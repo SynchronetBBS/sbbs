@@ -1,0 +1,524 @@
+; Script file VEHICLE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:41 2001
+
+@DECLARE water 000001168
+@DECLARE checkcanoe 000001513
+@DECLARE horse 000002044
+@DECLARE checkhorse 000002176
+@DECLARE wagon 000002706
+@DECLARE checkwagon 000002840
+@DECLARE horsehp 000003305
+@DECLARE wagonhp 000003717
+@DECLARE mounth 000004190
+@DECLARE dismounth 000004915
+@DECLARE mountw 000005893
+@DECLARE dismountw 000005906
+@DECLARE clearwin 000005920
+@DECLARE feedhorse 000006325
+@DECLARE feed2 000007961
+@DECLARE feed3 000009748
+@DECLARE leave 000011307
+@DECLARE showhorse 000011346
+@DECLARE nomore 000012240
+@NOCHECK
+; End of .REF index
+
+; VEHICHLE.REF  by Joel Gathercole
+;
+; CANOE : - RENT or BUY
+;         - gets you passed many water spots
+;
+; HORSE : - must feed it or will die
+;         - gives 2x default set amount of turns
+;         - needed for a wagon
+;         - can be obtained in QFORTRES.REF, BLDN.REF
+;
+; WAGON : - requires a horse for use.
+;         - gives 3x default set amount of turns
+;         - can break down if not maintained.
+;         - NPCs will pay you for lifts to places.
+;
+; got more ideas?
+;
+;
+@#water
+;a spot where the player needs a boat/canoe/raft or something to pass.
+@dataload canoe.idf &playernum `p20
+@IF `p20 > 0 THEN DO
+        @BEGIN
+        @do saybar
+`%You take out your little rental canoe and jump in.
+        @do goto leave
+        @end
+@do moveback
+@do saybar
+`%You need some sort of boat to pass here.
+
+@#CHECKCANOE
+@do `p25 is `p20
+@do `p26 is `p20
+@do `p25 * 200
+@do `p26 * 5
+@do `p25 + `p26
+@if `p20 is 1 then `p25 is 0
+@do move 23 16
+@do write
+`x                      `x
+@do move 23 16
+@do write
+`2You owe Paul about
+@do move 23 17
+@do write
+`$$`p25 `2for the rent of
+@do move 23 18
+@do write
+`x                      `x
+@do move 23 18
+@do write
+the canoe.
+@do move 23 19
+@do write
+`%                      `x
+@do move 23 20
+@do write
+`%                      `x
+@key bottom
+@routine vehicles in items.ref
+
+@#HORSE
+@if bitcheck `t79 1 1 then do
+        @BEGIN
+        @do goto leave
+        @end
+@routine stats in gametxt.ref
+
+@#CHECKHORSE
+@clear screen
+@do move 4 1
+@display showhorse in vehicle.ref
+@if bitcheck `t79 1 1 then do
+        @BEGIN
+        @routine horsehp
+        @do move 47 16
+        @do write
+`2Your horse is         `x
+        @do move 47 17
+        @do write
+`%`s02
+        @do move 47 18
+        @do write
+`5 Do you want to feed your horse?`%
+        @do move 49 19
+        @do `v01 is 1
+@choice
+`$Nah, he's fine  `%
+`$Yes, he needs it`%
+@if responce is 2 then goto FEEDHORSE
+        @do goto leave
+        @end
+
+
+@#WAGON
+@if bitcheck `t79 2 1 then do
+        @BEGIN
+
+        @do goto leave
+        @end
+@routine stats in gametxt.ref
+
+@#CHECKWAGON
+@if bitcheck `t79 2 1 then do
+        @BEGIN
+        @routine wagonhp
+        @do move 23 16
+        @do write
+`2Your wagon is         `x
+        @do move 23 17
+        @do write
+`%`s02
+@do move 23 18
+@do write
+`%                      `x
+@do move 23 19
+@do write
+`%                      `x
+@do move 23 20
+@do write
+`%                      `x
+        @key bottom
+        @do goto leave
+        @end
+@routine stats in gametxt.ref
+
+
+@#horsehp
+@if `t80 > 200 then `s02 is in`xperfect`xshape
+@if `t80 < 201 then `s02 is in`xgreat`xshape
+@if `t80 < 150 then `s02 is okay`xfor`xnow
+@if `t80 < 100 then `s02 is exausted
+@if `t80 < 50 then `s02 is very`xexausted
+@if `t80 < 20 then `s02 is on`xthe`xverge`xof`xdeath
+@if `t80 < 1 then do
+        @begin
+        @bitset `t79 1 0
+        @do `s02 is now`xdead
+        @end
+@do pad `s02 22
+
+@#wagonhp
+@if `t80 > 200 then `s02 is in`xperfect`xcondition
+@if `t80 < 201 then `s02 is in`xgreat`xcondition
+@if `t80 < 150 then `s02 is kinda`xdirty
+@if `t80 < 100 then `s02 is an`xaxel`xis`xbent
+@if `t80 < 50 then `s02 is missing`xwheels
+@if `t80 < 10 then `s02 is has`xno`xwheels
+@if `t80 < 1 then 
+@if `t80 < 1 then do
+        @begin
+        @bitset `t79 2 0
+        @do `s02 is a`xpiece`xof`xgarbage
+        @end
+@do pad `s02 22
+
+;mount/dismount horse
+@#mounth
+@if bitcheck `t79 3 0 then do
+        @begin
+@bitset `t79 3 1
+@if `t80 is 0 then do
+        @begin
+        @do saybar
+`5You can't mount a dead horse!
+        @closescript
+        @end
+@if `t80 > 200 then do
+        @begin
+        @do `p20 is `p11
+        @do `p20 * 2
+        @do `p11 is `p20
+        @closescript
+        @end
+@if `t80 < 201 then do
+        @begin
+        @if `t80 < 50 then do
+                @begin
+                @do `p20 is `p11
+                @do `p20 / 5
+                @do `p11 + `p20
+                @closescript
+                @end
+        @do `p20 is `p11
+        @do `p20 / 2
+        @do `p11 + `p20
+        @closescript
+        @end
+        @end
+
+@#dismounth
+@if bitcheck `t79 3 1 then do
+        @begin
+        @bitset `t79 3 0
+@if `t80 is 0 then do
+        @begin
+        @do saybar
+`5You can't mount a dead horse!
+        @closescript
+        @end
+@if `t80 > 200 then do
+        @begin
+        @do `p20 is `p11
+        @do `p20 / 2
+        @do `p11 is `p20
+        @if `p11 < 1 then `p11 is 1
+        @closescript
+        @end
+@if `t80 < 201 then do
+        @begin
+        @if `t80 < 50 then do
+                @begin
+                @do `p20 is `p11
+                @do `p20 / 2
+                @do `p20 / 3
+                @do `p20 * 5
+                @do `p11 is `p20
+                @if `p11 < 1 then `p11 is 1
+                @closescript
+                @end
+        @do `p20 is `p11
+        @do `p20 / 2
+        @do `p20 / 3
+        @do `p20 * 4
+        @do `p11 is `p20
+        @if `p11 < 1 then `p11 is 1
+        @closescript
+        @end
+        @end
+
+;mount/dismount wagon
+@#mountw
+@#dismountw
+
+@#CLEARWIN
+@do move 47 16
+@do write
+`x                                `x
+@do move 47 17
+@do write
+`x                                `x
+@do move 47 18
+@do write
+`x                                `x
+@do move 47 18
+@do write
+`x                                `x
+@do move 47 19
+@do write
+`%                                `x
+@do move 47 20
+@do write
+`%                                `x
+
+@#FEEDHORSE
+@routine clearwin
+@do move 47 16
+@do write
+`5Feeding your horse:
+@do `v01 is 1
+@do move 47 20
+@do write
+`x                     `x
+@do move 47 19
+@do write
+`x                     `x
+@do move 47 18
+@do write
+`x                     `x
+@do move 47 17
+@choice
+>`i03 0 `%        Milk         `%
+>`i02 0 `%    PoisonBerry      `%
+>`i05 0 `%    GreenPotion      `%
+`%        More         `%
+@if responce is 4 then goto feed2
+@if responce is 1 then do
+        @begin
+        @routine clearwin
+        @do `i03 - 1
+        @do move 47 17
+        @do write
+`$Your horse drinks the warm milk.
+        @do move 47 18
+        @do write
+`$Your horse wants more milk!
+        @do quebar
+`$Horses love milk.
+        @do `t80 + 25
+        @key bottom
+        @do goto leave
+        @end
+
+@if responce is 2 then do
+        @begin
+        @routine clearwin
+        @do `i02 - 1
+        @do move 47 17
+        @do write
+`$Your horse eats up the cluster of berries.
+        @do move 47 18
+        @do write
+`$Was there any effect?
+        @do `t80 - 5
+        @if `t80 < 1 then do
+                @begin
+                @bitset `t79 1 0
+                @do `s02 is now`xdead
+                @end
+        @key bottom
+        @do goto leave
+        @end
+
+@if responce is 3 then do
+        @begin
+        @routine clearwin
+        @do `i05 - 1
+        @do move 47 17
+        @do write
+`$Your horse drinks up the GreenPotion.
+        @do move 47 18
+        @do write
+`$It seems to make little effect.
+        @do `t80 + 20
+        @key bottom
+        @do goto leave
+        @end
+
+@#FEED2
+@do `v01 is 1
+@do move 47 20
+@do write
+`x                     `x
+@do move 47 19
+@do write
+`x                     `x
+@do move 47 18
+@do write
+`x                     `x
+@do move 47 17
+@choice
+>`i01 0 `%    WildBerries      `%
+>`i18 0 `%      Parrot         `%
+>`i43 0 `%    ChickenEgg       `%
+`%      More           `%
+@if responce is 4 then goto feed3
+@if responce is 1 then do
+        @begin
+        @routine clearwin
+        @do `i01 - 1
+        @do move 47 17
+        @do write
+`$Your horse slurps the cluster
+        @do move 47 18
+        @do write
+`$of fresh berries.
+        @do `t80 + 20
+        @key bottom
+        @do goto leave
+        @end
+
+@if responce is 2 then do
+        @begin
+        @routine clearwin
+        @do `i18 - 1
+        @do move 47 17
+        @do write
+`$Your horse chokes on trying to eat
+        @do move 47 18
+        @do write
+`$that bird! Your horse jumps around wildly.
+        @do `t80 - 100
+        @if `t80 < 1 then do
+                @begin
+                @bitset `t79 1 0
+                @do `s02 is now`xdead
+                @end
+        @do quebar
+`$Hmm, I doubt the horse liked that parrot.
+        @key bottom
+        @do goto leave
+        @end
+
+@if responce is 3 then do
+        @begin
+        @routine clearwin
+        @do `i43 - 1
+        @do move 47 17
+        @do write
+`$Your horse swallows the egg whole.
+        @do move 47 18
+        @do write
+`$Your horse isn't moving.
+        @do `t80 - 20
+        @if `t80 < 1 then do
+                @begin
+                @bitset `t79 1 0
+                @do `s02 is now`xdead
+                @end
+        @do quebar
+`$Hmm, I doubt horses likes eggs.
+        @key bottom
+        @do goto leave
+        @end
+
+@#FEED3
+@do `v01 is 1
+@do move 47 20
+@do write
+`x                     `x
+@do move 47 19
+@do write
+`x                     `x
+@do move 47 18
+@do write
+`x                     `x
+@do move 47 17
+@choice
+>`i17 0 `%      Gloworm        `%
+>`i19 0 `%       Apple         `%
+>`i08 0 `%     BerryPie        `%
+`%       None          `%
+@if responce is 4 then goto leave
+@if responce is 1 then do
+        @begin
+        @routine clearwin
+        @do `i17 - 1
+        @do move 47 17
+        @do write
+`$Your horse sucks on the gloworm
+        @do move 47 18
+        @do write
+`$and finishes it completely.
+        @do `t80 + 5
+        @do quebar
+`$Your horse seems to have a slight glow now. hummf.
+        @key bottom
+        @do goto leave
+        @end
+
+@if responce is 2 then do
+        @begin
+        @routine clearwin
+        @do `i19 - 1
+        @do move 47 17
+        @do write
+`$Your horse quickly eats the apple.
+        @do move 47 18
+        @do write
+`$Looks like he likes it.
+        @do `t80 + 30
+        @do quebar
+`$Your horse loves apples.
+        @key bottom
+        @do goto leave
+        @end
+
+@if responce is 3 then do
+        @begin
+        @routine clearwin
+        @do `i08 - 1
+        @do move 47 17
+        @do write
+`$Your horse quickly eats the entire
+        @do move 47 18
+        @do write  
+`$pie. Looks like he likes it.
+        @do `t80 + 50
+        @do quebar
+`$Your horse loved it, and is very energetic now.
+        @key bottom
+        @do goto leave
+        @end
+
+@#leave
+;@update
+@closescript
+
+@#showhorse
+`6                                  `8~.%(\_
+`6                               `8~~*%%%%`6  ^\
+`6                            `8~~*%%%%%`6   (`16`6 \
+`6                         `8~~~*%%%%%`6    ,    \
+`6          `8...._        `8~~~*%%%%%`6     /"._  `8,`6',
+`6        `8~*%%%%\\ ,...`8~~~*%%%%%%%`6    /    '-.-'
+`6      `8 ~.*%%%  `6;'    '"'"*%%%%@`6    /
+`6     `8 ~~*%%%' `6/                    \
+`6    `8 ~~~*%%% `6|                      |
+`6     `8 ~~*%%' `6|        .       '     |
+`6     `8 ~~*%%  `6 \     _ '      't   ,.')
+`6     `8  ~*%'  `6  |   y;- -,-""'"-\   \/
+`6     `8  ~*%   `6   / ./   ) /      '\/  \
+`6                |./   ( (         / /'
+`6                ||     \\        //'|
+`6                ||      \\     _//'||
+`6                ||       ))   |_/  ||
+`6                \_\     |_/        ||
+`6                 ''"               \_\
+@#NOMORE

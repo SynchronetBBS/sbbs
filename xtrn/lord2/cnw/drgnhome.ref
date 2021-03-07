@@ -1,0 +1,974 @@
+; Script file DRGNHOME.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:25 2001
+
+@DECLARE house1 000001198
+@DECLARE house2 000002931
+@DECLARE house3 000004612
+@DECLARE house4 000006295
+@DECLARE house5 000007988
+@DECLARE house6 000009708
+@DECLARE heal 000011364
+@DECLARE freshair 000011430
+@DECLARE sign 000011555
+@DECLARE sign2 000011703
+@DECLARE codaxbench 000011885
+@DECLARE codtalk 000012318
+@DECLARE stonecod 000014266
+@DECLARE out 000014873
+@DECLARE homeoffice 000015060
+@DECLARE dragontalk 000017226
+@DECLARE update 000017636
+@DECLARE mirror 000017741
+@DECLARE dogtail 000018769
+@DECLARE doghead 000019068
+@DECLARE secret 000019238
+@DECLARE chair 000019378
+@DECLARE tubman 000019561
+@DECLARE deepend 000019732
+@DECLARE sign4 000019860
+@DECLARE makehome 000020024
+@DECLARE done 000020298
+@DECLARE done 000020311
+@NOCHECK
+; End of .REF index
+
+;Dragon's Den Housing     REGISTERED!!!!
+;by Codax Dragon
+;Thanx for helping the cause....For your help you get this upgrade,
+;several more screens, rentable hutt and more.  You also get the
+;ablility to own/sell the 3 castles. 
+;---------------------------House1------------------------------------
+@#house1
+@do moveback
+@offmap
+@if castle71.dat exists false then do
+@begin
+@show
+
+   `r0`c`r1  For Rent  `r0`2
+
+	This little shack is for rent.  You will get a bed and table
+  with this hutt and you can go in it 60 times before your rent
+  expires.  Guess what, It only costs `$$500!`2
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 499 Pay rent
+<&money 500 Cuss 'cause you ain't got no cash
+>&money 499 Find the 3 little pigs.
+@
+
+@if responce not 1 then do
+@begin
+@run update
+@end
+
+@if responce is 1 then do
+@begin
+@writefile castle71.dat
+&playernum
+60
+@
+@do money - 500
+@do addlog
+`0`n`2 buys `%A hutt a Dragon's Den Housing for `$$500!
+@routine seperate in gametxt.ref
+@run house1
+@end
+@end
+
+@readfile castle71.dat
+`p20
+`p21
+@
+
+@if `p20 not &playernum then do
+@Begin
+@do saybar
+This is not your hutt!
+@run done
+@end
+
+@if `p20 is &playernum then do
+@begin
+@do `p21 - 1
+@do delete castle71.dat
+@writefile castle71.dat
+`p20
+`p21
+@
+
+@readfile castle71.dat
+`p20
+`p21
+@
+
+@if `p21 less 1 then do
+@begin
+@do saybar
+You have to pay your rent if you want your house back
+@key
+@do delete castle71.dat
+     @do addlog
+    `%`n, `2didn't pay s&his rent and lost s&his hutt at Dragon's Den Housing
+	  @routine seperate in gametxt.ref
+    @run house1
+@end
+
+@do `p22 is deleted `p20
+@if `p22 is 1 then do
+@begin
+ @do delete castle71.dat
+    @do addlog
+  `%A great hutt`2 is put on the market today.
+     @routine seperate in gametxt.ref
+@run house1
+@end
+
+@if `p21 more 0 then do
+@begin
+@do x is 12
+@do y is 6
+@do map is 1588
+@loadmap 1588
+@drawmap
+@update
+@do goto done
+@end
+@end
+;------------------------house2----------------------------------
+@#house2
+@do moveback
+@offmap
+@if castle72.dat exists false then do
+  @begin
+  @show
+
+   `r0`c`r1  For Rent  `r0`2
+
+	This little shack is for rent.  You will get a bed and table
+  with this hutt and you can go in it 60 times before your rent
+  expires.  Guess what, It only costs `$$500!`2
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 499 Pay rent
+<&money 500 Cuss 'cause you ain't got no cash
+>&money 499 Find the 3 little pigs.
+@
+
+@if responce not 1 then do
+@begin
+@run update
+@end
+
+@if responce is 1 then do
+@begin
+@writefile castle72.dat
+&playernum
+60
+@
+@do money - 500
+@do addlog
+`0`n`2 buys `%A hutt a Dragon's Den Housing for `$$500!
+@routine seperate in gametxt.ref
+@run house2
+@end
+@end
+
+@readfile castle72.dat
+`p20
+`p21
+@
+
+@if `p20 not &playernum then do
+@Begin
+@do saybar
+This is not your hutt!
+@end
+
+@if `p20 is &playernum then do
+@begin
+@do `p21 - 1
+@do delete castle72.dat
+@writefile castle72.dat
+&playernum
+`p21
+@
+
+@readfile castle72.dat
+`p20
+`p21
+@
+
+@if `p21 is 0 then do
+@begin
+@do saybar
+Time to pay your rent!
+@key
+@do delete castle72.dat
+     @do addlog
+    `%`n, `2didn't pay s&his rent and lost s&his hutt at Dragon's Den Housing
+	  @routine seperate in gametxt.ref
+    @run house2
+@end
+
+@do `p22 is deleted `p20
+@if `p22 is 1 then do
+@begin
+ @do delete castle72.dat
+    @do addlog
+  `%A great hutt`2 is put on the market today.
+     @routine seperate in gametxt.ref
+@run house2
+@end
+
+@if `p21 more 0 then do
+@begin
+@do x is 38
+@do y is 6
+@do map is 1588
+@loadmap 1588
+@run update
+@do goto done
+@end
+@end
+;--------------------house3--------------------------
+@#house3
+@do moveback
+@offmap
+@if castle73.dat exists false then do
+  @begin
+  @show
+
+   `r0`c`r1  For Rent  `r0`2
+
+	This little shack is for rent.  You will get a bed and table
+  with this hutt and you can go in it 60 times before your rent
+  expires.  Guess what, It only costs `$$500!`2
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 499 Pay rent
+<&money 500 Cuss 'cause you ain't got no cash
+>&money 499 Find the 3 little pigs.
+@
+
+@if responce not 1 then do
+@begin
+@run update
+@end
+
+@if responce is 1 then do
+@begin
+@writefile castle73.dat
+&playernum
+60
+@
+@do money - 500
+@do addlog
+`0`n`2 buys `%A hutt a Dragon's Den Housing for `$$500!
+@routine seperate in gametxt.ref
+@run house3
+@end
+@end
+
+@readfile castle73.dat
+`p20
+`p21
+@
+
+@if `p20 not &playernum then do
+@Begin
+@do saybar
+This is not your hutt!
+@run done
+@end
+
+@if `p20 is &playernum then do
+@begin
+@do `p21 - 1
+@do delete castle73.dat
+@writefile castle73.dat
+&playernum
+`p21
+@
+
+@readfile castle73.dat
+`p20
+`p21
+@
+
+@if `p21 is 0 then do
+@begin
+@do saybar
+Time to pay your rent
+@key
+@do delete castle73.dat
+     @do addlog
+    `%`n, `2didn't pay s&his rent and lost s&his hutt at Dragon's Den Housing
+	  @routine seperate in gametxt.ref
+    @run house3
+@end
+
+@do `p22 is deleted `p20
+@if `p22 is 1 then do
+@begin
+ @do delete castle73.dat
+    @do addlog
+  `%A great hutt`2 is put on the market today.
+     @routine seperate in gametxt.ref
+@run house3
+@end
+
+@if `p21 more 0 then do
+@begin
+@do x is 60
+@do y is 6
+@do map is 1588
+@loadmap 1588
+@run update
+@do goto done
+@end
+@end
+;----------------------house4----------------
+@#house4
+@do moveback
+@offmap
+@if castle74.dat exists false then do
+  @begin
+  @show
+
+   `r0`c`r1  For Rent  `r0`2
+
+	This little shack is for rent.  You will get a bed and table
+  with this hutt and you can go in it 60 times before your rent
+  expires.  Guess what, It only costs `$$800!`2
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 799 Pay rent
+<&money 800 Cuss 'cause you don't have the cash.
+>&money 799 Try to find the 3 little pigs.
+@
+
+@if responce not 1 then do
+@begin
+@run update
+@end
+
+@if responce is 1 then do
+@begin
+@writefile castle74.dat
+&playernum
+60
+@
+@do money - 800
+@do addlog
+`0`n`2 buys `%A hutt a Dragon's Den Housing for `$$800!
+@routine seperate in gametxt.ref
+@run house4
+@end
+@end
+
+@readfile castle74.dat
+`p20
+`p21
+@
+
+@if `p20 not &playernum then do
+@Begin
+@do saybar
+This is not your hutt!
+@run done
+@end
+
+@if `p20 is &playernum then do
+@begin
+@do `p21 - 1
+@do delete castle74.dat
+@writefile castle74.dat
+&playernum
+`p21
+@
+
+@readfile castle74.dat
+`p20
+`p21
+@
+
+@if `p21 is 0 then do
+@begin
+@do saybar
+Time to pay your rent
+@key
+@do delete castle74.dat
+     @do addlog
+    `%`n, `2didn't pay s&his rent and lost s&his hutt at Dragon's Den Housing
+	  @routine seperate in gametxt.ref
+    @run house4
+@end
+
+@do `p22 is deleted `p20
+@if `p22 is 1 then do
+@begin
+ @do delete castle74.dat
+    @do addlog
+  `%A great hutt`2 is put on the market today.
+     @routine seperate in gametxt.ref
+@run house4
+@end
+
+@if `p21 more 0 then do
+@begin
+@do x is 23
+@do y is 14
+@do map is 1588
+@loadmap 1588
+@run update
+@do goto done
+@end
+@end
+;-------------------------house5------------
+@#house5
+@do moveback
+@offmap
+@if castle75.dat exists false then do
+  @begin
+  @show
+
+   `r0`c`r1  For Rent  `r0`2
+
+	This house is for rent.  You will get a bed and table and windows
+  with this house and you can go in it 90 times before your rent
+  expires.  Guess what, It only costs `$$1500!`2
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 1499 Pay rent
+<&money 1500 Cuss 'cause you don't have the cash.
+>&money 1499 Try to find the 3 little pigs.
+@
+
+@if responce not 1 then do
+@begin
+@run update
+@end
+
+@if responce is 1 then do
+@begin
+@writefile castle75.dat
+&playernum
+90
+@
+
+@do money - 1500
+@do addlog
+`0`n`2 buys `%A home at Dragon's Den Housing for `$$1500!
+@routine seperate in gametxt.ref
+@run house5
+@end
+@end
+
+@readfile castle75.dat
+`p20
+`p21
+@
+
+@if `p20 not &playernum then do
+@Begin
+@do saybar
+This is not your house!
+@run done
+@end
+
+@if `p20 is &playernum then do
+@begin
+@do `p21 - 1
+@do delete castle75.dat
+@writefile castle75.dat
+&playernum
+`p21
+@
+
+@readfile castle75.dat
+`p20
+`p21
+@
+
+@if `p21 is 0 then do
+@begin
+@do saybar
+Time to pay your rent
+@key
+@do delete castle75.dat
+     @do addlog
+    `%`n, `2didn't pay s&his rent and lost s&his hutt at Dragon's Den Housing
+	  @routine seperate in gametxt.ref
+    @run house5
+@end
+
+@do `p22 is deleted `p20
+@if `p22 is 1 then do
+@begin
+ @do delete castle75.dat
+    @do addlog
+  `%A great hutt`2 is put on the market today.
+     @routine seperate in gametxt.ref
+@run house5
+@end
+
+@if `p21 more 0 then do
+@begin
+@do x is 28
+@do y is 15
+@do map is 1587
+@loadmap 1587
+@run update
+@do goto done
+@end
+@end
+
+
+;-----------------------house6---------------------
+@#house6
+@do moveback
+@offmap
+@if castle76.dat exists false then do
+  @begin
+  @show
+
+   `r0`c`r1  For Rent  `r0`2
+
+	This beautiful house is for rent.  You will get a huge bed, table
+  and windows.  You can go in it 200 times before your rent
+  expires.  Guess what, It only costs `$$5000!`2
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 4999 Pay rent
+<&money 5000 Cuss 'cause you don't have the cash.
+>&money 4999 Try to find the 3 little pigs.
+@
+
+@if responce not 1 then do
+@begin
+@run update
+@end
+
+@if responce is 1 then do
+@begin
+@writefile castle76.dat
+&playernum
+200
+@
+@do money - 5000
+@do addlog
+`0`n`2 buys `%A hutt a Dragon's Den Housing for `$$1500!
+@routine seperate in gametxt.ref
+@run house6
+@end
+@end
+
+@readfile castle76.dat
+`p20
+`p21
+@
+
+@if `p20 not &playernum then do
+@Begin
+@do saybar
+This is not your house!
+@run done
+@end
+
+@if `p20 is &playernum then do
+@begin
+@do `p21 - 1
+@do delete castle76.dat
+@writefile castle76.dat
+&playernum
+`p21
+@
+
+@readfile castle76.dat
+`p20
+`p21
+@
+
+@if `p21 is 0 then do
+@begin
+@do saybar
+Time to pay your rent
+@key
+@do delete castle76.dat
+     @do addlog
+    `%`n, `2didn't pay s&his rent and lost s&his hutt at Dragon's Den Housing
+	  @routine seperate in gametxt.ref
+    @run house6
+@end
+
+@do `p22 is deleted `p20
+@if `p22 is 1 then do
+@begin
+ @do delete castle76.dat
+    @do addlog
+  `%A great hutt`2 is put on the market today.
+     @routine seperate in gametxt.ref
+@run house6
+@end
+
+@if `p21 more 0 then do
+@begin
+@do x is 67
+@do y is 17
+@do map is 1587
+@loadmap 1587
+@run update
+@do goto done
+@end
+@end
+
+@#heal
+@do `p02 is `p03
+@do saybar
+You are fully healed
+
+@#freshair
+@do saybar
+MMMMMmmm Nothing like fresh air!
+;----------------------------------The Sign--------------------------
+@#sign
+@do moveback
+@do saybar
+  `2Welcome to Dragon's Den Housing.....
+;---------------------------------Second Sign------------------------
+@#sign2
+@do moveback
+
+@do Saybar
+   `$N`2ow `$E`2ntering `$T`2he `$U`2pper `$E`2states
+@closescript
+@end
+;---------------------------Codax's Bench----------------------
+@#codaxbench
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2Stone Him? [`0N`2/`0Y`2] :`x
+@do readspecial `s01 NY
+
+@if `s01 is N then do
+@begin
+@if rock&playernum.cod exists true then do
+@begin
+@readfile rock&playernum.cod
+`p20
+@
+@if `p20 not &time then do
+@begin
+@do delete rock&playernum.cod
+@do goto codtalk
+@end
+
+@if `p20 is &time then do
+@begin
+@do goto out
+@end
+@end
+
+@label codtalk
+@do `p21 random 24 1
+@if `p21 is 1 then saybar
+`0Codax:  `2Dragon's Den BBS is the only 1 4 me!!!
+@if `p21 is 2 then saybar
+`0Codax:  `2When I get a house I'll be safe forever
+@if `p21 is 3 then saybar
+`0Codax:  `2Place your add here
+@if `p21 is 4 then saybar
+`0Codax:  `2Alms for a sysop....Come on buddy...Please....<sniff>
+@if `p21 is 5 then saybar
+`0Codax:  `2Show me the `$Money!!!!
+@if `p21 is 6 then saybar
+`0Codax:  `2I'm shameless when advertising for my BBS
+@if `p21 is 7 then saybar
+`0Codax:  `2Look out behind you!!!!!!haha tricked you!!
+@if `p21 is 8 then saybar
+`0Codax:  `2May the Dragons Protect Your Soul
+@if `p21 is 9 then saybar
+`0Codax:  `2I've got alot to say don't I?
+@if `p21 is 10 then saybar
+`0Codax:  `2No body knows the trouble I seen....
+@if `p21 is 11 then saybar
+`0Codax:  `2Make Love not `4`bWar
+@if `p21 is 12 then saybar
+`0Codax:  `2WHAT?!?!?! PHOENIX?!?!?  WHERE?!?!?!?
+@if `p21 is 13 then saybar
+`0Codax:  `2Have your people call my people...We'll do lunch
+@if `p21 is 14 then saybar
+`0Codax:  `2The roof...The roof...The roof is on FIRE!!!
+@if `p21 is 15 then saybar
+`0Codax:  `2Barak still lives with his mother
+@if `p21 is 16 then saybar
+`0Codax:  `2Have you found Power yet?
+@if `p21 is 17 then saybar
+`0Codax:  `2Seth spelled backwards is Htes
+@if `p21 is 18 then saybar
+`0Codax:  `2Seth Able can also be Ale Thebs
+@if `p21 is 19 then saybar
+`0Codax:  `2Stay Off My BENCH!!!!!!!
+@if `p21 is 20 then saybar
+`0Codax:  `2Do you have a newspaper?  It's rather cold today
+@if `p21 is 21 then saybar
+`0Codax:  `2All hail Emporor Gehstal...er..sorry wrong game
+@if `p21 is 22 then saybar
+`0Codax:  `2Thou art so........odd
+@if `p21 is 23 then saybar
+`0Codax:  `2Idea for a new game:  Koshi's Island 2
+@if `p21 is 24 then saybar
+`0Codax:  `2 Nothing is like the music of hundreds of voices screaming in unison!
+@end
+
+@if `s01 is Y then do
+@begin
+@label stonecod
+@if rock&playernum.cod exists false then do
+@begin
+@writefile rock&playernum.cod
+0
+@
+@do goto stonecod
+@end
+
+@if rock&playernum.cod exists true then do
+@begin
+@readfile rock&playernum.cod
+`p20
+@
+
+@if `p20 not &time then do
+@begin
+@do delete rock&playernum.cod
+@writefile rock&playernum.cod
+&time
+@
+@drawmap
+@update
+@do `p20 Random 50 1
+@do money + `p20
+@do `p07 - 3
+@do saybar
+You throw stones at the poor defencles sysop and knock him unconsious!
+@do quebar
+You lost 3 allignment and stole `$$`p20`% out of his BBS fund! 
+@end
+
+@if `p20 is &time then do
+@begin
+@label out
+@do saybar
+Codax lies unconsious on his bench!  You already stoned him today!
+@end
+@end
+@end
+
+;------------------------------Home Office-----------------------------
+@#homeoffice
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1 `%Talking to Darlatia `r0
+
+
+        `2#$^HYAS#%QQDFHSDGJE#&&ASG #$^!SD #!G A      #% ARR>Mlp;'
+3788GSHS#$%^&sstSUI8356SG&@#!&* $%& $1!        !$^!$ % $Y$QG +¦òb864
+
+Do you understand?
+@choice
+Yes
+No
+Leave...she's scaring you.
+@if responce is 1 then goto Dragontalk
+@if responce is 3 then goto update
+   @show
+
+`2"My Appologies....I was unware you didn't know Dragon Tounge."  
+`k
+`$Fine...Just don't speak that shit to me again!!!
+`k
+
+`2"She bows then says "I am @#$^#!#)(+V...err...you can call me Darlatia
+I am second to `1C`3o`5d`7a`9x, `2the Leader of this village.  He would meet you himself
+but he is a trifle busy right now...I can't seem to find him anywhere....
+anyway would you like to hear the story behind this settlement?"
+`k
+
+`$"Not really, Dragon" You say flatly
+`k
+
+`2"Too bad you are going to hear it anyway.  Long ago there was a great
+war bettween the Phoenixi..."
+`k
+
+`$"You mean the Phoenixes!?!?!" You gasp in astonishment!!!
+`k
+
+`2"It is pronounced Phoenixi actually" she corrects you "anyway `1C`3o`5d`7a`9x was
+`2one of the warriors in the final battle of Phoel Hill.  Havn't you heard the
+legend of the Purple Dragon!?!?!
+`k
+
+`$"Is it anything like Ledgend Of the `4Red `2Dragon?" you say
+`k
+
+`2"Were you born on a farm, s&boy,?!?  The Red dragon is `1C`3o`5d`7a`9x's
+ `2father's cousin's son's daugter's roomate!"
+`k
+
+`$"So how does that relate him to this `1C`3o`5d`7a`9x `2guy?"
+`k
+
+`2"Never you mind.  `1C`3o`5d`7a`9x `2is the most powerfull of the Purple
+Dragons.  But it seems he has retired and decided to make some cash.
+Can't live on ledgends for ever ya know."
+`k
+`$"Psshhh...yeah.....right"
+`k
+
+`2"So he decided to build this town since the Dragon and Phoenix
+war was over, Dragons were nearly extinct, and there were DragonHunters
+everywhere.  He now takes the guize of a half-elf.
+`k
+
+`$This is interesting and all but I need a house!
+`k
+
+`2Just go in the one you want to buy.  C'ya.
+@
+@key
+@pauseon    
+@drawmap
+@update
+;==============================Dragontalk============================= 
+@#Dragontalk
+@show
+`2awtb n1 64156 #$%  !^!$  &!!$  !#$%^!  !^!N "C3__înMù!>  L5T5n
+WE4BQ23 N7 3 568E 234Q DFHDHW   13FGAG DARLATIA afoweij 908      23klh 7
+wea aega84 faweifj asdi  asdfi  loiw ba 
+kj
+ *&_)
+
+`2You relize you have no idea what she is saying and leave feeling like
+an idiot.
+@
+@key
+@pauseon
+@drawmap
+@update
+;-------------------------------Upadate Screen Routine--------------------
+@#update
+@drawmap
+@update
+;------------------------------Mirror-------------------------------------
+@#mirror
+@do moveback
+@do `p22 random 13 1
+
+@if `p22 is 1 then saybar
+`2"Mirror, Mirror on the wall which is greatest LORD of all?"
+@if `p22 is 2 then saybar
+`4`b<crack>
+@if `p22 is 3 then saybar
+`2Who's that s&man?  S&he's gorgous
+@if `p22 is 4 then saybar
+`2Hey baby!
+@if `p22 is 5 then saybar
+`2I can see myself from here
+@if `p22 is 6 then saybar
+`2i can't see a thing....gotta get this thing cleaned
+@if `p22 is 7 then saybar
+`0Geeves:  `2Stop looking in the mirror, s&sir, we have guests
+@if `p22 is 8 then saybar
+`2Are YOU talkN ta *ME*?  Are YOU TALKN TA ME?!? 
+@if `p22 is 9 then saybar
+`2Hasta Lavista....Baby
+@if `p22 is 10 then saybar
+`2You flex you pecs and other muscles(or lack of)
+@if `p22 is 11 then saybar
+`2codax_dragon@juno.com send him mail on howto send money
+@if `p22 is 12 then saybar
+`2Now that you are at the mirror you reflect over today's events
+@if `p22 is 13 then saybar
+`2Got Milk
+@closescript
+;----------------------------Dog Tail--------------------------------
+@#dogtail
+@do `p20 random 3 1
+
+@if `p20 is 1 then saybar
+`4`bYIP!!!!!!!
+@if `p20 is 2 then saybar
+`2The dog moves his tail so you don't step on it
+@if `p20 is 3 then saybar
+`2The dog doesn't notice you crushed his tail
+;------------------------------Dog Head------------------------------
+@#doghead
+@do moveback
+@do saybar
+`2<pant> <drool> <slober> <pant> <slurp> Arf!!!!
+@closescript
+;-----------------------------secret--------------------------------
+@#secret
+@do saybar
+`2You look around and turn the secret knob.....
+;-----------------------------master's chair------------------------
+@#chair
+@do saybar
+`2You sit in your chair....mmmmmm...food smells good.....
+@closescript
+@do `p02 is `p03
+;----------------------------tubman---------------------------------
+@#tubman
+@do moveback
+@do saybar
+`2Hey man....Can't you see I'm doing something!!!
+@closescript
+;--------------------------deepend---------------------------------
+@#deepend
+@do saybar
+`4`bCAUTION `2Shallow area ends here!!!!
+;--------------------------sign--------------------------------
+@#sign4
+@do saybar
+<---Greentree  ^Porttown   ---->Dragon's Den Housing(est. by Codax)
+
+;--------------------------Dragon Den is my home-------------------
+@#makehome
+@do moveback
+@Do saybar
+`%Make `#Dragon's Den `%your home? `8<`7y/N`8> :
+@do readspecial `s02 NY
+@if `s02 is Y then do
+        @begin
+        @do `p69 is 29
+        @do saybar
+  `#Dragon's Den `%housing is now home sweet home.
+        @end
+@closescript
+
+@#done
+@label done

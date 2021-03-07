@@ -1,0 +1,152 @@
+; Script file DRAGONS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:42 2001
+
+@DECLARE viewdragon 000000431
+@DECLARE egg1 000001356
+@DECLARE egg2 000001521
+@DECLARE hatchling 000001722
+@DECLARE baby 000001873
+@DECLARE baby2 000002221
+@DECLARE medium 000002592
+@DECLARE adult 000002995
+@DECLARE nomore 000004104
+@NOCHECK
+; End of .REF index
+
+;'p20 is ST
+;'p21 is DF
+;'p22 is HP
+;`s01 is color#
+
+@#VIEWDRAGON
+;@clear screen
+@do move 1 1
+@do write
+`r0`s01
+@if `p20 < 26 then do
+        @begin
+        @display EGG1 in dragons.ref
+        @closescript
+        @end
+@if `p20 < 50 then do
+        @begin
+        @display EGG2 in dragons.ref
+        @closescript
+        @end
+@if `p20 < 100 then do
+        @begin
+        @display HATCHLING in dragons.ref
+        @closescript
+        @end
+@if `p20 < 200 then do
+        @begin
+        @display BABY in dragons.ref
+        @closescript
+        @end
+@if `p20 < 500 then do
+        @begin
+        @display BABY2 in dragons.ref
+        @closescript
+        @end
+@if `p20 < 1000 then do
+        @begin
+        @display MEDIUM in dragons.ref
+        @closescript
+        @end
+@if `p20 > 1001 then do
+        @begin
+        @display ADULT in dragons.ref
+        @closescript
+        @end
+;@key bottom
+@closescript
+;        @begin
+;        @end
+@#EGG1
+        .-"-.
+      .'     '.
+     /         \
+    :           ;
+    |           |
+    :           :
+     \         /
+      '.     .'
+        '~~~'
+@#EGG2
+        .-"-.
+      .' '\/_'.
+     /\/ \_\/\_\
+    : _\(o o)\/
+    |/  \_^/\_/\
+    : \_/  'Y--':
+     \ / \.--\ /   |\
+      '. /  .'  /\ '~
+        '~~~ .-.'"
+             '''
+@#HATCHLING
+   _(,  {\V/}  ,)_
+     /\ | " | /\
+    //\\(o o)//\\
+    ||::/ ^ \::||
+    |||((   ))|||
+    |'  \" "/  '|
+         )I(
+        ""'""
+@#BABY
+            _.===._      ,"^^^^",
+           /_\^^^/_\    /  ^ ,^  \     ,
+           (0\ ^ /0)\  / ^  /  ^  \    /\
+            \     /  ^^   ^ \ ^ \  ",." /
+             )   (  ^  ^   ^ \   \    ,'
+             (o_o)^    \ ^   ,)  /'^^'
+              ^V^\ ^ \  \_,-"((((      
+              /  /'""/  /
+             ((('   '(((
+@#BABY2
+                           (' '.
+                _.--.     /   a '-.
+                '->  \ __/     __.'
+                 <_   |.'  /'-._)'-
+                  >--'    \
+              .--;'       |--.
+      ,-     _\.'         |   \_
+    //     /-'  \        / '\__/
+   | |   .'       /_._  |
+    \  '-'   _/  --.  \  '-.
+     '.___.-' \____/   \___/
+@#MEDIUM
+                 ,       ,
+                 #\'-"-'/
+                #/   o (o
+               #/ \__   '._
+,_#_#         #/  /=/'-. _")
+'-.'\#       #/  /=(_.. '-'.
+   \ '\#    #/  -.''_\\\'_\\\
+    ;  \#  #/ '.__.'=\_.'
+    |   '-#;    _|====\_
+    ;      '  /'  '\==| \
+     \     .        \=| /
+      '-.._         // /__
+          ')-.    '----._\
+            <_________\_\_\
+@#ADULT
+                    _.-'/   _.:''/
+                 ,''   ( ,:;.-''(
+               .'      .:''      \
+              /       //    _.-';)
+            _/      _//_.-;:-'''/
+         //|    \      \  .-''      \                                 ,
+        || /_,-,_|      | '""--..__  \                  .-'''''-.     )\
+   _.--'_  '-;_/_)_     |(''""'---.;"/-,.-.  _         /  .---.  \  .'  \
+  /6    ^'     ':_/     | "-._    .-'../__ )' ',.-. _ |  /     \  ;/_  _/
+ ('-----'--'.    \_)    ;|'"-.;-./        '""--;.__) ',-.      (| |  ||
+__)         {\   |_/\   \\    _.'                  '"-;_ )'-,_('/ ;_.'/
+ /         {=|   |)  \.-"\\  /                          ''-.;_:'  /_.'
+           {=|    \_.'    )) '        /                          /
+           {=|     ,                 |      ,                _.-'
+            {=;     '""--.            \    '.       __,.---''
+             {=\          '\           '._   '._.-"'
+       _,.--"';{\ '-.._    /        __,..-'-._ '.
+      (((/==)/ _';.--'"' .'--""""'''  .--"'''    )
+       '''  ' (((/===='''            ((((/======'
+@#NOMORE
+

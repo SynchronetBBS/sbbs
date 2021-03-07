@@ -1,0 +1,777 @@
+; Script file WIZCAST.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE sign 000001259
+@DECLARE violet 000001357
+@DECLARE sandtiger 000002321
+@DECLARE frontdoor 000003295
+@DECLARE start 000003412
+@DECLARE talking 000004939
+@DECLARE leave 000005199
+@DECLARE stay 000005295
+@DECLARE drink 000005785
+@DECLARE crazy 000006146
+@DECLARE yes 000006415
+@DECLARE no 000006978
+@DECLARE room 000007091
+@DECLARE ask 000007452
+@DECLARE whichroom 000007762
+@DECLARE eastwing 000008029
+@DECLARE westwing 000008207
+@DECLARE done 000008379
+@DECLARE broke 000008436
+@DECLARE eastdoor 000008541
+@DECLARE westdoor 000008645
+@DECLARE wrongkey 000008815
+@DECLARE rightkey 000008903
+@DECLARE nokey 000008975
+@DECLARE wrongeast 000009080
+@DECLARE notyet 000009662
+@DECLARE yet 000009829
+@DECLARE upstairs 000010071
+@DECLARE yesmaze 000011096
+@DECLARE mazegate 000011374
+@DECLARE up 000011820
+@DECLARE first 000011849
+@DECLARE second 000012297
+@DECLARE third 000012745
+@DECLARE fourth 000013194
+@DECLARE fifth 000013642
+@DECLARE sixth 000014090
+@DECLARE seventh 000014540
+@DECLARE eighth 000014989
+@DECLARE ninth 000015437
+@DECLARE people 000015886
+@NOCHECK
+; End of .REF index
+
+;
+;
+;  Bug fixes by CNW
+;
+
+@#sign
+@do moveback
+@do saybar
+The path to Wizard's Castle is near here, can you find it?
+
+@#violet
+@do `p70 is 103
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Violetta: `0Sleeping on the West side is more restful!
+@if `p20 is 2 then saybar
+`%Violetta: `0Remember to ask the Wizard about the maze upstairs!
+@if `p20 is 3 then saybar
+`%Violetta: `0Have you ever tasted the Wizard's Brew?  It's pretty good!
+@if `p20 is 4 then saybar
+`%Violetta: `0Be wary of sleeping on the East side.  No protection!
+@if `p20 is 5 then saybar
+`%Violetta: `0I heard there's a chest hidden upstairs.  Go find it!
+@if `p20 is 6 then saybar
+`%Violetta: `0I hear the chest upstairs has some gold and gems in it!
+@if `p20 is 7 then saybar
+`%Violetta: `0That darn chest upstairs keeps moving about from day to day!
+@if `p20 is 8 then saybar
+`%Violetta: `0The Wizard is a pretty cool guy!  
+@if `p20 is 9 then saybar
+`%Violetta: `0This IGM really adds alot to LORD II!   
+@end
+
+@#sandtiger
+@do `p70 is 104
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Sandtiger: `0Sleeping on the West side is more restful!
+@if `p20 is 2 then saybar
+`%Sandtiger: `0Remember to ask the Wizard about the maze upstairs!
+@if `p20 is 3 then saybar
+`%Sandtiger: `0Have you ever tasted the Wizard's Brew?  It's pretty good!
+@if `p20 is 4 then saybar
+`%Sandtiger: `0Be wary of sleeping on the East side.  No protection!
+@if `p20 is 5 then saybar
+`%Sandtiger: `0I heard there's a chest hidden upstairs.  Go find it!
+@if `p20 is 6 then saybar
+`%Sandtiger: `0I hear the chest upstairs has some gold and gems in it!
+@if `p20 is 7 then saybar
+`%Sandtiger: `0That darn chest upstairs keeps moving about from day to day!
+@if `p20 is 8 then saybar
+`%Sandtiger: `0The Wizard is a pretty cool guy!  
+@if `p20 is 9 then saybar
+`%Sandtiger: `0This IGM really adds a lot to LORD II!   
+@end
+
+@#FRONTDOOR
+@bitset `t90 2 0
+@bitset `t90 3 0
+@bitset `t90 4 0
+@bitset `t90 5 0
+@bitset `t90 6 0
+@bitset `t90 7 0
+@#START
+@DO MOVEBACK
+@CLEAR SCREEN
+@SHOW
+[?7h[255D[40m
+[0;1m[6C[0;35m¯  [1;37m¯ [0;35m¯
+   [1;37m¯   [0;35m¯  [1;37m¯
+    [0;35m¯ [1;37m¯   [0;35m¯
+  [1;37m¯  [0;35m¯  [1;37m¯
+‹‹‹‹‹‹‹‹‹‹‹
+[45m€ ∞ ∞ ∞ ∞ €[40mÕÕª
+[45m€ ∞ ∞ ∞ ∞ €[2C[40m∫
+[45m€ ∞ ∞ ∞ ∞ €[2C[40m∫
+[45m€ ∞ ∞ ∞ ∞ €[2C[40m∫
+[45m€ ∞ ∞ ∞ ∞ €[40mÕÕº
+[45m€ ∞ ∞ ∞ ∞ €[40m
+ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ
+
+`2As you approach the bar, you see that the castle hall has been converted
+into a bar.  Several people are sitting at tables with mugs of a purple,
+steaming liquid.
+
+@KEY BOTTOM
+@CLEAR SCREEN
+@SHOW
+[?7h[255D[40m
+[0;1m    [0;34m€€
+   € [30;44m*[34;40m€
+[5C€[30;44m([34;40m€
+    €€[30;44m*[34;40m€€
+‹‹‹[30;44m*[34;40m€[30;44m([34;40m€€[30;44m*[34m€[40m‹‹‹
+    [1;36m€€[43m€€[0;33m€[1;37;43mﬂ[40mﬂ
+    [36m€€[0;33m€[1;36m€€[0;33m€€ﬂﬂ
+   [1;36m€€[43m€[0;33m€€[1;36;43m€[40m€[43mﬂ[17C[37;40mYou see an unusual man standing behind the bar. He
+   [36m€€€[0;33m€€€[1;36m€€€[9C[37mhas a long white beard, and the bushiest eyebrows you have
+  [36m€€€[0;34m€€[30;44m*[34;40m€€ [1;36m€€[8C[37mever seen!  He is wearing a flowing robe with stars and
+    [0;34m€€≤≤≤€[30;44m([1C[1;36;40m€[8C[37mmoons on it.  He has a wide brimmed hat that come to a
+    [0;30;44m([34;40m€≤≤≤[30;44m*[34;40m€[10C[1;37mdrooping point at the top.
+    [0;34m€€≤≤≤≤≤≤≤≤≤[33;44m€[40m€ﬂ
+    [34m€[30;44m*[34;40m€≤≤≤≤≤≤≤≤
+    €€€€[30;44m([34;40m€€  ≤≤
+@key bottom
+@DO GOTO TALKING
+@#TALKING
+@clear screen
+@show
+
+`2What do you do?
+
+@do `v01 is 1
+@CHOICE
+`%Talk to the wizard.
+`%Leave before you get into trouble.
+@IF response IS 2 THEN DO
+ @BEGIN
+ @DO GOTO LEAVE
+ @END
+@IF response IS 1 THEN DO
+ @BEGIN
+ @DO GOTO STAY
+ @END
+
+@#LEAVE
+  @SHOW
+
+`2That may prove to be a wise decision.  Then again...
+
+  @DO GOTO DONE
+
+@#STAY
+ @CLEAR SCREEN
+  @SHOW
+
+`2  You slowly approach the bar.  The bearded man smiles, but he does not make
+eye contact.  At first you think he may have a visual impairment, but after a
+few seconds, you realize that he is staring at your money bag.
+
+  "What can I do for you?" he asks.
+
+@do `v01 is 1
+  @CHOICE
+`%I'd like a drink.
+`%Do you rent rooms?
+@IF response IS 1 THEN DO
+ @BEGIN
+ @DO GOTO DRINK
+ @END
+@IF response IS 2 THEN DO
+ @BEGIN
+ @DO GOTO ROOM
+ @END
+
+@#DRINK
+ @CLEAR SCREEN
+ @SHOW
+
+`2  "The only drink we serve here is Wizard's brew.  And it's $5 a mug!"
+
+@do `v01 is 1
+  @CHOICE
+`%You mean that purple stuff?!  You gotta be crazy!
+`%What have you got for a REAL adventurer?
+ @IF response IS 1 THEN DO
+ @BEGIN
+ @DO GOTO CRAZY
+ @END
+ @IF response IS 2 THEN DO
+ @BEGIN
+ @DO GOTO UPSTAIRS
+ @END
+
+@#CRAZY
+@clear screen
+@show
+
+`2    "Crazy or not, that's all we serve.  Do you want it or not?"
+
+@do `v01 is 1
+@choice
+Yes, I'll take one.
+No thanks.
+@if response is 1 then do
+@begin
+@do goto yes
+@end
+@if response is 2 then do
+@begin
+@do goto no
+@end
+
+@#YES
+@IF money < 5 THEN DO
+ @BEGIN
+ @SHOW
+
+`2 "You don't have that much money.  Come back when you can pay!"
+ @KEY BOTTOM
+ @DO GOTO TALKING
+ @END
+@DO money - 5
+ @SHOW
+
+`2  You feel as if everyone in the room is watching you as you carefully eye the
+steaming concoction.  You slowly lift the mug to take a sip...
+
+   @KEY
+   @SHOW
+
+`$  Hey!  That's good!  Everyone seems to smile as you chug down the rest.
+
+`2  The wizard smiles too.  "What?  Did you think it would turn you into a
+newt?" he teases.
+
+   @KEY BOTTOM
+   @DO GOTO TALKING
+
+@#NO
+   @SHOW
+
+`2  "Suit yourself, but you'll get awful thirsty."
+
+   @KEY BOTTOM
+   @DO GOTO TALKING
+
+@#ROOM
+ @CLEAR SCREEN
+ @SHOW
+
+`2 "Rooms?  Yes we rent rooms.  The rooms on the East Wing are $10 per night.
+The rooms on the West Wing are $25 per night."
+
+@do `v01 is 1
+ @CHOICE
+`%Why the price difference?
+`%I may be back later.
+ @IF response IS 1 THEN DO
+ @BEGIN
+ @DO GOTO ASK
+ @END
+ @IF response IS 2 THEN DO
+ @BEGIN
+ @DO GOTO DONE
+ @END
+
+@#ASK
+   @SHOW
+
+`2"Well, let's just say that the West Wing tends to be more restful.  Would
+you like a room or not?
+
+@do `v01 is 1
+@choice
+`%Yes, I'll take one.
+`%No, thanks.
+@if response is 1 then do
+@begin
+@do goto whichroom
+@end
+@if response is 2 then do
+@begin
+@do goto done
+@end
+
+@#whichroom
+@clear screen
+@show
+`2"Would you like one on the East Wing or the West Wing?"
+
+@do `v01 is 1
+@choice
+`%East Wing
+`%West Wing
+@if response is 1 then do
+@begin
+@do goto eastwing
+@end
+@if response is 2 then do
+@begin
+@do goto westwing
+@end
+
+@#EASTWING
+@if money < 10 then do
+@begin
+@do goto broke
+@end
+@DO money - 10
+@bitset `t90 3 1
+@SHOW
+
+`2A black key mysteriously appears in your hand.
+
+@DO GOTO DONE
+
+@#WESTWING
+@if money < 25 then do
+@begin
+@do goto broke
+@end
+@DO money - 25
+@bitset `t91 2 1
+@SHOW
+
+`2A red key mysteriously appears in your hand.
+
+@DO GOTO DONE
+
+@#DONE
+@KEY BOTTOM
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+
+@#BROKE
+@key
+@show
+
+`2You don't have that much money.
+
+@key
+@drawmap
+@update
+@closescript
+
+@#EASTDOOR
+@IF bitcheck `t90 3 1 THEN DO
+  @BEGIN
+  @DO GOTO RIGHTKEY
+  @END
+@DO GOTO WRONGEAST
+
+@#WESTDOOR
+@IF bitcheck `t90 2 1 THEN DO
+  @BEGIN
+  @DO GOTO RIGHTKEY
+  @END
+@IF bitcheck `t90 3 1 THEN DO
+  @BEGIN
+  @DO GOTO WRONGKEY
+  @END
+@DO GOTO NOKEY
+
+@#WRONGKEY
+@DO MOVEBACK
+@DO SAYBAR
+That key does not fit this door.
+@CLOSESCRIPT
+
+@#RIGHTKEY
+@DO SAYBAR
+You unlock the door with the key.
+@CLOSESCRIPT
+
+@#NOKEY
+@DO MOVEBACK
+@DO SAYBAR
+The door is locked.  Perhaps if you had a key...
+@CLOSESCRIPT
+
+@#WRONGEAST
+;@DO `t90 + 1
+;@IF `t90 < 3 DO GOTO NOTYET
+;@IF `t90 > 2 DO GOTO YET
+; CNW changed this section
+@do moveback
+@if bitcheck `t90 7 1 then do
+        @begin
+        @DO GOTO YET
+        @end
+@if bitcheck `t90 6 1 then do
+        @begin
+        @bitset `t90 7 1
+        @DO GOTO NOTYET
+        @end
+@if bitcheck `t90 5 1 then do
+        @begin
+        @bitset `t90 6 1
+        @DO GOTO NOTYET
+        @end
+@if bitcheck `t90 4 1 then do
+        @begin
+        @bitset `t90 5 1
+        @DO GOTO NOTYET
+        @end
+@bitset `t90 4 1
+@DO GOTO NOTYET
+
+
+@#NOTYET
+@DO MOVEBACK
+@if bitcheck `t90 3 1 then do
+        @begin
+        @do goto wrongkey
+        @end
+@DO SAYBAR
+The door seems to be locked.
+@CLOSESCRIPT
+
+@#YET
+@if x is 50 then do
+        @begin
+        @DO SAYBAR
+The door opens easy from the inside.
+        @do x - 1
+        @closescript
+        @end
+@DO SAYBAR
+The lock gives way, and the door opens!
+@do x + 2
+@CLOSESCRIPT
+
+@#UPSTAIRS
+@do move 1 1
+@CLEAR SCREEN
+@SHOW
+
+`2     The wizard's eyebrows raise just a bit.  He stares at you for a moment
+and then says, "Well, if you are a truly adventurous soul, there's always the
+maze.
+
+@do `v01 is 1
+@choice
+Actually, I was talking about something to drink.
+Tell me more about the maze.
+@if response is 1 then do
+        @begin
+        @do goto drink
+        @end
+@clear screen
+@show
+
+`2     The upstairs area of this castle is a maze.  For 50 pieces of gold, I
+will let you go upstairs.  In the maze, there are several servants guarding
+chests.  One of the chests (chosen at random) contains a treasure.  If you
+find the treasure chest, you may keep the treasure.  The challenge is that
+there are roving creatures that will try and stop you from finding the chest.
+
+@do `v01 is 1
+@choice
+`%No thanks, I'm not that adventurous.
+`%Sure.  Sounds like a deal.
+@if response is 1 then do
+@begin
+@do goto done
+@end
+@if response is 2 then do
+@begin
+@do goto yesmaze
+@end
+
+@#yesmaze
+@if money < 50 then do
+@begin
+@do goto broke
+@end
+@do money - 50
+@show
+
+`2     "You may come behind the bar, and go upstairs now."
+     The wizard motions you around behind him.
+
+@key
+@bitset `t90 1 1
+@do `t91 random 9 1
+@do `t92 is 0
+@do goto done
+
+@#mazegate
+@if &lasty is 5 then do
+        @begin
+        @do saybar
+The wizard smiles as you leave.
+        @closescript
+        @end
+@if bitcheck `t90 1 1 then do
+        @begin
+        @do saybar
+The wizard smiles as you walk towards the stairs.
+        @closescript
+        @end
+;@if bitcheck `t90 1 1 then do
+;        @begin
+;        @closescript
+;        @end
+@do moveback
+@do saybar
+You cannot go back there.
+@closescript
+
+@#up
+@bitset `t90 1 1
+
+@#first
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 1 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 1 gem.
+        @do money + 500
+        @do `p19 + 1
+        @do `t91 is 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 > 3 then `t91 is 0
+@closescript
+
+@#second
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 2 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 2 gems.
+        @do money + 500
+        @do `p19 + 2
+        @do `t91 = 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 is 3 then `t91 is 0
+@closescript
+
+@#third
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 3 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 2 gems.
+        @do money + 500
+        @do `p19 + 2
+        @do `t91 = 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 is 3 then `t91 is 0
+@closescript
+
+@#fourth
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 4 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 2 gems.
+        @do money + 500
+        @do `p19 + 2
+        @do `t91 = 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 is 3 then `t91 is 0
+@closescript
+
+@#fifth
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 5 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 2 gems.
+        @do money + 500
+        @do `p19 + 2
+        @do `t91 = 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 is 3 then `t91 is 0
+@closescript
+
+@#sixth
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 6 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 2 gems.
+        @do money + 500
+        @do `p19 + 2
+        @do `t91 = 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 is 3 then `t91 is 0
+@closescript
+
+@#seventh
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 7 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 2 gems.
+        @do money + 500
+        @do `p19 + 2
+        @do `t91 = 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 is 3 then `t91 is 0
+@closescript
+
+@#eighth
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 8 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 2 gems.
+        @do money + 500
+        @do `p19 + 2
+        @do `t91 = 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 is 3 then `t91 is 0
+@closescript
+
+@#ninth
+@do moveback
+@if `t91 = 0 then do
+        @begin
+        @do saybar
+Only 3 chances per day.
+        @closescript
+        @end
+@if `t91 = 9 then do
+        @begin
+        @do saybar
+Well done!  You gain 500 gold pieces and 2 gems.
+        @do money + 500
+        @do `p19 + 2
+        @do `t91 = 0
+        @closescript
+        @end
+@do saybar
+Sorry, wrong chest.
+@do `t92 + 1
+@if `t92 is 3 then `t91 is 0
+@closescript
+
+@#people
+@do moveback
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Halder: `0Sleeping on the West side is more restful!
+@if `p20 is 2 then saybar
+`%Barak: `0Remember to ask the Wizard about the maze upstairs!
+@if `p20 is 3 then saybar
+`%Aladdin: `0Have you ever tasted the Wizard's Brew?  It's pretty good!
+@if `p20 is 4 then saybar
+`%Olodrin: `0Be wary of sleeping on the East side.  No protection!
+@if `p20 is 5 then saybar
+`%Sparhawk: `0I heard there's a chest hidden upstairs.  Go find it!
+@if `p20 is 6 then saybar
+`%Turgon: `0I hear the chest upstairs has some gold and gems in it!
+@if `p20 is 7 then saybar
+`%Aragorn: `0That darn chest upstairs keeps moving about from day to day!
+@if `p20 is 8 then saybar
+`%Sandtiger: `0The Wizard is a pretty cool guy!
+@if `p20 is 9 then saybar
+`%Gandalf: `0This IGM really adds alot to LORD II!

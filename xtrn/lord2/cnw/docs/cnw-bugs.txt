@@ -1,0 +1,132 @@
+
+        ---------------   CNW BUG REPORTS   -------------------
+
+        These are the known CNW bugs which have been reported and
+      unable to currently fix. All other bugs are listed in the
+      cnw-todo.txt file, as they have been fixed or will be fixed.
+
+        An updated version of this file can be found at:
+     http://www.greenmachinebbs.com/lord2/cnwfiles/docs/cnw-bugs.txt
+
+                 KNOWN BUGS IN LATEST RELEASE v137.0
+
++#---BUG-------------------MAR 17-2001-----------------------------------+
+1      Sometimes, no idea why yet, the first player of the day does not
+     get started as a fresh new day, the game thinks they sre still
+     playing from the last day they played, meaning if there is no
+     more turns left, they will still have no more turns left.
+     
+     There is a temperary and quick way to pass this; Just have that
+     player quit and join the game again, everything should be fine.
+
+UPDATE-FEB-5-2001
+     If you run the "lord2.bat" as maint each night, this bug will not
+     show up to the users.
+
+     I need some more tests done on this, need more information. If you
+     can see any paterns, please inform me.
+
++-----------------------------------------------------------------------+
+2      The first player of the day does still run some maint, and will
+     take longer than usual. (aprox 1min on 233mhz system)
+
+     I've tried to fix this so they don't have to wait as much.
+     The maint is suposed to run when you run "l2.exe /maint",
+     but the "/maint" doesn't seem to work properly :(
+
+      All the /maint does is advance the game by 1 more day.
+     So, don't run this as nightly maintnence.
+     Why was is call "/maint" then??
+
+UPDATE-JAN-20-2001
+     I've played around with the maint.ref and the rules.ref, now you
+     must run "lord2.bat" with no switches to run the maint each night.
+     Of course it would be good to run this right at midnight.
+     What this actualy does, is loads up player "SYSOP" and runs a set
+     of maintence routines. If this is not run, the 1st player in the
+     game will have to suffer during the maintence routines.
+
+UPDATE-FEB-5-2001
+     To make sure it is ran, run the "lord.bat" two times. Yes two times.
+     Why? cuz sometimes the bug#1 happens. Sometimes, not always. Its
+     like random or something.
+
+UPDATE-MAR-17-2001
+     If you do not have or want a SYSOP player in the game, then you can
+     alternately run "lord2.bat maint+maint.ref". This will only call
+     maint routines then quit. It will actualy take the player #1 and
+     use it, but not effect the player stats or whatever. Well it didn't
+     before either. Its just another way of running the maint i guess. :)
+
++-----------------------------------------------------------------------+
+3      Sometimes when new users try to enter the game, they get the
+     message "ERROR:  Cannot dataload record 0!".  Then the game returns
+     to the BBS.
+
+     I still don't know why this happens, but i've got a few ideas why,
+     and working on those ideas. So far no luck.
+
+UPDATE-JAN-20-2001
+     I found one possible place this bug probably is. TAXES.REF. I've
+     made the apropiated changes and hope it will not re-occur again.
+
+UPDATE-FEB-23-2001
+     It has not happened again, maybe i fixed it. Report to me if it
+     still happens in v137.0+
+
++-----------------------------------------------------------------------+
+4      If you buy the Pouch of Documents BEFORE you open an account,
+     sometimes the game will crash. But the player still gets the pouch
+     when they go back in the game, and is left off where they were last.
+     (in front of bank)
+
+UPDATE-FEB-23-2001
+     The Pouch of Documents is now used as an EXT ITEMS, and does not seem
+     to have this problem anymore.
+     Most likely fixed. :)
+
++-----------------------------------------------------------------------+
+6-deleted players
+     when a player is deleted, taxes owed and many deeds owned by that
+     player will for the next player that joins the game which takes
+     the &playernum. As well as all the relationships with the NPCs
+     will still be the same.
+
+     This could be a bad thing and a good thing. It could mean the new
+     player has inherited the properties + owed taxes (good+bad).
+
+     Accept it for now!
+
++-----------------------------------------------------------------------+
+             -------   SUBMIT BUG REPORTS!   --------
+
+
+If you see a bug in CNW v137.0 package that is not listed here,
+please contact greenie@darktech.org or icq#16277704
+
+Please submit any of the following information to fix this bug asap.
+
+MAP #:
+related REF files:
+Whats wrong?: 
+
++-----------------------------------------------------------------------+
+And many thanks to our BUG REPORTERS:
+
+- Peter Anderson
+   Sysop, The Establishment BBS
+   604-575-1183
+- Eric Vinson
+- Wayne Steele
+- Rob Starr aka Lord Time
+   SysOp, Time Warp of the Future BBS
+   360-891-0969
+   telnet://Time.Darktech.Org (9am-12am PT) 
+- Tom Kolb Jr
+    aka sys-error and Malichi
+
+-And the many players on the CNW server which keep finding more small bugs.
+
+(possibly others that I had missed, please tell me if so)
+
+

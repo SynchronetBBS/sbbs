@@ -1,0 +1,49 @@
+TURGON'S BACKDOOR v1.1
+by Robby Dittmann
+
+Welcome to the latest version of Mamoosoft Programming's TURGON'S BACKDOOR!
+
+TO INSTALL:
+
+1) Make sure the files are in your LORD II directory.
+
+2) Type the following at a command prompt:
+
+   IGM BACKDOOR.IGM
+
+3) Crank up LORD II and head to the Training Center!
+
+TO UNINSTALL:
+
+1) Type IGM BACKDOOR.IGM again.
+
+
+HISTORY:
+
+v1.0
+Original release
+
+v1.1
+Fixed a bug where a non-existant loop was detected by the LORD2 engine and
+crashed anyone who tried to donate more than they had.
+
+Changed the .IGM file from "show" to "noshow"
+
+SPECIAL THANKS TO:
+
+Mariam Dittmann for alpha, beta, and gamma testing!  And for her help with
+the ANSI artwork.
+
+
+REGISTRATION:
+
+Turgon's Backdoor is absolutely FREE.  Of course, the author takes no
+responsibility for any damage or problems you may incur.
+
+Please let me know if you have any problems or questions.  And let me know
+what you think!
+
+Robby Dittmann
+Mamoosoft Programming
+1:133/8003
+robbyd@sprynet.com

@@ -1,0 +1,361 @@
+; Script file GANDALF.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE daughter 000000242
+@DECLARE oldmeet 000000486
+@DECLARE sadman 000001476
+@DECLARE coldlady 000006356
+@NOCHECK
+; End of .REF index
+
+@#daughter
+@show
+
+  `0"She is!  Thank you so much!  I have something for you!!"
+`k
+  `$"Thanks... uh.. what is this blue stuff?"
+`k
+  `0"It's the cure for freeze, just poor it on my daughter!"
+`k 
+   `$"I guess!!"
+`k
+@do `t40 is 6
+
+@#oldmeet
+@do `t40 is 1
+@do `v01 is 1
+@show
+`k`c  `r1 MEETING THE OLD GUY. `r0
+
+  `0"My name is Gandalf.  I was once a Trainer at Turgons."
+
+  `2You can't help but feel snicker - in jail!!!!
+
+  `0"Don't laugh, Its not funny!" `2the old one shouts.
+
+@do write
+`x`x
+@choice
+If you were such a great trainer, how did you end up here?
+Snicker even louder.
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"I quickly left Greentree, where I used to train.
+
+  `$"Why the hell you do that?" `2you politely ask.
+
+  `0"My daughter Lessa - my only child." `2he sighs.
+
+`k  `0"I came here to save her... the IceLord Clan caught her stealing from
+
+  the treasure vault here..  You look like a smart s&boy, can you help?."
+`k
+ @end
+
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"You weak little brat!  Get out of here!" `2Gandalf shouts.
+
+  `$"Not until you tell me why you left Greentree!"
+
+  `0"I had important business to tend to! Get out!"
+
+ `k
+ @end
+
+@#SADMAN
+@do moveback
+@if bitcheck `t42 1 1 then do
+  @begin
+   @do saybar
+`0Prisoner: `2You got that old man out! Pretty decent of you!
+   @closescript
+  @end
+@busy
+@if `t40 more 0 then do
+ @begin
+ @show
+`r0`c  `0Gandalf looks at you expectantly.
+
+ @end
+
+@if `t40 is 4 then do
+ @begin
+ @show
+  `0"Did you find my daughter?"
+
+ @end
+
+@if `t40 = 0 then do
+ @begin
+ @show
+`r0`c  `2An old man with a stands before you.
+
+ @end
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+=`t40 0 What is wrong with you old man?
+=`t40 1 Tell me about you daughter, I wanna meet her!
+=`t40 2 Come on you old codger!  What is with your daughter?
+=`t40 2 >`i08 0 Offer the Old Man your berry pie.
+=`t40 3 Ok, please tell me about your daughter.
+-`t41 0 =`t40 4 No sorry, not really - I wonder..
+=`t40 5 I have news - your daughter still lives! Just Frozen
+=`t40 7 =`t41 1 I have saved her!  She gave me something for you!
+Leave.
+@do write
+`\`\
+@if responce is 8 then do
+ @begin
+ @pauseoff
+@do addlog
+  `r1  `r0 `0`n`% has saved Gandalf and his daughter! `r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do `p18 + 10
+@bitset `t42 1 1
+@do `i74 = 0
+@readfile castle1.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @show
+`k`c  `r1  Talking with Gandalf `r0
+
+  `2Gandalf opens the letter slowly.  He looks sad.
+
+  `0"I knew she didn't do it! - but I don't understand why she found to
+  be guilty!"
+
+`k  The letter goes on to tell him she took the blame for her best friend.
+  Gandalf is completely shocked!!!
+
+`k`c  `r1`%  Free Gandalf  `r0
+
+  `0"Gandalf should be free!  Gandalf is innocent!" `2a you explain to
+  `0the jail Guard.  Other prisoners join your plea! - then, finally he
+  `0decides on letting Gandalf go!!!
+
+`k  Gandalf walks slowly and happy - for the first time since you met him 
+  you see him as a proud man!  He demands to see his daughter.
+
+`k  `2You see Gandalf's face look out a window.  When his eyes fall upon the
+  beautiful daughter he runs to her!  `0"`n`0!  I missed you and thanks 
+  to that young s&man you have returned!"
+
+  `$"You helped yourself.  Don't loose her again!" `2you reply heartily.
+
+`k  `%YOU RECIEVE 10 QUEST POINTS.
+
+  `2You give the two happy people one last goodbye.
+`k
+  @end
+
+@if responce is 1 then do
+ @begin
+ @routine oldmeet
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if responce is 7 then do begin
+ @begin
+ @routine daughter
+ @drawmap
+ @update
+ @closescript
+ @end
+
+
+@if responce is 2 then do begin
+ @begin
+@show
+  `0"She was a sweet daughter.. She took care of the house while I was
+  at work.  She made the best pie!" `2Gandalf smiles.
+
+  `$"She sounds like neat person.. where is she?" `2you demand.
+
+  `0"I would rather not speak of this subject anymore," `2Gandalf's voice cracks
+  with emotion.
+
+`k
+ @do `t40 is 2
+ @do goto sadman
+ @end
+
+@if responce is 3 then do begin
+ @begin
+
+@show
+  `0"No, child.  I will not speak of it!" `2Gandalf shouts.
+
+  `2He seems pretty determined. If only you had some kind
+  of peace offering...  `0(hint: mom's pie)
+
+`k
+ @do goto sadman
+ @end
+
+@if responce is 4 then do begin
+ @begin
+
+@show
+  `0"A pie?  For me?!  Such a good s&boy!" `2Gandalf exclaims.
+
+  `$"Yeah... Yeah I am." `2you agree wholeheartedly.
+
+`k  `%You get a quest point!
+
+`k
+ @do `t40 is 3
+ @do `p18 + 1
+ @do `i08 - 1
+ @do goto sadman
+ @end
+
+@if responce is 6 then do begin
+ @begin
+
+@show
+  `0"Don't worry, s&boy, You'll find her somehow..." `2Gandalf says.
+
+`k
+ @do goto sadman
+ @end
+
+
+@if responce is 5 then do begin
+ @begin
+
+@show
+  `0"Ok.. I'll tell you what happened."
+
+  `2You sit down on one of the empty prison beds.  Story time!
+
+`k`c  `r1  GANDALF'S STORY!  `r0
+
+`0  "I was once a level 10 master.  People would come from distant lands just
+  to train with me and Turgon," `2he describes it with detail as if it were 
+  only yesterday.
+
+  `$"Thats great and all...   but what did you do that got you put in jail!
+  Did you try to kill someone?" `2you ask curiously.
+
+`k  Gandalf looks at you seriously.  `0"Of coarse not! you silly s&boy!"
+
+  `2You snicker - is he telling the truth?
+
+`k  `0"The truth is this - it was soon after the great Red Dragon had been
+  slain when.."
+
+  `$"Red dragon?" `2you rudely interrupt in astonishment.
+
+  `0"Nevermind.. suffice to say we were very happy and celebrating with a great
+  feast when something awful happened," `2Gandalf continues.
+
+`k  `0"I received word that my daughter had tried to rob the IceLord Clan"
+
+`$  "Why did she rob them?!" `2you ask puzzled.
+
+  `0"She didn't rob them!" `2he screams.
+
+  `2His moist eyes convince you - you vow to find her!
+
+`k
+ @do `t40 is 4
+ @do goto sadman
+ @end
+
+@end
+
+@drawmap
+@update
+
+; This is the woman in the tower
+@#coldlady
+
+@if bitcheck `t42 1 1 then do
+  @begin
+   @do saybar
+`0Lessa: `2Thank you so much!
+   @closescript
+  @end
+
+@if `t40 less 4 then do
+@begin
+@do moveback
+@do saybar
+`0Wow a ice sculpture of a Woman.. Pretty!
+@end
+
+@if `t40 is 4 then do
+@begin
+@do moveback
+@do saybar
+`0Wait that's Lessa!!!
+@do `t40 is 5
+@end
+
+@if `t40 is 7 then do
+@begin
+@do moveback
+@do saybar
+`0Lessa: "Give him the letter!"
+@end
+
+@if `t40 is 6 then do
+ @do moveback
+ @begin
+ @show
+`r0`c  `r1 SAVING LESSA. `r0
+  
+  `2You poor the cure on Lessa! She melts!
+`k  
+  `0"Woah! Thank you So much!!!"
+`k
+  `$"Shure... uh.."
+`k
+  `0"What is your name? I am Lessa!" 
+`k 
+  `2She is a very beautiful Woman
+`k  
+  `$"My name is `n`$! You father told me about you!"
+`k
+  `0"Please do me a favor and give him this letter!"
+`k
+  `$"You got it!"
+`k
+  `0"Wait I have something for your troubles."
+`k   
+   @if &sex is 0 then do
+   @begin
+   @show 
+  `2She gives you a beautiful ring that makes you even more pretty
+`k    
+  `2You thank her!!!  `0(Charm raised by 5!)`2
+   @do `p08 + 5
+   @do `t41 is 1
+   @do `t40 is 7
+   @end
+   
+   @if &sex is 1 then do 
+   @begin
+   @show
+  `2She grabs you and kisses you!  She won't let go!
+`k
+  `2`p08 minutes later you feel `0VERY`2 repaid!
+`k   
+   @do `p34 + 1
+   @do `t41 is 1
+   @do `t40 is 7
+   @end
+
+@drawmap
+@update
+

@@ -1,0 +1,32 @@
+
+               The Township of New Stonebrook by Trent Renshaw
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : No!
+  Replaces screens?                               : Yes! (2)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+
+  Description:
+
+  The Township of New Stonebrook is a replacement screen for the original
+  Stonebrook with nothing more than enhanced buildings and landscapes
+  featuring trees from the Northlands.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM STONEB.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Township of New Stonebrook `2by `0Trent Renshaw
+replacescreen: 1359 1 show
+replacescreen: 156 2 noshow

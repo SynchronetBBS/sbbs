@@ -1,0 +1,380 @@
+; Script file BADCOMP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:28 2001
+
+@DECLARE beach 000000509
+@DECLARE boy 000000834
+@DECLARE girl 000001509
+@DECLARE grouch 000001757
+@DECLARE evidence 000002330
+@DECLARE forester 000002698
+@DECLARE carpenter 000003213
+@DECLARE fireside1 000003512
+@DECLARE ahyool 000003734
+@DECLARE fireside2 000008163
+@DECLARE blueface 000008281
+@DECLARE load 000008531
+@DECLARE save 000008580
+@DECLARE nomore 000008631
+@NOCHECK
+; End of .REF index
+
+@#BEACH
+;Girl walking by surf
+@ROUTINE LOAD
+@DO MOVEBACK
+@if `p21 is 15 then do
+ @begin
+ @closescript
+ @end
+@if `p21 > 2 then do
+ @begin
+@do saybar
+`7Tomestone: Here lies Carly, `%R.I.P.
+ @end
+@IF `p21 < 3 then do
+@begin
+@DO SAYBAR
+`#Carly`7: I don't trust Phillip... something about him is not right.
+@end
+
+@#BOY
+;Boy with girl
+@ROUTINE LOAD
+@DO MOVEBACK
+@if `p21 is 15 then do
+ @begin
+ @do saybar
+`7Suicide note: I have gone to find my true love!
+ @closescript
+ @end
+@if `p21 is 8 then do
+ @begin
+ @do saybar
+`7Suicide note: Even in death, Sarah haunts me... I must escape!
+ @closescript
+ @end
+@if `p21 is 1 then do
+ @begin
+@DO SAYBAR
+`9Tom`7: Has Ahyool told you about what happened? A guy killed in his sleep!
+@key
+@DO SAYBAR
+`9Tom`7: That's very distrubing, don't you think?
+@closescript
+@end
+@do saybar
+`9Tom`7: Hey, aren't you the guy that's helping Ahyool find the murderer?
+@key
+@do saybar
+`9Tom`7: You aren't doing too good a job, fathead.
+
+@#GIRL
+;Sarah
+@ROUTINE LOAD
+@DO MOVEBACK
+@if `p21 is 15 then do
+ @begin
+ @closescript
+ @end
+@if `p21 < 7 then do
+@begin
+@DO SAYBAR
+`#Sarah`7: Tommy here will protect me!
+@closescript
+@end
+@do saybar
+`7Tomestone: Sarah, `%R.I.P.
+
+@#GROUCH
+;Grouchy guy by tree
+@ROUTINE LOAD
+@DO MOVEBACK
+@if `p21 is 15 then do
+ @begin
+ @closescript
+ @end
+@if `p21 is 1 then do
+@begin
+@DO SAYBAR
+`8Philip`7: I knew this would happen. Whenever I travel, something happens.
+@closescript
+@end
+@if `p21 < 5 then do
+@begin
+@do saybar
+`8Phillip`7: More and more die, hour by hour... its like Ten Little Indians..
+@key
+@do saybar
+`8Phillip`7: And soon there will be none...
+@closescript
+@end
+@if `p21 is 15 then do
+ @begin
+ @closescript
+ @end
+@do saybar
+`7Tomestone: Here lies Phillip, `%R.I.P.
+
+@#EVIDENCE
+;Searches the rocks, finds evidence
+@ROUTINE LOAD
+@DO MOVEBACK
+@if `p21 is 15 then do
+ @begin
+ @closescript
+ @end
+@DO SAYBAR
+`7Upon searching the rock, you find a `bBLOODY GLOVE!
+@key
+@do saybar
+`7There's an inscription inside! It reads:
+@key
+@do saybar
+`7To `9TOM`7, with love, from `#Sarah`7!!!
+@key
+@do saybar
+`7This explains a lot.
+
+@#FORESTER
+;Green face
+@ROUTINE LOAD
+@DO MOVEBACK
+@if `p21 is 15 then do
+ @begin
+ @closescript
+ @end
+@if `p21 < 3 then do
+@begin
+@DO SAYBAR
+`0Forester`7: Ahyool told me what happened, and while they sleep, I go around
+@key
+@DO SAYBAR
+`7looking for evidence... its got to be here somewhere!
+@closescript
+@end
+@if `p21 is 3 then do
+ @begin
+@do saybar
+`0Forester`7: I had a vision of rocks... what could it mean???
+@closescript
+@end
+@do saybar
+`7Tomestone: Here lies `0Forester`7, `%R.I.P.
+
+@#CARPENTER
+;Ditto
+@ROUTINE LOAD
+@DO MOVEBACK
+@if `p21 is 15 then do
+ @begin
+ @closescript
+ @end
+@if `p21 < 6 then do
+@begin
+@DO SAYBAR
+`6Carpenter`7: Every day I'm delayed, I loose more and more money...
+@closescript
+@end
+@do saybar
+`7Tomestone: Here lies `6Carpenter`7, `%R.I.P.
+
+@#FIRESIDE1
+;Ahyool
+@ROUTINE LOAD
+@DO MOVEBACK
+@busy
+@if `p21 is 15 then do
+ @begin
+ @closescript
+ @end
+@if `p21 > 8 then do
+ @begin
+ @do saybar
+`7Tomestone: Here lies Ahyool, `%R.I.P.
+ @closescript
+ @end
+@LABEL AHYOOL
+@SHOW
+`r0`c`r1 Talking with Ahyool `r0`\
+@do `v01 is 4
+@choice
+Ask what's up
+[advance plot]
+<`p21 8 I know who's behind it
+Leave
+@if RESPONSE is 1 then do
+ @begin
+ @if `p21 is 1 then do
+ @begin
+ @show
+`\`\  `0"`2Well, it seems that a fellow in our caravan was murdered in his
+sleep. Most disstressing. Until now, I had had a perfect record. But we must
+find this villian before moving on. I'll keep everyone here while you and
+the `0Forester`2 look for any clues or evidence of the murderer's identity.
+        Come to me with any suspecions you may have. Let me know. And be
+careful. This person has killed once, and may not hesitate to kill again to
+save themselves.`0"
+ @end
+ @if `p21 is 2 then do
+ @begin
+ @show
+`\`\  `0"`9Blueface`2 was found slain. Highly irregular... there isn't much
+connecting the two murders - just that they were both males. `0Forester`2
+thinks that the murderer has probably hidden the evidence nearby.`0"
+ @end
+ @if `p21 is 3 then do
+ @begin
+ @show
+`\`\  `0"`#Carly`2 is dead. This is starting to scare me. We may have a
+psycho on our hands... we may be talking to them... and we don't know it!`0"
+ @end
+ @if `p21 is 4 then do
+ @begin
+ @show
+`\`\  `0"Forester`2 has been murdered. Now you're the only one searching for
+clues. You must hurry! I think `0Forester`2 was onto something and that was
+why he was slain! Last time I saw him, he was mentioning something about
+rocks.`0"
+ @end
+ @if `p21 is 5 then do
+ @begin
+ @show
+`\`\`\  `0"`8Phillip`2 has been added to the tally of the dead. I can't
+honestly say that I'll miss him, but a loss of life is a shame, regardless
+of who...`0"
+ @end
+ @if `p21 is 6 then do
+ @begin
+ @show
+`\`\`\  `0"`6The carpenter `2 is dead. There was a note found pinned to him,
+although the handwritting is terrible, I think it said something about greed
+being a deadly sin or something similar.`0"
+ @end
+ @if `p21 is 7 then do
+ @begin
+ @show
+`\`\`\  `0"`#Sarah`2 is dead now. Strangely enough, `9Tom`2 doesn't seem
+too broken over it. He just keeps drawing circles in the sand.`0"
+ @end
+ @if `p21 is 8 then do
+ @begin
+ @show
+`\`\`\  `0"`7Tom committed suicide. It seems he was the guilty party. Evidently,
+this all started out of jealously, blossomed by `#Sarah`2's powermongering,
+and then turned in on itself with grief.`0"
+ @end
+ @key
+ @DO GOTO AHYOOL
+ @end
+@if RESPONSE is 2 then do
+ @begin
+@show
+`\`\ `0(`2plot advanced`0)
+ @key
+ @do `p21 + 1
+ @if `p21 is 9 then do
+ @begin
+ @do `p21 - 1
+ @end
+ @ROUTINE SAVE
+ @DO GOTO AHYOOL
+ @end
+@if RESPONSE is 3 then do
+ @begin
+ @do `v01 is 1
+@show
+`\`\`r1 Ratin' on the bum `r0`\
+ @choice
+<`p21 2 Blueface
+<`p21 3 Carly
+<`p21 4 Forester
+<`p21 5 Phillip
+<`p21 6 Carpenter
+<`p21 7 Sarah
+<`p21 8 Tom
+@if RESPONSE < 7 then do
+ @begin
+ @show
+`r0`c`2 You and Ahyool go to investigate your suspect, and while questioning
+them, you three stumble over a corpse! Yuck! Obviously, you were mistaken.
+But while you were busy, the murderer has committed two more heinous deeds!
+@key
+@do `p21 + 2
+@ROUTINE SAVE
+@DO GOTO AHYOOL
+@end
+@show
+`r0`c`2 You corner Tom, and he spills his guts.
+@if `p21 > 1 then do
+ @show
+`2He killed `9Blueface `2because he was jealous (he'd seen him with Sarah).
+@if `p21 > 2 then do
+ @show
+`2He killed `#Carly`2 because Sarah demanded it as proof of his love.
+@if `p21 > 3 then do
+ @show
+`2He killed `0Forester`2 out of desperation -- he was on to him.
+@if `p21 > 4 then do
+ @show
+`2He killed Phillip because Phillip was about to turn him in.
+@if `p21 > 5 then do
+ @show
+`2He killed the `6Carpenter`2 because he was greedy.
+@if `p21 > 6 then do
+ @show
+`2He killed `#Sarah`2 because she was a demanding ...
+@show
+`\
+        Ahyool congradulates you and chains Tom to the spot, leaving him
+to rot. `0"`2To give him some time to contemplate what he did.`0" `2Ahyool
+mutters.
+        As a sign of gratitude, each of the survivors agree to give a
+portion of their lifeforce to you. Ahyool performs the ceremony.
+@do `p22 is 30
+@do `p21 * 3
+@do `p22 - `p21
+@show
+        You get `$`p22`2 defense, hitpoints, and strength.
+@do `p02 + `p22
+@do `p03 + `p22
+@do `p04 + `p22
+@do `p05 + `p22
+@do `p21 is 15
+@routine SAVE
+@key
+@DO GOTO AHYOOL
+@end
+@if RESPONSE is 4 then do
+ @begin
+ @drawmap
+ @update
+ @do saybar
+`7Ahyool: Take care, friend.
+ @closescript
+
+@#FIRESIDE2
+;Ditto
+@ROUTINE LOAD
+@DO MOVEBACK
+@DO SAYBAR
+`4Farague`7: Time is the fire in which we all burn...
+
+@#BLUEFACE
+;Guy north side
+@ROUTINE LOAD
+@DO MOVEBACK
+@if `p21 < 2 then do
+ @begin
+@DO SAYBAR
+`9Blueface`7: Man, I got the blues. >starts playing lyre<
+@closescript
+@end
+@do saybar
+`7Tomestone: Here lies `9Blueface`7, may he rest in peace.
+
+@#LOAD
+@dataload badcomp.idf &playernum `p21
+
+@#SAVE
+@datasave badcomp.idf &playernum `p21
+
+@#NOMORE

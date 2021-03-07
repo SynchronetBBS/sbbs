@@ -1,0 +1,567 @@
+;   LORD2: Complete New World v137.0
+;             x-x-2001
+;
+; NOTE: New website, no longer at lord2.darktech.org
+;
+; Our CNW LoRD2 website:
+;    http://www.greenmachinebbs.com/lord2/
+;
+; LoRD2 Mailing list (join this to find new versions of CNW)
+;    http://www.greenmachinebbs.com/maillist.htm
+;
+;  READ ./DOCS/CNW.TXT for more details
+;
+;
+@#welcome
+@busy
+@do moveback
+@offmap
+@DO MOVE 1 1
+@clear screen
+@show scroll
+
+
+`r0         `%`r2°±²`r0   `2Complete New World v137.0   `%`r2²±°`r0
+
+
+  `2 This is a LoRD2: New World, with every known GOOD IGM installed.
+  with absolutely no known conficts. Also, a few IGMs have been merged,
+  moved around, modified and enhanced, only for the better.
+
+   Also included is all of my own powerful features, such as:
+               `!-`@Amazing NPC interaction
+               `!-`@TAXES
+               `!-`@Vaults for banks of the realm
+               `!-`@Have KIDS!
+               `!-`@Bed of Roses
+               `!-`@The Locker Room Safe House
+               `!-`@Time is a concept now, years, ages, bdays, etc.
+               `!-`@Vehichles and NPCs can be accessed from items "V"iew
+               `!-`@Pouch of Documents
+               `!-`@Blue Water Falls (incomplete)
+
+   `2For a complete list of new changes in CNW can be found in the HELP
+  section, press `2"`7?`2" `2and check "`7Whats New`2"
+
+        
+ `$Minor DDO-F/X support. Included is the LORD2.FNT v2, you should ask
+  your SysOp to make this file available for you to d/l.  DDO-F/X requires
+  that you are using the FREEWARE LiTerm.
+
+  You have LORD2.FNT version #õ
+  (the "õ" should show a version number if you have font version 2+)
+  (If you see an odd looking "j", you do not have the proper LORD2.FNT or
+  no font)
+
+ `$Later versions will include:
+   `4- `2More great IGMs! Please contact CNW for requests.
+
+   `4- `2More NPC actions. Will add trading, and giving,
+       `2more gossiping, like tips and tricks.
+       `2Please send me comments and ideas what to add to which NPC
+       `2on this.
+
+   `4- `2iBBS support! yes, Inter-BBS support! It is easy to make
+        `2an add-on program to handle this. All the info is availble
+        `2to do such a thing. I however am not an expert programmer,
+        `2so I will not do it myself. But, if you are interested in
+        `2creating an iBBS external program, contact me ASAP, I'll
+        `2share my ideas on how to get this thing going.
+
+   `4- `2I want to make fonts for windows and DOS for terminals to
+       `2play LoRD2 with, unfortunately I'm terrible at making them.
+       `2So, I need some help to do this. please contact CNW if you
+       `2want to help.
+       `2NOTE: A DDO-F/X font has already been created.
+                   `$All fonts can be found at
+       `$http://www.greenmachinebbs.com/lord2/cnwfiles/fonts/
+        
+   `4- `2NEW QUESTS!
+
+   `4- `2More IGMs made by me! including:
+              `@A real PAWN SHOP! where you can buy the stuff they bought
+                  from other players. <-done it, but lost it :( gotta remake
+              `@More NPC CHARACTERS
+
+ `2I would like to thank all those IGM makers for making such
+  good IGMs for such a good game. I would of course also like to
+  thank Seth Able for another job well done.
+
+  PS, I heard he's working on a CGI web based game, possibly similar
+  to LoRD2. :) 
+
+`%Join the LORD2 Mailing list!            lord2@egroups.com
+         lord2-subscribe@egroups.com
+
+
+  EGroups site: http://www.egroups.com/group/lord2
+  CNW web: http://www.greenmachinebbs.com/lord2/
+  CNW telnet://greenmachinebbs.com
+
+@drawmap
+@update
+@closescript
+@end
+
+@#BBSLIST
+;
+@do moveback
+@busy
+@show
+`r0`c  `r1  OFFICIAL LoRD2 TELNET BBS LIST `r0
+
+@if docs/bbslist.txt exist false then do
+ @begin
+ @DO DELETE docs/bbslist.dat
+ @writefile docs/bbslist.dat
+15
+this file is for number of lines in bbslist.txt for proper display.
+ @writefile docs/bbslist.txt
+ `2 Please add your BBS to the EGroups LoRD2 Mailing List DATABASE section
+ `2 to get listed in next release of CNW.`$http://www.egroups.com/group/lord2
+               `#* `2= `5Alternate CNW server gateway`2.
+`8ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+`8³  `%CNW Main Server `2: `0telnet://greenmachinebbs.com                        `8³
+`8³`#* `%Time Warp of the Future `2: `0telnet://time.darktech.org                  `8³
+`8³`#* `%BoBo's BBS `2: `0telnet://bobobbs.net                                     `8³
+`8³  `%TechNet BBS `2: `0telnet://techbbs.dhs.org                                `8³
+`8³  `%The N.U.B. `2: `0telnet://nub.dhs.org                                     `8³
+`8³  `%Chowda Net `2: `0telnet://chowdanet.com                                   `8³
+`8³  `%The Wastelands `2: `0telnet://wasteland.darktech.org                      `8³
+`8³  `%Cold Fusion `2: `0telnet://fusion.darktech.org                            `8³
+`8³  `%The Apparatus `2: `0telnet://theapparatus.net                             `8³
+`8³  `%Top's Diamond Mine Online `2: `0telnet://bbs.tdmonline.com                `8³
+`8³  `%Mother Board BBS `2: `0telnet://mbbbs.dtdns.net                           `8³
+ @end
+
+@if docs/bbslist.txt exist true then do
+        @begin
+        @displayfile docs/bbslist.txt
+        @do write
+`8ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+        @end
+
+@show
+
+@DO WRITE
+           `$Do you want to add another LoRD2 BBS? `8[`%y`7/`%N`8]`x
+@DO READSPECIAL `s01 NY
+@if `s01 is N then do
+        @begin
+        @drawmap
+        @update
+        @closescript
+        @end
+@if `s01 is Y then do
+        @begin
+        @do write
+`%telnet://
+        @DO READSTRING 20 NIL `s01
+        @DO `p24 is length `s01
+        @IF `p24 less 3 then do
+                @begin
+                @do write
+`\  `%Thats too short, try again.`\`k
+                @drawmap
+                @update
+                @closescript
+                @end
+        @DO `s02 is `0telnet://
+        @DO `s02 add `s01
+        @DO STRIP `s02
+        @DO `p20 is length `s02
+        @DO `p21 is 74
+        @DO `p21 - `p20
+        @do write
+`\
+        @DO READSTRING `p21 Name`xof`xSystem `s03 <--Read string, NIL is default. (nothing)
+        @do stripbad `s03
+        @DO `p24 is length `s03
+        @IF `p24 less 3 then do
+                @begin
+                @do write
+`\  `%Thats too short, try again.`\`k
+                @drawmap
+                @update
+                @closescript
+                @end
+        @do `s01 is `%
+        @do `s01 add `s03
+        @DO `s03 add `x`2:`x
+        @do `s03 add `s02
+        @do write
+`\`x`x`%`s03`\           `$Add this to the list? `8[`%Y`7/`%n`8]`x
+        @DO READSPECIAL `s01 YN
+        @if `s01 is N then do
+                @begin
+                @drawmap
+                @update
+                @closescript
+                @end
+
+        @if `s01 is Y then do
+                @begin
+                @do `s01 is `8³`%`x`x
+                @do `s01 add `s03
+                @do pad `s01 74
+                @readfile docs/bbslist.dat
+`p20
+                @do `p20 + 1
+                @DO DELETE docs/bbslist.dat
+                @writefile docs/bbslist.dat
+`p20
+this file is for number of lines in bbslist.txt for proper display.
+                @do `p20 + 1
+                @if `p20 > 20 then do
+                        @begin
+                        @DO DELETE docs/bbslist.dat
+                        @writefile docs/bbslist.dat
+1
+this file is for number of lines in bbslist.txt for proper display.
+                        @writefile docs/bbslist.txt
+`k
+                        @end
+                @writefile docs/bbslist.txt
+`s01`x`8³
+                @drawmap
+                @update
+                @closescript
+                @end
+        @end
+
+
+@#newdata
+;gender
+@If &sex is 0 then `s09 is `#F
+@If &sex is 1 then `s09 is `1M
+
+;name
+@do `s02 is `N
+@do pad `s02 26
+
+;age
+@do `s03 is `p39
+@do pad `s03 2
+
+;lays
+@do `s05 is `p34
+@do pad `s05 5
+
+;kills
+@do `s06 is `p35
+@do pad `s06 5
+
+;charm
+@do `s07 is `p08
+@do pad `s07 5
+
+;last flirted with?
+@if `t72 is 0 then do
+        @begin
+        @do `p70 is `t71
+        @routine getname in npcname.ref
+        @if `t71 is 0 then `s01 is `8Nobody
+        @do `s08 is `s01
+        @end
+
+@if `t72 is 1 then do
+        @begin
+        @do `s08 is getname `t71
+        @end
+@if `t72 is 2 then do
+        @begin
+        @do `s08 is a`xsheep
+        @end
+
+@if `t72 > 2 then do
+        @begin
+        @do write
+`\`\ `4There is seems to be a bug someplace!`\`k
+        @end
+@do pad `s08 14
+
+;hometown
+@routine getplace in myhome.ref
+@do pad `s01 20
+@do delete info&playernum.dat  ; <-- player data for lists
+@do `s10 is `s09`%`s02`$`s03`x`%`s01`5`s05`4`s06
+@do `s01 is `!`s07`$`s08
+
+@writefile info&playernum.dat
+`s10
+`s01
+@drawmap
+@update
+@closescript
+
+@#list1
+;this is going to be the list of players with this info:
+;    AGE/GENDER/HOMETOWN/LAST FLIRT
+@do `p20 is 0
+@do write
+`r0`c  `0Listing players...
+
+@do delete cnw`*.dat
+@writefile cnw`*.dat
+`r0`r1                             `%  LORD II RANKINGS                            `r0
+                
+`0G  Name                   Age - HomeTown  - - - Lays-Kills-Charm-Likes 
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@
+@label makelist2
+@do `p20 + 1
+@IF info`p20.dat EXISTS TRUE then do
+        @begin
+        @readfile info`p20.dat
+`s01
+`s02
+        @writefile cnw`*.dat
+`s01`s02
+        @end
+@if `p20 < &totalaccounts then goto makelist2
+@convert_file_to_ansi cnw`*.dat cnwscore.ans
+@convert_file_to_ascii cnw`*.dat cnwscore.txt
+@clear screen
+@DO MOVE 1 1
+@displayfile cnw`*.dat
+@key bottom
+@drawmap
+@update
+@closescript
+
+@#SIGN1
+@do `p20 is 1
+@do goto SIGN
+
+@#SIGN2
+@do `p20 is 2
+@do goto SIGN
+
+@#SIGN3
+@do `p20 is 3
+@do goto SIGN
+
+@#SIGN4
+@do `p20 is 4
+@do goto SIGN
+
+@#SIGN5
+@do `p20 is 5
+@do goto SIGN
+
+@#SIGN6
+@do `p20 is 6
+@do goto SIGN
+@#SIGN7
+@do `p20 is 7
+@do goto SIGN
+@#SIGN8
+@do `p20 is 8
+@do goto SIGN
+@#SIGN9
+@do `p20 is 9
+@do goto SIGN
+@#SIGN10
+@do `p20 is 10
+@do goto SIGN
+@#SIGN11
+@do `p20 is 11
+@do goto SIGN
+@#SIGN12
+@do `p20 is 12
+@do goto SIGN
+@#SIGN13
+@do `p20 is 13
+@do goto SIGN
+@#SIGN14
+@do `p20 is 14
+@do goto SIGN
+@#SIGN15
+@do `p20 is 15
+@do goto SIGN
+
+@#SIGN
+; player rentable signs
+@do moveback
+@do `s01 is `%This`xsign`xis`xblank.
+@if cnwsign.`p20 exists true then do
+        @begin
+        @readfile cnwsign.`p20
+`s01
+`p21
+`p22
+        @do `p25 is &time
+        @do `p25 - `p21
+        @if `p25 > `p22 then do
+                @begin
+                @do delete cnwsign.`p20
+                @do `s01 is `%This`xsign`xis`xblank.
+                @end
+        @end
+@do saybar
+`s01
+
+@#RENTSIGN
+@do moveback
+@do move 1 1
+@clear screen
+@show
+`r0                        `r1 `$- `%Commercial Sign Services `$- `r0
+
+   `2We rent signs for `$50`2 gold per day, with a min of 10 days. `7($500)
+
+
+                                `6Ú/\/\/\/\/\/\/\/\¿
+                                `6³                ³
+                                `6³                ³
+                                `6³                ³
+                                `6³                ³
+                                `6À/\/\/\/\/\/\/\/\Ù
+@do `v01 is 1
+@do move 34 7
+@choice
+`$Rent a Sign
+`%Why so much?
+`$My Account
+`%Leave
+@if responce is 1 then goto RENTIT
+@if responce is 2 then goto WHYSIGN
+@if responce is 3 then goto SIGNACCT
+@if responce is 4 then goto NOMORE
+@#RENTIT
+@clear screen
+@do move 1 1
+@show
+`r0                        `r1 `$- `%Commercial Sign Services `$- `r0
+
+   `2Which area are you interested in having your sign?
+
+
+                                `6Ú/\/\/\/\/\/\/\/\¿
+                                `6³                ³
+                                `6³                ³
+                                `6³                ³
+                                `6³                ³
+                                `6À/\/\/\/\/\/\/\/\Ù
+@do `v01 is 1
+@do move 34 7
+@choice
+`$Just outside
+`%FlagCity area
+`$Sosen area
+`%Forget it
+@if responce is 1 then do
+        @begin
+        @do `p22 is 1
+        @do `p23 is 5
+        @end
+@if responce is 2 then do
+        @begin
+        @do `p22 is 6
+        @do `p23 is 10
+        @end
+@if responce is 3 then do
+        @begin
+        @do `p22 is 11
+        @do `p23 is 15
+        @end
+@if responce is 4 then goto NOMORE
+
+@label newsign
+@if cnwsign.`p22 exists true then do
+        @begin
+        @if `p22 is `p23 then do
+                @begin
+                @do move 3 13
+                @do write
+Sorry, there currently is no more signs availabe in that area.
+                @key bottom
+                @do goto RENTIT
+                @end
+        @do `p22 + 1
+        @do goto newsign
+        @end
+@do move 3 13
+@show
+What do you want written on your sign?
+
+`%:
+@do readstring 70 `N's`xsign `s01
+
+@label PAYSIGN
+@clear screen
+@do move 1 1
+@show
+`r0                        `r1 `$- `%Commercial Sign Services `$- `r0
+
+   `2Which area are you interested in having your sign?
+
+
+                                `6Ú/\/\/\/\/\/\/\/\¿
+                                `6³                ³
+                                `6³                ³
+                                `6³                ³
+                                `6³                ³
+                                `6À/\/\/\/\/\/\/\/\Ù
+@do `v01 is 1
+@do move 34 7
+@choice
+>&money 499 `410 Days `8($500)
+>&money 999 `420 Days `8($1000)
+>&money 1449 `430 Days `8($1450)
+Forget it
+@if responce is 4 then goto NOMORE
+@if responce is 1 then `p24 is 10
+@if responce is 2 then `p24 is 20
+@if responce is 3 then `p24 is 30
+
+@do `p25 is 500
+@do `p25 * `p24
+@if `p24 is 3 then `p25 - 50
+@do `p30 is 2
+@do `v40 is `p25
+@routine deposit in vaults.ref
+@do money - `p25
+@writefile cnwsign.`p22
+`s01
+&time
+`p24
+@do move 3 13
+@do write
+  `2Thanks. We've just sent someone out to fix up your new sign.
+@key bottom
+@do goto NOMORE
+
+@#WHYSIGN
+@do move 1 1
+@clear screen
+@show
+`r0                        `r1 `$- `%Commercial Sign Services `$- `r0
+
+   `2After you have purchased a sign, we/you will not be able to modify
+  it until the rent expires. We do not offer ANY sort of warning when
+  it will expire.
+
+    Why you ask is it so expensive? well simple enough, it costs us
+  cash to hire someone cut down some trees, cut them into posts and
+  boards. Then we need to pay ourselves for engraving each sign to
+  the customers liking.
+
+    We also take good care of the sign. Do you know how many little
+  warriors and little goblins try to knock these signs down. Who's
+  gotta replace them, we do!
+
+@key bottom
+@do goto RENTSIGN
+
+@#SIGNACCT
+@do goto RENTSIGN
+
+@#BREAKIN
+@do moveback
+@do saybar
+`%This door is LOCKED.
+@#NOMORE
+@drawmap
+@update
+@closescript

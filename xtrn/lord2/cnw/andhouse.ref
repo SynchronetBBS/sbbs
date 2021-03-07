@@ -1,0 +1,60 @@
+; Script file ANDHOUSE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE sign 000000312
+@DECLARE nomore 000000373
+@DECLARE father 000000385
+@DECLARE mother 000000776
+@DECLARE doors 000001136
+@DECLARE toilet 000001204
+@DECLARE nomore 000001269
+@NOCHECK
+; End of .REF index
+
+@#Sign
+@do moveback
+@do saybar
+`$The town of Andrew...
+@#Nomore
+
+@#Father
+@do `p70 is 101
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do `p21 random 3 1
+@if `p21 is 1 then saybar
+`@Andrew's Father: `$Go and talk to my son!
+@if `p21 is 2 then saybar
+`@Andrew's Father: `$If you have to, use my son's toilet!
+@if `p21 is 3 then saybar
+`@Andrew's Father: `$Well...well, you can talk to my wife too!
+@closescript
+@end
+
+@#Mother
+@do `p70 is 102
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do `p21 random 3 1
+@if `p21 is 1 then saybar
+`%Andrew's Mother: `#I begin to get tired of living here!
+@if `p21 is 2 then saybar
+`%Andrew's Mother: `#Oh, I love my husband!
+@if `p21 is 3 then saybar
+`%Andrew's Mother: `#Get lost!!!
+@closescript
+@end
+
+@#Doors
+@do saybar
+`5You open the door carefully and walk in!
+
+@#Toilet
+@do moveback
+@do saybar
+`%It looks like a toilet.
+
+@#NOMORE

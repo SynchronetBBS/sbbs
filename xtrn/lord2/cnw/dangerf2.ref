@@ -1,0 +1,958 @@
+; Script file DANGERF2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE sign 000001560
+@DECLARE sign2 000001646
+@DECLARE sign3 000001720
+@DECLARE chest 000001790
+@DECLARE 1 000003258
+@DECLARE 2 000003498
+@DECLARE 3 000003703
+@DECLARE 4 000003903
+@DECLARE 5 000004101
+@DECLARE 6 000004299
+@DECLARE 7 000004520
+@DECLARE 8 000004722
+@DECLARE 9 000004924
+@DECLARE 10 000005159
+@DECLARE 11 000005394
+@DECLARE 12 000005593
+@DECLARE 13 000005794
+@DECLARE 24 000006007
+@DECLARE 25 000006201
+@DECLARE 26 000006395
+@DECLARE 27 000006589
+@DECLARE 28 000006783
+@DECLARE 29 000006977
+@DECLARE 30 000007171
+@DECLARE 31 000007365
+@DECLARE 32 000007559
+@DECLARE 33 000007753
+@DECLARE 34 000007949
+@DECLARE 35 000008147
+@DECLARE 36 000008343
+@DECLARE 37 000008555
+@DECLARE 38 000008751
+@DECLARE 39 000008947
+@DECLARE 40 000009143
+@DECLARE 41 000009339
+@DECLARE 14 000009535
+@DECLARE 15 000009740
+@DECLARE 16 000009966
+@DECLARE 17 000010159
+@DECLARE 18 000010352
+@DECLARE 19 000010555
+@DECLARE 20 000010756
+@DECLARE 21 000010980
+@DECLARE 22 000011190
+@DECLARE 23 000011404
+@DECLARE 42 000011613
+@DECLARE findit 000011778
+@DECLARE leaving 000012197
+@DECLARE fight 000012241
+@DECLARE monster1 000012321
+@DECLARE monster2 000012926
+@DECLARE monster3 000013557
+@DECLARE monster4 000014186
+@DECLARE monster5 000014922
+@DECLARE monster6 000015619
+@DECLARE monster7 000015815
+@DECLARE die 000016015
+@DECLARE seperate 000020778
+@DECLARE nomore 000020883
+@NOCHECK
+; End of .REF index
+
+@NOCHECK
+@#SIGN
+@DO MOVEBACK
+@DO SAYBAR
+`%Danger inside.  `$BEWARE!  `%You were WARNED!
+
+@#SIGN2
+@DO MOVEBACK
+@DO SAYBAR
+`%There is nothing in here, honest.
+
+@#SIGN3
+@DO MOVEBACK
+@DO SAYBAR
+`$We told you it was dangerous.
+
+@#CHEST
+@offmap
+@do moveback
+@dataload dangerf.idf &playernum `p20
+@if `p20 > 1 then do
+        @begin
+        @do saybar
+`\The old box is in many peices.
+        @closescript
+        @end
+@show
+`r0`c  `%The Danger Forest Box
+
+`2  You find a box within the bushes.
+
+@if `p20 is 0 then do
+ @begin
+ @show
+
+  There is a large box here.  What could be in it?
+
+ @end
+
+@if `p20 > 0 then do
+ @begin
+ @show
+
+  There is an open box here.  It is empty.
+
+ @end
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+=`p20 0 Open the box - something good must be inside, yahh!
+<`p20 0 Kick the crappy box.
+=`p20 0 Carefully open the thing.  Could be a trap?
+Leave it to rot.
+@show
+
+
+@if responce is 4 then goto leaving
+@if response is 1 then do begin
+ @begin
+ @datasave dangerf.idf &playernum 1
+ @do money + 50
+ @Do `p02 is 1
+ @do `p01 + 500
+ @show
+  `2Damn it! a TRAP!
+
+`k
+
+  `%YOU FIND `$50 `%GOLD PIECES!
+  `%YOU GET `$500 `%EXPERIENCE!
+  `%YOUR HP IS DOWN TO `$1`%!
+
+`k
+ @do goto leaving
+ @end
+
+@if response is 3 then do begin
+ @begin
+ @datasave dangerf.idf &playernum 1
+ @do money + 50
+ @do `p11 - 250
+ @do `p01 + 500
+ @show
+  `2You spend half an hour opening a the box.
+  It had a trap, but you avoided it.
+
+  `%YOU FIND 50 GOLD PIECES!
+  `%YOU GET 500 EXPERIENCE!
+
+`k
+ @do goto leaving
+ @end
+
+@if response is 2 then do begin
+ @begin
+@datasave dangerf.idf &playernum 2
+@do `p28 random 42 1
+@do goto `p28
+
+@label 1
+;team houses
+;Royal deed
+@if castle78.dat exist false then do
+        @begin
+        @do `s02 is Royal's`xDeed`x-`xDragon`xHousing
+        @writefile castle78.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+
+@label 2
+;Qfortress
+@if qcastle.dat exist false then do
+        @begin
+        @do `s02 is QFortress`xDeed
+        @writefile qcastle.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+
+@label 3
+;Odins Keep
+@if keep.dat exist false then do
+        @begin
+        @do `s02 is Odins`xKeep`xDeed
+        @writefile keep.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 4
+@if tlhouse4.dat exist false then do
+        @begin
+        @do `s02 is Team`xHouse`x4`xDeed
+        @writefile tlhouse4.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 5
+@if tlhouse5.dat exist false then do
+        @begin
+        @do `s02 is Team`xHouse`x5`xDeed
+        @writefile tlhouse5.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 6
+;Underground City
+@if pass1.dat exist false then do
+        @begin
+        @do `s02 is Underground`xCity`x-`xHome`x#1
+        @writefile pass1.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 7
+@if pass2.dat exist false then do
+        @begin
+        @do `s02 is Underground`xCity`x-`xHome`x#2
+        @writefile pass2.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 8
+@if pass3.dat exist false then do
+        @begin
+        @do `s02 is Underground`xCity`x-`xHome`x#3
+        @writefile pass3.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 9
+;jasminita's deed
+@if castle77.dat exist false then do
+        @begin
+        @do `s02 is Jasminita's`xDeed`x-`xDragon`xHousing
+        @writefile castle77.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 10
+;Esperanto's deed
+@if castle79.dat exist false then do
+        @begin
+        @do `s02 is Esperanto's`xDeed`x-`xDragon`xHousing
+        @writefile castle79.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 11
+@if tlhouse1.dat exist false then do
+        @begin
+        @do `s02 is Team`xHouse`x1`xDeed
+        @writefile tlhouse1.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 12
+@if tlhouse3.dat exist false then do
+        @begin
+        @do `s02 is Team`xHouse`x3`xDeed
+        @writefile tlhouse3.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+
+@label 13
+;Gumtown Castle
+@if gumcast.dat exist false then do
+        @begin
+        @do `s02 is Gumtown`xCastle`xDeed
+        @writefile gumcast.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 24
+@if room1.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x101
+        @writefile room1.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 25
+@if room2.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x102
+        @writefile room2.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 26
+@if room3.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x103
+        @writefile room3.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 27
+@if room4.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x104
+        @writefile room4.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 28
+@if room5.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x105
+        @writefile room5.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 29
+@if room6.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x106
+        @writefile room6.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 30
+@if room7.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x107
+        @writefile room7.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 31
+@if room8.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x108
+        @writefile room8.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 32
+@if room9.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x109
+        @writefile room9.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 33
+@if room10.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x110
+        @writefile room10.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 34
+@if room11.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x111
+        @writefile room11.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 35  
+@if room12.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x112
+        @writefile room12.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 36
+@if room13.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x113 
+        @writefile room13.dat
+&playernum               
+NONE
+        @do goto findit
+        @end
+@Label 37
+@if room14.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x114
+        @writefile room14.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 38
+@if room15.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x115
+        @writefile room15.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 39
+@if room16.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x116
+        @writefile room16.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 40
+@if room17.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x117
+        @writefile room17.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@Label 41
+@if room18.dat exist false then do
+        @begin
+        @do `s02 is Loki`xInn`x-`xRoom`x118
+        @writefile room18.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+@label 14
+;Sosen Inn
+@if castle4.dat exist false then do
+        @begin
+        @do `s02 is Sosen`xInn`xDeed
+        @writefile castle4.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 15
+;IceLord
+@if castle1.dat exist false then do
+        @begin
+        @do `s02 is IceLord`xKeep`xDeed
+        @writefile castle1.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+
+;other castles
+
+@label 16
+@if castle2.dat exist false then do
+        @begin
+        @do `s02 is Castle`x#2`xDeed
+        @writefile castle2.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 17
+@if castle3.dat exist false then do
+        @begin
+        @do `s02 is Castle`x#3`xDeed
+        @writefile castle3.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 18
+;cottage inn
+@if cott.dat exist false then do
+        @begin
+        @do `s02 is Cottage`xInn`xDeed
+        @writefile cott.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 19
+@if tlhouse2.dat exist false then do
+        @begin
+        @do `s02 is Team`xHouse`x2`xDeed
+        @writefile tlhouse2.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+
+@label 20
+@if NINN1.dat exist false then do
+;Ma's Boarding house
+        @begin
+        @do `s02 is Ma's`xBoarding`xHouse`xDeed
+        @writefile ninn1.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+
+@label 21
+@if NINN2.dat exist false then do
+;Sea Hag Hotel
+        @begin
+        @do `s02 is Sea`xHag`xHotel`xDeed
+        @writefile ninn2.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 22
+;The Woodlog Inn
+@if NINN3.dat exist false then do
+        @begin
+        @do `s02 is The`xWoodlog`xInn`xDeed
+        @writefile ninn3.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 23
+;FlagCity Inn
+@if NINN4.dat exist false then do
+        @begin
+        @do `s02 is Flag`xCity`xInn`xDeed
+        @writefile ninn4.dat
+&playernum
+NONE
+        @do goto findit
+        @end
+
+@label 42
+        @begin
+        @do `p28 random 100000 10000
+        @do `s02 is `p28
+        @do `s02 add  gold
+        @do money + `p28
+        @end
+
+@label findit
+@do `p29 random 10 4
+@datasave dangerf.idf &playernum 2
+@do `p18 + `p29
+ @show
+  `2You defiantly strike the box with strong foot.
+                 `l.`l.`l.`l
+    What the?`l?`l`l
+
+    The bottom of the box opened up, and you find
+                 `l.`l.`l.`l
+
+      `$`s02!
+
+`k
+     `2You wonder why someone would leave this kind of loot here.
+
+      `%You get `p29 quest points
+@key
+@label leaving
+@drawmap
+@update
+@closescript
+
+@#FIGHT
+@do write
+`'
+@do `p21 random 7 1
+@do goto monster`p21
+@end
+
+
+@#monster1
+@do move `p25 `p26
+@do write
+`4`r0
+@fight
+;name
+Tree branch
+;string said when you see her
+Something pokes at the back of your head...
+;power move kill string
+This timber will burn.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+pokes you|25
+stabs in your back|35
+flaps up and down on your head|50
+NONE|NONE
+NONE|NONE
+;defense
+240
+;gold reward
+300
+;experience
+300
+;hit points
+500
+;if win: ref file|name or NONE
+FIGHT.REF|WIN
+;if lose: ref file|name or NONE
+DANGERF2.REF|DIE
+;if runs: ref file|name or NONE
+FIGHT.REF|WIN
+
+@#monster2
+@do move `p25 `p26
+@do write
+`4`r0
+@fight
+;name
+VERY VERY Angry Rock
+;string said when you see her
+It jumps on your foot...
+;power move kill string
+You threw the rock as far as possible.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hits back of your head|250
+rams into your chest|350
+knocks you out for a few seconds|500
+NONE|NONE
+NONE|NONE
+;defense
+900
+;gold reward
+25
+;experience
+300
+;hit points
+1500
+;if win: ref file|name or NONE
+FIGHT.REF|WIN
+;if lose: ref file|name or NONE
+DANGERF2.REF|DIE
+;if runs: ref file|name or NONE
+FIGHT.REF|WIN
+
+@#monster3
+@do move `p25 `p26
+@do write
+`4`r0
+@fight
+;name
+Long Branches
+;string said when you see her
+It whips your chest!
+;power move kill string
+You slice the branches with you sword!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+they wack the back of your head|250
+rams into your chest|350
+knocks you out for a few seconds|500
+NONE|NONE
+NONE|NONE
+;defense
+900
+;gold reward
+0
+;experience
+600
+;hit points
+900
+;if win: ref file|name or NONE
+FIGHT.REF|WIN
+;if lose: ref file|name or NONE
+DANGERF2.REF|DIE
+;if runs: ref file|name or NONE
+FIGHT.REF|WIN
+
+
+@#monster4
+@do move `p25 `p26
+@do write
+`4`r0
+@fight
+;name
+Green Elves
+;string said when you see her
+They come running out in large numbers...
+;power move kill string
+You swing your sword to slice them all!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+Half of them come charging at you|600
+They surround you and beat the crap out of you|800
+They manage to knock you out for a few seconds|50
+The swing their arms at you|100
+One tries to hit you realy hard|25
+;defense
+900
+;gold reward
+25
+;experience
+423
+;hit points
+945
+;if win: ref file|name or NONE
+FIGHT.REF|WIN
+;if lose: ref file|name or NONE
+DANGERF2.REF|DIE
+;if runs: ref file|name or NONE
+FIGHT.REF|WIN
+
+@#monster5
+@do move `p25 `p26
+@do write
+`4`r0
+@fight
+;name
+Sleep walking elves
+;string said when you see her
+They walk in front of you and stop.
+;power move kill string
+You knock the sleeping elves out!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+He swings his arms at you|100
+Walks into you with his sharp knife|250
+walks right past you, slightly slicing your arm|45
+Walks into you with his sharp knife|250
+NONE|NONE
+;defense
+230
+;gold reward
+361
+;experience
+90
+;hit points
+750
+;if win: ref file|name or NONE
+FIGHT.REF|WIN
+;if lose: ref file|name or NONE
+DANGERF2.REF|DIE
+;if runs: ref file|name or NONE
+FIGHT.REF|WIN
+
+@#monster6
+@do move `p25 `p26
+@do write
+`4`r0
+ `4  `$`|It jumped out of nowhere and bit you hard, then zoomed away.`| `4
+@do `p02 - 60
+@if `p02 < 1 then goto DIE
+@closescript
+@end
+
+
+@#monster7
+@do move `p25 `p26
+@do write
+`4’`r0
+@do `p02 / 3
+@do saybar
+ `4’  `$`|It jumped out of nowhere and bit you hard, then zoomed away.`| `4’
+@if `p02 < 1 then goto DIE
+@closescript
+@end
+
+@#DIE
+@do move 3 24
+@do write
+`r0                                                                           `x
+
+  @do X is 27
+  @do Y is 7
+  @do money / 2
+  @do `p02 is `p03 (give 'em max hit points)
+  @do `p20 is `p01
+  @do `p20 / 5
+  @do `p01 - `p20
+  @do MAP is 155
+  @do dead is 1
+  @update_update
+
+  @do talk `4Newsflash:`0`x`n`x`2died`xin`xthe`x`0DANGEROUS FOREST`2! all
+  @do addlog
+ `n `%tried to pass through the DANGEROUS FOREST, but was unsuscessful and DIED!
+  @do addlog
+  `$People have been warned not to enter, but do they listen?
+  @routine seperate
+@do move 3 24
+@do write
+`4You've been killed. `k
+
+@pauseoff
+@show
+`r0`c
+[34C[0mÜÜÜÛÛÛÛÛÛÛÛÛÜÜÜ
+[29CÜÛÛ[1;30;47m°°°°[0;47mÛ[1;30m°[0;47mÛÛÛÛÛÛÛÛÛÛÛ[40mÜ
+[28CÛ[1;30;47m°°°°[0;47mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[40mÝ
+[27CÛ[1;30;47m°±±°[0;47mÛÛÛÛÛÛÛÛ[1;30mÞÜ[0;47mÛÛÛÛÛÛÛÛÛ[40mÛ
+[19CÜÜ[5CÞ[1;30;47m°±²°[0;47mÛÛÛÛÛÛÛÛÛÛ[1;30mÛÛßß[0;47mÛÛÛÛÛ[40m
+[A[50C[47m[1;30mÞ[0mÛÛ
+[18CßÜÛÝ    [1;30;47m°±²±°[0;47mÛÛÛÛÛ[1;30mÜ Ý[0;47mÛ[1;30mÞÛÜ[40m
+[A[43C[0;47mÛÛÛÛÛ[1;30mÜÜ²[0mÛ[47mÛ[1C[40mÜ[1;47m±²[40mÜ
+[17C[30mÜ[47m°[0;47mÛÛ[1mÜ[0mÜ   [1;30;47m±²±° [0;47mÛÛ[1;30m°[40m
+[A[34C[0;47mÛ[1;30m°°²ÝÜß°Ü[0;47mÛ[1;30m°[0;47mÛÛÛÛ[1;30mß²Ý[40m
+[A[52C[47m[0mÝ[1;30mÜ[47m°[0;47mÛ[1m±[40mÝ
+[17C[30;47m²±°[0;47mÛÛ[1mßÜ[0mÜ [1;30mÞ[0mÜßß    [1;30mßß²[47m[40m
+[A[37C[47m²²°Ü[40m²ßß[5C[0mßß[1;30;47mß[40mÞ[47m±°[0mß ß
+[18C[1;30mßßß[47m°°[0;47mÛ [1;30m°[1C[0mÜ    [31mß   [1;30m±²
+[A[38C[47m²²°[40m±   [0;31mß    [37mÞÝ[1;30;47m²[40mß
+[23C[0mß[1;30;47m°±[40mÝ[0mÞÛÜÜ    ÜÜ[1;30;47mß[0mßß[1;30mß
+[A[41C[47mß[0mÜÜ    ÜÛ[1;47mÜ[0mÝ[1;30mÝ
+[25C[47m²[40mß[0mÜ[1;30;47mÜ [0;47mÛÛ[1;30mßßÜÜß[0mÝ [1;30mÝ [0mÞ
+[A[42C[1;30;47mÜÜßß[0;47mÛÛÛÛ[1mßÜ[0mÜ
+[26CÛ[1;30;47mß[0;47mÛÛÛÛ[1;30mÜ²²Ü[0;47mÛ[2C[1;30;40m²Ü [47m°±[40m
+[A[44C[47m°[0;47mÛÛÛÛÛ[40mßß
+[27CßÛÛ[1;30;47m°²[40m²±²[47m°[0mÜÜ[1;30;47m°²±°±[40m²ß[0mß ßßßß
+[29C[1;30mÜÜ ßÜ [0mßß[1;30mßß ß[0mß[1;30mß Üß [47m²±[0mÜ
+[27CÜ[1;30;47m°±²[40mÝ ß [47m°[0mÝ[1;47m²Û[40mÞÛ[0mßÜ[1;30;47m[40m
+[A[43C[47m°[40mß Ü [47m±°[0;47mÛ[40mÜ
+[22C[1mÜ  [47m±°[30m°°[40mß [0mÜ [1;30mß [0mÜ Ü[1mÜ Ü[0mÜ Ü 
+[A[45C[1;30mßÜ[47m°[1C[0mß[47m  [1m±[40mÜÜÜ
+[19CÜ[47m²²±°°[30m±[0mÝß ÜÛÛ[1;30;47mÞ[0;47mÛ[40mÜÜ ÜÜÜÜÜ ÜÜ
+[A[45C[1;30;47m°±[0;47mÛÛ[40mÜ ß[1;30;47m±[37m°±[40mß[47m²[40m
+[19C[0;31mÜ [37mÜßÛ[1;30;47m±[40mß[0;33mÜ²ÜÜ [37mß[1;47mßÜ[30m[40m
+[A[34C[47mß[0;47mÛÛÛ[1;30mÜß[0;47mÛÛÛÛ [1mÜß[0mß [33mÜÜÝ[1;30mÞ
+[A[53C[47m±[0mÜÝ[31mÜ
+[17C°±²ÛÜ[37mß[1;30mß[0;31mÜÜÜ[33;41mßßßß[40mÜ [37mß[1;47mß[40m
+[A[35C[0;47mÛÛ[1;30mÜ±[40m²[47m±Ü[40mß[47mÜ[37mß[0mß [31mÜ
+[A[48C[33;41mßßß[31;40mÜÜ[1;30mß[0;31mÜÜÛ²±°
+
+                     `%You have made a terrible error, s&boy.
+               `%The DANGEROUS FOREST has that name for a reason.
+
+`k
+ @if `v03 is 0 then do
+   @begin
+ ;rules.ref file says unlimited deaths not allowed, so we will boot them
+ ;till tomorrow
+
+ ;take them off the map
+  @do map is 1
+   @halt
+   @end
+
+ @pauseon
+
+ @do dead is 0
+
+ @if `p07 less 0 then do
+ @begin
+ @show
+`r0`c`%  `r1IT FEELS KINDA WARM IN HERE?`r0
+
+  `4You open your eyes.
+
+`k  `4There are naked screaming people all around you.  A little boy with
+  a ghastly face begins to gnaw on your leg.
+
+`k  `6"Din, leave the newcomer alone.  S&he isn't staying." `4a slow voice that
+  can only be described as an abomination dolefully states.
+
+`k  `2You feel yourself floating away... faster and faster.
+ @end
+
+ @if `p07 more -1 then do
+ @begin
+ @show
+`r0`c`%  `r1APPARENTLY DEATH ISN'T THE END.`r0
+
+  `2You open your eyes.
+
+`k  `2You are lying on a table of solid rock in a marble room.  Hundreds of
+  soft voices are murmuring all around you, but you see no one.
+
+`k  `%"Send s&him back." `2a voice whispers, this one louder than the others.
+
+`k  `2You feel yourself floating away... faster and faster.
+
+`k
+ @end
+
+
+@show
+`c  `r1`%AWAKENING.`r0
+
+  `0"Can you hear me, `n?" `2a stressed voice shouts.
+
+  `$"Yeah.  Christ mom, lemmie up, I'm fine." `2you assure your mother.
+
+  `0"You're alive!! The elders brought your body here yesterday, you must
+  have fainted out there." `2your mother shouts, tears of joy streaming down
+  her wrinkled face.
+
+  `$"Ok, ok - nice little happy reunion and all that, but I gotta hit the
+  road now. Buhbye." `2you tell her.  Afterall, you need to make the most of
+  this new lease on life.
+
+  `2You lose `4half`2 the gold you were carrying and `4`p20`2 experience.
+
+`k
+  @loadmap map
+  @drawmap
+  @update
+
+@#seperate
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@closescript
+
+@#NOMORE
+

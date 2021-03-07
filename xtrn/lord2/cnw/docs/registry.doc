@@ -1,0 +1,361 @@
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+                   G L O B A L  R E G I S T R I E S  v1.12
+
+                         A   N E W   A D D - O N
+
+                                   FOR
+
+                    L O R D  II  v1.01a  by Seth Robinson
+
+
+                         (c)1997 AuSSie Creations
+                         Written by: Mike Freeman
+                            
+                       Support BBS: 714-670-6500  14.4
+                                    714-736-5880  28.8
+                                    714-736-5881  33.6
+               Email: Internet: auzzi@bigfoot.com
+                      Majornet: aussie@cfe (For MajorBBS Systems)
+            Home Page : http://home.att.net/~aussie.mfreeman/home.htm
+                 On The Coffee Break BBS: send email to aussie
+                             My Fax: 714-521-6240
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+            
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+                          Global Registries Features
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+            * Allows your Lord II players to give a touch of personality
+              to their character's appearance.
+            * WORKS even if your copy of Lord II is Un-Registered!!!!!!!
+            * Easy to use menu style options with one letter response
+              options that execute when selection is typed.
+            * Help screens and information at all levels.
+            * Convenient Screen redraw & refresh options at all levels.
+            * Easy to understand Error messages.
+            * Global Registries is easily accessable from a map by
+              by pushing on the Registry Hut or by using the ITEMS
+              method of retrieval.
+            * Color your Registry entries using the standard Color
+              Codes that come with the game ie `1Blue `2Green etc.
+            * Sysops! No need to approve Registry entries. All fields
+              in the Registry are filtered for Profanity.
+            * If configured, users have the unique ability to buy an
+              additional life, for a price!
+            * Global Registries uses its own variables and flags. No
+              need to worry about conflicts with others IGM's.
+            * Built in automatic upgrade utility that upgrades your
+              version of GR from one version to another, when upgrades
+              are available.
+            * Built in online configurable options. No need to take your
+              system down to change module features.
+            * Different Access levels for players/Sysops/Co-Sysops.
+              Depending on your access level you see certain options that
+              others don't.
+            * Includes my special ADD-ON program MAKE ME A SYSOP(tm) for
+              Sysops to manage Global Registries. (Requies Registration!)
+            * Complete documentation included, including my handy version
+              release information for USERS and well as SYSOPS to view
+              online at anytime while the game is running.
+            * Best of all I support all my products with information on how
+              you may contact me for customer support.
+
+
+
+             TABLE OF CONTENTS
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+             Warranty...........................................1
+             Usage..............................................2
+             License............................................3
+             Distribution.......................................4
+             Description........................................5
+             Registration Information...........................6
+             Shareware vs Registered............................7
+             System Requirements................................8
+             Compatibility......................................9
+             Registering Lord II...............................10
+             What you need to know before installing GR........11
+             Combining methods.................................12
+             Warning...........................................13
+             Have you installed other IGM's?...................14
+             Installation instructions.........................15
+             Product Support & Upgrades........................16
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+
+     
+     ÚÄWARRANTYÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ1Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     This product is provided "as is" without warranty of any kind. 
+     The entire risk as to the results and performance of the program 
+     is assumed by you.  Futhermore, the author does not warrant, 
+     guarantee, or make any other representations regarding the use 
+     of, or the results of the use of the program, and you rely on the 
+     program and results solely at your own risk. The author cannot 
+     and will not accept responsibility for system damage, loss of 
+     profit, or any other special, consequential or incidental damages 
+     resulting from the use or inability to use this product.
+
+     Aussie Creations cautions that the software was tested as the sole
+     modification to an otherwise unmodified system and that no guarentee
+     exists with regard to the lack of conflicts with other modifications.
+     However, software written by AuSSie Creations will not conflict
+     with other software written by AuSSie Creations.
+
+
+     ÚÄUSAGEÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ2Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     This product is being distributed as Shareware. Under this 
+     concept you may use the SHAREWARE (unregistered) version for a 
+     reasonable period for evaluation, after which you MUST either 
+     register your copy or discontinue usage.  
+
+
+     ÚÄLICENSEÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ3Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     AuSSie Creations owns this software and licenses its use throughout
+     the world. The licensee assumes responsibility for the selection of
+     the software to achieve your intended results.
+
+     The licensee may only use this software on a single machine. However,
+     the software may be copied into machine-readable or printed form for
+     backup purposes in support of the use of this software on a single
+     machine.
+
+     This software is licensed for use to a single corporation or person,
+     on a single machine only. Once licensed, license to use this software
+     is NOT TRANSFERABLE to any other person or corporation, without the
+     express, written permission of AuSSie Creations.
+
+     THIS SOFTWARE MAY NOT BE USED, COPIED, MODIFIED, MERGED, DISASSEMBLED,
+     OR TRANSFERRED, IN WHOLE OR IN PART, EXCEPT AS EXPRESSLY PROVIDED FOR
+     IN THIS LICENSE.
+
+     Violation of any single parameter of this license will result in
+     immediate forfeiture of said license. The owner of the license to use
+     this software is responsible for whatever befalls his licensed copy
+     of the software.
+
+     If software integration is performed by other than the licensee, the
+     person or company performing said integration may not under any
+     circumstances retain any part of this software in any form. Neither
+     may the person or company performing said integration retain the
+     software as a "backup" for the licensee as provided above.
+
+
+     ÚÄDISTRIBUTIONÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ4Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     You are encouraged to distribute this copy of Global Registries
+     provided the archive is kept in its original and unmodified state.  
+
+
+     ÚÄDESCRIPTIONÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ5Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     At last! Now there is a way to record your own personal registry
+     about your character in Lord II. Registries are user definable,
+     allowing you to give a touch of personality to your character's
+     appearance. The description that you create will be viewable
+     online, from almost anyplace, in Lord II. Users can look up each
+     others entries simply by accessing the Global Registries main menu
+     while playing Lord II. Global Registries has taken many hours of
+     coding, testing and thought. We hope your users enjoy this add-on
+     as much as ours have.
+
+
+     ÚÄREGISTRATIONÄINFORMATIONÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ6Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     A registration form is included in this archive that covers ALL
+     AuSSie Creation products via Email or BBS registration. See our
+     telphone/Email information at the beginning of this document.
+     
+
+     ÚÄSHAREWAREÄVSÄREGISTEREDÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ7Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+     The shareware version will only allow you to perform limited Sysop
+     functions and users will be able to list only the first 3 players
+     who have entered their registry entries. Max # of registry entries
+     allowed in the un-registered version is 5. An attempt to enter the
+     6th registry entry will result in the user being denied the entry.
+     In addition, the following features are only available in the
+     registered version.
+
+     Using my MAKE ME A SYSOP(tm) program (reg'd only feature).
+     * Assign/remove Sysop access to 1 or more trusted Lord II users.
+     * Assign/remove Co-Sysop access to 1 or more trusted Lord II users.
+     * Assign all privilages to any Lord II player while the game is
+       running. No need to take your bbs/door pc down.
+     * All options are configurable online, while system is up.
+     * Sysop/Co-Sysop menus options show only to those who have access.
+     * For Registered systems, we put your bbs name in lights with a
+       cute little ansi addition.
+     * Free updates and support via email and fax.
+
+                         
+     ÚÄSYSTEMÄREQUIREMENTSÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ8Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     You must be running v1.01a of Lord II. If you are running v1.00, I
+     suggest you upgrade to the lastest version of Lord II before running
+     Global Registries. These changes are not for v1.00 and have not been
+     tested with v1.00 of Lord II. Get the upgrade services Pak 1 from
+     our internet site at http://home.att.net/~aussie.mfreeman/home.htm
+     or from Seths Internet site at www.rtsoft.com. The upgrade file name is
+     L2SP1A.ZIP. You may also download this file from our bbs, The Coffee
+     Break BBS, from our SUPPORT library. Our BBS phone number is listed at
+     the top of this document. Sorry, we are not TELNETABLE at this time.
+
+     
+     ÚÄCOMPATIBILITY ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ9Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     Global Registries has been tested on our 26-Line BBS, running WG2.0
+     connected to 2 door systems under DOS 6.2 running Seth Able's Lord
+     II game and found to be fully compatable. Global Registries will
+     run on any door pc or system that can run doors irrespective of the
+     software type used ie Wildcat, MBBS and will * NOT * interfer with
+     any of the Lord II's database file structure since Global Registries
+     keeps track of its own database files.
+
+
+     ÚÄDO I NEED A REGISTERED COPY OF LORD II?ÄÄÄÄÄÄÄÄÄÄ10Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ 
+     NO! but you will only be able to run Global Registries by entering
+     the module thru the little hut on Neb's Road. You will not be able
+     to type 'V' from anyplace in Lord to select the item REGISTRY KEY
+     to enter the module until you have registered Lord II.
+
+
+     ÚÄWHAT YOU NEED TO KNOW BEFORE INSTALLING GRÄÄÄÄÄÄÄ11Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+     Global Registries does not need a MAP to access, although there is
+     one supplied for those of you running the un-registered version of
+     Lord II. Ordinarily though, this is a MAP FREE module and does not
+     work like the other IGM's I'v seen. In fact, I think this is the first
+     and only module that works the way it does, other than the Brady
+     Adventure by Seth, but I could be wrong. Until I see such module in
+     existance, I will assume for now that Global Registries is the only one
+     of its kind. As of this writing, I am unable to assign a global character
+     such as the letter 'G' to globally retrieve Global Registries because
+     of the limitations of the language.
+
+     IF YOUR COPY OF LORD II IS UN-REGISTERED your users can enter Global
+     Registries from Neb's road. There is no other way I know of at this time
+     that will allow you to access Global Registries when unregistered.
+
+     IF YOUR COPY OF LORD II IS REGISTERED your users can enter Global
+     Registries using a new item as well as allowing your users to access
+     Global Registries from the map on Neb's road. The item gives your users
+     the REGISTRY KEY and is automatically given to existing and well as
+     new users to the game once the modification have been made to the code.
+     To use this item, all the user needs to do is select 'V' for statistics
+     on his account, then by selecting the REGISTRY KEY he is given access
+     to the module.
+     Currently, this is a non expiring key meaning its use is UNLIMITED.
+     Somewhere down the line we could make the modification of allowing
+     our users to WORK for the key, pay for the key or even sell it for
+     money. The possibilites are limitless.
+
+
+     ÚÄCOMBINING METHODSÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ12Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+     <NO LONGER AN ISSUE WITH V1.12>
+
+     ÚÄWARNINGÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ13Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+     THE DISTRIBUTION ZIP FILE SUPPLIED CONTAINS OTHER ZIP FILES AS WELL.
+     PLEASE *DO NOT* UNZIP ANYTHING AHEAD OF TIME, INTO YOUR LORD2 DIR,
+     UNTIL YOU HAVE READ AND UNDERSTOOD THE INSTALLATION DOCS. IF YOU DO,
+     YOU WILL GET INTO ALOT OF PROBLEMS. ONLY UNZIP FILES THAT ARE SPECIFIC
+     TO THE METHOD OF MODIFICATION YOUR INSTALLING. BE ACCURATE WHEN MANUALLY
+     CHANGING CODE. YOUR ACCURACY WILL SAVE YOU ALOT OF HEADACHES IN THE LONG
+     RUN. CHECK AND DOUBLE CHECK YOUR CHANGES IF ANY. -Thanks
+
+
+     ÚÄHAVE YOU INSTALLED OTHER IGM'S?ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ14Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+     If you have modified your ref files because you have installed other
+     IGM's, then you will need to spend some time modifying your refs to
+     install Global Registries. If you have NOT modified your ref files
+     from the stock game, then all you need to do is read these docs very
+     carefully unzipping only those files you need from my archive. For
+     the code modifications, please refer to my MCODE.DOC file.
+
+
+     ÚÄINSTALLATION INSTRUCTIONSÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ15Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+     1) Copy the file GLOBExxx.ZIP to an empty directory dir and at the
+        DOS prompt type PKUNZIP GLOBExxx. This will unzip the files into
+        your empty directory.
+
+        You have already done this if you are reading these docs!
+
+        For your information, my naming convention on all future releases of
+        Global Registries is as follows: GR121297.EXE means:
+
+        GR stands for Global Registries
+        121297 stands for 12/12/97 release date.
+
+        Next...
+
+        Copy the file GRxxxx98.EXE to your Lord II directory or whatever
+        directory you have installed Lord II in then type GRxxxx98 -d.
+
+        * DO NOT * forget to type the -d. If you forgot to type -d, and
+        everthing unzipped, then you must now delete the following files
+        SYCONFIG.DAT, REGSYSIN.DAT & VERSION.DAT from your Lord II directory.
+        Those files do not belong there and must be deleted. Then type
+        GRxxxx98 -d a second time and answer Y to overwriting all the files.
+        This should unzip the files where they should be ready for installation.
+
+        To complete installation please refer to MCODE.DOC for code changes.
+
+
+     ÚÄPRODUCTÄSUPPORTÄ&ÄUPGRADESÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ16Ä¿
+     ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+     I am available for any questions. See addresses/telephone numbers
+     at the beginning of this document! or log on to The Coffee Break BBS
+     The latest version of GR is always available there for download as
+     well as the files for Lord II. Demos of what Global Registries looks
+     like when installed and its operations can also be viewed online.
+     Call our support bbs, sign-up as usual then send a message to SYSOP
+     that your calling for Global Registries support and we will switch
+     your account to a SUPPORT ACCOUNT.
+
+     ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+     º °°°°°°°°°°°°°°° Acknowledgements °°°°°°°°°°°°°°°°°°°º
+     ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+     Special thanks to:
+     ==================
+     Seth A. Robinson for writing Lord II, a great game.
+     Lisa Verhagen for running a wild bbs and letting me test to my hearts
+     content.
+     Lance Neumann at Dreamscape bbs and his MajorMud Add-on for allowing
+     us to use his screen formats.
+
+     Beta Testers:
+
+     The Coffee Break BBS 26-Line(s) (714)670-6500 - Sysop Lisa Verhagen
+
+     Question/Comments/Suggestions to make Global Registries ever better
+     is welcomed! You can contact me a number of ways. Let me know how this
+     module is working for you.
+
+     Happy Coding
+
+     Mike Freeman (AuSSie Creations Inc.)
+

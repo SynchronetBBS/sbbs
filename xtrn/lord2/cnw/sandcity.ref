@@ -1,0 +1,307 @@
+; Script file SANDCITY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE heal 000000442
+@DECLARE inn 000002355
+@DECLARE pawn 000003067
+@DECLARE pawn1 000003161
+@DECLARE chest 000004003
+@DECLARE chest2 000004298
+@DECLARE bartender 000004552
+@DECLARE water 000005633
+@DECLARE mainsign 000005774
+@DECLARE sign1 000005896
+@DECLARE sign2 000006035
+@DECLARE sign3 000006170
+@NOCHECK
+; End of .REF index
+
+@#heal
+;SandCity's Healer Extrodinare (Sunny)
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1  SandCity Healing  `r0
+
+`2  Sunny looks you over for wounds. (and seems to enjoy looking)
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, fool!  What'd ya get yourself into anyway?
+  Aww, never mind crazy fool.  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry fool, we don't do no free work here."
+
+ @do write
+`x`x
+ @choice
+Hey Fool!  How am I supposed to make money when I can barely walk?
+Man, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"You Crazy, now get going with you!" `2 she laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Hey Fool, be a big s&man for once in your life!"`2 she yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a fool that don't work," `2she informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 she snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later fool!  I got other crazies to heal.
+  Nothing but scorpions in this town I tell ya," `2she laughs.
+
+`k
+@drawmap
+@update
+
+@#INN
+;Sand City Inn. The place to be in town!
+@offmap
+@do moveback
+@DO `v01 is 1
+@show
+`r0`c  `r1  SandCity Inn  `r0
+
+  `2You step into the beaten up building. It seems that part of the
+  building has collapsed, as if from a great fall. An old man sits
+  behind a mud counter staring at the ceiling.  He notices you and speaks.
+  `0"Hello stranger, need a room?  They're `$$120`0 here."`2
+
+@DO WRITE
+`x`x
+@CHOICE
+>&money 89 Get a room
+Leave
+@if response is 1 then do
+@begin
+@do money - 120
+@show
+`\`\  `0"Enjoy your stay here. Beware the caved in areas!"
+`\`k
+ @do map is 979
+ @loadmap 979
+ @do x is 21
+ @do y is 13
+@drawmap
+@update
+@closescript
+@end
+@drawmap
+@update
+@end
+
+@#pawn
+;Dozer's pawn shoppe. SandCity's hawker.
+@offmap
+@do moveback
+@do `v01 is 1
+@label pawn1
+@show
+`r0`c  `%Dozer's Pawn Shop
+
+`2  Dozer motions you to approach.  He reeks of beer.
+
+@do write
+`x`x
+@choice
+Examine his wares.
+Ask him to buy some of your stuff.
+Gossip with Dozer
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @buymanager
+  20
+  36
+  37
+  40
+  @end
+
+@if responce is 2 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @sellmanager
+  @end
+
+@if responce is 3 then do begin
+ @begin
+@show
+  `0"Wanna know something really strange?  I heard there is a tree on
+  the East Road that gives apples..."
+
+  `2You stare at him in disbelief.  `$"Yeah right, quit telling me stories,
+  Dozer!  You ain't exactly in the most travelled area of the world, ya know."
+
+`k
+  @end
+@if responce not 4 then goto pawn1
+@drawmap
+@update
+
+@#CHEST
+;Located in the Bar and Grill
+@do moveback
+@if bitcheck `t60 1 1 then do
+  @begin
+  @do saybar
+  There is nothing on the table.
+   @closescript
+  @end
+@bitset `t60 1 1
+@do saybar
+`%You find a Gold Potion on the table! What a stupid place to leave one!
+@do `i53 + 1
+@end
+
+@#CHEST2
+;Located in the Inn
+@do moveback
+@if bitcheck `t60 2 1 then do
+  @begin
+  @do saybar
+  There is an open chest here.
+   @closescript
+  @end
+@bitset `t60 2 1
+@do saybar
+`%You find a Silver Potion in the chest!
+@do `i54 + 1
+@end
+
+@#bartender
+;Bartenders love to talk
+@do `p70 is 99
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do moveback
+@do `p20 random 10 1
+@if `p20 is 1 then saybar
+`%Maverick: `0I used to be a thief. Then I found the way!
+@if `p20 is 2 then saybar
+`%Maverick: `0I have a potion in the back room. I forget how to get there.
+@if `p20 is 3 then saybar
+`%Maverick: `0Sandcity is a great place to live!
+@if `p20 is 4 then saybar
+`%Maverick: `0Here is your wallet back. Just practising!
+@if `p20 is 5 then saybar
+`%Maverick: `0Are you here to help restore the Sand Castle?
+@if `p20 is 6 then saybar
+`%Maverick: `0Call Mayhem BBS! It's cool! 905-790-8352
+@if `p20 is 7 then saybar
+`%Maverick: `0The Sand Castle was a wondrous place. Great Weapons shop too!
+@if `p20 is 8 then saybar
+`%Maverick: `0You might try to help dig out the Inn's second floor.
+@if `p20 is 9 then saybar
+`%Maverick: `0The Sand Castle was ruled by a beautiful Princess.
+@if `p20 is 10 then saybar
+`%Maverick: `0The Sand Castle MIGHT be available in the next release!
+@end
+
+@#water
+;SandCity's water source on the main town map
+@do saybar
+A pool of water. This must be how the town survives.
+@do moveback
+
+@#mainsign
+;Sign post before SandCity hole
+@do saybar
+Here lay the remains of SandCity. Beware the hole!
+@do moveback
+
+@#sign1
+;Sign post entering SandCity
+@do saybar
+Here lay what remains of SandCity. Inhabitants are few, but dangerous!
+@do moveback
+
+@#sign2
+;Sign post before the castle
+@do saybar
+In memorial of the Sand Castle. Crushed with the fall of the city.
+@do moveback
+
+@#sign3
+;Sign post entering SandCity
+@do saybar
+People wanted to uncover the Castle. Apply at the Bar.
+@do moveback
+
+

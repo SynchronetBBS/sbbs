@@ -1,0 +1,17 @@
+igmname: Highton Thieves' Guild
+replacescreen: 1090 1 noshow
+replacescreen: 1089 2 noshow
+replacescreen: 1088 3 noshow
+replacescreen: 1087 4 noshow
+replacescreen: 1086 5 noshow
+replacescreen: 1085 6 noshow
+replacescreen: 1084 7 noshow
+
+installmessage:
+
+`8The `%Thieves' Guild of Highton`8 is looking for recruits!
+
+This IGM adds a Thieves Guild as well as a house that you can
+enter and rob of jewels and other valuables.  More houses and
+people to be robbed in later versions.  It is situated just
+south west of the bridge on the Highton Continent.

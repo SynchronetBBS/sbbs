@@ -1,0 +1,567 @@
+Externally Defined Items package Beta 1.01, by Michael Hutson
+For use with LORD2 by Seth Able
+
+Dedicated to GOD
+"I know thy works: behold, I have set before thee an open door, and no man
+ can shut it:"   -Revelation 3:8
+----------------------------------------------------------------------------
+
+TABLE OF CONTENTS
+
+   I. What is the External Items package?
+  II. Setting up Lord2 to use the External Items package
+ III. Installing an external item for use in Lord2.
+  IV. Using externally defined items.
+   V. Writing an IGM that uses external items.
+      1. Defining an external item
+      2. Checking for possession of an external item
+      3. Giving a player an external item
+      4. Taking away an external item
+      5. Writing a batch file to install external items
+  VI. Deleting an external item from the game
+ VII. Addendum: further information for Beta testers.
+----------------------------------------------------------------------------
+
+I. WHAT IS THE EXTERNAL ITEMS PACKAGE?
+
+    Seth Able, author of Lord2, designed his excellent game to be highly
+modifiable. By use of his World Editor in the Lord2 configuration program,
+and the IGM.EXE program, people can create their own screens to be added to 
+the game. And they can add their own .REF files detailing custom routines to 
+be run. This allows Lord2 fans to create their own adventures using the 
+basic game engine. 
+    However, one thing has been missing up untill now: There has been no 
+easy way to add new items to the game. Items can be added by using the 
+Item Editor feature of L2CFG.EXE, the configuration program included with the 
+game, but this requires manually entering the attributes for each individual 
+item, and then adding the item's action to ITEMS.REF. As an aspiring 
+Lord2 IGM writer, I became convinced there had to be a way that IGM writers 
+could create their own custom items, and somehow add them automatically 
+to Lord2.
+    This package aspires to do just that. It uses a system of .REF and data
+files to define and use items outside of Lord2's ITEMS.DAT file. Once 
+installed to Lord2, it allows up to 30 additional items to be externally 
+defined by IGMs. This will allow IGM writers even broader scope for writing
+new adventures.
+    To use the package with Lord2, the following files must be in your
+Lord2 directory:
+- ADDEXT99.EXE
+- EXTITEMS.DAT
+- EXTITEMS.IDF
+- EXTITEMS.REF
+- INSTALL.REF
+- DEINSTAL.REF
+- ITEM99.REF
+    
+    In addition, the following files are included as an example of creating
+and using external items in IGMs. To use they should be in your Lord2
+directory:
+- SORRY.BAT
+- SORRY.IGM
+- SORRY.DAT
+- SORRY.REF
+- GUM.IDF
+-----------------------------------------------------------------------------
+
+II. SETTING UP LORD2 TO USE THE EXTERNALLY DEFINED ITEMS PACKAGE
+ 
+    Setting up Lord2 to recognize external items does require one addition
+to Lord2's items files ITEMS.DAT and ITEMS.REF. The External Items package
+1.02 now includes a utility to do this automatically. Once this is done all
+externally defined items will be referenced by a single entry in Lord2's
+regular items list. 
+    At the DOS prompt in your Lord2 directory, run the program ADDEXT99.EXE.
+This will add the following item into Lord2's ITEMS.DAT file.
+
+ LORD II ITEM EDITOR  editing item (99 of 99)
+ (A) Name of the item  : `$Extra Items
+ (B) Action string     :
+ (C) Used as armour?   : No
+ (D) Used as weapon?   : No
+ (E) Can be sold?      : Yes
+ (F) Ref, If "Usable"? : ITEM99
+ (G) Use string        : See what else you own
+ (H) Gold value        : 2
+ (I) Used only once?   : No
+ (J) Breaks 1 out of   : Never breaks.
+ (K) Description       : A sackfull of various junk
+ (L) Weapon Strength   : 0
+ (M) Armour Defence    : 0
+ (N) Quest item?       : No
+ (*) Show all items.
+ ([) Go back an account
+ (]) Go forward an account
+ (Q) Quit
+
+    And then in ITEMS.REF, a single header is added:
+
+@#item99
+@run menu in item99.ref
+@closescript
+
+    Some explanation might be in order here. What we are doing is adding a
+single item to the regular item list called "Extra Items". What this item 
+does is run a routine in Item99.ref that serves as the engine for listing 
+and using externally defined items. I use the analogy of Item 99 being a 
+"sack" for any external items a player possesses. In fact, whenever the 
+routine is called for a player to be given an external item, it checks to
+see if they in fact do possess Item 99 (by checking the value of variable 
+`I99) and gives them Item 99 if they don't already have it. Selling,
+dropping, or giving away their Item 99 will make their external items    
+inaccessible, and their previous inventory will be zeroed out the next time
+their inventory is checked.
+----------------------------------------------------------------------------
+III. INSTALLING AN EXTERNAL ITEM FOR USE IN LORD2
+
+    Ok, so now that Lord2 has been made ready, the IGM and it's associated
+external items can be installed. SORRY.BAT contains the commands to
+automatically add the SORRY.IGM, and then runs the routines that will install
+the external items it uses to the EXTITEMS .DAT and .REF item files. To use,
+make sure the files SORRY.BAT, SORRY.DAT, SORRY.IGM, SORRY.REF, and GUM.IDF 
+are in your Lord2 directory. Then from the DOS prompt run SORRY.BAT
+    First, the batch file will call the IGM.EXE file to install the new
+screen for SORRY.IGM. Then two external items will be added by getting the
+items' data from SORRY.REF, and then running INSTALL.REF.
+    First, INSTALL will confirm that the item has not been previously 
+installed. It will search for a label equal to the item name in EXTITEMS.REF, 
+and if it DOESN'T find it in already, you will get an ERROR message saying 
+that the item has not been found! _THIS_IS_NORMAL!! Just hit a key to clear 
+the <more> prompt and the routine will continue.
+    Next, it will confirm that EXTITEMS.REF doesn't already have the maximum
+of 30 items already installed. Provided that all is well, INSTALL will then
+begin processing the files EXTITEMS.REF and EXTITEMS.DAT to add the new item
+data in. This may take a few minutes; the routine will give you a "countdown"
+of how many lines it has left to process. When it's done, the item is
+installed! Then once the install routine has finished installing the first 
+item, SORRY.BAT will repeat the procedure for the second item.
+    For a fuller examination of how to write a batch file to install an item,
+see section V, Writing an IGM that uses external items. For further 
+information on how INSTALL.REF works, see the DEVELOPR.DOC file.
+-----------------------------------------------------------------------------
+
+IV. USING EXTERNALLY DEFINED ITEMS
+
+    Once an external item has been successfully installed, that item will
+then be available for any .REF that has been written to use it. If you have 
+added the files of the externally defined items package to your Lord2 
+directory, run ADDEXT99.EXE to configure Lord2's items files, and then run 
+the batch file SORRY.BAT, then you are ready to see external items in action! 
+    SORRY.IGM is pretty sorry, but it's just meant to be an example of
+external items, not really a permanent addition to the game. Just north of
+Greentree, you will see an enclosure and two tables, one outside and one
+inside. If you try to enter the enclosure at first, it won't let you: it will
+tell you you need a Doorpass. If you go to the table outside, sure enough 
+you'll find a Doorpass. You now own an external item! Go into your item menu
+and you should now see, among your possessions, Extra Items. If you choose 
+to use this item, it prompts you if you want to "See what else you own." 
+If you do, you will then see at the bottom of your screen a "scrollbox"
+similar to the figure below:
+                                  EXTRA ITEMS
+            ษออออออออออออออออออออออออออออออออออออออออออออออออออป  
+             บ                     Doorpass                     บ
+            ศออออออออออออออออออออออออออออออออออออออออออออออออออผ
+              Use U and D to scroll, Enter to choose, Q to exit
+              Your Command?
+
+    This "scrollbox" is how you see and choose to use what external items you 
+own. If you had more than one item (you don't yet) hitting U for Up or D for 
+Down would bring other items into view. (Exactly how long this takes depends
+on the machine you're using. I tried indexing ITEM99.REF, but that didn't 
+help much) If you hit Enter (or E), it will do whatever that item is supposed 
+to do. In this case, Doorpass isn't supposed to do anything- it's simply a 
+token to determine whether you can enter the enclosure. So you'll get a 
+message that you don't know what to do with it. Hitting Q returns you to 
+your regular item menu, where you can reenter the game. If you try the 
+enclosure now, you can get in.
+    On the table inside the enclosure you will find a Stick of gum (it will 
+give you an unlimited number of sticks of gum). Going back into your item 
+menu, and pulling up the External Items scrollbox, you will now see Doorpass
+and, if you scroll Up or Down, Stick of gum. Unlike Doorpass, Stick of gum 
+is intended to be an useable item (and in this case has a quantity value). 
+If you select Enter to use that item, you will enjoy the cool spearmint taste 
+of Stick of gum, and the number of that item that you own will go down by 
+one. If you chew the last one, that item is removed from your inventory. 
+Upon leaving the enclosure, you get a message that you have surrendered your 
+Doorpass. If you have chewed your last Stick of gum, a check of your 
+external items scrollbox will reveal the message
+<all you have is an empty sack!>. You can go back to the first table to get
+a Doorpass again if you wish, and test the process as many times as you like.
+    The next section will cover in more detail exactly how all this works so
+you can write your own .IGMs to use external items.
+----------------------------------------------------------------------------    
+
+V. WRITING AN IGM THAT USES EXTERNAL ITEMS.
+............................................................................. 
+ 1. Defining an external item
+    
+    To create your own external item, you need to write a routine in a .REF
+file that defines the following properties of the item: It's name, the
+location of the routine of what that item does, and whether it is an item
+that a player can have more than one of. Most typically the routine will be 
+included in the .REF file used for the IGM.
+The following examples are taken from SORRY.REF:
+
+@#stickgum
+@do `s06 is Stick`|of`|gum
+@do `s07 is gum
+@do `s08 is sorry.ref
+@do `s09 is gum.idf
+@run install in install.ref
+@closescript
+
+@#doorpass
+@do `s06 is Doorpass
+@do `s07 is nouse
+@do `s08 is item99.ref
+@do `s09 is NIL
+@run install in install.ref
+@closescript
+
+    To create a routine defining an external item, you must use the
+following format: (You MUST use string variables s06-s09, as given) 
+
+@#routinename
+
+@do `s06 is Item`|name ; The name IS case sensitive, so make sure that you
+;have it spelled the way you want. The name can have spaces, but the spaces
+;MUST be padded here with `| (Yes, `|. See section on INSTALL in 
+;DEVELOPR.DOC for the reason why.) Oh, and please limit the item name to 50
+;characters or less.
+
+@do `s07 is header
+@do `s08 is file.ref
+; These give the header name and file name of the routine where the item's
+;action is located. If the item is only going to be a token (doesn't DO
+;anything by itself), you should put nouse and item99.ref. The item's action
+;routine will typically be a header within the .REF file for the IGM you have
+;written, and it will basicly do anything you can detail in a .REF file.
+;Lord2's ITEMS.REF contains many examples of routines for an item's action.
+
+@do `s09 is ITEM.IDF ; Ordinarily, a player will simply either own an 
+;item or not. If the item needs to have a quantity value, this value must
+;be referenced from an .IDF file for that item. If the player will never
+;need more than one of an item, s09 should be set to NIL.
+
+@run install in install.ref ; this is where the action really begins. After
+;string variables s06 through s09 are set, running this routine starts the
+;actual process of installation, using the data written to the string
+;variables.
+
+@closescript ; end of item definition.
+
+............................................................................
+ 2. Checking for possession of an external item
+    
+    Next is how to check to see if a player has a particular external item.
+This is because checking to see if they own the item is a necessary first
+step to either giving them the item or taking it from them. It can also be
+used as a "token" to determine whether or not a particular action can take
+place. This is used in the example SORRY.REF to determine if the player can 
+enter the enclosure. In SORRY.REF we find:
+
+@#hotspot1
+@do `p29 is &playernum
+@routine Doorpass in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 1 then do
+ @begin
+ @do saybar
+Your Doorpass grants you admission!
+ @do x is 25
+ @do y is 9
+ @update
+ @end
+@if `p20 is 0 then do
+ @begin
+ @do moveback
+ @do saybar
+You must have a Doorpass to pass through
+ @end
+@closescript
+ 
+    The steps of the routine to check for possession of an item are:
+
+@do `p29 is &playernum 
+;This innocent looking line of code is vital, it must
+;ALWAYS be done immediately before doing the routine to get the item info.
+;This is because if an item has an .IDF, it uses the value of &playernum to
+;determine how many of that item the current player has. And for technical
+;reasons it has to assign that value to a longint variable instead of using
+;&playernum directly. So `p29 must equal &playernum before the following
+;line:
+
+@routine Doorpass in extitems.ref 
+;This runs the routine for the item that you want to check for, in this case 
+;the Doorpass. It runs the label by that name in EXTITEMS.REF, and that 
+;routine sets variables that allow the next command to know which item 
+;is being referenced:
+
+@routine bitcheck in item99.ref
+;To make a long story short, this determines if the player owns that 
+;external item or not, returning `p20 = 0 for no and `p20 = 1 for yes. 
+;DEVELOPR.DOC has more information on the mechanics of the procedure.
+
+    The rest of @#hotspot1 handles what to do depending on whether `p20 is
+0 or 1, either letting them through or telling them they have to have a
+Doorpass.
+
+............................................................................ 
+ 3. Giving a player an external item
+    
+    Once an external item is available, some way must exist for a player to
+acquire one. This would be done from a "hotspot" on a screen created by the
+IGM writer. The routine called by the hotspot could simply give them the item
+directly, or could involve a menu, an encounter with a game character, or
+some other indirect way. One way or another, it would involve running a
+routine similar to the one given below from SORRY.REF:
+
+@#hotspot2
+@do moveback
+@do `p29 is &playernum
+@routine Doorpass in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 0 then do
+ @begin
+ @routine giveitem in item99.ref
+ @do saybar
+You just found a Doorpass!
+ @do goto finished
+ @end
+@do saybar
+You see a spot where something used to be.
+@label finished
+@closescript
+
+    The routine works as follows. First, it goes through the steps to check
+to see if they already have the item. Then:
+
+@if `p20 is 0 then do
+ @begin
+ @routine giveitem in item99.ref
+ @do saybar
+You just found an Doorpass!
+ @do goto finished
+ @end
+;If they don't already have the item, the routine @#giveitem in ITEM99.REF is 
+;run. This gives them an "empty sack" if they don't already have any external
+;items, and then gives them the external item. 
+    And no, you can't just run the routine @#giveitem to give them multiple 
+copies of an item; @#giveitem can only set a flag from no to yes, and
+deliberately bypassing the value of `p20 will only foul up the player's 
+external item inventory. The routine for giving a player a Stick of gum shows
+the proper way to do external items with a quantity:
+
+@#hotspot3
+@do moveback
+@do `p29 is &playernum
+@routine Stick`xof`xgum in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 0 then do
+ @begin
+ @datasave gum.idf &playernum 0
+ @routine giveitem in item99.ref
+ @end
+@dataload gum.idf &playernum `p30
+@do `p30 + 1
+@datasave gum.idf &playernum `p30
+@do saybar
+You find a stick of gum!
+@closescript
+
+    Two extra things to cover: First, for the line:
+
+@routine Stick`xof`xgum in extitems.ref
+    
+    If the item name has spaces, they should be padded here with `x, the
+standard way Lord2 uses to pad spaces in a string variable. And then if they
+don't have any of a multiple item, there should be a line like:
+
+@datasave gum.idf &playernum 0
+
+    This ensures that player's record in the item's .IDF file is zeroed out
+(otherwise it's possible that by losing their Item 99, their inventory was
+erased, but the item.idf file would not have been updated.)
+
+Anyway, in this example, the check to see if they own the item Stick of gum
+is done, and if they don't already have it they are given it. Then:
+
+@dataload gum.idf &playernum `p30
+@do `p30 + 1
+@datasave gum.idf &playernum `p30
+;Any external item that a player will have more than one of must have an
+;associated .IDF file containing the number of that item that each player
+;owns. In this case, the number they previously owned is loaded, incremented
+;by one, then saved back to the file GUM.IDF.
+
+    For purposes of demonstration, the examples used in SORRY.REF allow the
+player to acquire the items an unlimited number of times, giving them another
+Doorpass if they've lost their first one, or incrementing the number of
+Stick of gum each time they visit that table. Usually however, you will want
+to write your .REF so that once they've visited a spot, they cannot get the
+item again. For external items without a quantity, that can be done simply by 
+testing to see if they already have one. For items with a quantity, a more
+elaborate procedure is necessary. In Lord2, whenever someone gets an item 
+such as a potion from a table, a bit is set in a byte variable, forever
+flagging the fact that they've been there. To do something similar with
+external items, the routine for that hotspot will have to include it's own
+.IDF file, with the routine checking the value stored there to see if the 
+player has ever been there before. If you have multiple hotspots in your IGM 
+that will need that feature and don't want to have to include multiple .IDF 
+files, you might want to read the file DEVELOPR.DOC, for the explanation on
+ITEM99.REF, and how the label loop and the routine @#bitcheck work there. It
+explains how you can use the value of a single long integer as 30 binary 
+bits, each of which can be used as a yes or no flag (which is exactly how 
+players' external item inventories are recorded!)
+
+.............................................................................
+ 4. Taking away an external item.
+
+    Finally, you might want to delete an external item from a player's
+inventory, if it is an item that's intended to be expended upon use. For the
+Doorpass in SORRY.REF, that is done by:
+
+@#hotspot4
+@do moveback
+@do `p29 is &playernum
+@routine Doorpass in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 1 then do
+ @begin
+ @routine takeitem in item99.ref
+ @do saybar
+You surrender your Doorpass upon exiting
+ @end
+@do x is 28
+@do y is 9
+@update
+@end
+@closescript
+    
+    Similar to the routine for giving an external item, only here the routine
+called after the bitcheck is @#takeitem in ITEM99.REF.
+    For items with a quantity, the routine for using those items will 
+usually include reducing the number of that item by one, and should run 
+the @#takeitem routine if the number reaches zero. This is illustrated by the
+routine @#gum in SORRY.REF:
+
+@#gum
+@dataload gum.idf &playernum `p30
+@if `p30 less 1 then do
+ @begin
+ @run errorC in item99.ref
+ @end
+@do `p30 - 1
+@datasave gum.idf &playernum `p30
+@clearblock 13 23
+@do move 1 14
+@show
+                     You chew a stick of gum......
+                         
+                     -Mmm! It's delicious!
+
+                    (you now have `p30 of 'em)
+`k
+@if `p30 is 0 then do
+ @begin
+ @routine takeitem in item99.ref
+ @run menu in item99.ref
+ @end
+@run getname in item99.ref
+@closescript
+
+.............................................................................
+ 5. Writing a batch file to install external items.
+
+    For the ease of the end user, a batch file should be used to run the
+routines to install the external items that an IGM will use. This will also
+ensure that the items necessary for the IGM to work right are automatically
+added when the IGM is installed to Lord2. SORRY.BAT is given here as an
+example:
+
+@echo off
+rem automatically adds SORRY.IGM and associated external items
+if not exist igm.exe goto cant
+if not exist sorry.igm goto cant
+if not exist sorry.dat goto cant
+if not exist extitems.dat goto cant
+if not exist install.ref goto cant
+if not exist sorry.ref goto cant
+igm sorry.igm
+echo igm installed, ready to install external items
+pause
+echo adding external item doorpass
+call lord2 doorpass+sorry.ref
+echo ready to install next external item
+pause
+echo adding external item stickgum
+call lord2 stickgum+sorry.ref
+echo all finished!
+goto end
+:cant
+echo one or more files needed to install igm are not in directory
+:end
+
+First, the batch file confirms that all necessary files are there. Then
+IGM.EXE is run to add the screen data. Then for each item to be installed,
+we have a line similar to : 
+call lord2 doorpass+sorry.ref
+
+This calls the batch file lord2.bat to run Lord2 with the parameters of the
+routine where the item is defined (see chapter V, section 1, Defining an
+External Item). 
+
+-----------------------------------------------------------------------------
+
+VI. DELETING AN EXTERNAL ITEM FROM THE GAME
+
+    Finally, you might decide to remove an .IGM from your game, and any
+external items associated with it. To remove an external item, you would type
+at your Lord2 directory's DOS prompt:
+
+lord2 deinstal+deinstal.ref
+
+    This will then prompt you for the name of the item you wish to remove 
+from the list of items in EXTITEMS.DAT and EXTITEMS.REF. Type the name of the
+item normally, with spaces if there are any, but name will be case sensitive.
+    Provided you have typed a valid name, it will then begin the deinstall
+procedure. Like the install, file processing might take a minute or two.
+When the files are processed, it will then ensure that the deleted item is
+removed from the players' external item inventories.
+
+-----------------------------------------------------------------------------
+
+VII. ADDENDUM: FURTHER INFORMATION FOR BETA TESTERS.
+............................................................................
+ 1. Drawbacks and limitations of Externally Defined Items.
+
+    Externally defined items do have some limitations. In a sense, they
+aren't "real" items at all- just a very fancy way of running routines based
+on flags set by the value stored for each player in EXTITEMS.IDF. External
+items cannot be recognized by the buymanager or sellmanager routines used by
+Lord2's stores and pawnshops (although a suitably written .REF might be able
+to create special stores for them). They have no intrinsic properties, such
+as a gold value. The Give Item option in the Hail Player menu won't work
+with them, and if you give someone your Item 99, they will NOT get the items 
+you had.
+    And most sadly of all, I don't see any way to use external items as 
+either armor or weapons. As far as I know, the & variables used for the
+player's armor and weapon can't be written to, only read. If anyone out there
+have any ideas on how to get around these limitations, I would be happy to
+hear them.
+............................................................................
+ 2. Author's postscript:
+    
+    If you've read this far, I presume it's because you're interested in the
+External Items concept and would like to give it a try. This package is the 
+result of a large amount of time, work, dispair, hope, and inspiration. I am
+NOT a skilled programmer, and I can only hope no insurmountable bugs turn up.
+I feel this package wasn't written, so much as it evolved. As it is, the 
+routines as currently written function, but may not meet more experienced
+programmer's standards of neatness or structure. Or you may have suggestions
+about minor features such as the appearence of the external item menu.
+Provided anyone out there thinks this package is a usefull enough concept to
+be worth trying to improve, I would be happy for any advice you might have
+to offer.
+    The often aforementioned file DEVELOPR.DOC goes into more detail on the
+mechanics of exactly how all this package works, and the reasoning behind
+why it is written as it is.  

@@ -1,0 +1,1328 @@
+; Script file BATTLE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:27 2001
+
+@DECLARE sign01 000002153
+@DECLARE sign02 000002579
+@DECLARE mozuz 000002672
+@DECLARE heymoz 000003342
+@DECLARE done 000003486
+@DECLARE gone 000003497
+@DECLARE sorry 000003528
+@DECLARE codsod1 000003603
+@DECLARE codsod2 000003682
+@DECLARE codsod3 000003756
+@DECLARE codsod4 000003837
+@DECLARE codsod5 000003901
+@DECLARE codsod6 000004016
+@DECLARE codsod7 000004096
+@DECLARE sharsod1 000004199
+@DECLARE sharsod2 000004277
+@DECLARE sharsod3 000004345
+@DECLARE sharsod4 000004461
+@DECLARE sharsod5 000004547
+@DECLARE sharsod6 000004667
+@DECLARE sharsod7 000004747
+@DECLARE codsod2 000004823
+@DECLARE powsod2 000004889
+@DECLARE powsod1 000004958
+@DECLARE powsod3 000005015
+@DECLARE powsod4 000005077
+@DECLARE powsod5 000005136
+@DECLARE powsod6 000005250
+@DECLARE powsod7 000005320
+@DECLARE entcasp 000005456
+@DECLARE extcasp 000005581
+@DECLARE armorp 000005705
+@DECLARE spyp 000005952
+@DECLARE guydead 000006021
+@DECLARE pp1a 000006216
+@DECLARE pp1b 000006427
+@DECLARE pp1c 000006631
+@DECLARE pigguyp 000006842
+@DECLARE treeguyp 000006937
+@DECLARE chop 000007374
+@DECLARE shaspy 000008146
+@DECLARE sleep 000008337
+@DECLARE getbeer 000008950
+@DECLARE drunk 000009871
+@DECLARE soldpow 000009936
+@DECLARE drkheal 000010049
+@DECLARE locked 000010508
+@DECLARE power 000010568
+@DECLARE power2 000010709
+@DECLARE miqueen 000013239
+@DECLARE queen 000014580
+@DECLARE sparebub 000014767
+@DECLARE arrows 000014860
+@DECLARE randev 000015682
+@DECLARE getfight 000016141
+@DECLARE monster1 000016700
+@DECLARE monster2 000017400
+@DECLARE monster3 000018109
+@DECLARE monster4 000018807
+@DECLARE monster5 000019513
+@DECLARE monster6 000020220
+@DECLARE monster7 000020961
+@DECLARE monster8 000021639
+@DECLARE monster9 000022333
+@DECLARE monster10 000023038
+@DECLARE merc 000023221
+@DECLARE randomm 000023801
+@NOCHECK
+; End of .REF index
+
+;Battlefield by Codax and Dragon's Den Ultd v .5
+;http://www.geocities.com/SiliconValley/Way/9982/index.html
+;this file has: Mozuz, signs, 1linerpeople, and Power's Castle
+@#sign01
+@do moveback
+@clearblock 21 21
+@do move 9 21
+@do write
+`r1`$/-------------------------------------------------\
+@do move 9 22
+@do write
+`r1`$|Warning!!!  There is a Three Way War going on    |
+@do move 9 23
+@do write
+`r1`$|Steer clear of this area!  Enter at your own risk|
+@do move 9 24
+@do write
+`r1`$\_________________________________________________/`l`l`l`l`l`l
+@clearblock 21 24
+@do statbar
+ 
+@#sign02
+@do moveback
+@do saybar
+<---Shara's Burning Palace         Battlegrounds --->
+ 
+@#mozuz
+@do moveback
+@show
+`r0`c  `r1`%  Meeting with an old guy  `r0`0
+ 
+  "Hey there sonney, I'm Mozuz!"`2 and old man states.
+`$
+  "Uh....hi,  Listen old man..."`0
+ 
+  Mozuz:  That's Mozuz s&boy!
+`$
+  "Yeah, fine, how am I suposed to get across this river here?"
+`0
+  Mozuz:  Easy I'll just wave my staff and the waters will part for you.`$
+ 
+  "OoooK"
+`0
+  Mozuz: Of course for a small fee, say `$500?
+ 
+@do `v01 is 1
+@choice
+<money 499 Sure why not
+Sorry, don't have the cash
+@
+@if responce is 2 then do
+@begin
+@run gone
+@end
+@if responce is 1 then do
+@begin
+@drawmap
+@update
+@do money - 500
+@run parth2o in battlefx.ref
+@end
+ 
+@#heymoz
+@do saybar
+HEY MOZUZ!  HOWZABOUT OPENING YOUR WATER UP!!!!
+@Key
+@do saybar
+Mozuz:  Ok here we go!
+@run parth2o in battlefx.ref
+ 
+@#done
+ 
+@#gone
+@drawmap
+@update
+ 
+@#sorry
+@do saybar
+Sorry, you cannot do that
+@key
+@do goto power
+ 
+@#codsod1
+@do saybar
+I would rather die than be captured by you Phoenixi
+ 
+@#codsod2
+@do moveback
+@do saybar
+I love to sit under these trees!
+ 
+@#codsod3
+@do moveback
+@do saybar
+I hate the Phoenix! I wanna killem all!
+ 
+@#codsod4
+@do moveback
+@do saybar
+I hear Codax is single
+ 
+@#codsod5
+@do moveback
+@do saybar
+Dragons fighting Dragons fighting Phoenixi! If only we could just be pals
+ 
+@#codsod6
+@do moveback
+@do saybar
+I hear that Shara is out to kill Codax
+ 
+@#codsod7
+@do moveback
+@do saybar
+I hear Codax has a great new weapon to kill off his enemies!
+ 
+@#sharsod1
+@do saybar
+Kill me if you will but I'll be back in 100 years
+ 
+@#sharsod2
+@do saybar
+Can't talk, fighting for my Queen Shara
+ 
+@#sharsod3
+@do moveback
+@do saybar
+We Phoexnix love and worship the lava that comes from our burining palace
+ 
+@#sharsod4
+@do moveback
+@do saybar
+Just 5 more years till my next regineration
+ 
+@#sharsod5
+@do moveback
+@do saybar
+Queen Shara, the greatest Phoexnix, is looking for someone to help run things
+ 
+@#sharsod6
+@do moveback
+@do saybar
+I'm one of Shara's greatest warriors!
+ 
+@#sharsod7
+@do moveback
+@do saybar
+General Cyrus is sooooo H-O-T-T HOTT!
+@#codsod2
+@do saybar
+Can't talk, fighting for my King Codax
+ 
+@#powsod2
+@do saybar
+Power is my master I shall do his bidding
+ 
+@#powsod1
+@do saybar
+May Power Protect My Actions!
+ 
+@#powsod3
+@do moveback
+@do saybar
+Evil is the greatest
+ 
+@#powsod4
+@do moveback
+@do saybar
+I hate Everything
+ 
+@#powsod5
+@do moveback
+@do saybar
+I had a Smack-rod but I lost it!  Now I can't get off this stupid island
+ 
+@#powsod6
+@do moveback
+@do saybar
+Guess what! Power is single!
+ 
+@#powsod7
+@do moveback
+@do saybar
+Black is not necessarily a bad color, just bad steriotypes!
+ 
+;----------Power's Castle--------
+@#entcasp
+@do map is 644
+@loadmap 644
+@do `p30 is 1
+@routine fade in battlefx.ref
+@do x is 38
+@do y is 19
+@update
+ 
+@#extcasp
+@do map is 373
+@loadmap 373
+@do `p30 is 2
+@routine fade in battlefx.ref
+@do x is 35
+@do y is 14
+@update
+ 
+@#armorp
+@do moveback
+@busy
+@show
+`r0`c  `r1  Evile's Armor  `r0`0
+ 
+  "Hello there, s&sir!  Could I interest you in some armor?"
+ 
+@buymanager
+10
+14
+37
+59
+@drawmap
+@update
+ 
+;@if bitcheck (bytevar) (which 0-7) (0=no 1=yes) then do
+@#spyp
+@do moveback
+@if bitcheck `t20 0 1 then do
+@begin
+@label guydead
+@do saybar
+This person is Dead
+@run done
+@end
+@if bitcheck `t20 0 0 then do
+@begin
+@do saybar
+Spy:  I'm a spy for Codax!  If you want to survive you should know our code
+@end
+ 
+@#pp1a
+@do moveback
+@if bitcheck `t20 1 1 then do
+@begin
+@do goto guydead
+@end
+@if bitcheck `t20 1 0 then do
+@begin 
+@do saybar
+How do you like these black trees!  I marvel at them everyday!!
+@end
+ 
+@#pp1b
+@do moveback
+@if bitcheck `t20 2 1 then do
+@begin
+@do goto guydead
+@end
+@if bitcheck `t20 2 0 then do
+@begin
+@do saybar
+Our soldiers are the best!  They blend in with the grass!
+@end
+ 
+@#pp1c
+@do moveback
+@if bitcheck `t20 3 1 then do
+@begin
+@do goto guydead
+@end
+@if bitcheck `t20 3 0 then do
+@begin
+@do saybar
+Welcome to Power's Castle.  I do so hope I will be his Queen!
+@end
+ 
+@#pigguyp
+@do moveback
+@do saybar
+I wish this war was over.  My pigs are scared stiff!
+ 
+@#treeguyp
+@do moveback
+@if bitcheck `t21 2 0 then do
+@begin
+ 
+@if `i15 > 0 then do
+@begin
+@do move 3 21
+@do write
+`0Can I have Your `+15?`2(`0Y`2,`0N`2)
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do saybar
+FINE BE THAT WAY!!!!!!
+@run done
+@end
+ 
+@if `s01 is Y then do
+@begin
+@bitset `t21 2 1
+@do `p07 - 5
+@do `p18 + 5
+@do saybar
+Thanx buddy!  I really needed this!  `4You get -5 alignment and 5 QP 
+@label chop
+@key
+@DO SAYBAR
+ 
+@do saybar
+Now to cut down this tree!!! <CHOP>`L.`L.`L.<CHOP>`l.`l.`l.<CHOP>`l`l<TIMBER> 
+@do move 35 6
+@do write
+`r2 `r0
+@run done
+@end
+@end
+ 
+@if `i15 < 1 then do
+@begin
+@show
+`r0`c  `r1  Loggers are your friends  `r0`0
+ 
+  "Hey buddy!"`2 A strage man says `0"I need to chop this tree down, will
+   you lend a fella a hand?"
+`k`$
+  "What do you need with me?"
+`k`0
+  "Just bring me a `2Huge Axe`0 so I can cut this tree down."
+`k`$
+  "Whatso important about _this_ tree?"
+`k`0
+  "It's called the Tree of `%Hope`0 and Power Hates it!  So it's coming down
+`k
+@drawmap
+@update
+@end
+@end
+ 
+@if bitcheck `t21 2 1 then do
+@begin
+@do saybar
+Stupid tree grew back!  Oh well I'll fix that!
+@do goto chop
+@end
+ 
+@#shaspy
+@do moveback
+@if bitcheck `t20 4 1 then do
+@begin
+@do saybar
+This spy is dead!
+@end
+@if bitcheck `t20 4 0 then do
+@begin
+@do saybar
+Do you have any dirt on Power?
+@end
+ 
+@#Sleep
+@do moveback
+@do move 3 22
+@do write
+`r0`2Would you like to rest?  Just `$$100`2! (`0Y`2,`0N`2)
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@clearblock 22 22
+@run done
+@end
+@if `s01 is Y then do
+@begin
+@if money < 100 then do
+@begin
+@clearblock 22 23
+@do money is 0
+@Do saybar
+You don't have that kind of money!!!
+@run done
+@end
+@if money > 99 then do
+@begin
+@clearblock 22 23
+@do money - 100
+@do `p25 is MAP
+@loadmap 1289
+@do map is 1289
+@routine fade in battlefx.ref
+@loadmap `p25
+@do map is `p25
+@do move 35 10
+@do write
+Sleep Well!`k
+@halt
+@end
+@end
+ 
+@#getbeer
+@if money < 200 then do
+@begin
+@do saybar
+Go away.....come back when you have at least 200 gold!!!
+@run done
+@end
+@if money > 199 then do
+@begin
+@drawpart 65 15
+@drawpart 64 16
+@drawpart 66 16
+@update
+@do move 3 22
+@do write
+`r0`2 Hey fella whatcha want? (`0A`2le,`0W`2ine,`8D`7ark Exlixer`2,`0Q`2uit)
+@do readspecial `s01 QAWD
+@clearblock 22 22
+@if `s01 is D then do
+@begin
+@do money - 200
+@do `p02 is `p03
+@do saybar
+Huh!  You want the Dark Elixer!!!  Well, um, ooooK.  Here it comes
+@run getale in battlefx.ref
+@end
+ 
+@if `s01 is W then do
+@begin
+@do money - 50
+@do saybar
+Ahhhh.....Wine....what a wonderful drink
+@run getale in battlefx.ref
+@end
+ 
+@if `s01 is A then do
+@begin
+@do money - 10
+@do saybar
+Ahhhh Ale.....Here ya go!
+@run getale in battlefx.ref
+@end
+ 
+@if `s01 is Q then do
+@begin
+@do saybar
+Then get out!!!!!
+@run done
+@do moveback
+@end
+@end
+ 
+@#drunk
+@do moveback
+@do saybar
+Take me drunk I'm home!
+ 
+@#soldpow
+@do moveback
+@do saybar
+I feel I've sold the great Power out!  For I have lost my will to fight
+ 
+@#drkheal
+@do moveback
+@show
+`r0`c  `r1  Would you like to be healed?  `r0`7
+ 
+ 
+    I am Arstumious the Dark Healer!  I will heal you for 1500 gold!
+    How about it?`/`/
+@do `v01 is 1
+@choice
+<money 1499 Sure
+Leave
+@
+@if responce is 2 then do
+@begin
+@run gone
+@end
+@if responce is 1 then do
+@begin
+@do `p02 is `p03
+@do money - 1500
+@show
+ 
+ 
+`7
+  There all better.  Take care in this world of good and evil!
+`k
+@run gone
+@end
+ 
+@#locked
+@do moveback
+@do saybar
+This door is locked!
+ 
+@#power
+@do moveback
+@if bitcheck `t20 7 1 then do
+@begin
+@do saybar
+Power is dead!
+@end
+@if bitcheck `t20 7 0 then do
+@begin
+@label power2
+@if map is 484 then `s02 is Power
+@if `s02 is Power then `s03 is Who's`xgot`xthe`xPower
+@do `p20 random 5 1
+@if `p20 is 1 then `s01 is Did`xyou`xhear`xthe`xone`xabout`xthe`xsamon?
+@if `p20 is 2 then `s01 is Whats`xblack`xand`xwhite`xand`xread`xall`xover?
+@if `p20 is 3 then `s01 is How`xmuch`xwood`xcoulda`xwoodchuck`xchuck?
+@if `p20 is 4 then `s01 is Why`xdid`xthe`xdragon`xcross`xthe`xstreet?
+@if `p20 is 5 then `s01 is Nice`xshoes.
+@show
+`r0`c  `r1`%  `s03  `r0`2
+ 
+ 
+  "`0What do you want from me?  I'm a busy dragon!!!`2"  `s02 Booms.
+			Royal Favor: `p82
+ 
+@do `v01 is 1
+@choice
+=`p82 0 How about `$$1,000,000,000
+>`p82 0 `s01
+=`p82 1 Nice castle...Looks like all the other ones I've seen
+>`p82 1 =&sex 0 Flirt
+>`p82 1 Why do you 3 fight?
+>`p82 3 =`p81 0 I would like to be your assasin!
+>`p82 49 =&sex 0 =`p83 0 Can I be your Queen?
+-`t21 0 >`p80 1 I've killed those spys!
+>`p84 1 I've killed those Royals!
+Leave
+@
+ 
+@if responce is 6 then do
+@begin
+@run assasin in battle2.ref
+@end
+ 
+@if responce is 4 then do
+@begin
+@routine flirt in battle2.ref
+@end
+ 
+@if responce is 3 then do
+@begin
+@show
+`\`\`\`\`0  'Sadly It's true, we all hired the same person to our castles
+ The lowsy bum cut corners and made all the castles almost identical!!!
+ You have alot of backbone for asking that!`k
+@do `p82 + 1
+@Do goto power2
+@end
+  
+@if responce is 1 then do
+@begin
+@show
+`\`\`\`\`0   'HAHAHAHAHAHAAHAHHAAaa!!!  You amuze me `n!`l`l`l`l
+@do `p82 + 1
+@do goto power2
+@end
+ 
+@if responce is 2 then do
+@begin
+@show
+`\`\`\`0`\  'Yawn.....Heard that one already....Go away!
+`k
+@do `p82 is 0
+@routine gone in battlefx.ref
+@update
+@do statbar
+@end
+ 
+ 
+@if responce is 5 then do
+@begin
+@do `p82 + 1
+@run story in battlest.ref
+@end
+ 
+@if responce is 10 then do
+@begin
+@routine gone in battlefx.ref
+@update
+@do statbar
+@end
+ 
+@if responce is 9 then do
+@begin
+@bitset `t21 1 1
+@show
+`\`\`\`\`\0  Wonderful!!!!  Hahaha Now I rule this area!!!  The war is
+  finaly over!!!  And I won!!!`k  
+@run `s01end in battlest.ref
+@end
+ 
+ 
+@if responce is 8 then do
+@begin
+@if `s01 is Power then `s03 is Codax
+@bitset `t21 0 1
+@show
+`\`\`\`\`0   Good You've finaly killed those spys!  I begining to like you!
+ Next, you should Kill`l.`l.`l. Shara and `s03!
+ `%You get 10 Quest Points and Royal Favor up!
+`k
+@
+@do `p18 + 10
+@do `p82 + 3
+@do `p82 + `p80
+@routine gone in battlefx.ref
+@update
+@end
+ 
+@if responce is 7 then do
+@begin
+@label miqueen
+@if battleqs.cod exists false then do
+@begin
+@writefile battleqs.cod
+0
+0
+0
+@
+@do goto miqueen
+@end
+@if battleqs.cod exists true then do
+@begin
+@readfile battleqs.cod
+`p30
+`p29
+`p28
+@
+@if `s02 is Power then do
+@begin
+@if `p30 not 0 then do
+@begin
+@do `s01 getname `p30
+@show
+`\`\`\`\`0  "Sorry `n, but `s01 is already my Queen.`k
+@do goto power2
+@end
+@if `p30 is 0 then do
+@begin
+@do write
+`\`\`\`\`0 Power Looks up and down your body`l.`l.`l.
+@do `p20 is 0
+@if `p07 < -100 then `p20 + 1
+@if `p07 > -99 then do
+@begin
+@do write
+`0  You need to be more Evil`l.`l.`l.
+@end
+@if `p08 > 60 then `p20 + 1
+@if `p08 < 60 then do
+@begin
+@do write
+`0  Your not that cute`l.`l.`l.
+@end
+@if `p20 not 2 then do
+@begin
+@do write
+`\`\Sorry you just aren't Queen Material `k
+@do goto power2
+@end
+@if `p20 is 2 then do
+@begin
+@do delete battleqs.cod
+@writefile battleqs.cod
+&playernum
+`p29
+`p28
+@
+@do `p83 is 1
+@do write
+`\`\Where have you been all my life!`k
+@writefile lognow.txt
+ 
+ `%    ATTENTION!!!!`0   POWER `2HAS FOUND A QUEEN!!!  PEASANTS ARE RESTLESS
+                    SHE IS THE BEAUTIFUL `0`n
+@do `p85 + 5000
+@do `p86 is &time
+@routine gone in battlefx.ref
+@update
+@do saybar
+Congradulations!!!  You are Power's new Queen!!!
+@end
+@end
+@end
+@end
+@end
+@end
+ 
+ 
+@#queen
+@if `p83 not 1 then do
+@begin
+@do moveback
+@do saybar
+Sorry You arn't the Queen!!!
+@run done
+@end
+@if `p83 is 2 then do
+@begin
+@run queen in battle2.ref
+@end
+ 
+ 
+@#sparebub
+@do moveback
+@do saybar
+Stay back!!!  These are the bulbs for this castle!!!
+ 
+@#arrows
+@do moveback
+@do `p20 is 0
+@show
+`r0 `c  `r1  `%Arrows 'R' Us  `r0`0
+ 
+	"Hallo taday sur!"`2  Says a small man behind the counter
+`0  "Ow many arrows can oye be getten you taday?"
+ 
+@do move 50 6
+@do readnum 4 `p20
+@do `p20 is `v40
+@do `p21 is `p20
+@do `p21 * 10
+@do `p22 is money
+@do `p22 - 1
+@if `p21 > money then do
+@begin
+@do move 5 8
+@do write
+Sorry Sir but you don't have that kinda money!`l`l`l
+@run arrows
+@end
+@if `p21 = money then do
+@begin
+@do `p90 + `p20
+@do money - `p21
+@clearblock 8 8
+@do move 5 10
+@do write
+Here you go! `p20 Arrows for a `$$`p21`k
+@drawmap
+@update
+@run done
+@end
+@if `p21 < `p22 then do
+@begin
+@do `p90 + `p20
+@do money - `p21
+@clearblock 8 8
+@do move 5 10
+@do write
+Here you go! `p20 Arrows for a `$$`p21`k
+@drawmap
+@update
+@end
+ 
+@#randev
+@do `p20 random 2 1
+@if `p20 is 1 then do
+@begin
+@run getlost in battlefx.ref
+@end
+ 
+@if `p20 is 2 then do
+@begin
+@routine march in battlefx.ref
+@if x > 33 then do
+@begin
+@if x < 46 then do
+@begin
+@do `p20 random 5 1
+ 
+@if `p20 is 1 then do
+@begin
+@do saybar
+You are trampled to Death!!!
+@do enemy is being`xtrampled`xto`xdeath
+@run die in gametxt.ref
+@end
+@if `p20 not 1 then do
+@begin
+@do `p02 is 1
+@end
+@end
+@end
+ 
+@#getfight
+@do `p20 random 10 1
+@if `p20 is 1 then do
+@begin
+@run monster1
+@end
+@if `p20 is 2 then do
+@begin
+@run monster2
+@end
+@if `p20 is 3 then do
+@begin
+@run monster3
+@end
+@if `p20 is 4 then do
+@begin
+@run monster4
+@end
+@if `p20 is 5 then do
+@begin
+@run monster5
+@end
+@if `p20 is 6 then do
+@begin
+@run monster6
+@end
+@if `p20 is 7 then do
+@begin
+@run monster7
+@end
+@if `p20 is 8 then do
+@begin
+@run monster8
+@end
+@if `p20 is 9 then do
+@begin
+@run monster9
+@end
+@if `p20 is 10 then do
+@begin
+@run monster10
+@end
+ 
+@#monster1
+@if `p81 is 1 then do
+@begin
+@do saybar
+Hello fellow Warrior!  I work for Power as well!  Fight hard!
+@end
+@if `p81 not 1 then do
+@begin
+@fight
+;name
+Power's Special Forces
+;string said when you see him
+A screaming warrior in dark dragon armor attacks
+;power move kill string
+What a loser!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits with its sonic yell|90
+pounces you|90
+Slashes|100
+NONE|NONE
+NONE|NONE
+;defense
+130
+;gold reward
+300
+;experience
+210
+;hit points
+300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@en
+ 
+@#monster2
+@if `p81 is 1 then do
+@begin
+@do saybar
+Hello fellow Warrior!  I work for Power as well!  Fight hard!
+@end
+@if `p81 not 1 then do
+@begin
+@fight
+;name
+Power's Special Forces
+;string said when you see him
+A huge lizardman attacks
+;power move kill string
+Looks like he'll be a purse!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Tickles you with it's forked tounge|120
+Tail flips you|90
+Claws your eyes|150
+NONE|NONE
+NONE|NONE
+;defense
+150
+;gold reward
+500
+;experience
+510
+;hit points
+400
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster3
+@if `p81 is 1 then do
+@begin
+@do saybar
+Hello fellow Warrior!  I work for Power as well!  Fight hard!
+@end
+@if `p81 not 1 then do
+@begin
+@fight
+;name
+Power's Elite
+;string said when you see him
+`2A small `0Dragon`2 looms over you!
+;power move kill string
+You find a new respect for yourself...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Spits Acid|150
+Slashes your eyes|170
+Sits on you|92
+NONE|NONE
+NONE|NONE
+;defense
+300
+;gold reward
+1000
+;experience
+1110
+;hit points
+600
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster4
+@if `p81 is 2 then do
+@begin
+@do saybar
+Stay my fellow Phoenix lover!  I shall help you fight!!
+@end
+@if `p81 not 2 then do
+@begin
+@fight
+;name
+Shara's Burn Brigade
+;string said when you see him
+A fire armoured warrior challenges you to battle
+;power move kill string
+Flame armour was no for you match you
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+hugs you|87
+spontaniously-cumbusts|300
+Punches|90
+NONE|NONE
+NONE|NONE
+;defense
+200
+;gold reward
+300
+;experience
+150
+;hit points
+200
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster5
+@if `p81 is 2 then do
+@begin
+@do saybar
+Stay my fellow Phoenix lover!  I shall help you fight!!
+@end
+@if `p81 not 2 then do
+@begin
+@fight
+;name
+Shara's Burning Brigade
+;string said when you see him
+A small bird squaks it's advance!
+;power move kill string
+You wonder if that witch near Stonebrook needs another bird
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+pecks you|87
+divebombs|90
+fire-flaps|200
+NONE|NONE
+NONE|NONE
+;defense
+300
+;gold reward
+400
+;experience
+120
+;hit points
+200
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster6
+@if `p81 is 2 then do
+@begin
+@do saybar
+Stay my fellow Phoenix lover!  I shall help you fight!!
+@end
+@if `p81 not 2 then do
+@begin
+@fight
+;name
+Shara's Phoenix Elite
+;string said when you see him
+A medium sized Phoenix burns brightly in front of you!
+;power move kill string
+"I'll be back to kill you in 100 years!!!"
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+Flame-flaps|100
+picks you up then drops you|110
+Reincarnates a friend|0
+NONE|NONE
+NONE|NONE
+;defense
+400
+;gold reward
+300
+;experience
+1110
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster7
+@if `p81 is 3 then do
+@begin
+@do saybar
+You fight on the right side my friend! May the Dragons Protect You
+@end
+@if `p81 not 3 then do
+@begin
+@fight
+;name
+Codax's Wyre 2nd Class
+;string said when you see him
+A man in armour attacks you!
+;power move kill string
+"May the Dragons Protect my Soul!!"
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slashes|87
+Kicks|90
+chants|100
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+300
+;experience
+110
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster8
+@if `p81 is 3 then do
+@begin
+@do saybar
+You fight on the right side my friend! May the Dragons Protect You
+@end
+@if `p81 not 3 then do
+@begin
+@fight
+;name
+Codax's Wyre 1st Class
+;string said when you see him
+A lizardman hisses his challenge
+;power move kill string
+This one's gotta be a new pair of boots
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Tail-flips|100
+claws you|90
+hisses|120
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+300
+;experience
+190
+;hit points
+400
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster9
+@if `p81 is 3 then do
+@begin
+@do saybar
+You fight on the right side my friend! May the Dragons Protect You
+@end
+@if `p81 not 3 then do
+@begin
+@fight
+;name
+Codax's Wyre Elite
+;string said when you see him
+You see a medium sized `#Purple`2 Dragon!
+;power move kill string
+"I will be avenged!!!"
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Shoots lightning|200
+Breathes fire|100
+Tail-smacks you|110
+NONE|NONE
+NONE|NONE
+;defense
+300
+;gold reward
+1300
+;experience
+1110
+;hit points
+600
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster10
+@do `p20 random 3 1
+@if `p20 is 1 then do
+@begin
+@run getfight
+@end
+@if `p20 is 2 then do
+@begin
+@run merc
+@end
+@if `p20 is 3 then do
+@begin
+@run randomm
+@end
+ 
+@#merc
+@fight
+;name
+Mercenary
+;string said when you see him
+`0"Your hide will bring in quite a fortune!!"`2 He says
+;power move kill string
+He better find a new line of work
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Impersonates Boba Fett|100
+Slashes at you|90
+throws a smokebomb|120
+NONE|NONE
+NONE|NONE
+;defense
+500
+;gold reward
+1300
+;experience
+1910
+;hit points
+1000
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#randomm
+@do `p20 Random 3 1
+@do `p21 Random 90 75
+@do `p22 Random 90 70
+@do `p23 Random 120 50
+@do `p24 Random 230 90
+@do `p25 random 80 50
+@do `p26 random 55 13
+@do `p27 random 130 13
+@fight
+;name
+Random Man
+;string said when you see him
+`$Don't I know you?!?`2 you say
+;power move kill string
+Random Man:  Power...Where are you now?!?!
+;sex - 1 is male, 2 is female, 3 is it
+`p20
+;weapon and strength for the weapon, up to 5
+kicks you|`p25
+punches you|`p26
+bites you|`p27
+NONE|NONE
+NONE|NONE
+;defense
+`p21
+;gold reward
+`p22
+;experience
+`p23
+;hit points
+`p24
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE

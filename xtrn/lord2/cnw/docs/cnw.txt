@@ -1,0 +1,618 @@
+ ﬂ‹€ﬂﬂﬂﬂﬂﬂ€ﬂ          ‹ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ‹ ﬂ‹€ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ‹   ﬂ‹€ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ‹
+   ››ﬁ€€›ﬁ›           ››ﬁ€€€€€ﬂﬂ€€€€ €  ››ﬁ€€€ﬂﬂﬂﬂ€€€›ﬁ›    ››ﬁ€€€€€ﬂﬂ€€€ €
+   ››ﬁ€€ €            ››ﬁ€€€ﬂ‹ﬂﬂ‹ﬁ€€›ﬁ› ››ﬁ€ﬂ‹ﬂﬂﬂﬂ‹ﬂ€›ﬁ›    ››ﬁ€€€ﬂ‹ﬂﬂ‹ﬁ€€ﬁ›
+   ››ﬁ€€›ﬁ›          ﬁ€ﬁ€€€›ﬁ›  €ﬁ€€›ﬁ› ››ﬁ€‹ﬂ‹‹‹‹ﬂ‹ﬂ €     ››ﬁ€€›ﬁ›  €ﬁ€›€
+   ﬁ€ﬁ€€›ﬁ›          ﬁ€ﬁ€€€›ﬁ›  ﬁ›ﬁ€›ﬁ› ﬁ€ﬁ€€€‹‹‹‹ﬂ‹ﬂﬂ      ﬁ€ﬁ€€›ﬁ›  €ﬁ€€ﬁ›
+   ﬁ€ﬁ€€€ €     ‹‹ﬂ€ﬂﬁ€ﬁ€€€€ €  ﬁ›ﬁ€€ € ﬁ€ﬁ€€ﬂ‹ﬂ€‹ﬂ‹        ﬁ€ﬁ€€€ €  ﬁ›ﬁ€ﬁ›
+   ››ﬁ€€€‹ﬂ‹‹ﬂﬂﬂ‹‹ €  ››ﬁ€€€‹ﬂ‹‹ﬂﬁ€€€ € ››ﬁ€›ﬁ›ﬂ‹ﬂ€‹ﬂ‹      ››ﬁ€€€‹ﬂ‹‹ﬂﬁ€›€
+   ››ﬁ€€€€€‹‹€€€€›ﬁ›  ››ﬁ€€€€€‹‹€€€€›ﬁ› ››ﬁ€›ﬁ› ﬂ‹ﬂ€€‹ﬂ‹    ››ﬁ€€€€€‹‹€€€ﬁ›
+  ﬁ€ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ €  ﬂ‹ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ‹ﬂ ﬁ€ﬂﬂﬂﬂ €   ﬂ‹ﬂﬂﬂ ﬂ‹ ﬁ€ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ €
+ ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ   ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ  ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ  ﬂﬂﬂﬂﬂﬂﬂ ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ
+                                  Part II
+     ⁄¬ø≥ ≥⁄ƒø  ⁄ƒ ⁄ƒø⁄ø⁄ø⁄ƒø≥ ⁄ƒø⁄¬ø⁄ƒø  ⁄ø¬⁄ƒøø  ⁄ ø  ⁄⁄ƒø⁄ƒø¬  ¬ƒø
+      ≥ √ƒ¥√ƒ   ≥  ≥ ≥≥¿Ÿ≥√ƒŸ≥ √ƒ  ≥ √ƒ   ≥≥≥√ƒ ≥⁄ø≥ ≥⁄ø≥≥ ≥√¬Ÿ≥  ≥ ≥
+      ¡ Ÿ ¿¿ƒŸ  ¿ƒŸ¿ƒŸŸ  ¿≥  ¿ƒ¿ƒŸ ¡ ¿ƒŸ  ¡¿Ÿ¿ƒŸ¿Ÿ¿Ÿ ¿Ÿ¿Ÿ¿ƒŸ¡¿ ¿ƒŸ¡ƒŸv137.0
+                           Now with 125 NPC CHARACTERS!
+                                                          
+
+                     Packaged by: Joel Gathercole aka Greenie
+                         Last Modified: MAR 17th, 2001
+
+                    http://www.greenmachinebbs.com/lord2/
+                 Please check the site for future versions.
+
+                            Or play the latest at
+                        telnet://greenmachinebbs.com
+
+                Or our alternate connections to our server:
+                           telnet://time.darktech.org
+                           telnet://bobobbs.net
+                           telnet://hdcbbs.net
+
+-------------------------------------0---------------------------------------
+                               -Index of Contents-
+
+        1.0 - Complete New World            3.0 - IGMs
+        1.1 - What is it                    3.1 - 3rdparty IGMs
+        1.2 - Who needs it                  3.2 - CNW FEATURES
+        1.3 - Paths & Files                 3.3 - <merged with 3.2>    
+        1.4 - Title Screen                  3.4 - Removing an IGM
+        1.5 - Who done it                   3.5 - NPCs
+        1.6 - LoRD2 Mailing List            3.6 - Fonts
+                                            3.7 - Make your own CNW IGM
+        2.0 - Installation                  
+        2.1 - Fresh New Game                4.0 - iBBS LoRD 2
+        2.2 - Restart Game                  4.2 - iBBS IGMs 
+        2.3 - Keep Game                     
+        2.4 - Upgrade CNW Game              5.0 - Auto-Update System
+        2.5 - RESET.BAT                     5.1 - Manual Updates
+        2.6 - 1st Player                    
+                                            6.0 - WWW Links
+                                            6.1 - Elysoft.org group
+                                            
+------------------------------------1.0--------------------------------------
+1.0 - Complete New World
+  This is a package set up for sysops that do not have the time
+ to install many IGMs, and to keep checking for overwritting other
+ IGMs. It is an easy way to have most of the GOOD IGMs quickly installed.
+
+        >>>>>>  YOU MUST HAVE LORD2 ALREADY! <<<<<<<<
+        >>>> JUST COPY OVER ALL YOUR LORD2 FILES. <<<
+
+  Get the latest version LoRD2 v1.02 (L2102.ZIP)
+    http://lord.lordlegacy.org/l2102.zip
+    http://greenmachinebbs.com/lord2/files/l2102.zip
+
+  There are 137 external IGMS included in this version, PLUS
+ many other IGMs I have made myself, which have not been
+ released individualy yet (only available in CNW)
+
+ +------------------------------------------------------------------------+
+1.1 - What is it
+   A compilation of the best IGMs for LoRD2: New World. Hence the name
+  "Complete". Also includes many special features which can not be
+  found for the normal New World. (see 3.2 and 3.3)
+
+   In other terms, this is also a "Pre-installed IGMs Package".
+
+   CNW is FREEWARE, and only FREEWARE IGMs will be accepted in CNW.
+  LoRD2 is NOT FREEWARE, even though in my opinion it should be. :)
+  Visit www.gameport.com for details.
+
+   CNW is not LoRD2, its an addition of lord2, you will need a registered
+  copy of LoRD2 to play CNW fully. $15 USD at www.gameport.com.
+
+   CNW has fixed countles bugs from the IGMS which authors have not fixed,
+  or will not fix.
+
+ +------------------------------------------------------------------------+
+1.2 - Who needs it
+  I would say EVERY SysOp who wants LoRD2: New World on their system should
+ have CNW.
+
+  It has been made very easy to setup and maintain, that every lazy SysOp
+ out there that does not want to have to worry about it, will NOT have to
+ worry about it. :)
+
+  Any SysOp who wishes to have many IGMs, but does NOT want to spend the
+ many HOURS of finding good IGMs, installing them, then testing them to
+ see if they will work properly with other IGMs that they have installed.
+ CNW is already setup to handle many IGMs already installed.
+
+ +------------------------------------------------------------------------+
+1.3 - Paths & Files
+    Description of some files and ALL directories in this version:
+
+ /           = main lord2 files, REF and REC files. (removing REC's slowly)
+ /RESET.BAT  = run this when you need to reset the game.
+ /UPDATE.BAT = run this to update to latest version of CNW
+ /INSTALL.BAT= Install a new CNW game.
+ /MAIL/      = lord2 mail files
+ /IGM/       = *.IGM files are here, so you can get quick info on any IGM.
+ /NPC        = NPC *.IDF directory
+ /regconf/   = registry config files  *REMOVED* (should no longer exist)
+ /regdata/   = registry data files  *REMOVED* (should no longer exist)
+ /docs/      = all the document files related to lord2 and the IGMs.
+ /fonts/     = going to store the fonts here for various terms and such.
+
+ +------------------------------------------------------------------------+
+1.4 - Title Screen
+  Humm, its cool isn't it? :)
+
+ +------------------------------------------------------------------------+
+1.5 - Who done it
+  Me of course. Joel Gathercole aka Greenie.
+  ICQ# 16277704
+  greenie@darktech.org
+  SysOp Green Machine WebBBS http://www.greenmachinebbs.com
+  telnet://greenmachinebbs.com
+
+ +------------------------------------------------------------------------+
+1.6 - LoRD2 Mailing List
+  A replacement for the Auto-update, just join the lord2 mailing list,
+ you'll be informed via the list of upgrade for CNW.
+
+  Join it at yahoogroups.com/groups/lord2
+       lord2@yahoogroups.com
+  Send an email to:  lord2-subscribe@yahoogroups.com
+
+  The YahooGroups also offers more useful services;
+   -Database of telnet bbs' to play LoRD2 and play LoRD2:CNW
+    (we've added an igm in v136.1+ to list these places to play, to get
+    your bbs added in next release, make sure you add yourself to the
+    list on egroups.com
+
+   -Files, you can get igms, and the most up to date CNW available from
+    the files section.
+
+   -Links, you can find useful lord2 links, not just CNW stuff!. :)
+
+So, humm, JOIN NOW! :)
+
+------------------------------------2.0--------------------------------------
+2.0 - Installation
+   Complete New World has been made to be extremely easy to install. You
+ should not have any difficulties what so ever. :) In any case, you do
+ have problems, simply contact me (see 1.5)
+
+   You need a copy of the FULL CNW package plus any latest small UPDATE
+ packages which may be available. If so, please run the earliest
+ INSTALL.BAT, then the UPGRADE.BAT if you are upgrading a sub version number
+ like 136.1 or something.
+
+   You DO NOT need to download every small update package. Every update
+ package i create supports all the previous updates.
+
+   So make sure you have eg.
+ CNW-1361.ZIP and CNW-1363.ZIP, no need for cnw-1362.zip in this situation.
+
+   An easy way to see if its a FULL or an UPGRADE is the size, usualy the
+ FULL is more than 2.2megs
+ UPGRADE is less than 1 meg
+
+   Complete New World v137.0+ REQUIRES LoRD2 v1.02. 
+
+  If installing a FULL version like v137.0, I recomend you do a complete
+ new install, not overtop of the old version of CNW. There are lots of
+ files in old CNW that are no longer needed and just takes up space.
+
+ +------------------------------------------------------------------------+
+2.1 - Fresh New Game
+   If you have just installed LORD2 original game, then it'll be easier than
+ other ways of installing.
+
+ Make sure you have LoRD2 v1.02 installed before you install CNW.
+
+ To install a fresh copy of CNW, just run INSTALL.BAT 
+
+ +------------------------------------------------------------------------+
+2.2 - Restart Game (Reset)
+  It is recommended that you do restart a fresh new game if you have not had
+ CNW installed previously.
+ -run RESET.BAT (see 2.5 for details)
+ -run L2CFG.EXE --> RESET GAME
+ -run lord2.bat (no switches) (see 2.6)
+
+ +------------------------------------------------------------------------+
+2.3 - Keep Game
+  If you wish to keep the same game running, and have not had CNW previously
+ installed, it is possible to do, but may cause confusion and players stuck
+ in locations that do not exist.
+
+  If installing a FULL version like v137.0, I recomend you do a complete
+ new install, not overtop of the old one. There are lots of files in old
+ CNW that are no longer needed and just takes up space.
+
+ +------------------------------------------------------------------------+
+2.4 - Upgrade CNW Game
+
+  To upgrade from a previous version of CNW, run UPGRADE.BAT
+
+  This will not automaticly RESET your game, but, it is recomended to run
+ RESET.BAT after upgrading.
+
+  Make sure you edit/check the RULES.REF for the games default settings,
+ everytime you upgrade CNW, this file is overwriten, because of changes
+ within this file are needed for most upgrades.
+
+  Upgrading from v136.* to v137.0 should be a complete new INSTALL, there
+ are lots of files no longer needed from the old CNW version, and will
+ take up space.
+
+ +------------------------------------------------------------------------+
+2.5 - RESET.BAT
+  This is a batch file which I spent a long time verifing that ALL the
+ data files used in as many IGMs as I could get my hands on, datafiles
+ were being deleted properly. It also includes some data files of IGMs
+ which are not in CNW.
+
+  Run this batch file when ever you want to reset the game. Thats it for
+ a reset. ;)
+
+  You also need to reset the game via L2CFG.EXE.
+
+ +------------------------------------------------------------------------+
+2.6 - 1st Player
+  The very first player to enter a new game of CNW, will have a long wait
+ for all the files to get created and updated for the world. It is HIGHLY
+ recomended that this first player is YOU, the SysOp. This is so that the
+ first player does not have to wait about 5 minutes or longer
+ (depends on your cpu) to wait for these files to be created, and there
+ are a lot of NPC files to be created.
+
+  The UPGRADE.BAT or INSTALL.BAT will automaticly now try to run "SYSOP"
+ after upgrading, it will in effect run everything that is needed to be
+ run after install.
+
+------------------------------------3.0-------------------------------------
+3.0 - IGMs
+ - I do NOT recomend you installing other IGMs on top of CNW!
+ - I do NOT recomend you REMOVE any IGMs with the IGM.EXE program with CNW
+    package! (see 3.4)
+ - If you see an IGM which you do not like in the CNW, contact me (see 1.5)
+    and I will look into the IGM to see if it is worth removing, also
+    please specify map location of IGM and whats so bad about it. :)
+ - If you want to know which IGMs are in included in CNW, check the
+    /IGMS/ path and 3RDPARTY.DAT after installing CNW.
+
+ +------------------------------------------------------------------------+
+3.1 - 3rdparty IGMs
+  There are well over 137 IGMs included in the latest package.
+
+  If you count the number listed in the 3RDPARTY.DAT file, it will report
+ much less. This is not 100% accurate, this is cuz some IGMs did not get
+ listed when I installed, or they go removed, no idea why or which ones
+ got missed. 
+
+  If you were to count the number of *.IGM files in the /IGM/ subdirectory,
+ It will show a more accurate number of IGMs included in the package.
+
+  I have added and removed many IGMs, doing it both with the IGM.EXE and
+ manualy. Also deleting the ?.IGM file in question. But, I also do not
+ trust myself 100% that I have done the complete removal of each IGM I
+ have removed from the package. I also have seen a few IGMs that did NOT
+ have an ?.IGM with the IGM package. (non-map igms, .ref only, and my IGMs)
+
+  Therefor, the actual number of IGMs installed in CNW is really unknown.
+ I go by the number of *.IGM files in the /IGM/ subdirectory for the
+ version number or each CNW package.
+
+  Some of you may noticed I would say for example.
+ "There are 136+ IGMs in v136.1 of CNW." Notice the "+" ;)
+
+ +------------------------------------------------------------------------+
+3.2 - CNW FEATURES
+   This is a complete list of features in CNW that are not 3rd party IGMS,
+ these ONLY can be found in CNW.
+
+⁄ƒƒƒƒƒƒƒFeatureƒƒƒƒƒƒƒƒƒƒƒƒƒƒ≈ƒLocationƒƒƒƒƒƒ≈ƒƒDescriptionƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒø
+≥ LoRD2 ANSi intro screen    ≥ start-up      ≥Also includes list players and ≥
+≥                            ≥               ≥check mail if player is dead.  ≥
+≥                            ≥               ≥                               ≥
+≥ NEW & BETTER ANSi SCREENS  ≥ THE REALM     ≥Made nicer ANSi screens all    ≥
+≥                            ≥               ≥over the place. Needed to do   ≥
+≥                            ≥               ≥this for support of many telnet≥
+≥                            ≥               ≥clients, including the Java    ≥
+≥                            ≥               ≥Telnet Applet.                 ≥
+≥                            ≥               ≥                               ≥
+≥ HomeTown                   ≥ "V"iew        ≥If you buy a new home, it can  ≥
+≥                            ≥               ≥be your HomeTown.              ≥
+≥                            ≥               ≥                               ≥
+≥ List Players               ≥ "L"           ≥Lists charm/hometown/lays/kills≥
+≥                            ≥               ≥/last flirt/age                ≥
+≥                            ≥               ≥                               ≥
+≥ NPC CHARACTERS             ≥ now 76!       ≥talk/flirt/give/fight/quests/  ≥
+≥                            ≥               ≥lay/marriage/kids/and more.    ≥
+≥                            ≥               ≥                               ≥
+≥ Time                       ≥ RULES.REF     ≥set days of a year             ≥
+≥                            ≥               ≥                               ≥
+≥ Age                        ≥ "V"iew        ≥players and NPCs have age, goes≥
+≥                            ≥               ≥with TIME.                     ≥
+≥                            ≥               ≥                               ≥
+≥ Casino Age restrictrions   ≥ RULES.REF     ≥Restriction of age to go in a  ≥
+≥                            ≥               ≥casino.                        ≥
+≥                            ≥               ≥                               ≥
+≥ TAXES                      ≥ RULES.REF     ≥Set the amount to charge your  ≥
+≥                            ≥               ≥players on taxes! checks their ≥
+≥                            ≥               ≥amount in hand, banks, and     ≥
+≥                            ≥               ≥properties owned. NPCs pay this≥
+≥                            ≥               ≥too. All the taxes collected   ≥
+≥                            ≥               ≥are placed in 200 vaults in the≥
+≥                            ≥               ≥realm. Sometimes players can   ≥ 
+≥                            ≥               ≥get tax returns!! Also adjust- ≥
+≥                            ≥               ≥able min age to pay the taxes. ≥
+≥                            ≥               ≥                               ≥
+≥ NPC SEX<soon player-player>≥ <npc>         ≥A more interactive rpg sex. A  ≥
+≥                            ≥               ≥cool status/hp/actions windows.≥
+≥                            ≥               ≥Soon to add ANSi and ASCii art.≥
+≥                            ≥               ≥                               ≥
+≥ Locker Rooms               ≥ East KnotWood ≥Rent a locker to keep your     ≥
+≥                            ≥               ≥belongings, or share with other≥
+≥                            ≥               ≥players. KeyCode to enter the  ≥
+≥                            ≥               ≥locker.                        ≥
+≥                            ≥               ≥You can try to rob a locker,   ≥
+≥                            ≥               ≥or check the empty ones for    ≥
+≥                            ≥               ≥left over goods or gold.       ≥
+≥                            ≥               ≥Enter "000000" as the password.≥
+≥                            ≥               ≥Be careful, you could be sent  ≥
+≥                            ≥               ≥to prison.                     ≥
+≥                            ≥               ≥                               ≥
+≥ Date Locations             ≥ some places   ≥Bring an NPC on a DATE!        ≥
+≥                            ≥               ≥ -Disco Hall in East KnotWood  ≥
+≥                            ≥               ≥ -Bed Of Roses                 ≥
+≥                            ≥               ≥ -Make out mountain            ≥
+≥                            ≥               ≥ -and more hidden places       ≥
+≥                            ≥               ≥                               ≥
+≥ Bed of Roses               ≥ Dark Forest   ≥Beautiful sancuary to bring a  ≥
+≥                            ≥               ≥special someone, get charm, get≥
+≥                            ≥               ≥the white flower and give to   ≥
+≥                            ≥               ≥a special someone.             ≥
+≥                            ≥               ≥                               ≥
+≥ Make Out Mountain          ≥ EasternDesert ≥A mountain to take an NPC.     ≥
+≥                            ≥               ≥very romantic. Try to get layed≥
+≥                            ≥               ≥here. :)                       ≥
+≥                            ≥               ≥                               ≥
+≥ Pouch of Documents         ≥               ≥A pouch to hold all your prop- ≥
+≥  (recently released IGM)   ≥               ≥erties owned by you.           ≥
+≥                            ≥               ≥                               ≥
+≥ Blue Water Falls           ≥ N-E GreenTree ≥<incomplete>                   ≥
+≥                            ≥               ≥                               ≥
+≥ Moved KnotWood Village     ≥ West GreenTree≥Moved to better location       ≥
+≥                            ≥               ≥                               ≥
+≥ Created East-KnotWood      ≥ West GreenTree≥Mixed a lot of IGMs from the   ≥
+≥                            ≥               ≥area of GreenTree to make East ≥
+≥                            ≥               ≥KnotWood.                      ≥
+≥                            ≥               ≥                               ≥
+≥                            ≥               ≥                               ≥
+≥ Vehicles & People          ≥ "V"iew        ≥You can check which NPC is with≥
+≥                            ≥               ≥you, and check what vehicles   ≥
+≥                            ≥               ≥you have, (eg, canoe or horse) ≥
+≥                            ≥               ≥                               ≥
+≥ Canoe                      ≥ East PortTown ≥The rentable canoe is needed in≥
+≥                            ≥               ≥every place you need to pass a ≥
+≥                            ≥               ≥water area.                    ≥
+≥                            ≥               ≥                               ≥
+≥ Horse                      ≥ stables       ≥You can buy a horse to get 2x  ≥
+≥                            ≥               ≥your turns when mounted. Press ≥
+≥                            ≥               ≥"Z" to mount and dismount your ≥
+≥                            ≥               ≥horse.                         ≥
+≥                            ≥               ≥You must FEED your horse or it ≥
+≥                            ≥               ≥will get sick and die on you.  ≥
+≥                            ≥               ≥If you own a smack rod, you no ≥
+≥                            ≥               ≥longer can use your horse.     ≥
+≥                            ≥               ≥Horses do not like the smackrod≥
+≥                            ≥               ≥A picture too!                 ≥
+≥                            ≥               ≥                               ≥
+≥ LoRD2 Telnet BBS List      ≥ Moms House    ≥List of LoRD2 BBSes. Players   ≥
+≥                            ≥               ≥can add more. If you want a BBS≥
+≥                            ≥               ≥added, contact CNW.            ≥
+≥                            ≥               ≥                               ≥
+¿ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ≈ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ≈ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒŸ
+
+ +------------------------------------------------------------------------+
+3.3 - <removed, merged with 3.2>
+ +------------------------------------------------------------------------+
+3.4 - Removing an IGM
+  DO NOT remove an IGM with IGM.EXE, it will not work, and it will cause
+ way too many problems. I recomend that you use the world editor, and
+ physicly remove the IGM from the map, then delete the corisponding REF
+ files. (RTWEDIT.EXE)
+
+  I do not think anyone will be doing this, if you must, I would like to
+ hear which IGM you plan to remove, and why. If it's a good reason, I may
+ either modify that IGM to better the game for the next release, or totaly
+ remove the IGM for the next release.
+
+ +------------------------------------------------------------------------+
+3.5 - NPCs
+  Here is something NEW and very characteristic of CNW now. CNW can currently
+ only handle a max of 200 interactive NPCs. Do not worry, this is far off
+ from how many currently are around. (125 now)
+
+  NPC profiles!, NPCs are very interactive, you can flirt, kiss, take out,
+ bring with you, marry them and even kill them. Each one is different,
+ and they change their attitudes as well as time passes and their
+ experiences develope with the players. Some are greedy, theives and
+ slutty, while others are very nice and hard to get, even JEALOUSY!
+
+  Each game that is run will be different, meaning, you might be able
+ to have a great time couting with the NPC in one game, while the other
+ game, that same character can rob and hate your guts!
+
+  NPCs have sexual prefrences, yes, some are gay, lesbian, or even bi, I
+ was thinking of adding another beastility (animal)
+ (only if someone requests it, I'll add it)
+ It is possible their preferences would change without notice.
+ 
+  NPCs can get lost too, if you see it mentioned in the daily news, then
+ you've got a chance to go find the NPC and earn stuff.
+
+  NPC Quests, sometimes they may ask for your help to bring them to
+ a place to pay their taxes. Help them out and earn quest points and
+ more.
+
+  With NPCs you can:
+   - flirt (take out on dates, marry,
+   - cure them on VD (quest points here)
+   - Other little quests they may ask for.
+   - attack and kill (or kill you) :)
+   - they can rob you if you are not nice to them.
+   - give gems or gold
+   - get information
+   - and much, much more!
+
+  In the future, by the time I complete this huge NPC project, there will
+ be features such as, trade items, give items and rob them.
+
+ +------------------------------------------------------------------------+
+3.6 - Fonts
+  This is something I started way back when CNW had first been released.
+ A font you could load with various programs.
+
+  I am sorry, I only so far created a font for the LiTERM terminal program
+ for DDO-F/X graphics.
+
+  I do plan to make a DOS font, and a Windows Font which you could load
+ at any time for any terminal program for DOS or Windows. I may need help
+ on this. Not sure at this moment.
+
+  If you have made fonts before or would like to help in making some,
+ please contact me. (see 1.5)
+
+ +------------------------------------------------------------------------+
+3.7 - Make your own CNW IGM
+  If you plan to make your own IGM for CNW, or have an IGM that you wish
+ to be included in CNW, please follow this requirements:
+        - MUST BE FREEWARE!
+        - Must NOT be compiled in REC only REFs permitted.
+        - Make sure it does NOT mix up with other map screens used by
+           other IGMs. Check the CNW map, then use that map instead of
+           the original New World map.
+        - If you're adding NPCs, please send me the choosen NPC#, and
+           profile info to include in CNW. Check these files for info
+            TALK.REF     <- has a list of ALL NPC related files
+            NPCNAME.REF  <- names and npc#'s already taken
+            NPCMAKE1.REF <- npc profile info 1
+            NPCMAKE2.REF <- npc profile info 2
+            NPCMAKE3.REF <- npc profile info 3
+            NPCMAKE4.REF <- npc profile info 4
+            NPCMAKE5.REF <- npc profile info 4
+        - If an NPC has a quest, please contact me with ideas, and I'll help
+           you make it the proper way. :)
+        - DO NOT OVERWRITE ANY CURRENT FILE NAME!
+        - All data files (.IDF), must be saved into the /data/ subdirectory.
+               (I'm still working on that IDF thing)
+        - Tell me that you made it! If it's good, I'll include it in next
+           release.
+
+ If you really want, you may join the CNW team. please contact me.
+
+ Joel Gathercole aka Greenie
+ ICQ#16277704
+ greenie@darktech.org
+ Green Machine WebBBS
+         http://www.greenmachinebbs.com/lord2/
+         telnet://greenmachinebbs.com
+
+(so don't say you could no contact me!)  :)
+
+------------------------------------4.0-------------------------------------
+4.0 iBBS LoRD 2
+ There is currently developement for a lord2 ibbs program. As of now,
+ this program will be FREEWARE. We do not have a release date yet.
+ When available, this program will be distrubed with the CNW package,
+ and mostly set up for joining our league. Will require to email me
+ when this is ready.
+
+UPDATE JAN30th 2000-
+  We may not make the typical ibbs game, but the real time line ibbs game,
+ a lot like the tw2002 for real time game. This will mean only bbses
+ connected to the internet will be able to function properly. This game
+ is more complicated to make into an ibbs as your typical game may be.
+ There is still a lot of talk about this. Please send your comments
+ to the lord2 mailing list at
+ lord2@egroups.com
+
+UPDATE DEC 2000 -
+  I'm planning to drop iBBS support at the moment, unless there is
+ any demand then I may try it again.
+
+ +------------------------------------------------------------------------+
+4.1 - CNW iBBS LoRD2
+  I've started a somewhat iBBS LoRD2. Your bbs MUST be connected to internet
+ all the time in order for this idea to work. So far there are 3 boards
+ connected to the LoRD2 CNW iBBS game, but is also currently still open for
+ other individual users/players.
+
+  What is it really?
+  Its a telnet server running off syncronet software, and can be setup
+ to only accept pre-configured boards to connect to the main server. Each
+ BBS will then be able to recruit players from their own board (like any
+ other iBBS game) and try to get them to join the same team, against players
+ from other boards that are connected to the main telnet server.
+
+  Contact me for details on starting your own lord2 ibbs league, in fact,
+ you can do this idea for ANY door game! You just need a dedicated telnet
+ server with a fast enough bandwidth. :)
+
+ To join the CNW iBBS network, fill out the /DOCS/L2CNW.APP form.
+
+ +------------------------------------------------------------------------+
+4.2 - iBBS IGMs    (do not worry about this yet)
+         --- Notice to IGM authors for iBBS compatibility ---
+
+    Directories to be added in future versions for iBBS compatibility:
+ /data/     = for all *.IDF and *.DAT files which are used during the game.
+ /ibbs-out/ = files to be processed and sent to another node.
+ /ibbs-in/  = files received from another node.
+
+  Have ALL your data files to store any info about the player or game
+ settings stored in the /data/ directory instead of the main lord2
+ directory. This will make it iBBS compatible and the same time, easier
+ to reset the game.
+
+  Any file in the /data/ directory which gets modified in the game, should
+ be copied into the /ibbs-out/ directory so they can be processed and
+ send to other nodes.
+
+  All IGMs already included in this version of CNW, I will make the
+ apropiate modifications to include iBBS support, if you wish your
+ IGM to be included in future versions, PLEASE make those new regulations
+ to make it iBBS compatible.
+
+  This version of CNW is NOT iBBS ready. The iBBS program is still under
+ developement.
+ If any other door authors wish to make iBBS programs, to handle the
+ processing and distribution, please use these standards laid out
+ here.
+
+------------------------------------5.0-------------------------------------
+5.0 - Auto Update System
+ The Auto Update System has been currently canceled.
+
+ I'm very sorry for this and to those sysops who did sign up.
+
+ +------------------------------------------------------------------------+
+5.1 - Manual Updates
+  I now automaticly upload all the files from the /IGM /DOCS and the *.REF
+ from the main lord2 path. You can manualy grab them any time with any
+ http file grabber, if you wish to do quick upgrades which I recently make
+ almost every day.
+
+  The best way to check if i updated something, is by the date on the file.
+ You can find various http grabbing programs to handle this, if you are
+ so interested in doing it.
+
+  "WGET" is a program for linux, I also heard there was a windows version,
+ I would recomend using it, as its very easy to use. :)
+ 
+ So set your grabber program to just grab NEW files that compare to yours.
+
+ make sure you add the option to not grab ALL the files off my server
+ (eg. wget -np http://greenmachinebbs.com/lord2/cwnfiles/)
+
+ If you figure out the proper command line for any program, please send
+ the details to me, so I could include it in here. thanks.
+
+ Get the updated files from here:
+ http://www.greenmachinebbs.com/lord2/cnwfiles/
+
+------------------------------------6.0-------------------------------------
+6.0 - WWW Links
+
+⁄ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ≈ƒƒƒƒƒƒƒƒƒƒ≈ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒø
+≥greenmachinebbs.com/lord2   ≥ CNW SITE ≥ CNW home site                    ≥
+≥greenmachinebbs.com         ≥ TELNET!  ≥ telnet here to play latest CNW   ≥
+≥greenmachinebbs.com:8000    ≥  JAVA    ≥ Java LoRD2                       ≥
+≥www.lordlegacy.org          ≥LordLegacy≥ Michael Presler's site, developer≥
+≥www.gameport.com            ≥ GamePort ≥ the owners of LoRD2              ≥
+≥shelby.net/wizards/lord2igm ≥LoRD2 IGMs≥ Offical L2 IGM site              ≥
+≥lordlegacy.org/lord2igm     ≥LoRD2 IGMs≥ Un-Offical L2 IGM MIRROR site    ≥
+≥yahoogroups.com/groups/lord2≥Mail List ≥ MailList/Voting/Files/Database   ≥
+≥elysoft.org                 ≥ ElySoft  ≥ CNW is now part of ElySoft group ≥
+≥time.darktech.org           ≥ TELNET   ≥ Alternate CNW server connection  ≥
+≥bobobbs.net                 ≥ TELNET   ≥ Alternate CNW server connection  ≥
+≥hdcbbs.net                  ≥ TELNET   ≥ Alternate CNW server connection  ≥
+¿ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ≈ƒƒƒƒƒƒƒƒƒƒ≈ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒŸ
+
+ +---------------------------E-O-F----------------------------------------+

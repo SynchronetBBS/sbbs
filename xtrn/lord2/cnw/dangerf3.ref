@@ -1,0 +1,61 @@
+; Script file DANGERF3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE forest 000000192
+@DECLARE nomore 000002276
+@NOCHECK
+; End of .REF index
+
+@NOCHECK
+@#FOREST
+@IF MAP IS 1036 THEN DO
+@BEGIN
+@IF &LASTY > 13 THEN DO
+        @begin
+        @IF &LASTX < 12 THEN DO
+                @begin
+                @DO `p20 random 6 1
+                @IF `p20 is 1 then do
+                        @begin
+                        @do `p21 random 4 1
+                        @if `p21 is 1 then do
+                                @begin
+                                @do `p25 is X
+                                @do `p25 + 1
+                                @if `p25 = &lastx then do
+                                        @begin
+                                        @do `p25 + 2
+                                        @end
+                                @do `p26 is Y
+                                @run fight in dangerf2.ref
+                                @end
+                        @if `p21 is 2 then do
+                                @begin
+                                @do `p25 is X
+                                @do `p25 - 1
+                                @if `p25 = &lastx then do
+                                        @begin
+                                        @do `p25 + 2
+                                        @end
+                                @do `p26 is Y
+                                @run fight in dangerf2.ref
+                                @end
+                        @if `p21 is 3 then do
+                                @begin
+                                @do `p25 is X
+                                @do `p26 is Y
+                                @do `p26 - 1
+                                @run fight in dangerf2.ref
+                                @end  
+                        @if `p21 is 4 then do
+                                @begin
+                                @do `p25 is X
+                                @do `p26 is Y
+                                @do `p26 + 1
+                                @run fight in dangerf2.ref
+                                @end
+                        @end
+                @end
+        @END
+
+@END
+@#NOMORE

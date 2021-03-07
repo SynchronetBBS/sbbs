@@ -1,0 +1,177 @@
++--------------------------- CNW-TO-DO List ------------------------------+
+
+        An updated version of this file can be found at:
+     http://www.greenmachinebbs.com/lord2/cnwfiles/docs/cnw-todo.txt
+
++--------------------------- MAR 29th 2001 ------------------------------+
+
+                          +##---LEGEND----------+
+                            * = Started work on
+                            ! = Finished
+                          +---------------------+
+
++##---------------- To-Do's for release of v137.2 -----------------------+
+ 46- Change entrance for Shark Island, make it via a dock not jumping in bushes! 
+ 99- Finish the whores as NPCs. Hirable by any inn owners.
+100- Make guards hirable too. Various strength and honorables (greed level)
+
++##-------------------- Non-Scheduled To-Do's ---------------------------+
+ 1- Add Locker Rooms Documents to Pouch of Documents. (this is hard todo)
+ 11- make possible to give deeds to online players when meeting them "h"ail
+       -or drop deeds off in locker rooms or something of this sort.
+ 15- Create more graphic levels (long time ago I tried level4=ddo-f/x)
+      Want to create one for the java applet (level5 or something)
+      but need it to be detected by lord2.
+ 16- Make a new online chat routines to include keyword responces
+     (flirt,hate,etc)
+*18- Make SEX interactive! (want to test it? ask me) (I NEED ANSi scenes)
+ 19- Add support to give roses to NPCs. ROSE.REF
+*36- Make new date locations (dinners/parties/taverns/etc)
+ 47- Gossip with NPCs may give random tips and tricks. <-gotta write them up first
+ 68- Install Castle Coldrake IGM again. (was removed in old CNW)
+ 69- Install Beach Side swimming area IGM
+ 70- Fortress Fear igm needs to be updated!
+ 74- Finish the NPCWED stuff. (even have NPC propose to players!)
+ 92- Add in routines for buying stuff from NPCs. They can earn cash too.
+ 93- Finish "GIVE" routines for NPCs (give items)
+ 94- Have NPCs able to own ITEMS too. (even sell/trade the stuff)
+106- Have kids, make sure they stay alive, send the family(s) food/money
+108- possible Co-SYSOP.
+109- Make ALL other KINGs and QUEENS as dukes and other types of ROYALTY.
+
++##-------------------- DONE TO-DO's for v137.1--------------------------+
+104- Xena's House fixed. It let players continuely fight and get more potions.
+105- StonePass Lodge totaly fixed. Was full of bugs and errors, even made the code shorter.
+107- Made an AUCTION HOUSE IGM
+108- Fixed TeamLord to automake pet dragon data file if not exists.
+110- Property Taxes added, uses regular tax rate.
+111- Added Loki's Inn as a quest opertunity.
+112- Changed around the background of Mom's House cuz of a bug that warps people to top left corner of screen.
+113- Fixed Gargoyle tower, in basement used to keep giving MoonStones. Now only 1.
+114- Added TeamLord Members list, and a BAN list, players only can be on 1 team.
+115- Fixed UGA physics department.
+116- TeamLord- when attack the dragon, now you'll enter the proper locations.
+
+
++                                                                        +
++---------------------- OLD DONE TO-DO'S --------------------------------+
++                                                                        +
++##-------------------- DONE TO-DO's for v137.0--------------------------+
+!2- Work on redoing the ANSi maps. 
+!3- Make some NPCs higher HP
+!4- Made is possible to list players AGE/GENDER/HOMETOWN/LAST FLIRT
+!6- Make Laura and Ed as NPC that goes with player, not an ITEM!
+!7- Finish "That Guy Has problems" guy north or Greentree.
+!8- Make view game settings to query to list the igms or not.
+!9- Fix up and shorten the npcwed.ref files and other npc creation/maint files.
+!10- add more NPCs to the game make it to at least total of 100 NPCs (125 now)
+!12- pay taxes at more banks (done: GreenTree,sosinbank,arrisville)
+*13- updated myhome.ref for all homes. (30 possible homes listed)
+!14- Add all towns to the MAP ANSi. (uses `t92,93 for if show on map)
+!17- Make min age to pay taxes.
+!20- fix "@do moveback" bug with talking with pharoh (near stonebrook)
+*21- fix as many as possible variable conflicts! - Replace to IDF files.
+!22- fix npc/npcstat2.idf (association with npc)
+!23- fix "TeamHouse #" to say the actual team house custom name not team#.
+!24- fix teamhouse list details at Red Dragon Inn
+!25- fix up FLIRT.REF, make appropiate CNW changes. Added a standard VD check.
+!26- finish the vehicles (done: horse)
+!27- add option to disable npc+npc maintence (goes with #30)
+!28- fix Loki's Inn, remove "little girl" from store.
+!29- fix bugs in Grizeldas house.. conflicts with `t12 and `t13 + add them as NPCs
+!30- create different playing styles (rules.ref)(goes with #27)
+!31- Re-write REFHELP.DOC file for new versions of LoRD2.
+!32- fix maint to quit only if SYSOP after completed.
+!33- add when training and with npc (on date),fails will be not good, passes would be impressive.
+!34- Updated RESET.BAT, now you can reset any LoRD2: New World
+!35- fix up date locations plus change to bitsets vars.
+!37- Fix DOC FARRELS REF files. They conflict and use `v vars!! THIS IS CRAZY!!
+!38- TeamLord REF bugs, quits if you try to take/leave gold and nobody owns it.
+!39- Make when bought or sell property, the real cash is sent to the local bank vaults (realm vaults).
+!40- If player keep npc over night, npc can get lost, reported if lost.
+!42- Removed "make batch file info" from Mother Home and put in the HELP stuff.
+!43- Made 'Janitor's Key'from Felicity Temple into an extented item goes in small pouch.
+!44- ArrisTraining Grounds moved and fixed map problems. Now in ArrisVille area!
+!45- Realm Vaults are now used. There put into banks.
+!48- Add missed towns to the MAP ANSi. (uses bitsets `t92,93 for if show on map)
+!49- Another Elle quest, talk to Johnny to find out.
+!50- Fix Canoe bugs.. keeps buying and they say you dont owe on tabs.. yet you have.
+!51- FrostGlint Keep - bartender sells too much and buys too much, bad routines to other refs, etc..
+       -warps you to dragon den housing? bug there!
+!52- Made TRAINING.REF to support going back to alternitive ref files. uses `s01 for ref file name.
+!53- Town of Glendale bugs fixed. Too many, also redone ansi work for the town.
+!54- Added a time/date question for the bartender at RedDragon Inn, in case you wanted to know the day.
+!55- Fixed Tower of Krystals IGM! Used `p97-`p99 vars and had lots of REF bugs. ALL FIXED!
+!56- Gems in "V"iew seemed to have a few extra spaces, fixed.
+!57- Fixed RedDragon Town, used `p64 var, shouldn't have.
+!58- Pay taxes in FlagCity CityHall - was there already, just need to implement it for real :)
+!59- Added bank quests. Transport money if your alignment is good. Talk to SYSOP in SYSOP Castle
+!60- Changed SYSOP Castle, its more useful now. Get quests, pay taxes, view vault amounts.
+!61- Changed begger requirement donation *10 of your level.
+!62- Changed SCRIBE in GreenTree *10 of your level.
+!63- The Loose Screw Resort was missing, put it back in, plus map location fixes.
+!64- Fixed The Loose Screw IGM. Removed var conflicts
+!65- Added Felicity Guest house to Pouch of Deeds
+!66- Changed Felicity Guest house into an Inn style rest area.
+!67- Wizard's Tower IGM was also missing, cuz it conflicted with TEAM#3, FIXED.
+!71- Updated Time Stands Still IGM to v2.01
+!72- Myst Inn had bugs
+!73- Updated Pouch of Deeds. Shows info about ever deed supported.
+!75- DragonDen housing warp bug fixed.
+!76- The Loose Screw Resort igm - Wanted man, fixed, now only can fight once, not over and over.
+!77- added some cool ansi for fishing.
+!78- added some cool ansi for swimming hole.
+!79- added people.ref - a file with a bunch of standard ansi/ascii pics of people
+!80- added dragons.ref - a file with a bunch of standard ansi/ascii pics of dragons
+!81- TeamLord - only uses 1 ref file now, removed tlhouse1.ref thru ...5.ref
+!82- TeamLord - made the menu system much better.
+!83- TeamLord - added dragon pics. As it gets stronger, it grows!
+!84- TeamLord - added time/turns are used to train as well (max turns/98)
+!85- TeamLord - added colour choice for the dragon (only owner can select colour)
+!86- UnderGround city houses only use 1 ref file now. removed pass1.ref and pass2.ref, no longer needed
+!87- UnderGround city houses - added a sexy maid (from people.ref) as the door maid.
+!88- Removed the Koshi Sword and Armour from being purchasable in many exploitable IGMs.
+!89- BoneTown MoshPit hall ansi bugs! Used lots of invalid hidden ansi chars.
+!90- DragonDen housing - Jasimita house had no maid for ownership options, yet
+       the code was already written. So, added a hotspot for it.
+!91- Added MoshPit as another NPC date location.
+!95- Start NPC "GIVE" routines. (give gold&gems)
+!96- Fast Freddy's Gems IGM now has real cash amount and amount of gems available.
+!97- UGA alchemist is now a little harder to get cash from gems. :)
+!98- Fix Northern Colliseum bugs.
+101- Fixed all the QUESTs with the package/sachet thing. Was problems with Pyramid/SpringFang/AquaMan
+102- Fixed Black Sheep conflist with `p90 and `t19 vars.
+103- Optimized the Barak/Turgeon quest. conflicted with igms and bad coding.
+
+------------ ToDo's in L2.EXE, not CNW -------------------------------+
+1- When a player is deleted from the play data base, to run a check on
+    ALL the *.IDF files to set everything to 0 for that &playernum.
+
+2- need a LoRDANSi -> HTML converter. (I could try to make a REF to do
+    this, but it complicated, want to try yourself??)
+
+3- SysOp <-> Player chat! there is one, but only works on dial-up nodes
+    or bbses that use com/ip or netmodem. Some reason lord2 needs a
+    com port for the chat to work.
+
+4- @LORDRANK figure out proper options if cant configure it, add options
+    to customize the listing.
+
+5- Make a possible command for writing "@"'s in a new file, something
+   like @writefile, but will stop writing the file at @fileend or
+   something.
+    UPDATE MAR 1-2001 --I think this is possible using `s vars.
+
+6- Make all NEW players added to end of player list, instead of
+   always replacing "DELETED" ones, untill player #200 is reached,
+   then  start re-writing "DELETED" ones. This will help out with
+   problem #1.
+
+7- Player stays on overmidnight sometimes do not get their new day turns.
+
++-------------------------- Contact CNW ---------------------------------+
+ Joel Gathercole           greenie@darktech.org           icq#16277704
+WebSite   -->  http://www.greenmachinebbs.com/lord2/
+Play here -->  telnet://greenmachinebbs.com
+IRC       -->  irc.lordlegacy.org #lord
++--------------------------E-O-F---------------------------------------+

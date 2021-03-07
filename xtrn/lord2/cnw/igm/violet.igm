@@ -1,0 +1,47 @@
+
+             Flirt with Violet/Seth Able By Michael Bujold Ver. 1.0
+                            (C)1997 FPSoft, Ltd.
+
+                              AN IGM FOR LORD2
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Nope
+  Using any LORD2 vars?                           : Yes
+  Overwrites any original .refs?                  : No
+  Saves and loads its own vars independently?     : No
+  Adds new .refs?                                 : Yes (1)
+  Replaces screens?                               : Yes (1)
+  Adds screens?                                   : No
+  Free?                                           : Yes, unless you have
+                                                    girls on your BBS.
+
+
+  Description:
+
+  An IGM that adds Violet and Seth Able flirting options in the Red Dragon
+  Inn
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM VIOLET.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Flirt with `1Seth Able`0/`5Violet `2by `@Floating Point `9Software
+replacescreen: 79 1 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Allows your players to flirt with `1Seth Able`2/`5Violet,`2 whatever their sex.
+
+  +-----------+
+  |FPSoft I   |  The FPSoft IGM Seal Indicates that this IGM is fully
+  |        G  |  compatible with all other FPSoft IGMs. 
+  |         M |
+  +-----------+
+

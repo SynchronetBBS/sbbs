@@ -1,0 +1,411 @@
+  Last Revision Date: 04/01/98
+
+  Code modifications document for Global Registries by Mike Freeman.
+
+  While testing Global Registries, I found 2 bugs in Seths ITEMS.REF,
+  in the stock version, that needs to be addressed. See my notes below on how
+  to fix this bug. If your * NOT * running Global Registries, its still a good
+  idea to make this fix to your ITEMS.REF file. You will also need my
+  REGFIXIT.REC program which is called from ITEMS.REF.
+
+  My L2BUGFIX.ZIP 12/29/97 file.
+  Recently, I posted this file on the Internet and all over that handles the
+  above problem. If you recently applied this patch then you can leave it
+  as it is since there is logic built into my installation program that will
+  either upgrade your files or install this patch for you. My installation
+  program handles upgrading your REGFIXIT.REC file only, to the latest version.
+  You will * STILL * need to check your ITEMS.REF to make sure the code that
+  calls my patch is still the same as the code changes I have below. It should
+  be, I have not changed that @ROUTINE call, but check to make sure yours is
+  identical anyway.
+
+  Code Modification
+  =================
+
+  WARNING: You must be running v1.01a of Lord II. If you are running v1.00
+  I strongly suggest you upgrade to the latest version of Lord II before
+  continuing. These changes are *NOT* for v1.00 and have *NOT* been tested
+  under v1.00. Get the upgrade Services Pak 1 from Seths Internet site at
+  www.rtsoft.com. The upgrade file name is L2SP1A.ZIP.
+
+  There are only 3 .ref files to modify to get Global Registries installed.
+  Those are RULES.REF, ITEMS.REF and GAMETXT.REF. It should take you less
+  than 15min to make these changes. Please check and recheck your work for
+  accuracy. It will save you alot of headaches in the long run.
+
+  GLOBAL REGISTRIES has its own set of rules so ..........
+
+  Ok. There is *NO* zip file supplied for this change. The reason we didn't
+  include one is because you probably made changes to your RULES.REF file
+  already to adjust turns per day, unlimited turns etc. Simply load RULES.REF
+  in a text editor and manually make the change below.
+
+  If you have to manually modify the code then:
+                 ========
+  Find the code in RULES.REF
+
+  ;*** example of showing users a message ****
+
+@do `v03 is 0  ;Can players die unlimited times per day?  0 is no, 1 is yes
+@do `v05 is 3000 ;turns per day given to a player, 0 for unlimited
+@do `v06 is 1  ; Make this 1 to activate CLEAN mode, this means 'dirty' things
+               ; will not happen, like there won't be whores at the Sea Hag
+               ; hotel
+@do `v07 is 4  ; Max random quests possible per day
+@do `v08 is 20 ; Max uses of the slot machines/craps per day
+@do `v09 is 15 ; Level at which players can be attacked in Inns. 0 for never
+
+@#NOMORE
+
+  Change it to:
+
+  ;*** example of showing users a message ****
+
+@do `v03 is 0  ;Can players die unlimited times per day?  0 is no, 1 is yes
+@do `v05 is 3000 ;turns per day given to a player, 0 for unlimited
+@do `v06 is 1  ; Make this 1 to activate CLEAN mode, this means 'dirty' things
+               ; will not happen, like there won't be whores at the Sea Hag
+               ; hotel
+@do `v07 is 4  ; Max random quests possible per day
+@do `v08 is 20 ; Max uses of the slot machines/craps per day
+@do `v09 is 15 ; Level at which players can be attacked in Inns. 0 for never
+
+@routine gr_rules in regrules.rec   ;<--- Add this line
+
+@#NOMORE
+
+                           =======================
+
+  Ok. There should be a zip file in this packet called ITEMS.ZIP It includes
+  the changes below. It does not include the changes to the item editor. You
+  will have to load the item editor yourself to enter that information manually.
+  If you have already made modifications to your ITEMS.REF file because you
+  have installed other IGM's, then you will need to manually change the code.
+  It only takes a few minutes! If on the other hand you have not changed
+  ITEMS.REF just unzip ITEMS.ZIP over the top of your ITEMS.REF file. Make a
+  backup of your ITEMS.REF before doing this.
+
+  This modification will allow your users to retrieve Global Registies, by
+  selecting the REGISTRY KEY item from the 'V' View Statistics option.
+
+  If you have to manually modify the code then:
+                 ========
+  Find the code in ITEMS.REF
+
+  ;Items file
+
+  @#DIARY
+  ;Barak's diary
+  @show
+  `r0`c  `r1`%  Reading Barak's Diary  `r0
+
+  Change it to:
+
+  ;Items file
+
+  @#default                                                  ;<-- Add
+  @routine error_handler in regfixit.rec                     ;<-- Add
+
+  @#item75                                                   ;<-- Add
+  @clearblock 13 23                                          ;<-- Add
+  @do move 1 13                                              ;<-- Add
+  @show                                                      ;<-- Add
+    `2You can use this key an `$UNLIMITED `2number of times. ;<-- Add
+
+  `k                                                         ;<-- Add
+  @                                                          ;<-- Add
+
+  @if `i75 > 0 then do                                       ;<-- Add
+   @begin                                                    ;<-- Add
+   @itemexit                                                 ;<-- Add
+   @routine load_registry in registry.rec                    ;<-- Add
+  @end                                                       ;<-- Add
+
+  @#DIARY
+  ;Barak's diary
+  @show
+  `r0`c  `r1`%  Reading Barak's Diary  `r0
+
+  This code assumes of course that your adding the Registry Item to Item#75
+  in the item editor. Be careful now. If you load your item editor and find
+  item (75 of 99) already taken, you'll need to modify the lines above that
+  says @if `i75 > 0 then do and the line that says #item75, to the integar
+  variable equal to the item number other than 75, in the item editor. So
+  lets assume you load the item editor and find (75 of 99) already taken.
+  Then move on to another item thats not taken and enter the information
+  below. Then modify the @if statement and the #item75 line above, to reflect
+  the number of your new item, in your item editor.
+
+  Enter EXACTLY as shown! Below:
+
+  LORD II ITEM EDITOR  editing item (75 of 99)
+    (A) Name of the item  : `$Registry Key
+    (B) Action String     : CLICK!
+    (C) Used as armour?   : No
+    (D) Used as weapon?   : No
+    (E) Can be sold?      : No
+    (F) Ref, if "Usable"? : ITEM75
+    (G) Use string        : Use it to enter the registry.
+    (H) Gold Value        : 0
+    (I) Used only once?   : No
+    (J) Breaks 1 out of   : Never breaks.
+    (K) Description       : Non-Expiring Key. Try it out!
+    (L) Weapon strength   : 0
+    (M) Armour defence    : 0
+    (N) Quest item?       : No
+
+                           =======================
+
+
+  Ok. There should be a zip file in this packet called GAMETXT.ZIP It includes
+  the changes below. If you have already made modifications to your GAMETXT.REF
+  file because you have installed other IGM's, then you will need to manually
+  change the code. It only takes a few minutes!
+  If on the other hand you have not changed GAMETXT.REF just unzip GAMETXT.ZIP
+  over the top of your GAMETXT.REF file. Make a backup of your GAMETXT.REF
+  before doing this.
+
+  THIS IS THE MOST IMPORTANT CHANGE FOR MOD#2. PLEASE DONT LEAVE THIS
+  CHANGE OUT       ================
+
+  If you have to manually modify the code then:
+                 ========
+  In the file GAMETXT.REF find the code:
+
+  @#startgame
+  ;do startgame routines here
+  @version 99
+  ;if version 99 or newer isn't detected, it will tell the player to
+  ;upgrade
+  @do `v01 is 1
+  @if map < 2 then map is 155
+  @if map > 1600 then map is 155
+
+  @do write
+  `r0`c
+
+  Change it to:
+
+  @#startgame
+  ;do startgame routines here
+  @version 99
+  ;if version 99 or newer isn't detected, it will tell the player to
+  ;upgrade
+  @do `v01 is 1
+  @if map < 2 then map is 155
+  @if map > 1600 then map is 155
+
+  @routine $init in reginit.rec        ;<-- Add  ;
+
+  @if `i75 is 0 then do                ;<-- Add  ;`i75='s Item # in Item Editor
+   @begin                              ;<-- Add  ;
+   @do `i75 is 1                       ;<-- Add  ;`i75='s Item # in Item Editor
+  @end                                 ;<-- Add  ;
+
+  @do write
+  `r0`c
+
+  Remember to change `i75 (ABOVE) to whatever number you used in the item editor
+  if you need to.
+
+ Also, in GAMETXT.REF find the code near the end of the file:
+
+  @if x < 1 then x is 27
+  @if y < 1 then y is 7
+  @if x > 80 then x is 27
+  @if y > 24 then y is 7
+
+  @show
+  `k
+  @do talk `0`n`x`2has`xentered`xthe`xrealm. all
+
+  @routine readlog in logstuff.ref
+
+  ;do end routines here
+  @#endgame
+  @do talk `0`n`x`2has`xleft. all
+  @if dead is 0 then do
+   @begin
+   @do move 1 24
+   @show
+
+ Change it to:
+
+  @if x < 1 then x is 27
+  @if y < 1 then y is 7
+  @if x > 80 then x is 27
+  @if y > 24 then y is 7
+
+  @show
+  `k
+  @do talk `0`n`x`2has`xentered`xthe`xrealm. all
+
+  @routine readlog in logstuff.ref
+
+  @if dead is 0 then do                              <--- Add this line
+   @begin                                            <--- Add this line
+   @routine warn_user in regadver.ref                <--- Add this line
+  @end                                               <--- Add this line
+
+  ;do end routines here
+  @#endgame
+  @do talk `0`n`x`2has`xleft. all
+  @if dead is 0 then do
+   @begin
+   @do move 1 24
+   @show
+
+NOTE: As a added bonus, I have supplied the source to REGADVER.REF so you can
+ optionally change the warning message sent to users who have *NOT* entered
+ their registry entry, when they enter the game. For more information on what
+ you can do, load REGADVER.REF into a text editor and read my notes. -Enjoy!
+
+  Also, in GAMETXT.REF find the code near the end of the file:
+
+  @KEY
+  ;Give them starting stuff
+    @do `p01 is 1
+    @do `p02 is 10
+    @do `p03 is 10
+    @do `p04 is 5
+    @do `p05 is 1
+    @do `p09 is 1
+    @do X is 27
+    @do Y is 7
+    @do MAP is 155
+    @addchar
+
+  and change it to:
+
+  @KEY
+  ;Give them starting stuff
+    @do `p01 is 1
+    @do `p02 is 10
+    @do `p03 is 10
+    @do `p04 is 5
+    @do `p05 is 1
+    @do `p09 is 1
+    @do `i75 is 1                      ;<--- Add
+    @do X is 27
+    @do Y is 7
+    @do MAP is 155
+    @addchar
+
+  Remember to change `i75 to whatever number you used in the item editor if
+  you need to. All the changes above * MUST * be entered exactly for
+  method 2 to work.
+
+ Once you have completed all these modification you may continue with the
+ rest of the installation and configuration:
+                           =======================
+
+
+ Continuing with installation:
+ =============================
+
+ 3) Still at your DOS prompt type:
+                  ==========
+    REGISTRY
+
+    This will install the updated map for Neb's road and install the Registry
+    hut so your users can push on it. Watch for the completion message and
+    make sure there were no errors detected!
+
+ 4) Log into your bbs and load Lord II. Do * NOT * log in LOCALLY!!!!!!
+    What I mean by that is * DO NOT * run LORD2 0 from your DOS prompt
+    to log in locally. You must log on your bbs like any other user would
+    to access Lord II.
+
+    Hopefully you have done all of the above correctly and you can load
+    Global Registries either by pushing on the Registry Hut on Neb's road
+    or typing 'V' from any map menu to access Global Registries.
+
+ 5) At any map menu, go to Neb's Road and push on the Registry Hut, if you
+    used method #1, or type V to load Global Registries using the key
+    method, method #2.
+
+    If you cannot get the changes that you made to load Global Registries
+    correctly, then go back and read the documenation again. Check and
+    recheck your changes. Make your changes and re-run everthing.
+
+ Configuring Global Registries
+ =============================
+ 6) Once your sure you can retrieve Global Registries using the Method
+    of your choice its time to run my installation utility that will
+    configure Global Registry for you and make you the Sysop in the module.
+    In anycase, you should already be at the main installation menu for
+    Global Registries once you load it. Simply highlight option number 1
+    that says INSTALL GLOBAL REGISTRIES FOR THE FIRST TIME.
+
+    There will be a question asking you for a PASSWORD. This was added
+    because we didn't want anyone but the SYSOP to be able to run the
+    installation procedure. Imagine what would happen if you installed
+    Global Registries and a user beat you to Lord II. They would be able
+    to register themselves as the SYSOP in the module. So to prevent this
+    from happening we setup the installation with a password option.
+
+    The password is: NEWINSTALLATION
+
+    Once you enter the correct password you will be given Sysop access in
+    Global Registries. The module * WILL NOT * be activated till you register
+    Global Registries on your system. Unless you register, this module will
+    remain active but closed to ALL users including yourself.
+
+    NOTE: While registering you as a Sysop a number of files will be created.
+    Watch for the completion message.
+
+    REGFIXIT.REC: If you downloaded my 12/28/97 patch to fix a few bugs in
+    Lord II from the Lord II Internet site, not to worry. I have built in logic
+    that will upgrade your patch to the latest version during the installation
+    if yours is out of date. If you didn't install my patch of 12/28/97 my
+    program will also detect this and apply the patch for you. Just make sure
+    that you make the code modifications to ITEMS.REF as I specified in these
+    docs above. Read Mod#1 or Mod#2 changes to find this fix!
+
+    Once the installation procedure is finished you will have access to the
+    main Global Registries menu. -Enjoy!
+
+    To uninstall, type:
+       =========
+
+    REGUNDO
+
+ Other things you should know how to do:
+ =======================================
+
+ Why did I create a 2 subdirectories? Global Registries keeps track of alot
+ of files. I felt it would clutter up your Lord II directory too much
+ and it would be an absolute nightmare to work out which files to delete
+ when you wanted to reset your data files. Plus I don't have the time to
+ list out every single file created by my program so I'v made it easy on
+ you.
+
+To reset * ALL * your user records - Registry Entries and what nots:
+   =====
+type at the DOS prompt:
+
+cd\lord2\regdata
+
+then type:
+
+del *.*
+
+To reset * ALL * the Global Registry System Files:
+   =====
+type at the DOS prompt:
+
+cd\lord2\regconf
+
+then type:
+
+del *.*
+
+But, I wouldn't reset the system files unless I was doing a fresh
+install in which case i would delete everthing in \regdata & \regconf
+followed by re-installing Global Registries fresh by copying REGISTRY.ZIP to
+an empty directory then following the installation instructions in
+REGISTRY.DOC on installing everthing fresh like you were installing for the
+first time. NOTE: Doing this will also wipe out your activation code so before
+doing anything I would write it down somewhere safe.
+
+-EOF

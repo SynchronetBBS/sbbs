@@ -1,0 +1,261 @@
+; Script file BAITSHOP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE nexus 000000486
+@DECLARE parappa 000000601
+@DECLARE fish 000000715
+@DECLARE fishsell 000001208
+@DECLARE outsign 000002048
+@DECLARE mart 000002132
+@DECLARE martstart 000002210
+@DECLARE fishdock 000004017
+@DECLARE phobos 000004074
+@DECLARE table1 000004160
+@DECLARE fishsign 000004380
+@DECLARE monster1 000004478
+@DECLARE nomore 000004795
+@NOCHECK
+; End of .REF index
+
+@#NEXUS
+;stares at ya
+@do moveback
+@do saybar
+`%The one and only `9NeXuS_oNe `%gives you an evil stare...
+
+@#PARAPPA
+;gives ya advice
+@do moveback
+@do saybar
+`9ParaPPa`%: I'd stay clear of `9NeXuS_oNe `%if I was you!
+
+@#FISH
+@offmap
+@do moveback
+@show
+`r0`c  `r1  `%The Big Bad Bait Shop  `r0
+
+  `2People are buying and selling fish all over the place!  You also see
+  some nice rods in a corner.  A man introduces himself as `0Rocky`2 and
+  asks what you need. 
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Buy something
+Sell some fish
+Leave
+@if response is 1 then do
+  @begin
+  @do write
+`\`\
+  @buymanager
+  28
+  29
+  @do goto fish
+  @end
+
+@if responce is 2 then do
+  @begin
+  @label fishsell
+  @show
+`c  `r1  The market place  `r0
+
+  `2You walk up to a fish bin and show 'em what you got.
+
+  `2You are holding `$$&money`2.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+<`i29 1 <`i30 1 You have no fish to sell.
+>`i29 0 Sell a Salmon for `$$50`%. `2(you have `0`i29`2)
+>`i30 0 Sell a Sparking Green Salmon for `$$250`%. `2(you have `0`i30`2)
+>`i29 0 <`i30 1 Sell nothing
+>`i30 0 <`i29 1 Sell nothing
+>`i30 0 >`i29 0 Sell nothing
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `0"Thank you for the fish, s&sir!"
+
+`k
+  @do money + 50
+  @do `i29 - 1
+  @do goto fishsell
+  @end
+@if responce is 3 then do
+  @begin
+  @show
+`\`\  `0"My god?!? Where did you catch this?!?  Thank you!"
+
+`k
+  @do money + 250
+  @do `i30 - 1
+  @do goto fishsell
+  @end
+
+ @do goto fish
+
+ @end
+
+@drawmap
+@update
+
+@#OUTSIGN
+@do moveback
+@do saybar
+`% The Big Bad Baitshop `2An IGM by `9Phobos
+
+
+@#MART
+;The quicke mart (tm) 
+@DO MOVEBACK
+@BUSY
+@DO `v01 is 1
+@label martstart
+@SHOW
+`r0`c  `r1`% Wow, they have everything in here `r0
+
+  `2The clerk behind the counter introduces herself as `1Shaira `2and says
+ `0"Oh my golly-gosh, customers!! How ever may I help you?"
+                      
+@DO WRITE
+`x`x
+@CHOICE
+Ask for some shark-jerky
+Get a super-slushie to go
+Check out the back room for supplies
+Leave
+@if responce is 4 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@IF RESPONSE IS 3 THEN DO
+@Begin
+@Show
+`\`\  `$"I need to get some new gear," `2you say. Shaira smiles, `0"Okie 
+  Dokie, I hope you enjoy our fine selection of death tools."  `2You 
+  review your choices.
+
+`k
+@show
+`r0`c                         `r1 `%Quick-E Mart Stuff
+
+
+@buymanager
+35
+36
+37
+40
+@do goto martstart
+@End
+
+@IF RESPONSE IS 1 THEN DO
+@Begin
+@Show
+`\`\  `2You take a look at the jerky, you're pretty sure you're better off
+  eating something you killed outside.`%
+`\`k
+@DO goto martstart
+@End
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@if money < 1 then do
+  @begin
+  @show
+`\`\  `0"Are trying to be ripping me off, s&sir?!  You shall not taste a single
+  drop of my wonderful liquid!"
+
+`k
+  @do goto martstart
+  @end
+@do money - 1
+@Show
+`\`\  `$"Give me a super slushie, one that's made entirely out of syrup," `2you
+  command.
+  `0"An all syrup super slushie?  Oh such a thing has never been done," `2
+  Shaira gasps.
+`\`k  `$"Just make it happen," `2you say as you lay down the dough.
+  `0"Oh dear," `2she moans and turns towards the machine.  It begins to
+  rumble, you feel the walls shake.  `0"Oh no, she's breaking up," `2she
+  yells....
+`\`k  `5DING!
+`\`k  `2The clerk turns and hands you your slushie.  `0"All done, if you
+  survive, please come again."
+`\`k
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@End
+
+
+@#FISHDOCK
+@run fishdock in porttown.ref
+@closescript
+
+@#Phobos
+ @do moveback
+ @do saybar
+`9Phobos`2: Gee! I really love these sharks!
+
+@#Table1
+ @do moveback
+ @if bitcheck `t13 1 1 then do
+   @begin
+   @do saybar
+There is nothing on the table.
+   @closescript
+   @end
+
+@bitset `t13 1 1
+@do saybar
+`%You found a Red Potion!
+@do `i52 + 1
+
+
+@#FISHSIGN
+@do moveback
+@do saybar
+`2<--- Prison `$Fish only off the middle dock `2--->
+
+
+
+@#Monster1
+@fight
+;name
+Loose Shark
+;
+He just jumped out of his tank!
+;
+You just killed an endangered species! :(
+;
+1
+;
+bites you!|6
+hits you with his powerful tail!|5
+scrapes his dorsal fin on you!|4
+NONE|NONE
+NONE|NONE
+;
+5
+;
+269
+;
+69
+;
+69
+;
+NONE|NONE
+;
+GAMETXT.REF|DIE
+;
+NONE|NONE
+  
+
+@#nomore
+

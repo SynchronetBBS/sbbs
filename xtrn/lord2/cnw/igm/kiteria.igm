@@ -1,0 +1,28 @@
+
+       Kiteria's Kastle by Mamoosoft Programming
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01a
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Kiteria's Kastle `2from `0 Mamoosoft Programming
+
+replacescreen: 1113 1 show
+replacescreen: 1566 2 noshow
+replacescreen: 1567 3 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Welcome to Kiteria's Kastle, another fine product from Mamoosoft!

@@ -1,0 +1,2176 @@
+; Script file EX!.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE goin 000001751
+@DECLARE man1 000001840
+@DECLARE chair 000002019
+@DECLARE doorman 000002071
+@DECLARE loopdoorman 000002266
+@DECLARE out 000002854
+@DECLARE 4d 000002898
+@DECLARE loop4d 000002928
+@DECLARE slotstart 000004791
+@DECLARE slots 000005869
+@DECLARE ending 000015504
+@DECLARE crapstart 000015644
+@DECLARE craps 000015688
+@DECLARE begin1 000016783
+@DECLARE nextroll 000017817
+@DECLARE hit 000018275
+@DECLARE win 000018326
+@DECLARE crapout 000018685
+@DECLARE lose 000018729
+@DECLARE bottom 000019071
+@DECLARE nomoney 000019116
+@DECLARE gossip 000019305
+@DECLARE write 000020018
+@DECLARE heal 000020982
+@DECLARE tooold 000021109
+@DECLARE hp 000021210
+@DECLARE loophp 000021239
+@DECLARE pool 000022205
+@DECLARE heal! 000022279
+@DECLARE tele 000022431
+@DECLARE doorguard 000023480
+@DECLARE startg 000023509
+@DECLARE enter 000025553
+@DECLARE done 000026322
+@DECLARE yerok 000027594
+@DECLARE letmein 000028108
+@DECLARE done 000028157
+@DECLARE pay 000028166
+@DECLARE looppay 000028357
+@DECLARE 2out 000028913
+@DECLARE 1out 000028948
+@DECLARE death 000028985
+@DECLARE fight 000029296
+@DECLARE monster1 000029450
+@DECLARE monster2 000030065
+@DECLARE monster3 000030625
+@DECLARE monster4 000031285
+@DECLARE monster5 000031876
+@DECLARE monster6 000032447
+@DECLARE monster7 000033052
+@DECLARE monster8 000033709
+@DECLARE monster9 000034328
+@DECLARE monster10 000035044
+@DECLARE monster11 000035606
+@DECLARE monster12 000036188
+@DECLARE done 000036702
+@DECLARE back 000036805
+@NOCHECK
+; End of .REF index
+
+;Extacy's Land Of Fun
+;Created By Yang Qingwei
+;Call Yang's Empire BBS at o65-581-1224 24hrs
+@#GOIN
+@do moveback
+@do quebar
+`4Shh!! Juz Move To The Forest South From Me!
+@end
+
+@#MAN1
+@busy
+@do moveback
+@do move 2 1
+@show
+`r0`c
+`4ShHHh!! Theres A Way To Get Into ExTAcYs Land of Fantasy!!
+`4Look For A Path To Get There!! ShHHh!
+@key
+@drawmap
+
+@#CHAIR
+@do saybar
+`%This Chair Is So NICE!!
+
+@#DOORMAN
+@do `v01 is 1
+@do move 2 1                                                                
+@show
+`r0`c`%  `r1 The Doorman Stop You. `r0
+`2  Hey Kid. Stop Right There. 
+
+@label LOOPDOORMAN
+@do move 2 1
+@show
+`r0`c`%  `r1 Time to Pay up `r0
+`2  Doorman waits While You Look At Your $$$
+
+@do write
+`x`x
+@choice
+Pay $50 To The Doorman.
+Leave.
+@
+
+@if response is 1 then do
+ @begin
+ @if money < 50 then do
+ @begin
+ @do moveback
+ @show
+ @do move 2 15 
+ @show
+`4Hey Kid, You Do Not Have Enuff Money!
+ @key
+ @drawmap
+ @end
+ @do money - 50
+ @do move 2 15
+ @show
+`4Thanks Kid!
+ @key
+ @drawmap
+ @end
+
+@if response is 2 then do
+ @begin
+ @do moveback
+ @do move 2 15
+ @show
+`4Bye Kid, Cum Back When You Have The Money.
+ @key
+ @drawmap
+ @end
+
+@#OUT
+@do x is 37
+@do y is 15
+@drawmap
+
+@#4D
+@do `v01 is 1
+@label LOOP4D
+@do move 2 1
+@show
+`r0`c`%
+`4BANG! `W`W`W`W`W BANG! `W`W`W`W`W
+`4The Door Opens While It Squeaks
+`4What Can I Do For You?
+
+@do write
+`x`x
+@choice
+Buy 4D ($20)
+Leave.
+@
+
+@if response is 1 then do
+@begin
+@if money < 20 then do
+@begin
+@do move 2 15
+@show
+`r0`c
+`4You Have Not Enuff $$$!
+@key
+@do goto LOOP4D
+@end
+@do money - 20
+@show
+`r0`c`%
+`4You Asked The Man And Buy The Number `W`W`W`W`W
+`4You Then Slowly Walk To The Side Of Room
+`4And Take A Sit. You Wait....`W`W`W`W`W`W`W And Wait `W`W`W`W`W
+@key
+@do `p20 random 10 1
+@if `p20 is 1 then do
+@begin
+@do move 2 15
+@show
+
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+@end
+
+@if `p20 is 2 then do
+@do move 2 15
+@show
+
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+
+@if `p20 is 3 then do
+@do move 2 15
+@begin
+@show
+
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+@end
+
+@if `p20 is 4 then do
+@do move 2 15
+@show
+`r0`c`%
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+
+@if `p20 is 5 then do
+@begin
+@do move 2 15
+@show
+
+`4 Hey Dude!! You WON!! Heres Your Money. ($100)
+@key
+@do money + 100
+@do goto LOOP4D
+@end
+
+@if `p20 is 6 then do
+@do move 2 15
+@show
+
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+
+@if `p20 is 7 then do
+@begin
+@do move 2 15
+@show
+
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+@end
+
+@if `p20 is 8 then do
+@do move 2 15
+@show
+
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+
+@if `p20 is 9 then do
+@begin
+@do move 2 15
+@show
+
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+@end
+
+@if `p20 is 10 then do
+@do move 2 15
+@show
+
+`4 Oh No..Sorry You Did Not Win.
+@key
+@do goto LOOP4D
+@end
+
+@if response is 2 then do
+@begin
+@do moveback
+@do move 2 15
+@show
+
+`4Better Luck Next Time!
+@drawmap
+@end
+
+@#SLOTSTART
+@show
+`r0`c  `r1 Welcome to the slot machines! `r0
+
+  `0Payoffs are:`2
+
+  `03 Bars`2....................................................`0100 `2to `01
+  3 Bells`2....................................................`080`2 to `01
+  3 Lemons`2...................................................`050 `2to `01
+  3 Plums`2....................................................`030 `2to `01
+  3 Peaches`2..................................................`025 `2to `01
+  3 Oranges`2..................................................`010 `2to `01
+  2 Bars & 1 Bell`2............................................`010 `2to `01
+  2 Bells & 1 Lemon`2...........................................`09 `2to `01
+  2 Lemons & 1 Plum`2...........................................`08 `2to `01
+  2 Plums & 1 Peach`2...........................................`07 `2to `01
+  2 Peaches & 1 Orange`2........................................`05 `2to `01
+  2 Oranges & Anything`2........................................`02 `2to `01
+               
+`k
+@do `v01 is 1
+@do goto slots
+
+@#slots
+@busy
+@do moveback
+@do `p20 is 0
+@do `p21 is 0
+@do `p22 is 0
+@do `p23 is 0
+@do `p24 is 0
+@do `p25 is 0
+@show
+`r0`c `% `r1 Pulling your lever `r0
+
+`2  You now have: `$$&money`2.  Put how much in the machine? `2(`0`p33`2 gambles left)
+
+@do write
+`x`x
+@choice
+$1
+$2
+$5
+$10
+$20
+Show payoffs
+Leave
+@if response is 6 then goto slotstart
+
+@if responce = 1 then do
+ @begin
+ @do `p21 is 1
+ @end
+@if responce = 2 then do
+ @begin
+ @do `p21 is 2
+ @end
+@if responce = 3 then do
+ @begin
+ @do `p21 is 5
+ @end
+@if responce = 4 then do
+ @begin
+ @do `p21 is 10
+ @end
+@if responce = 5 then do
+ @begin
+ @do `p21 is 20
+ @end
+@if responce = 7 then do
+ @begin
+ @do goto ending
+ @end
+@if money < `p21 then do
+ @begin
+ @show
+
+  `4You don't have that much money!
+ @key
+ @do goto slots
+ @end
+
+@if `p33 < 1 then do
+  @begin
+  @show
+`r0`c  `r1 `%You grab the level firmly `r0
+
+`2  `4Yang Qingwei Quickly Grab Your Hand.
+`\`k  `0"You've gambled enough for today we think, kid.  Come back
+  tomorrow," `2 a Decent looking fellow explains.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@do `p33 - 1
+
+@show
+`\`\  `2You pull the lever as hard as you can.`\
+@do `p22 random 6 1
+@if `p22 = 1 then do
+ @begin
+ @show
+  `%Bar
+ @do `p23 + 300000
+ @end
+@if `p22 = 2 then do
+ @begin
+ @show
+  `7Bell
+ @do `p23 + 20000
+ @end
+@if `p22 = 3 then do
+ @begin
+ @show
+  `$Lemon
+ @do `p23 + 3000
+ @end
+@if `p22 = 4 then do
+ @begin
+ @show
+  `5Plum
+ @do `p23 + 100
+ @end
+@if `p22 = 5 then do
+ @begin
+ @show
+  `6Peach
+ @do `p23 + 20
+ @end
+@if `p22 = 6 then do
+ @begin
+ @show
+  `6Orange
+ @do `p23 + 3
+ @end
+@do `p22 random 6 1
+@if `p22 = 1 then do
+ @begin
+ @show
+  `%Bar
+ @do `p23 + 300000
+ @end
+@if `p22 = 2 then do
+ @begin
+ @show
+  `7Bell
+ @do `p23 + 20000
+ @end
+@if `p22 = 3 then do
+ @begin
+ @show
+  `$Lemon
+ @do `p23 + 3000
+ @end
+@if `p22 = 4 then do
+ @begin
+ @show
+  `5Plum
+ @do `p23 + 100
+ @end
+@if `p22 = 5 then do
+ @begin
+ @show
+  `6Peach
+ @do `p23 + 20
+ @end
+@if `p22 = 6 then do
+ @begin
+ @show
+  `6Orange
+ @do `p23 + 3
+ @end
+@do `p22 random 6 1
+@if `p22 = 1 then do
+ @begin
+ @show
+  `%Bar
+ @do `p23 + 300000
+ @end
+@if `p22 = 2 then do
+ @begin
+ @show
+  `7Bell
+   @do `p23 + 20000
+ @end
+@if `p22 = 3 then do
+ @begin
+ @show
+  `$Lemon
+ @do `p23 + 3000
+ @end
+@if `p22 = 4 then do
+ @begin
+ @show
+  `5Plum
+ @do `p23 + 100
+ @end
+@if `p22 = 5 then do
+ @begin
+ @show
+  `6Peach
+ @do `p23 + 20
+ @end
+@if `p22 = 6 then do
+ @begin
+ @show
+  `6Orange
+ @do `p23 + 3
+ @end
+@do `p24 is `p21
+@if `p23 = 900000 then do
+ @begin
+ @show
+
+  `%Jackpot!!! `0100 `2to `01`2 payoffs!!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 100
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 200
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 500
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 1000
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 2000
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 60000 then do
+ @begin
+ @show
+
+  `2You win at `080`2 to `01`2 payoffs!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 80
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 160
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 400
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 800
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 1600
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 9000 then do
+ @begin
+ @show
+
+  `2You win at `050`2 to `01`2 payoffs!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 100
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 250
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 500
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 1000
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 300 then do
+ @begin
+ @show
+
+  `2You win at `030`2 to `01`2 payoffs!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 30
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 60
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 150
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 300
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 600
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 60 then do
+ @begin
+ @show
+
+  `2You win at `025`2 to `01`2 payoffs!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 25
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 125
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 250
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 500
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 9 then do
+ @begin
+ @show
+
+  `2You win at `010`2 to`0 1`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 100
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 200
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 620000 then do
+ @begin
+ @show
+
+  `2You win at `010`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 100
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 200
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 43000 then do
+ @begin
+ @show
+
+  `2You win at `09`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 9
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 18
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 45
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 90
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 180
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 6100 then do
+ @begin
+ @show
+
+  `2You win at `08`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 8
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 16
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 40
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 80
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 160
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 220 then do
+ @begin
+ @show
+
+  `2You win at `07`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 7
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 14
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 35
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 70
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 140
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 43 then do
+ @begin
+ @show
+
+  `2You win at `05`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 5
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 25
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 100
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 300006 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 20006 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 3006 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 106 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 26 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@show
+
+  `2I'm sorry, but you `4lose`2 your bet of: `$$`p21
+
+@if `p21 = 1 then do
+ @begin
+ @do money - 1
+ @end
+@if `p21 = 2 then do
+ @begin
+ @do money - 2
+ @end
+@if `p21 = 5 then do
+ @begin
+ @do money - 5
+ @end
+@if `p21 = 10 then do
+ @begin
+ @do money - 10
+ @end
+@if `p21 = 20 then do
+ @begin
+ @do money - 20
+ @end
+@key
+@do goto slots
+
+@#ending
+@drawmap
+@update
+@closescript
+;The Above Script Is Extracted From GAMBLE In Bonetown.
+;The Slot Script Is By Seth Able.
+
+@#crapstart
+
+@do `v01 is 1
+@do goto craps
+
+@#craps
+@do moveback
+@busy
+@do `p24 is 0
+@do `p21 is money
+@show
+`r0`c  `r1 Playing some Craps `r0
+
+  `2You have `$$`p21`2.  How much do you want to wager? `2(`0`p33 `2gambles left`2)
+
+@do write
+`x`x
+@choice
+$5
+$10
+$20
+$50
+$100
+Help on craps
+Leave
+@if response is 6 then do
+  @begin
+  @do goto help
+  @end
+
+
+@if responce = 1 then do
+ @begin
+ @if `p21 < 5 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 5
+ @do goto begin1
+ @end
+@if responce = 2 then do
+ @begin
+ @if `p21 < 10 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 10
+ @do goto begin1
+ @end
+@if responce = 3 then do
+ @begin
+ @if `p21 < 20 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 20
+ @do goto begin1
+ @end
+@if responce = 4 then do
+ @begin
+ @if `p21 < 50 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 50
+ @do goto begin1
+ @end
+@if responce = 5 then do
+ @begin
+ @if `p21 < 100 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 100
+ @do goto begin1
+ @end
+@if response = 7 then do
+ @begin
+ @do goto ending
+ @end
+@label begin1
+@if `p33 < 1 then do
+  @begin
+  @show
+`r0`c  `r1 `%You carefully spit on the dice for good luck. `r0
+
+`2  `4A hand catches yours before you can roll.
+`\`k  `0"You've gambled enough for today we think, kid.  Come back
+  tomorrow," `2 a greasy looking fellow explains.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do `p33 - 1
+@show
+`r0`c  `r1 `%You carefully spit on the dice for good luck. `r0
+
+@do `p22 random 5 1
+@do `p23 random 5 1
+@do `p24 + `p22
+@do `p24 + `p23
+@show
+  `0First Roll....
+
+@show
+  `2Die #1`0: `p22
+  `2Die #2:`0 `p23
+
+  `2Total: `0`p24
+
+@if `p24 = 2 then do
+ @begin
+ @show
+
+  `4Snake Eyes!
+ @do goto lose
+ @end
+@if `p24 = 3 then do
+ @begin
+ @show
+  `4Cock Eyes!
+ @do goto lose
+ @end
+@if `p24 = 12 then do
+ @begin
+ @show
+  `4Boxcars!
+ @do goto lose
+ @end
+@if `p24 = 7 then do
+ @begin
+ @show
+  `%A Natural!
+ @do goto win
+ @end
+@if `p24 = 11 then do
+ @begin
+ @show
+  `%A Natural!
+ @do goto win
+ @end
+@show
+  `0`p24`2 is your point.
+@label nextroll
+@do `p25 is 0
+@show
+
+  Press a key to roll again.
+@do `p22 random 5 1
+@do `p23 random 5 1
+@do `p25 + `p22
+@do `p25 + `p23
+@show
+`\`k  `2Die #1: `0`p22
+  `2Die #2: `0`p23
+
+  `2Total: `0`p25
+@if `p25 = `p24 then do
+ @begin
+ @do goto hit
+ @end
+@if `p25 = 7 then do
+ @begin
+ @do goto crapout
+ @end
+@if `p25 = 11 then do
+ @begin
+ @do goto crapout
+ @end
+@show
+
+  `2Not your point, keep rolling the bones!
+@do goto nextroll
+@label hit
+@show
+
+  `0Yes! You hit your point.
+@label win
+@show
+
+  `2You win your bet of: `$$`p20`2!
+@if `p20 = 5 then do
+ @begin
+ @do money + 5
+ @end
+@if `p20 = 10 then do
+ @begin
+ @do money + 10
+ @end
+@if `p20 = 20 then do
+ @begin
+ @do money + 20
+ @end
+@if `p20 = 50 then do
+ @begin
+ @do money + 50
+ @end
+@if `p20 = 100 then do
+ @begin
+ @do money + 100
+ @end
+@do goto bottom
+@label crapout
+@show
+
+  `4You crapped out!
+@label lose
+@show
+
+  `2You lose your bet of: `$$`p20`2.
+@if `p20 = 5 then do
+ @begin
+ @do money - 5
+ @end
+@if `p20 = 10 then do
+ @begin
+ @do money - 10
+ @end
+@if `p20 = 20 then do
+ @begin
+ @do money - 20
+ @end
+@if `p20 = 50 then do
+ @begin
+ @do money - 50
+ @end
+@if `p20 = 100 then do
+ @begin
+ @do money - 100
+ @end
+@label bottom
+@show
+`\`k
+@do goto craps
+@label nomoney
+@show
+`\`\  `4I'm sorry, but you don't have enough money for that bet.
+
+`k
+@do goto craps
+;the Crap script is extracted from GAMBLE.REF
+;the Crap script is by Seth Able.
+
+@#GOSSIP
+@do moveback
+@do `p20 random 8 1
+@if `p20 is 1 then saybar
+`%YQW: `0You Know What? Yang's Empire BBS is Kewl!
+@if `p20 is 2 then saybar
+`%YQW: `0Yang Qingwei Created This Kewl IGM"
+@if `p20 is 3 then saybar
+`%YQW: `0Call Yang's Empire BBS at o65-581-1224 24hrs Kewl BBS!       
+@if `p20 is 4 then saybar
+`%YQW: `0Do You Know That Yang's Place Is Oso Created By YAng Qingwei?
+@if `p20 is 5 then saybar
+`%YQW: `0This IGM Is The 2nd Yang Qingwei Had Made
+@if `p20 is 6 then saybar
+`%YQW: `0Hope You'll Enjoy This IGM!
+@if `p20 is 7 then saybar
+`%YQW: `0The Craps And Slot Script Is Extracted From Seth Able.
+@if `p20 is 8 then saybar
+`%YQW: `0The Beds At The Third Level Is The SAFEST!!
+
+@#WRITE
+@busy
+@Do moveback
+@show
+`r0`c  `r1You Saw A Table With A Pen On It.  `r0
+
+@if x!.txt exist false then do
+ @begin
+ @writefile x!.txt
+  `%Yang Qingwei `2: `0This IGM Is The 2nd I Had Created!
+  `%Yang Qingwei `2: `0Call Yang's Empire At o65-581-1224 24hrs!
+ @end
+
+@if yqw.txt exist true then do
+ @begin
+ @displayfile x!.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile x!.txt
+  `%`n`2 : `0`s03
+ @do trim x!.txt 17
+ @drawmap
+ @update
+
+@#HEAL
+@do saybar
+You Slowly Walk Near The Water.  
+@show
+`L`L
+@do saybar
+You are totally healed!
+@do `p02 is `p03
+
+@#tooold
+@show
+`r0`c`%  `r1 Time to Do Enhances `r0
+`\`\   `4Your big enuf PAL!!
+@key
+@drawmap
+
+
+@#HP
+@do moveback
+@label LOOPHP
+@datanewday ex!hp.idf
+@dataload ex!hp.idf &playernum `p20
+@if `p09 > 19 then goto tooold
+@if `p03 > 300 then goto tooold
+@if `p20 > 0 then do
+        @begin
+        @show
+`\`4Maybe Next Time Pal!
+        @key
+        @drawmap
+        @end
+@datasave ex!hp.idf &playernum 1
+@show
+`r0`c`%  `r1 Time to Do Enhances `r0
+`\`2  Body Builder waits While You Look At Your $$$
+
+@do write
+`l`l
+@do `p20 * `p03
+@do `p21 * `p09
+@do `v01 is 1
+@choice
+Pay $`p20 To The Bodybuilder And Enhance Your HP By `p21!.
+Leave.
+@
+
+@if response is 1 then do
+@begin
+@if money < `p20 then do
+@begin
+@do move 2 15
+@show
+`4Opps Guess You Do Not Have Enuff $$$
+@key
+@Drawmap
+@do goto LOOPHP
+@end
+@do money - `p20
+@do move 2 15
+@show
+`4Thanks Kid. Here Your Body Had Been Enhanced.
+@key
+@do `p03 + `p21
+@do goto LOOPHP
+@end
+
+@if response is 2 then do
+@begin
+@do moveback
+@do move 2 15
+@show
+`4Maybe Next Time Pal!
+@key
+@drawmap
+@end
+
+@#POOL
+@do saybar
+`4You Jumped Down To The Cool Water! Its Fun MaN!
+
+@#HEAL!
+@do moveback
+@do saybar
+Your Helper Use A Stick And Point It On You.  
+@show
+`L`L
+@do saybar
+You are totally healed!
+@do `p02 is `p03
+
+@#TELE
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Magic Of Traval  `r0
+
+  `0"Hello Master! Whould You Like To Go Anywhere?" 
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+GreenTree
+PortTown
+BoneTown
+FlagCity
+Sosen Village
+ArrisVille
+Nevermind
+@if response not 7 then do
+  @begin
+@show
+`\`\  `0"Okay sir, Get Ready."
+
+  `2BAM! A Loud Noise Was Heard.
+
+  `2Then suddenly, you are there, on your own.
+`\`k
+@if response is 1 then do
+  @begin
+   @do x is 10
+   @do y is 15
+   @do map is 1356
+  @end
+@if response is 2 then do
+  @begin
+   @do x is 38
+   @do y is 16
+   @do map is 956
+  @end
+@if response is 3 then do
+  @begin
+   @do x is 53
+   @do y is 18
+   @do map is 1572
+  @end
+@if response is 4 then do
+  @begin
+   @do x is 71
+   @do y is 19
+   @do map is 1092
+  @end
+@if response is 5 then do
+  @begin
+   @do x is 36
+   @do y is 5
+   @do map is 456
+  @end
+@if response is 6 then do
+  @begin
+   @do x is 19
+   @do y is 9
+   @do map is 523
+  @end
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#doorguard
+@do moveback
+@label startg
+@if 1stclass.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to Leave!" `2The Guard Shouted.
+  @closescript
+  @end
+
+@readfile 1stclass.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You Look At The Guard.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Talking to the House Guarder `r0
+
+  `2The Guarder Quickly Talk To You
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Sell Away This House
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Sell property back to the bank for `$3,000`%.
+Do nothing of the sort
+@if response is 1 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your keep back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete 1stclass.dat
+  @do money + 3000
+  @show
+`\`\  `%EXTACT'S 1ST CLASS HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Extacy's 1st Class House`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @show
+`\
+   `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)
+                      `2(enter `4ALL`2 to keep the door open for everyone)
+  @do write
+`\   `2Password:`x`x
+  @do readstring 40 `s01 `s01
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete 1stclass.dat
+  @writefile 1stclass.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#enter
+@do moveback
+@offmap
+@if 1stclass.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+ `4 The Bank has put it up for sale!  The asking price is `$$7,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 7000 Purchase it.
+<&money 6999 Sigh wistfully and leave since you don't have enough.
+@
+
+@if responce is 1 then do
+  @begin
+  @if 1stclass.dat exist true then do
+    @begin
+    @do goto done
+    @end
+
+  @writefile 1stclass.dat
+&playernum
+NONE
+    @do money - 7000
+    @do addlog
+  `0`n `2buys `%Extacy's 1st Class House`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this House!
+
+`k
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile 1stclass.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   @do delete 1stclass.dat
+    @do addlog
+  `%Extacys's 1st Class House`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is ALL then goto yerok
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 Extacy's 1st Class House - Owned by `s02 `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the door.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+
+  @show
+`r0`c  `r1 Extacy's 1st Class House `r0
+
+`2  A voice booms from behind the door.  `0"Halt, you!  What business have
+  you with my lord and master, `%`s02`0?" `2the guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Say Something.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+@label yerok
+    @show
+`r0`c`\`\  `0"Welcome to `%Extacy's 1st Class House`0,"`2 the Guard smiles as
+  the door slowly opens.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Extacy's 1st Class House Reports:
+
+`0  `n`2 attempted to Break Into The house By Saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Guard doesn't seem too interested, because you're
+  still outside a locked door!`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+@label letmein
+@do x is 45
+@do y is 16
+@do goto done
+@#done
+
+@#PAY
+@do `v01 is 1
+@do move 2 1                                                                
+@show
+`r0`c`%  `r1 The Doorman Stop You. `r0
+`2  Hey Kid. Stop Right There. 
+
+@label LOOPPAY
+@do move 2 1
+@show
+`r0`c`%  `r1 Pay up `r0
+`2  Doorman waits While You Look At Your $$$
+
+@do write
+`x`x
+@choice
+Pay $100 To The Doorman.
+Leave.
+@
+
+@if response is 1 then do
+ @begin
+ @if money < 100 then do
+ @begin
+ @do move 2 15
+ @show
+`4You Don't Have That Much!
+ @key
+ @do goto LOOPPAY
+ @end
+ @do money - 100
+ @do move 2 15
+ @show
+`4Thanks Pal Here You Go.
+ @key
+  @drawmap
+ @end
+ @end
+
+@if response is 2 then do
+ @begin
+ @do moveback
+ @show
+`r0`c
+`4Piss Off. I Have No Time For This!
+@key
+@Drawmap
+@end
+
+@#2out
+@do x is 39
+@do y is 9
+
+@#1out
+@do x is 43
+@do y is 16
+
+@#DEATH
+@do moveback
+@show
+`r0`c
+`4The Hour Of Death.
+`4You Are On Your Own Pal
+`4Beware Of Fake Exits.
+`4Remember, The
+`4Hardest To Get To The Exit
+`4Is The Real EXIT!
+`4Use This TIP Wisely.
+`4Goodluck. May The Begone Be GONE!
+`4                                    -Yang Qingwei
+@key
+@drawmap
+
+@#fight
+@do `p20 random 10 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 12 1
+@do goto monster`p20
+
+@#monster1
+@fight
+;name
+Highway Raider
+;string said when you see him
+`0"Put down your arms and no one gets hurt!" `2you hear from behind.
+;power move kill string
+You carefully step over the lifeless Rogue's body.. hehe!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+punches you|58
+backstabs you|83
+hits you with a poison dart|78
+clubs you|67
+NONE|NONE
+;defense
+10
+;gold reward
+230
+;experience
+180
+;hit points
+90
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Rabid Tiger
+;string said when you see him
+You hear a hoarse deep growl around the rock ahead.
+;power move kill string
+Stay kitty stay!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+rips off part of your arm|73
+bats you hard with a paw|85
+charges you|105
+NONE|NONE
+NONE|NONE
+;defense
+20
+;gold reward
+157
+;experience
+96
+;hit points
+78
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Hill Dwarf
+;string said when you see him
+You see a small hyperactive looking dwarf approaching.
+;power move kill string
+`$"Twikie from Buck Rodgers called, he want's his double back," `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hits you with a bone club|60
+wields his battle axe at you|75
+shouts plenty of obscenities|78
+kicks your knees, hard|69
+NONE|NONE
+;defense
+12
+;gold reward
+245
+;experience
+135
+;hit points
+103
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Rock Golem
+;string said when you see him
+A large stone sprouts legs and lunges at you!
+;power move kill string
+You rock out with a swing of your s&weapon & split it in two.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+pounds your foot|40
+throws its arm at your head|56
+rocks out|43
+NONE|NONE
+NONE|NONE
+;defense
+30
+;gold reward
+534
+;experience
+365
+;hit points
+380
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Lost Monkey
+;string said when you see him
+`0"Oo oo oo," `2you hear from behind.
+;power move kill string
+`2Bad monkey, boy did you spank him!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+twists your arm|60
+sweeps your feet|65
+bites at your finger|50
+whips you with his tail|70
+NONE|NONE
+;defense
+2
+;gold reward
+23
+;experience
+30
+;hit points
+34
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Sir Beavis
+;string said when you see him
+`0"Halt, heir person, or like ... uh something," `2you hear from behind.
+;power move kill string
+That knight guy ... really sucked.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hears voices|68
+slams you with his warhammer|78
+lays the smack down|89
+has a seizure|90
+NONE|NONE
+;defense
+37
+;gold reward
+343
+;experience
+289
+;hit points
+145
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Still Lost Knight
+;string said when you see him
+`0"Halt you too must be an enemy of this land," `2says a confused voice.
+;power move kill string
+`$"I thought you found your way home last time?" `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+breaks his club on your face|70
+hits with his broadsword|86
+bludgeons you|69
+stabs with a hidden dagger|68
+NONE|NONE
+;defense
+22
+;gold reward
+322
+;experience
+210
+;hit points
+87
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+Giant Snake
+;string said when you see him
+You see what you thought was a big log move and hiss at you!
+;power move kill string
+My anaconda don't want none unless it's got buns hun.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+inject about a liter of venom into you|78
+squeezes you|60
+gets a bite of your arm|67
+NONE|NONE
+NONE|NONE
+;defense
+14
+;gold reward
+287
+;experience
+102
+;hit points
+65
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster9
+@fight
+;name
+Future Warrior
+;string said when you see him
+`0"I'm afraid I have to take you back with me," `2you hear from behind.
+;power move kill string
+`$"I'm not going back with you," `2you scream .
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+blasts you with his laser|100
+gets lock on you with a beam of some kind|95
+uses his proton launcher|110
+launches a flying explosive thing at you|108
+calls for an airstrike from his Mauler|120
+;defense
+35
+;gold reward
+700
+;experience
+290
+;hit points
+120
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster10
+@fight
+;name
+Giant Worm
+;string said when you see him
+There's an awfully big tube hangin out of that carcus.
+;power move kill string
+No way you're getting worms.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+touches you|67
+gets slime on you|60
+attaches to your leg|70
+NONE|NONE
+NONE|NONE
+;defense
+12
+;gold reward
+199
+;experience
+98
+;hit points
+55
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster11
+@fight
+;name
+Oversized Hawk
+;string said when you see him
+A rather large shadow passes overhead.
+;power move kill string
+Put em on the endagered species list.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+gashes away some flesh|65
+buries its beak in your shoulder|60
+lands on your head|67
+NONE|NONE
+NONE|NONE
+;defense
+10
+;gold reward
+88
+;experience
+67
+;hit points
+50
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster12
+@fight
+;name
+Stray Cow
+;string said when you see him
+A loud `0"Moo" `2comes from up ahead!
+;power move kill string
+Got Milk?
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+moos at you|55
+kicks you|60
+milks you for a change|67
+NONE|NONE
+NONE|NONE
+;defense
+12
+;gold reward
+76
+;experience
+143
+;hit points
+45
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#done
+;The above are extracted from fightsw.ref
+;The Author Of The Above Script Is By Seth Able.
+
+@#BACK
+@show
+`r0`c
+`4No Turning Back Pal
+`4Fight Till The END!
+`4Good Luck
+@key
+@drawmap
+

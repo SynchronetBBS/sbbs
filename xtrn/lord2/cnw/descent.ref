@@ -1,0 +1,513 @@
+; Script file DESCENT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:25 2001
+
+@DECLARE start 000000788
+@DECLARE deadguy 000001503
+@DECLARE fightdrag 000003101
+@DECLARE draghome 000003770
+@DECLARE dragwin 000004441
+@DECLARE draglose 000004631
+@DECLARE dragrun 000004764
+@DECLARE lastmap 000006252
+@DECLARE rock 000006633
+@DECLARE condemmed 000006999
+@DECLARE fight 000007082
+@DECLARE dragon1 000007581
+@DECLARE dragon2 000008130
+@DECLARE dragon3 000008679
+@DECLARE dragon4 000009283
+@DECLARE dragon5 000009881
+@DECLARE checkdead 000010493
+@DECLARE scroll 000010614
+@DECLARE enterl 000010696
+@DECLARE enterr 000010796
+@DECLARE enter 000010895
+@DECLARE sign1 000011166
+@DECLARE nomore 000011266
+@DECLARE done 000011274
+@NOCHECK
+; End of .REF index
+
+@#start
+@datanewday child0.idf
+@dataload child0.idf &playernum `p20
+@if `p20 is 1 then do
+  @begin
+  @run genran in genran.ref
+  @end
+@dataload child3.idf &playernum `p20
+@If `p20 is 1 then
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end  
+@if `p09 > 4 then do
+  @begin
+  @dataload child1.idf &playernum `p20
+  @if `p20 is 0 then do
+    @begin
+    @do saybar
+You feel a wave of terror as a great winged shape flies overhead
+    @end
+  @if `p20 is 1 then do
+    @begin
+    @run deadguy in descent.ref
+    @end
+  @if `p20 is 2 then do
+    @begin
+    @do goto fightdrag in descent.ref
+    @end
+  @end
+@do saybar
+You feel a wave of terror as a great winged shape passes overhead.
+@#deadguy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2You hear an injured person nearby.  Investigate? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @datasave child1.idf &playernum 2
+  @clear screen
+  @show
+
+                       `r1`%Something Strange`r0
+
+`2You hear weak moaning from some bushes.  You invesigate to find a man who
+looks like he has been in the worst fight of his life, and LOST!
+
+The man is covered with blood.  One leg is bent at a very strange angle.  You
+can see his lips moving but no sound comes out.  You lean closer and you hear
+him whisper, "Beware Dragon."  You hear him draw a ragged breath and then
+exhale.  Then nothing.  It seems he is gone.
+
+  @do `v01 is 1
+  @choice
+  Bury him (20 turns)
+  Leave him for the buzzards
+  @if response is 1 then do
+    @begin
+    @do `p07 + 1
+    @if `v05 > 0 then do
+      @begin
+      @do `p11 - 20
+      @drawmap
+      @update
+      @do saybar
+You bury him near where you found him laying.  Alignment goes up by 1.
+      @closescript
+      @end
+    @if `v05 < 1 then do
+      @begin
+      @drawmap
+      @update
+      @do saybar
+You bury him near where you found him laying.  Alignment goes up by 1.
+      @closescript
+      @end
+    @end
+  @if response is 2 then do
+    @begin
+    @do `p07 - 2
+    @drawmap
+    @update
+    @do saybar
+You are much too busy to take the time to bury him.  Alignment goes down by 2.
+    @closescript
+    @end
+  @drawmap
+  @update
+@end
+@do saybar
+You are much too busy to help the man.
+@#fightdrag
+@fight
+;name
+`9Blue `2Dragon
+;string said when you see him
+A scaly blue dragon lands in front of you
+;power move kill string
+NOOOO!! The dragon screams as you bring your weapon down across her neck.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+breathes fire at you|178
+claws your throat|143
+hits you with her tail|137
+rips your arm with her teeth|92
+bites your leg|79
+;defense
+49
+;gold reward
+0
+;experience
+1750
+;hit points
+1500
+;if win: ref file|name or NONE
+descent.ref|dragwin
+;if lose: ref file|name or NONE
+descent.ref|draglose
+;if runs: ref file|name or NONE
+descent.ref|dragrun
+
+@#draghome
+@fight
+;name
+`9Blue `2Dragon
+;string said when you see him
+"You are a very foolish human to invade my lair," You hear.
+;power move kill string
+NOOOO!! The dragon screams as you bring your weapon down across her neck.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+breathes fire at you|178
+claws your throat|143
+hits you with her tail|137
+rips your arm with her teeth|92
+bites your leg|79
+;defense
+49
+;gold reward
+0
+;experience
+1750
+;hit points
+1500
+;if win: ref file|name or NONE
+descent.ref|dragwin
+;if lose: ref file|name or NONE
+gametxt.ref|die
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#dragwin
+@do addlog
+`2  `n has slain `9Blue `0Dragon`2!!
+@routine seperate in gametxt.ref
+@do `p18 + 900
+@datasave child3.idf &playernum 1
+@do quebar
+You recieve 900 quest points.
+@#draglose
+@do `p02 is 3
+@do quebar
+You awaken sometime later very weak.  Seems the Dragon left you for dead. 
+@clearblock 22 25
+@#dragrun
+@datasave child0.idf &playernum 1
+@do `p20 random 149 1
+@if `p20 < `p05 then do
+  @begin
+  @do saybar
+You barely escape the Dragon.
+  @clearblock 22 25
+  @do goto nomore
+  @end
+@clear screen
+@pauseoff
+@show
+`c`2You were much too slow!!  The Dragon blocked your path.
+
+The Dragon has you by the throat.  She looks down at you contemptuously.
+
+`3"You puny, pathetic human.  You are even more cowardly than I had heard.
+I see no challenge in killing a coward like you.  It's much too easy.
+Instead I will take you to my lair and let my babies practice on you."
+
+`2She takes wing and soon the dragon, and you are several hundred feet in the
+air.  You just hope she doesn't get tired of your weight and drop you.  She
+carries you a long way.  A long time later, she seems to be coming in for a
+landing in a field near some rocks.  She enters a cave.  Still carrying you
+and takes you through dark passages.  Soon she seems to reach a chamber.  She
+releases you.
+
+`3"See if you can get out of here alive, human.  I don't think you can.  I've
+been teaching my babies and now they get to practice on you."
+
+`2You begin to wander if running was such a good idea.
+
+@key
+@do `p20 is &map
+@do `p21 is &lastx
+@do `p22 is &lasty
+@datasave childx.idf &playernum `p21
+@datasave childy.idf &playernum `p22
+@datasave childm.idf &playernum `p20
+@do map is 42
+@loadmap 42
+@drawmap
+@do map is 16
+@do x is 74
+@do y is 5
+@loadmap &map
+@drawmap
+@update
+@#lastmap
+@dataload childm.idf &playernum `p20
+@dataload childx.idf &playernum `p21
+@dataload childy.idf &playernum `p22
+@if `p20 is 0 then do
+  @begin
+  @do map is 42
+  @do x is 24
+  @do y is 4
+  @loadmap &map
+  @drawmap
+  @updade
+  @closescript
+  @end
+@do map is `p20
+@do x is `p21
+@do y is `p22
+@datasave childm.idf &playernum 0
+@loadmap &map
+@drawmap
+@update
+@#rock
+@datanewday child2.idf
+@dataload child2.idf &playernum `p20
+@if `p20 is 1 then do
+  @begin
+  @do moveback
+  @do saybar
+It's a rock.  And a big one at that.
+  @end
+@if `p20 is 0 then do
+  @begin
+  @do moveback
+  @do saybar
+Wow.  There is a blue potion laying near the rock.  You take it.
+  @do `i40 + 1
+  @datasave child2.idf &playernum 1
+@#condemmed
+@do moveback
+@do saybar
+Sign reads: Dragon Cave near.  EXTREME Danger.
+@#fight
+@do `p21 random 30 1
+@if `p21 is 15 then do
+  @begin
+  @routine checkdead
+  @if p30 is 1 then do
+    @begin
+    @closescript
+    @end
+    @dataload childm.idf &playernum `p20
+    @if `p20 is 0 then do
+      @begin
+      @run draghome in descent.ref
+      @end
+    @if `p20 > 0 then do
+      @begin
+      @do saybar
+Dragon: Look!  It's the human.  Still alive.  But not for long! HAHA!  
+      @closescript
+      @end
+    @end
+@do `p20 random 5 1
+@do goto dragon`p20
+@#dragon1
+@fight
+;name
+Infant Dragon
+;string said when you see him
+You see a very young dragon.
+;power move kill string
+Ah.  Poor baby boo boo.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+claws your throat|35
+hits you with his tail|35
+rips your arm with her teeth|20
+NONE|NONE
+NONE|NONE
+;defense
+12
+;gold reward
+0
+;experience
+87
+;hit points
+65
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+gametxt.ref|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#dragon2
+@fight
+;name
+Infant Dragon
+;string said when you see him
+You see a very young dragon.
+;power move kill string
+Ah.  Poor baby boo boo.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+claws your throat|35
+hits you with her tail|36
+rips your arm with her teeth|18
+NONE|NONE
+NONE|NONE
+;defense
+11
+;gold reward
+0
+;experience
+80
+;hit points
+60
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+gametxt.ref|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#dragon3
+@fight
+;name
+Young Dragon
+;string said when you see him
+Look.  It's a dragon.  Looks like he needs his mamma.
+;power move kill string
+You kids don't learn very well, do you?
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Breathes fire at you|40
+claws your throat|47
+hits you with his tail|52
+rips your arm with her teeth|49
+NONE|NONE
+;defense
+20
+;gold reward
+0
+;experience
+130
+;hit points
+95
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+gametxt.ref|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#dragon4
+@fight
+;name
+Adolecent Dragon
+;string said when you see him
+Will these dragons never give up?
+;power move kill string
+This Dragon will never grow up to prey on people
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+breathes fire at you|65
+claws your throat|60
+hits you with his tail|67
+rips your arm with her teeth|64
+NONE|NONE
+;defense
+23
+;gold reward
+0
+;experience
+180
+;hit points
+110
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#dragon5
+@fight
+;name
+Adolecent Dragon
+;string said when you see him
+She looks kind of cute.  Too bad she wants to kill you.
+;power move kill string
+Looks like these kids will never learn
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+breathes fire at you|72
+claws your throat|79
+hits you with her tail|85
+rips your arm with her teeth|60
+NONE|NONE
+;defense
+27
+;gold reward
+0
+;experience
+220
+;hit points
+150
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#checkdead
+@do `p30 is 0
+@dataload child3.idf &playernum `p20
+@if `p20 is 1 then do
+  @begin
+  @do `p30 is 1
+  @end
+@#scroll
+@do moveback
+@do saybar
+Scroll:  Things are not always as they seem.
+@#enterl
+@routine enter
+@do map is 16
+@do x is 3
+@do y is 19
+@loadmap &map
+@drawmap
+@update
+@#enterr
+@routine enter
+@do map is 16
+@do x is 4
+@do y is 19
+@loadmap &map
+@drawmap
+@update
+@#enter
+@datanewday child0.idf
+@dataload child0.idf &playernum `p20
+@if `p20 is 1 then do
+  @begin
+  @do saybar
+You decide going back in there would be pushing your luck a little too far.
+  @do moveback
+  @routineabort
+  @end
+@datasave child0.idf &playernum 1
+@#sign1
+@do saybar
+Sign:  <ÄÄ Arrisville Northlands     Where you were before ÄÄ>
+@do moveback
+@#nomore
+@#done

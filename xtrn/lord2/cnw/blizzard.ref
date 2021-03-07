@@ -1,0 +1,134 @@
+; Script file BLIZZARD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:24 2001
+
+@DECLARE buygog 000000267
+@DECLARE snowgog 000001197
+@DECLARE finished 000001508
+@DECLARE goggles 000001535
+@DECLARE goguse 000001680
+@NOCHECK
+; End of .REF index
+
+@#buygog
+@do moveback
+@offmap
+@do move 1 1
+@clear screen
+@do `p29 is &playernum
+@routine Snow`xGoggles in extitems.ref
+@routine bitcheck in item99.ref
+@show
+
+
+
+      `7A lonely man sits in the center of the room.
+
+
+
+`\`k
+@if `p20 is 0 then do
+        @begin
+        @show
+`\ `2"You'll be needing a pair of goggles to pass through the snow blizzard."
+
+ `2"I can sell you a new pair for `$$3000`2"
+
+        @do `v01 is 1
+        @do move 22 15
+        @choice
+No thanks
+>&money 2999 I'll take 'em
+        @if responce is 2 then do
+                @begin
+                @do money - 3000
+                @routine giveitem in item99.ref
+                @drawmap
+                @update
+                @closescript
+                @end
+        @show
+`\ `2"I dont think I can help you any more good s&sir.
+`k
+        @drawmap
+        @update
+        @closescript
+        @end
+
+
+        
+@#snowgog
+@do `p29 is &playernum
+@routine Snow`xGoggles in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 0 then do
+ @begin
+ @routine giveitem in item99.ref
+ @do saybar
+You just found some Snow Goggles!
+ @do goto finished
+ @end
+@do saybar
+You see a spot where something used to be.
+@label finished
+@closescript
+
+@#goggles
+@do `s06 is Snow`|Goggles
+@do `s07 is goguse
+@do `s08 is blizzard.ref
+@do `s09 is NIL
+@run install in install.ref
+@closescript
+
+@#goguse
+@clearblock 13 23
+@do move 1 14
+
+@if map is 1502 then do
+  @begin
+   @show
+`%
+`%                          ((   ____________   ))
+`%                           \\ /            \ // 
+`%                            \(              )/  
+`%                              \    ____    /    
+`%                               '--'    '--'
+
+                      `2You put on your snow goggles..
+
+@key bottom
+
+                     `%Hey, you can see much better now!
+
+@key bottom
+
+@do map is 1504
+@loadmap 1504
+ @closescript
+  @end
+
+@if map is 1504 then do
+ @begin
+ @show
+ `2 You're WEARING them already!
+ `k `$
+ @run getname in item99.ref
+ @closescript
+ @end
+
+@show
+`%
+`%                          ((   ____________   ))
+`%                           \\ /            \ // 
+`%                            \(              )/  
+`%                              \    ____    /    
+`%                               '--'    '--'
+
+                      `2You put on your snow goggles..
+
+@key bottom
+
+                 `2These might be usefull if it was snowing.
+
+@key bottom
+@run getname in item99.ref
+@closescript

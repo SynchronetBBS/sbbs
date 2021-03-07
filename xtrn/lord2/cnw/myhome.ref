@@ -1,0 +1,175 @@
+; Script file MYHOME.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:13 2001
+
+@DECLARE getplace 000001052
+@DECLARE getplace2 000002803
+@DECLARE nomore 000004552
+@NOCHECK
+; End of .REF index
+
+;
+;
+;Used:
+; -listed in player listing
+; -"v"iew details in the stats
+; -paying taxes, looking up player records :)
+;        soon, making home in specific buildings will be taxable.
+;
+; examples to use to put in REF to make a place a home.
+;
+;EXAMPLE1 - CHOICE
+;@choice
+;`%Make `#<home> `%your home
+;Leave
+;@if responce is 1 then do
+;        @begin
+;        @do `p69 is 21
+;        @show
+;`r0`c
+;
+;   `#<home> `%is now your home sweet home.
+;
+;       @key
+;       @end
+;
+;EXAMPLE2 - SAYBAR
+;@#myhome
+;@do moveback
+;@Do saybar
+;`%Make `#Q-Fortress `%your home? `8<`7y/N`8> :
+;@do readspecial `s02 NY
+;@if `s02 is Y then do
+;        @begin
+;        @do `p69 is 24
+;        @do saybar
+;  `#Q-Fortress `%is now your registered home.
+;        @end
+;@closescript
+
+;
+;  Need to add: Loki's Inn
+;
+;
+
+
+@#getplace
+@if `p69 is 0 then `s01 is East`xStoneBrook
+@if `p69 is 1 then `s01 is StoneBrook
+@if `p69 is 2 then `s01 is South`xStoneBrook
+@if `p69 is 3 then `s01 is GreenTree
+@if `p69 is 4 then `s01 is PortTown
+@if `p69 is 5 then `s01 is Knotwood
+@if `p69 is 6 then `s01 is Sosin
+@if `p69 is 7 then `s01 is FlagCity
+@if `p69 is 8 then `s01 is Arrisville
+@if `p69 is 9 then `s01 is BoneTown
+@if `p69 is 10 then `s01 is GumTown
+@if `p69 is 11 then do
+        @begin
+        ;TeamHouse1
+        @readfile tltname1.dat
+`s01
+        @end
+@if `p69 is 12 then do
+        @begin
+        ;TeamHouse2
+        @readfile tltname2.dat
+`s01
+        @end
+@if `p69 is 13 then do
+        @begin
+        ;TeamHouse3
+        @readfile tltname3.dat
+`s01
+        @end
+@if `p69 is 14 then do
+        @begin
+        ;TeamHouse4
+        @readfile tltname4.dat
+`s01
+        @end
+@if `p69 is 15 then do
+        @begin
+        ;TeamHouse5
+        @readfile tltname5.dat
+`s01
+        @end
+@if `p69 is 16 then `s01 is BeachSide`xCottage
+@if `p69 is 17 then `s01 is IceLord's`xKeep
+@if `p69 is 18 then `s01 is Castle`xColdrake
+@if `p69 is 19 then `s01 is Wizard's`xTower
+@if `p69 is 20 then `s01 is Northlands`xColiseum
+@if `p69 is 21 then `s01 is Sword`xCastle
+@if `p69 is 22 then `s01 is <opps>
+@if `p69 is 23 then `s01 is Myst`xVille
+@if `p69 is 24 then `s01 is Q-Fortress
+@if `p69 is 25 then `s01 is Torin`xCastle
+@if `p69 is 26 then `s01 is Felicity
+@if `p69 is 27 then `s01 is Odin's`xKeep
+@if `p69 is 28 then `s01 is WoodLand`xUnderground
+@if `p69 is 29 then `s01 is Dragon's`xDen
+@if `p69 is 30 then `s01 is Fortress`xFear
+@if `p69 is 31 then `s01 is Black`xDragon`xCastle
+@if `p69 > 31 then `s01 is No`xHome
+
+
+@#getplace2
+@if `p20 is 0 then `s01 is East`xStoneBrook
+@if `p20 is 1 then `s01 is StoneBrook
+@if `p20 is 2 then `s01 is South`xStoneBrook
+@if `p20 is 3 then `s01 is GreenTree
+@if `p20 is 4 then `s01 is PortTown
+@if `p20 is 5 then `s01 is Knotwood
+@if `p20 is 6 then `s01 is Sosin
+@if `p20 is 7 then `s01 is FlagCity
+@if `p20 is 8 then `s01 is Arrisville
+@if `p20 is 9 then `s01 is BoneTown
+@if `p20 is 10 then `s01 is GumTown
+@if `p20 is 11 then do
+        @begin
+        ;TeamHouse1
+        @readfile tltname1.dat
+`s01
+        @end
+@if `p20 is 12 then do
+        @begin
+        ;TeamHouse2
+        @readfile tltname2.dat
+`s01
+        @end
+@if `p20 is 13 then do
+        @begin
+        ;TeamHouse3
+        @readfile tltname3.dat
+`s01
+        @end
+@if `p20 is 14 then do
+        @begin
+        ;TeamHouse4
+        @readfile tltname4.dat
+`s01
+        @end
+@if `p20 is 15 then do
+        @begin
+        ;TeamHouse5
+        @readfile tltname5.dat
+`s01
+        @end
+@if `p20 is 16 then `s01 is BeachSide`xCottage
+@if `p20 is 17 then `s01 is IceLord's`xKeep
+@if `p20 is 18 then `s01 is Castle`xColdrake
+@if `p20 is 19 then `s01 is Wizard's`xTower
+@if `p20 is 20 then `s01 is Northlands`xColiseum
+@if `p20 is 21 then `s01 is Sword`xCastle
+@if `p20 is 22 then `s01 is GreenTree
+@if `p20 is 23 then `s01 is Myst`xVille
+@if `p20 is 24 then `s01 is Q-Fortress
+@if `p20 is 25 then `s01 is Torin`xCastle
+@if `p20 is 26 then `s01 is Felicity
+@if `p20 is 27 then `s01 is Odin's`xKeep
+@if `p20 is 28 then `s01 is WoodLand`xUnderground
+@if `p20 is 29 then `s01 is Dragon's`xDen
+@if `p20 is 30 then `s01 is Fortress`xFear
+@if `p20 is 31 then `s01 is Black`xDragon`xCastle
+@if `p20 > 31 then `s01 is No`xHome
+
+@#NOMORE

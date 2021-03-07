@@ -1,0 +1,66 @@
+
+                       BeachSide Cottage by Skull V1.03
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No! Yes! Maybe?
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes! unless u wanna send 
+                                                       me money ;)
+
+  Description:
+  An IGM, first one that ever actualy is out to the public (that i made),
+  I (Skull) had originally made over 10 IGMS for the original LORD, but they all
+had too many errors and I got sick of fixin 'em. So here, in 1 day I made an 
+IGM for LORD][ and to my knowledge it is BUG-FREE. This is v. 1.03, changed
+the price and stuff, not really anything major. 
+
+BeachSide Cottage is the 1st in a series of IGMS due out from me, in which
+there is a small cottage located on the beach betweeen Flag City and BoneTown.
+There are guest beds which the owner can charge for, and a ferry too, as well
+as (SUPRISE! ;) ) a private bedroom. The ferry and Bedroom are password
+protected. 
+
+INSTALLATION:
+Unzip into your LORD2 Dir., then type
+
+  IGM COTTAGE.IGM
+
+  To uninstall, do the same thing again.
+
+To test, go to Fagcity... Er FLAGcity (sorry ;) ) and then go down the coastline. 
+You should see a small new building with a dock. If you reach bonetown,
+it didnt work.
+
+Some aditional stuff:
+This is version 1.03. Emm, i had a few bugs in 1.00 which i figured out in v.
+1.01, but then i had some more new bugs which i have figured out in 1.02.
+This one just changed the price.
+I GUARANTEE that this one WILL work. And rightly too.
+if not, you didnt read that last line.
+
+
+
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%BeachSide Cottage by `4Skull `2of Big R.C.s BBS 610-494-4604 v.1.03
+replacescreen: 1332 1 show
+
+replacescreen: 1411 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+`2Thanx for installin' `%BeachSide Cottage `2Lord2 IGM. I really appreciate it.                                                                     
+if you have any errors, contact `4Skull `2 on Big R.C.'s BBS (610)494-4604.
+`8Version 1.03

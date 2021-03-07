@@ -1,0 +1,443 @@
+; Script file JCASTLE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE merlin 000000365
+@DECLARE heal 000001765
+@DECLARE doorguard 000001964
+@DECLARE startg 000001993
+@DECLARE sign 000005121
+@DECLARE enter 000005415
+@DECLARE done 000006614
+@DECLARE letmein 000008280
+@DECLARE done 000008361
+@NOCHECK
+; End of .REF index
+
+@#merlin
+@offmap
+@do moveback
+@do move 1 1
+@clear screen
+@show
+`r0  `r1  Merlin  `r0
+
+  `0"Hello sir. Where do you wish to go today?" `2Asks Merlin.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+`%GreenTree
+`%PortTown
+`%BoneTown
+`%FlagCity
+`%Sosen Village
+`%ArrisVille
+`4Nevermind
+`%Make `5Torin Castle `%your home
+@if responce is 8 then do
+        @begin
+        @do `p69 is 25
+        @show
+
+   `#`5Torin Castle `%is now your registered home.
+
+        @key
+        @drawmap
+        @update
+        @closescript
+        @end
+@if response not 7 then do
+  @begin
+@show
+`\`\  `0"Okay sir, here we go, I'll just grab my spell book."
+
+`k  `2"`#Nethin dwargin nargin flargin!`2" Shouts Merlin.
+
+  `2Then suddenly, you are there, on your own.
+`\`k
+@if response is 1 then do
+  @begin
+   @do x is 10
+   @do y is 15
+   @do map is 1356
+  @end
+@if response is 2 then do
+  @begin
+   @do x is 38
+   @do y is 16
+   @do map is 956
+  @end
+@if response is 3 then do
+  @begin
+   @do x is 53
+   @do y is 18
+   @do map is 1572
+  @end
+@if response is 4 then do
+  @begin
+   @do x is 71
+   @do y is 19
+   @do map is 1092
+  @end
+@if response is 5 then do
+  @begin
+   @do x is 36
+   @do y is 5
+   @do map is 456
+  @end
+@if response is 6 then do
+  @begin
+   @do x is 19
+   @do y is 9
+   @do map is 523
+  @end
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Healer  `r0
+
+  `2The doctor carefully looks over your wounds.
+
+  `%YOU ARE COMPLETELY HEALED.
+`\`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#doorguard
+@do moveback
+@label startg
+@if jcastle.dat exist false then do
+  @begin
+  @do saybar
+`0"You must leave this castle now!" `2the guard yells.
+  @closescript
+  @end
+
+@readfile jcastle.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+The doorguard salutes you as you pass.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2You're doorguard stands to attention.
+
+@do write
+`x`x
+@choice
+`%Change Password (currently is `0`s01`%)
+`%Ownership Options
+`%Make `5Torin Castle `%your home
+Leave
+@if responce is 3 then do
+        @begin
+        @do `p69 is 25
+        @show
+
+   `#`5Torin Castle `%is now your registered home.
+
+        @key
+        @do goto startg
+        @end
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer ownership
+Sell property to the bank for  `$25,000`%.
+Nevermind
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your castle.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your castle to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your castle.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete jcastle.dat
+  @writefile jcastle.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of Torin Castle to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Torin Castle`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Ownership transfered.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell it back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your castle.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete jcastle.dat
+  @do money + 25000
+  @show
+`\`\  `%CASTLE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Torin Castle`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete jcastle.dat
+  @writefile jcastle.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if jcastle.dat exist false then do
+ @begin
+ @do saybar
+Torin Castle - For sale, enquire inside.
+ @end 
+
+@if jcastle.dat exist true then do
+ @begin
+@readfile jcastle.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+@if jcastle.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2Torin Castle was once a magnificent castle that has housed many
+  great warriors and royalty.
+
+  `2If you choose to buy this great castle, you will recieve:
+  
+  `0*`2 A magician to teleport you to many places.
+
+  `0*`2 Your very own healer that works free of charge.
+
+  `0*`2 Two doorguards for your protection
+
+  `0*`2 A room for your companions to stay.
+
+  The asking price is `$$50,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 49999 Purchase it.
+<&money 50000 Sigh wistfully and leave since you don't have enough.
+>&money 49999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if jcastle.dat exist true then do
+    @begin
+    @show
+`\`\  `2DAMN! Someone bought it while you where thinking about it.`\`\`k
+    @do goto done
+    @end
+
+  @writefile jcastle.dat
+&playernum
+NONE
+    @do money - 50000
+    @do addlog
+  `0`n `2buys `%Torin Castle`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this keep!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile jcastle.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   @do delete jcastle.dat
+    @do addlog
+  `%Torin Castle`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You knock on the door for some time before a reply is given.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%Torin Castle`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Torin Castle News:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard shows no interest.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 36
+@do y is 15
+@do map is 1202
+@loadmap 1202
+@do goto done
+@#done

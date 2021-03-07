@@ -1,0 +1,390 @@
+; Script file SEASONS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:38 2001
+
+@DECLARE reset 000000547
+@DECLARE sign 000000578
+@DECLARE rabbit 000000661
+@DECLARE box 000003555
+@DECLARE donation 000004139
+@DECLARE orphan 000004773
+@DECLARE empty 000007390
+@DECLARE nopres 000007892
+@DECLARE green 000008327
+@DECLARE blue 000008406
+@DECLARE red 000008483
+@DECLARE white 000008561
+@DECLARE snack 000008641
+@DECLARE craft 000008720
+@DECLARE thankyou 000009000
+@DECLARE leaving 000009223
+@NOCHECK
+; End of .REF index
+
+@#reset
+@do `v40 = 0
+@end
+ 
+@#sign
+@do moveback
+@do saybar
+`0The Children's Shelter.  Please come in.
+ 
+@#Rabbit
+@DO moveback
+@SHOW
+`r0 `c
+`%Rabbit: `0Merry Xmas to all! Welcome to the Children's Shelter, `N.
+Please remember to help out the needy at this time of year. Many times we
+forget how lucky we are.
+`k
+`2 Have you ever given to a charity before?
+@do `V01 is 1
+@Choice
+Yes
+No
+ 
+@if response is 1 then do
+@begin
+@pauseoff
+@clear screen
+@SHOW
+`r0 [255D[1C[0;1;36m*%\*/*%$%*\*/*%$%*\*/*%$%*\*/*%$%*\[33m^[36m/*%$%*\*/*%$%*\*/*%$%*\*/*%$%*\*/*%*
+ *[6C[31mO[7CO[7CO[7CO  [33m.|.  [31mO[7CO[7CO[7CO[7C[36m*
+ *[33C[33m-[37m*[33m-[34C[36m*
+ *   [37mAthbhliain Faoi Mhaise![7C[33m'|'[11C_    [37mHappy New Year!   [36m*
+ *   [37mFrohliche Weihnachten![8C[32m*[33m:[32m*[10C[33m([37m"[33mD[5C[37mChag Sameach!   [36m*
+ *   [37mSarbatori Fericite![10C[32m* [33m. [32m*[8C[33m~(=r[6C[37mBoas Festas!   [36m*
+ *   [37mJoyous Solstice![12C[32m**   **    [33m.../__\[7C[37mGut Yontif!   [36m*
+ *   [37mMele Kurisumasu![10C[32m*** [31mo   [32m***[5C[33m[[37mMJ[33m][7C[37mIyi YIllar!   [36m*
+ *   [37mMerry Christmas![10C[32m** [35m\\    [32m**[12C[37mVelelykh Svyat!   [36m*
+ *   [37mHappy Hanukkah![9C[32m***    [35m\\   [32m***[8C[37mStastny Novy Rok!   [36m*
+ *   [37mPari Dzounount![10C[32m* [31mo[5C[35m\\  [32m*[8C[37mKelemes Unnepeket!   [36m*
+ *   [37mHappy Holidays![9C[32m**    [31mO    [35m\\[32m**[6C[37mSeason's Greetings!   [36m*
+ *   [37mVeseli Vanoce![8C[32m***[35m\\[7C[31mo  [35m\[32m***[5C[37mGung Hay Fat Choy!   [36m*
+ *   [37mFeliz Navidad![9C[32m*   [35m\\  [31mo[7C[32m*[7C[37mFelican Jarfinon!   [36m*
+ *   [37mJoyeux Noel![10C[32m**  [31mo  [35m\\    [31mO   [32m**[7C[37mJoy to the World   [36m*
+ *   [37mBom Natal![9C[32m****[8C[35m\\[5C[31mo [32m****[6C[37m- And to All a   [36m*
+ *   [37mGod Jul![13C[32m** [31mo[5Co  [35m\\ [31mo   [32m**[11C[37mGood Night!   [36m*
+ *   [37mCheers![12C[32m***[5C[31mO[7C[35m\\    [32m***[23C[36m*
+ *   [37m*:D[7Co_[5C[32m*****************************[6C[37me[0m***************
+ [1;36m*[5C[37m_[6C<' )~[6C[0;33m___[6C#####  [1;37m_v_[12C[0m***[1;34m"""""""""""""[36m*
+ *    [37m/<~    ["""] V  o [___] _*_ [0;33m#####[1;37m__|~|_ A[8C[33m*" [34m___ ___________
+ [36m*   [37m%'=    *|HHH|[~] U |\ /|/^^^\[0;33m##[1;37m[{}{}{}{](") !    [34mII__[[33mw[34m] | [[33mi[34m] [[33mz[34m] |[0m
+`k
+`0I am glad that you have given to the Needy.
+`0Please remember that even though this is the time for giving
+help is needed year round!
+`k
+@pauseon
+@Drawmap
+@update
+@closescript
+@end
+ 
+@if response is 2 then do
+@begin
+@DO moveback
+@SHOW
+`\ `\
+`0You really need to think about giving to the Needy. With out our
+help they have `%no help`0 at all.
+`k
+@Drawmap
+@update
+@closescript
+@end
+ 
+@#box
+@do moveback
+@clear screen
+@show
+`0You see a wooden box.  There is a slot in the top, and the hand-painted
+sign on the front says...       
+ 
+               ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿   
+               ³`@HelP SaPPorT Teh ChlDrN'S ShlTR!`0³
+               ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@key
+@clear screen
+@show
+`0Do you drop some money in?
+ 
+@do `v01 is 1
+@choice
+`%No
+`%Yes
+@if response is 1 the do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+ 
+`0How wonderful of you to be so generous!
+@key
+@do goto donation
+@#donation
+@show
+ 
+`@How much will you donate?
+@do readnum 10 0
+@if `v40 > money then do
+@begin
+@show
+ 
+ 
+`0You don't have `@`v40 `0with you.  You only have `@&money`0.
+@key
+@do goto donation
+@end
+@if `v40 = 0 then do
+@begin
+@show
+ 
+ 
+`0It's too bad you changed your mind.  These kids could really use the help!
+@key
+@drawmap
+@update
+@closescript
+@end
+@if `v40 < 0 then do
+@begin
+@show
+ 
+ 
+`0Steal money from the kids?!  Not only is that truly dispicable, but it's not
+very bright, considering that Rabbit is watching you.
+@key
+@drawmap
+@update
+@closescript
+@end
+@drawmap
+@update
+@closescript
+ 
+@#ORPHAN
+@do moveback
+@datanewday seasons.idf
+@dataload seasons.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do saybar
+`%The children are all asleep.  Try again tomorrow.
+@closescript
+@end
+@offmap
+@pauseoff
+@SHOW
+`r0 `c
+`0As you approach the shelter you're greeted by the sight of smiling faces
+through the windows...
+`L
+`@Candles are burning to celebrate the season that is at hand...
+`L`L`L`L
+`0The aroma of roasting Dragon hangs in the air.  The feast must be about
+to begin...
+`L`L`L`L`L
+`@Bells are ringing.. stars are sparkling.. snow is squeaking under your
+feet..
+`L`L`L`L`L
+`0A wonderful feeling envelopes you as you enter into the shelter.
+`L`L`L`L`L`L
+`@`k
+`r0 `c
+@DISPLAYFILE SEA01.ANS NOPAUSE
+@SHOW
+`k
+`r0 `c
+`0You hug all of your new found friends...
+`L`L`L`L`L`L
+`0You laugh,`L`L you smile,`L`L you eat....
+`L`L`L
+You look at some of the cards that the Messenger brought to the shelter.
+`L`L`L`L`L`L
+One in particular catches your eye...
+`L`L`L`L`L`L
+A very crudely drawn picture, but it is the message that is important...
+`k
+`r0 `c
+`0The note simply states....
+ 
+`@                         "THNK YUO"
+ 
+`0and crayoned in at the bottom in big block letters...
+ 
+`@         "FRM AlL ThE CihlDrn THAT wErE HELPD LAst YeaR"
+ 
+`0You wipe your eyes and remember that only a few gold pieces can and do
+work wonders.....
+ 
+`L`@.`L`0.`L`@.`L`0.`L`@.`L`0.`L`@.`L`0.`L`@.`L`0.`@.
+ 
+`0 The little children run up to you and tug you over to the tree, to
+show you all the packages that you have.
+`k
+`r0`c
+`0You look up at the tree and low and behold The Jolly Fat Warrior has
+indeed visited the children!
+ 
+The stockings are filled to the Brim, and the tree is overflowing with
+presents.
+ 
+`@ Would you like to open your present or look in your stocking?
+ 
+@do `V01 is 1
+@Choice
+`%Open my present
+`%Look in my stocking
+@if response is 1 then do
+@begin
+@clear screen
+@SHOW
+ 
+`0One of the children brings a small package to you.
+@key
+@show
+ 
+`@You open it carefully.  Inside you find`L`0. `L`@. `L`0.
+@if `v40 is 0 then goto nopres
+@do `v40 / `p09
+@if `v40 > 100 then goto snack
+@if `v40 > 50 then goto white
+@if `v40 > 20 then goto red
+@if `v40 > 10 then goto blue
+@if `v40 > 5 then goto green
+@do goto craft
+@end
+@if response is 2 then do
+@begin
+@if `v40 is 0 then goto empty
+@do `v40 / `p09
+@do `v40 / 10
+@if `v40 is 0 then `v40 is 1
+@clear screen
+@show
+ 
+`0You dig down deep into your stocking and find`L`@. `L`0. `L`@.
+ 
+                `@`v40 `0gems!
+@key
+@do `p19 + `v40
+@do goto thankyou
+@end
+ 
+@#empty
+@show
+ 
+ 
+`0You dig down deep into your stocking and find`L`@. `L`0. `L`@.
+ 
+`@A sweet little clay something.  You are not sure what it was supposed to be,
+but you can see tiny fingerprints in the soft clay.
+@key
+@show
+ 
+`0A tear forms in your eye as you think of the tiny hands that made it for you.
+@key
+@clear screen
+@show
+`0Without your support these children cannot afford food.  They certainly
+cannot afford expensive presents for strangers.
+@key
+@do goto thankyou
+ 
+@#nopres
+@show
+ 
+ 
+`0A sweet little clay something.  You are not sure what it was supposed to be,
+but you can see tiny fingerprints in the soft clay.
+@key
+@show
+ 
+`@A tear forms in your eye as you think of the tiny hands that made it for you.
+@key
+@clear screen
+@show
+`0Without your support these children cannot afford food.  They certainly
+cannot afford expensive presents for strangers.
+@key
+@do goto thankyou
+ 
+ 
+@#green
+@show
+ 
+`0A green potion!
+@key
+@do `i05 + 1
+@do goto thankyou
+ 
+@#blue
+@show
+ 
+`0A blue potion!
+@key
+@do `i40 + 1
+@do goto thankyou
+ 
+@#red
+@show
+ 
+`0A red potion!
+@key
+@do `i52 + 1
+@do goto thankyou
+ 
+@#white
+@show
+ 
+`0A white potion!
+@key
+@do `i55 + 1
+@do goto thankyou
+ 
+@#snack
+@show
+ 
+`0A Koshi Snack!
+@key
+@do `i66 + 1
+@do goto thankyou
+ 
+@#craft
+@show
+ 
+`0A sweet little clay something.  You are not sure what it was supposed to be,
+but you can see tiny fingerprints in the soft clay.
+@key
+@show
+ 
+`@A tear forms in your eye as you think of the tiny hands that made it for you.
+@key
+@do goto thankyou
+ 
+@#thankyou
+@clear screen
+@show
+ 
+`0You express your thanks to the children, and vow to yourself that you will
+never let them go hungry!
+@key
+@do goto leaving
+ 
+@if response is 2 then do
+@begin
+@SHOW
+`k
+@end
+ 
+@#leaving
+@pauseon
+@datasave seasons.idf &playernum 1
+@drawmap
+@update
+@do saybar
+`0Thanks for visiting the Children's Shelter!
+@closescript

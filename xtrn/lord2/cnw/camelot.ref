@@ -1,0 +1,1121 @@
+; Script file CAMELOT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:42 2001
+
+@DECLARE bank 000000698
+@DECLARE note 000003362
+@DECLARE bird 000004320
+@DECLARE armor 000005012
+@DECLARE weapon 000005177
+@DECLARE throne 000005345
+@DECLARE table 000005401
+@DECLARE guard 000005467
+@DECLARE startg 000005496
+@DECLARE inn 000008429
+@DECLARE servant 000009189
+@DECLARE wizard 000009254
+@DECLARE travel 000010982
+@DECLARE heal 000011620
+@DECLARE enter 000013004
+@DECLARE done 000014441
+@DECLARE letmein 000016038
+@DECLARE done 000016118
+@DECLARE sign 000016129
+@DECLARE sign2 000016429
+@DECLARE bar 000016500
+@DECLARE danstart 000016723
+@NOCHECK
+; End of .REF index
+
+@#bank
+@do moveback
+@do `p20 is 0
+@if cam.dat exist true then do
+  @begin
+  @readfile cam.dat
+`p20
+  @end
+ 
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+ 
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+ 
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile cam.dat
+`p20
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Dammit! Someone just took it!
+    @closescript
+    @end
+ 
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete cam.dat
+  @writefile cam.dat
+`p20
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+ 
+//if not owner, lets notify him
+ 
+@readfile camelot.dat
+`p20
+`s01
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Camelot Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+ 
+  @end
+  @closescript
+  @end
+ 
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+ 
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing. You'll keep it for yourself.
+    @closescript
+   @end
+ 
+  @do money - `p21
+ 
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile cam.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete cam.dat
+  @writefile cam.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+ 
+@readfile camelot.dat
+`p20
+`s01
+@
+ 
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Camelot Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+ 
+  @end
+ 
+ 
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+ 
+ 
+  @end
+ 
+ 
+ 
+ 
+@#NOTE
+@do moveback
+@busy
+@show
+`r0`c  `r1 Book of Gossip   `r0
+ 
+@if book.txt exist false then do
+ @begin
+ @writefile book.txt
+  `%Barak`2: `0I am the greatest!
+  `%Turgon`2: `0Damn you Barak, its all your falt!
+  `%Barak`2: `0Go away you thief.
+ @end
+ 
+@if book.txt exist true then do
+ @begin
+ @displayfile book.txt
+ @end
+ 
+@show
+ 
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2What do you wish to write?  `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+ 
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+ @writefile book.txt
+  `%`n`2 : `0`s03
+ @do trim book.txt 17
+ @drawmap
+ @update
+ 
+@#bird
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A bird flies above you.  Throw a stone at it? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+ 
+@if `s01 is N then do
+  @begin
+  @do saybar
+The bird flies away.
+  @closescript
+  @end
+ 
+@if `p09 is 1 then do
+  @begin
+  @do `p20 random 2 1
+  @if `p20 is 1 then do
+    @begin
+    @do saybar
+`2You miss, he flies away.
+    @closescript
+    @end
+  @end
+ 
+@show
+`r0`c  `r1  Good Shot  `r0
+ 
+`2  The bird falls from the sky.
+ 
+`k  `2Apparently it was a messanger bird, it is carrying `$$350`2!
+ 
+  `2You take the money.
+ 
+`k
+   @do money + 350
+   @drawmap
+   @update
+   @closescript
+ 
+@#Armor
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                           `r1  Camelot Armory  `r0
+     
+ 
+ 
+@buymanager
+14
+37
+59
+@drawmap
+@update
+ 
+@#weapon
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                           `r1  Camelot Weaponry  `r0
+ 
+ 
+@buymanager
+36
+39
+49
+60
+58
+@drawmap
+@update
+ 
+@#throne
+@do saybar
+You sit upon the throne.
+@end
+ 
+@#table
+@do saybar
+You sit at the famous Round Table.
+@end
+ 
+@#guard
+@do moveback
+@label startg
+@if camelot.dat exist false then do
+  @begin
+  @do saybar
+`0"You must leave." `2the guard remarks.
+  @closescript
+  @end
+ 
+@readfile camelot.dat
+`p20
+`s01
+@
+ 
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+ 
+ 
+@do `v01 is 1 
+@show
+`r0`c  `r1 Instructing your servants `r0
+ 
+  `2Your guard salutes you as you address him.
+  
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+ 
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$30,000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to who?
+   @chooseplayer `p20
+ 
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep Camelot.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give ownership of Camelot to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep Camelot.`\`\`k
+    @do goto startg
+   @end
+ 
+  @do delete camelot.dat
+  @writefile camelot.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of Camelot to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+ 
+    @do addlog
+  `0`n`2 has given `%Camelot`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+ 
+    @show
+`\`\  `2Deed transfered.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Camelot back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep Camelot.`\`\`k
+    @do goto startg
+   @end
+ 
+  @do delete camelot.dat
+  @do money + 30000
+  @show
+`\`\  `%CAMELOT SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Camelot`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+ 
+ 
+  @do goto startg
+ @end
+ 
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete camelot.dat
+  @writefile camelot.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+ 
+@drawmap
+@update
+ 
+ 
+ 
+@#inn
+@do `v01 is 1
+@offmap
+@do moveback
+@show
+`r0`c  `%`r1  CAMELOT INN  `r0
+ 
+  `2This place looks great, a well built establishment for a warrior
+  to rest his tired bones.
+  A rather large man stands guard at the front entrance.
+ 
+  You are holding `$$&money`2.
+ 
+@do write
+`x`x
+@choice
+Get a room (`$$75`%)
+Leave
+@if response is 1 then do
+  @begin
+  @if money < 75 then do
+    @begin
+    @show
+`\`\`2  You don't have enough cash.
+ 
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\  `2You give the man the money, and go inside.
+`\`k
+   @do money - 75
+   @do x is 37
+   @do y is 15
+   @do map is 1443
+   @loadmap 1443
+   @drawmap
+   @update
+   @closescript
+  @end
+ 
+@drawmap
+@update
+ 
+ 
+@#servant
+@do saybar
+You're not supposed to go in there!
+ 
+ 
+@#wizard
+@readfile camelot.dat
+`p20
+`s01
+@
+@if camelot.dat exist false then do
+ @begin
+ @do saybar
+Unavailable until Camelot is owned
+ @closescript
+ @end
+ 
+@if `p20 is &playernum then do
+  @begin
+   @offmap
+   @do moveback
+   @show
+ `r0`c  `r1  Wizard  `r0
+ 
+  `0"Hello `n`0. Where do you wish to go today?" `2He asks.
+ 
+   @do write
+  `x`x
+  @choice
+  GreenTree
+  PortTown
+  BoneTown
+  FlagCity
+  Sosen Village
+  ArrisVille
+  Nevermind
+  @if response not 7 then do
+   @begin
+   @show
+ `\`\  `0"Okay sir, here we go, I'll just grab my spell book."
+ 
+ `k `2"`#Wooga Wooga Wooga Wooga Wooga!`2" He chants.
+ 
+  `2Then suddenly, you are there, on your own.
+ `\`k
+   @do goto travel
+   @end
+  @if response is 7 then do
+   @begin
+   @drawmap
+   @update
+   @end
+   @closescript
+  @end
+  
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Wizard  `r0
+ 
+  `0"Any trip costs `$$500`0, where do you want to go?" `2He asks.`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Go somewhere
+Leave
+@if response is 2 then do
+@begin
+ @drawmap
+ @update
+@end
+@if response is 1 then do
+@begin
+ @if money < 500 then do
+ @begin
+ @show
+`\`2  Sorry, you don't have enough cash.`k
+ @drawmap
+ @update
+ @closescript
+ @end
+@do `v01 is 1
+@show
+`\`\
+`r0`c  `r1  Wizard  `r0
+ 
+  `0"Where do you want to go?" `2He asks.
+`\
+@choice
+  GreenTree
+  PortTown
+  BoneTown
+  FlagCity
+  Sosen Village
+  ArrisVille
+  Nevermind
+@if response not 7 then do
+@begin
+@do money - 500
+@show
+`\`\  `0"Okay sir, here we go, I'll just grab my spell book."
+ 
+`k  `2"`#Wooga Wooga Wooga Wooga Wooga!`2" Shouts the Wizard.
+ 
+  `2Then suddenly, you are there, on your own.`\`k
+@do goto travel
+@end
+ 
+@label travel
+@if response is 1 then do
+  @begin
+   @do x is 10
+   @do y is 15
+   @do map is 1356
+  @end
+@if response is 2 then do
+  @begin
+   @do x is 38
+   @do y is 16
+   @do map is 956
+  @end
+@if response is 3 then do
+  @begin
+   @do x is 53
+   @do y is 18
+   @do map is 1572
+  @end
+@if response is 4 then do
+  @begin
+   @do x is 71
+   @do y is 19
+   @do map is 1092
+  @end
+@if response is 5 then do
+  @begin
+   @do x is 36
+   @do y is 5
+   @do map is 456
+  @end
+@if response is 6 then do
+  @begin
+   @do x is 19
+   @do y is 9
+   @do map is 523
+  @end
+ 
+  @loadmap &map
+  @end
+@drawmap
+@update
+ 
+ 
+@#heal
+@readfile camelot.dat
+`p20
+`s01
+@
+@if camelot.dat exist false then do
+ @begin
+ @do saybar
+Unavailable until Camelot is bought.
+ @end
+ 
+@if `p20 not &playernum then do
+  @begin
+  @do moveback
+  @do `v01 is 1
+  @show
+`r0`c  `r1  Camelot Healing  `r0
+ 
+`2  Chuck looks you over.
+ 
+  @do write
+`x`x
+  @if `p02 < `p03 then do
+   @begin
+  @do `p20 is `p03
+  @do `p20 - `p02
+  @do `p20 / 2
+ 
+ 
+   @show
+`0"You don't look so good, friend!  I can heal you for `$`p20`0 gold."
+ 
+  @do write
+`x`x
+  @choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Leave
+  @show
+`\
+  @if response is 1 then do begin
+   @begin
+   @if money < `p20 then do
+    @begin
+    @show
+  `0"Sorry old s&boy, we don't do charity work here."
+    @drawmap
+    @update
+    @closescript
+    @end
+ 
+  @do money - `p20
+  @do `p21 = `p03
+  @do `p21 - `p02
+  @do `p02 = `p03
+ 
+  @show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+ 
+`k
+    @end
+    @drawmap
+    @update
+    @closescript
+      @end
+ 
+  @show
+`0"You have no ailments, come back later!" `2Chuck laughs.
+ 
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+    @end
+ 
+ 
+@offmap
+ @do moveback
+ @show
+`r0`c  `r1  Camelot Healing  `r0
+ 
+  `2Chuck fixes you up for free.
+ 
+  `%YOU ARE COMPLETEY HEALED.
+ 
+`k
+ @do `p02 is `p03
+ @drawmap
+ @update
+ @end
+ 
+@#enter
+@do moveback
+@offmap
+@if camelot.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+ 
+  `2This magnificent structure has been owned by many famous knights
+  in the past. Camelot was owned by King Arthur himself and housed
+  the brave knights of the round table. Since then, it has been
+  modified with technology,other owners, and is significantly smaller.
+  If you choose to buy this you will recieve:
+  `0* `2You own Royal Palace.
+  `0* `2Royal Servants
+  `0* `2Dan's Bar
+  `0* `2An Inn
+  `0* `2Armory
+  `0* `2Weaponry
+  `2The following you get unlimitted access to for free
+  `0* `2Healer
+  `0* `2Wizard
+  The asking price for this townlike castle is `$$60,000`2.
+ 
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 59999 Purchase it.
+<&money 60000 Sigh wistfully and leave since you don't have enough.
+>&money 59999 Leave.
+@
+ 
+@if responce is 1 then do
+  @begin
+  @if camelot.dat exist true then do
+    @begin
+    @show
+`\`\  `2Dammit! Someone has bought it while you were thinking.`\`\`k
+    @do goto done
+    @end
+ 
+  @writefile camelot.dat
+&playernum
+NONE
+    @do money - 60000
+    @do addlog
+  `0`n `2buys `%Camelot`2!
+     @routine seperate in gametxt.ref
+ 
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own Camelot!
+ 
+`k  `0Hopefully you can make some money with it too!
+ 
+  `2Enjoy your new home.`\`\`k
+  @end
+ 
+@label done
+@drawmap
+@update
+@closescript
+  @end
+ 
+@readfile camelot.dat
+`p20
+`s01
+@
+ 
+@do `p21 is deleted `p20
+ 
+@if `p21 is 1 then do
+  @begin
+   @do delete camelot.dat
+    @do addlog
+  `%Camelot`2 is put on the market today.
+     @routine seperate in gametxt.ref
+ 
+   @do goto enter
+  @end
+ 
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+ 
+  `2You pound on the door for some time before you get an answer.
+ 
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+ 
+  `4Ouch!
+ 
+`k
+   @do goto done
+   @end
+ 
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+ 
+`2  A head pops over the gate.  `0"This is the Palace of Camelot.
+  Whats the secret password??"`\
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell the password
+Leave
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+ 
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%Camelot Palace`0,"`2 smiles the guard.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Camelot Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+ 
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+  @end
+ 
+@label letmein
+@do x is 19
+@do y is 9
+@do map is 1441
+@loadmap 1441
+@do goto done
+@#done
+ 
+@#sign
+@do moveback
+ 
+ @if camelot.dat exist false then do
+ @begin
+ @do saybar
+Camelot - For Sale, enquire inside.
+ @end 
+ 
+@if camelot.dat exist true then do
+ @begin
+@readfile camelot.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Camelot is owned by `0`s01`2.
+ @end 
+ 
+@#sign2
+@do moveback
+@begin
+@do saybar
+Welcome to Camelot!
+@end
+ 
+@#BAR
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c`%  `r1 Dan's Bar `r0
+ 
+`2  You take a seat at the bar and wait for dan.
+ 
+`k  A skinny man with slick hair and a pink shirt approaches you.
+ 
+`k
+ 
+@label danstart
+@show
+`r0`c`%  `r1 Dan's Bar `r0
+ 
+`2  Hello, my name is`l.`l.`l`#Dan!`2 Ahem. What would you like?
+ 
+@do write
+`x`x
+@choice
+What have you got?
+Order Something
+Stand up
+@
+ 
+@if response is 1 then do
+ @begin
+ @show
+`r0`c  `%Welcome to Dan's!
+ 
+  `5This bar has been a recent addition to Camelot, and has 3 delicious
+  drinks, that i can reccommend to all.
+ 
+`k  `#Beer (`$$20`#)
+ 
+  `5Not your average beer, this is brewed specially by the owner himself.
+  Trust me, it has a serious kick to it!
+ 
+  `#Lakini's Juice (`$$50`#)
+ 
+  `5A great new drink created by the band Live! A cannot explain the
+  taste, its just wonderful..try it!
+  
+  `#Mystery Drink (`$$250`#)
+ 
+  `5A collection of just about all the drinks we have lying around.
+  It can do wonderful things for you, though i must warn you, it can
+  also do bad things.
+ 
+`k
+@do goto danstart  
+ @end
+@if response is 3 then do
+             @begin
+             @drawmap
+             @update
+             @end
+@if response is 2 then do
+   @begin
+   @do write
+`\`\  `2Order what?  (`0You have `$&money`2)`\`\`x`x
+   @do `v01 is 1
+   @choice
+`#Beer (`$$20`#)
+`#Lakini's Juice (`$$50`5)
+`#Mystery Drink (`$$250`5)
+`#Nevermind
+   @if response is 1 then do
+    @begin
+    @if money < 20 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto danstart
+      @end
+    @do money - 20
+    @show
+`%`r0`c  `r1  Time for a drink  `r0`\`\
+  `2Dan brings you the beer you ordered.
+  You skull it down. Tastes normal.
+`\`k  `%Then it kicks in!
+`\`k  `%You get a huge addrenilin rush!
+`\`k
+    @end
+ 
+   @if response is 2 then do
+    @begin
+    @if money < 50 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto danstart
+      @end
+    @do money - 50
+    @show
+`%`r0`c  `r1  Time for a drink  `r0`\`\
+  `2Dan makes you a bubbling jug of Lakini's Juice.
+`\  You grab it and scull it down.  
+`\`k  `%You body feels kind strange...
+`\`k  `%You pass out for 5 minutes! Wow!
+`\`k
+    @end
+ 
+   @if response is 3 then do
+    @begin
+    @if money < 250 then do
+      @begin
+      @show
+`\`\  `4You can't afford it.`\`\`k
+      @do `v01 is 2
+      @do goto danstart
+      @end
+    @do money - 250
+    @show
+`%`r0`c  `r1  Time for a drink  `r0`\`\
+  `2Dan mixes random bottles into a jug.
+`\  You think about for a sec...
+`\
+    @show
+`%`k`r0`c  `r1  Time for a drink  `r0
+`\  `2Something good or bad can happen, but you've already paid...
+`\`k  `2Are you sure you want to drink it?`\
+    @do write
+`x`x
+    @do `v01 is 1
+    @choice
+Yes
+No
+    @if response is 1 then do
+     @begin
+     @show
+`\`\  `2You grab it and scull it down.
+`\`k  `2You feel really strange...like you're changing...
+`\`k  `2Then`l.`l.`l.
+`\`k
+     @do `p20 random 6 1
+      @if `p20 is 1 then do
+       @begin
+       @show
+   `%You gain 1 muscle point!`k
+       @do `p04 + 1
+       @drawmap
+       @update
+       @end
+      @if `p20 is 2 then do
+       @begin
+       @show
+   `4You lose 1 muscle point!`k
+       @do `p04 - 1
+       @drawmap
+       @update
+       @end
+      @if `p20 is 3 then do
+       @begin
+       @show
+   `%You gain 1 dodge point!`k
+       @do `p05 + 1
+       @drawmap
+       @update
+       @end
+      @if `p20 is 4 then do
+       @begin
+       @show
+   `4You lose 1 dodge point!`k
+       @do `p05 - 1
+       @drawmap
+       @update
+       @end
+      @if `p20 is 5 then do
+       @begin
+       @show
+   `%You gain 2 hit points!`k
+       @do `p03 + 2
+       @drawmap
+       @update
+       @end
+      @if `p20 is 6 then do
+       @begin
+       @show
+   `4You lose 2 hit points!`k
+       @do `p03 - 2
+       @drawmap
+       @update
+       @end
+      @end
+   @do `v01 is 2
+   @end
+@drawmap
+@update

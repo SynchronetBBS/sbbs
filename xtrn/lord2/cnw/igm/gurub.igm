@@ -1,0 +1,42 @@
+
+                  Guru Bob Version 0.9 BETA By Sam Wilson
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No! 
+  Free?                                           : Yes!
+
+
+  Description:
+    ออออออ
+  Well this is my second IGM that I have released.
+  My first one,The Realm Of The Domanu was,utter crap and this one is better
+  than it.(slightly,quite a simple IGM,created in around 3 hours).
+  REMEMBER THIS IS ONLY A BETA VERSION!!!!!!
+  The next version will have a better looking map screen,more people to talk
+  to,more ansis (it currently has none) and the temple of the Tree Of Wisdom
+  will be accessible.
+  There is a slight bug in the IGM at the moment that doesn't clear the screen
+  properly after talking to the guru.If you find more bugs/want to comment/or
+  know how to fix this one please e-mail me avatar@clear.net.nz
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Guru Bob and the Tree Of Knowledge `4By Sam Wilson
+
+;replacescreen: 1030 1 show
+replacescreen: 839 1 show
+
+installmessage:
+
+ `7 This is my second IGM.
+ `7 Pretty basic little thing that only took a couple of hours to create.
+ `7 E-mail me at : avatar@clear.net.nz

@@ -1,0 +1,111 @@
+   Pyramid's Place Ver 1.20
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : Yes! but you do that
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (6)
+  Adds screens?                                   : Yes! (9)
+  Free?                                           : Yes!
+
+
+  Description:
+  See Py's Place.doc
+   
+  Installation:
+  backup your quest.ref your items.dat and your items.ref files in case you want to
+   uninstall this IGM 
+  Unzip into your LORD2 dir and type:
+   igm pyramid.igm
+  NOTE: Unzipping will not overwrite ITEMS.ref and ITEMS.dat because I have 
+  put P in front of the files so if you put them on you don't copy over the originals.
+
+  To uninstall, do the same thing again and copy your backup items,
+  and quest files over the ones that came with the igm.
+
+  And when resetting LORD2, do the following:
+  "delete pyr4.DAT"
+  "delete pyr5.DAT"
+  "delete pyr6.DAT"
+  "delete pyr7.DAT"
+  "delete pr4.DAT"
+  "delete pr5.DAT"
+  "delete pr6.DAT"
+  "delete pr7.DAT
+  "delete pys.IDF"
+  "delete ankh.IDF
+  "delete pyport.idf
+  "delete pychek.idf
+  "dleete pychat.txt
+
+  Location:
+  Main entrance is on screen 1,194.
+  And there are some portals to get to Pyramid's Place
+  But I have put restrictions on it so a player can't use
+  it to cheat. Like get passed Neb. 
+
+
+
+
+(c)opyright 1997 Scott Tolboe
+
+ by Scott Tolboe Pyramid_1@geocities.com 
+ or at The Losse Screw BBS (801)561-4780
+ usere name Pyramid
+
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4Pyramid's`xPlace`x`2by`x`2Scott`xTolboe`xver.`x1.20 
+;replacescreen: 1194 1 show
+
+replacescreen: 1360 2 show
+
+replacescreen: 1591 3 show
+
+replacescreen: 1574 4 show
+
+replacescreen: 40 5 show
+
+replacescreen: 400 6 show
+
+replacescreen: 1549 7 noshow
+
+replacescreen: 1556 8 noshow
+
+replacescreen: 1476 9 noshow
+
+replacescreen: 1477 10 noshow
+
+replacescreen: 1478 11 noshow
+
+replacescreen: 1479 12 noshow
+
+replacescreen: 1396 13 noshow
+
+replacescreen: 1397 14 noshow
+
+replacescreen: 1398 15 noshow
+
+installmessage:
+
+`%ABOUT THIS IGM:
+
+
+Pyramid's place ver. 1.20
+
+Send your ? to `4Pyramid_1@geocities.com
+
+`%and I will get to you as soon as I can.
+
+`%The only change from Ver. 1.10 to 1.20
+
+`%is the art and I think that more of you will 
+
+`%like the art.  And I will responed to 
+
+`%everyone. 

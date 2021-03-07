@@ -1,0 +1,104 @@
+; Script file DRINKOFF.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:18 2001
+
+@DECLARE drinkoff 000000184
+@DECLARE done 000002335
+@NOCHECK
+; End of .REF index
+
+@#drinkoff
+  @busy
+  @if `t43 > 249 then do
+   @begin
+   @show
+`r0`c  `r1 NO WAY! `r0
+
+     `0"Your just a slobbering drunk you need to sober up before you
+  `0try to drink with me! I don't deal with the likes of you!!!"
+  `2(hint: go talk to rab about drunkeness)
+   `k 
+    @do money - 10
+    @do `t44 = 1
+   @do goto done
+   @end
+
+  @if `t43 < 250 then do
+   @begin
+   @do `v01 is 1
+   @show
+`r0`c  `r1 DRINKING CONTEST! `r0
+
+  `0"My name is Sandtiger!  I too was once a Trainer at 
+  
+  `0Turgons." `2(He is a big guy with a patch on his eye)
+
+  `0"I guess you wanna loose some money!" `2he smiles.
+
+@do write
+`x`x
+@choice
+Ok Mr. Sandtiger.. Lets see what ya got!
+Forget it!
+
+ @if response is 1 then do
+  @begin
+  @do `v01 is 1
+  @show
+`\`\  `0"Alright s&sir lets get this going!
+
+  `$"Well, I think I'm gonna show you something old man!" `2you say.
+
+  `0"We will see won't we!?!? - Only time will tell." `2he laughs.
+
+`k`c  `2You both signal Rab to bring the drinks.. 
+
+`k  `2(you know, it will cost ya to supply the drinks for the contest!)
+
+@do write
+`x`x
+@choice
+Here is $10 (you have $&money)
+Screw this!
+
+  @if response is 1 then do
+   @begin
+@show
+`c  `r1 LETS BEGIN! `r0    
+    
+     `2Sitting there you see Sandtiger preparing himself for drinking..
+  `2He fixes his patch and slams the table.. (whata nut!)
+`k  `2You each take a drink.. neither one of you fazed.. this goes on
+  `2for 5 drinks and then`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`.`l.
+  `k
+
+   @do `p20 random 600 `t43
+   
+   @if `p20 < 400 then do
+    @begin
+    @show
+`k`c  `r1 YOU LOST! `r0
+    
+     `2Things start to fade... the next thing you know your $10 and you  
+  `2have been out for at least an hour!  You gather yourself and stand up!
+    `k
+    @do money - 10
+    @end
+  
+  @if `p20 > 399 then do
+    @begin
+    @show
+`k`c  `r1 YOU WON! `r0
+     
+     `2Sandtiger spills his glass while reaching for it..  His head falls 
+  `2and he gives you the $10 you won! "Good job!" says rab half laughing
+  `2half seriously
+   `k 
+    @do money + 10
+    @end
+  
+  @end
+  @end
+
+@label done
+@drawmap
+@update
+@closescript

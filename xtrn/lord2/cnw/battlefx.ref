@@ -1,0 +1,1460 @@
+; Script file BATTLEFX.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE done 000002092
+@DECLARE parth2o 000002106
+@DECLARE walk1 000002430
+@DECLARE walk2 000002779
+@DECLARE closeh2o 000003076
+@DECLARE close 000003121
+@DECLARE getale 000003283
+@DECLARE comn 000003355
+@DECLARE fireworks 000003604
+@DECLARE rfade 000003634
+@DECLARE fade 000004341
+@DECLARE f0 000004367
+@DECLARE f1 000004512
+@DECLARE f2 000004678
+@DECLARE f3 000004823
+@DECLARE f4 000004984
+@DECLARE f5 000005129
+@DECLARE f6 000005295
+@DECLARE f7 000005440
+@DECLARE f01 000005602
+@DECLARE f8 000005748
+@DECLARE f9 000005914
+@DECLARE f10 000006060
+@DECLARE f02 000006224
+@DECLARE f11 000006371
+@DECLARE f12 000006539
+@DECLARE f13 000006686
+@DECLARE f03 000006850
+@DECLARE f14 000006997
+@DECLARE f15 000007165
+@DECLARE f16 000007312
+@DECLARE f04 000007533
+@DECLARE f17 000007680
+@DECLARE f18 000007905
+@DECLARE f19 000008052
+@DECLARE f05 000008255
+@DECLARE f20 000008402
+@DECLARE f21 000008608
+@DECLARE f22 000008757
+@DECLARE f06 000008981
+@DECLARE f23 000009128
+@DECLARE f24 000009391
+@DECLARE f25 000009540
+@DECLARE f07 000009820
+@DECLARE f26 000009967
+@DECLARE f27 000010249
+@DECLARE f08 000010398
+@DECLARE f09 000010547
+@DECLARE getlost 000010716
+@DECLARE d1 000010870
+@DECLARE d2 000011058
+@DECLARE d3 000011246
+@DECLARE d4 000011434
+@DECLARE d5 000012237
+@DECLARE d6 000012666
+@DECLARE d8 000013787
+@DECLARE drawh 000013991
+@DECLARE drawv 000014305
+@DECLARE march 000014624
+@DECLARE warpin 000017216
+@DECLARE movelft 000017700
+@DECLARE movergt 000018183
+@DECLARE moveup 000018663
+@DECLARE movedwn 000019158
+@DECLARE drawful 000019667
+@DECLARE gotya 000019823
+@DECLARE meeting 000022079
+@DECLARE flirt 000023466
+@DECLARE flirt2 000024017
+@DECLARE outroom 000024143
+@DECLARE gone 000024656
+@DECLARE movergt2 000024690
+@NOCHECK
+; End of .REF index
+
+;Battle fx features wonderful cinama scenes and animation short-cuts
+;in this igm.  All original Code by Codax
+;Battlefield igm for Lord2 Started 12/11/97 Ended: 1/03/98
+@#done
+ 
+@#parth2o
+@do move 7 10
+@do write
+`r1`$л`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`w`wл`l`l
+@do saybar
+Mozuz:  Go on, it's ok
+@key
+@if x > 10 then do
+@begin
+@do `p21 is 42
+@do `p20 is 36
+@label walk1
+@do `p20 - 1
+@do x - 1
+@update
+@do move `p21 10
+@do write
+`r1`$л`w
+@do `p21 - 1
+@if `p20 is 0 then do
+@begin
+@do saybar
+Mozuz:  Good, You're over now to close them
+@key
+@run closeh2o
+@run done
+@end
+@if `p20 not 0 then do
+@begin
+@do goto walk1
+@end
+@end
+ 
+@if x < 10 then do
+@begin
+@do `p21 is 7
+@do `p20 is 36
+@label walk2
+@do `p20 - 1
+@do x + 1
+@update
+@do move `p21 10
+@do write
+`r1`$л`w
+@do `p21 + 1
+@if `p20 is 0 then do
+@begin
+@do saybar
+Mozuz:  Good, You're over now to close them
+@key
+@run closeh2o
+@run done
+@end
+ 
+@if `p20 not 0 then do
+@begin
+@do goto walk2
+@end
+@end
+@end
+ 
+@#closeh2o
+@do `p21 is 7
+@do `p20 is 36
+@label close
+@drawpart `p21 10
+@do `p20 - 1
+@do `p21 + 1
+@if `p20 is 0 then do
+@begin
+@run done
+@end
+@if `p20 not 0 then do
+@begin
+@do goto close
+@end
+ 
+@#getale
+@do `p20 is 79
+@do move `p20 17
+@do write
+`r6`$Н`w`w`l
+@label comn
+@do move `p20 17
+@do write
+`r6`$Н`w`w
+@drawpart `p20 17
+@do `p20 - 1
+@if `p20 is 65 then do
+@begin
+@do move 65 17
+@do write
+`r6`$Н`w`l
+@drawpart 65 17
+@run done
+@end
+@if `p20 not 65 then do
+@begin
+@do goto comn
+@end
+ 
+@#fireworks
+@do `p20 is 40
+@label rfade
+@do `p21 random 80 1
+@do `p22 random 20 1
+@do `p23 random 9 0
+@do `p24 random 10 1
+@if `p24 is 1 then `s01 is OOOOOooooooo
+@if `p24 is 2 then `s01 is AAAAAAAaaaaaahh
+@if `p24 is 3 then `s01 is That`xwas`xa`xgood`xone!
+@if `p24 is 4 then `s01 is Beautiful
+@if `p24 is 5 then `s01 is Marvolous
+@if `p24 is 6 then `s01 is Spectacular
+@if `p24 is 7 then `s01 is Sewperb
+@if `p24 is 8 then `s01 is Magnificent
+@if `p24 is 9 then `s01 is Que`xBonita
+@if `p24 is 10 then `s01 is Nice!
+@do saybar
+`s01
+@do move `p21 `p22
+@do write
+`r0``p23`l
+@do move `p21 `p22
+@do write
+`r0 
+@do `p20 - 1
+@if `p20 not 0 then do
+@begin
+@do goto rfade
+@end
+@if `p20 is 0 then do
+@begin
+@end
+ 
+@#fade
+@do `p20 is 1
+@label f0
+@drawpart `p20 1
+@do `p20 + 1
+@if `p20 not 81 then do
+@begin
+@do goto f0
+@end
+@if `p20 is 81 then do
+@begin
+@do `p20 is 2
+ 
+@label f1
+@drawpart 80 `p20
+@drawpart 79 `p20
+@do `p20 + 1
+@if `p20 not 20 then do
+@begin
+@do goto f1
+@end
+@if `p20 is 20 then do
+@begin
+@do `p20 is 80
+ 
+@label f2
+@drawpart `p20 20
+@do `p20 - 1
+@if `p20 not 0 then do
+@begin
+@do goto f2
+@end
+@if `p20 is 0 then do
+@begin
+@do `p20 is 20
+ 
+@label f3
+@drawpart 1 `p20
+@drawpart 2 `p20
+@do `p20 - 1
+@if `p20 not 2 then do
+@begin
+@do goto f3
+@end
+@if `p20 is 2 then do
+@begin
+@do `p20 is 1
+ 
+@label f4
+@drawpart `p20 2
+@do `p20 + 1
+@if `p20 not 79 then do
+@begin
+@do goto f4
+@end
+@if `p20 is 79 then do
+@begin
+@do `p20 is 2
+ 
+@label f5
+@drawpart 78 `p20
+@drawpart 77 `p20
+@do `p20 + 1
+@if `p20 not 19 then do
+@begin
+@do goto f5
+@end
+@if `p20 is 19 then do
+@begin
+@do `p20 is 80
+ 
+@label f6
+@drawpart `p20 19
+@do `p20 - 1
+@if `p20 not 2 then do
+@begin
+@do goto f6
+@end
+@if `p20 is 2 then do
+@begin
+@do `p20 is 20
+ 
+@label f7
+@drawpart 3 `p20
+@drawpart 4 `p20
+@do `p20 - 1
+@if `p20 not 2 then do
+@begin
+@do goto f7
+@end
+@if `p20 is 2 then do
+@begin
+@do `p20 is 1
+ 
+@label f01
+@drawpart `p20 3
+@do `p20 + 1
+@if `p20 not 81 then do
+@begin
+@do goto f01
+@end
+@if `p20 is 81 then do
+@begin
+@do `p20 is 3
+ 
+@label f8
+@drawpart 76 `p20
+@drawpart 75 `p20
+@do `p20 + 1
+@if `p20 not 19 then do
+@begin
+@do goto f8
+@end
+@if `p20 is 19 then do
+@begin
+@do `p20 is 78
+ 
+@label f9
+@drawpart `p20 18
+@do `p20 - 1
+@if `p20 not 2 then do
+@begin
+@do goto f9
+@end
+@if `p20 is 2 then do
+@begin
+@do `p20 is 17
+ 
+@label f10
+@drawpart 5 `p20
+@drawpart 6 `p20
+@do `p20 - 1
+@if `p20 not 3 then do
+@begin 
+@do goto f10
+@end
+@if `p20 is 3 then do
+@begin
+@do `p20 is 1
+ 
+@label f02
+@drawpart `p20 4
+@do `p20 + 1
+@if `p20 not 81 then do
+@begin
+@do goto f02
+@end
+@if `p20 is 81 then do
+@begin
+@do `p20 is 4
+ 
+@label f11
+@drawpart 74 `p20
+@drawpart 73 `p20
+@do `p20 + 1
+@if `p20 not 18 then do
+@begin
+@do goto f11
+@end
+@if `p20 is 18 then do
+@begin
+@do `p20 is 73
+ 
+@label f12
+@drawpart `p20 17
+@do `p20 - 1
+@if `p20 not 6 then do
+@begin
+@do goto f12
+@end
+@if `p20 is 6 then do
+@begin
+@do `p20 is 17
+ 
+@label f13
+@drawpart 7 `p20
+@drawpart 8 `p20
+@do `p20 - 1
+@if `p20 not 4 then do
+@begin
+@do goto f13
+@end
+@if `p20 is 4 then do
+@begin 
+@do `p20 is 1
+ 
+@label f03
+@drawpart `p20 5
+@do `p20 + 1
+@if `p20 not 80 then do
+@begin
+@do goto f03
+@end
+@if `p20 is 80 then do
+@begin
+@do `p20 is 5
+ 
+@label f14
+@drawpart 72 `p20
+@drawpart 71 `p20
+@do `p20 + 1
+@if `p20 not 17 then do
+@begin
+@do goto f14
+@end
+@if `p20 is 17 then do
+@begin
+@do `p20 is 71
+ 
+@label f15
+@drawpart `p20 16
+@do `p20 - 1
+@if `p20 not 7 then do
+@begin
+@do goto f15
+@end
+@if `p20 is 7 then do
+@begin
+@do `p20 is 15
+ 
+@label f16
+@drawpart 13 `p20
+@drawpart 9 `p20
+@drawpart 10 `p20
+@drawpart 11 `p20
+@drawpart 12 `p20
+@do `p20 - 1
+@if `p20 not 5 then do
+@begin
+@do goto f16
+@end
+@if `p20 is 5 then do
+@begin
+@do `p20 is 1
+ 
+@label f04
+@drawpart `p20 6
+@do `p20 + 1
+@if `p20 not 79 then do
+@begin
+@do goto f04
+@end
+@if `p20 is 79 then do
+@begin
+@do `p20 is 6
+ 
+@label f17
+@drawpart 70 `p20
+@drawpart 69 `p20
+@drawpart 68 `p20
+@drawpart 67 `p20
+@drawpart 66 `p20
+@do `p20 + 1
+@if `p20 not 16 then do
+@begin
+@do goto f17
+@end
+@if `p20 is 16 then do
+@begin
+@do `p20 is 66
+ 
+@label f18
+@drawpart `p20 15
+@do `p20 - 1
+@if `p20 not 6 then do
+@begin
+@do goto f18
+@end
+@if `p20 is 6 then do
+@begin
+@do `p20 is 14
+ 
+@label f19
+@drawpart 14 `p20
+@drawpart 15 `p20
+@drawpart 16 `p20
+@drawpart 17 `p20
+@do `p20 - 1
+@if `p20 not 6 then do
+@begin
+@do goto f19
+@end
+@if `p20 is 6 then do
+@begin
+@do `p20 is 1
+ 
+@label f05
+@drawpart `p20 7
+@do `p20 + 1
+@if `p20 not 81 then do
+@begin
+@do goto f05
+@end
+@if `p20 is 81 then do
+@begin
+@do `p20 is 7
+ 
+@label f20
+@drawpart 65 `p20
+@drawpart 64 `p20
+@drawpart 63 `p20
+@drawpart 62 `p20
+@do `p20 + 1
+@if `p20 not 15 then do
+@begin
+@do goto f20
+@end
+@if `p20 is 15 then do
+@begin
+@do `p20 is 62
+ 
+@label f21
+@drawpart `p20 14
+@do `p20 - 1
+@if `p20 not 15 then do
+@begin
+@do goto f21
+@end
+@if `p20 is 15 then do
+@begin
+@do `p20 is 14
+ 
+@label f22
+@drawpart 18 `p20
+@drawpart 19 `p20
+@drawpart 20 `p20
+@drawpart 21 `p20
+@drawpart 22 `p20
+@do `p20 - 1
+@if `p20 not 5 then do
+@begin
+@do goto f22
+@end
+@if `p20 is 5 then do
+@begin 
+@do `p20 is 22
+ 
+@label f06
+@drawpart `p20 8
+@do `p20 + 1
+@if `p20 not 60 then do
+@begin
+@do goto f06
+@end
+@if `p20 is 60 then do
+@begin
+@do `p20 is 8
+ 
+@label f23
+@drawpart 61 `p20
+@drawpart 60 `p20
+@drawpart 59 `p20
+@drawpart 58 `p20
+@drawpart 57 `p20
+@drawpart 56 `p20
+@drawpart 55 `p20
+@do `p20 + 1
+@if `p20 not 14 then do
+@BEgin
+@do goto f23
+@end
+@if `p20 is 14 then do
+@begin
+@do `p20 is 55
+ 
+@label f24
+@drawpart `p20 13
+@do `p20 - 1
+@if `p20 not 22 then do
+@begin
+@do goto f24
+@end
+@if `p20 is 22 then do
+@begin
+@do `p20 is 13
+ 
+@label f25
+@drawpart 23 `p20
+@drawpart 24 `p20
+@drawpart 25 `p20
+@drawpart 26 `p20
+@drawpart 27 `p20
+@drawpart 28 `p20
+@drawpart 29 `p20
+@drawpart 30 `p20
+@do `p20 - 1
+@if `p20 not 8 then do
+@begin
+@do goto f25
+@end
+@if `p20 is 8 then do
+@begin
+@do `p20 is 30
+ 
+@label f07
+@drawpart `p20 9
+@do `p20 + 1
+@if `p20 not 54 then do
+@begin
+@do goto f07
+@end
+@if `p20 is 54 then do
+@begin
+@do `p20 is 9
+ 
+@label f26
+@drawpart 54 `p20
+@drawpart 53 `p20
+@drawpart 52 `p20
+@drawpart 51 `p20
+@drawpart 50 `p20
+@drawpart 49 `p20
+@drawpart 48 `p20
+@drawpart 47 `p20
+@do `p20 + 1
+@if `p20 not 13 then do
+@begin
+@do goto f26
+@end
+@if `p20 is 13 then do
+@begin
+@do `p20 is 47
+ 
+@label f27
+@drawpart `p20 12
+@do `p20 - 1
+@if `p20 not 30 then do
+@begin
+@do goto f27
+@end
+@if `p20 is 30 then do
+@begin
+@do `p20 is 30
+ 
+@label f08
+@drawpart `p20 10
+@do `p20 + 1
+@if `p20 not 47 then do
+@begin
+@do goto f08
+@end
+@if `p20 is 47 then do
+@begin
+@do `p20 is 47
+ 
+@label f09
+@drawpart `p20 11
+@do `p20 - 1
+@if `p20 not 30 then do
+@begin
+@do goto f09
+@end
+@if `p20 is 30 then do
+@begin
+@if `p30 is 0 then do
+@begin
+@end
+ 
+@#getlost
+@do move 3 22
+@do write
+`r0`0Hey!! Look over there!!!`2(Press `0C`2 to continue)
+@do readspecial `s01 C
+@clearblock 22 22
+@do `p20 is 20
+@label d1
+@do move 38 `p20
+@do write
+`r4`%`w`w
+@drawpart 38 `p20
+@do `p20 - 1
+@if `p20 not 10 then do
+@begin
+@do goto d1
+@end
+@if `p20 is 10 then do
+@begin
+@do `p20 is 38
+ 
+@label d2
+@do move `p20 11
+@do write
+`r7`%`w`w
+@drawpart `p20 11
+@do `p20 + 1
+@if `p20 not 69 then do
+@begin
+@do goto d2
+@end
+@if `p20 is 69 then do
+@begin
+@do `p20 is 11
+ 
+@label d3
+@do move 68 `p20
+@do write
+`r7`%`w`w
+@drawpart 68 `p20
+@do `p20 + 1
+@if `p20 not 17 then do
+@begin
+@do goto d3
+@end
+@if `p20 is 17 then do
+@begin
+@do `p20 is 68
+ 
+@label d4
+@do move `p20 16
+@do write
+`r7`%`w`w
+@drawpart `p20 16
+@do `p20 - 1
+@if `p20 not 64 then do
+@begin
+@do goto d4
+@end
+@if `p20 is 64 then do
+@begin
+@do move 65 16
+@do write
+`r7`%`w`w
+@do saybar
+                                                                                                     
+@do saybar
+Hey Buddy!  Howza bouta...bouta..uh..cold one my way!`l`l`l`l
+@routine getale
+ 
+@do `p20 random 5 1
+@do `p21 random 5 1
+@if `p20 is 1 then `s01 is Barney
+@if `p20 is 2 then `s01 is Gumble
+@if `p20 is 3 then `s01 is Farlo
+@if `p20 is 4 then `s01 is Figgs
+@if `p20 is 5 then `s01 is Vicks
+@if `p21 is 1 then `s02 is Wedge
+@if `p21 is 2 then `s02 is Pompey
+@if `p21 is 3 then `s02 is Caesar
+@if `p21 is 4 then `s02 is Tuvo
+@if `p21 is 5 then `s02 is Dumbo
+@label d5
+@do saybar
+Bartender:  That'll be `$$5`% sir.
+@key
+@do saybar
+Drunk:  Ya mean I gotta pay for that!
+@key
+@do saybar
+Bartender:  One way or another....heheheheeeee
+@key
+@do saybar
+Bartender:  `s01!  `s02!  Get him!
+@key
+ 
+@do move 64 18
+@do write
+`r7`6o
+@do move 64 17
+@do write
+`r7`3`w`w
+@drawpart 64 17
+@do move 64 16
+@do write
+`r7`3`w`w
+@do `p20 is 76
+@do move 77 16
+@do write
+`r7`6o
+ 
+@label d6
+@do move `p20 16
+@do write
+`r7`$`w`w
+@drawpart `p20 16
+@do `p20 - 1
+@if `p20 not 65 then do
+@begin
+@do goto d6
+@end
+@if `p20 is 65 then do
+@begin
+@do move 66 16
+@do write
+`r7`$`w`w
+ 
+@do saybar
+<BIFF>  `L<WUMP>`L <CRASH>  `L<SMACK>`L MY ARM DOESN'T TURN THAT WAY!!!
+@KEY
+@DO SAYBAR
+NO!!!`L`L I MIGHT NEED THAT LATER <CRUNCH> NOT IN THE FACE NOT IN THE FACE
+@KEY
+@DO SAYBAR
+NO NO PUT IT DOWN PUT IT DOWN!!! <CRASH> AHHHHH!!!
+@KEY
+@do saybar
+CAN'T WE ALL JUST GET ALONG!!!!  <BEAT>
+@key
+@DO SAYBAR
+THAT REALLY HURT!!!! <THUD>`L OUCH!!! <KICK>
+@key
+@do saybar
+Drunk:  I'll pay, I'll pay
+@key 
+@do saybar
+`s01 & `s02:  You already are buddy!!!!! hahaha <WILD BOOT TO FACE>
+@key
+ 
+@drawpart 65 16
+@do move 65 15
+@do write
+`r7`%`w`w
+@drawpart 65 15
+@do move 65 14
+@do write
+`r7`%`w`w
+@drawpart 65 14
+@do move 65 13
+@do write
+`r7`%`w`w
+@drawpart 65 13
+@do move 65 14
+@do write
+`r4`@`w`w
+ 
+ 
+@drawpart 64 16
+@do move 64 16
+@do write
+`r7`3`w`w
+@drawpart 64 16
+@do move 64 17
+@do write
+`r7`3`w`w
+@drawpart 64 17
+@drawpart 64 18
+ 
+@do `p20 is 65
+@label d8
+@do move `p20 16
+@do write
+`r7`$`w`w
+@drawpart `p20 16
+@do `p20 + 1
+@if `p20 not 77 then do
+@begin
+@do goto d8
+@end
+@if `p20 is 77 then do
+@begin
+@drawpart 77 16
+@run done
+@end
+ 
+@#drawh
+;draws - from left to right
+;before calling this command y value must be set by `p21
+;before calling this command x value must be set by `p20
+;`p22 is last x to draw
+@drawpart `p20 `p21
+@do `p20 + 1
+@if `p20 not `p22 then do
+@begin
+@do goto drawh
+@end
+@if `p20 is `p22 then do
+@begin
+@end
+ 
+@#drawv
+;this draws | from top to bottom
+;before calling this command y value must be set by `p21
+;before calling this command x value must be set by `p20
+;`p22 is last y to draw
+@drawpart `p20 `p21
+@do `p21 + 1
+@if `p21 not `p22 then do
+@begin
+@do goto drawv
+@end
+@if `p21 is `p22 then do
+@begin
+@end
+ 
+@#march
+@if map is 564 then `s01 is 3
+@if map is 566 then `s01 is !
+@if map is 568 then `s01 is 5
+@do saybar
+HUT HUT HUT HUT HUT HUT HUT HUT HUT HUT HUT HUT HUT HUT HUT 
+@do move 33 1
+@do write
+`r4``s01`w`w`w`w
+@do move 33 2
+@do write
+`r4``s01`w`w`w`w
+@do move 33 3
+@do write
+`r4``s01`w`w`w`w
+@do move 33 4
+@do write
+`r4``s01`w`w`w`w
+@do move 33 5
+@do write
+`r4``s01`w`w`w`w
+@do move 33 1
+@do write
+`r4`4            
+@do move 33 6
+@do write
+`r4``s01`w`w`w`w
+@do move 33 2
+@do write
+`r4`4            
+@do move 33 7
+@do write
+`r4``s01`w`w`w`w
+@do move 33 3
+@do write
+`r4`4            
+@do move 33 8
+@do write
+`r4``s01`w`w`w`w
+@do move 33 4
+@do write
+`r4`4            
+@do move 33 9
+@do write
+`r4``s01`w`w`w`w
+@do move 33 5
+@do write
+`r4`4            
+@do move 33 10
+@do write
+`r4``s01`w`w`w`w
+@do move 33 6
+@do write
+`r4`4            
+@do move 33 11
+@do write
+`r4``s01`w`w`w`w
+@do move 33 7
+@do write
+`r4`4            
+@do move 33 12
+@do write
+`r4``s01`w`w`w`w
+@do move 33 8
+@do write
+`r4`4            
+@do move 33 13
+@do write
+`r4``s01`w`w`w`w
+@do move 33 9
+@do write
+`r4`4            
+@do move 33 14
+@do write
+`r4``s01`w`w`w`w
+@do move 33 10
+@do write
+`r4`4            
+@do move 33 15
+@do write
+`r4``s01`w`w`w`w
+@do move 33 11
+@do write
+`r4`4            
+@do saybar
+HUT HUT HUT HUT HUT HUT HUT HUT TWO THREE FOUR!
+@do move 33 16
+@do write
+`r4``s01`w`w`w`w
+@do move 33 12
+@do write
+`r4`4            
+@do move 33 17
+@do write
+`r4``s01`w`w`w`w
+@do move 33 13
+@do write
+`r4`4            
+@do move 33 18
+@do write
+`r4``s01`w`w`w`w
+@do move 33 14
+@do write
+`r4`4            
+@do move 33 19
+@do write
+`r4``s01`w`w`w`w
+@do move 33 15
+@do write
+`r4`4            
+@do saybar
+Open the Door, we march off to war!!
+@do move 33 20
+@do write
+`r4``s01`w`w`w`w
+@do move 33 16
+@do write
+`r4`4            `w`w`w`w
+@do move 33 17
+@do write
+`r4`4            `w`w`w`w
+@do move 33 18
+@do write
+`r4`4            `w`w`w`w
+@do move 33 19
+@do write
+`r4`4            `w`w`w`w
+@do move 33 20
+@do write
+`r4`4            `w`w`w`w
+@do move 3 22
+@key
+@do saybar
+Roll the Carpet!!!
+@key
+@do `p20 is 31
+@do `p21 is 19
+@do `p22 is 46
+@routine drawh in battlefx.ref
+@do `p20 is 31
+@do `p21 is 20
+@do `p22 is 46
+@routine drawh in battlefx.ref
+ 
+@#warpin
+;this will make a neat onblock swirly thing MUST SET `P20 AND `P21
+;TO X AND Y RESPECTIVELY BEFORE RUNNING THIS REF!!!!!
+@do move `p20 `p21
+@do write
+`r2`$+`W`W
+@do move `p20 `p21
+@do write
+`r2`$|`W`W
+@do move `p20 `p21
+@do write
+`r2`$\`W`W
+@do move `p20 `p21
+@do write
+`r2`$-`W`W
+@do move `p20 `p21
+@do write
+`r2`$/`W`W
+@do move `p20 `p21
+@do write
+`r2`$|`W`W
+@do move `p20 `p21
+@do write
+`r2`$\`W`W
+@do move `p20 `p21
+@do write
+`r2`$-`W`W
+ 
+ 
+@#movelft
+;this routine will move a selected char left    <----
+;`p20 must be starting x,  `p21 must be starting y
+;`p22 must be ending x, `p23 bgcolor, `p24 foregcolor
+;`s01 character(s) to be moved, `s02 number of spaces
+@do move `p20 `p21
+@do write
+`r`p23``p24`s01
+@do move `p20 `p21
+@do write
+`r`p23`s02
+@do `p20 - 1
+@if `p20 not `p22 then do
+@begin
+@do goto movelft
+@end
+@if `p20 is `p22 then do
+@begin
+@do move `p20 `p21
+@do write
+`r`p23``p24`s01
+@end
+ 
+@#movergt
+;this routine will move a selected char right    ---->
+;`p20 must be starting x,  `p21 must be starting y
+;`p22 must be ending x, `p23 bgcolor, `p24 foregcolor
+;`s01 character(s) to be moved, `s02 number spaces
+@do move `p20 `p21
+@do write
+`r`p23``p24`s01
+@do move `p20 `p21
+@do write
+`r`p23`s02
+@do `p20 + 1
+@if `p20 not `p22 then do
+@begin
+@do goto movergt
+@end
+@if `p20 is `p22 then do
+@begin
+@do move `p20 `p21
+@do write
+`r`p23``p24`s01
+@end
+ 
+@#moveup
+;this routine will move a selected char up            /^\
+;`p20 must be starting x,  `p21 must be starting y     |
+;`p22 must be ending y, `p23 bgcolor, `p24 foregcolor  |
+;`s01 character(s) to be moved, `s02 number of spaces
+@do move `p20 `p21
+@do write
+`r`p23``p24`s01
+@do move `p20 `p21
+@do write
+`r`p23`s02
+@do `p21 - 1
+@if `p21 not `p22 then do
+@begin
+@do goto moveup
+@end
+@if `p21 is `p22 then do
+@begin
+@do move `p20 `p21
+@do write
+`r`p23``p24`s01
+@end
+ 
+@#movedwn
+;this routine will move a selected char down            |     
+;`p20 must be starting x,  `p21 must be starting y      | 
+;`p22 must be ending y, `p23 bgcolor, `p24 foregcolor  \ /
+;`s01 character(s) to be moved,  `s02 number spaces     *
+@do move `p20 `p21
+@do write
+`r`p23``p24`s01
+@do move `p20 `p21
+@do write
+`r`p23`s02
+@do `p21 + 1
+@if `p21 not `p22 then do
+@begin
+@do goto movedwn
+@end
+@if `p21 is `p22 then do
+@begin
+@do move `p20 `p21
+@do write
+`r`p23``p24`s01
+@end
+ 
+@#drawful
+;best if used after warpin, `p24 is color, `p23 is bgcolor
+;`p20 & `p21 are x and y respectively
+@do move `p20 `p21
+@do write
+`r`p23``p24
+ 
+@#gotya
+@if map is 484 then `p24 is 3
+@if map is 486 then `p24 is 0
+@if map is 488 then `p24 is 5
+@do `s01 is `w`w`w
+@do `s02 is 
+@do `p23 is 7
+@do `p20 is 2
+@do `p21 is 20
+@do `p22 is 14
+@routine moveup
+@do `p20 is 2
+@do `p21 is 11
+@routine warpin
+@routine drawful
+@do `p20 is 3
+@routine warpin
+@routine drawful
+@do `p20 is 4
+@routine warpin
+@routine drawful
+@do `p20 is 5
+@routine warpin
+@routine drawful
+@do saybar
+Guard Headmaster:  You're surrounded!  There is no escape....
+@key
+@do saybar
+Prepare to die!!!!
+@key
+@show
+`r0`c
+`0
+ 
+ 
+	You are gaged and blind-folded!`l.`l.`l.`l.
+ 
+		You are led downwards`l.`l.downwards`l.`l.
+		
+			Sweat beads on your fore-head`l.`l.
+ 
+ 
+	Executioner:  Would you like a blind-fold?`2[`0N`2,`0Y`2]
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do move 1 1
+@displayfile battle6.ans NOPAUSE
+@do x is 35
+@do y is 4
+@update
+@do `p20 is 44
+@do `p21 is 11
+@routine warpin
+@routine drawful
+@do saybar
+Executioner:  Master, have you come to watch the execution?!!?
+@Key
+@do saybar
+Yes, so make it good!
+@key
+@do saybar
+Ready..............
+@key
+@do saybar
+Aim..............
+@key
+@do saybar
+FIRE..............
+@key
+@do `s01 is |
+@do `s02 is `x
+@do `p20 is 35
+@do `p21 is 10
+@do `p22 is 5
+@do `p24 is 4
+@do `p23 is 7
+@routine moveup
+@do saybar
+The Arrow plunges into you heart!!!!!
+@key
+@do saybar
+Your body is pinned to the wall as another arrow is shot!
+@key
+@do `s01 is |
+@do `s02 is `x
+@do `p20 is 35
+@do `p21 is 10
+@do `p22 is 4
+@do `p24 is 4
+@do `p23 is 7
+@routine moveup
+@do saybar
+This one gets you right between the eyes.  And all goes dark!
+@key
+@do enemy is Executioner  
+@run die in gametxt.ref
+@end
+ 
+@if `s01 is Y then do
+@begin
+@do enemy is crossbows
+@show
+`r0`c
+ 
+Executioner:   Ready!!!`l.`l.`l.`l.`l.
+                  Aim!!!`l.`l.`l.`l.`l.
+	 	      FIRE!!!`l.`l.`l.`l.`l.
+ 
+<click>  Sorry boss, forgot to load the cross bow!`l`l`l
+             there we go!	
+ 
+Executioner:   Ready!!!`l.`l.`l.`l.`l.
+                  Aim!!!`l.`l.`l.`l.`l.
+	 	      FIRE!!!`l.`l.`l.`l.`l.
+ 
+        You don't even feel the arrow split your skull in two
+				`k
+@
+@run die in gametxt.ref
+@end
+ 
+@#meeting
+@do move 3 22
+@do write
+`r0`2Press `0C`2 to Continue......
+@do readspecial `s01 C
+@clearblock 22 22
+@do `p20 is 37
+@do `p21 is 20
+@do `p22 is 3
+@do `p23 is 4
+@do `p24 is 0
+@do `s01 is `!`w`w
+@do `s02 is `x
+@routine moveup
+@do `p30 random 5 1
+@if `p30 is 1 then `s03 is Sosen
+@if `p30 is 2 then `s03 is Greentree
+@if `p30 is 3 then `s03 is Bonetown
+@if `p30 is 4 then `s03 is Flagcity
+@if `p30 is 5 then `s03 is Stonebrooke
+@do saybar
+Soldier:  King Codax, the warriors of Shara are walling themselves up...
+@key
+@do saybar
+they seem to be playing a waiting game!
+@do saybar
+Codax:  So...that's their strategy.....
+@key
+@do saybar
+Soldier:  We are ready to take the castle...just give the order!
+@key
+@do saybar
+Codax:  Patience!  If we attack now, too many lives will be lost
+@key
+@do saybar
+Soldier:  But I'm ready to lay down my life for your empire!
+@key
+@do saybar
+Codax:  Your from `s03, right?
+@key
+@do saybar
+Soldier:  Yes sir, why?
+@key
+@do saybar
+Codax: And your family lives there?  Fall in battle and I'll have to deliver
+@key
+@do saybar
+the bad news.  What shall I say to them?  You have a life to go back to
+@key
+@do saybar
+someday...don't throw it all away for nothing!  I wouldn't want that!
+@key
+@do saybar
+Soldier:  YES SIR!!!!!
+@key
+@do `p21 is 3
+@do `p22 is 20
+@routine movedwn
+@drawpart 37 20
+ 
+ 
+@#flirt
+@do saybar
+First we turn on the lights!
+@key
+@do move 7 2
+@do write
+`6лллл`7ллллллл`4ллллллл
+@do move 7 3
+@do write
+`7ллллллллллл`4ллл`7лл
+@do move 7 4
+@do write
+`r7`7лллллл`6o0o`7лл`4ллл`7лл
+@do move 7 5
+@do write
+`r0`%п`4ллллллллллллл`7лл
+@do `p20 is x
+@do `p21 is y
+@do saybar
+Now lets take the cool way in!
+@key
+@routine warpin
+@do `p20 is 37
+@do `p21 is 2
+@routine warpin
+@do move 37 2
+@do write
+`r7 
+@do x is `p22
+@do y is `p23
+@do `p20 is x
+@do `p21 is y
+@routine warpin
+@routine warpin
+@update
+@label flirt2
+@do saybar
+You experience a wonderfull time with `s01 and gain charm and `s02 favor!
+@key
+@routine outroom 
+ 
+@#outroom
+@if map is 484 then `s02 is 3
+@if map is 484 then `s01 is Power
+@if map is 486 then `s02 is !
+@if map is 486 then `s01 is Codax
+@if map is 488 then `s01 is Shara
+@if map is 488 then `s02 is 5
+@do `p20 is x
+@do `p21 is y
+@routine warpin
+@drawpart 37 2
+@do x is 37
+@do y is 3
+@routine warpin
+@update
+@do move 7 2
+@do write
+`r0                  
+@do move 7 3
+@do write
+`r0``s02`s01's Chambers
+@do move 7 4
+@do write
+`r0                
+@do move 7 5
+@do write
+`r0                
+ 
+@#gone
+@drawmap
+@update
+ 
+@#movergt2
+;moves player --->
+@do x is `p20
+@do y is `p21
+@update
+@do move 3 22
+@do write
+`w
+@drawpart `p20 `p21
+@do `p20 + 1
+@if `p20 not `p22 then do
+@begin
+@do goto movergt2
+@end
+@if `p20 is `p22 then do
+@begin
+@end
+ 
+;-------------------high ascii---------------------------
+;    open face
+;    full face
+;    snow flake
+;А    partial open
+;Б    middle open
+;В    mostly closed
+;л    all closed
+;п    up top
+;м    down bottom
+;н    left wall
+;о    right wall
+;ў    middle square
+;њ    middle dot

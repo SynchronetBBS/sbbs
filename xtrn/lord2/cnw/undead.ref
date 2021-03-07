@@ -1,0 +1,203 @@
+; Script file UNDEAD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE undeadfight 000000335
+@DECLARE monster1 000000934
+@DECLARE monster2 000001488
+@DECLARE monster3 000002040
+@DECLARE monster4 000002562
+@DECLARE monster5 000003110
+@DECLARE undead 000003624
+@NOCHECK
+; End of .REF index
+
+@#UNDEADFIGHT
+@offmap
+@fight
+;name
+Skeleton King
+;string said when you see him
+He is grinning at you
+;power move kill string
+This time stay dead !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with his sword|295
+summons rats|250
+touches you with a boney hand|286
+stabs you with his dagger|241
+NONE|NONE
+;defense
+250
+;gold reward
+2562
+;experience
+1210
+;hit points
+525
+;if win: ref file|name or NONE
+QUESTER.REF|FINQUEST
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+QUESTER.REF|ENDQUEST
+
+@#monster1
+@fight
+;name
+Skeleton Warrior
+;string said when you see him
+A skeleton Warrior approaches you
+;power move kill string
+You kill him again.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with his sword|95
+summons rats|50
+touches you with a bony hand|86
+NONE|NONE
+NONE|NONE
+;defense
+65
+;gold reward
+562
+;experience
+210
+;hit points
+125
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Specter
+;string said when you see him
+A large Specter floats towards you
+;power move kill string
+You send it straight to hell
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+passes through you|75
+summons death|61
+hits you with a blast of cold|91
+NONE|NONE
+NONE|NONE
+;defense
+68
+;gold reward
+628
+;experience
+158
+;hit points
+145
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Zombie
+;string said when you see him
+This looks like a Zombie.
+;power move kill string
+You put it back to sleep forever !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+scratches you|45
+Bites you|95
+bites an ear|54
+NONE|NONE
+NONE|NONE
+;defense
+82
+;gold reward
+925
+;experience
+171
+;hit points
+265
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Ghost
+;string said when you see him
+A chill runs down your spine. 
+;power move kill string
+You banish him back to Hell !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+passes through you|80
+scares you half to death|95
+hits you with slime|78
+NONE|NONE
+NONE|NONE
+;defense
+90
+;gold reward
+815
+;experience
+200
+;hit points
+351
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Lurker
+;string said when you see him
+You see a shadow of a man
+;power move kill string
+Don't come round here no more !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+kicks you|84
+scratches you|98
+bites you|87
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+526
+;experience
+165
+;hit points
+542
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#UNDEAD
+@busy
+@do `p20 random 5 1
+@do goto monster`p20

@@ -1,0 +1,461 @@
+; Script file VAULTS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE banklist 000000840
+@DECLARE widthdraw 000002412
+@DECLARE deposit 000003013
+@DECLARE requestmore 000003113
+@DECLARE movegold3 000003213
+@DECLARE seegold 000003636
+@DECLARE seegold1 000003706
+@DECLARE fightguards 000006141
+@DECLARE win 000006749
+@DECLARE win2 000006890
+@DECLARE run 000007373
+@DECLARE movegold 000007663
+@DECLARE movegold1 000007758
+@DECLARE listvaults 000009291
+@DECLARE listtop 000009556
+@DECLARE endlist 000010246
+@DECLARE forcemove 000010388
+@DECLARE donequest 000010403
+@DECLARE nomore 000013498
+@NOCHECK
+; End of .REF index
+
+  @do `p30 is 14  <--Bank#
+  @do `v40 is 10000  <--amount to change
+  @routine deposit in vaults.ref
+;            ^--or widthdraw
+;
+;  Vaults of the realm! 
+;
+
+@#BANKLIST
+@do `s01 is Secret`xVault`x#`p20
+@if `p20 is 1 then `s01 is Main`xVault`xin`xSysOp`xCastle
+@if `p20 is 2 then `s01 is 1st`xBank`xOf`xGreentree
+@if `p20 is 3 then `s01 is PortTown`xBank
+@if `p20 is 4 then `s01 is FlagCity`xBank
+@if `p20 is 5 then `s01 is SosinVillage`xBank
+@if `p20 is 6 then `s01 is ArrisVille`xBank
+@if `p20 is 7 then `s01 is The`x`1G`2u`3m`4-`5L`6a`7s`8s`x`%Financial`xInstitution
+@if `p20 is 8 then `s01 is Inside`xDomain`xBank             ;<-slayer.ref
+@if `p20 is 9 then `s01 is Fortress`xOf`xFear`xBank
+@if `p20 is 10 then `s01 is RatVille`xBank
+@if `p20 is 11 then `s01 is MystVille`xBank
+@if `p20 is 12 then `s01 is Sword`xCastle`xBank
+@if `p20 is 13 then `s01 is Devils`xIsland`xBank
+@if `p20 is 14 then `s01 is Sand`xCity`xBank
+@if `p20 is 15 then `s01 is Shark`xTooth`xIsland`xBank
+@if `p20 is 16 then `s01 is Loki's`xInn`xBank
+@if `p20 is 17 then `s01 is Red`xDragon`xTown`xBank
+@if `p20 is 18 then `s01 is Bank`xOf`x`4Pyramid's`x`%Place
+@if `p20 is 19 then `s01 is Revenge`xBank
+@if `p20 is 20 then `s01 is Sword`xCastle`xBank
+@if `p20 is 21 then `s01 is WoodLand`xUnderground`xBank
+@if `p20 is 22 then `s01 is Bank`xof`xFortress`xFear
+@if `p20 is 23 then `s01 is BoneTown`xBank
+@if `p20 is 24 then `s01 is Bank`xof`xthe`xUnderGround`xPassage
+@if `p20 is 25 then `s01 is StonePass`xLodge
+@if `p20 is 26 then `s01 is Bank`xOf`xPhReAkS`xKeEp
+@if `p20 is 27 then `s01 is Cool`!NesS`%`xBank 
+@if `p20 is 199 then `s01 is Monsters`xGold
+@if `p20 is 200 then `s01 is 1=Too`xMuch`xMoney,Lottery
+;
+;
+;
+
+@#widthdraw
+@dataload vaults.idf `p30 `p29
+@if `p29 < `v40 then do
+        @begin
+        @show
+
+
+    `2Sorry to say this s&sir, but we do not have the requested `$$`v40
+  `2funds in our vaults, you're going to have to go to another branch to
+  widthdraw that amount.
+
+    `2We've just made a request for more gold here, we should have enough
+  `2by most as of tommorow. Thanks for your patience.
+
+        @key
+        @routineabort
+        @routine requestmore
+        @drawmap
+        @update
+        @closescript
+        @end
+@do `p29 - `v40
+@datasave vaults.idf `p30 `p29
+
+
+@#deposit
+@dataload vaults.idf `p30 `p29
+@do `p29 + `v40
+@datasave vaults.idf `p30 `p29
+
+
+@#requestmore
+@dataload movegold.idf `p30 `p28
+@do `p28 + `v40
+@datasave movegold.idf `p30 `p28
+
+@#movegold3
+@do write
+`\   ú`%Moving Requested Vault Money.`\
+@dataload vaults.idf 200 `p25
+@if `p25 > 1 then do            ;<---Drop left over gold in Monsters Account
+        @begin
+        @dataload vaults.idf 199 `p24
+        @do `p24 + `p25
+        @datasave vaults.idf 199 `p24
+        @datasave vaults.idf 200 0
+        @end
+@do `p20 is 1
+@do `p25 is 1
+@do `p26 is 1
+@do `p27 is 0
+@do goto movegold1
+
+@#seegold
+@do `p20 is 1
+@do `p21 is 1
+@do `p28 random 6 1
+
+@label seegold1
+@do `p20 + 1
+@if `p20 > 198 then goto NOMORE
+@dataload movegold.idf `p20 `p21
+@if `p21 > 0 then do
+        @begin
+        @do saybar
+`%You see `p28 well dressed royal guards carrying heavy crates.`l`l`l`k
+        @do saybar
+`%Try to jump them and rob the contents of the crates? `@[y/N]`x
+        @do readspecial `s01 NY
+        @if `s01 is N then do
+                @begin
+                @do saybar
+`5You wave to them as they pass by you.
+                @closescript
+                @end
+        @if `s01 is Y then do
+                @begin
+                @do saybar
+`5You hide in the best spot possible and wait for them to pass you.`l`l`k
+                @do saybar
+`5You JUMP out with you s&weapon in your hands yelling as loud as you can`l`l`k
+                @if `p28 > 3 then do
+                        @begin
+                        @do `p22 random 6 1
+                        @if `p22 < 4 then do
+                                @begin
+                                @do `p28 - `p22
+                                
+                                @do saybar
+`5`p22 guards go running in the other direction.`l`l`k
+                                @do `p20 random 10000 5000
+                                @if bounty.&playernum exist true then do
+                                        @begin
+                                        @readfile bounty.&playernum
+`p23
+`p24
+@
+                                        @do delete bounty.&playernum
+                                        @do `p20 + `p24
+                                        @end
+                                @writefile bounty.&playernum
+399
+`p20
+2
+@
+                        @end
+                @do `p07 - 3
+                @do `p23 random 55 25
+                @do `p22 is `p28
+                @do `p22 * `p23
+                @do `p30 is `p28
+                @do `p30 * `p03
+                @do `p23 is `p28
+                @do `p23 * 5
+                @do `p24 is `p28
+                @do `p24 * 16
+                @do `p25 is `p28
+                @do `p25 * 22
+                @do `p26 is `p28
+                @do `p26 * 34
+                @do `p27 is `p28
+                @do `p27 * 41
+                @do `p29 is `p28
+                @do `p29 * 100
+                @run fightguards
+                @end
+                @closescript
+        @end
+@do goto seegold1
+
+@#fightguards
+@fight
+;name
+`p28 Royal Guards
+;string said when you see him
+`5You prepare to fight the `p28 royal guards.`l`l`k
+;power move kill string
+You laugh as you swing your s&weapon apon them.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+swipes you|`p23 
+stabs you|`p24
+slashes you|`p25
+swings a sword at you|`p26
+bashes you|`p27
+;defense
+`p22
+;gold reward
+`p21
+;experience
+`p29
+;hit points
+`p30
+;if win: ref file|name or NONE
+vaults.ref|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+vaults.ref|RUN
+
+@#WIN
+;randomly put on bounty here, puts in today log
+@do `p07 - 2
+@dataload movegold.idf `p20 `p21
+@datasave movegold.idf `p20 0
+@label win2
+@do `p20 random 198 1
+@dataload vaults.idf `p20 `p22
+@if `p22 < `p21 then do
+        @begin
+        @datasave vaults.idf `p20 0
+        @do `p21 - `p22
+        @do goto win2
+        @end
+@do `p22 - `p21
+@datasave vaults.idf `p20 `p22
+@routine bankname
+@writefile lognow.txt
+  `5`s01 `%never received their requested money. It is believed that someone
+ managed to rob from the empire today.
+                                 `2-`0=`2-`%=`2-`0=`2-
+@closescript
+
+@#RUN
+;put in bounty list here
+@do `p20 random 10000 5000
+@if bounty.&playernum exist true then do
+    @begin
+    @readfile bounty.&playernum
+`p23
+`p24
+    @do delete bounty.&playernum
+    @do `p20 + `p24
+    @end
+@writefile bounty.&playernum
+399
+`p20
+2
+@closescript
+
+@#movegold
+@do `p20 is 1
+@do `p24 is 0
+@do `p25 is 0
+@do `p26 is 1
+@do `p27 is 0
+
+@label movegold1
+@do `p20 + 1
+@do `p26 + 1
+@if `p20 > 198 then goto NOMORE
+@dataload vaults.idf `p26 `p24
+
+@if `p24 < 0 then do        ;<-- should not be less than 0
+        @begin
+        @datasave vaults.idf `p26 0
+        @end
+
+@if `p24 > 50000 then do
+        @begin
+        @do `p27 random 30000 1
+        @do `p24 - `p27
+        @datasave vaults.idf `p26 `p24
+        @dataload vaults.idf 1 `p24
+        @do `p24 + `p27
+        @datasave vaults.idf 1 `p24
+        @end
+
+@dataload movegold.idf `p20 `p21
+@if `p21 > 0 then do
+        @begin        
+        @dataload vaults.idf 1 `p23
+        @if `p23 > `p21 then do
+                @begin
+                @do `p23 - `p21
+                @datasave vaults.idf 1 `p23
+                @dataload vaults.idf `p20 `p24
+                @do `p24 + `p21
+                @datasave vaults.idf `p20 `p24
+                @datasave movegold.idf `p20 0
+                @if `p25 is 1 then goto movegold1
+                @closescript
+                @end
+        @datanewday nomoregd.idf
+        @dataload nomoregd.idf 1 `p28
+        @if `p28 is 1 then do
+                @begin
+                @closescript
+                @end
+        @writefile lognow.txt
+`$King SysOp proclaims the realm vaults treasury is very low. We need 
+`$more gold. The banks will not be getting any more funds until enough
+`$taxes are collected.
+                                 `2-`0=`2-`%=`2-`0=`2-
+
+        @datasave nomoregd.idf 1 1
+        @end
+@do goto movegold1
+
+@#listvaults
+@do move 1 1
+@clear screen
+@do `p20 is 0
+@do `p22 is 5
+@show
+        `r1    List of Gold in Realm Vaults   `r0
+
+`8ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+`8³            `7[please wait, checking records]             `8³`\
+@label listtop
+@if `p22 > 22 then do
+        @begin
+        @do `p22 - 1
+        @do move 1 `p22
+        @do write
+`8ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+        @do `p22 is 5
+        @key
+        @end
+@do `p20 + 1
+@if `p20 > 200 then goto endlist
+@dataload vaults.idf `p20 `p21
+@if `p21 > 0 then do
+        @begin
+        @routine banklist
+        @do `p22 - 1
+        @do move 1 `p22
+        @do `s02 is `p21
+        @do pad `s01 36
+        @do pad `s02 18
+        @do write
+`8³`!`s01`8³`$$`s02`8³`\
+        @do write
+`8³            `7[please wait, checking records]             `8³`\
+        @do `p22 + 2
+        @end
+@do goto listtop
+
+@label endlist
+@do move 1 `p22
+@do write
+`8ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@key
+@drawmap
+@update
+@closescript
+@#forcemove
+
+@#DONEQUEST
+@do `p20 is 0
+@do `p29 is &playernum
+@routine Treasure`xChest in extitems.ref 
+@routine bitcheck in item99.ref
+@if `p20 is 1 then do
+        @begin
+        @dataload sysopdes.idf &playernum `p21
+        @if `p21 is `p30 then do
+                @begin
+                @dataload sysopqst.idf &playernum `p21
+                @if `p21 is 1 then do
+                        @begin
+                        @dataload sysopgld.idf &playernum `p22
+                        @if money < `p22 then do
+                                @begin
+                                @do saybar
+`$You'd better get the full amount for the delivery before you enter.
+                                @drawmap
+                                @update
+                                @closecript
+                                @end
+                        @do `p20 is `p30
+                        @routine banklist
+                        @show
+`r0`c  `r1 `%`s01 `r0
+
+`2  The young clerk notices the royal crest of the SYSOP on the case you
+ are carrying.
+ `k
+`2 "Thanks, we've been expecting this, I hope it is all still all intact."
+`k
+`$ You pass the `$`p22 gold over to the clerk.
+`k
+    `5Your BONUS:
+          `#+4 Quest Points
+          `#+2000 Experience
+          `#+4 Alignment
+
+                        @routine Treasure`xChest in extitems.ref 
+                        @routine bitcheck in item99.ref
+                        @routine takeitem in item99.ref
+                        @dataload sysopgld.idf &playernum `p22
+                        @dataload sysopgld.idf &playernum 0
+                        @datasave sysopdes.idf &playernum 0
+                        @do `p01 + 2000
+                        @do `p18 + 4
+                        @do `p07 + 4
+                        @do `v40 is `p22
+                        @routine deposit in vaults.ref
+                        @do money - `p22
+                        @key bottom
+                        @end
+                @if `p21 is 2 then do
+                        @begin
+
+                        @do `p20 is `p30
+                        @routine banklist
+                        @show
+`r0`c  `r1 `%`s01 `r0
+
+`0  The young clerk notices the royal crest of the SYSOP on the case you
+ are carrying.
+ `k
+`2 "Thanks, we've been expecting you."
+`k
+`0  The clerk takes the chest into the back room for a few minutes. Brings
+ it back out, obviously it is heavier now.
+
+`2 "Here, take this chest back to the emperor SYSOP immedietely."
+
+`0 He passes the full chest over to you.
+                        @dataload sysopgld.idf &playernum `p21
+                        @datasave sysopdes.idf &playernum 0
+                        @dataload vaults.idf `p20 `p27
+                        @do `p27 - `p21
+                        @datasave vaults.idf `p20 `p27
+                        @do money + `p21
+                        @datasave sysopqst.idf &playernum 3
+                        @key bottom
+                        @end
+                @end
+        @end
+@run bankstart in `s09.ref
+@#NOMORE

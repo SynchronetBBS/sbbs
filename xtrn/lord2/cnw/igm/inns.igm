@@ -1,0 +1,112 @@
+         -Inn Stuffing-
+  (c)opyright 1997 Chris Yeates
+     An IGM for LORD2 v1.00
+
+by Chris Yeates (Screwy343@aol.com)
+or at his BBS -- The Loose Screw (801)561-4780
+
+(The really bland looking credits above were also done by Chris <g> )
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : Yes!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (13)
+  Adds screens?                                   : No!     
+  Free?                                           : Yes!
+
+
+  Description:
+
+        This IGM basically allows ALL the inns in LORD2 to be purchased,
+  owned, and run by the participating users. It runs in much the same fashion
+  as Sosen Inn, with two basic new features:
+
+        -The owner can pick toilet water.
+         (What? What? you say. What is he talking about?)
+         I'll explain. Whomever owns the inn can choose to have their
+         toilet water made out of either Gold Potions, Red Potions, etc...
+         Then, once a day, users can drink from the toilet to receive the
+         benefits!
+
+        -All the inns have whores! (Sorry if this offends)
+         Except for Ma's Boarding House, all the inns now have whores
+         just like Porttown. However, the best catch: whomever owns the
+         inn gets to set the "sleep with whore" price.
+         Basically, the inn keepers also become pimps!
+
+  Installation:
+   Backup the following .REF's:
+
+        -INN.REF
+        -PORTTOWN.REF
+        -BONE.REF
+        -FLAGCITY.REF
+        -STONEP.REF
+        -CASTLE4.REF
+        -ARRIS.REF
+
+  Unzip into your LORD2 dir and type:
+
+   IGM INNS.IGM
+
+  Un-installation:
+   IGM INNS.IGM (again)
+   and type "delete NINN*.DAT"
+   and type "delete NINN*.IDF"
+
+   Then copy the above list of files back over mine...
+
+   (This IGM creates a shitload of files)
+
+  Resetting LORD2:
+    type "delete NINN*.DAT"
+    type "delete NINN*.IDF"
+
+  Location:
+  Wherever the inns are! ;)
+
+  For more information, please read INNS.DOC. Any comments, suggestions,
+  or complaints just send to:
+
+  Screwy343@aol.com
+  or
+  The Loose Screw BBS (801)561-4780 (to the sysop <g> )
+
+  Again, I apologize for my crappy .DOC writing...I hope you like the IGM
+  better.
+
+  Please PLEASE mail me with anything -- compliments, criticisms, questions.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `2I`0n`%n Stuffi`0n`2g `2by `2C`0h`%ris Yeat`0e`2s / `0The Loose Screw BBS `2(`0801`2)`0561`2-`04780
+replacescreen: 149 1 noshow
+
+replacescreen: 157 2 noshow
+
+replacescreen: 158 3 noshow
+
+replacescreen: 153 4 noshow
+
+replacescreen: 1286 5 noshow
+
+replacescreen: 1206 6 noshow
+
+replacescreen: 151 7 noshow
+
+replacescreen: 73 8 noshow
+
+replacescreen: 70 9 noshow
+
+replacescreen: 880 10 show
+
+replacescreen: 616 11 noshow
+
+replacescreen: 617 12 noshow
+
+replacescreen: 450 13 noshow
+

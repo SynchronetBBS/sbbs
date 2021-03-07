@@ -1,0 +1,1297 @@
+; Script file BATTLEXH.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE done 000000593
+@DECLARE gone 000000604
+@DECLARE sorry 000000635
+@DECLARE xhair 000000708
+@DECLARE aim 000001904
+@DECLARE power 000004026
+@DECLARE didihit 000005206
+@DECLARE miss1 000018761
+@DECLARE miss2 000018886
+@DECLARE miss3 000019093
+@DECLARE getaway 000019750
+@DECLARE assasin 000019807
+@DECLARE cyrus 000020951
+@NOCHECK
+; End of .REF index
+
+;Battlexh.ref  Handles all crossbow hit detection and assination scores
+;All origonal Code by Codax of Dragon's Den Ultd.
+ 
+@#done
+ 
+@#gone
+@drawmap
+@update
+ 
+@#sorry
+@do saybar
+Sorry, you cannot do that
+@key
+@do goto power
+ 
+@#Xhair
+@Drawpart &Lastx &Lasty
+@update
+@if crossbow.&playernum exists false then do
+@begin
+@do saybar
+This would make a great place to try to assasinate someone!
+@run done
+@end
+ 
+@if crossbow.&playernum exists true then do
+@begin
+@clearblock 21 21
+@do move 3 21
+@do write
+`%Would you like to take a shot with your crossbow? `2[`0Y`2,`0N`2]
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@if map is 644 then x - 1
+@if map is 648 then x - 1
+@if map is 646 then x - 1
+@drawmap
+@update
+@run done
+@end
+ 
+@if `s01 is Y then do
+@begin
+@clearblock 21 23
+@if `p90 < 1 then do
+@begin
+@do saybar
+You don't have any arrows
+@run done
+@end
+@if `p90 > 0 then do
+@begin
+@do move 3 21
+@do write
+`r0`4OOOOO
+@do `p20 is x ;xchord
+@do `p20 + 5  ;x chord
+@do `p21 is y ;y chord 
+@do `p21 + 2  ;y chord
+@do `p22 is 0 ;power
+@if map is 644 then `p23 is 2
+@if map is 564 then `p23 is 7
+@if map is 484 then `p23 is 7
+ 
+@if map is 646 then `p23 is 2
+@if map is 566 then `p23 is 7
+@if map is 486 then `p23 is 7
+ 
+@if map is 648 then `p23 is 2
+@if map is 568 then `p23 is 7
+@if map is 488 then `p23 is 7
+ 
+@do `p25 is `p20
+@do `p26 is `p21
+@do `p25 + 1
+@label aim
+@do move `p20 `p21
+@do write
+`r`p23`4*`r4
+@do move 3 23
+;8=up 6=right 4=left 2=down s=shoot +=powerup q=quit
+@do readspecial `s01 qr8642+s?
+ 
+@if `s01 is ? then do
+@begin
+@show
+`%`r0`c  `r1  How do you use this thingy?  `r0`0
+ 
+   Chapter 1:  Aiming your Crossbow`2
+ 
+	To aim the cross-bow use the number-pad on the right of the handle
+  The number 8 means = up, 2 = down, 4 = left, 6 = right.
+`k`0
+ 
+   Chapter 2:  Fine Tuning your shot`2
+ 
+	To fine tune your shot you can press "R" which is (If you are in
+   home row configuration) is just above your middle left-hand finger
+`k`0
+ 
+   Chapter 3:  Adding Tension to your crossbow`2
+ 
+	As you know if you do not use the correct tension on your crossbow
+   it will not fire at all and will make alot of noise.  Therefor you must
+   make sure your power meter is full before attemting a shot.  Your power
+   meter is located at the bottom of the hilt and looks like this:
+ 
+	`4OOOOO `00 out of 5 strength
+	`$0`4OOOO `01 out of 5 strength
+	`$00`4OOO `02 out of 5 strength
+	`$000`4OO `03 out of 5 strength
+	`$0000`4O `04 out of 5 strength
+	`$00000 `0Full power!
+`2
+   To add power all you have too do look to the afore metioned num-pad and
+   press the "+" key`0
+`k
+ 
+   Chapter 4:  Shooting your crossbow`2
+ 
+	To shoot an arrow at the target(`r`p23``p24*`r0`2) just press the
+   "S" key which is located near your left hand under your 2nd finger from
+   the pinky(home row positon)`0
+`k
+ 
+   Chapter 5:  Chickening out`2
+ 
+	If you don't have the guts to shoot or have changed your mind about
+   killing then use the "Q" key, which is right above your left pinky, to 
+   holster your crossbow.
+`k
+`0                            Happy Hunting!
+`k
+@drawmap
+@update
+@do goto power
+@end
+ 
+ 
+	
+@if `s01 is R then do
+@begin
+@drawmap
+@update
+@do goto power
+@end
+ 
+@if `s01 is Q then do
+@begin
+@do saybar
+You guess you will have to shoot later
+@key
+@run gone
+@end
+ 
+@if `s01 is + then do
+@begin
+@if `p25 > 80 then `p25 is 1
+@drawpart `p25 `p21
+@do `p22 + 1
+@if `p22 > 5 then `p22 is 5
+@label power
+@clearblock 21 21
+@do move 3 21
+@if `p22 is 0 then `s02 is `r0`4OOOOO
+@if `p22 is 1 then `s02 is `r0`$0`4OOOO
+@if `p22 is 2 then `s02 is `r0`$00`4OOO
+@if `p22 is 3 then `s02 is `r0`$000`4OO
+@if `p22 is 4 then `s02 is `r0`$0000`4O
+@if `p22 is 5 then `s02 is `r0`$00000`4
+@do write
+`s02
+@do goto aim
+@end
+ 
+@if `s01 is S then do
+@begin
+@do goto didihit
+@end
+ 
+@if `s01 is 4 then do
+@begin
+@if `p25 > 80 then `p25 is 1
+@drawpart `p20 `p21
+@do `p20 - 1
+@if `p20 < 1 then do
+@begin
+@do `p20 is 1
+@run sorry
+@end
+@if `p20 > 0 then do
+@begin
+@do goto aim
+@end
+@end
+ 
+@if `s01 is 2 then do
+@begin
+@drawpart `p20 `p21
+@do `p21 + 1
+@if `p21 > 20 then do
+@begin
+@do `p21 is 20
+@run sorry
+@end
+@if `p21 < 21 then do
+@begin
+@do goto aim
+@end
+@end
+ 
+@if `s01 is 8 then do
+@begin
+@drawpart `p20 `p21
+@do `p21 - 1
+@if `p21 < 1 then do
+@begin
+@do `p21 is 1
+@run sorry
+@end
+@if `p21 > 0 then do
+@begin
+@do goto aim
+@end
+@end
+ 
+@if `s01 is 6 then do
+@begin
+@drawpart `p20 `p21
+@do `p20 + 1
+@if `p20 > 80 then do
+@begin
+@do `p20 is 80
+@run sorry
+@end
+@if `p20 < 81 then do
+@begin
+@do goto aim
+@end
+@end
+ 
+@label didihit
+@if `p22 < 5 then do
+@begin
+@do saybar
+You didn't have enough tension on the crossbow!!!
+@key
+@if `p20 is x then `p29 is 1
+@if `p21 is y then `p29 + 1
+@if `p29 is 2 then do
+@begin
+@do `p29 is 30
+@if `p22 less 1 then `p22 is 1
+@do `p29 * `p22
+@do `p02 - `p29
+@if `p02 < 1 then do
+@begin
+@do enemy is a`xshot`xin`xthe`xfoot
+@run die in gametxt.ref
+@end
+@if `p02 > 0 then do
+@begin
+@do saybar
+You shoot yourself in the foot and loose `p29 hitpoints...lucky no one saw!
+@End
+@end
+@run done
+@end
+ 
+@if `p22 = 5 then do
+@begin
+@if `p20 > x then `s03 is \
+@if `p20 < x then `s03 is /
+@drawpart `p20 `p21
+@do move `p20 `p21
+@do write
+`r`p23`$`s03
+@if `p20 is x then `p29 is 1
+@if `p21 is y then `p29 + 1
+@if `p29 is 2 then do
+@begin
+@do `p29 is 30
+@if `p22 less 1 then `p22 is 1
+@do `p29 * `p22
+@do `p02 - `p29
+@if `p02 < 1 then do
+@begin
+@do enemy is a`xshot`xin`xthe`xfoot
+@run die in gametxt.ref
+@end
+@if `p02 > 0 then do
+@begin
+@do saybar
+You shoot yourself in the foot and loose `p29 hitpoints...lucky no one saw!
+@End
+@end
+ 
+@if map is 644 then do
+@begin
+@if `p20 is 20 then do
+@begin
+@if `p21 is 14 then do
+@begin
+@if bitcheck `t20 0 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t02 0 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit the spy!  Nice Shot!
+@key
+@bitset `t20 0 1
+@do `p90 + 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 34 then do
+@begin
+@if `p21 is 13 then do
+@begin
+@if bitcheck `t20 3 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t20 3 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a girl!  Nice Shot!
+@key
+@bitset `t20 3 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 26 then do
+@begin
+@if `p21 is 8 then do
+@begin
+@if bitcheck `t20 1 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t20 1 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a wierd guy!  Nice Shot!
+@key
+@bitset `t20 1 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 53 then do
+@begin
+@if `p21 is 17 then do
+@begin
+@if bitcheck `t20 2 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t20 2 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit someone!  Nice Shot!
+@key
+@bitset `t20 2 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 33 then do
+@begin
+@if `p21 is 2 then do
+@begin
+@do saybar
+You hit a guard in the leg but he doesn't even notice!
+@key
+@do goto xhair
+@end
+@end
+@run miss1
+@end
+;---end of kills on block 644---
+@end
+ 
+@if map is 564 then do
+@begin
+@if `p20 is 11 then do
+@begin
+@if `p21 is 15 then do
+@begin
+@do saybar
+You hit a guard in his leg, but he doesn't notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 17 then do
+@begin
+@if `p21 is 12 then do
+@begin
+@do saybar
+You hit a guard in his leg, but he doesn't notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 13 then do
+@begin
+@if `p21 is 6 then do
+@begin
+@do saybar
+You hit a guard in his leg, but he doesn't notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 18 then do
+@begin
+@if `p21 is 4 then do
+@begin
+@do saybar
+You hit a guard in his leg, but he doesn't notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 51 then do
+@begin
+@if `p21 is 7 then do
+@begin
+@do saybar
+You hit a guard in his leg, but he doesn't notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 55 then do
+@begin
+@if `p21 is 8 then do
+@begin
+@do saybar
+You hit a guard in his leg, but he doesn't notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 52 then do
+@begin
+@if `p21 is 14 then do
+@begin
+@do saybar
+You hit a guard in his leg, but he doesn't notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 53 then do
+@begin
+@if `p21 is 18 then do
+@begin
+@do saybar
+You hit a guard in his leg, but he doesn't notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 23 then do
+@begin
+@if `p21 is 15 then do
+@begin
+@if bitcheck `t20 4 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t20 4 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a spy!  Nice Shot!
+@key
+@bitset `t20 4 1
+@do `p90 + 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 64 then do
+@begin
+@if `p21 is 18 then do
+@begin
+@do saybar
+Your arrow hits the wall of the Tavern!
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 79 then do
+@begin
+@if `p21 is 18 then do
+@begin
+@do saybar
+Your arrow hits the wall of the Tavern!
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 77 then do
+@begin
+@if `p21 is 16 then do
+@begin
+@do saybar
+Your arrow hits the wall of the Tavern!
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 64 then do
+@begin
+@if `p21 is 3 then do
+@begin
+@do saybar
+The Dark healer sees the arrow coming and dodges easily!
+@key
+@do goto xhair
+@end
+@end
+@end
+@end
+;----------
+@if map is 484 then do
+@begin
+@if `p20 is 31 then do
+@begin
+@if `p21 is 20 then do
+@begin
+@do saybar
+That person on the balcony has a crossbow!!  Get s&him
+@key
+@run miss2
+@end
+@end
+@if `p20 is 45 then do
+@begin
+@if `p21 is 20 then do
+@begin
+@do saybar
+That person up there has a crossbow!  Get s&him!
+@key
+@run miss2
+@end
+@end
+@if `p20 is 64 then do
+@begin
+@if `p21 is 13 then do
+@begin
+@do saybar
+That person on the balcony has a crossbow!!  Get s&him
+@key
+@run miss2
+@end
+@end
+@if `p20 is 37 then do
+@begin
+@if `p21 is 2 then do
+@begin
+@if bitcheck `t20 7 1 then do
+@begin
+@run miss2
+@end
+@if bitcheck `t20 7 0 then do
+@begin
+@writefile lognow.txt
+ 
+	`0`n`2 HAS KILLED KING `0POWER`2!  GOOD DRAGONS EVERYWHERE
+		BEGIN A NIGHT OF PARTYING AND CELEBARTION!
+@
+@do saybar
+HIT!!!!  You have killed POWER!  A ROYAL IS DEAD!
+@key
+@bitset `t20 7 1
+@do `p84 + 1
+@do goto xhair
+@end
+@end
+@end
+@run miss2
+@end
+;---------
+@if map is 646 then do
+@begin
+@if `p20 is 32 then do
+@begin
+@if `p21 is 2 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 45 then do
+@begin
+@if `p21 is 2 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 21 then do
+@begin
+@if `p21 is 8 then do
+@begin
+@if bitcheck `t22 0 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t22 0 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a protester!  Nice Shot!
+@key
+@bitset `t22 0 1
+@do goto xhair
+@end
+@end
+@end
+ 
+@if `p20 is 43 then do
+@begin
+@if `p21 is 12 then do
+@begin
+@if bitcheck `t22 1 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t22 1 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a spy!  Nice Shot!
+@key
+@bitset `t22 1 1
+@do `p89 + 1
+@do goto xhair
+@end
+@end
+@end
+ 
+@if `p20 is 11 then do
+@begin
+@if `p21 is 13 then do
+@begin
+@if bitcheck `t22 2 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t22 1 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a non-conformist !  Nice Shot!
+@key
+@bitset `t22 2 1
+@do goto xhair
+@end
+@end
+@end
+ 
+@if `p20 is 34 then do
+@begin
+@if `p21 is 16 then do
+@begin
+@if bitcheck `t22 3 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t22 3 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a Blue Dragon!  Nice Shot!
+@key
+@bitset `t22 3 1
+@do goto xhair
+@end
+@end
+@end
+ 
+@if `p20 is 38 then do
+@begin
+@if `p21 is 10 then do
+@begin
+@if bitcheck `t22 4 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t22 4 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a White Dragon!  Nice Shot!
+@key
+@bitset `t22 4 1
+@do goto xhair
+@end
+@end
+@end
+@run miss1
+@end
+;--end map 646(codyard)
+ 
+@if map is 566 then do
+@begin
+ 
+@if `p20 is 12 then do
+@begin
+@if `p21 is 10 then do
+@begin
+@if bitcheck `t22 5 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t22 5 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a spy!  Nice Shot!
+@key
+@bitset `t22 5 1
+@do `p89 + 1
+@do goto xhair
+@end
+@end
+@end
+ 
+@if `p20 is 76 then do
+@begin
+@if `p21 is 5 then do
+@begin
+@if bitcheck `t22 6 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t22 6 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a spy!  Nice Shot!
+@key
+@bitset `t22 6 1
+@do `p89 + 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 64 then do
+@begin
+@if `p21 is 18 then do
+@begin
+@do saybar
+Your arrow hits the wall of the Tavern!
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 79 then do
+@begin
+@if `p21 is 18 then do
+@begin
+@do saybar
+Your arrow hits the wall of the Tavern!
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 77 then do
+@begin
+@if `p21 is 16 then do
+@begin
+@do saybar
+Your arrow hits the wall of the Tavern!
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 46 then do
+@begin
+@if `p21 is 14 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 22 then do
+@begin
+@if `p21 is 9 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 15 then do
+@begin
+@if `p21 is 15 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 26 then do
+@begin
+@if `p21 is 14 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 32 then do
+@begin
+@if `p21 is 19 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 45 then do
+@begin
+@if `p21 is 19 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 55 then do
+@begin
+@if `p21 is 14 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 53 then do
+@begin
+@if `p21 is 8 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 46 then do
+@begin
+@if `p21 is 1 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@if `p20 is 31 then do
+@begin
+@if `p21 is 1 then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+@run miss1
+@end
+;----end cod hall
+@if map is 486 then do
+@begin
+@if `p20 is 37 then do
+@begin
+@if `p21 is 2 then do
+@begin
+@if bitcheck `t22 7 1 then do
+@begin
+@run miss2
+@end
+@if bitcheck `t22 7 0 then do
+@begin
+@writefile lognow.txt
+ 
+	`0`n`2 HAS KILLED `0KING CODAX`2!  GOOD DRAGONS EVERYWHERE
+		WONDER WHAT WILL BECOME OF THEM!
+@do saybar
+HIT!!!!  You have killed CODAX!  A ROYAL IS DEAD!
+@key
+@bitset `t22 7 1
+@do `p84 + 1
+@run xhair
+@end
+@end
+@end
+ 
+@if `p20 is 31 then do
+@begin
+@if `p21 is 20 then do
+@begin
+@do saybar
+Get that person up there! S&he has a Crossbow!
+@key
+@do goto miss2
+@end
+@end
+ 
+@if `p20 is 45 then do
+@begin
+@if `p21 is 20 then do
+@begin
+@do saybar
+Get that person on the balcony, s&he has a Crossbow!
+@key
+@do goto miss2
+@end
+@end
+@do goto miss2
+@end
+;--endcodthroneroom
+@if map is 568 then do
+@begin
+@if `p20 is 77 then do
+@begin
+@if `p21 is 16 then do
+@begin
+@if bitcheck `t23 0 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t23 0 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a innocent human!  Nice Shot!
+@key
+@bitset `t23 0 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 60 then do
+@begin
+@if `p21 is 9 then do
+@begin
+@if bitcheck `t23 1 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t23 1 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a spy!  Nice Shot!
+@key
+@bitset `t23 1 1
+@do `p90 + 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 18 then do
+@begin
+@if `p21 is 9 then do
+@begin
+@if bitcheck `t23 2 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t23 2 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a Phoenix!  Nice Shot!
+@key
+@bitset `t23 2 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 20 then do
+@begin
+@if `p21 is 12 then do
+@begin
+@if bitcheck `t23 3 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t23 3 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a Phoenix!  Nice Shot!
+@key
+@bitset `t23 3 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 17 then do
+@begin
+@if `p21 is 16 then do
+@begin
+@if bitcheck `t23 4 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t23 4 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a Phoenix!  Nice Shot!
+@key
+@bitset `t23 4 1
+@do goto xhair
+@end
+@end
+@end
+@if `p20 is 64 then do
+@begin
+@if `p21 is 18 then do
+@begin
+@if bitcheck `t23 5 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t23 5 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a spy!  Nice Shot!
+@key
+@bitset `t23 5 1
+@do `p90 + 1
+@do goto xhair
+@end
+@end
+@end
+@do goto miss1
+@end
+;-endsharroom2
+@if map is 488 then do
+@begin
+@if `p20 is 56 then do
+@begin
+@if `p21 is 13 then do
+@begin
+@do saybar
+HIT!!!!  You hit Cyrus!  You are in trouble now!
+@key
+@run cyrus
+@end
+@end
+@if `p20 is 37 then do
+@begin
+@if `p21 is 2 then do
+@begin
+@if bitcheck `t23 7 1 then do
+@begin
+@run miss2
+@end
+@if bitcheck `t23 7 0 then do
+@begin
+@writefile lognow.txt
+ 
+	THE GREAT `0SHARA`2 WAS ASSASINATED TODAY!  HER TYRANY HAS ENDED
+	   FOR ANOTHER `0100`2 YEARS!!  HER KILLER IS BELIEVED TO BE
+			        `0`N
+@do saybar
+HIT!!!!  You hit a SHARA!  You killed a ROYAL!
+@key
+@bitset `t23 7 1
+@do `p84 + 1
+@do goto xhair
+@end
+@end
+@end
+@do goto miss2
+@end
+;---------------if Xhairs not = position-------
+@#miss1
+@do saybar
+You miss and your arrow hits the ground!
+@key
+@do saybar
+Lucky no one saw you!
+@key
+@run xhair
+ 
+@#miss2
+@do `p28 random 70 1
+@if `p28 is 1 then do
+@begin
+@run getaway
+@end
+@if `p28 not 1 then do
+@begin
+@do saybar
+Guards rush at you from all directions!!!!
+@run gotya in battlefx.ref
+@end
+ 
+@#miss3
+@do saybar
+This person is already dead!!!!
+@key
+@clearblock 22 24
+@run xhair
+ 
+;-this is the format for hit detection!
+@if map is ;block; then do
+@begin
+ 
+@if `p20 is ;x; then do
+@begin
+@if `p21 is ;;y then do
+@begin
+@if bitcheck `t;; ; 1 then do
+@begin
+@run miss3
+@end
+@if bitcheck `t;; ; 0 then do
+@begin
+@do saybar
+HIT!!!!  You hit a ;; !  Nice Shot!
+@key
+@bitset `t;; ; 1
+@do `p;; + 1
+@do goto xhair
+@end
+@end
+@end
+;-used for guards
+@if `p20 is ;x; then do
+@begin
+@if `p21 is ;y; then do
+@begin
+@do saybar
+HIT!!!!  You hit a guard in the leg but he doesn't even notice
+@key
+@do goto xhair
+@end
+@end
+ 
+@#getaway
+@do saybar
+Lucky no one heard that shot!
+ 
+@#assasin
+@if map is 488 then `p29 is 3
+@if map is 486 then `p29 is 2
+@if map is 484 then `p29 is 1
+ 
+@if `p29 is 3 then `s03 is Shara
+@if `p29 is 2 then `s03 is Codax
+@if `p29 is 1 then `s03 is Power
+ 
+@if `p29 is 3 then `s02 is she
+@if `p29 not 3 then `s02 is he
+@do `p28 random 3 1
+@routine gone
+@do saybar
+`s03:  We must wait for an omen!
+@do move 3 22
+@do write
+`l`l`l`l`l`l`l
+@if `p28 not 1 then do
+@begin
+@do saybar
+`s03:  Sorry you just aren't Assasin material, `n
+@run done
+@end
+ 
+@if `p28 is 1 then do
+@begin
+@do saybar
+`s03:  LOOK!!!!!!
+@key
+@do `s01 is `4O`2M`0E`!N`w
+@do `p20 is 1
+@do `p21 is 10
+@do `p22 is 76
+@do `s02 is  
+@do `p23 is 7
+@do `p24 is 2
+@routine movergt in battlefx.ref
+@do `p20 is 1
+@do `p21 is 10
+@do `p22 is 80
+@routine drawh in battlefx.ref
+@do saybar
+I guess we have our omen!  You are now my assasin!  Retire all spys here!
+@key
+@writefile lognow.txt
+ 
+	`0`N`2 got an omen from `0`s03`2 and became an assasin today!
+		Looks like the fighting just got dirty
+@
+@if `p29 is 1 then `p81 is 1
+@if `p29 is 2 then `p81 is 3
+@if `p29 is 3 then `p81 is 2
+ 
+@end
+ 
+@#cyrus
+@Do move 56 13
+@do write
+`r7`1
+@do enemy is Cyrus
+@do `p20 is 55
+@do `p21 is 13
+@do `s01 is `!Û
+@do `s02 is 
+@do `p22 is 7
+@do `p23 is 7
+@do `p24 is 0
+@routine movelft in battlefx.ref
+@do `p20 is 7
+@do `p22 is 2
+@do `s01 is `%`!Û
+@routine movelft in battlefx.ref
+@do `p20 is 2
+@do `p22 is 55
+@routine movergt2 in battlefx.ref
+@Do move 56 13
+@do write
+`r7`1
+@do x is `p22
+@do y is `p21
+@update
+@do saybar
+Cyrus:  I hope you are happy!!!  Now we both die!!!
+@key
+@Do move 56 13
+@do write
+`r4`1
+@Do move 55 13
+@do write
+`r4`%
+@Do move 55 13
+@do write
+`r7`$<>`w`w`w
+@do move 54 13
+@do write
+`r7`$<  >`w`w`w
+@do move 53 13
+@do write
+`r7`$<    >`w`w`w
+@do move 53 13
+@do write
+`r7      
+@run die in gametxt.ref
+ 
+ 
+;-------------------high ascii---------------------------
+;    open face
+;    full face
+;    snow flake
+;°    partial open
+;±    middle open
+;²    mostly closed
+;Û    all closed
+;ß    up top
+;Ü    down bottom
+;Ý    left wall
+;Þ    right wall
+;þ    middle square
+;ú    middle dot

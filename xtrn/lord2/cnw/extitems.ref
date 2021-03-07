@@ -1,0 +1,365 @@
+; Script file EXTITEMS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:23 2001
+
+@DECLARE item0 000001722
+@DECLARE doorpass 000001739
+@DECLARE item1 000001890
+@DECLARE stick 000001911
+@DECLARE item2 000002070
+@DECLARE snow 000002091
+@DECLARE item3 000002250
+@DECLARE janitors_keys 000002272
+@DECLARE item4 000002428
+@DECLARE treasure 000002451
+@DECLARE item5 000002606
+@DECLARE pouch 000002633
+@DECLARE item6 000002805
+@DECLARE stick 000002831
+@DECLARE item7 000003005
+@DECLARE marbles 000003021
+@DECLARE item8 000003175
+@DECLARE ___08 000003189
+@DECLARE item9 000003334
+@DECLARE ___09 000003348
+@DECLARE item10 000003494
+@DECLARE ___10 000003508
+@DECLARE item11 000003655
+@DECLARE ___11 000003669
+@DECLARE item12 000003816
+@DECLARE ___12 000003830
+@DECLARE item13 000003977
+@DECLARE ___13 000003991
+@DECLARE item14 000004138
+@DECLARE ___14 000004152
+@DECLARE item15 000004299
+@DECLARE ___15 000004313
+@DECLARE item16 000004460
+@DECLARE ___16 000004474
+@DECLARE item17 000004621
+@DECLARE ___17 000004635
+@DECLARE item18 000004782
+@DECLARE ___18 000004796
+@DECLARE item19 000004943
+@DECLARE ___19 000004957
+@DECLARE item20 000005104
+@DECLARE ___20 000005118
+@DECLARE item21 000005265
+@DECLARE ___21 000005279
+@DECLARE item22 000005426
+@DECLARE ___22 000005440
+@DECLARE item23 000005587
+@DECLARE ___23 000005601
+@DECLARE item24 000005748
+@DECLARE ___24 000005762
+@DECLARE item25 000005909
+@DECLARE ___25 000005923
+@DECLARE item26 000006070
+@DECLARE ___26 000006084
+@DECLARE item27 000006231
+@DECLARE ___27 000006245
+@DECLARE item28 000006392
+@DECLARE ___28 000006406
+@DECLARE item29 000006553
+@DECLARE ___29 000006567
+@NOCHECK
+; End of .REF index
+
+@#ITEM0
+@label Doorpass
+@do `s01 is Doorpass
+@do `s02 is nouse
+@do `s03 is item99.ref
+;@dataload  `P29 `P30
+;@do `s01 add  [`P30]
+@do `P22 is 0
+@closescript
+
+@#ITEM1
+@label Stick of gum
+@do `s01 is Stick`xof`xgum
+@do `s02 is gum
+@do `s03 is sorry.ref
+@dataload gum.idf `P29 `P30
+@do `s01 add  [`P30]
+@do `P22 is 1
+@closescript
+
+@#ITEM2
+@label Snow Goggles
+@do `s01 is Snow`xGoggles
+@do `s02 is goguse
+@do `s03 is blizzard.ref
+;@dataload  `P29 `P30
+;@do `s01 add  [`P30]
+@do `P22 is 2
+@closescript
+
+@#ITEM3
+@label Janitors_keys
+@do `s01 is Janitors`xkeys
+@do `s02 is DEEDS
+@do `s03 is DEEDS.ref
+;@dataload  `P29 `P30
+;@do `s01 add  [`P30]
+@do `P22 is 3
+@closescript
+
+@#ITEM4
+@label Treasure Chest
+@do `s01 is Treasure`xChest
+@do `s02 is JOB
+@do `s03 is sysop.ref
+;@dataload  `P29 `P30
+;@do `s01 add  [`P30]
+@do `P22 is 4
+@closescript
+
+@#ITEM5
+@label Pouch of Documents
+@do `s01 is Pouch`xof`xDocuments
+@do `s02 is DEEDS
+@do `s03 is DEEDS.ref
+@dataload jw-isleL.mil `P29 `P30
+@do `s01 add  [`P30]
+@do `P22 is 5
+@closescript
+
+@#ITEM6
+@label Stick of cinnamon
+@do `s01 is Stick`xof`xcinnamon
+@do `s02 is cinnamon
+@do `s03 is sorry.ref
+@dataload cinnamon.idf `P29 `P30
+@do `s01 add  [`P30]
+@do `P22 is 6
+@closescript
+
+@#ITEM7
+@label Marbles
+@do `s01 is Marbles
+@do `s02 is MARBLES
+@do `s03 is SRDTOWER.REF
+;@dataload  `P29 `P30
+;@do `s01 add  [`P30]
+@do `P22 is 7
+@closescript
+
+@#ITEM8
+@label ___08
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 8
+@closescript
+
+@#ITEM9
+@label ___09
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 9
+@closescript
+
+@#ITEM10
+@label ___10
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 10
+@closescript
+
+@#ITEM11
+@label ___11
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 11
+@closescript
+
+@#ITEM12
+@label ___12
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 12
+@closescript
+
+@#ITEM13
+@label ___13
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 13
+@closescript
+
+@#ITEM14
+@label ___14
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 14
+@closescript
+
+@#ITEM15
+@label ___15
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 15
+@closescript
+
+@#ITEM16
+@label ___16
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 16
+@closescript
+
+@#ITEM17
+@label ___17
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 17
+@closescript
+
+@#ITEM18
+@label ___18
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 18
+@closescript
+
+@#ITEM19
+@label ___19
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 19
+@closescript
+
+@#ITEM20
+@label ___20
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 20
+@closescript
+
+@#ITEM21
+@label ___21
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 21
+@closescript
+
+@#ITEM22
+@label ___22
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 22
+@closescript
+
+@#ITEM23
+@label ___23
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 23
+@closescript
+
+@#ITEM24
+@label ___24
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 24
+@closescript
+
+@#ITEM25
+@label ___25
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 25
+@closescript
+
+@#ITEM26
+@label ___26
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 26
+@closescript
+
+@#ITEM27
+@label ___27
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 27
+@closescript
+
+@#ITEM28
+@label ___28
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 28
+@closescript
+
+@#ITEM29
+@label ___29
+@do `s01 is NIL
+@do `s02 is nouse
+@do `s03 is ITEM99.ref
+;@dataload  `P29 `P30
+;@do `s01 add [`P30]
+@do `P22 is 29
+@closescript
+

@@ -1,0 +1,407 @@
+; Script file JENNIE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE greyman 000000552
+@DECLARE stonecircle 000002029
+@DECLARE choice 000002306
+@DECLARE entrance 000003534
+@DECLARE toilet 000003587
+@DECLARE jennie 000003692
+@DECLARE table 000006502
+@DECLARE inn 000007240
+@DECLARE backinn 000007675
+@NOCHECK
+; End of .REF index
+
+;Jennie.ref
+;1. Darkman at map 956
+;2. Stonecircle at map 960
+;3. Jennie's house at map 1523
+;4. Inn
+
+;------------------------------DARKMAN-----------------------------
+@#greyman
+@do `p70 is 130
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@show
+`r0`c `r1`%The Darkman`r0
+
+
+  `0"Hi young fellow . . . "
+
+  `$Your quite shocked looking at this dark person. He seems to be completly
+  black. You don't see his face or anything else.
+
+  `0"What can I do for you ?" `2The black man whispers.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Who are you ?
+Leave quick !
+@if response is 1 then do begin
+        @begin
+        @show
+`r0`c `r1`%The Darkman`r0
+
+  `0"I am just a friend of JENNIE GARTH the most beautiful girl of
+   greentree."
+
+  `$"Aha JENNIE GARTH. Where can I find her ?"
+
+  `0"Go a few miles east and look for some strange stones at the stonecircle"
+   Maybe you are clever enough to find out the secret about her . . .  
+  `2 He whispers . . .
+  
+  `$"Thank you !" `2You say quite happy to leave . . .
+`\`k
+        @drawmap
+        @update
+        @if jennie.&playernum exists false then do
+                @begin
+                @writefile jennie.&playernum
+`N
+                @do saybar
+`2Your ready to break up to the stonecircle
+                @closescript
+                @end
+        @end
+@end
+
+@if response is 2 then do
+ @begin
+ @show
+`r0`c `r1`%The Darkman`r0
+
+
+ `0"Yeah Yeah great. Everyone is running away from me." `2 He shouts !!!
+`\`k
+@drawmap
+@update
+@closescript
+@end
+
+;-------------------------STONECIRCLES-------------------------
+
+@#stonecircle
+@do moveback
+@if jennie.&playernum exists false then do
+@begin
+ @do saybar
+`2You don't no what to look for. Maybe you ask someone !
+ @closescript
+ @end
+
+@show
+`r0`c `r1`%The STONECIRCLE`r0
+
+ `1You see the beautiful tree which is completly silver. 
+
+@label choice
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Try to take the tree
+climb on the tree
+forget it !
+@if response is 1 then do
+  @begin
+  @show
+`r0`c `r1`%The Silvertree`r0
+
+`1Aeh Ooh . . . what a fuckin idea !
+`\`k
+@do goto choice
+@end
+@if response is 2 then do begin
+  @begin
+  @show
+`r0`c `r1`%The Silvertree`r0
+
+ `1Uaah it's very high up here :-)
+
+ `2Aah but there you see a kind of paper. A very special kind of paper you gess.
+
+ `1You look at it . . .
+
+ `2WOW !!!. There is the secret of JENNIE GARTH. 
+
+ `2Lets read the instructions . . .
+ go to the Red Dragon Inn.`l .`l .`l .`l right in front of the bartender. `l.`l .`l .`l then
+ 28 moves to the left .`l .`l .`l .`l 1 up .`l .`l .`l .  and 6 to the left .`l .`l .`l.
+ 
+ `1You should write this down. `$You think.
+ `\`k
+@drawmap
+@update
+@readfile jennie.&playernum
+`s01
+`s01
+@if `s01 = tree then do
+@begin
+@do saybar
+`2Lets walk to the Red Dragon Inn
+@closescript
+@end
+
+@writefile jennie.&playernum
+tree
+@do saybar
+`2Lets walk to the Red Dragon Inn
+@closescript
+@end
+
+@if response is 3 then do
+@drawmap
+@update
+@closescript
+@end
+
+;---------------------------JENNIE's HOUSE-----------------------------------
+@#entrance
+@do saybar
+`2What a nice and save home
+
+@#toilet
+@do moveback
+@do saybar
+`2A double toilet. You never saw something like this before . . .
+
+@#jennie
+@do `p70 is 131
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@readfile jennie.&playernum
+`s01
+`s01
+`p20
+@if `p20 = &time then do
+@begin
+@do saybar
+`2Try again tommorrow. . .
+@drawmap
+@update
+@closescript
+@end
+
+
+@do delete jennie.&playernum
+@writefile jennie.&playernum
+`N
+tree
+&time
+@show
+`r0`c `r1`%Jennie Garth`r0
+
+`4There she is. JENNIE GARTH . . . now you really notice how beautiful she is ! 
+`l
+`0"Who are you and how did you find me ?"
+
+`2"A good friend of you told me your secret."
+
+`0"I knew I couldn't trust him  . . ."
+
+ `$That's exactly the answer you expected ;-) 
+
+ `0So what can I do for you ?
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+My name is . . .
+You are so beautiful
+How much for one night ?
+Tell my something about you !
+@if response is 1 then do
+ @begin
+ @show
+ 
+`r0`c `r1`%Jennie Garth`r0
+
+ `0"That doesn't interest me . . ."
+ 
+ `2"Oh ah .`l .`l .`l .`l ok !"
+`\`k
+ @drawmap
+ @update
+ @do saybar
+ `2Ok next time maybe
+ @closescript 
+ @end
+
+@if response is 2 then do
+ @begin
+ @show
+ 
+`r0`c `r1`%Jennie Garth`r0
+
+ `0"Oh thank you." `$She smiles in a lovely way. 
+`\`k
+ 
+ @do `p08 + 5
+ @drawmap
+ @update
+ @do saybar
+ `2Yeah your get 5 charm points !
+ @closescript
+ @end  
+
+@if response is 3 then do begin
+ @begin
+ @do moveback
+ @show
+`r0`c `r1`%Jennie Garth`r0
+
+`0Her face gets angry .`l .`l .`l .`l and a few seconds later you have a broken
+nose :-)
+`\`k
+@drawmap
+@update
+@do `p20 random 3 1
+@if `p20 is 1 then do
+ @begin
+@do `p23 is `p01
+@do `p23 / 10
+@do `p01 - `p23
+ @drawmap
+ @update 
+ @do saybar
+`2You lost `p24 experience
+ @closescript
+ @end
+
+@if `p20 is 2 then do
+ @begin
+ @drawmap
+ @update 
+ @do saybar
+`2Oh shit but you had luck . . . just the nose is gone :-)
+ @closescript
+ @end
+
+@if `p20 is 3 then do
+ @begin
+ @do `p02 is 5
+ @drawmap
+ @update
+ @do saybar
+`2You lost some Hitpoints
+ @closescript
+ @end
+@end
+
+@if response is 4 then do
+ @begin
+ @do moveback
+ @show
+`r0`c `r1`%Jennie Garth`r0
+
+`0Once I lived in the deep forest  .`l  .`l  .`l
+`0But this cruel Red Dragon wanted to marry me. He cept me in a cold and dark
+`0cave. But then there came a great warrior. His name was SENoR FRoG and he was
+`0the strongest and bravest man I ever saw. He saved me and took me to this 
+`0hidden house. The Bartender and my old friend SENoR FRoG are the only ones
+`0who know this place. SENoR FRoG tries to hide himself because of the Red 
+`0Dragon. He sent you here to help me I gess because for him it is too
+`0dangerous.
+`0SO PLEASE HELP ME AND KILL THAT DAMN DRAGON
+`\`k
+ @do `p23 is `p01
+ @do `p23 / 10
+ @do `p01 + `p23
+ @drawmap
+ @update
+ @do saybar
+`2You get some experience
+ @closescript
+ @end
+@end
+
+@#table
+ @do moveback
+@readfile table.&playernum
+`p22
+@if `p22 = &time then do
+@begin
+@do saybar
+`2Try again later
+@closescript
+@end
+
+@do delete table.&playernum
+@writefile table.&playernum
+&time
+ @do `p20 random 3 1
+
+ @if `p20 is 1 then do
+  @begin
+@do `p23 is money
+@do `p23 / 10
+@do money + `p23
+  @do saybar
+`2You get `p23 gold pieces !
+  @closescript
+  @end
+
+ @if `p20 is 2 then do
+  @begin
+  @do money + 100
+  @do saybar
+`2You get 100 gold pieces !
+  @closescript
+  @end
+
+ @if `p20 is 3 then do
+  @begin
+ @do `p23 is money
+ @do `p23 / 5
+ @do money + `p23
+  @do saybar
+`2You get `p23 gold pieces !
+  @closescript
+  @end
+
+;---------------------------INN-----------------------------------
+
+@#inn
+@if jennie.&playernum exists false then do
+ @begin
+ @do moveback
+ @closescript
+ @end
+
+@readfile jennie.&playernum
+`s01
+`s01
+@if `s01 = tree then do
+@begin
+@show
+`r0`c `r1`%HIDDEN`r0
+
+`0You see a button right in front of you.`l .`l .`l .`l you push it and a door
+opens !
+`\`k
+
+@do map is 1523
+@loadmap 1523
+@do x is 49 
+@do y is 19
+@drawmap
+@update
+@do saybar
+`2Oh you discovered a hidden house !
+
+@#backinn
+@do map is 159
+@loadmap 159
+@do x is 2
+@do y is 4
+@drawmap
+@update

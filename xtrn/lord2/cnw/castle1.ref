@@ -1,0 +1,1165 @@
+; Script file CASTLE1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:14 2001
+
+@DECLARE wizsign 000001156
+@DECLARE teamsign 000001209
+@DECLARE maid 000001261
+@DECLARE bedguard 000001598
+@DECLARE bedguard2 000001688
+@DECLARE statue 000001774
+@DECLARE sit 000001828
+@DECLARE drinkoff 000001902
+@DECLARE patrons 000001962
+@DECLARE done 000002105
+@DECLARE patron 000002117
+@DECLARE tower 000002210
+@DECLARE cellguard 000002364
+@DECLARE cell0 000002919
+@DECLARE cell1 000003001
+@DECLARE cell2 000003047
+@DECLARE cell3 000003109
+@DECLARE lady 000003161
+@DECLARE toilet 000003257
+@DECLARE mens 000003305
+@DECLARE wmens 000003344
+@DECLARE monster1 000003388
+@DECLARE drunk 000003959
+@DECLARE stables 000004520
+@DECLARE healme 000005635
+@DECLARE barguy 000005855
+@DECLARE rabstart 000006071
+@DECLARE rabchat 000009491
+@DECLARE ladygossip 000012891
+@DECLARE mybank 000013790
+@DECLARE tower 000016573
+@DECLARE doorguard 000016665
+@DECLARE startg 000016694
+@DECLARE sign 000020306
+@DECLARE enter 000020600
+@DECLARE done 000021713
+@DECLARE letmein 000023701
+@DECLARE done 000023801
+@NOCHECK
+; End of .REF index
+
+@#wizsign
+@do saybar
+`$Wizards Tower `5
+@end
+
+@#teamsign
+@do saybar
+`$TeamHouse #1 `5---->
+@end
+
+@#MAID
+@do moveback
+@if castle1.dat exist false then do
+ @begin
+ @do saybar
+`2"This is Nobody's Chambers!" says the Young Woman.
+ @end 
+
+@if castle1.dat exist true then do
+ @begin
+@readfile castle1.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2"This is `0`s01`2's Chambers!" says the Young Woman.
+ @end 
+
+@#BEDGUARD
+  @do saybar
+`2"Be sure to not take a Royal's Bed!"  the Young Man says.
+
+@#BEDGUARD2
+  @do saybar
+`2"Be sure to not take someones bed!"  the Young Man says.
+
+@#STATUE
+  @do saybar
+`0Statue of the IceLord Clan!
+
+@#SIT
+  @do saybar
+`2Take a seat! Lets have a drinking contest!
+
+@#DRINKOFF
+  @do saybar
+`4UNDER CONSTRUCTION! `2(sorry)
+
+@#Patrons
+@do x is 37
+@do y is 14
+@do map is 1365
+@loadmap 1365
+@drawmap
+@update
+  @do saybar
+`2Several Patrons hail you!
+@do goto done
+@#done
+
+@#PATRON
+  @do saybar
+`0"`2Welcome! how is the day good s&sir?`0" says the friendly man.
+
+@#TOWER
+@pauseoff
+@clear screen
+@displayfile tower.ans
+@pauseon
+@do x is 33
+@do y is 14
+@do map is 1366
+@loadmap 1366
+@drawmap
+@update
+
+
+@#CELLGUARD
+@do moveback
+@do `p20 random 6 1
+@if `p20 is 1 then saybar
+`%Guard: `0IceLord Keep is the safest place in the world!
+@if `p20 is 2 then saybar
+`%Guard: `0These cells holds the worst criminals ever captured!
+@if `p20 is 3 then saybar
+`%Guard: `0Watch yourself, least you rot in a cell!
+@if `p20 is 4 then saybar
+`%Guard: `0I Have seen many evil people rot in these very cells!
+@if `p20 is 5 then saybar
+`%Guard: `0Be nice to me or you will end up like these bums!
+@if `p20 is 6 then saybar
+`%Guard: `0You can visit the prisoners..
+
+@#CELL0
+  @do saybar
+`0"`2You better be careful!`2"`0 he shouts importantly.
+
+@#CELL1
+  @do saybar
+`0"Nobody knows..."
+
+@#CELL2
+  @do saybar
+`0"I was the most wanted criminal!"
+
+@#CELL3
+  @do saybar
+`0"Damn the IceLord Clan!"
+
+@#lady
+  @do saybar
+`2"`0Your that warrior from east Stonebrook!`2" she says excitingly.
+
+@#toilet
+  @do saybar
+Ahh! takes a load off!
+
+@#mens
+  @do saybar
+`%MEN'S ROOM
+
+@#wmens
+  @do saybar
+`%WOMEN'S ROOM
+
+@#monster1
+@fight
+;name
+Escaping Prisoner
+;string said when you see him
+An escaping prisoner runs toward you!
+;power move kill string
+His cell mates scream at you!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Hits you with a crowbar!|10
+Punches you hard!|7
+Stabs you with a cafeteria spoon!|8
+NONE|NONE
+NONE|NONE
+;defense
+5
+;gold reward
+18
+;experience
+25
+;hit points
+40
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#drunk
+@fight
+;name
+Angry Drunk
+;string said when you see him
+An angry and stupid drunk spits on you!
+;power move kill string
+Everyone cheers for you!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Hits you with a bottle!|2
+Punches you hard!|1
+Stabs you with a broken bottle!|3
+NONE|NONE
+NONE|NONE
+;defense
+2
+;gold reward
+8
+;experience
+15
+;hit points
+40
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#STABLES
+;lets them warp to a view places
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Stables `r0
+
+  `0"Greetings, s&sir!  Where can we drop you off today?" `2a smartly dressed
+  youth asks.
+
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Sosen Village
+Stonepass Lodge
+PortTown
+GreenTree
+I'll stay here, thanks
+@if response not 5 then do
+  @begin
+@show
+`\`\  `0"We shall leave at once!" he shouts importantly.
+
+`k  `2A few bumps later you arrive - ah, traveling in style is so much fun!
+
+  `0"I bid you a goodday s&sir, please travel safely."
+
+  `2Looks like you are on your own.
+
+`k
+@if responce is 1 then do
+  @begin
+   ;Sosen village
+   @do x is 38
+   @do y is 5
+   @do map is 456
+  @end
+
+@if responce is 2 then do
+  @begin
+   ;Stonepass Lodge
+   @do x is 40
+   @do y is 11
+   @do map is 880
+  @end
+
+@if responce is 3 then do
+  @begin
+   ;Porttown
+   @do x is 43
+   @do y is 16
+   @do map is 956
+  @end
+
+@if responce is 4 then do
+  @begin
+   ;GreenTree
+   @do x is 54
+   @do y is 12
+   @do map is 1356
+  @end
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#HEALME
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Healers  `r0
+
+  `2The good doctor looks you over for wounds carefully.
+
+  `%YOU ARE COMPLETEY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#BARGUY
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c`%  `r1 IceLord Keep Tavern `r0
+
+`2  You grab a seat and wait for some service.
+
+`k  A strong man named Rab appears to take your order.
+
+`k
+
+@label rabstart
+@show
+`r0`c`%  `r1 Time to quench your thirst `r0
+
+`2  Rab stands their looking at you.
+
+@do write
+`x`x
+@choice
+Look at the drinks.
+Order something
+Shoot the Breeze
+Stand up
+@
+
+@if response is 1 then do
+ @begin
+ @show
+`r0`c  `%IceLord Keep Tavern!
+
+  `2You look up and see the labels on the bottles while Rab starts talking
+  to someone else.  You will want to try 'em all!
+
+`k  `2Beer (`0$2`2)
+
+  `2This is the most commonly ordered drink among the people here its
+  pretty much the same everywhere!
+
+  `2Venom Ale (`0$10`2)
+
+  `2You'll die of satisfaction when you taste this fabulous drink! Created
+  by some old drunk man who loved Cobra's.
+
+  `2Rab's Special (`0$50`2)
+
+  `2Extremely rare and famous for the light feeling you get after drinking
+  one, Many travel around the world to visit this tavern and drink rab's
+  is worth every penny!
+
+`k
+ @do goto rabstart  
+  @end
+
+@if response is 2 then do
+  @begin 
+   
+   @if `p96 > 20 then do
+    @begin
+    @show
+`r0`c`%  `r1 You are a DRUNK! `r0
+  
+  `2  Sorry Mac! but I don't serve slobbering drunks!!
+  `2Either get help or get the hell outta here! If you 
+  `2want help you can talk to me...
+  
+  `k
+    @end
+
+   @do write
+`\`\  `2Order what?  (`0You have `$&money`2)`\`\`x`x
+   @do `v01 is 1
+   @choice
+`2Beer (`0$2`2)
+`2Venom Ale (`0$10`2)
+`2Rab's Special (`0$40`2)
+`2Nuthin'
+  @
+
+   @if response is 1 then do
+    @begin
+    @if money < 2 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto rabstart
+      @end
+    @do money - 2
+    @show
+`r0`c  `r1  Drink it up!  `r0`\`\  `2Rab sloshes out the mug.  You quickly 
+  grab it from him `0-`2 looks good.  You slurp some up.
+`\`k  `4A little stronger than what you are used to...
+`\`k  `%But you like it!!!  Yum.
+`\`k
+     @do `p96 + 4
+     @end
+
+   @if response is 2 then do
+    @begin
+    @if money < 10 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto rabstart
+      @end
+    @do money - 10
+    @show
+`r0`c  `r1  Drink it up! `r0`\`\  `2Rab brings out the Venom Ale.
+`\  You see deadly venom swirl inside the ale!  
+`\`k  `4The venom gives you a major rush!
+`\`k  `%You enjoy the feeling!!!!  What a drink!
+`\`k
+    @do `p96 + 8
+    @end
+
+   @if response is 3 then do
+    @begin
+    @if money < 40 then do
+      @begin
+      @show
+`\`\  `4You can't afford the special drink.`\`\`k
+      @do `v01 is 2
+      @do goto rabstart
+      @end
+    @do money - 40
+    @do `p96 + 16
+    @show
+`r0`c  `r1  OH YEAH!  `r0`\`\  `2Rab brings out the drink in a container.
+`\  You take a close look at Rab who smiles.
+`\`k
+    @show
+`k`r0`c  `r1  OH YEAH!  `r0
+`\  `4The drink has a strong oder!
+`\`\  `2You carefully put the container to your lips, being careful
+  `2not to let it spill.
+`\`k  `2You swish the drink with your tongue, oooh, it tickles!
+`\`k  `0You finally decide the fun is over and swallow it.  Flavors
+  pour into your mouth!  Yay!
+`\`k
+      @do `v01 is 3
+      @do goto rabstart
+    @end
+   
+      @do `v01 is 2
+      @do goto rabstart
+    @end
+
+@if response is 3 then do
+ @begin
+ @show
+`r0`c`%  `r1 Chatting with Rab `r0
+
+`2  Hey Rab.... (You get his full attention)
+
+`k  Rab looks at you seriously.
+
+`k  
+
+@label rabchat
+@do `v01 is 1
+@show
+`r0`c`%  `r1 Talking with the Bartender Rab `r0
+
+`2  Rab stands their looking at you.
+
+@do write
+`x`x
+@choice
+What is Your story?
+Whats with "IceLord"?
+>`p96 8 I am a Drunk!
+=`t45 1 >`i08 0 Ok! Here is the pie!
+Nevermind
+@
+
+  @if response is 1 then do
+    @begin
+    @show
+`r0`c`%  `r1  Rab's Story  `r0
+    
+    `0  "Ok, well I lived in GreenTree as a Youth.  I loved to watch the 
+    `0other people train! So, I met a lot of great warriors as a lad.
+    `k
+    `0  One day, Turgon asked me to join the warriors. Quickly I trained 
+    `0all the way to level 12 Just as I became a man! I met with that 
+    `0great warrior who slaid the dragon.  Not to brag, but i was just
+    `0as good of a warrior as him!
+    `k
+    `0  On our way to slay the dragon we came across a injured warrior
+    `0she said her name was Neeshis and that she had been injured by the 
+    `0dragon.  Well, we flipped a silver coin to see who would take her 
+    `0to nathan.. and I lost!
+    `k
+    `0  After the defeat of the dragon I decided to vanish.. I had
+    `0trained my whole life to kill that beast and it all was for not
+    `0I met the original owners of this place the IceLord Clan, who 
+    `0gave me this job. It pays well! I can still whuup anyone in this 
+    `0Kingdom!"
+    `k
+    @do `v01 is 1
+    @do goto rabchat 
+     @end
+  
+  
+  @if response is 2 then do
+    @begin
+    @show
+`r0`c`%  `r1 Story Behind IceLord Keep `r0
+    
+    `0  "IceLord Keep was started by the IceLord Clan.  They were all
+    `0warriors who studied the ancient art of freezing their opponent 
+    `0in combat.  Of coarse many thought this leathal style of combat
+    `0evil or injust.  So, banned from all major towns they built their
+    `0own place to live."
+  `k  
+    @do `v01 is 2
+    @do goto rabchat 
+     @end
+
+  @if response is 3 then do
+    @begin
+    
+   @if `t45 = 1 then do
+    @begin
+    @show
+`r0`c`%  `r1 The Pie! `r0
+    
+    `0  "Ok, I am trying to be nice, bring the pie and I WILL help
+    `0You... so bring it!! You can't be that slow!!!" he says coldly
+    `0(hint: get the freakin pie!!)
+  
+  `k  
+    @do `v01 is 3
+    @do goto rabchat
+    @end
+    
+   @if `p96 > 3 then do
+    @begin
+    @show
+`r0`c`%  `r1 Your a DRUNK! `r0
+    
+    `0  "Ok, Your in a situation thats not the best.." he says
+    `0"But,.. at least you admit it! I do have a cure, but first 
+    `0I need your mom's famous pie!"
+  
+  `k  
+    @do `t45 = 1
+    @do `v01 is 3
+    @do goto rabchat 
+     @end
+    @end
+  
+  @if response is 4 then do
+   @begin
+    @show
+`r0`c`%  `r1 Lets Get Healed! `r0
+    
+    `0  "Great! You brought the pie!" he says
+    `0"Now I will.. as promised .. restore you to normal! BUT!! 
+    `0remember not to make the same mistake you did before! or I may
+    `0not be so kind!"
+    `k
+    `0He gives you the Potion, You take it and.`l.`l.`l.`l.`l.
+                    
+                    `%YOU ARE CURED
+    `k
+    `0You also got 7 more MAX HitPoints!
+    `k
+    `0You thank him and go on your way!
+    `k
+    @do `t45 = 0
+    @do `i08 - 1
+    @do `p03 + 7
+    @do `p02 is `p03
+    @do `v01 is 3
+    @do goto rabchat
+   @end
+
+  @if response is 5 then do
+   @begin
+    @do `v01 is 3
+    @do goto rabstart
+   @end
+   @end
+
+@drawmap
+@update
+
+@#LADYGOSSIP
+@do moveback
+@busy
+@show
+`r0`c  `r1  GOSSIP WITH THE LADY  `r0
+
+@if Lgossip.txt exist false then do
+ @begin
+ @writefile Lgossip.txt
+  `%Rab said`2: `0I am going to own my own place someday!
+  `%Sandtiger said`2: `0I can out drink all of ya!
+ @end
+
+@if Lgossip.txt exist true then do
+ @begin
+ @displayfile Lgossip.txt
+ @end
+
+@show
+
+@
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 71
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile Lgossip.txt
+  `%`n`2 said : `0`s03
+ @do trim Lgossip.txt 17
+ @drawmap
+ @update
+
+
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if tres1.dat exist true then do
+  @begin
+  @readfile tres1.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres1.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete tres1.dat
+  @writefile tres1.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile castle1.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0IceLord Keep Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres1.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete tres1.dat
+  @writefile tres1.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile castle1.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0IceLord Keep Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+@#TOWER
+@DO SAYBAR
+`2The tower on this castle is not accessable yet.
+@do moveback
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if castle1.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this keep!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile castle1.dat
+`p20
+`s01
+`s04
+`s08
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge doorguard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Home Sweet Home
+Leave
+@if responce is 3 then do
+        @begin
+        @do `p69 is 17
+        @show
+`\  This is your HOME now. Welcome Home.
+        @key
+        @end
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$25,000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your keep to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle1.dat
+  @writefile castle1.dat
+`p20
+`s01
+`s04
+`s08
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of IceLord Keep to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%IceLord Keep`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your keep back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle1.dat
+  @do money + 25000
+  @show
+`\`\  `%KEEP SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%IceLord Keep`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @drawmap
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\`2                               (Enter `4ALL `2for access to everyone! `\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete castle1.dat
+  @writefile castle1.dat
+&playernum
+`s01
+`s04
+`s08
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if castle1.dat exist false then do
+ @begin
+ @do saybar
+IceLord Keep - For Sale! Enquire inside.
+ @end 
+
+@if castle1.dat exist true then do
+ @begin
+@readfile castle1.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+@if castle1.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2IceLord Keep was once a magnificient structure that housed many of
+  the royal families.  Now it is for sale.
+
+  It is for sale, however.  The asking price is `$$50,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 49999 Purchase it.
+<&money 50000 Sigh wistfully and leave since you don't have enough.
+>&money 49999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if castle1.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile castle1.dat
+&playernum
+NONE
+    @do money - 50000
+    @do addlog
+  `0`n `2buys `%IceLord Keep`2!
+     @routine seperate in gametxt.ref
+
+  @show      
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this keep!
+
+`k  `0As a special bonus, a vault, stable, healer, and guards!
+
+`2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile castle1.dat
+`p20
+`s01
+`s04
+`s08
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete castle1.dat
+    @do addlog
+  `%IceLord Keep`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  
+  @if `s01 is ALL then do
+   @begin
+   @show
+`r0`c    `0-=ICELORD KEEP=-
+   
+   `0"Welcome to `%IceLord Keep`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @drawmap
+   @update
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%IceLord Keep`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0IceLord Keep Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 39
+@do y is 19
+@do map is 1361
+@loadmap 1361
+@drawmap
+@update
+@do goto done
+@#done

@@ -1,0 +1,53 @@
+
+               Northlands Coliseum v1.00b by ShroomTrip Software
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!  (1)
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (5)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  This IGM adds a Coliseum in the Northlands. You get to bet on which
+  monster will win a fight. The amount of times you can bet is limited
+  to 6 per day.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM COLISEUM.IGM
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `!Northlands Coliseum `2by `0ShroomTrip Software
+;215
+replacescreen: 294 1 show
+
+replacescreen: 216 2 show
+
+replacescreen: 217 3 show
+
+replacescreen: 137 4 show
+
+replacescreen: 57 5 show
+
+replacescreen: 54 6 noshow
+
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2This IGM adds a Coliseum in the Northlands. You get to bet on which
+  monster will win a fight. The amount of times you can bet is limited
+  to 6 per day.

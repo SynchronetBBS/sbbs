@@ -1,0 +1,399 @@
+; Script file BLACKBAR.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:24 2001
+
+@DECLARE blackbar 000000888
+@DECLARE whisky 000000960
+@DECLARE barchat 000004520
+@DECLARE notestop 000004552
+@DECLARE dabottom 000005567
+@DECLARE welcome 000005840
+@DECLARE couch 000005997
+@DECLARE couch1 000006164
+@DECLARE innsign 000006317
+@DECLARE baseinfo 000006489
+@DECLARE nightstand 000006656
+@DECLARE rock 000006829
+@DECLARE miles 000006988
+@DECLARE treehelp 000007139
+@DECLARE treasure 000007344
+@DECLARE canman 000007662
+@DECLARE jon 000008010
+@DECLARE jon1 000008037
+@DECLARE done 000009431
+@DECLARE jonfight 000009540
+@DECLARE rockpath 000010243
+@DECLARE nomore 000010402
+@NOCHECK
+; End of .REF index
+
+          ;ref file for the Black Death's Tavern 1.00- Lord2 IGM by Jim 
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#blackbar
+;Bartender of Black Death's Tavern
+@BUSY
+@DO MOVEBACK
+@label whisky
+@do `v01 is 1
+@show
+`r0`c  `r1  Bartender at the Tavern  `r0
+
+  `0"Hey `n, `0what brings you 'round these parts? What can I get for ya
+   pal?" `2You think a second...  A drink, a smoke, or maybe some info on 
+   this place?
+
+@do write
+`x`x
+@choice
+>&money 4 Get a drink (`$$5`%)
+Ask for a smoke
+Ask about this place
+Ask for the lowdown on local bounty's
+Leave
+@if response is 1 then do
+  @begin
+  @do money - 5
+  @if `p02 < `p03 then do
+   @begin
+   @do `p02 + 2
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"I'll take a shot of whisky ma' good man", you say as he grabs a 
+  bottle.`2It's not to shabby for a joint like this, you feel a bit 
+  better. `$(Your Refreshed!)
+`\`k
+  @do `p96 + 15
+  @do goto whisky
+  @end
+@if response is 2 then do
+@begin
+    @show
+`c`\`\  `0"OK, here you go`l.`l.`l.`l.`l.`l.  Wait, `4Where's your ID??`0"`l`l`l
+  `2You franticaly search yourself`l.`l.`l. But it seems your show 
+  has not impressed `4Bla`@ck De`4ath. `l`l`c 
+
+  `0"I see your without proof of your age" `2says the bartender 
+  calmly, `0"Well, I tell you what, you come back when your 19,
+  and I'll gladly sell you some smokes" `l`l`l`l 
+
+  "In the mean time, how about a drink??" `2laughs the bartender.
+`\`k
+   @do goto whisky
+   @end
+@if response is 3 then do
+  @begin
+   @do `p20 random 6 1
+  @if `p20 is 1 then do
+   @begin
+    @show
+`\`\  `0"This place was originally stolen... Uh, I mean founded by my great 
+  grandfather back when there was a real need for hard liquor. 
+  There are still many people who visit here daily.... <g>
+`\`k
+   @do goto whisky
+   @end
+
+  @if `p20 is 2 then do
+   @begin
+    @show
+`\`\  `0"Be cautious of a guy who sneaks into my basement.  He likes to go 
+  there and smoke and curse. I can't get rid of him! He's kind of a bother 
+  but, I could really care less.... Just `4don't `0pick a fight with him!
+`\`k
+   @do goto whisky
+   @end
+
+  @if `p20 is 3 then do
+   @begin
+    @show
+`\`\  `0Have you seen my `1Amulet`0? I think I lost it in that Stonepass Inn... 
+  It has a engraving on it that says -  "To whom soever this belongs,
+  Shall they pass the snowy mountains unharmed..." If you see it,
+  please bring it back, it's very important....
+`\`k
+   @do goto whisky
+   @end
+
+  @if `p20 is 4 then do
+   @begin
+    @show
+`\`\  `0I decided to let people sleep in the beds upstairs for free now...
+  Sometime in the future I may charge, but not now, so enjoy! 
+  - Remember, you cannot be attacked when your staying upstairs -  
+`\`k
+   @do goto whisky
+   @end
+
+@if `p20 is 5 then do
+   @begin
+    @show
+`\`\  `0"Don't forget to check out "Fortress of Death" IGM -
+  set to be relased sometime soon! Check out my website for more info as
+  I progress: `1http://www.geocities.com/TimesSquare/Realm/2366`0 
+`\`k
+   @do goto whisky
+   @end
+
+@if `p20 is 6 then do
+   @begin
+    @show
+`\`\  `0Just after the tavern was built, I went to put up a sign.
+  I put it near a weird `5Purple `0tree, with a hole in the trunk.
+  I've heard stories of warriors who ventured into the hole and 
+  never came back! If you choose to explore it, be careful!    
+`\`k
+   @do goto whisky
+   @end
+
+  @end
+@if response is 4 then do
+  @begin
+   @show
+`\`\  `0"Come a bit closer to the bar...."`2 
+   I'll let you in on what I know..
+`\`k
+  @routine BOUNTYLIST in BOUNTY.REF
+  @do goto whisky
+  @end
+@drawmap
+@update
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#barchat
+@do moveback
+ @label notestop
+ @show
+`r0`c  `%At the Bar with your dagger....
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`\
+`2  You find a nice spot on the bar to scratch a note
+`2  to the next warrior who shows up here...
+
+@do write
+`x`x`x
+ @do `v01 is 1
+ @choice
+See what the last guy wrote
+Leave your own comment
+Wuss out and don't do anything
+@if responce is 1 then do begin
+ @begin
+@readfile barnote.txt
+`s04
+`s05
+ @show
+`\`\
+`2    You notice `s04 `2managed to scrawl the following...
+    `4-=[ `%`s05 `4]=-
+`\`k
+ @do goto notestop
+ @end
+
+@if responce is 2 then do begin
+ @begin
+ @do `s04 is 
+ @do write
+`\`\`\   `2Well?:`x`x
+ @do readstring 40 `s04 `s04
+ @do `p20 is length `s04
+ @if `p20 < 2 then do
+  @begin
+  @show
+`\`\  `2You decide that'll be ok.`\`\`k
+  @do goto dabottom
+  @end
+ @show
+`\`\
+`2  You leave your etchings for everyone to see.... 
+`\`\`k
+@if barnote.txt exists true then delete barnote.txt
+@writefile barnote.txt
+`n
+`s04
+ @label dabottom
+ @do goto notestop
+ @end
+
+@if responce is 3 then do begin
+ @begin
+ @show
+`\`\`\`2    Oh, that sounds real important......
+`\`\`k
+ @end
+
+
+ @drawmap
+ @update
+ @closescript
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#welcome
+@do moveback
+@do saybar
+`0Welcome to `4Bla`@ck De`4ath's `0Tavern!
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#couch
+@do saybar
+Ooohh, this is a comfy couch, like it's been sat on for years....
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#couch1
+@do saybar
+Ahhh!!! This darn couch has a spring sticking out!
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#InnSign
+@do saybar
+Free beds upstairs for weary travellers, and couches to crash on....
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#baseinfo
+@do saybar
+There seems to be torches emitting just enough light to see..
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#nightstand
+@do saybar
+You empty you pockets on the nightstand and rest peacfully on the bed....
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#rock
+@do saybar
+`0A `@VERY `0large rock seems to block the small door.....
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#miles
+@do saybar
+`4Bla`@ck De`4ath's `2Tavern `0===> `46 `0miles
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#treehelp
+@do saybar
+`0Looks like this path has been blocked for awile now.....
+@do quebar
+`%Maybe there's a way around?
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#treasure
+@do moveback
+@do saybar
+`0You find an old treasure chest.....`L
+@begin
+@do money * 2
+@do quebar
+`0Your find twice as many gold pieces as you had!!
+@closescript
+@end
+
+@do saybar
+`0Sorry dude, You got your gold already!
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#canman
+@do moveback
+@busy
+@show
+`r0`c                                    `8C`7an`8M`7an
+
+
+  `0Hey kid! I just traded all my cans in for gold. Maybe I could use 
+  something you don't need anymore?
+  
+  `$Whatcha got there?
+
+@sellmanager
+
+@drawmap
+@update
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#jon
+@DO MOVEBACK
+@label jon1
+@do `v01 is 1
+@show
+`r0`c  `r1  Tall dark figure, - havin' a smoke.  `r0
+
+  `0"Hey `n, `0what the hell are you doing down here? 
+   `2Hmmm... maybe he'll be nice enough to spare a smoke?
+
+@do write
+`x`x
+@choice
+Ask for a smoke (`$$1`%)
+Ask about the weird glowing circles
+Tell him where to shove it.
+Leave
+@if response is 1 then do
+  @begin
+  @do money - 1
+  @if `p02 < `p03 then do
+   @begin
+   @do `p02 is `p03
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"Hook me up man!" `2you say as you pay him.  
+  Wow it's "`7du`8M`7aurier`2"! Your lungs fill with sweet 
+  smoke and you feel a bit better. (YOU ARE REFRESHED!)
+`\`k
+@do goto jon1
+@end
+
+@if response is 2 then do 
+@begin
+ @show
+`\`\`0  "So what are all those strange circles over there?"`2, you ask...
+
+`2  `0"Well from what I can tell, they'll take you instantly
+ `0to a few different places around the area"
+
+`2  Top Circle   `7:  `0Greentree
+`2  Middle circle`7:  `8Dark Forest
+`2  Bottom circle`7:  `9Shrine at Babos
+
+`0  "Check it out, they're fun!"
+
+`k
+@do goto jon1
+@end
+
+@if response is 3 then do
+  @begin
+   @show
+`\`\  `0"Hey Jon! Look over there," `2you say as you kick him over....`2 
+    
+      `$"Why you `4sonofabitch`$! Prepare to fight!!"
+`\`k
+@run jonfight in blackbar.ref
+  @end
+ @do goto done
+@if responce not 4 then goto jon1
+@label done
+@drawmap
+@update
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#jonfight
+@FIGHT
+;name
+Jon
+;string said when you see him
+No more screwin' around fool, prepare to fight!
+;power move kill string
+`4You suck `2No Chin! `@Give me all your smokes, `$Damn it!.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+burns you with cigarette|7
+kicks you in the nads|5
+screams profanitys|6
+blows smoke at you|2
+lets one rip|4
+;defense
+100
+;gold reward
+69
+;experience
+69
+;hit points
+120
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@drawmap
+@update
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#rockpath
+@do saybar
+`0Hey, there seems to be a path through these rocks!.....
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#NOMORE

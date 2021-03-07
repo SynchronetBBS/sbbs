@@ -1,0 +1,1137 @@
+; Script file SYSOP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE install 000001023
+@DECLARE job 000001159
+@DECLARE fight 000001389
+@DECLARE monster1 000001496
+@DECLARE monster2 000001580
+@DECLARE monster3 000001666
+@DECLARE monster4 000001754
+@DECLARE monster5 000001840
+@DECLARE monster6 000001926
+@DECLARE monster7 000002041
+@DECLARE monster8 000002625
+@DECLARE heal 000003190
+@DECLARE sign 000003327
+@DECLARE sysop 000003465
+@DECLARE sysoptalk 000004823
+@DECLARE findjob 000009411
+@DECLARE findjob2 000010133
+@DECLARE guards 000014069
+@DECLARE oops 000015369
+@DECLARE guard 000016326
+@DECLARE jail1 000017259
+@DECLARE start 000017534
+@DECLARE window 000018706
+@DECLARE taxes 000020269
+@DECLARE taxowe 000021293
+@DECLARE bounty 000022299
+@DECLARE howtax 000022377
+@DECLARE paytax 000023154
+@NOCHECK
+; End of .REF index
+
+; Updated by CNW to handle the java telnet app
+; CNW added the Taxes IGM in SYSOP.REF
+;
+;
+;
+; SYSOP.REF V1.2 by Don Kinney 
+;
+@#INSTALL
+@do `s06 is Treasure`|Chest
+@do `s07 is JOB
+@do `s08 is sysop.ref
+@do `s09 is NIL
+@run install in install.ref
+@closescript
+@#JOB
+@do write
+`#It has the royal crest of the SYSOP.
+@do write
+`#It must be delivered to `s01.
+
+
+; **************random monster/event gen***************
+; 
+;This is called randomly in the sysop underground screen
+;
+@#fight
+@busy
+@do `p20 random 8 1
+@do goto monster`p20
+; =========================================
+@#MONSTER1
+@run FINDKID in FIGHT.REF
+; =========================================
+@#MONSTER2
+@run FINDMONEY in FIGHT.REF
+; =========================================
+@#MONSTER3
+@run MONSTER10 in FIGHTSW.REF
+; =========================================
+@#MONSTER4
+@run MONSTER22 in FIGHT.REF
+; =========================================
+@#MONSTER5
+@run MONSTER15 in FIGHT.REF
+; =========================================
+@#MONSTER6
+@do money + `p20
+@do saybar
+`2You find a GREEN POTION!
+; =========================================
+@#MONSTER7
+@fight
+;name
+Rat
+;string said when you see him
+A tiny brown thing shoots between your legs!
+;power move kill string
+Beter than a rattrap.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites your toes|2
+prickles you|1
+rolls over your feet|2
+NONE|NONE
+NONE|NONE
+;defense
+7
+;gold reward
+10
+;experience
+33
+;hit points
+90
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+;====================================================
+@#MONSTER8
+@fight
+;name
+Bunch of Worms
+;string said when you see him
+YUCK.
+;power move kill string
+No way you're getting worms.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+touches you|3
+gets slime on you|6
+attaches to your leg|7
+NONE|NONE
+NONE|NONE
+;defense
+1
+;gold reward
+1
+;experience
+19
+;hit points
+999
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+; *******************HEAL*****************************
+@#HEAL
+@do `p02 is `p03
+@do `p02 + 10
+@do saybar
+`2 you RELLY feel BETTER!
+
+; *****************sign *****************************
+@#SIGN
+@do moveback               
+@displayfile SYSOP.MAP
+@drawmap
+@update
+
+; *****************SYSOP*****************************
+@#SYSOP
+@do `s02 is &realname
+@if `s02 not SYSOP then do
+        @begin
+        @do moveback
+        @end
+@DO SAYBAR
+`2 ZZZZZZZZ- ZZZZZZZ - ZZZZZZ (...King Sysop is asleep)`l`k
+@do move 1 1
+@clear screen
+@dataload sysopqst.idf &playernum `p20
+@if `p20 > 99 then do
+        @begin
+        @show
+
+  `$ The SYSOP jumps awake yellin, `2"ARREST THIS S&MAN!!"
+
+`l`l`l`l`l
+        @drawmap
+        @update
+        @do write
+`l`l`l`l
+        @DO GOTO OOPS
+        @closescript
+        @end
+@show
+
+  `$ You see the SYSOP sleeping like a baby:
+
+  `2 One of the guards see you and says:
+  `2 ...QUIET!   His highness the all mighty SYSOP is asleap...
+
+  `k
+
+@do `v01 is 1
+@choice
+ Humbly say your sorry...
+ Wake up the SYSOP!
+ Start making lots of noise!
+ @IF RESPONCE IS 1 THEN DO
+   @begin
+   @drawmap
+   @update
+   @do saybar
+    `2WHEW! That was close!
+   @closescript
+   @end
+
+ @IF RESPONCE IS 3 THEN DO
+        @begin
+        @do move 1 1
+        @clear screen
+        @show
+`r0  `r1 `%SYSOP  `r0
+
+  `$ The SYSOP wakes up and screams:
+
+  `2 ...GET THIS $#@##$ PERSON OUT OF HERE!
+
+  `l`l`l`l`l
+
+        @drawmap
+        @update
+        @do write
+`l`l`l`l
+        @DO GOTO OOPS
+        @end
+
+@do move 1 1
+@clear screen
+@show
+`r0  `r1 `%SYSOP  `r0
+
+  `$ The SYSOP wakes up.
+
+@key
+@label sysoptalk
+@do move 1 1
+@clear screen
+@show
+`r0  `r1 `%SYSOP  `r0
+
+   `$How can I help you?
+
+@do `v01 is 1
+@choice
+What up Op?
+>`p07 50 Check Vault Balances
+Request a job
+Nah, nothing
+@if responce is 1 then do
+        @begin
+        @do move 1 1
+        @clear screen
+        @show
+`\Nothing much.`\
+        @key
+        @end
+@if responce is 3 then do
+        @begin
+        @do move 1 1
+        @clear screen
+        @do `p20 is 0
+        @do `p29 is &playernum
+        @routine Treasure`xChest in extitems.ref 
+        @routine bitcheck in item99.ref
+        @if `p20 is 1 then do
+                @begin
+                @dataload sysopqst.idf &playernum `p20
+                @if `p20 is 3 then do
+                        @begin
+                        @dataload sysopgld.idf &playernum `p22
+                        @if money < `p22 then do
+                                @begin
+                                @do `p23 is money
+                                @do `p22 - `p23
+                                @do money is 0
+                                @datasave sysopgld.idf &playernum `p22
+                                @dataload vaults.idf 1 `p23
+                                @do `p23 + `p22
+                                @datasave vaults.idf 1 `p23
+                                @show
+`r0`c  `r1 `%SYSOP `r0
+
+  `2"Where is the rest of the gold? Return it to me at once! You've got
+  till the end of the DAY!"
+
+  `2"You still owe me `$`p22 gold`2"
+
+                                @key bottom
+                                @drawmap
+                                @update
+                                @closescript
+                                @end
+                        @show
+`r0`c  `r1 `%SYSOP `r0
+
+`2  "Thank-you..thank-you"`0 the SYSOP jumps for joy.
+ `k
+`$ You pass the `$`p22 gold over to the clerk.
+`k
+    `5Your BONUS:
+          `#+5 Quest Points
+          `#+3000 Experience
+          `#+4 Alignment
+
+                        @do `p01 + 3000
+                        @do `p18 + 5
+                        @do `p07 + 4
+                        @datasave sysopqst.idf &playernum 0
+                        @dataload sysopgld.idf &playernum `p21
+                        @do money - `p21
+                        @datasave sysopgld.idf &playernum 0
+                        @datasave sysopday.idf &playernum 0
+                        @dataload vaults.idf 1 `p22
+                        @do `p22 + `p21
+                        @datasave vaults.idf 1 `p22
+                        @do `p29 is &playernum
+                        @routine Treasure`xChest in extitems.ref
+                        @routine bitcheck in item99.ref
+                        @routine takeitem in item99.ref
+                        @key bottom
+                        @drawmap
+                        @update
+                        @closescript
+                        @end
+                @show
+`\  `0You already have a delivery to make.
+Are you going to give up on the job right now?   `7[n/Y]
+                @do readspecial `s02 NY
+                @if `s02 is Y then do
+                        @begin
+                        @show
+`\  Ok no problem. Some s&boys can't take the presure. Come back and try
+another time, when you're more confident.
+                        @datasave sysopdes.idf &playernum 0
+                        @datasave sysopday.idf &playernum 0
+                        @datasave sysopgld.idf &playernum `p21
+                        @datasave sysopgld.idf &playernum 0
+                        @do money - `p21
+                        @dataload vaults.idf 1 `p22
+                        @do `p22 + `p21
+                        @datasave vaults.idf 1 `p22
+                        @do `p29 is &playernum
+                        @routine Treasure`xChest in extitems.ref
+                        @routine bitcheck in item99.ref
+                        @routine takeitem in item99.ref
+                        @key bottom
+                        @end
+                @do goto sysoptalk
+                @end
+        @show
+`\  If you've been good to society, I can offer you some Royal Guard duties,
+that only a few can successfully handle.
+
+Have you been loyal?
+
+        @do `v01 is 1
+        @choice
+>`p07 20 Yes, I'm your s&man
+No, i don't think so
+@
+        @if responce is 1 then do
+                @begin
+                @show
+`\`\  `$Ok, good, I see that you should be able to handle this.`k
+                @do `p20 is 2
+               @label findjob
+                @dataload movegold.idf `p20 `p21
+                @if `p21 is 0 then do
+                        @begin        
+                        @do `p20 + 1
+                        @if `p20 < 199 then goto findjob
+                        @end
+                @if `p21 < 1 then do
+                        @begin
+                        @show
+`\  `$But, I am very sorry, I have no jobs available right now.
+                        @key
+                        @do goto sysoptalk
+                        @end
+                @dataload vaults.idf 1 `p28
+                @if `p28 < `p21 then do
+                        @begin
+                        @do `p20 is 2
+                       @label findjob2
+                        @dataload vaults.idf `p20 `p24
+                        @if `p24 < `p21 then do
+                                @begin        
+                                @do `p21 + 1
+                                @if `p21 < 199 then goto findjob2
+                                @if `p21 > 198 then do
+                                        @begin
+                                        @show
+`\`\  `0I'm very sorry, the realm is going through some bad times.
+ There is not enough gold in the banks and in any of the realm vaults
+ to go around to the people. We will need to collect more taxes and
+ start asking for donations. 
+
+ Please help bring people to the tax offices and get everyone up
+ to date on their taxes. Thanks.
+                                        @key bottom
+                                        @drawmap
+                                        @update
+                                        @closescript
+                                        @end
+                                @end
+                                @routine banklist in vaults.ref
+                                @show
+`\`\  `0Heres the mission, my vault here needs more gold. I need you to
+ go to `5`s01`0 and pick up `$`p21 gold`0.
+ Deliver it back to me before tonight. If you do not deliver the package,
+ on time you will be placed on the bounty list by me personally, and I
+ will send out my own bounties out to get you everyday until you complete
+ the delivery or pay the realm back the amount you were delivering.
+
+ Just show this chest with my special seal to the bank clerk and they
+ will pass you the required amount.
+                        @datasave sysopday.idf &playernum &time
+                        @datasave sysopgld.idf &playernum `p21
+                        @datasave sysopdes.idf &playernum `p20
+                                ;<--quest type-->
+                        @datasave sysopqst.idf &playernum 2
+                        @do `p29 is &playernum
+                        @routine Treasure`xChest in extitems.ref
+                        @routine bitcheck in item99.ref
+                        @routine giveitem in item99.ref
+                        @key bottom
+                        @drawmap
+                        @update
+                        @closescript
+                        @end
+                @datasave movegold.idf `p20 0
+                @routine banklist in vaults.ref
+                @show
+`\`\  `0Heres the mission, you deliver this `$`p21 gold `0to the
+ `5`s01 `0before tonight. If you do not deliver the package,
+ on time, you will be placed on the bounty list by me personally,
+ and I will send out my own bounties out to get you everyday until
+ you complete the delivery or pay the realm back the amount you were
+ delivering.
+
+ Just bring this special chest with my personal seal on it to the
+ bank, they will recognize it right away.
+
+                @dataload vaults.idf 1 `p22
+                @do `p22 - `p21
+                @do money + `p21
+                @datasave vaults.idf 1 `p22
+                @datasave sysopgld.idf &playernum `p21
+                @datasave sysopday.idf &playernum &time
+                @datasave sysopdes.idf &playernum `p20
+                @datasave sysopqst.idf &playernum 1
+                @do `p29 is &playernum
+                @routine Treasure`xChest in extitems.ref
+                @routine bitcheck in item99.ref
+                @routine giveitem in item99.ref
+                @key
+                @drawmap
+                @update
+                @closescript
+                @end
+        @drawmap
+        @update
+        @closescript
+        @end
+@if responce is 2 then do
+        @begin
+        @run listvaults in vaults.ref
+        @end
+
+@drawmap
+@update
+@closescript
+
+
+
+; ********************** guards *****************************
+@#guards
+@do move 1 1
+@show
+`r0`c `r1 `%ROYAL GUARD `r0
+
+  `$ The ROYAL GUARD grabs you and says: 
+
+  `2 ...QUIET!   His highness the all mighty SYSOP is asleap...
+
+  `k
+
+@CHOICE
+ Humbly say your sorry...
+ INSULT the ROYAL GUARD!
+ Start making lots of noise!
+ @IF RESPONCE IS 1 THEN DO
+   @begin
+   @do moveback
+   @drawmap
+   @update
+   @do saybar
+    `2WHEW! That was close!
+   @closescript
+   @end
+; ----- DO BATTLE! -----------------
+@IF RESPONCE IS 2 THEN DO
+   @begin
+@do move 1 1
+@show
+`r0`c `r1 `%ROYAL GUARD `r0
+
+  `$ The ROYAL GUARD says: 
+
+  `2 ...THAT wasnt very smart!
+
+  `k
+
+
+@fight
+;name
+ROYAL GUARD
+;string said when you see him
+He suddenly charges you.
+;power move kill string
+`$"MESS with me will you!!"  `2you shout.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+charges you|10
+beats you|50
+practice with his sword on you|15
+attempt to trample you|20
+NONE|NONE
+;defense
+20
+;gold reward
+14
+;experience
+10
+;hit points
+200
+;if win: ref file|name or NONE
+SYSOP.REF|OOPS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SYSOP.REF|OOPS
+
+@drawmap
+@update
+  @closescript
+  @end
+
+@DO goto oops
+@closescript  
+
+; *****otherwise go to jail!*****
+@#OOPS
+@do move 1 1
+@show
+   `r0`c `r1 `%ROYAL GUARD `r0
+
+   `$ The other ROYAL GUARD grabs you again and this time hauls you 
+   off to the jail... You didnt even have a chance to fight!
+   
+   `k
+   
+   `$...VERY WELL, you can stay n here till you prove you will
+   behave yourself! I want you to write "I WILL BEHAVE MYSELF"
+   10 times before I let you out!
+
+   `2 (This is as bad as being sent to your room!)
+
+   `2A few minutes later he leaves....Your experience increases 
+   by 10 but you dont feel so good (1/2 hit points).
+ 
+
+   `k
+   
+   @do `p01 + 10
+   @do `p02 / 2
+   @do x is 16
+   @do y is 5
+;          ^^^  <--------warp past guard over return warp
+;  @do map is 863
+;  @loadmap 863
+;          ^^^  <-------- move to another map?
+   @drawmap
+   @update
+   @do saybar
+`% THAT was a mistake....you stomp arround and scream!
+   @closescript
+  
+; ********************** guard *****************************
+@#guard
+@do move 1 1
+@show
+`r0`c `r1 `%ROYAL GUARD `r0
+
+  `$ The ROYAL GUARD grabs you and says: 
+
+  `2 NOW ARE YOU GOING TO BEHAVE YOURSELF?
+
+  `k
+
+@CHOICE
+ Humbly say "yes Sir"
+ INSULT the ROYAL GUARD!
+ Start making lots of noise!
+ @IF RESPONCE IS 1 THEN DO
+   @begin
+   @drawmap
+   @update
+   @do saybar
+    `2WHEW! That was close!
+   @closescript
+   @end
+
+ 
+; -----otherwise get smacked--------
+   
+@do move 1 1
+   @show
+   `r0`c `r1 `%ROYAL GUARD `r0
+
+   `$0 The ROYAL GUARD grabs you again and RUFFS you up and
+   hits you for -10 hitpoints)
+
+
+   
+ 
+
+   `k
+   
+
+   @do `p02 - 10
+   @if `p02 less 1 then do
+     @begin
+    
+     @do enemy is ROYAL GUARD
+     @run DIE in GAMETXT.REF
+     @closescript
+     @end
+   
+   @do moveback
+   @drawmap
+   @update
+   @do saybar
+`% OUCH! That HURT!
+   @closescript
+
+; **************************JAIL1*******************************
+@#JAIL1
+@do `p50 is 10
+@do `s09 is length 20
+@do `s09 is I`xWILL`xBEHAVE`xMYSELF
+@do move 1 1
+@show 
+`c`r0
+
+`2 You sit down at the desk and fiddle arround with a pen and
+paper.
+
+`0 The Guard comes over and says:
+  NOW... write " `s09 " `p50  times!
+
+
+`k
+@label START
+@CHOICE
+ Get up and do something else
+ Start Writing!
+@if response is 1 then do
+  @begin
+  @do moveback
+  @drawmap
+  @update
+  @do saybar
+   You get up from the desk
+  @closescript
+  @end
+@do readstring 20 NIL `s10
+@do strip `s10
+@do upcase `s10
+
+;-----------WRONG!------------
+@if `s10 not `s09 then do
+  @begin
+@do move 1 1
+  @show
+  `c`r0
+
+  `0 You entered that line wrong!
+     Try AGAIN! 
+     
+  `0 If you quit now you will just have start all over again
+  
+  
+  `k
+  @do goto start
+  @end
+
+;----------wright--------------
+  @do `p50 - 1
+  
+@if `p50 more 0 then do 
+  @begin
+@do move 1 1
+  @show
+  `c`r0
+
+  `0 Thats GOOD `N!
+  You have `p50 more to go!
+
+  `0 If you quit now you will just have to start all over again
+
+
+  `k
+  @do goto start
+  @end
+
+; --------done-------------------
+
+@do move 1 1
+@show
+   `c`r0
+
+   `0 Well its about time you finished!
+   
+   `2 The guard lets you outside and resumes his post...
+
+
+   `k
+@do x is 19
+@do y is 5
+@drawmap
+@update
+@do saybar
+ FREE AT LAST!..... well maby...
+@closescript
+
+; ********************** window *****************************
+@#WINDOW
+@do move 1 1
+@show
+`r0`c `r1 `%WINDOW `r0
+
+  `$ You climb up on a barrel and look out at freedom: 
+
+  `2 These bars look a bit weak. If you bang your head against
+  them they MIGHT break before your head does. (10% chance)
+  
+  `2 You notice the barrel is kinda tippy, It must be something
+  its sitting on.
+  
+ 
+
+  `k
+
+@CHOICE
+ NEVERMIND - continue searching the room
+ Bang your head against the bars for -10 hitpoints
+ LOOK under the barrel
+
+@IF RESPONCE IS 1 THEN DO
+   @begin
+   @do moveback
+   @drawmap
+   @update
+   @closescript
+   @end
+
+ 
+; -----use your head--------
+@IF RESPONCE is 2 then do
+  @begin
+  @do `p02 - 10
+  @if `p02 less 1 then do
+     @begin
+     @do enemy is JAIL BARS
+     @run DIE in GAMETXT.REF
+     @closescript
+     @end
+ 
+  @do `p20 random 9 1
+  @if `p20 is 1 then do   
+     @begin
+     @show
+   
+   `$0 YOU fall through the bars !
+
+
+   
+ 
+
+   `k
+     @do saybar
+     FREE! at last!
+     @do x is 5
+     @do y is 5
+     @drawmap
+     @update
+     @closescript
+     @end
+   
+   
+@do saybar
+  OUCH! that HURT ME more than the window!
+@do moveback
+@drawmap
+@update
+@closescript
+@end  
+
+; --------------------------------
+@do move 1 1
+@show
+   `c
+
+   `$ You see a hole in the floor under the barrel
+
+
+   AND 
+
+   `k
+   
+   FALL
+
+   `k
+
+   THROUGH
+
+   `k
+
+   THE DAMM HOLE!
+
+    
+   `k
+   @do x is 7
+   @do y is 5
+   @do map is 1198
+   @loadmap 1198
+   @drawmap
+   @update
+   @do saybar
+`% OUCH! That HURT!
+   @closescript
+
+@#taxes
+@do moveback
+@do move 1 1
+@show
+`c                          `r1  Tax Collector  `r0
+
+  Weclome, how my I help you s&sir?
+
+@do move 14 9
+@do write
+`r2`$Ú³\ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ/³¿`r0
+@do move 14 10
+@do write
+`r2`$³`r0                           `r2`$³`r0
+@do move 14 11
+@do write
+`r2`$³`r0                           `r2`$³`r0
+@do move 14 12
+@do write
+`r2`$³`r0                           `r2`$³`r0
+@do move 14 13
+@do write
+`r2`$³`r0                           `r2`$³`r0
+@do move 14 14
+@do write
+`r2`$³`r0                           `r2`$³`r0
+@do move 14 15
+@do write
+`r2`$À³/ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\³Ù`r0
+@do move 15 10
+@do `v01 is 1
+@choice
+`$How much do I owe in taxes?`$
+`$Claim or check bounty list `$
+`$   How do taxes work?      `$
+`$       Pay taxes           `$
+`$         Leave             `$
+@if responce is 1 then goto taxowe
+@if responce is 2 then goto bounty
+@if responce is 3 then goto howtax
+@if responce is 4 then goto paytax
+@drawmap
+@update
+@closescript
+
+@#taxowe
+@routine getplace in myhome.ref
+@dataload taxes.idf &playernum `p20
+@do move 1 1
+@show
+`c                          `r1  Tax Collector  `r0
+
+ `$Tax Collector: `%What is your name, s&sir?`l`l`l`l`l
+
+ `$`N: `%`N!`l`l`l`l
+
+ `$Tax Collector: `%One moment `N, as I find your files.`l`l
+
+ `%<`l.`l.`l.`l>`l
+
+@if `p20 > 0 then do
+        @begin
+        @show
+ `$Tax Collector: `%Here we go, s&sir, `N of `s01.
+                 `%According to your record, you owe a tribute to the realm of
+                  `$`p20 `%gold coins.
+
+                  `%Please make your tribute before the middle of the year,
+                  `%or you will be charged interest each day being late.
+        @end
+@if `p20 < 1 then do
+        @begin
+        @show
+ `$Tax Collector: `%Here we go, s&sir, `N of `s01.
+                  `%According to this, you do not owe any tribute
+                  `%to our fine realm. Thanks for stopping by.
+        @end
+@show
+`x
+`x
+@key
+@do goto taxes
+
+@#bounty
+@do `p30 is 1
+@routine bountylist in bounty.ref
+@do goto taxes
+
+@#howtax
+@do move 1 1
+@show
+`c`r0
+`$
+- Taxes are payable at SysOp Castle, or out on the road via another
+ tax collector.                                       
+
+- The current tax rate is `%`v15%`$.
+
+- Taxes are calculated once every year, at the beginning of each new year.
+
+- If taxes are not paid by the middle of the year. There is an interest
+ rate of `%`v16%`$ per day. If taxes are over `%`v17`$ gold and the date is after
+ half the year, a bounty will be put out on that person.
+
+- EVERYONE MUST pay their taxes.
+
+- If you are unable to afford your taxes, you will be sent to the GreenTree
+ Prison to work on grinding stones. 
+
+- All taxes collected are stored in about 200 various secured vaults
+ through-out the realm.
+
+@key
+@do goto taxes
+
+@#paytax
+@if bitcheck `t50 3 1 then do
+        @begin
+        @dataload npc/npctaxes.idf `p71 `p20
+        @do `p70 is `p71
+        @routine getname in npcname.ref
+@do move 1 1
+        @show
+`c                          `r1  Tax Collector  `r0
+
+ `$Tax Collector: `%What is your name, s&sir?`l`l`l`l`l
+
+ `$`s01: `%`s01!`l`l`l`l
+
+ `$Tax Collector: `%One moment `s01, as I find your files.`l`l
+
+ `%<`l.`l.`l.`l>`l
+
+ `$Tax Collector: `%Okay, you must pay tribute of `$`p20 `%gold
+                  to our fine realm.
+
+        @dataload npc/npcgold.idf `p71 `p22
+        @if `p22 < `p20 then do
+                @begin
+                @show
+ `$`s01: `%Hold on a second sir.`l`l
+
+ `%<`s01 turns to you>
+
+ `$`s01: `%`N, do you have `$`p20 `%gold I could borrow to pay my debts
+        to the mighty king Sysop?
+
+                @if money < `p20 then do
+                        @begin
+                        @show
+ `$`N: `%I am soo sorry, I can not afford your dues either, you'll have
+        to come by here again sometime soon.`l`l
+
+ `$`s01: `%Okay, sir, tax collector guy, I'll be back another day to pay
+        my dues, please be patient on me. Thank-you.`l`l
+
+ `%<`s01 turns to the tax collector>
+
+ `$Tax Collector: `%`s01, as long as you don't let it get too high. BYE.`l
+
+                        @key
+                        @do goto taxes
+                        @end
+                @show
+ `%<Y/n>
+
+                @do readspecial `s05 YN
+                @if `s05 is Y then do
+                        @begin
+                        @show
+ `$`N: `%Yah sure, I'll cover for you this time.
+       `%Here take my `$`p20 `%gold.`l`l
+
+ `$`s01: `%Thank you so much s&sir, I am forever in your debts.
+
+ `%<`s01 turns to the tax collector>
+
+ `$`s01: `%Sir, I have the gold for my devine sire and realm.
+       `% Will you accept?
+
+ `$Tax Collector: `%Of course, thank-you, the realm will not forget
+        `%you generous deeds today.
+
+ `%<`s01 turns back to YOU>
+
+ `$`s02: `%Please take me home and I'll give you some stuff. I promise.
+
+                        @datasave npc/npctaxes.idf `p71 0
+                        @do money - `p20
+                        @dataload vault.idf 1 `p23
+                        @do `p23 + `p20
+                        @datasave vault.idf 1 `p23
+                        @bitset `t50 3 0
+                        @bitset `t50 4 1
+                        @bitset `t50 7 1
+                        @key
+                        @do goto taxes
+                        @end
+                @if `s05 is N then do
+                        @begin
+                        @show
+ `$`s01: `%I am sorry sir tax collector, I will have to return with
+       `%more money, as I am not carrying enough gold with me.
+
+ `$Tax Collector: `%Okay sure no problem, come back when you do.
+
+                        @bitset `t50 7 1
+                        @key
+                        @do goto taxes
+                        @end
+                @key
+                @do goto taxes
+                @end
+
+        @show
+ `$`s01: `%Okay sir, here I've got the `$`p20 `%gold.
+
+ `%<`s01 hands over the `$`p20 `%gold to the tax collector>
+        @do `22 - `p20
+        @datasave npc/npcgold.idf `p71 `p22
+        @dataload vaults.idf 1 `p21
+        @do `p21 + `p20
+        @datasave vaults.idf 1 `p21
+        @datasave taxes.idf &playernum `p21
+        @if bounty.`p71 exist TRUE then do
+                @begin
+                @readfile bounty.`p71
+`p20
+`p21
+`p22
+                @if `p20 is 201 then do
+                        @begin
+                        @do delete bounty.`p71
+                        @end
+                @end
+        @key
+        @do goto taxes
+        @end
+
+@do `p24 is &playernum
+@dataload taxes.idf `p24 `p20
+@do move 1 1
+@show
+`c                          `r1  Tax Collector  `r0
+
+ `$Tax Collector: `%What is your name, s&sir?`l`l`l`l`l
+
+ `$`N: `%`N!`l`l`l`l
+
+ `$Tax Collector: `%One moment `N, as I find your files.`l`l
+
+ `%<`l.`l.`l.`l>`l
+
+ `$Tax Collector: `%Okay, you must pay tribute of `$`p20 `%gold
+                  to our fine realm.
+
+@if money < `p20 then do
+        @begin
+        @show
+ `$`N: `%Sorry, I will have to return with more money, as I am not
+                  carrying enough gold.
+        @key
+        @do goto taxes
+        @end
+@show
+ `$`N: `%Okay sir, here I've got the `$`p20 `%gold.
+
+ `%<you hand over `$`p20 `%gold>
+@do money - `p20
+@bitset `t19 7 0
+@dataload vaults.idf 1 `p21
+@do `p21 + `p20
+@datasave vaults.idf 1 `p21
+@datasave taxes.idf `p24 0
+@if bounty.&playernum exist TRUE then do
+     @begin
+     @readfile bounty.&playernum
+`p20
+`p21
+`p22
+     @if `p20 is 201 then do
+        @begin
+        @do delete bounty.&playernum
+        @end
+     @end
+@key
+@do goto taxes
+
+#@NOMORE
+

@@ -1,0 +1,45 @@
+; Script file JUMP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE temple1 000000206
+@DECLARE grave 000000478
+@DECLARE nomore 000000763
+@NOCHECK
+; End of .REF index
+
+@#temple1
+@do moveback
+@if `p09 > 2 then do
+@begin
+@do map is 653
+@do x is 47
+@do y is 2
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+@if `p09 < 2 then do
+@do saybar
+`%The guard says: `$"`!Go home to your mother, don't play here!`$"
+@closescript
+@end
+
+@#grave
+@do moveback
+@if `p09 > 4 then do
+@begin
+@do map is 572
+@do x is 39
+@do y is 17
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+@if `p09 > 4 then do
+@do saybar
+`%The grave digger says: `$"`!You are too young to be playing around here.`$"
+@closescript
+@end
+
+@#NOMORE

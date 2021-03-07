@@ -1,0 +1,363 @@
+; Script file HAWOOD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:37 2001
+
+@DECLARE honeypot 000000349
+@DECLARE poohtalk 000000443
+@DECLARE poo 000000510
+@DECLARE poohcave 000001235
+@DECLARE owltree 000001516
+@DECLARE owl 000001578
+@DECLARE eeyorewish 000002528
+@DECLARE mtop 000002590
+@NOCHECK
+; End of .REF index
+
+
+@#honeypot
+@DO SAYBAR
+`2There are lots of empty honey pots lying around.
+@DO MOVEBACK
+
+
+@#poohtalk
+;Inside Winnie the Pooh's Cave
+@OFFMAP
+@DO MOVEBACK
+@label poo
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  Winnie the Pooh  `r0
+
+  `6"Well, umm... hello!"`2 stammers Pooh
+
+
+@DO WRITE
+`x`x
+@CHOICE
+Talk to Pooh Bear
+Buy more honey
+Say Goodbye
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @SHOW
+`\`\  `6"P is for Pooh who loves to eat honey,
+     `6that's why I have such a round little tummy"
+
+`k  `0"Um, that's nice!"`2 you offer.
+      
+      `6"Please help yourself to what's on the table"`2 he adds. 
+`\`k
+@do goto poo
+  @END
+
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@Show
+`r0`c                         `r1 `%Pooh's Illegal Honey Trade
+
+
+@buymanager
+89
+88
+@do goto poo
+@End
+@drawmap
+@update
+@end
+
+
+---------------------------------------------------------
+
+@#poohcave
+;secret
+@do moveback
+@if bitcheck `t13 1 1 then do
+  @begin
+  @do saybar
+There is nothing on the table.
+  @closescript
+  @end
+
+@bitset `t13 1 1
+@do saybar
+`%You find a Pot of Honey!
+@do `i88 + 1
+
+--------------------------------------------------------
+
+@#owltree
+;The Wise Old Owl's House
+@OFFMAP
+@DO MOVEBACK
+@label owl
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  Owl's Tree  `r0
+
+  `2A Owl looks down at you with a knowing look!
+  
+  `0"Good afternoon, how may I ... help you?"`2
+
+
+@DO WRITE
+`x`x
+@CHOICE
+Ask for a blessing
+Check out the potions
+Leave, quick!!
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @SHOW
+`\`\  `$"Excuse me, could you give me a blessing?"`2 you ask.
+
+`k  `0"Me?!? Give you a blessing??!!"`2 he retorts.
+      
+      Owl laughs outloud.`2 
+`\`k
+@do goto owl
+  @END
+
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@Show
+`\`\  `$"I'm kinda in need of a pick me up," `2you say.  `$"What do you recommend?" 
+  
+  `0"Take your pick young warrior, but choose `4Carefully!!" `2Owl warns.   
+  
+  `2You review your choices.
+
+`k
+@show
+`r0`c                         `r1 `%Health Affecting Potions
+
+
+@buymanager
+91
+90
+92
+93
+@do goto owl
+@End
+@drawmap
+@update
+@end
+
+--------------------------------------------------------
+
+@#eeyorewish
+; Getting a FREE wish
+ @offmap
+ @do moveback
+ @label mtop
+ @do `v01 is 1
+ @show
+`r0`c  `%Eeyore's Thistle Patch
+
+`2 As you approach you see a strange looking donkey.
+
+@do write
+`x`x`x`x
+@choice
+Talk to Eeyore
+Leave
+@show
+@if response is 1 then do
+ @begin
+
+; Checking if Data file exists... if not write fake one (don't want this
+; program to crash out)
+
+@if myst&playernum.txt exists false then do begin
+@begin
+@writefile myst&playernum.txt
+01/01/1988
+`s02
+@end
+
+; Read the players data file compare it to todays date. If it equals
+; todays date then exit out with message, else do the routine
+
+@readfile myst&playernum.txt
+`s01
+`s02
+@do `s05 is &date
+@if `s01 not `s05 then do
+ @begin
+ @show
+`c
+ `2 You talk to Eeyore.
+
+ `0 "What do you want Eeyore?"`2 you ask nervously.
+
+ `5 "I have a surprise for you young warrior!"`2 he drones, 
+ `5 "Come closer and I will help you!"  
+ 
+ `2 You move closer and you get`l. `l. `l. `l. `l. `l. `l. `l. `l. `\ 
+
+@do `p20 random 11 1
+;
+; Random things that you can get
+;
+; 1 - Extra Gold
+; 2 - Extra Muscle
+; 3 - Extra Dodge
+; 4 - if Neg alignment (Eviler) If positive (nicer)
+; 5 - A healing potion (5 point one)
+; 6 - a red potion (5 hit points)
+; 7 - a silver potion (muscle)
+; 8 - a gold potion (dodge)
+; 9 - pie
+; 10 - quest point
+; 11 - gem
+
+@if `p20 is 1 then do
+@begin
+ @do `p21 is 0
+ @do `p22 is 0
+ @do `p21 is `v09
+ @do `p21 - 1
+; Do the math, You'll get Gold = level * level * 10
+ @do `p21 * `p21
+ @do `p21 * 10
+ @show
+`%  Richer! `2 In your hand appears `$`p21`2 gold!`\
+`2  You look at the gold, then leave happly.`\`\`k
+ @do money + `p21
+@end
+
+@if `p20 is 2 then do begin
+@begin
+ @show
+`%  Stronger! `2 You feel stronger! (1 muscle point)`\
+`2  You look at your self and leave.`\`\`k
+ @do `p04 + 1
+@end
+
+@if `p20 is 3 then do begin
+@begin
+ @show
+`%  Tougher! `2 You get 1 point toughness!`\
+`2  You feel tougher, and you then leave.`\`\`k
+ @do `p05 + 1
+@end
+
+@if `p20 is 4 then do begin
+@begin
+ @if `p07 less 0 then do begin
+ @begin
+  @show
+`2 You truely are `% EVIL`2.  I can see it in you.  I will help you with
+the way you choose to be.  You lose 1 alignment.`\`\`k
+  @do `p07 - 1
+ @end
+
+ @if `p07 more 0 then do begin
+ @begin
+  @show
+`2  You truely are `%GOOD`2.  I can see it in you.  I will help you with
+the way you choose to be.  You gain 1 alignment.`\`\`k
+  @do `p07 + 1
+ @end
+
+ @if `p07 equals 0 then do begin
+ @begin
+  @show
+`2  You truely are `%GOOD`2.  I can see it in you.  I will help you with
+the way you choose to be.  You gain 1 alignment.`\`\`k
+  @do `p07 + 1
+ @end
+@end
+
+@if `p20 is 5 then do begin
+@begin
+ @show
+`2A Green Potion! This potion will heal 10 hitpoints if you drink it!`\`\`k
+ @do `i05 + 1
+@end
+
+@if `p20 is 6 then do begin
+@begin
+ @show
+`2A `4Red Potion! `2This potion will give you 5 hipoints if you drink it!`\`\`k
+ @do `i52 + 1
+@end
+
+@if `p20 is 7 then do begin
+@begin
+ @show
+`2A `$Gold Potion! `2This potion will give you extra muscles if you drink it!`\`\`k
+ @do `i53 + 1
+@end
+
+@if `p20 is 8 then do begin
+@begin
+ @show
+`2A `%Silver Potion! `2This potion will give you extra dodges if you drink it!`\`\`k
+ @do `i54 + 1
+@end
+
+@if `p20 is 9 then do begin
+@begin
+ @show
+`%  A Pie! `2 You get an extra pie!`\`\`k
+ @do `i08 + 1
+@end
+
+@if `p20 is 10 then do begin
+@begin
+ @show
+`%  A Quest point! `2 You get an extra quest point!`\`\`k
+ @do `p18 + 1
+@end
+
+@if `p20 is 11 then do begin
+@begin
+ @show
+`%  A Gem! `2 You get an extra gem!`\`\`k
+ @do `p19 + 1
+@end
+
+
+
+@if myst&playernum.txt exists true then delete myst&playernum.txt
+@writefile myst&playernum.txt
+&date
+`s02
+@do goto mtop
+@end
+
+@if `s01 is `s05 then do
+ @begin
+ @show
+`2`\`\You already wished to day.  Try again tomorrow!
+`\`\`k
+ @do goto mtop
+ @end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+@if response is 2 then do
+@begin
+ @show
+`\`\
+`2  You decide not to make a wish right now.
+`\
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+
+@show
+`\`\
+`2  This is under construction!
+`\`\`k
+@do goto mtop
+
+@drawmap
+@update
+@closescript
+@end

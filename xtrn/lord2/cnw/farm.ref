@@ -1,0 +1,754 @@
+; Script file FARM.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:38 2001
+
+@DECLARE sign 000000572
+@DECLARE janie 000000679
+@DECLARE farmer 000001680
+@DECLARE farmertop 000002072
+@DECLARE shack 000006895
+@DECLARE shacktop 000006972
+@DECLARE harvest1 000009433
+@DECLARE harvest2 000010120
+@DECLARE picking 000010410
+@DECLARE pickdone 000012935
+@DECLARE aftermath 000014286
+@DECLARE gotnone 000015252
+@DECLARE farmnoway 000015548
+@DECLARE bottom 000015715
+@DECLARE beathimup 000016406
+@DECLARE nomore 000018333
+@NOCHECK
+; End of .REF index
+
+@#sign
+; Signy thangy
+@do saybar
+`$Ye Olde Farm`% - by Lloyd Hannesson (`0support`@@`0techn.com`%)
+ 
+@#janie
+; Janie the loving goat
+@if bitcheck `t43 4 0 then do begin
+ @begin
+ @do moveback
+@do saybar
+Janie the goat seems to cuddle you, where'd she learn that!?
+ @end
+ 
+@if bitcheck `t43 4 1 then do begin
+ @begin
+ @do moveback
+@show
+`r0`c  `r1  Feeding Janie  `r0
+ 
+`2  As you approach Janie looks at you... she can smell the treat in your
+`2  pocket, and tries to get at it. Luckily she is tied down, that could
+`2  of been messy!
+ 
+`2  You take the treat out and give it to her, watching that she doesn't bite
+`2  off your fingers in the process.
+ 
+`2  While she is happily munching on her Goat Treat, you notice a piece of
+`2  paper in her collar. You take it out and notice that it is a Love letter!
+ 
+`2  "`$Oh my god is Farmer Kyle ever a sick puppy!`2"
+ 
+`2  You stop reading for fear of nausea! Now you have the proof to show his
+`2  wife! Way to go slick!
+ 
+`k
+        @bitset `t43 4 0
+        @bitset `t43 5 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@#farmer
+; Farmer Kyle
+@do moveback
+;@bitset `t43 0 0 ; Talked to him the first time
+;@bitset `t43 1 0 ; Call him a sicko
+;@bitset `t43 2 0 ; Ignoring him
+;@bitset `t43 3 0 ; if 1 you gave farmer the treat
+;@bitset `t43 4 0 ; if 1 you have the goat food
+;@bitset `t43 5 0 ; if 1 you have the love letter
+;@bitset `t43 6 0 ; If 1 you can harvest fields
+;@bitset `t43 7 0 ; 
+@label farmertop
+@show
+`r0`c  `r1  Talking to Farmer Kyle  `r0
+ 
+ @if bitcheck `t43 6 0 then do begin
+   @begin
+   @show
+`2  "`0Hello there buddy! I'm Farmer Kyle! Do you like my loud colorful
+`0  shirt! It scares all the crows away!`2"
+ 
+`2  "`$Ummm no not really. So I hear you like to, you know, make out
+`$  with goats or something. Momma warned me never to talk to you, she
+`$  said you scared her into the life that she is now leading`2"
+ 
+`2  "`0What!? You little brat! If I wasn't in front of Janie mah goat,
+`0  I'd woop yer ass!`2"
+ 
+`2  "`$Hehehe Whatever old man!`2"
+ 
+   @end
+ @if bitcheck `t43 6 1 then do begin
+   @begin
+   @show
+`2  You come to the place where Farmer Kyle used to be, but all you see is
+`2  a bloody mess! It seems to moan something but you can't make it out.
+ 
+`2  You step closer to investigate...
+ 
+   @end
+@do `v01 is 1
+@do write
+`x`x`x`x
+@choice
+-`t43 0 Ask about Janie
++`t43 1 Call the old Man a Sicko
++`t43 2 Try to get Farmer Kyle's Attention
++`t43 3 Talk to the smiling Farmer
++`t43 6 Ask the farmer what happened!
+Leave
+@if responce is 1 then do begin
+  @begin
+    @show
+`r0`c  `r1  Talking to Farmer Kyle  `r0
+ 
+`2  "`$So Kyle, where'd you get that fine goat of yours! IF she wasn't already
+`$  taken, well lets just say she'd be a popular gal`2"
+ 
+`2  "`0What!? She's taken! oh no... this can't be... Waaaaaaaaaaaaaahh!`2"
+ 
+`2  "`$Chill out Kyle! Geeze I meant she was yours already yours! You know
+`$  I thought this whole goat thing was a joke, I never thought that the
+`$  rumor was true! Man you really are sick!`2"`%
+ 
+`2  "`0Ummm what do you mean!? I didn't say anything... must of been the wind
+`0  blowing through the wheat or something... Yah that's what it was, really!`2"
+ 
+`2  "`$Umm ok old man... you just keep on believing that....`2"`%
+ 
+`k
+    @bitset `t43 0 1
+    @bitset `t43 1 1
+    @do goto farmertop
+  @end
+@if responce is 2 then do begin
+  @begin
+    @show
+`r0`c  `r1  Talking to Farmer Kyle  `r0
+ 
+`2  "`$You are a sick man you know! You are WAY worse than goatboy!`2"`%
+ 
+`2  "`0Hey don't talk about goatboy like that! He has shown me the light,
+`0  he has made me the man I am today, he taught me how to... uhhh... ummm..
+`0  well nevermind, what he taught me isn't all that important....`2"
+ 
+`2  "`$Well the way you were going on about it, I'd believe that it was
+`$  important! I should tell yer wife about Janie, how do you think she'd like
+`$  it!?`2"
+ 
+`2  "`0That's it s&boy! I don't want to talk to you anymore, you are no longer
+`0  my friend!`2"
+ 
+`2  "`$Sorry old man! I'll make it up to you! I didn't want to hurt your 
+`$  feelings! I'm truly sorry!`2"
+ 
+`2  Farmer Kyle just ignores you....`%
+ 
+`k
+ 
+    @bitset `t43 1 0
+    @bitset `t43 2 1
+    @do goto farmertop
+  @end
+ 
+@if responce is 3 then do begin
+  @begin
+     @if `i08 more 0 then do begin
+       @begin
+         @show
+`r0`c  `r1  Talking to Farmer Kyle  `r0
+ 
+`2  "`$Ummm i'm sorry old man, I didn't mean to hurt your feelings. Here,
+`$  you can have this fresh baked berry pie, my mother made it especially
+`$  for you.`2"
+ 
+`2  "`0A pie! For Me! Aww gee kid, I can't stay mad at you anymore!`2"
+ 
+`2  Farmer Kyle takes the pie and eats it!
+ 
+`k
+ 
+`2  "`0Here! Take this goat treat! It's all that I can give you. Sorry that
+`0  it's such a small gift (won't show up in the inventory) after you giving
+`0  me sucha good pie, but I can't afford much....`2"
+ 
+`2  "`$That's ok old man, thanks!`2"
+ 
+`2  Hmmm maybe you're getting somewhere now!`%
+ 
+`k
+        @bitset `t43 2 0
+        @bitset `t43 3 1
+        @bitset `t43 4 1
+        @do `i08 - 1
+        @do goto farmertop
+       @end
+ 
+     @if `i08 less 1 then do begin
+       @begin
+         @show
+ 
+`r0`c  `r1  Talking to Farmer Kyle  `r0
+ 
+`2  Farmer Kyle just ignores you... maybe if you had something to soften
+`2  him up...`%
+ 
+`k
+         @do goto farmertop
+       @end
+   @end
+ 
+ 
+@if responce is 4 then do begin
+  @begin
+  @show
+`r0`c  `r1  Talking to Farmer Kyle  `r0
+ 
+`2  "`0Thanks again for the pie it was great!`2"`%
+ 
+`k
+   @do goto farmertop
+  @end
+ 
+@if responce is 5 then do begin
+  @begin
+   @show
+`r0`c  `r1  Talking to Farmer Kyle  `r0
+ 
+`2  "`$Farmer Kyle! What happened to you!? You're a bloody mess!`2"
+ 
+`2  "`0Someone tipped off mah wife about the affair I was having, she damn
+`0  near killed me! The damn whore!`2"
+ 
+`2  "`$Well at least your blood will help the crops grow!`2" You say to
+`2  yourself as you walk away.
+ 
+`2  He ain't going anywhere for a long time.`%
+ 
+`k
+  
+   @do goto farmertop
+  @end
+ 
+ @end
+ @drawmap
+ @update
+ @closescript
+ 
+;---------------------------------------------------------------------------
+ 
+@#shack
+; The old shack (with people in it)
+@do moveback
+@offmap
+@label shacktop
+@show
+`r0`c  `r1  In the Farm House  `r0
+ 
+`2  You step into the dark hut, and you are almost immediatly greeted with
+`2  the most awfull stench you've ever smelled. You place it as rotting
+`2  chicken guts (dunno how you accomplished that).
+ 
+@if &sex is 1 then do begin
+ @begin
+  @show
+`2  As you step in you notice 2 girls look up at you. They appear to be the
+`2  farmer's wife and daughter. You can barely take your eyes off the 
+`2  daughter's full body and skimpy dress.`\
+  @end
+@if &sex is 0 then do begin
+ @begin
+  @show
+`2  As you step in you notice 2 girls look up at you. They appear to be the
+`2  farmer's wife and daughter. You flash a glare at the daughter, man is she
+`2  ever dressing like a slut!`\
+  @end
+@do `v01 is 1
+@do write
+`x`x`x`x
+@choice
+Talk to The Farmer's Wife
+Talk to the Farmer's Daughter
++`t43 6 Help to harvest the crop
+Leave
+@if responce is 2 then do begin
+ @begin
+@if &sex is 1 then do begin
+ @begin
+  @show
+`r0`c  `r1  Talking to the Farmer's Daughter  `r0
+ 
+`2  "`$Hey baby, if there is anything that I can do to help you, just ask.
+`$  I love to help people who are like you... very rewarding.`2"
+ 
+`2  "`0Well if you can prove that my Father is a cheating man, you can help
+`0  us harvest the crops, and even make some cash at the same time! Pick
+`0  only the full grown veggies tho!`2"
+ 
+`2  "`$Hey baby! You looking hot tonight! Wanna come out back and help me
+`$  make something grow?`2"
+ 
+`2  After listening to your offer, the girl decides`L.`L.`L.
+`k
+`2  to `bSLAP YOU`2!
+ 
+`2  Damn, I guess that's a no...`%
+ 
+`k
+@end
+@if &sex is 0 then do begin
+ @begin
+  @show
+`r0`c  `r1  Talking to the Farmer's Daughter  `r0
+ 
+`2  You walk a little closer to the scantily clad daughter sitting at the
+`2  table.
+ 
+`2  "`0Hello! Want to be friends!?`2"
+ 
+`2  "`$No way honey, not on your life!`2" You slap the bitch to the ground
+`2  "`$That's for stealing all the guys around here, you dumb whore!`2"
+ 
+`2  "`0But I just wanted to tell you about the job we'll offer to the person
+`0  who finds out that my dad is cheating! I just wanted to be friends`2"
+ 
+`2  Her sobs increase, you figure that it would be a good time to leave. Well
+`2  she should learn not to flirt with every guy she sees! She should leave
+`2  some for a warrior like you!`%
+ 
+`k
+@end
+    @do goto shacktop
+   @end
+ 
+@if responce is 3 then do begin
+ @begin
+ @label harvest1
+  @datanewday farm.idf
+  @dataload farm.idf &playernum `p20
+  @if `p20 is 1 then goto farmnoway
+ 
+  @do `p22 is 0
+  @do `p23 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do `p27 is 0
+  @do `p28 is 0
+  @do `p29 is 0
+  @do `p30 is 0
+  @do `p24 random 20 10
+ 
+  @show
+`r0`c  `r1  Talking to the Farmer's Wife  `r0
+ 
+`2  "`0Well it's about time! The crops are growing out of control, and we
+`0  need food! Go harvest the crops for a while, and i'll pay you for the
+`0  amount of food you pick`2"
+ 
+`2  "`$Ok ok! Keep your pants on, I'll go right now!`2" Yer feeling kinda
+`2  sorry for squeeling on the Farmer now aren't you!?`%
+ 
+`k
+ 
+@label harvest2
+   @show
+`r0`c  `r1  Harvesting the Fields  `r0
+ 
+`2  You have `%`p24 `2picks left in the field...`%
+ 
+@do write
+`2  Do you continue picking veggies? `5[`0Y`5/`0N`5] `%
+@do readspecial `s01 YN
+ 
+@if `s01 is Y then goto picking
+@if `s01 is N then goto pickdone
+ 
+@label picking
+   @show
+ 
+`2  You head off into the fields... you spend a few minutes looking around`%
+ 
+   @do `p20 random 10 1
+   @if `p20 is 1 then do begin
+    @begin
+     @show
+`2  You find a nice ripe `0Tomato`2!`%
+ 
+`k
+   @do `p21 is `v05
+   @do `p21 / 48           ;<--half hour work
+   @do `p11 - `p21
+     @do `p25 + 1
+     @do `p22 + 3
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 2 then do begin
+    @begin
+     @show
+`2  You find some nice `0Carrots`2!`%
+ 
+`k
+     @do `p26 + 1
+     @do `p22 + 2
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 3 then do begin
+    @begin
+     @show
+`2  You find some nice `0Radishes`2!`%
+ 
+`k
+     @do `p27 + 1
+     @do `p22 + 1
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 4 then do begin
+    @begin
+     @show
+`2  You find some nice `0Green Beans`2!`%
+ 
+`k
+     @do `p28 + 1
+     @do `p22 + 1
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 5 then do begin
+    @begin
+     @show
+`2  You find a nice big `0Green Pepper`2!`%
+ 
+`k
+     @do `p29 + 1
+     @do `p22 + 3
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 6 then do begin
+    @begin
+     @show
+`2  You find some nice `0Peas`2!`%
+ 
+`k
+     @do `p30 + 1
+     @do `p22 + 1
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 7 then do begin
+    @begin
+     @show
+`2  You find nothing! Damn all these weeds!`%
+ 
+`k
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 8 then do begin
+    @begin
+     @show
+`2  You find a Watermellon, but it is rotten, damn!`%
+ 
+`k
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 9 then do begin
+    @begin
+     @show
+`2  You find some huge veggies, but they are all rotten!`%
+ 
+`k
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+   @if `p20 is 10 then do begin
+    @begin
+     @show
+`2  You find a potato! But under closer observation, you see that it is only
+`2  goat poop, Ewwwww!`%
+ 
+`k
+     @do `p24 - 1
+     @if `p24 is 0 do goto pickdone
+     @do goto harvest2
+    @end
+ 
+ 
+@label pickdone
+@do `p23 + `p25
+@do `p23 + `p26
+@do `p23 + `p27
+@do `p23 + `p28
+@do `p23 + `p29
+@do `p23 + `p30
+ 
+@if `p23 is 0 do goto gotnone
+@do `p23 is `p22
+ 
+@if `p09 more 65 then do begin
+ @begin
+  @do `p23 * 1500
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 60 then do begin
+ @begin
+  @do `p23 * 1000
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 55 then do begin
+ @begin
+  @do `p23 * 500
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 50 then do begin
+ @begin
+  @do `p23 * 300
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 45 then do begin
+ @begin
+  @do `p23 * 200
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 40 then do begin
+ @begin
+  @do `p23 * 150
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 35 then do begin
+ @begin
+  @do `p23 * 100
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 30 then do begin
+ @begin
+  @do `p23 * 80
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 25 then do begin
+ @begin
+  @do `p23 * 50
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 20 then do begin
+ @begin
+  @do `p23 * 15
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 15 then do begin
+ @begin
+  @do `p23 * 10
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 10 then do begin
+ @begin
+  @do `p23 * 4
+  @do goto aftermath
+ @end
+ 
+@if `p09 more 5 then do begin
+ @begin
+  @do `p23 * 2
+  @do goto aftermath
+ @end
+ 
+@label aftermath
+   @show
+`r0`c  `r1  Trading up for Gold  `r0
+ 
+`2  Well that wasn't bad I guess, you bring your harvest to the Farmer's
+`2  Wife, hopefully she likes what you brought!
+ 
+`2  "`$Here you go, I hope you like it, it took me forever to get all this
+`$  stuff! You should get someone to weed!`2"
+ 
+`2  "`0OK, well let me see what you got...
+ 
+`0  You found `%`p25 `0Tomatos
+`0  You found `%`p26 `0Carrots
+`0  You found `%`p27 `0Radishes
+`0  You found `%`p28 `0Green Beans
+`0  You found `%`p29 `0Green Peppers
+`0  You found `%`p30 `0Peas
+`k
+`2  "`0I'll give you `$$`p23`0 gold for your harvest. Thank you for the
+`0  help! you are much better then my husband`2"
+ 
+`2  You take your gold, and leave....
+ 
+`%`k
+@do money + `p23
+@datasave farm.idf &playernum 1
+@do addlog
+  `r5  `r0 `0`n`2 has harvested the fields in `0Ye Olde Farm`2! `r5  `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do goto bottom
+@label gotnone
+   @show
+`r0`c  `r1  Trading up for Gold  `r0
+ 
+`2  "`$Sorry, but I coudln't find anything! Don't be mad ok?`2"
+ 
+`2  "`0Geeze! With help like you, we'll all starve....`2"
+ 
+`2  Hmm you better not talk to her again till tomorrow, she's pissed!`%
+ 
+`k
+@do goto bottom
+@label farmnoway
+@show
+`r0`c  `r1  Harvesting the Fields  `r0
+ 
+`2  You should wait till tomorrow to try this again... you'll pick the
+`2  garden bare!`%
+ 
+`k
+ 
+@label bottom
+  @do goto shacktop
+  @end
+ 
+@if responce is 1 then do begin
+ @begin
+ @if bitcheck `t43 5 0 then do begin
+   @begin
+    @if bitcheck `t43 6 1 then do begin
+     @begin
+      @do goto beathimup
+     @end
+   @show
+`r0`c  `r1  Talking to the Farmer's Wife  `r0
+ 
+`2  "`$Did you know your husband has an obsession with Goats!!?`2"
+ 
+`2  "`0Umm no, now that you mention it, I didn't. He is too busy harvesting
+`0  to do that. If you ever find out that he is having an affair, tell me!
+`0  I'll pay you to harvest the crops then!`2"
+ 
+`2  Hmm piss off that farmer, and make money! Alright! You better get some
+`2  proof!`%
+ 
+`k
+    @do goto shacktop
+    @label beathimup
+    @show
+ 
+ 
+ 
+`2  "`0Thanks alot for helping me! Now get in the fields and help us with
+`0  the harvest!`2"`%
+ 
+`k
+ 
+    @do goto shacktop
+ 
+   @end
+ 
+  @if bitcheck `t43 5 1 then do begin
+   @begin
+     @pauseoff
+     @show
+`r0`c  `r1  Talking to the Farmer's Wife  `r0
+ 
+`2  "`$I think you might want to read this, it might interest you`2", you say
+`2  as you hand the Love letter to the Farmer's (ex?)wife.
+ 
+`2  She takes it and opens it. half way through her face turns bright red! She
+`2  looks more dangerous then any creature you've fought in the forest. She 
+`2  pushes you out of the way and storms out the door.
+ 
+`2  for the next 15 minutes you hear the distinct sounds of someone getting
+`2  their ass kicked, hmm I wonder what could be happening.
+ 
+`k
+ 
+`2  As the noise starts to die (ohh bad pun) down, the wife returns, but this
+`2  time she is smiling!
+ 
+`2  "`0Thank you `%`N`0!!! For the longest time i've suspected this
+`0  but never had the proof! You've done me a great service this day!`2"
+ 
+`2  You just smile to yourself, not because you've done the good thing, but
+`2  because that stupid old farmer got his butt kicked!
+ 
+`2  "`0As a reward I'll let you harvest the fields each day, and pay you for
+`0  all the vegetables you pick. After all, someone has to help out around
+`0  here, seeing as my hubby won't be moving for a while.`2"
+ 
+`k
+ 
+`2  Way to go! You get `%2 Quest points `2and`% 2 Charm`2! Congrats! You also
+`2  gain the ability to harvest for gold! Oh happy day!
+ 
+`k
+    @do `p08 + 2
+    @do `p18 + 2
+    @bitset `t43 3 0
+    @bitset `t43 4 0
+    @bitset `t43 5 0
+    @bitset `t43 6 1
+@do addlog
+  `r5  `r0 `0`n`2 helped the Farmer's wife in `0Ye Olde Farm`2! `r5  `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+    @pauseon
+   @end
+ @end
+ 
+ 
+ @drawmap
+ @update
+ @closescript
+ 
+ 
+@#nomore

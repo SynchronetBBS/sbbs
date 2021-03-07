@@ -1,0 +1,44 @@
+
+                       GARGOYLE'S LANDING IGM by NiGHT fLYER
+                          (SysOp: Gargoyle's Landing BBS)
+                           AN IGM FOR LORD2 version 1.xx
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  a keep just to the north of the ferry, this one you can purchase, and
+  there are a few little suprises in it
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM GARGOYLE.IGM
+
+  To uninstall, do the same thing again.
+
+  
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `8GARGOYLE'S LANDING `2by `8NiGHT fLYER
+replacescreen: 135 1 show
+
+replacescreen: 130 2 noshow
+replacescreen: 131 3 noshow
+replacescreen: 132 4 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  This is my first attempt at an IGM, its placed just north of the ferry,
+  and has a few little suprises in it... enjoy

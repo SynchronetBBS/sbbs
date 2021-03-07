@@ -1,0 +1,456 @@
+; Script file ORACLE3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE scene5 000000297
+@DECLARE bottom 000003900
+@DECLARE clear 000004607
+@DECLARE bob 000004635
+@DECLARE scene6 000004836
+@NOCHECK
+; End of .REF index
+
+;Another scene file for the oracle.
+
+@#scene5
+@loadmap 1498
+@drawmap
+@do move 46 5
+@do write
+`l`l`l`l`r0`4ø
+@do move 48 5
+@do write
+`r0`4ø`l`l`l`l`l`l`l`l
+@do move 46 5
+@do write
+`r0`x
+@do move 48 5
+@do write
+`r0`x
+@do move 46 5
+@do write
+`l`l`l`l`r0`4ø
+@do move 48 5
+@do write
+`r0`4ø`l`l`l`l
+@do move 80 12
+@do write
+`w`r3`%
+@do move 79 12
+@do write
+`w`r3`%Û
+@do move 78 12
+@do write
+`w`r3`%Û
+@do move 77 12
+@do write
+`w`r3`%Û
+@do move 76 12
+@do write
+`w`r3`%Û
+@do move 75 12
+@do write
+`w`r3`%Û
+@do move 74 12
+@do write
+`w`r3`%Û
+@do move 73 12
+@do write
+`w`r3`%Û
+@do move 72 12
+@do write
+`w`r3`%Û
+@do move 71 12
+@do write
+`w`r3`%Û
+@do move 70 12
+@do write
+`w`r3`%Û
+@do move 69 12
+@do write
+`w`r3`%Û
+@do move 68 12
+@do write
+`w`r3`%Û
+@do move 67 12
+@do write
+`w`r3`%Û
+@do move 66 12
+@do write
+`w`r3`%Û
+@do move 65 12
+@do write
+`w`r3`%Û
+@do move 64 12
+@do write
+`w`r3`%Û
+@do move 63 12
+@do write
+`w`r3`%Û
+@do move 62 12
+@do write
+`w`r3`%Û
+@do move 61 12
+@do write
+`w`r3`%Û
+@do move 60 12
+@do write
+`w`r3`%Û
+@do move 59 12
+@do write
+`w`r3`%Û
+@do move 58 12
+@do write
+`w`r3`%Û
+@do move 57 12
+@do write
+`w`r3`%Û
+@do move 56 12
+@do write
+`w`r3`%Û
+@do move 46 5
+@do write
+`r0`x
+@do move 48 5
+@do write
+`r0`x
+@do move 55 12
+@do write
+`w`r3`%Û
+@do move 54 12
+@do write
+`w`r3`%Û
+@do move 53 12
+@do write
+`w`r3`%Û
+@do move 52 12
+@do write
+`w`r3`%Û
+@do move 51 12
+@do write
+`w`r3`%Û
+@do move 50 12
+@do write
+`w`r3`%Û
+@do move 49 12
+@do write
+`w`r3`%Û
+@do move 48 12
+@do write
+`w`r3`%Û
+@do move 47 12
+@do write
+`w`r3`%Û
+@do move 46 12
+@do write
+`w`r3`%±
+@do move 45 12
+@do write
+`w`r3`%Û
+@do move 44 12
+@do write
+`w`r3`%Û
+@do move 43 12
+@do write
+`w`r3`%Û
+@do move 42 12
+@do write
+`w`r3`%Û
+@do move 41 12
+@do write
+`w`r3`%Û
+@do move 40 12
+@do write
+`w`r3`%Û
+@do move 39 12
+@do write
+`w`r3`%Û
+@do move 38 12
+@do write
+`w`r3`%Û
+@do move 37 12
+@do write
+`w`r3`%Û
+@do move 36 12
+@do write
+`w`r3`%Û
+@do move 46 5
+@do write
+`r0`4ø
+@do move 48 5
+@do write
+`r0`4ø
+@do move 35 12
+@do write
+`w`r3`%Û
+@do move 34 12
+@do write
+`w`r3`%Û
+@do move 33 12
+@do write
+`w`r3`%Û
+@do move 32 12
+@do write
+`w`r3`%Û
+@do move 31 12
+@do write
+`w`r3`%Û
+@do move 30 12
+@do write
+`w`r3`%Û
+@do move 29 12
+@do write
+`w`r3`%Û
+@do move 28 12
+@do write
+`w`r3`%Û
+@do move 27 12
+@do write
+`w`r3`%Û
+@do move 26 12
+@do write
+`w`r3`%Û
+@do move 25 12
+@do write
+`w`r3`%Û
+@do move 24 12
+@do write
+`w`r3`%Û
+@do move 23 12
+@do write
+`w`r3`%Û
+@do move 22 12
+@do write
+`w`r3`%Û
+@do move 21 12
+@do write
+`w`r3`%Û
+@do move 20 12
+@do write
+`w`r3`%Û
+@do move 19 12
+@do write
+`w`r3`%Û
+@do move 18 12
+@do write
+`w`r3`%Û
+@do move 17 12
+@do write
+`w`r3`%Û
+@do move 16 12
+@do write
+`w`r3`%Û
+@do move 15 12
+@do write
+`w`r3`%Û
+@do move 14 12
+@do write
+`w`r3`%Û
+@do move 13 12
+@do write
+`w`r3`%Û
+@do move 12 12
+@do write
+`w`r3`%Û
+@do move 11 12
+@do write
+`w`r3`%Û
+@do move 10 12
+@do write
+`w`r3`%Û
+@do move 9 12
+@do write
+`w`r3`%Û
+@do move 8 12
+@do write
+`w`r3`%Û
+@do move 7 12
+@do write
+`w`r3`%Û
+@do move 6 12
+@do write
+`w`r3`%Û
+@do move 5 12
+@do write
+`w`r3`%Û
+@do move 4 12
+@do write
+`w`r3`%Û
+@do move 3 12
+@do write
+`w`r3`%Û
+@do move 2 12
+@do write
+`w`r3`%²
+@do move 1 12
+@do write
+`w`r3`%²
+@do move 1 12
+@do write
+`w`r3`%²
+@do move 46 5
+@do write
+`l`l`l`l`r0`x
+@do move 48 5
+@do write
+`r0`x
+@loadmap 1205
+@drawmap
+@run oracle in owtc.ref
+
+@#bottom
+@do move 1 15
+@do write
+`r4`@ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿`r0
+@do move 1 16
+@do write
+`r4`@³ø                                                                            ø³`r0
+@do move 1 17
+@do write
+`r4`@³                                                                              ³`r0
+@do move 1 18
+@do write
+`r4`@³                                                                              ³`r0
+@do move 1 19
+@do write
+`r4`@³ø                                                                            ø³`r0
+@do move 1 20
+@do write
+`r4`@ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ`r0
+
+@#clear
+@do `p22 is 16
+@label bob
+@if `p22 < 20 the do
+  @begin
+  @do move 3 `p22
+  @do write
+`r4`@                                                                           `r0
+  @do `p22 + 1
+  @do goto bob
+  @end
+
+@#scene6
+@show
+`r0`c
+@routine bottom
+@do move 4 16
+@do write
+`r4`%History tells us of the great Gate to the Abyss, a doorway between our
+@do move 4 17
+@do write
+`r4`%world and that of the great evils.
+@key nodisplay
+@routine clear
+@do move 4 16
+@do write
+`r4`%1,000 years have passed since that Gate was fully opened once more, a
+@do move 4 17
+@do write
+`r4`%trial of virtue yet to come.  For the last time the Gate let loose its
+@do move 4 18
+@do write
+`r4`%evil, a powerful Dragon was born.
+@key nodisplay
+@routine clear
+@do move 4 16
+@do write
+`r4`%Now we see that it will open again!
+@key nodisplay
+@do move 21 14
+@do write
+`w`r0`9
+@do move 21 13
+@do write
+`w`r0`9
+@do move 21 14
+@do write
+`r0`x
+@routine clear
+@do move 4 16
+@do write
+`r4`9Tien: `%Where am I...
+@key nodisplay
+@routine clear
+@do move 4 16
+@do write
+`r4`9Tien: `%The `@Nightmare Gate`%!
+@do move 21 12
+@do write
+`w`r0`|`b
+@do move 20 13
+@do write
+`w`r0`|`b`9`|`b
+@do move 21 14
+@do write
+`w`r0`|`b
+@key nodisplay
+@routine clear
+@do move 4 16
+@do write
+`r4`9Tien: `%And me without my sword...
+@do move 21 13
+@do write
+`w`r0`9
+@do move 21 13
+@do write
+`w`r0`9
+@do move 21 13
+@do write
+`w`r0`9
+@do move 21 13
+@do write
+`w`r0`9
+@do move 21 13
+@do write
+`w`r0`9
+@do move 21 13
+@do write
+`w`r0`x
+@do move 31 14
+@do write
+`w`r0`%
+@do move 31 13
+@do write
+`w`r0`%
+@do move 31 14
+@do write
+`r0`x
+@key nodisplay
+@routine clear
+@do move 4 16
+@do write
+`r4`%`n: `%Asmodeus!
+@do move 31 12
+@do write
+`w`r0`%
+@do move 31 13
+@do write
+`r0`x
+@do move 31 11
+@do write
+`w`r0`%
+@do move 31 12
+@do write
+`r0`x
+@do move 31 10
+@do write
+`w`r0`|`b
+@do move 30 11
+@do write
+`w`r0`|`b`%`|`b
+@do move 31 12
+@do write
+`w`r0`|`b
+@key nodisplay
+@routine clear
+@do move 4 16
+@do write
+`r4`%A fate seen early may be changed... The `@Nightmare's Gate `%Approaches,
+@do move 4 17
+@do write
+`r4`%and Tien Lung Might be able to help... if you can retrieve his sword from
+@do move 4 18
+@do write
+`r4`%the land where `$Time Stands Still`%...
+@key nodisplay
+@datasave godlike.idf &playernum 
+@run oracle in owtc.ref

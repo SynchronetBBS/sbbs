@@ -1,0 +1,27 @@
+
+     Externally Defined Items example screen by Michael Hutson Beta 1.01
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+  Uses Externally Defined Items?                  : Yes! (2)
+
+igmname: `0Sorry `2by `0Michael Hutson
+
+replacescreen: 1276 1 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Well, it's  really sorry - but it lets you see how .REF files can use
+  Externally Defined Items

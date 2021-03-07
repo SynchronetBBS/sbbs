@@ -1,0 +1,754 @@
+; Script file CANOE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:24 2001
+
+@DECLARE sevent 000000684
+@DECLARE event 000001149
+@DECLARE nevent 000001522
+@DECLARE person1 000001975
+@DECLARE nocanoe 000002094
+@DECLARE rental 000002177
+@DECLARE tab2high 000004766
+@DECLARE sellcanoe 000005632
+@DECLARE returncanoe 000006729
+@DECLARE sdock 000007295
+@DECLARE ndock 000007896
+@DECLARE bar 000008642
+@DECLARE bardock 000008858
+@DECLARE bartap 000009706
+@DECLARE billstart 000010060
+@DECLARE castled 000013838
+@DECLARE csign 000014232
+@DECLARE healers 000014337
+@DECLARE wake 000014555
+@DECLARE nomore 000015538
+@NOCHECK
+; End of .REF index
+
+@NOCHECK
+@#sevent
+@IF &LASTX EQUALS 2 THEN DO
+@BEGIN
+@IF &LASTY < 9 THEN DO
+   @BEGIN
+   @DO saybar
+   `@ Not good, Here comes a Piranna!  You paddle away as fast as you can!
+   @DO MOVEBACK
+   @DO X IS 3
+  @END
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@IF &LASTX EQUALS 79 THEN DO
+@BEGIN
+@IF &LASTY < 7 THEN DO
+@BEGIN
+@DO saybar
+`@ Not good, Here comes a SHARK!  You paddle as fast as you can backwards!
+@DO MOVEBACK
+@DO X IS 78
+@END
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#event
+@IF &LASTX EQUALS 2 THEN DO
+@BEGIN
+@DO saybar
+`@ Not good, Here comes a Piranna!  You paddle away as fast as you can!
+@DO MOVEBACK
+@DO X IS 3
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@IF &LASTX EQUALS 79 THEN DO
+@BEGIN
+@DO saybar
+`@ Not good, Here comes a SHARK!  You paddle as fast as you can backwards!
+@DO MOVEBACK
+@DO X IS 78
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#nevent
+@IF &LASTX EQUALS 2 THEN DO
+@BEGIN
+@IF &LASTY > 11 THEN DO
+@BEGIN
+ @DO saybar
+`@ Not good, Here comes a Piranna!  You paddle away as fast as you can!
+@DO MOVEBACK
+@DO X IS 3
+@UPDATE
+@CLOSESCRIPT
+@END
+@END
+
+@IF &LASTX EQUALS 79 THEN DO
+@BEGIN
+@IF &LASTY > 14 THEN DO
+@BEGIN
+@DO saybar
+`@ Not good, Here comes a SHARK!  You paddle as fast as you can backwards!
+@DO MOVEBACK
+@DO X IS 78
+@UPDATE
+@CLOSESCRIPT
+@END
+@END
+
+@#person1
+@DO MOVEBACK
+@DO SAYBAR
+`2 I always wanted a canoe so I could sail these waters.
+
+@END
+@CLOSESCRIPT
+
+@#nocanoe
+@show
+`2
+`2 You do not have a TAB with me!
+`2
+`k
+@do goto rental
+
+@#rental
+@DO MOVEBACK
+@CLEAR SCREEN
+@SHOW
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%  Paul's Canoe Rental
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`2
+`2  You nock on the door of the small shack. A man drinking whiskey opens
+`2  the door. You assume he is Paul.
+`2
+`2  `%"`5What can I do fer ya?`%"`2, he asks as you walk up.
+`2
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`2
+@DO `V01 IS 1
+@CHOICE
+Rent a Canoe
+Return Your Canoe
+Chat with Paul
+Pay your tab
+Leave
+@IF RESPONSE IS 4 THEN DO
+        @BEGIN
+@dataload canoe.idf &playernum `p21
+@if `p21 > 0 then do
+        @begin
+        @dataload canoeday.idf &playernum `p20
+        @if `p20 > 1 then do
+                @begin
+                @show
+`\                
+      `2You have `$&money `2gold in your pouch.
+`\
+                @do `p21 is `p20
+                @do `p22 is `p20
+                @do `p21 * 200
+                @do `p22 * 5
+                @do `p21 + `p22
+                @show
+`\
+`$Paul: `%I'll have to charge you for `p20 days, that'll be `$$`p21
+`k
+                @show
+`$Paul: `%Will you pay now? or put in your tab? [Y/n]
+                @DO READSPECIAL `s02 YN
+                @if `s02 is Y then do
+                        @begin
+                        @if money < `p21 then do
+                                @begin
+                        @if `p21 > 10000 then goto tab2high
+                                @show
+`\
+`$Paul: `%You do not have enough cash, I'll be seeing you again sometime.
+
+`$Paul: `%Do not let your tab go over `$$10,000`%, you'll be arrested.
+                                @key
+                                @do goto rental
+                                @end
+                        @do money - `p21
+                        @show
+`$Paul: `%Thank-you, if you want to return it now, please do so.
+                        @datasave canoeday.idf &playernum 1
+                        @key
+                        @do goto rental
+                        @end
+                @if `s02 is N then do
+                        @begin
+                        @if `p21 > 10000 then goto tab2high
+                        @show
+`$Paul: `%Do not let your tab go over `$$10,000`%, you'll be arrested.
+                        @key
+                        @do goto rental
+                        @end
+
+                @end
+        @end
+@show
+`\
+`$Paul: `%You do not owe me anything.
+`\
+`k
+@do goto rental
+
+@label tab2high
+@show
+`\
+`$Paul: `%My CANOE, you didn't return it.
+`k
+`$Paul: `%You owe me more than `$10,000`%.
+`k
+`$Paul: `%You are going to go to jail now.
+`k`k`k
+`%You were struck on the head from behind, then all goes black.`k
+@do `s01 is didn't`xpay`xcanoe`xrent
+@run enter in prison.ref
+@end
+
+
+@IF RESPONSE IS 3 THEN DO
+@BEGIN
+@SHOW
+`2
+`2
+`2   `%"`5I'll tell ya, I've heard there is a bar and another castle out
+`5      there for you sailors. Can't miss 'em!`%"
+`2
+`2    You walk off, head high with pride of your new found knowlege.
+`2
+@KEY
+        @DRAWMAP
+        @UPDATE
+        @CLOSESCRIPT
+@END
+@IF RESPONSE IS 2 THEN DO
+@BEGIN
+@DO GOTO RETURNCANOE
+@END
+@IF RESPONSE IS 5 THEN DO
+@BEGIN
+        @DRAWMAP
+        @UPDATE
+        @CLOSESCRIPT
+@END
+@IF RESPONSE IS 1 THEN DO
+@BEGIN
+        @DO GOTO SELLCANOE
+@END
+
+@#SELLCANOE
+@CLEAR SCREEN
+@SHOW
+`2
+`2 `%"`5A canoe, 'eh?  Well alright, I imagine I can work that for ya.
+`2  `5Its $`@5,000 `5, and $`@200 `5a day after that + interest.
+`2
+`2  I'll also pay ya back $`@5000`5 when or if you return it to me here.`%"
+`2
+@do `v01 is 1
+@do move 10 10
+@CHOICE
+Deal
+I'm outta here!
+@IF RESPONSE IS 2 THEN DO
+@BEGIN
+        @DRAWMAP
+        @UPDATE
+        @CLOSESCRIPT
+@END
+
+@IF RESPONSE IS 1 THEN DO
+@BEGIN
+        @IF MONEY LESS 5000 THEN DO
+        @BEGIN
+        @SHOW
+`4      MORON! HELLO!?! HEY THINK! YOU DONT HAVE ENOUGH MORON!
+        @KEY
+        @DRAWMAP
+        @UPDATE
+        @CLOSESCRIPT
+        @END
+@SHOW
+`2
+`2
+`2
+`2      The Man takes your money, and walks you outside where he gives you
+`2   one of the unshapely canoes.
+`2
+`2   As you walk off, he yells to you
+`2   `#"`5Beware! only go north or south, or you might regret it!
+`2   `5These are dangerous waters, surrounded by sharks and piranna.`#"
+`2
+@DO money - 5000
+
+@datasave canoe.idf &playernum 1
+@KEY
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#RETURNCANOE
+@CLEAR SCREEN
+@dataload canoe.idf &playernum `p20
+
+@IF `p20 = 0 THEN DO
+@BEGIN
+@SHOW
+`2
+`2     You don't have a canoe to return, stupid!
+`2
+@KEY
+@END
+
+@if `p20 > 1 then do
+        @begin
+        @show
+`2
+`2    You must pay me the money you owe me before returning the canoe.
+`2
+        @end
+@IF `p20 is 1 THEN DO
+@BEGIN
+@SHOW
+`2
+`2    You give him back the canoe, and get $`@5000 `2in return.
+`2
+@DO MONEY + 5000
+@datasave canoe.idf &playernum 0
+@dataload canoe.idf &playernum `p20
+@KEY
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+
+@#sdock
+@dataload canoe.idf &playernum `p20
+@IF `p20 LESS 1 THEN DO
+@BEGIN
+@DO MOVEBACK
+@do saybar
+You jump in, and piranas attack you! You jump out quickly. but are hurt.
+@do quebar
+You need a canoe to travel these waters.
+@do `p02 - 5
+@CLOSESCRIPT
+@END
+
+@IF &LASTY = 7 THEN DO
+@BEGIN
+@DO SAYBAR
+You get in your canoe and push off
+@DO Y is 5
+@END
+@IF &LASTY = 5 THEN DO
+@BEGIN
+@DO SAYBAR
+You dock your canoe and step onto the dock
+@DO Y is 7
+@END
+
+@IF &LASTY = 5 THEN DO
+@BEGIN
+@DO SAYBAR
+You dock your canoe and step onto the dock
+@DO Y is 7
+@END
+
+@CLOSESCRIPT
+
+
+@#ndock
+@dataload canoe.idf &playernum `p20
+@IF `p20 MORE 0 THEN DO
+@BEGIN
+
+@IF &lasty is 14 then do
+@begin
+@do saybar
+You get in your canoe and push off.
+@do y is 16
+@end
+@if &lasty is 15 then do
+@begin
+@do saybar
+You tie off your canoe and step onto the dock.
+@do y is 13
+@end
+
+@IF &lasty is 14 then do
+@begin
+@do saybar
+You get in your canoe and push off.
+@do y is 16
+@end
+@if &lasty is 15 then do
+@begin
+@do saybar
+You tie off your canoe and step onto the dock.
+@do y is 13
+@end
+@end
+
+
+@dataload canoe.idf &playernum `p20
+@if `p20 is 0 then do
+@begin
+@do moveback
+@do saybar
+You jump in, and piranas attack you! You jump out quickly. but are hurt.
+@do quebar
+You need a canoe.
+@do `p02 - 2
+@end
+
+
+
+@#bar
+@dataload canoe.idf &playernum `p20
+@IF `p20 MORE 0 THEN DO
+@BEGIN
+@if &lastx is 32 then do
+@begin
+@do saybar
+You get in the canoe and hope your sober enough to get home.
+@do x is 36
+@end
+@end
+
+@#bardock
+@DO MOVEBACK
+@CLEAR SCREEN
+@dataload canoe.idf &playernum `p20
+@SHOW
+`9-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%  Seascape Dock
+`1-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`2  `4ATTENTION: THIS DRINKING ESTABLISHMENT IS LEGAL.
+`2  `4 YOU MUST BE 18 TO PARTY, 21 TO DRINK
+`2  `#"`5That'll be $1000`#"
+@DO `V01 IS 1
+`@
+@CHOICE
+Pay the $1000
+Say Goodbye
+@IF RESPONSE IS 2 THEN DO
+@BEGIN
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+@IF RESPONSE IS 1 THEN DO
+@BEGIN
+@IF MONEY MORE 999 THEN DO
+@BEGIN
+@SHOW
+`2
+`2
+`2  You give him one thousand dollars, and he gets you docked.
+`2
+@KEY
+@do x is 32
+@do money - 1000
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+@SHOW
+`4
+`4
+`4  You don't have that much money.
+@KEY
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+
+@#bartap
+@offmap
+@do moveback
+@do `p30 is 0
+@do `v01 is 1
+@show
+`r0`c`%  `r1 SeaScape Bar and Grille `r0
+
+`2  You grab a seat and wait for some service.
+  `#"`5Hey, You must be `N, And you want some food. Yah, A good barman has
+  to have a sick sense about his customers nowadays, and I'm nothing if
+  I'm not a good barman.`#"
+`k
+
+@label billstart
+@show
+`r0`c`%  `r1 Lunch Time `r0
+
+`2  `#"`5People call me Bill,`L Probably because thats my name!`#"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Order something
+Chat with Bill
+Leave
+@
+
+@if response is 2 then do
+   @begin
+   @show
+  `r0`c  `r1  Chat with Bill  `r0`\`\
+  `#"`5You know, I used to have a s&son, and a wife, back in a small town called
+   `5Stonebrook. I got so sick of them I faked my death, and ran off here to
+   `5start this bar. My s&son would now be.`l.`l.`l. About `3your`5 age.`#"
+   `k
+   @do goto billstart
+   @end
+@if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Order what?  (`0You have `$&money`2)`\`\`x`x
+   @do `v01 is 1
+   @choice
+`#Icecream (`$$20`#)
+`#Steak (`$$30`5)
+`#A Beer (`$$5`5)
+`#Glass of Wine (`$$15`5)
+`#Nuthin'
+@
+
+   @if response is 1 then do
+    @begin
+    @if money < 20 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto Billstart
+      @end
+    @do money - 20
+    @show
+`r0`c  `r1  Chow Time  `r0`\`\  `2Bill brings out the Ice Cream.  You
+    scarf It down!
+  `k  YOU ARE REFRESHED!
+`\`k
+    @do `p02 is `p03
+    @end
+
+   @if response is 2 then do
+    @begin
+    @if money < 30 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto Billstart
+      @end
+    @do money - 30
+    @show
+`r0`c  `r1  Chow Time  `r0`\`\  `2Bill brings out the Steak.
+`\  Mmmmmm.... A-1 Sauce!  
+`\`k  `4Munch Munch Munch!!
+`\`k                 YOU GET A HIT POINT!
+  `k
+    @do `p03 + 1
+    @do `p02 is `p03
+    @Do `p30 + 1
+    @IF `p30 > 3 then do
+     @begin
+     @show
+     `r0`c  `r1  Your Stuffed!  `r0`\`\
+      `4`#"`!Ohhhh......... My stomach!`#" `@You scream
+      `#"`5You have had enough for today.`#" `4Bill says. You pay him and fall to
+      `4the floor. `5 You loose 2 Hit points and wake up weak.
+      `k
+      @do `p03 - 2
+      @do `p02 is 1
+      @DRAWMAP
+      @UPDATE
+      @CLOSESCRIPT
+     @end
+    
+    @end
+
+   @if response is 3 then do
+    @begin
+    @if money < 5 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto Billstart
+      @end
+    @do money - 5
+    @show
+`r0`c  `r1  Chow Time  `r0`\`\  `2Ahh... Liquid Refreshment....
+`k
+    @Do `p96 + 6
+    @IF `p96 > 30 then do
+     @begin
+     @show
+     `r0`c  `r1  Your Drunk!  `r0`\`\
+      `4Whoa, da world is spinningggg.... `#"`@Bbaaarrrtap, which wwway to the dor? `#"
+      `#"`5You have had enough for today.`#" `4Bill says. You pay him and fall to
+      `4the floor. `5 You loose 2 Hit points and wake up weak.
+      `k
+      @do `p03 - 2
+      @do `p02 is 1
+      @DRAWMAP
+      @UPDATE
+      @CLOSESCRIPT
+     @end
+    @end
+
+   @if response is 4 then do
+    @begin
+    @if money < 15 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto Billstart
+      @end
+    @do money - 15
+    @show
+`r0`c  `r1  Chow Time  `r0`\`\  `2Ahh... Mmmm.. Nice white wine.
+`\`k   YOU GET A RED POTION
+`k
+    @Do `p96 + 6
+    @IF `p96 > 30 then do
+     @begin
+     @show
+     `r0`c  `r1  Your Drunk!  `r0`\`\
+      `4Whoa, da world is spinningggg.... `#"`@Bbaaarrrtap, which wwway to the dor? `#"
+      `#"`5 You have had enough for today. `#" `4Bill says. You pay him and fall to
+      `4the floor.
+      `5 You loose 2 Hit points and wake up weak.
+      `k
+      @do `p03 - 2
+      @do `p02 is 1
+      @DRAWMAP
+      @UPDATE
+      @CLOSESCRIPT
+     @end
+    
+    @do `i52 + 1
+    @end
+
+   @do `v01 is 2
+   @do goto Billstart
+   @end
+
+@drawmap
+@update
+
+@#castled
+@dataload canoe.idf &playernum `p20
+@IF `p20 LESS 1 THEN DO
+@BEGIN
+@DO MOVEBACK
+@DO SAYBAR
+You can't travel by water without a boat!
+@CLOSESCRIPT
+@END
+@IF &LASTY = 18 THEN DO
+@BEGIN
+@DO SAYBAR
+You get in your canoe and push off
+@DO Y is 20
+@END
+@IF &LASTY = 19 THEN DO
+@BEGIN
+@DO SAYBAR
+You dock your canoe and step onto the dock
+@DO Y is 17
+@END
+
+@CLOSESCRIPT
+
+@#csign
+@DO SAYBAR
+`2 Welcome weary traveler to a home away from home. You cannot be killed here.
+
+@#healers
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Healers  `r0
+
+  `2The good doctor looks you over for wounds carefully.
+
+  `%YOU ARE COMPLETEY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#wake
+@do moveback
+@datanewday ccanoe.idf
+@dataload ccanoe.idf &playernum `p29
+@if `p29 < 1 then do
+
+@begin
+@show
+`r0`c   `r1  Evil Deed  `r0
+
+  `2 This man is sleeping, and seems to be having a nice dream.
+`k
+   @do `v01 is 1
+   @choice
+`#Scream at him to wake him up.
+`#Offer the man some addons to his dream.
+`#Let him be.
+@if response is 1 then do
+@begin
+@clear screen
+@show
+`2
+`%"`@AAAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHH!!!!!!!!!`%" `4The man screamed.
+`2
+`2 Hehehehehe....  `@You lose 1 alignment!
+`2
+`k
+@do `p07 - 1
+@datasave ccanoe.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@if response is 2 then do
+@begin
+@clear screen
+@show
+`2
+`%"`#Oh, I love you with all my heart. I want to spend my life with you.`%"
+`#You whisper into his ear. His face shows a smile and he giggles lightly.
+`2
+`2 `2You gain 2 alignment!
+`2
+`k
+@do `p07 + 2
+@datasave ccanoe.idf &playernum 1
+
+
+@drawmap
+@update
+@closescript
+@end
+
+
+
+@#NOMORE

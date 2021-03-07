@@ -1,0 +1,649 @@
+; Script file SHOW2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE sstart 000000496
+@DECLARE kfirst 000002112
+@DECLARE ksecond 000002778
+@DECLARE send 000003417
+@DECLARE lair 000009870
+@DECLARE stuff 000010426
+@DECLARE challenge 000010462
+@DECLARE enter 000015048
+@DECLARE exit 000015431
+@DECLARE read 000015812
+@DECLARE readmore 000015912
+@DECLARE whoop 000016125
+@DECLARE pooh 000016422
+@DECLARE runner 000016722
+@NOCHECK
+; End of .REF index
+
+@#sstart
+ @do moveback
+ @offmap
+ @datanewday seye.shw
+ @clear screen
+ @dataload seye.shw &playernum `p20
+  @if `p20 is 0 then do
+   @begin
+    @show
+  `c
+       `2The huge eye looms in front of you.  You look at it for a moment,
+     and then touch it.  Suddenly, in the air in front of you, some words
+     appear.  You begin to read them...
+
+             `8Step lightly, friend, and not on one, but two.
+            If in the right order, then to the end with you.
+
+       `2Hmmm...  Wonder what that means...
+
+   `\`k
+   @datasave seye.shw &playernum 1
+   @do goto stuff
+   @end
+  @if `p20 is 10 then do
+   @begin
+    @show
+    `c
+       `2You touch the eye, but nothing happens.  You touch it again.  Still,
+     nothing happens.  Frustrated, you kick it.  Suddenly, a strange and
+     painful light surrounds you.
+
+       `%Hit points go down to `#1`%!!
+
+       `\`k
+    @do `p02 = 1
+    @do goto stuff
+    @end
+  @if `p20 is 4 then do
+   @begin
+    @show
+    `c
+       `2You gently touch the huge eye.  Nothing happens.  You sit glumly
+     sit around for a moment before you realise that you've already solved
+     this puzzle.
+
+     `\`k
+   @do goto stuff
+   @end
+  @if `p20 > 0 then do
+   @begin
+    @show
+    `c
+       `2You reach out again and touch the eye.  Some words appear again,
+     but this time, they appear to be different...
+
+       `8Only fools try to re-start something before they've finished it.
+     Try again later, once you've learned a little more.
+
+   `\`k
+   @datasave seye.shw &playernum 10
+    @do goto stuff
+    @end
+
+@#kfirst
+ @datanewday seye.shw
+ @dataload seye.shw &playernum `p20
+  @if `p20 is 1 then do
+   @begin
+   @do saybar
+   Nothing bad happens...  You got the first one right!
+   @datasave seye.shw &playernum 2
+   @end
+  @if `p20 > 1 then do
+   @begin
+   @offmap
+   @clear screen
+   @show
+`c         `2You step on the tile again, and a shock runs through your body.
+       You lose 15 hit points!  And what's worse, the puzzle reset!  You
+       won't be able to try again today!
+
+
+       `\`k
+   @do `p02 - 15
+   @if `p02 < 1 then do
+    @begin
+     @do `p02 is 1
+    @end
+   @datasave seye.shw &playernum 10
+   @do goto stuff
+   @end
+    
+@#ksecond
+ @datanewday seye.shw
+ @dataload seye.shw &playernum `p20
+  @if `p20 is 2 then do
+   @begin
+   @do saybar
+   You've got them both!  Now what?
+   @datasave seye.shw &playernum 3
+   @end
+  @if `p20 > 2 then do
+   @begin
+   @offmap
+   @clear screen
+   @show
+`c         `2You step on the tile again, and a shock runs through your body.
+       You lose 15 hit points!  And what's worse, the puzzle reset!  You
+       won't be able to try again today!
+
+
+       `\`k
+   @do `p02 - 15
+   @if `p02 < 1 then do
+    @begin
+     @do `p02 is 1
+    @end
+   @datasave seye.shw &playernum 10
+   @do goto stuff
+   @end
+
+@#send
+ @do moveback
+ @offmap
+ @datanewday seye.shw
+ @clear screen
+ @dataload seye.shw &playernum `p20
+  @if `p20 is 0 then do
+   @begin
+    @show
+  `c
+       `2The huge eye looms in front of you.  You look at it for a moment,
+     and then touch it.  Suddenly, in the air in front of you, some words
+     appear.  You begin to read them...
+
+            `8You are too anxious.  Patience is a virtue best learned
+              through pain.  Here, warrior, is your first lesson.
+
+       `2Suddenly, thousands of stinging spiders come at you from within
+     the eye.  They crawl all over, and continue to bite long after you've
+     died.
+`\`k
+  @do X is 27
+  @do Y is 7
+  @do money / 2
+  @do `p02 is `p03
+  @do `p20 is `p01
+  @do `p20 / 5
+  @do `p01 - `p20
+  @do MAP is 155
+  @do dead is 1
+  @update_update
+
+  @do addlog
+  `r5  `r0 `0`n`2 was a tad too anxious in the eye puzzle. `r5  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@pauseoff
+@show
+`r0`c
+[34C[0mÜÜÜÛÛÛÛÛÛÛÛÛÜÜÜ
+[29CÜÛÛ[1;30;47m°°°°[0;47mÛ[1;30m°[0;47mÛÛÛÛÛÛÛÛÛÛÛ[40mÜ
+[28CÛ[1;30;47m°°°°[0;47mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[40mÝ
+[27CÛ[1;30;47m°±±°[0;47mÛÛÛÛÛÛÛÛ[1;30mÞÜ[0;47mÛÛÛÛÛÛÛÛÛ[40mÛ
+[19CÜÜ[5CÞ[1;30;47m°±²°[0;47mÛÛÛÛÛÛÛÛÛÛ[1;30mÛÛßß[0;47mÛÛÛÛÛ[40m
+[A[50C[47m[1;30mÞ[0mÛÛ
+[18CßÜÛÝ    [1;30;47m°±²±°[0;47mÛÛÛÛÛ[1;30mÜ Ý[0;47mÛ[1;30mÞÛÜ[40m
+[A[43C[0;47mÛÛÛÛÛ[1;30mÜÜ²[0mÛ[47mÛ[1C[40mÜ[1;47m±²[40mÜ
+[17C[30mÜ[47m°[0;47mÛÛ[1mÜ[0mÜ   [1;30;47m±²±° [0;47mÛÛ[1;30m°[40m
+[A[34C[0;47mÛ[1;30m°°²ÝÜß°Ü[0;47mÛ[1;30m°[0;47mÛÛÛÛ[1;30mß²Ý[40m
+[A[52C[47m[0mÝ[1;30mÜ[47m°[0;47mÛ[1m±[40mÝ
+[17C[30;47m²±°[0;47mÛÛ[1mßÜ[0mÜ [1;30mÞ[0mÜßß    [1;30mßß²[47m[40m
+[A[37C[47m²²°Ü[40m²ßß[5C[0mßß[1;30;47mß[40mÞ[47m±°[0mß ß
+[18C[1;30mßßß[47m°°[0;47mÛ [1;30m°[1C[0mÜ    [31mß   [1;30m±²
+[A[38C[47m²²°[40m±   [0;31mß    [37mÞÝ[1;30;47m²[40mß
+[23C[0mß[1;30;47m°±[40mÝ[0mÞÛÜÜ    ÜÜ[1;30;47mß[0mßß[1;30mß
+[A[41C[47mß[0mÜÜ    ÜÛ[1;47mÜ[0mÝ[1;30mÝ
+[25C[47m²[40mß[0mÜ[1;30;47mÜ [0;47mÛÛ[1;30mßßÜÜß[0mÝ [1;30mÝ [0mÞ
+[A[42C[1;30;47mÜÜßß[0;47mÛÛÛÛ[1mßÜ[0mÜ
+[26CÛ[1;30;47mß[0;47mÛÛÛÛ[1;30mÜ²²Ü[0;47mÛ[2C[1;30;40m²Ü [47m°±[40m
+[A[44C[47m°[0;47mÛÛÛÛÛ[40mßß
+[27CßÛÛ[1;30;47m°²[40m²±²[47m°[0mÜÜ[1;30;47m°²±°±[40m²ß[0mß ßßßß
+[29C[1;30mÜÜ ßÜ [0mßß[1;30mßß ß[0mß[1;30mß Üß [47m²±[0mÜ
+[27CÜ[1;30;47m°±²[40mÝ ß [47m°[0mÝ[1;47m²Û[40mÞÛ[0mßÜ[1;30;47m[40m
+[A[43C[47m°[40mß Ü [47m±°[0;47mÛ[40mÜ
+[22C[1mÜ  [47m±°[30m°°[40mß [0mÜ [1;30mß [0mÜ Ü[1mÜ Ü[0mÜ Ü 
+[A[45C[1;30mßÜ[47m°[1C[0mß[47m  [1m±[40mÜÜÜ
+[19CÜ[47m²²±°°[30m±[0mÝß ÜÛÛ[1;30;47mÞ[0;47mÛ[40mÜÜ ÜÜÜÜÜ ÜÜ
+[A[45C[1;30;47m°±[0;47mÛÛ[40mÜ ß[1;30;47m±[37m°±[40mß[47m²[40m
+[19C[0;31mÜ [37mÜßÛ[1;30;47m±[40mß[0;33mÜ²ÜÜ [37mß[1;47mßÜ[30m[40m
+[A[34C[47mß[0;47mÛÛÛ[1;30mÜß[0;47mÛÛÛÛ [1mÜß[0mß [33mÜÜÝ[1;30mÞ
+[A[53C[47m±[0mÜÝ[31mÜ
+[17C°±²ÛÜ[37mß[1;30mß[0;31mÜÜÜ[33;41mßßßß[40mÜ [37mß[1;47mß[40m
+[A[35C[0;47mÛÛ[1;30mÜ±[40m²[47m±Ü[40mß[47mÜ[37mß[0mß [31mÜ
+[A[48C[33;41mßßß[31;40mÜÜ[1;30mß[0;31mÜÜÛ²±°
+
+                     `%You have made an error, s&boy.
+
+`k
+ @if `v03 is 0 then do
+   @begin
+ ;rules.ref file says unlimited deaths not allowed, so we will boot them
+ ;till tomorrow
+
+ ;take them off the map
+  @do map is 1
+   @halt
+   @end
+
+ @pauseon
+
+ @do dead is 0
+
+ @if `p07 less 0 then do
+ @begin
+ @show
+`r0`c`%  `r1IT FEELS KINDA WARM IN HERE?`r0
+
+  `4You open your eyes.
+
+`k  `4There are naked screaming people all around you.  A little boy with
+  a ghastly face begins to gnaw on your leg.
+
+`k  `6"Din, leave the newcomer alone.  S&he isn't staying." `4a slow voice that
+  can only be described as an abomination dolefully states.
+
+`k  `2You feel yourself floating away... faster and faster.
+ @end
+
+ @if `p07 more -1 then do
+ @begin
+ @show
+`r0`c`%  `r1APPARENTLY DEATH ISN'T THE END.`r0
+
+  `2You open your eyes.
+
+`k  `2You are lying on a table of solid rock in a marble room.  Hundreds of
+  soft voices are murmuring all around you, but you see no one.
+
+`k  `%"Send s&him back." `2a voice whispers, this one louder than the others.
+
+`k  `2You feel yourself floating away... faster and faster.
+
+`k
+ @end
+
+
+@show
+`c  `r1`%AWAKENING.`r0
+
+  `0"Can you hear me, `n?" `2a stressed voice shouts.
+
+  `$"Yeah.  Christ mom, lemmie up, I'm fine." `2you assure your mother.
+
+  `0"You're alive!! The elders brought your body here yesterday, you must
+  have fainted out there." `2your mother shouts, tears of joy streaming down
+  her wrinkled face.
+
+  `$"Ok, ok - nice little happy reunion and all that, but I gotta hit the
+  road now. Buhbye." `2you tell her.  Afterall, you need to make the most of
+  this new lease on life.
+
+  `2You lose `4half`2 the gold you were carrying and `4`p20`2 experience.
+
+`k
+  @loadmap map
+  @drawmap
+  @update
+
+   @datasave seye.shw &playernum 10
+   @end
+  @if `p20 is 10 then do
+   @begin
+    @show
+    `c
+       `2You touch the eye, but nothing happens.  You touch it again.  Still,
+     nothing happens.  Frustrated, you kick it.  Suddenly, a strange and
+     painful light surrounds you.
+
+       `%Hit points go down to `#1`%!!
+
+       `\`k
+    @do `p02 = 1
+    @do goto stuff
+    @end
+  @if `p20 is 4 then do
+   @begin
+    @show
+    `c
+       `2You gently touch the huge eye.  Nothing happens.  You sit glumly
+     sit around for a moment before you realise that you've already solved
+     this puzzle.
+
+     `\`k
+   @do goto stuff
+   @end
+  @if `p20 is 3 then do
+   @begin
+    @show
+    `c
+       `2You almost fondle the eye, and some words appear in the air.
+
+       `8You have done well, warrior.  You have found the two triggers,
+           and in the right order.  Now, can you find your prize?
+
+     `\`k
+    @datasave seye.shw &playernum 4
+    @do goto stuff
+   @end
+  @if `p20 > 0 then do
+   @begin
+    @show
+    `c
+       `2You reach out again and touch the eye.  Some words appear again,
+     but this time, they appear to be different...
+
+       `8Only fools try to end something before it's actually finished.
+             Try again later, once you've learned a little more.
+
+   `\`k
+   @datasave seye.shw &playernum 10
+    @do goto stuff
+    @end
+
+@#lair
+ @do moveback
+ @if x is 48 then do
+  @begin
+  @if y is 3 then do
+  @begin
+ @offmap
+ @datanewday seye.shw
+ @clear screen
+ @dataload seye.shw &playernum `p20
+  @if `p20 is 4 then do
+   @begin
+    @show
+    `c
+       `2Searching along the wall, you discover a switch.  Somewhat cautiously,
+     you flip it.  The wall in front of you opens up, and some strange force
+     pulls you inside...
+
+     `\`k
+    @do x is 40
+    @do y is 17
+    @do map is 250
+    @loadmap &map
+    @drawmap
+    @update
+    @end
+   @end
+  @end
+
+@#stuff
+ @drawmap
+ @update
+
+@#challenge
+ @offmap
+ @do moveback
+ @datanewday seye.shw
+ @datanewday seyes.shw
+ @clear screen
+ @dataload seye.shw &playernum `p20
+  @if `p20 is 4 then do
+   @begin
+    @if `i83 is 0 then do
+    @begin
+    @show
+    `c
+       `2As you approach the man, he begins to stare into your eyes.  You
+     almost swear that he was staring straight into your soul...  You shake
+     visibly.  He smiles at you and begins to speak.
+
+       "`8Hello there, young `0`n`8.  My name is `4K`5C`8D, surely you've
+     heard of me...?`2"
+
+`k       `2You gasp.  `2"`$I..is it really you?`2"
+
+       "`8Yes, but I'm not the same as I used to be.  I have grown old and
+     tired.  I have passed on all my secrets and strengths to `3Spr`7ing`4Fa`6ng`8.
+     Though, he was hardly in need of them.`2"
+
+       "`$But I thought that statue on the Fightin' floor was a memorial to your
+     death?`2"
+
+       He laughs.  "`8Yes, I had it built to make people believe that I truly
+     am dead.  I wish for only intelligent, not neccessarily strong, people to
+     find me.  Clearly, you are one of those people.  Here, let me give you
+     something.`2"
+
+    @do `i83 is 1
+    @show
+`k       He doesn't make a move, but your bag suddenly feels heavier...
+
+`k       "`8I have given you the `0Mystic Eye`8.  With it, you can travel back to
+     the lobby of this place at any time.  Well, let's get on with it."
+     `\`k
+   @end
+   @if `i83 is 1 then do
+   @begin
+   @show
+   `c
+`r0`c  `%`r1  KCD's Challenge Area  `r0
+
+
+       `2"`8Welcome to the `@Challenge Area`8!  How may I help you?`2"
+
+@do `v01 is 1
+@choice
+I want to challenge someone!
+See list of available competitors.
+Challenge Area?  What is it?
+Leave.
+@if responce is 2 then do
+ @begin
+  @do goto read
+ @end
+  @if responce is 3 then do
+ @begin
+  @show
+  `c
+       `2"`8Ah, yes.  The `@Challenge Area`8.  It is where you can challenge
+     absolutely anyone who has ever entered `3Spr`7ing`4Fa`6ng`2's House of
+     Wonders`8.  You will fight them right here, even if they are dead!  If
+     you manage to defeat them, they won't actually lose any gold or
+     experience, but you will gain some.  Also, if you lose, you won't really
+     die.  It is wonderful!  Only problems are that you can only challenge
+     the people who have entered, and that if they haven't come in in a
+     while, their stats will be out of date.  Sorry.`2"
+
+     `\`k
+    @do goto challenge
+    @end
+@if responce is 4 then do
+ @begin
+  @do goto stuff
+ @end
+@if responce is 1 then do
+ @begin
+ @dataload seyes.shw &playernum `p20
+  @if `p20 < 5 then do
+   @begin
+  @show
+  `c
+       `2"`8Well, then.  Who would you like to challenge?`2"
+
+  @chooseplayer `p22
+  @if `p22 is 0 then do
+    @begin
+    @show
+    `k
+    @do goto challenge
+    @end
+  @if `p22 is &playernum then do
+   @begin
+   @show
+   `c
+       `4K`5C`8D `2chuckles.  "`8You can't challenge yourself.  Sorry.`2"
+       `\`k
+    @do goto challenge
+   @end
+  @if challeng.`p22 exists true then do
+   @begin
+@do `s01 is getname `p22
+   @dataload challeng.`p22 3 `p21
+   @dataload challeng.`p22 6 `p24
+   @dataload challeng.`p22 4 `p20
+   @dataload challeng.`p22 5 `p23
+   @dataload challeng.`p22 2 `p95
+
+@do `p24 / 10
+@do `p22 random `p24 500
+
+@do `p91 random `p24 1000
+
+@do `p24 random `p20
+@do `p24 random `p20
+
+@do `p24 random `p20
+@do `p24 / 5
+@do `p20 - `p24
+
+@fight
+;name
+`s01
+;string said when you see him
+Now is your chance...
+;power move kill string
+You've destroyed them...  Sort of...
+;sex - 1 is male, 2 is female, 3 is it
+`p95
+;weapon and strength for the weapon, up to 5
+hurts you|`p20
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+`p91
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+SHOW2.REF|WHOOP
+;if lose: ref file|name or NONE
+SHOW2.REF|POOH
+;if runs: ref file|name or NONE
+SHOW2.REF|RUNNER
+  @end
+@do goto stuff
+@end
+@end
+
+@show
+`c
+       `2"`8Sorry, `0`n`8, but you have already had your `05`8 chances for
+     the day.  Come back tomorrow.`2"
+
+     `\`k
+ @do goto stuff
+ @end
+ @end
+  @if `p20 is 0 then do
+   @begin
+    @show
+    `c
+       `2You have either cheated to get in this room, or slept here for a
+     night.  In either case, this man doesn't want to talk to you.  In fact,
+     it doesn't look like he's going to want to see you until tomorrow...
+
+     `\`k
+     @datasave seye.shw &playernum 10
+     @routine meye in items.ref
+    @end
+  
+   @do goto stuff
+
+@#enter
+ @datasave challeng.&playernum 1 &playernum
+ @datasave challeng.&playernum 2 sexmale
+ @datasave challeng.&playernum 3 `p03
+ @datasave challeng.&playernum 4 `p04
+ @datasave challeng.&playernum 5 `p05
+ @do `p29 is 1
+ @if sexmale is 0 then `p29 is 2
+ @datasave challeng.&playernum 6 `p29
+
+ @do x is 40
+ @do y is 17
+ @do map is 245
+ @loadmap &map
+ @do goto stuff
+
+@#exit
+ @datasave challeng.&playernum 1 &playernum
+ @datasave challeng.&playernum 2 sexmale
+ @datasave challeng.&playernum 3 `p03
+ @datasave challeng.&playernum 4 `p04
+ @datasave challeng.&playernum 5 `p05
+ @do `p29 is 1
+ @if sexmale is 0 then `p29 is 2
+ @datasave challeng.&playernum 6 `p29
+
+ @do x is 42
+ @do y is 3
+ @do map is 55
+ @loadmap &map
+ @do goto stuff
+
+@#read
+  @clear screen
+  @do `p21 is 1
+  @do `p25 is &totalaccounts
+  @do `p25 + 1
+   @label readmore
+   @if challeng.`p21 exist TRUE then do
+     @begin
+     @do `s01 is getname `p21
+     @show
+`s01
+     @end
+   @do `p21 + 1
+   @if `p21 < `p25 then goto readmore
+@show
+ `k
+@do goto challenge
+
+@#whoop
+ @do `p02 is `p03
+@dataload seyes.shw &playernum `p20
+@do `p20 + 1
+@datasave seyes.shw &playernum `p20
+
+  @do addlog
+  `r5  `r0 `0`n`2 has challenged `0`s01 `2and `!won`2! `r5  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do goto stuff
+
+
+
+@#pooh
+ @do `p02 is `p03
+@dataload seyes.shw &playernum `p20
+@do `p20 + 1
+@datasave seyes.shw &playernum `p20
+
+  @do addlog
+  `r5  `r0 `0`n`2 has challenged `0`s01 `2and `!lost`2! `r5  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do goto stuff
+
+
+
+@#runner
+ @do `p02 is `p03
+@dataload seyes.shw &playernum `p20
+@do `p20 + 1
+@datasave seyes.shw &playernum `p20
+
+  @do addlog
+  `r5  `r0 `0`n`2 has challenged `0`s01 `2and `!RAN AWAY`2!!! `r5  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do goto stuff

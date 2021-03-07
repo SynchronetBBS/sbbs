@@ -1,0 +1,1224 @@
+; Script file DRGNHM2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:25 2001
+
+@DECLARE jasdeed 000001135
+@DECLARE startg 000001164
+@DECLARE jasminita 000004386
+@DECLARE done 000005355
+@DECLARE letmeinj 000007099
+@DECLARE done 000007199
+@DECLARE esperanto 000007284
+@DECLARE done 000008255
+@DECLARE letmeine 000009919
+@DECLARE esprmaid 000010080
+@DECLARE startg 000010109
+@DECLARE warp 000013280
+@DECLARE girl 000014474
+@DECLARE healme 000015105
+@DECLARE royal 000015262
+@DECLARE done 000016264
+@DECLARE letmeinr 000017940
+@DECLARE royalmaid 000018120
+@DECLARE startg 000018149
+@DECLARE book 000021316
+@DECLARE library 000024840
+@DECLARE steamroom 000025015
+@DECLARE garden 000025234
+@DECLARE secluded 000025365
+@DECLARE fence 000025506
+@DECLARE cigar 000025634
+@DECLARE dogeatn 000026342
+@DECLARE draft 000026477
+@NOCHECK
+; End of .REF index
+
+;Drgnhome.ref part 2(don't ya hate it when you run outta conventional mem)
+;This is REGISTERED!!! Thanx 4 sending me $5 bucks so my BBS can go up
+;any way here it is.......
+;----------------------------jasminita's deed---------------------
+@#jasdeed
+@do moveback
+@label startg
+@if castle77.dat exist false then do
+  @begin
+;  @do move 1 1
+;  @display maid in people.ref
+  @do saybar
+`0"You have 5 minutes to vacate this house, or I'll dust ya!" `2the maid barks.
+  @closescript
+  @end
+
+@readfile castle77.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the maid, nice of her to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 
+@show
+`r0`c  `r1 Instructing your maid `r0
+
+  `2The huge maid drops her mop when she sees you are going to
+  address her.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$7500`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your house to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to house your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle77.dat
+  @writefile castle77.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of A nice house to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%A nice House`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your House back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle77.dat
+  @do money + 7500
+  @show
+`\`\  `%HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%A nice House Keep`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete castle77.dat
+  @writefile castle77.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the maid promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+;--------------------------------Jasminita----------------------------
+@#jasminita
+@do moveback
+@offmap
+@if castle77.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+   `2This is a nice house
+  It is for sale, and the asking price is `$$15000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy that sucker.
+<&money 15000 Cuss 'cause you ain't got no cash
+>&money 14999 Find the 3 little pigs.
+@
+
+@if responce is 1 then do
+  @begin
+  @if castle77.dat exist true then do
+    @begin
+    @show
+`\`\  `2Dammit!  Someone bought the house you had your eye on.  There goes
+  the honeymoon in paradise...better find someplace else.`\`\`k
+    @do goto done
+    @end
+
+@writefile castle77.dat
+&playernum
+NONE
+    @do money - 15000
+    @do addlog
+  `0`n `2buys `%A nice house`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%G`day, landowner! `r0
+`\`2  You now own this house!
+
+`k  `0As a special bonus, one bed is included!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile castle77.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete castle77.dat
+    @do addlog
+  `%A great house`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto jasminita
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4You hang your head.
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops out the door.  `0"Halt, you!  What do you want with
+  my lord and master, `%`s02`0?" `2the maid asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Say something.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%This nice house`0,"`2 the maid smiles as she opens the door.`\`\`k
+    @do goto letmeinj
+    @end
+   @writefile mail\mail`p20.dat
+  `0House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the maid by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The maid doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmeinj
+@do x is 36
+@do y is 18
+@do map is 1082
+@loadmap 1082
+@update
+@drawmap
+@do goto done
+@#done
+;------------------------------Esperanto------------------------------
+@#Esperanto
+@do moveback
+@offmap
+@if castle79.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+   `2This is a nice house
+  It is for sale, and the asking price is `$$25000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 24999 Buy that sucker.
+<&money 25000 Cuss 'cause you ain't got no cash
+>&money 24999 Find the 3 little pigs.
+@
+
+@if responce is 1 then do
+  @begin
+  @if castle79.dat exist true then do
+    @begin
+    @show
+`\`\  `2Dammit!  Someone bought the house you had your eye on.  There goes
+  the honeymoon in paradise...better find someplace else.`\`\`k
+    @do goto done
+    @end
+
+  @writefile castle79.dat
+&playernum
+NONE
+    @do money - 25000
+    @do addlog
+  `0`n `2buys `%A nice house`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%G`day, landowner! `r0
+`\`2  You now own this house!
+
+`k  `0As a special bonus, one bed is included!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile castle79.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   @do delete castle79.dat
+    @do addlog
+  `%A great house`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   @do goto esperanto
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4You hang your head.
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops out the door.  `0"Halt, you!  What do you want with
+  my lord and master, `%`s02`0?" `2the maid asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Say something.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%This nice house`0,"`2 the maid smiles as she opens the door.`\`\`k
+    @do goto letmeine
+    @end
+   @writefile mail\mail`p20.dat
+  `0House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the maid by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The maid doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmeine
+@do x is 41
+@do y is 19
+@do map is 1084
+@loadmap 1084
+@do goto done
+;---------------------------------espermaid-------------------------------
+@#esprmaid
+@do moveback
+@label startg
+@if castle79.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this house, or I'll dust ya!" `2the maid barks.
+  @closescript
+  @end
+
+@readfile castle79.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the maid, nice of her to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 
+@show
+`r0`c  `r1 Instructing your maid `r0
+
+  `2The huge maid drops her mop when she sees you are going to
+  address her.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$15500`%.
+Do nothing of the sort
+@if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your house to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to house your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle79.dat
+  @writefile castle79.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of A nice house to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%A nice House`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your House back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle79.dat
+  @do money + 15500
+  @show
+`\`\  `%HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%A nice House Keep`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete castle79.dat
+  @writefile castle79.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the maid promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+;----------------------------------Let's Warp-----------------------------
+@#warp
+@do moveback
+@do move 20 5
+@do write
+`r0`$ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 20 6
+@do write
+`r0`$³-Where would you like to go?-³
+@do move 20 7
+@do write
+`r0`$³                             ³
+@do move 20 8
+@do write
+`r0`$³                             ³
+@do move 20 9
+@do write
+`r0`$³                             ³
+@do move 20 10
+@do write
+`r0`$ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do move 30 7
+@do `v01 is 1
+@choice
+`%Porttown `%
+`%Bonetown `%
+`%Stay here`%
+@if responce is 1 then do
+    @begin
+    @if `p11 < 100 then do
+        @begin
+        @do saybar
+`@Dang, not enough energy.
+        @drawmap
+        @update
+        @closescript
+        @end
+    @do `p11 - 100
+    @do map is 956
+    @do x is 39
+    @do y is 19
+    @end
+
+@if responce is 2 then do
+    @begin
+    @if `p11 < 1000 then do
+        @begin
+        @do saybar
+`@Dang, not enough energy.
+        @drawmap
+        @update
+        @closescript
+        @end
+    @do `p11 - 1000
+    @do map is 1572
+    @do x is 56
+    @do y is 18
+    @end
+
+@loadmap &map
+@drawmap
+@update
+@closescript
+;-----------------------------------Nice girl-----------------------------
+@#girl
+@DO MOVEBACK
+@do `p24 random 30 1
+@SHOW
+
+`r0`c  `r1`%  Hot Chic  `r0
+
+`2You stand before your personal love slave...She has dedicated her life you
+serving your wishes.  Her long blonde hair is neatly combed just the way you
+like it the most.  A hint of incense wofts through your nose as you climb onto
+her bed.  She gets on top of you and....`\`k
+`p24 minutes later `0(need to exercise huh?)`2 you get up, very satisfied.
+You feel great and leave knowing there was NO chance of catching anything.
+`\`k  
+`\`k
+@
+@drawmap
+@update
+;-----------------------------I want to be healed!!----------------------
+@#healme
+@do `p02 is `p03
+@do saybar
+`2You are completely Rested!!!
+@closescript
+;-----------------------------Royal-----------------------------------
+@#Royal
+@do moveback
+@offmap
+@if castle78.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+   `2This is a nice house
+  It is for sale, and the asking price is `$$20000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Buy that sucker.
+<&money 20000 Cuss 'cause you ain't got no cash
+>&money 19999 Find the 3 little pigs.
+@
+
+@if responce is 1 then do
+  @begin
+  @if castle78.dat exist true then do
+    @begin
+    @show
+`\`\  `2Dammit!  Someone bought the house you had your eye on.  There goes
+  the honeymoon in paradise...better find someplace else.`\`\`k
+    @do goto done
+    @end
+
+  @writefile castle78.dat
+&playernum
+NONE
+    @do money - 20000
+    @do addlog
+  `0`n `2buys `%A nice house`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%G`day, landowner! `r0
+`\`2  You now own this house!
+
+`k  `0As a special bonus, there is a pool, spa, cigar room, library, and dog!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile castle78.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   @do delete castle78.dat
+    @do addlog
+  `%A great house`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto royal
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4You hang your head.
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops out the door.  `0"Halt, you!  What do you want with
+  my lord and master, `%`s02`0?" `2the maid asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Say something.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%The Royal`0,"`2 the maid smiles as she opens the door.`\`\`k
+    @do goto letmeinr
+    @end
+   @writefile mail\mail`p20.dat
+  `0House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the maid by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The maid doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmeinr
+@do x is 40
+@do y is 19
+@do map is 1083
+@loadmap 1083
+@update
+@drawmap
+@do goto done
+;------------------------------Royal Maid--------------------------------
+@#royalmaid
+@do moveback
+@label startg
+@if castle78.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this house, or I'll dust ya!" `2the maid barks.
+  @closescript
+  @end
+
+@readfile castle78.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the maid, nice of her to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 
+@show
+`r0`c  `r1 Instructing your maid `r0
+
+  `2The huge maid drops her mop when she sees you are going to
+  address her.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$10000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your house to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to house your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle78.dat
+  @writefile castle78.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of A nice house to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%A nice House`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your House back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle78.dat
+  @do money + 10000
+  @show
+`\`\  `%HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%A nice House Keep`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete castle78.dat
+  @writefile castle78.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the maid promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+;----------------------------------Book------------------------------
+@#book
+@do moveback
+@do `p27 random 9 1
+
+@if `p27 is 1 then do
+ @begin
+ @show
+`r0`c  `r1 `%Book of Physics  `r0
+
+	`2You start to read the book of Physics.  After several hours of
+reading you find you know less than when you started.
+ @key
+ @drawmap
+ @update
+ @end
+
+@if `p27 is 2 then do
+  @begin
+  @show
+`r0`c  `r1 `%Book of Chemistry  `r0
+
+	`2You start to read the book of Chemistry.  After several hours of
+reading you find you know less than when you started.
+ @key
+ @drawmap
+ @update
+ @end
+@if `p27 is 3 then do
+  @begin
+  @show
+`r0`c  `r1 `%Book of History  `r0
+
+	`2You start to read the book of History.  After several hours of
+reading you find you know less than when you started.
+ @key
+ @drawmap
+ @update
+ @end
+
+
+@if `p27 is 4 then do `s02 is Events
+    @begin
+    @show
+    `r0`c  `r1 `%Events  `r0`\`\
+    @displayfile lognow.txt Nopause
+    @key
+    @drawmap
+    @update
+    @end
+
+@if `p27 is 5 then do `s02 is Philosophy
+    @begin
+    @do `p26 random 5 1
+@if `p26 is 1 then `s03 is The`xworld`xis`xlike`xa`xsnowflake`xin`xAlaska
+@if `p26 is 2 then `s03 is Fire`xis`xthe`xpassion`xof`xof`xlove
+@if `p26 is 3 then `s03 is The`xbest`xway`xto`xlook`xat`xToronto`xis`xthrough`xthe`xrear`xview`xmirror.
+@if `p26 is 4 then `s03 is All`xthings`xconsidered,`xinsanity`xmay`xbe`xthe`xonly`xreasonable`xalternative.
+@if `p26 is 5 then `s03 is Any`xsufficiently`xadvanced`xtechnology`xis`xindistinguishable`xfrom`xa`xrigged`xdemo.
+    @show
+`r0`c  `r1 `%Book of Philosophy `r0
+
+`2You flip through the pages and find this quote `l. `l. `l. `l. `l.
+`0`s03
+
+`2You find this quote insighfull and provocative!!!
+Your charm goes up by one!!!
+@do `p08 + 1
+   @key 
+   @drawmap
+   @update
+   @end
+
+@if `p27 is 6 then do
+   @begin
+   @show
+`r0`c  `r1 `%Book of Speling  `r0
+
+`2Tehrr are maany pEopL tat ain't no good at Spellink and Gramer.  But that 
+is ok Bcasue threre isn't no problme in anyuthing.  To Speil U must voik
+hard and nevr give up.  
+   @key
+   @drawmap
+   @update
+   @end
+
+@if `p27 is 7 then do
+   @begin
+   @show
+`r0`c  `r1 `%Book of Hints  `r0
+
+`2So you want hints do you!!!  Well here is a tip.  Support Dragon's Den BBS
+You need to send me money!!!! Please I need it.  Your sysop has helped you 
+should to!!!  E-mail me at Codax_dragon@juno.com or visit my web-page at
+http://www.geocites.com/SiliconValley/Way/9982/index.html
+I apologize for the long name that is another reason I need the money.
+  @key
+  @drawmap
+  @update
+  @end
+
+@if `p27 is 8 then do 
+  @begin
+  @show
+`r0`c  `r1 Book of Healing   `r0
+
+	`2You open the book of healing and are surrounded by a beautiful
+`%white light`2 You are blinded for a moment then feel much better!!!
+  @key
+  @do `p02 is `p03
+  @drawmap
+  @update
+  @end
+
+@if `p27 is 9 then do
+  @begin
+  @show
+`r0`c   `r1  `2Book of `4`bPain   `r0
+
+	`2You reluctantly open the book of `b`4Pain `2and `l. `l. `l. `l.
+`k
+@
+@if `p07 Less 3 then do
+@begin
+@do `p07 - 3
+@show
+`2You learn how to tourture your victem and break pinkys(ouch)
+`4`b Your alignment drops by 3!!!!
+@
+@key
+@drawmap
+@update
+@end
+
+@if `p07 > 2 then do
+@begin
+@do `p02 is 1
+@do `p07 + 1
+@show
+`2You were horrified at the tourtures impozed on people and you toss your 
+lunch on the floor.  `4`bHit-points down to 1!!!!!! But, `l. `l.
+`!Your Allignment rises by 1
+  @key 
+  @drawmap
+  @update
+  @end
+;----------------------------Library--------------------------------
+@#library
+@do saybar
+`2The smell of old books greets you as you enter the library.
+@closescript
+;---------------------------Steam Room---------------------------------
+@#steamroom
+@if &lastx > x then `s01 is feels
+@if &lastx < x then `s01 is felt
+@do saybar
+`%Ahhhhhhhh......The steam `s01 good!!!
+@closescript
+;--------------------------Garden--------------------------------------
+@#garden
+@do Saybar
+`2What a beautiful indor garden!
+;-----------------------------Secluded---------------------------------
+@#secluded
+@do saybar
+`2This area is just perfect for making out!!
+;-----------------------------------Fence-------------------------------
+@#fence
+@do saybar
+`4`bCAUTION `2Fighters Only!!!
+;----------------------------------cigar---------------------------------
+@#cigar
+@if &lasty < y then do
+@begin
+@do saybar
+You no longer smell the sweet smell of cigars
+@end
+
+@if &lasty > y then do
+@begin
+@show
+`r0`c  `r1  Cigars  `r0
+`2There is a box on the wall....It says "Cigars $5"
+Do you want a Cigar
+@do `v01 is 1
+@choice
+Yes
+No
+@if responce is 1 then do
+  @begin
+   @do money - 5
+@drawmap
+@update
+@do saybar
+MMMmmmmmm........ It's cuban!
+@do quebar
+`2You puff the cigar savoring is taste. Soon the room is filled with the aroma
+   @end
+@if response is 2 then do
+   @begin
+   @drawmap
+   @update
+`2The smell of recently smoked cigars wafts in the air
+   @end
+@end
+;-----------------------------------Dogeatn------------------------------
+@#dogeatn
+@do saybar
+`2What is that Dog Eating?!?!?!?!?!?!?!???
+;---------------------------------Draft-----------------------------
+@#Draft
+@do saybar
+`4`bEEEEEEIIIIIIII......`2It's cold over here!!!!

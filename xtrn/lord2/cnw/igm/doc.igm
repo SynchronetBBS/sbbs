@@ -1,0 +1,67 @@
+
+                      Doc Farrell by Kevin Farrell V3.01a
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : YES!
+  Using any LORD2 vars?                           : YES!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : YES!
+  Replaces screens?                               : YES!
+  Adds screens?                                   : YES!
+  Free?                                           : YES!
+
+
+  Description:
+
+  Doc Farrell is a doctors office 2 miles under the Stonepass Lodge.  The
+  update introduces something brand new to LORD II.  Actual interactivity!
+  You can play a game of darts and win money (or lose it (-: ).
+  There are also lots of hidden treasures like...A hidden key which opens
+  the door to a hidden cave!  A backdoor where you can play a game of darts
+  or can go to the Brutal World to try and defeat all 9 enimies and become
+  King of the Mountain!  Remember to be nice to the homeless guy!
+
+  To install, unzip DOC301a.ZIP into your LORD2 dir and type:
+
+  IGM DOC
+
+******** READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS ********
+*                                                                           *
+* (NOTE: if you already have an older version of Doc Farrell installed then *
+*        ininstall it before you install this one or you will be stuck with *
+*        the old screens!!!)                                                *
+*****************************************************************************
+
+  To uninstall, do the same thing again.
+
+  To test, walk down 2 screens directly under the Stonepass Lodge and you will
+  see a house there - go up to it, go inside and do whatever.
+
+
+
+---------------BELOW IS USED BY LORD2-----DON'T TOUCH!!----------------------
+
+igmname:  `2Doc Farrell `8by: `%K`7evin `%F`7arrell `3v3.01a
+
+replacescreen: 1040 1 show
+replacescreen: 169 2 noshow
+replacescreen: 167 3 noshow
+replacescreen: 168 4 noshow
+replacescreen: 170 5 noshow
+
+installmessage:
+`r0                      `r1 `4DOC FARRELL`r0
+
+                `2Thank you for installing "`%Doc Farrell`2"!!!
+                I hope you enjoy it and please e-mail me at:
+                `3kfarrell@kearney.net
+                `2if you have ANY questions from how to install
+                to how to edit it....just write me a letter and
+                I will reply within 24 hours!
+
+                                             `6Thanks & enjoy
+                                             `%K`7evin `%F`7arrell

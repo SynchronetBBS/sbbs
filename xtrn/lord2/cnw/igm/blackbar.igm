@@ -1,0 +1,52 @@
+
+                       Black Death's Bar by Jim V1.00
+
+                           AN IGM FOR LORD2 1.01a+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (2)
+  Adds screens?                                   : Yes! (3)
+  Free?                                           : Yes! (Yeah!)
+
+
+  Description:
+
+  My first Igm for LORD2, Talk with Black Death, the bartender
+  or stay in a room in the four room Inn upstairs. You can also
+  explore the basement which has some fun stuff to do.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM BLACKBAR.IGM or use the included batch file (BBinst).
+
+  To uninstall, do the same thing again.
+
+  To test, walk 6 screens east of the Purple tree (above Sosen Village)
+  
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4Bla`@ck De`4ath's `@Tavern `$1.00 `2- `0by `4J`@im `2(blackdth@geocities.com)
+replacescreen: 299 1 show
+
+replacescreen: 305 2 show
+
+replacescreen: 1459 3 noshow
+
+replacescreen: 1460 4 noshow
+
+replacescreen: 1461 5 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2A new place to go hang out and get a drink, some tips, stay a 
+  night or maybe even get some `$$$. `2Your `0LORD2`2 world will
+  be a bit more fun to be in :)

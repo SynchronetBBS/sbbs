@@ -1,0 +1,1020 @@
+; Script file MOSH.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:18 2001
+
+@DECLARE pay 000001776
+@DECLARE locked 000002383
+@DECLARE todd 000005097
+@DECLARE seth 000005178
+@DECLARE mike 000005270
+@DECLARE joe 000005353
+@DECLARE dive 000005464
+@DECLARE onstage 000006243
+@DECLARE backstage 000006385
+@DECLARE guy 000006602
+@DECLARE event 000007763
+@DECLARE pitfight 000008360
+@DECLARE stagefight 000008978
+@DECLARE lose 000009561
+@DECLARE tv 000009745
+@DECLARE backtodd 000009822
+@DECLARE backseth 000009910
+@DECLARE backjoe 000009996
+@DECLARE backmike 000010257
+@DECLARE hooker 000010345
+@DECLARE nasty 000011431
+@DECLARE seat 000011905
+@DECLARE stereo 000012176
+@DECLARE exitdream 000012268
+@DECLARE drugdeal 000012424
+@DECLARE prejudice 000014522
+@DECLARE prejudicewin 000015195
+@DECLARE confusion 000015239
+@DECLARE confusionwin 000015943
+@DECLARE indifference 000015990
+@DECLARE indifferencewin 000016640
+@DECLARE greed 000016680
+@DECLARE greedwin 000017372
+@DECLARE revenge 000017414
+@DECLARE revengewin 000018079
+@DECLARE anger 000018119
+@DECLARE angerwin 000019341
+@DECLARE angerlose 000019823
+@DECLARE angerrun 000019948
+@NOCHECK
+; End of .REF index
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                          ;;
+;;          ::[[ BoneTown Moshpit IGM by Curious Yellow v1.00 ]]::          ;;
+;;                                                                          ;;
+;;                   http://home.earthlink.net/~csyellow                    ;;
+;;                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+@#PAY
+; Reset all `p variables that are used for this IGM..
+@if bitcheck `t50 7 1 then goto locked
+@if bitcheck `t51 7 1 then goto locked
+@if bitcheck `t51 1 1 then goto locked
+
+@do `p22 is 0
+@do `p23 is 0
+@do `p51 is 0
+@do `p52 is 0
+@do `p53 is 0
+@do `p54 is 0
+@do `p55 is 0
+@do `p56 is 0
+@do `p57 is 0
+@do `p58 is 0
+@do `p61 is 0
+@do `p62 is 0
+@do `p63 is 0
+@do `p64 is 0
+@do `p65 is 0
+@do `p66 is 0
+; makes player "off the map" until they return or enter the concert hall
+@offmap
+@datanewday MOSH.IDF
+@dataload MOSH.IDF &playernum `p21
+@if `p21 not 0 then do
+  @begin
+@label locked
+  @do moveback
+  @do saybar
+  `0The concert hall is empty. Better come back tomorrow.
+  @closescript
+  @end
+
+@SHOW
+`^`r0
+`c  `r1`% Not So Fast.. `r0
+`0
+  "Hold it there.. you've gotta pay `$$100 `0to get in here."
+
+  `%"Why would I want to, eh?"
+
+  `0"Cuz `$RESIDUE`0 is playing. That should be reason enough."
+
+@do `v01 is 2
+@choice
+>&money 99 Okay, I can spare the cash.
+<&money 100 Hey.. those are nice shoes, dude!
+Who the heck is RESIDUE?
+Screw this, man!
+@if responce is 1 then do
+  @begin
+  @do `p21 is 1
+  @datasave MOSH.IDF &playernum `p21
+  @show
+`c  `%"Trust me.. you won't be disappointed."`\`k
+  @loadmap 974
+  @do map is 974
+  @do x is 39
+  @do y is 17
+  @DRAWMAP
+  @update
+  @DO SAYBAR
+  `%This is the biggest moshpit you have ever SEEN!
+  @if `p71 > 0 then do
+        @begin
+        @do `p26 is `p71
+        @routine getname in npcname2.ref
+        @do quebar
+`$`s01: `%Thanks for bring me here! this could be fun.
+        @bitset `t50 6 1
+        @bitset `t51 1 1
+        @do `p20 random 3 1
+        @if `p20 is 1 then do
+                @begin
+                @bitset `t51 7 1
+                @end
+        @dataload npc/npc-`p71.idf &playernum `p26
+        @do `p26 + 1
+        @do `p26 + `p20
+        @if `p26 > 200000 then `p26 is 200000
+        @datasave npc/npc-`p71.idf &playernum `p26
+        @do `p08 + 1
+        @do `p02 / 2
+        @do `p01 + 250
+        @do `p11 - 100
+        @End
+  @UPDATE
+  @do money - 100
+  @CLOSESCRIPT
+  @end
+@if responce is 2 then do
+  @begin
+  @do `p20 random 10 1
+    @if `p20 is 8 then do
+      @begin
+      @do `p21 is 1
+      @datasave MOSH.IDF &playernum `p21
+      @show
+`c  `%"You sound like a nice kid.. I'll let you in for free."`\`k
+      @loadmap 974
+      @do map is 974
+      @do x is 39
+      @do y is 17
+      @DRAWMAP
+      @update
+      @DO SAYBAR
+      `%This is the biggest moshpit you have ever SEEN!
+      @UPDATE
+      @CLOSESCRIPT
+      @end
+    @if `p20 not 8 then do
+      @begin
+      @show
+`c`r0  `r1`% Nice Try. `r0
+
+  `0Well, nice try, but the guard just got mad
+  and beat the crap out of you.. *sigh*
+`k
+      @do `p02 is 5
+      @do moveback
+      @drawmap
+      @update
+      @do saybar
+      `%"Punk! Get lost!"
+      @closescript
+      @end
+  @end
+@if responce is 3 then do
+  @begin
+  @show
+`r0`c  `0"Only the coolest band in the world! Where have you been?!"
+  
+  `%"Avenging the death of my father."
+
+  `0"Whatever, s&boy.."
+`k
+  @do goto PAY
+  @end
+@if responce is 4 then do
+  @begin
+  @do moveback
+  @drawmap
+  @update
+  @do saybar
+  `%"Well then.. Your loss, I guess."
+  @closescript
+  @end
+
+@#TODD
+@do saybar
+`0Todd: `%"It's SUPPOSED to be a drumset.."
+@closescript
+
+@#SETH
+@do saybar
+`0Seth is flying through an extremely difficult riff..
+@closescript
+
+@#Mike
+@do saybar
+`0Mike: `%"How the heck did you get up here?!"
+@closescript
+
+@#JOE
+@do saybar
+`%"The Lester Colony rules! YEAH!" `0.. You wonder of Joe is 'all there'.
+@closescript
+
+@#DIVE
+@if `p54 < 6 then do
+  @begin
+  @do move x y
+  @show
+ `W
+  @do y + 1
+  @update
+  @do move x y
+  @show
+ `W
+  @do y + 1
+  @update
+  @do move x y
+  @show
+ `W
+  @do y + 1
+  @update
+  @do move x y
+  @show
+ `W
+  @do y + 1
+  @update
+  @do `p54 + 1
+  @do `p53 random 10 1
+  @if `p53 < 6 then do
+    @begin
+    @do `p02 - 5
+    @do saybar
+    `0Oh, cripes! No one caught you! `$-5 HP!
+    @if `p02 < 1 then do
+      @begin
+      @run DIE in GAMETXT.REF
+      @closescript
+      @end
+    @closescript
+    @end
+  @if `p53 > 5 then do
+    @begin
+    @do `p55 random 20 5
+    @do saybar
+    `0Whoo! What a rush! `$+`p55 experience!
+    @closescript
+    @end
+  @end
+@do saybar
+`0Your headache won't permit you to jump..
+@closescript
+
+@#ONSTAGE
+@if &lasty not 4 then do
+  @begin
+  @do saybar
+  `0Cool! You found a way to get on stage! ROCK ON!
+  @closescript
+  @end
+
+@#BACKSTAGE
+@if `p23 is 1 then do
+  @begin
+  @loadmap 975
+  @do map is 975
+  @do x is 40
+  @do y is 10
+  @do `p23 is 0
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do saybar
+`%Backstage? Haw!
+@closescript
+
+@#GUY
+@if `p23 is 1 then do
+  @begin
+  @do saybar
+  `0Shadowy Figure: `%"How 'bout that `$backstage pass`%! Cool, eh?"
+  @closescript
+  @end
+@show
+`c`r0  `r1`% Shady Figure `r0
+
+  `0"I might be able to hook you up with a `$backstage pass`0.."
+
+  `%"Oh? How much will it cost me, you bum?"
+
+  `0"It WOULD HAVE cost you `$$1`0, but I'll make it
+  `$$175`0 now for that 'bum' remark.. haw haw haw!"
+
+@do `v01 is 2
+@choice
+>&money 174 Okay, I'll take it!
+<&money 175 You wanker! I don't have the cash!
+Bah. I don't trust you.
+@if responce is 1 then do
+  @begin
+  @do money - 175
+  @do `p23 is 1
+  @show
+`r0`c  `0"Trust me, my s&boy.. it's worth every penny."
+
+  `2YOU NOW HAVE BACKSTAGE ACCESS!
+`k
+  @do moveback
+  @drawmap
+  @update
+  @do saybar
+  `%"You won't regret it!"
+  @end
+@if responce is 2 then do
+  @begin
+  @show
+  `r0`c  `0"Then get out of my face, loser.."
+`k
+  @do moveback
+  @drawmap
+  @update
+  @do saybar
+  `0Geez. What a jerk.
+  @closescript
+  @end
+@if responce is 3 then do
+  @begin
+  @do moveback
+  @drawmap
+  @update
+  @do saybar
+  `0"Fine then. Be that way."
+  @closescript
+  @end
+
+@#EVENT
+@do `p22 random 15 1
+@if `p22 < 11 then do
+  @begin
+  @if y > 8 then do
+    @begin
+    @do goto pitfight
+    @closescript
+    @end
+  @do goto stagefight
+  @closescript
+  @end
+@if `p22 is 11 then do
+  @begin
+  @do saybar
+  `%Dang! This band sounds AWESOME!
+  @closescript
+  @end
+@if `p22 is 12 then do
+  @begin
+  @do saybar
+  `%You slip in a puddle of vomit.
+  @closescript
+  @end
+@if `p22 > 12 then do
+  @begin
+  @do saybar
+  `%You found a nacho on the floor! YUM!
+  @if `p02 < `p03 then do
+    @begin
+    @do `p02 + 1
+    @end
+  @closescript
+  @end
+
+@#PITFIGHT
+@fight
+;name
+Mosher
+;string said when you see him
+`0The maniac is foaming at the mouth, smashing into everything around him..
+;power move kill string
+A smack to the face brings him to his senses.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+elbows you|46
+stomps on your feet|56
+jumps at you headfirst|31
+NONE|NONE
+NONE|NONE
+;defense
+19
+;gold reward
+100
+;experience
+20
+;hit points
+80
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+MOSH.REF|LOSE
+;if runs: ref file|name or NONE
+NONE|NONE
+@end
+@closescript
+
+@#STAGEFIGHT
+@fight
+;name
+Stage Diver
+;string said when you see him
+`0He looks ready to jump.. LOOK OUT!
+;power move kill string
+You step out of the way, and he falls flat on his face.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+lands on you|46
+flings himself at you|56
+spits on you|31
+NONE|NONE
+NONE|NONE
+;defense
+25
+;gold reward
+121
+;experience
+25
+;hit points
+100
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+MOSH.REF|LOSE
+;if runs: ref file|name or NONE
+NONE|NONE
+@end
+@closescript
+
+@#LOSE
+@do `p02 is 5
+@loadmap 1287
+@do map is 1287
+@do x is 58
+@do y is 5
+@drawmap
+@update
+@do saybar
+`0You're not dead, but you were thrown out for fighting..
+@closescript
+
+@#TV
+@do saybar
+`0An older model TV, but it works..
+@closescript
+
+@#BACKTODD
+@do saybar
+`0Todd: `%"Yo! Glad you could join the party!"
+@closescript
+
+@#BACKSETH
+@do saybar
+`0Seth: `%"Hey. Do you think we're any good?"
+@closescript
+
+@#BACKJOE
+@if `p52 is 0 then do
+  @begin
+  @do saybar
+  `0Joe: `%"GoatS&Boy .. Is that you?! Here! Take these `#gems`%!"
+  @do `p19 + 10
+  @do `p52 is 1
+  @closescript
+  @end
+@do saybar
+`0Joe: `%"You know, you look kinda familiar.."
+@closescript
+
+@#BACKMike
+@do saybar
+`0Mike is hitting on a groupie. Leave him alone.
+@closescript
+
+@#HOOKER
+@if &sexmale not 0 then do
+  @begin
+  @do saybar
+  `0Delilah: `%"Sorry, babe.. I ain't like that!"
+  @closescript
+  @end
+
+@if `p56 is 1 then do
+  @begin
+  @do saybar
+  `0Delilah: `%"You were amazing! Come back later, hon.."
+  @closescript
+  @end
+
+@show
+`c`r0  `r1 `%Delilah `r0
+
+  `0"Hey, baby.. I'll give you a ride for `$$200`0, VD-Free!"
+
+  `%You look the girl over, and decide she's pretty damn hot.
+
+  `0"Well, handsome, what'll it be?"
+
+@do `v01 is 2
+@choice
+>&money 199 Let me show you my bony maccaroni..
+<&money 200 How 'bout a freebie?
+No thanks, babe.. I'm pretty tired.
+@if responce is 1 then do
+  @begin
+  @do money - 200
+  @do goto NASTY
+  @end
+@if responce is 2 then do
+  @begin
+  @do `p57 random 10 1
+  @if `p57 is 8 then do
+    @begin
+    @show
+`\`0"Okay, baby.. but bring some green next time!"
+@do goto NASTY
+    @drawmap
+    @update
+    @closescript
+    @end
+  @end
+@if responce is 3 then do
+  @begin
+  @do moveback
+  @drawmap
+  @update
+  @do saybar
+  `0"Oh.. shy, aren't you?"
+  @closescript
+  @end
+
+@#NASTY
+  @do `p56 is 1
+  @do `p34 + 1
+  @show
+`c`r0  `r1 `%Doin' The Nasty `r0
+
+  `%She leads you by the hand to a quiet backroom and slowly pulls off
+  her clothes, and beckons for you to do the same. You undress, and
+  join her on a plush, circular bed. You "protect" yourself, and start
+  the action`L.`L.`L.`L.`L. *whew!* What a ride!
+
+  `%You leave Delilah, asleep, and head back to the party.
+
+`k
+  @do moveback
+  @drawmap
+  @update
+  @closescript
+
+@#SEAT
+@if `p51 is 0 then do
+  @begin
+  @do saybar
+  `0You sit next to Todd and he hands you a soda. HP MAXED OUT!
+  @do `p02 is `p03
+  @do `p51 is 1
+  @closescript
+  @end
+@do saybar
+`0You kick back and relax next to Todd, 'n watch some TV..
+@closescript
+
+@#STEREO
+@do saybar
+`0Woman: `%"Isn't that the biggest stereo EVER?!"
+@closescript
+
+@#EXITDREAM
+@show
+`c  `%YOU DID NOT HEED THE MAN'S WARNING!
+
+  Your dream has killed you, when you tried to escape it.
+
+`k
+@run DIE in GAMETXT.REF
+
+@#DRUGDEAL
+@if `p58 is 2 then do
+  @begin
+  @do moveback
+  @do saybar
+`0You've had enough.
+  @closescript
+  @end
+@show
+`c`r0  `r1`% Shadier Figure `r0
+
+  You come across a man in a dark green trenchcoat. Scruffy-looking, unkempt
+  hair, and several holes in his jeans spread an inquisitive look across your
+  face. He begins to speak...
+
+  `0"Doses?"
+
+  `$"What?!"
+
+  `%You figure out what he's talking about when he pulls several sheets of
+  "paper" from his trenchcoat. Decision-making time, eh?
+
+@do `v01 is 1
+@choice
+>&money 99 Buy a tab
+>&money 199 Buy a sheet
+Run away
+@if response is 1 then do
+  @begin
+  @do money - 100
+  @do `p58 is 1
+  @if `p53 < 5 then do
+    @begin
+    @do `p53 is 1
+    @end
+  @if `p53 < 5 then do
+    @begin
+    @do `p53 - 5
+    @end
+  @drawmap
+  @update
+  @do saybar
+`$(You are weakened.) `0The walls begin to breathe.. good high.
+  @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @dataload MOSHDRUG.IDF &playernum `p66
+  @if `p66 is 1 then do
+    @begin
+    @do moveback
+    @drawmap
+    @update
+    @do saybar
+`0Maybe you'd better not, eh?
+    @closescript
+    @end
+  @do money - 200
+  @do `p58 is 2
+  @if `p02 < 10 then do
+    @begin
+    @do `p02 is 0
+    @drawmap
+    @update
+    @do saybar
+`0You were not strong enough to take it.
+    @show
+`L`L`L`L
+    @run DIE in GAMETXT.REF
+    @closescript
+    @end
+  @if `p02 > 10 then do
+    @begin
+    @do `p02 - 10
+    @datasave MOSHDRUG.IDF &playernum 1
+    @show
+`\`\  You can feel the high begin to take over your body`L.`L.`L.`L and your `@mind.
+
+`k
+  `0"A warning, boy." `%His words beginning to blur..
+
+  `0"If you do not defeat your dream, it will kill you."
+
+  `$"What?!" `%Too late. You are out of tune with the conscious world..
+
+`k
+    @do map is 976
+    @loadmap 976
+    @do x is 2
+    @do y is 10
+    @drawmap
+    @update
+    @closescript
+    @end
+  @end
+@if response is 3 then do
+  @begin
+  @do moveback
+  @drawmap
+  @update
+  @do saybar
+`0Man: `%"Farewell, weenie."
+  @closescript
+  @end
+
+@#PREJUDICE
+@do moveback
+@if `p61 is 1 then do
+  @begin
+  @do saybar
+`0Your Prejudice is dead.
+  @closescript
+  @end
+@fight
+;name
+Prejudice
+;string said when you see him
+Blind hate.
+;power move kill string
+The beast is destroyed.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+attempts to lynch you|33
+yells racial slurs at you|40
+firebombs your house|42
+NONE|NONE
+NONE|NONE
+;defense
+18
+;gold reward
+100
+;experience
+40
+;hit points
+150
+;if win: ref file|name or NONE
+MOSH.REF|PREJUDICEWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@closescript
+
+@#PREJUDICEWIN
+@do `p61 is 1
+@closescript
+
+@#CONFUSION
+@do moveback
+@if `p62 is 1 then do
+  @begin
+  @do saybar
+`0Your Confusion is dead.
+  @closescript
+  @end
+@fight
+;name
+Confusion
+;string said when you see him
+All is lost.
+;power move kill string
+Your thoughts are properly rearranged..
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+points you in the wrong direction|38
+spins you around|45
+speaks backwards|47
+messes with your mind|53
+NONE|NONE
+;defense
+22
+;gold reward
+120
+;experience
+52
+;hit points
+160
+;if win: ref file|name or NONE
+MOSH.REF|CONFUSIONWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@closescript
+
+@#CONFUSIONWIN
+@do `p62 is 1
+@closescript
+
+@#INDIFFERENCE
+@do moveback
+@if `p63 is 1 then do
+  @begin
+  @do saybar
+`0Your Indifference is dead.
+  @closescript
+  @end
+@fight
+;name
+Indifference
+;string said when you see him
+Nobody cares.
+;power move kill string
+I'll bet he cares now.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+yawns on you|48
+doesn't care|55
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+25
+;gold reward
+127
+;experience
+57
+;hit points
+170
+;if win: ref file|name or NONE
+MOSH.REF|INDIFFERENCEWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@closescript
+
+@#INDIFFERENCEWIN
+@do `p63 is 1
+@closescript
+
+@#GREED
+@do moveback
+@if `p64 is 1 then do
+  @begin
+  @do saybar
+`0Your Greed is dead.
+  @closescript
+  @end
+@fight
+;name
+Greed
+;string said when you see him
+It's all mine! MINE!
+;power move kill string
+There IS enough of a good thing. A bad thing, too. Heh heh..
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+steals from you|52
+wants what you have|56
+is filled with desire|57
+NONE|NONE
+NONE|NONE
+;defense
+25
+;gold reward
+127
+;experience
+57
+;hit points
+170
+;if win: ref file|name or NONE
+MOSH.REF|GREEDWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@closescript
+
+@#GREEDWIN
+@do `p64 is 1
+@closescript
+
+@#REVENGE
+@do moveback
+@if `p65 is 1 then do
+  @begin
+  @do saybar
+`0Your Revenge is dead.
+  @closescript
+  @end
+@fight
+;name
+Revenge
+;string said when you see him
+I'll get you back for that.
+;power move kill string
+Killing Revenge is bittersweet.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+stabs you in the back|60
+gets you back|62
+obsesses|67
+NONE|NONE
+NONE|NONE
+;defense
+30
+;gold reward
+140
+;experience
+62
+;hit points
+190
+;if win: ref file|name or NONE
+MOSH.REF|REVENGEWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@closescript
+
+@#REVENGEWIN
+@do `p65 is 1
+@closescript
+
+@#ANGER
+@do moveback
+@if `p61 not 1 then do
+  @begin
+  @do saybar
+`0You must first defeat your other emotions.
+  @closescript
+  @end
+@if `p62 not 1 then do
+  @begin
+  @do saybar
+`0You must first defeat your other emotions.
+  @closescript
+  @end
+@if `p63 not 1 then do
+  @begin
+  @do saybar
+`0You must first defeat your other emotions.
+  @closescript
+  @end
+@if `p64 not 1 then do
+  @begin
+  @do saybar
+`0You must first defeat your other emotions.
+  @closescript
+  @end
+@if `p65 not 1 then do
+  @begin
+  @do saybar
+`0You must first defeat your other emotions.
+  @closescript
+  @end
+    
+@fight
+;name
+Anger
+;string said when you see him
+It is your anger. Kill or be killed.
+;power move kill string
+Have you truly won?
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+yells obsenitites at you|70
+lashes into you|75
+throws you to the ground|80
+strikes you with unreckoned force|87
+NONE|NONE
+;defense
+30
+;gold reward
+400
+;experience
+170
+;hit points
+220
+;if win: ref file|name or NONE
+MOSH.REF|ANGERWIN
+;if lose: ref file|name or NONE
+MOSH.REF|ANGERLOSE
+;if runs: ref file|name or NONE
+MOSH.REF|ANGERRUN
+@closescript
+@end
+
+@#ANGERWIN
+@show
+`c  `$A voice speaks into your very thoughts..
+
+  `%You just don't get it. There is no way to destroy your anger. At least..
+  no violent means to do so. You cannot destroy it. You must convert it. Anger
+  to care. Anger to concern. Anger to curiosity. Anger is a part of you. It
+  never TRULY goes away.. just gets bigger or smaller.
+
+  `@Spread the love.
+
+`k
+@do map is 974
+@loadmap 974
+@do x is 39
+@do y is 11
+@drawmap
+@update
+@closescript
+
+@#ANGERLOSE
+@do saybar
+`0You have lost to your emotions. 'Tis only human.`L`L`L`L
+@run DIE in GAMETXT.REF
+@closescript
+
+@#ANGERRUN
+@do saybar
+`0Fool! You cannot escape your emotions!`L`L`L`L
+@run DIE in GAMETXT.REF
+@closescript

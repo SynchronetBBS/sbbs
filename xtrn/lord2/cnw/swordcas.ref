@@ -1,0 +1,1395 @@
+; Script file SWORDCAS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:29 2001
+
+@DECLARE pawn 000000910
+@DECLARE locations 000001313
+@DECLARE sign 000001591
+@DECLARE sign2 000001693
+@DECLARE sing 000001803
+@DECLARE startsing 000002000
+@DECLARE fishing 000003286
+@DECLARE start 000003484
+@DECLARE armory 000004662
+@DECLARE armory 000004677
+@DECLARE man1 000005310
+@DECLARE man2 000005507
+@DECLARE whore 000005698
+@DECLARE hotel 000005798
+@DECLARE aqua 000006511
+@DECLARE fishsell 000007174
+@DECLARE fishend 000007952
+@DECLARE wizard 000007989
+@DECLARE wiz 000011516
+@DECLARE table 000012253
+@DECLARE real 000012446
+@DECLARE bank 000013675
+@DECLARE bankstart 000013803
+@DECLARE bankagain 000014932
+@DECLARE deposit 000016385
+@DECLARE withdraw 000016935
+@DECLARE bartender 000017803
+@DECLARE fishin 000017999
+@DECLARE attention 000022674
+@NOCHECK
+; End of .REF index
+
+@#Pawn
+@do moveback
+@OFFMAP
+@Show
+`r0`c `r1 Selling your items `r0
+
+`2"How's it goin' there boy?, Have anything I might be interested in?
+
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Pawn Item(s)
+Leave
+@if responce is 2 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do
+@begin
+@show
+`2"What do ya want to part with kid??"
+
+@sellmanager
+@drawmap
+@update
+@end
+
+@#LOCATIONS
+@do moveback
+@offmap
+@show
+`r0`c `r1 Wizard Locations `r0
+
+`01. `91 mile west of Porttown
+`02. `91 mile east of Sosen Village
+`03. `94 miles north and 2 miles west of Arrisville
+`04. `91 miles north of and 1 mile east of Bonetown
+
+`k
+`k
+@drawmap
+@update
+
+@#SIGN
+@do moveback
+@do saybar
+The Sword Castle V1.1 by MeRcEr (Michael Naeseth)
+@closescript
+
+@#SIGN2
+@do moveback
+@do saybar
+There are nothing but Sparkling Green Salmon in this lake!
+@closescript
+
+@#SING
+@datanewday swordca3.idf
+@dataload swordca3.idf &playernum `p20
+@if `p20 not 1 then goto startsing
+
+@do moveback
+@do saybar
+You can only sing once a day!
+@closescript
+
+
+@label startsing
+@offmap
+@do moveback
+@show
+`r0`c `r1 Puttin' on a show! `r0
+
+`2You step up to the mic as nervous as sin.
+`k
+`2You try to think of a sing as fast as you can before
+`k
+`2the audience gets impatient....
+`k
+`2You sing`l.`l.`l.`l.
+
+@do `p20 random 4 1
+
+@if `p20 is 1 then do
+@begin
+@show
+`r0
+`4A BARNEY SONG :( ,`%The crowd throws everything in sight at you!
+`4YOU ARE TOO DIZZY TO MOVE MUCH MORE, YOU LOSE 500 TURNS!
+`k
+@do `p11 - 500
+@datasave swordca3.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 2 then do
+@begin
+@show
+`r0
+`%A PUFF DADDY SONG, THE CROWD APPLAUDS YOU, FROM HIGH SPIRIT YOU
+`%GAIN 500 TURNS!
+`k
+@do `p11 + 500
+@datasave swordca3.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 3 then do
+@begin
+@show
+`r0
+`%A BEATLES SONG!, THE CROWD CLAPS A LITTLE, BUT THE OLD BARKEEP,
+`%JAMIE LOVED THE SONG, HE GIVES YOU 12 GEMS!
+`k
+@do `p19 + 12
+@datasave swordca3.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 4 then do
+@begin
+@show
+`r0
+`4A MARILYN MANSON SONG :( NOT ONLY DO THEY SERIOUSLY BEAT YOUR ASS,
+`4THEY KICK YOU STRAIGHT OUT OF THE SWORD CASTLE!!
+`k
+@do `p02 = 1
+@datasave swordca3.idf &playernum 1
+@do map is 1463
+@do x is 40
+@do y is 7
+@loadmap 1463
+@drawmap
+@update
+@end
+
+@#FISHING
+@do moveback
+@datanewday swordca2.idf
+@dataload swordca2.idf &playernum `p20
+@if `p20 not 1 then goto start
+
+@do saybar
+You can only go fishing here once a day!
+@closescript
+
+@label start
+@offmap
+@show
+`r0`c `r1 Goin' Fishin' `r0
+
+`%WOW, you see nothing but Sparkling Green Salmon in this lake!, you bet
+yourself that you could catch at least 10!
+
+`2So, what you gonna' do?
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Go Fishin'
+Leave
+@if responce not 1 then do
+@begin
+@drawmap
+@update
+@end
+
+
+
+@if responce is 1 then do
+@begin
+@show
+`r0`c
+
+`2You stick your `%s&weapon `2into the water hoping to stab
+some fish for food or money, you catch`l.`l.`l.`l.
+
+@do `p20 random 4 1
+@if `p20 is 1 then do
+@begin
+@show
+`r0
+`%4 SPARKLING GREEN SALMON!
+`k
+@do `i30 + 4
+@datasave swordca2.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 2 then do
+@begin
+@show
+`r0
+`%2 SPARKLING GREEN SALMON!
+`k
+@DO `i30 + 2
+@datasave swordca2.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 3 then do
+@begin
+@show
+`r0
+`4A SHARK!, IT BITES YOU! (HIT POINTS GO DOWN, WAAAAY DOWN!)
+`k
+@do `p02 = 2
+@datasave swordca2.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 4 then do
+@begin
+@show
+`r0
+`9A FISHING POLE?!?! `%HOW IRONIC!
+`k
+@do `i28 + 1
+@datasave swordca2.idf &playernum 1
+@drawmap
+@update
+@end
+
+
+@#ARMORY
+@label armory
+@offmap
+@do moveback
+@show
+`r0`c `r1 The Armory `r0
+
+`2A rusted old man by the name of Renip walks
+up to you, "`9May I help you my friend?`2" asks
+the old man.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Chat with Renip
+Look at Renip's wares
+Leave!
+@if responce is 1 then do
+@begin
+@show
+`2"I have nothing to say to you `%`n`2!" He snaps
+`k
+`2"`%What an ass!`2" you mumble to yourself
+`k
+@do goto armory
+@end
+
+
+@if responce is 2 then do
+@begin
+@clear screen
+@buymanager
+9
+16
+36
+49
+58
+14
+37
+59
+70
+62
+
+@do goto armory
+@end
+
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@end
+
+
+@#MAN1
+@do `p70 is 111
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+Mann, I don't have the guts to go up there and embarass myself..
+@closescript
+@end
+
+@#man2
+@do `p70 is 112
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+Mordin: The bartender's drinks are the best in the world!
+@closescript
+@end
+
+@#WHORE
+@do moveback
+@do saybar
+This building was banned from the Stone Castle.
+@closescript
+
+@#hotel
+@offmap
+@do moveback
+@show
+`r0`c `r1 Getting a room `r0
+
+`2"What can I do ya for sonney?" an old man asks
+`2"Would you like a room?, only $50 and there
+are special bonuses in the rooms!" he exclaims
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Get a room
+Leave
+@if responce is 2 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do
+@begin
+@if money < 50 then do
+@begin
+@drawmap
+@update
+@do saybar
+`%You don't have enough gold!
+@closescript
+@end
+@show
+
+`2"That'll be fifty bucks please"
+`k
+`%You slap the dough on the counter
+`k
+`2"Thank you go right on in"
+`k
+@do money - 50
+@do map is 1466
+@do x is 30
+@do y is 14
+@loadmap 1466
+@drawmap
+@update
+@end
+ 
+@#aqua
+@offmap
+@do `p70 is 113
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@show
+`r0`c
+`2"Hello `n, what can I do ya for?" Aquaman asks
+`k
+`%"Where the heck do you get a name like Aquaman?" you ask
+`k
+`2"Hmmm....let's see... I live in water you doof!" says Aquaman sarcastically
+`2"So what do ya' want you bafoon?" asks Aquaman
+
+`k
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Conduct business with Aquaman
+Sell fish
+Leave
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do
+  @begin
+  @do `p20 is 7
+  @run getquest in quest.ref
+  @end
+
+@if responce is 2 then do
+@begin
+@label fishsell
+@show
+`r0`c `r1 Selling fish `r0 
+
+`2"So how much fish ya got here kid??" asks Aquaman
+`0(You have `9&money`0)
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+<`i29 1 <`i30 1 You have no fish to sell.
+>`i29 0 Sell a Salmon for `$$50`%. `2(you have `0`i29`2)
+>`i30 0 Sell a Sparking Green Salmon for `$$250`%. `2(you have `0`i30`2)
+>`i29 0 <`i30 1 Sell nothing
+>`i30 0 <`i29 1 Sell nothing
+>`i30 0 >`i29 0 Sell nothing
+@if responce is 2 then do
+@begin
+@show
+
+`2"Thanks kid."
+
+`k
+  @do money + 50
+  @do `i29 - 1
+  @do goto fishsell
+  @end
+@if responce is 3 then do
+@begin
+@show
+
+`2"Damn!, now that is a nice lookin' fish!" exclaims Aquaman
+
+`k
+  @do money + 250
+  @do `i30 - 1
+  @do goto fishsell
+  @end
+
+ @do goto fishend
+
+ @end
+
+@label fishend
+@drawmap
+@update
+@end
+
+@#WIZARD
+@offmap
+@do moveback
+@show
+`r0`c `r1 The Wizard `r0
+        
+`%"Hey, where is your boat at?" You ask
+`k
+`2"I don't use boats, obviously I am a wizard and have
+the power to warp people places!" he yells
+`k
+`%"Sorry I asked!" you say
+`k
+`2"So, can I help ya or not?"
+`k
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Buy warp to Greentree for $500
+Buy warp to Porttown for $600
+Buy warp to Sosen Village for $650
+Buy warp to Arrisville for $2,000
+Buy warp to Flagcity for $600
+Buy warp to a random secret place for $2,000
+Leave
+@if responce is 7 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do
+@begin
+@if money < 500 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold
+@closescript
+@end
+
+@show
+`r0`c
+`2"Ok, let me just grab my spell book here, hold on..."
+`k
+`2"Ok, got it here we go `l`9RAFNAR `lETOOW `lMERCERROCKS`l.`l.
+
+`2Before you know it you are there!
+`k
+@do money - 500
+@do map is 1356
+@do x is 24
+@do y is 6
+@loadmap 1356
+@drawmap
+@update
+@end
+
+@if responce is 2 then do
+@begin
+@if money < 600 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold
+@closescript
+@end
+
+@show
+`r0`c
+`2"Ok, let me just grab my spell book here, hold on..."
+`k
+`2"Ok, got it here we go `l`9RAFNAR `lETOOW `lMERCERROCKS`l.`l.
+
+`2Before you know it you are there!
+`k
+@do money - 600
+@do map is 956
+@do x is 38
+@do y is 15
+@loadmap 956
+@drawmap
+@update
+@end
+
+@if responce is 3 then do
+@begin
+@if money < 650 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold
+@closescript
+@end
+
+@show
+`r0`c
+`2"Ok, let me just grab my spell book here, hold on..."
+`k
+`2"Ok, got it here we go `l`9RAFNAR `lETOOW `lMERCERROCKS`l.`l.
+
+`2Before you know it you are there!
+`k
+@do money - 650
+@do map is 456
+@do x is 17
+@do y is 7
+@loadmap 456
+@drawmap
+@update
+@end
+
+@if responce is 4 then do
+@begin
+@if money < 2000 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold
+@closescript
+@end
+
+@show
+`r0`c
+`2"Ok, let me just grab my spell book here, hold on..."
+`k
+`2"Ok, got it here we go `l`9RAFNAR `lETOOW `lMERCERROCKS`l.`l.
+
+`2Before you know it you are there!
+`k
+@do money - 2000
+@do map is 523
+@do x is 11
+@do y is 11
+@loadmap 523
+@drawmap
+@update
+@end
+
+@if responce is 5 then do
+@begin
+@if money < 600 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold
+@closescript
+@end
+
+@show
+`r0`c
+`2"Ok, let me just grab my spell book here, hold on..."
+`k
+`2"Ok, got it here we go `l`9RAFNAR `lETOOW `lMERCERROCKS`l.`l.
+
+`2Before you know it you are there!
+`k
+@do money - 600
+@do map is 1092
+@do x is 79
+@do y is 18
+@loadmap 1092
+@drawmap
+@update
+@end
+
+@if responce is 6 then do
+@begin
+@if money < 2000 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold
+@closescript
+@end
+
+@show
+`r0`c
+`2"Ok, let me just grab my spell book here, hold on..."
+`k
+`2"Ok, got it here we go `l`9RAFNAR `lETOOW `lMERCERROCKS`l.`l.
+
+`2Before you know it you are there!
+`k
+@do `p20 random 3 1
+
+@if `p20 is 1 then do
+@begin
+@do money - 2000
+@do map is 146
+@do x is 32
+@do y is 13
+@loadmap 146
+@drawmap
+@update
+@end
+
+@if `p20 is 2 then do
+@begin
+@do money - 2000
+@do map is 1514
+@do x is 76
+@do y is 12
+@loadmap 1514
+@drawmap
+@update
+@end
+
+@if `p20 is 3 then do
+@begin
+@do money - 2000
+@do map is 558
+@do x is 37
+@do y is 4
+@loadmap 558
+@drawmap
+@update
+@end
+
+@#WIZ
+@offmap
+@do moveback
+@show
+`r0`c `r1 The Wizard `r0
+
+`2"I'll warp ya to The Sword Castle for $850"
+`2"What do ya say?"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, warp me to The Sword Castle
+No, i'm outta here
+@if responce is 2 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do 
+@begin
+@if money < 850 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold
+@closescript
+@end
+
+@show
+`r0`c
+   `2"Ok, let me just grab my spell book here, hold on..."
+`k
+   `2"Ok, got it here we go `l`9RAFNAR `lETOOW `lMERCERROCKS`l.`l.
+
+   `2Before you know it you are there!
+`k
+@do money - 850
+@do map is 1463
+@do x is 38
+@do y is 7
+@loadmap 1463
+@drawmap
+@update
+@end
+
+@#TABLE
+@do moveback
+@datanewday swordcas.idf
+@dataload swordcas.idf &playernum `p20
+@if `p20 not 1 then goto real
+
+@do saybar
+There is nothing else there....
+@closescript
+@end
+
+@label real
+@offmap
+@show
+`r0`c
+`2You glide your hand along the tables smooth surface, and find`l.`l.`l.`l.
+@do `p20 random 6 1
+
+@if `p20 is 1 then do
+@begin
+@show
+`r0
+`%A KOSHI SNACK!
+`k
+@do `i66 + 1
+@datasave swordcas.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 2 then do
+@begin
+@show
+`r0
+`%A SILVER POTION!
+`k
+@do `i54 + 1
+@datasave swordcas.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 3 then do
+@begin
+@show
+`r0
+`%A FUZZY LITTLE ANIMAL
+`k
+@do `i51 + 1
+@datasave swordcas.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 4 then do
+@begin
+@show
+`r0
+`%A BOOK!
+`k
+`%YOU READ THE BOOK AND FEEL SMARTER (1000 EXPERIANCE GAINED)
+`k
+@do `p01 + 1000
+@datasave swordcas.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 5 then do
+@begin
+@show
+`r0
+`%A HAMMERSTONE?
+`k
+`2"What's this for?" you ask
+`k
+`%OH YEAH, YOU BREAK IT IN HALF WITH YOUR S&WEAPON!
+`k
+`%STRENGTH RAISED BY 5!
+`k
+@do `p04 + 5
+@datasave swordcas.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 is 6 then do
+@begin
+@show
+`r0
+`%500 GOLD PIECES!!
+`k
+`%SOMEONE MUST HAVE BEEN IN A HURRY!
+`k
+@do money + 500
+@datasave swordcas.idf &playernum 1
+@drawmap
+@update
+@end
+
+@#bank
+@do `p30 is 20
+@do `v01 is 1
+@offmap
+@do moveback
+@do `s09 is swordcas
+@routine DONEQUEST in VAULTS.REF
+@label bankstart
+@show
+`r0`c  `r1 `%The Sword Castle Bank `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+                        s
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @routine widthdraw in vaults.ref
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+@#BARTENDER
+@datanewday swordca1.idf
+@dataload swordca1.idf &playernum `p20
+@if `p20 not 1 then goto fishin
+
+@do saybar
+Sorry, you have already purchased from me today...
+@closescript
+
+@label fishin
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c `r1 Talking with barkeep `r0
+
+`2"Would you like a menu today, `9`n`2?"
+`k
+`2"`%OK, send it this way.."
+`%You start reading
+`k`c
+                                `9MENU
+
+                      `3DRINKS:  
+                      `2Beer............... $10.00
+
+                      `2Ale................ $25.00
+
+                      `2Koshi Juice........ $55.00
+
+                      `2Dragon Blood....... $55.00
+
+                      `3FOOD:
+                      `2Jumping Beans...... $50.00
+
+                      `2Liver.............. $25.00
+                      
+                      `2Book Worm.......... $50.00
+
+
+`k`c
+
+`r1 Talking with Barkeep `r0
+
+`2"So, what'll it be?"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Buy Beer for $10.00
+Buy Ale for $25.00
+Buy Koshi Juice for $55.00
+Buy Dragon Blood for $55.00
+Buy Jumping Beans for $50.00
+Buy Liver for $25.00
+Buy Book Worm for $50.00
+Leave
+@if responce is 1 then do
+@begin
+@if money < 10 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold!
+@closescript
+@end
+
+@show
+`r0`c
+`2"Coming right up!" Shouts the barkeep
+
+`2He comes back a few minutes later with your order.
+`k
+`2"Well, try it" he says
+`k
+`2You slurp down your beer in a few seconds, your gut tingles
+`k
+`%You gain 10 health
+`k
+@do money - 10
+@drawmap
+@update
+@datasave swordca1.idf &playernum 1
+@do `p96 + 2
+@drawmap
+@update
+@end
+
+@if responce is 2 then do
+@begin
+@if money < 25 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold!
+@closescript
+@end
+
+@show
+`r0`c
+`2"Coming right up!" Shouts the barkeep
+
+`2He comes back a few minutes later with your order.
+`k
+`2"Well, try it" he says
+`k
+`2You feel the contents of the glass sliding down your throat
+`k
+`%You are fully healed!
+`k
+@do money - 25
+@do `p96 + 4
+@drawmap
+@update
+@datasave swordca1.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if responce is 3 then do
+@begin
+@if money < 55 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold!
+@closescript
+@end
+
+@show
+`r0`c
+`2"Coming right up!" Shouts the barkeep
+
+`2He comes back a few minutes later with your order.
+`k
+`2"Well, try it" he says
+`k
+`2You hesitantly sip on the green liquid, you feel good
+`k
+`%You gain 5 alignment!
+`k
+@do money - 55
+@do `p07 + 5
+@do `p96 + 12
+@drawmap
+@update
+@datasave swordca1.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if responce is 4 then do
+@begin
+@if money < 55 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold!
+@closescript
+@end
+
+@show
+`r0`c
+`2"Coming right up!" Shouts the barkeep
+
+`2He comes back a few minutes later with your order.
+`k
+`2"Well, try it" he says
+`k
+`2The redness of the liquid is compelling, you guzzle it down!
+`k
+`4Alignment lowered by 5
+`k
+@do money - 55
+@do `p07 - 5
+@do `p96 + 15
+@drawmap
+@update
+@datasave swordca1.idf &playernum 1
+@drawmap
+@update
+@end
+
+
+@if responce is 5 then do
+@begin
+@if money < 50 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold!
+@closescript
+@end
+
+@show
+`r0`c
+`2"Coming right up!" Shouts the barkeep
+
+`2He comes back a few minutes later with your order.
+`k
+`2"Well, try em'" he says
+`k
+`2You toss some jumping beans in your mouth, mmmmm...
+`k
+`%You gain 4 Dodge!
+`k
+@do money - 50
+@do `p05 + 4
+@do `p96 + 18
+@drawmap
+@update
+@datasave swordca1.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if responce is 6 then do
+@begin
+@if money < 25 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold!
+@closescript
+@end
+
+@show
+`r0`c
+`2"Coming right up!" Shouts the barkeep
+
+`2He comes back a few minutes later with your order.
+`k
+`2"Well, try it" he says
+`k
+`2You smack on the liver, eeewwwww!!!
+`k
+`%Max hitpoints raised by 10
+`k
+@do money - 25
+@do `p03 + 10
+@do `p96 + 23
+@drawmap
+@update
+@datasave swordca1.idf &playernum 1
+@drawmap
+@update
+@end
+
+
+@if responce is 7 then do
+@begin
+@if money < 50 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have enough gold!
+@closescript
+@end
+
+@show
+`r0`c
+`2"Coming right up!" Shouts the barkeep
+
+`2He comes back a few minutes later with your order.
+`k
+`2"Well, try it" he says
+`k
+`2You chomp on the worm, hehehe, it tickles your throat...
+`k
+`%You gain 300 experience, guess it's true what they say bout'
+book worms
+`k
+@do money - 50
+@do `p01 + 300
+@do `p96 + 25
+@drawmap
+@update
+@datasave swordca1.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if responce is 8 then do
+@begin
+@drawmap
+@update
+@end
+
+@#attention
+@do moveback
+@do saybar
+Pay no attention to the nut in the fountain - The Sword Castle Assoc.
+@closescript

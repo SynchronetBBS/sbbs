@@ -1,0 +1,45 @@
+
+               The `4Red Dragon's `%Hide-Out v1.1 `2by `%King `4Lucifer
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  This is my 2nd IGM that I've made for LORD II, my 1st was Red Dragon's   Castle.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM REDRAGON.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, go 2 screens south of Flag City and follow the blinking     arrow.  It should warp you to a different screen
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%The `4Red Dragon's `%Hide-Out v1.1`2by `%King `4Lucifer
+replacescreen: 353 1 noshow
+
+replacescreen: 354 2 noshow
+
+replacescreen: 355 3 noshow
+
+replacescreen: 1252 4 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `%Welcome to my 2nd IGM that has been made by me for the game Legend       Of the Red Dragon 2: New World.  For the next few months (at least 6     months) I will NOT be making any IGMs as I will be working on my own   New World for LORD II...hopefully by then I would have gotten used to     writing .ref files...thank you for choosing this IGM...

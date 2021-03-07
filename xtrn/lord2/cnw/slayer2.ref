@@ -1,0 +1,777 @@
+; Script file SLAYER2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:41 2001
+
+@DECLARE qman 000000693
+@DECLARE matt 000002520
+@DECLARE monster 000003177
+@DECLARE monster1 000003235
+@DECLARE monster2 000003590
+@DECLARE mattfin 000003894
+@DECLARE beatmatt 000004310
+@DECLARE where 000004709
+@DECLARE mattrun 000004768
+@DECLARE ran 000007901
+@DECLARE toilet 000008114
+@DECLARE danger 000008200
+@DECLARE danger1 000008256
+@DECLARE danger2 000008586
+@DECLARE danger3 000008985
+@DECLARE danger4 000009390
+@DECLARE danger5 000009715
+@DECLARE sign 000010043
+@DECLARE rock 000010110
+@DECLARE rock2 000010246
+@DECLARE nomore 000010320
+@NOCHECK
+; End of .REF index
+
+@#qman
+@dataload qman.idf &playernum `p20
+@if `p20 is 1 then do
+@do moveback
+@begin
+@do saybar
+`%Seek Matt!
+@closescript
+@end
+ 
+@dataload head.idf &playernum `p20
+@if `p20 is 1 then do 
+@do moveback
+@begin
+@show
+`r0`c`0"Excellent, you have returned with Matt's Head!!  Here is your reward
+as promised."
+ 
+`%10 quest points
+10 hitpoints
+1000 experience
+5 muscle
+3 dodge
+@key nodisplay
+@do `p01 + 1000
+@do `p18 + 10
+@do `p03 + 10
+@do `p02 is `p03
+@do `p04 + 5
+@do `p05 + 3
+@datasave head.idf &playernum 0
+@datasave done.idf &playernum 1
+@drawmap
+@update
+@do addlog
+        `2`n has killed `0Matt`2 and been rewarded by `!The Ben`2!
+@run seperate in gametxt.ref
+@closescript
+@end
+ 
+ 
+@dataload done.idf &playernum `p20
+@if `p20 is 1 then do
+@do moveback
+@begin
+@do saybar
+`%You Rock `n`%!
+@closescript
+@end
+ 
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                   `8Shadow Man
+ 
+ 
+`0"Hello `n`0."  `2Says the man.
+ 
+`$"Who are you?"  `2You ask.
+ 
+`0"I am The Ben, I was a great warrior, until I was killed by Matt, 
+a dirty, cheap and cheating warrior!  I want you to find him and avenge my 
+death!  I will reward you, but you must bring back his head."
+ 
+`$"But how can you be dead if I'm talking to you?"
+ 
+`0"Nevermind that!  Do you accept?"
+ 
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Sure pal.
+No, do it yourself.
+@if responce is 1 then do offmap
+@offmap
+@begin
+@datasave qman.idf &playernum 1
+@datasave matt.idf &playernum 1
+@busy
+@show
+`r0`c
+ 
+`0"This will be very hard, so be warned: once you encounter Matt there is no
+way out but death if you fail!  He is living in a house near the shrine, and
+don't forget his head!"
+ 
+`$"Ok."  `2You say excitedly.
+@key nodisplay
+@update
+ 
+@if responce is 2 then do
+@end
+@drawmap
+@update
+ 
+@#matt
+@do moveback
+@dataload matt.idf &playernum `p20
+@if `p20 not 1 then do
+@begin
+@do saybar
+`%Get out of here.  Now!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+@closescript
+@end
+ 
+@dataload dead.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do saybar
+`%Matt's headless corpse lies still.
+@closescript
+@end
+ 
+@busy
+@show
+ 
+`r0`c`$"I'll kill you Matt`$"  `2You say angrily.
+ 
+`0"Ach, The Ben must have sent you!!  Well, if we are going to fight, we do it
+my way!  Ha ha!  Prepare to die `n!"
+ 
+`2Matt disappears, you start to feel pretty funny......
+@key nodisplay
+@loadmap 172  
+@do x is 6
+@do y is 17
+@drawmap
+@update
+ 
+@#monster
+@do `p20 random 2 1
+@do goto monster`p20
+ 
+@#monster1
+@fight
+;name
+Matt Clone
+;string when seen
+God!  He looks like Matt!!
+;powermove string
+What a nut!
+;sex
+1
+;weapons
+breathes on you|500
+screams at you|500
+claws you|500
+cheaps shots you|500
+throws a rock|500
+;defense
+400
+;gold
+3
+;experience
+3
+;hitpoints
+2500
+;win
+NONE|NONE
+;lose
+GAMETXT.REF|DIE
+;runs
+NONE|NONE
+ 
+@#monster2
+@fight
+;name
+Matt's Guard
+;string
+Another Matt goon?!?!
+;power
+Die!!!!!!!!!!!!
+;sex
+1
+;weapons
+wacks you hard|450
+drop kicks you|469
+flips on you|438
+NONE|NONE
+NONE|NONE
+;defense
+398
+;gold
+3
+;exp
+3
+;hits
+2387
+;win
+NONE|NONE
+;lose
+GAMETXT.REF|DIE
+;run
+NONE|NONE
+ 
+@#mattfin
+@do moveback
+@fight
+;name
+Matt
+;string
+`0"You caught me, now you fight me!"  `2Screams Matt.
+;power string
+Cripes, what a loser!
+;sex
+1
+;weapons
+kicks you in the head|600
+slaps you|600
+whines at you|600
+throws a bad punch|600
+wallops you a good one|600
+;defense
+500
+;gold
+1000
+;experience
+900
+;HP
+3000
+;win
+SLAYER2.REF|BEATMATT
+;lose
+GAMETXT.REF|DIE
+;run
+SLAYER2.REF|RAN
+ 
+@#beatmatt
+@busy
+@show
+`r0`c`$"Take that you nutsack!"
+ 
+`2Matt lies dead, never to rise again.  You are victotious.  You rip his head
+off to take it back to The Ben.  Then you get that weird feeling again......
+ 
+ 
+@key nodisplay
+@datasave head.idf &playernum 1
+@datasave qman.idf &playernum 0
+@datasave dead.idf &playernum 1
+@loadmap 332
+@do x is 23
+@do y is 11
+@drawmap
+@update
+ 
+@#where
+@do saybar
+`%Where the heck are you now???
+ 
+@#mattrun
+@busy
+@show
+`r0`c
+ 
+`2Matt runs.`l.`l.`l.`l.`l.`l.`l
+You run after him.`l.`l.`l.`l.`l.`l.`l
+@drawmap
+@update
+@do move 60 5
+@do write
+`w`0
+@do move 60 5
+@do write
+`w`x
+@do move 61 5
+@do write
+`0
+@do move 61 5
+@do write
+`w`x
+@do move 62 5
+@do write
+`0
+@do move 62 5
+@do write
+`w`x
+@do move 63 5
+@do write
+`0
+@do move 63 5
+@do write
+`w`x
+@do move 64 5
+@do write
+`0
+@do move 64 5
+@do write
+`w`x
+@do move 65 5
+@do write
+`0
+@do move 65 5
+@do write
+`w`x
+@do move 66 5
+@do write
+`0
+@do move 66 5
+@do write
+`w`x
+@do move 67 5
+@do write
+`0
+@do move 67 5
+@do write
+`w`x
+@do move 68 5
+@do write
+`0
+@do move 68 5
+@do write
+`w`x
+@do move 69 5
+@do write
+`0
+@do move 69 5
+@do write
+`w`x
+@do move 70 5
+@do write
+`0
+@do move 70 5
+@do write
+`w`x
+@do move 71 5
+@do write
+`0
+@do move 71 5
+@do write
+`w`x
+@do move 72 5
+@do write
+`0
+@do move 72 5
+@do write
+`w`x
+@do move 73 5
+@do write
+`0
+@do move 73 5
+@do write
+`w`x
+@do move 74 5
+@do write
+`0
+@do move 74 5
+@do write
+`w`x
+@do move 75 5
+@do write
+`0
+@do move 75 5
+@do write
+`w`x
+@do move 76 5
+@do write
+`0
+ 
+@do move 45 5
+@do write 
+`w`%
+@do move 45 5
+@do write
+`w`x
+@do move 46 5
+@do write
+`%
+@do move 46 5
+@do write
+`w`x
+@do move 47 5
+@do write
+`%
+@do move 47 5
+@do write
+`w`x
+@do move 48 5
+@do write
+`%
+@do move 48 5
+@do write
+`w`x
+@do move 49 5
+@do write
+`%
+@do move 49 5
+@do write
+`w`x
+@do move 50 5
+@do write
+`%
+@do move 50 5
+@do write
+`w`x
+@do move 51 5
+@do write
+`%
+@do move 51 5
+@do write
+`w`x
+@do move 52 5
+@do write
+`%
+@do move 52 5
+@do write
+`w`x
+@do move 53 5
+@do write
+`%
+@do move 53 5
+@do write
+`w`x
+@do move 54 5
+@do write
+`%
+@do move 54 5
+@do write
+`w`x
+@do move 55 5
+@do write
+`%
+@do move 55 5
+@do write
+`w`x
+@do move 56 5
+@do write
+`%
+@do move 56 5
+@do write
+`w`x
+@do move 57 5
+@do write
+`%
+@do move 57 5
+@do write
+`w`x
+@do move 58 5
+@do write
+`%
+@do move 58 5
+@do write
+`w`x
+@do move 59 5
+@do write
+`%
+@do move 59 5
+@do write
+`w`x
+@do move 60 5
+@do write
+`%
+@do move 60 5
+@do write
+`w`x
+@do move 61 5 
+@do write
+`%
+@do move 61 5
+@do write
+`w`x
+@do move 62 5
+@do write
+`%
+@do move 62 5
+@do write
+`w`x
+@do move 63 5
+@do write
+`%
+@do move 63 5
+@do write
+`w`x
+@do move 64 5
+@do write
+`%
+@do move 64 5
+@do write
+`w`x
+@do move 65 5
+@do write
+`%
+@do move 65 5
+@do write
+`w`x
+@do move 66 5
+@do write
+`%
+@do move 66 5
+@do write
+`w`x
+@do move 67 5
+@do write
+`%
+@do move 67 5
+@do write
+`w`x
+@do move 68 5
+@do write
+`%
+@do move 68 5
+@do write
+`w`x
+@do move 69 5
+@do write
+`%
+@do move 69 5
+@do write
+`w`x
+@do move 70 5
+@do write
+`%
+@do move 70 5
+@do write
+`w`x
+@do move 71 5
+@do write
+`%
+@do move 71 5
+@do write
+`w`x
+@do move 72 5
+@do write
+`%
+@do move 72 5
+@do write
+`w`x
+@do move 73 5
+@do write
+`%
+@do move 73 5
+@do write
+`w`x
+@do move 74 5
+@do write
+`%
+@do move 74 5
+@do write
+`w`x
+@do move 75 5
+@do write 
+`%`l`l
+@run mattfin in slayer2.ref
+ 
+ 
+@#ran
+@show
+`r0`c`0"You think I'll let you run that easily?  No way s&boy!"  `2Says Matt
+ 
+TheBen told you death was the only way if you failed`l.`l.`l.`l.`l.`l.`l.`l.`l.
+ 
+ 
+@run die in gametxt.ref
+ 
+@#toilet
+@do moveback
+@do saybar
+`%I wouldn't use Matt's toilet if I were you.
+ 
+@#danger
+@do `p20 random 5 1
+@do goto danger`p20
+ 
+@#danger1
+@fight
+;name
+Serial Killer
+;string
+Yikes, that guy looks nuts!
+;power
+You killed the bastard
+;sex
+1
+;weapons
+shoots you|150
+tortures you|100
+stabs you repeatedly|200
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold
+200
+;exp.
+250
+;hits
+379
+;win
+NONE|NONE
+;if lose
+GAMETXT.REF|DIE
+;if run
+NONE|NONE
+ 
+@#danger2
+@fight
+;name
+Rapper
+;string when seen
+You can tell that this dude sucks.
+;powermove string
+Shut the hell up!
+;sex
+1
+;weapons and strenghts
+raps a crappy song at you|170
+hits you with his microphone|100
+calls out his pals|200
+NONE|NONE
+NONE|NONE
+;defense
+300
+;gold
+400
+;experience
+300
+;hits
+1000
+;if win
+NONE|NONE
+;if lose
+GAMETXT.REF|DIE
+;if run
+NONE|NONE
+ 
+@#danger3
+@fight
+;name
+`9S`4L`!A`3Y`@E`%R`2 Wannabe
+;string
+This dudes not as good as the real `1S`4L`!A`3Y`@E`%R`0!
+;power string
+You kill this stupid wannabe!
+;sex
+1
+;weapons
+swings his short sword|200
+chops his axe|189
+throws a dagger|300
+NONE|NONE
+NONE|NONE
+;defense
+400
+;gold
+567
+;experience
+321
+;hits
+326
+;if win
+NONE|NONE
+;if lose
+GAMETXT.REF|DIE
+;if run
+NONE|NONE
+ 
+@#danger4
+@fight
+;name
+Backstreet Boys
+;string
+Man these dudes are scary!
+;powermove
+Don't ever sing again!
+;sex
+3
+;weapons
+sing a song|300
+get down|150
+talk to you|100
+NONE|NONE
+NONE|NONE
+;defense
+200
+;gold
+600
+;exp
+321
+;hits
+501
+;if win
+NONE|NONE
+;if lose
+GAMETXT.REF|DIE
+;if run
+NONE|NONE
+ 
+@#danger5
+@fight
+;name
+Extorsionist
+;string
+That guy looks pissed.
+;powermove
+And don't ever try that again! 
+;sex
+1
+;weapons
+jumps on you|140
+knifes you|190
+kicks your ass|99
+NONE|NONE
+NONE|NONE
+;defense
+89
+;gold
+267
+;exp
+190
+;hits
+231
+;if win
+NONE|NONE
+;if lose
+GAMETXT.REF|DIE
+;if run
+NONE|NONE
+ 
+@#sign
+@do moveback
+@do saybar
+`%Danger Zone ahead, BEWARE!
+ 
+@#rock
+@dataload slay.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@loadmap 775
+@do x is 2
+@do y is 5
+@drawmap
+@update
+ 
+@#rock2
+@loadmap 856
+@do x is 79
+@do y is 5
+@drawmap
+@update
+ 
+ 
+@#nomore
+ 
+ 
+ 
+ 
+ 
+ 
+ 

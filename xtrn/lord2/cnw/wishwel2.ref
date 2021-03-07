@@ -1,0 +1,442 @@
+; Script file WISHWEL2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE wishwell 000000436
+@DECLARE intro 000000471
+@DECLARE demandeargent 000000806
+@DECLARE choice 000001750
+@DECLARE nothing 000009173
+@DECLARE combat 000009392
+@DECLARE win 000010289
+@DECLARE run 000010420
+@DECLARE nomore 000010553
+@NOCHECK
+; End of .REF index
+
+;This is Wishing Well v1.2 by David Loranger [FieldSoft]
+
+@#WISHWELL
+@do moveback
+@busy
+@label intro
+@show
+`r0`c`%  `r1  The Wishing Well  `r0
+
+  `2Some legends say that when you throw some gold down a well and make a
+  wish, the wish sometimes realizes.
+
+  Will you throw some gold? [`0Y`2/`0n`2] :`\
+@do readspecial `s01 YN
+@if `s01 is N then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@label demandeargent
+@show
+`r0`c`%  `r1  The Wishing Well  `r0
+
+  `2How much do you intend to throw down the well? (You have `$&money`2)
+@do write
+`\`\`x`xAmount : 
+@do readnum 10 
+@do `p20 is `v40
+@if `p20 less 0 then goto demandeargent
+@if `p20 is 0 then do
+  @begin
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2You finally decide to throw nothing
+  
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@if `p20 > money then do
+  @begin
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2You don't have that much! Trying to fool me isn't right! You'll soon
+  be punished...`\`\`k
+  @do `t76 + 5
+  @do money is 0
+  @drawmap
+  @update
+  @closescript
+  @end
+@do money - `p20
+@show
+`r0`c`%  `r1  The Wishing Well  `r0
+
+  `2You throw `$$`p20 down the well...
+@do `p22 is `p20
+@do `p22 / 100
+@if `p20 < 101 then do `p22 is 1
+@if `p22 > 1000 then do `p22 is 1000
+@do `p23 random 99 1 
+@do `p24 random 999 1 
+@label choice
+@show
+  
+  `l`l`l`l
+  `2Then...  `l`l`l`l`l`l`l`l
+
+  `2You think of what you shall wish for. You dreamed of so many things 
+  before, but only a couple comes to your mind.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Wish to be more `3Rich
+Wish to be more `3Strong
+Wish to be more `3Dexterous
+Wish to be more `3Beautiful
+Wish to be more `3Good
+Wish to be more `3Evil
+Wish to be more `3Experienced
+Wish to be more `3Resistent
+Wish to be more `3Morninger
+@if responce is 1 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `p25 random 9 1
+  @do `p25 * `p20
+  @do money + `p25
+  @if `t76 < 60 then do `t76 is 70
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2You hear a little thingle up ahead, and as you look up, you see a rain
+  of gold pieces falling upon you. Your wish has been granted. As it stop
+  raining you start to pick them all!
+
+  You now are a lot richier, and you can hardly wait to get back to the
+  civilization to show off your whealth!  
+
+  `%YOU GAIN `$$`p25`%!
+  
+`k
+  @key
+  @do addlog
+  `0`n`2 has been granted a `%WISH`2 by the well!
+  @routine seperate in gametxt.ref
+  @do `t76 + 5
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 2 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `p25 random &totalaccounts 1
+  @do `p04 + `p25
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2Suddenly, you feel your muscles swell under your skin.  As you grip your 
+  &weapon, you can feel that you could easily slay anything who could cross 
+  you.  As you look at your s&armor, you can see that it is more fit than 
+  before.
+
+  Everyone's muscles you look at seems tiny compared to your bulging mass of
+  sheer strenght.  You just feel superior.
+  
+  `%YOU GAIN `p25 STRENGTH POINTS!
+
+`k
+  @key
+  @do addlog
+  `0`n`2 has been granted a `%WISH`2 by the well`2!
+  @routine seperate in gametxt.ref
+  @do `t76 + 5
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 3 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `p25 random &totalaccounts 1
+  @do `p05 + `p25
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2Suddenly, you feel your muscles straighten up, as if they would totally
+  be in your control.  As you watch you hand move and wave throuh the air, 
+  you know you could be able to dodge about anything
+
+  Everyone you now look at seems to be so brash that they could fall when 
+  walking upon grass.  No one can possibly compare to your nimbleness
+
+  `%YOU GAIN `p25 DODGE POINTS!
+
+`k
+  @key
+  @do addlog
+  `0`n`2 has been granted a `%WISH`2 by the well`2!
+  @routine seperate in gametxt.ref
+  @do `t76 + 5
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 4 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `p25 random &totalaccounts 1
+  @do `p08 + `p25
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2Suddenly, you instinctively know how to court and to talk to others.  You
+  can now pretty knowledgeable in the ways of the speech.  You could nearly
+  sell ice to an eskimoo.
+
+  All around you, the folks seems ugly, totally unable to talk correctly, even
+  unable to make a child stop crying.
+
+  `%YOU GAIN `p25 CHARM POINTS!
+
+`k
+  @key
+  @do addlog
+`0`n`2 has been granted a `%WISH`2 by the well`2!
+  @routine seperate in gametxt.ref
+  @do `t76 + 5
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 5 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `p25 random &totalaccounts 1
+  @do `p07 + `p25
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2Suddenly, you feel lighter, more ready to bring the peace back to the 
+  world.  You could save a man in danger, rescue a young child, or bring
+  to justice those who lied.  You... just feel as an angel in heaven!
+
+  You wonder why everyone whom you encounter seems to be just... more bad
+  than you, less whilling to undertake what you feel is right to.
+
+  `%YOU GAIN `p25 ALIGNEMENT!
+
+`k
+  @key
+  @do addlog
+  `0`n`2 has been granted a `%WISH`2 by the well`2!
+  @routine seperate in gametxt.ref
+  @do `t76 + 5
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 6 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `p25 random &totalaccounts 1
+  @do `p07 - `p25
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2Suddenly, your mind races as all sorts of evil and wicked schemes goes
+  through your head.  You can feel you are worth of leading entire armies
+  made to kill, rape and destroy.  You dream of subduing entire town to your
+  greedy rules.
+
+  More over, you can see that all the others adventurers just have too much
+  feeling of goodness.  Maybe there nothing after all!  
+
+  `%YOU LOSE `p25 ALIGNEMENT!
+
+`k
+  @key
+  @do `t76 + 5
+  @do addlog
+  `0`n`2 has been granted a `%WISH`2 by the well`2!
+  @routine seperate in gametxt.ref
+  @drawmap
+  @update
+  @closescript
+  @end 
+@if responce is 7 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `p25 random &totalaccounts 1
+  @do `p18 + `p25
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2You suddenly feel you brain filling up with a lot of different things.
+  As you can see, those are parts of the life-experience of some fellow 
+  adventurer, some evil, some good, but all are able of particular acts.  Now
+  you feel yourself as good as they were...
+  
+  As you retain all the new knowledge you just gain, you now are somewhat 
+  better then every other adventurer, able to use the power of some ancient 
+  mind.
+
+  `%YOU GAIN `p25 QUEST POINTS!
+
+`k
+  @key
+  @do `t76 + 5
+  @do addlog
+  `0`n`2 has been granted a `%WISH`2 by the well`2!
+  @routine seperate in gametxt.ref
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 8 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `p25 random &totalaccounts 1
+  @do `p03 + `p25
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2Suddenly, you feel your skin becoming tougher, harder, as made of pure 
+  steel.  You also feel more resistent to blow in any forms, wheter slashing,
+  piercing, or bludgeoning.  You can't think of how much you can now receive
+  damage without being killed or passing out.
+
+  You look forward as the next time you will meet danger, and that it won't
+  stand a chance against you now hardened body!
+
+  `%YOU GAIN `p25 HIT POINTS!
+
+`k
+  @key
+  @do `t76 + 5
+  @do addlog
+  `0`n`2 has been granted a `%WISH`2 by the well`2!
+  @routine seperate in gametxt.ref
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 9 then do
+  @begin
+  @if `p23 < `t76 then goto combat
+  @if `p24 > `p22 then goto nothing
+  @do `i57 + 1
+  @show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2You see a perfectly round stone appearing on the side of the well, as 
+  pale as the moon.  It is one of the fabled MoonStone!
+
+  `%YOU GAIN A MOONSTONE!
+
+`k
+  @key
+  @do `t76 + 5
+  @do addlog
+  `0`n`2 has been granted a `%WISH`2 by the well`2!
+  @routine seperate in gametxt.ref
+  @drawmap
+  @update
+  @closescript
+  @end
+
+
+@label nothing
+@show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  
+  `l`l`l`l`2Nothing happens...`l`l`l`l
+  
+  `2Well... It's true that you haven't thrown much either...
+
+`k
+@key
+@drawmap
+@update
+@closescript
+@label combat
+@do `p26 is s&wep_num 
+@do `p26 * 3
+@do `p27 is s&arm_num
+@do `p27 * 2
+
+@do `p28 is `p01
+@do `p28 / 2
+@do `p29 is s&wep_num
+@do `p29 * 4
+@show
+`r0`c`%  `r1  The Wishing Well  `r0   
+
+  `2As you make your wish, all hell break loose as a demon comes out of the
+  well and ATTACKS you !
+
+`k
+@key
+@drawmap
+@update
+@fight
+;name
+Demon
+;string said when you see him
+It seems more powerfull...!
+;power move kill string
+With an allmighty blow, you send him from where he comes!.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hits you|`P26
+bites you|`P26
+slaps you|`P26
+kicks you|`P26
+claws you|`P26
+;defense
+`p27
+;gold reward
+0
+;experience
+`p28
+;hit points
+`p29
+;if win: ref file|name or NONE
+WISHWELL.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+WISHWELL.REF|RUN
+
+
+@#WIN
+@do addlog
+  `0`n`2 killed the `0`e of the well`2!
+@routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+
+
+@#RUN
+@do addlog
+  `0`n`2 fled the `0`e of the well`2!
+@routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+ 
+
+@#NOMORE

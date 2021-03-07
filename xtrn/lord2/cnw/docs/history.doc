@@ -1,0 +1,9 @@
+     Descent of the Dragon  A LORD ][ IGM           History file
+
+v1.50  Added routine so that the player cannot enter the Dragon's Lair more
+       than once a day.  Also added provision that dragon encounter will not
+       happen more than once a day.  Corrected a small spelling error in
+       install.com routine that writes GENRAN.REF without Soda Machine
+       routines.  Indexed DESCENT.REF for speed in execution.
+
+v1.00  Descent of the Dragon released.

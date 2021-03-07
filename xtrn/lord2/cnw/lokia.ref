@@ -1,0 +1,3346 @@
+; Script file LOKIA.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:29 2001
+
+@DECLARE room1 000000766
+@DECLARE star1 000006488
+@DECLARE done 000006530
+@DECLARE room2 000006633
+@DECLARE star2 000012325
+@DECLARE room3 000012439
+@DECLARE star3 000018144
+@DECLARE room4 000018260
+@DECLARE star4 000023963
+@DECLARE room5 000024075
+@DECLARE done 000029424
+@DECLARE star5 000029791
+@DECLARE done 000029831
+@DECLARE room6 000029914
+@DECLARE star6 000035617
+@DECLARE room7 000035732
+@DECLARE star7 000041435
+@DECLARE room8 000041553
+@DECLARE star8 000047256
+@DECLARE room9 000047371
+@DECLARE star9 000053059
+@DECLARE nomore 000053103
+@NOCHECK
+; End of .REF index
+
+;-----------------------------ROOM 1--------------------------------- 
+@#ROOM1
+@do `p25 is 0
+@do `s01 is nil
+
+@do moveback
+@offmap
+@readfile room2.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room3.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room4.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room5.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room6.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room7.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room8.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room9.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room1.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#101 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room1.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star1
+  @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room1.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room1.dat
+    @do addlog
+  `%Private Room `$#101 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room1
+  @end
+
+@label star1
+@run roompass1 in lokiroom.ref
+
+@#DONE
+@drawmap
+@update
+;-------------------------------------ROOM 2 ----------------------------
+@#ROOM2
+@do moveback
+@offmap
+
+@readfile room1.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room3.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room4.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room5.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room6.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room7.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room8.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room9.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room2.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#102 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room2.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star2
+  @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room2.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room2.dat
+    @do addlog
+  `%Private Room `$#102 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room2
+  @end
+
+
+@label star2
+@run roompass2 in lokiroom.ref
+;-----------------------------------ROOM 3-----------------------------
+@#ROOM3
+@do moveback
+@offmap
+
+@readfile room1.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room2.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room4.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room5.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room6.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room7.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room8.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room9.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room3.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#103 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard  
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room3.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star3
+  @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room3.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room3.dat
+    @do addlog
+  `%Private Room `$#103 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room3
+  @end
+
+;let him in
+@label star3
+@run roompass3 in lokiroom.ref
+;---------------------------------ROOM 4---------------------------------
+@#ROOM4
+@do moveback
+@offmap
+
+@readfile room1.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room2.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room3.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room5.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room6.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room7.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room8.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room9.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room4.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#104 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room4.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star4
+  @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room4.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room4.dat
+    @do addlog
+  `%Private Room `$#104 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room4
+  @end
+
+;let him in
+@label star4
+@run roompass4 in lokiroom.ref
+;-----------------------------------Room 5---------------------------
+@#ROOM5
+@do moveback
+@offmap
+
+@readfile room1.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room2.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room3.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room4.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room6.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room7.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room8.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room9.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room5.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#105 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room5.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star5
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room5.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room5.dat
+    @do addlog
+  `%Private Room `$#105 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room5
+  @end
+
+;let him in
+@label star5
+@run roompass5 in lokiroom.ref
+@#done
+;---------------------------------ROOM 6--------------------------------
+@#ROOM6
+@do moveback
+@offmap
+
+@readfile room1.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room2.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room3.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room4.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room5.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room7.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room8.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room9.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room6.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#106 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room6.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star6
+  @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room6.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room6.dat
+    @do addlog
+  `%Private Room `$#106 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room6
+  @end
+
+;let him in
+@label star6
+@run roompass6 in lokiroom.ref
+;----------------------------------ROOM 7-------------------------------
+@#ROOM7
+@do moveback
+@offmap
+
+@readfile room1.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room2.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room3.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room4.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room5.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room6.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room8.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room9.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room7.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#107 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room7.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star7
+  @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room7.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room7.dat
+    @do addlog
+  `%Private Room `$#107 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room7
+  @end
+
+;let him in
+@label star7
+@run roompass7 in lokiroom.ref
+;-----------------------------------ROOM 8---------------------------------
+@#ROOM8
+@do moveback
+@offmap
+
+@readfile room1.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room2.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room3.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room4.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room5.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room6.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room7.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room9.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room8.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#108 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room8.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star8
+  @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room8.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room8.dat
+    @do addlog
+  `%Private Room `$#108 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room8
+  @end
+
+;let him in
+@label star8
+@run roompass8 in lokiroom.ref
+;------------------------------------ROOM 9-----------------------------
+@#ROOM9
+@do moveback
+@offmap
+
+@readfile room1.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room2.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room3.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room4.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room5.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room6.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room7.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room8.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room10.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room11.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+ `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+ `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room12.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+  
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room13.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room14.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room15.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room16.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room17.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@readfile room18.dat
+`p25
+`s01
+@
+
+@if `p25 is &playernum then do
+@begin
+@show
+`r0 `c `r1 `%One Private Room per person `r0
+
+  `2Sorry `%`n`2, you are only allowed to purchase `b1 `2private room.
+
+  `$Nice try though ! 
+`\`k
+@do goto done
+@end
+
+@if room9.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%Private Room `$#109 `%for Sale `r0
+
+  `0Our special Includes :
+
+  `b* `%Low price, only `$$15,000 `%!
+
+  `b* `%Your very own room guard
+
+  `b* `%Security in an insecure world
+
+  `b* `%Guest Bedroom
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 14999 Buy the room.
+<&money 15000 You don't have enough money.
+>&money 14999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @writefile room9.dat
+&playernum
+NONE
+0
+0
+0
+    @do money - 15000
+    @do addlog
+  `0`n `2buys a `%Private Room `2in Loki's Inn!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Your new `4* `%PRIVATE `4* `%room `r0
+
+ `2Enjoy the feeling of not getting `4killed `2in your sleep !
+
+ `%HINT`8`^:
+ `!If you choose to have a password be careful who you give it to.
+ `\`k
+  @do goto star9
+  @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile room9.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete room9.dat
+    @do addlog
+  `%Private Room `$#109 `2at Loki's Inn is back on the market.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto room9
+  @end
+@label star9
+@run roompass9 in lokiroom.ref
+
+@#NOMORE

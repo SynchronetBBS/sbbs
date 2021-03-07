@@ -1,0 +1,1569 @@
+; Script file REVENGE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE fence 000000966
+@DECLARE fishing 000001089
+@DECLARE mtop 000001152
+@DECLARE weapon 000009864
+@DECLARE arstart 000009918
+@DECLARE potion 000010485
+@DECLARE bstart 000010538
+@DECLARE heal 000010929
+@DECLARE bank 000012634
+@DECLARE bankstart 000012761
+@DECLARE bankagain 000013852
+@DECLARE deposit 000015271
+@DECLARE withdraw 000015787
+@DECLARE person 000016691
+@DECLARE main 000017611
+@DECLARE bank 000021322
+@DECLARE bankstart 000021378
+@DECLARE bankagain 000022469
+@DECLARE deposit 000023888
+@DECLARE withdraw 000024404
+@DECLARE write 000025305
+@DECLARE sign2 000026301
+@DECLARE inn 000026450
+@DECLARE store 000027400
+@DECLARE chancee 000030607
+@DECLARE travel 000030711
+@NOCHECK
+; End of .REF index
+
+;Revenge.ref Includes all store and objects inside the Castle.
+;Not anything that is inside buildings that are inside the Castle.
+
+@#fence
+@do saybar
+`0The fence is locked
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#fishing
+;Go fishing for things
+ @offmap
+ @do moveback
+ @label mtop
+ @do `v01 is 1
+ @show
+`r0`c  `%Secret Fishing Pond
+
+`2As you get transported into the Castle from the secret path you
+found, you see a pond full of fish and junk.  you look around and
+see a fishing pole, and you think to yourself if you want to go
+fishing or not.
+
+@do write
+`x`x`x`x
+@choice
+Go fishing
+Leave the place
+@show
+@if response is 1 then do
+ @begin
+
+; Checking if Data file exists... if not write fake one (don't want this
+; program to crash out)
+
+@if rev&playernum.txt exists false then do begin
+@begin
+@writefile rev&playernum.txt
+01/01/1988
+`s02
+@end
+
+; Read the players data file compare it to todays date. If it equals
+; todays date then exit out with message, else do the routine
+
+@readfile rev&playernum.txt
+`s01
+`s02
+@do `s05 is &date
+@if `s01 not `s05 then do
+ @begin
+ @show
+`c
+`0 You decided to go fishing anyway, not caring what if anyone could see
+ you.  You pick up the fishing rod and cast it into the water.  You
+ wait a brief moment and then you get a tug on the line, you pull
+ fast.`l. `l. `l. `l. `\
+
+@do `p20 random 22 1
+;
+; Random things that you can get
+;
+; 1 - Extra Gold
+; 2 - Extra Muscle
+; 3 - Extra Dodge
+; 4 - Sparkling Green Salmon
+; 5 - A healing potion (5 point one)
+; 6 - a red potion (5 hit points)
+; 7 - a silver potion (muscle)
+; 8 - a gold potion (dodge)
+; 9 - pie
+; 10 - Salmon
+; 11 - gem
+; 12 - blue potion
+; 13 - white potion
+; 14 - egg
+; 15 - little Girl
+; 16 - apple
+; 17 - travel potion
+; 18 -> 22 - Nothing
+
+@if `p20 is 1 then do
+@begin
+ @do `p21 is 0
+ @do `p22 is 0
+ @do `p21 is `v09
+ @do `p21 - 1
+; Do the math, You'll get Gold = level * level * 10
+ @do `p21 * `p21
+ @do `p21 * 10
+ @show
+`%  Richer! `2 In your hand appears `$`p21`2 gold!`\
+`2  You look at the gold, then leave happly.`\`\`k
+ @do money + `p21
+    @do addlog
+   `%лл `0`n `2has recieved `$gold`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 2 then do 
+@begin
+@show
+`%  Strength!`\
+`2  As you pull in you realize you caught a rock, giving you strength
+    from pulling it in.`\`\`k
+ @do `p04 + 1
+    @do addlog
+   `%лл `0`n `2has recieved `4Strength`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 3 then do
+@begin
+ @show
+`%  Tougher!`\
+`2  You reel in a piranha and it attacks you, but you defend
+    your self, giving you defense..`\`\`k
+ @do `p05 + 1
+    @do addlog
+   `%лл `0`n `2has recieved `9Defence`2 in the mysterious pond `%лл
+    @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 4 then do 
+@begin
+  @show
+`% Sparkling Salmon
+`2 As you reel in you get a very big tug, about an half hour later you
+pull in a very nice Sparkling Green Salmon.
+@do `i30 + 1
+    @do addlog
+   `%лл `0`n`2 recieved a `0Sparkling Green Salmon`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 5 then do 
+@begin
+ @show
+`%  A Green Potion!`\
+`2  You reel in slowly and see that you have caught a green potion`\`\`k
+ @do `i05 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `0green potion`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 6 then do 
+@begin
+ @show
+`% A Red Potion!`\
+`2 You reel in slowly and see that you have caught a red potion`\`\`k
+ @do `i52 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `4red potion`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 7 then do 
+@begin
+ @show
+`% A Gold Potion!`\
+`2 You reel in slowly and see that you have caught a gold potion`\`\`k
+ @do `i53 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `$gold potion`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 8 then do 
+@begin
+ @show
+`% A Silver Potion!`\
+`2 You reel in slowly and see that you have caught a silver potion`\`\`k
+ @do `i54 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `7silver potion`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 9 then do 
+@begin
+ @show
+`%  A Pie!`\
+`2 You reel in, and a tug, you pull in and you get see a berry pie
+   on your hook.`\`\`k
+ @do `i08 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `9pie`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+ @end
+
+@if `p20 is 10 then do 
+@begin
+ @show
+`%  Salmon!`\
+`2  You reel in slowly and you get a big tug.  After an few minutes
+    you pull out a nice Salmon`\`\`k
+ @do `p18 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `6Salmon`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 11 then do 
+@begin
+ @show
+`%  A Gem!`\
+`2  You get an extra gem as you reel in your line!`\`\`k
+ @do `p19 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `5gem`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 12 then do 
+@begin
+ @show
+`%  A Blue potion!`\
+`2  You reel in slowly seeing that you have caught a blue potion.`\`\`k
+@do `i40 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `1blue potion`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 13 then do 
+@begin
+ @show
+`% A White Potion!`\
+`2 You reel in slowly seeing that you have caught a white potion.`\`\`k
+@do `i55 +1
+    @do addlog
+   `%лл `0`n `2has recieved a `%white potion`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 14 then do 
+@begin
+ @show
+`% An Egg!`\
+`2 Some how when you reeled in your line, you had an egg on it. `\`\`k
+@do `i43 + 1
+    @do addlog
+   `%лл `0`n `2has recieved an `4egg`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 15 then do 
+@begin
+ @show
+`% A little girl!?`\
+`2 As you are fishing, you see a little girl treading in the water, yelling
+   help me!, you jump and and save her, then she asks if you can take her
+   to her mom in the Red Dragon Inn.`\`\`k
+@do `i11 + 1
+    @do addlog
+   `%лл `0`n `2has saved a little girl in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+
+@end
+
+@if `p20 is 16 then do 
+@begin
+ @show
+`% An apple!`\
+`2 As you reel in, you find an apple on your hook.`\`\``k
+@do `i19 + 1
+    @do addlog
+   `%лл `0`n `2has recieved an `4apple`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 17 then do 
+@begin
+ @show
+`% A Travel potion`\
+`2 As you reel in, you find a traveling potion on your line.`\`\`k
+@do `i50 + 1
+    @do addlog
+   `%лл `0`n `2has recieved a `!travel potion`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 18 then do 
+@begin
+ @show
+`4 Nothing!`\
+`2 As you reel in, you notice that you have nothing on your line.`\`\`k
+    @do addlog
+   `%лл `0`n `2has recieved `4NOTHING`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 19 then do 
+@begin
+ @show
+`4 Nothing!`\
+`2 As you reel in, you notice that you have nothing on your line.`\`\`k
+    @do addlog
+   `%лл `0`n `2has recieved `4NOTHING`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 20 then do
+@begin
+ @show
+`4 Nothing!`\
+`2 As you reel in, you notice that you have nothing on your line.`\`\`k
+    @do addlog
+   `%лл `0`n `2has recieved `4NOTHING`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 21 then do
+@begin
+ @show
+`4 Nothing!`\
+`2 As you reel in, you notice that you have nothing on your line.`\`\`k
+    @do addlog
+   `%лл `0`n `2has recieved `4NOTHING`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if `p20 is 22 then do
+@begin
+ @show
+`4 Nothing!`\
+`2 As you reel in, you notice that you have nothing on your line.`\`\`k
+    @do addlog
+   `%лл `0`n `2has recieved `4NOTHING`2 in the mysterious pond `%лл
+     @routine seperate in gametxt.ref
+@end
+
+@if rev&playernum.txt exists true then delete rev&playernum.txt
+@writefile rev&playernum.txt
+&date
+`s02
+@do goto mtop
+@end
+
+
+
+@if `s01 is `s05 then do
+ @begin
+ @show
+`2`\`\You already went fishing today.  Try again tomorrow!
+`\`\`k
+ @do goto mtop
+ @end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+@if response is 2 then do
+@begin
+ @show
+`\`\
+`2  You decide not to make a wish right now.
+`\
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+
+@show
+`\`\
+`2  This is under construction!
+`\`\`k
+@do goto mtop
+
+@drawmap
+@update
+@closescript
+@end
+
+
+;-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#WEAPON
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c  `%Revenge's Weapon & Armour store
+
+`2  You enter the building and start looking around.
+
+@do write
+`x`x
+@choice
+Examine his weaponry
+Examine his armoury
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  6
+  4
+  9
+  15
+  16
+  38
+  36
+  49
+  39
+  58
+  @end
+
+@if responce is 2 then do begin
+ @begin
+@buymanager
+  10
+  12
+  13
+  14
+  37
+  59
+  @end
+
+@if responce not 3 then goto arstart
+@drawmap
+@update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#Potion
+@offmap
+@do moveback
+@do `v01 is 1
+@label bstart
+@show
+`r0`c  `%Revenge's Potion Shop
+
+`2  You enter the building and start looking around.
+
+@do write
+`x`x
+@choice
+Examine his potion
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+
+  05
+  40
+  55
+  @end
+
+@if responce not 2 then goto bstart
+@drawmap
+@update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#heal
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+
+`2  Phyco looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Phyco informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later," `2Phyco laughs.
+
+`k
+@drawmap
+@update
+
+
+@#bank
+@do `p30 is 19
+@do `v01 is 1
+@offmap
+@do moveback
+@do `s09 is revenge
+@routine DONEQUEST in VAULTS.REF
+@label bankstart
+@show
+`r0`c  `r1 `%The Bank `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#person
+;Man in Revenge Castle
+@do moveback
+@do `p20 random 10 1
+@if `p20 is 1 then saybar
+`%Guy: `0I heard that the IGM `8Myst Ville`0 is a great one.
+@if `p20 is 2 then saybar
+`%Guy: `8Revenge Castle `0is created by Sejr Andersen aka `4FireHawk
+@if `p20 is 3 then saybar
+`%Guy: `0I heard that you can sneak in the pond and go fishing.
+@if `p20 is 4 then saybar
+`%Guy: `0The view is great up here.
+@if `p20 is 5 then saybar
+`%Guy: `0It is sure quiet up here, in the forest far from everyone.
+@if `p20 is 6 then saybar
+`%Guy: `0***Yawn***
+@if `p20 is 7 then saybar
+`%Guy: `0If you find the secret enterance outside the castle you can go fish
+@if `p20 is 8 then saybar
+`%Guy: `0That black spot over there is a secret.
+@if `p20 is 9 then saybar
+`%Guy: `0If you want to get another chance at something, visit the west room
+
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#main
+;tells you were everything is.
+DO MOVEBACK
+@BUSY
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1Main Desk    `r0
+
+  `0Welcome to `8Revenge Castle.`0 This is the `4M`2a`1i`#n `%D`$e`!s`@k
+`0and I'm here to help anyone that needs to know where they can find where
+things are. 
+`k
+`c
+
+@do moveback
+@busy
+@offmap
+@clear screen
+@show
+`c
+`r0`c  `r1`%Info on the Castle    `r0
+
+`0 So you are wondering where everything is in this wonderful castle.
+Well first I can tell you the history of this castle.
+
+`0In the olden days this castle was near Arrisville at the time, and there
+was also another castle, called `4Dragon Tooth Castle`0.  One day, the
+`4Dragon Tooth Castle`0 formed a Clan, which is still here to this day.  When
+they had this Group of people they were very powerful, they had all the
+weapons they needed, and they fought everyone that got in there way.
+
+`0One day, this Castle got a message from a mysterious man, that the `4Dragon
+Tooth Clan`0 was going to attack this castle, because it was the only one left
+that wasn't for sale for people to buy. So the king of the castle listen to
+this man and they formed a group to defend the castle.  But it didn't work,
+the `4Dragon tooth clan`0 was too big, and they defeated the king.
+
+`0The next day, the same mysterious man came and said that they
+were going to attack the castle again.  But this time the man had a plan.
+Later that day, they went to the `4Dragon tooth Castle`0 and went into the
+secret path way that the mysterious man had showed them and they placed a fire
+in it, then the army ran out, and the castle blew up. Everyone died in that
+castle except one single man, that made the `4Dragon Tooth Clan `0that is here
+to this day.
+
+`0The reason why the Castle is over here now, is because when that one man
+survived he swore he would get `4revenge`0 and attack the castle, so the
+mysterious man moved the castle with the magic powers that he had and placed
+it far away, where the man couldn't find it anymore.
+`k
+`c
+
+`r0`c `r1`%Main Office   `r0
+
+`0Okay, now I can tell you where all the rooms are and what are in them.
+The first room is this room, the main office.  There isn't much in this
+room.  There is a `$bank `0, so that you can withdrawl, or depsoit
+some money before going into the rooms, so you can buy things, or not lose
+any money if someone comes in here and attacks you.   This room is also safe
+for people if you are in LOW levels (under 15), cause this is a no fighting
+room.  If you would like to be sent somewhere, `8Revenge Castle `0has a nice
+selection of places to visit.
+`k
+`c
+
+`r0`c  `r1`%North Room    `r0
+
+`0The second room is just North from this room, you can buy your `6weapons
+`0and `6armour `0up in that room.  A `9magic pond `0is said to be located
+in the black spot, but no one knows how to get in there, since it was sealed
+off. Some people say that there is a secret place in the rocks outside that
+will take you to it, you can go fishing and catch anything.  There is also a
+`4healer `0in there, and a `5potion shop`0.  It is a nice place to rest, it
+is quiet and full of trees.
+`k
+`c
+
+`r0`c `r1`%West Room    `r0
+
+`0The third room is West room.  In this room, there is a wall
+that you can write on .  There is an inn, that you can stay in for a cheap
+price.  There is a place that you can fight monsters, so that you can gain
+experience and gold.  Then there is a chance place to
+allow you to give you another chance (more steps, more fishings turns etc..).
+
+     I hope you enjoy your stay at `8Revenge Castle`0.
+`\`k
+@drawmap
+@update
+@closescript
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#bank
+@do `v01 is 1
+@offmap
+@do moveback
+@label bankstart
+@show
+`r0`c  `r1 `%The Bank `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-
+@#Write
+@do moveback
+@busy
+@show
+`r0`c  `r1  Write on the Wall  `r0
+
+@if revenge2.txt exist false then do
+ @begin
+ @writefile revenge.txt
+  `%Mystirous Man `2: `0Watch out for the `4Dragon Tooth Clan`0!
+ @end
+
+@if revenge2.txt exist true then do
+ @begin
+ @displayfile revenge2.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile revenge2.txt
+  `%`n`2 : `0`s03
+ @do trim revenge2.txt 17
+ @drawmap
+ @update
+
+;-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#sign2
+;Infront of the Inn
+@do saybar
+`%Welcome to Revenge Inn
+@end
+
+;-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#inn
+;Revenge Inn
+@do `v01 is 1
+@offmap
+@do moveback
+@show
+`r0`c  `%`r1  Revenge Inn  `r0
+
+  `2The towered Inn looks very nice -  A refreshing change from what you're
+  used to in your travels.
+
+  A well dressed man looks up from the front desk.
+
+  `0"Good day s&sir, how may I help you?"`2
+  
+  You are holding `$$&money`2.
+
+@do write
+`x`x
+@choice
+Get a room (`$$200`%)
+Leave
+@if response is 1 then do
+  @begin
+  @if money < 200 then do
+    @begin
+    @show
+`\`\`2  You are short on cash.  It's okay, someday you'll be able to stay
+  here...
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\  `2You give the man the cash.  He leads you inside...
+`\`k
+   @do money - 200
+   @do x is 37
+   @do y is 19  
+   @do map is 1297
+   @loadmap 1297
+   @drawmap
+   @update
+   @closescript
+  @end
+
+@drawmap
+@update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#store
+@do moveback
+@show
+`c
+`r0`c  `%`r1  The Chances Shop  `r0
+
+       `0Welcome to the Chances Shop, you can get another chance on
+      other things like gain a level, fight in the arena if you lost
+      and much more.  Hope you enjoy, and come again.
+
+`8You have `$$&money`8.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Gaining a level.        `%(`4$1,500`%)
+Fighting in the arena.  `%(`4$1,000`%)
+Going in Barak's house. `%(`4$1,000`%)
+Fishing.                `%(`4$50`%)
+Quests.                 `%(`4$300`%)
+Turns.                  `%(`4$500 `7for 100 turns`%)
+Leave.
+@if responce is 1 then do
+ @begin
+  @if `T04 is 0 then do
+   @begin
+    @show
+    `c
+    `2"`@You haven't failed today yet!`2"
+    `\`k
+   @do goto chancee
+   @end
+  @if money < 1500 then do
+   @begin
+    @show
+    `c
+    `2"`@Try comeing back when you have enough money, you reject!`2"
+    `\`k
+   @do goto chancee
+   @end
+   @show
+   `c
+   `2"`@Let's just hope you don't screw up this time...`2"
+   `\`k
+      @do `T04 is 0
+      @do money - 1500
+ @end
+@if responce is 2 then do
+ @begin
+  @if bitcheck `t12 7 0 then do
+   @begin
+    @show
+    `c
+    `2"`@Why are you tring to get anther fight, when you never lost yet?`2"
+    `\`k
+   @do goto chancee
+   @end
+  @if money < 1000
+   @begin
+    @show
+    `c
+    `2"`@You need `0$1,000`@to get this...`2"
+    `\`k
+   @do goto chancee
+   @end
+  @show
+  `c
+  `2"`@All done!  Now you can fight in the Arena again!`2"
+  `\`k
+  @bitset `t12 7 0
+  @do money - 1000
+ @do goto chancee
+ @end
+@if responce is 3 then do
+ @begin
+  @dataload barmom.idf &playernum `p20
+  @if `p20 is 0 then do
+   @begin
+    @show
+    `c
+    `2"`@Barak's mother hasn't thrown you out yet!`2"
+    `\`k
+   @do goto chancee
+   @end
+  @if money < 1000 then do
+   @begin
+    @show
+    `c
+    `2"`@You don't quite have the cash to pay for this.`2"
+    `\`k
+   @do goto chancee
+   @end
+  @datasave barmom.idf &playernum 0
+  @show
+  `c
+  `2"`@Now you can go and pick that lock again!`2"
+  `\`k
+  @do money - 1000
+  @do goto chancee
+ @end
+@if responce is 4 then do
+ @begin
+  @if money < 50 then do
+   @begin
+    @show
+    `c
+    `2"`@You are truly sad.  You don't even have `050 `@measly dollars...`2"
+    `\`k
+   @do goto chancee
+  @end
+ @show
+    `c
+    `2"`@Here you go, you can now go fishing one more time...
+    Hope it's a `0Sparkling Green Salmon`@!`2"
+    `\`k
+  @do `T10 + 1
+  @do money - 50
+  @do goto chancee
+ @end
+@if responce is 5 then do
+ @begin
+  @if money < 300 then do
+   @begin
+    @show
+    `c
+    `2"`@It's `0$300 `@per quest, and I won't take anything less.`2"
+    `\`k
+    @do goto chancee
+   @end
+  @show
+  `c
+  `2"`@There's one more quest for ya!`2"
+  `\`k
+  @do `p31 + 1
+  @do money - 300
+  @do goto chancee
+ @end
+@if responce is 6 then do
+ @begin
+  @if money < 500 then do
+   @begin
+    @show
+    `c
+    `2"`0$500 `@dollars isn't too much, is it?!?!?`2"
+    `\`k
+    @do goto chancee
+   @end
+  @show
+  `c
+  `2"`@One hundred more turns, coming right up!`2"
+  `\`k
+  @do `p11 + 100
+  @do money - 500
+  @do goto chancee
+ @end
+@do goto chancee
+
+@#chancee
+@drawmap
+@update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-[Revenge Castle]-=-=-=-=-=-=-=-=-=-=-=-=-
+@#Travel
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0 `2Would you like to get a ride? (`$$1000`2) [`0Y`2\`0N`2]: `x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+  @begin
+  @if money < 1000 then do
+    @begin
+    @show
+  `\`\ You don't have enough money for a ride!"
+  `k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - 1000
+  @show
+`\`\  `r0`c `r1 Stables! `r0
+
+      `2Where would you like to go?  
+`\`k
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Green Tree
+Porttown
+Flag City
+Bone Town
+Sosen Village
+Stonepass Lodge
+ArrisVille
+StoneBrook
+Tree House
+Leave
+@if response is 1 then do
+  @begin
+  ;Green Tree
+   @do x is 54
+   @do y is 12
+   @do map is 1356
+  @end
+
+@if response is 2 then do
+  @begin
+   ;Porttown
+   @do x is 43
+   @do y is 16
+   @do map is 956
+  @end
+
+@if responce is 3 then do
+  @begin
+  ;Flag City
+  @do x is 71
+  @do y is 18
+  @do map is 1092 
+ @end
+
+@if responce is 4 then do
+  @begin
+  ;Bone Town
+  @do x is 39
+  @do y is 18
+  @do map is 1572
+ @end
+
+@if responce is 5 then do
+  @begin
+  ;sosen village
+  @do x is 32
+  @do y is 8
+  @do map is 456
+ @end
+
+@if responce is 6 then do
+  @begin
+  ;Stone village
+  @do x is 35
+  @do y is 12
+  @do map is 880
+ @end
+
+@if responce is 7 then do
+  @begin
+  ;Stonebrook
+  @do x is 36
+  @do y is 7
+  @do map is 1359
+ @end
+
+@if responce is 8 then do
+  @begin
+  ;ArrisVille
+  @do x is 25
+  @do y is 11
+  @do map is 523
+ @end
+
+@if responce is 9 then do
+  @begin
+  ;Tree House
+  @do x is 31
+  @do y is 11
+  @do map is 232
+ @end
+
+  @loadmap &map
+  @end
+@drawmap
+@update

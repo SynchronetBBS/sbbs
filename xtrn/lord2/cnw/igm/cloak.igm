@@ -1,0 +1,57 @@
+
+                     DarkCloak Ruins by Jay Weber V2.00
+                        (C) 1997 ShroomTrip Software
+                           AN IGM FOR LORD2 v1.01a
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes! `t14: Bit 5
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes, Always!
+
+
+  Description:
+
+  Explore the ruins of the Dark Cloak Tavern. Players can talk to Tarrin
+  and learn about color codes, play a game with the Old Man, change their
+  name, and attempt to become a True Warrior!
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM CLOAK
+
+  To uninstall, do the same thing again.
+
+  To upgrade from v1.00, run Install.Bat
+
+  To test, go to 2 screens south of Runion Keep, and go to the ïÿsymbol
+  in the center and press against it. It will warp you to a ïÿsymbol near
+  the Ruins.
+
+   Author: Jay Weber (aka Elric, Anakha, and blade)
+   (C) 1997 ShroomTrip Software
+   http://www.afn.org/~afn50378/sthome.html
+   E-Mail: elric@innocent.com
+   Support: kender@innocent.com
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `7Dark Cloak Ruins v2.00 `2by `!E`#lric
+replacescreen: 1431 1 show
+
+replacescreen: 1583 2 noshow
+
+replacescreen: 1584 3 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0Explore the ruins of the Dark Cloak Tavern. Players can talk to Tarrin
+  and learn about color codes, play a game with the Old Man, change their
+  name, and attempt to become a True Warrior!

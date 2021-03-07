@@ -1,0 +1,682 @@
+; Script file ROSE2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE seeroses 000000259
+@DECLARE enter 000000373
+@DECLARE fred 000000409
+@DECLARE sign 000011898
+@DECLARE nomore 000011979
+@NOCHECK
+; End of .REF index
+
+@#seeroses
+@do moveback
+@do saybar
+`$You could see a huge bed of beautiful `@red roses`$. 
+@end
+@closescript
+
+@#enter
+@do moveback
+@offmap
+@label fred
+@do `v01 is 1
+@show
+`r0`c `r1 `%Ralphie's Roses & More `r0
+
+  `2As you walk in to this cozy little hut, you are greeted by a big, hairy man.
+
+  `0"Hi. I'm Ralphie. What can I get for you?"`2, asks.
+
+@do write
+`x`x
+@choice
+>&money 49 `%Buy a rose for `$$50
+<&money 50 `%Leave cuz you don't have enough.
+Nevermind
+
+@if responce is 3 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do `v01 is 1
+  @show
+`r0`c `r1 `%Say It With Flowers `r0
+
+  `$"I'd like to buy a rose please," `2you tell the man.
+
+  `0"Sure. It'll cost you `$$50 `0to buy a rose," `2says Ralphie.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+`%Buy the rose
+Leave
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+  
+@if responce is 1 then do
+  @begin
+  @show
+`r0`c
+  `$"Sure!"`2, you say, and then proceed to pay the man.
+
+  `2Who do you want to send it to?
+    @chooseplayer `p20
+
+    @if `p20 is &playernum then do
+        @begin
+        @show
+  `2You can't send yourself a rose!`\`\`k
+        @do goto fred
+        @end
+    @if `p20 is 0 then do
+      @begin
+      @show
+  `2You decide to keep your money - for now.`\`\`k
+      @do goto fred
+      @end
+    @do money - 50
+    @do `s02 is getname `p20
+@do `p25 random 10 1
+@if `p25 is 1 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                                              :. ,..
+                                            .' :~.':_.,
+                                          .'   ::.::'.'
+                                         :     ::'  .:
+                                       `.:    .:  .:/
+                                        `::--.:'.::'
+                                          |. _:===-'
+                                         / /
+                        ,---.---.    __,','
+                       (~`.  \   )   )','.,---..
+                        `v`\ | ,' .-'.:,'_____   `.
+                            )|/.-~.--~~--.   ~~~-. \
+                          _/-'_.-~        ""---.._`.|
+                     _.-~~_.-~                    ""'
+              _..--~~_.(~~
+   __...---~~~_..--~~
+,'___...---~~~
+`k
+@end
+@if `p25 is 2 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                           _.--.
+                          ;.-'i.`._.--,
+                         {(;{} y`-.`,_`--.
+                        <`~;`-( _.'`.~`.' \
+                         \  `i.' `  Y  },-,)
+                        .j~. |      ;  / _j\
+                       <_   `!      ;_.'(  /
+                         >-,  `---.,'  .'-j
+                        /   `.   ,<_  ( `. \
+                        `=-j\ `-</`.Y-f   `.\
+                          / ,`-~'\ :|\ \___ ` _.~~~..
+                         /,'      \:| \ \/   / /.'-'-`~,
+                        ('         \| <\ \  <,' \ \ `_/
+                                  .-|-._\ \//\ __..~'
+                                .'-/-  ,-\ Y___
+                               /- /.\ \|  \ \/
+                               |-| \ `/    \ \
+                               |/ \ .'
+                               \  .'
+                                \'
+`k
+@end
+@if `p25 is 3 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                                     __
+                              ___  _// \
+                            _/   \/__|_ \
+                           /  __//_/==\_| ___
+                         / | / /|// == \ \   /
+                         |  | |\|| //_\ | |_/
+                          \  \ \\ / \_/| || \
+                           \___/\\| _  ///___\
+                             \__|\_\=//_// _\_|
+                                \___\_____/
+                               !! \____/
+                              !!
+                               !!
+                    ___      -(!!      __ ___ _
+                   |\|  \       !!_.-~~ /|\-  \~-._
+                   | -\| |      !!/   /  | |\- | |\ \
+                    \__-\|______ !!  |    \___\|  \_\|
+              _____ _.-~/|\     \\!!  \  |  /       ~-.
+            /     /|  / /|  \    \!!    \ /          |\~-
+          /  ---/| | |   |\  |     !!                 \__|
+         | ---/| | |  \ /|  /    -(!!
+         | -/| |  /     \|/        !!
+         |/____ /                  !!)-
+                                   !!
+`k
+@end
+@if `p25 is 4 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                               .-~~~-
+                          .-~~~_._~~~\
+                          /~-~~   ~.  `._
+                         /    \     \  | ~~-_
+                 __     |      |     | |  /~\|
+             _-~~  ~~-..|       ______||/__..-~~/
+              ~-.___     \     /~\_________.-~~
+                   \~~--._\   |             /
+                    ^-_    ~\  \          /^
+                       ^~---|~~~~-.___.-~^
+                         /~^| | | |^~\
+                        //~^`/ /_/ ^~\\
+                        /   //~||      \
+                           ~   ||
+                    ___      -(||      __ ___ _
+                   |\|  \       ||_.-~~ /|\-  \~-._
+                   | -\| |      ||/   /  | |\- | |\ \
+                    \__-\|______ ||  |    \___\|  \_\|
+              _____ _.-~/|\     \\||  \  |  /       ~-.
+            /'  --/|  / /|  \    \||    \ /          |\~-
+           ' ---/| | |   |\  |     ||                 \__|
+          | --/| | ;  \ /|  /    -(||
+          `./  |  /     \|/        ||)-
+            `~^~^                  ||
+`k
+@end
+@if `p25 is 5 then do
+@begin
+`k
+`r0`c
+    @writefile mail\mail`p20.dat
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                        .=====__
+                    /==Z' .===_ ~~=,_===\
+                  _/  |   |    YZ, `\,   ~\
+                  |   |   | _/=j'\   !,   d
+           __====_|   |   b/    V`;  /'  .M ,
+   `5\==/~~       W,  t   d+,  .D4| /   /'|/~~~\=__     .-
+    `\            t~\ |   |t`~~T/'|Z  :/  |        ~~\=/V
+      \           |  \4,  | ~/~' :Z  -!   |             |
+       \,      /\__|   \\.!     :XG   \   / ._,       ./'
+        `L    |    ~;    V;  _//' |    \ .f~' `~;    .b_
+       ./ \\__JL    `;    Y7~     |    / /     d   //'  \,
+      .!       `D\,  `\,   |     .!   .t/    .(_/=~      \
+      /         `;`~~~=+=qLb,   jK_L==f'    j''          `;
+    ./          .(r,        `~\5'   ~\\,._r/              |
+ ~=m!         ./D' `\,          \,     !G~                 t
+    ~==___===/'/   .!`\__       /! __=~\\~=_                TG=
+              |   .|     ~\=\=r@/~5 \   !,  ~=_,        __//'
+              |./~V           ||  `| \,  t     ~~~~\==~~
+              t|  |           | |  |  !\, \=_,
+              !   t          .! !, \    `\/~~~
+                  |          /   !\/\
+                  `;       ./      `~-
+                   t      .!
+                    N,  ./'
+                     `\/'
+`k
+@end
+@if `p25 is 6 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                  __
+             _   / /|
+            |\\  \/_/
+            \_\| / __
+               \/_/__\           .-=='/~\
+        ____,__/__,_____,______)/   /{~}}}
+        -,------,----,-----,---,\'-' {{~}}
+                                 '-==.\}/
+`k
+@end
+@if `p25 is 7 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                __ .---.
+            __ /  `  .-.7,--.
+           /  `. .-''. -,  , \
+           '--.-    -;   | ) /
+           ,` /   \ ,_) /   '-.
+          /  (  (  |   /  .' ) \
+          '.  `--,/   .---' ,-.|
+            `--.  / '-, -' .'
+           .==,=; `-,.;--'
+          / ,'  _;--;|
+         /_...='    ||
+                    || .==,=.
+                    ||/    '.\
+                   ,||`'=...__\
+                    ||
+                    ||
+                    ||,
+                    ||
+                    ||
+                    ||
+`k
+@end
+@if `p25 is 8 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+               _
+            _.;_'-._
+           {`--.-'_,}
+          {; \,__.-'/}
+          {.'-`._;-';
+           `'--._.-'
+              .-\\,-"-.
+              `- \( '-. \
+                  \;---,/
+              .-""-;\
+             /  .-' )\
+             \,---'` \\
+                      \|
+`k
+@end
+@if `p25 is 9 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                        ';.
+               .---.,       \
+              {}-.__,>=======;==================
+               `----'      ,/
+                         .;'
+`k
+@end
+@if `p25 is 10 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                               _
+                              /_)
+                            (8_))}-  .
+                              \_)      '.
+                                 .--.    .
+                , .-.-,_,       :    '. .'
+                )`-.>'` (        '---'`;
+               /     `\  |             .
+               |       | |          _.'
+                \     / /         .'
+                `=(\ /.=`         '
+                 `-;`.-'           '._
+                   `)|     ,           ` ' ' '   '  '
+                    ||  .-'|
+                  ,_||  \_,/
+            ,      \|| .'
+            |\|\  , ||/
+           ,_\` |/| |Y_,
+            '-.'-._\||/
+               >_.-`Y|
+              `   ,_||
+                   \||
+                    ||
+                    ||
+                    |/
+`k
+@end
+
+    @do addlog
+  `0`n`2 has sent `0`s02`2 a `@rose`2!
+    @routine seperate in gametxt.ref
+    @do `p08 + 1
+    @show
+`\`\  `2Ok! The rose has been sent. `S02 `2will be notified.`\`\`k
+      `$+1 Charm`\`k
+    @do goto fred
+    @end
+
+
+@#sign
+@do moveback
+@do saybar
+`%<ÄÄÄÄ Ralphie's Roses
+@end
+@closescript
+@#nomore
+
+
+;
+;
+@if `p25 is 1 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                                              `4:. ,..
+                                            `4.' :~.':_.,
+                                          `4.'   ::.::'.'
+                                         `4:     ::'  .:
+                                       `4'.:    .:  .:/
+                                        `2'::--`4.:'.::'
+                                          `2|. _:===-`4'
+                                         `2/ /
+                        `2,---.---.    __,','
+                       `2(~'.  \   )   )','.,---..
+                        `2'v'\ | ,' .-'.:,'_____   '.
+                            `2)|/.-~.--~~--.   ~~~-. \
+                          _`2/-'_.-~        ""---.._'.|
+                     `2_.-~~_.-~                    ""'
+`2              _..--~~_.(~~
+`2   __...---~~~_..--~~
+`2,'___...---~~~
+`k
+@end
+@if `p25 is 2 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                     `4      _.--.
+                     `4     ;.-'i.'._.--,
+                     `4    {(;{} y'-.',_'--.
+                     `4   <'~;'-( _.''.~'.' \
+                     `4    \  'i.' '  Y  },-,)
+                     `4   .j~. |      ;  / _j\
+                     `4  <_   '!      ;_.'(  /
+                     `4    >-,  '---.,'  .'-j
+                     `4   /   '.   ,<_  ( '. \
+                     `2  '=-j\ '-</'.Y-f   `2ù.\
+                     `2     / ,'-~'\ :|\ \___ ' _.~~~..
+                     `2    /,'      \:| \ \/   / /.'-'-'~,
+                     `2   ('         \| <\ \  <,' \ \ '_/
+                     `2             .-|-._\ \//\ __..~'
+                     `2           .'-/-  ,-\ Y___
+                     `2          /- /.\ \|  \ \/
+                     `2          |-| \ '/    \ \
+                     `2          |/ \ .'
+                     `2          \  .'
+                     `2           \'
+`k
+@end
+@if `p25 is 3 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                     `4                __
+                     `4         ___  _// \
+                     `4       _/   \/__|_ \
+                     `4      /  __//_/==\_| ___
+                     `4    / | / /|// == \ \   /
+                     `4    |  | |\|| //_\ | |_/
+                     `4     \  \ \\ / \_/| || \
+                     `4      \___/\\| _  ///___\
+                     `4        \__|\_\=//_// _\_|
+                                `4\___\_____/
+                               `2!! `4\____/
+                           `2   !!
+                           `2    !!
+            `2        ___      -(!!      __ ___ _
+            `2       |\|  \       !!_.-~~ /|\-  \~-._
+            `2       | -\| |      !!/   /  | |\- | |\ \
+            `2        \__-\|______ !!  |    \___\|  \_\|
+           `2   _____ _.-~/|\     \\!!  \  |  /       ~-.
+          `2  /     /|  / /|  \    \!!    \ /          |\~-
+        `2  /  ---/| | |   |\  |     !!                 \__|
+       `2  | ---/| | |  \ /|  /    -(!!
+       `2  | -/| |  /     \|/        !!
+       `2  |/____ /                  !!)-
+       `2                            !!
+`k
+@end
+@if `p25 is 4 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+        `4                       .-~~~-
+        `4                  .-~~~_._~~~\
+        `4                  /~-~~   ~.  '._
+        `4                 /    \     \  | ~~-_
+        `4         __     |      |     | |  /~\|
+        `4     _-~~  ~~-..|       ______||/__..-~~/
+        `4      ~-.___     \     /~\_________.-~~
+        `4           \~~--._\   |             /
+        `4            ^-_    ~\  \          /^
+        `4               ^~---|~~~~-.___.-~^
+        `4                 /~^| | | |^~\
+        `4                //~^'/ /_/ ^~\\
+        `4                /   //~`2||      \
+        `4                   ~   `2||
+`2                    ___      -(||      __ ___ _
+`2                   |\|  \       ||_.-~~ /|\-  \~-._
+`2                   | -\| |      ||/   /  | |\- | |\ \
+`2                    \__-\|______ ||  |    \___\|  \_\|
+`2              _____ _.-~/|\     \\||  \  |  /       ~-.
+`2            /'  --/|  / /|  \    \||    \ /          |\~-
+`2           ' ---/| | |   |\  |     ||                 \__|
+`2          | --/| | ;  \ /|  /    -(||
+`2          './  |  /     \|/        ||)-
+`2            '~^~^                  ||
+`k
+@end
+@if `p25 is 5 then do
+@begin
+`k
+`r0`c
+    @writefile mail\mail`p20.dat
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+`4                        .=====__
+`4                    /==Z' .===_ ~~=,_===\
+`4                  _/  |   |    YZ, '\,   ~\
+`4                  |   |   | _/=j'\   !,   d
+`4           __====_|   |   b/    V';  /'  .M ,
+`4   '5\==/~~       W,  t   d+,  .D4| /   /'|/~~~\=__     .-
+`4    '\            t~\ |   |t'~~T/'|Z  :/  |        ~~\=/V
+`4      \           |  \4,  | ~/~' :Z  -!   |             |
+`4       \,      /\__|   \\.!     :XG   \   / ._,       ./'
+`4        'L    |    ~;    V;  _//' |    \ .f~' '~;    .b_
+`4       ./ \\__JL    ';    Y7~     |    / /     d   //'  \,
+`4      .!       'D\,  '\,   |     .!   .t/    .(_/=~      \
+`4      /         ';'~~~=+=qLb,   jK_L==f'    j''          ';
+`4    ./          .(r,        '~\5'   ~\\,._r/              |
+`4 ~=m!         ./D' '\,          \,     !G~                 t
+`4    ~==___===/'/   .!'\__       /! __=~\\~=_                TG=
+`4              |   .|     ~\=\=r@/~5 \   !,  ~=_,        __//'
+`4              |./~V           ||  '| \,  t     ~~~~\==~~
+`4              t|  |           | |  |  !\, \=_,
+`4              !   t          .! !, \    '\/~~~
+`4                  |          /   !\/\
+`4                  ';       ./      '~-
+`4                   t      .!
+`4                    N,  ./'
+`4                     '\/'
+`k
+@end
+@if `p25 is 6 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+`2                  __
+`2             _   / /|
+`2            |\\  \/_/
+`2            \_\| / __           `4
+`2               \/_/__\          `4 .-=='/~\
+`2        ____,__/__,_____,______)`4/   /{~}}}
+`2        -,------,----,-----,---,`4\'-' {{~}}
+`2                                `4 '-==.\}/
+`k
+@end
+@if `p25 is 7 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+`4                __ .---.
+`4            __ /  '  .-.7,--.
+`4           /  '. .-''. -,  , \
+`4           '--.-    -;   | ) /
+`4           ,' /   \ ,_) /   '-.
+`4          /  (  (  |   /  .' ) \
+`4          '.  '--,/   .---' ,-.|
+`4            '--.  / '-, -' .'
+`2           .==,=;`4 '-,.;--'
+`2          / ,'  _;--;|
+`2         /_...='    ||
+`2                    || .==,=.
+`2                    ||/    '.\
+`2                   ,||`'=...__\
+`2                    ||
+`2                    ||
+`2                    ||,
+`2                    ||
+`2                    ||
+`2                    ||
+`k
+@end
+@if `p25 is 8 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+`4               _
+`4            _.;_'-._
+`4           {'--.-'_,}
+`4          {; \,__.-'/}
+`4          {.'-'._;-';
+`4           ''--._.-'
+`2              .-\\,-"-.
+`2              '- \( '-. \
+`2                  \;---,/
+`2              .-""-;\
+`2             /  .-' )\
+`2             \,---'' \\
+`2                      \|
+`k
+@end
+@if `p25 is 9 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+`2                        ';.
+`4               .---., `2      \
+`4              {}-.__,>`2=======;==================
+`4               '----' `2    ,/
+`2                         .;'
+`k
+@end
+@if `p25 is 10 then do
+@begin
+    @writefile mail\mail`p20.dat
+`k
+`r0`c
+  `@Delivery from Ralphie's Roses:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has sent you a rose. S&he must really like you!
+                          `$     _
+                          `$    /_)
+                          `$  (8_))}- `% .
+                          `$   \_)    `%  '.
+                               `%  .--.    .
+`4                , .-.-,_,      `% :    '. .'
+`4                )'-.>'' (      `%  '---'';
+`4               /     '\  |     `%        .
+`4               |       | |     `%     _.'
+`4                \     / /      `%   .'
+`2                '=(`4\ /`2.='      `%   '
+`2                 '-;'.-'       `%    '._
+`2                   ')|     ,   `%        ' ' ' '   '  '
+`2                    ||  .-'|
+`2                  ,_||  \_,/
+`2            ,      \|| .'
+`2            |\|\  , ||/
+`2           ,_\' |/| |Y_,
+`2            '-.'-._\||/
+`2               >_.-'Y|
+`2              '   ,_||
+`2                   \||
+`2                    ||
+`2                    ||
+`2                    |/
+`k
+@end
+

@@ -1,0 +1,248 @@
+       
+       
+       ฺฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฟ
+     ษอุออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออุอป
+     บ ณ                                                         Ü฿ ณ บ
+     บ ณ ÛÛÛÛÛÛÛÛÛÞÛÛÝÛÛÛÛÛÛÛÛÞÛÛÝ    ÛÛÛÛÛÛÛÜ                 ÜÛ   ณ บ
+     บ ณ  ÛÛ    ฿฿ ÛÛ  ÛÛ   ฿฿ ÛÛ      ÛÛ  ฿ÛÛ              Ü ฿ Û   ณ บ
+     บ ณ  ÛÛ       ÛÛ  ÛÛ      ÛÛ      ÛÛ   ÛÛ            Ü฿    Û   ณ บ
+     บ ณ  ÛÛÛÛÛ    ÛÛ  ÛÛÛÛÛ   ÛÛ      ÛÛ   ÛÛ         Ü Û Ü    ฿   ณ บ
+     บ ณ  ÛÛ       ÛÛ  ÛÛ      ÛÛ      ÛÛ   ÛÛ       Ü฿Û Û฿         ณ บ
+     บ ณ  ÛÛ       ÛÛ  ÛÛ   ÜÜ ÛÛ   ÜÜ ÛÛ  ÜÛÛ   Ü  Û  Û ฿          ณ บ
+     บ ณ ÞÛÛÝ     ÞÛÛÝÛÛÛÛÛÛÛÛÞÛÛÛÛÛÛÛÞÛÛÛÛÛÛ฿ Ü฿   ÛÜ฿             ณ บ
+     บ ณ                                       ฿฿฿Û ฿               ณ บ
+     บ ณ                                        Ü฿                  ณ บ
+     ศอุออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออุอผ
+       ภฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ[Presents]ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู
+
+                        
+                     The Wishing Well by David Loranger
+
+
+
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Index ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+        
+        1: Installation Info
+        2: FieldSoft Infos
+        3: Joining FieldSoft
+        4: Distribution Sites List
+        5: To Become a Distribution Site
+        6: Other Lord 2 IGMs
+        7: Words from the author
+
+
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ 1.0 ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Installation Info ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+        Informations for the installation of Thw Wishing Well v1.2. For this
+IGM, you must have Lord II v1.00 installed for your Bulletin Board System.
+The registred version is required for this IGM.
+
+  1st: Unzip WWELL12.ZIP in your Legend Of The Red Dragon II directory.
+  2nd: Type the fallowing command at your DOS prompt.
+  
+     IGM WISHWELL.igm
+
+  And it's installed!  
+
+        To uninstall, just retype the same command line again.
+
+        This IGM does not require the replacement of any Data Files or of
+Reference Files. It uses the fallowing Lord II variables:
+
+     `t76
+
+
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ 2.0 ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ FieldSoft Infos ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+        FieldSoft is an all new group whose purpuse is to amplify and
+diversify the Legend Of The Red Dragon realm created by Seth Able Robinson.
+Through it's IGMs, it brings the story to life, linking to the known events
+of the Red Dragon Saga, trasitions and continuity between the first and
+second LORD.
+
+        FieldSoft comes first from the mind of Max Larive, a typical
+French Canadian, busting his brains on his Bulletin Board System, trying
+to make it as original as possible, especially when it comes to his
+favorite online game, Lord II: New World.
+
+        The IGMs offered for free by FieldSoft are quality ideas coming to
+the programmer of this IGM from Users of Lord II, friends, and other Sysops
+who die for BBS variety. Small or big, FieldSoft creations are most likely
+Bug Free (or be sure to find a newer version if any bugs are to be found).
+
+        With time, FieldSoft intends to preduce IGMs and Add-Ons for more
+onlige games, to emplify the stories and realms of all your favorite online
+games that supports IGM factors.
+
+        From all the Staff of FieldSoft, we wish you will enjoy this IGM!
+
+
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ 3.0 ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Joining FieldSoft ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+        The IGMs we tend to produce are Lord Realm-like stories, linked to
+the real Saga, and always fit in the map like a charm. Irrelevent story-based
+IGMs would not be FieldSoft distributed. It is also required that all
+FieldSoft IGMs can be installed at once. If you have any IGMs you wish to
+present us, please make sure there is no common variables, created files,
+file replacements or map screens. For other online games, the same
+restrictions are applyable.
+
+        Another thing about FieldSoft IGMs, they are Lord-like. Apperence,
+colors, maps and text are all Lord-like similar (such as titles, text color,
+map graphics and colors, etc.). The same concept is to be kept for any other
+online game IGMs.
+
+        To join FieldSoft, please send your full name, full postal address
+and phone number, and a sample-IGM of your own design. The IGM mustn't be
+compiled for programming observation. Be assured that your uncompiled IGM
+will not be distributed, or copied for anyone's own purpuse, by FieldSoft.
+To send in by mail, please send letter and disk (for IGM) to:
+
+                            FireField BBS -FieldSoft-
+                                 3287 Masson St.
+                                Longueuil, Quebec
+                                     J4L 3Z4
+
+        The disk can be returned, if ask, to the return address that must
+be in the upper left corner. The stamps must equal the current Canadian
+mail value. To send infos and IGM by Data, call FireField BBS in the
+Montreal Region (Quebec, Canada) at (450)679-7599 and send all to the Sysop,
+Demolition Man. Or, you can send directly your application and demo IGM to
+fieldsoft@hotmail.com. Please take note that files must NOT be compiled.
+Supporting IGM authors, you can be assured that FieldSoft will not steal
+your ideas and Reference Files for other members used, and will not make
+any modifications without consent and membership. Of course, ideas and
+Reference Files fonctioning are likely to be share within members only, so
+as long as you are not a member, you have nothing to worry.
+
+        The requirements are simple. Any IGM produced for FieldSoft must go
+through proper testing of all possibilities. All variable and file infos must
+be written in a text file before being sent to FieldSoft Headquarters for
+the insertion of a similar ReadMe text file. The IGMs must also fit the
+details in the two first paragraphs of this sections.
+
+        FieldSoft is currently looking for LordAnsi Drawers for IGM purpuse,
+a good and original Map drawer for Lord 2 IGMs, a few Lord 1 IGM programmers
+and some easily-reached Beta testers.
+
+        Here is the current Staff list:
+
+ ฺฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฟ
+ ณ Name                 ณ Fonction    ณ BBS or E-Mail                      ณ
+ษุออออออออออออออออออออออุอออออออออออออุออออออออออออออออออออออออออออออออออออุป
+บณ Max Larive          ณ Author      ณ demoliman@hotmail.com              ณบ
+บณ David Loranger       ณ Author      ณ low_range@hotmail.com              ณบ
+บณ Michel Brisebois     ณ Beta Tester ณ agonize@hotmail.com                ณบ
+ศฯออออออออออออออออออออออฯอออออออออออออฯออออออออออออออออออออออออออออออออออออฯผ
+
+
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ 4.0 ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Distribution Site List ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+        FieldSoft is a new Lord IGM group. It is looking dearly for new 
+Distribution Sites (more info in section 5). This is the list of the current
+Bulletin Board Systems officially distributing our IGMs:
+
+ ฺฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฟ
+ ณ BBS Name                     ณ Phone Number  ณ Province/State ณ Country ณ
+ษุออออออออออออออออออออออออออออออุอออออออออออออออุออออออออออออออออุอออออออออุป
+บณ FireField BBS [HQ]           ณ (450)679-7599 ณ Quebec         ณ   CAN   ณบ
+บณ Mysteria BBS                 ณ (514)257-8043 ณ Quebec         ณ   CAN   ณบ
+ศฯออออออออออออออออออออออออออออออฯอออออออออออออออฯออออออออออออออออฯอออออออออฯผ
+
+
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ 5.0 ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ To Become a Distribution Site ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+        BBS Name:
+        BBS Phone Number: (...)...-....
+        Province/State:
+        Country:
+        Email Address (if applicable): 
+
+        Your BBS is opened since: MM/DD/YYYY
+        Free HD space you would keep for FieldSoft:
+
+
+        To become a Distribution Site for FieldSoft, please send the above
+few informations. To send in by mail, please send letter to:
+
+                            FireField BBS -FieldSoft-
+                                 3287 Masson St.
+                                Longueuil, Quebec
+                                     J4L 3Z4
+
+        The stamps must equal the current Canadian mail value. To send infos
+by Data, call FireField BBS in the Montreal Region (Quebec, Canada) at
+(450)679-7599 and send all to the Sysop, Demolition Man. Or you can send
+your application at fieldsoft@hotmail.com.
+
+
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ 6.0 ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Other Lord 2 IGMs ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+  SFORT21.ZIP      The Sea Fortress v2.1 by Max Larive
+
+  LIDDUX16.ZIP     Fortress Liddux v1.6 by Max Larive
+
+  SLVIL17.ZIP      SandLand Village v1.7 by Max Larive
+
+  VIOLET27.ZIP     Violet's Hose v2.7 by Max Larive
+
+  GANNON24.ZIP     Gannon Keep v2.4 by Max Larive
+
+  GTG15.ZIP        Greentree Grocery Store v1.5 by Max Larive
+
+  SFARM13.ZIP      The Smiths Farm v1.3 by Max Larive
+
+  SETH22.ZIP       Seth Able's Music Shop v2.2 by Max Larive
+
+  PENYON15.ZIP     Penyon Manor v1.5 by Max Larive
+
+  DARKCT13.ZIP     Dark Cloak Tavern v1.3 by Max Larive
+
+  VOLCAN13.ZIP     Dragon's Volcano v1.3 by Max Larive
+
+  TENDS10.ZIP      Tends Village v1.0 by Max Larive
+
+  WWELL12.ZIP      The Wishing Well v1.2 by David Loranger
+
+  HSCITY11.ZIP     HillSide City v1.1 by Max Larive
+
+
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ 7.0 ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Words from the Author ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+        This well, my first creation, is an IGM that grants wishes to thoses
+who throw enough gold! If you have any idea about new wishes that could be
+included, write me! Also, I'd like to thanks FieldSoft, for helping me out on
+my first, testing and publishing my work.
+
+        What is next? Well, I'm already working on a Mage Tower completely
+redrawn, and a little quest in the forest where my well is situted.
+
+For any comment or suggestion, please send a letter to:
+
+David Loranger
+1225 Robillard St.
+St. Hubert, Quebec
+J4T 1B7
+
+or contact Nexus at:
+
+FireField BBS
+(450)679-7599
+
+low_range@hotmail.com

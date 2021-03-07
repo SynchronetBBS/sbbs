@@ -1,0 +1,18 @@
+Hello, this is here, for instructions on how to make it so that if you
+have takin the smackrod or Gryphon Moon off someone, because they've been
+somehow cheating with it.. They won't be able to get it back..
+Change `p99 to 5. You can do this by going into the player's account, and
+going into longest variables.. The last Variable is 99, it says something like
+
+VAR 99  Choked Mom?          0
+
+Change that to 5 and voila. The user won't be able to get the smackrod..
+
+Change it to 6 and they won't be able to get the Gryphon moon..
+
+Change it to 7 and they won't be able to get anything!
+(I hope you don't have users like that)
+
+Okay thats how you do it..
+
+Spencer Vickers (aka Mountie)

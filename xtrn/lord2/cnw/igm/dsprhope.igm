@@ -1,0 +1,92 @@
+               -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+               The Cave of Despair and Hope by Codax Dragon
+                       Copyright 1997 Dragon's Den ULTD.
+               -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                           AN IGM FOR LORD2 Beta 7+
+
+Quick Info:
+
+  Is registered version of LORD2 required to use? : Yes :( 
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (6)
+  Free?                                           :Yes....BUT PLEASE SEND DONATIONS FOR MY BBS 
+ 
+Description:
+
+  Cave of Hope + Despair
+  -=-=-=-=-=-=-=-=-=-=-=-=-
+
+  This is my second IGM for LORD2, so it isn't the greatest, but my users
+  love it :). This is The Cave of Hope and despair for Lord2.    
+
+  It includes a lost adventurer, a Healer, and a daily treasure chest with 15 different results
+
+ To Install:
+
+   Type: IGM Dsprhope
+
+  To Uninstall:
+
+   do the same thing again.
+
+   To Test:
+
+    Go 2 miles north and 1 mile east of BoneTown. Enjoy!
+
+  To Contact Me:
+
+    My BBS:  Dragon's Den BBS   (DIS)-CON-ECTD   :(  That's why I need da money
+
+
+    Snail Mail Me:     Codax Dragon
+		107 Patti Ln
+		St.Clairsville Ohio 43950
+
+
+    Email:     codax_dragon@Juno.com
+    Web:     http://www.geocities.com/SiliconValley/Way/9982/index.html
+
+  
+Please I need feed back tell me what you think of my IGM
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `2The Cave of  `7Hope `2and `%Dispair `2by `1C`3o`5d`7a`9x `4Dragon
+
+replacescreen: 1413 1 show
+;913
+replacescreen:  674 2 noshow
+
+;914
+replacescreen:  675 3 noshow
+
+;915
+replacescreen:  676 4 noshow
+
+;833
+replacescreen:  594 5 noshow
+
+;834
+replacescreen:  595 6 noshow
+
+;835
+replacescreen:  596 7 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+`2The Cave of Hope and dispair is a cave with a different item in the chest every day and a few suprises along the way.  If you like, you can talk to Codax ;) 2 different paths to get to the chest
+The second of may IGMs coming form Dragon's Den ULTD.
+
+Location: 2 miles north and 1 mile east of BoneTown
+
+Author: `1C`3o`5d`7a`9x
+`2Donations are encoureged!!!!
+
+  `%Copyright 1997 Dragon's Den Ultd
+  `%http://www.geocities.com/SiliconValley/Way/9982/index.html      codax_dragon@juno.com

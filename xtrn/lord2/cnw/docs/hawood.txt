@@ -1,0 +1,239 @@
+Hundred Acre Woods IGM
+for Lord2 v1.0 or higher
+
+Below is all the install info. :)
+
+This Igm is free to distribute, just let me know what you think!
+
+Author: Jennifer Doyle.
+pindari@connexus.net.au
+
+------------------------------------------------------------------------
+  I added maps to blocks 1345, 1346, 1347 and altered block 1355.  
+  All I did was add a blue tree to the west of Greentree.  If this is a
+  problem, go ahead and move it to wherever you like, but be sure to change
+  the exit from the Woods to go to the new tree location.   
+  
+  Whilst making this IGM I edited the items.ref file and added to the items.dat. 
+  file through the item editor. Just so they won't overwrite your files, I've 
+  named them hitems.ref, and hitems.dat. Below are listed all the changes.
+
+    
+  ITEMS.REF
+  What I did was add six items to the items.ref file. It's very simple to
+  add them all. Just copy the following into the file somewhere, except
+  of course in another function. (At the beginning is probably the easiest)
+  Just highlight the following lines and cut and paste them across:
+----------------------------------------------------------------------
+  
+@#item88
+;Pot of Honey
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You swallow the sticky mess.
+
+`k  `%MAX HITPOINTS INCREASED BY TEN.
+
+`k
+@do `p03 + 10
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+
+@#item89
+;Jar of Honey
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You swallow the sticky mess.
+
+`k  `%MAX HITPOINTS INCREASED BY FIVE.
+
+`k
+@do `p03 + 5
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+
+@#item90
+;black potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You slurp it down.  It tastes ok at first but then... `bYUCK!`2
+
+  You spew all over the place!
+
+  `4HITPOINTS GO DOWN BY ONE.
+@if `p02 more 0 then `p02 - 1
+@clearblock 5 11
+@routine drawstats in gametxt.ref
+@do move 1 19
+@key
+
+@#item91
+;purple potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You slurp it down. It tastes like draino...!`2
+
+  
+  `4HITPOINTS GO DOWN BY FIVE.
+@if `p02 more 0 then `p02 - 5
+@clearblock 5 11
+@routine drawstats in gametxt.ref
+@do move 1 19
+@key
+
+@#item92
+;Yellow Potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You swallow the bubbling concoction.
+
+`k  `%MAX HITPOINTS INCREASED BY ONE.
+
+`k
+@do `p03 + 1
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+
+@#item93
+;Pink potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You drink the pink liquid.
+
+@if `p02 less `p03 then do
+ @begin
+ @show
+  `%You feel a lot better!
+
+ @do `p02 + 200
+ @if `p02 more `p03 then `p02 is `p03
+ @savecursor
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+ @loadcursor
+
+
+----------------------------------------------------------------------
+  
+  ITEMS.DAT (You change info in this file through the l2cfg.exe files item editor!!)
+
+  This is where the info is for the six items I added. You simply add this 
+  stuff in by going into the L2CFG.exe file and accessing the item editor. I will 
+  list all the stats for these items just as they are listed in the item editor.  
+  It is EXTREMELY necessary that you keep the item numbers the same.
+  (Unfortunately it has to be done manually and can't be copied across :( !!)  
+
+
+  LORD II ITEM EDITOR  editing item (88 of 99)
+  (A) Name of the item  : Pot of Honey
+  (B) Action String     :
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : ITEM88
+  (G) Use string        : Swallow it.
+  (H) Gold Value        : 50,000
+  (I) Used only once?   : Yes
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : Looks Stickier!!
+  (L) Weapon strength   : 0
+  (M) Armour defence    : 0
+  (N) Quest item?       : No
+
+
+  LORD II ITEM EDITOR  editing item (89 of 99)
+  (A) Name of the item  : Jar of Honey
+  (B) Action String     :
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : ITEM89
+  (G) Use string        : Gulp it down.
+  (H) Gold Value        : 30,000
+  (I) Used only once?   : Yes
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : Looks Sticky!!
+  (L) Weapon strength   : 0
+  (M) Armour defence    : 0
+  (N) Quest item?       : No
+
+
+  LORD II ITEM EDITOR  editing item (90 of 99)
+  (A) Name of the item  : Black Potion
+  (B) Action String     : 
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : ITEM90
+  (G) Use string        : Go on try it!!
+  (H) Gold Value        : 100
+  (I) Used only once?   : Yes
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : It looks sorta alright!!???
+  (L) Weapon strength   : 0
+  (M) Armour defence    : 0
+  (N) Quest item?       : No
+
+
+  LORD II ITEM EDITOR  editing item (91 of 99)
+  (A) Name of the item  : Purple Potion
+  (B) Action String     : 
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : ITEM91
+  (G) Use string        : Go on try it!!
+  (H) Gold Value        : 50
+  (I) Used only once?   : Yes
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : It's a pretty colour!!
+  (L) Weapon strength   : 0
+  (M) Armour defence    : 0
+  (N) Quest item?       : No
+
+
+  LORD II ITEM EDITOR  editing item (92 of 99)
+  (A) Name of the item  : Yellow Potion
+  (B) Action String     : 
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : ITEM92
+  (G) Use string        : Go on try it!!
+  (H) Gold Value        : 150
+  (I) Used only once?   : Yes
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : You don't know till you try it!
+  (L) Weapon strength   : 0
+  (M) Armour defence    : 0
+  (N) Quest item?       : No
+
+
+  LORD II ITEM EDITOR  editing item (93 of 99)
+  (A) Name of the item  : Pink Potion
+  (B) Action String     : 
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : ITEM93
+  (G) Use string        : Go on try it!!
+  (H) Gold Value        : 200
+  (I) Used only once?   : Yes
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : It's OK if you like pink!!
+  (L) Weapon strength   : 0
+  (M) Armour defence    : 0
+  (N) Quest item?       : No
+
+
+  Then to install, unzip into your LORD2 dir and type:
+
+  IGM HAWOOD.IGM
+
+  To uninstall, do the same thing again.

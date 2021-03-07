@@ -1,0 +1,491 @@
+; Script file FIGHTSW.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:15 2001
+
+@DECLARE fight 000000913
+@DECLARE fiteme 000001620
+@DECLARE monster1 000001678
+@DECLARE monster2 000002344
+@DECLARE monster3 000002954
+@DECLARE monster4 000003665
+@DECLARE monster5 000004307
+@DECLARE monster6 000004929
+@DECLARE monster7 000005585
+@DECLARE monster8 000006293
+@DECLARE monster9 000006963
+@DECLARE monster10 000007735
+@DECLARE monster11 000008348
+@DECLARE monster12 000008981
+@DECLARE win 000009545
+@DECLARE done 000009575
+@NOCHECK
+; End of .REF index
+
+;some monsters for the West Coast of the 1st continent, they are a bit
+;tougher than most ones.  Around BoneTown & FlagCity up to the Desert
+;and Snowy Pass.
+
+;NOTE: This file has been modified by ShroomTrip Software. Please read the
+;      Sysop.Doc that came with this file to determine what changes have been
+;      made.
+
+@#fight
+@busy
+@do `p20 random 10 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@do `p21 random 4 1
+@if `p21 is 1 then do
+  @begin
+  @do `p25 is X
+  @do `p25 + 1
+  @if `p25 = &lastx then do
+    @begin
+    @do `p25 + 2
+    @end
+  @do `p26 is Y
+  @do goto fiteme
+  @end
+@if `p21 is 2 then do
+  @begin
+  @do `p25 is X
+  @do `p25 - 1
+  @if `p25 = &lastx then do
+    @begin
+    @do `p25 + 2
+    @end
+  @do `p26 is Y
+  @do goto fiteme
+  @end
+@if `p21 is 3 then do
+  @begin
+  @do `p25 is X
+  @do `p26 is Y
+  @do `p26 - 1
+  @do goto fiteme
+  @end
+@if `p21 is 4 then do
+  @begin
+  @do `p25 is X
+  @do `p26 is Y
+  @do `p26 + 1
+  @do goto fiteme
+  @end
+
+@#fiteme
+@do `p20 random 12 1
+@do goto monster`p20
+
+@#monster1
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Highway Raider
+;string said when you see him
+`0"Put down your arms and no one gets hurt!" `2you hear from behind.
+;power move kill string
+You carefully step over the lifeless Rogue's body.. hehe!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+punches you|58
+backstabs you|83
+hits you with a poison dart|78
+clubs you|67
+NONE|NONE
+;defense
+10
+;gold reward
+155
+;experience
+180
+;hit points
+90
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster2
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Rabid Tiger
+;string said when you see him
+You hear a hoarse deep growl around the rock ahead.
+;power move kill string
+Stay kitty stay!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+rips off part of your arm|73
+bats you hard with a paw|85
+charges you|105
+NONE|NONE
+NONE|NONE
+;defense
+20
+;gold reward
+97
+;experience
+96
+;hit points
+78
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster3
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Hill Dwarf
+;string said when you see him
+You see a small hyperactive looking dwarf approaching.
+;power move kill string
+`$"Twikie from Buck Rodgers called, he want's his double back," `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hits you with a bone club|60
+wields his battle axe at you|75
+shouts plenty of obscenities|78
+kicks your knees, hard|69
+NONE|NONE
+;defense
+12
+;gold reward
+145
+;experience
+135
+;hit points
+103
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster4
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Rock Golem
+;string said when you see him
+A large stone sprouts legs and lunges at you!
+;power move kill string
+You rock out with a swing of your s&weapon & split it in two.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+pounds your foot|40
+throws its arm at your head|56
+rocks out|43
+NONE|NONE
+NONE|NONE
+;defense
+30
+;gold reward
+234
+;experience
+365
+;hit points
+380
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster5
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Lost Monkey
+;string said when you see him
+`0"Oo oo oo," `2you hear from behind.
+;power move kill string
+`2Bad monkey, boy did you spank him!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+twists your arm|60
+sweeps your feet|65
+bites at your finger|50
+whips you with his tail|70
+NONE|NONE
+;defense
+2
+;gold reward
+23
+;experience
+30
+;hit points
+34
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster6
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Sir Beavis
+;string said when you see him
+`0"Halt, heir person, or like ... uh something," `2you hear from behind.
+;power move kill string
+That knight guy ... really sucked.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hears voices|68
+slams you with his warhammer|78
+lays the smack down|89
+has a seizure|90
+NONE|NONE
+;defense
+37
+;gold reward
+243
+;experience
+289
+;hit points
+145
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster7
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Still Lost Knight
+;string said when you see him
+`0"Halt you too must be an enemy of this land," `2says a confused voice.
+;power move kill string
+`$"I thought you found your way home last time?" `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+breaks his club on your face|70
+hits with his broadsword|86
+bludgeons you|69
+stabs with a hidden dagger|68
+NONE|NONE
+;defense
+22
+;gold reward
+232
+;experience
+210
+;hit points
+87
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster8
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Giant Snake
+;string said when you see him
+You see what you thought was a big log move and hiss at you!
+;power move kill string
+My anaconda don't want none unless it's got buns hun.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+inject about a liter of venom into you|78
+squeezes you|60
+gets a bite of your arm|67
+NONE|NONE
+NONE|NONE
+;defense
+14
+;gold reward
+187
+;experience
+102
+;hit points
+65
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster9
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Future Warrior
+;string said when you see him
+`0"I'm afraid I have to take you back with me," `2you hear from behind.
+;power move kill string
+`$"I'm not going back with you," `2you scream .
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+blasts you with his laser|100
+gets lock on you with a beam of some kind|95
+uses his proton launcher|110
+launches a flying explosive thing at you|`p04
+calls for an airstrike from his Mauler|`p04
+;defense
+`p05
+;gold reward
+600
+;experience
+290
+;hit points
+`p03
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster10
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Giant Worm
+;string said when you see him
+There's an awfully big tube hangin out of that carcus.
+;power move kill string
+No way you're getting worms.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+touches you|67
+gets slime on you|60
+attaches to your leg|70
+NONE|NONE
+NONE|NONE
+;defense
+12
+;gold reward
+99
+;experience
+98
+;hit points
+112
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster11
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Oversized Hawk
+;string said when you see him
+A rather large shadow passes overhead.
+;power move kill string
+Put em on the endagered species list.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+gashes away some flesh|65
+buries its beak in your shoulder|60
+lands on your head|67
+NONE|NONE
+NONE|NONE
+;defense
+10
+;gold reward
+88
+;experience
+67
+;hit points
+50
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#monster12
+@do move `p25 `p26
+@do write
+`9`r0
+@fight
+;name
+Stray Cow
+;string said when you see him
+A loud `0"Moo" `2comes from up ahead!
+;power move kill string
+Got Milk?
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+moos at you|55
+kicks you|60
+milks you for a change|67
+NONE|NONE
+NONE|NONE
+;defense
+12
+;gold reward
+46
+;experience
+143
+;hit points
+45
+;if win: ref file|name or NONE
+FIGHTSW.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FIGHTSW.REF|WIN
+
+@#WIN
+;@drawmap
+@update
+
+@#done

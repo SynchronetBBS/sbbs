@@ -1,0 +1,39 @@
+; Script file FIGAROL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE man1 000000307
+@DECLARE sign 000000408
+@DECLARE book1 000000468
+@DECLARE book2 000000561
+@DECLARE book4 000000651
+@DECLARE stairs 000000753
+@DECLARE shutup 000000794
+@NOCHECK
+; End of .REF index
+
+@#man1
+@do saybar
+`0Librarian: `2Read books from `9Blue `2Shelves only! Everything else sucks!
+ 
+@#sign
+@do saybar
+`7QUIET PLEASE! This is a Library!
+ 
+@#book1
+@do saybar
+`7What the hell? Someone hid a `%PlayBoy `7in here... or did they!?
+ 
+@#book2
+@do saybar
+`7"`%The erotic adventures of Hercules`7"... a Disney Classic!!!
+ 
+@#book4
+@do saybar
+`7"`%The Guide To Cheat At LORD`7"... you don't have time to read this now!
+ 
+@#stairs
+@do saybar
+`%OUT OF ORDER
+ 
+@#shutup
+@do saybar
+`0Librarian: `2Be quiet! This is a library!

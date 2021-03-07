@@ -1,0 +1,46 @@
+
+                The Crazy Man's House by Seth A. Robinson V1.00
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM CRAZY.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, walk to the screen directly under Stonebrook and you will see
+  a new building - enter it and see the crazy old man say 9 random things.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Crazy Man's House `2by `0Seth A. Robinson
+;replacescreen: 1439 1 show
+replacescreen: 1431 1 show
+
+replacescreen: 1458 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Well, it really sucks - but it lets you see how easy it is to install
+  and uninstall new houses and areas to your `0LORD2`2 world without screwing
+  up everything!

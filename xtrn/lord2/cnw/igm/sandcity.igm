@@ -1,0 +1,46 @@
+
+                       SandCity by Kevin Brown V1.00
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes! (T60)
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM SANDCITY.IGM
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0SandCity `2by `0Kevin Brown
+
+replacescreen: 1027 1 show
+
+replacescreen: 980 2 noshow
+
+replacescreen: 979 3 noshow
+
+replacescreen: 978 4 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Well, it's a starter! Add Sandcity to your desert. Sandcity has fallen
+  into a cavern below it's origional site. Will you help them dig out?

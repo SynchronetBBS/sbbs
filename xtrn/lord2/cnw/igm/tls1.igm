@@ -1,0 +1,75 @@
+  -The Loose Screw Resort-
+(c)opyright 1997 Chris Yeates
+  An IGM for LORD2 v7.00b
+
+by Chris Yeates (Screwy343@aol.com)
+or at his BBS -- The Loose Screw (801)561-4780
+
+(The really bland looking credits above were also done by Chris <g> )
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+
+      It uses so far 3 variables: `p90, `p95, `p91
+      For any additions hereafter I am going to
+      attempt to use the new @dataload & @datasave
+      But for the above variables, a manual
+      installation is required (which is described
+      in TLS1.DOC)
+
+  Overwrites any original .refs?                  : Yes!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+  See TLS1.DOC -- but, even it stinks. By the time I was finished with
+  the REF, I felt little like explaining it...it takes a while to get
+  used to. Everything happens for a purpose...it improves your exp or
+  such...it is mainly built for those who are farther in the game (to
+  give THEM some sort of challenge) but a few surprises such as free
+  EXP points and *Violet* will keep even the in-experienced user
+  (hopefully) entertained.
+
+  Installation:
+  backup your ITEMS.ref and your ITEMS.dat files incase you want to
+   uninstall this IGM 
+  Unzip into your LORD2 dir and type:
+   IGM TLS1.IGM
+  NOTE: Unzipping will overwrite ITEMS.ref and ITEMS.dat because there
+   is an added item. If this is a problem, unzip the file into its own
+   directory and, when copying over, do not overwrite these files but
+   manually add in the information described in TLS1.DOC...
+
+  To uninstall, do the same thing again and copy your backup ITEMS files
+   over the ones that came with the IGM.
+
+  Location:
+  On the same screen as Flag City...
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `#The Loose Screw Resort `5by `#Chris Yeates `5/ `#The Loose Screw BBS `5(`#801`5)`#561`5-`#4780
+replacescreen: 656 1 noshow
+
+replacescreen: 576 2 noshow
+
+replacescreen: 495 3 noshow
+
+;replacescreen: 497 4 noshow
+replacescreen: 496 4 noshow
+
+replacescreen: 655 5 noshow
+
+replacescreen: 657 6 noshow
+
+;replacescreen: 1092 7 show
+replacescreen: 662 7 show
+
+;replacescreen: 1012 8 show
+replacescreen: 663 8 show

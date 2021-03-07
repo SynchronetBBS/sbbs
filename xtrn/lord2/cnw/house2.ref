@@ -1,0 +1,725 @@
+; Script file HOUSE2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE run 000000981
+@DECLARE dead 000001220
+@DECLARE win 000001508
+@DECLARE tiolet 000002154
+@DECLARE sink 000002220
+@DECLARE sinkst 000002249
+@DECLARE healme 000002813
+@DECLARE doorguard 000003029
+@DECLARE startg 000003058
+@DECLARE sign 000007077
+@DECLARE enter 000007405
+@DECLARE done 000010033
+@DECLARE letmein 000011819
+@DECLARE done 000015822
+@NOCHECK
+; End of .REF index
+
+;
+;     -----------------------------------------------
+;      Fortress Fear IGM for LORD II - The New World
+;     -----------------------------------------------
+;
+; House2.ref - Copyright 1997 Isaac Laurin and D/´rK /\/iGHT
+;                                        darkn@geocities.com
+;
+; If you copy any of this ref file I'll will personaly see
+; that an assassin is hired and sent after you! :) 
+; Also you must let me know by an email, or include my
+; name in your docs!
+;
+
+@#RUN
+@show
+`r0`c`@  You turn and try to run but the Maneating plant blocks your way!
+
+`0  "Trying to get away are ya? Well you're not going anywhere MWHAHAHA!"
+  the Maneating plant evily laughs.`\`\`k
+@run fightpl IN ffear.ref
+
+@#DEAD
+@show
+`r0`c`2  The Maneating plant feasts on your dead body. Next time FEED the plant
+  to prevent getting eaten!`\`\`k
+@readfile ffhouse2.dat
+`p20
+`s01
+`p21
+`p22
+@do delete ffhouse2.dat
+@writefile ffhouse2.dat
+&playernum
+`s01
+0
+`p22
+0
+0
+@run die IN gametxt.ref
+
+@#WIN
+@show
+`r0`c`2  Hey how the hell did you kill the Maneating plant?!?! You must of cheated
+  or something! Cause your not supposed to be able to kill that plant! It
+  has 5000 attack and 5000 defence! You're supposed to be dead! hmmmm......`\`\`k
+  The Maneating plant is suddenly alive again! (hehehe now yer in for it :)`\`\`k
+  It hides in the corner and in a weak voice it says "Please don't hurt me
+  I'm not hungry anymore!" (Well I guess your not in for it afterall)`\`\`k
+@readfile ffhouse2.dat
+`p20
+`s01
+`p21
+`p22
+@do delete ffhouse2.dat
+@writefile ffhouse2.dat
+&playernum
+`s01
+0
+`p22
+0
+0
+@do goto letmein
+
+@#TIOLET
+@DO MOVEBACK
+@DO SAYBAR
+<FLUSH> Ahhh...much better..
+
+@#SINK
+@DO MOVEBACK
+@label sinkst
+@do `v01 is 1
+@show
+`r0`c  `r1  The Washroom Sink  `r0
+
+  `2What do you want to do now?
+
+@do write
+`x`x
+@choice
+Wash your hands
+Eat the soap
+Leave
+
+@if responce is 1 then do
+  @begin
+  @show
+`\`2  You wash your hands and`l.`l.`l.`l.`l.`l.`l.nothing happens.`\`\`k
+  @do goto sinkst
+  @end
+@if responce is 2 then do
+  @begin
+  @show
+`\`2  You pick up the soap and eat it. It tastes GROSS! You find that`l.`l.`l.`l.`l.`l.`l.`l.
+
+`4  YOU'VE LOST ALL BUT 1 HP!`\`\`k
+  @do `p02 = 1
+  @do goto sinkst
+  @end
+
+@drawmap
+@update
+
+@#HEALME
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Healing Statue  `r0
+
+  `2You place a hand on the statue and....
+
+  `%YOU ARE COMPLETEY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if ffhouse2.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 1 minute to vacate this house!" `2the Maneating Plant barks.
+  @closescript
+  @end
+
+@readfile ffhouse2.dat
+`p20
+`s01
+`p21
+`p22
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the Maneating Plant, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Feeding Your Maneating Plant `r0
+
+  `2The Maneating Plant drools as he sees you are going to feed him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+>`p22 0 Feed the Maneating Plant
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$15000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your house - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your house to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your house - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ffhouse2.dat
+  @writefile ffhouse2.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of House #2 in Fortree Fear to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%House #2 in Fortress Fear`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your house back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your house - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ffhouse2.dat
+  @do `p30 is 22
+  @do `v40 is 2
+  @routine widthdraw in vaults.ref
+  @do money + 15000
+  @show
+`\`\  `%HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%House #2 in Fortress Fear`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete ffhouse2.dat
+  @writefile ffhouse2.dat
+&playernum
+`s01
+`p21
+`p22
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the Maneating Plant promises.`\`\`k
+   @do goto startg
+  @end
+
+@if responce is 3 then do
+  @begin
+  @show
+`\`\`2  You toss the Maneating plant a package of Lo Wang's plant food. The
+  plant gulps it down. "Mmmmm...good!" the Maneating plant says contently.`\
+  I wonder what's in the food...maybe some unlucky LORD 2 player...`\`\`k
+  @do `p22 - 1
+  @show
+`\`2  You now have `p22 package(s) of Lo Wang's plant food.`\`\`k
+  @do `p21 = 0
+  @do delete ffhouse2.dat
+@writefile ffhouse2.dat
+&playernum
+`s01
+`p21
+`p22
+0
+0
+@do goto startg
+@end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if ffhouse2.dat exist false then do
+ @begin
+ @do saybar
+House #2 in Fortress Fear - For sale cheap, enquire inside.
+ @end 
+
+@if ffhouse2.dat exist true then do
+ @begin
+@readfile ffhouse2.dat
+`p20
+`s01
+`p21
+`p22
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+@if ffhouse2.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2This big house in Fortress Fear can be yours!
+  
+  Buy now and recieve the following bonuses:
+
+  `0* `2A healing statue that heals you!
+
+  `0* `2A Maneating Plant to protect you and your house!
+
+  `2The asking price is `$$20,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Purchase it.
+<&money 20000 Sigh wistfully and leave since you don't have enough.
+>&money 19999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if ffhouse2.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+  @if house1.dat exist true then do
+    @begin
+    @readfile house1.dat
+    `p20
+    `s01
+    @
+    ;load owner and current password
+
+    @if `p20 = &playernum then do
+      @begin
+      @show
+`\`\  `2You already own a house in `@Fortress Fear`2! Let someone else have
+  the chance to buy one!`\`\`k
+      @do goto done
+      @end
+   @end
+  @if house3.dat exist true then do
+    @begin
+    @readfile house3.dat
+    `p20
+    `s01
+    @
+    ;load owner and current password
+
+    @if `p20 = &playernum then do
+      @begin
+      @show
+`\`\  `2You already own a house in `@Fortress Fear`2! Let someone else have
+  the chance to buy one!`\`\`k
+      @do goto done
+      @end
+   @end
+  @if house4.dat exist true then do
+    @begin
+    @readfile house4.dat
+    `p20
+    `s01
+    @
+    ;load owner and current password
+
+    @if `p20 = &playernum then do
+      @begin
+      @show
+`\`\  `2You already own a house in `@Fortress Fear`2! Let someone else have
+  the chance to buy one!`\`\`k
+      @do goto done
+      @end
+   @end
+  @if house5.dat exist true then do
+    @begin
+    @readfile house5.dat
+    `p20
+    `s01
+    @
+    ;load owner and current password
+
+    @if `p20 = &playernum then do
+      @begin
+      @show
+`\`\  `2You already own a house in `@Fortress Fear`2! Let someone else have
+  the chance to buy one!`\`\`k
+      @do goto done
+      @end
+   @end
+  @writefile ffhouse2.dat
+&playernum
+NONE
+0
+0
+0
+0
+  @do `p30 is 22
+  @do `v40 is 20000
+  @routine deposit in vaults.ref
+    @do money - 20000
+    @do addlog
+  `0`n `2buys `%House #2 in Fortress Fear`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this house!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile ffhouse2.dat
+`p20
+`s01
+`p21
+`p22
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete ffhouse2.dat
+    @do addlog
+  `%House #2 in Fortress Fear`2 was put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the Maneating Plant asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%House #2`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Your Fortress Fear House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Maneating Plant snaps it's jaws at you...RUN!`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+
+;Hungry plant
+@readfile ffhouse2.dat
+`p20
+`s01
+`p21
+`p22
+@if `p20 is &playernum then do
+ @begin
+;reset eat.idf
+ @datanewday eat.idf
+@dataload eat.idf &playernum `p20
+@if `p20 not 1 then do
+ @begin
+ @do `p21 + 1
+ @do delete ffhouse2.dat
+@writefile ffhouse2.dat
+&playernum
+`s01
+`p21
+`p22
+0
+0
+ @if `p21 = 2 then do
+;day 1
+  @begin
+  @show
+`r0`c`2  The Maneating plant stares at you with an evil grin as you walk by..`\`\`k
+  @end
+;day 2
+ @if `p21 = 3 then do
+  @begin
+  @show
+`r0`c`2  You can't help noticing that your maneating plant starts drooling as
+  you walk by...maybe it's hungry...`\`\`k
+  @end
+;day 3
+ @if `p21 = 4 then do
+  @begin
+  @show
+`r0`c`2  You can't help noticing that your maneating plant starts drooling as
+  you walk by...maybe it's hungry...`\`\`k
+  @end
+;day 5
+ @if `p21 = 5 then do
+  @begin
+  @do `v01 is 1
+  @show
+`r0`c`2  "I'm starving!!" bellows the Maneating plant as you walk by. "If you
+  don't feed me I'm gonna feed myself by eating YOU!"
+
+  @do write
+`x`x
+@choice
+>`p22 0 Feed Him
+Ask where you can buy food
+RUN!
+  @if responce is 1 then do
+   @begin
+   @show
+`\`\`2  You toss the Maneating plant a package of Lo Wang's plant food. The
+  plant gulps it down. "Mmmmm...good!" the Maneating plant says contently.`\
+  I wonder what's in the food...maybe some unlucky LORD 2 player...`\`\`k
+   @do `p22 - 1
+   @show
+`\`2  You now have `p22 package(s) of Lo Wang's plant food.`\`\`k
+   @do `p21 = 0
+   @do delete ffhouse2.dat
+@writefile ffhouse2.dat
+&playernum
+`s01
+`p21
+`p22
+0
+0
+   @end
+  @if responce is 2 then do
+   @begin
+   @show
+`\`\`2  "You can buy me food at Lo Wang's Supermarket at the other side of
+  Fortress Fear! Now go get me some!" growls the Maneating plant.`\`\`k
+   @end
+  @if responce is 3 then do
+   @begin
+   @show
+`\`\`2  You run as fast as you can past the Maneating plant and into the
+  house...now the only problem is getting out of the house...`\`\`k
+   @end
+@end
+;day 6
+ @if `p21 is 6 then do
+  @begin
+  @do `v01 is 1
+  @show
+`r0`c`2  "You better have food with you!"
+
+  @do write
+`x`x
+@choice
+>`p22 0 I do, here have some food!
+Ummm..where can I get some?
+Err..I forgot them in my other pants..
+  @if responce is 1 then do
+   @begin
+   @show
+`\`\`2  You toss the Maneating plant a package of Lo Wang's plant food. The
+  plant gulps it down. "Mmmmm...good!" the Maneating plant says contently.`\
+  I wonder what's in the food...maybe some unlucky LORD 2 player...`\`\`k
+   @do `p22 - 1
+   @show
+`\`2  You now have `p22 package(s) of Lo Wang's plant food.`\`\`k
+   @do `p21 = 0
+   @do delete ffhouse2.dat
+@writefile ffhouse2.dat
+&playernum
+`s01
+`p21
+`p22
+0
+0
+   @end
+  @if responce is 2 then do
+   @begin
+   @show
+`\`\`2  "You can buy me food at Lo Wang's Supermarket at the other side of
+  Fortress Fear!" growls the Maneating plant. "But it's too late for that!"`\
+  The Maneating plant takes you into it's jaws and starts munching! "Ahhh!"
+  you scream. Then you manage to get out of the plant's jaws and run!`\
+  "You'd better bring me food today or you won't be so lucky tommorow!" the
+  plant threatens.`\
+`4  Your hit points are down to 1!`\`\`k
+   @do `p02 = 1
+   @end
+  @if responce is 3 then do
+   @begin
+   @show
+`\`\`2  The Maneating plant takes you into it's jaws and starts munching! "Ahhh!"
+  you scream. Then you manage to get out of the plant's jaws and run!`\
+  "You'd better bring me food today or you won't be so lucky tommorow!" the
+  plant threatens.`\
+`4  Your hit points are down to 1!`\`\`k
+   @do `p02 = 1
+   @end
+@end
+;day 7 
+ @if `p21 is 7 then do
+  @begin
+  @show
+`r0`c`2  The Maneating plant attacks you and trys eats you up! "Hahaha I told you
+  won't be so lucky!" laughs the Maneating plant.`\`\`k
+  @run fightpl IN ffear.ref
+  @end
+@end
+@end
+@datasave eat.idf &playernum 1
+@end
+
+@do x is 44
+@do y is 15
+@do map is 418
+@loadmap 418
+@do goto done
+@#done

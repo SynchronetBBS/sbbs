@@ -1,0 +1,80 @@
+This is the Beta 1.02 version of the Externally Defined Items package 
+for Lord2
+Externally Defined Items package by Michael Hutson
+Lord2 by Seth Able
+............................................................................
+
+REVISION HISTORY:
+ 1.00: original raw version
+ 1.01: adds batch files to automate installation of external items.
+ 1.02: All-automatic configuration of Lord2 to work with external items.
+............................................................................
+
+QUICK INSTALLATION INSTRUCTIONS
+1. Unzip extitem3.zip in your Lord2 directory
+
+2. At the DOS prompt in your Lord2 directory, type addext99.exe. You should
+get a message confirming that Lord2 is now configured to use external items.
+
+3. Once steps 1 & 2 have been done, you can add IGMs that use external items
+to your Lord2 game. To add the example IGM included with this package, type
+sorry.bat at the DOS prompt in your Lord2 directory. To add the Blizzard IGM,
+type blizzard.bat.
+.............................................................................
+
+The file EXTITEMS.ZIP should unzip to the following files, falling into
+three categories:
+
+ - information files explaining how everything works
+ * the basic, vital files needed to run the package
+ + example files used to demonstrate the package
+
+- README.1ST| you're reading it
+
+- EXTITEMS.DOC| What the Externally Defined Items package is, instructions 
+  for installing it, and how IGM writers can write .REFs to use it. 
+
+- DEVELOPR.DOC| a file containing heavily annotated copies of ITEM99.REF,
+  INSTALL.REF and DEINSTAL.REF explaining exactly what each line of the 
+  scripts are doing; for use by programmers in examining and debugging the
+  External Items package.
+
+The following files are the 7 main files of the package:
+
+* ADDEXT99.EXE
+* EXTITEMS.DAT
+* EXTITEMS.IDF
+* DEINSTAL.REF
+* EXTITEMS.REF
+* INSTALL.REF
+* ITEM99.REF
+
+And then the following files are included to demonstrate the use of
+externally defined items:
+
++ SORRY.BAT| automates installation of SORRY.IGM and it's external items.
+
++ SORRY.REF| A .REF file containing examples of how an IGM writer can define
+  an external item to be used in Lord2, give that item to a character, use
+  the item, and remove the item again.
+
++ SORRY.DAT| A single screen (map north of Greentree) containing hotspots
+  demonstating use of external items.
+
++ SORRY.IGM| Script file for installing replacement map with IGM.EXE
+
++ GUM.IDF| an index file used to determine how many of that item each player
+  has.
+
+LATE ADDITION!: Also included is the BLIZZARD IGM by Michael Hutson, the
+first "real" IGM written to use an externally defined item.
+
++ BLIZZARD.BAT
++ BLIZZARD.IGM
++ BLIZZARD.REF
++ BLIZZARD.DAT
+.............................................................................
+
+Please E-mail any comments or questions to:  MikeHutson@juno.com
+If you need to send attached files, use the alternate address:
+lumpenprole@kerowyns-haven.com

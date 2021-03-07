@@ -1,0 +1,210 @@
+; Script file MINE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE start 000000358
+@DECLARE nope 000001826
+@DECLARE enter 000001983
+@DECLARE nothing 000003194
+@DECLARE something 000003419
+@DECLARE broke 000003794
+@DECLARE one 000003966
+@DECLARE two 000004132
+@DECLARE tired 000004301
+@NOCHECK
+; End of .REF index
+
+@#start
+@offmap
+@do moveback
+@routine dismounth in vehicle.ref
+@clear screen
+@show
+[?7h[255D[6C[0mÛÛÛÛÛÛ
+[5CÛÛ[43mÄ[33;40mÛÛ[37;43mÄ[40mÛÛ
+    ÛÛ[33mÛ[30;43mø[33;40mÛÛ[30;43mø [37;40mÛÛ    [1mø[12C[0;32m"Welcome to Dahlonega Dave's!  It costs 50 gold
+    [37mÛÛ[33mÛÛ[30;43mÀÙ[33;40mÛÛ[37mÛÛ   [1mø[11C[0;32mpieces to enter the mine, but you get to keep any
+    [37mÛÛÛÛÛÛÛÛÛÛ  [1mø[12C[0;32mgold or gems that you find."
+[5C[37mÛÛ[30;43mÀÄÄÄ[1;31;47mÜÜ[40mÜÜÛÛ
+[5C[0mÛÛÛÛÛÛÛÛ
+   [1mÛÛ[34m±[0mÛÛÛÛÛÛ[1;34m±[37mÛÛ
+  ÛÛÛ[34m±[37mÛ[0mÛÛÛÛ[1mÛ[34m±[37mÛÛÛ[9C[0m²²²²²²²²²
+ [1mÛÛÛ [34m±[37mÛÛÛÛÛÛ[34m± [37mÛÛÛ[8C[0m²  $50  ²
+  [1mÛÛÛ[34m±±±±±±±±[37mÛÛÛ[8C[0m²²²²²²²²²²²
+   [1mÛÛ[34m±±±±±±±±[37mÛÛ[9C[0m²²²²²²²²²²²
+[5C[1;34m±±±±±±±±[11C[0m²²²²²²²²²²²
+[33m²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²
+ ²ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ²
+ ²ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[1;35;43mDahlonega Dave's[0;33mÛÛÛÛÛÛÛÛÛÛÛ²
+ ²ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[43m [1;35mDo-it-yourself [0;33mÛÛÛÛÛÛÛÛÛÛÛ²
+ ²ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[43m     [1;35mMining     [0;33mÛÛÛÛÛÛÛÛÛÛÛ²
+ ²ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ²
+@do move 54 12
+@do write
+`0Would you care to enter?
+@do move 51 14
+@do `v01 is 1
+@choice
+Yes, I'd like to try my luck
+No, I don't think so        `%
+@if responce is 1 then do
+  @begin
+  @do goto enter
+  @end
+@if responce is 2 then do
+  @begin
+  @do goto nope
+  @end
+@#nope
+  @do move 1 22
+  @do write
+  Well, it's your choice.  Come back and see us when you feel luckier!
+@key bottom
+@drawmap
+@update
+@closescript
+@#enter
+@if `v05 > 0 then do
+        @begin
+        @do `p21 is `v05
+        @do `p21 / 24
+        @if `p11 < `p21 then do
+                @begin
+                @do goto tired
+                @closescript
+                @end
+        @end
+
+
+@clear screen
+@if money < 50 do goto broke
+@if `p02 < 10 do goto tired
+@show
+
+               You pay your admission and enter the mine.
+
+@key
+@do money - 50
+@show
+
+
+
+     The longer you spend mining, the more likely you are to find something.
+
+                 How many turns will you spend in the mine?
+@do move 23 12
+@do write
+`8ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 23 13
+@do write
+`8³                 ³
+@do move 23 14
+@do write
+`8³                 ³
+@do move 23 15
+@do write
+`8³                 ³
+@do move 23 16
+@do write
+`8ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do move 24 13
+
+;<--Added by CNW-->
+@do `p21 is `v05
+@do `p21 / 24
+@do `p22 is `p21
+@do `p22 * 2
+
+@do `v01 is 1
+@choice
+<`p21 `p11 one hour
+<`p22 `p11 two hours
+Forget it
+@if response is 3 then do
+ @begin
+  @drawmap
+  @update
+  @closescript
+ @end
+@if response is 1 then do
+ @begin
+  @do goto one
+ @end
+@if response is 2 then do
+ @begin
+  @do goto two
+ @end
+@#nothing
+@do move 1 17
+@do write
+          You didn't find anything.  Better luck next time.
+@key
+@show
+
+          You return to your adventure a little less cheery.
+@key bottom
+@drawmap
+@update
+@closescript
+
+@#something
+@do `p20 random 1000 50
+@do move 1 17
+@do write
+                        You found `p20 gold pieces!
+@do money + `p20
+@key
+@do `p20 random 10 2
+@show
+
+                        You also found `p20 gems!
+
+@do `p19 + `p20
+@key
+@show
+
+ You return to your adventures with your new found wealth and a big smile.
+@key bottom
+@drawmap
+@update
+@closescript
+@#broke
+@show
+
+
+
+  "You don't have that much," says Dave.  "Remember, it takes money to make
+money!!!"  He smiles as you leave.
+@key
+@drawmap
+@update
+@closescript
+@#one
+@do `p20 random 4 1
+@do `p02 - `p20
+@do `p11 - `p21
+@do `p20 random 100 1
+@if `p20 > 10 then do
+  @begin
+  @do goto nothing
+  @end
+@do goto something
+@#two
+@do `p20 random 10 1
+@do `p02 - `p20
+@do `p11 - `p22
+@do `p20 random 100 1
+@if `p20 > 25 then do
+  @begin
+  @do goto nothing
+  @end
+@do goto something
+@#tired
+@show
+
+
+
+  "You look too tired to work in the mine today," says Dave.  Why don't you
+ come back tomorrow?"  He smiles as you leave.
+@key
+@drawmap
+@update
+@closescript

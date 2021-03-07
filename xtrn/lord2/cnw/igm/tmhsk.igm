@@ -1,0 +1,46 @@
+
+  Frostglint Keep by Jonathon Welborn (The March Hare) V2.00
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : I'm sure I don't know!
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : I Think!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  A small and simple IGM for LORD2.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM TMHSK.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, goto screen 1439.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%Frostglint Keep V0.30 `2by `%Jonathon Welborn (The March Hare)`2.
+replacescreen: 1428 1 show
+replacescreen: 1429 2 noshow
+replacescreen: 1430 3 noshow
+;replacescreen: 1439 1 show
+;replacescreen: 1458 2 noshow
+;replacescreen: 1588 3 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2It adds a small keep in the snowy pass.  There is a Healer, Wizard, and
+  `2Inn.  The keep is run by Koshi and they don't respond to well to evil
+  `2players.

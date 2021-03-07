@@ -1,0 +1,132 @@
+; Script file INSTALL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:23 2001
+
+@DECLARE install 000000400
+@DECLARE loop1 000000871
+@DECLARE done1 000001034
+@DECLARE loop2 000001335
+@DECLARE writeitem 000001697
+@DECLARE loop3 000001726
+@DECLARE postitem 000002592
+@DECLARE done4 000002715
+@DECLARE full 000002774
+@DECLARE duplicate 000002870
+@NOCHECK
+; End of .REF index
+
+@#install
+@show
+checking for duplicate record...
+
+(Note: If you get an error message saying that the item wasn't found in
+ EXTITEMS.REF, don't worry! It's _Expected_ to do that. Just hit a key to
+ continue..)
+
+@do `p22 is -1
+@do `p29 is 1
+@do `s05 is `s06
+@do replaceall `| `x `s05
+@routine `s05 in extitems.ref
+@if `p22 not -1 then goto duplicate
+
+@show
+Ok, item not already installed; searching for open record slot...
+@do `p23 is 0
+@do `p29 is 1
+@label loop1
+@if `p23 is 30 then goto full
+@routine Item`p23 in extitems.ref
+@do `s04 is NIL
+@if `s01 is `s04 then goto done1
+@do `p23 + 1
+@do goto loop1
+
+@label done1
+@show
+Ok, record slot available, beginning install.
+
+@if extitems.bak exists true then delete extitems.bak
+@copyfile extitems.dat extitems.bak
+@do delete extitems.dat
+@do delete extitems.ref
+@do `p22 * 10
+@do `p24 is 301
+@show
+Processing records may require a few minutes....
+@label loop2
+@if `p24 less 2 then goto done4
+@if `p22 is 0 then goto writeitem
+@do `p24 - 1
+@do `p22 - 1
+@readfile extitems.bak
+`s05
+@writefile extitems.dat
+`s05
+@do replaceall | x `s05
+@do replaceall ~ s `s05
+@do replaceall = p `s05
+@writefile extitems.ref
+`s05
+@do trim extitems.bak `p24
+@show
+`p24 lines left to process
+@do goto loop2
+
+@label writeitem
+@do `p25 is 1
+@label loop3
+@if `p25 is 1 then `s05 is @#ITEM`p23
+@if `p25 is 2 then do
+ @begin
+ @do `s05 is @label`x`s06
+ @do replaceall `| `x `s05
+ @end
+@if `p25 is 3 then `s05 is @do`x`~01`xis`x`s06
+@if `p25 is 4 then `s05 is @do`x`~02`xis`x`s07
+@if `p25 is 5 then `s05 is @do`x`~03`xis`x`s08
+@if `p25 is 6 then do
+ @begin
+ @if `s09 is `s04 then `s05 is ;
+ @do `s05 add @dataload`x`s09`x`=29`x`=30
+ @end
+@if `p25 is 7 then do
+ @begin
+ @if `s09 is `s04 then `s05 is ;
+ @do `s05 add @do`x`~01`xadd`x`x[`=30]
+ @end
+@if `p25 is 8 then `s05 is @do`x`=22`xis`x`p23
+@if `p25 is 9 then `s05 is @closescript
+@if `p25 is 10 then `s05 is NIL
+@writefile extitems.dat
+`s05
+@do replaceall | x `s05
+@do replaceall ~ s `s05
+@do replaceall = p `s05
+@writefile extitems.ref
+`s05
+@do `p25 + 1
+@if `p25 is 11 then goto postitem
+@do `s05 is NIL
+@do goto loop3
+
+@label postitem
+@do `p24 - 10
+@do `p22 is 29
+@do `p22 - `p23
+@do `p22 * 10
+@do trim extitems.bak `p24
+@do goto loop2
+
+@label done4
+@show
+INSTALLATION COMPLETE
+@closescript
+
+@label full
+@show
+Sorry, the maximum of 30 items are already installed!
+@closescript
+
+@label duplicate
+@show
+That item is already installed as Item `p22 of EXTITEMS.REF
+@closescript

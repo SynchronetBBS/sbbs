@@ -1,0 +1,1399 @@
+; Script file LOCKERS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE teller 000001119
+@DECLARE account 000002125
+@DECLARE account3 000002330
+@DECLARE accountloop 000002867
+@DECLARE accountend 000003873
+@DECLARE account2 000004504
+@DECLARE payup 000008450
+@DECLARE rentitmore 000010715
+@DECLARE rent 000010959
+@DECLARE rentit 000013805
+@DECLARE checkloop 000014598
+@DECLARE doneloop 000016246
+@DECLARE rentit2 000016670
+@DECLARE buy 000017978
+@DECLARE info 000018110
+@DECLARE ownlocker 000022510
+@DECLARE letinroom 000024431
+@DECLARE changepw 000025467
+@DECLARE empty 000026159
+@DECLARE door1 000026979
+@DECLARE door2 000030153
+@DECLARE door3 000033544
+@DECLARE breakin 000033723
+@DECLARE bb 000034608
+@DECLARE nomore 000037292
+@NOCHECK
+; End of .REF index
+
+;
+;     Locker House version 1.2 (REF FILE #1/6)
+;       by: Joel Gathercole
+;
+;    in aliance with Complete New World 136.3+
+;
+;
+;   http://greenmachinebbs.com/lord2/
+;   telnet://greenmachinebbs.com
+;   greenie@darktech.org
+;
+;
+;
+;  You must run MAINT in LOCKMANT.REF each day.
+;
+;
+@#teller
+@busy
+@do `p29 is 962
+@do moveback
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³`6Welcome to the Locker House, the safest place to store your belongings.`7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+                          `1³                    ³
+                          `1³                    ³
+                          `1³                    ³
+                          `1³                    ³
+                          `1³                    ³
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+
+@do move 29 9
+@DO `V01 IS 1
+@choice
+`5Read documents
+`$Rent a locker room
+`$Buy a locker room
+=`t49 1 `$Your account
+`4Leave
+@if responce is 1 then goto info
+@if responce is 2 then goto rent
+@if responce is 3 then goto buy
+@if responce is 4 then goto account
+@do goto nomore
+@end
+@closescript
+
+@label account
+@do `s01 is NIL
+@do `s02 is NIL
+@do `s03 is NIL
+@do `s04 is a
+@do `p21 is 0
+@do `p22 is 0
+@do `p23 is 0
+@do `p24 is 0
+@do `p25 is 0
+@do `p28 is 0
+@do `p29 is 0
+@do `p30 is 0
+
+@label account3
+@if lockers`s04.idf exist true then do
+        @begin
+        @readfile lockers`s04.idf
+`p25
+`p27
+`p26
+`s05
+        @if `p25 is &playernum then do
+                @begin
+                @do `p23 is &time
+                @do `p23 - `p27 
+                @do `p26 - `p23
+                @do `p22 is `p27
+                @do `p22 + `p26
+                @do goto account2
+                @end
+        @end
+;`p25=name
+;`p27-day start
+;`p26=total days of account
+;`s05=password
+@do goto accountloop
+
+@label accountloop
+@if `s04 is 6 then goto accountend
+@if `s04 is 5 then `s04 is 6
+@if `s04 is 4 then `s04 is 5
+@if `s04 is 3 then `s04 is 4
+@if `s04 is 2 then `s04 is 3
+@if `s04 is 1 then `s04 is 2
+@if `s04 is z then `s04 is 1
+@if `s04 is y then `s04 is z
+@if `s04 is x then `s04 is y
+@if `s04 is w then `s04 is x
+@if `s04 is v then `s04 is w
+@if `s04 is u then `s04 is v
+@if `s04 is t then `s04 is u
+@if `s04 is s then `s04 is t
+@if `s04 is r then `s04 is s
+@if `s04 is q then `s04 is r
+@if `s04 is p then `s04 is q
+@if `s04 is o then `s04 is p
+@if `s04 is n then `s04 is o
+@if `s04 is m then `s04 is n
+@if `s04 is l then `s04 is m
+@if `s04 is k then `s04 is l
+@if `s04 is j then `s04 is k
+@if `s04 is i then `s04 is j
+@if `s04 is h then `s04 is i
+@if `s04 is g then `s04 is h
+@if `s04 is f then `s04 is g
+@if `s04 is e then `s04 is f
+@if `s04 is d then `s04 is e
+@if `s04 is c then `s04 is d
+@if `s04 is b then `s04 is c
+@if `s04 is a then `s04 is b
+@do goto account3
+
+@label accountend
+@do move 1 1
+@show
+`r0`c
+         `0±`5ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+         `5³          `%No more lockers owned by you.          `5³
+         `0±`5ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+        
+
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+                          `1³                 ³
+                          `1³                 ³
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+@do move 29 10
+@do `s04 is a
+@DO `V01 IS 1
+@choice
+Next Account
+Never mind
+@if responce is 2 then goto teller
+@if responce is 1 then goto accountloop
+@end
+
+@label account2
+@do move 1 1
+@show
+`r0`c
+         `0±`5ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+         `5³ `%Locker Room: `$`s04
+         `5³ `%Pass Code  : `$`s05
+         `5³ `%Days rent expires : `$`p26 `%on `$DAY `p22
+         `5³ `%Days Rented so far: `$`p23 `%since `$DAY `p27
+         `0±`5ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+                          `1³                    ³
+                          `1³                    ³
+                          `1³                    ³
+                          `1³                    ³
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+@do move 60 5
+@do write
+`5³`r0
+@do move 60 6
+@do write
+`5³`r0
+@do move 60 7
+@do write
+`5³`r0
+@do move 60 8
+@do write
+`5³`r0
+@do move 29 12
+@DO `V01 IS 1
+@choice
+Next Account
+Extend Rent
+<`p26 0 `$PAY OVER DUES
+Never mind
+@if responce is 3 then goto payup
+@if responce is 4 then goto teller
+@if responce is 1 then goto accountloop
+@if responce is 2 then do
+@begin
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³`6How many more days do you wish to rent your Locker Room for?           `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+                           `6You have `$&money `%gold
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+
+@do move 29 9
+@DO `V01 IS 1
+@choice
+>&money 99 `%1 day (`$100 `%gold)
+>&money 699 `%7 days (`$700 `%gold)
+>&money 999 `%10 days (`$1000 `%gold)
+>&money 1399 `%14 days (`$1400 `%gold)
+>&money 1999 `%20 days (`$2000 `%gold)
+>&money 4999 `%50 days (`$5000 `%gold)
+>&money 9999 `%100 days (`$10,000 `%gold)
+>&money 24999 `%250 days (`$25,000 `%gold)
+>&money 49999 `%500 days (`$50,000 `%gold)
+>&money 99999 `%1000 days (`$100,000 `%gold)
+`%Forget it.
+@if responce is 1 then do
+        @begin
+        @do `p20 is 100
+        @do `p26 is 1
+        @do goto rentitmore
+        @end
+@if responce is 2 then do
+        @begin
+        @do `p20 is 700
+        @do `p26 is 7
+        @do goto rentitmore
+        @end
+@if responce is 3 then do
+        @begin
+        @do `p20 is 1000
+        @do `p26 is 10
+        @do goto rentitmore
+        @end
+@if responce is 4 then do
+        @begin
+        @do `p20 is 1400
+        @do `p26 is 14
+        @do goto rentitmore
+        @end
+@if responce is 5 then do
+        @begin
+        @do `p20 is 2000
+        @do `p26 is 20
+        @do goto rentitmore
+        @end
+@if responce is 6 then do
+        @begin
+        @do `p20 is 5000
+        @do `p26 is 50
+        @do goto rentitmore
+        @end
+@if responce is 7 then do
+        @begin
+        @do `p20 is 10000
+        @do `p26 is 100
+        @do goto rentitmore
+        @end
+@if responce is 8 then do
+        @begin
+        @do `p20 is 25000
+        @do `p26 is 250
+        @do goto rentitmore
+        @end
+@if responce is 9 then do
+        @begin
+        @do `p20 is 50000
+        @do `p26 is 500
+        @do goto rentitmore
+        @end
+@if responce is 10 then do
+        @begin
+        @do `p20 is 100000
+        @do `p26 is 1000
+        @do goto rentitmore
+        @end
+@do goto teller
+@end
+@end
+
+@label payup
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³                      `6You owe for `@`p26 `6days                           `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+                           `6You have `$&money `%gold
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+
+@do move 29 9
+@DO `V01 IS 1
+@choice
+>&money 99 `%1 day (`$100 `%gold)
+>&money 199 <`p26 -1 `%2 days (`$200 `%gold)
+>&money 299 <`p26 -2 `%3 days (`$300 `%gold)
+>&money 399 <`p26 -3 `%4 days (`$400 `%gold)
+>&money 499 <`p26 -4 `%5 days (`$500 `%gold)
+>&money 599 <`p26 -5 `%6 days (`$600 `%gold)
+>&money 699 <`p26 -6 `%7 days (`$700 `%gold)
+`%Forget it.
+@if responce is 1 then do
+        @begin
+        @do `p20 is 100
+        @do `p26 is 1
+        @do goto rentitmore
+        @end
+@if responce is 2 then do
+        @begin
+        @do `p20 is 200
+        @do `p26 is 2
+        @do goto rentitmore
+        @end
+@if responce is 3 then do
+        @begin
+        @do `p20 is 300
+        @do `p26 is 3
+        @do goto rentitmore
+        @end
+@if responce is 4 then do
+        @begin
+        @do `p20 is 400
+        @do `p26 is 4
+        @do goto rentitmore
+        @end
+@if responce is 5 then do
+        @begin
+        @do `p20 is 500
+        @do `p26 is 5
+        @do goto rentitmore
+        @end
+@if responce is 6 then do
+        @begin
+        @do `p20 is 600
+        @do `p26 is 6
+        @do goto rentitmore
+        @end
+@if responce is 7 then do
+        @begin
+        @do `p20 is 700
+        @do `p26 is 7
+        @do goto rentitmore
+        @end
+@if responce is 8 then goto teller
+@end
+
+@label rentitmore
+@do money - `p20
+@readfile lockers`s04.idf
+`p25
+`p27
+`p28
+`s05
+@do `p28 + `p26
+@do delete lockers`s04.idf
+@writefile lockers`s04.idf
+&playernum
+`p27
+`p28
+`s05
+@do `s04 is a
+@do goto accountloop
+@end
+@closescript
+
+@label rent
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³`6So, you want to rent a room, it'll cost you `$700 `6gold for the first 7   `7³
+ `7³`6days.  `$100 `6gold for every extra day after that.                        `7³
+ `7³`6You must pay in advance, please read our document concerning renting.  `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+                           `6You have `$&money `%gold
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+
+@do move 29 11
+@DO `V01 IS 1
+@choice
+>&money 699 `%7 days (`$700 `%gold)
+>&money 999 `%10 days (`$1000 `%gold)
+>&money 1399 `%14 days (`$1400 `%gold)
+>&money 1999 `%20 days (`$2000 `%gold)
+>&money 4999 `%50 days (`$5000 `%gold)
+>&money 9999 `%100 days (`$10,000 `%gold)
+>&money 24999 `%250 days (`$25,000 `%gold)
+>&money 49999 `%500 days (`$50,000 `%gold)
+>&money 99999 `%1000 days (`$100,000 `%gold)
+`%Forget it.
+@if responce is 1 then do
+        @begin
+        @do `p20 is 700
+        @do `p28 is 7
+        @do goto rentit
+        @end
+@if responce is 2 then do
+        @begin
+        @do `p20 is 1000
+        @do `p28 is 10
+        @do goto rentit
+        @end
+@if responce is 3 then do
+        @begin
+        @do `p20 is 1400
+        @do `p28 is 14
+        @do goto rentit
+        @end
+@if responce is 4 then do
+        @begin
+        @do `p20 is 2000
+        @do `p28 is 20
+        @do goto rentit
+        @end
+@if responce is 5 then do
+        @begin
+        @do `p20 is 5000
+        @do `p28 is 50
+        @do goto rentit
+        @end
+@if responce is 6 then do
+        @begin
+        @do `p20 is 10000
+        @do `p28 is 100
+        @do goto rentit
+        @end
+@if responce is 7 then do
+        @begin
+        @do `p20 is 25000
+        @do `p28 is 250
+        @do goto rentit
+        @end
+@if responce is 8 then do
+        @begin
+        @do `p20 is 50000
+        @do `p28 is 500
+        @do goto rentit
+        @end
+@if responce is 9 then do
+        @begin
+        @do `p20 is 100000
+        @do `p28 is 1000
+        @do goto rentit
+        @end
+@do goto nomore
+@end
+
+@label rentit
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³ `6Please choose 1 of the available rooms.                               `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+                          `1³                      `1³
+                          `1³                      `1³
+                          `1³                      `1³
+                          `1³                      `1³
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+
+@do `s01 is NIL
+@do `s02 is NIL
+@do `s05 is NIL
+@do `s03 is NIL
+@do `p21 is 0
+@do `p22 is 0
+@do `p23 is 0
+@do `p24 is 0
+@do `s04 is a
+@do goto checkloop
+
+@label checkloop
+@if `s04 is 7 then goto doneloop
+@if `s04 is NIL then `s04 is a
+@if lockers`s04.idf exist false then do
+        @begin
+        @do `p24 + 1
+        @if `p24 is 1 then do
+                @begin
+                @do `p21 is 1
+                @do `s01 is `s04
+                @end
+        @if `p24 is 2 then do
+                @begin
+                @do `p22 is 1
+               @do `s02 is `s04
+                @end
+        @if `p24 is 3 then do
+                @begin
+                @do `p23 is 1
+                @do `s03 is `s04
+                @end
+        @end
+@if `p24 is 4 then goto doneloop
+;@if `s04 is 6 then `p24 is 4
+@if `s04 is 6 then `s04 is 7
+@if `s04 is 5 then `s04 is 6
+@if `s04 is 4 then `s04 is 5
+@if `s04 is 3 then `s04 is 4
+@if `s04 is 2 then `s04 is 3
+@if `s04 is 1 then `s04 is 2
+@if `s04 is z then `s04 is 1
+@if `s04 is y then `s04 is z
+@if `s04 is x then `s04 is y
+@if `s04 is w then `s04 is x
+@if `s04 is v then `s04 is w
+@if `s04 is u then `s04 is v
+@if `s04 is t then `s04 is u
+@if `s04 is s then `s04 is t
+@if `s04 is r then `s04 is s
+@if `s04 is q then `s04 is r
+@if `s04 is p then `s04 is q
+@if `s04 is o then `s04 is p
+@if `s04 is n then `s04 is o
+@if `s04 is m then `s04 is n
+@if `s04 is l then `s04 is m
+@if `s04 is k then `s04 is l
+@if `s04 is j then `s04 is k
+@if `s04 is i then `s04 is j
+@if `s04 is h then `s04 is i
+@if `s04 is g then `s04 is h
+@if `s04 is f then `s04 is g
+@if `s04 is e then `s04 is f
+@if `s04 is d then `s04 is e
+@if `s04 is c then `s04 is d
+@if `s04 is b then `s04 is c
+@if `s04 is a then `s04 is b
+@do goto checkloop
+
+@label doneloop
+@do move 29 9
+@DO `V01 IS 1
+@choice
+`%Forget it
+=`p21 1 `%ROOM `s01
+=`p22 1 `%ROOM `s02
+=`p23 1 `%ROOM `s03
+@if responce is 1 then goto teller
+@if responce is 2 then do
+  @begin
+  @do `s04 is `s01
+  @do goto rentit2
+  @end
+@if responce is 3 then do
+  @begin
+  @do `s04 is `s02
+  @do goto rentit2
+  @end
+@if responce is 4 then do
+  @begin
+  @do `s04 is `s03
+  @do goto rentit2
+  @end
+
+@label rentit2
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³ `6You need a pass code to enter the room, please choose a `%6 `6digit code: `7³
+ `7³                                                                       `7³
+ `7³ `6Please `%REMEMBER `6this `%PASS CODE`6, It will cost you money to retreive it  `7³
+ `7³ `6later.                                                                `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+                        `0±`1ÄÄÄÄÄÄÄÄÄ`0±
+                        `1³         `1³
+                        `0±`1ÄÄÄÄÄÄÄÄÄ`0±
+
+@do move 27 12
+@do readstring 6 000000 `s05
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³ `6Congradualations on your new locker room.                             `7³
+ `7³                                                                       `7³
+ `7³ `6You now have Locker Room `%`s04 `6for `%`p28 `6days.
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+@do move 74 7
+@do write
+`7³
+@do move 1 13
+@key
+@do `t49 is 1
+@bitset `t49 0 1
+@do money - `p20
+@writefile lockers`s04.idf
+&playernum
+&time
+`p28
+`s05
+@do goto teller
+@end
+
+@label buy
+@do move 1 1
+@show
+`r0`c
+
+
+    `2Sorry, we're not selling rooms at this moment.
+
+@key
+@do goto nomore
+@end
+
+@label info
+@do move 1 1
+@show scroll
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³`6-Welcome to the Locker House, the safest place to store your belongings`7³
+ `7³                                                                       `7³
+ `7³`6-You can use these lockers to trade items with other people, or to     `7³
+ `7³`6store your extra weapons, and to store your precious currency.         `7³
+ `7³                                                                       `7³
+ `7³`6-When you purchase or rent a locker room, you will be requested to use `7³
+ `7³`6a pass code, this pass code can be changed at the locker and only by   `7³
+ `7³`6the owner. Anyone with the pass code can open the door, so 1 room can  `7³
+ `7³`6be shared among other players.                                         `7³
+ `7³                                                                       `7³
+ `7³`6-If you leave anything in your room while renting, and your rent is due`7³
+ `7³`6you have 7 days to come and claim your belongings and to pay for those `7³
+ `7³`67 extra days, or I will pawn everything at the local pawn shop, and    `7³
+ `7³`6then you can re-buy your stuff there.                                  `7³
+ `7³                            [more]                                     `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+
+
+
+
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³                                                                       `7³
+ `7³`6-If you own a room, you can RENT it out to other people, and earn extra`7³
+ `7³`6money.                                                                 `7³
+ `7³                                                                       `7³
+ `7³`6-Check the "(D)aily Happenings to see which DAY it is.                 `7³
+ `7³                                                                       `7³
+ `7³`6-You are NOT permitted to sleep with your items, you may get arrested  `7³
+ `7³`6and sent to prison, because you could mistakenly be taken as a theif   `7³
+ `7³`6It is only for everyones protection.                                   `7³
+ `7³                                                                       `7³
+ `7³`6-Yes, we do accept certified COUPONS for renting and buying. These     `7³
+ `7³`6coupons are available from some other certified merchants through-out  `7³
+ `7³`6the lands.                                                             `7³
+ `7³                                                                       `7³
+ `7³                                                                       `7³
+ `7³                            [more]                                     `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+
+
+
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³                                                                       `7³
+ `7³`6-We have very outstanding high security measures to insure that our    `7³
+ `7³`6customers have the safest place to store their belongings. We have     `7³
+ `7³`6many security officers posted through-out our building 24 hours a      `7³
+ `7³`6day, every day.                                                        `7³
+ `7³                                                                       `7³
+ `7³`6-Anyone that is caught trying to steal or illegally breaking into any  `7³
+ `7³`6of the lockers rooms, the accused will be taken to the Greentree       `7³
+ `7³`6Prison to finish their life.                                           `7³
+ `7³                                                                       `7³
+ `7³                            Thank-you,                                 `7³
+ `7³                                                                       `7³
+ `7³        `5Prices:                                                        `7³
+ `7³             `%To BUY a room: `$500,000 `%gold                               `7³
+ `7³             `%To rent/day  : `$100 `%gold (min 7 days)                      `7³
+ `7³                                                                       `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+@key
+@do goto teller
+@end
+
+@label ownlocker
+@do move 1 1
+@show
+`r0`c
+
+                    `r7`8ÂÄÄÄÄÄ¿`r0
+                    `r7`8³     ³`r0
+                    `r7`8Å    `%±`8³`r0
+                    `r7`8³     ³`r0
+                    `r7`8ÁÄÄÄÄÄÙ`r0
+
+`2You aproach the locker door, and you decide to...
+
+         `r1`4°ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ°`r0
+         `r1`4³                     ³`r0
+         `r1`4³                     ³`r0
+         `r1`4³                     ³`r0
+         `r1`4°ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ°`r0
+
+
+@DO `V01 IS 1
+@do move 11 14
+@choice
+`$Open the locker door
+`$Use the pass code key
+`$Leave it aloneÿÿÿÿÿÿ
+@if response is 3 then goto nomore
+@if response is 1 then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+ `4±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`4±
+ `7³ `6The door doesn't budge. It is securely locked. The only way in is the `7³
+ `7³`6pass code.                                                             `7³
+ `4±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`4±
+
+ @key
+ @do quebar
+ `$oh damn, there must be another way in.
+ @do goto nomore
+ @end
+@if response is 2 then do
+ @begin
+ 
+ @readfile lockers`s01.idf
+`p25
+`p27
+`p26
+`s05
+@do move 1 1
+ @show
+`r0`c
+
+        `2Please enter the 6 digit pass code:
+
+
+
+                      `7²ÄÄÄÄÄÄÄÄÄ²
+                      `7³         ³
+                      `7²ÄÄÄÄÄÄÄÄÄ²
+ @do move 25 10
+ @do `s02 is 000000
+ @DO READSTRING 6 000000 `s02
+@if `p25 NOT &playernum then do
+        @begin
+        @writefile mail\mail`p25.dat
+ `0Locker Room Security
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%  `n`2 has attempted to open your locker room using
+" `%`s02" `2as the pass code.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        @end
+ @if `s02 is `s05 then goto letinroom
+ @if `s02 NOT `s05 then goto breakin
+ @end
+
+
+@label letinroom
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³           `$Welcome to this LOCKER ROOM                  `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+         `0°`4ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0°
+         `4³                      ³
+         `4³                      ³
+         `4³                      ³
+         `4³                      ³
+         `4³                      ³
+         `0°`4ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0°
+
+
+@DO `V01 IS 1
+@do move 11 9
+@readfile lockers`s01.idf
+`p25
+`p27
+`p26
+`s05
+@choice
+`$Leave this Locker Room
+`$Bulletin Board
+`$Treasury
+`$Item Inventory
+=&playernum `p25 `$Change the Pass Code
+@if responce is 1 then goto nomore
+@if responce is 2 then goto bb
+@if responce is 3 then do
+        @begin
+        @run treasure in lockref3.ref
+        @end
+@if responce is 4 then do
+        @begin
+        @run items in lockref3.ref
+        @end
+@if responce is 5 then goto changepw
+@do goto nomore
+@end
+
+@label changepw
+@readfile lockers`s01.idf
+`p25
+`p27
+`p26
+`s05
+@do move 1 1
+@show
+`r0`c
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+ `7³ `6The current pass code is `$`s05                                            `7³
+ `7³ `6Please enter a new 6 digit pass code:                                 `7³
+ `7±ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ±
+
+                      `7²ÄÄÄÄÄÄÄÄÄ²
+                      `7³         ³
+                      `7²ÄÄÄÄÄÄÄÄÄ²
+
+ @do move 25 10
+ @DO READSTRING 6 000000 `s05
+@do delete lockers`s01.idf
+@writefile lockers`s01.idf
+&playernum
+`p27
+`p26
+`s05
+@do goto letinroom
+@end
+
+
+@#empty
+@do `v01 is 1
+@do move 1 1
+@show
+`r0`c
+
+                    `r7`8ÂÄÄÄÄÄ¿`r0
+                    `r7`8³     ³`r0
+                    `r7`8Å    `%±`8³`r0
+                    `r7`8³     ³`r0
+                    `r7`8ÁÄÄÄÄÄÙ`r0
+
+`2You aproach the locker door, and you decide to...
+
+         `r1`4°ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ°`r0
+         `r1`4³                     ³`r0
+         `r1`4³                     ³`r0
+         `r1`4³                     ³`r0
+         `r1`4°ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ°`r0
+
+
+@do write
+`x`x
+@do move 11 14
+@choice
+`$Open the locker door
+`$Use the pass code key
+`$Leave it aloneÿÿÿÿÿÿ
+@if response is 1 then do
+ @begin
+ @do goto door1
+ @end
+@if response is 2 then do 2
+ @begin
+ @do goto door2
+ @end
+@if response is 3 then do 3
+ @begin
+ @do goto door3
+ @end
+
+@label door1
+@DATALOAD lock`s01.idf &PLAYERNUM `p24
+@IF `p24 is 1 THEN DO
+   @begin
+@do move 1 1
+   @show
+`r0`c
+
+  `2You open the door with ease and find a `$few dust balls `2the previous
+ owner of this locker must have left. 
+   @key
+  @do goto nomore
+   @end
+@IF `p24 NOT 1 THEN DO
+   @begin
+   @DATASAVE lock`s01.idf &PLAYERNUM 1
+   @do `p28 random 10 1
+
+        @if `p28 is 1 then do
+        @begin
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$few dust balls `2the previous
+ owner of this locker must have left. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 2 then do
+        @begin
+        @do `p27 random 25 10
+        @do money + `p27
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find `$`p27 gold coins `2in the corner,
+ the previous owner of this locker must have left them by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 3 then do
+        @begin
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$few dust balls `2the previous
+ owner of this locker must have left. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 4 then do
+        @begin
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$few dust balls `2the previous
+ owner of this locker must have left. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 5 then do
+        @begin
+        @do `i91 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$`+91`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 6 then do
+        @begin
+        @do `i94 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$`+94`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 7 then do
+        @begin
+        @do `i87 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$`+87`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 8 then do
+        @begin
+        @do `i82 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$`+82`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 9 then do
+        @begin
+        @do `i80 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$`+80`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 10 then do
+        @begin
+        @do `i77 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You open the door with ease and find a `$`+77`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+@end
+
+@label door2
+@do move 1 1
+@show
+`r0`c
+
+        `2Please enter the 6 digit pass code:
+
+
+
+                      `7²ÄÄÄÄÄÄÄÄÄ²
+                      `7³         ³
+                      `7²ÄÄÄÄÄÄÄÄÄ²
+@do move 25 10
+@DO READSTRING 6 000000 `s02
+@DATALOAD lock`s01.idf &PLAYERNUM `p24
+@IF `p24 is 1 THEN DO
+   @begin
+@do move 1 1
+   @show
+`r0`c
+
+  `2You open the door with ease and find a `$few dust balls `2the previous
+ owner of this locker must have left. 
+   @key
+  @do goto nomore
+   @end
+
+@IF `p24 NOT 1 THEN DO
+@begin
+@DATASAVE lock`s01.idf &PLAYERNUM 1
+@do move 1 1
+@show
+`r0`c
+
+  `2IT OPENS! You open the door on your first try, great work.
+
+@key
+@do `p28 random 10 1
+
+        @if `p28 is 1 then do
+        @begin
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$few dust balls `2the previous
+ owner of this locker must have left. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 2 then do
+        @begin
+        @do `p27 random 25 10
+        @do money + `p27
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find `$`p27 gold coins `2in the corner,
+ the previous owner of this locker must have left them by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 3 then do
+        @begin
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$few dust balls `2the previous
+ owner of this locker must have left. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 4 then do
+        @begin
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$few dust balls `2the previous
+ owner of this locker must have left. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 5 then do
+        @begin
+        @do `i91 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$`+91`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 6 then do
+        @begin
+        @do `i94 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$`+94`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 7 then do
+        @begin
+        @do `i87 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$`+87`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 8 then do
+        @begin
+        @do `i82 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$`+82`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 9 then do
+        @begin
+        @do `i80 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$`+80`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+        @if `p28 is 10 then do
+        @begin
+        @do `i78 + 1
+@do move 1 1
+        @show
+`r0`c
+
+  `2You look around and find a `$`+77`2, the previous
+ owner of this locker must have left it by mistake. 
+        @key
+        @do goto nomore
+        @end
+  @end
+
+@label door3
+  @do map is `p29
+  @loadmap `p29
+  @drawmap
+  @update
+  @do saybar
+`$You decide to leave it as is, and continue looking around.
+  @closescript
+  @end
+
+
+@label breakin
+@do `p20 random 3 1
+@if `p20 NOT 1 then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+
+
+          [?7h[40m[2J[5C[0;1;5;31;41mÚ¿[7CÚ¿[2;1H[5CÀÙ[7CÀÙ[0m
+
+
+        `@DRING!  RING!  DING!  DRING!  RING!  DRING!  DING!  DRING!
+
+             `2Better watch out cuz next time you go to prison!!
+
+ @key
+ @do goto nomore
+ @end
+
+@do move 1 1
+@show
+
+
+          [?7h[40m[2J[5C[0;1;5;31;41mÚ¿[7CÚ¿[2;1H[5CÀÙ[7CÀÙ[0m
+
+
+        `@DRING!  RING!  DING!  DRING!  RING!  DRING!  DING!  DRING!
+
+`k
+
+                    `$You have been CAUGHT!
+
+`k
+
+       `2The guard grabs you from behind and ties your wrists tightly
+     together with a really itchy rope. You are taken to the Green Tree
+     Prison and given to the warden to handle.
+
+`k
+
+
+        `3Welcome to `!Green Tree Prison`3, prisoner!
+
+
+@key
+@run enter in prison.ref
+@end
+
+@label bb
+@do move 1 1
+@show
+`r0`c
+       `5±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`5±
+       `7³                      `$Your Notes                        `7³
+       `5±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`5±
+
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `1³                       `1³
+                          `0±`1ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`0±
+
+@do move 29 9
+@do `v01 is 1
+@choice
+Okay, thats enough.
+Read the Board
+Add a Note
+=&playernum `p25 Destroy the Notes
+@if responce is 1 then goto letinroom
+@if responce is 4 then do
+        @begin
+        @if lockbb`s01.txt exist false then do
+                 @begin
+@do move 1 1
+                @show
+`r0`c
+ `5±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`5±
+ `7³              `6Bulletin Board cleared.                   `7³
+ `5±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`5±
+                @key
+                @do goto bb
+                 @end
+
+        @if lockbb`s01.txt exist true then do
+                @begin
+@do move 1 1
+                @show
+`r0`c
+ `5±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`5±
+ `7³              `6Bulletin Board cleared.                   `7³
+ `5±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`5±
+                @key
+                @do delete lockbb`s01.txt
+                @do goto bb
+                @end
+        @end
+
+@if responce is 2 then do
+@begin
+@if lockbb`s01.txt exist false then do
+ @begin
+ @writefile lockbb`s01.txt
+  `1The Management`2: `0Welcome to room `s01.
+ @end
+
+@if lockbb`s01.txt exist true then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+ `5±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`$Bulletin`7Ä`$Board`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`5±
+ @displayfile lockbb`s01.txt
+ @key
+ @end
+@do goto bb
+@end
+
+@if responce is 3 then do
+@begin
+@do move 1 1
+ @show
+`r0`c
+ `5±`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`$Bulletin`7Ä`$Board`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`5±
+ @displayfile lockbb`s01.txt
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a note or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+@do goto bb
+ @end
+
+ @writefile lockbb`s01.txt
+  `%`n`2 : `0`s03
+ @do trim lockbb`s01.txt 17
+@do goto bb
+@end
+@end
+
+@#nomore
+@do map is `p29
+@loadmap `p29
+@drawmap
+@update
+@end
+@closescript
+

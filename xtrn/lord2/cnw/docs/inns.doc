@@ -1,0 +1,140 @@
+      Inn Stuffing v1.00
+      ------------------
+(for lack of a better IGM title)
+by Chris Yeates (Screwy343@aol.com)
+or at The Loose Screw (801)561-4780
+
+Other IGM's by Chris:
+
+The Loose Screw Resort (v1.03)
+MafiaVille (v1.02)
+House of the Incredible Tensions (v1.00)
+
+Installation:
+
+Just check out INNS.IGM. It has most of that information. The most important
+thing you need to know about this IGM is that it *DOES OVERWRITE* original
+LORD2 .REF's.
+
+If you have any IGM's intalled that have altered any of the following files
+and/or REF title names, then I would suggest not installing this IGM (unless,
+of course, you consider un-installing the other IGM and then installing
+this one)...
+
+The files this IGM overwrites are:
+
+INN.REF
+-------
+@#MABACK
+@#MA
+@#MADOOR
+
+
+PORTTOWN.REF
+------------
+@#INN
+@#WHORE
+
+
+BONE.REF
+--------
+@#INN
+
+
+FLAGCITY.REF
+------------
+@#INN
+
+
+STONEP.REF
+----------
+@#LODGE
+
+
+CASTLE4.REF
+-----------
+@#DOORGUARD
+
+
+ARRIS.REF
+---------
+@#INN
+
+The new .REF's it comes with are:
+
+INNS.REF
+INNS1.REF
+INNS2.REF
+
+Files that it creates are:
+
+NINN1.DAT
+ NINN1A.DAT
+ NINNW1.DAT
+ NINNW1.IDF
+
+NINN2.DAT
+ NINN2A.DAT
+ NINN2B.DAT
+ NINNW2.DAT
+ NINNW2.IDF
+
+NINN3.DAT
+ NINN3A.DAT
+ NINN3B.DAT
+ NINNW3.DAT
+ NINNW3.IDF
+
+NINN4.DAT
+ NINN4A.DAT
+ NINN4B.DAT
+ NINNW4.DAT
+ NINNW4.IDF
+
+NINN5.DAT
+ NINN5A.DAT
+ NINN5B.DAT
+ NINNW5.DAT
+ NINNW5.IDF
+
+ NINN6B.DAT
+ NINNW6.DAT
+ NINNW6.IDF
+
+NINN7.DAT
+ NINN7A.DAT
+ NINN7B.DAT
+ NINNW7.DAT
+ NINNW7.IDF
+
+Summary, overview, etc:
+
+        This IGM basically allows ALL the inns in LORD2 to be purchased,
+  owned, and run by the participating users. It runs in much the same fashion
+  as Sosen Inn, with two basic new features:
+
+        -The owner can pick toilet water.
+         (What? What? you say. What is he talking about?)
+         I'll explain. Whomever owns the inn can choose to have their
+         toilet water made out of either Gold Potions, Red Potions, etc...
+         Then, once a day, users can drink from the toilet to receive the
+         benefits!
+
+        -All the inns have whores! (Sorry if this offends)
+         Except for Ma's Boarding House, all the inns now have whores
+         just like Porttown. However, the best catch: whomever owns the
+         inn gets to set the "sleep with whore" price.
+         Basically, the inn keepers also become pimps!
+
+Troubleshooting:
+
+        Not sure what could be wrong with this yet. It's the first version.
+  I'd say beta, except that I've tested it pretty well. If you find any
+  bugs, please do not report them to Ben or whatever Lord2 IGM page you
+  might have have gotten this from.
+
+        Please send all comments, suggestions, etc, to:
+
+        Screwy343@aol.com
+        or
+        at my BBS, The Loose Screw (801)561-4780

@@ -1,0 +1,91 @@
+              -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                   Ye Olde Farm by Lloyd Hannesson V 1.00
+                       Copyright 1997 Tech'n Software
+              -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                         An IGM for LordII ver 1.00
+
+Quick Info:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : Yes! (`t43)
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Duh! :)
+
+
+Description:
+
+  Ye Olde Farm 1.0
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+  Well here it is, my third IGM for Lord 2, and I think i'm doing pretty well.
+  This adds a Small farm 1 screen West from where Neb is. This IGM is a
+  little different then most. For one thing it'll work in the unregistered
+  version of Lord2. Secondly, it doesn't really do much untill you help to
+  solve a little mystery thet is going on in the farm. The farmer's wife 
+  believes that her hubby is cheating, and you have to prove it :) Once you
+  prove it, the Wife will let you harvest the fields once a day, and you'll
+  get cash depending on the number of veggies you find. The gold reward is
+  also level dependant, so it shouldn't kill the game.
+
+  Features Include:
+   - Solve a quest, and gain the ability to farm for gold...
+
+  Features To be added in the next version:
+   - Well I think the game is pretty much solid. It does what it was created
+     to do. I shouldn't have to add anything more.
+
+  To Install:
+
+   Type: IGM FARM.IGM
+
+  To Uninstall:
+
+   do the same thing again.
+
+  To Test:
+
+    Go 1 screen west from Neb, you'll see it
+
+  To Contact Me:
+
+    My BBS:  The Outworld BBS (204) 334-0217  2400-33600 baud
+
+
+    Mail Me:     Lloyd Hannesson
+                 3015 Sinclair St.
+                 Winnipeg, Manitoba
+                 R2V 4K9, CANADA
+
+    Email:     support@techn.com
+    Web:       http://www.techn.com/
+
+  Thanks To:
+
+    Bobby Roger Queen <wizards@shelby.net>
+       - Thanx for the spell checking buddy! :) I'm the worst!
+
+    Elric <afn50378@afn.org>
+       - Thanx for the spell checking also, damn I need to re-read what
+         I type eh? :)
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Ye Olde Farm `2by `0Lloyd Hannesson
+
+replacescreen: 1357 1 show
+
+installmessage:
+
+`$  Ye olde Farm version 1.0
+
+`2  Visit this strange farm. Solve the mystery and you'll be able to harvest
+  the fields for gold.
+
+  Location: `31 screen west of Neb
+
+  `%Copyright 1997 Tech'n Software and Lloyd Hannesson
+  `%http://www.techn.com/            support@techn.com

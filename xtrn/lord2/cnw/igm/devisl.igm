@@ -1,0 +1,54 @@
+
+                          Devils Island Version v1.50
+
+                             MetaLHeaD Softwarez
+
+                    Copyright 1997(c), All Rights Reserved...
+
+
+  Is registered version of LORD2 required to use? : Dunno :>
+  Using any LORD2 vars?                           : Yes (see devils.txt)
+  Overwrites any original .refs?                  : No
+  Saves and loads its own vars independently?     : Yes
+  Adds new .refs?                                 : Yes  (3)
+  Replaces screens?                               : Yes  (1)
+  Adds screens?                                   : Yes  (5)
+  Free?                                           : Yes 
+
+
+Description:  
+
+ Cool Igm!, Its a small island about in the cent of Lord ii the new world!
+
+   It has a Cityhall(Bank is only open so far), Bar(with bathroom thats opend
+    since v.666), Training Center, Demons Inn(finished version!), Finishing
+    ,A Place to shop!, a small quest to do!, and much more check it out!
+
+
+    See Devils.Txt for more information on this fine igm by Demon Knight
+
+Use Devils.Exe to REST/UNINSTALL or information!
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Devils Island! v1.50 `2by `0MetaLHeaD Softwars
+replacescreen: 942 1 show
+
+replacescreen: 862 2 show
+
+replacescreen: 863 3 noshow
+
+replacescreen: 864 4 noshow
+
+replacescreen: 865 5 noshow
+
+replacescreen: 866 6 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Devisl Island, Orignal a Megadeth song, and now a Lord *2* IGM.
+   Written by: Demon Knight
+    Demon-Knight@Juno.com
+     WWW.IBBS.COM/DARKLAND/
+      DarkLandsBBS 215.487.7315

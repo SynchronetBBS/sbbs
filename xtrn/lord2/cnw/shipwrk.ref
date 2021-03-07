@@ -1,0 +1,963 @@
+; Script file SHIPWRK.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE ghost 000001097
+@DECLARE water 000001651
+@DECLARE shark 000002182
+@DECLARE lever 000002809
+@DECLARE lever1 000003058
+@DECLARE wizard 000005187
+@DECLARE wizardtalk 000005410
+@DECLARE leverdone 000008061
+@DECLARE hatch 000008122
+@DECLARE hatchopen 000008315
+@DECLARE shipswheel 000008409
+@DECLARE mast 000008561
+@DECLARE wetbed 000008631
+@DECLARE window 000008692
+@DECLARE gunner 000013126
+@DECLARE cannon 000013200
+@DECLARE cannon1 000013277
+@DECLARE firegun 000013340
+@DECLARE fish 000013730
+@DECLARE captain 000013793
+@DECLARE trade 000016001
+@DECLARE selling 000016404
+@DECLARE quest 000018773
+@DECLARE barrel 000019094
+@DECLARE empty 000019396
+@DECLARE barrel1 000019453
+@DECLARE barrel2 000019662
+@DECLARE barrel3 000019890
+@DECLARE barrel4 000020106
+@DECLARE exit 000020312
+@DECLARE teleport 000020494
+@DECLARE travel 000021293
+@DECLARE arris 000021599
+@DECLARE ferry 000021861
+@DECLARE nomore 000022230
+@NOCHECK
+; End of .REF index
+
+;Shipwreck IGM
+
+@#ghost
+@pauseoff
+@SHOW
+[1;1H[0m
+
+
+[40C[44m[40m
+[1;1H[0m
+
+
+[40C[44m [40m
+[1;1H[0m
+
+
+[41C[44m [40m
+[1;1H[0m
+
+
+[42C[44m [40m
+[1;1H[0m
+
+
+[43C[44m [40m
+[1;1H[0m
+
+
+[44C[44m [40m
+[1;1H[0m
+
+
+[45C[44m [40m
+[1;1H[0m
+
+
+[46C[33m∫[37;44m[40m
+[1;1H[0m
+
+
+[47C[44m [40m
+[1;1H[0m
+
+
+[48C[44m [40m
+[1;1H[0m
+
+
+[49C[44m [40m
+[1;1H[0m
+
+
+[50C[44m [40m
+[1;1H[0m
+
+
+[50C[44m  [40m
+@end
+
+@do saybar
+`7`$Man! Was that a ghost?
+@update
+@end
+
+@#WATER
+@dataload canoe.idf &playernum `p21
+@IF `p21 MORE 0 THEN DO
+@BEGIN
+@do saybar
+Glad you have a canoe to make this short trip, those sharks look hungry!
+@END
+
+@IF `p21 LESS 1 THEN DO
+@BEGIN
+@do `p20 random 5 1
+@if `p20 is 1 then saybar
+`$Hope this doesn't rust the armour.
+@if `p20 is 2 then saybar
+`$Wonder if there are any sharks in this water?
+@if `p20 is 3 then saybar
+`$Ewww!!  Some fish went potty in the water.
+@if `p20 is 4 then goto shark
+@do `p20 is 0
+@END
+@do `p02 - 5
+@CLOSESCRIPT
+@END
+
+
+@#SHARK
+@fight
+;name
+Large shark
+;string said when you see him
+A triangular shaped fin approaches you...
+;power move kill string
+You shudder at what might have happened.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+slaps you with a powerful tail|30
+rams into you with its nose|35
+grabs your leg and pulls you under|40
+slashes your arm with it's teeth|42
+NONE|NONE
+;defense
+25
+;gold reward
+103
+;experience
+77
+;hit points
+80
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#lever
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2There is a lever on the wall.  Pull it? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then goto lever1
+@drawmap
+@update
+@closescript
+@end
+
+@#lever1
+@DATANEWDAY SHIPWRK.idf
+@DATALOAD SHIPWRK.idf &PLAYERNUM `p21
+@do moveback
+@if `p21 is 1 THEN GOTO LEVERDONE
+@pauseoff
+@show
+[1;1H[0m
+
+
+
+
+[18C[30m€[37m
+[18C[33m‹[37m
+[14C[33m‹‹€€€[37m
+[10C[33m‹‹‹€
+[A[14C[1;30;47m [40m
+[A[15C[0;34;47m[40m
+[A[16C[1;30;47m  [40m
+[A[18C[0;33m€[37m
+[10C[33mﬂﬂﬂ€
+[A[14C[1;30;47m    [40m
+[A[18C[0;33m€[37m
+[14C[33mﬂﬂ€€€[37m
+[18C[33mﬂ[37m
+[10C[30m€€€€€€€€€[37m
+[1;1H[0m
+
+
+
+
+[18C[30m€[37m
+[18C[33m‹[37m
+[14C[33m‹‹€€€[37m
+[10C[33m‹‹‹€
+[A[14C[1;30;47m    [40m
+[A[18C[0;33m€[37m
+[10C[33mﬂﬂﬂ€
+[A[14C[1;30;47m [40m
+[A[15C[0;34;47m[40m
+[A[16C[1;30;47m  [40m
+[A[18C[0;33m€[37m
+[14C[33mﬂﬂ€€€[37m
+[18C[33mﬂ[37m
+[10C[30m€€€€€€€€€[37m
+[1;1H[0m
+
+
+
+
+[18C[30m€[37m
+[18C[33m‹[37m
+[14C[33m‹‹€€€[37m
+[10C[33m‹‹‹€
+[A[14C[1;30;47m    [40m
+[A[18C[0;33m€[37m
+[10C[33mﬂﬂﬂ€
+[A[14C[1;30;47m  [40m
+[A[16C[0;34;47m[40m
+[A[17C[1;30;47m [40m
+[A[18C[0;33m€[37m
+[14C[33mﬂﬂ€€€[37m
+[18C[33mﬂ[37m
+[10C[30m€€€€€€€€€[37m
+[1;1H[0m
+
+
+
+
+[18C[30m€[37m
+[18C[33m‹[37m
+[14C[33m‹‹€€€[37m
+[10C[33m‹‹‹€
+[A[14C[1;30;47m    [40m
+[A[18C[0;33m€[37m
+[10C[33mﬂﬂﬂ€
+[A[14C[1;30;47m   [40m
+[A[17C[0;34;47m[40m
+[A[18C[33m€[37m
+[14C[33mﬂﬂ€€€[37m
+[18C[33mﬂ[37m
+[10C[30m€€€€€€€€€[37m
+[1;1H[0m
+
+
+
+
+[18C[30m€[37m
+[18C[33m‹[37m
+[14C[33m‹‹€€€[37m
+[10C[33m‹‹‹€
+[A[14C[1;30;47m    [40m
+[A[18C[0;33m€[37m
+[10C[33mﬂﬂﬂ€
+[A[14C[1;30;47m    [40m
+[A[18C[0;34;47m[37;40m
+[14C[33mﬂﬂ€€€[37m
+[18C[33mﬂ[37m
+[10C[30m€€€€€€€€€[37m
+[1;1H[0m
+
+
+
+
+[18C[30m€[37m
+[18C[33m‹[37m
+[14C[33m‹‹€€€[37m
+[10C[33m‹‹‹€
+[A[14C[1;30;47m    [40m
+[A[18C[0;33m€[37m
+[10C[33mﬂﬂﬂ€
+[A[14C[1;30;47m     [40m
+[A[19C[0;34;47m[37;40m
+[14C[33mﬂﬂ€€€[37m
+[18C[33mﬂ[37m
+[10C[30m€€€€€€€€€[37m
+@DATASAVE SHIPWRK.IDF &playernum 1
+@DO SAYBAR
+`7Out of no where an old man appears to your left.
+@closescript
+@end
+
+@#WIZARD
+@DATANEWDAY SHIPWRK.idf
+@DATALOAD SHIPWRK.idf &PLAYERNUM `p21
+@do moveback
+@if `p21 is 1 THEN GOTO WIZARDTALK
+@DO SAYBAR
+`$You hear faint noises on the other side of the wall.
+@CLOSESCRIPT
+@END
+
+@LABEL WIZARDTALK
+@SHOW
+`r0`c  `%`r1 Talking with the wizard `r0
+`\`2  Before you is a rather ancient looking man.  His bearing is rather
+  haughty but you figure you could take him with one hand.  Never the less
+  you decide you will play it safe.`\
+@DATANEWDAY SHIPWRK2.idf
+@DATALOAD SHIPWRK2.idf &PLAYERNUM `p23
+@DO `v01 is 1
+@DO WRITE
+`x`x
+@CHOICE
+Whoaa...who are you and where did you come from
+What is the deal with this ship
+>`p23 0 Say, can you teleport people
+Sorry, I didn't realize anyone was here
+@IF RESPONSE IS 1 THEN DO
+@BEGIN
+@SHOW
+`r0`c  `%`r1 Talking with the wizard `r0
+`\`\`2  "`0Who am I?  Why I am Larkin.  The most powerful wizard ever.  Master of
+  the ancient mysteries.  Mentor to the realms greatest warriors.  Slayer
+  of the Red Dragon...
+
+`k`2  By now you realize he is a nut.
+
+`k`0  ... Builder of great empires.`2"  he says.  "`0 How I got here is beyond
+  your puny minds ability to comprehend`2."
+
+`k`2  You idly wonder how his superior mind would comprehend a slight
+  intrusion by your s&weapon, but let it slide for the moment.
+
+`k
+@DO GOTO WIZARDTALK
+@END
+
+@IF RESPONSE IS 2 THEN DO
+@BEGIN
+@DATALOAD SHIPWRK.idf &PLAYERNUM `p21
+@SHOW
+`r0`c  `%`r1 Talking with the wizard `r0
+`\`\`2  "`0This is the merchant vessal PRIDE OF ARRIS.  We were in route to her
+  home port of Arrisville when a storm forced us on these rocks`2."
+
+`k`2  "`0Currently the crew is working to repair the damage.  In the meantime
+  the captain has set up shop on the upper decks and is doing a little trading
+  to offset his loses.  Unfortunately business is brisk and I suspect he is
+  delaying the repairs to take advantage of it and delaying me in the process`2."
+
+`k`2  "`$I see.  So, ummm, how do I get up to see the captain`2?"
+
+`k`2  The wizard doesn't look please with your request but closes his eyes in
+  concentration.  Somewhere behind you you hear a click.  Larkin points to the
+  stairwell...  `L`L`L`L`Land then just disappears as if he never existed.
+
+`k`2  Maybe bashing his head with your s&weapon wouldn't have been such a good
+  idea after all.  You are glad you waited.
+
+`k
+@datasave shipwrk.idf &playernum 2
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@IF RESPONSE IS 3 THEN GOTO TELEPORT
+@END
+
+@END
+
+@IF RESPONSE IS 4 THEN DO
+@BEGIN
+@DATALOAD SHIPWRK.idf &PLAYERNUM `p21
+@SHOW
+`r0`c  `%`r1 Talking with the wizard `r0
+`\`\`2  The old man does not look amused.  He promptly disappears as if he was
+  never there.  Maybe you made the right decision.  
+
+`k
+@do `p21 is 0
+@datasave shipwrk.idf &playernum 0
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+
+@LABEL LEVERDONE
+@do saybar
+`$You have already pulled the lever.
+
+@#HATCH
+@DATANEWDAY SHIPWRK.idf
+@DATALOAD SHIPWRK.idf &PLAYERNUM `p21
+@if `p21 is 2 THEN GOTO HATCHOPEN
+@do moveback
+@DO SAYBAR
+`$The hatch seems to be locked.
+@CLOSESCRIPT
+@END
+
+@#HATCHOPEN
+@LOADMAP 871
+@DO x IS 50
+@DO y IS 7
+@DRAWMAP
+@UPDATE
+@closescript
+@end
+
+@#SHIPSWHEEL
+@DO MOVEBACK
+@DO SAYBAR
+`%You foolishly spin the ship's wheel and shout "Heave Ho you scurvy dogs".
+@DO QUEBAR
+`%You feel kind of silly.
+
+@#MAST
+@DO SAYBAR
+`%Looks like they need to replace this mast.
+
+@#WETBED
+@DO SAYBAR
+`$Eewwwww.... That isn't sea water.
+
+@#WINDOW
+@DO MOVEBACK
+@CLEAR SCREEN
+@PAUSEOFF
+@SHOW
+`r1`1
+[0m[30;43m …ÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÀÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕ[40m
+[A[63C[43mÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕª[40m
+[A[79C[30;43m  ∫ [37;40m[4C[5;1;30m.[0m[8C.[5C[5m.[0m[3C
+[A[26C[1;30m.[0m [5;1;30m.[0m[3C[1;30m.[0m[4C[5;1;30m.
+[A[38C[0;30;43m ∫ [37;40m[9C[1m.[0m  [1m.[0m . [5;1;30m.[0m[4C
+[A[62C[1;30m.[0m[7C. .[5;1;30m.[0m[3C[30;43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m  .[7C[1m.[0m[3C[1;30m.[0m[12C[1m.
+[A[31C[0m  [1;30m.[0m[4C[30;43m ∫ [37;40m [1;30m.[0m[3C.[13C
+[A[60C.[4C[5;1;30m.[0m[5C[1;30m.[0m  [5m.[0m  [30;43m ∫[40m
+[A[79C[30;43m  ∫ [1;40m.[0m[4C.  [1m.[0m  [1;30m.[0m 
+[A[16C[5;1;30m.[0m [1;30m.[0m[6C   [1m.[0m  [1m.[0m  [1m.[0m[3C
+[A[38C[30;43m ∫ [37;40m  [1;30m.[0m[7C[1m.[0m[10C[1m.[0m[3C
+[A[66C[1;30m.[0m[3C[1m.[0m [5;1;30m.[0m  [1;30m.[0m [30;43m[40m
+[A[77C[43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m [1;30m.[0m[3C[1;30m.[0m  .[3C[1;30m
+[A[15C.[0m[8C.[12C[1m.[0;30;43m ∫ [37;40m[4C[5;1;30m.[0m[22C
+[A[68C[1m.[0m [1m..[0m[5C[30;43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m[3C[5;1;30m.[0m[3C[1;30m.[0m[4C[1m.
+[A[16C[0m  [1;30m.[0m[6C[1;30m.[0m[11C[1;30m.[0;30;43m ∫ [37;40m[4C
+[A[45C.[17C[1;30m.[0m  [5;1;30m.[0m[4C[1m.[0m  [1m.[0m  
+[A[77C[30;43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m[6C.[1;30m.[0m[3C[1;30m.[0m  [1m.
+[A[18C[0m [1;30m.[0m[7C[1;30m.[0m[4C[1;30m.[0m[5C[30;43m ∫[40m
+[A[40C[43m [37;40m  [1;30m.[0m[18C[1;30m.[0m[7C[1m.[0m[6C
+[A[77C[30;43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m[3C[1;30m.[0m[8C[1;30m.[0m  [1m.[0m[3C
+[A[22C[1;30m.[0m  [1;30m.[0m.[4C[5;1;30m.[0m .[5;1;30m.[0m[3C
+[A[38C[30;43m ∫ [37;40m .[1;30m.[0m[3C[1;30m.[37m.[5;30m.[0m[3C
+[A[53C[1;30m.[0m[5C[1;30m.[0m[5C[5;1;30m.[0m[4C[1;30m.[0m[5C
+[A[76C[5;1;30m.[0;30;43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m  .[1;30m.[0m[3C[1;30m.[0m  [1;30m.[0m[6C
+[A[20C[1;30m.[0m[3C[5m.[0m[5C[1;30m..[0m[5C.[30;43m ∫ [40m
+[A[41C[37m  [1;30m.[0m[8C.[1;30m.[0m[3C[1;30m.[0m[5C[1;30m
+[A[63C.[0m[5C[1;30m.[0m[3C.[3C[30;43m ∫[40m
+[A[79C[30;43m  ÃÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕŒÕÕÕÕÕÕÕÕÕÕÕÕÕÕ[40m
+[A[54C[43mÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕπ[40m
+[A[79C[30;43m  ∫ [37;40m [1;30m.[0m[4C.[5;1;30m.[0m[8C.[5C
+[A[25C[5;1;30m..[0m[3C[1;30m.[0m[4C[5;1;30m.[0m  [30;43m ∫ [37;40m[4C
+[A[45C[5m.[0m  [5;1;30m.[0m[7C[1;30m.[0m[18C[1;30m.[0m 
+[A[77C[30;43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m.[1;30m.[0m[3C[1;30m.[0m  [5m.[0m  
+[A[14C[5;1;30m.[0m[3C..[5;1;30m.[0m[8C.[1;30m.[0m[7C[30;43m[40m
+[A[38C[43m ∫ [37;40m  [1;30m..[0m  [1;30m.[0m[3C.[1;30m.[0m[3C
+[A[56C[1;30m.[0m[3C[1;30m.[0m[15C[1;30m.[0;30;43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m [1;30m.[0m[10C[1;30m.[0m[5C[5m.[0m[3C
+[A[25C[1;30m.[0m[4C[1;30m.[0m[7C[30;43m ∫ [37;40m[11C[1;30m
+[A[52C.[0m[4C[5;1;30m.[0m[16C[1m.[0m  [30;43m ∫[40m
+[A[79C[30;43m  ∫ [37;40m[4C[1;30m.[0m[3C[1;30m.[0m[4C[1;30m
+[A[16C.[0m[7C[5;1;30m.[0m[8C[1;30m.[0m[4C[30;43m ∫ [37;40m 
+[A[42C[1;30m.[0m[3C[1;30m.[0m[8C[1;30m.[0m [1;30m.[0m[5C
+[A[63C[5m.[0m[5C.[5C[1;30m.[0m [30;43m ∫[40m
+[A[79C[30;43m  ∫ [34;40m∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞[30;43m[40m
+[A[38C[43m ∫ [34;40m∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞[30;43m ∫[40m
+[A[79C
+[A[79C[30;43m  ∫ [34;40m±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±[30;43m[40m
+[A[38C[43m ∫ [34;40m±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±[30;43m ∫[40m
+[A[79C
+[A[79C[30;43m  ∫ [34;40m≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤[30;43m[40m
+[A[38C[43m ∫ [34;40m≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤[30;43m ∫[40m
+[A[79C
+[A[79C[30;43m  ∫ [34;40m€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[30;43m[40m
+[A[38C[43m ∫ [34;40m€€€€€€€€€€€€€€€€€€€€€€[44m [40m€€€€€€€€[44m  [40m
+[A[74C€€€[30;43m ∫[40m
+[A[79C[30;43m  »ÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕ ÕÕÕÕÕÕÕÕÕÕÕÕÕÕ[40m
+[A[54C[43mÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕº[40m
+[A[79C[30;43m
+@END
+;@PAUSEON
+@SHOW
+
+`r0`!             Strange.  The sun was shinning bright when you came in?!?!?!
+@KEY
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#GUNNER
+@DO SAYBAR
+`$First Mate: "Don't touch! This one is loaded."
+
+@#CANNON
+@DO SAYBAR
+`$Sure are a lot of cannons for a merchant vessal.
+
+@#CANNON1
+@DO SAYBAR
+`$You could rule BoneTown with this.
+
+@#FIREGUN
+@DO MOVEBACK
+@pauseoff
+@SHOW
+[1;1H[0m
+
+
+
+[42C[44m˛[40m
+[1;1H[0m
+
+
+[42C[44m˛[40m
+[42C[44m [40m
+[1;1H[0m
+
+[42C[44m˛[40m
+[42C[44m [40m
+[1;1H[0m
+[42C[44m˛[40m
+[42C[44m [40m
+[1;1H[0m[42C[44m˛[40m
+[42C[44m [40m
+[1;1H[0m[42C[44m [40m
+@end
+
+@do saybar
+`7`$First Mate: "You're a College s&boy ain't you."
+@update
+@end
+
+@#FISH
+@DO SAYBAR
+`$Fresh fish.  Must be someone here.
+
+@#CAPTAIN
+@BUSY
+@DO MOVEBACK
+@SHOW
+`\
+`r0`c  `%`r1 Talking to the captain `r0
+`\`2  From the quality of his clothes you figure this must be the captain.  
+  He welcomes you with a cheerful hello.
+
+@DO `v01 IS 1
+@DO WRITE
+`x`x
+@CHOICE
+So Captain how long you gonna be here
+Is the wizard below as powerful as he says
+What's with that window down below
+How about a little trade
+Maybe you will catch him later
+@IF RESPONSE IS 1 THEN DO
+@BEGIN
+@SHOW
+`r0`c  `%`r1 Talking to the captain `r0
+
+`\`2  "`0Depends.  We still have quite a few repairs to finish as you can see.
+  We haven't been working to hard though, what with the trade we have been
+  doing here`2."
+
+`k  `2"`$So what might you be in the market for`2?"
+
+`k  `2"`0Nothing you could be carrying in that bag of yours unless you have
+  something in there to eat other then fish`2."
+
+`k
+@DO GOTO CAPTAIN
+@END
+
+@IF RESPONSE IS 2 THEN DO
+@BEGIN
+@DATANEWDAY SHIPWRK2.idf
+@DATALOAD SHIPWRK2.idf &PLAYERNUM `p23
+@SHOW
+`r0`c  `%`r1 Talking to the captain `r0
+
+`\`2  "`0Who Larkin?  Haw!  That feeble minded old fish face?  He is the reason
+  we are here.  Tried to conjure up a wind to get us to port faster.  Instead
+  we end up here on this rock.  You would think that the flagship of the
+  Arrisville fleet would rate someone a little more competant`2."
+
+`k`2  "`$So why do you keep him around`2?"
+
+`k`2  "`0Well to be honest with you he is a powerful wizard.  The problem is he
+  isn't as young as he once was and anytime he starts to feel his age he crawls
+  inside a bottle.  Keep that in mind if he offers to teleport you somewhere`2."
+
+`k
+@DATASAVE SHIPWRK2.IDF &playernum 1
+@DO GOTO CAPTAIN
+@END
+
+@IF RESPONSE IS 3 THEN DO
+@BEGIN
+@SHOW
+`r0`c  `%`r1 Talking to the captain `r0
+
+`\`2  "`0That's that lunkhead Larkin again.  After he conjured up the storm that
+  put us here he figured he would to fix it.  Only thing he managed to cast a
+  spell on was the window.  I thought he looked a little tipsy that evening`2."
+                             
+`k
+@DO GOTO CAPTAIN
+@END
+
+@IF RESPONSE IS 4 THEN GOTO TRADE
+@END
+
+@IF RESPONSE IS 5 THEN DO
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#TRADE
+@OFFMAP
+@SHOW
+`r0`c  `r1  `%Trading with the Captain  `r0
+
+  `2The Captain's whole demeanor changes as he sets his mind to business.
+
+@DO `v01 IS 1
+@DO WRITE
+`x`x
+@CHOICE
+Buy something
+Sell something
+Leave
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @do write
+`\`\
+  @BUYMANAGER
+  05
+  40
+  55
+  66
+  36
+  @DO GOTO TRADE
+  @end
+
+@IF RESPONSE IS 2 THEN DO
+  @BEGIN
+  @LABEL SELLING
+  @SHOW
+`r0`c  `r1  Trading with the Captain  `r0
+
+`2  "`0Before you start let me make one thing clear, NO FISH`2!"
+
+  `2You open your pack to show him what you have.
+
+  `2You are holding `$$&money`2.
+
+@DO WRITE
+`x`x
+@DO `v01 IS 1
+@CHOICE
+<`i08 1 <`i43 1 <`i51 1 <`p15 6 You have nothing to sell.
+>`i08 0 Sell a Berry pie for `$$20`%. `2(you have `0`i08`2)
+>`i43 0 Sell a chicken egg for `$$15`%. `2(you have `0`i43`2)
+>`i51 0 Sell a small fuzzy animal for `$$1000`%. `2(you have `0`i51`2)
+>`p15 5 Sell your Arrisville quest `2(Current value is `0$`p16`2)
+>`i08 0 >`i43 0 >`i51 0 >`p15 5 Sell nothing.
+>`i08 0 <`i43 1 <`i51 1 <`p15 6 Sell nothing.
+<`i08 1 >`i43 0 <`i51 1 <`p15 6 Sell nothing.
+<`i08 1 <`i43 1 >`i51 0 <`p15 6 Sell nothing.
+<`i08 1 <`i43 1 <`i51 1 >`p15 5 Sell nothing.
+>`i08 0 >`i43 0 <`i51 1 <`p15 6 Sell nothing.
+>`i08 0 <`i43 1 >`i51 0 <`p15 6 Sell nothing.
+>`i08 0 <`i43 1 <`i51 1 >`p15 5 Sell nothing.
+<`i08 1 >`i43 0 >`i51 0 <`p15 6 Sell nothing.
+<`i08 1 <`i43 1 >`i51 0 >`p15 5 Sell nothing.
+<`i08 1 >`i43 0 <`i51 1 >`p15 5 Sell nothing.
+>`i08 0 >`i43 0 >`i51 0 <`p15 6 Sell nothing.
+>`i08 0 >`i43 0 <`i51 1 >`p15 5 Sell nothing.
+>`i08 0 <`i43 1 >`i51 0 >`p15 5 Sell nothing.
+<`i08 1 >`i43 0 >`i51 0 >`p15 5 Sell nothing.
+@IF RESPONSE IS 2 THEN DO
+  @BEGIN
+  @SHOW
+`\`\  `0"Ahhhh, just like home.  Thank you s&sir!"
+
+`k
+  @DO MONEY + 20
+  @DO `i08 - 1
+  @DO GOTO SELLING
+  @END
+@IF RESPONSE IS 3 THEN DO
+  @BEGIN
+  @SHOW
+`\`\  `0"Seems like years since I had one of those."
+
+`k
+  @DO MONEY + 15
+  @DO `i43 - 1
+  @DO GOTO SELLING
+  @END
+@IF RESPONSE IS 4 THEN DO
+  @BEGIN
+  @SHOW
+`\`\  `0"Careful now, I have people that would kill for one of those."
+
+`k
+  @DO MONEY + 1000
+  @DO `i51 - 1
+  @DO GOTO SELLING
+  @END
+@IF RESPONSE IS 5 THEN DO
+  @BEGIN
+  @DO `p25 is `p16
+  @DO `p25 / 4
+  @DO `p25 * 3
+  @SHOW
+`r0`c  `%`r1  Trading with the Captain  `r0
+`\`\`2  "`0I can complete your quest for you.  I will give you `$$`p25`0 and save
+   you the trip`2." `2(Current value is `0$`p16`2)
+
+`k
+@do write
+`r0  `2Allow the Captain to finish you quest? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then goto QUEST
+@DO GOTO SELLING
+@drawmap
+@update
+@closescript
+@end
+
+@drawmap
+@update
+@closescript
+@end
+
+@drawmap
+@update
+@closescript
+@end
+
+
+@#QUEST
+;reset quest stuff
+;give money
+@do money + `p25
+;add one to quests completed var
+@do `p18 + 1
+@do `p14 is 0
+@do `p15 is 0
+@do `p16 is 0
+@do `p17 is 0
+@do `i44 is 0
+@do `i45 is 0
+@do `i46 is 0
+@do `i47 is 0
+@do `i48 is 0
+@DO GOTO SELLING
+@END
+
+@DO GOTO TRADE
+
+@END
+@DRAWMAP
+@UPDATE
+@END
+
+@#BARREL
+@BUSY
+@DO MOVEBACK
+@DATANEWDAY SHIPWRK1.idf
+@DATALOAD SHIPWRK1.idf &PLAYERNUM `p22
+@IF `p22 IS 1 THEN GOTO EMPTY
+@DO `p20 RANDOM 4 1
+@IF `p20 IS 1 THEN GOTO BARREL1
+@IF `p20 IS 2 THEN GOTO BARREL2
+@IF `p20 IS 3 THEN GOTO BARREL3
+@IF `p20 IS 4 THEN GOTO BARREL4
+@CLOSESCRIPT
+@END
+
+@#EMPTY
+@DO SAYBAR
+`$There is nothing here.
+@END
+
+@#BARREL1
+@SHOW
+`r0`c  `r1  `%Pirates treasure maybe?  `r0
+`\`\`2  A sparkle catches your eye.
+
+`k  `2You find a `$GEM
+
+`k
+@DO `p19 + 1
+@datasave shipwrk1.idf &playernum 1
+@DRAWMAP
+@UPDATE
+@END
+
+@#BARREL2
+@SHOW
+`r0`c  `r1  `%Pirates treasure maybe?  `r0
+`\`\`2  A movement catches your eye.
+
+`k  `2You find a `0Sparking Green Salmon
+
+`k
+@DO `i30 + 1
+@datasave shipwrk1.idf &playernum 1
+@DRAWMAP
+@UPDATE
+@END
+
+@#BARREL3
+@SHOW
+`r0`c  `r1  `%Pirates treasure maybe?  `r0
+`\`\`2  A sparkle catches your eye.
+
+`k  `2You find a `0Red Potion
+
+`k
+@DO `i52 + 1
+@datasave shipwrk1.idf &playernum 1
+@DRAWMAP
+@UPDATE
+@END
+
+@#BARREL4
+@SHOW
+`r0`c  `r1  `%Pirates treasure maybe?  `r0
+`\`\`2  A sparkle catches your eye.
+
+`k  `2You find a `$GEM
+
+`k
+@DO `p19 + 1
+@datasave shipwrk1.idf &playernum 1
+@DRAWMAP
+@UPDATE
+@END
+
+@#EXIT
+@DATALOAD SHIPWRK.idf &PLAYERNUM `p21
+@DO `p21 IS 0
+@datasave shipwrk.idf &playernum 0
+@LOADMAP 950
+@DO x IS 46
+@DO y IS 8
+@DRAWMAP
+@UPDATE
+@closescript
+@end
+
+@#TELEPORT
+@SHOW
+`r0`c  `%`r1 Talking with the wizard `r0
+`\`\`2  After a slight hesitation he says "`0I am not a side show magician doing
+  parlor tricks to impress people little s&boy.  A wizard of my calibre demands
+  a high price.  I can transport you to Arrisville for no less then `$$6,000`2."
+
+`k`2  A ticket in PortTown cost $8,000.  You remember what the captain has told
+  you and wonder if it is worth the chance.
+
+`k
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 5999 Give him the money. `!(You have `$$&money`!)
+<&money 6000 Sorry but that is more then I can afford.
+>&money 5999 Leave.
+@IF RESPONSE IS 1 THEN GOTO TRAVEL
+@END
+
+@IF RESPONSE IS 2 THEN GOTO WIZARDTALK
+@END
+
+@IF RESPONSE IS 3 THEN GOTO WIZARDTALK
+@END
+
+;@DRAWMAP
+;@UPDATE
+;@CLOSESCRIPT
+@END
+
+@#TRAVEL
+;YOU HAVE PAID YOUR MONEY
+@DATANEWDAY SHIPWRK.idf
+@DATALOAD SHIPWRK.idf &PLAYERNUM `p21
+@DO `p21 IS 0
+@datasave shipwrk.idf &playernum 0
+@do `p20 random 4 1
+@IF `p20 IS 1 THEN GOTO ARRIS
+@IF `p20 IS 2 THEN GOTO ARRIS
+@IF `p20 IS 3 THEN GOTO ARRIS
+@IF `p20 IS 4 THEN GOTO FERRY
+@END
+
+
+@#ARRIS
+@SHOW
+`r0`c  `%`r1 Teleporting `r0
+`\`\`2  The walls of the ship seem to fad around you...
+
+`k`2  As your vision clears you realize you have arrived safely.
+
+`k
+@DO MONEY - 6000
+@LOADMAP 444
+@DO x IS 66
+@DO y IS 18
+@DRAWMAP
+@UPDATE
+@END
+
+@#FERRY
+@SHOW
+`r0`c  `%`r1 Teleporting `r0
+`\`\`2  The walls of the ship seem to fad around you...
+
+`k`2  <Buuuurp>
+
+`k`2  Larkin chooses that moment to uncork a huge belch and you realize that
+  you may be in trouble.
+
+`k
+@DO QUEBAR
+`$  Well we made it half way.  Could have been worse.
+@LOADMAP 215
+@DO x IS 59
+@DO y IS 15
+@DRAWMAP
+@UPDATE
+@END
+
+@#NOMORE

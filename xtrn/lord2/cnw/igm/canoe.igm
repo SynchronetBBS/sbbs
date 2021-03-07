@@ -1,0 +1,64 @@
+
+                              The Canoe 2.0
+       by James C. Jones and Ben Tiefert, The Shadow BBS (850) 864-4292
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (2)
+  Adds screens?                                   : Yes! (7)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  This IGM adds a Canoe rental shop east of Porttown where you can
+  get a canoe, and with that, can go to the SeaScape Bar and Grille,
+  and a safehouse to stay. You may also pass those up and go across
+  the sea.
+
+
+  IGM CANOE.IGM
+
+  To uninstall, do the same thing again.
+
+ /////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `!The Canoe `2by `0James Jones The Shadow BBS 850-864-4292
+
+replacescreen: 477 1 show
+
+replacescreen: 556 2 noshow
+
+replacescreen: 637 3 noshow
+
+replacescreen: 717 5 noshow
+
+replacescreen: 797 4 noshow
+
+replacescreen: 877 6 noshow
+
+replacescreen: 957 7 show
+
+replacescreen: 636 8 noshow
+
+replacescreen: 716 9 noshow
+
+
+installmessage:
+
+                          `!The Canoe 2.0
+  `%ABOUT THIS IGM:
+
+  `2This IGM adds a Canoe rental shop east of Porttown where you can
+  `2get a canoe, and with that, can go to the SeaScape Bar and Grille,
+  `2and a safehouse to stay. You may also pass those up and go across
+  `2the sea.
+
+  `! Made by James C. Jones and Ben Tiefert, The Shadow BBS 850-864-4292
+

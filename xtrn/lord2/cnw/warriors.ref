@@ -1,0 +1,335 @@
+; Script file WARRIORS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:26 2001
+
+@DECLARE monster1 000000447
+@DECLARE monster2 000000997
+@DECLARE monster3 000001586
+@DECLARE monster4 000002189
+@DECLARE monster5 000002750
+@DECLARE monster6 000003318
+@DECLARE monster7 000003854
+@DECLARE monster8 000004409
+@DECLARE monster9 000004970
+@DECLARE monster10 000005587
+@DECLARE fight 000006157
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+Bollocks Wanker
+;string said when you see him
+Watch out for that cactus-shaped anal probe.
+;power move kill string
+It's Kill or be Killed.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Slice and dices|318
+squeezes your crotch|525
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+2289
+;experience
+4122
+;hit points
+150
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Vampire Cult Member
+;string said when you see him
+`0I am `4Dracula`0. I will bite your nee-e-ee-ck.
+;power move kill string
+He eerily smiles as you take his life.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+burns you with his cross|576
+curses you|456
+bites your neck|645
+NONE|NONE
+NONE|NONE
+;defense
+49
+;gold reward
+3386
+;experience
+3398
+;hit points
+1312
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+gumtown2.REF|VAMPIRE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Mighty Morphing Power Ranger.
+;string said when you see him
+A coloured guy wobbles his head at you.
+;power move kill string
+The thing has just had its last transformation.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Kung Fus You|598
+morphs into a crap and smells|1087
+morphs into a mong|427
+NONE|NONE
+NONE|NONE
+;defense
+23
+;gold reward
+2332
+;experience
+7189
+;hit points
+203
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+The Evil `1G`2u`3m`4-`5L`6a`7s`8s
+;string said when you see him
+Oh my god. It killed Kenny
+;power move kill string
+Oh, Kenny's OK.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+screws you up|1187
+bites you, bitch|1076
+Furrows his brows at you|992
+NONE|NONE
+NONE|NONE
+;defense
+600
+;gold reward
+10000
+;experience
+20000
+;hit points
+1000
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+The Pickpocket
+;string said when you see him
+Look over there!
+;power move kill string
+Get out of my pockets, butthole
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+gives you a knifing|570
+kicks you unaware|1180
+says nasty things about you|2560
+Sodomizes you|2355
+NONE|NONE
+;defense
+500
+;gold reward
+1245
+;experience
+9146
+;hit points
+1000
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+gumtown2.REF|thief
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Starvin Marvin
+;string said when you see him
+It's an Ethanopean.
+;power move kill string
+Yeah I want Cheesy Poofs.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+chews on your leg|476
+bites your ear|587
+naws on you in the shin|320
+NONE|NONE
+NONE|NONE
+;defense
+80
+;gold reward
+525
+;experience
+245
+;hit points
+2
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Dark Ghost
+;string said when you see him
+A shadow moves towards you with leugi speed.
+;power move kill string
+You showed it the flem.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+gets in your eye|379
+gets in your Hair|90
+attacks your soul|112
+NONE|NONE
+NONE|NONE
+;defense
+35
+;gold reward
+2405
+;experience
+5135
+;hit points
+5120
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+Washed up boxer
+;string said when you see him
+I'll fight and I'll win
+;power move kill string
+`$"Better go back to the Dojo Wanker."
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Jabs at you neck|85
+throws a lefty|97
+uses his ninja throwing stars|1105
+NONE|NONE
+NONE|NONE
+;defense
+38
+;gold reward
+950
+;experience
+1910
+;hit points
+115
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster9
+@fight
+;name
+Meat Cleaver
+;string said when you see him
+`2You hear a rusty sound.
+;power move kill string
+`$"Never thought I'd meet a beaver I didn't like."
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+you get infected|776
+makes big lettace marks in your neck|290
+calls upon his bladder to help|105
+eats part of your anatomy|397
+NONE|NONE
+;defense
+40
+;gold reward
+500
+;experience
+2130
+;hit points
+800
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster10
+@fight
+;name
+Pig Piggy Pig Pig
+;string said when you see him
+Eat pig piggy pig pig.
+;power move kill string
+`2I should've come here.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+uses some form of pig attack|482
+hits you with a wooden beam|264
+performs an elaborate trick|807
+NONE|NONE
+NONE|NONE
+;defense
+38
+;gold reward
+1350
+;experience
+5165
+;hit points
+530
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 10 1
+@do goto monster`p20

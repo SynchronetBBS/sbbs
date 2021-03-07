@@ -1,0 +1,141 @@
+                    C R Y S T A L L I N E   S T A T S
+                    ---------------------------------
+                        Game Statistics Generator
+
+                               Version 0.1.2
+
+         Copyright (C) 2000 Michael Dillon.  All Rights Reserved.
+
+
+I. Legal Disclaimer
+
+This program is under no warranty explicit, expressed, or implied.  You may
+use this program freely without obligation to the author.  The author is NOT
+responsible for any damages that may incur or be caused directly or remotely
+by this program or any of its companion files.  You may distribute this
+program freely without any charge as long as the original archive's contents
+are not modified.
+
+II. Programs and Operating Systems Supported
+
+To date Crystalline Stats supports the following software:
+
+Legend Of the Red Dragon
+Legend Of the Red Dragon II
+Planets: The Exploration Of Space
+Avalon - Live The Epic
+
+Crystalline Stats runs on these Operating Systems:
+
+DOS/DPMI          You need an active DPMI server or use CWSDPMI.
+Windows 32        This will run on any Windows 9x/ME/NT/2000 machine.
+Linux, *NIX       Statically Linked ELF Binary.  Should work on any *NIX OS.
+
+There is plans for an OS/2 version.  Once a suitable compiler is obtained
+this version will become available with all the same functionality as the
+other versions.
+
+III. General Information
+
+Crystalline Stats is a program that will take the player information from
+certain games and then create an HTML file that will list all the current
+players and various information about them.
+
+Minimum Requirements for all versions are:
+Intel Compatible 386 or better processor
+500KB of space for the program
+Monochrome Monitor or better
+640KB Minimum RAM
+
+Other Requirements:
+Windows   Windows 9x/ME/NT/2000
+*NIX      Anything that can support ELF binaries
+DOS       DPMI server such as CWSDPMI.
+
+Note: Might require more RAM to run the DPMI server. DOS Specific.
+
+This program takes a few command line arguments.  These arguments or
+parameters will tell it which game to parse and where the game is located.
+
+Usage: cstats <game> <path>
+
+First Parameter ( game ):
+
+ Option         Game Being Parsed
+ ------         ---------------------------------
+-lord           Legend Of the Red Dragon
+-lord2          Legend Of the Red Dragon II
+-teos           Planets: The Exploration Of Space
+-avln85         Avalon - Live The Epic
+
+The second parameter/argument is the path where the program is stored.  Some
+examples of paths are as follows:
+
+Windows, DOS, OS/2:      C:\BBS\DOORS\LORD
+*NIX, Linux, etc  :      /usr/home/bbs/doors/lord
+
+The leading slash (forward or backward) is not required.  Those are the only
+parameters that Crystalline Stats needs.  If one or more of these are not
+given or are invalid then the program will exit in error.
+
+If you specify more than one game it will only use the first one specified.
+Also, if you specify more than one path it will also only use the first one.
+
+Note: Do not use <, >, or | in the path name since those are illegal
+      characters.
+
+IV: What The Program Does.
+
+It will attempt to open the required files for each game from the path you
+specify.  If the open fails it will exit informing you of the problem.
+Otherwise it will read the player data and any other required information.
+After all players are loaded it will then parse them to sort, usually
+sorting by using the experience of the player.  Players are then outputted
+to an HTML file. If any problems occur the program will normally exit or
+stop processing and verbally inform you of the problem.
+
+V: Files created by Crystalline Stats
+
+Depending on which door is parsed, a file is created that is the actual
+statistics file.  A list of the known created files are:
+
+Game                                       Stat File Created
+---------------------------------          -----------------
+Legend Of the Red Dragon                   lstat.htm
+Legend Of the Red Dragon 2                 l2stat.htm
+Planets: The Exploration Of Space          pstat.htm
+Avalon - Live The Epic                     avlnstat.htm
+
+As games are added then number of outputted files will increase.
+
+VI: How To Contact Me
+
+You may contact me, Michael Dillon, with any comments or suggestions using
+the following methods:
+
+IRC:     DALnet ( dragons.dal.net ) in #CrystallineRealms
+         BBSNet ( irc.lordlegacy.org, irc.thebbs.org ) in #bbs
+E-Mail:  gsvalore@arn.net ( Primary e-mail )
+         crealms@arn.net  ( Crystalline Realms e-mail address )
+Website: http://members.darktech.org/gsvalore/ ( Crystalline Realms )
+
+If you'd like to become a beta tester, please use one of the method above
+to contact me.
+
+*Note I use the alias of GSValore on IRC networks.
+
+VII: Thanks
+
+My thanks go out to all those that helped me work on this software mostly
+by tolerating my rantings.  Most especially those that tested the software
+on various platforms to make sure it worked.
+
+VIII: Other Legal Information
+
+Crystalline Realms is trademarked to Michael Dillon.
+All other copyrights belong to the respected holders.
+
+Legend Of the Red Dragon, Legend Of the Red Dragon 2,
+Planets: The Exploration Of Space are Copyright (C) Metropolis.
+
+Avalon - Live The Epic is Copyright (C) Dean Woodside.

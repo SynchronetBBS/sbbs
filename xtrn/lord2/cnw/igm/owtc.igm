@@ -1,0 +1,39 @@
+
+                The Oracle of What's to Come v3.00
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01
+  Is registered version of LORD2 required to use? : Possibly!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes! 
+  Adds new .refs?                                 : Yes! (4)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM owtc.IGM
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%The Oracle of What's to Come v`@3`%.`@00 `2by `0Tien Lung
+replacescreen: 1125 1 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2The Oracle of What's to Come introduces characters to a story behind 
+  the scenes and moderately works to slowly build up the character.
+
+  `2This `0IGM `2is located in the abandonned cavern by Stonebrook
+  `2By: `!G`3odlike `!P`3roductions

@@ -1,0 +1,141 @@
+-House of the Incredible Tensions-
+  (c)opyright 1997 Chris Yeates
+     An IGM for LORD2 v1.00
+
+by Chris Yeates (Screwy343@aol.com)
+or at his BBS -- The Loose Screw (801)561-4780
+
+(The really bland looking credits above were also done by Chris <g> )
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+        This is one big IGM. This is my third actually decent-enough-to-be
+  -released IGM for Lord II. I know a great many people who were disappointed
+  that there was no Red Dragon here in Lord II, so this is it. This creates
+  the Red Dragon Ending everyone was looking for.
+        This IGM is incredibly difficult (and it was incredibly difficult to
+   write). It is only for those who are very far in the game and/or have
+   completed the game (as good or evil).
+        If you can find your way through the House of the Incredible Tensions,
+   solving puzzles and what-not, then you will be taken completely unarmed to
+   the valley of the Red Dragons, where each enemy is a red dragon...plus, the
+   enemies are formed under much the same format that Turgon's or Barak's
+   training opponents are (to match the skill level of the user).
+        Lastly, if you can solve all the puzzles in the Valley of the Red
+   Dragon, you can fight the Mother of all Red Dragons, and find a new ending
+   to Lord II.
+
+        It also has frequent allusions to:
+                -The Legend of Zelda
+                -Star Wars
+                -Back to the Future
+                -Aliens
+                -The Loose Screw BBS <g>
+
+        I'm terrible at documentation. I urge you to try it. I promise you
+   won't be disappointed, though I also promise you it is REALLY difficult.
+   Don't give up. You will want to see the valley of the red dragon (I hope).
+
+   Please report all bugs to Screwy343@aol.com. Also contact me there if
+   you'd like either one of my other IGM's (MafiaVille and The Loose Screw
+   Resort). However, you can find both of these on the Offical Lord 2 IGM
+   page...at any rate. Enjoy!
+
+  Installation:
+  Unzip into your LORD2 dir and type:
+   IGM TENSE.IGM
+
+  Un-installation:
+   IGM TENSE.IGM (again)
+   and type "delete TENSE*.DAT"
+   and type "delete TENSE*.IDF"
+   and type "delete TENSE*.TXT"
+
+   (This IGM creates a shitload of files)
+
+  Resetting LORD2:
+    type "delete TENSE*.DAT"
+    type "delete TENSE*.IDF"
+    type "delete TENSE*.TXT"
+
+  Location:
+  Sort of near Greentree
+
+  By the way, this IGM creates the following files:
+
+  TENSEMN1.DAT
+  TENSEMN2.DAT
+  TENSEMN3.DAT
+  TENSEMN4.DAT
+  TENSEFIN.DAT
+  TENSEWMN.DAT
+  TENSEKEY.DAT
+  TENSEKB.DAT
+  TENSEQZ.DAT
+  TENSEQZ2.DAT
+  TENSEW1.DAT
+  TENSEW2.DAT
+  TENSEW3.DAT
+  TENSEW4.DAT
+  TENSEP1.DAT
+  TENSEP2.DAT
+  TENSEPK.DAT
+  TENSESCLE.DAT
+  TENSEWPN.DAT
+  TENSESEC1.DAT
+  TENSESEC2.DAT
+  TENSESEC3.DAT
+  TENSEQZ1.IDF
+  TENSEQZ2.IDF
+  TENSEDP.DAT
+
+  Again, I apologize for my crappy .DOC writing...I hope you like the IGM
+  better.
+
+  Please PLEASE mail me with anything -- compliments, criticisms, questions.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%House of the Incredible Tensions `7by `8Chris Yeates
+replacescreen: 1357 1 show
+
+replacescreen: 895 2 noshow
+
+replacescreen: 815 3 noshow
+
+replacescreen: 735 4 noshow
+
+replacescreen: 736 5 noshow
+
+replacescreen: 816 6 noshow
+
+replacescreen: 896 7 noshow
+
+replacescreen: 897 8 noshow
+
+replacescreen: 817 9 noshow
+
+replacescreen: 737 10 noshow
+
+replacescreen: 738 11 noshow
+
+replacescreen: 818 12 noshow
+
+replacescreen: 898 13 noshow
+
+replacescreen: 899 14 noshow
+
+replacescreen: 819 15 noshow
+
+replacescreen: 739 16 noshow

@@ -1,0 +1,267 @@
+; Script file DF.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:37 2001
+
+@DECLARE guard 000000634
+@DECLARE locke 000000711
+@DECLARE matt 000000794
+@DECLARE kstart 000001113
+@DECLARE help 000002037
+@DECLARE  000002199
+@DECLARE krystal2 000002213
+@DECLARE krystal3 000003609
+@DECLARE ps 000004027
+@DECLARE touch 000004097
+@DECLARE zelda 000004193
+@DECLARE wee 000004252
+@DECLARE auto 000004309
+@DECLARE welcome 000005117
+@DECLARE computer 000005208
+@DECLARE man 000005287
+@DECLARE man2 000005360
+@DECLARE man3 000005454
+@DECLARE man4 000005558
+@DECLARE man5 000005660
+@NOCHECK
+; End of .REF index
+
+@#Guard
+@do saybar
+`2You better be good or you won't make it back home.
+
+@#Locke
+@Do moveback
+@do saybar
+`5Locke`2: Why me?! Why is it always broken?!
+
+@#Matt
+;My Boss
+@busy
+@do moveback
+@do `p20 is 0
+@dataload DF.IDF &playernum `p98
+
+@if `p98 is 1 then do
+@begin
+@run Krystal2 in DF.REF
+@end
+
+@if `p98 is 2 then do
+@begin
+@run Krystal2 in DF.REF
+@end
+
+@if `p98 is 3 then do
+@begin
+@run Krystal3 in DF.REF
+@end
+
+@do `p20 is 0
+@do `p97 is 0
+@label KStart
+@do `v01 is 1
+@show
+`r0`c`r1  `%Matt the President  `r0
+
+      `2As you enter the room you see Playstation posters fill every inch of
+      `2wall. Matt raises an eyebrow...
+
+      `2"What do you want?" he asks.
+
+@choice
+<`p97 1 I heard you're in a bit of some trouble.
+=`p97 1 I'll help you destroy SoldaCar!
+Run!
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+@if responce is 2 then do
+@begin
+@do write
+`\`\
+@show
+      `0"Thank you! Check the Computers downstairs to learn the
+      `0location of SoldaCar headquarters. Your mission, is to
+      `0kill the evil Dr. Notnilc who has kidnapped my dog for
+      `0his "science." Please hurry.
+     
+@key
+@datasave df.IDF &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+
+@if responce is 1 then do
+@begin
+@display help in DF.REF
+@key
+@do `p97 is 1
+@do goto KStart
+@end
+
+@if responce is 1 then do
+
+@#help
+`c`r0  `%We want you!
+
+      `2Well you see, we are at war with SoldaCar and we need someone
+      `2to help us take them out... Will you be that person?
+@#
+
+@#Krystal2
+@do `v01 is 1
+@show
+`r0`c`r1  `%The President  `r0
+
+      `2As you enter the room you see Playstation posters fill every
+      `2inch of wall. Matt raises an eyebrow...
+
+      `2He looks at you and speaks, "Did you destroy Notnilc and save
+      `2my dog?"
+
+@choice
+=`p98 2 I have done so. But I have bad news as well...
+=`p98 1 I have yet to do so.
+@if responce is 2 then do
+@begin
+@do write
+`\`\
+@show
+      `0"Please hurry.  There isn't much time!"
+@key
+@drawmap
+@update
+@closescript
+@end
+
+@If responce is 1 then do
+@begin
+@show
+`r0`c`r1  `%VICTORY!  `r0
+
+      `2"You have defeated SoldaCar! Thank you! Now, where is my dog?"
+      `2he asks softly.
+
+      `%"I'm sorry to inform you of this. But I was too late.
+      `%Dr. Notnilc transformed Zelda into a monster and it had to
+      `%be destroyed...
+
+      `2Matt stands there, motionless. Locke hears the news and talks
+      `2to Matt.
+
+      `7Locke speaks up, "I talked to him so he should be ok now.
+      `7Thank you for helping us. In return, I shall give you a reward."
+
+       You get 20 Muscle and 20 Dodge!
+@key
+@do `p03 + 20
+@do `p04 + 20
+@datasave df.idf &playernum 3
+@do addlog
+  `r1  `r0 `0`n`% has solved the `4SoldaCar Crisis`%!`r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+
+@drawmap
+@update
+@closescript
+@end
+
+@#Krystal3
+@show
+`r0`c`r1  `%Matt `r0
+
+      `2As you enter the room you see Playstation posters fill every inch of
+      `2wall. Matt raises an eyebrow...
+
+      `2Matt looks up at you... "Ah, it is you again. Well, Locke has helped
+      `2me calm down. But I don't want to speak now... Please, leave...
+
+@choice
+Sorry, I'll leave.
+@if responce is 1 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+
+@#PS
+@do saybar
+Matt: `2Wouldn't you rather play PlayStation?
+
+@#Touch
+@Do moveback
+@Do saybar
+`5Locke`2: Don't touch my computer. It's fucked anyway...
+
+@#Zelda
+@Do saybar
+Matt: `2I wonder where Zelda is now?
+
+@#Wee
+@do saybar
+Weeeeeee! I love indoor swimming!
+
+@#Auto
+@do moveback
+@busy
+@show
+`r0`c  `%`r1  A Computer Image  `r0
+
+     `3You walk up to the computer to ask for directions. Suddenly the blank
+     screen turns into a face of a Woman.
+
+     `2"Here are your directions: To the SouthWest of you is the council
+     room. Today they are debating about the SoldaCar crisis. You might
+     Want to talk to them...
+       To your SouthEast is the Computer room, where we gather as much
+     info on this world. Go there and it may give you some info on things.
+       Upstairs are the personal quarters of our Leaders, Matt & Locke.
+     You might wanna talk to them last because they are kinda in a huff
+     about SoldaCar kidnapping Mat's dog. Enjoy!"
+
+     `3"Thanks... er..."
+`k
+   @drawmap
+   @update
+   @closescript
+   @end
+
+@#Welcome
+@do saybar
+Welcome to the Computer room. Use the purple terminal to start.
+
+@#Computer
+@do saybar
+On the screen you see a dark castle in the RockHolm Mts.
+
+@#Man
+@do moveback
+@do saybar
+Man: `2We must get rid of SoldaCar!
+
+@#Man2
+@do moveback
+@do saybar
+Ashley: `2But what can we do? Our spys have been killed.
+
+@#Man3
+@do moveback
+@do saybar
+Man: `2If we want to attack them, we'll need a very small force...
+
+@#Man4
+@do moveback
+@do saybar
+Woman: `2Why don't you become our spy? Go upstairs and ask Matt.
+
+@#Man5
+@do moveback
+@do saybar
+Man: ...

@@ -1,0 +1,508 @@
+; Script file PALO.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE castle 000000859
+@DECLARE finneg 000001045
+@DECLARE fiend 000002837
+@DECLARE cave 000006058
+@DECLARE mazeguy 000006160
+@DECLARE ghostguard 000006280
+@DECLARE wizard 000006392
+@DECLARE guard 000009307
+@DECLARE drink1 000009603
+@DECLARE drink2 000009676
+@DECLARE drink3 000009794
+@DECLARE drink4 000009904
+@DECLARE bless 000010003
+@DECLARE bartender 000010663
+@DECLARE nomore 000012687
+@NOCHECK
+; End of .REF index
+
+;þÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄþ
+;       Paladin's Oasis IGM for LORD ][
+;       ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;  version 2 - Finneg bug fixed      entrance -- middle of desert
+; Author: E-mail TALAPHID@JUNO.COM
+;þÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄþ
+@#CASTLE
+@offmap
+ @show
+`r0`c`r1`% Inside the Paladin's Oasis Castle `r0`\
+@do `v01 is 3
+@choice
+Talk to Finneg
+Talk to `@F`4iend
+Leave
+@if RESPONSE is 1 then do
+ @begin
+@LABEL FINNEG
+ @show
+`r0`c`r1`% Dealing with the unwholesome Finneg `r0`\
+@if `i44 > 0 then do
+ @begin
+@show
+`9Finneg: `%"`7I'll buy that `+44`7 off you for `$3 gems`7...?`%"`\
+@do `v01 is 1
+@choice
+ No way, you loon!
+ Sure! Done deal!
+@if RESPONSE is 2 then do
+ @begin
+ @do `p19 + 3
+ @do `i44 - 1
+ @do `p14 is 0
+ @do `p15 is 0
+ @do `p16 is 0
+ @do `p17 is 0
+ @end
+ @end
+@if `i47 > 0 then do
+ @begin
+@show
+`9Finneg: `%"`7I'll buy that `+47`7 off you for `$4 gems`7...?`%"`\
+@do `v01 is 1
+@choice
+ No way, you loon!
+ Sure! Done deal!
+@if RESPONSE is 2 then do
+ @begin
+ @do `p19 + 4
+ @do `i47 - 1
+ @do `p14 is 0
+ @do `p15 is 0
+ @do `p16 is 0
+ @do `p17 is 0
+ @end
+ @end
+@if `i48 > 0 then do
+ @begin
+@show
+`9Finneg: `%"`7I'll buy that `+48`7 off you for `$3 gems`7...?`%"`\
+@do `v01 is 1
+@choice
+ No way, you loon!
+ Sure! Done deal!
+@if RESPONSE is 2 then do
+ @begin
+ @do `p19 + 3
+ @do `i48 - 1
+ @do `p14 is 0
+ @do `p15 is 0
+ @do `p16 is 0
+ @do `p17 is 0
+ @end
+ @end
+@if `i46 > 0 then do
+ @begin
+@show
+`9Finneg: `%"`7I'll buy that `+46`7 off you for `$2 gems`7...?`%"`\
+@do `v01 is 1
+@choice
+ No way, you loon!
+ Sure! Done deal!
+@if RESPONSE is 2 then do
+ @begin
+ @do `p19 + 2
+ @do `i46 - 1
+ @do `p14 is 0
+ @do `p15 is 0
+ @do `p16 is 0
+ @do `p17 is 0
+ @end
+ @end
+@if `i45 > 0 then do
+ @begin
+@show
+`9Finneg: `%"`7I'll buy that `+45`7 off you for `$3 gems`7...?`%"`\
+@do `v01 is 1
+@choice
+ No way, you loon!
+ Sure! Done deal!
+@if RESPONSE is 2 then do
+ @begin
+ @do `p19 + 3
+ @do `i45 - 1
+ @do `p14 is 0
+ @do `p15 is 0
+ @do `p16 is 0
+ @do `p17 is 0
+ @end
+ @end
+@show
+`\`\
+`9Finneg: `%"`7I do business all with quest items...`%" `7he sneers.
+@key
+ @RUN CASTLE
+ @end
+@if RESPONSE is 2 then do
+ @begin
+@LABEL FIEND
+@show
+`r0`c`r1`% Consulting the omnipresent `@F`4iend `r0`\
+`@F`4iend`7: `%"`7What do you want the inside word on?`%"`\
+ @do `v01 is 5
+ @choice
+Free money
+Other IGMs by Tal
+The questions of the Scrying Company
+What's the deal with Herman?
+No, I wanna remain ignant.
+ @if response is 1 then do
+ @begin
+ @show
+`\`\`@"`4Well, there's the money in the tree south and east of Stonebrook,
+you could sell the wildberries that are on the east side of the screen mom's
+house is on, and you can run errands for the `0Bartender`4 in `2Greentree`4,
+and run back and forth to `9Porttown`4. If you're weak, and you can't go
+beyond `9Porttown`4, reject offers to deliver anywhere but `2Greentree`4 or
+`9Porttown`4. Find out who owns the Wizard's Castle, get on their good side.
+GET THE WAND. Rumour is that the bats in the cave (this is for players who
+are before Neb) are the cash cows of that area. Beating up the helpless guys
+gets you some quick, easy cash. Do this even if you're good a few times, to
+afford the expensive equipment.`@"
+@key
+ @DO GOTO FIEND
+ @end
+ @if response is 2 then do
+ @begin
+ @show
+`\`\`@"`4Divine Comedy : To get past Peter, you need to be holding all four
+pieces of the Skystaff. But that's only the first time through. Raphael, the
+little `%bright white `4face on top, only lets people with more than 19
+alignment, whereas Incubus, the `@bright red`4 face on bottom, only lets past
+those of us with less than -19 alignment. There is a difference in which is
+your patron deity and his gifts -- but they're more or less equal.
+        Monastry : The sign with the Psalm on it rotates by day. The store
+sells two more items, if you are of sufficent virtue.
+        Scrying Company : For the questions, ask me about that seperately.
+But for the scoop, make sure there are only FIVE people in the band at
+O'Bubba's-- or else you've got a trickster. My hint to you is this --
+the IGM was written by TALAPHID, and he likes coincidences.
+        Gorilla Villa : This is a straightforward little IGM. The dryad
+is as powerful as the chief WHEN THEY LAST VISITED IT! So, they may NOW
+be a level 22, but if they haven't vistied since they claimed it at level 5,
+ho ho ho, an easy claim indeed. Each player can only own ONE house. Although,
+in the regular game of LORD ][, there is a moonstone not far from here.
+        Magi, the Teleportationist : This fellow charges you based upon
+your experience level. Don't bother paying for things like VooDoo temple
+or Divine Comedy -- they're right outside.`@"
+@key
+ @DO GOTO FIEND
+ @end
+ @if response is 3 then do
+ @begin
+ @show
+`\`\`@"`4The key to this is that the answer must, unfortunately, be uppercase.
+The answers, jumbled, are SETH VILLAGE DIARY SOSEN WILD BARAK'S KOSHI SMACKROD
+SHIRT SPIKED BERRIES ABLE JEWEL.`@"
+@key
+ @DO GOTO FIEND
+ @end
+ @if response is 4 then do
+ @begin
+ @show
+`\`\`@"`4Herman isn't too clever -- he never learns from his mistakes. But,
+if you learn the right items to bring to him, he can make a much cheaper
+Skystaff.
+@key
+ @DO GOTO FIEND
+ @end
+ @RUN CASTLE
+ @end
+@if RESPONSE is 3 then do
+ @begin
+ @do MOVEBACK
+ @DRAWMAP
+ @UPDATE
+ @closescript
+ @end
+
+@#CAVE
+  @do map is 1581
+  @do x is 34
+  @do y is 19
+  @loadmap 1581
+  @drawmap
+  @update
+
+@#MAZEGUY
+@DO SAYBAR
+`@Cr`4azed Man`7: `%"`7I once bit into a glowworm... that's the answer!!!`%"
+@DO MOVEBACK
+
+@#GHOSTGUARD
+@DO SAYBAR
+`%Gh`7os`%t`7: `%"`7The bartender has a good deal going... but only if you're good.`%"
+
+@#WIZARD
+@DO MOVEBACK
+@DO SAYBAR
+`7W`8i`7z`%a`7r`8d`7: Hi! I'm Herman, the great Transmutationist!
+@key
+@DO SAYBAR
+`7W`8i`7z`%a`7r`8d`7: Each use of my power drains one of your quest oppurtunities.
+@key
+;29 -> 25  Sky
+;1 -> 2 Poison
+;2 -> 24 Sky
+;4 -> 3  milk
+;3 -> 23 Skystaff
+;5 -> 6 Rusty Dag
+;6 -> 4 Dagger
+;8 -> 11 Little girl
+;11 -> 19 Apple
+;40 -> 30 Sparking Salmon
+;43 -> 2 Poison
+@if `p31 < 1 then do
+ @begin
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: It seems you don't have any quest oppurtunities left!
+ @closescript
+ @end
+@do `v01 is 1
+@show
+`r0`c`r1`% Talking with a madman `r0`\
+@choice
+I want nothing to do with insanity!
+>`i29 0 Change my Salmon!
+>`i01 0 Change my wildberries!
+>`i02 0 Change my poison berries!
+>`i04 0 Change my dagger!
+>`i03 0 Change my milk!
+>`i05 0 Change my Green Potion!
+>`i06 0 Change this rusty dagger!
+>`i08 0 Change my mom's pie!
+>`i11 0 Psst, change this little girl!
+>`i19 0 Doc, here's an apple, what can you do?
+>`i40 0 Here's this blue potion...
+>`i43 0 I've got a chicken egg...
+@drawmap
+@update
+@if RESPONSE is 1 then do
+ @begin
+ @closescript
+ @end
+@do `p31 - 1
+@if RESPONSE is 2 then do
+ @begin
+ @do `i29 - 1
+ @do `i25 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: Woah! Its a `%Skystaff`7 part!
+ @end
+@if RESPONSE is 3 then do
+ @begin
+ @do `i01 - 1
+ @do `i02 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: Uh oh, that looks dangerous!
+ @end
+@if RESPONSE is 4 then do
+ @begin
+ @do `i02 - 1
+ @do `i24 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: Woah! Its a `%Skystaff`7 part!
+ @end
+@if RESPONSE is 5 then do
+ @begin
+ @do `i04 - 1
+ @do `i03 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: >astounded< Its like Bessy, all over again...
+ @end
+@if RESPONSE is 6 then do
+ @begin
+ @do `i03 - 1
+ @do `i23 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: Woah! Its a `%Skystaff`7 part!
+ @end
+@if RESPONSE is 7 then do
+ @begin
+ @do `i05 - 1
+ @do `i06 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: Drat! ANOTHER object covered in rust...
+ @end
+@if RESPONSE is 8 then do
+ @begin
+ @do `i06 - 1
+ @do `i04 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: Ha. There goes the rust!
+ @end
+@if RESPONSE is 9 then do
+ @begin
+ @do `i08 - 1
+ @do `i11 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: That's the first time a little girl has been here.. honest!
+ @end
+@if RESPONSE is 10 then do
+ @begin
+ @do `i11 - 1
+ @do `i19 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: Sniffle... again, an apple... just like the last one...
+ @end
+@if RESPONSE is 11 then do
+ @begin
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: I could keep the doctor away!
+ @do `p31 + 1
+ @end
+@if RESPONSE is 12 then do
+ @begin
+ @do `i40 - 1
+ @do `i30 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: A POTION into a FISH?!?! Sounds like a fairy tale...
+ @end
+@if RESPONSE is 13 then do
+ @begin
+ @do `i43 - 1
+ @do `i02 + 1
+ @do saybar
+`7W`8i`7z`%a`7r`8d`7: I guess that egg was rotten...
+ @end
+
+@#GUARD
+@if `p07 < 9 then do
+ @begin
+ @do moveback
+ @do saybar
+`!G`3uard`7: Halt! No `bevil-doer`7 shall pass!
+ @key
+ @do saybar
+`!G`3uard`7: Even if you slip past me, others will see you for what you are!
+@closescript
+ @end
+ @do saybar
+`!G`3uard`7: Welcome to `%Paladin's Oasis!
+
+@#DRINK1
+@DO MOVEBACK
+@DO SAYBAR
+`7Avatar: It is TOUGH being good.
+
+@#DRINK2
+@DO MOVEBACK
+@DO SAYBAR
+`%Paladin: `7The `%Gryphon Moon`7 is our goal... I suspect the `bTooth Clan`7!
+
+@#DRINK3
+@DO MOVEBACK
+@DO SAYBAR
+`%Po`@pe`7: The enemies of the `%Light`7 seek the fabled `4Smackrod`7.
+
+@#DRINK4
+@DO MOVEBACK
+@DO SAYBAR
+`7Prophet: All will become clear when a Prince does obscure!
+
+@#BLESS
+@show
+`c[7B[255D[3C[7A[0;1;31mÚ[30mÄÄÄÄ[31m¿[8D[BÚ[0mÚ[1mÄÄÄÄÄÄ[A
+[9C[0m¿[1;31m¿[11D[BÚ[0mÚ[1mÚ[0mÙ[1;30mÙ[34mÜÜ[30mÀ[0mÀ[1m¿[0m¿[A
+[11C[1;31m¿[12D[B[30m³[37m³[0mÙ[1;30mÙ[34mÞ[0;34mÉ»[1mÝ[30mÀ[0mÀ[A
+[10C[1m³[30m³[12D[B³[37m³[0m¿[1;30m¿[34mÞ[0;34mÈ¼[1mÝ[30mÚ[0mÚ[A
+[10C[1m³[30m³[12D[B[31mÀ[0mÀ[1mÀ[0m¿[1;30m¿[34mßß[30mÚ[0mÚ[1mÙ[A
+[10C[0mÙ[1;31mÙ[11D[BÀ[0mÀ[1mÄÄÄÄÄÄ[0mÙ[1;31mÙ[8D[BÀ[30mÄÄÄÄ[31m[A
+[8CÙ[4D[3A[34mÈ¼[2D[1AÉ»[2D[33mÉ»[2D[BÈ¼[2D[37mÈ¼[2D[1AÉ»[2D[A
+[5C[0mÉ»[2D[BÈ¼[2D[1;30mÉ[1DÈ¼[2D[1AÉ»[2D [B [2D [1A [0m`\`\`\`\
+@#BARTENDER
+@if `p07 < 9 then do
+ @begin
+ @do saybar
+ `0Bartender: `7I don't deal with `4SCUM`7 like you.
+ @do moveback
+ @closescript
+ @end
+@show
+`r0`c`r1`% Dealing with Al `r0`\
+@do `v01 is 4
+@choice
+   Trade in 4 gems for a blessing (Gems: `$`p19)
+   Ask about potions
+   Ask about name
+   No deal
+@if RESPONSE is 4 then do
+ @begin
+@show
+`\`\      `$"`2See you later, you crazily-familar-yet-still-not-figure-type-person!`$"`\
+        @key
+        @do moveback
+        @drawmap
+        @update
+        @closescript
+ @end
+@if RESPONSE is 3 then do
+ @begin
+@show
+`\`\   `!"`3Hey, kid, if you know what's good for you, you won't ask no more questions.`!"
+   `$"`2What's amatta, your name something like Harry Ballz or something?`$"`\
+   `!"`3Impudent boy! I am a Gohl, and as such, the protection of the clan
+Sabrewulf is mine! As are the psychic powers passed from father to son!`!"`\
+   `$"`2Psyhic powers? More like bowel powers! P-U!`$"
+`\   `2...you think he'd make a better "barntender"...`\
+@key
+@RUN BARTENDER
+@end
+@if RESPONSE is 2 then do
+ @begin
+ @show
+`\`\`!"`3Do I `@LOOK`3 like a chemist?!`!"`\
+@key
+@RUN BARTENDER
+@end
+@if RESPONSE is 1 then do
+ @begin
+ @if `p19 < 4 then do
+  @begin
+  @do moveback
+  @drawmap
+  @update
+  @do saybar
+`0Bartender: `!"`3YOU MORON! You don't HAVE 4 gems!`!"
+  @closescript
+  @end
+ @do `v01 is 5
+@show
+`\`\`r1`% Exchanging Gems for... `r0`\
+@choice
+   Steel blessing ( Strength +5 )
+   Blood blessing ( Max HP +5 )
+   Forge blessing ( Defense +5 )
+   Soul blessing ( Charm +3, Alignment +2 )
+   Nah... changed my mind.
+@show
+`\
+ @do moveback
+@if RESPONSE is 5 then do
+ @begin
+ @key
+ @drawmap
+ @update
+ @closescript
+ @end
+ @ROUTINE BLESS
+ @key
+ @do `p19 - 4
+@if RESPONSE is 1 then do
+ @do `p04 + 5
+@if RESPONSE is 2 then do
+ @begin
+ @do `p02 + 5
+ @do `p03 + 5
+ @end
+@if RESPONSE is 3 then do
+ @do `p05 + 5
+@if RESPONSE is 4 then do
+ @begin
+ @do `p08 + 3
+ @do `p07 + 2
+ @end
+@drawmap
+@update
+@#NOMORE

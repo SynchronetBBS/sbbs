@@ -1,0 +1,403 @@
+; Script file BLUES.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE puzzle1 000000501
+@DECLARE success1 000001026
+@DECLARE fail 000001211
+@DECLARE puzzle2 000001742
+@DECLARE wins 000002297
+@DECLARE death 000002569
+@DECLARE runs 000002788
+@DECLARE puzzle3 000003068
+@DECLARE complete 000003642
+@DECLARE rans 000004120
+@DECLARE mirror 000004252
+@DECLARE dead2 000005947
+@DECLARE corner 000006379
+@DECLARE nomore 000006432
+@NOCHECK
+; End of .REF index
+
+@#puzzle1
+@dataload puz1.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do moveback
+@do saybar
+`%You don't want to go back.
+@closescript
+@end
+ 
+@busy
+@do moveback
+@show
+`r0`c`%The first challenge is a word puzzle.  You must spell just ONE WORD 
+from the following letters:  OWODREN (put you answer in lowercase and
+ABSOLUTELY NO SPACES!!)
+ 
+You answer: 
+@do readstring 20 NIL `s01
+@if `s01 is oneword then do
+@begin
+@run success1 in blues.ref
+@closescript
+@end
+ 
+@run fail in blues.ref
+@end
+ 
+@#success1
+@datasave puz1.idf &playernum 1
+@show
+`r0`cCongratulations warrior, you have passed the first test, you may now move
+on.
+`k
+@do x is 53
+@do y is 10
+@drawmap
+@update
+ 
+@#fail
+@do moveback
+@dataload fail.idf &playernum `p20
+@if `p20 is 1 then do     
+@begin
+@do moveback
+@show
+`r0`c`0"You have failed for the last time!"  `2The last thing you see before
+you die is the dragons image imprinted on your eyes.  If you're stumped,
+check the four corners of this room!
+`k
+@do enemy is Dragon's Test
+@routine dead2 in blues.ref
+@closescript
+@end
+ 
+@datasave fail.idf &playernum 1
+@show
+`r0`cYou have failed the test.  I will permit you to try again!
+`k
+@run puzzle1 in blues.ref
+ 
+@#puzzle2
+@dataload puz2.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do moveback
+@do saybar
+`%You don't want to go back.
+@closescript
+@end
+ 
+@busy
+@show
+`r0`cFor the second challenge, you are confronted with a mirror image of
+yourself.  You draw your weapon and advance, it does the same.  Now what?
+@do `v01 is 1
+@choice
+Attack.
+Run.
+Put away your weapon.
+@if responce is 1 then do
+@begin
+@routine death in blues.ref
+@end
+ 
+@if responce is 2 then do
+@begin
+@routine runs in blues.ref
+@end
+ 
+@routine wins in blues.ref
+ 
+@#wins
+@datasave puz2.idf &playernum 1
+@show
+`r0`c`%You put away your weapon.  The image does the same.  You approach and
+bond with the image.  All is well, you have defeated the second challenge, one
+more to go.
+`k
+@do x is 20
+@do y is 10
+@drawmap
+@update
+ 
+@#death
+@show
+`r0`c`%You lunge with you`4 s&weapon `%and hit the image.  You feel the pain
+as the blade hits its heart, and you fall over dead.  OOOOPPPPSSSS!!
+`k
+@routine dead2 in blues.ref
+@closescript
+@end
+ 
+@#runs
+@show
+`r0`c`%Wherever you run the mirror image follows.  When you stop it stops.
+You are getting nowhere this way.
+@do `v01 is 1
+@choice
+Attack.
+Put away weapon.
+@if responce is 1 then do
+@begin
+@run death in blues.ref
+@end
+ 
+@routine wins in blues.ref
+ 
+@#puzzle3
+@show
+`r0`cAs you approach the final door, you get a weird feeling
+`k
+@do map is 1187
+@do x is 36
+@do y is 9
+@loadmap &map
+@drawmap
+@update
+ 
+`%You stand confronted by the dragon and prepare for battle.
+@key
+@fight
+;name
+Blue Dragon
+;string
+Oh crap!
+;power string
+Finished at last!
+;sex
+1
+;weapons
+burns you|500
+shoots lightning|500
+chews you up|431 
+claws you|487
+swings his tail|501
+;defense
+400
+;experience
+2000
+;gold
+3000
+;hit points
+3000
+;if win
+BLUES.REF|COMPLETE
+;if lose
+BLUES.REF|DEAD2
+;if run
+BLUES.REF|RANS
+ 
+@#complete
+@datasave comp.idf &playernum 1
+@datasave compboat.idf &playernum 1
+@clearblock 21 24
+@do move 3 21
+@do write
+`%All of a sudden you hear the dragon's booming voice.  Congratulations
+@do move 3 22
+@do write
+warrior!  You have passed the tests and defeated my image!  You may now go
+@do move 3 23
+@do write
+free.  As a reward you will recieve 10 quest points.
+@key
+@do `p18 + 10
+@do map is 1188
+@do x is 25
+@do y is 8
+@loadmap &map
+@drawmap
+@update
+ 
+@#rans
+@do saybar
+`%The Blue Dragon won't let you run.  Now you have to fight him again!
+`k
+@routine puzzle3 in blues.ref
+ 
+@#mirror
+@do move 43 6
+@do write
+`$|
+@do move 43 6
+@do write
+`w`w`x
+@do move 43 6
+@do write
+`$/
+@do move 43 6
+@do write
+`w`w`x
+@do move 43 6
+@do write
+`$\
+@do move 43 6
+@do write
+`w`w`x
+@do move 43 6
+@do write
+`$|
+@do move 43 6
+@do write
+`w`w`x
+@do move 43 6
+@do write
+`$/
+@do move 43 6
+@do write
+`w`w`x
+@do move 43 6
+@do write
+`$\
+@do move 43 6
+@do write
+`w`w
+@do move 43 6
+@do write
+`%
+@do move 43 6
+@do write
+`w`x
+@do move 42 7
+@do write
+`%
+@do move 42 7
+@do write
+`w`x
+@do move 41 8
+@do write
+`%
+@do move 41 8
+@do write
+`w`x
+@do move 40 9
+@do write
+`%
+@do move 40 9
+@do write
+`w`x
+@do move 39 10
+@do write
+`%
+@do move 39 10
+@do write
+`w`x
+@do move 38 10
+@do write
+`%
+@do move 38 10
+@do write
+`w`x
+@do move 37 10
+@do write
+`%
+@do move 37 10
+@do write
+`w`x
+@do move 36 10
+@do write
+`%
+@do move 36 10
+@do write
+`w`x
+@do move 35 10
+@do write
+`%
+@do move 35 10
+@do write
+`w`x
+@do move 34 10
+@do write
+`%
+@do move 34 10
+@do write
+`w`x
+@do move 33 10
+@do write
+`%
+@do move 33 10
+@do write
+`w`x
+@do move 32 10
+@do write
+`%
+@do move 32 10
+@do write
+`w`x
+@do move 31 10
+@do write
+`%
+@do move 31 10
+@do write
+`w`x
+@do move 30 10
+@do write
+`%
+@do move 30 10
+@do write
+`w`x
+@do move 29 10
+@do write
+`%
+@do move 29 10
+@do write
+`w`x
+@do move 28 10
+@do write
+`%
+@do move 28 10
+@do write
+`w`x
+@do move 27 10
+@do write
+`w`x
+@do move 26 10
+@do write
+`%
+@do move 26 10
+@do write
+`w`x
+@do move 25 10
+@do write
+`%
+@do move 25 10
+@do write
+`w`x
+@do move 24 10
+@do write
+`%
+@do move 24 10
+@do write
+`w`w`w`x
+@routine puzzle2 in blues.ref
+ 
+@#dead2
+@show
+`r0`c`\`\`\`\`\`\`\
+                           `%You messed up s&boy!
+ 
+                    `4You will lose half gold and some exp.
+ 
+        `2You can't die in here, you must beat the challenges to escape!
+ 
+                         `k
+ 
+  @do X is 69
+  @do Y is 10
+  @do money / 2
+  @do `p02 is `p03
+  @do `p20 is `p01
+  @do `p20 / 5
+  @do `p01 - `p20
+  @do MAP is 1186
+  @drawmap
+  @update
+ 
+@#corner
+@do saybar
+`%The password is oneword.
+ 
+@#nomore
+ 
+

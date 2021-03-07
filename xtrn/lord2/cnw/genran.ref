@@ -1,0 +1,167 @@
+; Script file GENRAN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:13 2001
+
+@DECLARE genran 000000328
+@DECLARE npcfind 000003017
+@DECLARE taxes 000003057
+@DECLARE canoe 000003095
+@NOCHECK
+; End of .REF index
+
+;general random stuff that is usually called from any major tavel route
+;where roads are
+
+
+@#GENRAN
+@do saybar
+`7[ please wait ]
+@routine roses in rose.ref
+@do `p20 random 35 1
+
+@if `p20 is 1 then do
+ @begin
+ @run event1 in genran2.ref
+ @end
+@if `p20 is 2 then do
+  @begin
+  @run event2 in genran2.ref
+  @end
+@if `p20 is 3 then do
+  @begin
+  @run hunters in bounty.ref
+  @end
+@if `p20 is 4 then do
+  @begin
+  @run event4 in genran2.ref
+  @end
+@if `p20 is 5 then do
+  @begin
+  @run event5 in genran2.ref
+  @end
+@if `p20 is 6 then do
+  @begin
+  @run event6 in genran2.ref
+  @end
+@if `p20 is 7 then do
+  @begin
+  @run event7 in genran2.ref
+  @end
+@if `p20 is 8 then do
+  @begin
+  @run event6 in genran2.ref
+  ; yes, we want the run in with the Dragon Tooth guards to happen A LOT
+  @end
+@if `p20 is 9 then do
+  @begin
+  @run start in descent.ref
+  @end
+@if `p20 is 10 then do
+  @begin
+  @run event3 in genran2.ref
+  @end
+@if `p20 is 11 then do
+  @begin
+  @run event8 in genran2.ref
+  @end
+@if `p20 is 12 then do
+  @begin
+  @run event8 in genran2.ref
+  @end
+@if `p20 is 13 then do
+  @begin
+  @run event9 in genran2.ref
+  @end
+@if `p20 is 14 then do
+  @begin
+  @run event9 in genran2.ref
+  @end
+@if `p20 is 15 then do
+  @begin
+  @run event6 in genran2.ref
+  ; yes, we want the run in with the Dragon Tooth guards to happen A LOT
+  @end
+@if `p20 is 16 then do
+  @begin
+  @run event10 in genran2.ref
+  @end
+@if `p20 is 17 then do
+ @begin
+ @run canoe in genran2.ref
+ @end
+@if `p20 is 18 then do
+ @begin
+ @run canoe in genran2.ref
+ @end
+@if `p20 is 19 then do
+ @begin
+ @run canoe in genran2.ref
+ @end
+@if `p20 is 20 then do
+ @begin
+ @run horse in genran2.ref
+ @end
+@if `p20 is 21 then do
+ @begin
+ @dataload taxes.idf &playernum `p21
+ @if `p21 > 0 then do
+        @begin
+        @run taxes in genran2.ref
+        @end
+ @end
+@if `p20 is 22 then do
+ @begin
+ @run animalman in genran2.ref
+ @end
+@if `p20 is 23 then do
+ @begin
+ @run horse in genran2.ref
+ @end
+@if `p20 is 24 then do
+ @begin
+ @run movegold in vaults.ref
+ @end
+@if `p20 is 25 then do
+ @begin
+ @run seegold in vaults.ref
+ @end
+@if `p20 is 26 then do
+ @begin
+ @run seegold in vaults.ref
+ @end
+@if `p20 is 27 then do
+  @begin
+  @run hunters in bounty.ref
+  @end
+@if `p20 is 28 then do
+  @begin
+  @run hunters in bounty.ref
+  @end
+@if `p20 is 29 then do
+  @begin
+  @run hunters in bounty.ref
+  @end
+@if `p20 is 30 then do
+  @begin
+  @run hunters in bounty.ref
+  @end
+@if `p20 is 31 then do
+  @begin
+  @run hunters in bounty.ref
+  @end
+
+@if `p20 > 31 then do
+ @begin
+ @if `p96 < 1 then do
+        @begin
+        @run npcfind in genran2.ref
+        @end
+ @run drunk in genran2.ref
+ @end
+
+@#NPCFIND
+@RUN NPCFIND in GENRAN2.REF
+
+@#TAXES
+@RUN TAXES in GENRAN2.REF
+
+@#CANOE
+@RUN CANOE in GENRAN2.REF

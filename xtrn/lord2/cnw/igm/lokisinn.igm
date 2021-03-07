@@ -1,0 +1,55 @@
+
+                     Loki's Inn by Peter Jackson V1.03
+
+                           AN IGM FOR LORD2 1.01a+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs/recs                             : Yes! (7)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (8)
+  Free?                                           : Yes!
+
+
+  Description:
+    
+  To install, unzip into your LORD2 dir and type:
+
+  IGM LOKISINN.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, from Arrisville go North then west on the west highway. 
+  
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%L`7oki's `%I`7nn `8by `4AEsir `8software
+replacescreen: 202 1 show
+replacescreen: 261 2 noshow
+replacescreen: 341 3 noshow
+replacescreen: 342 4 noshow
+replacescreen: 343 5 noshow
+;344
+replacescreen: 422 6 noshow
+;345
+replacescreen: 502 7 noshow
+replacescreen: 346 8 noshow
+replacescreen: 347 9 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+
+  `b* `7Up to 18 player owned private rooms at Loki's Inn
+  `b* `7Built in code prevents 1 player from buying all the rooms.
+  `b* `7Innkeeper performs Name and sex changes
+  `b* `7Flirting  with local Man/Woman (depending on players sex)
+
+  `%Also see Loki.doc for full details about this IGM. 

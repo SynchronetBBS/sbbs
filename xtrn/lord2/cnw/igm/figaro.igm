@@ -1,0 +1,45 @@
+
+                     FIGARO CASTLE v1.3 by VooDoo KnighT
+
+Quick Info:
+
+  Is registered version of LORD2 required to use? : Yep
+  Using any LORD2 vars?                           : Yep
+  Overwrites any original .refs?                  : Nope
+  Saves and loads its own vars independently?     : Yep
+  Adds new .refs?                                 : Yep (4)
+  Replaces screens?                               : Yep (2)
+  Adds screens?                                   : Yep (9)
+  Free?                                           : Yep
+
+  To Install:
+   Type: INSTALL
+
+  To Uninstall:
+   Type: INSTALL (Why not!? They both execute "IGM FIGARO" newayz!) =)
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Figaro Castle (BETTER VERSION) `2by `0VooDoo KnighT
+replacescreen: 1031 1 show
+replacescreen: 344 2 noshow
+replacescreen: 424 3 noshow
+replacescreen: 504 4 noshow
+replacescreen: 425 5 noshow
+replacescreen: 503 6 noshow
+replacescreen: 505 7 noshow
+replacescreen: 423 8 noshow
+replacescreen: 264 9 noshow
+replacescreen: 345 10 noshow
+replacescreen: 1575 11 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+   `2FIGARO CASTLE `4(BETTER VERSION) `2is by VooDoo KnighT!
+   `2Here's my Second LORD2 IGM I've designed! This IGM looks
+   `2so much like the REAL FIGARO CASTLE in FF3, I'm happy you
+   `2installed it on your LORD2 game! =)
+   `2Greetz go to SQUARESOFT & KooK! Our `0HomePage`2:
+   `%http://www.angelfire.com/ks/knightsoft/index.html

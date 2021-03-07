@@ -1,0 +1,197 @@
+; Script file FALLS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE squeek 000000420
+@DECLARE lookout 000000515
+@DECLARE shacktrap 000000882
+@DECLARE underpath 000001177
+@DECLARE table 000001681
+@DECLARE canoe 000003172
+@DECLARE manintree 000003435
+@DECLARE hit 000003517
+@DECLARE godown 000004141
+@DECLARE nomore 000004175
+@NOCHECK
+; End of .REF index
+
+; Blue Falls v0.02
+@#squeek
+@do saybar
+`2You hear the boards under you sqeeking. It is sounds hollow below.
+
+@#lookout
+@do `p20 random 4 1
+@if `p20 is 1 then do
+@begin
+@do saybar
+`1"`%What a beautiful site!`1"
+@end
+@if `p20 is 2 then do
+@begin
+@do saybar
+`1"`%Nice waterfalls!`1"
+@end
+@if `p20 is 3 then do
+@begin
+@do saybar
+`1"`%so, this is the Blue Waterfall, upclose.`1"
+@end
+@if `p20 is 4 then do
+@begin
+@do saybar
+`1"`%arrgg... I got wet!"
+@end
+
+@#shacktrap
+@show
+`r0`c
+
+`2You fall down the hole. What a smart move!
+
+    `$You loose `%5`$hp.
+
+
+@key
+@do `p02 - 5
+@do x is 24
+@do y is 13
+@do map is 1117
+@loadmap 1117
+@drawmap
+@update
+@do saybar
+`$You can hear the falls more now. It is very loud down here.
+@closescript
+
+@#underpath
+@show
+`r0`c
+
+
+`2You follow the winding lightly lit cavern towards the light at
+ the other end.
+
+`k`k
+
+`2As you get very close to the end of the cavern, you suddenly
+fall down another hole. It takes you outside. The trap you just
+fell thru is not re-climbable. You decide to continue your journy
+onwards.
+
+   `$You loose `%15`$hp.
+
+@key
+@do `p02 - 15
+@do x is 40
+@do y is 3
+@do map is 1277
+@loadmap 1277
+@drawmap
+@update
+@do saybar
+`$Wasn't that fun? :)
+@closescript
+
+@#table
+@show
+`r0`c
+
+        `%On the table you see an old piece of paper.
+`k`k
+    *ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ*
+    ³-1st full moon of spring-                               ³
+    ³  Dear diary,                                           ³
+    ³    I wish I had more paper, so I could continue my     ³
+    ³diary. My dad left today on our canoe and has not return³
+    ³yet and it is after dark now.                           ³
+`k
+    ³                                                        ³
+    ³-next day-                                              ³
+    ³    He still has not returned, I waited over at the     ³
+    ³beach all day long.                                     ³
+`k
+    ³                                                        ³
+    ³-next day-                                              ³
+    ³    I sit on the cliff looking over the river, I still  ³
+    ³do not see him come home. I hope he comes next day.     ³
+`k
+    ³                                                        ³
+    ³-next day-                                              ³
+    ³    I am worry for my dad, I'm going to hike as far down³
+    ³the river I can, to try and find my dad. There are many ³
+    ³secrets my dad never told me yet about these mountain. I³
+    ³will have to find them for meself.                      ³
+    *ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ*
+`k
+`k
+@drawmap
+@update
+@end
+@closescript
+
+@#canoe
+@dataload canoe.idf &playernum `p20
+@IF `p20 LESS 1 THEN DO
+@BEGIN
+@DO MOVEBACK
+@do saybar
+if you jump in, the fast currents will take you away, and you will drown.
+@do quebar
+You need a good canoe to travel this river.
+@CLOSESCRIPT
+@END
+
+@#manintree
+@do saybar
+HELLO! This is my tree house, stay out!
+@do moveback
+@end
+
+@#hit
+@do `p20 random 5 1
+@if `p20 is 1 then do
+@begin
+@do `p02 / 3
+@do saybar
+ahhh! this isn't safe! aaaaahhhhhhhhhhhhh!
+@do y + 1
+@end
+
+@if `p20 is 2 then do
+@begin
+@do `p02 - 12
+@do saybar
+Ouch!, yet fun! yahhooooo!
+@do y + 1
+@end
+
+@if `p20 is 3 then do
+@begin
+@do `p02 - 36
+@do saybar
+eih! eih!, yahhooooo!
+@do y + 1
+@end
+
+@if `p20 is 4 then do
+@begin
+@do `p02 / 4
+@do saybar
+damn it.. this is painful, you try going down a waterfall in a canoe!
+@do y + 1
+@end
+
+@if `p20 is 5 then do
+@begin
+@do `p02 - 13
+@do saybar
+ahhh! this isn't safe! aaaaahhhhhhhhhhhhh!
+@do y + 1
+@end
+
+@#godown
+@do moveback
+@end
+
+
+@#nomore
+

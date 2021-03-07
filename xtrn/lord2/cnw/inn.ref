@@ -1,0 +1,2045 @@
+; Script file INN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:13 2001
+
+@DECLARE sign 000001095
+@DECLARE sign2 000001198
+@DECLARE violetsroom 000001268
+@DECLARE violet 000001363
+@DECLARE seth 000001503
+@DECLARE edhome 000001646
+@DECLARE laura 000001819
+@DECLARE edhouse 000001987
+@DECLARE fall 000002214
+@DECLARE chest2 000002500
+@DECLARE castle 000002726
+@DECLARE ferrynot 000002827
+@DECLARE bartender 000002945
+@DECLARE ferry 000007197
+@DECLARE cabin 000008105
+@DECLARE elle 000012111
+@DECLARE findrapest 000013610
+@DECLARE elletalk 000016328
+@DECLARE madoor 000017498
+@DECLARE manb 000018198
+@DECLARE maback 000018287
+@DECLARE startg 000018390
+@DECLARE potion1 000019565
+@DECLARE clean 000025219
+@DECLARE girl 000025323
+@DECLARE girl2 000025516
+@DECLARE door 000025748
+@DECLARE ma 000025797
+@DECLARE startma1 000025918
+@DECLARE startma 000033076
+@DECLARE mother 000037528
+@DECLARE chatwall 000038450
+@DECLARE finishoff 000039362
+@DECLARE potiond 000040118
+@DECLARE done 000041793
+@DECLARE nothing 000041849
+@NOCHECK
+; End of .REF index
+
+@#sign
+@do moveback
+@do saybar
+`%Arrisville - South                           Loki's Inn - West
+
+@#sign2
+@do moveback
+@do saybar
+`%Ferry Crossing services
+
+@#violetsroom
+@do moveback
+@do saybar
+`@Thats where Violet does, well you know.
+@closescript
+
+@#violet
+@do moveback
+@do `p70 is 1
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`%Violet: `#I'm Violet.
+@end
+
+@#seth
+@do moveback
+@do `p70 is 2
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`%Seth: `#I'm Seth Able.
+@end
+
+@#edhome
+@do moveback
+@do `p70 is 109
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`%Edward: `2Hello again, `n!`2  Nice of you to visit!
+@end
+
+@#laura
+@do moveback
+@do `p70 is 15
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`%Laura: `#Greetings!  Do you like my new room?
+@end
+
+@#edhouse
+;does edward live here?
+@if bitcheck `t12 5 0 then do
+  @begin
+  @do moveback
+  @do saybar
+Hmm... no answer.
+  @closescript
+  @end
+
+@do x is 39
+@do y is 12
+@do map is 160
+@loadmap &map
+@drawmap
+@update
+
+@#fall
+@show
+`r0`c  `r1A falling out `r0
+
+`2  You step back - your foot finds nothing but air.
+
+`k  You fall.. and fall.  After what seems like hours pass you finally hit
+  bottom.
+
+`k  Your hands feels warm and sticky.  You stop breathing.
+
+`k
+@run die in gametxt.ref
+
+@#chest2
+;secret
+@do moveback
+@if bitcheck `t13 2 1 then do
+  @begin
+  @do saybar
+There is nothing on the table.
+  @closescript
+  @end
+
+@bitset `t13 2 1
+@do saybar
+`%You find two Silver Potions!
+@do `i54 + 2
+
+
+@#castle
+;castle
+@do moveback
+@do saybar
+`0Sign on door: `2Will be for sale in next beta.
+
+
+@#ferrynot
+@do moveback
+@do saybar
+Ferry closed.  Will be active in next version. (it will cost $1000 I think)
+
+@#bartender
+@do moveback
+@if `p09 < 2 then do
+  @begin
+  @do saybar
+`0Bartender: `2Get outta my face kid, I've never heard of you!
+  @closescript
+  @end
+@do `v01 is 1
+@show
+`r0`c  `r1 Talking to the bartender `r0
+
+  `0"What do ya want, punk?"
+
+@do write
+`x`x
+@choice
+What day is it?
+Conduct business with the bartender
+Trade in gems
+Ask about Teams
+Leave
+@if response is 1 then do
+@begin
+@do `s01 is `v12
+@do `s02 is `v11
+@DO `p20 IS LENGTH `s01
+@if `p20 is 1 then do
+        @begin
+        @do frontpad `s01 2
+        @do pad `s01 3
+        @end
+@if `p20 is 2 then do
+        @begin
+        @do frontpad `s01 3
+        @end
+
+@DO `p20 IS LENGTH `s02
+@if `p20 is 1 then do
+        @begin
+        @do frontpad `s02 2
+        @do pad `s02 3
+        @end
+@if `p20 is 2 then do
+        @begin
+        @do frontpad `s02 3
+        @end
+@show
+`\
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+`r0                 `%             `r6`8___`r0`%             `r6`8___`r0`%
+`r0                 `%Today is day `r6`%`s02`r0`% of the year `r6`%`s01`r0`%
+
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@key bottom
+@end
+@if response is 4 then do
+@begin
+@show
+`\`\            `2What about the teams do you want to know?
+@do move 35 15
+@do `v01 is 1
+@choice
+STATS
+RELATIONS
+@if responce is 2 then do
+        @begin
+        @do `s09 is bartender
+        @do `s10 is inn.ref
+        @do `p29 is 0
+        @routine STARTREL in TLHOUSE.REF
+        @end
+@if responce is 1 then do
+        @begin
+@show
+`\`\`0"So you wanna hear about Teams?"
+`k
+@do `s01 is `8-
+@do `s02 is `8-
+@do `s03 is `8-
+@do `s04 is `8-
+@do `s05 is `8-
+@do `s10 is `s05
+@do `p21 is 0
+@do `p22 is 0
+@do `p23 is 0
+@do `p24 is 0
+@do `p25 is 0
+@do `p26 is 0
+@do `p27 is 0
+@do `p28 is 0
+@do `p29 is 0
+@do `p30 is 0
+@readfile tltname1.dat
+`s01
+@readfile tlhouse1.dat
+`p26
+@readfile tltname2.dat
+`s02
+@readfile tlhouse2.dat
+`p27
+@readfile tltname3.dat
+`s03
+@readfile tlhouse3.dat
+`p28
+@readfile tltname4.dat
+`s04
+@readfile tlhouse4.dat
+`p29
+@readfile tltname5.dat
+`s10
+@readfile tlhouse5.dat
+`p30
+@readfile tltres1.dat
+`p21
+@readfile tltres2.dat
+`p22
+@readfile tltres3.dat
+`p23
+@readfile tltres4.dat
+`p24
+@readfile tltres5.dat
+`p25
+@CLEAR SCREEN
+@do move 7 3
+@do write
+`r1 Cool TeamLord `r0
+@do move 5 5
+@do write
+`2-Team-
+@do move 30 5
+@do write
+`2-Gold-
+@do move 50 5
+@do write
+`2-Leader-
+@do move 5 6
+@do write
+`$`s01
+@do move 30 6
+@do write
+`$$`p21
+@do move 5 7
+@do write
+`s02
+@do move 30 7
+@do write
+`$$`p22
+@do move 5 8
+@do write
+`s03
+@do move 30 8
+@do write
+`$$`p23
+@do move 5 9
+@do write
+`s04
+@do move 30 9
+@do write
+`$$`p24
+@do move 5 10
+@do write
+`s10
+@do move 30 10
+@do write
+`$$`p25
+@do move 50 6
+@do `s08 is getname `p26
+@do pad `s08 28
+@do write
+`#`s08
+@do move 50 7
+@do `s08 is getname `p27
+@do pad `s08 28
+@do write
+`#`s08
+@do move 50 8
+@do `s08 is getname `p28
+@do pad `s08 28
+@do write
+`#`s08
+@do move 50 9
+@do `s08 is getname `p29
+@do pad `s08 28
+@do write               
+`#`s08
+@do move 50 10
+@do `s08 is getname `p30
+@do pad `s08 28
+@do write
+`#`s08
+@do move 1 12
+@key
+@end
+@do goto bartender
+@end
+@if responce is 2 then do
+  @begin
+  @do `p20 is 1
+  @run getquest in quest.ref
+  @end
+@if response is 3 then do
+@begin
+;3 gems for `i54 Silver potion,  3 gems for `i53 Gold, `i52 red.
+ @if `p19 < 3 then do
+   @begin
+   @show
+`\`\  `0"Hey, you need at least three gems to get a potion!"
+`\`k
+   @do goto bartender
+   @end
+  @do `v01 is 1
+  @show
+`\`\  `0"Okay, what kind a potion you want?"`2
+
+  @do write
+  `x`x
+  @choice
+Silver Potion
+Gold Potion
+Red Potion
+   @if response is 1 then do
+    @begin
+    @do `p19 - 3
+    @do `i54 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+   @if response is 2 then do
+    @begin
+    @do `p19 - 3
+    @do `i53 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+   @if response is 3 then do
+    @begin
+    @do `p19 - 3
+    @do `i52 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+  @end
+@drawmap
+@update
+
+@#FERRY
+;Ferrys on the Northern Continents        
+@offmap
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  `%Looks like a Ferry!  `r0
+
+  `2A man at the counter greets you `0"Hello there, like to travel across the
+  ocean?  It'll cost you 1000 gold."
+                      
+@DO WRITE
+`x`x
+@CHOICE
+>&Money 999 Take the Ferry
+Leave
+@IF RESPONSE IS 1 THEN DO
+@Begin
+@do money - 1000
+@Show
+`\`\  `$"Let's take a trip,"`2 you say and pay the man.
+`\`k
+  @if map is 215 then do
+    @begin
+    @loadmap 203
+    @do map is 203
+    @do x is 47
+    @do y is 13
+    @drawmap
+    @update
+    @DO SAYBAR
+`2Looks like a new land ...
+    @closescript
+    @end
+  @loadmap 215
+  @do map is 215
+  @do x is 49
+  @do y is 10
+  @drawmap
+  @update
+  @closescript         
+@End
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@Show
+`\`\  `2Maybe later...
+`\`k
+@DO MOVEBACK
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@End
+
+
+@#CABIN
+@do `v01 is 1
+@do moveback
+
+
+@if bitcheck `t12 5 1 then do
+  @begin
+  @do saybar
+No one is here.  Oh yeah, they moved to Greentree, remember?
+  @closescript
+  @end
+
+
+@if `p71 is 109 then do
+  @begin
+  @do saybar
+`0Uncle Edward: `2What are we doing back here?
+  @do quebar
+`0Laura: `#Take us to Greentree, `n`#!
+  @closescript
+  @end
+
+@if bitcheck `t12 4 1 then do
+  @begin
+  @show
+`r0`c  `r1  THE CABIN  `r0
+
+`2  A young woman opens the door.  `#"Have you changed your mind?"
+
+  @do write
+`x`x
+  @choice
+Yes, I'll take you and your uncle to Greentree, ok?
+No - just came by to tell you no again.  Haw!
+  @if response is 2 then do
+    @begin
+    @show
+`\`\  `2Laura is not amused.  She slams the door in your face!
+`\`k
+    @drawmap
+    @update
+    @closescript
+    @end
+
+ @do `p71 is 109
+ @show
+`\`\  `#"Wonderful!  I'll go tell Edward!"
+
+`k  `%TWO HOURS LATER, YOU LEAVE - WITH LAURA AND EDWARD WITH YOU!
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+
+@if `i41 < 1 then do
+ @begin
+  @show
+`r0`c  `r1  THE CABIN  `r0
+
+`2  A young woman opens the door.  `#"Can I help you?"
+
+  @do write
+`x`x
+  @choice
+Hi um... Can I be your friend?
+I may be a stranger, but let me in!
+You don't know me, but I've been watching you for a long time...
+  @show
+`\`\  `#"S&sir - neither my uncle nor I know you.  Please leave."
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+  @show
+`r0`c  `r1  THE CABIN  `r0
+
+`2  A young woman opens the door.  `#"Can I help you?"
+
+  @do write
+`x`x
+  @choice
+I have a letter for someone named Edward from his sister?
+@
+@bitset `t12 4 1
+@do `i41 is 0 ;take away letter
+@show
+`\`\  `#"Yes!  I am his niece, Laura.  Yes my uncle would want to see you,
+  please come in.  But first, I must warn you..."
+
+`k  `$"Warn me?  About what?" `2you ask.
+
+`#  "My uncle has a slight disorder... I never mention it - he would be
+  positively crushed if we were to say anything about it...  So.. I would
+  be debted to you forever if you don't."
+`\`k`c  `r1  `%Meeting Uncle Edward  `r0
+
+  `2Uncle Edward turns out to be a large jovial man with a round red face.
+
+  He shakes your hand enthusiastically.
+
+`k  `0"Nice to meeeheat you, `n`0!"
+
+`k  `4YOU ARE KNOCKED OVER BY THE `bWORST BREATH`4 YOU HAVE EVER SMELLED!
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+`%Nice to meet you too, Uncle Edward!
+`%You have `4REALLY `%bad breath, did you know that?!
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2He smiles and retires to a back room to read the letter.
+
+  `2Laura winks at you!
+
+  `%YOU GET ONE CHARM AND ALIGNMENT!
+  @do `p08 + 1
+  @do `p07 + 1
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `2You see a tear tricle down Uncle Edward's cheek.  He quickly wipes
+  it off.  `0"I must read this in private... I'll be back in a moment."
+
+`k  `2Laura slaps you.  
+
+ `4 YOU LOSE ONE CHARM AND ALIGNMENT!
+  @if `p08 > 0 then `p08 - 1
+  @do `p07 - 1
+  @end
+
+  @show
+`\`k`c  `r1  `%A CHANGE OF PLANS  `r0
+
+`2  Edward appears from a back room.
+
+  `0"We must go see her," `2he states gravely.
+
+  `2Laura stands up. `#"It is too dangerous, Uncle!  If only we had someone
+  to travel with us... Someone who knew the roads.."
+
+`k  `2All eyes turn to you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Absolutely NOT!  I am not a babysitter.
+Yes, I will take you to Ma, back in Greentree.
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `2Edward look downcast and Laura leaves the room in a huff.
+
+  `0"If you chahange `4::smell alert::`0 your mind, `n`0 - Please come back."
+
+  `2There isn't much else to do but leave.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+  @show
+`\`\  `2Edward and Laura cheer in unison!
+
+  `0"Wonderfull!  I'll pack my things!!" `2Uncle Edward shouts as he runs
+  out of the room.
+
+`k  `%TWO HOURS LATER, YOU LEAVE - WITH LAURA AND EDWARD WITH YOU!
+`\`k
+ @do `p71 is 109
+ @drawmap
+ @update
+
+@#ELLE
+;elle's room
+@do `p20 is 1
+@busy
+@do `p70 is 17
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@if bitcheck `t12 3 1 then do
+        @begin
+        @if bitcheck `t12 5 1 then do
+                @begin
+                @dataload npc/ellequst.idf &playernum `p20
+                @if `p20 > 0 then do
+                        @begin
+                        @dataload npc/ellequst.idf &playernum `p20
+                        @if `p20 < 3 then do
+                                @begin
+                                @datasave npc/ellequst.idf &playernum 3
+                                @do saybar
+`#`N`2: It wasn't Johhny! I talked with him near FlagCity, what really happened?`l`k
+                                @do saybar
+`#Elle`2: I don't care, go away.  `7<sniffle>`l`k
+                                @update
+                                @closescript
+                                @end
+                        @if `p20 is 3 then do
+                                @begin
+                                @do `p20 random 3 1
+                                @if `p20 is 1 then do
+                                        @begin
+                                        @datasave npc/ellequst.idf &playernum 4
+                                        @do saybar
+`#`N`2: Do you know who done this to you?`l`k
+                                        @do saybar
+`#Elle`2: Not really,`k
+                                       @label findrapest
+                                        @do `p21 random 200 2
+                                        @dataload npc\npcgendr.idf `p21 `p22
+                                        @if `p21 is 39 then goto findrapest  <--can't be Johnny!
+                                        @if `p22 is 0 then goto findrapest  <--can't be a female!
+                                        @if `p22 is 2 then goto findrapest  <--can't be a female!
+                                        @if `p22 is 4 then goto findrapest  <--can't be a female!
+                                        @if `p22 is 3 then goto findrapest  <--can't be a gay man!
+                                        @if `p22 > 5 then goto findrapest  <--huh? shouldn't even be this high!
+                                        @do `p70 is `p21
+                                        @routine getname in npcname.ref  <--can't be nobody!
+                                        @if `s01 is Somebody then goto findrapest
+                                        @do `t82 is `p21
+                                        @do saybar
+`#Elle`2: I was raped late one night just outside of GreenTree!`l`k
+                                        @do saybar
+`#Elle`2: It was too dark to see their face.`l`k
+                                        @update
+                                        @closescript
+                                        @end
+                                @end
+                        @do saybar
+`#`N`2: How do you feel now?`l`k
+                        @do saybar
+`#Elle`2: I feel better, thanks.`l`k
+                        @closescript
+                        @end
+                @do saybar
+`#Elle`2: I lost my baby because of you!  GET OUT!
+                @closescript
+                @end
+        @do saybar
+`#Elle`2: Thanks for talking to mum.  I wonder what she'll do?
+        @closescript
+        @end
+
+@if bitcheck `t12 2 1 then do
+  @begin
+  @do saybar
+`#Elle`2: Go talk to my mother!
+  @closescript
+  @end
+
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A girl is crying, talk to her? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+  @begin
+   @if `v06 is 1 then do
+     @begin
+     ;clean mode is on, so we can't say 'bitch'
+     @do saybar
+Poor girl, she needs to be alone.
+     @end
+
+   @if `v06 is 0 then do
+     @begin
+     @do saybar
+Let the bitch cry.
+     @end
+  @closescript
+  @end
+
+@if `v06 is 1 then do
+   @begin
+   ;clean mode is on, will disable this quest
+   @do saybar
+`0Elle: `2This game is running in `4CLEAN mode`2, so this quest is disabled.
+   @closescript
+   @end
+
+@do `v01 is 1
+@end
+
+@label elletalk
+@if `p20 is 0 then do
+@begin
+@show
+`r0`c  `r1  `%ELLE'S ROOM  `r0
+
+  `2The girl stops her convulsive sobbing to speak with you.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Your ma is big, eh?
+Why the water works?
+Leave
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0"Don't talk about my mother that way!  Get away from me!"
+`\`k
+;added for NPC profiles
+@dataload npc/npc-`p70.idf &playernum `p21
+@do `p21 - 15
+@datasave npc/npc-`p70.idf &playernum `p21
+; end of NPC change
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 2 then do
+  @begin
+  @do `s01 is a`xslut
+  @if `v06 is 1 then `s01 is pregnant
+  @show
+`\`\  `0"I'm pregnant!" `2she screams.
+
+`k  `$"Woah!! Does your ma know?  She thinks you are good girl, if
+  she knew you were `s01 she'd have a heart attack!" `2you soothe.
+
+`k  `0"I know," `2Elle tells you tearfully. `0"Would you tell her for me?  In
+  a nice way?  Make her understand that I LOVE Johnny!"
+
+`k  `2You agree.
+
+  `0"Thank you!  Come back and tell me what happened!!!"
+
+`k
+  @bitset `t12 2 1
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@drawmap
+@update
+@end
+@end
+@end
+@#madoor
+@if `p71 is 17 then do
+        @begin
+        @do saybar
+`$Elle opens to door to let you through.
+        @closescript
+        @end
+@if `p71 is 18 then do
+        @begin
+        @do saybar
+`$Ma opens to door to let you through.
+        @closescript
+        @end
+@if `p71 is 19 then do
+        @begin
+        @do saybar
+`$Estella opens to door to let you through.
+        @closescript
+        @end
+
+
+@if ninn1.dat exist true than do
+ @begin
+@readfile ninn1.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+ @end
+
+@if &lasty is 10 then do
+ @begin
+ @do moveback
+ @do saybar
+`!Ma: `$Only paying customers can go back there!
+ @end
+
+@#MANB
+;Man in the booth
+@DO SAYBAR
+`0"This is MY booth, go away."
+@do moveback
+
+@#MABACK
+@do moveback
+@do `p70 is 18
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@label startg
+
+@if ninn1a.dat exist false then do
+  @begin
+  @writefile ninn1a.dat
+200
+0
+  @end
+
+
+@if ninn1.dat exist false then do
+  @begin
+  @do saybar
+`#Ma: `0What are you doing behind the counter?!
+ @closescript
+  @end
+
+@readfile ninn1.dat
+`p20
+`s01
+@
+
+  @readfile ninn1a.dat
+`p26
+`p27
+  @
+
+@if ninnw1.dat exist false then do
+ @begin
+ @writefile ninnw1.dat
+5
+Red Potion
+ @end
+ @readfile ninnw1.dat
+`p29
+`s03
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`#Ma: `0What are you doing behind the counter?!
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing Ma `r0
+
+  `2She stops working for a moment.
+
+@do write
+`x`x
+@choice
+Set password to private bedroom. (currently is `0`s01`%)
+Ownership options
+Set inn fee (currently is at `$$`p26`%)
+Take money from register
+Change Toilet Water (currently is made of `!`s03s`%)
+Home Sweet Home
+Leave
+@if responce is 6 then do
+        @begin
+        @show
+
+`\`2This is you new home now.
+        @key
+        @do `p69 is 3
+        @end
+@if response is 5 then do
+ @begin
+ @label POTION1
+ @show
+`c`\`\  `0"What do you want your toilet water made of?"
+
+@do write
+`x`x`x
+@do `v01 is 1
+@choice
+Silver Potion
+Gold Potion
+Red Potion
+What!?!
+@if response is 4 then do
+ @begin
+ @show
+`\`\  `2Let's explain, shall we...
+
+  `0In your private room, there will be a toilet. In it, there will be water.
+  What kind of water is your choice. This water will be available to drink
+  once per day by yourself and whomever you allow inside your private room.
+
+        `2Types of Water:
+
+           `$-`0Silver Potion`2: Dodge goes up by 1!
+           `$-`0Gold Potion`2: Muscle goes up by 2!
+           `$-`0Red Potion`2: Max HP goes up by 5!
+
+  `2That's what we're talking about...
+
+`k
+
+  @do goto POTION1
+  @end
+
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2Ma says, and pours the contents of a Silver Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW1.DAT exist true then delete NINNW1.DAT
+ @writefile NINNW1.DAT
+1
+Silver Potion
+ @end
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2Ma says, and pours the contents of a Gold Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW1.DAT exist true then delete NINNW1.DAT
+ @writefile NINNW1.DAT
+2
+Gold Potion
+ @end
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2Ma says, and pours the contents of a Red Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW1.DAT exist true then delete NINNW1.DAT
+ @writefile NINNW1.DAT
+5
+Red Potion
+ @end
+
+  @do goto MABACK
+  @end
+
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `0"Before you look in that register.. lemmie tell you business has
+  been a little slow." `2Ma tells you.
+
+`k  `$"How slow?" `2you ask.
+
+`k  `0"Ok, we have not had a single customer since you last checked, ARE
+  YOU HAPPY NOW!?" `2Ma sobs as she bursts into tears. `0"You're going to
+  FIRE us!"
+
+`k
+   @do goto maback
+   @end
+
+
+  @readfile ninn1a.dat
+`p26
+`p27
+  @
+  @do money + `p27
+  @do delete ninn1a.dat
+  @writefile ninn1a.dat
+`p26
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p27`2, here ya go!
+
+`k
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto maback
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto maback
+
+  @end
+
+    @do goto maback
+    @end
+  @readfile ninn1a.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete ninn1a.dat
+  @writefile ninn1a.dat
+`p26
+`p27
+  @
+  @do goto maback
+  @end
+
+
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$10000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your Inn to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ninn1.dat
+  @writefile ninn1.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of Ma's Boarding House to you. 
+  Password to enter bedroom will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Ma's Boarding House`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Inn back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ninn1.dat
+  @do delete ninn1a.dat
+  @do money + 10000
+  @show
+`\`\  `%INN SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Ma's Boarding House`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete ninn1.dat
+  @writefile ninn1.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2Ma promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+@end
+
+@#CLEAN
+;Table in Jack's restaurant
+@DO SAYBAR
+Someone needs to clean up this table.
+@do moveback
+
+@#GIRL
+;Girl in MA's bording
+@do moveback
+@do `p70 is 19
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@DO SAYBAR
+`#Estella: `0Hey there, I hope you'll stay a night.
+@end
+
+@#GIRL2
+;Touching the Girl in Ma's bording
+@do moveback
+@do `p70 is 19
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+
+@if &sex > 0 then do
+@BEGIN
+@DO SAYBAR
+`#Estella: `0Hey look but don't touch big boy.
+@END
+
+@#door
+ @do saybar
+The door opens.
+ @end
+
+
+
+@#ma
+;ma from ma's boarding house
+@if ninn1.dat exist false then do
+  @begin
+@do moveback
+@do `v01 is 1
+@label startma1
+@do `p70 is 18
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@dataload npc/ellequst.idf &playernum `p20
+@show
+`r0`c  `r1  `%Talking to Ma `r0
+
+`2  'Ma' is a pleasantly plump woman with rosy cheeks.
+
+  `0"What kin I do for ya, child?" `2she asks.
+
+@do write
+`x`x
+@choice
+Get a room
+-`t12 5 Shoot the breeze with Ma
++`t12 2 -`t12 3 Your daughter got knocked up!
++`t12 1 I kill dogs.
++`t12 3 -`t12 4 Where do I deliver this letter again?
+=`p71 109 I have Uncle Edward with me!
++`t12 5 Shoot the breeze with Ma
+I'd like to buy this place!
+Leave
+>`p20 1 <`p20 5 It wasn't Johnny!
++`t11 7 Hand over the bastard
+@if responce is 11 then do
+        @begin
+        @show
+`\`\
+  `2"`$I got him right here!`2"
+  `l`k
+  `2"`0Great, let me punish him my way.`2" Ma takes him by the ear in the
+  back room. All you here is a lot of slapping.
+  `l`k
+  `2"`0Estella, get me the silver dagger`2" Estella runs to the back room
+  with the shark object.
+  `l`k
+  `2You suddenly hear a loud high pitch scream comming from the back room.
+`l`k
+  `2Ma and Estella comes out.
+  `2"`$There, that should take care of his breeding habits.`2"
+  `l`k
+
+ `@BONUS: `!3000 EXP
+ `@       `!75 QUEST POINTS
+        @key
+        @do `p01 + 3000
+        @do `p18 + 75
+        @do `p71 is 0
+        @bitset `t11 7 0
+        @datasave npc/ellequst.idf &playernum 255
+        @drawmap
+        @update
+        @closescript
+        @end
+@if responce is 10 then do
+        @begin
+        @show
+`\`\
+  `2"`$It wasn't Johnny that knocked your daughter up!`2" you say.
+  `l`l`k
+  `2Ma scowls out, "`0What do you mean?! its not Johnny?`2"
+  `l`l`k
+  `2"`$I caught up with Johnny near FlagCity, and he hardly knows who
+  Elle is. He says he was was last here less than 2 months ago hanging
+  out in the `4Red Dragon Inn`$. He said he's more interested in Violet's
+  daughter. He was only introduced to Elle for a short time. He hardly
+  remembered her at all.`2" you explain.
+  `l`l`k
+  `2"`0Then who did this obstructiveness!"
+  `l`l`k
+  `2"`$I'll try to find out for you Ma.`2" you insist.
+  `l`l`k
+  `2"`0Ok `N, try to find the culpret, we'll bring them to justice!`2"
+  `l`l`k
+  `2"`0Bring him here when you find him!`2"
+  `l`l`k
+
+        @bitset `t11 5 1
+        @dataload npc/ellequst.idf &playernum `p22
+        @if `p22 is 4 then `p22 is 4
+        @if `p22 is 3 then `p22 is 3
+        @if `p22 is 2 then `p22 is 3
+        @datasave npc/ellequst.idf &playernum `p22
+        @drawmap
+        @update
+        @closescript
+        @end
+@if response is 2 then do
+ @begin
+@if bitcheck `t12 3 1 then do
+  @begin
+ @show
+`\`\  `0"Not much to tell," `2Ma scowls. `0"My daughter Elle is the whore
+  of Greentree, that's all!"
+
+`k
+ @do goto startma1
+
+
+  @end
+ @show
+`\`\  `0"Not much to tell," `2Ma smiles. `0"My daughter Elle is the light
+  of my life.  I am so proud of her!"
+
+`k
+ @do goto startma1
+ @end
+
+@if response is 7 then do
+ @begin
+ @show
+`\`\  `0"Not much to tell," `2Ma smiles. `0"Elle still hates me and Laura
+  and Edward are still visiting.  They are renting a house near here."
+
+`k
+ @do `v01 is 1
+ @do goto startma1
+ @end
+
+
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `0"With who?!?!?!" `2the portly woman screams.  Ma looks like she is
+  ready to explode.
+
+`k  `$"That Johnny guy.  Yeah, ya want me to kill 'em for you?"
+
+`k  `2Ma thinks hard.  `0"No.. No we need something else.  I want you to
+  deliver this letter to my brother Edward urgently.  Please don't read it."
+
+`k  `%YOU GET THE LETTER!
+
+@if `i20 > 0 then do
+  @begin
+  @show
+  `2Your map was marked with his location.
+  @end
+@if `i20 = 0 then do
+  @begin
+  @show
+  `2If you buy a map, it will be marked with his location.
+  @end
+
+ @show
+`\`k
+ @bitset `t12 3 1
+ @do `i41 is 1
+ @do goto startma1
+ @end
+
+
+@if response is 5 then do
+ @begin
+ @show
+`\`\  `0"Take the letter to my brother Edward.  He lives about 4 miles south
+  of Greentree," `2Ma tells you.
+
+`k
+ @do `v01 is 1
+ @do goto startma1
+ @end
+
+@if response is 6 then do
+ @begin
+ @show
+`\`\  `0"Edward!!! How I've missed you!" `2cries Ma.  `0"And with Laura too!"
+
+`k  `2Your eyes moisten at this happy reunion.
+
+  `0"Did you bring it?" `2Ma asks seriously.
+
+  `2Edward slowly pulls something out of his knapsack...
+
+`k  `%IT IS A BARREN ROCK.
+
+`k  `0"We must do this now," `2Edward states somberly.
+
+`k`c  `r1 A little something different happens at the Inn... `r0
+
+  `2A few minutes later you hear screams coming from upstairs.
+
+`k  `2Later Ma comes down.  `0"Thanks to you, Elle is a virgin again.  At
+  least that's what we're gonna say, right?" `2she nudges with a wink.
+
+`k  `%MA GIVES YOU 2000 GOLD AND YOU GET 10 QUEST POINTS!
+
+`k
+ @bitset `t12 5 1
+ @do money + 2000
+ @do `p18 + 10
+ @do `p71 is 0
+ @do `p70 is 17
+@dataload npc/npc-`p70.idf &playernum `p21
+@do `p21 - 25
+@datasave npc/npc-`p70.idf &playernum `p21
+ @drawmap
+ @update
+ @end
+
+
+@if response is 4 then do
+ @begin
+ @show
+`\`\  `0"I'm so happy for you," `2Ma smiles.
+
+`k
+ @do goto startma1
+ @end
+
+
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"Ok, that will be $50."
+@do write
+`\`x`x
+@choice
+Ok!
+<`p07 -4 `4If I'm gonna spend `$$50`4, I might as well go up to the whore house, bitch.
+>`p07 -5 No way!
+ @if response is 1 then do
+   @begin
+   @if money < 50 then do
+    @begin
+    @show
+`\`\  `2Damn it... You only have `$$&money`2!
+`\`k
+    @do goto startma1
+    @end
+   @show
+   @do money - 50
+`\`\  `2Ma takes your money and tells you to find a room upstairs.
+   @do y - 2
+   @do x - 1
+   @drawmap
+   @update
+   @closescript
+   @end
+ @if response is 2 then do
+  @begin
+  @show
+`\`\  `2Ma's face turns beet red.  Haw, serves her right.`\`\`k
+  @end
+
+ @if response is 3 then do
+  @begin
+  @show
+`\`\  `2Maybe later - `$50 `2is a bit much.`\`\`k
+  @end
+
+
+
+ @do goto startma1
+ @end
+
+ @if response is 8 then do
+  @begin
+  @show
+`\`\  `$"I'd like to buy this place from you," `2you say to Ma.
+
+`k  `0"Oh, how did you know that because of increasingly hard times we've
+  been thinking of selling the place?" `2She is sobbing uncontrollably.
+
+`k  `$"I  didn't," `2you say. `$"But that's great! That's just what I was
+  hoping for."
+
+`k  `0"But we'd be out of work!" `2Ma screams at you.
+
+`k  `$"Oh, you could still work for me. I just want some profit."
+
+`k  `0"You mean it? You'd let us stay?"
+
+`k  `$"Sure."
+
+  @do goto FINISHOFF
+  @end
+@drawmap
+@update
+@end
+
+@closescript
+
+@end
+;---IF MA'S INN HAS BEEN PURCHASED!
+
+@readfile ninn1.dat
+`p20
+`s01
+@
+
+@do `s02 is getname `p20
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete ninn1.dat
+    @do addlog
+  `%Ma's Boarding House`2 is put on the market today.
+     @routine seperate in gametxt.ref
+  @end
+
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`0Ma: `2Greetings, s&sir!
+  @closescript
+  @end
+
+@do moveback
+@label startma
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Talking to Ma `r0
+
+`2  'Ma' is a pleasantly plump woman with rosy cheeks.
+
+  `0"What kin I do for ya, child?" `2she asks.
+
+@do write
+`x`x
+@choice
+Get a room
+-`t12 5 Shoot the breeze with Ma
++`t12 2 -`t12 3 Your daughter got knocked up!
++`t12 1 I kill dogs.
++`t12 3 -`t12 4 Where do I deliver this letter again?
+>`p71 109 I have Uncle Edward with me!
++`t12 5 Shoot the breeze with Ma
+How's the owner?
+Leave
+@if response is 2 then do
+ @begin
+@if bitcheck `t12 3 1 then do
+  @begin
+ @show
+`\`\  `0"Not much to tell," `2Ma scowls. `0"My daughter Elle is the whore
+  of Greentree, that's all!"
+
+`k
+ @do goto startma
+
+
+  @end
+ @show
+`\`\  `0"Not much to tell," `2Ma smiles. `0"My daughter Elle is the light
+  of my life.  I am so proud of her!"
+
+`k
+ @do goto startma
+ @end
+
+@if response is 7 then do
+ @begin
+ @show
+`\`\  `0"Not much to tell," `2Ma smiles. `0"Elle still hates me and Laura
+  and Edward are still visiting.  They are renting a house near here."
+
+`k
+ @do `v01 is 1
+ @do goto startma
+ @end
+
+
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `0"With who?!?!?!" `2the portly woman screams.  Ma looks like she is
+  ready to explode.
+
+`k  `$"That Johnny guy.  Yeah, ya want me to kill 'em for you?"
+
+`k  `2Ma thinks hard.  `0"No.. No we need something else.  I want you to
+  deliver this letter to my brother Edward urgently.  Please don't read it."
+
+`k  `%YOU GET THE LETTER!
+
+@if `i20 > 0 then do
+  @begin
+  @show
+  `2Your map was marked with his location.
+  @end
+@if `i20 = 0 then do
+  @begin
+  @show
+  `2If you buy a map, it will be marked with his location.
+  @end
+
+ @show
+`\`k
+ @bitset `t12 3 1
+ @do `i41 is 1
+ @do goto startma
+ @end
+
+
+@if response is 5 then do
+ @begin
+ @show
+`\`\  `0"Take the letter to my brother Edward.  He lives about 4 miles south
+  of Greentree," `2Ma tells you.
+
+`k
+ @do `v01 is 1
+ @do goto startma
+ @end
+
+@if response is 6 then do
+ @begin
+ @show
+`\`\  `0"Edward!!! How I've missed you!" `2cries Ma.  `0"And with Laura too!"
+
+`k  `2Your eyes moisten at this happy reunion.
+
+  `0"Did you bring it?" `2Ma asks seriously.
+
+  `2Edward slowly pulls something out of his knapsack...
+
+`k  `%IT IS A BARREN ROCK.
+
+`k  `0"We must do this now," `2Edward states somberly.
+
+`k`c  `r1 A little something different happens at the Inn... `r0
+
+  `2A few minutes later you hear screams coming from upstairs.
+
+`k  `2Later Ma comes down.  `0"Thanks to you, Elle is a virgin again.  At
+  least that's what we're gonna say, right?" `2she nudges with a wink.
+
+`k  `%MA GIVES YOU 2000 GOLD AND YOU GET 10 QUEST POINTS!
+
+`k
+ @bitset `t12 5 1
+ @do money + 2000
+ @do `p18 + 10
+ @do `p71 is 0
+ @drawmap
+ @update
+ @end
+
+
+@if response is 4 then do
+ @begin
+ @show
+`\`\  `0"I'm so happy for you," `2Ma smiles.
+
+`k
+ @do goto startma
+ @end
+
+
+@if response is 1 then do
+ @begin
+  @readfile ninn1a.dat
+`p26
+`p27
+  @
+ @show
+`\`\  `0"Ok, that will be $`p26."
+@do write
+`\`x`x
+@choice
+Ok!
+<`p07 -4 `4If I'm gonna spend `$`p26`4, I might as well go up to the whore house, bitch.
+>`p07 -5 No way!
+ @if response is 1 then do
+   @begin
+   @if money < `p26 then do
+    @begin
+    @show
+`\`\  `2Damn it... You only have `$$&money`2!
+`\`k
+    @do goto startma
+    @end
+   @show
+   @do money - `p26
+`\`\  `2Ma takes your money and tells you to find a room upstairs.
+  @do `p27 + `p26
+  @do delete ninn1a.dat
+  @writefile ninn1a.dat
+`p26
+`p27
+  @
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has stayed at your Inn!  Cha-CHING!
+
+   @do y - 2
+   @do x - 1
+   @drawmap
+   @update
+   @closescript
+   @end
+ @if response is 2 then do
+  @begin
+  @show
+`\`\  `2Ma's face turns beet red.  Haw, serves her right.`\`\`k
+  @end
+
+ @if response is 3 then do
+  @begin
+  @show
+`\`\  `2Maybe later - `$50 `2is a bit much.`\`\`k
+  @end
+
+
+
+ @do goto startma
+ @end
+
+ @if response is 8 then do
+ @begin
+ @show
+`\`\  `$"How's `0`s02 `$doing?" `2you groan meekly. You'd like to buy this
+  place.
+
+`k  `0"Doing fine. Doing fine. And a good owner, too! Treated us very
+  kindly, thank you for asking."
+
+  `$"What's his toilet water like?"
+
+  `0"Very tasty. I'd stay here just for that if I were you..."
+
+`k
+ @do goto startma
+ @end
+
+@drawmap
+@update
+
+
+@#mother
+;chick waiting for her daughter in RDI
+@do moveback
+@busy
+@do `v01 is 1
+@show
+`r0`c  `%`r1 Talking to a patron `r0
+
+`2  A woman is sitting on a stool.
+
+@do write
+`x`x
+@choice
+>`i11 0 `%Hello, woman, why so worried?
+>`i11 0 I have returned your daughter!  Safe and sound.
+=&sex 1 !`i11 1 Hey baby, wassup?
+Leave
+@if responce is 1 then do
+ @begin
+ @show
+`\`\  `0"My daughter was supposed to meet me here!  She is never this late!"
+
+`k
+@do goto mother
+ @end
+
+@if responce is 3 then do
+ @begin
+ @show
+`\`\  `0"Get lost, creep!"
+
+  `2Damn!  She is outta your league anyway.
+
+`k
+@do goto mother
+ @end
+
+
+@if responce is 2 then do
+ @begin
+ @do money + 50
+ @do `p01 + 10
+ @do `i11 - 1
+ @show
+`\`\  `0"Thank you so much!!!  You saved her life!"
+
+  `2The woman gives you `$$50`2! `2 You receive `010`2 experience for helping the community.
+`k
+@end
+
+
+@drawmap
+@update
+
+@#CHATWALL
+@do moveback
+@busy
+@show
+`r0`c  `r1  SCRIBBLING ON THE BULLETIN BOARD  `r0
+
+@if bar.txt exist false then do
+ @begin
+ @writefile bar.txt
+  `%Bartender `2: `0Notice - Do not graffiti on this or else!
+ @end
+
+@if bar.txt exist true then do
+ @begin
+ @displayfile bar.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile bar.txt
+  `%`n`2 : `0`s03
+ @do trim bar.txt 17
+ @drawmap
+ @update
+
+
+
+@#FINISHOFF
+@show
+`k`r0`c`\`\  `0"We'd sell it to you for `%$25,000`0?
+
+@do `v01 is 1
+@do write
+`x`x`x
+@choice
+>&money 24999  I'll take it!
+Too rich for my blood.
+@
+@if response is 1 then do
+@begin
+  @if ninn1.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile ninn1.dat
+&playernum
+NONE
+0
+0
+0
+0
+    @do money - 25000
+    @do addlog
+  `0`n `2buys `%Ma's Boarding House`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Ma, your Employee and Friend `r0
+`\`2  Nice job!  You now own her Inn!
+
+  `2Enjoy your new home.
+
+`k
+@label POTIOND
+@show
+`c`\
+  `2What would you like your toilet water to be made out of?
+
+@do write
+`x`x`x
+@do `v01 is 1
+@choice
+Silver Potion
+Gold Potion
+Red Potion
+What!?!
+@if response is 4 then do
+ @begin
+ @show
+`\`\  `2Let's explain, shall we...
+
+  `0In your private room, there will be a toilet. In it, there will be water.
+  What kind of water is your choice. This water will be available to drink
+  once per day by yourself and whomever you allow inside your private room.
+
+        `2Types of Water:
+
+           `$-`0Silver Potion`2: Dodge goes up by 1!
+           `$-`0Gold Potion`2: Muscle goes up by 2!
+           `$-`0Red Potion`2: Max HP goes up by 5!
+
+  `2That's what we're talking about...
+
+`k
+
+  @do goto POTIOND
+  @end
+
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2Ma says, and pours the contents of a Silver Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW1.DAT exist true then delete NINNW1.DAT
+ @writefile NINNW1.DAT
+1
+Silver Potion
+ @end
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2Ma says, and pours the contents of a Gold Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW1.DAT exist true then delete NINNW1.DAT
+ @writefile NINNW1.DAT
+2
+Gold Potion
+ @end
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2Ma says, and pours the contents of a Red Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW1.DAT exist true then delete NINNW1.DAT
+ @writefile NINNW1.DAT
+5
+Red Potion
+ @end
+
+@drawmap
+@update
+@closescript
+  @end
+
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@#DONE
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@#NOTHING

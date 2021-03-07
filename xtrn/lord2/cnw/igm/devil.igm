@@ -1,0 +1,53 @@
+                The Devil's Rage by Tony M. Brown V2.00
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 2.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (5)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (6)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  This is a test of skill where users can gain much needed experence.
+  I wish to remain anonymous because of the fact someone who sees this
+  will prolly be really religous, and then like call a preist on me or
+  something... I'll tell you, I do write to other IGMs that are fairly
+  good... try to find em...
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM DEVIL.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, goto the desert, to the osais... enter the hole!
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4The Devil's Rage `0by `4Tony M. Brown
+replacescreen: 1029 1 show
+replacescreen: 989 2 noshow
+replacescreen: 1069 3 noshow
+replacescreen: 909 4 noshow
+replacescreen: 179 5 noshow
+replacescreen: 180 6 noshow
+replacescreen: 260 7 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0This is the first release. This is an adventure to the pits of hell.
+  In there, warps will send you to a place to gain experence... for example
+  The Bunny Trail and The End of Time are just two of the places that
+  you can go. After exiting the pits of hell, you appear in the GreenTree
+  chapel... isn't that weird???
+
+

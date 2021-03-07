@@ -1,0 +1,1138 @@
+; Script file GUMTOWN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:25 2001
+
+@DECLARE foodsell 000000753
+@DECLARE food1 000000805
+@DECLARE behind 000001837
+@DECLARE son1 000001909
+@DECLARE urn 000001981
+@DECLARE talk 000002048
+@DECLARE healer 000002115
+@DECLARE dealer 000003922
+@DECLARE racetrack 000005011
+@DECLARE dograce 000005447
+@DECLARE armshop 000007546
+@DECLARE abstart 000007600
+@DECLARE townsign 000007956
+@DECLARE mybank 000008049
+@DECLARE priv 000010855
+@DECLARE innkeeper 000010953
+@DECLARE pass1 000012256
+@DECLARE pass2 000012510
+@DECLARE done 000013863
+@DECLARE doorguard 000013899
+@DECLARE startg 000013928
+@DECLARE sign 000019143
+@DECLARE enter 000019446
+@NOCHECK
+; End of .REF index
+
+
+
+@#foodsell
+@offmap
+@do moveback
+@do `v01 is 1
+@label food1
+@show
+`r0`c  `%The Kind Old Food Lady
+
+`2  She waves you over. She is simply too old and feebly to yell.
+
+@do write
+`x`x
+@choice
+Examine her wares.
+I've got some stuff if your a collector.
+What's your favourite food, lady?
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @buymanager
+  1
+  3
+  11
+  17
+  29
+  43
+  @end
+
+@if responce is 2 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @sellmanager
+  @end
+
+@if responce is 3 then do begin
+ @begin
+@show
+  `0"Yes, my favourite food is the infamous `4Waldorf Salad`0. 
+  `0It's beautiful. Berries, normal and poisonous; egg, salmon,
+   crumbled pie, a dash of milk, a tasty child and a sprinkling
+  `0of the finest glowworm this side of the Philopines.
+  `0Unfortunately my supplier doesn't sell berry pie "She says.
+  `2"I know what to get you, a double labotomy and ten rolls of
+   rubber wallpaper!"
+`k
+  @end
+
+
+
+@if responce not 4 then goto food1
+@drawmap
+@update
+
+@#behind
+ @do saybar
+   `4Get out from behind here!
+ @do moveback
+
+
+@#son1
+ @do saybar
+  `2Mom makes the best Pies ever.
+ @do moveback
+
+@#urn
+ @do saybar
+   A beautiful Grecian Urn.
+ @do moveback
+
+@#talk
+ @do saybar
+   Go away we're talking!
+ @do moveback
+
+@#healer
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1  GumTown Healing  `r0
+
+`2  A Georgeous lady looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Piss off ya pov bastard."
+
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot make love to a man who doesn't work," `2she informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 she snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.  OUCH!
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+    @do `p30 is 7
+    @do `v40 is `p20 
+    @routine deposit in vaults.ref
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later!" `2she giggles seductively.
+
+`k
+@drawmap
+@update
+
+
+@#DEALER
+;the info dealer
+@do moveback
+@busy
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Talking to The Dealer  `r0
+
+  `2A slightly evil looking man encourages you to sit.
+
+@do write
+`x`x
+@choice
+Gossip
+Conduct business with The Dealer
+Leave
+@if responce is 2 then do
+  @begin
+  @do `p20 is 5
+  @run getquest in quest.ref
+  @end
+
+@if responce is 1 then do
+  @begin
+   @do `p21 random 3 1
+   @if `p21 is 1 then do
+     @begin
+     @show
+`\`\  `0"Well.. I have an evil half brother, Basil. I want to know what 
+  he plans so I can be rid of him and rule the land myself."
+`\`k
+     @end
+
+   @if `p21 is 2 then do
+     @begin
+     @show
+`\`\  `0"I could kill you with a glance. Don't tempt me asshole.
+  If that fails, I could run you through with my `4Dragonblade`0..."
+`\`k
+     @end
+
+   @if `p21 is 3 then do
+     @begin
+     @show
+`\`\  `0"This town is small. But in the information game I always have 
+  a few customers.. What do I sell? Don't EVER ask me that again!"
+`\`k
+     @end
+
+  @do goto dealer
+
+    @end
+
+@drawmap
+@update
+
+
+
+
+@#Racetrack
+;racetrack...
+@do moveback
+
+
+@if `p33 < 1 then do
+  @begin
+  @do saybar
+Sorry. I can't let you gamble here.  Maybe tomorrow.
+  @closescript
+  @end
+
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2Wanna put bets on the dogs? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+  @begin
+  @do saybar
+Maybe later when the dogs are biting.
+  @closescript
+  @end
+
+@label dograce
+
+@do `p20 is `i29
+@do `p20 + `i30
+@do `s01 is `p20
+@if `s01 is 0 then `s01 is no
+
+@show
+`r0`c  `r1  `%The race track  `r0
+
+  `2You sit yourself down to enjoy the race.
+
+  You have &money Dollars.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+>&money 14 Bet 15 on 5 in the 2nd.
+>&money 14 Bet 15 on 13 in the 3rd.
+Get up and leave
+@if responce is 3 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if response is 1 then do
+  @begin
+  @do `p33 - 1
+    @do `p30 is 7
+    @do `v40 is 15
+    @routine deposit in vaults.ref
+  @do money - 15
+  @do `p20 random 80 20
+  @show
+    He's really going for it.......
+
+@end
+
+@if response is 2 then do
+  @begin
+  @do `p33 - 1
+    @do `p30 is 7
+    @do `v40 is 15
+    @routine deposit in vaults.ref
+  @do money - 15
+  @do `p20 random 20 1
+  @show
+    This one's a cainer.
+
+@end
+
+
+@do write
+  `2You wait.`l.
+@if `p33 < 1 then do
+  @begin
+  @show
+`4The dogs are all stuffed.`2
+
+  It looks like the action is finished for today.
+
+`k
+  @do goto dograce
+  @end
+@do `p20 random 2 1
+@if `p20 is 1 then do
+   @begin
+   @show
+`4Crap he lost.
+
+`2  You spit in disgust.
+
+`k
+   @do goto dograce
+   @end
+@if `p20 is 2 then do
+   @begin
+   @show
+`%You have a chance!`2
+
+@do write
+`k
+@do `p20 random 4 1
+@IF `P20 IS 1 then do
+  @begin
+  ;catching a special fish
+  @show
+  It's the trifecter!  You are on the edge of your seat...
+
+@do write
+`k
+@do `p20 random 4 1
+@IF `P20 IS 1 then do
+   @begin
+   @show
+  `bDisqualified!
+
+  `4"Aaaarrrrrrgggggggghh!!!!" you scream.
+
+`k
+   @do goto dograce
+   @end
+  @show
+  `2Yes! You picked `0the trifector`2! `4Win $1000
+`\`k
+    @do `p30 is 7
+    @do `v40 is 1015
+    @routine widthdraw in vaults.ref
+  @do money + 1015
+  @do `p33 - 1
+  @do goto dograce
+  @end
+
+  @show
+  You go to collect your winnings.
+
+`k  Take that evil bookie. `4WIN $100
+
+`k
+    @do `p30 is 7
+    @do `v40 is 115
+    @routine widthdraw in vaults.ref
+   @do money + 115
+   @do `p33 - 1
+   @do goto dograce
+   @end
+
+
+  @end
+
+@#ARMSHOP
+@offmap
+@do moveback
+@do `v01 is 1
+@label abstart
+@show
+`r0`c  `%Gum's Armoury
+
+`2 An Ideal place to buy things for maiming or self defence.
+
+@do write
+`x`x
+@choice
+Examine her wares
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  14
+  15
+  35
+  37
+  39
+  59
+  62
+  64
+  70
+  @end
+
+@if responce not 2 then goto abstart
+@drawmap
+@update
+
+@#townsign
+ @do saybar
+ `1Welcome to `2G`3u`4m`5t`6o`7w`8n`1:Population 21
+ @do moveback
+
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if gumtres.dat exist true then do
+  @begin
+  @readfile gumtres.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile gumtres.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete gumtres.dat
+  @writefile gumtres.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile gumcast.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Gum-Lass Castle Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile gumtres.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete gumtres.dat
+  @writefile gumtres.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile gumcast.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Gum-Lass Castle Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+@#priv
+@do moveback
+@do saybar
+Ahhh!  The private bedroom!  Nothing can hurt you here.
+
+@#innkeeper
+
+
+@do moveback
+
+@if gumcast.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@readfile gumcast.dat
+`p20
+`s01
+@
+
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`0Innkeeper: `2Greetings, s&sir!
+  @closescript
+  @end
+
+
+
+@if gumcasta.dat exist false then do
+  @begin
+  @writefile gumcasta.dat
+200
+0
+  @
+  @end
+
+  @readfile gumcasta.dat
+`p26
+`p27
+  @
+
+
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Getting a room  `r0
+
+`2  The Innkeeper looks at you.  `0"Kin I getcha a room?  Today it costs
+  only `$$`p26!`2"
+
+@do write
+`x`x
+@choice
+Yeah, what a great deal.
+Shyeah, right.
+@if responce is 1 then do
+  @begin
+  @if money < `p26 then do
+    @begin
+    @show
+`\`\  `2You sort of lack the funds right now.  Looks like you're sleeping
+  outside...
+
+`k
+   @do goto innkeeper
+   @end
+
+  @do money - `p26
+  @do `p27 + `p26
+  @do delete gumcasta.dat
+  @writefile gumcasta.dat
+`p26
+`p27
+  @
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has stayed at your Inn!  Cha-CHING!
+
+  @do x is 25
+  @do y is 13
+  @drawmap
+  @update
+  @do saybar
+`0Bartender:  `2"Great!  Go on Inn! Ha Ha, a Pun."
+  @closescript
+  @end
+
+@drawmap
+@update
+
+@#pass1
+@readfile gumcast.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 27 then do
+  @begin
+  @do moveback
+  @do saybar
+`0Innkeeper:  `2You need to pay me before you can go back there.
+  @end
+
+@#pass2
+@if gumcast.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 62 then do
+  @begin
+  @closescript
+  @end
+
+@readfile gumcast.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0Innkeeper:  `2No one is allowed over there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The Innkeeper looks over at you.  `0"Hey!  What business do you have
+  going in there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on in then!"`\`\`k
+    @do x + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Inkeeper Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Innkeeper isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+
+ @#done
+ @drawmap
+ @update
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+
+@if gumcasta.dat exist false then do
+  @begin
+  @writefile gumcasta.dat
+200
+0
+  @end
+
+
+@if gumcast.dat exist false then do
+  @begin
+  @do saybar
+`0"Get out please!  The Castle has been sold!" `2the Innkeeper commands.
+ @closescript
+  @end
+
+@readfile gumcast.dat
+`p20
+`s01
+@
+
+  @readfile gumcasta.dat
+`p26
+`p27
+  @
+
+
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the Innkeeper.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The Innkeeper stops working for a moment.
+
+@do write
+`x`x
+@choice
+Set password to private rooms. (currently is `0`s01`%)
+Ownership options
+Set room fee (currently is at `$$`p26`%)
+Take money from register
+Leave
+@
+
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `0"Before you look in that register.. lemmie tell you business has
+  been a little slow." `2the Innkeeper tells you.
+
+`k  `$"How slow?" `2you ask.
+
+`k  `0"Ok, we have not had a single customer since you last checked, I'm
+  a terrible manager," Innkeeper cries as he bursts into tears.
+     No wonder I never get invited to parties.
+
+`k
+   @do goto doorguard
+   @end
+
+
+  @readfile gumcasta.dat
+`p26
+`p27
+  @
+  @do money + `p27
+  @do delete gumcasta.dat
+  @writefile gumcasta.dat
+`p26
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p27`2, here ya go!
+
+`k
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto doorguard
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto doorguard
+
+  @end
+
+    @do goto doorguard
+    @end
+  @readfile gumcasta.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete gumcasta.dat
+  @writefile gumcasta.dat
+`p26
+`p27
+  @
+  @do goto doorguard
+  @end
+
+
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$100000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your Castle to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete gumcast.dat
+  @writefile gumcast.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of Gum-Lass Castle to you. 
+  Password to enter bedroom will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Gum-Lass Castle`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Castle back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete gumcast.dat
+  @do delete gumcasta.dat
+    @do `p30 is 7
+    @do `v40 is 100000 
+    @routine widthdraw in vaults.ref
+  @do money + 100000
+  @show
+`\`\  `%CASTLE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Gum-Lass Castle`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete gumcast.dat
+  @writefile gumcast.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the Innkeeper promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if gumcast.dat exist false then do
+ @begin
+ @do saybar
+Gum-Lass Castle - For sale cheap, enquire inside.
+ @end 
+
+@if gumcast.dat exist true then do
+ @begin
+@readfile gumcast.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+
+
+@if gumcast.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+[0mÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+[A[71CÄÄÄÄÄÄÄÄ¿³ [41m      [40m[9C[41m      [40m[4C[41m        [40m[18C
+[A[53C[41m        [40m[8C[1;36;41m[0m[8C³³ [41m  [40m[5C
+[A[9C[41m      [40m  [41m  [40m  [41m  [40m[4C[41m  [40m[8C
+[A[37C[41m      [40m  [41m  [40m[6C[41m  [40m     [9C
+[A[69C[1;32;41m[0m[8C³³ [41m    [40m[3C[41m  [40m  [41m  [40m
+[A[15C  [41m      [40m[4C[41m        [40m  [41m  [40m  [41m  [40m
+[A[43C  [41m  [40m[6C[41m      [40m[10C[1;33;41m[0m[8C³³ 
+[A[2C[41m  [40m[5C[41m  [40m  [41m  [40m  [41m  [40m [41m  [40m[11C
+[A[33C[41m  [40m  [41m      [40m  [41m  [40m[6C[41m  [40m   
+[A[58C [10C[32;41m[37;40m[8C³³ [41m  [40m[5C[41m      [40m 
+[A[16C [41m  [40m  [41m  [40m[4C[41m        [40m  [41m  [40m 
+[A[40C [41m  [40m  [41m      [40m  [41m        [40m[8C[35;41m[40m
+[A[70C[41m[37;40m[8C³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+[A[45CÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ[0m

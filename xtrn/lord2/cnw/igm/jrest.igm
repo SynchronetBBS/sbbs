@@ -1,0 +1,43 @@
+
+                        Jack's Restauraunt by ASC‹‹
+
+                              AN IGM FOR LORD2
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No! 
+  Free?                                           : Yes!
+
+
+  Description:
+
+  More Complex IGM for LORD2.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM JREST.IGM
+
+  To uninstall, do the same thing again.
+
+  To enter, walk to the screen directly under Stonebrook and to the right
+  you will see a new building - enter it and you're in The Wizard's Castle!
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Jack's Restauraunt `2by `0ASC‹‹
+replacescreen: 1589 1 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2I added a secret room similar to Turgon's Shack where you can find
+  500,000 gold pieces on the in the back room. Sysops feel `%FREE TO CHANGE
+  %THAT! `2it's in the TREASURE.REF file.

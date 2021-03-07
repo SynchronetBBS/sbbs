@@ -1,0 +1,896 @@
+; Script file LOKIGRDB.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:29 2001
+
+@DECLARE roomguard1b 000000725
+@DECLARE starta1 000001027
+@DECLARE roomguard2b 000002585
+@DECLARE startb1 000002887
+@DECLARE roomguard3b 000004447
+@DECLARE startc1 000004751
+@DECLARE roomguard4b 000006302
+@DECLARE startd1 000006606
+@DECLARE roomguard5b 000008165
+@DECLARE starte1 000008467
+@DECLARE roomguard6b 000010020
+@DECLARE startf1 000010322
+@DECLARE roomguard7b 000011872
+@DECLARE startg1 000012174
+@DECLARE roomguard8b 000013657
+@DECLARE starth1 000013959
+@DECLARE roomguard9b 000015445
+@DECLARE starti1 000015747
+@DECLARE done 000017231
+@DECLARE nomore 000017262
+@NOCHECK
+; End of .REF index
+
+@#Roomguard1b
+@do moveback
+@readfile room10.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+
+@label starta1
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10,000`%.
+Leave
+@
+
+@if responce is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto starta1
+   @end
+
+  @do delete room10.dat
+  @do money + 10000
+  @show
+`\`\`\                       `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#110 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 64
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+    @do goto done
+    @end
+    
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto starta1
+   @end
+  @do delete room10.dat
+  @writefile room10.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto starta1
+  @end
+
+@drawmap
+@update
+;------------------------------ROOM 111-------------------------------
+@#Roomguard2b
+@do moveback
+@readfile room11.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+
+@label startb1
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10,000`%.
+Leave
+@
+
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto startb1
+   @end
+
+  @do delete room11.dat
+  @do money + 10000
+  @show
+`\`\`\                         `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#111 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 58
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+    @do goto done
+    @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto startb1
+   @end
+  @do delete room11.dat
+  @writefile room11.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto startb1
+  @end
+
+@drawmap
+@update
+--------------------------------ROOM 112--------------------------------
+@#Roomguard3b
+@do moveback
+@readfile room12.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+
+
+@label startc1
+@busy
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10,000`%.
+Leave
+@
+
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto startc1
+   @end
+
+  @do delete room12.dat
+  @do money + 10000
+  @show
+`\`\`\                         `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#112 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 52
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+    @do goto done
+    @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto startc1
+   @end
+  @do delete room12.dat
+  @writefile room12.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto startc1
+  @end
+
+@drawmap
+@update
+;---------------------------ROOM 113-----------------------------
+@#Roomguard4b
+@do moveback
+
+@readfile room13.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+
+@label startd1
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10,000`%.
+Leave
+@
+
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto startd1
+   @end
+
+  @do delete room13.dat
+  @do money + 10000
+  @show
+`\`\`\                         `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#113 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 46
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+    @do goto done
+    @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto startd
+   @end
+  @do delete room13.dat
+  @writefile room13.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto startd1
+  @end
+
+@drawmap
+@update
+;------------------------------ROOM 114---------------------------------
+@#Roomguard5b
+@do moveback
+
+@readfile room14.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+@label starte1
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10,000`%.
+Leave
+@
+
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto starte1
+   @end
+
+  @do delete room14.dat
+  @do money + 10000
+  @show
+`\`\`\                         `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#114 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 40
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+    @do goto done
+    @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto starte1
+   @end
+  @do delete room14.dat
+  @writefile room14.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto starte1
+  @end
+
+@drawmap
+@update
+;-----------------------------Room 115---------------------------
+@#Roomguard6b
+@do moveback
+
+@readfile room15.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+@label startf1
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10000`%.
+Leave
+@
+
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto startf1
+   @end
+
+  @do delete room15.dat
+  @do money + 10000
+  @show
+`\`\`\                       `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#115 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 34
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+    @do goto done
+    @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto startf1
+   @end
+  @do delete room15.dat
+  @writefile room15.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto startf1
+  @end
+
+@drawmap
+@update
+;--------------------------ROOM 116------------------------------
+@#Roomguard7b
+@do moveback
+
+@readfile room16.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+@label startg1
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10,000`%.
+Leave
+@
+
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto startg1
+   @end
+
+  @do delete room16.dat
+  @do money + 10000
+  @show
+`\`\`\                        `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#116 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 28
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+  @do goto done
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto startg1
+   @end
+  @do delete room16.dat
+  @writefile room16.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto startg1
+  @end
+
+@drawmap
+@update
+
+@#Roomguard8b
+@do moveback
+
+@readfile room17.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+@label starth1
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10000`%.
+Leave
+@
+
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto starth1
+   @end
+
+  @do delete room17.dat
+  @do money + 10000
+  @show
+`\`\`\                        `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#117 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 22
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+    @do goto done
+    @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto starth1
+   @end
+  @do delete room17.dat
+  @writefile room17.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto starth1
+  @end
+
+@drawmap
+@update
+
+@#Roomguard9b
+@do moveback
+
+@readfile room18.dat
+`p20
+`s01
+@
+
+;load owner and current password
+@do `s02 is getname `p20
+@if `p20 not &playernum then do
+ @begin
+@show
+`r0`c  `r1 `%Owner Only `r0
+
+  `0"I only obey `%`s02's `0orders" `2 the guard explains.
+`\`k
+  @do goto done
+  @end
+@label starti1
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 The Room Guard `r0
+
+  `2The Guard stops what he is doing and gives you his attention.
+
+@do write
+`x`x
+@choice
+Set password to your Private room. (currently is `0`s01`%)
+Sell your room to the bank for `$$10,000`%.
+Leave
+@
+
+@if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Room to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+No
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room.`\`\`k
+    @do goto starti1
+   @end
+
+  @do delete room18.dat
+  @do money + 10000
+  @show
+`\`\`\                       `%ROOM SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Private Room `$#118 `2at Loki's Inn, to the bank!
+    @routine seperate in gametxt.ref
+  @do x is 16
+  @do y is 9
+  @do map is 344
+  @loadmap &map
+  @update
+  @do goto done
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What's the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide to keep the current password.`\`\`k
+   @do goto starti1
+   @end
+  @do delete room18.dat
+  @writefile room18.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"I will not forget it!" `2the Room Guard promises.`\`\`k
+   @do goto starti1
+  @end
+
+@drawmap
+@update
+
+@#DONE
+@drawmap
+@update
+
+@#NOMORE

@@ -1,0 +1,707 @@
+;                                            MAR-28-2001
+;
+;  Auction House v0.1-beta
+;
+;                   by Joel Gathercole
+;                      GreenMachineBBS.com
+;
+;
+;
+;    --Will be adding in NPC support soon.
+;
+;
+; lines for auction data files
+@writefile `p20.auc     <-- `p20 is AUCTION#
+&time    <-- start date
+`p21     <--how many days for auction
+`p22     <--Owner of AUCTION
+`p23     <--0=ITEM# 100=GEM 101+DEEDS
+`s01     <--item# or deed data file name or "GEM"
+`p24     <--quantity of items
+`p25     <--Starting BID
+`p26     <--Current BID
+`p27     <--HIGHEST BIDDER Playernum or NPC# (201-399)
+`p30     <-- bid increment
+;
+;
+;
+
+@#START
+@busy
+@offmap
+@do moveback
+@do move 1 1
+@clear screen
+@show
+                `r1  `$-  `4AUCTION HOUSE  `$-  `r0
+
+  `2Welcome to the Auction House. Here you can put your items up for
+ auction for other people to bid on to buy. Everytime a bid is made, that
+ person will have to put down the cash immediately. If they loose the
+ auction, they will of course be given back all their cash put into their
+ account with us. 
+
+
+
+                      `%Ú`7ÄÄ`8ÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`7¿
+                      `7³                `7³
+                      `7³                `%³
+                      `8³                `%³
+                      `7³                `7³
+                      `7ÀÄÄÄÄÄ`%ÄÄÄÄÄÄÄÄ`7ÄÄÄ`8Ù
+
+@do move 25 12
+@do `v01 is 1
+@choice
+`%View Auctions `%
+`%Add an Auction`%
+`%My account    `%
+`%Leave         `%
+@if responce is 1 then goto VIEWLIST
+@if responce is 2 then goto ADD
+@if responce is 3 then goto ACCOUNT
+@drawmap
+@update
+@closescript
+
+
+@#ACCOUNT
+@dataload auction.idf &playernum `p21
+@do move 1 1
+@clear screen
+@show
+                `r1  `$-  `4AUCTION HOUSE  `$-  `r0
+
+   `2What can be in your account here:
+
+   `$- `%If you previously placed bids and have lost on the auctions,
+
+   `$- `%The gold from on an item you put up for auction.
+
+   `$- `%The item in which you won an auction with.
+
+@if `p21 > 0 then do
+        @begin
+        @show
+`%You take your `$`p21 `%gold from your account.
+        @datasave auction.idf &playernum 0
+        @do money + `p21
+        @end
+@if `p21 < 1 then do
+        @begin
+        @show
+`\         `4You have no more gold in your account here.
+        @end
+
+@key bottom
+@do goto START
+
+@#ADD
+@do move 1 1
+@clear screen
+@show
+                `r1  `$-  `4AUCTION HOUSE  `$-  `r0
+
+  `2Please tell us what kind of item you're putting up for auction.
+
+
+                      `%Ú`7ÄÄ`8ÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`7¿
+                      `7³                `7³
+                      `7³                `%³
+                      `8³                `%³
+                      `7³                `7³
+                      `7ÀÄÄÄÄÄ`%ÄÄÄÄÄÄÄÄ`7ÄÄÄ`8Ù
+
+@do move 25 7
+@do `v01 is 1
+@CHOICE
+`%    ITEMS     `%
+`%    DEED      `%
+`%    GEMS      `%
+`%    Nothing   `%
+@if responce is 1 then goto ADDITEM
+@if responce is 2 then goto ADDDEED
+@if responce is 3 then goto ADDGEMS
+@if responce is 4 then goto START
+
+@#ADDGEMS
+@do write
+`\`4How many GEMS?`x:`x
+@DO READNUM 3
+@if `v40 > `p19 then goto BADMOVE
+@if `v40 < 1 then goto BADMOVE
+@do `p24 is `v40
+@do `s10 is GEM
+@do `p23 is 100
+@do goto NEWAUCTION
+
+@#ADDITEM
+@do `s10 is `x
+@do write
+`\`\`4Which ITEM?`x:`x
+@DO READSTRING 20 `x `s09
+@routine ITEMNAME in ITEMNAME.REF
+@if `s10 is NIL then goto START
+@if `s10 is `x then goto START
+@do `s01 is `p20
+`\`\`4How many `s10?`x:`x
+@DO READNUM 3
+@if `v40 > `p21 then goto BADMOVE
+@if `v40 < 1 then goto BADMOVE
+@do `p24 is `v40
+@do `p23 is `p20
+@do goto NEWAUCTION
+
+@#ADDDEED
+@do write
+`\`4Feature not available yet.
+@key bottom
+@do goto START
+
+@#NEWAUCTION
+@do write
+`\`4How many days to keep auction open?`x:`x
+@DO READNUM 2
+@if `v40 > 90 then do
+        @begin
+        @do write
+`\That is too long for an AUCTION, please select less than 90 days.
+        @key bottom
+        @do goto NEWAUCTION
+        @end
+@do `p21 is `v40
+@do write
+`\`4What is the starting bid?`x:`x
+@DO READNUM 6
+@do `p25 is `v40
+@do `p26 is `v40
+@do write
+`\`4What is the lowest increment bid?`x:`x
+@DO READNUM 6
+@do `p30 is `v40
+@if `p30 < 1 then goto BADMOVE
+
+@do `p20 is 0
+@label FINDNEXT
+@if `p20 > 50 then do
+        @begin
+        @do move 1 1
+        @clear screen
+        @show
+                `r1  `$-  `4AUCTION HOUSE  `$-  `r0
+
+ `%One slight problem, s&sir. We do not have enough
+ space at this moment to hold anymore auctions. Please
+ wait for one of the current auctions to complete.
+
+                   Thanks You.
+        @key bottom
+        @do goto START
+        @end
+@do `p20 + 1
+@do `s08 is `p20.auc
+@if `s08 exists true then goto FINDNEXT
+
+@if `p23 is 100 then do
+        @begin
+        @do `p19 - `p24
+        @do goto MAKEAUC
+        @end
+@if `p23 is 1 then `i01 - `p24
+@if `p23 is 2 then `i02 - `p24
+@if `p23 is 3 then `i03 - `p24
+@if `p23 is 4 then `i04 - `p24
+@if `p23 is 5 then `i05 - `p24
+@if `p23 is 6 then `i06 - `p24
+@if `p23 is 7 then `i07 - `p24
+@if `p23 is 8 then `i08 - `p24
+@if `p23 is 9 then `i09 - `p24
+@if `p23 is 10 then `i10 - `p24
+@if `p23 is 11 then `i11 - `p24
+@if `p23 is 12 then `i12 - `p24
+@if `p23 is 13 then `i13 - `p24
+@if `p23 is 14 then `i14 - `p24
+@if `p23 is 15 then `i15 - `p24
+@if `p23 is 16 then `i16 - `p24
+@if `p23 is 17 then `i17 - `p24
+@if `p23 is 18 then `i18 - `p24
+@if `p23 is 19 then `i19 - `p24
+@if `p23 is 20 then `i20 - `p24
+@if `p23 is 21 then `i21 - `p24
+@if `p23 is 22 then `i22 - `p24
+@if `p23 is 23 then `i23 - `p24
+@if `p23 is 24 then `i24 - `p24
+@if `p23 is 25 then `i25 - `p24
+@if `p23 is 26 then `i26 - `p24
+@if `p23 is 27 then `i27 - `p24
+@if `p23 is 28 then `i28 - `p24
+@if `p23 is 29 then `i29 - `p24
+@if `p23 is 30 then `i30 - `p24
+@if `p23 is 31 then `i31 - `p24
+@if `p23 is 32 then `i32 - `p24
+@if `p23 is 33 then `i33 - `p24
+@if `p23 is 34 then `i34 - `p24
+@if `p23 is 35 then `i35 - `p24
+@if `p23 is 36 then `i36 - `p24
+@if `p23 is 37 then `i37 - `p24
+@if `p23 is 38 then `i38 - `p24
+@if `p23 is 39 then `i39 - `p24
+@if `p23 is 40 then `i40 - `p24
+@if `p23 is 41 then `i41 - `p24
+@if `p23 is 42 then `i42 - `p24
+@if `p23 is 43 then `i43 - `p24
+@if `p23 is 44 then `i44 - `p24
+@if `p23 is 45 then `i45 - `p24
+@if `p23 is 46 then `i46 - `p24
+@if `p23 is 47 then `i47 - `p24
+@if `p23 is 48 then `i48 - `p24
+@if `p23 is 49 then `i49 - `p24
+@if `p23 is 50 then `i50 - `p24
+@if `p23 is 51 then `i51 - `p24
+@if `p23 is 52 then `i52 - `p24
+@if `p23 is 53 then `i53 - `p24
+@if `p23 is 54 then `i54 - `p24
+@if `p23 is 55 then `i55 - `p24
+@if `p23 is 56 then `i56 - `p24
+@if `p23 is 57 then `i57 - `p24
+@if `p23 is 58 then `i58 - `p24
+@if `p23 is 59 then `i59 - `p24
+@if `p23 is 60 then `i60 - `p24
+@if `p23 is 61 then `i61 - `p24
+@if `p23 is 62 then `i62 - `p24
+@if `p23 is 63 then `i63 - `p24
+@if `p23 is 64 then `i64 - `p24
+@if `p23 is 65 then `i65 - `p24
+@if `p23 is 66 then `i66 - `p24
+@if `p23 is 67 then `i67 - `p24
+@if `p23 is 68 then `i68 - `p24
+@if `p23 is 69 then `i69 - `p24
+@if `p23 is 70 then `i70 - `p24
+@if `p23 is 71 then `i71 - `p24
+@if `p23 is 72 then `i72 - `p24
+@if `p23 is 73 then `i73 - `p24
+@if `p23 is 74 then `i74 - `p24
+@if `p23 is 75 then `i75 - `p24
+@if `p23 is 76 then `i76 - `p24
+@if `p23 is 77 then `i77 - `p24
+@if `p23 is 78 then `i78 - `p24
+@if `p23 is 79 then `i79 - `p24
+@if `p23 is 80 then `i80 - `p24
+@if `p23 is 81 then `i81 - `p24
+@if `p23 is 82 then `i82 - `p24
+@if `p23 is 83 then `i83 - `p24
+@if `p23 is 84 then `i84 - `p24
+@if `p23 is 85 then `i85 - `p24
+@if `p23 is 86 then `i86 - `p24
+@if `p23 is 87 then `i87 - `p24
+@if `p23 is 88 then `i88 - `p24
+@if `p23 is 89 then `i89 - `p24
+@if `p23 is 90 then `i90 - `p24
+@if `p23 is 91 then `i91 - `p24
+@if `p23 is 92 then `i92 - `p24
+@if `p23 is 93 then `i93 - `p24
+@if `p23 is 94 then `i94 - `p24
+@if `p23 is 95 then `i95 - `p24
+@if `p23 is 96 then `i96 - `p24
+@if `p23 is 97 then `i97 - `p24
+@if `p23 is 98 then `i98 - `p24
+@if `p23 is 99 then `i99 - `p24
+
+@label MAKEAUC
+@writefile `p20.auc
+&time
+`p21
+&playernum
+`p23
+`s10
+`p24
+`p25
+`p26
+0
+`p30
+@do move 1 1
+@clear screen
+@show
+                `r1  `$-  `4AUCTION HOUSE  `$-  `r0
+                `r1  `$-  `4YOUR AUCTION   `$-  `r0
+
+`%Starting Date: `$&time
+`%Length: `$`p21 days
+`%Item: `$`s10
+`%Quantity: `$`p24
+`%Starting Bid: `$$`p25
+
+@key bottom
+@do goto START
+
+@#BADMOVE
+@do write
+`\`4You made a BAD move, returning you to Main Menu.
+@key bottom
+@do goto START
+
+@#VIEWLIST
+@do `p20 is 0
+@label FINDNEXT2
+@do `p20 + 1
+@do `s08 is `p20.auc
+@if `s08 exists true then do
+        @begin
+        @do move 1 1
+        @clear screen
+        @readfile `s08
+`p28
+`p21 
+`p22 
+`p23 
+`s04 
+`p24 
+`p25 
+`p26 
+`p27 
+        @do `s06 is `p28
+        @do `p29 is &time
+        @do `s06 is `$`p28
+        @if `p28 is `p29 then `s06 is `5Today`%
+        @do `p30 is `p28
+        @do `p30 + `p21
+        @do `p30 - `p29
+        @if `p30 < 0 then do
+                @begin
+                @routine DONEAUC
+                @end
+        @do `s07 is `5`p30`%`xdays
+        @if `p30 is 0 then `s07 is `5today   `%
+        @if `p30 is 1 then `s07 is `5tommorow`%
+        @if `p21 is 9999 then `s07 is `5COMPLETE`%
+        @do `s03 is getname `p22
+        @do `s05 is getname `p27
+        @if `p27 is 0 then `s05 is `@NOBODY
+        @if `p23 > 100 then do
+                @begin
+;ADD THIS IN WHEN DEEDS ROUTINES ARE COMPLETED
+                @end
+        @do `s02 is `p20
+        @do pad `s02 3
+        @do pad `s06 5
+        @do pad `s07 10
+        @do pad `s04 24
+        @do pad `s03 18
+        @do pad `s05 18
+        @show
+                `r1  `$-  `4AUCTION HOUSE  `$-  `r0
+
+           `%ÚÄÄÄÄÄÄÄÄ`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`8ÄÄÄÄÄÄÄÄÄÄ`7ÄÄÄÄ¿
+           `%³   `r7  `$-      `4ITEM# `s02     `$-      `r0   `7³
+           `7³ `%Start day: `$`s06   `%Ends: `s07`7³
+           `7³ `%Item:     `$`s04 `7³
+           `7³ `%BID: `$$           `%Start BID: `$$      `7³
+           `7³ `%Highest Bidder: `5`s05 `7³
+           `7³ `%Owner: `$`s03          `7³
+           `7ÀÄÄÄÄÄ`%ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`7ÄÄÄÄÄÄÄ`8ÄÄÙ
+                      `%Ú`7ÄÄ`8ÄÄÄÄÄÄÄÄÄÄ`7¿
+                      `7³            `7³
+                      `8³            `%³
+                      `7³            `7³
+                      `7ÀÄÄÄÄÄ`%ÄÄÄÄ`7ÄÄÄ`8Ù
+        @do move 20 6
+        @do write
+`@`p24
+        @do move 20 7
+        @do write
+`$`p26
+        @do move 43 7
+        @do write
+`$`p25
+        @do move 25 12
+        @choice
+`%`xNext     `%
+!`p21 9999 `%`xBid      `%
+=`p21 9999 =`p27 &playernum `%`xCollect   `%
+`%`xLeave    `%
+        @if responce is 3 then goto COLLECTIT
+        @if responce is 4 then goto START
+        @if responce is 2 then do
+                @begin
+                @readfile `s08
+`p28
+`p21
+`p22
+`p23
+`s04
+`p24
+`p25
+`p26
+`p27
+`p30
+                @if `p22 is &playernum then goto BADMOVE
+                @if `p27 is &playernum then goto BADMOVE
+                @do `p40 is `p30
+                @do `p40 + `p26
+                @do write
+`\`\`%Bid amount `8(`7min. `p40`8):`x
+                @do readnum 8
+                @if `v40 < `p40 then goto BADMOVE
+                @if `v40 < `p26 then goto BADMOVE
+                @do `p26 is `v40
+                @dataload auct`p20.idf &playernum `p29
+                @if `p29 is 0 then do
+                        @begin
+                        @if `p26 > money then goto BADMOVE
+                        @end
+                @if `p29 > 0 then do
+                        @begin
+                        @do `p26 - `p29
+                        @if `p26 > money then goto BADMOVE
+                        @do `p26 + `p29
+                        @end
+                @do delete `s08
+                @writefile `s08
+`p28
+`p21
+`p22
+`p23
+`s04
+`p24
+`p25
+`p26
+&playernum
+`p30
+                @dataload auct`p20.idf &playernum `p29
+                @if `p29 is 0 then do
+                        @begin
+                        @datasave auct`p20.idf &playernum `p26
+                        @end
+                @if `p29 > 0 then do
+                        @begin
+                        @do `p26 - `p29
+                        @datasave auct`p20.idf &playernum `p26
+                        @end
+                @do money - `p26
+                @do `p20 - 1
+                @end
+        @end
+@if `p20 > 50 then `p20 is 0
+@do goto FINDNEXT2
+
+@#DONEAUC
+; read the file again!
+@readfile `s08
+`p28
+`p21 
+`p22 
+`p23 
+`s04 
+`p24 
+`p25 
+`p26 
+`p27
+`p30
+@if `p21 is 9999 then do
+        @begin
+        @closescript
+        @end
+@if `p27 is 0 then `p27 is `p22
+@do delete `s08
+@writefile `s08
+`p28
+9999
+`p22
+`p23
+`s04
+`p24
+`p25
+`p26
+`p27
+`p30
+@
+@DO `s02 IS GETNAME `p27
+@if `p22 is `p27 then do
+        @begin
+        @writefile mail\mail`p22.dat
+  `0AUCTION HOUSE
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%Your auction #`p20 has ended. There was NO winner of this
+`%AUCTION. You need to come to the AUCTION HOUSE to collect
+`%your `$`s04`%.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+        @closescript
+        @end
+
+@if `p22 < 201 then do
+        @begin
+        @dataload auction.idf `p22 `p28
+        @do `p28 + `p26
+        @datasave auction.idf `p22 `p28
+        @writefile mail\mail`p22.dat
+  `0AUCTION HOUSE
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%Your auction #`p20 has ended. The winner of the AUCTION was
+`%`s02`%. You need to come to the AUCTION HOUSE to
+`%collect your `$`p26 `%gold from the winning bid.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+        @end
+@if `p27 < 201 then do
+        @begin
+        @datasave auct`p20.idf `p27 0
+        @writefile mail\mail`p27.dat
+  `0AUCTION HOUSE
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%You WON the auction #`p20 with the `s04`%
+`%at the price of `$`p26 `%gold. Please come to the
+`%AUCTION HOUSE to pick up your winning item.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+        @end
+@do `p22 is 0
+@label DONEAUC2
+@do `p22 + 1
+@dataload auct`p20.idf `p22 `p29
+@if `p29 > 0 then do
+        @begin
+        @dataload auction.idf `p22 `p28
+        @do `p28 + `p29
+        @datasave auction.idf `p22 `p28
+        @end
+@if `p22 > &totalaccounts then do
+        @begin
+        @do delete auct`p20.idf
+        @closescript
+        @end
+@do goto DONEAUC2
+
+@#COLLECTIT
+@readfile `s08
+`p28
+`p21 
+`p22 
+`p23 
+`s04 
+`p24 
+`p25 
+`p26 
+`p27 
+@if `p27 is &playernum then do
+        @begin
+        @if `p23 < 100 then do
+                @begin
+@if `p23 is 1 then `i01 + `p24
+@if `p23 is 2 then `i02 + `p24
+@if `p23 is 3 then `i03 + `p24
+@if `p23 is 4 then `i04 + `p24
+@if `p23 is 5 then `i05 + `p24
+@if `p23 is 6 then `i06 + `p24
+@if `p23 is 7 then `i07 + `p24
+@if `p23 is 8 then `i08 + `p24
+@if `p23 is 9 then `i09 + `p24
+@if `p23 is 10 then `i10 + `p24
+@if `p23 is 11 then `i11 + `p24
+@if `p23 is 12 then `i12 + `p24
+@if `p23 is 13 then `i13 + `p24
+@if `p23 is 14 then `i14 + `p24
+@if `p23 is 15 then `i15 + `p24
+@if `p23 is 16 then `i16 + `p24
+@if `p23 is 17 then `i17 + `p24
+@if `p23 is 18 then `i18 + `p24
+@if `p23 is 19 then `i19 + `p24
+@if `p23 is 20 then `i20 + `p24
+@if `p23 is 21 then `i21 + `p24
+@if `p23 is 22 then `i22 + `p24
+@if `p23 is 23 then `i23 + `p24
+@if `p23 is 24 then `i24 + `p24
+@if `p23 is 25 then `i25 + `p24
+@if `p23 is 26 then `i26 + `p24
+@if `p23 is 27 then `i27 + `p24
+@if `p23 is 28 then `i28 + `p24
+@if `p23 is 29 then `i29 + `p24
+@if `p23 is 30 then `i30 + `p24
+@if `p23 is 31 then `i31 + `p24
+@if `p23 is 32 then `i32 + `p24
+@if `p23 is 33 then `i33 + `p24
+@if `p23 is 34 then `i34 + `p24
+@if `p23 is 35 then `i35 + `p24
+@if `p23 is 36 then `i36 + `p24
+@if `p23 is 37 then `i37 + `p24
+@if `p23 is 38 then `i38 + `p24
+@if `p23 is 39 then `i39 + `p24
+@if `p23 is 40 then `i40 + `p24
+@if `p23 is 41 then `i41 + `p24
+@if `p23 is 42 then `i42 + `p24
+@if `p23 is 43 then `i43 + `p24
+@if `p23 is 44 then `i44 + `p24
+@if `p23 is 45 then `i45 + `p24
+@if `p23 is 46 then `i46 + `p24
+@if `p23 is 47 then `i47 + `p24
+@if `p23 is 48 then `i48 + `p24
+@if `p23 is 49 then `i49 + `p24
+@if `p23 is 50 then `i50 + `p24
+@if `p23 is 51 then `i51 + `p24
+@if `p23 is 52 then `i52 + `p24
+@if `p23 is 53 then `i53 + `p24
+@if `p23 is 54 then `i54 + `p24
+@if `p23 is 55 then `i55 + `p24
+@if `p23 is 56 then `i56 + `p24
+@if `p23 is 57 then `i57 + `p24
+@if `p23 is 58 then `i58 + `p24
+@if `p23 is 59 then `i59 + `p24
+@if `p23 is 60 then `i60 + `p24
+@if `p23 is 61 then `i61 + `p24
+@if `p23 is 62 then `i62 + `p24
+@if `p23 is 63 then `i63 + `p24
+@if `p23 is 64 then `i64 + `p24
+@if `p23 is 65 then `i65 + `p24
+@if `p23 is 66 then `i66 + `p24
+@if `p23 is 67 then `i67 + `p24
+@if `p23 is 68 then `i68 + `p24
+@if `p23 is 69 then `i69 + `p24
+@if `p23 is 70 then `i70 + `p24
+@if `p23 is 71 then `i71 + `p24
+@if `p23 is 72 then `i72 + `p24
+@if `p23 is 73 then `i73 + `p24
+@if `p23 is 74 then `i74 + `p24
+@if `p23 is 75 then `i75 + `p24
+@if `p23 is 76 then `i76 + `p24
+@if `p23 is 77 then `i77 + `p24
+@if `p23 is 78 then `i78 + `p24
+@if `p23 is 79 then `i79 + `p24
+@if `p23 is 80 then `i80 + `p24
+@if `p23 is 81 then `i81 + `p24
+@if `p23 is 82 then `i82 + `p24
+@if `p23 is 83 then `i83 + `p24
+@if `p23 is 84 then `i84 + `p24
+@if `p23 is 85 then `i85 + `p24
+@if `p23 is 86 then `i86 + `p24
+@if `p23 is 87 then `i87 + `p24
+@if `p23 is 88 then `i88 + `p24
+@if `p23 is 89 then `i89 + `p24
+@if `p23 is 90 then `i90 + `p24
+@if `p23 is 91 then `i91 + `p24
+@if `p23 is 92 then `i92 + `p24
+@if `p23 is 93 then `i93 + `p24
+@if `p23 is 94 then `i94 + `p24
+@if `p23 is 95 then `i95 + `p24
+@if `p23 is 96 then `i96 + `p24
+@if `p23 is 97 then `i97 + `p24
+@if `p23 is 98 then `i98 + `p24
+@if `p23 is 99 then `i99 + `p24
+                @do write
+`\`\   `%You collect your `4`p24 `$`s04`%.
+                @end
+        @if `p23 is 100 then do
+                @begin
+                @do `p19 + `p24
+                @do write
+`\`\   `%You collect your `$`p24 GEMS`%.
+                @end
+        @if `p23 > 100 then do
+                @begin
+;ADD THIS IN WHEN DEEDS ROUTINES ARE COMPLETED
+                @end
+
+        @end
+@do delete `s08
+@key bottom
+@do goto START
+@#NOMORE

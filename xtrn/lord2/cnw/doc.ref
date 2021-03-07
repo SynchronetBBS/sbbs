@@ -1,0 +1,2272 @@
+; Script file DOC.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:33 2001
+
+@DECLARE welcome 000001200
+@DECLARE loop 000001441
+@DECLARE loop2 000001687
+@DECLARE doc 000002469
+@DECLARE talk 000007721
+@DECLARE guest 000012720
+@DECLARE namechange 000018036
+@DECLARE changename 000018645
+@DECLARE key 000019760
+@DECLARE passage 000021776
+@DECLARE secratary 000022529
+@DECLARE sectalk 000022978
+@DECLARE gossip 000023542
+@DECLARE random 000031724
+@DECLARE treasure 000031790
+@DECLARE usedchest 000032086
+@DECLARE chestprize 000032239
+@DECLARE treasure1 000033501
+@DECLARE treasure2 000033763
+@DECLARE treasure3 000034028
+@DECLARE treasure4 000034290
+@DECLARE treasure5 000034555
+@DECLARE treasure6 000034820
+@DECLARE treasure7 000035082
+@DECLARE treasure8 000035344
+@DECLARE treasure9 000035606
+@DECLARE guy 000035865
+@DECLARE usedguy 000036110
+@DECLARE guy1 000036345
+@DECLARE guy2 000037780
+@DECLARE guy3 000039482
+@DECLARE guy4 000040188
+@DECLARE guy5 000040471
+@DECLARE color 000043581
+@DECLARE backroom 000044991
+@DECLARE bed 000045087
+@DECLARE nohome 000045166
+@DECLARE bye 000047328
+@DECLARE thatsall 000047518
+@NOCHECK
+; End of .REF index
+
+@#welcome
+@datanewday docpass.idf
+@dataload docpass.idf 1 `p20
+@if `p20 is 0 then do
+        @begin
+        @do `p21 random 99999999 1
+        @datasave docpass.idf 1 `p21
+        @end
+@show
+`r0`c
+@do `p20 is 39
+@do `p21 is 41
+@label loop
+@do move 40 13
+@do write
+`3л`w
+@do move `p20 13
+@do write
+`3л
+@do move `p21 13
+@do write
+`3л`w
+@do `p21 + 1
+@do `p20 - 1
+@if `p21 < 56 then do
+        @begin
+        @do goto loop
+@end
+@do `p20 is 12
+@do `p21 is 14
+@label loop2
+@do move 25 `p20
+@do write
+`3ллллллллллллллллллллллллллллллл
+@do move 25 `p21
+@do write
+`3ллллллллллллллллллллллллллллллл`l
+@do `p20 - 1
+@do `p21 + 1
+@if `p21 < 17 then do
+        @begin
+        @do goto loop2
+@end
+@do move 25 10
+@do write
+`r3`6 Welcome to the Doc's Office!!
+@do move 25 11
+@do write
+`r3`6 There are many treasures that
+@do move 25 12
+@do write
+`r3`6 await, even a hidden cave!!!!
+@do move 25 13
+@do write
+`r3`6 The Doc can heal you for very
+@do move 25 14
+@do write
+`r3`6 cheap!!  And you can even try
+@do move 25 15
+@do write
+`r3`6 your luck with the secratary!
+@do move 25 16
+@do write
+`r3`6 Be nice to the homeless guy!!
+@do move 1 22
+@key
+@loadmap 169
+@do x is 32
+@do y is 12
+@drawmap
+@update
+@closescript
+ 
+ 
+@#doc
+@do moveback
+@busy
+@datanewday docpass.idf
+@dataload docpass.idf &playernum `p21
+@if `p21 is 0 then do
+@begin
+@do `p21 random 10000 89999
+@datasave docpass.idf &playernum `p21
+@do `p30 is `p21
+@end
+@do moveback
+@busy
+@show
+`r0`c
+              `2Hello there `n`2, how can I help you?
+ 
+                       `2(`6T`2)alk with da Doc
+                       `2(`6H`2)eal yourself for 1 gold per 3 hitpoints
+                       `2(`6G`2)et Doc to heal VD
+                       `2(`6S`2)ex Change
+                       `2(`6A`2)sk the Doc if he has any spare change
+                       `2(`6R`2)eal time chat with da Doc
+                       `2(`6W`2)rite in the Doc's guest sheet
+                       `3(`2L`3)eave
+ 
+@do write
+`r0  `6What would you like to do? :
+@do readspecial `s01 LTHSARWG
+@if `s01 is L then do
+        @begin
+        @drawmap
+        @update
+        @closescript
+        @end
+@if `s01 is T then do
+@begin
+@show
+`r0`c
+        `3Excuse me there Doc...how come you put your office here in the 
+        middle of the forest?  Why don't you get an office in town somewhere?
+ 
+@key
+@show
+`r0
+        `2Well you see young `%`n`2, I don't have the money right now...maybe
+        after I sell a few sex changes...I have fixed up my office though!
+        Hmmm...hey you know what?  I used to be a warrior when I was a boy too.
+        I bet you've heard of me eh?
+ 
+@key
+@show
+`r0
+        `3"Um...actually...no." you say.
+ 
+@key
+@show
+`r0
+        `2"Oh...ok" says the Doc sadly, "but anyway, I was a warrior and I
+        wasn't quite as tough as I thought...oh sure I killed everyone in town
+        that one time but that was mostly because it was 4 in the morning and
+        everyone was asleep...but anyway...I thought I was tough enough to
+        take out the `4Red Dragon`2.  Guess what?  I was wrong.
+ 
+@key
+@show
+`r0
+        `3"Wow Doc, that's um...neat," you say, trying not to be too mean.
+        "but uh...I better be going!"
+ 
+@key
+@show
+`r0
+        `2Oh don't worry...this isn't a long story.  Well, you see...I was
+        laying in the forest, mostly coughing up blood.  And I saw a light
+        come down out of the sky...and then in what seemed like just seconds,
+        it was gone...then...I realized I was completely healed!  That's when
+        I thought that I could help people...and decided to become a doctor!
+ 
+@key
+@show
+`r0
+        `3"Wow" you say, trying to be enthused, "that's um...really awesome,
+        but I uh...uh...better get going."
+ 
+@key
+@do goto doc
+@end
+ 
+ 
+@if `s01 is H then do
+@begin
+@if `p02 < `p03 then do
+@begin
+@do `p20 = `p03
+@do `p20 - `p02
+@do `p21 = `p20
+@do `p20 / 3
+@show
+`r0`c
+        `3Well there `n, you don't look to good.  You only have `p02 out of
+        `p03 hitpoints.  I'll heal your `p21 hitpoints for $`p20 gold.
+ 
+@do write
+`r0  `2How 'bout it?  `4Y`2/`4N :
+@do readspecial `s02 NY
+@if `s02 is N then do
+@begin
+@show
+`r0`c
+ 
+ 
+        `4FINE!!  RUN AROUND WITH BLOOD ALL OVER YOU.  SEE IF I CARE!!!!
+ 
+@key
+@do goto doc
+@end
+@if `s02 is Y then do
+@begin
+@if money < `p20 then do
+@begin
+@show
+`r0`c
+ 
+        `4HEY!!!  WHAT THE HECK ARE YOU TRYING TO PULL???  YOU THINK I CAN
+        AFFORD TO DO ALL THIS STUFF FOR FREE???
+        Try again when you have the cash
+ 
+@key
+@do goto doc
+@end
+@do money - `p20
+@do `p02 = `p03
+@show
+`r0`c
+ 
+        `2I've healed your `p21 hitpoints for $`p20 gold.
+        Your hitpoints are now `3(`%`p02 `3of `%`p03`3)`2.
+ 
+@key
+@do goto doc
+@end
+@end
+@show
+`r0`c
+ 
+        `2Whatcha smokin' dude?  You don't got a bruise on ya!
+ 
+@key
+@do goto doc
+@end
+ 
+ 
+ 
+@if `s01 is S then do
+@begin
+@if &sex is 0 then `s03 is boy
+@if &sex is 1 then `s03 is girl
+@show
+`r0`c
+ 
+        `9So...you ain't happy being a s&boy eh?  Well...I could make you a
+        `s03 for just $50000!!!
+ 
+@do write
+`r0    `2What do ya say?  Y/N :
+@do readspecial `s02 NY
+@if `s02 is N then do
+@begin
+@show
+`r0`c
+ 
+        `6I wouldn't wanna screw with my organs either.
+ 
+@key
+@do goto doc
+@end
+@if `s02 is Y then do
+@begin
+@if money < 50000 then do
+@begin
+@show
+`r0`c
+        `4WHAT DO YOU MEAN YOU DON'T HAVE THE MONEY?  YOU SORRY LITTLE BRAT!!
+        Come back when you have the cash!!!
+ 
+@key
+@do goto doc
+@end
+@if &sex is 0 then do
+@begin
+@do sexmale is 1
+@do money - 50000
+@show
+`r0`c
+ 
+        `2The Doc takes you into the back room and lays you on the bed,  he
+        drugs you up real good and gets to work...then next thing you know
+        when you wake up you are now a `3BOY`2!!!  You rush of to the
+        bathroom to look at your new MANLY features.
+ 
+@key
+@do goto doc
+@end
+@if &sex is 1 then do
+@begin
+@do sexmale is 0
+@do money - 50000
+@show
+`r0`c
+ 
+        `2The Doc takes you into the backroom and lays you down on the bed.
+        He drugs you up and starts working on your body...next thing you know
+        you wake up and run to the bathroom and look your self over a couple
+        hundred times!  `3MAN YOU'RE A HOT CHICK!
+ 
+@key
+@do goto doc
+@end
+@end
+@end
+ 
+@if `s01 is R then do
+@begin
+@label talk
+@show
+`r0`c
+        `3What would you like to talk about? (Enter to abort)
+@do readstring 76 NIL `s02
+@show
+ 
+@
+@do `p23 is length `s02
+@if `p23 < 1 then do
+        @begin
+        @do goto doc
+        @end
+@if lord2 inside `s02 then do
+        @begin
+        @show
+`r0`3DA BEST DOOR GAME EVER MADE!!!!!!!!!!!
+        @key
+        @do goto talk
+        @end
+@if lord inside `s02 then do
+        @begin
+        @show
+`r0`2The original Legend of the Red Dragon door game...one of the best ever made!
+        @key
+        @do goto talk
+        @end
+@if complete inside `s02 then do
+        @begin
+        @show
+`r0`3DA "Complete New World": BEST lord2 package ever made!
+        @key
+        @do goto talk
+        @end
+@if cnw inside `s02 then do
+        @begin
+        @show
+`r0`3DA "Complete New World": BEST lord2 package ever made!
+        @key
+        @do goto talk
+        @end
+@if world inside `s02 then do
+        @begin
+        @show
+`r0`3DA "New World": BEST DOOR GAME EVER MADE!!!!!!!!!!!
+        @key
+        @do goto talk
+        @end
+@if dragon inside `s02 then do
+        @begin
+        @show
+`r0`5Oooohh...watch out for the `4Red Dragon`5!!!!!
+        @key
+        @do goto talk
+        @end
+@if farrell inside `s02 then do
+        @begin
+        @show
+`r0`2Kevin Farrell is the creator of `%D`7oc `%F`7arrell`1!!!!!
+        @key
+        @do goto talk
+        @end
+@if kevin inside `s02 then do
+        @begin
+        @show
+`r0`3Kevin?  Kevin Farrell?  He created me!!
+        @key
+        @do goto talk
+        @end
+@if doc inside `s02 then do
+        @begin
+        @show
+`r0`5I am the best docter in the `1N`4ew `1W`4orld`5!!!
+        @key
+        @do goto talk
+        @end
+@if `n inside `s02 then do
+        @begin
+        @show
+`r0`9Yes I know you are `n!
+        @key
+        @do goto talk
+        @end
+@if secret inside `s02 then do
+        @begin
+        @do `p20 random 4 1
+        @if `p20 is 1 then do
+                @begin
+                @show
+`r0`!Try asking me about a password!
+                @key
+                @do goto talk
+                @end
+        @if `p20 is 2 then do
+                @begin
+                @show
+`r0`#I heal cheaper then the Healers in Stonebrook!!!
+                @key
+                @do goto talk
+                @end
+        @if `p20 is 3 then do
+                @begin
+                @show
+`r0`9E-mail Kevin Farrell at `%kfarrell@kearney.net
+                @key
+                @do goto talk
+                @end
+        @if `p20 is 4 then do
+                @begin
+                @show
+`r0`%Visit `7Kevin Farrell's `%web page at `3www.kearney.net/~kfarrell
+                @key
+                @do goto talk
+                @end
+        @end
+
+@dataload docpass.idf 1 `p25
+@if password inside `s02 then do
+        @begin
+        @show
+`r0`6Password...my password for today is "`%`p25`6"
+        @key
+        @do goto talk
+        @end
+@if key inside `s02 then do
+        @begin
+        @show
+`r0`3There is a key hidden in my office somewhere!
+        @key
+        @do goto talk
+        @end
+@do `p21 random 6 1
+@if `p21 is 1 then do
+        @begin
+        @show
+`r0`3I don't know what you're talking about
+        @key
+        @do goto talk
+        @end
+@if `p21 is 2 then do
+        @begin
+        @show
+`r0`1Bla bla bla bla....
+        @key
+@do goto talk
+        @end
+@if `p21 is 3 then do
+        @begin
+        @show
+`r0`2Wow...that's uh...er...interesting...
+        @key
+        @do goto talk
+        @end
+@if `p21 is 4 then do
+        @begin
+        @show
+`r0`6You're starting to bore me...
+        @key
+        @do goto talk
+        @end
+@if `p21 is 5 then do
+        @begin
+        @show
+`r0`6Really?
+        @key
+        @do goto talk
+        @end
+@if `p21 is 6 then do
+        @begin
+        @show
+`r0`9Zzzzzzzzz
+        @key
+        @do goto talk
+        @end
+@end
+ 
+ 
+@if `s01 is A then do
+@begin
+@datanewday doccash.idf
+@dataload doccash.idf &playernum `p20
+@if `p20 not 0 then do
+@begin
+@show
+`r0`c
+ 
+        `4You decide that the Doc has been generous enough for today.
+ 
+@key
+@do goto doc
+@end
+@show
+`r0`c
+ 
+        `3So...you need a little cash help eh?  Well...I might be able to help
+        you out a little there...that is...if you can get my password...
+ 
+@do write
+`r0   `2What's the password? :
+@do readnum 5 NIL
+@dataload docpass.idf 1 `p25
+@if `p25 not `v40 then do
+@begin
+@show
+`r0`c
+ 
+        `4Sorry...that wasn't the right password...
+        `2(HINT: You can get the password from da Doc!)
+ 
+@key
+@do goto doc
+@end
+@do `p23 random 1000 1
+@show
+`r0`c
+ 
+        `3THAT'S IT!!!!!  YOU GOT MY PASSWORD RIGHT!!!!!!
+        You will recieve $`p23 gold!!!
+ 
+@key
+@do money + `p23
+@datasave doccash.idf &playernum 1
+@do goto doc
+@end
+ 
+ 
+@if `s01 is W then do
+@begin
+@label guest
+@if docguest.txt exists false then do
+@begin
+@writefile docguest.txt
+`r0`2D`3oc `2F`3arrell : `%ATTENTION ALL GUESTS: Please sign my guest sheet!
+@end
+@clear screen
+@displayfile docguest.txt
+@show
+ 
+ 
+@
+@do `s08 is NIL
+@do `s08 add `3
+@do `s08 add `n
+@do strip `s08
+@do `s08 add `x`3:`x`%
+@do `p21 is length `s08
+@do `p22 is 76
+@do `p22 - `p21
+@do write
+`r0`2Type what you would like to add below.  (Enter to quit)`\`s08
+@do readstring `p22 NIL `s09
+@do stripbad `s09
+@do `p23 is length `s09
+@if `p23 < 2 then do
+@begin
+@do goto doc
+@end
+@writefile docguest.txt
+`3`n`3 : `%`s09
+@do trim docguest.txt 15
+@do goto guest
+@end
+ 
+@if `s01 is G then do
+@begin
+@if bitcheck `t50 2 1 then do
+        @begin
+        @routine getname in npcwith.ref
+        @show
+`r0`c
+        `2So, `s01 has the deadly disease, `4VD`2?
+        For just $1000 gold I can cure `s01 of this!!
+ 
+        @do write
+`r0  `2Do it?  `3Y`2/`3N`2 :
+        @do readspecial `s02 NY
+        @if `s02 is N then do
+                @begin
+                @show
+`r0`c
+ 
+        `4FINE!!  JUST LET `s01 RUN AROUND GETTING SICKER AND
+        SICKER UNTIL `s01 IS PAINFUL AND SUFFERING DEATH!!!!!!!!!!!
+ 
+                @key
+                @do goto doc
+                @end
+        @if `s02 is Y then do
+                @begin
+                @if money < 1000 then do
+                        @begin
+                        @show
+`r0`c
+ 
+        `4HEY PUNK!!!  YOU DON'T HAVE ENOUGH MONEY!!  I AIN'T GONNA CURE
+        ANYONE UNTIL YOU HAVE $1000 GOLD!!!!!!!
+ 
+                        @key
+                        @do goto doc
+                        @end
+
+                @do `p21 is `v05
+                @do `p21 / 24
+                @do `p11 - `p21
+                @show
+`r0`c
+ 
+        `3The Doc takes `s01 into his back room, sets you down
+        and gets started.
+
+       `k
+        You wait out in the waiting for about an hour.
+
+       `k
+        `s01 is `2CURED`3!!!
+ 
+        `$`s01: `2Thanks, I'll give you everything I've got for doing
+         this for me. Here take this. Please take me home safely.
+
+         `%You Earned:
+                @dataload npc/npcgold.idf `p71 `p21
+                @if `p21 > 0 then do
+                        @begin
+                        @dataload npc/npcgold.idf `p71 `p21
+                        @do `p20 random `p21 1
+                        @if `p20 > 2000 then `p20 is 100
+                        @do money + `p20
+                        @do `p21 - `p20
+                        @datasave npc/npcgold.idf `p71 `p21
+                        @show
+                `$`p20 GOLD
+                        @end
+                @dataload npc/npcgems.idf `p71 `p21
+                @if `p21 > 0 then do
+                        @begin
+                        @dataload npc/npcgems.idf `p71 `p21
+                        @do `p20 random `p21 1
+                        @if `p20 > 10 then `p20 is 0
+                        @do `p19 + `p20
+                        @do `p21 - `p20
+                        @datasave npc/npcgems.idf `p71 `p21
+                        @show
+                `$`p20 GEMS
+                        @end
+                `$3 CHARM
+                `$500 EXPERIENCE
+                `$1 QUEST POINT
+                @key
+                @bitset `t50 0 1
+                @bitset `t50 2 0
+                @bitset `t50 7 1
+                @do money - 1000
+                @do `p08 + 3
+                @do `p01 + 500
+                @do `p18 + 1
+                @datasave npc/npcvd.idf `p71 0
+                @dataload npc/npc-`p71 &playernum `p22
+                @do `p22 + 25
+                @datasave npc/npc-`p71 &playernum `p22
+                @do `p12 is 0
+                @do `p02 is `p03
+                @do goto doc
+                @end
+        @do goto doc
+        @end
+
+@if `p12 not 1 then do
+        @begin
+        @show
+`r0`c
+ 
+        `3Aah...I can see that you're drunk again...YOU DON'T HAVE `4VD`3!!!
+ 
+        @key
+        @do goto doc
+        @end
+@show
+`r0`c
+        `2So you are one those people who has the deadly disease, `4VD`2?
+        For just $1000 gold I can cure you of this!!
+ 
+@do write
+`r0  `2Do it?  `3Y`2/`3N`2 :
+@do readspecial `s02 NY
+@if `s02 is N then do
+        @begin
+        @show
+`r0`c
+ 
+        `4FINE!!  JUST RUN AROUND GETTING SICKER AND SICKER UNTIL YOUR
+        PAINFUL AND SUFFERING DEATH!!!!!!!!!!!
+ 
+        @key
+        @do goto doc
+        @end
+@if `s02 is Y then do
+        @begin
+        @if money < 1000 then do
+                @begin
+                @show
+`r0`c
+ 
+        `4HEY PUNK!!!  YOU DON'T HAVE ENOUGH MONEY!!  I AIN'T GONNA CURE YOU
+        UNTIL YOU HAVE $1000 GOLD!!!!!!!
+ 
+                @key
+                @do goto doc
+                @end
+   @do `p21 is `v05
+   @do `p21 / 24
+   @do `p11 - `p21
+        @show
+`r0`c
+ 
+        `3The Doc takes you into his back room, sets you down and gets started.
+        You wake up about an hour later `2CURED`3!!!
+ 
+        You are fully refreshed!!
+ 
+        @key
+        @do money - 1000
+        @do `p12 is 0
+        @do `p02 is `p03
+        @do goto doc
+        @end
+@do goto doc
+@end
+ 
+ 
+@#namechange
+@do moveback
+@busy
+@datanewday docname.idf
+@dataload docname.idf &playernum `p21
+@if `p21 not 0 then do
+@begin
+@show
+`r0`c
+ 
+        `4You better not change your name again today!!!
+ 
+@key
+@drawmap
+@update
+@closescript
+@end
+@show
+`r0`c
+ 
+        `%You find a stack of papers laying on the table...they're the
+        Personal ID papers for everyone in town.  You find yours.
+ 
+@do `v01 is 1
+@choice
+`x`x`x`x`x`2Erase your name and change it
+`x`x`x`x`x`6Leave 'em alone
+@if responce is 2 then do
+@begin
+@drawmap
+@update
+@end
+@if responce is 1 then do
+@begin
+@label changename
+@do write
+`r0`c`\`\`\`\  `3You scribble out your name and replace it with :`\ `2
+@do readstring 40 NIL `s10
+@do `p20 is length `s10
+@if `p20 < 3 then do
+@begin
+@show
+`r0`c
+ 
+        `4Sorry, that name is too short!!
+ 
+@do write
+`r0`4   Try again?  `3Y`4/`3N`4 :
+@do readspecial `s02 NY
+@if `s02 is N then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if `s02 is Y then do
+@begin
+@do goto changename
+@end
+@end
+@if checkdupe is true then do
+@begin
+@show
+`r0`c
+ 
+        `3There is already someone named `s10`3!
+ 
+@do write
+`r0`2   Try again?  Y/N
+@do readspecial `s02 NY
+@if `s02 is N then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if `s02 is Y then do
+@begin
+@do goto changename
+@end
+@end
+@do write
+`r0`c   `3Are you sure you want to be known as `s10 `3from now on?  Y/N :
+@do readspecial `s02 NY
+@if `s02 is N then do
+@begin
+@drawmap
+@update
+@end
+@if `s02 is Y then do
+@begin
+@do copytoname
+@show
+`r0`c
+ 
+        `2CONGRATULATIONS!!!  You are now known as `n!!!!!!!!!!!
+ 
+@key
+@datasave docname.idf &playernum 1
+@drawmap
+@update
+@end
+ 
+@#key
+@do moveback
+@busy
+@dataload dockey.idf &playernum `p20
+@show
+`r0`c
+[?7h[255D[40m
+ 
+[0;1m[16C[0;33mлллллллллллллллллллллллллллллллллллллллллллллллл
+[16Cлл[46m                                            [40mлл
+[16Cлл[46m                                            [40mлл
+[16Cлл[46m                                            [40mлл
+[16Cлл[46m                              [1;30mм[40mл[46mм           [0;33mлл
+[16Cлл[46m         [1;30mм[40mл[46mм                м[40mллллл[46mм         [0;33mлл
+[16Cлл[1;30mл[46mмм    м[40mллллл[46mм           м[40mллллллллллл[46mм      [0;33mлл
+[16Cлл[1;30mлллл[46mмм[40mллллллллл[46mм       м[40mллллллллллллллл[46mм    [0;33mлл
+[16Cлл[1;30mллллллллллллллллл[46m    м[40mллллллллллллллллллл[46m   [0;33mлл
+[16Cлл[32mлллллллллллллллллллллллллллллллллллллллллллл[33mлл
+[16Cлл[32mлллллллллллллллллллллллллллллллллллллллллллл[33mлл
+[16Cлл[32mлллллллллллллллллллллллллллллллллллллллллллл[33mлл
+[16Cлл[32mлллллллллллллллллллллллллллллллллллллллллллл[33mлл
+[16Cлл[32mлллллллллллллллллллллллллллллллллллллллллллл[33mлл
+[16Cлл[32mлллллллллллллллллллллллллллллллллллллллллллл[33mлл
+[16Cлллллллллллллллллллллллллллллллллллллллллллллллл
+[0m[255D
+ 
+@if `p20 is 1 then do
+@begin
+@show
+`r0               `2Not much to do here since you already took the key!
+ 
+@key
+@drawmap
+@update
+@closescript
+@end
+@do write
+`r0           `3(`2L`3)`2eave     `2(`3K`2)`3nock the picture down
+@do readspecial `s02 LK
+@if `s02 is L then do
+@begin
+@drawmap
+@update
+@end
+@if `s02 is K then do
+@begin
+@show
+`r0`c
+ 
+        `2You knock the picture to the ground and it makes a loud `4THUD`2!!
+        You turn around and look at the secretary...she didn't even notice.
+        You look at the wall where the picture used to be.
+        There's a `$KEY `2there!!!!
+ 
+        `3You wonder what the key goes to.
+ 
+@key
+@datasave dockey.idf &playernum 1
+@drawmap
+@update
+@end
+ 
+@#passage
+@do moveback
+@busy
+@dataload dockey.idf &playernum `p20
+@show
+`r0`c
+ 
+        `2You walk back behind the tables and you find a `3HIDDEN DOOR`2!!!!
+@if `p20 not 1 then do
+@begin
+@show
+`r0`2        You mess around with it for a long time...then you realize that
+        you won't be able to open it without a key.
+ 
+        (`0HINT: You can find the key in the Doc's office!`2)
+ 
+@key
+@drawmap
+@update
+@closescript
+@end
+@show
+`r0`2        You play with the lock until you're about to give up when you
+        remember that you found a key behind a picture in the secretary's
+        office!!  You insert the key...turn...and the door OPENS!!!
+ 
+@key
+@loadmap 167
+@do x is 1
+@do y is 9
+@drawmap
+@update
+@end
+ 
+@#secratary
+@do `p70 is 132
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@busy
+@if &sex is 0 then do
+@begin
+@show
+`r0`c
+ 
+        `3You see the Doc's secretary sitting at her desk.  Her name tag
+        says: "`%Rosie Luver`3"
+ 
+@do write
+`r0`2        Talk to her?  `3Y`2/`3N `2:
+@do readspecial `s02 NY
+@if `s02 is N then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if `s02 is Y then do
+@begin
+@label sectalk
+@show
+`r0`c
+ 
+        `3-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+                `2"`%What do you want to talk about?`2" asks Rosie.
+ 
+                `3(`2G`3)ossip
+                `2(`6N`2)ever Mind
+ 
+@do write
+`r0`0        What will it be?
+@do readspecial `s03 NG
+@if `s03 is N then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if `s03 is G then do
+@begin
+@if docsec.txt exists false then do
+@begin
+@writefile docsec.txt
+ `2Rosie `3: `%I heard that `7Kevin Farrell `%is one `@HANDSOME `%guy!!
+@end
+@label gossip
+@clear screen
+@displayfile docsec.txt
+@show
+`r0
+ 
+ 
+@do `s04 is NIL
+@do `s04 add `x`2
+@do `s04 add `n
+@do strip `s04
+@do `s04 add `x`3:`x`%
+@do `p21 is length `s04
+@do `p22 is 78
+@do `p22 - `p21
+@do write
+`r0`2  Enter you gossip below  (Enter blank line to quit) :`\`s04
+@do readstring `p22 NIL `s05
+@do `p21 is length `s05
+@if `p21 < 1 then goto sectalk
+@writefile docsec.txt
+ `2`n `3: `%`s05
+@do trim docsec.txt 17
+@do goto gossip
+@end
+@end
+@end
+@datanewday docflirt.idf
+@dataload docflirt.idf &playernum `p20
+@if `p20 is 2 then do
+@begin
+@show
+`r0`c
+ 
+        `2You better not push it!  You don't want to go to fast...
+        maybe tomorrow!
+ 
+@key
+@drawmap
+@update
+@closescript
+@end
+@show
+`r0`c
+ 
+        `3You see a `4GREAT `3looking secretary with beautiful blue eyes,
+        teeth as white as snow, and lips as red as roses.  You feel like
+        you're in Heaven, and are almost expecting an angel to come and
+        tap you on your shoulder.  You see a sign on the desk that says
+        "`%Secretary: Rosie Luver`3"
+ 
+ 
+@do write
+`r0        `3Flirt with her `2Y`3/`2N`3 :
+@do readspecial `s02 NY
+@if `s02 is N then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if `s02 is Y then do
+@begin
+@show
+`r0`c
+        `3-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+            `2You walk up to her and say "`%Excuse me Miss Luver`2"
+            `9She turns and looks at you with her beautiful eyes
+ 
+                `6(`%N`6)`7ever mind
+                `6(`%1`6)`7Suck in your gut and act cool
+                `6(`%2`6)`7Tell her you love her eyes
+                `6(`%3`6)`7Kiss her on the cheek
+                `6(`%4`6)`7Ask her on a date
+                `6(`%5`6)`7Give FULL kiss on the lips
+                `6(`%6`6)`7Grab her rear end
+                `6(`%7`6)`7Lay her down on the desk
+        `3=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@do write
+`r0    `2What will it be?  :
+@do readspecial `s03 N1234567
+@if `s03 is N then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if `s03 is 1 then do
+@begin
+@show
+`r0`c
+        `3You suck in your stomach and push out your chest.  As you walk
+        out you let your gut back out and your pants fall as the button
+        pops of your pants and you trip and fall over and `4LAND FLAT ON
+        YOUR FACE!!!!  `3Rosie starts laughing at you!!!
+ 
+        `4You're so embarrassed your hitpoints drop to 1 !!!!!!
+@key
+@do `p02 is 1
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@if `s03 is 2 then do
+@begin
+@show
+`r0`c
+        `3You walk up to her and tell her that her eyes are very beautiful
+@do write
+`r0        `3She tells you`l.`l.`l.`l.
+@if `p08 < 1 then do
+@begin
+@key
+@show
+`r0`4TO DROP DEAD!!!!!!
+ 
+        You lose 10 experience!!!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 - 1
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p01 - 10
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@show
+`r0`2thanks and winks at you!
+ 
+        You gain 1 max hitpoint!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 1
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p03 + 1
+@do `p02 is `p03
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@if `s03 is 3 then do
+@begin
+@show
+`r0`c
+        `2You kiss Rosie on the cheek!
+@do write
+`r0        `!She`l.`l.`l.`l.
+@if `p08 < 4 then do
+@begin
+@show
+`r0`4SAYS "EEW!!!  GET LOST CREEP!!!"
+ 
+        Your hitpoints drop to 1 !!!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 - 2
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p02 is 1
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@show
+`r0`3smiles and says hi.
+ 
+        You gain 25 experience!!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 2
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p01 + 25
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@if `s03 is 4 then do
+@begin
+@show
+`r0`c
+        `2You walk over to Rosie, look into her eyes, and ask her if she
+        would like to go on a date with you tonight.
+ 
+@do write
+`r0        `3She`l.`l.`l.`l.
+@if `p08 < 8 then do
+@begin
+@show
+`r0`4LAUGHS IN YOUR FACE AND TELLS YOU TO GET LOST!
+ 
+        You spend the night alone in the woods!
+ 
+        You lose 40 experience!!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 - 3
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p01 - 40
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@show
+`r0`agrees to go!!
+ 
+        You have a GREAT time that night at dinner.
+ 
+        You gain 5 charm!!!!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 3
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p08 + 5
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@if `s03 is 5 then do
+@begin
+@show
+`r0`c
+        `@You lean down to her and press your lips against hers.
+ 
+@do write
+`r0`@        She`l.`l.`l.`l.
+@if `p08 < 15 then do
+@begin
+@show
+`r0`4PUSHES YOU AWAY, SLAPS YOUR FACE AND TELLS YOU NEVER TO TOUCH HER AGAIN!
+ 
+        You lose 5 charm!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 - 6
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p08 - 5
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@do `p22 random 5 1
+@show
+`r0`3wraps her arms around you and kisses you for `%`p22 `3minutes!!!
+ 
+        You gain 100 experience!!!!!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 6
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p01 + 100
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@if `s03 is 6 then do
+@begin
+@show
+`r0`c
+        `6You reach down and grab Rosie's rear end
+ 
+@do write
+`r0`6        Rosie`l.`l.`l.`l.
+@if `p08 < 20 then do
+@begin
+@show
+`r0`4SLAPS YOU AND KICKS YOU BETWEEN THE LEGS!!!
+ 
+        You lose 175 experience and hitpoints drop to 1 !!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 - 6
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p01 - 175
+@do `p02 is 1
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@show
+`r0`9smiles and draws close!!!
+ 
+        You recieve 250 experience and 5 charm
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 9
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p01 + 250
+@do `p08 + 5
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@if `s03 is 7 then do
+@begin
+@show
+`r0`c
+        `0You pick Rosie up off her feet and lay her on the desk...
+ 
+@do write
+`r0`7        She`l.`l.`l.`l.
+@if `p08 < 30 then do
+@begin
+@show
+`r0`4PUNCHES YOU RIGHT IN THE SNOT-LOCKER!!!!
+ 
+        You lose 300 experience and 5 charm!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 - 9
+@datasave npc/npc-`p70.idf &playernum `p29
+@do `p01 - 300
+@do `p08 - 5
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+   @do `p21 is `v05
+   @do `p21 / 24
+   @do `p11 - `p21
+@show
+`r0`3giggles and pulls you onto the desk!
+ 
+        1 hour later you feel GREAT!
+ 
+        You gain 800 experience, 1 lay, 7 charm and you are fully refreshed!
+@key
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 12
+@datasave npc/npc-`p70.idf &playernum `p29
+@dataload npc/npcvd.idf `p70 `p29
+@do `p25 random 100 1
+@if `p25 is 25 then goto rosievd
+
+@if `p29 > 0 then do
+@begin
+@lable rosievd
+@show
+`r0`c
+ 
+ 
+        `4YOU GET VD FROM ROSIE!!!!!!  YOU MUST CURE THIS DEADLY DISEASE
+        BEFORE YOU DIE!!!!
+ 
+@key
+@datasave npc/npcvd.idf `p70 1
+@do `p12 is 1
+@end
+@do `p34 + 1
+@do `p01 + 800
+@do `p08 + 7
+@do `p02 = `p03
+@do `p20 + 1
+@datasave docflirt.idf &playernum `p20
+@drawmap
+@update
+@closescript
+@end
+@end 
+ 
+@#random
+@do saybar
+`6 It's so dark and wet down here!
+ 
+ 
+@#treasure
+@datanewday docchest.idf
+@datanewday doctreas.idf
+@dataload doctreas.idf &playernum `p22
+@if `p22 is 2 then do
+@begin
+@show
+`r0`c
+ 
+        `4You have already opened 2 treasure chests today...maybe tomorrow.
+ 
+@key
+@routineabort
+@drawmap
+@update
+@closescript
+@end
+ 
+@#usedchest
+@show
+`r0`c
+ 
+        `4Sorry...you've already opened that chest today...try another one!
+ 
+@key
+@drawmap
+@update
+@closescript
+ 
+@#chestprize
+@do `p23 random 7 1
+@show
+`r0`c`\`\`\`\        `2You open up the chest.
+@do write
+`r0        `2You find`l.`l.`l.`l.
+@if `p23 is 1 then do
+@begin
+@show
+`r0`2a book on how to be a great warrior!!!
+ 
+        You recieve 200 experience!
+ 
+@key
+@do `p01 + 100
+@end
+@if `p23 is 2 then do
+@begin
+@show
+`r0`3a bag of gold!!!
+ 
+        There is $1,000 gold in the bag!!!!
+ 
+@key
+@do money + 1000
+@end
+@if `p23 is 3 then do
+@begin
+@show
+`r0`9some 50 pound weights!!!
+ 
+        You get 25 muscle points!!
+ 
+@key
+@do `p04 + 25
+@end
+@if `p23 is 4 then do
+@begin
+@show
+`r0`$a bottle of cologne!!
+ 
+        You gain 10 charm!!
+ 
+@key
+@do `p08 + 10
+@end
+@if `p23 is 5 then do
+@begin
+@show
+`r0`0a new suit!!!
+ 
+        You get 1 extra flirt with the secretary in the Doc's office!
+ 
+@key
+@datanewday docflirt.idf
+@dataload docflirt.idf &playernum `p24
+@do `p24 - 1
+@datasave docflirt.idf &playernum `p24
+@end
+@if `p23 is 6 then do
+@begin
+@show
+`r0`%a great looking sheild!!
+ 
+        You gain 15 max hitpoints!!!
+ 
+@key
+@do `p03 + 15
+@do `p02 = `p03
+@end
+@if `p23 is 7 then do
+@begin
+@show
+`r0`%a new pair of shoes!
+ 
+        You gain 15 dodge points!
+ 
+@key
+@do `p05 + 15
+@end
+ 
+ 
+ 
+@#treasure1
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 1 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 1
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+@#treasure2
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 2 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 2
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+ 
+@#treasure3
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 3 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 3
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+@#treasure4
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 4 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 4
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+ 
+@#treasure5
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 5 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 5
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+ 
+@#treasure6
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 6 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 6
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+@#treasure7
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 7 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 7
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+@#treasure8
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 8 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 8
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+@#treasure9
+@do moveback
+@busy
+@routine treasure
+@dataload docchest.idf &playernum `p20
+@if `p20 is 9 then goto usedchest
+@routine chestprize
+@datasave docchest.idf &playernum 9
+@do `p22 + 1
+@datasave doctreas.idf &playernum `p22
+@drawmap
+@update
+ 
+ 
+@#guy
+@datanewday docguy.idf
+@dataload docguy.idf &playernum `p20
+@if `p20 is 2 then do
+@begin
+@show
+`r0`c
+ 
+        `4You've already talked to 2 people today...maybe tomorrow.
+ 
+@key
+@routineabort
+@drawmap
+@update
+@end
+ 
+ 
+@#usedguy
+@datanewday doclast.idf
+@dataload doclast.idf &playernum `p22
+@if `p22 is `p21 then do
+@begin
+@show
+`r0`c
+ 
+        `8I refuse to talk to you again until tomorrow!
+ 
+@key
+@routineabort
+@drawmap
+@update
+@end
+ 
+ 
+@#guy1
+@do moveback
+@busy
+@routine guy
+@do `p21 is 1
+@routine usedguy
+@do `p23 is money
+@do `p24 is `p23
+@do `p24 / 25
+@if `p24 < 10 then `p25 is 1
+@if `p24 < 100 then `p25 is 2
+@if `p24 < 1000 then `p25 is 3
+@if `p24 < 10000 then `p25 is 4
+@if `p24 < 100000 then `p25 is 5
+@if `p24 < 1000000 then `p25 is 6
+@if `p24 < 10000000 then `p25 is 7
+@if `p24 < 100000000 then `p25 is 8
+@show
+`r0`c
+ 
+        `8Hello there `n`8. I've been waiting for someone to come down here.
+        Not a lot of people can find this place.  But anyway...are you having
+        trouble getting attention from the opposite sex?  Well...I can teach
+        you to be charming for just `$$25 gold `8per point!
+ 
+   `7How many would you like?  You can afford `%`p24`7.
+@do write
+`r0`7   ( `%0 to exit `7)  :
+@do readnum `p25 NIL
+@do `p26 is `p24
+@do `p26 * 25
+@if `p24 is 0 then do
+@begin
+@do `p20 + 1
+@datasave docguy.idf &playernum `p20
+@datasave doclast.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@if `p26 > money then do
+@begin
+@show
+`r0`c
+ 
+        `4HEY!!!  You don't have enough gold for `%`p24 `4charm!
+        Try again!
+ 
+@key
+@do goto guy1
+@end
+@do money - `p26
+@do `p08 + `p24
+@show
+`r0`c
+ 
+        `3You gained `!`p24 `3charm and you now have `%`p08 `3charm!!
+ 
+@key
+@do `p20 + 1
+@datasave docguy.idf &playernum `p20
+@datasave doclast.idf &playernum 1
+@drawmap
+@update
+ 
+ 
+@#guy2
+@do moveback
+@busy
+@routine guy
+@do `p21 is 2
+@routine usedguy
+@show
+`r0`c
+ 
+        `8Hello `n`8.  How may I help you?
+ 
+                `8(`%W`8)`7hat's down here?
+                `8(`%H`8)`7ow come this is here?
+                `8(`%L`8)`7eave
+ 
+@do write
+`r0`7        Your choice?  :
+@do readspecial `s02 LHW
+@if `s02 is L then do
+@begin
+@do `p20 + 1
+@datasave docguy.idf &playernum `p20
+@datasave doclast.idf &playernum 2
+@drawmap
+@update
+@end
+@if `s02 is W then do
+@begin
+@show
+`r0`c
+ 
+        `7Man this place is creepy!  What exactly is down here?
+ 
+@key
+@show
+`r0
+ 
+        `8This "`%creepy`8" place is my home!  There are many treasures
+        to be found here!  And all of the other people that live down here
+        are VERY generous and will help you out a lot!
+ 
+@key
+@do goto guy2
+@end
+@if `s02 is H then do
+@begin
+@show
+`r0`c
+ 
+        `7Hey!  Why is this place even here?  It's sooo creepy!
+ 
+@key
+@show
+`r0
+ 
+        `8This place is here because we are all ex-cons!  We were framed and
+        were being sentenced to death because of a gang that runs around
+        beating up on everyone!  All of us down here are friends and we gave
+        them a pretty good butt-whoopin'!  Well...they were friends with
+        some rich guy and he told everyone that we tried to kill him.  He
+        even stabbed himself to make it look more convincing.  Then one day we
+        ran across the Doc and he agreed to help us.  So then we built
+        this underground tunnel and have been hiding here ever since...
+        "I don't even remember what day-light looks like" he says sadly.
+ 
+@key
+@do goto guy2
+@end
+ 
+@#guy3
+@do moveback
+@busy
+@routine guy
+@do `p21 is 3
+@routine usedguy
+@do `p23 random 4 1
+@if `p23 is 1 then do
+@begin
+@do saybar
+The Doc heals cheeper then any other docter in the world!!!!!
+@end
+@if `p23 is 2 then do
+@begin
+@do saybar
+Talk with other people by writing in the tree on the east side of the tunnel!
+@end
+@if `p23 is 3 then do
+@begin
+@do saybar
+You can open 2 treasure chest and talk to 2 people every day!
+@end
+@if `p23 is 4 then do
+@begin
+@if `p34 < 1 then `s03 is :(
+@if `p34 > 0 then `s03 is `2Way to be!!  :)
+@do saybar
+`6You've been laid `2`p34 `6times.  `s03
+@end
+@do `p20 + 1
+@datasave docguy.idf &playernum `p20
+@datasave doclast.idf &playernum 3
+ 
+@#guy4
+@do moveback
+@busy
+@routine guy
+@do `p21 is 4
+@routine usedguy
+@show
+`r0`c
+ 
+                `3Is there anything you'd like to get rid of?
+ 
+@sellmanager
+@do `p20 + 1
+@datasave docguy.idf &playernum `p20
+@datasave doclast.idf &playernum 4
+@drawmap
+@update
+ 
+@#guy5
+@do moveback
+@busy
+@routine guy
+@do `p21 is 5
+@routine usedguy
+@do `p27 is 0
+@do `p28 is 0
+@do `p29 is 0
+@do `p23 is money
+@do `p24 is `p23
+@do `p24 / 15
+@if `p24 > 99 then do `p24 is 99
+@do `p25 is 2
+@show
+`r0`c
+ 
+        `8I can enhance your muscle, dodge, or hitpoints for just $100 gold
+        per point!!!  (limit of 99 muscle, dodge and hitpoints per day)
+ 
+                `8(`%M`8)`7uscle
+                `8(`%D`8)`7odge
+                `8(`%H`8)`7itpoints
+                `7(`8L`7)`%eave
+ 
+@do write
+`r0`8   Which will it be? :
+@do readspecial `s02 LMDH
+@if `s02 is L then do
+@begin
+@drawmap
+@update
+@do `p20 + 1
+@datasave docguy.idf &playernum `p20
+@datasave doclast.idf &playernum 5
+@end
+@if `s02 is M then do
+@begin
+@if `p27 is 1 then do
+@begin
+@show
+`r0`c
+ 
+        `8You already bought some muscle today!  Maybe tomorrow.
+ 
+@key
+@do goto guy5
+@end
+@show
+`r0`c
+ 
+        `8You have `p04 muscle points right now.  You have enough money
+        to get `p24 more.
+ 
+@do write
+`r0`7  How many would you like?
+@do readnum `p25 NIL
+@if `p24 is 0 then goto guy5
+@do `p26 is `p24
+@do `p26 * 100
+@if `p26 > money then do
+@begin
+@show
+`r0`c
+ 
+        `4You don't have enough money for `p24 muscle!!!  That would cost
+        `$$`p26 `4gold and you only have `$$`p23 `4gold!!
+ 
+@key
+@do goto guy5
+@end
+@do `p27 is 1
+@do money - `p26
+@do `p04 + `p24
+@do
+@show
+`r0`c
+ 
+        `%You now have `p04 muscle!!!
+ 
+@key
+@do goto guy5
+@end
+@if `s02 is D then do
+@begin
+@if `p28 is 1 then do
+@begin
+@show
+`r0`c
+ 
+        `8You already bought some dodge today!  Maybe tomorrow.
+ 
+@key
+@do goto guy5
+@end
+@show
+`r0`c
+ 
+        `8You have `p05 dodge right now.  You have enough money to buy `p24
+        more.
+ 
+@do write
+`r0`7   How many do you want?
+@do readnum `p25 NIL
+@do `p26 is `p24
+@do `p26 * 100
+@if `p24 is 0 then goto guy5
+@if `p26 > money then do
+@begin
+@show
+`r0`c
+ 
+        `4You don't have enough money for `%`p24 `4dodge!!!  That would cost
+        `$$`p26 `4gold and you only have `$$`p23 `4gold!!!
+ 
+@key
+@do goto guy5
+@end
+@do `p28 is 1
+@do money - `p26
+@do `p05 + `p24
+@show
+`r0`c
+ 
+        `7You now have `%`p24 `7dodge!!!!!
+ 
+@key
+@do goto guy5
+@end
+@if `s02 is H then do
+@begin
+@if `p29 is 1 then do
+@begin
+@show
+`r0`c
+ 
+        `8You already bought some hitpoints today!  Maybe tomorrow.
+ 
+@key
+@do goto guy5
+@end
+@show
+`r0`c
+ 
+        `8You have `p03 max hitpoints now.  You have enough money to buy
+        `p24 more!
+ 
+@do write
+`r0`7   How many would you like?
+@do readnum `p25 NIL
+@do `p26 is `p24
+@do `p26 * 100
+@if `p24 is 0 then goto guy5
+@if `p26 > money then do
+@begin
+@show
+`r0`c
+ 
+        `4You don't have enough money for `%`p24 `4max hitpoints.  That would
+        cost you `$$`p26 `4gold and you only have `$$`p23 `4gold!
+ 
+@key
+@do goto guy5
+@end
+@do `p29 is 1
+@do money - `p26
+@do `p03 + `p24
+@show
+`r0`c
+ 
+        `7You know have `p03 max hitpoints!!!!!
+ 
+@key
+@do goto guy5
+@end
+ 
+ 
+ 
+ 
+ 
+@#color
+@do moveback
+@busy
+@if doctree.txt exists false then do
+@begin
+@writefile doctree.txt
+`%Hobb : `7Are we ever gonna be able to get out of this cave?
+`%Barley : `8I hope so...some day.
+@end
+@clear screen
+@displayfile doctree.txt
+@show
+ 
+ 
+@do `s02 is `n`x:`x
+@do `p21 is length `s02
+@do `p22 is 78
+@do `p22 - `p21
+@do `v01 is 1
+@choice
+`x`2Write on tree with `7chalk
+`x`2Write on tree with `8coal
+`x`6Leave
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@end
+@if responce is 1 then do
+@begin
+@clear screen
+@displayfile doctree.txt
+@show
+`r0`c
+ 
+   `3Type what you would like to add below (Enter blank line to quit) :
+@do readstring `p22 NIL `s03
+@do `p20 is length `s03
+@if `p20 < 3 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@do stripall `s03
+@do `s02 is NIL
+@do `s02 is `n
+@do stripall `s02
+@writefile doctree.txt
+`%`s02`x:`x`7`s03
+@do trim doctree.txt 17
+@do goto color
+@end
+@if responce is 2 then do
+@begin
+@clear screen
+@displayfile doctree.txt
+@show
+`r0`c
+ 
+   `3Type what you would like to add below (Enter blank line to quit) :
+@do readstring `p22 NIL `s03
+@do `p20 is length `s03
+@if `p20 < 3 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@do stripall `s03
+@do `s02 is NIL
+@do `s02 is `n
+@do stripall `s02
+@writefile doctree.txt
+`%`s02`x:`x`8`s03
+@do trim doctree.txt 17
+@do goto color
+@end
+ 
+ 
+ 
+@#backroom
+@if &lasty is 7 then do
+@begin
+@do saybar
+`6The Doc seems busy in his work.
+@end
+ 
+@#bed
+@do moveback
+@do saybar
+`2Eeew...it smells like a dead carcus.
+ 
+@#nohome
+@do moveback
+@datanewday docnohom.idf
+@dataload docnohom.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do saybar
+`2The man is lying on the ground bleeding all over `4THANKS TO YOU!
+@closescript
+@end
+@datanewday dochomno.idf
+@dataload dochomno.idf &playernum `p20
+@if `p20 = 1 then do
+        @begin
+        @if &lastx is 40 then do
+                @begin
+                @do x is 42
+                @update
+                @closescript
+        @end
+        @if &lastx is 42 then do
+                @begin
+                @do x is 40
+                @update
+                @closescript
+        @end
+@end
+@show
+`r0`c
+                     `r1`2TALKING WITH HOMELESS GUY`r0
+ 
+ 
+        `3HEY KID!  If you give me $1000 gold I will make it worth your while.
+ 
+ 
+@if money < 1000 then do
+@begin
+@do `v01 is 1
+@choice
+`4Beat him
+`6Leave since you don't have $1000
+@if responce is 2 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if responce is 1 then do
+@begin
+@show
+`r0`c
+ 
+        `2You push him to the ground and beat him with your s&weapon.
+@do `p21 is random 1000 1
+@show
+`r0        `2You find $`p21 gold on him!
+ 
+        `4ALIGNMENT GOES DOWN BY 2
+ 
+@key
+@do money + `p21
+@do `p07 - 2
+@datasave docnohom.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@end
+@do `v01 is 1
+@choice
+`3Give him the money
+`4Beat him
+`6Leave
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@end
+@if responce is 1 then do
+@begin
+@show
+`r0`c
+ 
+        `3Thank you so very much young `n`3.  I am very thankful.
+        For being such a nice warrior I will let ya go around to the
+        back of the building!!!
+ 
+ 
+ 
+ 
+@key
+@do x is 40
+@do money - 1000
+@datasave dochomno.idf &playernum 1
+@drawmap
+@update
+@end
+@if responce is 2 then do
+@begin
+@do `p21 random 1000 1
+@show
+`r0`c
+ 
+        `2You shove the old man into the wall and beat him with your trusty
+        s&weapon.
+ 
+        You find $`p21 gold!!!
+ 
+        `4ALIGNMENT GOES DOWN BY 2
+ 
+@key
+@do `p07 - 2
+@do money + `p21
+@datasave docnohome.idf &playernum 1
+@drawmap
+@update
+@end
+ 
+ 
+ 
+@#bye
+@offmap
+@show
+`r0`c
+ 
+        `2Thank you for using `%D`7oc `%F`7arrell `2by `3Kevin Farrell
+ 
+@key
+@loadmap 1040
+@do x is 43
+@do y is 9
+@drawmap
+@update
+@end
+ 
+ 
+@#thatsall

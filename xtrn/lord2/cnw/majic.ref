@@ -1,0 +1,203 @@
+; Script file MAJIC.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE magicfight 000000331
+@DECLARE monster1 000000918
+@DECLARE monster2 000001473
+@DECLARE monster3 000002004
+@DECLARE monster4 000002555
+@DECLARE monster5 000003074
+@DECLARE majic 000003621
+@NOCHECK
+; End of .REF index
+
+@#MAGICFIGHT
+@offmap
+@fight
+;name
+Wizard King
+;string said when you see him
+He's mumbling and chanting
+;power move kill string
+You take his spell book !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+casts an icestorm|295
+throws a fireball|250
+puts you to sleep|286
+hits with his staff|265
+NONE|NONE
+;defense
+250
+;gold reward
+2562
+;experience
+1210
+;hit points
+589
+;if win: ref file|name or NONE
+QUESTER.REF|FINQUEST
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+QUESTER.REF|ENDQUEST
+
+@#monster1
+@fight
+;name
+Black Sorcerer
+;string said when you see him
+A hooded magic user appears before you
+;power move kill string
+You take his spell book !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+casts an icestorm|195
+launches a fireball|150
+puts you to sleep|86
+NONE|NONE
+NONE|NONE
+;defense
+65
+;gold reward
+562
+;experience
+210
+;hit points
+125
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Witch
+;string said when you see him
+You see a hag on a broom 
+;power move kill string
+You break her broom in half !
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+hits you with her broom|75
+summons the dead|61
+curses you|91
+NONE|NONE
+NONE|NONE
+;defense
+68
+;gold reward
+628
+;experience
+158
+;hit points
+145
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Wizard
+;string said when you see him
+Looks like a white bearded wizard
+;power move kill string
+You cut out his tongue
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+throw a fireball|145
+stabs you with his dagger|95
+summons a lightning bolt|154
+NONE|NONE
+NONE|NONE
+;defense
+82
+;gold reward
+925
+;experience
+171
+;hit points
+265
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Evil Cleric
+;string said when you see
+Here comes trouble
+;power move kill string
+You break his staff
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+cast a death spell|180
+hits you with his staff|95
+curses you|78
+NONE|NONE
+NONE|NONE
+;defense
+90
+;gold reward
+815
+;experience
+200
+;hit points
+351
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Evil Fairy
+;string said when you see him
+It's a twisted looking fairy
+;power move kill string
+You use her for a target
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+hits you with her wand|84
+gives you a bad wish|98
+zaps you with lightning|87
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+526
+;experience
+165
+;hit points
+542
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#MAjIC
+@busy
+@do `p20 random 5 1
+@do goto monster`p20

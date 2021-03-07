@@ -1,0 +1,182 @@
+; Script file CLOAKF.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:30 2001
+
+@DECLARE darkq 000000394
+@DECLARE clean 000000494
+@DECLARE monster1 000000560
+@DECLARE monster2 000001171
+@DECLARE monster3 000001768
+@DECLARE monster4 000002327
+@DECLARE win 000002924
+@DECLARE prize 000003041
+@DECLARE run 000003375
+@DECLARE nomore 000003498
+@NOCHECK
+; End of .REF index
+
+@#darkq
+@busy
+@if bitcheck `t14 5 1 then goto clean
+@do `p20 random 4 1
+@do goto monster`p20
+
+@#clean
+@busy
+@do `p20 random 3 1
+@do goto monster`p20
+
+
+@#monster1
+@fight
+;name
+`%Skeleton
+;string said when you see him
+`0A pile of bones comes to life and attacks you
+;power move kill string
+`%The bones clatter to the ground in horrid defeat.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+gives you a bone|10
+slashes with its skinless hand|7
+tears its arm off and hits you with it|12
+NONE|NONE
+NONE|NONE
+;defense
+10
+;gold reward
+48
+;experience
+50
+;hit points
+50
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+`%Zombie
+;string said when you see him
+`0A mass of rotting and deacaying flesh shambles towards you
+;power move kill string
+`%Whoa! He shold switch to decaf!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+uses its amputated arm to bash you|10
+moans "brains" & bites you|15
+gnaws on your leg|13
+NONE|NONE
+NONE|NONE
+;defense
+9
+;gold reward
+42
+;experience
+78
+;hit points
+60
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+`%Ghost
+;string said when you see him
+`0A shimmering figure approaches you
+;power move kill string
+You have killed the undead.  Not bad.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+laughs at you|1
+takes you to the other side|15
+grabs at your soul|30
+NONE|NONE
+NONE|NONE
+;defense
+29
+;gold reward
+276
+;experience
+167
+;hit points
+90
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+`%Minor Death
+;string said when you see him
+`0A hooded figure with a scythe approaches
+;power move kill string
+`%Yes! not even Death can stop you!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slashes with his scythe|46
+uses his Death Gaze|56
+touches you with a deathly cold hand|31
+NONE|NONE
+NONE|NONE
+;defense
+20
+;gold reward
+1300
+;experience
+700
+;hit points
+110
+;if win: ref file|name or NONE
+CLOAKF.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+CLOAKF.REF|RUN
+
+@#win
+@bitset `t14 5 1
+@do saybar
+`%You have completed your mission! You get 5 Quest Points!
+@do goto prize
+
+@#prize
+@if sexmale is 1 then `s01 is He
+@if sexmale is 0 then `s01 is She
+@do addlog
+             `@ `%`@A`9n`@a`9k`@h`9a `0has beaten Death! He is a True Warrior! `@
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do `p18 + 5
+@do x is 11
+@do y is 11
+@do map is 1583
+@loadmap 1583
+@drawmap
+@update
+
+@#run
+@datasave cloak.idf &playernum 2
+@do x is 11
+@do y is 11
+@do map is 1583
+@loadmap 1583
+@drawmap
+@update
+
+@#nomore

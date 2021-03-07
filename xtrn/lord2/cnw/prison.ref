@@ -1,0 +1,882 @@
+; Script file PRISON.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:26 2001
+
+@DECLARE blocka 000000731
+@DECLARE blockb 000001005
+@DECLARE blockc 000001282
+@DECLARE blockd 000001573
+@DECLARE entguard 000001854
+@DECLARE sign 000002170
+@DECLARE canoe 000002233
+@DECLARE guilt 000002298
+@DECLARE enter 000003097
+@DECLARE warden 000004082
+@DECLARE flirt 000007924
+@DECLARE guydead 000013898
+@DECLARE girl 000013937
+@DECLARE gotout 000013975
+@DECLARE run 000014012
+@DECLARE win 000014046
+@DECLARE execute 000014084
+@DECLARE fall 000014123
+@DECLARE done 000014159
+@NOCHECK
+; End of .REF index
+
+;Greentree Prison Version 2 by Codax and Dragon's Den Ultd
+;This update should fix the freeze problem
+
+@#blockA
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+@if `s02 not A then do
+@begin
+@do saybar
+This is not Your Cell Block!!!
+@end
+
+@if `s02 is A then do
+@begin
+@do x is 40
+@do y is 15
+@do map is 610
+@loadmap 610
+@drawmap
+@Update
+@end
+
+@#blockB
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+@
+@if `s02 not B then do
+@begin
+@do saybar
+This is not Your Cell Block!!!
+@end
+
+@if `s02 is B then do
+@begin
+@do x is 40
+@do y is 15
+@do map is 850
+@loadmap 850
+@drawmap
+@Update
+@end
+
+@#blockC
+@do moveback
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+@
+@if `s02 not C then do
+@begin
+@do saybar
+This is not Your Cell Block!!!
+@end
+
+@if `s02 is C then do
+@begin
+@do x is 40
+@do y is 15
+@do map is 847
+@loadmap 847
+@drawmap
+@Update
+@end
+
+@#blockD
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+@
+@if `s02 not D then do
+@begin
+@do saybar
+This is not Your Cell Block!!!
+@end
+
+@if `s02 is D then do
+@begin
+@do x is 40
+@do y is 15
+@do map is 607
+@loadmap 607
+@drawmap
+@Update
+@end
+
+
+@#entguard
+@do moveback
+@readfile pris&playernum.idf
+`p21
+`p22
+@if `p22 < 1 then do
+@begin
+@do saybar
+Patrol Man:  A Ha...I have caught you with no strikes left!`|`l`l`l`l`l
+@run execute
+@end
+
+@if `p22 not 0 then do
+@begin
+@do saybar
+Patrol Man:  Watch your back...You have `!`p22`% strikes left
+@end
+
+@#sign
+@do moveback
+@do saybar
+ <----  Greentree Prison
+
+@#canoe
+@Do `s01 is didn't`xpay`xcanoe`xrent
+@do goto enter
+
+@#guilt
+@do moveback
+@if pris&playernum.idf exists false then do
+@begin
+
+@do `p20 Random 9 1
+
+@if `p20 is 1 then `s01 is stole`xa`xloaf`xof`xbread
+@if `p20 is 2 then `s01 is stole`xa`xhorse
+@if `p20 is 3 then `s01 is stole`xmilk
+@if `p20 is 4 then `s01 is stole`xa`xbag`xof`xgems
+@if `p20 is 5 then `s01 is triped`xa`xclergyman
+@if `p20 is 6 then `s01 is assalted`xa`xbard
+@if `p20 is 7 then `s01 is killed`xa`xmockingbird
+@if `p20 is 8 then `s01 is had`xgood`xrelations`xwith`xa`xgoat
+@if `p20 is 9 then `s01 is robbed`xa`xhouse
+
+@show
+
+	`r0`c`%  `r1  Doing his Duty  `r0`2
+
+  Patrol Man:  Hello Citizen`l .`l .`l .Wait!!!  I know you, you are the
+   person I ran into years ago `l. `l. `l.you `!`s01!!`2
+   You are going to jail!!!
+`k
+@do goto enter
+@end
+
+@begin
+@label enter
+@do x is 71
+@do y is 12
+@do map is 689
+@loadmap 689
+@drawmap
+@update
+@do saybar
+Patrol Man:  You are a thief!!!!  Go directly to see the warden!!
+@key
+@do saybar
+All your warpable Items have been taken!!!
+@do `p21 is 0
+
+@if `p20 > 0 then do
+@begin
+@do `p21 + 1
+@end
+
+@if `p20 > 3 then do
+@begin
+@do `p21 + 1
+@end
+
+@if `p20 > 5 then do
+@begin
+@do `p21 + 1
+@end
+
+@if `p20 > 7 then do
+@begin
+@do `p21 + 1
+@end
+
+@writefile pris&playernum.idf
+&time
+3
+`p21
+0
+0
+0
+`s01
+@
+@run takeitem in prisonb.ref
+@end
+
+@if pris&playernum.idf exists true then do
+@begin
+@readfile pris&playernum.idf
+`p30
+@
+
+@if `p30 not &time then do
+@begin
+@do delete pris&playernum.idf
+@do saybar
+Patrol Man:  You come here again and I'll run you in!
+@end
+
+@if `p30 is &time then do
+@begin
+@do saybar
+Didn't you get enough the first time you were here today?
+@end
+@end
+
+
+;-------------------------warden----------------------------------------
+@#warden
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+
+@if `s02 is 0 then do
+@begin
+@show
+
+      `r0`c  `r1`%  The Warden  `r0`2
+
+  Warden:  So you are the new filth in town, huh.  Here are a few rules if
+           you want to make it out of this place.
+           
+           1.  Every Newday come and talk to me 
+`k
+           2.  No Escaping
+`k
+	   3.  No fiddling with the locks
+`k
+	   4.  Remember Your prison cell number
+`k
+	   5.  If you do anything wrong you will be executed, but your body
+               will remain here untill your sentence is up!!!
+
+           Do you understand!
+
+@do `v01 is 1
+@choice
+Yes
+No
+@if responce is 2 then do
+@begin
+@run warden
+@end
+
+@if responce is 1 then do
+@begin
+@show
+`2
+  Warden:  Good....now let's see what you did`l.`l.`l.`l.hmmmmm
+           <gasp> It says here you `!`s01`2!
+           That means you get `!`p23`2 Days in here!           
+`$`k
+  But I'm innocent!!!
+`k
+@do `p20 Random 4 1
+@if `p20 is 1 then `s02 is A
+@if `p20 is 2 then `s02 is B
+@if `p20 is 3 then `s02 is C
+@if `p20 is 4 then `s02 is D
+@show
+`2
+  Warden:  That's What they all say....I'm assigning you to cell block`! `s02`2
+           Now get out of my sight!!!
+`k
+@if `s02 is A then `p30 is 610
+@if `s02 is B then `p30 is 850
+@if `s02 is C then `p30 is 847
+@if `s02 is D then `p30 is 607
+
+@do `p20 random 4 1
+@if `p20 is 1 then do
+@begin
+@do `p28 is 70
+@do `p29 is 7
+@end
+
+@if `p20 is 2 then do
+@begin
+@do `p28 is 29
+@do `p29 is 3
+@end
+
+@if `p20 is 3 then do
+@begin
+@do `p28 is 48
+@do `p29 is 2
+@end
+
+@if `p20 is 4 then do
+@begin
+@do `p28 is 23
+@do `p29 is 3
+@end
+
+@do delete prisinfo.&playernum
+@writefile prisinfo.&playernum
+0
+0
+0
+`p28
+`p29
+0
+`p30
+@
+
+@do delete pris&playernum.idf
+@writefile pris&playernum.idf
+&time
+3
+`p23
+0
+0
+`s02
+`s01
+@drawmap
+@update
+@end
+@end
+
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@if `s02 not 0 then do
+@begin
+
+@if `p23 is 0 then do
+@begin
+@run gotout
+@end
+
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+
+@if `p21 not &time then do
+@begin
+@do `p23 - 1
+@Show
+
+`r0`c  `r1`%  One day closer to freedom  `r0`2
+
+  Warden:  Well, what do ya know, punk s&boy has only `!`p23`2 days left!
+`k
+
+@do delete pris&playernum.idf
+@writefile pris&playernum.idf
+&time
+`p22
+`p23
+`p24
+`p25
+`s02
+`s03
+@
+@drawmap
+@update
+@end
+
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+
+@if `p21 is &time then do
+@begin
+@show
+
+  `r0`c  `r1`%  Bothering The Warden  `r0`2
+
+  Warden:  What do you want?
+
+@do `v01 is 1
+@choice
+How many days do I have left
+Flirt
+To KILL YOU!
+Leave
+@
+
+@if responce is 4 then do
+@begin
+@drawmap
+@do y is 6
+@update
+@do saybar
+Warden:  Don't waste my time!
+@drawpart 17 5 
+
+@end
+
+@if responce is 1 then do
+@begin
+@drawmap
+@do y is 6
+@update
+@do saybar
+Warden:  You have `p23 days left
+@drawpart 17 5
+@end
+
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@fight
+;name
+The Warden
+;string said when you see him
+`$"Die you fat ugly pig"`2 you scream
+;power move kill string
+Warden:  I am the law and the law is not mocked
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Sprays you with mace|175
+Hits you with his billy club|290
+Farts|90
+Smacks you with his blackjack|300
+NONE|NONE
+;defense
+1000
+;gold reward
+500
+;experience
+2000
+;hit points
+2000
+;if win: ref file|name or NONE
+prison.ref|win
+;if lose: ref file|name or NONE
+prison.ref|execute
+;if runs: ref file|name or NONE
+prison.ref|run
+@end
+
+@if responce is 2 then do
+@begin
+@run flirt
+@end
+@end
+
+;------------------------------------------------------------------------
+@#flirt
+@readfile pris&playernum.idf
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+
+@if &sex is 1 then do
+@begin
+@do `p22 - 1
+@do delete pris&playernum.idf
+@writefile pris&playernum.idf
+&time
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@drawmap
+@do y is 6
+@update
+@do saybar
+`0You sick boy...Don't you ever try that again! You have `p22 strikes left!
+@if `p22 less 1 then do
+@begin
+@run execute
+@end
+@end
+
+@if &sex is 0 then do
+@begin
+@datanewday warden.idf
+@dataload warden.idf &playernum `p26
+ 
+@if `p26 is 1 then do
+  @begin
+  @do saybar
+`0You've been suave enough for one day...
+  @closescript
+ @end
+
+@DO `p27 random 12 1
+  @do `v01 is 1
+  @SHOW
+`r0`c  `r1`% The Warden `r0
+
+`2  This ugly as a slop, pig faced, officer smiles dumbly at you.
+
+@do write
+`x`x
+@CHOICE
+>`p08 0  Wink at him
+>`p08 1  Kiss his hand
+>`p08 2  Peck him on the lips
+>`p08 3  Slap his on the behind
+>`p08 5  Make out session
+>`p08 7  Bed together!
+Sorry, you're too dumb...even for me.
+@if response is 1 then do
+ @begin
+ @if `p27 > 5 then do
+ @begin
+ @show
+`\`\  `2You give the warden a good wink! 
+
+  He smiles back at you and blows a kiss! Excellent!                  
+
+  `@Charm goes up by 1.
+`\`k
+
+ @datasave warden.idf &playernum 1
+ @do `p08 + 1
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if `p27 < 6 then do
+ @datasave warden.idf &playernum 1
+ @show
+`\
+  `0He slaps you silly! Don't you feel like an ass...
+
+`k
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if response is 2 then do
+ @begin
+ @if `p27 > 5 then do
+ @begin
+ @show
+`\`\  `2Like the debonaire young lady you are, you kiss him on the hand and
+  in a well-fashioned English accent sweet-talk him...
+
+  He kisses you on the cheek. Smooth!
+
+  `@Charm goes up by 2.
+`\`k
+ @do `p08 + 2
+ @datasave warden.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if `p27 < 6 then do
+ @datasave WArden.idf &playernum 1
+ @show
+`\
+  `0He slaps you silly! Don't you feel like an ass...
+
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+@end
+
+@if response is 3 then do
+ @begin
+ @if `p27 > 5 then do
+ @begin
+ @show
+`\`\  `2You sneak in a quick flirtatious peck on the lips and, to your very
+  lucky surprise, He engulfs your peck with a sloppy wet-one!
+
+  `@Charm goes up by 3.
+`\`k
+ @do `p08 + 3
+@do addlog
+ `r0 `0`n`2 has kissed quite heavily `0The warden of Greentree jail
+ @writefile lognow.txt
+  `2at `0Greentree Jail
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @datasave warden.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if `p27 < 6 then do
+ @datasave warden.idf &playernum 1
+ @show
+`\
+  `0He slaps you silly! Don't you feel like an ass...
+
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+@end
+
+@if response is 4 then do
+ @begin
+ @if `p27 > 5 then do
+ @begin
+ @show
+`\`\  `2You decide to take the plunge. Very confidently, you sneak your hand
+  around to the warden's backside and with a swift pump whack on his very
+  extremely wide ass...
+
+  He guhuks and gives you a kiss!
+
+  `@Charm goes up by 4.
+`\`k
+ @do `p08 + 4
+@do addlog
+ `r0 `0`n`2 has slapped `0The warden`2's ass
+ @writefile lognow.txt
+  `2at `0Greentree Jail
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @datasave warden.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if `p27 < 6 then do
+ @datasave warden.idf &playernum 1
+ @show
+`\
+  `0He slaps you silly! Don't you feel like an ass...
+
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+@end
+
+@if response is 5 then do
+ @begin
+ @if `p27 > 5 then do
+ @begin
+ @show
+`\`\  `$"Hey, Warden! I feel like we've gotten to know each other fairly well,  
+  don't you? I, well, I...well...I was wondering if you'd make out with me?"
+
+`k  `0"Right here?"
+
+`k  `$"Yes...you know, if you would...please..."
+
+`k  `2Before you can answer, He jumps on top of you. You roll around for a bit
+  and just as you start feeling like more -- He stands up and says thank you.
+
+  `@You have 2 more chances to do something wrong.
+`k
+@do `p22 + 2
+@do delete pris&playernum.idf
+@writefile pris&playernum.idf
+&time
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+
+`\`k
+ @do addlog
+ `r0 `0`n`2 has made out with `0the warden
+ @writefile lognow.txt
+  `2at `0Greentree Jail!
+                                 `2-`0=`2-`%=`2-`0=`2-
+
+ @datasave wArden.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if `p27 < 6 then do
+ @datasave warden.idf &playernum 1
+ @show
+`\
+  `0He slaps you silly! Don't you feel like an ass...
+
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+@end
+
+@if response is 6 then do
+ @begin
+ @if `p27 > 5 then do
+ @begin
+ @show
+`\`\  `2Remembering your good ol' days with Seth, you grab the warden
+   and lay him on his huge table.  He flips you over and mis-uses your
+   body in ways it was never misused before.  You cry out, but his heaving
+   only blocks it out. 
+
+  `2It is terrible. You limp on out, kinda bow legged at the experience
+  but it least it got you one day less in jail.
+
+  `@You got one less day in prison`k
+  `@You get VD.`k
+  `@Lays go up by 1.
+`\`k
+ @do addlog
+ `7-`8= `r0 `0`n`2 left the warden's office walking bow-legged and filty! `8=`7-
+ @writefile lognow.txt
+    `2at `0Greetree Jail!
+                                 `2-`0=`2-`%=`2-`0=`2-
+
+@do `p23 - 1
+@do delete pris&playernum.idf
+@writefile pris&playernum.idf
+&time
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+
+ @do `p12 is 1
+ @do `p34 + 1
+ @do y is 6
+ @datasave warden.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if `p27 < 6 then do
+ @datasave warden.idf &playernum 1
+ @show
+`\
+  `0He is discusted at your proposal and gives you an extra day in jail
+`k
+@do `p23 + 1
+@do delete pris&playernum.idf
+@writefile pris&playernum.idf
+&time
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01 
+@
+
+@drawmap
+ @update
+ @closescript
+@end
+
+@end
+
+@CLOSESCRIPT
+@END
+
+
+;->
+@#guydead
+@run guydead in prisonf.ref
+
+@#girl
+@run girl in prisonf.ref
+
+@#gotout
+@run gotout in prisonf.ref
+
+@#run
+@run run in prisonf.ref
+
+@#win
+@run win in prisonf.ref
+
+@#execute
+@run execute in prisonf.ref
+
+@#FALL
+@run fall in prisonf.ref
+
+@#done
+
+
+;Vars for pris&playernum.idf
+;var1 = time                 (`p21)
+;var2 = strikes              (`p22)
+;var3 = days left            (`p23)
+;var4 = found spoon          (`p24)
+;var5 = finished tunnel      (`p25) 
+;var6 = prison block letter  (`s02)
+;var7 = crime                (`s01)
+
+;Vars for Prisinfo.&playernum
+;var1 = time for once a day race  	(`p21)
+;var2 = time for once a day work out	(`p22)
+;var3 = time for once a day rocks break	(`p23)
+;var4 = Player cell x			(`p24)
+;var5 = player cell y			(`p25)
+;var6 = time for once a day flirt  	(`p26)
+;var7 = player cell map			(`p27)

@@ -1,0 +1,1067 @@
+; Updated by CNW to handle the java telnet app
+;
+;
+;
+
+;help inside of help.ref (yeah, this file) is run if a user hits ? from
+;the main screen in the game.  This way, if you want to add a complicated
+;help system, (ie, they can get help on certain things, whatever) you can.
+
+@#NOTIME
+`r0  `2Um, hello?  Anybody home?  You can't sit here all day, there are
+  adventures to be had!  Come back when you are ready - be not afraid, child.
+
+@#yell
+@busy
+@do move 3 21
+@do write
+`r1`% ENTER SCREEN MESSAGE :`x
+@do readstring 51 NIL `s01
+@do stripbad `s01
+@do `p21 is length `s01
+@if `p21 more 1 then do
+ @begin
+ @do `s02 is `r1`%`x`n`%:`x
+ @do `s02 add `s01
+ @do talk `s02 all
+ @end
+@do statbar
+
+@#talk
+@busy
+@do move 3 21
+@do write
+`r1`% ENTER GLOBAL MESSAGE :`x
+@do readstring 51 NIL `s01
+@do stripbad `s01
+@do `p21 is length `s01
+@if `p21 more 1 then do
+ @begin
+ @do `s02 is `r1`%`x`n`%:`x
+ @do `s02 add `s01
+ @do talk `s02 all
+ @end
+@do statbar
+
+
+@#Z
+;z key activates this
+;the Smackrod/aka legendary xy cord warping device
+
+
+@if `i73 < 1 then do
+  @begin
+@if bitcheck `t79 3 1 then do
+        @begin
+        @do saybar
+`%You dismount your horse.
+        @routine dismounth in vehicle.ref
+        @closescript
+        @end
+
+@if bitcheck `t79 1 1 then do
+        @begin
+        @do saybar
+`%You mount your horse.
+        @routine mounth in vehicle.ref
+        @closescript
+        @end
+
+  @do saybar
+`%You do not own a horse.
+  @closescript
+
+; no more bad Z msg.. now horsy.
+;  @do saybar
+;`2Nice job on pressing the `0Z`2 key.  It is a great key, really.
+;  @closescript
+  @end
+
+@do move 3 23
+@do write
+`0`r0New X? `2:`x
+@do `p20 is x
+@do `p21 is y
+@do readnum 2 `p20
+;changed 80 to 79 and 1 to 2, so players can not cheat.
+@if `v40 is 0 then `v40 is `p20
+@if `v40 > 79 then `v40 is 79
+@if `v40 < 2 then `v40 is 2
+@do x is `v40
+
+@do move 15 23
+@do write
+`0`r0New Y? `2:`x 
+@do readnum 2 `p21
+;changed 20 to 19 and 1 to 2, so players can not cheat.
+@if `v40 is 0 then `v40 is `p21
+@if `v40 > 20 then `v40 is 19
+@if `v40 < 2 then `v40 is 2
+@do y is `v40
+
+@if `p71 > 0 then do
+  @begin
+  @routine getname in npcwith.ref
+  @dataload npc/npc-`p71.idf &playernum `p27
+  @do `p27 - 15
+  @datasave npc/npc-`p71.idf &playernum `p27
+  @datasave npc/npclost.idf `p71 map
+  @datasave npc/npclost2.idf `p71 &playernum
+  @routine getplace in location.ref
+  @do `p71 is 0
+  @do `p70 is 0
+  @bitset `t50 1 0
+  @bitset `t50 2 0
+  @bitset `t50 3 0
+  @bitset `t50 4 0
+  @bitset `t50 5 0
+  @bitset `t50 6 0
+  @bitset `t50 7 0
+  @writefile lognow.txt
+   `$`s01 got lost today. `s01 was last seen near `s02.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @do saybar
+`$You just had lost `s01. :(
+  @so quebar
+`$Maybe you shouldn't jump around like that.
+  @end
+
+@clearblock 23 24
+
+@if blockpassable not 0 then do
+ @begin
+  @clearblock 23 24
+  @drawpart `p20 `p21
+  @update
+ @end
+@if blockpassable is 0 then do
+ @begin
+ @do x is &lastx
+ @do y is &lasty
+ @drawpart `p20 `p21
+ @update
+ @do saybar
+Sorry, you can't go there.
+@end
+
+
+@#whoison
+@busy
+;our whos on list
+@do move 1 1
+@show
+`r0`c  `r1                        `%PEOPLE ON NOW                             `r0  
+
+  `0Name                       Level           Location
+
+@whoison
+@show
+
+@key
+@drawmap
+@update
+
+@#map
+@busy
+;if player hits M from the map menu
+@if `i20 > 0 then do
+  @begin
+  @do write
+`r0
+  @overheadmap
+  ;now we do any additions to our map,  like text or marks on the map
+  ;we had npc players do so they know where to go
+
+  @do move 76 12 ;porttown
+  @do write
+`r2`%Ü
+
+  @do move 76 17 ;greentree
+  @do write
+`r2`%Ü
+
+  @do move 79 17 ;stonebrook
+  @do write
+`r2`%ş
+
+  @do move 80 10 ;stonepass lodge
+  @do write
+`r2Ü
+
+  @do move 52 14 ;flag city
+  @do write
+`r2`%Ü
+
+  @do move 43 7 ;ArrisVille
+  @do write
+`r2`%Ü
+
+  @do move 56 6 ;Sosen Village
+  @do write
+`r2`%Ü
+
+  @do move 52 20 ;BoneTown
+  @do write
+`r2`%Ü
+
+  @do move 75 17 ;town of knotwood
+  @do write
+`r2`%ş
+
+  @if bitcheck `t93 1 1 then do
+    @begin
+  @do move 61 17 ;town of Shark Tooth Island
+  @do write
+`r2`%ş
+    @end
+
+  @if bitcheck `t93 2 1 then do
+    @begin
+  @do move 62 11 ;Devils Island
+  @do write
+`r2`%Ü
+    @end
+
+  @if bitcheck `t93 0 1 then do
+    @begin
+  @do move 74 14 ;woodland
+  @do write
+`r2`%ş
+    @end
+  @if bitcheck `t92 7 1 then do
+    @begin
+  @do move 65 6 ;GumTown
+  @do write
+`r2`%Ü
+    @end
+
+  @if bitcheck `t92 6 1 then do
+    @begin
+  @do move 53 17 ;MystVille
+  @do write
+`r2`%Ü
+    @end
+
+  @if bitcheck `t92 0 1 then do
+    @begin
+  @do move 42 2 ;ArrisTraining Grounds
+  @do write
+`r2`%ø
+    @end
+
+  @if bitcheck `t92 1 1 then do
+    @begin
+  @do move 74 16 ;TeamHouse1
+  @do write
+`r2`#1
+    @end
+  @if bitcheck `t92 2 1 then do
+    @begin
+  @do move 80 4 ;TeamHouse2
+  @do write
+`r2`#2
+        @end
+  @if bitcheck `t92 3 1 then do
+    @begin
+  @do move 55 16 ;TeamHouse3
+  @do write
+`r2`#3
+        @end
+  @if bitcheck `t92 4 1 then do
+    @begin
+  @do move 68 13 ;TeamHouse4
+  @do write
+`r2`#4
+        @end
+  @if bitcheck `t92 5 1 then do
+    @begin
+  @do move 55 1 ;TeamHouse5
+  @do write
+`r2`#5
+        @end
+
+  @if bitcheck `t12 3 1 then do
+    @begin
+    @do move 75 20 ;edward
+    @do write
+`r2`0ø
+    @end
+
+
+  ;this math converts your 'block #' to x y cords to show the
+  ;"you are here" blip.  We use lmap instead of map, lmap is the
+  ;the last 'visible' map the player was on.
+
+  @do `p20 is &lmap
+  @do `p20 / 80
+  @do `p21 is &lmap
+  @do `p22 is `p20
+  @do `p22 * 80
+  @do `p21 - `p22
+  @do `p20 + 1
+  @if `p21 is 0 then do
+   @begin
+   @do `p21 is 80
+   @do `p20 - 1
+   @end
+  @do move `p21 `p20
+  @do write
+`r2`bX`r0
+
+;draw the help
+@do move 3 3
+@show
+`r1`%Reading your map.
+`2ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+  `%Ü `0City/town with lodging
+  `%ş `0City/town `4without`0 lodging
+  `%ø `0House or shack
+  `4X `0Your current location
+  `## `0TeamHouse #
+
+  `0Note:  `2Some buildings/etc must be
+  discovered before they show up here.
+  @do move 1 22
+  @do write
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@do saybar
+`4You don't have a map.
+
+@#rank1
+;this is the format for experience ranking
+@do `s01 is `n
+@do pad `s01 21
+@if sexmale is 1 then `s02 is `0M
+@if sexmale is 0 then `s02 is `#F
+@do `s03 is `p01
+@do frontpad `s03 14
+@do `s04 is `p09
+@do frontpad `s04 2
+@if dead is 1 then `s05 is `4Dead
+@if dead is 0 then `s05 is `%Alive
+
+@writefile temp`*.dat
+`s02 `2`s01`%`s03   `s04     `s05
+@#rank2
+;this is the format for experience ranking
+@do `s01 is `n
+@do pad `s01 21
+
+@if sexmale is 1 then `s02 is `0M
+@if sexmale is 0 then `s02 is `#F
+
+@do `s03 is `p18
+@do frontpad `s03 14
+
+@if `p96 < 10 then `s04 is `%Sober`xenuf
+@if `p96 < 1 then `s04 is `%Sober
+@if `p96 > 10 then `s04 is `5Mildly`xdrunk
+@if `p96 > 20 then `s04 is `5Feeling`xGOOD
+@if `p96 > 30 then `s04 is `5Dilerious!?!
+@if `p96 > 40 then `s04 is `5Drunk
+@if `p96 > 50 then `s04 is `5Way`xDrunk
+@if `p96 > 60 then `s04 is `5Pissed`xDRUNK!
+@do frontpad `s04 13
+@writefile list`*.dat
+`s02`x`2`s01`%`s03`x`s04
+@#rank3
+@If &sex is 0 then `s09 is `#F
+@If &sex is 1 then `s09 is `1M
+;name
+@do `s02 is `N
+@do pad `s02 26
+;age
+@do `s03 is `p39
+@do pad `s03 2
+;lays
+@do `s05 is `p34
+@do pad `s05 4
+;kills
+@do `s06 is `p35
+@do pad `s06 4
+;charm
+@do `s07 is `p08
+@do pad `s07 6
+;last flirted with?
+;- working on this -
+@if `t72 is 0 then do
+        @begin
+        @do `p70 is `t71
+        @routine getname in npcname.ref
+;        @do write
+;made it here!?! `s01`k
+        @do `s08 is `s01
+        @end
+@if `t72 is 1 then do
+        @begin
+        @do `s08 is getname `t71
+        @end
+@if `t72 is 2 then do
+        @begin
+        @do `s08 is a`xsheep
+        @end
+@do pad `s08 9
+;hometown
+@routine getplace in myhome.ref
+@do pad `s01 20
+@do delete lst2`*.dat
+@writefile lst2`*.dat
+`s09`x`%`s02`x`$`s03`x`%`s01`x`5`s05`x`4`s06`x`!`s07`x`$`s08
+@#listplayers
+@busy
+@clear screen
+@do move 14 1
+@do write
+`4ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 14 2
+@do write
+`4³                                                ³
+@do move 14 3
+@do write
+`4³                                                ³
+@do move 14 4
+@do write
+`4³                                                ³
+@do move 14 5
+@do write
+`4³                                                ³
+@do move 14 6
+@do write
+`4³                                                ³
+@do move 14 7
+@do write
+`4³                                                ³
+@do move 14 8
+@do write
+`4³                                                ³
+@do move 14 9
+@do write
+`4³                                                ³
+@do move 14 10
+@do write
+`4³                                                ³
+@do move 14 11
+@do write
+`4ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+@do move 18 3
+@show
+`7How should we list the players this time?
+@do move 25 5
+@do write
+`8ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 25 6
+@do write
+`8³                        ³
+@do move 25 7
+@do write
+`8³                        ³
+@do move 25 8
+@do write
+`8³                        ³
+@do move 25 9  
+@do write
+`8ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do move 26 6
+@do `v01 is 1
+@choice
+`$Rank by Experience      `%
+`$List HomeTown/Lays/Kills`%
+`$List by most QUESTs     `%
+@if responce is 2 then do
+        @begin
+        @run list1 in gm23.ref
+        @end
+
+;        @do `p20 is 0
+;        @do write
+;`r0`c  `0Listing players...
+;
+;@do delete lst2`*.dat
+;@writefile lst2`*.dat
+;`r0`r1                             `%  LORD II RANKINGS                            `r0
+;                
+;`0G  Name                     Age - HomeTown  - - - Lays Kills Charm - Likes 
+;`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+;@rank lst2`*.dat 8 rank3
+;@do move 1 1
+;@displayfile lst2`*.dat
+;@key bottom
+;@drawmap
+;@update
+;@closescript
+;@end
+
+@if responce is 3 then do
+        @begin
+        @do move 1 1
+        @clear screen
+        @do write
+`r0  `0Another way of Ranking players...  TESTING!!!
+
+@do delete list`*.dat         ;`* is node number
+@writefile list`*.dat
+`r0`c`r1                             `%  LORD II RANKINGS                            `r0
+                
+  `0Name                     Quests - Drunk -
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@
+
+;rank lets us specify WHAT `p to rank, and what the name of the procedure
+;that formats the rank.
+;its been comented out - it works, but @lordrank is the same thing built
+;into the .EXE, so it is a bit faster
+;      @lordrank temp`*.dat 1
+
+       ;@rank crap`*.dat 1 rank1
+       @rank list`*.dat 18 rank2
+       ;@lordrank list`*.dat 18
+        @do move 1 1
+        @displayfile list`*.dat
+        @key bottom
+        @drawmap
+        @update
+        @closescript
+        @end
+@do move 1 1
+@clear screen
+@do write
+`r0  `0Ranking players...
+
+@do delete temp`*.dat         ;`* is node number
+@writefile temp`*.dat
+`r0`c`r1                             `%  LORD II RANKINGS                            `r0
+                
+  `0Name                     Experience  Level   Status Alignment Quests
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@
+
+;rank lets us specify WHAT `p to rank, and what the name of the procedure
+;that formats the rank.
+;its been comented out - it works, but @lordrank is the same thing built
+;into the .EXE, so it is a bit faster
+;@rank crap`*.dat 1 rank1
+@lordrank temp`*.dat 1
+@convert_file_to_ansi temp`*.dat score.ans
+@convert_file_to_ascii temp`*.dat score.txt
+@do move 1 1
+@displayfile temp`*.dat
+@key bottom
+@drawmap
+@update
+
+
+
+@#help
+@do `v01 is 1
+@label helpstart
+@do move 1 1
+@show
+`r0`c  `r1  `%LORD II: Complete New World v137 `r0
+
+  `2Use your `0ARROW-KEYS`2 or numpad (with numlock turned on) to select an
+  option then press `0ENTER`2.
+
+@do write
+`x`x
+@choice
+`2List hotkeys that do things on the map mode
+`2What symbols mean on the `0'your stats'`2 screen
+`2How to move
+`2New CNW stuff added since the last version
+`2About us and how to report bugs and suggestions
+`2Beginners help and strategy
+`4Quit the game
+`2View `0Game Settings`2
+`@Complete New World?
+`%Play the game!
+@if responce is 9 then do
+        @begin
+        @do write
+`r0`%
+        @displayfile docs/cnw.txt
+        @key
+        @do goto helpstart
+        @end
+@if responce is 8 then do
+  @begin
+   @if `v06 is 1 then `s01 is On
+   @if `v06 is 0 then `s01 is Off
+   @do `s02 is `v05
+   @if `v05 < 1 then `s02 is `%unlimited
+   @show
+`r0`c  `r1  Settings for this game  `r0
+
+   @if `v03 is 0 then write
+  `2You get only `0one`2 life per day.`\
+   @if `v03 not 0 then write
+  `2You may die `0unlimited`2 times per day.`\
+   @show
+  `2You get `0`s02`2 turns per day.
+  `2Clean mode is `0`s01`2.
+  `2Quest opportunities per day is `0`v07`2.
+  `2This game has been running for `0&time`2 days. 
+  `21 Year in this realm is `0`v10 `2days.
+  `2NPCs stay knocked out for `0`v14 `2days.
+  `2Pregnancy lasts for `0`v13 `2days.
+  `2Tax rates are at `0`v15%`2.
+@if `v09 < 1 then do
+  @begin
+  @show
+  `2Players are safe in Inns the entire game.
+  @end
+@if `v09 > 0 then do
+  @begin
+  @show
+  `2Players can be attacked in Inns at level `0`v09`2+.
+  @end
+
+@show
+
+`$Do you want to list all the IGMs installed in CNW? [N/y] :
+@do READSPECIAL `s02 NY
+
+@if `s02 is N then goto helpstart
+  `2`%IGM'S INSTALLED ON THIS SYSTEM:
+
+  @displayfile 3rdparty.dat
+  @show
+`k
+  @do goto helpstart
+  @end
+
+@if responce is 1 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%Commands that work from the main map screens:
+
+  `0? `2- `0This help screen
+  `0R `2- `0Redraw the screen
+  `0V `2- `0View your stats/inventory
+  `0T `2- `0Talk - Everyone in the game can hear you
+  `0D `2- `0Daily Happenings
+  `0H `2- `0Hail - Trade with/talk to/kill a person. (must be on their square)
+  `0L `2- `0List warriors, lets you know who's on top
+  `0W `2- `0Write mail to someone
+  `0P `2- `0People online right now
+  `0S `2- `0Show names of everyone on the current screen
+  `0B `2- `0BackBuffer, log of recent messages.
+  `0F `2- `0Fast BackBuffer, shows last 3 messages only, for speed.
+  `0Q `2- `0Quit the game
+@do goto helpstart
+ @end
+
+@if responce is 2 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%ABOUT ITEM SYMBOLS:
+
+  `r4`*W`r0`2 `8- `2It can be used as a weapon.
+  `r2`*A`r0`2 `8- `2It can be used as armour.
+  `r5`*1`r0`2 `8- `2It can only be used once.
+
+  `r0`$­`r0`2 `8- `2Potion or bottle.
+
+  `2Remember - press `0V `2to view your stats, this is also where you
+  equip weapons and armour.
+@do goto helpstart
+
+ @end
+
+@if responce is 3 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%ABOUT MOVEMENT:
+
+  `2Use the `0arrow-keys`2 or the `0numpad`2 to move around/select options
+  in most areas.  To use the numpad, make `4SURE`2 that the num lock
+  key is `4ON`2. `2(`0it will work either way if your terminal supports arrow
+  keys`2)
+
+  If using arrow keys causes the daily log to pop up randomly, you should
+  switch to the numpad.
+
+ `8-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+  `$Want to move faster?
+     `2Either shell from your terminal now to your DOS shell, or run the
+     batch file before you start your term, or put the line right into
+     your autoexec.bat file. `8(for Windows & DOS)
+     `2You can make a batch file with the following line:
+                  `%mode con rate=32 delay=1
+    `2thats it!
+
+@do goto helpstart
+ @end
+
+
+@if responce is 4 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+`%+-------------------------------------------------------------------------+
+             `%NEW STUFF in CNW v137.0 SINCE v136.0:
+
+  `%- `$ANSi map screens all been redone. Why? cuz those little trees were
+     ugly! And also wasn't supported by many cheaper telnet programs including
+     the JAVA telnet app.
+  `%- `$Made is possible to list players AGE/GENDER/HOMETOWN/LAST FLIRT
+  `%- `$Each player has a hometown, when you buy a place it can be set
+     as your home. Some inns will also allow this.
+  `%- `$Added a HORSE you can buy and ride (get a max of 2x your turns
+     when mounted). Also made a nice ANSi pic of him. You must feed
+     it too. (Press "Z" to mount)
+  `%- `$Finish "That Guy Has problems" guy north or Greentree.
+  `%- `$Make view game settings to query to list the igms or not. (in HELP)
+  `%- `$Added/Changed newbie quick starter help in home screen.
+  `%- `$Put the 'how to move faster' info in the HELP->STRATEGY
+  `%- `$Added all towns to the MAP ANSi, once you visit it will show.
+  `%- `$Added a standard 'VD check & pass it on' for every sexual encounter.
+  `%- `$Added Zena IGM to the game and put in East Knotwood.
+  `%- `$Created a new quest for Elle, go talk to Johnny and find out more.
+  `%- `$Upgraded a few IGMs `%- `$Oracle Of Whats to Come (v3)
+                          `%- `$House of Dreams (v2)
+                          `%- `$Frost Glint Keep (v0.3)
+  `%- `$SmackRodders can't cheat anymore, bounced 1 space from the edge.
+        and cannot jump on unmovable blocks.
+  `%- `$BBS LIST, get your lord2 bbs listed!
+  `%- `$Load time shorten dramaticly, moved maint to maint.ref, which
+     is ran once a day, hopefully by the SysOp.
+  `%- `$added some cool ansi for fishing.
+  `%- `$added some cool ansi for swimming hole.
+  `%- `$added PEOPLE.REF - a file with a bunch of standard ansi/ascii pics
+     of people which can be called apon from anywhere in the game.
+  `%- `$added DRAGONS.REF - a file with a bunch of standard ansi/ascii pics
+     of dragons which can be called apon from anywhere in the game.
+  `%- `$Updated Pouch of Deeds. Shows info about every deed supported. (62)
+  `%- `$Changed SCRIBE in GreenTree *10 of your level.
+  `%- `$Taxes! Tired of those rich high end players getting richer and richer.
+     Now everyone over 21 years old has to pay taxes to the realm. If the
+     realm gets too rich there is a lottery to give it away.
+  `%- `$VAULTS all over the place. I mentioned a long time ago about these
+     vaults. Well, they now exist in banks and a few other places. Each
+     Bank has REAL money now, if they dont have enough to give the player,
+     they dont give it to the player. If this happens a request is sent to
+     the SYSOP in SYSOP Castle. Then there are new quests available to move
+     money into proper locations. If you are good enough, you can check all
+     the vault balances.
+  `%- `$When buying or selling property, the cash is sent to the local bank
+     vault (realm vaults).
+  `%- `$Pay taxes at more banks
+  `%- `$Pay taxes in FlagCity CityHall - was there already, just need to
+     implement it for real :)
+  `%- `$Added bank quests. Transport money if your alignment is good.
+     Talk to SYSOP in SYSOP Castle
+  `%- `$Another Elle quest, talk to Johnny to find out. Where is Johnny? :)
+  `%- `$Changed SYSOP Castle, its more useful now. Get quests, pay taxes,
+     view vault amounts.
+  `%- `$Added a time/date question for the bartender at RedDragon Inn,
+     in case you wanted to know the day.
+
+
+`%+-------------------------------------------------------------------------+
+             `%NEW NPC STUFF in CNW v137.0 SINCE v136.0:
+
+  `%- `$Added lots more NPCs to the game. `8[`7now 125`8]
+  `%- `$NPCs can ROB you if you are not nice, or if they are evil.
+  `%- `$You can fight the NPCs. They can fight back, so be careful.
+  `%- `$Many NPC bug fixes has been done. Thanks people.
+  `%- `$Make Laura and Ed as NPC that goes with player, not an ITEM!
+  `%- `$If you keep NPC over night with you, npc can get lost, reported if lost.
+  `%- `$fixed up FLIRT.REF.
+  `%- `$Added a standard VD check routine. (TALK.REF)
+  `%- `$Made SEX with NPCs more interactive! `7<--This is cool! `1:`4)
+  `%- `$Made NPCs stronger and richer.
+  `%- `$Start NPC "GIVE" routines. (now you can give gold and gems to increase
+      your relationship with the NPC.
+  `%- `$Added MoshPit as another NPC date location.
+  `%- `$Made TRAINING.REF to support going back to alternitive ref files.
+     (uses s01 for ref file name)
+  `%- `$Fixed NPCLOST maint, now check ALL npcs if lost, not just the
+     first one found.
+  `%- `$Fixed up NPC date locations bugs plus change to bitsets vars.
+
+`8Note: `7Each CNW game with NPCs, will have different stats than another game.
+    When a new game is start, most of the stats are created randomly. Each game
+    will be different.
+
+
+`%+-------------------------------------------------------------------------+
+             `%IGM BUG FIXES in CNW v137.0 SINCE v136.0:
+
+  `%- `$Fixed "@do moveback" bug with talking with pharoh in pyramid igm
+  `%- `$Grizeldas house
+                  `%- `$conflicts with vars t12 and t13
+                  `%- `$made 'em NPCs
+  `%- `$TeamLord IGM
+                  `%- `$Bug fixes; quits if you try to take/leave gold &
+                       nobody owns it.
+                  `%- `$Some buying bugs, weird, but fixed.
+                  `%- `$Bar listing now shows TeamName not "TeamHouse #" 
+                  `%- `$Fixed list details at Red Dragon Inn (were many here)
+                  `%- `$Only uses 1 ref file now, removed tlhouse1.ref
+                       thru *5.ref
+                  `%- `$Made the menu system much better.
+                  `%- `$Added dragon pics. As it gets stronger, it grows!
+                  `%- `$Added time/turns are used to train as well 
+                  `%- `$Added colour choice for the dragon
+                       (only owner can select colour)
+                  `%- `$Now TEAMs can declare their relations with other teams
+                       (a list can be seen at the bar in GreenTree)
+  `%- `$Loki's Inn
+                  `%- `$removed "little girl" from store
+                  `%- `$flirting NPC into standard interactive NPCs.
+  `%- `$fixed Q-Fortress location bug.
+  `%- `$Fix DOC FARRELS IGM. Conflicts and used global vars, THIS IS CRAZY!!
+  `%- `$Fix Northern Colliseum bugs.
+  `%- `$UGA alchemist is now a little harder to get cash from gems. :)
+  `%- `$Fast Freddy's Gems IGM now has real cash amount and amount of
+     gems available.
+  `%- `$Fixed RedDragon Town, used `p64 var, shouldn't have.
+  `%- `$Changed begger requirement donation *10 of your level.
+  `%- `$The Loose Screw Resort
+                `%- `$Was missing, put it back in,
+                `%- `$Map jump location fixed.
+                `%- `$Removed var conflicts.
+                `%- `$Wanted man, fixed, now only can fight once,
+                      not over and over.
+  `%- `$Felicity IGM
+                `%- `$Changed to an Inn style rest area instead of TEAM style
+                `%- `$Added to Pouch of Deeds
+                `%- `$Made Janitor's Keys as an EXT ITEM.
+  `%- `$Wizard's Tower IGM
+                `%- `$Was also missing, cuz it conflicted with TEAM#3, FIXED
+                `%- `$Map jumps locations fixed.
+  `%- `$Updated Time Stands Still IGM to v2.01
+  `%- `$Myst Inn had tons of bugs
+  `%- `$UnderGround city houses
+                `%- `$Only use 1 ref file now. removed pass1.ref and pass2.ref
+                `%- `$Added a sexy maid (from people.ref) as the door maid.
+  `%- `$BoneTown MoshPit hall ansi bugs! Used lots of invalid hidden ansi chars.
+  `%- `$DragonDen housing
+                `%- `$Warp bug fixed.
+                `%- `$Jasimita house had no maid for ownership options, yet
+                     the code was already written. So, added a hotspot for it.
+  `%- `$ArrisTraining Grounds moved and fixed map problems. Now in ArrisVille area!
+  `%- `$Fix Canoe bugs.. keeps buying and they say you dont owe on tabs.. yet you have.
+  `%- `$FrostGlint Keep
+                `%- `$Bartender sells too much and buys too much,
+                `%- `$Bad routines to other refs, and more!
+                `%- `$Warps you to dragon den housing? bug there! all fixed.
+  `%- `$Town of Glendale bugs fixed. Too many, also redone ansi work for the town.
+  `%- `$Fixed Tower of Krystals IGM! Used `p97-`p99 vars and had lots of REF bugs. ALL FIXED!
+  `%- `$Fixed Black Sheep conflist with p90 and t19 vars.
+
+
+`%+-------------------------------------------------------------------------+
+             `%CNW BUG FIXES in CNW v137.0 SINCE v136.0:
+
+  `%- `$fixed "no data record 0" bug when getting into the game.
+  `%- `$fixed 2nd year bug (wouldn't create new players after 1st year)
+  `%- `$The "Broken Key" item will no longer give an error.
+  `%- `$Optimized the Barak/Turgeon quest. It conflicted with igms and
+     bad coding.
+  `%- `$Fixed all the QUESTs with the package/sachet thing. Was problems
+     with Pyramid, SpringFang and AquaMan
+  `%- `$Removed the Koshi Sword and Armour from being purchasable in many exploitable IGMs.
+  `%- `$Removed "make batch file info" from Mother Home and put in the HELP stuff.
+  `%- `$Gems in "V"iew seemed to have a few extra spaces, fixed.
+  `%- `$If you use a smackrod with a screen like a house and nothing on very
+      edges, most maps had non-hard spots there, meaning players (cheaters)
+      can easily jump from one house to another, sometimes a secured house.
+      So, every map edges that were not suposed to be used, are now all
+      blocked off. 
+
+`%+-------------------------------------------------------------------------+
+         `%NEW GAME OPTIONS/SYSOP OPTIONS in CNW v137.0 SINCE v136.0:
+
+  `%- `$Requires LoRD2 v1.02+   `%(get it at http://lordlegacy.org)
+  `%- `$Now SysOp should run "lord2.bat" as maint every night, so
+     the players do not need to run the maint. If not run, 1st
+     player will still have to run the maint.
+  `%- `$Made a min age to pay taxes.
+  `%- `$Intrest Rates adjustible.
+  `%- `$Different game styles.
+  `%- `$Option to disable npc+npc maintence (goes with game styles)
+  `%- `$Updated RESET.BAT, now you can reset any LoRD2: New World
+  `%- `$Age restrictions for casinos
+  `%- `$Re-wrote /DOCS/REFHELP.DOC file for new versions of LoRD2.
+  `%- `$Maint will only now quit if SYSOP was running the maint.
+
+ `%Most likely I missed a few dozen other changes since v136.0 :)
+ `%This gives you an idea on how much work was put into fixing bugs
+ `%and exploits from the original LoRD2 to all the IGMs being used
+ `%within here.
+
+                        `7-Thanks for ALL the help and bug reports.
+                        `7-Mostly thanks to the players on the CNW server!
+
+@do goto helpstart
+ @end
+
+@if responce is 5 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+  `%ABOUT US:
+  `0LORD II`2:`0 New World `2- (c) Copyright 2001 Metropolis, Inc.
+   Developed by Michael Preslar
+   
+  `0WWW  `8:`2  www.gameport.com
+  `0Email`8:`2  info@gameport.com
+
+ `%ABOUT CNW:
+ `0LORD II`2:`0 Complete New World `2 - a package by many FREEWARE IGM authors.
+ `2This is v137 Released MAR-18-2001. 
+ `0WWW  `8:`2  http://greenmachinebbs.com/lord2
+ `0Email`8:`2  greenie@darktech.org
+ `0ICQ  `8:`2  #16277704
+`k
+@do goto helpstart
+ @end
+
+@if responce is 6 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%Help and strategy for the new adventurer.
+
+  `0LORD II`2:`0 New World `2is a very different kind of game.  There is a
+  huge world to explore (`0over 1000 screens`2) many people and animals to meet
+  (not all of them nice) and other REAL players to befriend and kill `0-`2 even while
+  they are online playing at the same time!
+
+ `$ You can be good or you can be evil.  You can save the world or you can
+  destroy it.
+
+  `%Find some cash!
+
+  `2Do this by 'pushing' against the table in 'your' house.  (the one you
+  started in)  With this money you can buy cheap things at the store.
+
+  `%Get berries for your mom.
+
+  `2Just west of your cottage there is a small patch that looks different
+  than the rest `0-`2 try pushing against it.  You'll find some berries.  If you
+  see a certain block of grass or stone that looks different, try pushing
+  against it `0-`2 you never know what you'll find. (most likely something
+  good)
+
+  `%Fight monsters, heal yourself.
+
+  `2This isn't such an unfamiliar idea!  But it is more tricky now `0-`2 First,
+  find an area that looks like it might contain monsters.  (usually away from
+  towns and villages)
+
+  Next `0-`2 Walk around.  You will randomly encounter various beasts/people and
+  be able to kill and sometimes talk with them.  Some areas contain a `0HIGHER`2
+  chance of running into things.  
+
+  When you are low on hitpoints, you will need to heal yourself.  Inside
+  Stonebrook there is such a place.  Later, when you have more gold you may
+  wish to purchase items that have the same effect `0-`2 different color potions
+  are the easiest way to heal on the road.
+
+  `%Raising Levels
+
+  `2No matter how long you have been playing the game, it is `0ALWAYS`2 possible
+  to improve your skills by gaining a level providing you have the experience.
+
+  `2In all the land there is only ONE place you can do this `0-`2 Barak's Training
+  center in Greentree.  Beware of Barak though, he is kind of a jerk.
+
+  `%What is alignment?
+
+  `2This is what determines what kind of a person you are - naughty or
+  nice.  `00`2 is average, `010`2 is very nice and `4-10`2 is very
+  nasty.
+
+  Someone who is nasty might see different options then someone who is nice -
+  depending on their level of evil they might have an option to kick a beggar
+  in the head where a nice person would have had 'give him some gold' as an
+  option.  Get it?
+
+  `%Arming weapons and armour 101.
+
+  `2Before you can use them you need to arm them.  From the map menu, hitting
+  `0V`2 will bring up your `0stat screen`2.  This where you can see things
+  like what you are holding and how strong you are.
+
+  You equip and use items the same way - by highlighting them with the
+  light bar and pressing enter.  You will then be given a list of options
+  that can be done with that item.  Some items have more than one use.
+
+  After equiping a weapon or armour, pay close attention to your overall
+  Attack and Defense.  The level these increment is how you know how good
+  a particular piece of equipment is!
+
+  `%Getting jobs and quests.
+
+  `2Certain people you talk to will let you 'conduct business' - this usually
+  means they have a job for you to do.
+
+  If it involves going somewhere you have never heard of - do not accept it
+  and see if they have any others.  You only get 4 job offers per day max by
+  default so be smart! 
+
+  `$Quick Tip: `2Finish the quest on the same day and you will get a bonus!
+
+  `$Want to move faster? 
+     `2Either shell from your terminal now to your DOS shell, or run the
+     batch file before you start your term, or put the line right into
+     your autoexec.bat file. `8(for Windows & DOS)
+     `2You can make a batch file with the following line:
+                  `%mode con rate=32 delay=1
+    `2thats it!
+
+`%+-------------------------------------------------------------------------+
+
+  `$You can also find more helpful hints and stredegies within the game.
+
+  `2One good little place is right south two screens of StoneBrook.
+
+
+`%+-------------------------------------------------------------------------+
+                  `$YOU CAN FIND MORE HELP AT THESE WEB SITES:
+
+`%http://greenmachinebbs.com/lord2
+
+          `8[ does anyone else have an FAQ or WalkThru for L2? ]
+
+@do goto helpstart
+ @end
+
+@if response is 7 then do
+  @begin
+  @show
+`\`\  Goodbye.
+  @halt 0
+  @end
+
+
+ ;default
+ @pauseon
+ @if `p09 > 0 then do
+   @begin
+   @drawmap
+   @update
+   @end
+ @closescript
+
+@#done

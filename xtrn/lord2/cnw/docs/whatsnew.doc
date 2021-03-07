@@ -1,0 +1,47 @@
+What is new in V1.01a since V1.01:
+
+* Fixed .EXE to automatically add .REF if needed.
+
+What is new in V1.01 since V1.00:
+
+* @prognam command works, now if you run BRADY.REF it will say 'Brady Bunch
+  Adventure' on the status bar correctly.  (or any other program that uses
+  this feature)
+* (P)eople online function shows correct location for everyone.  This bug
+  was related to changes in the loadmap function that were added at the last
+  minute in V1.00...
+* Ability to read compiled .refs.  COMPILE.EXE and .doc are included for
+  developers.
+* Changed ITEMS.REF so that you can abort a quest at anytime by looking at
+  the 'sack' or whatever it is.  People were turning evil then Prince Corin
+  would tell them to screw off and they could never finish the quest.
+* Fixed .REF error while talking to Basil in arris.ref.
+* Changed successfull to successful in quest.ref.
+* One eye had ANOTHER @show where it should have been a @saybar.. wish
+  I could blame Pap for that one.. ARGH!!!!
+* Fixed Turgon.ref so you can actually complete the quest.  It's funny,
+  people actually were like 'change line 127 to such and such, moron!' and
+  they are right!!!!!!  Many people fixed this stuff on their own, that is
+  cool that that is possible...
+* Fixed problem where sometimes people would pop up on their bed on the map
+  even though they were dead (they could be killed again)
+* Unregged people now warp back home properly, a change had to be done in
+  the items.ref file so it would change the X/Y cords BEFORE loading the
+  screen, before, they could warp in a weird black place and magically
+  walk to Greentree/etc.
+* Changed stoneb.ref so that it gives 3 quest points when rescuing the
+  parrot.  (it used to give 1 but SAY it gave 3)
+* @Datanewday can Decipher &playernum ect for the filename now, it made no
+  sense while the other data commands could and this one couldn't.
+
+Well, that's about it.  Thanks to everyone for helping, especially
+Ben Tiefert, Joe Orsborn, Ben Shadwick, Trevor Lemon and everybody else!!!
+
+Also, be sure to hit Ben's LORD2 page, he has over 22 IGM's listed
+already - hit rtsoft, then files, then the LORD2 IGM page link to get
+there.  (cuz I'm too lazy to cut and paste his address in... but I'm not
+too lazy to type a sentence to explain that?  Gawd!)
+
+-Seth (sethable@rtsoft.com)
+
+www: www.rtsoft.com

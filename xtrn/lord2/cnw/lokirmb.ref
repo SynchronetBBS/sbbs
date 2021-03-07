@@ -1,0 +1,869 @@
+; Script file LOKIRMB.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:29 2001
+
+@DECLARE stone 000000656
+@DECLARE roompass1b 000002008
+@DECLARE done 000003522
+@DECLARE roompass2b 000003620
+@DECLARE done 000005126
+@DECLARE roompass3b 000005231
+@DECLARE done 000006737
+@DECLARE roompass4b 000006839
+@DECLARE done 000008345
+@DECLARE roompass5b 000008445
+@DECLARE done 000009949
+@DECLARE roompass6b 000010049
+@DECLARE done 000011555
+@DECLARE roompass7b 000011653
+@DECLARE done 000013159
+@DECLARE roompass8b 000013258
+@DECLARE done 000014764
+@DECLARE roompass9b 000014865
+@DECLARE done 000016371
+@NOCHECK
+; End of .REF index
+
+@#STONE
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Majik Stone `r0
+
+  `2Before you is a smooth, purple stone. As you touch the stone
+  it comes alive and begins speaking to you.
+
+  
+  `0"I'm a majik transport stone, just tell me where you would like to
+  go today and I'll send you there." `2it says.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Sosen Village
+Stonepass Lodge
+Bonetown
+Flagcity
+Greentree
+I'll stay here, thanks
+@if responce is 6 then do
+@begin
+@do goto done
+@end
+@show
+`c
+`\`\  `0"Very well s&sir, have a good trip." `2the stone says.
+`\`k
+  `2The stone begins to glow `9blue`2. It's aura engulfs you.
+`\`k
+@if responce is 1 then do
+  @begin
+   ;Sosen village
+   @do x is 38
+   @do y is 5
+   @do map is 456
+   @loadmap &map
+   @end
+    
+@if responce is 2 then do
+   @begin
+   ;Stonepass Lodge
+   @do x is 40
+   @do y is 11
+   @do map is 880
+   @loadmap &map
+   @end
+
+@if responce is 3 then do
+  @begin
+   ;Bonetown
+   @do x is 53
+   @do y is 17
+   @do map is 1572
+   @loadmap &map
+   @end
+   
+
+@if responce is 4 then do
+  @begin      
+   ;Flagcity
+   @do x is 68
+   @do y is 18
+   @do map is 1092
+   @loadmap &map
+   @end
+   
+@if responce is 5 then do
+  @begin
+  ;Greentree
+  @do x is 10
+  @do y is 15
+  @do map is 1356
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#roompass1b
+@if room10.dat exist false then do
+  @begin
+  @run ROOM10 in lokib.ref
+  @end
+@readfile room10.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 61
+  @do y is 8
+  @do map is 347
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+    @do x is 61
+    @do y is 8
+    @do map is 347
+    @loadmap &map
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update
+;-------------------------------ROOM 111-----------------------
+@#roompass2b
+@if room11.dat exist false then do
+  @begin
+  @run ROOM11 in lokib.ref
+  @end
+@readfile room11.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 40
+  @do y is 8
+  @do map is 347
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+  @do x is 40
+  @do y is 8
+  @do map is 347
+  @loadmap &map
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update
+;--------------------------------ROOM 112-----------------------------
+@#roompass3b
+@if room12.dat exist false then do
+  @begin
+  @run ROOM12 in lokib.ref
+  @end
+@readfile room12.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 19
+  @do y is 8
+  @do map is 347
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+  @do x is 19
+  @do y is 8
+  @do map is 347
+  @loadmap &map
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update
+;----------------------------------ROOM 113------------------------
+@#roompass4b
+@if room13.dat exist false then do
+  @begin
+  @run ROOM13 in lokib.ref
+  @end
+@readfile room13.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 61
+  @do y is 8
+  @do map is 346
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+  @do x is 61
+  @do y is 8
+  @do map is 346
+  @loadmap &map
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update
+;--------------------------------ROOM 114------------------------
+@#roompass5b
+@if room14.dat exist false then do
+  @begin
+  @run ROOM14 in lokib.ref
+  @end
+@readfile room14.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 40
+  @do y is 8
+  @do map is 346
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+  @do x is 40
+  @do y is 8
+  @do map is 346
+  @loadmap &map
+  @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update
+;-------------------------------ROOM 115-------------------------
+@#roompass6b
+@if room15.dat exist false then do
+  @begin
+  @run ROOM15 in lokib.ref
+  @end
+@readfile room15.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 19
+  @do y is 8
+  @do map is 346
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+  @do x is 19
+  @do y is 8
+  @do map is 346
+  @loadmap &map
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update
+;---------------------------------ROOM 116---------------------
+@#roompass7b
+@if room16.dat exist false then do
+  @begin
+  @run ROOM16 in lokib.ref
+  @end
+@readfile room16.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 61
+  @do y is 8
+  @do map is 502
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+  @do x is 61
+  @do y is 8
+  @do map is 502
+  @loadmap &map
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update
+;--------------------------------ROOM 117-----------------------
+@#roompass8b
+@if room17.dat exist false then do
+  @begin
+  @run ROOM17 in lokib.ref
+  @end
+@readfile room17.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 40
+  @do y is 8
+  @do map is 502
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+  @do x is 40
+  @do y is 8
+  @do map is 502
+  @loadmap &map
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update
+;------------------------------ROOM 118---------------------------
+@#roompass9b
+@if room18.dat exist false then do
+  @begin
+  @run ROOM18 in lokib.ref
+  @end
+@readfile room18.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 19
+  @do y is 8
+  @do map is 502
+  @loadmap &map
+  @do goto done
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @busy
+  @show
+`r0`c  `r1 `%Get Lost `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"`%`s02 `0is `bNOT `0allowing visitors" `2the guard commands.
+`\`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the Private Room `r0
+
+  `2A mean looking Guard opens the door.
+
+  `0"What's the password ?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tell him the password
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok `%`n`0, come on in then!"`\`\`k
+  @do x is 19
+  @do y is 8
+  @do map is 502
+  @loadmap &map
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Room Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get into your private room by saying
+  `0"`s03"`2.  `2they were `bNOT`2 allowed in.
+
+   @show
+`\`\  `0"That's not correct, punk ! Get out !"`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+@#done
+@drawmap
+@update

@@ -1,0 +1,532 @@
+; Script file DSPRHOPE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:24 2001
+
+@DECLARE sign1 000001098
+@DECLARE sign2 000001193
+@DECLARE events 000001286
+@DECLARE event01 000001491
+@DECLARE event02 000001686
+@DECLARE event03 000001752
+@DECLARE chest 000001839
+@DECLARE chestopen 000002306
+@DECLARE tres1 000003357
+@DECLARE tres2 000003432
+@DECLARE tres3 000003500
+@DECLARE tres4 000003568
+@DECLARE tres5 000003661
+@DECLARE tres6 000003723
+@DECLARE tres7 000003795
+@DECLARE tres8 000003866
+@DECLARE tres9 000003941
+@DECLARE tres10 000004022
+@DECLARE tres11 000004092
+@DECLARE tres13 000004168
+@DECLARE tres12 000004279
+@DECLARE tres14 000004380
+@DECLARE tres15 000004480
+@DECLARE healme 000004555
+@DECLARE sunlight 000005149
+@DECLARE sign3 000005204
+@DECLARE event00 000005276
+@DECLARE codax 000005331
+@DECLARE win 000008596
+@DECLARE run 000008775
+@DECLARE done 000008936
+@NOCHECK
+; End of .REF index
+
+;The Cave of HOPE and DESPAIR
+;Dragon's Den Ultd
+;This igm is FREEWARE but please send me a donation to get
+;Dragon's Den BBS up and running
+
+@#sign1
+@do moveback
+@do saybar
+`4`bCAUTION...`2This a cave of `%Hope `2and of `8Dispair
+
+@#sign2
+@do moveback
+@do saybar
+`%Take care....for this is a cave of Pain and Healing
+
+@#events
+@do `p20 random 3 1
+@if `p20 is 1 then do
+  @begin
+  @run event01
+  @end
+@if `p20 is 2 then do
+  @begin
+  @run event02
+  @end
+@if `p20 is 3 then do
+  @begin
+  @run event03
+  @end
+
+@#event01
+@do saybar
+`4`bHit Points go down 10!!!
+@do `p02 - 10
+@if `p02 < 1 then do
+    @begin
+    @do enemy is The`xCave`xof`xHope`xand`xDespair
+    @run die in gametxt.ref
+    @end
+
+@#event02
+@do saybar
+`2You feel renewed!!!
+@do `p02 is `p03
+
+@#event03
+@do saybar
+`4`bEEEEEEIIIIIIIiiiiii......`2You hear a soul renching scream
+
+@#chest
+@do moveback
+@do `p24 is &playernum
+
+@do `p22 is &time
+
+@if cave`p24.cod exists true then do
+   @begin
+    @readfile cave`p24.cod
+`p23
+@if `p23 not &time then do
+    @begin
+    @do delete cave`p24.cod
+    @run chestopen  
+    @end
+    
+@if `p23 is &time then do
+   @begin
+   @do saybar
+`2You already have your treasure for today...GO HOME!!!!
+   @end
+   
+@end
+@if cave`p24.cod exists false then do
+@begin
+ @run chestopen
+@end
+
+@#chestopen
+@do `p24 is &playernum
+@do `p22 is &time
+@writefile cave`p24.cod
+`p22
+@do `p20 Random 15 1
+
+@if `p20 is 1 then do
+  @begin
+  @run tres1
+  @end
+
+@if `p20 is 2 then do begin
+  @begin
+  @run tres2
+  @end
+
+@if `p20 is 3 then do begin
+  @begin
+  @run tres3
+  @end
+
+@if `p20 is 4 then do begin
+  @begin
+  @run tres4
+  @end
+
+@if `p20 is 5 then do begin
+  @begin
+  @run tres5
+  @end
+
+@if `p20 is 6 then do begin
+  @begin
+  @run tres6
+  @end
+
+@if `p20 is 7 then do begin
+  @begin
+  @run tres7
+  @end
+  
+@if `p20 is 8 then do begin
+  @begin
+  @run tres8
+  @end
+
+@if `p20 is 9 then do begin
+  @begin
+  @run tres9
+  @end
+
+@if `p20 is 10 then do begin
+  @begin
+  @run tres10
+  @end
+
+@if `p20 is 11 then do begin
+  @begin
+  @run tres11
+  @end
+
+@if `p20 is 12 then do begin
+  @begin
+  @run tres12
+  @end
+
+@if `p20 is 13 then do begin
+  @begin
+  @run tres13
+  @end
+
+@if `p20 is 14 then do begin
+  @begin
+  @run tres14
+  @end
+
+@if `p20 is 15 then do
+ @begin
+ @run tres15
+ @end
+
+@#tres1
+ @do `i02 + 25
+ @do saybar
+`2You got a bunch of Poisonberrys
+
+@#tres2
+ @do `i05 + 15
+ @do saybar
+`2You got 15 Green Potions
+
+@#tres3
+ @do `i06 + 15
+ @do saybar
+`2You got 15 Rusty Daggers
+
+@#tres4
+ @do `p02 is 1
+ @do saybar
+`2IT WAS A TRAP!!!`4`b  Hit-Points go WAY down!!!
+
+
+@#tres5
+ @do `i20 + 1
+ @do saybar
+`2You got a World Map
+
+@#tres6
+ @do `i35 + 2
+ @do saybar
+`2You got the `%2 Silver Sabres
+
+@#tres7
+ @do `i40 + 3
+ @do saybar
+`2You got the `!3 Blue Potions
+
+@#tres8
+ @do `i50 + 10
+ @do saybar
+`2You got the `%10 Travel Potions
+
+@#tres9
+ @do `p20 / 2
+ @do saybar
+`4`bIT'S A TRAP......HIT POINTS GO DOWN
+
+@#tres10
+ @do `i53 + 3
+ @do saybar
+`2You got the `$Gold Potions
+
+@#tres11
+ @do `i54 + 3
+ @do saybar
+`2You got the `%3 Silver Potions
+
+
+@#tres13
+ @do `p12 + 1
+ @do saybar
+`2A `4`bHOLL`2 (human+troll) Jumps out and rapes you!!! You got VD!!!
+
+@#tres12
+ @do `p11 is 0
+ @do saybar
+`2You faint at the sight of the scum that was in the chest
+
+@#tres14
+ @do `p08 - 5
+ @do saybar
+`2The chest explodes and you are covered with `6slop.  PU!
+
+@#tres15
+ @do `i52 + 3
+ @do saybar
+`2You got the `43 Red Potions
+
+
+
+@#healme
+@do moveback
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+  @begin
+  @run event02
+  @end
+
+@if `p21 is 2 then do
+  @begin
+  @do `p02 is 1
+  @do saybar
+`4`b Aaacchhh....`2Hit points down to 1
+  @Drawmap
+  @update
+  @end
+
+@if `p21 is 3 then do
+  @begin
+  @do `p02 - 50
+  @drawmap
+  @update
+@if `p02 < 1 then do
+    @begin
+    @do enemy is a`x`1Pond
+    @run die in gametxt.ref
+    @end
+  @end
+
+@if `p21 is 4 then do
+  @begin
+  @do `p03 + 1
+  @drawmap
+  @update
+  @end
+
+@if `p21 is 5 then do
+  @begin
+  @do `p03 - 1
+  @drawmap
+  @update
+  @end
+
+@#sunlight
+@do saybar
+`2What beautiful `$sunlight!!!
+
+@#sign3
+@do moveback
+@do saybar
+`$This is the best prize of all
+
+@#event00
+@do saybar
+`$LOOK AT ALL THAT GOLD!!!!!
+
+
+@#codax
+@do moveback
+
+@if caveq&playernum.cod exists false then do
+@begin
+@writefile caveq&playernum.cod
+&time
+0
+@
+@run codax
+@end
+
+@if caveq&playernum.cod exists true then do
+@begin  
+@readfile caveq&playernum.cod
+`p20
+`p21
+@
+
+@if `p20 not &time then do
+  @begin
+  @do delete caveq&playernum.cod
+  @run codax
+  @end
+
+@if `p20 is &time then do
+  @begin
+
+@if `p21 is 1 then saybar
+`2C`3o`5d`7a`9x`%:  `2Leave me the Hell ALONE...You left me to die!!!!
+@if `p21 is 2 then saybar
+`2C`3o`5d`7a`9x`%:`2 Go AWAY!!!!!!!!
+@if `p21 is 3 then saybar
+`2C`3o`5d`7a`9x `2lies dead at your feet
+@if `p21 is 4 then saybar
+`2C`3o`5d`7a`9x`%:`2  Get out of here you sorry excuse for a human
+@if `p21 is 5 then saybar
+`2You have already rescued Codax this is just his shadow
+
+@if `p21 is 0 then do
+ @begin
+@show
+
+`r0`c  `r1`% Help Me!!!  `r0
+
+  `1C`3o`5d`7a`9x`%:`2  You have got to help me!!!!  I was searching for treasure when I
+          got lost in this maze here!!!  Please Help me!!!
+
+@do `v01 is 1
+@choice
+Help `2C`3o`5d`7a`9x`2 Out of the Cave
+Laugh at him and run
+Hit him with your s&weapon
+@
+
+@if responce is 2 then do
+  @begin
+  @show
+
+`$Out of my way, FREAK!!!  You run away laughing!!!
+`k
+
+@do delete caveq&playernum.cod
+
+@writefile caveq&playernum.cod
+&time
+2
+@
+@drawmap
+@update
+@end
+
+@if responce is 3 then do
+  @begin
+  @show
+  
+  `$You meanly hit `1C`3o`5d`7a`9x`2 with your s&weapon....Uh oh looks like he's mad!!
+
+@drawmap
+@update
+@fight
+;name
+`2C`3o`5d`7a`9x`2
+;string said when you see him
+`1C`3o`5d`7a`9x`2 turns into a DRAGON!!!
+;power move kill string
+Legend of the Purple Dragon my foot!!!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Shoots lightning at you|200
+bites you|100
+Hits you with his tail|75
+Roars loudly|0
+Summons ancient powers|250
+;defense
+250
+;gold reward
+10000
+;experience
+1890
+;hit points
+1500
+;if win: ref file|name or NONE
+dsprhope.ref|Win
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+dsprhope.ref|run
+@end
+
+@if responce is 1 then do
+  @begin
+  @show
+
+
+
+`k
+  `1C`3o`5d`7a`9x`%:`2  What's That...You'll help me out!!! Great
+   
+   Traveling`l. `l. `l. `l. Oh no your Hitpoints went down to one...but
+   you are sooooo close...Do you want to chance it?
+
+@do `v01 is 1
+@choice
+Yes
+No
+@
+
+@if responce is 2 then do
+  @begin
+@do `p02 is 1
+@do x is 20
+@do y is 15
+@loadmap 676
+@drawmap
+@update
+@Do saybar
+`2You leave `2C`3o`5d`7a`9x`2 Behind to fend for himself
+@do delete caveq&playernum.cod
+@writefile caveq&playernum.cod
+&time
+1
+@
+@end
+
+@if responce is 1 then do
+@begin
+
+@show
+
+`k
+`2  You decide to continue on`l. `l. `l. You see daylight!!!! Then...You are
+  outside!!!!
+
+  `1C`3o`5d`7a`9x`%:`2  Thank you Soooo much!!!! Here I have a present for you!
+          I will heal you!!!!  You gain 2 alignment!! You get 1 quest point
+          but it took you 300 turns.
+`k
+@do delete caveq&playernum.cod
+
+@writefile caveq&playernum.cod
+&time
+5
+@
+
+@do `p07 + 2
+@do `p02 is `p03
+@do `v11 - 300
+@do `p18 + 1
+@do x is 46
+@do y is 12
+@do map is 1413
+@loadmap 1413
+@drawmap
+@update
+@end
+@end
+@end
+
+@#win
+@do saybar
+`1C`3o`5d`7a`9x`2 falls to the ground....dead!  Somehow you know he'll be back
+
+@do delete caveq&playernum.cod
+
+@writefile caveq&playernum.cod
+&time
+3
+
+@#run
+@do saybar
+`2C`3o`5d`7a`9x`%:`2  With people like you who needs assasins
+@do delete caveq&playernum.cod
+
+@writefile caveq&playernum.cod
+&time
+4
+
+@#done

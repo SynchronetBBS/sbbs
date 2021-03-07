@@ -1,0 +1,484 @@
+; Script file DEVHOT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE sig 000001434
+@DECLARE soda 000001556
+@DECLARE snack 000003336
+@DECLARE ice 000005063
+@DECLARE urnal 000005741
+@DECLARE sink 000006192
+@DECLARE tol 000006272
+@DECLARE con 000006753
+@DECLARE goodie 000008428
+@DECLARE lockeddoor 000009525
+@NOCHECK
+; End of .REF index
+
+; Ref File for Devils Island Version v1.50
+; MetaLHeaD Softwares, Copyright 1997(c), All Rights Reserved...
+; DarkLandsBBS 2i5.487.73i5 Call it...
+; Http://www.ibbs.com/darkland/
+; TelNet: 205.198.132.190
+;                    ^__.190 Can change (sorry) Dynamic ips :<
+;
+;
+; First off, I do allow editing to be done. What I Don't allow is for
+; you to give it out after you have edited and or put your name on it
+; . This is COPYRIGHTED 1997(C), MetaLHeaD Softwarez
+;
+; But if you change something that could be of good. Then send it to me
+; and I will put your name in it, Stating that you have made some good  
+;  change to it.
+;
+; Use DEVISL.EXE to REST/UNINSTALL/HELP/ On this Igm
+;
+; WARNING: MY SPELLING SUCKS SOMETHING IS MISS SPELLED U CAN FIX IT!
+;
+; Whats New Information
+;
+;  Fixed most of the spelling I knew how to
+;   Fixed `l`x` error causing running time errors
+;    Fixed `p19, `p18 usage, Now using `p20-`p25
+;
+; Finished Hotel:
+;  Added Soda Machine
+;  Added Ice Machine
+;  Added Food Machine
+;
+;---<Sign
+@#Sig
+ @busy
+  @do saybar
+   `%Speaking Sign?!:`2Snacks, Soda, Ice Ahead!
+     @do moveback
+
+;---<Soda Machine!
+
+@#Soda
+ @BUSY
+ @DO MOVEBACK
+ @do `v01 is 1
+@show
+`r0`c  `r1`7  Soda Machine  `r0
+
+  `0"Your staring at the soda machine. You notice there all 1 Dollar. Damn  
+  that's expensive for a little can of soda!.
+                                                       
+@do write
+`x`x
+@choice
+>&money 1 Coke          (`$$1`%)
+>&money 1 Pepsi         (`$$1`%)
+>&money 1 Mountain Due  (`$$1`%)
+>&money 1 Cherry Coke   (`$$1`%)
+Leave
+@if response not 5 then do
+ @begin
+  @show
+
+@if response is 1 then do
+  @begin
+  @do money - 1
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 5
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"You Push the Button." `2A Coke comes out, ahh refreshing
+`\`k
+  @do goto soda
+   @end
+
+@if response is 2 then do
+  @begin
+  @do money - 1
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 5
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"You Push the Button." `2A Pepsi comes out, ahh refreshing
+`\`k
+  @do goto soda
+   @end
+
+@if response is 3 then do
+  @begin
+  @do money - 1
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 5
+    @if `p02 > `p03 then `p02 is `p03
+     @end
+  @show
+`\`\  `$"You Push the Button." `2A Mountian Due comes out, ahh refreshing. 
+`\`k
+  @do goto soda
+   @end
+
+@if response is 4 then do
+  @begin
+  @do money - 1
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 5
+    @if `p02 > `p03 then `p02 is `p03
+     @end
+  @show
+`\`\  `$"You Push the Button" `2A Cherry Coke comes out, ahh refreshing
+`\`k
+  @do goto soda
+   @end
+
+@if responce is 5 then do
+ @begin
+  @show
+`\`\ `$"You walk away drinking your soda.."
+`\`k
+  @end
+   @end
+    @drawmap
+    @update 
+    @closescript
+    @end
+
+
+;---<Snack Machine!
+@#Snack
+ @BUSY
+ @DO MOVEBACK
+ @do `v01 is 1
+@show
+`r0`c  `r1`7  Snack Machine  `r0
+
+  `0"Your staring at the snack machine.   
+                                                       
+@do write
+`x`x
+@choice
+>&money 1 Snickers     (`$$1`%)
+>&money 2 Milkyway     (`$$2`%)
+>&money 3 Skittles     (`$$3`%)
+>&money 4 Goobers      (`$$4`%)
+Leave
+@if response not 5 then do
+ @begin
+  @show
+
+@if response is 1 then do
+  @begin
+  @do money - 1
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 5
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"You Push the Button." `2The Snickers falls down, you reach for it.
+`\`k
+  @do goto snack
+   @end
+
+@if response is 2 then do
+  @begin
+  @do money - 2
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 6
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"You Push the Button." `2The Milkyway falls down, you reach for it.
+`\`k
+  @do goto snack
+   @end
+
+@if response is 3 then do
+  @begin
+  @do money - 3
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 7
+    @if `p02 > `p03 then `p02 is `p03
+     @end
+  @show
+`\`\  `$"You Push the Button." `2The Skittles fall down, you reach for them.
+`\`k
+  @do goto snack
+   @end
+
+@if response is 4 then do
+  @begin
+  @do money - 4
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 5
+    @if `p02 > `p03 then `p02 is `p03
+     @end
+  @show
+`\`\  `$"You Push the Button" `2The goobers fall down, you reach for them.
+`\`k
+  @do goto snack
+   @end
+
+@if responce is 5 then do
+ @begin
+  @show
+`\`\ `$"You walk away eating your little snack.."
+`\`k
+  @end
+   @end
+    @drawmap
+    @update 
+    @closescript
+    @end
+
+
+
+;---<Ice Machine!
+@#Ice
+ @BUSY
+ @DO MOVEBACK
+ @do `v01 is 1
+@show
+`r0`c  `r1`7Your looking at a ice machine!  `r0
+
+  `0"Gee Ice is all they have!. damn
+                                                          
+@do write
+`x`x
+@choice
+>&money 1 Ice       (`$$3`%)
+Leave
+@if response not 2 then do
+ @begin
+@if response is 1 then do
+  @begin
+  @do money - 3
+     @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 0
+    @if `p02 > `p03 then `p02 is `p03
+     @end
+  @show
+`\`\  `$You push the button `2WOW ICE! what the hell can ya do with it! NUTTIN!
+`\`k
+   @end
+
+@if response is 2 then do
+ @end
+    @drawmap
+    @update 
+    @closescript
+    @end
+
+;---<Urnal
+@#URNAL
+  @datanewday devbath.idf
+  @dataload devbath.idf &playernum `p21
+
+    @if `p21 is 0 then do
+     @begin
+      @do saybar
+       `%AHHHHHHHH, Ohhhhhhhhh, yesssss, that felt great!
+         @datasave devbath.idf &playernum 1  ;Set Flag to 1=Went today
+          @Key
+            @end
+
+   @if `p21 is 1 then do
+    @begin
+     @do saybar
+   `%Gee. You just went, and don't have the urge yet.
+     @key
+      @end
+
+
+;---<Sink
+@#SINK
+ @do saybar
+  `%Ewww sticky stuff!, gotta wash that off
+
+;---<Toliet
+@#TOL
+  @datanewday devbath.idf
+  @dataload devbath.idf &playernum `p21
+
+    @if `p21 is 0 then do
+     @begin
+      @do saybar
+       `%Ouch Ouch!, Its a big one, ahhhhhhhhhhhhhhhhh, AHHHHHHH that's better
+         @datasave devbath.idf &playernum 1  ;Set Flag to 1=Went today
+          @Key
+            @end
+
+   @if `p21 is 1 then do
+    @begin
+     @do saybar
+   `%Gee. You just went, and don't have the urge yet.
+     @key
+      @end
+
+;---<Condom Dispenser
+@#CON
+ @BUSY
+ @DO MOVEBACK
+ @do `v01 is 1
+
+@show
+`r0`c  `r1`7 Condom Dispenser  `r0
+
+  `0"Look at the selection!   
+                                                       
+@do write
+`x`x
+@choice
+>&money 5 Ribbed             (`$$5`%)
+>&money 10 Rainbow           (`$$10`%)
+>&money 3 Basic Type         (`$$3`%)
+>&money 14 Eatable type      (`$$14`%)
+Leave
+@if response not 5 then do
+ @begin
+  @show
+
+@if response is 1 then do
+  @begin
+  @do money - 5
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 0
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"You Push the Button." `2Wow! Cool Ribbed one!, now how do I use it?
+`\`k
+  @do goto con
+   @end
+
+@if response is 2 then do
+  @begin
+  @do money - 10
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 0
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"You Push the Button." `2Wow! Cool Rainbow one!, now how do I use it?
+`\`k
+  @do goto con
+   @end
+
+@if response is 3 then do
+  @begin
+  @do money - 3
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 0
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"You Push the Button." `2Hm Basic one, no fun!, now how do I use it?
+`\`k
+  @do goto con
+   @end
+
+@if response is 4 then do
+  @begin
+  @do money - 14
+   @if `p02 < `p03 then do
+    @begin
+   @do `p02 + 0
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"You Push the Button." `2Cool Eatable one! Yes!, now how do I use it?
+`\`k
+  @do goto con
+     @end
+
+@if response is 5 then do
+  @begin
+   @end
+
+  @end
+    @drawmap
+    @update 
+    @closescript
+    @end
+
+;---<Goodies!
+@#GOODIE
+  @datanewday devgood.idf
+   @dataload devgood.idf &playernum `p20
+ @if `p20 not 1 then do
+  @begin
+   @do `p21 random 4 1
+    @if `p21 is 1 then do
+  @begin
+   @do saybar
+   `0You Gain 5 bucks! Whoohoo!
+   @do money + 5
+     @key
+   @end
+  @datasave devgood.idf &playernum 1
+
+   @if `p21 is 2 then do
+   @begin
+    @do saybar
+   `0You Gain 5 HitPts! Wow cool!
+    @do `p03 + 5
+     @key
+   @end
+  @datasave devgood.idf &playernum 1
+
+   @if `p21 is 3 then do
+   @begin
+   @do saybar
+   `0You got stronger, (must have been wacking!)
+    @do `p05 + 5
+    @key
+   @end
+  @datasave devgood.idf &playernum 1
+
+   @if `p21 is 4 then do
+   @begin
+   @do saybar
+   `0No more sorry :<
+      @end
+       @end
+
+     @datasave devgood.idf &playernum 1  ;Set Flag to 1=Went today
+      @end
+
+   @if `p20 is 1 then do
+    @begin
+     @do saybar
+   `%Damn you, you you pig! you where just here go away!
+     @key
+      @end
+
+     @do x is 34
+     @do y is 14
+     @do map is 866
+      @drawmap
+      @update
+       @end
+    
+;---<Locked door
+@#LOCKEDDOOR
+@dataload devisl2.idf &playernum `p25
+ @if `p25 is 1 then do
+  ;---User can access door
+  @begin
+   @do saybar
+   `%"You may pass my fellow man
+    @key
+   @do x is 33
+   @do y is 12
+   @do map is 866
+         @drawmap
+      @update
+      @closescript
+       @end

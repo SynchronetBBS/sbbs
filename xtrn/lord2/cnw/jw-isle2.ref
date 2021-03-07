@@ -1,0 +1,1308 @@
+; Script file JW-ISLE2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:27 2001
+
+@DECLARE start 000001542
+@DECLARE beach 000001711
+@DECLARE mandrakebard 000004218
+@DECLARE pickdrake 000004357
+@DECLARE pickbane 000004830
+@DECLARE mandrakesign 000005403
+@DECLARE forebode 000005539
+@DECLARE pylon1 000005750
+@DECLARE pylon2 000006140
+@DECLARE chasmhealer 000006544
+@DECLARE chasmbard 000006742
+@DECLARE farmgirl 000006906
+@DECLARE farmer 000007090
+@DECLARE nocash 000008293
+@DECLARE eastentrance 000008410
+@DECLARE hasorb 000008731
+@DECLARE caveebard 000009613
+@DECLARE heron 000009756
+@DECLARE westentrance 000010929
+@DECLARE cavewarden 000011268
+@DECLARE cavewbard 000011429
+@DECLARE darkbard 000011618
+@DECLARE darknbard 000023781
+@DECLARE darksbard 000024498
+@DECLARE mirrortable 000025190
+@DECLARE westtp 000025899
+@DECLARE easttp 000026098
+@DECLARE med2tp 000026294
+@DECLARE med1tp 000026446
+@DECLARE skull 000026600
+@DECLARE weststone 000027222
+@DECLARE eaststone 000027360
+@DECLARE northstone 000027499
+@DECLARE southstone 000027639
+@DECLARE menhirman 000027776
+@DECLARE menman 000027831
+@DECLARE healerhut 000029720
+@DECLARE fishbard 000032216
+@DECLARE fish 000032350
+@DECLARE swamprat 000032484
+@DECLARE swampprize 000035937
+@DECLARE talkedshiv 000037176
+@DECLARE safebridge 000037526
+@DECLARE swampfever 000037684
+@DECLARE witch 000037725
+@DECLARE killkeypress 000038591
+@NOCHECK
+; End of .REF index
+
+; Ref file for Jim Wilson's, Lord 2 IGM ver.  1.01, Mimsic Isle.
+
+
+@#Start
+
+
+                        ;Events       ....
+
+;--------------------------------------------------------------------
+
+                        ;Mandrake
+
+@#Beach
+@busy
+@do moveback
+@pauseoff
+@show
+[?7h[40m[2J[8C[0;1;31m‹‹‹‹€€€€€€€€€€€€€€€€€€€€€€[45m≤≤≤≤±±±∞∞∞  [40m[s
+[u[45m                [0;30;45m∞∞∞±±±±±€€€€€€[2;1H[5C[1;31;40m‹€€€€€€[s
+[u€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m≤≤≤±±∞∞                     [40m[s
+[u[0;30;45m∞∞±±±≤≤€€[3;1H[4C[1;31;40m€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€[45m≤≤≤≤±±∞∞                 [0;30;45m∞∞±±±≤€[4;1H[3C[40m[s
+[u[1;31;40mﬁ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m≤≤±±∞∞ [40m[s
+[u[45m                [0;30;45m∞∞±±≤[5;1H[3C[1;31;40mﬁ€€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m≤≤≤±±∞∞∞              [40m[s
+[u[0;30;45m∞∞±±[6;1H[3C[1;31;40mﬁ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€[45m≤≤±±∞∞∞              [0;30;45m∞∞[7;1H[3C[40m[s
+[u[1;31;40m€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m≤[40m[s
+[u[45m≤±±∞∞∞              [0;30;45m∞[8;1H[3C[1;31;40m€€€€€€€€€€€€€€€€[s
+[u€‹€€ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m≤≤±±∞∞            [40m
+[9;1H   €€€€€€€€€€€€€€€‹ﬂ‹‹‹ﬂ€€€€ﬂﬂﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[s
+[u[45m≤≤±±∞∞        [0;30;45mﬁ[10;1H[3C[1;31;40m€€€€€€€€€€€€‹ﬂ€‹€ﬂﬂﬂﬂ[s
+[u ﬂ‹‹€€ﬂ‹‹ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m≤≤±±∞∞    [0;30;45m€[40m
+[11;1H   [1;31m€€€€€€€€€€ﬂ‹ﬂ€ﬁﬂ‹ﬂ€€  €€€€€ﬂ‹€ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€[45m≤≤±±∞∞[0;35m€€[30;45m€[12;1H[3C[1;31;40m€€€€€€€€€€€ﬂ‹‹ ﬂ[s
+[u‹‹ﬂ› ﬁ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m≤±∞ [0;35m€[s
+[u[30;45mﬁ[13;1H[3C[1;31;40m€€€€€€€€€€€€€€› €€‹› ﬁ€€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m≤±∞[0;30;45mﬁ[14;1H[3C[1;31;40mﬂﬂﬂﬂﬂ[s
+[uﬂﬂﬂ€€€€€€› ﬁ€€›  €€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[45m€€€€[40m[s
+[u[45m€€€≤±∞[15;1H[3C[33;40m€€€€€€€€‹‹‹[31mﬂﬂ€› ﬁ€€›  ﬁ€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€€[45m€€€€€€€€€€€€€€€€€€€€€€±[16;1H[3C[33;40m€€€€€€€€€€€€[s
+[u€‹  [31mﬁ€€    €€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[s
+[u[45m€€≤[17;1H[15C[33;40mﬂﬂ   [31mﬂ[7Cﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€€€€€€€€€€€€€€€€[s
+[u[45m€€€€€€€€€€€€€€€€€€[18;1H[42C[0;34m‹   [1;31mﬂﬂﬂ[44mﬂﬂﬂﬂﬂﬂ[40m[s
+[u[44mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[19;1H[32C[0;34m‹ ‹‹ﬂﬂ€€€ﬂﬂ€‹‹‹‹€‹‹‹‹€€€ﬂﬂﬂ€[s
+[u€€€€€€ﬂﬂﬂﬂﬂﬂﬂsc˙[20;1H[1;37;40m
+
+                            `!Beautifull Beach!`l`x`l`x
+@pauseon
+@key nodisplay
+@if `p02 < `p03 then do
+@begin
+        `p02 + 5
+@end
+@drawmap
+@update
+;--------------------------------------------------------------------
+@#MandrakeBard
+@do saybar
+`$You must learn what `0plants`$ to pick.
+;--------------------------------------------------------------------
+@#PickDrake
+@busy
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 1 1 then do
+        @bitset `t70 6 1
+        @do `p24 is `t70
+        @datasave jw-isle3.mil &playernum `p24
+        @do saybar
+        `0You pick some `%Mandrake. `0It shrieks as the roots pull loose!
+        @closescript
+end
+@do saybar
+You must learn plantlore lest you pluck the wrong weeds!
+
+;--------------------------------------------------------------------
+@#PickBane
+@busy
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+
+@if bitcheck `t70 1 1 then do
+@begin
+        @datanewday jw-isle1.mil
+        @dataload jw-isle1.mil &playernum `p24
+        @do `t70 is `p24
+        @bitset `t70 7 1
+        @do `p24 is `t70
+        @datasave jw-isle1.mil &playernum `p24
+
+        @do saybar
+        `$You pick some `%Wolf's Bane.`$ It may come in handy!
+        @closescript
+@end
+
+@do saybar
+`$You pick some `#smelly`$ plants, what are they?
+
+;---------------------------------------------------------
+
+@#MandrakeSign
+@do moveback
+@do saybar
+`%Mandrake grows here, be aware!
+
+;---------------------------------------------------------
+
+@#ForeBode
+
+@do saybar
+`%You feel an uncanny sense of dread...you want to `$RUN!!
+
+;-----------------------------------------------------------
+                        ; Chasm
+                        ; TP
+@#Pylon1
+@do saybar
+Interesting, a tightrope!  Dare I cross it?
+@do moveback
+@dataload jw-isleg.mil &playernum `p22
+@do `t70 is `p22
+
+@if bitcheck `t70 4 1 then do
+@begin
+        @do y is 7
+        @do x is 48
+        @update
+        @do saybar
+`0You carefully inch across using your `%pole `0for balance.
+@end
+;-----------------------------------------------------------
+
+@#Pylon2
+@do saybar
+`0Interesting, a `%tightrope!  `0Dare I cross it?
+@do moveback
+@dataload jw-isleg.mil &playernum `p22
+@do `t70 is `p22
+
+@if bitcheck `t70 4 1 then do
+@begin
+        @do y is 11
+        @do x is 48
+        @update
+        @do saybar
+`0You carefully inch across using your `%pole `0for balance.
+@end
+
+;-----------------------------------------------------------
+
+@#ChasmHealer
+@do moveback
+@busy
+@show
+`r0`c
+                        `%Chasm Field Hospital
+`/
+`/
+@run hospital in jw-isle.ref
+;-----------------------------------------------------------
+
+@#ChasmBard
+@do saybar
+`0Try buying the `%pole`0 in the giftshop. It will help you cross the chasm!
+;-----------------------------------------------------------
+@#Farmgirl
+@busy
+@do moveback
+@do saybar
+`$I hear that `#Krista `$is looking for hired help, north and west of here.
+
+;-----------------------------------------------------------
+@#Farmer
+@busy
+@do moveback
+@show
+`r0`c
+        `0You find a weathered old farmer standing in his field.
+
+        `2You see garlic, `%Wolf's Bane `2 and cloves growing profusely
+
+        `2You wonder if you should by some?  (You have `$$&money`2 with you.)
+
+
+@if &money < 1000 then do
+@begin
+        @show
+
+
+        That's not enough jack, Jack!
+
+        @do goto nocash
+@end
+@DO `V01 IS 1
+@do write
+`x`x`x`x`x`x`x`x
+        @choice
+Leave
+`$Buy some herbs for $980
+@if response is 1 then do
+@begin
+        @show
+        `c
+                 `0You'd rather not buy any, you have enough.
+@end
+
+@if response is 2 then do
+@begin
+        @do money - 1000
+        @datanewday jw-isle1.mil
+        @dataload jw-isle1.mil &playernum `p24
+        @do `t70 is `p24
+        @bitset `t70 7 1
+        @do `p24 is `t70
+        @datasave jw-isle1.mil &playernum `p24
+        @dataload jw-isleL.mil &playernum `p24
+        @do `p24 + 20
+        @datasave jw-isleL.mil &playernum `p24
+
+        @show
+        `c
+    `$You now have some cooking spices and some `%Wolf's Bane.
+
+
+    `$You pack it all away carefully, including your change of 20 rat pelts.
+
+
+@end
+@label nocash
+@key nodisplay
+@drawmap
+@update
+@closescript
+
+;-----------------------------------------------
+@#EastEntrance
+                        ; EastCave
+                        ; TP
+@busy
+@do moveback
+@do `p20 is 1
+@routine hasorb
+
+@if `p20 is 0 then do
+@begin
+        @closescript
+@end
+
+@do map is 1316
+@do x is 75
+@do y is 12
+@loadmap &map
+@drawmap
+@update
+
+;-----------------------------------------------
+@#HasOrb
+
+@if `i17 > 0 then do
+@begin
+        @do quebar
+`0You hold your `#glowworm `0high and march forward into the caves.
+        @closescript
+@end
+
+@dataload jw-isleg.mil &playernum `p24
+@do `t70 is `p24
+
+@if bitcheck `t70 3 1 then do
+@begin
+        @do quebar
+`0You hold your `$Shining Orb `0high and march forward into the caves.
+        @closescript
+@end
+
+@if bitcheck `t70 1 1 then do
+@begin
+        @do quebar
+`0You hold your `$Sunstone `0high and march forward into the caves.
+        @closescript
+@end
+
+@if bitcheck `t70 0 1 then do
+@begin
+        @do quebar
+`0You use your `$Campfire Starter `0to as a torch and go forward into the caves.
+        @closescript
+@end
+
+@do saybar
+`2With no way to create a light you back away from the caves.
+@do `p20 is 0
+@closescript
+
+;-----------------------------------------------------------
+@#CaveEBard
+@do saybar
+`$Some people wear a helmet when going into this cave.
+
+;-----------------------------------------------------------
+
+@#Heron
+@do moveback
+@busy
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+
+@show
+`r0`c
+       `2You see the Greater Mimsic Herons fishing along the shore.
+
+       One of them has dropped a salmon at its feet.
+       Another stalks amongst the reeds.
+
+@do write
+`x`x`x`x`x`x
+@do `v01 is 1
+        @choice
+`$Leave ?
+`%Take the salmon the Heron dropped ?
+>`i29 0 `2Throw the hunting Heron a salmon ?
+@if response is 1 then do
+@begin
+        @show
+        `r0`c
+        `$You leave the beach to the Herons.
+@end
+
+@If response is 2 then do
+@begin
+        @if `i29 < 30 then do
+        @begin
+                @do `i29 + 1
+        @end
+        @bitset `t70 2 0
+        @show
+        `r0`c
+        `%You snatch the `#salmon `%and leave the beach. Yipee, a salmon!
+@end
+
+@If response is 3 then do
+@begin
+        @do `i29 - 1
+        @bitset `t70 2 1
+        @show
+        `r0`c
+        `$You throw the wading heron a fat `#salmon. `$It looks happy!
+
+@end
+
+@do `p24 is `t70
+@datasave jw-isle3.mil &playernum `p24
+
+@key nodisplay
+@drawmap
+@update
+
+;-----------------------------------------------------------
+
+@#WestEntrance
+                        ; West Cave
+                        ; TP
+@busy
+@do moveback
+@do `p20 is 1
+
+@routine hasorb
+
+@if `p20 is 0 then do
+@begin
+        @closescript
+@end
+
+@do map is 1316
+@do x is 4
+@do y is 11
+@loadmap &map
+@drawmap
+@update
+
+;-----------------------------------------------------------
+@#Cavewarden
+
+@do moveback
+@do saybar
+`$Most people wear a helmet when going into the caves.
+
+;-----------------------------------------------------------
+@#CaveWBard
+@do moveback
+@do saybar
+`%Medusa lives north of here.  She's a stoner!
+
+;-----------------------------------------------------------
+                        ; DeepWoods
+
+@#DarkBard
+@busy
+@do moveback
+
+@datanewday jw-isle4.mil
+@dataload jw-isle4.mil &playernum `p20
+@do `t70 is `p20
+@if bitcheck `t70 1 0 then do
+@begin
+        @bitset `t70 1 1
+        @do `p20 is `t70
+        @datasave jw-isle4.mil &playernum `p20
+        @pauseoff
+        @show
+[?7h[40m[2J[4C[0;33m‹€≤±≤ ∞±€ ‹€  €‹‹‹[17C[34m∞€  [1;5;44m∞∞[40m[s
+[u[3C[0;34m€[20C[1;5m˛[2;1H [0;33m∞∞± ‹∞∞≤±∞[1;34;43m∞∞[40m[s
+[u[0;33m€ €[1;34;43m∞∞[0;33m€€€‹‹ﬂﬂﬂﬂﬂ ﬂ[10C[34mﬂ€ [1;5;44m∞[40m[s
+[u[0;34m∞[1;44m∞[3C[0;34m€[20C[1m‹[5C[0;5;34mﬂ[3;1H    [0;33mﬂ[s
+[uﬂ±≤€€€‹€[1;5;34;43m∞[0;1;34;43m∞∞[0;33m€ﬂﬂ[14C‹[6C[34m∞[s
+[u[1;5;44m∞[1C[0;1;34;44m∞≤[5m∞[0;1;34;44m∞[1C[0;34m‹ﬂ[7C‹  [s
+[u[1;5m˛[6C[0;34m‹ﬂ [1;5m‹€[0;1;34m‹  [0;5;34mﬂ ‹[4;1H[8C[0;33m[s
+[uﬂ∞€€‹[1;34;43m∞∞[0;33m€[16C€€≤±[5C[1;34;44m≤[2C[5m±[40m[s
+[u[0;1;34;44m±≤[5m∞[1C[0;34m€[7C‹[6C[1m‹  [0;34mﬂ[1m‹‹ﬂﬂ[5m‹ [s
+[u[0;5;34m‹ ‹[5;1H[10C[0;33m±€[1;34;43m∞∞[0;33m€[6C[37mﬂ ‹[s
+[u[1;30m‹[47m‹[40mﬂ   [0;33m‹€€≤±∞∞  [34m‹€[1;44m±[5m∞[40m[s
+[u[0;34m∞  [1;44m±∞∞[1C[0;34m€[8C‹€€ [1mﬂ  ‹ﬂ[0;5;34m‹ [0;1;34mﬂ[s
+[u[5mﬂ[0;1;34m‹ﬂ[0;5;34m‹ﬂ[6;1H    [0;33m‹‹±∞ﬂ  ≤[43m [40m[s
+[u[43m[1;5;34m∞[2C[0;33mﬂ€€‹‹‹    ‹‹€€€[1;34;43m∞[0;33m€€≤±∞∞ [s
+[u[34m€[1;44m±[0;34m∞   [1;44m∞±≤[5m∞[0;34m‹ﬂ[6Cﬂ ‹‹€ﬂ    €ﬂ[1m‹[s
+[uﬂ[5m‹ﬂ€[0;1;34mﬂ[0;5;34m‹[7;1H [0;33m∞±≤≤±∞   ±≤[1;34;43m∞[40m[s
+[u[43m[5m∞[2C[0;33m€€ﬂﬂ[1;34;43m∞∞[0;33m€€€[43m  [1;34m∞[40m[s
+[u[43m[5m∞[0;1;34;43m∞∞[0;33m€€€≤≤±∞∞[34m‹[1;44m±[5m∞[1C[40m[s
+[u[0;34m∞∞ [1;44m±≤∞[0;34m€[10C€‹€  ‹‹€€ [1m‹ﬂ‹  ﬂ‹ [0;34mﬂ‹[8;1H[s
+[u  [33m±±∞ﬂ    ±≤€[1;34;43m∞[0;33m€  €€[1;34;43m∞∞ [0;33m€[s
+[u[1;5;34;43m∞ [0;1;34;43m∞∞[5m∞[0;1;34;43m∞[0;33m€€€≤≤≤±∞∞[34m€[s
+[u[1;44m∞≤[1C[0;34m∞  ∞[1;44m±[5m∞[0;34m€[10C[1;5m˛[0;34m‹ﬂ[1m[s
+[u‹[5mﬂ[0;34m‹€[1m‹ﬂ€‹ﬂ[0;5;34m‹[0;34mﬂ[1m‹€‹€ [0;34m€ﬂ[9;1H[s
+[u[10C[33m≤€[43m [1;34m∞∞[2C[0;33mﬁ€€[1;34;43m∞∞[0;33m€≤≤€[s
+[u[1;34;43m∞[0;33m€€€≤≤±±∞∞  [34m€[1;44m≤[5m∞[1C[0;34m∞∞ [s
+[u[1;5;44m∞[0;1;34;44m≤[2C[0;34m€‹[9C‹ﬂ[1m‹‹[5m€[0;34m‹ﬂ[1mﬂ‹€ﬂ[s
+[u‹[0;5;34mﬂ[0;34m‹[1mﬂ[0;5;34m‹[0;34m‹[1mﬂ[5m‹[0;5;34m˛[10;1H[s
+[u[9C[0;33m±≤€[43m [1;5;34m∞[0;1;34;43m∞[0;33m€   ﬂ€[s
+[u[1;34;43m∞[5m∞[0;33m€€≤≤≤≤≤≤±∞∞    [1;34;44m≤[0;34m∞±∞∞ [s
+[u[1;44m±≤[0;34m∞±  ﬂ‹[8C[1;5m‹[0;1;34mﬂ[5m‹[0;34m‹‹ﬂ[1m‹€[s
+[u[5;37m˛[0;1;34mﬂﬂ‹€[0;5;34mﬂ€[0;34mﬂ[1m‹[5m€ﬂ[0;5;34m‹[11;1H[s
+[u[6C[0;33m‹ ∞±€[1;34;43m∞∞∞[0;33m€[1;34;43m∞[0;33m€ ‹  €[s
+[u[1;34;43m∞[5m∞[0;1;34;43m∞[0;33m€€ﬂﬂ‹±∞[7C[1;34;44m±[0;34m∞   [s
+[u[1;5;44m∞ [0;34m∞≤   €€[5Cﬂ€ [1m€[0;34m€€ﬂﬂ‹[1;37m‹€[34m‹ﬂ‹€€[s
+[u[5m‹ ‹[0;5;34mﬂ[0;34m‹ﬂ[12;1H[7C[33mﬂﬂ±≤€[1;34;43m∞∞∞[40m[s
+[u[0;33mﬂﬂﬂ   ‹€[1;34;43m∞[5m∞[0;1;34;43m∞[0;33m€≤±∞±[7C[s
+[u[1;34;44m±[0;34mﬂ   [1;5;44m∞[0;1;34;44m∞ [1C[0;34m∞±   €[6Cﬂ€‹[s
+[uﬂ[1;5m‹[0;1;34m€ﬂ[0;34m€[5m‹[1;37m‹[0;1mﬂ[34m‹€[5;37m‹[34m€‹€[s
+[u[0;34mﬂ‹€[5m€[13;1H[11C[0;33mﬂﬂ[5C‹‹€[1;5;34;43m∞[40m[s
+[u[0;1;34;43m∞[5m∞[0;1;34;43m∞∞[0;33m€≤±ﬂ[8C[1;34;44m≤[5m∞[40m[s
+[u[0;34m∞∞ [1;44m∞ ≤[1C[0;34m∞∞± ‹ﬂ[8C‹ [1mﬂ[5m‹[0;1;34m‹[0;34m[s
+[uﬂ [1;37m‹€‹€ﬂ[5m‹[34mﬂ[0;1;34m€[0;34m‹ﬂ [1;5m˛[14;1H[15C[s
+[u[0;33m‹€€€€[1;34;43m∞∞[0;33m€€[1;34;43m∞∞[0;33m€≤[10C[34m‹∞  [s
+[u[1;44m∞≤ [1C[0;34m∞€∞  €[7C[5mﬂ‹[0;34m€€[1m‹  [5;37mﬂ[0;1m‹ [s
+[u[5m˛[0;1mﬂ €ﬂ [34m‹  [0;34mﬂ[15;1H[8C[33m∞±ﬂ‹‹€€€€€ﬂﬂﬂ  €€[s
+[u[1;5;34;43m∞[0;33m≤±[9C[34m∞[1;44m≤[4C[5m±∞[0;34m∞∞ €± ﬂ‹[7Cﬂ[s
+[u‹  [1;37m‹ [5m‹[0;1m‹ﬂ[0;34m‹[33m≤ [34m‹‹[1mﬂ[0;34m‹‹ﬂ[16;1H[s
+[u[20C[33m‹€ ‹[1;34;43m∞[5m∞[0;33m€±[9C[1;34;44m≤[0;34m∞   [s
+[u[1;44m∞[5m±[0;1;34;44m≤[0;34m∞   [1;44m∞[0;34m±±€‹[8Cﬂ€‹[1;37m[s
+[uﬂ[5mﬂ [0;34mﬂ [33m≤∞  [34mﬂﬂ[17;1H[13C[33m€€€ﬂﬂﬂ€€‹€[s
+[u[1;5;34;43m∞∞[0;33m€€ﬂ[8C[1;5;34;44m∞[0;34m∞[5C[44m [1;5m[40m[s
+[u[44m±[0;1;34;44m≤∞[3C∞[0;34m≤≤ﬂ[12C[33m∞  ≤≤≤∞∞[18;1H[15C‹‹€€€[s
+[u[1;34;43m∞[5m∞[0;1;34;43m∞[0;33m€€ﬂ[7C[34m‹‹∞∞[7C[44m [40m[s
+[u[44m[1;5m±[0;1;34;44m≤≤[2C∞[0;34m‹∞€[13C[33m∞±≤€±∞[19;1H[34m∞[s
+[u[10C[33mﬂ±±≤≤€€[1;34;43m∞∞[0;33m€€€ﬂ[8C[34m≤≤±[6C[44m  [40m[s
+[u[44m[1m≤[5m≤[0;1;34;44m≤≤[2C∞[0;34m‹ﬂ ﬂ€[13C[33m∞±€± ∞[20;1H[s
+[u[34m∞±≤[10C[33m∞∞±≤€ﬂﬂ[7C[34m‹‹‹‹∞∞[6C[44m  [1m≤[5m≤[40m[s
+[u[0;1;34;44m≤≤±[0;34m∞∞€ﬂ   ∞±€‹[10C[33m∞∞€≤ ∞[21;1H[34ms˙∞≤‹[s
+[u[19C‹‹∞±∞[8C[44m  [1m±[5m∞[0;1;34;44m∞±≤[1C[0;34m‹‹ﬂ  ∞∞±≤≤‹€[s
+[u[11C[33m∞∞≤±∞[22;1H[34m˙c  ∞≤≤‹‹[10C‹‹∞∞±±[17Cﬂﬂﬂ  ‹‹‹€ﬂﬂ ﬂ
+[23;1H[1;37;40m
+@pauseon
+        @do readspecial `s01 yn
+        @show
+`r0`c`$
+        Hello fine traveller!  I have visited all parts of this isle and
+        am alive to speak of it!
+
+        Is there anything I can tell you about ?
+
+        @do write
+`x`x`x`x`x`x`x`x
+        @do `v01 is 1
+        @choice
+`0The Bandersnatch
+`0The Banshees
+`0Hot Burning Ash
+`0Moria Caverns
+`0Mimsic Chasm
+`0Fresh Garlic
+`0The `%Holy Book
+`0The `%Holy Flail
+`0Mandrake root
+`0The Medusa
+`0Piper Tunes
+`0The Vampires
+`0The Vorpal Blade
+`0Wolf's Bane
+        @if response is 1 then do
+        @begin
+              @show
+              `c
+        `0The Bandersnatch?
+
+        `2This is a tough monster in a bad neighbourhood!
+        The `$Vorpal Blade `2sure helps when you have to fight it,
+        and you will likely see it on your way to fight
+        the `4Demons`2 at the volcano, just south of there.
+
+              @key nodisplay
+        @end
+        @if response is 2 then do
+        @begin
+              @show
+              `c
+        `0The Banshees?
+
+        `2To hear them is to die.  Not much more to tell you.
+
+        If you have earmuffs, as smart travellers do, you never
+        will hear them. Travel north of here and you may find them,
+        the `0Banshees`2 that is. A little travel humour there. Heh.
+
+
+              @key nodisplay
+        @end
+        @if response is 3 then do
+        @begin
+              @show
+              `c
+        `0Hot Burning Ash?
+
+        `2Stay out of it. Haw! It burns.
+
+        If you are having troubles with it near the volcano,
+        see if you can get some `%burn herb `2from the farmers.
+
+        They don't sell it much but you may find one willing
+        to trade for it.  Mostly, they need help and you can't
+        get hired help around here. A youngster of either sex
+        would be what they might trade for, if you find one
+        in need.
+
+        Why, that reminds me, the farmer just north of here
+        was looking for some help just yesterday, I think it was!
+
+        Or was it last year and the other farmer...no matter,
+        just poke around and see for yourself.
+
+              @key nodisplay
+        @end
+        @if response is 4 then do
+        @begin
+              @show
+              `c
+        `0Moria Caverns?
+
+        `2Deep subject.  Haw!  I kill me!
+
+        The caves run through the mountains just north of here.
+        You need special equipment to pass safely.
+
+        Some kind of light, a glowworm or maybe a `%Shining Orb`2
+        would be good, and you need a helmet lest the rocks split
+        your head open!
+
+        No helmets for sale at the gift shop, try Port Town,
+        if you know where that is?
+
+              @key nodisplay
+        @end
+        @if response is 5 then do
+        @begin
+              @show
+              `c
+        `0Mimsic Chasm?
+
+        `2It's just a ditch.  It does keep the `%Medusa `2from
+        wandering down to Ratville, and I bet the townspeople
+        are glad!
+
+        It keeps the rif-raf from getting eaten by the `#Trolls, `2too!
+
+        The `#Trolls `2stay north of the chasm, the smart folks stay
+        south, nice and safe, sorta`.
+
+              @key nodisplay
+        @end
+        @if response is 6 then do
+        @begin
+              @show
+              `c
+        `0Fresh Garlic?
+
+        `2Some people think it keeps `$vampires `2away.
+
+        It might, It can't hurt to buy some from the farmers
+
+        While you are at it, get Wolf's Bane and cloves, too.
+        You can cook with some, if nothing else!
+
+              @key nodisplay
+        @end
+        @if response is 7 then do
+        @begin
+              @show
+              `c
+        `0The `%Holy Book?
+
+        `2I have heard of that, the gift shop in town
+        sometimes has a copy.  I hear that you need it
+        to use the `%Holy Flail.`2
+
+        'Course, you hear a lot of things, some even true!
+
+        Haw haw!
+
+              @key nodisplay
+        @end
+        @if response is 8 then do
+        @begin
+              @show
+              `c
+        `0The `%Holy Flail?
+
+        `2Ah, good thinking `&lad!
+
+        You'll be needing that to take on the `4Pit Fiend`2
+        that lives inside the volcano.  Lucky for us he never
+        ever comes out or there would be nobody left on this isle.
+
+        You aren't ready for that, nobody is.
+        Forget that I told you anything about the `%Flail!
+
+              @key nodisplay
+        @end
+        @if response is 9 then do
+        @begin
+              @show
+              `c
+        `0Mandrake root?
+
+        `2I love the way it squeals when picked fresh!  Haw!
+
+        It is usefull in some medicines, Dr. Fell will
+        trade you for it.
+
+        What was it he offered me?  Oh yes, `%armour polish.`2
+        Just the thing to make your shield like a mirror!
+
+              @key nodisplay
+        @end
+        @if response is 10 then do
+        @begin
+              @show
+              `c
+        `0The Medusa?
+
+        `2Whew, that one kills with a glance.
+
+        She has her own island and never leaves it.
+        The island is off the northwest corner of
+        Mimsic, you can avoid her, but it may involve
+        a long walk. Smart idea, actually.
+
+        You could face her using a mirror, or anything
+        like that, to stone her before she gets you!
+
+              @key nodisplay
+        @end
+        @if response is 11 then do
+        @begin
+              @show
+              `c
+        `0Piper Tunes?
+
+        `2The `0piper `2does teach a few people his tunes
+        and the gift shop sometimes sells pipes for playing.
+
+        I remember chasing around piper field to catch him
+        as he marched, it took some time to corner him
+        but it was worth it.  I learned all I could from
+        him.  Music can inspire, don't you think?
+
+              @key nodisplay
+        @end
+        @if response is 12 then do
+        @begin
+              @show
+              `c
+        `0The Vampires?
+
+        `2A bloody subject that!
+
+        They are deadly, though there are worse things around
+        and about.  Best thing is to carry a `%Shining Orb`2
+
+        They hate the light and should stay away from it.
+
+
+              @key nodisplay
+        @end
+        @if response is 13 then do
+        @begin
+              @show
+              `c
+        `0The Vorpal Blade?
+
+        `2A good weapon against certain monsters, I heard it was
+        lost in the caverns.  If you find it, keep it.
+
+        It is good against the `%Jabberwok`2 and the `%Bandersnatch.
+
+              @key nodisplay
+        @end
+        @if response is 14 then do
+        @begin
+              @show
+              `c
+        `0Wolf's Bane?
+
+        `2You can pick this herb yourself or buy it
+        from farmers in the field, remember, it must
+        be fresh to keep the wolves away!
+
+              @key nodisplay
+        @end
+
+        @drawmap
+        @update
+        @closescript
+@end
+@do saybar
+`$You have already asked for a hint today, come back another day.
+@closescript
+;-----------------------------------------------------------
+@#DarkNBard
+@busy
+@do moveback
+@show
+`r0`c
+`0        You see before you a Bard, he turns to you and says:
+
+
+`2       "This is a dismal place.  Ashes from the volcano to the
+        west obscure the sun and all is permanent shadow here.
+        The trees grow slowly and animals are hungry.  This is
+        not a great place to visit without a `$Shining Orb`2 to
+        light the way and hold back the night."
+
+       "North of here is nicer, in a light sort of way. The Dark Bard,
+        over a ways west of me in the forest, can give you lots of
+        hints, he has travelled far and wide!"
+
+
+@key nodisplay
+@drawmap
+@update
+
+;-----------------------------------------------------------
+@#DarkSBard
+@do moveback
+@busy
+@show
+`r0`c
+`0        You see before you a Bard, he turns to you and says:
+
+
+`2       "This is a dismal place.  Ashes from the volcano to the
+        west obscure the sun and all is permanent shadow here.
+        The trees grow slowly and animals are hungry.  This is
+        not a great place to visit without a `$Shining Orb`2 to
+        light the way and hold back the night."
+
+       "I'd suggest some fresh `%Wolf's Bane `2too, but you must
+        know about that, seasoned traveller that you are!"
+
+@key nodisplay
+@drawmap
+@update
+
+;-----------------------------------------------------------
+
+                        ; Moria
+
+@#MirrorTable
+@do moveback
+@busy
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 4 1 then do
+@begin
+        @do saybar
+`%You see the empty table where you found the `$Vorpal Blade.
+        @closescript
+@end
+@bitset `t70 4 1
+@do `p24 is `t70
+@datasave jw-isle2.mil &playernum `p24
+@show
+`r0`c
+        `0You have found the lost `%Vorpal Blade!`0
+
+        It was lost years ago by Morlock the Greb.
+        It will be handy to have if you meet a `#Jabberwok.`0
+
+        It's not much good for other monsters though,
+        except maybe a `#Bandersnatch.
+
+@key nodisplay
+@drawmap
+@update
+@closescript
+;-----------------------------------------------------------
+@#WestTP
+
+@do saybar
+Shazaam!   A moving performance!
+@do map is 1313
+@do x is 73
+@do y is 11
+@loadmap &map
+@drawmap
+@update
+
+;-----------------------------------------------------------
+@#EastTP
+@do saybar
+Shazaam!   A moving performance!
+@do map is 1315
+@do x is 4
+@do y is 10
+@loadmap &map
+@drawmap
+@update
+
+;-----------------------------------------------------------
+@#Med2TP
+@do saybar
+Shazaam!   A moving performance!
+@do x is 74
+@do y is 3
+@update
+;-----------------------------------------------------------
+@#Med1TP
+@do saybar
+Shazaam!   A moving performance!
+@do x is 30
+@do y is 11
+@update
+
+;-----------------------------------------------------------
+@#Skull
+
+@if `i37 is 0 then do
+@begin
+        @do `p24 is `p03
+        @do `p24 / 3
+        @do `p02 - `p24
+        @do statbar
+        @do saybar
+`$Ouch, falling rocks are killer!  I should get a `%helmet `$from somewhere!
+        @if `p02 < 1 then do
+        @begin
+                @do enemy is falling`xrocks
+                @run die in gametxt.ref
+        @end
+        @closescript
+@end
+
+@do saybar
+`$Lucky you are wearing your `%helmet, `$that rock bounced off of it!
+@closescript
+
+;------------------------------------------------------
+                        ;Compass .. Stone Circle
+
+@#WestStone
+@do saybar
+You bump into the West Stone of the huge Compass.
+;-----------------------------------------------------------
+@#EastStone
+@do saybar
+You bump into the East Stone of the huge Compass.
+;-----------------------------------------------------------
+@#NorthStone
+@do saybar
+You bump into the North Stone of the huge Compass.
+;-----------------------------------------------------------
+@#SouthStone
+@do saybar
+You bump into the South Stone of the huge Compass.
+;---------------------------------------------------------
+@#MenhirMan
+
+@do moveback
+@BUSY
+@do `t71 is 0
+
+@label Menman
+
+@SHOW
+`r0
+`c
+`0`r1-=-You see a sunburned man sitting in the centre of a stone circle.`0-=-
+`/
+`/
+`r0`2   He looks up at you with his piercing gaze.   `x`0"Yes...?"`2 he asks.
+`/
+`/
+
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+
+@DO `v01 is 1
+@CHOICE
+`$Leave.
+-`t71 0 `2Who are you?
+-`t71 1 `2What are these Stones?
+-`t71 2 +`t70 0 `%Dr Fell sent me.
+@IF RESPONSE IS 1 THEN DO
+@begin
+  @DRAWMAP
+  @UPDATE
+  @closescript
+@end
+@IF RESPONSE IS 2 THEN DO
+@begin
+  @bitset `t71 0 1
+  @Show
+`c
+`2  Why ... I am `%Aragorn!
+`/
+`/
+`#  Do you mean to say that you didn't recognize me ?
+`/
+`2  I have been gone from Greentree for far too long, I fear.
+  Perhaps, I should go back and visit old friends.
+`!  Do you know Turgon?  `2I must go and see him soon!
+`/
+`/
+  @key
+  @do goto menman
+@end
+@IF RESPONSE IS 3 THEN DO
+@begin
+  @bitset `t71 1 1
+  @Show
+`c
+`/
+`/
+    These stones are ancient.  They were set up as a compass
+    by an ancient sea-faring race of spiders. Few of them remain.
+    Few of the stones, very few of the spiders. `%Have you met any?
+`/
+`/
+  @key
+  @do goto menman
+@end
+@IF RESPONSE IS 4 THEN DO
+@begin
+  @bitset `t71 2 1
+  @Show
+`c
+`0  Ah...Doctor Fell sent you to learn about mandrake and other plants.
+  Very well, I shall help you, he is an old friend.
+`/
+  `%Mandrake `0grows in a forest north and west of here, it is easy
+  to find and pick. There are farmers who grow `%garlic, cotton`0 and
+  `%wolfsbane.`0  These are of great value to wanderers of the wild
+  lands to the north.  You better find or buy those that you can!
+`/
+`/
+  @key
+
+  @dataload jw-isle3.mil &playernum `p24
+  @do `t70 is `p24
+  @bitset `t70 1 1
+  @do `p24 is `t70
+  @datasave jw-isle3.mil &playernum `p24
+  @do goto menman
+@end
+
+;---------------------------------------------------------
+@#HealerHut
+@do moveback
+@busy
+
+@pauseoff
+@show
+[?7h[40m[2J[37C[0;1;30m€  [0;31m≥[1;33;41mü[0;31m≥[12C[34m‹[5C[s
+[u[1;30m€ [0;33m‹ﬂ›[6C€ﬁ[1m›[2;1H[37C[30m€  [0;31m≥€≥[10C[34m‹€€[s
+[u€‹   [1;30m€  [43m [7C[0;33mﬁﬁ[1m›[3;1H[37C[30m€  [0;31m≥€≥[8C[s
+[u[34m‹€€€€€€€‹ [1;30m€  [0;31;43mﬂ[40m‹˛[5C[33mﬁﬁ[1m›[4;1H[37C[s
+[u[30m€  [0;31m≥[1;33;41m˜[0;31m≥[7C[34m‹€€ﬂﬂﬂ€€€€‹[1;30m€ [0;33mﬁ[s
+[u[43m [40m‹[6C€ﬁ[1m›[5;1H[37C[30m€ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[0;34mﬁ€ﬂ[33m‹[s
+[u[1;37mﬂ‹  ‹[44m‹[40mﬂ[0;34m€›[1;30mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[6;1H[8C[s
+[u[37mYes ?[24C[30m€[11C[37m‹[0;34mﬂ[33m‹  ﬂ‹ﬂ  ‹[34mﬂ[1;37m‹[s
+[u[10C[0;30;42m≥[32;47m€[30;42m≥[7;1H[37C[1;40m€[10C[37m‹ﬂ ‹[s
+[u[0;33mﬂ€ﬂ›ﬂ€ﬂ[1;37m‹ ﬂ‹[9C[0;30;42m≥[37mé[30m≥[8;1H[37C[40m[s
+[u[1;40m€[9C[37m‹ﬂﬂ‹ﬂ€‹ﬂﬂﬂ‹€ﬂ ‹‹€[8C[0;30;42m≥[1më[0;30;42m≥[40m
+[9;1H[37C[1m€[9C[37m‹ €ﬂ‹ ﬂ€€€‹ﬂ ‹ﬂ€‹[8C[0;30;42m≥[32;47m€[40m[s
+[u[30;42m≥[10;1H[37C[1;40m€[8C[0;34m‹‹‹[1;37mﬂ‹[0;34m‹ﬂ‹  ‹‹ﬂ€ [s
+[u[1;37mﬂ[0;34m‹‹‹[7C[30;42m≥[32;47m€[30;42m≥[11;1H[37C[40m[s
+[u[1;40m€[5C[0;34m‹€€€ﬂﬂ€€€€€ €€‹€€ €€€ ﬂﬂ‹    [30;42m≥[1m˜[40m[s
+[u[0;30;42m≥[12;1H[37C[1;40m€ﬂﬂﬂﬂ [0;34m€ﬂ‹€  ﬂ€€‹€‹ €€€€ﬂ €€€€€ ‹[s
+[u[1;30mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[13;1H[37C€    [0;34m€€€ﬂ    €€€€€ €€€€€   €€ﬂ€€
+[14;1H[37C[1;30m€    [0;34m€€€€‹    €€€€ €€€ €€ﬂ‹ €ﬂ€€[5C[35m≥€[s
+[u[1;36;45mÄ[0;35m€≥[15;1H[37C[1;30m€   [0;34mﬂ ‹‹‹‹  [1;33m\  [s
+[u[0;34m€€ €[1;33m|[0;34mﬂ€€€ﬂ [1;33m/[0;34mﬂ‹‹‹‹‹    [35m≥€[s
+[u[1;36;45mË[0;35m€≥[16;1H[37C[1;30m€  [0;34m‹ﬂﬂ[33m‹ ‹ [34mﬂ   [s
+[u[1;33m\ [0;34mﬂ  [1;33m| [0;34mﬂ‹ [1;33m/ [0;34m‹ﬂ [33m‹ ‹ [34mﬂ[s
+[u‹  [35m≥€[1;36;45mõ[0;35m€≥[17;1H[37C[1;30m€ [0;34mﬂ  [33m‹˛ﬂ ﬂ [s
+[u[1m‹‹‹‹‹‹‹   ‹‹‹‹‹‹ [0;33mﬂ ﬂ˛‹ [34m‹  [35m≥€[45m [40m€≥s[18;1H[s
+[u[37C[1;30m€  [0;34mﬂ‹‹  [33m‹[1;43mﬂﬂﬂﬂﬂ[0;33m‹‹‹ [1;43mﬂﬂﬂ[40m[s
+[u[1C[0;33m‹‹‹[1;43mﬂﬂﬂﬂ[0;33m‹[7C[35m≥€[1;36;45m˜[0;35m€≥c[19;1H[s
+[u[27C[1;30mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[20;1H[s
+[u[37m[1;37;40m
+`7                                            (Ansi by Sandy Chidester)
+@pauseon
+@key nodisplay
+
+@show
+`r0
+`c
+                           `r1`%Merlin's Potion Shoppe`r0                             `r0
+
+
+@buymanager
+   2
+  40
+  55
+  66
+
+@drawmap
+@update
+@closescript
+;---------------------------------------------------------
+@#FishBard
+@do moveback
+@do saybar
+`$It is a beautiful day for fishing!`0
+;---------------------------------------------------------
+@#Fish
+@routine fishdock in porttown.ref
+;---------------------------------------------------------
+
+
+               ;Marsh
+@#Swamprat
+@busy
+@pauseoff
+@show
+[?7h[40m[2J[16C[0;33m∞[7C[37m€   ﬂﬂ€€€≤≤±∞ ≤≤ﬂ ‹‹€€≤±‹‹[5C‹ﬂﬂ€€€≤≤±[s
+[u±∞  ±≤≤€‹  [33m≤[2;1H[8C[32m∞±≤[33m∞ [32m∞∞ [33m±  [32m∞±≤  [s
+[u[37m≤€[6C€€≤±∞∞±   ≤±≤ﬂ≤±∞∞≤≤≤±€‹‹   ≤±±≤±∞∞ ≤±∞±≤±[33m±∞[32m‹‹‹
+[3;1H[7C‹‹‹  [33m∞  ≤[8C[37m±≤[8C≤±∞∞   €≤±∞∞±≤±≤±±∞±≤≤±±∞ ± ±±≤±±∞ ±[s
+[u[32mﬂﬂ≤±∞   ‹ﬂ[4;1H ‹‹≤±∞∞[33m∞±  [32m‹≤±∞∞≤±[6C[37m∞∞±±[10C∞ [s
+[u[33m‹  [37m∞   ∞[7C±    [33m‹  [37m∞∞±    ∞[32m‹  [33m≤[32m∞∞±≤
+[5;1H∞±   [33m∞∞± ±∞   ±±[32mﬂﬂﬂ‹[5C[37m∞∞±∞∞±≤[5C∞∞∞[33mﬂ€‹   ‹‹€€€[s
+[u€€‹‹   ‹€ﬂ[37m∞∞∞   [32m∞∞±≤±± [33m±[32m∞ [33m∞ [32mﬂ[6;1H    [s
+[u[33m∞∞  ±±≤   ∞[13C[37m∞∞  ∞±≤≤[5C[33mﬁ €‹ﬂﬂﬂ€€€€€ﬂﬂﬂ‹€ ›  [37m∞ [s
+[u[32mﬂﬂﬂ   ﬂ   [33m≤[32m‹‹€ﬂﬂ[7;1H[1;30m≤  [0;33m∞∞ ∞∞±[32m∞≤   [s
+[u[33m∞ [32mﬂﬂ±≤‹‹[8C[37m∞∞ ∞±∞±≤≤  [33m€  ﬁ‹ [37m˙ [33m€€€ [37m˙ [s
+[u[33m‹›  €  ‹‹‹[8C[32m∞  ≤ [33m∞±[8;1H[1;30m≤≤≤   [0;32m±∞∞ ﬂﬂ±≤‹‹[s
+[u    ﬂﬂﬂﬂ [37m≤[10C∞∞≤≤  [33mﬂ €€€‹€€€ €‹€€€ ﬂ €€€€€€€€   [32m∞∞±±≤[s
+[u[33m∞±[32m≤±[9;1H[1;30m≤±±≤≤€€ [0;32m∞∞ﬂﬂ‹  [33m∞  [32m‹  [37m∞∞[s
+[u∞∞±≤≤[7C∞∞   ≤≤   [33mﬂ€€›ﬂ€ﬂﬁ€€ﬂ ‹€€€€€€€€€€€€[6C[32m∞∞[33m∞
+[10;1H[1;30m±±∞±≤≤€€€[5C[0;33m∞∞[32mﬂﬂ≤±∞   [37m∞∞±±≤[8C∞∞   ≤≤   [s
+[u[33mﬂ ﬂﬂﬂ ﬂ‹‹€€€€€ €€€€€€€€€€  ±∞  [32m±≤[11;1H[1;30m∞∞∞±≤≤≤€€€€  [s
+[u[0;33m±[5C[32mﬂ   [37m∞∞  ∞∞∞±≤≤[5C∞[7C[33m€ ﬂ‹‹‹ﬂ €€€€€€ €€€ €€€[s
+[u€€€€€   [32mﬂﬂ≤≤[12;1H   [1;30mﬂﬂﬂ‹‹€€‹ ﬂ€≤±€[8C[0m∞∞∞∞ ∞∞∞∞∞    [s
+[u[33m‹€€‹ €€€ﬂ    ‹€€ﬂﬂ€€€ €€€‹  €€€€€€€   ∞±[32m‹[13;1H[1;30m€€€€€€€[s
+[u€€≤±∞[5Cﬂﬂ€[9C[0m∞∞∞∞ ∞∞∞ [33m€€ﬂ‹ﬂﬂ[9Cﬂﬂ ﬂ‹ ﬂ‹ €€€€‹ ﬂ€€€€€€ [32m[s
+[u‹‹ﬂﬂ[14;1H[1;30m€€€€€€€€€€€€€€≤±∞   €€€[8C[0m∞∞[6C[33mﬂ‹ ﬂ[10C‹ﬂﬂ[s
+[uﬂ€€€‹  €€€€‹ €€€€€€€ [32m±±≤[15;1H[1;30m€€€€€€€€€€€€€€€≤±±∞  €€€[9C[s
+[u[0m∞[20C[33m‹ ﬂ  ﬂ€€€€€€ﬂ ‹‹€€€€€€€  [32m∞[16;1H[1;30m≤≤±±€€€€€€€€[s
+[u€€€€€≤≤±∞  €€€€€ﬂﬂﬂﬂ‹‹‹‹‹‹[17C[0;33m‹‹€€€‹‹‹‹‹  ‹€€€€€€€€€  [1;30m‹
+[17;1H€€€±±∞∞€€€€€€€€€€€≤±±∞[5C€€€€€€∞±≤€€≤±∞ ∞±≤≤€€€€€€ﬂ [0;33m€€€€€€ﬂ€[s
+[u€€€€€€€€€€€€€€€ [1;30mﬂﬂ[18;1H€€€€€€∞∞∞±±≤≤±∞∞ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ  [0;34m‹‹‹‹[s
+[u‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ﬂ   [33mﬂ€€€€   €€€€€€€€€€€€   [1;30ms[19;1H€€€€€€[s
+[u€€€€≤±∞∞∞∞∞∞ [0;34m‹€€€€€€€€€€€€€€€€€€€ﬂﬂﬂﬂﬂﬂ[1;30m‹‹‹‹∞∞±≤€ﬂﬂﬂ [s
+[u[0;33mﬂ€€€€‹‹ ﬂ€€€€€€€ﬂ    [1;30mc[20;1H€€€€≤±∞∞±≤€‹‹‹‹‹‹‹‹‹‹‹‹‹  [s
+[u[0;34mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ  [1;30m∞∞±≤€€‹‹ [0;33m‹ ‹ ‹‹€€€€€€€€€€ﬂ[1;30m∞±∞ [s
+[u[0;33mﬂﬂﬂﬂ [1;30m≤±±∞‹[21;1H[22;1H[42m             [0;30;42mY[40m[s
+[u[42mech!    What in the world is [1;37mTHAT [0;30;42mthing?     [40m[s
+[u[42m                     [23;1H[1;37;40m
+@key nodisplay
+
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 1 0 then do
+@begin
+@fight
+;name
+Slimey Kobold
+;string said when you see him
+`#Oh oh .... this is `%Gross!                           ˇ
+;power move kill string
+A mighty swat!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hugs you|1000
+hurls swampwater at you|1200
+swipes at you with a dirty fist|800
+NONE|NONE
+NONE|NONE
+;defense
+1000
+;gold reward
+1500
+;experience
+750
+;hit points
+2000
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@end
+
+@drawmap
+@update
+@closescript
+
+;--------------------------------------------------------
+
+@#SwampPrize
+@do moveback
+@busy
+@dataload jw-isleg.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 7 0 then do
+@begin
+        @show
+`r0`c
+     `0You see a `%Holy Flail`0 inside a hollow tree.  You dare not pick
+     it up without more knowledge. You wonder whether the `%Holy Book`0
+     that you saw in the town's gift shop might not tell you which is
+     the `#dangerous`0 end of the weapon, and where it should be used?
+`/
+`/
+        @key nodisplay
+        @drawmap
+        @update
+        @closescript
+@end
+
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 1 0 then do
+@begin
+  @if bitcheck `t70 3 1 then do
+  @begin
+        @bitset `t70 1 1
+        @do `p24 is `t70
+        @datasave jw-isle2.mil &playernum `p24
+
+        @do move 15 23
+        @do write
+`r0`@Wow!`0 You pick up a `%Holy Flail!
+        @key
+        @clearblock 23 24
+        @closescript
+  @end
+@end
+
+@if bitcheck `t70 3 0 then do
+@begin
+        @run madmage in jw-isle.ref
+@end
+
+@do move 5 23
+@do write
+`r0`0There is nothing here but a tree with the name "Shiv" carved in it.
+@key nodisplay
+@clearblock 23 24
+@closescript
+
+;-------------------------------------------------------
+@#TalkedShiv
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 3 0 then do
+@begin
+  @do moveback
+                        ;If not seen shiv, else pass through.
+  @busy
+  @do saybar
+Have you spoken to Shiv in the town jail?
+  @routine killkeypress
+@end
+
+;--------------------------------------------------------
+
+@#SafeBridge
+@do quebar
+`%I'd hate to think about hero eating `#TROLLS`% under this bridge!
+
+
+;--------------------------------------------------------
+@#SwampFever
+
+@do moveback
+@offmap
+
+@label witch
+
+@show
+`r0`c  `r1  Swamp Remedies & Cures  `r0
+
+`2  The witch-doctor looks you over for wounds and fever.
+
+@dataload jw-isle1.mil &playernum `p24
+@do `t70 is `p24
+
+@if bitcheck `t70 5 1 then do
+@begin
+        @do `p02 is 1
+        @bitset `t70 5 0
+        @do `p24 is `t70
+        @datasave jw-isle1.mil &playernum `p24
+
+        @show
+`/
+`0The Shaman solemly announces:
+`%  "You have swamp fever, it must be cured before your enter
+   this dwelling, lest you spread the disease."
+`/
+  "Whether you wish it or not, I must proceed."
+`/
+`/
+  `2The Shaman throws magic powder in your face and you lose
+  all but one hitpoint. He has cured your swamp fever. (Whew!)
+
+        @key nodisplay
+        @do goto witch
+@end
+
+@run hospital in jw-isle.ref
+
+@closescript
+;------------------------------------------------
+
+@label killkeypress
+@do moveback
+@do move 15 23
+@do write
+`r0`@Ouch!`0 Did you intend to bump into `@THAT ? `%(Yn)
+@do readspecial `s01 YN
+@clearblock 23 24
+
+@CloseScript

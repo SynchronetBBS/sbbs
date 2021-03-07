@@ -1,0 +1,25 @@
+______________________The Sword Castle v2.0___________________________________
+
+Executing the file INSTALL.BAT will overwright the file QUEST.REF, the
+
+QUEST.REF file included in this IGM package has everything the original
+
+one has, it just makes an extra quest available from Aquaman at The Sword
+
+Castle.
+______________________________________________________________________________
+
+You will automatically be making a backup of Quest.ref by using the
+
+INSTALL program included in this zip. To execute it just type 'INSTALL'
+
+no quotes. The install will change the name of your old one to Quest2.ref,
+
+and The one included in the zip will be active until you decide to uninstall
+
+it. If you decide you do not like the Quest.ref, just type 'UNINSTAL' - no
+
+quotes to restore the old one.
+______________________________________________________________________________
+
+-MeRCeR-

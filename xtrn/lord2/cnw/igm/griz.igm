@@ -1,0 +1,43 @@
+
+                Grizelda's House V1.00
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM GRIZ.IGM
+
+  To uninstall, do the same thing again.
+
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `1Grizelda's `3House `$by `4Brandon Harvey (aka X-Acutioner)
+
+replacescreen: 1436 1 show
+
+replacescreen: 240 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `$This IGM is cool.. Talk to The Ugly GRIZELDA, The Hot Sherie..
+  `$Inject a needle different things happen.. More coming soon...
+  `3E-Mail Questions and Comments or suggestions INSANEPRODUCTIONS@juno.com

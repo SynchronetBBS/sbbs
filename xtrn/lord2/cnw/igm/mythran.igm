@@ -1,0 +1,20 @@
+igmname: `0Mythrans Cottage `2v`01.12 `2by `0Heath Axton
+
+replacescreen: 1436 1 show
+replacescreen: 112 2 show
+replacescreen: 111 3 noshow
+replacescreen: 110 4 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+   `2Mythran is an old man who lives on a strange island. You can buy 
+   items from him, get free stuff, flirt with his georgeous apprentice,
+   or go into the basement and beat the shit out of his collection of
+   rabid animals.
+   
+   `2To test this IGM, go south of Greentree and walk into the purple
+   tree. (which will teleport you to mythrans secret island)
+
+  `4** NOTE, THIS IGM REQUIRES THE REGISTERED VERSION OF LORD 2 ! **

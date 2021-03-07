@@ -1,0 +1,216 @@
+; Script file OWTC.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE oracle 000000260
+@DECLARE upbar 000004568
+@DECLARE clearbar 000004927
+@NOCHECK
+; End of .REF index
+
+;The Main REF file for the Oracle IGM by Tien Lung
+
+@#oracle
+@busy
+@do moveback
+@dataload oracle.idf &playernum `p20
+@do `v01 is 1
+@show
+`r0`c                             `$Oracle
+
+   `2This ancient man stands before you.  His age seems to exceed anything
+   ever expected from a normal human.  He stands there awaiting you to make 
+   a decision.
+
+@do write
+`x`x
+@choice
+`%What do you do?
+=`p20 1 `%I wish to see your 1st vision
+=`p20 2 `%I wish to see your 2nd vision
+=`p20 3 `%I want your next vision
+=`p20 4 `%Can you give me anymore help?
+=`p20 5 `%Anything else?
+=`p20 6 `%What else do you know of the `@dragon`%?
+=`p20 7 `%Tell me more!
+=`p20 8 `%Have learned more?
+`%Leave
+@if response is 10 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 1 then do
+  @begin
+  @show
+`\
+  `0"I am an oracle, a seer."  `2The man annouced proudly.  `0"I bring forth
+  visions from the past, present and future.  I am the only person in the 
+  world who can show you these things."
+  `k
+  `0"When you wish to see a vision... ask."
+  `k
+  @dataload oracle.idf &playernum `p20
+  @if `p20 < 1 then do
+    @begin
+    @do `p20 is 1
+    @datasave oracle.idf &playernum `p20
+    @end
+  @end
+@if responce is 2 then do
+  @begin
+  @show
+`\
+  `0"Here is my first vision... and I'm involved."
+  `k
+  @dataload oracle.idf &playernum `p20
+  @do `p20 + 1
+  @datasave oracle.idf &playernum `p20
+  @routine scene1 in oracle1.ref
+  @end
+@if responce is 3 then do
+  @begin
+  @show
+`\
+  `0"Here is my second vision... and I'm involved."
+  `k
+  @dataload oracle.idf &playernum `p20
+  @do `p20 + 1
+  @datasave oracle.idf &playernum `p20
+  @routine scene2 in oracle1.ref
+  @end
+@if responce is 4 then do
+  @begin
+  @show
+`r0`c`\`\
+  `0"Here is my thrid vision... But it costs `$300 `0gp"
+  @do `v01 is 1
+  @do write
+`x`x
+  @choice
+`%I'll pay
+`%No thanks
+  @if responce is 1 then do
+    @begin
+    @if money < 300 then do
+      @begin
+      @show
+      `\
+      `0"I'm sorry, but you don't have enough."
+      `k
+      @do goto oracle
+      @end
+    @do money - 300
+    @dataload oracle.idf &playernum `p20
+    @do `p20 + 1
+    @datasave oracle.idf &playernum `p20
+    @routine scene3 in oracle2.ref
+    @end
+  @if responce is 2 then goto oracle
+  @end
+@if responce is 5 then do
+  @begin
+  @show
+`\
+  `0"Here is an extra bit of my help..."
+  `k
+  `bGET 5 HIT POINTS`%
+  `k
+  @do `p03 + 5
+  @dataload oracle.idf &playernum `p20
+  @do `p20 + 1
+  @datasave oracle.idf &playernum `p20
+  @end
+@if responce is 6 then do
+  @begin
+  @show
+`r0`c`\`\
+  `0"Here is my next vision... But it costs `$300 `0gp"
+  @do `v01 is 1
+  @do write
+`x`x
+  @choice
+`%I'll pay
+`%No thanks
+  @if responce is 1 then do
+    @begin
+    @if money < 300 then do
+      @begin
+      @show
+      `\
+      `0"I'm sorry, but you don't have enough."
+      `k
+      @do goto oracle
+      @end
+    @do money - 300
+    @dataload oracle.idf &playernum `p20
+    @do `p20 + 1
+    @datasave oracle.idf &playernum `p20
+    @run scene4 in oracle2.ref
+    @end
+  @if responce is 2 then goto oracle
+  @end
+@if responce is 7 then do
+  @begin
+  @show
+`r0`c`\`\
+  `0"That brings us to another vision... But it costs `$1000 `0gp"
+  @do `v01 is 1
+  @do write
+`x`x
+  @choice
+`%I'll pay
+`%No thanks
+  @if responce is 1 then do
+    @begin
+    @if money < 1000 then do
+      @begin
+      @show
+      `\
+      `0"I'm sorry, but you don't have enough."
+      `k
+      @do goto oracle
+      @end
+    @do money - 1000
+    @dataload oracle.idf &playernum `p20
+    @do `p20 + 1
+    @datasave oracle.idf &playernum `p20
+    @run scene5 in oracle3.ref
+    @end
+  @if responce is 2 then goto oracle
+  @end
+@if responce is 8 then do
+  @begin
+  @dataload godlike.idf &playernum `p21
+  @if `p21 is 2 then do
+    @begin
+    @dataload oracle.idf &playernum `p20
+    @do `p20 + 1
+    @datasave oracle.idf &playernum `p20
+    @run scene6 in oracle3.ref
+    @end
+  @show
+`r0`c`\`\
+  `0"I lost my abilities to see into the future without my `$Time Gem`0.  The
+  Judge from `9Lawyer's World `0took it from me as penalty for losing a case."
+  `k
+  `\`2Maybe you might be able to get it...
+  `k
+  @do goto oracle
+  @end
+@if responce not 9 then goto oracle
+
+@#upbar
+@do move 1 1
+@do write
+`r1`%ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿`r0
+@do move 1 2
+@do write
+`r1`%³                                                                              ³`r0
+@do move 1 3
+@do write
+`r1`%ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ`r0
+
+@#clearbar
+@do move 1 2
+@do write
+`r1`%³                                                                              ³`r0

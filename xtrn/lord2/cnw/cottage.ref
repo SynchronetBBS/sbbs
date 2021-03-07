@@ -1,0 +1,692 @@
+; Script file COTTAGE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE travel 000000815
+@DECLARE done 000002087
+@DECLARE chooseaplace 000002128
+@DECLARE priv 000002969
+@DECLARE innkeeper 000003046
+@DECLARE pass1 000004252
+@DECLARE pass2 000004484
+@DECLARE done 000005772
+@DECLARE doorguard 000005808
+@DECLARE startg 000005837
+@DECLARE sign 000010880
+@DECLARE enter 000011173
+@DECLARE done 000012201
+@DECLARE letmein 000012609
+@DECLARE done 000012690
+@NOCHECK
+; End of .REF index
+
+;hey all, long time no.. um.. updates. been busy. mebbie ill make some new IGMs
+;later this year, mebbie not. dont copy this, or ill shoot ya. i lit myself on
+;fire once. Call Big R.C.s BBS (still up, dunno, kinda accidentally deleted
+;QMODEM hehehe WHUPS <slap!>)
+;(610)494-4604
+@#Travel
+@if cott.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 58 then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+@readfile cott.dat
+`p20
+`s01
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0Captain:  `2Sorry, the owner has requested that I do not allow anyone
+on this here ferry.
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Ride on the Ferry `r0
+
+`2  `2The Captain looks over at you.  `0"Yeah, what's your business?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"OK, then lets go!"`\`\`k
+    @do goto chooseaplace
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to ride your ferry by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed onboard.
+
+   @show
+`\`\  `2The captain asks you to leave`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+
+ @#done
+ @drawmap
+ @update
+
+
+@#ChooseAPlace
+;lets them warp to a view places
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Your Ferry `r0
+
+  `0"Good day, sir. Where do you wish to go today?" `2asks the captain.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Sosen Village
+Flag City
+Portown
+I'll stay here, thanks
+@if response not 4 then do
+  @begin
+@show
+`\`\  `0"A fine choice, Sir."
+
+`k  `2A few minutes later, you arrive at your destination.
+
+  `0"Have a nice day, Sir."
+
+  `2Looks like you are on your own.
+
+`k
+@if responce is 1 then do
+  @begin
+   @do x is 38
+   @do y is 5
+   @do map is 456
+  @end
+
+@if responce is 2 then do
+  @begin
+   @do x is 40
+   @do y is 14
+   @do map is 71
+  @end
+
+@if responce is 3 then do
+  @begin
+   ;Porttown
+   @do x is 43
+   @do y is 16
+   @do map is 956
+  @end
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#priv
+@do moveback
+@do saybar
+The private bedroom, how peaceful.
+
+@#innkeeper
+
+
+@do moveback
+
+@if cott.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@readfile cott.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`0Guard: `2Good day, s&sir!
+  @closescript
+  @end
+
+
+
+@if cotta.dat exist false then do
+  @begin
+  @writefile cotta.dat
+200
+0
+  @end
+
+  @readfile cotta.dat
+`p26
+`p27
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Getting a room to Sleep in  `r0
+
+`2  The guard looks at you.  `0"Hey! You want a room 'ta sleep in? For you 
+  only `$$`p26!`2"
+
+@do write
+`x`x
+@choice
+YEAH
+Hellz no!
+@if responce is 1 then do
+  @begin
+  @if money < `p26 then do
+    @begin
+    @show
+`\`\  `2YO! Whutup, fool? You ain't got da money. GET OUT! 
+
+
+`k
+   @do goto innkeeper
+   @end
+
+  @do money - `p26
+  @do `p27 + `p26
+  @do delete cotta.dat
+  @writefile cotta.dat
+`p26
+`p27
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has rented a room in your cottage! 
+  @do y - 3
+  @drawmap
+  @update
+  @do saybar
+`0Guard:  `2"Alright then, go in back and pick out a bed."
+  @closescript
+  @end
+
+@drawmap
+@update
+
+@#pass1
+@readfile cott.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@if &lasty is 11 then do
+  @begin
+  @do moveback
+  @do saybar
+`0Guard:  `2Sup, fool? You need to pay first!
+  @end
+
+@#pass2
+@if cott.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 58 then do
+  @begin
+  @closescript
+  @end
+
+@readfile cott.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0Guard:  `2Can't go over there, its PRIVATE.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The guard looks over at you.  `0"YO! What's your business?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Oh, ok then!"`\`\`k
+    @do x + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Guard Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 tried to get into the PRIVATE bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Guard draws his sword.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+
+ @#done
+ @drawmap
+ @update
+
+@#doorguard
+@do moveback
+@label startg
+
+@if cotta.dat exist false then do
+  @begin
+  @writefile cotta.dat
+200
+0
+  @end
+
+
+@if cott.dat exist false then do
+  @begin
+  @do saybar
+`0"Get out please!  The cottage has been sold!" `2the guard commands.
+ @closescript
+  @end
+
+@readfile cott.dat
+`p20
+  @readfile cotta.dat
+`p26
+`p27
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the guard.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The guard stops working for a moment.
+
+@do write
+`x`x
+@choice
+Set password to private bedroom & ferry. (currently is `0`s01`%)
+Ownership options
+Set room fee (currently is at `$$`p26`%)
+Take money from register
+Home Sweet Home
+Leave
+@if responce is 5 then do
+        @begin
+        @show
+
+`\`2This is you new home now.
+        @key
+        @do `p69 is 16
+        @end
+
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `0"Um, sir, we havn't been doing much business lately..."`2 The guard says.
+
+
+`k  `$"How much have we done?" `2you ask.
+
+`k  `0"Well, none since you last checked, sir." `2the Innkeeper cries as he bursts into tears.
+
+`k  `$"WHY AREN'T WE DOING BUSINESS?"`2 you scream, then throw a tantrum.
+
+`k  `0"I guess this would not be a good time to ask for a raise?"`2 he asks. You
+              dont bother to answer
+`k
+   @do goto doorguard
+   @end
+
+
+  @readfile cotta.dat
+`p26
+`p27
+  @do money + `p27
+  @do delete cotta.dat
+  @writefile cotta.dat
+`p26
+0
+  @show
+`\`\  `2Sure, we've made `$$`p27`2, here ya go!
+
+`k
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto doorguard
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto doorguard
+
+  @end
+
+    @do goto doorguard
+    @end
+  @readfile cotta.dat
+`p26
+`p27
+  @do `p26 is `v40
+  @do delete cotta.dat
+  @writefile cotta.dat
+`p26
+`p27
+  @do goto doorguard
+  @end
+
+
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$40000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your cottage to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete cott.dat
+  @writefile cott.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of BeachSide Cottage to you. 
+  Password to enter bedroom will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%BeachSide Cottage`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your cottage back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete cott.dat
+  @do delete cotta.dat
+  @do money + 40000
+  @show
+`\`\  `%COTTAGE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%BeachSide Cottage`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete cott.dat
+  @writefile cott.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the Innkeeper promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if cott.dat exist false then do
+ @begin
+ @do saybar
+BeachSide Cottage - For sale cheap, enquire inside.
+ @end 
+
+@if cott.dat exist true then do
+ @begin
+@readfile cott.dat
+`p20
+`s01
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+
+
+@if cott.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2CBeachSide Cottage - a beautiful cottage on the beach.
+  `$$65000`2.
+  
+  Buy now and recieve the following bonuses:
+
+  `0* `2Private area for you
+
+  `0* `24 guest beds
+
+  `0* `2A ferry
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 64999 Purchase it.
+<&money 65000 Sigh wistfully and leave since you don't have enough.
+>&money 64999 Leave.
+@if responce is 1 then do
+  @begin
+  @if cott.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone beat ya to it. Don't that just suck? I say ya go
+kick his ass now, dontcha think?  `\`\`k
+    @do goto done
+    @end
+
+  @writefile cott.dat
+&playernum
+NONE
+    @do money - 65000
+    @do addlog
+  `0`n `2buys `%BeachSide Cottage`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this Cottage!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile cott.dat
+`p20
+`s01
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete cott.dat
+    @do addlog
+  `%BeachSide Cottage`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+;let him in
+@label letmein
+@do x is 51
+@do y is 12
+@do map is 1411
+@loadmap &map
+@do goto done
+@#done

@@ -1,0 +1,1000 @@
+@#BANK
+@do `v01 is 1
+@offmap
+@do moveback
+@do `s09 is loki
+@routine DONEQUEST in VAULTS.REF
+@label bankstart
+@show
+`r0`c  `r1 `%Loki's Inn Bank `r0
+
+`2  An older man looks you over carefully.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do `p30 is 16
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdrawal.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The man asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last questions?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @routine widthdraw in vaults.ref
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+@#SALES
+@offmap
+@do moveback
+@label weapons
+@show
+`r0`c `r1 `%Loki's Weapons, Armor and General Goods `r0
+
+  `2A scruffy looking blacksmith approaches
+ `0"Waddaya need today?" `2he asks.
+ 
+
+@do `v01 is 1
+@do write
+`x
+@choice
+Examine his Weaponry
+Check out the Armory
+List other Goods
+Sell something
+Leave
+@show
+`\`c
+
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  60
+  49
+  39
+  58
+  @end
+
+@if responce is 2 then do begin
+ @begin
+@buymanager
+  37
+  59
+  62
+  68
+  @end
+
+@if responce is 3 then do begin
+ @begin
+@buymanager
+  3
+  17
+  20
+  29
+  5
+  40
+  50
+  55
+  61
+  @end
+
+@if responce is 4 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @sellmanager
+  @end
+
+@if responce not 5 then goto WEAPONS
+@drawmap
+@update
+@end
+
+@#WINK1
+@if `p08 < 5 then do
+@begin
+@show
+`c
+  `4oDiN `2doesn't seem interested in your fluttering eyelashes.
+`\`k
+  `%Perhaps if you had more charm ?
+`\`k
+@do goto fin
+@end
+@if `p08 > 4 then do
+@begin
+@do `p01 + 525
+@show
+`c
+  `4oDiN `2smiles and winks at you !
+`\`k
+`\
+  `%You gain 525 experience points !
+`\`k
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 2
+@datasave npc/npc-`p70.idf &playernum `p29
+@do goto fin
+@end
+
+@#WINK2
+@if `p08 < 5 then do
+@begin
+@show
+`c
+  `#Hilda `2doesn't seem interested in your winking.
+`\`k
+  `%You lack the charm it seems.
+`\`k
+@do goto fin
+@end
+@if `p08 > 4 then do
+@begin
+@do `p01 + 525
+@show
+`c
+  `#Hilda `2smiles and winks at you !
+`\`k
+`\
+  `%You gain 525 experience points !
+`\`k
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 2
+@datasave npc/npc-`p70.idf &playernum `p29
+@do goto fin
+@end
+
+@#DINNER1
+@if `p08 < 10 then do
+@begin
+@show
+`c
+  `4oDiN `2refuses your invitation to dinner.
+`\`k
+  `%You lack the charm it seems.
+`\`k
+@do goto fin
+@end
+@if `p08 > 9 then do
+@begin
+@do `p01 + 750
+@show
+`c
+  `4oDiN `2accepts your invitation to dinner !
+`\`k
+  `2You eat dinner together and stare deep into each others eyes.
+`\`k
+  `%You gain 750 experience points !
+`\`k
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 3
+@datasave npc/npc-`p70.idf &playernum `p29
+@do goto fin
+@end
+
+@#DINNER2
+@if `p08 < 10 then do
+@begin
+@show
+`c
+  `#Hilda `2refuses your invitation to dinner.
+`\`k
+  `%Perhaps if you had more charm ? 
+`\`k
+@do goto fin
+@end
+@if `p08 > 9 then do
+@begin
+@do `p01 + 750
+@show
+`c
+  `#Hilda `2accepts your invitation to dinner.
+`\`k
+`\
+  `2You enjoy your dinner with `#Hilda`2, she asks you
+  to return tomorrow !
+`\`k
+`\
+  `%You gain 750 experience points !
+`\`k
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 3
+@datasave npc/npc-`p70.idf &playernum `p29
+@do goto fin
+@end
+
+@#WALK1
+@if `p08 < 15 then do
+@begin
+@show
+`c
+  `4oDin `2tells you that his leg is cramped.
+`\`k
+  `%If only you had more charm.
+`\`k
+@do goto fin
+@end
+@if `p08 > 14 then do
+@begin
+@do `p01 + 975
+@show
+`c
+  `4oDiN `2takes your hand in his and together you go out walking in the
+  moonlight. It is a beautiful night and you are overcome with desire
+  as he whispers sweet nothings in your ear.
+`\`k
+`\
+  `%You gain 975 experience points !
+`\`k
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 6
+@datasave npc/npc-`p70.idf &playernum `p29
+@do goto fin
+@end
+
+@#WALK2
+@if `p08 < 15 then do
+@begin
+@show
+`c
+  `#Hilda `2tells you her leg is cramped.
+`\`k
+  `%If only you had more charm.
+`\`k
+@do goto fin
+@end
+@if `p08 > 14 then do
+@begin
+@do `p01 + 975
+@show
+`c
+  `#Hilda `2accepts your invitation for a moonlit walk !
+`\`k
+  `2You walk around outside the Inn holding hands in the moonlight.
+  `#Hilda `2rests her head on your shoulder as you continue your
+  walk together.
+`\`k
+`\
+  `%You gain 975 experience points !
+`\`k
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 6
+@datasave npc/npc-`p70.idf &playernum `p29
+@do goto fin
+@end
+
+@#KISS1
+@if `p08 < 20 then do
+@begin
+@show
+`c
+  `4oDiN `2frowns and turns away as you try to embrace and kiss him.
+`\`k
+  `%You decide that you really do need more charm.
+`\`k
+  `4You lose 1 Hit Point
+`\`k
+@do goto fin
+@end
+@if `p08 > 19 then do
+@begin
+@do `p01 + 1129
+@show
+`c
+  `4oDiN `2returns your affections, you kiss and hug for what seems like
+  forever. He asks you to return tomorrow !
+`\`k
+`\
+  `%You gain 1129 experience points !
+`\`k
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 8
+@datasave npc/npc-`p70.idf &playernum `p29
+@do goto fin
+@end
+
+@#KISS2
+@if `p08 < 20 then do
+@begin
+@do `p03 - 1
+@show
+`c
+  `#Hilda `2pushes you away and `bslaps `2you silly !
+`\`k
+  `%You decide that you need more charm before you try that again.
+`\`k
+  `4You Lose 1 Hit Point 
+`\`k
+@do goto fin
+@end
+@if `p08 > 19 then do
+@begin
+@do `p01 + 1129
+@show
+`c
+  `2You show `#Hilda `2the finer points of making out !
+  She invites you to return tomorrow for some more fun.
+`\`k
+`\
+  `%You gain 1129 experience points !
+`\`k
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + 8
+@datasave npc/npc-`p70.idf &playernum `p29
+@do goto fin
+@end
+
+@#NOFLIRT
+@busy
+@do moveback
+@if sexmale is 1 then `s10 is `#Hilda
+@if sexmale is 0 then `s10 is `4oDiN
+@show
+`r0`c  
+
+  `2You notice that `s10 `2is busy talking to the InnKeeper.
+`\`k
+@do goto fin
+
+@#FLIRT
+@datanewday loki3.idf
+@dataload loki3.idf &playernum `p25
+@if `p25 = 1 then do
+@begin
+@do goto NOFLIRT
+@end
+@datasave loki3.idf &playernum 1
+
+@if sexmale = 0 then do
+@begin
+@do goto odin
+@end
+
+@if sexmale = 1 then do
+@begin
+@do goto hilda
+@end
+
+@#Odin
+@do `p70 is 61
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@show
+`r0`c  `r1 `%Flirting with `4oDiN `r0
+
+  `2You sit down on the stool next to the most handsome man you've
+  ever laid eyes on. He introduces himself as `4oDiN`2.
+
+  `0You decide to...
+`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Flutter your eyelashes at him
+Invite him to dinner
+Ask him to join you for a walk in the moonlight
+Embrace and Kiss him
+Get up and leave
+@if responce is 5 then do
+@begin
+@do goto fin
+@end
+@if responce is 1 then do
+@begin
+@do goto wink1
+@end
+@if responce is 2 then do
+@begin
+@do goto dinner1
+@end
+@if responce is 3 then do
+@begin
+@do goto walk1
+@end
+@if responce is 4 then do
+@begin
+@do goto kiss1
+@drawmap
+@update
+@end
+
+@#HILDA
+@do `p70 is 62
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@show
+`r0`c  `r1 `%Flirting with `#Hilda `r0
+
+  `2You sit down on the stool next to the most beautiful woman you've
+  ever laid eyes on. She introduces herself as `#Hilda`2.
+
+  `0You decide to....
+`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Wink at her
+Invite her to dinner
+Ask her to join you for a walk in the moonlight
+Embrace and Kiss her
+Get up and leave
+@if responce is 5 then do
+@begin
+@do goto fin
+@end
+@if responce is 1 then do
+@begin
+@do goto wink2
+@end
+@if responce is 2 then do
+@begin
+@do goto dinner2
+@end
+@if responce is 3 then do
+@begin
+@do goto walk2
+@end
+@if responce is 4 then do
+@begin
+@do goto kiss2
+@drawmap
+@update
+@end
+
+@#SEXMONEY
+@show
+`r0`c  `r1 Money before Sex Change `r0
+
+ `0"I'll change your sex for `$$50000 `0gold." `2the Innkeeper says
+`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 49999 Pay the InnKeeper
+<&money 50000 Leave because you can't afford it
+>&money 49999 I'm outta here
+@
+ @if responce is 1 then do 
+@begin
+@do money - 50000
+@do goto sexchange
+@end
+
+@do goto koshi
+
+@#NAMEMONEY
+@show
+`r0`c  `r1 Money before Name Change `r0
+
+ `0"I'll change your name for `$$250 `0gold." `2the Innkeeper says
+`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 249 Pay the InnKeeper
+<&money 250 Leave because you can't afford it
+>&money 249 No thanks
+@
+ @if responce is 1 then do 
+@begin
+@do money - 250
+@do goto changename
+@end
+
+@do goto koshi
+
+@#SEXCHANGE
+@show
+`r0`c  `r1 Sex Change `r0
+
+ `0"Normally I frown upon this sort of thing, but I do have a few
+ sharp knives and extra parts in the back room somewhere."
+
+ `0"So what sex do you want to be `%`n `0?"
+`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+I want to be a `!man
+Make me a `#woman
+I'll pass
+@if responce is 1 then sexmale is 1
+@if responce is 2 then sexmale is 0
+@if responce is 3 then do
+@begin
+@show
+`\
+ `0"You're a weird one, here is half of your money back !"
+
+ `2He hands you `$$250 `2gold.
+`\`k
+@do money + 250
+@do goto koshi
+@end
+@if sexmale is 1 then `s10 is `!Man
+@if sexmale is 0 then `s10 is `#Woman
+
+@show
+`r0`c  `r1 `%Your new sex is `^? `r0
+
+  `2After hours of painful surgery you emerge a `l.`l.`l.`l.`l.`l.`l.
+  `l.`l.`l.`l.`l.`l.`l.`l. `s10 `2!
+`\`k
+ `0"There you go `%`n `0! Enjoy your new sex."
+`\`k
+@if sex is 1 then `s09 is she
+@if sex is 0 then `s09 is he
+@do goto Koshi
+
+@#CHANGENAME
+@label namechange
+@show
+`r0`c  `r1 Name change `r0
+
+ `0"Ok `%`n`0, what do you want to change your name to?" `2the Innkeeper asks. 
+ 
+ 
+@do `v01 is 1
+@show
+
+@do write
+  `2You decide upon 
+  @do readstring 20 NIL
+  @do stripbad `s10
+  ; change dark blue to light blue in their name
+  @do replaceall `1 `! `s10
+  @do `p20 is length `s10
+  @if `p20 less 1 then do
+    @begin
+    @do move 20 y
+    @show
+`bNada `2.
+
+ `0"I thought you wanted to change your name, when you decide on a
+ name let me know."
+`\`k
+ `0"You're a strange one, here's half of your money back !"
+
+ `2The InnKeeper hands you `$$125 `2gold.
+`\`k
+    @do money + 125
+    @do goto koshi
+    @end
+
+
+
+  @if `p20 less 3 then do
+    @begin
+    @show
+
+
+ `0"The name you chose is too short, try again !"
+`\`k
+    @do goto namechange
+    @end
+
+   @if checkdupe `s10 true then do
+    @begin
+    @show
+
+
+ `0"I already know someone with that name, try again !"
+`\`k
+    @do goto namechange
+    @end
+   
+    @end
+
+  
+
+@show
+`\`\ `0"Are you sure you want to be known as `%`s10 `0?" `\
+@do write
+`x`x
+@choice
+Keep it
+Try again
+@if response is 2 then goto namechange
+@do copytoname
+@show
+`r0`c `r1 Your new name `r0
+
+ `0"You will now be known as `%`n`0 !" `2the Innkeeper exclaims. 
+`\`k
+@do goto koshi
+
+@#NOALIGN
+@show
+`r0`c  `r1 Chatting with InnKeeper `r0
+
+  `0"Come back tomorrow `%`n`0. I'm too busy to chat now."
+`\`k
+@do goto koshi
+
+@#KOSHI
+@do moveback
+@label keeper
+@show
+`r0`c  `r1 `%Koshi InnKeeper `r0
+
+  `2As the InnKeeper approaches you notice his wings, knowing right
+  away that he belongs to the "`$Good`2" race, the Koshi.
+
+  `0"Hello `%`n`0, what can I do for you today?" `2he says smiling. 
+`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Make conversation
+Ask about Loki's Inn
+Who is oDiN ?
+I want to change my name.
+Do you do Sex change operations?
+Conduct business
+Leave
+@if responce is 6 then do
+        @begin
+        @do `p20 is 11
+        @run getquest in quest.ref
+        @end
+@if responce is 7 then goto fin
+@if responce is 5 then goto sexmoney
+@if responce is 4 then goto namemoney
+@if responce is 3 then do
+@begin
+@show 
+`r0`c  `r1 Who is oDiN `r0
+
+ `0"You mean `4oDiN `0? Well he's some regular kind of guy with
+ way too much time on his hands. He built a place near Greentree
+ called "`$Quester`0" and another place near Porttown called "`$Odin's Keep`0."
+
+ "They say he's working on building a place called `$Valhalla`0,
+ I talked with him once, he kept mumbling something about webs or
+ we-bsi-te or something like that."
+
+ "Oh yea, he gave me his address it's kinda strange, didn't make much sense
+ to me. It is `$http://members.aol.com/odin706/title.html`0,strange huh?"
+
+ "His brother's name is `7Nemesis `0and has been seen starting to build
+ something around here." `2the Innkeeper informs.
+`\`k
+@do goto keeper
+@end
+
+@if responce is 2 then do
+@begin
+@show
+`r0`c  `r1 About Loki's Inn `r0
+
+ `0"Well now `%`n`0, there was this gangster that came along, he called
+ himself "`$The Gangster of Love`0" he put up the money for the Inn and a
+ man named `4oDiN `0built it."
+
+ "All of the rooms here are owned by private people. There are guards in
+ each room and from what I understand they won't allow any harm to come to
+ the owner of the room."
+
+ "Rooms `3101 - 109 `0are kinda small but each room has a spare bedroom.
+ Rooms `!110 - 118 `0are really super nice and each comes with it's own
+ majik transporter stone." 
+
+ "I hope I've answered any questions you may have had about the Inn."
+`\`k
+@do goto keeper
+@end
+
+@if responce is 1 then do
+@begin
+@datanewday loki1.idf
+@dataload loki1.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto NOALIGN
+@end
+
+@datasave loki1.idf &playernum 1
+
+  @show
+`r0`c  `r1 Chit Chat `r0
+
+ `0"I took this job hoping to help others in need." 
+
+ `0"Do you help others `%`n`0?" `2the Innkeeper asks.
+
+@do write
+`x`x
+@choice
+Yes as much as I can.
+I help others to an early Grave.
+@if responce is 1 then do
+@begin
+@do `p07 + 5
+@show      
+`r0`c
+       `0"Maybe this gift will help you continue helping others" `2he says.
+`\`k
+`\`\
+                          `%YOU GAIN `$5 `%ALIGNMENT
+`\`k
+@do goto keeper
+@end
+@if responce is 2 then do
+@begin
+@do `p07 - 5
+@show
+`r0`c
+                       `0"You are beyond hope `%`n`0."
+`\`k
+`\`\
+                           `4YOU LOSE `%5 `4ALIGNMENT
+`\`k
+@do goto keeper
+@end
+@end
+
+@#FIN
+@drawmap
+@update
+
+@#SIGN1
+@do moveback
+@busy
+@do saybar
+`%Welcome to Loki's Inn
+
+@#SIGN2
+@do moveback
+@busy
+@do saybar
+`%`^<---- `0Rooms 110 - 118    `$Rooms 101 - 109 `%`^---->
+
+
+@#SIGN3
+@do `p70 is 60
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+    @do `p20 random 10 1
+    @if `p20 is 1 then saybar
+`$Guard: `%oDiN is rumoured to visit this Inn often.
+  @if `p20 is 2 then saybar
+`$Guard: `%I'm taking a break from guarding a room here.
+  @if `p20 is 3 then saybar
+`$Guard: `%There is something behind this Inn.
+  @if `p20 is 4 then saybar
+`$Guard: `%I secretly hate this job.
+  @if `p20 is 5 then saybar
+`$Guard: `%Do you visit here often.
+  @if `p20 is 6 then saybar
+`$Guard: `%Have you visited Odin's Keep ?
+  @if `p20 is 7 then saybar
+`$Guard: `%I once worked as a spy for the Koshi.
+  @if `p20 is 8 then saybar
+`$Guard: `%Talk to the InnKeeper. He is very wise.
+  @if `p20 is 9 then saybar
+`$Guard: `%I completed a quest in Quester once..
+  @if `p20 is 10 then saybar
+`$Guard: `%I love to talk ! 
+@end
+@#NOMORE
+

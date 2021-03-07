@@ -1,0 +1,188 @@
+This file contains installation steps for Global Registries v1.xx
+
+***                                                     ***
+*** PLEASE READ THIS FILE, ESPECIALLY IF YOUR UPGRADING ***
+***                                                     ***
+
+If you are reading this file then you must have unzipped the release
+.zip file into a temporary directory which was empty prior to unzipping.
+
+Your next steps depends on whether or not this is a NEW installation.
+                                                   ===
+
+Note that you must be running the following version of Lord II:
+
+LORD II v1.01a
+
+If you are running Lord v1.00 then you must upgrade to the latest version
+or Lord II before you may install Global Registries.
+
+NEW INSTALLATION
+================
+
+For a new installation, you need to start off by printing out REGISTRY.DOC
+and following the instructions in this document on how to install Global
+Registries.
+
+UPGRADE INSTALLATION
+====================
+
+If you are upgrading from an earlier version of Global Registries then you have
+a few more steps which have to be made. Although you do NOT have to reset GR
+as part of the installation there are a few sysops who have expressed this as
+their plan.
+
+SYSOPS WHO ARE RESETTING  read this:
+========================
+
+Follow these steps to fully reset your game of Global Registires:
+
+<If you need these instructions email me over the Internet>
+                at: auzzi@bigfoot.com
+
+SYSOPS WHO ARE NOT RESETTING read this:
+=======================================
+
+SYSOPS WHO ARE UPGRADING FROM v1.09 ONLY! to ANY other VERSION
+============================= ===== +++++    ===       =======
+
+   There were major revisions done between v1.09 and all the other versions.
+   You *MUST* complete these steps if you are upgrading from v1.09 to any
+   other version.
+
+   Make sure you know which version your running now. If you don't know, load
+   Global Registries and look for the version number at the top of the Global
+   Registries menu.
+
+1) Take a full backup of all your LORD II files from your LORD II directory.
+2) Type REGISTRY in your Lord II directory to Uninstall the map. This is req
+   in this version because we changed a few minor things.
+3) Copy the file UPDATxxx.ZIP to your Lord II directory.
+4) Unzip UPDATxxx.ZIP answering YES to overwriting any files, if there are any.
+5) Type REGISTRY in your Lord II directory a second time to re-install the map.
+
+In LOGSTUFF.REF at the very end of the file find the code:
+
+@if `s01 is T then goto readlog
+
+ @routine warn_user in regadver.ref       <--- Delete this line!
+                                          <--- Delete this line!
+@#alldone
+
+6) Read MCODE.DOC. Make the code changes to REFULES.REF, ITEMS.REF and
+   GAMETXT.REF as outlined. It should take you less than 15min to complete
+   these changes. Please be ACCURATE with you changes. It will save you lots
+   of headaches in the long run. Also check and recheck your work. I have
+   tried to make my docs as easy to use as possible.
+
+7) The hardest part is over. Simply load Lord II, go into Global Registries and
+   the automatic update utility will run and install the latest version for you.
+8) Once the installation is complete verify the version number and installation
+   date has changed at the top of your Global Registries menu to the latest ver.
+9) Read the sysop release notes (GRSYSOP.RLN) for release information or type
+   ! to read the Sysop release notes online which is different from the release
+   notes the users can see.
+
+If you have any questions, please consult the Global Registries doc files
+(Registry.doc & Mcode.doc) or contact me at auzzi@bigfoot.com over the internet
+with your comments.
+
+
+SYSOPS WHO ARE UPGRADING FROM v1.10 or v1.11 to v1.12
+============================= =====    =====   =======
+   Make sure you know which version your running now. If you don't know, load
+   Global Registries and look for the version number at the top of the Global
+   Registries main menu.
+
+1) Take a full backup of all your LORD II files from your LORD II directory.
+2) Type REGISTRY in your Lord II directory to Uninstall the map. This is req
+   in this version because we changed a few minor things.
+2) Copy the file UPDATxxx.ZIP to your Lord II directory.
+3) Unzip UPDATxxx.ZIP answering YES to overwriting any files, if there are any.
+5) Type REGISTRY in your Lord II directory a second time to re-install the map.
+
+In LOGSTUFF.REF at the very end of the file find the code:
+
+@if `s01 is T then goto readlog
+                                   This routine has been moved elsewhere so
+@if dead is 0 then do                     <--- Delete this line!
+ @begin                                   <--- Delete this line!
+ @routine warn_user in regadver.ref       <--- Delete this line!
+ @end                                     <--- Delete this line!
+                                          <--- Delete this line!
+@#alldone
+
+
+This routine should end up looking like this
+
+@if `s01 is T then goto readlog
+
+@#alldone
+
+
+In GAMETXT.REF near the end of the file find the code:
+
+** This is the code we deleted from LOGSTUFF.REF and moved here **
+
+  @if x < 1 then x is 27
+  @if y < 1 then y is 7
+  @if x > 80 then x is 27
+  @if y > 24 then y is 7
+
+  @show
+  `k
+  @do talk `0`n`x`2has`xentered`xthe`xrealm. all
+
+  @routine readlog in logstuff.ref
+
+  ;do end routines here
+  @#endgame
+  @do talk `0`n`x`2has`xleft. all
+  @if dead is 0 then do
+   @begin
+   @do move 1 24
+   @show
+
+ Change it to:
+
+  @if x < 1 then x is 27
+  @if y < 1 then y is 7
+  @if x > 80 then x is 27
+  @if y > 24 then y is 7
+
+  @show
+  `k
+  @do talk `0`n`x`2has`xentered`xthe`xrealm. all
+
+  @routine readlog in logstuff.ref
+
+  @if dead is 0 then do                              <--- Add this line
+   @begin                                            <--- Add this line
+   @routine warn_user in regadver.ref                <--- Add this line
+  @end                                               <--- Add this line
+
+  ;do end routines here
+  @#endgame
+  @do talk `0`n`x`2has`xleft. all
+  @if dead is 0 then do
+   @begin
+   @do move 1 24
+   @show
+
+6) You shouldn't need to change anything else. If you wish though, you may
+   want to read MCODE.DOC. It's a new revised version (SIMPLIFIED CODE CHGS)
+   to our origional docs. Its less reading and way less coding changes. As
+   I said no other code changes is needed to go from v1.10 --> v1.12.
+
+7) Load Lord II, go into Global Registries and the automatic upgrade utility
+   will run and install the latest version for you.
+8) Check the version number and file date has changed at the top of your GR
+   menu to the latest version.
+9) Read the sysop release notes (GRSYSOP.RLN) for release information or type
+   ! to read the Sysop release note online which is different from the release
+   notes the users can see.
+
+If you have any questions, please consult the Global Registries docs file
+(registry.doc) or go to my Web Page http://home.att.net/~aussie.mfreeman/
+home.htm and email me directly.
+

@@ -1,0 +1,461 @@
+              ณ
+Û฿Û           ณ
+ฐฒฐ           ณ
+ฑฑฑ    egend  ณ
+ฒฐฒ ÜÜÜ       ณ
+ÛÜÛÜÛÜÛ       ณ
+              ณ
+Û฿Û฿Û฿Û       ณ
+ฐฒฐ ฐฒฐ       ณ
+ฑฑฑ ฑฑฑ       ณ
+ฒฐฒ ฒฐฒ       ณ
+ÛÜÛÜÛÜÛ       ณ
+              ณ
+Û฿Û฿Û฿Ü       ณLORD 2 (Legend of the Red Dragon) is a multi-player battle game
+ฐฒฐ ฐฒฐ       ณ            created for Bulletin Board Systems (BBS).
+ฑฑฑ฿฿ฑÜ ed    ณ
+ฒฐฒ  ฒฐฒ      ณ         (c) Copyright 1997: Robinson Technologies, Inc.
+ÛÜÛ  ÛÜÛ      ณ                      All rights reserved.
+              ณ
+Û฿Û฿฿ÛÜ       ณ                 Written By: Seth Able Robinson
+ฐฒฐ  ฐฒฐ      ณ                       Compiled 7/6/97                                      
+ฑฑฑ  ฑฑฑragon ณ
+ฒฐฒ  ฒฐฒ      ณ                        Seth A. Robinson
+ÛÜÛÜÜÛ฿  II   ณ                            761 E St
+              ณ                     Independence, OR  97351
+ New World    ณ
+              ณ                        The Darkside BBS
+  V1.01a      ณ                         (503) 838-6171
+              ณ
+              ณ                
+              ณ                       WWW: www.rtsoft.com                        
+              ณ                     Email: sethable@rtsoft.com
+              ณ                  
+              ณ      This archive may be shared with all, in its unmodified
+              ณ                        shareware format.
+              ณ
+              ณ
+              ณ
+              ณ      TEXT FILES INCLUDED:
+              ณ
+              ณ      REGISTER.DOC <- Info on buying this product
+              ณ      REFHELP.DOC  <- Info on the .REF scripting language
+              ณ      SYSOP.DOC    <- Setting it up and general info
+              ณ      3RDPARTY.DOC <- Tips and help and the structures
+              ณ      IGM.DOC      <- How to make an IGM for LORD2 easy.  
+              ณ      LORDAD.ANS   <- Ansi ad for your BBS if you want it
+              ณ      COMPILE.DOC  <- How to compile your .ref's
+              ณ
+              ณ
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Index ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+                      Part 1 -=-=-  Introduction and description
+                      Part 2 -=-=-  Setup locally or with a BBS
+                      Part 3 -=-=-  Common Questions & Answers
+                      Part 4 -=-=-  Acknowledgements
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Introduction ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Most of you know what LORD is - a BBS door over 8 years old I originally
+wrote on a Commodore Amiga.  It was funny and strange and did very well.
+
+This is the sequel - some will be suprised to find it plays completly
+different, although it contains many of the same characters.
+
+Here is why:
+
+   This game is FREAKIN' huge.
+
+   It is a large zelda type world that lets players roam about as enemies or
+   friends.
+
+The entire game runs under a nifty engine - this gaming engine is what
+is special - it allows people run walk around in the same world.  It uses
+clock based timing to communicate by HD through tiny, tiny files.  For
+instance, the locations of all players are in one tiny file.
+
+This tiny file is read and written very quickly using advanced file
+locking techniques.  It is recommended you use a disk cache such as
+Smartdrv.exe or things will run entirely too slow.
+
+The engine is smart enough to NOT draw every single movement other players
+are making - if a player is moving quickly, it will still draw him at the
+same rate, making the game playable, even at 2400 baud.  And of course,
+the engine will not redraw players unless they have moved.
+
+You can CHANGE how quicky it 'polls' the HD from the Game Options in
+L2CFG.EXE.  (100 is one second, which is standard.  Set to 50 to poll
+twice as fast, player movement will be more acurate, but require more
+computer muscle)
+
+  Some of LORD2 many features:
+
+  * It's an ANSI graphical MUD
+  * It gives a new meaning to the word multi-player
+  * People can SEE other people moving around the map in realtime
+  * People can travel in packs, follow each other around, show people
+    hidden stuff, ect
+  * Players can pickup/buy/sell and use items
+  * Smart data recovery after dropped carriers and even lockups.
+  * Swear checking
+  * Players can GIVE items/money to other players offline or online
+  * Players can 1 on 1 chat in realtime, or use globals so everyone can see
+  * NPC's can travel with you (sort of), and you can talk to them
+  * It is possible to do things like buy a castle or hold and live in it!
+  * IGM support with drop in maps
+  * A huge and interesting world filled with lots of story and uniqueness
+  * Sort of sick and twisted
+  * Regular and adventure mode (unlimited lives, no turn limits)
+  * Turns per day, clean mode and more can be set by editting RULES.REF with
+    a text editor
+  * Unlimited worlds and quests can be added, either by you or you can
+    download other peoples work
+  * Creates bulletin outputs as SCORE.ANS and SCORE.TXT each time someone
+    'lists players'.
+  * 1000 levels
+  * Only $15 to register
+
+  Features creative people with time would be interested in:
+
+  * Complete easy to use map editor, up to 2 million locations
+  * LORD II's innards are completely built with the the .REF system, this
+    means you can edit them in any way you want
+  * The RTREADER .REF system has had a major overhaul and is inside the engine
+  * Item editor
+  * Add as many quests and characters as you want
+  * EVERYTHING can be changed, even the player ranking format or stat screen
+  * You can distribute your own 'world' to other LORD II users
+  * You could make your own addon pack that is a different game completely
+    (get 'The Brady Bunch Adventure' from somewhere, it is an example of
+    what this .ref system can do working as a whole different game)
+
+
+  Until you register, you can only access only a small portion of the game.
+
+  (this file contains the registered version too, you can unlock it by
+  purchasing a registration code - in minutes over the phone even!)
+
+  REGISTERED FEATURES:
+
+   * Can use more items, weapons and armour.
+   * Over 300 new map screens
+   * Will work with larger IGM's
+   * PortTown
+   * Flagcity
+   * Sosen Village
+   * Arrisville
+   * Quest2000 random quest engine
+   * The Lodge
+   * Bounty hunting, players and NPC bounty hunters
+   * Slots and craps at the Bonetown casino
+   * Several brothels, woo! (unless in clean mode)
+   * Game can be won 2 ways, good and evil.  Or even both...
+   * When someone wins, the game is NOT reset - instead they get special
+     powers and can continue to rule the game
+   * Polar regions, mountain areas, ect.
+   * Sleep at many different inns
+   * 4 ownable landmarks some with special abilities - unregistered only
+     one.
+   * All future upgrades to DOS LORD2: New World will be FREE for you!
+   * Everyone will be mailed a hardcopy with their code on it for safe
+     keeping
+   * You'll be supporting shareware - this means we will love you, and
+     will keep adding to the game.
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Setup ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+*****NOTE:  To change rule settings for LORD2 (including TURNS PER DAY), you
+            must edit the RULES.REF file with a text editor.
+            
+
+Ok - First you will want to know what the game looks like and if it works.
+
+Here is how to play it locally:
+
+From DOS type:
+
+LORD2
+
+That is it.  It will give you the name of SYSOP automatically.
+
+To test it out multinode locally under Win95, DV or OS/2:
+
+Open a window and run "LORD2", get into the game.
+
+Open ANOTHER window and run "LORD2 /L", this will prompt you for
+your name.  (allowing you to make a new character)
+
+Once in the game, you should see the second character pop up on the
+first guys screen.  You are now enjoying truly multinode movement!
+
+It is possible to play a game with friends over a LAN, as long as
+everyone can play from the same guys drive, it will work.
+
+To set it up for your BBS:
+
+Well, if you've ever set up LORD or Planets: TEOS, this will be a
+breeze!  The setup is identical.
+
+STEP 1:
+
+Run L2CFG.EXE.  Choose the (S)etup nodes option.  There is an option
+to copy the settings from LORD or TEOS if you already have those
+installed.
+
+STEP 2:
+
+Edit the LORD2.BAT file.  At the top, change the cd statements to reflect
+where the LORD2 files are located.  (we want to move to the LORD2 dir
+before running the game)
+
+STEP 3:
+
+Have you BBS run:
+
+CALL LORD2 <node number> (ie:  "CALL LORD2 1" for node 1)
+
+For multiplayer interaction to work properly, make sure each player is
+on a DIFFERENT node #.  (Don't do "call lord2 1" for all nodes, actually
+it would probably work ok now that I think about it...)
+
+***** How to trouble shoot a problem ******
+
+When LORD2 starts, it shows the comport, fossil driver info ect - if
+you hit Pause right when LORD2 starts, you can make it stop so you can
+compare it to your system and make sure LORD2's setup is correct.
+
+(it doesn't show this screen remotely)
+
+***** About the CALL statement *****
+
+If you run it like this:
+
+CALL LORD2
+
+And forget the 1 as a parm, it will run as node 0 which is by default,
+locally.  So if it keeps coming up in local move, this is probably why.
+
+If you run it like this:
+
+LORD2 1
+
+And after LORD2 is played and the user quits, it stops at a DOS prompt,
+this is because you need word CALL in front.  This will allow it to
+be called from a batch file and RETURN when it is done.  
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Common Questions & Answers ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Q:  What is the RULES.REF file for?
+
+A:  This is VERY important - if you wish to see what settings can be
+    changed in LORD 2, edit this file.  It's self explanatory but we'll
+    go over it anyway.
+
+Q:  What is adventure mode?
+
+A:  It means your callers can CONTINUE to play after they are 'killed'.
+    (instead of having to wait until the next day)
+
+    Edit the RULES.REF file, you will see where to change the 0 to 1 to
+    activate this mode.
+
+Q:  What are 'turns per day'?
+
+A:  Changing this lets you set how many 'movements' a person can do a
+    day.  We've defaulted it to 3000.  6000 would mean they can play
+    twice as long.  Setting it to 0 means NO LIMITS at all.
+
+Q:  I've been playing locally and I want it to be the 'next day' and I am
+    tired of changing the date!
+
+A:  Heh, ok.. Add /MAINT to the command line when you play, it will cause
+    it to advance a day.
+
+Q:  I tried to play and it said "Someone is attacking you/giving you an
+    item, try again later." but no one is?? What's up!??!
+
+A:  On rare occasions LORD2 will make a mistake due to a crash or runtime
+    error - it will automatically fix this 60 minutes from when it happened,
+    just wait until then.  Or run ALLOFF.EXE, this will tell LORD no one
+    is logged on, therby fixing the problem.
+
+Q:  I noticed Swear Patrol is on.  But I love swearing!! How can I turn
+    it off?
+
+A:  Easy.. Same as LORD.  Delete the BADWORDS.DAT file or edit it to your
+    liking.
+
+Q:  How come I don't see an intro screen when I play with an (E)nter the
+    realm option like LORD and all the LORD clones?
+
+A:  This isn't a LORD clone.  As soon as the door is run, the 'adventure'
+    begins.  I'm sorry it's unorthodox, but I kinda like it.  If you REALLY
+    need an 'intro screen' you could easily add one - put it in the rules
+    ini, it is run before the game starts.
+
+Q:  I know LORD2 is incredible in how it can allow you to see other real
+    people moving and all, but really, how many people could it support
+    at once?
+
+A:  Good question.  It communicates entirely through a complicated
+    process of file locking, it depends on how fast your HD is, how
+    well it is caches and such.
+
+    Running over a network will work, although it will slow it down
+    a bit.
+
+    I have not done many tests, but if things are too slow, like you have 6
+    people in and it is unplayably slow, then you will want to change
+    the poll rate to 500 for read and write, this way it will only update
+    every 5 seconds, thereby requiring much less disk access. 
+
+    Setting the poll time to something really high effectivly turns off
+    most communication - it will still play multinode fine and fast, but
+    players will not see other players moving around.  (But it will keep
+    track of who can attack and such, so it would work ok)
+
+Q:  I already registered LORD, so I get LORD2 for free, right?
+
+A:  No.  LORD2 is all new code and an all new game.  For this reason, I
+    am charging for it seperately, at what I believe is a very fair price!
+
+Q:  Yeah..  Um, I kinda like LORD2 and wanna buy it, can I buy 2 for $20
+    like with LORD?  
+
+A:  No.  No volume discounts are available.   (sorry!)
+
+Q:  You make a lot of sexual allusions to goats.  Why?
+
+A:  Goats are people too. ;>
+
+Q:  Why the hell are you still making ansi games?  Why not internet winsock
+    compliant client/terminal games?
+
+A:  I'm a loser! Nah, I really like BBS's and the thought of local people
+    getting together to game in the same world.
+
+    Remember - the most important part of a game isn't the graphics and
+    sound.. it's the game.
+
+    This is my last contribution to the BBS world!!
+
+Q:  What is the real story behind New World?
+
+A:
+
+I promised a game called "New World" a few years ago, I even put an add into
+LORD for it.  At the time, it was half done - it was a futuristic game
+that let you join a colonizing ship to go to a new world, and eventually
+Earth is destroyed for some reason and this little colony is all that is
+left.
+
+Alien artifacts are found and sold, you basically walked around and
+stuff, including flirting with this Natasha chick.
+
+BUT:  I got bored and quit working on it.  I don't know, I got bored and
+quit working on everything.
+
+Two months ago I got an ever so familiar email saying "Where is New World?
+I saw an add for it years ago!" and I snapped.  I said "Gawd damn it!! I
+better finish this friggin game!!!" so I starting working on it.
+
+A week later I renamed it to LORD II: New World.  Viola!  I got to work
+with characters I liked in a world I liked and I also got to use
+the "New World" engine (although I ended up changing it quite a bit) and be
+true to my promise.
+
+I'm probably gonna put up the unfinished New World game up for download
+sometime in the 'Nostalgia' dir just so people could see what it would
+have been like...
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Acknowledgements ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Special thanks to the RTSoft staff:
+
+  Seth A. Robinson
+  Greg Smith
+  Sean Teal
+  Justin Martin
+  Kurt Kim
+  Dan Oliver
+
+  About Greg Smith - he is a 19 year old college student who gamed with us
+  regularly.  He started helping me make map screens for LORD2 - often.  Then
+  one day he showed up with a brand new (and lavish) chair.  He then become
+  a permanent fixture around here!! He is working VC++ stuff too. 
+
+  He did ALL of the ANSI maps for the northern continent and most left of
+  Porttown.  Without him the map would have been a LOT smaller!!!
+
+  About Sean Teal -  Ok, he actually likes his named spelled Shawn but it is
+  fun to give him a hard time.  He handles a LOT of the day to day operations
+  around here including going through ALL email before I do and helping
+  people get their reg codes.  He programs too!! He's 23.
+
+  Justin Martin - Ok, he really didn't help with this project, but he is
+  our artist and has been working VERY hard on our new game Dink Smallwood.
+  Oh - did our LORD poster too! He's 24.
+
+  Kurt Kim - He didn't help much either, but watch for him, natural talent
+  like his is very rare.  He's 17.
+
+  Dan Oliver - You may know him from the TEOS IGM 'Hippy Van', but he
+  actually is working with me with Directx VC++ programming for new games,
+  watch for his!!!  He's 18.
+
+  Seth A. Robinson - I provide the electricity, moniters, keyboards and
+  mice.  They bring their boxes and plug in!  I am also the project
+  cordinator.  Recently I bought a building for us to work in, it has
+  always been my dream to work with a talented group such as this, I know
+  we will create great things. I'm 22.
+
+And some others:
+
+Jesse Barfknecht:  Helped to goof off.
+Chris Navilio: He rocks!
+My family:  For everything.  And for helping me move into my new house!!!
+
+** MASTER BETA TESTERS **
+
+Trevor Lemon
+Neal Pearson
+valtane@digitaledge.com
+Jeremy Stewart
+Ben Tiefert
+Gangsta 'o love
+Joe Orsborn
+Adam Smith
+Dr Feelgood
+Elliott Goodman
+
+I feel like I owe so much to this people - most are skilling programmers
+too and are also creating there own masterpieces, so I doubly appreciate
+the time they took to help me with mine.   I will gladly do the same for
+any of them!
+
+Hundreds of others deserve to be listed here too, I recieved THOUSANDS of
+bug reports about LORD2 - I really appreciate it!!!  It would be SOO
+buggy without you guys!!!
+
+Mulaware; Copyright 1992, ABSoft - ALL RIGHTS RESERVED
+Turbo Pascal is a registered trademark of Borland International
+Windows is a registered trademark of Microsoft Corporation
+OS/2 is a registered trademark of IBM Corporation
+MS-DOS is a registered trademark of Microsoft Corporation
+RIPterm, RIPscrip, RIPaint, the RIPterm logo, TeleGrafix Communications.
+
+All other programs are copyright and/or trademarked by their respective author
+unless otherwise noted.

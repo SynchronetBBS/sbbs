@@ -1,0 +1,1444 @@
+; Script file QFORTRES.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE myhome 000001593
+@DECLARE potions 000001863
+@DECLARE postart 000001917
+@DECLARE qitems 000002217
+@DECLARE qistart 000002271
+@DECLARE supplies 000002570
+@DECLARE sustart 000002624
+@DECLARE waitress 000002936
+@DECLARE waitstart 000003170
+@DECLARE bar 000006220
+@DECLARE barstart 000006478
+@DECLARE ssign 000009544
+@DECLARE msign 000009601
+@DECLARE isign 000009660
+@DECLARE osign 000009737
+@DECLARE bsign 000009813
+@DECLARE tsign 000009919
+@DECLARE door 000010003
+@DECLARE f1 000010050
+@DECLARE fg1 000010143
+@DECLARE fg2 000010228
+@DECLARE as1 000010309
+@DECLARE as2 000010387
+@DECLARE a1 000010452
+@DECLARE a2 000010536
+@DECLARE a3 000010619
+@DECLARE a4 000010700
+@DECLARE a5 000010785
+@DECLARE a6 000010870
+@DECLARE hsign 000010955
+@DECLARE sea1 000011022
+@DECLARE sea2 000011092
+@DECLARE sea3 000011183
+@DECLARE sea4 000011241
+@DECLARE s1 000011321
+@DECLARE s2 000011400
+@DECLARE s3 000011479
+@DECLARE s4 000011536
+@DECLARE s5 000011609
+@DECLARE s6 000011669
+@DECLARE s7 000011803
+@DECLARE armour 000011900
+@DECLARE arstart 000011954
+@DECLARE weapons 000012287
+@DECLARE westart 000012341
+@DECLARE mybank 000012724
+@DECLARE stables 000015515
+@DECLARE stabletop 000015590
+@DECLARE sea 000018372
+@DECLARE healer 000019437
+@DECLARE doorguard 000019647
+@DECLARE startg 000019676
+@DECLARE sign 000023144
+@DECLARE enter 000023448
+@DECLARE done 000024791
+@DECLARE letmein 000026718
+@DECLARE done 000026797
+@NOCHECK
+; End of .REF index
+
+@#myhome
+@do moveback
+@Do saybar
+`%Make `#Q-Fortress `%your home? `8<`7y/N`8> :
+@do readspecial `s02 NY
+@if `s02 is Y then do
+        @begin
+        @do `p69 is 24
+        @do saybar
+  `#Q-Fortress `%is now your registered home.
+        @end
+@closescript
+
+@#potions
+@offmap
+@do moveback
+@do `v01 is 1
+@label postart
+@show
+`r0`c  `%Potion Shop
+
+`2  Better buy some potions before you leave here.
+
+@do write
+`x`x
+@choice
+View Potions
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+  5
+  40
+  55
+  @end
+
+@if response not 2 then goto postart
+@drawmap
+@update
+
+
+@#Qitems
+@offmap
+@do moveback
+@do `v01 is 1
+@label qistart
+@show
+`r0`c  `%Exotic Items
+
+`2  The items here are strange and wierd.
+
+@do write
+`x`x
+@choice
+View Items
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+  17
+  50
+  61
+  51
+  @end
+
+@if response not 2 then goto qistart
+@drawmap
+@update
+
+
+@#Supplies
+@offmap
+@do moveback
+@do `v01 is 1
+@label sustart
+@show
+`r0`c  `%Castle Supplies
+
+`2  Here you can prepare for a long journey.
+
+@do write
+`x`x
+@choice
+View Supplies
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+  1
+  3
+  43
+  20
+  28
+  @end
+
+@if response not 2 then goto sustart
+@drawmap
+@update
+
+
+@#waitress
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c`%  `r1Q's Bar `r0
+
+`2  You take a seat at the nearest table.
+
+`k  After about 5 minutes a the waitress approches you.
+
+`k  "What'll it be"? she asks.
+
+`k
+
+@label waitstart
+@show
+`r0`c`%  `r1 Time to get loaded! `r0
+
+`2  The waitress impatiently waits for your order.
+
+@do write
+`x`x
+@choice
+View Drinks
+Order a Drink
+Leave
+@
+
+@if responce is 1 then do
+ @begin
+ @show
+`r0`c  `%Q's Bar!
+
+  `2The waitress hands you a menu so you can view the drinks.
+
+`k  `2Water (`0$1`2)
+
+  `2What a rip! All this is is moat water!
+
+  `2Beer (`0$5`2)
+
+  `2This is rumored to be the finest beer in all the land!
+
+  `2Wizzard Piss (`0$10`2)
+
+  `2Now you to can have the mystical abilities of a wizard, its probably
+  not gonna work though!
+
+  `2Hard Liquor (`0$25`2)
+
+  `2After smelling a sample you realize its the same stuff burning in the
+  oil lamps!
+
+`k
+@do goto waitstart
+ @end
+
+ @if response is 2 then do
+    @begin
+    @do write
+`\`\  `2What do you want?  (`0You have `$&money`2)`\`\`x`x
+   @do `v01 is 1
+   @choice
+Water ($1)
+Beer  ($5)
+Wizard Piss ($10)
+Hard Liquor  ($25)
+Leave
+@
+
+  @if response is 1 then do
+   @begin
+   @if money < 1 then do
+     @begin
+     @show
+`\`\ `4Whats your problem, You can't afford this!`\`\`k
+     @do `v01 is 2
+     @do goto waitstart
+     @end
+   @do money - 1
+   @show
+`r0`c  `r1  Drink it!  `r0`\`\  `2The waitress comes back with a mug of water,
+  and you guzzle it down.
+`\`k  `2Whoa, for moat water it sure is refreshing.
+`\`k
+    @end
+
+  @if response is 2 then do
+   @begin
+   @if money < 5 then do
+     @begin
+     @show
+`\`\ `4Whats your problem, You can't afford this!`\`\`k
+     @do `v01 is 2
+     @do goto waitstart
+     @end
+   @do money - 5
+   @show
+`r0`c  `r1  Drink it! `r0`\`\  `2The waitress brings you your beer.
+`\  This fine quality imported beer smells great!
+`\`k  `2You quickly polish it off and want to order more!
+`\`k
+    @do `p96 + 2
+    @end
+
+  @if response is 3 then do
+   @begin
+   @if money < 10 then do
+     @begin
+     @show
+`\`\  `4Ha Ha, that's sad you can't even afford the piss water!`\`\`k
+      @do `v01 is 2
+      @do goto waitstart
+      @end
+    @do money - 10
+    @show
+`r0`c  `r1  OH BOY!  `r0`\`\  `2The waitress brings out your drink.
+`\  You carefully inspect the drink.
+`\`k  `2It doesn't look like piss.
+`\`k  `2It doesn't smell like it either.
+`\`k  `2You chug it down without a second thought...
+`\`k  `2DAMN!  That's pretty good!
+`\`k
+    @do `p96 + 6
+    @end
+
+  @if response is 4 then do 
+   @begin
+   @if money < 25 then do
+     @begin
+     @show
+`\`\  `4Get outa my face, you can't afford this!.`\`\`k
+      @do `v01 is 2
+      @do goto waitstart
+      @end
+    @do money - 25
+    @show
+`r0`c  `r1  Here ya go! `r0`\`\  `2The waitress gives you the glass.
+`\  After smelling it again you are more confident this is what they're
+  burning in the oil lamps!
+`\`k  `2But you already paid for it so...
+`\`k  `2Wow, for lamp oil it ain't half bad!
+`\`k
+      @do `p96 + 10
+      @do `v01 is 3
+      @do goto waitstart
+    @end
+
+      @do `v01 is 2
+      @do goto waitstart
+    @end
+
+@drawmap
+@update
+
+@#bar
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c`%  `r1Q's Bar `r0
+
+`2  You grab the nearest bar stool and wait for service.
+
+`k  After about 5 minutes an old fat hairy guy approches you.
+
+`k  "What's your poison"? He asks.
+
+`k
+
+@label barstart
+@show
+`r0`c`%  `r1 Time to get loaded! `r0
+
+`2  The bar tender impatiently waits for your order.
+
+@do write
+`x`x
+@choice
+View Drinks
+Order a Drink
+Leave
+@
+
+@if responce is 1 then do
+ @begin
+ @show
+`r0`c  `%Q's Bar!
+
+  `2While the bar tender is turned away scratching himself you look
+  at the labels.
+
+`k  `2Water (`0$1`2)
+
+  `2What a rip all this is is moat water!
+
+  `2Beer (`0$5`2)
+
+  `2This is rumored to be the finest beer in all the land!
+
+  `2Wizzard Piss (`0$10`2)
+
+  `2Now you to can have the mystical abilities of a wizard, its probably
+  not gonna work though!
+
+  `2Hard Liquor (`0$25`2)
+
+  `2After smelling a sample you realize its the same stuff burning in the
+  oil lamps!
+
+`k
+@do goto barstart
+ @end
+
+ @if response is 2 then do
+    @begin
+    @do write
+`\`\  `2What do you want?  (`0You have `$&money`2)`\`\`x`x
+   @do `v01 is 1
+   @choice
+Water ($1)
+Beer  ($5)
+Wizard Piss ($10)
+Hard Liquor  ($25)
+Leave
+@
+
+  @if response is 1 then do
+   @begin
+   @if money < 1 then do
+     @begin
+     @show
+`\`\ `4Whats your problem, You can't afford this!`\`\`k
+     @do `v01 is 2
+     @do goto barstart
+     @end
+   @do money - 1
+   @show
+`r0`c  `r1  Drink it!  `r0`\`\  `2The bar tender fills up the mug, and you
+  guzzle it down.
+`\`k  `2Whoa, for moat water it sure is refreshing.
+`\`k
+    @end
+
+  @if response is 2 then do
+   @begin
+   @if money < 5 then do
+     @begin
+     @show
+`\`\ `4Whats your problem, You can't afford this!`\`\`k
+     @do `v01 is 2
+     @do goto barstart
+     @end
+   @do money - 5
+   @show
+`r0`c  `r1  Drink it! `r0`\`\  `2The bar tender brings you your beer.
+`\  This fine quality imported beer smells great!
+`\`k  `2You quickly polish it off and want to order more!
+`\`k
+    @do `p96 + 2
+    @end
+
+  @if response is 3 then do
+   @begin
+   @if money < 10 then do
+     @begin
+     @show
+`\`\  `4Ha Ha, that's sad you can't even afford my piss water!`\`\`k
+      @do `v01 is 2
+      @do goto barstart
+      @end
+    @do money - 10
+    @show
+`r0`c  `r1  OH BOY!  `r0`\`\  `2The bar tender brings out your drink.
+`\  You carefully inspect the drink.
+`\`k  `2It doesn't look like piss.
+`\`k  `2It doesn't smell like it either.
+`\`k  `2You chug it down without a second thought...
+`\`k  `2DAMN!  That's pretty good!
+`\`k
+    @do `p96 + 6
+    @end
+
+  @if response is 4 then do 
+   @begin
+   @if money < 25 then do
+     @begin
+     @show
+`\`\  `4Get outa my face, you can't afford this!.`\`\`k
+      @do `v01 is is 2
+      @do goto barstart
+      @end
+    @do money - 25
+    @show
+`r0`c  `r1  Here ya go! `r0`\`\  `2The bar tender gives you the glass.
+`\  After smelling it again you are more confident this is what they're
+  burning in the oil lamps!
+`\`k  `2But you already paid for it so...
+`\`k  `2Wow, for lamp oil it ain't half bad!
+`\`k
+      @do `p96 + 10
+      @do `v01 is 3
+      @do goto barstart
+    @end
+
+      @do `v01 is 2
+      @do goto barstart
+    @end
+
+@drawmap
+@update
+
+@#ssign
+@do moveback
+@do saybar
+`0Team Inn  ----->
+
+@#msign
+@do moveback
+@do saybar
+`0<-----  Team Vault
+
+@#isign
+@do moveback
+@do saybar
+`4Doorguard`0: What are you lookin at!
+
+@#osign
+@do moveback
+@do saybar
+`4Doorguard`0: Go away kid, I'm busy!
+
+@#bsign
+@do moveback
+@do saybar
+`#Waitress: `0Go ahead and take a seat, I'll be with ya in a sec.
+
+
+@#tsign
+@do moveback
+@do saybar
+`0Please observe our imported northern trees. 
+
+@#door
+ @do saybar
+ `0The Door Opens
+ @end
+
+@#F1
+ @do saybar
+ `4This place is like an oven! There are hot coals everywhere!
+ @end
+
+@#FG1
+@do moveback
+@do saybar
+`4OUCH! I BURNED MY HAND BECAUSE OF YOU!!!
+@end
+
+@#FG2
+@do moveback
+@do saybar
+`4GET OUTA HERE KID ITS TO HOT FOR YA!
+@end
+
+@#AS1
+@do moveback
+@do saybar
+`0Feel free to browse our displays.
+@end
+
+@#AS2
+@do saybar
+`0For some reason you feel safe here.
+@end
+
+@#A1
+@do moveback
+@do saybar
+`0Heavy Coat: Beautiful craftmanship! (+2)
+@end
+
+@#A2
+@do moveback
+@do saybar
+`0Leather Vest: Tough leather, nice. (+4)
+@end
+
+@#A3
+@do moveback
+@do saybar
+`0Chain Mail: Rugged construction. (+8)
+@end
+
+@#A4
+@do moveback
+@do saybar
+`0Plate Mail: Wow, prefection exists! (+15)
+@end
+
+@#A5
+@do moveback
+@do saybar
+`0Skull Helmet: Kind of scary lookin. (+20)
+@end
+
+@#A6
+@do moveback
+@do saybar
+`0Spiked Shirt: Keeps people away. (+30)
+@end
+
+@#hsign
+ @do moveback
+ @do saybar
+ `0<----  To Healers
+ @end
+
+@#sea1
+ @do saybar
+ `0The stairs seem to go down forever!
+ @end
+
+@#sea2
+ @do saybar
+ `0It must have taken years for the sea to carve this cave.
+ @end
+
+@#sea3
+ @do saybar
+ `0WOW, THAT CAVE IS HUGE!
+ @end
+
+@#sea4
+ @do moveback
+ @do saybar
+ `4DANGER! `0NO SWIMMING NEAR CAVE!
+ @end
+
+@#s1
+ @do saybar
+ `0Whew! This must be where they keep the horses!
+ @end
+
+@#s2
+ @do moveback
+ @do saybar
+ `0EEEWWWWW!!!! Its even steaming!
+ @end
+
+@#s3
+ @do saybar
+ `0DAMN! It stinks in here!
+ @end
+
+@#s4
+ @do moveback
+ @do saybar
+ `0AAHHH-CHOOOO! Stupid hay!
+ @end
+
+@#s5
+ @do moveback
+ @do saybar
+ `0Yummy, Oats!
+ @end
+
+@#s6
+ @do moveback
+ @do saybar
+ `0Mmmmm, Nothin like a big gulp of trough water! `%(You feel better.)
+ @do `p02 is `p03
+ @end
+
+@#s7
+ @do moveback
+ @do saybar
+ `0Wow, thats the smallest horse i've ever seen.
+ @end
+
+@#Armour
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c  `%Castle Armor
+
+`2  You can see the finest collection of armor in all the land!
+
+@do write
+`x`x
+@choice
+Examine Armor
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+  10
+  12
+  13
+  14
+  37
+  59
+  @end
+
+@if response not 2 then goto arstart
+@drawmap
+@update
+
+@#weapons
+@offmap
+@do moveback
+@do `v01 is 1
+@label westart
+@show
+`r0`c  `%Castle Weapons
+
+`2  Every possible weapon is in this place - you feel like a kid in a toy
+  store
+
+@do write
+`x`x
+@choice
+Examine Weaponry
+Nevermind
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  6
+  4
+  9
+  15
+  16
+  38
+  35
+  36
+  49
+  39
+  58
+  @end
+
+@if responce not 2 then goto westart
+@drawmap
+@update
+
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if qtres.dat exist true then do
+  @begin
+  @readfile qtres.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile qtres.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete qtres.dat
+  @writefile qtres.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile qcastle.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `9Q's Fortress`0 Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres2.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete qtres.dat
+  @writefile qtres.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile qcastle.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `9Q's Fortress`0 Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+@#STABLES
+;lets them warp to a view places
+@offmap
+@do moveback
+@label stabletop
+@show
+`r0`c  `r1  Travel `r0
+
+
+  `0"Greetings, s&sir!  We sell horses here, we no longer offer transport
+  `0services.
+
+@do `v01 is 1
+@do move 15 9
+@choice
+`#Why a horse?   `%
+-`t79 1 `$Buy a horse    `%
++`t79 1 `4Sell your horse`%
+`%Leave          `%
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0A horse you ask?`\
+  If your horse is healthy and well kept, you can get to your
+   destinations much quicker than by foot.
+
+  You MUST take good care of your horse if you want to keep it
+   around, or resell someplace else.
+
+  `7<To mount your horse, press "`%Z`7" from the map screen>
+  @key
+  @do goto stabletop
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `0It costs `$$9,000 `0here for a healthy horse.
+`\   Do you still want to buy it?`\
+@choice
+`$Forget it
+>&money 8999 `$Yes
+@if responce is 2 then do
+        @begin
+        @do money - 9000
+        @do `t80 is 255
+        @bitset `t79 1 1
+        @show
+`\`0Ok, you now have a healthy horse. Have fun!`\`k
+        @end
+  @do goto stabletop
+  @end
+@if responce is 3 then do
+  @begin
+  @do `p21 is `v10
+  @do `p21 / 2
+  @do `p22 is `v11
+  @if `t80 > 50 then do
+        @begin
+        @do `p20 is 55
+        @end
+  @if `t80 > 75 then do
+        @begin
+        @do `p20 is 510
+        @end
+  @if `t80 > 100 then do
+        @begin
+        @do `p20 is 1100
+        @end
+  @if `t80 > 125 then do
+        @begin
+        @do `p20 is 2100
+        @end
+  @if `t80 > 150 then do
+        @begin
+        @do `p20 is 3100
+        @end
+  @if `t80 > 175 then do
+        @begin
+        @do `p20 is 4100
+        @end
+  @if `t80 > 200 then do
+        @begin
+        @do `p20 is 5100
+        @end
+  @if `t80 > 225 then do
+        @begin
+        @do `p20 is 7100
+        @end
+
+  @if `p22 > `p21 then do
+        @begin
+        @if `t80 > 200 then do
+                @begin
+                @do `p20 + 450
+                @end
+        @if `t80 > 100 then do
+                @begin
+                @do `p20 + 270
+                @end
+        @end
+  @if `p22 < `p21 then do
+        @begin
+        @if `t80 > 200 then do
+                @begin
+                @do `p20 + 400
+                @end
+        @if `t80 > 100 then do
+                @begin
+                @do `p20 + 210
+                @end
+        @end
+
+  @routine horsehp in vehicle.ref
+  @show
+`\`\  `0I will buy your `%`s02 `0horse for `$`p20.
+`\   Do you still want to sell it?`\
+@do `v01 is 1
+@choice
+`$Forget it
+`$Yes
+@if responce is 2 then do
+        @begin
+        @do money + `p20
+        @do `t80 is 0
+        @bitset `t79 1 0
+        @show
+`\`0Thanks!  Come again.`\`k
+        @end
+  @do goto stabletop
+  @end
+@drawmap
+@update
+
+@#SEA
+;lets them warp to a view places
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Sea Travel `r0
+
+  `0"Greetings,!  "Where is it that you'd like to go?" The harbor master
+  asks.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+PortTown
+Sosen Village
+ArrisVille
+FlagCity
+I think I'll stay here
+@if response not 5 then do
+  @begin
+@show
+`\`\  `0"We will leave whenever you're ready sir." he says.
+
+`k  `2It is a long journey but you finally arrive.
+
+  `0"We have arrived at our destination `N `0.  I'm heading back now."
+
+  `2You are glad to be rid of him.
+
+`k
+@if responce is 1 then do
+  @begin
+   ;PortTown
+   @do x is 38
+   @do y is 2
+   @do map is 152
+  @end
+
+@if responce is 2 then do
+  @begin
+  ;Sosen Village
+  @do x is 40
+  @do y is 18
+  @do map is 536
+ @end
+
+@if responce is 3 then do
+  @begin
+  ;ArrisVille
+  @do x is 66
+  @do y is 19
+  @do map is 444
+ @end
+
+@if response is 4 then do
+  @begin
+  ;Flagcity
+  @do x is 37
+  @do y is 15
+  @do map is 71
+ @end
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+
+@#HEALER
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Healers  `r0
+
+  `2The doctor gives you a potion and...
+
+`k  `%YOU ARE COMPLETELY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if qcastle.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this castle!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile qcastle.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge doorguard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$25000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep `9Q's Fortress`2 - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give `9Q's Fortress `2to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep `9Q's Fortress`2 - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete qcastle.dat
+  @writefile qcastle.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of `9Q's Fortress`2 to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `9Q's Fortress`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transferred.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your castle back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep `9Q's Fortress`2 - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete qcastle.dat
+  @do money + 25000
+  @show
+`\`\  `%CASTLE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `9Q's Fortress`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\
+  @do write
+  `0                             `2(enter `4ALL`2 for access to everyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete qcastle.dat
+  @writefile qcastle.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if qcastle.dat exist false then do
+ @begin
+ @do saybar
+`9Q's Fortress`2 - For sale cheap, inquire inside.
+ @end 
+
+@if qcastle.dat exist true then do
+ @begin
+@readfile qcastle.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+@if qcastle.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `9Q's Fortress`2 was formerly owned by one of the greatest warriors
+  in the realm
+
+  Buy now and receive the following bonuses:
+
+  `0* `2A private stable service!  With drop off points in `0Bone Town`2
+    and `0GreenTree`2!
+
+  `0* `2Aprivate sea travel service!  With docking points in `0Flagcity`2
+    and `0ArrisVille`2!
+
+  `0* `2Also, a many rooms for guests who stay the night!
+
+  `2The asking price is `$$50,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 49999 Purchase it.
+<&money 50000 Go back and work up so more money since you don't have enough.
+>&money 49999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if qcastle.dat exist true then do
+    @begin
+    @show
+`\`\  `2You idiot!  Someone bought it while you were still thinking about it.
+   You will regret your slow decision making for the rest of your life.`\`\`k
+    @do goto done
+    @end
+
+  @writefile qcastle.dat
+&playernum
+ALL
+0
+0
+0
+0
+    @do money - 50000
+    @do addlog
+  `0`n `2buys `9Q's Fortress`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Excellent!  You now own this `9Q's Fortress`2!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile qcastle.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete qcastle.dat
+    @do addlog
+  `9Q's Fortress`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is ALL then do
+   @begin
+   @show
+`r0`c
+`\`\  `0"Welcome to `9Q's Fortress`0,"`2 the guard smiles as he opens
+the gate.`\`\`k
+    @do goto letmein
+    @end
+
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Damn!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `9Q's Fortress`0,"`2 the guard smiles as he opens
+the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `9Q's Fortress Reports`0:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 40
+@do y is 19
+@do map is 835
+@loadmap 835
+@do goto done
+@#done
+
+

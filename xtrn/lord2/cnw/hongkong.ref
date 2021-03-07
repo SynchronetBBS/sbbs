@@ -1,0 +1,1145 @@
+; Script file HONGKONG.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE mybank 000001060
+@DECLARE pass2 000003890
+@DECLARE done 000005222
+@DECLARE enter 000005255
+@DECLARE enter5 000005407
+@DECLARE done 000006398
+@DECLARE letmein 000007014
+@DECLARE done 000007112
+@DECLARE tang 000007126
+@DECLARE tangw 000008003
+@DECLARE enter1 000008468
+@DECLARE enter4 000008701
+@DECLARE doorguard 000009624
+@DECLARE startg 000009653
+@DECLARE sign 000015818
+@DECLARE wdoor 000016130
+@DECLARE sossign 000016200
+@DECLARE storer 000016320
+@DECLARE wang 000016415
+@DECLARE carpic 000017671
+@DECLARE car 000018237
+@DECLARE nomore 000019365
+@DECLARE cardam 000019432
+@DECLARE enter3 000021497
+@DECLARE gate 000021843
+@DECLARE sneak 000021949
+@DECLARE clean 000022145
+@DECLARE bing 000022289
+@DECLARE scribestart 000022338
+@DECLARE keepwriting 000023264
+@NOCHECK
+; End of .REF index
+
+While some scripts may have been borowed from other IGMS all ideas and
+writing are by Chan, first distributed in October 1997.
+ 
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if tres5.dat exist true then do
+  @begin
+  @readfile tres5.dat
+`p20
+  @end
+ 
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Money in Safe `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+ 
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+ 
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawal.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres5.dat
+`p20
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+ 
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete tres5.dat
+  @writefile tres5.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the safe.
+ 
+//if not owner, lets notify him
+ 
+@readfile hong3.dat
+`p20
+`s01
+@
+;load owner and current password
+ 
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `4H`@ong `4K`@ong `4S`@tudio `0Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the safe.
+ 
+  @end
+  @closescript
+  @end
+ 
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+ 
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+ 
+  @do money - `p21
+ 
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres5.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete tres5.dat
+  @writefile tres5.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+ 
+@readfile hong3.dat
+`p20
+`s01
+@
+;load owner and current password
+ 
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `4H`@ong `4K`@ong `4S`@tudio `0Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2in the safe.
+ 
+  @end
+ 
+ 
+    @do saybar
+`2You leave `$`p21`2 in the safe.
+    @drawmap
+    @update
+  @closescript
+ 
+ 
+  @end
+ 
+@#pass2
+@if hong3.dat exist false then do
+  @begin
+  @closescript
+  @end
+ 
+@if &lastx is 62 then do
+  @begin
+  @closescript
+  @end
+ 
+@readfile hong3.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+ 
+@do moveback
+ 
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`$Ching Lee:  `0No one allowed over there.. dat boss's place.
+ 
+   @closescript
+   @end
+ 
+  @show
+`r0`c  `r1 Entrance To The Office `r0
+ 
+`2  `2Ching Lee notices you.  `0"Hey!  What you do'n over `dere?"
+ 
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03
+  @do upcase `s03
+  @do upcase `s01
+ 
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok,  me sorry go in!"`\`\`k
+    @do x + 2
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Ching Lee Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 try to get into private office by saying
+`0"`s03"`2.  `2I `bNO`2 let him in!
+ 
+   @show
+`\`\  `2Ching Lee laughs at you and tells you to go away.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+ 
+  @do goto done
+ 
+ 
+ @#done
+ @drawmap
+ @update
+ 
+@#enter
+@DO MOVEBACK
+  @IF `v06 is 1 then do
+  @BEGIN
+  @DO GOTO ENTER5
+  @END
+ 
+@IF `v06 IS 0 THEN DO
+  @BEGIN
+  @DO GOTO ENTER5
+  @END
+ 
+@#enter5
+@do moveback
+@offmap
+@if hong3.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+ 
+  `4H`@ong `4K`@ong `4S`@tudio`2 - money making opportunity.  Buy now, only ask
+  `$$20,000`2.
+ 
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Purchase it.
+<&money 20000 Sigh wistfully and leave since you don't have enough.
+>&money 19999 Leave.
+@
+ 
+@if response is 1 then do
+  @begin
+  @if hong3.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+ 
+  @writefile hong3.dat
+&playernum
+NONE
+    @do money - 20000
+    @do addlog
+  `0`n `2buys `4H`@ong `4K`@ong `4S`@tudio`2!
+     @routine seperate in gametxt.ref
+ 
+  @show
+`r0`c  `r1 `%Why hello there, business man! `r0
+`\`2  Nice job!  You now own this establishment!
+ 
+  `2Enjoy your new business.`\`\`k
+  @end
+ 
+@label done
+@drawmap
+@update
+@closescript
+  @end
+ 
+@readfile hong3.dat
+`p20
+`s01
+@
+ 
+@do `p21 is deleted `p20
+ 
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete hong3.dat
+    @do addlog
+  `4H`@ong `4K`@ong `4S`@tudio`2 is put on the market today.
+     @routine seperate in gametxt.ref
+ 
+   ;run script again
+   @do goto enter
+  @end
+ 
+;let him in
+@readfile hong3.dat
+`p20
+`s01
+@
+ 
+@if `p20 is &playernum then do
+  @begin
+  @do x is 60
+  @do y is 17
+  @do map is 713
+  @loadmap &map
+  @do goto done
+  @closescript
+  @end
+@label letmein
+   @do x is 60
+   @do y is 17
+   @do map is 711
+   @loadmap &map
+   @do goto done
+   @#done
+ 
+ 
+@#Tang
+;the whore in Hong Kong Studio's lobby
+@if sexmale is 0 then do
+  @begin
+  @do goto TANGW
+  @closescript
+  @end
+@if sexmale is 1 then do
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`$Tang Mai: `4Me Love You Long Time ;)!
+@if `p20 is 2 then saybar
+`$Tang Mai: `4$20 go long way in Hong Kong!
+@if `p20 is 3 then saybar
+`$Tang Mai: `4Hong Kong hasa bes girls in Town!
+@if `p20 is 4 then saybar
+`$Tang Mai: `4$20, $30, $50 depends what want!
+@if `p20 is 5 then saybar
+`$Tang Mai: `4You Want Good Time?
+@if `p20 is 6 then saybar
+`$Tang Mai: `4Hong Kong very safe no kill in whore house.
+@if `p20 is 7 then saybar
+`$Tang Mai: `4China girls very clean no `bVD `4at Hong Kong!
+@if `p20 is 8 then saybar
+`$Tang Mai: `4We no sell illegal weapon in basement!
+@if `p20 is 9 then saybar
+`$Tang Mai: `4You good customer! You been laid `@`p34 `4times!
+ 
+@#TANGW
+@do `p20 random 5 1
+@if `p20 is 1 then saybar
+`$Tang Mai: `4We no sell illegal weapon in basement!
+@if `p20 is 2 then saybar
+`$Tang Mai: `4Only China girl work here you no get job!
+@if `p20 is 3 then saybar
+`$Tang Mai: `4Tell boyfriend about good time at Hong Kong ha ha ha!
+@if `p20 is 4 then saybar
+`$Tang Mai: `4Hong Kong very safe no kill in whore house.
+@if `p20 is 5 then saybar
+`$Tang Mai: `4What kind girl you think I am? Go way!
+ 
+ 
+@#ENTER1
+;Ching Lee The Manager of Hong Kong
+@DO MOVEBACK
+@BUSY
+@dataload hong2.idf &playernum `p20
+  @IF `p20 IS 1 THEN DO
+  @BEGIN
+  @DO GOTO ENTER3
+  @END
+ 
+@IF `p20 IS 0 THEN DO
+  @BEGIN
+  @DO GOTO ENTER4
+  @END
+ 
+@#ENTER4
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  Front Desk  `r0
+ 
+  `0"Where are the whores?" `2you ask.
+  `0"No whore here we sell ahh... picture" `2says Ching Lee
+ 
+  `2Oh no what if the rumors about this place aren't true!
+  `2What if it isn't a whore house?? You have to think of something
+  `2smart to say!
+ 
+@DO WRITE
+`x`x
+@CHOICE
+YA RIGHT, I know what you people do here let me in you whore!
+Emmm I'm sorry I have the wrong building...
+@if responce is 1 then do
+  @BEGIN
+    @do x is 60
+    @do y is 15
+    @do map is 713
+    @datasave hong2.idf &playernum 1
+    @show
+`\`\`0"Ok me let you in but you no tell police ok?`2 says Ching Lee `\`\`k
+`\`\`0"Ok no problem I won't tell" `2you relpy`\`\`k
+    @loadmap &map
+    @drawmap
+    @update
+    @end
+@If responce is 2 then do
+ @BEGIN
+  @drawmap
+  @update
+  @do saybar
+`2You walk out feeling real stupid
+  @closescript
+  @end
+   
+ 
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+ 
+@if hong3a.dat exist false then do
+  @begin
+  @writefile hong3a.dat
+200
+0
+  @end
+ 
+ 
+@if hong3.dat exist false then do
+  @begin
+  @do saybar
+`0"Get out!  The whore house been sole!" `2Ching Lee commands.
+ @closescript
+  @end
+ 
+@readfile hong3.dat
+`p20
+`s01
+@
+ 
+  @readfile hong3a.dat
+`p26
+`p27
+  @
+ 
+ 
+;load owner and current password
+ 
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`$Ching Lee:`#Tell all friends about good time at Hong Kong |)!
+  @closescript
+  @end
+@busy
+ 
+ 
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Running your "business" `r0
+ 
+  `2Ching Lee stops filing her nails when she sees you.
+  `0"What you want boss?" `2Ching Lee smiles
+ 
+@do write
+`x`x
+@choice
+Set password to private office. (currently is `0`s01`%)
+Ownership options
+Set whore fee (currently is at `$$`p26`%)
+Take money from register
+See Owner's Manual
+Leave
+@
+@if responce is 5 then do
+ @begin
+ @Show
+ 
+`2 Congratulations! You are now the owner of your very own whorehouse.
+ The following are some of the things that you, as the owner of this
+ establishment should know.`\`\`k
+ Since you are the owner and make all the money that your whores "earn"
+ you will not be allowed to "use" them. This is to keep a balance between
+ the players and the owner. The players will gain skill points while the
+ owner will gain gold. Suggested whore rates are from `$$200 `2to `$$2000`2.`\`\`k
+ There are no whores for female characters, sorry Ladies. It would have
+ taken much too long to put them in. So I suggest that the owner of `4H`@ong
+ `4K`@ong `4S`@tudio `2be female to keep the game fair.`\`\`k
+ Since you are the owner I should let you know that the car outside may
+ be fun to smash up, but be careful there is a 1 in 8 chance it will
+ explode and hurt you real bad.`\`\`k
+ Well that's just about it. Hope you have lots of fun!`\`\`k
+                              `4Chan`\`k
+ @do goto startg
+ @end
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin
+@show
+`\`\  `0"Before look in register.. lemmie tell you business has
+  beena little slow." `2Ching Lee says to you in fear.
+ 
+`k  `4"How slow?" `2you demand.
+ 
+`k  `0"We not have single customer since you last here, This is no
+  good!" `2Ching Lee states sadly
+ 
+`k
+   @do goto doorguard
+   @end
+ 
+ 
+  @readfile hong3a.dat
+`p26
+`p27
+  @
+  @do money + `p27
+  @do delete hong3a.dat
+  @writefile hong3a.dat
+`p26
+0
+  @
+ 
+  @show
+`\`\  `2Sure, we make `$$`p27`2, here ya go!
+ 
+`k
+  @end
+ 
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+ 
+`k  `2You sure we no pay people for China girls?.
+ 
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, we will.
+Na, your right Ching that was pretty dumb!
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0"You very stupid" I NO pay people to be with China girls.
+ 
+  @do goto doorguard
+  @end
+ 
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  Ching Lee winks at you for your show of intelligence.
+ 
+  @do goto doorguard
+ 
+  @end
+ 
+    @do goto doorguard
+    @end
+  @readfile hong3a.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete hong3a.dat
+  @writefile hong3a.dat
+`p26
+`p27
+  @
+  @do goto doorguard
+  @end
+ 
+ 
+ 
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+ 
+  `2You retrieve your deed and carefully look it over.
+ 
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$10000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+ 
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your whore house - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your whore house to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your whore house - for now.`\`\`k
+    @do goto startg
+   @end
+ 
+  @do delete hong3.dat
+  @writefile hong3.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of `4H`@ong `4K`@ong `4S`@tudio to you.
+  Password to enter office will remain `0"`s01"`2 unless
+  `2you come by and change it.
+ 
+    @do addlog
+  `0`n`2 has given `4H`@ong `4K`@ong `4S`@tudio to `0`s02`2!
+     @routine seperate in gametxt.ref
+ 
+    @show
+`\`\  `2Deed transferred.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your whore house back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your whore house - for now.`\`\`k
+    @do goto startg
+   @end
+ 
+  @do delete hong3.dat
+  @do delete hong3a.dat
+  @do money + 10000
+  @show
+`\`\  `%WHORE HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `4H`@ong `4K`@ong `4S`@tudio`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+ 
+ 
+  @do goto startg
+ @end
+ 
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"What you want for new password?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete hong3.dat
+  @writefile hong3.dat
+&playernum
+`s01
+@show
+`\`\  `0"OK, Me no forget it!" `2Ching Lee promises.`\`\`k
+   @do goto startg
+  @end
+ 
+@drawmap
+@update
+ 
+ 
+@#sign
+@do moveback
+ 
+ @if hong3.dat exist false then do
+ @begin
+ @do saybar
+`4H`@ong `4K`@ong `4S`@tudio `%- For sale cheap, ask inside.
+ @end
+ 
+@if hong3.dat exist true then do
+ @begin
+@readfile hong3.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end
+ 
+ 
+@#WDOOR
+  @do saybar
+`2This door is locked try the other one.
+ 
+@#sossign
+@do moveback
+@do saybar
+`0Sign: `2<--- Sosen Village, 10 miles | `4H`@ong `4K`@ong `4S`@tudio`2 --->
+ 
+ 
+@#storer
+@do moveback
+@do saybar
+`0Leave the storeroom alone, or `4Chan`0 will shoot you.
+ 
+@#Wang
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Wang's Egg Roll Delivery  `r0
+ 
+  `0"I go lotsa places today to deliver egg roll.
+  `0Where you want go?"
+ 
+@do `v01 is 1
+@do write
+`x`x
+@choice
+GreenTree
+PortTown
+BoneTown
+FlagCity
+Sosen Village
+ArrisVille
+Stonebrook
+I don't want to go anywhere!
+@if response not 8 then do
+  @begin
+@show
+`\`\  `0"Ok les go!"
+ 
+`k  `2You jump in the back of his truck and sit on a box of egg rolls.
+ 
+  `0"Ok we here I make delivery you get out" says Wang.
+`\`k
+@if response is 1 then do
+  @begin
+   @do x is 10
+   @do y is 15
+   @do map is 1356
+  @end
+@if response is 2 then do
+  @begin
+   @do x is 38
+   @do y is 16
+   @do map is 956
+  @end
+@if response is 3 then do
+  @begin
+   @do x is 53
+   @do y is 18
+   @do map is 1572
+  @end
+@if response is 4 then do
+  @begin
+   @do x is 71
+   @do y is 19
+   @do map is 1092
+  @end
+@if response is 5 then do
+  @begin
+   @do x is 36
+   @do y is 5
+   @do map is 456
+  @end
+@if response is 6 then do
+  @begin
+   @do x is 19
+   @do y is 9
+   @do map is 523
+  @end
+ 
+@if responce is 7 then do
+  @begin
+   @do x is 30
+   @do y is 9
+   @do map is 1359
+  @end
+ 
+  @loadmap &map
+  @end
+@drawmap
+@update
+ 
+ 
+ 
+@#carpic
+  @pauseoff
+  @show
+[40m[2J[40m
+ 
+[0;31mThe Abandoned Car
+ 
+ 
+[13C[33m‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹
+[11C[1;36m‹€[43m [0;33;46mﬂ     [40m€[1;36;47m€€€€€€[43m €[40m‹
+[8C‹‹€€[43m [0;33;46m€[1;36m€‹›‹  [D[0;33m€[1;36;47m€€€€€€[0;33;47mﬂ[43m [1;36;40m€€‹
+[5C[31;41mÈ[43m        [0;30;43mÕ      Õ               [1;33;40m [D
+   [0;30;47m[37;43mÕÕÕÕ[33;40mﬂﬂﬂ[37;43mÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕ[33;40mﬂﬂﬂ[37;43mÕÕÕ[30;47m[40m
+[5C[33mﬂﬂﬂ[1;30m€[43m€€[0;33mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[1;30m€€€[0;33mﬂﬂﬂ
+[8C[1;30mﬂﬂﬂ[20Cﬂﬂﬂ
+`\`\`k
+@#Car
+@busy
+@do moveback
+@datanewday car.idf
+@dataload car.idf &playernum `p20
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @drawmap
+  @update
+  @do saybar
+`2You've done enough damage for one day.
+  @end
+@if `p20 not 1 then do
+  @begin
+  @routine carpic
+@show
+`r0`c  `r1`% The Abandoned Car  `r0
+ 
+`0  "Look at this rusting old piece of crap" `2you think to yourself.
+`2  Many other people have destroyed this car in the past, but for some
+`2  reason it magically reassembles itself every night at midnight.
+`2  Do you want to cause some damage to it?
+ 
+ 
+  @do write
+`x`x
+;@do `v01 is 1
+@choice
+Na, I'm not into that vandalism stuff
+Yeah! I'm going to send it to hades!
+@if responce is 1 then do
+  @begin
+  @drawmap
+  @update
+  @do saybar
+`2You leave the car alone.
+  @closescript
+  @end
+ 
+@if responce is 2 then do
+@datasave car.idf &playernum 1
+@pauseon
+@show
+`c
+`2  You take out your s&weapon `2and start the destruction...`\`\
+ 
+`l`l`l  `4SMASH!!!`l`l`l      `4SLAM!!!`l`l`l       `4CRASH!!!`l`l`l         `4BAM!!!`l`l`l`\`\`k
+  @begin
+  @do goto CARDAM
+  @closescript
+  @end
+ 
+ 
+@#NOMORE
+@do saybar
+`2You have done enough damage for today.
+ 
+@#CARDAM
+@do `p20 random 9 1
+@if `p20 is 1 then do begin
+@begin
+ @show
+ `2You broke off a door!`\`\
+ `%YOU GAIN 150 EXPERIENCE!`\`k
+ @do `p01 + 150
+  @drawmap
+  @update
+  @end
+@if `p20 is 2 then do begin
+@begin
+ @show
+ `2You smashed in the headlights!`\`\
+ `%YOU GAIN 50 EXPERIENCE! `\`k
+ @do `p01 + 50
+  @drawmap
+  @update
+  @end
+@if `p20 is 3 then do begin
+@begin
+ @show
+ `2You smashed in the tail lights!`\`\
+ `%YOU GAIN 50 EXPERIENCE! `\`k
+ @do `p01 + 50
+  @drawmap
+  @update
+  @end
+@if `p20 is 4 then do begin
+@begin
+ @show
+ `2You shattered 2 windows!`\`\
+ `%YOU GAIN 105 EXPERIENCE! `\`k
+ @do `p01 + 105
+  @drawmap
+  @update
+  @end
+@if `p20 is 5 then do begin
+@begin
+ @show
+ `2You broke the windshield!`\`\
+ `%YOU GAIN 100 EXPERIENCE! `\`k
+ @do `p01 + 100
+  @drawmap
+  @update
+  @end
+@if `p20 is 6 then do begin
+@begin
+ @show
+ `2You slashed all the tires!`\`\
+ `%YOU GAIN 101 EXPERIENCE! `\`k
+ @do `p01 + 101
+  @drawmap
+  @update
+  @end
+@if `p20 is 7 then do begin
+@begin
+ @show
+ `2You break open the trunk and find`l.`l.`l.`\`\
+ `@A RED POTION!`\`\`k
+@do `i52 + 1
+  @end
+@if `p20 is 8 then do begin
+@begin
+ @show
+ `2You roll the car over onto its roof, causing massive damage!`\`\`k
+ `%YOU GAIN 250 EXPERIENCE!`\`k
+ @do `p01 + 250
+  @end
+ 
+@if `p20 is 9 then do begin
+@begin
+ @show
+ `2Drip`l`l`\`\
+ `2Drip`l`l`\`\
+ `2Drip`l`l`\`\
+ `2Before you can even scream`l.`l.`l.
+ `4B `wO `wO `wO `wO `wM `wM `wM `wM `w! `w! `w! `w! `w! `w! `w! `w!`\`\`k
+ `2The gas tank explodes, and sends you flying! `4The car has its revenge!`\`\`k
+ `2You wake up several hours later in critical condition. The accident
+ `2has permanently disfigured you!`\`\`k
+ `4YOU LOSE 500 TURNS AND 2 CHARM!`\`\`k
+  @do `p08 - 2
+  @do `p11 - 500
+  @do `p02 is 1
+  @do x is 11
+  @do y is 19
+@do addlog
+  `r1  `r0 `0`n`4 was severely injured today when the abandoned car exploded! `r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+ 
+  @end
+  @drawmap
+  @update
+ 
+@#Enter3
+@Show
+ 
+`r0`c `r1  Front Desk  `r0`\`\
+`0"Oh hello `N`0 so good to see you. Always like whena good costmer come
+`0by ;)!"`2 declares Ching Lee happily.`\`\`k
+`$"That's nice, now let me in" `2you reply.`\`\`k
+`0"Ok Me let you in now." `2she says.`\`\`k
+@do x is 60
+@do y is 15
+@do map is 713
+@loadmap &map
+@drawmap
+@update
+ 
+@#gate
+@do moveback
+@do saybar
+`0The gate is locked. Ask the woman behind the counter to open it.
+ 
+@#Sneak
+    @do x is 60
+    @do y is 13
+    @do map is 713
+    @loadmap 713
+    @drawmap
+    @update
+    @do saybar
+`4Ha ha ha you just use your smackrod to get by the gate!
+    @end
+ 
+@#CLEAN
+;this ref is no longer in use
+@do moveback
+@do saybar
+`2When the game is in clean mode this is nothing but an abandoned building
+ 
+@#Bing
+@do moveback
+@do `v01 is 1
+@label scribestart
+@show
+`r0`c  `r1 `%Bing's Newsletter `r0
+ 
+`2  `%Bing's Newsletter`2 is the 2nd most popular newspaper in the world
+`2  it is also the only other known place in the world to make an
+`2  announcement besides `0GreenTree`2.
+ 
+`2  `%Bing`2 is busy writing today's issue of `%Bing's Newsletter`2. `2He
+`2  looks up at you through his thick glasses. `0"You want to put add
+`0  in my paper?"`2 `2he asks `0"Costa `$$100`0 per add."
+ 
+@do write
+`x`x
+@choice
+`%Place an add in Bing's Newsletter for `$$100`%.
+Forget it
+@
+@if response is 1 then do
+ @begin
+ @if money < 100 then do
+  @begin
+  @show
+`\`\  `2You do not have enough money to place an add at this time.`\`\`k
+  @do goto scribestart
+  @end
+  @do money - 100
+  @writefile lognow.txt
+  `2`n`2 Announces the following from `4H`@ong `4K`@ong `4S`@tudio:`%
+  @show
+`\`\  `0"Ok what do you want to say in your add?" `2asks `%Bing
+@label keepwriting
+@do write
+`\`x`x
+  @do readstring 75 NIL `s01                                       
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+   @show
+`\  `0"Your add now in today's newsletter"`2 says `%Bing`2.
+ 
+`\`k
+@drawmap
+@update
+@closescript
+   @end
+  @do stripbad `s01
+  @writefile lognow.txt
+  `s01
+  @
+  @do goto keepwriting
+ 
+ @end
+ 
+@drawmap
+@update

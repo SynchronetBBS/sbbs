@@ -1,0 +1,76 @@
+ 
+                Hong Kong Studio by Chan ver 1.04
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (3)
+  Adds screens?                                   : Yes! (3)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  A whore house that people can own and make money on. It also sells
+  4 new items in the basement. There is an abandoned car to damage and
+  modern day monsters to fight outside.
+
+  Updates since v 1.03a
+  *Added a place to make announcements in the basement
+  *Fixed All known bugs
+  *Made text look nicer
+  *Added some trees and rocks
+  *Game is now more colorful
+
+  backup your ITEMS.ref and your ITEMS.dat files incase you want to
+   uninstall this IGM 
+  Unzip into your LORD2 dir and type:
+
+   IGM Honkong.IGM
+
+  This will install Hong Kong Studio in the northlands 10 screens to the
+  right of Socean Village. 
+
+  NOTE: Unzipping will overwrite ITEMS.ref and ITEMS.dat because there
+   is an added item. If this is a problem, unzip the file into its own
+   directory and, when copying over, do not overwrite these files but
+   manually add in the information in Honkong.doc.
+
+  
+  To uninstall, 
+  Type IGM Honkong.IGM
+
+  If you want to reset the IGM just type:
+  erase hong*.dat
+  erase hong*.idf
+  erase car.idf
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4H`@ong `4K`@ong `4S`@tudio`2ver1.04, `2by `4Chan
+replacescreen: 711 1 noshow
+
+replacescreen: 712 2 noshow
+
+replacescreen: 713 3 noshow
+
+replacescreen: 386 4 show
+
+replacescreen: 385 5 show
+
+replacescreen: 466 6 show
+installmessage:
+
+  `2ABOUT `4H`@ong `4K`@ong `4S`@tudio `2ver1.04, `2by `4Chan 
+
+  This IGM is a place in the middle of the northlands where nothing
+  else exists, I made it so that there would be a place to go besides
+  Socean Village in the northlands. It is a whore house in which the owner
+  gets to keep the money from the sales and a whole lot more, which
+  includes a store and place to make announcements. Trust me your users
+  will love it, and if not it will be very easy to erase.
+  

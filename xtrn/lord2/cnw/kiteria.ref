@@ -1,0 +1,1276 @@
+; Script file KITERIA.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:27 2001
+
+@DECLARE start 000000772
+@DECLARE book 000003520
+@DECLARE leaving 000031495
+@DECLARE opendoor 000031569
+@DECLARE enterbedroom 000031642
+@DECLARE bedalready 000031826
+@DECLARE enterkitchen 000031925
+@DECLARE enterlibrary 000031991
+@DECLARE enterthrone 000032056
+@DECLARE bedroom 000032121
+@DECLARE nobed 000035548
+@DECLARE soup 000035643
+@DECLARE passage 000036134
+@DECLARE cobweb 000036813
+@DECLARE pool 000036892
+@DECLARE inwater 000036975
+@DECLARE nodrown 000037449
+@DECLARE dive 000038296
+@DECLARE where 000039471
+@DECLARE getout 000039764
+@DECLARE swimnorth 000039838
+@DECLARE drown 000040331
+@DECLARE nomore 000041293
+@NOCHECK
+; End of .REF index
+
+@#START
+@do moveback
+@offmap
+@clear screen
+@show
+`2   You knock on the castle door.
+@key
+@show
+
+`2   After several moments, the door begins to open.
+@key
+@pauseoff
+@clear screen
+@show
+[0;1;34m[57C‹[5C[42m˙[0;32m‹[1;34;42m˙[0;32m‹[1;34;42m˙[40m
+[57C[0;32m∫[5C[1;33m€[43mﬂﬂﬂ[40m€
+[57C[0;32m∫    [1;33mﬁ[43m›[0;34;43m¯[31m®[34m¯[1;33mﬁ[40m›
+[57C[0;32m∫    [1;33mﬁ[43m› [0;31;43mo [1;33mﬁ[40m›
+[7C[0;32mYou are greeted by a remarkable woman.  She is    ∫    [A
+[62C[1;33m€€[0;35;43m‹‹‹[1;33;40m€€
+[0;32mlovely  beyond  description.    As beautiful as a new    ∫  [35m[A
+[60C‹€[1;34;45mﬁ€€ €€›[0;35m€‹
+[32mspring morning,  yet her  eyes seem to hold an ancient   [33m€[A
+[58C[35m‹€ﬂ[1;33mﬁ[34;45mﬁ[40m€€[0;35;43m€[1;34;40m€€[45m›[40m[A
+[69C[33;40m›[0;35m€
+[32mwisdom, deeper than the very ocean.  She smiles warmly   ∫   [A
+[61C[1;33mﬁ[34;45mﬁ[40m€€[0;35;43m€[1;34;40m€€[45m›[33;40m›[A
+[70C[0;35mﬁ›
+[32mas you stare into the beauty of her face.[16C∫   [1;33mﬁ€[0;35m€[A
+[64C[1;34;45m‹‹‹[0;35m€[1;33m€›[0;35m€
+[57C[32m∫   [1;33mﬁ€[0;35m€[1;34m€€€[0;35m€[1;33m€›[0;33mﬂ
+[57C[32m∫   [1;33mﬁ[0;35m€[1;34m€€€€€[0;35m€[1;33m›
+[7C[34m"I am Princess Kiteria and this is the Castle[5C[0;32m∫    [A
+[62C[35m€[1;34m€€€€€[0;35m€
+[1;34mFair Play.  Would you like to come in for a visit?"[6C[0;32m∫  [A
+[60C  [35m€[1;34m€€€€€[0;35m€
+[57C[32m∫    [35m€[1;34m€€€€€[0;35m€
+[57C[32m∫  [35m‹[1;34;45m‹[40m€€€€€€€[45m‹[0;35m‹
+[60Cﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ
+@pauseon
+@do `v01 is 1
+@choice
+`%No, I am not worthy of your company.
+`%Yes, if you are sure that you would like me to.
+@if response is 1 then do
+@begin
+@do goto leaving
+@end
+@clear screen
+@show
+`#   "I am so glad you have come," she says.  "I do not get company often."
+@key
+@show
+
+`2   She motions you inside and closes the door.  
+@key
+@show
+
+`#   "Most adventurers are interested in self-advancement, and Fair Play is far
+from their minds," she continues.  "I do so hope that you are not like those."
+
+@do `v01 is 1
+@choice
+`%My main interest is in victory.
+`%My main interest is in the sport.
+@if response is 1 then do
+@begin
+@clear screen
+@show
+`#   "Then I am afraid I can do nothing for you."
+@key
+@do goto leaving
+@end
+@clear screen
+@show
+`#   "You cannot know how glad I am to hear that.  I have some business that I
+must attend to immediately, but feel free to make yourself at home."
+@key
+@show
+
+`2  The beautiful princess leaves you, and you find yourself standing in a great
+entrance hall lined with torches.
+@key
+@loadmap 1566
+@do map is 1566
+@do x is 40
+@do y is 12
+@drawmap
+@update
+@closescript
+
+@#BOOK
+@do moveback
+@clear screen
+@show
+
+`2   This is an ornate wooden table.  On the table is a large book.  The cover
+of the book is ancient leather, embossed with gold lettering.
+@key
+@clear screen
+@show
+
+
+
+[0;1;33m[21C[43m…ÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕª[0;33m‹‹
+[21C[1;43m∫                          ∫[0;43m€›[40m
+[21C[1;33;43m∫                          ∫[0;43m€›[40m
+[21C[1;33;43m∫     The                  ∫[0;43m€›[40m
+[21C[1;33;43m∫        Book              ∫[0;43m€›[40m
+[21C[1;33;43m∫            Of            ∫[0;43m€›[40m
+[21C[1;33;43m∫              Fair        ∫[0;43m€›[40m
+[21C[1;33;43m∫                  Play    ∫[0;43m€›[40m
+[21C[1;33;43m∫                          ∫[0;43m€›[40m
+[21C[1;33;43m∫                          ∫[0;43m€›[40m
+[21C[1;33;43m∫                          ∫[0;43m€›[40m
+[21C[1;33;43m∫    By,                   ∫[0;43m€›[40m
+[21C[1;33;43m∫       Princess           ∫[0;43m€›[40m
+[21C[1;33;43m∫               Kiteria    ∫[0;43m€›[40m
+[21C[1;33;43m∫                          ∫[0;43m€›[40m
+[21C[1;33;43m»ÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕÕº[0;43m€›[40m
+
+@key
+@clear screen
+@show
+
+`2Do you open it?
+
+@do `v01 is 1
+@choice
+`%No
+`%Yes
+@if response is 1 the do
+@begin
+@show
+
+`2   Perhaps another time.
+@closescript
+@end
+@pauseoff
+@SHOW SCROLL
+
+                     
+
+`9
+Herein lies the complete and unabridged collection of the wisdoms of
+Princess Kiteria.  For many years I had heard stories of adventurers
+who cheated the fates in their quest to destroy the Red Dragon.  In
+the interest of Fair Play, I took it upon myself to learn the methods
+used by these unholy vagabonds.  It was my intention to make their
+methods known to all in an attempt to bring Fair Play back into the
+realm.  I soon discovered that their cheating was being enabled by a
+hideous force known as Igyembug.  In this tome I have compiled the
+chants and prayers offered to Igyembug so that all may use them in
+their quest for the dragon.
+                             
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+`4----------------------------------------------------------------------------
+`4`bNOTE FROM MAMOOSOFT:  `%There are some codes contained in here that cannot
+be shown correctly by the game, as it interprets them as programming code.
+Please remember that wherever you see an apostrophe (') in this file, the
+cheat code actually needs a reversed apostrophe, which can be typed by NOT
+holding shift when pressing the tilde (~) key.  I hope this is not too
+confusing, but it was the only way to do this.  Now back to the IGM!
+`4----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+`2**ACROSS THE TRACKS**
+
+`%In version 4 THE ORIGINAL, Find the bum, and give him 
+some money. Type in -2,000,000,000 for your amount.  
+You will be given 2 billion in hand.  The author 
+repaired this with version 5.0.  The second version 
+fixed the "old man" cheat but not the cheat that has 
+to do with giving more money than you have to the two 
+children in the Adoption Agency.  With this one 
+just make sure that you bet and/or give more money 
+than you have, and that includes everything in the 
+LORD bank as well as in hand.  Exit the IGM, then 
+exit the game, when you return you will have 2 billion 
+gold in hand.
+
+`2**ARAGON'S TIMER 1.0**
+
+`%You'll need another player's cooperating with you.  
+If you think that no-one else has played Aragon's 
+Timer today, you should enter and exit the IGM alone 
+without playing the game to make sure the data
+file is reset.  Once you have done that, both of 
+you should enter Aragon's Timer.  You play the game; 
+your partner doesn't. You exit back to LORD first, 
+then your partner exits to LORD (Precise timing
+is a must, since you may not be able to talk to each 
+other.) Now that you're both in LORD, it's time to go 
+back to Aragon's Timer.  Both of you enter Aragon's Timer.  
+Your partner plays the game; you don't.  Your partner 
+exits Aragon's Timer first, then you exit Aragon's Timer
+second.   The result:  If you're both good at Aragon's 
+Timer, both of you have increased your wealth by 50%.  
+Here's the cool part: if you followed the above instructions, 
+Aragon's Timer will have NO record of either of you playing 
+the game!   That's right...both of you can go back and 
+play Aragon's Timer FOREVER!...or until you run out of
+time...or the SysOp catches you.  :)   This worked for 
+me locally under Aragon's Timer 1.0. (I had two LORD games 
+running under two different windows in win3.11.)  I don't 
+know of any updates to Aragon's Timer. 
+
+`2**ALADDIN'S PALACE**
+`%**::UPDATE FROM STANLEY CHIU...the Gentleman Genius::**
+
+The 's  code has never worked in ALADDIN'S PALACE not even in
+version 1.25 and older. (Mike Neale also told me this, I just
+did not click to what I was being told. SF)  First of all, I'll
+elaborate on the weapon/armor situation. If you sell your weapon,
+you'll get the money, plus you keep the strength of that
+particular weapon. The same holds true for the armor.  Another
+thing is how to get two billion gold as often as you want. Of
+course, Iago will only visit you once per day... but you can
+arrange it so that you can make him come at anytime. =)  All you
+need to do is change your name, either in the IGM, or with the
+bartender - it doesn't matter. Upon re-entering the IGM, it will
+think it is your first time in, so it will give you all the
+random events again. Of course, then you can get the two billion
+gold as many times as you wish.  NOTE:  If you win the negative two
+billion bet with Iago, you don't go into negative, but rather, you
+get two hundred million and something gold. So it's still enough
+to buy a Blood Sword and a Golden Armor...which would do just fine,
+unless you're REALLY greedy.
+
+**SEE EXPLANATION OF NEGATIVE GOLD at end of file**
+Of course, when you change your name in Aladdin's Palace, you can
+also train again, so you can gain additional skill points for Thieving,
+Mystics and Death Knight. Also, with this, you can go OVER the regular
+40 maximum skill points that LORD allows. For example, I believe I
+have 55 Mystic use points, and 46 Thieving skill points. The formula
+for that is simply the number of points divided by five, so I start
+the day off with 9 Thieving uses.  As the number of skill points
+increase, the uses do also.  Lastly, you can change your name inside
+Aladdin's Palace to just color codes, i.e., '1'4'!'$, which will make
+attacking you by others IMPOSSIBLE.  They will have absolutely no way
+of bringing your name up in the prompt.
+*********************************************************
+I can only assume at this writing, that he is speaking of 1.25.
+Careful when you attempt any of the cheats for Aladdin's, its many
+repair's has caused it to become a time bomb, almost everything you
+do and can do, depends on what version you have available to you.
+*********************************************************
+**::NEW INFORMATION Supplied by Mike Neale::**
+Every time you go into Aladdin's palace, try selling a fairy, even
+if you don't have one. It will buy your fairy every time you enter,
+even if it's more than once a day!  Another thing that I learned from
+an earlier version regards buying and selling a weapon.  Buy a Wan's
+Weapon from the regular shop and sell it in Aladdin's Palace.  Then go
+back to the regular shop and do it all over again.  As many times as
+you want.  What happens is, you buy the weapon for 1m and it 'says'
+it offers you 500k when you sell it.  It actually  gives you 5m!
+PLUS keep an eye on your strength column!  Every time you buy and
+sell the Wan's Weapon, your strength keeps going up accordingly.
+
+A FEW WORDS FROM DEVON BROOKS, AUTHOR OF ALADDIN'S PALACE:
+  *** All of these bugs mentioned are in =previous=  ***
+  *** versions  of Aladdin's Palace.  FREQ "ALADDIN" ***
+  *** from 1:140/129, to *** receive Version 2.00 -  ***
+  *** which fixes all of these bugs, and much more   ***
+
+`2**CITY OF EROS**
+`%submitted by Noriko
+
+The current, yes CURRENT version of City of Eros!   Go in 
+and go to Jasmine's Spa (I think it's called).  Make sure 
+you have a little money.  Keep pressing Massage or the more 
+expensive sauna a million times -- you get experience points 
+in 25 increments and 50 increments in the latter.  Okay, you 
+don't have to press it a million times, but the more you press 
+the more experience you get and you can return to the IGM as 
+many times as you like.  Now when you exit, look at your stats 
+and see a negative amount -- of course you've exceeded your 
+cash on hand in the Spa, but who cares!  Exit the game for a 
+sec and when you reenter, bingo!  You've got 2,000,000,000 
+gold in hand!  If you have patience, keep going back to the 
+Spa!   
+
+`2**FAIRY TOWN**
+`%SPECIAL FEATURE
+submitted by Loyd Bulmur
+
+The way to get past all three Giants is:
+
+    Prior to entering the IGM, have at least one gem in your
+possession.  Try to have over-scale hit points (either through
+an IGM or JENNIE-HOTT).
+
+    The following sequence  -* must *-  be followed.
+
+    {T}alk to the Fairy
+    {F}ollow the Giant's Footsteps: defeat # 1
+    {F}ollow the Giant's Footsteps a second time: defeat # 2
+    {O}ffer the Fairy a gem.  No matter how many potions you
+receive, drink only the {Y}ellow one.  Your hit points, which
+will have been depleted through defeating the first two Giants,
+will be restored.
+    {F}ollow the Giant's Footsteps for the third time.  Upon
+defeating it, you will receive the bonus, which is an appearance
+by the Trojan Warrior (for femmes) or the Amazon Warrior (for
+males).  The bonus is a random thing, which usually includes
+some gems, some gold, and a goodly number of experience points.
+
+
+`2**JEWELER'S SHOPPE,THE**
+`%submitted by Nicole Willson
+
+Go into the Skills Training Center in the Jeweler's Shoppe. 
+(I took the Mystical Skills training I'm not sure how this
+would work for the other two types of training.) You have to 
+pay 1000 gp for each turn, so you should make sure that
+you only have about 1000 or 2000 gp in hand. The training
+for Mystical Skills is a number-guessing game. The first
+time, I guessed right and got about 30 gems. The second
+time, I guessed wrong, and ended up with negative gold in
+hand.  Quit the game entirely and when you re-enter you'll
+have 2 billion gold in hand.
+
+`2**JUANCHO'S PARADISE**
+`%submitted by Ann Labuda
+ 
+When you enter Juancho's Paradise, go to the Forest and use 
+all thirty of your fights.  You NEVER lose a fight and each 
+time you get x amount of strength and x amount of gems (x being a 
+number between 1 and 99).  After using up all of your forest fights 
+there (you're given 30), leave the forest and talk to the man in the 
+corner.  He'll give you a riddle with the answer scrambled, and the 
+letters contained in the answer will be given to you.  EX:  Snap!  
+Better when wet!  OLTEW  ANS: TOWEL (Note:  They're all that easy)  
+He'll let you guess five riddles then tell you that you can't play 
+any more today.  Then, go to the Church and Pray to Juancho the Taco 
+God (or God of Tacos, I forget exactly how it's worded).  Each time 
+you pray to Juancho, you'll get x amount of strength, defense, gems, 
+or charm.  (Here, x is a number between 0 and 99)  There is NO LIMIT 
+to how many times you can pray to him per day other than how much 
+time your SysOp has allotted you to be on his/her board.  If you exit 
+Juancho's Paradise at any point and go back in, you'll have 30 more 
+forest fights in there, and 5 more riddles to answer, plus of course 
+the unlimited prayers.
+
+`2**JOURNEY TO THE CASTLE OF L.O.R.D.**
+
+`%In version 2.00 dated 8/24/95 You can sell negative gems.  
+Sell -32000 gems, and you will be given 32000 of them.  
+You can then take  them back to the regular LORD and 
+trade them to the bartender for strength, defense, and 
+hit points.  THIS HAS BEEN REPAIRED in version 2.10:  
+Please do this author the courtesy of using only the most 
+recent release of his works on your BBS.
+
+`2**KNIGHT'S OF THE GOLDEN HORSESHOE**
+
+`%In the original version KNIGHT55.ZIP, Go to the bank and 
+deposit -2000000000 it will give it to you on hand.  
+THIS HAS BEEN REPAIRED in version KNIGHT65.ZIP: Please 
+do this author the courtesy of using only the most recent 
+release of his works on your BBS.  NOTE OF WARNING:
+Cheaters are SEVERELY punished in the newest version. {G}
+
+`2**LORD HUNTER**
+
+`%v1.01 enter amount in negative gold
+
+`2**LORD'S PIT, THE** v2.50
+
+`%If you exit and re-enter it, your Arena Fights go back up 
+to 25.
+
+`2**LORD'S REALM**
+
+`%The original version WW-LRO11.ZIP version 11
+Enter the store and ask to buy anything.  When it asks 
+how much you want say 100,000.  It will say that it will 
+charge you -$xxxxxxx (A lot of cash).  Agree and you will 
+come out of the store with TONS of cash.  For example if you 
+had 800 strength and you bought 100,000 strength you would 
+end up with -30,000 strength and about 100 mil.  To make 
+it go positive buy another 100,000.  You will end up with 
+2500 strength.  But be careful though, because you can start
+ to go into negative cash.  If that happens just buy or sell 
+100,000 forest fights until positive again.  This trick 
+basically gives you anything you want!  You can get HUGE 
+amounts of charm, and using the change sex option, you 
+can marry both Seth Able and Violet.  Lord's Realm v0.12 
+105 KB is listed, but I do not know if it repairs any of
+ the above.
+
+`2**LOVE SHACK, THE**
+
+`%LOVE110.ZIP Version 1.10, LOVE120.ZIP  Version 1.20
+Go in Love Shack, and go to the Lounge or Bar.  Order the 
+most expensive drink. It SHOULD say that a thief comes 
+and knocks you out, and steals all your money.  You 
+now  exit the IGM, then exit the game.  The next time you 
+enter LORD, you will have 2 billion gold on hand.  IF 
+you go into the bank before you exit the game, you will
+cancel your negative gold in hand, and be given $100. gold.
+
+`2**MAIL CODES**
+`%
+'S - for skills
+'k - for kids
+'{  - for lays
+'} - for charm
+The above all that work for normal play.  You must have access to 
+any IGM that allows the name change of your weapon.  Write in 
+'Ssword name, NOTHING else!!  Then every time you check your stats, 
+your skills will go up, or what ever of the four you have selected.
+
+`2**MIRROR OF ILLUSION**
+
+`%In the original version, MOI18.ZIP version 18, IF the game
+is registered, then press "c" when the first "{MORE} prompt 
+pops up.  Enter noisullI fO rorriM" (Mirror Of Illusion 
+backwards) and pick the 2429 Town. You will be able 
+to bet on fights.  Place a bet of "-2000000000" gold and 
+hope you will lose the fight.  If not, you will still 
+get over 200 million gold...but not the 2 billion.
+If you are satisfied, then leave...if not, stay and 
+continue to try and get your 2 billion gold.
+THIS HAS BEEN REPAIRED with version MOI20.ZIP 
+please do this author the courtesy of using only the 
+most recent release of his works. 
+
+`2**NAPPING OCEAN'S ADVENTURE**  NOAD20.ZIP
+
+`%Go to the IGM bank, and DEPOSIT -2000000000, return 
+to the LORD bank, then exit.  You now have 2 billion 
+gold in the bank, and 200,000,000 in your hand.  If 
+you chose to not go for that much gold, you can place
+a with drawl of -2000000000, and this will give you 
+the same amount in the positive.  You can also go to 
+the Dolphin Rest Inn, talk to the bartender, tip him 
+-1000000000 and he'll give it back in the positive.
+
+`2**OASIS OF EL-SAYAN** OASIS-07.ZIP 
+
+`%Go into the IGM with no money, go to the bazaar and 
+buy slave children it will cost a negative amount, 
+with that you GET the gold and the child.
+I believe this only works for Level 7 and above.
+THIS HAS BEEN REPAIRED, OASIS-09.ZIP, Please do this 
+author the courtesy of using only the most recent
+ release of his works on your BBS.
+
+`2**RED DRAGON GAMBLING CASINO**
+
+`%Original version RDCAS16.ZIP, you could use the 
+negative number betting.
+THIS HAS BEEN REPAIRED with version 1.7. 
+Please do this author the courtesy of using only 
+the most recent release of his works on your BBS.
+
+`2**SANDTIGER'S BAR** SBAR102.ZIP.
+
+`%A NOTE OF WARNING
+Sandtiger's Bar v2.00 65 KB (Unofficial)  (and I'm sure 
+there is 1 or 2 more) There are several different versions 
+of this IGM, don't just automatically sell everything and 
+jump in there thinking you are going to make billions 
+in minutes.  
+ORIGINAL VERSION:  You can sell your armor and weapon in 
+the LORD game and go into Sandtiger's and sell your "fists" 
+and "nothing" for around 2.4 million each.  Then you go 
+back to the LORD game weapon and armor shop, sell the 
+Sandtiger's weapon and armor, go back and do it again.  
+It's very easy to make big money in this version.  
+SECOND VERSION:  Start this when you are LEVEL 1 and 
+ready to sell your armor. Remember, check it out first, 
+because of the different versions.  Have only $1500 gold, 
+"fist" for weapon, (this one doesn't work on armor.) Go to 
+the shop and sell your weapon, IF the salesman doesn't ask 
+you if you want to sell your "fist"  for a quoted amount,
+then purchase it 19 more times, (that's 20 all together)  
+Napalm does it for 40.  Then exit the IGM, go into the bank, 
+do nothing, exit the bank then return. You should have 
+200,000,000. gold in the bank now.  IF you have a negative 
+amount in hand and nothing in the bank, exit the IGM and 
+then go back in, that will give you 2,000,000,000. gold.
+Be sure that when you start this you only have $1500. in 
+the bank do not have any more or any less or it will not 
+work.   With the gold you make from these two versions, 
+you can purchase your stats, and skills and charm for 
+very little gold.
+THIRD VERSION:  This one has to be started at level 1, 
+it will not give you big gold, but it will give you level 12
+ stats by the time you are at Level 7.  Sell armor and weapon,
+go to Sandtiger's IGM and purchase "Sling Shot" and "Lead Pan".  
+The purchase price is $500. go to LORD weapon and armor shop 
+and sell each for $1500.  With this version, you make a profit
+and your stats go up each time you purchase, and they do not 
+drop when you sell.  Stick with the first and second weapons 
+and armors, otherwise you'll be spending more than your making.
+FOURTH VERSION: At level one, when you are ready to sell your 
+armor, sell it in the LORD game, then go to Sandtiger's, armor 
+dealer, and see if he will buy your "nothing" for a tidy sum. 
+If so, have at least enough gold to purchase a "Sling Shot" 
+based on what amount the old woman's exchange of 'bar coin's 
+to gold coins' is.  Sell your "nothing" to the armor dealer 
+and go purchase a Sling Shot.  Leave the IGM, go to the LORD 
+weapon's dealer sell the Sling Shot.  Return to Sandtiger's
+armor dealer, sell your "nothing" purchase a Sling shot again, 
+go back to the LORD weapon's dealer again, sell the sling shot 
+again...etc...etc.  Got it?  Your strength keeps going up and 
+not dropping, plus you keep selling "nothing" for all that gold.
+
+`2**SUNSHINE'S FAIRYLAND** 
+
+`%SFAIRY20.ZIP SFAIRY23.ZIP
+One or both of these allows purchasing with the use of 
+the negative numbers.  
+THIS HAS BEEN REPAIRED SFAIRY25.ZIP Please do this author 
+the courtesy of using only the most recent release of his 
+works on your BBS.
+
+`2**SKILL TRAINING CENTER**  SKILL104.ZIP
+
+`%In the section for Mystical Skills, if you are allowed to 
+start first, choosing 1, 2, 7, & 4 will win every time.  
+If the old man starts first, 8, 9, 3, & 6 will win every 
+time.
+
+`2**THOR'S BACK ALLEY BAR** BA401.ZIP
+
+`%(Napalm Runner's Version)
+Go to any of the little area's in there.  When asked 
+for your percentage of ingredients, type in any numbers 
+that end up with a value of 100.  For example, you would 
+type in -32000 for the first one, and 32100 for the second 
+one, and 0 for the rest.  More then likely, you will be 
+offered to buy it at a negative amount, and if you pick 
+the right percentages, you will also get the special 
+attribute also, like the strength, defense, hit points, 
+experience, and/or charm.  This works great in the 
+"Bathroom", because after you've exhausted your number
+of buys, return to the previous menu then go back in, 
+and start buying again.
+KITERIA'S VERSION:  Go into the bathroom, select 99 
+of Purple Pedals, and 0 to the rest, it will say it 
+cost a negative amount, say yes and you will GET that 
+money plus what you are purchasing.  This works with
+every one of the "Bathroom" item's except Goober Grass.  
+Every forth time, you must leave the bathroom, but you 
+can go right back in.  
+THIS HAS BEEN REPAIRED: BA506.ZIP v5.06 Please do 
+this author the courtesy of using only the most 
+recent release of his works on your BBS.
+
+Submitted by Carin M. Armlin
+Go into Thor's BackAlley Bar (take at least $100000 with you), 
+and (F)ind A Stud.  After you buy one, you should be left with 
+a negative amount of gold on hand (it's happened to me every time 
+at least).  Exit the IGM, and Quit LORD w/out going to the bank.  
+Re-enter the game, and you'll have $2 billion gold on hand.  Oh, 
+as far as I know, you have to be a female to do this, so if there is 
+another IGM that allows you to change your sex, or for someone to 
+change it for you, do that first.
+
+SPECIAL FUNCTION:  Go to the Dark Cloaked Figure and
+type "dick", no quote marks.  You will receive 100 charm.
+IF you have OVER 100 charm, you will be reduced to 100 charm,
+so don't do it if you don't need it.
+
+`2**TURGON'S HOUSE**THOUSE25.ZIP 
+
+`%When you are given the option of either trading in 
+your weapon or armor for another one, do not trade 
+up for a better weapon/armor.  If you do it will 
+only make you weaker.  You are given the weapon/armor, 
+but not the strength and defense associated with it.  
+Trade in for a weaker weapon or armor if possible.  
+That way, when you sell your weapon/armor for a better 
+one, you will not lose as much strength/defense.  This 
+will make more sense once you start doing it.  You can 
+rack up tons of strength and defense this way.
+There is a newer version, Turgon's House v2.80 I 
+cannot say that it repairs this or not. 
+
+SPECIAL FEATURE
+submitted by Mary Jane Frank
+
+I found out that when you are in Turgon's House you can break 
+into his room if you are a thief (otherwise you get the message 
+"You need a key"). Also, if you open the closet and the fairies 
+come out, you try to grab one and it says "You will be humiliated 
+for life" your sex changes!  This can really screw up your love 
+life! ;)
+
+
+`2**UNDERGROUND, THE**
+`% UNDERV1.ZIP version 1.01 and Underground v1.20
+
+Enter with at least 1 gold.  Go to the gambling area, 
+and wager a negative amount of gold.  Depending on what 
+level you are on, is important as to how much you should 
+wager.  When asked to pick a number between 1 and ten, 
+pick "11".  You'll lose.  Continue for the rest of your 
+turns.  With the money you just earned, enter the Wizard's 
+area.  CAUTION: If you are at a low level, and you bet a
+very high amount, you should go and deposit the gold in 
+the LORD bank, and other banks as well if available.  If 
+you don't, when you enter the Wizard's area, it will 
+immediately throw you into the negative, forcing all your 
+purchases to be NEGATIVE.  This is not good.  This IGM is 
+so choked with easy cheating, that you can cheat yourself if
+you're not careful!!!!  While here, you may also make your 
+name blink or invisible.  Pick for a name change, enter a 
+"'b" before your name to make it blink red or "'y" for 
+yellow or simply a color code to make it invisible but 
+you will not be able to receive mail unless you write
+it first.
+
+`2**VILLAGE OF THE PHOENIX**
+`%VOTP-10D.ZIP VOTP-14.ZIP
+
+On older versions, there's a way to get an instant 
+2 billion gold. Go to the innkeeper and give him a 
+tip of (negative) -2000000000" or so.  This cheat 
+is 'high' or 'low' spirit reactive.  
+THIS HAS BEEN REPAIRED in version v1.50a  Please do 
+this author the courtesy of using only the most recent
+release of his work.  NOTE OF WARNING, Guido will kick
+your butt if you cheat in the new version and take 
+everything you have.
+
+`2**WARRIOR'S GRAVEYARD**  v1.10 
+
+`%This really isn't that big of a deal...but if it's the 
+only IGM in the realm, it's still an advantage.  If you 
+buy your lemonade, you will notice that you can't buy 
+it again...but if you leave and come back, it will let 
+you!  If it says "You feel vigorous, I wonder what that 
+means?", It means that you may flirt again, with Violet, 
+Seth, or the grave digger but not another player.  You can 
+also completely change your name and re-enter as a new 
+player and go through the entire IGM again.
+
+`2**WARRIOR'S VILLAGE** 
+
+`%rename armor/weapon to 'k, 'S or '}
+
+`2**WEAPON'S OF WAR** v2.53b
+
+`%Before killing the dragon stash everything into this 
+IGM, it will all be there waiting for you when you restart.  
+You can get tons of gems in this IGM as well.  Go to the 
+bank, and pick the option to sell your gems.  You have to 
+have at least 1 gem on hand to make this work.  ...i.e.,
+you can sell -32000 gems...and get 32,000 gems...of course, 
+your money on hand will go into the negatives, but that 
+can easily be fixed by either going into the LORD bank and 
+leaving without making any transaction, or exiting
+the game, and then coming back in.
+
+`2**WISE ONE, THE**
+
+`%Transfer your gold to someone else, go in and ask for gold. 
+Do it over and over.  (This on may be fixed so that you 
+can only go into it one time.)
+
+`2**XENON'S TOWN SQUARE** XENON-V1.ZIP 
+
+`%You can get tons of free gold and gems in this IGM.  
+Go to the bank and deposit a negative amount of gems and/or 
+gold.  This works great in version 3.50+, when you can cash them 
+in all at one time.  THIS HAS BEEN REPAIRED in Xenon's Town 
+Square v2.00 Please do this author the courtesy of using only 
+the most recent release of his work.
+
+`2**NEGATIVE GOLD**
+`%Contributed by Stanley Chiu
+
+If you go into negative gold in some way, DO NOT go in 
+and out of the bank. The 100 gold compensation is a pretty 
+shoddy one.  What you SHOULD do is THIS:  When you see you 
+have negative gold, leave LORD.  Upon re-entry, you'll see 
+that you have two billion gold on hand. The reason is 
+pretty simple...; LORD naturally assumes you obtained 
+negative gold because you went OVER the 2,147,483,617 limit,
+so it gives you two billion back, because it doesn't want to 
+"cheat" you.
+
+`2***WORDS OF WISDOM FROM THE "GREAT" NAPALM RUNNER***
+
+`%If you exceed the limited amount of gold, or experience 
+which is right around 2.147 billion, it will revert you back
+to 2 billion gold, and the same amount of experience.  Experience
+is not that big a deal.  Your hit points, strength, and defense 
+will go into the negative if you exceed 32,767.  When this 
+happens to your strength or defense or in some occasions both, 
+sell the equipment, and it will drop you down.  If it is hit points 
+that has gone over the 32,767 limit, purchase gems and redeem them 
+at the bartenders.  Instead of going up, it will go down and take 
+you out of the negative.
+
+`2For more hints, tips, and information about the game LORD, 
+and the IGM's, read the FIDO LORD Door Game Discussion ECHO. 
+
+`4THIS FILE AND ALL PRECEDING BY THIS AUTHOR 
+ARE NOW PROTECTED UNDER THE COPYRIGHT LAWS 
+OF THE UNITED STATES OF AMERICA.  ANY 
+REPRODUCTION OR OTHER UNAUTHORIZED USE OF 
+THE MATERIAL HEREIN IS PROHIBITED WITHOUT 
+THE EXPRESS WRITTEN PERMISSION OF:
+DOC & SY ENTERPRISE 1997
+@drawmap
+@update
+@pauseon
+@end
+
+@#leaving
+@clear screen
+@show
+`2You leave
+@drawmap
+@update
+@end
+
+@#OPENDOOR
+@do saybar
+`%You open the door and go through.
+@end
+
+@#ENTERBEDROOM
+@datanewday kittip.idf
+@dataload kittip.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do goto bedalready
+@end
+@do saybar
+`%You open the bedroom door.
+@end
+
+@#BEDALREADY
+@do moveback
+@do saybar
+`%You decide not to disturb the Princess again.
+@end
+
+@#ENTERKITCHEN
+@do saybar
+`%You open the kitchen door.
+@end
+
+@#ENTERLIBRARY
+@do saybar
+`%You open the library door.
+@end
+
+@#ENTERTHRONE
+@do saybar
+`%You open the throne room door.
+@end
+
+@#BEDROOM
+@do x is 47
+@clear screen
+@show
+`2   You see the Princess sitting at a desk, staring intently at some papers.
+
+@do write
+`2   Do you try and get her attention? Y/N:
+@do readspecial `s01 YN
+@if `s01 is N then do
+@begin
+@do goto nobed
+@end
+
+@datasave kittip.idf &playernum 1
+@show
+
+`2   She looks up and smiles.
+
+   `#"I'm sorry that I am so busy right now, but please feel free to wander
+the castle."
+@key
+@show
+
+`#   "By the way, did you know that `L.`L.`L.`L
+
+@do `p20 random 14 1
+@if `p20 is 1 then do
+@begin
+@show
+
+`#... in Greentree, in the bottom-middle screen, there's a tree in the wall.
+You can walk into it and come out at the screen just below the city.  Not
+much, but it's a shortcut. You can go in the same way."
+   
+@key
+@end
+@if `p20 is 2 then do
+@begin
+@show
+
+`#... in Turgon's shack, there's a secret passage on the left wall."
+@key
+@end
+@if `p20 is 3 then do
+@begin
+@show
+
+`#... in the screen above the little hut there's a secret passage through the
+trees at the top and then on the left.  It will lead you to a Red Potion."
+@key
+@end
+@if `p20 is 4 then do
+@begin
+@show
+
+`#... deep in the dark forest, there's a secret passage into a lair.  Inside the
+lair there are teleport spots hidden all over.  If you find your way through,
+you will fight a creature called Tash.  If you defeat him, you'll get a
+Moonstone.  If you run, you'll be transported to a very strange place."
+@key
+@end
+@if `p20 is 5 then do
+@begin
+@show
+
+`#... in the Stonepass Lodge there is an amulet under one of the beds."
+@key
+@end
+@if `p20 is 6 then do
+@begin
+@show
+
+`#... you can get an apple if you climb the big tree near the Stonepass Lodge."
+@key
+@end
+@if `p20 is 7 then do
+@begin
+@show
+
+`#... there is a little passage near Castle Coldrake.  You must go through the
+castle to get there.  At the end of the passage is a table with 2 Silver
+Potions."
+@key
+@end
+@if `p20 is 8 then do
+@begin
+@show
+
+`#... Along the shoreline from Castle Coldrake to Sosen Village, there is one
+part of the shoreline that extends to the south.  Follow that to the tree and
+you will find a Red Potion."
+@key
+@end
+@if `p20 is 9 then do
+@begin
+@show
+
+`#... somewhere in Smallwood Field, north of Sosen Village, there's a large
+purple tree.  Walk into the tree and you will be transported to a weird place.
+Once you are there, you can get a Moonstone from the table."
+@key
+@end
+@if `p20 is 10 then do
+@begin
+@show
+
+`#... in the Arrisville Inn, there is a ghost.  If you find him, he may give you
+a quest."
+
+@key
+@end
+@if `p20 is 11 then do
+@begin
+@show
+
+`#... in one of the waterfalls, west of Portown, there's a secret passage that
+leads to a Moonstone."
+@key
+@end
+@if `p20 is 12 then do
+@begin
+@show
+
+`#... in one of the houses in Greentree, there is  woman who does not want you
+to use her bathroom.  Check the toilet, and you will find something useful."
+@key
+@end
+@if `p20 is 13 then do
+@begin
+@show
+
+`#... at the massive tree, near Stonebrook, there is a way to get inside.
+You will find money inside the tree."
+@key
+@end
+@if `p20 is 14 then do
+@begin
+@show
+
+`#... Mamoosoft's IGMs are the best out there.  You should get your SysOp to
+install all of them!"
+@key
+@end
+@show
+
+`2  You thank her for the information and decide not to disturb her any further.
+@key
+@drawmap
+@update
+@closescript
+
+@#NOBED
+@show
+
+`2   You decide not to disturb her.
+@key
+@drawmap
+@update
+@closescript
+
+@#SOUP
+@do moveback
+@clear screen
+@show
+`2   There is a soup pot simmering on the stove.  Dou you try some?
+
+@do `v01 is 1
+@choice
+`%Yes, it looks yummy.
+`%No, I'm not hungry.
+@if response is 1 the do
+@begin
+@show
+
+
+
+`2   The soup tastes wonderful.  You have never tasted anything like it.
+@key
+@show
+
+                     `2You are `@`bFULLY REFRESHED`2!
+@key
+@do `p02 is `p03
+@drawmap
+@update
+@end
+@if response is 2 then do
+@begin
+@drawmap
+@update
+@end
+
+@#PASSAGE
+@do moveback
+@clear screen
+@show
+`2   As you bump the torch, you hear a soft rumbling noise, and begin to
+stumble.
+@key
+@show
+
+`2   You regain your footing, and realize that the floor beneath you is moving.
+The floor panel slides away and reveals a secret passage and a stairway going
+down.
+@key
+@show
+
+`2   Do you enter?
+
+@do `v01 is 1
+@choice
+`%No
+`%Yes
+@if response is 1 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if response is 2 then do
+@begin
+@clear screen
+@show
+`2   You take the torch in hand and slowly descend the dark staircase.
+@key
+@loadmap 1567
+@do map is 1567
+@do x is 75
+@do y is 9
+@drawmap
+@update
+@end
+
+@#COBWEB
+@do saybar
+`%This passage is very musty and full of cobwebs.
+@end
+
+@#POOL
+@do saybar
+`%Is that something sparkling under the water?`L`L
+@end
+
+@#INWATER
+@clear screen
+@show
+`2   As you step into the water to take a closer look, you are surprised by the
+strength of the current.
+@key
+@show
+
+`2   You try to keep your footing, but it is no use.  You slip and begin to wash
+south, downstream.
+
+@do `v01 is 1
+@choice
+`%I relax and let the stream take me.
+`%I swim north as hard as I can!
+@if response is 1 then do
+@begin
+@do goto drown
+@end
+@if response is 2 then do
+@begin
+@do goto nodrown
+@end
+
+@#NODROWN
+@clear screen
+@show
+`2   You valiantly battle the force of the current.
+@key
+@show
+
+`2   Slowly you begin to make headway.  Just an inch at first, but more and
+more as flail your arms with all your might.
+@key
+@show
+
+`2   As you make your way back to the center of the pool, the current decreases.
+There must be an underground spring bubbling up in the middle.  You drop your
+feet and find that you are able to stand here.
+@key
+@show
+
+`2   Something glimmers slightly from the bottom of the pool.
+
+@do `v01 is 1
+@choice
+`%I dive down and check it out.
+`%I head for shore before I drown.
+`%I continue swimming north to see where I end up.
+@if response is 1 then do
+@begin
+@do goto dive
+@end
+@if response is 2 then do
+@begin
+@do goto getout
+@end
+@if response is 3 then do
+@begin
+@do goto swimnorth
+@end
+
+@#DIVE
+@clear screen
+@datanewday divedown.idf
+@dataload divedown.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@show
+`2   You are about to dive down again, then you decide that you have enough
+treasure.  You decide not to risk drowning.
+@key
+@do goto where
+@end
+@show
+`2   You take a deep breath and dive to the bottom.
+@key
+@show
+
+`2   Wedged in the rocks at the bottom, you find the remains of an unfortunate
+adventurer who obviously was not the swimmer you are.
+@key
+@show
+
+`2   The glimmer is coming from an open pouch attached to his belt.
+@key
+@show
+
+`2   Do you take the pouch?
+
+@do `v01 is 1
+@choice
+Yes
+No
+@if response is 1 then do
+@begin
+@clear screen
+@show
+`2   You take the pouch and swim to the surface.  Once there, you open the
+pouch and find...
+@key
+@show
+
+1000 gold pieces
+@key
+@do money + 1000
+@show
+
+7 gems
+@key
+@do `p10 + 7
+@show
+
+and a Green Potion.
+@key
+@do `i05 + 1
+@datasave divedown.idf &playernum 1
+;<--Added by CNW-->
+@do `p21 is `v05
+@do `p21 / 48 <-- half hour of swimming!
+@do `p11 - `p24
+;<-- -->
+@do goto where
+@end
+
+@if response is 2 then do
+@begin
+@do goto where
+@end
+
+@#WHERE
+@clear screen
+@show
+`2   What do you do now?
+
+@do `v01 is 1
+@choice
+`%I head for shore before I drown.
+`%I continue swimming north to see where I end up.
+@if response is 1 then do
+@begin
+@do goto getout
+@end
+@if response is 2 then do
+@begin
+@do goto swimnorth
+@end
+
+@#GETOUT
+@do x is 49
+@do y is 10
+@drawmap
+@update
+@closescript
+
+@#SWIMNORTH
+;<--Added by CNW-->
+@do `p21 is `v05
+@do `p21 / 96 <-- 15mins hour of swimming!
+@do `p11 - `p24
+;<-- -->
+@clear screen
+@show
+`2   You continue swimming north.  The current seems to be behind you now.
+@key
+@show
+
+`2   After a few minutes, you can make out a light at the end of the tunnel.
+You swim towards the light and emerge `L.`L.`L.`L on the shore of the Forest River.
+@key
+@loadmap 1113
+@do map is 1113
+@do x is 15
+@do y is 8
+@drawmap
+@update
+@closescript
+
+@#DROWN
+@clear screen
+@show
+`2   You relax and let the water take you.  You drift quickly for a few minutes,
+then suddenly your hear the crashing sound of a waterfall.
+@key
+@show
+
+`2   You turn and swim with all your might, but it is too late.  The current has
+you firmly in it's grasp.
+@key
+@show
+
+`2   The water plunges 100 feet into a giant subterranean sea, and takes you
+with it!
+@key
+@show
+
+`2   As you feel gravity take hold, you close your eyes and think how much you
+will miss your mom.
+@key
+;<--Added by CNW-->
+@do `p21 is `v05
+@do `p21 / 48 <-- half hour
+@do `p11 - `p24
+;<-- -->
+@clear screen
+@show
+
+`L`L`L   `2Then you slowly open your eyes.
+@key
+@show
+
+`2   You are beaten and battered, but not quite dead.  You are lying on the
+ground outside of Kiteria's Castle.  How on earth did you get here??
+@key
+@do `p02 is 1
+@loadmap 1113
+@do map is 1113
+@do x is 30
+@do y is 19
+@drawmap
+@update
+@closescript
+
+@#NOMORE

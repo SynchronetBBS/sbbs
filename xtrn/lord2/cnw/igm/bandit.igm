@@ -1,0 +1,55 @@
+
+                   Bandit's Hide Out by Chet Rhodes v2.0
+
+                          AN IGM FOR LORD2 V1.00
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2 v1.0.
+
+   TO INSTALL
+   unzip into your LORD2 dir and type:
+
+   IGM BANDIT.IGM
+
+   Go to the east from BoneTown one screen.  The hideout is in the well.
+  
+   TO UNINSTALL
+   Do the same thing again.
+
+   TO UPGRADE FROM v1.1
+   Simply copy over the existing files.
+
+
+   TO UPGRADE FROM A VERSION PRIOR TO 1.1    
+   Uninstall the current version (see above).  Overwrite the existing
+   BANDIT.* files with the new files.  From here use the normal install
+   directions.
+
+   chet.rhodes@juno.com
+   Fido 1:151/131
+  
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Bandit's Hideout `2by `0Chet Rhodes (aka Hawkmoon)
+replacescreen: 1573 1 show
+
+replacescreen: 1570 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Bandit's Cove is a once per day IGM with both rewards and penalities.

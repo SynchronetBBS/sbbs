@@ -1,0 +1,166 @@
+; Script file MON.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE welcomer 000000409
+@DECLARE firstsign 000000572
+@DECLARE secondsign 000000677
+@DECLARE thirdsign 000000760
+@DECLARE churcher 000003038
+@DECLARE priest 000003113
+@DECLARE monk1 000003202
+@DECLARE monk2 000003301
+@DECLARE itemshop 000003477
+@DECLARE nomore 000004175
+@NOCHECK
+; End of .REF index
+
+@#WELCOMER
+@DO SAYBAR
+`9Welcome Man: `7"Welcome to the Flagcity Monastry."
+@key
+@DO SAYBAR
+`9Welcome Man: `7"Please refrain from violence."
+@DO MOVEBACK
+
+@#FIRSTSIGN
+@DO SAYBAR
+`7Sign: These beds used by Saint Walksalot, in his Holy Quest
+@DO MOVEBACK
+
+@#SECONDSIGN
+@DO SAYBAR
+`7Sign:   `%<-- `7Apothacary. Holy Items
+@DO MOVEBACK
+
+@#THIRDSIGN
+@DO MOVEBACK
+@datanewday MON.IDF
+@dataload MON.IDF 1 `p92
+@IF `p92 is 0 then do
+ @begin
+ @DO `p92 RANDOM 4 1
+ @end
+@datasave MON.IDF 1 `p92
+@IF `p92 is 1 then do
+ @begin
+@show
+`r0`c
+        `%PSALM 50:17-21 `!-`3- a warning to the rich!
+
+  `7Fear not when a man grows rich,
+        when the wealth of his house becomes great,
+  For when he dies, he shall take none of it;
+        his wealth shall not follow him down.
+  Though in his lifetime he counted himself blessed,
+        "They will praise you for doing well for yourself,"
+  He shall join the circle of his forebears
+        who shall never more see light.
+  Man, for all his splendor, if he have not prudence,
+        resembles the beasts that perish.
+@key
+ @drawmap
+ @closescript
+ @end
+@IF `p92 is 2 then do
+ @begin
+@show
+`r0`c
+        `%PSALM 54:6-9 `!-`3- you are never alone
+`7
+        Behold, God is my helper;
+                the Lord sustains my life.
+        Turn back the evil upon my foes;
+                in your faithfulness destroy them.
+        Freely will I offer you sacrifice:
+                I will praise your name, O Lord, for its goodness,
+        Because from all distress you have rescued me,
+                and my eyes look down upon my enemies.
+@key
+@drawmap
+ @closescript
+ @end
+@IF `p92 is 3 then do
+ @begin
+@DO SAYBAR
+`7Sign: We will be holding a midnight vigil for all lost souls.
+ @closescript
+ @end
+@IF `p92 is 4 then do
+ @begin
+@show
+`r0`c
+        `%PSALM 85: 9-14 `!-`3 peace
+`7
+        I will hear what God proclaims;
+                the Lord-for he proclaims peace.
+        To his people, and to his faithful ones,
+                and to those who put in him their hope.
+        Near indeed is his salvation to those who fear him,
+                glory dwelling in our land.
+        Kindness and truth shall meet;
+                justice and peace shall kiss.
+        Truth shall spring out of the earth,
+                and justice shall look down from heaven.
+        The Lord himself will give his benefits;
+                our land shall yield its increase.
+        Justice shall walk before him,
+                and salvation, along the way of his steps.
+@key
+@drawmap
+ @closescript
+ @end
+
+@#CHURCHER
+@DO SAYBAR
+`7Devout: "`%SHHH!!! BE QUIET!!!`7"
+@DO MOVEBACK
+
+@#PRIEST
+@DO SAYBAR
+`%Priest: `!"`0I say again, AMEN brotha', AMEN!`!"
+@DO MOVEBACK
+
+@#MONK1
+@DO SAYBAR
+`7Devout: "Do unto others as you would have done unto thee!"
+@DO MOVEBACK
+
+@#MONK2
+@DO SAYBAR
+`7Devout: I'm searching for the meaning of Life, the Universe, and Everything.
+@key
+@DO SAYBAR
+`7Devout: Why do I keep thinking 42?
+@DO MOVEBACK
+
+@#ITEMSHOP
+@DO MOVEBACK
+@offmap
+@busy
+@if `p07 > 50 then do
+ @begin
+@show
+`r0`c                           `%Piety, Ltd.
+`7      Although you're in a monastry, you can't help but worry about
+               the funny glances the shop keeper is giving you...
+
+
+@buymanager
+50
+66
+63
+@drawmap
+@update
+ @closescript
+ @end
+@show
+`r0`c                           `%Piety, Ltd.
+`7      Although you're in a monastry, you can't help but worry about
+               the funny glances the shop keeper is giving you...
+         You quickly steal a glance of some armour, but this fellow
+                  makes no mention of selling any such thing...
+@buymanager
+50
+@drawmap
+@update
+
+@#NOMORE

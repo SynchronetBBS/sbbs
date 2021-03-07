@@ -1,0 +1,801 @@
+; Script file FLIRT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:16 2001
+
+@DECLARE preacher 000001239
+@DECLARE female 000002193
+@DECLARE letter 000002879
+@DECLARE vain 000005028
+@DECLARE sorry 000005185
+@DECLARE choice 000005501
+@DECLARE yes 000006021
+@DECLARE no 000007318
+@DECLARE nomarry 000007696
+@DECLARE end 000008126
+@DECLARE alldone 000008164
+@DECLARE married 000008236
+@DECLARE amarried 000008532
+@DECLARE chapelsign 000008790
+@DECLARE jump1 000008851
+@DECLARE jump2 000009156
+@DECLARE jump3 000009499
+@DECLARE jump4 000009823
+@DECLARE goback 000010146
+@DECLARE spy 000012077
+@DECLARE leapsign 000012181
+@DECLARE schedule 000012235
+@DECLARE top 000012440
+@DECLARE schedule2 000012788
+@DECLARE leap 000012837
+@DECLARE complete 000014240
+@DECLARE list 000015058
+@DECLARE npccheck 000015395
+@DECLARE list1 000015700
+@DECLARE listshow 000016401
+@DECLARE dispatch 000016559
+@DECLARE oops 000016626
+@DECLARE nomore 000017262
+@NOCHECK
+; End of .REF index
+
+;The Wedding Chapel v1.0
+;Complements of Hawkmoon's Realm BBS FIDO 1:151/131
+;Sysop Chet Rhodes
+;chet.rhodes@juno.com
+;
+;---
+; CNW Update, email address is non-existant, so I'll take over this IGM
+; with-in CNW.
+;
+
+@#PREACHER
+@DO MOVEBACK
+@BUSY
+@if wedfin&playernum.txt exist true then goto complete
+@DATALOAD flirtm.IDF &PLAYERNUM `p26
+@IF `p26 NOT 0 THEN GOTO MARRIED
+@if wedpro&playernum.txt exist true then goto choice
+@DATANEWDAY FLIRT.IDF
+@DATALOAD FLIRT.IDF &PLAYERNUM `p20
+@IF `p20 IS 1 THEN GOTO ALLDONE
+@if &sex IS 0 then goto female
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+@if &sex EQUALS 0 then goto female
+@show
+`7  Before you is a beautiful, angelic figure which momentarily makes you forget
+  what you came for.  A faint scent of honeysuckle is in the air. 
+
+`k`%  "Welcome to the Wedding Chapel.  Our purpose here is to bring those that
+  are far away a little closer.  We are also responsible for keeping track of
+  all marriages and proposals.  Rest assured that while marriages are public
+  knowledge all other information is held in strictest confidence."
+
+`k
+@do goto letter
+@END
+
+@#FEMALE
+@do move 1 1
+@show
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`7  Before you is a beautiful, angelic figure which momentarily makes you feel
+  rather plain.  A faint scent of honeysuckle is in the air.  She smiles at you
+  and you strangely feel better about yourself.
+
+`k`%  "Welcome to the Wedding Chapel.  Our purpose here is to bring those that
+  are far away a little closer.  We are also responsible for keeping track of
+  all marriages and proposals.  Rest assured that while marriages are public
+  knowledge all other information is held in strictest confidence."
+
+`k
+@do goto letter
+@END
+
+@drawmap
+@update
+@closescript
+@end
+
+
+@#letter
+@busy
+@show
+@clear screen
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+
+`%  "Is there someone in particular you are interested in?"
+@chooseplayer `p25
+@if `p25 is 0 then goto end
+@if `p25 is &playernum then goto Vain
+@do `s01 is getname `p25
+@if wedpro`p25.txt exist true then goto Sorry
+@DATALOAD flirtm.IDF `p25 `p26
+@IF `p26 NOT 0 THEN GOTO AMARRIED
+
+@
+;(Do tricky stuff with name to determine how much they can type) Thanks Seth
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Composing your love letter to `s01 `r0`\
+@DO WRITE
+`x`x`0Show your `@hearts `0desire `2(1 line only).  `0ENTER`2 to abort.`\`x`x
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@DO `v01 IS 1
+@SHOW
+`\`\`%  "Are you sure this is what you want to do?"
+
+@DO WRITE
+`x`x
+@CHOICE
+Yes ma'am, please send my letter right away.ÿ
+Maybe I will sleep on it first.  Thanks anyway.
+@IF RESPONSE IS 2 THEN GOTO END
+@do stripbad `s03
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "A dispatch rider will be sent out we the letter right away.  I hope it goes
+  well for you."
+
+`k
+@do addlog
+  `r3 `b `r0 `0`n`2 has been seen plucking petals from a flower `r3 `b `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@DATASAVE FLIRT.IDF &PLAYERNUM 1
+
+@DO `p24 is length `s03   ;WHAT IS THIS!!!!!!!!!!!!!!!!!
+@IF `p24 less 3 then do   ;WHAT IS THIS!!!!!!!!!!!!!!!!!
+
+@writefile mail\mail`p25.dat
+`2    A message from `0`N
+`2`x`x =============================================================================`#
+`x`x`x`x`s03`$
+
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=`!Romantic Letter`$=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`2
+`x`x  :To finalize this arrangment you will need to stop by the wedding chapel:`$
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@writefile wedpro`p25.txt
+&playernum
+`n
+&sex
+@drawmap
+@update
+@end
+
+@#vain
+@show
+`%  "Whoaa Cybil!!!  We don't do split personality weddings.  It's just too
+  darn hard to seat the guest."
+
+`k
+@do goto letter
+@end
+
+@#SORRY
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "I am sorry my child but `s01 is already considering a proposal.  You may
+  want to send her a letter and tell `s01 your feelings.  But don't wait too
+  long or it may be too late."
+
+`k
+@drawmap
+@update
+@end
+
+@#CHOICE
+@readfile wedpro&playernum.txt
+`p20
+`s01
+`p21
+@do `s01 is getname `p20
+@do `p26 is `p20
+
+@clear screen
+@do move 1 1
+@show
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "Congratulations.  I understand that `s01 has proposed.  I hope
+  you are as  excited as I am."
+
+@DO `v01 IS 1
+@DO WRITE
+`x`x
+@CHOICE
+Yes ma'am.  This has got to be the best day of my life.
+What?  Marry that pig?  I don't think so!
+@IF RESPONSE IS 1 THEN GOTO YES
+@IF RESPONSE IS 2 THEN GOTO NO
+@END
+
+@#YES
+@if &sex equals `p21 then goto nomarry
+@DATALOAD flirtm.IDF `p20 `p27
+@IF `p27 MORE 0 THEN DO
+ @BEGIN
+ @DO `s02 IS GETNAME `p27
+ @END
+@IF `p27 NOT 0 THEN GOTO OOPS
+@DO `p20 is `p09
+@DO `p20 * 100
+@DO `p01 + `p20
+@DO `P18 + 3
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "Then may each day of your lives together be equally happy."
+
+`k`7  She quickly makes an entry in a large white record book and you realize
+  that you are no longer a lone wolf.
+
+`k`7  Your experience increases by `$`p20
+`7  Your quest points increases by `$3
+
+`k
+@do addlog
+  `r3 `b `r0 `2It is a joyous day for `0`n `2and `0`s01 `r3 `b `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@DATASAVE flirtm.IDF &PLAYERNUM `p26
+@DATASAVE flirtm.IDF `p26 &PLAYERNUM
+@writefile wedfin`p26.txt
+&playernum
+`n
+@writefile mail\mail`p26.dat
+`#    `2A message from `% The Wedding Chapel
+
+`x`x `$-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=`!Congratulations`$=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`x`x   `#`n has accepted your proposal.
+`x`x   Be sure to stop by the chapel and pick up your wedding gifts.
+`x`x `$-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@do delete wedpro&playernum.txt
+@drawmap
+@update
+@end
+
+
+@#NO
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "I am sorry to here that.  I hope you find someone you will be happy with."
+
+`k
+@do delete wedpro&playernum.txt
+@do addlog
+  `r3  `r0 `0`s01 `2 has been snubbed by `0`n `r3  `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@drawmap
+@update
+@end
+
+@#NOMARRY
+@if &sex equals 1 then `s04 is female
+@if &sex equals 0 then `s04 is male
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`7  The Magistrate pulls down a large white record book and starts to make
+  an entry.  A startled look appears on her face.
+
+`k`%  "I am sorry but there seems to be some mistake here.  I thought that
+  `s01 was `s04."
+
+`k`7  Sadly you move on.
+
+`k
+@label end
+@drawmap
+@update
+@end
+
+@#ALLDONE
+@DO SAYBAR
+`$You have already proposed to someone today.
+
+@#MARRIED
+@DATALOAD flirtm.IDF &PLAYERNUM `p26
+@do `s01 is getname `p26
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "Back so soon?  I hope this doesn't mean that you and `s01
+  are having marital difficulties."  
+
+`k
+@drawmap
+@update
+@end
+
+@#AMARRIED
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "I'm sorry my child but `s01 is already married."
+
+`k`7  You quickly turn away so she won't see the tears in your eyes.
+
+`k
+@drawmap
+@update
+@end
+
+@#CHAPELSIGN
+@DO SAYBAR
+`y       The Wedding Chapel ------->
+
+@#JUMP1
+@DO x is 17
+@DO y is 9
+@DRAWPART 16 10
+@UPDATE
+@DO X IS 18
+@DO Y IS 8
+@DRAWPART 17 9
+@UPDATE
+@DO X IS 19
+@DO Y IS 8
+@DRAWPART 18 8
+@UPDATE
+@DO X IS 20
+@DO Y IS 9
+@DRAWPART 19 8
+@UPDATE
+@DO X IS 21
+@DO Y IS 10
+@DRAWPART 20 9
+@UPDATE
+@DO SAYBAR
+`$YaaHoooo....
+@CLOSESCRIPT
+
+@#JUMP2
+@DO x is 40
+@DO y is 11
+@DRAWPART 39 12
+@UPDATE
+@DO X IS 41
+@DO Y IS 10
+@DRAWPART 40 11
+@UPDATE
+@DO X IS 42
+@DO Y IS 10
+@DRAWPART 41 10
+@UPDATE
+@DO X IS 43
+@DO Y IS 11
+@DRAWPART 42 10
+@UPDATE
+@DO X IS 44
+@DO Y IS 12
+@DRAWPART 43 11
+@UPDATE
+@DO SAYBAR
+`$Whoooaaaaa.....  Almost slipped that time.
+@CLOSESCRIPT
+
+@#JUMP3
+@DO x is 43
+@DO y is 11
+@DRAWPART 44 12
+@UPDATE
+@DO X IS 42
+@DO Y IS 10
+@DRAWPART 43 11
+@UPDATE
+@DO X IS 41
+@DO Y IS 10
+@DRAWPART 42 10
+@UPDATE
+@DO X IS 40
+@DO Y IS 11
+@DRAWPART 41 10
+@UPDATE
+@DO X IS 39
+@DO Y IS 12
+@DRAWPART 40 11
+@UPDATE
+@DO SAYBAR
+`$Don't try this at home.
+@CLOSESCRIPT
+
+@#JUMP4
+@DRAWPART 21 10
+@DO x is 20
+@DO y is 9
+@UPDATE
+@DO X IS 19
+@DO Y IS 8
+@DRAWPART 20 9
+@UPDATE
+@DO X IS 18
+@DO Y IS 8
+@DRAWPART 19 8
+@UPDATE
+@DO X IS 17
+@DO Y IS 9
+@DRAWPART 18 8
+@UPDATE
+@DO X IS 16
+@DO Y IS 10
+@DRAWPART 17 9
+@UPDATE
+@DO SAYBAR
+`$I can see my house from here.
+@CLOSESCRIPT
+
+@#GOBACK
+@DO MOVEBACK
+@BUSY
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Information Desk  `r0`\
+`%  "Hi.  Can I help you?"
+
+@DO `v01 IS 1
+@DO WRITE
+`x`x
+@CHOICE
+Could I see the marraige records
+Could I see the scheduled marriages
+Tell me about the magistrate
+I need to go back now.
+No thank you.  Wrong desk.
+@IF RESPONSE IS 1 THEN GOTO LIST
+@if response is 2 then goto schedule
+@IF RESPONSE IS 3 THEN DO
+@BEGIN
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Caroline's story  `r0`\
+`%  "A sad story really.  She met a handsome and gentle man as a young girl.
+  He seemed like the perfect match and they were as happy as any young couple
+  could be.  That was until he fell in with a band of men from BoneTown.
+  Dragon's Tooth clansmen they were.  He started drinking and gambling and
+  nothing she tried could sway him from those evil people."
+
+`k`%  "The final straw came 9 months later on a cold morning when he stood in
+  the middle of the city with a bottle of strong drink in one hand and a
+  Dragon's Tooth amulet in the other.  I can't repeat the language he used
+  and don't care to even attempt to tell you what he had to say about the
+  Koshi.  I will just say that it was the final straw.  The elders had
+  overlooked him as long as they could for Caroline's sake but they couldn't
+  ignore him that time."
+
+`k`%  "Caroline was devastated.  She became like a child that had to be told
+  to eat and bathe.  When the elders assigned her to handle weddings I thought
+  it would be the last straw.  But for Caroline helping others to find what she
+  had lost turned out to be the best medicine.  I guess that is why I am not
+  an elder."
+
+`k
+@DO GOTO GOBACK
+@END
+@IF RESPONSE IS 4 THEN DO
+ @begin
+ @SHOW
+`%`\`\`\  "No problem s&sir, we will take care of you right now."
+
+`k
+ @LOADMAP 1356
+ @DRAWMAP
+ @DO X IS 55
+ @DO Y IS 6
+ @UPDATE
+ @END
+@IF RESPONSE IS 5 THEN DO
+@DRAWMAP
+@UPDATE
+@END
+
+@#SPY
+@DO SAYBAR
+`&Shady Character: If it doesn't work out you can get a divorce in BoneTown.
+
+@#LEAPSIGN
+@DO SAYBAR
+`$Caution!  Koshi Express.
+
+@#schedule
+@do `p20 is &time
+@do `p21 is `p20
+@do `p21 + 25
+@do move 1 1
+@show
+`c`r0
+`$        Weddings Scheduled at the Wedding Chapel
+`0  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@label top
+@if npc/wed`p20.day exists true then do
+        @begin
+        @readfile npc/wed`p20.day
+`p25
+`p26
+        @do `s02 is getname `p25
+        @routine getname in npcname2.ref
+        @do write
+  `@`s02 `$will be wedding `@`s01 on day `@`p20.
+        @end
+@if `p20 > `p21 then goto schedule2
+@do `p20 + 1
+@do goto top
+
+@label schedule2
+@key
+@drawmap
+@update
+@closescript
+
+@#LEAP
+@LOADMAP 1356
+@DRAWMAP
+@DO x is 58
+@DO y is 1
+@UPDATE
+@DO X IS 58
+@DO Y IS 2
+@DRAWPART 58 1
+@UPDATE
+@DO X IS 58
+@DO Y IS 3
+@DRAWPART 58 2
+@UPDATE
+@DO X IS 58
+@DO Y IS 4
+@DRAWPART 58 3
+@UPDATE
+@DO X IS 58
+@DO Y IS 5
+@DRAWPART 58 4
+@UPDATE
+@DO X IS 58
+@DO Y IS 6
+@DRAWPART 58 5
+@UPDATE
+@DO X IS 58
+@DO Y IS 7
+@DRAWPART 58 6
+@UPDATE
+@DO X IS 58
+@DO Y IS 8
+@DRAWPART 58 7
+@UPDATE
+@DO X IS 58
+@DO Y IS 9
+@DRAWPART 58 8
+@UPDATE
+@DO X IS 58
+@DO Y IS 10
+@DRAWPART 58 9
+@UPDATE
+@DO X IS 58
+@DO Y IS 11
+@DRAWPART 58 10
+@UPDATE
+@DO X IS 58
+@DO Y IS 12
+@DRAWPART 58 11
+@UPDATE
+@DO X IS 58
+@DO Y IS 13
+@DRAWPART 58 12
+@UPDATE
+@DO X IS 58
+@DO Y IS 14
+@DRAWPART 58 13
+@UPDATE
+@DO X IS 58
+@DO Y IS 15
+@DRAWPART 58 14
+@UPDATE
+@DO X IS 58
+@DO Y IS 16
+@DRAWPART 58 15
+@UPDATE
+@DO X IS 59
+@DO Y IS 15
+@DRAWPART 58 16
+@UPDATE
+@DO X IS 60
+@DO Y IS 14
+@DRAWPART 59 15
+@UPDATE
+@DO X IS 61
+@DO Y IS 14
+@DRAWPART 60 14
+@UPDATE
+@DO X IS 62
+@DO Y IS 15
+@DRAWPART 61 14
+@UPDATE
+@DO X IS 63
+@DO Y IS 16
+@DRAWPART 62 15
+@UPDATE
+@DO X IS 63
+@DO Y IS 15
+@DRAWPART 63 16
+@UPDATE
+@DO X IS 66
+@DO Y IS 15
+@DRAWPART 63 15
+@UPDATE
+@DO X IS 67
+@DO Y IS 16
+@DRAWPART 66 15
+@UPDATE
+@DO SAYBAR
+`$Ooof... that's gonna leave a mark.
+@DO QUEBAR
+`yYou probably need to see a healer after that fall.
+@DO `p02 IS 1
+@CLOSESCRIPT
+@END
+
+@#COMPLETE
+@readfile wedfin&playernum.txt
+`p20
+`s01
+`p21
+@do `s01 is getname `p20
+@clear screen
+@do move 1 1
+@show
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "Congratulations.  I understand that `s01 has accepted.  I hope you are as
+  excited as I am."
+
+`k  `$"More then you can imagine."
+
+`k
+@DO `p20 is `p09
+@DO `p20 * 100
+@DO `p01 + `p20
+@DO `P18 + 3
+
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "Then may each day of your lives together be equally happy."
+
+`k`7  She quickly makes an entry in a large white record book and you realize
+  that you are no longer a lone wolf.
+
+`k`7  Your experience increases by `$`p20
+`7  Your quest points increases by `$3
+
+
+`k
+@do delete wedfin&playernum.txt
+@drawmap
+@update
+@end
+
+@#LIST
+@BUSY
+@DO MOVEBACK
+@DO `p20 IS 0
+@DO `p21 IS &TOTALACCOUNTS
+@WRITEFILE Married.tmp
+
+`$       Weddings in the Realm
+`0  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Gathering data   `r0
+@DO MOVE 19 3
+@SHOW
+`r1`|`|+
+@do `p26 is 0
+@do goto npccheck
+;@DO GOTO LIST1
+@CLOSESCRIPT
+
+@label npccheck
+@do `p26 + 1
+@dataload npc/npcwed.idf `p26 `p24
+@if `p24 > 0 then do
+        @begin
+        @do `s02 getname `p24
+        @routine getname in npcname2.ref
+        @writefile married.tmp
+   `0`s01 `2is married to `0`s02
+        @end
+@if `p26 > 199 then goto list1
+@do goto npccheck
+
+
+@#list1
+@DO `p20 + 1
+@IF `p20 MORE `p21 then goto LISTSHOW
+@DATALOAD FLIRTM.IDF `p20 `p26
+@IF `p26 IS 0 THEN GOTO LIST1
+@DATALOAD MARRIED.IDF `p20 `p29
+@IF `p29 IS 1 THEN GOTO LIST1
+@DO `s01 IS GETNAME `p20
+@DO `s02 IS GETNAME `p26
+@DATASAVE MARRIED.IDF `p20 1
+@DATASAVE MARRIED.IDF `p26 1
+@WRITEFILE MARRIED.TMP
+   `0`s01 `2is married to `0`s02
+@IF `p20 IS 20 THEN DO
+@BEGIN
+@WRITEFILE MARRIED.TMP
+`k
+@END
+@IF `p20 IS 40 THEN DO
+@BEGIN
+@WRITEFILE MARRIED.TMP
+`k
+@END
+@IF `p20 IS 60 THEN DO
+@BEGIN
+@WRITEFILE MARRIED.TMP
+`k
+@END
+@IF `p20 IS 80 THEN DO
+@BEGIN
+@WRITEFILE MARRIED.TMP
+`k
+@END
+@IF `p20 IS 100 THEN DO
+@BEGIN
+@WRITEFILE MARRIED.TMP
+`k
+@END
+@END
+
+@#LISTSHOW
+@clear screen
+@WRITEFILE MARRIED.TMP
+
+`k
+@DISPLAYFILE MARRIED.TMP
+@DO DELETE MARRIED.TMP
+@DO DELETE MARRIED.IDF
+@DRAWMAP
+@UPDATE
+@END
+
+@#DISPATCH
+@DO SAYBAR
+`$Temporarily closed until the next release
+
+@#OOPS
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Speaking to Magistrate S. Caroline Dillon  `r0`\
+`%  "Then may each day of your lives together be equally happy."
+
+`7  The Magistrate pulls down a large white record book and starts to make
+  an entry.  A startled look appears on her face.
+
+`k`%  "I am sorry but there seems to be some mistake here.  It seems that
+  `s01 got a little impatient and has married `s02."
+
+`k`7  You quickly turn away so she won't see the tears in your eyes.  A black
+  spot has formed on your heart and its name is `s01.
+
+`k
+@DO DELETE wedpro&playernum.txt
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#NOMORE

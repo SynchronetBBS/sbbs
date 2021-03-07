@@ -1,0 +1,101 @@
+
+                              LORD Stuff Pack 1
+                        (c) 1997 ShroomTrip Software
+
+Color Codes:
+1 = Dark Blue
+2 = Dark Green
+3 = Dark Cyan
+4 = Dark Red
+5 = Magenta
+6 = Brown/Yellow
+7 = Grey
+8 = Dark Grey
+9 = Light Blue
+0 = Light Green
+! = Light Cyan
+@ = Light Red
+# = Light Magenta
+$ = Yellow
+% = White
+b = Blinking Red
+
+  #1  `0Cluster of `!wild`4berries
+  #2  `!Poison`4berry  
+  #3  `%Milk  
+  #4  `0Dagger  
+  #5  `0Green Potion  
+  #6  `6Rusty Dagger  
+  #7  `0Ancient Flute  
+  #8  `4Berry `0Pie  
+  #9  `7Short Sword  
+  #10 `0Heavy Coat  
+  #11 `0Little Girl  
+  #12 `6Leather Vest  
+  #13 `7Chain Mail  
+  #14 `7Plate Mail  
+  #15 `0Huge Axe  
+  #16 `1C`9r`!yst`9a`1l `%Shard  
+  #17 `0Gloworm  
+  #18 `2P`0a`$rr`0o`2t  
+  #19 `@Apple  
+  #20 `%World Map  
+  #21 `%Travel Pass  
+  #22 `!Skystaff `0Base  
+  #23 `!Skystaff `0Middle  
+  #24 `!Skystaff `0Top  
+  #25 `!Skystaff `0Gemstone  
+  #26 Ticket to `$ArrisVille  
+  #27 Ticket to `@Sosen Village  
+  #28 `6Fishing Pole  
+  #29 `6Salmon  
+  #30 `0Sparking Green Salmon  
+  #31 `6Mountain Amulet  
+  #32 Ticket to `!PortTown  
+  #33 Ticket to `#Flag`0City  
+  #34 `%Cloud Sword  
+  #35 `7Silver Sabre 
+  #36 `$Pirate Hook  
+  #37 `%Skull Helmet  
+  #38 `7Spiked Mace 
+  #39 `7Broadsword  
+  #40 `!Blue Potion 
+  #41 `0Ma's letter 
+  #42 `0Laura & Uncle Edward  
+  #43 `%Chicken Egg  
+  #44 `@Sack  
+  #45 `@Satchel  
+  #46 `@Small Bag  
+  #47 `@Letter  
+  #48 `@Small Purse  
+  #49 `0Poison Dagger  
+  #50 `#Travel `0Potion
+  #51 `0Small fuzzy animal
+  #52 `@Red Potion  
+  #53 `$Gold Potion  
+  #54 `7Silver Potion
+  #55 `%White Potion  
+  #56 `0Wizard Wand 
+  #57 `%Moonstone  
+  #58 `0Twin Swords  
+  #59 `7Spiked Shirt 
+  #60 `7Ninja Stars  
+  #61 `7Ghost's `!Ring  
+  #62 `0Blessed Armour  
+  #63 `@Koshi Armour  
+  #64 `@Fire`4ball  
+  #65 `@Koshi Sword 
+  #66 `0Koshi Snack 
+  #67 `@Disguise  
+  #68 `%Cursed Armour  
+  #69 `@Dragon Armour
+  #70 `!Ice storm  
+  #71 `@Dragon Sword
+  #72 `%Gryphon Moon  
+  #73 `4Smackrod  
+  #74 `0Barak's Diary  
+
+Added by CNW-
+Obviously there are more item in CNW package, I'll update this list
+at a later time, for now just check the list in l2cfg.exe :)
+
