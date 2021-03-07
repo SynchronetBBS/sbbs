@@ -54,18 +54,6 @@ Commands.User.Config = {
 	Description: "Enter the user settings configuration menu"
 };
 
-if (inBBS) {
-	Commands.User.Config.Action = _wrap(bbs.user_config);
-	Commands.User.Find.Action = findUser;
-	Commands.User.Info.Action = _wrap(bbs.user_info);
-	Commands.User.List.Action = _wrap(bbs.list_users);
-	Commands.User.ListNodes.Action = _wrap(bbs.list_nodes);
-	Commands.User.ListNodesActive.Action = _wrap(bbs.whos_online);
-	Commands.User.Logons.Action = _wrap(bbs.list_logons);
-	Commands.User.SelectShell.Action = _wrap(bbs.select_shell);
-	Commands.User.SelectEditor.Action = _wrap(bbs.select_editor);
-}
-
 Commands.User.Find = {
 	Description: "Find user by username/number"
 };
@@ -98,25 +86,19 @@ Commands.User.SelectEditor = {
 	Description: "Select an external message editor"
 }
 
-// System areas & functions that don't fit elsewhere
-
 if (inBBS) {
-	Commands.System.Chat.Action = function() { bbs.exec("?chat_sec.js"); }
-	Commands.System.ExternalPrograms.Action = _wrap(bbs.xtrn_sec);
-	Commands.System.Info.Action = _wrap(bbs.sys_info);
-	Commands.System.LogOff.Action = _wrap(bbs.logoff);
-	Commands.System.LogOffFast.Action = _wrap(bbs.logout);
-	Commands.System.NodeChat.Action = _wrap(bbs.multinode_chat);
-	Commands.System.NodeChatPrivate.Action = _wrap(bbs.private_chat);
-	Commands.System.NodeMessage.Action = _wrap(bbs.private_message);
-	Commands.System.NodeStats.Action = _wrap(bbs.node_stats);
-	Commands.System.PageSysop.Action = _wrap(bbs.page_sysop);
-	Commands.System.PageGuru.Action = _wrap(bbs.page_guru);
-	Commands.System.Stats.Action = _wrap(bbs.sys_stats);
-	Commands.System.TextSection.Action = _wrap(bbs.text_sec);
-	Commands.System.TimeBank.Action = _wrap(bbs.time_bank);
-	Commands.System.Version.Action = _wrap(bbs.ver);
+	Commands.User.Config.Action = _wrap(bbs.user_config);
+	Commands.User.Find.Action = findUser;
+	Commands.User.Info.Action = _wrap(bbs.user_info);
+	Commands.User.List.Action = _wrap(bbs.list_users);
+	Commands.User.ListNodes.Action = _wrap(bbs.list_nodes);
+	Commands.User.ListNodesActive.Action = _wrap(bbs.whos_online);
+	Commands.User.Logons.Action = _wrap(bbs.list_logons);
+	Commands.User.SelectShell.Action = _wrap(bbs.select_shell);
+	Commands.User.SelectEditor.Action = _wrap(bbs.select_editor);
 }
+
+// System areas & functions that don't fit elsewhere
 
 Commands.System.Chat = {
 	Description: "Enter the chat section"
@@ -178,26 +160,25 @@ Commands.System.Version = {
 	Description: "Display software version information"
 }
 
-// Message area related functions
-
 if (inBBS) {
-	Commands.Messages.BulkMail.Action = _wrap(bbs.bulk_mail);
-	Commands.Messages.Find.Action = findMessages;
-	Commands.Messages.Post.Action = _wrap(bbs.post_msg);
-	Commands.Messages.MailRead.Action = _wrap(bbs.read_mail);
-	Commands.Messages.QWKSection.Action = _wrap(bbs.qwk_sec);
-	Commands.Messages.Read.Action = _wrap(bbs.scan_msgs);
-	Commands.Messages.Scan.Action = scanSubs;
-	Commands.Messages.ScanConfig.Action = _wrap(bbs.cfg_msg_scan);
-	Commands.Messages.ScanPointers.Action = _wrap(bbs.cfg_msg_ptrs);
-	Commands.Messages.ScanPointersReinit.Action = _wrap(bbs.reinit_msg_ptrs);
-	Commands.Messages.SelectGroup.Action = selectMessageGroup;
-	Commands.Messages.SelectArea.Action = selectMessageArea;
-	Commands.Messages.SelectGroupAndArea.Action = selectGroupAndArea;
-	Commands.Messages.SendMail.Action = sendMail;
-	Commands.Messages.SendNetMail.Action = sendNetMail;
-	Commands.Messages.SubInfo.Action = _wrap(bbs.sub_info);
+	Commands.System.Chat.Action = function() { bbs.exec("?chat_sec.js"); }
+	Commands.System.ExternalPrograms.Action = _wrap(bbs.xtrn_sec);
+	Commands.System.Info.Action = _wrap(bbs.sys_info);
+	Commands.System.LogOff.Action = _wrap(bbs.logoff);
+	Commands.System.LogOffFast.Action = _wrap(bbs.logout);
+	Commands.System.NodeChat.Action = _wrap(bbs.multinode_chat);
+	Commands.System.NodeChatPrivate.Action = _wrap(bbs.private_chat);
+	Commands.System.NodeMessage.Action = _wrap(bbs.private_message);
+	Commands.System.NodeStats.Action = _wrap(bbs.node_stats);
+	Commands.System.PageSysop.Action = _wrap(bbs.page_sysop);
+	Commands.System.PageGuru.Action = _wrap(bbs.page_guru);
+	Commands.System.Stats.Action = _wrap(bbs.sys_stats);
+	Commands.System.TextSection.Action = _wrap(bbs.text_sec);
+	Commands.System.TimeBank.Action = _wrap(bbs.time_bank);
+	Commands.System.Version.Action = _wrap(bbs.ver);
 }
+
+// Message area related functions
 
 Commands.Messages.BulkMail = {
 	Description: "Send bulk private mail"
@@ -263,19 +244,26 @@ Commands.Messages.SubInfo = {
 	Description: "Display message sub-board information"
 }
 
-// File area related functions
-
 if (inBBS) {
-	Commands.Files.BatchMenu.Action = _wrap(bbs.batch_menu);
-	Commands.Files.BatchDownload.Action = _wrap(bbs.batch_download);
-	Commands.Files.DirInfo.Action = _wrap(bbs.dir_info);
-	Commands.Files.List.Action = _wrap(bbs.list_files);
-	Commands.Files.ListExtended.Action = _wrap(bbs.list_file_info);
-	Commands.Files.Scan.Action = _wrap(bbs.scan_dirs);
-	Commands.Files.TempXfer.Action = _wrap(bbs.temp_xfer);
-	Commands.Files.Upload.Action = _wrap(bbs.upload_file);
-	Commands.Files.XferPolicy.Action = _wrap(bbs.xfer_policy);
+	Commands.Messages.BulkMail.Action = _wrap(bbs.bulk_mail);
+	Commands.Messages.Find.Action = findMessages;
+	Commands.Messages.Post.Action = _wrap(bbs.post_msg);
+	Commands.Messages.MailRead.Action = _wrap(bbs.read_mail);
+	Commands.Messages.QWKSection.Action = _wrap(bbs.qwk_sec);
+	Commands.Messages.Read.Action = _wrap(bbs.scan_msgs);
+	Commands.Messages.Scan.Action = scanSubs;
+	Commands.Messages.ScanConfig.Action = _wrap(bbs.cfg_msg_scan);
+	Commands.Messages.ScanPointers.Action = _wrap(bbs.cfg_msg_ptrs);
+	Commands.Messages.ScanPointersReinit.Action = _wrap(bbs.reinit_msg_ptrs);
+	Commands.Messages.SelectGroup.Action = selectMessageGroup;
+	Commands.Messages.SelectArea.Action = selectMessageArea;
+	Commands.Messages.SelectGroupAndArea.Action = selectGroupAndArea;
+	Commands.Messages.SendMail.Action = sendMail;
+	Commands.Messages.SendNetMail.Action = sendNetMail;
+	Commands.Messages.SubInfo.Action = _wrap(bbs.sub_info);
 }
+
+// File area related functions
 
 Commands.Files.BatchMenu = {
 	Description: "Enter the batch file transfer menu"
@@ -311,6 +299,18 @@ Commands.Files.Upload = {
 
 Commands.Files.XferPolicy = {
 	Description: "Display the file transfer policy"
+}
+
+if (inBBS) {
+	Commands.Files.BatchMenu.Action = _wrap(bbs.batch_menu);
+	Commands.Files.BatchDownload.Action = _wrap(bbs.batch_download);
+	Commands.Files.DirInfo.Action = _wrap(bbs.dir_info);
+	Commands.Files.List.Action = _wrap(bbs.list_files);
+	Commands.Files.ListExtended.Action = _wrap(bbs.list_file_info);
+	Commands.Files.Scan.Action = _wrap(bbs.scan_dirs);
+	Commands.Files.TempXfer.Action = _wrap(bbs.temp_xfer);
+	Commands.Files.Upload.Action = _wrap(bbs.upload_file);
+	Commands.Files.XferPolicy.Action = _wrap(bbs.xfer_policy);
 }
 
 getMenus();
