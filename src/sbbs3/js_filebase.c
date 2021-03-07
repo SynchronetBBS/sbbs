@@ -245,6 +245,11 @@ set_file_properties(JSContext *cx, JSObject* obj, smbfile_t* f, enum file_detail
 			|| !JS_DefineProperty(cx, obj, "md5", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 			return false;
 	}
+	if(f->tags != NULL
+		&& ((js_str = JS_NewStringCopyZ(cx, f->tags)) == NULL
+			|| !JS_DefineProperty(cx, obj, "tags", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
 	return true;
 }
 
@@ -360,6 +365,20 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 		if(*extdesc == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_ERR_MEM;
+		}
+	}
+	prop_name = "tags";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_FAILURE;
+		}
+		if((result = smb_new_hfield_str(file, SMB_TAGS, cp)) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
 		}
 	}
 
