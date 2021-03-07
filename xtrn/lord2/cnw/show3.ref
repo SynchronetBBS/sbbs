@@ -1,0 +1,767 @@
+; Script file SHOW3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:33 2001
+
+@DECLARE springfang 000000385
+@DECLARE bankstart 000001430
+@DECLARE bankagain 000002644
+@DECLARE deposit 000003910
+@DECLARE withdraw 000004430
+@DECLARE turnstart 000005552
+@DECLARE dept 000006364
+@DECLARE withd 000007107
+@DECLARE spring 000015581
+@NOCHECK
+; End of .REF index
+
+@#springfang
+ @do moveback
+ @offmap
+ @datanewday show1.shw
+ @datanewday show2.shw
+ @clear screen
+ @show
+ `c
+       `2You approach the throne and see `3Spr`7ing`4Fa`6ng `2sitting there, looking
+     dangerous, kind, mean, and caring all at the same time.  You remember
+     all the tales you've heard of him throughout your life, of how he was
+     the only apprentice of `4K`5C`8D `2that actually bested him in a duel.
+
+       "`4What can I do for you today, `0`n`4?`2" `3Spr`7ing`4Fa`6ng `2smiles warmly.
+
+       "`$Uh, um, well....  I want to`2"
+
+@do `v01 is 1
+@choice
+be healed.
+use the bank.
+do something with you.
+worship you!
+be declared as the greatest warrior!
+conduct business.
+do nothing.
+@if responce is 2 then do
+ @begin
+  @show
+  `c
+       `2"`4Would you like to use the turn bank or the money bank?`2"
+
+  @do `v01 is 1
+  @choice
+  Money Bank
+  Turn Bank
+  @if responce is 1 then do
+  @begin
+  @show
+  `c
+       `2"`4Sure thing.  Here, let me bring up your account...`2"
+       `\`k
+   @label bankstart
+   @do `v01 is 1
+   @show
+`r0`c  `r1 `%SpringFang's International Coffers `r0
+
+`2  `3Spr`7ing`4Fa`6ng `2looks at you expectantly.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with us.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave.
+@if response is 4 then goto springfang
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `3Spr`7ing`4Fa`6ng `2asks you to sit down.
+
+  `0"`4Your full name, s&boy?`0"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"`4Your current residence?`0"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"`4Your net income yearly?`0"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 2857365 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b2857365`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"`4How much would you like to open your account with?`0" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `3Spr`7ing`4Fa`6ng `2looks at you, dumbfounded.
+
+    `0"`4Listen, s&boy.  You need at least `0$50 `4to open an account ANYWHERE.
+  Didn't you know that?`0"
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+    `0"`4Well, then.  We'll be anxiously awaiting your return!`0"
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"`4S&Boy, `$$50 `0is required to open a new account!`0"
+  @do goto bankagain
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"`4Very good, s&boy!  Your new account has been opened!`0"
+
+`k
+  @do goto bankstart
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"`4Deposit how much, s&boy?`0"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"`4Withdraw how much, s&boy?`0"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"`4Very well, s&boy!  This will close your account with us, are you sure you wish
+  to do that?`0" `3Spr`7ing`4Fa`6ng `2states calmly.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+No. I don't know WHAT I was thinking.
+Yes.  I am an idiot.
+@if response is 1 then goto bankstart
+
+   @end
+
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+ @end
+@end
+@end
+@end
+@end
+  @if responce is 2 then do
+  @begin
+  @show
+  `c
+       `2"`4Sure thing.  Here, let me bring up your account...`2"
+       `\`k
+   @do `p22 is money
+   @do `p22 + bank
+   @do `p22 / 5
+   @if `p22 < 750 then `p22 is 750
+   @label turnstart
+   @dataload sturn.shw &playernum `p20
+
+   @do `v01 is 1
+   @show
+`r0`c  `r1 `%SpringFang's Turn Bank `r0
+
+`2  `3Spr`7ing`4Fa`6ng `2looks at you expectantly.
+
+@if `p20 more 0 then do
+ @begin
+ @show
+`2  You have `$`p11 `2turns, your account is at `$`p20 `2turns.
+
+ @end
+
+@if `p20 is 0 then do
+ @begin
+ @show
+`2  You have `$`p11 `2turns, you don't have an account.
+
+ @end
+
+ @show
+ `2 It will cost you `0$`p22 `2to make a withdrawl or deposit.
+ `8 You have $&money.
+
+@do write
+`x`x
+@choice
+Make a deposit.
+Make a withdraw.
+Leave.
+@if response is 3 then goto springfang
+@if response is 1 then do
+  @begin
+  @if money < `p22 then do
+  @begin
+  @show
+  `c
+  `2You don't have enough money!
+  `\`k
+  @do goto springfang
+ @end
+  @show
+  `c
+
+
+  @do write
+`\
+  @label dept
+  @do write
+`\  `0"`4Deposit how many turns, s&boy?`0"`\`\`x`x
+  @do readnum 10 `p11
+  @if `v40 more `p11 then do
+  @begin
+  @show
+`\`\  `2You don't have that many turns...
+  @do goto dept
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto dept
+  @end
+
+  @if `v40 is 0 then do
+  @begin
+  @do goto turnstart
+  @end
+
+  @do `p11 - `v40
+  @do `p20 + `v40
+  @do money - `p22
+  @datasave sturn.shw &playernum `p20
+  @do goto turnstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @if money < `p22 then do
+  @begin
+  @show
+  `c
+  `2You don't have enough money!
+  `\`k
+  @do goto springfang
+ @end
+  @show
+  `c
+
+  @do write
+`\
+  @label withd
+  @do write
+`\  `0"`4Withdraw how many turns, s&boy?`0"`\`\`x`x
+  @do `p21 is `p20
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more `p20 then do
+  @begin
+  @show
+`\`\  `2Your account isn't that large!
+  @do goto withd
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withd
+  @end
+
+  @if `v40 is 0 then do
+  @begin
+  @do goto turnstart
+  @end
+
+  @do `p11 + `v40
+  @do `p20 - `v40
+  @do money - `p22
+  @datasave sturn.shw &playernum `p20
+  @do goto turnstart
+  @end
+@end
+@end
+@end
+@end
+  
+@if responce is 1 then do
+ @begin
+  @do `v01 is 1
+  @show
+`r0`c  `%`r1  SpringFang the Healer  `r0
+
+`2  `3Spr`7ing`4Fa`6ng `2looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 = `p03 then do
+ @begin
+@show
+`0"`4You have no ailments, come back later,`0" `3Spr`7ing`4Fa`6ng `2states.
+
+`k
+  @do goto springfang
+ @end
+
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"`4You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, ok?`0"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"`4Sorry s&boy, I can't do it for free.`0"
+
+`k
+  @drawmap
+  @update
+  @closescript
+  @do goto springfang
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+  @end
+  @drawmap
+  @update
+  @closescript
+  @do goto springfang
+@end
+
+ @if responce is 6 then do
+    @begin
+    @do `p20 is 9
+    @run getquest in quest.ref
+    @end
+@if responce is 3 then do
+ @begin
+  @dataload show1.shw &playernum `p20
+  @if `p20 is 1 then do
+   @begin
+    @show
+    `c
+       `2You've already done all you can with him today.
+       `\`k
+   @do goto springfang
+   @end
+  @if `p20 is 0 then do
+   @begin
+    @show
+  `c
+       `2He thinks for a while and then says:
+
+       "`4Well, all right.  What would you like to do?`2"
+`\`k
+  @do `p20 random 3 1
+  @if `p20 is 1 then do
+   @begin
+    @show
+    `c
+       `2You decide to go have a picnic in GreenTree.  You both have lots
+     of fun and become good friends.
+
+       `2Just as he leaves, `3Spr`7ing`4Fa`6ng `2gives you 3 gems!
+
+     `^You gain 3 gems!
+     `\`k
+    @do `p19 + 3
+   @datasave show1.shw &playernum 1
+    @do x is 32
+    @do y is 15
+    @do map is 147
+    @loadmap &map
+    @do goto spring
+   @end
+  @if `p20 is 2 then do
+   @begin
+    @show
+    `c
+       `2You decide to go have a walk on the beach.  `3Spr`7ing`4Fa`6ng `2shows
+     you the best spots, and you stop at the observation deck.
+
+       `2He suddenly has to go, but gives you his best wishes and $500!
+
+     `^You gain 500 gold!
+     `\`k
+    @do money + 500
+   @datasave show1.shw &playernum 1
+    @do x is 55
+    @do y is 9
+    @do map is 800
+    @loadmap &map
+    @do goto spring
+   @end
+  @if `p20 is 3 then do
+   @begin
+    @if sexmale is 0 then do
+     @begin
+     @show
+    `c
+       `2You decide to go swimming.  You swim all over and have quite an
+     experience!  `3Spr`7ing`4Fa`6ng shows you some of the better ways to
+     enjoy swimming.
+
+     `^You gain 4 charm!
+     `\`k
+    @do `p08 + 4
+   @datasave show1.shw &playernum 1
+    @do x is 60
+    @do y is 12
+    @do map is 1033
+    @loadmap &map
+    @do goto spring
+     @end
+    @if sexmale is 1 then do
+     @begin
+     @show
+     `c
+       `2You go down to the Red Dragon Inn and he buys you a drink.  You
+     notice that he doesn't drink at all.  He must care more about his image
+     than you do about yours.  Hmmmm...
+
+     `^You gain 4 charm!
+     `\`k
+    @do `p08 + 4
+   @datasave show1.shw &playernum 1
+    @do x is 26
+    @do y is 5
+    @do map is 159
+    @loadmap &map
+    @do goto spring
+     @end
+   @end
+  @end
+ @end
+@if responce is 4 then do
+ @begin
+  @dataload show2.shw &playernum `p20
+  @if `p20 is 0 then do
+   @begin
+    @show
+    `c
+       `2You fall on your knees in front of `3Spr`7ing`4Fa`6ng `2and begin to
+     worship him.
+
+       `2He rushes over and lifts you up.
+
+       "`4There's no need for that!  Here, though, let me reward you...`2"
+
+     @do `p20 random 3 1
+     @if `p20 is 1 then do
+      @begin
+       @show
+       `^You gain 5 hit points!
+       `\`k
+       @do `p03 + 5
+      @end
+     @if `p20 is 2 then do
+      @begin
+       @show
+       `^You gain 2 strength!
+       `\`k
+       @do `p04 + 2
+      @end
+     @if `p20 is 3 then do
+      @begin
+       @show
+       `^You gain 1 dodge!
+       `\`k
+       @do `p05 + 1
+      @end
+   @datasave show2.shw &playernum 1
+  @do addlog
+  `r5  `r0 `0`n`2 has been seen worshiping `3Spr`7ing`4Fa`6ng`2! `r5  `r0
+  @writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+     @do goto springfang
+    @end
+  @if `p20 is 1 then do
+   @begin
+    @show
+    `c
+       `2You've already humiliated yourself enough today...
+       `\`k
+   @end
+  @do goto springfang
+ @end
+@if responce is 5 then do
+ @begin
+  @dataload grshow.shw 1 `p20
+  @if `p20 not 0 then do
+   @begin
+   @if `p20 not &playernum then do
+    @begin
+   @dataload grshow.shw 2 `p95
+   @do `s01 is getname `p20
+   @show
+    `c
+       `2"`4I'm sorry, friend, but `0`s01 `4is currently the greatest warrior in
+     the land.  You will have to defeat them before you can claim the title.
+     If you do, you will win `0$`p95`4.`2"
+     `\`k
+    @do goto springfang
+   @end
+  @end
+  @if &playernum is `p20 then do
+   @begin
+   @dataload grshow.shw 2 `p95
+   @show
+    `c
+       `2"`4Oh, my poor, sad `0`n`4.  Don't you realise that I have already
+     proclaimed you as the greatest?  You will retain the title until someone
+     actually kills you.`2"
+
+       `2"`4The prize for beating you is currently set at `0$`p95`4!`2"
+
+
+
+   @do `v01 is 1
+   @choice
+   Oh, heh, silly me...
+   I wish to withdraw the title.
+   @if responce is 1 then do
+    @begin
+     @do goto springfang
+    @end
+   @if responce is 2 then do
+    @begin
+     @show
+      `c
+       `2"`4Very well.  The title `$Greatest Warrior in the Land `4is now up
+     for grabs.  You are just a lowly nothing.  Oh, here is your money.`2"
+
+       `2You get your `p95 dollars back.
+    `\`k
+    @do money + `p95
+    @do delete grshow.shw
+    @do addlog
+  `r5  `r0 `0`n`2 has withdrawn s&his title of `$Greatest Warrior in the Land`2! `r5  `r0
+  @writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+   @do goto springfang
+   @end
+   @end
+  @show
+  `c
+       `2"`4Ah.  You wish to proclaim yourself as the greatest?  Well, you
+     know then that you must give me some money to give you the title.  You
+     choose the amount.  If someone finds you and kills you, they will get
+     the money, and you will lose your title.  The title will then be
+     available for anyone else who thinks that they deserve it.  Um, do you
+     wish to continue?`2"
+
+
+   @do `v01 is 1
+   @choice
+   Yes, I already knew all that!
+   No.  Sounds like a death wish.
+   @if responce is 2 then do
+    @begin
+     @do goto springfang
+    @end
+   @if responce is 1 then do
+    @begin
+     @show
+     `c
+       `2"`4How much money are you willing to stake on this title?`2"
+
+
+     
+  @do readnum 10 money
+  @if `v40 is 0 then do
+  @begin
+   @show
+
+       `2You need to put in SOMETHING!
+       `\`k
+   @do goto springfang
+  @end
+  @if `v40 more money then do
+  @begin
+  @show
+
+       `2You don't have that much money!  I guess you don't really want the
+     title? 
+  `\`k
+  @do goto springfang
+  @end
+  @datasave grshow.shw 1 &playernum
+  @datasave grshow.shw 2 `v40
+  @do `s01 is `n
+  @do money - `v40
+  @show
+  `c
+       `2"`4It is done.  `0`n, `4you are now the `$Greatest Warrior in the Land`4.
+     At least, you have the title, but I'd watch my back if I were you...`2"
+   `\`k
+  @do addlog
+  `r5  `r0 `0`n`2 is now the `$Greatest Warrior in the Land`2! `r5  `r0
+  @writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@end
+@do goto springfang
+@end
+  @if responce is 7 then do
+ @begin
+  @do goto spring
+ @end
+
+@#spring
+ @drawmap
+ @update

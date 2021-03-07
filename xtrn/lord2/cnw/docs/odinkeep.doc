@@ -1,0 +1,208 @@
+
+
+
+
+
+
+
+
+
+
+
+                                -=-  Odin's Keep  -=-
+                              A Lord II InterGame Module
+                               Written By: Peter Jackson
+                                   A.K.A. ... oDiN
+                                BBS- (706) 613-3577
+                               Internet- Odin706@aol.com
+
+                                    Version 2.00
+                                (c)1997 AEsir Software
+
+
+                
+
+
+
+
+      TEXT FILES INCLUDED:
+
+      DONATE.DOC   <- Info on donating.
+      SYSOP.DOC    <- Setting it up and general info
+      BUGRPT.DOC   <- Report flaws to me 
+      WHATSNEW.DOC <- Explains what I added to this version.
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Index ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+                      Part 1 -=-=-  Introduction and description
+                      Part 2 -=-=-  Setting it up 
+                      Part 3 -=-=-  Acknowledgements
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Introduction ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+
+This IGM was written for use with LORD II version 1.00a+ ONLY it will not
+work with lower versions. This is not an IGM that is too giving, but
+can be altered by you to your specifications.
+
+Odin's Castle is located east of PortTown. Inside the Castle is the keep
+and Eric's bar.
+
+
+                  -= Inside the Castle =-
+
+ -Odin's Keep is an ownable keep that has :
+
+ * "Majic" swimming pool
+ * An adult male Dragon named "Vincent" that will transport people to 
+   Flagcity, Sosen Village, etc.
+ * A private doctor that will heal wounds at no charge.  
+ * No player fights inside the Keep !
+
+ -Eric's Bar contains the following :
+
+ * Alot of Patrons to talk with
+ * A Bartender that accepts quests, gems, gives free drinks etc.
+ * Weapons, Armor and goods dealer - you can also sell things 
+ * PG-13 Male or Female Companions with "clean mode" protection
+   Also gives "lay" points to players.
+ * + alot more.
+
+ -Towers
+ * Finally finished them. ::wahoo::  No big deal they just choose from 4
+   random events 2 events are bad 2 events are good.
+
+                  -= Outside the Castle =-
+
+ * Fairy Garden - Let's get real people, she's cool but don't piss her off ! 
+ 
+
+-Coming soon in the next version
+ * This is the last version ! ;}
+
+
+Try my other IGM's for LORD 2
+
+ * Quester V2.00 for LORD2  A Great IGM for LORD2 1.01a+
+   Allows players to complete a quest per day that involves fighting
+   against some major enemies ! Very configurable. Bug fix + compatible
+   with other Lord II IGM's.
+
+ * Thor V1.00 for LORD2  Works with Registered or Unregistered
+   Lord II Ver 101a+ If player's kill stat 5 or above, Thor will give
+   1 of 4 blessings. "Blessings" include Muscle, Dodge, Charm and
+   Hit Points. Special code limits one visit per day.
+ 
+ * COMING SOON *
+
+  Loki's Inn and Valhalla IGM's for Lord II !
+
+                 
+You can get these off my BBS or just E-mail me and I'll send them to you.
+Odin706@aol.com
+
+You can also get them off my website.
+http://members.aol.com/odin706/title.html
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Setup ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Setup is simple.
+
+-IF AND ONLY IF! YOU HAVE PREVIOUSLY INSTALLED VERSION 1.00 or 1.02 
+Before you do anything !
+
+#1 In your Lord II directory type,
+IGM ODINKEEP.IGM
+This will uninstall the old version and restore your old world map back to
+original.
+
+#2 Follow the rest of the directions below.  
+
+Install will replace four sections on the game map. Likewise Uninstall
+will restore these sections to their original state.
+
+******If you have more than one IGM installed **************************
+
+Edit ODINKEEP.IGM to find out which areas on the world map
+will be affected. Thereby you won't overwrite another IGM or Visa/Versa.
+
+*************************************************************************
+
+
+To Install :>
+
+Copy and unpack the contents of ODINK200.ZIP into an empty directory.
+
+Then Copy and unpack ODINKEEP.ZIP into your LORD II directory.
+
+Type IGM ODINKEEP.IGM
+This will install the Odin's Keep into the game.
+
+To Uninstall :<
+
+Inside your Lord II directory 
+Type IGM ODINKEEP.IGM
+This will successfully uninstall Odin's Keep from your game.
+
+******IMPORTANT*********************************************************
+
+This IGM also generates (7) .idf files to keep track of players last time
+on and such.
+
+#1 - Fairy.idf    
+#2 - Swim.idf
+#3 - Compadre.idf
+#4 - Lock.idf    
+#5 - Guard.idf
+#6 - Drink.idf
+#7 - Tower.idf
+
+This IGM also generates (1) .txt file used for the Graffitti Wall inside
+Eric's bar. 
+#6 - wall.txt
+
+******BE SURE NOT TO DELETE THESE 6 FILES!******************************
+
+
+
+
+I will not be held responsible for any mishap caused by using this IGM.
+If you find a bug let me know about it, take a little time and fill
+out the enclosed bugrpt.doc .
+
+Above all enjoy this IGM, it rocks !
+
+-oDiN
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Acknowledgements ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Thanks go out to :
+
+Seth Able Robinson, the creator of LORD II, for his divine help and
+suggestions.
+
+Calypso, For creating Audacity BBS, the best BBS software I've ever had 
+the pleasure to use.
+
+Carlos Matos, thanks for helping me out with the spelling and routines. 
+Good luck at Phillips or whereever you end up Bueno Munchacho.
+Its all good, aint nothing but a thang.
+
+Yin, For helping with the artwork.
+
+
+
+
+
+
+
+                                  EOF

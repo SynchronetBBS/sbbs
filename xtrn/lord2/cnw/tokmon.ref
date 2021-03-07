@@ -1,0 +1,336 @@
+; Script file TOKMON.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE leftg 000000461
+@DECLARE rightg 000001056
+@DECLARE tguard 000001637
+@DECLARE monster1 000002184
+@DECLARE monster2 000002736
+@DECLARE monster3 000003264
+@DECLARE monster4 000003833
+@DECLARE monster5 000004376
+@DECLARE fight 000004922
+@DECLARE meetgolem 000004980
+@DECLARE golem 000005401
+@DECLARE wingolem 000005950
+@NOCHECK
+; End of .REF index
+
+@#LeftG
+@fight
+ ;name
+Left Guard
+ ;string said when you see him
+"We have sworn to protect her from rabble like you!" he screams.
+ ;power move kill string
+All right, where's the other one?
+ ;sex - 1 is male, 2 is female, 3 is it
+1
+ ;weapon and strength for the weapon, up to 5
+slashes you|76
+kicks you|65
+runs you through|84
+headbutts you|34
+NONE|NONE
+ ;defense
+57
+ ;gold reward
+1000
+ ;experience
+500
+ ;hit points
+400
+ ;if win: ref file|name or NONE
+TOKMON.REF|RightG
+ ;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+ ;if runs: ref file|name or NONE
+Tok.ref|Lose
+
+@#RightG
+@fight
+ ;name
+Right Guard
+ ;string said when you see him
+"For Lefty!" he screams!
+ ;power move kill string
+"With idiots for guards, it's amazing she's still safe!" you sneer.
+ ;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slashes you|76
+kicks you|65
+runs you through|84
+headbutts you|34
+NONE|NONE
+ ;defense
+57
+ ;gold reward
+1000
+ ;experience
+500
+ ;hit points
+400
+ ;if win: ref file|name or NONE
+NONE|NONE
+ ;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+ ;if runs: ref file|name or NONE
+TOK.REF|Lose
+
+@#TGuard
+@fight
+ ;name
+Tower Guard
+ ;string said when you see him
+"Halt intruder!" he yells.
+ ;power move kill string
+"Silly guard, you can't beat me!"
+ ;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slashes you|56
+kicks you|45
+runs you through|64
+headbutts you|24
+NONE|NONE
+ ;defense
+37
+ ;gold reward
+231
+ ;experience
+164
+ ;hit points
+100
+ ;if win: ref file|name or NONE
+NONE|NONE
+ ;if lose: ref file|name or NONE
+TOK.REF|Lose
+ ;if runs: ref file|name or NONE
+TOK.REF|Lose
+
+@#monster1
+@fight
+;name
+Krystal Spider
+;string said when you see him
+Something glints strangely in the cave...
+;power move kill string
+It shatters into a million pieces!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+spaps at you|97
+pounces on you|84
+bites you|107
+blinds you|55
+NONE|NONE
+;defense
+56
+;gold reward
+576
+;experience
+325
+;hit points
+200
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Krystal Ant
+;string said when you see him
+A shiney thing bit your toe!
+;power move kill string
+It shatters into a million pieces!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+spaps at you|97
+bites you|107
+blinds you|55
+NONE|NONE
+NONE|NONE
+;defense
+43
+;gold reward
+475
+;experience
+287
+;hit points
+178
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Krystal Goblin
+;string said when you see him
+A little krystal humaniod jumps at you!
+;power move kill string
+It shatters into a million pieces!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+smacks you|105
+pounces on you|120
+hits you with a krystal club|134
+blinds you|55
+NONE|NONE
+;defense
+66
+;gold reward
+976
+;experience
+625
+;hit points
+300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Krystal Bat
+;string said when you see him
+OUCH!  Something just hit your face!
+;power move kill string
+It shatters into a million pieces!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+spaps at you|92
+flys into you|84
+bites you|102
+blinds you|55
+NONE|NONE
+;defense
+60
+;gold reward
+756
+;experience
+425
+;hit points
+250
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Krystal Gremlin
+;string said when you see him
+"Agalaga Shaga!" screams a krystal critter.
+;power move kill string
+It shatters into a million pieces!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hits you|107
+jumps on you|94
+bites you|92
+blinds you|55
+NONE|NONE
+;defense
+61
+;gold reward
+734
+;experience
+525
+;hit points
+375
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#FIGHT
+@do `p20 random 5 1
+@do goto monster`p20
+
+@#MeetGolem
+@dataload tok.idf &playernum `p97
+@if `p97 is 1 then do
+@begin
+@show
+`r0`c`r1  The Krystal Golem  `r0
+
+      `2Before you stands a being completely made of the valuable krystal!
+      `2Because he's the biggest, you assume he's the leader and charge!
+
+@key
+@run golem in tokmon.ref
+@end
+@if `p97 more 1 then do
+@do saybar
+The shattered remains of the Krystal Golem.  Nope, no more gems...
+@end
+
+@#Golem
+@fight
+;name
+Krystal Golem
+;string said when you see him
+"Uuuahhhh!" screams the giant.
+;power move kill string
+It shatters into a million pieces!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+smacks you|127
+steps on you|134
+bites you|92
+blinds you|55
+NONE|NONE
+;defense
+97
+;gold reward
+5000
+;experience
+2500
+;hit points
+600
+;if win: ref file|name or NONE
+TOKMON.REF|WINGOLEM
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#WinGolem
+@busy
+@show
+`r0`c`r1  `%You Stand Victorious!  `r0
+
+      `2You stand of the stattered remains of your foe and smile.  Not even
+      `2this monstosity could stop you.`L.`L.`L.
+
+      `2What's this?  Some of the shards left over look just big enough to pass
+      `2as gems!  You decide to pocket them as a little reward!
+
+      `%You get 3 gems!
+@key
+@datasave tok.idf &playernum 2
+@do `p19 + 3
+@drawmap
+@update
+@closescript

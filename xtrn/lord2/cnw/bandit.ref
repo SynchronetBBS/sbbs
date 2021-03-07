@@ -1,0 +1,446 @@
+; Script file BANDIT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE sign 000000760
+@DECLARE well 000000845
+@DECLARE ladder 000001124
+@DECLARE door 000006631
+@DECLARE room1 000006820
+@DECLARE room2 000007222
+@DECLARE room3 000007625
+@DECLARE room4 000008059
+@DECLARE room5 000008686
+@DECLARE celldoor 000008964
+@DECLARE plaque 000009210
+@DECLARE table 000009740
+@DECLARE spot 000009820
+@DECLARE hawkmoon 000009892
+@DECLARE healer 000011750
+@DECLARE nomore 000011835
+@NOCHECK
+; End of .REF index
+
+; -= Bandit's Hideout =-  LORD II IGM for version 1.00 or higher
+; Compliments of Chet and Mary Rhodes (aka Hawkmoon and Breanna)
+; Hawkmoon's Realm BBS (919)556-8363
+; FIDO 1:151/131
+; chet.rhodes@juno.com
+
+@#SIGN
+@DO MOVEBACK
+@DO SAYBAR
+`$CAUTION! Poisoned Water.  DO NOT DRINK!
+@END
+
+@#WELL
+@DO MOVEBACK
+@IF `p02 < 2 THEN GOTO HEALER
+@DATANEWDAY BANDIT.idf
+@DATALOAD BANDIT.idf &PLAYERNUM `p20
+@IF `p20 NOT 1 THEN DO
+@BEGIN
+@DO GOTO LADDER
+@CLOSESCRIPT
+@END
+
+@DO SAYBAR
+`$That bandit could show up any minute now.  You better head out of here.
+
+
+@#LADDER
+@BUSY
+@SHOW
+`\
+`r0`c  `%`r1 Examining the well `r0
+`\`2  The area around the well show signs of recent activity.  Strangely
+  enough not only is the well dry but there is a ladder inside.  At the
+  bottom seems to be a large opening.`\
+@DO `v01 IS 1
+@DO WRITE
+`x`x
+@CHOICE
+Climb down into the well and explore a little.ÿ
+Leave before you find something you don't want to.ÿ
+@IF RESPONSE IS 2 THEN DO
+@BEGIN
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@IF RESPONSE IS 1 THEN DO
+@BEGIN
+@SHOW
+`r0`c  `%`r1 Inside the well `r0
+
+`2  Half way down the ladder makes a loud popping sound and you wonder if this
+  is a wise thing to do.  As your foot touches the last rung you here a gasp
+  behind you.
+
+`k`2  Startled you spin around and ready your s&weapon expecting the worst.
+
+`k`2  The base of the well is actually a large room.  Directly behind you is an
+  opening leading off to the north.  Standing in the doorway is a small boy
+  who seems even more startled then you, if that is possible.
+
+`k
+`r0`c  `%`r1 A young boy `r0
+
+`2  "`0Please sir,  I didn't take anything.  I thought I heard my dog in here
+  and I came down to rescue him.  I won't tell anyone what I saw, honest!`2" he
+  pleads.
+
+`k`2  "`$Easy lad.  I don't intend to harm you.  Now, what is this place?`2"
+  You smile as you notice the bulge in the young man's pockets and suspect he
+  may not have been quite truthful.
+
+`k`2  "`0It is the hideout of some old bandit named Hawkmoon.  He use to hang
+  out in BoneTown but no one has seen him in awhile.`2"
+
+`k`2  "`$So what is down here`2?"
+
+`k
+`r0`c  `%`r1 A young boy `r0
+
+`2  "`0At the end of the tunnel there are 5 doors.  Rumor has it that one has
+  the bandit's main treasure.  I am not sure what the other four are but I
+  have heard that one of them is a trap.`2"
+
+`k`2  "`$What kind of trap?  Which door leads to the treasure`2?"
+
+`k`2  "`0The old folks say that there is a ghost in there and that he won't let
+  you leave unless you give him part of your life force.  Others say that the
+  door has been enchanted and that once closed won't open again until the
+  moon has reached it's zenith.  I don't know about that but I do know that
+  the doors open on different rooms each day.`2"
+
+`k`2  As you turn to peer down the tunnel the young boy darts past you and
+  scrambles up the ladder. You smile with fond memories of your own childhood
+  and start down the tunnel.
+
+`k
+@clear screen
+@pauseoff
+@show
+`1
+[?7h[40m[2J[2;1H[3C[0;1;30;41mÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄ[40m[s
+[u[41mÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁ[3;1H[3CÂÄÁÄÂÄÁÄÂ[40m[s
+[u[41mÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂÄÁÄÂ[40m[s
+[u[41mÄÁÄÂ[4;1H[3CÁÄÂÄÁÄ[0;41mArrisVille[1;30mÁÄÂ[0;41mGreent[40m[s
+[u[41mree[1;30mÁÄÂÄ[0;41mFlagCity[1;30mÁÄÂÄÁ[0;41mPortTown[40m[s
+[u[41m[1;30mÄÂÄÁÄ[0;41mStonebrook[1;30mÁÄÂÄÁ[5;1H[3CÂÄÁÄÂÄ[40m[s
+[u[0;30;43mÉÍÍÍÍÍÍÍ»[1;41mÄÂÄÁ[0;30;43mÉÍÍÍÍÍÍÍ»[1;41mÂÄÁÄ[40m[s
+[u[0;30;43mÉÍÍÍÍÍÍÍ»[1;41mÄÁÄÂ[0;30;43mÉÍÍÍÍÍÍÍ»[1;41mÁÄÂÄ[40m[s
+[u[0;30;43mÉÍÍÍÍÍÍÍ»[1;41mÄÂÄÁÄÂ[6;1H[3CÁÄÂÄÁÄ[0;30;43mº [40m[s
+[u[33;40m³³³³³[1;30;43m°[0;30;43mº[1;41mÄÁÄÂ[0;30;43mº [40m[s
+[u[33;40m³³³³³[1;30;43m°[0;30;43mº[1;41mÁÄÂÄ[0;30;43mº [40m[s
+[u[33;40m³³³³³[1;30;43m°[0;30;43mº[1;41mÄÂÄÁ[0;30;43mº [40m[s
+[u[33;40m³³³³³[1;30;43m°[0;30;43mº[1;41mÂÄÁÄ[0;30;43mº [40m[s
+[u[33;40m³³³³³[1;30;43m°[0;30;43mº[1;41mÄÁÄÂÄÁ[7;1H[3CÂÄÁÄÂÄ[40m[s
+[u[0;30;43mº    [1m°°±[0;30;43mº[1;41mÄÂÄÁ[0;30;43mº    [1m°°[40m[s
+[u[43m±[0;30;43mº[1;41mÂÄÁÄ[0;30;43mº    [1m°°±[0;30;43mº[40m[s
+[u[1;41mÄÁÄÂ[0;30;43mº    [1m°°±[0;30;43mº[1;41mÁÄÂÄ[0;30;43m[40m[s
+[u[43mº    [1m°°±[0;30;43mº[1;41mÄÂÄÁÄÂ[8;1H[3CÁÄÂÄÁÄ[40m[s
+[u[0;30;43mº   [1m°°[0;30;43mé[1m²[0;30;43mº[1;41mÄÁÄÂ[40m[s
+[u[0;30;43mº   [1m°°[0;30;43mé[1m²[0;30;43mº[1;41mÁÄÂÄ[40m[s
+[u[0;30;43mº   [1m°°[0;30;43mé[1m²[0;30;43mº[1;41mÄÂÄÁ[40m[s
+[u[0;30;43mº   [1m°°[0;30;43mé[1m²[0;30;43mº[1;41mÂÄÁÄ[40m[s
+[u[0;30;43mº   [1m°°[0;30;43mé[1m²[0;30;43mº[1;41mÄÁÄÂÄÁ[40m
+[9;1H   [41mÂÄÁÄÂÄ[0;30;43mº [1m°°°±²²[0;30;43mº[1;41mÄÂÄÁ[40m[s
+[u[0;30;43mº  [1m°°±²²[0;30;43mº[1;41mÂÄÁÄ[0;30;43mº [1m°°°±²[40m[s
+[u[43m²[0;30;43mº[1;41mÄÁÄÂ[0;30;43mº  [1m°°±²²[0;30;43mº[40m[s
+[u[1;41mÁÄÂÄ[0;30;43mº  [1m°°±²²[0;30;43mº[1;41mÄÂÄÁÄÂ[10;1H[40m[s
+[u[3C[41mÁÄÂÄÁÄ[0;30;43mº[1m°°±±²²²[0;30;43mº[1;41mÄÁÄÂ[40m[s
+[u[0;30;43mº [1m°±±²²²[0;30;43mº[1;41mÁÄÂÄ[0;30;43mº[1m°°±±²²[40m[s
+[u[43m²[0;30;43mº[1;41mÚÂÄÁ[0;30;43mº[1m°°±±²²²[0;30;43mº[40m[s
+[u[1;41mÂÄÁÄ[0;30;43mº [1m°±±²²²[0;30;43mº[1;41mÄÁÄÂÄÁ[11;1H[40m[s
+[u[3CÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[s
+[uÛÛÛÛÛÛÛ[12;1H   ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[s
+[uÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[0m
+
+@END
+@PAUSEON
+@SHOW
+`3  You wonder if the city names over the doors have any bearing on which room
+  you should pick.
+
+@do `v01 is 1
+@DO WRITE
+`x`x
+@CHOICE
+ArrisVille
+Greentree
+FlagCity
+PortTown
+Stonebrook
+Leave this hole.
+@IF RESPONSE IS 1 THEN GOTO DOOR
+@END
+
+@IF RESPONSE IS 2 THEN GOTO DOOR
+@END
+
+@IF RESPONSE IS 3 THEN GOTO DOOR
+@END
+
+@IF RESPONSE IS 4 THEN GOTO DOOR
+@END
+
+@IF RESPONSE IS 5 THEN GOTO DOOR
+@END
+
+@IF RESPONSE IS 6 THEN DO
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#DOOR
+@do `p20 random 5 1
+@if `p20 is 1 then GOTO ROOM1
+@if `p20 is 2 then GOTO ROOM2
+@if `p20 is 3 then GOTO ROOM3
+@if `p20 is 4 then GOTO ROOM4
+@if `p20 is 5 then GOTO ROOM5
+
+
+@#ROOM1
+@SHOW
+`r0`c  `%`r1 Main Treasurey `r0
+
+`2  Whoa, you hit the mother load.  Even the banker at Greentree would be
+  impressed with this haul.
+
+`k`2  A cutlass laying in the corner reminds you of where you are at.  You
+  quickly load your pockets and head out.
+
+`2   You find $2,000 in gold
+
+`k
+@DO MONEY + 2000
+@DATASAVE BANDIT.IDF &playernum 1
+@drawmap
+@update
+@closescript
+
+@#ROOM2
+@SHOW
+`r0`c  `%`r1 Treasurey `r0
+
+`2  Hmmm... this can't be the main treasury.  This must be where Hawkmoon
+  keeps his overflow.  Drat!!!
+
+`k`2  A rat scurries by and startles you reminding you of where you are at.
+  You quickly load your pockets and head out.
+
+`k`2  You find $500 in gold
+
+`k
+@DO MONEY + 500
+@DATASAVE BANDIT.IDF &playernum 1
+@drawmap
+@update
+@closescript
+
+@#ROOM3
+@SHOW
+`r0`c  `%`r1 A Tunnel `r0
+
+`2  In front of you is another tunnel.  Ahead you see a bright light.
+  eagerly you hurry forward in anticipation of huge riches.
+
+`k`2  You reach the light only to realize that you have exited the hideout.
+  A rumble in the cave and a puff of dust from the entrance discourages you
+  from heading back in.
+
+`k
+@DATASAVE BANDIT.IDF &playernum 1
+@drawmap
+@update
+@closescript
+
+@#ROOM4
+@SHOW
+`r0`c  `%`r1 A Tunnel `r0
+
+`2  In front of you is another tunnel.  Ahead you see a bright light.
+  eagerly you hurry forward in anticipation of huge riches.
+
+`k`2  Just before you reach the light you realize that you have found another
+  entrance to the hideout. With a loud rumble in the roof of the cave comes
+  crashing down.
+
+`k`2  For a minute there you thought you were a goner but you manage to
+  struggle free.  Going back down that tunnel is out of the question.
+
+`k  You realize you need a doctor.
+
+`k
+@DATASAVE BANDIT.IDF &playernum 1
+@DO `p02 / 2
+@drawmap
+@update
+@closescript
+
+@#ROOM5
+@SHOW
+`r0`c  `%`r1 A Room `r0
+
+`2 You here an ominous click as the door swings closed behind you.
+
+`k
+@DATASAVE BANDIT.IDF &playernum 1
+@LOADMAP 1570
+@DO X IS 37
+@DO y IS 11
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#CELLDOOR
+@DO MOVEBACK
+@DATANEWDAY BANDIT.idf
+@DATALOAD BANDIT.idf &PLAYERNUM `p20
+@IF `p20 NOT 1 THEN DO
+@BEGIN
+@LOADMAP 1573
+@DO X IS 47
+@DO Y IS 15
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@DO SAYBAR
+`$The door seems to be locked.
+
+@#PLAQUE
+@DO MOVEBACK
+@SHOW
+`r0`c  `%`r1              Writing on the wall              `r0
+
+
+         Twofold is the path of the portal
+          One for dead and one for mortal.
+
+         If thou seek to test hell's gate
+         Hawkmoon then will hold thy fate.
+
+           If yon door resist thy power
+     then wait thou must for the witching hour.
+
+
+
+
+`k
+
+`2  At the bottom some one has scratch
+  "the blasted door only opens once per day after midnight."
+
+`k
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#TABLE
+@DO MOVEBACK
+@DO SAYBAR
+`$You don't recognize anything here.
+@END
+
+@#SPOT
+@DO SAYBAR
+`$A strange chill runs down you spine.
+@END
+
+@#HAWKMOON
+@DO MOVEBACK
+@SHOW
+`\
+`r0`c  `%`r1 Talking with Hawkmoon `r0
+`\`2  You see a man sitting at a desk working.  The items in his hands seem 
+  drift in and out of focus.  A candle flickers and caste eerie shadows on
+  the wall.  The light seems not to come from around the man, but rather
+  through him.  Somehow you know you have found Hawkmoon.
+
+`k`2  "`0Welcome mortal to my own personal piece of purgatory.`2"
+
+`k`2  "`$Thank you.  Now how do I get out`2?"
+
+`k`2 "`0You can wait for the door to open after midnight or you can pay my
+  price`2."
+
+`k`2  "`$And your price would be....`2"
+
+`k
+`r0`c  `%`r1 Talking with Hawkmoon `r0
+
+`2  "`0Very simple, surrender to me part of your life force.  It is what I
+  require before I can leave this place`2."
+
+`k
+@DO `v01 IS 1
+@CHOICE
+ÿÿSurrender part of your life force to help Hawkmoon
+ÿÿNo thanks.  I will wait for the door to open.
+@IF RESPONSE IS 2 THEN DO
+@BEGIN
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@IF RESPONSE IS 1 THEN DO
+@CLEAR SCREEN
+@SHOW
+                        ³  
+                         ³
+                        ³
+                       ³
+                       ³
+                       ³
+                       ³
+                       ³
+                       ³
+                       ³
+                       ³
+                       À¿
+                        À¿
+                         À¿
+                          À¿
+                           ³
+                          ÚÁÂÄ¿
+                         ÚÙ Ã¿À¿
+                        ÚÙ ÚÙÀ¿ÀÄ¿
+                        ³  ³  À¿ ³
+                        ³
+@CLEAR SCREEN
+@SHOW
+`r0`c  `%`r1 Talking with Hawkmoon `r0
+
+`2  You seriously need to see a healer now.
+
+`k
+@DO `p02 is 1
+@LOADMAP 1573
+@DO X IS 47
+@DO Y IS 15
+ 
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#HEALER
+@DO SAYBAR
+`$You should see a healer before venturing down here.
+@END
+
+@#NOMORE
+

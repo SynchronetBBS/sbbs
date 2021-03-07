@@ -1,0 +1,46 @@
+
+  Woodland Underground by Syntech Software v1.00a
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (4)
+  Free?                                           : Yes!
+
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM WOODLAND.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Woodland Underground `2by `0Valtane `8(valtane@geocities.com)
+
+rem replacescreen: 1114 1 show
+
+replacescreen: 1596 2 noshow
+
+replacescreen: 1597 3 noshow
+
+replacescreen: 1598 4 noshow
+
+replacescreen: 1599 5 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0This IGM adds a new underground town with a bar, general store, museum,
+  `0bank, and sheriff's office.
+
+  `2To get to the entrance of this IGM, walk down the path towards the
+  elderly nudist, or go west two screens from PortTown, and follow the
+  path south.

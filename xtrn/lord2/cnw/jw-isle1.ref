@@ -1,0 +1,1860 @@
+; Script file JW-ISLE1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:27 2001
+
+@DECLARE start 000001926
+@DECLARE banshee 000002001
+@DECLARE jabber 000002799
+@DECLARE lava 000003162
+@DECLARE topmonsters 000004461
+@DECLARE cavewest 000005008
+@DECLARE eastcave 000005370
+@DECLARE moria 000005728
+@DECLARE intown 000006580
+@DECLARE spiders 000006884
+@DECLARE fieldfights 000007190
+@DECLARE marsh 000010163
+@DECLARE stonefights 000010941
+@DECLARE mandrake 000011245
+@DECLARE chasm 000011549
+@DECLARE deepwoods 000011844
+@DECLARE cavewest 000012416
+@DECLARE eastcave 000012556
+@DECLARE moria 000012693
+@DECLARE spiderdo 000012843
+@DECLARE rats 000013480
+@DECLARE ratpelt 000014051
+@DECLARE stonedo 000014923
+@DECLARE mandrakedo 000015522
+@DECLARE marshdo 000016141
+@DECLARE wolves 000016745
+@DECLARE vampires 000019239
+@DECLARE getorb 000019870
+@DECLARE monitor 000020038
+@DECLARE cavetroll 000020667
+@DECLARE harpy 000021305
+@DECLARE howler 000021916
+@DECLARE licht 000022558
+@DECLARE beholder 000023215
+@DECLARE chimera 000023850
+@DECLARE wyvern 000024477
+@DECLARE gorgon 000025119
+@DECLARE deathknight 000025755
+@DECLARE dracolicht 000026418
+@DECLARE wraith 000027082
+@DECLARE shadowdemon 000027727
+@DECLARE jujutree 000028384
+@DECLARE pitfiend 000029022
+@DECLARE leastdemon 000029754
+@DECLARE meddemon 000030484
+@DECLARE lesserdemon 000031228
+@DECLARE medusafight 000032023
+@DECLARE jubjubbird 000032696
+@DECLARE jabberwalk 000033379
+@DECLARE bander 000034038
+@DECLARE pitsister 000034703
+@DECLARE dem1 000035365
+@DECLARE dem2 000035597
+@DECLARE dem3 000035824
+@DECLARE dem0 000036057
+@DECLARE beatjub 000036336
+@DECLARE beatjab 000036557
+@DECLARE beatband 000036767
+@DECLARE beatmed 000036976
+@DECLARE beatsis 000037187
+@DECLARE fleesis 000037427
+@NOCHECK
+; End of .REF index
+
+; Ref file for Jim Wilson's, Lord 2 IGM ver.  1.01, Mimsic Isle.
+;
+
+@#Start
+
+;-----------------------------------------------------------
+@#Banshee
+
+@do `p24 random 2 1
+@if `p24 is 1 then do
+@begin
+        @dataload jw-isleg.mil &playernum `p25
+        @do `t70 is `p25
+        @if bitcheck `t70 6 0 then do
+        @begin
+                @do enemy is banshee
+                @show
+                `r0`c
+       `%The howling of the banshees is the last thing that you hear!
+
+`$                      (Where are your earmuffs?)
+
+                @do readspecial `s01 yn
+                @show
+                `r01`c
+                @run die in gametxt.ref
+                @closescript
+        @end
+        @do saybar
+   `$Good thing you were wearing earmuffs, the banshees just screamed by.
+        @closescript
+@end
+
+@run topmonsters
+@closescript
+;-----------------------------------------------------------
+
+@#Jabber
+
+@do `p24 random 4 1
+
+@if `p24 is 1 then do
+@begin
+        @run wyvern
+@end
+@if `p24 is 2 then do
+@begin
+        @run dracolicht
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run deathknight
+@end
+
+@if `p24 is 4 then do
+@begin
+        @run chimera
+@end
+
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#Lava
+
+@do `p24 random 4 1
+
+@if `p24 is 1 then do
+@begin
+        @run deathknight
+@end
+@if `p24 is 2 then do
+@begin
+        @run shadowdemon
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run wraith
+@end
+
+@if `p24 is 4 then do
+@begin
+        @dataload jw-isle3.mil &playernum `p24
+        @do `t70 is `p24
+        @if bitcheck `t70 7 0 then do
+        @begin
+                @show
+`r0`c
+        `$You are burned, burned `%deeply`$ by the hot ashes
+        that rain down upon the ground in this area.`l`x`l`x
+
+        Your `lhealth is `lfailing, you `lbetter leave!`l`x
+
+
+        `lThere are `lburn herbs, `lyou should `lfind some!`l`x`l`x`l`x
+
+                @key nodisplay
+                @do `p27 is `p03
+                @DO `P27 / 3
+                @do `p02 - `P27
+                @do statbar
+                @if `p02 < 1 then do
+                @begin
+                        @do enemy is falling`xash
+                        @run die in gametxt.ref
+                @end
+                @drawmap
+                @update
+                @closescript
+        @end
+        @do saybar
+`%The `#burn herbs `%you got at the Krista's are saving `lyour hide!
+@end
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#TopMonsters
+@do `p24 random 7 1
+
+@if `p24 is 1 then do
+@begin
+        @run licht
+@end
+@if `p24 is 2 then do
+@begin
+        @run beholder
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run genran in genran.ref
+@end
+
+@if `p24 is 4 then do
+@begin
+        @run chimera
+@end
+
+@if `p24 is 5 then do
+@begin
+        @run wyvern
+@end
+
+@if `p24 is 6 then do
+@begin
+        @run gorgon
+@end
+@if `p24 is 7 then do
+@begin
+        @run wolves
+@end
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#CaveWest
+
+@do `p24 random 4 1
+
+@if `p24 is 1 then do
+@begin
+        @run rats
+@end
+@if `p24 is 2 then do
+@begin
+        @run Harpy
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run genran in genran.ref
+@end
+
+@if `p24 is 4 then do
+@begin
+        @run Wolves
+@end
+
+@closescript
+;-----------------------------------------------------------
+@#EastCave
+@do `p24 random 4 1
+
+@if `p24 is 1 then do
+@begin
+        @run rats
+@end
+@if `p24 is 2 then do
+@begin
+        @run Howler
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run genran in genran.ref
+@end
+
+@if `p24 is 4 then do
+@begin
+        @run Wolves
+@end
+
+@closescript
+;-----------------------------------------------------------
+@#Moria
+
+@do `p24 random 4 1
+
+@if `p24 < 3 then do
+@begin
+        @run rats
+        @closescript
+@end
+@if `p24 is 3 then do
+@begin
+        @run cavetroll
+@end
+
+@if `p24 is 4 then do
+@begin
+    @if `i37 > 0 then do
+    @begin
+        @show
+`r0`c
+     `#Something small and fast just stole the `%`+37`# from your head!
+
+        @do `i37 - 1
+        @if `i37 > 0 then do
+        @begin
+                @show
+
+     `$Luckily, `lyou `lhave `lanother!`l.`l.`l.`l.`l.`l.
+
+                @key nodisplay
+                @drawmap
+                @update
+                @closescript
+        @end
+        @show
+     `$That `lwas `lyour `lonly one!`l.`l.`l.`l.`l.`l.
+
+        @key nodisplay
+        @drawmap
+        @update
+    @end
+@end
+@closescript
+
+
+;-----------------------------------------------------------
+
+@#Intown
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 0 0 then do
+@begin
+        @run rats
+        @closescript
+@end
+@do saybar
+`%Nice to walk thorough town with no rats bothering me!
+@closescript
+
+;-----------------------------------------------------------
+
+@#Spiders
+@do `p24 random 3 1
+
+@if `p24 is 1 then do
+@begin
+        @run rats
+@end
+@if `p24 is 2 then do
+@begin
+        @run spiderdo
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run genran in genran.ref
+@end
+
+@closescript
+;-----------------------------------------------------------
+@#FieldFights
+
+@do `p24 random 4 1
+
+@if `p24 is 1 then do
+@begin
+        @run genran in genran.ref
+@end
+
+@if `p24 is 2 then do
+@begin
+        @run rats
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run spiderdo
+@end
+
+@if `p24 is 4 then do
+@begin
+        @do `p23 random 2 1
+        @datanewday jw-isle4.mil
+        @dataload jw-isle4.mil &playernum `p21
+        @do `t70 is `p21
+        @if bitcheck `t70 0 1 then do
+        @begin
+              @do `p23 is 2
+        @end
+        @if `p23 is 1 then do
+        @begin
+          @do moveback
+          @busy
+          @bitset `t70 0 1
+          @do `p21 is `t70
+          @datasave jw-isle4.mil &playernum `p21
+
+          @show
+`r0`c
+`0        Ah, the famed `%PIPER `0stands before you!
+`/
+`/
+        Perhaps, he may teach you how to use the magic pipe?
+`/
+          @dataload jw-isleg.mil &playernum `p20
+          @do `t70 is `p20
+          @if bitcheck `t70 2 0 then do
+          @begin
+             @show
+        `$If you had one! `l.`l.`l.`l.`l.`l.`l.`l.`l.
+        `/
+             @do readspecial `s01 yn
+             @drawmap
+             @update
+             @closescript
+          @end
+                                ;Meet the piper and learn.
+          @dataload jw-isle2.mil &playernum `p20
+          @do `t70 is `p20
+          @do `v01 is 1
+          @choice
+`%Leave, there is nothing you can learn here!
+-`t70 6 `0Learn `%'Rat Patrol'
+-`t70 7 `0Learn `%'Tarantula'
+-`t70 5 `0Learn `%'oh...When the Saints'
+          @if response is 1 then do
+          @begin
+                @show
+        `c
+        `$The `%Piper`$ marches down the field, rats following his every step.
+        `/
+
+        `k
+          @end
+          @if response is 2 then do
+          @begin
+                @show
+        `c
+        `$The `%Piper`$ teaches you to play `0"Rat Patrol" `$on your magic pipe.
+        `/
+        `$Maybe now the rats will follow you?
+
+        `k
+                @bitset `t70 6 1
+          @end
+
+          @if response is 3 then do
+          @begin
+                @show
+        `c
+        `$The `%Piper`$ teaches you to play `0"Tarantula" `$on your magic pipe.
+        `/
+        `$Maybe now the big spiders will leave you alone?
+
+        `k
+                @bitset `t70 7 1
+          @end
+
+          @if response is 4 then do
+          @begin
+                @show
+        `c
+        `$The `%Piper`$ teaches you to play `0"Saints" `$on your magic pipe.
+        `/
+        `$Will this help against `4DEMONS`$?
+
+        `k
+                @bitset `t70 5 1
+          @end
+
+          @do `p20 is `t70
+          @datasave jw-isle2.mil &playernum `p20
+          @drawmap
+          @update
+          @closescript
+        @end
+        @do saybar
+`0You see the `%Piper`0 skipping across the field, too fast for you to catch!
+@end
+@closescript
+;-----------------------------------------------------------
+
+@#Marsh
+
+@do `p24 random 4 1
+
+@if `p24 is 1 then do
+@begin
+        @run genran in genran.ref
+@end
+
+@if `p24 is 2 then do
+@begin
+        @run rats
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run marshdo
+@end
+
+@if `p24 is 4 then do
+@begin
+    @do `p27 random 2 1
+    @if `p27 is 1 then do
+    @begin
+      @datanewday jw-isle1.mil
+      @dataload jw-isle1.mil &playernum `p20
+      @do `t70 is `p20
+      @bitset `t70 5 1
+      @do `p20 is `t70
+      @datasave jw-isle1.mil &playernum `p20
+      @do quebar
+`% You are bitten by an insect and now have `#Swamp Fever!
+      @if `p02 > 5 then do
+      @begin
+            @do `p02 - 5
+      @end
+    @end
+@end
+
+@closescript
+
+;-----------------------------------------------------------
+@#StoneFights
+
+@do `p24 random 3 1
+
+@if `p24 is 1 then do
+@begin
+        @run rats
+@end
+@if `p24 is 2 then do
+@begin
+        @run stonedo
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run genran in genran.ref
+@end
+
+@closescript
+;-----------------------------------------------------------
+@#Mandrake
+
+@do `p24 random 3 1
+
+@if `p24 is 1 then do
+@begin
+        @run rats
+@end
+@if `p24 is 2 then do
+@begin
+        @run mandrakedo
+@end
+
+@if `p24 is 3 then do
+@begin
+        @run genran in genran.ref
+@end
+
+@closescript
+;-----------------------------------------------------------
+@#Chasm
+
+@do `p27 random 3 1
+
+@if `p27 is 1 then do
+@begin
+        @run wolves
+@end
+
+@if `p27 is 2 then do
+@begin
+        @run Monitor
+@end
+
+@if `p27 is 3 then do
+@begin
+        @run rats
+@end
+
+@closescript
+
+;-----------------------------------------------------------
+@#DeepWoods
+
+@do `p27 random 3 1
+
+@if `p27 is 1 then do
+@begin
+        @run wolves
+@end
+
+@if `p27 is 2 then do
+@begin
+        @dataload jw-isleg.mil &playernum `p24
+        @do `t70 is `p24
+        @if bitcheck `t70 3 1 then do
+        @begin
+                @do saybar
+`%Your `$Shining Orb`% casts a bright light that keeps the vampire at bay!
+                @closescript
+        @end
+        @run vampires
+@end
+
+@if `p27 is 3 then do
+@begin
+        @run rats
+@end
+
+@closescript
+
+;-----------------------------------------------------------
+@#CaveWest
+@do quebar
+Running a CaveWest fight in isle2.ref.
+@closescript
+;-----------------------------------------------------------
+@#EastCave
+@do quebar
+Running a CaveEast fight in isle2.ref.
+@closescript
+;-----------------------------------------------------------
+@#Moria
+@do quebar
+Running a Moria fight in isle2.ref.
+
+@closescript
+
+
+
+
+;--------------------------Fights----------------------------
+
+@#spiderdo
+
+@fight
+;name
+Baby Spider
+;string said when you see him
+A form climbs your boot!
+;power move kill string
+You shiver as the leggey thing quivers on the ground.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+nips you|99
+claws you|125
+bites you|95
+NONE|NONE
+NONE|NONE
+;defense
+122
+;gold reward
+27
+;experience
+151
+;hit points
+175
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+;@drawmap
+;@update
+@closescript
+
+;-----------------------------------------------------------
+
+@#Rats
+@fight
+;name
+Scurrying Rat
+;string said when you see him
+Something creeps near your feet!
+;power move kill string
+You grin as the nasty thing splats on the ground.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+nips you|144
+claws you|125
+bites you|195
+NONE|NONE
+NONE|NONE
+;defense
+75
+;gold reward
+15
+;experience
+101
+;hit points
+264
+;if win: ref file|name or NONE
+jw-isle1.ref|ratpelt
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+@#ratpelt
+@do quebar
+`0You skin the beastie and gain one `$Rat Pelt.
+                                                ;Add 1 to pelts
+                                                ;If in jail, get key.
+
+@dataload jw-isleL.mil &playernum `p24
+@do `p24 + 1
+@datasave jw-isleL.mil &playernum `p24
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 4 1 then do
+@begin
+   @if bitcheck `t70 5 1 then do
+    @begin
+      @do quebar
+`%You found the master key!
+      @bitset `t70 4 0
+      @bitset `t70 5 0
+      @do `p24 is `t70
+      @datasave jw-isle3.mil &playernum `p24
+      @dataload jw-isle2.mil &playernum `p24
+      @do `t70 is `p24
+      @bitset `t70 2 1
+      @do `p24 is `t70
+      @datasave jw-isle2.mil &playernum `p24
+    @end
+@end
+@closescript
+
+;-----------------------------------------------------------
+
+@#stonedo
+
+@fight
+;name
+Rock Snake
+;string said when you see him
+A snake slithers slowly!
+;power move kill string
+You laugh as the broken thing dies.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+strikes|299
+bites you|295
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+222
+;gold reward
+299
+;experience
+351
+;hit points
+350
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@closescript
+
+;-----------------------------------------------------------
+
+@#mandrakedo
+
+@fight
+;name
+Swamp Boar
+;string said when you see him
+The tusker charges you from the swale.
+;power move kill string
+You immediately think about roast pork!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+nips you|240
+rakes you|270
+gores you|350
+NONE|NONE
+NONE|NONE
+;defense
+322
+;gold reward
+610
+;experience
+370
+;hit points
+577
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@closescript
+
+;-----------------------------------------------------------
+
+@#marshdo
+
+@fight
+;name
+Alligator
+;string said when you see him
+A shape lunges at your back!
+;power move kill string
+You tremble from the close call.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+rips you|277
+claws you|325
+bites you|350
+NONE|NONE
+NONE|NONE
+;defense
+357
+;gold reward
+880
+;experience
+475
+;hit points
+601
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+
+@#wolves
+
+                                ;Check for wolfsbane
+
+@datanewday jw-isle1.mil
+@dataload jw-isle1.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 7 1 then do
+@begin
+        @do saybar
+`$Lucky for you your `%Wolf's Bane `$is fresh. A wolfpack passes close by.
+        @closescript
+@end
+@do `p24 is `p03
+@do `p24 / 3
+@do `p02 - `p24
+@pauseoff
+@show
+[?7h[40m[2J[6C[0m‹ [1;30mﬂ‹[30C‹[0m‹ ‹ [1;33m€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€€€€€[2;1H[6C[0m‹  ﬂ[1;30mﬂ›‹[24C‹‹ﬂ[0mﬂ  ‹  [1;33mﬂ[s
+[u€€€€€€€€ﬂ€€€€‹€€€€€€ €€€€€€€€€€€€[3;1H[6C[0m‹ ‹  €ﬂ[1;30mﬂ[0m‹[s
+[u[1;30m‹   [0m‹ [1;30m‹‹[0m‹ ﬂﬂ [1;30m‹[0m‹‹   [1;30m‹[0m‹[s
+[u[1;30mﬂ[0mﬂﬂ [1;30m€ [0m€[1;30m€   [33mﬂ€€€€ﬂ€€ﬂ‹ ﬂ‹ﬂ‹€€€€ﬂ  ﬂ€€[s
+[u€€€€€€€€[4;1H[6C[30m€[0m€‹ [1;30m‹ [0mﬂ[1;30m‹ﬂ[0mﬂ ‹€ ﬂ[s
+[u[1;30m€€€€€€‹‹€‹[0m€ ﬂ   [1;30m‹€€ﬂ [0m€[1;30m€    [33mﬂ€€€€ﬂ‹€‹[s
+[u €ﬂ‹€€€€‹    ‹€€€€€€€€€[5;1H[6C[30mﬂ‹[0m€  [1;30mﬂ‹[5C€€€€€€‹€‹‹[s
+[uﬂﬂﬂ   ‹€€ﬂﬂ  [0m€‹[1;30mﬂ[6C[33mﬂ€€€‹ﬂ  ‹€ﬂ‹€€ﬂ[6Cﬂ€€€€€€€€[6;1H[s
+[u[7C[30mﬂ€[0m€[1;30m‹ ‹€‹  ‹  ﬂﬂ €ﬂ€€ﬂ[0m‹€   [1;30m‹   [0m‹ ‹€[s
+[u[1;30m‹ﬂ[9C[33mﬂ€€€   ‹€€€€ﬂ[7C‹€€€€€€€[7;1H[5C[0m‹ﬂ  ‹€[1;30m[s
+[uﬂ€‹ [0m€[1;30m‹ [33mﬂ[30mﬂ‹ [0m€€[1;30m€€ [0m€‹ [1;30m‹[33mﬂ[s
+[u[0mﬂ [1;30m‹ [0m€ ‹ ‹  ‹[11C[1;33mﬂ   €€€€‹[8C‹€€€€€€€[8;1H    [s
+[u[0m‹€ ‹ﬂ€ [1;30m€€ [0m€‹ [1;30mﬂﬂ[0m‹‹ﬂﬂ [1;30m€‹€€‹ [0m‹ [s
+[u[1;30mﬂﬂ[0m‹ﬂ [1;30m‹€‹‹ € [0m€‹[14C[1;33mﬂ€ﬂ[9C‹€€€€€€€[9;1H [s
+[u   [0m€ ‹€‹[1;30m‹ﬂ  ﬂ‹‹[0mﬂﬂﬂ[1;30m‹‹ﬂ [0m€[1;30mﬂ [0m€ﬂ[s
+[u[1;30mﬂ‹‹[0mﬂﬂﬂ[1;30m‹‹ﬂ  €‹ﬂ[0mﬂ[1;30mﬂ‹ [0m‹[27C[1;33mﬂﬂﬂﬂﬂﬂ
+[10;1H   [0mﬂ‹ﬂ[1;30m‹‹ﬂ[0m€  [1;30m€€  ﬂﬂﬂ   ‹‹‹‹‹‹   ﬂﬂﬂ[10C[0mﬂ[s
+[u[1;30mﬂ‹[0m€[11;1H   [1;30m€€‹ﬂ   ‹€[9Cﬂ[6Cﬂ[14C[0mﬂ[1;30m€‹ﬂ[s
+[u‹[12;1Hsc‹ﬂﬂ   ﬂ‹€[11Cﬂ‹  ‹ﬂ[7C‹‹‹[7C[0m€‹[1;30m‹ﬂ‹[13;1H ﬂ    [s
+[u‹€[16Cﬂ[9Cﬂ   ﬂﬂ‹ €‹[14;1H[23C‹›ﬁ‹[7Cﬂ‹‹    ﬂ‹[15;1H[21Cﬂﬂ ‹‹ ﬂ[s
+[uﬂ[8Cﬂ‹[16;1H[17;1H[18;1H[19;1H[20;1H[19C[0;33mNext time, have f[s
+[uresh [1;37mWolf's Bane![21;1H[22;1H[1;37;40m
+  `$The wolf pack leader rips a strip from your hide, spits it out and leaves!
+@pauseon
+@do readspecial `s01 yn
+
+@if `p02 < 1 then do
+@begin
+        @Show
+`r0`c
+        @do enemy is a`xWolf`xPack
+        @do `p02 is 0
+        @run die in gametxt.ref
+@end
+
+@drawmap
+@update
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#vampires
+
+@fight
+;name
+Dark One
+;string said when you see him
+A shape lunges at your neck!
+;power move kill string
+You tremble from the close call.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+hypnotizes you|614
+claws your face|444
+bites your neck|650
+NONE|NONE
+NONE|NONE
+;defense
+857
+;gold reward
+1107
+;experience
+775
+;hit points
+1209
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+jw-isle1.ref|getorb
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#getorb
+@do quebar
+`$A `%Shining Orb`$ from the giftshop would keep vampires away!
+@closescript
+
+;-----------------------------------------------------------
+
+@#monitor
+
+@fight
+;name
+Monitor Lizard
+;string said when you see him
+This could be bad!
+;power move kill string
+You crush it's skull with no regrets.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+tail thumps you|414
+rakes your thigh|244
+bites your left arm|450
+NONE|NONE
+NONE|NONE
+;defense
+335
+;gold reward
+707
+;experience
+535
+;hit points
+567
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#CaveTroll
+
+@fight
+;name
+Balrog
+;string said when you see him
+This guy looks as hard as rock!
+;power move kill string
+You crack it's skull to gravel.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+clubs you with a stoney fist|514
+smites your leg|444
+claws your right arm|659
+NONE|NONE
+NONE|NONE
+;defense
+535
+;gold reward
+755
+;experience
+735
+;hit points
+1407
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#Harpy
+
+@fight
+;name
+Smelly Harpy
+;string said when you see him
+This thing can fly!
+;power move kill string
+You knock her from the sky.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+swoops in for a swipe|478
+claws your right ear|644
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+465
+;gold reward
+775
+;experience
+840
+;hit points
+450
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#Howler
+
+@fight
+;name
+Howler
+;string said when you see him
+Something screams at you from your left.
+;power move kill string
+You end its noise forever.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+screams in your face|522
+deafens your senses|454
+ruptures your eardrums|577
+NONE|NONE
+NONE|NONE
+;defense
+335
+;gold reward
+810
+;experience
+777
+;hit points
+1107
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+
+@#Licht
+
+@fight
+;name
+Licht
+;string said when you see him
+A wizened, rotting corpse lurches into sight.
+;power move kill string
+You end mouldering festering un-life.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+casts a foul spell of rot|622
+hurls a ju ju|554
+rips at your lifeforce|612
+NONE|NONE
+NONE|NONE
+;defense
+635
+;gold reward
+710
+;experience
+877
+;hit points
+1280
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+@#Beholder
+
+@fight
+;name
+beholder
+;string said when you see him
+You feel a stoney stare.
+;power move kill string
+You dim its sight forever.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+stares you in the eye|722
+casts lightening at you|554
+uses a deathspell on you|635
+NONE|NONE
+NONE|NONE
+;defense
+621
+;gold reward
+933
+;experience
+887
+;hit points
+1307
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+@#Chimera
+
+@fight
+;name
+chimera
+;string said when you see him
+An awfull sight greats your weary eyes.
+;power move kill string
+The abomination is tattered.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+claws at your eyes|822
+rips at your viscera|654
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+735
+;gold reward
+1110
+;experience
+1200
+;hit points
+1510
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+@#Wyvern
+
+@fight
+;name
+wyvern
+;string said when you see him
+A flying shape that bodes you no good!
+;power move kill string
+You strike it from the sky!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+screams in your face|722
+swoops onto your back|754
+ruptures your eardrums|677
+NONE|NONE
+NONE|NONE
+;defense
+535
+;gold reward
+870
+;experience
+877
+;hit points
+1005
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+@#Gorgon
+
+@fight
+;name
+gorgon
+;string said when you see him
+An ugly visage forbidden to view.
+;power move kill string
+You close its eyes forever.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+glares at your helm|655
+ponds on your visor|534
+hisses in its fury|577
+NONE|NONE
+NONE|NONE
+;defense
+635
+;gold reward
+1210
+;experience
+1177
+;hit points
+900
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+@#deathknight
+
+@fight
+;name
+Death Knight
+;string said when you see him
+An armoured form charges your flank.
+;power move kill string
+You unhorse and slay the fiend.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+lances your side|922
+clubs your sword arm|1054
+wipes your nose with his battleaxe|977
+NONE|NONE
+NONE|NONE
+;defense
+935
+;gold reward
+2810
+;experience
+1777
+;hit points
+990
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+@#Dracolicht
+
+@fight
+;name
+dracolicht
+;string said when you see him
+An undead dragon? That's more than you need now!
+;power move kill string
+You survive, this time.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+smacks you with its tail|922
+bites at your head|854
+tears at your weakened form|1177
+NONE|NONE
+NONE|NONE
+;defense
+1035
+;gold reward
+1010
+;experience
+1650
+;hit points
+1550
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+
+@#wraith
+
+@fight
+;name
+wraith
+;string said when you see him
+A shadowy form materializes in front of you.
+;power move kill string
+You dispell its shape.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+wraps you in its form|1255
+freezes your will to survive|1354
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+935
+;gold reward
+1210
+;experience
+1377
+;hit points
+1300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+
+@#ShadowDemon
+
+@fight
+;name
+shadowdemon
+;string said when you see him
+This could be it, you say a quick prayer.
+;power move kill string
+The unclean beast is no more!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hurls a sleep spell|1222
+shatters your will|1454
+rips out your liver|1377
+NONE|NONE
+NONE|NONE
+;defense
+1050
+;gold reward
+1810
+;experience
+1777
+;hit points
+1690
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+
+
+@#JuJuTree
+
+@fight
+;name
+Ju Ju Tree
+;string said when you see him
+This tree is thorned and moving FAST!
+;power move kill string
+You chop it to a stump.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+swipes mightily|1522
+uproots you|1654
+drops a huge limb on you|1877
+NONE|NONE
+NONE|NONE
+;defense
+1450
+;gold reward
+1810
+;experience
+1977
+;hit points
+1890
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+
+@#pitfiend
+
+@fight
+;name
+Pit Fiend
+;string said when you see him
+`#Oh oh .... this is `%BAD!                           ˇ
+;power move kill string
+Incredible .... you managed to survive!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+breathes on you|24000
+hurls lava at you|25000
+smites you with a stony fist|20000
+rips you open with a talon|30000
+casts a freeze spell|19000
+;defense
+`p27
+;gold reward
+100000
+;experience
+15000
+;hit points
+70000
+;if win: ref file|name or NONE
+jw-isle1|dem0
+;if lose: ref file|name or NONE
+jw-isle3.ref|notdead
+;if runs: ref file|name or NONE
+jw-isle3.ref|notrun
+
+;-----------------------------------------------------------
+
+@#leastdemon
+@fight
+;name
+Least Demon
+;string said when you see him
+`#Oh oh .... this is `%BAD!                           ˇ
+;power move kill string
+Incredible .... you managed to survive!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+breathes on you|2000
+hurls brimstone at you|3500
+smites you with an evil fist|3000
+rips you open with a scaled claw|4200
+casts a freeze spell|1800
+;defense
+`p27
+;gold reward
+25000
+;experience
+5000
+;hit points
+10000
+;if win: ref file|name or NONE
+jw-isle1|dem1
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+jw-isle3.ref|notrun1
+
+;-----------------------------------------------------------
+
+@#meddemon
+@fight
+;name
+Medium Demon
+;string said when you see him
+`#Oh oh .... this is `%NOT`# good!                           ˇ
+;power move kill string
+Incredible .... you managed to survive!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+breathes on you|4000
+hurls brimstone at you|6200
+smites you with a mailed fist|5500
+rips you open with a scaled claw|8000
+casts a chilling spell|5000
+;defense
+`p27
+;gold reward
+25000
+;experience
+3500
+;hit points
+15000
+;if win: ref file|name or NONE
+jw-isle1|dem2
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+jw-isle3.ref|notrun2
+
+;-----------------------------------------------------------
+
+@#lesserdemon
+
+@fight
+;name
+Lesser Demon
+;string said when you see him
+`#Oh oh .... this is `%BAD!                           ˇ
+;power move kill string
+Incredible .... you managed to survive!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+breathes on you|7000
+hurls brimstone at you|12000
+smites you with an evil fist|10000
+rips you open with a scaled claw|15000
+casts a freeze spell|9500
+;defense
+`p27
+;gold reward
+50000
+;experience
+7500
+;hit points
+30000
+;if win: ref file|name or NONE
+jw-isle1|dem3
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+jw-isle3.ref|notrun3
+                                        ;Must have won
+
+;-----------------------------------------------------------
+
+@#Medusafight
+@drawmap
+@update
+@fight
+;name
+medusa
+;string said when you see him
+You use the shield as a mirror.
+;power move kill string
+The unclean beast is no more!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+swings blindly|830
+lashes out at your shield|754
+hurls a spear at your legs|677
+NONE|NONE
+NONE|NONE
+;defense
+650
+;gold reward
+1210
+;experience
+977
+;hit points
+750
+;if win: ref file|name or NONE
+jw-isle1.ref|beatmed
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+
+;-----------------------------------------------------------
+
+@#JubJubBird
+
+@fight
+;name
+Jub Jub Bird
+;string said when you see him
+a bulky mass of feathers greets you.
+;power move kill string
+The featherd foul is no more!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+lashes out with a clawed foot|1530
+rips at you with its beak|1754
+buffets you with a wing|1967
+NONE|NONE
+NONE|NONE
+;defense
+1650
+;gold reward
+2210
+;experience
+1450
+;hit points
+2750
+;if win: ref file|name or NONE
+jw-isle1.ref|beatjub
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#Jabberwalk
+
+@fight
+;name
+jabberwock
+;string said when you see him
+jaws that bite and claws that catch!
+;power move kill string
+The unclean beast is no more!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+rakes you savagely|2100
+smashes you into the ground|2254
+evicerates you|2477
+NONE|NONE
+NONE|NONE
+;defense
+`p25
+;gold reward
+3210
+;experience
+2270
+;hit points
+3300
+;if win: ref file|name or NONE
+jw-isle1.ref|beatjab
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#Bander
+
+@fight
+;name
+bandersnatch
+;string said when you see him
+You should have shunned the frumious bandersnatch!
+;power move kill string
+The unclean beast is no more!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+screams and rips:1800
+rips and tears|1450
+claws and bites|2100
+NONE|NONE
+NONE|NONE
+;defense
+1690
+;gold reward
+3210
+;experience
+2294
+;hit points
+3150
+;if win: ref file|name or NONE
+jw-isle1.ref|beatband
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@closescript
+
+;-----------------------------------------------------------
+
+@#Pitsister
+
+@fight
+;name
+pit fiend's big sister
+;string said when you see him
+No way, Jose. You are toast now!
+;power move kill string
+Sure, that will work!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+slaps|32,000
+scratches and bites|31,000
+claws and bites|30,000
+NONE|NONE
+NONE|NONE
+;defense
+32,000
+;gold reward
+32100
+;experience
+22949
+;hit points
+20,000
+;if win: ref file|name or NONE
+jw-isle1.ref|beatsis
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+jw-isle1.ref|fleesis
+
+@closescript
+
+
+;-----------------------------------------------------------
+
+@#dem1
+        @do addlog
+  `$`N`0 killed the Least Demon. `%What a star!
+        @do addlog
+                                `2-`0=`2-`%=`2-`0=`2-
+@closescript
+
+;-----------------------------------------------------------
+
+@#dem2
+        @do addlog
+  `$`N`0 slew the Medium Demon. `%What a hero!
+        @do addlog
+                                `2-`0=`2-`%=`2-`0=`2-
+@closescript
+;-----------------------------------------------------------
+@#dem3
+        @do addlog
+  `$`N`0 clobbered the Least Demon. `%What a killer!
+        @do addlog
+                                `2-`0=`2-`%=`2-`0=`2-
+@closescript
+;-----------------------------------------------------------
+@#dem0
+        @do addlog
+  `$`N`0 destroyed the Pit Fiend. `%Do not mess with this pigeon!
+        @do addlog
+                                `2-`0=`2-`%=`2-`0=`2-
+        @routine pitsister
+@closescript
+
+;-----------------------------------------------------------
+@#beatjub
+@dataload jw-isle4.mil &playernum `p29
+@do `t70 is `p29
+@bitset `t70 3 1
+@do `p29 is `t70
+@datasave jw-isle4.mil &playernum `p29
+@closescript
+;-----------------------------------------------------------
+@#beatjab
+@dataload jw-isle4.mil &playernum `p29
+@do `t70 is `p29
+@bitset `t70 4 1
+@do `p29 is `t70
+@datasave jw-isle4.mil &playernum `p29
+@closescript
+------------------------------------------------
+@#beatband
+@dataload jw-isle4.mil &playernum `p29
+@do `t70 is `p29
+@bitset `t70 2 1
+@do `p29 is `t70
+@datasave jw-isle4.mil &playernum `p29
+@closescript
+------------------------------------------------
+@#beatmed
+@dataload jw-isle4.mil &playernum `p29
+@do `t70 is `p29
+@bitset `t70 5 1
+@do `p29 is `t70
+@datasave jw-isle4.mil &playernum `p29
+@closescript
+------------------------------------------------
+
+@#beatsis
+        @do addlog
+  `$`N`0 killed the Pit Fiend's sis. `%What a bully!
+        @do addlog
+                                `2-`0=`2-`%=`2-`0=`2-
+@closescript
+
+;-----------------------------------------------------------
+
+@#fleesis
+        @clearblock 22 24
+        @do saybar
+`%You can't run forever, `$CHICKEN!
+        @do addlog
+  `$`N`0 ran from the Pit Fiend's Sister. `%What a wuss!
+        @do addlog
+                                `2-`0=`2-`%=`2-`0=`2-
+
+@closescript
+

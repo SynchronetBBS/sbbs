@@ -1,0 +1,375 @@
+; Script file FELHOUSE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:19 2001
+
+@DECLARE doorguard 000001332
+@DECLARE startg 000001361
+@DECLARE sign 000005328
+@DECLARE enter 000005636
+@DECLARE done 000006832
+@DECLARE yerok 000007886
+@DECLARE letmein 000008476
+@DECLARE done 000008555
+@NOCHECK
+; End of .REF index
+
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|Felicity's Temple IGM for Lord2 - The New World                  |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|Ref notes:                                                       |
+;|                                                                 |
+;|Felhouse.ref - Copyright 1997 Lloyd Hannesson and Tech'n Software|
+;|               http://www.techn.com/      -     support@techn.com|
+;|               -> The Guest House ref file. Most of this was     |
+;|                  from Seth's house refs. Thanks Seth!           |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|Please! If you are gonna copy and of these routines, please let  |
+;|me know by an email, or include my name in your docs :)          |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+
+;------------------------------------------------------------------------
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if felhouse.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this keep!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile felhouse.dat
+`p20
+`p22
+`p23
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the auto-protector, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Talking to the House Auto-Protector `r0
+
+  `2The huge auto-protector snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set price to gain entrance (currently is `$$`p22`%)
+Empty Cash Box
+Ownership options
+Leave
+@if responce is 2 then do
+        @begin
+        @readfile felhouse.dat
+`p20
+`p22
+`p23
+        @if `p23 < 1 then do
+                @begin
+                @show
+`r0`c  `r1 Empting the Cash `r0
+
+  `2There doesn't seem to be anything in there.
+
+                `4Dag-nabit!
+
+        @key bottom
+        @do goto startg
+                @end
+        @do money + `p23
+        @writefile felhouse.dat
+`p20
+`p22
+0
+        @show
+`r0`c  `r1 Empting the Cash `r0
+
+  `2You retrieve all the collect gold. A total of `$$`p23`2.
+
+               `4CHA-CHING!
+   
+
+        @key bottom
+        @do goto startg
+        @end
+@if responce is 3 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$5,000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your keep to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete felhouse.dat
+  @writefile felhouse.dat
+`p20
+`p22
+`p23
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of `%Felicity's Guest House`2 to you. 
+  Password to enter will remain `%"`s01"`2 unless you come by
+  `2and change it.
+
+    @do addlog
+  `0`n`2 has given `%Felicity's Guest House`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your keep back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete felhouse.dat
+  @do `v40 is 5000
+  @do `p30 is 1
+  @routine widthdraw in vaults.ref
+  @do money + 5000
+  @show
+`\`\  `%FELICITY'S GUEST HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Felicity's Guest House`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @show
+`\
+   `0"And the new price, s&sir?" `2
+                `2(enter `40`2 to keep the door open for everyone freely)
+  @do write
+`\   `2Price:`x`x
+  @DO READNUM 4
+  @do delete felhouse.dat
+  @writefile felhouse.dat
+&playernum
+`v40
+1
+@show
+`\`\  `0"Yes s&sir, I will now charge `$$`v40`0!" `2.`\`\`k
+   @do goto startg
+  @end
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if felhouse.dat exist false then do
+ @begin
+ @do saybar
+`%Felicity's Guest House`2 - For sale cheap, enquire inside.
+ @end 
+
+@if felhouse.dat exist true then do
+ @begin
+@readfile felhouse.dat
+`p20
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+@if felhouse.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `%Felicity's Guest House`2 is kept by Felicity for her visiting guests. I
+  guess the `4Dragon`2 has kept people from visiting though...
+
+  Felicity has put it up for sale!  The asking price is `$$7,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 6999 Purchase it.
+<&money 7000 Sigh wistfully and leave since you don't have enough.
+>&money 6999 Leave.
+@if responce is 1 then do
+  @begin
+  @if felhouse.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+@writefile felhouse.dat
+&playernum
+5
+1
+    @do `v40 is 7000
+    @do `p30 is 1
+    @routine deposit in vaults.ref
+    @do money - 7000
+    @do addlog
+  `0`n `2buys `%Felicity's Guest House`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this guest house!
+
+`k
+  `2Enjoy your new home.`\`\
+
+  @do `p69 is 26
+  @key bottom
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile felhouse.dat
+`p20
+`p22
+`p23
+@do `p21 is deleted `p20
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do `p30 is 1
+   @do `v40 is `p23
+   @routine deposit in vaults.ref
+   @do delete felhouse.dat
+    @do addlog
+  `%Felicity's Guest House`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is 0 then goto yerok
+  @show
+`r0`c  `r1 Felicity's Guest House `r0
+
+`2  A voice booms from behind the door.  `0"Halt, you!  
+`2  It costs only `$$`p22 `2for a room here. We will protect you while you
+ sleep.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+>&money `p22 Get a bed.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do money - `p22
+   @readfile felhouse.dat
+`p20
+`p22
+`p23
+   @do `p23 + `p22
+   @writefile felhouse.dat
+`p20
+`p22
+`p23
+@label yerok
+    @show
+`r0`c`\`\  `0"Welcome to `%Felicity's Guest House`0,"`2 the auto-protector smiles as
+  the door slowly opens.`\`\`k
+   @writefile mail\mail`p20.dat
+  `0Felicity's Guest House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 stayed at your Felicity Guest house, cha-ching.
+    @do goto letmein
+    @end
+
+   @show
+`\`\  `2The auto-protector doesn't seem too interested, because you're
+  still outside a locked door!`\`\`k
+   @key bottom
+   @do goto done
+   @end
+
+  @do goto letmein
+
+  @end
+
+;let him in
+@label letmein
+@do x is 37
+@do y is 14
+@do map is 575
+@loadmap 575
+@do goto done
+@#done

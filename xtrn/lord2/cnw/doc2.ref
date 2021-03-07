@@ -1,0 +1,905 @@
+; Script file DOC2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:38 2001
+
+@DECLARE backdoor 000000710
+@DECLARE bid 000002964
+@DECLARE dartgame 000003623
+@DECLARE position 000004284
+@DECLARE power 000004623
+@DECLARE shoot 000005406
+@DECLARE prize 000006793
+@DECLARE redtree 000009089
+@DECLARE fight1 000009288
+@DECLARE fight2 000009920
+@DECLARE fight3 000010583
+@DECLARE fight4 000011229
+@DECLARE fight5 000011865
+@DECLARE fight6 000012531
+@DECLARE fight7 000013173
+@DECLARE fight8 000013844
+@DECLARE fight9 000014535
+@DECLARE lose 000015332
+@DECLARE win 000015742
+@DECLARE win2 000016116
+@DECLARE champ 000016649
+@DECLARE end 000017429
+@NOCHECK
+; End of .REF index
+
+@#backdoor
+@do moveback
+@if &lasty is 6 then do
+@begin
+@update
+@closescript
+@end
+@offmap
+@show
+`r0`c
+ 
+                        `r1 `%BACKYARD `r0
+ 
+        `2You walk around to the back of the building.  You rub your eyes
+        when you see a door just standing there in the middle of the yard,
+        seeming to serve no purpose.
+ 
+@do write
+`3   What do you do?
+@do `v01 is 1
+@choice
+`2Go in the front side
+`2Go in the back side
+`6Leave
+@if response is 3 then do
+@begin
+@do x is 39
+@do y is 8
+@loadmap 1040
+@drawmap
+@update
+@closescript
+@end
+@if response is 1 then do
+@begin
+@show
+`r0`c
+ 
+        `2TO YOUR AMAZMENT!!!  When you step through the door there is another
+        room!  You see two beautiful women in bikinis walk by.
+ 
+`k
+ 
+        `2Then you see four guys sitting at a table (obviously drunk!) and
+        they yell for you to come over.
+ 
+        `3"Hey there little s&boy, how'd ya like ta try and make some money?"
+ 
+        `0"And exactly how would I do that?" you say sarcasticly
+ 
+        `3"Well you see that dart board?  If you can get 200 or more points
+        then you get double your money, and if you can't then you lose it!
+        Whado ya say?"
+ 
+@do write
+`2     Well?  Y/[N] :
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do goto backdoor
+@end
+@do write
+`\`\`\`2   Do you want to see the instructions?  Y/[N] :
+@do readspecial `s01 NY
+@if `s01 is Y then do
+@begin
+@show
+`r0`c
+                           `r1 `%DARTS INSTRUCTIONS `r0
+ 
+        `3This game is simple!  First, you will be the head on the left side
+        moving up and down.  When you are ready hit a key and it will stop.
+        That will be your position.  Then, on the bottom there will be a bar
+        going back and forth.  When you are ready hit a key.  That will be
+        your power.  Red is the strongest and Green is the weakest.  The
+        Stronger you throw the straighter it goes!  You will want to try to
+        hit as close as you can to the bullseye on the dart board at the
+        right end of the screen.  If you can 200 or more points then you will
+        get double your money, otherwise you lose it.
+        Good Luck!
+ 
+@key
+@end
+@label bid
+@do `p24 is 200
+@show
+`r0`c
+ 
+        `2How much would you like to bet?  MIN $200 (blank to cancel)
+@if `p24 is 0 then do goto backdoor
+@if money < 200 then do
+@begin
+@do write
+`4       YOU DON'T HAVE ENOUGH MONEY `\`\`\`\
+@key
+@do goto backdoor
+@end
+@do write
+`3   Enter amount :
+@do readnum 6 200
+@if `p24 < 200 then do
+@begin
+@show
+`r0
+        `4Sorry the minimum bid is $200 gold.
+ 
+@key
+@do goto bid
+@end
+@if `p24 > money then do
+@begin
+@show
+`r0`c
+ 
+        `4Damn!  `2You must be drunker then me cuz `4YOU DON'T HAVE THAT MUCH
+        MONEY!!!
+ 
+@key
+@do goto bid
+@end
+@do `p28 is 0
+@do `p22 is 0
+@label dartgame
+@do `p28 + 1
+@do move 20 12
+@do write
+  `2Press a key when you're ready to throw...
+@key nodisplay
+@clear screen
+@show
+[?7h[255D[0;1;32;44mÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜ[40m
+[A[79C[44mß[40m
+ 
+ 
+[77C[37mpts[75C[34mÛÛ [37m10[75C[34mÛÛ
+[75C[33mÛÛ [37m20[75C[33mÛÛ
+[75C[0;32mÛÛ [1;37m30[75C[0;31mÛÛ [1;37m50[75C[0;32mÛÛ [1;37m30[75C[33mÛÛ
+[75CÛÛ [37m20[75C[34mÛÛ
+[75CÛÛ [37m10
+ 
+ 
+[32;44mßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜßÜß[40m
+[A[79C[44mÜ[40m
+ 
+[0m[255D
+@do `p20 is 2
+@do `p29 is 1
+ 
+@label position
+@do move 1 `p20
+@do write
+`%`w
+@do getkey `s01
+@if `s01 not _ then do
+@begin
+@do `p25 is `p20
+@do `p20 is 1
+@do `p29 is 1
+@do `p21 is 5
+@do `s10 is `2Û
+@do goto power
+@end
+@do move 1 `p20
+@do write
+`r0`x
+@if `p20 is 19 then `p29 is -1
+@if `p20 is 2 then `p29 is 1
+@do `p20 + `p29
+@do goto position
+ 
+ 
+@label power
+@do move `p20 22
+@do write
+`s10`w
+@do getkey `s01
+@if `s01 not _ then do
+        @begin
+        @do `p26 is `p27  ;power
+        @do `p24 is 0     ;move 'till drop
+        @do `p21 is 1     ;x position
+        @do goto shoot
+@end
+@if `p20 not 1 then do
+@begin
+@if `p29 is -1 then do
+@begin
+@do move `p20 22
+@do write
+`r0`x`x
+@end
+@end
+@if `p20 is 6 then `p29 is -1
+@if `p20 is 1 then `p29 is 1
+@if `p20 is 1 then `p27 is 5
+@if `p20 is 2 then `p27 is 10
+@if `p20 is 3 then `p27 is 20
+@if `p20 is 4 then `p27 is 30
+@if `p20 is 5 then `p27 is 50
+@if `p20 is 6 then `p27 is 100
+@do `p20 + `p29
+@if `p20 is 2 then `s10 is `2Û
+@if `p20 is 3 then `s10 is `$Û
+@if `p20 is 4 then `s10 is `$Û
+@if `p20 is 5 then `s10 is `4Û
+@do goto power
+ 
+ 
+@label shoot
+@do move `p21 `p25
+@do write
+ `%>Ä>`w
+@if `p24 is `p26 then do
+        @begin
+        @do move `p21 `p25
+        @do write
+        `r0`x`x`x`x
+        @do `p25 + 1
+        @do `p21 + 1
+        @do `p24 is 0
+        @if `p25 is 19 then do
+                @begin
+                @if `p28 is 5 then do
+                @begin
+                        @do goto prize
+                @end
+                @do goto dartgame
+        @end
+        @do `p24 + 1
+        @do goto shoot
+@end
+@if `p21 is 72 then do
+        @begin
+        @do move `p21 `p25
+        @do write
+  `%>Ä
+        @if `p25 is 6 then `p22 + 10
+        @if `p25 is 7 then `p22 + 10
+        @if `p25 is 8 then `p22 + 20
+        @if `p25 is 9 then `p22 + 20
+        @if `p25 is 10 then `p22 + 30
+        @if `p25 is 11 then `p22 + 50
+        @if `p25 is 12 then `p22 + 30
+        @if `p25 is 13 then `p22 + 20
+        @if `p25 is 14 then `p22 + 20
+        @if `p25 is 15 then `p22 + 10
+        @if `p25 is 16 then `p22 + 10
+        @do `p24 is 0
+        @if `p28 is 5 then do
+                @begin
+                @do move 15 13
+                @do write
+`%That was your last dart, hit any key to continue...
+                @key nodisplay
+                @do goto prize
+        @end
+        @do goto dartgame
+@end
+@do `p21 + 1
+@do `p24 + 1
+@do goto shoot
+ 
+ 
+@label prize
+@if `p22 < 200 then do
+        @begin
+        @show
+`r0`c
+ 
+        `2HA HA HA HA HA!!!!  Sorry Jr., you only got `p22 points!
+        `4Now cough up the dough!
+ 
+        `3So you sadly hand over the `$$`p23 `3gold you bet.
+ 
+        @key
+        @do money - `p23
+        @do goto backdoor
+@end
+@show
+`r0`c
+ 
+        `2WOW!!!  They stare in amazment as even they can see that you've
+        won!
+ 
+        YOU GOT `p22 POINTS!!!
+ 
+        `3Excuse me BOYS, I belive ya'll owe me some money!  You say happily.
+ 
+        `0They hand you the money and go sit at their table and start yelling.
+ 
+@key
+@do `p23 * 2
+@do money + `p23
+@do goto backdoor
+@end
+@end
+@if response is 2 then do
+        @begin
+        @datanewday docbrutl.idf
+        @dataload docbrutl.idf &playernum `p20
+        @if `p20 is 1 then do
+        @begin
+        @show
+`r0`c
+ 
+        `2Sorry...you may not enter again today for you have already beaten
+        everyone in the Brutal World!
+ 
+        @key
+        @do goto backdoor
+        @end
+        @show
+`r0`c
+                            `r1 `%BRUTAL WORLD `r0
+ 
+           `%You walk through the door and there is another world!
+ 
+           `2Welcome `n`2, we've been expecting you.  Ahead lies a great
+           challenge, that is, if you're brave enough to except it.
+ 
+           You see...there is a world ahead with many dangers, a world where
+           there are no moral boundries.  You must be prepared for the worst.
+           If you go there will be 9 enemies awaiting, each one tougher then
+           the other.  You will have to fight them all to win.  If you beat
+           them all then you will be GREATLY REWARDED!  If you fail you will
+           be remembered as a sissy little s&boy.
+ 
+@do write
+`3   Do you except the challenge?  Y/[N] :
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@show
+`r0`c
+`\`\`\`\`\`\`\
+                             `4SISSY!!!!
+`\`\`\
+@key
+@do goto backdoor
+@end
+@show
+`r0`c
+ 
+        `2It's great that the warriors today are still brave...
+ 
+        But I warn you friend that this will not be easy!
+ 
+ 
+@key
+@datasave docbrute.idf &playernum 0
+@do x is 46
+@do y is 12
+@loadmap 170
+@drawmap
+@update
+@end
+ 
+ 
+ 
+@#redtree
+@show
+`r0`c
+ 
+        `4YOU COWARD!!!  `2You don't even have the courage to TRY and become
+        a great warrior!  Ya know what?  You're a wimp!
+ 
+ 
+@key
+@do goto backdoor
+ 
+ 
+@#fight1
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 > 0 then do
+@begin
+@do saybar
+`2The "Great Brian" is laying on the ground unconscious.  What a GEEK!
+@closescript
+@end
+@fight
+;name
+The Great Brian
+;string
+You dare to challenge me The GREAT BRIAN?
+;power move
+You hit him with your s&weapon and kill him!  What a wimp!
+;sex
+1
+;weapons 1-5
+hits you with his sword|25
+punches you in the face|31
+kicks you in the shins|29
+NONE|NONE
+NONE|NONE
+;defence
+34
+;experience
+0
+;gold
+0
+;hitpoints
+75
+;ref if wins
+DOC2.REF|WIN
+;ref if loses
+DOC2.REF|LOSE
+;ref if runs
+NONE|NONE
+ 
+@#fight2
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 < 1 then do
+@begin
+@do saybar
+`2     You are not yet worthy of me!
+@closescript
+@end
+@if `p20 > 1 then do
+@begin
+@do saybar
+`2     You have already beaten him!
+@closescript
+@end
+@fight
+;name
+Daggus
+;string
+HA HA HA!  You make me laugh s&boy.
+;power move
+Is it possible a wimp like you could defeat me? Daggus?
+;sex
+1
+;weapons
+body slams you|34
+throws you into a tree|39
+slashes you with his daggar|47
+NONE|NONE
+NONE|NONE
+;defence
+40
+;exper
+0
+;gold
+0
+;hitpoints
+100
+;ref if win
+DOC2.REF|WIN
+;ref if lose
+DOC2.REF|LOSE
+;ref if run
+NONE|NONE
+ 
+@#fight3
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 < 2 then do
+@begin
+@do saybar
+`2   You are not yet worthy of me!
+@closesript
+@end
+@if `p20 > 2 then do
+@begin
+@do saybar
+`2                      She's dead!
+@closescript
+@end
+@fight
+;name
+Veronica
+;string
+Challenge me? Veronica?  Good Luck!  You'll need it!
+;power move
+You got lucky!!!
+;sex
+2
+;weapon
+kicks you between the legs|45
+slaps you across the face|57
+shoves your face in the dirt|49
+NONE|NONE
+NONE|NONE
+;defence
+60
+;exper
+0
+;gold
+0
+;hitpoints
+150
+;win ref
+DOC2.REF|WIN
+;lose ref
+DOC2.REF|LOSE
+;run ref
+NONE|NONE
+ 
+@#fight4
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 < 3 then do
+@begin
+@do saybar
+`2   You are not yet worthy of me!
+@closescript
+@end
+@if `p20 > 3 then do
+@begin
+@do saybar
+`2   The giant bug lying on the ground bleading.
+@closescript
+@end
+@fight
+;name
+Giant Gahaniet
+;string
+Come on you puny human!
+;powermove
+AAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHH a puny human has defeated me!
+;sex
+3
+;weapons
+whips you with its antenna|69
+bites your leg|54
+mauls you|94
+NONE|NONE
+NONE|NONE
+;defence
+75
+;exper
+0
+;gold
+0
+;hp
+200
+;win
+DOC2.REF|WIN
+;lose
+DOC2.REF|LOSE
+;run
+NONE|NONE
+ 
+@#fight5
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 < 4 then do
+@begin
+@do saybar
+`2   You are not yet worthy of me!
+@closescript
+@end
+@if `p20 > 4 then do
+@begin
+@do saybar
+`2   Jake "the Jerk" has already been defeated!
+@closescript
+@end
+@fight
+;name
+Jack the Champ
+;string
+You?  Beat me?  I'd like to see you try!
+;power
+I don't believe I've been bested by YOU!!
+;sex
+1
+;weapons
+gives you a straight jab to the face|78
+gives you a left hook to the jaw|91
+drop kicks you|87
+NONE|NONE
+NONE|NONE
+;defence
+150
+;exper
+0
+;gold
+0
+;hitpoints
+300
+;win
+DOC2.REF|WIN
+;lose
+DOC2.REF|LOSE
+;run
+NONE|NONE
+ 
+@#fight6
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 < 5 then do
+@begin
+@do saybar
+`2   You are not yet worthy of me!
+@closescript
+@end
+@if `p20 > 5 then do
+@begin
+@do saybar
+`2   You have already defeated him!
+@closescript
+@end
+@fight
+;name
+Evil King Drake
+;string
+Hah!  You're nothing but a worthless peasant!
+;power
+Nooo!  You can't beat me!  I'm a KING!!!
+;sex
+1
+;weapons
+hits you with his staff|97
+calls his guards|113
+stabs you with his crown|102
+NONE|NONE
+NONE|NONE
+;defence
+300
+;exper
+0
+;gold
+0
+;hitpoints
+600
+;win
+DOC2.REF|WIN
+;lose
+DOC2.REF|LOSE
+;run
+NONE|NONE
+ 
+@#fight7
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 < 6 then do
+@begin
+@do saybar
+`2   You are not yet worthy of me!
+@closescript
+@end
+@if `p20 > 6 then do
+@begin
+@do saybar
+`2   You have already defeated he...er...she...er...IT!
+@closescript
+@end
+@fight
+;name
+Green Alien
+;string
+Are you ready to die earthling?
+;powermove
+NOOOOOOOOOO!!  M-m-must f-f-find sp-sp-space sh-sh-ship f-f-fast!
+;sex
+3
+;weapon
+zaps you with it's phaser|139
+throws you 30 feet into the air|160
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defence
+400
+;exper
+0
+;gold
+0
+;hitpoints
+800
+;win
+DOC2.REF|WIN
+;lose
+DOC2.REF|LOSE
+;run
+NONE|NONE
+ 
+@#fight8
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 < 7 then do
+@begin
+@do saybar
+`2   You are not worthy of me!
+@closescript
+@end
+@if `p20 > 7 then do
+@begin
+@do saybar
+`2  The entire mob is dead and scattered around the ground!
+@closescript
+@end
+@fight
+;name
+Angry Mob
+;string
+It's people like you who have destroyed are land!  LET'S GET 'EM!
+;power
+B-B-But that's impossible!  You are one...we are many!
+;sex
+3
+;weapons
+dogpile you|197
+pin you down and massacre you|237
+stampede and plow you|249
+NONE|NONE
+NONE|NONE
+;defence
+700
+;exper
+0
+;gold
+0
+;hitpoints
+1200
+;win
+DOC2.REF|WIN2
+;lose
+DOC2.REF|LOSE
+;run
+NONE|NONE
+ 
+@#fight9
+@do moveback
+@busy
+@dataload docbrute.idf &playernum `p20
+@if `p20 < 8 then do
+@begin
+@do saybar
+`2   You are not worthy of me!
+@closescript
+@end
+@if docchamp.dat exists false then do
+@begin
+@writefile docchamp.dat
+Gander the Warrior
+@end
+@readfile docchamp.dat
+`s01
+@fight
+;name
+`s01
+;string
+You may have beaten the others, but you have no chance against me!
+;power
+W-w-what?!?  It's impossible!!!  I've never been beaten!! NOOOOOOOOO!!!
+;sex
+1
+;weapon
+strikes you with a bolt of lightning|374
+opens the earth between your feet|334
+lifts you off the earth and drops you|364
+changes into a dragon and breathes fire on you|578
+NONE|NONE
+;defence
+1000
+;exper
+0
+;gold
+0
+;hitpoints
+2000
+;win
+DOC2.REF|CHAMP
+;lose
+DOC2.REF|LOSE
+;run
+NONE|NONE
+ 
+ 
+@#lose
+@show
+`r0`c
+ 
+ 
+        `4You are a disgrace to ALL warriors!  `2You have failed to meet
+        your challenge!  Why don't you go off into the world, get stronger,
+        get smarter, and then come back and try again!
+ 
+@key
+@do addlog
+`n `2was defeated by `e `2and is a disgrace to all warriors!
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do goto backdoor
+ 
+ 
+@#win
+@show
+`r0`c
+ 
+                            `r1 `%CONGRATULATIONS `r0
+ 
+        `%You are another step up on your way to glory!  But don't get cocky
+        yet!  You still have a long way to go!  But NEVER give up!  Keep
+        trying, and you will be a CHAMPION!
+ 
+ 
+@key
+@do `p20 + 1
+@datasave docbrute.idf &playernum `p20
+@drawmap
+@update
+ 
+ 
+ 
+@#win2
+@if docchamp.dat exists false then do
+@begin
+@writefile docchamp.dat
+Gander the Wizard
+@end
+@readfile docchamp.dat
+`s01
+@show
+`r0`c
+ 
+                            `r1 `%CONGRATULATIONS `r0
+ 
+        `%You are only one step away from becoming a CHAMPION!  But your
+        next and last challenge is the greatest one of all!  Your next
+        challenge is `s01`%!
+        If you win you become King of the Mountain!!!
+ 
+ 
+@key
+@do `p20 + 1
+@datasave docbrute.idf &playernum `p20
+@drawmap
+@update
+ 
+ 
+@#champ
+@if docchamp.dat exists false then do
+@begin
+@writefile docchamp.dat
+Gander the Wizard
+@end
+@readfile docchamp.dat
+`s01
+@show
+`r0`c
+ 
+                            `r1 `%CONGRATULATIONS `r0
+ 
+        `%YOU'VE DONE IT!  You've accomplished the impossible!  You've
+        beaten `s01`%!!  You truly are a GREAT warrior!
+        You are now the king of the mountain!!!
+ 
+        `2You recieve 1000 experience, and $2000 gold.
+ 
+ 
+@key
+@do `p01 + 1000
+@do money + 2000
+@datasave docbrutl.idf &playernum 1
+@do addlog
+`2`n`2 has beaten `e `2and has become King of the Mountain!
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@if docchamp.dat exists true then delete docchamp.dat
+@writefile docchamp.dat
+`n
+@do goto backdoor
+ 
+ 
+@#end

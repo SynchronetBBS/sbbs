@@ -1,0 +1,952 @@
+; Script file SHOW5.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:33 2001
+
+@DECLARE up 000000974
+@DECLARE monsters 000001007
+@DECLARE show1 000001692
+@DECLARE show2 000002220
+@DECLARE show3 000002745
+@DECLARE show4 000003280
+@DECLARE show5 000003802
+@DECLARE show6 000004311
+@DECLARE show7 000004827
+@DECLARE show11 000005354
+@DECLARE show12 000005877
+@DECLARE show13 000006407
+@DECLARE show14 000006935
+@DECLARE show15 000007477
+@DECLARE show16 000007990
+@DECLARE show17 000008505
+@DECLARE show21 000009004
+@DECLARE show22 000009525
+@DECLARE show23 000010062
+@DECLARE show24 000010624
+@DECLARE show25 000011170
+@DECLARE show26 000011673
+@DECLARE show27 000012193
+@DECLARE show8 000012735
+@DECLARE show9 000013428
+@DECLARE show10 000014211
+@DECLARE show18 000014592
+@DECLARE show19 000014965
+@DECLARE show20 000015527
+@DECLARE show28 000016144
+@DECLARE show29 000016692
+@DECLARE show30 000017368
+@NOCHECK
+; End of .REF index
+
+@#up
+@drawmap
+@update
+
+@#monsters
+ @show
+ `c
+`r0`c  `%`r1  Monster Cave  `r0
+
+
+       `2"`3Welcome to the Monster Cave!  What would you like to do?`2"
+
+ @do `v01 is 1
+ @choice
+ Explore the dank, dark, deadly, and mysterious cave!
+ Leave.
+ @if responce is 2 then do
+ @begin
+ @do goto up
+ @end
+
+ @if responce is 1 then do
+ @begin
+  @clear screen
+  @do `p11 - 5
+  @if `p09 < 21 then do
+  @begin
+   @do `p20 random 10 1
+   @do goto show`p20
+  @end
+
+  @if `p09 > 20 then do
+  @begin
+   @if `p09 < 41 then do
+   @begin
+    @do `p20 random 20 1
+    @do goto show`p20
+   @end
+  @end
+
+  @if `p09 > 40 then do
+  @begin
+   @do `p20 random 30 1
+   @do goto show`p20
+  @end
+ @end
+
+@#show1
+@fight
+;name
+Square
+;string said when you see him
+What's that block approaching?
+;power move kill string
+You carve it into a triangle!  HA!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+corners you|30
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+30
+;gold reward
+30
+;experience
+30
+;hit points
+30
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show2
+@fight
+;name
+Skipping School Child
+;string said when you see him
+You hear singing?
+;power move kill string
+Let's see him skip now!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+skips on your head|56
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+78
+;gold reward
+5
+;experience
+70
+;hit points
+70
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show3
+@fight
+;name
+Mr. Piano Man
+;string said when you see him
+Bad chords coming this way...
+;power move kill string
+You chop him into firewood.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+bangs some chords|100
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+78
+;experience
+89
+;hit points
+100
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show4
+@fight
+;name
+Weakling
+;string said when you see him
+Here comes a wimp!
+;power move kill string
+Eh, he wasn't much of a challenge.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+feebly strikes|20
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+10
+;gold reward
+50
+;experience
+47
+;hit points
+350
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show5
+@fight
+;name
+Painting
+;string said when you see him
+Ach!  It hurts your eyes!
+;power move kill string
+Hmph!  Modern art!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+spews fumes|70
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+60
+;gold reward
+50
+;experience
+40
+;hit points
+80
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show6
+@fight
+;name
+Mouse
+;string said when you see him
+Something scurries over.
+;power move kill string
+One more tail for ya!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+nibbles your toes|50
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+89
+;experience
+78
+;hit points
+100
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show7
+@fight
+;name
+Piece of Carpet
+;string said when you see him
+Is that shag you see?
+;power move kill string
+"I prefer hardwood!" you scream.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+carpet burns|10
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+11
+;gold reward
+12
+;experience
+13
+;hit points
+9
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show11
+@fight
+;name
+Sage
+;string said when you see him
+Aw, here comes a cute little doggy...
+;power move kill string
+You lob off her head.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+bites you|300
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+250
+;gold reward
+100
+;experience
+75
+;hit points
+200
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show12
+@fight
+;name
+Fritz
+;string said when you see him
+A cow-like cat approaches...
+;power move kill string
+You throw the bloody carcass....far.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+scratches|250
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+217
+;gold reward
+115
+;experience
+68
+;hit points
+150
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show13
+@fight
+;name
+Twilight
+;string said when you see him
+The evening approaches...
+;power move kill string
+Night will never come again...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+frightens you|319
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+265
+;gold reward
+15
+;experience
+100
+;hit points
+225
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show14
+@fight
+;name
+Griffin
+;string said when you see him
+Hmmmm...  Never seen one of those before...
+;power move kill string
+You cut off its head as a trophy.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+slashes|200
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+270
+;gold reward
+150
+;experience
+17
+;hit points
+100
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show15
+@fight
+;name
+Jeckyl
+;string said when you see him
+A bird flies in.
+;power move kill string
+Hmmm...  Pretty feathers...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+pecks at you|300
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+255
+;gold reward
+100
+;experience
+100
+;hit points
+50
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show16
+@fight
+;name
+Zoe
+;string said when you see him
+That's strange...
+;power move kill string
+You are putting an end to oddities!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+runs around|50
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+500
+;gold reward
+97
+;experience
+80
+;hit points
+20
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show17
+@fight
+;name
+Hex
+;string said when you see him
+Programming code...?
+;power move kill string
+Binary is best!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+confuses you|20
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+500
+;gold reward
+80
+;experience
+97
+;hit points
+50
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show21
+@fight
+;name
+Reindeer of Pain
+;string said when you see him
+Uh oh...
+;power move kill string
+You slice off its bloody antlers...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+gores you|500
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+425
+;gold reward
+500
+;experience
+350
+;hit points
+666
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show22
+@fight
+;name
+`4K`5C`8D`2's Apprentice
+;string said when you see him
+One of the few of the best...
+;power move kill string
+Now for the real one!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+does stuff|525
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+450
+;gold reward
+500
+;experience
+400
+;hit points
+700
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show23
+@fight
+;name
+Little Thing
+;string said when you see him
+Hawhawhaw!  Look at that!
+;power move kill string
+You crushed it!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+flits through your nose|650
+flits through your ears|650
+flits through your eyes|650
+NONE|NONE
+NONE|NONE
+;defense
+525
+;gold reward
+200
+;experience
+400
+;hit points
+5
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show24
+@fight
+;name
+Annoyance
+;string said when you see him
+Uh oh...  Here comes something bad...
+;power move kill string
+"I am not amused!" you state bravely.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+annoys you|580
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+500
+;gold reward
+478
+;experience
+500
+;hit points
+678
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show25
+@fight
+;name
+You
+;string said when you see him
+My, you are handsome!
+;power move kill string
+You feel odd...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+mirrors you|496
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+475
+;gold reward
+300
+;experience
+200
+;hit points
+510
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show26
+@fight
+;name
+Mittens
+;string said when you see him
+Oh, sweetums!
+;power move kill string
+You cut off its paw for good luck...
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+looks sweet|500
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+450
+;gold reward
+400
+;experience
+375
+;hit points
+300
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show27
+@fight
+;name
+BIG Square
+;string said when you see him
+And you thought the first one was trouble...
+;power move kill string
+What a blockhead...  HA!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+lands on you|700
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+700
+;gold reward
+700
+;experience
+700
+;hit points
+700
+;if win: ref file|name or NONE
+SHOW5.REF|MONSTERS
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+SHOW5.REF|MONSTERS
+
+@#show8
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+
+       `2As you walk through the dark room, you bump into something...
+
+       "`5Arrr...  Who be there?`2"
+
+       As you open your mouth to answer, a long, tentacled, squishy thing
+     flies into it, and down your throat.  You are lifted off the ground,
+     and blood pours and squirts from every opening in your body.  Your
+     eyes burst, and your muscles all gelatinize.  This isn't too cool...
+
+       After a few hours of torture and pain, the thing finally lets you
+     go.
+
+     `%Your hitpoints go down to 1!  You lost 15 turns!
+`k
+@do `p11 - 15
+@if `p11 < 1 then `p11 is 1
+@do `p02 = 1
+@do goto monsters
+
+@#show9
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+
+       `2As you walk through the dark room, you bump into something...
+
+       "`!Hello, friend!  Good to see you!`2"
+
+       A hand is suddenly shaking yours.
+
+       "`!Let me help you out!`2"
+
+       You are led around and around for a long time.  Eventually, you
+     come upon a ghastly creature.  You fight it for a long time, and
+     you are victorious!  This fight seemed a little more profitable than
+     most...
+
+     `%You lost 25 hitpoints!  You lost 100 turns!
+     `%You gained 3 maximum hitpoints!  You gained 500 experience and gold!
+`k
+@do `p11 - 100
+@if `p11 < 1 then `p11 is 1
+@do `p02 - 25
+@if `p02 < 1 then `p02 is 1
+@do `p03 + 3
+@do `p01 + 500
+@do money + 500
+@do goto monsters
+
+@#show10
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+
+       `2As you walk through the dark room, you bump into something...
+
+       It turns out to be a spike.  It rips through your chest, but
+     fortunately it didn't hit anything vital...
+
+     `%Hit points are at 1!  You lost 2 max hp!
+`k
+@do `p03 - 2
+@if `p03 < 1 then `p03 is 1
+@do `p02 = 1
+@do goto monsters
+
+@#show18
+@do `p20 random 6 1
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+
+       `2Something rips into your foot.
+
+       You spend several minutes nursing your foot.  However, the thing
+     that ripped into your foot turns out to be a bag of gems!
+
+     `%You lost 8 hitpoints!
+     `%You gained `p20 gems!
+`k
+@do `p02 = 1
+@do `p19 +`p20
+@do goto monsters
+
+@#show19
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+
+       `2You've come upon some kind of maze...  You decide to go on in.
+
+       You walk around for a LOOOOOOONG time, when you finally come upon
+     something.  It's a dead bird.
+
+       "`$Man, this sucks!  Nothing ever goes my way.  Now I've got to
+     get out of here!`2"
+
+       You kick the bird and stomp out of the room.  Strangely enough,
+     you are suddenly outside of the maze...
+
+     `%You lost 1000 turns!
+`k
+@do `p11 - 1000
+@if `p11 < 1 then `p11 is 1
+@do goto monsters
+
+@#show20
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+       `2There is a mirror in front of you.  On it are the following words,
+     written in blood:
+
+       `4`n `4is a dead s&man.  S&he will regret the day that s&he found
+     this place....  HAHAHAHAHAHA!!!!
+
+       `2Suddenly, the mirror molds into a strange, human-like shape, and
+     comes at you.  You attempt to fight it, but you cannot harm it.  After
+     several hours, you lose.  Hehehehe...
+
+     `%You lost 350 turns!  You died!!!!
+`k
+@do `p11 - 350
+@if `p11 < 1 then `p11 is 1
+@do enemy is Mirror`xMan
+@routine DIE in GAMETXT.REF
+
+@#show28
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+       `2Something beckons to you from the dark.  You stupidly walk towards
+     it...
+
+       "`7Hello!  I hate you!  Wouldn't you like to die?`2"
+
+       "`$I most certainly would not, fiend!`2"
+
+       You jump at the thing and beat on it for a while.  After a few
+     hours, you are done.
+
+       After a search of the body, you find nothing.
+
+     `%You lost 200 turns!
+     `%You gained 2000 experience!
+`k
+@do `p11 - 200
+@if `p11 < 1 then `p11 is 1
+@do goto monsters
+
+@#show29
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+
+       `2You've come upon some kind of maze...  You decide to go on in.
+
+       You walk around for a while, when you find an old man.
+
+       "`0Please, sit`2"
+
+       You do so obligingly.  He offers you a cup with some strange drink
+     in it.  Courageously, you take a sip.  You feel slightly energized, so
+     you take another.  You soon finish the cup.
+
+       "`$Thanks, old man!`2"  you say, and run off.
+
+     `%You lost 10 turns!
+     `%You gained 5 max hitpoints!  You were completely healed!
+`k
+@do `p11 - 10
+@if `p11 < 1 then `p11 is 1
+@do `p03 + 5
+@do `p02 is `p03
+@do goto monsters
+
+@#show30
+@show
+`c
+`r0`c  `%`r1  An Event!  `r0
+
+       `2Something isn't right here.  There isn't any ground beneath you,
+     but you are still able to walk.  It is very strange.
+
+       You continue to walk for a while when you come upon a large, black,
+     rectangular, um, monolith.  It is strange and beautiful.  You look at
+     it for a while, and then turn to leave.
+
+       Something is totally wrong.  You turn around, and the monolith is
+     right behind you.  Frightened, you run, but you go nowhere.  Suddenly,
+     the monolith falls over onto you.  This really sucks.
+
+     `%You lost 734 turns!  You lost 38 hp!  You lost 237 gold!
+     `%You gained 487 experience!
+`k
+@do `p11 - 734
+@if `p11 < 1 then `p11 is 1
+@do `p02 - 38
+@if `p02 < 1 then `p02 is 1
+@do money - 237
+@if money < 0 then money is 0
+@do `p01 + 487
+@do goto monsters
+

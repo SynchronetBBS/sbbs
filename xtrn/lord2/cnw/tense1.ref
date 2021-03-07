@@ -1,0 +1,170 @@
+; Script file TENSE1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:28 2001
+
+@DECLARE tmoonroof 000000381
+@DECLARE tmoonlab 000000650
+@DECLARE tmoonstair 000000904
+@DECLARE tmoonwater 000001180
+@DECLARE sign1 000001446
+@DECLARE sign2 000001540
+@DECLARE sign3 000001649
+@DECLARE smackrod 000001911
+@DECLARE pot 000002885
+@NOCHECK
+; End of .REF index
+
+@#TMOONROOF
+@do `p20 is 0
+@dataload TENSEMN1.DAT &playernum `p20
+@if `p20 > 0 then do
+@begin
+@do saybar
+`%The roof is beautiful here.
+@closescript
+@end
+@do saybar
+`%You find a Moonstone on the roof.
+@do `i57 + 1
+@datasave TENSEMN1.DAT &playernum 1
+@end
+ 
+@#TMOONLAB
+@do `p20 is 0
+@dataload TENSEMN2.DAT &playernum `p20
+@if `p20 > 0 then do
+@begin
+@do saybar
+`%There is nothing here.
+@closescript
+@end
+@do saybar
+`%You find a Moonstone!
+@do `i57 + 1
+@datasave TENSEMN2.DAT &playernum 1
+@end
+ 
+@#TMOONSTAIR
+@do `p20 is 0
+@dataload tensemn3.dat &playernum `p20
+@if `p20 > 0 then do
+@begin
+@do saybar
+`%There is nothing here.
+@closescript
+@end
+@do saybar
+`%You find a Moonstone underneath the stairs.
+@do `i57 + 1
+@datasave tensemn3.dat &playernum 1
+@end
+ 
+@#TMOONWATER
+@do `p20 is 0
+@dataload tensemn4.dat &playernum `p20
+@if `p20 > 0 then do
+@begin
+@do saybar
+`%There is nothing here.
+@closescript
+@end
+@do saybar
+`%You find a Moonstone in the waterfall.
+@do `i57 + 1
+@datasave tensemn4.dat &playernum 1
+@end
+ 
+@#SIGN1
+@do moveback
+@do saybar
+`%House of the Incredible Tensions `7by `8Chris Yeates
+ 
+@#SIGN2
+@do moveback
+@do saybar
+`!A Proud Production of The Loose Screw BBS `7(`$801`7)`$561`7-`$4780
+ 
+@#SIGN3
+@do moveback
+@if TENSE.TXT exist false then do
+  @begin
+@do saybar
+`!The sign is blank. Apparently no one has been through the house alive yet.
+  @closescript
+  @end
+ 
+@show
+`r0`c
+@displayfile TENSE.TXT
+@show
+ 
+`k
+@drawmap
+@update
+ 
+@#SMACKROD
+@if `i73 < 1 then do
+ @begin
+ @do saybar
+`!Smackrod Inspector: `$Move along...`k
+  @do x is 37
+  @do y is 19
+  @do map is 735
+  @loadmap 735
+  @drawmap
+  @update
+ @closescript
+ @end
+ 
+@do `p20 is `i73
+@do `v01 is 1
+@show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 `0smackrod(s). If you'd please
+  deposit it here with me, you can pick it back up over there in that pot..."
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Deposit your smackrod
+No way!
+@IF RESPONSE IS 1 THEN DO
+ @begin
+ @drawmap
+ @update
+ @datasave TENSEDP.DAT &playernum `p20
+ @do `p20 is `i73
+ @do `i73 - `p20
+ @do saybar
+`!You deposit your `p20 smackrod(s)`k
+ @do saybar
+`!Smackrod Inspector: `$Move along...`k
+  @do x is 37
+  @do y is 19
+  @do map is 735
+  @loadmap 735
+  @drawmap
+  @update
+ @closescript
+ @end
+ 
+@do moveback
+@drawmap
+@update
+@end
+ 
+@#POT
+@do moveback
+@do `p20 is 0
+@dataload TENSEDP.DAT &playernum `p20
+@if `p20 is 0 then do
+ @begin
+ @do saybar
+`!There's nothing in here.
+ @closescript
+ @end
+ 
+@do `i73 + `p20
+@do saybar
+`!You retrieve your `p20 smackrod(s)
+@datasave TENSEDP.DAT &playernum 0

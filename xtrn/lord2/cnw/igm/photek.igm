@@ -1,0 +1,44 @@
+
+                Photek's House by White Stone V2.8
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Visit Photek, talk, whatver.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM PHOTEK.IGM
+
+  To uninstall, do the same thing again.
+
+  
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Photek's House v2.8 `2by `0White_Stone
+
+replacescreen: 1569 1 noshow
+
+replacescreen: 1586 2 noshow
+
+replacescreen: 1595 3 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+        `2This is my `5first`2 igm, and it could really use some work, but
+        other than that, it's not bad for my first one.

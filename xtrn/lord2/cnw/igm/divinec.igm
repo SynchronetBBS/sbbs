@@ -1,0 +1,61 @@
+
+                Divine Comedy REF by Talaphid Elsdragon v1.01
+
+ QUICK INFO:
+
+ Version of LORD2 required to use it             : works with 1.00
+ Is registered version of LORD2 required to use? : Yes
+ Using any LORD2 vars?                           : No 
+ Overwrites any original .refs?                  : No 
+ Saves and loads its own vars independently?     : Yes (2 - DIVPETER.IDF
+                                                            DIVDEITY.IDF)
+ Adds new .refs?                                 : Yes (1 - DIVINEC.REF)
+ Replaces screens?                               : Yes (1 - Greentree o/side) 
+ Adds screens?                                   : Yes (1 - block# 1201) 
+ Free?                                           : Sure
+
+
+  Description:
+
+  A one a day bonus you have to earn. I'm considering making the bonus
+greater the more good (or evil) the character is... to go along with the
+whole idea. Not too unbalancing, I believe... unless you know of any level
+1 characters who happen to get skystaffs...
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM DIVINEC
+   - or -
+  IGM DIVINEC.IGM
+
+  To uninstall, do the same thing again.
+
+  WHAT'S THE DIFFERENCE?
+
+  Nothing much. Just this map looks a whole lot better than the v1.00 one.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `@Div`4ine `%Com`7edy `8REF `3by `!T`3alaphid
+
+;replacescreen: 1201 1 noshow
+replacescreen: 321 1 noshow
+
+;replacescreen: 1356 2 show
+replacescreen: 401 2 show
+
+installmessage:
+
+        `2The question with a `@Div`4ine `%Com`7edy `2becomes...
+
+             `2who is laughing at who? [probably at me]
+
+  `3-=- To TEST: Talk to the `0GREEN `3face just outside GREENTREE.
+                `3-=- To USE: You need a SKYSTAFF and 
+           `3either more than 19 or less than -19 alignment
+
+`7mail: TALAPHID@JUNO.COM
+
+`3-=-
+`!: `3An `@Adventures `$Unlimited`3 product `!: `#REF for LORD ][
+`3-=-                   `8]`7no thanks `%Seth Able Robinson`8[

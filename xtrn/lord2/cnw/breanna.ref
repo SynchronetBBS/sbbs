@@ -1,0 +1,394 @@
+; Script file BREANNA.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE student 000000637
+@DECLARE start1 000001065
+@DECLARE start2 000001300
+@DECLARE master_first 000001517
+@DECLARE startmaster 000001893
+@DECLARE round2 000008186
+@DECLARE round3 000008644
+@DECLARE roundfinal 000009108
+@DECLARE fail 000010682
+@DECLARE nottoday 000011570
+@DECLARE nomore 000011737
+@NOCHECK
+; End of .REF index
+
+;Breanna's Cove
+;Location: West of Porttown
+;Setting: Small hut adjacent to a cove
+
+;Interior
+; - Young girl cooking at fireplace. (user should approach him first)
+; - Breanna
+; - Table
+
+@#student
+ @busy
+ @show
+`r0`c  `%`r1 Talking to Julia `r0
+
+`2  "`$Ummmm... smells good.  Watcha cooking?`2"
+
+`k`2  "`0A potion for my master.  She is a wise woman and I fear she will
+   not survive much longer.  She is so old.`2" she sighs wistfully.
+
+`k`2  "`0Remember when you talk to her that only fear can defeat you and
+`0   you will do well.`2"`\`\`k
+ @do moveback
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@#start1
+@do moveback
+@datanewday breanna1.idf
+@dataload breanna1.idf &playernum `p20
+@if `p20 not 1 then do
+@begin
+@do goto start2
+@closescript
+@end
+
+@do saybar
+`$I am too tired to continue today.  Come see me tomorrow.
+
+@#start2
+@do moveback
+@dataload breanna2.idf &playernum `p20
+@if `p20 not 1 then do
+@begin
+@do goto master_first
+@closescript
+@end
+
+@do saybar
+`$I have nothing left to give.  Good luck warrior.
+
+
+
+@#master_first
+@busy
+@show
+`r0`c  `%`r1 Talking to Breanna `r0
+
+
+`2 "`0Long have I waited for one such as you `n.`2"   Her voice is weak
+  and she seems to be in some pain.
+
+`k`$ "How do you know my name?"
+
+`k`2 "`0We have no time for that.  My hour draws near.  Are you ready to
+  begin?`2" she ask.  Although faint, her voice is sharp and commanding.
+
+`k
+@label startmaster
+@do `v01 is 1
+@choice
+"So just what is it that we are to begin?"
+"I have time.  How can I help you old woman?"
+"Maybe next time."
+@IF RESPONSE IS 1 THEN DO
+@Begin
+@Show
+`r0`c  `%`r1 Talking to Breanna `r0
+`\`\  `2"`0If you must waste precious time then waste your own.  I have too
+  little left as it is.`2"
+`\`k
+@do goto startmaster
+@End
+@IF RESPONSE IS 3 THEN DO
+@Begin
+@Show
+`r0`c  `%`r1 Talking to Breanna `r0
+`\`\  `2"`$Sorry old woman but I am on a quest already and it pays more then it
+  looks like you could do.  Maybe I will stop by again some other
+  time.`2" you lie to her.
+
+`k  "`0Do not wait too long warrior.  Even now death is approaching my
+  door.`2" she remarks sadly.
+
+`k  You feel a strange twinge and wonder if you made the right decision.
+`\`k
+@datasave breanna1.idf &playernum 1
+@DO MOVEBACK
+@DRAWMAP
+@UPDATE
+@closescript
+@End
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@PAUSEOFF
+@do `p02 is `p03
+@Show
+`r0`c  `%`r1 Talking to Breanna `r0
+`\`\  `2Her gaze draws your eyes to her and you see a strength in them that
+  her body has long forgotten.  You feel her strength flowing into your body.
+`\`k`0  "And so it begins.`l.`l.`l.`l.
+
+
+`r0`c  `%`r1 The Forest `r0
+`\`\  `2You feel dazed and confused as if awakening in a strange room.  The
+  last thing you remember was walking down the shore line in route to Flag
+  City.  The armour and weapons you carried then are gone.
+
+`k  Where am I you wonder.  Around you is a forest that seems faintly familiar
+  yet you know you haven't been here before.  A strong odor is in the air that
+  you can not place although it too seems familiar.  Looming in front of you
+  is the entrance to a large cave.
+
+`k  Without thought you start in the direction of the cave only to be overcome
+  with nausea.  With each step the bile seems to rise higher in your throat.
+  Somehow you know the cave holds answers that you need.  You spit and
+  purposely stride forward.
+
+`k
+`r0`c  `%`r1 Inside the cave `r0
+
+`2  The odor in the cave is overwhelming.  This isn't doing a thing to help
+  your stomach and you fear you may loose what little food you have eaten
+  today.
+
+`k`1
+@CLEAR SCREEN
+@SHOW
+
+[?7h[40m[2J[2;1H[1C[0;31m≤ﬂﬂ ﬂ ﬂ[33mﬂ[31mﬂ[33mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€ﬂ [s
+[u[31mﬂ ﬂ[33mﬂ [31mﬂ[33mﬂﬂ ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[s
+[u[31;43mﬂ[33;40mﬂ[31mﬂﬂ[33mﬂ[31mﬂ ﬂﬂ[30;41m∞[3;1H[1C[40m[s
+[u[31;40m‹ [30;47m±∞[37;40m€€ﬂ€[1;47m∞[0m€€€[30;47m±[37;40m€€€[s
+[u[30;47m∞[37;40m‹ ‹[30;47m∞∞[1C[43m [1C[41m±∞[31;40m€ﬂ€[s
+[u[30;41m∞[31;40m‹   [33m-Legend of the Red Dragon-[6C[31m∞ ﬂ≤ ‹
+[4;1H [33;41m∞[1C[30;47m∞[37;40m€[30;47m∞ﬂ[1C[37;40m‹€[s
+[u[31;47m∞[37;40m€[30;47m∞[1C[37;40m€€€€€[47m  [31m±[40m[s
+[u[37;40m€ [43m [1C[30;41m∞[33m∞[31;40m€  €[33;41m∞[30m±[40m[s
+[u[32C[33mª    [31m± [43m≤[5;1H[1C[33;41m±[1C[30;47m∞[40m[s
+[u[37;40m‹€[1;47m∞[0m€[30;47m∞[37;40m‹ﬂﬂ  ﬂﬂ ‹[1;47m±[0m€€[s
+[u[31;47m∞[37;40m€ [43m [1C[31;40m€[33;41m±[31;40m€  €[s
+[u[33;41m±[30m∞[1C[31;40m€‹ﬂ€[30;41m∞[31;40m‹ﬂﬂ€[30;41m∞[40m[s
+[u[31;40m‹ [30;41m±[31;40mﬂ€[41m [2C[30m∞[31;40mﬂ€   [43m∞[40m[s
+[u[40m€ﬂﬂ[43m∞[40m€  [43m∞[40mﬂﬂ[6;1H [33;41m≤[1C[37;40m€[s
+[u[31;47m±[37;40m€€ € [1;30m‹ﬂﬂ ﬂ  [0mﬂ[1;47mﬂ∞[0m€ﬂ€ [43m [40m[s
+[u[1C[31m€[33;41m≤[31;40m€  €[33;41m≤[31;40m€ [43m±€[1C[40m[s
+[u[40m€[43m‹[40mﬂ‹€‹[43m±[40m€ [30;41m∞[1C[31;40m€[43m≤[40m[s
+[u[30;41m∞[1C∞[1C[31;40m€   [43m∞[40m€  [43m∞[40m€  ﬂﬂﬂ[s
+[u[43m∞[7;1H[1C[33;40m€ [37m€[31;47m∞[1;37m‹≤[0m€‹ [1;30m≤ ± ∞[s
+[u   [0m‹‹ﬂ€[31;47m∞[1C[43m [1C[41m [33m€[31;40m€ ‹[s
+[u[33;41m‹ﬂ[31;40mﬂ‹[43m∞€[2C[40m‹[43m±[1C[40m‹€[43m∞€[40m[s
+[u[1C€ €[43m±[40m€ € €[43m±[40m€ [43m∞[40m€ [43m€∞[40m€[5C[s
+[u[43m∞[8;1H[1C[33;40m€ [1;30;47m∞[0m‹ [1;47m± [0;30;47m∞[40m[s
+[u[1C[1m± ∞    [0m€[1;47m€ﬂ±[0m€€ [43m [1C[31;40mﬂﬂﬂﬂﬂﬂ  ﬂﬂﬂ   [s
+[uﬂﬂﬂ ﬂﬂ ﬂﬂ€[43m∞[40m€ ﬂﬂﬂﬂ ﬂﬂﬂ ﬂﬂﬂ  ﬂﬂﬂﬂ  [43m [9;1H[1C[40m[s
+[u[33;40m€ [37m€€€€ﬂ  [1;30m∞[7C[37;47m∞[0m€ﬂ‹€ [31;43m∞[40m[s
+[u[8C[30;41m≤[31;40m€[30;41m∞[9C[31;40m€[43mﬂ€[1C[40m€[s
+[u[43m [40m€[19C∞ [33m€[10;1H €‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ ‹ [31;43m[40m[s
+[u[43m±[1C[40m∞[6C[30;41m±[31;43m≤[40m€[10Cﬂﬂﬂﬂﬂ[12C‹≤‹[7C[s
+[u[33m€[11;1H €[22C[31;43m≤[1C[40m‹[6C[30;41m∞[31;43m±[40m[s
+[u[40m€[5C‹ﬂﬂﬂﬂ[30;41m∞[31;40m‹ ﬂﬂﬂ [30;41m±[31;40m€‹ﬂ€[s
+[u[30;41m∞[31;40m‹    ﬂ ∞[6C[33m€[12;1H € [31m[[33mA[31m][33mt[s
+[utack the dragon  [31;43m€[1C[40mﬂ[6C€[43m∞[40m€[5C‹[s
+[u[30;41m∞[31;40m€ﬂ€‹€ [30;41m∞[31;43mﬂ[40m€ [30;41m∞[40m[s
+[u[31;43m±[40m€ €[43m±[40mﬂ[11Cﬂ [33m€[13;1H € [31m[[33mR[31m[s
+[u][33mun like a baby    ‹ [31m≤[6C€[43m €[1C[40m‹[43mﬂﬂ[40m[s
+[u[40m‹ﬂ[41m [1C[40m‹€[43m±[40m€ [43m€∞[40m€ €[43m∞[40m€[15C[s
+[u≤ [33m€[14;1H €[22C€ [31mﬂﬂ ﬂ   ﬂﬂﬂﬂﬂﬂﬂﬂ ﬂﬂﬂ ﬂﬂ ﬂﬂﬂ ﬂﬂﬂ[12Cﬂ ﬂﬂ [s
+[u[33m€[15;1H € [31mﬂ ﬂﬂ[33mﬂ[31mﬂ[33mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[s
+[uﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[31mﬂ [33mﬂﬂ[31mﬂ [33mﬂ[31mﬂ ﬂ [33m€
+[16;1H € As if thing weren't bad enough already you hear a low rumble c[s
+[uome from€[17;1H € deep within the cave. Your bowels immediately turn[s
+[u to water and sweat €[18;1H [31;43m∞[1C[33;40mbeads on your foreh[s
+[uead. You instictively reach for a weapon that you  [41m≤[19;1H[40m[s
+[u[1C[31;43m±[1C[33;40mno longer have.  A gutteral moan escapes fro[s
+[um between you lips.[7C[41m±[20;1H[1C[31;43m≤[71C[33;41m∞[40m
+[21;1H [31m€ ‹ ‹[33m‹ [31m‹[33m‹‹ [31m‹[33m‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹[s
+[u‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹[31m‹[33m‹[31m‹€[0m
+@do `v01 is 1
+@end
+@PAUSEON
+@SHOW
+`\`2Your Command, `0`n`2? [`5A`2] :`x
+@DO READSPECIAL `s01 AR
+@if `s01 is A then do
+ @BEGIN
+ @show
+`r0`c  `r1  `%Dragon Encounter.  `r0
+
+`2  The `4Red Dragon `2approaches.
+
+  Your skill allows you to get the first strike.
+
+`2  Your Hitpoints : `0`p02
+`2  The `4Red Dragon's `2Hitpoints : `015,000
+
+`2  (`5A`2)ttack
+`2  (`5R`2)un
+
+`\`2  Your Command, `0`n`2? [`5A`2] :`x
+@DO GOTO ROUND2
+@closescript
+@end
+
+@DO GOTO fail
+
+@LABEL ROUND2
+@DO READSPECIAL `s01 AR
+@if `s01 is A then do
+@do `p02 / 2
+ @BEGIN
+ @show
+`r0`c  `r1  `%Dragon Encounter.  `r0
+
+`4  **`2  The `4Red Dragon `2hits with it's `0Huge Claws `2. `4**
+
+`2  You attack, swinging your bone wildly.
+
+`2  Your Hitpoints : `0`p02
+`2  The `4Red Dragon's `2Hitpoints : `09,875
+
+`2  (`5A`2)ttack
+`2  (`5R`2)un
+
+`\`2  Your Command, `0`n`2? [`5A`2] :`x
+@DO GOTO ROUND3
+@closescript
+@end
+
+@DO GOTO fail
+
+@LABEL ROUND3
+@DO READSPECIAL `s01 AR
+@if `s01 is A then do
+@do `p02 / 2
+ @BEGIN
+ @show
+`r0`c  `r1  `%Dragon Encounter.  `r0
+
+`4  **`2  The `4Red Dragon `2hits with it's `0Huge Claws `2. `4**
+
+`2 You strike hoping to hit a soft spot.
+
+`2  Your Hitpoints : `0`p02
+`2  The `4Red Dragon's `2Hitpoints : `07,036
+
+`2  (`5A`2)ttack
+`2  (`5R`2)un
+
+`\`2  Your Command, `0`n`2? [`5A`2] :`x
+@DO GOTO ROUNDFINAL
+@closescript
+@end
+
+@DO GOTO fail
+
+@LABEL ROUNDFINAL
+@DO READSPECIAL `s01 AR
+@if `s01 is A then do
+@do `p02 / 2
+ @BEGIN
+ @show
+`r0`c
+`2  With a yell you launch yourself at your foe sure that you will fail but
+  hoping for a quick and painless death.
+
+`k`r0`c  `r1  `%Breanna's Hut `r0
+
+`2  You slam into the wall and the old hut creaks as though tossed in a
+  storm.  You spin around looking for the dragon only to find the old
+  woman calmly watching you.
+
+`k`2  "`0You have done well.`2" she said.  Her voice is stronger and her
+  bearing a little more erect as if a heavy burden has been removed from
+  her shoulders.
+
+`k`2  "`$WHERE IS THE DRAGON`2?" you scream, still lost in the nightmare.
+
+`k`2  "`0The dragon was only an illusion.  The test is complete.  You are
+  safe... for now`2.
+
+`k`2  "`$So I beat the dragon`2?"  you say, standing a little more erect.
+
+`k`r0`c  `r1  `%Breanna's Hut `r0
+
+`2  "`0The test was not if you would win or lose but rather to see if you
+  had the strength and conviction to try.`2"
+
+`2  "`0Within your breast beats the heart of a warrior.  It is not within my
+  powers to read your conscience so I can only hope you use my gift wisely.`2"
+
+`k
+
+`2  You gain `02 `2Muscle and `01 `2Dodge
+
+`k
+@do `p22 is 2
+@do `p04 + `p22
+
+@do `p23 is 1
+@do `p05 + `p23
+
+@do `p02 is `p03
+
+@datasave breanna2.idf &playernum 1
+@do addlog
+  `r5  `r0 `0`n `2 has received Breanna's blessing. `r5  `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+
+@DO MOVEBACK
+@DRAWMAP
+@UPDATE
+@closescript
+@End
+
+
+@DO GOTO fail
+
+
+@label fail
+@show
+`r0`c  `r1  `%Breanna's Hut `r0
+
+`2  You whirl around to run from the cave...
+
+`2  You slam into the wall and the old hut croaks as though tossed in a
+  storm.  You spin around looking for the dragon only to find the old
+  woman starring at you.  She seems to have aged even more since you last
+  saw her.
+
+`k`2  "`0You have failed.`2" she said.  Her voice is barely a whisper.
+
+`k`2  "`$WHERE IS THE DRAGON`2?" you scream, still lost in the nightmare.
+
+`k`2  "`0The dragon was only an illusion.  You are safe now.  Return to me
+  when your heart is not so consumed by petty things`2."
+
+`k
+@datasave breanna1.idf &playernum 1
+@do addlog
+  `r5  `r0 `0`n `2was seen with wet pants and crying for s&his mommy. `r5  `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@end
+
+@PAUSEON
+@END
+@DO MOVEBACK
+@DRAWMAP
+@UPDATE
+@End
+
+@#nottoday
+ @busy
+ @show
+`r0`c  `%`r1 Talking to Breanna `r0
+
+`k`2 "`0I am too tired today.`2"`\`\`k
+ @do moveback
+ @drawmap
+ @update
+ @closescript
+ @end
+
+
+@#nomore

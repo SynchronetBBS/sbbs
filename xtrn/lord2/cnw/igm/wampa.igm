@@ -1,0 +1,43 @@
+
+       Wampa's Cave 1.00 by James C. Jones, The Shadow BBS(850) 864-4292
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Use the force Luke to kill the evil Wampa Ice Creature and enjoy in the
+  benefits, once a day.
+  
+  IGM WAMPA.IGM
+
+  To uninstall, do the same thing again.
+
+  Find it in snowy pass. There is another cave added there on the west side.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `!Wampa's Cave `2by `0James Jones The Shadow BBS 850-864-4292
+
+replacescreen: 1418 1 noshow
+
+replacescreen: 1499 2 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Use the force Luke to kill the evil Wampa Ice Creature and enjoy in the
+  `2benefits, once a day.
+  `! Made by James C. Jones, The Shadow BBS 850-864-4292
+

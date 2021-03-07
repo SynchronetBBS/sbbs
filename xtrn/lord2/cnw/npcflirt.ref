@@ -1,0 +1,1282 @@
+; Script file NPCFLIRT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE flirt 000001155
+@DECLARE 1-no 000013303
+@DECLARE 1-yes 000013612
+@DECLARE 2-yes 000013917
+@DECLARE 2-no 000014260
+@DECLARE 3-yes 000014370
+@DECLARE 3-no 000016665
+@DECLARE 4-yes 000017167
+@DECLARE 4-no 000017576
+@DECLARE 5-yes 000018741
+@DECLARE 5-no 000019498
+@DECLARE 6-yes 000019585
+@DECLARE 6-no 000020234
+@DECLARE 7-yes 000020321
+@DECLARE 7-no 000021146
+@DECLARE 8-no 000021232
+@DECLARE 8-yes 000021319
+@DECLARE 9-no 000022175
+@DECLARE 9-yes 000022264
+@DECLARE nodate 000025426
+@DECLARE godate2 000027494
+@DECLARE godate 000027743
+@DECLARE 10-no 000032792
+@DECLARE 10-yes 000032869
+@DECLARE 10-yes2 000035047
+@DECLARE 11-no 000039328
+@DECLARE 11-yes 000039414
+@DECLARE doublecheck 000040500
+@DECLARE 12-yes 000041451
+@DECLARE 12-no 000041639
+@DECLARE 13-yes 000041714
+@DECLARE 13-no 000041764
+@DECLARE 14-yes 000041829
+@DECLARE 14-no 000042494
+@DECLARE leave 000042585
+@DECLARE leave2 000042666
+@DECLARE leave3 000042805
+@DECLARE leave4 000043100
+@DECLARE nomore 000043227
+@NOCHECK
+; End of .REF index
+
+
+@#flirt
+@dataload npc\npcfl`p70.idf &playernum `p23
+@do `p23 + 1
+@datasave npc\npcfl`p70.idf &playernum `p23
+@do `p23 random 3 1
+@do `p24 random 5 1
+@dataload npc/npcgendr.idf `p70 `p20
+
+@if `p20 is 0 then do ;straight girl
+        @begin
+        @do `s03 is her
+        @do `s04 is she
+        @do `s05 is girl
+        @end
+@if `p20 is 1 then do ;straight boy
+        @begin
+        @do `s03 is his
+        @do `s04 is he
+        @do `s05 is boy
+        @end
+@if `p20 is 2 then do ;lesbian girl
+        @begin
+        @do `s03 is her
+        @do `s04 is she
+        @do `s05 is girl
+        @end
+@if `p20 is 3 then do ;gay boy
+        @begin
+        @do `s03 is his
+        @do `s04 is he
+        @do `s05 is boy
+        @end
+@if `p20 is 4 then do ;bisexual girl
+        @begin
+        @do `s03 is her
+        @do `s04 is she
+        @do `s05 is girl
+        @end
+@if `p20 is 5 then do ;bisexual boy
+        @begin
+        @do `s03 is his
+        @do `s04 is he
+        @do `s05 is boy
+        @end
+@if `p20 > 5 then do ;OTHER?!?!
+        @begin
+        @do `s03 is it's
+        @do `s04 is it
+        @do `s05 is it
+        @end
+
+@if response is 1 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 1-no
+                @if `p20 is 1 then goto 1-yes
+                @if `p20 is 2 then goto 1-yes
+                @if `p20 is 3 then goto 1-no
+                @if `p20 is 4 then goto 1-yes
+                @if `p20 is 5 then goto 1-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 1-yes
+                @if `p20 is 1 then goto 1-no
+                @if `p20 is 2 then goto 1-no
+                @if `p20 is 3 then goto 1-yes
+                @if `p20 is 4 then goto 1-yes
+                @if `p20 is 5 then goto 1-yes
+                @end
+        @end
+@if response is 2 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 2-no
+                @if `p20 is 1 then goto 2-yes
+                @if `p20 is 2 then goto 2-yes
+                @if `p20 is 3 then goto 2-no
+                @if `p20 is 4 then goto 2-yes
+                @if `p20 is 5 then goto 2-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 2-yes
+                @if `p20 is 1 then goto 2-no
+                @if `p20 is 2 then goto 2-no
+                @if `p20 is 3 then goto 2-yes
+                @if `p20 is 4 then goto 2-yes
+                @if `p20 is 5 then goto 2-yes
+                @end
+        @end
+
+@if response is 3 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 3-no
+                @if `p20 is 1 then goto 3-yes
+                @if `p20 is 2 then goto 3-yes
+                @if `p20 is 3 then goto 3-no
+                @if `p20 is 4 then goto 3-yes
+                @if `p20 is 5 then goto 3-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 3-yes
+                @if `p20 is 1 then goto 3-no
+                @if `p20 is 2 then goto 3-no
+                @if `p20 is 3 then goto 3-yes
+                @if `p20 is 4 then goto 3-yes
+                @if `p20 is 5 then goto 3-yes
+                @end
+        @end
+@if response is 4 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 4-no
+                @if `p20 is 1 then goto 4-yes
+                @if `p20 is 2 then goto 4-yes
+                @if `p20 is 3 then goto 4-no
+                @if `p20 is 4 then goto 4-yes
+                @if `p20 is 5 then goto 4-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 4-yes
+                @if `p20 is 1 then goto 4-no
+                @if `p20 is 2 then goto 4-no
+                @if `p20 is 3 then goto 4-yes
+                @if `p20 is 4 then goto 4-yes
+                @if `p20 is 5 then goto 4-yes
+                @end
+        @end
+@if response is 5 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 5-no
+                @if `p20 is 1 then goto 5-yes
+                @if `p20 is 2 then goto 5-yes
+                @if `p20 is 3 then goto 5-no
+                @if `p20 is 4 then goto 5-yes
+                @if `p20 is 5 then goto 5-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 5-yes
+                @if `p20 is 1 then goto 5-no
+                @if `p20 is 2 then goto 5-no
+                @if `p20 is 3 then goto 5-yes
+                @if `p20 is 4 then goto 5-yes
+                @if `p20 is 5 then goto 5-yes
+                @end
+        @end
+@if response is 6 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 6-no
+                @if `p20 is 1 then goto 6-yes
+                @if `p20 is 2 then goto 6-yes
+                @if `p20 is 3 then goto 6-no
+                @if `p20 is 4 then goto 6-yes
+                @if `p20 is 5 then goto 6-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 6-yes
+                @if `p20 is 1 then goto 6-no
+                @if `p20 is 2 then goto 6-no
+                @if `p20 is 3 then goto 6-yes
+                @if `p20 is 4 then goto 6-yes
+                @if `p20 is 5 then goto 6-yes
+                @end
+        @end
+@if response is 7 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 7-no
+                @if `p20 is 1 then goto 7-yes
+                @if `p20 is 2 then goto 7-yes
+                @if `p20 is 3 then goto 7-no
+                @if `p20 is 4 then goto 7-yes
+                @if `p20 is 5 then goto 7-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 7-yes
+                @if `p20 is 1 then goto 7-no
+                @if `p20 is 2 then goto 7-no
+                @if `p20 is 3 then goto 7-yes
+                @if `p20 is 4 then goto 7-yes
+                @if `p20 is 5 then goto 7-yes
+                @end
+        @end
+@if response is 8 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 8-no
+                @if `p20 is 1 then goto 8-yes
+                @if `p20 is 2 then goto 8-yes
+                @if `p20 is 3 then goto 8-no
+                @if `p20 is 4 then goto 8-yes
+                @if `p20 is 5 then goto 8-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 8-yes
+                @if `p20 is 1 then goto 8-no
+                @if `p20 is 2 then goto 8-no
+                @if `p20 is 3 then goto 8-yes
+                @if `p20 is 4 then goto 8-yes
+                @if `p20 is 5 then goto 8-yes
+                @end
+        @end
+@if response is 9 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 9-no
+                @if `p20 is 1 then goto 9-yes
+                @if `p20 is 2 then goto 9-yes
+                @if `p20 is 3 then goto 9-no
+                @if `p20 is 4 then goto 9-yes
+                @if `p20 is 5 then goto 9-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 9-yes
+                @if `p20 is 1 then goto 9-no
+                @if `p20 is 2 then goto 9-no
+                @if `p20 is 3 then goto 9-yes
+                @if `p20 is 4 then goto 9-yes
+                @if `p20 is 5 then goto 9-yes
+                @end
+        @end
+@if response is 10 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 10-no
+                @if `p20 is 1 then goto 10-yes
+                @if `p20 is 2 then goto 10-yes
+                @if `p20 is 3 then goto 10-no
+                @if `p20 is 4 then goto 10-yes
+                @if `p20 is 5 then goto 10-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 10-yes
+                @if `p20 is 1 then goto 10-no
+                @if `p20 is 2 then goto 10-no
+                @if `p20 is 3 then goto 10-yes
+                @if `p20 is 4 then goto 10-yes
+                @if `p20 is 5 then goto 10-yes
+                @end
+        @end
+@if response is 11 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 11-no
+                @if `p20 is 1 then goto 11-yes
+                @if `p20 is 2 then goto 11-yes
+                @if `p20 is 3 then goto 11-no
+                @if `p20 is 4 then goto 11-yes
+                @if `p20 is 5 then goto 11-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 11-yes
+                @if `p20 is 1 then goto 11-no
+                @if `p20 is 2 then goto 11-no
+                @if `p20 is 3 then goto 11-yes
+                @if `p20 is 4 then goto 11-yes
+                @if `p20 is 5 then goto 11-yes
+                @end
+        @end
+@if response is 12 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 12-no
+                @if `p20 is 1 then goto 12-yes
+                @if `p20 is 2 then goto 12-yes
+                @if `p20 is 3 then goto 12-no
+                @if `p20 is 4 then goto 12-yes
+                @if `p20 is 5 then goto 12-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 12-yes
+                @if `p20 is 1 then goto 12-no
+                @if `p20 is 2 then goto 12-no
+                @if `p20 is 3 then goto 12-yes
+                @if `p20 is 4 then goto 12-yes
+                @if `p20 is 5 then goto 12-yes
+                @end
+        @end
+@if response is 13 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 13-no
+                @if `p20 is 1 then goto 13-yes
+                @if `p20 is 2 then goto 13-yes
+                @if `p20 is 3 then goto 13-no
+                @if `p20 is 4 then goto 13-yes
+                @if `p20 is 5 then goto 13-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 13-yes
+                @if `p20 is 1 then goto 13-no
+                @if `p20 is 2 then goto 13-no
+                @if `p20 is 3 then goto 13-yes
+                @if `p20 is 4 then goto 13-yes
+                @if `p20 is 5 then goto 13-yes
+                @end
+        @end
+@if response is 14 then do
+        @begin
+        @if &sex is 0 then do
+                @begin
+                @if `p20 is 0 then goto 14-no
+                @if `p20 is 1 then goto 14-yes
+                @if `p20 is 2 then goto 14-yes
+                @if `p20 is 3 then goto 14-no
+                @if `p20 is 4 then goto 14-yes
+                @if `p20 is 5 then goto 14-yes
+                @end
+        @if &sex is 1 then do
+                @begin
+                @if `p20 is 0 then goto 14-yes
+                @if `p20 is 1 then goto 14-no
+                @if `p20 is 2 then goto 14-no
+                @if `p20 is 3 then goto 14-yes
+                @if `p20 is 4 then goto 14-yes
+                @if `p20 is 5 then goto 14-yes
+                @end
+        @end
+@do saybar
+THERE IS A BUG HERE, CONTACT GREENIE@DARKTECH.ORG. MENTION NPC NAME.
+@do goto leave
+
+@label 1-no
+@do saybar
+`$`s04 doesn't even notice, maybe `s04's not my type.
+@if `p08 > 50 then do
+        @begin
+        @do `p29 random 5 1
+        @if `p29 is 2 then do
+                @begin
+                @datasave npc/npcgendr.ref `p70 4
+                @end
+        @end
+@do goto leave
+
+@label 1-yes
+@if `p08 > 0 then do
+        @begin
+        @do saybar
+`%`s04 smiles back at you. `!:`4)
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 1
+        @end
+@do goto leave
+
+@label 2-yes
+@if `p08 > 1 then do
+        @begin
+        @do saybar
+`%`s04 also gives you a little wink. `!;`4)
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 1
+        @end
+@if `p08 < 2 then goto 2-no
+@do goto leave
+
+@label 2-no
+@do saybar
+`%`s04 doesn't even notice your wink. Maybe `s04 is not my type.
+@do goto leave
+
+@label 3-yes
+@do saybar
+`N: So, hows the weather been treating you? `k
+@if `p08 > 4 then do
+        @begin
+        @do `p22 random 13 1
+        @if `p22 is 1 then `s02 is HOT
+        @if `p22 is 2 then `s02 is very`xHOT
+        @if `p22 is 2 then `p08 + 1
+        @if `p22 is 3 then `s02 is cloudy
+        @if `p22 is 4 then `s02 is warm`xout
+        @if `p22 is 5 then `s02 is rainy
+        @if `p22 is 6 then `s02 is wet
+        @if `p22 is 7 then `s02 is cold
+        @if `p22 is 8 then `s02 is rather`xunpleasant
+        @if `p22 is 9 then `s02 is cool
+        @if `p22 is 10 then `s02 is beautiful
+        @if `p22 is 10 then `p08 + 1
+        @if `p22 is 11 then `s02 is beautiful
+        @if `p22 is 11 then `p08 + 1
+        @if `p22 is 12 then `s02 is beautiful
+        @if `p22 is 12 then `p08 + 1
+        @if `p22 is 13 then `s02 is sunny
+        @do `p22 random 4 1
+        @if `p22 is 1 then do
+                @begin
+                @do saybar
+`s01: It's been `s02 lately.
+                @end
+        @if `p22 is 2 then do
+                @begin
+                @do saybar
+`s01: It's been rather `s02 lately.
+                @end
+        @if `p22 is 3 then do
+                @begin
+                @do saybar
+`s01: It's `s02 today.
+                @end
+        @if `p22 is 4 then do
+                @begin
+                @if `s02 is very`xHOT then do
+                        @begin
+                        @do `p08 + 1
+                        @dataload npc/npc-`p70.idf &playernum `p22
+                        @do `p22 + 5
+                        @datasave npc/npc-`p70.idf &playernum `p22
+                        @end
+                @do saybar
+`s01: It's going to be `s02 later.
+                @end
+                
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 1
+        @end
+@if `p08 < 5 then do
+        @begin
+        @do saybar
+        `$`s01: `%Please go away, I don't want to talk to you right now.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 - 1
+        @end
+@do goto leave
+
+@label 3-no
+@do `p23 random 4 1
+@if `p23 is 1 then do
+        @begin
+        @do saybar
+`$`s01: `%Yikes, are you trying to flirt with me?
+        @end
+@if `p23 is 2 then do
+        @begin
+        @do saybar
+`$`s01: `%Yikes, are you flirting with me?
+        @end
+@if `p23 is 3 then do
+        @begin
+        @do saybar
+`$`s01: `%humm, ok whatever.
+        @end
+@dataload npc/npc-`p70.idf &playernum `p22
+@do `p22 - `p23
+@datasave npc/npc-`p70.idf &playernum `p22
+@do goto leave
+
+@label 4-yes
+@if `p08 > 9 then do
+        @begin
+        @do saybar
+`%`s04 blushes and looks down.
+        @do quebar
+`%As you leave, `s01 looks back up and blows YOU a kiss.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 2
+        @end
+@if `p08 < 10 then goto 4-no
+@do goto leave
+
+@label 4-no
+@do `p22 random 7 1
+@if `p22 is 1 then do
+        @begin
+        @do saybar
+`$`s01: `%HA HA HA!, you're so funny.
+        @end
+@if `p22 is 2 then do
+        @begin
+        @do saybar
+`$`s01: `%HA HA HA!, you're such a joke.
+        @end
+@if `p22 is 3 then do
+        @begin
+        @do saybar
+`$`s01: `%Someone needs a friend, and it ain't me.
+        @end
+@if `p22 is 4 then do
+        @begin
+        @do saybar
+`$`s01: `%Get lost loser.
+        @end
+@if `p22 is 5 then do
+        @begin
+        @do move 1 1
+        @displayfile finger.ans
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - 5
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @show
+                         `$OUCH!!
+        @key
+        @end
+@if `p22 is 6 then do
+        @begin
+        @do saybar
+`$You're ignored.
+        @end
+@if `p22 is 7 then do
+        @begin
+        @do saybar
+`$`s01 doesn't even seem notice.
+        @end
+@dataload npc/npc-`p70.idf &playernum `p22
+@do `p22 - `p23
+@datasave npc/npc-`p70.idf &playernum `p22
+@if `p24 is 3 then `p08 - 1
+@if `p24 is 4 then `p08 - 2
+@do goto leave
+
+@label 5-yes
+@if `p08 > 14 then do
+        @begin
+        @do saybar
+`$You take `s03 hand and press your lips on the back of `s03 hand. `k
+        @do saybar
+`$`s04 looks up at you and says, you're so romantic.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 2
+        @end
+@if `p08 < 15 then do
+        @begin
+        @do saybar
+`$`s01: `%Hummm, please don't, you're not that cute.`L.`L.`Lyet.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 - 1
+        @if `p24 is 4 then `p08 - 2
+        @end
+@do goto leave
+
+@label 5-no
+@do saybar
+`$`s01: `4Sorry s&boy, I'm not that type.
+@do goto leave
+
+@label 6-yes
+@if `p08 > 19 then do
+        @begin
+        @do saybar
+`$`s01: `%Hmmm, that feels so good, thanks.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 1
+        @end
+@if `p08 < 20 then do
+        @begin
+        @do saybar
+`$`s01: `%Hummm, please don't, you're not that good yet.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 - 1
+        @if `p24 is 4 then `p08 - 2
+        @end
+@do goto leave
+
+@label 6-no
+@do saybar
+`$`s01: `4Sorry s&boy, I'm not that type.
+@do goto leave
+
+@label 7-yes
+@if `p08 > 29 then do
+        @begin
+        @do saybar
+`%`s04 returns the favour and touches your privates.
+        @do quebar
+`%As you leave, `s01 looks up at you and blows YOU a kiss.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @if `p24 is 2 then `p22 + 3
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 2
+        @end
+@if `p08 < 30 then do
+        @begin
+        @do saybar
+`$`s01: `%What the?!?! you think?!?! NO WAY, you're too quick for me.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @if `p24 is 2 then `p22 - 3
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 - 1
+        @if `p24 is 4 then `p08 - 2
+        @end
+@do goto leave
+
+@label 7-no
+@do saybar
+`$`s01: `4Sorry s&boy, I'm not that type.
+@do goto leave
+
+@label 8-no
+@do saybar
+`$`s01: `4Sorry s&boy, I'm not that type.
+@do goto leave
+
+@label 8-yes
+@if `p08 > 39 then do
+        @begin
+        @do saybar
+`%`s04 returns the favour and presses a deap long kiss on yours.
+        @do quebar
+`%As you leave, `s01 calls out "`N, WAIT!" and blows YOU another kiss.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @if `p24 is 2 then `p22 + 3
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 2
+        @end
+@if `p08 < 40 then do
+        @begin
+        @do saybar
+`$`s01: `%What the?!?! you think?!?! NO WAY, you're just too quick for me.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @if `p24 is 2 then `p22 - 3
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 - 1
+        @if `p24 is 4 then `p08 - 2
+        @end
+@do goto leave
+
+
+@label 9-no
+@do saybar
+`$`s01: `4Sorry s&boy, I'm not that type.
+@do goto leave
+
+
+@label 9-yes
+@if `p08 < 50 then do
+        @begin
+        @do saybar
+`$`s01: `%What the?!?! you think?!?! NO WAY, you're just too quick for me.
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @if `p24 is 1 then `p22 - 5
+        @if `p24 is 2 then `p22 - 9
+        @if `p24 is 3 then `p22 - 10
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 2 then `p08 - 1 
+        @if `p24 is 3 then `p08 - 4 
+        @if `p24 is 4 then `p08 - 8
+        @do goto leave
+        @end
+@if `p08 > 49 then do
+        @begin
+        @do saybar
+`$`N: `%"Humm, how should I put this, `k
+        @do saybar
+`$`N: `%humm, do you want to go out with me,`k
+        @do saybar
+ humm, on a date with me?`k
+        @dataload npc\npcstat.idf `p70 `p29
+        @if `p29 < 4 then do
+                @begin
+                @dataload npc\npcstat2.idf `p70 `p29
+                @if `p29 > 0 then do
+                        @begin
+                        @if `p29 is &playernum then do
+                                @begin
+                                @do saybar
+`$`s01: `%Ok great, I've been waiting for you honey.     `!:`4)`l
+                                @do goto ondate
+                                @end
+                        @if `p29 NOT &playernum then do
+                                @begin
+                                @dataload npc\npcslut.idf `p70 `p29
+                                @do `p22 random `p29 1
+                                @if `p22 < 10 then goto nodate
+                                @if `p22 is 15 then goto nodate
+                                @if `p22 is 19 then goto nodate
+                                @if `p22 is 22 then goto nodate
+                                @if `p22 is 26 then goto nodate
+                                @if `p22 is 33 then goto nodate
+                                @if `p22 is 44 then goto nodate
+                                @if `p22 is 50 then goto nodate
+                                @if `p22 is 55 then goto nodate
+                                @if `p22 is 58 then goto nodate
+                                @if `p22 is 60 then goto nodate
+                                @if `p22 is 70 then goto nodate
+                                @if `p22 is 80 then goto nodate
+                                @if `p22 is 90 then goto nodate
+                                @if `p22 is 100 then goto nodate
+                                @if `p22 is 120 then goto nodate
+                                @if `p22 is 199 then goto nodate
+                                @dataload npc\npcloyal.idf `p70 `p29
+                                @do `p22 random `p29 1
+                                @if `p22 > 50 then goto nodate
+                                @if `p22 < 51 then do
+                                        @begin
+                                        @do `p22 random `p29 1
+                                        @if `p22 > 25 then goto nodate
+                                        @end
+                                @do goto godate2
+                               @label nodate
+     ; now lets see if old romance is still alive!
+@dataload npc\npcdy`p70.idf &playernum `p22
+@dataload npc\npctouch.idf `p70 `p29
+@do `p23 is &time
+@do `p23 - `p22
+@if `p23 > `p29 then do
+        @begin
+        @dataload npc\npcstat2.idf `p70 `p29
+        @writefile mail\mail`p29.dat
+  `0`s01 wrote this letter to you:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+   `7Where have you been, I have not heard from you in about
+ `7`p23 days. I'm just writing to you to let you know our
+ `7relationship has come to an end.
+
+ `7I've found someone else who is treating me well.
+                                `7~`s01
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+                                        @do goto godate2
+                                        @end
+                                @do saybar
+`$`s01: `%sorry `N, I'm not interested, I'm already seeing someone.`l
+                                @dataload npc\npcloyal.idf `p70 `p29
+                                @do `p29 + 2
+                                @datasave npc\npcloyal.idf `p70 `p29
+                                @dataload npc\npcslut.idf `p70 `p29
+                                @do `p29 - 2
+                                @if `p29 < 1 then `p29 is 0
+                                @datasave npc\npcslut.idf `p70 `p29
+                                @dataload npc\npcstat2.idf `p70 `p29
+                                @writefile mail\mail`p29.dat
+  `0`s01 wrote this letter to you:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+   `7Hello my dear, I miss you, will you come to see me today?
+ `7I've been having problems with `N. S&man keeps asking me
+ `7out for romantic get togethers. I'm just fed up with it.
+ `7
+ `7I turned s&him away.
+                                `7~`s01
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+                                @do goto leave
+                                @end
+                        @end
+               @label godate2
+                @do `p22 random 3 1
+                @if `p22 is 1 then do
+                        @begin
+                        @do saybar
+`$`s01: `%Yah sure, why not, you've charmed me thus far. `!:`4)`l
+                       @label godate
+                        @bitset `t50 1 1
+                        @do `p71 is `p70
+                        @datasave npc/npchere.idf `p70 &playernum
+                        @if `p29 is 0 then do
+                                @begin
+                                @datasave npc\npcstat.idf `p70 1
+                                @do quebar
+`%`s01 is following you now.
+                                @dataload npc/npc-`p70.idf &playernum `p22
+                                @do `p22 + `p23
+                                @if `p24 is 2 then `p22 + 2
+                                @datasave npc/npc-`p70.idf &playernum `p22
+                                @if `p24 is 3 then `p08 + 2
+                                @do goto leave
+                                @end
+                        @end
+                @if `p22 > 1 then do
+                        @begin
+                        @do saybar
+`$`s01: `%Sorry, not today, I am busy today.`k
+                        @do saybar
+`$`s01: `%Thanks for the offer though.`k
+                        @do quebar
+`%Ask `03 again another day.
+                        @end
+                @end
+;procedure to check if npc will "cheat" with another player.
+        @if `p29 > 1 then do
+                @begin
+                @dataload /npc/npcloyal.idf `p70 `p40
+                @do `p29 random `p40 1
+                @if `p29 < 10 then do
+                        @begin
+                        @do saybar
+`$`s01: `%Yah sure, why not, you've charmed me this far. `!:`4)
+                        @bitset `t50 1 1
+                        @datasave npc\npcstat.idf `p70 1
+                        @do quebar
+`%`s01 is following you now.
+                        @dataload npc/npc-`p70.idf &playernum `p22
+                        @do `p22 + `p23
+                        @if `p24 is 2 then `p22 + 3
+                        @datasave npc/npc-`p70.idf &playernum `p22
+                        @if `p24 is 3 then `p08 + 2
+                        @do goto leave
+                        @end
+                @if `p22 is 0 then do
+                        @begin
+                        @if `p29 < 150 then do
+                                @begin
+                                @if `p29 > 10 then do
+                                        @begin
+                                        @do `p28 random 3 1
+                                        @if `p28 is 1 then do
+                                                @begin
+                                                @do saybar
+`$`s01: `%Yah sure, why not, you've charmed me thus far. `!:`4)
+                                                @bitset `t50 1 1
+                                                @datasave npc\npcstat.idf `p70 1
+                                                @do quebar
+`%`s01 is following you now.
+                                                @dataload npc/npc-`p70.idf &playernum `p22
+                                                @do `p22 + `p23
+                                                @if `p24 is 2 then `p22 + 3
+                                                @datasave npc/npc-`p70.idf &playernum `p22
+                                                @if `p24 is 3 then `p08 + 2
+                                                @do `p22 is 1
+                                                @do goto leave
+                                                @end
+                                        @end
+                                @end
+                        @end
+                @if `p22 is 0 then do
+                        @begin
+                        @if `p29 < 200 then do
+                                @begin
+                                @if `p29 > 149 then do
+                                       @begin
+                                       @do `p28 random 8 1
+                                       @if `p28 is 1 then do
+                                               @begin
+                                               @do saybar
+`$`s01: `%Yah sure, why not, you've charmed me this far. `!:`4)
+                                               @bitset `t50 1 1
+                                               @datasave npc\npcstat.idf `p70 1
+                                               @do quebar
+`%`s01 is following you now.
+                                               @dataload npc/npc-`p70.idf &playernum `p22
+                                               @do `p22 + `p23
+                                               @if `p24 is 2 then `p22 + 3
+                                               @datasave npc/npc-`p70.idf &playernum `p22
+                                               @if `p24 is 3 then `p08 + 2
+                                               @do goto leave
+                                               @end
+                                       @end
+                                @end
+                        @end
+                @end
+        @end
+
+@label 10-no
+@do saybar
+`%`s01: `%I am not interested.
+@do goto leave
+
+@label 10-yes
+;fuck 'em! :)
+        @dataload npc/npc-`p70.idf &playernum `p40
+        @dataload npc/npcreqc5.idf `p70 `p41
+        @if `p41 > `p40 then goto 10-yes2     ;<--- check if NPC is a SLUT! 
+        @do saybar
+`$`s01: Okay sure, why not, this could be fun. `!;`@)`k
+        @routineabort
+        @run STARTSEX in npc-sex.ref
+        @closescript
+
+;
+;
+; going to remove this part, new/better/cooler routines is in npc-sex.ref now.
+;
+;
+
+        @do `p22 random 3 1
+        @if `p22 is 1 then do
+                @begin
+                @do saybar
+`$`s01: `%come over here baby. `k
+                @do saybar
+`$`s01: `%CLOSER!! `k
+                @do saybar
+`k`k`k`k
+                @do saybar
+`$`s01: `%That was SOOOO good, you're the best. `k
+                @do saybar
+`%After a while you get off of `s03 and continue your quests.
+                @do `p34 + 1
+                @dataload npc/npc-`p70.idf &playernum `p22
+                @do `p24 random 3 1
+                @do `p22 + `p24
+                @if `p24 is 2 then `p22 + 3
+                @datasave npc/npc-`p70.idf &playernum `p22
+                @if `p24 is 3 then `p08 + 5
+                @do goto leave
+                @end
+
+        @if `p22 is 2 then do
+                @begin
+                @do saybar
+`$`s01: Sorry, not today, maybe next time.
+                @do goto leave
+                @end
+        @if `p22 is 3 then do
+                @begin
+                @do saybar
+`$`s01: I am not in the mood.
+                @do goto leave
+                @end
+;        @end
+        @do `p22 random 3 1
+        @if `p22 is 1 then do
+                @begin
+                @do saybar
+`$`s01: I'm not that type of person.
+                @do goto leave
+                @end
+        @if `p22 is 2 then do
+                @begin
+                @do saybar
+`$`s01: Sorry, not today, maybe next time.
+                @do goto leave
+                @end
+        @if `p22 is 3 then do
+                @begin
+                @do saybar
+`$`s01: I'm not that type of person.
+                @do goto leave
+                @end
+@do goto leave
+
+@label 10-yes2
+@if `p08 < 1 then do
+        @begin
+        @dataload npc/npcslut.idf `p70 `p22
+        @dataload npc/npcgreed.idf `p70 `p27
+        @if `p22 > 25 then do
+                @begin
+                @do `p29 random `p22 1
+                @if `p29 > 50 then do
+                        @begin
+                        @do `p28 random 5 1
+                        @do `p22 / `p28
+                        @do `p28 random `p27 1
+                        @do `p22 * `p28
+                        @do `p22 * `p09
+                        @do saybar
+`$`s01: `%It'll cost you, are you willing to pay `$`p22 gold`%? `0[y/N]
+                        @DO GETCHAR `s10
+                        @if `s10 is N then goto leave4
+                        @if `s10 is Y then do
+                                @begin
+                                @if money < `p22 then goto leave3
+                                @do money - `p22
+                                @dataload npc/npcgold.idf `p70 `p29
+                                @do `p29 + `p22
+                                @datasave npc/npcgold.idf `p70 `p29
+                                @if `p27 > 150 then do
+                                        @begin
+                                        @if money < `p27 then do
+                                                @begin
+                                                @do `p27 is money
+                                                @do money is 0
+                                                @end
+                                        @dataload npc/npcgold.idf `p70 `p29
+                                        @do `p29 + `p27
+                                        @datasave npc/npcgold.idf `p70 `p29
+                                        @end
+                                @if `p27 > 197 then do
+                                        @begin
+                                        @do `p27 is money
+                                        @dataload npc/npcgold.idf `p70 `p29
+                                        @do `p29 + `p27
+                                        @datasave npc/npcgold.idf `p70 `p29
+                                        @do money is 0
+                                        @end
+                                @do saybar
+`$`s01: `%Okay, lets get it on then, `k
+                                @do saybar
+`$`s01: `%come over here baby. `k
+                                @do saybar
+`$`s01: `%CLOSER!! `k
+                                @do saybar
+`k`k`k`k
+                                @do saybar
+`$`s01: `%That was SOOOO good, you're the best. `k
+                                @do saybar
+`%After a while you get off of `s03 and continue your quests.
+                                @do addlog
+`@`N has slept with the whore, `s01!
+                                @dataload npc\npcvd.idf `p70 `p28
+                                @if `p28 > 0 then do
+                                        @begin
+                                        @do `p12 is 1
+                                        @end
+                                @if `p12 > 0 then do
+                                        @begin
+                                        @datasave npc\npcvd.idf `p70 1
+                                        @end
+                                @do `p34 + 1
+                                @dataload npc\npclays.idf `p70 `p28
+                                @do `p28 + 1
+                                @datasave npc\npclays.idf `p70 `p28
+                                @dataload npc\laynp`p70.idf &playernum `p28
+                                @do `p28 + 1
+                                @datasave npc\laynp`p70.idf &playernum `p28
+                                @do goto leave
+                                @end
+                        @end
+                @end
+        @end
+        @do saybar
+`$`s01: `%HA HA, you're not experienced enough for me!
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @if `p24 is 2 then `p22 - 3
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 - 1
+        @if `p24 is 4 then `p08 - 2
+        @do goto leave
+        @end
+@do goto leave
+
+@label 11-no
+@do saybar
+`$`s01: `4That's illegal in this realm.
+@do goto leave
+
+@label 11-yes
+@do saybar
+`$`N: `%Will you marry me? `k
+@do `p22 is 0
+@dataload npc/npcage.idf `p70 `p29
+@if `p29 < 18 then do
+        @begin
+        @do saybar
+`$`s01: `%I am way to young to be thinking about marriage.
+        @do `p22 is 1
+        @do goto leave
+        @end
+@if `p39 < 18 then do
+        @begin
+        @do saybar
+`$`s01: `%You are way to young to be thinking about marriage.
+        @do `p22 is 1
+        @do goto leave
+        @end
+@if `p08 < 150 then do
+        @begin
+        @do saybar
+`$`s01: `%You're thinking about marriage already?`k
+        @do saybar
+`$`s01: `%We just not ready for this yet.
+        @end
+@if `p08 > 149 then do
+        @begin
+        @do `p49 random 3 1
+        @if `p49 is 2 then do
+                @begin
+;YES, the wedding will happen
+                @do saybar
+`$`s01: `%I dekko my feelings for you, `k
+                @do saybar
+`$`s01: `%YES, I WILL.
+;find date of wedding
+                @do `p27 random 7 1
+                @do `p27 + 12
+                @do `p27 + &time
+                @label doublecheck
+                @if npc/wed`p27.day exists true then do
+                        @begin
+                        @do `p27 + 1
+                        @if npc/wed`p27.day exists true then goto doublecheck
+                        @end
+                @writefile npc/wed`p27.day
+&playernum
+`p70
+                @do quebar
+`%CONGRATS!, your wedding will take place on day `p27.
+                @do quebar
+Don't be late! `!:`4)
+                @do addlog
+`@CONGRATS, `$`N `%has proposed to `$`s01 `%for marriage. 
+                @do addlog
+`%The wedding will take place on day `p27, everyone is invited to the
+                @do addlog
+`%to the ceromonies at the wedding chapel.
+                @do goto leave
+                @end
+
+        @do saybar
+`$`s01: `%I am sorry to disapoint you, `k
+        @do saybar
+`$`s01: `%I do not want to wed yet so soon.
+        @end
+@do goto leave
+@closescript
+
+
+;go get married
+@#12-yes
+;marriage not available yet
+@do saybar
+`$`s01: `%Lets wait a bit longer.  `8[Feature not availabe yet]
+@do goto leave
+
+@writefile wedfin`p25.txt
+&playernum
+`n
+&sex
+
+
+
+@#12-no
+@do saybar
+`$`s01: `%Lets wait a bit longer.
+@do goto leave
+
+@#13-yes
+;kids not available yet
+@do goto leave
+@#13-no
+;kids not available yet
+@do goto leave
+
+;Go steady
+@#14-yes
+@dataload npc/npcstat.idf `p70 `p29
+@if `p29 < 2 then do
+        @begin
+        @do saybar
+`$`s01: `%Sure babe! I love you.
+        @datasave npc/npcstat.idf `p70 2
+        @datasave npc/npcstat2.idf `p70 &playernum
+        @do goto leave
+        @end
+@if `p29 > 1 then do
+        @begin
+        @dataload npc/npcstat2.idf `p70 `p29
+        @if `p29 is &playernum then do
+                @begin
+                @do saybar
+`$`s01: `%Are you an idiot?? I'm already all yours! :)
+                @do goto leave
+                @end
+        @do saybar
+`$`s01: `%I'm already seeing someone right now.
+        @do goto leave
+        @end
+
+@#14-no
+@do saybar
+`$`s01: `%Yah right, whatever, you're a funny one.
+@do goto leave
+
+@#leave
+@do `p20 is 1
+@do moveback
+;@drawmap
+;@update
+@closescript
+
+@label leave2
+@do `p20 is 1
+;@drawmap
+@do saybar
+`$Your CONSCIENCE: `%Don't over due it buddy.
+@do moveback
+@update
+@closescript
+
+@label leave3
+@do `p20 is 1
+@dataload npc/npc-`p70.idf &playernum `p21
+@do `p22 random 10 1
+@do `p21 - `p22
+@datasave npc/npc-`p70.idf &playernum `p21
+;@drawmap
+@do saybar
+`$`s01: `%HAHAHA!`k
+@do saybar
+`$`s01: `%YOU DON'T HAVE ENOUGH, GET OUT!
+@do moveback
+@update
+@closescript
+
+@label leave4
+@do `p20 is 1
+;@drawmap
+@do saybar
+`$`N: `%No thanks, maybe another time.
+@do moveback
+@update
+@closescript
+
+@#NOMORE
+

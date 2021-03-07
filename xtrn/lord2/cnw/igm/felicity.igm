@@ -1,0 +1,99 @@
+               -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                 Felicity's Temple by Lloyd Hannesson V1.00
+                       Copyright 1997 Tech'n Software
+               -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                           AN IGM FOR LORD2 BETA 7+
+
+Quick Info:
+
+  Is registered version of LORD2 required to use? : Yes :( 
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (4)
+  Free?                                           : Duh! :)
+
+
+Description:
+
+  Felicity's Temple for Lord2
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+  This is my first IGM for LORD2, so it isn't the greatest, but my users
+  love it :). Basicly this is Felicity's Temple for Lord2. Many of the same
+  characters (and secrets) from the origional game are here.
+
+  Features Include:
+   - A new ownable property Felicity's Guest House
+      - Heal for free
+      - Allow anyone, only those with password, or none into the place
+      - Message board for quick notes
+   - A General Store
+      - Lots of Items to buy, Armor, Weapons, Potions, ect ect
+   - A Healers Hut
+      - Heal yerself (This was the first place I added BTW :)
+   - The Temple
+      - Talk to Felicity and have her help you
+      - Talk to Akasha
+      - Talk to the Janitor (If you find the secret key)
+      - Warp to different places in the game (also if you have the key)
+
+  To Install:
+
+   Type: IGM FELICITY.IGM
+
+  To Uninstall:
+
+   do the same thing again.
+
+  To Test:
+
+    Go 1 screen south, and 1 East from Stonebrook. Enjoy!
+
+  To Contact Me:
+
+    My BBS:  The Outworld BBS (204) 334-0217  2400-33600 baud
+
+
+    Mail Me:     Lloyd Hannesson
+                 3015 Sinclair St.
+                 Winnipeg, Manitoba
+                 R2V 4K9, CANADA
+
+    Email:     support@techn.com
+    Web:     http://www.techn.com/
+
+  Wishlist:
+
+    I wish Seth would of made Lord2 handle IGMs better for the
+    Unregistered people. Because of this limitation, all you can do
+    is talk to the people by the Temple path :(. So how about it Seth?
+    Is this something that you might be fixing soon?
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Felicity's Temple `2by `0Lloyd Hannesson
+replacescreen: 1440 1 show
+
+replacescreen: 573 2 noshow
+
+replacescreen: 574 3 noshow
+
+replacescreen: 575 4 noshow
+
+replacescreen: 653 5 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Felicity's Temple! The good IGM for Lord one, becomes even better for
+  Lord2! Visit Felicity, talk to Akasha, find the Janitor's Secret room.
+  Also Includes an ownable Guest house....
+
+  Location: South-East from Stonebrook
+
+  `%Copyright 1997 Tech'n Software and Lloyd Hannesson
+  `%http://www.techn.com/            support@techn.com

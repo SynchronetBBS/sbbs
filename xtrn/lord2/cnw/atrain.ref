@@ -1,0 +1,656 @@
+; Script file ATRAIN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:24 2001
+
+@DECLARE gladtalk 000000697
+@DECLARE train 000000772
+@DECLARE trainstart 000000829
+@DECLARE trainraise 000001746
+@DECLARE tsign 000002735
+@DECLARE hsign 000002809
+@DECLARE heal 000002863
+@DECLARE arena 000004813
+@DECLARE beat 000004916
+@DECLARE south 000007602
+@DECLARE north 000007643
+@DECLARE gladfite 000007710
+@DECLARE kill 000010609
+@DECLARE winglad 000011677
+@DECLARE defeat 000012275
+@DECLARE run 000012698
+@DECLARE noexit 000013213
+@DECLARE nomore 000013306
+@NOCHECK
+; End of .REF index
+
+; Script file ATRAIN.REF, indexed by REFINDEX v0.01 on Wed Oct 01 01:52:50 1997
+
+
+@#gladtalk
+@do moveback
+@do saybar
+`%Are you tough enough to defeat me?
+
+@#train
+@offmap
+@do moveback
+@do `v01 is 1
+@label trainstart
+@show
+`r0`c  `r1 `%Arris Training Center `r0
+
+`2  There are warriors everywhere, sparring, mediataing, and attempting
+  to become better than they already are.
+
+  A fellow adventurer waves to you as you come in.
+
+@do write
+`x`x
+@choice
+Ask for a level raise
+Talk to Ben
+Leave
+@if responce is 1 then do
+ @begin
+ @run trainraise
+ @do goto trainstart
+ @end
+
+
+@if responce is 2 then do
+ @begin
+  @show
+`r0`c  `r1 `%Talking to Ben `r0
+
+  `0"What can I do for you, s&sir?"
+
+  `$"So, Ben...  How do I prove that I am a great warrior?" `2you
+  innocently ask.
+  
+`k  `0"Well, `N `0, when I feel that you are ready, I will arrange
+  a sparring match for you. If you win, you will be promoted to the
+  next level. If you fail, you stay put," `2Ben informs you.
+
+  `$"Gee, that sounds easy. I think I might be ready..."
+
+`k
+ @do goto trainstart
+ @end
+
+@drawmap
+@update
+
+@#trainraise
+;can they raise their level?
+
+@do `p20 is `p09
+@do `p20 * 100
+@do `p20 * `p09
+
+@if `p20 > `p01 then do
+ @begin
+ @do `p21 is `p20
+ @do `p21 - `p01
+ @show
+
+
+  `2Next level raise at `%`p20`2.
+
+  `0"You need about `%`p21`0 more experience before your next level raise!"
+
+  `2Looks like you need to go kill some more monsters.
+
+`k
+@run trainstart
+@closescript
+@end
+
+ @if `t04 > 0 then do
+ @begin
+ @show
+
+
+  `0"You already failed once today, `n`0.  I cannot let you try again until
+  tomorrow," `2the Master tells you.
+
+  `2You vow that tomorrow will be different. 
+
+`k
+@run train
+@closescript
+@end
+
+
+ @show
+
+
+  `0You've been at level `p09 for too long, `N`0.
+
+@show
+`k
+`c  `r1 `%PROVING YOUR WORTHIENSS `r0
+
+`2  Ben proceedes to cast a spell on you.
+
+`2  You feel your eyelids get heavy...
+
+`2  You lay down and begin dreaming immediately.
+
+`k
+@do `p20 random 2 1
+@do `p20 + 1
+@run startfight in train`p20.ref
+@closescript
+
+@#tsign
+@bitset `t92 0 1
+@do moveback
+@do saybar
+`%Training Center
+
+@#hsign
+@do moveback
+@do saybar
+`%Healing Center
+
+@#heal
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1 `%The Healers `r0
+
+`2  You see a sign on the wall that says healing costs 2 gold per hitpoint
+  needed, and a certificate stating that Sherry is a graduate of the
+  `%Medicine Man Medical School`2.
+
+`2  Sherry looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 * 2
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, mmm k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry, I'm not gonna perform those services for free!"
+
+@if sexmale is 1 then do
+ @begin
+ @do write
+`x`x
+ @choice
+For `$$`p20`%, you better perform some other services too, slut!
+How about I pay with my good looks, honey?
+How 'bout you and me go in the back and I show you my sword?
+Meekly accept, and compliment her on his hair.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good boy. Now get along with you!" `2she laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"How dare you say that to me!  Get out!!!!" `2she screams.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I'd rather kiss a troll." `2she informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"How 'bout I show you my fists?" `2she yells as she sticks a needle in you!
+
+`k  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+
+
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You are a perfect picture of health, dear `$`n`0!" `2Sherry exclaims.
+
+`k
+@drawmap
+@update
+
+@#arena
+@do moveback
+@busy
+@if &lasty is 7 then goto noexit
+@if &lasty is 13 then goto noexit
+@label beat
+@do `v01 is 2
+@show
+`r0`c  `r1 `%The Gladiator Arena `r0
+
+`2  The area is surrounded by plebeian onlookers who cheer as a fight proceeds
+  in the middle.  A man in cyan robes who seems to be the organizer approaches
+  you.
+
+`0  "You look like a prosperous warrior. Would you care to take a chance?"
+
+@do write
+`x`x
+@CHOICE
+Ask about the rules
+Do battle
+Purchase Armor
+Purchase Weapons
+Leave
+@if response is 5 then do
+  @begin
+         @if bitcheck `t12 7 1 then do
+           @begin
+  @show
+`\`\  `0"Haha! Go practice with a corpse, kid!"
+`\  `$"I'll be back soon and I'll beat your stinking gladiator!
+  You just wait and see" `2you say.
+`\  `0"Yeah, sure, whatever kid. Now git!
+
+
+  You leave the Arena, but you plan on returning soon...
+`\`k
+  @drawmap
+  @update
+  @closescript
+
+           @end
+  @show
+`\`\  `0"We knew you were a coward the moment you arrived!"
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 3 then do
+  @begin
+  @show
+`r0`c `r1 `%Arena Armor `r0
+
+  `0So you want to buy some armor, eh kid? That might just be the smartest
+  thing you've ever done. So what'll it be?
+
+  @buymanager
+  59
+  62
+  68
+  @do goto beat
+  @closescript
+  @end
+
+@if responce is 4 then do
+  @begin
+  @show
+`r0`c `r1 `%Arena Weapons `r0
+
+  `0Smart move. Your `%s&weapon `0won't do you much good in the arena.
+  Why don't you buy one of our weapons. You might just stand a chance
+  if you do...
+
+  @buymanager
+  60
+  58
+  64
+  70
+  @do goto beat
+  @closescript
+  @end
+
+@if response is 1 then do
+        @begin
+        @show
+`\`\  `0"It's simple.  For 400 gold, you fight one of my random gladiators
+  for the crowd.  If you win, you double the 200.  If not, you lose it.  You
+  can battle as many times you want a day until you lose.  So what do you
+  say? 
+`\`k
+        @do goto beat
+        @end
+
+
+@if response is 2 then do
+        @begin
+        @if money < 400 then do
+          @begin
+        @show
+`\`\  `0"You don't even have 400 gold?!  How on earth could you be a great
+  arena warrior?!  Hahaha!"
+
+  `2Your face turns beet red.
+`\`k
+         @do goto beat
+         @end
+
+         @if bitcheck `t12 7 1 then do
+           @begin
+           @show
+`\`\  `0"You have already been bested in the Arena once today!  The crowd
+  would much rather see a winner, not someone like you!"
+
+`k
+           @do goto beat
+           @end
+
+        @do money - 400
+        @show
+  `2The robed man tells you to go stand on the `$X `2to commence the fight.
+
+`k
+        @if &lasty is 5 then goto south
+        @if &lasty is 15 then goto north
+        @end
+
+@#south
+@do y + 2
+@drawmap
+@update
+
+@#north
+@do y - 2
+@drawmap
+@update
+
+;Here's the gladiator
+@#gladfite
+@if 1 is 1 then do
+@begin
+@do `p20 random 6 1
+  @if `p20 is 1 then `s01 is Gladiator
+  @if `p20 is 2 then `s01 is Big`xGladiator
+  @if `p20 is 3 then `s01 is Fat`xGladiator
+  @if `p20 is 4 then `s01 is Armored`xGladiator
+  @if `p20 is 5 then `s01 is Death`xGladiator
+  @if `p20 is 6 then `s01 is Ghost`xGladiator
+@show
+`r0`c `r1 `%The Fight Of Your Life `r0
+
+  `2They agree to let you fight.
+
+  You grip your `0s&weapon`2 tightly as you wait for your opponent.
+`\`k  `0The robed man screams the name.`l .`l .`l .`l .`% `s01`0!
+
+`k
+@
+;Glad Strength
+        @do `p20 random 5 1
+               @if `p20 is 1 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                 @do `p21 - 30
+                @end
+
+               @if `p20 is 2 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                 @do `p21 - 12
+                @end
+
+               @if `p20 is 3 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                @end
+
+                @if `p20 is 4 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                 @do `p21 + 12
+                @end
+
+               @if `p20 is 5 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                 @do `p21 + 30
+                @end
+;Glad Defense
+        @do `p20 random 3 1
+               @if `p20 is 1 then do
+                 @begin
+                  @do `p22 is S&arm_num
+                  @do `p22 + `p05
+                  @do `p22 - 20
+                 @end
+
+               @if `p20 is 2 then do
+                @begin
+                 @do `p22 is S&arm_num
+                 @do `p22 + `p05
+                @end
+
+               @if `p20 is 3 then do
+                @begin
+                 @do `p22 is S&arm_num
+                 @do `p22 + `p05
+                 @do `p22 + 20
+                @end
+;Glad H.p.
+
+        @do `p20 random 3 1
+               @if `p20 is 1 then do
+                @begin
+                 @do `p23 is `p03
+                 @do `p23 - 10
+                 @end
+
+               @if `p20 is 2 then do
+                @begin
+                 @do `p23 is `p03
+                @end
+
+                @if `p20 is 3 then do
+                 @begin
+                  @do `p23 is `p03
+                  @do `p23 + 10
+                 @end
+
+@show
+`r0`c `r1 `%The Fight Of Your Life `r0
+
+  `2`s01 walks out, and boy does he look tough!
+
+  `0Allright, s&boy! Let's get this over with!
+
+`k  `%At this time, the creator of this IGM would
+  like to wish you Good Luck, as you may need it.
+
+`k
+@drawmap
+@update
+@do goto kill
+@end
+
+@#kill
+@do move 37 10
+@do write
+`r6`6Û
+@do move 38 10
+@do write
+`r6`$
+@do move 38 10
+@do write
+`r6`6Û
+@do move 39 10
+@do write
+`r6`$
+@do move 39 10
+@do write
+`r6`6Û
+@do move 40 10
+@do write
+`r6`$
+@do move 40 10
+@do write
+`r6`6Û
+@do move 41 10
+@do write
+`r6`$
+@do move 41 10
+@do write
+`r6`6Û
+@do move 42 10
+@do write
+`r6`$
+@do move 42 10
+@do write
+`r6`6Û
+@do move 43 10
+@do write
+`r6`$
+@fight
+;name
+`s01
+;string said when you see him
+`0"You get one chance kid. Don't blow it!" `2taunts `s01.
+;power move kill string
+You carefully step over the lifeless Gladiator's body... hehe!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits with his club|`p21
+slams you with his shield|`p21
+hits you with a big rock|`p21
+brawls with you|`p21
+NONE|NONE
+;defense
+`p22
+;gold reward
+800
+;experience
+120
+;hit points
+`p23
+;if win: ref file|name or NONE
+ATRAIN.REF|WINGLAD
+;if lose: ref file|name or NONE
+ATRAIN.REF|DEFEAT
+;if runs: ref file|name or NONE
+ATRAIN.REF|RUN
+
+@#WINGLAD
+;Winning at the Arena
+@show
+`r0`c  `r1 `%VICTORY IS YOURS THIS DAY `r0
+
+`2  The entire arena roars in approval as you behead poor `0`e`2.
+
+  `2You have done well - dare you attempt another battle?
+`\`k
+@do `p20 random 5 1
+@if `p20 is 1 then `s02 is decapitated
+@if `p20 is 2 then `s02 is gutted
+@if `p20 is 3 then `s02 is slaughtered
+@if `p20 is 4 then `s02 is mutilated
+@if `p20 is 5 then `s02 is destroyed
+@do addlog
+  `r7  `r0 `%`N `2has `s02 `%`e`2! `r7  `r0
+@routine seperate in maint.ref
+@do x is 40
+@do y is 16
+@do map is 122
+@loadmap 122
+@drawmap
+@update
+
+@#DEFEAT
+;Losing at the Arena
+@do `p02 is 5
+@bitset `t12 7 1
+@show
+`r0`c  `r1 `%You Lost `r0
+
+`2  The hulking Gladiator stands over you.  You can hear the crowd booing your
+  defeat in the background.  Better luck tommorow...
+`\`k
+@do addlog
+  `r7  `r0 `%`N `2got whupped by `%`e`2 in the Arena! `r7  `r0
+@routine seperate in maint.ref
+@do x is 40
+@do y is 16
+@do map is 122
+@loadmap 122
+@drawmap
+@update
+
+@#RUN
+;Running at the Arena
+@bitset `t12 7 1
+@show
+`r0`c  `r1 `%Only one thing to do! `r0
+
+`2  You turn your back to your enemy and bolt.  You scramble over the Arena
+  fence!
+
+  `0"Coward, Coward!" `2the audience chants in unison.
+
+  Crap... Looks like you better not show your face around here again today...
+`\`k
+@do addlog
+  `r7  `r0 `%`N `2has run from `%`e`2 in the Arena! `r7  `r0
+@routine seperate in maint.ref
+@do x is 40
+@do y is 16
+@do map is 122
+@loadmap 122
+@drawmap
+@update
+
+@#noexit
+@do moveback
+@do saybar
+`%You have to fight if you want to leave the Arena...
+
+@#nomore

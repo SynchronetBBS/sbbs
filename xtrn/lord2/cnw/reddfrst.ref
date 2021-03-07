@@ -1,0 +1,520 @@
+; Script file REDDFRST.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:41 2001
+
+@DECLARE olivia 000000654
+@DECLARE deathknight 000000747
+@DECLARE darkcloak 000001494
+@DECLARE innman 000001561
+@DECLARE fred1 000001675
+@DECLARE fred2 000001766
+@DECLARE fred3 000001857
+@DECLARE bartender 000001951
+@DECLARE choicem 000002384
+@DECLARE lair 000004071
+@DECLARE honey 000004128
+@DECLARE endnow 000011125
+@DECLARE fight 000011258
+@DECLARE monster1 000011329
+@DECLARE monster2 000011909
+@DECLARE monster3 000012481
+@DECLARE monster4 000013060
+@DECLARE monster5 000013596
+@DECLARE done 000014141
+@NOCHECK
+; End of .REF index
+
+@#olivia
+@do saybar
+`7You find a rotten purple haired head on the ground... yuck!
+ 
+@#deathknight
+@clear screen
+@do moveback
+@show
+ 
+`7     "What are you looking at kid? Leave me alone!" `2an armored old man
+     says with a grin.
+ 
+`$     "HEY! Aren't you one of those legendary `8DEATH KNIGHTS`$!?"
+ 
+`7     "So our names are still scattered around!? How interesting... I
+     was sure we'd be forgetten as the years go by."
+ 
+`$     "From what I learned at school, all the Death Knights became normal
+     people because their skills became so unpopular, so they were out of
+     a job!"
+ 
+`7     "Argh! It's true, I am the only Death Knight left in the world, I'm
+     so ashamed of myself..."
+ 
+`2     You decide to leave the sobbing Death Knight alone...
+ 
+@key
+@drawmap
+@update
+@closescript
+@end
+ 
+@#darkcloak
+@do saybar
+`7The DarkCloak Tavern is nailed shut...
+ 
+@#innman
+@IF &lastx is 59 then goto fred1
+@IF &lastx is 60 then goto fred2
+@IF &lastx is 61 then goto fred3
+ 
+@#fred1
+@do moveback
+@do saybar
+`0Big Man: `2You wanna room? You go talk to bartender!
+@#fred2
+@do moveback
+@do saybar
+`0Big Man: `2You wanna room? You go talk to bartender!
+@#fred3
+@do x is 59
+@do saybar
+`0Big Man: `2Hope you come back here for next time!
+ 
+@#bartender
+@do moveback
+@clear screen
+@show
+`r0`c  `r1 `%The bartender `r0
+ 
+`0     "Welcome to the Red Dragon Inn stranger!" `2says the bartender
+ 
+`$     "I'm not a stranger! I am `n `$the all mighty!"
+ 
+`0     "`n`0!? Never heard of that name before..."
+ 
+`$     "Nevermind... so, how much does it cost to get a room around here!?"
+ 
+`0     "`$$300`0! It sounds expensive... but it's worth it!"
+ 
+@do goto choicem
+@#choicem
+@DO `V01 is 1
+@choice
+Tell me about Honey
+How about a bribe...
+I want a room for `$$300
+I gotta go!
+@if response is 1 then do
+ @begin
+ @clear screen
+ @show
+ 
+`0     "Honey!? She's Violet's sweet and sexy daughter! Very young too!
+     But unfortunatly, unlike Violet, she's now the town's local whore!
+     We're kind of short on cash and we're all doing our best to survive
+     in this strange world!"
+ 
+`$     "So she won't marry anyone!? Neither just take a wink!?"
+ 
+`0     "Nope! Not at all, pay `$$1000 `0to one of those big guys and do
+     whatever you want in that room with Honey for 15 minutes... that's
+     all...... so... anything else!?"
+ 
+ @do goto choicem
+ @end
+@if response is 2 then do
+ @begin
+ @clear screen
+ @show
+ 
+`0     "I don't take bribes so you can go slaughter people in my Inn
+     anymore... if you wanna kill someone in one of my rooms, go ahead,
+     just pay the entry fee and do whatcha want... just keep it quiet
+     and clean up your mess afterward... anything else!?"
+ 
+ @do goto choicem
+ @end
+@if response is 3 then do
+ @begin
+  @if money < 300 then do
+    @begin
+    @show
+`\`\`0     "Sorry kid! But ya don't have enough cash!"
+ 
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\`0     "Well well well! Enjoy your stay!"
+ 
+`2     You give the bartender the money, he then signals the big guy
+     guarding the stairs to let you in...
+ 
+`\`k
+   @do money - 300
+   @do x is 61
+   @do y is 8  
+   @drawmap
+   @update
+   @closescript
+  @end
+@if response is 4 then do
+ @begin
+ @show
+ 
+`0     "Come back anytime!"
+ 
+@key
+@drawmap
+@update
+@closescript
+ 
+@#lair
+@do saybar
+`7The Dragon's Lair is empty...
+ 
+@#honey
+@clear screen
+@do moveback
+@pauseoff
+@show
+[2J[0m[21C[1;36m [33mß²ÛÛ[43m²[40mÛÜßßÜ[43m²[40mÛÝÞÛÛÛ[43m²[40mÛÜ Û
+[A[44C[43m²²[40mÛÛÛ ÝÞ[47m²[40m²ÛßÛ[47m²[40mÛÝ[0;33mÛÜ[1mÞ²ÛÝ
+[A[66CÞ²[43m²[40mÛÛÛÛÛÛ[43m²[40mÛÛß[0m
+[22C[33mÞÜ[1mßßÛÛÛÛ[43m²[40mÞÛÛÛÜß[43m²ÛÛ[40m²ÛÜÞÛÛ[43m²²[40mÛ
+[A[49CÛÞ [43mÛ²[40mÝÞ²ÛÛ[0;33mÞ[1;31;43m°°[0;33mÝ[1mß²Ý[43m²[40m
+[A[67CÛßß²ÛÛßßß[31mÜÜ[43m±[0m
+[22C[1;36m [33;43m°±[0;33mÜÜ[1;43m°[40mßßß[0;33mÜ[1mß[43m²[40m
+[A[34CÛß[0;33mÜ [1mßßß [0;33mÜ[1mßÜßßßÛ[43m²[40mÜ[43m²[0m 
+[A[53C[1;33;43mÛ[40mÛ Û[43m²[40mÛ[0;33mÞ[1;31;43m°±±[0;33mÜÜ
+[A[65C[1mßþ[31;43m±[0;33mß[1;31;43m°°[0;33mßß[1;31;43m±°°±²±[0m
+[23C[33mÞ[1;43m°±±±²[0;33mÞ[1;43m°[0;33mÞÜÜÜ[1;43m±°[0;33mßÜ
+[A[39C[1;31;43m°°±±°[0;33mß[1;31;43m°[0;33mÜ[1;31;43m°[0;33mÜß
+[A[50C[1mßß²ß[43m²[40mÝ[31mÜ[33mß[43m²[40mÝ[31;43m°±²²±°[40m
+[A[66C[0;33mß[1;31;43m°[0;33mß ÛßÜß[1;31;43m°[0;33mÜ[1;31;43m°[40m
+[A[77C[0;33mß[1;31;43m²[0m
+[23C [1;33;43m±²²²[40mÝ[43m²±[0;33mÝ[1;43m±²²±°[0;33mÝ[1;31;43m[40m
+[A[38C[43m±±±²²±°[0;33mÜßÜÜß[1;37mÜÜ Ü [33mßþ[31;43m²[40mÜ[33mß
+[A[60Cþ[31;43m²ÛÛ²±°[0m [33mÜß[1;37mÜÜ[47m²[40mÜÜ[0;33mßÜ 
+[A[78C[1;31mÞ[0m
+[24C[1;36m [33;43m²²Û²[40mÞÝ[43m²²ÛÛ²±°[31;40mÞ[43m²²Û²±[0;33mÜ
+[A[45Cß [37mÜ[1;47m±²²[40mß[47mÛ²[40mÝ[31mÞ[43m²²ÛÛÛÛÛ²Û²[0m Ü
+[A[68C[1;47m±±²Û²[40mß[47m²Û[40mÜ [31;43m²[0m
+[25C[1;36m [33;43mÛ²Û[0m [1;33mÛ[43m²ÛÛ²±°[0m [33mÜ[1;31mß
+[A[40C[43mÛ²²±[40mÜ [37;47m±±²Û[40mßÞ[47m²Û[40mÞ [31;43m²[40m
+[A[57CÞ[43m²ÛÛÛÛÛ²[40mÝ[0mÞ[1;47m°±²ÛÛ²[40mÝÞ[47m²Û[40mÝ[31mÞ[0m
+[26C[1;33mÞ[43mÛ²[40mÝ[43m²ÛÛ²Û²±[0;33mÝ ß [1;31;43mÛ²²²[0mÞ
+[A[46C[1;47m°±²Û[0m  [1mß Þ [31;43m²[40mÝÞ[43m²ÛÛÛ²Û[0m 
+[A[66C[1;47m±±²ÛÛ²Û[0m  [1mß [0;34mÜ[1;31mÞ[0m
+[25C[1;36m [33;43m²ÛÛ²[40mÞ[43mÛ²Û²²±[0;33mÝßÜ[1;43m°[31;40mÞ
+[A[42C[43mÛ²²[40mÝ[37;47m±²Û²[40mÝ [0;34mÜ[1;44m°[0;34mÝ
+[A[55C[1;31mÞ[43m²²[0m [1;31;43m²ÛÛÛÛ²[40mÝ[0mÞ[1;47m±±²²Û²[40m
+[A[73CÝ[34;44m°[0;34mÜ[1;44m°[0;34mß[1;31mÞ[0m
+[24C[1m [33mÞ[43mÛ²ÛÛ[40mÞ[43m²Û²²±°[0m [1;33;43m°[0;33mÝß 
+[A[42C[1;31;43mÛÛ²²[40mÜÜ[37mßß[47m²[0;34mß[1;44m°[0;34mß
+[A[54C[1;31mÜ[43m²[40mÛ[43m²[0m [1;31;43m²ÛÛÛÛÛ²[40mÜ[0mßß
+[A[69C[1mß[47m²Û²[0m [34mßß [1;31mÜ[43m²[0m
+[23C [1;33mÞ[43m²²[40mß[43m²Û[40mÞ[43mÛ²±±±[0;33mÝÞßÜ[1;43m°[40m
+[A[41C[31mÞ[43mÛÛ²²Û²Û²[40mÜÜÜ[43m²[40mÛÛ[43m²[40mÝÞ[43m²ÛÛÛÛ[40m
+[A[64C[43mÛÛ[40mÛ[43mÛ²²[40mÜÜÜÜÜ[43m²²Û²[0m
+[23C[1;36m [33mßÜ [43m²Û[40mÝÛ[43m²±°[0;33mßÜÜ[1;43m°°±[0m 
+[A[41C[1;31;43mÛ²[40mÛÛÛ[43m²ÛÛÛÛÛÛÛ²²[40mßÜ[43m²ÛÛÛÛÛÛÛÛÛÛÛ²ÛÛÛ[40m
+[A[74C[43m²ÛÛÛ²[0m
+[23C[1;33mÞ[43m²[40mÝÞ[43m²Û[0m [1;33mÛ[43m²±[0;33mÝ[1;43m°±±[40m
+[A[37C[43m±[0;33mß [1;31mÞ[43m²[40mÛÛÛÛÛÛÛÛÛÛÛ[43m²[40mÝÜ[43m²[40m
+[A[57C[43mÛÛ²²Û[40mÛÛÛÛ[43m²[40mÛÛÛÛÛÛÛÛÛÛ[43m²±[0m
+[23C[1;33mÛßÜ[43m²²Û[40mÞÛ[43m²±°±±[0;33mßÜ[1;43m°[0m 
+[A[40C[1;31;43m²ÛÛÛ[40mÛÛÛÛÛÛ[43m²[40mÛÛÛ[43m²[40mÜßß[43m²[40m
+[A[59CÜß[43m²[40mÛÛÛ[43m²[40mÛ[43mÛÛÛÛÛÛÛÛ²Û²±[0m
+[23C[1;33mÛ[43m²ÛÛ[40mÝÜÛ[43m²[40mÛ[43m²±²[40mÝ[0;33mÞ[1;43m±[40m
+[A[38C[43m±[0;33mÝ[1;31mÞ[43m²Û[40mÛÛÛÛÛÛÛÛ[43m²[40mÛÛÛ[43m²²[40m
+[A[57CÛ[43m²²²²[40mÛÛÛÛÛ[43mÛÛÛÛÛÛÛ²Û²±°[0m
+[22C[1;33mÞ[47m²[43m²Û²[40mÞÛ[43m²[40mÛ[43m²²²[40mÛ [43m²²²[40m
+[A[39C[0m [33mÜ[1;31mß[43m²Û[40mÛÛÛÛÛÛÛÛÛÛÛ[43m²[40mß[0;33mÜÜ
+[A[59C[1;31mßßß[43m²[40mÛÛÛÛÛ[43mÛ²ÛÛÛ²Û²±°[33;40mÞ[0m
+[21C[1;33mÜÛ[43m²±²[0m [1;33mÛ²ÛÛ[43m²[40mÛ² Þ[43mÛ²[40mß
+[A[39C[0;33mÞ[1;43m°[0;33mÜÜ[1;31mßß[43m²ÛÛÛ[40mÛÛÛÛÛ[43m²±[40m
+[A[56C[0;33mßÜ [31mÜ²ß[1mÜ[43m²[40mÛÛÛ[43m²²ÛÛ²²±²±[0;33mß 
+[A[78C[1m²[0m
+[20C[1;33mÞ[47m²[43m²[40mßÜ[43m²[40mÞÛÛÛÛÛÝ [43m²Û²[40mß
+[A[38C[0;33mÜ[1;43m±±°°[0;33mßÜÜ [1;31mß[43mÛ²ÛÛÛ[40mÛÛ[43m²²[40m
+[A[57CÜ[0;31mßß[1mÜ[43m²[40mÛÛ[43mÛÛÛÛÛ²²±±[0;33mß[37m  
+[A[76C[1;36m [33mÞ[43m²[0m
+[18C[1;36m [33mÜ²[43m²[40mÝÞ[43m²[40mÜÛÛÛ[43m²[40mÛ² Û[43mÛ[40m
+[A[35C²ßÞ[43m²²²±[0;33mÝÞ[1;43m±° [0;33mÜ  [1;31mßß[43m²ÛÛÛ[40m
+[A[56CÛ[43m²²²[40mÛÛ[43mÛÛ²²[40mÛÛ[43m²[40mß[0;33mÜ [37m   
+[A[75C[1m [33mÞ[43mÛ²[0m
+[18C[1;33mÞ[43m²²±[40mÜßÞÛÛÛ[43m²[40mÛÝÜ[43mÛ²²[40mßÜ[43m²ÛÛ²²[40m
+[A[42C[0m [1;33m²[43m²±°[0;33mßß[37m[5C [1;31mß[43m²²ÛÛ[40mÛ
+[A[61C[43mÛÛ²[40mßß[0;33mÜ[1;31;43m°[40mÜ[43m°±[0m [3C[1;36m
+[A[75C [33mÛ[43m²Û[0m
+[15C  [33mÜ[1;43m±²[40mßßÜÛ[43m²[40mÛÛÛÛßÞ[43mÛ²Û[40mßÞ[43mÛÛ²[40m
+[A[39C[43mÛÛ²[40mÞ[43m²[40mß [0m[10C [1;31mÜÜÜÜÜ[43m±[40mÜ
+[A[64C[43m±±°±±±[0m  [1;30múAPú[33mÛ[43mÛ²[0m
+@key
+@pauseon
+@clear screen
+@show
+`\`2     You stare at the fleshy beauty for a moment...
+ 
+`0     "So you payed `$$1000 `0just to stare at my beautiful body! Hey...
+     sounds good enough to me!" `2Honey says with a smile
+ 
+`$     "Actually I was just paralyzed by your brea... ah... beauty..."
+ 
+`0     "Let's get this over with..."
+ 
+@key
+@show
+`2     `wSlap, `wHump, `wWhip, `wKiss, `wHump, `wHump, `wSlap, `wHump, `wWhip...
+ 
+`2     15 minutes later, Honey pushes you off her...
+ 
+`0     "Harumph! That was kinda borring... my mom was right... never
+     do it with rookies!"
+ 
+`2     You give Honey an evil grin, but as you get out of the room, you
+     think to yourself what a great time you had!
+ 
+@do `p34 + 1
+@key
+@do `p20 random 7 1
+@if `p20 is 1 then do
+ @begin
+ @do `p08 + 1
+ @do `p07 - 2
+ @show
+ 
+                  `%YOU GET `$1 CHARM `%... but `4LOSE 2 `%ALIGNMENT!
+ @do goto endnow
+ @end
+@if `p20 is 2 then do
+ @begin
+ @do `p08 + 2
+ @do `p07 - 1
+ @show
+ 
+               `%COOL! YOU GET `$2 `%CHARM AND ONLY `4LOSE 1 `%ALIGNMENT!
+ @do goto endnow
+ @end
+@if `p20 is 3 then do
+ @begin
+ @do `p08 + 1
+ @do `p07 - 3
+ @do `p19 + 3
+ @show
+ 
+     `%YOU GET `$1 `%CHARM, `4LOSE 1 `%ALIGNMENT ... BUT FIND `03 GEMS `%UP YOUR ASS!?
+ @do goto endnow
+ @end
+@if `p20 is 4 then do
+ @begin
+ @do `p08 + 1
+ @do `p07 - 1
+ @show
+ 
+                  `%YOU GET `$1 CHARM `%... but `4LOSE 1 `%ALIGNMENT!
+ @do goto endnow
+ @end
+@if `p20 is 5 then do
+ @begin
+ @do `p08 + 1
+ @do `p07 - 2
+ @show
+ 
+                  `%YOU GET `$1 CHARM `%... but `4LOSE 2 `%ALIGNMENT!
+ @do goto endnow
+ @end
+@if `p20 is 6 then do
+ @begin
+ @do `p02 is 1
+ @do `p07 - 2
+ @show
+ 
+        `%OUCH! You realize that it wasn't as great as you thought it was!
+        `%All the whip scars and slapping really hurt you! Your `7HitPoints
+                   `%are reduced to `41 `%AND you `4lose 2 `%alignment!
+ @do goto endnow
+ @end
+@if `p20 is 7 then do
+ @begin
+ @do `p08 + 2
+ @do `p07 - 2
+ @show
+ 
+                  `%YOU GET `$2 CHARM `%... but `4LOSE 2 `%ALIGNMENT!
+ @do goto endnow
+ @end
+ 
+@#endnow
+@key
+@do x is 23
+@do y is 9
+@drawmap
+@update
+@closescript
+@end
+ 
+@do `p20 random 4 1
+@if `p20 is 1 then saybar
+ 
+@#FIGHT
+@busy
+@do `p20 random 5 1
+@do goto monster`p20
+@end
+ 
+@#monster1
+@fight
+;name
+Bran The Loser
+;string said when you see him
+`2It's ... it's ... ... ... Bran The Loser!? Oh come on ...
+;power move kill string
+After a cheap battle, Bran lies on the ground... decapitated...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Short Sword|13
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+6
+;gold reward
+134
+;experience
+35
+;hit points
+40
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster2
+@fight
+;name
+Tiny Thief
+;string said when you see him
+At first you didn't notice anything... but you did when it said "HEY THERE".
+;power move kill string
+You disembowel the little thieving shit!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Toothpick|5
+anoying voice|3
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+5
+;gold reward
+10
+;experience
+15
+;hit points
+20
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster3
+@fight
+;name
+Ugly Boy
+;string said when you see him
+`2You see an ugly shit giving you the finger, you decide that HE MUST DIE!
+;power move kill string
+You quietly watch as the Ugly Boy bleeds to death.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Yellow Teeth|14
+Ugliness|10
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+5
+;gold reward
+120
+;experience
+34
+;hit points
+22
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster4
+@fight
+;name
+Ugly Old Decomposing Hag
+;string said when you see him
+`0"Eeewww... you are UGLY!!!" `2you say.
+;power move kill string
+She drops into million of pieces...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Hands|12
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+33
+;experience
+15
+;hit points
+15
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster5
+@fight
+;name
+Evil Whorerior
+;string said when you see him
+`2It wanted money... but you'll teach it a lesson!!!
+;power move kill string
+With a swift boot to her head, you kill her
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+ugly stick|9
+kick|13
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+4
+;gold reward
+120
+;experience
+93
+;hit points
+40
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#done

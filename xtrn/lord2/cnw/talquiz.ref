@@ -1,0 +1,353 @@
+; Script file TALQUIZ.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE sign 000000802
+@DECLARE greeter 000000895
+@DECLARE id1 000000975
+@DECLARE id2 000001042
+@DECLARE id3 000001097
+@DECLARE ben 000001205
+@DECLARE benhost 000001297
+@DECLARE bguest1 000001549
+@DECLARE bguest2 000001633
+@DECLARE drawguy 000001741
+@DECLARE startgame 000003231
+@DECLARE sitfem 000005715
+@DECLARE sitwrong 000005818
+@DECLARE situhoh 000006810
+@DECLARE sithost 000006926
+@DECLARE guest1 000007167
+@DECLARE guest2 000007269
+@DECLARE guest3 000007378
+@DECLARE guest4 000007744
+@DECLARE sidekick 000007995
+@DECLARE mainguest 000008098
+@DECLARE bubhost 000008853
+@DECLARE band1 000008957
+@DECLARE bumba 000009038
+@DECLARE nomore 000009528
+@NOCHECK
+; End of .REF index
+
+@#SIGN
+@DO MOVEBACK
+@DO SAYBAR
+`7Sign: `%The future is HERE! Scry programming here!
+
+@#GREETER
+@DO MOVEBACK
+@DO SAYBAR
+`7Hi! The shows are broadcast to the right.
+
+@#ID1
+@DO SAYBAR
+`7Overhead notice: O'Bubba show filmed below
+
+@#ID2
+@DO SAYBAR
+`7Overhead notice: Win His Money
+
+@#ID3
+@DO SAYBAR
+`7Overhead notice: SIT ON IT! filmed below
+
+;--- WIN HIS MONEY section---------------
+@#BEN
+@DO MOVEBACK
+@DO SAYBAR
+`7Ben: `%I don't dance. But I will defend my money!
+
+@#BENHOST
+@DO MOVEBACK
+@DO SAYBAR
+`7Host: `%Ben, you've sworn that you don't know any of the answers?
+@KEY
+@DO sayBAR
+`7Ben: `%Yes, I have no idea what's going on.
+@key
+@DO sayBAR
+`7Host: `%Good, then we're ready! Contestant, take your seat.
+@#BGUEST1
+@DO MOVEBACK
+@DO SAYBAR
+`$Audience member: `7I heard he doesn't sing.
+@#BGUEST2
+@DO MOVEBACK
+@DO SAYBAR
+`$Audience member: `7Well, I heard that he doesn't do magic tricks.
+
+@#DRAWGUY
+@show
+`c
+
+
+[23C[0;1;33mÜ
+[16C[0;33mÛÛÛ[1;37mú [33mÜßÛßÜ [37mú [33mÜÜÜÜÜÜ[37mú ú[33mÜÜÜÜ [37mú [33mÜÜÜÜ  [37mú[33mÜÜÜÜ  [0;33m±°²
+[15C²²²² [1mÛ  Û  Û   Û[6CÛ   ÛÛ Û   ÛÛ Û   ÛÛ [0;33mÛÛ²Û
+[15CÛ²±Û[1;37mú[33mßÜ Û [37mú ú ú[33mÛÜÜÜ [37mú [33mÛ [37mú[33mÛ[37mú[33mÛ[37mú[33mÛ[37mú [33mÛ Û Û [37mú[33mÛ[37mú[33mÛ [0;33m±Û²²
+[15CÛÛ²°   [1mßÛßÜ[8CßÜ Û Üß Û Û Üß Û Û Û  Û [0;33mÛÛ²Û
+[15C²±±²[1;37mú[33mÜ[37mú [33mÛ [37mú[33mÛ[37mú ú ú ú [33mÛ ÛÜß [37mú[33mÛ[37mú[33mÛÜß[37mú [33mÛ ÛÛ[37mú ú[33mÛ [0;33m²±²²
+[15C²²±Û [1mßÜÜÛÜß    ÜÜÜÜß  ßÛÜÜÜß ßÛÜÜÜß ßÜÜÜÜß [0;33mÛ²°²
+[8C[1mÜÜÜÜÜ[10Cß
+[7CÜÛÛÛ[31;44mÛß[27C[30;40mÜÜÜÜÜ[6C°° °
+[8C[33mÛ[31mÛÛÛÛ   [0mÜÜÜ[20CŞ[43mÄşÄşÄ[40mİ    [1;30m°²±°±Û°±
+[8C[0;34mÜÜÛÛÜÜ  [37mÛ[1;30;47m1[0mÛ[21C[43m  ß  [4C[1;30;40m±°±°±°²°Û±
+[8C[0;34mÛÜÛÜÜÛÜ [44m [1;31mßß[22C[43m   [6C[30;40m²°²°°±±°²
+[8C[0;34mÛ[1;31mÜ[0;31mÜÜÜÜÜ[44mÜÜÜ[40mÜÜ[19CÜÜÜÜÜÜÜ   [1;30m±[0;34mÜÜÜÜÜÜÜÜ [1;30m°
+[8C[0;34mß[31mŞ İ[37;44mBob  [31;40mŞ İ[19CŞ  [36mB  [31mİ    [34mŞ  [36mG  [34mŞ [1;30m±
+[9C[0;31mŞ ßßßßßßß İ[19CŞ  [36mE  [31mİ    [34mŞ  [36mU  [34mŞ[1;30m²
+[9C[0;31mŞ ÜÜÜÜ    İ[19CŞ  [36mN  [31mİ    [34mŞ  [36mE  [34mŞ [1;30m±°
+[9C[0;31mŞ   ÜÜÜ   İ[19CŞ[5Cİ    [34mŞ  [36mS  [34mŞ
+[9C[31mŞ[5CÜÜÜ İ[19CŞ[5Cİ    [34mŞ  [36mT  [34mŞ[1;30m± °
+[9C[0;31mŞÜÜÜÜÜÜÜÜÜİ[19CŞ ÜÜÜ İ    [34mŞ ÜÜÜ Ş [1;30m±
+@#STARTGAME
+@DO MOVEBACK
+@DATANEWDAY TALQUIZ.IDF
+@DATALOAD TALQUIZ.IDF &playernum `p97
+@IF `p97 is 1 then do
+ @begin
+ @do saybar
+`3Bob: `!Sorry, you can only play once a day.
+@closescript
+ @end
+@do `p97 is 1
+@DATASAVE TALQUIZ.IDF &playernum `p97
+@DO SAYBAR
+`3Bob: `!Remember all your answer must be in UPPER CASE... thanks Seth! =(
+@KEY
+@ROUTINE DRAWGUY
+@DO `p27 RANDOM 8 1
+@IF `p27 is 1 then do
+        @begin
+        @DO `S01 is SOSEN VILLAGE
+        @DO `S02 is Where is Basil?
+        @DO `S03 is Flagcity
+        @end
+@IF `p27 is 2 then do
+        @begin
+        @DO `S01 is BARAK'S DIARY
+        @DO `S02 is What exonerates Turgon?
+        @do `s02 is [xxxxx'S xxxxx]
+        @do `s03 is Fiend'S guile
+        @end
+@IF `p27 is 3 then do
+        @begin
+        @do `s01 is KOSHI
+        @do `s02 is Your father was
+        @do `s02 ADD a what [xxxxx]?
+        @do `s03 is thief
+        @end
+@if `p27 is 4 then do
+        @begin
+        @do `s01 is SMACKROD
+        @do `s02 is What do the
+        @do `s02 ADD Dragon.Tooth want? [xxxxxxxx]
+        @do `s03 is problems
+        @end
+@if `p27 is 5 then do
+        @begin
+        @do `s01 is SPIKED SHIRT
+        @do `s02 is What is an 
+        @do `s02 ADD Weapon AND armour?
+        @do `s02 ADD [xxxxxx xxxxx]
+        @do `s03 is DONKEY REARS
+        @end
+@if `p27 is 6 then do
+        @begin
+        @do `s01 is WILD BERRIES
+        @do `s02 is What does Mom
+        @do `s02 ADD first want? [xxxx
+        @do `s02 ADD  xxxxxxx]
+        @do `s03 is DUMB BUNNIES
+        @end
+@if `p27 is 7 then do
+        @begin
+        @do `s01 is SETH ABLE
+        @do `s02 is Who is the
+        @do `s02 ADD moron behind Lord?
+        @do `s02 ADD  [xxxx xxxx]
+        @do `s03 is Dave Duma
+        @end
+@if `p27 is 8 then do
+        @begin
+        @do `s01 is JEWEL
+        @do `s02 is The best singer
+        @do `s02 ADD is? [xxxxx]
+        @do `s03 is Not me!
+        @end
+@DO MOVE 1 1
+@SHOW
+`3Bob: `!`s02
+`3Ben: `!`s03
+`3Bob: Sorry, Ben, but that's wrong. `N?
+@DO READSTRING 15 DUH.. `s04
+@if `s04 is `s01 then do
+ @begin
+@DO `p97 is 50
+@DO `p97 * `p09
+@DO `p97 * `p09
+ @show
+`\`3Bob: `!CORRECT!!! You win `$`p97`!!!!
+@do addlog
+`$ -$$- `2`N `2won `p97`2 today in Win His Money! `$ -$$-
+@DO money + `p97
+@key
+ @drawmap
+ @update
+ @closescript
+ @end
+@show
+`\`3Bob: `!Wrong!
+@key
+@drawmap
+@update
+
+;--- SIT ON IT section-------------------
+@#SITFEM
+@DO MOVEBACK
+@DO SAYBAR
+`#Contestant: `6I don't know about you, sugah, but this is fun.
+@#SITWRONG
+@DO MOVEBACK
+@DO `p20 RANDOM 9 1
+@IF `p20 is 1 then do
+ @begin
+ @DO SAYBAR
+`@Con`4fused Con`5testant: `7I know, its a barbie doll!
+ @end
+@IF `p20 is 2 then do
+ @begin
+ @DO SAYBAR
+`@Con`4fused Con`5testant: `7Ooh, its... the Washington Monument!
+ @end
+@IF `p20 is 3 then do
+ @begin
+ @DO SAYBAR
+`@Con`4fused Con`5testant: `7Ben, Ben is that you?!
+ @end
+@IF `p20 is 4 then do
+ @begin
+ @DO SAYBAR
+`@Con`4fused Con`5testant: `7Whatever it is, its two sizes too big!
+ @end
+@IF `p20 is 5 then do
+ @begin
+ @DO SAYBAR
+`@Con`4fused Con`5testant: `7I've got it this time -- its the Venus de Milo!
+ @end
+@IF `p20 is 7 then do
+ @begin
+ @DO SAYBAR
+`@Con`4fused Con`5testant: `7Blood.. is that blood I feel?!
+ @end
+@IF `p20 is 8 then do
+ @begin
+ @DO SAYBAR
+`@Con`4fused Con`5testant: `7Hey, I thought you said no sheep!
+ @end
+@IF `p20 is 9 then do
+ @begin
+ @DO SAYBAR
+`@Con`4fused Con`5testant: `7I... just don't know. Lemme ram it up my nostrils.
+ @end
+@#SITUHOH
+@DO MOVEBACK
+@DO SAYBAR
+`8Frowning Contestant: `7>sniff sniff< Hmm... Hhhmmm... where's the bathroom?
+@#SITHOST
+@DO MOVEBACK
+@DO SAYBAR
+`%Grinning Jim: `7Hey, look, its our contestant for our next episode!
+@key
+@DO sayBAR
+`7You figure to sneak away before he starts forcing you to sit on stuff
+;--- OBUBBA section----------------------
+@#GUEST1
+@DO MOVEBACK
+@DO SAYBAR
+`$Yogi: `7I wonder if Conan O'Bubba has any pic-i-nic baskets...
+@#GUEST2
+@DO MOVEBACK
+@DO SAYBAR
+`@F`4iend: `7Yeah, well, sometimes he's really amusing. And he's Irish.
+@#GUEST3
+@DO MOVEBACK
+@DO SAYBAR
+`#B`5eth`7: Hey, you represent the U.S.A., `@F`4iend`3, so act normal!
+@key
+@DO sayBAR
+`@F`4iend`7: We're in LA. In California. In the USA. To whom do I represent?
+@key
+@DO sayBAR
+`#B`5eth`7: Everything is a joke to you, huh?
+@key
+@DO sayBAR
+`@F`4iend`7: Just what we had. That and your clothing. Fashionably green, eh?
+@#GUEST4
+@DO MOVEBACK
+@DO SAYBAR
+`#Em`7: It will be a cold day where Judas rots before those two stop.
+@key
+@DO saybar
+`@F`4iend`7: Yeah, but we all know its her fault -- and I don't normally say that.
+
+;------OBUBBA KEY PLAYERS-----------
+@#SIDEKICK
+@DO MOVEBACK
+@DO SAYBAR
+`$Andy: `%Well, howdy. Nice to meet our new guest, `8George C.
+@#MAINGUEST
+@DO MOVEBACK
+@DO SAYBAR
+`8George C.: `%Hey, nice to hear you got your movie re-released, what was it?
+@key
+@DO sayBAR
+`!Conan: `7Uh, it turns out that is the wrong scroll. I HATE Dirty Duncing.
+@key
+@DO sayBAR
+`$Andy: `%Liz, could we see the text?
+@key
+@DO sayBAR
+`8George C.: `%Actually, I've gotta teleport soon, so...
+@key
+@DO sayBAR
+`!Conan: `7It was Flashdunce I wanted re-released.. the one with the town...
+@key
+@DO sayBAR
+`$Andy: `%Uh, I bust you on that one, too. Flashdunce doesn't have a town.
+@key
+@DO sayBAR
+`!Conan: `3>frustrated sigh<
+@key
+@DO sayBAR
+`$Andy: `%Yeah, I know. I was kinda confused, but its YOUR show, so...
+@key
+@DO sayBAR
+`8George C.: `%So, anyway, my Seven Dirty Words routine goes...
+@#BUBHOST
+@DO MOVEBACK
+@DO SAYBAR
+`!Conan: `3And now, a word from our sponsors. `L`LWe have sponsors?
+@#BAND1
+@DO MOVEBACK
+@DO SAYBAR
+rap tap tap tap rap ratatatatarap rap rap...
+@#BUMBA
+@DO MOVEBACK
+@DO SAYBAR
+`6Bamba: `@You threatened to fire me if they didn't re-release that scroll.
+@key
+@DO sayBAR
+`!Conan: `3Yeah, well, lucky they did!
+@key
+@DO sayBAR
+`6Bamba: `@I was going to kill you.
+@key
+@DO sayBAR
+`!Conan: `3That's nice, but I was just kidd...
+@key
+@DO sayBAR
+`6Bamba: `@No, really. I went and bought a crossbow. I was goin' ta kill you.
+@key
+@DO sayBAR
+`!`L`LConan: `3Well, `L>adjusts tie<so, `8George`3, tell us about your routine...
+@#NOMORE

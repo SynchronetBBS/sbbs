@@ -1,0 +1,58 @@
+; Script file WAMPA.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE sign 000000226
+@DECLARE fight 000000332
+@DECLARE hike 000001025
+@DECLARE nomore 000001089
+@NOCHECK
+; End of .REF index
+
+@#SIGN
+@do moveback
+@do saybar
+`2The Wampa Ice-Creature is waiting for blood. I'd be careful here.
+
+@#FIGHT
+@datanewday wampa.idf
+@dataload wampa.idf &playernum `p20
+@if `p20 EQUALS 1 then goto hike
+
+@fight
+;name
+Wampa
+;string said when you see him
+`0"ROOOOOOOOOOORRRRRRRR!!!!! AAHHHAHAHA!!!."
+;power move kill string
+Obi-wan has taught you well!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Roars at you|15
+Slashes at you|70
+Tears your head off|99
+NONE|NONE
+NONE|NONE
+;defense
+30
+;gold reward
+15000
+;experience
+800
+;hit points
+400
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+gametxt.ref|die
+;if runs: ref file|name or NONE
+NONE|NONE
+@datasave wampa.idf &playernum 1
+@closescript
+@end
+
+@#hike
+@do saybar
+`2He's dead Jim. Try again tomorrow.
+
+
+@#NOMORE

@@ -1,0 +1,77 @@
+
+               `9The Sword Castle v2.0 - MeRCeR Programming
+                                         
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.01a+
+  Is registered version of LORD2 required to use? : YES! (sorry)
+  Using any LORD2 vars?                           : YES! (3)
+  Overwrites any original .refs?                  : YES! (1, w/ Backup)
+  Saves and loads its own vars independently?     : YES!
+  Adds new .refs?                                 : YES! (2)
+  Replaces screens?                               : YES! (4)
+  Adds screens?                                   : YES! (23)
+  Free?                                           : YES!
+
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM SWORDCAS
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `9The Sword Castle v2.0 - MeRCeR Programming
+
+replacescreen: 955 1 show
+replacescreen: 457 2 show
+replacescreen: 201 3 show
+replacescreen: 1493 4 show
+replacescreen: 1383 5 noshow
+replacescreen: 1463 6 noshow
+replacescreen: 1464 7 noshow
+replacescreen: 1465 8 noshow
+replacescreen: 1466 9 noshow
+replacescreen: 1467 10 noshow
+replacescreen: 1468 11 noshow
+replacescreen: 1469 12 noshow
+replacescreen: 1470 13 noshow
+replacescreen: 1472 14 noshow
+replacescreen: 983 15 noshow
+replacescreen: 984 16 noshow
+replacescreen: 985 17 noshow
+replacescreen: 986 18 noshow
+replacescreen: 1063 19 noshow
+replacescreen: 1064 20 noshow
+replacescreen: 1065 21 noshow
+replacescreen: 1066 22 noshow
+replacescreen: 1143 23 noshow
+replacescreen: 1144 24 noshow
+replacescreen: 1145 25 noshow
+replacescreen: 1146 26 noshow
+replacescreen: 1225 27 noshow
+
+installmessage:
+
+       `0Thanks for downloading this MeRCeR Programming LORD2
+       IGM. Visit the MeRCeR Programming web site at
+       HTTP://members.aol.com/yomercer/index.htm. Or for questions,
+       comments, or suggestions email MeRCeR at YOMeRCeR@AOL.COM
+
+ABOUT THIS IGM:
+
+      `2Description: A whole new city in LORD2 (REGISTERED) many
+      chances to get money, items, food, fish, and all kinds of stuff,
+      In this version (2.0), Buy a tower, go in caves, there is a
+      built-in quest for you to do, gambling, and much more!!!
+      Also replaces quest.ref to make deliveries available to this
+      new city! Have fun with this one.... Look for later releases!
+
+
+      
+
+

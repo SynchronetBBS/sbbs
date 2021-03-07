@@ -1,0 +1,803 @@
+; Script file TLS3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:41 2001
+
+@DECLARE monster1 000000643
+@DECLARE monster2 000001209
+@DECLARE monster3 000001793
+@DECLARE monster4 000002390
+@DECLARE fight 000002932
+@DECLARE yoda 000002986
+@DECLARE yoda2 000007539
+@DECLARE yoda3 000008684
+@DECLARE events 000014494
+@DECLARE event1 000015799
+@DECLARE event2 000016072
+@DECLARE event3 000016336
+@DECLARE event4 000016609
+@DECLARE event5 000016879
+@DECLARE event6 000017136
+@DECLARE event7 000017405
+@DECLARE event8 000017662
+@DECLARE event9 000017928
+@DECLARE event10 000018197
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+Ewok
+;string said when you see him
+That pathetic gibbering gets on your nerves.
+;power move kill string
+I will crush you with my foot!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+knaws on your knee|110
+knaws on your numb skull|140
+knaws on your nards|210
+NONE|NONE
+NONE|NONE
+;defense
+40
+;gold reward
+205
+;experience
+135
+;hit points
+120
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster2
+@fight
+;name
+Imperial Guard
+;string said when you see him
+`0"Don't these guys ever talk," you think...
+;power move kill string
+`$"Your cool red outfit is mine!"
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+just stands there|135
+just stands here|145
+just stands there and looks scary|210
+NONE|NONE
+NONE|NONE
+;defense
+70
+;gold reward
+250
+;experience
+110
+;hit points
+220
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster3
+@fight
+;name
+Stormtrooper
+;string said when you see him
+`2You hear him hit his head on the way in...
+;power move kill string
+`$I bet he can hardly see out of that thing...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+shoots aimlessly|150
+punches uselessly|170
+at last shoots you|190
+kicks you in the balls|250
+NONE|NONE
+;defense
+65
+;gold reward
+300
+;experience
+180
+;hit points
+150
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster4
+@fight
+;name
+Tie Figther
+;string said when you see him
+`2It is buzzing around brainlessly.
+;power move kill string
+`2Stay on target!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+shoots its phasers|115
+shoots a proton torpedo|105
+TIE bombs you|180
+NONE|NONE
+NONE|NONE
+;defense
+135
+;gold reward
+576
+;experience
+656
+;hit points
+875
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#FIGHT
+@do `p20 random 4 1
+@do goto monster`p20
+ 
+@#YODA
+@if tlsyoda1.dat exist true then do
+  @begin
+  @readfile tlsyoda1.dat
+`p20
+`p21
+  @do `s01 is getname `p20
+  @do `s02 is getname `p21
+ 
+  @if `p20 is &playernum then do
+    @begin
+    @do moveback
+    @do saybar
+`!Yoda: `$You're not allowed in here!
+    @closescript
+    @end
+@end
+@datanewday TLSTODAG.DAT
+@dataload TLSTODAG.DAT &playernum `p25
+@if `p25 < 1 then do
+ @begin
+ @do moveback
+ @do saybar
+`!Yoda's voice: `$Please use the Groon to come back to Dagobah...
+ @closescript
+ @end
+@do moveback
+@datanewday TLSYODA.DAT
+@do `p20 is 0
+@dataload TLSYODA.DAT &playernum `p20
+@if `p20 is 0 then do
+ @begin
+ @do goto YODA2
+ @end
+ 
+ @do `p20 is 0
+ @offmap
+ @do `v01 is 1
+ @if tlsyoda1.dat exist true then do
+   @begin
+   @readfile tlsyoda1.dat
+`p20
+`p21
+   @do `s01 is getname `p20
+   @do `s02 is getname `p21
+ 
+   @if `p20 is &playernum then do
+     @begin
+     @do saybar
+ `!Yoda: `$What are you doing here? Out! Out! Leave!
+     @closescript
+     @end
+ 
+  @show
+`r0`c  `r1 Master Yoda `r0
+ 
+  `2Master Yoda is in pieces. Literally. His lips speak to you...
+ 
+  `0"I will not let `%`s01`0 in, yes!. Good `%`s02`0's told me not
+  to. A wise person is he, yes," `2his lips squawk at you.
+ 
+  @end
+ 
+@if tlsyoda1.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 Master Yoda `r0
+ 
+  `2Master Yoda is in pieces. Literally. His lips gawk at you...
+ 
+  `0"Any of me have you found, yes? No? Found me you have, no...Yes? Hrm.
+  Keep looking. Find something you will, yes."
+ 
+  @end
+ 
+@do write
+`x`x
+@choice
+Tell Mater Yoda not to let someone in.
+>`p20 0 Tell Master Yoda to let `0`s01 `%back in.
+Give me some stats while I'm here!
+Give Master Yoda the stuff you've found
+Leave
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0"Who do you say cannot come in Dagobah, yes?"
+  @chooseplayer `p22
+  @if `p22 is 0 then do
+    @begin
+    @show
+`k
+    @do goto YODA
+    @end
+  @if `p22 is &playernum then do
+    @begin
+    @show
+  `0"You are yourself, yes. Not no one else, no. Sorry." `\`\`k
+    @do goto YODA
+    @end
+ 
+   @if tlsyoda1.dat exist true then delete tlsyoda1.dat
+   @writefile tlsyoda1.dat
+`p22
+&playernum
+  @show
+  `0"That person I will not let in here, yes. The Myphon Groon will not
+  let him, of course, yes. No. Thank you for off tipping him, yes. 
+  Grateful am I. I am," `2Yoda's lips snicker.
+`\`k
+  @readfile tlsyoda1.dat
+`p20
+`p21
+  @do `s01 is getname `p20
+  @do `s02 is getname `p21
+@do addlog
+ `r0 `7-`!= `0`s02`2 told Mater Yoda to not let `0`s01 `2into Dagobah
+@writefile lognow.txt
+     `2at `#The Loose Screw Resort `!=`7-
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @do goto YODA
+  @end
+ 
+@if responce is 2 then do
+  @begin
+  @if tlsyoda1.dat exist true then delete tlsyoda1.dat
+  @show
+`\`\  `2You tell Master Yoda not to be worried. With a swift upper lip,
+  he agrees...
+`\`k
+@do addlog
+ `r0 `7-`!= `0`s02`2 told Master Yoda to let `0`s01 `2back into Dagobah.
+@writefile lognow.txt
+     `2at `#The Loose Screw Resort `!=`7-
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @do goto yoda
+  @end
+ 
+@if response is 3 then do
+ @begin
+  @dataload TLSEVE1.DAT &playernum `p20
+  @dataload tlseve2.dat &playernum `p21
+  @dataload tlseve3.dat &playernum `p22
+  @dataload tlseve4.dat &playernum `p23
+  @dataload tlseve5.dat &playernum `p24
+  @dataload tlseve6.dat &playernum `p25
+  @dataload tlseve7.dat &playernum `p26
+  @dataload tlseve8.dat &playernum `p27
+  @dataload tlseve9.dat &playernum `p28
+  @dataload tlseve10.dat &playernum `p29
+ 
+  @show
+`r0`c`\`\  `0"Looks, it does, like you have the following things:
+ 
+    `$-`2You are carrying `!`p20 `2fingernails.
+     `$-`2You have `!`p21 `2of Yoda's feet.
+    `$-`2You are carrying `!`p22 `2strands of Yoda's hair.
+     `$-`2You have `!`p23 `2of Yoda's wrinkles.
+    `$-`2You are carrying `!`p24 `2R2 unit(s).
+     `$-`2You have `!`p25 `2of Yoda's tongues.
+    `$-`2You are carrying `!`p26 `2X-Wing(s).
+     `$-`2You have `!`p27 `2of Yoda's ears.
+    `$-`2You are carrying `!`p28 `2of Yoda's canes.
+     `$-`2You have `!`p29 `2Darth Vader head(s).
+ 
+  @dataload TLSTURNS.DAT &playernum `p20
+  @do `p22 is `p11
+  @do `p22 - `p20
+  @show
+  `0...and it looks like you have `%`p22 `0turns left before leave you must
+  Dagobah until tomorrow."
+     
+`k
+  @do goto YODA
+  @end
+ 
+@if response is 4 then do
+ @begin
+ @do goto YODA3
+ @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#YODA2
+ @offmap
+  @datanewday TLSEVE1.DAT &playernum `p20
+  @datanewday TLSeve2.dat &playernum `p21
+  @datanewday tlseve3.dat &playernum `p22
+  @datanewday tlseve4.dat &playernum `p23
+  @datanewday Tlseve5.dat &playernum `p24
+  @datanewday tlseve6.dat &playernum `p25
+  @datanewday tlseve7.dat &playernum `p26
+  @datanewday tlseve8.dat &playernum `p27
+  @datanewday tlseve9.dat &playernum `p28
+  @datanewday tlseve10.dat &playernum `p29
+ @do `v01 is 1
+  @show
+`r0`c  `r1 Master Yoda `r0
+ 
+  `2Master Yoda is in pieces. Literally. Some of him on the floor, on
+  the table. His lips talk to you...
+ 
+  `0"Eee-gad, it was that underwater thing, yes, that chew me up, it did.
+  Myself, I am all over the place. Yes. My body pieces, they are helpful. 
+  Yes. Your weapons, you will need them! And this pack. Take this pack and
+  find my body pieces and other things you will. Bring them back here,
+  yes?"
+ 
+`k  `$"I will not fail you."
+ 
+`k  `0"All right. All right. You're very positive, yes. Leave and find my
+  body!"
+ 
+`k
+ 
+  @datasave TLSYODA.DAT &playernum 1
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+@#YODA3
+  @show
+`r0`c`\`\  `0"If, I find, you have found many of my things, for this
+  shall you be well rewarded," `2Yoda says to you.
+ 
+`k
+  @dataload TLSEVE1.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p21 is `p20
+   @do `p21 / 3
+   @do `p22 random `p21 1
+   @do `p22 / 2
+   @do `p23 is `p20
+   @do `p25 random 500 1
+   @do `p23 * `p25
+   @do `p23 / 2
+   @show
+    `$-`0"For finding `!`p20 `0of my fingernails, get you will`l.`l.`l.
+`l    
+        `4-`@Muscle increased by `%`p22`@!
+        `@-`$You receive `%`p23 `$gold!
+ 
+`k
+  @do `p04 + `p22
+  @do money + `p23
+  @datasave TLSEVE1.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE2.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p22 is `p20
+   @do `p22 / 4
+   @do `p27 random 200 500
+   @do `p23 is `p20
+   @do `p23 * `p27
+   @do `p23 / 2
+   @show
+    `$-`0"For finding `!`p20 `0of my feet, get you will`l.`l.`l.
+`l    
+        `4-`@Dodge increased by `%`p22`@!
+        `@-`$You receive `%`p23 `$gold!
+ 
+`k
+  @do `p05 + `p22
+  @do money + `p23
+  @datasave TLSEVE2.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE3.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p22 is `p20
+   @do `p22 / 7
+   @do `p23 is `p20
+   @do `p24 random 15 8
+   @do `p23 * `p24
+   @do `p23 / 2
+   @show
+    `$-`0"For finding `!`p20 `0strands of my hair, get you will`l.`l.`l.
+`l    
+        `4-`@Max HP increased by `%`p22`@!
+        `@-`$You receive `%`p23 `$gold!
+ 
+`k
+  @do `p03 + `p22
+  @do money + `p23
+  @datasave TLSEVE3.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE4.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p22 is `p20
+   @do `p22 / 25
+   @do `p25 random `p22 1
+   @do `p22 - `p25
+   @do `p29 random 5 1
+   @do `p23 is `p20
+   @do `p23 * `p29
+   @do `p26 is `p20
+   @do `p26 / 50
+   @do `p28 random 3 2
+   @do `p26 / `p28
+   @do `p27 is `p20
+   @do `p27 / 70
+   @do `p27 / `p28
+   @do `p23 / 2
+   @do `p23 / 2
+   @show
+    `$-`0"For finding `!`p20 `0of my wrinkles, get you will`l.`l.`l.
+`l    
+        `4-`@Max HP increased by `%`p22`@!
+        `4-`@Muscle increased by `%`p26`@!
+        `4-`@Dodge increased by `%`p27`@!
+        `@-`$You receive `%`p23 `$gold!
+ 
+`k
+  @do `p03 + `p22
+  @do `p04 + `p26
+  @do `p05 + `p27
+  @do money + `p23
+  @datasave TLSEVE4.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE5.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p22 is `p20
+   @do `p21 random 2 1
+   @do `p22 * `p21
+   @do `p25 random 10000 5000
+   @do `p23 is `p20
+   @do `p23 * `p25
+   @do `p23 / 2
+   @do `p23 / 2
+   @show
+    `$-`0"For finding `!`p20 `0R2 unit(s), get you will`l.`l.`l.
+`l    
+        `5-`#You receive `%`p22 `#gems!
+        `@-`$You receive `%`p23 `$gold!
+ 
+`k
+  @do `p19 + `p22
+  @do money + `p23
+  @datasave TLSEVE5.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE6.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p22 is `p20
+   @do `p23 random 3 1
+   @do `p22 / `p23
+   @show
+    `$-`0"For finding `!`p20 `0of my tongue(s), get you will`l.`l.`l.
+`l    
+        `4-`@Charm increased by `%`p22`@!
+ 
+`k
+  @do `p08 + `p22
+  @datasave TLSEVE6.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE7.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p25 random 50000 25000
+   @do `p26 random 25000 1
+   @do `p25 - `p26
+   @do `p26 random 25000 1
+   @do `p25 + `p26
+   @do `p25 * `p20
+   @do `p25 / 2
+   @do `p23 is `p25
+   @do `p23 / 2
+   @show
+    `$-`0"For finding `!`p20 `0X-Wing(s), get you will`l.`l.`l.
+`l    
+        `@-`$You receive `%`p23 `$gold!
+ 
+`k
+  @do money + `p23
+  @datasave TLSEVE7.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE8.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p22 is `p20
+   @do `p25 random 7 2
+   @do `p22 / `p25
+   @do `p25 random 5 2
+   @do `p22 / `p25
+   @do `p27 random 200 500
+   @do `p23 is `p20
+   @do `p23 * `p27
+   @do `p23 / 2
+   @show
+    `$-`0"For finding `!`p20 `0of my ears, get you will`l.`l.`l.
+`l    
+        `4-`@Dodge increased by `%`p22`@!
+        `@-`$You receive `%`p23 `$gold!
+ 
+`k
+  @do `p05 + `p22
+  @do money + `p23
+  @datasave TLSEVE8.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE9.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @do `p22 is `p20
+   @do `p25 random 100 90
+   @do `p22 * `p25
+   @do `p26 random 40 30
+   @do `p23 is `p20
+   @do `p23 * `p26
+   @do `p23 / 2
+   @show
+    `$-`0"For finding `!`p20 `0of my canes, get you will`l.`l.`l.
+`l    
+        `7-`%Experience goes up by `!`p22`%!
+        `@-`$You receive `%`p23 `$gold!
+ 
+`k
+  @do `p01 + `p22
+  @do money + `p23
+  @datasave TLSEVE9.DAT &playernum 0
+  @do `p20 is 0
+  @end
+  @dataload TLSEVE10.DAT &playernum `p20
+  @if `p20 > 0 then do
+   @begin
+   @show
+    `$-`0"For finding `!`p20 `0Darth Vader Head(s), get you will`l.`l.`l.
+`l    
+`r0`c
+ 
+  `0"Which way do you wish for these heads to affect your allignment?"
+ 
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Up
+Down
+@if response is 1 then do
+    @begin
+    @do `p22 is 0
+    @do `p22 + `p20
+    @do `p22 / 2
+    @show
+ 
+        `8-`7Allignment goes up by `%`p22`7!
+ 
+    @end
+@if response is 2 then do
+    @begin 
+    @do `p22 is 0
+    @do `p22 - `p20
+    @do `p22 / 2
+    @show
+ 
+        `7-`8Allignment goes down by `%`p22`8!
+ 
+    @end
+ 
+@show
+`k
+  @do `p07 + `p22
+  @datasave TLSEVE10.DAT &playernum 0
+  @do `p20 is 0
+  @end
+ 
+@show
+`r0`c`\`\  `0"Did ever so many body parts you know I have, hrm?" `2Yoda
+  squawks at you. `0"No more do you have to give me. Come back later..."
+ 
+`k
+ 
+@do goto YODA
+ 
+@#EVENTS
+@datanewday TLSTURNS.DAT
+@dataload TLSTURNS.DAT &playernum `p21
+ @do `p25 is `p21
+ @do `p25 + 3005
+@if `p21 is 0 then do
+ @begin
+ @closescript
+ @end
+@if `p11 > `p25 then do
+  @begin
+  @do map is 656
+  @do x is 35
+  @do y is 17
+  @loadmap &map
+  @drawmap
+  @update
+  @do saybar
+`l`!Yoda's Voice: `$Cheating it looks like you have been. In trouble you are.
+  @closescript
+  @end
+@if `p11 < `p21 then do
+ @begin
+ @show
+`r0`c`\`\  `2Yoda's voice once again intrudes upon you.
+ 
+  `0"You are out of turns. Out of turns you are. Come back again tomorrow,
+  I urge you."
+ 
+`k
+  @do map is 656
+  @do x is 35
+  @do y is 17
+  @loadmap &map
+  @dataload TLSTODAG.DAT &playernum `p20
+  @if `p20 is 1 then do
+  @begin
+  @do `p28 is &money
+@do addlog
+ `r0 `$$`7-`!= `0`n `2has made `$$`p28 `2inside Dagobah
+@writefile lognow.txt
+      `2at `#The Loose Screw Resort `!=`7-`$$
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @end
+  @drawmap
+  @update
+  @datasave TLSTODAG.DAT &playernum 2
+  @do saybar
+`!Yoda's Voice: `$May the force be with you...
+  @closescript
+  @end
+ 
+@datanewday TLSYODA.DAT
+@do `p20 is 0
+@dataload TLSYODA.DAT &playernum `p20
+ @if `p20 is 0 then do
+ @begin
+ @closescript
+ @end
+@do `p29 random 10 1
+@do goto EVENT`p29
+ 
+@#EVENT1
+  @do `p25 random 5 1
+  @datanewday TLSEVE1.DAT
+  @do `p20 is 0
+  @dataload TLSEVE1.DAT &playernum `p20
+  @do `p20 + `p25
+  @datasave TLSEVE1.DAT &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!of Yoda's fingernail(s). You now have `$`p20 `!of them.
+ 
+@#EVENT2
+  @do `p25 random 2 1
+  @datanewday tlseve2.dat
+  @do `p20 is 0
+  @dataload tlseve2.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve2.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!of Yoda's feet. You now have `$`p20 `!of them.
+ 
+@#EVENT3
+  @do `p25 random 50 1
+  @datanewday tlseve3.dat
+  @do `p20 is 0
+  @dataload tlseve3.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve3.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!strands of Yoda's hair. You now have `$`p20 `!of them.
+ 
+@#EVENT4
+  @do `p25 random 500 1
+  @datanewday tlseve4.dat
+  @do `p20 is 0
+  @dataload tlseve4.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve4.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!of Yoda's wrinkles. You now have `$`p20 `!of them.
+ 
+@#EVENT5
+  @do `p25 random 1 1
+  @datanewday tlseve5.dat
+  @do `p20 is 0
+  @dataload tlseve5.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve5.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!R2 unit. You now have `$`p20 `!of them.
+ 
+@#EVENT6
+  @do `p25 random 1 1
+  @datanewday tlseve6.dat
+  @do `p20 is 0
+  @dataload tlseve6.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve6.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!of Yoda's tongue(s). You now have `$`p20 `!of them.
+ 
+@#EVENT7
+  @do `p25 random 1 1
+  @datanewday tlseve7.dat
+  @do `p20 is 0
+  @dataload tlseve7.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve7.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!X-Wing!. You now have `$`p20 `!of them.
+ 
+@#EVENT8
+  @do `p25 random 2 1
+  @datanewday tlseve8.dat
+  @do `p20 is 0
+  @dataload tlseve8.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve8.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!of Yoda's ear(s). You now have `$`p20 `!of them.
+ 
+@#EVENT9
+  @do `p25 random 20 1
+  @datanewday tlseve9.dat
+  @do `p20 is 0
+  @dataload tlseve9.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve9.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!of Yoda's cane(s). You now have `$`p20 `!of them.
+ 
+@#EVENT10
+  @do `p25 random 5 1
+  @datanewday tlseve10.dat
+  @do `p20 is 0
+  @dataload tlseve10.dat &playernum `p20
+  @do `p20 + `p25
+  @datasave tlseve10.dat &playernum `p20
+@do saybar
+`1:`!You find `$`p25 `!Darth Vader head(s). You now have `$`p20 `!of them.
+ 

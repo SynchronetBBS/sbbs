@@ -1,0 +1,45 @@
+
+                         Bad Company by Talaphid
+
+Lord 2 1.01a: backwards compatiblity unknown, probably waaay back
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yup
+  Using any LORD2 vars?                           : Nope
+  Overwrites any original .refs?                  : No  
+  Saves and loads its own vars independently?     : Yes 
+  Adds new .refs?                                 : Yes (1- BADCOMP.REF)
+  Replaces screens?                               : Yes (1)               
+  Adds screens?                                   : No        
+  Free?                                           : Yes
+
+
+  Description:
+
+        The one and ONLY murder mystery IGM for LORD ][. While traveling
+between Porttown and Sosen Village, a murderer claims the life of a traveler!
+Determined not to let the villian loose into an unsuspecting Sosen Village,
+Ahyool (the caravan leader) stops the troop, and refuses to continue until
+the heinous fiend is caught.
+
+        The player has a certain number of chances of getting the culprit.
+Each time they guess wrong, two more people die (and thus, their bonus gets
+lower and lower). If they're stuck, they can advance the plot by talking
+with Ahyool. One person dies, but maybe some light is shed on the situation.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM BADCOMP.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `@Bad company `3by `!T`3alaphid
+
+replacescreen: 720 1 show
+
+installmessage:
+
+        `7Something has happened on the route to Sosen Village!

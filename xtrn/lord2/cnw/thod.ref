@@ -1,0 +1,216 @@
+; Script file THOD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:26 2001
+
+@DECLARE thewall 000000436
+@DECLARE treasure 000000504
+@DECLARE sign 000000778
+@DECLARE dream 000000855
+@DECLARE owner 000004299
+@NOCHECK
+; End of .REF index
+
+;This if the REF file belonging to the IGM The House of Dreams.  This IGM
+;is written by Tien Lung and is good for once a day things.  This is my
+;first rather simple IGM.
+
+@#thewall
+@if `p09 > 20 then do
+ @begin
+ @do moveback
+ @end
+
+@#treasure
+@datanewday thod1.idf
+@dataload thod1.idf &playernum `p27
+@if `p27 not 1 then do
+ @begin
+ @do saybar
+`2You get ahold of a sack with 3000 gold.
+ @do money + 3000
+ @datasave thod1.idf &playernum 1
+ @closescript
+ @end
+@do saybar
+`2An empty storage case
+
+
+@#sign
+@do saybar
+`0The House of Dreams `2by `@Tien Lung
+@do moveback
+
+@#dream
+@do moveback
+@datanewday thod.idf
+@dataload thod.idf &playernum `p20
+
+@if `p20 not 1 then do
+ @begin
+ @do `p21 random 6 1
+ @if `p21 is 1 then do
+   @begin
+   @show
+`r0`c  `r1  `%The Dream  `r0
+
+  `2A beautiful `0green `2field surrounds you.  Flowers dot the horizon and you
+  feel the beauty within yourself.  Birds soar over head and you feel the same
+  energy in yourself.  You feel like you have the energy to travel the world.
+  `k
+  `%500 EXTRA TURNS
+  `k
+   @do `p11 + 500
+   @end
+ @if `p21 is 2 then do
+   @begin
+   @show
+`r0`c  `r1  `%The Dream  `r0
+
+  `2You find yourself siting in the Inn of the `4Red Dragon `2back in `0Greentree
+  `2and notice strange people around.  You see warriors, rogues, and wizards
+  sitting about drinking and generally have a good time.
+  `k
+  `2You believe you find yourself in the early days of the `4Red Dragon`2's
+  assault.  You feel the rush of adventure and it makes you feel stronger.
+  `k
+  `%MUSCLE GOES UP BY ONE
+  `k
+   @do `p04 + 1
+   @end
+ @if `p21 is 3 then do
+   @begin
+   @show
+`r0`c  `r1  `7A Nightmare  `r0
+
+  `8Thunder and lightning crash down about you.  Demons with decomposing
+  flesh dance about you, raising high their demonic and sickening weapons.
+  Several spit flames at you or stick you with their weapons and the horror
+  and pain make you ache before expected blow.
+  `k
+  `7Could this be your `@Final Nightmare`7?
+  `k
+  `4LOSE ONE DODGE
+  `k
+   @do `p05 - 1
+   @end
+ @if `p21 is 4 then do
+   @begin
+   @show
+`r0`c  `r1  `%The Dream  `r0
+
+  `2The wild cats of the Northlands run fast, but not as fast as you.  You
+  seem to be wearing only enough fur for modesty reasons.  Your feet barely
+  touch the ground as they only hit long enough to propel yourself further
+  and faster.  Your muscles began to stretch and you seem more agile than
+  ever before.
+  `k
+  `%DODGE GOES UP BY ONE
+  `k
+   @do `p05 + 1
+   @end
+ @if `p21 is 5 then do
+   @begin
+   @show
+`r0`c  `r1  `7A Nightmare  `r0
+
+  `8A large clawed hand collides with your face, ripping you from where you 
+  stand and tossing you over a hundred yards.  Before you can get up, the 
+  demon leaps the distance and lands on your legs painfully.  With an evil 
+  grin, it grabs both of your arms and tears them from their sockets.  The
+  pain makes your upper body tighten up.
+  `k
+  `7Could this be your `@Final Nightmare`7?
+  `k
+  `4LOSE ONE MUSCLE
+  `k
+   @do `p04 - 1
+   @end
+ @if `p21 is 6 then do
+   @begin
+   @do `p26 is `p09
+   @do `p26 * 100
+   @show
+`r0`c  `r1  `%The Dream  `r0
+
+  `2The crashing of waves collide with the side of the ship.  You are hit by
+  such a huge wave that you are tossed over the side of the ship.
+  `k
+  `2Surprisingly, you find that you can breath the water as you sink to the 
+  bottom of the sea.  As you touch the sea floor, you notice an old box
+  before you.  Its a pirate's treasure.
+  `k
+  `2You quickly break the lock and open the lid to find lots of gold.
+  `k
+  `%`p26 GOLD PIECES ARE FOUND
+  `k
+   @do money + `p26
+   @end
+ @datasave thod.idf &playernum 1
+ @do x is 35
+ @do y is 14
+ @drawmap
+ @update
+ @closescript
+ @end
+@show
+`r0`c  `r1  `%The Attempted Dream  `r0
+
+  `2You have already dreamed today and so you toss and turn unsuccessfully
+  and remain awake.
+  `k
+  `7Try again Tomorrow.
+  `k
+@do x is 35
+@do y is 14
+@drawmap
+@update
+
+@#owner
+@do moveback
+@busy
+@do `v01 is 1
+@show
+`r0`c  `r1  Bradley Aaron  `r0
+
+  `2This young man seems to be fully rested and awaiting your words.  His eyes
+  look at you with amazement that you stopped by and a smile crosses his lips
+
+  `0"Hello friend, want to dream?" `2he asks.
+
+@do write
+`x`x
+@choice
+First, how about a little more information
+Sure, I could use a nap
+Leave
+@if responce is 1 then do
+ @begin
+ @show
+  `\
+  `0"Always with the information..." `2he mumbles.
+  `0"Okay.  First of all, I place you into the bed and make sure you are
+  comfortable.  After, I start my spell and send you literally into your
+  dreams."
+  `k
+  `$"And then what happens?"
+  `k
+  `0"Simply put, you enter the dreams you currently have whether it was a
+  good one, or a bad one.  Either way, you come out of your dreams just a
+  little different then you did when you went in."
+  `k
+  @do goto owner
+ @end
+@if responce is 2 then do
+ @begin
+ @show
+ `\
+ `0"Then its a nap you shall have." `2he says as his hands begin to glow with
+ a golden light.  `0"And soon your dream or nightmare shall become real."
+ `k
+ `2He helps you over to the bed and you get comfortable.
+ `k
+ `0"Let the dream take over..."
+ `k
+ @do goto dream
+ @end
+@drawmap
+@update
+@closescript

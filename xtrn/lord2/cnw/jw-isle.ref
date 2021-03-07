@@ -1,0 +1,1701 @@
+; Script file JW-ISLE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:27 2001
+
+@DECLARE start 000001374
+@DECLARE giftshop 000001527
+@DECLARE inshop 000001982
+@DECLARE boughtsome 000010490
+@DECLARE nosale 000010681
+@DECLARE travelbureau 000010791
+@DECLARE clerkexit 000018839
+@DECLARE doctorfell 000020397
+@DECLARE drloop 000020450
+@DECLARE banker 000023678
+@DECLARE hotel 000023973
+@DECLARE jail 000024168
+@DECLARE farmerhut 000024366
+@DECLARE ratnest 000025301
+@DECLARE redcross 000026597
+@DECLARE celldoor 000026826
+@DECLARE jailer 000027082
+@DECLARE prisoner 000027295
+@DECLARE shiv 000027746
+@DECLARE madmage 000028313
+@DECLARE jailexit 000031786
+@DECLARE hotelexit 000032070
+@DECLARE clerkenter 000032222
+@DECLARE entryshack 000033309
+@DECLARE entrywharf 000033841
+@DECLARE entrysign 000034526
+@DECLARE spidersign 000034707
+@DECLARE spiderbard 000034845
+@DECLARE dockman 000035209
+@DECLARE bigspider 000035482
+@DECLARE spiderfight 000037599
+@DECLARE spiderdo 000039224
+@DECLARE spiderweb 000039982
+@DECLARE hospital 000042998
+@DECLARE piperbard 000044807
+@DECLARE pipersign 000044973
+@DECLARE oldroad 000045132
+@DECLARE piperstone 000045286
+@DECLARE killkeypress 000045461
+@DECLARE ranger 000045698
+@NOCHECK
+; End of .REF index
+
+; Ref file for Jim Wilson's, Lord 2 IGM ver.  1.01, Mimsic Isle.
+; jw-isle.ref
+
+@#Start
+                        ;Events       ....
+                        ;Town Stuff
+
+;-----------------------------------------------------
+
+@#GiftShop
+                        ;  Once per day
+                        ;  Ask about items.
+                        ;  Buy one?  Close Shop.
+@do moveback
+@busy
+@datanewday jw-isle1.mil
+@dataload jw-isle1.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 6 1 then do
+@begin
+        @do saybar
+        `$Sorry, we're closed. Try again another day.
+        @closescript
+@end
+@dataload jw-isleL.mil &playernum `p23
+@do `v01 is 1
+
+@label inshop
+@show
+`r0`c   `2         You stand at the counter of the quaint little gift shop
+            with your `$`p23`2 rat pelts, the local currency.
+`/
+@choice
+Leave
+`0Ask about the `4Campfire Starter     `0   (15 pelts)
+`0Ask about the `$Sunstone             `0   (15 pelts)
+`0Ask about the `!Magic Pipe           `0   (50 pelts)
+`0Ask about the `#Shining Orb          `0  (170 pelts)
+`0Ask about the `2Balance Pole         `0  (170 pelts)
+`0Ask about the `3Earmuffs             `0  (350 pelts)
+`0Ask about the `%Holy Book            `0  (999 pelts)
+@if response is 1 then do
+@begin
+                      @do goto nosale
+@end
+
+@if response is 2 then do
+@begin
+        @show
+        `c
+        This usefull item is a requirement for all travelers
+        through "Spider Woods". It costs 15 rat pelts.
+`/
+        @dataload jw-isleg.mil &playernum `p22
+        @do `t70 is `p22
+        @if bitcheck `t70 0 1 then do
+        @begin
+                @show
+        `%I see that you already have one.
+`/
+                @key nodisplay
+                @do goto inshop
+        @end
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+        @if `p23 > 14 then do
+        @begin
+                @do `v01 is 1
+                @choice
+Leave
+Buy one
+                @if response is 1 then do
+                @begin
+                        @do goto inshop
+                @end
+                @bitset `t70 0 1
+                @do `p22 is `t70
+                @datasave jw-isleg.mil &playernum `p22
+                @do `p23 - 15
+                @do goto boughtsome
+        @end
+        @show
+        `/`$
+        You can't afford it right now.
+        @key nodisplay
+        @do goto inshop
+@end
+
+@if response is 3 then do
+@begin
+        @show
+        `c
+        This is another way to get past the spiders in
+        "Spider Woods". It costs 15 rat pelts.
+`/
+        @dataload jw-isleg.mil &playernum `p22
+        @do `t70 is `p22
+        @if bitcheck `t70 1 1 then do
+        @begin
+                @show
+        `%I see that you already have one.
+`/
+                @key nodisplay
+                @do goto inshop
+        @end
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+        @if `p23 > 14 then do
+        @begin
+                @do `v01 is 1
+                @choice
+Leave
+Buy one
+                @if response is 1 then do
+                @begin
+                        @do goto inshop
+                @end
+                @bitset `t70 1 1
+                @do `p22 is `t70
+                @datasave jw-isleg.mil &playernum `p22
+                @do `p23 - 15
+                @do goto boughtsome
+        @end
+        @show
+        `/`$
+        You can't afford it right now.
+        @key nodisplay
+        @do goto inshop
+@end
+
+@if response is 4 then do
+@begin
+        @show
+        `c
+        A musician?  These pipes are said to be magical,
+        You may need instruction for their use.  I scarcely
+        make a profit at the low price of 50 pelts!
+`/
+        @dataload jw-isleg.mil &playernum `p22
+        @do `t70 is `p22
+        @if bitcheck `t70 2 1 then do
+        @begin
+                @show
+        `%I see that you already have one.
+`/
+                @key nodisplay
+                @do goto inshop
+        @end
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+        @if `p23 > 49 then do
+        @begin
+                @do `v01 is 1
+                @choice
+Leave
+Buy one
+                @if response is 1 then do
+                @begin
+                        @do goto inshop
+                @end
+                @bitset `t70 2 1
+                @do `p22 is `t70
+                @datasave jw-isleg.mil &playernum `p22
+                @do `p23 - 50
+                @do goto boughtsome
+        @end
+        @show
+        `/`$
+        You can't afford it right now.
+        @key nodisplay
+        @do goto inshop
+@end
+
+@if response is 5 then do
+@begin
+        @show
+        `c
+        This bright object will help you see in the gloom.
+        Handy for the eastern trail north.
+        It is on sale for the modest price of 170 rat pelts!
+`/
+        @dataload jw-isleg.mil &playernum `p22
+        @do `t70 is `p22
+        @if bitcheck `t70 3 1 then do
+        @begin
+                @show
+        `%I see that you already have one.
+`/
+                @key nodisplay
+                @do goto inshop
+        @end
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+        @if `p23 > 169 then do
+        @begin
+                @do `v01 is 1
+                @choice
+Leave
+Buy one
+                @if response is 1 then do
+                @begin
+                        @do goto inshop
+                @end
+                @bitset `t70 3 1
+                @do `p22 is `t70
+                @datasave jw-isleg.mil &playernum `p22
+                @do `p23 - 170
+                @do goto boughtsome
+        @end
+        @show
+        `/`$
+        You can't afford it right now.
+        @key nodisplay
+        @do goto inshop
+@end
+
+
+@if response is 6 then do
+@begin
+        @show
+        `c
+        This usefull item allows travellers to cross the
+        chasm that cuts the western trail north.
+        It can be had for only 170 rat pelts.
+`/
+        @dataload jw-isleg.mil &playernum `p22
+        @do `t70 is `p22
+        @if bitcheck `t70 4 1 then do
+        @begin
+                @show
+        `%I see that you already have one.
+`/
+                @key nodisplay
+                @do goto inshop
+        @end
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+        @if `p23 > 169 then do
+        @begin
+                @do `v01 is 1
+                @choice
+Leave
+Buy one
+                @if response is 1 then do
+                @begin
+                        @do goto inshop
+                @end
+                @bitset `t70 4 1
+                @do `p22 is `t70
+                @datasave jw-isleg.mil &playernum `p22
+                @do `p23 - 170
+                @do goto boughtsome
+        @end
+        @show
+        `/`$
+        You can't afford it right now.
+        @key nodisplay
+        @do goto inshop
+@end
+
+@if response is 7 then do
+@begin
+        @show
+        `c
+        These are not for cold, oh no, they stop the sounds
+        of the `3BANSHEES`0 from killing you dead!
+        They cost 350 rat pelts a pair.
+`/
+        @dataload jw-isleg.mil &playernum `p22
+        @do `t70 is `p22
+        @if bitcheck `t70 6 1 then do
+        @begin
+                @show
+        `%I see that you already have 'em.
+`/
+                @key nodisplay
+                @do goto inshop
+        @end
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+        @if `p23 > 349 then do
+        @begin
+                @do `v01 is 1
+                @choice
+Leave
+Buy one
+                @if response is 1 then do
+                @begin
+                        @do goto inshop
+                @end
+                @bitset `t70 6 1
+                @do `p22 is `t70
+                @datasave jw-isleg.mil &playernum `p22
+                @do `p23 - 350
+                @do goto boughtsome
+        @end
+        @show
+        `/`$
+        You can't afford them right now.
+        @key nodisplay
+        @do goto inshop
+
+@end
+
+@if response is 8 then do
+@begin
+        @show
+        `c
+        `0Ah...the Holy Book.  It is an instruction manual for
+        use of the `%Holy Flail.`0    It costs 999 rat pelts.
+
+        The `%Holy Flail`0 will help if you ever fight `4DEMONS!
+`/
+        @dataload jw-isleg.mil &playernum `p22
+        @do `t70 is `p22
+        @if bitcheck `t70 7 1 then do
+        @begin
+                @show
+        `%I see that you already have one.
+`/
+                @key nodisplay
+                @do goto inshop
+        @end
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+        @if `p23 > 998 then do
+        @begin
+                @do `v01 is 1
+                @choice
+Leave
+Buy one
+                @if response is 1 then do
+                @begin
+                        @do goto inshop
+                @end
+                @bitset `t70 7 1
+                @do `p22 is `t70
+                @datasave jw-isleg.mil &playernum `p22
+                @do `p23 - 999
+                @do goto boughtsome
+        @end
+
+        @show
+        `/`$
+        You can't afford it right now.
+        @key nodisplay
+        @do goto inshop
+@end
+
+@label boughtsome
+@datasave jw-isleL.mil &playernum `p23
+@dataload jw-isle1.mil &playernum `p24
+@do `t70 is `p24
+@bitset `t70 6 1
+@do `p24 is `t70
+@datasave jw-isle1.mil &playernum `p24
+
+@label nosale
+
+@drawmap
+@update
+@closescript
+
+;------------------------------------------------------
+@#TravelBureau
+@do moveback
+@busy
+@show
+`r0`c
+                `$Howdy stranger!
+
+                `3We're closed, out of business, destitute!
+
+                People that aren't already on Mimsic Isle
+                don't wish to visit and people who are here
+                don't want to go any where else!
+
+                You can see why, check out the travel posters,
+                they are no good to me now.
+
+                The first one here is the falls at Mimsic gap.
+
+@do readspecial `s01 yn
+@pauseoff
+@show
+[?7h[40m[2J[0;1;36;46m≤≤≤[40m€[46m±±∞∞∞[40m€€€€[46m∞≤≤≤≤[40m[s
+[u[40m€€[46m≤≤≤≤≤[40m€[46m≤≤≤[40m€€[46m≤≤≤[40m€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€€€€€€€€€€€€€€€€[2;1H[0;32m‹[1;36m€€[46m≤≤≤[40m€€€[s
+[u[46m≤≤≤≤[40m€€€€[46m±±±≤≤≤[40m€€€€[46m≤≤≤≤±±±±[40m€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[3;1H[30;42m∞[40m›[0;32m‹‹‹‹‹ [s
+[u[1;36mﬂﬂ€€€€€ﬂﬂﬂ€ﬂﬂﬂﬂﬂ€€€€€[46m≤≤≤≤≤≤≤±±[40m€€€€€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€€€€€€€€[4;1H[30m€[42m±‹∞‹ﬂ‹[0;32m€€[36m‹‹‹‹‹‹‹‹‹[32m[s
+[u‹€€€€‹[1;36mﬂﬂﬂﬂ€€€€€[46m≤≤≤≤≤[40m€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€€€[5;1H[30m≤≤€€[42m±[40m€[42m∞[40m€ [0;36mﬂ€[1;46m[40m[s
+[u[46m∞≤€≤[0;36m€€€ﬂ[1;30m€€[42m±∞  [0;32m€€ [1;36mﬂ€€€[46m≤[40m[s
+[u[46m≤[40m€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[6;1H[30m≤≤[s
+[u≤ﬂ€€€€€ [0;36mﬂ€[1;46m±›[0;36m€€›[1;30m€€€[42m≤±ﬂ [0;32m€€€€ [s
+[u[1;36mﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[7;1H[30m€[s
+[u€€€‹≤≤±±±∞[0;36mﬁ[1;46m≤€[0;36m€ﬂ[1;30m€€€€€€[42m±≤‹∞ ﬂ ∞[40m[s
+[u[36;40mﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€[8;1H[30m€[s
+[u€≤±±∞∞€€∞[0;36mﬁ€[1;46m≤‹[30;40m∞€€€€€≤≤€€[42m±≤‹[40m€[42m∞[40m[s
+[u[42m∞ [40m‹[36mﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+[9;1H[30m€≤≤±∞∞€€∞[0;36mﬁ€[1;46m±≤[0;36m€[1;30m∞€€€€ﬂﬂ€±±±€€€€[s
+[u[42m±[40m€€‹[36mﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+[10;1H[30m≤≤±±±∞∞€∞∞[0;36mﬁ[1;46m‹±[30;40m∞€ﬂﬂ‹‹€€€€€€±±∞∞€€€€‹‹[s
+[u[36mﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ﬂ[11;1H[30m€ﬂﬂ ‹‹€€[s
+[u±∞[0;36mﬁ[1;46m€‹[0;36m€[1;30m∞ ±±±≤≤±≤€€€€€€∞∞∞‹‹€‹[36mﬂ€€€€€€€€[s
+[u€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ﬂ[30m‹€[12;1Hs€€€€€€€∞[0;36mﬁ€[s
+[u[1;46mﬂ≤[0;36m€[1;30m∞∞±€€€∞ﬂﬂﬂ€≤≤€€€€€€€€€‹[36mﬂ€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€€€€€€€€€€€€€ﬂ [30m‹‹€±[13;1Hc≤€€€€€€∞[0;36mﬁ€[1;46m±≤[40m[s
+[u[0;36m€[1;30m∞€€€€ﬂ ∞±≤≤€€€€€€€€€€€€‹[36mﬂ€€€€€€€€€€€€€€€€€€€€€€€€€[s
+[u€€€€€€€ﬂ[30m‹‹‹€€±±∞[14;1H±±≤≤€€€∞[0;36mﬁ€€[1;46m≤≤[0;36m€›[s
+[u[1;30m∞€€ﬂ≤≤€€€€€€€€€€€€€€€€€‹[36mﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€ﬂ [s
+[u[30m‹‹€€€€±±€€ﬂ[15;1H‹‹±±≤≤±∞[0;36mﬁ€[1;46m±≤±[0;36m€€›[1;30m∞±±[s
+[u≤€€€€€€€€[42mﬂﬂ[0;32m‹‹‹‹[1;30;42mﬂ  ‹[40m€‹‹ [36mﬂ€€€€€€€€€€€€€€[s
+[u€€€€€€ﬂ[30m‹‹‹‹€≤±∞€≤±€€ﬂ [42m [16;1H[40m€€‹‹±±±∞[0;36mﬁ€€[s
+[u[1;46m€€[0;36m€ﬂ€[1;30m∞±€€€€€€€[42mﬂﬂ [0;32mﬂﬂ€€€ﬂ[1;30m€€€€€€€[s
+[u€‹ [36mﬂ€€€€€€€€€€€€€€€ﬂ[30m‹‹€€€≤≤±∞‹€€€€ﬂ[0;32m‹[1;30;42m∞ [40m[s
+[u[42m [17;1H[40m€€€€[0;36m‹ﬂ[1;46mﬂ[0;36mﬂ[1;46m‹€ﬂ‹‹ﬂ[40m[s
+[u[0;36m€‹€‹€‹‹[1;30mﬂ€€€€€€€€€€€€€€€€€€€€€€‹ [36mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[30m‹[s
+[u€€€€€€€€€€€€€€[0;32m€[42m [1;30m‹‹‹‹[18;1H[0;36m€€€€€[1;46m[40m[s
+[u[46m∞∞±≤‹ﬂﬂ≤≤±∞∞[0;36m€€€[1;46m∞∞∞[0;36m€€€[1;46m∞∞[0;36m€€€€‹‹‹[s
+[u‹‹‹‹‹‹‹‹‹‹[1;30;46mﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ[19;1H[40m
+[20;1H[21;1H[1;37;40m
+                              `%Chasm Falls
+@do readspecial `s01 yn
+@pauseon
+@show
+`r0`c
+                `%This one is the mountains below Krista's Tavern.
+
+                `$Nice place to live if you know the ropes.
+
+                An easy place to die if you don't!
+
+@do readspecial `s01 yn
+@pauseoff
+@show
+[?7h[40m[2J[0;1m€€  [0;33m≤[36m€€€€€€€€€[1;46m‹‹‹‹[0;36m€€€[33m∞[s
+[u[36m€€€€[1;46m∞∞∞∞∞∞[0;36m€€€€€€€ﬂﬂﬂﬂ[1;37m‹‹‹ [0;36mﬂﬂﬂﬂ€€€[s
+[u[1;46m∞∞±±€≤±±∞[0;36m€€ﬂ [1;37m‹€€€[47mﬂﬂﬂﬂ  ﬂ€€[2;1H[40m€‹€[s
+[u[0;33m±≤≤[36m€€€[1;46m‹‹€€€€[0;32m‹‹‹≤±∞[33m≤∞[1;36;46m∞∞∞[40m[s
+[u[0;36m€ﬂﬂﬂﬂﬂ€€ﬂ [1;37m‹‹‹‹[47m€≤∞€€€ﬂ[40m€‹€‹‹ [0;36mﬂﬂ€€€[s
+[u[1;46m±∞∞[0;36m€€€ [1;30m‹ﬂ[47m  [37mﬂﬂ[30;40m€[47m [40m€≤[s
+[u[47m∞≤[40m€[37;47mﬂ[30m∞[3;1H[37;40m€[0;32m±≤≤[33m±[32m∞±≤≤‹‹[s
+[u[36m€€[1;46m≤±≤≤≤[0;32mﬂﬂ[33m±€[32m€‹‹[36mﬂ [1;37m‹€€ﬂ‹‹‹[s
+[u[47mﬂﬂﬂ≤±±∞[30;40m€[37;47m±±€ﬂ≤≤≤≤  ﬂ€[1C[0;36mﬂﬂ€€[1;46m∞[40m[s
+[u[0;36mﬂﬂ [1;30m‹‹€[47m≤±±∞≤[40m≤≤≤[47m≤[40m≤≤≤[47m±±[4;1H[40m[s
+[u[47m[37m€≤±[0;33m±∞≤[32m‹‹ [36mﬂﬂ€€€€€€€€€[33m∞[32m∞[33m∞[36m[s
+[u€ﬂ[32m≤≤‹‹[1;30;47m±≤≤[40m€[47m≤±∞ ≤[40m≤[37;47m∞[30m±[40m[s
+[u[47m[37m∞[30;40m≤[47m€≤[37m∞[30;40m≤[37;47m±[30;40m≤[47m[40m[s
+[u[47m [37m≤ ±≤ﬂ[30;40m€‹ [0;36mﬂ€ [1;30m€€[47m€€≤≤[40m€[s
+[u[47m≤[40m±±≤±±≤±±±[47m≤[40m€[5;1H[0;32m∞±≤ﬂ≤∞ﬂﬂ≤≤±±∞[36mﬂ€[32m[s
+[uﬂﬂ±∞∞[33m∞[32m≤‹[1;30m‹‹€€€€€[47m≤€≤≤±±≤[40m∞≤±[47m [37m≤€[40m[s
+[u[30;40m≤±[47m±[40m≤[37;47m∞[30;40m≤±[47m±[40m≤[47m≤[40m€[s
+[u[47m±±≤[40m€‹ ﬂ€€€€[47m≤€[40m±[47m≤[40m±∞∞∞∞∞∞∞±[47m≤€[40m
+[6;1H[37;47m∞∞ [0;33m±[32mﬂ[33m≤[47m [1;30m∞[40m€€€€€‹ [0;36mﬂﬂﬂ[s
+[u [1;30m‹[0;33m∞≤∞[32mﬂﬂ[1;30m€€€≤≤±[47m€[40m∞∞[47m∞[1C[40m[s
+[u[40m∞∞ ∞±[47m€[40m∞≤± [47m≤[40m±±±[47m∞[40m±±≤≤€[47m≤[40m[s
+[u[40m€€‹‹  ﬂ€ ±± ∞∞∞∞  ∞∞∞[47m€[40m€[7;1H[0;32m∞±≤≤[33m∞[32m≤±‹≤[s
+[u≤€‹‹‹[1;30m‹ ﬂﬂ[0;32mﬂﬂ[33m∞€±[32mﬂ≤≤‹‹[1;30m±±±∞   ∞∞∞∞   ∞∞∞ ∞±[s
+[u±±∞±±±±≤ ±≤€€€‹[8C∞  ∞∞∞∞±€[8;1H∞€[0;32mﬂﬂ[33m±∞[1;30m€≤≤≤≤[s
+[u[47m€[40m€€[47m€[40m€€‹ €[0;33m±∞≤[1;30m≤≤±±[0;32m≤±∞‹   [s
+[u[1;30m∞∞∞[5C∞∞   ∞∞∞∞∞∞∞ ±   ±≤€€€‹[6C∞[5C∞±€[9;1H[0;32m∞∞±±[s
+[u[33m≤∞[1;30m±±≤±≤≤≤≤≤€€€‹ [0;33m∞∞€[32m‹‹‹[1;30m∞∞∞   ∞[15C∞  ∞∞[s
+[u   ∞    ±≤€€€‹‹‹[8C[32m∞∞∞[10;1H[30ms∞±[0;33m±≤[32m∞∞∞±±≤‹‹[s
+[u[1;30m±≤[0;32mﬂ≤±∞±≤[33m±≤  [32mﬂﬂ≤≤‹‹ [1;30m∞[19C∞∞∞∞ ∞[11Cﬂ[s
+[u[32m‹‹‹‹±±±  ∞[11;1H[30mc∞∞[0;33m∞∞∞[1;30m∞  ∞±∞±±±±≤≤ €[0;33m±€[s
+[u±[30C[1;30m∞  ∞ [32m‹‹[0;32m‹‹[1m‹ﬂﬂ≤[0;32m€[1m≤≤±±±±ﬂ∞[12;1H[s
+[u[0;32m∞∞∞±[33m∞[32m‹[1;30m∞  [0mﬂﬂﬂﬂ‹‹  [1;32m‹‹ [0;33m±≤∞ [s
+[u[37m‹‹[32m‹[16C‹‹‹[1m‹[0;32m‹‹±∞∞∞∞∞ [1m≤≤[0;32mﬂﬂ[1m∞   [s
+[u[0;32m±[13;1H   [33m∞≤[32mﬂ≤‹‹‹   [1m‹[30m∞[32m‹‹   [0;33m≤≤∞[s
+[u[1;32mﬂ‹‹[0mﬂ‹ [34mﬂﬂ€€€€€€€‹‹‹‹‹[14C[32m∞∞±≤≤  [33m‹≤±∞∞[1;30m[s
+[u€‹  [0;32mﬂﬂ‹  [33m∞∞[14;1H    ≤±∞    [1;30m‹[6C[0;33m‹±∞±∞[10C[s
+[u[34mﬂﬂﬂﬂﬂ€[1;44m∞ ﬂ  [0;34m€€€€[1;44m∞[0;34m€[44m   [1m‹ [40m[s
+[u[0;34m‹‹‹‹‹‹‹‹    [1;30mﬂ‹ [0;32m‹ﬂ ≤€≤ﬂ[15;1H[33m∞   ≤±∞  [s
+[u[1;30mﬂ‹ [0m‹‹€‹   [33mﬂ   ≤‹  [1;30m‹€[0m∞±≤ﬂﬂ[33m‹[7C[37m‹‹ [s
+[u[34mﬂﬂﬂﬂﬂﬂﬂﬂﬂ€[44m [1m≤±∞[0;34m€€€€€ﬂﬂ[1;30m‹[0;33m∞∞  [32m‹≤±≤[s
+[u[33m±[32m€‹ﬂ[16;1H  [33m≤∞±∞∞≤‹ [1;30mﬂ[0mﬂﬂ[1;30m€ﬂ‹€‹[0m‹‹[s
+[u[10C[33m∞∞±≤≤ﬂﬂﬂﬂﬂ[37mﬂﬂﬂ [34m‹‹‹‹‹‹‹€[44m [1m‹≤±∞∞[0;34m€€€ﬂ [s
+[u[1;30m‹‹‹ [0;32m‹ ﬂ≤±∞∞ [33m∞‹ [32m€‹[17;1H[33m‹ﬂ ﬂ≤±≤ﬂﬂﬂﬂ  [s
+[u[1;30m‹‹ [0;33m∞∞[37m∞∞±ﬂ[1;30mﬂﬂﬂ   [0;34m‹‹‹‹‹‹‹‹‹€€[s
+[u[1;37;44m‹‹[34m‹‹‹≤€€€€€ﬂﬂﬂ [0;34m€€ﬂﬂﬂ [1;30m‹‹[0;33m∞∞[5C[32m[s
+[u‹‹‹ﬂ[33m‹[32m≤‹‹ﬂ[18;1H[1;30m‹‹‹  [0;33mﬂ [1;30mﬂﬂﬂ [0;34m‹‹‹‹‹[s
+[u‹‹‹‹‹‹‹€€€€€€€€[44m [1;37m‹‹[34m‹‹[37m‹[34m‹€≤±±∞∞∞∞∞∞   [40m[s
+[u[0;34m€€€ﬂﬂ  [1;30mﬂﬂ [0;33m‹‹≤±∞    [32mﬂﬂ‹ﬂ [33mﬂ  ≤±[19;1H[s
+[u[34m‹‹‹‹‹‹‹€€€€€€€€€€€€€[44m     [1;37m‹‹[34m‹‹[37m‹[34m€€€[40m[s
+[u[44m€€≤≤±±±±±∞∞∞∞    ∞∞ [0;34m€€€€€€€‹‹‹‹‹‹‹‹‹‹‹‹‹‹  [33mﬂﬂ[20;1H[s
+[u[34m€€€€€€€€€€€€€€€[44m [1;37m‹‹[34m‹‹‹‹[37m‹[34m€€€€€€€€≤≤[40m[s
+[u[44m≤≤≤±±±±∞∞∞        [0;34m€€€[1;44m∞[0;34m€€€€€€€€€€€€€€€€€€ﬂﬂﬂﬂ[s
+[uﬂﬂ[21;1H[22;1H[1;37;40m
+                          `%Jabber Mountains
+@do readspecial `s01 yn
+@pauseon
+@show
+`r0`c
+         `$That it, I'm closing now. Close the door on your way out!`l`x`l`x`l`x`l`x
+                @key nodisplay
+@drawmap
+@update
+@closescript
+
+;--------------------------------------------------------
+
+@#ClerkExit
+                ; Robbed, toss in jail?
+                ; Only if broke or if has Vorpal,
+                ; and not Flail.
+@busy
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 4 1 then do            ;Vorpal
+@begin
+  @if bitcheck `t70 1 0 then do          ;Flail
+  @begin
+    @do money is 0
+  @end
+@end
+
+@show
+`r0`c   `0The Front Desk Clerk says,
+   "We trust that you have enjoyed your stay, that will be $50 please."`L
+`/
+`/
+`L
+@if money < 50 then do
+@begin
+  @show
+     `2Checking your wallet you find that it is chewed up and `%EMPTY!`L
+`L
+     `2"Can I owe you for this one 'til I get to the bank?", you ask.`L
+`/
+`/
+`L
+     `0"No way, I've heard that one before! I'm calling the town Guards!",`L
+     says the Desk Clerk and you hear running feet!`L
+`/
+`/
+  @key nodisplay
+  @show
+`%     Bammmmm!`L.`L.`L.`L.
+`c`0     The lights go out and`L ... `Lyou wake up in a `#cell.
+  @key nodisplay
+                                        ;Set in jail flag.
+
+  @dataload jw-isle3.mil &playernum `p24
+  @do `t70 is `p24
+  @bitset `t70 4 1
+  @do `p24 is `t70
+  @datasave jw-isle3.mil &playernum `p24
+
+  @do map is 1236
+  @do x is 28
+  @do y is 12
+  @loadmap &map
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`/
+`%       You pay the Clerk and he ushers you to the lobby.
+@key nodisplay
+@do money - 50
+@do y + 2
+@drawmap
+@update
+
+@do quebar
+`$I'm sure glad to be out of that `%RAT HOLE!
+@closescript
+
+;------------------------------------------------
+
+@#DoctorFell
+@do moveback
+@busy
+@do `t71 is 0
+
+@label drloop
+
+@show
+`r0`c            `$You are in a poorly lit shop, dusty and dark.
+`/
+     A (somewhat) competent looking elf greets you, `%"What do you want?"
+`/
+
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+
+@DO `v01 is 1
+@CHOICE
+`$Leave.
+-`t71 0 -`t70 0 `2Who are you?
+-`t71 1 `2What are all these plants and herbs?
+-`t71 2 -`t70 1 `%Do you have any work for me to do?
+-`t71 3 +`t70 0 `2Who are you, `%again?
++`t70 6 `$What can you give me for this Mandrake?
+@IF RESPONSE IS 1 THEN DO
+@begin
+  @DRAWMAP
+  @UPDATE
+  @closescript
+@end
+@IF RESPONSE IS 2 THEN DO
+@begin
+  @bitset `t71 0 1
+  @Show
+`r0`c
+`2  Why ... I am `%Doctor Fell! `2Many know me well!
+`/
+`/
+`#  Do you mean to say that you have never heard of me ?
+`/
+`2  I provide the ingredients for most potions used in the New World.
+  Perhaps,  you might help me as I am often in need of more flora?
+`/
+`/
+  @key
+  @do goto drloop
+@end
+@IF RESPONSE IS 3 THEN DO
+@begin
+  @bitset `t71 1 1
+  @Show
+`c
+`/
+`/
+    There are many uses for plants. Some are used as they grow,
+    like cotton, Wolf's Bane and Hemlock ... deadly stuff that!
+    Others, like Mandrake are mixed up into healing, and killing,
+    potions and draughts.  I'm getting low on `#Mandrake.
+`/
+`/
+  @key
+  @do goto drloop
+@end
+@IF RESPONSE IS 4 THEN DO
+@begin
+  @bitset `t71 2 1
+  @Show
+`c
+`0  Ah...I need Mandrake and will take anything else you find
+  such as Garlic or Hens Bane.
+`/
+  `0It may not be so easy to find, perhaps you should go and see
+  my old friend Menhir in his fields to the east.
+
+  He lives near a great stone circle, somewhere past `4Spider Woods.`0
+  Spiders...that reminds me, you will need something from the gift
+  shop to pass through `%that`0 region!
+`/
+`/
+  @key
+
+  @dataload jw-isle3.mil &playernum `p24
+  @do `t70 is `p24
+  @bitset `t70 0 1
+  @do `p24 is `t70
+  @datasave jw-isle3.mil &playernum `p24
+  @do goto drloop
+@end
+
+@IF RESPONSE IS 5 THEN DO
+@begin
+  @bitset `t71 3 1
+  @Show
+`r0`c
+`2  Why ... I am `%Doctor Fell! `2You should know me well!
+`/
+`/
+`#  Do you mean to say that you have forgotten me ?
+`/
+`2  I provide the ingredients for most potions used in the New World.
+  Perhaps,  you might help me as I am often in need of more flora?
+`/
+`/
+  @key
+  @do goto drloop
+@end
+
+@IF RESPONSE IS 6 THEN DO
+@begin
+  @dataload jw-isle3.mil &playernum `p24
+  @do `t70 is `p24
+  @bitset `t70 6 0
+  @do `p24 is `t70
+  @datasave jw-isle3.mil &playernum `p24
+
+  
+  @Show
+`r0`c
+`%  Thank you! `2I have needed these roots for some time!
+`/
+`/
+`0  They are a key ingredient of a nasty spell I am developing.
+  It just may save the island from the `4Demons`0 you have heard about!
+`/
+`/  I have little to repay you with ... oh ... `%Armour Polish,
+  `0Just what you will be needing.  Reflect on this matter. `3Hahahahah!
+`/
+  @key
+
+  @dataload jw-isleg.mil &playernum `p24
+  @do `t70 is `p24
+  @if bitcheck `t70 5 0 then do
+  @begin
+        @bitset `t70 5 1
+        @do `p24 is `t70
+        @datasave jw-isleg.mil &playernum `p24
+        @do `p18 + 5
+  @end
+  @do goto drloop
+@end
+
+;------------------------------------------------
+@#Banker
+@do `p30 is 10
+@do moveback
+@busy
+@show
+`r0`c     `$You have entered Rat Ville branch of the 1st Bank of Greentree
+`/
+                Welcome, please approach the counter.
+`/
+@key no display
+@run bankstart in green.ref
+
+;--------------------------------------------------
+
+@#Hotel
+@do quebar
+Ahhh....so this is the Rat Ville Hotel!
+@do map is 1236
+@do x + 25
+@do y is 17
+@loadmap &map
+@drawmap
+@update
+
+;---------------------------------------------------
+
+@#Jail
+@do quebar
+`%You entered a jail on purpose ???
+@do map is 1236
+@do x is 21
+@do y is 17
+@loadmap &map
+@drawmap
+@update
+
+;----------------------------------------------------
+
+@#FarmerHut
+@do moveback
+@busy
+@show
+`r0`c
+`0You enter a hovel at the seaward side of town and are greeted by
+a ragged looking farmer. A cheerfull fellow, he greets you warmly.
+`/
+`/
+`/
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 0 0 then do
+@begin
+  @show
+`/
+`$"Howdy stranger!  I'd offer you some vittles but the rats
+eat everything I grow.  The main nest is near here, if only
+someone could get the `%Piper`$ to come and lure them out of town!"
+`/
+`/
+@end
+@if bitcheck `t70 0 1 then do
+@begin
+  @show
+`/
+`$"Howdy stranger!  You have gotten the rats out of town, most
+of them, anyways. I'll stuff you so full of food you will be
+the healthiest you have ever been!"
+`/`/`L`L`L
+`%                 You feel refreshed, and full!
+`/
+`/
+  @do `p02 is `p03
+@end
+
+@key nodisplay
+@drawmap
+@update
+@closescript
+
+;---------------------------------------------------------
+
+@#RatNest
+
+@do moveback
+@busy
+
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 0 1 then do
+@begin
+  @show
+`r0`c
+`%       You see the old rat's nest, empty now, thanks to you!
+`/`0
+       It's a harder to pick up rat bounties now, but the town
+       is sure a lot nicer with the rodent menace gone.
+`/
+@end
+
+@if bitcheck `t70 0 0 then do
+@begin
+  @show
+`r0`c
+`#   You face a tremendous swarm of rats. Far too many to risk killing any
+   lest the rest all turn on you at once.
+`/
+
+  @if bitcheck `t70 6 1 then do
+  @begin
+    @show
+`/
+`0     You take up your magic pipe and play the tune
+     that the `%Piper`0 taught you ....
+`/
+`/
+     `$Rat Patrol! `%  `L    `L      
+`/
+`/
+`L
+`L
+`0  The rats perk up and begin to march through town and out the gates!
+`/`L`L
+         The townsmen go `4wild`0 !   You have completed a `%quest !
+
+    @do `p18 + 2
+    @bitset `t70 0 1
+    @do `p24 is `t70
+    @datasave jw-isle2.mil &playernum `p24
+  @end
+  @if bitcheck `t70 6 0 then do
+  @begin
+    @show
+`/
+`0  You better get out of here until you learn more about `%rats`0 and `%Pipers!
+`/
+  @end
+@end
+
+@key nodisplay
+@drawmap
+@update
+@closescript
+
+
+;---------------------------------------------------------
+@#RedCross
+@do moveback
+@busy
+@show
+`r0`c
+        `$Welcome to Rat Ville's Astounding Healing Hostel
+`/
+`/
+@run hospital
+
+                        ; Jail, Hotel
+;-------------------------------------------------------
+@#CellDoor
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 2 0 then do
+@begin
+  @do moveback
+  @closescript
+@end
+                        ; If no key, do moveback
+;--------------------------------------------------------
+
+@#Jailer
+@busy
+@do move 10 23
+@do write
+`r0`$Haven't I seen you somewhere before, like, on a `#wanted poster?
+@key nodisplay
+@clearblock 23 24
+
+;--------------------------------------------------------
+@#Prisoner
+@busy
+@do move 10 22
+@do write
+`r0`2I had a `0master`2 key for these doors, but I `0lost`2 it.
+@do move 6 23
+@do write
+`r0`%Hey`2, if you find it, will you take me with you when you `%escape?
+@key nodisplay
+@clearblock 22 24
+
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+@bitset `t70 5 1
+@do `p24 is `t70
+@datasave jw-isle3.mil &playernum `p24
+@closescript
+;--------------------------------------------------------
+@#Shiv
+@do moveback
+@busy
+@show
+`r0`c
+`2      You see a prisoner, a wizened elf.  He stares at you intently`L
+      apparently not sure whether to speak or to remain silent.`L
+`L
+      You wonder, could he be waiting for a `#Berry pie?`L
+`L
+@if bitcheck `t70 2 0 then do
+                                        ;Smackrod?  Begone!
+@begin
+  @pauseoff
+  @Show
+`c`4  You cannot be here, my cell is still locked. Begone ... wall walker!
+`/
+`/
+  @do write
+`0     I guess this smackrod thing can backfire sometimes.
+  @do readspecial `s01 NY
+  @label madmage
+  @pauseoff
+  @show
+[?7h[40m[2J[16C[0;1m˙  ˙  ˙ [36m˛[34m˛[37m˙ ˙[20C˙    ˙    ˙ ˙
+[2;1H[15C˙    [36m˛[34m˛ ˛˛ ˛ [36m˛[18C[37m˙    ˙   ˙˙   ˙[3;1H[s
+[u[14C˙    [36m˛[34m˛ ˛ [31m‹ ‹ [36m˛[20C[37m˙  ˙˙ [36m˛[34m˛ [s
+[u[36m˛ [37m˙[4;1H[17C˙   [36m˛[34m˛[31mﬂ  ‹[24C[37m˙ [36m˛[34m[s
+[u˛ ˛˛˛ [36m˛[37m˙[5;1H[19C˙ ˙   [31mﬂ‹›[9C[37m‹[0m‹ﬂ‹[1m‹[13C[s
+[u[31mﬂ‹ [34m˛˛[36m˛[6;1H[26C[31mﬂ€›[6C[0m‹[1m€[0mﬂ[1;31m‹‹‹[s
+[u[0mﬂ[1mﬂ[0m‹[1;47mﬂ[40m‹ ‹[6C[31mﬂ‹‹ﬂ [36m˛ [37m˙[7;1H[27C[s
+[u[31mﬂ[34m‹ﬂ€‹   [0m€‹[1;31m‹‹›‹‹[0m€€ﬂ‹[1;47mﬂ[40m‹ﬂ  [34m‹€‹[s
+[u[6C[37m˙[8;1H[24C[34m‹‹€ﬂ ﬂ[0;34m‹[1m‹[0;34mﬂ‹ [37mﬂ‹[1mﬂ€[0m[s
+[uﬂ€ﬂ [1;47m‹[0mﬂ€ﬂ‹[1m‹‹[34mﬂ[0;34m€[1mﬂ[0;34m€[1m€‹[9;1H[22C‹ﬂ[s
+[u€‹[0;34m‹‹[1mﬂ[0;34m€  ﬂ‹€ﬂ  [1;37mﬂﬂ[0mﬂ [34m‹‹[37m‹ﬂﬂ[34m‹€ﬂ€€[s
+[u‹‹€[1m€‹[10;1H[27C[0;34m€€ﬂﬂ€ ﬂ€€€ﬂ€€€ﬂﬂ ‹±ﬂ ﬂ€€€€ﬂ[1m€‹[0;34m€[s
+[u[1mﬂ[11;1H[35C[0;34mﬁ‹€€€€€±€≤ﬂ ﬂﬂ‹‹€€   [1mﬂ[12;1H[35C[0;34mﬁ€€[s
+[u€€≤±ﬂ±[8Cﬂﬂ‹[13;1H[36Cﬂ≤±∞±±€[14;1H[37C‹  ﬂ‹∞‹[15;1H[36C€€€±∞€± €
+[16;1H[39C∞∞ €± €[17;1H[36C€€∞∞±€‹≤‹€[18;1H[36C€€∞≤€≤€± ‹€[19;1H[s
+[u[36C€ ∞∞≤€±±‹ﬂ €[20;1H[35C€ﬂ€€∞€≤€€ﬂ €‹[1;37;40m
+`/
+  @do write
+`% You are in trouble!                         You shouldn't mess with Shiv!
+  @key nodisplay
+  @pauseon
+  @show
+`c
+`%  Zaaaaaaaaaaaaaaaaaaaap!
+  @run dockman
+  @closescript
+@end
+
+@if `i08 < 1 then do
+                                        ; No pie
+@begin
+  @show
+      `%Too bad you don't have one!
+`/
+  @key nodisplay
+  @drawmap
+  @update
+  @closescript
+@end
+
+@if `i08 > 0 then do
+                                        ; Has pie
+@begin
+  @do `i08 - 1
+  @show
+`2      Luckily, you have one and `0Shiv`2 snatches it and eats it in one bite!
+`L
+`L
+@end
+
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+                                ;No Vorpal blade, no message.
+@if bitcheck `t70 4 0 then do
+@begin
+  @Show
+`%  "`N`0, you are not ready for the knowledge that I could impart."`L
+`/
+`L
+  "I know `%secrets`0 about this Isle that you will need,
+   but you don't need them `L... `L`%YET!"`/`L
+`/
+`0  "Come see me again, when you think you are more capable."
+  @key nodisplay
+  @drawmap
+  @update
+  @closescript
+@end
+
+@if bitcheck `t70 3 1 then do
+@begin
+  @show
+             `$"You came back?  Whatever for?"
+`/
+`/
+  @if bitcheck `t70 1 1 then do
+  @begin
+    @show
+`%             "Ah, I see you have the flail, I told you!"
+`/
+  @end
+  @if bitcheck `t70 1 0 then do
+  @begin
+    @show
+`%             "The Flail is still in the swamp, you will need it!"
+`/
+`L
+`0                     You lose ten hit points.
+    @do `p02 - 10
+    @if `p02 < 1 then do
+    @begin
+      @do `p02 is 1
+    @end
+  @end
+@end
+
+@if bitcheck `t70 3 0 then do
+@begin
+  @show
+`%  At last he speaks...
+`/
+`L
+`0  "I am `%Shiv.`0
+  There is a `%Holy Flail`0 hidden in the swamp, many miles to the east,
+  you will need it to fight some unholy creatures. Try to find it but
+  be aware that swamp fever hits many who venture there!"
+`/
+`L  .`L.`L.`L.`L.`L.`L.`L.`L.`L.
+`0  You had better scram, the guard may wake up any second!
+`/
+  @bitset `t70 3 1
+  @do `p24 is `t70
+  @datasave jw-isle2.mil &playernum `p24
+@end
+
+@key nodisplay
+@drawmap
+@update
+@closescript
+
+;--------------------------------------------------------
+@#JailExit
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+@bitset `t70 2 0
+@do `p24 is `t70
+@datasave jw-isle2.mil &playernum `p24
+@do map is 1553
+@do x is 23
+@do y is 7
+@loadmap &map
+@drawmap
+@update
+;--------------------------------------------------------
+
+@#HotelExit
+@do map is 1553
+@do x - 25
+@do y is 7
+@loadmap &map
+@drawmap
+@update
+
+;--------------------------------------------------------
+
+@#ClerkEnter
+@do `v01 is 1
+@do moveback
+@offmap
+@show
+`r0`c  `%`r1  The Rat Ville Hotel  `r0
+
+  `2This place looks crude - the odd rat scurries about the halls.
+
+  A stinky clerk with bad breath smiles kindly at you.
+
+  You are holding `$$&money`2.
+
+@do write
+`x`x
+@choice
+Get a room (`$$50`%)
+Leave
+@if response is 1 then do
+@begin
+  @if money < 50 then do
+  @begin
+    @show
+`\`\`2  You are short on cash.  Luckily, you can pay as you leave.
+`k
+    @do x - 1
+    @do y - 2
+    @drawmap
+    @update
+    @closescript
+  @end
+  @if money > 49 then do
+  @begin
+    @show
+`\`\  `2  The clerk says "Welcome to our Hotel, you may pay as you leave."
+`\`k
+    @do x - 1
+    @do y - 2
+    @drawmap
+    @update
+    @closescript
+  @end
+@end
+@if response is 2 then do
+@begin
+  @show
+`\`\  `2  The clerk says "Well, perhaps another time?"
+`\`k
+
+  @drawmap
+  @update
+  @closescript
+@end
+;--------------------------------------------------------
+
+                        ;NorthBeach
+
+;--------------------------------------------------------
+
+@#EntryShack
+@do moveback
+@busy
+@do move 10 23
+@do write
+`r0`$Would you like a ticket to Mimsic Isle ? They are free! `!
+@do readspecial `s01 YN
+@clearblock 23 24
+
+@do move 10 23
+@do write
+`%Here you are, just show it the the man on the wharf, bon voyage!
+@key nodisplay
+@clearblock 23 24
+
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+@bitset `t70 3 1
+@do `p24 is `t70
+@datasave jw-isle3.mil &playernum `p24
+
+                        ; TP
+;--------------------------------------------------------
+
+@#EntryWharf
+@do moveback
+@busy
+@dataload jw-isle3.mil &playernum `p24
+@do `t70 is `p24
+
+@if bitcheck `t70 3 0 then do
+@begin
+  @do move 10 23
+  @do write
+You can get a ticket to Mimsic Isle in that shack over there.
+  @key nodisplay
+  @clearblock 23 24
+@end
+
+@if bitcheck `t70 3 1 then do
+@begin
+  @do move 10 23
+  @do write
+Now boarding, bound for Mimsic Isle! Have a good trip!
+  @key nodisplay
+  @clearblock 23 24
+
+  @bitset `t70 3 0
+  @do `p24 is `t70
+  @datasave jw-isle3.mil &playernum `p24
+
+  @do map is 1554
+  @do x is 33
+  @do y is 17
+  @loadmap &map
+  @drawmap
+  @update
+@end
+
+
+;--------------------------------------------------------
+
+@#EntrySign
+@do moveback
+@do saybar
+Visit Mimsic Isle, tickets now on `$SALE!!
+
+                        ;Spiders
+;--------------------------------------------------------
+
+@#SpiderSign
+@do moveback
+@do saybar
+`%<--- `$Rat Ville, One short hike.
+
+;--------------------------------------------------------
+@#SpiderBard
+@do moveback
+@busy
+@clearblock 21 24
+@do move 1 21
+@show
+`r0`0    Welcome to Mimsic Isle. Rat Ville, our only town, is north and west.
+    The dock to the south is the best way home, maybe you should take it?
+@key nodisplay
+@clearblock 21 24
+@do statbar
+                        ; TP
+;--------------------------------------------------------
+@#DockMan
+
+@do move 10 23
+@do write
+`r0`0  Hope you enjoyed your visit ?   Come again soon!
+@key nodisplay
+@clearblock 23 24
+
+@do map is 471
+@do x is 52
+@do y is 14
+@loadmap &map
+@drawmap
+@update
+
+;--------------------------------------------------------
+@#BigSpider
+
+@busy                                                ;Met the critter Today?
+@datanewday jw-isle1.mil
+@dataload jw-isle1.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 0 1 then do
+@begin
+  @do quebar
+`0So the Spiders remember me ... `%today!
+  @closescript
+@end
+
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+                                                ;Knows tarantula?
+@if bitcheck `t70 7 1 then do
+@begin
+  @do quebar
+`0So that's why you learned the tune "`%Tarantula"`0!
+  @closescript
+@end
+
+@busy
+@pauseoff
+@show
+[?7h[40m[2J[0mﬂﬂ‹‹‹ ‹ﬂ[6Cﬂ‹[5Cﬂ‹[9C‹ﬂ[15C‹‹ﬂﬂ[2;1H    ﬂﬂ‹[8C‹ﬂ‹  [s
+[u ‹‹€‹‹‹   ‹ﬂ‹‹‹‹‹‹‹‹[5C‹‹ﬂﬂ[3;1H ‹‹ﬂﬂ  ﬂﬂ‹‹‹ﬂﬂﬂ   €‹ﬂ  ﬂ   ﬂ‹ﬂﬂﬂ[8Cﬂ‹[s
+[u‹ﬂﬂ[4;1H€[10Cﬂ‹[6Cﬂ‹  €  ‹ﬂ[9C‹‹ﬂﬂ ﬂ‹‹[5;1H‹‹[10C[31m‹‹‹‹[1;30m‹[s
+[u‹  ‹ﬂ‹ [0m€‹ﬂ[1;30mﬁ€‹‹€›‹‹‹[0mﬂ[8Cﬂﬂ‹[6;1H  ﬂﬂ‹  [1;30m‹[0;31m‹€[s
+[u€€ﬂ[1;30m≤[0;31mﬂﬂ [1;30m≤ﬂ€›≤€‹‹‹ﬂ›€ﬂ €ﬁ ≤±ﬂ‹ﬂ‹[8C[0m€[7;1H[5C[s
+[u[1;30m‹ﬂ≤[0;31mﬂﬂ[1;30m±±±∞[5C€›  €‹ ∞›€±∞€ﬁ∞±‹€[0;31mﬂ[1;30m∞ €ﬂﬂ[s
+[u[6C[0m€[8;1H‹‹ [1;30m‹ﬂ≤≤±±∞∞∞[5C∞€›    ﬂ‹∞›€±∞€ﬁ∞‹ﬂ∞∞‹ﬂ‹€‹‹ﬂ[5C[s
+[u[0m€[9;1H[1;30msc€≤≤±∞∞∞[7C∞∞€›±∞∞ ‹≤‹€›‹≤ﬁ€‹ﬂﬂﬂﬂ [0m‹‹[1;30m€›[s
+[u[0m‹ ‹‹ ‹ €[10;1H [1;30m€≤≤±∞∞[6C∞∞±±∞€›‹‹ﬂﬂ[0m‹ ‹[1;30m€›  ﬁ€ ‹  [s
+[u €   €[6C[0m€[11;1H[1;30mﬁ≤±±±±   ∞±±±≤≤±‹‹€› ‹  [0m‹ﬂ‹[1;30m€›€[s
+[u[0m‹[1;30mﬁ€ €   ﬂ‹  €›    [0m€[12;1H[1;30m€‹‹≤≤≤≤±±≤‹‹‹ﬂﬂﬂ  €› €[s
+[u[0m‹ﬂ ‹ [1;30m€›€ ﬁ€[0m‹[1;30mﬂ‹   €  €›  [0m‹ﬂ[13;1H  [1;30mﬂﬂﬂﬂ[s
+[uﬂﬂ   [0m‹‹    [1;30m€›[0m‹[1;30m‹ﬂ   [0m€[1;30m€›‹ﬂ[0m‹ [1;30mﬁ€[s
+[u[0mﬂ[1;30mﬂ‹   ﬂ ﬁ€ [0mﬂ[14;1H[13Cﬂﬂ [1;30m€› [0m‹    €[1;30m€› [s
+[u  [0mﬂ‹‹[1;30mﬁ€  [0mﬂﬂ‹‹ ‹[1;30mﬁ€[15;1H[0mﬂ‹[13C[1;30m€›[0mﬂﬂ[s
+[u[5C[1;30m€›[7C[0mﬂ[1;30mﬁ€   [0m‹‹ﬂﬂ‹[1;30mﬁ€[16;1H  [0mﬂﬂﬂﬂ‹‹‹[s
+[u‹‹‹ [1;30mﬂﬂ[0m‹ﬂ[5C[1;30mﬂﬂ[0m‹ ﬂ‹‹‹‹‹ﬂﬂ  [1;30mﬂﬂ[0mﬂ‹‹   ﬂ [s
+[u[1;30mﬂﬂ[0mﬂ‹[17;1H[18;1H[19;1H[20;1H[21;1H[22;1H
+@do move 15 23
+@do write
+`r0`@Yikes!`0 Did you intend to bump into `@THAT ? `%(Yn)
+@do readspecial `s01 YN
+@pauseon
+
+@label Spiderfight
+                                        ;Spiders messing around
+                                        ;Send em back if no orb or fire.
+
+@dataload jw-isleG.mil &playernum `p24
+@do `t70 is `p24
+
+@if bitcheck `t70 0 0 then do
+@begin
+  @run madmage
+@end
+
+@if bitcheck `t70 1 0 then do
+@begin
+  @run madmage
+@end
+                                                ;Pick, then fight.
+@show
+`r0`c
+`0You see before you a huge spider guarding a large web, perhaps
+with an egg case within.  `%What will you do?`/
+
+
+@do `v01 is 1
+@choice
+`$Retreat!
+`4Use the Campfire Starter to burn the webs!
+`#Offer the spider the SunStone to warm the nest egg.
+`0Ignore the webs and walk right through.
+  @show
+`\
+`\
+@if response is 1 then do
+@begin                                ;Do nearly nothing
+    @do moveback
+    @drawmap
+    @update
+    @closescript
+@end
+
+@if response is 2 then do
+@begin
+    @show
+`c
+  `4You light a torch and `$BURN`4 the webs as the spider retreats.`L.`L.`L.
+
+  `%Then returns!
+
+  `0Your alignment drops 3 points and ... `L`#you are in trouble!
+
+    @do `p07 - 3
+    @key nodisplay
+@end
+
+@if response is 3 then do
+@begin
+    @show
+`c
+  `2You offer your SunStone to the Arachnid and it seems to understand.`L.`L.`L.
+
+  `%Or not!
+
+  `0Your alignment rises 5 points and ... `L`#you are in trouble!
+
+    @do `p07 + 5
+    @key nodisplay
+@end
+
+@if response is 4 then do
+@begin
+    @show
+`c
+  `2You march ahead ignoring the scittering varmits.`L.`L.`L.
+
+  `%For a few steps!`L
+
+  `#You may be in trouble!
+
+    @key nodisplay
+@end
+
+@label spiderdo
+
+@fight
+;name
+Web Master
+;string said when you see him
+A form awaits in the web.
+;power move kill string
+You shiver as the leggey thing quivers on the ground.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+nips you|299
+claws you|325
+bites you|295
+NONE|NONE
+NONE|NONE
+;defense
+122
+;gold reward
+257
+;experience
+151
+;hit points
+544
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@drawmap
+@update
+@dataload jw-isle1.mil &playernum `p24
+@do `t70 is `p24
+@bitset `t70 0 1
+@do `p24 is `t70
+@datasave jw-isle1.mil &playernum `p24
+
+;--------------------------------------------------------
+@#SpiderWeb
+@busy
+                                                ;Met the critter Today?
+@datanewday jw-isle1.mil
+@dataload jw-isle1.mil &playernum `p24
+@do `t70 is `p24
+@if bitcheck `t70 0 1 then do
+@begin
+  @do quebar
+`0So the Spiders remember me ... `%today!
+  @closescript
+@end
+
+
+@dataload jw-isle2.mil &playernum `p24
+@do `t70 is `p24
+                                                ;Knows tarantula?
+@if bitcheck `t70 7 1 then do
+@begin
+  @drawmap
+  @update
+  @closescript
+@end
+
+@busy
+@pauseoff
+@show
+[?7h[40m[2J[4C[0m‹‹[15C[1;30m‹‹ﬂsc‹€ﬂ   ‹ﬂ[5C∞±≤‹   ﬂ€‹ ﬂ‹‹ [0m‹ﬂ[s
+[u[7Cﬂ‹[7C‹‹[2;1H[6Cﬂﬂ[1m‹‹  [0m‹ﬂ[10Cﬂ[1;30m€€   ‹€[6C∞±≤≤€€‹   [s
+[u€€  [0m‹ﬂ‹[10Cﬂ‹ [1m‹‹ﬂﬂ[3;1H[10Cﬂﬂ[0m‹‹[7C[1m‹[0mﬂﬂﬂ[1;30m€€ [s
+[u  ﬂ€€ﬂ‹  ∞±≤€ﬂ€€ﬂ   €€[0m‹ﬂ   ﬂ‹‹[6C[1m‹‹ﬂﬂ   [0mﬂ‹[4;1H[10C‹ﬂ  ﬂﬂ[s
+[u[1m‹‹  ﬂ   [30m‹ﬂ [0m‹‹‹ ‹[1;30mﬂ[41m‹[40m‹ﬂﬂ ﬂﬂ‹[41m‹[40mﬂ [0m[s
+[uﬂﬂ‹ ‹[1;30mﬂ‹[7C[0mﬂ‹‹‹ﬂ[1mﬂ[9C[0m€[5;1H[8C‹ﬂ[7C‹ﬂﬂ[1m‹‹  [0m[s
+[u‹ﬂﬂ   ﬂ‹  [1;30mﬂ€‹ ‹€ﬂ[5C[0m‹ﬂ  ﬂ‹    ‹‹ﬂﬂ‹[13C€[6;1H[1m‹‹[0m‹‹ [s
+[u  ‹ﬂ[6C[1m‹ﬂ[5C[0mﬂﬂ[1m‹‹[6C[0mﬂ[1m‹    [0mﬁ›    [1m‹ﬂ[6C€‹ﬂﬂ[s
+[u[5C[0mﬂ‹[12C[1m‹‹‹‹[0m‹[7;1H    ﬂ[1mﬂﬂ[0mﬂ‹[1m‹‹   [0m‹ﬂ    ‹ﬂ[s
+[u    [1mﬂﬂ[0m‹‹    [1mﬂ‹  [0mﬁ›  [1m‹ﬂ    ‹‹ﬂﬂ [0mﬂ[1m‹[7C[0mﬂ‹ [s
+[u‹[1m‹‹‹[0m‹‹ﬂ[1mﬂﬂﬂ[0mﬂ[8;1H[5C‹ﬂ    [1mﬂﬂ € ﬂﬂ[0mﬂ[1m‹‹‹[0m‹‹[s
+[u‹[5Cﬂﬂ‹[1m‹  [0mﬂ‹ﬁ[1m›‹ﬂ  ‹‹ﬂﬂ[5C[0m‹€‹‹[1mﬂﬂ[0mﬂﬂﬂ €ﬂ[10Cﬂ‹
+[9;1H[5Cﬂ[8Cﬂ‹   €[5Cﬂﬂﬂ[1mﬂﬂ[0mﬂﬂ‹ [1mﬂ[0mﬂ‹[1m‹[0mﬁ[1m›‹[0m‹ﬂ[s
+[uﬂ ‹‹ﬂﬂ[1mﬂﬂ[0mﬂﬂﬂ‹[8Cﬂ‹[11Cﬂ[10;1H[1mﬂﬂﬂﬂﬂ[0mﬂﬂﬂ[1mﬂﬂﬂ[0mﬂﬂﬂﬂ[s
+[u[1m€[0mﬂﬂﬂﬂﬂﬂ[1mﬂﬂﬂﬂ[0mﬂﬂﬂﬂﬂ[1mﬂﬂ[0mﬂﬂﬂ‹‹ﬁ[1m›[0m‹‹ﬂ[1mﬂﬂﬂ[0mﬂ[s
+[uﬂﬂ[1mﬂﬂﬂ[0mﬂﬂ[1m€[0mﬂ[1mﬂﬂﬂﬂ[0mﬂ[1mﬂﬂﬂ€[0mﬂ[1mﬂﬂﬂﬂﬂ[0mﬂﬂﬂ[1mﬂ[s
+[uﬂ[0mﬂﬂﬂﬂ[11;1H   ‹ﬂ[9C€    ﬂ‹[5C‹‹‹‹[1mﬂ[0mﬂ[1m‹‹ﬂ[0mﬂ ‹[1mﬁ›[s
+[u[0m‹ ﬂﬂ‹‹ﬂﬂ‹‹[1m‹‹ ‹[0mﬂ[8C‹ﬂ[11C€[12;1H   €[10C€   ‹[1m‹‹ﬂﬂﬂﬂ[s
+[u[0mﬂ  ‹‹ﬂ[1mﬂ   [0m‹ﬂ [1mﬁ› [0mﬂ‹   [1mﬂﬂ‹‹  [0m€ﬂ[1mﬂﬂ[0mﬂ‹[s
+[u[1m‹   [0m‹ﬂ[11C€[13;1H   ﬂ‹[5C‹‹[1m‹ﬂﬂ€[0mﬂﬂ    ﬂ‹[1m‹‹ﬂﬂ[5C‹ﬂ[s
+[u   [0mﬁ[1m›   ﬂ‹[5C€ﬂ‹[0m‹[5C[1mﬂ[0mﬂ‹ﬂ‹[1m‹[0m‹[8C€[14;1H‹‹[s
+[u[1m‹‹[0m‹ﬂﬂ[1mﬂﬂﬂ[6C[0mﬂ‹  ‹‹[1mﬂﬂ  [0mﬂ‹‹  [1m‹ﬂ[5Cﬁ›[5Cﬂ‹[s
+[u[0m‹ﬂﬂ    [1mﬂﬂ‹[0m‹  ‹ﬂ    [1mﬂﬂ[0mﬂ[1m‹‹‹ [0mﬂ[15;1H[5Cﬂ‹[9C[s
+[u[1m‹‹[0mﬂﬂ‹[8C[1m‹ﬂ [0mﬂﬂ‹‹‹‹[1mﬁ›[0m‹‹[1m‹‹[0mﬂﬂ [1mﬂ‹[9Cﬂﬂ‹[s
+[u‹[8C[0m‹ ﬂ[1mﬂﬂ‹‹[16;1H[6C[0mﬂ‹‹   [1m‹‹ﬂﬂ[5C[0mﬂ‹‹   ‹[1mﬂ[s
+[u[9C[0mﬁ[1m›[9C[0mﬂ‹[8C‹  [1mﬂﬂ[0m‹‹  ‹ﬂ[7C[1mﬂﬂ[0mﬂ[17;1H[s
+[u[8C[1m‹[0m‹ﬂﬂ[12Cﬂ‹ﬂ‹[10Cﬁ[1m›[10C‹ﬂ‹ [0m‹‹‹ﬂﬂ[7C[1mﬂﬂ[0m‹‹
+[18;1H    ‹‹[1mﬂﬂ   [0mﬂﬂ‹‹[8C‹ﬂ   ﬂ[1mﬂ‹‹‹‹[0m‹‹‹ﬂ[1mﬁ[0m›ﬂ‹‹‹‹‹‹[s
+[u[1m‹ﬂﬂ   [0mﬂ‹[15Cﬂ[1mﬂ‹[0m‹[19;1H[20;1H[21;1H[22;1H
+@do move 15 23
+@do write
+`r0           `@Yikes!`0 This doesn't feel too safe!
+@key nodisplay
+@clearblock 23 24
+@pauseon
+@run Spiderfight
+
+;----------------------------------------------------------
+@#Hospital
+@do moveback
+@busy
+
+@if `p02 < `p03 then do
+@begin
+  @do `p20 is `p03
+  @do `p20 - `p02
+  @do `p20 / 2
+  @show
+`0  "You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+  @do `v01 is 1
+
+  @choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+  @show
+`\
+  @if response is 1 then do begin
+  @begin
+    @if money < `p20 then do
+    @begin
+      @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+      @choice
+Well come on!  How am I supposed to make money when I can barely walk?
+Buddy, how 'bout a little compassion for once in your life freak!
+How 'bout some of your 'special' pills then?
+Yes sir.
+      @show
+
+
+      @if response is 4 then do
+      @begin
+      @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+    @end
+
+    @if response is 1 then do
+    @begin
+      @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+    @end
+    @if response is 2 then do
+    @begin
+      @show
+  `0"I cannot respect a man who doesn't work," `2Shaman informs you.
+
+`k
+    @end
+    @if response is 3 then do
+    @begin
+      @do `p02 = 1
+      @show
+  `0"Sure.  Take like uh.. these." `2 he snickers.
+
+  `2You gulp down the weird green pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+
+    @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+`/
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later!" `2says Shaman.
+
+`k
+@drawmap
+@update
+
+
+;------------------------------------------------------------------
+                        ;PiperField
+
+@#PiperBard
+@do Saybar
+`!The `%Piper`! marches and plays here every day. You will find him!
+;--------------------------------------------------------------------
+@#PiperSign
+@do moveback
+@do saybar
+`%Spiders south, `!Piper's practice fields north.
+;--------------------------------------------------------------------
+@#OldRoad
+@do saybar
+`%You lurch through potholes on this `2wretched`% road.
+;--------------------------------------------------------------------
+@#PiperStone
+@do saybar
+`7 A worthless rock, interesting `%diamond`7 shape though!
+@closescript
+
+;-------------------------------------------------------------
+
+@label killkeypress
+@do moveback
+@do move 15 23
+@do write
+`r0`@Ouch!`0 Did you intend to bump into `@THAT ? `%(YN)
+@do readspecial `s01 YN
+@clearblock 23 24
+
+@CLOSESCRIPT
+
+;-------------------------------------------------------------
+
+@#ranger
+@busy
+@dataload jw-isleG.mil &playernum `p24
+@do `t70 is `p24
+
+@if bitcheck `t70 0 0 then do
+@begin
+  @do moveback
+  @show
+`r0`c             `0You are met by a Ranger who waves you back and says,
+
+
+             `$"Without a `%campfire starter `$no passage is permitted."
+
+             "Please, visit the Rat Ville Gift Shop."
+
+  @do readspecial `s01 yn
+  @drawmap
+  @update
+  @closescript
+@end
+
+@if bitcheck `t70 1 0 then do
+@begin
+  @do moveback
+  @show
+`r0`c           `0You are met by a Ranger who waves you back and says,
+
+
+           `$"You must have a `%Sun Stone `$to pass through this region."
+
+           "Please, visit the Rat Ville Gift Shop, they pay my wages."
+
+  @do readspecial `s01 yn
+  @drawmap
+  @update
+  @closescript
+@end
+
+@CLOSESCRIPT
+

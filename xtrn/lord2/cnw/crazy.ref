@@ -1,0 +1,75 @@
+; Script file CRAZY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE crazy 000000214
+@NOCHECK
+; End of .REF index
+
+;ref file for the Crazy Old Man IGM demo by Seth A. Robinson
+
+@#crazy
+@do moveback
+@do `p20 random 31 1
+@if `p20 is 1 then saybar
+`%Crazy: `0Walking on roads has no advantage at all!
+@if `p20 is 2 then saybar
+`%Crazy: `0Always donate 100 * your level to churches for good stuff...
+@if `p20 is 3 then saybar
+`%Crazy: `0Have you ever played the slots in Bonetown?  It rocks!
+@if `p20 is 4 then saybar
+`%Crazy: `0The Dragon Tooth clan eat children.  Sick, eh?
+@if `p20 is 5 then saybar
+`%Crazy: `0Ever heard of the Koshi people?  They weird me out huge.
+@if `p20 is 6 then saybar
+`%Crazy: `0I hear there is an old Wizard Tower for sale near Flagcity..
+@if `p20 is 7 then saybar
+`%Crazy: `0North of Stone Lodge there is a castle for sale.
+@if `p20 is 8 then saybar
+`%Crazy: `0LORD2 can support IGM's now!  Yay!
+@if `p20 is 9 then saybar
+`%Crazy: `0The treehouse password changes everyday.
+@if `p20 is 10 then saybar
+`%Crazy: `0Becareful who you flirt with. They may not like you.
+@if `p20 is 11 then saybar
+`%Crazy: `0If you're very charming, you could change someones sexuality.
+@if `p20 is 12 then saybar
+`%Crazy: `0It's almost imposible to wed with Violet or Seth.
+@if `p20 is 13 then saybar
+`%Crazy: `0Your age counts!
+@if `p20 is 14 then saybar
+`%Crazy: `0Don't ever miss someones wedding.
+@if `p20 is 15 then saybar
+`%Crazy: `0Some people don't mind making love with anyone, if they get paid.
+@if `p20 is 16 then saybar
+`%Crazy: `0Don't propose for marriage too soon.
+@if `p20 is 17 then saybar
+`%Crazy: `0Never forget your RINGs for marriage, buy them before you propose.
+@if `p20 is 18 then saybar
+`%Crazy: `0Do more successful simple flirting before you decide to get serious.
+@if `p20 is 19 then saybar
+`%Crazy: `0Everyone is always invited to all weddings.
+@if `p20 is 20 then saybar
+`%Crazy: `0Bring gifts for any newly weds at the chapel. 
+@if `p20 is 21 then saybar
+`%Crazy: `0Take your date out as much as possible.
+@if `p20 is 22 then saybar
+`%Crazy: `0Don't take too long to pop the question.
+@if `p20 is 23 then saybar
+`%Crazy: `0What ever you do, DO NOT MISS YOUR WEDDING DAY!
+@if `p20 is 24 then saybar
+`%Crazy: `0Don't keep someone with you (when not married) when you go to sleep.
+@if `p20 is 25 then saybar
+`%Crazy: `0You can take people out on dates, there are many locations to enjoy.
+@if `p20 is 26 then saybar
+`%Crazy: `0Have Fun!
+@if `p20 is 28 then saybar
+`%Crazy: `0HaVE Fun!
+@if `p20 is 29 then saybar
+`%Crazy: `0After you get married, you can go to the retirement home to relax.
+@if `p20 is 30 then saybar
+`%Crazy: `0Don't flirt too much, you can scare some people.
+@if `p20 is 30 then saybar
+`%Crazy: `0If you're in a bad mood, DO NOT FLIRT. (charm < 0 = no flirt)
+@if `p20 is 31 then saybar
+`%Crazy: `0The bum in GreenTree is a Peeping Tom!
+@if `p20 is 31 then saybar
+`%Crazy: `0You need at least a half of 100 charm to ask someone out.

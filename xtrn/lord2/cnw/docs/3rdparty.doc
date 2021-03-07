@@ -1,0 +1,257 @@
+
+              THIRD PARTY DOCUMENTATION FOR THE LORD2 ENGINE
+
+
+FOR INFO ON CREATING AN IGM FOR LORD2, READ IGM.DOC!!!!!!!!!!!!!!  This
+stuff is generally usefull info too, though.
+
+This is some extra info and help on creating addons/new areas/stand alone
+.refs/new worlds for the LORD2 engine.
+
+My goal is to make it easy and free (besides our cheap $15 registration
+fee to use more than the unregistered portion of the world screens) for
+any non programmer to make his own door or world.
+
+** The pascal structures of most data files are listed at the end of this **
+** file.                                                                  **
+
+Q:  How do I start adding screens from a clear map?
+
+A:  Delete the files WORLD.DAT and MAP.DAT.
+
+Q:  If I make my own world, what do I need to distribute it?
+
+A: MAP.DAT, WORLD.DAT and all your .REF files.  Probably a good idea to
+   also throw in a file_id.diz and a .doc file of some sort.
+
+   To install it, a person should setup a NEW game of LORD2 somewhere, then
+   copy your files over it.  Otherwise it would destroy the real LORD2 game
+   they were running.  Be sure to make this clear in your documentation.
+
+   Do *NOT* distribute the GAME.DAT file.  This is where non game
+   information is held like their registration info (they probably don't
+   want this overwritten!) and ticks per second, etc.
+
+Q: You made LORD2 and my game needs it to run - does this mean I cannot
+   charge people for it?
+
+A: Charge away, I don't want any royalities, you might thank me in your
+   docs though. ;>  Since there is no way to compile or protect your work,
+   I doubt many will charge for addons which is fine by me.
+
+   A situation that would make charging feasible is say, if you have one
+   full world addon, and for $5 you would send them two more.  This worked
+   with new LORD ansi packs for a few people, and so much more than new
+   ANSI can be done now.
+
+Q: I'm editting some stuff in LORD2 - How do I know what vars you used for
+   what?
+
+A: Check the VARLIST.DAT file - at the top I list every var I am using and
+   tell you what it is for.  Any addon you make should contain a list like
+   this in the file.  It also helps the Sysop's to know what stuff is, as
+   L2CFG.EXE reads this file to put descriptions by vars.
+
+Q: I made my own game using your system - but it says LORDII: New World at
+   the bottom of the screen!! How tacky!
+
+A: You can change this.  As well as the default <more> prompt.  Check
+   REFHELP.DOC to learn about the @PROGNAME and @MOREMAP commands.
+
+Q: Do I have to use your realtime movement/messaging system?
+
+A: No.  Download my addon BRADYREF.ZIP from my website and check it out - it
+   demonstrates how you can run a single .REF file for the game instead of
+   using the full on system.  For .REF's like these, it is possible to run
+   them FROM the LORD2 dir, and not disrupt LORD2's real data files, in
+   case the sysop also has a LORD2 game running there.
+
+   It looks like this:  LORD2 crap+crap.ref <other parms here>.  This is
+   good for testing specific .ref files also.  "crap" is the label to
+   run, and "crap.ref" is the filename.
+
+   When LORD2 is run this way, it behaves a little differently - for one, it
+   quits the game as soon as the .ref is done.  Also, you cannot use the
+   built in load/save player data.
+
+   If you NEEDED this, but didn't want to use the mapping system at all, you
+   still can.  You would edit the @#STARTGAME function to start your main
+   .REF game, then do a @halt to stop the game before it moves on to the
+   mapping system.
+
+-= Summary =-
+
+In any case - *IF* you are using the mapping engine in your game, be sure
+to tell the user in the docs if a registered LORD2 is required so they
+don't think your .ref is buggy if things go wrong.
+
+They need a registered LORD2 if:
+
+ * You use maps that are not in the unregistered area.  This kinda tricky -
+   but basically all the maps you can access in the very first part of the
+   game up to until you get to Porttown are the unregistered area.
+
+ * You use more than 57 items in the items system.  If they pickup/buy an
+   item pass 57, it will show up as blank, and will not be useable.
+
+Please send your finishes addons/games over to me to check out, I'll put the
+best ones/ones that work on my web page for download!
+
+Just email attach them mime or uue to sethable@rtsoft.com.
+
+If you have questions and need help with .REF's please feel free to email
+me for help and suggestions, but even in LORD2's beta form I am getting
+.REF's sent to me every day to diagnose problems and such and I can see
+I won't be able to do this for everyone... <G>
+
+But I'll do what I can!
+
+Also:  I'll probably have LORD2 ref/world download area on my website soon,
+as well as a developers area.  So hit www.rtsoft.com once in a while to
+see what is new there!
+
+-Seth (sethable@rtsoft.com)
+
+-=-=-= Record formats for the map.dat, world.dat and trader.dat files =-=-
+
+I got a few people wanting to make their own player/screen editors for
+L2, this is fine with me.  As promised here is the record formats in
+Pascal:
+
+    type igm_data = record {format of the @data commands when saved}
+  last_used: longint; {used for the @datanewday feature, this is how it tells
+                       if it should reset the data because it is a new day
+                       or not}
+  data: array[1..200] of longint; {the real data is kept here}
+  extra: array[1..200] of char; {reserved for gracefull upgrades..
+                                 hey, you never know}
+  end;
+
+  The above is the format for the new *.IDF files.
+
+  type world_info = record {For the world.dat file -  this is kind of
+  the index for the MAP.REF file.  It tells LORD2 how each screen hooks
+  to each other.  loc is each screen - starting at x1,y1 is 1, then this
+  goes right until 80 is reached, then starts at x1,y2 for 81 etc.}
+  name: string[60];
+  loc: array[1..1600] of integer; {holds the physical map # of the
+  record for this screen from the MAP.DAT file.. If # is 0, there is
+  no screen here. }
+  v: array[1..40] of longint; {used by `v}
+  s: array[1..10] of string[80]; {used by `s}
+  time: longint; {year+month+day?.. not sure can't remember}
+  show: array[1..1600] of byte; {show up on the players auto 'map'?}
+  extra: array[1..396] of char; {extra for me}
+  end;
+
+
+  type all_players = record
+  p: array[1..200] of all_p;
+  end;
+
+
+  type user_rec = record
+   name : string[25]; {handle they choose for LORD2}
+   real_names: string[40]; {name from BBS}
+   gold,bank,exp: longint; {exp isn't used but reserved}
+   last_day_on,love: integer; {love isn't used but reserved}
+   wep,arm: shortint; {item # of wep/arm they have equipped}
+   race: string[30]; {reserved}
+   sex_male: integer; {1 if male.. yes there is a reason I didn't use
+                       a byte!! <G> }
+   on_now,battle: byte; {these will be OFF when a player is offline}
+   dead,busy,deleted,nice,map,e6: integer;
+   {If dead, dead is 1, if deleted, deleted is 1.  Map is map block #.}
+   x,y: integer; {current cordinates of player}
+   item: array[1..99] of integer; {items.  used by `i}
+   p: array[1..99] of longint;  {longints.  used by `i}
+   b: array[1..99] of byte;  {bytes.  Used by `t}
+   last_saved: longint; {last day saved}
+   last_day_played: longint; {duh}
+   lmap: integer; {last map player was on that was 'visable'}
+   extra: array[1..354] of char; {reserved for me}
+   end;
+
+
+{The update.tmp file is made up of this record, one for each player
+in order.  Just in case you wanted to write an ap that needed to know
+what was going on realtime.}
+
+        type q_update = record
+    x,y: shortint;
+    map: integer;
+    on_now: byte;
+    busy: byte;   {these are all 0 or 1 if true}
+    battle: byte;
+    end;
+
+
+
+
+
+    type item_struct = record  {used by item.ref}
+    name: string[30]; {name of item}
+    action: string[40];  {string for hitting someone with it}
+    use_once,armour,weapon,sell,used: boolean;
+    value: longint;   {gold value}
+    breakage: integer;  {break percentage per use}
+    max_buy: integer;  {unused for now}
+    def,strength: integer;  {strength/defence added if equipped}
+    eat: integer;    {unused for now}
+    ref: string[12]; {label of .ref procedure in ITEMS.REF}
+    use_action: string[30]; {text for using it with the .ref}
+    descrip: string[30]; {description of item that shows to the right}
+    drop: boolean; {if true, item cannot be dropped, it is a quest item}
+    extra: array[1..37] of char;  {reserved}
+    end;
+
+    type item_rec = record {the entire ITEMS.DAT file is ONE of this
+    record format}
+    i: array[1..99] of item_struct;
+    end;
+
+
+    type map_info = record {used by plan_rec, which is for each
+                            screen}
+    fc: shortint; {foreground color of square}
+    bc: shortint; {background color of square}
+    c: char; {actual char}
+    t: integer; {can't remember}
+    s: shortint; {what type so it knows if you can walk through it or
+    not.. here is the list:
+
+if map^.w[x,y].s = 0 then ter := 'Unpassable';
+if map^.w[x,y].s = 1 then ter := 'Grass';
+if map^.w[x,y].s = 2 then ter := 'Rocky';
+if map^.w[x,y].s = 3 then ter := 'Water';
+if map^.w[x,y].s = 4 then ter := 'Ocean';
+if map^.w[x,y].s = 5 then ter := 'Forest';   }
+
+    end;
+
+
+    type special_struct = record {also used by plan_rec, the ten
+hotspots available all use this format}
+    move_place: integer; {map to move to, 0 if not a warp}
+    dx,dy: shortint; {xy cords of hotspot, 0 if hotspot not used}
+    x,y: shortint;  {xy cords of warp destination, 0 if not a warp}
+    refname: string[12]; {label of ref procedure to run, if not a warp}
+    reffile: string[12]; {filename of .ref to run if not a warp}
+    extra: array[1..100] of char; {reserved by me}
+    end;
+
+
+    type plan_rec = record {record for the MAP.DAT file, which is
+    screen info}
+   name: string[30]; {name of screen}
+   w: array[1..80] of array[1..20] of map_info; {each block on screen}
+   special: array[1..10] of special_struct; {the 10 hotspots}
+   battle_odds: longint; {odds of running the 'screen random ref'}
+   batfile: string[12]; {ref file name}
+   batname: string[12]; {label of ref procedure}
+   safe: boolean; {true if players cannot fight on this screen}
+   extra: array[1..469] of char; {reserved by me}
+   end;
+
+
+

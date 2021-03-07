@@ -1,0 +1,49 @@
+
+                        Scry Programming by Talaphid
+                  (formerly Broadcast Scrying-Gem Co.)
+
+Lord 2 1.01a: backwards compatiblity unknown, probably waaay back
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Probably
+  Using any LORD2 vars?                           : Nope
+  Overwrites any original .refs?                  : Nope
+  Saves and loads its own vars independently?     : Yup
+  Adds new .refs?                                 : Yup (1- TALQUIZ.REF)
+  Replaces screens?                               : Yup (1- 1W of Stonebrook)
+  Adds screens?                                   : Yup (1)
+  Free?                                           : Sure
+
+
+  Description:
+
+        Some more filling for your LORD ][ game, and a little gameshow
+where players can get a little money (level based) for knowing their
+LORD trivia. If no other word escapes your mind from this document, think
+JEWEL. =)
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM TALQUIZ.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%S`7cry `%P`7rogramming `3by `!T`3alaphid
+
+;1357
+replacescreen: 1437 1 show
+;1489
+replacescreen: 1399 2 noshow
+;1491
+replacescreen: 1401 3 noshow
+;1490
+replacescreen: 1400 4 noshow
+;1571
+replacescreen: 1481 5 noshow
+
+installmessage:
+
+        La-de-dah, you've got another place in LORD ][! Yay!

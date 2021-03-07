@@ -1,0 +1,817 @@
+; Script file FELICITY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE makekey 000001782
+@DECLARE sign 000002000
+@DECLARE tellem 000002199
+@DECLARE sign2 000002410
+@DECLARE karadoc 000002596
+@DECLARE heal 000004009
+@DECLARE store 000005098
+@DECLARE storetop 000005178
+@DECLARE tp 000006078
+@DECLARE ahh 000006242
+@DECLARE felicity 000006408
+@DECLARE feltop 000006498
+@DECLARE feltalktop 000007072
+@DECLARE plant 000013226
+@DECLARE akasha 000013400
+@DECLARE jan 000014686
+@DECLARE secret 000015319
+@DECLARE warp1 000015748
+@DECLARE warp2 000015932
+@DECLARE warp3 000016112
+@DECLARE warp4 000016294
+@DECLARE janitor 000016480
+@DECLARE wowpool 000017551
+@DECLARE pool 000017721
+@DECLARE reset 000017999
+@DECLARE notes 000018375
+@DECLARE notestop 000018447
+@DECLARE dabottom 000019429
+@NOCHECK
+; End of .REF index
+
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|Felicity's Temple IGM for Lord2 - The New World                  |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|Ref notes:                                                       |
+;|                                                                 |
+;|Felicity.ref - Copyright 1997 Lloyd Hannesson and Tech'n Software|
+;|               http://www.techn.com/      -     support@techn.com|
+;|               -> The main Ref file for Felicity's Temple        |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|Please! If you are gonna copy and of these routines, please let  |
+;|me know by an email, or include my name in your docs :)          |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+
+;Add janitor keys to extitems.ref, only used during install.
+
+@#MAKEKEY
+@do `s06 is Janitors_keys
+@do `s07 is DEEDS
+@do `s08 is DEEDS.ref
+@do `s09 is NIL
+@run install in install.ref
+@closescript
+
+
+;------------------------------------------------------------------------
+
+@#sign
+; Sign North of the Temple
+@do moveback
+@do saybar
+South - Felicity's Temple - Shhhhhh don't tell anyone!
+
+;------------------------------------------------------------------------
+
+@#tellem
+; Man above the Temple
+@do moveback
+@do saybar
+Go visit Felicity's Temple! Follow the path to the South to get there
+
+;------------------------------------------------------------------------
+
+
+@#sign2
+; Sign in the temple area
+@do moveback
+@do saybar
+<--- The Temple     Felicity's Shops --->
+
+;------------------------------------------------------------------------
+
+@#karadoc
+; Karadoc the wise mage
+@do `p20 random 14 1
+@if `p20 is 1 then saybar
+`%Karadoc: `0Rumor has it that Felicity's has been stockpiling things...
+@if `p20 is 2 then saybar
+`%Karadoc: `0Aren't the trees lovely this time of year
+@if `p20 is 3 then saybar
+`%Karadoc: `0Healing here is a steal! 
+@if `p20 is 4 then saybar
+`%Karadoc: `0Take a look around, i'm sure you'll find something you like.
+@if `p20 is 5 then saybar
+`%Karadoc: `0Akasha is a strange character! Heard she was a vampire!
+@if `p20 is 6 then saybar
+`%Karadoc: `0Visit the Tech'n software Web page at http://www.techn.com/
+@if `p20 is 7 then saybar
+`%Karadoc: `0If you like this IGM email support@techn.com
+@if `p20 is 8 then saybar
+`%Karadoc: `0If you are evil, Felicity can help to make you even more evil!
+@if `p20 is 9 then saybar
+`%Karadoc: `0If you are good, Felicity can help to make you even nicer!
+@if `p20 is 10 then saybar
+`%Karadoc: `0Doesn't LORD kick ass!
+@if `p20 is 11 then saybar
+`%Karadoc: `0The dark forest is a good place to get Experience.
+@if `p20 is 12 then saybar
+`%Karadoc: `0Have you found the secret in the dark forest!?
+@if `p20 is 13 then saybar
+`%Karadoc: `0Fishing is a great way to make money, visit PortTown for info.
+@if `p20 is 14 then saybar
+`%Karadoc: `0The Janitor is a hard fellow to track down.
+
+;------------------------------------------------------------------------
+
+@#heal
+; The healers hut
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%Paragrim the Town Healer
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`\
+`2  Paragrim the town healer looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You seem a little sick my friend! I can heal you for `$`p20`0 gold, ok?
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry buddy, you don't have enough gold!"
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You look fine! You should come back when you're sick!" 
+
+`k
+@drawmap
+@update
+
+;------------------------------------------------------------------------
+
+@#store
+; The General Store
+ @offmap
+ @do moveback
+ @do `v01 is 1
+ @label storetop
+ @show
+`r0`c  `%Talking to Turin - At The General Store
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`\
+`2    `0"What are you looking for my young s&man???"`2, asks Turin. You can
+`2  see that he is selling all sorts of strange items. They seem to be
+`2  divided up into 3 main sections though.
+
+@do write
+`x`x`x`x
+ @do `v01 is 1
+ @choice
+Look at his armor.
+Look at his weapons.
+Look at his general items.
+Leave
+@if responce is 2 then do begin
+ @begin
+ @buymanager
+4
+9
+15
+16
+38
+35
+49
+39
+58
+ @do goto storetop
+ @end
+
+@if responce is 1 then do begin
+ @begin
+ @buymanager
+10
+12
+13
+14
+37
+59
+ @do goto storetop
+ @end
+
+@if responce is 3 then do begin
+ @begin
+ @buymanager
+5
+40
+55
+ @do goto storetop
+ @end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+;------------------------------------------------------------------------
+
+@#tp
+; Hmmmm :)
+@do moveback
+@do saybar
+Do you need some TP for your bunghole?
+
+;------------------------------------------------------------------------
+
+@#ahh
+; Was that a number 1 or a number 2?
+@do saybar
+Ahhhhhhhh! Much better.
+
+;------------------------------------------------------------------------
+
+@#felicity
+; Talking to felicity... the babe of the castle
+ @offmap
+ @do moveback
+ @label feltop
+ @do `v01 is 1
+ @show
+`r0`c  `%Felicity - The temple owner
+`2  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+`2    As you step up to the counter, the beautiful Felicity greets you.
+`2  What a sight she is! In all your years, you have never seen a woman
+`2  to match her beauty. You wonder how she stays this young and fresh,
+`2  as stories of the Great Temple have been around forever.
+
+@do write
+`x`x`x`x
+@choice
+Talk to Felicity
+Ask for a little help
+Leave this place
+@show
+@if response is 1 then do
+ @begin
+ @label feltalktop
+ @show
+`r0`c  `%Talking to Felicity
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+`0    "Excuse me Felicity, but can I ask you a few thing?"`2, you ask.
+`0  "Sure thing! Ask away! I always have time for questions."`2 replys
+`2  Felicity. Allright! This is your lucky day! It's not everyday that
+`2  you get to talk to a legend.
+
+@do write
+`x`x`x`x
+@do `v01 is 1
+@choice
+Ask about the Temple
+Ask about the Storage Room
+Ask about the `4Dragon
+Leave this place
+@if response is 1 then do begin
+ @begin
+ @show
+`\`\`0    "So what exactly is this Temple here for Felicity"`2, you ask. She
+`2  seems a little bit annoyed with your question! `0"What is this here for
+`0  you ask!? What type of question is that! This is my home, where I live
+`0  where I have my stor... umm err nevermind"`2, says felicity, her face
+`2  turning red.`\
+`0    "Why are you blushing, and what's this stor thing you were talking about?
+`0  fill me in Wench! Err I mean my Beautious Felicity!"`2, you say with a fake
+`2  grin. `0"Well this is really none of your concern, you should forget the
+`0  whole conversation"`2, Felicity says with a smile...
+`\`k
+`2  Well that's didn't go too good did it!?
+`\`\`k
+ @do goto feltalktop
+ @end
+
+@if response is 2 then do begin
+ @begin
+ @show
+`\`\`0    "What's this Storage room I hear people talking about, is this what
+`0  you meant when you said Stor!?"`2, You ask. `0"Ahh no, I didn't say anything
+`0  of the sort! There is no such thing as a storage room here!"`2, she says
+`2  rather calmly.
+`\`k
+`2  Hmmm for some reason you don't think she is telling the truth!
+`\`k
+ @do goto feltalktop
+ @end
+
+@if response is 3 then do begin
+ @begin
+ @show
+`\`\`0    "So do you know anything of the `4Dragon`0"`2, you ask. `0"All that I know
+`0  is that we should all stay far away from the `4Dragon`0, that thing is scarry!
+`0  The `4Dragon`0 is the sole reason that I'm stockpiling all this stuff"`2, she
+`2  says. `0"Stockpiling!?!?! So you do have a store!!!"`2, you exclaim! `0"No I
+`0  don't, and you can't prove it! Unless that is if you've allready found it!"`2
+`\`k
+`2  Hey! Now you're getting somewhere!
+`\`k
+ @do goto feltalktop
+ @end
+
+@if response is 4 then do begin
+ @begin
+ @do goto feltop
+ @end
+
+@end
+
+
+
+@if response is 2 then do ;Talking to Felicity
+ @begin
+
+; Checking if Data file exists... if not write fake one (don't want this
+; program to crash out)
+
+@if fel&playernum.txt exists false then do begin
+@begin
+@writefile fel&playernum.txt
+01/01/1988
+`s02
+@end
+
+; Read the players data file compare it to todays date. If it equals
+; todays date then exit out with message, else do the routine
+
+@readfile fel&playernum.txt
+`s01
+`s02
+@do `s05 is &date
+@if `s01 not `s05 then do
+ @begin
+ @show
+`c
+`2  You think to yourself `0"Hmmm Felicity seems to have all these powers
+`0  maybe she can help me on my quest!?"`2 Gathering up all your strength
+`2  you plead `0"Please Felicity, you are obviously a woman of great
+`0  strength and knowledge! Can you find it in yourself to help a poor
+`0  s&man like me?"`\
+`2  Felicity takes a few seconds to respond, but then she says `0"Help you
+`0  eh? I suppose I can try to do something for you `n"`\
+`0  "Touch my ring and concentrate your wishes will be granted"`\
+`2  You reach over and touch her ring and.`l.`l.`l you feel...`\
+@do `p20 random 5 1
+;
+; Random Goodies and stuff level dependant
+;
+; 1. Extra Gold
+; 2. Extra Muscle
+; 3. Extra Dodge
+; 4. if Neg alignment (Eviler) If positive (nicer)
+; 5. A healing potion (5 point one)
+
+@if `p20 is 1 then do
+@begin
+ @do `p21 is 0
+ @do `p22 is 0
+ @do `p21 is `v09
+ @do `p21 - 1
+; Do the math, You'll get Gold = level * level * 10
+ @do `p21 * `p21
+ @do `p21 * 10
+ @show
+`%  Richer! `2 Felicity hands you a bag with `$`p21`2 gold!`\
+`2  You thank Felicity then make your exit.`\`\`k
+ @do money + `p21
+@end
+
+@if `p20 is 2 then do begin
+@begin
+ @show
+`%  Stronger! `2 You get 1 point stronger!`\
+`2  You thank Felicity then make your exit.`\`\`k
+ @do `p04 + 1
+@end
+
+@if `p20 is 3 then do begin
+@begin
+ @show
+`%  Tougher! `2 You get 1 point toughness!`\
+`2  You thank Felicity then make your exit.`\`\`k
+ @do `p05 + 1
+@end
+
+@if `p20 is 4 then do begin
+@begin
+ @if `p07 less 0 then do begin
+ @begin
+  @show
+`%  Eviler! `0"I can tell by looking into your heart that you are a evil
+`0  s&man! I will help you to become what you truely are!" `2says Felicity
+`2  `\  You lose 1 alignment!`\
+`2  You thank Felicity then make your exit.`\`\`k
+  @do `p07 - 1
+ @end
+
+ @if `p07 more 0 then do begin
+ @begin
+  @show
+`%  Nicer! `0"I can tell by looking into your heart that you are a good
+`0  s&man! I will help you to become what you truely are!" `2says Felicity
+`2  `\  You gain 1 alignment!`\
+`2  You thank Felicity then make your exit.`\`\`k
+  @do `p07 + 1
+ @end
+
+ @if `p07 equals 0 then do begin
+ @begin
+  @show
+`%  Nicer! `0"I can tell by looking into your heart that you are a good
+`0  s&man! I will help you to become what you truely are!" `2says Felicity
+`2  `\  You gain 1 alignment!`\
+`2  You thank Felicity then make your exit.`\`\`k
+  @do `p07 + 1
+ @end
+@end
+
+@if `p20 is 5 then do begin
+@begin
+ @show
+`%  A `0Green Potion! `2 This potion will heal 10 hitpoints if you drink it!`\
+`2  You thank Felicity then make your exit.`\`\`k
+ @do `i05 + 1
+@end
+
+
+@if fel&playernum.txt exists true then delete fel&playernum.txt
+@writefile fel&playernum.txt
+&date
+`s02
+@do goto feltop
+@end
+
+@if `s01 is `s05 then do
+ @begin
+ @show
+`2`\`\Don't you think you've bugged felicity enough!? Try again tomorrow!
+`\`\`k
+ @do goto feltop
+ @end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+@if response is 3 then do
+@begin
+ @show
+`\`\
+`2  You tell Felicity that you'll talk to her later
+`\
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+
+@show
+`\`\
+`2  This is under construction!
+`\`\`k
+@do goto feltop
+
+@drawmap
+@update
+@closescript
+@end
+
+;------------------------------------------------------------------------
+
+@#plant
+@do moveback
+@do saybar
+A huge plant takes up most of the room! What could it be?
+
+;------------------------------------------------------------------------
+
+@#Akasha
+; Talking to Akasha... very small routine for right now
+ @offmap
+ @do moveback
+ @do `v01 is 1
+ @show
+`r0`c  `%Akasha - `4The mysterious one
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+`2    As you step into Akasha's room, you can smell a faint coppery scent.
+`2  You know that you've smelt it before, but you can't quite put your finger
+`2  on it. Akasha herself is quite beautifull, but her skin is rather pale.
+`2  She could also use a visit to the Dentist, As she seems to have 2 teeth
+`2  that stick out quite a bit, almost like... Nahhh they couldn't be fangs...
+`2  could they!?
+
+@do write
+`x`x`x`x
+@choice
+Talk to Akasha
+Leave this place
+@if response is 1 then do
+@begin
+ @show
+`\`\
+`2  As you walk towards Akasha, you notice that she is isn't moving.
+`2  she seems to be in a very deep sleep.... You'll need to wake her first
+`2  if you want to talk with her, I guess.
+`\
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+@if response is 2 then do
+@begin
+ @show
+`\`\
+`0  "Talk to you later Akasha!"`2, you say as you step out the door.
+`\
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+;------------------------------------------------------------------------
+
+@#jan
+; At the janitor's Door....
+
+@do `p29 is &playernum
+@routine Janitors_keys in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 0 then do
+ @begin
+ @do moveback
+ @do saybar
+Hmmm this door is locked!? I wonder how you can open it....
+ @end
+
+@do `p29 is &playernum
+@routine Janitors_keys in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 > 0 then do
+ @begin
+ @do moveback
+ @do x is 23
+ @do y is 11
+ @do map is 573
+ @loadmap 573
+ @drawmap
+ @do saybar
+You insert the key, and the door slowly opens.....
+ @end
+
+;------------------------------------------------------------------------
+
+@#secret
+; The secret key
+@do moveback
+@do `p29 is &playernum
+@routine Janitors_keys in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 > 0 then do
+ @begin
+ @do saybar
+You allready have the key! If you lose your copy come back and get another
+ @end
+
+@routine giveitem in item99.ref
+ @do saybar
+You found the Janitor's Key!
+ @end
+
+;------------------------------------------------------------------------
+
+@#warp1
+; Warp to GreenTree
+ @do x is 49
+ @do y is 14
+ @do map is 1356
+ @loadmap &map
+ @drawmap
+
+
+;------------------------------------------------------------------------
+
+@#warp2
+; Warp to PortTown
+ @do x is 39
+ @do y is 14
+ @do map is 956
+ @loadmap &map
+ @drawmap
+
+;------------------------------------------------------------------------
+
+@#warp3
+; Warp to Flag City
+ @do x is 71
+ @do y is 19
+ @do map is 1092
+ @loadmap &map
+ @drawmap
+
+;------------------------------------------------------------------------
+
+@#warp4
+; Warp to Sosen Village
+ @do x is 32
+ @do y is 7
+ @do map is 456
+ @loadmap &map
+ @drawmap
+
+;------------------------------------------------------------------------
+
+@#janitor
+; The Janitor
+ @offmap
+ @do moveback
+ @do `v01 is 1
+ @show
+`r0`c  `%Talking to The Janitor!
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`\
+`2    As you step over you notice the Janitor sleeping... he slowly wakes up
+`0  "Hey!? Who the heck are you!? And how'd you get in?"`2, he asks puzzled.
+`0  "I found your spare key in tree old man! What a stupid place to put it"
+`2  ,you say. The Janitor doesn't seem pleased.
+
+@do write
+`x`x`x`x
+@choice
+Talk to the Janitor
+Leave
+@if response is 1 then do
+@begin
+ @show
+`\`\`0  "So what are all those blinking lights outside?"`2, you ask
+
+`2  `0"Well sonny, they are my secret portals! They'll take you instantly
+`0  to many different places in the realm"
+
+`2  Top-Left     `7:  `0Greentree
+`2  Top-Right    `7:  `0PortTown
+`2  Bottom-Left  `7:  `0Flag City
+`2  Bottom-Right `7:  `0Sosen Village
+
+`0  "Hop in one, and take a ride!"
+
+`k
+@end
+ @drawmap
+ @update
+ @closescript
+@end
+
+;------------------------------------------------------------------------
+
+@#wowpool
+; Looking at the pool
+@do saybar
+Wow! A full size pool! This place was a steal.
+
+;------------------------------------------------------------------------
+
+@#pool
+; Healing at the pool
+@do saybar
+You jump off the diving board into the pool
+@show
+`L`L
+@do saybar
+You are refreshed by the cleansing water! You are totally healed!
+@do `p02 is `p03
+
+;------------------------------------------------------------------------
+
+@#reset
+; get rid of any garbage data in the var  <--lets keep it
+
+@do `p29 is &playernum
+@routine Janitors_keys in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 > 0 then do
+ @begin
+; @do saybar
+;The Janitor's Key in your pocket mysteriously disappears.
+; @do `p30 is 0
+; @end
+
+;------------------------------------------------------------------------
+
+@#notes
+; The message board in the guest house
+@do moveback
+ @label notestop
+ @show
+`r0`c  `%At the Message Board
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`\
+`2  This is a general purpose message board... leave a comment
+`2  for the next user that visits the Guest House...
+
+@do write
+`x`x`x
+ @do `v01 is 1
+ @choice
+View Current Message
+Leave A New Message
+Do Nothing
+@if responce is 1 then do begin
+ @begin
+@readfile felnote.txt
+`s04
+`s05
+ @show
+`\`\
+`2    You look over a message left by: `0`s04
+    `4-=[ `%`s05 `4]=-
+`\`k
+ @do goto notestop
+ @end
+
+@if responce is 2 then do begin
+ @begin
+ @do `s04 is 
+ @do write
+`\`\`\   `2New Message:`x`x
+ @do readstring 40 `s04 `s04
+ @do `p20 is length `s04
+ @if `p20 < 2 then do
+  @begin
+  @show
+`\`\  `2You decide the current message is ok.`\`\`k
+  @do goto dabottom
+  @end
+ @show
+`\`\
+`2  You leave your mark for everyone to see.... 
+`\`\`k
+@if felnote.txt exists true then delete felnote.txt
+@writefile felnote.txt
+`n
+`s04
+ @label dabottom
+ @do goto notestop
+ @end
+
+@if responce is 3 then do begin
+ @begin
+ @show
+`\`\`\`2    You don't have anything important to say I guess......
+`\`\`k
+ @end
+
+
+ @drawmap
+ @update
+ @closescript
+
+;------------------------------------------------------------------------
+
+; That's the end... for now! :)
+; Checkout http://www.techn.com/ for the Latest version!

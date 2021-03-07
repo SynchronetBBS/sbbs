@@ -1,0 +1,213 @@
+; Script file HACKNEY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:16 2001
+
+@DECLARE slavesign 000000325
+@DECLARE bedsign 000000409
+@DECLARE gemsign 000000519
+@DECLARE potsign 000000588
+@DECLARE slaver 000000674
+@DECLARE gemman 000001420
+@DECLARE potion 000002266
+@NOCHECK
+; End of .REF index
+
+@#slavesign
+@do saybar
+`2Sign reads: `0 Visit Bob the Slave Trader
+@do moveback
+
+@#BEDSIGN
+@do saybar
+`2Sign reads: `0 This Bedroom is Safe from Commies. Red blankets too.
+@do moveback
+
+@#gemsign
+@do saybar
+`2Buy and sell Gems with Me.
+@do moveback
+
+@#potsign
+@do saybar
+`2Sign reads: `0 I've got some wicked potions.
+@do moveback
+
+@#SLAVER
+;trading in girls
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Slaver `r0
+
+  `0"Good day, s&sir!  I am evil Bob, the fiendly slavetrader"
+  `2a the cheerful gentleman says.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>`i11 0 Trade Kid For Gems (an evil passtime).
+<`i11 1 "I don't Have any Kids for you."
+"Slave Trading is Wrong!"
+@if response not 3 then do
+  @begin
+@show
+`\`\  `0"Either way i think you are an amoral wanker!" he shouts.
+                        But I love you.
+
+
+`k
+@if responce is 1 then do
+  @begin
+   @do `p19 + 1
+   @do `i11 - 1
+   @do `p07 - 3
+   @end
+
+@if responce is 2 then do
+  @begin
+  @do saybar
+      `6Then piss off`0!
+  @end
+
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#GEMMAN
+;trading in gems
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Gem Man `r0
+
+  `0"Hello, s&sir and welcome to my wonderful gem house"
+  
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>`p19 0 Trade a Gem for GOOD Alignment and health potions.
+>`p19 0 Trade a Gem for EVIL Alignment and health potions.
+>&money 999 Buy a Gem for $1000.
+I don't Like Gems.
+@if response not 4 then do
+  @begin
+@show
+`\`\  `0"Gems Gems Gems are `6Sweet`0!" he shouts.
+
+
+
+`k
+@if responce is 1 then do
+  @begin
+   @do `p19 - 1
+   @do `p07 + 5
+   @do `i40 + 1
+   @do `i55 + 1
+   @end
+
+
+`k
+@if responce is 2 then do
+  @begin
+   @do `p19 - 1
+   @do `p07 - 5
+   @do `i40 + 1
+   @do `i55 + 1
+   @end
+
+@if responce is 3 then do
+  @begin
+   @do `p19 + 1
+   @do money - 1000
+  @end
+
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#POTION
+;trading in potions
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Big Gay Potion Guy `r0
+
+  `0"Hello, s&sir. I have som wicked, filth, sick Potions!"
+  
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Buy a Red potion. ($20000)
+>&money 14999 Buy a Silver potion. ($15000)
+>&money 16999 Buy a Gold potion. ($17000)
+>&money 2999 Buy a Yellow potion. ($3000)
+>&money 1999 Buy a Purple potion. ($2000)
+>&money 3999 Buy a Black potion. ($4000)
+>&money 6999 Buy a Pink potion. ($7000)
+>&money 399 Buy a White potion. ($400)
+I don't Like Drugs.
+@if response not 9 then do
+  @begin
+@show
+`\`\  `0"Cool; a fellow drugie. `6Sweet`0!" he shouts loudly.
+
+
+
+`k
+
+@if responce is 1 then do
+  @begin
+   @do money - 20000
+   @do `i52 + 1
+   @end
+
+@if responce is 2 then do
+  @begin
+   @do money - 15000
+   @do `i54 + 1
+   @end
+
+@if responce is 3 then do
+  @begin
+   @do money - 17000
+   @do `i53 + 1
+   @end
+@if responce is 4 then do
+  @begin
+   @do money - 3000
+   @do `i94 + 1
+   @end
+@if responce is 5 then do
+  @begin
+   @do money - 2000
+   @do `i93 + 1
+   @end
+@if responce is 6 then do
+  @begin
+   @do money - 4000
+   @do `i91 + 1
+   @end
+@if responce is 7 then do
+  @begin
+   @do money - 7000
+   @do `i86 + 1
+   @end
+@if responce is 8 then do
+  @begin
+   @do money - 400
+   @do `i55 + 1
+   @end
+
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update

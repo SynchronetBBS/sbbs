@@ -1,0 +1,48 @@
+; Script file BUNFIG.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE monster1 000000183
+@DECLARE fight 000000657
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+Bunny
+;string said when you see him
+Mr. Bunny!!!!
+;power move kill string
+Too easy
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+jumps on you|20
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+20
+;gold reward
+20
+;experience
+20
+;hit points
+20
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+ 
+ 
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do goto monster1

@@ -1,0 +1,299 @@
+; Script file DORMFT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE monster1 000000415
+@DECLARE monster2 000001008
+@DECLARE monster3 000001567
+@DECLARE monster4 000002133
+@DECLARE monster5 000002672
+@DECLARE monster6 000003266
+@DECLARE monster7 000003864
+@DECLARE monster8 000004471
+@DECLARE monster9 000005048
+@DECLARE fight 000005608
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+Frat Brother
+;string said when you see him
+You see a young man in boxer shorts and a fraternity shirt.
+;power move kill string
+He may be Greek, but he's no Hercules!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+gives you a nuggie|87
+gives you a wedgie|72
+gives you a SUPER wedgie|92
+NONE|NONE
+NONE|NONE
+;defense
+38
+;gold reward
+300
+;experience
+110
+;hit points
+`p02
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+House Mother
+;string said when you see him
+Boy is that old lady OLD!
+;power move kill string
+Back to the kitchen with you!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+gives you kitchen duty|80
+swats you with a broom|67
+threatens to call your dad|90
+NONE|NONE
+NONE|NONE
+;defense
+25
+;gold reward
+475
+;experience
+180
+;hit points
+180
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Pizza Guy
+;string said when you see him
+`0"Hey! Do you know who ordered this?" `2 you hear.
+;power move kill string
+How's THAT for a tip!?
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+smacks you with a pizza box|87
+drips cheese on you|76
+overcharges you|90
+NONE|NONE
+NONE|NONE
+;defense
+32
+;gold reward
+600
+;experience
+154
+;hit points
+240
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Freshman
+;string said when you see him
+Look at that nerd!
+;power move kill string
+Go back to High School!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+drools on your shoes|80
+hits you with a textbook|95
+stabs you with a pencil|78
+NONE|NONE
+NONE|NONE
+;defense
+30
+;gold reward
+480
+;experience
+170
+;hit points
+350
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Janitor
+;string said when you see him
+`0"Careful!  That floor's still wet!" `2 you hear.
+;power move kill string
+Now who's gonna clean THAT mess up?!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+mops up the floor with you|85
+whacks you with a wet mop|100
+makes you scrub the toilet|79
+NONE|NONE
+NONE|NONE
+;defense
+27
+;gold reward
+401
+;experience
+156
+;hit points
+480
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+The Dean
+;string said when you see him
+`0"Hey, are you supposed to be in here?"  `2you hear.
+;power move kill string
+I guess I made the Dean's List! 
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+lowers all your grades|87
+puts you on academic probation|102
+signs you up for cheerleading|76
+NONE|NONE
+NONE|NONE
+;defense
+32
+;gold reward
+550
+;experience
+160
+;hit points
+400
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Math Geek
+;string said when you see him
+`0"Do you know the square root of 15,434,464?" `2 you hear.
+;power move kill string
+`$"It's 3928.672, you geek!"`2
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+smacks you with his pocket-protector|80
+whacks you with a math book|78
+calculates on your head|97
+NONE|NONE
+NONE|NONE
+;defense
+33
+;gold reward
+430
+;experience
+160
+;hit points
+210
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+English Major
+;string said when you see him
+`0"To be or not to be?" `2 you hear.
+;power move kill string
+You'd rather read his tombstone!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+quotes Shakespeare at you|85
+writes a requiem for you|99
+makes you read Faulkner|105
+NONE|NONE
+NONE|NONE
+;defense
+25
+;gold reward
+410
+;experience
+156
+;hit points
+130
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster9
+@fight
+;name
+Hired Tutor
+;string said when you see him
+`0"Do you need help?" 
+;power move kill string
+I think she's the one who needed help!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+makes you do your homework|97
+studies your internal organs|105
+disects you|115
+NONE|NONE
+NONE|NONE
+;defense
+27
+;gold reward
+760
+;experience
+166
+;hit points
+250
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#FIGHT
+@busy
+@do `p20 random 9 1
+@do goto monster`p20

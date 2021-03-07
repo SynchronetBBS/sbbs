@@ -1,0 +1,51 @@
+                            
+                             Extacy's Land Of Fun 
+                               by Yang Qingwei
+                    BBS : Yang's Empire BBS o65-581-1224 24hrs
+                        EMAIL: yqwemail@mbox2.singnet.com.sg
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : YES!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (4)
+  Free?                                           : Yes!
+
+  Description:
+
+ * Your First Version? Follow This Step *
+  Super simple IGM for LORD2, to be used as a template.
+  Great IGM!
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM EXFUN.IGM
+
+  To uninstall, do the same thing again.
+  Hmm...Look For It Yourself! Its KewL!
+
+//////////////////////// BELOW IS FOR USE BY IGM.EXE /////////////////////
+
+igmname: `0Extacy's Land Or Paradise By `4Yang Qingwei
+replacescreen: 1099 1 show
+replacescreen: 1179 2 show
+replacescreen: 401 3 noshow
+replacescreen: 402 4 noshow
+replacescreen: 403 5 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+
+  `2Extacy's Land Of Fun Had Been Renamed To Extacy's Land Of Paradise
+  `2No BUGS Reported Or Found In Version 1.01 So This Will Be The FINAL
+  `2Version. Added Quite A Number Of Things. Nothing Much To Say Now.
+  `2Changed The REF To REC.
+  `2Maybe I'll Create A Patch To Add 1 Or 2 New Things. But Its Most Unlikely.
+  `3                 Extacy's Land Of Paradise V1.03 PATCH 

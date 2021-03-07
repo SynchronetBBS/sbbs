@@ -1,0 +1,572 @@
+; Script file TENSEM.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:38 2001
+
+@DECLARE monster1 000000445
+@DECLARE monster2 000001687
+@DECLARE monster3 000002957
+@DECLARE monster4 000004199
+@DECLARE monster5 000005462
+@DECLARE monster6 000006689
+@DECLARE monster7 000007959
+@DECLARE monster8 000009225
+@DECLARE monster9 000010506
+@DECLARE monster10 000011787
+@DECLARE fight 000013050
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 `0smackrod(s). If you'd please
+  deposit it here with me, you can pick it back up just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+ 
+@fight
+;name
+Strange Tension Child
+;string said when you see him
+A quite furry kid munches on your ankles.
+;power move kill string
+You just hate kids.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+tears your tongue out|48
+bites at your crotch|55
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+54
+;gold reward
+289
+;experience
+122
+;hit points
+80
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster2
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Tension Reaper
+;string said when you see him
+`0"I'm like Death, but different!" `2this thing says.
+;power move kill string
+He disappears, maybe into oblivion...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+stabs at you with his fingers|106
+breathes on you|86
+headbutts you|105
+NONE|NONE
+NONE|NONE
+;defense
+29
+;gold reward
+386
+;experience
+98
+;hit points
+346
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+STONEP.REF|THIEF
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster3
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Tension's Pet Gerbil
+;string said when you see him
+Now that is one damn big gerbil!
+;power move kill string
+You squash its furry hide...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+munches on your crotch|128
+swallows you whole|147
+vomits on you|67
+NONE|NONE
+NONE|NONE
+;defense
+43
+;gold reward
+332
+;experience
+189
+;hit points
+243
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster4
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Tension Butler
+;string said when you see him
+A stupid looking but very large man approaches you.
+;power move kill string
+You feel kind of bad. Like you killed Lurch or something.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+steps on you|127
+bores you|106
+greets you|189
+NONE|NONE
+NONE|NONE
+;defense
+63
+;gold reward
+287
+;experience
+190
+;hit points
+256
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster5
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Tension Twins
+;string said when you see him
+Two pyschotic looking kids run at you.
+;power move kill string
+You, uh, kill them...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+squeeze you between them|160
+spit on you|146
+trip you|90
+kiss you|325
+NONE|NONE
+;defense
+42
+;gold reward
+245
+;experience
+146
+;hit points
+160
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster6
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Tension Ghost
+;string said when you see him
+A really uncreative enemy approaches you.
+;power move kill string
+In space, no one can hear you scream...what!?!?
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+envelops you|126
+flies inside your soul|116
+takes a ghostly pee on you|195
+NONE|NONE
+NONE|NONE
+;defense
+80
+;gold reward
+525
+;experience
+245
+;hit points
+98
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster7
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Tension Dragon
+;string said when you see him
+A small violet dragon approaches you. How cute.
+;power move kill string
+Reminds you of that famous ol' Red Dragon.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+flies up your ass|118
+flies up your pants|90
+flies up your nose|110
+NONE|NONE
+NONE|NONE
+;defense
+55
+;gold reward
+405
+;experience
+135
+;hit points
+146
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster8
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Kung-Fu Tension
+;string said when you see him
+These enemies just good more mundane, less creative.
+;power move kill string
+`$"Better go back to the Dojo Wang."
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+judo chops at you neck|124
+throws a fireball|120
+uses his ninja throwing stars|145
+NONE|NONE
+NONE|NONE
+;defense
+48
+;gold reward
+450
+;experience
+110
+;hit points
+145
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster9
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Tension Grandfather
+;string said when you see him
+He's ancient, slow, but sturdy...
+;power move kill string
+Quite the grumpy old man...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slaps you in the face|119
+slaps you on the hand|90
+slaps you on the ass|105
+slaps you where the sun don't shine|167
+NONE|NONE
+;defense
+60
+;gold reward
+500
+;experience
+130
+;hit points
+165
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster10
+@if `i73 > 0 then do
+ @begin
+ @do `p20 is `i73
+ @show
+`r0`c  `r1`% Smackrod Inspector `r0
+ 
+  `0"Hello there, sir," `2he says to you and salutes. `0"I am the smackrod
+  inspector. Apparently, you're carrying `$`p20 smackrod(s). If you'd please
+  deposit it here with me, you can pick it back just outside in the pot..."
+ 
+`k  `0"Perhaps I'm not being clear," `2the Inspector says to you. `0"You
+  have NO choice. I will take your smackrods now. You can pick them back up
+  when you leave!"
+ 
+`k
+@do `p20 is `i73
+@drawmap
+@update
+@datasave TENSEDP.DAT &playernum `p20
+@do `i73 - `p20
+@do saybar
+`!You give the inspector your `p20 smackrod(s)
+@closescript
+@end
+@fight
+;name
+Red Dragon Minister
+;string said when you see him
+`2My God, what IS that thing!
+;power move kill string
+`2That was close.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+attacks you with a red-dragon arm|282
+blows red-dragon breath on you|186
+farts red-dragon fart on you|195
+NONE|NONE
+NONE|NONE
+;defense
+58
+;gold reward
+350
+;experience
+165
+;hit points
+160
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#FIGHT
+@do `p20 random 12 1
+@busy
+@do `p20 random 10 1
+@do goto monster`p20

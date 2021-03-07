@@ -1,0 +1,460 @@
+; Script file NPCMAKE4.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE creation 000001157
+@DECLARE c2 000001222
+@DECLARE c3 000001286
+@DECLARE c4 000001350
+@DECLARE c5 000001414
+@DECLARE c6 000001479
+@DECLARE c7 000001545
+@DECLARE c8 000001610
+@DECLARE c9 000001676
+@DECLARE c10 000001737
+@DECLARE c11 000001805
+@DECLARE c12 000001871
+@DECLARE creation1 000001905
+@DECLARE top1 000001972
+@DECLARE gold2 000002167
+@DECLARE creation2 000002822
+@DECLARE top2 000002895
+@DECLARE hp2 000003089
+@DECLARE creation3 000003331
+@DECLARE top3 000003402
+@DECLARE st2 000003557
+@DECLARE creation4 000004144
+@DECLARE top4 000004214
+@DECLARE df2 000004368
+@DECLARE creation5 000004534
+@DECLARE creation6 000004569
+@DECLARE top6 000004685
+@DECLARE creation7 000004825
+@DECLARE top7 000004892
+@DECLARE creation8 000005060
+@DECLARE top8 000005128
+@DECLARE creation9 000005297
+@DECLARE top9 000005372
+@DECLARE creation10 000005551
+@DECLARE creation11 000012309
+@DECLARE top11 000012377
+@DECLARE c12 000012502
+@DECLARE nomore 000012628
+@NOCHECK
+; End of .REF index
+
+;
+;Must create NPC IDF files.
+;
+@#creation
+@if npc\npcgold.idf exists false then goto creation1
+@label c2
+@if npc\npc-hp.idf exists false then goto creation2
+@label c3
+@if npc\npc-st.idf exists false then goto creation3
+@label c4
+@if npc\npc-df.idf exists false then goto creation4
+@label c5
+@if npc\npc-hp2.idf exists false then goto creation5
+@label c6
+@if npc\npc-bday.idf exists false then goto creation6
+@label c7
+@if npc\npcgems.idf exists false then goto creation7
+@label c8
+@if npc\npctaxes.idf exists false then goto creation8
+@label c9
+@if vaults.idf exists false then goto creation9
+@label c10
+@if npc/npctimes.idf exists false then goto creation10
+@label c11
+@if npc/npcjob.idf exists false then goto creation11
+@label c12
+@closescript
+
+@label creation1
+@show
+`\   ú`%Creating NPC Gold.`\
+@do `p20 is 0
+
+@label top1
+@do `p20 + 1
+@if `p20 > 200 then goto gold2
+@do `p21 random 21000 1
+@if `p21 > 20001 then `p21 is 0
+@datasave npc/npcgold.idf `p20 `p21
+@do goto top1
+
+;specific gold values
+@label gold2
+@datasave npc\npcgold.idf 1 5500000
+@datasave npc\npcgold.idf 2 5500000
+@datasave npc\npcgold.idf 40 11320
+@datasave npc\npcgold.idf 80 304056
+@datasave npc\npcgold.idf 81 4410
+@datasave npc\npcgold.idf 82 100
+@datasave npc\npcgold.idf 83 4
+@datasave npc\npcgold.idf 84 1330
+@datasave npc\npcgold.idf 100 200200
+@datasave npc\npcgold.idf 101 10000
+@datasave npc\npcgold.idf 116 50000
+@datasave npc\npcgold.idf 117 546710000
+@datasave npc\npcgold.idf 121 5700
+@datasave npc\npcgold.idf 122 20000
+@datasave npc\npcgold.idf 123 40000
+@datasave npc\npcgold.idf 199 20000000
+@datasave npc\npcgold.idf 200 0
+@do goto c2
+;
+
+@label creation2
+@show
+`\   ú`%Creating NPC Hit Points.`\
+@do `p20 is 0
+
+@label top2
+@do `p20 + 1
+@if `p20 > 200 then goto hp2
+@do `p21 random 2000 1
+@datasave npc/npc-hp.idf `p20 `p21
+@datasave npc/npc-hp2.idf `p20 `p21
+@do goto top2
+;setting specific HP's
+
+@label hp2
+@datasave npc\npc-hp2.idf 1 110150
+@datasave npc\npc-hp2.idf 2 110150
+@datasave npc\npc-hp2.idf 22 2500
+@datasave npc\npc-hp.idf 1 10150
+@datasave npc\npc-hp.idf 2 10150
+@datasave npc\npc-hp.idf 22 2500
+@do goto c2
+
+@label creation3
+@show
+`\   ú`%Creating NPC Stregnth.`\
+@do `p20 is 0
+
+@label top3
+@do `p20 + 1
+@if `p20 > 200 then goto st2
+@do `p21 random 140 10
+@datasave npc/npc-st.idf `p20 `p21
+@do goto top3
+;setting specific ST's
+@label st2
+@datasave npc\npc-st.idf 1 17000
+@datasave npc\npc-st.idf 2 17000
+@datasave npc\npc-st.idf 10 10
+@datasave npc\npc-st.idf 11 200
+@datasave npc\npc-st.idf 12 10
+@datasave npc\npc-st.idf 13 10
+@datasave npc\npc-st.idf 14 10
+@datasave npc\npc-st.idf 15 10
+@datasave npc\npc-st.idf 16 10
+@datasave npc\npc-st.idf 17 90
+@datasave npc\npc-st.idf 18 10
+@datasave npc\npc-st.idf 19 10
+@datasave npc\npc-st.idf 35 150
+@datasave npc\npc-st.idf 36 100
+@datasave npc\npc-st.idf 37 170
+@datasave npc\npc-st.idf 41 200
+@datasave npc\npc-st.idf 42 100
+@do goto c4
+
+@label creation4
+@show
+`\   ú`%Creating NPC Defence.`\
+@do `p20 is 0
+
+@label top4
+@do `p20 + 1
+@if `p20 > 200 then goto df2
+@do `p21 random 140 5
+@datasave npc/npc-df.idf `p20 `p21
+@do goto top2
+;setting specific DF's
+@label df2
+@datasave npc\npc-df.idf 1 2400
+@datasave npc\npc-df.idf 2 2400
+@datasave npc\npc-df.idf 24 128
+@datasave npc\npc-df.idf 122 508
+@do goto c5
+
+@label creation5
+@do goto c6
+
+
+@label creation6
+;b-day can be from 1 to `v10 (default 90)
+@show
+`\   ú`%Creating NPC Birth Days.`\
+@do `p20 is 0
+
+@label top6
+@do `p20 + 1
+@if `p20 > 200 then goto c6
+@do `p21 random `v10 1
+@datasave npc/npc-bday.idf `p20 `p21
+@do goto top6
+
+@label creation7
+@show
+`\   ú`%Creating NPC Gems.`\
+@do `p20 is 0
+
+@label top7
+@do `p20 + 1
+@if `p20 > 200 then goto c7
+@do `p21 random 100 1
+@if `p21 > 51 then `p21 is 0
+@datasave npc/npcgems.idf `p20 `p21
+@do goto top7
+
+@label creation8
+@show
+`\   ú`%Creating NPC Taxes.`\
+@do `p20 is 0
+
+@label top8
+@do `p20 + 1
+@if `p20 > 200 then goto c8
+@do `p21 random 100 1
+@if `p21 > 90 then `p21 is 0
+@datasave npc/npctaxes.idf `p20 `p21
+@do goto top8
+
+@label creation9
+@show
+`\   ú`%Creating Realm Vault Gold.`\
+@do `p20 is 0
+
+@label top9
+@do `p20 + 1
+@if `p20 > 200 then goto c9
+@do `p21 random 500 1
+@if `p21 > 400 then `p21 is 0
+@datasave vaults.idf `p20 `p21
+@do goto top9
+
+@do goto c10
+@label creation10
+@show
+`\   ú`%Creating NPC data file #7.`\
+@datasave npc\npctimes.idf 1 1
+@datasave npc\npctimes.idf 2 1
+@datasave npc\npctimes.idf 3 3
+@datasave npc\npctimes.idf 4 3
+@datasave npc\npctimes.idf 5 2
+@datasave npc\npctimes.idf 6 2
+@datasave npc\npctimes.idf 7 2
+@datasave npc\npctimes.idf 8 2
+@datasave npc\npctimes.idf 9 2
+@datasave npc\npctimes.idf 10 2
+@datasave npc\npctimes.idf 11 2
+@datasave npc\npctimes.idf 12 2
+@datasave npc\npctimes.idf 13 2
+@datasave npc\npctimes.idf 14 3
+@datasave npc\npctimes.idf 15 3
+@datasave npc\npctimes.idf 16 2
+@datasave npc\npctimes.idf 17 2
+@datasave npc\npctimes.idf 18 5
+@datasave npc\npctimes.idf 19 3
+@datasave npc\npctimes.idf 20 4
+@datasave npc\npctimes.idf 21 2
+@datasave npc\npctimes.idf 22 1
+@datasave npc\npctimes.idf 23 4
+@datasave npc\npctimes.idf 24 3
+@datasave npc\npctimes.idf 25 2
+@datasave npc\npctimes.idf 26 4
+@datasave npc\npctimes.idf 27 2
+@datasave npc\npctimes.idf 28 1
+@datasave npc\npctimes.idf 29 2
+@datasave npc\npctimes.idf 30 5
+@datasave npc\npctimes.idf 31 1
+@datasave npc\npctimes.idf 32 7
+@datasave npc\npctimes.idf 33 1
+@datasave npc\npctimes.idf 34 7
+@datasave npc\npctimes.idf 35 2
+@datasave npc\npctimes.idf 36 2
+@datasave npc\npctimes.idf 37 2
+@datasave npc\npctimes.idf 38 2
+@datasave npc\npctimes.idf 39 2
+@datasave npc\npctimes.idf 40 1
+@datasave npc\npctimes.idf 41 2
+@datasave npc\npctimes.idf 42 2
+@datasave npc\npctimes.idf 43 1
+@datasave npc\npctimes.idf 44 2
+@datasave npc\npctimes.idf 45 2
+@datasave npc\npctimes.idf 46 2
+@datasave npc\npctimes.idf 47 1
+@datasave npc\npctimes.idf 48 2
+@datasave npc\npctimes.idf 49 2
+@datasave npc\npctimes.idf 50 1
+@datasave npc\npctimes.idf 51 2
+@datasave npc\npctimes.idf 52 1
+@datasave npc\npctimes.idf 53 2
+@datasave npc\npctimes.idf 54 2
+@datasave npc\npctimes.idf 55 2
+@datasave npc\npctimes.idf 56 1
+@datasave npc\npctimes.idf 57 2
+@datasave npc\npctimes.idf 58 2
+@datasave npc\npctimes.idf 59 2
+@datasave npc\npctimes.idf 60 2
+@datasave npc\npctimes.idf 61 1
+@datasave npc\npctimes.idf 62 2
+@datasave npc\npctimes.idf 63 2
+@datasave npc\npctimes.idf 64 2
+@datasave npc\npctimes.idf 65 1
+@datasave npc\npctimes.idf 66 2
+@datasave npc\npctimes.idf 67 2
+@datasave npc\npctimes.idf 68 2
+@datasave npc\npctimes.idf 69 2
+@datasave npc\npctimes.idf 70 1
+@datasave npc\npctimes.idf 71 2
+@datasave npc\npctimes.idf 72 2
+@datasave npc\npctimes.idf 73 2
+@datasave npc\npctimes.idf 74 2
+@datasave npc\npctimes.idf 75 1
+@datasave npc\npctimes.idf 76 2
+@datasave npc\npctimes.idf 77 2
+@datasave npc\npctimes.idf 78 2
+@datasave npc\npctimes.idf 79 2
+@datasave npc\npctimes.idf 80 3
+@datasave npc\npctimes.idf 81 1
+@datasave npc\npctimes.idf 82 2
+@datasave npc\npctimes.idf 83 2
+@datasave npc\npctimes.idf 84 2
+@datasave npc\npctimes.idf 85 2
+@datasave npc\npctimes.idf 86 2
+@datasave npc\npctimes.idf 87 2
+@datasave npc\npctimes.idf 88 2
+@datasave npc\npctimes.idf 89 2
+@datasave npc\npctimes.idf 90 2
+@datasave npc\npctimes.idf 91 2
+@datasave npc\npctimes.idf 92 2
+@datasave npc\npctimes.idf 93 2
+@datasave npc\npctimes.idf 94 2
+@datasave npc\npctimes.idf 95 2
+@datasave npc\npctimes.idf 96 1
+@datasave npc\npctimes.idf 97 2
+@datasave npc\npctimes.idf 98 2
+@datasave npc\npctimes.idf 99 2
+@datasave npc\npctimes.idf 100 2
+@datasave npc\npctimes.idf 101 2
+@datasave npc\npctimes.idf 102 2
+@datasave npc\npctimes.idf 103 2
+@datasave npc\npctimes.idf 104 2
+@datasave npc\npctimes.idf 105 2
+@datasave npc\npctimes.idf 106 0
+@datasave npc\npctimes.idf 107 0
+@datasave npc\npctimes.idf 108 0
+@datasave npc\npctimes.idf 109 1
+@datasave npc\npctimes.idf 110 2
+@datasave npc\npctimes.idf 111 2
+@datasave npc\npctimes.idf 112 2
+@datasave npc\npctimes.idf 113 2
+@datasave npc\npctimes.idf 114 2
+@datasave npc\npctimes.idf 115 2
+@datasave npc\npctimes.idf 116 2
+@datasave npc\npctimes.idf 117 2
+@datasave npc\npctimes.idf 118 2
+@datasave npc\npctimes.idf 119 2
+@datasave npc\npctimes.idf 120 1
+@datasave npc\npctimes.idf 121 2
+@datasave npc\npctimes.idf 122 2
+@datasave npc\npctimes.idf 123 2
+@datasave npc\npctimes.idf 124 2
+@datasave npc\npctimes.idf 125 2
+@datasave npc\npctimes.idf 126 2
+@datasave npc\npctimes.idf 127 2
+@datasave npc\npctimes.idf 128 2
+@datasave npc\npctimes.idf 129 2
+@datasave npc\npctimes.idf 130 2
+@datasave npc\npctimes.idf 131 2
+@datasave npc\npctimes.idf 132 2
+@datasave npc\npctimes.idf 133 2
+@datasave npc\npctimes.idf 134 1
+@datasave npc\npctimes.idf 135 2
+@datasave npc\npctimes.idf 136 2
+@datasave npc\npctimes.idf 137 2
+@datasave npc\npctimes.idf 138 2
+@datasave npc\npctimes.idf 139 2
+@datasave npc\npctimes.idf 140 2
+@datasave npc\npctimes.idf 141 2
+@datasave npc\npctimes.idf 142 2
+@datasave npc\npctimes.idf 143 1
+@datasave npc\npctimes.idf 144 2
+@datasave npc\npctimes.idf 145 2
+@datasave npc\npctimes.idf 146 2
+@datasave npc\npctimes.idf 147 2
+@datasave npc\npctimes.idf 148 2
+@datasave npc\npctimes.idf 149 2
+@datasave npc\npctimes.idf 150 2
+@datasave npc\npctimes.idf 151 2
+@datasave npc\npctimes.idf 152 2
+@datasave npc\npctimes.idf 153 2
+@datasave npc\npctimes.idf 154 2
+@datasave npc\npctimes.idf 155 2
+@datasave npc\npctimes.idf 156 2
+@datasave npc\npctimes.idf 157 1
+@datasave npc\npctimes.idf 158 2
+@datasave npc\npctimes.idf 159 2
+@datasave npc\npctimes.idf 160 2
+@datasave npc\npctimes.idf 161 2
+@datasave npc\npctimes.idf 162 2
+@datasave npc\npctimes.idf 163 2
+@datasave npc\npctimes.idf 164 2
+@datasave npc\npctimes.idf 165 2
+@datasave npc\npctimes.idf 166 2
+@datasave npc\npctimes.idf 167 2
+@datasave npc\npctimes.idf 168 2
+@datasave npc\npctimes.idf 169 2
+@datasave npc\npctimes.idf 170 2
+@datasave npc\npctimes.idf 171 2
+@datasave npc\npctimes.idf 172 2
+@datasave npc\npctimes.idf 173 2
+@datasave npc\npctimes.idf 174 2
+@datasave npc\npctimes.idf 175 2
+@datasave npc\npctimes.idf 176 2
+@datasave npc\npctimes.idf 177 2
+@datasave npc\npctimes.idf 178 2
+@datasave npc\npctimes.idf 179 1
+@datasave npc\npctimes.idf 180 2
+@datasave npc\npctimes.idf 181 2
+@datasave npc\npctimes.idf 182 2
+@datasave npc\npctimes.idf 183 2
+@datasave npc\npctimes.idf 184 2
+@datasave npc\npctimes.idf 185 2
+@datasave npc\npctimes.idf 186 1
+@datasave npc\npctimes.idf 187 1
+@datasave npc\npctimes.idf 188 1
+@datasave npc\npctimes.idf 189 1
+@datasave npc\npctimes.idf 190 2
+@datasave npc\npctimes.idf 191 2
+@datasave npc\npctimes.idf 192 2
+@datasave npc\npctimes.idf 193 2
+@datasave npc\npctimes.idf 194 2
+@datasave npc\npctimes.idf 195 2
+@datasave npc\npctimes.idf 196 1
+@datasave npc\npctimes.idf 197 2
+@datasave npc\npctimes.idf 198 2
+@datasave npc\npctimes.idf 199 2
+@datasave npc\npctimes.idf 200 7
+
+@label creation11
+@show
+`\   ú`%Creating NPC JOBs.`\
+@do `p20 is 0
+
+@label top11
+@do `p20 + 1
+@if `p20 > 138 then goto c12
+@do `p21 is 1
+@datasave npc/npcjob.idf `p20 `p21
+@do goto top11
+
+@label c12
+@datasave npc/npcjob.idf 198 1
+@datasave npc/npcjob.idf 199 200
+@datasave npc/npcjob.idf 200 200
+
+@closescript
+@#NOMORE

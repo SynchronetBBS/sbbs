@@ -1,0 +1,76 @@
+; +-- WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! --+
+;
+;       LoRD2: Complete New World v137.0+ requires LoRD2 v1.02+
+;
+;                             get it at
+;                    http://lord.lordlegacy.org
+;
+;
+;
+@#rules
+
+;Rules for LORD II: New World.  You can change #'s here to affect the
+;rules of the game.
+;change the 0 below to a 1 to show an optional opening message.
+
+@progname
+Complete New World  v137.0
+
+@moremap
+`r0`2<`w`0M`wO`wR`wE`w`2>
+
+;@GRAPHICS IS 3  <-- no need to use yet 1=ascii game 2=ascii 3+=ansi
+
+@DO MOVE 1 1
+@CLEAR SCREEN
+@displayfile lord.ans
+
+;Set the following to your preferences.
+@do `v03 is 0 ;Can players die unlimited times per day?  0 is no, 1 is yes
+@do `v05 is 20000 ;turns per day given to a player, 0 for unlimited
+@do `v06 is 0 ; Make this 1 to activate CLEAN mode, this means 'dirty' things
+              ; will not happen, like there won't be whores at the Sea Hag
+              ; hotel
+@do `v07 is 5 ; Max random quests possible per day
+@do `v08 is 50 ; Max uses of the slot machines/craps per day
+@do `v09 is 10 ; Level at which players can be attacked in Inns. 0 for never
+@do `v10 is 20 ;<-- SET THIS to adjust days for 1 LoRD2 Year
+; `v11 is todays day # for the year. Checks for in gametxt.ref
+; `v12 is current year #. Checks for in gametxt.ref
+@do `v13 is 20 ; Days of pregnancy for women.
+@do `v14 is 2  ; Days to keep NPC dead for after being killed by a player.
+@do `v15 is 15 ; Tax rate "%" for calculating how much owed.
+@do `v16 is 5  ; Interest rate. (eg. for late taxes by day)
+@do `v17 is 10000 ;How much gold to allow for over dues of taxes before put on bounty list.
+@do `v18 is 22  ;min age to start paying taxes. If under, do not calc it.
+@do `v19 is 13  ;min age players can start at (random)
+@do `v20 is 19  ;max age players can start at (random)
+;
+;  +------------------------- GAME STYLE -----------------------------+
+;
+@do `v30 is 0 ;<ÄÄÄ¿
+;                  ÀÄSet this to one of theseÄÄÄ
+;          0=full CNW (All IGMs and ALL NPCS functional)
+;          1=No IGMs, but is NPC (no igms) <- not available yet, do not set!
+;          2=<not available yet, do not set!>
+;          3=<not available yet, do not set!>
+;          4=FULL COMPLETE INSANE WAR! ;> 
+;    +- below here NPCs are partialy or complete disabled -+
+;          5=WAR, disable NPC flirts (availble: quests+give+fight)
+;          6=NOT WAR, disable NPC flirts (availble: quests+give+fight)
+;          7=WAR, disable NPC flirts+give (availble: quests+fight)
+;          8=NOT WAR, disable NPC flirts+give (availble: quests+fight)
+;          9=Just IGMs (disable NPCs completely)
+;
+;     WAR = -NPCs are more greedy+stronger
+;           -hate mail is on.           
+;           -more ideas? leave a msg on lord2@egroups.com
+;
+@show
+`%Legend of the Red Dragon II: Complete New World is now loading...`\
+`l.`l.`l.
+@routine maint in maint.ref          ; <-- new maint procedures
+
+
+@DO MOVE 1 1
+@#NOMORE

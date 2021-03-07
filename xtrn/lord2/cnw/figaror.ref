@@ -1,0 +1,249 @@
+; Script file FIGAROR.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE poison 000000490
+@DECLARE fred 000000636
+@DECLARE book 000000973
+@DECLARE statue 000001941
+@DECLARE deadman 000002691
+@DECLARE howcome 000003727
+@DECLARE cool 000004706
+@DECLARE go 000005294
+@DECLARE dagger 000005429
+@DECLARE troy 000005903
+@DECLARE pod1 000005980
+@DECLARE pod2 000006073
+@DECLARE junk 000006175
+@DECLARE nothere 000006248
+@NOCHECK
+; End of .REF index
+
+@#poison
+@if `p02 is 1 then goto fred
+ 
+@do `p02 - 1
+@do saybar
+`%The air is quite `0toxic`%! You cough a little and lose `41 Hit Point`%.
+ 
+@#fred
+@clear screen
+@show
+ 
+`2     The air is getting a little too `0toxic `2for you to take! You hold
+     your breath and head out of the Laboratory for you know one more
+     minute in there could `4kill `2you!
+ 
+`l`l`l`l
+`k
+@loadmap 344
+@do map is 344
+@do x is 40
+@do y is 12
+@drawmap
+@update
+@closescript
+@end
+ 
+@#book
+@do moveback
+@clear screen
+@show
+ 
+`2     You grab a book called `0"Figaro's Secrets" `2!
+     You open the book to a Random Page... it is writin:
+ 
+`7                       It comes only before,
+`7                       It comes only after,            `%@ @
+`7                       Rises only in darkness,         `%@ `7@
+`7                       But rises only in light.        `%@ @
+`7                       It is always the same,          `%@ @
+`7                       But is yet always different. 
+ 
+`7                       What am I?
+ 
+       This famous Riddle was past down from generation to generation!
+       It was rumored that the inventor of Castle Figaro has hidden his
+       laboratory somewhere within the Castle. But no one was able to
+       find the entrance! Could this riddle have a clue?
+ 
+`7Figaro's Secrets..................................................Page 192
+@key
+@drawmap
+@update
+@closescript
+ 
+@#statue
+@do moveback
+@clear screen
+@show
+`\`\`2     You look at the Statue closely... for some reason, you have this
+     urge to say something to it...
+ 
+@do `s01 is moon
+@do write
+  `2You say:`x
+@do readstring 50 NIL `s02
+@do upcase `s01
+@do upcase `s02
+ 
+@if `s02 is `s01 then do
+  @begin
+  @show
+`\`\       `0"Moon? The moon?" `2the statue says... soon a trap door opens in
+       front of you, deciding on what you should do next, the Chancellor
+       looks at you weirdly, without hesitation, you rush down the door!
+ 
+`k
+@loadmap 345
+@do map is 345
+@do x is 16
+@do y is 5
+@drawmap
+@update
+@closescript
+@end
+ 
+@show
+`\`\       `2Nothing happened!? DUH!!! It's a statue you dolt!
+ 
+`k
+@drawmap
+@update
+ 
+@#deadman
+@do moveback
+@clear screen
+@show
+[0m
+[6C  [1;30m ‹[0m‹[1m‹[0m
+[6C [1;30m‹[47m≤±∞ [37m≤[40m‹[0m
+[6C[1;30mﬁ›[0;31m‹[37mﬂ[1;30;47m‹[0;30;47mﬂ[31;40m˛[1;37mﬁ›[0m
+[3C[31m∞±≤‹[1;30mﬂ[41m∞[47m±[0;30;47mﬂ[1;37m‹[41m±[40mﬂ[0;31m‹±∞[37m[5C[1;32m"Wazzup? Please talk with me! I'm very lonely!"[0m
+  [31m∞±≤€€‹[1;30mﬂﬂ[0;31m‹‹ﬂ‹€≤±∞[37m
+[3C[31m∞±≤≤€€€‹‹€€€€≤±∞[37m
+[6C[31m∞±±≤≤≤≤±±∞∞[37m
+[7C[31m∞∞∞±±∞∞∞[37m
+[0m
+ 
+`$     "What the hell!? A talking skull!?" `2you scream out.
+ 
+`0     "It's not my fault! I've been trapped here for several years
+     and the toxic gas mutated me and now I'm alive again... as an
+     undead skull of course!" `2he explains.
+ 
+@DO `V01 is 1
+@choice
+How come you died?
+Do you have any super cool powers?
+Sniff... sniff... this place smells! Gotta go!
+@if response is 1 then do
+ @begin
+ @do goto howcome
+ @end
+@if response is 2 then do
+ @begin
+ @do goto cool
+ @end
+@if response is 3 then do
+ @begin
+ @do goto go
+ @end
+ 
+@#howcome
+@clear screen
+@show
+ 
+`0     "A long time ago, I designed this whole castle and my Laboratory
+     used to be the Main Engine room. But there was an accident and the
+     engine exploded, toxic liquid made out of Behemoth blood spilled
+     all over the room! But stupid me, I never told anyone about the
+     location of my Laboratory, so I died of Intoxication... but as the
+     years past by, I was revived by the gas... soon I hope to evolve
+     into a Humanoid type form, first I was a Rat, then a skull... what
+     could be next!?" `2he explains...
+ 
+`$     "I hope I won't mutate into something as ugly as you are because
+     I'm wasting my time listening to your life story!" `2you say with
+     a grin.
+ 
+`0     "You don't need Toxic Gases to turn yourself into a ugly freak...
+     you already look enough like one!" `2the skull says with a grin.
+ 
+`2     You decide to leave the loner alone...
+@key
+@drawmap
+@update
+@closescript
+ 
+@#cool
+@clear screen
+@show
+ 
+`$     "Do you have any super cool powers!?" `2you ask.
+ 
+`0     "I can make pathetic anoying kids who bother Mutated Skulls go
+     away!" `2the skull replies.
+ 
+`$     "COOL! Could you gimme a demonstration!?" `2you ask with a smile!
+ 
+`0     "My pleasure..." `2the skull says and remains immobilized.
+ 
+`$     "Why aren't you talking anymore!? Hello? Skull... damn he must be
+     dead..." `2you ask by leaving the skull alone...
+ 
+`2     As you head away from it, you hear a little laugh...       
+@key
+@drawmap
+@update
+@closescript
+ 
+@#go
+@clear screen
+@show
+ 
+`2     You decide to stay away from the talking skull...
+@key
+@drawmap
+@update
+@closescript
+ 
+@#dagger
+@do moveback
+@if `p49 is 1 then goto troy
+@clear screen
+@show
+ 
+`2     You find a dagger lying on the floor, it seems to be glowing with
+     a strange green light...
+ 
+`$     "Wow! After years of being exposed to Toxis Gases, this normal
+     lame Dagger is now a `0POISON DAGGER`$!!!" `2you say in an excited
+     voice.
+ 
+`%                       YOU NOW OWN A POISON DAGGER!
+ 
+@do `p49 is 1
+@do `i49 + 1
+@key
+@drawmap
+@update
+@closescript
+ 
+@#troy
+@do saybar
+`7One `0Poison Dagger `7is good enough if ya ask me!
+ 
+@#pod1
+@do saybar
+`7This containment pod seems to be carrying a human male... strange!
+ 
+@#pod2
+@do saybar
+`7The containment pod is carrying a strange female dressed in royal clothing!
+ 
+@#junk
+@do saybar
+`7You strugle your way into the pile of junk.
+ 
+@#nothere
+@do saybar
+`7Not implemented in this version yet.

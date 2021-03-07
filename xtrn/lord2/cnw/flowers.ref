@@ -1,0 +1,81 @@
+; Script file FLOWERS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE notfun 000000303
+@DECLARE flowerbed 000000432
+@DECLARE flowerbed2 000000936
+@DECLARE whitesee 000001024
+@DECLARE whiteflower 000001365
+@DECLARE nomore 000001686
+@NOCHECK
+; End of .REF index
+
+@#notfun
+@routine getname in npcname2.ref
+@do saybar
+`$`s01: `%This sucks, take me away from here!
+@do goto flowerbed2
+
+@#flowerbed
+@if `p71 is 0 then goto flowerbed2
+@if `t50 > 1 then goto notfun
+@do `p26 is `p71
+@routine getname in npcname2.ref
+@do saybar
+`$`s01: `%WOW, this is BEAUTIFUL!
+@do `t50 is 7
+@dataload npc/npc3`p70.idf &playernum `p21
+@if `p21 is 0 then `p21 is 1
+@if `p21 > 0 then goto flowerbed2
+@datasave npc/npc3`p70.idf &playernum `p21
+@dataload npc/npc-`p70.idf &playernum `p20
+@do `p20 + 3
+@if `p20 > 200 then `p20 is 200
+@datasave npc/npc-`p70.idf &playernum `p20
+@do `p08 + 2
+
+@label flowerbed2
+@do quebar
+`$`N: `%WOW, what a beautiful flowerbed!
+@end
+@closescript
+
+@#whitesee
+@do `p20 random 3 1
+@if `p20 is 1 then do
+@begin
+@do saybar
+`|`$Why is this white flower all by itself?
+@end
+
+@if `p20 is 2 then do
+@begin
+@do saybar
+`|`$STOP!! Don't walk on that nice flower.
+@end
+
+@if `p20 is 3 then do
+@begin
+@do saybar
+`|`$There must be something special about this.
+@end
+@closescript
+
+@#whiteflower
+@do moveback
+@if `i92 > 0 then do
+        @begin
+        @do saybar
+`%@`2>-      `4Nice white flower.
+        @closescript
+        @end
+@do saybar
+`%@`2>- `4Nice white flower, do you pick it? [N/y]
+@DO READSPECIAL `s01 NY
+@if `s01 is Y then do
+  @begin
+  @do `i92 + 1
+  @end
+@end
+@closescript
+
+@#nomore

@@ -1,0 +1,503 @@
+; Script file ORACLE2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE scene3 000000220
+@DECLARE scene4 000003812
+@NOCHECK
+; End of .REF index
+
+;Another scene file for the oracle.
+
+@#scene3
+@loadmap 1440
+@drawmap
+@do move 40 11
+@do write
+`r2`8
+@do move 58 11
+@do write
+`l`l`|`|`r2`$
+@do move 57 11
+@do write
+`w`r2`$`x
+@do move 56 11
+@do write
+`w`r2`$`x
+@do move 55 11
+@do write
+`w`r2`$`x
+@do move 54 11
+@do write
+`w`r2`$`x
+@do move 53 11
+@do write
+`w`r2`$`x
+@do move 52 11
+@do write
+`w`r2`$`x
+@do move 51 11
+@do write
+`w`r2`$`x
+@do move 50 11
+@do write
+`w`r2`$`x
+@do move 49 11
+@do write
+`w`r2`$`x
+@do move 48 11
+@do write
+`w`r2`$`x
+@do move 47 11
+@do write
+`w`r2`$`x
+@do move 46 11
+@do write
+`w`r2`$`x
+@do move 45 11
+@do write
+`w`r2`$`x
+@do move 44 11
+@do write
+`w`r2`$`x
+@do move 43 11
+@do write
+`w`r2`$`x
+@do move 42 11
+@do write
+`w`r2`$`x
+@do move 41 11
+@do write
+`w`r2`$`x`l`l
+@show
+`r0`c                          `4Evil Incarnate
+
+      `8"You took long enough to get here..."
+      `k
+      `$"It can't be helped.  There's a warrior nearby who's looking for you
+      whether it be a good reason or not I'm not sure."
+      `k
+      `8"Does the man or woman know about the dragon?"
+      `k
+      `$"The s&man may know milord.  It might be wise to keep the dragon at
+      bay for now."
+      `k
+      `8"Damn!" `7he barks.  `8"Arrange for this warrior to come to our island
+      and make sure no one interfers."
+      `k
+@drawmap
+@do move 40 11
+@do write
+`r2`8
+@do move 45 11
+@do write
+`r2`$
+@do move 45 11
+@do write
+`l`l`r2`x
+@do move 45 12
+@do write
+`r2`$
+@do move 45 12
+@do write
+`w`r2`x
+@do move 45 13
+@do write
+`r2`$
+@do move 45 13
+@do write
+`w`r2`x
+@do move 45 14
+@do write
+`r2`$
+@do move 45 14
+@do write
+`w`r2`x
+@do move 45 15
+@do write
+`r2`$
+@do move 45 15
+@do write
+`w`r2`x
+@do move 45 16
+@do write
+`r2`$
+@do move 44 16
+@do write
+`w`r2`$`x
+@do move 43 16
+@do write
+`w`r2`$`x
+@do move 42 16
+@do write
+`w`r2`$`x
+@do move 41 16
+@do write
+`w`r2`$`x
+@do move 40 16
+@do write
+`w`r2`$`x
+@do move 39 16
+@do write
+`w`r2`$`x
+@do move 38 16
+@do write
+`w`r2`$`x
+@do move 37 16
+@do write
+`w`r2`$`x
+@do move 36 16
+@do write
+`w`r2`$`x
+@do move 35 16
+@do write
+`w`r2`$`x
+@do move 34 16
+@do write
+`w`r2`$`x
+@do move 33 16
+@do write
+`w`r2`$`x
+@do move 32 16
+@do write
+`w`r2`$`x
+@do move 31 16
+@do write
+`w`r2`$`x
+@do move 30 16
+@do write
+`w`r2`$`x
+@do move 29 16
+@do write
+`w`r2`$`x
+@do move 28 16
+@do write
+`w`r2`$`x
+@do move 27 16
+@do write
+`w`r2`$`x
+@do move 26 16
+@do write
+`w`r2`$`x
+@do move 25 16
+@do write
+`w`r2`$`x
+@do move 24 16
+@do write
+`w`r2`$`x
+@do move 23 16
+@do write
+`w`r2`$`x
+@do move 22 16
+@do write
+`w`r2`$`x
+@do move 21 16
+@do write
+`w`r2`$`x
+@do move 20 16
+@do write
+`w`r2`$`x
+@do move 19 16
+@do write
+`w`r2`$`x
+@do move 18 16
+@do write
+`w`r2`$`x
+@do move 17 16
+@do write
+`w`r2`$`x
+@do move 16 16
+@do write
+`w`r2`$`x
+@do move 15 16
+@do write
+`w`r2`$`x
+@do move 14 16
+@do write
+`w`r2`$`x
+@do move 13 16
+@do write
+`w`r2`$`x
+@do move 12 16
+@do write
+`w`r2`$`x
+@do move 11 16
+@do write
+`w`r2`$`x
+@do move 10 16
+@do write
+`w`r2`$`x
+@do move 9 16
+@do write
+`w`r2`$`x
+@do move 8 16
+@do write
+`w`r2`$`x
+@do move 7 16
+@do write
+`w`r2`$`x
+@do move 6 16
+@do write
+`w`r2`$`x
+@do move 5 16
+@do write
+`w`r2`$`x
+@do move 4 16
+@do write
+`w`r2`$`x
+@do move 3 16
+@do write
+`w`r2`$`x
+@do move 2 16
+@do write
+`w`r2`$`x
+@do move 1 16
+@do write
+`w`r2`$`x
+@do move 1 16
+@do write
+`w`r2`x
+@do move 40 11
+@do write
+`r2`|`|`x`l`l
+@loadmap 1205
+@drawmap
+
+@#scene4
+@loadmap 1193
+@drawmap
+@do move 40 12
+@do write
+`r7`8`l`l`l`l
+@routine upbar in owtc.ref
+@do move 4 2
+@do write
+`r1`%SUMMON`l`l`l`l
+@routine clearbar in owtc.ref
+@do move 44 12
+@do write
+`r7`|`|`|`|`4`b
+@show
+`r0`c                          `4Into the Dragon
+
+      `8"My faithful dragon... soon you'll be reborn to the world."
+      `k
+      `4"Fail me not again, I have need for the Smakrod, I have need to be
+      reborn..."
+      `k
+      `8"It won't take as long as expected and then the Koshi too shall be
+      utterly helpless under your power, your breath."
+      `k
+      `4"The Koshi are no worry, just get me the rod or you'll join me on
+      the otherside.  And this is no threat."
+      `k
+@drawmap
+@do move 40 12
+@do write
+`r7`8
+@do move 44 12
+@do write
+`r7`4`b`l`l`l`l
+@do move 44 12
+@do write
+`|`|`|`|`r7`x`l`l`l
+@do move 80 12
+@do write
+`r2`0
+@do move 79 12
+@do write
+`w`r2`0`x
+@do move 78 12
+@do write
+`w`r2`0`x
+@do move 77 12
+@do write
+`w`r2`0`x
+@do move 76 12
+@do write
+`w`r2`0`x
+@do move 75 12
+@do write
+`w`r2`0`x
+@do move 74 12
+@do write
+`w`r2`0`x
+@do move 73 12
+@do write
+`w`r2`0`x
+@do move 72 12
+@do write
+`w`r2`0`x
+@do move 71 12
+@do write
+`w`r2`0`x
+@do move 70 12
+@do write
+`w`r2`0`x
+@do move 69 12
+@do write
+`w`r2`0`x
+@do move 68 12
+@do write
+`w`r2`0`x
+@do move 67 12
+@do write
+`w`r2`0`x
+@do move 66 12
+@do write
+`w`r2`0`x
+@do move 65 12
+@do write
+`w`r2`0`x
+@do move 64 12
+@do write
+`w`r2`0`x
+@do move 63 12
+@do write
+`w`r2`0`x
+@do move 62 12
+@do write
+`w`r2`0`x
+@do move 61 12
+@do write
+`w`r2`0`x
+@do move 60 12
+@do write
+`w`r2`0`x
+@do move 59 12
+@do write
+`w`r2`0`x
+@do move 58 12
+@do write
+`w`r2`0`x
+@do move 57 12
+@do write
+`w`r2`0`x
+@do move 56 12
+@do write
+`w`r2`0`x
+@do move 55 12
+@do write
+`w`r2`0`x
+@do move 54 12
+@do write
+`w`r2`0`x
+@do move 53 12
+@do write
+`w`r2`0`x
+@show
+`r0`c                          `!Destruction
+
+      `8"The dragon fears the Gryphon moon, I need it to be on hand once I
+      bring the Smakrod to the Gateway."
+      `k
+      `0"But milord, what if we don't have it?  The Koshi still try to get
+      it back."
+      `k
+      `8"It won't matter, I want the whole of the clan to be ready for our
+      victory and if we must, to be ready to slay the dragon once we are
+      victorious!"
+      `k
+      `0"You are clever milord, we shall stand ready!"
+      `k
+@drawmap
+@do move 53 12
+@do write
+`r2`0
+@do move 40 12
+@do write
+`r7`8`l`l
+@do move 53 12
+@do write
+`w`r2`x`0
+@do move 54 12
+@do write
+`w`r2`x`0
+@do move 55 12
+@do write
+`w`r2`x`0
+@do move 56 12
+@do write
+`w`r2`x`0
+@do move 57 12
+@do write
+`w`r2`x`0
+@do move 58 12
+@do write
+`w`r2`x`0
+@do move 59 12
+@do write
+`w`r2`x`0
+@do move 60 12
+@do write
+`w`r2`x`0
+@do move 61 12
+@do write
+`w`r2`x`0
+@do move 62 12
+@do write
+`w`r2`x`0
+@do move 63 12
+@do write
+`w`r2`x`0
+@do move 64 12
+@do write
+`w`r2`x`0
+@do move 65 12
+@do write
+`w`r2`x`0
+@do move 66 12
+@do write
+`w`r2`x`0
+@do move 67 12
+@do write
+`w`r2`x`0
+@do move 68 12
+@do write
+`w`r2`x`0
+@do move 69 12
+@do write
+`w`r2`x`0
+@do move 70 12
+@do write
+`w`r2`x`0
+@do move 71 12
+@do write
+`w`r2`x`0
+@do move 72 12
+@do write
+`w`r2`x`0
+@do move 73 12
+@do write
+`w`r2`x`0
+@do move 74 12
+@do write
+`w`r2`x`0
+@do move 75 12
+@do write
+`w`r2`x`0
+@do move 76 12
+@do write
+`w`r2`x`0
+@do move 77 12
+@do write
+`w`r2`x`0
+@do move 78 12
+@do write
+`w`r2`x`0
+@do move 79 12
+@do write
+`w`r2`x`0
+@do move 80 12
+@do write
+`w`r2`x
+@do move 40 12
+@do write
+`r7`%`|`|`|`|`x
+@do move 41 16
+@do write
+`r7`%`|`|`|`|`!`l`l`l`l
+@do move 41 16
+@do write
+`r7`%`|`|`|`|`x`l`l`l`l
+@loadmap 1205
+@drawmap
+@run oracle in owtc.ref

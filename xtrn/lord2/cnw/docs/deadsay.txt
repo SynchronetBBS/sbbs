@@ -1,0 +1,19 @@
+
+                              LORD Stuff Pack 1
+                        (c) 1997 ShroomTrip Software
+
+  These are all 8 of the random sayings that will be added to the Daily News
+when a player is killed by a monster:
+
+  `n was whipped up on by `e!
+  `e has decapitated `n!
+  `e has eaten `n for breakfast!
+  `n got s&his ass slaughtered by `e!
+  `n has died a pitiful death at the hands of `e!
+  `e was last seen hauling `n's body to their lair!
+  `e totally humiliates `n in front of s&his lover!
+  `n curses the day `e was born!
+
+`n = This is the player's name in LORD 2
+`e = This is the name of the monster that killed the player
+s&his = his if sex is male, her if sex is female

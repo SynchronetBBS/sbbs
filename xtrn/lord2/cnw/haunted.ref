@@ -1,0 +1,199 @@
+; Script file HAUNTED.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE sign 000000378
+@DECLARE warp 000000453
+@DECLARE ghost 000000729
+@DECLARE guy 000001246
+@DECLARE guy2 000001737
+@DECLARE door 000002232
+@DECLARE oldlady 000002469
+@DECLARE old 000003082
+@DECLARE gho 000003321
+@DECLARE nomore 000003746
+@NOCHECK
+; End of .REF index
+
+@#SIGN
+@DO MOVEBACK
+@DO SAYBAR
+`bCONDEMNED BUILDING: `7Haunted House
+
+@#WARP
+@dataload HAUNTED.IDF &playernum `t50
+@do MAP is 1238
+@if bitcheck `t50 3 1 then do
+ @begin
+ @do MAP is 1237
+ @end
+@do X is 38
+@do Y is 19
+@loadmap &map
+@drawmap
+@update
+@if bitcheck `t50 4 1 then do
+ @begin
+ @do move 36 13
+ @do write
+`r7`6ì
+ @end
+
+@#GHOST
+;wants moonstone
+@dataload HAUNTED.IDF &playernum `t50
+@DO MOVEBACK
+@if bitcheck `t50 0 1 then do
+ @begin
+ @do saybar
+You've given me my moonstone! Yay! I'm so happy!
+ @closescript
+ @end
+@DO SAYBAR
+I want a moonstone.
+@if `i57 > 0 then do
+ @begin
+ @key
+ @do saybar
+Will you give him a moonstone? Y/N :
+@DO READSPECIAL `s01 YN
+ @if `s01 is Y then do
+  @begin
+  @bitset `t50 0 1
+  @do `i57 - 1
+  @do saybar
+You hand over a moonstone
+  @end
+ @end
+@datasave HAUNTED.IDF &playernum `t50
+
+@#GUY
+;wants egg
+@dataload HAUNTED.IDF &playernum `t50
+@DO MOVEBACK
+@if bitcheck `t50 1 1 then do
+ @begin
+ @do saybar
+You've given me my egg! Yay! I'm so happy!
+ @closescript
+ @end
+@DO SAYBAR
+I want an egg.
+@if `i43 > 0 then do
+ @begin
+ @key
+ @do saybar
+Will you give him an egg? Y/N :
+@DO READSPECIAL `s01 YN
+ @if `s01 is Y then do
+  @begin
+  @bitset `t50 1 1
+  @do `i43 - 1
+  @do saybar
+You hand over an egg
+  @end
+ @end
+@datasave HAUNTED.IDF &playernum `t50
+
+@#GUY2
+;apple
+@dataload HAUNTED.IDF &playernum `t50
+@DO MOVEBACK
+@if bitcheck `t50 2 1 then do
+ @begin
+ @do saybar
+You've given me my apple! Yay! I'm so happy!
+ @closescript
+ @end
+@DO SAYBAR
+I want an apple.
+@if `i19 > 0 then do
+ @begin
+ @key
+ @do saybar
+Will you give him an apple? Y/N :
+@DO READSPECIAL `s01 YN
+ @if `s01 is Y then do
+  @begin
+  @bitset `t50 2 1
+  @do `i19 - 1
+  @do saybar
+You hand over an apple
+  @end
+ @end
+@datasave HAUNTED.IDF &playernum `t50
+
+@#DOOR
+;check itself
+@dataload HAUNTED.IDF &playernum `t50
+@if bitcheck `t50 0 1 then do
+ @begin
+@if bitcheck `t50 1 1 then do
+ @begin
+@if bitcheck `t50 2 1 then do
+ @begin
+ @closescript
+ @end
+ @end
+ @end
+@do moveback
+
+@#OLDLADY
+@dataload HAUNTED.IDF &playernum `t50
+@DO MOVEBACK
+@if bitcheck `t50 3 1 then do
+ @begin
+ @do saybar
+Old Lady: You've been so kind, giving me this small furry animal. Thank you!
+ @closescript
+ @end
+@DO SAYBAR
+Old Lady: Me oh my, I'm such an old, decrepit, lonely old lady...
+@if `i51 > 0 then do
+ @begin
+ @key
+ @do saybar
+Do you give her a small fuzzy animal? Y/N :
+@DO READSPECIAL `s01 YN
+ @if `s01 is Y then do
+  @begin
+  @bitset `t50 3 1
+  @do `i51 - 1
+  @do saybar
+You hand over the small furry animal to the happy old lady
+  @end
+ @end
+@datasave HAUNTED.IDF &playernum `t50
+
+@#OLD
+@do MOVEBACK
+@DO SAYBAR
+Thank you so much for breaking the curse. Those ghosts that were in the house
+@key
+@do saybar
+were bound to say until all of us got a specific item. Thank you so very,
+@key
+@do saybar
+very much!!!
+
+@#GHO
+@dataload HAUNTED.IDF &playernum `t50
+@if bitcheck `t50 4 1 then do
+ @begin
+ @closescript
+ @end
+@do moveback
+@do saybar
+The other ghosts ... continued the journey of life... but I remained behind
+@key
+@do saybar
+So as to reward you. Here is $40,000 and two moonstones for your trouble.
+@do `i57 + 2
+@do MONEY + 40000
+@bitset `t50 4 1
+@do move 36 13
+@do write
+`r7`6ì
+@key
+@do saybar
+Thank you.
+
+@#NOMORE

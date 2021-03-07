@@ -1,0 +1,42 @@
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+                         About Devils Island v1.50
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+
+  Devils Island Version 1.50
+
+   Completed Demon Inn!
+
+    File: DEVHOT.REF
+      Added
+           :Soda Machine
+           :Snack Machine
+           :Ice Machine
+           :If completion of quest user has acs to the locked door!
+             \_Tables have some stuff for them on it, Only Once a day
+
+
+   Completed Demon's Bar!
+
+    FILE: DEVHOT.REF
+      Updated
+             :Bathroom
+               Added
+                    :Sink            
+                    :Urnal
+                    :Toliet
+                    :Condom dispencer
+
+   Party finished CityHall (Bank only)
+
+    FILE: DEVISL.REF
+      Added
+           :Bank
+
+
+Darklands BBS (215) 487 7315
+Http://www.ibbs.com/darkland/
+TelNet: 205.198.132.190
+                   ^__.190 can change.(sorry)damn dynamic ips
+
+

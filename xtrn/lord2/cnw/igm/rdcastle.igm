@@ -1,0 +1,50 @@
+
+                `4The Red Dragon's Castle `2By `%King `4Lucifer
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  An easy to make IGM that I thought would really help people and their
+  quests...ENJOY
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM RDCASTLE.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, go across Flag City Bridge and follow the beach until you see a
+  good size island with a path leading directly into the water...(hint hint)
+  at the centre of the island is a blinking X which teleports you inside
+  the castle...
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4The Red Dragon's Castle `2by `%King `4Lucifer
+replacescreen: 1014 1 show
+
+replacescreen: 933 2 show
+
+replacescreen: 44 3 noshow
+
+installmessage:
+
+  `bABOUT THIS IGM:
+
+  `yIf you didn't already know this, this is my first IGM I ever created...I
+  think it makes sense since the Dragon Tooth Clan is always protecting a Town
+  or City from attack from the Red Dragon...if you have any questions write me
+  mail in LORD II on THE ZONE BBS...

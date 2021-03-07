@@ -1,0 +1,318 @@
+; Script file TSTDRGON.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:41 2001
+
+@DECLARE dragon 000000353
+@DECLARE clean 000001529
+@DECLARE thewords 000002156
+@DECLARE dragon_choices 000002445
+@DECLARE win 000006233
+@DECLARE example 000006297
+@NOCHECK
+; End of .REF index
+
+;The file that will pull up the dragon information.
+ 
+@#dragon
+@do moveback
+@dataload tstdrgon.idf &playernum `p20
+@if `p20 is 1 then do
+  @begin
+  @do saybar
+`7The `4Red Dragon `7is `4Dead`7!
+  @closescript
+  @end
+@offmap
+@pauseoff
+@show
+`r0`c
+[?7h[40m[2J[0;1;30mÛßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßÛ
+[2;1HÛ[20C[0;33mßÜ[12C[1;30mÛ[3;1HÛ[8C[0;33mÜ Ü[8C[s
+[u[31mÜ[41m  [1m0[0;31mÜÜÜ[8C[1;30mÛ[4;1HÛ[7C[s
+[u[31;43mÜÛÜßÜ[0;33mÜ    [31mÜ[41m     [40mßßß[8C[s
+[u[1;30mÛ[5;1HÛ[9C[31mß[43mÛÜß[0;33mÛ [31mÜ[41m [40m[s
+[u[41m  [40mß   ßß[9C[1;30mÛ[6;1HÛ[41m [0;31mÜ[5CÜÜÜ[s
+[u[41m         [12C[1;33;40mÜÛÜ[30mÛ[7;1HÛ[41m   [40m[s
+[u[0;31mÜ Ü[41m          [1;33mÜ[40mß[11CÜÛÛÛÛ[30mÛ
+[8;1HÛ [0;31mß[41m             [1;33mß[0;31mÜ[10C[1;33m[s
+[uÜÛÛÛÛÛÛ[30mÛ[9;1HÛ   [0;31mß[41m        [1;33mÜ[40m[s
+[u[40mß [0;31mß[41m  [40mÜ[6C[1;33mÜÛÛÛÛÛÛÛÛ[30mÛ
+[10;1HÛßßßßßßßßß[0;31;43mThe Red Dragon[1;30;40mßßßßßßßßßßß[s
+[uÛ[11;1HÝ[34CÞ[12;1HÝ[34CÞ[13;1HÝ[34CÞ[14;1HÝ[34CÞ
+[15;1HÝ[34CÞ[16;1HÝ[34CÞ[17;1HÝ[34CÞ[18;1HÝ[34CÞ
+[19;1HÝ[34CÞ[20;1HÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛ[0m
+@pauseon
+@run thewords
+ 
+@#clean
+  @do move 3 11
+  @do write
+`4                                `4
+  @do move 3 12
+  @do write
+`4                                `4
+  @do move 3 13
+  @do write
+`4                                `4
+  @do move 3 14
+  @do write
+`4                                `4
+  @do move 3 15
+  @do write
+`4                                `4
+  @do move 3 16
+  @do write
+`4                                `4
+  @do move 3 17
+  @do write
+`4                                `4
+  @do move 3 18
+  @do write
+`4                                `4
+  @do move 3 19
+  @do write
+`4                                `4
+ 
+@#thewords
+@do move 3 11
+@do write
+`4A large beast stands before you.
+@do move 3 12
+@do write
+`4Its red scale hide is enough to
+@do move 3 13
+@do write
+`4drive fear into your heart and
+@do move 3 14
+@do write
+`4you know it is the `@Red Dragon`4.
+@run dragon_choices
+ 
+@#dragon_choices
+@do `p20 is 0
+@do `p21 is 0
+@do `p22 is 0
+@do `p23 is 0
+@do `p24 is 0
+@do `p25 is 0
+@do `p26 is 0
+@if tien.ref exists true then do
+  @begin
+  @do `p20 is 1
+  @end
+@if lawyer.ref exists true then do
+  @begin
+  @do `p21 is 1
+  @end
+@if owtc.ref exists true then do
+  @begin
+  @do `p22 is 1
+  @end
+@do move 40 2
+@choice
+>`p07 -1 `%Hello Dragon!
+<`p07 1 `4Stare at the dragon...
+=`p20 1 `%What about `@Tien Lung's House`%?
+=`p21 1 `%What about `!Lawyer's World`%?
+=`p22 1 `%What about `@T`4he `@O`4racle `@O`4f `@W`4hat's `@T`4o `@C`4ome`%?
+`%Fight the Dragon
+`%Leave
+@if responce is 1 then do ;Hello Dragon
+  @begin
+  @routine clean
+  @do move 3 11
+  @do write
+`4Do not Speak to me in as a
+  @do move 3 12
+  @do write
+`4friend.  You are nothing to me
+  @do move 3 13
+  @do write
+`4and nothing should make no
+  @do move 3 14
+  @do write
+`4sounds.  Now vanish from my
+  @do move 3 15
+  @do write
+`4cave or attack me foolish s&boy
+  @do move 3 16
+  @do write
+`4but do not annoy me any further
+  @do move 3 17
+  @do write
+`4or else!
+  @do move 3 18
+  @key
+  @end
+@if responce is 2 then do ;Stare at the dragon...
+  @begin
+  @routine clean
+  @do move 3 11
+  @do write
+`4Look at me not like that.  Even
+  @do move 3 12
+  @do write
+`4one with such a dark heart does
+  @do move 3 13
+  @do write
+`4nothing to place you in my good
+  @do move 3 14
+  @do write
+`4graces.  Be like the other 
+  @do move 3 15
+  @do write
+`4vermin and run while you can!
+  @do move 3 16
+  @key
+  @end
+@if responce is 3 then do ;Tien Lung's House
+  @begin
+  @routine clean
+  @do move 3 11
+  @do write
+`4The place is only special once
+  @do move 3 12
+  @do write
+`4it has gotten to its peek 
+  @do move 3 13
+  @do write
+`4growth.  That way you get that
+  @do move 3 14
+  @do write
+`%Moonstone `4from there.  Otherwise
+  @do move 3 15
+  @do write
+`4the place sucks.  And you have
+  @do move 3 16
+  @do write
+`4to be the saviour to get it!
+  @do move 3 17
+  @key
+  @end
+@if responce is 4 then do ;Lawyer's World
+  @begin
+  @routine clean
+  @do move 3 11
+  @do write
+`4You actually think there can be
+  @do move 3 12
+  @do write
+`4any good when there are lawyers
+  @do move 3 13
+  @do write
+`4around?  There is... but only
+  @do move 3 14
+  @do write
+`4one the hidden court of the
+  @do move 3 15
+  @do write
+`4damned is found and you need
+  @do move 3 16
+  @do write
+`4version 2.00 for that.
+  @do move 3 17
+  @key
+  @end
+@if responce is 5 then do ;The Oracle of What's To Come
+  @begin
+  @routine clean
+  @do move 3 11
+  @do write
+`4The `$Oracle `4is true, his
+  @do move 3 12
+  @do write
+`4visions are correct.  He can
+  @do move 3 13
+  @do write
+`4show you where the `@Dragon
+  @do move 3 14
+  @do write
+`4truly is!  He holds a
+  @do move 3 15
+  @do write
+`7Moonstone `4as well.
+  @do move 3 16
+  @key
+  @end
+@if response is 6 then do ;Fight
+  @begin
+  @routine clean
+  @do move 3 11
+  @do write
+`4Let us do battle!
+  @do move 3 12
+  @key
+  @do statbar
+@fight
+;name
+`4Red Dragon
+;string said when you see him
+`2The monster of the past belches flames.
+;power move kill string
+Magic is how long it took me to kick your ass!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+spits fire|240
+rakes violently|180
+lashes with its tail|139
+stomps|135
+bites|151
+;defense
+127
+;gold reward
+10000
+;experience
+456
+;hit points
+800
+;if win: ref file|name or NONE
+tstdrgon.ref|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+tstdrgon.ref|DRAGON
+  @end
+@if response is 7 then do ;Leave
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@routine clean
+@run thewords
+ 
+@#WIN
+@datasave tstdrgon.idf &playernum 1
+@run dragon
+ 
+@#example
+@if responce is 1 then do ;Hello Dragon
+  @begin
+  @routine clean
+  @do move 3 11
+  @do write
+`4
+  @do move 3 12
+  @do write
+`4
+  @do move 3 13
+  @do write
+`4
+  @do move 3 14
+  @do write
+`4
+  @do move 3 15
+  @do write
+`4
+  @do move 3 16
+  @do write
+`4
+  @do move 3 17
+  @do write
+`4
+  @do move 3 18
+  @do write
+`4
+  @do move 3 19
+  @key
+  @end
+ 

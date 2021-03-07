@@ -1,0 +1,94 @@
+              -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+              The Warrior's Graveyard by Lloyd Hannesson V 1.00
+                       Copyright 1997 Tech'n Software
+              -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                         An IGM for LordII ver 1.01
+
+Quick Info:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Duh! :)
+
+
+Description:
+
+  The Warrior's Graveyard 1.0
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+  This is my second IGM for LORD2, hopefully you people will like it as
+  much as you liked Felicity's Temple. This IGM will basicly let you revisit
+  the Warrior's Graveyard from Lord 1. The same characters are there to talk
+  to, and interact with. There are a few secrets, but they aren't fully
+  implemented yet. 
+
+  Features Include:
+   - Grave Robbing
+      - A popular option from Warrior's Graveyard from Lord 1 makes another
+        appearance. Same as before, it can be good or bad :)
+   - The Old Hut
+      - Potions from the hag
+      - Flirt with the Hag (if yer male)
+      - gossip
+   - The Lemon-Aid stand
+      - Talk to the Juice Seller
+      - Buy some Aid
+      - Comment sheet!
+   - The Grave Digger
+      - Gossip with him!
+
+  Features To be added in the next version:
+   - More secrets (2 ghosts)
+   - Flirting for the ladies (sorry I didn't have time to put this in for
+     the ladies :(
+   - another section that'll remain secret for now :)
+
+  To Install:
+
+   Type: IGM WGRAVE.IGM
+
+  To Uninstall:
+
+   do the same thing again.
+
+  To Test:
+
+    Go to Stonebrook, you'll see it :)
+
+  To Contact Me:
+
+    My BBS:  The Outworld BBS (204) 334-0217  2400-33600 baud
+
+
+    Mail Me:     Lloyd Hannesson
+                 3015 Sinclair St.
+                 Winnipeg, Manitoba
+                 R2V 4K9, CANADA
+
+    Email:     support@techn.com
+    Web:       http://www.techn.com/
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0The Warrior's Graveyard `2by `0Lloyd Hannesson
+replacescreen: 1198 1 show
+
+replacescreen: 572 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2The Warrior's Graveyard! Visit this mysterious Graveyard, and try to
+  find out all the secrets that it holds! Talk to the Grave digger, and the
+  Old Hag. Or cool off at the Lemon-Aid stand.
+
+  Location: Same screen as Stonebrook
+
+  `%Copyright 1997 Tech'n Software and Lloyd Hannesson
+  `%http://www.techn.com/            support@techn.com

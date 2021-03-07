@@ -1,0 +1,522 @@
+; Script file RDFIGHT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE redtalk 000000627
+@DECLARE redpic 000002865
+@DECLARE redfight 000009225
+@DECLARE redwin 000009883
+@DECLARE done 000010232
+@DECLARE run 000010241
+@DECLARE finish 000010353
+@DECLARE fight 000010364
+@DECLARE monster1 000010421
+@DECLARE monster2 000010985
+@DECLARE monster3 000011630
+@DECLARE monster4 000012215
+@DECLARE monster5 000012805
+@DECLARE monster6 000013411
+@DECLARE monster7 000014006
+@DECLARE monster8 000014632
+@DECLARE monster9 000015201
+@DECLARE done 000015794
+@NOCHECK
+; End of .REF index
+
+@#REDTALK
+@show
+`r0`c  `r1  `%Talking to the `4Red Dragon  `r0
+
+  `4"Well, well, look who we have here, a curious little boy
+
+`k  `%"Who are you to call me a little boy?!" `2you reply.
+
+`k  `4"Perhaps I should introduce myself, I am the Red Dragon."
+
+`k  `%"Come on, I know the `4Red Dragon `%is dead, you think you're trying
+    to fool me?" You interrogate.
+
+`k  `4"I already have, you see I wasn't really dead, but in the eyes of you
+    pathetic mortals, I was." he replies without hesitation.
+
+`k  `%"I still don't understand, my mother told me the story of when she was
+    a little girl and was in the bar with her mother when a warrior covered
+    in blood stumbled in holding the heart of the `4Red Dragon `%in his hand."
+    You say with pride.
+
+`k  `4"That's what I mean by you humans thinking I was dead..."
+
+`k  `%"Explain" you interrupt.
+
+`k  `4"Well, when that 'Warrior' approached me with anger in his eyes, I just
+    fried him with one blast of my fire, he was extremely lucky to be living,
+    so I made a deal with him..." he tells you 
+
+`k  `%"What kind of deal?" you interrupt rudely...again
+
+`k  `4"I guess you could call it a death threat...anyway I made a deal with
+    him that if I didn't steal anymore children from the town that he HAD to
+    make sure that no one would ever bother me again...or make it seem like
+    to the towns people that I was dead...but when it came to that we were
+    stuck trying to find a way to make it look like he killed me, then we
+    came up with the idea of getting a sheep and taking out it's heart, and
+    that's what he showed the people in the bar..."
+
+`k  `%"So what Barak said was true...and no one even listened..." you say to
+    yourself out loud
+
+`k  `4"And the blood that covered him was either his own from when I fried him,
+    or from the sheep which we smeared it's blood all over him."  He concludes
+
+`k  `%"So you've been hiding all this time? Wow!"  you say with awe, "I can't
+    wait to tell my mom about this..."
+
+`k  `4"You see that's where you're wrong boy, now you must DIE!  Like all those
+    other souls that were lost to me..."  he shouts in vain.
+
+@KEY
+@clear screen
+@end
+@do goto redpic
+
+@#REDPIC
+@pauseoff
+@show
+[A[47C [0m‹‹[1;47m‹[40mﬂﬂ   [0mﬂ€‹[1m‹  [0;31mﬂ[1;41m∞±≤  [40m
+[A[68C[41m[0;31mﬂ[41m  [1m∞ [0;31m‹
+[16C[37m€[22C‹[1;47m‹[40mﬂ   [0m‹[1;47m‹‹€[40mﬂ[8C[0mﬂ[1;47m∞€[40m
+[A[61C[47m[40m‹  [0;31mﬂ[1;41m±≤  [C∞ ∞ ∞[0;31m‹
+[15C[37m€[1;30;47m∞[0m›[19C‹[1;47m±∞[40mﬂ [0m‹[1;47m‹‹€[40mﬂ
+[A[47C[12C[0mﬂ[1;47m±€€[40m‹ [0;31mﬂ[1;41m±∞≤ [0;31m‹ﬂ[1;41m∞≤∞[40m
+[A[75C[41m∞±±[40m
+[15C[0m€€[19C[1;47m∞±€[40mﬂ [0mﬂ[1mﬂ[41mﬂ[0;31m‹‹‹‹[41m [40m≤±
+[A[51C∞   ‹‹‹‹ﬂ‹[1;41m∞[0;31m‹[1;41m±[0;31m‹[41m [C[40mﬂ[1;41m±[40m
+[A[69C[41m≤ €[C≤≤∞±±€[40m
+[A[79C[0;31m [14C[37m€[1;30;47m∞[19C[0m€ﬂ[1mﬂ[0;31m‹‹[41m [40m
+[A[41C[41m[40mﬂﬂﬂ   ‹‹[41m [40mﬂ‹[41m [40mﬂﬂﬂ  ∞∞ [1;41m∞ ≤≤€[40m
+[A[66C[41m[0;31m‹ ﬂ[1;41m±∞ [C∞≤∞±±€[40m
+[A[79C[0;31m [14C[37m€[1;30;47m∞[18C[0m€ [31m‹[41m [40mﬂ   ‹‹‹
+[A[45C[41m [40m≤±∞[6C≤±±ﬂ   [1;41m∞ ±≤€ [0;31m‹ ﬂ[1;41m±€[0;31m‹
+[A[74Cﬂ[1;41m≤ ±≤[40m
+[A[79C[0;31m [15C[1;30;47m∞[0m€[16C€ [31m‹[41m [C[40m‹[41m   [40m
+[A[42C[41m   [40m≤±∞    ‹[41m [40mﬂﬂ[8C[1;41m∞ ≤±€€[C∞±≤[C[40m
+[A[75C[41m[0;31m‹‹ﬂ[1;41m≤[40m
+[A[79C[0;31m [15C[1;30;47m∞[0m€[1;30;47m∞[14C[0;31m‹‹[41m   [40m
+[A[37C[41m[40m‹[41m   [40m€≤≤±∞ﬂ ‹‹  ﬂ[12C[1;41m∞ ±≤€[2C±≤€[C∞≤≤[40m
+[A[79C[0;31m [16C[37m€€€[9C[31m‹[41m     [40m›[41m     [40m≤ﬂﬂ
+[A[43Cﬂ ‹‹[41m [40mﬂﬂ[41m   [40m‹ ‹‹[41m  [40m≤≤±ﬂ   [1;41m∞ ±€€[40m
+[A[71C[41m[C∞± [0;31m‹[1;41m∞≤≤[40m
+[A[79C[0;31m [16C[37mﬁ[1;30;47m∞±[0m›[7C[31m‹[41m [1m∞  [40m
+[A[32C[41m[0;31mﬂ  [41m    [40m‹‹‹[41m       [40m‹‹ ﬂﬂ‹ ﬂ[41m [40m
+[A[58C[41m[40m≤≤≤[6C[1;41m∞ ≤€[C[0;31mﬂ[1;41m∞±≤[C∞≤[40m
+[A[79C[0;31m [15C[37mﬁ[1;30;47m∞±[0m€[7C[31m‹[41m [1m∞[0;31mﬂ
+[A[30Cﬂ    [41m                  [40m‹ﬁ[41m [40m‹‹ ﬂ≤[7C[1;41m∞±≤[40m
+[A[71C[41m€[C∞± ≤[C∞[40m
+[A[79C[0m [15C€[1;30;47m±[0m€[6C[31mﬁ€[1;41m∞∞[0;31m› [5;1;32m
+[A[30C‹‹ﬂ  [0;31;41m     [40m≤[41m        [40mﬂﬂ[41m   [40m‹ﬁ
+[A[56C[41m   [40m‹    ‹‹‹‹ﬂ[1;41m∞±≤[0;31m‹ [1;41m∞± [C∞[40m
+[A[79C[0;31m [14C[37m€[1;30;47m∞[0m€[6C[31mﬁ[41m [1m∞ [2C[40m
+[A[29C[41m[5;32;40m€€ﬂ  [0;31mﬁ[41m               [40m≤‹ﬁ[41m  [40m
+[A[55C[41m[40m‹ﬁ€[41m  [C    [40m≤ﬂ  ﬂ[1;41m∞±€[C∞±€≤[40m
+[13C[0mﬁ[1;30;47m∞±[0m€[5C[31mﬁ[41m [1m≤∞[2C[5;32;40mﬂ  [0;31m
+[A[31C‹‹‹[41m     [40m≤[41m          [40mﬂ  [41m   [40m‹ﬁ€[41m [40m
+[A[60C[41m[40m‹ ﬂ[41m [40m≤ﬂ    ﬂ[1;41m∞€[C[0;31;41m ±€≤[40m
+[14C[37m€[1;30;47m∞[0m›    [31mﬁ[41m [1m±∞[0;31m›‹[41m          [40m
+[A[37C[41m         [1m∞[0;31mﬂﬂ   ﬁ[41m    [40m‹ﬁ[41m [1m∞∞[40m
+[A[62C[41m[0;31m‹‹[7C[1;41m∞±[C[0;31;41m ∞±€≤[40m
+[A[79C [15C[37m€[1;30;47m±[3C[0;31m‹‹ﬂ[41m         [40m∞ﬁ[41m  [40m
+[A[36C[41m        [40mﬂ[6C‹[1;41m∞     [0;31m‹ﬁ[41m [1m±±∞ [C[40m
+[A[66C[41m[0;31m‹    [1;41m∞€[C[0;31;41m  ± €[40m
+[A[79C [16C[37m€› [31;41m    [C      [40m±±∞≤[41m         [1m∞[40m
+[A[44C[41m[3C[0;31m‹[41m   [1m±∞∞     [0;31mﬁ[41m  [1m≤±∞[40m
+[A[65C[41m[0;31m‹ [41m [40m≤‹‹ [1;41m≤[0;31m‹ [41m  [1m±€[40m
+[A[79C[0;31m [11C[1;37m‹    [0mﬂ [31;41m [40mﬂ [41m      [40m€≤
+[A[29C≤±∞∞±[41m        [1m∞[3C[0;31;41m    ≤±±∞     [40m‹ﬁ[41m  [40m
+[A[63C[41m[1m≤±∞[C[0;31mﬂ≤   [1;41m±€[C[0;31;41m ∞∞≤[40m
+[A[79C [11C[37mﬂ[1m€‹   [0;31;41m ±≤∞∞  [40mﬂﬂﬂﬂﬂﬂ[41m [40m€∞≤
+[A[34C[41m        [1m∞[2C[0;31mﬁ[41m   [1m€≤≤±∞      [C[40m
+[A[61C[41m[0;31;41m  €≤±∞[C[40mﬂ   [1;41m∞[0;31mﬂ [41m [1m∞±€[40m
+[A[79C[0m [12Cﬂ[1;47mﬂ[40m€ﬂ[0;31m‹[1;41m≤∞∞ [0;31mﬂ  [1;37;47m[40m
+[A[24C[47mﬁ[40m›ﬂ‹ [0;31m± ﬂ[41m [40m›[41m       [1m∞[0;31mﬂ ‹
+[A[45C[41m    [1m€≤≤±∞       [0;31m‹ﬂ[41m [1m€≤±∞ [0;31mﬂ  
+[A[72C[1;41m∞[C[0;31;41m ∞ ±€[40m
+[A[79C [14C[37mﬂ[31mﬁ[1;41m±∞  [0;31mﬂ [1;37;47mﬁ[40m› [47mﬁ[40m
+[A[26C[47m[40m›  [0;31m≤± ﬂ[41m        [1m∞[C[0;33m‹ [31mﬂ[41m[40m
+[A[46C[41m    [1m€≤±∞∞       [0;31m‹ﬂ[41m [1m≤±∞ [C[0;31;41m [40m
+[A[71C[41m[40m‹ﬂ [41m [1m∞∞ ≤[40m
+[A[79C[0;31m [16C[41m ∞∞[C[37;40m‹[1m€[0mﬂ[1m€› ﬂ    ﬂ‹ 
+[A[34C[0;31;41m   [40mﬂ‹[41m  [40mﬂ [33m€€ [31mﬂ[41m    [1m€≤±∞[40m
+[A[55C[41m         [C[0;31;41m ≤±∞[40m‹ [1;41m∞[2C[0;31;41m ∞± €[40m
+[A[79C[37m [18C‹[1m€ €› ﬂ   ‹ ﬂ‹ [0;31m‹[41m  [40mﬂ‹[41m  [40mﬂ
+[A[41C [1;33;43m±∞[0;33m€€ [31mﬂ[41m    [1m€≤±∞        [0;31m€‹ﬁ
+[A[67C[1;41m€±∞[0;31m‹[1;41m∞[C[0;31m‹[41m [1m∞ ≤€[40m
+[A[79C[0m [19Cﬂ[1m‹ ﬂ  ‹ﬂ‹ ﬂ ﬂ[0;31m‹[41m [40mﬂﬂ‹[41m  [40mﬂ 
+[A[41C[1;33mﬂ[43m€€[40mﬂ[0;33m‹€ [31;41m    [1m€≤±∞          [40m
+[A[66C[41m[0;31mﬁ[41m [1m±±∞[0;31mﬂ [41m [1m∞±≤  [40m
+[A[79C[0;31m [23C[1;37m‹ [0;31m‹‹‹‹‹[41m   [40m‹‹[41m  [40mﬂ
+[A[38C[5C[1;33;43m±∞[0;33m€€‹ [31;41m    [1m€≤±∞         [0;31m‹ﬁ
+[A[68C[41m [1m∞∞[C[0;31;41m  ∞±≤ €[40m
+[A[79C [23C[30mŸ[31mﬁ[41m  [1m±±∞∞  [0;31mﬂﬂ[8C[1;33mﬂ[43m€[40m
+[A[45C[43m[0;33mﬂﬂﬂ‹ [31;41m    [1m€≤±∞         [0;31m‹ﬁﬂ ‹[41m [40m
+[A[73C[41m[1m±∞  € [40m
+[A[79C[0;31m [25Cﬂﬂﬂﬂﬂﬂﬂ[12C[1;33m‹‹[43m∞[0;33m€€ [31;41m    [40m
+[A[54C[41m[1m€≤±∞         [C[0;31m‹[1;41m∞±≤∞∞  €[40m
+[44C[33;43m€≤±∞[0;33m€ [31mﬂ[41m    [1m€≤±∞        [0;31m‹ ﬂ
+[A[70C[1;41m∞±±  [0;31mﬂ
+[44C[1;33;43m€≤[40mﬂ[0;33mﬂﬂ‹‹ [31;41m   [1m€≤±±∞         [0;31m‹ 
+[A[71Cﬂ[1;41m±±[2C[0;31;41m   [40m
+[A[79C [44C[1;33m‹‹[43m€≤±∞[0;33m€‹ [31;41m   [1m€≤±±∞          [40m
+[A[71C[41m[C[0;31mﬂ[41m  [C   [40m
+[A[79C [43C[1;33m‹[43m€[40mﬂﬂﬂ[0;33mﬂ‹‹‹ [31;41m     [1m≤±∞[40m
+[A[61C[41m[0;31mﬂﬂﬂﬂ[41m       [40m‹ [41m [40m‹ ﬂ[41m [40m
+[A[79C [43C[1;33m‹‹[43m€€≤±∞[0;33m€€ [31mﬂﬂ ‹‹‹‹‹[41m   [40m‹ 
+[A[66C[41m       [40m‹ [41m  [40m‹‹
+[A[79C [43C[1;33;43m€€[40mﬂﬂﬂ[0;33mﬂﬂ[31m‹‹[41m   [1m∞≤± ∞     [40m
+[A[65C[41m[0;31m‹ [41m       [C[40mﬂ[41m   [40m
+[A[79C [43C[1;33m‹[43m≤[0;33m‹€ﬂ [31;41m     [1m∞≤±±∞∞∞     [40m
+[A[66C[41m[0;31m‹ ﬂ[41m      [C   [40m
+@pauseon
+@do goto redfight
+
+@#REDFIGHT
+@fight
+;name
+`4Red Dragon
+;string said when you see him
+"You shall die like all of the children I stole," You hear.
+;power move kill string
+"You shall pay for this mortal!"  The dragon roars
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+breathes fire at you|750
+claws your throat|600
+hits you with his tail|600
+rips your arm with his teeth|400
+bites your leg|400
+;defense
+555
+;gold reward
+15000
+;experience
+17500
+;hit points
+15000
+;if win: ref file|name or NONE
+RDFIGHT.REF|REDWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+RDFIGHT.REF|RUN
+
+@#REDWIN
+@show
+`\`\  `%You have finally, TRULY killed the mighty `4Red Dragon."
+
+`k
+@do addlog
+  `r4  `r0 `0`n`% has truly slain the `4Red Dragon!!!! `r4  `r0
+@writefile lognow.txt
+                                 `%-`7=`8-`4=`8-`7=`%-`2
+
+@clear screen
+@do x is 22
+@do y is 3
+@do map is 1360
+@loadmap 1360
+@drawmap 1360
+@do goto done
+@#done
+
+@#RUN
+@clear screen
+@do x is 77
+@do y is 10
+@do map is 355
+@loadmap 355
+@drawmap 355
+@do goto finish
+@#finish
+
+@#FIGHT
+@do `p20 random 9 1
+@do goto monster`p20
+
+@#monster1
+@fight
+;name
+`6Simba
+;string said when you see him
+You hear a deep throated growl coming from the darkness ahead.
+;power move kill string
+To the victor go the spoils!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+rips into your arm|130
+bats you with a paw|90
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+40
+;gold reward
+470
+;experience
+360
+;hit points
+270
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+`4Hitler's Son
+;string said when you see him
+`0"Hey!  It's your fault my father's dead!!" `2a voice yells.
+;power move kill string
+`$"I guess it's my fault that you're dead too," `2you cackle wickedly.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+socks you in the jaw|100
+barks orders at you|no apparent reason
+kicks you in the ass|150
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+440
+;experience
+350
+;hit points
+250
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+`4Evil `#Pam Anderson
+;string said when you see him
+An extremely good-looking and muscular woman looks down at you fiercly.
+;power move kill string
+That sucked, they were TWINS!!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+pulls your hair|140
+slaps you|90
+calls you a bitch|70
+pouts|10
+NONE|NONE
+;defense
+0
+;gold reward
+220
+;experience
+190
+;hit points
+150
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+`8King Kong
+;string said when you see him
+`4"RRRRROOOOOAAAAARRRRR" `2you hear from behind.
+;power move kill string
+`2Bad monkey, boy did you spank him!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+breaks your arm|80
+crushes your feet|110
+bites at your head|70
+flicks you with his finger|80
+NONE|NONE
+;defense
+50
+;gold reward
+460
+;experience
+300
+;hit points
+7500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+`0Godzilla
+;string said when you see him
+`0You hear a high-pitched roar.
+;power move kill string
+`$"I didn't even get his autograph!" `2you whine
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Hits you with his tail|200
+Blows his radioactive breath at you|250
+Slashes at you with his claws|100
+NONE|NONE
+NONE|NONE
+;defense
+300
+;gold reward
+5000
+;experience
+5000
+;hit points
+10000
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+`6Moose
+;string said when you see him
+You see what you think is a deer on steroids!!
+;power move kill string
+`$"Now we have food for tonight," `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+racks you up like a coat|120
+kicks with his hind legs|100
+smashes you into a tree|70
+NONE|NONE
+NONE|NONE
+;defense
+40
+;gold reward
+160
+;experience
+180
+;hit points
+180
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+`5Barney
+;string said when you see him
+You see the purple dinosaur singing his annoying love song.
+;power move kill string
+`$"DINOSAURS ARE EXTINCT!!!" `2you tell the lifeless body.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Talks to you how to love somenoe|300
+Rapes you|150
+Spanks his monkey in front of you|120
+NONE|NONE
+NONE|NONE
+;defense
+15
+;gold reward
+999
+;experience
+999
+;hit points
+9999
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+`2B`0o`2b`0a `2F`0e`2t`0t
+;string said when you see him
+`0"Hey I bet there's a price on your head." `2 you hear.
+;power move kill string
+He should do better research.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+disintegrates a toe|575
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+320
+;gold reward
+6000
+;experience
+3000
+;hit points
+2400
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster9
+@fight
+;name
+`!Sir Butt-Head
+;string said when you see him
+`0"Shut up, or I'll kick your ass," `2you hear from behind.
+;power move kill string
+That knight guy ... really sucked.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hears voices|275
+slams you with his warhammer|324
+lays the smack down|400
+NONE|NONE
+NONE|NONE
+;defense
+370
+;gold reward
+3430
+;experience
+2890
+;hit points
+1450
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#done

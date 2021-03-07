@@ -1,0 +1,203 @@
+; Script file GOBLIN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE goblinfight 000000335
+@DECLARE monster1 000000977
+@DECLARE monster2 000001565
+@DECLARE monster3 000002138
+@DECLARE monster4 000002682
+@DECLARE monster5 000003277
+@DECLARE goblin 000003853
+@NOCHECK
+; End of .REF index
+
+@#GOBLINFIGHT
+@offmap
+@fight
+;name
+Goblin King
+;string said when you see him
+This guy wants a piece of you
+;power move kill string
+You gut him and hang him up on a tree !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with stench|295
+stabs you with evil looking dagger|250
+shoots you with crossbow|286
+slices you with his twinswords|245
+NONE|NONE
+;defense
+250
+;gold reward
+2056
+;experience
+1002
+;hit points
+528
+;if win: ref file|name or NONE
+QUESTER.REF|FINQUEST
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+QUESTER.REF|ENDQUEST
+
+@#monster1
+@fight
+;name
+Goblin
+;string said when you see him
+A nasty looking little Goblin pops in front of you.
+;power move kill string
+You slice him from ear to ear.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with stench|95
+stabs you with evil looking dagger|50
+shoots you with crossbow|86
+NONE|NONE
+NONE|NONE
+;defense
+65
+;gold reward
+562
+;experience
+210
+;hit points
+125
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Ork
+;string said when you see him
+You see the pig like face and know it's an ork.
+;power move kill string
+Go back to Mordor !
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hits with it's battleaxe|75
+chops off your ear with it's axe|61
+Bites you with it's teeth|91
+NONE|NONE
+NONE|NONE
+;defense
+68
+;gold reward
+628
+;experience
+158
+;hit points
+145
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Goblin prince
+;string said when you see him
+His armor looks strong.
+;power move kill string
+Die punk ! 
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slices you with his long sword|45
+stabs you hard with his dagger|95
+backhands you|54
+NONE|NONE
+NONE|NONE
+;defense
+282
+;gold reward
+925
+;experience
+171
+;hit points
+265
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Goblin blacksmith
+;string said when you see him
+Judging by his weapons he must be a blacksmith
+;power move kill string
+He won't make anymore weapons
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slices you with his cursed sword|180
+head butts you|95
+stabs you with a poisoned dagger|178
+NONE|NONE
+NONE|NONE
+;defense
+90
+;gold reward
+815
+;experience
+200
+;hit points
+351
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Goblin Archer
+;string said when you see him
+A goblin raises his bow
+;power move kill string
+You break his longbow in half.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with 3 arrows|184
+smacks you with his longbow|98
+pins your hand to a tree with an arrow|187
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+526
+;experience
+165
+;hit points
+542
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#GOBLIN
+@busy
+@do `p20 random 5 1
+@do goto monster`p20

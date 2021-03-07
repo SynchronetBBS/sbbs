@@ -1,0 +1,52 @@
+                               @>---,---'---
+                              Ralphie's Roses
+                               ---'---,---<@
+
+                             An IGM for LORD 2
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+
+
+  Description:
+
+  This IGM adds a small hut west of Runion Keep where players can
+  buy a rose for $5 and send it to another player.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM Rose
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `@Ralphie's Roses (r) `2by `!E`0lric `#(`0elric`2@`0innocent`2.`0com`#)
+
+replacescreen: 1271 1 show
+
+installmessage:
+
+ `%ABOUT THIS IGM:
+
+  `0This IGM adds a small hut west of Runion Keep where players can
+  buy a rose for `$$5 `0and send it to another player.
+
+  `0I would like to dedicate this IGM to my father-in-law `%Fred Ledden`0,
+  the real-life owner of `@Ralphie's Roses`0.
+
+  `0From `!S`@h`#r`$o`%o`0m`!T`@r`#i`$p `0Software:
+
+  `0WWW            `%:`0 www`2.`0afn`2.`0org`2/`!~`0afn50378`2/`0sthome`2.`0html
+  `0Primary Email  `%:`0 elric`2@`0innocent`2.`0com
+  `0Secondary Email`%:`0 afn50378`2@`0afn`2.`0org
+  `0Tech Support   `%:`0 kender`2@`0innocent`2.`0com

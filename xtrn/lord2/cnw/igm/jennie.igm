@@ -1,0 +1,44 @@
+
+                The JENNIE GARTH's House by SENoR FRoG (Julian Korell) 
+                                 V. 1.00 
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (3)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+  This is a nice IGM for Lord 2. Find the secret of Jennie Garth. If you are
+  succesful you will get experience, money or charm points. Just try it 
+  you'll see it's real fun.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `3Jennie Garth 's hidden house `2by `0SENoR FRoG
+replacescreen: 960 1 show
+;Stonecircle
+replacescreen: 874 2 show
+;Greyman 956
+replacescreen: 79 3 show
+;Red Dragon Inn 159
+replacescreen: 1523 4 noshow
+;Jennie's house 1441
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2It is my first IGM for Lord2 but I think it is quite good. You have to talk
+   to someone to find the secret home of Jennie Garth. So it is funny and 
+   complicated too.
+  `5 !!! YOU HAVE TO CREATE A DIRECTORY CALLED \JENNIE\ IN YOUR LORD PATH !!!
+   made by SENoR FRoG (Julian Korell)

@@ -1,0 +1,578 @@
+; Script file PASS3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE location 000000702
+@DECLARE mybank 000001328
+@DECLARE doorguard 000004170
+@DECLARE startg 000004276
+@DECLARE enter 000008224
+@DECLARE done 000009576
+@DECLARE letmein 000011336
+@DECLARE done 000011755
+@NOCHECK
+; End of .REF index
+
+;
+;  CNW updated to use ONLY 1 ref file instead of 3!
+;           no need to copy ref after ref to do the same things.. shesh..
+;                 REMOVED: PASS1.REF
+;                          PASS2.REF
+;
+;                 Added @#LOCATION routine to figure out where they are.
+;
+;                                                           SIMPLE.
+
+@#LOCATION
+@if &lastx is 30 then `p29 is 3
+@if &lastx is 21 then `p29 is 2
+@if &lastx is 13 then `p29 is 1
+
+@readfile pass1.dat
+`p20
+@if `p20 is &playernum then do
+        @begin
+        @if &lastx is 13 then `p29 is 1
+        @If &map is 1455 then `p29 is 1
+        @end
+@readfile pass2.dat
+`p20
+@if `p20 is &playernum then do
+        @begin
+        @if &lastx is 21 then `p29 is 2
+        @If &map is 1455 then `p29 is 2
+        @end
+@readfile pass3.dat
+`p20
+@if `p20 is &playernum then do
+        @begin
+        @if &lastx is 30 then `p29 is 3
+        @If &map is 1456 then `p29 is 3
+        @end
+
+@#MYBANK
+@routine LOCATION
+@do moveback
+@do `p20 is 0
+@if pastre`p29.dat exist true then do
+  @begin
+  @readfile pastre`p29.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pastre`p29.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete pastre`p29.dat
+  @writefile pastre`p29.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile pass`p29.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Underground House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pastre`p29.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete pastre`p29.dat
+  @writefile pastre`p29.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile pass`p29.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Underground House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+@#doorguard
+@routine LOCATION
+@do moveback
+@Clear Screen
+@do move 1 1
+@display MAID in people.ref
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if pass`p29.dat exist false then do
+  @begin
+  @do move 40 10
+`0"Hello, now leave!" `2the maid barks.
+  @key bottom
+  @closescript
+  @end
+
+@readfile pass`p29.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door maid, nice of him to let you in.
+  @key bottom
+  @drawmap
+  @closescript
+  @end
+@busy
+
+@do `v01 is 1 ;set default choice to 1
+@routine rightclear in people.ref
+@do move 40 3
+@do write
+`r0  `r1 Instructing your servants `r0
+@do move 40 5
+@do write
+`2The door maid snaps to attention when
+@do move 40 6
+@do write
+she sees you are going to address her.
+@do move 40 8
+@choice
+Change password (`0`s01`%)
+Ownership options
+Leave
+@routine rightclear in people.ref
+@if responce is 2 then do
+ @begin
+@do move 40 3
+@do write
+`r0  `r1 Ownership Options `r0
+@do move 40 5
+@do write
+`2You retrieve your deed and carefully
+@do move 40 6
+@do write
+ look it over.
+ 
+   @do `v01 is 1
+@do move 40 8
+   @choice
+Transfer deed to someone else
+Sell house to the bank - `$10,500`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+@do move 40 12
+@do write
+`\`\  `2Transfer to whom?
+   @do move 40 13
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @do move 40 14
+    @do write
+`2You decide to keep your domain.
+    @key bottom
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @do move 40 14
+   @do write
+`2Are you sure you wish to give your
+@do move 40 15
+@do write
+ keep to `0`s02`2?
+@do move 40 17
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+@do move 40 19
+@do write
+`2You decide to keep your domain.
+    @key bottom
+    @do goto startg
+   @end
+
+  @do delete pass`p29.dat
+  @writefile pass`p29.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of an  Underground House to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Underground House`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+@do move 40 12
+@do write
+`2Are you sure you wish to sell your
+@do move 40 13
+@do write
+ keep back to the bank?`\
+@do `v01 is 1
+@do move 40 15
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+@do move 40 18
+@do write
+`2You decide to keep your domain
+    @key bottom
+    @do goto startg
+   @end
+
+  @do delete pass`p29.dat
+  @do `p30 is 24
+  @do `v40 is 10500
+  @routine widthdraw in vaults.ref
+  @do money + 10500
+  @do move 40 18
+  @do write
+  `%KEEP SOLD!`2
+  @key bottom
+    @do addlog
+  `0`n`2 has sold `%Underground House`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do move 40 12
+  @do write
+`0"And the new password, s&sir?"
+  @do move 40 13
+  @do write
+`2(enter `4NONE`2 for no access to anyone)
+  @do move 1 22
+  @do write
+`2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+  @do move 40 16
+  @do write
+`2You decide the current password is ok.
+   @key bottom
+   @do goto startg
+   @end
+  @do delete pass`p29.dat
+  @writefile pass`p29.dat
+&playernum
+`s01
+  @do move 40 16
+  @do write
+`0"Yes s&sir, I will not forget it!"
+  @do move 40 17
+  @do write
+ `2the door maid promises.
+   @key bottom
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#enter
+@routine LOCATION
+@do moveback
+@offmap
+@if pass`p29.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2Underground House is a little cottage on an underground lake!
+
+  It is for sale, however.  The asking price is `$$20,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Purchase it.
+<&money 20000 Sigh wistfully and leave since you don't have enough.
+>&money 19999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if pass`p29.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile pass`p29.dat
+&playernum
+NONE
+  @do `p30 is 24
+  @do `v40 is 20000
+  @routine deposit in vaults.ref
+    @do money - 20000
+    @do addlog
+  `0`n `2buys `%Underground House`2!
+     @routine seperate in gametxt.ref
+
+  @display main in people.ref
+  @do move 40 3
+  @do write
+`r0  `r1 `%Why hello there, landowner! `r0
+  @do move 40 5
+  @do write
+`\`2  Nice job!  You now own this keep!
+  @key bottom
+  @do move 40 6
+  @do write
+`0As a special bonus, two beds and a
+  @do move 40 7
+  @do write
+ door maid are included!
+  @do move 40 10
+  @do write
+   `2Enjoy your new home.
+  @key bottom
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile pass`p29.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete pass`p29.dat
+    @do addlog
+  `%Underground House`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door maid asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%Underground House`0,"`2 the maid smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Underground House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the maid by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The maid doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@routine LOCATION
+@if `p29 is 3 then do
+        @begin
+        @do x is 6
+        @do y is 15
+        @do map is 1456
+        @end
+@if `p29 is 2 then do
+        @begin
+        @do x is 27
+        @do y is 16
+        @do map is 1455
+        @end
+@if `p29 is 1 then do
+        @begin
+        @do x is 9
+        @do y is 16
+        @do map is 1455
+        @end
+@loadmap &map
+@drawmap
+@update
+@#done

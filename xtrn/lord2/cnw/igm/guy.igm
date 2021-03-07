@@ -1,0 +1,39 @@
+
+            Greentree's Weird Guy 1.0: Spencer Vickers
+                                         
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : Yes!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM GUY.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Greentree's own `2Weird Guy: By Spence
+replacescreen: 1197 1 show
+
+installmessage:
+
+  `% Well, if have actually downloaded my igm, thank you...There is no stupid
+stuff about registering, because like most igm's, this one is FREEWARE!!
+    Check out CHeRNOByL BbS where this thing was made
+    cya :)
+
+
+

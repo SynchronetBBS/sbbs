@@ -1,0 +1,152 @@
+; Script file PASSINN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE innback 000000289
+@DECLARE door 000000405
+@DECLARE inn 000000451
+@DECLARE starti 000000521
+@DECLARE chatwall 000001798
+@DECLARE nothing 000002732
+@NOCHECK
+; End of .REF index
+
+@#innback
+;Wendy behind the counter 
+@DO SAYBAR
+`#Wendy: `0What are you doing behind the counter?!
+@do moveback
+
+@#door
+ @do saybar
+The door opens.
+ @end
+
+@#Inn
+;Person from Jaime's Inn
+@do moveback
+@do `v01 is 1
+@label starti
+@show
+`r0`c  `r1  `%Talking to Wendy `r0
+
+`2  'Wendy' is a pleasantly plump woman with rosy cheeks.
+
+  `0"What kin I do for ya, child?" `2she asks.
+
+@do write
+`x`x
+@choice
+Get a room
+I kill ckickens!
+Leave
+
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"I'm so happy for you," `2Wendy smiles.
+
+`k
+ @do goto starti
+ @end
+
+
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"Ok, that will be $150."
+@do write
+`\`x`x
+@choice
+Ok!
+<`p07 -4 `4If I'm gonna spend `$$150`4, I might as well go shoot myself.
+>`p07 -5 No way!
+ @if response is 1 then do
+   @begin
+   @if money < 150 then do
+    @begin
+    @show
+`\`\  `2Damn it... You only have `$$&money`2!
+`\`k
+    @do goto starti
+    @end
+   @show
+  @do `p30 is 24
+  @do `v40 is 150
+  @routine deposit in vaults.ref
+   @do money - 150
+`\`\  `2Wendy takes your money and tells you to find a room upstairs.
+   @do y - 2
+   @do x - 1
+   @drawmap
+   @update
+   @closescript
+   @end
+ @if response is 2 then do
+  @begin
+  @show
+`\`\  `2Wendy's face turns beet red.  Haw, serves her right.`\`\`k
+  @end
+
+ @if response is 3 then do
+  @begin
+  @show
+`\`\  `2Maybe later - `$150 `2is a bit much.`\`\`k
+  @end
+
+
+
+ @do goto starti
+ @end
+
+
+@drawmap
+@update
+
+@#CHATWALL
+@do moveback
+@busy
+@show
+`r0`c  `r1  SCRIBBLING ON THE BULLETIN BOARD  `r0
+
+@if passage.txt exist false then do
+ @begin
+ @writefile passage.txt
+  `%Master Walton`2: `0Notice - Do not graffiti on this or else!
+ @end
+
+@if passage.txt exist true then do
+ @begin
+ @displayfile passage.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile passage.txt
+  `%`n`2 : `0`s03
+ @do trim passage.txt 17
+ @drawmap
+ @update
+ 
+@#NOTHING

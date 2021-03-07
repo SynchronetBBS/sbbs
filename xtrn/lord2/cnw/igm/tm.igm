@@ -1,0 +1,47 @@
+
+                The OLD Man's Time Machine by Justin P. Murphy V1.14
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01a
+  Is registered version of LORD2 required to use? : YES!<sorry>
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : YES!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : YES! (1)
+  Free?                        : NO give me $$$ :)<of course its free :)>
+
+
+  Description:
+
+  Super simple IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM TM.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, walk to the the tree Elf Highway and poof there you are
+  enter it and see if you can go back<or forward :) in time>
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Old Man's Time Machine v1.14 `2by `0Justin P. Murphy
+;1357
+replacescreen: 1431 1 show
+;1600
+replacescreen: 1511 2 noshow
+
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Well, it's my first atempt at an igm but what it does is its a place  
+  which lets you gain or lose time in the game. Ah well don't complain.
+  This is ver 1.14 Send your bug Repots to justin@comnet.ca or call inner
+  Realm (613)838-3034 and give them to me on my bbs.

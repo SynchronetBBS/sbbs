@@ -1,0 +1,939 @@
+; Script file SRDTOWER.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:28 2001
+
+@DECLARE marbles 000000854
+@DECLARE marbles 000001014
+@DECLARE thug 000001136
+@DECLARE startgambl 000001430
+@DECLARE crapsign 000002422
+@DECLARE slotsign 000002494
+@DECLARE super 000002562
+@DECLARE startsing 000003141
+@DECLARE superwin 000003739
+@DECLARE questsign 000004421
+@DECLARE quest 000004515
+@DECLARE talk 000004743
+@DECLARE found 000006595
+@DECLARE toilet 000006676
+@DECLARE treasure 000006752
+@DECLARE tower 000009547
+@DECLARE doorguard 000009656
+@DECLARE startg 000009685
+@DECLARE sign 000013261
+@DECLARE enter 000013574
+@DECLARE done 000014504
+@DECLARE letmein 000016177
+@DECLARE done 000016258
+@DECLARE heal 000016268
+@DECLARE wizard 000016475
+@NOCHECK
+; End of .REF index
+
+;Added by CNW, Marbles is no an EXT ITEM.
+@#Marbles
+@do `s06 is Marbles
+@do `s07 is MARBLES
+@do `s08 is SRDTOWER.REF
+@do `s09 is NIL
+@run install in install.ref
+@closescript
+;<---end of CNW--->
+@#MARBLES
+@do `s01 is You`xcant`xthink`xof`xany`xway`xto`xuse`xthis`xitem!
+@routine display in item99.ref
+@closescript
+
+@#Thug
+@do `p70 is 110
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@datanewday srdgambl.idf
+@dataload srdgambl.idf &playernum `p20
+@if `p20 not 1 then goto startgambl
+
+@do moveback
+@do saybar
+"I can only sell gambles once a day!"
+@closescript
+
+@label startgambl
+@do moveback
+@offmap
+@show
+`r0`c `r1 Talking with stranger `r0
+
+`2"Psst, hey kid, you all out of gambles for today?"
+"Well, then i've got the perfect deal for you my friend"
+`k
+`2"I'll give you 10 extra gambles for a fair price of
+only 200 gold pieces, deal?" asks the stranger
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+DEAL!
+Get away from me stranger!
+@show
+`\
+@if responce is 2 then do
+@begin
+@drawmap
+@update
+@do saybar
+"You're making a mistake" the stranger says
+@closescript
+@end
+
+@if responce is 1 then do
+@begin
+@if money < 200 then do
+@begin
+@drawmap
+@update
+@do saybar
+"You don't have 200 kid" says the stranger
+@closescript
+@end
+
+@if money > 200 then do
+@begin
+@do money - 200
+@do `p33 + 10
+@datasave srdgambl.idf &playernum 1
+@drawmap
+@update
+@do saybar
+"Good dealin' wit' ya kid, go use your new gambles!"
+@dataload npc/npcgold.idf `p70 `p22
+@do `p22 + 200
+@datasave npc/npcgold.idf `p70 `p22
+@closescript
+@End
+@end
+
+@#crapsign
+@do moveback
+@do saybar
+\`2C`0R`2A`0P`2S
+@closescript
+
+@#slotsign
+@do moveback
+@do saybar
+`2S`0L`2O`0T`2S
+@closescript
+
+@#Super
+@do moveback
+@do `p29 is &playernum
+@routine Marbles in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 1 then do
+        @begin
+        @do Saybar
+The Super-Human's dead body lies rotting
+        @closescript
+        @end
+@if bitcheck `t93 5 1 then do
+        @begin
+        @do Saybar
+The Super-Human's dead body lies rotting
+        @closescript
+        @end
+@datanewday srdtower.idf
+@dataload srdtower.idf &playernum `p20
+@if `p20 not 1 then goto startsing
+@do saybar
+It takes em' at least a day to regenerate!
+@closescript
+
+@label startsing
+@fight
+;name
+Super-Human
+;string said when you see him
+You see a glowing figure dart towards you!
+;power move kill string
+"You aren't very super!" you say stupidly
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+throws a glowing ball of energy at you|900
+sets you on fire|700
+freezes you|800
+NONE|NONE
+NONE|NONE
+;defense
+500
+;gold reward
+1
+;experience
+2000
+;hit points
+6000
+;if win: ref file|name or NONE
+srdtower.ref|superwin
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#Superwin
+@begin
+@offmap
+@show
+`r0`c `r1 Defeated Super-human `r0
+
+`2The Super-human's bloody body falls to the hard ground..
+`k
+`2You quickly run up to his body and search his clothing
+for Abel's marbles.
+`k
+`2You find that`l.`l.`l.`l.
+@do `p20 random 4 1
+@if `p20 is 1 then do
+@begin
+@show
+`%It was the real Super-human, you find the marbles!!!
+`k
+@do `p29 is &playernum
+@routine Marbles in extitems.ref
+@routine bitcheck in item99.ref
+@routine giveitem in item99.ref
+@datasave srdtower.idf &playernum 1
+@drawmap
+@update
+@end
+
+@if `p20 not 1 then do
+@begin
+@show
+`4It was a decoy Super-human, no marbles here, damn!
+`k
+@drawmap
+@update
+@end
+
+@#Questsign
+@do moveback
+@do saybar
+Caves condemned - The Sword Castle Assoc.
+@closescript
+
+@#Quest
+@do moveback
+@do `p29 is &playernum
+@routine Marbles in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 1 then do
+@begin
+@do goto found
+@end
+
+@if `p20 not 1 then do
+@begin
+@do goto talk
+@end
+
+@label talk
+@offmap
+@show
+`r0`c `r1 Talking with Abel `r0
+
+`2You see an old man weeping like a baby. You
+approach him to find out what his problem is.
+`k
+`0"My marbles, I lost me marbles, boo hoo..."
+`k
+`%"You sure did (snicker), is there anything I can do?" you ask
+`k`c
+`0"Yes, you could find my marbles for me, i'm too old to go down in
+those caves and look for them. But if you do choose to help me be
+careful down in the caves, only a strong warrior should go down there
+because of all the monsters. The marbles were taken from me by a
+super-human, who gaurds the marbles with his life, you will have to
+kill the super-human before getting my marbles, there are also
+decoy super-humans who don't really have the marbles, so choose the
+right path. The cave opening is in the east tower of the castle.
+`k`k
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Hear story again
+Give Abel his marbles
+Leave
+@show
+`\
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do
+@begin
+@do goto talk
+@end
+
+@if responce is 2 then do
+@begin
+@do `p29 is &playernum
+@routine Marbles in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 not 1 then do
+@begin
+@drawmap
+@update
+@do saybar
+You don't have my marbles!
+@closescript
+@end
+
+@if `p20 is 1 then do
+@begin
+@offmap
+@show
+`r0`c `r1 Returning Abel's marbles `r0
+
+`2"THANK YOU SO MUCH, YOU FOUND THEM!!!!!"
+`k
+`2"I'll give you a quite generous reward!"
+`k
+`0The old man walks out of the tower, then runs
+back towards you.
+`k
+`%He gives you `9100 Gems`%, `2100,000 Gold pieces`%,
+and a `0Moonstone`%!!!
+`k
+@do `p19 + 100
+@do money + 100000
+@do `i57 + 1
+@bitset `t93 5 1
+@do `p29 is &playernum
+@routine Marbles in extitems.ref
+@routine bitcheck in item99.ref
+@routine takeitem in item99.ref
+@drawmap
+@update
+@end
+
+@label found
+@do saybar
+Thanks again for finding my marbles, `n
+@closescript
+
+
+@#Toilet
+@do moveback
+@do saybar
+Ahhh.... Much better
+@closescript
+
+@#treasure
+@do moveback
+@do `p20 is 0
+@if srdtres.dat exist true then do
+  @begin
+  @readfile srdtres.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile srdtres.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete srdtres.dat
+  @writefile srdtres.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile srdtower.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0The Sword Castle Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile srdtres.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete srdtres.dat
+  @writefile srdtres.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile srdtower.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0The Sword Castle Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+@#TOWER
+;Tower in the castle
+@DO SAYBAR
+`2The tower on this castle is not ready yet.
+@do moveback
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if srdtower.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this tower!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile srdtower.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge doorguard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+`%Make `#Sword Castle `%your home
+Leave
+@if responce is 3 then do
+        @begin
+        @do `p69 is 21
+        @show
+`r0`c
+
+   `#Sword Castle `%is now your registered home.
+
+        @key
+        @end
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$10,000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your tower to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete srdtower.dat
+  @writefile srdtower.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of The Sword Castle Tower to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%The Sword Castle Tower`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your tower back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete srdtower.dat
+  @do money + 10000
+  @show
+`\`\  `%TOWER SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%The Sword Castle Tower`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete srdtower.dat
+  @writefile srdtower.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if srdtower.dat exist false then do
+ @begin
+ @do saybar
+The Sword Castle Tower - For sale cheap, enquire inside.
+ @end 
+
+@if srdtower.dat exist true then do
+ @begin
+@readfile srdtower.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+@if srdtower.dat exist false then do
+  @begin
+  @show
+`r0`c `r1 For Sale `r0
+
+`2The Sword Castle Tower is a great value for the asking price,
+it comes complete with free healing, wizard to transport you
+places, and more!
+
+It is for sale at 20,000 gold pieces.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Purchase it.
+<&money 20000 Sigh wistfully and leave since you don't have enough.
+>&money 19999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if srdtower.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile srdtower.dat
+&playernum
+NONE
+    @do money - 20000
+    @do addlog
+  `0`n `2buys `%The Sword Castle Tower`2!
+     @routine seperate in gametxt.ref
+
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile srdtower.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete srdtower.dat
+    @do addlog
+  `%The Sword Castle Tower`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c `r1 No entrance `r0
+
+`0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+voice calls from behind the wall.
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c `r1 Identify yourself `r0
+
+`2A head pops over the gate.  `0"Halt, you!  What business have you with
+my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%The Sword Castle Tower`0,"`2
+  the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0The Sword Castle Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 79
+@do y is 10
+@do map is 1468
+@loadmap 1468
+@do goto done
+@#done
+
+@#Heal
+@do moveback
+@offmap
+@show
+`r0`c `r1 Your personal Doc `r0
+
+`2The doc carefully looks you over for wounds.
+`k
+`%You are completely healed.
+
+`k
+`k
+@do `p02 = `p03
+@drawmap
+@update
+
+
+@#wizard
+@do moveback
+@offmap
+@show
+`r0`c `r1 Your personal Wizard `r0
+
+`2"Hello Master, where would you like to go today?"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Greentree
+Stonebrook
+Porttown
+Flagcity
+Arrisville
+Bone Town
+Sosen Village
+Leave
+@show
+`\`\
+@if responce is 8 the do
+@begin
+@drawmap
+@update
+@end
+
+@if responce not 8 then do
+@begin
+@show
+`2Ok, let me just grab my spell book....
+`k
+`2Ok, here we go....`9RAFNAR, ECRAGS, MERCERRULZ...
+
+`2Before you know it, you are there.
+@end
+
+@if responce is 1 then do
+@begin
+@do map is 1356
+@do x is 44
+@do y is 7
+@loadmap 1356
+@drawmap
+@update
+@end
+
+@if responce is 2 then do
+@begin
+@do map is 1359
+@do x is 46
+@do y is 15
+@loadmap 1359
+@drawmap
+@update
+@end
+
+@if responce is 3 then do
+@begin
+@do map is 152
+@do x is 42
+@do y is 17
+@loadmap 152
+@drawmap
+@update
+@end
+
+@if responce is 4 then do
+@begin
+@do map is 1092
+@do x is 73
+@do y is 18
+@loadmap 1092
+@drawmap
+@update
+@end
+
+@if responce is 5 then do
+@begin
+@do map is 523
+@do x is 22
+@do y is 17
+@loadmap 523
+@drawmap
+@update
+@end
+
+@if responce is 6 then do
+@begin
+@do map is 1572
+@do x is 41
+@do y is 15
+@loadmap 1572
+@drawmap
+@update
+@end
+
+if responce is 7 then do
+@begin
+@do map is 456
+@do x is 27
+@do y is 11
+@loadmap 456
+@drawmap
+@update
+@end

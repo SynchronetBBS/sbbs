@@ -1,0 +1,198 @@
+; Script file BLDN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE stables 000000210
+@DECLARE stabletop 000000318
+@DECLARE trader 000003120
+@NOCHECK
+; End of .REF index
+
+@#STABLES
+;lets them warp to a few places
+;added by CNW: buy a horse here.
+@offmap
+@do moveback
+@label stabletop
+@do move 1 1
+@show
+`r0`c  `r1  The Stables `r0
+
+  `0"Greetings, s&sir!  We sell horses here, we no longer offer transport
+  `0services.
+
+@do `v01 is 1
+@do move 15 9
+@choice
+`#Why a horse?   `%
+-`t79 1 `$Buy a horse    `%
++`t79 1 `4Sell your horse`%
+`%Leave          `%
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0A horse you ask?`\
+  If your horse is healthy and well kept, you can get to your
+   destinations much quicker than by foot.
+
+  You MUST take good care of your horse if you want to keep it
+   around, or resell someplace else.
+
+  `7<To mount your horse, press "`%Z`7" from the map screen>
+  @key
+  @do goto stabletop
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `0It costs `$$8,000 `0here for a healthy horse.
+`\   Do you still want to buy it?`\
+@choice
+`$Forget it
+>&money 7999 `$Yes
+@if responce is 2 then do
+        @begin
+        @do money - 8000
+        @do `t80 is 255
+        @bitset `t79 1 1
+        @show
+`\`0Ok, you now have a healthy horse. Have fun!`\`k
+        @end
+  @do goto stabletop
+  @end
+@if responce is 3 then do
+  @begin
+  @do `p21 is `v10
+  @do `p21 / 2
+  @do `p22 is `v11
+  @if `t80 > 50 then do
+        @begin
+        @do `p20 is 55
+        @end
+  @if `t80 > 75 then do
+        @begin
+        @do `p20 is 510
+        @end
+  @if `t80 > 100 then do
+        @begin
+        @do `p20 is 1100
+        @end
+  @if `t80 > 125 then do
+        @begin
+        @do `p20 is 2100
+        @end
+  @if `t80 > 150 then do
+        @begin
+        @do `p20 is 3100
+        @end
+  @if `t80 > 175 then do
+        @begin
+        @do `p20 is 4100
+        @end
+  @if `t80 > 200 then do
+        @begin
+        @do `p20 is 5100
+        @end
+  @if `t80 > 225 then do
+        @begin
+        @do `p20 is 7100
+        @end
+
+  @if `p22 < `p21 then do
+        @begin
+        @if `t80 > 200 then do
+                @begin
+                @do `p20 + 500
+                @end
+        @if `t80 > 100 then do
+                @begin
+                @do `p20 + 250
+                @end
+        @end
+  @if `p22 > `p21 then do
+        @begin
+        @if `t80 > 200 then do
+                @begin
+                @do `p20 + 600
+                @end
+        @if `t80 > 100 then do
+                @begin
+                @do `p20 + 290
+                @end
+        @end
+
+  @routine horsehp in vehicle.ref
+  @show
+`\`\  `0I will buy your `%`s02 `0horse for `$`p20.
+`\   Do you still want to sell it?`\
+@do `v01 is 1
+@choice
+`$Forget it
+`$Yes
+@if responce is 2 then do
+        @begin
+        @do money + `p20
+        @do `t80 is 0
+        @bitset `t79 1 0
+        @show
+`\`0Thanks!  Come again.`\`k
+        @end
+  @do goto stabletop
+  @end
+@drawmap
+@update
+
+@#trader
+;let's you join in on the joys of slavetrading.
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Stables `r0
+
+  `0"Greetings, s&sir!  we would like you to piss off now?"
+  `2a complete smeghead asks.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Trade in little girls
+trade in gems
+buy a potion
+leave
+@if response not 4 then do
+  @begin
+@show
+`\`\  `0"So you don't hate me" he shouts gayly.
+
+
+`k
+@if responce is 1 then do
+  @begin
+   ;the traders lockup
+   @do x is 19
+   @do y is 16
+   @do map is 31
+  @end
+
+@if responce is 2 then do
+  @begin       
+   ;gemhouse
+   @do x is 58
+   @do y is 15
+   @do map is 31
+  @end
+
+@if responce is 3 then do
+  @begin
+   ;potionhouse
+   @do x is 32
+   @do y is 7
+   @do map is 31
+  @end
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+

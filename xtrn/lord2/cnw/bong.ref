@@ -1,0 +1,119 @@
+; Script file BONG.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE start 000000202
+@DECLARE done 000002295
+@DECLARE toohigh 000002385
+@NOCHECK
+; End of .REF index
+
+@#start
+@datanewday bong.idf
+@dataload bong.idf &playernum `p20
+ 
+@IF `p20 is 1 then do
+ @begin
+  @DO GOTO toohigh
+ @end
+@CLEAR SCREEN
+@SHOW
+`7 STONEBROOK BONG
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+`2        You walk into the museum with the bong (It's 20 feet high)  in it
+you wonder what it would be like if you got high from it!!
+@key bottom
+@clear screen
+@show
+ 
+`3 A hippie comes up to you and tells you the options....
+ 
+ 
+ 
+@do `v01 is 1
+@choice
+"take a hit...."
+"Run away"
+"Converse with hippie"
+"Kick the hippie"
+"Offer them some Jamakin `@WEED"
+"let out a rip rourous fart"
+@if responce is 6 then do
+ @begin
+ @clear screen
+ @show
+`# You let out a HUGE fart and are kicked out of the Museum... with nothing
+to show for it!!!!
+@do `p20 is 1
+@do goto done
+@end
+@if responce is 5 then do
+ @begin
+ @clear screen
+ @show
+`@ You smoke some JAMAKIN with them mon.... you gain 20 turns for being so
+unselfish.
+ @do `p11 + 20
+ @do `p20 is 1
+@do goto done
+@end
+@if responce is 4 then do
+ @begin
+ @clear screen
+ @show
+ 
+`! "OWWWWWWW" The hippie screams "Why'd you do that???" You just shake your 
+head laughing.... The hippie is mad now "You can't have any of my Jamakin 
+`@weed `! now!! You feel so sad that you lose all but one hitpoint.
+ @do `p02 is 1
+ @do `p20 is 1
+@do goto done 
+@end
+ 
+@if responce is 3 then do
+ @begin
+ @clear screen
+ @show
+`1     You walk up to the hippies... They stare at you with that high
+look you've come to know and love! "Hi how are you???" One answers
+"Not bad try some of this jamakin `@weed`1." You get `@S`!T`#O`4N`6E`7D!!`1
+And leave.
+ 
+@do `p20 is 1
+    @do goto done
+  @end
+@if responce is 2 then do
+ @begin
+  @show
+  `@ You run away like a little girly man you trip on your own feet and lose
+  all but one hitpoint!
+  @do`p02 is 1
+  @do `p20 is 1
+ @end
+@clear screen
+@show
+ 
+ 
+`1       You take a HUGE hit off the bong and are so high you are stumbling!!
+You can see things that aren't normal!!! You gain 10 more turns do to your
+new enlightment!
+@do `p11 + 10  
+@do goto done
+ @end
+@#DONE
+@datasave bong.idf &playernum 1
+@KEY BOTTOM
+@drawmap
+@update
+@closescript
+@#toohigh
+@do saybar
+ UH UH NOT AGAIN TODAY BUSTER!
+@closescript
+ 
+ 
+ 

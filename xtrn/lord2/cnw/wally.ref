@@ -1,0 +1,568 @@
+; Script file WALLY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE start 000000568
+@DECLARE test 000001693
+@DECLARE insult 000002829
+@DECLARE explain 000003165
+@DECLARE one 000005031
+@DECLARE five 000005850
+@DECLARE done 000006644
+@DECLARE tired 000006823
+@DECLARE ten 000007105
+@DECLARE fifty 000007278
+@DECLARE sign 000007515
+@DECLARE unlimited 000007586
+@DECLARE broke 000008316
+@DECLARE unone 000008564
+@DECLARE unfive 000009314
+@DECLARE unten 000010035
+@DECLARE unfifty 000010136
+@NOCHECK
+; End of .REF index
+
+@#start
+@offmap
+@do moveback
+;<--Added by CNW-->
+;<must dismount hourse, could be a cheating tool>
+@routine dismounth in vehicle.ref
+@if `v05 > 0 then do
+        @begin
+        @do `p21 is `v05
+        @do `p21 / 24
+        @do `p21 * 3
+        @if `p11 < `p21 then do
+                @begin
+                @do saybar
+The library is locked.  Try again tomorrow.
+                @closescript
+                @end
+        @end
+
+;<--only if unlimitted turns .. CNW-->
+
+@if `v05 is 0 then do
+        @begin
+        @datanewday wally.idf
+        @dataload wally.idf &playernum `p20
+        @if `p20 is 1 then do
+                @begin
+                @do saybar
+The library is locked.  Try again tomorrow.
+                @closescript
+                @end
+        @end
+@clear screen
+@show
+ 
+     You enter a large room.  The walls are lined with floor to ceiling
+bookshelves.  A small man with large spectacles works quietly behind a desk.
+ 
+@do `v01 is 1
+@choice
+Leave before I disturb him.
+Approach the little man.
+@if response is 1 then do
+@begin
+@do goto done
+@end
+@do goto test
+@#test
+@clear screen
+@show
+[?7h[255D[9C[0;1;31mÜÜ  ÜÜ[7C[0;41mÚÄÄÄÄÄÄÄÄÄÄÄÄ¿[40m
+[7C[1;31;46mÛÛ[43mßß[0;33;46mÛÛ[1;31;43mßß[46mÛÛ[5C[0;41m³Quiet [40m[A
+[29C[41mPlease³[40m
+[6C[1;31;46mÛÛ[43m        [46mÛÛ[4C[0;41mÀÄÄÄÄÄÄÄÄÄÄÄÄÙ[40m
+[6C[1;31;46mÛ[30;43mÚÄÄ¿  ÚÄÄ¿[31;46mÛ[40m
+[7C[30;43m´ [0;34;43mú[1;30mÃÄÄ´[0;34;43mú [1;30mÃ[40m
+[7C[43mÀÄÄÙ[0;30;43mÀÙ[1mÀÄÄÙ[2C[0;41mÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿[40m
+[8C[33;46mÛÛ[31;43mÀÄÄÙ[33;46mÛÛ[3C[37;41m³Do Not Remove Books³[40m
+[9C[33mßßÛÛßß    [37;41mÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ[40m
+[7C[1;34;46mÛÛÛÛÛÛÛÛÛÛ[40m
+[6C[46mÛÛ[1CÛÛÛÛÛÛ[1CÛÛ[40m
+ [0;33m±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+  ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+  ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±[6C[1;37mThe little man looks up fro[A
+[72Cm his
+  [0;33m±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±  [1;37mdesk.  "Can I help you[A
+[63C?" he asks.
+ 
+@do `v01 is 1
+@choice
+What is this place?
+What are you?  Some kind of gnome?
+@if response is 1 then do
+@begin
+@do goto explain
+@end
+@if response is 2 then do
+@begin
+@do goto insult
+@end
+ 
+@#insult
+@clear screen
+@show
+ 
+The little man's eyes grow very large.  His face becomes very red.  "I am most
+certainly NOT a gnome.  I am a scholar and a philanthropist.  You, however,
+are an uncouth barbarian.  Please leave my establishment immediately!"
+ 
+@key
+@show
+ 
+Boy, he sure is touchy.
+ 
+@key
+@do goto done
+ 
+@#explain
+@clear screen
+@show
+ 
+     "This is Wise Wally's Public Library.  I'm Wise Wally, and these are my
+books.  I allow anyone to read them, but you must read them here.  I will not
+allow my books to be removed from the Library."
+ 
+@key
+@do `v01 is 1
+@choice
+Sounds great.  I'd like to read a book.
+No thanks.  I'm not a book person.
+@if response is 2 then do
+@begin
+@do goto done
+@end
+@clear screen
+@show
+ 
+Several books catch your eye.  Which one would you like to read?
+ 
+@do `v01 is 1
+@choice
+The Art of Battle, by Turgon
+Body Building, by D. Hulk
+Creative Defensive Maneuvers, by P. Mason
+How to Make Friends, by B. Nice
+@if response is 1 then do
+@begin
+@show
+ 
+The information in this book will give you experience.
+
+@key
+@do `p20 is 1
+@end
+ 
+@if response is 2 then do
+@begin
+@show
+ 
+The information in this book will improve your muscles.
+
+@key
+@do `p20 is 2
+@end
+ 
+@if response is 3 then do
+@begin
+@show
+ 
+The information in this book will give you raise your dodging abilities.
+
+@key
+@do `p20 is 3
+@end
+ 
+@if response is 4 then do
+@begin
+@show
+ 
+The information in this book will increase charm.
+
+@key
+@do `p20 is 4
+@end
+@if `v05 is 0 then goto unlimited
+@clear screen
+;<--Added by CNW-->
+@do `p21 is `v05
+@do `p21 / 24
+@do `p22 is `p21
+@do `p22 * 2
+@do `p23 is `p21
+@do `p23 * 3
+@do `p24 is `p21
+@do `p24 * 4
+@show
+ 
+Wally smiles as you make yourself comfortable and begin reading.
+ 
+How long will you study the book?
+@do `v01 is 1
+@choice
+>`p11 `p21 `% 1 hour  `%
+>`p11 `p22 `% 2 hours `%
+>`p11 `p23 `% 3 hours `%
+>`p11 `p24 `% 4 hours `%
+@if response is 1 then do
+@begin
+@do goto ten
+@end
+@if response is 2 then do
+@begin
+@do goto fifty
+@end
+@if response is 3 then do
+@begin
+@do goto one
+@end
+@if response is 4 then do
+@begin
+@do goto five
+@end
+ 
+@#one
+@if `p11 < `p23 the do
+@begin
+@do goto tired
+@end
+@do `p11 - `p23
+@clear screen
+@if `p20 is 1 then do
+@begin
+@show
+ 
+You quickly read The Art of Battle by Turgon.  You gain 100 experience.
+ 
+@do `p01 + 100
+@end
+ 
+@if `p20 is 2 then do
+@begin
+@show
+ 
+You quickly read Body Building by D. Hulk.  You gain 1 muscle point.
+ 
+@do `p04 + 1
+@end
+ 
+@if `p20 is 3 then do
+@begin
+@show
+ 
+You quickly read Creative Defensive Manuevers by P. Mason.  You gain 1
+dodge point.
+ 
+@do `p05 + 1
+@end
+ 
+@if `p20 is 4 then do
+@begin
+@show
+ 
+You quickly read How to Win Friends by B. Nice.  You gain 1 charm point.
+ 
+@do `p08 + 1
+@end
+ 
+@key
+@clear screen
+@show
+ 
+     Wally smiles from behind his desk.  "I'm glad you enjoyed the book.
+Please come again.
+ 
+@key
+@do goto done
+ 
+@#five
+@if `p11 < `p24 the do
+@begin
+@do goto tired
+@end
+@do `p11 - `p24
+@clear screen
+@if `p20 is 1 then do
+@begin
+@show
+ 
+You study The Art of Battle by Turgon.  You gain 200 experience.
+ 
+@do `p01 + 200
+@end
+ 
+@if `p20 is 2 then do
+@begin
+@show
+ 
+You study Body Building by D. Hulk.  You gain 2 muscle points.
+ 
+@do `p04 + 2
+@end
+ 
+@if `p20 is 3 then do
+@begin
+@show
+ 
+You study Creative Defensive Manuevers by P. Mason.  You gain 2 dodge points.
+ 
+@do `p05 + 2
+@end
+ 
+@if `p20 is 4 then do
+@begin
+@show
+ 
+You study How to Win Friends by B. Nice.  You gain 2 charm points.
+ 
+@do `p08 + 2
+@end
+ 
+@key
+@clear screen
+@show
+ 
+     Wally smiles from behind his desk.  "I'm glad you enjoyed the book.
+Please come again."
+ 
+@key
+@do goto done
+ 
+@#done
+@clear screen
+@show
+ 
+     You quietly exit the library and return to your adventures.
+ 
+@key
+@datasave wally.idf &playernum 1
+@drawmap
+@update
+@closescript
+ 
+@#tired
+@clear screen
+@show
+ 
+     You realize that you are too tired to read.  Perhaps you should come back
+tomorrow.
+ 
+@key
+@show
+ 
+You quietly exit the library and return to your adventures.
+ 
+@key
+@datasave wally.idf &playernum 1
+@drawmap
+@update
+@closescript
+ 
+@#ten
+@if `p11 < `p20 the do
+@begin
+@do goto tired
+@end
+@do `p11 - `p20
+ 
+@clear screen
+@show
+ 
+You quickly thumb through the pages.
+ 
+@key
+@do goto done
+ 
+@#fifty
+@if `p11 < `p22 the do
+@begin
+@do goto tired
+@end
+@do `p11 - `p22
+ 
+@clear screen
+@show
+ 
+     The book looks interesting.  Perhaps you should come back sometime and
+read it more thoroughly.
+ 
+@key
+@do goto done
+ 
+@#sign
+@do moveback
+@do saybar
+Knowledge -->
+@closescript
+ 
+@#unlimited
+@clear screen
+@show
+ 
+        Since you have decided to read a book, you will need a quiet place to
+read.  Wally rents his private reading room for $2 per turn.
+ 
+How long will you study the book?
+@do `v01 is 1
+@choice
+`% 1 hour  `%
+`% 2 hours `%
+`% 3 hours `%
+`% 4 hours `%
+@if response is 1 then do
+@begin
+@if money < 100 then goto broke
+@do money - 100
+@do goto unten
+@end
+@if response is 2 then do
+@begin
+@if money < 250 then goto broke
+@do money - 250
+@do goto unfifty
+@end
+@if response is 3 then do
+@begin
+@if money < 500 then goto broke
+@do money - 500
+@do goto unone
+@end
+@if response is 4 then do
+@begin
+@if money < 1500 then goto broke
+@do money - 1500
+@do goto unfive
+@end
+@#broke
+@clear screen
+@show
+ 
+You realize that you aren't carrying that much money.
+ 
+@key
+@show
+ 
+You quietly exit the library and return to your adventures.
+ 
+@key
+@datasave wally.idf &playernum 1
+@drawmap
+@update
+@closescript
+ 
+@#unone
+@clear screen
+@if `p20 is 1 then do
+@begin
+@show
+ 
+You quickly read The Art of Battle by Turgon.  You gain 100 experience.
+ 
+@do `p01 + 100
+@end
+ 
+@if `p20 is 2 then do
+@begin
+@show
+ 
+You quickly read Body Building by D. Hulk.  You gain 1 muscle point.
+ 
+@do `p04 + 1
+@end
+ 
+@if `p20 is 3 then do
+@begin
+@show
+ 
+You quickly read Creative Defensive Manuevers by P. Mason.  You gain 1
+dodge point.
+ 
+@do `p05 + 1
+@end
+ 
+@if `p20 is 4 then do
+@begin
+@show
+ 
+You quickly read How to Win Friends by B. Nice.  You gain 1 charm point.
+ 
+@do `p08 + 1
+@end
+ 
+@key
+@clear screen
+@show
+ 
+     Wally smiles from behind his desk.  "I'm glad you enjoyed the book.
+Please come again.
+ 
+@key
+@do goto done
+ 
+@#unfive
+@clear screen
+@if `p20 is 1 then do
+@begin
+@show
+ 
+You study The Art of Battle by Turgon.  You gain 200 experience.
+ 
+@do `p01 + 200
+@end
+ 
+@if `p20 is 2 then do
+@begin
+@show
+ 
+You study Body Building by D. Hulk.  You gain 2 muscle points.
+ 
+@do `p04 + 2
+@end
+ 
+@if `p20 is 3 then do
+@begin
+@show
+ 
+You study Creative Defensive Manuevers by P. Mason.  You gain 2 dodge points.
+ 
+@do `p05 + 2
+@end
+ 
+@if `p20 is 4 then do
+@begin
+@show
+ 
+You study How to Win Friends by B. Nice.  You gain 2 charm points.
+ 
+@do `p08 + 2
+@end
+ 
+@key
+@clear screen
+@show
+ 
+     Wally smiles from behind his desk.  "I'm glad you enjoyed the book.
+Please come again."
+ 
+@key
+@do goto done
+@#unten
+@clear screen
+@show
+ 
+You quickly thumb through the pages.
+ 
+@key
+@do goto done
+ 
+@#unfifty
+@clear screen
+@show
+ 
+     The book looks interesting.  Perhaps you should come back sometime and
+read it more thoroughly.
+ 
+@key
+@do goto done

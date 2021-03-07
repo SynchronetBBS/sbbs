@@ -1,0 +1,134 @@
+; Script file FAERIE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:18 2001
+
+@DECLARE fae1 000000420
+@DECLARE fae2 000000547
+@DECLARE fae3 000000662
+@DECLARE fae4 000000774
+@DECLARE fae5 000000885
+@DECLARE chick 000000985
+@DECLARE sign 000001093
+@DECLARE fqueen 000001183
+@DECLARE garden 000001990
+@NOCHECK
+; End of .REF index
+
+;faerie.ref, for the Faerie Glade IGM from ShroomTrip Software
+
+@#FAE1
+;One of the Faeries
+@do moveback
+@do saybar
+`%Faerie Glimmer: `0I can't talk right now. I'm having too much fun!
+
+@#FAE2
+;One of the Faeries
+@do moveback
+@do saybar
+`%Faerie Tisha: `0SCREECH! How did a HUMAN get in here?!
+
+@#FAE3
+;One of the Faeries
+@do moveback
+@do saybar
+`%Faerie Raana: `0Be sure to visit our Flower Garden!
+
+@#FAE4
+;One of the Faeries
+@do moveback
+@do saybar
+`%Faerie Nolan: `0I `@ `0my cat, so I had it `7`0!
+
+@#FAE5
+;One of the Faeries
+@do moveback
+@do saybar
+`%Faerie: `0Have you seen the Queen yet?
+
+@#CHICK
+;Woman by the lake
+@do moveback
+@do saybar
+`%Woman: `0Doesn't the pond just look beautiful?
+
+
+@#SIGN
+;DUH! It's a sign!
+@do moveback
+@do saybar
+`%Welcome to the Faerie Glade!
+
+@#FQUEEN
+;The Faerie Queen
+@do moveback
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Faerie Queen: `0Please do not fight here.
+@if `p20 is 2 then saybar
+`%Faerie Queen: `0Welcome to the Faerie Glade.
+@if `p20 is 3 then saybar
+`%Faerie Queen: `0Please be careful in our Flower Garden.
+@if `p20 is 4 then saybar
+`%Faerie Queen: `0How did you find us?
+@if `p20 is 5 then saybar
+`%Faerie Queen: `0There are very few of us Faeries left.
+@if `p20 is 6 then saybar
+`%Faerie Queen: `0I wonder what the `!Bard `%Seth Able `0is up to now-a-days?
+@if `p20 is 7 then saybar
+`%Faerie Queen: `0Do you remember the beautiful `#Violet`0?
+@if `p20 is 8 then saybar
+`%Faerie Queen: `0Have you seen `%Turgon `0yet?
+@if `p20 is 9 then saybar
+`%Faerie Queen: `0Be careful of `%Neb`0. He's a mean one.
+
+@#GARDEN
+;Gossip in the Flower Garden
+@do moveback
+@busy
+@show
+`r0`c  `r1  ARRANGING THE FLOWERS IN THE GARDEN  `r0
+
+@if garden.txt exist false then do
+ @begin
+ @writefile garden.txt
+  `%Fairy Tisha`2: `0Oooh! I love to kiss.
+  `%Fairy Nolan`2: `0Yes! I wish more humans would visit us.
+  `%Fairy Glimmer`2: `0I think that they are all afraid of us.
+ @end
+
+@if garden.txt exist true then do
+ @begin
+ @displayfile garden.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile garden.txt
+  `%`n`2 : `0`s03
+ @do trim garden.txt 17
+ @drawmap
+ @update
+
+

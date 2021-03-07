@@ -1,0 +1,33 @@
+
+                              Screen 1436 Patch 
+                               by Bobby Queen
+                         E-MAIL: wizards@shelby.net
+
+  QUICK INFO:
+
+  Allows you to use BOTH the Greentree Orphanage IGM *AND* the Mythrans 
+  Cottage IGM at the same time (Otherwise wouldn't be possible, as they 
+  use the same screen.  This is just the screen with BOTH igm's on it.  
+  Both IGM's are available for download at the Official Lord II IGM web 
+  site. www.chatnet.com/ben/l2igm/
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM p1436.IGM
+
+  To uninstall, do the same thing again.
+
+//////////////////////// BELOW IS FOR USE BY IGM.EXE /////////////////////
+
+igmname: `0Greentree Orphange `2- `0Mythrans Cottage`2 Combination Patch
+replacescreen: 1436 1 show
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2This IGM is actually just a screen patch for those of you that wish to
+  `2run `0Greentree Orphange `2AND `0Mythrans Cottage IGM's in the same game.  
+  `2They both use the same entry point screen, and can only co-exist if you
+  `2install both of them first, then install this patch, all will be well.

@@ -1,0 +1,282 @@
+; Script file CLEFT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE leave 000000476
+@DECLARE hang 000000543
+@DECLARE dead1 000000610
+@DECLARE dead2 000000668
+@DECLARE monster1 000000719
+@DECLARE monster2 000001232
+@DECLARE monster3 000001752
+@DECLARE monster4 000002274
+@DECLARE fight 000002776
+@DECLARE meetman 000002832
+@DECLARE final 000003353
+@DECLARE winfinal 000003915
+@DECLARE die 000004877
+@NOCHECK
+; End of .REF index
+
+@#leave
+@do moveback
+@do saybar
+`2Leave this place.. uh,.....
+
+@#hang
+@do moveback
+@do saybar
+`4Ewww, this guy is hanging!
+
+@#dead1
+@do moveback
+@do saybar
+`2This is horriable
+
+@#dead2
+@do moveback
+@do saybar
+`2Sick...
+
+@#monster1
+@fight
+;name
+Hell Spawn
+;string said when you see him
+What is this freak of hell doing here?
+;power move kill string
+Go to hell...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+spaps at you|300
+pounces on you|400
+bites you|600
+
+NONE|NONE
+;defense
+50
+;gold reward
+576
+;experience
+325
+;hit points
+200
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Magick Man
+;string said when you see him
+Saladem hablar polais!
+;power move kill string
+Sorry, I don't believe in magic...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+casts ICE|397
+casts FIRE|307
+casts LIT|455
+NONE|NONE
+NONE|NONE
+;defense
+43
+;gold reward
+475
+;experience
+287
+;hit points
+178
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Hell Goblin
+;string said when you see him
+Me want MEAT!
+;power move kill string
+Chew on this: Trident!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+smacks you|205
+pounces on you|220
+hits you with his club|234
+bites you|255
+NONE|NONE
+;defense
+66
+;gold reward
+976
+;experience
+625
+;hit points
+300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Lobo
+;string said when you see him
+Grrrrr...
+;power move kill string
+Sorry, I don't know spanish...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites you|107
+jumps on you|194
+bites you|192
+slashes you|155
+NONE|NONE
+;defense
+61
+;gold reward
+734
+;experience
+525
+;hit points
+375
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#FIGHT
+@do `p20 random 4 1
+@do goto monster`p20
+
+@#MeetMan
+@do moveback
+@dataload cleft.idf &playernum `p97
+@if `p97 is 0 then do
+@begin
+@show
+`r0`c`r1  ????  `r0
+
+      `2Suddenly you are wisked away into darkness...
+      `2
+      `% Where am I?
+      `2
+      `4 Welcome to HELL... For all time you will remain here...
+      `2
+      `% I'm sorry I won't be staying long...`L`L`L`L`L`L`L
+      `2
+      `1 You draw your sword...
+
+@key
+@run final in cleft.ref
+@end
+@if `p97 is 1 then do
+@do saybar
+What the hell are you doing back here?!
+@end
+
+@#final
+@fight
+;name
+Hell Mage
+;string said when you see him
+"Damn you Warrior!" He cries
+;power move kill string
+Noooo! Lucifer! I have failed you!!!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Stabs you|827
+Slams you into a wall|834
+breaks your arm|892
+burns you|855
+NONE|NONE
+;defense
+897
+;gold reward
+50000
+;experience
+25000
+;hit points
+1000
+;if win: ref file|name or NONE
+CLEFT.REF|WINFINAL
+;if lose: ref file|name or NONE
+CLEFT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#WinFINAL
+@busy
+@show
+`r0`c`r1  `%You Stand Victorious!  `r0
+
+      `4Nooooooooooo! How could you have beaten me?
+      `2
+      `%Hell will never win against those with a good heart...
+      `4
+      `4Araggg! I'll be BACK...................."`L`L`L`L`L`L
+
+      `2What's this? Suddenly words form above you...
+      `2
+      `%Go on to victory! Defending truth, humility, and Justace!
+      `%Go forth to awe-inspiring deeds! You love what is good.
+      `%And hate what is wrong. Therefore God, your God, has
+      `%giving you another chance. You are forgiven!`L`L`L`L`L`L
+
+      `2Just like that, you arive in Greentree...
+
+
+
+      
+@key
+@datasave cleft.idf &playernum 2
+@do addlog
+  `r1  `r0 `0`n`% has been given another chance! `r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+
+@do `p97 is 1
+   @do x is 36
+   @do y is 20
+   @do map is 1356
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#DIE
+@show
+`r0`c  `r1FOREVER IN HELL `r0
+
+`2  You step back, bleeding all over...
+
+`%Please spare me! You cry with all your might, but to no avail.
+`2
+`4 I'm sorry, I must add you to my collection of lives
+`4 I need souls, therefore I need YOU!!
+
+`2You start to fall.. fall forever into darkness...
+
+`k
+@do addlog
+  `r1  `r0 `0`n`% took a journey to hell, and never came back... `r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+
+@run die in gametxt.ref

@@ -1,0 +1,60 @@
+
+                     þMyst Ville by Sejr Andersen V1.00þ
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (3)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM MYST.IGM
+
+  To uninstall, do the same thing again.
+
+  This IGM is right under Flag City.  You have to find the purple tree
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Myst Ville `2by `0Sejr Andersen
+
+replacescreen: 1249 1 noshow
+
+replacescreen: 1250 2 noshow
+
+replacescreen: 1330 3 noshow
+
+replacescreen: 1331 4 show
+
+replacescreen: 1333 5 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Myst Ville, is a little Town just a little down from FlagCity.  A
+  tree was made to go to Myst Ville.  Myst Ville is available for any-
+  one to enter.  It includes a:
+  þHealer
+  þBank
+  þWeaponary
+  þStables          
+  þInn             - You can buy the Inn, and recieve money.
+  þTraining Ground  
+  þGamble House    
+
+                           -=[Enjoy]=-
+

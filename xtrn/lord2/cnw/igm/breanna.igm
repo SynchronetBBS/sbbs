@@ -1,0 +1,47 @@
+
+                   Breanna's Cove by Chet Rhodes V1.00
+
+                         AN IGM FOR LORD2 V1.00
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2 v1.0.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM CRAZY.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, head west from Porttown or North from Flag City.  Follow the
+  coast line till you find Breanna's hut.
+
+  chet.rhodes@juno.com
+  Fido 1:151/131
+  
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Breanna's Cove `2by `0Hawkmoon
+replacescreen: 940 1 show
+
+replacescreen: 860 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Breanna's Cove is a one time only IGM.  Users will be given one chance
+  each day until they have completed the IGM.  This IGM was designed to
+  enhance the game without overbalanceing it.

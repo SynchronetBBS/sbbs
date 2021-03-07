@@ -1,0 +1,453 @@
+; Script file FLIRTD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:26 2001
+
+@DECLARE judge 000000740
+@DECLARE final 000002870
+@DECLARE end 000003953
+@DECLARE notmarried 000004008
+@DECLARE sign 000004855
+@DECLARE dispatchsign 000004924
+@DECLARE dispatch 000004974
+@DECLARE tears 000007317
+@DECLARE kiss 000008450
+@DECLARE hug 000009489
+@DECLARE nogift 000010665
+@DECLARE gettear 000010731
+@DECLARE getkiss 000011261
+@DECLARE gethug 000012053
+@DECLARE giftout 000012690
+@DECLARE nomore 000012923
+@NOCHECK
+; End of .REF index
+
+; Updated by CNW to handle the java telnet app
+;
+;
+;
+;The Wedding Chapel v1.0
+;Complements of Hawkmoon's Realm BBS FIDO 1:151/131
+;Sysop Chet Rhodes
+;chet.rhodes@juno.com
+
+@#JUDGE
+@DO MOVEBACK
+@BUSY
+@DATALOAD flirtm.IDF &PLAYERNUM `p26
+@IF `p26 IS 0 THEN GOTO NOTMARRIED
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Talking with Judge Dillon  `r0`\
+`2  Before you is a loud and garishly dressed man.  An old, weathered sign
+  on his desk says "Divorce Court".
+
+`k`0  "Welcome young s&man.  Come on in and don't be bashful.  We're all here for
+  the same reason.  After all even honey will sour on you with time."
+
+`k`2  As you step closer you are engulfed by the smell of stale beer and musty
+  clothes.  For a second you get a wiff of honeysuckle but it is quickly
+  overwhelmed by the other odors.
+
+`k`0  "So you want a divorce.  Done had all you can stand and just can't take
+  any more I reackon."
+
+`k
+@DO `v01 IS 1
+@DO WRITE
+`x`x
+@CHOICE
+Yep, we've lost that lovin feeling.
+Nope, I was just looking for the bathroom.
+@if response is 2 then goto end
+@IF RESPONSE IS 1 THEN DO
+@DO `p20 is `p09
+@DO `p20 * 500
+@DO `p21 is `p09
+@DO `p21 * 100
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Talking with Judge Dillon  `r0`\
+`0  "Well you come to the right place s&sir.  We've all had that cross to bear at
+  one time or the other.  That is why I run this place so's that I can help
+  others in focusing their love were it will do the most good, if you know what
+  I mean." `2 he says with a wink.
+
+`k`2  You can't imagine the joy this fellows former wife must have felt when he
+  decided to refocus.
+
+`k`0  "Course now you realize that there is a small fee involved and since you
+  are the only one here you will have to pay the court cost."
+
+`k`$  "So how small is this fee?"
+
+`k`r0`c  `%`r1 Talking with Judge Dillon  `r0`\
+`0  "Divorces don't come cheap but I like you so I will handle you divorce
+  for only `$$`p20`0."
+`\
+@DO `v01 IS 1
+@DO WRITE
+`x`x
+@CHOICE
+>&money `p20 Worth every dime Judge.  Fix me up. `2(You have `0&money`2)
+>&money `p20 Maybe things aren't so bad after all.
+<&money `p20 I had no idea it would be so much.  I can't afford it right now.
+@if response is 1 then goto final
+@IF RESPONSE IS 2 THEN GOTO END
+@if response is 3 then goto end
+
+@#FINAL
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Talking with Judge Dillon  `r0`\
+`2  With a chuckle the judge pulls out a black book and makes an entry.  While
+  filling in the information he murmurs to himself.
+
+`0  "And another one ole Caroline my girl."
+
+`k
+`2  Experience drops `$`p21
+`2  Quest points drop 3
+
+`k
+@DO `p01 - `p21
+@DO `p18 - 3
+@do money - `p20
+@DO `s01 IS GETNAME `p26
+@DATASAVE FLIRTM.IDF `p26 0
+@DATASAVE FLIRTM.IDF &PLAYERNUM 0
+@do addlog
+  `r3  `r0 `0`n`2 has asked `0`s01 `2to sleep somewhere else. `r3  `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@DO `p20 / 2
+@DO `s03 IS `p20
+@WRITEFILE MAIL\MAIL`p26.DAT
+`#     A Post Dispatch rider hands you a letter.`$
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`x`x`2   I regret to inform you that `0`n`2 has purchased a divorce.
+`x`x   Attached is your alimony payment of `$$`p20.
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@WRITEFILE MAIL\CON`p26.TMP
+ADDGOLD|`p20
+@DRAWMAP
+@UPDATE
+@END
+
+@#END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#NOTMARRIED
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Talking with Judge Dillon  `r0`\
+`2  Before you is a loud and garishly dressed man.  An old, weathered sign
+  on his desk says "Divorce Court".
+
+`k`0  "Welcome young s&man.  Come on in and don't be bashful.  We're all here for
+  the same reason.  After all even honey will sour on you with time."
+
+`k`2  As you step closer you are engulfed by the smell of stale beer and musty
+  clothes.  For a second you get a wiff of honeysuckle but it is quickly
+  overwhelmed by the other odors.
+
+`k`0  "So you want a divorce.  Done had all you can stand and just can't take
+  any more I reackon."
+
+`k`$  "But I am not married."
+
+`k`0  "Well now that is a pickle isn't.  You come back and see me when you are.
+  I am sure you will need my services sooner or later."
+
+`k
+@DRAWMAP
+@UPDATE
+@END
+
+@#SIGN
+@DO SAYBAR
+`$Dillon's Discount House of Divorce.
+
+@#DISPATCHSIGN
+@DO SAYBAR
+`&Post Dispatch office
+
+@#DISPATCH
+@DO MOVEBACK
+@BUSY
+@DATALOAD FLIRTGG.IDF &PLAYERNUM `p28
+@IF `p28 IS 1 THEN GOTO GETTEAR
+@IF `p28 IS 2 THEN GOTO GETKISS
+@IF `p28 IS 3 THEN GOTO GETHUG
+@DATANEWDAY FLIRTG.IDF 
+@DATALOAD FLIRTG.IDF &PLAYERNUM `p27
+@IF `p27 IS 1 THEN GOTO NOGIFT
+@DATALOAD flirtm.IDF &PLAYERNUM `p26
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Talking with the dispatch officer.  `r0`\
+`7  A sign by the door says "This Post Dispatch office is solely provided for
+  the benefit of married couples."
+
+`k`%  "Welcome.  How may I help you?"`\
+@DO WRITE
+`x`x
+@DO `v01 IS 1
+@CHOICE
+>`p26 0 I would like to send a gift to my love.
+<`p26 1 How do you get married?
+Sorry, wrong office.
+@IF RESPONSE IS 1 THEN DO
+@BEGIN
+@DO `p20 is `p09
+@DO `p21 IS `p09
+@DO `p20 * 100
+@DO `p21 * 300
+@DATALOAD flirtm.IDF &PLAYERNUM `p26
+@DO `s01 IS GETNAME `p26
+@DATALOAD FLIRTGG.IDF `p26 `p28
+@IF `p28 NOT 0 THEN GOTO GIFTOUT
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Choosing a gift  `r0`\
+`%  "We have several special gifts to choose from.  Feel free to look them over."
+`\  `2You have `$$&money `2to spend on `s01.`\
+`#  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@DO `v01 IS 1
+@DO WRITE
+`x`x
+@CHOICE
+>&money 999 Tears of Joy for................ `$$`p20
+>&money 2999 Kiss of Love for................ `$$`p21
+>&money 2999 Hug of Protection for........... `$$`p21
+>&money 999 `s01 isn't worth that much.
+<&money 1000 Maybe I better stop by the bank first.
+@if response is 1 then GOTO TEARS
+@if response is 2 then GOTO KISS
+@if response is 3 then GOTO HUG
+@if response is 4 then GOTO END
+@if response is 5 then GOTO END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+@IF RESPONSE IS 2 THEN DO
+@BEGIN
+@IF &MAP IS 76 THEN DO
+ @BEGIN
+@do move 1 1
+ @SHOW
+ `r0`c  `%`r1 Talking with the dispatch officer.  `r0`\
+`%  "Marriages are handled by Caroline.  Talk with her and she will be more then
+  happy to help you out.  She is over at the large desk."
+
+`k
+ @DRAWMAP
+ @UPDATE
+ @CLOSESCRIPT
+ @END
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Talking with the dispatch officer.  `r0`\
+`%  "Marriages are handled by The Wedding Chapel.  It is located in Cloudy
+  City.  You will need a completed Skystaff to go there.  Oh! and a willing
+  partner of course."
+
+`k
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+@IF RESPONSE IS 3 THEN DO
+@DRAWMAP
+@UPDATE
+@END
+
+@#TEARS
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Choosing a gift  `r0`\
+`2  The attendant places a small glass vial on the table in front of you and
+  ask you to look inside.  You lean forward and peer down into the vial.
+
+`k`2  A vision of `s01 forms in the bottom of the vial.  A feeling of
+  loneliness consumes you. A lump grows in your throat and the tears begin
+  to flow. One of the tears slides down the inside of the vial striking that
+  bottom with a definate clicking sound.  Upon inspection you realize the the
+  tear has become a gem.
+
+`k`2  Retrieving the vial the attendant places a cap on the end.
+
+`k`%  "A dispatch rider will be sent out right away to find `s01."
+
+`k
+@writefile mail\mail`p26.dat
+`#     A Post Dispatch rider hands you a letter.`$
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`x`x   `2`n has sent you a gift.
+`x`x   Be sure to stop by the dispatch office and pick it up.`$
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@DATASAVE FLIRTG.IDF &playernum 1
+@DATASAVE FLIRTGG.IDF `P26 1
+@DRAWMAP
+@UPDATE
+@END
+
+@#KISS
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Choosing a gift  `r0`\
+`2  The attendant hands you a small lump of clay shaped like a pair of lips
+  and ask you to kiss it.  Feeling rather foolish you look around to see if
+  anyone is looking and then quickly kiss the wax.
+
+`k`2  The wax feels cold and hard to your hand but when you press it to your
+  lips it feels warm and responsive.  For a brief moment you could have sworn
+  it was `s01.
+
+`k`2  Unsure of what just happened you hand the wax back to the attendant.
+
+`k`%  "A dispatch rider will be sent out right away to find `s01."
+
+`k
+@writefile mail\mail`p26.dat
+`#     A Post Dispatch rider hands you a letter.`$
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`x`x   `2`n has sent you a gift.
+`x`x   Be sure to stop by the dispatch office and pick it up.`$
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@DATASAVE FLIRTG.IDF &playernum 1
+@DATASAVE FLIRTGG.IDF `p26 2
+@DRAWMAP
+@UPDATE
+@END
+
+@#HUG
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Choosing a gift  `r0`\
+`2  The attendant escorts you to a small doorway and tells you to enter.
+  As you step inside the dark room the door closes behind you cutting off
+  the light that had flowed through it.
+
+`k  A gentle hand touches yours and pulls you closer into a warm embrace.
+  The familiar contours can only be `s01's.  A feeling of contentment
+  washes over you.
+
+`k  The door opens and for a brief instant you see a grey form standing before
+  you.  It drops to the floor and you realize it is but a piece of cloth.  The
+  attendant gently retrieves the cloth and begins to carefully fold it.
+
+`k`%  "A dispatch rider will be sent out right away to find `s01."
+
+`k
+@writefile mail\mail`p26.dat
+`#     A Post Dispatch rider hands you a letter.`$
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`x`x   `2`n has sent you a gift.
+`x`x   Be sure to stop by the dispatch office and pick it up.`$
+`x`x -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@DATASAVE FLIRTG.IDF &playernum 1
+@DATASAVE FLIRTGG.IDF `p26 3
+@DRAWMAP
+@UPDATE
+@END
+
+@#NOGIFT
+@DO SAYBAR
+`$  You have already sent a gift today.
+
+@#GETTEAR
+@DATALOAD flirtm.IDF &PLAYERNUM `p26
+@DO `s01 IS GETNAME `p26
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 The Dispatch Office  `r0`\
+`2  The attendant recognizes you.  Smiling she hands you a small vial.  Inside
+  seems to be a small amount of liquid.  Opening the cap you pour it into your
+  hand.
+
+`k  A gem drops into your waiting hand.  You smile realizing it is a "Tear of
+  Joy" from `s01.
+
+`k  You receive `$1 Gem
+
+`k
+@DATASAVE FLIRTGG.IDF &playernum 0
+@DO `p19 + 1
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#GETKISS
+@DATALOAD flirtm.IDF &PLAYERNUM `p26
+@DO `s01 IS GETNAME `p26
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 The Dispatch Office  `r0`\
+`2  The attendant recognizes you.  Smiling she hands you a small lump of clay
+  shaped like a pair of human lips and and ask you to kiss it.  Feeling rather
+  foolish you look around to see if anyone is looking and then quickly kiss
+  the wax.
+
+`k`2  The wax feels cold and hard to your hand but when you press it to your
+  lips it feels warm and responsive.  For a brief moment you could have sworn
+  it was `s01.
+
+`k  A feeling of love consumes you and you feel you could defeat the world
+  with a love like this.
+
+`k  You receive `$1 Muscle
+
+`k
+@DATASAVE FLIRTGG.IDF &playernum 0
+@DO `p04 + 1
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+
+@#GETHUG
+@DATALOAD flirtm.IDF &PLAYERNUM `p26
+@DO `s01 IS GETNAME `p26
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 The Dispatch Office  `r0`\
+`2  The attendant recognizes you.  Smiling she hands you a grey cloth.  Not
+  really sure what you are suppose to do with it you wrap it around your
+  shoulders.  The cloth envelopes you and seems to pull you closer into a
+  warm embrace.  The familiar contours can only be `s01's.
+
+
+`k  A feeling of security washes over you.  Fear seems to be a forgotten
+  enemy.
+
+`k  You receive `$1 Dodge
+
+`k
+@DATASAVE FLIRTGG.IDF &playernum 0
+@DO `p05 + 1
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#GIFTOUT
+@do move 1 1
+@SHOW
+`r0`c  `%`r1 Talking with the dispatch officer.  `r0`\
+`%  I'm sorry but `s01 hasn't picked up the last gift yet.  We can only store
+  one at the time.
+
+`k
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#NOMORE

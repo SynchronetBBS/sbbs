@@ -1,0 +1,204 @@
+; Script file SPIDER.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE spiderfight 000000335
+@DECLARE monster1 000000947
+@DECLARE monster2 000001522
+@DECLARE monster3 000002103
+@DECLARE monster4 000002633
+@DECLARE monster5 000003203
+@DECLARE spider 000003737
+@NOCHECK
+; End of .REF index
+
+@#SPIDERFIGHT
+@offmap
+@fight
+;name
+Spider King
+;string said when you see him
+This is the largest spider you've ever seen
+;power move kill string
+You light him on fire for good measure
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+sinks it's fangs in you|295
+hypnotizes you|250
+spins you up in a web|286
+NONE|NONE
+NONE|NONE
+;defense
+250
+;gold reward
+2050
+;experience
+500
+;hit points
+1008
+;if win: ref file|name or NONE
+QUESTER.REF|FINQUEST
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+QUESTER.REF|ENDQUEST
+
+
+@#MONSTER1
+@fight
+;name
+Giant Spiderling
+;string said when you see him
+A nasty looking giant spiderling descends out of a web
+;power move kill string
+You send it back to hell.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+sinks it's fangs in you|95
+hypnotizes you|50
+feasts on your eyes|86
+NONE|NONE
+NONE|NONE
+;defense
+138
+;gold reward
+562
+;experience
+210
+;hit points
+125
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#MONSTER2
+@fight
+;name
+Giant Black Widow
+;string said when you see him
+That red hour glass on her stomach is as big as you
+;power move kill string
+You send her straight to hell
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+spins a web over you|75
+gaffs you with her leg|61
+sinks in her fangs|91
+NONE|NONE
+NONE|NONE
+;defense
+134
+;gold reward
+628
+;experience
+158
+;hit points
+145
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#MONSTER3
+@fight
+;name
+Giant Tarantula
+;string said when you see him
+What a big hairy Spider
+;power move kill string
+You cut off all eight legs
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Tramples you|45
+Bites you|95
+Spins you up in a web|54
+NONE|NONE
+NONE|NONE
+;defense
+141
+;gold reward
+925
+;experience
+171
+;hit points
+265
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#MONSTER4
+@fight
+;name
+Giant Two Headed Spider
+;string said when you see him
+That spider's got two heads, yuck!
+;power move kill string
+You chop off both heads !
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+chomps down with both heads|80
+scares you half to death|95
+Paralyzes you|78
+NONE|NONE
+NONE|NONE
+;defense
+145
+;gold reward
+815
+;experience
+200
+;hit points
+351
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#MONSTER5
+@fight
+;name
+Giant Brown Spider
+;string said when you see him
+This Spider looks hungry.
+;power move kill string
+Don't come round here no more
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+sprays venom on you|84
+smothers you|98
+bites you|87
+NONE|NONE
+NONE|NONE
+;defense
+125
+;gold reward
+526
+;experience
+165
+;hit points
+542
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#SPIDER
+@busy
+@do `p20 random 5 1
+@do goto monster`p20

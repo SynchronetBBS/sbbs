@@ -1,0 +1,181 @@
+; Script file PHOTEK.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE toilet 000000419
+@DECLARE blue 000001775
+@DECLARE green 000001864
+@DECLARE greet 000001973
+@DECLARE oldman 000002049
+@DECLARE guard 000002167
+@DECLARE whitestone 000002278
+@DECLARE knife 000002386
+@DECLARE photek 000004043
+@NOCHECK
+; End of .REF index
+
+;ref file for Photek's House IGM by White_Stone
+ 
+@#toilet
+@do moveback
+@datanewday photek.idf
+@dataload photek.idf &playernum `p20
+@if `p20 not 1 then do
+@begin
+@show
+`\`r0`c`2   `r3`0At the Toilet!!`r0`2
+ 
+                You run to the `$toilet.  `2Man you gotta go bad.  You start
+       to pull down your pants when you smell something so awful you just
+       about barf.  You turn around to see that this `$toilet `2hasn't been
+       flushed!!!
+`\`k`\
+@show
+       Suddenly your world spins.  Your head feels like it's whirling at 100
+       miles an hour.  Then everything goes black.
+`\`k`\
+@show
+       You wake up about 30 minutes later, your body hurts like hell.  You
+       try to move, but your body is strapped to a small wooden table.  As
+       your eyes come into focus, you see above you the man you saw at the
+       door.  In his hand is a HUGE `4syringe`2.  You become dizzy again, and
+       fall into unconsciousness.  Suddenly you awake to find yourself
+       standing in a place you know so well.
+ 
+             `7How did I get here?  My pockets fell heavier.
+             `2You wonder what could have happened.  `7oh well...
+`\`k
+@datasave photek.idf &playernum 1
+@do `I05 + 1
+@do map is 1595
+@do x is 20
+@do y is  5
+@loadmap 1595
+`k
+@update
+@drawmap
+@closescript
+@end
+ 
+@do saybar
+`2Haven't you done your duty enough for today `N?
+ 
+@#blue
+@do moveback
+@do saybar
+`7Go away.  I don't like to be bothered.
+@end
+ 
+ 
+@#green
+@do moveback
+@do saybar
+`9Hey, my name's DaBull, what's yours?  I'm from Stonebrook.
+@end
+ 
+ 
+@#greet
+@do moveback
+@do saybar
+`7Please seat yourself s&sir.
+@end
+ 
+@#oldman
+@do moveback
+@do saybar
+`0A `3magic `3rock `0was discovered today!!  It's just outside.
+@end
+ 
+@offmap
+@#guard
+@do moveback
+@do saybar
+        `4Don't `2touch the table, or you `4will `2be sorry.
+@end
+ 
+@#whitestone
+@do moveback
+@do saybar
+`0This is the ancient statue of `3Zeos`0, a legendary ski god.
+@end
+ 
+@#knife
+@do moveback
+@do enemy is `4Rusty_Dagger
+@show
+`\`r0`c`2       A `4Rusty Dagger `2is on the table.  You start to turn away when
+       you notice the weapon has a slight glow surrounding it.  There
+       is also a message written on the handle.  You reach for it,
+       but suddenly it comes to life.  Then it speaks to you!!
+ 
+`\`k
+@show
+   `0I am the feared `4Dagger `0of tranquility.  Give me all your money or die!!
+ 
+`k
+@do `v01 is 1
+@choice
+Give it your $&money
+Run!!
+@if response is 1 then do
+ @begin 
+ @do money is 0
+ @show
+`c`\`\        `8Money..  `4 Ha Ha Ha...You fool  `8 Money is worthless to me..
+        Especially since you have none now!!  Ha Ha...  Get lost.
+ 
+@show
+`\`k        `8Oh, and your life, it's in my hands now.  Ha Ha Ha!!
+ 
+`\`k  
+ @do dead is 1
+  @run die in gametxt.ref
+ @end
+@if response is 2 then do
+ @begin
+ @do money is 0
+ @show
+`c`\`\     `9You decide to hightail it out of this place.  You run from the table
+    only to be met by the `4Dagger `9staring you in the face.  You dodge for
+    the door, but you're too slow.  You pull out your s&Weapon...
+ 
+`k
+@show
+      `3You ask:
+        `9What do you want?  I'm not here to hurt you!!  You can have my
+        s&Weapon `9and all of my $&money`9..  oops... where'd all my cash go??
+ 
+`k
+@show
+    `9The `4Dagger `9only slashes through the air, coming dangerously close.
+    You slice through the air with your s&Weapon`9, hoping to kill the
+    `4Dagger`9, but to no avail.  Suddenly the `4Dagger `9moves with
+    lightning speed, severing your head...
+`k
+@do dead is 1
+@run die in gametxt.ref
+@end
+ 
+@#photek
+@do moveback
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Photek: `0I bet I know how much gold you have.  ummm...   &money??
+@if `p20 is 2 then saybar
+`%Photek: `0Have you seen Beener lately?  He's around... somewhere.
+@if `p20 is 3 then saybar
+`%Photek: `0White_Stone is watching your every move.  Be careful!
+@if `p20 is 4 then saybar
+`%Photek: `0The Dragon Tooth clan eat children.  Sick, eh?
+@if `p20 is 5 then saybar
+`%Photek: `0Ever heard of the Koshi people?  I'm one of them.  Don't mess.
+@if `p20 is 6 then saybar
+`%Photek: `0I hear `N is good in bed.
+@if `p20 is 7 then saybar
+`%Photek: `0Can I have your s&Weapon?
+@if `p20 is 8 then saybar
+`%Photek: `0Do you know where I am?
+@if `p20 is 9 then saybar
+`%Photek: `0The treehouse used to be my home, but I moved out.
+@update
+@end
+ 
+ 

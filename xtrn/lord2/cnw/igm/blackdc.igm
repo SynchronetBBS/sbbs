@@ -1,0 +1,43 @@
+
+                Black Dragon Castle by Gum-Lass V1.01
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01a
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (2) Sort of....
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (3)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM BLACKDC.IGM
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Black Dragon Castle  `2by `0Gum-Lass
+replacescreen: 41 1 show
+
+replacescreen: 31 2 noshow
+
+replacescreen: 30 3 noshow
+
+replacescreen: 29 4 noshow
+
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+     `1Be a winner, learn to cheat
+

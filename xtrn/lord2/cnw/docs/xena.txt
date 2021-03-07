@@ -1,0 +1,151 @@
+Xena's House by Quineska Software: Version 2.00
+-------------------------------------------------
+Created by Christopher Armstrong. Adopted and resdistributed by Quineska
+Software with permission of author. Copyright (C) 1999 Quineska Software.
+
+DISCLAIMER:
+
+By using this program, you agree by the following terms and conditions:
+
+THIS SOFTWARE IS PROVIDED "AS IS". Quineska Software takes no responsibility
+for any damage of any sort that is caused by the use or misuse of this
+program.
+
+LICENSE:
+
+This program is FREEWARE. This means the code still remains copyright to
+Quineska Software but we grant you the license to use it as much as you want
+on as many computers you want. It is nessecary though, to register it for
+free by emailing us from our web site or at one of the support addresses.
+
+INSTALLING IT:
+
+Xena's House is a small IGM for the Door Game LORD2 that creates a little
+house just west of Greentree. To install Xena's House:
+
+1. Copy all the archive files into your LORD2 directory.
+2. Enter "IGM XENA" (mind the quotes) at the DOS prompt.
+
+To install the registration code:
+
+Edit XENAINFO.DAT (or create it if it is not there) and type out your
+registration details as follows:
+
+First Line : Your registration name
+Second Line: Your first registration number
+Third Line : Your second registeration number
+
+For example:
+
+Joe Blows
+8789
+29283
+
+NEWS AND DETAILS:
+
+Just realeased second version. Contains a registeration routine requiring you
+to fill out the form at the end and emailing or netmailing it to us. You can
+register as many times as you like.
+
+CONTACT:
+
+To send comments, bugs or suggestions or if you need help please contact us
+via the following ways:
+
+Fidonet: 3:714/970.5 or 3:712/848.7
+
+Email: quineska@hotmail.com
+
+Web Site: http://quineska.bizland.com : Our site has other IGMS created by us
+                                        plus the latest news. We hope to have
+                                        it completed soon.
+Updated: 27/09/1999
+
+HISTORY:
+
+Here is the history of the making of Xena's House from right back in 1997
+until revised later in 1999. All entries marked with an asterik (*) are beta
+versions. I change the letter for DOC changes and and the numeral for actual
+changes to the IGM. Will be updating the Hercule's House IGM soon and and
+creating and interaction IGM between the two IGMS.
+
+Xena's House Version 2.00  - Second full release with registration routine
+                             plus a few bug fixes and cosmetic changes. Hope
+                             to really distribute (you would have to be lucky
+                             to get your hands on the last beta).
+                             Archive: XENA200.ZIP
+                             27/09/1999
+Xena's House Version 1.21a*- Just checking what is wrong with IGM and fixing
+                             bugs. It may be a while untill I get feedback
+                             since I don't run a BBS.
+Xena's House Version 1.20a*- Did a major check of the scripting and fixed sev-
+                             eral bugs present that affected the look.
+                             Archive: XENA120A.ZIP
+                             16/05/99
+Xena's House Version 1.12b*- Fixed DOCS and added date. Added things forgotton
+                             in previous versions.
+                             Archive: XENA112B.ZIP
+                             12/05/99
+Xena's House Version 1.12a*- Fixed up the map, changed IGM file and added a
+                             feature for Sysops who warp their players onto
+                             houses so the player can escape. 
+                             Archive: XENA112A.ZIP
+                             12/05/99
+Xena's House Version 1.11b*- Added this DOC to XENA.TXT for convenience of
+                             user/sysop. Added FILE_ID.DIZ. Should be distrib-
+                             uted. Changed to Freeware.
+                             Archive: XENA111B.ZIP
+                             Date Unknown
+Xena's House Version 1.11a*- Created fight between Xena and player if they
+                             return. Changed House completely. Added thing
+                             where is player runs from fight Xena can find
+                             and kill them. Still require to revise text.
+                             Fix map also.
+                             Archive: XENA111B.ZIP
+                             26/04/99
+Xena's House Version 1.10a*- Revised text. Added recognision between which
+                             option the user chooses. To be added:
+                             - A fight between player and Xena
+                             - Revision of text colours
+                             Archive: XENA110A.ZIP
+                             26/04/99
+Xena's House Version 1.01d - Added XENAHIST.TXT for convience. Updated DOC's
+                             and IGM file. To be distributed ASAP. Added NEWS
+                             section to DOC's.
+                             Archive: XENA101D.ZIP
+                             14/04/99
+Xena's House Version 1.01c - Fixed money error in XENA.REC. People could get
+                             free stuff. Never distributed. Updated DOC's
+                             and IGM file.
+                             13/04/99
+                             Archive: XENA101C.ZIP
+Xena's House Version 1.01b - Fixed archive name and updated XENA.IGM. Never
+                             distributed to public. Updated DOCS.
+                             13/04/99
+                             Archive: XENA101B.ZIP
+Xena's House Version 1.01a - Passed over to Quineska Software. Fixed variable
+                             bug. Totally redid DOC's. Tried distributing
+                             but failed.
+                             12/04/99
+                             Archive: XENA100A.ZIP
+Xena's House Version 1.00  - Created by Christopher Armstrong. First Release.
+                             Barely distributed. Some versions were REC's
+                             and others REF's. Archives differed.
+                             About 09/04/1997
+                             Archive: XENAV100.ZIP
+
+REGISTRATION FORM:
+
+Quneska Software Xena's House Registration Form (cut and paste into email
+editor then fill out and send to quineska@hotmail.com, 3:712/848.7 or
+3:714/970.5)
+
+Name:
+
+Email Address/Fido Address:
+
+Registration Name (Name that appears
+in game to whom it is registered to):
+
+Comments/Bugs/Suggestions:
+

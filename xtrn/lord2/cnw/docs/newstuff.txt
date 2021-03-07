@@ -1,0 +1,12 @@
+---------------------------- What is New? ------------------------v1.48--
+ 
+        I am sorry, i have been busy, not much of an upgrade.
+        It does have more on the guilds though, still not much.
+        Look forward to an update before Christmas!
+
+
+- Redraw screen bugfix for the none allowed
+- Women can finish quest
+- Continued work on the guilds (ansi screens)
+- Glow worm bug fixed w/ the rab special drink
+- Passwords for the Royal & Owner bedrooms

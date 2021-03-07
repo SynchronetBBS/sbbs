@@ -1,0 +1,44 @@
+           Global Registries(tm) For Lord II v1.01a by Mike Freeman
+                          AuSSie Creations Inc.
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.01a(NEW WORLD ONLY!)
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : Yes! (03)(OPTIONAL)
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (10)
+  Replaces screens?                               : Yes! (01)(Neb's Road)
+  Adds screens?                                   : No!
+  Free?                                           : Optional
+
+  Description:
+
+  To install, unzip into an empty directory by typing:
+     =======
+
+  pkunzip registry
+
+  Next:
+
+  * DO NOT TYPE * IGM REGISTRY till you read the docs
+
+  Read REGISTRY.DOC for full installation modifications and installation
+  completion instructions. * DO NOT * type REGISTRY until you have  read
+  REGISTRY.DOC and MCODE.DOC
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `@Ú `2Global Registries `0v1`2.`012 `2by Mike Freeman `0(`2AuSSie Creations Inc.`0) `@¿             `@À `2Our Home Page ... `$http`7://`$home`7.`$att`7.`$net`7/~`$aussie`7.`$mfreeman`7/`$home`7.`$htm `@Ù`2
+
+replacescreen: 1358 1 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+       `%Please read `$REGISTRY.DOC `%and `$MCODE.DOC `%prior to running
+                       Global Registries(tm).
+

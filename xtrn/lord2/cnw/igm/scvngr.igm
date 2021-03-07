@@ -1,0 +1,99 @@
+
+Scavenger Hunt by Codax and Dragon's Den ULTD  v 1.03
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes
+  Using any LORD2 vars?                           : money and items
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (13)
+  Adds screens?                                   : Yes (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+	This Igm will send players to find items and then bring them back to
+the home base.  This igm uses ALL the Items found in Lord2 plus some little
+extras.  These items can be found by searching the world, talking to people,
+bartering, and just plain luck(little brains never hurt either)
+(This game is Loose Screw BBS and Springfang friendly!)
+
+Note:   Not having mine, Loose Screw, or Springfang items won't really
+ 	matter, but it makes the igm harder to understand(clues and all)
+        Also if you choose not to have my items just delete the file
+	SCVNGR.NUM this will only let players hunt for the original 57 items
+	
+
+List of Files
+	scvngr.igm   --->This file used to (un)install
+	scvngr.ref   --->This is the (I)n (G)ame (M)odule
+	scvngr1.ans  --->Picture
+	scvngr2.ans  --->Picture
+	scvngr3.ans  --->Picture
+	scvngr.num   --->Text editable, how many items to hunt for (1 - 99)
+	scvngr.dat   --->Used by igm.exe to fill in screens
+	items.dat    --->My items(not nessesary if scvngr.num = 57)
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM scvngr.igm
+
+  To uninstall, do the same thing again.
+
+
+Location:  (Main Hedquaters) 2 screens south of Castle Coldrake
+           other locations are various places around the world
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0The Great Scavenger hunt by `1C`3o`5d`7a`9x `0and `#Dragon's `$Den `%Ultd
+
+replacescreen: 560 1 show
+
+replacescreen: 462 2 show
+
+replacescreen: 238 3 show
+
+replacescreen: 388 4 show
+
+replacescreen: 120 5 show
+
+replacescreen: 706 6 show
+
+replacescreen: 280 7 show
+
+replacescreen: 1494 8 show
+
+replacescreen: 559 9 noshow
+
+replacescreen: 136 10 show
+
+replacescreen: 160 11 noshow
+
+replacescreen: 1100 12 show
+
+replacescreen: 1210 13 noshow
+
+replacescreen: 1512 14 noshow
+
+replacescreen: 1193 15 show
+
+
+installmessage:
+
+`0  Hunt for items in the world and bring them back for cash and prizes
+
+
+  `%ABOUT THIS IGM:
+
+`%Location:  2 screens south of Castle Coldrake.
+   Author: `1C`3o`5d`7a`9x
+   Dragon's Den Ultd
+   http://www.geocities.com/SiliconValley/Way/9982/index.html
+   Codax_dragon@juno.com
+
+                                                                                                                      

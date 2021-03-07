@@ -1,0 +1,960 @@
+; Script file LOCKREF3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:18 2001
+
+@DECLARE treasure 000000963
+@DECLARE gems 000002006
+@DECLARE gold 000009431
+@DECLARE items 000016847
+@DECLARE leaveitem 000017798
+@DECLARE showitem 000018312
+@DECLARE itemcom 000018430
+@DECLARE items2 000018723
+@DECLARE up 000019651
+@DECLARE down 000019982
+@DECLARE baditems 000020316
+@DECLARE baditems2 000020640
+@DECLARE baditems 000020963
+@DECLARE seeitems 000021286
+@DECLARE itemsloop 000021732
+@DECLARE itemsloop2 000022266
+@DECLARE displayitem 000022776
+@DECLARE itemcom2 000022954
+@DECLARE down2 000023225
+@DECLARE items3 000023370
+@DECLARE baditems3 000024299
+@NOCHECK
+; End of .REF index
+
+;
+;     Locker House version 1.2 (REF FILE #3/6)
+;       by: Joel Gathercole
+;
+;    in aliance with Complete New World 136.3+
+;
+;
+;   http://greenmachinebbs.com/lord2/
+;   telnet://greenmachinebbs.com
+;   greenie@darktech.org
+;
+@label treasure
+@do `p20 is 0
+@if lockt`s01.idf exist false then do
+        @begin
+        @writefile lockt`s01.idf
+0
+0
+        @end
+@if lockt`s01.idf exist true then do
+  @begin
+  @readfile lockt`s01.idf
+`p20
+`p25
+  @end
+@do move 1 1
+@show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і    `%(`$M`%)`2oney`2, `%(`@G`%)`2ems `2or `2(`0N`2)evermind
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+@do move 65 5
+@do write
+`7і
+@do move 65 9
+@do write
+`7і
+@do readspecial `s02 MGQN
+@if `s02 is G then goto gems
+@if `s02 is M then goto gold
+@if `s02 is Q then do
+        @begin
+        @run letinroom in lockers.ref
+        @end
+@if `s02 is N then do
+        @begin
+        @run letinroom in lockers.ref
+        @end
+@run nomore in lockers.ref
+@end
+
+@label gems
+@do move 1 1
+@show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і `@GEMS   `2(`0T`2)ake, (`0L`2)eave or (`0N`2)evermind
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+@do readspecial `s02 NTL
+ @if `s02 is N then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і               `6You close the safe carefuly.
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 1 12
+ @key
+ @run letinroom in lockers.ref
+ @end
+
+@if `s02 is T then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і   `6Amount? `0: `%
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 17 9
+ @do readnum 10 0
+ @do `p21 is `v40
+ @if `p21 < 1 then `p21 is 0
+ @if `p21 > `p25 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і            `6Not enough in safety box for that.
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 65 5
+  @do write 
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @run letinroom in lockers.ref
+  @end
+
+  @if `p21 is 0 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і                     `6You take nothing
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 65 5
+  @do write
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @run letinroom in lockers.ref
+  @end
+ @readfile lockt`s01.idf
+`p20
+`p25
+@if `p25 < `p21 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і`6Oh no!  Someone took the money while you were thinking about it!
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 69 5
+  @do write
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @run letinroom in lockers.ref
+  @end
+ @do `p25 - `p21
+ @do `p19 + `p21
+ @do delete lockt`s01.idf
+ @writefile lockt`s01.idf
+`p20
+`p25
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і       `6You take `@`p21 GEMS `6from the safety box.
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 1 12
+ @readfile lockers`s01.idf
+`p28
+`p27
+`p26
+`s05
+ @if `p28 not &playernum then do
+  @begin
+  @writefile mail\mail`p28.dat
+  `0Locker Room `s01 Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `@`p21 GEMS `2from the safety box.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  @end
+ @key
+ @run letinroom in lockers.ref
+ @end
+
+@if `s02 is L then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і   `6Amount? `0: `%
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 17 9
+ @do readnum 10 `p19
+ @do `p21 is `v40
+ @if `p21 < 1 then `p21 is 0
+ @if `p21 > `p19 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і            `6You are not carrying that much!
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 65 5
+  @do write
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @do goto treasure
+  @end
+
+ @if `p21 is 0 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і               `6You don't have that much!
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 65 5
+  @do write
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @do goto treasure
+  @end
+ @do `p19 - `p21
+ @readfile lockt`s01.idf
+`p20
+`p25
+ @do `p25 + `p21
+ @do delete lockt`s01.idf
+ @writefile lockt`s01.idf
+`p20
+`p25
+ @readfile lockers`s01.idf
+`p28
+`p27
+`p26
+`s05
+ @if `p28 not &playernum then do
+  @begin
+  @writefile mail\mail`p28.dat
+  `0Locker Room `s01 Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `@`p21 GEMS `2to the safety box.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  @end
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6You leave `@`p21 GEMS `6in the safety box.
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 1 12
+ @key
+ @run letinroom in lockers.ref
+ @end
+ @run letinroom in lockers.ref
+@end
+ @run letinroom in lockers.ref
+@end
+
+
+@label gold
+@do move 1 1
+@show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і `$GOLD   `2(`0T`2)ake, (`0L`2)eave or (`0N`2)evermind
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+@do readspecial `s02 NTL
+ @if `s02 is N then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і               `6You close the safe carefuly.
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 1 12
+ @key
+ @run letinroom in lockers.ref
+ @end
+
+@if `s02 is T then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і   `6Amount? `0: `%
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 17 9
+ @do readnum 10 0
+ @do `p21 is `v40
+ @if `p21 < 1 then `p21 is 0
+ @if `p21 > `p20 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і            `6Not enough in safety box for that.
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 65 5
+  @do write 
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @do goto treasure
+  @end
+
+  @if `p21 is 0 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і                     `6You take nothing
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 65 5
+  @do write
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @do goto treasure
+  @end
+ @readfile lockt`s01.idf
+`p20
+`p25
+ @if `p20 < `p21 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і`6Oh no!  Someone took the money while you were thinking about it!
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 69 5
+  @do write
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @do goto treasure
+  @end
+ @do `p20 - `p21
+ @do money + `p21
+ @do delete lockt`s01.idf
+ @writefile lockt`s01.idf
+`p20
+`p25
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і       `6You take `$`p21 GOLD `6from the safety box.
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 1 12
+ @readfile lockers`s01.idf
+`p28
+`p27
+`p26
+`s05
+ @if `p28 not &playernum then do
+  @begin
+  @writefile mail\mail`p28.dat
+  `0Locker Room `s01 Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the safety box.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  @end
+ @key
+ @run letinroom in lockers.ref
+ @end
+
+@if `s02 is L then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і   `6Amount? `0: `%
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 17 9
+ @do readnum 10 &money
+ @do `p21 is `v40
+ @if `p21 < 1 then `p21 is 0
+ @if `p21 > money then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і            `6You are not carrying that much!
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 65 5
+  @do write
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @run letinroom in lockers.ref
+  @end
+
+ @if `p21 is 0 then do
+  @begin
+@do move 1 1
+  @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і               `6You don't have that much!
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  @do move 65 5
+  @do write
+`7і
+  @do move 65 9
+  @do write
+`7і
+  @do move 1 12
+  @key
+  @run letinroom in lockers.ref
+  @end
+ @do money - `p21
+ @readfile lockt`s01.idf
+`p20
+`p25
+ @do `p20 + `p21
+ @do delete lockt`s01.idf
+ @writefile lockt`s01.idf
+`p20
+`p25
+ @readfile lockers`s01.idf
+`p28
+`p27
+`p26
+`s05
+ @if `p28 not &playernum then do
+  @begin
+  @writefile mail\mail`p28.dat
+  `0Locker Room `s01 Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$`p21 GOLD `2to the safety box.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  @end
+@do move 1 1
+ @show
+`r0`c
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6Treasury is at `$`p20 GOLD `6and `@`p25 GEMS           
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+  `7і     `6You leave `$`p21 GOLD `6in the safety box.
+  `7±ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД±
+ @do move 65 5
+ @do write
+`7і
+ @do move 65 9
+ @do write
+`7і
+ @do move 1 12
+ @key
+ @run letinroom in lockers.ref
+ @end
+ @run letinroom in lockers.ref
+@end
+ @run letinroom in lockers.ref
+@end
+
+
+@label items
+@do `p20 is 0
+@do `p21 is 0
+@do move 1 1
+@show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і                      `6Your inventory of Items.                         `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+
+                          `0±`1ДДДДДДДДДДДДДДДДДДДД`0±
+                          `1і                    і
+                          `1і                    і
+                          `1і                    і
+                          `1і                    і
+                          `0±`1ДДДДДДДДДДДДДДДДДДДД`0±
+
+@do move 29 9
+@DO `V01 IS 1
+@choice
+`$Nah forget this
+`$Leave an item here
+`$See items
+@if responce is 1 then do
+        @begin
+        @run letinroom in lockers.ref
+        @end
+@if responce is 2 then goto leaveitem
+@if responce is 3 then goto seeitems
+@run letinroom in lockers.ref
+@end
+
+@label leaveitem
+@do `p20 is 1
+@do move 1 1
+@show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і              Which item would you like to leave here?                 `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+
+ `%up   8             `0±`1ДДДДДДДДДДДДДДДДДДДДДДДДДДДД`0±
+ `8і    і і            `1і                            і
+`%down  2             `0±`1ДДДДДДДДДДДДДДДДДДДДДДДДДДДД`0±
+
+@do goto showitem
+@end
+
+@label showitem
+@do move 24 9
+@do write
+яяяяяяяяяяяяяяяяяяяяяяяяяяя`1і
+@do move 24 9
+@run `p20 in lockref4.ref
+
+@label itemcom
+@do move 55 9
+@do readspecial `s03 e82udq
+@do move 55 9
+@do write
+я
+@if `s03 is E then goto items2
+@if `s03 is 8 then goto up
+@if `s03 is 2 then goto down
+@if `s03 is U then goto up
+@if `s03 is D then goto down
+@if `s03 is Q then goto items
+@do goto itemcom
+@end
+
+@label items2
+@do `v40 is 0
+@if `p20 is 99 then goto baditems2
+@if `p20 is 75 then goto baditems2
+@if `p20 is 7 then goto baditems2
+@if `p20 is 11 then goto baditems2
+@do move 1 1
+@show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і `$You have: `%`p22
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+@do move 74 5
+@do write
+`7і
+@do move 1 7
+@show
+
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і `$How many to put in this Locker Room? :                                `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+@do move 43 9 
+@do readnum 5 `p22
+@if `v40 is 0 then goto items
+@if `v40 > `p22 then goto baditems
+@datasave locki`s01.idf `p20 `v40
+@do `p22 - `v40
+@do `p30 is 2
+@run b`p20 in lockref5.ref
+@do goto items
+@end
+@end
+@closescript
+
+@label up
+@do `p20 - 1
+@do `p30 is 1
+@if `p20 < 1 then do
+    @begin
+    @do `p20 is 99
+    @do goto showitem
+    @end
+@if `p20 is 0 then do
+    @begin
+    @do `p20 is 99
+    @do goto showitem
+    @end
+@if `p20 > 99 then do
+    @begin
+    @do `p20 is 1
+    @do goto showitem
+    @end
+@do goto showitem
+@end
+
+@label down
+@do `p30 is 0
+@do `p20 + 1
+@if `p20 > 99 then do
+    @begin
+    @do `p20 is 1
+    @do goto showitem
+    @end
+@if `p20 is 0 then do
+    @begin
+    @do `p20 is 1
+    @do goto showitem
+    @end
+@if `p20 < 1 then do
+    @begin
+    @do `p20 is 99
+    @do goto showitem
+    @end
+@do goto showitem
+@end
+
+@label baditems
+@do move 1 1
+ @show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і                  `6You do not have that many!                           `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ @key
+@do goto items
+@end
+
+@label baditems2
+@do move 1 1
+ @show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і                  `6You can't leave that here!                           `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ @key
+@do goto items
+@end
+
+@label baditems
+@do move 1 1
+ @show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і                  `6You do not have that many!                           `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ @key
+@do goto items
+@end
+
+@label seeitems
+@do `p20 is 1
+@if locki`s01.idf exists false then do
+ @begin
+@do move 1 1
+ @show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і                  `6No items in this Locker Room.                        `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ @key
+ @end
+@if locki`s01.idf exists true then goto itemsloop
+@do goto items
+@end
+
+@label itemsloop
+@do `p28 is 0
+@do move 1 1
+@show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і                      `2Your items in this room:                         `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+
+`%take =`$Enter `%/ `$E `%/ `$T  `0±`1ДДДДДДДДДДДДДДДДДДДДДДДДДДДД`0±
+`%quit =`$Q              `1і                            і
+`%down =`$2 `%or `$D         `0±`1ДДДДДДДДДДДДДДДДДДДДДДДДДДДД`0±
+
+@do goto itemsloop2
+
+
+@label itemsloop2
+@dataload locki`s01.idf `p20 `p21
+@do `p28 + 1
+@if `p28 > 150 then do
+        @begin
+        @do delete locki`s01.idf
+        @do goto seeitems
+        @end
+@if `p20 > 98 then do
+        @begin
+        @do `p20 is 1
+        @do goto itemsloop2
+        @end
+@if `p21 is 0 then do
+        @begin
+        @do `p20 + 1
+        @do goto itemsloop2
+        @end
+@if `p21 > 0 then do
+        @begin
+        @run c`p20 in lockref5.ref
+        @end
+@do goto itemsloop2
+@end
+
+@label displayitem
+@do `p28 is 0
+@do move 24 9
+@do write
+яяяяяяяяяяяяяяяяяяяяяяяяяяя`1і
+@do move 24 9
+ @do write
+`s04 `$(`%`p21`$)
+@do move 24 9
+@do goto itemcom2
+@end
+
+@label itemcom2
+@do move 55 9
+@do readspecial `s03 e2dqt
+@do move 55 9
+@do write
+я
+@if `s03 is T then goto items3 
+@if `s03 is E then goto items3 
+@if `s03 is 2 then goto down2
+@if `s03 is D then goto down2
+@if `s03 is Q then goto items
+@do goto itemcom
+@end
+
+@label down2
+@do `p20 + 1
+@if `p20 > 98 then do
+    @begin
+    @do `p20 is 1
+    @do goto showitem
+    @end
+@do goto itemsloop2
+@end
+
+@label items3
+@end
+@do `v40 is 0
+@if `p20 is 99 then goto baditems2
+@if `p20 is 75 then goto baditems2
+@if `p20 is 7 then goto baditems2
+@if `p20 is 11 then goto baditems2
+@do move 1 1
+@show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і `$Available here: `%`p21
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+@do move 74 5
+@do write
+`7і
+@do move 1 7
+@show
+
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і `$How many do you want to take?                                         `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+@do move 40 9 
+@do readnum 5 `p21
+@if `v40 is 0 then goto items
+@if `v40 > `p21 then goto baditems
+@do `p21 - `v40
+@datasave locki`s01.idf `p20 `p21
+@do `p22 is `v40
+@do `p30 is 2
+@run d`p20 in lockref6.ref
+@end
+
+@label baditems3
+@do move 1 1
+ @show
+`r0`c
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ `7і              `6There isn't enough to take that many!                    `7і
+ `5±`7ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД`5±
+ @key
+@do goto items
+@end

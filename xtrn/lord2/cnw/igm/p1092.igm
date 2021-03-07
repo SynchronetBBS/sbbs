@@ -1,0 +1,34 @@
+
+                              Screen 1092 Patch 
+                               by Bobby Queen
+                         E-MAIL: wizards@shelby.net
+
+  QUICK INFO:
+
+  Allows you to use BOTH The Loose Screw IGM *AND* Fathers
+  Grave IGM at the same time (Otherwise wouldn't be 
+  possible, as they use the same screen.  This is just the screen with 
+  BOTH igm's on it.  Both IGM's are available for download at the 
+  Official Lord II IGM web site.  www.shelby.net/wizards/l2igm
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM p1092.IGM
+
+  To uninstall, do the same thing again.
+
+//////////////////////// BELOW IS FOR USE BY IGM.EXE /////////////////////
+
+igmname: `0The Loose Screw `2- `0Fathers Grave`2 Combination Patch
+replacescreen: 1092 1 show
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2This IGM is actually just a screen patch for those of you that wish to
+  `2run `0The Loose Screw IGM `2AND `0Fathers Grave IGM 
+  `2in the same game.  They both use the same entry point screen, and can 
+  `2only co-exist if you install both of them first, then install this 
+  `2patch, all will be well.

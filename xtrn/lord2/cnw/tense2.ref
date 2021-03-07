@@ -1,0 +1,2108 @@
+; Script file TENSE2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:38 2001
+
+@DECLARE neccessite 000001594
+@DECLARE dungshow 000003986
+@DECLARE hintwoman 000004088
+@DECLARE saybar1 000004750
+@DECLARE saybar2 000004830
+@DECLARE saybar3 000004924
+@DECLARE saybar4 000005007
+@DECLARE saybar5 000005077
+@DECLARE saybar6 000005171
+@DECLARE saybar7 000005270
+@DECLARE saybar8 000005371
+@DECLARE saybar9 000005444
+@DECLARE saybar10 000005526
+@DECLARE labman 000005616
+@DECLARE key1 000007785
+@DECLARE key1check 000008475
+@DECLARE key2 000008727
+@DECLARE key2check 000009423
+@DECLARE key3 000009675
+@DECLARE key3check 000010365
+@DECLARE marty 000010618
+@DECLARE doc 000013044
+@DECLARE plateauman 000015072
+@DECLARE plateauman2 000016194
+@DECLARE bridge 000017106
+@DECLARE woman1 000017577
+@DECLARE woman1a 000019416
+@DECLARE finish1 000020217
+@DECLARE prisoner1 000021931
+@DECLARE prisoner2 000023601
+@DECLARE keydoor 000025227
+@DECLARE woman2 000025477
+@DECLARE woman2a 000027431
+@DECLARE finish2 000028213
+@DECLARE woman3 000029905
+@DECLARE woman3a 000031894
+@DECLARE finish3 000032711
+@DECLARE slaves 000034438
+@DECLARE slave1 000034505
+@DECLARE slave2 000034560
+@DECLARE slave3 000034654
+@DECLARE slave4 000034739
+@DECLARE slave5 000034833
+@DECLARE slavegive 000034934
+@DECLARE collector 000035401
+@DECLARE collector2 000036759
+@DECLARE woman4 000037926
+@DECLARE woman4a 000040243
+@DECLARE finish4 000041060
+@DECLARE neccessite2 000042912
+@DECLARE necc2 000045641
+@DECLARE tensepass 000049051
+@NOCHECK
+; End of .REF index
+
+@#NECCESSITE
+@do `p21 is 0
+@dataload TENSEFIN.DAT &playernum `p21
+@if `p21 > 0 then do
+@begin
+@do moveback
+@do saybar
+`!Neccessite: `$I know you're a hero, but I still hate you!
+@closescript
+@end
+ 
+@do `p20 is 0
+@dataload TENSEWMN.DAT &playernum `p20
+@if `p20 is 4 then do
+ @begin
+ @do goto NECCESSITE2
+ @closescript
+ @end
+@if `p20 is 5 then do
+ @begin
+ @do goto TENSEPASS
+ @closescript
+ @end
+ 
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% Neccessite, Guardian of the Thing `r0
+ 
+  `2Although she is quite beautiful, you refuse to trust her.
+  `2Perhaps it is the falseness of her smile, or the fingers crossed
+  behind her back, or the extremely long (but beautiful) length of
+  her nose.
+ 
+  `2Nonetheless, she blows you a kiss and welcomes you.
+ 
+  `0"Welcome to the Thing. I am Neccessite, Guardian of the Thing."
+ 
+@DO WRITE
+`x`x
+@CHOICE
+What is this thing?
+See ya' Babe!
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"What is this thing?"
+`k  `0"This thing is ancient, and very still. It hardly moves. "
+ 
+`k  `$"I noticed. It has a damn long tongue, too?"
+ 
+`k  `0"That's because its throat is a passage...I mean, yes, yes it does
+  have a long tongue, doesn't it? I'd never really noticed that it did.
+  Being here for so long, I must have taken it for granted...how the tongue
+  acts as a pathway and all. I mean, you'd almost think you could walk 
+  inside...not that you can! No! No, of course not! That would be silly."
+ 
+`k  `$"You're lying. But, I feel the plot must develop throughout the
+  adventure in this house so I'll change the subject. Whose house is this?"
+ 
+`k  `0"This is the ancient house of the Tensions. Four of which are women.
+  Very powerful women, with strange motives. They did a terrible deed
+  awhile back. And so they were scattered, and imprisoned secretly throughout
+  this house -- to insure that any terrible deeds would not happen again.
+ 
+`k  `$"Were they hot?"
+ 
+`k  `0"Beauty beyond belief. But evil, evil unimaginable. If, upon your
+  journeys in this house, you come upon any of the four, leave them be.
+  Do not rescue them, or store them inside you. Believe me, the forces
+  you deal with are incomprehensible.
+ 
+  Plus, if you don't, I'll go out with you. You're kind of cute."
+ 
+`k  `$"Thanks!"
+`\`k
+  @do goto NECCESSITE
+  @END
+ 
+@drawmap
+@update
+@end
+ 
+@#DUNGSHOW
+@do saybar
+`%The Nicely Decorated Tension Dungeon: Most of these poor men are dead.
+ 
+@#HINTWOMAN
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% Helga, the Hinting Woman `r0
+ 
+  `2An elderly, poorly dressed woman is crouched in front of you.
+  `2She meditates well, and is very indifferent to your presence.
+                                                                  
+  `2In front of her is a sign. It reads: `$"Hints for free: Only 500$"
+ 
+  `2You find it very confusing.
+ 
+@DO WRITE
+`x`x
+@CHOICE
+>&money 499  Pay the free fee! (500 gold)
+Leave the old codger
+@IF RESPONSE IS 1 THEN DO
+  @begin
+  @do money - 500
+  @drawmap
+  @update
+ @do `p25 random 10 1
+ @run saybar`p25
+  @end
+ 
+  @drawmap
+  @update
+  @end
+ 
+@#saybar1
+@do saybar
+`!Helga: `$There are 8 moonstones hidden in this house.
+@#saybar2
+@do saybar
+`!Helga: `$There is a moonstone beneath the stairs on the main floor.
+@#saybar3
+@do saybar
+`!Helga: `$There is a moonstone hidden in that labaratory.
+@#saybar4
+@do saybar
+`!Helga: `$There is a moonstone on the roof. 
+@#saybar5
+@do saybar
+`!Helga: `$There is a moonstone beneath the stairs on the main floor.
+@#saybar6
+@do saybar
+`!Helga: `$There is a walk-through wall on the green-walled indoor island.
+@#saybar7
+@do saybar
+`!Helga: `$Don't go opening doors without money, food, or strong damn armor.
+@#saybar8
+@do saybar
+`!Helga: `$The tension women are easily charmed.
+@#saybar9
+@do saybar
+`!Helga: `$There is a moonstone hidden in the waterfall.
+@#saybar10
+@do saybar
+`!Helga: `$There is a walk-through wall near the dragon slaves.
+ 
+@#LABMAN
+@do `p20 is 0
+@dataload TENSEKEY.DAT &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @do moveback
+ @dataload TENSEKB.DAT &playernum `p21
+  @if `p21 is 1 then do
+  @begin
+  @do saybar
+`!Lebby: `$You've got the key shaped like a stupid heart.
+  @end
+  @if `p21 is 2 then do
+  @begin
+  @do saybar
+`!Lebby: `$You've got the key shaped like a stupid diamond.
+  @end
+  @if `p21 is 3 then do
+  @begin
+  @do saybar
+`!Lebby: `$You've got the key shaped like a stupid spade.
+  @end
+ @do saybar
+`!Lebby: `$Go ahead and grab a key!
+ @closescript
+ @end
+ 
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% Labreticulus, the Lab Man `r0
+ 
+  `2In front of you is a very old fellow, not to mention a little senile,
+  stupid, and scarniferous. You approach him cautiously, but he yells in
+  your face! 
+ 
+  `0"Hey there! Hey! Welcome to Lebby's Keys! Just 5 moonstones!" `2he yells.
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Did you say '5' moonstones!?!?
+>`i57 4  Give him your moonstones.
+Leave
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @SHOW
+`\`\  `$"Did you say `%5`$ moonstones!?!?!"
+ 
+`k  `0"Yup! 5. No more, no less. That's right. 5! Moonstones."
+ 
+`k  `$"Do you have any idea how hard those things are to come by!?!"
+ 
+`k  `0"Oh, yes. That's why I'm asking so much for my keys."
+ 
+`k  `$"Why?!?!"
+ 
+`k  `0"Because I'm hungry!"
+ 
+`k  `$"What the hell does that have to do with moonstones?!?!"
+ 
+`k  `0"I eat moonstones."
+ 
+`k  `$"Oh. Well." `2You breathe deeply. `$"You make keys, right?"
+ 
+`k  `0"Oh, no. Nothing like that. I have keys, you see, to this house.
+  For 5 moonstones to feed my starving self, I'll let you take them out
+  ONE at a time...of course, you'll have to leave some collateral. And,
+  oh yes, of course you won't be getting any of it back. I guess, in a
+  way, I'm just really overcharing you! But, hey, you won't be able
+  to get very far in this house without participating..."
+  
+`k  `$"Uh-huh..."
+ 
+@do goto LABMAN
+@end
+ 
+@if response is 2 then do
+@begin
+@do `i57 - 5
+@drawmap
+@update
+@do saybar
+@datasave TENSEKEY.DAT &playernum 1
+`!Lebby: `$Thanks!
+@end
+ 
+@drawmap
+@update
+@end
+ 
+@#KEY1
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% The Key Obviously Shaped like a Heart `r0
+ 
+  `2As you pick it up, you think, `$"Damn, ASCII codes suck. I have a 
+  stupid key shaped like a heart."
+ 
+  `2You take it over to Lebby. `$"I'd like this key, please."    
+ 
+  `0"That will be `%$10,000 `0please."  
+ 
+@DO WRITE
+`x`x
+@CHOICE
+>&money 9999  Pay the overcharging man (10,000 gold)
+I don't have that kind of money.
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @drawmap
+  @update
+  @do money - 10000
+  @datasave TENSEKB.DAT &playernum 1
+  @do saybar
+`!You have the stupid key shaped like a heart!
+  @closescript
+  @end
+ 
+  @drawmap
+  @update
+  @end
+ 
+@#KEY1CHECK
+@do `p20 is 0
+@dataload TENSEKB.DAT &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @do saybar
+`!You use the stupid key and go through the stupid door.
+ @closescript
+ @end
+ 
+ @do moveback
+ @do saybar
+`!It's locked, damnit.
+ @end
+ 
+@#KEY2
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% The Key Obviously Shaped like a Diamond `r0
+ 
+  `2As you pick it up, you think, `$"Damn, ASCII codes suck. I have a 
+  stupid key shaped like a diamond."
+ 
+  `2You take it over to Lebby. `$"I'd like this key, please."    
+ 
+  `0"That will be `%$10,000 `0please."  
+ 
+@DO WRITE
+`x`x
+@CHOICE
+>&money 9999  Pay the overcharging man (10,000 gold)
+I don't have that kind of money.
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @drawmap
+  @update
+  @do money - 10000
+  @datasave TENSEKB.DAT &playernum 2
+  @do saybar
+`!You have the stupid key shaped like a diamond!
+  @closescript
+  @end
+ 
+  @drawmap
+  @update
+  @end
+ 
+@#KEY2CHECK
+@do `p20 is 0
+@dataload TENSEKB.DAT &playernum `p20
+@if `p20 is 2 then do
+ @begin
+ @do saybar
+`!You use the stupid key and go through the stupid door.
+ @closescript
+ @end
+ 
+ @do moveback
+ @do saybar
+`!It's locked, damnit.
+ @end
+ 
+@#KEY3
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% The Key Obviously Shaped like a Spade `r0
+ 
+  `2As you pick it up, you think, `$"Damn, ASCII codes suck. I have a 
+  stupid key shaped like a spade."
+ 
+  `2You take it over to Lebby. `$"I'd like this key, please."    
+ 
+  `0"That will be `%$10,000 `0please."  
+ 
+@DO WRITE
+`x`x
+@CHOICE
+>&money 9999  Pay the overcharging man (10,000 gold)
+I don't have that kind of money.
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @drawmap
+  @update
+  @do money - 10000
+  @datasave TENSEKB.DAT &playernum 3
+  @do saybar
+`!You have the stupid key shaped like a spade!
+  @closescript
+  @end
+ 
+  @drawmap
+  @update
+  @end
+ 
+@#KEY3CHECK
+@do `p20 is 0
+@dataload TENSEKB.DAT &playernum `p20
+@if `p20 is 3 then do
+ @begin
+ @do saybar
+`!You use the stupid key and go through the stupid door.
+ @closescript
+ @end
+ 
+ @do moveback
+ @do saybar
+`!It's locked, damnit.
+ @end
+ 
+@#MARTY
+ @do `p22 is 0
+ @dataload TENSEQZ.DAT &playernum `p22
+ @if `p22 > 2 then do
+ @begin
+ @do saybar
+`!Marty: `$We've already given you the almanac.
+ @closescript
+ @end
+ @do `p21 is 0
+ @dataload TENSEQZ1.IDF &playernum `p21
+ @if `p21 is 1 then do
+ @begin
+ @do moveback
+ @do saybar
+`!Marty: `$If you haven't already, try talking to Doc.
+ @closescript
+ @end
+ 
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% Heavy Marty `r0
+ 
+  `2You approach him carefully, as you are quite intimidated by his
+  stylish orange vest that rather resembles a life vest. 
+ 
+  `$"Hey, kid. You jump ship?" `2you say to him. He doesn't laugh.
+ 
+  `0"My name's Marty. And I have something you need. Gray's Sports
+  Almanac. I'll give it to you if you can answer my one question, and
+  Doc's one question, correctly. Is that a deal?"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Give his question a shot!
+Sorry, daddio. No time for this.
+@IF RESPONSE is 2 THEN DO
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"I'll give your question a shot."
+ 
+`k  `2He approaches you slowly. `0"All right, listen closely. I don't
+  like to repeat myself. My question involves simple algebra. If you have
+  one number, x, divided by another number y, and it is multiplied by
+  another number, z, which is the result of an equation, ab + cd = z,
+  and cd is equal to 12, and x is 80 more than 12 + ab, divided by z,
+  and, you know, I am just kidding you. I mean, what does this have to do
+  with Lord II?" `2He smiles.
+ 
+`k  `$"I failed algebra."
+ 
+`k  `0"Me, too. I was a slacker.
+ 
+`k
+`c`0  Your real question is this: Who was framed by his student and
+  thrown out of his training institution?"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Barak
+Nickabrick
+Turgon
+Selena
+Abdul
+@IF RESPONSE IS 3 then do
+ @begin
+ @drawmap
+ @update
+ @datasave TENSEQZ1.IDF &playernum 1
+  @do `p20 is 0
+ @dataload TENSEQZ.DAT &playernum `p20
+  @if `p20 is 1 then do
+  @begin
+ @do saybar
+`!Marty: `$That's right! Here's the sports almanac!
+ @do `p20 + 1
+ @datasave TENSEQZ.DAT &playernum `p20
+  @closescript
+  @end
+ @drawmap
+ @update
+ @datasave TENSEQZ.DAT &playernum 1
+ @do saybar
+`!Marty: `$That's right! Talk to Doc now!
+ @closescript
+ @end
+ 
+ @drawmap
+ @update
+ @datasave TENSEQZ1.IDF &playernum 1
+ @do saybar
+`!Marty: `$Sorry, that wasn't exactly the right answer.
+ 
+@#DOC
+ @do `p22 is 0
+ @dataload TENSEQZ.DAT &playernum `p22
+ @if `p22 > 2 then do
+ @begin
+ @do saybar
+`!Doc: `$We've already given you the almanac.
+ @closescript
+ @end
+ @do `p21 is 0
+ @dataload TENSEQZ2.IDF &playernum `p21
+ @if `p21 is 1 then do
+ @begin
+ @do moveback
+ @do saybar
+`!Doc: `$If you haven't already...great scott! Talk to Marty!
+ @closescript
+ @end
+ 
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% Great Scott Doc `r0
+ 
+  `2This crazy-haired scientist apparently has a concetrated disorder.
+  He can't stop yelling or walking or moving or waving his wild eyes
+  wildly.
+ 
+  `$"Great scott! I've got a question for you. You want the sports
+  almanac don't you?"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Give his question a shot!
+Sorry, daddio. No time for this.
+@IF RESPONSE is 2 THEN DO
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"I'll give your question a shot."
+ 
+`k  `2He dances around you. `0"Damn. Damn. Damn. Kid, did I ever tell
+  you that story? That one story? Did I? About when I slipped and hit
+  my head on a toilet or something like that. I came up with the flux
+  capacitor!"
+ 
+`k  `$"Does my question have to do with the flux capacitor?"
+ 
+`c`0  "Your real question is this: What is your best friend's name?"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Barak
+Nickabrick
+Turgon
+Wendle
+Abdul
+@IF RESPONSE IS 4 then do
+ @begin
+ @drawmap
+ @update
+ @datasave TENSEQZ2.IDF &playernum 1
+  @do `p20 is 0
+ @dataload TENSEQZ.DAT &playernum `p20
+  @if `p20 is 1 then do
+  @begin
+ @do saybar
+`!Doc: `$That's right! Great scott! Here's the sports almanac!
+ @do `p20 + 1
+ @datasave TENSEQZ.DAT &playernum `p20
+  @closescript
+  @end
+ @drawmap
+ @update
+ @datasave TENSEQZ.DAT &playernum 1
+ @do saybar
+`!Doc: `$That's right! Great scott, talk to Marty now!
+ @closescript
+ @end
+ 
+ @drawmap
+ @update
+ @datasave TENSEQZ2.IDF &playernum 1
+ @do saybar
+`!Doc: `$Great scott, that was the wrong answer!
+ 
+@#PLATEAUMAN
+@do `p21 is 0
+@dataload TENSEQZ.DAT &playernum `p21
+@If `p21 is 3 then do
+ @begin
+ @do saybar
+`!Paul: `$I have no more need of you. Leave me to read!
+ @closescript
+ @end
+ 
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% Paul, the Plateau Man `r0
+ 
+  `2He's not really very attractive, incredible, unique, or remarkable.
+  `2He just is. And seemingly very useless, at that. 
+ 
+  `0"My name's Paul. People call me boring. Can I help you?"
+ 
+@do `p20 is 0
+@dataload TENSEQZ.DAT &playernum `p20
+@if `p20 is 2 then do
+ @begin
+ @do goto PLATEAUMAN2
+ @closescript
+ @end
+ 
+@DO WRITE
+`x`x
+@CHOICE
+I don't know. Can you help me?
+See ya, guy.
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Maybe you can help me."
+ 
+`k  `0"I don't think so. I need something to read up here on this plateau."
+ 
+`k  `$"You want me to get you a book?"
+ 
+`k  `0"A book. A magazine. Anything. Anything to read. If you do, I might
+  give you this self-exctracting bridge I've got in my pocket here."
+ 
+`k  `$"You got it!"
+ 
+`k
+ @do goto PLATEAUMAN
+ @end
+ 
+ @drawmap
+ @update
+ @end
+ 
+@#PLATEAUMAN2
+@DO WRITE
+`x`x
+@CHOICE
+I don't know. Can you help me?
+I've got this Sport's Almanac!
+See ya, guy.
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Maybe you can help me."
+ 
+`k  `0"I don't think so. I need something to read up here on this plateau."
+ 
+`k  `$"You want me to get you a book?"
+ 
+`k  `0"A book. A magazine. Anything. Anything to read. If you do, I might
+  give you this self-exctracting bridge I've got in my pocket here."
+ 
+`k  `$"You got it!"
+ 
+`k
+ @do goto PLATEAUMAN
+ @end
+ 
+@IF RESPONSE IS 2 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"I've got this sports almanac. Will that do?"
+ 
+`k  `0"That's perfect! Wonderful! I can even place a few bets. Here's that
+  self-extracting bridge I promised you. Put it in your pocket."
+ 
+  `@YOU HAVE A SELF-EXTRACTING BRIDGE (IN YOUR POCKET)!
+ 
+`k
+ 
+ @datasave TENSEQZ.DAT &playernum 3
+ @drawmap
+ @update
+ @end
+ 
+@#BRIDGE
+@do `p20 is 0
+@dataload TENSEQZ.DAT &playernum `p20
+@if `p20 is 3 then do
+ @begin
+ @do saybar
+`!This is a nice self-extracting bridge. Very userful!
+ @closescript
+ @end
+ 
+@show
+`r0`c  `r1A falling out `r0
+ 
+`2  You step back - your foot finds nothing but air.
+ 
+`k  You fall.. and fall.  After what seems like hours pass you finally hit
+  bottom.
+ 
+`k  Your hands feels warm and sticky.  You stop breathing.
+ 
+`k
+@run die in gametxt.ref
+ 
+@#WOMAN1
+@do `p20 is 0
+@dataload TENSEW1.DAT &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @do saybar
+`!Only her body remains.
+ @closescript
+ @end
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% An Incredible Tension Woman `r0
+ 
+  `2An indescribably beautiful woman looms before you. She whispers,
+  `0"You have found me. For the one who finds me, I am responsible thereof
+  to let my spirit loose inside of. I thank you for finding me. It has been
+  a long time, and I am lonely."
+ 
+@if sexmale is 1 then do
+ @begin
+ @do goto WOMAN1A
+ @end
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Talk with her
+Take her spirit inside you
+Leave her here to rot
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Anasie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, I heard you were evil. I heard that you
+  did something terrible a long while back. What was it?"
+ 
+`k  `0"The four of us Tension women were responsible for the creation of
+  the legendary Red Dragon. We admired only its beauty, and power. We do
+  not consider ourselves evil, though a great many others will try to
+  convince you that we are. The day the dragon died was a sad day for us.
+ 
+`k
+ @do goto WOMAN1
+ @end
+ 
+@IF RESPONSE is 2 THEN DO
+  @BEGIN
+  @drawmap
+  @update
+  @do `p20 is 0
+  @dataload TENSEWMN.DAT &playernum `p20
+  @do `p20 + 1
+  @datasave TENSEWMN.DAT &playernum `p20
+  @datasave TENSEW1.DAT &playernum 1
+  @do saybar
+`!Her spirit flies inside you. Only her body remains.
+@do addlog
+  `0`n`2 has released one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#WOMAN1A
+@DO WRITE
+`x`x
+@CHOICE
+Talk with her
+Take her spirit inside you
+Sleep with her
+Leave her here to rot
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Anasie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, I heard you were evil. I heard that you
+  did something terrible a long while back. What was it?"
+ 
+`k  `0"The four of us Tension women were responsible for the creation of
+  the legendary Red Dragon. We admired only its beauty, and power. We do
+  not consider ourselves evil, though a great many others will try to
+  convince you that we are. The day the dragon died was a sad day for us.
+ 
+`k
+ @do goto WOMAN1
+ @end
+ 
+@IF RESPONSE is 2 THEN DO
+  @BEGIN
+  @label FINISH1
+  @drawmap
+  @update
+  @do `p20 is 0
+  @dataload TENSEWMN.DAT &playernum `p20
+  @do `p20 + 1
+  @datasave TENSEWMN.DAT &playernum `p20
+  @datasave TENSEW1.DAT &playernum 1
+  @do saybar
+`!Her spirit flies inside you. Only her body remains.
+@do addlog
+  `0`n`2 has released one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @closescript
+  @end
+ 
+@if RESPONSE is 3 THEN DO
+  @begin
+  @show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Anasie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, I heard you were evil. I heard that you
+  did something terrible a long while back. What was it?"
+ 
+`k  `0"The four of us Tension women were responsible for the creation of
+  the legendary Red Dragon. We admired only its beauty, and power. We do
+  not consider ourselves evil, though a great many others will try to
+  convince you that we are. The day the dragon died was a sad day for us.
+ 
+`k  `$"Will you sleep with me?"
+ 
+`k  `0"Of course," `2she says, and reaches for your belt buckle.
+ 
+`k  `2A few hours later, you feel completely refreshed. You love these 
+  Tension women! 
+ 
+  `@Maximum HP improved by 5!
+  `@Charm increased by 10! 
+ 
+`k  `0"For your request, I am required to be inside you."
+ 
+`k
+@do addlog
+  `0`n`2 has gotten laid with one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @do `p03 + 5
+  @do `p08 + 10
+  @do goto FINISH1
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#PRISONER1
+@do moveback
+@do `p21 is 0
+@dataload TENSEP1.DAT &playernum `p21
+@if `p21 is 1 then do
+ @begin
+ @closescript
+ @end
+@do `v01 is 1
+@show
+`r0`c  `r1`% Some Dying Prisoner `r0
+ 
+  `2He gasps at you.
+ 
+  `0"I'm dying here, man. I'm dying. You got some food or something. Please.
+  I mean, more specifically something made from berries. Damn, I miss those
+  good Stonebrook berries. But I can't eat 'em plain. I mean, I hate to be
+  paticular, starving and all, but I really miss those berries mixed into
+  stuff. If only I had something to eat like that, I could give you this
+  key!"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+>`i08 0  Give him a berry pie!
+Sorry, pal. Maybe later.
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @do `i08 - 1
+  @Show
+`\`\  `2You hand him the pie. `$"There you go, dying dude. Now, how about
+  that key?"
+ 
+`k  `0"Oh, sure, sure. Here you go," `2he says and hands you half a key.
+ 
+`k  `$"Hey, you shithead. You trying to cheat me? This is only half a key.
+  Where's the other half?"
+ 
+`k  `2But it's too late. He choked on the pie trying to eat it too fast.
+  `$"Damnit," `2you say and kick the dead body. Where could that other
+  half be?
+ 
+`k
+  @drawmap
+  @update
+  @datasave TENSEP1.DAT &playernum 1
+  @do `p20 is 0
+  @dataload TENSEPK.DAT &playernum `p20
+  @if `p20 is 1 then do
+   @begin
+   @do saybar
+`!You fix the key halves together! You have a whole key!
+  @do `p20 + 1
+  @datasave TENSEPK.DAT &playernum `p20
+   @closescript
+   @end
+  @do `p20 + 1
+  @datasave TENSEPK.DAT &playernum `p20
+  @do saybar
+`!You have half a key! Yay...
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@end
+ 
+@#PRISONER2
+@do moveback
+@do `p21 is 0
+@dataload tensep2.dat &playernum `p21
+@if `p21 is 1 then do
+ @begin
+ @closescript
+ @end
+@do `v01 is 1
+@show
+`r0`c  `r1`% Some Dying Prisoner `r0
+ 
+  `2He gasps at you.
+ 
+  `0"I'm dying here, man. I'm dying. You got some food or something. Please.
+  I mean, more specifically something made from chickens. Damn, I miss those
+  good Stonebrook chickens. I mean, I hate to be paticular, starving and all,
+  but I really miss those chickens. If only I had something to eat like that,
+  I could give you this key!"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+>`i43 0  Give him a chicken egg.
+Sorry, pal. Maybe later.
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @do `i43 - 1
+  @Show
+`\`\  `2You hand him the egg. `$"There you go, dying dude. Now, how about
+  that key?"
+ 
+`k  `0"Oh, sure, sure. Here you go," `2he says and hands you half a key.
+ 
+`k  `$"Hey, you shithead. You trying to cheat me? This is only half a key.
+  Where's the other half?"
+ 
+`k  `2But it's too late. He choked on the egg trying to eat it too fast.
+  `$"Damnit," `2you say and kick the dead body. Where could that other
+  half be?
+ 
+`k
+  @drawmap
+  @update
+  @datasave tensep2.dat &playernum 1
+  @do `p20 is 0
+  @dataload TENSEPK.DAT &playernum `p20
+  @if `p20 is 1 then do
+   @begin
+   @do saybar
+`!You fix the key halves together! You have a whole key!
+  @do `p20 + 1
+  @datasave TENSEPK.DAT &playernum `p20
+   @closescript
+   @end
+  @do `p20 + 1
+  @datasave TENSEPK.DAT &playernum `p20
+  @do saybar
+`!You have half a key! Yay...
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@end
+ 
+@#KEYDOOR
+@do `p20 is 0
+@dataload TENSEPK.DAT &playernum `p20
+@if `p20 is 2 then do
+@begin
+@do saybar
+`!That door is no longer locked.
+@closescript
+@end
+ 
+@do moveback
+@do saybar
+`!The door is locked, like all the rest it seems. Damn!
+ 
+@#WOMAN2
+@if `p08 < 10 then do
+ @begin
+ @do saybar
+`!Tension Woman: `$I will not talk to someone so uncharming...
+ @closescript
+ @end
+ 
+@do `p20 is 0
+@dataload TENSEW2.DAT &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @do saybar
+`!Only her body remains.
+ @closescript
+ @end
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% An Incredible Tension Woman `r0
+ 
+  `2An indescribably beautiful woman looms before you. She whispers,
+  `0"You have found me. For the one who finds me, I am responsible thereof
+  to let my spirit loose inside of. I thank you for finding me. It has been
+  a long time, and I am lonely."
+ 
+@if sexmale is 1 then do
+ @begin
+ @do goto WOMAN2A
+ @end
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Talk with her
+Take her spirit inside you
+Leave her here to rot
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Tebbie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, what is in the belly of that thing?"
+ 
+`k  `0"The legendary red dragon came from inside that thing. Inside his
+  belly is the unknown Valley of the Dragons. There are many more like 
+  that one there. We feel they are a beautiful species, and have spent most
+  of our time studying them and their behavior. It is dangerous in his belly,
+  however. I would not go there."
+ 
+`k
+ @do goto WOMAN2
+ @end
+ 
+@IF RESPONSE is 2 THEN DO
+  @BEGIN
+  @drawmap
+  @update
+  @do `p20 is 0
+  @dataload TENSEWMN.DAT &playernum `p20
+  @do `p20 + 1
+  @datasave TENSEWMN.DAT &playernum `p20
+  @datasave TENSEW2.DAT &playernum 1
+  @do saybar
+`!Her spirit flies inside you. Only her body remains.
+@do addlog
+  `0`n`2 has released one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#WOMAN2A
+@DO WRITE
+`x`x
+@CHOICE
+Talk with her
+Take her spirit inside you
+Sleep with her
+Leave her here to rot
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Tebbie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, what is in the belly of that thing?"
+ 
+`k  `0"The legendary red dragon came from inside that thing. Inside his
+  belly is the unknown Valley of the Dragons. There are many more like 
+  that one there. We feel they are a beautiful species, and have spent most
+  of our time studying them and their behavior. It is dangerous in his belly,
+  however. I would not go there."
+ 
+`k
+ @do goto WOMAN2
+ @end
+ 
+@IF RESPONSE is 2 THEN DO
+  @BEGIN
+  @label FINISH2
+  @drawmap
+  @update
+  @do `p20 is 0
+  @dataload TENSEWMN.DAT &playernum `p20
+  @do `p20 + 1
+  @datasave TENSEWMN.DAT &playernum `p20
+  @datasave TENSEW2.DAT &playernum 1
+  @do saybar
+`!Her spirit flies inside you. Only her body remains.
+@do addlog
+  `0`n`2 has released one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @closescript
+  @end
+ 
+@if RESPONSE is 3 THEN DO
+  @begin
+  @show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Tebbie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, what is in the belly of that thing?"
+ 
+`k  `0"The legendary red dragon came from inside that thing. Inside his
+  belly is the unknown Valley of the Dragons. There are many more like 
+  that one there. We feel they are a beautiful species, and have spent most
+  of our time studying them and their behavior. It is dangerous in his belly,
+  however. I would not go there."
+ 
+`k  `$"Will you sleep with me?"
+ 
+`k  `0"Of course," `2she says, and reaches for your belt buckle.
+ 
+`k  `2A few hours later, you feel completely refreshed. You love these 
+  Tension women! 
+ 
+  `@Maximum HP improved by 5!
+  `@Charm increased by 10! 
+ 
+`k  `0"For your request, I am required to be inside you."
+ 
+`k
+@do addlog
+  `0`n`2 has gotten laid with one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @do `p03 + 5
+  @do `p08 + 10
+  @do goto FINISH2
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#WOMAN3
+@if `p08 < 20 then do
+ @begin
+ @do saybar
+`!Tension Woman: `$I will not talk to someone so uncharming...
+ @closescript
+ @end
+ 
+@do `p20 is 0
+@dataload tensew3.dat &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @do saybar
+`!Only her body remains.
+ @closescript
+ @end
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% An Incredible Tension Woman `r0
+ 
+  `2An indescribably beautiful woman looms before you. She whispers,
+  `0"You have found me. For the one who finds me, I am responsible thereof
+  to let my spirit loose inside of. I thank you for finding me. It has been
+  a long time, and I am lonely."
+ 
+@if sexmale is 1 then do
+ @begin
+ @do goto WOMAN3A
+ @end
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Talk with her
+Take her spirit inside you
+Leave her here to rot
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Lendriatie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, what exactly IS that thing?"
+ 
+`k  `0"The thing is a portal we created to reach the valley of the dragons.
+  We are old women, though we make look young and beautiful. Three-hundred
+  years ago we set out to find, study, and admire a very real dragon. We
+  created this house to harness the power of the Tension family, and together
+  we created the thing so we could reach the valley of the dragons."
+ 
+`k
+ @do goto WOMAN3
+ @end
+ 
+@IF RESPONSE is 2 THEN DO
+  @BEGIN
+  @drawmap
+  @update
+  @do `p20 is 0
+  @dataload TENSEWMN.DAT &playernum `p20
+  @do `p20 + 1
+  @datasave TENSEWMN.DAT &playernum `p20
+  @datasave tensew3.dat &playernum 1
+  @do saybar
+`!Her spirit flies inside you. Only her body remains.
+@do addlog
+  `0`n`2 has released one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#WOMAN3A
+@DO WRITE
+`x`x
+@CHOICE
+Talk with her
+Take her spirit inside you
+Sleep with her
+Leave her here to rot
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Lendriatie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, what exactly IS that thing?"
+ 
+`k  `0"The thing is a portal we created to reach the valley of the dragons.
+  We are old women, though we make look young and beautiful. Three-hundred
+  years ago we set out to find, study, and admire a very real dragon. We
+  created this house to harness the power of the Tension family, and together
+  we created the thing so we could reach the valley of the dragons."
+ 
+`k
+ @do goto WOMAN3
+ @end
+ 
+@IF RESPONSE is 2 THEN DO
+  @BEGIN
+  @label FINISH3
+  @drawmap
+  @update
+  @do `p20 is 0
+  @dataload TENSEWMN.DAT &playernum `p20
+  @do `p20 + 1
+  @datasave TENSEWMN.DAT &playernum `p20
+  @datasave tensew3.dat &playernum 1
+  @do saybar
+`!Her spirit flies inside you. Only her body remains.
+@do addlog
+  `0`n`2 has released one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @closescript
+  @end
+ 
+@if RESPONSE is 3 THEN DO
+  @begin
+  @show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Lendriatie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, what exactly IS that thing?"
+ 
+`k  `0"The thing is a portal we created to reach the valley of the dragons.
+  We are old women, though we make look young and beautiful. Three-hundred
+  years ago we set out to find, study, and admire a very real dragon. We
+  created this house to harness the power of the Tension family, and together
+  we created the thing so we could reach the valley of the dragons."
+ 
+`k  `$"Will you sleep with me?"
+ 
+`k  `0"Of course," `2she says, and reaches for your belt buckle.
+ 
+`k  `2A few hours later, you feel completely refreshed. You love these 
+  Tension women! 
+ 
+  `@Maximum HP improved by 5!
+  `@Charm increased by 10! 
+ 
+`k  `0"For your request, I am required to be inside you."
+ 
+`k
+@do addlog
+  `0`n`2 has gotten laid with one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @do `p03 + 5
+  @do `p08 + 10
+  @do goto FINISH3
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#SLAVES
+ @do moveback
+ @do `p25 random 5 1
+ @run SLAVE`p25
+ 
+@#SLAVE1
+@do saybar
+`!Slave: `$Never kill a dragon.
+@#SLAVE2
+@do saybar
+`!Slave: `$The Tension Women locked us in here for kiling the dragons.
+@#SLAVE3
+@do saybar
+`!Slave: `$Most of us are dying. There is nothing you can do.
+@#SLAVE4
+@do saybar
+`!Slave: `$One of us has a red dragon scale. But he is highly secured.
+@#SLAVE5
+@do saybar
+`!Slave: `$The Tension Women are babes, but, boy, do they love dragons!
+ 
+@#SLAVEGIVE
+@do `p20 is 0
+@dataload tensescl.dat &playernum `p20
+@if `p20 > 0 then do
+ @begin
+ @do saybar
+`!It's the poor dead guy who gave you the dragon scale.
+ @closescript
+ @end
+ 
+@show
+`r0`c  `r1`% A Dying Dragon Slave `r0
+ 
+  `0"Listen," `2he says to you, and grabs your arm. `0"Take this. Please."
+ 
+  `2And he falls down dead. Sad, but...
+ 
+  `@YOU HAVE A DRAGON SCALE
+ 
+`k
+@datasave tensescl.dat &playernum 1
+@drawmap
+@update
+@end
+ 
+@#COLLECTOR
+@do `p20 is 0
+@dataload tensescl.dat &playernum `p20
+@if `p20 is 3 then do
+ @begin
+ @do moveback
+ @do saybar
+`!Screwy: `$I'm not worthy, oh dragon-slayer!
+ @closescript
+ @end
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% Screwy, the Collector `r0
+ 
+  `2A scrawny, ratty-bearded fellow stands before you. All over this
+  room are plastered posters, dragon flags, t-shirts, baseball caps,
+  tennis shoes, all of which in some way or another read, "I killed the
+  red dragon!"
+ 
+  `0"Hi! I'm Screwy, the Collector. I collect anything having to do with
+  the red dragon."
+ 
+@do `p20 is 0
+@dataload tensescl.dat &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @do goto COLLECTOR2
+ @end
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Chat with this nerd
+Screw Off...er, leave
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"You're obsessed with Lord II."
+ 
+`k  `0"I know. I know. I've got everything I could, except something real.
+  I tell you, what I'd give for a real piece of the dragon, or to meet the
+  man who killed the dragon. What I'd give! I tell you. I'd give ANYTHING.
+  Well, not anything, but whatever I could. I'm a nerd."
+ 
+`k  `$"And a bastard!"
+ 
+`k  `0"And a bastard, yes. Oh. Lovely. I'm all done talking..."
+ 
+`k
+@do goto COLLECTOR
+@closescript
+@end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#COLLECTOR2
+@DO WRITE
+`x`x
+@CHOICE
+Chat with this nerd
+Give him the dragon scale
+Screw Off...er, leave
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"You're obsessed with Lord II."
+ 
+`k  `0"I know. I know. I've got everything I could, except something real.
+  I tell you, what I'd give for a real piece of the dragon, or to meet the
+  man who killed the dragon. What I'd give! I tell you. I'd give ANYTHING.
+  Well, not anything, but whatever I could. I'm a nerd."
+ 
+`k  `$"And a bastard!"
+ 
+`k  `0"And a bastard, yes. Oh. Lovely. I'm all done talking..."
+ 
+`k
+@do goto COLLECTOR
+@end
+ 
+@IF RESPONSE is 2 then do
+ @begin
+  @Show
+`\`\  `$"Here, take this dragon scale," `2you say, and hand it to him.
+ 
+`k  `0"This is perfect! Does this mean you killed the dragon?"
+ 
+`k  `$"Uh, yeah!"
+ 
+`k  `0"Wow! Listen, for you, I've got something special." `2He walks over
+  to the corner and opens a chest. `0"This key! I have no idea what it's
+  to. Maybe you can figure it out."
+ 
+  `@YOU HAVE SOME USELESS KEY
+ 
+`k
+  @datasave tensescl.dat &playernum 3
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@end
+ 
+@#WOMAN4
+@do `p20 is 0
+@dataload TENSESCL.DAT &playernum `p20
+@if `p20 < 3 then do
+@begin
+@do moveback
+@do saybar
+`!It's locked, of course!
+@closescript
+@end
+ 
+ 
+@if `p08 < 30 then do
+ @begin
+ @do saybar
+`!Tension Woman: `$I will not talk to someone so uncharming...
+ @closescript
+ @end
+ 
+@do `p20 is 0
+@dataload tensew4.dat &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @do moveback
+ @do saybar
+`!Only her body remains in this tower.
+ @closescript
+ @end
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% An Incredible Tension Woman inside a Tower `r0
+ 
+  `2An indescribably beautiful woman looms before you. She whispers,
+  `0"You have found me. For the one who finds me, I am responsible thereof
+  to let my spirit loose inside of. I thank you for finding me. It has been
+  a long time, and I am lonely."
+ 
+@if sexmale is 1 then do
+ @begin
+ @do goto WOMAN4A
+ @end
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Talk with her
+Take her spirit inside you
+Leave her here to rot
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Tina. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, how do I get passed Neccessite?"
+ 
+`k  `0"The guardian is strong, but she is easily distracted. If you combine
+  the four of us Tension Women spirits together, then, not only will some
+  sort of silly Feminist message be revealed, but also will we be able to
+  open once again the throat of the thing, and you can see one of the 
+  legendary dragons for yourself!"
+ 
+`k  `$"You mean I can go to the valley of the dragons, myself?"
+ 
+`k  `0"Of course."
+ 
+`k  `$"How do I get out?"
+ 
+`k  `0"Through the sphincter muscle."
+ 
+`k
+ @do goto WOMAN4
+ @end
+ 
+@IF RESPONSE is 2 THEN DO
+  @BEGIN
+  @drawmap
+  @update
+  @do `p20 is 0
+  @dataload TENSEWMN.DAT &playernum `p20
+  @do `p20 + 1
+  @datasave TENSEWMN.DAT &playernum `p20
+  @datasave tensew4.dat &playernum 1
+  @do saybar
+`!Her spirit flies inside you. Only her body remains.
+@do addlog
+  `0`n`2 has released one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#WOMAN4A
+@DO WRITE
+`x`x
+@CHOICE
+Talk with her
+Take her spirit inside you
+Sleep with her
+Leave her here to rot
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Lendriatie. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, what exactly IS that thing?"
+ 
+`k  `0"The thing is a portal we created to reach the valley of the dragons.
+  We are old women, though we make look young and beautiful. Three-hundred
+  years ago we set out to find, study, and admire a very real dragon. We
+  created this house to harness the power of the Tension family, and together
+  we created the thing so we could reach the valley of the dragons."
+ 
+`k
+ @do goto WOMAN4
+ @end
+ 
+@IF RESPONSE is 2 THEN DO
+  @BEGIN
+  @label FINISH4
+  @drawmap
+  @update
+  @do `p20 is 0
+  @dataload TENSEWMN.DAT &playernum `p20
+  @do `p20 + 1
+  @datasave TENSEWMN.DAT &playernum `p20
+  @datasave tensew4.dat &playernum 1
+  @do saybar
+`!Her spirit flies inside you. Only her body remains.
+@do addlog
+  `0`n`2 has released one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @closescript
+  @end
+ 
+@if RESPONSE is 3 THEN DO
+  @begin
+  @show
+`\`\  `$"Who are you?"
+ 
+`k  `0"My name is Tina. I am one of the four Tension women. I thank you
+  for finding me."
+ 
+`k  `$"Yeah. Yeah. I know. Listen, how do I get passed Neccessite?"
+ 
+`k  `0"The guardian is strong, but she is easily distracted. If you combine
+  the four of us Tension Women spirits together, then, not only will some
+  sort of silly Feminist message be revealed, but also will we be able to
+  open once again the throat of the thing, and you can see one of the 
+  legendary dragons for yourself!"
+ 
+`k  `$"You mean I can go to the valley of the dragons, myself?"
+ 
+`k  `0"Of course."
+ 
+`k  `$"How do I get out?"
+ 
+`k  `0"Through the sphincter muscle."
+ 
+`k  `$"Will you sleep with me?"
+ 
+`k  `0"Of course," `2she says, and reaches for your belt buckle.
+ 
+`k  `2A few hours later, you feel completely refreshed. You love these 
+  Tension women! 
+ 
+  `@Maximum HP improved by 5!
+  `@Charm increased by 10! 
+ 
+`k  `0"For your request, I am required to be inside you."
+ 
+`k
+@do addlog
+  `0`n`2 has gotten laid with one of the `0Tension Women
+@writefile lognow.txt
+  `2at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @do `p03 + 5
+  @do `p08 + 10
+  @do goto FINISH4
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#NECCESSITE2
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% Neccessite, Guardian of the Thing `r0
+ 
+  `2Although she is quite beautiful, you refuse to trust her.
+  `2Perhaps it is the falseness of her smile, or the fingers crossed
+  behind her back, or the extremely long (but beautiful) length of
+  her nose.
+ 
+  `2Nonetheless, she blows you a kiss and welcomes you.
+ 
+  `0"Welcome to the Thing. I am Neccessite, Guardian of the Thing."
+ 
+@if sexmale is 1 then do
+ @begin
+ @do goto NECC2
+ @end
+ 
+@DO WRITE
+`x`x
+@CHOICE
+What is this thing?
+Unleash the power of the Incredible Tension Women
+See ya' Babe!
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"What is this thing?"
+ 
+`k  `0"This thing is ancient, and very still. It hardly moves. "
+ 
+`k  `$"I noticed. It has a damn long tongue, too?"
+ 
+`k  `0"That's because its throat is a passage...I mean, yes, yes it does
+  have a long tongue, doesn't it? I'd never really noticed that it did.
+  Being here for so long, I must have taken it for granted...how the tongue
+  acts as a pathway and all. I mean, you'd almost think you could walk 
+  inside...not that you can! No! No, of course not! That would be silly."
+ 
+`k  `$"You're lying. But, I feel the plot must develop throughout the
+  adventure in this house so I'll change the subject. Whose house is this?"
+ 
+`k  `0"This is the ancient house of the Tensions. Four of which are women.
+  Very powerful women, with strange motives. They did a terrible deed
+  awhile back. And so they were scattered, and imprisoned secretly throughout
+  this house -- to insure that any terrible deeds would not happen again.
+ 
+`k  `$"Were they hot?"
+ 
+`k  `0"Beauty beyond belief. But evil, evil unimaginable. If, upon your
+  journeys in this house, you come upon any of the four, leave them be.
+  Do not rescue them, or store them inside you. Believe me, the forces
+  you deal with are incomprehensible.
+ 
+  Plus, if you don't, I'll go out with you. You're kind of cute."
+ 
+`k  `$"Thanks!"
+`\`k
+  @do goto NECCESSITE
+  @END
+ 
+@if reponse is 2 then do
+ @begin
+ @show
+`\`\  `2You unleash the spirits of the Tension Women. Neccessite screams.
+ 
+`k  `0"What are you doing?" `2she screams. `0"You're insane. I trusted you."
+ 
+`k  `$"I'm sorry. But I have to see these red dragons. The ending to Lord 2
+  was kind of disappointing, and I'm hoping this will make up for it."
+ 
+`k  `2The Tension Women swarm around Neccessite. She screams`0, "I hate you!,"
+  `2and runs down the tongue and out the door, out of the Tension's lives
+  forever...
+ 
+  @datasave TENSEWMN.DAT &playernum 5
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#NECC2
+@DO WRITE
+`x`x
+@CHOICE
+What is this thing?
+Unleash the power of the Incredible Tension Women
+Sleep with Neccessite
+See ya' Babe!
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"What is this thing?"
+ 
+`k  `0"This thing is ancient, and very still. It hardly moves. "
+ 
+`k  `$"I noticed. It has a damn long tongue, too?"
+ 
+`k  `0"That's because its throat is a passage...I mean, yes, yes it does
+  have a long tongue, doesn't it? I'd never really noticed that it did.
+  Being here for so long, I must have taken it for granted...how the tongue
+  acts as a pathway and all. I mean, you'd almost think you could walk 
+  inside...not that you can! No! No, of course not! That would be silly."
+ 
+`k  `$"You're lying. But, I feel the plot must develop throughout the
+  adventure in this house so I'll change the subject. Whose house is this?"
+ 
+`k  `0"This is the ancient house of the Tensions. Four of which are women.
+  Very powerful women, with strange motives. They did a terrible deed
+  awhile back. And so they were scattered, and imprisoned secretly throughout
+  this house -- to insure that any terrible deeds would not happen again.
+ 
+`k  `$"Were they hot?"
+ 
+`k  `0"Beauty beyond belief. But evil, evil unimaginable. If, upon your
+  journeys in this house, you come upon any of the four, leave them be.
+  Do not rescue them, or store them inside you. Believe me, the forces
+  you deal with are incomprehensible.
+ 
+  Plus, if you don't, I'll go out with you. You're kind of cute."
+ 
+`k  `$"Thanks!"
+`\`k
+  @do goto NECCESSITE
+  @END
+ 
+@if reponse is 2 then do
+ @begin
+ @show
+`\`\  `2You unleash the spirits of the Tension Women. Neccessite screams.
+ 
+`k  `0"What are you doing?" `2she screams. `0"You're insane. I trusted you."
+ 
+`k  `$"I'm sorry. But I have to see these red dragons. The ending to Lord 2
+  was kind of disappointing, and I'm hoping this will make up for it."
+ 
+`k  `2The Tension Women swarm around Neccessite. She screams`0, "I hate you!,"
+  `2and runs down the tongue and out the door, out of the Tension's lives
+  forever...
+ 
+`k
+  @datasave TENSEWMN.DAT &playernum 5
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `$"Listen, you said if I was good and didn't do anything with the
+  Tension women, you'd date me."
+ 
+`k  `0"Yes?" `2She says to you with a smile.
+ 
+`k  `$"Well, I was kind of wondering if maybe we could skip the whole
+  dating thing and just get it on, right here on the tongue...?"
+ 
+`k  `2She giggles. `0"Okay, sure."
+ 
+`k  `2In the heat of the moment, so to speak, you realize you have
+  distracted Neccessite easily enough. With your passions completely
+  misplaced, you decide you really want to see these dragons and...
+ 
+`k  `2You unleash the spirits of the Tension Women. Neccessite screams.
+ 
+`k  `0"What are you doing?" `2she screams. `0"You're insane. I trusted you."
+ 
+`k  `$"I'm sorry. But I have to see these red dragons. The ending to Lord 2
+  was kind of disappointing, and I'm hoping this will make up for it."
+ 
+`k  `2The Tension Women swarm around Neccessite. She screams`0, "I hate you!,"
+  `2and runs down the tongue and out the door, out of the Tension's lives
+  forever...
+ 
+`k
+  @datasave TENSEWMN.DAT &playernum 5
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+@drawmap
+@update
+@end
+ 
+@#TENSEPASS
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1`% The Tension Women Spirits `r0
+ 
+  `0"Listen closely," `2they say to you. `0"If you proceed, you will
+  lose everything. Your backpack will be cleared, as will your gold.
+  Such items do not digest well in the stomach of the thing."
+ 
+  `4You will lose:
+ 
+    `@-`4All items
+    `@-`4All gold
+ 
+  `4You will gain:
+    `@-`4An opportunity to beat the game, kill the red dragon, and become
+     a hero.
+ 
+  `0"Lastly," `2they say to you, `0"You will not be able to come out of this
+  place easily. Only through the sphincter can you pass..."
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Let me in!
+Not ready quite yet
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @do money is 0
+  @do `i01 is 0
+  @do `i02 is 0
+  @do `i03 is 0
+  @do `i04 is 0
+  @do `i05 is 0
+  @do `i06 is 0
+  @do `i07 is 0
+  @do `i08 is 0
+  @do `i09 is 0
+  @do `i10 is 0
+  @do `i11 is 0
+  @do `i12 is 0
+  @do `i13 is 0
+  @do `i14 is 0
+  @do `i15 is 0
+  @do `i16 is 0
+  @do `i17 is 0
+  @do `i18 is 0
+  @do `i19 is 0
+  @do `i20 is 0
+  @do `i21 is 0
+  @do `i22 is 0
+  @do `i23 is 0
+  @do `i24 is 0
+  @do `i25 is 0
+  @do `i26 is 0
+  @do `i27 is 0
+  @do `i28 is 0
+  @do `i29 is 0
+  @do `i30 is 0
+  @do `i31 is 0
+  @do `i32 is 0
+  @do `i33 is 0
+  @do `i34 is 0
+  @do `i35 is 0
+  @do `i36 is 0
+  @do `i37 is 0
+  @do `i38 is 0
+  @do `i39 is 0
+  @do `i40 is 0
+  @do `i41 is 0
+  @do `i42 is 0
+  @do `i43 is 0
+  @do `i44 is 0
+  @do `i45 is 0
+  @do `i46 is 0
+  @do `i47 is 0
+  @do `i48 is 0
+  @do `i49 is 0
+  @do `i50 is 0
+  @do `i51 is 0
+  @do `i52 is 0
+  @do `i53 is 0
+  @do `i54 is 0
+  @do `i55 is 0
+  @do `i56 is 0
+  @do `i57 is 0
+  @do `i58 is 0
+  @do `i59 is 0
+  @do `i60 is 0
+  @do `i61 is 0
+  @do `i62 is 0
+  @do `i63 is 0
+  @do `i64 is 0
+  @do `i65 is 0
+  @do `i66 is 0
+  @do `i67 is 0
+  @do `i68 is 0
+  @do `i69 is 0
+  @do `i70 is 0
+  @do `i71 is 0
+  @do `i72 is 0
+  @do `i73 is 0
+  @do `i74 is 0
+  @do `i75 is 0
+  @do `i76 is 0
+  @do `i77 is 0
+  @do `i78 is 0
+  @do `i79 is 0
+  @do `i80 is 0
+  @do `i81 is 0
+  @do `i82 is 0
+  @do `i83 is 0
+  @do `i84 is 0
+  @do `i85 is 0
+  @do `i86 is 0
+  @do `i87 is 0
+  @do `i88 is 0
+  @do `i89 is 0
+  @do `i90 is 0
+  @do `i91 is 0
+  @do `i92 is 0
+  @do `i93 is 0
+  @do `i94 is 0
+  @do `i95 is 0
+  @do `i96 is 0
+  @do `i97 is 0
+  @do `i98 is 0
+@do addlog
+  `0`n`2 is trapped in the `@Valley of the Red Dragons 
+@writefile lognow.txt
+  `2inside the belly of the thing at the `%House of the Incredible Tensions.
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @do map is 739
+  @do x is 38
+  @do y is 7
+  @loadmap &map
+  @update
+  @end
+ 
+@drawmap
+@update
+@end

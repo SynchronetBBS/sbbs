@@ -1,0 +1,51 @@
+
+                       Jester's Casino Update v2.1
+
+                         AN IGM FOR LORD2 V1.00+
+
+                         by ShroomTrip Software
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes, Always.
+
+
+  Description:
+
+  This IGM adds a new gambling feature to Jester's Casino in Bowntown.
+  You can now play Knucklebones, 3 Shells. or Knucklebones for Turns.
+
+   TO INSTALL
+   unzip into your LORD2 dir and type:
+
+   IGM Jester
+
+   To test you will need to go to Jester's Casino in BownTown.
+  
+   TO UNINSTALL
+   Do the same thing again.
+
+   Author: Jay Weber (aka Elric, Anakha, and blade)
+   (C) 1997 ShroomTrip Software
+   http://www.afn.org/~afn50378/sthome.html
+   E-Mail: elric@innocent.com
+   Support: kender@innocent.com
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0J`2ester's `0C`2asino `0U`2pdate v1.0 by `!E`#lric
+replacescreen: 1288 1 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0This IGM adds a `%new `0gambling feature to `%Jester's Casino `0in `%Bowntown`0.
+  You can now play `%Knucklebones`0, `%3 Shells`0, or `%Knucklebones for Turns`0.

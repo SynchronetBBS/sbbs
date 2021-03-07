@@ -1,0 +1,639 @@
+; Script file GLENDALE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:25 2001
+
+@DECLARE castsign 000000868
+@DECLARE sign1 000000929
+@DECLARE town 000001002
+@DECLARE exittown 000001104
+@DECLARE healer 000001205
+@DECLARE weapon 000003108
+@DECLARE weap1 000003160
+@DECLARE raise 000003899
+@DECLARE barak 000005283
+@DECLARE train 000005315
+@DECLARE flink 000005617
+@DECLARE flinkstart 000005712
+@DECLARE armour 000007143
+@DECLARE gastart 000007197
+@DECLARE fountain 000007666
+@DECLARE king 000007739
+@DECLARE queen 000007835
+@DECLARE entcast 000007931
+@DECLARE exitcast 000008034
+@DECLARE hotel 000008200
+@DECLARE open 000008236
+@DECLARE exithotel 000011124
+@DECLARE exitglen 000011233
+@DECLARE enterglen 000011338
+@NOCHECK
+; End of .REF index
+
+; Routines For Glendale Grove IGM
+; MAJOR CODE RE-WRITE BY PATRICK MCCONVILLE
+
+@#castsign
+@do saybar
+`!Glendale Castle. Visitors welcome.
+
+@#sign1
+@do saybar
+`!<ÄÄ Glendale Castle    The Town of Glendale ÄÄ>
+
+@#town
+@do x is 2
+@do y is 11
+@do map is 825
+@loadmap 825
+@drawmap
+@update
+@closescript
+
+@#exittown
+@do x is 25
+@do y is 13
+@do map is 824
+@loadmap 824
+@drawmap
+@update
+@closescript
+
+@#healer
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+
+`2  You see a sign on the wall that says healing cost 1/2 gold per hitpoint
+  needed.
+
+`2  Bursa looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry, I'm not gonna perform those services for free!"
+
+@if sexmale is 1 then do
+ @begin
+ @do write
+`x`x
+ @choice
+For `$$`p20`%, you better perform some other services too baby!
+How about I pay with my good looks, honey?
+How 'bout you and me go in the back and I'll show you my sword?
+Meekly accept, and compliment her on her dress.
+@if response is 4 then do
+ @begin
+ @show
+  `0"Why thanks....now you better be getting along!" `2 she laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"How dare you say that to me!  Get out!!!!" `2 she screams.
+
+`k
+ @end
+
+@if response is 2 then do
+ @begin
+ @show
+  `0"I'd rather kiss a troll." `2 she informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"How 'bout you try THIS sword!" `2 she yells as she sticks you with a needle!
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+@do `p30 is 1 
+@do `v40 is `p20
+@routine deposit in vaults.ref
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You're a picture of perfect health, dear `$`n`$!" `2Bursa exclaims.
+
+`k
+@drawmap
+@update
+
+@#weapon
+@offmap
+@do moveback
+@do `v01 is 1
+@label weap1
+@show
+`r0`c  `%Glendale Weaponry
+
+`2  You see an old man whittling on an even older stick.
+
+@do write
+`x`x
+@choice
+Examine his wares.
+Ask him to buy some of your stuff.
+Go outside.
+@if responce is 1 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @buymanager
+  4
+  6
+  9
+  15
+  36
+  38
+  71
+@do goto weap1
+  @end
+
+@if responce is 2 then do begin
+ @begin
+@show
+  `!"I don't think so - I don't buy things back. Find a Pawn Shop and do  
+  business with them!" `2the codger relates.
+
+`k
+@do goto weap1
+@end
+
+@if responce is 3 then do
+@Begin
+ @show
+ `\
+ `0 "Perhaps some other time then....."
+ `k
+ @drawmap
+ @update
+ @closescript
+@end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+@#raise
+;can they raise their level?
+
+@do `p20 is `p09
+@do `p20 * 100
+@do `p20 * `p09
+
+@if `p20 > `p01 then do
+ @begin
+ @do `p21 is `p20
+ @do `p21 - `p01
+ @show
+`\
+
+  `2Next level raise at `%`p20`2.
+
+  `0"You need about `%`p21`0 more experience before your next level raise!"
+
+  `2Damn, and you thought you were ready!
+
+`k
+ @closescript
+ @end
+
+@if `t04 > 0 then do
+ @begin
+ @show
+
+  `0"You already failed once today, come back tomorrow, loser!"
+  `2 You lower your head in shame and cower away!
+
+`k
+ @closescript
+ @end
+     
+@show
+     
+  `0"You've been at level `p09 long enough."
+
+@if `p09 IS 1 then do
+ @begin
+ @show
+  `$"Cool!  So where is the master I fight?" `2you beam with pride.
+
+`k  `0"Master?  Haw!  Now that *I* run this place we do it my way!" `2FLiNK
+  laughs as he crumbles a strange black root into a mortar...
+
+  `2You anxiously await your fate...
+
+@end
+@show
+`k
+`c  `r1`4 DRINKING YOUR OWN INIQUITY `r0
+
+`2  FLiNK hands you a cup and asks you to drink.
+
+  `2You nearly retch as you feel the vessel's oily contents slide down
+  your throat.
+
+`k  `2FLiNK leads you to a small room with a cot.  `2"I'll be back in a few
+  hours,  then we'll see if you're still this cocky!" 
+
+`2  You lay down and begin dreaming immediately.
+
+`k
+@do `s01 is glendale
+@routine startfight in training.ref
+@closescript
+
+@#barak
+@do goto flinkstart
+
+@#train
+@do `p21 is `v05
+@do `p21 / 24
+@if `p11 < `p21 then do
+        @begin
+        @do moveback
+        @do saybar
+`0There is not enough time for today, come back tommorow.
+        @key bottom
+        @closescript
+        @end
+@offmap
+@do moveback
+@do `v01 is 1
+@do goto flinkstart
+
+@#flink
+@offmap
+@if bitcheck `t19 1 1 then goto turg
+@do moveback
+@do `v01 is 1
+@label flinkstart
+@show
+`r0`c  `%FLiNK's Training Center
+
+`2  Hundreds of warriors are randomly jumping and shrieking in their
+  efforts to better themselves.
+
+  Although the building itself is old and scarred, the sign is new.
+
+@do write
+`x`x
+@choice
+Ask for a level raise.
+Talk to Master FLiNK.
+Leave
+@if responce is 1 then do
+ @begin
+ @routine raise
+ @do goto flinkstart
+ @end
+         
+@if responce is 2 then do
+ @begin
+ @if `t01 is 4 then do
+  @begin
+  @show
+`r0`c  `%Talking to Master FLiNK
+
+  `0"Make it fast kid, I'm busy!"
+
+  `$"Um, FLiNK?  Where are the other trainers, as is the tradition?" `2you
+  innocently ask.
+  
+`k  `0"Other trainers?!  Now that *I'M* the new MASTER TRAINER, I fired the
+  rest!  I am the master for EVERY LEVEL NOW!" `2FLiNK cackles evilly.
+
+  `$"Wow, nice.  You must have worked long and hard to achieve this position,
+  Master FLiNK."
+
+`k  `0"Of course I did!  That last Master, this geezer known as  turned
+  out to be a real looser, he had a crappy system of level raising" `2FLiNK
+  laughs crudely.
+
+`k
+ @do `t01 is 5
+ @do goto flinkstart
+ @end
+
+  @show
+`r0`c  `%Talking to Master FLiNK
+
+  `0"Sorry kid, I'm a little busy TEACHING, because after all, I am sort of
+  the MASTER of this whole place - you can grasp that concept, can't you?"
+
+  `2Wow, what an ass.  Maybe he'll talk later.
+
+`k
+ @do goto flinkstart
+ @end
+
+@drawmap
+@update
+
+@#armour
+@offmap
+@do moveback
+@do `v01 is 1
+@label gastart
+@show
+`r0`c  `%Glendale Armoury
+
+`2  You see all sorts of armour and clothing here...
+
+@do write
+`x`x
+@choice
+Examine the wares
+Go outside.
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  10
+  12
+  13
+  68
+  69
+  @do goto gastart
+@end
+
+@if responce is 2 then do
+@begin
+ @show
+`\
+ `0"People are in such a hurry these days....."
+ `\
+ `k
+ @drawmap
+ @update
+ @closescript
+@end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+@#fountain
+@do saybar
+`%You see a statue in the middle of the fountain.
+
+@#king
+@do saybar
+`1King: `4Help yourself to a bed but remember, you can still be killed.
+
+@#queen
+@do saybar
+`@Queen: `4Hello, dear. My husband is a little silly, don't mind him.
+
+@#entcast
+@do x is 39
+@do y is 15
+@do map is 826
+@loadmap 826
+@drawmap
+@update
+@closescript
+
+@#exitcast
+@do x is 22
+@do y is 12
+@do map is 822
+@loadmap 822
+@drawmap
+@update
+@closescript
+;=================================================================
+@#hotel
+@offmap
+@Do MOVEBACK
+@label open
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1`% The Glendale Hotel `r0
+
+  `2You step inside the hotel door and realize that this isn't the dump
+  that it seems like from outside. There is a small restaurant to your left
+  and a desk to your right. You decide it's best if you head to the restaurant
+  and get some food.     
+
+  `2(you have `$$&money`2)
+
+@DO WRITE
+`x`x
+@CHOICE
+Buy a $10 meal
+Buy the $20 BIG meal
+Flirt with the waitress
+Get a room for the night
+Leave this place
+@IF RESPONcE IS 1 THEN DO
+@Begin
+@if money < 10 then goto open
+@do `p30 is 1 
+@do `v40 is 10
+@routine deposit in vaults.ref
+@do money - 10
+@Show
+`\`\  `2Heres the $10.00 special, he says. `2"Oh goodie.... spam soup!"
+
+  `%You feel PARTIALLY refreshed.
+`\`k
+@do `p02 + 5
+@if `p02 > `p03 then `p02 is `p03
+@do goto open
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@End
+
+@IF RESPONcE IS 2 THEN DO
+@Begin
+@if money < 20 then goto open
+@do `p30 is 1 
+@do `v40 is 20
+@routine deposit in vaults.ref
+@do money - 20
+@Show 
+`\  `$"Give me some of those dog ribs I've heard so much about"`2, you cry out
+     `2He proudly serves you the house specialty.
+
+  `%You feel FULLY refreshed.
+`\`k
+@if `p02 < `p03 then `p02 is `p03
+@do goto open
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@end
+
+  @IF RESPONcE IS 3 THEN DO
+@Begin
+@Show
+`\`\  `2You spot a rather voluptuous waitress and remark.....
+ `$ "Hey baby, when do you get off?" `2She turns, looks at you and `l.`l.`l.
+@do write
+`\`k
+@do `p20 random 4 1
+
+@IF `p20 is 1 then do
+  @Begin
+  @Show
+  `0with a knowing smile says, `2"Same time you do....."
+`\`k
+  @do goto open
+  @End
+
+@IF `p20 is 2 then do
+  @Begin
+  @Show
+  `0shoots back, `2"When i feel like getting off!  Whats it to ya!?!?"
+  `\`k
+  @do goto open
+  @End
+
+@IF `p20 is 3 then do
+  @Begin
+  @Show
+  `0snaps back, `2"I'm not your baby!"
+  `\`k
+  @do goto open
+  @End
+
+@If `p20 is 4 then do
+@begin
+@Show
+  `2Slaps you across the face! `$(Gee... you guess not any time soon)
+`\`k
+@do goto open
+  @End
+
+@IF RESPONcE IS 5 THEN DO
+@begin
+ @show
+`\
+`0 "Hope your stay was pleasant....."`
+`\
+`k
+ @DRAWMAP
+ @UPDATE
+ @CLOSESCRIPT
+@End
+
+@drawmap
+@update
+@closescript
+@end
+
+@IF RESPONcE IS 4 THEN DO
+@Begin
+@do `v01 is 1
+@Show
+`\  `$"Pardon me sir, I'm interested in a room for the ....."
+  `0He rudely interrupts without looking up from his paper by saying,
+  `$"Rooms are 35 smackolas a night if you're interested."
+
+@DO WRITE
+`x`x
+@CHOICE
+Go ahead and get a room
+Forget this place
+@IF RESPONcE IS 1 THEN DO
+@BEGIN
+@if money < 35 then goto open
+@do `p30 is 1 
+@do `v40 is 35
+@routine deposit in vaults.ref
+@do money - 35
+@do x is 28
+@do y is 5
+@do map is 827
+@loadmap 827
+@drawmap
+@update
+@closescript
+@END
+
+@IF RESPONcE IS 2 THEN DO
+@do goto open
+@End
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+@#exithotel
+@do x is 62
+@do y is 19
+@do map is 825
+@loadmap 825
+@drawmap
+@update
+@closescript
+@end
+
+@#exitglen
+@do x is 79
+@do y is 8
+@do map is 1280
+@loadmap 1280
+@drawmap
+@update
+@closescript
+
+@#enterglen
+@do x is 36
+@do y is 20
+@do map is 823
+@loadmap 823
+@drawmap
+@update
+@closescript
+

@@ -1,0 +1,142 @@
+; Script file HONGCFG.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE chan 000000752
+@DECLARE chan1 000000804
+@DECLARE hongwall 000002472
+@NOCHECK
+; End of .REF index
+
+These Ref's have been left out of the main ref because the sysop may want
+to edit some of the settings in these refs. The Ref's included in this file
+are for Chan's underground, incase you did the manual install of the items
+and wish to assign them new numbers, and the chat wall is also included
+incase you want to enable clean mode on it. Instructions on how to change
+these settings are located where you see a ****. It will tell you how to
+change them. Please do not change anything but what is suggested, you could
+mess up the IGM.
+
+@#Chan
+@offmap
+@do moveback
+@do `v01 is 1
+@label chan1
+@show
+`r0`c  `r1  Chan's Underground  `r0
+
+`2  `4Chan's`% eyes watch your every move. He has a harsh look on his face.
+`0  "You buy something or go the hell out!"`2says Chan coldly.
+
+@do write
+`x`x
+@choice
+Buy something from `4Chan`%
+Ask about his items
+Leave before `4Chan`% shoots you
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+;****These are the item numbers if you wish to change them do it here****
+;****I ask that you change only the item numbers and nothing else    ****
+ @buymanager
+  78
+  55
+  @end
+
+@if responce is 2 then do begin
+ @begin
+@show
+
+ `2Note From author: If your sysop didn't install this IGM properly
+ `2the new items below will not be avaliable.`\`\`k
+
+ `0"Ak-47 very good, made in China, very good. Auto fire very good
+ `0very good for drive by. Hasa 7.62mm bullet make big hole in people."
+ `0Cost ahhhhh `$60,000 `0dollar."
+
+`k
+
+`0"`@Flame Thrower `0make big ball of fire like dragon. Cook anythin'
+ `0alive like egg roll. Very good ahhh value only `$70,000 `0dollar."
+
+`k
+
+ `0"`450 caliber machine gun `0very big gun, send weak man flying like
+ `0grasshopper. Kill everything, nothing live. Can cut down tree no need
+ `0chainsaw! Very expensive, very good, costa `$1,000,000 `0dollar."
+
+`k
+
+  `0"`!Kevlar Vest `0good stop bullet, very, very good protection only
+  `0`$200,000 `0dollar." I no steal it from police station last week, ahhh
+ `0 bought in Thiland."
+
+`k
+
+  "`%White Potion`0 very good if hurt. Fix ahhh `2200`0 hitpoint. Only`$ 300
+  `0dollar."`\`\`k
+  @end
+
+
+
+@if responce not 3 then goto chan1
+@drawmap
+@update
+
+@#HONGWALL
+@do moveback
+@busy
+@show
+`r0`c  `r1  HONG KONG STUDIO v1.04 MESSAGE BOARD  `r0
+
+  `4Chan`2 :`0 If you like this IGM E-mail me at Chan69@juno.com
+@if hongwall.txt exist false then do
+ @begin
+ @writefile hongwall.txt
+  `#Ching Lee `2: `0Leave message but no say bad words. I get in trouble!
+  `$Tang Mai `2: `4Me love you long time, for a little money!
+  `%Wang `2: `0Wise man once say there wisdom in nature.
+@end
+
+@if hongwall.txt exist true then do
+ @begin
+ @displayfile hongwall.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+;****Comment the next line in if you don't want your users writing****
+;****foul language on the wall, do not change anything else       ****
+;@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile hongwall.txt
+  `%`n`2 : `0`s03
+ @do trim hongwall.txt 16
+ @drawmap
+ @update
+
+
+

@@ -1,0 +1,49 @@
+
+                The Crazy Man's House by Seth A. Robinson V1.00
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : Yes! (`p98 & `t18 bit 5)
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (4)
+  Adds screens?                                   : No!
+  Free?                                           : No! (2 bucks)
+
+
+  Description:
+
+  Old Man |\/|ortal's House.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM MORTAL.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, walk to the screen directly under Stonebrook and you will see
+  a new building - enter it and see what you can see.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `6Old man `4|\/|`6ortal's `6by `4R`6ob `4C`6ummings
+replacescreen: 1359 1 show
+replacescreen: 1360 2 show
+replacescreen: 1439 3 show
+replacescreen: 1440 4 noshow
+
+installmessage:
+
+  `8A`%BOUT `8T`%HIS `8IGM`%:
+
+  `4W`6ell, it took me forever and a day to figure out the half-ass
+  language `4S`6eth wrote `4:) `6however, the game is cool and I think
+  you'll like the `4IGM`6! `4T`6hanks goes out to `4M`6r. `4A`6ble for a
+  great game.
+
+

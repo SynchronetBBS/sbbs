@@ -1,0 +1,247 @@
+; Script file ITEM99.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:23 2001
+
+@DECLARE menu 000000691
+@DECLARE loop 000000979
+@DECLARE getname 000001211
+@DECLARE nada 000001364
+@DECLARE nouse 000001450
+@DECLARE display 000001534
+@DECLARE command 000002255
+@DECLARE next 000002536
+@DECLARE runref 000002862
+@DECLARE error1 000002931
+@DECLARE quit 000002988
+@DECLARE bitcheck 000003045
+@DECLARE exponent 000003398
+@DECLARE done 000003493
+@DECLARE error2 000003717
+@DECLARE finished 000003794
+@DECLARE giveitem 000003824
+@DECLARE takeitem 000003981
+@DECLARE errora 000004105
+@DECLARE errorb 000004632
+@DECLARE errorc 000004965
+@NOCHECK
+; End of .REF index
+
+@#menu
+@do `p20 is 0
+@do `p21 is 0
+@do `p22 is 0
+@do `p23 is 1
+@do `p24 is 1
+
+@if extitems.idf exists false then goto error1 
+@dataload extitems.idf &playernum `p21
+@if `p21 is 0 then goto nada
+@if `p21 less 0 then goto error1
+@if `p21 more 1073741823 then goto error1
+
+@label loop
+@do `p25 is `p21
+@if `p25 less `p24 then goto next 
+@do `p25 / `p24
+@do `p26 is `p25
+@do `p26 / 2
+@do `p26 * 2
+@if `p26 is `p25 then `p20 is 0
+@if `p26 not `p25 then `p20 is 1
+@if `p20 is 0 then goto next
+
+@label getname
+@if `p20 is 1 then do
+ @begin
+ @do `s04 is Item`p22
+ @do `p29 is &playernum
+ @routine `s04 in extitems.ref
+ @do goto display
+ @end
+
+@label nada
+@do `s01 is <All`xyou`xhave`xis`xan`xempty`xsack!>
+@do goto display
+
+@label nouse
+@do `s01 is You`xcant`xthink`xof`xany`xway`xto`xuse`xthis`xitem!
+
+@label display
+@do `s04 is NIL
+@if `s01 is `s04 then do
+ @begin
+ @run errorB in item99.ref
+ @end
+@clearblock 13 23  
+@do move 1 14
+@show
+                                  EXTRA ITEMS
+            `r1ษออออออออออออออออออออออออออออออออออออออออออออออออออป`r0  
+            `r1 บ                                                  บ`r0
+            `r1ศออออออออออออออออออออออออออออออออออออออออออออออออออผ`r0
+              Use U and D to scroll, Enter to choose, Q to exit
+              Your Command?
+@do move 15 16
+@do `p25 is length `s01
+@if `p25 less 49 then do
+ @begin
+ @do `p26 is 50
+ @do `p26 - `p25
+ @do `p26 / 2
+ @do `p25 + `p26
+ @do frontpad `s01 `p25
+ @do pad `s01 49
+ @end
+@show
+`r1`s01
+
+@label command 
+@do move 29 19
+@do write
+`d `d
+@do readspecial `s05 equd
+@if `s05 is E then goto runref
+@if `s05 is Q then goto quit
+@if `s05 is U then do
+ @begin
+ @do `p23 is -1
+ @do goto next
+ @end
+@if `s05 is D then do
+ @begin
+ @do `p23 is 1
+ @do goto next
+ @end
+
+@label next
+@if `p21 is 0 then goto nada
+@do `p22 + `p23
+@if `p22 more 29 then do
+ @begin
+ @do `p22 is 0
+ @do `p24 is 1
+ @do goto loop
+ @end
+@if `p22 less 0 then do
+ @begin
+ @do `p22 is 29
+ @do `p24 is 536870912
+ @do goto loop
+ @end
+@if `p23 is 1 then `p24 * 2
+@if `p23 is -1 then `p24 / 2
+@do goto loop
+
+@label runref
+@if `p21 is 0 then goto display
+@run `s02 in `s03
+
+@label error1
+@do `p30 is 1
+@run errorA in item99.ref
+
+@label quit
+@run stats in gametxt.ref
+@closescript
+
+
+@#bitcheck
+@do `p20 is 0
+@do `p21 is 0
+@do `p23 is 0 ; here p23 is a loop counter
+@do `p24 is 1
+
+@if extitems.idf exists false then goto error2 
+@if `i99 is 0 then do
+ @begin
+ @datasave extitems.idf &playernum 0
+ @end
+@dataload extitems.idf &playernum `p21
+@if `p21 less 0 then goto error2
+@if `p21 more 1073741823 then goto error2
+
+@label exponent
+@if `p23 is `p22 then goto done
+@do `p23 + 1
+@do `p24 * 2
+@do goto exponent
+
+@label done
+@do `p25 is `p21
+@if `p25 less `p24 then goto finished 
+@do `p25 / `p24
+@do `p26 is `p25
+@do `p26 / 2
+@do `p26 * 2
+@if `p26 is `p25 then `p20 is 0
+@if `p26 not `p25 then `p20 is 1
+@do goto finished
+
+@label error2
+@do `p30 is -1
+@routineabort
+@run errorA in item99.ref
+
+@label finished
+@closescript
+
+
+@#giveitem
+@if `p20 is 0 then do
+ @begin
+ @if `i99 is 0 then `i99 is 1
+ @do `p21 + `p24
+ @datasave extitems.idf &playernum `p21
+ @end
+@closescript
+
+@#takeitem
+@if `p20 is 1 then do
+ @begin
+ @do `p21 - `p24
+ @datasave extitems.idf &playernum `p21
+ @end
+@closescript
+
+@#errorA
+@show
+`r0 `c
+`bERROR!
+`4An illegal value has been detected for record number &playernum in the
+file EXTITEMS.IDF. This value should never be negative, nor greater than
+1,073,741,823 (=[2^30]-1). If this message has been triggered, either the
+file does not exist, the file record has been altered, or data corruption 
+has taken place. `k
+@datasave extitems.idf 1 0
+@if `p30 is 1 then do
+ @begin
+ @run stats in gametxt.ref
+ @end
+@if `p30 is -1 then do
+ @begin
+ @drawmap
+ @update
+ @end
+@closescript
+
+@#errorB
+@show
+`r0 `c
+`bERROR!
+`4There is a mismatch between the record of external items you own and the 
+index of external items. This possibly indicates that files from two
+different backups or installations have been mixed together. Please report
+this problem to your sysop. `k
+@run stats in gametxt.ref
+@closescript
+
+@#errorC
+@show
+`r0 `c
+`bERROR!
+`4You have attempted to expend an multiple quantity item whose .IDF file is
+already at less than 1. This probably indicates a miswritten .REF file.
+Possible mistakes are that .REF file is giving player an external item and 
+not adding to the count of that item in the related .IDF file; or count has
+reached zero and the .REF has not run ROUTINE TAKEITEM IN ITEM99.REF to
+remove that external item from player's inventory.  `k
+@run stats in gametxt.ref
+@closescript

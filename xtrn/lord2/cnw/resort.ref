@@ -1,0 +1,147 @@
+; Script file RESORT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE enter 000000625
+@DECLARE exit 000000707
+@DECLARE build 000000795
+@DECLARE water 000000879
+@DECLARE sign1 000000963
+@DECLARE sign2 000001013
+@DECLARE sign3 000001074
+@DECLARE sign4 000001145
+@DECLARE bartend 000001202
+@DECLARE bar 000001291
+@DECLARE healer 000001404
+@DECLARE direct 000001495
+@DECLARE person1 000001693
+@DECLARE person2 000001843
+@DECLARE person3 000001991
+@DECLARE person4 000002139
+@DECLARE person5 000002313
+@NOCHECK
+; End of .REF index
+
+; These are the routines for the Resort IGM
+
+@#ENTER
+@do x is 38
+@do y is 2
+@do map is 51
+@loadmap 51
+@drawmap
+@update
+
+@#EXIT
+@do x is 34
+@do y is 19
+@do map is 1518
+@loadmap 1518
+@drawmap
+@update
+
+@#BUILD
+@do x is 40
+@do y is 15
+@do map is 52
+@loadmap 52
+@drawmap
+@update
+
+@#WATER
+@do x is 72
+@do y is 12
+@do map is 50
+@loadmap 50
+@drawmap
+@update
+
+@#SIGN1
+@do saybar
+`%This way to The Resort.
+
+@#SIGN2
+@do saybar
+`%This way back to South Stonebrook.
+
+@#SIGN3
+@do saybar
+`%You find yourself in a small grove of trees.
+
+@#SIGN4
+@do saybar
+`%This way to The Resort Lodge
+
+@#BARTEND
+@do `p21 is `p03
+@do `p21 + 5
+@if `p02 > `p21 then goto bar
+@do `p02 + 1
+@label bar
+@do saybar
+`4Bartender: `%Here's a nice, cold beer for ya!
+@do quebar
+`%You feel very refreshed!
+
+@#HEALER
+@do `p02 is `p03
+@do saybar
+`4Mystical Healer: `%You are completely healed.
+
+@#DIRECT
+@do `p70 is 105
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`4Direct: `%There are a few beds in the next room. The healer is over there.
+@end
+
+@#PERSON1
+@do `p70 is 134
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`4Happy pappy: `%Lets Dance!
+@end
+
+@#PERSON2
+@do `p70 is 135
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`4Dan: `%hik! whata wanta?
+@end
+
+@#PERSON3
+@do `p70 is 136
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`4Don: `%have a beer, hik!
+@end
+
+@#PERSON4
+@do `p70 is 137
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`4Lone: `%Leave me alone!! I don't want any friends.
+@end
+
+@#PERSON5
+@do `p70 is 138
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`4Dance: `%There is music in the air.
+@end

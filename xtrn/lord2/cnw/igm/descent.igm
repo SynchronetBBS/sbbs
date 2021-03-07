@@ -1,0 +1,49 @@
+
+                      Descent of the Dragon v1.5r 
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.01a
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Decent of the Dragon v1.5r
+
+  This is an IGM that will add a random event to the GENRAN.REF.  A dragon
+  attack.  Players must be level 5 before this will happen.  The dragon is
+  so powerful that a character level 4 or below will have virtually no chance
+  against the Dragon.  Most characters below level 8 won't have a chance.
+  Losing to the dragon will not kill the player but leave them with very few
+  hitpoints.  Running from the Dragon will in most cases be futile.  But not
+  necessarily fatal.
+
+  To uninstall, type INSTALL /U
+
+  To test, walk to the screen directly under Stonebrook and you will see
+  a new building - enter it and see a list of places you can go.  But not
+  for free.:)
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Decent of the Dragon `2by Oaksoft Computing
+replacescreen: 16 1 noshow
+replacescreen: 42 2 show
+installmessage:
+
+ ` THIS IGM:
+
+ `2This is my second IGM.  It adds a random event to GENRAN.REF.  A dragon
+ attack.  Players must be level 5 or higher before this will happen.  Run
+ away from the dragon and she will grab you and carry you to her lair so her
+ babies can practice on you.
+ This IGM backs up the current GENRAN.REF for easy un-install.

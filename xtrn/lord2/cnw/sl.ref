@@ -1,0 +1,109 @@
+; Script file SL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE spring 000000437
+@DECLARE swim 000000730
+@DECLARE mount 000000808
+@DECLARE sign1 000001082
+@DECLARE sign2 000001147
+@DECLARE sign3 000001206
+@DECLARE pers1 000001274
+@DECLARE pers2 000001581
+@DECLARE pers3 000001871
+@DECLARE nomore 000002241
+@NOCHECK
+; End of .REF index
+
+;REF file for Shangri La IGM By Nicholas Morrissey
+
+@#SPRING
+@datanewday sl.idf
+@dataload sl.idf &playernum `p20
+@if `p20 not 1 then do
+ @begin
+ @do `p03 + 1
+ @do `p02 is `p03
+ @do saybar
+ `4You feel refreshed. You get an extra hitpoint.
+ @datasave sl.idf &playernum 1
+ @closescript
+ @end
+@do saybar
+`4You can't get anymore things
+
+@#SWIM
+ @do saybar
+ `4You see someone swimming. You wish you could join
+
+@#MOUNT
+@datanewday sl.idf
+@dataload sl.idf &playernum `p20
+@if `p20 not 1 then do
+ @begin
+ @do `p04 + 1
+ @do saybar
+ `4You climb to a higher place and gain 1 muscle
+ @datasave sl.idf &playernum 1
+ @closescript
+ @end
+@do saybar
+`4You can't get anymore things
+
+@#SIGN1
+ @do saybar
+ `%You see a spring enclosed in a fence
+
+@#SIGN2
+ @do saybar
+ `%You see a small mountain ahead
+
+@#SIGN3
+ @do saybar
+ `%You see a swimming pool in front of you
+
+@#PERS1
+@datanewday sl.idf
+@dataload sl.idf &playernum `p20
+@if `p20 not 1 then do
+ @begin
+ @do `p07 + 1
+ @do saybar
+ `0Person: `4You seem like a helpful person, I'll help you. (Alignment up by one)
+ @datasave sl.idf &playernum 1
+ @closescript
+ @end
+@do saybar
+`4You can't get anymore things
+
+@#PERS2
+@datanewday sl.idf
+@dataload sl.idf &playernum `p20
+@if `p20 not 1 then do
+ @begin
+ @do `p08 + 1
+ @do saybar
+ `0Person: `4You are such a charming younging. (Charm up by one)
+ @datasave sl.idf &playernum 1
+ @closescript
+ @end
+@do saybar
+`4You can't get anymore things
+
+@#PERS3
+@datanewday sl.idf
+@dataload sl.idf &playernum `p20
+@if `p20 not 1 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `0Person: `4 Hey Look out
+ `5WHHHHHUUUUUUUUUMMMMMMMMMPPPPPPPPPPPPPPP
+ `$You dodge a rock and it lands next to you.
+ `4YOU GAIN ONE DODGE POINT
+ @datasave sl.idf &playernum 1
+ @closescript
+ @end
+@do saybar
+`4You can't get anymore things
+
+
+@#NOMORE

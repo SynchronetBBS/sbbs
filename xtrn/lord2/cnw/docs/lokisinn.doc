@@ -1,0 +1,198 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                  -=-  Loki's Inn  -=-
+
+                              A Lord II In Game Module
+                               Written By: Peter Jackson
+                                   A.K.A. ... oDiN
+                                 BBS - 706-613-3577
+                               Internet-Odin706@aol.com
+
+                                    Version 1.03
+                               (c)1997 AEsir Software
+
+                  
+      
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Index ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+                      Part 1 -=-=-  Introduction and description
+                      Part 2 -=-=-  Setting it up 
+                      Part 3 -=-=-  Acknowledgements
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Introduction ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+
+This IGM was written for use with LORD II version 1.01a+ ONLY it will not
+work with lower versions. This is not an IGM that is too giving.
+
+Loki's Inn was a time consuming project for me. I tested and retested
+before releasing this to the public.
+
+I wrote it because of the lack of private rooms on my Lord II game.
+Instead of installing a half a dozen castles or keeps in my game.
+
+Inside Inn :
+
+Koshi Innkeeper - performs name and sex changes.
+
+Armor, weapons and goods dealer - only deals in game available stuff.
+
+Bank - Convient banking for your pleasure
+
+Hilda/Odin - depending on the players sex, players can flirt and if they
+have the charm get experience.
+
+18 private rooms, No single player can own more than one room.
+
+9 rooms have teleporters.
+
+What's new :
+
+Last version - Loki's Inn Version 1.01
+I revised this version simply to make good ole Bobby happy. He reviews quite
+a few IGM's daily and I thank him for his suggestions. So now the majik
+stone is no longer in the table but it is now a real live rock. ;-)
+
+Latest Version - Loki's Inn Version 1.03
+Simply put I goofed big time, in previous releases of Loki's Inn. 
+We are all human aren't we?!?!?!?!?!?!?
+It seems that the rooms weren't working properly. :(
+Now they are !!!! ;)
+Local (node 0) players must be aware of a certain circumstance in the
+IGM. If you are trying to by a room at Loki's Inn and a message comes
+up and tells you only 1 room per person. Visit Hilda/Odin this will
+make it so that you can buy a room. If this still doesn't solve the
+problem then either wait until the next day or run the maint switch
+when loading Lord II example: Lord2 /maint then visit Hilda/Odin in the
+Inn 1 time. Then you will be able to buy a room.
+This bug is not in this IGM but is in the game itself, and DOES NOT
+AFFECT REMOTE PLAYERS AT ALL.
+
+I almost went blind doing the bug fix so have Mercy!
+Thanks ring out to Jim for the bug fix of the year!
+
+***New in upcoming release of Loki's Inn***
+
+I'm going to add at least 18 more private rooms, can't be done you say.
+Wait and watch. :)
+
+
+Try my other IGM's for LORD 2
+
+ * Odin's Keep V2.01 - Own the legendary Keep.
+   Comes fully stocked with your own pet dragon, healer, Swimming Pool
+   and much more.  New this version - Bar with male and female companions,
+   weapons and armour dealers, etc. Redesigned Artwork + bug fix 
+ 
+ * Thor V2.01 - Works with Registered or Unregistered LordII Ver 101a+
+   If player's kill stat 5 or above, Thor will give 1 of 4 blessings.
+   "Blessings" include Muscle, Dodge, Charm and HitPoints. Special code
+   limits one visit per day.
+
+ * Quester V2.01 - Allows players to complete a quest per day that involves 
+   fighting against some major enemies ! Very configurable. New this version:
+   Added swimming at Tiny Lake Rewrote a few routines, 2 Bug fixes +
+   compatible with  other Lord II IGM's 
+
+ * COMING SOON *
+
+ Valhalla Igm for Lord2
+                 
+You can get these off my BBS or just E-mail me and I'll send them to you.
+
+You can also get the latest releases off my website.
+http://members.aol.com/odin706/title.html
+
+
+Let me know what you think about Loki's Inn. Drop a line to me at...
+
+Odin706@aol.com
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Setup ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Setup is simple.
+
+***ACHTUNG********
+
+If you have previously installed Loki's Inn Version 1.00 or 1.01 then do the
+following first.
+
+Type IGM LOKISINN.IGM to uninstall it.
+
+Copy and unpack the contents of loki103.ZIP into a empty directory.
+Then Copy and unpack Lokisinn.zip into your LORD II directory.
+
+Then proceed with the installation as follows :
+
+OR if you have never Installed this IGM then ......
+
+Install will replace 9 sections on the game map. Likewise Uninstall
+will restore these sections to their original state.
+
+******If you have more than one IGM installed **************************
+
+Edit LOKISINN.IGM to find out which areas on the world map
+will be affected. Thereby you won't overwrite another IGM or Visa/Versa.
+
+*************************************************************************
+
+To Install :>
+
+Copy and unpack the contents of loki100.ZIP into a empty directory.
+Then Copy and unpack Lokisinn.zip into your LORD II directory.
+
+Type IGM LOKISINN.IGM
+This will install Loki's Inn into the game.
+
+To Uninstall :<
+
+Inside your Lord II directory 
+Type IGM LOKISINN.IGM
+This will successfully uninstall Loki's Inn from your game.
+
+I will not be held responsible for any mishap caused by using this IGM.
+If you find a bug let me know about it, take a little time and fill
+out the enclosed bugrpt.doc .
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Acknowledgements ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Thanks go out to :
+
+Seth Able Robinson, the creator of LORD II, for making the game.
+
+Calypso, For creating Audacity BBS, the best BBS software I've ever had 
+the pleasure to use.
+
+Jim, for the bug fix of the year.
+
+
+
+
+
+
+
+
+                                  EOF

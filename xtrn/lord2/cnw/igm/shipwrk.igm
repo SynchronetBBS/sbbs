@@ -1,0 +1,52 @@
+
+                    The Shipwreck by Chet Rhodes v1.0
+
+                         AN IGM FOR LORD2 V1.00+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Another IGM from Chet Rhodes.  Sysop of Hawkmoon's Realm.
+
+   TO INSTALL
+   unzip into your LORD2 dir and type:
+
+   IGM SHIPWRK.IGM
+
+   Head west 6 screens from PortTown to test.
+  
+   TO UNINSTALL
+   Do the same thing again.
+
+   TO UPGRADE FROM A PREVIOUS VERSION
+   N/A
+
+   chet.rhodes@juno.com
+   Fido 1:151/131
+  
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0The Shipwreck `2by `0Chet Rhodes (aka Hawkmoon)
+replacescreen: 950 1 show
+
+replacescreen: 870 2 noshow
+
+replacescreen: 790 3 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Explore the merchant ship PRIDE OF ARRIS.  Trade with her captain.
+  Fire the cannon.  Meet Larkin, the worlds most powerful wizard.

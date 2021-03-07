@@ -1,0 +1,80 @@
+                     ==================================
+                     |     IceLord Keep (tm) v1.49    |
+                     |           by Commando          |
+                     ==================================
+                              
+                             AN IGM FOR LORD2
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : Yes! (1)
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (4)
+  Replaces screens?                               : Yes! (4)
+  Adds screens?                                   : Yes! (9)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  A great Keep for those larger bulletin boards with tons of people
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM Icelord
+
+  To uninstall, do the same thing again.
+
+  To test, walk to the screen above GreenTree and follow to the left. 
+  You will find a awesome castle - enter and see all the buildings!
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0IceLord Keep (tm) `2by `0Commando
+replacescreen: 1361 1 noshow
+
+replacescreen: 1362 2 noshow
+
+replacescreen: 1363 3 noshow
+
+replacescreen: 1364 4 noshow
+
+replacescreen: 1365 5 noshow
+
+replacescreen: 1366 6 noshow
+
+replacescreen: 1367 7 noshow
+
+replacescreen: 1368 8 noshow
+
+replacescreen: 1369 9 noshow
+
+replacescreen: 1370 10 noshow
+
+replacescreen: 1371 11 noshow
+
+replacescreen: 1272 12 show
+
+replacescreen: 1273 13 show
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+   `2This IGM is for those who find the keep dull! if you want a real castle
+  with tons of buildings and lots of things to do then this is the igm for 
+  your bbs! Your `0LORD2`2 keep will be the most popular in town!
+
+   `2Ok, well if you like this igm i sweat to create then you can pay me 
+  back by donating me some money, but if you just want to write to me saying
+  how much you do or don't like this that will be fine too!  :)
+
+    `4Commando:
+       
+      `2Fred Franks Jr.
+      `2810 Timberline Dr.
+      `2Akron, OH 44333
+       
+      `2IceLord33@aol.com

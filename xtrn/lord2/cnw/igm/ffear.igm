@@ -1,0 +1,104 @@
+                  ---------------------------------------
+                  Fortress Fear (tm) by Isaac Laurin V0.30
+                      Copyright 1997 D/´rK /\/iGHt
+                  ---------------------------------------
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : Newest One!
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Not Right Now!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (15)
+  Free?                                           : For Now! :)
+
+  Description:
+
+  FORTRESS FEAR
+  -------------
+  My first IGM and it isn't even finished yet!
+
+  Features (most of these aren't in the IGM yet):
+   - Five houses you can buy
+      - One has a Maneating plant that eats you if you don't feed it!
+      - All of them have different features in them
+   - A tower you can buy
+      - Still thinking about what to put in it
+   - Shops
+      - Inn, Casino, Bank, Weapon Shop and More!
+      - They all work now!
+   - The Castle Keep
+      - Talk to the king and his guards
+      - Steal the king's money
+      - A jail for thieves
+      - Lots of other stuff
+   - Dock to goto other places
+   
+  How to contact me:
+  ------------------
+  Email: darkn@geocities.com
+
+  Webpage: http://www.geocities.com/siliconvalley/park/8021
+  (Page Still Under Construction)
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM FFEAR.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, goto the Porttown castle screen and goto the dock. Talk to the
+  green guy and he'll give you a free ride to Fortress Fear.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4For`@tress F`4ear `2by `0Isaac Laurin
+replacescreen: 1117 1 show
+
+replacescreen: 417 2 noshow
+
+replacescreen: 418 3 noshow
+
+replacescreen: 419 4 noshow
+
+replacescreen: 420 5 noshow
+
+replacescreen: 421 6 noshow
+
+replacescreen: 497 7 noshow
+
+replacescreen: 498 8 noshow
+
+replacescreen: 499 9 noshow
+
+replacescreen: 500 10 noshow
+
+replacescreen: 501 11 noshow
+
+replacescreen: 577 12 noshow
+
+replacescreen: 578 13 noshow
+
+replacescreen: 579 14 noshow
+
+replacescreen: 580 15 noshow
+
+replacescreen: 581 16 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2This is my first IGM and it's not complete yet either. I've finally got
+  some time to work on this IGM and I've got a bunch of things working now
+  (you can buy 2 houses now and go into the shops).
+
+  `2Location: Porttown Entrance Screen
+
+  `%Copyright 1997 D/´rK /\/iGHt and Isaac Laurin
+  `%http://www.geocities.com/siliconvalley/park/8021     darkn@geocities.com
+

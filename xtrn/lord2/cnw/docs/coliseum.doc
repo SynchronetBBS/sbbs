@@ -1,0 +1,57 @@
+
+              Northlands Coliseum v1.00b by ShroomTrip Software
+                   (c) Copyright 1997: ShroomTrip Software
+                               All rights reserved.
+ 
+                              Written By: Jay Weber
+                                Compiled 12/04/97
+
+                                Find Jay Weber on
+                               The Stellar Net BBS
+                                  Handle: blade
+                                 (352) 378-2119
+
+                                       or
+
+                     WWW: www.afn.org/~afn50378/sthome.html
+                            Email: elric@innocent.com
+                         afn50378@afn.org (always works)
+                        Bug Reports: kender@innocent.com
+
+              This archive may be shared with all, in its unmodified
+                               shareware format.
+
+   Files contained in Col100B.Zip:
+
+   COLISEUM.DOC <--This File
+   COLISEUM.IGM <--IGM Control File
+   COLISEUM.DAT <--DATA File Containing Maps For This IGM
+   COLISEUM.REF <--.REF File For This IGM
+   215PATCH.ZIP <--Patch For Bridge Of Theives, Fishing Docks, And This IGM
+   FCPATCH.ZIP  <--Patch For Fishing Docks And This IGM
+   TCPATCH.ZIP  <--Patch For Bridge Of Theives And This IGM
+   FILE_ID.DIZ  <--Discription File For BBS's
+
+   This IGM adds a Coliseum in the Northlands. You get to bet on which
+   monster will win a fight. The amount of times you can bet is limited
+   to 6 per day.
+
+   WARNING: This IGM is incompatible with The Bridge of Theives IGM and
+            The Fishing Docks IGM, as they all use Screen 215.
+
+   What's New:
+
+   100 : * The IGM first debutes
+
+   100a: * Fixed an error in COLISEUM.IGM which loaded
+           screens 216 & 217 at screen 217
+         * Fixed a few spelling errors
+         * Changed the max bet from $10,000 to $1,000
+         * Changed the monster variables from fixed values to random values
+         * Limited bets to 6 per day, instead of going by gambles left
+         * Added a Play Again option to the end of the fight sequance
+
+   100b: * Fixed an error that would let you bet even if you had less than
+           the $100 minimum, and would let your money go into the negative.
+         * Added more monsters (for a total of 10)
+

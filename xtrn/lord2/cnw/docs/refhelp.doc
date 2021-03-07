@@ -1,0 +1,679 @@
+MARCH-12-2001
+
+        *******  HOW TO MAKE YOUR OWN REF FILES FOR LORD II *******
+
+                        For LORD II:New World v1.02
+
+                     Redone & Updated by Joel Gathercole
+                        telnet://greenmachinebbs.com
+                      http://greenmachinebbs.com/lord2
+
+           Visit http://lordlegacy.org for the latest LoRD2 package.
+
+                Check 3rdparty.doc for more IGM developer info.
+
++------------------------------INTRODUCTION----------------------------------+
+
+-FROM JOEL-
+Finally this REF help file gets updated. This file has been updated for
+the new LoRD2 v1.02 and later. I've also included quite a bit of previously
+'undocumented' commands. I hope this doc helps you create some good IGMs
+for LoRD2.
+
+Some rules that the developer of LoRD2 agrees with for the NEW WORLD IGMS:
+
+                       - LoRD2: New World IGMS -
+
+DO NOT USE ANY VARIABLES FOR YOUR OWN DATA. USE .IDF AND .DAT FILES AS OFTEN
+AS POSSIBLE. YOU SHOULD NOT NEED TO EVEN USE EXTRA VARS. THEY ARE BEING
+RESERVED FOR THE BASE GAME ITSELF. WHEN YOU USE THESE VARS, YOU CAUSE
+CONFLICTS WITH OTHER IGMS AND IN GAME VARS THAT YOU MAY NOT KNOWN ABOUT.
+
+FOR NEW ITEMS THAT GO WITH YOUR IGM, PLEASE USE AND UNDERSTAND THE EXTITEMS
+PROCEDURES, AS ALL ITEM (`i) VARS WILL BE USED FOR THE BASE GAME AS WELL.
+REFER TO EXTITEMS.REF FOR HELP ON ADDING NEW ITEMS. YOU MAY USE YOUR OWN
+NEW REF FILE SO IT DOES NOT OVERWRITE THE ORIGINAL EXTITEMS.REF WHICH ALSO
+MAY WRITE OVER OTHER IGMS ITEMS.
+
+I, plan to fix and re-release every outdated/unsupported IGM out there to
+abide by these new rules of thumb for NEW WORLD IGMs.
+I am also looking for help on updating these old IGMs, we could put a team
+together to get this done much faster.
+
+My Other TIPS I hope you will follow:
+  - Please do NOT use those tree ascii/ansi codes! they are ugly and are
+    not supported by many cheap terminals, including the telnet java applet
+    which has been picking up popularity recently.
+  - Also do not use the other low end ascii codes, such as:
+       -spades
+       -hearts
+       -diamonds
+       -clubs
+       -That large fancy star (not even supported in MTelnet!)
+    for the same reason.
+
+
+-FROM ORIGINAL AUTHOR (SETH)-
+The heart of this system is the .REF format.  It is a script language that
+can be used to do complex gaming things, like math and getting random
+numbers, adding and deleting other varibles in the game - nearly
+everything a simple basic could do.
+
+REF is short for - Relay Execution File?  Reference File?  Who cares!
+
+Although tricky at first, making a ref file is really pretty simple.  If
+something doesn't work, just go look at your .REF file, (a simple text
+file) and fix it!  The .ref language will tell you at runtime about
+words it doesn't understand or syntax errors.
+
+ To see a demonstration of most commands, edit LORD II's .ref files.
+
++------------------------------REF FEATURES----------------------------------+
+
+ *  If a command isn't understood, it will tell you upon execution
+ *  .REF size is limited by conventional memory
+ *  REF files are completely loaded, and interpreted BEFORE execution for
+     speed
+ *  Allows BEGIN and END statements, thousands of levels deep
+ *  Ansi and SethAnsi (eg. `1) are automatically displayed correctly
+     locally and remotely
+ *  They can save and write their own data
+
++-----------------------------VARIABLES--------------------------------------+
+
+
+    NOTE:  If the following are found in a string being displayed they
+           will be replaces with their values:
+
+`V01 through `V40 These are the 40 GLOBAL longint varibles. (for numbers)
+`S01 through `S10 These are 10 GLOBAL string varibles. (for text)
+`P01 through `P99 These are the 99 player longint varibles. (for numbers)
+`T01 through `T99 these are 99 player byte varibles.  (255 max)
+`I01 through `I99 these are the 99 player integer item varibles. 32000 max)
+`+01 through `+99 - Same as above, but shows the item NAME, not amount.
+
+`v05 and `p11 are reserved if you wish to use LORD2's 'limited movements'.
+
+x  (players x cordinates)
+y  (players y cordinates)
+map (players current block #)
+dead (1 is player is dead)
+sexmale (1 if player is male)
+narm (current armour #)  <-- Does this really exist?
+nwep (current weapon #)  <-- Does this really exist?
+money (players moola)
+bank (moola in bank)
+enemy (force `e (last monster faught) to equal a certain name)
+
+ALL The above can also be changed. Examples:
+
+@do x is 20   <-sets X to 20
+@do `i05 is 90  <- Gives dude 90 item 5's (item is defined in l2cfg.exe)
+
+These are symbols that will be translated automatically when using
+@show or @do write.  You can also make variables equal these, etc. Simular
+to Renegades MCI codes.
+
+`N this is the users name.
+`E Enemy name.
+`G Current Graphics Level.
+`X Adds a space.
+`D Sends a #8 (delete).
+`0 through `9 and `! through `^ change color.
+`W One tenth a second wait. (real time delay)
+`L About a half second wait. (real time delay)
+`\ Simulates a carriage return.
+`r0 through `r7, change background color.
+`c Clears the screen and simulates 2 carriage returns.
+
+&realname | Real name as passed by the drop file
+&date | The date and time like 12/12/97 format.
+&nicedate | Time AND date like 5:19 on 12/12.
+s&armour | equipped armour name.
+s&arm_num | equipped armour's defensive value
+s&weapon | equipped weapon name.
+s&wep_num | equipped weapon's attack value.
+s&son | son/daughter, depending on current users sex
+s&boy | boy/girl, depending on current users sex
+s&man | man/lady, depending on current users sex
+s&sir | sir/ma'am, depending on current users sex
+s&him | him/her, depending on current users sex
+s&his | his/her, depending on current users sex
+&money | current users gold
+&bank | current users gold in bank
+&lastx | users x position before last move.
+&lasty | users y position before last move - helpfull to determine which
+         direction they came from before the hit the ref, etc.
+&map | current map #
+&time | Current age of the game in days.
+&timeleft | Minutes the user has left in the door.
+&sex | returns 0 if player is female, 1 if player is male
+&playernum | The account # of the current player.
+&totalaccounts | How many player accounts exist. Includes accounts marked
+                 deleted.
+LOCAL | Will equal 5 if the ref is being viewed locally, otherwise 0.
+
+(NOTE: Vars starting with s& usually means if you can control the case
+of the first letter of the outpout by the case of the first s - so
+S&sir would return "Sir" and s&sir would return "sir")
+
+@STRIPCODE <`s var>
+     - This will remove ALL ` codes from a string variable.
+
+@BITSET <`t01 to `t99> <bit> <0 or 1>
+     - Sets a certain bit in a byte var, lets you have 8 yes/no vars
+        in one `t byte var! Examp: @bitset `t12 1 1 (this turns bit 1
+        in `t12 to ON) (bits can be from 0 to 7)
+
+@REPLACE <this> <that> <in `s var>
+      - Replaces this with that in an `s var.
+
+@REPLACEALL <this> <that> <in `s var>
+      - Same as above but replaces all instances
+
+
++----------------------------COMMANDS----------------------------------------+
+
+        +------------------- BINARY DATA FILES -------------------+
+                          "IGM DATA FILES" 
+
+ These files normaly have the extention IDF. They only store numeric data
+from -2.2 billion to +2.2billion (longints), in 200 different records
+(for 200 players). If the file doesn't exist, it is created and all records
+are set to 0. IDF files are only 1004 bytes in size.
+
+@DATALOAD <filename> <record#> <var>
+     - LOADS a longint by <record#> from a datafile and puts in <var>
+
+@DATASAVE <filename> <record#> <value>
+     - SAVES a longint to a <record#> in a datafile.
+     - You can put a <var> or a number in the <value> 
+
+@DATANEWDAY <filename>
+     - If it is the NEXT day since this function was called, all #'s in
+       <filename> will be set to 0.
+     - Check EXAMPLE.REF for an example of how this works.  
+
+
+        +----------------- MAP/DISPLAY COMMANDS ------------------+
+
+@DRAWPART <x> <y>
+     - will draw one char of a map screen with whatever it should be.
+       (including if people are there)
+
+@DRAWMAP
+     - draws the current map the user is on.
+
+@UPDATE
+     - Draws all the people on the screen.
+
+@BUSY
+     - Makes the player appear 'red' to other players currently playing.
+
+@OFFMAP
+     - Makes the player appear to disappear to other players currently
+       playing.  (so it looks like they actually went into the hut)
+
+@PAUSEOFF
+     - You can show long ansis etc and it won't do its usuall every
+        24 line pause.
+
+@PAUSEON
+     - Turns pause back on.
+
+@LOADMAP <map #>
+     - Lets you change someones map location in
+       a ref file.  This is the 'block #' not the physical map
+       location, so it could be 1 to 1600.  (make sure it exist
+       in l2cfg.exe though) Be SURE to change the map variable
+       too!!  Using this and changing the X and Y
+       cords effectivly lets you do a 'warp' from a .ref file.
+
+@STATBAR
+     - Draws the statbar.
+
+@CLEARBLOCK <start y> <end y>
+     - Clears lines quick
+     - @CLEAR BLOCK 20 24 would clear 4 lines starting at 20
+
+@DISPLAYFILE <filename> <options>
+     - This display an entire file.
+     - Possible options are:  NOPAUSE and NOSKIP. You can use both.
+
+@DISPLAY <this> IN <this file> <options>
+     - This is used to display a certain part of a file, compatible
+        with the LORDTXT.DAT format.
+     - <this> is a header or label
+     - Possible options are:  NOPAUSE and NOSKIP. You can use both.
+
+@SHOW <options>
+     - no options will show the following text/ansi.  Stops when a @ is hit on.
+     - <options> can be "SCROLL", puts all the text in a nifty scroll window.
+
+@CLEAR <options>
+     - <options> "NAME", Deletes the name line of the game window.
+     - <options> "USERSCREEN", Clears user text.
+     - <options> "TEXT", Clears game text.
+     - <options> "PICTURE", Clears pic.
+     - <options> "ALL", Clears user text, pic, game text, name and redraws screen.
+     - <options> "SCREEN", Clears entire screen. You should use "@DO MOVE 1 1"
+         before this for those cheap ANSi terms, including the Java Telnet term.
+
+@KEY <options>
+      - No options will do a "MOREMAP" prompt, centered on current line.
+      - <options> "TOP", will display "MOREMAP" at top of screen.
+      - <options> "BOTTOM", will display "MOREMAP" at bottom of screen.
+      - <options> "NODISPLAY", will not display "MOREMAP".
+
+@SAY
+      - All text UNDER this will be put in the 'talk window' until a @ is
+         hit.
+
+
+        +--------------------- @DO COMMANDS ----------------------+
+
+@DO <Var To Change> <How To Change It> <Change With What>
+    - Ways to change it:(-,+,/,*,IS,ADD)
+    - You can also do this with `S (string vars) but you are limited to
+       only using IS and ADD. 
+
+@DO <Var to put # in> RANDOM <Highest random number> <number added to it>
+    - Create a random number
+
+@DO `V01 IS 1
+     - Sets the default option on the next lightbar selection,
+        ALWAYS use before a @CHOICE command.
+
+@DO ADDLOG
+     - The line UNDER this command is added to the 'lognow.txt' file.
+
+@DO `s01 IS GETNAME 8
+     - Would get the name of player 8 and put it in `s01.
+        (only works with `s vars)
+
+@DO `p20 IS DELETED 8
+     - Puts 1 (yes) or 0 (no) in `p20.
+        (only works with `p vars)
+
+@DO <num var> IS LENGTH <`s var>
+    - Gets length, smart way
+    
+@DO <num var> IS REALLENGTH <String var>
+    - Gets length dumb way. (includes
+
+@DO BEEP
+    - Makes a weird beep noise, locally only.
+       No idea why this would be used.
+
+@DO COPY TO NAME
+    - Put whatever is in `S10 into `N.  (name)
+    - Change Players characters name.
+
+@DO COPYTONAME
+    - Puts `s10 into PLAYERS NAME field. You can change player name here.
+
+@DO DELETE <file name>
+    - Delete a file.
+
+@DO FRONTPAD <var> <how_long>
+    - I guess its similar to @DO PAD, but the opposite.
+
+@DO GETCHAR <String var to put it in>
+    - Grabs a keypress, with timeslicing.
+
+@DO GETKEY <String var to put it in>
+    - This command is usefull, *IF* a key IS CURRENTLY being pressed,
+       it puts that key into the string var. Otherwise, it puts a '_' in
+       to signal no key was pressed. Good way to stop loops!
+
+@DO GOTO <header or LABEL name>
+    - Goes to another routine in the REF
+
+@DO MOVE <X> <Y>
+    - This moves the curser.
+    - Enter 0 for (...current possition?) (was cut off in old REFHELP.DOC)
+
+@DO MOVEBACK
+     - Use this to move the player back to where he moved from - good
+        for when they push against a treasure chest or such, and you
+        don't want them to appear inside of it when they are done.
+
+@DO PAD <string var> <length>
+    - Adds spaces to end until string is as long as <length>.
+
+    - NOTE:  Pad automatically does not include color codes in
+       the length, and DOES include varibles in the length.  (like
+       if there was a `s02 inside the string)  (my God.. If you were
+       displaying `s01 and it had a `s01 in it, wouldn't it display
+       forever?  I'll have to check that.) (note from 3 years later..
+       still haven't checked into that..maybe next year..) <--Still didn't
+       6+ years later!
+
+@DO QUEBAR
+<message>
+    - The above will add a message to the saybar que - This means if the game
+       is currently displaying a message, or has a few to display, it will
+       wait until the proper time.
+
+@DO READCHAR <`s var to put it in>
+    - Waits for a key to be pressed, uses DV and windows time slicing
+       while waiting.
+
+@DO READNUM <MAX LENGTH> <FOREGROUND COLOR> <BACKGROUND COLOR>
+    - The READNUM procedure is a very nice string editer to get a number
+       in. It supports arrow keys and such.
+    - <DEFAULT>: The number is put into `V40.
+    - FORGROUND AND BACKGROUND is optional, defualt is white on blue back.
+
+@DO READSTRING <MAX LENGTH> <DEFAULT> <`s VAR TO PUT IT IN>
+    - Get a string. You only can use `s vars.
+    - Use "NIL" if you want a blank var.
+
+@DO READSPECIAL <String var to put it in> <legal chars, 1st is default>
+    - Example:
+                @do write
+                Would you like to kill the monster? Y/N :
+                @DO READSPECIAL `s01 YN
+                @if `s01 is Y then do
+                        @begin
+                        @show
+                        You killed him!
+                        @end
+
+    - That ONLY allow the person to hit Y or N - if he hit ENTER, it
+      would be the same as hitting Y, because that was listed first.  
+
+@DO REPLACEALL
+    - Same as @REPLACEALL
+
+@DO SAYBAR
+<message>
+    - The above is like quebar, except it displays the message instantly,
+       without taking into consideration that a message might have just been
+       displayed and this will write over it.
+
+@DO STRIPBAD <`s var>
+    - Strips out illegal ` codes, and replaces badwords with the standard
+       badword.dat file.
+
+@DO STRIPALL <`s var>
+    - Strips out all ` codes.  Good for passwords, etc.
+
+
+@DO STRIP <`s var>
+    - This strips beginning and end spaces of a string.
+
+@DO TALK [string] [who:all]
+      eg. @DO TALK `0`n`x`2has`xentered`xthe`xrealm. all
+
+@DO TRIM <file name> <lines to trim to>
+    - Trims text file to x amount of lines
+
+@DO UPCASE <`s var>
+    - Makes a string all capitals.
+
+@DO WRITE
+<1 line text>
+    - Will display to the screen the text below, this could be used after
+       a @DO MOVE command to display text in a specific location.
+
+
+        +--------------------- @IF COMMANDS ----------------------+
+ All <then do> can be replaced with a @DO command removing the @DO
+  example: @IF `p01 IS 1 then BEEP
+
+examples:
+        @IF `V04 MORE 500 THEN DO `V04 - 500
+        (This would take 500 from `V04 if they had it)
+        (+ would add money, IS would MAKE it 500)
+
+        @IF `V04 MORE 500 THEN DO
+                @BEGIN
+                @SHOW
+ `2You have more then 500!  In fact you have `V04!
+                 @END
+
+ (if @BEGIN is followed by a @DO it will be executed, otherwise skipped)
+ (In @DO WRITE, @SAY and @SHOW (Except SHOW SCROLL) it will print the `V,
+  `P and `S varibles - It also understands:
+ `N (user name)
+ `* (node number)
+
+
+@IF <Varible> <Math> <Varible> then do
+    - Math can be MORE, LESS, NOT, IS
+
+@IF <Word or var> INSIDE <Word or var> then do
+    - Allows you to search a string for something inside of it.
+       Not case sensitive.
+
+@IF <name of file> EXISTS TRUE then do
+
+@IF <name of file> EXISTS FALSE then do
+
+@if BITCHECK <`t var> <bit> <1/0> then do
+     - Checks the `t bitsets if true or false, then does.
+
+@IF BLOCKPASSIBLE <not/is> then do
+     - Checks to see if destination square is a passible one. If not,
+        you must add the code to be sent back, check HELP.REF for an example.
+
+
+        +--------------------- REF ROUTINES ----------------------+
+
+ You can have as many headers/labels as you want, however, the first 300
+  'headers' and 'labels' will be INSTANT access, anything past will not be
+  quite as quick.
+
+ This 'speed up' routine runs by default on all .REF files.  (Processes the
+  labels and headers before running)
+
+ This takes a noticable pause when doing so, so you may wish to disable this
+  feature.  Add a @NOCHECK
+
+ LoRD2 maps the labels/headers on the fly if it runs across one that
+  isn't - So the SECOND time you run GOTO it, it's instantanous.
+  (this is always active)
+
+ Headers like all other commands in RTREADER are *NOT* case sensitive.
+  You can type the whole thing in lowercase, or uppercase - or mixed.
+  It just don't matter man.
+
+@LABEL <labelname>
+
+@#<header>
+     - Routines will end when reaches another @#, but will continue
+        through the @LABEL unless told to stop.
+
+@NOCHECK
+     - This makes it not scan for labels/headers before running the REF.
+     - Might make the REF load faster if too many labels/headers.
+     - Should be at the top of the REF.
+
+@ROUTINE <Header or label name> IN <Filename of .REF file>
+     - (only one parm is given, it assumes it is in the current .ref)
+
+@ROUTINEABORT
+     - Stops it from returning.
+
+@RUN <Header or label name> IN <Filename of .REF file>
+
+@DECLARE <Label/header name> <offset in decimal format>
+     - Put at beginning of REF file to set location of headers/labels
+        for a quicker read of the REF file. REFINDEX.EXE will do this
+        for you automaticly.
+     - WARNING - If you change anything in the REF file after the REF
+        has pre-set DECLARES, then the REF will not work, just remove/
+        change all the DECLARE commands to the changes.
+     -Should put a @NOCHECK right after the DECLARE statements.
+
+@CLOSESCRIPT
+      - This ends the script.
+
+        +--------------------- GAME SETTINGS ---------------------+
+
+@PROGNAME
+     - The line UNDER this will be the status bar name of the game
+
+@MOREMAP
+     - The line UNDER this will be the new <more> prompt. A pause that
+        waits for a key to be pressed.
+
+@LOADWORLD
+     - Loads globals and world data - has never been used, but is
+        included just in case.
+
+@VERSION <Version it needs>
+     - For instance, you would put @VERSION 2 for this version of
+        RTREADER.  (002) If it is run on Version 1, (could happen) a
+        window will pop up warning the person he had better get the
+        latest version.
+
+@OVERHEADMAP
+     - Show the "M"ap to the player. Will show all "shown" blocks.
+
+@SAVEGLOBALS
+     - I presume it saves global vars.
+
+@SAVEWORLD
+     - Saves stats and world data - only use yet is in right after
+        @#maint is called to save random stats set for that day and
+        such.
+
+@GRAPHICS IS <Num>
+     - 3 or more enable remote ANSI.  Not very useful, as everything is ANSi
+        If you set this to 1 remote users can only see ascii.
+      
+@CHECKMAIL
+     - Checks players mail.
+
+@HALT <error level>
+     - Quits and returns correct error level.
+
+@SHELL <.EXE, BAT or COM> <Parms, up to 8>
+     - Shell to DOS and run
+     - (note, use `* for node num)
+
+@UPDATE_UPDATE
+     - Writes current player data to UPDATE.TMP file.  (if you can't wait
+        until they are out of the ref file for some reason)
+
+@CHOOSEPLAYER `p20
+     - Will prompt user for another players name
+     - its the standard 'full or partial name' thing, with a 'you mean
+        this guy?'.  It returns the players # or 0 if none.
+
+@ITEMEXIT
+     - Tells the item editor to automatically return the player to the
+        map screen after the item is used.  It is up to you to use the
+        @DRAWMAP and @UPDATE commands as usual though.
+
+@LORDRANK
+     - [no details ... more later]
+
+@RANK <file>`*.dat <var> <label>
+     - file = should be max 5 chars, leaving `* for the other 3.
+        var = rank in the list by this var being highest.
+        label = label in current REF which to see what is listed.
+
+@BUYMANAGER
+     - Every number below this until the next @ will be the item
+       availabe to the player to buy.
+
+@SELLMANAGER
+     - Sell items.
+
+@CHOICE
+<1st choice>
+<2nd choice>
+     - To give options to the player on what to do.
+     - RESPONSE (or RESPONCE) What @CHOICE returned. Same as `v01.
+     - "@DO `V01 IS 1" should come before, you can set to which ever
+       choice you want to be default. Usualy 1.
+     - At the the @ it will stop the choices.
+     - IMPORTANT NOTE:  Never have spaces AFTER lines under a choice
+        command.. This can make options not show up.
+
+     example:
+
+        @DO `V01 IS 1
+        @CHOICE
+Your 1st choice of the day
++`t12 1 Hey, byte 12 bit 1 is TRUE!
+-`t44 7 Hey, byte 44 bit 7 is FALSE!
+=`p20 500 Hey, I have 500 exactly!
+!`p20 500 Hey, I have anything BUT 500 exactly!
+>`p20 500 Hey, I have MORE than 500!
+<`p20 100 Hey, I have LESS than 100!
+>`p20 100 <`p20 500 I have more then 100 and less than 500!
+        @IF RESPONCE IS 1 THEN DO
+                @BEGIN
+                @SHOW
+   Thats your first choice?
+                @END
+
+
+        +--------------------- FILE COMMANDS ---------------------+
+
+@WRITEFILE <file name>
+<Things to write>
+     - Unlimited amount of lines can be written to file. Until a @ is hit.
+     - Note:  @WRITEFILE appends the lines if the file exists, otherwise it
+        creates it.  File locking techniques are used.
+
+@READFILE <file name>
+<Var>
+     - Unlimited amount of lines can be written to file. Until a @ is hit.
+        puts into a the var specified.
+     - NOTE:  @READFILE is a smart procedure - It will not run-time error
+        or anything, even if you try to read past the end of the file. It
+        simply won't change the vars if the file isn't long enough.
+
+@COPYFILE <input filename> <output filename>
+     - Copies a file.  Not that hard to use, really.
+
+@CONVERT_FILE_TO_ANSI <input file> <output file>
+     - Converts a text file of Sethansi to regular ansi.
+        Good for a final score output.
+
+@CONVERT_FILE_TO_ASCII <input file> <output file>
+     - Converts a text file of Sethansi to regular ascii,
+        ie, no colors at all. Removes all colours.
+
+
+
+
+
+        +-----------------THE SHELL COMMANDS ---------------------+
+
+NOTE:  THIS FEATURE DOES NOT WORK IN LORD II AT THIS TIME.
+
+A powerful feature of RTREADER is the ability to run OTHER programs inside
+of it, and return to the exact spot it left automatically.
+
+@SHELL <.EXE, BAT or COM> <Parms, up to 8> (note, use `* for node num)
+
+When this happens, two files are created.
+
+DO<node num>.BAT is created.  This is actually the file that is run.
+
+INFO.<node num> is created.  Simular to LORD's INFO.? system.
+
+This text file contains the following:
+
+Users first name
+Users Last Name
+Ref file it was reading before shelling
+Offset of ref file (where it was when it shelled)
+Graphics <- Passed from drop file, usually between 2 and 5.
+Time Left
+Com Port
+Baud Rate
+Lockbaud
+FOSSIL (or INTERNAL or DIGI)
+
+Note:  The procedure RTREADER uses upon 're-entry' is it reads the proper
+       NODE<node num>.DAT file, *THEN* it reads the INFO.? file and fills
+       in the gaps.  It does read the Time Left back in also.
+
+                

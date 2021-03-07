@@ -1,0 +1,1093 @@
+; Script file PRISONF.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:26 2001
+
+@DECLARE guydead 000000828
+@DECLARE girl 000000899
+@DECLARE gotout 000001011
+@DECLARE run 000001275
+@DECLARE win 000001364
+@DECLARE execute 000002330
+@DECLARE die 000004811
+@DECLARE fall 000009018
+@DECLARE john 000009108
+@DECLARE race 000010163
+@DECLARE rstart 000010753
+@DECLARE go 000010822
+@DECLARE rocks 000010990
+@DECLARE gym 000011533
+@DECLARE tunnel 000011924
+@DECLARE out 000012204
+@DECLARE codax 000013934
+@DECLARE bobmad 000014495
+@DECLARE bobglad 000014910
+@DECLARE bob 000015261
+@DECLARE done 000019418
+@DECLARE giveitem 000019840
+@DECLARE takeitem 000019980
+@NOCHECK
+; End of .REF index
+
+;Greentree Prison Version 2 by Codax and Dragon's Den Ultd
+;This update should fix the freeze problem
+
+@#guydead
+@do moveback
+@do moveback
+@do saybar
+This Guy is DEAD!!!
+
+@#girl
+@do moveback
+@do saybar
+Girl With Husky Voice:  Hi there sweet thing!  Come to Papa err Momma!
+
+
+@#gotout
+@do x is 13
+@do y is 11
+@do map is 1355
+@loadmap 1355
+@drawmap
+@update
+@do saybar
+Get Out of my Jail.  I hope you are now a better person!
+@do `p01 + 1000
+@do `p05 + 1
+@do `p18 + 10
+@do delete prisinfo.&playernum
+@run giveitem in prisonb.ref
+
+@#run
+@drawmap
+@Update
+@do saybar
+Warden:  Guards...Get s&him
+@key
+@run execute
+
+@#win
+@show
+
+	`r0`c`%  `r1  Escaping  `r0`2
+
+  You run through the prison camp...holding the warden's head aloft!
+`k
+  Running `l. `l. `l. `l.
+  `k     
+          Running`l. `l. `l. `l.
+`k
+                 Running`l. `l. `l. `l.
+`k
+          Guards rush at you and`l. `l. `l.
+`k
+
+@do `p20 random 2 1
+@if `p20 is 1 then do
+@begin
+@show
+
+`2  They catch you!  They drag you down to the execution area!!!
+`k
+@run execute
+@end
+
+@if `p20 not 1 then do
+@begin
+
+@do `p20 random 2 1
+
+@if `p20 is 1 then do
+@begin
+@Show
+  
+  `2On your way out you see the items they took from you!
+       `l.`l.`l.`l. You easily scoop them up!
+
+@run giveitem in prisonb.ref
+@end
+
+@Show
+`2
+  You easily dodge them!  You run through the gates.  But you are the only
+   one to make it!
+`k  
+@do x is 13
+@do y is 11
+@do map is 1355
+@loadmap 1355
+@drawmap
+@update
+@do saybar
+Freedom never tasted so good....You gain 5 dodge
+@do `p05 + 2
+
+@#execute
+@show
+	`r0`c`r1`%  Dum da dum dum `r0`2
+
+  Guards rush at you from all directions!`l.`l.`l.`l.`l.
+
+               They tie your hands`l.`l.`l.
+
+			You are dragged to the execution area!
+
+  Warden:  So you tried to elude us huh?  Well now you will get what you 
+    deserve!  But I am not an evil man so I will let you choose how you die!
+
+@do `v01 is 1
+@choice
+Hang me
+Cut off my head
+Throw me down a pit
+Leave me on the rack
+@
+
+@if responce is 1 then do
+@begin
+@Show
+
+
+
+
+
+`2Warden:  So it shall be done!
+`k
+            They lead you to the large tree in the`k
+                   exacution area.  The noose tightens around your neck`k
+                       The preist reads some hymns...`k
+                           A crowd has gathered around you.`k
+                       The warden yells something`k
+                   You hear a sickening <SNAP> but seems far away`k
+           Your body goes limp.  You dangle.`k
+
+@do `s01 is hung
+@do enemy is The`xWarden
+@do goto die
+@end
+
+@if responce is 2 then do
+@begin
+@show
+
+
+
+
+
+
+`2Warden:  So it shall be done!
+
+	They lead you to a open spot where you see 3 tree trunks`k
+              Your head is tied down to one and the preist reads something
+`k         A man in black grabs his larges axe.`k
+ 	      He seems to have an evil grin under the mask.`k
+        He raises up and`l.`l.`l.`l. Chops your head off in one blow!`k
+
+@do `s01 is beheaded
+@do enemy is Executioner
+@do goto die
+@end
+
+@if responce is 3 then do
+@begin
+@show
+
+
+
+
+
+`2Warden:  So it shall be done!
+
+	They lead you to an open spot with a deep dark scarry pit.`k
+		A preist reads something but it seems far away`k
+        The Pit exacutioner pushes you into the casm....You fall screaming`k
+                Untill you hit the bottom with a loud`k `w<`wT`WH`WU`W`D`W>`K
+
+@do `s01 is pushed`xinto`xa`xpit
+@do enemy is an`xexecutioner
+@do goto die
+@end
+
+@if responce is 4 then do
+@begin
+@show
+
+
+
+
+`2Warden:  So it shall be done!
+
+	You are lead to a large table with chains and whips and other pointy`k
+           objects.  You are attached by chains and are slowly pulled apart.
+            `k  You feel your muscles rip and tear as you get farther and
+`k               farther apart.  You are wipped.  The pain in so intense
+`k                    you black out.  Then....
+`k
+@do `s01 is streached`xto`xdeath 
+@do enemy is the`xrack
+@do goto die
+@end
+
+@label die
+@readfile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+
+@do move 3 24
+@do write
+`r0                                                                           `x
+
+  @do X is `p24
+  @do Y is `p25
+  @do money / 2
+  @do `p02 is `p03 (give 'em max hit points)
+  @do `p20 is `p01
+  @do `p20 / 5
+  @do `p01 - `p20
+  @do MAP is `p27
+  @do dead is 1
+  @update_update
+
+  @do talk `4Newsflash:`0`x`n`x`2was`x`s01`xby`x`0`e`2! all
+  @do addlog
+  `0`n`2 was `s01 by `0`e`2!
+  @routine seperate in gametxt.ref
+@do move 3 24
+@do write
+`4You've been `s01. `k
+
+@pauseoff
+@show
+`r0`c
+[34C[0mÜÜÜÛÛÛÛÛÛÛÛÛÜÜÜ
+[29CÜÛÛ[1;30;47m°°°°[0;47mÛ[1;30m°[0;47mÛÛÛÛÛÛÛÛÛÛÛ[40mÜ
+[28CÛ[1;30;47m°°°°[0;47mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[40mÝ
+[27CÛ[1;30;47m°±±°[0;47mÛÛÛÛÛÛÛÛ[1;30mÞÜ[0;47mÛÛÛÛÛÛÛÛÛ[40mÛ
+[19CÜÜ[5CÞ[1;30;47m°±²°[0;47mÛÛÛÛÛÛÛÛÛÛ[1;30mÛÛßß[0;47mÛÛÛÛÛ[40m
+[A[50C[47m[1;30mÞ[0mÛÛ
+[18CßÜÛÝ    [1;30;47m°±²±°[0;47mÛÛÛÛÛ[1;30mÜ Ý[0;47mÛ[1;30mÞÛÜ[40m
+[A[43C[0;47mÛÛÛÛÛ[1;30mÜÜ²[0mÛ[47mÛ[1C[40mÜ[1;47m±²[40mÜ
+[17C[30mÜ[47m°[0;47mÛÛ[1mÜ[0mÜ   [1;30;47m±²±° [0;47mÛÛ[1;30m°[40m
+[A[34C[0;47mÛ[1;30m°°²ÝÜß°Ü[0;47mÛ[1;30m°[0;47mÛÛÛÛ[1;30mß²Ý[40m
+[A[52C[47m[0mÝ[1;30mÜ[47m°[0;47mÛ[1m±[40mÝ
+[17C[30;47m²±°[0;47mÛÛ[1mßÜ[0mÜ [1;30mÞ[0mÜßß    [1;30mßß²[47m[40m
+[A[37C[47m²²°Ü[40m²ßß[5C[0mßß[1;30;47mß[40mÞ[47m±°[0mß ß
+[18C[1;30mßßß[47m°°[0;47mÛ [1;30m°[1C[0mÜ    [31mß   [1;30m±²
+[A[38C[47m²²°[40m±   [0;31mß    [37mÞÝ[1;30;47m²[40mß
+[23C[0mß[1;30;47m°±[40mÝ[0mÞÛÜÜ    ÜÜ[1;30;47mß[0mßß[1;30mß
+[A[41C[47mß[0mÜÜ    ÜÛ[1;47mÜ[0mÝ[1;30mÝ
+[25C[47m²[40mß[0mÜ[1;30;47mÜ [0;47mÛÛ[1;30mßßÜÜß[0mÝ [1;30mÝ [0mÞ
+[A[42C[1;30;47mÜÜßß[0;47mÛÛÛÛ[1mßÜ[0mÜ
+[26CÛ[1;30;47mß[0;47mÛÛÛÛ[1;30mÜ²²Ü[0;47mÛ[2C[1;30;40m²Ü [47m°±[40m
+[A[44C[47m°[0;47mÛÛÛÛÛ[40mßß
+[27CßÛÛ[1;30;47m°²[40m²±²[47m°[0mÜÜ[1;30;47m°²±°±[40m²ß[0mß ßßßß
+[29C[1;30mÜÜ ßÜ [0mßß[1;30mßß ß[0mß[1;30mß Üß [47m²±[0mÜ
+[27CÜ[1;30;47m°±²[40mÝ ß [47m°[0mÝ[1;47m²Û[40mÞÛ[0mßÜ[1;30;47m[40m
+[A[43C[47m°[40mß Ü [47m±°[0;47mÛ[40mÜ
+[22C[1mÜ  [47m±°[30m°°[40mß [0mÜ [1;30mß [0mÜ Ü[1mÜ Ü[0mÜ Ü 
+[A[45C[1;30mßÜ[47m°[1C[0mß[47m  [1m±[40mÜÜÜ
+[19CÜ[47m²²±°°[30m±[0mÝß ÜÛÛ[1;30;47mÞ[0;47mÛ[40mÜÜ ÜÜÜÜÜ ÜÜ
+[A[45C[1;30;47m°±[0;47mÛÛ[40mÜ ß[1;30;47m±[37m°±[40mß[47m²[40m
+[19C[0;31mÜ [37mÜßÛ[1;30;47m±[40mß[0;33mÜ²ÜÜ [37mß[1;47mßÜ[30m[40m
+[A[34C[47mß[0;47mÛÛÛ[1;30mÜß[0;47mÛÛÛÛ [1mÜß[0mß [33mÜÜÝ[1;30mÞ
+[A[53C[47m±[0mÜÝ[31mÜ
+[17C°±²ÛÜ[37mß[1;30mß[0;31mÜÜÜ[33;41mßßßß[40mÜ [37mß[1;47mß[40m
+[A[35C[0;47mÛÛ[1;30mÜ±[40m²[47m±Ü[40mß[47mÜ[37mß[0mß [31mÜ
+[A[48C[33;41mßßß[31;40mÜÜ[1;30mß[0;31mÜÜÛ²±°
+
+                           `%You are DEAD!
+
+`k
+ @if `v03 is 0 then do
+   @begin
+@readfile prison.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@do delete prison.&playernum
+@writefile prison.&playernum
+`p21
+3
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+
+
+  @do map is `p27
+   @halt
+   @end
+
+ @pauseon
+
+ @do dead is 0
+
+ @if `p07 less 0 then do
+ @begin
+ @show
+
+  `4You open your eyes.
+
+Cell mates are all around you...Looks like they thought that they would
+  steal your stuff.  To bad for them.
+
+ @end
+
+ @if `p07 more -1 then do
+ @begin
+ @show
+`r0`c`%  `r1APPARENTLY DEATH ISN'T THE END.`r0
+
+  `2You open your eyes.
+
+Cell mates are all around you....`k
+     One says:  You are a kind soul and should not be here.
+`k     I have protected you but now I must go.`k
+ @end
+
+
+@show
+`c  `r1`%AWAKENING.`r0
+
+You wake up to find the prison cell's cold and icy chillness.
+`k
+	Hairy Bob looks into your eyes and says:  Get up sweet thing
+`k              
+  `2You lost `4half`2 the gold you were carrying and `4`p20`2 experience.
+
+`k
+@readfile prison.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@do delete prison.&playernum
+@writefile prison.&playernum
+`p21
+3
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@readfile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+
+  @loadmap `p27
+  @drawmap
+  @update
+@end
+
+@#FALL
+@do `s01 is pushed`xinto`xa`xpit
+@do enemy is an`xexecutioner
+@do goto die
+
+
+@#john
+@do moveback
+@show
+  
+      `r0`c`%  `r1  A Quarel  `r0`2
+
+Javet:  Now bring me prisoner 24601`l.`l.`l.Your time is up and your parol's
+        begun.  You know what that means?
+`k
+
+John:  Yes, it means I'm fr`we`we`we`we`we`we`we`wee
+`k
+
+Javet:  No!`w`l  That means you get your yellow ticket of leave`l.`l.`l.`l
+        you are a thief!
+`k
+
+John:  I stole a loaf of bread!
+`k
+
+Javet:  You robbed a HOUSE!
+`k
+
+John:  I broke a window P`wa`wa`wane`l.`l.`l.`lmy sister's child was close to death
+       `l`l`lwe were starving
+`k
+
+Javet:  You will starve again unless you know the meaning of the LAW!
+`k
+
+John:  I know the meaning of those nineteen years`l.`l.`l.`la slave`l.`l.
+       of the LA`wA`wA`wA`wA`wAW!
+`k
+
+Javet: FIVE YEARS FOR WHAT YOU DID`l.`l.`l.THE REST `lBECAUSE TO TRIED 
+       TO RUN!`l`l`l`l YES, 24601!!
+`k
+
+John:  My name is John Valjohn
+`k
+
+Jevet:  And I am`l.`l.`l.`lJevet.  Do not forget my name.`l`l`l`l`l
+        Do not forget me,`l 2`l4`l6`l0`l1!!
+`k
+`k
+
+@drawmap
+@update
+
+@#race
+@drawpart 58 13
+@drawpart 59 14
+@if prisinfo.&playernum exists false then do
+@begin
+@do saybar
+You cannot race until you have seen the warden!
+@run done
+@end
+
+@if prisinfo.&playernum exists true then do
+@begin
+;Vars for Prisinfo.&playernum
+@readfile Prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+
+@if `p21 not &time then do
+@begin
+@do `p05 + 1
+@do delete prisinfo.&playernum
+@writefile prisinfo.&playernum
+&time
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+@do goto rstart
+@end
+
+@if `p21 is &time then do
+@begin
+@do goto rstart
+@end
+
+@label rstart
+@do `p22 is 0
+@do saybar
+READY......SET.....GO!!!!!!
+
+@label go
+@do `p22 + 1
+
+@if `p22 is 38 then do
+@begin
+@run done
+@end
+
+@do `p20 is x
+@do `p21 is y
+@do x - 1
+@update
+@drawpart `p20 `p21
+@do goto go
+@end
+
+@#rocks
+@if prisinfo.&playernum exists false then do
+@begin
+@do saybar
+Go see the Warden!
+@end
+
+@if prisinfo.&playernum exists true then do
+@begin
+@readfile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+@if `p23 not &time then do
+@begin
+@do saybar
+You break up some rocks and get 5 more muscle
+@do `p04 + 5
+@do delete prisinfo.&playernum
+@writefile prisinfo.&playernum
+`p21
+`p22
+&time
+`p24
+`p25
+`p26
+`p27
+@
+@end
+
+@if `p23 is &time then do saybar
+You have already broken enough rocks today
+@end
+
+@#gym
+@readfile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+@if `p22 not &time then do
+@begin
+@do saybar
+You do exercises and gain 5 more muscle
+@do `p04 + 5
+@do delete prisinfo.&playernum
+@writefile prisinfo.&playernum
+`p21
+&time
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+@end
+
+@if `p22 is &time then do saybar
+You have already worked out enough today
+@end
+
+@#tunnel
+@busy
+@readfile prison.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+
+@if `p24 is 0 then do
+@begin
+@do saybar
+Hmmmm....This area would be great for tunneling...
+@key
+@do saybar
+If you only had something to dig with
+@end
+
+@if `p25 more 4 then do
+@label out
+@begin
+@do saybar
+Finaly this tunnel is finished!
+@key
+@do x is 30
+@do y is 4
+@do map is 1289
+@loadmap 1289
+@drawmap
+@update
+@do delete prisinfo.&playernum
+@do `p01 + 1000
+@do `p03 + 10
+@do `p19 + 2
+@do money + 100
+@do saybar
+You feel a little different now that you are out of Prison
+@run done
+@end
+
+
+@if `p24 is 1 then do
+@begin
+
+@if `p25 more 4 then do
+@begin
+@goto out
+@end
+
+@if `p25 less 5 then do
+@show
+`r0`c`%  `r1  Digging for Freedom  `r0`2
+
+                  How many turns would you like to dig for?
+
+@do `v01 is 1
+@choice
+>`p11 4999 5000 turns
+>`p11 3999 4000 turns
+>`p11 2999 3000 turns
+>`p11 1999 2000 turns
+>`p11 999  1000 turns
+Leave
+@
+
+@if responce is 6 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do
+@begin
+@do `p11 - 5000
+@do delete prison.&playernum
+@do `p25 + 5
+@writefile prison.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@run tunnel
+@end
+ 
+@if responce is 2 then do
+@begin
+@do `p11 - 4000
+@do delete prison.&playernum
+@do `p25 + 4
+@writefile prison.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@run tunnel
+@end
+
+@if responce is 3 then do
+@begin
+@do `p11 - 3000
+@do delete prison.&playernum
+@do `p25 + 3
+@writefile prison.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@run tunnel
+@end
+
+@if responce is 4 then do
+@begin
+@do `p11 - 2000
+@do delete prison.&playernum
+@do `p25 + 2
+@writefile prison.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@run tunnel
+@end
+
+@if responce is 5 then do
+@begin
+@do `p11 - 1000
+@do delete prison.&playernum
+@do `p25 + 1
+@writefile prison.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`s02
+`s01
+@
+@run tunnel
+@end
+
+@#codax
+@do moveback
+@show
+
+	`r0`c`%`r1  What! You again?!  `r0
+
+  `$Codax is that you?	`k
+
+  `1C`3o`5d`7a`9x`2:  Yup.  I finaly got locked up.`k
+
+  `$Why?	`k
+
+  `1C`3o`5d`7a`9x`2:  Well, I was minding my own bussiness going through all
+     the places I established when this cop jumped me and put my in here`k
+
+  `$You still havn't answered my question`k
+
+  `1C`3o`5d`7a`9x`2:  They said`k<sniff>`k that I put myself in to many`k
+      <sniff> Igms <WAAAAAAAAA>`k
+
+  `$SERVES YOU RIGHT YOU VAIN PEACE OF BELAR
+`k
+
+@DRAWMAP
+@UPDATE
+
+@#bobmad
+@readfile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+@do delete prisinfo.&playernum
+@writefile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+&time
+`p27
+@
+@drawmap
+@update
+@drawpart 32 2
+@drawpart 51 3
+@drawpart 67 7
+@drawpart 26 2
+@drawpart 27 2
+@drawpart 34 3
+@drawpart 51 2
+@drawpart 27 3
+@update
+@do saybar
+Bob pushes you away for your unwelcome advance
+
+@#bobglad
+@readfile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+@do delete prisinfo.&playernum
+@writefile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+&time
+`p27
+@
+@update
+@drawmap
+@drawpart 32 2
+@drawpart 51 3
+@drawpart 67 7
+@drawpart 26 2
+@drawpart 27 2
+@drawpart 34 3
+@drawpart 51 2
+@drawpart 27 3
+@update
+
+@#bob
+@do moveback
+@readfile prisinfo.&playernum
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+@
+@show
+
+  `r0`c`r1`%  Chatting up Bob   `r0`2
+
+   Bob looks over at you.  He has hair all over his body.  He smiles a crooked
+ toothed grin.
+
+@do `v01 is 1
+@choice
+<`p26 &time Whisper Sweet nothings
+>&time `p26 Kiss him
+>&time `p26 Give him a massage
+>&time `p26 Hug him
+>&time `p26 Grab his butt
+>&time `p26 Sit him on your lap
+>&time `p26 French Him
+>&time `p26 Make him pleasure you
+Pleasure Bob
+Nevermind
+@
+
+@if responce is 8 then do
+@begin
+@if `p08 < 20 then do
+@begin
+@show
+`c`2
+    You push Bob onto the bed!`l.`l.`l.  He quickly gets up and then
+  beat the living heck out of you!`k
+  `4`bHIT POINTS GO DOWN TO 1`k  Charm goes down 3
+@do `p02 is 1
+@do `p08 - 3
+@run bobmad
+@end
+
+@if `p08 > 19 then do
+@begin
+@show
+`r0`c  `r1  Bedding with Bob  `r0`2
+
+  You push Bob onto the bed!`l.`l.`l.  He smiles invitingly!`k
+     You enjoy him for all that he has!`k
+        Hit Points Maxed!`k  Dodge plus 1!`k  Lays plus 1`k
+@do `p02 is `p03
+@do `p05 + 1
+@do `p34 + 1
+@run bobglad
+@end
+@end
+
+@if responce is 1 then do
+@begin
+@show
+`c`2
+    You start telling Bob everthing you like about him.`k
+         Charm goes up 1
+@do `p08 + 1
+@run bobglad
+@end
+
+@if responce is 7 then do
+@begin
+@if `p08 < 13 then do goto bobmad
+@if `p08 > 12 then do
+@begin
+@Show
+`c`2`k
+
+ You grab Bob by the waist and pull him toward you.`k
+      You force you face on his and you easy his lips open with yours
+`k       You move your tounge in and wave it around in his mouth`l.`l.`l.
+`k           He does the same!  Charm goes up 9
+@do `p08 + 9
+@run bobglad 
+@end
+@end
+
+@if responce is 6 then do
+@begin
+@if `p08 < 10 then do goto bobmad
+@if `p08 > 9 then do
+@begin
+@show
+`c`2
+  You sit Bob on your lap`l.`l.`l.`l.He laughs hartily and kisses you on
+  the cheek`k  Charm + 8
+@run bobglad
+@end
+@end
+
+@if responce is 5 then do
+@begin
+@if `p08 < 8 then do goto bobmad
+@if `p08 > 7 then do
+@begin
+@show
+`c`2
+  You take both hands and plant them firmly on Bob buttux.  You rub a second
+`l.`l.`l.`l.Then Bob Smiles at you and blows you a kiss!
+Charm + 6
+`k
+@do `p08 + 6
+@run bobglad
+@end
+@end
+
+@if responce is 4 then do
+@begin
+@if `p08 < 5 then do goto bobmad
+@if `p08 > 4 then do
+@begin
+@show
+`c`2
+  You give Bob a great big hug!`k  Bob hugs you back!
+  Charm + 2`k
+@do `p08 + 2
+@run bobglad
+@end
+@end
+
+@if responce is 3 then do
+@begin
+@if `p08 < 3 then do goto bobmad
+@if `p08 > 2 then do
+@begin
+@show
+`c`2
+ You give Bob a massage`l.`l"Ummm`l.`l.Ohhhh`l.`lOh yeah right there"
+   Bob loves it!  Charm + 3
+`k
+@do `p08 + 3
+@run bobglad
+@end
+@end
+
+@if responce is 2 then do
+@begin
+@show
+`c`2
+You lean over and give bob a kiss on the cheek and`l.`l.`l.He blushes`k
+ Charm goes up 1`k
+@do `p08 + 1
+@run bobglad
+@end
+
+
+@if responce is 10 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 9 then do
+@begin
+@do `p20 random 7 1
+@if `p20 is 1 then `s01 is Dig`xnear`xthe`xred`xrock
+@if `p20 is 2 then `s01 is Persistance`xthe`xkey`xto`xopening`xthe`xlock
+@if `p20 is 3 then `s01 is You`xdon't`xalways`xescape`xwhen`xyou`xkill`xthe`xwaden
+@if `p20 is 4 then `s01 is Using`xthe`xspoon`xis`xthe`xonly`xway`xto`xtunnel`xout
+@if `p20 is 5 then `s01 is Codax`xis`xa`xreally`xgreat`xguy!
+@if `p20 is 6 then `s01 is If`xyou`xuse`xthe`xsmackrod`xdon't`xtry`xto`xjust`xwalk`xout`xthe`xfront`xgate
+@if `p20 is 7 then `s01 is If`xyou`xloose`xa`xfight`xyou`xdon't`xdie`xyou`xjust`xloose`xa`xstrike
+
+@do `p20 random 5 1
+@if `p20 is 1 then `s02 is licks`xyour`xear
+@if `p20 is 2 then `s02 is pinches`xyour`xbut
+@if `p20 is 3 then `s02 is kisses`xyou`xon`xthe`xlips
+@if `p20 is 4 then `s02 is takes`xfull`xadvantage`xof`xyour`xbody
+@if `p20 is 5 then `s02 is sits`xyou`xon`xhis`xlap
+
+@show
+`c`2
+Bob's face lights up, then he `0`s02`2.`k
+  Bob's face then saddens.
+         "That is the niceset thing anyone has
+             ever done for me" he continues "I'll tell you a secret!"`k
+
+"`s01"
+`k
+@do `p02 is `p03
+@run bobglad
+@end
+
+@#done
+
+
+;Vars for Prisitem.&playernum
+;var1 = Travel Potions			(`p20)(`i50)
+;Var2 = Flute				(`p21)(`i07)
+;Var3 = mystic eye  			(`p22)(`i83)
+;var4 = Loose screw			(`p23)(`i94)
+;var5 = Mypron Groon			(`p24)(`i95)
+;var6 = Skystaff Base			(`p25)(`i22)
+;var7 = skystaff Middle			(`p26)(`i23)
+;var8 = skystaff Top			(`p27)(`i24)
+;var9 = skystaff Gemstone		(`p28)(`i25)
+;var10= wizards wand			(`p29)(`i56)
+
+@#giveitem
+@readfile prisitem.&playernum
+`i50
+`i07
+`i83
+`i94
+`i95
+`i22
+`i23
+`i24
+`i25
+`i56
+@
+@do delete prisitem.&playernum
+
+@#takeitem
+@writefile prisitem.&playernum
+`i50
+`i07
+`i83
+`i94
+`i95
+`i22
+`i23
+`i24
+`i25
+`i56
+@
+@do `i50 is 0
+@do `i07 is 0
+@do `i83 is 0
+@do `i94 is 0
+@do `i95 is 0
+@do `i22 is 0
+@do `i23 is 0
+@do `i24 is 0
+@do `i25 is 0
+@do `i56 is 0
+
+

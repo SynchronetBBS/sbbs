@@ -1,0 +1,82 @@
+; Script file NPCGOSIP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:41 2001
+
+@DECLARE gossip 000000184
+@DECLARE notalk 000002622
+@NOCHECK
+; End of .REF index
+
+
+@#Gossip
+@dataload npc/npcvd.idf `p70 `p21
+@if `p21 > 0 then do
+        @begin
+;Don't ALWAYS have to tell the player this.  ;-) let them get VD, mohahaha!
+        @if `p71 > 0 then do                ;can't take 2 npcs so forget telling.
+                @begin
+                @do goto notalk 
+                @end
+        @Do `p21 random 6 1
+        @if `p21 is 1 then do
+                @begin
+                @do saybar
+`$`s01: `%I have `@VD`%  `!:`@(  `k
+                @do saybar
+`$`s01: `%Can you please bring me to a healer that can help me? [Y/n]
+                @DO READSPECIAL `s03 YN
+                @if `s03 is Y then do
+                        @begin
+                        @do saybar
+`$`s01: `%Thank-you very much, take me there now please.`k
+                        @datasave npc/npchere.idf `p70 &playernum
+                        @bitset `t50 2 1
+                        @do `p71 is `p70
+                        @end
+                @do `p20 is 1
+                @drawmap
+                @do moveback
+                @update
+                @closescript
+                @end
+        @end
+@dataload npc/npctaxes.idf `p70 `p21
+@if `p21 > 0 then do
+        @begin
+        @if `p71 > 0 then do            ;can't take 2 npcs so forget telling.
+                @begin
+                @do goto notalk 
+                @end
+        @dataload npc/npc-`p71.idf &playernum `p27
+        @if `p27 < 4 then do            ;will not got with strangers. :)
+                @begin
+                @do goto notalk 
+                @end
+        @Do `p21 random 6 1
+        @if `p21 is 1 then do
+                @begin
+                @do saybar
+`$`s01: `%I haven't paid my taxes yet, i need help getting there.`!:`@(  `k
+                @do saybar
+`$`s01: `%Would you please bring me to the place to pay taxes? [Y/n]
+                @DO READSPECIAL `s03 YN
+                @if `s03 is Y then do
+                        @begin
+                        @do saybar
+`$`s01: `%Thank-you very much, take me there now please.
+                        @datasave npc/npchere.idf `p70 &playernum
+                        @bitset `t50 3 1
+                        @do `p71 is `p70
+                        @end
+                @do `p20 is 1
+                @drawmap
+                @do moveback
+                @update
+                @closescript
+                @end
+        @end
+
+@label notalk
+@do `p20 is 0
+@drawmap
+@do moveback
+@update
+@closescript

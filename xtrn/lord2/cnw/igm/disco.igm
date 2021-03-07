@@ -1,0 +1,28 @@
+
+                  G-Dogg's Disco Hall by MK Technologies
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4G`7-`6Dogg's `2D`3i`#s`$c`0o `7Hall `3by `8Hades `4Software
+
+replacescreen: 1277 1 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0G-Dogg's Disco Hall is the first IGM from Hades Software. Hope ya enjoy
+     enjoy it! If ya like this IGM, visit the official home of Hades
+     Software - Darkside BBS!!! The number is (732) 251-4931

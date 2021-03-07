@@ -1,0 +1,48 @@
+; Script file WW2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE monster1 000000180
+@DECLARE fight 000000682
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+Big Boy
+;string said when you see him
+He is HUGE, wait... its a BOMB!
+;power move kill string
+Nice cloud!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+shoots bullets|55
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+55
+;gold reward
+120
+;experience
+120
+;hit points
+120
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+ 
+ 
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do goto monster1

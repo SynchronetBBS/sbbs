@@ -1,0 +1,1781 @@
+; Script file SCVNGR.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:28 2001
+
+@DECLARE done 000001004
+@DECLARE store 000001015
+@DECLARE pixie 000001265
+@DECLARE pix 000001847
+@DECLARE horn 000001908
+@DECLARE hornwin 000002589
+@DECLARE dragon 000002664
+@DECLARE scale 000003367
+@DECLARE talon1 000003518
+@DECLARE scale1 000003610
+@DECLARE bblade 000003697
+@DECLARE talon 000003776
+@DECLARE bsword 000003927
+@DECLARE found1 000004064
+@DECLARE codhat 000004276
+@DECLARE codknob 000004458
+@DECLARE codhelm 000004651
+@DECLARE regknob 000004850
+@DECLARE vomit 000005373
+@DECLARE cleric 000005498
+@DECLARE sign 000009018
+@DECLARE sign2 000009115
+@DECLARE slip 000009218
+@DECLARE whore 000009272
+@DECLARE trashman 000011220
+@DECLARE thing 000012728
+@DECLARE codax 000016898
+@DECLARE getquest 000017073
+@DECLARE gone 000022406
+@DECLARE finish 000022605
+@DECLARE youlose 000029361
+@NOCHECK
+; End of .REF index
+
+;Scavenger Hunt by Codax and Dragon's Den Ultd  v 1.03
+@#done
+
+@#store
+@offmap
+@do moveback
+@show
+`r0`c  `r1  A secret Shop  `r0`2
+
+  `0"Welcome to my secret shop!"`2 says a small man behind a counter
+           `0"What would you like?"
+
+@buymanager
+1
+77
+81
+82
+86
+92
+99
+@
+@drawmap
+@update
+
+
+@#pixie
+@fight
+;name
+Trixy the wierd Pixie
+;string said when you see him
+`0"Eat my dust looser"
+;power move kill string
+Someone should have told her to get some Silver Potions!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+throws pixie dust on you|300
+smacks you|100
+flashes you|50
+Right wings ya|100
+NONE|NONE
+;defense
+10
+;gold reward
+2500
+;experience
+1000
+;hit points
+20500
+;if win: ref file|name or NONE
+SCVNGR.REF|PIX
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#PIX
+@do `i39 + 1
+@do quebar
+You find a crushed `+39
+
+@#horn
+@do `p20 random 50 1
+@if `p20 not 1 then do
+@begin
+@run fight in fightne.ref
+@end
+
+@if `p20 is 1 then do
+@begin
+@fight
+;name
+Bash-Noser
+;string said when you see him
+`0A strage Triceritops charges at you 
+;power move kill string
+Your horn will make me some money!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Poops on you|100
+Horn rams ya|150
+Stomps ya|200
+Charges|100
+NONE|NONE
+;defense
+900
+;gold reward
+2000
+;experience
+1500
+;hit points
+5000
+;if win: ref file|name or NONE
+SCVNGR.REF|hornwin
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@end
+
+@#hornwin
+@do `i79 + 1
+@do quebar
+You rip it's horn off as a momento!
+
+@#dragon
+@do `p20 random 2 1
+@if `p20 is 1 then `s01 is TALON1
+@if `p20 is 2 then `s01 is SCALE1
+@fight
+;name
+Green Dragon
+;string said when you see him
+`2You are engulfed in shadow as a `0Green`2 Dragon Flies down to kill you!
+;power move kill string
+You stoped him from dragon his butt elsewhere!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Shoots Acid|500
+Tail smakcs you|100
+Breaths on you|50
+Summons Gail|100
+NONE|NONE
+;defense
+1000
+;gold reward
+5000
+;experience
+1000
+;hit points
+9000
+;if win: ref file|name or NONE
+SCVNGR.REF|`s01
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#scale
+@do `p20 random 50 1
+@if `p20 not 1 then do
+@begin
+@run fight in fightnw.ref
+@end
+
+@if `p20 is 1 then do
+@begin
+@run dragon
+@end
+
+@#talon1
+@do `i79 + 1
+@do quebar
+You tear off one of the dragon's talons as a momento
+
+@#scale1
+@do `i79 + 1
+@do quebar
+You rip some scales off the dragon as a momento
+
+@#bblade
+@do `i79 + 1
+@do quebar
+You find a `i79 just lying on the ground
+
+@#talon
+@do `p20 random 50 1
+@if `p20 not 1 then do
+@begin
+@run fight in fightnw.ref
+@end
+
+@if `p20 is 1 then do
+@begin
+@run dragon
+@end
+
+@#bsword
+@do moveback
+@if `i88 > 0 then do
+@begin
+@do goto found1
+@end
+
+@do `p20 random 5 1
+@if `p20 not 1 then do
+@begin
+@label found1
+@do saybar
+You search through the garbage and find`l.`l.`l.`0Nothing
+@end
+
+@if `p20 is 1 then do
+@begin
+@do `i88 + 1
+@do saybar
+You search through the garbage and find`l.`l.`l.`0a `+88
+@end
+
+@#codhat
+@do `p20 random 50 1
+@if `p20 not 1 then do
+@begin
+@run fight in fightne.ref
+@end
+
+@if `p20 is 1 then do
+@begin
+@do `i89 + 1
+@do quebar
+You find a `+89
+@end
+
+@#codknob
+@do moveback
+@if `i90 > 0 then do
+@begin
+@do saybar
+There is nothing there
+@end
+
+@if `i90 is 0 then do
+@begin
+@do `i90 + 1
+@do saybar
+You find a `+90 in the tree
+@end
+
+@#codhelm
+@do `p20 random 50 1
+@if `p20 not 1 then do
+@begin
+@run fightsw.ref
+@end
+
+@if `p20 is 1 then do
+@begin
+@do `i91 + 1
+@do quebar
+You find a `+91 just lying on the ground!
+@end
+
+@#regknob
+@do moveback
+@if `i93 > 0 then do
+@begin
+@do saybar
+I don't want to do business with you!
+@end
+@if `i93 is 0 then do
+@begin
+@show
+`r0`c  `r1  For Sale  `r0`2
+
+   "Hey Buddy...." a shady figure says "Would you like a `+93?"
+@do `v01 is 1
+@choice
+<money 100 Yes
+No
+Leave
+@
+@if responce not 1 then do
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do
+@begin
+@do `i93 + 1
+@show
+`\`\`\`\`2
+Ok Here you are....That's 100 dollars!
+`k
+@do money - 100
+@drawmap
+@update
+@end
+@end
+
+@#vomit
+@do `97 + 1
+@do `p08 - 1
+@do saybar
+Slip in a pile of puke!   Some goes into your backpack!  Charm goes down
+
+@#cleric
+@do moveback
+@if money less 50 then do
+@begin
+@do saybar
+Leave me alone!
+@run done
+@end
+
+@if money more 49 then do
+@begin
+
+@do `p20 random 25 1
+
+@if `p20 is 25 then do
+@begin
+@do `i98 + 1
+@do saybar
+Take this ancient rune...It is not safe for me to have!
+@end
+
+@if `p20 is 1 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Every Time you talk to me you loose money
+@end
+
+@if `p20 is 2 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  I'm not really a cleric...but a theif
+@end
+
+@if `p20 is 3 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  I have information about where to find some secret items
+@end
+
+@if `p20 is 4 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Have you been to the place where the path looks like an
+@key
+@do saybar
+arrow is sticking outta persons head?
+@end
+
+@if `p20 is 5 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Rarity is found in strange places, like oval mountains!
+@end
+
+@if `p20 is 6 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  I hear you can find bits of Dragons near Arisville!
+@end
+
+@if `p20 is 7 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  There is just about a 1 in 200 chance of finding secrets!
+@end
+
+@if `p20 is 8 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Thingy and me are friends, he steals more tho! 
+@end
+
+@if `p20 is 9 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  I hate Codax so much he looses his stuff everywhere!
+@end
+
+@if `p20 is 10 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  If I could find the Dragon's Talon I might be unstopable!
+@end
+
+@if `p20 is 11 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Dragon's Den BBS....Nope never heard of it.
+@end
+
+@if `p20 is 12 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Haha I just stole `$$50`% from you!
+@end
+
+@if `p20 is 13 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  I hear there is a war brewing!
+@end
+
+@if `p20 is 14 then do
+@begin
+@do money - 50
+@do quebar
+Dishonest Cleric:  I love stoning that crazy bum, Codax!
+@end
+
+@if `p20 is 15 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Power is my kinda guy!
+@end
+
+@if `p20 is 16 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  What is it with the Dragon and Phoenix War anyway?!?
+@end
+
+@if `p20 is 17 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  SSlKni asdie noasdf ot!!
+@end
+
+@if `p20 is 18 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Codax is a Doornob!
+@end
+
+@if `p20 is 19 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Dragons...Phoenix who cares about their silly war!
+@end
+
+@if `p20 is 20 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  I have to go to "The Pond"...maybe south of "The Pond"!
+@end
+
+@if `p20 is 21 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  You are so strong...I'll bet you have `p04 muscle!
+@end
+
+@if `p20 is 22 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  You have `p18 quest-points!  You must know the world!
+@end
+
+@if `p20 is 23 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  Hmmm....a level `p09 warrior pretty strong.
+@end
+
+@if `p20 is 24 then do
+@begin
+@do money - 50
+@do saybar
+Dishonest Cleric:  I hate everything!
+@end
+
+@end
+
+@#sign
+@do moveback
+@do saybar
+<----Codax's Scavenger Hunter's Paradise  ^Castle Coldrake
+
+@#sign2
+@do moveback
+@do saybar
+Rare Items for a limited time Get them while they're `b`4HOT`%!!!
+
+@#slip
+@do saybar
+You slip in a pile of garbage
+
+@#WHORE
+@if sexmale is 0 then do
+  @begin
+@do moveback
+  @do saybar
+Leave me Alone!
+  @closescript
+  @end
+@if `v06 is 1 then do
+  @begin
+@do moveback
+@do saybar
+Leave me alone  
+@closescript
+  @end
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A kinky looking woman pulls your arm.  Speak with her? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+  @begin
+  @if `07 < 5 then do
+    @begin
+    @do saybar
+You brutally kick her in the face.
+    @closescript
+    @end
+  @do saybar
+You push her away.  Poor lost soul.
+   @closescript
+  @end
+@pauseoff
+@displayfile scvngr3.ans nopause
+@show
+`r0`c  `r1`% Close encounters with the whore kind  `r0
+
+`0  "Looking for a good time, sir?  Only `$$25`0." `2she drolls.
+
+	Not a bad price for a QT like her....but with all the trash
+            
+              Every where....well....
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Why not?  Daddy needs to relax a little bit.
+Not today.
+@if response is 1 then do
+  @begin
+  @if money < 25 then do
+    @begin
+    @show
+`\`\  `2You lack the funds for a girl right now.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - 25
+  @do `p20 is random 3 1
+  @if `p20 is 1 then do
+    @begin
+    @do `p12 is 1
+    @end
+  @do `p34 + 1
+  @show
+`\`\  `2The two of you lie down on some trashy matress.
+
+`k`c  `r1  All Aboard  `r0
+
+`2  You remove her garments - her skin is soft and beautiful
+ what a wonderful girl for only $25 dollars!
+
+`k  It is over quickly.  Your reverie is interrupted by the sound of wretching
+  in a corner.  She seems sick.
+
+  `4THERE IS A 33 PERCENT CHANCE THAT YOU JUST CAUGHT SOMETHING.
+
+`k
+  @drawmap
+  @update
+  @do saybar
+You put your pants back on.
+  @closescript
+  @end
+
+@show
+`\`\  `$"I do not desire your services right now, woman," `2you inform
+  her.
+
+`k
+@do moveback
+@drawmap
+@update
+
+@#trashman
+@do moveback
+@show
+`r0`c    `r1  Talk about a grunge look!  `r0`0
+
+ "Howdy there <HACK> what do you want from me <GHACK>?"`$`\`k
+ "I am on a quest!  I have come to the understanding you may have`k
+  something I need!"`0`\`k
+ "Why would you come to me?"`$`\`k
+ "Some wierdo told me you collect Stuff"`0`\`k
+ "Well who ever he is, is right!`l`l`l`l  I am TRASHMAN!!!!<GHACK>
+  You name it I got it.  As a matter 'o <HACK><SNORT> I'll trade you for
+  some rare stuff!"`k
+
+@do `v01 is 1
+@choice
+>`i79 0 A `+79 for a `+88
+>`i89 0 A `+89 for a `+80
+>`i98 0 A `+98 for a `+86
+>`i92 0 A `+92 for a `+81
+>`i80 0 A `+80 for a `+57
+Leave
+@
+
+@if responce is 1 then do
+@begin
+@do `i79 - 1
+@do `i88 + 1
+@show
+`\`\`\`\`\`\`\
+
+  `0"Here you go!  One `+79 for a `+88"`k
+@drawmap
+@update
+@end
+
+@if responce is 2 then do
+@begin
+@do `i89 - 1
+@do `i80 + 1
+@show
+`\`\`\`\`\`\`\`0
+   "Here you go!  One `+89 for a `+80"`k
+@drawmap
+@update
+@end
+
+@if responce is 3 then do
+@begin
+@do `i98 - 1
+@do `i86 + 1
+@show
+`\`\`\`\`\`\`\`0
+   "Here you go!  One `+98 for a `+86"`k
+@drawmap
+@update
+@end
+
+@if responce is 4 then do
+@begin
+@do `i92 - 1
+@do `i81 + 1
+@show
+`\`\`\`\`\`\`\`0
+  "Here you go!  One `+92 for a `+81"`k
+@drawmap
+@update
+@end
+
+@if responce is 5 then do
+@begin
+@do `i80 - 1
+@do `i57 + 1
+@Show
+`\`\`\`\`\`\`\`0
+  "Here you go!  One `+80 for a `+57"`k
+@drawmap
+@update
+@end
+
+@if responce is 6 then do
+@begin
+@drawmap
+@update
+@end
+
+@#thing
+@do moveback
+
+@if `p31 less 1 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  I take 500 gold from you, when I feel like it. Sometimes I will
+@key
+@do saybar
+give you advice....but only if you have some quest oppurtunities left!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p31 more 0 then do
+@begin
+@if money < 500 then do
+@begin
+@do saybar
+Thingy spits on your face!
+@run done
+@end
+
+@if money > 499 then do
+@begin
+
+@do money - 500
+@do `p20 random 20 1
+@if `p20 is 1 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Codax feeds me very well!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 2 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  You don't look so tough, you only have `p04 muscle!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 3 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Howza bouta kiss?  After all you do have `p08 charm!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 4 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  19 miles west 1 mile north, maybe?
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 5 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  I hear Trashman collect garbage, and has some neat stuff too!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 6 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  My master like to sing "The Roof, The Roof, The Roof is on fire.."
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 7 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  My master needs to go to the shrine of, um, Battos, maybe?
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 8 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Did you know my master is Purple?!?
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 9 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy: Hear part of the Legend of the Purple Dragon at Dragon's Den Housing
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 10 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Be careful when falling into pits.
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 11 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  My master told me not to tell you the code, codax_dragon@juno.com
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 12 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Help me Obi wan `n`% you're my only hope <bleep>! Like my R2?
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 13 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Watch out for Trashman's Daughter!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 14 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Some guy will give you an ancient rune, use it wisely
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 15 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  110 north and 265 west of Arrisville Entrance slim chance!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 16 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Find the store!  It has stuff!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 17 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  I love Doornobs...I need to go back to BoneTown!
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 18 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  I wonder if Codax will have to go to GreenTree Prison  
+@key
+@drawmap
+@update
+@run done
+@end
+
+@if `p20 is 19 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  The way to the Secret shop is....12 west 2 north!
+@key
+@drawmap
+@update
+@run done
+@end
+  
+@if `p20 is 20 then do
+@begin
+@displayfile scvngr2.ans nopause
+@do saybar
+Thingy:  Dragon's Talon, nope havn't seen it near Dragon Mountains.
+@key
+@drawmap
+@update
+@run done
+@end
+@end
+@end
+
+@#codax
+@do moveback
+@if scvngr.&playernum exists false then do
+@begin
+@run getquest
+@end
+
+@if scvngr.&playernum exists true then do
+@begin
+@run finish
+@end
+
+
+@#getquest
+@if scvngr.num exists false then do
+@begin
+@writefile scvngr.num
+57
+@
+@end
+
+@if scvngr.num exists true then do
+@begin
+@readfile scvngr.num
+`p20
+@
+@displayfile scvngr1.ans NOPAUSE
+@do saybar
+Codax:  Hello traveler!  I am Codax.  I seem to have lost something.....
+@do write
+`r1
+@clearblock 22 24
+@do move 3 22
+@do write
+`r1  `%Will you help me find it?`r0`2 [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+@begin
+@clearblock 22 22
+@do saybar
+Codax:  Fine!  Then go!!
+@key
+@do goto gone
+@end
+
+@if `s01 is Y then do
+@begin
+@do write
+`r1
+@clearblock 22 22
+@do move 3 22
+@do write
+`r1  `%What kind of Reward do you want?`r0`2 [`0M`2oney, m`0U`2scle, `0D`2odge, `0E`2xp] :`x
+@do readspecial `s01 MUDE
+
+@if `s01 is M then `p24 is 0
+@if `s01 is U then `p24 is 1
+@if `s01 is D then `p24 is 2
+@if `s01 is E then `p24 is 3
+
+@do `p28 random 10 1
+@do `p30 is `p01
+@do `p30 / `p18 ;money
+@do `p30 * 10
+@do `p30 * `p28
+
+@do `p28 random 15 5 ;muscle dodge
+
+@do `p27 random `p18 `p09 ;experience
+@do `p27 * 10
+@do `p21 random `p20 1 ;item
+
+@do `p22 random 5 1 ;days
+
+@do `p29 is &time
+
+@do `p29 + `p22 ;date
+
+@if `p24 is 0 then `p25 is `p30
+@if `p24 is 1 then `p25 is `p28
+@if `p24 is 2 then `p25 is `p28
+@if `p24 is 3 then `p25 is `p27
+
+;item chooser routine
+@if `p21 is 1 then `s01 is `+01
+@if `p21 is 2 then `s01 is `+02
+@if `p21 is 3 then `s01 is `+03
+@if `p21 is 4 then `s01 is `+04
+@if `p21 is 5 then `s01 is `+05
+@if `p21 is 6 then `s01 is `+06
+@if `p21 is 7 then `s01 is `+07
+@if `p21 is 8 then `s01 is `+08
+@if `p21 is 9 then `s01 is `+09
+@if `p21 is 10 then `s01 is `+10
+@if `p21 is 11 then `s01 is `+11
+@if `p21 is 12 then `s01 is `+12
+@if `p21 is 13 then `s01 is `+13
+@if `p21 is 14 then `s01 is `+14
+@if `p21 is 15 then `s01 is `+15
+@if `p21 is 16 then `s01 is `+16
+@if `p21 is 17 then `s01 is `+17
+@if `p21 is 18 then `s01 is `+18
+@if `p21 is 19 then `s01 is `+19
+@if `p21 is 20 then `s01 is `+20
+@if `p21 is 21 then `s01 is `+21
+@if `p21 is 22 then `s01 is `+22
+@if `p21 is 23 then `s01 is `+23
+@if `p21 is 24 then `s01 is `+24
+@if `p21 is 25 then `s01 is `+25
+@if `p21 is 26 then `s01 is `+26
+@if `p21 is 27 then `s01 is `+27
+@if `p21 is 28 then `s01 is `+28
+@if `p21 is 29 then `s01 is `+29
+@if `p21 is 30 then `s01 is `+30
+@if `p21 is 31 then `s01 is `+31
+@if `p21 is 32 then `s01 is `+32
+@if `p21 is 33 then `s01 is `+33
+@if `p21 is 34 then `s01 is `+34
+@if `p21 is 35 then `s01 is `+35
+@if `p21 is 36 then `s01 is `+36
+@if `p21 is 37 then `s01 is `+37
+@if `p21 is 38 then `s01 is `+38
+@if `p21 is 39 then `s01 is `+39
+@if `p21 is 40 then `s01 is `+40
+@if `p21 is 41 then `s01 is `+41
+@if `p21 is 42 then `s01 is `+42
+@if `p21 is 43 then `s01 is `+43
+@if `p21 is 44 then `s01 is `+44
+@if `p21 is 45 then `s01 is `+45
+@if `p21 is 46 then `s01 is `+46
+@if `p21 is 47 then `s01 is `+47
+@if `p21 is 48 then `s01 is `+48
+@if `p21 is 49 then `s01 is `+49
+@if `p21 is 50 then `s01 is `+50
+@if `p21 is 51 then `s01 is `+51
+@if `p21 is 52 then `s01 is `+52
+@if `p21 is 53 then `s01 is `+53
+@if `p21 is 54 then `s01 is `+54
+@if `p21 is 55 then `s01 is `+55
+@if `p21 is 56 then `s01 is `+56
+@if `p21 is 57 then `s01 is `+57
+@if `p21 is 58 then `s01 is `+58
+@if `p21 is 59 then `s01 is `+59
+@if `p21 is 60 then `s01 is `+60
+@if `p21 is 61 then `s01 is `+61
+@if `p21 is 62 then `s01 is `+62
+@if `p21 is 63 then `s01 is `+63
+@if `p21 is 64 then `s01 is `+64
+@if `p21 is 65 then `s01 is `+65
+@if `p21 is 66 then `s01 is `+66
+@if `p21 is 67 then `s01 is `+67
+@if `p21 is 68 then `s01 is `+68
+@if `p21 is 69 then `s01 is `+69
+@if `p21 is 70 then `s01 is `+70
+@if `p21 is 71 then `s01 is `+71
+@if `p21 is 72 then `s01 is `+72
+@if `p21 is 73 then `s01 is `+73
+@if `p21 is 74 then `s01 is `+74
+@if `p21 is 75 then `s01 is `+75
+@if `p21 is 76 then `s01 is `+76
+@if `p21 is 77 then `s01 is `+77
+@if `p21 is 78 then `s01 is `+78
+@if `p21 is 79 then `s01 is `+79
+@if `p21 is 80 then `s01 is `+80
+@if `p21 is 81 then `s01 is `+81
+@if `p21 is 82 then `s01 is `+82
+@if `p21 is 83 then `s01 is `+83
+@if `p21 is 84 then `s01 is `+84
+@if `p21 is 85 then `s01 is `+85
+@if `p21 is 86 then `s01 is `+86
+@if `p21 is 87 then `s01 is `+87
+@if `p21 is 88 then `s01 is `+88
+@if `p21 is 89 then `s01 is `+89
+@if `p21 is 90 then `s01 is `+90
+@if `p21 is 91 then `s01 is `+91
+@if `p21 is 92 then `s01 is `+92
+@if `p21 is 93 then `s01 is `+93
+@if `p21 is 94 then `s01 is `+94
+@if `p21 is 95 then `s01 is `+95
+@if `p21 is 96 then `s01 is `+96
+@if `p21 is 97 then `s01 is `+97
+@if `p21 is 98 then `s01 is `+98
+@if `p21 is 99 then `s01 is `+99
+
+@if `p24 is 0 then `s02 is `$Gold
+@if `p24 is 1 then `s02 is `0Muscle
+@if `p24 is 2 then `s02 is `%Dodge
+@if `p24 is 3 then `s02 is `0Experience
+
+@writefile scvngr.&playernum
+`p29
+`p21
+`p24
+`p25
+`s01
+`s02
+@
+
+@clearblock 22 22
+@do saybar
+Codax:  Ok now that that is settled......
+@key
+@do saybar
+You will need to find me my `0`s01`% in `0`p22`% days.
+@key
+@do saybar
+Codax:  Your reward will be `0`p25 `s02`% if you bring it on time
+@key
+@do saybar
+but if you are late, I will take away `0`p25 `s02`%!
+@key
+@drawmap
+@update
+@do quebar
+Codax:  And one more thing, don't touch my pet, Thingy!
+@end
+@end
+
+@#gone
+@drawmap
+@update
+
+;Scvngr.&playernum
+;final date for quest
+;item number
+;type of reward (0=Money, 1=Muscle, 2=Dodge, 3=Experience)
+;amount of reward
+;item string
+;reward string
+
+@#finish
+@do `p30 is 0
+@readfile scvngr.&playernum
+`p20
+`p21
+`p22
+`p23
+`s01
+`s02
+@if `p21 is 1 then do
+@begin
+@if `i01 > 0 then `p30 is 1
+@end
+@if `p21 is 2 then do
+@begin
+@if `i02 > 0 then `p30 is 1
+@end
+@if `p21 is 3 then do
+@begin
+@if `i03 > 0 then `p30 is 1
+@end
+@if `p21 is 4 then do
+@begin
+@if `i04 > 0 then `p30 is 1
+@end
+@if `p21 is 5 then do
+@begin
+@if `i05 > 0 then `p30 is 1
+@end
+@if `p21 is 6 then do
+@begin
+@if `i06 > 0 then `p30 is 1
+@end
+@if `p21 is 7 then do
+@begin
+@if `i07 > 0 then `p30 is 1
+@end
+@if `p21 is 8 then do
+@begin
+@if `i08 > 0 then `p30 is 1
+@end
+@if `p21 is 9 then do
+@begin
+@if `i09 > 0 then `p30 is 1
+@end
+@if `p21 is 10 then do
+@begin
+@if `i10 > 0 then `p30 is 1
+@end
+@if `p21 is 11 then do
+@begin
+@if `i11 > 0 then `p30 is 1
+@end
+@if `p21 is 12 then do
+@begin
+@if `i12 > 0 then `p30 is 1
+@end
+@if `p21 is 13 then do
+@begin
+@if `i13 > 0 then `p30 is 1
+@end
+@if `p21 is 14 then do
+@begin
+@if `i14 > 0 then `p30 is 1
+@end
+@if `p21 is 15 then do
+@begin
+@if `i15 > 0 then `p30 is 1
+@end
+@if `p21 is 16 then do
+@begin
+@if `i16 > 0 then `p30 is 1
+@end
+@if `p21 is 17 then do
+@begin
+@if `i17 > 0 then `p30 is 1
+@end
+@if `p21 is 18 then do
+@begin
+@if `i18 > 0 then `p30 is 1
+@end
+@if `p21 is 19 then do
+@begin
+@if `i19 > 0 then `p30 is 1
+@end
+@if `p21 is 20 then do
+@begin
+@if `i20 > 0 then `p30 is 1
+@end
+@if `p21 is 21 then do
+@begin
+@if `i21 > 0 then `p30 is 1
+@end
+@if `p21 is 22 then do
+@begin
+@if `i22 > 0 then `p30 is 1
+@end
+@if `p21 is 23 then do
+@begin
+@if `i23 > 0 then `p30 is 1
+@end
+@if `p21 is 24 then do
+@begin
+@if `i24 > 0 then `p30 is 1
+@end
+@if `p21 is 25 then do
+@begin
+@if `i25 > 0 then `p30 is 1
+@end
+@if `p21 is 26 then do
+@begin
+@if `i26 > 0 then `p30 is 1
+@end
+@if `p21 is 27 then do
+@begin
+@if `i27 > 0 then `p30 is 1
+@end
+@if `p21 is 28 then do
+@begin
+@if `i28 > 0 then `p30 is 1
+@end
+@if `p21 is 29 then do
+@begin
+@if `i29 > 0 then `p30 is 1
+@end
+@if `p21 is 30 then do
+@begin
+@if `i30 > 0 then `p30 is 1
+@end
+@if `p21 is 31 then do
+@begin
+@if `i31 > 0 then `p30 is 1
+@end
+@if `p21 is 32 then do
+@begin
+@if `i32 > 0 then `p30 is 1
+@end
+@if `p21 is 33 then do
+@begin
+@if `i33 > 0 then `p30 is 1
+@end
+@if `p21 is 34 then do
+@begin
+@if `i34 > 0 then `p30 is 1
+@end
+@if `p21 is 35 then do
+@begin
+@if `i35 > 0 then `p30 is 1
+@end
+@if `p21 is 36 then do
+@begin
+@if `i36 > 0 then `p30 is 1
+@end
+@if `p21 is 37 then do
+@begin
+@if `i37 > 0 then `p30 is 1
+@end
+@if `p21 is 38 then do
+@begin
+@if `i38 > 0 then `p30 is 1
+@end
+@if `p21 is 39 then do
+@begin
+@if `i39 > 0 then `p30 is 1
+@end
+@if `p21 is 40 then do
+@begin
+@if `i40 > 0 then `p30 is 1
+@end
+@if `p21 is 41 then do
+@begin
+@if `i41 > 0 then `p30 is 1
+@end
+@if `p21 is 42 then do
+@begin
+@if `i42 > 0 then `p30 is 1
+@end
+@if `p21 is 43 then do
+@begin
+@if `i43 > 0 then `p30 is 1
+@end
+@if `p21 is 44 then do
+@begin
+@if `i44 > 0 then `p30 is 1
+@end
+@if `p21 is 45 then do
+@begin
+@if `i45 > 0 then `p30 is 1
+@end
+@if `p21 is 46 then do
+@begin
+@if `i46 > 0 then `p30 is 1
+@end
+@if `p21 is 47 then do
+@begin
+@if `i47 > 0 then `p30 is 1
+@end
+@if `p21 is 48 then do
+@begin
+@if `i48 > 0 then `p30 is 1
+@end
+@if `p21 is 49 then do
+@begin
+@if `i49 > 0 then `p30 is 1
+@end
+@if `p21 is 50 then do
+@begin
+@if `i50 > 0 then `p30 is 1
+@end
+@if `p21 is 51 then do
+@begin
+@if `i51 > 0 then `p30 is 1
+@end
+@if `p21 is 52 then do
+@begin
+@if `i52 > 0 then `p30 is 1
+@end
+@if `p21 is 53 then do
+@begin
+@if `i53 > 0 then `p30 is 1
+@end
+@if `p21 is 54 then do
+@begin
+@if `i54 > 0 then `p30 is 1
+@end
+@if `p21 is 55 then do
+@begin
+@if `i55 > 0 then `p30 is 1
+@end
+@if `p21 is 56 then do
+@begin
+@if `i56 > 0 then `p30 is 1
+@end
+@if `p21 is 57 then do
+@begin
+@if `i57 > 0 then `p30 is 1
+@end
+@if `p21 is 58 then do
+@begin
+@if `i58 > 0 then `p30 is 1
+@end
+@if `p21 is 59 then do
+@begin
+@if `i59 > 0 then `p30 is 1
+@end
+@if `p21 is 60 then do
+@begin
+@if `i60 > 0 then `p30 is 1
+@end
+@if `p21 is 61 then do
+@begin
+@if `i61 > 0 then `p30 is 1
+@end
+@if `p21 is 62 then do
+@begin
+@if `i62 > 0 then `p30 is 1
+@end
+@if `p21 is 63 then do
+@begin
+@if `i63 > 0 then `p30 is 1
+@end
+@if `p21 is 64 then do
+@begin
+@if `i64 > 0 then `p30 is 1
+@end
+@if `p21 is 65 then do
+@begin
+@if `i65 > 0 then `p30 is 1
+@end
+@if `p21 is 66 then do
+@begin
+@if `i66 > 0 then `p30 is 1
+@end
+@if `p21 is 67 then do
+@begin
+@if `i67 > 0 then `p30 is 1
+@end
+@if `p21 is 68 then do
+@begin
+@if `i68 > 0 then `p30 is 1
+@end
+@if `p21 is 69 then do
+@begin
+@if `i69 > 0 then `p30 is 1
+@end
+@if `p21 is 70 then do
+@begin
+@if `i70 > 0 then `p30 is 1
+@end
+@if `p21 is 71 then do
+@begin
+@if `i71 > 0 then `p30 is 1
+@end
+@if `p21 is 72 then do
+@begin
+@if `i72 > 0 then `p30 is 1
+@end
+@if `p21 is 73 then do
+@begin
+@if `i73 > 0 then `p30 is 1
+@end
+@if `p21 is 74 then do
+@begin
+@if `i74 > 0 then `p30 is 1
+@end
+@if `p21 is 75 then do
+@begin
+@if `i75 > 0 then `p30 is 1
+@end
+@if `p21 is 76 then do
+@begin
+@if `i76 > 0 then `p30 is 1
+@end
+@if `p21 is 77 then do
+@begin
+@if `i77 > 0 then `p30 is 1
+@end
+@if `p21 is 78 then do
+@begin
+@if `i78 > 0 then `p30 is 1
+@end
+@if `p21 is 79 then do
+@begin
+@if `i79 > 0 then `p30 is 1
+@end
+@if `p21 is 80 then do
+@begin
+@if `i80 > 0 then `p30 is 1
+@end
+@if `p21 is 81 then do
+@begin
+@if `i81 > 0 then `p30 is 1
+@end
+@if `p21 is 82 then do
+@begin
+@if `i82 > 0 then `p30 is 1
+@end
+@if `p21 is 83 then do
+@begin
+@if `i83 > 0 then `p30 is 1
+@end
+@if `p21 is 84 then do
+@begin
+@if `i84 > 0 then `p30 is 1
+@end
+@if `p21 is 85 then do
+@begin
+@if `i85 > 0 then `p30 is 1
+@end
+@if `p21 is 86 then do
+@begin
+@if `i86 > 0 then `p30 is 1
+@end
+@if `p21 is 87 then do
+@begin
+@if `i87 > 0 then `p30 is 1
+@end
+@if `p21 is 88 then do
+@begin
+@if `i88 > 0 then `p30 is 1
+@end
+@if `p21 is 89 then do
+@begin
+@if `i89 > 0 then `p30 is 1
+@end
+@if `p21 is 90 then do
+@begin
+@if `i90 > 0 then `p30 is 1
+@end
+@if `p21 is 91 then do
+@begin
+@if `i91 > 0 then `p30 is 1
+@end
+@if `p21 is 92 then do
+@begin
+@if `i92 > 0 then `p30 is 1
+@end
+@if `p21 is 93 then do
+@begin
+@if `i93 > 0 then `p30 is 1
+@end
+@if `p21 is 94 then do
+@begin
+@if `i94 > 0 then `p30 is 1
+@end
+@if `p21 is 95 then do
+@begin
+@if `i95 > 0 then `p30 is 1
+@end
+@if `p21 is 96 then do
+@begin
+@if `i96 > 0 then `p30 is 1
+@end
+@if `p21 is 97 then do
+@begin
+@if `i97 > 0 then `p30 is 1
+@end
+@if `p21 is 98 then do
+@begin
+@if `i98 > 0 then `p30 is 1
+@end
+@if `p21 is 99 then do
+@begin
+@if `i99 > 0 then `p30 is 1
+@end
+
+@if `p20 < &time then do
+@begin
+@label youlose
+@if `p22 is 0 then money - `p23
+@if `p22 is 1 then `p04 - `p23
+@if `p22 is 2 then `p05 - `p23
+@if `p22 is 3 then `p01 - `p23
+@do `p02 is 1
+@do delete scvngr.&playernum
+@displayfile scvngr1.ans NOPAUSE
+@clearblock 21 24
+@do saybar
+Codax: WHAT HAPPENED?  YOU DIDN'T BRING ME WHAT YOU PROMISED!
+@do move 3 22
+@do write
+`r1`%Codax smacks you with his huge Talons!`k
+@drawmap
+@update
+@do quebar
+You feel weak and you lost `0`p23 `s02`%!
+@run done
+@end
+
+
+@if `p20 > &time then do
+@begin
+@do `v01 is 1
+@displayfile scvngr1.ans NOPAUSE
+@clearblock 21 24
+@do move 50 18
+@do write
+`%Codax:  Do you have my
+@do move 58 19
+@do write
+`s01
+@do move 3 21
+@choice
+=`p30 1 Yeah
+Not yet, but it's coming
+Sorry, howz about letting me outta the bet?
+@
+@if responce is 2 then do
+@begin
+@run gone
+@end
+
+@if responce is 3 then do
+@begin
+@do goto youlose
+@end
+
+@if responce is 1 then do
+@begin
+@if `p22 is 0 then money + `p23
+@if `p22 is 1 then `p04 + `p23
+@if `p22 is 2 then `p05 + `p23
+@if `p22 is 3 then `p01 + `p23
+
+@if `p21 is 1 then `i01 - 1
+@if `p21 is 2 then `i02 - 1
+@if `p21 is 3 then `i03 - 1
+@if `p21 is 4 then `i04 - 1
+@if `p21 is 5 then `i05 - 1
+@if `p21 is 6 then `i06 - 1
+@if `p21 is 7 then `i07 - 1
+@if `p21 is 8 then `i08 - 1
+@if `p21 is 9 then `i09 - 1
+@if `p21 is 10 then `i10 - 1
+@if `p21 is 11 then `i11 - 1
+@if `p21 is 12 then `i12 - 1
+@if `p21 is 13 then `i13 - 1
+@if `p21 is 14 then `i14 - 1
+@if `p21 is 15 then `i15 - 1
+@if `p21 is 16 then `i16 - 1
+@if `p21 is 17 then `i17 - 1
+@if `p21 is 18 then `i18 - 1
+@if `p21 is 19 then `i19 - 1
+@if `p21 is 20 then `i20 - 1
+@if `p21 is 21 then `i21 - 1
+@if `p21 is 22 then `i22 - 1
+@if `p21 is 23 then `i23 - 1
+@if `p21 is 24 then `i24 - 1
+@if `p21 is 25 then `i25 - 1
+@if `p21 is 26 then `i26 - 1
+@if `p21 is 27 then `i27 - 1
+@if `p21 is 28 then `i28 - 1
+@if `p21 is 29 then `i29 - 1
+@if `p21 is 30 then `i30 - 1
+@if `p21 is 31 then `i31 - 1
+@if `p21 is 32 then `i32 - 1
+@if `p21 is 33 then `i33 - 1
+@if `p21 is 34 then `i34 - 1
+@if `p21 is 35 then `i35 - 1
+@if `p21 is 36 then `i36 - 1
+@if `p21 is 37 then `i37 - 1
+@if `p21 is 38 then `i38 - 1
+@if `p21 is 39 then `i39 - 1
+@if `p21 is 40 then `i40 - 1
+@if `p21 is 41 then `i41 - 1
+@if `p21 is 42 then `i42 - 1
+@if `p21 is 43 then `i43 - 1
+@if `p21 is 44 then `i44 - 1
+@if `p21 is 45 then `i45 - 1
+@if `p21 is 46 then `i46 - 1
+@if `p21 is 47 then `i47 - 1
+@if `p21 is 48 then `i48 - 1
+@if `p21 is 49 then `i49 - 1
+@if `p21 is 50 then `i50 - 1
+@if `p21 is 51 then `i51 - 1
+@if `p21 is 52 then `i52 - 1
+@if `p21 is 53 then `i53 - 1
+@if `p21 is 54 then `i54 - 1
+@if `p21 is 55 then `i55 - 1
+@if `p21 is 56 then `i56 - 1
+@if `p21 is 57 then `i57 - 1
+@if `p21 is 58 then `i58 - 1
+@if `p21 is 59 then `i59 - 1
+@if `p21 is 60 then `i60 - 1
+@if `p21 is 61 then `i61 - 1
+@if `p21 is 62 then `i62 - 1
+@if `p21 is 63 then `i63 - 1
+@if `p21 is 64 then `i64 - 1
+@if `p21 is 65 then `i65 - 1
+@if `p21 is 66 then `i66 - 1
+@if `p21 is 67 then `i67 - 1
+@if `p21 is 68 then `i68 - 1
+@if `p21 is 69 then `i69 - 1
+@if `p21 is 70 then `i70 - 1
+@if `p21 is 71 then `i71 - 1
+@if `p21 is 72 then `i72 - 1
+@if `p21 is 73 then `i73 - 1
+@if `p21 is 74 then `i74 - 1
+@if `p21 is 75 then `i75 - 1
+@if `p21 is 76 then `i76 - 1
+@if `p21 is 77 then `i76 - 1
+@if `p21 is 78 then `i78 - 1
+@if `p21 is 79 then `i79 - 1
+@if `p21 is 80 then `i80 - 1
+@if `p21 is 81 then `i81 - 1
+@if `p21 is 82 then `i82 - 1
+@if `p21 is 83 then `i83 - 1
+@if `p21 is 84 then `i84 - 1
+@if `p21 is 85 then `i85 - 1
+@if `p21 is 86 then `i86 - 1
+@if `p21 is 87 then `i87 - 1
+@if `p21 is 88 then `i88 - 1
+@if `p21 is 89 then `i89 - 1
+@if `p21 is 90 then `i90 - 1
+@if `p21 is 91 then `i91 - 1
+@if `p21 is 92 then `i92 - 1
+@if `p21 is 93 then `i93 - 1
+@if `p21 is 94 then `i94 - 1
+@if `p21 is 95 then `i95 - 1
+@if `p21 is 96 then `i96 - 1
+@if `p21 is 97 then `i97 - 1
+@if `p21 is 98 then `i98 - 1
+@if `p21 is 99 then `i99 - 1
+@do delete scvngr.&playernum
+@clearblock 21 24
+@do saybar
+Codax:  You brought my `s01`%!!!!!  Thank you so much!!!
+@key
+@do saybar
+Codax:  Now for your reward...that would be `0`p23 `s02!`%  Here ya go! 
+@key
+@drawmap
+@update
+@do quebar
+Codax:  Thanx again!
+@end
+@end

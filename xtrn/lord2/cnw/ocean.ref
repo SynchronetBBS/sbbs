@@ -1,0 +1,1117 @@
+; Script file OCEAN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE caught 000001197
+@DECLARE typhoon 000002355
+@DECLARE seafights 000002570
+@DECLARE westsea 000002736
+@DECLARE pirate0 000003370
+@DECLARE under0 000003445
+@DECLARE searand 000003523
+@DECLARE buoy 000004724
+@DECLARE castaway 000005159
+@DECLARE getscuba 000006126
+@DECLARE flee 000006540
+@DECLARE treasure 000006662
+@DECLARE chest 000007210
+@DECLARE kraken 000007753
+@DECLARE seafight1 000008579
+@DECLARE seafight2 000009148
+@DECLARE seafight3 000009672
+@DECLARE seafight4 000010212
+@DECLARE seafight5 000010760
+@DECLARE seafight6 000011311
+@DECLARE seafight7 000011823
+@DECLARE pirate1 000012387
+@DECLARE pirate2 000012950
+@DECLARE pirate3 000013550
+@DECLARE pirate4 000014110
+@DECLARE pirate5 000014649
+@DECLARE pirate6 000015230
+@DECLARE undersea1 000015787
+@DECLARE undersea2 000016352
+@DECLARE undersea3 000016922
+@DECLARE undersea4 000017494
+@DECLARE undersea5 000018085
+@DECLARE ashore 000018653
+@DECLARE kfight 000019040
+@DECLARE kdead 000019688
+@NOCHECK
+; End of .REF index
+
+;--------------------------MONTER/RANDOM REFS-------------------------------
+@#caught
+@busy
+@dataload ocean3.idf &playernum `p20
+@do `t70 is `p20
+@if bitcheck `t70 1 1 then do
+ @begin
+ @show
+`r0`c  `r1`% BENEATH THE WAVES `r0
+
+  `2As the maelstrom drags you down deeper and deeper, you dig frantically
+  in your sack for that scuba tank you found earlier. You put it on and
+  gratefully suck in air.
+  
+  At the sea bottom, an astonishing sight greets your eyes. A gigantic shell
+  as big as a small town lies there. Phosphorescent algae give enough light 
+  to see by, so you decide to explore inside...
+
+ <Hit Enter to contine>
+@do readspecial `s01 c
+@if `s01 is c then do
+ @begin
+ @end
+ @do map is 631
+ @do x is 1
+ @do y is 1
+ @loadmap &map
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @show
+`r0`c  `r1`% GLUB-GLUB-GLUB! `r0
+
+  `2Just before the last bubble of air escapes your lungs, you catch a
+  glimpse of a strange underwater world. If only you'd had a scuba tank with
+  you....                                                
+
+ <Hit Enter to contine>
+@do readspecial `s01 c
+@if `s01 is c then do
+ @begin
+ @end
+@do enemy is the`xMaelstrom
+@run die in gametxt.ref
+@end
+@closescript
+
+@#typhoon
+@do `p20 is `p03
+@do `p20 / 10
+@do saybar
+Crashing Waves inflict `p20 damage!!
+@do `p02 - `p20
+@if `p02 less 1 then do
+ @begin
+ @do enemy is a`xtyphoon
+ @run die in gametxt.ref
+@closescript
+
+@#seafights
+@do `p20 random 6 1
+@if `p20 is 1 then do
+ @begin
+ @run SEARAND in OCEAN.REF
+ @end
+@busy
+@do `p20 random 7 1
+@do goto seafight`p20
+@closescript
+
+@#westsea
+;random messages for Great Western Ocean
+@do `p20 RANDOM 7 1
+@if `p20 is 1 then `s01 is Barnacle`xBill`xis`xan`xold`xfriend`xof`xPopeye's.
+@if `p20 is 2 then `s01 is You`xlisten`xto`xthe`xsinging`xof`xthe`xwhales.
+@if `p20 is 3 then `s01 is The`xdolphins`xcall`xto`xyou`xto`xcome`xand`xplay.
+@if `p20 is 4 then `s01 is The`xocean`xis`xcompletely`xempty`xand`xquiet.
+@if `p20 is 5 then `s01 is Could`xthe`xtale`xof`xthe`xgiant`xsquid`xbe`xtrue?
+@if `p20 is 6 then `s01 is The`xsun`xand`xthe`xbreeze`xare`xrefreshing.
+@if `p20 is 7 then `s01 is You`xwhistle`xan`xold`xsea`xchantey.
+@do saybar
+`s01
+@closescript
+
+@#pirate0
+@busy
+@do `p20 random 6 1
+@do goto pirate`p20
+@closescript
+
+@#under0
+@busy
+@do `p20 random 5 1
+@do goto undersea`p20
+@closescript
+
+@#SEARAND
+;Chance for alignment raise or drop
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2You see a lifeboat drifting nearby. Investigate? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  `%Aid the unfortunate  `r0
+
+  `0A boatload of refugees have no water and their boat is starting to sink
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Help the people out
+Victimize them further
+Leave
+@if response is 1 then do
+  @begin
+  @do `p07 + 1
+  @show
+`\`\  `2You share what water you can spare with them, and help them patch
+  their boat up enough to make it to shore.
+
+  `$YOUR ALIGNMENT GOES UP BY ONE!`b
+`\`k
+@drawmap
+@update
+  @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @do `p07 - 1
+  @show
+`\`\  `2You decide the world has too many refugees already, so you split open
+  their hull with your s&weapon and laugh as they drown.
+
+  `bYOUR ALIGNMENT GOES DOWN BY ONE!`0
+`\`k
+@drawmap
+@update
+  @closescript
+  @end
+@end
+@drawmap
+@update
+@do saybar
+You ignore the boat and continue on your way.
+
+;------------------------------HOTSPOTS-------------------------------------
+@#buoy
+@do moveback
+@busy
+@show
+`r0`c  `r1`% A marker buoy at sea `r0
+
+  `2ArrisVille           `$11`2 Leagues North and West
+  Sosen Village         `$8`2 Leagues North and East
+  FlagCity              `$6`2 Leagues South                         
+  Bone Town            `$11`2 Leagues South
+  DragonTooth Island   `$15`2 Leagues East
+  PortTown             `$29`2 Leagues East
+
+`k
+@drawmap
+@update
+@closescript
+
+@#castaway
+@do moveback
+@dataload ocean3.idf &playernum `p20
+@do `t70 is `p20
+@if bitcheck `t70 1 1 then do
+ @begin
+ @do saybar
+You find the bones of long-dead castaways
+ @closescript
+ @end
+@if bitcheck `t70 1 0 then do
+ @begin
+ @busy
+ @clear screen
+ @displayfile castaway.ans NOPAUSE
+ @key
+@fight
+;name
+Starving Castaway
+;string said when you see him
+With a gibbering howl, the wretch springs upon you...
+;power move kill string
+You put the creature out of it's misery
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+claws at you with 4-inch fingernails|230
+tries to bite a chunk out of you|230
+slashes with a sharpened clamshell|230
+NONE|NONE
+NONE|NONE
+;defense
+120
+;gold reward
+0
+;experience
+1280
+;hit points
+1080
+;if win: ref file|name or NONE
+OCEAN.REF|GETSCUBA
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+OCEAN.REF|FLEE
+@end
+@closescript
+
+@#GETSCUBA
+@busy
+@show
+`c
+  `2Having defeated the crazed cannibal, you go over the reef for anything
+  of possible value...
+
+  `0You find, of all things, a fully charged scuba tank.
+  
+  `%YOU RECEIVE TEN QUEST POINTS
+
+`k
+  
+@do `p18 + 10
+@dataload ocean3.idf &playernum `p20
+@do `t70 is `p20
+@bitset `t70 1 1
+@do `p20 is `t70
+@datasave ocean3.idf &playernum `p20
+@drawmap
+@update
+@closescript
+
+@#FLEE
+@drawmap
+@update
+@do quebar
+You have no choice but to run. Your cheeks burn with shame...
+@closescript
+
+@#TREASURE
+@do moveback
+@busy
+@show
+`r0`c `r1 It's a Treasure Chest `r0
+
+ `2You break open the pirates' treasure chest to see what spoils are there...
+@datanewday ocean2.idf
+@dataload ocean2.idf &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @show
+  
+ `2The chest is empty. Maybe they'll have some loot another day
+`k
+ @end
+@if `p20 is 0 then do
+ @begin
+ @do `p20 RANDOM 9 1
+ @do `p20 * 5
+ @do `p19 + `p20 
+ @datasave ocean2.idf &playernum 1
+ @show
+  
+ `0You find `$`p20 `0gems!!
+`k
+ @end
+@drawmap
+@update
+@closescript
+
+@#CHEST
+@do moveback
+@busy
+@show
+`r0`c `r1 The Treasure Chest `r0
+
+ `2You break open the pirates' treasure chest to see what spoils are there...
+@datanewday ocean.idf
+@dataload ocean.idf &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @show
+  
+ `2The chest is empty. Maybe they'll have some loot another day
+`k
+ @end
+@if `p20 is 0 then do
+ @begin
+ @do `p20 RANDOM 9 1
+ @do `p20 * 5
+ @do `p19 + `p20 
+ @datasave ocean.idf &playernum 1
+ @show
+  
+ `0You find `$`p20 `0gems!!
+`k
+ @end
+@drawmap
+@update
+@closescript
+
+@#KRAKEN
+@do moveback
+@dataload ocean3.idf &playernum `p20
+@do `t70 is `p20
+@if bitcheck `t70 2 1 then do
+ @begin
+ @drawmap
+ @update
+ @do saybar
+You find the empty lair of a now-dead monster
+ @closescript
+ @end
+@offmap
+@show
+`r0`c  `r1`% TERROR IN THE DEEP `r0
+
+  `2Uh-oh! Apparently this shell isn't quite as abandoned as you thought! 
+  It seems as if the legend of the giant squid has a basis in fact. The 
+  enormous Kraken lies here at the bottom of the sea, and YOU just woke it
+  up...
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Run like heck
+Fight the Kraken
+@if response is 1 then do
+ @begin
+ @run ashore in ocean.ref
+ @end
+@if response is 2 then do
+ @begin
+ @run Kfight in ocean.ref
+ @end
+@closescript
+
+;-------------------------------MONSTERS------------------------------------
+@#SEAFIGHT1
+@fight
+;name
+Great White Shark
+;string said when you see him
+You hear this "dum-da-dum-da" music...
+;power move kill string
+This is the one that didn't get away!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites with it's pearly whites|150
+rams you head on|100
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+500
+;experience
+300
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#SEAFIGHT2
+@fight
+;name
+Man O'War
+;string said when you see him
+A mighty ship of the line comes about
+;power move kill string
+You scuttled it!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+fires a 60-gun broadsides|120
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+75
+;gold reward
+950
+;experience
+280
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#SEAFIGHT3
+@fight
+;name
+Lamprey Eel
+;string said when you see him
+Eeww, Gross! A bloodsucking parasite
+;power move kill string
+Take that, Sucker!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+latches on with it's sucker|100
+sucks your blood|130
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+300
+;experience
+150
+;hit points
+300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#SEAFIGHT4
+@fight
+;name
+Ancient Mariner
+;string said when you see him
+Who is this greybeard loon?
+;power move kill string
+You've heard the story already
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+uses his hypnotic gaze|200
+tells his ghastly tale|130
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+75
+;gold reward
+450
+;experience
+280
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#SEAFIGHT5
+@fight
+;name
+Flying Dutchman
+;string said when you see him
+Out of the past comes an omen of doom
+;power move kill string
+They will wander no more
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+places a curse on you|180
+drains your life force|200
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+95
+;gold reward
+375
+;experience
+300
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#SEAFIGHT6
+@fight
+;name
+Seagull
+;string said when you see him
+A pesky bird harasses you
+;power move kill string
+You pluck out all it's feathers
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+pecks at you|100
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+200
+;experience
+100
+;hit points
+200
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#SEAFIGHT7
+@fight
+;name
+Captain Ahab
+;string said when you see him
+An insane whaling captain attacks you for no reason
+;power move kill string
+You feed him to the White Whale
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+throws a harpoon|125
+invokes the wrath of God|130
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+55
+;gold reward
+425
+;experience
+125
+;hit points
+399
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#PIRATE1
+@fight
+;name
+Irate Pirate
+;string said when you see him
+That "arr" sound is louder than ever...
+;power move kill string
+You chop him up into "pieces of eight"!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+chops with his cutlass|150
+fires a pistol ball|200
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+1005
+;experience
+500
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#PIRATE2
+@fight
+;name
+Long John Silver
+;string said when you see him
+You're warned by the thumping of a peg-leg behind you
+;power move kill string
+Now he needs a peg-everything.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+has his trained parrot dive-bomb you|200
+gags you with his filthy long-johns|150
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+75
+;gold reward
+500
+;experience
+500
+;hit points
+600
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#PIRATE3
+@fight
+;name
+Captain Blood
+;string said when you see him
+An unusually clean-looking pirate attacks
+;power move kill string
+You make him live up to his name
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+swings on a rope at you|175
+drops a sail over you|150
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+87
+;gold reward
+770
+;experience
+425
+;hit points
+550
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#PIRATE4
+@fight
+;name
+Captain Bligh
+;string said when you see him
+"This is mutiny!" you hear him bellow
+;power move kill string
+You throw him overboard!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+keelhauls you|190
+gives you fifty lashes|180
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+85
+;gold reward
+800
+;experience
+440
+;hit points
+770
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#PIRATE5
+@fight
+;name
+Software Pirate
+;string said when you see him
+This is a really, really sorry joke
+;power move kill string
+The police confiscate his computer
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hacks your password with a trojan horse|195
+cracks the registration code|150
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+75
+;gold reward
+500
+;experience
+300
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#PIRATE6
+@fight
+;name
+Eric the Red
+;string said when you see him
+A sea rover of the past confronts you
+;power move kill string
+Now he's "Eric the Dead"
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+swings a huge battle-ax|195
+butts with his horned helmet|150
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+85
+;gold reward
+1000
+;experience
+550
+;hit points
+800
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#UNDERSEA1
+@fight
+;name
+King Neptune
+;string said when you see him
+It's the king of the sea himself!
+;power move kill string
+The king is dead, long live the king
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+jabs with his Trident|300
+summons the elements|250
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+150
+;gold reward
+5000
+;experience
+1200
+;hit points
+1200
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+OCEAN.REF|ASHORE
+
+@#UNDERSEA2
+@fight
+;name
+Giant Clam
+;string said when you see him
+You put your foot in the wrong place
+;power move kill string
+You're left with a clammy feeling...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+clamps shut on you|225
+squirts disgusting clam juice|200
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+3000
+;experience
+800
+;hit points
+900
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+OCEAN.REF|ASHORE
+
+@#UNDERSEA3
+@fight
+;name
+Renegade U-Boat
+;string said when you see him
+For some, the war never ended
+;power move kill string
+You leave the shatterd hulk on the bottom
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+launches a torpedo|275
+drops a depth charge on you|300
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+125
+;gold reward
+4575
+;experience
+950
+;hit points
+1100
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+OCEAN.REF|ASHORE
+
+@#UNDERSEA4
+@fight
+;name
+Ugly Mermaid
+;string said when you see him
+And you thought all mermaids were beautiful...
+;power move kill string
+You decide to throw this one back
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+screeches her awful singing|225
+sickens you with her bad looks|200
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+145
+;gold reward
+3175
+;experience
+1010
+;hit points
+1050
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+OCEAN.REF|ASHORE
+
+@#UNDERSEA5
+@fight
+;name
+Sparky the Seal
+;string said when you see him
+This cheerful pest won't leave you alone
+;power move kill string
+Sparky has "UURRKK"d his last
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+bounces you on his nose|200
+gives you a slimy kiss|300
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+105
+;gold reward
+3388
+;experience
+882
+;hit points
+1098
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+OCEAN.REF|ASHORE
+
+@#ASHORE
+@busy
+@show
+`r0`c  `r1 ESCAPE FROM THE DEPTHS `r0
+
+  `2You ruefully admit that the undersea world is just too dangerous for you,
+  at least until you can become stronger. You follow an upward slope until
+  at last you break the surface by the shores of a tropical island.
+
+`k
+@do map is 558
+@do x is 43
+@do y is 18
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@#KFIGHT
+@clear screen
+@displayfile kraken.ans NOPAUSE
+@fight
+;name
+Kraken
+;string said when you see him
+The monster of the deep reaches out for you...
+;power move kill string
+Now he's just so much sushi!!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+crushes you in it's tentacles|500
+bites with it's beak|400
+spews poisoned ink|450
+NONE|NONE
+NONE|NONE
+;defense
+300
+;gold reward
+0
+;experience
+5000
+;hit points
+3000
+;if win: ref file|name or NONE
+OCEAN.REF|KDEAD
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+OCEAN.REF|ASHORE
+@closescript
+
+@#KDEAD
+@offmap
+@dataload ocean3.idf &playernum `p20
+@do `t70 is `p20
+@bitset `t70 2 1
+@do `p20 is `t70
+@datasave ocean3.idf &playernum `p20
+@do `p18 + 20
+@show
+`r0`c  `r1 VICTORY AT SEA `r0
+
+  `2You've defeated the toughest monster the sea has to offer!
+
+  `%YOU RECEIVE TWENTY QUEST POINTS!
+
+`k
+  `2With the monster dead, you find hidden in it's lair several magical
+  teleportation stones! You read the inscriptions...
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Northlands
+Khosi Village
+PukeWorld
+Snowy Pass
+BoneTown
+PortTown
+Desert Oasis
+@if response is 1 then do
+ @begin
+ @show 
+`\`\  `0You get carried away!   `k
+ @do map is 59
+ @do x is 36
+ @do y is 8
+ @loadmap &map
+ @drawmap
+ @update
+ @closescript
+ @end
+@if response is 2 then do
+ @begin
+ @show 
+`\`\  `0You get carried away!   `k
+ @do map is 195
+ @do x is 58
+ @do y is 14
+ @loadmap &map
+ @drawmap
+ @update
+ @closescript
+ @end
+@if response is 3 then do
+ @begin
+ @show 
+`\`\  `0You get carried away!   `k
+ @do map is 1512
+ @do x is 1
+ @do y is 1
+ @loadmap &map
+ @drawmap
+ @update
+ @closescript
+ @end
+@if response is 4 then do
+ @begin
+ @show 
+`\`\  `0You get carried away!   `k
+ @do map is 1498
+ @do x is 49
+ @do y is 6
+ @loadmap &map
+ @drawmap
+ @update
+ @closescript
+ @end
+@if response is 5 then do
+ @begin
+ @show 
+`\`\  `0You get carried away!   `k
+ @do map is 1572
+ @do x is 68
+ @do y is 5
+ @loadmap &map
+ @drawmap
+ @update
+ @closescript
+ @end
+@if response is 6 then do
+ @begin
+ @show 
+`\`\  `0You get carried away!   `k
+ @do map is 956
+ @do x is 11
+ @do y is 14
+ @loadmap &map
+ @drawmap
+ @update
+ @closescript
+ @end
+@if response is 7 then do
+ @begin
+ @show 
+`\`\  `0You get carried away!   `k
+ @do map is 1029
+ @do x is 27
+ @do y is 10
+ @loadmap &map
+ @drawmap
+ @update
+ @closescript
+ @end
+@closescript

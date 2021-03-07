@@ -1,0 +1,596 @@
+; Script file HOUSE1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE fountain 000000892
+@DECLARE washroom 000003470
+@DECLARE healme 000003519
+@DECLARE doorguard 000003735
+@DECLARE startg 000003764
+@DECLARE sign 000007217
+@DECLARE enter 000007533
+@DECLARE done 000010134
+@DECLARE letmein 000011889
+@DECLARE done 000011968
+@NOCHECK
+; End of .REF index
+
+;
+;     -----------------------------------------------
+;      Fortress Fear IGM for LORD II - The New World
+;     -----------------------------------------------
+;
+; House1.ref - Copyright 1997 Isaac Laurin and D/´rK /\/iGHT
+;                                        darkn@geocities.com
+;
+; If you copy any of this ref file I'll will personaly see
+; that an assassin is hired and sent after you! :) 
+; Also you must let me know by an email, or include my
+; name in your docs!
+;
+
+@#fountain
+@do moveback
+@datanewday fount.idf
+@dataload fount.idf &playernum `p20
+@IF `p20 IS 1 THEN DO
+@BEGIN
+@DO SAYBAR
+You've already used the fountain today!.  Try again tomorrow.
+@closescript
+@END
+@DO `v01 is 1
+@show
+`r0`c  `r1  The Fountain In The Secret Part Of The Inn  `r0
+
+  `2A sparkling fountain is before you. A voice wispers:
+  `0"What do you wish for?"`2
+
+@DO WRITE
+`x`x
+@CHOICE
+`$GOLD!
+Hitpoints
+Alignment
+Turns
+Gems
+`4World Domination
+@if response is 1 then do
+@begin
+@do `p20 RANDOM 3 1
+@if `p20 = 2 then do
+@begin
+@do money + 100
+@show
+`c`2You check your`$ gold`2 and see that you are `$$100`2 richer!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@show
+`c`4You check your gold and see that nothing happened!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@if response is 2 then do
+@begin
+@do `p20 RANDOM 30 1
+@if `p20 = 20 then do
+@begin
+@do `P03 + 2
+@show
+`c`2You check your hp and find that you have 2 more to your max!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@show
+`c`4You check your hp and find that nothing happened!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@if response is 3 then do
+@begin
+@do `p20 RANDOM 4 1
+@if `p20 = 3 then do
+@begin
+@do `P07 + 1
+@show
+`c`%You GET one alignment point!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@do `P07 - 1
+@show
+`c`4You LOSE one alignment point!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@if response is 4 then do
+@begin
+@do `p20 RANDOM 4 1
+@if `p20 = 3 then do
+@begin
+@do `P11 + 1000
+@show
+`c`2You GET 1000 more turns today!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@do `P11 - 50
+@show
+`c`4You LOSE 50 turns today!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@if response is 5 then do
+@begin
+@do `p20 RANDOM 4 1
+@if `p20 = 3 then do
+@begin
+@do `P19 + 3
+@show
+`c`2You GET three gems!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@show
+`c`4Nothing Happens`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@if response is 6 then do
+@begin
+@do `P02 = 1
+@show
+`c`2 A lightning bolt hits you! You lose a bunch of hp!`\
+ You can hear the gods laughing at you...`\`\
+ ...You and your greed!`\`\`k
+@datasave fount.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@#washroom
+@do saybar
+Ahhhhh...much better...
+
+@#HEALME
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Healing Statue  `r0
+
+  `2You place a hand on the statue and....
+
+  `%YOU ARE COMPLETEY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if ffhouse1.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 1 minute to vacate this house!" `2RoboDog barks.
+  @closescript
+  @end
+
+@readfile ffhouse1.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to RoboDog (TM), nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Programing Your RoboDog (TM) `r0
+
+  `2RoboDog snaps to attention when he sees you are going to address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$15000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your house - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your house to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your house - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ffhouse1.dat
+  @writefile ffhouse1.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of House #1 in Fortress Fear to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%House #1 in Fortress Fear`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your house back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your house - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ffhouse1.dat
+  @do `p30 is 22
+  @do `v40 is 15000
+  @routine widthdraw in vaults.ref
+  @do money + 15000
+  @show
+`\`\  `%HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%House #1 in Fortress Fear`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete ffhouse1.dat
+  @writefile ffhouse1.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the RoboDog promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if ffhouse1.dat exist false then do
+ @begin
+ @do saybar
+House #1 in Fortress Fear - For sale cheap, enquire inside.
+ @end 
+
+@if ffhouse1.dat exist true then do
+ @begin
+@readfile ffhouse1.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+@if ffhouse1.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2This beautiful house in Fortress Fear can be yours!
+  
+  Buy now and recieve the following bonuses:
+
+  `0* `2A healing statue that heals you!
+
+  `0* `2A wishing well!
+
+  `2The asking price is `$$20,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Purchase it.
+<&money 20000 Sigh wistfully and leave since you don't have enough.
+>&money 19999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if ffhouse1.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+  @if house2.dat exist true then do
+    @begin
+    @readfile house2.dat
+    `p20
+    `s01
+    @
+    ;load owner and current password
+
+    @if `p20 = &playernum then do
+      @begin
+      @show
+`\`\  `2You already own a house in `@Fortress Fear`2! Let someone else have
+  the chance to buy one!`\`\`k
+      @do goto done
+      @end
+   @end
+  @if house3.dat exist true then do
+    @begin
+    @readfile house3.dat
+    `p20
+    `s01
+    @
+    ;load owner and current password
+
+    @if `p20 = &playernum then do
+      @begin
+      @show
+`\`\  `2You already own a house in `@Fortress Fear`2! Let someone else have
+  the chance to buy one!`\`\`k
+      @do goto done
+      @end
+   @end
+  @if house4.dat exist true then do
+    @begin
+    @readfile house4.dat
+    `p20
+    `s01
+    @
+    ;load owner and current password
+
+    @if `p20 = &playernum then do
+      @begin
+      @show
+`\`\  `2You already own a house in `@Fortress Fear`2! Let someone else have
+  the chance to buy one!`\`\`k
+      @do goto done
+      @end
+   @end
+  @if house5.dat exist true then do
+    @begin
+    @readfile house5.dat
+    `p20
+    `s01
+    @
+    ;load owner and current password
+
+    @if `p20 = &playernum then do
+      @begin
+      @show
+`\`\  `2You already own a house in `@Fortress Fear`2! Let someone else have
+  the chance to buy one!`\`\`k
+      @do goto done
+      @end
+   @end
+  @writefile ffhouse1.dat
+&playernum
+NONE
+0
+0
+0
+0
+  @do `p30 is 22
+  @do `v40 is 20000
+  @routine deposit in vaults.ref
+    @do money - 20000
+    @do addlog
+  `0`n `2buys `%House #1 in Fortress Fear`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this house!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile ffhouse1.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete ffhouse1.dat
+    @do addlog
+  `%House #1 in Fortress Fear`2 was put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the RoboDog asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%House #1`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Your Fortress Fear House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 38
+@do y is 15
+@do map is 417
+@loadmap 417
+@do goto done
+@#done

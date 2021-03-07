@@ -1,0 +1,47 @@
+
+     Wizard's Tower 2.00 by James C. Jones, The Shadow BBS(850) 864-4292
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (2)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Add everything you could want to the Wizard's Tower in LORD2
+  Disco, Travel Agent, and, a bed. 
+
+  IGM WIZARD20.IGM
+
+  To uninstall, do the same thing again.
+
+ /////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `!Wizard's Tower 2.0 `2by `0James Jones The Shadow BBS 850-864-4292
+
+;replacescreen: 1175 1 noshow
+replacescreen: 1179 1 noshow
+
+replacescreen: 1176 2 noshow
+
+replacescreen: 1177 3 noshow
+
+replacescreen: 1178 4 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Add everything you could want to the Wizard's Tower in LORD2
+  `2Disco, Travel Agent, and, a bed.
+
+  `! Made by James C. Jones, The Shadow BBS 850-864-4292
+

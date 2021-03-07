@@ -1,0 +1,46 @@
+
+                The town of Andrew by Andreas Svendsen V1.00
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01a
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : I don't know!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (9)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (4)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM ANDREW.IGM
+
+  To uninstall, do the same thing again.
+
+  
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `@The town of Andrew `4by `$Andreas Svendsen
+replacescreen: 1564 1 show
+
+replacescreen: 1563 2 noshow
+
+replacescreen: 1565 3 show
+
+replacescreen: 1484 4 show
+
+replacescreen: 1194 5 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `4This is my fourth or fifth IGM. This IGM adds a new town...with a
+  `$few new shops...etc. If you have any questions or there are any
+  `4bugs, please E-mail me on Rolfas@online.no
+  `$I will answer everybody!!!!!!!!!!!

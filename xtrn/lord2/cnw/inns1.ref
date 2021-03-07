@@ -1,0 +1,887 @@
+; Script file INNS1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:28 2001
+
+@DECLARE whore1 000000561
+@DECLARE ponward 000001355
+@DECLARE psleep 000002958
+@DECLARE whore2 000003646
+@DECLARE fonward 000004446
+@DECLARE fsleep 000006043
+@DECLARE whore3 000006732
+@DECLARE fonward 000007527
+@DECLARE lsleep 000009048
+@DECLARE whore4 000009737
+@DECLARE sonward 000010541
+@DECLARE ssleep 000012149
+@DECLARE whore5 000012837
+@DECLARE fonward 000013714
+@DECLARE asleep 000015311
+@DECLARE ghost 000016028
+@NOCHECK
+; End of .REF index
+
+@#WHORE1
+;random things that happen walking around The Woodlog Inn
+@if sexmale is 0 then do
+  @begin
+  ;if they are female, don't run this... sorry girls, no female version
+  ;was written.
+  @closescript
+  @end
+@if `v06 is 1 then do
+  @begin
+  ;clean mode is on, lets get the hell out of this routine!!
+  @closescript
+  @end
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@if ninn3.dat exist true then do
+ @begin
+ @readfile ninn3.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+@do write
+`r0  `2One of your girls pulls your arm. Feel like some? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+  @do goto PONWARD
+  @end
+ @end
+@do write
+`r0  `2A gorgeous looking woman pulls your arm.  Speak with her? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@label PONWARD
+@if `s01 is N then do
+  @begin
+  @if `p07 < 5 then do
+    @begin
+    ;person is evil
+    @do saybar
+You brutally kick her in the face.
+    @closescript
+    @end
+  @do saybar
+You push her away.  Poor lost soul.
+   @closescript
+  @end
+@pauseoff
+@if ninn3b.dat exist false then do
+  @begin
+  @writefile ninn3b.dat
+25
+0
+  @end
+@readfile ninn3b.dat
+`p25
+`p27
+@
+@show
+`r0`c  `r1`% Close encounters with the whore kind  `r0
+
+@if ninn3.dat exist true then do
+ @begin
+ @readfile ninn3.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+  @show
+  `0"Oh, it's you, sir. Sorry. I didn't recognize you. Of course it's
+  free for you, sir."
+
+`k
+  @do goto PSLEEP
+  @end
+  @end
+  @show
+`0  "Looking for a good time, sir?  Only `$$`p25`0." `2she speaks
+  seductively.
+
+`2  She is one of the finest specimens of sexualty you have ever seen. 
+  Looking at her, contracted diseased seem a smile price to pay...
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Why not?  Daddy needs to relax a little bit.
+Not today.
+@if response is 1 then do
+  @begin
+  @if money < `p25 then do
+    @begin
+    @show
+`\`\  `2You lack the funds for a whore right now.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - `p25
+  @do `p27 + `p25
+  @do delete ninn3b.dat
+  @writefile ninn3b.dat
+`p25
+`p27
+  @
+  @readfile ninn3.dat
+`p20
+`s01
+@
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has slept with one of your girls, you pimp daddy! 
+  Cha-Ching!
+
+  @label PSLEEP
+  @do x is 43
+  @do y is 6
+  @do `p20 is random 5 1
+  @if `p20 is 1 then do
+    @begin
+    ;ha ha, user caught vd
+    @do `p12 is 1
+    @end
+  @do `p34 + 1
+  @show
+`\`\  `2She leads you to her bed.
+
+`k`c  `r1  All Aboard  `r0
+
+`2  She reaches for your belt buckle. Your hands make their way where 
+  they shouldn't. Things turn sweaty. You have a great time. Good sex.
+  Relief.
+
+`k  `4THERE IS A 20 PERCENT CHANCE THAT YOU JUST CAUGHT SOMETHING.
+
+`k
+  @drawmap
+  @update
+  @do saybar
+You put your pants back on.
+  @closescript
+  @end
+
+@show
+`\`\  `$"I do not desire your services right now, woman," `2you inform
+  her.
+
+`k
+@drawmap
+@update
+
+@#WHORE2
+;random things that happen walking around the Flagcity Inn
+@if sexmale is 0 then do
+  @begin
+  ;if they are female, don't run this... sorry girls, no female version
+  ;was written.
+  @closescript
+  @end
+@if `v06 is 1 then do
+  @begin
+  ;clean mode is on, lets get the hell out of this routine!!
+  @closescript
+  @end
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@if ninn4.dat exist true then do
+ @begin
+ @readfile ninn4.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+@do write
+`r0  `2One of your girls pulls your arm. Feel like some? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+  @do goto fonward
+  @end
+ @end
+@do write
+`r0 `2A young lady in her twenties steps before you.  Speak with her? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@label fonward
+@if `s01 is N then do
+  @begin
+  @if `p07 < 5 then do
+    @begin
+    ;person is evil
+    @do saybar
+You brutally kick her in the face.
+    @closescript
+    @end
+  @do saybar
+You push her away.  Poor lost soul.
+   @closescript
+  @end
+@pauseoff
+@if ninn4b.dat exist false then do
+  @begin
+  @writefile ninn4b.dat
+25
+0
+  @end
+@readfile ninn4b.dat
+`p25
+`p27
+@
+@show
+`r0`c  `r1`% Close encounters with the whore kind  `r0
+
+@if ninn4.dat exist true then do
+ @begin
+ @readfile ninn4.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+  @show
+  `0"Oh, it's you, sir. Sorry. I didn't recognize you. Of course it's
+  free for you, sir."
+
+`k
+  @do goto fsleep
+  @end
+  @end
+  @show
+`0  "Looking for a good time, sir?  Only `$$`p25`0." `2she speaks
+  seductively.
+
+`2  This girl should be in college. Still, she's making a living. You hardly
+  think you could turn this gorgeous young lady down...
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Why not?  Daddy needs to relax a little bit.
+Not today.
+@if response is 1 then do
+  @begin
+  @if money < `p25 then do
+    @begin
+    @show
+`\`\  `2You lack the funds for a whore right now.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - `p25
+  @do `p27 + `p25
+  @do delete ninn4b.dat
+  @writefile ninn4b.dat
+`p25
+`p27
+  @
+  @readfile ninn4.dat
+`p20
+`s01
+@
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has slept with one of your girls, you pimp daddy! 
+  Cha-Ching!
+
+  @label fsleep
+  @do x is 54
+  @do y is 12
+  @do `p20 is random 5 1
+  @if `p20 is 1 then do
+    @begin
+    ;ha ha, user caught vd
+    @do `p12 is 1
+    @end
+  @do `p34 + 1
+  @show
+`\`\  `2She leads you to her bed.
+
+`k`c  `r1  All Aboard  `r0
+
+`2  She reaches for your belt buckle. Your hands make their way where 
+  they shouldn't. Things turn sweaty. You have a great time. Good sex.
+  Relief.
+
+`k  `4THERE IS A 20 PERCENT CHANCE THAT YOU JUST CAUGHT SOMETHING.
+
+`k
+  @drawmap
+  @update
+  @do saybar
+You put your pants back on.
+  @closescript
+  @end
+
+@show
+`\`\  `$"I do not desire your services right now, woman," `2you inform
+  her.
+
+`k
+@drawmap
+@update
+
+@#WHORE3
+;random things that happen walking around the StonePass Lodge
+@if sexmale is 0 then do
+  @begin
+  ;if they are female, don't run this... sorry girls, no female version
+  ;was written.
+  @closescript
+  @end
+@if `v06 is 1 then do
+  @begin
+  ;clean mode is on, lets get the hell out of this routine!!
+  @closescript
+  @end
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@if ninn5.dat exist true then do
+ @begin
+ @readfile ninn5.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+@do write
+`r0  `2One of your women pull your arm. Feel like some? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+  @do goto fonward
+  @end
+ @end
+@do write
+`r0 `2One of the local women step before you.  Speak with her? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@label fonward
+@if `s01 is N then do
+  @begin
+  @if `p07 < 5 then do
+    @begin
+    ;person is evil
+    @do saybar
+You brutally kick her in the face.
+    @closescript
+    @end
+  @do saybar
+You push her away.  Poor lost soul.
+   @closescript
+  @end
+@pauseoff
+@if ninn5b.dat exist false then do
+  @begin
+  @writefile ninn5b.dat
+25
+0
+  @end
+@readfile ninn5b.dat
+`p25
+`p27
+@
+@show
+`r0`c  `r1`% Close encounters of the local kind  `r0
+
+@if ninn5.dat exist true then do
+ @begin
+ @readfile ninn5.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+  @show
+  `0"Oh, it's you, sir. Sorry. I didn't recognize you. Of course it's
+  free for you, sir."
+
+`k
+  @do goto lsleep
+  @end
+  @end
+  @show
+`0  "I remember you from downstairs. I bet you're interested," `2she
+  says and pulls up her skirt. `0"Only `$$`p25`0." `2she says seductively.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Why not?  Daddy needs to relax a little bit.
+Not today.
+@if response is 1 then do
+  @begin
+  @if money < `p25 then do
+    @begin
+    @show
+`\`\  `2You lack the funds for a whore right now.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - `p25
+  @do `p27 + `p25
+  @do delete ninn5b.dat
+  @writefile ninn5b.dat
+`p25
+`p27
+  @
+  @readfile ninn5.dat
+`p20
+`s01
+@
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has slept with one of your girls, you pimp daddy! 
+  Cha-Ching!
+
+  @label lsleep
+  @do x is 44
+  @do y is 12
+  @do `p20 is random 5 1
+  @if `p20 is 1 then do
+    @begin
+    ;ha ha, user caught vd
+    @do `p12 is 1
+    @end
+  @do `p34 + 1
+  @show
+`\`\  `2She leads you to her bed.
+
+`k`c  `r1  All Aboard  `r0
+
+`2  She reaches for your belt buckle. Your hands make their way where 
+  they shouldn't. Things turn sweaty. You have a great time. Good sex.
+  Relief.
+
+`k  `4THERE IS A 20 PERCENT CHANCE THAT YOU JUST CAUGHT SOMETHING.
+
+`k
+  @drawmap
+  @update
+  @do saybar
+You put your pants back on.
+  @closescript
+  @end
+
+@show
+`\`\  `$"I do not desire your services right now, woman," `2you inform
+  her.
+
+`k
+@drawmap
+@update
+
+@#WHORE4
+;random things that happen walking around The Sosen Village Inn
+@if sexmale is 0 then do
+  @begin
+  ;if they are female, don't run this... sorry girls, no female version
+  ;was written.
+  @closescript
+  @end
+@if `v06 is 1 then do
+  @begin
+  ;clean mode is on, lets get the hell out of this routine!!
+  @closescript
+  @end
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@if castle4.dat exist true then do
+ @begin
+ @readfile castle4.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+@do write
+`r0  `2One of your girls pulls your arm. Feel like some? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+  @do goto SONWARD
+  @end
+ @end
+@do write
+`r0  `2A gorgeous looking woman pulls your arm.  Speak with her? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@label SONWARD
+@if `s01 is N then do
+  @begin
+  @if `p07 < 5 then do
+    @begin
+    ;person is evil
+    @do saybar
+You brutally kick her in the face.
+    @closescript
+    @end
+  @do saybar
+You push her away.  Poor lost soul.
+   @closescript
+  @end
+@pauseoff
+@if ninn6b.dat exist false then do
+  @begin
+  @writefile ninn6b.dat
+25
+0
+  @end
+@readfile ninn6b.dat
+`p25
+`p27
+@
+@show
+`r0`c  `r1`% Close encounters with the whore kind  `r0
+
+@if castle4.dat exist true then do
+ @begin
+ @readfile castle4.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+  @show
+  `0"Oh, it's you, sir. Sorry. I didn't recognize you. Of course it's
+  free for you, sir."
+
+`k
+  @do goto ssleep
+  @end
+  @end
+  @show
+`0  "Looking for a good time, sir?  Only `$$`p25`0." `2she speaks
+  seductively.
+
+`2  She is one of the finest specimens of sexualty you have ever seen. 
+  Looking at her, contracted diseased seem a smile price to pay...
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Why not?  Daddy needs to relax a little bit.
+Not today.
+@if response is 1 then do
+  @begin
+  @if money < `p25 then do
+    @begin
+    @show
+`\`\  `2You lack the funds for a whore right now.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - `p25
+  @do `p27 + `p25
+  @do delete ninn6b.dat
+  @writefile ninn6b.dat
+`p25
+`p27
+  @
+  @readfile castle4.dat
+`p20
+`s01
+@
+  @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has slept with one of your girls, you pimp daddy! 
+  Cha-Ching!
+
+  @label ssleep
+  @do x is 61
+  @do y is 6
+  @do `p20 is random 5 1
+  @if `p20 is 1 then do
+    @begin
+    ;ha ha, user caught vd
+    @do `p12 is 1
+    @end
+  @do `p34 + 1
+  @show
+`\`\  `2She leads you to her bed.
+
+`k`c  `r1  All Aboard  `r0
+
+`2  She reaches for your belt buckle. Your hands make their way where 
+  they shouldn't. Things turn sweaty. You have a great time. Good sex.
+  Relief.
+
+`k  `4THERE IS A 20 PERCENT CHANCE THAT YOU JUST CAUGHT SOMETHING.
+
+`k
+  @drawmap
+  @update
+  @do saybar
+You put your pants back on.
+  @closescript
+  @end
+
+@show
+`\`\  `$"I do not desire your services right now, woman," `2you inform
+  her.
+
+`k
+@drawmap
+@update
+
+@#WHORE5
+@do `p20 random 10 1
+@if `p20 < 3 then do
+ @begin
+ @do goto GHOST
+ @end
+;random things that happen walking around the Flagcity Inn
+@if sexmale is 0 then do
+  @begin
+  ;if they are female, don't run this... sorry girls, no female version
+  ;was written.
+  @closescript
+  @end
+@if `v06 is 1 then do
+  @begin
+  ;clean mode is on, lets get the hell out of this routine!!
+  @closescript
+  @end
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@if ninn7.dat exist true then do
+ @begin
+ @readfile ninn7.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+@do write
+`r0  `2One of your girls pulls your arm. Feel like some? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+  @do goto fonward
+  @end
+ @end
+@do write
+`r0 `2A young lady in her twenties steps before you.  Speak with her? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@label fonward
+@if `s01 is N then do
+  @begin
+  @if `p07 < 5 then do
+    @begin
+    ;person is evil
+    @do saybar
+You brutally kick her in the face.
+    @closescript
+    @end
+  @do saybar
+You push her away.  Poor lost soul.
+   @closescript
+  @end
+@pauseoff
+@if ninn7b.dat exist false then do
+  @begin
+  @writefile ninn7b.dat
+25
+0
+  @end
+@readfile ninn7b.dat
+`p25
+`p27
+@
+@show
+`r0`c  `r1`% Close encounters with the whore kind  `r0
+
+@if ninn7.dat exist true then do
+ @begin
+ @readfile ninn7.dat
+`p20
+`s01
+ @
+ @if `p20 is &playernum then do
+  @begin
+  @show
+  `0"Oh, it's you, sir. Sorry. I didn't recognize you. Of course it's
+  free for you, sir."
+
+`k
+  @do goto asleep
+  @end
+  @end
+  @show
+`0  "Looking for a good time, sir?  Only `$$`p25`0." `2she speaks
+  seductively.
+
+`2  This girl should be in college. Still, she's making a living. You hardly
+  think you could turn this gorgeous young lady down...
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Why not?  Daddy needs to relax a little bit.
+Not today.
+@if response is 1 then do
+  @begin
+  @if money < `p25 then do
+    @begin
+    @show
+`\`\  `2You lack the funds for a whore right now.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - `p25
+  @do `p27 + `p25
+  @do delete ninn7b.dat
+  @writefile ninn7b.dat
+`p25
+`p27
+  @
+  @readfile ninn7.dat
+`p20
+`s01
+@
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has slept with one of your girls, you pimp daddy! 
+  Cha-Ching!
+
+  @label asleep
+  @do x is 42
+  @do y is 11
+  @do `p20 is random 5 1
+  @if `p20 is 1 then do
+    @begin
+    ;ha ha, user caught vd
+    @do `p12 is 1
+    @end
+  @do `p34 + 1
+  @show
+`\`\  `2She leads you to her bed.
+
+`k`c  `r1  All Aboard  `r0
+
+`2  She reaches for your belt buckle. Your hands make their way where 
+  they shouldn't. Things turn sweaty. You have a great time. Good sex.
+  Relief.
+
+`k  `4THERE IS A 20 PERCENT CHANCE THAT YOU JUST CAUGHT SOMETHING.
+
+`k
+  @drawmap
+  @update
+  @do saybar
+You put your pants back on.
+  @closescript
+  @end
+
+@show
+`\`\  `$"I do not desire your services right now, woman," `2you inform
+  her.
+
+`k
+@drawmap
+@update
+
+
+
+;---written by Seth, :)
+@#ghost
+;The ghost quest, that haunts the .... :)
+@if bitcheck `t14 4 0 then do
+  @begin
+@if `i61 > 0 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@busy
+@show
+`r0`c  `%`r1  A Ghostly Image  `r0
+
+  `3Walking down the halls of the inn you begin to hear a quiet moaning.
+  You look around but see nothing.  The sound seems to be coming from a
+  wall!  You move closer to hear more, the moaning seems to be getting
+  louder.  Suddenly you notice a light, but not from a candle, it seems
+  to be a brilliant blue.
+
+  A transparent blue body floats out from the wall, it's a man with a
+  dismal look on his face moaning loudly.  You're both scared an
+  exhilarated at the same time.  `%Who is this Ghost?`3
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Attempt to talk to it
+Fight it
+Run
+@if response is 1 then do
+  @begin
+  @do `i61 is 1
+  @show
+`\`\  `%You fight back your fear and reach out towards the apparition.
+  As you do so the figure stops its moaning and looks to you.
+  `$"Who .. who are you?"  `%you ask.
+  `%"A person .. like yourself,"  `3he replies.  `%"I too quested for the
+  Red Dragon, back when we were sure of his existance.  I believed I had
+  found my way to one of his lairs.  Here in this land, in the northeast
+  a cave in the water.  I went in hoping to find the beast, but was betrayed
+  by a companion."
+
+  `%"You may right my death though. `3Take this and find the cave, honor my
+  body..."
+
+  `%His image fades and lying where he was is a small silver ring.
+`\`k
+  @end
+@if response is 2 then do
+  @begin
+  @pauseoff
+  @do `p07 - 1
+  @show
+`\`\  `%Your instincts take over as you pull out your s&weapon.  The ghost
+  seems instantly aware of you.  It speaks ...
+  `3"Beware the path you choose warrior, it may not be as easy as you may
+  think ..."  `%and like that he's gone.
+
+  `bYOUR ALIGNMENT GOES DOWN BY ONE!`b
+`\`k
+  @end
+@end
+@drawmap
+@update

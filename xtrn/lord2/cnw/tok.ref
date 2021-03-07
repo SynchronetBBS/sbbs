@@ -1,0 +1,270 @@
+; Script file TOK.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE sign1 000000434
+@DECLARE sign2 000000475
+@DECLARE sign3 000000527
+@DECLARE sign4 000000572
+@DECLARE warn 000000611
+@DECLARE healers 000000706
+@DECLARE start 000000720
+@DECLARE leave 000002348
+@DECLARE weapons 000002394
+@DECLARE wp 000002465
+@DECLARE qguard 000003793
+@DECLARE lose 000004459
+@NOCHECK
+; End of .REF index
+
+@#Sign1
+@do saybar
+Tower of Krystal
+
+@#Sign2
+@do Saybar
+Our Lady's Most Holy Healer
+
+@#Sign3
+@do Saybar
+Our Lady's Equipment
+
+@#Sign4
+@do Saybar
+Krystal Storage
+
+@#Warn
+@do Saybar
+Looks like the wall was broken from the inside...  By something big!
+
+@#Healers
+@label Start
+@busy
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%Our Lady's Most Holy Healers
+
+`2  Morin looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+What's with this place?
+Limp on out.
+@show
+`\
+@If response is 3 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+@If response is 2 then do
+@begin
+@show
+`c
+      `$"What's with this place?  Why's that guard blocking the way into the
+      `$basement?" `2you ask stupidly.
+
+      `0"There are many rumors going around, friend.  The one that I believe
+      `0is that Lady Krystal is hoarding treasure so that she can raise an army
+      `0and wipe out the `4Dragon Tooth Clan`0!"
+
+      `$"I think she's just breeding monsters down there." `2you say stupidly.
+
+      `0"GET OUT OF HERE!  NO ONE TALKS OF LADY KRYSTAL THAT WAY!"
+
+      `2You decide to leave before he does the opposite of healing on you...
+@key
+@drawmap
+@update
+@closescript
+@end
+
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry, I'm not gonna perform those services for free!"
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+@do goto leave
+@end
+
+@show
+`0"You are in perfect health, `$`n`$." `2Morin says.
+@key
+@label leave
+@drawmap
+@update
+@closescript
+
+@#weapons
+;equipment store
+ @offmap
+ @do moveback
+ @do `v01 is 1
+ @label wp
+ @show
+`r0`c`r1  `%Our Lady's Equipment Store  `r0
+
+      `2The young man behind the counter absently stares at his ring...
+
+@do `v01 is 1
+@choice
+Examine his weapons.
+Look at his armor.
+View his potions.
+Talk to him.
+Leave
+@if responce is 1 then do
+ @begin
+ @buymanager
+4
+9
+15
+16
+38
+35
+49
+39
+58
+ @do goto wp
+ @end
+
+@if responce is 2 then do 
+@begin
+ @buymanager
+10
+12
+13
+14
+37
+59
+ @do goto wp
+ @end
+
+@if responce is 3 then do 
+@begin
+ @buymanager
+5
+40
+55
+ @do goto wp
+ @end
+
+@if responce is 4 then do 
+@begin
+@show
+`r0`c
+      `$"Why is there a guard blocking the basement?" `2you ask.
+
+      `0"Huh?  What?" `2He seems to snap out of it.  `0"Did you ask about some
+      `0of the wares?"
+
+      `$"No...  The big, dumb guard in front of the basement, why's he there?"
+
+      `2He stops and thinks for a moment.  `0"There are many rumors about what's
+      `0down there.  But, with the Lady of the tower being an enchantress and
+      `0all...  I would be suprised if she's breeding monsters down there..."
+
+      `$"Really?  Monsters?  COOL!  I have to see this for myself!"
+
+      `0"Do what you wish, but I'd avoid the basement if I were you."
+@key
+@do goto wp
+@end
+
+@if responce is 5 then do begin
+ @drawmap
+ @update
+ @closescript
+@end
+
+@#QGuard
+@busy
+@dataload tok.idf &playernum `p25
+@if `p25 more 0 then do
+@begin
+@do saybar
+The guards smile at you as you pass.
+@closescript
+@end
+
+@do `v01 is 1
+@show
+`r0`c`r1  `%Royal Guards  `r0
+
+      `0"Halt!" `2they yell in unison.  `0"Why must you pass?"
+
+@choice
+I have urgent business with the Lady.
+Get out of my way or die!
+Run away.
+@if responce is 1 then do
+@begin
+@show
+
+
+      `0"Very well then, you may pass."
+@key
+@drawmap
+@update
+@closescript
+@end
+
+@if responce is 2 then do
+@Begin
+@drawmap
+@update
+@run LeftG in TOKMON.REF
+@end
+
+@if responce is 3 then do
+@do moveback
+@drawmap
+@update
+@closescript
+@end
+
+@#Lose
+;if lost to a guard
+@if `p02 less 0 then do
+@begin
+@do `p02 is 1
+@end
+@do x is 32
+@do y is 16
+@do map is 1352
+@loadmap &map
+@drawmap
+@update
+@closescript
+

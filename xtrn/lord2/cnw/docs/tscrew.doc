@@ -1,0 +1,160 @@
+The only thing you must do manually:
+
+type IGM TLSCREW.IGM
+
+If, as I'm sure many of you do, you have other IGM's installed and overwriting
+the ITEMS.REF or ITEMS.DAT would delete THEIR data, you must install the
+following manually:
+
+(ITEMS.REF)
+
+;---The Following is used by TLS1.REF
+@#groon
+;Myphon Groon
+@routine GTRANS in TLS1.REF
+@drawmap
+@update
+
+@#screw
+;The Loose Screw
+@routine GSCREW in TLS2.REF
+@drawmap
+@update
+;---------------------------------
+
+(In the Item Editor)
+
+  LORD II ITEM EDITOR  editing item (94 of 99)
+  (A) Name of the item  : `$The Loose Screw BBS
+  (B) Action string     : 
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, If "Usable"? : SCREW
+  (G) Use string        : Call (801)561-4780!
+  (H) Gold value        : 
+  (I) Used only once?   : No
+  (J) Breaks 1 out of   : Never breaks.
+û (K) Description       : A really cheap advertisement.
+  (L) Weapon Strength   : 0
+  (M) Armour Defence    : 0
+  (N) Quest item?       : No
+  (*) Show all items.
+  ([) Go back an account
+  (]) Go forward an account
+  (Q) Quit
+
+
+  LORD II ITEM EDITOR  editing item (96 of 99)
+û (A) Name of the item  : `9Light Saber
+  (B) Action string     : Choove, wooove, wooove
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : Yes
+  (E) Can be sold?      : No
+  (F) Ref, If "Usable"? :
+  (G) Use string        :
+  (H) Gold value        : 
+  (I) Used only once?   : No
+  (J) Breaks 1 out of   : Never breaks.
+  (K) Description       : A glowing beauty! (+550)
+  (L) Weapon Strength   : 550
+  (M) Armour Defence    : 0
+  (N) Quest item?       : No
+  (*) Show all items.
+  ([) Go back an account
+  (]) Go forward an account
+  (Q) Quit
+
+  LORD II ITEM EDITOR  editing item (95 of 99)
+û (A) Name of the item  : `#Myphon Groon
+  (B) Action string     :
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, If "Usable"? : GROON
+  (G) Use string        : Rub the Myphon Groon
+  (H) Gold value        : 
+  (I) Used only once?   : No
+  (J) Breaks 1 out of   : Never breaks.
+  (K) Description       : It looks a little like nothing
+  (L) Weapon Strength   : 0
+  (M) Armour Defence    : 0
+  (N) Quest item?       : No
+  (*) Show all items.
+  ([) Go back an account
+  (]) Go forward an account
+  (Q) Quit
+
+--------------------
+Ok, the lightsaber seems like an unfair weapon...but only people who can
+find it (and that is a TOUGH thing to do).
+It will most likely not be found by most, and even those who reach it will
+most likely be very experienced players (the enemy's along the way are
+tough)
+
+And the Myphon Groon (not only a satire) actually allows for people to
+transfer to any city of their choice -- however. This item is guarded by
+Blando, who will be near impossible to defeat until a person has completed
+the game...so...
+With v1.03 I changed this: The Groon is easier to reach; however, for
+everywhere a person transfers themself, their turns (divided by 5) are
+subtracted...thus making the Groon only useful about 5 times per day!
+
+Innard's Experienced Tower will actually give users EXP points (randomly
+chosen between 1 and 9000) once a day...
+
+Violet is located in Jabba's Hutt, as is Tira, as is Princess Laya -- all
+of them can be flirted with and, if a user's charm is high enough, laid!
+
+The drinks from the bartender do the following:
+
+20,000$ -- gives a user 8 muscle
+25,000$ -- gives a user 10 dodge
+30,000$ -- gives a user +8 max HP
+
+Burrito (brother of Greedo) is used in a similar fashion as that of the
+treehouse. A user can tell Greedo to kill a certain user, and, if the user
+has a run in with Burrito, then -- well, the user is dead...
+
+When someone finds the screw in Cloud City, it will say, of course, that
+they have found a screw. However, if they check their inventory, they will
+find they do not in fact have a screw...this was to save precious ITEM
+space -- a screw that would do nothing would be pointless to put it. So it
+writes to screw.dat that the user has found the screw (NEVER run the daily
+maintenance on this file, or they can find screw after screw after screw)
+and then, if they chat with the sysops, they find The Loose Screw BBS -- which,
+is not only a cheap form of advertising, but it also a great way to get
+back to the IGM.
+
+With v1.03, Dagobah is finished! It allows for random collecting of Yoda's
+body parts, and then trading them in for prizes (all of which seem to be
+pretty fair to me...if you disagree, mail me and let me know). As far as I
+know, this area CANNOT be cheated -- there are no bugs so a person can use
+it multiple times a day and what-not. I took every precaution. I hope it
+works exactly -- I hate cheaters. If you find any bugs, in Dagobah or
+elsewhere, let me know!
+
+-----------------------
+
+Files it creates (don't touch):
+
+TLSLAYA.IDF -- used to tell if a user has flirted with Laya or not
+TLSTIRA.IDF -- used to tell if a user has flirted with Tira or not
+TLSVLET.IDF -- used to tell if a user has flirted with Violet or not
+TLSSCREW.DAT -- used to tell if a user has found the screw
+TLSINNRD.DAT -- used to tell if the user has used the Random Gesture
+TLSWANT.DAT -- used to tel if the user has beaten the Wanted Man
+TLSBUR.DAT -- used for Burrito's "who to kill"
+TLS1.SAV -- used for un-installation
+TLSINNRD.DAT -- This holds all the movie lines <g>
+TLSBLANDO.DAT -- used to tell if the user has beaten Blando or not...
+TLSYODA.DAT -- saves whether the user has Yoda's pouch or not yet...
+TLSTURNS.DAT -- saves the users turns when they enter Dagobah for comparison
+TLSTODAG.DAT -- saves whether or not the user has used his turns at Dagobah today
+TLSYODA1.DAT -- saves who and who not to let into Dagobah
+
+If you have any questions, e-mail me at screwy343@aol.com or at
+chris.yeates@sharecity.com, or even FASTER is at my BBS -- The Loose Screw
+(801)561-4780...
+
+

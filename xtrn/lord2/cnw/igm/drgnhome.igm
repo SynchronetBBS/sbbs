@@ -1,0 +1,118 @@
+               -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                      Dragon's Den Housing by Codax Dragon
+                       Copyright 1997 Dragon's Den ULTD.
+               -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                           AN IGM FOR LORD2 Beta 7+
+
+Quick Info:
+
+  Is registered version of LORD2 required to use? : Yes :( 
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (10)
+  Free?                                           : Yes
+ 
+Description:
+
+  Dragon's Den Housing
+  -=-=-=-=-=-=-=-=-=-=-=-
+
+  This is my first IGM for LORD2, I have gone back and redone somethings so
+  now it takes up less space but has more in it.  I decided to make this
+  free so eveyone can have a chance at owning great housing for little money
+  I also added some new features.  I hope you love it, I do! :)
+  This is Dragon's Den Housing for Lord2.    
+
+You get:
+   -6 Rentable Huts
+   -One person to a hutt
+   -Darlatia's Legend
+   -The Castle Esperanto
+       -Dog
+       -beds
+       -Warp
+       -indoor fishing and garden
+       -pool
+       -much more
+
+   -The Castle Royal
+       -Warp, dog, bed, tables, restaurant, library
+       -much more   
+
+   -The Castle Jasminita
+       -Warp, dog, beds, bathrooms
+       -much more
+
+   -Hutts are now rentals 60 entries, 90 entries, 120 entries depending on price
+
+if you are upgrading from the unreged ver delete uninstall drgnhome and then reinstall
+
+To Install:
+
+   Type: IGM Drgnhome.IGM
+
+  To Uninstall:
+
+   do the same thing again.
+
+   To Test:
+
+    Go to the Travel agency outside of Greentree. Enjoy!
+
+  To Contact Me:
+
+    My BBS:  Dragon's Den BBS   (DIS)-CON-ECTD   :(  That's why I need da money
+
+
+    Snail Mail Me:     Codax Dragon
+		107 Patti Ln
+		St.Clairsville Ohio 43950
+
+
+    Email:     codax_dragon@Juno.com
+    Web:     http://www.geocities.com/SiliconValley/Way/9982/index.html
+
+  
+Please I need feed back tell me what you think of my IGM
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `#Dragon's Den `$Housing `2by `1C`3o`5d`7a`9x `4Dragon   `4`bRegistered!! :)
+replacescreen: 1356 1 show
+
+replacescreen: 1588 2 noshow
+
+replacescreen: 1422 3 noshow
+
+replacescreen: 1423 4 noshow
+
+replacescreen: 1082 5 noshow
+
+replacescreen: 1083 6 noshow
+
+replacescreen: 1084 7 noshow
+
+replacescreen: 1002 8 noshow
+
+replacescreen: 1003 9 noshow
+
+replacescreen: 1004 10 noshow
+
+replacescreen: 1587 11 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Dragon's Den Housing the first of many Dragon's Den Ultd. Igms coming out.
+`2`bRegistered!!! `2Thanx!!!  Because you contributed you are my friend....also you have
+  helped out Dragon's Den BBS to go up!!!!
+  
+Location: Travel Hut outside Greentree
+
+  `%Copyright 1997 Dragon's Den Ultd
+  `%http://www.geocities.com/SiliconValley/Way/9982/index.html      codax_dragon@juno.com
+`k                            `k

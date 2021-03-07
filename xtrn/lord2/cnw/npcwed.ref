@@ -1,0 +1,729 @@
+; Script file NPCWED.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:15 2001
+
+@DECLARE weds 000000261
+@DECLARE top 000000568
+@DECLARE end 000024712
+@NOCHECK
+; End of .REF index
+
+;
+;
+;
+;     I need to redo this REF, make is smaller. 
+;
+
+@#weds
+@do `p20 is &time
+@do `p21 is `p20
+@do `p21 - 1
+@do `p22 is `p20
+@do `p22 - 2
+@do `p23 is `p20
+@do `p23 - 3
+@datanewday npc/wedchk.tmp
+@dataload npc/wedchk.tmp 1 `p22
+@if `p22 is 1 then goto end
+@datasave npc/wedchk.tmp 1 1
+@show
+`\   ú`%Running daily NPC maintence for weddings.`\
+@label top
+@if npc/wed`p20.day exists true then do
+        @begin
+        @readfile npc/wed`p20.day
+`p25
+`p26
+        @do `s02 is getname `p25
+@if `p20 is 0 then `s01 is Nobody
+@if `p20 is 1 then `s01 is Violet
+@if `p20 is 2 then `s01 is Seth`xAble
+;East StoneBrook
+@if `p20 is 3 then `s01 is Wryn
+@if `p20 is 4 then `s01 is Kess
+@if `p20 is 5 then `s01 is Sherra
+@if `p20 is 6 then `s01 is Hattie
+@if `p20 is 7 then `s01 is Ninna
+@if `p20 is 8 then `s01 is Georgie
+@if `p20 is 9 then `s01 is Nicki
+@if `p20 is 10 then `s01 is Gei
+@if `p20 is 11 then `s01 is Sally
+@if `p20 is 12 then `s01 is Yowli
+@if `p20 is 13 then `s01 is Chip
+@if `p20 is 14 then `s01 is Mrs`xJenkins
+;GreenTree
+@if `p20 is 15 then `s01 is Laura
+@if `p20 is 16 then `s01 is Sheep`xMan
+@if `p20 is 17 then `s01 is Elle
+@if `p20 is 18 then `s01 is Ma
+@if `p20 is 19 then `s01 is Estella
+@if `p20 is 20 then `s01 is Lango
+;porttown
+@if `p20 is 21 then `s01 is Guy
+;Voodoo Temple
+@if `p20 is 22 then `s01 is Mickey
+@if `p20 is 23 then `s01 is Aerith
+@if `p20 is 24 then `s01 is Invisible`xMan
+@if `p20 is 25 then `s01 is Rudy
+@if `p20 is 26 then `s01 is Julia
+@if `p20 is 27 then `s01 is Kita
+@if `p20 is 28 then `s01 is Elay
+;Gypsy Camp
+@if `p20 is 29 then `s01 is Lilliana
+@if `p20 is 30 then `s01 is Chandler
+@if `p20 is 31 then `s01 is Lela
+@if `p20 is 32 then `s01 is Mirella
+@if `p20 is 33 then `s01 is Sherif
+@if `p20 is 34 then `s01 is Viollica
+@if `p20 is 35 then `s01 is Gimi
+;South of FlagCity
+@if `p20 is 36 then `s01 is Spence
+@if `p20 is 37 then `s01 is Lost`xMan
+@if `p20 is 38 then `s01 is Chance
+@if `p20 is 39 then `s01 is Johnny
+@if `p20 is 40 then `s01 is Old`xWarrior
+;Sosin Village
+@if `p20 is 41 then `s01 is Matt`xLongsword
+@if `p20 is 42 then `s01 is Wiscard
+@if `p20 is 43 then `s01 is Basil
+@if `p20 is 44 then `s01 is Somebody
+@if `p20 is 45 then `s01 is Somebody
+@if `p20 is 46 then `s01 is Somebody
+@if `p20 is 47 then `s01 is Somebody
+;PawnShop
+@if `p20 is 48 then `s01 is Somebody
+@if `p20 is 49 then `s01 is Nick
+;Far North
+@if `p20 is 50 then `s01 is Prince`xCorin
+@if `p20 is 51 then `s01 is Somebody
+@if `p20 is 52 then `s01 is Somebody
+@if `p20 is 53 then `s01 is Somebody
+@if `p20 is 54 then `s01 is Somebody
+@if `p20 is 55 then `s01 is Somebody
+@if `p20 is 56 then `s01 is Somebody
+@if `p20 is 57 then `s01 is Somebody
+@if `p20 is 58 then `s01 is Somebody
+@if `p20 is 59 then `s01 is Somebody
+; Loki Inn
+@if `p20 is 60 then `s01 is Loki`xGuard
+@if `p20 is 61 then `s01 is oDiN
+@if `p20 is 62 then `s01 is Hilda
+@if `p20 is 63 then `s01 is Somebody
+@if `p20 is 64 then `s01 is Somebody
+@if `p20 is 65 then `s01 is Somebody
+@if `p20 is 66 then `s01 is Somebody
+@if `p20 is 67 then `s01 is Somebody
+@if `p20 is 68 then `s01 is Somebody
+@if `p20 is 69 then `s01 is Somebody
+@if `p20 is 70 then `s01 is Somebody
+@if `p20 is 71 then `s01 is Somebody
+@if `p20 is 72 then `s01 is Somebody
+@if `p20 is 73 then `s01 is Somebody
+@if `p20 is 74 then `s01 is Somebody
+@if `p20 is 75 then `s01 is Gorilla`xGirl
+; GreenTree (again)
+@if `p20 is 76 then `s01 is Minister
+@if `p20 is 77 then `s01 is Somebody
+@if `p20 is 78 then `s01 is Somebody
+@if `p20 is 79 then `s01 is Somebody
+;Scorpian's Den
+@if `p20 is 80 then `s01 is Old`xMan`xScorp
+@if `p20 is 81 then `s01 is Famous`xDrunk
+@if `p20 is 82 then `s01 is Scorpian`xLady
+@if `p20 is 83 then `s01 is Drunk`xLady
+@if `p20 is 84 then `s01 is Scorpian`xMaid
+@if `p20 is 85 then `s01 is Somebody
+@if `p20 is 86 then `s01 is Somebody
+@if `p20 is 87 then `s01 is Somebody
+@if `p20 is 88 then `s01 is Somebody
+@if `p20 is 89 then `s01 is Somebody
+;desert figaro's castle
+@if `p20 is 90 then `s01 is Chancellor
+@if `p20 is 91 then `s01 is Edgar
+@if `p20 is 92 then `s01 is Edgars`xGuard
+@if `p20 is 93 then `s01 is Edgars`xGuard
+@if `p20 is 94 then `s01 is Forga
+@if `p20 is 95 then `s01 is Fatiguel
+@if `p20 is 96 then `s01 is Somebody
+@if `p20 is 97 then `s01 is Somebody
+@if `p20 is 98 then `s01 is Somebody
+;Sandcity
+@if `p20 is 99 then `s01 is Maverick
+;KnotWood
+@if `p20 is 100 then `s01 is Andrew
+@if `p20 is 101 then `s01 is Mr.`xAndrew
+@if `p20 is 102 then `s01 is Mrs.`xAndrew
+;Wizards Castle (near StoneBrook)
+@if `p20 is 103 then `s01 is Violetta
+@if `p20 is 104 then `s01 is Sand`xTiger
+@if `p20 is 105 then `s01 is Direct
+;path from stonebrook to greentree and around greentree
+@if `p20 is 106 then `s01 is Begger
+@if `p20 is 107 then `s01 is Sherie
+@if `p20 is 108 then `s01 is Grizelda
+@if `p20 is 109 then `s01 is Edward
+;Sword Castle
+@if `p20 is 110 then `s01 is Thug
+@if `p20 is 111 then `s01 is Mann
+@if `p20 is 112 then `s01 is Mordin
+@if `p20 is 113 then `s01 is Aqua
+@if `p20 is 114 then `s01 is Somebody
+@if `p20 is 115 then `s01 is Somebody
+;BoneTown
+@if `p20 is 116 then `s01 is Dad
+@if `p20 is 117 then `s01 is Rich`xWoman
+@if `p20 is 118 then `s01 is Jesse
+@if `p20 is 119 then `s01 is Boy
+@if `p20 is 120 then `s01 is John
+@if `p20 is 121 then `s01 is Big`xMa
+@if `p20 is 122 then `s01 is Kelley                        ;a whore
+@if `p20 is 123 then `s01 is Selena
+@if `p20 is 124 then `s01 is Drunk`xMan
+@if `p20 is 125 then `s01 is Bouncer
+@if `p20 is 126 then `s01 is D.J.
+@if `p20 is 127 then `s01 is Somebody
+@if `p20 is 128 then `s01 is Somebody
+@if `p20 is 129 then `s01 is Somebody
+;PortTown - Odin's Keep area
+@if `p20 is 130 then `s01 is Grey`xMan
+@if `p20 is 131 then `s01 is Jennie
+@if `p20 is 132 then `s01 is Rosie
+@if `p20 is 133 then `s01 is Somebody
+;Resort + Glendale near StoneBrook
+@if `p20 is 134 then `s01 is Happy`xPappy
+@if `p20 is 135 then `s01 is Dan
+@if `p20 is 136 then `s01 is Don
+@if `p20 is 137 then `s01 is Lone
+@if `p20 is 138 then `s01 is Dance
+@if `p20 is 139 then `s01 is Somebody
+@if `p20 is 140 then `s01 is Somebody
+@if `p20 is 141 then `s01 is Somebody
+@if `p20 is 142 then `s01 is Somebody
+@if `p20 is 143 then `s01 is Somebody
+@if `p20 is 144 then `s01 is Somebody
+@if `p20 > 144 then `s01 is Somebody
+;--All the Whores!--
+; Female
+@if `p20 is 170 then `s01 is Kelli
+@if `p20 is 171 then `s01 is Karen
+@if `p20 is 172 then `s01 is Mundin
+@if `p20 is 173 then `s01 is Mulan
+@if `p20 is 174 then `s01 is Pocahontas
+@if `p20 is 175 then `s01 is Samira
+@if `p20 is 176 then `s01 is Linda
+@if `p20 is 177 then `s01 is White
+@if `p20 is 178 then `s01 is Red
+@if `p20 is 179 then `s01 is Jasmine
+@if `p20 is 180 then `s01 is Marilyn
+@if `p20 is 181 then `s01 is Yewanda
+@if `p20 is 182 then `s01 is Karlita
+@if `p20 is 183 then `s01 is Kelly
+@if `p20 is 184 then `s01 is Sheila
+@if `p20 is 185 then `s01 is Bibianna
+@if `p20 is 186 then `s01 is Yuko
+@if `p20 is 187 then `s01 is Lisa
+@if `p20 is 188 then `s01 is Kina
+@if `p20 is 189 then `s01 is Kiko
+@if `p20 is 190 then `s01 is Kimbery
+@if `p20 is 191 then `s01 is Cindy
+@if `p20 is 192 then `s01 is Yurri
+@if `p20 is 193 then `s01 is Tina
+@if `p20 is 194 then `s01 is Tanya
+@if `p20 is 195 then `s01 is Saby
+@if `p20 is 196 then `s01 is Asada
+;@if `p20 is 197 then `s01 is Nobody
+@if `p20 is 198 then `s01 is Fast`xFreddy
+@if `p20 is 199 then `s01 is SysOp
+        @do addlog
+`%Today `@`s02`%and `@`s01 `%are to be wed at the wedding chapel.
+        @do addlog
+`%Everyone is welcome to watch these two to be united as one.
+@DO DELETE npc/wed`p20.day
+@writefile npc/wed`p20.now
+`p25
+`p26
+        @end
+
+@if npc/wed`p21.day exists true then do
+        @begin
+        @readfile npc/wed`p21.day
+`p25
+`p26
+        @do `p25 
+        @do `s02 is getname `p25
+
+@if `p20 is 0 then `s01 is Nobody
+@if `p20 is 1 then `s01 is Violet
+@if `p20 is 2 then `s01 is Seth`xAble
+;East StoneBrook
+@if `p20 is 3 then `s01 is Wryn
+@if `p20 is 4 then `s01 is Kess
+@if `p20 is 5 then `s01 is Sherra
+@if `p20 is 6 then `s01 is Hattie
+@if `p20 is 7 then `s01 is Ninna
+@if `p20 is 8 then `s01 is Georgie
+@if `p20 is 9 then `s01 is Nicki
+@if `p20 is 10 then `s01 is Gei
+@if `p20 is 11 then `s01 is Sally
+@if `p20 is 12 then `s01 is Yowli
+@if `p20 is 13 then `s01 is Chip
+@if `p20 is 14 then `s01 is Mrs`xJenkins
+;GreenTree
+@if `p20 is 15 then `s01 is Laura
+@if `p20 is 16 then `s01 is Sheep`xMan
+@if `p20 is 17 then `s01 is Elle
+@if `p20 is 18 then `s01 is Ma
+@if `p20 is 19 then `s01 is Estella
+@if `p20 is 20 then `s01 is Lango
+;porttown
+@if `p20 is 21 then `s01 is Guy
+;Voodoo Temple
+@if `p20 is 22 then `s01 is Mickey
+@if `p20 is 23 then `s01 is Aerith
+@if `p20 is 24 then `s01 is Invisible`xMan
+@if `p20 is 25 then `s01 is Rudy
+@if `p20 is 26 then `s01 is Julia
+@if `p20 is 27 then `s01 is Kita
+@if `p20 is 28 then `s01 is Elay
+;Gypsy Camp
+@if `p20 is 29 then `s01 is Lilliana
+@if `p20 is 30 then `s01 is Chandler
+@if `p20 is 31 then `s01 is Lela
+@if `p20 is 32 then `s01 is Mirella
+@if `p20 is 33 then `s01 is Sherif
+@if `p20 is 34 then `s01 is Viollica
+@if `p20 is 35 then `s01 is Gimi
+;South of FlagCity
+@if `p20 is 36 then `s01 is Spence
+@if `p20 is 37 then `s01 is Lost`xMan
+@if `p20 is 38 then `s01 is Chance
+@if `p20 is 39 then `s01 is Johnny
+@if `p20 is 40 then `s01 is Old`xWarrior
+;Sosin Village
+@if `p20 is 41 then `s01 is Matt`xLongsword
+@if `p20 is 42 then `s01 is Wiscard
+@if `p20 is 43 then `s01 is Basil
+@if `p20 is 44 then `s01 is Somebody
+@if `p20 is 45 then `s01 is Somebody
+@if `p20 is 46 then `s01 is Somebody
+@if `p20 is 47 then `s01 is Somebody
+;PawnShop
+@if `p20 is 48 then `s01 is Somebody
+@if `p20 is 49 then `s01 is Nick
+;Far North
+@if `p20 is 50 then `s01 is Prince`xCorin
+@if `p20 is 51 then `s01 is Somebody
+@if `p20 is 52 then `s01 is Somebody
+@if `p20 is 53 then `s01 is Somebody
+@if `p20 is 54 then `s01 is Somebody
+@if `p20 is 55 then `s01 is Somebody
+@if `p20 is 56 then `s01 is Somebody
+@if `p20 is 57 then `s01 is Somebody
+@if `p20 is 58 then `s01 is Somebody
+@if `p20 is 59 then `s01 is Somebody
+; Loki Inn
+@if `p20 is 60 then `s01 is Loki`xGuard
+@if `p20 is 61 then `s01 is oDiN
+@if `p20 is 62 then `s01 is Hilda
+@if `p20 is 63 then `s01 is Somebody
+@if `p20 is 64 then `s01 is Somebody
+@if `p20 is 65 then `s01 is Somebody
+@if `p20 is 66 then `s01 is Somebody
+@if `p20 is 67 then `s01 is Somebody
+@if `p20 is 68 then `s01 is Somebody
+@if `p20 is 69 then `s01 is Somebody
+@if `p20 is 70 then `s01 is Somebody
+@if `p20 is 71 then `s01 is Somebody
+@if `p20 is 72 then `s01 is Somebody
+@if `p20 is 73 then `s01 is Somebody
+@if `p20 is 74 then `s01 is Somebody
+@if `p20 is 75 then `s01 is Gorilla`xGirl
+; GreenTree (again)
+@if `p20 is 76 then `s01 is Minister
+@if `p20 is 77 then `s01 is Somebody
+@if `p20 is 78 then `s01 is Somebody
+@if `p20 is 79 then `s01 is Somebody
+;Scorpian's Den
+@if `p20 is 80 then `s01 is Old`xMan`xScorp
+@if `p20 is 81 then `s01 is Famous`xDrunk
+@if `p20 is 82 then `s01 is Scorpian`xLady
+@if `p20 is 83 then `s01 is Drunk`xLady
+@if `p20 is 84 then `s01 is Scorpian`xMaid
+@if `p20 is 85 then `s01 is Somebody
+@if `p20 is 86 then `s01 is Somebody
+@if `p20 is 87 then `s01 is Somebody
+@if `p20 is 88 then `s01 is Somebody
+@if `p20 is 89 then `s01 is Somebody
+;desert figaro's castle
+@if `p20 is 90 then `s01 is Chancellor
+@if `p20 is 91 then `s01 is Edgar
+@if `p20 is 92 then `s01 is Edgars`xGuard
+@if `p20 is 93 then `s01 is Edgars`xGuard
+@if `p20 is 94 then `s01 is Forga
+@if `p20 is 95 then `s01 is Fatiguel
+@if `p20 is 96 then `s01 is Somebody
+@if `p20 is 97 then `s01 is Somebody
+@if `p20 is 98 then `s01 is Somebody
+;Sandcity
+@if `p20 is 99 then `s01 is Maverick
+;KnotWood
+@if `p20 is 100 then `s01 is Andrew
+@if `p20 is 101 then `s01 is Mr.`xAndrew
+@if `p20 is 102 then `s01 is Mrs.`xAndrew
+;Wizards Castle (near StoneBrook)
+@if `p20 is 103 then `s01 is Violetta
+@if `p20 is 104 then `s01 is Sand`xTiger
+@if `p20 is 105 then `s01 is Direct
+;path from stonebrook to greentree and around greentree
+@if `p20 is 106 then `s01 is Begger
+@if `p20 is 107 then `s01 is Sherie
+@if `p20 is 108 then `s01 is Grizelda
+@if `p20 is 109 then `s01 is Edward
+;Sword Castle
+@if `p20 is 110 then `s01 is Thug
+@if `p20 is 111 then `s01 is Mann
+@if `p20 is 112 then `s01 is Mordin
+@if `p20 is 113 then `s01 is Aqua
+@if `p20 is 114 then `s01 is Somebody
+@if `p20 is 115 then `s01 is Somebody
+;BoneTown
+@if `p20 is 116 then `s01 is Dad
+@if `p20 is 117 then `s01 is Rich`xWoman
+@if `p20 is 118 then `s01 is Jesse
+@if `p20 is 119 then `s01 is Boy
+@if `p20 is 120 then `s01 is John
+@if `p20 is 121 then `s01 is Big`xMa
+@if `p20 is 122 then `s01 is Kelley                        ;a whore
+@if `p20 is 123 then `s01 is Selena
+@if `p20 is 124 then `s01 is Drunk`xMan
+@if `p20 is 125 then `s01 is Bouncer
+@if `p20 is 126 then `s01 is D.J.
+@if `p20 is 127 then `s01 is Somebody
+@if `p20 is 128 then `s01 is Somebody
+@if `p20 is 129 then `s01 is Somebody
+;PortTown - Odin's Keep area
+@if `p20 is 130 then `s01 is Grey`xMan
+@if `p20 is 131 then `s01 is Jennie
+@if `p20 is 132 then `s01 is Rosie
+@if `p20 is 133 then `s01 is Somebody
+;Resort + Glendale near StoneBrook
+@if `p20 is 134 then `s01 is Happy`xPappy
+@if `p20 is 135 then `s01 is Dan
+@if `p20 is 136 then `s01 is Don
+@if `p20 is 137 then `s01 is Lone
+@if `p20 is 138 then `s01 is Dance
+@if `p20 is 139 then `s01 is Somebody
+@if `p20 is 140 then `s01 is Somebody
+@if `p20 is 141 then `s01 is Somebody
+@if `p20 is 142 then `s01 is Somebody
+@if `p20 is 143 then `s01 is Somebody
+@if `p20 is 144 then `s01 is Somebody
+@if `p20 > 144 then `s01 is Somebody
+;--All the Whores!--
+; Female
+@if `p20 is 170 then `s01 is Kelli
+@if `p20 is 171 then `s01 is Karen
+@if `p20 is 172 then `s01 is Mundin
+@if `p20 is 173 then `s01 is Mulan
+@if `p20 is 174 then `s01 is Pocahontas
+@if `p20 is 175 then `s01 is Samira
+@if `p20 is 176 then `s01 is Linda
+@if `p20 is 177 then `s01 is White
+@if `p20 is 178 then `s01 is Red
+@if `p20 is 179 then `s01 is Jasmine
+@if `p20 is 180 then `s01 is Marilyn
+@if `p20 is 181 then `s01 is Yewanda
+@if `p20 is 182 then `s01 is Karlita
+@if `p20 is 183 then `s01 is Kelly
+@if `p20 is 184 then `s01 is Sheila
+@if `p20 is 185 then `s01 is Bibianna
+@if `p20 is 186 then `s01 is Yuko
+@if `p20 is 187 then `s01 is Lisa
+@if `p20 is 188 then `s01 is Kina
+@if `p20 is 189 then `s01 is Kiko
+@if `p20 is 190 then `s01 is Kimbery
+@if `p20 is 191 then `s01 is Cindy
+@if `p20 is 192 then `s01 is Yurri
+@if `p20 is 193 then `s01 is Tina
+@if `p20 is 194 then `s01 is Tanya
+@if `p20 is 195 then `s01 is Saby
+@if `p20 is 196 then `s01 is Asada
+;@if `p20 is 197 then `s01 is Nobody
+@if `p20 is 198 then `s01 is Fast`xFreddy
+@if `p20 is 199 then `s01 is SysOp
+;;now 125
+        @do addlog
+`%Tommorow `@`s02 `%and `@`s01 `%are to be wed at the wedding chapel.
+        @do addlog
+`%Everyone is welcome to watch these two to be united as one.
+        @end
+
+@if npc/wed`p22.day exists true then do
+        @begin
+        @readfile npc/wed`p22.day
+`p25
+`p26
+        @do `p25 
+        @do `s02 is getname `p25
+@if `p20 is 0 then `s01 is Somebody
+@if `p20 is 1 then `s01 is Violet
+@if `p20 is 2 then `s01 is Seth`xAble
+;East StoneBrook
+@if `p20 is 3 then `s01 is Wryn
+@if `p20 is 4 then `s01 is Kess
+@if `p20 is 5 then `s01 is Sherra
+@if `p20 is 6 then `s01 is Hattie
+@if `p20 is 7 then `s01 is Ninna
+@if `p20 is 8 then `s01 is Georgie
+@if `p20 is 9 then `s01 is Nicki
+@if `p20 is 10 then `s01 is Gei
+@if `p20 is 11 then `s01 is Sally
+@if `p20 is 12 then `s01 is Yowli
+@if `p20 is 13 then `s01 is Chip
+@if `p20 is 14 then `s01 is Mrs`xJenkins
+;GreenTree
+@if `p20 is 15 then `s01 is Laura
+@if `p20 is 16 then `s01 is Sheep`xMan
+@if `p20 is 17 then `s01 is Elle 
+@if `p20 is 18 then `s01 is Ma 
+@if `p20 is 19 then `s01 is Estella
+@if `p20 is 20 then `s01 is Somebody 
+@if `p20 is 21 then `s01 is Somebody 
+@if `p20 is 22 then `s01 is Somebody 
+@if `p20 is 23 then `s01 is Somebody 
+@if `p20 is 24 then `s01 is Somebody 
+@if `p20 is 25 then `s01 is Somebody 
+@if `p20 is 26 then `s01 is Somebody 
+@if `p20 is 27 then `s01 is Somebody 
+@if `p20 is 28 then `s01 is Somebody 
+@if `p20 is 29 then `s01 is Somebody 
+@if `p20 is 30 then `s01 is Somebody 
+@if `p20 is 31 then `s01 is Somebody 
+@if `p20 is 32 then `s01 is Somebody 
+@if `p20 is 33 then `s01 is Somebody 
+@if `p20 is 34 then `s01 is Somebody 
+@if `p20 is 35 then `s01 is Somebody 
+@if `p20 is 36 then `s01 is Somebody 
+@if `p20 is 37 then `s01 is Somebody 
+@if `p20 is 38 then `s01 is Somebody 
+@if `p20 is 39 then `s01 is Somebody 
+@if `p20 > 39 then `s01 is Somebody 
+@if `p20 > 39 then `p20 is 0
+        @do addlog
+`%In two days `@`s02 `%and `@`s01 `%are to be wed at the wedding chapel.
+        @end
+
+@if npc/wed`p23.day exists true then do
+        @begin
+        @readfile npc/wed`p23.day
+`p25
+`p26
+        @do `p25 
+        @do `s02 is getname `p25
+@if `p20 is 0 then `s01 is Nobody
+@if `p20 is 1 then `s01 is Violet
+@if `p20 is 2 then `s01 is Seth`xAble
+;East StoneBrook
+@if `p20 is 3 then `s01 is Wryn
+@if `p20 is 4 then `s01 is Kess
+@if `p20 is 5 then `s01 is Sherra
+@if `p20 is 6 then `s01 is Hattie
+@if `p20 is 7 then `s01 is Ninna
+@if `p20 is 8 then `s01 is Georgie
+@if `p20 is 9 then `s01 is Nicki
+@if `p20 is 10 then `s01 is Gei
+@if `p20 is 11 then `s01 is Sally
+@if `p20 is 12 then `s01 is Yowli
+@if `p20 is 13 then `s01 is Chip
+@if `p20 is 14 then `s01 is Mrs`xJenkins
+;GreenTree
+@if `p20 is 15 then `s01 is Laura
+@if `p20 is 16 then `s01 is Sheep`xMan
+@if `p20 is 17 then `s01 is Elle
+@if `p20 is 18 then `s01 is Ma
+@if `p20 is 19 then `s01 is Estella
+@if `p20 is 20 then `s01 is Lango
+;porttown
+@if `p20 is 21 then `s01 is Guy
+;Voodoo Temple
+@if `p20 is 22 then `s01 is Mickey
+@if `p20 is 23 then `s01 is Aerith
+@if `p20 is 24 then `s01 is Invisible`xMan
+@if `p20 is 25 then `s01 is Rudy
+@if `p20 is 26 then `s01 is Julia
+@if `p20 is 27 then `s01 is Kita
+@if `p20 is 28 then `s01 is Elay
+;Gypsy Camp
+@if `p20 is 29 then `s01 is Lilliana
+@if `p20 is 30 then `s01 is Chandler
+@if `p20 is 31 then `s01 is Lela
+@if `p20 is 32 then `s01 is Mirella
+@if `p20 is 33 then `s01 is Sherif
+@if `p20 is 34 then `s01 is Viollica
+@if `p20 is 35 then `s01 is Gimi
+;South of FlagCity
+@if `p20 is 36 then `s01 is Spence
+@if `p20 is 37 then `s01 is Lost`xMan
+@if `p20 is 38 then `s01 is Chance
+@if `p20 is 39 then `s01 is Johnny
+@if `p20 is 40 then `s01 is Old`xWarrior
+;Sosin Village
+@if `p20 is 41 then `s01 is Matt`xLongsword
+@if `p20 is 42 then `s01 is Wiscard
+@if `p20 is 43 then `s01 is Basil
+@if `p20 is 44 then `s01 is Somebody
+@if `p20 is 45 then `s01 is Somebody
+@if `p20 is 46 then `s01 is Somebody
+@if `p20 is 47 then `s01 is Somebody
+;PawnShop
+@if `p20 is 48 then `s01 is Somebody
+@if `p20 is 49 then `s01 is Nick
+;Far North
+@if `p20 is 50 then `s01 is Prince`xCorin
+@if `p20 is 51 then `s01 is Somebody
+@if `p20 is 52 then `s01 is Somebody
+@if `p20 is 53 then `s01 is Somebody
+@if `p20 is 54 then `s01 is Somebody
+@if `p20 is 55 then `s01 is Somebody
+@if `p20 is 56 then `s01 is Somebody
+@if `p20 is 57 then `s01 is Somebody
+@if `p20 is 58 then `s01 is Somebody
+@if `p20 is 59 then `s01 is Somebody
+; Loki Inn
+@if `p20 is 60 then `s01 is Loki`xGuard
+@if `p20 is 61 then `s01 is oDiN
+@if `p20 is 62 then `s01 is Hilda
+@if `p20 is 63 then `s01 is Somebody
+@if `p20 is 64 then `s01 is Somebody
+@if `p20 is 65 then `s01 is Somebody
+@if `p20 is 66 then `s01 is Somebody
+@if `p20 is 67 then `s01 is Somebody
+@if `p20 is 68 then `s01 is Somebody
+@if `p20 is 69 then `s01 is Somebody
+@if `p20 is 70 then `s01 is Somebody
+@if `p20 is 71 then `s01 is Somebody
+@if `p20 is 72 then `s01 is Somebody
+@if `p20 is 73 then `s01 is Somebody
+@if `p20 is 74 then `s01 is Somebody
+@if `p20 is 75 then `s01 is Gorilla`xGirl
+; GreenTree (again)
+@if `p20 is 76 then `s01 is Minister
+@if `p20 is 77 then `s01 is Somebody
+@if `p20 is 78 then `s01 is Somebody
+@if `p20 is 79 then `s01 is Somebody
+;Scorpian's Den
+@if `p20 is 80 then `s01 is Old`xMan`xScorp
+@if `p20 is 81 then `s01 is Famous`xDrunk
+@if `p20 is 82 then `s01 is Scorpian`xLady
+@if `p20 is 83 then `s01 is Drunk`xLady
+@if `p20 is 84 then `s01 is Scorpian`xMaid
+@if `p20 is 85 then `s01 is Somebody
+@if `p20 is 86 then `s01 is Somebody
+@if `p20 is 87 then `s01 is Somebody
+@if `p20 is 88 then `s01 is Somebody
+@if `p20 is 89 then `s01 is Somebody
+;desert figaro's castle
+@if `p20 is 90 then `s01 is Chancellor
+@if `p20 is 91 then `s01 is Edgar
+@if `p20 is 92 then `s01 is Edgars`xGuard
+@if `p20 is 93 then `s01 is Edgars`xGuard
+@if `p20 is 94 then `s01 is Forga
+@if `p20 is 95 then `s01 is Fatiguel
+@if `p20 is 96 then `s01 is Somebody
+@if `p20 is 97 then `s01 is Somebody
+@if `p20 is 98 then `s01 is Somebody
+;Sandcity
+@if `p20 is 99 then `s01 is Maverick
+;KnotWood
+@if `p20 is 100 then `s01 is Andrew
+@if `p20 is 101 then `s01 is Mr.`xAndrew
+@if `p20 is 102 then `s01 is Mrs.`xAndrew
+;Wizards Castle (near StoneBrook)
+@if `p20 is 103 then `s01 is Violetta
+@if `p20 is 104 then `s01 is Sand`xTiger
+@if `p20 is 105 then `s01 is Direct
+;path from stonebrook to greentree and around greentree
+@if `p20 is 106 then `s01 is Begger
+@if `p20 is 107 then `s01 is Sherie
+@if `p20 is 108 then `s01 is Grizelda
+@if `p20 is 109 then `s01 is Edward
+;Sword Castle
+@if `p20 is 110 then `s01 is Thug
+@if `p20 is 111 then `s01 is Mann
+@if `p20 is 112 then `s01 is Mordin
+@if `p20 is 113 then `s01 is Aqua
+@if `p20 is 114 then `s01 is Somebody
+@if `p20 is 115 then `s01 is Somebody
+;BoneTown
+@if `p20 is 116 then `s01 is Dad
+@if `p20 is 117 then `s01 is Rich`xWoman
+@if `p20 is 118 then `s01 is Jesse
+@if `p20 is 119 then `s01 is Boy
+@if `p20 is 120 then `s01 is John
+@if `p20 is 121 then `s01 is Big`xMa
+@if `p20 is 122 then `s01 is Kelley                        ;a whore
+@if `p20 is 123 then `s01 is Selena
+@if `p20 is 124 then `s01 is Drunk`xMan
+@if `p20 is 125 then `s01 is Bouncer
+@if `p20 is 126 then `s01 is D.J.
+@if `p20 is 127 then `s01 is Somebody
+@if `p20 is 128 then `s01 is Somebody
+@if `p20 is 129 then `s01 is Somebody
+;PortTown - Odin's Keep area
+@if `p20 is 130 then `s01 is Grey`xMan
+@if `p20 is 131 then `s01 is Jennie
+@if `p20 is 132 then `s01 is Rosie
+@if `p20 is 133 then `s01 is Somebody
+;Resort + Glendale near StoneBrook
+@if `p20 is 134 then `s01 is Happy`xPappy
+@if `p20 is 135 then `s01 is Dan
+@if `p20 is 136 then `s01 is Don
+@if `p20 is 137 then `s01 is Lone
+@if `p20 is 138 then `s01 is Dance
+@if `p20 is 139 then `s01 is Somebody
+@if `p20 is 140 then `s01 is Somebody
+@if `p20 is 141 then `s01 is Somebody
+@if `p20 is 142 then `s01 is Somebody
+@if `p20 is 143 then `s01 is Somebody
+@if `p20 is 144 then `s01 is Somebody
+@if `p20 > 144 then `s01 is Somebody
+;--All the Whores!--
+; Female
+@if `p20 is 170 then `s01 is Kelli
+@if `p20 is 171 then `s01 is Karen
+@if `p20 is 172 then `s01 is Mundin
+@if `p20 is 173 then `s01 is Mulan
+@if `p20 is 174 then `s01 is Pocahontas
+@if `p20 is 175 then `s01 is Samira
+@if `p20 is 176 then `s01 is Linda
+@if `p20 is 177 then `s01 is White
+@if `p20 is 178 then `s01 is Red
+@if `p20 is 179 then `s01 is Jasmine
+@if `p20 is 180 then `s01 is Marilyn
+@if `p20 is 181 then `s01 is Yewanda
+@if `p20 is 182 then `s01 is Karlita
+@if `p20 is 183 then `s01 is Kelly
+@if `p20 is 184 then `s01 is Sheila
+@if `p20 is 185 then `s01 is Bibianna
+@if `p20 is 186 then `s01 is Yuko
+@if `p20 is 187 then `s01 is Lisa
+@if `p20 is 188 then `s01 is Kina
+@if `p20 is 189 then `s01 is Kiko
+@if `p20 is 190 then `s01 is Kimbery
+@if `p20 is 191 then `s01 is Cindy
+@if `p20 is 192 then `s01 is Yurri
+@if `p20 is 193 then `s01 is Tina
+@if `p20 is 194 then `s01 is Tanya
+@if `p20 is 195 then `s01 is Saby
+@if `p20 is 196 then `s01 is Asada
+;@if `p20 is 197 then `s01 is Nobody
+@if `p20 is 198 then `s01 is Fast`xFreddy
+@if `p20 is 199 then `s01 is SysOp
+        @do addlog
+`%In three days `@`s02 `%and `@`s01 `%are to be wed at the wedding chapel.
+        @end
+
+@do `p20 + 1
+@if `p20 > 200 then goto end
+@do goto top
+
+@#END
+@closescript

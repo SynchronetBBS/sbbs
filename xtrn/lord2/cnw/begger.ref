@@ -1,0 +1,133 @@
+; Script file BEGGER.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE sign 000000501
+@DECLARE donate 000000593
+@DECLARE gold 000002225
+@DECLARE alin 000002488
+@DECLARE charm 000002613
+@DECLARE nocash 000002735
+@DECLARE alldone 000002872
+@NOCHECK
+; End of .REF index
+
+; The Begger IGM created by Craig Goldsmith
+; to Install run Instbeg.bat 
+
+;
+;
+; CNW added = needs to give according to players level.
+;      10$ * level
+;
+; Added begger as NPC#106
+;
+@#sign
+ @do saybar
+`2Sign reads:`0 Money for the Poor. 
+ @do moveback
+@CLOSESCRIPT
+
+@#donate
+@datanewday begg.idf
+
+; the above command will reset all #'s in BEGG.IDF to 0 *IF* a new day has
+; occured since the last time this command was called.
+
+@do `p70 is 106
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+
+
+@dataload begg.idf &playernum `p20
+
+; the above command is important - this is how you retrieve ALL data.
+; &playernum is the current players # in the trader.dat file, and `p20 is
+; a scratch var that we want to put the return result in.
+
+;
+;figure out how much
+
+@do `p21 is 10
+@do `p21 * `p09
+
+ @if `p20 is 1 then goto alldone
+ @busy
+ @clearblock 21 21
+ @do move 3 21
+ @if money < `p21 then goto nocash
+ @do write
+`r0    `2An old begger sits, waiting for money. Do you feel generous? (`0y`2/`0n`2)
+ @do readspecial `s01 YN
+ @if `s01 is N then do
+  @begin
+   @clearblock 21 21
+   @do move 3 21
+   @do write
+`0`2       you decide to keep your money`L`L`$ Greedy S&boy`L`L`L
+   @do statbar
+   @closescript
+  @end
+ @clearblock 21 21
+ @do move 3 21
+ @do write
+`r0  `2You toss `$$`p21 `2gold into the tin... `L`Lclink!`L`L clink!`L`L clink!`L`L
+ @do money - `p21
+ @datasave begg.idf &playernum 1
+ @dataload npc/npcgold.idf `p70 `p29
+ @do `p29 + `p21
+ @datasave npc/npcgold.idf `p70 `p29
+ @clearblock 21 21
+ @do move 3 21
+ @do saybar
+`0  `2Bless you my dear child may the gods be with you...`L`L`L`L`L
+ @do `p20 random 4 1
+ @if `p20 is 1 then goto gold
+ @if `p20 is 2 then goto alin
+ @if `p20 is 3 then goto charm
+ @clearblock 21 21
+ @do quebar
+ `r0  `2      You feel contented! What a lovely day.`L`L`L`L`L
+@CLOSESCRIPT
+@end
+
+@#gold
+ @do `p20 random 5 1
+ @do `p20 * 7
+ @dataload npc/npcgold.idf `p70 `p29
+ @if `p29 < `p20 then `p20 is `p29
+ @do `p29 - `p20
+ @datasave npc/npcgold.idf `p70 `p29
+ @do money + `p20
+ @do write
+`0  `2You gain `$`p20 `2gold!`L`L`L`L`L
+@CLOSESCRIPT
+
+@#alin
+ @do `p20 random 3 1
+ @do `p07 + `p20
+ @do write
+`0  `2You gain `$`p20 `2Alignment!`2`L`L`L`L`L
+@CLOSESCRIPT
+
+@#charm
+ @do `p20 random 3 1
+ @do `p08 + `p20
+ @do write
+`0  `2You gain `$`p20 `2Charm!`2`L`L`L`L`L
+@CLOSESCRIPT
+
+@#nocash
+ @clearblock 21 21
+ @do write
+`0        `2You dont have enough gold poor old begger!`L`L`L`L
+ @do statbar
+@CLOSESCRIPT
+
+@#alldone
+ @clearblock 21 21
+ @do write
+ `2   You have already donated enough.`L`W God Bless!`L`L`L
+ @do statbar
+@CLOSESCRIPT
+

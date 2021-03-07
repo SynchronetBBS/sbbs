@@ -1,0 +1,25 @@
+; Script file PAWNSHOP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE junkman2 000000328
+@DECLARE nomore 000000367
+@NOCHECK
+; End of .REF index
+
+;
+;       The Pawn Shop
+;
+;  Here is yet another complex IGM by Green Machine 23(r)
+;
+; 
+;   http://thor.prohosting.com/~greenie/
+;
+
+@#JUNKMAN2
+@show
+`r0`c
+зд©
+Ё Ё
+юды
+@#NOMORE
+@drawmap
+@update

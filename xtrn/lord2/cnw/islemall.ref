@@ -1,0 +1,210 @@
+; Script file ISLEMALL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:24 2001
+
+@DECLARE pawn 000000452
+@DECLARE pwstart 000000506
+@DECLARE magic 000000798
+@DECLARE mgstart 000000852
+@DECLARE weapons 000001409
+@DECLARE wpstart 000001463
+@DECLARE armor 000001822
+@DECLARE arstart 000001876
+@DECLARE misc 000002214
+@DECLARE mistart 000002268
+@DECLARE grocery 000002611
+@DECLARE grstart 000002665
+@NOCHECK
+; End of .REF index
+
+@#pawn
+@offmap
+@do moveback
+@do `v01 is 1
+@label pwstart
+@show
+ `r0`c   `9Isle of the Phreaks Pawn Shop
+
+  `%What would you like to part with kid?
+
+@do write
+`x`x
+@choice
+Sell something
+Leave
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@sellmanager
+
+ @end
+
+@if response not 2 then goto pwstart
+@drawmap
+@update
+
+
+@#magic
+@offmap
+@do moveback
+@do `v01 is 1
+@label mgstart
+@show
+
+`r0`c     `9Isle of the Phreaks Magic Shop
+
+    `%"What would you like today, `n?" Max asks.
+
+    "How did you know my name, sir?" you ask.
+
+"`n, you should know that, I am the mighty Max, Master of all known `bMAGICS`%!" Max says
+
+    "I am very honoured to be in your presence, sir" you say.
+
+@do write
+`x`x
+@choice
+Examine Magic Goods
+Say Bye and Leave
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+  05
+  40
+  55
+  64
+  70
+  @end
+
+@if response not 2 then goto mgstart
+@drawmap
+@update
+
+
+@#weapons
+@offmap
+@do moveback
+@do `v01 is 1
+@label wpstart
+@show
+
+`r0`c     `9Isle of the Phreaks Weapons Shop
+
+       `4You see a lot of good weapons laying around in the back
+
+@do write
+`x`x
+@choice
+Examine Weapons
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+  15
+  16
+  35
+  36
+  38
+  39
+  @end
+
+@if response not 2 then goto wpstart
+@drawmap
+@update
+
+@#armor
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c  `9Isle of the Phreaks Armor Shop
+
+     `4You see a lot of pieces of armor laying around in the back
+
+@do write
+`x`x
+@choice
+Examine Armor
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+ 13
+ 14
+ 20
+ 59
+ 62
+ @end
+
+@if response not 2 then goto arstart
+@drawmap
+@update
+
+@#misc
+@offmap
+@do moveback
+@do `v01 is 1
+@label mistart
+@show
+`r0`c  `9Isle of the Phreaks Assorted Goods Shop
+
+     `4You see an assortment of goods
+
+@do write
+`x`x
+@choice
+Examine Goods
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+ 5
+ 17
+ 20
+ 26
+ 27
+ 28
+ 32
+ 33
+ 51
+ @end
+
+@if response not 2 then goto mistart
+@drawmap
+@update
+
+
+@#grocery
+@offmap
+@do moveback
+@do `v01 is 1
+@label grstart
+@show
+`r0`c   `5Isle of the Phreaks Grocery Store
+
+@do write
+`x`x
+@choice
+Examine Goods
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+@begin
+@buymanager
+ 1
+ 3
+ @end
+
+@if response not 2 then goto grstart
+@drawmap
+@update
+

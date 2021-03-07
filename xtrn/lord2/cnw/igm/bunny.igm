@@ -1,0 +1,68 @@
+
+                     The Bunny Cave v1.01 by Tom Torbeck
+
+  QUICK INFO:
+  Version of LORD2 required to use it             : 1.01a
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : Yes (a few)
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+     (Actually, 1 REC file.  Requires L2 1.01!)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+  Description:
+  The Bunny Cave started as a joke, but bloomed pretty well after that.
+  Users can will gain gold and experience.  They MAY also gain 1 quest
+  point, 10 dodge points, 5 gems, and 1 charm if they meet all of the
+  challenges correctly.  Some items cancel out if they do things out of
+  order.  I did this on purpose.
+
+  Also, it is important to note that I made this tough.  The mosters adjust
+  automatically to the player they are fighting, making this far more of
+  a challenge then first meets the eye.  If you and your players are finding
+  this too hard, let me know.  I did want it to be difficult.  I found that
+  most players above 25 level (including myself) were just walking around
+  killing EVERYTHING that ran into.  The Bunny Cave fixes that.  My current
+  character is 34th level, has both the Koshi Sowrd and Armour and STILL
+  managed to get killed.  I feel that my goal was obtained.  ;-)
+
+  This IGM replaces the Old Man's Rock (1189).  The old man still functions,
+  just an entrance is added north of were he sits naked.  One new screen
+  is added to handle the internal section of the cave (492).
+
+  SPECIAL NOTE: When you reset your game, delete BUNNY.IDF! (Igm Data File)
+
+  HISTORY:  v1.00  Initial Release
+            v1.01  Bug fixes in @Choice (Thanks, Ben!)
+            
+  To install, unzip into your LORD2 dir and type:
+
+  IGM BUNNY.IGM
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `@The Bunny Cave v1.01 `3by Tom Torbeck
+
+replacescreen: 1189 1 show
+
+replacescreen: 492 2 noshow
+
+installmessage:
+
+                              `%ABOUT THIS IGM:
+  `2This is my first public release IGM.  It may not be much, but I thought
+  that the idea was pretty funny, so I put it together.  I did try to avoid
+  the "walk in the park for easy money" though.
+
+              Kudos to Seth for the `0LORD2`2 world and engine!
+
+  `3Do you have internet email?  Join the LORD/LORD2 mailing list by sending
+  an email to `9listserv@leftside.com `3in the `@Message BODY`3, place the
+  words "`2SUBSCRIBE LORDLIST`3" <w/o quotes>.  This list has been approved
+  by Seth, he'll be around to answer questions on it too.'!!

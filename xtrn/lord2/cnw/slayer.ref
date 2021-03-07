@@ -1,0 +1,996 @@
+; Script file SLAYER.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE shop 000001027
+@DECLARE potion 000001248
+@DECLARE man1 000001428
+@DECLARE gareth 000002507
+@DECLARE pawn 000002636
+@DECLARE slayer 000002823
+@DECLARE beatslayer 000003568
+@DECLARE tree 000003901
+@DECLARE man2 000004180
+@DECLARE bank 000004626
+@DECLARE bankstart 000004794
+@DECLARE bankagain 000005913
+@DECLARE deposit 000007408
+@DECLARE withdraw 000007979
+@DECLARE healers 000008873
+@DECLARE stables 000010674
+@DECLARE stabletop 000010782
+@DECLARE door 000013624
+@DECLARE toilet 000013669
+@DECLARE barman1 000013731
+@DECLARE barman2 000013789
+@DECLARE barman3 000013866
+@DECLARE barman4 000013928
+@DECLARE deathraise 000014000
+@DECLARE death 000014834
+@DECLARE deathstart 000014891
+@DECLARE win 000015533
+@DECLARE die 000016091
+@DECLARE wakeup 000016265
+@DECLARE arena 000016526
+@DECLARE master 000016729
+@DECLARE startfight 000017324
+@DECLARE nomore 000017739
+@NOCHECK
+; End of .REF index
+
+@#shop
+;SLAYER's Shop
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                    `r1SLAYER's Shop`r0
+ 
+What would you like to buy?
+ 
+ 
+@buymanager
+62
+64
+68
+70
+@drawmap
+@update
+ 
+@closescript
+@end
+ 
+@#potion
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                   `r1The Potion Shop`r0
+ 
+What do ya want to buy?
+ 
+ 
+@buymanager
+5
+40
+55
+50
+66
+@drawmap
+@update
+ 
+@#man1
+@dataload coolness.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do saybar
+`3Cool`!NesS: `%Hello again.
+@closescript
+@end
+ 
+@do moveback
+@offmap
+@busy
+@show
+`r0`c `r1Strange Man`r0
+ 
+ 
+`0"Hello warrior."  `2Says the strange man.
+ 
+`$"Who are you?"  `2You ask.
+ 
+`0"I am `!Cool`3NesS`0!  Friend to `1S`4L`!A`3Y`@E`%R`0, the greatest warrior ever!
+Are you interested im money and power?"
+ 
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Of course.
+No, I'm already rich and powerful.
+@if responce is 1 then do offmap
+@offmap
+@begin
+@datasave coolness.idf &playernum 1
+@datasave slay.idf &playernum 1
+@busy
+@show
+`r0`c
+ 
+`0"This will be pretty flippin hard!  You will need the best weapon and armour, 
+and plenty of hit points, muscle and dodge.  To find him go right as far as
+you can, then down three times and over once.  I wasn't supposed to let you 
+know that, so don't tell `1S`4L`!A`3Y`@E`%R`0!"
+ 
+`$"Ok."  `2You say excitedly.
+@key nodisplay  
+@update
+@end
+ 
+@if response is 2 then do end
+@end
+@drawmap
+@update
+ 
+ 
+ 
+@#gareth
+@do moveback
+ 
+@do saybar
+`9Gareth:  `0Follow the path to `9S`4L`!A`3Y`@E`%R`0's Domain   
+ 
+@closescript
+@end
+ 
+@#pawn
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                           `r1SLAYER's Pawn Shop`r0
+ 
+So, what would you like to sell?
+ 
+ 
+@sellmanager
+ 
+@drawmap
+@update
+ 
+@#slayer
+@do moveback
+@dataload slayer.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do saybar
+`%You pay your respects to `9S`4L`!A`3Y`@E`%R`%.
+@closescript
+@end
+ 
+@busy
+@fight
+;name
+`9S`4L`!A`3Y`@E`%R`2
+;string when you see him
+You draw your `0s&weapon `2and prepare for the battle of a lifetime.
+;powermove kill string
+You deliver the final blow to this great warrior.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and weapon strength, up to 5
+chops with his Death Axe|800
+casts a death spell|800
+lunges with his Dragon Rapier|800
+none|none
+none|none
+;defense
+700
+;gold reward
+9000
+;experience
+3000
+;hit points
+1000
+;if win
+SLAYER.REF|BEATSLAYER
+;if lose
+GAMETXT.REF|DIE
+;if run
+NONE|NONE
+ 
+@#BEATSLAYER
+@datasave slayer.idf &playernum 1
+@show
+`c `r1 YOU WERE VICTORIOUS! `r0
+ 
+`0"Nice fight!"  `2Says `1S`4L`!A`3Y`@E`%R`2.
+ 
+`%(YOU GET 5 QUEST POINTS!)
+ 
+@key nodisplay 
+@do `p18 + 5
+@drawmap
+@update
+@do addlog
+         `n has been victorious at `1S`4L`!A`3Y`@E`%R`0's domain!
+@run seperate in gametxt.ref
+ 
+ 
+@#tree
+@do moveback
+@dataload tree.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do saybar
+There is nothing in the tree.
+@closescript
+@end
+ 
+@datasave tree.idf &playernum 1
+@do saybar
+`%You find a silver potion!  Wasn't I nice to give you that?
+@do `i54 + 1
+ 
+@#man2
+  @do moveback
+  @do `p20 random 5 1
+  ; now `p20 is a random # between 1 and 5
+ 
+  @if `p20 is 1 then saybar
+`4Aaron: `% Talk to that guy in the casino!
+  @if `p20 is 2 then saybar
+`4Aaron:  `%That purple tree's got something!
+  @if `p20 is 3 then saybar
+`4Aaron:  `9S`4L`!A`3Y`@E`%R's a real tough fighter!
+  @if `p20 is 4 then saybar
+`4Aaron:  `%Get drunk!!
+  @if `p20 is 5 then saybar
+`4Aaron:  `%I'll kick your ass!
+ 
+@#bank
+@do `p30 27
+@do `v01 is 1
+@do `p22 is 0
+@do `p24 is 0
+@do `p25 is 0
+@offmap
+@do moveback
+@do `s09 is slayer
+@routine DONEQUEST in VAULTS.REF
+@label bankstart
+@show
+`r0`c  `r1 `3Cool`!NesS`% Bank `r0
+ 
+`2  A large male clerk glares at you.
+ 
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+ 
+ @end
+ 
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+ 
+ @end
+ 
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+ 
+ 
+  `2The stalky man asks you to sit down.
+ 
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+ 
+ 
+  `0"Your current residence?"
+ 
+  @do write
+`x`x
+  @do readstring 50 `s01
+ 
+  @show
+ 
+ 
+  `0"Your net income yearly?"
+ 
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+ 
+  @end
+ 
+  @if `v40 more 19 then do
+   @begin
+   @show
+ 
+ 
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+ 
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+ 
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+ 
+ 
+  `2You decide you really don't want to open an account with this
+  branch.
+ 
+`k
+  @do goto bankstart
+  @end
+ 
+  @if `v40 > money then do
+   @begin
+   @show
+ 
+ 
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+ 
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+ 
+  `2The big man eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+ 
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+ 
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+ 
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+ 
+`k
+@drawmap
+@update
+@closescript
+   @end
+ 
+  @show
+ 
+ 
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @do `p30 is 27
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @show
+ 
+ 
+  `0"Very good S&sir!  Your new account has been opened!"
+ 
+`k
+  @do goto bank
+  @end
+ 
+ 
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+ 
+  @do `p30 is 27
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+ 
+  @end
+ 
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+ 
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+ 
+  @if `v40 is bank then do
+   @begin
+   @show
+ 
+ 
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the man asks.   
+ 
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+ 
+   @end
+ 
+  @do `p30 is 27
+  @routine widthdraw in vaults.ref
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+ 
+ 
+ 
+@drawmap
+@update
+ 
+@#healers
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+ 
+  `4Reap`1er `2inspects your wounds.
+ 
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+ 
+ 
+ @show
+`0"You look pretty crappy!  Fix ya up for `$`p20`0 gold, ok?"
+ 
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+ 
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+ 
+ 
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+ 
+`k
+ @end
+ 
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+ 
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `4Reap`1er`2 informs you.
+ 
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+ 
+  `2You gulp down the weird black pills
+ 
+  `4HIT POINTS GO DOWN TO 1.
+ 
+`k
+ @end
+ 
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+  @do `p30 is 27
+  @do `v40 is `p20
+  @routine deposit in vaults.ref
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+ 
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+ 
+@show
+`0"You have no ailments, come back later," `4Reap`1er `2Cackles.
+ 
+`k
+@drawmap
+@update   
+ 
+@#STABLES
+;lets them warp to a few places
+;added by CNW: buy a horse here.
+@offmap
+@do moveback
+@label stabletop
+@clear screen
+@do move 1 1
+@show
+`r0             `r1  `9S`4L`!A`3Y`@E`%R's Stables `r0
+
+  `0"Greetings, s&sir!  We sell horses here, we no longer offer transport
+  `0services.
+
+@do `v01 is 1
+@do move 15 9
+@choice
+`#Why a horse?   `%
+-`t79 1 `$Buy a horse    `%
++`t79 1 `4Sell your horse`%
+`%Leave          `%
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0A horse you ask?`\
+  If your horse is healthy and well kept, you can get to your
+   destinations much quicker than by foot.
+
+  You MUST take good care of your horse if you want to keep it
+   around, or resell someplace else.
+
+  `7<To mount your horse, press "`%Z`7" from the map screen>
+  @key
+  @do goto stabletop
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `0It costs `$$8,000 `0here for a healthy horse.
+`\   Do you still want to buy it?`\
+@choice
+`$Forget it
+>&money 7999 `$Yes
+@if responce is 2 then do
+        @begin
+        @do money - 8000
+        @do `t80 is 255
+        @bitset `t79 1 1
+        @show
+`\`0Ok, you now have a healthy horse. Have fun!`\`k
+        @end
+  @do goto stabletop
+  @end
+@if responce is 3 then do
+  @begin
+  @do `p21 is `v10
+  @do `p21 / 2
+  @do `p22 is `v11
+  @if `t80 > 50 then do
+        @begin
+        @do `p20 is 55
+        @end
+  @if `t80 > 75 then do
+        @begin
+        @do `p20 is 510
+        @end
+  @if `t80 > 100 then do
+        @begin
+        @do `p20 is 1100
+        @end
+  @if `t80 > 125 then do
+        @begin
+        @do `p20 is 2100
+        @end
+  @if `t80 > 150 then do
+        @begin
+        @do `p20 is 3100
+        @end
+  @if `t80 > 175 then do
+        @begin
+        @do `p20 is 4100
+        @end
+  @if `t80 > 200 then do
+        @begin
+        @do `p20 is 5100
+        @end
+  @if `t80 > 225 then do
+        @begin
+        @do `p20 is 7100
+        @end
+
+  @if `p22 < `p21 then do
+        @begin
+        @if `t80 > 200 then do
+                @begin
+                @do `p20 + 500
+                @end
+        @if `t80 > 100 then do
+                @begin
+                @do `p20 + 250
+                @end
+        @end
+  @if `p22 > `p21 then do
+        @begin
+        @if `t80 > 200 then do
+                @begin
+                @do `p20 + 600
+                @end
+        @if `t80 > 100 then do
+                @begin
+                @do `p20 + 290
+                @end
+        @end
+
+  @routine horsehp in vehicle.ref
+  @show
+`\`\  `0I will buy your `%`s02 `0horse for `$`p20.
+`\   Do you still want to sell it?`\
+@do `v01 is 1
+@choice
+`$Forget it
+`$Yes
+@if responce is 2 then do
+        @begin
+        @do money + `p20
+        @do `t80 is 0
+        @bitset `t79 1 0
+        @show
+`\`0Thanks!  Come again.`\`k
+        @end
+  @do goto stabletop
+  @end
+@drawmap
+@update
+ 
+@#door
+@do saybar
+`%It squeeks open.
+ 
+@#toilet
+@do saybar
+`%That toilet does not smell good.
+ 
+@#barman1
+@do saybar
+`%Brad:  Ha, this games rules!
+ 
+@#barman2
+@do saybar
+`0Enzo:  `%Hello, I'm so cool!  I know I'm cool!!
+ 
+@#barman3
+@do saybar
+`%Drunk:  ::BURP::  Have a drink!!
+ 
+@#barman4
+@do saybar
+`!Toilet `$Duck:  `%This IGM is so cool!!
+ 
+@#deathraise
+;can they raise their level?
+ 
+@do `p20 is `p09
+@do `p20 * 100
+@do `p20 * `p09
+ 
+@if `p20 > `p01 then do
+ @begin
+ @do `p21 is `p20
+ @do `p21 - `p01
+ @show
+ 
+ 
+  `2Next level raise at `%`p20`2.
+ 
+  `0"You need about `%`p21`0 more experience before your next level raise!"
+ 
+  `2Your face falls - damn!
+ 
+`k
+@run deathstart
+@closescript
+@end
+ 
+ @if `t04 > 0 then do
+ @begin
+ @show
+ 
+ 
+  `0"You already failed once today, `n.  I cannot let you try again
+  tomorrow," `4Death `2tells you
+ 
+  `2Your face falls - what a bummer!
+ 
+`k
+@run death
+@closescript
+@end
+ 
+ 
+ @show
+ 
+ 
+  `0"You have been sitting at level `p09 long enough."
+ 
+@show
+`k
+`c  `r1`4 PEPARING FOR BATTLE `r0
+ 
+`4  Death`2 escorts to a small room.    
+ 
+  `k
+@run startfight in slayer.ref
+@closescript
+ 
+ 
+@#DEATH
+@offmap
+@do moveback
+@do `v01 is 1
+@label deathstart
+@show
+`r0`c  `4Death`%'s Training centre
+ 
+`2  This is a great training centre, created by `1S`4L`!A`3Y`@E`%R`2 himself.  
+ 
+  `4Death `2salutes as you come in.
+ 
+@do write
+`x`x
+@choice
+Ask for a level raise.
+Talk to Master Death.
+Leave
+@if responce is 1 then do
+ @begin
+ @run deathraise
+ @do goto deathstart
+ @end
+ 
+ 
+@if responce is 2 then do
+ @begin
+  @show
+`r0`c  `%Talking to Master `4Death
+ 
+  `0"Hello `n I am a student of `1S`4L`!A`3Y`@E`%R`0, I will raise your level
+  in a duel with me."
+ 
+  `$"Okay, that sounds cool!"
+  
+ 
+`k
+ @do goto deathstart
+ @end
+ 
+@drawmap
+@update
+ 
+;training
+@#WIN
+ 
+@do `p21 is 5
+@do `p03 + `p21
+ 
+@do `p22 is 2
+@do `p04 + `p22
+ 
+@do `p23 is 1
+@do `p05 + `p23
+ 
+ 
+@do `p09 + 1
+ 
+@do addlog
+  `r4  `r0 `0`n`2 has beaten `0`e`2 and become level `p09! `r4  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do `p02 is `p03
+@show
+`r0`c  `r1 YOU HAVE FACED DEATH AND TRIUMPHED! `r0 
+ 
+  `2You get a free heal after the duel.
+ 
+  `%YOU ARE NOW LEVEL `p09.
+ 
+  `2You gain `0`p21`2 hitpoints,`0 `p22`2 muscle and `0`p23`2 dodge.
+ 
+`k
+@run death in slayer.ref
+ 
+@#DIE
+@do `p02 is 1
+@do `t04 is 1 
+@show
+`r0`c  `r4 DEATH HAS BESTED YOU `r0 
+ 
+  `2You fall unconcious.
+ 
+  You have failed.
+ 
+`k
+@run death in slayer.ref
+ 
+@#WAKEUP
+@do `t04 is 1 
+@show
+`r0`c  `r4 YOU RUN AWAY REALLY FAST `r0 
+ 
+  `2You get away from the fight.  Wiping the beads of sweat from your brow,
+  you wonder how you could have thought you were ready for this...
+ 
+`k
+@run death in slayer.ref
+ 
+ 
+@#arena
+@show
+`c  `r1                           `4HELL                           `r0
+ 
+  `@Your body shoots down to a very warm place.
+ 
+  You land and see `4Death `@waiting for you.
+ 
+@
+ 
+ 
+@#master
+@show
+  `4Death `2prepares to fight you. 
+ 
+`k
+@fight
+;name
+`4Death
+;string said when you see him
+Death draws his scythe.
+;power move kill string
+You've killed `4Death`2!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+swings his scythe|`p22
+spits on you|`p22
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+0
+;experience
+0
+;hit points
+`p21
+;if win: ref file|name or NONE
+SLAYER.REF|WIN
+;if lose: ref file|name or NONE
+SLAYER.REF|DIE
+;if runs: ref file|name or NONE
+SLAYER.REF|WAKEUP
+@closescript
+ 
+@#startfight
+ 
+;do math to create monster
+ 
+@do `p21 is `p03
+@do `p25 is `p09
+;@do `p25 * `p25
+@do `p25 random `p25
+@do `p21 + `p25
+ 
+@do `p22 is S&wep_num
+@do `p22 + `p04
+ 
+@do `p23 is S&arm_num
+@do `p23 + `p05
+ 
+@do `p24 random `p22
+@do `p21 + `p24
+@do `p24 random `p22
+@do `p21 - `p24
+ 
+@do `p24 random `p22
+@do `p24 / 5
+@do `p22 - `p24
+ 
+@routine arena `p20
+ 
+@routine master `p20
+ 
+ 
+@#NOMORE
+ 
+ 
+ 
+ 
+                  

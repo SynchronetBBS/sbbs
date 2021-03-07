@@ -1,0 +1,61 @@
+
+                          Gorilla Villa by Talaphid 9th V
+
+Lord 2 1.01a: backwards compatiblity unknown, probably all back to á5
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yup
+  Using any LORD2 vars?                           : Nope
+  Overwrites any original .refs?                  : Nope
+  Saves and loads its own vars independently?     : Yup
+  Adds new .refs?                                 : Yup! (1- GORILLA.REF)
+  Replaces screens?                               : Yup! (3)
+                                                    1 E of Porttown)
+                                                    2 NNE of Sosen Village
+  Adds screens?                                   : Yup! (2)
+  Free?                                           : Sure!
+
+
+  Description:
+
+Read the beginning of GORILLA.REF. Its like New York City, without the bad
+things. So really, its just "City". A healer, five ownable houses (just safe
+place to rest- no more, no less). A stables, so that there's a two-way link
+Porttown/Gorilla Villa (A shaman 1E of Porttown links to Gorilla Villa).
+The Chief gets to set the house's price (50gp to start with), and can
+collect the money from the treasury. Chief is a player, BTW. A nice change
+of scenery, too -- the buildings are all TREES!!! =)
+
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM GORILLA.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `5Gorilla `2Villa `3by `@T`4alaphid
+replacescreen: 60 1 noshow
+
+replacescreen: 140 2 show
+
+replacescreen: 957 3 show
+
+replacescreen: 220 4 show
+
+installmessage:
+
+        `2While you were monkeying around, some gorillas went and settled
+into your LORD ][ game. They live far north of Sosen village, but can be
+reached by their helpful shaman who lives just east of Porttown. Sometimes,
+though, their construction philosophy is enough to drive ya...well, up a
+tree.
+
+        Now that I'm through punning around, I'm through. (Gosh, that was
+DUMB.) This doesn't screw up your game, doesn't do anything bad (and if it
+does, its not my fault). The worst it could do is give people a hiding spot.
+Oh no. Just get a Smackrod and no worries, right? =)
+
+`7mail: TALAPHID@JUNO.COM

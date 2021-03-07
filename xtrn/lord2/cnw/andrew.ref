@@ -1,0 +1,233 @@
+; Script file ANDREW.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE start 000000254
+@DECLARE nomore 000003911
+@DECLARE moon 000003979
+@DECLARE nocash 000004547
+@DECLARE end 000004669
+@NOCHECK
+; End of .REF index
+
+@#START
+@do `p70 is 100
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@datanewday Andrew.idf
+@dataload Andrew.idf &playernum `p20
+@if `p20 is 1 then do
+ @begin
+  @do goto NOMORE
+ @end
+@offmap
+@Clear Screen
+@show
+`@Hey, `N. `@I am the coolest guy in the world!!
+
+@Do `v01 is 1
+@Choice
+`$Yes I know, I agree!!!
+`4No, you're not!!
+@IF Responce is 2 then goto end
+  @Clear Screen
+@datanewday House.idf
+@dataload House.idf &playernum `p20
+@if `p20 is 1 then do
+ @begin
+  @do goto end
+ @end
+@offmap
+@Clear Screen
+@show
+
+`@You're cool, `N.
+
+`@Why do you visit me then?
+
+
+`$`2you answer,
+@Do `v01 is 1
+@Choice
++`t19 2 `$Because I have heard that you give things away
+`4Forget it, maybe later!
+@if responce is 2 then goto end
+@show
+
+
+
+`@Thats right, but you can lose things too!
+
+`@Are you sure you want to try?
+
+@Do `v01 is 1
+@Choice
+`$Yes I am sure i want to try!!
+`4Forget it, maybe later!
+@IF Responce is 1 then do
+ @begin
+
+  @do `p21 random 15 1
+@show
+`x`x
+  @if `p21 is 1 then `p11 + 500 
+  @if `p21 is 1 then do
+        @begin
+        @show
+`@Time slows down for a while; You get 500 turns!!
+        @end
+  @if `p21 is 2 then money + 1000
+  @if `p21 is 2 then do
+        @begin
+        @show
+`6You GAIN 1000 `$Gold`6!!
+        @end
+  @if `p21 is 3 then `i05 + 2
+  @if `p21 is 3 then do
+        @begin
+        @show
+`7You get 2 `2Green `7Potion!!
+        @end
+  @if `p21 is 4 then `i17 + 2
+  @if `p21 is 4 then do
+        @begin
+        @show
+`8You GAIN 2 Gloworms!!
+        @end
+  @if `p21 is 5 then money + 5000
+  @if `p21 is 5 then do
+        @begin
+        @show
+`5You get 5000 `$Gold`5!!
+        @end
+  @if `p21 is 6 then `i53 + 1
+  @if `p21 is 6 then do
+        @begin
+        @show
+`4You GAIN 1 `$Gold `4Potion!!
+        @end
+  @if `p21 is 7 then money + 250
+  @if `p21 is 7 then do
+        @begin
+        @show
+`@Time slows down for a while; You GAIN 250 Turns!!
+        @end
+  @if `p21 is 8 then `i54 + 1
+  @if `p21 is 8 then do
+        @begin
+        @show
+`5You get 1 `7Silver `5Potion!
+        @end
+  @if `p21 is 9 then `i40 + 1
+  @if `p21 is 9 then do
+        @begin
+        @show
+`0You get 1 `1Blue `0Potion!
+        @end
+  @if `p21 is 10 then `p11 + 750
+  @if `p21 is 10 then do
+        @begin
+        @show
+`$Time slows down for a while; You GAIN 750 turns!
+        @end
+  @if `p21 is 11 then do
+        @begin
+        @if `p11 < 500 then `p11 is 0
+        @if `p11 > 500 then `p11 - 500
+        @if `p11 is 500 then `p11 is 0
+        @show
+`4You're wasting your time; You lose 500 turns!!
+        @end
+  @if `p21 is 12 then do
+        @begin
+        @if money < 1000 then money is 0
+        @if money > 1000 then money - 1000
+        @if money is 1000 then money - 1000
+        @show
+`4You'd better check your pockes; You lose 1000 `$Gold`6!!
+        @end
+  @if `p21 is 13 then `p02 is 1
+  @if `p21 is 13 then do
+        @begin
+        @show
+`4WACK!; Your hitpoints are at 1!
+        @end
+  @if `p21 is 14 then do
+        @begin
+        @if `p11 < 750 then `p11 is 0
+        @if `p11 > 750 then `p11 - 750
+        @if `p11 is 750 then `p11 - 750
+        @show
+`4You're wasting your time; You lose 750 turns!!
+        @end
+  @if `p21 is 15 then do
+        @begin
+        @if `p11 < 2000 then `p11 is 0
+        @if `p11 > 2000 then `p11 - 2000
+        @if `p11 is 2000 then `p11 - 2000
+        @show
+`4You're wasting your time; You lose 2000 turns!!
+        @end
+ @end
+@datasave Andrew.idf &playernum 1
+@key bottom
+@drawmap
+@update
+@closescript   
+@end
+
+@#NOMORE
+@do saybar
+`$This is my house, get lost!!
+@Closescript
+
+@#Moon
+@offmap
+@do moveback
+@Clear Screen
+@show
+`r0`c  `%Andrew's Moonstone shop
+
+`2  There are so many white stones in the house!
+
+`2A old man comes to you.
+
+`@Would you buy a great, white moonstone?
+
+`@It only cost 200000 `$Gold`@!!
+
+@if money < 200000 then goto Nocash
+@do `v01 is 1
+@choice
+`$Yes!
+`4No, maybe later!
+@if responce is 1 then do
+ @begin
+  @do money - 200000
+  @Clear Screen
+  @show
+`$You got a perfectly round white stone!
+  @do `i57 + 1
+ @end
+
+@key buttom
+@do moveback
+@do statbar
+@drawmap
+@update
+@closescript
+
+@#Nocash
+@show
+`4You don't have enough money!!
+@do moveback
+@do statbar
+@key buttom
+@drawmap
+@update
+@closescript
+
+@#end
+@drawmap
+@update
+@closescript

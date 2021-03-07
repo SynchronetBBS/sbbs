@@ -1,0 +1,478 @@
+; Script file ORACLE1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE scene1 000000181
+@DECLARE scene2 000006069
+@NOCHECK
+; End of .REF index
+
+@#scene1
+@show
+`r0`c
+@do move 1 1
+@show
+`r2`0
+                                                                            
+                                                                          
+                                                                     
+                              `$ `0                                      
+                                                                            
+                                                                   
+                                                                  
+                                                                 
+                                                                   
+                                                                       
+                                                                      
+                                                                      
+                                                                  
+                                                                    
+                                                            
+                                                        
+                                                                   
+                                                                      
+ 
+@do move 36 20
+@do write
+`w`!
+@do move 36 20
+@do write
+`w`x
+@do move 36 19
+@do write
+`!
+@do move 36 19
+@do write
+`w`x
+@do move 36 18
+@do write
+`!
+@do move 36 18
+@do write
+`w`x
+@do move 36 17
+@do write
+`!
+@do move 36 17
+@do write
+`w`x
+@do move 36 16
+@do write
+`!
+@do move 36 16
+@do write
+`w`x
+@do move 36 15
+@do write
+`!
+@do move 36 15
+@do write
+`w`x
+@do move 36 14
+@do write
+`!
+@do move 36 14
+@do write
+`w`x
+@do move 36 13
+@do write
+`!
+@do move 36 13
+@do write
+`w`x
+@do move 36 12
+@do write
+`!
+@do move 36 12
+@do write
+`w`x
+@do move 36 11
+@do write
+`!
+@do move 36 11
+@do write
+`w`x
+@do move 36 10
+@do write
+`!
+@do move 36 10
+@do write
+`w`x
+@do move 36 9
+@do write
+`!
+@do move 36 9
+@do write
+`w`x
+@do move 36 8
+@do write
+`!
+@do move 36 8
+@do write
+`w`x
+@do move 36 7
+@do write
+`!
+@do move 36 7
+@do write
+`w`x
+@do move 36 6
+@do write
+`!`l`l
+@show
+`r0`c                               `$The Oracle
+
+    `0"I am the seer you sent for," `2the oracle informs the man.  `0"you wish
+    to know what it is that makes me sense the return of the red dragon?"
+    
+    `$"It was on my mind," `2he replies.
+    `k
+    `0"The birth of a hero has happened and one who the gods only grant
+    when the world is in danger as they did so long ago."  `2he says.  `0"I
+    know you will be visited soon."
+
+    `$"I'll seek the warrior out then..."
+    `k
+    `0"No!" `2the oracle screams in response.  `0"The s&man will seek you out."
+    `k
+@show
+`r0`c
+@do move 1 1
+@show
+`r2`0
+                                                                            
+                                                                          
+                                                                     
+                              `$ `0                                      
+                                                                            
+                                                                   
+                                                                  
+                                                                 
+                                                                   
+                                                                       
+                                                                      
+                                                                      
+                                                                  
+                                                                    
+                                                            
+                                                        
+                                                                   
+                                                                      
+ 
+@do move 36 6
+@do write
+`!`l`l
+@do move 36 6
+@do write
+`w`x
+@do move 36 7
+@do write
+`!
+@do move 36 7
+@do write
+`w`x
+@do move 36 8
+@do write
+`!
+@do move 36 8
+@do write
+`w`x
+@do move 36 9
+@do write
+`!
+@do move 36 9
+@do write
+`w`x
+@do move 36 10
+@do write
+`!
+@do move 36 10
+@do write
+`w`x
+@do move 36 11
+@do write
+`!
+@do move 36 11
+@do write
+`w`x
+@do move 36 12
+@do write
+`!
+@do move 36 12
+@do write
+`w`x
+@do move 36 13
+@do write
+`!
+@do move 36 13
+@do write
+`w`x
+@do move 36 14
+@do write
+`!
+@do move 36 14
+@do write
+`w`x
+@do move 36 15
+@do write
+`!
+@do move 36 15
+@do write
+`w`x
+@do move 36 16
+@do write
+`!
+@do move 36 16
+@do write
+`w`x
+@do move 36 17
+@do write
+`!
+@do move 36 17
+@do write
+`w`x
+@do move 36 18
+@do write
+`!
+@do move 36 18
+@do write
+`w`x
+@do move 36 19
+@do write
+`!
+@do move 36 19
+@do write
+`w`x
+@do move 36 20
+@do write
+`!
+@do move 36 20
+@do write
+`w`x`l`l
+@drawmap
+@update
+@closescript
+
+@#scene2
+@loadmap 159
+@drawmap
+@do move 19 19
+@do write
+`w`r6`#
+@do move 19 19
+@do write
+`w`r6`x
+@do move 19 18
+@do write
+`r6`#
+@do move 19 18
+@do write
+`w`r6`x
+@do move 19 17
+@do write
+`r6`#
+@do move 19 17
+@do write
+`w`r6`x
+@do move 19 16
+@do write
+`r6`#
+@do move 18 16
+@do write
+`w`r6`#`x
+@do move 17 16
+@do write
+`w`r6`#`x
+@do move 16 16
+@do write
+`w`r6`#`x
+@do move 15 16
+@do write
+`w`r6`#`x
+@do move 14 16
+@do write
+`w`r6`#`x
+@do move 13 16
+@do write
+`w`r6`#`x
+@do move 12 16
+@do write
+`w`r6`#`x
+@do move 12 16
+@do write
+`w`r6`x
+@do move 12 15
+@do write
+`r6`#
+@do move 12 15
+@do write
+`w`r6`x
+@do move 12 14
+@do write
+`r6`#
+@do move 12 14
+@do write
+`w`r6`x`#
+@do move 19 19
+@do write
+`r6`$`l`l
+@do move 19 19
+@do write
+`w`r6`x
+@do move 19 18
+@do write
+`r6`$
+@do move 19 18
+@do write
+`w`r6`x
+@do move 19 17
+@do write
+`r6`$
+@do move 19 17
+@do write
+`w`r6`x
+@do move 19 16
+@do write
+`r6`$
+@do move 18 16
+@do write
+`w`r6`$`x
+@do move 17 16
+@do write
+`w`r6`$`x
+@do move 16 16
+@do write
+`w`r6`$`x
+@do move 15 16
+@do write
+`w`r6`$`x
+@do move 14 16
+@do write
+`w`r6`$`x
+@do move 13 16
+@do write
+`w`r6`$`x
+@do move 12 16
+@do write
+`w`r6`$`x
+@do move 12 16
+@do write
+`w`r6`x
+@do move 12 15
+@do write
+`r6`$
+@do move 12 15
+@do write
+`w`r6`x`$`l`l
+@do move 25 14
+@do write
+`|`|`r6`!
+@do move 24 14
+@do write
+`w`r6`!`x
+@do move 23 14
+@do write
+`w`r6`!`x
+@do move 22 14
+@do write
+`w`r6`!`x
+@do move 21 14
+@do write
+`w`r6`!`x`l`l
+@show
+`r0`c                               `$The Oracle
+
+    `0"The warrior has come to the land," `2the oracle tells them all.
+    `0"We must be ready and tell the rulers of the coming.  I have already
+    spoken to the Prince of Arrisville."
+    `k
+    `#"I can't go anywhere though," `2the woman responds.  `#"I busy watching
+    the man Barak whose deeds stain the soil he stands on."
+    `k
+    `0"Then don't leave him."
+    `k
+    `$"I'll find the Koshi and warn them of the coming," `2the other
+    gentleman says.  `$"I'll will wait there for s&him or you to come."
+    `k
+    `0"Then until we all meet again."
+    `k
+@loadmap 159
+@drawmap
+@do move 21 14
+@do write
+`r6`!
+@do move 13 15
+@do write
+`r6`$
+@do move 13 14
+@do write
+`r6`#
+@do move 21 14
+@do write
+`l`l`r6`|
+@do move 13 15
+@do write
+`r6`|
+@do move 21 14
+@do write
+`r6`$ì
+@do move 13 15
+@do write
+`r6`$ì
+@do move 12 14
+@do write
+`w`r6`#`$ì
+@do move 12 14
+@do write
+`w`r6`x
+@do move 12 15
+@do write
+`r6`#
+@do move 12 15
+@do write
+`w`r6`x
+@do move 12 16
+@do write
+`r6`#
+@do move 12 16
+@do write
+`w`r6`x`#
+@do move 13 16
+@do write
+`w`r6`x`#
+@do move 14 16
+@do write
+`w`r6`x`#
+@do move 15 16
+@do write
+`w`r6`x`#
+@do move 16 16
+@do write
+`w`r6`x`#
+@do move 17 16
+@do write
+`w`r6`x`#
+@do move 18 16
+@do write
+`w`r6`x`#
+@do move 19 16
+@do write
+`w`r6`x
+@do move 19 17
+@do write
+`r6`#
+@do move 19 17
+@do write
+`w`r6`x
+@do move 19 18
+@do write
+`r6`#
+@do move 19 18
+@do write
+`w`r6`x
+@do move 19 19
+@do write
+`r6`#
+@do move 19 19
+@do write
+`w`r6`x`l`l
+@loadmap 1205
+@drawmap

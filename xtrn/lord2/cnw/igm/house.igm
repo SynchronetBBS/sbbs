@@ -1,0 +1,63 @@
+
+                   Greentree Manor by CHRiS Belanger V1.00
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  This is my first IGM, so go easy on me.
+
+  I found that all the castles cost WAAY too much for a newbie, and
+  had a bunch of stuff that made it expensive.
+
+  This is a no-frills house with a tub (1 random event per day) and a TV
+  (heals you).
+  
+  To install:
+  
+  IGM HOUSE.IGM
+
+  The IGM should make 2 files: HOUSE1.DAT (owner + password), and BUCKET.DAT
+  (treasury).
+
+  To uninstall, do the same thing again.
+
+  To test, just go to the bottom-left corner of Greentree and look for a 
+  blue house. It's that simple, my friend!!
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Greentree Manor `2by `@CHR`%i`@S `%Belanger
+replacescreen: 69 1 noshow
+
+replacescreen: 229 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Ok, this is my first IGM, and yes, it `%kinda sucks`2. What it is is a little
+  house in Greentree aimed at the lower levels, cuz it's cheap (`$500$`2), and
+  dosen't have very much in it.
+
+  Send `%ALL `2comments (`@bad`2, `$neutral`2, or `%good`2) to
+    
+     The_Roach_42@hotmail.com
+
+  I wanna know what u think!!
+
+  CHRiS Belanger
+

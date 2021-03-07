@@ -1,0 +1,2620 @@
+; Script file INNS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:28 2001
+
+@DECLARE greentree 000000864
+@DECLARE gtoilet 000001177
+@DECLARE gtreasurey 000002134
+@DECLARE groom 000005064
+@DECLARE done 000006438
+@DECLARE ptoilet 000006472
+@DECLARE pdoor 000007422
+@DECLARE pdoorguard 000008803
+@DECLARE startp 000008832
+@DECLARE potion1 000010068
+@DECLARE ptreasurey 000017155
+@DECLARE bonetown 000020074
+@DECLARE btoilet 000020352
+@DECLARE pdoor 000021302
+@DECLARE bdoor 000022678
+@DECLARE btreasurey 000024069
+@DECLARE bdoorguard 000026998
+@DECLARE startg 000027027
+@DECLARE potion2 000028267
+@DECLARE flagcity 000035344
+@DECLARE ftoilet 000035619
+@DECLARE ftreasurey 000036574
+@DECLARE fdoor 000039488
+@DECLARE fdoorguard 000040875
+@DECLARE startf 000040904
+@DECLARE potion3 000042144
+@NOCHECK
+; End of .REF index
+
+@#GREENTREE
+@do moveback
+
+ @if NINN1.dat exist false then do
+ @begin
+ @do saybar
+`!Ma's Boarding House, owned by Ma, herself
+ @end 
+
+@if NINN1.DAT exist true then do
+ @begin
+@readfile NINN1.DAT
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`!Ma's Boarding House, `!owned by `0`s01`2.
+ @end 
+
+@#GTOILET
+@datanewday NINNW1.IDF
+@dataload NINNW1.IDF &playernum `p20
+ @if `p20 > 0 then do
+  @begin
+  @do saybar
+`!You drank all the toilet water. Come back tomorrow.
+  @closescript
+  @end
+
+@if NINNW1.DAT exist false then do
+ @begin
+ @do saybar
+`!There is no toilet water in here. Better tell the owner.
+ @closescript
+ @end
+
+ @readfile NINNW1.DAT
+`p29
+`s03
+ @datasave NINNW1.IDF &playernum 1
+ @if `p29 is 1 then do
+  @begin
+  @do saybar
+`1:`!You drink the toilet water, and your dodge goes up by 1!
+  @do `p05 + 1
+  @closescript
+  @end
+ @if `p29 is 2 then do
+  @begin
+  @do saybar
+`1:`!You drink the toilet water, and your muscle goes up by 2!
+  @do `p04 + 2
+  @closescript
+  @end
+ @if `p29 is 5 then do
+  @begin
+  @do saybar
+`1`!You drink the toilet water, and your max HP goes up by 5!
+  @do `p03 + 5
+  @closescript
+  @end
+
+@do saybar
+`!There seems to be something wrong with the toilet. Tell the owner.
+
+@#GTREASUREY
+;team treasury
+@if ninn1.dat exist false then do
+ @begin
+ @do moveback
+ @do saybar
+`!No one owns the treasury yet.
+ @closescript
+ @end
+
+@do moveback
+@do `p20 is 0
+@if ninnt1.dat exist true then do
+  @begin
+  @readfile ninnt1.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile ninnt1.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete ninnt1.dat
+  @writefile ninnt1.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile ninn1.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Ma's Boarding House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile ninnt1.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete ninnt1.dat
+  @writefile ninnt1.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile ninn1.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Ma's Boarding House Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+@#GROOM
+@if ninn1.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 25 then do
+  @begin
+  @closescript
+  @end
+
+@readfile ninn1.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0The Looes Screw Spirit:  `2No one is allowed over there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The Loose Screw spirit looks over at you.  `0"Hey!  What business do you
+  have going in there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on in then!"`\`\`k
+    @do x + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Ma Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Loose Screw Spirit isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+
+ @#done
+ @drawmap
+ @update
+
+@#PTOILET
+@datanewday NINNW2.IDF
+@dataload NINNW2.IDF &playernum `p20
+ @if `p20 > 0 then do
+  @begin
+  @do saybar
+`!You drank all the toilet water. Come back tomorrow.
+  @closescript
+  @end
+
+@if NINNW2.DAT exist false then do
+ @begin
+ @do saybar
+`!There is no toilet water in here. Better tell the owner.
+ @closescript
+ @end
+
+ @readfile NINNW2.DAT
+`p29
+`s03
+ @datasave NINNW2.IDF &playernum 1
+ @if `p29 is 1 then do
+  @begin
+  @do saybar
+`1:`!You drink the toilet water, and your dodge goes up by 1!
+  @do `p05 + 1
+  @closescript
+  @end
+ @if `p29 is 2 then do
+  @begin
+  @do saybar
+`1:`!You drink the toilet water, and your muscle goes up by 2!
+  @do `p04 + 2
+  @closescript
+  @end
+ @if `p29 is 5 then do
+  @begin
+  @do saybar
+`1`!You drink the toilet water, and your max HP goes up by 5!
+  @do `p03 + 5
+  @closescript
+  @end
+
+@do saybar
+`!There seems to be something wrong with the toilet. Tell the owner.
+@#PDOOR
+@if ninn2.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 20 then do
+  @begin
+  @closescript
+  @end
+
+@readfile ninn2.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0The Looes Screw Spirit:  `2No one is allowed over there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The Loose Screw spirit looks over at you.  `0"Hey!  What business do you
+  have going in there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on in then!"`\`\`k
+    @do x - 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0The Hag Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Loose Screw Spirt isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+@#PDOORGUARD
+@do moveback
+@label startp
+
+@if ninn2a.dat exist false then do
+  @begin
+  @writefile ninn2a.dat
+200
+0
+  @end
+@if ninn2b.dat exist false then do
+  @begin
+  @writefile ninn2b.dat
+25
+0
+  @end
+
+@if ninn2.dat exist false then do
+  @begin
+  @do saybar
+`$The Loose Screw Spirit: `!Greetings...
+ @closescript
+  @end
+
+@readfile ninn2.dat
+`p20
+`s01
+@
+
+  @readfile ninn2a.dat
+`p26
+`p27
+  @
+  @readfile ninn2b.dat
+`p25
+`p29
+  @
+@if NINNW2.dat exist false then do
+ @begin
+ @writefile NINNW2.dat
+5
+Red Potion
+ @end
+ @readfile NINNW2.dat
+`p28
+`s03
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`$The Loose Screw Spirit: `!Greetings...
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing The Loose Screw Spirit `r0
+
+  `2It glows before you, almost like, well, a lightbulb.
+
+@do write
+`x`x
+@choice
+Set password to private bedroom. (currently is `0`s01`%)
+Ownership options
+Set inn fee (currently is at `$$`p26`%)
+Take money from register
+Set whore fee (currently is at `$$`p25`%)
+Take money from whores
+Change Toilet Water (currently is made of `!`s03s`%)
+Leave
+@
+@if response is 7 then do
+ @begin
+ @label POTION1
+ @show
+`c`\`\  `0"What do you want your toilet water made of?"
+
+@do write
+`x`x`x
+@do `v01 is 1
+@choice
+Silver Potion
+Gold Potion
+Red Potion
+What!?!
+@if response is 4 then do
+ @begin
+ @show
+`\`\  `2Let's explain, shall we...
+
+  `0In your private room, there will be a toilet. In it, there will be water.
+  What kind of water is your choice. This water will be available to drink
+  once per day by yourself and whomever you allow inside your private room.
+
+        `2Types of Water:
+
+           `$-`0Silver Potion`2: Dodge goes up by 1!
+           `$-`0Gold Potion`2: Muscle goes up by 2!
+           `$-`0Red Potion`2: Max HP goes up by 5!
+
+  `2That's what we're talking about...
+
+`k
+
+  @do goto POTION1
+  @end
+
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2he says, and pours the contents of a Silver Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW2.DAT exist true then delete NINNW2.DAT
+ @writefile NINNW2.DAT
+1
+Silver Potion
+ @end
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2He says, and pours the contents of a Gold Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW2.DAT exist true then delete NINNW2.DAT
+ @writefile NINNW2.DAT
+2
+Gold Potion
+ @end
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2He says, and pours the contents of a Red Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if NINNW2.DAT exist true then delete NINNW2.DAT
+ @writefile NINNW2.DAT
+5
+Red Potion
+ @end
+
+  @do goto PDOORGUARD
+  @end
+
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `0"Before you look in that register.. lemmie tell you business has
+  been a little slow." `2The Spirit tells you.
+
+`k  `$"How slow?" `2you ask.
+
+`k  `0"Ok, we have not had a single customer since you last checked, ARE
+  YOU HAPPY NOW!?" `2The Spirit bursts into tears. `0"It's me! It's all
+  because I'm a ghost. People don't like ghosts...except Casper."
+
+`k
+   @do goto PDOORGUARD
+   @end
+
+
+  @readfile ninn2a.dat
+`p26
+`p27
+  @
+  @do money + `p27
+  @do delete ninn2a.dat
+  @writefile ninn2a.dat
+`p26
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p27`2, here ya go!
+
+`k
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto PDOORGUARD
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto PDOORGUARD
+
+  @end
+
+    @do goto PDOORGUARD
+    @end
+  @readfile ninn2a.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete ninn2a.dat
+  @writefile ninn2a.dat
+`p26
+`p27
+  @
+  @do goto PDOORGUARD
+  @end
+
+
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$25000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startp
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your Inn to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startp
+   @end
+
+  @do delete ninn2.dat
+  @writefile ninn2.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of The Sea Hag's Hotel to you. 
+  Password to enter bedroom will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Ma's Boarding House`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Inn back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startp
+   @end
+
+  @do delete ninn2.dat
+  @do delete ninn2a.dat
+  @do money + 25000
+  @show
+`\`\  `%INN SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Sea Hag's Hotel`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startp
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startp
+   @end
+  @do delete ninn2.dat
+  @writefile ninn2.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the Spirit promises.`\`\`k
+   @do goto startp
+  @end
+
+@if response is 5 then do
+ @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto PDOORGUARD
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto PDOORGUARD
+
+  @end
+
+    @do goto PDOORGUARD
+    @end
+  @readfile ninn2b.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete ninn2b.dat
+  @writefile ninn2b.dat
+`p26
+`p27
+  @
+  @do goto PDOORGUARD
+  @end
+
+
+@if response is 6 then do
+ @begin
+ @readfile NINN2b.dat
+`p25
+`p29
+ @if `p29 is 0 then do
+  @begin
+  @show
+`\`\  `2The whores sob uncontrollably. `0"We haven't had sex since you last
+  checked. It's awful!"
+
+`k
+  @do goto PDOORGUARD
+  @end
+
+  @do money + `p29
+  @do delete ninn2b.dat
+  @writefile ninn2b.dat
+`p25
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p29`2, here ya go!
+
+  `2The whores sure are helpful.
+
+`k
+  @end
+
+@drawmap
+@update
+
+@#PTREASUREY
+;team treasury
+@if ninn2.dat exist false then do
+ @begin
+ @do moveback
+ @do saybar
+`!No one owns the treasury yet.
+ @closescript
+ @end
+@do moveback
+@do `p20 is 0
+@if ninnt2.dat exist true then do
+  @begin
+  @readfile ninnt2.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile ninnt2.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete ninnt2.dat
+  @writefile ninnt2.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile ninn2.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Sea Hag Hotel Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile ninnt2.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete ninnt2.dat
+  @writefile ninnt2.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile ninn2.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Sea Hag Hotel Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+@#BONETOWN
+@do moveback
+
+ @if ninn3.dat exist false then do
+ @begin
+ @do saybar
+`!The Woodlog Inn
+ @end 
+
+@if ninn3.dat exist true then do
+ @begin
+@readfile ninn3.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`!The Woodlog Inn, owned by `0`s01
+ @end 
+
+@#BTOILET
+@datanewday ninnw3.IDF
+@dataload ninnw3.IDF &playernum `p20
+ @if `p20 > 0 then do
+  @begin
+  @do saybar
+`!You drank all the toilet water. Come back tomorrow.
+  @closescript
+  @end
+
+@if ninnw3.DAT exist false then do
+ @begin
+ @do saybar
+`!There is no toilet water in here. Better tell the owner.
+ @closescript
+ @end
+
+ @readfile ninnw3.DAT
+`p29
+`s03
+ @datasave ninnw3.IDF &playernum 1
+ @if `p29 is 1 then do
+  @begin
+  @do saybar
+`1:`!You drink the toilet water, and your dodge goes up by 1!
+  @do `p05 + 1
+  @closescript
+  @end
+ @if `p29 is 2 then do
+  @begin
+  @do saybar
+`1:`!You drink the toilet water, and your muscle goes up by 2!
+  @do `p04 + 2
+  @closescript
+  @end
+ @if `p29 is 5 then do
+  @begin
+  @do saybar
+`1`!You drink the toilet water, and your max HP goes up by 5!
+  @do `p03 + 5
+  @closescript
+  @end
+
+@do saybar
+`!There seems to be something wrong with the toilet. Tell the owner.
+@#PDOOR
+@if ninn2.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 20 then do
+  @begin
+  @closescript
+  @end
+
+@readfile ninn2.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0The Looes Screw Spirit:  `2No one is allowed over there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The Loose Screw spirit looks over at you.  `0"Hey!  What business do you
+  have going in there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on in then!"`\`\`k
+    @do x - 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0The Hag Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Loose Screw Spirt isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+@#BDOOR
+@if ninn3.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lasty is 7 then do
+  @begin
+  @closescript
+  @end
+
+@readfile ninn3.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0The Looes Screw Spirit:  `2No one is allowed over there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The Loose Screw spirit looks over at you.  `0"Hey!  What business do you
+  have going in there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on in then!"`\`\`k
+    @do y - 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0The Dirty Old Man Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Loose Screw Spirit isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+@#BTREASUREY
+;team treasury
+@if ninn3.dat exist false then do
+ @begin
+ @do moveback
+ @do saybar
+`!No one owns the treasury yet.
+ @closescript
+ @end
+@do moveback
+@do `p20 is 0
+@if ninnt3.dat exist true then do
+  @begin
+  @readfile ninnt3.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile ninnt3.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete ninnt3.dat
+  @writefile ninnt3.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile ninn3.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0The Dirty Old Man Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile ninnt3.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete ninnt3.dat
+  @writefile ninnt3.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile ninn3.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0The Dirty Old Man Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+@#BDOORGUARD
+@do moveback
+@label startg
+
+@if ninn3a.dat exist false then do
+  @begin
+  @writefile ninn3a.dat
+200
+0
+  @end
+@if ninn3b.dat exist false then do
+  @begin
+  @writefile ninn3b.dat
+25
+0
+  @end
+
+@if ninn3.dat exist false then do
+  @begin
+  @do saybar
+`$The Loose Screw Spirit: `!Greetings...
+ @closescript
+  @end
+
+@readfile ninn3.dat
+`p20
+`s01
+@
+
+  @readfile ninn3a.dat
+`p26
+`p27
+  @
+  @readfile ninn3b.dat
+`p25
+`p29
+  @
+@if ninnw3.dat exist false then do
+ @begin
+ @writefile ninnw3.dat
+5
+Red Potion
+ @end
+ @readfile ninnw3.dat
+`p28
+`s03
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`$The Loose Screw Spirit: `!Greetings...
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing The Loose Screw Spirit `r0
+
+  `2It glows before you, almost like, well, a lightbulb.
+
+@do write
+`x`x
+@choice
+Set password to private bedroom. (currently is `0`s01`%)
+Ownership options
+Set inn fee (currently is at `$$`p26`%)
+Take money from register
+Set whore fee (currently is at `$$`p25`%)
+Take money from whores
+Change Toilet Water (currently is composed of `!`s03s`%)
+Leave
+@
+@if response is 7 then do
+ @begin
+ @label POTION2
+ @show
+`c`\`\  `0"What do you want your toilet water made of?"
+
+@do write
+`x`x`x
+@do `v01 is 1
+@choice
+Silver Potion
+Gold Potion
+Red Potion
+What!?!
+@if response is 4 then do
+ @begin
+ @show
+`\`\  `2Let's explain, shall we...
+
+  `0In your private room, there will be a toilet. In it, there will be water.
+  What kind of water is your choice. This water will be available to drink
+  once per day by yourself and whomever you allow inside your private room.
+
+        `2Types of Water:
+
+           `$-`0Silver Potion`2: Dodge goes up by 1!
+           `$-`0Gold Potion`2: Muscle goes up by 2!
+           `$-`0Red Potion`2: Max HP goes up by 5!
+
+  `2That's what we're talking about...
+
+`k
+
+  @do goto POTION2
+  @end
+
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2He says, and pours the contents of a Silver Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if ninnw3.DAT exist true then delete ninnw3.DAT
+ @writefile ninnw3.DAT
+1
+Silver Potion
+ @end
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2He says, and pours the contents of a Gold Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if ninnw3.DAT exist true then delete ninnw3.DAT
+ @writefile ninnw3.DAT
+2
+Gold Potion
+ @end
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2He says, and pours the contents of a Red Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if ninnw3.DAT exist true then delete ninnw3.DAT
+ @writefile ninnw3.DAT
+5
+Red Potion
+ @end
+
+  @do goto BDOORGUARD
+  @end
+
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `0"Before you look in that register.. lemmie tell you business has
+  been a little slow." `2The Spirit tells you.
+
+`k  `$"How slow?" `2you ask.
+
+`k  `0"Ok, we have not had a single customer since you last checked, ARE
+  YOU HAPPY NOW!?" `2The Spirit bursts into tears. `0"It's me! It's all
+  because I'm a ghost. People don't like ghosts...except Casper."
+
+`k
+   @do goto bdoorguard
+   @end
+
+
+  @readfile ninn3a.dat
+`p26
+`p27
+  @
+  @do money + `p27
+  @do delete ninn3a.dat
+  @writefile ninn3a.dat
+`p26
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p27`2, here ya go!
+
+`k
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto bdoorguard
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto bdoorguard
+
+  @end
+
+    @do goto bdoorguard
+    @end
+  @readfile ninn3a.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete ninn3a.dat
+  @writefile ninn3a.dat
+`p26
+`p27
+  @
+  @do goto bdoorguard
+  @end
+
+
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$30000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your Inn to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ninn3.dat
+  @writefile ninn3.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of The Woodlog Inn to you. 
+  Password to enter bedroom will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%The Woodlog Inn`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Inn back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ninn3.dat
+  @do delete ninn3a.dat
+  @do money + 30000
+  @show
+`\`\  `%INN SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%The Woodlog Inn`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete ninn3.dat
+  @writefile ninn3.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the Spirit promises.`\`\`k
+   @do goto startg
+  @end
+
+@if response is 5 then do
+ @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto bdoorguard
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto bdoorguard
+
+  @end
+
+    @do goto bdoorguard
+    @end
+  @readfile ninn3b.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete ninn3b.dat
+  @writefile ninn3b.dat
+`p26
+`p27
+  @
+  @do goto bdoorguard
+  @end
+
+
+@if response is 6 then do
+ @begin
+ @readfile ninn3b.dat
+`p25
+`p29
+ @if `p29 is 0 then do
+  @begin
+  @show
+`\`\  `2The whores sob uncontrollably. `0"We haven't had sex since you last
+  checked. It's awful!"
+
+`k
+  @do goto bdoorguard
+  @end
+
+  @do money + `p29
+  @do delete ninn3b.dat
+  @writefile ninn3b.dat
+`p25
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p29`2, here ya go!
+
+  `2The whores sure are helpful.
+
+`k
+  @end
+
+@drawmap
+@update
+
+@#FLAGCITY
+@do moveback
+
+ @if ninn4.dat exist false then do
+ @begin
+ @do saybar
+`%FlagCity Inn
+ @end 
+
+@if ninn4.dat exist true then do
+ @begin
+@readfile ninn4.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`$FlagCity Inn, owned by `0`s01`$.
+ @end 
+
+@#FTOILET
+@datanewday ninnw4.IDF
+@dataload ninnw4.IDF &playernum `p20
+ @if `p20 > 0 then do
+  @begin
+  @do saybar
+`!You drank all the toilet water. Come back tomorrow.
+  @closescript
+  @end
+
+@if ninnw4.DAT exist false then do
+ @begin
+ @do saybar
+`!There is no toilet water in here. Better tell the owner.
+ @closescript
+ @end
+
+ @readfile ninnw4.DAT
+`p29
+`s03
+ @datasave ninnw4.IDF &playernum 1
+ @if `p29 is 1 then do
+  @begin
+  @do saybar
+`1:`!You drink the toilet water, and your dodge goes up by 1!
+  @do `p05 + 1
+  @closescript
+  @end
+ @if `p29 is 2 then do
+  @begin
+  @do saybar
+`1:`!You drink the toilet water, and your muscle goes up by 2!
+  @do `p04 + 2
+  @closescript
+  @end
+ @if `p29 is 5 then do
+  @begin
+  @do saybar
+`1`!You drink the toilet water, and your max HP goes up by 5!
+  @do `p03 + 5
+  @closescript
+  @end
+
+@do saybar
+`!There seems to be something wrong with the toilet. Tell the owner.
+@#FTREASUREY
+;team treasury
+@if ninn4.dat exist false then do
+ @begin
+ @do moveback
+ @do saybar
+`!No one owns the treasury yet.
+ @closescript
+ @end
+@do moveback
+@do `p20 is 0
+@if ninnt4.dat exist true then do
+  @begin
+  @readfile ninnt4.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile ninnt4.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete ninnt4.dat
+  @writefile ninnt4.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile ninn4.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0FlagCity Inn Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile ninnt4.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete ninnt4.dat
+  @writefile ninnt4.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile ninn4.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0FlagCity Inn Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+@#FDOOR
+@if ninn4.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 15 then do
+  @begin
+  @closescript
+  @end
+
+@readfile ninn4.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0The Looes Screw Spirit:  `2No one is allowed over there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The Loose Screw spirit looks over at you.  `0"Hey!  What business do you
+  have going in there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on in then!"`\`\`k
+    @do x - 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0FlagCity Inn Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Loose Screw Spirit isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+@#FDOORGUARD
+@do moveback
+@label startf
+
+@if ninn4a.dat exist false then do
+  @begin
+  @writefile ninn4a.dat
+200
+0
+  @end
+@if ninn4b.dat exist false then do
+  @begin
+  @writefile ninn4b.dat
+25
+0
+  @end
+
+@if ninn4.dat exist false then do
+  @begin
+  @do saybar
+`$The Loose Screw Spirit: `!Greetings...
+ @closescript
+  @end
+
+@readfile ninn4.dat
+`p20
+`s01
+@
+
+  @readfile ninn4a.dat
+`p26
+`p27
+  @
+  @readfile ninn4b.dat
+`p25
+`p29
+  @
+@if ninnw4.dat exist false then do
+ @begin
+ @writefile ninnw4.dat
+5
+Red Potion
+ @end
+ @readfile ninnw4.dat
+`p28
+`s03
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`$The Loose Screw Spirit: `!Greetings...
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing The Loose Screw Spirit `r0
+
+  `2It glows before you, almost like, well, a lightbulb.
+
+@do write
+`x`x
+@choice
+Set password to private bedroom. (currently is `0`s01`%)
+Ownership options
+Set inn fee (currently is at `$$`p26`%)
+Take money from register
+Set whore fee (currently is at `$$`p25`%)
+Take money from whores
+Change Toilet Water (currently is composed of `!`s03s`%)
+Leave
+@
+@if response is 7 then do
+ @begin
+ @label potion3
+ @show
+`c`\`\  `0"What do you want your toilet water made of?"
+
+@do write
+`x`x`x
+@do `v01 is 1
+@choice
+Silver Potion
+Gold Potion
+Red Potion
+What!?!
+@if response is 4 then do
+ @begin
+ @show
+`\`\  `2Let's explain, shall we...
+
+  `0In your private room, there will be a toilet. In it, there will be water.
+  What kind of water is your choice. This water will be available to drink
+  once per day by yourself and whomever you allow inside your private room.
+
+        `2Types of Water:
+
+           `$-`0Silver Potion`2: Dodge goes up by 1!
+           `$-`0Gold Potion`2: Muscle goes up by 2!
+           `$-`0Red Potion`2: Max HP goes up by 5!
+
+  `2That's what we're talking about...
+
+`k
+
+  @do goto potion3
+  @end
+
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2He says, and pours the contents of a Silver Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if ninnw4.DAT exist true then delete ninnw4.DAT
+ @writefile ninnw4.DAT
+1
+Silver Potion
+ @end
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2He says, and pours the contents of a Gold Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if ninnw4.DAT exist true then delete ninnw4.DAT
+ @writefile ninnw4.DAT
+2
+Gold Potion
+ @end
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `0"Okay," `2He says, and pours the contents of a Red Potion into
+  your toilet water. `0"I'll refill it once a day."
+
+`k
+ @if ninnw4.DAT exist true then delete ninnw4.DAT
+ @writefile ninnw4.DAT
+5
+Red Potion
+ @end
+
+  @do goto fDOORGUARD
+  @end
+
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `0"Before you look in that register.. lemmie tell you business has
+  been a little slow." `2The Spirit tells you.
+
+`k  `$"How slow?" `2you ask.
+
+`k  `0"Ok, we have not had a single customer since you last checked, ARE
+  YOU HAPPY NOW!?" `2The Spirit bursts into tears. `0"It's me! It's all
+  because I'm a ghost. People don't like ghosts...except Casper."
+
+`k
+   @do goto fdoorguard
+   @end
+
+
+  @readfile ninn4a.dat
+`p26
+`p27
+  @
+  @do money + `p27
+  @do delete ninn4a.dat
+  @writefile ninn4a.dat
+`p26
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p27`2, here ya go!
+
+`k
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto fdoorguard
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto fdoorguard
+
+  @end
+
+    @do goto fdoorguard
+    @end
+  @readfile ninn4a.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete ninn4a.dat
+  @writefile ninn4a.dat
+`p26
+`p27
+  @
+  @do goto fdoorguard
+  @end
+
+
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$30000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startf
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your Inn to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startf
+   @end
+
+  @do delete ninn4.dat
+  @writefile ninn4.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of FlagCity Inn to you. 
+  Password to enter bedroom will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%FlagCity Inn`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Inn back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startf
+   @end
+
+  @do delete ninn4.dat
+  @do delete ninn4a.dat
+  @do money + 30000
+  @show
+`\`\  `%INN SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%FlagCity Inn`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startf
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startf
+   @end
+  @do delete ninn4.dat
+  @writefile ninn4.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the Spirit promises.`\`\`k
+   @do goto startf
+  @end
+
+@if response is 5 then do
+ @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto fdoorguard
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto fdoorguard
+
+  @end
+
+    @do goto fdoorguard
+    @end
+  @readfile ninn4b.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete ninn4b.dat
+  @writefile ninn4b.dat
+`p26
+`p27
+  @
+  @do goto fdoorguard
+  @end
+
+
+@if response is 6 then do
+ @begin
+ @readfile ninn4b.dat
+`p25
+`p29
+ @if `p29 is 0 then do
+  @begin
+  @show
+`\`\  `2The whores sob uncontrollably. `0"We haven't had sex since you last
+  checked. It's awful!"
+
+`k
+  @do goto fdoorguard
+  @end
+
+  @do money + `p29
+  @do delete ninn4b.dat
+  @writefile ninn4b.dat
+`p25
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p29`2, here ya go!
+
+  `2The whores sure are helpful.
+
+`k
+  @end
+
+@drawmap
+@update
+

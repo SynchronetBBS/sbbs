@@ -1,0 +1,1209 @@
+; Script file LOCKREF4.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:19 2001
+
+@DECLARE 1 000002635
+@DECLARE 2 000002810
+@DECLARE 3 000002986
+@DECLARE 4 000003162
+@DECLARE 5 000003338
+@DECLARE 6 000003514
+@DECLARE 7 000003690
+@DECLARE 8 000004000
+@DECLARE 9 000004176
+@DECLARE 10 000004352
+@DECLARE 11 000004531
+@DECLARE 12 000004711
+@DECLARE 13 000004891
+@DECLARE 14 000005071
+@DECLARE 15 000005251
+@DECLARE 16 000005431
+@DECLARE 17 000005611
+@DECLARE 18 000005791
+@DECLARE 19 000005971
+@DECLARE 20 000006151
+@DECLARE 21 000006331
+@DECLARE 22 000006519
+@DECLARE 23 000006699
+@DECLARE 24 000006879
+@DECLARE 25 000007059
+@DECLARE 26 000007239
+@DECLARE 27 000007419
+@DECLARE 28 000007599
+@DECLARE 29 000007779
+@DECLARE 30 000007959
+@DECLARE 31 000008139
+@DECLARE 32 000008319
+@DECLARE 33 000008499
+@DECLARE 34 000008679
+@DECLARE 35 000008859
+@DECLARE 36 000009039
+@DECLARE 37 000009220
+@DECLARE 38 000009400
+@DECLARE 39 000009580
+@DECLARE 40 000009760
+@DECLARE 41 000009940
+@DECLARE 42 000010120
+@DECLARE 43 000010300
+@DECLARE 44 000010480
+@DECLARE 45 000010660
+@DECLARE 46 000010840
+@DECLARE 47 000011021
+@DECLARE 48 000011201
+@DECLARE 49 000011381
+@DECLARE 50 000011561
+@DECLARE 51 000011741
+@DECLARE 52 000011929
+@DECLARE 53 000012132
+@DECLARE 54 000012312
+@DECLARE 55 000012492
+@DECLARE 56 000012672
+@DECLARE 57 000012852
+@DECLARE 58 000013032
+@DECLARE 59 000013212
+@DECLARE 60 000013392
+@DECLARE 61 000013572
+@DECLARE 62 000013752
+@DECLARE 63 000013932
+@DECLARE 64 000014120
+@DECLARE 65 000014300
+@DECLARE 66 000014480
+@DECLARE 67 000014660
+@DECLARE 68 000014840
+@DECLARE 69 000015020
+@DECLARE 70 000015200
+@DECLARE 71 000015380
+@DECLARE 72 000015560
+@DECLARE 73 000015740
+@DECLARE 74 000015920
+@DECLARE 75 000016100
+@DECLARE 76 000016280
+@DECLARE 77 000016460
+@DECLARE 78 000016640
+@DECLARE 79 000016820
+@DECLARE 80 000017000
+@DECLARE 81 000017180
+@DECLARE 82 000017360
+@DECLARE 83 000017540
+@DECLARE 84 000017720
+@DECLARE 85 000017902
+@DECLARE 86 000018082
+@DECLARE 87 000018262
+@DECLARE 88 000018442
+@DECLARE 89 000018622
+@DECLARE 90 000018802
+@DECLARE 91 000018982
+@DECLARE 92 000019162
+@DECLARE 93 000019342
+@DECLARE 94 000019522
+@DECLARE 95 000019702
+@DECLARE 96 000019882
+@DECLARE 97 000020062
+@DECLARE 98 000020242
+@DECLARE 99 000020422
+@NOCHECK
+; End of .REF index
+
+;
+;     Locker House version 1.2 (REF FILE #4/6)
+;       by: Joel Gathercole
+;
+;    in aliance with Complete New World 136.3+
+;
+;
+;   http://greenmachinebbs.com/lord2/
+;   telnet://greenmachinebbs.com
+;   greenie@darktech.org
+;
+@label 1
+ @do `p20 is 1
+@if `i01 > 0 then do
+ @begin
+ @do `p22 is `i01
+ @do write
+`+01 `$(`%`i01`$)
+ @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 99
+
+@label 2
+ @do `p20 is 2
+@if `i02 > 0 then do
+ @begin
+ @do `p22 is `i02
+  @do write
+`+02 `$(`%`i02`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 1
+
+@label 3
+ @do `p20 is 3
+@if `i03 > 0 then do
+ @begin
+ @do `p22 is `i03
+  @do write
+`+03 `$(`%`i03`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 2
+
+@label 4
+ @do `p20 is 4
+@if `i04 > 0 then do
+ @begin
+ @do `p22 is `i04
+  @do write
+`+04 `$(`%`i04`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 3
+
+@label 5
+ @do `p20 is 5
+@if `i05 > 0 then do
+ @begin
+ @do `p22 is `i05
+  @do write
+`+05 `$(`%`i05`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 4
+
+@label 6
+ @do `p20 is 6
+@if `i06 > 0 then do
+ @begin
+ @do `p22 is `i06
+  @do write
+`+06 `$(`%`i06`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 5
+
+@label 7
+; There is a weird bug here, do not know why!?!?! :(
+; This is all exatly the same as the rest, yet a bug exists.
+; @do `p20 is 7
+;@if `i07 > 0 then do
+; @begin
+; @do `p22 is `i07
+; @begin
+;  @do write
+;`+07 `$(`%`i07`$)
+;  @run itemcom in lockref3.ref
+; @end
+@if `p30 is 1 then goto 6
+
+@label 8
+ @do `p20 is 8
+@if `i08 > 0 then do
+ @begin
+ @do `p22 is `i08
+  @do write
+`+08 `$(`%`i08`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 7
+
+@label 9
+ @do `p20 is 9
+@if `i09 > 0 then do
+ @begin
+ @do `p22 is `i09
+ @do write
+`+09 `$(`%`i09`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 8
+
+@label 10
+ @do `p20 is 10 
+@if `i10 > 0 then do
+ @begin
+ @do `p22 is `i10
+  @do write
+`+10 `$(`%`i10`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 9
+
+@label 11
+ @do `p20 is 11 
+@if `i11 > 0 then do
+ @begin
+ @do `p22 is `i11
+  @do write
+`+11 `$(`%`i11`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 10
+
+@label 12
+ @do `p20 is 12 
+@if `i12 > 0 then do
+ @begin
+ @do `p22 is `i12
+  @do write
+`+12 `$(`%`i12`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 11
+
+@label 13
+ @do `p20 is 13 
+@if `i13 > 0 then do
+ @begin
+ @do `p22 is `i13
+  @do write
+`+13 `$(`%`i13`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 12
+
+@label 14
+ @do `p20 is 14 
+@if `i14 > 0 then do
+ @begin
+ @do `p22 is `i14
+  @do write
+`+14 `$(`%`i14`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 13
+
+@label 15
+ @do `p20 is 15 
+@if `i15 > 0 then do
+ @begin
+ @do `p22 is `i15
+  @do write
+`+15 `$(`%`i15`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 14
+
+@label 16
+ @do `p20 is 16 
+@if `i16 > 0 then do
+ @begin
+ @do `p22 is `i16
+  @do write
+`+16 `$(`%`i16`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 15
+
+@label 17
+ @do `p20 is 17 
+@if `i17 > 0 then do
+ @begin
+ @do `p22 is `i17
+  @do write
+`+17 `$(`%`i17`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 16
+
+@label 18
+ @do `p20 is 18 
+@if `i18 > 0 then do
+ @begin
+ @do `p22 is `i18
+  @do write
+`+18 `$(`%`i18`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 17
+
+@label 19
+ @do `p20 is 19 
+@if `i19 > 0 then do
+ @begin
+ @do `p22 is `i19
+  @do write
+`+19 `$(`%`i19`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 18
+
+@label 20
+ @do `p20 is 20 
+@if `i20 > 0 then do
+ @begin
+ @do `p22 is `i20
+  @do write
+`+20 `$(`%`i20`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 19
+
+@label 21
+ @do `p20 is 21 
+@if `i21 > 0 then do
+ @begin
+ @do `p22 is `i21
+  @do write
+`+21 `$(`%`i21`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 20
+        
+@label 22
+ @do `p20 is 22 
+@if `i22 > 0 then do
+ @begin
+ @do `p22 is `i22
+  @do write
+`+22 `$(`%`i22`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 21
+
+@label 23
+ @do `p20 is 23 
+@if `i23 > 0 then do
+ @begin
+ @do `p22 is `i23
+  @do write
+`+23 `$(`%`i23`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 22
+
+@label 24
+ @do `p20 is 24 
+@if `i24 > 0 then do
+ @begin
+ @do `p22 is `i24
+  @do write
+`+24 `$(`%`i24`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 23
+
+@label 25
+ @do `p20 is 25 
+@if `i25 > 0 then do
+ @begin
+ @do `p22 is `i25
+  @do write
+`+25 `$(`%`i25`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 24
+
+@label 26
+ @do `p20 is 26 
+@if `i26 > 0 then do
+ @begin
+ @do `p22 is `i26
+  @do write
+`+26 `$(`%`i26`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 25
+
+@label 27
+ @do `p20 is 27 
+@if `i27 > 0 then do
+ @begin
+ @do `p22 is `i27
+  @do write
+`+27 `$(`%`i27`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 26
+
+@label 28
+ @do `p20 is 28 
+@if `i28 > 0 then do
+ @begin
+ @do `p22 is `i28
+  @do write
+`+28 `$(`%`i28`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 27
+
+@label 29
+ @do `p20 is 29 
+@if `i29 > 0 then do
+ @begin
+ @do `p22 is `i29
+  @do write
+`+29 `$(`%`i29`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 28
+
+@label 30
+ @do `p20 is 30 
+@if `i20 > 0 then do
+ @begin
+ @do `p22 is `i30
+  @do write
+`+30 `$(`%`i30`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 29
+
+@label 31
+ @do `p20 is 31 
+@if `i31 > 0 then do
+ @begin
+ @do `p22 is `i31
+  @do write
+`+31 `$(`%`i31`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 30
+
+@label 32
+ @do `p20 is 32 
+@if `i32 > 0 then do
+ @begin
+ @do `p22 is `i32
+  @do write
+`+32 `$(`%`i32`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 31
+
+@label 33
+ @do `p20 is 33 
+@if `i33 > 0 then do
+ @begin
+ @do `p22 is `i33
+  @do write
+`+33 `$(`%`i33`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 32
+
+@label 34
+ @do `p20 is 34 
+@if `i34 > 0 then do
+ @begin
+ @do `p22 is `i34
+  @do write
+`+34 `$(`%`i34`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 33
+
+@label 35
+ @do `p20 is 35 
+@if `i35 > 0 then do
+ @begin
+ @do `p22 is `i35
+  @do write
+`+35 `$(`%`i35`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 34
+
+@label 36
+ @do `p20 is 36 
+@if `i36 > 0 then do
+ @begin
+ @do `p22 is `i36 
+  @do write
+`+36 `$(`%`i36`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 35
+
+@label 37
+ @do `p20 is 37 
+@if `i37 > 0 then do
+ @begin
+ @do `p22 is `i37
+  @do write
+`+37 `$(`%`i37`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 36
+
+@label 38
+ @do `p20 is 38 
+@if `i38 > 0 then do
+ @begin
+ @do `p22 is `i38
+  @do write
+`+38 `$(`%`i38`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 37
+
+@label 39
+ @do `p20 is 39 
+@if `i39 > 0 then do
+ @begin
+ @do `p22 is `i39
+  @do write
+`+39 `$(`%`i39`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 38
+
+@label 40
+ @do `p20 is 40 
+@if `i40 > 0 then do
+ @begin
+ @do `p22 is `i40
+  @do write
+`+40 `$(`%`i40`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 39
+
+@label 41
+ @do `p20 is 41 
+@if `i41 > 0 then do
+ @begin
+ @do `p22 is `i41
+  @do write
+`+41 `$(`%`i41`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 40
+
+@label 42
+ @do `p20 is 42 
+@if `i42 > 0 then do
+ @begin
+ @do `p22 is `i42
+  @do write
+`+42 `$(`%`i42`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 41
+
+@label 43
+ @do `p20 is 43 
+@if `i43 > 0 then do
+ @begin
+ @do `p22 is `i43
+  @do write
+`+43 `$(`%`i43`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 42
+
+@label 44
+ @do `p20 is 44 
+@if `i44 > 0 then do
+ @begin
+ @do `p22 is `i44
+  @do write
+`+44 `$(`%`i44`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 43
+
+@label 45
+ @do `p20 is 45 
+@if `i45 > 0 then do
+ @begin
+ @do `p22 is `i45
+  @do write
+`+45 `$(`%`i45`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 44
+
+@label 46
+ @do `p20 is 46 
+@if `i46 > 0 then do
+ @begin
+ @do `p22 is `i46 
+  @do write
+`+46 `$(`%`i46`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 45
+
+@label 47
+ @do `p20 is 47 
+@if `i47 > 0 then do
+ @begin
+ @do `p22 is `i47
+  @do write
+`+47 `$(`%`i47`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 46
+
+@label 48
+ @do `p20 is 48 
+@if `i48 > 0 then do
+ @begin
+ @do `p22 is `i48
+  @do write
+`+48 `$(`%`i48`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 47
+
+@label 49
+ @do `p20 is 49 
+@if `i49 > 0 then do
+ @begin
+ @do `p22 is `i49
+  @do write
+`+49 `$(`%`i49`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 48
+
+@label 50
+ @do `p20 is 50 
+@if `i50 > 0 then do
+ @begin
+ @do `p22 is `i50
+  @do write
+`+50 `$(`%`i50`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 49
+
+@label 51
+ @do `p20 is 51 
+@if `i51 > 0 then do
+ @begin
+ @do `p22 is `i51
+  @do write
+`+51 `$(`%`i51`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 50
+        
+@label 52
+ @do `p20 is 52 
+@if `i52 > 0 then do
+ @begin
+ @do `p22 is `i52 
+  @do write
+`+52 `$(`%`i52`$)
+  @run itemcom in lockref3.ref
+ @end                      
+@if `p30 is 1 then goto 51
+
+@label 53
+ @do `p20 is 53 
+@if `i53 > 0 then do
+ @begin
+ @do `p22 is `i53
+  @do write
+`+53 `$(`%`i53`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 52
+
+@label 54
+ @do `p20 is 54 
+@if `i54 > 0 then do
+ @begin
+ @do `p22 is `i54
+  @do write
+`+54 `$(`%`i54`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 53
+
+@label 55
+ @do `p20 is 55 
+@if `i55 > 0 then do
+ @begin
+ @do `p22 is `i55
+  @do write
+`+55 `$(`%`i55`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 54
+
+@label 56
+ @do `p20 is 56 
+@if `i56 > 0 then do
+ @begin
+ @do `p22 is `i56
+  @do write
+`+56 `$(`%`i56`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 55
+
+@label 57
+ @do `p20 is 57 
+@if `i57 > 0 then do
+ @begin
+ @do `p22 is `i57
+  @do write
+`+57 `$(`%`i57`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 56
+
+@label 58
+ @do `p20 is 58 
+@if `i58 > 0 then do
+ @begin
+ @do `p22 is `i58
+  @do write
+`+58 `$(`%`i58`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 57
+
+@label 59
+ @do `p20 is 59 
+@if `i59 > 0 then do
+ @begin
+ @do `p22 is `i59
+  @do write
+`+59 `$(`%`i59`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 58
+
+@label 60
+ @do `p20 is 60 
+@if `i60 > 0 then do
+ @begin
+ @do `p22 is `i60
+  @do write
+`+60 `$(`%`i60`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 59
+
+@label 61
+ @do `p20 is 61 
+@if `i61 > 0 then do
+ @begin
+ @do `p22 is `i61
+  @do write
+`+61 `$(`%`i61`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 60
+
+@label 62
+ @do `p20 is 62 
+@if `i62 > 0 then do
+ @begin
+ @do `p22 is `i62
+  @do write
+`+62 `$(`%`i62`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 61
+
+@label 63
+ @do `p20 is 63 
+@if `i63 > 0 then do
+ @begin
+ @do `p22 is `i63
+  @do write
+`+63 `$(`%`i63`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 62
+        
+@label 64
+ @do `p20 is 64 
+@if `i64 > 0 then do
+ @begin
+ @do `p22 is `i64
+  @do write
+`+64 `$(`%`i64`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 63
+
+@label 65
+ @do `p20 is 65 
+@if `i65 > 0 then do
+ @begin
+ @do `p22 is `i65
+  @do write
+`+65 `$(`%`i65`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 64
+
+@label 66
+ @do `p20 is 66 
+@if `i66 > 0 then do
+ @begin
+ @do `p22 is `i66
+  @do write
+`+66 `$(`%`i66`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 65
+
+@label 67
+ @do `p20 is 67 
+@if `i67 > 0 then do
+ @begin
+ @do `p22 is `i67
+  @do write
+`+67 `$(`%`i67`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 66
+
+@label 68
+ @do `p20 is 68 
+@if `i68 > 0 then do
+ @begin
+ @do `p22 is `i68
+  @do write
+`+68 `$(`%`i68`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 67
+
+@label 69
+ @do `p20 is 69 
+@if `i69 > 0 then do
+ @begin
+ @do `p22 is `i69
+  @do write
+`+69 `$(`%`i69`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 68
+
+@label 70
+ @do `p20 is 70 
+@if `i70 > 0 then do
+ @begin
+ @do `p22 is `i70
+  @do write
+`+70 `$(`%`i70`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 69
+
+@label 71
+ @do `p20 is 71 
+@if `i71 > 0 then do
+ @begin
+ @do `p22 is `i71
+  @do write
+`+71 `$(`%`i71`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 70
+
+@label 72
+ @do `p20 is 72 
+@if `i72 > 0 then do
+ @begin
+ @do `p22 is `i72
+  @do write
+`+72 `$(`%`i72`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 71
+
+@label 73
+ @do `p20 is 73 
+@if `i73 > 0 then do
+ @begin
+ @do `p22 is `i73
+  @do write
+`+73 `$(`%`i73`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 72
+
+@label 74
+ @do `p20 is 74 
+@if `i74 > 0 then do
+ @begin
+ @do `p22 is `i74
+  @do write
+`+74 `$(`%`i74`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 73
+
+@label 75
+ @do `p20 is 75 
+@if `i75 > 0 then do
+ @begin
+ @do `p22 is `i75
+  @do write
+`+75 `$(`%`i75`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 74
+
+@label 76
+ @do `p20 is 76 
+@if `i76 > 0 then do
+ @begin
+ @do `p22 is `i76
+  @do write
+`+76 `$(`%`i76`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 75
+
+@label 77
+ @do `p20 is 77 
+@if `i77 > 0 then do
+ @begin
+ @do `p22 is `i77
+  @do write
+`+77 `$(`%`i77`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 76
+
+@label 78
+ @do `p20 is 78 
+@if `i78 > 0 then do
+ @begin
+ @do `p22 is `i78
+  @do write
+`+78 `$(`%`i78`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 77
+
+@label 79
+ @do `p20 is 79 
+@if `i79 > 0 then do
+ @begin
+ @do `p22 is `i79
+  @do write
+`+79 `$(`%`i79`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 78
+
+@label 80
+ @do `p20 is 80 
+@if `i80 > 0 then do
+ @begin
+ @do `p22 is `i80
+  @do write
+`+80 `$(`%`i80`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 79
+
+@label 81
+ @do `p20 is 81 
+@if `i81 > 0 then do
+ @begin
+ @do `p22 is `i81
+  @do write
+`+81 `$(`%`i81`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 80
+
+@label 82
+ @do `p20 is 82 
+@if `i82 > 0 then do
+ @begin
+ @do `p22 is `i82
+  @do write
+`+82 `$(`%`i82`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 81
+
+@label 83
+ @do `p20 is 83 
+@if `i83 > 0 then do
+ @begin
+ @do `p22 is `i83
+  @do write
+`+83 `$(`%`i83`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 82
+
+@label 84
+ @do `p20 is 84 
+@if `i84 > 0 then do
+ @begin
+ @do `p22 is `i84
+  @do write
+`+84 `$(`%`i84`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 83
+
+
+@label 85
+ @do `p20 is 85 
+@if `i85 > 0 then do
+ @begin
+ @do `p22 is `i85
+  @do write
+`+85 `$(`%`i85`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 84
+
+@label 86
+ @do `p20 is 86 
+@if `i86 > 0 then do
+ @begin
+ @do `p22 is `i86
+  @do write
+`+86 `$(`%`i86`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 85
+
+@label 87
+ @do `p20 is 87 
+@if `i87 > 0 then do
+ @begin
+ @do `p22 is `i87
+  @do write
+`+87 `$(`%`i87`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 86
+
+@label 88
+ @do `p20 is 88 
+@if `i88 > 0 then do
+ @begin
+ @do `p22 is `i88
+  @do write
+`+88 `$(`%`i88`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 87
+
+@label 89
+ @do `p20 is 89 
+@if `i89 > 0 then do
+ @begin
+ @do `p22 is `i89
+  @do write
+`+89 `$(`%`i89`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 88
+
+@label 90
+ @do `p20 is 90 
+@if `i90 > 0 then do
+ @begin
+ @do `p22 is `i90
+  @do write
+`+90 `$(`%`i90`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 89
+
+@label 91
+ @do `p20 is 91 
+@if `i91 > 0 then do
+ @begin
+ @do `p22 is `i91
+  @do write
+`+91 `$(`%`i91`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 90
+
+@label 92
+@if `i92 > 0 then do
+ @begin
+ @do `p20 is 92 
+ @do `p22 is `i92
+  @do write
+`+92 `$(`%`i92`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 91
+
+@label 93
+ @do `p20 is 93 
+@if `i93 > 0 then do
+ @begin
+ @do `p22 is `i93
+  @do write
+`+93 `$(`%`i93`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 92
+
+@label 94
+ @do `p20 is 94 
+@if `i94 > 0 then do
+ @begin
+ @do `p22 is `i94
+  @do write
+`+94 `$(`%`i94`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 93
+
+@label 95
+ @do `p20 is 95 
+@if `i95 > 0 then do
+ @begin
+ @do `p22 is `i95
+  @do write
+`+95 `$(`%`i95`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 94
+
+@label 96
+ @do `p20 is 96 
+@if `i96 > 0 then do
+ @begin
+ @do `p22 is `i96
+  @do write
+`+96 `$(`%`i96`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 95
+
+@label 97
+ @do `p20 is 97 
+@if `i97 > 0 then do
+ @begin
+ @do `p22 is `i97
+  @do write
+`+97 `$(`%`i97`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 96
+
+@label 98
+ @do `p20 is 98 
+@if `i98 > 0 then do
+ @begin
+ @do `p22 is `i98
+  @do write
+`+98 `$(`%`i98`$)
+  @run itemcom in lockref3.ref
+ @end
+@if `p30 is 1 then goto 97
+
+@label 99
+ @do `p20 is 99 
+@if `i99 > 0 then do
+ @begin
+ @do `p22 is `i99
+  @do write
+`+99 `$(`%`i99`$)
+  @run itemcom in lockref3.ref
+ @end
+@do goto 1
+@end
+

@@ -1,0 +1,1732 @@
+; Script file GENRAN2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:42 2001
+
+@DECLARE npcfind 000000897
+@DECLARE findloop 000001003
+@DECLARE taxes 000003572
+@DECLARE drunk 000005934
+@DECLARE canoe 000007428
+@DECLARE tab2high 000009256
+@DECLARE event3 000009630
+@DECLARE bird 000009864
+@DECLARE event8 000010631
+@DECLARE event7 000012077
+@DECLARE event6 000013233
+@DECLARE dbattle 000015958
+@DECLARE event5 000016593
+@DECLARE 4run 000017778
+@DECLARE 4win 000017864
+@DECLARE event4 000017964
+@DECLARE event2 000019501
+@DECLARE ev1 000019725
+@DECLARE event1 000021224
+@DECLARE event9 000022727
+@DECLARE event10 000023586
+@DECLARE animalman 000035550
+@DECLARE animal2 000036135
+@DECLARE horse 000037883
+@DECLARE done 000038241
+@NOCHECK
+; End of .REF index
+
+;
+; GENRAN.REF got too big.. took delays for players. So moved all events
+; to this file.
+;
+
+@#npcfind
+@if `p71 > 0 then do
+        @begin
+        @closescript
+        @end
+@do `p20 is 1
+@label findloop
+@dataload npc/npclost.idf `p20 `p21
+@if `p21 > 0 then do
+        @begin
+        @if `p21 is map then do
+                @begin
+                @do moveback
+                @do write
+`r1
+                @clearblock 21 21
+                @do move 3 21
+                @do write
+`r0`0You hear someone coming. Stick around? `2[`0Y`2/`0N`2] :`x
+                @do readspecial `s01 YN
+                @if `s01 is N then do
+                        @begin
+                        @do saybar
+You wait until the sounds are gone before advancing.
+                        @closescript
+                        @end
+                @if `s01 is Y then do
+                        @begin
+                        @do `p70 is `p20
+                        @routine getname in npcname.ref
+                        @show
+`c`r0       `r1   A Stranger in your travels   `r0
+
+ `$`N: `5Hello?, who are you?
+
+ `$`s01: `6I'm `s01, and I am lost, could you please bring me back home?
+
+ `%<Y/n>
+
+                        @do readspecial `s02 YN
+                        @if `s02 is Y then do
+                                @begin
+                                @dataload npc/npclost.idf `p20 `p21
+                                @if `p21 is &playernum then do
+                                        @begin
+                                        @show
+ `$`N: `5Yah sure, come with me. I'll take you to your home.`l`l`l`l
+
+ `$`s01: `6Hey!, it's YOU, the one that left me here!!`l`l`l
+
+ `$`N: `5Ummm, yah.. that was me.`l`l`l
+
+ `$`s01: `6Forget it`l.`l.`l I'll be better off without you!`l`l`l`\
+                                        @key
+                                        @closescript
+                                        @end
+                                @show
+ `$`N: `5Yah sure, come with me. I'll take you to your home.`l`l`l`l
+
+ `$`s01: `6Thank you very much.`l`l
+                                @key
+                                @do `p71 is `p20
+                                @bitset `50 0 1
+                                @bitset `50 7 1
+                                @end
+                        @if `s02 is N then do
+                                @begin
+                                @drawmap
+                                @update
+                                @closescript
+                                @end
+                        @end
+                @end
+        @end
+@if `p20 > 199 then do
+        @begin
+        @closescript
+        @end
+@do `p20 + 1
+@do goto findloop
+
+@#taxes
+@busy
+; add more later
+@dataload taxes.idf &playernum `p21
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`0You hear something in the distance. `l`k
+@do move 1 1
+@clear screen
+@show
+`r0`x
+
+    `%<`4You can recognize them anywhere, they are tax collectors!`%>
+    `l`l`k
+    `$Tax Collector: `%Ahh, looky at who we found gentlemen.
+                     `%It's ol' `N `%from `s01`%!`l`k
+
+    `$Guards: `%Perfect.. it's time to pay your taxes s&sir.`l`l
+    `l`k
+
+    `$`N: `%How much do I owe?`l`l`l
+    `l`l`k
+
+    `$Tax Collector: `%Exactly `$`p21 `%gold.`l
+    `l`l`k
+
+@if money < `p21 then do
+        @begin
+        @show
+ `$`N: %Sorry, I will have to return with more money, as I am not
+       `%carrying enough gold.`l`l
+       `l`l`l`k
+
+        @do `p23 is `v17
+        @do `p23 - 1
+        @if `p21 > `p23 then do
+                @begin
+                @show
+ `$Tax Collector: `%You have not paid your tributes in a long time. You are
+                `%going to be sent to jail without passing GO. <smirk>
+                `%GUARDS!! Take this sorry little s&boy away.
+                `l`k
+ `$Guards: `%Yes SIR!`l`k
+
+ `%<The guards grab your arms and pull you away to the GreenTree Prison>
+ `l`k
+
+ `$Tax Collector: `%Make sure you pay your dues as soon as you get out of
+               `%prison. Taxes are payable at the King SysOps Castle.
+               `l`l`k
+                @key
+                @do `s01 is didn't`xpay`xtaxes
+                @run enter in prison.ref
+                @end
+        @show
+ `$Tax Collector: `%This time you can leave, but don't let your taxes go over
+                  `$`v17`% gold. You'll end up in jail for life.
+                  `l`l`l`l`l`l`l`k
+
+        @key
+        @drawmap
+        @update
+        @closescript
+        @end
+@show
+
+ `%Will you pay now? or go pay later at the SysOp Castle or Bank. [Y/n]
+@DO READSPECIAL `s02 YN
+@if `s02 is Y then do
+        @begin
+        @show
+
+ `$`N: `%Okay sir, here I've got the `$`p21 `%gold.
+ `l`l`k
+
+ `%<you hand over `$`p21 `%gold>`l`l`k
+
+        @bitset `t19 7 0
+        @do money - `p21
+        @dataload vaults.idf 2 `p22
+        @do `p22 + `p21
+        @datasave vaults.idf 2 `p22
+        @key
+        @end
+
+@drawmap
+@update
+@closescript
+
+@drawmap
+@update
+@closescript
+
+@#drunk
+@if `p96 > 0 then do
+        @begin
+        @do `p96 - 2
+        @if `p96 < 0 then `p96 is 0
+        @end
+@if `p96 > 10 then do
+        @begin
+        @if `p96 > 60 then do
+                @begin
+                @do saybar
+`5The alchol is finaly taking some serious effects.`l`l`l`k
+                @do saybar
+`5You will soon pass out there on the ground.
+                @do `p11 - 200
+                @do `p02 / 2
+                @closescript
+                @end
+        @if `p96 > 50 then do
+                @begin
+                @do saybar
+`5The alchol is finaly taking some more dangerous effects.
+                @do `p11 - 150
+                @do `p02 / 5
+                @closescript
+                @end
+        @if `p96 > 40 then do
+                @begin
+                @do saybar
+`5The alchol is finaly taking some serious effects.
+                @do `p11 - 100
+                @do `p02 / 10
+                @closescript
+                @end
+        @if `p96 > 30 then do
+                @begin
+                @do saybar
+`5The alchol is finaly taking some effects.
+                @do `p11 - 75
+                @do `p02 / 15
+                @closescript
+                @end
+        @if `p96 > 20 then do
+                @begin
+                @do saybar
+`5The alchol is finaly taking effect.
+                @do `p11 - 50
+                @do `p02 / 20
+                @closescript
+                @end
+        @end
+
+@#canoe
+@busy
+@dataload canoe.idf &playernum `p21
+@if `p21 > 0 then do
+        @begin
+        @dataload canoeday.idf &playernum `p20
+        @if `p20 > 1 then do
+                @begin
+                @do saybar
+`$Paul: `%My CANOE, you didn't return it.`l`l`l`l`l`k
+                @do `p21 is `p20
+                @do `p22 is `p20
+                @do `p21 * 200
+                @do `p22 * 5
+                @do `p21 + `p22
+                @do saybar
+`$Paul: `%I'll have to charge you for `p20 days, that'll be `$$`p21`l`l`l`l`l`k
+                @do saybar
+`$Paul: `%Will you pay now? or put in your tab? [Y/n]
+                @DO READSPECIAL `s02 YN
+                @if `s02 is Y then do
+                        @begin
+                        @if money < `p21 then do
+                                @begin
+                        @if `p21 > 10000 then goto tab2high
+                                @do saybar
+`$Paul: `%You do not have enough cash, I'll be seeing you again sometime.`l`l`l`l`l
+                                @do quebar
+`$Paul: `%Do not let your tab go over `$$10,000`%, you'll be arrested.
+                                @closescript
+                                @end
+                        @do money - `p21
+                        @do saybar
+`$Paul: `%Thank-you, you may go on your way now.
+                        @datasave canoeday.idf &playernum 1
+                        @closescript
+                        @end
+                @if `s02 is N then do
+                        @begin
+                        @if `p21 > 10000 then goto tab2high
+                        @do saybar
+`$Paul: `%Do not let your tab go over `$$10,000`%, you'll be arrested.`l`l`l`l`l
+                        @end
+                @end
+        @end
+@closescript
+@end
+
+
+@label tab2high
+@do saybar
+`$Paul: `%My CANOE, you didn't return it.`l`l`l`l`l`k
+@do saybar
+`$Paul: `%You owe me more than `$10,000.`l`l`l`l`l`k
+@do saybar
+`$Paul: `%You are going to go to jail now.`l`l`l`l`l`k
+@do saybar
+`%You were struck on the head from behind, then all goes black.`l`l`l`l`l`k
+@do `s01 is didn't`xpay`xcanoe`xrent
+@run enter in prison.ref
+@end
+
+
+@#event3
+@busy
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2You notice an ugly vulture flying above you. Stop? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @label bird
+  @busy
+  @show
+`c  `r1  `%The Vulture  `r0
+`\The ugly bird slowly circles overhead.
+`\What do you do?`\
+@do `v01 is 1
+@choice
+`%Throw a rock at it
+>&money 0 `%Throw your money pouch at it
+`%Wait for it to go away
+@if responce is 1 then do
+  @begin
+  @show
+`2The stone misses.  The vulture flies away.`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\`%You toss your money pouch at the ugly thing`l.`l.`l.
+`k`\`%It makes an attempt to grab it`l.`l.`l.
+`k`\`%IT CATCHES IT!
+`\`%The vulture flys off toward Greentree.
+`k
+  @do `p20 is money
+  @do bank + `p20
+  @do money is 0
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce not 3 then goto bird
+@drawmap
+@update
+
+
+@#event8
+@busy
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`0You hear something in the distance. Investigate? `2[`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1 `%How NOT To Get "Ahead" `r0
+
+  `0After about 5 minutes, you find the source of the noise`w.`w.`w`w.`w.`w.
+
+  `%It's a severed head!
+`k
+  @show
+ `$"Don't I know you from somewhere?" `2you ask.
+
+ `0"I don't think so... My name is Olivia Newton-John. Does that help?"
+
+`k `2You laugh! `$"Olivia Newton-John? It's about time someone put you in your place!"
+ `2You notice two big tears well up in her eyes.
+
+ `$"Aww, cut it out. That fake cry-on-cue crap ain't gonna work on me."
+
+ `2Apperantly, she thinks different and begins to cry.
+
+`k `2After 2 minutes of her crying, you decide that you can't take anymore,
+ get physical, and give her a good boot!
+
+`k
+@do `p20 random 50 100
+@do `p20 + `p04
+  @show
+ `2She sails through the air...
+`k
+  @show
+`2`w.`wú`w-`wÄ`wÍ`wþ`w[`w-`w-`w-`w-`w-`w-`w-`w-`w-`w-`w-`w-`w-`w-`w-`w]`wþ`wÍ`wÄ`w-`wú`w.
+`k
+ @show
+ `2and lands `p20 yards away! Maybe next time she'll land in Xanadu!
+`k
+@do addlog
+`0WOW! `%`N `0kicked Olivia Newton-John's severed head `%`p20 `0yards!
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+@drawmap
+@update
+@closescript
+@end
+
+ @do saybar
+`%You decide you have better things to do.
+
+@#EVENT7
+;The travelers who speak of the dragon
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2Sounds like traveling folk.  Stop? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  ` of Travelers  `r0
+
+  `0"Hello!"  `2says the leader.  His groups seems happy and well travelled.
+  `$"Good day sir, how goes the travels?"  `2you ask.
+  `2You sit down and talk with the group a while.  They tell you how they're
+  on their way to FlagCity and then on to PortTown.  They've heard many a
+  rumor and story on their quests.  He also speaks of the dragon ...`k
+
+  `0"There are those who believe ... that the `bRed Dragon`0 is still alive.
+  With the existance of the Dragon Tooth clan that possibility seems more
+  and more real.  If the Dragon is still alive, terror could very well
+  come to this land.  I suspect only the Dragon Tooth ... and maybe the
+  Koshi know the truth."  `(YOU ARE FULLY RESTED!)
+`\`k  
+@do `p02 is `p03
+@drawmap
+@update
+ @do saybar
+`0"Have good travels!"
+@closescript
+@end
+
+ @do saybar
+You hide in the bushes while they pass.
+
+@#EVENT6
+;Evil with the Dragon Tooth Clan
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2You hear a lot of footsteps coming.  Investigate? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is N then do
+  @begin
+  @do saybar
+You wait until the sounds are gone before advancing.
+  @closescript
+  @end
+
+
+@if `s01 is Y then do
+  @begin
+  @dataload child1.idf &playernum `p20
+  @if `p20 < 2 then do
+    @begin
+    @datasave child1.idf &playernum 1
+    @end
+  @show
+`r0`c  `r1  ` Tooth Battalion  `r0
+
+  `0"Halt lowly citizen!"  `2the lieutenant screams.  His men seem very
+  loyal and very shady.
+  `0"What's you business here?"  `2he asks.
+  
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Listen to what they have to say
+-`t18 0 Insult them
+-`t18 0 <`p07 -9 Inquire about recruitment
++`t18 0 Head to the castle
+Take off
+@if response is 1 then do
+  @begin
+  @dataload child1.idf &playernum `p20
+  @if `p20 < 2 then do
+    @begin
+    @datasave child1.idf &playernum 1
+    @end
+  @pauseoff
+  @show
+`\`\  `0"The Dragon is still alive my friends, and only we know of the way
+  to stop him.  We may protect you, but for a price.  It costs us to fight
+  off the beast on a constant basis.  We need your money to make the towns
+  safe.  Give it to us or your friends will surely die!"  `2You stand not
+  very sure of this loser's speech.  Sounds like a classic scam.
+
+  `$"I hate to ruin your fine speech sir, but I don't live near here."
+  `2you say.
+
+  `0"The Dragon has wings, he will travel.  Soon your home may be next!"
+  `2he replys.
+`\`k
+  @end
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `$"You guys suck, what a load of crap!!"  `2you yell.
+
+  `0"You'll regret that s&boy."  `2says the lieutenant.
+`\`k
+  @do goto DBATTLE
+  @end
+@if response is 3 then do
+  @begin
+  @show
+`\`\  `$"Hey, I like being evil.  Could I join you guys and get a piece
+  of the action?"  `2you ask.
+
+  `0"You are lowly, but not so lowly that you can't be trained.  Yes ...
+  now I think I see a little potential in you s&boy.  You could be
+  trained to serve us.  Come, to our castle where you may learn more about
+  yourself in our eyes."
+`\`k
+  @loadmap 705
+  @do map is 705
+  @do x is 27
+  @do y is 11
+  @update
+  @drawmap
+  @closescript
+  @end
+@if response is 4 then do
+  @begin
+  @show
+`\`\  `$"My masters, I must see the gatekeeper and ask him of my progress."
+  `2you say.
+
+  `0"It shall be done ..."
+`\`k
+  @loadmap 705
+  @do map is 705
+  @do x is 27
+  @do y is 11
+  @update
+  @drawmap
+  @closescript
+  @end
+@drawmap
+@update
+@if bitcheck `t18 0 0 then do
+ @begin
+ @do saybar
+`0"We'll meet again!"
+ @end
+
+@#DBATTLE
+@fight
+;name
+Dragon Tooth Battalion
+;string said when you see him
+They suddenly charge you, so much for protection.
+;power move kill string
+`$"Save your own ass!!"  `2you shout.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+charges you|100
+surrounds and beats you|125
+practice with their swords on you|150
+attempt to trample you|97
+NONE|NONE
+;defense
+40
+;gold reward
+1400
+;experience
+210
+;hit points
+700
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@drawmap
+@update
+
+@#EVENT5
+;Injured person
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2You hear an injured person nearby.  Investigate? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  ` a fellow traveler  `r0
+
+  `0"Please help me!" `2the injured man screams.  His leg seems to have
+  taken quite a blow.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Help the man out
+Beat him and take his money
+Leave
+@if response is 1 then do
+  @begin
+  @do `p07 + 1
+  @show
+`\`\  `2You help the man, and with the first aid are able to get him on his
+  way to a city where he can further heal.
+
+  `bYOUR ALIGNMENT GOES UP BY ONE!`b
+`\`k
+@drawmap
+@update
+  @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @do `p07 - 2
+  @do `p20 random 1300 221
+  @do money + `p20
+  @show
+`\`\  `$"Sure I'll help you .. die!"  `2You slam him with your s&weapon, and
+  after he falls unconscious you raid his purse.
+
+  `2You find `$`p20 `2gold!
+
+  `bYOUR ALIGNMENT GOES DOWN BY TWO!`0
+`\`k
+@drawmap
+@update
+  @closescript
+  @end
+ @end
+@do saybar
+You are much too busy to help the man.
+@drawmap
+@update
+@#4run
+@drawmap
+@update
+@do quebar
+You run... she'll have to fend for herself.
+
+@#4win
+@drawmap
+@update
+@do `p07 + 1
+@do quebar
+You saved her!  Alignment goes up by one.
+
+@#event4
+;if clean mode, find another event to run, this one isn't suitable...
+@if `v06 is 1 then goto genran
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2A woman is being raped by two men nearby.  Interrupt them? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  Violation or a right, you decide  `r0
+
+  `0"Please help me!" `2the woman screams.  The two men are wearing
+  Dragon Tooth armour... they also seem to be having quite the good time.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Help the woman and kill the men
+Join in the fun
+Leave the encounter
+@if responce is 2 then do
+  @begin
+@drawmap
+@update
+@do `p07 - 1
+@do `p34 + 1
+@do quebar
+A few hours later you are finished!  Yeah!  Alignment goes down by one.
+  @closescript
+  @end
+@if responce is 1 then do
+  @begin
+  @fight
+;name
+The Guards
+;string said when you see him
+`0"Kill that s&boy!  s&he saw us" `2they yell!
+;power move kill string
+You strike a blow for justice this day!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+sock you|45
+clothesline you|52
+laugh as one trips you for|36
+NONE|NONE
+NONE|NONE
+;defense
+15
+;gold reward
+89
+;experience
+54
+;hit points
+136
+;if win: ref file|name or NONE
+GENRAN2.REF|4WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+GENRAN2.REF|4RUN
+  @end
+@drawmap
+@update
+@closescript
+@end
+
+@do saybar
+Screw it, why be a hero?
+
+@#event2
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A dark robed priest approaches.  Speak with him? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @label ev1
+  @show
+`r0`c  `r1  A deal, perhaps?  `r0
+
+  `0"Greetings fellow traveler.  Would you be interested in a traveling
+  potion for `$$500`0?" `2the priest asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Exactly how does it work, strange dark robed priest?
+>&money 499 Yes, I'll take it!
+>&money 499 No thanks.
+<&money 500 I can't afford it.
+@if response is 1 then do
+  @begin
+  @show
+`r0`c  `r1  How it works  `r0
+
+  `0"It's really very simple young s&man, first you drink it.  Then you
+  wait.  You will be randomly teleported to one of ten various places."
+
+  `$"What if I don't like where I am?"
+
+`k  `0"Then you're pretty much screwed, aren't you," `2he laughs.
+ 
+  `$"Hey!  A priest isn't supposed to talk like that!" `2you accuse.
+
+`k  `0"We're also not supposed to sell illegal drugs, what's your point?"
+
+`k
+  @do goto ev1
+  @end
+ @if response is 2 then do
+   @begin
+   @show
+`\`\  `0"Great doing business with you," `2he smiles as he hands you a
+  funny looking vial.
+`\`k
+   @drawmap
+   @update
+   @do `i50 + 1
+   @do money - 500
+   @closescript
+   @end
+  
+
+
+ @if response is 3 then do
+   @begin
+   @show
+`\`\  `0"Maybe next time, friend," `2he smiles.
+`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+
+
+ @if response is 4 then do
+   @begin
+   @show
+`\`\  `0"Maybe next time, friend," `2he smiles.
+`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+
+
+  @end
+@do saybar
+You move to the side to let him pass.
+
+@#event1
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A hooded figure approaches.  Speak with him? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @busy
+  @do `p20 random 4 1
+  @if `p20 is 1 then `s10 is `+22
+  @if `p20 is 2 then `s10 is `+23
+  @if `p20 is 3 then `s10 is `+24
+  @if `p20 is 4 then `s10 is `+25
+  @do `p22 random 500 85
+
+  @do move 1 1
+  @clear screen
+  @show
+`r0  `r1  Dark Trading `r0
+
+  `0"Greetings, stranger.  I have a very magical item called a `S10
+  `0for sale.. would you like to buy it for `$`p22`0?"
+  @do write
+`\`x`x
+  @do `v01 is 1
+  @choice
+>&money `p22 Sure, I'll take it
+I don't deal with your type.
+<&money `p22 Sorry, I can't afford that.
+  @if response is 1 then do
+    @begin
+  @if `p20 is 1 then `i22 + 1
+  @if `p20 is 2 then `i23 + 1
+  @if `p20 is 3 then `i24 + 1
+  @if `p20 is 4 then `i25 + 1
+    @do money - `p22
+  @show
+`\`\  `0"Nice doing business with you," `2the dark trader laughs evilly as
+  he hands you the `S10`2.
+`\`k
+    @drawmap
+    @update
+    @closescript
+    @end
+
+  @if response is 2 then do
+   @begin
+   @show
+`\`\  `0"You are making a mistake.." `2the dark trader grunts as he leaves.
+`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+
+   @show
+`\`\  `0"Maybe next time.." `2the dark trader grunts as he leaves.
+`\`k
+   @drawmap
+   @update
+  @closescript
+
+ @end
+
+@do saybar
+You move to the side to let him pass.
+@#event9
+@do moveback
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`0You hear someone coming. Stick around? `2[`0Y`2/`0N`2] :`x
+@do readspecial `s03 YN
+@if `s03 is Y then do
+@begin
+@do `p20 random 5 1
+@if `p20 is 1 then do
+  @begin
+  @do `s10 is ugly
+  @do `s01 is You`xlose`x1`xcharm
+  @end
+@if `p20 not 1 then do
+  @begin
+  @do `s10 is pretty
+  @do `s01 is Charm`xgoes`xup`xby`x1
+  @end
+@show
+`r0`c  `r5 `%WOAH! He's Nekkid! `r0
+
+`\   `2A naked old man runs by and bops you with his `s10 stick!
+`\   `0`s01!
+`\`k
+@if `p20 is 1 then do
+  @begin
+  @do `p08 - 1
+  @if `p08 < 0 then `p08 is 0
+  @end
+@if `p20 not 1 then do
+  @begin
+  @do `p08 + 1
+  @end
+@drawmap
+@update
+@do saybar
+`%Boogitty boogitty
+@closescript
+@end
+
+@do saybar
+`%You step to the side & watch as a naked old man runs by!
+
+@#event10
+;Risk
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0 `2You see a `4w`@i`4z`@a`4r`@d `2that will do some magic (`$$50`2) [`0Y`2\`0N`2]: `x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+  @begin
+  @if money < 50 then do
+    @begin
+    @show
+  `\`\ You don't have enough money for magic!"
+  `k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - 50
+  @show
+`\`\  `r0`c `r1 The risk! `r0
+  
+   `$"Hey `4w`@i`4z`@a`4r`@d `$can you do some magic for me?"`2 You ask rudely.
+
+   `0"The `4w`@i`4z`@a`4r`@d `0turns around and does what you say."
+
+   `2He then starts to chant a song `0"It could be good, it could be bad
+   depends on what mood that I'm at!"
+`\`k
+@do write
+`x`x
+@do `v01 is 1
+@do `p20 random 45 1
+@if `p20 is 1 then do
+  @begin
+  @show
+`\`\`%You recieve 500 gold
+`\`k
+@do money + 500
+    @do addlog
+   `$þþ `0`n `2has gain `$gold`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 2 then do
+  @begin
+  @show
+`\`\`bYou lose 500 gold`b
+`\`k
+@do money - 500
+    @do addlog
+   `$þþ `0`n `2has lost `$gold`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 3 then do
+  @begin
+  @show
+`\`\`%You gain 300 gold
+`\`k
+@do money + 300
+    @do addlog
+   `$þþ `0`n `2has gain `$gold`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 4 then do
+  @begin
+  @show
+`\`\`bYou loose 300 gold`b
+`\`k
+@do money - 300
+    @do addlog
+   `$þþ `0`n `2has lost `$gold`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 5 then do
+  @begin
+  @show
+`\`\`%You gain 5000 gold
+`\`k
+@do money + 5000
+    @do addlog
+   `$þþ `0`n `2has gain `$gold`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 6 then do
+  @begin
+  @show
+`\`\`bYou loose 2000 gold`b
+`\`k
+@do money - 500
+    @do addlog
+   `$þþ `0`n `2has lost `$gold`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 7 then do
+  @begin
+  @show
+`\`\`%You gain 1 hit point
+`\`k
+@do `p03 + 1
+    @do addlog
+   `$þþ `0`n `2has gain a `4Hitpoint`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 8 then do
+  @begin
+  @show
+`\`\`%You gain 2 hit points
+`\`k
+@do `p03 + 2
+    @do addlog
+   `$þþ `0`n `2has gain `4Hitpoints`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 9 then do
+  @begin
+  @show
+`\`\`%You gain 5 hit points
+`\`k
+@do `p03 + 5
+    @do addlog
+   `$þþ `0`n `2has gain `4Hitpoints`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 10 then do
+  @begin
+  @show
+`\`\`bYou loose 4 hit points`b
+`\`k
+@do `p03 - 4
+    @do addlog
+   `$þþ `0`n `2has lost `4Hitpoints`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 11 then do
+  @begin
+  @show
+`\`\`%You lose 2 hit points
+`\`k
+@do `p03 - 2
+    @do addlog
+   `$þþ `0`n `2has lost `4Hitpoints`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 12 then do
+  @begin
+  @show
+`\`\`%You lose 1 hit points
+`\`k
+@do `p03 - 1
+    @do addlog
+   `$þþ `0`n `2has lost a `4Hitpoint`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 13 then do
+  @begin
+  @show
+`\`\`%You gain 500 experience
+`\`k
+@do `p01 + 500
+    @do addlog
+   `$þþ `0`n `2has gain `!experience`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 14 then do
+  @begin
+  @show
+`\`\`bYou loose 500 experience`b
+`\`k
+@do `p01 - 500
+    @do addlog
+   `$þþ `0`n `2has lost `!experience`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 15 then do
+  @begin
+  @show
+`\`\`%You gain 2000 experience
+`\`k
+@do `p01 + 2000
+    @do addlog
+   `$þþ `0`n `2has gain `!experience`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 16 then do
+  @begin
+  @show
+`\`\`bYou loose 1000 experience`b
+`\`k
+@do `p01 - 1000
+    @do addlog
+   `$þþ `0`n `2has lost `!experience`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 17 then do
+  @begin
+  @show
+`\`\`%You gain 1500 experience
+`\`k
+@do `p01 + 1500
+@drawmap
+@update
+@closescript
+    @do addlog
+   `$þþ `0`n `2has gain `!experience`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@end
+@if `p20 is 18 then do
+  @begin
+  @show
+`\`\`bYou loose 100 experience`b
+`\`k
+@do `p01 - 100
+@drawmap
+@update
+@closescript
+    @do addlog
+   `$þþ `0`n `2has lost `!experience`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@end
+@if `p20 is 19 then do
+  @begin
+  @show
+`\`\`%You gain 1 alignment
+`\`k
+@do `p07 + 1
+@drawmap
+@update
+@closescript
+    @do addlog
+   `$þþ `0`n `2has gain `%alignment`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@end
+@if `p20 is 20 then do
+  @begin
+  @show
+`\`\`bYou loose 1 alignment`b
+`\`k
+@do `p07 - 1
+@drawmap
+@update
+@closescript
+    @do addlog
+   `$þþ `0`n `2has lost `%alignment`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@end
+@if `p20 is 21 then do
+  @begin
+  @show
+`\`\`%You gain 2 alignments
+`\`k
+@do `p07 + 2
+@drawmap
+@update
+@closescript
+    @do addlog
+   `$þþ `0`n `2has gain `%alignment`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@end
+@if `p20 is 22 then do
+  @begin
+  @show
+`\`\`bYou loose 2 alignments`b
+`\`k
+@do `p07 - 2
+@drawmap
+@update
+@closescript
+    @do addlog
+   `$þþ `0`n `2has lost `%alignment`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@end
+@if `p20 is 23 then do
+  @begin
+  @show
+`\`\`%You gain 3 alignments
+`\`k
+@do `p07 + 3
+    @do addlog
+   `$þþ `0`n `2has gain `%alignment`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 24 then do
+  @begin
+  @show
+`\`\`bYou loose 1 alignments`b
+`\`k
+@do `p07 - 1
+    @do addlog
+   `$þþ `0`n `2has lost `%alignment`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 25 then do
+  @begin
+  @show
+`\`\`%You gain some berries
+`\`k
+@do `i01 + 3
+    @do addlog
+   `$þþ `0`n `2has gain `6berries`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end       
+@if `p20 is 26 then do
+  @begin
+  @show
+`\`\`bYou loose some berries`b
+`\`k
+@do `i01 - 3
+    @do addlog
+   `$þþ `0`n `2has lost `6berries`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 27 then do
+  @begin
+  @show
+`\`\`%You gain some eggs
+`\`k
+@do `i43 + 3
+    @do addlog
+   `$þþ `0`n `2has gain `%eggs`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 28 then do
+  @begin
+  @show
+`\`\`bYou loose some eggs`b
+`\`k
+@do `i43 - 3
+    @do addlog
+   `$þþ `0`n `2has lost `%eggs`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 29 then do
+  @begin
+  @show
+`\`\`%You gain a couple of Green potions
+`\`k
+@do `i05 + 2
+    @do addlog
+   `$þþ `0`n `2has gain `0Green potions`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 30 then do
+  @begin
+  @show
+`\`\`bYou loose a couple of Green potions`b
+`\`k
+@do `i05 - 2 
+    @do addlog
+   `$þþ `0`n `2has lost `0Green potions`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 31 then do
+  @begin
+  @show
+`\`\`%You gain 5 muscles
+`\`k
+@do `p04 + 5
+    @do addlog
+   `$þþ `0`n `2has gain `7muscle`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 32 then do
+  @begin
+  @show
+`\`\`bYou loose 2 muscles`b
+`\`k
+@do `p04 - 2
+    @do addlog
+   `$þþ `0`n `2has lost `7muscle`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 33 then do
+  @begin
+  @show
+`\`\`%You gain 2 dodges
+`\`k
+@do `p05 + 2
+    @do addlog
+   `$þþ `0`n `2has gain `7dodges`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 34 then do
+  @begin
+  @show
+`\`\`bYou loose 2 dodges`b
+`\`k
+@do `p05 - 2
+    @do addlog
+   `$þþ `0`n `2has lost `7dodges`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 35 then do
+  @begin
+  @show
+`\`\`% you gain 1 Red potions
+`\`k
+@do `i52 + 1
+    @do addlog
+   `$þþ `0`n `2has gain `4Red potions`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 36 then do
+  @begin
+  @show
+`\`\`% you gain 2 Gold potions
+`\`k
+@do `i53 + 2
+    @do addlog
+   `$þþ `0`n `2has gain `$Gold potions`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+@if `p20 is 37 then do
+  @begin
+  @show
+`\`\`% you gain 2 Silver potions
+`\`k
+@do `i54 + 2
+    @do addlog
+   `$þþ `0`n `2has gain `7Silver potions`2 from the `4w`@i`4z`@a`4r`@d `$þþ
+     @routine seperate in gametxt.ref
+@drawmap
+@update
+@closescript
+@end
+
+@if `p20 is 38 then do
+  @begin
+  @show
+`\`\`bYou are moved to Island of the Phreaks`b
+`\`k
+@loadmap 63
+@do map is 63
+@do x is 40
+@do y is 18
+@update
+@drawmap
+@closescript
+@end
+@if `p20 is 39 then do
+  @begin
+  @show
+`\`\  `%You are moved to Loki's Inn
+`\`k
+@loadmap 202
+@do map is 202
+@do x is 32
+@do y is 13
+@update
+@drawmap
+@closescript
+@end
+@do moveback
+@if `p20 is 40 then do
+  @begin
+  @show
+`\`\`bYou are moved to the middle of a battlefield`b
+`\`k
+@loadmap 293
+@do map is 293
+@do x is 40
+@do y is 10
+@update
+@drawmap
+@closescript
+@end
+@if `p20 is 41 then do
+  @begin
+  @show
+`\`\`bYou are moved to Bone Town`b
+`\`k
+@loadmap 1572
+@do map is 1572
+@do x is 70
+@do y is 17
+@update
+@drawmap
+@closescript
+@end
+@if `p20 is 42 then do
+  @begin
+  @show
+`\`\`bYou are moved to New StoneBrook`b
+`\`k
+@loadmap 156
+@do map is 156
+@do x is 7
+@do y is 3
+@update
+@drawmap
+@closescript
+@end
+@if `p20 is 43 then do
+  @begin
+  @show
+`\`\`bYou are moved to Marshy Fell`b
+`\`k
+@loadmap 1475
+@do map is 1475
+@do x is 39
+@do y is 13
+@update
+@drawmap
+@closescript
+@end
+@if `p20 is 44 then do
+  @begin
+  @show
+`\`\`bYou are moved to Slayers Domain`b
+`\`k
+@loadmap 935
+@do map is 935
+@do x is 40
+@do y is 10
+@update
+@drawmap
+@closescript
+@end
+@if `p20 is 45 then do
+  @begin
+  @show
+`\`\`bYou are moved to someplace in BigWood Forest`b
+`\`k
+@loadmap 300
+@do map is 300
+@do x is 40
+@do y is 11
+@update
+@drawmap
+@closescript
+@end
+
+@end
+@do saybar
+You decided not to get involved
+
+@#animalman
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A dark robed priest approaches.  Speak with him? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @do `p20 random 65 25
+  @do `p21 random 3000 1000
+  @do `p22 random 300 200
+  @do `p23 random 15 1
+  @do `p24 random 400 200
+  @do `p25 random 20000 5000
+  @do `p26 is 0
+  @do move 1 1
+  @clear screen
+  @show
+`r0  `r1  A deal, perhaps?  `r0
+
+  `0"Greetings fellow traveler.  I'm looking for little animals.
+   By any chance do you have any?
+
+@label animal2
+@key
+  @if `p26 is 1 then do
+        @begin
+        @do move 1 1
+        @clear screen
+        @show
+`r0  `r1  A deal, perhaps?  `r0
+
+  `0"Do you have any more for me?
+
+        @end
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+>`i17 0 `$$`p20`% for a gloworm
+>`i18 0 `$$`p21`% for a parrot
+>`i29 0 `$$`p22`% for a salmon
+>`i30 0 `$$`p23`% for a green salmon
+>`i43 0 `$$`p24`% for a chicken egg
+>`i51 0 `$$`p25`% for a small fuzzy animal
+Nah, I dont think so
+@if response is 1 then do
+  @begin
+  @show
+`\  `0Thank you, these glowy buggers are great for tastes. Heres your `$$`p20`0.
+  @do money + `p20
+  @do `i17 - 1
+  @do `p26 is 1
+  @do goto animal2
+  @end
+@if response is 2 then do
+  @begin
+  @show
+`\  `0Thank you, i could always use more feathers. Heres your `$$`p21`0.
+  @do money + `p21
+  @do `i18 - 1
+  @do `p26 is 1
+  @do goto animal2
+  @end
+@if response is 3 then do
+  @begin
+  @show
+`\  `0Thank you, i could always use more scales. Heres your `$$`p22`0.
+  @do money + `p22
+  @do `i29 - 1
+  @do `p26 is 1
+  @do goto animal2
+  @end
+@if response is 4 then do
+  @begin
+  @show
+`\  `0Thank you, i could always use more green scales. Heres your `$$`p23`0.
+  @do money + `p23
+  @do `i30 - 1
+  @do `p26 is 1
+  @do goto animal2
+  @end
+@if response is 5 then do
+  @begin
+  @show
+`\  `0Thank you, i could always use more eggs. Heres your `$$`p24`0.
+  @do money + `p24
+  @do `i43 - 1
+  @do `p26 is 1
+  @do goto animal2
+  @end
+@if response is 6 then do
+  @begin
+  @show
+`\  `0Thank you, these are hard to fine, they make the best brew.`\    Heres your `$$`p25`0.
+  @do money + `p25
+  @do `i51 - 1
+  @do `p26 is 1
+  @do goto animal2
+  @end
+@drawmap
+@update
+@closescript
+@#HORSE
+@do `p20 random 5 1
+@if bitcheck `t79 1 1 then do
+        @begin
+        @do `t80 - `p20
+        @if `t80 < 1 then do
+                @begin
+                @bitset `t79 1 0
+                @do saybar
+`@`bYour HORSE is now dead!
+                @do quebar
+`4You should think about feeding it next time.
+                @end
+        @end
+@#done
+

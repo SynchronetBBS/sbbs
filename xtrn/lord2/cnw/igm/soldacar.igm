@@ -1,0 +1,52 @@
+
+                SoldaCar Crisis v.0.9 By ArticNight IGMs
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : I think so!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (2)
+  Adds screens?                                   : Yes! (5)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM soldacar.IGM
+
+  To uninstall, do the same thing again.
+
+  
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4 SoldaCar Crisis V.9 `2By: `3 ArticNight IGMs
+
+replacescreen:  60 1 noshow
+replacescreen:  61 2 noshow
+replacescreen:  62 3 noshow
+replacescreen:  141 4 noshow
+replacescreen:  142 5 noshow
+replacescreen:  219 6 show
+;replacescreen:  316 7 show
+replacescreen:  315 7 show
+
+
+installmessage:`%ABOUT THIS IGM:
+
+   This is the `7 4th `2IGM that ArticNight IGMs has created! This IGM is:
+   SoldaCar Crisis: Where you play the spy for our Mother Company,
+   DarkForest Software! Kill the Evil Dr. Notnilc! Save Zelda? It is all
+   up to you!
+
+Stephen Walls
+Proud member (& CEO) of DarkForest Software!!!
+

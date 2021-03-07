@@ -1,0 +1,41 @@
+
+  LORD2 Compile.exe V1.00 by Seth.
+
+  Have you written an IGM or World and you don't want others to be able
+  to look inside it?
+
+  Use COMPILE.EXE on your ref and people CAN'T do the following:
+
+   * Look at the .ref to find hidden tricks
+   * Change the .ref to make it easier/customized
+   * Steal your work and copy it
+
+  Sounds great!  Is it hard to do?
+
+  Nope, just type "COMPILER.EXE refname.ref" and it will create a file
+  called "refname.rec" without touching your original.
+
+  Now, take your source (the .ref file) out of the dir and run LORD2, it will
+  automatically load the .REC after it cannot find the .REF file!  If a .ref
+  exists, it will always run that instead of the .REC.  (.ref is the source
+  file, .rec is the compiled version.  Get it?  LORD2 can read both)
+
+  ** Info and quirks **
+
+  * SHOW SCROLL will not work inside of a compiled .ref.  The good news
+  is nobody I've ever seen has used this feature, and if you need it just
+  stick it into a different .ref file - you can mix and match uncompiled
+  and compiled together.  As for as original LORD2 .refs, HELP.REF is the
+  only one that uses it. 
+
+  * Compiled .refs aren't really compiled.. they are encrypted.  This means
+  they are not smaller or faster, just the opposite actually.  
+
+  * Declare command will not work with compiled .refs.  I may add this
+  later, it would really speed up .refs as they would not need to be
+  'scanned' before running each time.  (although no one has built a util
+  to add DECLARE statements to uncompiled .refs either, so no great loss)
+
+  * I did a compile *.ref in the LORD2 dir, then deleted *.ref and manually
+  copied help.ref into the dir (the one with the scroll scroll), and everything
+  worked great but be warned that this is basically untested.

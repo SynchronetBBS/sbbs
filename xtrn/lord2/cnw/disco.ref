@@ -1,0 +1,236 @@
+; Script file DISCO.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:13 2001
+
+@DECLARE start 000000229
+@DECLARE start2 000000399
+@DECLARE done 000005694
+@DECLARE locked 000005786
+@NOCHECK
+; End of .REF index
+
+@#START
+;@if `p71 is 0 then goto start2
+@if bitcheck `t50 7 1 then goto locked
+@if bitcheck `t51 7 1 then goto locked
+@if bitcheck `t51 1 1 then goto locked
+
+@label start2
+@DO MOVEBACK
+@datanewday disco.idf
+@dataload disco.idf &playernum `p20
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @DO GOTO LOCKED
+ @END
+@CLEAR SCREEN
+@SHOW
+`%                 °
+`%                 °
+`%              ÜÜÜ°ÜÜÜ
+`%           Ü±²±²±²±²±²±Ü               `4G`7-`6Dogg's
+`%         Ü±²±²±²±²±²±²±²±Ü                `2D`3i`#s`$c`0o
+`%       Ü±²±²±²±²±²±²±²±²±²±Ü                 `7Hall
+`%       Û±²±²±²±²±²±²±²±²±²±Û
+`%       ß±²±²±²±²±²±²±²±²±²±ß
+`%         ß±²±²±²±²±²±²±²±ß
+`%           ß±²±²±²±²±²±ß
+`%              ßßßßßßß
+
+`5    You enter the disco hall and are greeted by a big white ball hanging
+from the ceiling. You see tons of people "getting funky" and making complete
+idiots out of themselves! You ponder what to do...
+@KEY BOTTOM
+@CLEAR SCREEN
+@SHOW
+`$   ²Û   Û            `!²ÛÛÛ     ÛÛÛ            `0²ÛÛÛÛÛÛÛ             `@  ²ÛÛÛ
+`$   ²Û   Û            `!²Û ÛÛ   ÛÛ Û            `0²Û                   `@ ²ÛÛ ÛÛ
+`$   ²ÛÛÛÛÛ            `!²Û  ÛÛ ÛÛ  Û            `0²Û                   `@²ÛÛ   ÛÛ
+`$     ²Û              `!²Û   ÛÛÛ   Û            `0²Û                   `@²ÛÛÛÛÛÛÛ
+`$     ²Û              `!²Û         Û            `0²Û                   `@²Û     Û
+`$     ²Û              `!²Û         Û            `0²Û                   `@²Û     Û
+`$     ²Û              `!²Û         Û            `0²ÛÛÛÛÛÛÛ             `@²Û     Û
+`%
+@do move 25 10
+@do `v01 is 1
+@CHOICE
+Dance in the Disco
+Leave before someone you know sees you
+Kick the bouncer's ass
+>`p71 0 Dance with your date
+@if response is 4 then do
+        @begin
+        @do `p26 is `p71
+        @routine getname in npcname2.ref
+        @do move 1 1
+        @CLEAR SCREEN
+        @SHOW
+
+
+
+
+       `0 Yeah! Time to show `s01 your disco moves!
+`k
+        After an hour of constant dancing, you both decide to leave
+   the place and relax a while.
+
+        @bitset `t50 6 1
+        @bitset `t51 1 1
+        @do `p20 random 3 1
+        @if `p20 is 1 then do
+                @begin
+                @bitset `t51 7 1
+                @end
+        @dataload npc/npc-`p71.idf &playernum `p26
+        @do `p26 + 1
+        @do `p26 + `p20
+        @if `p26 > 200000 then `p26 is 200000
+        @datasave npc/npc-`p71.idf &playernum `p26
+        @do `p08 + 1
+        @do `p02 / 2
+        @do `p01 + 250
+        @do `p11 - 100
+        @do goto done
+        @end
+
+@IF RESPONCE IS 3 THEN DO
+ @BEGIN
+  @CLEAR SCREEN
+  @SHOW
+  @KEY BOTTOM
+  @CLEAR SCREEN
+  @SHOW
+  `4   You pull back your fist to punch the bouncer and all of a sudden...
+  WHAM! Everything goes black!
+
+
+  `0   When you awake, you realize that you don't feel very well.  You also
+  notice that you spent a great deal of time unconscious... Better not try
+  that again...
+  
+
+
+`6                          HITPOINTS ARE AT 1
+                              YOU HAVE LOST 300 TURNS
+   @DO `p02 IS 1
+   @DO `p11 - 300
+  @DO GOTO DONE
+ @END
+
+7@IF RESPONCE IS 2 THEN DO
+ @BEGIN
+   @SHOW
+
+
+`0You exit the disco hall behind the cover of a fat woman! Whew! It's good to
+  be outta there!!!
+   @DO GOTO DONE
+ @END
+@CLEAR SCREEN
+@SHOW
+
+
+
+
+       `0 Yeah! Time to show some of them so called disco-ers your moves!
+@DO `p20 RANDOM 10 1
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @SHOW
+
+`3 You manage to make a complete ass outta yourself! All ya did is waste
+   precious time!
+        
+        
+@DO `p11 - 50
+ @DO GOTO DONE
+ @END
+@IF `p20 IS 2 THEN DO
+ @BEGIN
+  @SHOW
+
+`5 You were discoing when all of a sudden, you bounced into some fat woman!
+   You then richocheted into the bouncer who painfully throws ya out!
+@DO `p02 = 1
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 3 THEN DO
+ @BEGIN
+  @SHOW
+
+`3 You were getting down when all of a sudden an old woman falls down on the
+   floor and has a heart attack! You instinctively dial 911 and save her life!
+   Way to go!
+@DO `p07 + 1
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 4 THEN DO
+ @BEGIN
+  @SHOW
+
+`7 While getting down on the dance floor you bang into someone! Then ya feel
+   like moshing! You mosh all over the place and the hall becomes a mosh pit!
+   This has to be one of the most evil things ya ever did! He he he!!!
+  @DO `p07 - 1
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 5 THEN DO
+ @BEGIN
+  @SHOW
+
+`5 You dance in the disco but nothing happens... You just have some fun...
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 6 THEN DO
+ @BEGIN
+  @SHOW
+
+`6 You jazz up the dance floor and win a disco contest in which the prize is
+   one hundred gold! 
+  @DO money + 100
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 7 THEN DO
+ @BEGIN
+  @SHOW
+
+`9 You got down on the dance floor but all ya wasted was precious time...
+  @DO `p11 - 50
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 8 THEN DO
+ @BEGIN
+  @SHOW
+
+`# All that disco has somewhat relaxed you and makes you feel better! You are
+   totally refreshed!
+  @DO `p02 = `p03
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 9 THEN DO
+ @BEGIN
+  @SHOW
+
+`@ All that discoing has improved your lung capicity! You feel a lot
+   healthier!
+  @DO `p03 + 1
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 10 THEN DO
+ @BEGIN
+  @SHOW
+
+`$ While discoing you manage to find some spare change on the floor... Not a
+   lot of cash but still it's free!
+  @DO money + 25
+  @DO GOTO DONE
+ @END
+@#DONE
+@datasave disco.idf &playernum 1
+@KEY BOTTOM
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+
+@#LOCKED
+@DO SAYBAR
+  The disco hall is closed.  Try entering it tomorrow.
+@CLOSESCRIPT

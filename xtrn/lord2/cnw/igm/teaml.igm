@@ -1,0 +1,59 @@
+
+                     Cool TeamLord v1.30
+                 Copyright (C) Coolhouse in 1997
+                  -=-=-=-=-=-=-=-=-=-=-=-=-
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : Yes! (inn.ref)
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (10)
+  Replaces screens?                               : Yes! (8)
+  Adds screens?                                   : YES!(2)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM TEAML.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `1Co`9ol `%Tea`9mLo`1rd. `0By. Lauri Aalto
+replacescreen: 1274 1 show
+replacescreen: 1221 2 noshow
+replacescreen: 320 3 show
+replacescreen: 80 4 noshow
+replacescreen: 1255 5 show
+replacescreen: 1175 6 noshow
+replacescreen: 1028 7 show
+replacescreen: 1342 8 noshow
+replacescreen: 55 9 show
+replacescreen: 1340 10 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+  `1Co`9ol`% Team`9LO`1RD v1.2
+  `2Playing LORD 2 trough again and again is bit boring? I think it is.
+  `2So I made this great IGM! It adds 5 TeamHouses. Now you can attack
+  `2other TeamHouses and steal their treasure, but beware the `4Dragons`2
+  `2And now in this version you can heal yourself free and write messages
+  `2to chatting wall.
+
+  `2Thanks for ideas:
+  `2All LORD 2 players in The Eden Project BBS
+   
+    `2Contact us:
+    `2http://www.angelfire.com/co/coolhouse
+     `2coolhousebbs@hotmail.com
+     `2latex@death-star.com
+     `9Thanks for trying this IGM...hope you like it.
+  

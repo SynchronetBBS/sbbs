@@ -1,0 +1,302 @@
+; Script file VOYFITE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:23 2001
+
+@DECLARE monster1 000000416
+@DECLARE monster2 000000974
+@DECLARE monster3 000001560
+@DECLARE monster4 000002112
+@DECLARE monster5 000002682
+@DECLARE monster6 000003248
+@DECLARE monster7 000003844
+@DECLARE monster8 000004389
+@DECLARE monster9 000004945
+@DECLARE fight 000005522
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+`n
+;string said when you see him
+"You Look kinda familiar?!" `$You say
+;power move kill string
+You find a new respect for yourself...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hits with its s&weapon|100
+pounces you|94
+He hits himself..sorta|200
+NONE|NONE
+NONE|NONE
+;defense
+`p05
+;gold reward
+50
+;experience
+32
+;hit points
+`p02
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Spence
+;string said when you see him
+This guy looks like he knows what he's doing!
+;power move kill string
+Take that boy! Hahahaha
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Slices with his Koshi Sword|134
+Runs you through with his Dragon Sword|250
+Kicks you in the head|112
+NONE|NONE
+NONE|NONE
+;defense
+2000
+;gold reward
+19
+;experience
+12
+;hit points
+325
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Steve
+;string said when you see him
+`0Well, at least I can kill this guy!
+;power move kill string
+I guess so!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+smacks you with his crossbow|100
+hits with his longsword|76
+stabs hard with a dagger|92
+NONE|NONE
+NONE|NONE
+;defense
+2000
+;gold reward
+60
+;experience
+23
+;hit points
+234
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Hologram
+;string said when you see him
+`0"Is this for real?" `2 you say.
+;power move kill string
+Guess not.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Jumps threw you|100
+Goes Invisible and starts hitting you|120
+Whips you up with a holographic whip you|230
+NONE|NONE
+NONE|NONE
+;defense
+2000
+;gold reward
+43
+;experience
+23
+;hit points
+1231
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Commando
+;string said when you see him
+`2You see a macho man with lots of advanced weaponry.
+;power move kill string
+Kick your ass!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+throws a grenade|144
+fires sniper rifle|102
+uses C4|121
+pulls off your arm|323
+Breaks your nose|121
+;defense
+2000
+;gold reward
+40
+;experience
+66
+;hit points
+300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Caecilius
+;string said when you see him
+`0"Hey, have you seen Quintus or Mettela?"  `2you hear.
+;power move kill string
+`$"Go back to Rome" 
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+nails you with a wax tablet|102
+volcano power!|230
+smashes you with a stick|121
+Gets Clemens to attack you|164
+NONE|NONE
+;defense
+2000
+;gold reward
+55
+;experience
+16
+;hit points
+400
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+The Powerful one
+;string said when you see him
+`0"I have the power" `2 you hear.
+;power move kill string
+`$"What power would that be?"`2
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+uses his power|234
+shakes the earth|178
+Screams|3210
+NONE|NONE
+NONE|NONE
+;defense
+2000
+;gold reward
+10
+;experience
+50
+;hit points
+2000
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+Spastic Chicken
+;string said when you see him
+`0"KFC!?!!I Kill you!!" `2 you hear.
+;power move kill string
+Lay an egg now!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits with his egg|150
+pecks out your eyes|134
+sticks a feater up your nose|124
+NONE|NONE
+NONE|NONE
+;defense
+1500
+;gold reward
+41
+;experience
+22
+;hit points
+222
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster9
+@fight
+;name
+Death Himself
+;string said when you see him
+`0"You are mine now..." 
+;power move kill string
+`$"Looks like it wasn't my time after all!"
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+jabs you with his spear|321
+Hails the undead!|419
+rams his spear through your arm|234
+NONE|NONE
+NONE|NONE
+;defence
+3000
+;gold reward
+27
+;experience
+12
+;hit points
+2500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @do saybar
+"Sorry, you ain't gonna find no people with travel potions in here!"
+@do `p20 random 9 1
+@do goto monster`p20

@@ -1,0 +1,546 @@
+; Script file SHARK.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE man 000000542
+@DECLARE woman 000001461
+@DECLARE lake 000002220
+@DECLARE bank 000002969
+@DECLARE bankstart 000003041
+@DECLARE bankagain 000004139
+@DECLARE deposit 000005592
+@DECLARE withdraw 000006142
+@DECLARE closescript 000007010
+@DECLARE shop 000007024
+@DECLARE shstart 000007078
+@DECLARE heal 000007478
+@DECLARE travel 000009202
+@NOCHECK
+; End of .REF index
+
+;.Ref for Sharks' Tooth Island
+;(C) 1997 ShroomTrip Software 
+
+@#MAN
+@do moveback
+@do `p20 random 10 1
+@if `p20 is 1 then saybar
+`%Whatup `N`%? My name is `0E`!lric `%& I wrote this IGM!
+@if `p20 is 2 then saybar
+`0E`!lric `%: Eat, Drink & be `N`%!
+@if `p20 is 3 then saybar
+`0E`!lric `%: I would like to thank `0Seth Able `%for creating LORD 2.
+@if `p20 is 4 then saybar
+`0E`!lric `%: I'm going to be a Father soon!
+@if `p20 is 5 then saybar
+`0E`!lric `%: Have you visited the Faerie Glade yet?
+@if `p20 is 6 then saybar
+`0E`!lric `%: I love to program random sayings into my IGM's :)
+@if `p20 is 7 then saybar
+`0E`!lric `%: Your Sysop should get `0LORD 2: Beyond Imagination`%. It Rocks!
+@if `p20 is 8 then saybar
+`0E`!lric `%: I have to credit this island to Ben Tiefert. Thanx man.
+@if `p20 is 9 then saybar
+`0E`!lric `%: Go away, there's nobody here, I'm a hologram.
+@if `p20 is 10 then saybar
+`0E`!lric `%: Hey `7NightAvenger`%! Your Tea is done.
+
+
+@#WOMAN
+@do moveback
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Hello `N`%. I'm `0E`!lric`%'s wife `$Angelhair`%. How are you today?
+@if `p20 is 2 then saybar
+`$Angelhair `%: Bring me an shrubbery.
+@if `p20 is 3 then saybar
+`$Angelhair `%: You've got issues!
+@if `p20 is 4 then saybar
+`$Angelhair `%: I'm not a steak. You can't order me.
+@if `p20 is 5 then saybar
+`$Angelhair `%: If they called them Sad Meals(TM) then nobody'd buy them.
+@if `p20 is 6 then saybar
+`$Angelhair `%: As long as your up getting a drink, why don't you wash the car?
+@if `p20 is 7 then saybar
+`$Angelhair `%: Go wash!
+@if `p20 is 8 then saybar
+`$Angelhair `%: STICK IT IN!
+@if `p20 is 9 then saybar
+`$Angelhair `%: Your Ad Here for only `$$20 `%a Week!
+
+
+@#LAKE
+@do moveback
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`7NightAvenger `%: We get our Drinking Water from this spring.
+@if `p20 is 2 then saybar
+`7NightAvenger `%: Holy Hippospit! It's `N`%! Run Away! Run Away!
+@if `p20 is 3 then saybar
+`7NightAvenger `%: Have you been to `7The NightAvenger's Cove `%yet?
+@if `p20 is 4 then saybar
+`7NightAvenger `%: Ni!
+@if `p20 is 5 then saybar
+`7NightAvenger `%: Do I type like I care?
+@if `p20 is 6 then saybar
+`7NightAvenger `%: Censorship sucks.
+@if `p20 is 7 then saybar
+`7NightAvenger `%: Star Wars RULES! It RULES! 
+@if `p20 is 8 then saybar
+`7NightAvenger `%: Have you seen Slipoka?
+@if `p20 is 9 then saybar
+`7NightAvenger `%: Clucky was a hairball who lived in my nose.
+
+@#BANK
+@do `p30 is 15
+@do `v01 is 1
+@offmap
+@do moveback
+@label bankstart
+@show
+`r0`c  `r1 `%Last Bank Of The Shark `r0
+
+`2  A young clerk eyes you cooly.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The cool man asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means YOU." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'Cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @routine widthdraw in vaults.ref
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+@#CLOSESCRIPT
+
+
+
+@#SHOP
+@offmap
+@do moveback
+@do `v01 is 1
+@label shstart
+@show
+`r0`c  `% Sharks' Tooth Blue Light Sales
+
+`0You see a wide variety of items for sale here. What are ya gonna do `N`0?
+
+@do write
+`x`x
+@choice
+Buy Something
+Go outside
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+ @buymanager
+   3 
+   5
+   6
+  14
+  16
+  35
+  37
+  38
+  40
+  43
+  55
+  @end
+
+@if responce not 2 then goto shstart
+@drawmap
+@update
+
+
+
+
+@#HEAL
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%Sharks' Tooth Healers
+
+`2  Jimmy looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a person who doesn't work," `2Jimmy informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later," `2Jimmy laughs.
+
+`k
+@drawmap
+@update
+
+
+
+
+@#TRAVEL
+@DO MOVEBACK
+@OFFMAP
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1`% Sharks' Tooth Travel `r0
+
+  `0"Welcome to Shraks' Tooth Travel, how may I help you?" `2Asks a receptionist.            
+@DO WRITE
+`x`x
+@CHOICE
+Purchase a world map
+Buy a ticket for somewhere
+Leave
+@IF RESPONSE IS 1 THEN DO
+@Begin
+@Show
+`\`\  `$"I'd like to get a map,"`2 you reply.
+`\`k  `0"Okay that'll be 20 gold,"`2 she states.
+
+@if money < 20 then do
+        @BEGIN
+        @show
+  `2You don't have that much, so naturally you take it out on her.
+
+`k  `$"Look you stupid wench, since when do maps cost that much?!?! You just
+  lost a customer, lady!" `2you scream.
+
+`k  `2You see tears in her eyes as you storm out the door.
+`\`k
+        @DRAWMAP
+        @UPDATE
+        @CLOSESCRIPT
+        @End
+@show
+`2  You plop down the money.`\`\`k
+@do money - 20
+@do `i20 + 1
+@DRAWMAP
+@UPDATE        
+@CLOSESCRIPT
+@End
+
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@Show
+`\`\  `$"I need to get out of town," `2you say.  She smiles, `0"Okay where
+   would you like to go?" `2You review your choices.
+
+`k
+@show
+`r0`c                         `r1 `%Sharks' Tooth Booking Center
+
+
+@buymanager
+26
+27
+32
+33
+@do goto TRAVEL
+@End
+
+
+@IF RESPONSE IS 3 THEN DO
+@Begin
+@Show
+`\`\  `$"Sorry wrong building,"`2 you say as you saunter out the door.
+`\`k
+@DRAWMAP
+@UPDATE        
+@CLOSESCRIPT
+@End

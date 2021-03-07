@@ -1,0 +1,144 @@
+; Script file GUMTOWN4.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:25 2001
+
+@DECLARE piere 000000328
+@DECLARE gotsalad 000001061
+@DECLARE pieresalad 000002197
+@DECLARE gettherest 000002769
+@DECLARE normrun 000002961
+@DECLARE beatnorm 000003099
+@DECLARE nomore 000003469
+@NOCHECK
+; End of .REF index
+
+@#piere
+@do moveback
+@busy
+@dataload piereqst.idf &playernum `p20
+@if `p20 = 0 then goto pieresalad
+@if `p20 = 2 then goto gotsalad
+@if `i01 < 1 then goto gettherest
+@if `i08 < 1 then goto gettherest
+@if `i03 < 1 then goto gettherest
+@if `i11 < 1 then goto gettherest
+@if `i29 < 1 then goto gettherest
+@if `i43 < 1 then goto gettherest
+@show
+`r0`c  `r1  You brought the Salad  `r0
+
+`$Thank you `n `$. Now I have my `4Waldorf Salad`$.
+
+`$I will never forget this. Here, a gift from me.
+
+`4 `l.`l.`l.`l.`l.  You Get 10 Gems!
+
+`k
+
+@do `i01 - 1 
+@do `i02 - 1
+@do `i08 - 1 
+@do `i03 - 1 
+@do `i11 - 1 
+@do `i29 - 1 
+@do `i43 - 1 
+@do `p19 + 10
+@datasave piereqst.idf &playernum 2
+@drawmap
+@update
+
+
+@#gotsalad
+@pauseoff
+@show
+`r0`c  `r1  Jon Piere: The Weelie Champion  `r0
+
+[?7h[40m[2J[0;1;33m-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=[s
+[u-=-=-=-=-=-=-=-=-=-=-=-=-=[2;1H[7C[37;47m°°°°°°°[13C[33;42m°°°[40m
+[3;1H[7C[37;47m°°°°°°°°°[11C[33;42m°°[45mÛ[4;1H[8C[37;47m°°°°°°[40m[s
+[u[47m°°°°[9C[36;42m [D [D [D [D[37;40m====Û[5;1H[9C[47m[40m[s
+[u[47m°°°°°°°°°[9C[36;42m [D [D [D[3C[0;31mÛÛòòòò[1;30m²²²[6;1H[s
+[u[12C[37;47m°°°°°°°[8C[33;45m [D [D [D [D [D[0;31mÛÛÛ   [s
+[u[1;30m²²²²²[7;1H[14C[37;47m°°°°°°[3C[0;30m²[33m²²²²²²[30m²[s
+[u[1;33;45m [D[0;30m²²²²²²²[1m²²²[8;1H[16C[37;47m°°°°°[2C[40m[s
+[u[0;30m²²²[1m²²²[0;30m²²[1;33;45m [D[0;30m²[9;1H[23C² [1m²²²²²[s
+[u[0;30m²²[10;1H[23C²²²[1m²²²[0;30m²²²[11;1H[1;33m-=-=-=-=-=-=-=-=-=-[s
+[u=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+@pauseon
+@show
+`2Hi I am Jon Piere.
+          I really loved that salad `n`2. thank you. When I go out
+`2next I'll do a Weelie for you!
+
+
+@key
+@drawmap
+@update
+@closescript
+@end
+
+@#pieresalad
+@show
+`r0`c  `r1  Jon Piere: The Weelie Champion  `r0
+
+`%Hi I am Jon Piere.
+`%         I am the French Weelie Champion. After a race I like a nice
+`4Waldorf Salad`%. Say, if you could get me one I'll be most grateful!
+`%Ask the nice food lady how to make one. Bring all the ingredients to
+`%me and my agent will make one for my. All I have at the moment is the
+`%`3Poison`4berrys, so get the rest can you?
+`%                                               -Thanks
+
+`k
+@datasave piereqst.idf &playernum 1 
+@drawmap
+@update
+@closescript
+@end
+
+@#gettherest
+@show
+`r0`c  `r1  Piere's Salad  `r0
+
+`3What are you trying to pull?
+
+`3Go see the lady and bring back `4ALL `3the ingredients.
+
+`k
+@drawmap
+@update
+@closescript
+@end
+
+@#normrun
+@show
+`r0`c  `r1  You Ran from Spiney Norman  `r0
+
+               `0Good for you.
+
+           
+`k
+@drawmap
+@update
+
+@#beatnorm
+@show
+`r0`c  `r1  You are a Gumtown Hitman  `r0
+
+`0You did it, you beat `$Spiney Norman`0.
+
+`0Your wit is obviously great `n`0.
+
+`l.`l.`l.`l.
+
+`4You Gain 20 muscle and 20 dodge!
+
+`k
+@do `p04 + 20
+@do `p05 + 20
+@datasave beatnorm.idf &playernum 1
+@do addlog
+`n `2just beat `$Spiney Norman to become a `3Gumtown Hitman`2!
+
+@drawmap
+@update
+
+@#NOMORE

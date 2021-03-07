@@ -1,0 +1,342 @@
+; Script file HABIB.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:18 2001
+
+@DECLARE entrance 000000775
+@DECLARE exit 000000859
+@DECLARE upstairs 000000949
+@DECLARE downstairs 000001158
+@DECLARE sign 000001226
+@DECLARE sign2 000001330
+@DECLARE door1 000001436
+@DECLARE habib 000001563
+@DECLARE drunk 000003199
+@DECLARE door2 000003801
+@DECLARE toilet 000003859
+@DECLARE sign3 000003941
+@DECLARE tree 000004054
+@DECLARE tree1 000004144
+@DECLARE tree2 000004491
+@DECLARE tree3 000004837
+@DECLARE tree4 000005184
+@DECLARE tree5 000005530
+@DECLARE moneytree1 000005887
+@DECLARE exptree1 000006239
+@DECLARE exptree2 000006590
+@DECLARE desk 000006937
+@NOCHECK
+; End of .REF index
+
+;ref file for Habib's Tavern IGM v1.00 by Ryan Fields
+
+@#entrance
+  @do `p22 is 0
+  @do x is 40
+  @do y is 17
+  @loadmap 26
+  @drawmap
+
+@#exit
+  @do `p22 is 0
+  @do x is 55
+  @do y is 11
+  @loadmap 1253
+  @drawmap
+
+@#upstairs
+  @if `p22 is 1 then do
+  @begin
+  @do x is 25 
+  @do y is 5
+  @loadmap 27
+  @drawmap
+  @end
+
+  @if `p22 is 0 then do 
+  @begin
+  @do saybar
+You have to pay to go up there.
+  @end
+
+@#downstairs
+  @do x is 23
+  @do y is 5
+  @loadmap 26
+  @drawmap
+  
+@#sign
+   @DO SAYBAR
+   `4H`@a`$b`2i`3b`#'`5s `7Tavern v1.00 `%by `0Ryan Fields.
+   @DO MOVEBACK
+
+@#sign2
+   @do saybar
+   Welcome to `4H`@a`$b`2i`3b`#'`5s `7Tavern!  
+   @do moveback
+@closescript
+
+@#door1
+   @do saybar
+   That's where Habib serves drinks.  You're not allowed back there.
+   @do moveback
+@closescript
+
+@#habib
+  @show
+`c`r0Talking With Habib  
+
+`0"What can I do for you?"
+
+  @do `v01 is 1
+  @choice
+Talk to `4H`@a`$b`2i`3b
+Get something to drink
+>&money 74 Get a room (`$$75`%)
+Examine his items
+Leave him alone
+  @end
+
+@if response is 1 then do
+  @begin
+  @show
+`c`$  This is some place you've got here," you politely say.
+ 
+`k`0"Thank you!  I've put lots of work into it.  I've been working
+upstairs for over a month.  It looks great now.  It's the safest place 
+you can find in these parts.
+
+`k`$"COOL.  How much are rooms?"
+
+`k`0"They're a low, low price of $75 dollars.  But remember, if you
+get a room, don't leave the tavern or I can't let you back upstairs."  
+  
+`k`$"Oh, ok."
+
+`k`$"Thanks for the information!"
+
+`k
+  @do goto habib
+  @end
+
+@if response is 2 then do
+  @begin
+  @show
+`c`4H`@a`$b`2i`1b `0gives you a glass of the finest beer you've ever tasted.   
+
+`k`3You feel much better.`k
+  @do `p96 + 6
+  @do goto habib
+  @end
+
+@if response is 3 then do  
+  @begin
+  @show
+`c`0"Here's the room key.  Now you can go into any room you want.  The stairs
+are over there."
+
+`4H`@a`$b`2i`3b `0points to your left.
+  
+`k  
+  @do money - 75
+  @do `p22 is 1
+  @do goto habib
+  @end
+
+@if response is 4 then do
+  @begin
+  @show
+`c`r0Buy Stuff
+
+`4H`@a`$b`2i`3b `0leads you to a back room.
+`0You are amazed at the amount of things he has in this little room. 
+  
+  @buymanager
+  1
+  43
+  5
+  40
+  36
+  28
+  14
+  37
+  39
+  20
+  55
+  58
+  59
+  @do goto habib
+  @end
+
+@if response is 5 then do
+  @begin
+  @update
+  @drawmap
+  @closescript
+  @end
+
+@#drunk
+   @do moveback
+   @do `p21 random 6 1
+   @if `p21 is 1 then saybar
+`7Drunk: `%I heard there's `7::hic:: `%money upstairs. 
+   @if `p21 is 2 then saybar
+`7Drunk: `4H`@a`$b`2i`3b `%is a `7::hic:: `%great guy.
+   @if `p21 is 3 then saybar
+`7Drunk: `7::hic:: `%I'm not as think `7::hic:: `%as you drunk I am.
+   @if `p21 is 4 then saybar
+`7Drunk: `9Blue `%trees mean `7::hic:: `%treasure.
+   @if `p21 is 5 then saybar
+`7Drunk: ::hic:: `%Somes says there's a `7::hic:: `%secret passage. 
+   @if `p21 is 6 then saybar
+`7Drunk: `%Take me `7::hic:: `%drunk, I'm home.
+
+@closescript
+
+@#door2
+   @do saybar
+Ahhh.  Privacy.
+@closescript
+
+@#toilet
+   @do saybar
+You relieve yourself of one large load. 
+@closescript
+
+@#sign3
+   @do moveback
+   @do saybar
+`9Blue `%trees mean treasure.  Can you find the way?
+@closescript   
+
+@#tree
+   @do saybar
+You've gotta go INSIDE to use this tree!!!  Duh.
+@closescript
+
+@#tree1
+   @datanewday tree.idf
+   @dataload tree.idf &playernum `p20
+@if `p20 not 1 then do
+   @begin
+   @do saybar
+You find a `#Death Sword`%! ...but can you find your way back?
+   @do `i71 + 1
+   @datasave tree.idf &playernum 1
+   @closescript
+   @end
+@do saybar
+Come back tomorrow.  The tree needs time to regrow what you took.
+
+@#tree2
+   @datanewday tree.idf
+   @dataload tree.idf &playernum `p20
+@if `p20 not 1 then do
+   @begin
+   @do saybar
+You find `#Death Armour`%! ...but can you find your way back?
+   @do `i69 + 1
+   @datasave tree.idf &playernum 1
+   @closescript
+   @end
+@do saybar
+Come back tomorrow.  The tree needs time to regrow what you took.
+
+@#tree3
+   @datanewday tree.idf
+   @dataload tree.idf &playernum `p20
+@if `p20 not 1 then do
+   @begin
+   @do saybar
+You find a `3Koshi Sword`%! ...but can you find your way back?
+   @do `i65 + 1
+   @datasave tree.idf &playernum 1
+   @closescript
+   @end
+@do saybar
+Come back tomorrow.  The tree needs time to regrow what you took.
+
+@#tree4
+   @datanewday tree.idf
+   @dataload tree.idf &playernum `p20
+@if `p20 not 1 then do
+   @begin
+   @do saybar
+You find `3Koshi Armour`%! ...but can you find your way back?
+   @do `i63 + 1
+   @datasave tree.idf &playernum 1
+   @closescript
+   @end
+@do saybar
+Come back tomorrow.  The tree needs time to regrow what you took.
+
+@#tree5
+   @datanewday tree.idf
+   @dataload tree.idf &playernum `p20
+@if `p20 not 1 then do
+   @begin
+   @do saybar
+You find `$500,000 gold`%! ...but can you find your way back?
+   @do money + 500000
+   @datasave tree.idf &playernum 1
+   @closescript
+   @end
+@do saybar
+Come back tomorrow.  The tree needs time to regrow what you took.
+
+@#moneytree1
+   @datanewday tree.idf
+   @dataload tree.idf &playernum `p20
+@if `p20 not 1 then do
+   @begin
+   @do saybar
+You find `$100,000 gold`%! ...but can you find your way back?
+@do money + 100000
+   @datasave tree.idf &playernum 1
+   @closescript
+   @end
+@do saybar
+Come back tomorrow.  The tree needs time to regrow what you took.
+
+@#exptree1
+   @datanewday tree.idf
+   @dataload tree.idf &playernum `p20
+@if `p20 not 1 then do
+   @begin
+   @do saybar
+You find 50,000 experience! ...but can you find your way back?
+@do `p01 + 50000
+   @datasave tree.idf &playernum 1
+   @closescript
+   @end
+@do saybar
+Come back tomorrow.  The tree needs time to regrow what you took.
+
+@#exptree2
+   @datanewday tree.idf
+   @dataload tree.idf &playernum `p20
+@if `p20 not 1 then do
+   @begin
+   @do saybar
+You find 25,000 experience! ...but can you find your way back?
+@do `p01 + 25000
+   @datasave tree.idf &playernum 1
+   @closescript
+   @end
+@do saybar
+Come back tomorrow.  The tree needs time to regrow what you took.
+
+@#desk
+  @datanewday desk.idf
+  @dataload desk.idf &playernum `p23
+@if `p23 not 1 then do begin
+  @begin
+  @do saybar
+Wow!  You find `$$1,000 `%in the top drawer! 
+  @do money + 1000
+  @datasave desk.idf &playernum 1
+  @closescript
+  @end
+@if `p23 is 1 then do begin
+  @begin
+  @do saybar
+You already took the money.
+  @end
+

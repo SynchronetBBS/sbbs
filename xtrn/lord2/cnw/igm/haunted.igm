@@ -1,0 +1,42 @@
+
+                     Haunted House by Talaphid and Monty Python
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes
+  Using any LORD2 vars?                           : No
+  Overwrites any original .refs?                  : No
+  Saves and loads its own vars independently?     : Yes
+  Adds new .refs?                                 : Yes (1- HAUNTED.REF)
+  Replaces screens?                               : Yes (1- S of Runion)
+  Adds screens?                                   : Yes (2)
+  Free?                                           : Yes
+
+
+  Description:
+
+        A haunted house. You gotta give everyone what they want -- trust
+me, its worth it. People can be very rewarding, once you set their spirit
+free, so to speak.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM HAUNTED
+
+  To uninstall, do the same thing again.
+
+ Recent notes:
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `6Haunted House `2by `!T`3alaphid `2& `0Monty Python
+
+replacescreen: 1237 1 noshow
+
+replacescreen: 1238 2 noshow
+
+replacescreen: 1354 3 show
+
+installmessage:
+
+haunted house installed

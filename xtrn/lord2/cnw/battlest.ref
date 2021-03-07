@@ -1,0 +1,1162 @@
+; Script file BATTLEST.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE warpin 000000687
+@DECLARE story 000001169
+@DECLARE shar 000001468
+@DECLARE cod 000002834
+@DECLARE pow 000003780
+@DECLARE s0 000004826
+@DECLARE s1 000005042
+@DECLARE sf 000009414
+@DECLARE s2 000010173
+@DECLARE s3 000010413
+@DECLARE s4 000011681
+@DECLARE sg 000013557
+@DECLARE s6 000014442
+@DECLARE s7 000014954
+@DECLARE sh 000015312
+@DECLARE s8 000015776
+@DECLARE s9 000016133
+@DECLARE s10 000016440
+@DECLARE s11 000016685
+@DECLARE dgrass 000017586
+@DECLARE codend 000017670
+@DECLARE sharend 000018978
+@DECLARE powend 000020280
+@NOCHECK
+; End of .REF index
+
+@#warpin
+;this will make a neat onblock swirly thing MUST SET `P20 AND `P21
+;TO X AND Y RESPECTIVELY BEFORE RUNNING THIS REF!!!!!
+@do move `p20 `p21
+@do write
+`r2`$+`W`W
+@do move `p20 `p21
+@do write
+`r2`$|`W`W
+@do move `p20 `p21
+@do write
+`r2`$\`W`W
+@do move `p20 `p21
+@do write
+`r2`$-`W`W
+@do move `p20 `p21
+@do write
+`r2`$/`W`W
+@do move `p20 `p21
+@do write
+`r2`$|`W`W
+@do move `p20 `p21
+@do write
+`r2`$\`W`W
+@do move `p20 `p21
+@do write
+`r2`$-`W`W
+ 
+ 
+@#story
+@busy
+@do `p29 is map
+@if `p29 is 484 then do
+@begin
+@do `p30 is 1 ;power's castle
+@do goto pow
+@end
+ 
+@if `p29 is 488 then do
+@begin
+@do `p30 is 2 ;shara's castle
+@do goto shar
+@end
+ 
+@if `p29 is 486 then do
+@begin
+@do `p30 is 3 ;codax's castle
+@do goto cod
+@end
+ 
+@label shar
+@show
+`r0`c`%  `r1  A story unfolds  `r0`2
+ 
+  Shara:  As you know I am a Phoenix...`$
+`k
+  What's a Phoenix?`2
+`k
+  Shara:  A Phoenix is a mystical bird that lives forever.  When the
+	Phoenix "die" we become ashes and must stay that way for 100yrs.
+	We all worship and cherish fire, bathing it's liquid form.  
+	This keeps us immortal, kinda.  
+`k
+	Cyrus, my general, is a strange sort of Phoenix though...
+	He is what all Phoenix want to be.  If he dies, he'll give off
+	a crushing beam of light that will slay his slayor and he will turn
+	to dust untill the next day!  He respects me too much to take
+	my throne....though I think he likes me....
+`k
+	Anyway our fighting is nothing compared to what our sisters and
+	brothers are doing.  In a near by land yet undiscovered by you
+	Phoenix and Dragons fight with such vicousness I cannot even
+	discribe it to you.  We came here to overcome our differences
+	but it didn't quite happen.
+`k
+	The Dragons Codax & Power were always in trouble and I always
+	seemed to bail them out.  One time I remember clearly because of
+	the Koshi!  I hate the Koshi with a vengence!  When I finish the
+	Dragons I will go after the Koshi!  This is what happened....
+ 
+`k
+		       Press C to continue....
+ 
+ 
+@do readspecial `s01 C
+@if `s01 is C then do
+@begin
+@do goto s0
+@end
+@end
+ 
+@label cod
+@show
+ 
+`r0`c  `r1`%  A story unfolds  `r0`2
+ 
+  Codax:`0  Power, Shara, and I were always enemies.  However on rare 
+	occasions we banded together.  You see the `%Koshi`0 were always
+	after us!  The Koshi hated all that wasn't Human or Koshi therfore
+	we, Shara Phoenix, Power Darkdraco, and I, Codax Dragon were all 
+	quarry for the Koshi.
+ 
+`k      
+`$   But why were they after you?  What drove the hatred?!`2
+`k
+ 
+  Codax:`0  You see, the Koshi feared that the Dragon and Phoenix War would
+	rip the world apart.  They should have left us alone we can fend for
+	ourselves.  Our magic was strong but I don't believe what the Koshi
+	say.  
+ 
+	Power and I had just escaped from the Koshi and we headed to the point
+	where we said we would meet so we could finaly finish our battle!
+ 
+`k
+		       Press C to continue....
+ 
+ 
+@do readspecial `s01 C
+@if `s01 is C then do
+@begin
+@do goto s0
+@end
+@end
+ 
+@label pow
+@show
+ 
+`r0`c  `r1`%  A story unfolds  `r0`2
+ 
+  Power:`0  Codax, Shara, and I were always enemies.  However on rare 
+	occasions we banded together.  You see the `%Koshi`0 were always
+	after us!  The Koshi hated all that wasn't Human or Koshi therfore
+	we, Shara Phoenix, Codax Dragon, and I, Power Darkdraco were all 
+	quarry for the Koshi.
+ 
+`k      
+`$   But why were they after you?  What drove the hatred?!`2
+`k
+ 
+  Power:`0  You see, the Koshi feared that the Dragon and Phoenix War would
+	rip the world apart.  They should have left us alone we can fend for
+	ourselves.  Our magic was strong but I don't believe what the Koshi
+	say.  Sure, *I* am evil, but the way they tourtured Dragons`l.`l.`l.
+	I will never forget, nor forgive.
+ 
+	Codax and I had just escaped from the Koshi and we headed to the point
+	where we said we would meet so we could finaly finish our battle!
+ 
+`k
+		       Press C to continue....
+ 
+ 
+@do readspecial `s01 C
+@if `s01 is C then do
+@begin
+@do goto s0
+@end
+@end
+ 
+ 
+@label s0
+@show
+`r0`c
+@do move 35 10
+@do write
+`r0`%Fifty Years Ago`l`l`l`l
+@displayfile battle1.ans NOPAUSE
+ 
+@do saybar
+Codax:  Man....the Koshi almost got us that time!!!
+@do `p20 is 80
+@do `p21 is 80
+@label s1
+@do move `p20 11
+@do write
+`r2`3
+@do move `p20 10
+@do write
+`r2`!`w`w
+@do `p20 - 1
+@do move `p21 11
+@do write
+`r2 
+@do move `p21 10
+@do write
+`r2 
+@do `p21 - 1
+@if `p20 not 39 then do
+@begin
+@do goto s1
+@end
+@if `p20 is 39 then do
+@begin
+@do move 40 11
+@do write
+`r2`3
+@do move 40 10
+@do write
+`r2`!`w`w`w
+@do saybar
+Power:  Get away from me you stupid goody, goody!
+@key
+@clearblock 21 22
+;--power moves down
+@do move 40 11
+@do write
+`r2`3`w`w
+@do move 40 11
+@do write
+`r2 
+@do move 40 12
+@do write
+`r2`3`w`w
+@do move 40 12
+@do write
+`r2 
+@do move 40 13
+@do write
+`r2`3`w`w
+@do move 40 13
+@do write
+`r2 
+@do move 40 14
+@do write
+`r2`3`w`w
+@do move 40 14
+@do write
+`r2 
+@do move 40 15
+@do write
+`r2`3`w`w
+@do saybar
+Power:  Shara's late`l.`l.`l.looks like I'll have to kill you then her!
+@key
+@do saybar
+Codax:  I think you spoke to soon,  LOOK!!!!!
+@key
+@do `p20 is 21
+@do `p21 is 12
+@routine warpin
+@do move 21 12
+@do write
+`r2`5
+@do saybar
+Shara:  Hahahaaa...did you think I'd forget about our little hiding spot?
+@key
+@do saybar
+Codax:  I knew you'd be here!  Nice Teleport, you can teach it to me....
+@key
+@do saybar
+JUST BEFORE I KILL YOU!!!!!
+@key
+@do saybar
+Power:  Finaly, I will be able to make tropies outta both of ya!!!!
+@key
+@do saybar
+Shara:  Watch your tounge, Power!  I'm a lady and if you're not carefull...
+@key
+@do saybar
+I'll wear it as a necklace!!!
+@key
+@do saybar
+Codax:  Then lets get ready, to RUMBLE!!!!
+@key
+@do saybar
+WAIT!!!!!!!
+@KEY
+@do saybar
+All:  Who said that?!?!?!?!
+@key
+@do saybar
+Us.
+@key
+@do `p20 is 38
+@do `p21 is 6
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`%`w`w
+@do `p20 is 26
+@do `p21 is 7
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`%`w`w
+@do `p20 is 16
+@do `p21 is 12
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`%`w`w
+@do `p20 is 26
+@do `p21 is 17
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`%`w`w
+@do `p20 is 40
+@do `p21 is 17
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`%`w`w
+@do `p20 is 50
+@do `p21 is 11
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`%`w`w
+@do `p20 is 44
+@do `p21 is 6
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`%`w`w
+@do move 80 10
+@do write
+`r2`%`w`w
+@do move 80 11
+@do write
+`r2`%`w`w
+@do saybar
+In case you forgot us
+@key
+@do saybar
+We are
+@key
+@do saybar
+THE KOSHI!!!!!!
+@key
+@do saybar
+Shara, Codax, Power:  NOOOOOOOOOOooooooooo How did you find us?!?!!?!!
+@key
+@do move 38 6
+@do write
+`r2 `w`w
+@do move 38 7
+@do write
+`r2`%
+@do saybar
+Dahma:  I am Dahma!!!  Power you should remember me.
+@key
+@do saybar
+Power:  Yeah, I was your slave for 26 human years, untill you thought you
+@key
+@do saybar
+could tame the Red Dragon.  He taught me how to FIGHT!!!  And use Magic!!
+@key
+@do saybar
+Dahma:  Well your time is up!!!  Since we can't seem to hold on to you we'll
+@key
+@do saybar
+Seal your powers for 50 human years!  By that time you should learn to get
+@key
+@do saybar
+along and play nice.......HAHAHAHAHAahahah!  I would suggest Porathe
+@key
+@do saybar
+I hear It's nice this time of year.  Koshi!!!  Do it!!!!!
+@key
+@do saybar
+All Koshi:  DISPSTO  IPTO FACTO NUMBOADO SOUL END TORSTAFA!!!!!!!!
+@key
+@do saybar
+Shara, Codax, Power:  NOOOOOOOOOOOooooooooooo!!!!!!!!!!!!!!!!!!!
+@key
+@do `p20 is 26
+@do `p21 is 7
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`2 `w`w
+@do `p20 is 16
+@do `p21 is 12
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`2 `w`w
+@do `p20 is 26
+@do `p21 is 17
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`2 `w`w
+@do `p20 is 40
+@do `p21 is 17
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`2 `w`w
+@do `p20 is 50
+@do `p21 is 11
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`2 `w`w
+@do `p20 is 44
+@do `p21 is 6
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`2 `w`w
+@do `p20 is 80
+@do `p21 is 10
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`2 `w`w
+@do `p21 is 11
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2 `w`w
+@do saybar
+Dahma:  Enjoy your 50 years without powers!!!!
+@key
+@do `p20 is 38
+@do `p21 is 7
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2 `w`w
+@do map is 1289
+@loadmap 1289
+@clearblock 21 22
+@routine fade in battlefx.ref
+@key
+@label sf
+@do move 1 1
+@displayfile battle2.ans NOPAUSE
+@do move 43 7
+@do write
+`r0 
+@do move 8 11
+@do write
+`r2 
+@do move 74 16
+@do write
+`r2`3
+@Do saybar
+The Koshi did an incomplete job on us though....We all gained warping power
+@key
+@do saybar
+and lost all our others, including morphing into our respective creatures
+@key
+@do saybar
+and over the next 25 years our legend faded away.  We all stayed young, as
+@key
+@do saybar
+Dragons and Phoenix do.  But were forced to live without powers.
+@key
+@do saybar
+As it turned out, we all ended up in Porathe after all.....
+@key
+@do `p20 is 8
+@do `p21 is 19
+@routine warpin
+@do move 8 19
+@do write
+`r2`5`l`l`l`l 
+@do saybar
+Shara:  He's late......`l`l
+@key
+@do `p20 is 1
+ 
+@label s2
+@do move `p20 10
+@do write
+`r6`$`w`w
+@do move `p20 10
+@do write
+`r6 
+@do `p20 + 1
+@if `p20 not 9 then do
+@begin
+@do goto s2
+@end
+@if `p20 is 9 then do
+@begin
+@do move 8 10
+@do write
+`r2`$`w`w
+@do `p20 is 10
+ 
+@label s3
+@do move 8 `p20
+@do write
+`r2`$`w`w
+@do move 8 `p20
+@do write
+`r2 
+@do `p20 + 1
+@if `p20 not 19 then do
+@begin
+@do goto s3
+@end
+@if `p20 is 19 then do
+@begin
+@do move 8 18
+@do write
+`r2`$
+@do saybar
+`$Man:  Sorry I'm late Shara, Dragon Tooth Clan Problems....
+@key
+@do saybar
+`%Shara:  I don't care about your silly excuses!  I summoned you because
+@key
+@do saybar
+I heard you were the best castle builder around.
+@key
+@do saybar
+`$Man:  I do my best.  I hope you have the amount....
+@key
+@do saybar
+`%Shara:  I do.  All $5,000,000 of it.  This should cover a mountain castle
+@key
+@do saybar
+`$Man:  WAHhhh, by the Koshi!  Where did you get that much MONEY!!!!
+@key
+@do saybar
+`%Shara:  WHAT DID YOU SAY!!!!
+@key
+@do saybar
+`$Man:  I wondered where you get the money.
+@key
+@do saybar
+`%Shara:  BEFORE THAT!!!
+@key
+@do move 8 18
+@do write
+`r2 
+@do move 8 17
+@do write
+`r2`$
+@do saybar
+`$Man:  um by the um koshi
+@key
+@do saybar
+`%Shara:  If you want to live to spend your gold I suggest you NEVER, EVER,
+@key
+@do saybar
+Mention that word in my presence!!!!!!
+@key
+@do saybar
+`$Man:  Yes mistress Shara!
+@key
+@do saybar
+Shara:  Leave me.  And remember lotsa lava now!
+@key
+@do `p20 is 17
+ 
+@label s4
+@do move 8 `p20
+@do write
+`r2`$`w`w
+@do move 8 `p20
+@do write
+`r2 
+@do `p20 - 1
+@if `p20 not 9 then do
+@begin
+@do goto s4
+@end
+@if `p20 is 9 then do
+@begin
+@do move 8 10
+@do write
+`r2`$
+@do saybar
+`$Man:  Hey what's happening?!?!?!?  Ahhhhh.....
+@key
+@do `p20 is 8
+@do `p21 is 10
+@routine warpin
+@routine dgrass
+@do `p20 is 74
+@do `p21 is 15
+@routine warpin
+@do move `p20 `p21
+@do write
+`r2`$
+@do saybar
+`$Man:  What happened?
+@key
+@do saybar
+Power:  Hello, I am Power and I have a little proposition for you!
+@key
+@do saybar
+I want you to build me a castle!  I will pay your handsomely if you do
+@key
+@do saybar
+Well.....?
+@key
+@do saybar
+`$Man:  Two jobs in one day this is great!!!  Um how do I get outta here?
+@key
+@do saybar
+Power:  Simple!!!!
+@key
+@do map is 295
+@loadmap 295
+@routine fade in battlefx.ref
+@do move 74 14
+@do write
+`r2`$
+@do saybar
+`$Man:  How the hell did I get here?  Oh well, this is where I'll build
+@key
+@do move 1 1
+@displayfile battle2.ans NOPAUSE
+@do move 43 7
+@do write
+`r0 
+@do move 8 11
+@do write
+`r2 
+@do move 74 16
+@do write
+`r2`3
+@do move 29 9
+@do write
+`r2`!
+@do saybar
+Codax:  Oh I do so hate to have to walk around these trees!
+@key
+@do `p20 is 29
+@do `p21 is 9
+@routine warpin
+@routine dgrass
+@do `p20 is 52
+@do `p21 is 17
+@routine warpin
+@do move 52 17
+@Do write
+`r2`!
+@do saybar
+Codax:  Thats better!  Now....
+@key
+@do saybar
+Codax:  Friends!  As you know In another 25yrs I will be whole again!
+@key
+@do saybar
+I wish for all of you to share in my glory above the Phoenix SHARA and
+@key
+@do saybar
+the EVIL Dragon POWER!!!  Help me build me a castle!!!!!!
+@key
+@do saybar
+Crowd:  WE ARE WITH YOU CODAX!!! HURRAH!! MAY THE DRAGONS PROTECT OUR SOULS!
+@key
+@do map is 1289
+@loadmap 1289
+@routine fade in battlefx.ref
+@label sg
+@do move 25 10
+@do write
+`r0`%1 day before Koshi's Spell was to wear off!`l`l`l`l`l
+@do move 1 1
+@displayfile battle3.ans
+@do saybar
+Codax:  Just one more day untill this stupid spell wears off!!!
+@key
+@do saybar
+Power:  I can't wait!!!!  I'm so.....Anxious!!!!
+@key
+@do saybar
+Shara:  My fire,  I did so miss my fire!
+@key
+@do saybar
+Codax:  I say we team up to destroy the Koshi, then go on with our war!!
+@key
+@do saybar
+Power & Shara:  Sounds good to me!!!!
+@key
+@do `p20 is 65
+@do `p21 is 1
+@routine warpin
+@do move 65 1
+@do write
+`r6`%
+@do saybar
+Koshi:  So they still havn't learned yet!  Well this'll fix 'em!!!
+@key
+@do saybar
+Koshi: Storfa rombla ko tombla!!!
+@key
+@do saybar
+Shara:  Do you feel that, that, RUMBLING!!!!
+@key
+@do saybar
+RUMBLE RUMBLE RUMBLE RUMBLE RUMBLE RUMBLE RUMBLE RUMBLE RUMBLE RUMBLE
+@do `p20 is 20
+ 
+@label s6
+@do move 1 `p20
+@do write
+`r0`6°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°`l`w`w
+@do move 1 `p20
+@do write
+`r0                                                                                
+@do `p20 - 1
+@if `p20 not 0 then do
+@begin
+@do saybar
+Shara:  The Ground is giving way!!!!  EARTHQUAKE!!!!!!
+@do goto s6
+@end
+@if `p20 is 0 then do
+@begin
+@do `p20 is 1
+@do saybar
+AAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHhhhhhhhhhhhhhhh!!!!!!!!!
+ 
+@label s7
+@do move 30 `p20
+@do write
+`r0`5    `3     `!`w`w
+@do move 30 `p20
+@do write
+			  
+@do `p20 + 1
+@if `p20 not 21 then do
+@begin
+@do goto s7
+@end
+@if `p20 is 21 then do
+@begin
+@do saybar
+Koshi:  Now to restore this ground!!!  May it be cursed forever!!!!!
+@key
+@do map is 1434
+@loadmap 1434
+@routine fade in battlefx.ref
+@key
+@label sh
+@do move 1 1
+@displayfile battle4.ans NOPAUSE
+@do move 71 6
+@do write
+`r6 
+@do move 56 13
+@do write
+`r6`3
+ 
+@do saybar
+Codax:  Stupid Koshi!!!!  Always picking on us Dragons!!
+@key
+@do saybar
+Lets see...how can I get outta here!  AHA lets see if my magic's back!
+@key
+@do saybar
+SUMMON CODAX CLONE!
+@do move 74 7
+@do write
+`r6`!
+@do saybar
+Codax:  HAHAHAHAHAHAAAaaaa....See ya later!!!!  I'm outta here!
+@key
+@do `p20 is 74
+ 
+@label s8
+@do move `p20 7
+@do write
+`r6`!`w
+@do move `p20 7
+@do write
+`r6 
+@do `p20 - 1
+@if `p20 not 0 then do
+@begin
+@Do goto s8
+@end
+@if `p20 is 0 then do
+@begin
+@do saybar
+Shara:  HMMmmmm...Codax had a good idea there!  PHOENIX FIRE CLONE!
+@key
+@do move 49 14
+@do write
+`r6`5
+@do `p20 is 49
+@do saybar
+I'm outta here!!!
+@key
+ 
+@label s9
+@do move `p20 14
+@do write
+`r6`5`w`w
+@do move `p20 14
+@do write
+`r6 
+@do `p20 - 1
+@if `p20 not 0 then do
+@begin
+@do goto s9
+@end
+@if `p20 is 0 then do
+@begin
+ 
+@do saybar
+Power:  Cowards!  I'm not afraid of the Koshi!
+@key
+@do saybar
+I'm outta here!
+@key
+@do `p20 is 56
+ 
+@label s10
+@do move `p20 13
+@do write
+`r6`3`w
+@do move `p20 13
+@do write
+`r6 
+@do `p20 - 1
+@if `p20 not 0 then do
+@begin
+@do goto s10
+@end
+@if `p20 is 0 then do
+@begin
+ 
+@do move 1 1
+@displayfile battle5.ans
+@do `p20 is 80
+ 
+@label s11
+@Do move `p20 11
+@do write
+`r6`3`w
+@do move `p20 11
+@do write
+`6Û
+@do `p20 - 1
+@if `p20 not 40 then do
+@begin
+@do goto s11
+@end
+@if `p20 is 40 then do
+@begin
+ 
+@do move 40 11
+@do write
+`r6`3`w`w
+@do saybar
+Power:  Hey wait!!!  If I can leave so will that great healer!  
+@key
+@do saybar
+I'll have to fix that!  SUMMON RANDOM MAN!!!!
+@do `p20 is 41
+@do `p21 is 11
+@routine warpin
+@do move 41 11
+@do write
+`r6`1
+@do saybar
+Random Man:  I am here my master!
+@key
+@do saybar
+Power:  I want you to gaurd this area!  Don't let the Healer escape!
+@key
+@do saybar
+Random Man:  I shall follow your orders past death o great Power!
+@key
+@do saybar
+Power:  HAHAHAHAHAHAHAHAHAHAHAHAHAhahahahahahahahaaaaaaaaaaaaaaaaaa!!!!
+@do map is `p29
+@loadmap `p29
+@routine fade in battlefx.ref
+@update
+@do saybar
+And that is how it happened that we are at war!!!!
+ 
+@#dgrass
+;`p20 is x chord `p21 is y chord
+@do move `p20 `p21
+@do write
+`r2 
+ 
+@#codend
+@do map is 213
+@loadmap 213
+@routine fade in battlefx.ref
+@do x is 23
+@do y is 16
+@update
+@do move 25 16
+@do write
+`r2`!
+@do `p01 + 1000
+@do `p04 + 2
+@do `p03 + 10
+@do `p05 + 2
+@do `p18 + 20
+@do saybar
+Codax:  Because of your bravery I award you...
+@key
+@do saybar
+1,000 exp, 10 More Hitpoints, 2 more Dodge and Muscle, and....`l`l`l
+@key
+@do saybar
+A FESTIVAL IN YOUR HONOR!!!!!`l`l`l`l`l
+@key
+@show
+`r0`c
+ 
+ 
+ 
+ 
+		         Later that evening
+ 
+`k
+`r0`c
+@routine fireworks in battlefx.ref
+@key
+@show
+`r0`c  `r1`%  Oh man!!  `r0`2
+ 
+	Oh man!  What a hangover!  All that partying lastnight.
+	maybe lastnight...Was it all a dream?  Oh well...`k
+ 
+@
+@do map is 155
+@loadmap 155
+@do x is 36
+@do y is 11
+@do `p80 is 0
+@do `p84 is 0
+@do `p89 is 0
+@do `p90 is 0
+@bitset `t20 0 0
+@bitset `t20 1 0
+@bitset `t20 2 0
+@bitset `t20 3 0
+@bitset `t20 4 0
+@bitset `t20 5 0
+@bitset `t20 6 0
+@bitset `t20 7 0
+@bitset `t21 0 0
+@bitset `t21 1 0
+@bitset `t22 0 0
+@bitset `t22 1 0
+@bitset `t22 2 0
+@bitset `t22 3 0
+@bitset `t22 4 0
+@bitset `t22 5 0
+@bitset `t22 6 0
+@bitset `t22 7 0
+@bitset `t23 0 0
+@bitset `t23 1 0
+@bitset `t23 2 0
+@bitset `t23 3 0
+@bitset `t23 4 0
+@bitset `t23 5 0
+@bitset `t23 6 0
+@bitset `t23 7 0
+@drawmap
+@update
+ 
+@#sharend
+@do map is 292
+@loadmap 292
+@routine fade in battlefx.ref
+@do x is 43
+@do y is 18
+@update
+@do move 45 18
+@do write
+`r2`5
+@do `p01 + 1000
+@do `p04 + 2
+@do `p03 + 10
+@do `p05 + 2
+@do `p18 + 20
+@do saybar
+Shara:  Because of your bravery I award you...
+@key
+@do saybar
+1,000 exp, 10 More Hitpoints, 2 more Dodge and Muscle, and....`l`l`l
+@key
+@do saybar
+A FESTIVAL IN YOUR HONOR!!!!!`l`l`l`l`l
+@key
+@show
+`r0`c
+ 
+ 
+ 
+ 
+		         Later that evening
+ 
+`k
+@routine fireworks in battlefx.ref
+@key
+@show
+`r0`c  `r1`%  Oh man!!  `r0`2
+ 
+	Oh man!  What a hangover!  All that partying lastnight.
+	maybe lastnight...Was it all a dream?  Oh well...`k
+ 
+@
+@do x is 27
+@do y is 7
+@do map is 155
+@loadmap 155
+@do `p80 is 0
+@do `p84 is 0
+@do `p89 is 0
+@do `p90 is 0
+@bitset `t20 0 0
+@bitset `t20 1 0
+@bitset `t20 2 0
+@bitset `t20 3 0
+@bitset `t20 4 0
+@bitset `t20 5 0
+@bitset `t20 6 0
+@bitset `t20 7 0
+@bitset `t21 0 0
+@bitset `t21 1 0
+@bitset `t22 0 0
+@bitset `t22 1 0
+@bitset `t22 2 0
+@bitset `t22 3 0
+@bitset `t22 4 0
+@bitset `t22 5 0
+@bitset `t22 6 0
+@bitset `t22 7 0
+@bitset `t23 0 0
+@bitset `t23 1 0
+@bitset `t23 2 0
+@bitset `t23 3 0
+@bitset `t23 4 0
+@bitset `t23 5 0
+@bitset `t23 6 0
+@bitset `t23 7 0
+@drawmap
+@update
+ 
+ 
+@#powend
+@do map is 373
+@loadmap 373
+@routine fade in battlefx.ref
+@do x is 20
+@do y is 15
+@update
+@do move 22 15
+@do write
+`r2``
+@do `p01 + 1000
+@do `p04 + 2
+@do `p03 + 10
+@do `p05 + 2
+@do `p18 + 20
+@do saybar
+Power:  Because of your bravery I award you...
+@key
+@do saybar
+1,000 exp, 10 More Hitpoints, 2 more Dodge and Muscle, and....`l`l`l
+@key
+@do saybar
+A FESTIVAL IN YOUR HONOR!!!!!`l`l`l`l`l
+@key
+@show
+`r0`c
+ 
+ 
+ 
+ 
+		         Later that evening
+ 
+`k
+@routine fireworks in battlefx.ref
+@key
+@show
+`r0`c  `r1`%  Oh man!!  `r0`2
+ 
+	Oh man!  What a hangover!  All that partying lastnight.
+	maybe lastnight...Was it all a dream?  Oh well...`k
+ 
+@
+@do x is 27
+@do y is 7
+@do map is 155
+@loadmap 155
+@do `p80 is 0
+@do `p84 is 0
+@do `p89 is 0
+@do `p90 is 0
+@bitset `t20 0 0
+@bitset `t20 1 0
+@bitset `t20 2 0
+@bitset `t20 3 0
+@bitset `t20 4 0
+@bitset `t20 5 0
+@bitset `t20 6 0
+@bitset `t20 7 0
+@bitset `t21 0 0
+@bitset `t21 1 0
+@bitset `t22 0 0
+@bitset `t22 1 0
+@bitset `t22 2 0
+@bitset `t22 3 0
+@bitset `t22 4 0
+@bitset `t22 5 0
+@bitset `t22 6 0
+@bitset `t22 7 0
+@bitset `t23 0 0
+@bitset `t23 1 0
+@bitset `t23 2 0
+@bitset `t23 3 0
+@bitset `t23 4 0
+@bitset `t23 5 0
+@bitset `t23 6 0
+@bitset `t23 7 0
+@drawmap
+@update
+ 
+;-------------------high ascii---------------------------
+;    open face
+;    full face
+;    snow flake
+;°    partial open
+;±    middle open
+;²    mostly closed
+;Û    all closed
+;ß    up top
+;Ü    down bottom
+;Ý    left wall
+;Þ    right wall
+;þ    middle square
+;ú    middle dot

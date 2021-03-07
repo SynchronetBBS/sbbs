@@ -1,0 +1,308 @@
+; Script file NPCMAINT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE start 000000750
+@DECLARE top 000000968
+@DECLARE start2 000001414
+@DECLARE top2 000001639
+@DECLARE 1 000001992
+@DECLARE 2 000002299
+@DECLARE 3 000002606
+@DECLARE 4 000002913
+@DECLARE 5 000003220
+@DECLARE 6 000003527
+@DECLARE 7 000003834
+@DECLARE 8 000004141
+@DECLARE 9 000004448
+@DECLARE 10 000004576
+@DECLARE 11 000004884
+@DECLARE 12 000005192
+@DECLARE 13 000005498
+@DECLARE 14 000005806
+@DECLARE 15 000006110
+@DECLARE 16 000006418
+@DECLARE 17 000006695
+@DECLARE 18 000006972
+@DECLARE 19 000007251
+@DECLARE 20 000007262
+@DECLARE 21 000007273
+@DECLARE 22 000007284
+@DECLARE end 000007600
+@NOCHECK
+; End of .REF index
+
+@#start
+@do `p22 is 0
+@datanewday npc/npcbday.tmp
+@dataload npc/npcbday.tmp 1 `p20
+@if `p20 > 0 then goto start2
+@do `p20 + 1
+@datasave npc/npcbday.tmp 1 `p20
+@do write
+`\ `%Checking for NPC Birthdays.`\
+
+@label top
+@do `p22 + 1
+@if `p22 > 200 then goto start2
+@dataload npc\npc-bday.idf `p22 `p23
+@if `p23 is `v11 then do
+        @begin
+        @do `p70 is `p22
+        @routine getname in npcname.ref
+        @dataload npc\npcage.idf `p22 `p25
+        @do `p25 + 1
+        @do addlog
+`2It's `s01 birthday today. `s02 turned `p25 years old.
+        @datasave npc\npcage.idf `p22 `p25
+        @do goto top
+        @end
+@do goto start2
+
+@#start2
+@datanewday npc/npcchange.tmp
+@dataload npc/npcchange.tmp 1 `p20
+@if `p20 > 3 then goto end
+@do `p20 + 1
+@datasave npc/npcchange.tmp 1 `p20
+@do write
+`\ `%Minor changes to NPC Profiles.`\
+@do `p29 is 0
+
+@label top2
+@do `p29 + 1
+@if `p29 > 5 then goto end
+@do `p20 random 22 1
+@do `p22 random 200 1
+@dataload npc\npchange.idf `p22 `p23
+@do `p24 random `p23 1
+@if `p24 > 98 then goto `p20
+@if `p24 is 75 then goto `p20
+@if `p24 is 50 then goto `p20
+@if `p24 is 25 then goto `p20
+@if `p24 is 1 then goto `p20
+@if `p23 < 1 then `p23 is 1
+@do goto top2
+
+@#1
+@dataload npc\npcreqc1.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcreqc1.idf `p22 `p23
+
+@#2
+@dataload npc\npcreqc2.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcreqc2.idf `p22 `p23
+
+@#3
+@dataload npc\npcreqc3.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcreqc3.idf `p22 `p23
+
+@#4
+@dataload npc\npcreqc4.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcreqc4.idf `p22 `p23
+
+@#5
+@dataload npc\npcreqc5.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcreqc5.idf `p22 `p23
+
+@#6
+@dataload npc\npcreqc6.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcreqc6.idf `p22 `p23
+
+@#7
+@dataload npc\npcreqc7.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcreqc7.idf `p22 `p23
+
+@#8
+@dataload npc\npcreqc8.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcreqc8.idf `p22 `p23
+
+@#9
+@dataload npc\npcvd.idf `p22 `p23
+@do `p25 random 3 1
+@if `p25 is 1 then `p23 + 1
+@datasave npc\npcvd.idf `p22 `p23
+
+@#10
+@dataload npc\npcgreed.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcgreed.idf `p22 `p23
+
+@#11
+@dataload npc\npctouch.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npctouch.idf `p22 `p23
+
+@#12
+@dataload npc\npcslut.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcslut.idf `p22 `p23
+
+@#13
+@dataload npc\npcloyal.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npcloyal.idf `p22 `p23
+
+@#14
+@dataload npc\npclbs.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 3
+@if `p25 is 6 then `p23 - 3
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npclbs.idf `p22 `p23
+
+@#15
+@dataload npc\npchange.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@if `p23 < 1 then `p23 is 1
+@datasave npc\npchange.idf `p22 `p23
+
+@#16
+@dataload npc\npcstat.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@datasave npc\npcstat.idf `p22 `p23
+
+@#17
+@dataload npc\npcagep.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@datasave npc\npcagep.idf `p22 `p23
+
+@#18
+@dataload npc\npctimes.idf `p22 `p23
+@do `p25 random 6 1
+@if `p25 is 1 then `p23 + 1
+@if `p25 is 2 then `p23 - 1
+@if `p25 is 3 then `p23 + 2
+@if `p25 is 4 then `p23 - 2
+@if `p25 is 5 then `p23 + 5
+@if `p25 is 6 then `p23 - 5
+@datasave npc\npctimes.idf `p22 `p23
+
+@#19
+@label 20
+@label 21
+@label 22
+@do `p23 random &totalaccounts 1
+@dataload npc\npc-`p22.idf `p23 `p24
+@do `p25 random 6 1
+@if `p25 is 1 then `p24 + 1
+@if `p25 is 2 then `p24 - 1
+@if `p25 is 3 then `p24 + 2
+@if `p25 is 4 then `p24 - 2
+@if `p25 is 5 then `p24 + 5
+@if `p25 is 6 then `p24 - 5
+@datasave npc\npc-`p22.idf `p23 `p24
+
+
+@#end

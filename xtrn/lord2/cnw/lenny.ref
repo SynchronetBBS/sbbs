@@ -1,0 +1,250 @@
+; Script file LENNY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE lenny 000000277
+@DECLARE start 000000314
+@DECLARE done 000001378
+@DECLARE game 000001441
+@DECLARE ok 000001799
+@DECLARE tiegame 000002527
+@NOCHECK
+; End of .REF index
+
+@#lenny
+@datanewday lenny.idf
+@label start
+@clear screen
+@show
+`%Visiting with Uncle Lenny
+`2-=-=-=-=-=-=-=-=-=-=-=-=-
+ 
+`2Uncle Lenny begins to speak...
+"The Dragon Tooth clan is evil.  Don't ever believe them!"
+"Don't be afraid...they don't bother ya here in Stonebrook."
+ 
+@do `v01 is 1
+@choice
+Talk to Uncle Lenny
+Play a game
+Leave
+@if response is 1 then do
+@begin
+@show
+`\`\`2"So how's life treating ya Uncle Lenny?"
+"I'm doing good, how is your mother getting along?" replies Uncle Lenny
+ 
+@do `v01 is 1
+@choice
+Mother is doing well
+Not so good
+@if response is 1 then do
+@begin
+@show
+`\`\`2Good!  I am glad to here that she is getting better
+after your father's death.
+@end
+@if response is 2 then do
+@begin
+@show
+`\`\`2I'm sorry to hear that.  I guess she still misses your
+father a great deal.
+@end
+@key
+@do goto start
+@end
+ 
+@if response is 2 then do
+@begin
+@do goto game
+@end
+ 
+@if response is 3 then do
+@begin
+@show
+`\`\`2"Leaving already?  Remeber don't believe what the Dragon
+Tooth clan tells you `n"
+@key
+@do goto done
+@end
+ 
+@label done
+@drawmap
+@do moveback
+@update
+@closescript
+ 
+@label game
+@clear screen
+@show
+`%Playing a game with Uncle Lenny
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ 
+`2Uncle Lenny says "So you want to play a game?  How about
+Rock, Paper, Scissors?"
+ 
+@do `v01 is 1
+@choice
+Ok let's play
+No thanks
+@if response is 1 then do
+@begin
+@do goto ok
+@end
+@if response is 2 then do
+@begin
+@do goto start
+@end
+ 
+@label ok
+@clear screen
+@dataload lenny.idf &playernum `p25
+@if `p25 is 1 then do
+@begin
+@show
+`%Rock, Paper, Scissors
+`2-=-=-=-=-=-=-=-=-=-=-
+ 
+`2Sorry but I am too busy to play again today.
+@key
+@do goto start
+@end
+ 
+@show
+`%Rock, Paper, Scissors
+`2-=-=-=-=-=-=-=-=-=-=-
+ 
+`2"How much do you want to bet?" asks Uncle Lenny
+Place your bet (500 max)
+@do readnum 3
+ 
+@if `v40 is 0 then do
+@begin
+@show
+`\`2You have to bet at least $1!
+@do `v01 is 1
+@choice
+Try again
+Nevermind
+@if response is 1 then do
+@begin
+@do goto ok
+@end
+@if response is 2 then do
+@begin
+@do goto start
+@end
+@end
+ 
+@if `v40 > money then do
+@begin
+@show
+`\`2You don't have `v40!
+@key
+@do goto game
+@end
+ 
+@label tiegame
+@clear screen
+@show
+`%Rock, Paper, Scissors
+`2-=-=-=-=-=-=-=-=-=-=-
+ 
+`2Ok that sounds good let's begin!
+ 
+@do `v01 is 1
+@choice
+Rock
+Paper
+Scissors
+@if response is 1 then do
+@begin
+@do `p28 is 0
+@end
+@if response is 2 then do
+@begin
+@do `p28 is 1
+@end
+@if response is 3 then do
+@begin
+@do `p28 is 2
+@end
+ 
+@do `p27 random 3
+@if `p28 is 0 then do
+@begin
+@if `p27 is 0 then do
+@begin
+@show
+`\`\`2The game is a tie!
+@do goto tiegame
+@end
+ 
+@if `p27 is 1 then do
+@begin
+@show
+`\`\`2Paper beats rock!  Uncle Lenny wins!
+You hand Uncle Lenny `v40 gold.
+@do money - `v40
+@end
+ 
+@if `p27 is 2 then do
+@begin
+@show
+`\`\`2Rock beats scissors!  You win!
+Uncle Lenny hands you `v40 gold!
+@do money + `v40
+@end
+@end
+@if `p28 is 1 then do
+@begin
+@if `p27 is 0 then do
+@begin 
+@show
+`\`\`2Paper beats rock!  You win!
+Uncle Lenny hands you `v40 gold!
+@do money + `v40
+@end
+ 
+@if `p27 is 1 then do
+@begin
+@show
+`\`\`2The game is a tie!
+@do goto tiegame
+@end
+ 
+@if `p27 is 2 then do
+@begin
+@show
+`\`\`2Scissors beats paper!  Uncle Lenny wins!
+You hand Uncle Lenny `v40 gold.
+@do money - `v40
+@end
+@end
+@if `p28 is 2 then do
+@begin
+@if `p27 is 0 then do
+@begin
+@show
+`\`\`2Rock beats scissors!  Uncle Lenny wins!
+You hand Uncle Lenny `v40 gold.
+@do money - `v40
+@end
+ 
+@if `p27 is 1 then do
+@begin
+@show
+`\`\`2Scissors beats paper!  You win!
+Uncle Lenny hands you `v40 gold!
+@do money + `v40
+@end
+ 
+@if `p27 is 2 then do
+@begin
+@show
+`\`2The game is a tie!
+@do goto tiegame
+@end
+@end
+@key
+//@datasave lenny.idf &playernum 1
+@do goto game
+ 

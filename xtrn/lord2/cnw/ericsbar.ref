@@ -1,0 +1,870 @@
+; Script file ERICSBAR.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:30 2001
+
+@DECLARE barsign 000001092
+@DECLARE nomore 000001151
+@DECLARE drinknomore 000001168
+@DECLARE spirit 000001409
+@DECLARE monster1 000003335
+@DECLARE monster2 000003891
+@DECLARE monster3 000004446
+@DECLARE monster4 000005026
+@DECLARE monster5 000005588
+@DECLARE living 000006133
+@DECLARE nomore 000007550
+@DECLARE chicken 000007563
+@DECLARE nomore 000008945
+@DECLARE lockdown 000008959
+@DECLARE nomore 000009112
+@DECLARE booty 000009123
+@DECLARE nomore 000010237
+@DECLARE break 000010248
+@DECLARE nomore 000012165
+@DECLARE pick 000012175
+@DECLARE nomore 000013161
+@DECLARE secretdoor 000013177
+@DECLARE nomore 000013782
+@DECLARE leaveguard 000013798
+@DECLARE nomore 000014115
+@DECLARE guard1 000014127
+@DECLARE nomore 000014707
+@DECLARE castlesign 000014723
+@DECLARE towerend 000014814
+@DECLARE tower 000014886
+@DECLARE nomore 000016206
+@NOCHECK
+; End of .REF index
+
+;                             Ericsbar.ref
+;                         Needs Odinkeep.ref to work
+@#BARSIGN
+@do moveback
+@do saybar
+Welcome to Eric's Bar
+@#NOMORE
+
+@#DRINKNOMORE
+@show
+`r0`c  `r1 `%One TrIp a day `r0
+
+  `2When you wake up the whole bar is huddled around you.
+
+  `0"Uh yea, I forgot to tell you `%`n`0, you can only TrIp
+  once per day." `2Eric says grinning.
+`\`k
+@drawmap
+@update
+
+@#SPIRIT
+@datanewday drink.idf
+@dataload drink.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto DRINKNOMORE
+@end
+
+@datasave drink.idf &playernum 1
+
+@offmap
+@show
+`\`c
+                       `0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                        `$Welcome to the spirit realm
+                       `0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`\`k
+        `2You see your body lying on the bar floor beneath you.
+        You are now dead it seems .`l.`l.`l.`l. or are you ?
+`\`k       
+       `%"Curse you Eric !" `2you shout.
+        `2But he can't hear you. In fact, Eric is laughing.
+`\`k
+        You see your father walking towards you.
+`\`k
+       `0"Hello my little s&boy. If you want to return to the living
+        you must face 1 challenge. Prepare yourself and good luck."
+`\`k
+
+@do `p21 random 5 1
+@if `p21 is 1 then do
+ @begin
+  @show
+`\`c                               
+       `2You seem to be facing a shadowy version of yourself.
+`\
+      `%"I've waited a long time for this!" `2your double mumbles.
+
+`k
+@do goto MONSTER1
+@drawmap
+@update
+
+ @end
+
+@if `p21 is 2 then do
+ @begin
+ @show
+`\`c                               
+        `0"I'm your spirit guide, you must defeat me in battle to gain
+        true enlightenment."  
+`\`k
+@do goto MONSTER2
+
+@drawmap
+@update
+
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @show
+`\`c
+           `2You are face to face with the spirit of a Red Dragon.
+
+          `0"Prepare to die, young one." `2the dragon roars
+`\`k
+@do goto MONSTER3
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @show
+`\`c
+             `2You are facing a Black Sorcerer.
+
+            `0"Young fool how dare you invade my realm." `2he mumbles
+`\`k
+  @do goto MONSTER4
+  @end
+
+@if `p21 is 5 then do
+ @begin
+ @show
+`\`c
+             `0"I'm your worst `@KnightMare`0, flea!"
+`\`k
+  @do goto MONSTER5
+  @end
+
+
+@drawmap
+@update
+@end
+
+@#MONSTER1
+@fight
+;name
+Shadowy Double
+;string said when you see him
+You see your shadowy double
+;power move kill string
+There's only room for one of us pal.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+punches you|74
+slaps you silly|100
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+52
+;gold reward
+1000
+;experience
+500
+;hit points
+92
+;if win: ref file|name or NONE
+ERICSBAR.REF|LIVING
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+ERICSBAR.REF|CHICKEN
+
+
+@#MONSTER2
+@fight
+;name
+Spirit Guide
+;string said when you see him
+You see your Spirit Guide
+;power move kill string
+I guess I passed the test huh?
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+passes through you|100
+bitch slaps you|125
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+60
+;gold reward
+1033
+;experience
+625
+;hit points
+120
+;if win: ref file|name or NONE
+ERICSBAR.REF|LIVING
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+ERICSBAR.REF|CHICKEN
+
+
+@#MONSTER3
+@fight
+;name
+Spirit of a Red Dragon
+;string said when you see him
+You see the spirit of a Red Dragon
+;power move kill string
+I killed you again big mamma!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+claws you|74
+slaps you with it's tail|134
+Fire Breath|100
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+3500
+;experience
+1006
+;hit points
+150
+;if win: ref file|name or NONE
+ERICSBAR.REF|LIVING
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+ERICSBAR.REF|CHICKEN
+
+
+@#MONSTER4
+@fight
+;name
+Black Sorcerer
+;string said when you see him
+A black Sorcerer faces you
+;power move kill string
+Go back to majik school punk!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Hit you with his staff|56
+Summons Fire|85
+Cast Ice spell|100
+NONE|NONE
+NONE|NONE
+;defense
+35
+;gold reward
+652
+;experience
+298
+;hit points
+120
+;if win: ref file|name or NONE
+ERICSBAR.REF|LIVING
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+ERICSBAR.REF|CHICKEN
+
+@#MONSTER5
+@fight
+;name
+KnightMare
+;string said when you see him
+A KnightMare faces you
+;power move kill string
+Go back to the pasture Mr. Ed !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hoofs you|74
+whinnies loudly|34
+Head butts you|45
+NONE|NONE
+NONE|NONE
+;defense
+35
+;gold reward
+1514
+;experience
+200
+;hit points
+56
+;if win: ref file|name or NONE
+ERICSBAR.REF|LIVING
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+ERICSBAR.REF|CHICKEN
+
+
+@#LIVING
+@offmap
+@do `p04 + 1
+@show
+`\`c
+         `2You feel strange.`l.`l.`l.`l. when you awaken you see
+         Eric with a worried look on his face.
+`\`k
+        `0"Thank Goodness you're ok. I was so worried about you."
+         `2he exclaims.  
+`\`k
+        `%"BullCrap Eric !" `2you yell.
+
+         `2You punch Eric violently in the nose. He falls flat
+         on his back. The whole bar laughs at Eric.
+`\`k
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+         `2For your bravery you gain`$.`l.`l.`l.`l.`l.`l.`l.
+
+         `l.`l.`l.`l.`l.`l.`l.`l.`%1 MUSCLE POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+         `2For your bravery you gain`$.`l.`l.`l.`l.`l.`l.`l.
+
+         `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT `2!
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+         `2For your bravery you gain`$.`l.`l.`l.`l.`l.`l.`l.
+
+         `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM `2!
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+         `2For your bravery you gain`$.`l.`l.`l.`l.`l.`l.`l.
+
+         `l.`l.`l.`l.`l.`l.`l.`l.`%1 HITPOINT `2!
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+         `2For your bravery you gain`$.`l.`l.`l.`l.`l.`l.`l.
+
+         `l.`l.`l.`l.`l.`l.`l.`l.`%1 CHARM POINT `2!
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#CHICKEN
+@offmap
+@show
+`\`c
+        `2You decided to run instead of fighting. Remembering
+        that old saying `%"It's better to run than die."
+`\`k
+        `2You awaken to find, that while you were gone from your
+        body, the locals decided to bury you. 
+`\`k
+        After hours of work you claw your way out of your grave.
+        The whole ordeal leaves you weak as a kitten. 
+`\`k
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 - 1
+ @show
+        `2For your cowardice you LOSE`$.`l.`l.`l.`l.`l.`l.`l.
+
+        `l.`l.`l.`l.`l.`l.`l.`l.`%1 MUSCLE POINT
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 - 1
+ @show
+        `2For your cowardice you `@LOSE`$.`l.`l.`l.`l.`l.`l.`l.
+
+        `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 - 1
+ @show
+        `2For your cowardice you `@LOSE`$.`l.`l.`l.`l.`l.`l.`l.
+
+        `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 - 1
+ @show
+        `2For your cowardice you `@LOSE`$.`l.`l.`l.`l.`l.`l.`l.
+
+        `l.`l.`l.`l.`l.`l.`l.`l.`%1 HITPOINT
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 - 1
+ @show
+        `2For your cowardice you `@LOSE`$.`l.`l.`l.`l.`l.`l.`l.
+
+        `l.`l.`l.`l.`l.`l.`l.`l.`%1 CHARM POINT
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#LOCKDOWN
+@show
+`r0`c
+               `2You decide to return to the treasure chest tomorrow.
+
+               `l`l`l`l`l`l`l
+`\`k
+@drawmap
+@update
+@#NOMORE
+
+@#BOOTY
+@show
+`r0`c
+               `2You carefully open the lid on the treasure chest.
+
+               As you look inside you find.`l.`l.`l.`l.`l. 
+
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p19 + 6
+ @show
+                     `%6 GEMS `2!
+`\`k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `i53 + 2
+ @show
+                     `%2 GOLD POTIONS `2!
+`\`k                 
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `i50 + 1
+ @show
+                     `%A TRAVELING POTION `2!
+`\`k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `i40 + 10
+ @show
+                     `%10 BLUE POTIONS `2! 
+`\`k
+ @end
+
+
+@if `p21 is 5 then do
+  @begin
+  @show
+                     `%ERIC THE BARTENDER `2!
+`\`k
+`c
+               `0"I knew if I hid in here long enough,
+                I'd catch the thieving piece of crap that's
+                been stealing my stuff !"
+`k
+                `2Eric grabs you up by your hair and drags
+                you out of the bar.
+
+`k
+ @do x is 15
+ @do y is 7
+ @do map is 879
+ @loadmap &map
+ @end
+
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#BREAK
+@show
+`\`c
+                     `2You attempt to break the lock.
+`\`k
+          You grasp your `@s&weapon `2firmly and with all your force
+          you bring it down on the padlock.`l.`l.`l.`l.`l.
+`\
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @show
+                     `2The lock breaks off the chest.
+`\`k
+@do goto BOOTY
+  @end
+@if `p21 is 2 then do
+ @begin
+ @show
+`c
+                  `2Your `@s&weapon `2glances off the padlock.
+
+                  You hear footsteps approaching. You quickly hide
+                  in the shadows. It's Eric the bartender.
+`k
+                 `0"Who's there ?" `2he studders.
+`k
+                  You wait quietly until Eric leaves.
+
+                  You decide you had better try this again later
+                  maybe tomorrow.
+`\`k                 
+ @end
+@if `p21 is 3 then do
+ @begin
+ @show
+                     `2The lock breaks off the chest.
+`\`k
+@do goto BOOTY
+ @end
+@if `p21 is 4 then do 
+ @begin
+ @show
+ `c
+                `2Your `@s&weapon `2glances off the padlock.
+
+                You hear footsteps approaching. You quickly hide
+                in the shadows. It's Eric the bartender.
+`k
+               `0"Who's there ?" `2he studders.
+`k
+                You wait quietly until Eric leaves.
+
+                You decide you had better try this again later
+                maybe tomorrow.
+ 
+
+ `k
+ @end
+@if `p21 is 5 then do
+ @begin
+ 
+ @show
+ `c
+               `2Your `@s&weapon `2glances off the padlock.
+
+               You hear footsteps approaching. You quickly hide
+               in the shadows. It's Eric the bartender.
+`k
+              `0"Who's there ?" `2he studders.
+`k
+               You wait quietly until Eric leaves.
+
+               You decide you had better try this again later
+               maybe tomorrow.
+ 
+
+ `k
+ @end
+
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#PICK
+@show
+`\`c
+                     `2You attempt to pick the lock.`l.`l.`l.`l.`l.
+`\
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @show
+ `c
+                     `2You pick the lock without any difficulty.
+`\`k
+@do goto BOOTY
+
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @show
+ `c
+                     `2You are unable to pick the lock !
+
+                     You decide to try again tomorrow.
+`\`k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @show
+ `c
+                     `2You pick the lock without any difficulty.
+`\`k
+@do goto BOOTY
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @show
+ `c
+                     `2You are unable to pick the lock !
+
+                     You decide to try again tomorrow.
+ 
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ 
+ @show
+ `c
+                     `2You are unable to pick the lock !
+
+                     You decide to try again tomorrow.
+
+ `k
+ @end
+
+@drawmap
+@update
+@closescript
+@end
+@#NOMORE
+
+@#SECRETDOOR
+@do moveback
+@datanewday lock.idf
+@dataload lock.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto LOCKDOWN
+@end
+
+@datasave lock.idf &playernum 1
+
+@show
+`r0`c `r1 Treasure Chest `r0
+
+ `2Seems you've found a treasure chest. 
+ It appears to be locked with a huge padlock.
+ 
+ You decide to .... 
+
+@do `v01 is 1
+@do write
+`x
+@choice
+Break the padlock
+Pick the lock
+Leave the treasure chest alone
+@if responce is 1 then do
+    @begin
+    @do goto BREAK
+    @end
+
+@if responce is 2 then do
+   @begin
+   @do goto PICK
+   @end
+
+@end
+
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#LEAVEGUARD
+@offmap
+@show
+`\`r0`c
+               `2The door guard stops you again.
+
+              `0"Thank you for visiting s&sir, I hope you
+               are enjoying your visit."
+
+               "May Odin smile down upon you." `2he says. 
+
+               `l`l`l`l`l`l`l`l`l`l`l`
+`\`k
+@drawmap
+@update
+@#NOMORE
+
+@#GUARD1
+@datanewday guard.idf
+@dataload guard.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto LEAVEGUARD
+@end
+
+@datasave guard.idf &playernum 1
+
+
+@offmap
+@show
+`\`r0`c
+               `2As soon as you walk in the door, you see a guard 
+               approaching you.
+               
+              `0"Welcome to the castle. Eric's Bar is to the left and up,
+              The actual Keep is to your right and up."
+
+              `0"Enjoy your stay !" `2the guard says.
+
+              `l`l`l`l`l`l`l`l`l`l`l`l`l`l`l`l`l`l`l
+`\`k
+@drawmap
+@update
+@#NOMORE
+
+@#CASTLESIGN
+@do moveback
+@do saybar
+Odin's castle - Eric's Bar and Odin's Keep Inside
+
+@#TOWEREND
+@do saybar
+`%The tower door is locked, try again tomorrow.
+
+@#TOWER
+@datanewday tower.idf
+@dataload tower.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto TOWEREND
+@end
+
+@datasave tower.idf &playernum 1
+
+@do moveback
+@offmap
+@show
+`r0`c
+ `2The door opens easily. You grip your `%s&weapon `2tightly as you enter
+ the tower. As you start to walk up the stairs to the top of the tower,
+ a feeling of uncertainty overcomes you.
+`\`k
+ `2 As you reach the top of the tower you find .`l.`l.`l.`l.
+@do `p21 random 4 1
+@if `p21 is 1 then do
+ @begin
+ @do money + 1000
+ @show
+
+  `%One Thousand Gold pieces `2laying on the floor !
+`\`k
+  `2What a lucky break !
+`\`k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do money = 1
+ @show
+
+  `%A thief ! `2the thief surprises you and knocks you out cold.
+`\`k
+  `2When you awaken you realize all but 1 of your gold has been stolen.
+`\`k
+  `2What a bummer !
+`\`k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+
+  `2A `%gem `2laying on the floor !
+`\`k
+  What a lucky break !
+`\`k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 - 1
+ @show
+
+  `%A very upset guard !
+`\`k
+  `0"What are you doing up here ! Get the hell out of here now !!!"
+
+  `2The guard picks you up and throws you down the steps.
+`\`k
+  `2You `@LOSE `21 hitpoint 
+`\`k
+ @end
+
+
+@drawmap
+@update
+@#NOMORE

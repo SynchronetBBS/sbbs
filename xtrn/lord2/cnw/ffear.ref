@@ -1,0 +1,1043 @@
+; Script file FFEAR.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE docksign 000001419
+@DECLARE sign 000001500
+@DECLARE sign1 000001566
+@DECLARE sign2 000001623
+@DECLARE sign3 000001685
+@DECLARE sign4 000001755
+@DECLARE notdone 000001815
+@DECLARE dance 000001882
+@DECLARE drinks 000001944
+@DECLARE drinkin 000001974
+@DECLARE weapon 000005730
+@DECLARE wstart 000005768
+@DECLARE lowang 000006768
+@DECLARE lwstart 000006957
+@DECLARE bank 000008667
+@DECLARE bankstart 000008739
+@DECLARE bankagain 000009844
+@DECLARE deposit 000011299
+@DECLARE withdraw 000011849
+@DECLARE healers 000012715
+@DECLARE ffboat 000014486
+@DECLARE portboat 000015278
+@DECLARE gatekeeper 000016797
+@DECLARE attack 000017279
+@DECLARE monster1 000017508
+@DECLARE monster2 000018112
+@DECLARE monster3 000018700
+@DECLARE fightpl 000019269
+@DECLARE nomore 000019858
+@NOCHECK
+; End of .REF index
+
+;
+;     -----------------------------------------------
+;      Fortress Fear IGM for LORD II - The New World
+;     -----------------------------------------------
+;
+; FFear.ref - Copyright 1997 Isaac Laurin and D/¥rK /\/iGHT
+;                                      darkn@geocities.com
+;
+; If you copy any of this ref file I'll will personaly see
+; that an assassin is hired and sent after you! :) 
+; Also you must let me know by an email, or include my
+; name in your docs!
+;
+
+@#docksign
+@do moveback
+@do saybar
+$200 boat ride to Fortress Fear this way!!!
+
+@#sign
+@do moveback
+@do saybar
+Welcome To `@Fortress Fear!
+
+@#sign1
+@do moveback
+@do saybar
+King Fear's Casino
+
+@#sign2
+@do moveback
+@do saybar
+`@Lo Wang's Supermarket
+
+@#sign3
+@do moveback
+@do saybar
+`$<-- Houses For Sale This Way!
+
+@#sign4
+@do moveback
+@do saybar
+<- Bar    Casino ->
+
+@#notdone
+@do moveback
+@do saybar
+`$THIS AREA IS NOT COMPLETE!
+
+@#dance
+@do moveback
+@do saybar
+`0"Isn't dancing fun?"
+
+@#drinks
+@do moveback
+@label drinkin
+@do `v01 is 1
+@show
+`r0`c  `r1`%  Getting A Drink  `r0
+
+`0  "Here's a list of drinks, so what will it be today?"
+
+`2  You have `$$&money`2 left.
+
+@do write
+`x`x
+@choice
+Water (FREE)
+Sprite ($2)
+Ale ($5000)
+Red Dragon's Fire ($5000)
+Grog ($100)
+Nothing
+@show
+`\
+@if responce is 1 then do
+  @begin
+  @show
+`2  The bartender gives you a cup of dark, murky water. You drink it and`l.`l.`l.`l.`l.`l.`l.
+`4  YOU FEEL LIKE THROWING UP!`\`\`k
+  Your hitpoints go WAY down!`\`\`k
+  @do `p02 = 1
+  @end
+@if responce is 2 then do
+  @begin
+  @if &money > 1 then do
+  @begin
+  @do `p30 is 22
+  @do `v40 is 2
+  @routine deposit in vaults.ref
+  @do money - 2
+  @show
+`2  The bartender pours you a glass of Sprite (TM). You gulp it down and`l.`l.`l.`l.`l.`l.`l.
+  <BUUUUUURRRRRPPP!!>`\`\`k
+`%  You feel refreshed!`\`\`k
+  @do `p02 = `p03
+  @do goto drinkin
+  @end
+  @show
+`2  Hey you don't have enough money for that!`\`\`k
+  @end
+@if responce is 3 then do
+  @begin
+  @if &money > 4999 then do
+  @begin
+  @do `p30 is 22
+  @do `v40 is 5000
+  @routine deposit in vaults.ref
+  @do money - 5000
+  @show
+`2  The bartender pours you a mug of ale. You quickly gulp it down and`l.`l.`l.`l.`l.`l.`l.
+  you feel a little bit dizzy...`\`\`k
+`%  ...But besides that you feel tougher!`\`\`k
+  @do `p05 + 1
+  @do `p96 + 4
+  @do goto drinkin
+  @end
+  @show
+`2  Hey you don't have enough money for that!`\`\`k
+  @end
+@if responce is 4 then do
+  @begin
+  @if &money > 4999 then do
+  @begin
+  @do `p30 is 22
+  @do `v40 is 5000
+  @routine deposit in vaults.ref
+  @do money - 5000
+  @show
+`2  The bartender gives you a glass of dark red liquid. You drink it and`l.`l.`l.`l.`l.`l.`l.
+`4  YOU FEEL AS IF YOUR HEAD IS GOING TO EXPLODE!...`\`\`k
+`%  ...But besides that you feel stronger!`\`\`k
+  @do `p04 + 1
+  @do `p96 + 25
+  @do goto drinkin
+  @end
+  @show
+`2  Hey you don't have enough money for that!`\`\`k
+  @end
+@if responce is 5 then do
+  @begin
+  @if &money > 99 then do
+  @begin
+  @do `p30 is 22
+  @do `v40 is 100
+  @routine deposit in vaults.ref
+  @do money - 100
+  @do `v01 is 1
+  @show
+`c`2  The bartender puts on an evil grin, then walks to the back of the bar. He
+  returns shortly later with a strong looking metal mug filled with steaming
+  liquid.
+
+`0  "Watch out it's corrosive!" laughs the bartender as he hands you the
+  melting mug.
+
+@do write
+`x`x
+@choice
+Drink It
+Chicken Out
+@show
+`\
+ @if responce is 1 then do
+    @begin
+    @show
+`2  You pick up the melting mug, close your eyes and swallow. The liquid is
+  burning your mouth! And`l.`l.`l.`l.`l.`l.`l.`l.
+
+    @do `p20 random 100 1
+    @if `p20 is 50 then do
+      @begin
+      @show
+`2  `l.`l.`l.`l.`l.`%THE GROG GIVES YOU SUPER HUMAN STRENGH!`\`\`k
+  YOU GAIN 5 STRENGTH, 5 DEFENCE, 10 HITPOINTS AND 1000 EXPERIENCE!`\`\`k
+      @do `p01 + 1000
+      @do `p03 + 10
+      @do `p04 + 5
+      @do `p05 + 5
+      @do `p96 + 10
+      @do goto drinkin
+      @end
+    @show
+`2  `l.`l.`l.`l.`l.`4THE GROG MELTS RIGHT THROUGH YOU!`\`\`k
+  YOU LOSE 1 STRENGTH, 1 DEFENCE AND 10 ALIGNMENT!`\`\`k
+    @do `p04 - 1
+    @do `p05 - 1
+    @do `p07 - 10
+  @do `p96 + 11
+    @do goto drinkin
+    @end
+ @if responce is 2 then do
+   @begin
+   @show
+`2  You bartender sneers, takes back your grog and takes 100 gold too.
+
+`0  "The gold will pay for my wasted grog mug!" the bartender laughs.`\`\`k
+`2  He then takes the grog to the back of the bar but he spills it! He
+  curses as it melts though the floor...`\`\`k
+   @do goto drinkin
+   @end
+ @end
+  @show
+`2  Hey you don't have enough money for that!`\`\`k
+  @end
+
+@if responce not 6 then goto drinkin
+@drawmap
+@update
+
+@#weapon
+@offmap
+@do moveback
+@label wstart
+@do `v01 is 1
+@show
+`r0`c  `r1`%  Weapons & More!  `r0
+
+`2  Tools of torture and destuction line the walls in this shop         
+  An ugly lookin store keeper turns to you and says "You gonna
+  buy somethin? Or just look around?"
+
+@do write
+`x`x
+@choice
+Buy something
+Look around
+Boy you're ugly!
+Leave
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@show
+`r0`c  `r1`%  Shopping At Weapons & More!  `r0
+
+`\  `2"Hurry up kid, I don't have all day" says the ugly man.`\
+
+@buymanager
+  4
+  36
+  39
+  49
+  64
+  70
+  10
+  37
+  59
+  68
+  @end
+
+@if responce is 2 then do begin
+@begin
+@show
+`2  "Ok, you can look around BUT DON'T TOUCH ANYTHING!"`\`\`k
+`%  Note - More will be added into this option later..`\`\`k
+@end
+
+@if responce is 3 then do begin
+@begin
+@show
+`2  You open your mouth to say something but nothing comes out!`\`\`k
+`%  Note - This option not complete yet`\`\`k
+@end
+
+@if responce not 4 then goto wstart
+@drawmap
+@update
+
+@#lowang
+@offmap
+@do moveback
+@do `p20 = 0
+@if ffhouse2.dat exist true then do
+ @begin
+ @readfile ffhouse2.dat
+`p20
+`s01
+`p21
+`p22
+@end
+ ;load owner and current password
+@label lwstart
+@do `v01 is 1
+@show
+`r0`c  `r1`%  Lo Wang's Supermarket  `r0
+
+`2  There are rows of food, drinks and weapons down the store...         
+  The shop owner notices you and says "Hey you what you want?"
+
+@do write
+`x`x
+@choice
+Go shopping
+=`p20 &playernum Buy Maneating plant food
+Hear some words of wisdom from Wang
+Attack Lo Wang
+Leave
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@show
+`r0`c  `r1`%  Shopping At Lo Wang's  `r0
+
+`\  `2Lo Wang impatiently says "Hurry up! I no have all day!"`\
+
+@buymanager
+  4
+  49
+  60
+  1
+  2
+  3
+  5
+  17
+  29
+  30
+  40
+  43
+  @end
+
+@if responce is 2 then do begin
+@begin
+@do `v01 is 1
+@show
+`c`2  "Sooo..You are owner of House #2. You want to feed plant? I have very
+  much good food for plant, cost only $200! You want?"
+
+@do write
+`x`x
+@choice
+>&money 199 Buy it
+Nevermind
+ @if responce is 1 then do
+  @begin
+  @readfile ffhouse2.dat
+`p20
+`s01
+`p21
+`p22
+  @do `p22 + 1
+  @do `p30 is 22
+  @do `v40 is 200
+  @routine deposit in vaults.ref
+  @do money - 200
+  @do delete ffhouse2.dat
+@writefile ffhouse2.dat
+&playernum
+`s01
+`p21
+`p22
+0
+0
+  @show
+`\`2  You now have `p22 package(s) of plant food.`\`\`k
+  @end
+ @if responce is 2 then do
+  @begin
+  @show
+`\`2  "So you no think my plant food good? May your Maneating plant go hungry
+  and eata you!"`\  Boy what a grouch!`\`\`k
+  @end
+@end
+
+@if responce is 3 then do begin
+@begin
+@show
+`2"Sorry, I no have wisdom words for you right now"`\`\`k
+@end
+
+@if responce is 4 then do begin
+@begin
+@show
+`$THIS OPTION NOT COMPLETE YET! WILL BE ADDED IN LATER!`\`\`k
+@end
+
+@if responce not 5 then goto lwstart
+@drawmap
+@update
+
+@#bank
+@do `p30 is 22
+@do `v01 is 1
+@offmap
+@do moveback
+@label bankstart
+@show
+`r0`c  `r1 `%Bank Of Fortress Fear  `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @routine widthdraw in vaults.ref
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+@#healers
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+
+`2  Joe looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Joe informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+  @do `p30 is 22
+  @do `v40 is `p20
+  @routine deposit in vaults.ref
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later," `2Joe laughs.
+
+`k
+@drawmap
+@update
+
+@#ffboat
+;lets them warp to porttown
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Dock `r0
+
+  `0"Greetings, s&sir!  What can I do for you?" `2a sailor asks.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 200 I wanna goto PortTown ($200)
+Nevermind
+@if response not 2 then do
+  @begin
+  @do `p30 is 22
+  @do `v40 is 200
+  @routine deposit in vaults.ref
+@do money - 200
+@show
+`\`\  `0"We shall leave at once!" he shouts importantly.
+
+`k  `2A few hours later you arrive - ah, traveling by sea is so much fun!
+
+  `0"I bid you a goodday s&sir, please travel safely."
+
+  `2Looks like you are on your own.
+
+`k
+
+@if responce is 1 then do
+  @begin
+   ;Porttown
+   @do x is 9
+   @do y is 9
+   @do map is 956
+  @end
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#portboat
+;lets them warp to Fortress Fear
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Dock `r0
+
+  `0"Greetings, s&sir!  What can I do for you?" `2a sailor asks.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 200 I wanna goto `@Fortress Fear ($200)
+Nevermind
+@if response not 2 then do
+  @begin
+  @do `p30 is 22
+  @do `v40 is 200
+  @routine deposit in vaults.ref
+@do money - 200
+@show
+`\`\  `0"We shall leave at once!" he shouts importantly.
+
+`k  `2A few hours later you arrive - ah, traveling by sea is so much fun!
+
+  `0"I bid you a goodday s&sir, please travel safely."
+
+  `2Looks like you are on your own.
+
+`k
+
+@show
+[?7h[40m[2J[40m
+
+[0;1m  [30m€€€€€€€ ‹‹‹‹‹‹‹ ‹‹‹‹‹‹‹  ‹‹‹‹‹‹ ‹‹‹‹‹‹‹   ‹‹‹‹‹‹‹ ‹‹‹‹‹‹‹ ‹‹‹‹‹‹‹
+  [0m€€‹‹‹‹  €€   €€ €€   €€    €€   €€   €€   €€‹‹‹‹  €€‹‹‹‹‹ €€‹‹‹‹‹
+  [1m€€ﬂﬂﬂﬂ  €€   €€ €€ﬂﬂ€€[5C€€   €€ﬂﬂ€€    €€[11C€€[6C€€
+  €€[6Cﬂﬂﬂﬂﬂﬂﬂ ﬂﬂ  ﬂﬂﬂﬂﬂ  ﬂﬂ   ﬂﬂ  ﬂﬂﬂﬂﬂ ﬂﬂﬂﬂﬂﬂﬂ ﬂﬂﬂﬂﬂﬂﬂ ﬂﬂﬂﬂﬂﬂﬂ
+  ﬂﬂ  [0;36mƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ
+[39C[1;30m€€€€€€€ ‹‹‹‹‹‹‹ ‹‹‹‹‹‹‹ ‹‹‹‹‹‹‹   €€
+[39C[0m€€‹‹‹‹  €€‹‹‹‹  €€‹‹‹€€ €€   €€   €€
+[39C[1m€€ﬂﬂﬂﬂ  €€[6C€€   €€ €€ﬂﬂ€€    ﬂﬂ
+[39C€€[6Cﬂﬂﬂﬂﬂﬂﬂ ﬂﬂ   ﬂﬂ ﬂﬂ  ﬂﬂﬂﬂﬂ ﬂﬂ
+[39Cﬂﬂ  [0;36mƒƒƒƒƒƒƒ [1;30mMade By D/¥rK /\/iGHT [0;36mƒƒ
+
+[23C[1;5;33mThis IGM is not complete yet!
+
+[0m[255D
+`k
+
+@if responce is 1 then do
+  @begin
+   ;Fortress Fear
+   @do x is 73
+   @do y is 19
+   @do map is 578
+   @end
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#gatekeeper
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The GateKeeper `r0
+
+  `0"Hello there! Want me to let you out?" `2the GateKeeper asks.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes!
+No! I wanna stay here!
+@if response not 2 then do
+  @begin
+@show
+`\`\  `0The GateKeeper pulls a lever and the gate opens..
+
+`k
+
+@if responce is 1 then do
+  @begin
+   @do x is 37
+   @do y is 13
+   @do map is 498
+  @end
+          
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#attack
+@dataload ffattack.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@busy
+@do `p20 random 3 1
+@do goto monster`p20
+@end
+@do `p20 random 20 1
+@if `p20 = 10 then do
+@begin
+@saybar
+`2It's so nice here
+@end
+
+@#monster1
+@fight
+;name
+Castle Peasant
+;string said when you see him
+"Ummm...you stole tha king's gold...so I getta kill you now.."
+;power move kill string
+"Must be your lucky day!" `2 you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+draws blood with his pitchfork|15
+stabs you with his pitchfork|10
+smells bad|20
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+200
+;experience
+50
+;hit points
+40
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Castle Guard
+;string said when you see him
+"It is a good day to die!"
+;power move kill string
+"Yes it is a good day for YOU to die!" `2 you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+stabs you with its broadsword|250
+slashes you with its broadsword|100
+punches you|50
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+1000
+;experience
+100
+;hit points
+100
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Castle Guards
+;string said when you see him
+"There he is! ATTACK!"
+;power move kill string
+"Hahaha" `2 you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hacks you with their weapons|400
+stabs you with their weapons|250
+farts and makes a bad smell|500
+NONE|NONE
+NONE|NONE
+;defense
+300
+;gold reward
+10000
+;experience
+1500
+;hit points
+800
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#fightpl
+@fight
+;name
+Maneating Plant
+;string said when you see him
+"MMMMM....FOOD!!!!"
+;power move kill string
+"Ah shit I killed my Maneating plant!" `2 you curse.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites your head off|10000
+rips you apart|10000
+chews you up|10000
+eats your insides|10000
+NONE|NONE
+;defense
+10000
+;gold reward
+100
+;experience
+10
+;hit points
+10000
+;if win: ref file|name or NONE
+HOUSE2.REF|WIN
+;if lose: ref file|name or NONE
+HOUSE2.REF|DEAD
+;if runs: ref file|name or NONE
+HOUSE2.REF|RUN
+
+@#NOMORE
+

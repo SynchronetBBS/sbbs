@@ -1,0 +1,870 @@
+; Script file BUNNY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE rndbunny 000001034
+@DECLARE eggdye 000001115
+@DECLARE bridgeout 000002400
+@DECLARE bunny1 000004339
+@DECLARE bunny2 000004902
+@DECLARE bunny3 000005504
+@DECLARE bunny4 000006050
+@DECLARE bunny5 000006599
+@DECLARE bunny6 000007128
+@DECLARE bunny7 000007713
+@DECLARE bunny8 000008294
+@DECLARE bunny9 000008797
+@DECLARE bunny10 000009396
+@DECLARE easter 000009941
+@DECLARE runeb 000010658
+@DECLARE runbat 000011057
+@DECLARE battery 000011484
+@DECLARE prefight 000012196
+@DECLARE deadbat 000012591
+@DECLARE door1 000012800
+@DECLARE door2 000013361
+@DECLARE door3 000013707
+@DECLARE kille 000015112
+@DECLARE drycell 000015322
+@DECLARE oldman 000016264
+@DECLARE ebunny 000018470
+@DECLARE nomore 000019286
+@NOCHECK
+; End of .REF index
+
+;                       The Bunny Cave IGM v1.01
+;                   By Tom Torbeck for LORD2 v1.01+
+;     You can contact the author via the internet: Tom@leftside.com
+@#rndbunny
+@busy
+@do `p20 random 10 1
+@routine prefight
+@do goto bunny`p20
+ 
+@#eggdye
+@dataload bunny.idf &playernum `p30
+@busy
+@do moveback
+@show
+`r0`c`!`r1The Paint Shop`r0
+ 
+`2The work bench in this room has all kinds of paints, dyes, and brushes
+on it.  They are used to color eggs.  But there is something special about
+these paints.  They are magic!
+ 
+@if `p30 more 4 then do
+    @begin
+    @show
+`3Too bad they are all dried up.  You may have found a use for them.
+ 
+    @key
+    @drawmap
+    @update
+    @closescript
+    @end
+@if `i43 less 1 then do
+    @begin
+    @show
+`3Now if you could only figure out what to do with the paints...
+ 
+    @key
+    @drawmap
+    @update
+    @closescript
+    @end
+@do `v01 is 1
+@choice
+Leave
+Hey!  Why don't I paint an egg?!?
+@if responce is 1 then do
+    @begin
+    @drawmap
+    @update
+    @closescript
+    @end
+@if responce is 2 then do
+    @begin
+    @show
+`\
+`2You sit down with one of your eggs and take a long look at it.  After
+selecting a brush, you spend the next few hours working on your egg with
+the magic paints.  It all leaves you feeling just a little better about
+yourself.
+ 
+`#You Gain One Charm Point!
+ 
+    @do `p08 + 1
+    @do `i43 - 1
+    @datasave bunny.idf &playernum 5
+    @key
+    @drawmap
+    @update
+    @closescript
+    @end
+ 
+@#bridgeout
+@busy
+@show
+`r0`c`$`r4The Bridge is Out!`r0
+`3The bridge here is out.  Below you can hear the sound of fast moving
+water.  By the sounds of it, there one heck of a drop before you would
+even make contact with the water.  The gap across is about twelve or
+fifteen feet wide.  The wood is a little slippery, so that will make
+the jump a little more difficult.
+ 
+@do `v01 is 2
+@choice
+I'll brave the jump
+Turn back now
+@if responce is 2 then do
+    @begin
+    @do moveback
+    @drawmap
+    @update
+    @closescript
+    @end
+@if &lastx is 55 then `p21 is 53
+@if &lastx is 53 then `p21 is 55
+@if &lastx is 38 then `p21 is 36
+@if &lastx is 36 then `p21 is 38
+; Formula = If `p05 + rnd(100) < 80 fall down...
+; get the location (x=`p21)
+@do `p20 random 100 `p05
+@if `p20 less 80 then do
+    @begin
+    @do moveback
+    @show
+`r0`c`$`r1I missed it by THAT MUCH!`r0
+ 
+`2You try to make it across to the other side, but you fail.  As gravity
+would have it, you fall....and fall...and fall.  Finally, after what seems
+to be forever you impact in the water below.
+`\
+`2The water is near freezing and there is a very strong current in this
+underground river.  The current carries you along without mercy, all the
+time you are strugling and getting no where.  A few seconds later you can
+hear the mounting sound of a waterfall.  You are in total darkness, so you
+cannot even tell if there is something to grab onto or not.
+`\
+`2Eventually, you locate the edge of the falls and begin to plummet once
+again, bouncing off rocks as you cascade down with the water.  You think
+to yourself, `3Self, this just plain sucks!  `2You never do recall hitting
+the bottom.....
+`\
+    @key
+    @do enemy is a`xfall`xto`xs&his`xdeath
+    @routine die in gametxt.ref
+    @end
+ 
+@if `p20 more 79 then do
+    @begin
+    @do x is `p21
+    @drawmap
+    @update
+    @do saybar
+`%You Made It!
+    @end
+ 
+@#bunny1
+@fight
+;name
+Pet Bunny
+;string said when you see him
+`2Is that a sword or a carrot the bunny has...
+;power move kill string
+`2Anybody for rabbit stew??
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+jabs you with a carrot|`p24
+kicks with his hind legs|`p24
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+26
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny2
+@fight
+;name
+Cartoon Bunny
+;string said when you see him
+`0"Eh? What's Up Doc?"`2, says the bunny.
+;power move kill string
+`%THAT'S ALL FOLKS!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+jabs you with his carrot|`p24
+kicks with his hind legs|`p24
+drops an anvil on you|`p24
+hands you a bomb|`p24
+gives you a big kiss|`p24
+;defense
+`p23
+;gold reward
+101
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny3
+@fight
+;name
+Playboy Bunny
+;string said when you see him
+`2HUBBA! HUBBA!
+;power move kill string
+`%Cheap Hussy!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+throws high heel shoe|`p24
+wants to talk|`p24
+smother with knockers|`p24
+choke with feather boa|`p24
+NONE|NONE
+;defense
+`p23
+;gold reward
+69
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny4
+@fight
+;name
+Man-Eatting Bunny
+;string said when you see him
+`2Big Surprises come in small bunny suits
+;power move kill string
+`%The world is a safer place...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bite|`p24
+gives you rabies|`p24
+BIG bite|`p24
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+123
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny5
+@fight
+;name
+Cute Pink Bunny
+;string said when you see him
+`2PINK???  That is weird.
+;power move kill string
+`2Splat!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+jabs you with a carrot|`p24
+kicks with his hind legs|`p24
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+26
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny6
+@fight
+;name
+6' Invisible Bunny
+;string said when you see him
+`0"My name is Harvey", `2you hear him say.  But WHERE is he?
+;power move kill string
+`2It would be a pretty site, if you could see him...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+stops your clock|`p24
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+80
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny7
+@fight
+;name
+Chocolate Bunny
+;string said when you see him
+`2It looks good enough to eat, but he sounds like a chicken!
+;power move kill string
+`2You fill your pack with pieces to eat later
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Throws a chocolate egg|`p24
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+66
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny8
+@fight
+;name
+Lab Bunny
+;string said when you see him
+`2It looks normal, but is it?
+;power move kill string
+`2It BLEW UP!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+breathes fire|`p24
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+32
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny9
+@fight
+;name
+Ninja Bunny
+;string said when you see him
+`2All bunny, all ninja, all attitude!
+;power move kill string
+`2You bow in respect, then kick the dead thing in the head.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+throws ninja star|`p24
+slices you with ninja sword|`p24
+kicks your face|`p24
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+101
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#bunny10
+@fight
+;name
+Giant Dust Bunny
+;string said when you see him
+`2In a cloud of smoke, er, dust -- it appears.
+;power move kill string
+`2Cleaned up that mess...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+breathes dust cloud|`p24
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+45
+;experience
+`p22
+;hit points
+`p21
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#easter
+@do `p23 is S&arm_num
+@do `p22 is S&wep_num
+@do `p22 + `p04
+@do `p22 + `p09
+@fight
+;name
+Easter Bunny
+;string said when you see him
+`2You spot the tall white rabbit with a basket.
+;power move kill string
+`2You are now King of Jelly Beans!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Throws jelly beans at you|`p22
+Kicks with his hind legs|`p22
+Throws hard-boiled eggs at you|`p22
+Smacks you with his basket|`p22
+NONE|NONE
+;defense
+`p23
+;gold reward
+1100
+;experience
+1100
+;hit points
+500
+;if win: ref file|name or NONE
+BUNNY.REF|KILLE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+BUNNY.REF|RUNEB
+ 
+@#runeb
+@busy
+@do `p20 is `p02
+@do `p20 - 1
+@do `p21 random `p20
+@do `p02 - `p21
+@show
+`r0`c`%`r1An attempt to run...`r0
+ 
+`2While you run away from the Easter Bunny, in a fit of rage he grabs a
+very nasty looking egg.  He throws it at you, just missing you.  However,
+the egg explodes behind you and does `0`p21 `2points damage.  You survive
+to escape.
+ 
+@key
+@drawmap
+@update
+ 
+@#runbat
+@busy
+@do `p20 is `p02
+@do `p20 - 1
+@do `p21 random `p20
+@do `p02 - `p21
+@show
+`r0`c`%`r1An attempt to run...`r0
+ 
+`2You attempt to run away from the Battery-Powered Bunny.  But he does not
+give up easy.  He picks up his drum and lobs it at you.  It nails you
+squarely in the back.  You receive `0`p21 `2points damage and are knocked
+to the floor.  You manage to escape...
+ 
+@key
+@drawmap
+@update
+ 
+@#battery
+@do `p23 is S&arm_num
+@do `p22 is S&wep_num
+@do `p22 + `p04
+@do `p22 + `p09
+@fight
+;name
+Battery-Powered Bunny
+;string said when you see him
+`@What would YOU say if saw a 9' bunny with shades?
+;power move kill string
+`0"I guess he needs a jump-start now"`2, you say to yourself
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Hits you with drumstick|`p22
+Kicks with his hind legs|`p22
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+1200
+;experience
+1200
+;hit points
+600
+;if win: ref file|name or NONE
+BUNNY.REF|DEADBAT
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+BUNNY.REF|RUNBAT
+ 
+@#prefight
+;Calculate Bunny's HP  - will be `p21
+@do `p21 is `p09
+@do `p21 * 9
+@do `p21 random `p21 25
+;Calculate defense for Bunny - will be `p23
+@do `p23 is S&arm_num
+@do `p23 + `p05
+;Calculate XP's earned - will be `p22
+@do `p22 is `p21
+@do `p22 + 99
+@do `p22 random `p22
+;Set Weapon as `p24
+@do `p24 is S&wep_num
+;Uncomment next line for Extra Tough Mode!
+;@do `p24 + `p04
+ 
+@#deadbat
+;Killed Battery Bunny!
+@do addlog
+  `r0 `0`n`3 has beaten `%`e`2!
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@datasave bunny.idf &playernum 8
+@do `p30 is 8
+ 
+@#door1
+@busy
+@dataload bunny.idf &playernum `p30
+@if `p30 more 8 then do
+    @begin
+    @do saybar
+`$All that is here is a dead crystal ball
+    @closescript
+    @end
+ 
+@show
+`r0`c`%`r1The Crystal Ball of Health`r0
+ 
+`2In this alcove is a pedestal with a beautiful crystal ball.  You are
+drawn to it so strongly that you are unable to resist the temptation
+to touch it.
+ 
+@key
+@show
+`3You feel happy-happy-joy-joy!  `!(You are FULLY rested!)
+ 
+@do `p02 is `p03
+@datasave bunny.idf &playernum 9
+@do `p30 is 9
+@key
+@drawmap
+@update
+ 
+@#door2
+@busy
+@dataload bunny.idf &playernum `p30
+@if `p30 more 9 then do
+    @begin
+    @do saybar
+`$This alcove is empty.
+    @closescript
+    @end
+ 
+@show
+`r0`c`$`r1Lucky You!`r0
+ 
+`$What a find!  `2You locate 5 gems in this alcove!
+ 
+@do `p19 + 5
+@datasave bunny.idf &playernum 10
+@do `p30 is 10
+@key
+@drawmap
+@update
+ 
+@#door3
+@busy
+@dataload bunny.idf &playernum `p30
+@if `p30 more 10 then do
+    @begin
+    @do saybar
+`$This alcove is empty.
+    @closescript
+    @end
+ 
+@show
+`r0`c`$`r1Again with the Strange Old Man`r0
+ 
+`2You are certain that you saw this same old man when you first entered
+these caves.  The scary part is, that you are correct.  `0"But how and when
+did he get past me?"`2, you ask yourself.
+ 
+`3"Made it you have.  This you did earn"`2, he says as he hand you a rather
+delicious looking carrot.  You take the carrot from him.  `0"So what do I do
+with this?"`2, you ask the old man.  He at first looks surprised, then some
+what disappointed.  `3"All brawn, no brains..."`2, he mutters then he vanishes
+without a trace.
+ 
+@do `v01 is 2
+@choice
+Eat the carrot
+Clean your ear with the carrot
+@if responce is 1 then do
+    @begin
+    @show
+`\
+`#There is hope for you after all!  `@You gain One Quest Point!
+    @do `p18 + 1
+    @end
+@if responce is 2 then do
+    @begin
+    @show
+`\`7Unfortunately, the old man was correct.  You ARE rather stupid.  While
+using the carrot to clean something out of your ear, it breaks.  The pieces
+glow for a moment and stop.  Suddenly the pieces rot into dust in front of
+your eyes.  You ask yourself aloud, `0"Maybe I should have eaten it".
+    @end
+@datasave bunny.idf &playernum 11
+@do `p30 is 11
+@key
+@drawmap
+@update
+ 
+@#kille
+;Killed Easter Bunny!
+@do addlog
+  `r0 `0`n`3 has beaten `%`e`2!
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@datasave bunny.idf &playernum 4
+@do `p30 is 4
+ 
+@#drycell
+@busy
+@dataload bunny.idf &playernum `p30
+@if `p30 less 8 then do
+    @begin
+    @do moveback
+    @show
+`r0`c`$`r1The Battery-Powered Bunny`r0
+ 
+`2From a distance, you spot a one foot tall bunny that has a drum and
+is wearing dark sunglasses.  He looks over at you in surprise, then
+gives you a devilish little grin..
+ 
+Then suddenly, he grabs a cylinder that is reads `$Heavy Duty `2and
+faster then you can blink, he pulls the cylinder that is currently in
+his back and slaps in the new one...
+ 
+    @key
+    @show
+`0Instantly, then little bunny beings to grow, and grow, and grow.  He
+peaks out at nearly `%Nine Feet Tall! `2(not including those ears of his).
+`0He spins one of his drum sticks in anticipation of your duel.
+ 
+    @key
+    @drawmap
+    @update
+    @routine battery
+    @end
+ 
+@if `p30 more 7 then do
+    @begin
+    @do saybar
+`$Here lies a bunny with a dead battery...
+    @end
+ 
+@#oldman
+@busy
+@do `p30 is 0
+@dataload bunny.idf &playernum `p30
+@do moveback
+@show
+`r0`c`$`r1Really Strange Old Man`r0
+ 
+`2Sitting in the corner of this room is a rather odd looking old man.  He
+almost looks like he might be part Rabbit!  He stops talking to the carrot
+he is holding and looks up at you...
+ 
+@if `p30 is 0 then do
+    @begin
+    @show
+`3Danger ahead there is`2, he starts.  `3Safe is you if bunny slippers you
+`3do wear`2, he adds followed by a happy little grunt.  Just then, you notice
+that his hairy feet are covered with bunny slippers.  He suddenly shots out,
+`3Sell you mine I will!
+ 
+`2You think to yourself, `0Okay, sure.  After all, he couldn't want very
+much for them.
+ 
+    @key
+    @show
+`310,000 Gold! `2the crazy old fart suddenly blurts out...
+ 
+    @end
+ 
+@do `p20 is money
+@do `v01 is 1
+@choice
+Leave him to his carrot
+Kill him and take his slippers
+>`p20 9999 <`p30 1 Buy the slippers he is wearing for 10,000 gold
+@if response is 1 then do
+    @begin
+    @drawmap
+    @update
+    @closescript
+    @end
+;Kill the old fart
+@if response is 2 then do
+    @begin
+    @show
+`r0`c`$`r4Attack of the Bunny Slippers!`r0
+ 
+`0Before you can draw your weapon, before you can blink an eye, his
+slippers suddenly come to life and leap at you with blinding speed!
+ 
+    @key
+    @show
+`L`L`L`%They have Fangs!`L`L`L`@     The PAIN!!`L`L`L`$      AAAGGGHHH!!!`L`L
+ 
+`7The darkness....
+@key
+@show
+(Bet you won't do that again by choice)`L`L
+@do enemy is A`xPair`xof`xBunny`xSlippers
+@routine die in gametxt.ref
+@end
+;pay the old man and get the slippers
+@if response is 3 then do
+    @begin
+    @if money less 10000 then do
+        @begin
+        @drawmap
+        @update
+        @closescript
+        @end
+ 
+    @do money - 10000
+    @datasave bunny.idf &playernum 1
+    @show
+`c`2You sit right down, take your boots off and don the bunny slippers.
+They feel warm and cozy.  And you even feel like you have a little more
+spring in your step!  A few seconds later, they fade away to nowhere...
+ 
+    @do `p05 + 10
+    @show
+`$You gain Ten (10) Dodge Points!
+ 
+    @key
+    @end
+ 
+@drawmap
+@update
+ 
+@#ebunny
+@busy
+@dataload bunny.idf &playernum `p30
+@if `p30 less 4 then do
+    @begin
+    @do moveback
+    @show
+`r0`c`$`r1Encounter with the Easter Bunny`r0
+ 
+`2This seven foot tall, white rabbit hardly had taken notice of you until
+you were nearly standing on top of him.  He appears to be quite angry that
+you have interrupted his jelly bean count -- and he appears to be getting
+more agitated as the seconds pass.
+ 
+`2You insist that he start over again and try to move past him to proceed
+down the hall behind him.  Quickly he grabs a large basket and jumps in
+front of you.
+ 
+`0The fight begins!
+ 
+    @key
+    @drawmap
+    @update
+    @routine easter
+    @end
+ 
+@if `p30 more 3 then do
+    @begin
+    @do saybar
+`$The now dead Easter Bunny rots on the floor here...
+    @end
+ 
+@#nomore

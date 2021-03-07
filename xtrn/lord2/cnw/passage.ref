@@ -1,0 +1,308 @@
+; Script file PASSAGE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE nobody 000000628
+@DECLARE jaime 000000726
+@DECLARE jaimesrt 000000772
+@DECLARE innsign 000002924
+@DECLARE tsign 000003026
+@DECLARE tstart 000003199
+@DECLARE weapon 000003792
+@DECLARE wpstart 000003846
+@DECLARE armor 000004172
+@DECLARE arstart 000004226
+@DECLARE pawn 000004517
+@DECLARE pwstart 000004571
+@DECLARE warpme 000004853
+@DECLARE sign 000004930
+@DECLARE 1sign 000005018
+@DECLARE 2sign 000005097
+@DECLARE stone 000005176
+@DECLARE islesign 000005566
+@NOCHECK
+; End of .REF index
+
+;<added by cnw>
+@#NOBODY
+@DO MOVEBACK
+@DO SAYBAR
+Nobody seems to be home.
+@closescript
+;<end added by cnw>
+
+@#jaime
+@do `v01 is 1
+@do moveback
+@label jaimesrt
+@show
+`r0`c       `%Talking with the lovely Jaime
+
+   `9Hello `n, what can I do for you?
+
+@do write
+`x`x
+@choice
+Talk with the lovely Jaime.
+Leave
+@if response is 1 then do
+ @begin
+@show
+
+`r0`c            Talking with the lovely Jaime
+
+    `4Hello `n.
+
+    `5"Hi, Jaime... god you are beautiful!" you say.
+`k
+
+    `4"Thank you `n. Now what is it that you wanted to talk to me about?"
+    Jaime asks
+`k
+
+    `5"Nothing much really, but I heard a rumor that you knew Master Walton,
+    master of all known magics," you say.
+`k
+
+    `4"Yes I do, he is a nice man. He even gives me free stuff and free
+    lessons!" Jaime replies
+`k
+
+    `5"Wow, you know him that well!" you say surprised.
+`k
+
+    `4"Yes I do! I even now where he lives!" Jaime laughs.
+`k
+
+    `5"You do... ah you are so lucky. And does he know where you live?" you ask
+`k
+
+    `4"Why, yes he does. I invite him over some times! He usually excepts...
+     when he is not busy teaching others the ways of the magics!" she says
+`k
+
+    `5"Where does he live?" you question.
+`k
+
+    `4"Inside the Wizard Tower on the Isle of the Phreaks," she says
+`k
+
+    `5"Oh... But you need to be a good charcter to get in there I hear!" you
+    say
+`k
+
+    `4"Yes that is true, Max is the master of all magics but he is of the
+    good side! He knows evil spells but he never uses them.  He only uses
+    good spells.  He usually only uses his spell for knowledge and defense."
+    Jaime says.
+ `k
+
+    `5"Wow, you sure do know a lot about him," you say.
+ `k
+
+    `4"Yes, I guess I do, `n.  But he is an easy guy to get along with!" she
+    says
+`k
+
+    `5"Maybe I could get to know him, maybe I could become his apprentice!"
+    you say.
+`k
+
+    `4"I bet he would like you.  And I'll give him your request.  But if you
+    are evil, he will never let you into his home!  But I have to go tend to
+    a problem in the inn, so I'll talk to you later.
+`k
+
+    `5"Ok, bye Jaime, you are the most beautiful girl in the whole realm!"
+    you say
+`k
+@end
+
+@if response not 2 then goto jaimesrt
+@drawmap
+@update
+
+@#innsign
+@do moveback
+@do saybar
+`%Sign: `7Rosemary Inn, Owned and operated by, `bJaime`7.
+@end
+
+@#tsign
+@offmap
+@do moveback
+@do saybar
+Its a broken and unreadble sign
+@closescript
+;<--removed by CNW-->   enuf training centres already! :)
+
+@do `v01 is 1
+@label tstart
+@show
+`r0`c     `%Training Center Sign
+
+`4 I know the training center is a complete copy of the one in Greentree,
+But I thought some people just might not want to travel back to Greentree,
+to get there level raise!  Especially when you are in the desert already!
+`k
+`4 Be warned, if you choose the first one, you might end up somewhere you
+don't want to be!
+`k
+@do write
+`x`x
+@choice
+Let go of me you freak
+Say nothing and leave
+@if responce is 1 the do begin
+ @begin
+ @show
+
+@do x is 38
+@do y is 19
+@do map is 805
+@do goto warpme
+@end
+
+@drawmap
+@update
+
+@#weapon
+@offmap
+@do moveback
+@do `v01 is 1
+@label wpstart
+@show
+`r0`c   `%Underground Weapons
+
+`2 You can see the finest collection of weapons in all the realm!
+
+@do write
+`x`x
+@choice
+Examine Weapons
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+ 15
+ 16
+ 35
+ 36
+ @end
+
+@if response not 2 then goto wpstart
+@drawmap
+@update
+
+@#armor
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c  `%Underground Armor
+
+`2 You see a fine selection of armor
+
+@do write
+`x`x
+@choice
+Examine Armor
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+ 13
+ 14
+ 20
+ 59
+ @end
+
+@if response not 2 then goto arstart
+@drawmap
+@update
+
+@#pawn
+@offmap
+@do moveback
+@do `v01 is 1
+@label pwstart
+@show
+`r0`c   `%Underground Pawn Shop
+
+`2 What would you like to part with, kid?
+
+@do write
+`x`x
+@choice
+Sell Something
+Leave
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@sellmanager
+
+ @end
+
+@if response not 2 then goto pwstart
+@drawmap
+@update
+
+@#warpme
+@loadmap &map
+@drawmap
+@update
+@do quebar
+`%WOW! What a ride!
+
+@#sign
+@do moveback
+@do saybar
+`%Sign: `9Underground Passage to Arrisville
+@end
+
+@#1sign
+@do moveback
+@do saybar
+`%Sign:`9 South-East to Arrisville
+@end
+
+@#2sign
+@do moveback
+@do saybar
+`%Sign:`9 Frank the Healing Wizard
+@end
+
+@#stone
+;Isle of the Phreaks
+@if isle35.dat exist false then do
+@begin
+@do moveback
+@show
+
+`r0`c      `r1 OUT OF ORDER `r0
+
+`k
+       `4Please encourage your sysop to download Isle of the Phreaks
+                    igm by Max (Phreak) Walton.
+`k
+@drawmap
+@update
+@end
+@if isle35.dat exist true then do
+@begin
+@do x is 9
+@do y is 18
+@do map is 63
+@Do goto warpme
+
+@#islesign
+;Isle of the Phreaks teleporting sign
+@do moveback
+@do saybar
+`%Sign: Teleporter stone to the Isle of the Phreaks
+@end
+

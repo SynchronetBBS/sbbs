@@ -1,0 +1,192 @@
+; Script file FGRAVE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE grave 000000288
+@DECLARE lango 000002190
+@DECLARE table 000003143
+@DECLARE guardian 000003491
+@DECLARE winguard 000004078
+@DECLARE nomore 000004443
+@NOCHECK
+; End of .REF index
+
+@#GRAVE
+@do moveback
+@dataload amulet.idf &playernum `p97
+@if `p97 is 3 then do
+  @begin
+   @do saybar
+`0Your father has been laid to rest thanks to you!
+  @closescript
+  @end
+
+@if `p97 is 2 then do
+  @begin
+  @show
+`r0`c                             `%`r1  Your father's grave  `r0
+
+  `$You have done it!
+
+`k `2You hold up the amulet... the image of your father vanishes with a
+   smile. His last words are:
+
+  `$"Keep this amulet, I can rest in peace knowing you have it now"
+  `%YOU RECIEVE 250 QUEST POINTS AND 7,500 EXPERIENCE!
+`k
+@datasave amulet.idf &playernum 3
+  @do `p18 + 250
+  @do `p01 + 7500
+@do addlog
+  `r1  `r0 `0`n`% has laid his father to rest! `r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if `p97 is 1 then do
+  @begin
+   @show
+`r0`c                             `%`r1  Your father's grave  `r0
+
+  `$Your task:
+
+   `2"Please son, please find the amulet! I will tell you a secret:
+   Go to GreenTree's Picnic Area and talk to a man named Lango. He 
+   will have information reguarding the amulet you must get."
+`k
+@drawmap
+@update
+@closescript
+@end
+
+@if `p97 is 0 then do
+@show
+`r0`c                             `%`r1  Mysterious Grave  `r0
+
+`k `2You approach the grave and read the scribblings on the stone.
+   Hey wait a minute...
+
+   `$THIS IS YOUR FATHER'S GRAVE!
+
+   `2As you step back in fear, a figure appears out of the darkness.
+   `3"Son.... you have finally come.... I.... I... I need you to do
+      do something for me..."
+   `4"What is that father?", you ask.
+   `3"You must retrieve my amulet and bring it back here for me...", he
+      explains
+   `4"Yes father, I will do my best", you respond as a tear rolls down
+      your cheak.
+`k  
+@datasave amulet.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@#LANGO
+@do `p70 is 20
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@dataload amulet.idf &playernum `p97
+@if `p97 is 1 then do
+  @begin
+   @show
+`r0`c                             `%`r1  LANGO  `r0
+
+   `2"So you want to know where the amulet is eh? No problem.
+   Go west from PortTown along the beach until you see 2 islands to 
+   the north of the beach. You can cross over the water and keep going 
+   north. You will enter `$THE OLD DRAGON TOOTH TEMPLE`2. Once inside, 
+   follow these directions from where your current STARTING position is:
+`k
+   `$5 steps up, 27 steps right and 3 steps down.
+
+   `2"You will find a secret passageway. But be warned, there are rumors
+   of a `3GUARDIAN `2guarding the Temple still. But i don't know where.
+   Just be careful...."
+`k
+@do moveback
+@drawmap
+@update
+@closescript
+@end
+
+@do saybar
+`$LANGO: `0"What the hell do you want???"
+  @closescript
+@end
+
+@#TABLE
+@dataload fgrave.idf &playernum `p97
+@if `p97 is 0 then do
+@begin
+@show
+`r0`c`r1  The AMULET!  `r0
+
+      `2Before you stands a being guarding the amulet!
+      `2Your guessing he is the Temple Guardian!
+
+@key
+@run guardian in fgrave.ref
+@end
+@if `p97 more 0 then do
+@do saybar
+`%There is nothing on the table...
+@end
+
+@#Guardian
+@fight
+;name
+Temple Guardian
+;string said when you see him
+"This is gonna be EASY!" laughs the Guardian.
+;power move kill string
+You crush him like a recking ball!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+smacks you|250
+steps on you|225
+headbutts you|200
+lunges at you|175
+NONE|NONE
+;defense
+200
+;gold reward
+50000
+;experience
+25000
+;hit points
+1600
+;if win: ref file|name or NONE
+FGRAVE.REF|WINGUARD
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+FGRAVE.REF|NOMORE
+
+@#WinGuard
+@busy
+@show
+`r0`c`r1  `%You Stand Victorious!  `r0
+
+      `2You stand at the remains of your foe and smile.  Not even
+      `2this monstosity could stop you.`L.`L.`L.
+
+      `%You get 15 gems!
+      You take the amulet!
+@key
+@datasave fgrave.idf &playernum 1
+@datasave amulet.idf &playernum 2
+@do `p19 + 15
+@drawmap
+@update
+@closescript
+
+@#nomore
+@drawmap
+@update
+@closescript

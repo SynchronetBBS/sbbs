@@ -1,0 +1,945 @@
+; Script file KNOTWOOD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE aric 000000768
+@DECLARE sign 000001552
+@DECLARE oldman 000001620
+@DECLARE door1 000001702
+@DECLARE abstart 000001756
+@DECLARE door2 000002225
+@DECLARE door3 000003962
+@DECLARE westart 000004016
+@DECLARE cave 000004365
+@DECLARE water2 000006400
+@DECLARE water 000006447
+@DECLARE fishcast 000007088
+@DECLARE king 000008922
+@DECLARE redwizard 000009652
+@DECLARE bars 000010732
+@DECLARE -----=====fountain=====----- 000010867
+@DECLARE fountain 000010883
+@DECLARE mtop 000010972
+@DECLARE prize 000012090
+@DECLARE nowish 000018009
+@DECLARE buhbye 000018100
+@DECLARE nomore 000018151
+@NOCHECK
+; End of .REF index
+
+;ref file for Knotwood Village
+
+@#Aric
+@do moveback
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Man: `0Welcome to Knotwood Village
+@if `p20 is 2 then saybar
+`%Man: `0I hear good old Ernie loves eggs...
+@if `p20 is 3 then saybar
+`%Man: `0I haven't seen `#Violet `0in ages...wonder how's she's doing?
+@if `p20 is 4 then saybar
+`%Man: `0The `4Dragon Tooth `0live on an island...wonder how to get there?
+@if `p20 is 5 then saybar
+`%Man: `0Have you talked to Ernie yet?
+@if `p20 is 6 then saybar
+`%Man: `0Check out http://rat.org/pub/furry/andsean/ It's some art I found
+@if `p20 is 7 then saybar
+`%Man: `0Sneakers, the Lone Fox was here
+@if `p20 is 8 then saybar
+`%Man: `0Check out the wizard in the castle...he's strange!
+@if `p20 is 9 then saybar
+`%Man: `0We are peaceful folks...welcome!
+
+
+@#sign
+@do moveback
+@do saybar
+`0To Knotwood Village <---
+
+
+@#oldman
+@do saybar
+`%Old Man: `0My dear son was killed by the `4Red Dragon
+
+
+@#door1
+@offmap
+@do moveback
+@do `v01 is 1
+@label abstart
+@show
+`r0`c  `%Crazy Harry's Armour and Weapons
+
+`2  You see loads of armour and weapons all over the place
+
+@do write
+`x`x
+@choice
+Examine his Armour
+Examine his Weapons
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  12
+  13
+  14
+  37
+  59
+  @end
+
+@if responce is 2 then do begin
+ @begin
+@buymanager
+  38
+  35
+  36
+  49
+  39
+  58
+  @end
+
+@if responce not 3 then goto abstart
+@drawmap
+@update
+
+@#door2
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1  Knotwood Village Master Healing  `r0
+
+`2  Master looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+ @do write
+`x`x
+ @choice
+Well come on!  How am I supposed to make money when I can barely walk?
+Buddy, how 'bout a little compassion for once in your life freak!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Master informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take like uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later!" `2says Master.
+
+`k
+@drawmap
+@update
+
+@#door3
+@offmap
+@do moveback
+@do `v01 is 1
+@label westart
+@show
+`r0`c  `%Sir Waldo's Weird and Wonderful stuff
+
+`2  You are amazed at all the stuff sold here!
+
+@do write
+`x`x
+@choice
+Examine the goods
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  5
+  40
+  55
+  50
+  20
+  17
+  51
+  @end
+
+@if responce not 2 then goto westart
+@drawmap
+@update
+
+@#cave
+;lets them warp to a view places
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Uncle Ernie's Cave `r0
+
+  `0"Welcome, welcome, welcome to my cave! If you had something I
+   desired...then I will help you on your travels."
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>`i43 0 Would you like to travel somewhere?
+Leave
+@if response is 2 then do
+  @begin
+  @loadmap &map
+  @drawmap
+  @update
+  @end
+
+@if response not 2 then do
+  @begin
+
+@clear screen
+@show
+
+`2Where to buddy?
+
+@choice
+`#Sosen Village
+`#Stonepass Lodge
+`#PortTown
+`#Greentree
+`#Arrisville
+`#Bonetown
+`#Stonebrook
+`#Flagcity
+`2I'll stay here, thanks
+@if response not 9 then do
+  @begin
+@show
+`\`\  `0"We shall leave at once!" he shouts importantly.
+
+`k  `2A few bumps later you arrive - ah, traveling in style is so much fun!
+
+  `0"I bid you a goodday s&sir, please travel safely."
+
+  `2Looks like you are on your own.
+
+`k
+@if responce is 1 then do
+  @begin
+   ;Sosen village
+   @do x is 32
+   @do y is 8
+   @do map is 456
+   @do `i43 - 1
+  @end
+
+@if responce is 2 then do
+  @begin
+   ;Stonepass Lodge
+   @do x is 35
+   @do y is 12
+   @do map is 880
+   @do `i43 - 1
+  @end
+
+@if responce is 3 then do
+  @begin
+   ;Porttown
+   @do x is 38
+   @do y is 14
+   @do map is 956
+   @do `i43 - 1
+  @end
+
+@if responce is 4 then do
+  @begin
+   ;Greentree
+   @do x is 11
+   @do y is 15
+   @do map is 1356
+   @do `i43 - 1
+  @end
+
+@if responce is 5 then do
+  @begin
+   ;Arrisville
+   @do x is 26
+   @do y is 11
+   @do map is 523
+   @do `i43 - 1
+  @end
+
+@if responce is 6 then do
+  @begin
+   ;Bonetown
+   @do x is 39
+   @do y is 18
+   @do map is 1572
+   @do `i43 - 1
+  @end
+
+@if responce is 7 then do
+  @begin
+   ;Stonebrook
+   @do x is 36
+   @do y is 7
+   @do map is 1359
+   @do `i43 - 1
+  @end
+
+@if responce is 8 then do
+  @begin
+   ;Flagcity
+   @do x is 71
+   @do y is 17
+   @do map is 1092
+   @do `i43 - 1
+  @end
+
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+
+@#water2
+@do saybar
+Hehehehehe! It's cold!
+
+@#water
+;Fishing hole...
+@do moveback
+
+@if `i28 < 1 then do
+  @begin
+  ;person doesn't have fishing pole
+  @DO SAYBAR
+`2You doubt you would catch anything with your s&weapon...
+  @closescript
+  @end
+
+
+@if `t10 < 1 then do
+  @begin
+  @do saybar
+You have caught all the fish in the fountain.  Maybe tomorrow.
+  @closescript
+  @end
+
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2Cool fountain..Wanna try your luck fishing in it? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+  @begin
+  @do saybar
+Maybe later when the fish are biting.
+  @closescript
+  @end
+
+@label fishcast
+
+@do `p20 is `i29
+@do `p20 + `i30
+@do `s01 is `p20
+@if `s01 is 0 then `s01 is no
+
+@show
+`r0`c  `r1  `%The foiuntain  `r0
+
+  `2You sit yourself down at the edge of the fountain and relax a bit.
+
+  You have `s01 fish.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Cast deep
+Cast shallow
+Get up and leave
+@if responce is 3 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if response is 1 then do
+  @begin
+  @do `p20 random 80 20
+  @show
+`\`\  `2You add a weight and let your hook plops down and sink deeply
+  about `0`p20`2 feet down.
+
+@end
+
+@if response is 2 then do
+  @begin
+  @do `p20 random 20 1
+  @show
+`\`\  `2You gently done your line.  Your hook makes a soft splash
+  about `0`p20 `2feet down.
+
+@end
+
+
+@do write
+  `2You wait.`l.`l.`l.`l.
+@if `t10 < 1 then do
+  @begin
+  @show
+`4No fish are biting.`2
+
+  It looks like the action is finished for today.
+
+`k
+  @do goto fishcast
+  @end
+@do `p20 random 2 1
+@if `p20 is 1 then do
+   @begin
+   @show
+`4Nothing happens.
+
+`2  You reel the line back in.
+
+`k
+   @do goto fishcast
+   @end
+@if `p20 is 2 then do
+   @begin
+   @show
+`%You have a bite!`2
+
+@do write
+`k
+@do `p20 random 4 1
+@IF `P20 IS 1 then do
+  @begin
+  ;catching a special fish
+  @show
+  The fish is suprisingly strong!  But you reel it in slowly...
+
+@do write
+`k
+@do `p20 random 4 1
+@IF `P20 IS 1 then do
+   @begin
+   @show
+  `bTHE LINE BREAKS!
+
+  `2The mighty fish has escaped.
+
+`k
+   @do goto fishcast
+   @end
+  @show
+  `2You have just caught a `0Sparkling Green Salmon`2!
+`\`k
+  @do `i30 + 1
+  @do `t10 - 1
+  @do goto fishcast
+  @end
+
+  @show
+  You slowly reel the fish to shore.
+
+`k  You have caught a Salmon.
+
+`k
+   @do `i29 + 1
+   @do `t10 - 1
+   @do goto fishcast
+   @end
+
+
+  @end
+
+
+
+@#king
+@do moveback
+@busy
+@offmap
+@show
+`r0`c  `%`r1  The Royal Castle  `r0
+
+  `2The castle of Knotwood is a lovely yet simple monument that sits
+  quietly in the wilderness.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Speak to the king
+Leave
+@if responce is 1 then do
+  @begin
+  @if `p07 < -50 then do
+   @begin
+  @show
+`\`\  `2The king is outraged and sends you to prison to rot for your crimes.
+`\`k
+   @do x is 72
+   @do y is 18
+   @drawmap
+   @update
+   @closescript
+   @end
+  @do `v01 is 1
+  @show
+`\`\  `2The king welcomes you to his humble castle, and wishes you luck in
+  defeating the `4Dragon Tooth Clan`2.
+`\`k
+  @loadmap &map
+  @end
+@drawmap
+@update                            
+
+@#redwizard
+@do moveback
+@busy
+@offmap
+@show
+`r0`c  `%`r1 `4The Red Wizard`% `r0
+
+  `2Before you is the `4Red Wizard `2 He smiles up at you and says,`%"You are
+  worthy...I see great potential within your dark heart. I want you to
+  meet someone. Are you willing to go?"`2,as he waits for your answer.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Yes
+No
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2The `4Red Wizard`2 smiles and chants a few words, soon you start to feel
+  yourself starting to fade away to a distant place. You hear his voice
+  in your mind,`%"Look for Phineaus.."`2 You appear on the beach of a small
+  island.
+`\`k
+   @loadmap 705
+   @do map is 705
+   @do x is 30
+   @do y is 10
+   @drawmap
+   @update
+   @closescript
+   @end
+  @do `v01 is 1
+  @show
+`\`\  `2The Red Wizard shrugs,`%"Suit yourself...you can sit and rot here then and
+  play shadow puppets with me."`2 ,as he grins at you with some hand gestures.
+`\`k
+  @loadmap &map
+  @end
+@drawmap
+@update                            
+@do moveback
+@busy
+@offmap
+@show
+
+@#bars
+@do saybar
+`0ZZZZZAAAAAPPP!! `@*OUCH!! `%These bars are magical and drained your hp!
+@do `p02 - 1
+
+@#-----=====fountain=====-----
+
+
+@#fountain
+; Getting a FREE wish
+ @offmap
+ @do moveback
+ @datanewday knotwood.idf
+ @label mtop
+ @dataload knotwood.idf &playernum `p20
+ @do `v01 is 1
+ @show
+`r0`c  `%Knotwood's magic fountain
+
+`2 Before you is a beautiful fountain with crystal clear sparkling clean
+water. You see a plaque which reads:
+
+`% -=Take a drink, and get a wish=-
+
+@do write
+`x`x`x`x
+@choice
+Take a drink?
+Leave
+@if response is 1 then do
+ @begin
+ @if `p20 is 1 then do
+   @begin
+   @do goto nowish
+   @end
+ @show
+`c
+ `2 You kneel before the majestic fountain, the surface smooth to touch. 
+ You place you hand deep into the water. You feel the cool water embrace
+ your skin, feeling ever so pleasent. You cup your hand and scoop up some
+ of the precious water and slowly drink it, enjoying the taste and purity
+ of the clean water. You smile and look up at the heavens, wishing for some
+ kind of help on your quest.
+
+ @do addlog
+          `r4  `r0 `0`n`2 makes a wish at the wishing fountain `r4  `r0
+ @do goto prize
+ @end
+
+@if response is 2 then do
+ @begin
+ @show
+`\`\
+`2  You decide you aren't that thirsty right now. Perhaps later.
+`\
+`k
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@#prize
+@do `p29 random 12 1
+;
+; Random things that you can get
+;
+; 1 - Extra Gold
+; 2 - Extra Muscle
+; 3 - Extra Dodge
+; 4 - Extra Hitpoints Max
+; 5 - if Neg alignment (Eviler) If positive (nicer)
+; 6 - A healing potion (5 point one)
+; 7 - a red potion (5 hit points)
+; 8 - a silver potion (muscle)
+; 9 - a gold potion (dodge)
+; 10 - egg
+; 11 - quest point
+; 12 - gem
+
+@if `p29 is 1 then do
+  @begin
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p21 is `v09
+  @do `p21 - 1
+; Do the math, You'll get Gold = level * level * 10
+  @do `p21 * `p21
+  @do `p21 * 10
+  @show
+`% Cool! `9You feel your pocket bulge and find `$`p21`9 gold!
+`9 You look up and thank the heavens for their kindness.`\`\`k
+  @do money + `p21
+  @do addlog
+          `r4  `r0 `0`n`2 received `$`p21`2 gold! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 2 then do
+  @begin
+  @show
+`2 Stronger! `9 You feel your strenth increase!
+`9 You look at yourself, grin and leave.`\`\`k
+  @do `p04 + 5
+  @do addlog
+          `r4  `r0 `0`n`2 received strength! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 3 then do
+  @begin
+  @show
+`% Life! `9 You feel like you can take on the world!
+`9 You strike a pose and continue on your way.`\`\`k
+  @do `p03 + 5
+  @do addlog
+          `r4  `r0 `0`n`2 received some hitpoints! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 4 then do
+  @begin
+  @show
+`% Quickness! `9 You feel alot more agile!
+`9 You jog around the fountain and enjoy your agility.`\`\`k
+   @do `p05 + 5
+   @do addlog
+          `r4  `r0 `0`n`2 received quickness `r4  `r0
+   @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 5 then do
+  @begin
+  @if `p07 less 0 then do
+    @begin
+    @show
+`9 You feel your dark soul grow even darker. You feel like doing some
+ heinus acts of cruelity.`\`k
+    @do `p07 - 10
+    @do addlog
+          `r4  `r0 `0`n`2's soul got darker! `r4  `r0
+    @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+    @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+    @end
+
+  @if `p07 more 0 then do
+    @begin
+    @show
+`9 You feel totally blessed, feeling your soul purify, a sense of well 
+ being and love embrace you, ready to rid the land of all evil.`\`k
+    @do `p07 + 10
+    @do addlog
+          `r4  `r0 `0`n`2's soul purified! `r4  `r0
+    @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+    @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+    @end
+
+  @if `p07 equals 0 then do
+    @begin
+    @show
+`9 You feel totally blessed, feeling your soul purify, a sense of well
+ being and love embrace you, ready to rid the land of all evil.`\`k
+    @do `p07 + 10
+    @do addlog
+          `r4  `r0 `0`n`2's soul purified! `r4  `r0
+    @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+    @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+    @end
+  @end
+
+@if `p29 is 6 then do
+  @begin
+  @show
+`% Wow! `9You feel blessed as a `0Green potion `9appears in your hands!`\`k
+  @do `i05 + 1
+  @do addlog
+          `r4  `r0 `0`n`2 received a `0Green potion! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 7 then do
+  @begin
+  @show
+`% Wow! `9You feel blessed as a `4Red potion `9appears in your hands!`\`k
+  @do `i52 + 1
+  @do addlog
+          `r4  `r0 `0`n`2 received a `4Red potion! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 8 then do
+  @begin
+  @show
+`% Wow! `9You feel blessed as a `$Gold potion `9appears in your hands!`\`k
+  @do `i53 + 1
+  @do addlog
+          `r4  `r0 `0`n`2 received a `$Gold potion! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 9 then do
+  @begin
+  @show
+`% Wow! `9You feel blessed as a `7Silver potion `9appears in your hands!`\`k
+  @do `i54 + 1
+  @do addlog
+          `r4  `r0 `0`n`2 received a `7Silver potion! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 10 then do
+  @begin
+  @show
+`% An Egg?! `9 Man...you can't help but feel jipped!`\`k
+  @do `i43 + 1
+  @do addlog
+          `r4  `r0 `0`n`2 received an egg!! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 11 then do
+  @begin
+  @show
+`% Wow! `9 You get a quest point!`\`k
+  @do `p18 + 1
+  @do addlog
+          `r4  `r0 `0`n`2 received a `%Quest `2point! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+@if `p29 is 12 then do begin
+  @begin
+  @show
+`9 You smile as the water droplets in your hand turn into gems!`\`k
+  @do `p19 + 5
+  @do addlog
+          `r4  `r0 `0`n`2 received some shiny gems! `r4  `r0
+  @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @datasave knotwood.idf &playernum 1
+@drawmap
+@update
+@closescript
+  @end
+
+
+@#nowish
+@show
+`2`\`\Sorry... You already made a wish today.
+`\`\`k
+@do goto buhbye
+
+@#buhbye
+@drawmap
+@update
+@closescript
+@end
+
+@#nomore

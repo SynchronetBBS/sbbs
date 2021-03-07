@@ -1,0 +1,510 @@
+; Script file ALIEN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE biomeunit 000000653
+@DECLARE cyrounit 000001002
+@DECLARE sample 000001593
+@DECLARE transctrl 000001746
+@DECLARE transport 000002305
+@DECLARE watertank 000002881
+@DECLARE captain 000002970
+@DECLARE capmain 000003332
+@DECLARE capsell 000003686
+@DECLARE capbuy 000005550
+@DECLARE tchief 000006657
+@DECLARE trans2 000007309
+@DECLARE nodeal 000007882
+@DECLARE nodein 000008096
+@DECLARE secguy 000008520
+@DECLARE force 000008720
+@DECLARE sight 000008802
+@DECLARE ran 000008883
+@DECLARE nomore 000009257
+@NOCHECK
+; End of .REF index
+
+@#BIOMEUNIT
+@DO MOVEBACK
+@SHOW
+`r0`c`r3`1 Biomeunit `r0`\
+`b  Running diagnostic . . .
+`7 Temperature: `L`L`L`%CHECK
+`7 Structure:   `L`L`L`%CHECK
+`7 Contents:    `L`L`L`%CHECK
+    `L`bdiagnostic complete: stored plant samples are healthy
+`\
+        `2Kinda weird, this and that other thing, the `3Cryounit`2...
+@key
+@drawmap
+@update
+
+@#CYROUNIT
+@DO MOVEBACK
+@SHOW
+`r0`c`r3`1 Cyrounit `r0`\
+`b  Running diagnostic . . .
+`7 Temperature: `L`L`L`%CHECK
+`7 Structure:   `L`L`L`%CHECK
+`7 Contents:    `L`L`L`%CHECK
+    `L`bdiagnostic complete: stored life forms are in stasis
+`\
+        `2You're not too sure what all that meant, but from the fact that
+there are a bunch of frozen people behind the screen, you guess this is
+a sort of fridge for aliens. Yuck! They eat PEOPLE. You think their
+dentist doesn't like that either. `0"`2Look, you've got a wad of arm stuck
+between your teeth.`0"
+@key
+@drawmap
+@update
+
+@#SAMPLE
+@DO MOVEBACK
+@DO SAYBAR
+`9Computer`7: Sample dwelling structure `L`L`bINTACT
+@Key
+@DO SAYBAR
+`7This house seems vaguely familiar...
+
+@#TRANSCTRL
+@do MOVEBACK
+@show
+`r0`c`r1 A choice comes up on the little box ... `r0`\
+@readfile alientel.inf
+`p21
+@if `p21 is 0 then do
+ @begin
+ @do `p21 is 1
+ @end
+@do `v01 is 1
+@choice
+STONEBROOK
+HELL
+ARRISVILLE
+ORBITAL CONTACT
+@IF RESPONSE is 1 then do
+ @begin
+ @do `p21 is 1
+ @end
+@IF RESPONSE is 2 then do
+ @begin
+ @do `p21 is 2
+ @end
+@IF RESPONSE is 3 then do
+ @begin
+ @do `p21 is 3
+ @end
+@IF RESPONSE is 4 then do
+ @begin
+ @do `p21 is 4
+ @end
+@do delete alientel.inf
+@writefile alientel.inf
+`p21
+@drawmap
+@update
+
+@#TRANSPORT
+@readfile alientel.inf
+`p21
+@if `p21 is 1 then do
+ @begin
+ @do MAP is 1360
+ @loadmap &map
+ @do X is 37
+ @do Y is 16
+ @drawmap
+ @update
+ @closescript
+ @end
+@if `p21 is 2 then do
+ @begin
+ @do MOVEBACK
+ @do saybar
+`9Computer: `7Ha ha, no such coordinates!
+ @closescript
+ @end
+@if `p21 is 3 then do
+ @begin
+ @do MAP is 523
+ @loadmap &map
+ @do X is 24
+ @do Y is 11
+ @drawmap
+ @update
+ @closescript
+ @end
+@if `p21 is 4 then do
+ @begin
+ @do MAP is 48
+ @loadmap &map
+ @do X is 9
+ @do Y is 5
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@#WATERTANK
+@DO MOVEBACK
+@DO SAYBAR
+Woah... they're collecting water from the ocean!
+
+@#CAPTAIN
+@do moveback
+@IF `I19 is 0 then do
+ @begin
+ @do saybar
+ `$Alien`7: Suprised I speak English? You need an apple for anyone else to
+ @key
+ @do saybar
+ `$Alien`7: be comprehendable. It somehow bridges a brainwave gap...
+ @key
+ @do saybar
+ `$Alien`7: But as ship's commander, I had to learn English. >shudder<
+ @closescript
+ @end
+@busy
+@LABEL CAPMAIN
+@show
+`r0`c`r1 Dealing with the Captain `r0`\
+@do `v01 is 3
+@choice
+Sell stuff
+Buy stuff
+Leave
+@if RESPONSE is 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+@if RESPONSE is 2 then do
+ @begin
+ @DO GOTO CAPSELL
+ @end
+@if RESPONSE is 1 then do
+ @begin
+ @DO GOTO CAPBUY
+ @end
+@DO GOTO CAPMAIN
+@closescript
+
+@LABEL CAPSELL
+@DO `v01 is 1
+@show
+`r0`c`r1`% Buying stuff from the captain `r0
+`7You have `$`p19`7 gems.`\
+@choice
+Travel potion (1 gem)
+Skystaff base (2 gems)
+Red potion (3 gems)
+Spiked Shirt (4 gems)
+Twin Sword (7 gems)
+Blessed Armour +80 (15 gems)
+Fire spell     +300 (15 gems)
+Nah, never mind
+@DO MOVE 1 14
+@IF RESPONSE is 8 then do
+ @begin
+ @do goto CAPMAIN
+ @end
+@if RESPONSE is 1 then do
+ @begin
+ @if `p19 is 0 then do
+  @begin
+  @show
+`\`3You don't have 1 gem.
+  @do goto CAPSELL
+  @end
+ @do `i50 + 1
+ @do `p19 - 1
+ @show
+`\Bought 1 Travel Potion.
+ @end
+@if RESPONSE is 2 then do
+ @begin
+ @if `p19 < 2 then do
+  @begin
+  @show
+`\`3You don't have 2 gems.
+  @do goto CAPSELL
+  @end
+ @do `i22 + 1
+ @do `p19 - 2
+ @show
+`\Bought 1 Skystaff Base.
+ @end
+@if RESPONSE is 3 then do
+ @begin
+ @if `p19 < 3 then do
+  @begin
+  @show
+`\`3You don't have 3 gems.
+  @do goto CAPSELL
+  @end
+ @do `i52 + 1
+ @do `p19 - 3
+ @show
+`\Bought 1 Red Potion.
+ @end
+@if RESPONSE is 4 then do
+ @begin
+ @if `p19 < 4 then do
+  @begin
+  @show
+`\`3You don't have 4 gems.
+  @do goto CAPSELL
+  @end
+ @do `i59 + 1
+ @do `p19 - 4
+ @show
+`\Bought 1 Spiked Shirt.
+ @end
+@if RESPONSE is 5 then do
+ @begin
+ @if `p19 < 7 then do
+  @begin
+  @show
+`\`3You don't have 7 gems.
+  @do goto CAPSELL
+  @end
+ @do `i58 + 1
+ @do `p19 - 7
+ @show
+`\Bought 1 Twin Swords.
+ @end
+@if RESPONSE is 6 then do
+ @begin
+ @if `p19 < 15 then do
+  @begin
+  @show
+`\`3You don't have 15 gems.
+  @do goto CAPSELL
+  @end
+ @do `i62 + 1
+ @do `p19 - 15
+ @show
+`\Bought 1 Blessed Armour.
+ @end
+@if RESPONSE is 7 then do
+ @begin
+ @if `p19 < 15 then do
+  @begin
+  @show
+`\`3You don't have 15 gems.
+  @do goto CAPSELL
+  @end
+ @do `i64 + 1
+ @do `p19 - 15
+ @show
+`\`7Bought 1 `bFireball `7spell.
+ @end
+@key
+@DO GOTO CAPSELL
+
+@LABEL CAPBUY
+@DO `v01 is 1
+@show
+`r0`c`r1 Selling stuff to the captain `r0`\
+`7You have `$`p19`7 gems.`\
+@choice
+>`i17 0 Sell Glowworm ( 1 gem )
+>`i43 0 Sell Chicken Egg ( 1 gems )
+>`i29 0 Sell Salmon ( 2 gems )
+>`i66 0 Sell Koshi Snack ( 3 gems )
+>`i11 0 Sell Little Girl ( 4 gems )
+>`i30 0 Sell Sparkling Green Salmon ( 10 gems )
+I'm done here
+@DO MOVE 1 10
+@IF RESPONSE is 7 then do
+ @begin
+ @DO GOTO CAPMAIN
+ @end
+@IF RESPONSE is 1 then do
+ @begin
+ @do `i17 - 1
+ @do `p19 + 1
+ @show
+Sold: One Glowworm
+ @end
+@IF RESPONSE is 2 then do
+ @begin
+ @show
+Sorry, we have enough Chicken eggs now.
+ @end
+@IF RESPONSE is 3 then do
+ @begin
+ @do `i29 - 1
+ @do `p19 + 2
+ @show
+Sold: One Salmon
+ @end
+@IF RESPONSE is 4 then do
+ @begin
+ @do `i66 - 1
+ @do `p19 + 3
+ @show
+Sold: One Koshi Snack
+ @end
+@IF RESPONSE is 5 then do
+ @begin
+ @do `i11 - 1
+ @do `p19 + 4
+ @show
+Sold: One Little Lost Girl (what would her mother say?)
+ @end
+@IF RESPONSE is 6 then do
+ @begin
+ @do `i30 - 1
+ @do `p19 + 10
+ @show
+Sold: One Sparkling Green Salmon
+ @end
+@key
+@DO GOTO CAPBUY
+
+@#TCHIEF
+@do moveback
+@IF `I19 is 0 then do
+ @begin
+ @do saybar
+ `$Alien`7: AGhr, ighop ytugas!
+ @closescript
+ @end
+@show
+`r0`c`r1 Telling the chief where ta leave ya... `r0`\
+@readfile alientel.inf
+`p21
+@if `p21 is 0 then do
+ @begin
+ @do `p21 is 1
+ @end
+@do `v01 is 1
+@choice
+STONEBROOK
+HELL
+ARRISVILLE
+DOWNED CRAFT
+@IF RESPONSE is 1 then do
+ @begin
+ @do `p21 is 1
+ @end
+@IF RESPONSE is 2 then do
+ @begin
+ @do `p21 is 2
+ @end
+@IF RESPONSE is 3 then do
+ @begin
+ @do `p21 is 3
+ @end
+@IF RESPONSE is 4 then do
+ @begin
+ @do `p21 is 4
+ @end
+@do delete alientel.inf
+@writefile alientel.inf
+`p21
+@drawmap
+@update
+
+@#TRANS2
+@readfile alientel.inf
+`p21
+@if `p21 is 1 then do
+ @begin
+ @do MAP is 1360
+ @loadmap &map
+ @do X is 37
+ @do Y is 16
+ @drawmap
+ @update
+ @closescript
+ @end
+@if `p21 is 2 then do
+ @begin
+ @do MOVEBACK
+ @do saybar
+`9Computer: `7Ha ha, no such coordinates!
+ @closescript
+ @end
+@if `p21 is 3 then do
+ @begin
+ @do MAP is 523
+ @loadmap &map
+ @do X is 24
+ @do Y is 11
+ @drawmap
+ @update
+ @closescript
+ @end
+@if `p21 is 4 then do
+ @begin
+ @do MAP is 46
+ @loadmap &map
+ @do X is 9
+ @do Y is 4
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@#NODEAL
+@do moveback
+@IF `I19 is 0 then do
+ @begin
+ @do saybar
+ `$Alien`7: AGhr, ighop ytugas!
+ @closescript
+ @end
+@do saybar
+`$Alien`7: Our minds are occupied with communion in the `%Great Network`7.
+
+@#NODEIN
+@do moveback
+@IF `I19 is 0 then do
+ @begin
+ @do saybar
+ `9Computer terminal`7: You will need an apple to understand the Grashians.
+ @closescript
+ @end
+@do saybar
+`9Computer`7: The `%Great Network`7 has set mission goal: collect samples.
+@key
+@do saybar
+`9Computer`7: Necessary protein structures identified as being on planet su-
+@key
+@do saybar
+`9Computer`7: rface. Must acquire, at all costs!
+
+
+@#SECGUY
+@DO MOVEBACK
+@IF `I19 is 0 then do
+ @begin
+ @do saybar
+ `$Alien`7: AGhr, ighop ytugas!
+ @closescript
+ @end
+@do saybar
+`$Alien`7: I'm sorry, but no non-Grashians beyond this point.
+
+@#FORCE
+@DO MOVEBACK
+@DO SAYBAR
+A strange field prevents you from entering!
+
+@#SIGHT
+@DO SAYBAR
+Woah, looks like SOMEONE was drinking some mighty bad ale!
+
+@#RAN
+@do `p22 random 4 1
+@if `p22 is 1 then saybar
+Woah... you think you saw something moving in the corner of your eye...
+@if `p22 is 2 then saybar
+You get the eerie feeling you're being watched...
+@if `p22 is 3 then saybar
+You feel you'd regret meeting one of the guys who made this...
+@if `p22 is 4 then saybar
+You wonder why the whole ship is so dark...
+
+@#NOMORE

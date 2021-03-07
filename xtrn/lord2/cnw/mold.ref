@@ -1,0 +1,187 @@
+; Script file MOLD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE heal 000000374
+@DECLARE dirtyman 000000529
+@DECLARE weapon 000001015
+@DECLARE storetop 000001070
+@DECLARE armor 000001450
+@DECLARE armortop 000001505
+@DECLARE barguy 000001831
+@DECLARE start 000001877
+@DECLARE piss 000002413
+@NOCHECK
+; End of .REF index
+
+;lala
+
+@#heal
+@offmap
+@do moveback
+@show
+
+`r0`c YOU ARE COMPLETLY HEALED `4MUTHA PHUCKA!
+
+`k
+@do `p02 is `p03
+@do `p03 + 1
+@drawmap
+@update
+
+
+
+@#dirtyman
+@do moveback
+@do `p20 random 7 1
+@if `p20 is 1 then saybar
+Im very dirty, touch me if you like ;)
+@if `p20 is 2 then saybar
+i havent had a bath in at least 2 years!
+@if `p20 is 3 then saybar
+I am dirty
+@if `p20 is 4 then do
+ @begin
+ @do `p03 + 2
+ @update
+@closescript
+@end
+@if `p20 is 5 then saybar
+You dont want to know how dirty i am, or do you?
+@if `p20 is 6 then saybar
+Wanna smell my feet?
+@if `p20 is 7 then saybar
+My toe's are brown and Icky.
+
+
+
+@#weapon
+@offmap
+@do moveback
+@do `v01 is 1
+@label storetop
+@show
+`r0`cYou are talking to Stealth smakilo, he yells 'what do you want!?`
+
+@do write
+`x`x
+ @do `v01 is 1
+ @choice
+Look at his Gawd damn Weapon's
+Leave this god forbidden place.
+@if responce is 1 then do begin
+ @begin
+ @buymanager
+6
+4
+9
+15
+16
+34
+35
+36
+38
+39
+49
+58
+60
+ @do goto storetop
+ @end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+
+
+@#armor
+@offmap
+@do moveback
+@do `v01 is 1
+@label armortop
+@show
+`r0`c Your talking to Storkus Malfunction
+
+
+`k
+@do write
+`x`x
+ @do `v01 is 1
+ @choice
+Look at his Damn armor
+Leave this ugly hell hole.
+@if response is 1 then do begin
+ @begin
+ @buymanager
+10
+12
+13
+14
+37
+59
+67
+68
+ @do goto armortop
+ @end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+
+@#barguy
+@do moveback
+@do `v01 is 1
+@label start ma
+@show
+`r0`c`% Talking to the INN Keeper.
+ Hi! Welcome to Stealth's INN,
+ he asks, AY What can i do for ya?  `r0
+                              
+
+@do write
+`x`x
+ @do `v01 is 1
+ @choice
+>&money 50 Get a Room for 50 Bux
+Leave this place
+@if response is 1 then do begin
+ @begin
+ @do x is 35
+ @do y is 13
+ @do map is 324
+ @loadmap 324
+ @drawmap
+ @update
+ @do money - 50
+
+@end
+
+@if response is 2 then do begin
+ @begin
+ @do x is 39
+ @do y is 15
+ @do map is 324
+ @loadmap 324
+ @drawmap
+ @update
+@end
+
+
+@#piss
+@do moveback
+@do `p20 random 3 1
+@if `p20 is 1 then do begin
+ @begin
+ @do `p02 = `p03
+ @do saybar
+AHHhhhhhhhhh....  MUCH BETTER!!
+
+@if `p20 is 2 then saybar
+mmmmmmmm, you sigh releif as you take a load off..
+@if `p20 is 3 then saybar
+oh yeah, much better, i needed that.
+
+
+@end
+

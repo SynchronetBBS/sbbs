@@ -5,6 +5,10 @@
 // TODO: Detect disconnections better
 // TODO: Clear flags after a timeout... stuck with battle bit and you're locked out.
 // TODO: Does using an item take a turn?
+// TODO: Hail, Attack, Other player presses 'A', can kill someone without them knowing.
+// TODO: Detect player map zero and don't load it
+// TODO: The original does NOT treat something as a line unless it ends with CRLF, this means
+//       things can have LFs in them and still go in an @saybar.
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -950,16 +954,21 @@ function insane_run_ref(sec, fname, refret)
 				}
 				else if (args[2].toLowerCase() === 'getname') {
 					tmp = clamp_integer(getvar(args[3]), '8') - 1;
-					if (tmp >= pfile.length)
-						setvar(args[0], '');
-					else {
-						tmp = pfile.get(tmp);
+					if (tmp === player.Record) {
 						setvar(args[0], tmp.name);
+					}
+					else {
+						if (tmp >= pfile.length || tmp < 0)
+							setvar(args[0], '');
+						else {
+							tmp = pfile.get(tmp);
+							setvar(args[0], tmp.name);
+						}
 					}
 				}
 				else if (args[2].toLowerCase() === 'deleted') {
 					tmp = clamp_integer(getvar(args[3]), '8') - 1;
-					if (tmp >= pfile.length)
+					if (tmp >= pfile.length || tmp < 0)
 						setvar(args[0], 1);
 					else {
 						tmp = pfile.get(clamp_integer(getvar(args[3]), '8') - 1);
@@ -1335,7 +1344,6 @@ function insane_run_ref(sec, fname, refret)
 			// TODO: Implemented in line parser
 		},
 		'run':function(args) {
-			// TODO: Test if the ref that's ran actually returns here, or if it simple aborts execution!
 			var f = fname;
 			var s = replace_vars(args[0]).toLowerCase();
 
@@ -1744,9 +1752,9 @@ function load_player()
 		map = load_map(player.map);
 		// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
 		if (map === null) {
-			player.map = 0;
-			player.x = 0;
-			player.y = 0;
+			player.map = 1;
+			player.x = 1;
+			player.y = 1;
 		}
 		player.lastx = player.x;
 		player.lasty = player.y;
@@ -3658,12 +3666,12 @@ function hail()
 							break;
 						case 'WON':
 							op.dead = 1;
-							op.x = 0;
-							op.y = 0;
+							op.x = 1;
+							op.y = 1;
 							op.map = 1;
 							players[op.Record].x = 0;
 							players[op.Record].y = 0;
-							players[op.Record].map = 0;
+							players[op.Record].map = 1;
 							players[op.Record].battle = 0;
 							players[op.Record].put();
 							if (op.money > 0)

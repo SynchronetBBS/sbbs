@@ -1,0 +1,54 @@
+
+                Sosen Inn Guard by Weaver of Weaver's House bbs
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.01
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : Yes! (see innguard.txt)
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : No! 
+  Replaces screens?                               : Yes! (2)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  This is an igm to make your Sosen Inn safe so people can't just break in 
+  with the Smackrod. Now you gotta pay to get in to the sleeping area and
+  no using the Smackrod.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM innguard 
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%Sosen Inn Safeguard `2by `1W`2E`3A`4V`2E`5R `%of Weaver's House bbs
+;616
+replacescreen: 619 1 noshow
+;617
+replacescreen: 620 2 noshow
+;776
+replacescreen: 618 3 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0This is a little Igm to fix it so people can't use the SmackRod to break 
+  `0into Sosen Inn. You're room still isn't safe yet (might fix that to if I 
+  `0get a few e-mails that people like it) though, but it still makes it so 
+  `0that the inn owner make more money 'cause they can't just use the smackrod
+  `0to get inn. However...if they use the Smack Rod to get out the won't get 
+  `0their flute back until they get out the right way. If ya like it or hate 
+  `0it send me e-mail `bout it. 
+
+  Thanx,
+        `1W`2E`3A`4V`2E`5R
+        `%qtgroove10@aol.com

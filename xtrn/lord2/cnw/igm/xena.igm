@@ -1,0 +1,44 @@
+
+                Xena's House Version 2.00 by Quineska Software
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.01a
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+                                                    (Registration required)
+
+Xena's House replaces the South Greentree Field Map (Block: 1435) and adds
+XENA.REC.
+  
+  To install, unzip into your LORD2 dir and type:
+
+  IGM XENA
+
+  To uninstall, do the same thing again.
+
+  If installing over a previous version, uninstall the existing one first
+  otherwise it'll stuff up. 
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Xena's House `2by `0Quineska Software
+replacescreen: 1435 1 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  [34mYou enter Xena's House in the LORD II World and she gives you more
+  Dodge, Muscle, Experience and More Hitpoints at a reasonable price! Players
+  can only use it once a day unless LORD2 /MAINT is called locally.
+  Please read XENA.TXT.
+  Have fun!
+

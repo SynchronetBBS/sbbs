@@ -1,0 +1,672 @@
+; Script file RESET.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:28 2001
+
+@DECLARE start 000000293
+@DECLARE menu 000000905
+@DECLARE scoreloop 000005323
+@DECLARE newidfs 000007281
+@DECLARE resetidfdone 000007646
+@DECLARE nomore 000014930
+@NOCHECK
+; End of .REF index
+
+@#START
+
+;Reset version 1.06      Jan. 98
+
+;testing data fakes
+;@bitset `t17 7 1
+;@bitset `t18 7 1
+
+;@do `p27 is 1
+@do `p27 is 0            ;debug tool to stay at 1438
+                         ;set to 0 for jump home at end.
+
+@do moveback
+
+; first we move them back, so they are not standing in the door.
+
+@busy
+
+@do `p21 is 0
+@do `p22 is 0
+@do `p23 is 0
+
+
+@if bitcheck `t17 7 1 then do
+@begin
+          @do `p21 is 1     ;Has finished Good?
+@end
+
+@if bitcheck `t18 7 1 then do
+@begin
+          @do `p22 is 1     ;Has finished Evil?
+@end
+
+@do `p23 + `p21
+@do `p23 + `p22
+
+@label menu
+
+@SHOW
+`r0
+`c
+`0-=-=-=-=-=-=-=-`r1  This looks like a retirement home! `r0`0-=-=-=-=-=-=-=-
+`/
+
+`2The small man behind the lobby desk greets you`x`x`x`0"Yesss...?"
+`/
+`/
+
+@dataload reset.idf &playernum `p24
+@datanewday rsetalgn.idf                ;Once a day per player!
+@dataload rsetalgn.idf &playernum `p25
+
+@DO `v01 is 1
+
+@CHOICE
+`$Leave.
+`5See list of retirees.
+`%Visit your ancestor.
+`@Retire your player. (Start over from scratch.)
+@IF RESPONSE IS 1 THEN DO
+@begin
+        @DRAWMAP
+        @UPDATE
+        @closescript
+@end
+
+@IF RESPONSE IS 2 THEN DO
+@Begin
+      @if reset.txt exists false then do
+      @begin
+          @show
+          `c
+          `2 There are `%no`2 retirees yet, will you be the first? `0
+          @key noshow
+          @do goto menu
+      @end
+        @show
+        `c
+        @displayfile reset.txt
+        @show
+        `/
+        @key
+        @do goto menu
+@End
+
+@IF RESPONSE IS 3 THEN DO     ;  If player quailified, and once per day.
+@begin
+   @if `p24 is 0 then do      ; No ancestors here.
+   @begin
+     @show
+            `c
+            `%You have no ancestors in this retirement village.
+
+            `0Guess you will have to do something else!
+
+     @key
+     @do goto menu
+   @end
+   @If `p25 is 0 then do      ; Not been here before, today.
+   @begin
+      @show
+   `c
+   `/
+   `/
+   `/
+              `%Your revered ancestor greets you and says,
+
+            `0"How can I help you, favorite `2s&son,'0 ... hmmm ... I know!"
+
+
+`2Would you like me to:
+
+      `!R`2aise your alignment,
+      `@L`2ower your alignment,
+        @do write
+   or `%N`2either?  `!R`0/`@L`0/`%N`x`x
+      @do Readspecial `s09 NRLnrl
+      @do upcase `s09
+      @if `s09 is R then do
+      @begin
+           @do `p07 + 6                            ;Alignment up 6
+           @datasave rsetalgn.idf &playernum 1
+           @show
+      `/
+      `/
+      `!You feel yourself grow nicer!
+      `/
+           @key
+           @do goto menu
+      @end
+      @if `s09 is L then do
+      @begin
+          @do `p07 - 3                             ;Alignment drops 3
+          @datasave rsetalgn.idf &playernum 1
+          @show
+      `/
+      `/
+      `@You feel meaner by the second!
+      `/
+          @key
+          @drawmap
+          @UPDATE
+          @closescript
+      @end
+      @if `s09 is N then do
+      @begin
+          @show
+      `/
+      `/
+      `0That was unrewarding!
+      `/
+          @key
+          @do goto menu
+      @end
+   @end
+
+@show
+      `c
+
+              `0Only one visit per day to relatives of Retirees!
+
+
+@key
+@do goto menu
+@closescript
+@end
+
+@IF RESPONSE IS 4 THEN DO begin           ;  If player quailifies.
+@begin
+   @show
+`r0`3`c
+   This will remove all your equipment (throw it away), all your
+   money, your money in the bank, your experience, quests, alignment
+   and start you off as a new player. `/
+
+   What will you keep? `0Probably`3, you keep properties that you own.
+   `/
+   `/
+   `0
+   @key
+   @DO `v01 is 1
+   @CHOICE
+   `$Chicken out!
+   `@Reset your character to level one.
+   @IF RESPONSE IS 1 THEN DO
+   @begin
+        @DRAWMAP
+        @UPDATE
+        @closescript
+   @end
+
+   @if `p23 less 1 then do
+   @begin
+     @show
+   `c
+   `0
+   Until you have completed the `!Koshi Quest`0 or the `@Dragon Quest`0
+   you cannot retire, one must work hard you know!
+   `/
+   `/
+   `/
+     @key
+     @DRAWMAP
+     @UPDATE
+     @closescript
+   @end
+
+
+   @dataload reset.idf &playernum `p24
+                                ; write to reset.idf, the totals
+                                ; `p24 holds total times won.
+
+    @do `p25 is `p21            ; `p21 has # of times won 1.
+    @do `p25 * 10000            ; `p25 has number of Good times won.
+    @do `p24 + `p25             ;  Added new times won as good
+    @do `p24 + `p22             ; `p22 has number of evil times won.
+                                ; `p24 has total good won and bad.
+
+    @datasave reset.idf &playernum `p24
+
+                           ; Add the new info.
+
+                           ; build new text file of people retired.
+
+    @do delete reset.txt
+    @do `p20 is 0                ; Player Number
+    @do `p25 is &totalaccounts   ; `P25 is a control loop var.
+    @do `p25 + 1
+
+@label scoreloop
+    @do `p21 is 0
+    @do `p20 + 1                    ; From 1 to 200?
+    @dataload reset.idf `p20 `p21
+    @do `p22 is `p21
+    @do `p22 / 10000         ; `p22 holds total Good times won.
+    @do `p24 is `p22
+    @do `p24 * 10000
+    @do `p23 is `p21
+    @do `p23 - `p24          ; `p23 holds total Evil times won.
+    @if `p21 more 0 then do
+    @begin
+
+       @do `p28 random 6 1
+
+       @if `p28 is 6 then do
+       @begin
+         @do `s05 is inspiring
+       @end
+       @if `p28 is 5 then do
+       @begin
+         @do `s05 is lowbrow
+       @end
+       @if `p28 is 4 then do
+       @begin
+         @do `s05 is mimsic
+       @end
+       @if `p28 is 3 then do
+       @begin
+         @do `s05 is guiltless
+       @end
+       @if `p28 is 2 then do
+       @begin
+         @do `s05 is lacklustre
+       @end
+       @if `p28 is 1 then do
+       @begin
+         @do `s05 is loquacious
+       @end
+       
+       @do `S02 is getname `p20
+       @do `S03 is `2Having won `%`p22`2`xtimes
+       @do `S03 ADD `xas `!Good`2 and`x
+       @do `S03 ADD `%`p23`2`xtimes`xas`x`@Evil,`0
+       @do `S04 is the`x`S05`x`$`S02 `0retires!
+
+       @writefile reset.txt
+
+`S03
+`S04
+       @if `p20 is &playernum then do
+       @begin
+         @show
+       `c
+`S03
+`S04
+       `/
+       `/
+         @do addlog
+    `0<`$`S02`0>`% retired today!`0 S&his s&son will take over the family name.
+         @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+       @end
+    @end
+    @if `p20 less `p25 then do
+    @Begin
+        @do goto scoreloop
+    @end
+ ; resetidfs
+
+    @show
+`/
+`/
+`/
+`^Working`0....this may take a minute.
+`/
+`/
+Resetting IDFs...
+`/
+
+    @if resetidf.txt exists false then do
+    @Begin
+        @do goto resetidfdone
+    @end
+
+    @copyfile resetidf.txt resetidf.tmp
+    @readfile resetidf.tmp
+`s01
+    @do `s02 is `s01
+    @do `p29 is 52
+
+@label newidfs
+
+    @do `p29 - 1
+    @do trim resetidf.tmp `p29
+    @readfile resetidf.tmp
+`s01
+    @if unchanged INSIDE `s01 then do
+    @begin
+        @do goto newidfs
+    @end
+
+    @do `p20 is length `s01
+    @if `p20 < 2 then do
+    @begin
+        @do goto resetidfdone
+    @end
+
+    @datasave `s01 &playernum 0
+
+    @do goto newidfs
+
+@label resetidfdone
+
+    @do delete resetidf.tmp
+    @do delete `N.IOH           ;Hydra Isle reset
+    @do delete bounty.&playernum
+
+    @show
+`c
+Resetting variables.....
+`/
+
+    @do `p01 is 1    ;  Exp
+    @do `p02 is 10   ;  HP
+    @do `p03 is 10   ;  HP Max
+    @do `p04 is 5    ;  Muscle
+    @do `p05 is 0    ;  Dodge
+    @do `p06 is 0    ;  Quest 1 Status. <picked berries>
+    @do `p07 is 0    ;  Alignment
+    @do `p08 is 0    ;  Charm
+    @do `p09 is 1    ;  Level
+                     ; `p10 is Last day played
+    @do `p11 is `v05 ; `p11 is turns left
+    @do `p12 is 0    ;  VD
+    @do `p13 is 0    ;  Boat Destination. 0 is not on boat
+    @do `p14 is 0    ;  Quest origin
+    @do `p15 is 0    ;  Quest Destination
+    @do `p16 is 0    ;  Quest Reward
+    @do `p17 is 0    ;  Quest item
+    @do `p18 is 0    ;  Quests completed
+    @do `p19 is 0    ;  Gems
+    @do `p31 is `v07 ;  Quests left today
+    @do `p32 is 0    ;  Quest age in days
+    @do `p33 is `v08 ;  Gambles left for today
+    @do `p34 is 0    ;  Lays
+    @do `p35 is 0    ;  Kills
+    @do `p36 is 0    ;  Flute MAP location
+    @do `p98 is 0    ;  Found hidden tree?
+    @do `p99 is 0    ;  Tried to choke mom?
+
+;player specific byte vars.  Some are used with the bitcheck command to turn
+;the byte into 8 yes/no vars.
+
+    @do `t01 is 0    ;  Talked to Turgon, 2 - asked him about Greentree
+    @do `t02 is 0    ;  Turgon chest open
+    @do `t03 is 0    ;  1 - Talked to Neb, 2 - Beat up Neb
+    @do `t04 is 0    ;  1 - Tried to fight master today (reset to 0 at NEWDAY)
+    @do `t05 is 0    ;  Old woman, 1 - met her.
+    @do `t06 is 0    ;  Amount of items in old woman's cauldron.
+    @do `t07 is 0    ;  Opened chest in cave, 1 - yes.
+    @do `t08 is 0    ;  Found bird? 1 - yes, 2 bird is dead, 3 bird is released
+    @do `t09 is 0    ;  1 - has used shrine today.
+    @do `t10 is random 10 5; fish left in stream today.
+    @do `t11 is 0    ;  1 - Took money from Dad's dresser
+
+    @do `t12 is 0
+
+;`t12: Bit 1: Killed Jeb's dog
+;`t12: Bit 2: Met Elle
+;`t12: Bit 3: Talked to Ma about Elle
+;`t12: Bit 4: Has talked with Edward
+;`t12: Bit 5: Has finished Edward quest
+;`t12: Bit 6: Read the letter even though asked not too
+;`t12: Bit 7: Lost at the Arena today
+
+  @do `t13 is 0
+
+;`t13: Bit 0: Opened chest
+;`t13: Bit 1: Opened chest 
+;`t13: Bit 2: Opened chest              
+;`t13: Bit 3: Opened chest
+;`t13: Bit 4: Opened chest
+;`t13: Bit 5: Opened chest
+;`t13: Bit 6: Opened chest
+;`t13: Bit 7: Opened chest
+
+    @do `t14 is 0
+
+;`t14: Bit 1: Learned about flute
+;`t14: Bit 2: Knows 1st 2 songs..
+;`t14: Bit 3: Has killed Tash?
+;`t14: Bit 4: Completed ghost quest
+
+    @do `t15 is 0          ;  `t15 Flute X position
+    @do `t16 is 0          ;  `t16 Flute Y position
+    @do `t17 is 0
+
+;`t17: Bit 0: Chest
+;`t17: Bit 1: Can talk to mother about Koshi
+;`t17: Bit 2: Asked Koshi about Dragon
+;`t17: Bit 3: Talked to mom about dad
+;`t17: Bit 4: Ready to steal Gryphon
+;`t17: Bit 5: Something else?
+;`t17: Bit 6: Has Gryphon!
+;`t17: Bit 7: Has won as good
+
+    @do `t18 is 0
+
+;`t18: Bit 0: Joined Dragon Tooth or not
+;`t18: Bit 1: Has met Phin.
+;`t18: Bit 2: Has accepted quest.
+;`t18: Bit 3: Has the merchandise
+;`t18: Bit 4: Has delivered it
+
+;`t18: Bit 7: Has won as evil
+
+    @do `t19 is 0     ; `t19 bit 1 is Goat Boy toggle.
+
+; just in case?
+
+    @do `t20 is 0
+    @do `t21 is 0
+    @do `t22 is 0
+    @do `t23 is 0
+    @do `t24 is 0
+    @do `t25 is 0
+    @do `t26 is 0
+    @do `t27 is 0
+    @do `t28 is 0
+    @do `t29 is 0
+    @do `t30 is 0
+    @do `t31 is 0
+    @do `t32 is 0
+    @do `t33 is 0
+    @do `t34 is 0
+    @do `t35 is 0
+    @do `t36 is 0
+    @do `t37 is 0
+    @do `t38 is 0
+    @do `t39 is 0
+
+
+    @do `t40 is 0
+    @do `t41 is 0
+    @do `t42 is 0
+    @do `t43 is 0
+    @do `t44 is 0
+    @do `t45 is 0
+    @do `t46 is 0
+    @do `t47 is 0
+    @do `t48 is 0
+    @do `t49 is 0
+    @do `t50 is 0
+    @do `t51 is 0
+    @do `t52 is 0
+    @do `t53 is 0
+    @do `t54 is 0
+    @do `t55 is 0
+    @do `t56 is 0
+    @do `t57 is 0
+    @do `t58 is 0
+    @do `t59 is 0
+    @do `t60 is 0
+    @do `t61 is 0
+    @do `t62 is 0
+    @do `t63 is 0
+    @do `t64 is 0
+    @do `t65 is 0
+    @do `t66 is 0
+    @do `t67 is 0
+    @do `t68 is 0
+    @do `t69 is 0
+    @do `t70 is 0
+    @do `t71 is 0
+    @do `t72 is 0
+    @do `t73 is 0
+    @do `t74 is 0
+    @do `t75 is 0
+    @do `t76 is 0
+    @do `t77 is 0
+    @do `t78 is 0
+    @do `t79 is 0
+    @do `t80 is 0
+    @do `t81 is 0
+    @do `t82 is 0
+    @do `t83 is 0
+    @do `t84 is 0
+    @do `t85 is 0
+    @do `t86 is 0
+    @do `t87 is 0
+    @do `t88 is 0
+    @do `t89 is 0
+    @do `t90 is 0
+    @do `t91 is 0
+    @do `t92 is 0
+    @do `t93 is 0
+    @do `t94 is 0
+    @do `t95 is 0
+    @do `t96 is 0
+    @do `t97 is 0
+    @do `t98 is 0
+    @do `t99 is 0
+
+; Toss all items.
+
+    @do `i01 is 0
+    @do `i02 is 0
+    @do `i03 is 0
+    @do `i04 is 0
+    @do `i05 is 0
+    @do `i06 is 0
+    @do `i07 is 0
+    @do `i08 is 0
+    @do `i09 is 0
+    @do `i10 is 0
+    @do `i11 is 0
+    @do `i12 is 0
+    @do `i13 is 0
+    @do `i14 is 0
+    @do `i15 is 0
+    @do `i16 is 0
+    @do `i17 is 0
+    @do `i18 is 0
+    @do `i19 is 0
+    @do `i20 is 0
+    @do `i21 is 0
+    @do `i22 is 0
+    @do `i23 is 0
+    @do `i24 is 0
+    @do `i25 is 0
+    @do `i26 is 0
+    @do `i27 is 0
+    @do `i28 is 0
+    @do `i29 is 0
+    @do `i30 is 0
+    @do `i31 is 0
+    @do `i32 is 0
+    @do `i33 is 0
+    @do `i34 is 0
+    @do `i35 is 0
+    @do `i36 is 0
+    @do `i37 is 0
+    @do `i38 is 0
+    @do `i39 is 0
+    @do `i40 is 0
+    @do `i41 is 0
+    @do `i42 is 0
+    @do `i43 is 0
+    @do `i44 is 0
+    @do `i45 is 0
+    @do `i46 is 0
+    @do `i47 is 0
+    @do `i48 is 0
+    @do `i49 is 0
+    @do `i50 is 0
+    @do `i51 is 0
+    @do `i52 is 0
+    @do `i53 is 0
+    @do `i54 is 0
+    @do `i55 is 0
+    @do `i56 is 0
+    @do `i57 is 0
+    @do `i58 is 0
+    @do `i59 is 0
+    @do `i60 is 0
+    @do `i61 is 0
+    @do `i62 is 0
+    @do `i63 is 0
+    @do `i64 is 0
+    @do `i65 is 0
+    @do `i66 is 0
+    @do `i67 is 0
+    @do `i68 is 0
+    @do `i69 is 0
+    @do `i70 is 0
+    @do `i71 is 0
+    @do `i72 is 0
+    @do `i73 is 0
+    @do `i74 is 0
+    @do `i75 is 0
+    @do `i76 is 0
+    @do `i77 is 0
+    @do `i78 is 0
+    @do `i79 is 0
+    @do `i80 is 0
+    @do `i81 is 0
+    @do `i82 is 0
+    @do `i83 is 0
+    @do `i84 is 0
+    @do `i85 is 0
+    @do `i86 is 0
+    @do `i87 is 0
+    @do `i88 is 0
+    @do `i89 is 0
+    @do `i90 is 0
+    @do `i91 is 0
+    @do `i92 is 0
+    @do `i93 is 0
+    @do `i94 is 0
+    @do `i95 is 0
+    @do `i96 is 0
+    @do `i97 is 0
+    @do `i98 is 0
+    @do `i99 is 0
+
+    @do narm is 0
+    @do nwep is 0
+    @do bank is 0
+    @do money is 0
+
+                                ;put him back home.
+    @show
+ We are done here!
+
+    @if `p27 is 0 then do           ; set `p27 at start of IGM for debugging
+    @begin
+          @do X is 27
+          @do Y is 7
+          @do MAP is 155
+          @loadmap 155
+    @end
+
+    @DRAWMAP
+    @UPDATE
+    @CLOSESCRIPT
+@End
+
+@End
+
+@#NOMORE
+

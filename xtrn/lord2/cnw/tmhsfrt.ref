@@ -1,0 +1,1730 @@
+; Script file TMHSFRT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE healme 000001105
+@DECLARE hres 000001462
+@DECLARE human2 000001664
+@DECLARE humang 000001788
+@DECLARE matcha 000001885
+@DECLARE tmhsgm 000001936
+@DECLARE sign1 000003331
+@DECLARE guard 000003431
+@DECLARE tbery 000003500
+@DECLARE healers 000003620
+@DECLARE thief 000005626
+@DECLARE posnbery 000005747
+@DECLARE human1 000006246
+@DECLARE mrchst1 000006366
+@DECLARE chst1 000006416
+@DECLARE opend 000008353
+@DECLARE nblesd 000008442
+@DECLARE matchb 000008585
+@DECLARE tmrhre 000008748
+@DECLARE fishsell 000010588
+@DECLARE keepwriting 000012970
+@DECLARE byptins 000013501
+@DECLARE trapdr 000018578
+@DECLARE warpmp 000018631
+@DECLARE map1 000019271
+@DECLARE map2 000021289
+@DECLARE map3 000023323
+@DECLARE koshi1 000025498
+@DECLARE hrdoor 000026529
+@DECLARE dtscmp 000026786
+@DECLARE tooth 000026836
+@DECLARE testel 000026923
+@DECLARE darkfrt 000027365
+@DECLARE monster1 000027734
+@DECLARE bountylist 000028376
+@DECLARE readmore 000028577
+@NOCHECK
+; End of .REF index
+
+@#HEALME
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `%Frostglint Keep - The Healers.
+
+@if `p07 < 0 then do
+@begin
+@show
+  `2Koshi Healer: "`0Get out you slime!`2"`k
+@drawmap
+@update
+@closescript
+@end
+
+@show
+  `2The Koshi healer looks you over for wounds carefully.
+
+  `%YOU ARE COMPLETEY HEALED!`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#HRES
+@do moveback
+@if `p07 < 0 then do begin
+@begin
+@do saybar
+`2The March Hare: "`0Get out you slime!`2"
+@closescript
+@end
+@do saybar
+`2The March Hare: "`0Hello!`2"
+@closescript
+@end
+
+@#HUMAN2
+@do moveback
+@do saybar
+`5The March Hare: "`7You can buy almost anything at the keep's market place`5"
+@end
+
+@#HUMANG
+@do moveback
+@do saybar
+`2The March Hare: "`0Welcome to March Hare Keep!`2"
+@end
+
+@#MATCHA
+@do moveback
+@busy
+@do `v01 is 1
+@label TMHSGM
+@show
+`r0`c  `%Frostglint Keep - Trading Gems.
+
+  `2"`0You wanna trade some gems for bulk crates of potions?
+  `0 Each crate holds 20 potions.`2"
+
+  `2You Have `0`p19 `2Gems.
+
+ `$- `%Potions `$-
+  `2Red: `0`i52
+  `2Gold: `0`i53
+  `2Silver: `0`i54
+
+@do write
+`x`x
+@choice
+>`p19 39 Trade 40 gems for a 20 red potions.
+>`p19 39 Trade 40 gems for a 20 gold potion.
+>`p19 39 Trade 40 gems for a 20 silver potion.
+Leave.
+@show
+`\
+@if responce is 1 then do begin
+@begin
+@if `p19 < 40 then do begin
+@begin
+@show
+  `2"`0You don't have enough gems!`2"`k
+@do goto TMHSGM
+@closescript
+@end
+@do `p19 - 40
+@do `i52 + 20
+@show
+  `2"`0Okay kid, heres your `%Red Potions`0!`2"`k
+@do goto TMHSGM
+@end
+
+ @end
+
+@if responce is 2 then do begin
+@begin
+@if `p19 < 40 then do begin
+@begin
+@show
+  `2"`0You don't have enough gems!`2"`k
+@do goto TMHSGM
+@closescript
+@end
+@do `p19 - 40
+@do `i53 + 20
+@show
+  `2"`0Okay kid, heres your `%Gold Potions`0!`2"`k
+@do goto TMHSGM
+@end
+
+ @end
+
+@if responce is 3 then do begin
+@begin
+@if `p19 < 40 then do begin
+@begin
+@show
+  `2"`0You don't have enough gems!`2"`k
+@do goto TMHSGM
+@closescript
+@end
+@do `p19 - 40
+@do `i54 + 20
+@show
+  `2"`0Okay kid, heres your `%Silver Potions`0!`2"`k
+@do goto TMHSGM
+@end
+
+ @end
+
+@if responce is 4 then do begin
+@begin
+@do `v01 is 9
+@do goto TMRHRE
+@end
+
+@#SIGN1
+@do moveback
+@do saybar
+`%You are now entering the kingdom of The March Hare...
+@end
+
+@#GUARD
+@do moveback
+@do saybar
+`2Koshi: "`0Zzzzzz...`2"
+@end
+
+@#TBERY
+@do moveback
+@do saybar
+`2The March Hare: "`0Find the flute in a cave south-west of Stonebrook`2"
+@end
+
+@#HEALERS
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%Frostglint Keep - The Healers.
+
+  `2You see a sign on the wall that says healing cost `01/4 `2gold per hitpoint
+  `2needed.
+
+  `2Acadia looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 4
+
+
+
+ @show
+`2"`0`n`0, you don't look good at all!`2" Acadia exclaims
+  `2"`0I'll heal your wounds for `$`p20 `0gold, agreed?`2"
+
+@do write
+`x`x
+@choice
+Heal Yourself For `$$`p20`%. `0(`2You Have `$$&money`0)
+Make Your Excuses And Leave.
+@show
+`\
+@if response is 1 then do begin
+@begin
+@if money < `p20 then do
+@begin
+@show
+  `2"`0I apologize, but I cannot perform those services for free!`2"
+
+@if sexmale is 1 then do
+@begin
+@do write
+`x`x
+ @choice
+`2"`$For `$$`p20`$, you better perform some other services too, whore!`2"
+`2"`$How about I pay with my good looks, honey?`2"
+`2"`$How 'bout you and me go in the back and I show you my sword?`2"
+Meekly Accept, And Compliment Her On Her Dress.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `2"`0That's a good lad, now get along with you!`2" she laughs.`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `2"`0How dare you talk that way to me!  Get out!`2" she screams.`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `2"`0I'd rather kiss a troll`2" she informs you.`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `2"`0How about I show ya my fists?`2" she says as she jabs a needle in you!`k
+ @drawmap
+ @update
+ @do saybar
+`bHITPOINTS GO DOWN TO ONE!
+ @closescript
+ @end
+
+
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better after `0`p21 `2hitpoints are restored.`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`2"`0You are a perfect picture of health, dear `n`0!`2"
+  `2Acadia exclaims.`k
+@drawmap
+@update
+
+@#THIEF
+@do moveback
+@do saybar
+`2The March Hare: "`0Please help yourself to the chest in the backroom`2"
+@end
+
+@#POSNBERY
+@do moveback
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2You notice a strange growth of berries.  Pick one? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 NY
+@if `s01 is Y then do
+  @begin
+@if `i02 more 0 then do
+ @begin
+@do saybar
+`2Nah, you already have one with you.
+ @closescript
+ @end
+@do `i02 + 1
+@do saybar
+`2You carefully pick a Poisonberry.
+@closescript
+@end
+@if `s01 is N then do
+ @begin
+@do saybar
+`2Maybe later.
+ @closescript
+ @end
+
+@#HUMAN1
+@do moveback
+@do saybar
+`2The March Hare: "`0Look in all the beds at Stonepass Lodge if you go`2"
+@end
+
+@#MRCHST1
+@do moveback
+@busy
+@do `v01 is 1
+@label CHST1
+@show
+`r0`c  `%Hidden Chest.
+
+  `2You found the hidden chest!
+
+@do write
+`x`x
+@choice
+Open the chest.
+Leave.
+@show
+`\
+@if responce is 2 then do begin
+@begin
+@drawmap
+@update
+@end
+
+@if responce is 1 then do
+@begin
+;@datanewday TMHSFRV.IDF   <-- FUCK NO WAY, THIS IS TOO MUCH, ONLY 1 TIME PLEASE. - CNW
+@dataload TMHSFRV.IDF &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto OPEND
+@end
+
+@datasave TMHSFRV.IDF &playernum 1
+
+@do `p21 random 9 1
+
+@if `p21 is 1 then do
+@begin
+@do `i66 + 500
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%500 Koshi SNACK!`k
+@do goto CHST1
+@closescript
+@end
+
+@if `p21 is 2 then do
+@begin
+@do `i68 + 10
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%10 Cursed Armors!`k
+@do goto CHST1
+@closescript
+@end
+
+@if `p21 is 3 then do
+@begin
+@do `i57 + 5
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%5 Moonstones!`k
+@do goto CHST1
+@closescript
+@end
+
+@if `p21 is 4 then do
+@begin
+@do `i52 + 50
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%Fifty Red Potions!`k
+@do goto CHST1
+@closescript
+@end
+
+@if `p21 is 5 then do
+@begin
+@do `i53 + 50
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%Fifty Gold Potions!`k
+@do goto CHST1
+@closescript
+@end
+
+@if `p21 is 6 then do
+@begin
+@do `i54 + 50
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%Fifty Silver Potions!`k
+@do goto CHST1
+@closescript
+@end
+
+@if `p21 is 7 then do
+@begin
+@do money + 100000
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%One Hundred Thousand Gold!`k
+@do goto CHST1
+@closescript
+@end
+
+@if `p21 is 8 then do
+@begin
+@do `p19 + 150
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%One Hundred And Fifty Gems!`k
+@do goto CHST1
+@closescript
+@end
+
+@if `p21 is 9 then do
+@begin
+@do `i51 + 1
+@show
+  `2You find`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`l`%A Small Fuzzy Animal!`k
+@do goto CHST1
+@closescript
+@end
+
+@#OPEND
+@busy
+@show
+  `2The chest is empty.`k
+@do goto CHST1
+@closescript
+@end
+
+@#NBLESD
+@busy
+@show
+  `2You have already received a blessing today.`k
+@do goto TMRHRE
+@closescript
+@end
+
+
+;The March Hare Stuff. 
+
+@#MATCHB
+@do moveback
+@if `p07 < 0 then do begin
+@begin
+@do saybar
+`2The March Hare: "`0Get out you slime!`2"
+@closescript
+@end
+@busy
+@do `v01 is 1
+@label TMRHRE
+@show
+`r0`c  `%Frostglint Keep - The March Hare.
+
+  `2The March Hare: "`0How may I help you?`2"
+
+@do write
+`x`x
+@choice
+Gossip.
+Take a room.
+Buy potions.
+Buy goods.
+Sell goods.
+Sell fish.
+Ask for a blessing.
+View bounty list.
+Make an announcement.
+Trade in gems.
+Leave.
+@show
+`\
+@if responce is 1 then do begin
+@begin
+
+@do `p21 random 2 1
+
+@if `p21 is 1 then do
+@begin
+@show
+  `2"`0Well, I heard a crazy old man lives in a shack south of Stonebrook`2"`k
+
+  `2"`$Really?  What else?`2" you ask.`k
+
+  `2"`0That old shack has a fake wall section somewhere inside...`2"`k
+@do goto TMRHRE
+@closescript
+@end
+
+@if `p21 is 2 then do
+@begin
+@show
+  `2"`0You wanna know something really strange?  I heard there is a tree on
+  `0Neb's Road that has magical powers...`2"`k
+
+  `2You stare at him in disbelief.  `2"`$Yeah right, quit telling me stories,
+  `$you ain't exactly the most trustworthy hare in town, ya know!`2"`k
+@do goto TMRHRE
+@closescript
+@end
+
+@end
+
+@if responce is 2 then do begin
+@begin
+@pauseoff
+@do `v01 is 1
+@Show
+  `2"`$Pardon me sir, I'm interested in a room for the night`2"
+  `2"`0A room here will only cost you 50 gold`2"
+
+@DO WRITE
+`x`x
+@CHOICE
+>&money 50 Go ahead and get a room.
+Forget this place.
+@IF RESPONSE IS 1 THEN DO
+@BEGIN
+@do money - 50
+@do x = 16
+@do y = 8
+@drawmap
+@update
+@closescript
+@END
+@IF RESPONSE IS 2 THEN DO
+@do `v01 is 2
+@do goto TMRHRE
+@End
+
+
+@if responce is 3 then do
+@begin
+@do goto BYPTINS
+@end
+
+@if responce is 4 then do
+@begin
+@show
+`r0`c  `%Frostglint Keep - Buying Goods. 
+
+@buymanager
+ 64
+ 66
+ 68
+ @do goto TMRHRE
+ @closescript
+ @end
+
+@if responce is 5 then do
+@begin
+@clearblock 8 17
+@do move 9 7
+@sellmanager
+@do goto TMRHRE
+@end
+
+@if responce is 6 then do
+  @begin
+  @label FISHSELL
+  @show
+`r0`c  `%March Hare Keep - Selling Fish.
+
+  `2You are holding: `$$&money
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+<`i29 1 <`i30 1 You have no fish to sell.
+>`i29 0 Sell a Salmon for `$$50`%. `2(`0You have `i29`2)
+>`i30 0 Sell a Sparking Green Salmon for `$$250`%. `2(`0You have `i30`2)
+>`i29 0 <`i30 1 Sell nothing.
+>`i30 0 <`i29 1 Sell nothing.
+>`i30 0 >`i29 0 Sell nothing.
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `2"`0Thank you for the fish, s&sir!`2"
+
+`k
+  @do money + 50
+  @do `i29 - 1
+  @do goto FISHSELL
+  @end
+@if responce is 3 then do
+  @begin
+  @show
+`\`\  `2"`0My God! Where did you catch this!?  Thank you!`2"
+
+`k
+  @do money + 250
+  @do `i30 - 1
+  @do goto FISHSELL
+  @end
+
+ @do `v01 is 6
+ @do goto TMRHRE
+
+ @end
+
+@end
+
+@if responce is 7 then do
+@begin
+@datanewday TMHSFRU.IDF
+@dataload TMHSFRU.IDF &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto NBLESD
+@end
+
+@datasave TMHSFRU.IDF &playernum 1
+
+@show
+  `2The March Hare blesses you.`k
+
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+@begin
+@do `p04 + 2
+@show
+  `2You receive`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`%Strength!
+  `2(`0You get 2 Muscle!`2)`k
+@do goto TMRHRE
+@closescript
+@end
+
+@if `p21 is 2 then do
+@begin
+@do `p05 + 1
+@show
+  `2You receive`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`%Dexterity!
+  `2(`0You get 1 Dodge!`2)`k
+@do goto TMRHRE
+@closescript
+@end
+
+@if `p21 is 3 then do
+@begin
+@do `p01 + 500 * `p09
+@show
+  `2You receive`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`%Intelligence!
+  `2(`0You get some Experience!`2)`k
+@do goto TMRHRE
+@closescript
+@end
+
+@if `p21 is 4 then do
+@begin
+@do `p02 + 5
+@do `p03 is `p02
+@show
+  `2You receive`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`%Constitution!
+  `2(`0You get 5 Hitpoints and are completely healed!`2)`k
+@do goto TMRHRE
+@closescript
+@end
+
+@if `p21 is 5 then do
+@begin
+@do `p08 + 1
+@show
+  `2You receive`l.`l.`l.`l.`l.`l.`l.`l.`l.`l.`%Charisma!
+  `2(`0You get 1 Charm!`2)`k
+@do goto TMRHRE
+@closescript
+@end
+
+ @end
+
+@if responce is 8 then do begin
+  @begin
+  @show
+  `2"`0You wanna know about the heat ... I can tell you`2"`%`k
+  @routine BOUNTYLIST
+  @do goto TMRHRE
+  @end
+
+@if response is 9 then do begin
+ @begin
+  @writefile lognow.txt
+  `0`n`2 announces the following from Frostglint Keep:`\`0
+  @show
+  `2Enter your announcement.
+@label keepwriting
+@do write
+`\`x`x
+  @do readstring 75 NIL `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+   @show
+`\  `2Announcement made!`k
+@do goto TMRHRE
+@closescript
+@end
+  @do stripbad `s01
+  @writefile lognow.txt
+  `s01
+  @
+  @do goto keepwriting
+;@closescript
+;@end
+@do goto TMRHRE
+@closescript
+@end
+
+@end
+
+@if responce is 10 then do begin
+@begin
+@do goto MATCHA
+@closescript
+@end
+
+@drawmap
+@update
+
+@#BYPTINS
+@busy
+@show
+`r0`c  `%Frostglint Keep - Buying Potions.
+
+  `0(`2G`0)`2reen Potion...................................`$$2
+  `0(`2B`0)`2lue Potion....................................`$$32
+  `0(`2W`0)`2hite Potion...................................`$$150
+  `0(`2T`0)`2ravel Potion..................................`$$250 
+  `2g`0(`2O`0)`2ld Potion....................................`$$1,200 
+  `0(`2R`0)`2ed Potion.....................................`$$1,200
+  `0(`2S`0)`2ilver Potion..................................`$$1,200
+  
+  `0(`2N`0)`2evermind.
+
+@do move 1 15
+@do write
+  `2Your command `0`n`2?:`x
+@do readspecial `s01 NGBWTOSR
+@if `s01 is N then do begin
+@begin
+@do move 1 17
+@do write
+  `2You decide to keep your money - for now anyway.`k
+@do goto TMRHRE
+@closescript
+@end
+@if `s01 is G then do begin
+@begin
+@if money < 2 then do begin
+@begin
+@do move 1 17
+@do write
+  `2You cannot afford a Green Potion.`k
+@do goto BYPTINS
+@end
+@do move 1 17
+@do write
+  `2Are you sure you want to buy a Green Potion for `$$2`2? (`0Y`2/`0N`2) :`x
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do move 1 19
+@do write
+  `2The Green Potion has not been placed in your inventory`k
+@do goto BYPTINS
+@closescript
+@end
+@do move 1 19
+@do write
+  `2The Green Potion has been placed in your inventory`k
+@do money - 2
+@do `i05 + 1
+@do goto BYPTINS
+@closescript
+@end
+@if `s01 is B then do begin
+@begin
+@if money < 32 then do begin
+@begin
+@do move 1 17
+@do write
+  `2You cannot afford a Blue Potion.`k
+@do goto BYPTINS
+@end
+@do move 1 17
+@do write
+  `2Are you sure you want to buy a Blue Potion for `$$32`2? (`0Y`2/`0N`2) :`x
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do move 1 19
+@do write
+  `2The Blue Potion has not been placed in your inventory`k
+@do goto BYPTINS
+@closescript
+@end
+@do move 1 19
+@do write
+  `2The Blue Potion has been placed in your inventory`k
+@do money - 32
+@do `i40 + 1
+@do goto BYPTINS
+@closescript
+@end
+@if `s01 is W then do begin
+@begin
+@if money < 150 then do begin
+@begin
+@do move 1 17
+@do write
+  `2You cannot afford a White Potion.`k
+@do goto BYPTINS
+@end
+@do move 1 17
+@do write
+  `2Are you sure you want to buy a White Potion for `$$150`2? (`0Y`2/`0N`2) :`x
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do move 1 19
+@do write
+  `2The White Potion has not been placed in your inventory`k
+@do goto BYPTINS
+@closescript
+@end
+@do move 1 19
+@do write
+  `2The White Potion has been placed in your inventory`k
+@do money - 150
+@do `i55 + 1
+@do goto BYPTINS
+@closescript
+@end
+@if `s01 is T then do begin
+@begin
+@if money < 250 then do begin
+@begin
+@do move 1 17
+@do write
+  `2You cannot afford a Travel Potion.`k
+@do goto BYPTINS
+@end
+@do move 1 17
+@do write
+  `2Are you sure you want to buy a Travel Potion for `$$250`2? (`0Y`2/`0N`2) :`x
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do move 1 19
+@do write
+  `2The Travel Potion has not been placed in your inventory`k
+@do goto BYPTINS
+@closescript
+@end
+@do move 1 19
+@do write
+  `2The Travel Potion has been placed in your inventory`k
+@do money - 250
+@do `i50 + 1
+@do goto BYPTINS
+@closescript
+@end
+@if `s01 is O then do begin
+@begin
+@if money < 1200 then do begin
+@begin
+@do move 1 17
+@do write
+  `2You cannot afford a Gold Potion.`k
+@do goto BYPTINS
+@end
+@do move 1 17
+@do write
+  `2Are you sure you want to buy a Gold Potion for `$$1,200`2? (`0Y`2/`0N`2) :`x
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do move 1 19
+@do write
+  `2The Gold Potion has not been placed in your inventory`k
+@do goto BYPTINS
+@closescript
+@end
+@do move 1 19
+@do write
+  `2The Gold Potion has been placed in your inventory`k
+@do money - 1200
+@do `i53 + 1
+@do goto BYPTINS
+@closescript
+@end
+@if `s01 is R then do begin
+@begin
+@if money < 1200 then do begin
+@begin
+@do move 1 17
+@do write
+  `2You cannot afford a Red Potion.`k
+@do goto BYPTINS
+@end
+@do move 1 17
+@do write
+  `2Are you sure you want to buy a Red Potion for `$$1,200`2? (`0Y`2/`0N`2) :`x
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do move 1 19
+@do write
+  `2The Red Potion has not been placed in your inventory`k
+@do goto BYPTINS
+@closescript
+@end
+@do move 1 19
+@do write
+  `2The Red Potion has been placed in your inventory`k
+@do money - 1200
+@do `i52 + 1
+@do goto BYPTINS
+@closescript
+@end
+@if `s01 is S then do begin
+@begin
+@if money < 1200 then do begin
+@begin
+@do move 1 17
+@do write
+  `2You cannot afford a Silver Potion.`k
+@do goto BYPTINS
+@end
+@do move 1 17
+@do write
+  `2Are you sure you want to buy a Silver Potion for `$$1,200`2? (`0Y`2/`0N`2) :`x
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do move 1 19
+@do write
+  `2The Silver Potion has not been placed in your inventory`k
+@do goto BYPTINS
+@closescript
+@end
+@do move 1 19
+@do write
+  `2The Silver Potion has been placed in your inventory`k
+@do money - 1200
+@do `i54 + 1
+@do goto BYPTINS
+@closescript
+@end
+
+@#TRAPDR
+@offmap
+@do moveback
+@do `v01 is 1
+@label WARPMP
+@show
+`r0`c  `%Frostglint Keep - Wizard's House.
+
+@if `p07 < 0 then do
+@begin
+@show
+  `2Koshi Wizard: "`0Get out before I turn you into a newt!`2"`k
+@drawmap
+@update
+@closescript
+@end
+@show
+  `2Koshi Wizard: "`0Where would you like to go today?`2"
+
+@do write
+`x`x
+@choice
+List 1.
+List 2.
+List 3.
+Leave.
+@show
+`\
+@if response is 1 then do
+@begin
+@do goto MAP1
+@closescript
+@end
+
+@if response is 2 then do
+@begin
+@do goto MAP2
+@closescript
+@end
+
+@if response is 3 then do
+@begin
+@do goto MAP3
+@closescript
+@end
+
+@if responce is 4 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+@label MAP1
+@show
+`r0`c  `%Frostglint Keep - Wizard's House.
+
+  `2Koshi Wizard: "`0Where would you like to go today?`2"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Stonebrook.
+Greentree.
+Runion (IceLord?) Keep.
+Port Town.
+Stonepass Lodge.
+Castle Coldrake.
+Rocky Alcove.
+Flag City.
+Wizard's Tower.
+Bone Town.
+Sosen Village.
+Arrisville.
+Koshi Village.
+Dragon Tooth Castle.
+Nevermind.
+@show
+`\
+@if response not 15 then do
+@begin
+@show
+  `2"`0Okay, I'll just grab my spellbook!`2"`k
+@if responce is 1 then do
+;Stonebrook
+@begin
+@do x is 36
+@do y is 9
+@do map is 1359
+@end
+
+@if responce is 2 then do
+;Greentree
+@begin
+@do x is 50
+@do y is 14
+@do map is 1356
+@end
+
+@if responce is 3 then do
+;Runion Keep
+@begin
+@do x is 27
+@do y is 18
+@do map is 1274
+@end
+
+@if responce is 4 then do
+;Port Town
+@begin
+@do x is 38
+@do y is 17
+@do map is 956
+@end
+
+@if responce is 5 then do
+;Stonepass Lodge
+@begin
+@do x is 54
+@do y is 17
+@do map is 880
+@end
+
+@if responce is 6 then do
+;Castle Coldrake
+@begin
+@do x is 46
+@do y is 11
+@do map is 320
+@end
+
+@if responce is 7 then do
+;Out Rock (Rocky Alcove)
+@begin
+@do x is 38
+@do y is 13
+@do map is 1019
+@end
+
+@if responce is 8 then do
+;Flag City
+@begin
+@do x is 71
+@do y is 19
+@do map is 1092
+@end
+
+@if responce is 9 then do
+;Wizard's Tower
+@begin
+@do x is 72
+@do y is 5
+@do map is 1255
+@end
+
+@if responce is 10 then do
+;Bone Town
+@begin
+@do x is 42
+@do y is 18
+@do map is 1572
+@end
+
+@if responce is 11 then do
+;Sosen Village
+@begin
+@do x is 38
+@do y is 5
+@do map is 456
+@end
+
+@if responce is 12 then do
+;Arrisville
+@begin
+@do x is 23
+@do y is 11
+@do map is 523
+@end
+
+@if responce is 13 then do
+;Koshi Village
+@begin
+@do x is 36
+@do y is 12
+@do map is 196
+@end
+
+@if responce is 14 then do
+;Dragon Tooth Castle
+@begin
+@do x is 45
+@do y is 10
+@do map is 706
+@end
+
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+@do `v01 is 1
+@do goto WARPMP
+@end
+
+@label MAP2
+@show
+`r0`c  `%Frostglint Keep - Wizard's House.
+
+  `2Koshi Wizard: "`0Where would you like to go today?`2"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Forest With Small Mountain.
+Hidden Dark Forest.
+Dark Forest.
+Forest.
+East Forest.
+South Dark Forest.
+Waterfall.
+Oasis.
+Old Man's Rock.
+Split Rock.
+West Forest.
+RockHolm Mountains.
+Tropical Island.
+Bigwood Forest.
+Nevermind.
+@show
+`\
+@if response not 15 then do
+@begin
+@show
+  `2"`0Okay, I'll just grab my spellbook!`2"`k
+@if responce is 1 then do
+;Forest with small mountain
+@begin
+@do x is 41
+@do y is 10
+@do map is 1195
+@end
+
+@if responce is 2 then do
+;Hidden Dark Forest
+@begin
+@do x is 32
+@do y is 11
+@do map is 1514
+@end
+
+@if responce is 3 then do
+;Dark Forest
+@begin
+@do x is 34
+@do y is 7
+@do map is 1354
+@end
+
+@if responce is 4 then do
+;Forest
+@begin
+@do x is 28
+@do y is 11
+@do map is 1271
+@end
+
+@if responce is 5 then do
+;East Forest
+@begin
+@do x is 40
+@do y is 10
+@do map is 1040
+@end
+
+@if responce is 6 then do
+;South Dark Forest
+@begin
+@do x is 37
+@do y is 13
+@do map is 1592
+@end
+
+@if responce is 7 then do
+;Waterfall
+@begin
+@do x is 60
+@do y is 14
+@do map is 1033
+@end
+
+@if responce is 8 then do
+;Oasis
+@begin
+@do x is 25
+@do y is 15
+@do map is 1029
+@end
+
+@if responce is 9 then do
+;Old Man's Rock
+@begin
+@do x is 21
+@do y is 12
+@do map is 1189
+@end
+
+@if responce is 10 then do
+;Split Rock
+@begin
+@do x is 47
+@do y is 15
+@do map is 1024
+@end
+
+@if responce is 11 then do
+;West Forest
+@begin
+@do x is 24
+@do y is 4
+@do map is 1576
+@end
+
+@if responce is 12 then do
+;Rockholm Mountains
+@begin
+@do x is 41
+@do y is 18
+@do map is 398
+@end
+
+@if responce is 13 then do
+;Tropical Island
+@begin
+@do x is 43
+@do y is 13
+@do map is 558
+@end
+
+@if responce is 14 then do
+;Bigwood Forest
+@begin
+@do x is 55
+@do y is 4
+@do map is 379
+@end
+
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+@do `v01 is 2
+@do goto WARPMP
+@end
+
+@label MAP3
+@show
+`r0`c  `%Frostglint Keep - Wizard's House.
+
+  `2Koshi Wizard: "`0Where would you like to go today?`2"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+East Stonebrook Village.
+North-east Stonebrook Village.
+Village Forest.
+Jack's Restaurant.
+The Old Woman's House.
+Turgon's Shack.
+Greentree Pawn Shoppe.
+Fishing Dock.
+Uncle Edward's Cabin.
+Waterfall Observation Dock.
+Glimmering Pond.
+West Beach Ferry.
+Arrisland Ferry.
+Seth Able's Music Shoppe.
+Nevermind.
+@show
+`\
+@if response not 15 then do
+@begin
+@show
+  `2"`0Okay, I'll just grab my spellbook!`2"`k
+@if responce is 1 then do
+;East Stonebrook Village
+@begin
+@do x is 3
+@do y is 12
+@do map is 1360
+@end
+
+@if responce is 2 then do
+;North-east Stonebrook Village
+@begin
+@do x is 37
+@do y is 18
+@do map is 1280
+@end
+
+@if responce is 3 then do
+;Village Forest
+@begin
+@do x is 37
+@do y is 14
+@do map is 1279
+@end
+
+@if responce is 4 then do
+;Jack's Restaurant
+@begin
+@do x is 15
+@do y is 19
+@do map is 1278
+@end
+
+@if responce is 5 then do
+;The Old Woman's House
+@begin
+@do x is 27
+@do y is 12
+@do map is 1438
+@end
+
+@if responce is 6 then do
+;Turgon's Shack
+@begin
+@do x is 39
+@do y is 13
+@do map is 1519
+@end
+
+@if responce is 7 then do
+;Greentree Pawn Shoppe
+@begin
+@do x is 29
+@do y is 9
+@do map is 1196
+@end
+
+@if responce is 8 then do
+;Fishing Dock
+@begin
+@do x is 51
+@do y is 11
+@do map is 1116
+@end
+
+@if responce is 9 then do
+;Uncle Edward's Cabin
+@begin
+@do x is 64
+@do y is 13
+@do map is 1595
+@end
+
+@if responce is 10 then do
+;Waterfall
+@begin
+@do x is 30
+@do y is 11
+@do map is 1035
+@end
+
+@if responce is 11 then do
+;Pond
+@begin
+@do x is 38
+@do y is 5
+@do map is 1120
+@end
+
+@if responce is 12 then do
+;West Beach Ferry
+@begin
+@do x is 52
+@do y is 13
+@do map is 215
+@end
+
+@if responce is 13 then do
+;Arrisland Ferry
+@begin
+@do x is 43
+@do y is 15
+@do map is 203
+@end
+
+@if responce is 14 then do
+;Music Shoppe
+@begin
+@do x is 44
+@do y is 9
+@do map is 360
+@end
+
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+@do `v01 is 3
+@do goto WARPMP
+@end
+
+@drawmap
+@update
+
+@#KOSHI1
+@do moveback
+@if `p07 < 0 then do begin
+@begin
+@do saybar
+`2Koshi Warrior: "`0We've heard of you, `n!`2"
+@closescript
+@end
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`2Koshi Warrior: `2"`0Look in all the beds at Stonepass Lodge if you go`2"
+@if `p20 is 2 then saybar
+`2Koshi Warrior: `2"`0I hear there's a shortcut through the Snowy Pass!`2"
+@if `p20 is 3 then saybar
+`2Koshi Warrior: `2"`0Careful, I hear the Inn here isn't the safest.`2"
+@if `p20 is 4 then saybar
+`2Koshi Warrior: `2"`0I hear the dark forest is a terrible place!`2"
+@if `p20 is 5 then saybar
+`2Koshi Warrior: `2"`0Find the flute in a cave south-west of Stonebrook`2"
+@if `p20 is 6 then saybar
+`2Koshi Warrior: `2"`0Have you ever flown?`2"
+@if `p20 is 7 then saybar
+`2Koshi Warrior: `2"`0I've been to Flagcity before.. ever been there?`2"
+@if `p20 is 8 then saybar
+`2Koshi Warrior: `2"`0The Dragon Tooth clan eat children.  Sick, eh?`2"
+@if `p20 is 9 then saybar
+`2Koshi Warrior: `2"`0I hear this inn has a false wall!`2"
+
+@#HRDOOR
+@if &lasty is 10 then do
+@begin
+@do moveback
+@if `p07 < 0 then do begin
+@begin
+@do saybar
+`2The March Hare: "`0Get out you slime!`2"
+@closescript
+@end
+@do saybar
+`2The March Hare : "`0Only paying customers can go back there!`2"
+@end
+
+@#DTSCMP
+@do moveback
+@busy
+@do `v01 is 1
+@label TOOTH
+@show
+`r0`c  `%Dragon Tooth Outpost.
+
+@if `p07 > -9 then do
+@begin
+@label TESTEL
+@show
+  `2Dragon Tooth Guard: "`0You bug me! Go away!`2"`k
+@drawmap
+@update
+@closescript
+@end
+@if bitcheck `t18 7 1 then do
+@begin
+@show
+  `2Dragon Tooth Guard: "`0Ah, well if it isn't `n`0, the great warrior
+    `0who helped us steal the `4smackrod`0 from the Koshi!`2"`k
+@do goto DARKFRT
+@closescript
+@end
+@if `t18 > 0 then do
+@begin
+@do goto DARKFRT
+@closescript
+@end
+
+@do goto TESTEL
+@closescript
+@end
+
+@#DARKFRT
+@do moveback
+@busy
+@do `v01 is 1
+@show
+`r0`c  `%Dragon Tooth Outpost.
+
+  `2Various shields and crests hang from the walls, as well as many bodies!
+ 
+@do write
+`x`x
+@choice
+Buy Goods.
+Leave.
+@show
+`\
+@if responce is 1 then do begin
+@begin
+@buymanager
+40
+55
+50
+59
+68
+58
+70
+@do goto DARKFRT
+@closescript
+@end
+
+@drawmap
+@update
+
+@#monster1
+@fight
+;name
+The Mad Hatter
+;string said when you see him
+You see a weird old brittish person!
+;power move kill string
+That wasn't even close! Too easy you think to yourself.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+throws a giant snowball at you|85
+pushes you into yellow snow|50
+shows you a picture of your naked grandma|55
+offers you some tea|125
+NONE|NONE
+;defense
+40
+;gold reward
+700
+;experience
+250
+;hit points
+530
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#BOUNTYLIST
+  @show
+`r0`c  `r1  Target           Payoff           Placed by               Dead/Alive`r0
+
+@do move 27 5
+@do write
+`r1`%[reading, please wait]`r0
+@do `p21 is 1
+@do `p26 is 5
+@label readmore
+@if bounty.`p21 exist TRUE then do
+     @begin
+     @readfile bounty.`p21
+`p20
+`p22
+`p23
+     @if `p21 < 201 then do
+        @begin
+        @do `s05 is getname `p21
+        @end
+     @if `p21 > 200 then do
+        @begin
+        @do `p29 is `p21
+        @do `p29 - 200
+        @do `p70 is `p29
+        @routine getname in npcname.ref
+        @do `s05 is `s01
+        @end
+     @if `p20 is 0 then `s02 is King`xSysOp
+     @if `p20 > 0 then do
+        @begin
+        @if `p20 < 201 then do
+                @begin
+                @do `s02 is getname `p20
+                @end
+        @if `p20 > 200 then do
+                @begin
+                @do `p28 is `p20
+                @do `p28 - 200
+                @do `p70 is `p28
+                @routine getname in npcname.ref
+                @do `s02 is `s01
+                @end
+        @end
+     @do `s03 is `p22
+     @if `p23 is 0 then `s04 is Dead
+     @if `p23 is 1 then `s04 is Alive
+     @if `p23 is 2 then `s04 is Either
+;    @do pad `s01 20
+;    @do pad `s03 10
+@do move 27 `p26
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+@do move 3 `p26
+@do write
+`s05
+@do move 21 `p26
+@do write
+`$$`s03 `2
+@do move 40 `p26
+@do write
+`s02
+@do move 65 `p26
+@do write
+`s04
+@do `p26 + 1
+@do move 27 `p26
+@do write
+`r1`%[reading, please wait]`r0
+     @end
+   @do `p21 + 1
+   @if `p21 < 401 then goto readmore
+
+@do move 27 `p26
+@do write
+`r1`%    [end of list]     `r0`\`k
+@if `p30 is 1 then do
+        @begin
+        @run taxes in sysop.ref
+        @end
+@if `p30 is 2 then do
+        @begin
+        @run bartend in bone.ref
+        @end
+@do goto MATCHB

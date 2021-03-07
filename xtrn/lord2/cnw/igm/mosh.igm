@@ -1,0 +1,48 @@
+
+               The BoneTown Concert Hall v1.00 by Curious Yellow
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  alright.. well.. an "upgrade" of sorts for the original. it fixes ALL BUGS,
+  (all known, at least,) and adds a new aspect to the IGM. you can drop acid.
+  if you find the guy (he's hidden, of course), you can decide how high you
+  want to get. if you take a sheet, you will be put into a mini-quest kinda
+  thing, where you have to battle all your evil emotions.
+
+  visit shadowsoft's homepage at http://home.earthlink.net/~csyellow/shadow
+
+                                curious yellow
+                            csyellow@earthlink.net
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0B`2one`0T`2own `0C`2oncert `0H`2all `2by `$Curious Yellow
+replacescreen: 974 1 noshow
+
+replacescreen: 975 2 noshow
+
+replacescreen: 976 3 noshow
+
+;replacescreen: 1287 4 noshow
+
+installmessage:
+
+  `r1 `%Is it cool? HECK YEAH. `r0
+
+`2At least.. I think it is. heh.. it replaces screens 974-976, and 1287.
+
+                `$curious yellow

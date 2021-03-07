@@ -1,0 +1,868 @@
+; Script file TALK.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:14 2001
+
+@DECLARE talk 000003745
+@DECLARE talk2 000011108
+@DECLARE gossip 000017155
+@DECLARE findrapest 000020985
+@DECLARE notalk 000024392
+@DECLARE flirt 000024441
+@DECLARE give 000024532
+@DECLARE givegold 000025133
+@DECLARE givegems 000026132
+@DECLARE giveitem 000027113
+@DECLARE fight 000027207
+@DECLARE vd 000027419
+@DECLARE leave 000027653
+@DECLARE leave2 000027723
+@DECLARE leave3 000027863
+@DECLARE leave4 000028159
+@DECLARE leave5 000028292
+@DECLARE nomore 000028355
+@NOCHECK
+; End of .REF index
+
+;
+;  NPC Talking v0.8.0
+;
+;  This is a very complicated and extensive IGM for the NPCs.
+;
+; Below are ALL the IDF files used for the IGM data.
+;
+;npc-###.idf -NPC relations with players, var#=player num, value=charmed
+;       -NPC goals in life-
+;    The lower the #, the easier to get
+;npc\npcreqc1.idf  -charm requirements on npc for 1st date
+;npc\npcreqc2.idf  -for grab ass
+;npc\npcreqc3.idf  -for 1st kiss
+;npc\npcreqc4.idf  -for official boyfriend/girlfriend (going steady)
+;npc\npcreqc5.idf  -for a lay
+;npc\npcreqc6.idf  -for engagement
+;npc\npcreqc7.idf  -for marriage
+;npc\npcreqc8.idf  -for planned kids
+;npc\npclays.idf  -lays of the NPCs
+;npc\laynp###.idf -lay history of NPC with which players
+;npc\laypl###.idf -lay history of players with which players
+;npc\laypn###.idf -lay history of players with which npcs
+;npc\npcvd.idf    -VD Y/N info on all NPCs, or other diseases. 1=VD
+;npc\npcgreed.idf -greedy? how much 0-255, 0=not at all 255=very greedy
+;       (more greedy=likes more money and gifts, less=wants an occasional flower)
+;npc\npctouch.idf -keep in touch requriments 0-255, 255=nothing 0=every day 1=1 day pass
+;      (visit npc\npc, send flowers, send letter, send cash, send gift)
+;npc\npcdy###.idf &playernum  -last day player kept in touch with NPC  (### = npc#)
+;npc\npcage.idf   -age of npc\npc
+;npc\npcslut.idf  -pay to sleep with me number (slut value) (this one is really mean) hehe
+;      (0=not a slut, 255=total cheap slut) eg255 wants 10g for a lay.
+;npc\npcloyal.idf -npc\npc loyalty level towards lovers. 0=not loyal, 255=very loyal
+;npc\npclbs.idf   -weight of npc\npc (+100)
+;npc\npchange.idf -how easy to change personality, most are 0-5. 255=total wacko
+;npc\npcgendr.idf -0=female+straight 1=male+straight 2=female+les
+                  3=male+gay 4=female+bi 5=male+bi
+;npc\npcstat.idf  -0=available, 1=dating many ppl, 2=serious dating, 4=engaged,
+;                  3=pregnantnotmarried, 6=married 7=pregnantmarried, 10=dead
+;npc\npcstat2.idf npc# &playernum  - associated with.
+;npc\npcagep.idf  -age difference preference, eg, NPC=5, it'll only accept
+;                  flirts from 5 years older or 5 years younger.
+;npc\npctimes.idf -times you can flirt with NPC/day
+;npc\npcfl###.idf -current flirts today
+;npc\npchere.idf -Is the npc here or with which player (0=here) (#=playernum)
+;npc\npcdead.idf -which day the npc will return to life. (0=alive) (#=&time)
+;npc\npctaxes.idf -npc's taxes
+;npc\npcgems.idf -the amount of gems they have
+;npc\npclost.idf npc# map# -if the npc is lost someplace.. this can be done
+;                            randomly or when a player looses the npc.
+;npc\npclost2.idf npc# playernum -which player lost this npc.. cuz player
+;                               can not find npc right away.                
+;
+;npc\npcjob.idf npc# ###  - are they for hire? 0 = yes, 1 = has misc job, 2 = whore 3 = guard, 4 =
+;
+;
+;<-- Example to make a CNW NPC active. -->
+;@do `p70 is NPC#
+;@do moveback
+;@routine talk in talk.ref
+;@if `p20 is 0 then do
+;@begin
+; <-- original npc actions here -->
+;@end
+
+
+@#talk
+; check the game style first.
+@if `v30 > 8 then goto notalk
+@busy
+;@routine getname in npcname.ref         ; <--- I need this to work!?!?! :(
+;                         -Then I could get rid of this section below!!! :)
+@if `p70 is 0 then `s01 is Nobody
+@if `p70 is 1 then `s01 is Violet
+@if `p70 is 2 then `s01 is Seth`xAble
+;East StoneBrook
+@if `p70 is 3 then `s01 is Wryn
+@if `p70 is 4 then `s01 is Kess
+@if `p70 is 5 then `s01 is Sherra
+@if `p70 is 6 then `s01 is Hattie
+@if `p70 is 7 then `s01 is Ninna
+@if `p70 is 8 then `s01 is Georgie
+@if `p70 is 9 then `s01 is Nicki
+@if `p70 is 10 then `s01 is Gei
+@if `p70 is 11 then `s01 is Sally
+@if `p70 is 12 then `s01 is Yowli
+@if `p70 is 13 then `s01 is Chip
+@if `p70 is 14 then `s01 is Mrs`xJenkins
+;GreenTree
+@if `p70 is 15 then `s01 is Laura
+@if `p70 is 16 then `s01 is Sheep`xMan
+@if `p70 is 17 then `s01 is Elle
+@if `p70 is 18 then `s01 is Ma
+@if `p70 is 19 then `s01 is Estella
+@if `p70 is 20 then `s01 is Lango
+;porttown
+@if `p70 is 21 then `s01 is Guy
+;Voodoo Temple
+@if `p70 is 22 then `s01 is Mickey
+@if `p70 is 23 then `s01 is Aerith
+@if `p70 is 24 then `s01 is Invisible`xMan
+@if `p70 is 25 then `s01 is Rudy
+@if `p70 is 26 then `s01 is Julia
+@if `p70 is 27 then `s01 is Kita
+@if `p70 is 28 then `s01 is Elay
+;Gypsy Camp
+@if `p70 is 29 then `s01 is Lilliana
+@if `p70 is 30 then `s01 is Chandler
+@if `p70 is 31 then `s01 is Lela
+@if `p70 is 32 then `s01 is Mirella
+@if `p70 is 33 then `s01 is Sherif
+@if `p70 is 34 then `s01 is Viollica
+@if `p70 is 35 then `s01 is Gimi
+;South of FlagCity
+@if `p70 is 36 then `s01 is Spence
+@if `p70 is 37 then `s01 is Lost`xMan
+@if `p70 is 38 then `s01 is Chance
+@if `p70 is 39 then `s01 is Johnny
+@if `p70 is 40 then `s01 is Old`xWarrior
+;Sosin Village
+@if `p70 is 41 then `s01 is Matt`xLongsword
+@if `p70 is 42 then `s01 is Wiscard
+@if `p70 is 43 then `s01 is Basil
+@if `p70 is 44 then `s01 is Somebody
+@if `p70 is 45 then `s01 is Somebody
+@if `p70 is 46 then `s01 is Somebody
+@if `p70 is 47 then `s01 is Somebody
+;PawnShop
+@if `p70 is 48 then `s01 is Somebody
+@if `p70 is 49 then `s01 is Nick
+;Far North
+@if `p70 is 50 then `s01 is Prince`xCorin
+@if `p70 is 51 then `s01 is Somebody
+@if `p70 is 52 then `s01 is Somebody
+@if `p70 is 53 then `s01 is Somebody
+@if `p70 is 54 then `s01 is Somebody
+@if `p70 is 55 then `s01 is Somebody
+@if `p70 is 56 then `s01 is Somebody
+@if `p70 is 57 then `s01 is Somebody
+@if `p70 is 58 then `s01 is Somebody
+@if `p70 is 59 then `s01 is Somebody
+; Loki Inn
+@if `p70 is 60 then `s01 is Loki`xGuard
+@if `p70 is 61 then `s01 is oDiN
+@if `p70 is 62 then `s01 is Hilda
+@if `p70 is 63 then `s01 is Somebody
+@if `p70 is 64 then `s01 is Somebody
+@if `p70 is 65 then `s01 is Somebody
+@if `p70 is 66 then `s01 is Somebody
+@if `p70 is 67 then `s01 is Somebody
+@if `p70 is 68 then `s01 is Somebody
+@if `p70 is 69 then `s01 is Somebody
+@if `p70 is 70 then `s01 is Somebody
+@if `p70 is 71 then `s01 is Somebody
+@if `p70 is 72 then `s01 is Somebody
+@if `p70 is 73 then `s01 is Somebody
+@if `p70 is 74 then `s01 is Somebody
+@if `p70 is 75 then `s01 is Gorilla`xGirl
+; GreenTree (again)
+@if `p70 is 76 then `s01 is Minister
+@if `p70 is 77 then `s01 is Somebody
+@if `p70 is 78 then `s01 is Somebody
+@if `p70 is 79 then `s01 is Somebody
+;Scorpian's Den
+@if `p70 is 80 then `s01 is Old`xMan`xScorp
+@if `p70 is 81 then `s01 is Famous`xDrunk
+@if `p70 is 82 then `s01 is Scorpian`xLady
+@if `p70 is 83 then `s01 is Drunk`xLady
+@if `p70 is 84 then `s01 is Scorpian`xMaid
+@if `p70 is 85 then `s01 is Somebody
+@if `p70 is 86 then `s01 is Somebody
+@if `p70 is 87 then `s01 is Somebody
+@if `p70 is 88 then `s01 is Somebody
+@if `p70 is 89 then `s01 is Somebody
+;desert figaro's castle
+@if `p70 is 90 then `s01 is Chancellor
+@if `p70 is 91 then `s01 is Edgar
+@if `p70 is 92 then `s01 is Edgars`xGuard
+@if `p70 is 93 then `s01 is Edgars`xGuard
+@if `p70 is 94 then `s01 is Forga
+@if `p70 is 95 then `s01 is Fatiguel
+@if `p70 is 96 then `s01 is Somebody
+@if `p70 is 97 then `s01 is Somebody
+@if `p70 is 98 then `s01 is Somebody
+;Sandcity
+@if `p70 is 99 then `s01 is Maverick
+;KnotWood
+@if `p70 is 100 then `s01 is Andrew
+@if `p70 is 101 then `s01 is Mr.`xAndrew
+@if `p70 is 102 then `s01 is Mrs.`xAndrew
+;Wizards Castle (near StoneBrook)
+@if `p70 is 103 then `s01 is Violetta
+@if `p70 is 104 then `s01 is Sand`xTiger
+@if `p70 is 105 then `s01 is Direct
+;path from stonebrook to greentree and around greentree
+@if `p70 is 106 then `s01 is Begger
+@if `p70 is 107 then `s01 is Sherie
+@if `p70 is 108 then `s01 is Grizelda
+@if `p70 is 109 then `s01 is Edward
+;Sword Castle
+@if `p70 is 110 then `s01 is Thug
+@if `p70 is 111 then `s01 is Mann
+@if `p70 is 112 then `s01 is Mordin
+@if `p70 is 113 then `s01 is Aqua
+@if `p70 is 114 then `s01 is Somebody
+@if `p70 is 115 then `s01 is Somebody
+;BoneTown
+@if `p70 is 116 then `s01 is Dad
+@if `p70 is 117 then `s01 is Rich`xWoman
+@if `p70 is 118 then `s01 is Jesse
+@if `p70 is 119 then `s01 is Boy
+@if `p70 is 120 then `s01 is John
+@if `p70 is 121 then `s01 is Big`xMa
+@if `p70 is 122 then `s01 is Kelley                        ;a whore
+@if `p70 is 123 then `s01 is Selena
+@if `p70 is 124 then `s01 is Drunk`xMan
+@if `p70 is 125 then `s01 is Bouncer
+@if `p70 is 126 then `s01 is D.J.
+@if `p70 is 127 then `s01 is Somebody
+@if `p70 is 128 then `s01 is Somebody
+@if `p70 is 129 then `s01 is Somebody
+;PortTown - Odin's Keep area
+@if `p70 is 130 then `s01 is Grey`xMan
+@if `p70 is 131 then `s01 is Jennie
+@if `p70 is 132 then `s01 is Rosie
+@if `p70 is 133 then `s01 is Somebody
+;Resort + Glendale near StoneBrook
+@if `p70 is 134 then `s01 is Happy`xPappy
+@if `p70 is 135 then `s01 is Dan
+@if `p70 is 136 then `s01 is Don
+@if `p70 is 137 then `s01 is Lone
+@if `p70 is 138 then `s01 is Dance
+@if `p70 is 139 then `s01 is Somebody
+@if `p70 is 140 then `s01 is Somebody
+@if `p70 is 141 then `s01 is Somebody
+@if `p70 is 142 then `s01 is Somebody
+@if `p70 is 143 then `s01 is Somebody
+@if `p70 is 144 then `s01 is Somebody
+@if `p70 > 144 then `s01 is Somebody
+;--All the Whores!--
+; Female
+@if `p70 is 170 then `s01 is Kelli
+@if `p70 is 171 then `s01 is Karen
+@if `p70 is 172 then `s01 is Mundin
+@if `p70 is 173 then `s01 is Mulan
+@if `p70 is 174 then `s01 is Pocahontas
+@if `p70 is 175 then `s01 is Samira
+@if `p70 is 176 then `s01 is Linda
+@if `p70 is 177 then `s01 is White
+@if `p70 is 178 then `s01 is Red
+@if `p70 is 179 then `s01 is Jasmine
+@if `p70 is 180 then `s01 is Marilyn
+@if `p70 is 181 then `s01 is Yewanda
+@if `p70 is 182 then `s01 is Karlita
+@if `p70 is 183 then `s01 is Kelly
+@if `p70 is 184 then `s01 is Sheila
+@if `p70 is 185 then `s01 is Bibianna
+@if `p70 is 186 then `s01 is Yuko
+@if `p70 is 187 then `s01 is Lisa
+@if `p70 is 188 then `s01 is Kina
+@if `p70 is 189 then `s01 is Kiko
+@if `p70 is 190 then `s01 is Kimbery
+@if `p70 is 191 then `s01 is Cindy
+@if `p70 is 192 then `s01 is Yurri
+@if `p70 is 193 then `s01 is Tina
+@if `p70 is 194 then `s01 is Tanya
+@if `p70 is 195 then `s01 is Saby
+@if `p70 is 196 then `s01 is Asada
+;@if `p70 is 197 then `s01 is Nobody
+@if `p70 is 198 then `s01 is Fast`xFreddy
+@if `p70 is 199 then `s01 is SysOp
+;;now 125
+@datasave npc\npcdy`p70.idf &playernum &time
+
+@label talk2
+@dataload npc/npchere.idf `p70 `p21
+@if `p21 > 0 then do
+        @begin
+        @if `p21 is &playernum then do
+                @begin
+                @if bitcheck `t50 7 1 then do
+                        @begin
+                        @do saybar
+`$`s01: `%Thank you for bringing me back home safely.`k
+                        @datasave npc/npchere.idf `p70 0
+                        @if bitcheck `t50 1 1 then do
+                                @begin
+                                @do saybar
+`%You get `@1 `%QUEST point.`k
+                                @do `p18 + 1
+                                @bitset `t50 1 0
+                                @end
+                        @if bitcheck `t50 4 1 then do
+                                @begin
+                                @do `p21 is 0
+                                @do saybar
+`$`s01: `%As promised, I might have gifts for you...let me look`l`l`k
+                                @dataload npc/npcgold.idf `p70 `p23
+                                @dataload npc/npcgems.idf `p70 `p24
+                                @dataload npc/npcgreed.idf `p70 `p25
+                                @if `p23 > 0 then do
+                                        @begin
+                                        @do `p26 random `p25 1
+                                        @do `p27 random 5 1
+                                        @if `p26 > 50 then `p23 / `p27
+                                        @do `p21 + 1
+                                        @do saybar
+`$`s01: `%here take `$`p23 `%gold...`l`l`k
+                                        @do money + `p23
+                                        @dataload npc/npcgold.idf `p70 `p27
+                                        @do `p27 - `p23
+                                        @datasave npc/npcgold.idf `p70 `p27
+                                        @bitset `t50 4 0
+                                        @end
+                                @if `p24 > 0 then do
+                                        @begin
+                                        @do `p26 random `p25 1
+                                        @do `p27 random 5 1
+                                        @if `p26 > 50 then `p24 / `p27
+                                        @do `p21 + 1
+                                        @do saybar
+`$`s01: `%here take `@`p24 `%gems...`l`l`k
+                                        @do `p19 + `p24
+                                        @dataload npc/npcgems.idf `p70 `p27
+                                        @do `p27 - `p24
+                                        @datasave npc/npcgems.idf `p70 `p27
+                                        @bitset `t50 4 0
+                                        @end
+                                @if `p21 > 0 then do
+                                        @begin
+                                        @do `p01 + 200
+                                        @do `p18 + 1
+                                        @do quebar
+You also earned 200 experience points and another quest point.`k
+                                        @end
+                                @if `p21 is 0 then do
+                                        @begin
+                                        @do saybar
+`$`s01: `%Sorry, I have nothing to give you right now...`l`l`k
+                                        @do saybar
+`$`s01: `%I will not forget about you, just come back another time...`l`l`k
+                                        @end
+                                @end
+                        @dataload npc/npc-`p70.idf &playernum `p22
+                        @do `p22 + 6
+                        @datasave npc/npc-`p70.idf &playernum `p22
+                        @do `p70 is 0
+                        @do `p71 is 0
+                        @bitset `t50 7 0
+                        @do goto leave
+                        @end
+                @end
+        @if `p71 is `p70 then do
+                @begin
+                @do saybar
+`$`s01: `%Thanks for bringing me home safely.`k
+                @do `p71 is 0
+                @datasave npc/npchere.idf `p70 0
+                @do goto leave
+                @end
+        @do saybar
+`$`s01 is NOT here at the moment.
+        @do goto leave
+        @end
+@if `p71 is `p70 then do
+        @begin
+        @do saybar
+`$`s01: `%Thanks for bringing me home safely.`k
+        @datasave npc/npchere.idf `p70 0
+        @do `p71 is 0
+        @do goto leave
+        @end
+
+
+@dataload npc/npcdead.idf `p70 `p22
+@if `p22 > 0 then do
+                @begin
+                @if `p22 < &time then do
+                        @begin
+                        @datasave npc/npcdead.idf `p70 0
+                        @do goto talk
+                        @end
+                @if `p22 is &time then do
+                        @begin
+                        @datasave npc/npcdead.idf `p70 0
+                        @do goto talk
+                        @end
+                @do saybar
+`$`s01 is currently being healed and will return soon.
+                @closescript
+                @end
+
+@do move 63 2
+@do write
+`r4`$ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 64 2
+@do write
+`r4`%`s01
+@do move 63 3
+@do write
+`r4`$³`r0                `r4³
+@do move 63 4
+@do write
+`r4`$³`r0                `r4³
+@do move 63 5
+@do write
+`r4`$³`r0                `r4³
+@do move 63 6
+@do write
+`r4`$³`r0                `r4³
+@do move 63 7
+@do write
+`r4`$³`r0                `r4³
+@do move 63 8
+@do write
+`r4`$ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do move 65 3
+@DO `V01 IS 1
+@choice
+`!Gossip
+<`v30 5 `!Flirt
+<`v30 9 `!Fight
+<`v30 7 `!Give
+`!Leave
+@if response is 1 then goto Gossip
+@if response is 2 then goto Flirt
+@if response is 3 then goto Fight
+@if response is 4 then goto Give
+@if response is 5 then goto Leave
+@closescript
+
+;bug with loading more than 2 REFs, will not go back with @routine.
+;@#Gossip
+;@routine Gossip in npcgosip.ref
+;@do goto leave
+
+@#Gossip
+@dataload npc/npcvd.idf `p70 `p21
+@if `p21 > 0 then do
+        @begin
+;Don't ALWAYS have to tell the player this.  ;-) let them get VD, mohahaha!
+        @if `p71 > 0 then do                ;can't take 2 npcs so forget telling.
+                @begin
+                @do goto notalk 
+                @end
+        @Do `p21 random 5 1
+        @if `p21 is 1 then do
+                @begin
+                @do saybar
+`$`s01: `%I have `@VD`%  `!:`@(       `k
+                @do saybar
+`$`s01: `%Can you please bring me to a healer that can help me? [Y/n]
+                @DO READSPECIAL `s03 YN
+                @if `s03 is Y then do
+                        @begin
+                        @do saybar
+`$`s01: `%Thank-you very much, take me there now please.`k
+                        @datasave npc/npchere.idf `p70 &playernum
+                        @bitset `t50 2 1
+                        @do `p71 is `p70
+                        @end
+                @do `p20 is 1
+                @drawmap
+                @do moveback
+                @update
+                @closescript
+                @end
+        @end
+;
+; Elle's Quest to find rapest.
+;
+@if bitcheck `t11 5 1 then do
+       @begin
+       @if `p70 is 39 then goto notalk
+       @if `p70 is 17 then goto notalk
+       @if `p70 is 18 then goto notalk
+       @if `p70 is 19 then goto notalk
+       @if `p70 is 15 then goto notalk
+       @if `p70 is 109 then goto notalk
+       @do `p21 random 3 1
+       @if `p21 is 1 then goto notalk
+       @if `p21 is 2 then goto notalk
+       @dataload npc/ellequst.idf &playernum `p21
+       @if `p21 > 3 then do
+        @begin
+        @do saybar
+`0`N `2: `%Do know anything on what happened with Elle?`l`k
+        @do `p22 random 10 1
+        @if `p22 is 1 then do
+                @begin
+                @if `p21 > 4 then do
+                        @begin
+                        @do `p21 - 4           <--which npc knows?
+                        @if `p70 is `p21 then do  <--talking to who knows what happened!
+                                @begin
+                                @do `s02 is `s01
+                                @do `p70 is `t82  <--who did it!
+                                @routine getname in npcname.ref
+                                @do saybar
+`0`s02 `2: `%Yah, I know what happened.`l`k
+                                @do saybar
+`0`s02 `2: `%I over heard `s01 bragging about it at the Red Dragon Inn to his friend.`l`k
+                                @do saybar
+`0`N `2: `%What did `s01 exactly say he did?`l`k
+                                @do saybar
+`0`s02 `2: `%He said he grabbed her just outside the gates and fucked her silly.`l`k
+                                @do saybar
+`0`N `2: `%Thanks for the info `s02.`l`k
+                                @do quebar
+`8< `%Perfect, this is the evidence you needed! `8>
+                                @bitset `t11 6 1
+                                @datasave npc/ellequst.idf &playernum
+                                @do `p20 is 1
+                                @closescript
+                                @end
+                        @do `p22 random 10 1
+                        @if `p22 is 1 then do
+                                @begin
+                                @do `s02 is `s01
+                                @do `p21 is `p70
+                                @routine getname in npcname.ref 
+                                @do saybar
+`0`s02 `2: `%I heard `s01 say something about it.`l`k
+                                @do `p20 is 1
+                                @closescript
+                                @end
+                        @end
+                @if `p21 is 4 then do
+                        @begin
+                       @label findrapest
+                        @do `p22 random 200 1
+                        @if `p22 is `p70 then goto findrapest  <--Can't be the one your talking to!
+                        @if `p22 is 39 then goto findrapest  <--Johnny doesn't know!
+                        @if `p22 is 18 then goto findrapest  <--can't be Ma!
+                        @if `p22 is 17 then goto findrapest  <--can't be Elle!
+                        @if `p22 is 19 then goto findrapest  <--can't be Estella!
+                        @if `p22 is 109 then goto findrapest  <--can't be Edward!
+                        @if `p22 is 15 then goto findrapest  <--can't be Laura either!
+                        @do `s02 is `s01
+                        @do `p70 is `p22
+                        @routine getname in npcname.ref 
+                        @if `s01 is Somebody then goto findrapest  <--can't be nobody!
+                        @do `p22 + 4
+                        @datasave npc/ellequst.idf &playernum `p22
+                        @do saybar
+`0`s02 `2: `%I heard `s01 say something about it, ask `$`s01.`l`k
+                        @do `p20 is 1
+                        @closescript
+                        @end
+                @end
+        @if `p22 is 2 then saybar
+`0`s01 `2: `%Sorry, all I know is she lives in GreenTree.`l`k
+        @if `p22 is 3 then saybar
+`0`s01 `2: `%She's Ma's daughter, right?`l`k
+        @if `p22 is 4 then saybar
+`0`s01 `2: `%Sorry, I don't know who you are talking about.`l`k
+        @if `p22 is 5 then saybar
+`0`s01 `2: `%Who? what happened?`l`k
+        @if `p22 is 6 then saybar
+`0`s01 `2: `%Humm, sorry, I don't think I could help you.`l`k
+        @if `p22 is 7 then saybar
+`0`s01 `2: `%What did she do?`l`k
+        @if `p22 is 8 then saybar
+`0`s01 `2: `%What happened to her?`l`k
+        @if `p22 is 9 then saybar
+`0`s01 `2: `%Humm, sorry, I don't think I could help you.`l`k
+        @if `p22 is 10 then saybar
+`0`s01 `2: `%Humm, sorry, I don't think I could help you.`l`k
+        @do `p20 is 1
+        @update
+        @closescript
+        @end
+       @end
+
+@dataload npc/npctaxes.idf `p70 `p21
+@if `p21 > 0 then do
+        @begin
+        @if `p71 > 0 then do            ;can't take 2 npcs so forget telling.
+                @begin
+                @do goto notalk 
+                @end
+        @dataload npc/npc-`p71.idf &playernum `p27
+        @if `p27 < 2 then do            ;will not talk with strangers.
+                @begin
+                @do goto notalk 
+                @end
+        @Do `p21 random 4 1
+        @if `p21 is 1 then do
+                @begin
+                @do saybar
+`$`s01: `%I haven't paid my taxes yet, i need help getting there.`!:`@(  `k
+                @do saybar
+`$`s01: `%Would you please bring me to the place to pay taxes? [Y/n]
+                @DO READSPECIAL `s03 YN
+                @if `s03 is Y then do
+                        @begin
+                        @do saybar
+`$`s01: `%Thank-you very much, take me there now please.`k
+                        @datasave npc/npchere.idf `p70 &playernum
+                        @bitset `t50 3 1
+                        @do `p71 is `p70
+                        @end
+                @do `p20 is 1
+                @drawmap
+                @do moveback
+                @update
+                @closescript
+                @end
+        @end
+
+@label notalk
+@do `p20 is 0
+@update
+@closescript
+
+@#Flirt
+@do `t72 is 0
+@do `t71 is `p70
+@routine flirt in npcflrt2.ref
+@do goto leave
+
+@#Give
+@do `p20 is 1
+@do moveback
+@update
+
+@do move 63 3
+@do write
+`r4`$³`r0                `r4³
+@do move 63 4
+@do write
+`r4`$³`r0                `r4³
+@do move 63 5
+@do write
+`r4`$³`r0                `r4³
+@do move 63 6
+@do write
+`r4`$³`r0                `r4³
+@do move 63 7
+@do write
+`r4`$³`r0                `r4³
+@do move 65 3
+@DO `V01 IS 1
+@choice
+`$  Gold   `%
+`@  Gems   `%
+`%  Items  `%
+`! Nothing `%
+@if response is 1 then goto GIVEGOLD
+@if response is 2 then goto GIVEGEMS
+@if response is 3 then goto GIVEITEM
+@if response is 4 then goto Leave
+@closescript
+
+@#GIVEGOLD
+@do move 63 3
+@do write
+`r4`$³`r0                `r4³
+@do move 63 4
+@do write
+`r4`$³`r0                `r4³
+@do move 63 5
+@do write
+`r4`$³`r0                `r4³
+@do move 63 6
+@do write
+`r4`$³`r0                `r4³
+@do move 63 7
+@do write
+`r4`$³`r0                `r4³
+@do move 65 3
+@do write
+`$How much?
+@do move 65 5
+@do readnum 10
+@if `v40 < 1 then do
+        @begin
+        @do saybar
+`4You decide to not give anything.
+        @closescript
+        @end
+@if `v40 > money then do
+        @begin
+        @do saybar
+`4You don't have that much
+        @closescript
+        @end
+@do saybar
+`$You give `s01 `v40 gold.
+@do quebar
+`$`s01: `%Thanks!
+@do money - `v40
+@do `p22 is `v40
+@do `p22 / 100
+@if `p22 > 5 then `p22 is 5
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + `p22
+@datasave npc/npc-`p70.idf &playernum `p29
+@dataload npc/npcgold.idf &playernum `p29
+@do `p29 + `v40
+@datasave npc/npcgold.idf &playernum `p29
+@closescript
+
+@#GIVEGEMS
+@do move 63 3
+@do write
+`r4`$³`r0                `r4³
+@do move 63 4
+@do write
+`r4`$³`r0                `r4³
+@do move 63 5
+@do write
+`r4`$³`r0                `r4³
+@do move 63 6
+@do write
+`r4`$³`r0                `r4³
+@do move 63 7
+@do write
+`r4`$³`r0                `r4³
+@do move 65 3
+@do write
+`$How much?
+@do move 65 5
+@do readnum 10
+@if `v40 < 1 then do
+        @begin
+        @do saybar
+`4You decide to not give anything.
+        @closescript
+        @end
+@if `v40 > `p19 then do
+        @begin
+        @do saybar
+`4You don't have that many
+        @closescript
+        @end
+@do saybar
+`$You give `s01 `v40 gems.
+@do quebar
+`$`s01: `%Thanks!
+@do `p19 - `v40
+@do `p22 is `v40
+@if `p22 > 5 then `p22 is 5
+@dataload npc/npc-`p70.idf &playernum `p29
+@do `p29 + `p22
+@datasave npc/npc-`p70.idf &playernum `p29
+@dataload npc/npcgold.idf &playernum `p29
+@do `p29 + `v40
+@datasave npc/npcgold.idf &playernum `p29
+@closescript
+
+@#GIVEITEM
+@do saybar
+`$`s01: `%I do not want anything yet. Thanks anyways.
+@closescript
+
+
+@#fight
+@do saybar
+`@Are you sure you want to fight `s01?   `7[y/N]:
+@do readspecial `s02 NY
+@if `s02 is Y then do
+        @begin
+        @routine startfight in npcfight.ref
+        @end
+@do goto leave
+
+
+@#VD
+@dataload npc\npcvd.idf `p71 `p24
+@if `p24 is 1 then do
+        @begin
+        @do `p12 is 1
+        @end
+@if `p12 is 1 then do
+        @begin
+        @datasave npc\npcvd.idf `p71 1
+        @end
+@closescript
+
+@label leave
+@routine clearmenu
+@do `p20 is 1
+;@do moveback
+@update
+@closescript
+
+@label leave2
+@routine clearmenu
+@do `p20 is 1
+;@drawmap
+@do saybar
+`$Your CONSCIENCE: `%Don't over due it buddy.
+;@do moveback
+@update
+@closescript
+
+@label leave3
+@routine clearmenu
+@do `p20 is 1
+@dataload npc/npc-`p70.idf &playernum `p21
+@do `p22 random 10 1
+@do `p21 - `p22
+@datasave npc/npc-`p70.idf &playernum `p21
+;@drawmap
+@do saybar
+`$`s01: `%HAHAHA!`k
+@do saybar
+`$`s01: `%YOU DON'T HAVE ENOUGH, GET OUT!
+;@do moveback
+@update
+@closescript
+
+@label leave4
+@routine clearmenu
+@do `p20 is 1
+;@drawmap
+@do saybar
+`$`N: `%No thanks, maybe another time.
+;@do moveback
+@update
+@closescript
+
+@label leave5
+@routine clearmenu
+@do `p20 is 1
+;@do moveback
+@update
+@closescript
+
+@#clearmenu
+@do `p40 is 2
+@do `p41 is 63
+@label clearmenunext
+@drawpart `p41 `p40
+@do `p41 + 1
+@if `p41 is 81 then do
+@begin
+@do `p41 is 63
+@do `p40 + 1
+@if `p40 is 9 then goto doneclear
+@end
+@do goto clearmenunext
+@label doneclear
+@#NOMORE
+

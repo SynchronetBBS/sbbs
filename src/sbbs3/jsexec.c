@@ -56,7 +56,11 @@ js_callback_t	cb;
 scfg_t		scfg;
 char*		text[TOTAL_TEXT];
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
+#ifndef JSDOOR
 ulong		js_opts = JAVASCRIPT_OPTIONS;
+#else
+ulong		js_opts = JSOPTION_JIT | JSOPTION_METHODJIT | JSOPTION_COMPILE_N_GO | JSOPTION_PROFILING;
+#endif
 FILE*		confp;
 FILE*		errfp;
 FILE*		nulfp;

@@ -1,0 +1,232 @@
+; Script file FIGARO.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE sign 000000528
+@DECLARE guard 000000564
+@DECLARE stair1 000000637
+@DECLARE stair2 000000693
+@DECLARE guard2 000000745
+@DECLARE guard3 000000832
+@DECLARE chancellor 000000942
+@DECLARE edgar 000001432
+@DECLARE edguard1 000002205
+@DECLARE edguard2 000002365
+@DECLARE sit 000002552
+@DECLARE bonetown 000002646
+@DECLARE inn 000003563
+@DECLARE girly 000004412
+@DECLARE girly1 000004585
+@NOCHECK
+; End of .REF index
+
+@#sign
+`7Figaro Castle `%--->
+ 
+@#guard
+@do saybar
+`0Guards: `2This is Figaro, the desert castle.
+ 
+@#stair1
+@do saybar
+`7<-- To Castle Mobility Area
+ 
+@#stair2
+@do saybar
+`7To Prison Cell Area -->
+ 
+@#guard2
+@do saybar
+`2I heard the DragonTooth Clan talking about the Red Dragon!
+ 
+@#guard3
+@do saybar
+`2The DragonTooth Clan has harnessed the Red Dragon's power. Who can stop them?
+ 
+@#chancellor
+@do `p70 is 90
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do moveback
+@clear screen
+@show
+ 
+`0     "The whole business of the succession was so repugnant to Sabin, the
+     King's brother that he fled the castle forever. The succession was
+     settled with a coin toss..." `2Chancellor explains.
+ 
+`$     "And I'm supose to give a damn!?" `2you say with a grin.
+ 
+`0     "Go away kid..."
+ 
+@key
+@drawmap
+@update
+@closescript
+@end
+
+@#edgar
+@do `p70 is 91
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do moveback
+@clear screen
+@if l2tree.dat exists true then do
+  @begin
+  @readfile l2tree.dat
+`s01
+  @end
+ 
+@if l2tree.dat exists false then do
+  @begin
+  @do `s01 is SECRET
+  @end
+ 
+@show
+ 
+ 
+`0     "Hiya there kid! So why did you decide to visit my humble
+     castle?" `2says King Edgar.
+ 
+`$     "For fun! Or anything that can help me on my quest!" `2you reply.
+ 
+`0     "Help!? I've heard that you can use the password
+     `%`s01`0 to enter some TreeHouse!"
+ 
+`$     "Thank you very much, that should be very helpful!"     
+ 
+`2     You decide to leave the king alone for now.
+ 
+   @key
+   @drawmap
+   @update
+   @closescript
+@end 
+
+@#edguard1
+@do `p70 is 92
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`0Guard: `2Feel free to wander around!
+@end
+
+@#edguard2
+@do `p70 is 93
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`0Guard: `2I've been protecting the King's life for several years now!
+@end
+
+@#sit
+@do saybar
+`7YOU DARE sit on the Queen's Thrown!? Even if there's no Queen!?
+ 
+@#bonetown
+@do moveback
+@clear screen
+@show
+ 
+`2     As you enter Figaro Castle, the guards grab you and throw you inside.
+ 
+`0     "Hurry up kid! This place is too borring, we're moving back closer
+     to PortTown, hope you don't mind!" `2the guard says.
+ 
+`$     "WHAT!? Hey what's going on!?" `2you scream out.
+ 
+`2     The castle starts rumbling, almost like there was a huge earthquake.
+     Soon the Castle stops and the guard greets you with a:
+ 
+`0     "Welcome to Figaro, the desert castle! Sorry for that, but we don't
+     like it when the Castle is located close to BoneTown, that renegade town
+     is insane, we'd rather live closer to PortTown, plus their desert is
+     alot bigger!" `2he says by giving you a smile.
+ 
+`2     You get up and pretend nothing ever happened...
+ 
+@key
+@loadmap 504
+@do map is 504
+@do x is 36
+@do y is 15
+@drawmap
+@update
+@closescript
+@end
+ 
+ 
+@#inn
+@do `v01 is 1
+@do moveback
+@clear screen
+@show
+`r0`c  `%`r1  Figaro Castle Inn  `r0
+ 
+  `2As you enter a room, you notice that you have stumbled upon
+  the local Inn of the castle.
+ 
+  A young lady approaches you with a smile.
+ 
+  `0"Welcome s&sir, how may I help you?"`2
+  
+  You are holding `$$&money`2.
+ 
+@do write
+`x`x
+@choice
+Get a room (`$$50`%)
+Leave
+@if response is 1 then do
+  @begin
+  @if money < 50 then do
+    @begin
+    @show
+`\`\`2  You are short on cash.  Maybe next time you'll have the molla!
+ 
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\  `2After giving the girl your money, you head inside...
+`\`k
+   @do money - 50
+   @do x is 37
+   @do y is 14  
+   @do map is 423
+   @loadmap 423
+   @drawmap
+   @update
+   @closescript
+  @end
+ 
+@drawmap
+@update
+ 
+@#girly
+@do `p70 is 94
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`0Forga: `2We hope you'll enjoy your stay at our Inn!
+@end
+
+@#girly1
+@do `p70 is 95
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`0Fatiguel: `2GO AWAY! Can't you see I'm trying to sleep!?
+@end

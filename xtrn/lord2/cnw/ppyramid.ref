@@ -1,0 +1,178 @@
+; Script file PPYRAMID.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:38 2001
+
+@DECLARE 1 000000495
+@DECLARE 2 000000563
+@DECLARE 3 000000631
+@DECLARE 4 000000699
+@DECLARE 5 000000767
+@DECLARE 6 000000835
+@DECLARE leave 000000907
+@DECLARE done 000001666
+@DECLARE theplace 000001713
+@DECLARE somesign 000001918
+@DECLARE serv.1 000002027
+@DECLARE serv.2 000002074
+@DECLARE serv.3 000002118
+@DECLARE ph 000002173
+@DECLARE nomore 000003049
+@NOCHECK
+; End of .REF index
+
+@#1
+@datasave pyport.idf &playernum 1
+@do goto theplace
+@end
+ 
+@#2
+@datasave pyport.idf &playernum 2
+@do goto theplace
+@end
+ 
+@#3
+@datasave pyport.idf &playernum 3
+@do goto theplace
+@end
+ 
+@#4
+@datasave pyport.idf &playernum 4
+@do goto theplace
+@end
+ 
+@#5
+@datasave pyport.idf &playernum 5
+@do goto theplace
+@end
+ 
+@#6
+@datasave pyport.idf &playernum 6
+@do goto theplace
+@end
+ 
+@#leave
+@dataload pyport.idf &playernum `p20
+@if `p20 is 1 then do
+  @begin
+  @do x is 43
+  @do y is 5
+  @do map is 1360
+  @do goto done
+  @end
+ 
+@if `p20 is 2 then do
+  @begin
+  @do x is 42
+  @do y is 11
+  @do map is 400
+  @do goto done
+  @end
+ 
+@if `p20 is 3 then do
+  @begin
+  @do x is 39
+  @do y is 8
+  @do map is 40
+  @do goto done
+  @end
+ 
+@if `p20 is 4 then do
+  @begin
+  @do x is 32
+  @do y is 16
+  @do map is 1574
+  @do goto done
+  @end
+ 
+@if `p20 is 5 then do
+  @begin
+  @do x is 67
+  @do y is 6
+  @do map is 1591
+  @do goto done
+  @end
+ 
+@if `p20 is 6 then do
+  @begin
+  @do x is 43
+  @do y is 6
+  @do map is 1194
+  @do goto done
+  @end
+ 
+@if `p20 is 0 then do
+  @begin
+  @closescript
+  @end
+ 
+@#done
+@run done in Pyramid.ref
+@end
+ 
+@#theplace
+@if `p01 < 2 then do
+        @begin
+        @do saybar
+`%The door seems to be locked.
+        @closescript
+        @end
+@do x is 52
+@do y is 10
+@do map is 1549
+@do goto done
+@end
+ 
+@#somesign
+@do moveback
+@do saybar
+`0The famous King Ptolemy will be at the Pyrmaid's square. 
+@end
+ 
+ 
+@#serv.1
+@do saybar
+`0This is hard work.
+ 
+@#serv.2
+@do saybar
+`0Its a hard job.
+ 
+@#serv.3
+@do saybar
+`0Only talk to the king once.
+ 
+ 
+@#ph
+@do moveback
+@datanewday py's.idf
+@dataload py's.idf &playernum `p20
+@if `p20 not 1 then do
+  @begin
+  @do `p21 random 7 1
+ 
+  @if `p21 is 1 then saybar
+`0King: `2If you own Rooms 1,2,3 you can enter form the lobby of Pyramid's Place.
+  @if `p21 is 2 then saybar
+`0King: `2I say yes.
+  @if `p21 is 3 then saybar
+`0King: `2Who knew.
+  @if `p21 is 4 then saybar
+`0King: `2Report bugs to `4Pyramid`0athotmail.com
+  @if `p21 is 5 then saybar
+`0King: `2The Ankh is next to the red stairs.
+  @if `p21 is 6 then saybar
+`0King: `2When looking for the Pharaoh's armor, doors can be deceiving.
+  @if `p21 is 7 then saybar
+`0King: `2It's pretty nice on the roof of Pyramid's Place.
+ 
+ 
+  @datasave py's.idf &playernum 1
+  @closescript
+  @end
+ 
+@do moveback
+@do saybar
+`2Guard "I WARNED YOU!!!"`4HIT POINTS GO DOWN TO 1.
+@do `p02 is 1
+@end
+ 
+ 
+@#NOMORE

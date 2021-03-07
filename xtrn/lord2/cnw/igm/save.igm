@@ -1,0 +1,101 @@
+
+                               SAVE v1.0 by Talaphid 
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : You betcha
+  Using any LORD2 vars?                           : Yes 
+  Overwrites any original .refs?                  : Yes/No (see below)
+  Saves and loads its own vars independently?     : Yes
+  Adds new .refs?                                 : Yes (1- SAVE.REF)
+  Replaces screens?                               : Yes (3- 1093, 379, 319)
+  Adds screens?                                   : Yes (3- 1045-7)
+  Free?                                           : Once again, yes
+  Adds items?                                     : No
+
+  Description:
+
+        An IGM to redefine how LORD 2 plays. With this version, I'm not
+sure that it all works, and this won't affect IGMs that refuse to use DIE
+in GAMETXT.REF. Morons. This IGM adds a religious order that will, upon
+the player finding them, be so nice as to resurrect the player ( at their
+choice ) at any of their [found] temples. This requirement, of finding
+a temple first, prevents it from unbalancing (a level 1 character by
+RockHolm!?) gameplay. One site is in each corner of the map, and there are
+no conflicts that I noticed.
+
+  ADDENUM:
+
+        This requires editing your GAMETXT.REF. I'm not aware of which
+ versions require what, but this will allow backwards capability probably
+ to beta 7. And forwards capability, as well. Anyway, here's what you do:
+
+ -- BACKUP GAMETXT.REF --
+ Open GAMETXT.REF in your favorite text editor... or DOS's EDIT. Whatever
+         gets the job done.
+ Find "@#DIE"
+ Delete EVERYTHING down to @#iwon
+ Add "@routine NEWLIFE in SAVE.REF"
+        So, the revelent few lines of GAMETXT.REF will look like : "
+
+@#DIE
+@routine NEWLIFE in SAVE.REF
+
+@#iwon
+;is run after someone kills a player - if in multinode combat, L2
+" minus, of course, the quotation marks... =)
+
+  Now, there's another edit in GAMETXT.REF, and its a lot more
+        tricky.
+
+  Find ";if he is dead when he logs on"
+        I'll just show you what stuff will look like post edit, you figure
+     out how to get there:"
+
+@if `v03 is 1 then do
+ @begin
+ @if dead is 1 then do
+ ;if he is dead when he logs on
+  @begin
+  @routine OLDLIFE in SAVE.REF
+  @end
+ @end
+
+
+"
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM SAVE.IGM
+
+  -and- make the necessary edits mentioned in the ADDENUM above.
+
+  To uninstall, do
+
+  IGM SAVE.IGM
+
+  again, and then restore your backup of GAMETXT.REF.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `9Save `7by `!T`3alaphid
+replacescreen: 1045 1 noshow
+
+replacescreen: 1046 2 noshow
+
+replacescreen: 1047 3 noshow
+
+replacescreen: 1093 4 show
+
+replacescreen: 379 5 show
+
+replacescreen: 319 6 show
+
+installmessage:
+
+`2        You've just made life nicer for your LORD2 players, thanks be to
+      `9Talaphid Elsdragon `@( `4Talaphid@Juno.Com `@)`2, member of `@A`$U`2.
+
+`3        Try out my other IGMs, if you haven't --
+`4             or risk an eternity in `@Hell.
+`!                   Your choice. `3=)

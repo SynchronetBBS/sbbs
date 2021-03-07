@@ -1,0 +1,101 @@
+; Script file GIVE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:38 2001
+
+@DECLARE start 000000330
+@DECLARE begin 000000862
+@DECLARE gryph 000000902
+@DECLARE give1 000001111
+@DECLARE smack 000001313
+@DECLARE give2 000001525
+@DECLARE leave 000001745
+@DECLARE haha 000001830
+@NOCHECK
+; End of .REF index
+
+@#start
+@offmap
+@do moveback
+@clear screen
+@do `v01 is 1
+@show
+`\
+`c `r1  `%SMACKROD & GRYPHON MOON DEALERSHIP    `r0
+ 
+`$  "Hello! We are here to serve those who have lost their smackrod and
+     Gryphon Moons in IGM's that stupidly don't have an option to get
+     your specialty items back.."
+ 
+`0  "That's Great!"
+`k
+@do write
+`x`x
+@choice
+Get Back Your Gryphon Moon!
+Get Back Your Smackrod!
+Leave.
+@if response is 1 then goto gryph
+@if response is 2 then goto smack
+@if response is 3 then goto begin
+ 
+@#begin
+ @drawmap
+ @update
+ @end
+ 
+@#gryph
+@if `i72 is 1 then goto leave
+@if `t98 is 6 then goto haha
+@if `t98 is 7 then goto haha
+@if bitcheck `t17 7 1 then goto give1
+@drawmap
+@do saybar
+`$ "You Havn't Saved Them You Fool!!"
+@end
+ 
+@#give1
+@clear screen
+@show
+ 
+`$   "I see you have been deprived of the Gryphon Moon. We can help."
+ 
+`%    THEY GIVE YOU BACK YOUR GRYPHON MOON!!!
+`k
+@do `i72 is 1
+@drawmap
+@update
+@end
+ 
+@#smack
+@if `i73 is 1 then goto leave
+@if `t98 is 5 then goto haha
+@if `t98 is 7 then goto haha
+@if bitcheck `t18 7 1 then goto give2
+@drawmap
+@do saybar
+`$ "You Havn't Stolen It Yet You Fool!!"
+@end
+ 
+@#give2
+@clear screen
+@show
+ 
+`$   "We've checked our records, and we see that yes, you are deprived of a
+      smackrod.."
+ 
+`%    THEY GIVE YOU BACK YOUR SMACKROD
+`k
+@do `i73 is 1
+@drawmap
+@update
+@end
+ 
+@#leave
+@drawmap
+@do saybar
+`$ "Get Out Of Here! You Already Have One!!"
+@end
+ 
+@#haha
+@drawmap
+@do saybar
+`$ "Sorry King SysOp has felt that your not responsible enough to have it"
+@end

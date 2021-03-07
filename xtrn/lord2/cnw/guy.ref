@@ -1,0 +1,407 @@
+; Script file GUY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE guy 000000314
+@DECLARE dilberstart 000000430
+@DECLARE hithim 000000938
+@DECLARE heran 000001632
+@DECLARE missed 000001816
+@DECLARE dilbert2 000002599
+@DECLARE leaveguy 000011962
+@NOCHECK
+; End of .REF index
+
+@#GUY
+@busy
+@do moveback
+@if `t57 > 10 then `t57 is 10
+@if `t57 < 0 then `t57 is 0
+@do `v01 is 1
+@label dilberstart
+@clearblock 19 23
+@do move 1 19 
+@if `t57 is 10 then do
+        @begin
+        @show
+`r0     - Dilbert -
+`7   "Thanks for your help, I'm feeling fine again now.
+`k
+        @do goto leaveguy
+        @end
+@show
+`r0     - Dilbert -
+`7   "Hi..`l
+..hehehe...`l
+`l`l`lI..um..`l`l got...hehe..stuff.`w..`w.hehe.`l`l`l`k
+@clearblock 19 23
+@do move 1 19 
+@show
+..um...hehe.`l.you...hehe...`l`l`l
+...you.`l`l..hehe.`l`l`l..want...to...buy..it?.`l`l`l`l..hehe"`k
+@DO goto dilbert2
+
+@label hithim
+@if `t56 < 4 then do
+        @begin
+        @DO `p07 + 1
+        @DO `t56 + 1
+        @do `t57 - 1
+        @clearblock 19 23
+        @do move 1 19
+        @SHOW
+`3You swing your arm as far back and `l`l.`l`l.`l`l.
+   `%POW!!`l  `k
+  `3You knocked him in the nose... Then he makes a run for it.`k
+        @clearblock 19 23
+        @do move 1 19
+        @SHOW
+  `%You did everyone a favour...
+  `$Your alignment goes up by 1`k
+        @DO GOTO leaveguy
+        @end
+
+@if `t56 > 3 then do
+        @begin
+        @clearblock 19 23
+        @do move 1 19
+        @SHOW
+
+ `%Why bother? you can't hit him anyways... `k
+        @DO GOTO leaveguy
+        @end
+
+@label heran
+@DO `t56 + 1
+@SHOW
+`3You swing your arm as far back and `l`l.`l`l.`l`l.
+   `7"hehe..`l what the.`l`lgotta go."`k 
+`3Dilbert ran away! `k
+@DO GOTO leaveguy
+@end
+
+@label missed
+@if `t56 < 4 then do
+        @begin
+        @DO `p07 - 1
+        @DO `p02 = 3
+        @DO `t56 + 1
+        @do `t57 - 1
+        @clearblock 19 23
+        @do move 1 19
+        @SHOW
+`3You swing your arm as far back and `l`l.`l`l.`l`l.
+ `4You missed!! How could you?
+ `$Your alignment goes down by 1. `k
+        @clearblock 19 23
+        @do move 1 19
+        @show
+        `7"How could you do such a thing!`l hehe.."`l
+        get..`lhehe.. out of my`l`l...`%FACE!
+        `$He returns a punch, then makes a run for it.`k
+        @DO GOTO leaveguy
+        @END
+
+@if `t56 > 3 then do
+        @begin
+        @clearblock 19 23
+        @do move 1 19
+        @SHOW
+ `%Why bother? you can't hit him anyways... `k
+        @end
+@DO GOTO leaveguy
+
+
+@#dilbert2
+@clearblock 19 23
+@do move 19 19
+@choice
+`%  Buy Some Of Dilbert's Stuff  `%
+`%       Talk to the freak       `%
+`%           Get Away            `%
+>`t57 1 <`t57 5 `%  Punch the freak in the nose  `%
+>`t57 5 `%  Give the poor guy something  `%
+>`t57 2 = &sex `%      Flirt with Dilbert       `%
+@if responce is 6 then do
+        @begin
+        @do `t57 + 1
+        @if `p08 < 5 then do
+                @begin
+                @do `t58 + 1
+                @clearblock 19 23
+                @do move 1 19
+                @SHOW
+`r0`5You merely `%wink `5at him with your beautiful eyes.
+   `l.`l.`l.`l.`w`w.`w.`k
+                @do `p27 random 3 1
+                        @if `p27 is 1 then do
+                        @begin
+                        @clearblock 19 23
+                        @do move 1 19
+                        @show
+  `5Dilbert returns a smile.`k
+  `$Your charm is increased by 1.
+  `$You feel sexier.`k
+                        @do `p08 + 1
+                        @end
+                @if `p27 is not 1 then do
+                        @begin
+                        @clearblock 19 23
+                        @do move 1 19
+                        @show
+  `5Dilbert doesn't even notice.`k
+                        @end
+                @end
+        @if `p08 > 4 < `p08 10 then do
+                @begin
+                @do random `p28 3 1
+                @if `p28 is 1 then do
+                        @begin
+                        @do `t58 + 1
+                        @clearblock 19 23
+                        @do move 1 19
+                        @SHOW
+`r0`5You merely `%throw a kiss `5at him with your sexy red lips.`l.`l.`l.`l.`w`w.`w.
+  `5Dilbert returns a wink.`k
+  `$Your charm is increased by 1.
+  `$You feel sexier.`k
+                        @do `p08 + 1
+                        @end
+                @if `p28 is not 1 then do
+                        @begin
+                        @clearblock 19 23
+                        @do move 1 19
+                        @show
+  `5Dilbert doesn't even notice.`k
+                        @end
+
+                @end
+        @if `p08 > 9 < `p08 14 then do
+                @begin
+                @do random `p28 3 1
+                @if `p28 is 1 then do
+                        @begin
+                        @do `t58 + 1
+                        @clearblock 19 23
+                        @do move 1 19
+                        @SHOW
+`r0`5You try to `%kiss him on the cheaks `5with your sexy red lips.`l.`l.`l.`l.`w`w.`w.
+  `5Dilbert returns the passionate kiss.`k
+  `$Your charm is increased by 1.
+  `$You feel sexier.`k
+                        @do `p08 + 1
+                        @end
+                @if `p28 is not 1 then do
+                        @begin
+                        @show
+                        @clearblock 19 23
+                        @do move 1 19
+  `5Dilbert dodges your kiss and pretended it didn't happen.`k
+                        @end
+                @end
+        @if `p08 > 14 then do
+                @begin
+                @do random `p28 3 1
+                @if `p28 is 1 then do
+                        @begin
+                        @do `t58 + 1
+                        @SHOW
+`r0`c
+  `5You try to `%jump his bones `5with your horny body.`l.`l.`l.`l.`w`w.`w.
+  `5Horny Dilbert polls his skirt up and accepts.`l.`l.`l.
+                        @clearblock 19 23
+                        @do move 1 19
+  `5YOU GOT LAYED!!`k
+  `$Your charm is increased by `@2.
+  `$Your lays is increased by `@1.
+  `$Your experience is increased by `@1000.`k
+                        @do `p01 + 1000
+                        @do `p08 + 1
+                        @do `p34 + 1
+                        @do `p02 / 2 
+                        @end
+                @if `p28 is not 1 then do
+                        @begin
+                        @clearblock 19 23
+                        @do move 1 19
+                        @show
+  `5Dilbert runs away scared.`k
+                        @do goto leaveguy
+                        @end
+                @end
+        @do goto dilbert2
+        @end
+
+@if responce is 4 then do
+        @begin
+        @do `p26 random 3 1
+        @if `p26 is 1 then goto missed
+        @if `p26 is 2 then goto hithim
+        @if `p26 is 3 then goto heran
+        @clearblock 19 23
+        @do move 1 19
+        @show
+`r0     - Dilbert -
+`7   "hehehe...`l`l I've still...`l`lha`lha.. got stuff! `l`lhehehe`l`l`l
+  `7   buy something`l`l.`l. hehehe"
+        @do goto dilbert2
+        @end
+
+@if responce is 5 then do
+        @begin
+        @do `p29 is &playernum
+        @routine Stick`xof`xcinnamon in extitems.ref
+        @routine bitcheck in item99.ref
+        @DO `p27 is 0
+        @if `p20 is 1 then do
+                @begin
+                @if `t57 > 3 then do
+                        @begin
+                        @DO `p27 is 2
+                        @end
+                @end
+        @clearblock 19 23
+        @do `v01 is 1
+        @do move 1 19
+        @do `p20 is `i01
+        @do `p21 is `i08
+        @do `p22 is `i03
+        @Choice
+Forget it
+>`p27 0 Offer him the Stick of cinnamon
+>`p20 0 Offer him some wildberries
+>`p21 0 Offer him momma's pie
+>`p22 0 Offer him a bottle of milk
+        @if responce is 2 then do
+                @begin
+                @clearblock 19 23
+                @do move 1 19
+                @show
+  `7"hehe`l... YES`l`l`lI`l need that!`l`l`l`l"`k
+             `$Dilbert eats the Stick of cinnamon`k
+  `7"There I feel much better now, thank you very much"`k
+                @clearblock 19 23
+                @do move 1 19
+                @routine Stick`xof`xcinnamon in extitems.ref
+                @routine bitcheck in item99.ref
+                @routine takeitem in item99.ref
+                @do `p01 + 2000
+                @do `t57 is 10
+                @do `i51 + 1
+                @do `p06 + 1
+                @show
+  `$Dilbert gives you a `+51
+  `$You get 2000 experience!
+  `$Quest point earned! `k
+                @do goto leaveguy
+                @end
+        @if responce is 3 then do
+                @begin
+                @clearblock 19 23
+                @do move 1 19
+                @do `i01 - 1
+                @show
+  `7"hehe`l... thanks`l`l`l`lhehe`lhe`l"`k
+             `$Dilbert takes the berries.`k
+  `7"hehe`l.`l.`l.more`l`l`l pie`l`l`l is`l on the he`lhehe`l way`l`l`l"`k
+                @do goto leaveguy
+                @end
+        @if responce is 4 then do
+                @begin
+                @clearblock 19 23
+                @do move 1 19
+                @do `i08 - 1
+                @show
+  `7"hehe`l... thanks`l`l`l`lhehe`lhe`l"`k
+             `$Dilbert eats momma's pie`k
+  `7"hehe`l.`l.`l.wow`l`l... thats better`l`l than `l`l`hehe`lhe`l`l my `l`l`lberry pie!"`k
+                @do goto leaveguy
+                @end
+        @if responce is 5 then do
+                @begin
+                @clearblock 19 23
+                @do move 1 19
+                @do `i03 - 1
+                @show
+  `7"hehe`l... thanks`l`l`l`lhehe`lhe`l"`k
+             `$Dilbert drinks the milk`k
+  `7"hehe`l.`l.`l.yumm`l`l... milk`l`l is`l`l`l good for `l`lme`l`hehe`lhe`l"`k
+                @do goto leaveguy
+                @end
+        @if responce is 1 then goto dilbert2
+        @end
+
+@if responce is 2 then do
+        @begin
+        @DO `t57 + 1 
+        @clearblock 19 23
+        @do move 1 19
+        @do `p20 random 5 1
+
+        @if `t57 < 2 then do
+                @begin
+                @show
+`r0  `7"hehe`l... i know `l`lhehe`l..something you`l`lhehe`l.. dont`l`lhehe`l..!`l`l`l`l"`k
+                @do goto dilbert2
+                @end
+        @if `t57 < 3 then do
+                @begin
+                @show
+`r0  `7"hehe`l... wheres my pie?`l`lhehe`l.. da man?!`l`l`l`l"`k
+                @do goto dilbert2
+                @end
+        @if `t57 < 4 then do
+                @begin
+                @show
+`r0  `7"hehe`l... yoyo `l`lhehe`l..yur perty `l`lhehe`l.. `l`l"`k
+                @do goto dilbert2
+                @end
+        @if `t57 < 5 then do
+                @begin
+                @show
+`r0  `7"hehe`l... whats happ'n`l`lhehe`l.. man?!`l`l`l`l"`k
+                @do goto dilbert2
+                @end
+        @if `t57 > 4 then do
+                @begin
+                @show
+`r0  `7"hehe`l... I've got something `l`lhehe..`lfor.. `lhehe`l`l.. you..`l hehe..
+     `7but first..`l`l.. I want someting..`l`lhehe`l.. from you...`l`lhehe..."`k
+                @do goto dilbert2
+                @end
+        @end
+
+@if responce is 1 then do
+        @begin
+        @clearblock 19 23
+        @do move 1 19
+        @SHOW
+`r0   "This is what..`l hehe..`l I have..`lhehe.."`k
+        @clearblock 19 23
+        @do move 1 19
+        @buymanager
+1
+2
+43
+51
+        @clearblock 19 23
+        @do move 1 19
+        @SHOW
+`r0     - Dilbert -
+         `7"com'n`l`l.. `l`l I know .. `lhehe `lyou want more..`l HE HE HE HE!!!"
+`k
+        @do goto dilbert2
+        @end
+
+@clearblock 19 23
+@do move 1 19
+@SHOW
+`r0     - Dilbert -
+
+         `7"Thanks.. `l`lcome again..`l HE HE HE HE!!!"
+`k
+@clearblock 19 23
+@do statbar
+@#leaveguy
+@clearblock 19 23
+@do statbar
+@update
+

@@ -1,0 +1,56 @@
+
+                     Quester by Peter Jackson V2.01
+
+                         AN IGM FOR LORD2 1.01a+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (6)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (6)
+  Free?                                           : Yes!
+
+
+  Description:
+    
+  To install, unzip into your LORD2 dir and type:
+
+  IGM QUESTER.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, from GreenTree go north towards Porttown at the 
+  pawn shop (North GreenTree) screen, go west to (Forest with small 
+  Mountain) screen, go North to (Tiny Lake) screen. You're there !
+  
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Quester `2by `4AEsir Software
+replacescreen: 1115 1 show
+;1368
+replacescreen: 1212 2 noshow
+;1369
+replacescreen: 1213 3 noshow
+;1370
+replacescreen: 1214 4 noshow
+
+replacescreen: 1384 5 noshow
+
+replacescreen: 1385 6 noshow
+
+replacescreen: 1386 7 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2A good addition to any game, not to giving, very sysop configurable.
+  Please read the Quester.doc for full details.
+
+  `0Enjoy !

@@ -1,0 +1,1552 @@
+; Script file DEEDS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:18 2001
+
+@DECLARE install 000002122
+@DECLARE deeds 000002271
+@DECLARE top 000003079
+@DECLARE display 000003188
+@DECLARE command 000004030
+@DECLARE 0 000004928
+@DECLARE 1 000004969
+@DECLARE 2 000005036
+@DECLARE 3 000005640
+@DECLARE 4 000006161
+@DECLARE 5 000006579
+@DECLARE 6 000006973
+@DECLARE 7 000007528
+@DECLARE 8 000008063
+@DECLARE 9 000008599
+@DECLARE 10 000009193
+@DECLARE 11 000009788
+@DECLARE 12 000010183
+@DECLARE 13 000010580
+@DECLARE 14 000011085
+@DECLARE 15 000011751
+@DECLARE 16 000012265
+@DECLARE 17 000012746
+@DECLARE 18 000013232
+@DECLARE 19 000013729
+@DECLARE 20 000014134
+@DECLARE 21 000014819
+@DECLARE 22 000015555
+@DECLARE 23 000016301
+@DECLARE 24 000017047
+@DECLARE 25 000017429
+@DECLARE 26 000017811
+@DECLARE 27 000018217
+@DECLARE 28 000018634
+@DECLARE 29 000019016
+@DECLARE 30 000019398
+@DECLARE 31 000019780
+@DECLARE 32 000020162
+@DECLARE 33 000020544
+@DECLARE 34 000020952
+@DECLARE 35 000021360
+@DECLARE 36 000021768
+@DECLARE 37 000022192
+@DECLARE 38 000022600
+@DECLARE 39 000023008
+@DECLARE 40 000023416
+@DECLARE 41 000023824
+@DECLARE 42 000024211
+@DECLARE 43 000024598
+@DECLARE 44 000024983
+@DECLARE 45 000025368
+@DECLARE 46 000025745
+@DECLARE 47 000026133
+@DECLARE 48 000026646
+@DECLARE 49 000027124
+@DECLARE 50 000027576
+@DECLARE 51 000028028
+@DECLARE 52 000028047
+@DECLARE 53 000028499
+@DECLARE 54 000028951
+@DECLARE 55 000029403
+@DECLARE 56 000029838
+@DECLARE 57 000030287
+@DECLARE 58 000030764
+@DECLARE 59 000031214
+@DECLARE 60 000031769
+@DECLARE 61 000032343
+@DECLARE 62 000032901
+@DECLARE 63 000033510
+@DECLARE quit 000033951
+@NOCHECK
+; End of .REF index
+
+;
+;      - Pouch of Deeds - v1.63.2 -
+;                    v= a.b.c
+;                    a= major release#
+;                    b= # of deeds supported
+;                    c= update #
+;
+;
+;       by: Joel Gathercole
+;
+;  Now released seperately from CNW.
+;
+;
+;   http://greenmachinebbs.com/lord2/
+;   telnet://greenmachinebbs.com
+;   greenie@darktech.org
+;
+@#INSTALL
+@do `s06 is Pouch`|of`|Documents
+@do `s07 is DEEDS
+@do `s08 is DEEDS.ref
+@do `s09 is NIL
+@run install in install.ref
+@closescript
+
+
+@#DEEDS
+@do `s01 is `x               ;<--Owner Name
+@do `s02 is None
+@do `s03 is `x               ;<--Password
+@do `s04 is N/A              ;<--toilet water colour
+@do `s05 is N/A              ;<--cash in tresurey
+@do `s06 is NIL              ;<--location line1
+@do `s07 is NIL              ;<--location line2
+@do `s10 is NIL              ;<--location line3
+@do `p20 is 0        <--&Playernum of owner
+@do `p21 is 0        <--Deed#
+@do `p22 is 0        <--Price NEW
+@do `p23 is 0        <--Price to sell
+@do `p24 is 0        <--<temp/unused>
+@do `p25 is 0        <--Whore Rate
+@do `p26 is 0        <--Lodging Rate
+@do `p27 is 0        <--Money in register
+@do `p28 is 0        <--<
+@do `p29 is 0        <--entries left (if rented or something)
+@do `p30 is 0        <--gold in tresurey
+@label top
+@show
+`r0
+@routine justitems in gametxt.ref
+@if `p21 < 1 then `p21 is 1
+@do goto `p21
+
+@label display
+@clearblock 13 23  
+@do move 1 14
+@show
+`r0                              `r3   `%Your Deeds   `r0            (63 deeds supported)
+            `r0`%`r3`7ษอออออออออออออออออออออออออออออออออออออออออออออออออป`r0`%U  
+             `r3`7บ                                                 `r3`7บ`r0
+            `r0`%`r3`7ศอออออออออออออออออออออออออออออออออออออออออออออออออผ`r0`%D
+           `8Use `7U `8and `7D `8to scroll, `7E`8nter to read deed, `7Q`8 to close it.
+
+            `8(not all deeds may be listed or possible to read yet)
+                         (still working on them)`0
+
+@do move 15 16
+@do `p45 is length `s08
+@if `p45 less 49 then do
+ @begin
+ @do `p46 is 50
+ @do `p46 - `p45
+ @do `p46 / 2
+ @do `p45 + `p46
+ @do frontpad `s08 `p45
+ @do pad `s08 46
+ @end
+@do `s09 is `r1`s08
+@show
+`r3`s09
+
+@label command 
+@do move 29 19
+@do write
+`d`d
+@do readspecial `s05 equd
+@if `s05 is E then do
+@begin
+@run deedinfo in deeds2.ref
+@end
+@if `s05 is Q then goto quit
+@if `s05 is U then do
+ @begin
+ @do `p21 is 0
+@do `s01 is `x
+@do `s02 is None
+@do `s03 is N/A
+@do `s04 is N/A
+@do `s05 is N/A
+@do `s06 is NIL
+@do `s07 is NIL
+@do `s10 is NIL
+@do `p20 is 0
+@do `p22 is 0
+@do `p23 is 0
+@do `p24 is 0
+@do `p25 is 0
+@do `p26 is 0
+@do `p27 is 0
+@do `p28 is 0
+@do `p29 is 0
+@do `p30 is 0
+ @do goto `p21
+ @end
+@if `s05 is D then do
+ @begin
+ @do `p21 + 1
+@do `s01 is `x
+@do `s02 is None
+@do `s03 is N/A
+@do `s04 is N/A
+@do `s05 is N/A
+@do `s06 is NIL
+@do `s07 is NIL
+@do `s10 is NIL
+@do `p20 is 0
+@do `p22 is 0
+@do `p23 is 0
+@do `p24 is 0
+@do `p25 is 0
+@do `p26 is 0
+@do `p27 is 0
+@do `p28 is 0
+@do `p29 is 0
+@do `p30 is 0
+ @do goto `p21
+ @end
+@do goto `p21
+
+
+@label 0
+@if `p21 < 1 then `p21 is 1
+
+@label 1
+@do `s08 is - Enevelope`xis`xopen -
+@do goto display
+
+@label 2
+@if qcastle.dat exist true then do
+        @begin
+        @readfile qcastle.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile qtres.dat
+`p30
+                @do `s08 is QFortress`xDeed
+                @do `s06 is From`xPort`xTown,`x8`xmiles`xwest,`x6 miles
+                @do `s09 is south,`x1`xmile`xeast.
+                @do `p22 is 50000
+                @do `p23 is 25000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 3
+;Odins Keep
+@if keep.dat exist true then do
+        @begin
+        @readfile keep.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Odins`xKeep`xDeed
+                @do `s06 is 1`xmile`xeast,`x1`xmile`xsouth`xof`xPort`xTown
+                @do `p22 is 50000
+                @do `p23 is 25000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 4
+@if tlhouse4.dat exist true then do
+        @begin
+        @readfile tlhouse4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres4.dat
+`p30
+                @do `s08 is Team`xHouse`x4`xDeed
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 5
+@if tlhouse5.dat exist true then do
+        @begin
+        @readfile tlhouse5.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres5.dat
+`p30
+        @do `s08 is Team`xHouse`x5`xDeed
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 6
+;Underground City
+@if pass1.dat exist true then do
+        @begin
+        @readfile pass1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile pastre1.dat
+`p30
+                @do `s08 is Underground`xCity`x-`xHome`x#1
+                @do `s06 is Western`xhome.
+                @do `p22 is 20000
+                @do `p23 is 10500
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 7
+@if pass2.dat exist true then do
+        @begin
+        @readfile pass2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile pastre2.dat
+`p30
+                @do `s08 is Underground`xCity`x-`xHome`x#2
+                @do `s06 is Middle`xhome.
+                @do `p22 is 20000
+                @do `p23 is 10500
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 8
+@if pass3.dat exist true then do
+        @begin
+        @readfile pass3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile pastre3.dat
+`p30
+                @do `s08 is Underground`xCity`x-`xHome`x#3
+                @do `s06 is Eastern`xhome.
+                @do `p22 is 20000
+                @do `p23 is 10500
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 9
+;jasminita's deed
+@if castle77.dat exist true then do
+        @begin
+        @readfile castle77.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Jasminita's`xDeed`x-`xDragon`xHousing
+                @do `s06 is Dragon's`xDen`xhousing`xis`xlocated
+                @do `s09 is next`xto`xGreenTree.
+                @do `p22 is 15000
+                @do `p23 is 7500
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 10
+;Esperanto's deed
+@if castle79.dat exist true then do
+        @begin
+        @readfile castle79.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Esperanto's`xDeed`x-`xDragon`xHousing
+                @do `s06 is Dragon's`xDen`xhousing`xis`xlocated
+                @do `s09 is next`xto`xGreenTree.
+                @do `p22 is 25000
+                @do `p23 is 15500
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 11
+@if tlhouse1.dat exist true then do
+        @begin
+        @readfile tlhouse1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres1.dat
+`p30
+        @do `s08 is Team`xHouse`x1`xDeed
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 12
+@if tlhouse3.dat exist true then do
+        @begin
+        @readfile tlhouse3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres3.dat
+`p30
+        @do `s08 is Team`xHouse`x3`xDeed
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+
+@label 13
+;Gumtown Castle
+@if gumcast.dat exist true then do
+        @begin
+        @readfile gumcast.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile gumtres.dat
+`p30
+                @do `s08 is Gumtown`xCastle`xDeed
+                @do `p22 is 200000
+                @do `p23 is 100000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+@label 14
+@if castle4.dat exist true then do
+        @begin
+        @readfile castle4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tres4.dat
+`p30
+                @readfile castle4a.dat
+`p26
+`p24
+                @readfile ninnw6.dat
+`s04
+`s04
+                @readfile ninn1b.dat
+`p25
+`p27
+                @do `p27 + `p24
+                @do `p22 is 25000
+                @do `p23 is 10000
+                @do `s08 is Sosen`xInn`xDeed
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 15
+;IceLord
+@if castle1.dat exist true then do
+        @begin
+        @readfile castle1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is IceLord`xKeep`xDeed
+                @readfile tres1.dat
+`p30
+                @do `p22 is 50000
+                @do `p23 is 25000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+
+;other castles
+
+@label 16
+@if castle2.dat exist true then do
+        @begin
+        @readfile castle2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Castle`xColdrake
+                @readfile tres2.dat
+`p30
+                @do `p22 is 20000
+                @do `p23 is 10000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 17
+@if castle3.dat exist true then do
+        @begin
+        @readfile castle3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Wizard's`xTower`xDeed
+                @readfile tres3.dat
+`p30
+                @do `p22 is 40000
+                @do `p23 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 18
+;cottage inn
+@if cott.dat exist true then do
+        @begin
+        @readfile cott.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Cottage`xInn`xDeed
+                @readfile cotta.dat
+`p26
+`p27
+                @do `p22 is 65000
+                @do `p23 is 40000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 19
+@if tlhouse2.dat exist true then do
+        @begin
+        @readfile tlhouse2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres2.dat
+`p30
+        @do `s08 is Team`xHouse`x2`xDeed
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+        
+
+@label 20
+@if NINN1.dat exist true then do
+;Ma's Boarding house
+        @begin
+        @readfile ninn1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile ninn1a.dat
+`p26
+`p24
+                @readfile ninn1b.dat
+`p25
+`p27
+                @readfile ninnw1.DAT
+`s04
+`s04
+                @readfile ninnt1.DAT
+`p30
+                @do `p27 + `p24
+                @do `s06 is Inside`xGreenTree. East`xend.
+                @do `s08 is Ma's`xBoarding`xHouse`xDeed
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+
+@label 21
+@if NINN2.dat exist true then do
+;Sea Hag Hotel
+        @begin
+        @readfile ninn2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile ninn2a.dat
+`p26
+`p24
+                @readfile ninn2b.dat
+`p25
+`p27
+                @readfile ninnw2.DAT
+`s04
+`s04
+                @readfile ninnt2.DAT
+`p30
+                @do `p22 is 65000
+                @do `p23 is 30000
+                @do `p27 + `p24
+                @do `s06 is East`xend`xof`xPortTown.
+                @do `s08 is Sea`xHag`xHotel`xDeed
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 22
+;The Woodlog Inn
+@if NINN3.dat exist true then do
+        @begin
+        @readfile ninn3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile ninn3a.dat
+`p26
+`p24
+                @readfile ninn3b.dat
+`p25
+`p27
+                @readfile ninnw3.DAT
+`s04
+`s04
+                @readfile ninnt3.DAT
+`p30
+                @do `p22 is 65000
+                @do `p23 is 30000
+                @do `p27 + `p24
+                @do `s06 is The`xinn`xinside`xof`xBoneTown
+                @do `s08 is The`xWoodlog`xInn`xDeed
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 23
+;FlagCity Inn
+@if NINN4.dat exist true then do
+        @begin
+        @readfile ninn4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile ninn4a.dat
+`p26
+`p24
+                @readfile ninn4b.dat
+`p25
+`p27
+                @readfile ninnw4.DAT
+`s04
+`s04
+                @readfile ninnt4.DAT
+`p30
+                @do `p22 is 65000
+                @do `p23 is 30000
+                @do `p27 + `p24
+                @do `s08 is Flag`xCity`xInn`xDeed
+                @do `s06 is FlagCity`xis`xon`xthe`xwest`xcoast.
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 24
+@if room1.dat exist true then do
+        @begin
+        @readfile room1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+        @do `s08 is Loki`xInn`x-`xRoom`x101
+                @do `p22 is 15000
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 25
+@if room2.dat exist true then do
+        @begin
+        @readfile room2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+        @do `s08 is Loki`xInn`x-`xRoom`x102
+                @do `p22 is 15000
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 26
+@if room3.dat exist true then do
+        @begin
+        @readfile room3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x103
+                @do `p22 is 15000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 27
+@if room4.dat exist true then do
+        @begin
+        @readfile room4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `p22 is 15000
+        @do `s08 is Loki`xInn`x-`xRoom`x104
+                @do `p22 is 15000
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 28
+@if room5.dat exist true then do
+        @begin
+        @readfile room5.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+        @do `s08 is Loki`xInn`x-`xRoom`x105
+                @do `p22 is 15000
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 29
+@if room6.dat exist true then do
+        @begin
+        @readfile room6.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+        @do `s08 is Loki`xInn`x-`xRoom`x106
+                @do `p22 is 15000
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 30
+@if room7.dat exist true then do
+        @begin
+        @readfile room7.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+        @do `s08 is Loki`xInn`x-`xRoom`x107
+                @do `p22 is 15000
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 31
+@if room8.dat exist true then do
+        @begin
+        @readfile room8.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+        @do `s08 is Loki`xInn`x-`xRoom`x108
+                @do `p22 is 15000
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 32
+@if room9.dat exist true then do
+        @begin
+        @readfile room9.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+        @do `s08 is Loki`xInn`x-`xRoom`x109
+                @do `p22 is 15000
+        @do goto display
+        @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 33
+@if room10.dat exist true then do
+        @begin
+        @readfile room10.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x110
+                @do `p22 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 34
+@if room11.dat exist true then do
+        @begin
+        @readfile room11.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x111
+                @do `p22 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 35
+@if room12.dat exist true then do
+        @begin
+        @readfile room12.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x112
+                @do `p22 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 36
+@if room13.dat exist true then do
+        @begin
+        @readfile room13.dat
+`p20               
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x113 
+                @do `p22 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 37
+@if room14.dat exist true then do
+        @begin
+        @readfile room14.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x114
+                @do `p22 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 38
+@if room15.dat exist true then do
+        @begin
+        @readfile room15.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x115
+                @do `p22 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 39
+@if room16.dat exist true then do
+        @begin
+        @readfile room16.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x116
+                @do `p22 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 40
+@if room17.dat exist true then do
+        @begin
+        @readfile room17.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x117
+                @do `p22 is 20000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 41
+@if castle71.dat exist true then do
+        @begin
+        @readfile castle71.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Little`xShack`x-`xDragon`xHousing
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 42
+@if castle72.dat exist true then do
+        @begin
+        @readfile castle72.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Little`xShack`x-`xDragon`xHousing
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@Label 43
+@if castle73.dat exist true then do
+        @begin
+        @readfile castle73.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Little`xShack`x-`xDragon`xHousing
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto 44
+@end
+
+@Label 44
+@if castle74.dat exist true then do
+        @begin
+        @readfile castle74.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Little`xShack`x-`xDragon`xHousing
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto 45
+@end
+
+@Label 45
+@if castle75.dat exist true then do
+        @begin
+        @readfile castle75.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x-`xDragon`xHousing
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto 46
+@end
+
+@Label 46
+@if castle76.dat exist true then do
+        @begin
+        @readfile castle76.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Beautiful`xHouse`x-`xDragon`xHousing
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto 47
+@end
+
+@label 47
+@if castle78.dat exist true then do
+        @begin
+        @readfile castle78.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Royal's`xDeed`x-`xDragon`xHousing
+                @do `s06 is Just`xeast`xof`xGreenTree.
+                @do `p22 is 20000
+                @do `p23 is 10000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 48
+@if house1.dat exist true then do
+        @begin
+        @readfile house1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is GreenTree`xManor
+                @readfile bucket.dat
+`p30
+                @do `p22 is 5000
+                @do `p23 is 2500
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 49
+@if ffhouse1.dat exist true then do
+        @begin
+        @readfile ffhouse1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#1`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 50
+@if ffhouse2.dat exist true then do
+        @begin
+        @readfile ffhouse2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#2`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 51
+@end
+
+@label 52
+@if ffhouse3.dat exist true then do
+        @begin
+        @readfile ffhouse3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#3`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 53
+@if ffhouse4.dat exist true then do
+        @begin
+        @readfile ffhouse4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#4`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 54
+@if ffhouse5.dat exist true then do
+        @begin
+        @readfile ffhouse5.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#5`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 55
+@if jcastle.dat exist true then do
+        @begin
+        @readfile jcastle.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Torin`xCastle
+                @do `p22 is 50000
+                @do `p23 is 25000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 56
+@if 1stclass.dat exist true then do
+        @begin
+        @readfile 1stclass.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Extacy's`x1st`xClass`xHouse
+                @do `p22 is 7000
+                @do `p23 is 3000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 57
+@if myst1.dat exist true then do
+        @begin
+        @readfile myst1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile myst1a.dat
+`p26
+`p27
+                @do `s08 is Myst`xInn
+                @do `p22 is 50000
+                @do `p23 is 10000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 58
+@if felhouse.dat exist true then do
+        @begin
+        @readfile felhouse.dat
+`p20
+`p26
+`p27
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Felicity`xGuest`xHouse
+                @do `p22 is 7000
+                @do `p23 is 5000
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 59
+@if blackdgn.dat exist true then do
+        @begin
+        @readfile blackdgn.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Black`xDragon`xCastle
+                @do `p22 is 100000
+                @do `p23 is 50000
+                @readfile dragtres.dat
+`p30
+                @do `s06 is Far`xNorth`xWest`xof`xArrisVille.
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 60
+@if ship$.dat exist true then do
+        @begin
+        @readfile ship$.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is 
+                @do `p22 is 100000
+                @do `p23 is 50000
+                @readfile shiptres.dat
+`p30
+                @do `s08 is The`xSea`xSerpent
+                @do `s06 is Along`xthe`xbeach,`xits`xa`xSHIP
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 61
+@if camelot.dat exist true then do
+        @begin
+        @readfile camelot.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is 
+                @do `p22 is 60000
+                @do `p23 is 30000
+                @readfile cam.dat
+`p30
+                @do `s08 is Castle`xCamelot
+                @do `s06 is Near`xSosen`xvillage
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 62
+@if hong3.dat exist true then do
+        @begin
+        @readfile hong3.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is 
+                @do `p22 is 20000
+                @do `p23 is 10000
+                @readfile hong3a.dat
+`p25
+`p27
+                @readfile tres5.dat
+`p30
+                @do `s08 is Hong`xKong`xStudio
+                @do `s06 is Near`xSosen`xvillage
+                @do goto display
+                @end
+        @do `p21 + 1
+        @do goto `p21
+        @end
+@do `p21 + 1
+@do goto `p21
+@end
+
+@label 63
+@if room18.dat exist true then do
+        @begin
+        @readfile room18.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x118
+                @do `p22 is 20000
+                @do `p21 is 0
+                @do goto display
+                @end
+        @do `p21 is 1
+        @do goto 1
+        @end
+@do `p21 is 1
+@do goto 1
+@end
+    
+@label quit
+@run justitems in gametxt.ref
+@Closescript

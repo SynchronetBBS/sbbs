@@ -1,0 +1,1313 @@
+; Script file BATTLE2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE done 000001431
+@DECLARE gone 000001439
+@DECLARE queen 000001467
+@DECLARE queen2 000001913
+@DECLARE codqueen 000004190
+@DECLARE sharsec 000004357
+@DECLARE shara 000004537
+@DECLARE power2 000004689
+@DECLARE miqueen 000007237
+@DECLARE flirt 000008495
+@DECLARE mad 000010070
+@DECLARE codent 000012722
+@DECLARE codex 000012830
+@DECLARE notdead 000012940
+@DECLARE stickout 000013180
+@DECLARE dare 000013375
+@DECLARE welcome 000013590
+@DECLARE what 000013780
+@DECLARE powsod 000013966
+@DECLARE sharspy 000014162
+@DECLARE soldcod 000014373
+@DECLARE xbow 000014486
+@DECLARE scary 000015765
+@DECLARE codax 000015822
+@DECLARE power3 000016008
+@DECLARE miqueen2 000018540
+@DECLARE sharent 000019805
+@DECLARE sharexit 000019907
+@DECLARE shar1 000020006
+@DECLARE shar2 000020101
+@DECLARE shar3 000020190
+@DECLARE shar4 000020351
+@DECLARE shar5 000020436
+@DECLARE shar6 000020612
+@DECLARE lifesprng 000020704
+@DECLARE human 000020821
+@DECLARE lost 000021034
+@DECLARE sha1 000021261
+@DECLARE sha2 000021521
+@DECLARE sha3 000021753
+@DECLARE pow 000021999
+@DECLARE herelys 000022316
+@DECLARE cyrus 000022406
+@DECLARE assasin 000024557
+@DECLARE prize 000024596
+@DECLARE opendoor 000025872
+@NOCHECK
+; End of .REF index
+
+;Battle2.ref
+;All origonal code by the one and only Codax of Dragon's Den Ultd
+@#done
+@#gone
+@drawmap
+@update
+@#queen
+@if `p83 is 1 then `s01 is Queen
+@if `p83 is 2 then `s01 is Queen
+@if `p83 is 3 then `s01 is Second
+@readfile bounty.&playernum
+`p24
+`p25
+@
+@do delete bounty.&playernum
+@do `p25 + 500
+@writefile bounty.&playernum
+`p24
+`p25
+@
+@do `p20 is &time
+@do `p21 is `p86
+@do `p20 - `p21
+@writefile lognow.txt
+ 
+	    `0`s01 `n `2has ruled for `p20 days
+		Will the tyrany stop?
+@	
+@do `p21 random 100 100
+@do `p85 + `p21
+@label queen2
+@show
+`r0`c  `r1`%  So how does it feel to be `s01?  `r0`2
+ 
+   Good day!  Royal taxes have brought in `$$`p21`2 for you!
+             Royal Treasury now at `$$`p85!
+	You have ruled this kingdom for `p20 days!!!
+ 
+@do `v01 is 1
+@choice
+Take money out treasury
+Put money in treasury
+Sleep
+Abdicate the throne
+Leave
+@
+ 
+@if responce is 5 then do
+@begin
+@routine gone
+@end
+ 
+@if responce is 4 then do
+@begin
+@show
+`r0`c  `r1`%  Are you sure?  `r0`2
+ 
+	Do you really want to abdicate the throne?(Y,N)
+@do readspecial `s01 NY
+@if `s01 is N then do
+@begin
+@do write
+`2  PHWEW!  That's good!`k
+@do goto queen2
+@end
+@if `s01 is Y then do
+@begin
+@do `p83 is 0
+@show
+`\`\`\`\
+		Good bye my leige!  We enjoyed your presence!`k
+@do `p07 - 50
+@do delete bounty.&playernum
+@writefile lognow.txt
+ 
+`2       NEWS FLASH!:    `0`S01 `N`2 HAS ABDICATED S&HIS THRONE!!!!           
+		AFTER `0`P20 DAYS!!!!!  PEASENTS ARE RESTLESS!
+ 
+@routine gone
+@update
+@end
+@end
+ 
+@if responce is 3 then do
+@begin
+@do `p02 is `p03
+@show
+`r0`c
+                     Sleep well my liege!`k
+ 
+@halt
+@end
+ 
+ 
+@if responce is 2 then do
+@begin
+@show
+`\`\`\`\`\  How much would you like to put in?
+ 
+@do readnum 9 money
+@do `p22 is `v40
+@if `p22 > money then do
+@begin
+@do write
+Sorry, you don't have that much on hand!`k
+@do goto queen2
+@end
+@if `p22 < money then do
+@begin
+@do `p85 + `p22
+@do money - `p22
+@do write
+`p22 Gold Deposited!  Royal Tresury now at `p85`k
+@do goto queen2
+@end
+@if `p22 = money then do
+@begin
+@do `p85 + `p22
+@do money - `p22
+@do write
+`p22 Gold Deposited!  Royal Tresury now at `p85`k
+@do goto queen2
+@end
+@end
+ 
+@if responce is 1 then do
+@begin
+@show
+`\`\`\`\`\  How much would you like to take out?
+ 
+@do readnum 9 `p85
+@do `p22 is `v40
+@if `p22 > `p85 then do
+@begin
+@do write
+Sorry, but you don't have that much money in the Royal Tresury`k
+@do goto queen2
+@end
+@if `p22 < `p85 then do
+@begin
+@do `p85 - `p22
+@do money + `p22
+@do write
+Enjoy your money!  Royal Treasury now at `p85!`k
+@do goto queen2
+@end
+@if `p22 = `p85 then do
+@begin
+@do `p85 is 0
+@do money + `p22
+@do write
+Enjoy your money!  Royal Treasury now at `p85!`k
+@do goto queen2
+@end
+ 
+@#codqueen
+@if `p83 not 2 then do
+@begin
+@do moveback
+@do saybar
+You arn't the queen!!  Get outta here!
+@end
+@if `p83 is 2 then do
+@begin
+@run queen
+@end
+ 
+@#sharsec
+@if `p83 not 3 then do
+@begin
+@do moveback
+@do saybar
+You arn't Shara's Second!  Get outta here!
+@run done
+@end
+@if `p83 is 3 then do
+@begin
+@run queen
+@end
+ 
+@#shara
+@do moveback
+@if bitcheck `t23 7 1 then do
+@begin
+@do saybar
+Shara is Dead!
+@run done
+@end
+@if bitcheck `t23 7 0 then do
+@begin
+@label power2
+@do `p20 random 5 1
+@if `p20 is 1 then `s01 is Did`xyou`xhear`xthe`xone`xabout`xthe`xsamon?
+@if `p20 is 2 then `s01 is Whats`xblack`xand`xwhite`xand`xread`xall`xover?
+@if `p20 is 3 then `s01 is How`xmuch`xwood`xcoulda`xwoodchuck`xchuck?
+@if `p20 is 4 then `s01 is Why`xdid`xthe`xdragon`xcross`xthe`xstreet?
+@if `p20 is 5 then `s01 is Nice`xshoes.
+@show
+`r0`c  `r1`%  The Burning Phoenix Queen  `r0`2
+ 
+ 
+  "`0What do you want from me?  I'm a busy Phoenix!!!`2"  Shara Booms.
+ 
+			Royal Favor:  `0`p88
+			
+@
+@do `v01 is 1
+@choice
+=`p88 0 How about `$$1,000,000,000
+>`p88 0 `s01
+=`p88 1 Nice castle...Looks like all the other ones I've seen
+>`p88 1 =&sex 1 Flirt
+>`p88 2 Why do you 3 fight?
+>`p88 3 =`p81 0 I would like to be your assasin!
+>`p88 49 =&sex 1 =`p83 0 Can I be your Second?
+-`t21 0 >`p90 1 I've killed those spys!
+>`p84 1 I've killed those Royals!
+Leave
+@
+ 
+@if responce is 6 then do
+@begin
+@if `p83 is 3 then `p25 is 1
+@if `p83 is 0 then `p25 is 1 
+@if `p25 is 1 then do
+@begin
+@run assasin
+@end
+@if `p25 not 1 then do
+@begin
+@routine gone
+@do saybar
+You have already pleadged your alegence to another!
+@end
+@end
+ 
+@if responce is 4 then do
+@begin
+@routine flirt
+@routine gone
+@end
+ 
+@if responce is 3 then do
+@begin
+@show
+`\`\`\`\`0  'Sadly It's true, we all hired the same person to our castles
+ The lowsy bum cut corners and made all the castles almost identical!!!
+ You have alot of backbone for asking that!`k
+@do `p88 + 2
+@Do goto power2
+@end
+  
+@if responce is 1 then do
+@begin
+@show
+`\`\`\`\`0   'HAHAHAHAHAHAAHAHHAAaa!!!  You amuze me `n!`l`l`l`l
+@do `p88 + 1
+@do goto power2
+@end
+ 
+@if responce is 2 then do
+@begin
+@show
+`\`\`\`0`\  'Yawn.....Heard that one already....Go away!
+`k
+@do `p88 is 0
+@routine gone
+@update
+@do statbar
+@end
+ 
+@if responce is 5 then do
+@begin
+@do `p88 + 1
+@run story in battlest.ref
+@end
+ 
+@if responce is 10 then do
+@begin
+@routine gone
+@update
+@do statbar
+@end
+ 
+@if responce is 9 then do
+@begin
+@bitset `t21 1 1
+@show
+`\`\`\`\`\0  Wonderful!!!!  Hahaha Now I rule this area!!!  The war is
+  finaly over!!!  And I won!!!`k  
+@run sharend in battlest.ref
+@end
+ 
+@if responce is 8 then do
+@begin
+@bitset `t21 0 1
+@show
+`0`c Good You've finaly killed those spys!  I begining to like you!
+ Next, you should Kill`l.`l.`l. Power and Codax!
+`%Quest points up 10
+`k
+@
+@do `p18 + 10
+@do `p88 + 3
+@do `p84 + 0
+@routine gone
+@update
+@end
+ 
+@if responce is 7 then do
+@begin
+@label miqueen
+@if battleqs.cod exists false then do
+@begin
+@writefile battleqs.cod
+0
+0
+0
+@
+@do goto miqueen
+@end
+@if battleqs.cod exists true then do
+@begin
+@readfile battleqs.cod
+`p30
+`p29
+`p28
+@
+@if `p28 not 0 then do
+@begin
+@do `s01 getname `p28
+@show
+`\`\`\`\`0  "Sorry `n, but `s01 is already my Second.`k
+@do goto power2
+@end
+@if `p28 is 0 then do
+@begin
+@do write
+`\`\`\`\`0 Shara Looks up and down your body`l.`l.`l.
+@do `p20 is 0
+@if `p07 > 100 then `p20 + 1
+@if `p07 < 101 then do
+@begin
+@do write
+`0  You need to be more Nice`l.`l.`l.
+@end
+@if `p08 > 80 then `p20 + 1
+@if `p08 < 81 then do
+@begin
+@do write
+`0  Your not that handsom`l.`l.`l.
+@end
+@if `p20 not 2 then do
+@begin
+@do write
+`\`\Sorry you just aren't Second Material `k
+@do goto power2
+@end
+@if `p20 is 2 then do
+@begin
+@do delete battleqs.cod
+@writefile battleqs.cod
+`p30
+`p29
+&playernum
+@
+@do `p83 is 3
+@do write
+`\`\Where have you been all my life!`k
+@writefile lognow.txt
+ 
+ `%    ATTENTION!!!!`0   SHARA'S `2HAS FOUND A SECOND!!!  PEASANTS ARE RESTLESS
+                    HE IS THE HANDSOM`0 `n
+@do `p85 + 5000
+@do `p86 is &time
+@routine gone
+@update
+@do saybar
+Congradulations!!!  You are Shara's Second!!!
+@end
+ 
+@#flirt
+@if battle.&playernum exists false then do
+@begin
+@writefile battle.&playernum
+0
+@run flirt
+@end
+ 
+@if battle.&playernum exists true then do
+@begin
+@if map is 484 then `s01 is Power
+@if map is 486 then `s01 is Codax
+@if map is 488 then `s01 is Shara
+@if map < 488 then `s02 is him
+@if map > 487 then `s02 is her
+@readfile battle.&playernum
+`p26
+@show
+ 
+  `r0`c`r1`%  Puttine the moves on `s01   `r0`2
+ 
+ `s01 looks over at you.  You approach `s02.  What do you
+  you do?
+ 
+@do `v01 is 1
+@choice
+>&time `p26 Whisper Sweet nothings
+>&time `p26 Kiss him
+>&time `p26 Give him a massage
+>&time `p26 Hug him
+>&time `p26 Grab his butt
+>&time `p26 Sit on his lap
+>&time `p26 French Him
+>&time `p26 Take `s02 to bed
+Nevermind
+@
+ 
+@if responce is 8 then do
+@begin
+@do delete battle.&playernum
+@writefile battle.&playernum
+&time
+@if `p08 < 50 then do
+@begin
+@routine gone
+@run done
+@end
+@if `p08 > 49 then do
+@begin
+@if `s01 is Power then `p82 + 8
+@if `s01 is Codax then `p87 + 8
+@if `s01 is Shara then `p88 + 8
+@do `p08 + 5
+@do `p01 + 900
+@routine gone
+@do `p22 is 7
+@do `p23 is 5
+@routine flirt in battlefx.ref
+@end
+@end
+ 
+@if responce is 1 then do
+@begin
+@do delete battle.&playernum
+@writefile battle.&playernum
+&time
+@show
+`c`2
+    You start telling `s01 everthing you like about `s02.`k
+         Charm goes up 1
+@do `p08 + 1
+@routine gone
+@do statbar
+@end
+ 
+@if responce is 7 then do
+@begin
+@do delete battle.&playernum
+@writefile battle.&playernum
+&time
+@
+@if `p08 < 30 then do
+@begin
+@label mad
+@routine gone
+@do saybar
+HOW DARE YOU!!  I GUESS I'LL SPARE YOU!  DON'T EVER TRY THAT AGAIN!
+@end
+@if `p08 > 29 then do
+@begin
+@Show
+`c`2
+ You grab `s01 by the waist and pull `s02 toward you.`k
+      You force you face on `s02 and you easy slip `s02's lips open.
+`k       You move your tounge in and wave it around in `s02's mouth`l.`l.`l.
+`k           Charm goes up 9!  Favor goes up!  Lucky you werent' beheaded!
+@do `p08 + 9
+@if `s01 is Shara then `p88 + 5
+@if `s01 is Power then `p82 + 5
+@if `s01 is Codax then `p87 + 5
+@routine gone 
+@do statbar
+@end
+@end
+ 
+@if responce is 6 then do
+@begin
+@do delete battle.&playernum
+@writefile battle.&playernum
+&time
+@if `p08 < 20 then do goto mad
+@if `p08 > 19 then do
+@begin
+@show
+`c`2
+  You sit on `s01's lap and `s01 `l.`l.`l.`l.`s01 laughs hartily and
+  kisses you on the cheek`k  Charm + 8!  Favor goes up!
+@do `p08 + 8
+@if `s01 is Power then `p82 + 3
+@if `s01 is Codax then `p87 + 3
+@if `s01 is Shara then `p88 + 3
+@routine gone
+@do statbar
+@end
+@end
+ 
+@if responce is 5 then do
+@begin
+@do delete battle.&playernum
+@writefile battle.&playernum
+&time
+@if `p08 < 18 then do goto mad
+@if `p08 > 17 then do
+@begin
+@show
+`c`2
+  You take both hands and plant them firmly on `s01's buttux.  You rub a second
+`l.`l.`l.`l.Then `s01 Smiles at you and blows you a kiss!
+Charm + 6  Favor up!
+`k
+@do `p08 + 6
+@if `s01 is Shara then `p88 + 1
+@if `s01 is Codax then `p87 + 1
+@if `s01 is Power then `p82 + 1
+ 
+@routine gone
+@do statbar
+@end
+@end
+ 
+@if responce is 4 then do
+@begin
+@do delete battle.&playernum
+@writefile battle.&playernum
+&time
+@if `p08 < 9 then do goto mad
+@if `p08 > 8 then do
+@begin
+@show
+`c`2
+  You give `s01 a great big hug!`k  `s01 hugs you back!
+  Charm + 2`k 
+@do `p08 + 2
+@routine gone
+@do statbar
+@end
+@end
+ 
+@if responce is 3 then do
+@begin
+@do delete battle.&playernum
+@writefile battle.&playernum
+&time
+@if `p08 < 3 then do goto mad
+@if `p08 > 2 then do
+@begin
+@show
+`c`2
+ You give `s01 a massage`l.`l"Ummm`l.`l.Ohhhh`l.`lOh yeah right there"
+   `s01 loves it!  Charm + 3  Favor up
+`k
+@do `p08 + 3
+@if `s01 is Shara then `p88 + 4
+@if `s01 is Codax then `p87 + 4
+@if `s01 is Power then `p82 + 4
+@routine gone
+@do statbar
+@end
+@end
+ 
+@if responce is 2 then do
+@begin
+@do delete battle.&playernum
+@writefile battle.&playernum
+&time
+@show
+`c`2
+You lean over and give `s01 a kiss on the cheek and`l.`l.`l.`s01 blushes`k
+ Charm goes up 1`k
+@do `p08 + 1
+@routine gone
+@Do statbar
+@end
+ 
+@if responce is 9 then do
+@begin
+@routine gone
+@do statbar
+@end
+ 
+;Cod
+@#codent
+@do map is 646
+@loadmap 646
+@routine fade in battlefx.ref
+@do x is 37
+@do y is 19
+@update
+ 
+@#codex
+@do map is 213
+@loadmap 213
+@routine fade in battlefx.ref
+@do x is 31
+@do y is 13
+@update
+ 
+@#notdead
+@do moveback
+@if bitcheck `t22 0 0 then do
+@begin
+@do saybar
+I'm not dead....I'm just protesting the war using body paints!
+@end
+@if bitcheck `t22 0 1 then do
+@begin
+@do saybar
+This person really is dead now!
+@end
+ 
+@#stickout
+@do moveback
+@if bitcheck `t22 1 0 then do
+@begin
+@do saybar
+I don't stick out too much do I?
+@end
+@if bitcheck `t22 1 1 then do
+@begin
+@do saybar
+This person is dead!
+@end
+ 
+@#dare
+@do moveback
+@if bitcheck `t22 2 0 then do
+@begin
+@do saybar
+Dare to be different!  Conformity breeds bordom!!
+@end
+@if bitcheck `t22 2 1 then do
+@begin
+@do saybar
+This person is dead!
+@end
+ 
+@#welcome
+@do moveback
+@if bitcheck `t22 3 0 then do
+@begin
+@do saybar
+Welcome to Codax's Kingdom!
+@end
+@if bitcheck `t22 3 1 then do
+@begin
+@do saybar
+This person is dead!
+@end
+ 
+@#what
+@do moveback
+@if bitcheck `t22 4 0 then do
+@begin
+@do saybar
+What the Hell is that in the middle of the fountain!?!?
+@run done
+@end
+@do saybar
+This person is dead!
+ 
+@#powsod
+@do moveback
+@if bitcheck `t22 5 0 then do
+@begin
+@do saybar
+HAHAHAhaha I blend right in here!
+@end
+@if bitcheck `t22 5 1 then do
+@begin
+@do saybar
+This spy is dead!
+@end
+ 
+@#sharspy
+@do moveback
+@if bitcheck `t22 6 0 then do
+@begin
+@do saybar
+Shara, I've infultrated Codax's castle!  Moving to...uh oh someone's coming!
+@run done
+@end
+@do saybar
+This person is dead!
+ 
+ 
+@#soldcod
+@do moveback
+@do saybar
+I feel I've sold Codax out!  My legs are badly mangled and I cannot fight!
+ 
+@#xbow
+@do moveback
+@if crossbow.&playernum exists true then `p20 is 1
+@if crossbow.&playernum exists false then `p20 is 0
+@show
+ 
+`r0`c  `r1`%  What's this?  `r0`2
+ 
+ 
+   Hello there, I'm `0Tak`2 and I will be assiting you today!  What kind of
+	crossbow would you like?  Here are the Crossbow in your price
+ 			range, `$$0 - &money
+ 
+@do `v01 is 1
+@choice
+<money 199 =`p20 0 Rusty Crossbow      $200
+<money 499 =`p20 0 Wood Crossbow       $500
+<money 999 =`p20 0 Steel Crossbow      $1000
+<money 3999 =`p20 0 Iron Crossbow       $4000
+<money 9999 =`p20 0 Supreame Crossbow   $10000
+=`p20 1 Sell your crossbow
+Leave
+@
+@if responce is 6 then do
+@begin
+@do money + 100
+@do delete crossbow.&playernum
+@routine gone
+@do saybar
+That Xbow is pretty messed up I'll only give you 100 for it!
+@end
+@if responce is 7 then do
+@begin
+@run gone
+@end
+@if responce is 1 then `p21 is 200
+@if responce is 2 then `p21 is 500
+@if responce is 3 then `p21 is 1000
+@if responce is 4 then `p21 is 4000
+@if responce is 5 then `p21 is 10000
+@if responce < 6 then do
+@begin
+@writefile crossbow.&playernum
+@do money - `p21
+@show
+`r0`c  `%`r1  Getting your crossbow `r0`2
+ 
+   Tak:  Here is your Crossbow!  Enjoy!  That'll be `$$`p21
+`k
+@run gone
+@end
+ 
+@#scary
+@do saybar
+That lack of ground is scary!!!
+ 
+@#codax
+@do moveback
+@if bitcheck `t22 7 1 then do
+@begin
+@do saybar
+Codax is Dead!  Dragons everywhere are mourning!
+@run done
+@end
+@if bitcheck `t22 7 0 then do
+@begin
+@label power3
+@do `p20 random 5 1
+@if `p20 is 1 then `s01 is Did`xyou`xhear`xthe`xone`xabout`xthe`xsamon?
+@if `p20 is 2 then `s01 is Whats`xblack`xand`xwhite`xand`xread`xall`xover?
+@if `p20 is 3 then `s01 is How`xmuch`xwood`xcoulda`xwoodchuck`xchuck?
+@if `p20 is 4 then `s01 is Why`xdid`xthe`xdragon`xcross`xthe`xstreet?
+@if `p20 is 5 then `s01 is Nice`xshoes.
+@show
+`r0`c  `r1`%  The Dragon King  `r0`2
+ 
+ 
+  "`0What do you want from me?  I'm a busy Dragon!!!`2"  Codax Booms.
+ 
+			Royal Favor:  `0`p87
+ 
+@do `v01 is 1
+@choice
+=`p87 0 How about `$$1,000,000,000
+>`p87 0 `s01
+=`p87 1 Nice castle...Looks like all the other ones I've seen
+>`p87 1 =&sex 0 Flirt
+>`p87 2 Why do you 3 fight?
+>`p87 3 =`p81 0 I would like to be your assasin!
+>`p87 49 =&sex 0 1 =`p83 0 Can I be your Queen?
+-`t21 0 >`p89 1 I've killed those spys!
+>`p84 1 I've killed those Royals!
+Leave
+@
+@if responce is 6 then do
+@begin
+@if `p83 is 3 then `p25 is 1
+@if `p83 is 0 then `p25 is 1 
+@if `p25 is 1 then do
+@begin
+@run assasin
+@end
+@if `p25 not 1 then do
+@begin
+@routine gone
+@do saybar
+You have already pleadged your alegence to another!
+@end
+@end
+ 
+ 
+@if responce is 4 then do
+@begin
+@routine flirt
+@routine gone
+@end
+ 
+@if responce is 3 then do
+@begin
+@show
+`\`\`\`\`0  'Sadly It's true, we all hired the same person to our castles
+ The lowsy bum cut corners and made all the castles almost identical!!!
+ You have alot of backbone for asking that!`k
+@do `p87 + 2
+@Do goto power3
+@end
+  
+@if responce is 1 then do
+@begin
+@show
+`\`\`\`\`0   'HAHAHAHAHAHAAHAHHAAaa!!!  You amuze me `n!`l`l`l`l
+@do `p87 + 1
+@do goto power3
+@end
+ 
+@if responce is 2 then do
+@begin
+@show
+`\`\`\`0`\  'Yawn.....Heard that one already....Go away!
+`k
+@do `p87 is 0
+@routine gone
+@update
+@do statbar
+@end
+ 
+ 
+@if responce is 5 then do
+@begin
+@do `p87 + 1
+@run story in battlest.ref
+@end
+ 
+@if responce is 10 then do
+@begin
+@routine gone
+@update
+@do statbar
+@end
+ 
+@if responce is 9 then do
+@begin
+@bitset `t21 1 1
+@show
+`\`\`\`\`\0  Wonderful!!!!  Hahaha Now I rule this area!!!  The war is
+  finaly over!!!  And I won!!!`k  
+@run codend in battlest.ref
+@end
+ 
+@if responce is 8 then do
+@begin
+@bitset `t21 0 1
+@show
+`c`0   Good you've killed those `p89 spys!  I begining to like you!
+ Next, you should Kill`l.`l.`l. Power and Shara!
+`k
+@
+@do `p18 + 10
+@do `p87 + 3
+@do `p87 + `p89
+@do `p84 is 0
+@routine gone
+@update
+@end
+ 
+@if responce is 7 then do
+@begin
+@label miqueen2
+@if battleqs.cod exists false then do
+@begin
+@writefile battleqs.cod
+0
+0
+0
+@
+@do goto miqueen2
+@end
+@if battleqs.cod exists true then do
+@begin
+@readfile battleqs.cod
+`p30
+`p29
+`p28
+@
+@if `p29 not 0 then do
+@begin
+@do `s01 getname `p29
+@show
+`\`\`\`\`0  "Sorry `n, but `s01 is already my Queen.`k
+@do goto power3
+@end
+@if `p29 is 0 then do
+@begin
+@do write
+`\`\`\`\`0 Codax Looks up and down your body`l.`l.`l.
+@do `p20 is 0
+@if `p07 > 100 then `p20 + 1
+@if `p07 < 101 then do
+@begin
+@do write
+`0  You need to be more Nice`l.`l.`l.
+@end
+@if `p08 > 80 then `p20 + 1
+@if `p08 < 81 then do
+@begin
+@do write
+`0  Your not that sexy`l.`l.`l.
+@end
+@if `p20 not 2 then do
+@begin
+@do write
+`\`\Sorry you just aren't Queen Material `k
+@do goto power3
+@end
+@if `p20 is 2 then do
+@begin
+@do delete battleqs.cod
+@writefile battleqs.cod
+`p30
+&playernum
+`p28
+@
+@do `p83 is 2
+@do write
+`\`\Where have you been all my life!`k
+@writefile lognow.txt
+ 
+ `%    ATTENTION!!!!`0   CODAX `2HAS FOUND A QUEEN!!!  PEASANTS ARE RESTLESS
+                    SHE IS THE BEAUTIFUL `0`n
+@
+@do `p85 + 5000
+@do `p86 is &time
+@routine gone
+@update
+@do saybar
+Congradulations!!!  You are Codax's Queen!!!
+@end
+ 
+;Shar
+@#sharent
+@do map is 648
+@loadmap 648
+@routine fade in battlefx.ref
+@do x is 39
+@do y is 19
+ 
+@#sharexit
+@do map is 292
+@loadmap 292
+@routine fade in battlefx.ref
+@do x is 33
+@do y is 17
+ 
+@#shar1
+@do moveback
+@do saybar
+Shara's Burning Moutain is made of wonder glorious LAVA
+ 
+@#shar2
+@do moveback
+@do saybar
+I cut this Dark Lava Trench to resemble a Phoenix
+ 
+@#shar3
+@do moveback
+@do saybar
+There are great places to sniper dragons!  Balconys, Islands
+@key
+@do saybar
+All you have to do is find the right one!
+ 
+@#shar4
+@do moveback
+@do saybar
+We all look alike because we are all Phoenix!
+ 
+@#shar5
+@do moveback
+@do saybar
+Dark Cyan is the Color of Power
+@key
+@do saybar
+Codax adores Cyan
+@key
+@do saybar
+I am wise so I know this stuff!  You should too!
+ 
+@#shar6
+@do moveback
+@do saybar
+If I cannot be Second to Shara, Cyrus should be!
+ 
+@#lifesprng
+@do moveback
+@do `p03 - 1
+@do saybar
+You loose one max-hitpoint!  Lava springs and humans don't mix!
+ 
+@#human
+@do moveback
+@if bitcheck `t23 0 0 then do
+@begin
+@do saybar
+I know it's dangerous to be human in a Phoenix Lair!
+@end
+@if bitcheck `t23 0 1 then do
+@begin
+@do saybar
+This human is dead
+@end
+ 
+@#lost
+@do moveback
+@if bitcheck `t23 1 0 then do
+@begin
+@do saybar
+Darn it!  Power shoulda trained us better!  I lost my Smack-Rod!
+@end
+@if bitcheck `t23 1 1 then do
+@begin
+@do saybar
+This person is dead!
+@end
+ 
+@#sha1
+@do moveback
+@if bitcheck `t23 2 0 then do
+@begin
+@do saybar
+Even if I do get assinated I'll be back in 100years
+@end
+@if bitcheck `t23 2 1 then do
+@begin
+@do saybar
+Here lies a pile of ashes!  In 100 years they will form a Phoenix!
+@end
+ 
+@#sha2
+@do moveback
+@if bitcheck `t23 3 0 then do
+@begin
+@do saybar
+Codax is a fuddy duddy!
+@end
+@if bitcheck `t23 3 1 then do
+@begin
+@do saybar
+Here lies a pile of ashes!  In 100 years they will form a Phoenix!
+@end
+ 
+@#sha3
+@do moveback
+@if bitcheck `t23 4 0 then do
+@begin
+@do saybar
+Look how beautiful the Lava is tonite!
+@end
+@if bitcheck `t23 4 1 then do
+@begin
+@do saybar
+Here lies a pile of ashes!  In 100 years they will form a Phoenix!
+@end
+ 
+@#pow
+@do moveback
+@if bitcheck `t23 5 0 then do
+@begin
+@do saybar
+Spying is hard work!  I need a drink!  Hey Bartender!  Send on my way
+@routine getale in battlefx.ref
+@do move 3 22
+@key
+@Do saybar
+Darn it!  You missed!
+@end
+@if bitcheck `t23 5 1 then do
+@begin
+@do saybar
+This spy is dead
+@end
+@#herelys
+@do saybar
+Here lie the Great Phoenix Warriors that gloriously died in Battle!
+@#cyrus
+@do moveback
+@Do `p20 random 25 1
+@if `p20 is 1 then saybar
+Cyrus:  I am the only Phoenix that will regenerate almost instantly
+@if `p20 is 2 then saybar
+Cyrus:  Dragons Suck!
+@if `p20 is 3 then saybar
+Cyrus:  I'm trying to be Shara's Second, but I'm just a General
+@if `p20 is 4 then saybar
+Cyrus:  I'm a General not some love starved twit
+@if `p20 is 5 then saybar
+Cyrus:  Fire is a wonderfull toy!
+@if `p20 is 6 then saybar
+Cyrus:  I'm the only Phoenix of my color
+@if `p20 is 7 then saybar
+Cyrus:  Don't mistake me for a spy or you'll be sorry
+@if `p20 is 8 then saybar
+Cyrus:  This flashy bit is carpet, not Lavaspring like in the previous room!
+@if `p20 is 9 then saybar
+Cyrus:  I've never seen a Koshi, but Shara has!
+@if `p20 is 10 then saybar
+Cyrus:  I can't wait till I get my Talons on Power
+@if `p20 is 11 then saybar
+Cyrus:  Greatness is only achieved through persistance
+@if `p20 is 12 then saybar
+Cyrus:  Power's soldiers look like this `3
+@if `p20 is 13 then saybar
+Cyrus:  Codax's soldiers look like this `!
+@if `p20 is 14 then saybar
+Cyrus:  Dragon Meat is the best in this world
+@if `p20 is 15 then saybar
+Cyrus:  Lifesprings feel great!  There is a good one near the bar!
+@if `p20 is 16 then saybar
+Cyrus:  Lifesprings and Lavasprings are the same thing ya know!
+@if `p20 is 17 then saybar
+Cyrus:  This is only a small battle in the Dragon & Phoenix War
+@if `p20 is 18 then saybar
+Cyrus:  If the Dragons Ever stoped fighting each other they might win.
+@if `p20 is 19 then saybar
+Cyrus: http:\\www.geocities.com\SiliconValley\Way\9982\index.html some code!
+@if `p20 is 20 then saybar
+Cyrus:  Dragon's Den BBS needs money, I heard.  Like I'd give Codax anything
+@if `p20 is 21 then saybar
+Cyrus:  Quidam?  I wonder what it means
+@if `p20 is 22 then saybar
+Cyrus:  Have you heard Cirque du Soleil?  They helped complete this place
+@if `p20 is 23 then saybar
+Cyrus:  Shara sometimes can go into her ranks without being noticed!
+@if `p20 is 24 then saybar
+Cyrus:  Power's Officers look like this `3
+@if `p20 is 25 then saybar
+Cyrus:  Codax's Officers look like this `!
+@#assasin
+@run assasin in battlexh.ref
+@#prize
+@do moveback
+@do `p20 random 5 1
+@do `p21 random 2000 1000
+@do `p22 random 10 1
+@do `p23 random 4 1
+@do move 3 22
+@do write
+`r0`2 Do you really want to open this chest?[`0Y`2,`0N`2]
+@do readspecial `s01 NY
+@clearblock 22 23
+ 
+@if `s01 is N then do
+@begin
+@do saybar
+Guess it wasn't meant for you!
+@run done
+@end
+ 
+@if `s01 is Y then do
+@begin
+@if `t04 not 0 then do
+@begin
+@do saybar
+Your hand passes through the chest!  You must not be worhty enough.
+@run done
+@end
+ 
+@if `t04 is 0 then do
+@begin
+@do `t04 is 1
+@if `p20 is 1 then `p01 + `p21
+@if `p20 is 1 then `s01 is experience
+@if `p20 is 1 then `p25 is `p21
+ 
+@if `p20 is 2 then `p04 + `p22
+@if `p20 is 2 then `s01 is Muscle
+@if `p20 is 2 then `p25 is `p22
+ 
+@if `p20 is 3 then `p05 + `p22
+@if `p20 is 3 then `s01 is Dodge
+@if `p20 is 3 then `p25 is `p22
+ 
+@if `p20 is 4 then `p87 + `p23
+@if `p20 is 4 then `s01 is Royal`xFavor
+@if `p20 is 4 then `p25 is `p23
+ 
+@if `p20 is 5 then `p03 - `p22
+@if `p20 is 5 then `s01 is Max`xHitpoints
+@if `p20 is 5 then `p25 is `p22
+ 
+@if `p20 not 5 then `s02 is gain
+@if `p20 is 5 then `s02 is lose
+@clearblock 22 23
+@do saybar
+`\
+@do saybar
+You carefully open the chest and `s02`l.`l.`l.`l. `p25 `s01
+@end
+@end
+ 
+@#opendoor
+@if &lastx is 70 then do
+@begin
+@if money < 2000 then do
+@begin
+@do saybar
+This is Shara's Lavaspring!  You gotta have cash to get in!
+@run done
+@end
+@if money > 1999 then do
+@begin
+@do move 3 22
+@do write
+`r0`2Would you like to take a dip in the Lavaspring `0(`$$2000`0)`2?
+@do readspecial `s01 NY
+@if `s01 is N then do
+@clearblock 22 23
+@Begin
+@do saybar
+They didn't want to polute it with humans any way!
+@run done
+@end
+@if `s01 is Y then do
+@begin
+@do money - 2000
+@do x + 2
+@do `p04 + 2
+@do `p05 + 2
+@do `p02 is `p03
+@do saybar
+This one actually feels....kinda good!  Str & Def Up!
+@update
+@end
+@end
+@end
+@if &lastx is 72 then do
+@begin
+@do saybar
+That was interesting!  You wipe some lava off your s&armour.
+@do x - 2
+@update
+@end

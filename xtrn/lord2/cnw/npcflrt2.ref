@@ -1,0 +1,384 @@
+; Script file NPCFLRT2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE flirt 000000402
+@DECLARE flirtno 000003711
+@DECLARE flirt2old 000007181
+@DECLARE flirt2yng 000007304
+@DECLARE flirtyes 000007429
+@DECLARE steady 000008188
+@DECLARE leave2 000008858
+@DECLARE leave 000009515
+@NOCHECK
+; End of .REF index
+
+;
+; Will only work with LoRD2: CNW package.
+;
+;
+@#flirt
+;check for max flirt times.
+@dataload npc\npctimes.idf `p70 `p25
+;check current flirts today
+@datanewday npc\npcfl`p70.idf
+@dataload npc\npcfl`p70.idf &playernum `p26
+;add a max flirt
+@do `p25 + 1
+;check if can flirt again.
+@if `p25 < `p26 then goto leave2
+;
+;loading all flirting data requirements
+;
+@dataload npc/npcgendr.idf `p70 `p20 ;male or female and sexuality?
+@dataload npc/npc-`p70.idf &playernum `p22 ;your relationship with (charm)
+@dataload npc\npcreqc1.idf `p70 `p41 ;charm requirements on npc for 1st date
+@dataload npc\npcreqc2.idf `p70 `p42 ;for grab ass
+@dataload npc\npcreqc3.idf `p70 `p43 ;for 1st kiss
+@dataload npc\npcreqc4.idf `p70 `p44 ;for official boyfriend/girlfriend (going steady)
+@dataload npc\npcreqc5.idf `p70 `p45 ;for a lay
+@dataload npc\npcreqc6.idf `p70 `p46 ;for engagement
+@dataload npc\npcreqc7.idf `p70 `p47 ;for marriage
+@dataload npc\npcreqc8.idf `p70 `p48 ;for planned kids
+@dataload npc\npclays.idf `p70 `p29
+
+@do move 63 2
+@do write
+`r4`$ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 68 2
+@do write
+`r4`%`s01
+@do move 63 3
+@do write
+`r4`$³`r0                `r4³
+@do move 63 4
+@do write
+`r4`$³`r0                `r4³
+@do move 63 5
+@do write
+`r4`$³`r0                `r4³
+@do move 63 6
+@do write
+`r4`$³`r0                `r4³
+@do move 63 7
+@do write
+`r4`$³`r0                `r4³
+@do move 63 8
+@do write
+`r4`$³`r0                `r4³
+@do move 63 9
+@do write
+`r4`$³`r0                `r4³
+@do move 63 10
+@do write
+`r4`$³`r0                `r4³
+@do move 63 11
+@do write
+`r4`$³`r0                `r4³
+@do move 63 12
+@do write
+`r4`$³`r0                `r4³
+@do move 63 13
+@do write
+`r4`$³`r0                `r4³
+@do move 63 14
+@do write
+`r4`$³`r0                `r4³
+@do move 63 15
+@do write
+`r4`$³`r0                `r4³
+@do move 63 16
+@do write
+`r4`$³`r0                `r4³
+@do move 63 17
+@do write
+`r4`$ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do `p21 random 25 1
+@do `p22 + `p21
+;check if engaged or married, if so increase "GO STEADY","MARIAGE","MAKE KIDS"
+@dataload npc/npcstat.idf `p70 `p49
+@if `p49 > 3 then do
+        @begin
+        @do `p44 + 200
+        @do `p46 + 200
+        @do `p47 + 200
+        @do `p48 + 200
+        @end
+; --------------------------------------------
+; "make kids" not an option yet in this version yet.
+@do `p48 is 60000
+; --------------------------------------------
+@do move 64 3
+@DO `V01 IS 1
+@choice
+Smile
+Wink
+Gossip
+Blow kiss
+Kiss hand
+Massage Neck
+>`p22 `p42 Grab ass
+>`p22 `p43 Kiss Lips
+>`p22 `p41 Ask out
+>`p22 `p45 Make love
+>`p22 `p46 Ask for hand
+>`p22 `p47 Get married
+>`p22 `p48 Make kids                      ; <--not available yet
+>`p22 `p44 GO STEADY?
+Forget it
+@drawmap
+@if response is 15 then goto leave
+@if response is 14 then goto steady
+@do `p21 random 15 1
+@do `p11 - `p21
+@dataload npc\npcstat.idf `p70 `p25
+@if `p25 > 1 then do
+        @begin
+        @dataload npc\npcloyal.idf `p70 `p25
+        @do `p29 random `p25 1
+        @if `p29 < 25 then goto flirtyes
+        @if `p29 is 50 then goto flirtyes
+        @if `p29 is 100 then goto flirtyes
+        @if `p29 is 150 then goto flirtyes
+        @if `p29 is 199 then goto flirtyes
+        @do goto flirtno
+        @end
+@do goto flirtyes
+@closescript
+
+@label flirtno
+;@drawmap
+@do `p21 random 22 1
+@if `p21 is 1 then do
+        @begin
+        @do saybar
+`$`s01: `%Sorry, I am not interested.
+        @end
+@if `p21 is 2 then do
+        @begin
+        @do saybar
+`$`s01: `%Sorry, I am not interested.
+        @end
+@if `p21 is 3 then do
+        @begin
+        @do saybar
+`$`s01: `%Sorry, I am not interested in you.
+        @end
+@if `p21 is 4 then do
+        @begin
+        @do saybar
+`@SLAP! `k
+        @do saybar
+`$you've just been slapped across the face
+        @do `p08 - 1
+        @do `p02 / 3
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - 1
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @end
+@if `p21 is 5 then do
+        @begin
+        @do saybar
+`$`s01 stops, turns around, `k
+        @do saybar
+`$and walks over to the counter,`k
+        @do saybar
+`$picks up something, returns back to you`k
+        @do saybar
+`$and pours a small bucket of cold water over your HEAD!`k
+        @do `p08 - 2
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - 2
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @end
+@if `p21 is 6 then do
+        @begin
+        @do saybar
+`$`s01: `%YUK!, you're so disgusting, stay away from me!
+        @end
+@if `p21 is 7 then do
+        @begin
+        @do saybar
+`$`s01: `%You still here??  (`s01 is ignoring you)
+        @end               
+@if `p21 is 8 then do
+        @begin
+        @do saybar
+`$`s01: `%You still here??  (`s01 is ignoring you)
+        @end
+@if `p21 is 9 then do
+        @begin
+        @do saybar
+`$`s01: `%Get lost loser!
+        @end
+@if `p21 is 10 then do
+        @begin
+        @do saybar
+`$`s01: `%Get AWAY from me!
+        @end
+@if `p21 is 11 then do
+        @begin
+        @do saybar
+`$`s01: `%I smell something odd, i think its you.
+        @end
+@if `p21 is 12 then do
+        @begin
+        @do saybar
+`$`s01: `%What stinks? ahhh..IT's `N!
+        @end
+@if `p21 is 13 then do
+        @begin
+        @do saybar
+`$`s01: `%yikes, sorry i'm not interested.
+        @end
+@if `p21 is 14 then do
+        @begin
+        @do saybar
+`$`s01: `%I'm not into that sort of thing.
+        @end
+@if `p21 is 15 then do
+        @begin
+        @do saybar
+`$`s01: `%Did you try that last week, I'm still not interested.
+        @end                                                   
+@if `p21 is 16 then do
+        @begin
+        @do saybar
+`$`s01: `%Did you try that last week, I'm still not interested.
+        @end
+@if `p21 is 17 then do
+        @begin
+        @do saybar
+`$`s01: `%hummm, I don't think so!
+        @end                                                   
+@if `p21 is 18 then do
+        @begin
+        @do saybar
+`$`s01: `%hummf... Talk to the hand.
+        @end
+@if `p21 is 19 then do
+        @begin
+        @do saybar
+`$`s01: `%hummf... Talk to the hand.
+        @end                                                   
+@if `p21 is 20 then do
+        @begin
+        @do saybar
+`$`s01: `%hummf... Talk to the hand.
+        @end
+@if `p21 is 21 then do
+        @begin
+        @do saybar
+`$( You made `s01 shed a little tear, from fear.
+        @end                                                   
+@if `p21 is 22 then do
+        @begin
+        @do saybar
+`$`s01: `%Only if my dad was here to take you down for that!
+        @end
+
+@do `p20 is 1
+@update
+@closescript
+
+@label flirt2old
+@do `p20 is 1
+@do saybar
+`$`s01: `%Yuk!! you're too old for me. You old bag!
+@update
+@closescript
+
+@label flirt2yng
+@do `p20 is 1
+@do saybar
+`$`s01: `%HaHA! who do you think I am? You little kid.
+@update
+@closescript
+
+@label flirtyes
+@dataload npc\npcslut.idf `p70 `p25
+        @do `p29 random `p25 1
+        @if `p29 < 25 then goto flirtno
+        @if `p29 is 50 then `p08 - 1 
+        @if `p29 is 50 then goto flirtno
+        @if `p29 is 100 then `p08 - 1 
+        @if `p29 is 100 then goto flirtno
+        @if `p29 is 150 then `p08 - 1 
+        @if `p29 is 150 then goto flirtno
+        @if `p29 is 199 then `p08 - 1 
+        @if `p29 is 199 then goto flirtno
+@dataload npc\npcage.idf `p70 `p23
+@dataload npc\npcagep.idf `p70 `p24
+@do `p25 is `p23
+@do `p25 + `p24
+
+@do `p26 is `p23
+@do `p26 - `p24
+
+@if `p39 > `p25 then goto flirt2old
+@if `p39 < `p26 then goto flirt2yng
+
+@dataload npc/npcgendr.idf `p70 `p20
+@routine flirt in npcflirt.ref
+@closescript
+
+@#steady
+@do `p27 random 3 1
+@if `p27 is 1 then do 
+                @begin
+                @do saybar
+`$`s01: `%Yah sure, lets go steady.`k
+                @datasave npc/npcstat.idf `p70 2
+                @bitset `t50 1 1
+                @do addlog
+`s01 is now going steady with `N.
+                @end
+@if `p27 > 1 then do
+                @begin
+                @do saybar
+`$`s01: `%No, not yet, I'm not ready for you.
+                @datasave npc/npcstat.idf `p70 2
+                @do addlog
+`s01 put down `N, `N asked to go steady.
+                @end
+@end                
+@do `p20 is 1
+;@drawmap
+@do moveback
+@update
+@closescript
+
+@label leave2
+@do `p20 is 1
+@do `p21 random 5 1
+@if `p21 is 1 then do
+        @begin
+        @do saybar
+`$Your CONSCIENCE: `%Don't over due it buddy.
+        @end
+@if `p21 is 2 then do
+        @begin
+        @do saybar
+`$`s01: `%Thats enough for today sweaty.
+        @end
+@if `p21 is 3 then do
+        @begin
+        @do saybar
+`$`s01: `%Don't push it lover s&boy.
+        @end
+@if `p21 is 4 then do
+        @begin
+        @do saybar
+`$It could be bad to continue this now.
+        @end
+@if `p21 is 5 then do
+        @begin
+        @do saybar
+`$You decide to leave as is for now.
+        @end
+
+@do moveback
+@update
+@closescript
+
+@#LEAVE
+@closescript
+

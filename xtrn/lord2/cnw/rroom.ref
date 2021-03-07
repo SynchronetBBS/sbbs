@@ -1,0 +1,162 @@
+; Script file RROOM.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE enter 000000260
+@DECLARE letmein 000001514
+@DECLARE done 000001594
+@DECLARE roomguard 000001708
+@DECLARE startg 000001737
+@NOCHECK
+; End of .REF index
+
+@#enter
+
+@readfile castle1.dat
+`p20
+`s01
+`s04
+`s08
+@
+
+@if `p20 is &playernum then do
+ @begin
+  @do goto letmein
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do moveback
+  @do `s02 is getname `p20
+  @do upcase `s01
+  
+  @if `s04 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @drawmap
+   @update
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops through the door.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s04
+
+  @if `s03 is `s04 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%the Royal Chambers`0,"`2 the guard smiles as he opens the door.`\`\`k
+    @do goto letmein
+    @end
+   
+  @do goto done
+
+  @end
+  @end
+  @do goto done
+
+;let him in
+@label letmein
+@do x is 42
+@do y is 6
+@do map is 1363
+@loadmap 1363
+@do goto done
+@#done
+@drawmap
+@update
+@end
+
+; -----======- This is the much like the main guard for the whole keep
+
+@#roomguard
+@do moveback
+@label startg
+;control people from getting in
+@if castle1.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this room!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile castle1.dat
+`p20
+`s01
+`s04
+`s08
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge doorguard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s04`%)
+Leave
+@
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)  `\  `2Password:`x
+  @do readstring 40 `s04 `s04 
+  @do `p20 is length `s04
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete castle1.dat
+  @writefile castle1.dat
+&playernum
+`s01
+`s04
+`s08
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update

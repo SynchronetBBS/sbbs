@@ -1,0 +1,1038 @@
+; Script file NPCWEDD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:37 2001
+
+@DECLARE chapel 000001598
+@DECLARE top 000001894
+@DECLARE mywed 000002446
+@DECLARE guests 000005035
+@DECLARE guests2 000005800
+@DECLARE vows 000011490
+@DECLARE allguests 000019551
+@DECLARE showweds 000019841
+@DECLARE guest1 000019967
+@DECLARE guest2 000020449
+@DECLARE guest3 000020676
+@DECLARE couple1 000020904
+@DECLARE bride 000021130
+@DECLARE norings 000021389
+@DECLARE noway 000021703
+@DECLARE leave 000021919
+@DECLARE end 000022017
+@NOCHECK
+; End of .REF index
+
+;
+; An addition to the cloud Chapel for marriages.
+;
+;RULES of GETTING MARRIED.
+;
+; -Player MUST NOT have the NPC with the to wed them.
+; -The NPC will find their own way here.
+; -Player MUST NOT even go see the NPC on the wedding day.
+; -Player must be here on the day of the wedding, or bad things will happen.
+; -Only female-male couples can wed here. No female-female or male-male.
+; -Player MUST HAVE the RING!, even if player is female.
+; -Player MUST pay (donation) to the church for their services.
+;
+;MARRIAGE GUIDELINES:
+;
+; -Player MUST contact spouce everyday.
+; -If player doesn't play for a few days, then the player SHOULD be with
+;   the NPC. Meaning, everytime player finishes for the day, it'll be wise
+;   to be with the NPC, have them follow you.
+; -After 1 year of marriage, you can retire with the NPC at the retirement
+;   home, and this will mean YOU finished this part of the game for that NPC.
+;   (: Now player can start again, and try to marry someone else. :)
+;
+
+@#chapel
+@do `p29 is 0
+@do `p28 is 0
+@if &lasty is 15 then goto leave
+@datanewday npc/visitwed.idf
+@dataload npc/visitwed.idf &playernum `p27
+@if `p27 is 1 then goto end
+@datasave npc/visitwed.idf &playernum 1
+@do `p20 is &time
+@do saybar
+`%Out of respect, you pause for a moment.
+
+@label top
+@if npc/wed`p20.now exists true then do
+        @begin
+        @do `p29 is 1
+        @readfile npc/wed`p20.now
+`p25
+`p26
+        @do `s02 is getname `p25
+        @routine getname in npcname2.ref
+        @if `s02 is `N then goto mywed
+        @do addlog
+`$`N `%visited the wedding of `$`s02 `%and `$`s01`% today.
+        @do saybar
+`%A wedding is about to start, you'd better take a seat.
+        @key
+        @routine guests
+        @do goto end
+        @end
+@do `p20 + 1
+@if `p20 > 200 then goto end
+
+@do goto top
+
+@label mywed
+@if `i78 < 1 then goto norings
+@if &sex is 1 then do
+        @begin
+        @do `p28 is 2
+@do saybar
+`$Guests: `%sshh!, here comes the groom.
+@do move 43 16
+@do write
+`r1`%
+@do move 43 16
+@do write
+`w`r1`x
+@do move 43 15
+@do write
+`r1`%
+@do move 43 15
+@do write
+`w`r1`x
+@do move 43 14
+@do write
+`r1`%
+@do move 43 14
+@do write
+`w`w`r1`x
+@do move 43 13
+@do write
+`r1`%
+@do move 43 13
+@do write
+`w`w`r1`x
+@do move 43 12
+@do write
+`r1`%
+@do move 43 12
+@do write
+`w`w`r1`x
+@do move 43 11
+@do write
+`r1`%
+@do move 43 11
+@do write
+`w`w`r1`x
+@do move 43 10
+@do write
+`r1`%
+@do move 43 10
+@do write
+`w`w`r1`x
+@do move 43 9
+@do write
+`r1`%
+@do move 43 9
+@do write
+`w`w`r1`x
+@do move 43 8
+@do write
+`r1`%
+@do move 43 8
+@do write
+`w`w`r1`x
+@do move 43 7
+@do write
+`r1`%
+@do move 43 7
+@do write
+`w`w`r1`$Ä
+@do move 44 7
+@do write
+`r1`%
+@do saybar
+`%You're sooo nervous. Where could she be?.
+@do x is 44
+@do y is 7
+        @routine guests2
+        @end
+
+@if &sex is 0 then do
+        @begin
+        @do `p28 is 1
+        @routine allguests
+@do saybar
+`$Guests: `%sshh!, here comes the bride.
+@do move 43 16
+@do write
+`r1`%
+@do move 43 16
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 15
+@do write
+`r1`%
+@do move 43 15
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 14
+@do write
+`r1`%
+@do move 43 14
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 13
+@do write
+`r1`%
+@do move 43 13
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 12
+@do write
+`r1`%
+@do saybar
+`%You could see your handsome future husband now.
+@do move 43 12
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 11
+@do write
+`r1`%
+@do move 43 11
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 10
+@do write
+`r1`%
+@do move 43 10
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 9
+@do write
+`r1`%
+@do move 43 9
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 8
+@do write
+`r1`%
+@do move 43 8
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 7
+@do write
+`r1`%
+@do move 43 7
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`$Ä
+@do move 42 7
+@do write
+`r1`%
+        @end
+@do goto vows
+@closescript
+
+@label guests
+@drawmap
+@do move 43 14
+;you move automaticly to sit down
+@do write
+`w`r1`%
+@do move 43 14
+@do write
+`w`r1`x
+@do move 43 13
+@do write
+`r1`%
+@do move 43 13
+@do write
+`w`r1`x
+@do move 43 12
+@do write
+`r1`%
+@do move 43 12
+@do write
+`w`r1`x
+@do move 43 11
+@do write
+`r1`%
+@do move 43 11
+@do write
+`w`r1`x
+@do move 43 10
+@do write
+`r1`%
+@do move 43 10
+@do write
+`w`r1`x
+@do move 42 10
+@do write
+`r1`%
+@do move 42 10
+@do write
+`w`r1`x
+@do move 41 10
+@do write
+`r1`%
+@do move 41 10
+@do write
+`w`r1`x
+@do move 40 10
+@do write
+`r1`%
+@do move 40 10
+@do write
+`w`r1`x
+@do move 39 10
+@do write
+`r1`%
+@do move 39 10
+@do write
+`w`r1`x
+@do move 38 10
+@do write
+`r1`%
+@do x is 38
+@do y is 10
+
+@label guests2
+;more ppl come in
+@do move 43 16
+@do write
+`r1`!
+@do move 43 16
+@do write
+`w`r1`x
+@do move 43 15
+@do write
+`r1`!
+@do move 43 15
+@do write
+`w`r1`x
+@do move 43 14
+@do write
+`r1`!
+@do move 43 14
+@do write
+`w`r1`x
+@do move 44 14
+@do write
+`r1`!
+@do move 44 14
+@do write
+`w`r1`x
+@do move 45 14
+@do write
+`r1`!
+@do move 45 14
+@do write
+`w`r1`x
+@do move 46 14
+@do write
+`r1`!
+@do move 46 14
+@do write
+`w`r1`x
+@do move 47 14
+@do write
+`r1`!
+@do move 47 14
+@do write
+`w`r1`x
+@do move 48 14
+@do write
+`r1`!
+@do move 48 14
+@do write
+`w`r1`x
+@do move 49 14
+@do write
+`r1`!
+@do move 49 14
+@do write
+`w`r1`x
+@do move 50 14
+@do write
+`r1`!
+@do move 50 14
+@do write
+`w`r1`x
+@do move 51 14
+@do write
+`r1`!
+
+;next guy
+@do move 43 16
+@do write
+`r1`@
+@do move 43 16
+@do write
+`w`r1`x
+@do move 43 15
+@do write
+`r1`@
+@do move 43 15
+@do write
+`w`r1`x
+@do move 43 14
+@do write
+`r1`@
+@do move 43 14
+@do write
+`w`r1`x
+@do move 43 13
+@do write
+`r1`@
+@do move 43 13
+@do write
+`w`r1`x
+@do move 43 12
+@do write
+`r1`@
+@do move 43 12
+@do write
+`w`r1`x
+@do move 42 12
+@do write
+`r1`@
+@do move 42 12
+@do write
+`w`r1`x
+@do move 41 12
+@do write
+`r1`@
+@do move 41 12
+@do write
+`w`r1`x
+@do move 40 12
+@do write
+`r1`@
+@do move 40 12
+@do write
+`w`r1`x
+@do move 39 12
+@do write
+`r1`@
+@do move 39 12
+@do write
+`w`r1`x
+@do move 38 12
+@do write
+`r1`@
+@do move 38 12
+@do write
+`w`r1`x
+@do move 37 12
+@do write
+`r1`@
+
+;a couple
+@do move 43 16
+@do write
+`r1`6
+@do move 43 15
+@do write
+`r1`6
+@do move 43 16
+@do write
+`r1`$
+@do move 43 16
+@do write
+`w`w`r1`x
+@do move 43 14
+@do write
+`r1`6
+@do move 43 15
+@do write
+`r1`$
+@do move 43 15
+@do write
+`w`w`r1`x
+@do move 43 13
+@do write
+`r1`6
+@do move 43 14
+@do write
+`r1`$
+@do move 43 14
+@do write
+`w`w`r1`x
+@do move 43 12
+@do write
+`r1`6
+@do move 43 13
+@do write
+`r1`$
+@do move 43 13
+@do write
+`w`w`r1`x
+@do move 44 12
+@do write
+`r1`6
+@do move 43 12
+@do write
+`r1`$
+@do move 43 12
+@do write
+`w`w`r1`x
+@do move 45 12
+@do write
+`r1`6
+@do move 44 12
+@do write
+`r1`$
+@do move 44 12
+@do write
+`w`w`r1`x
+@do move 46 12
+@do write
+`r1`6
+@do move 45 12
+@do write
+`r1`$
+@do move 45 12
+@do write
+`w`w`r1`x
+@do move 47 12
+@do write
+`r1`6
+@do move 46 12
+@do write
+`r1`$
+@do move 46 12
+@do write
+`w`w`r1`x
+@do move 48 12
+@do write
+`r1`6
+@do move 47 12
+@do write
+`r1`$
+@do move 47 12
+@do write
+`w`w`r1`x
+@do move 49 12
+@do write
+`r1`6
+@do move 48 12
+@do write
+`r1`$
+@do move 48 12
+@do write
+`w`w`r1`x
+@do move 50 12
+@do write
+`r1`6
+@do move 49 12
+@do write
+`r1`$
+@do move 49 12
+@do write
+`w`w`r1`x
+@do move 51 12
+@do write
+`r1`6
+@do move 50 12
+@do write
+`r1`$
+@do move 50 12
+@do write
+`w`r1`x
+@do move 52 12
+@do write
+`r1`6
+@do move 51 12
+@do write
+`w`r1`$
+
+;"another player" guest
+@do move 43 16
+@do write
+`r1`7
+@do move 43 16
+@do write
+`w`r1`x
+@do move 43 15
+@do write
+`r1`7
+@do move 43 15
+@do write
+`w`r1`x
+@do move 43 14
+@do write
+`r1`7
+@do move 43 14
+@do write
+`w`r1`x
+@do move 42 14
+@do write
+`r1`7
+@do move 42 14
+@do write
+`w`w`r1`x
+@do move 41 14
+@do write
+`r1`7
+@do move 41 14
+@do write
+`w`w`r1`x
+@do move 40 14
+@do write
+`r1`7
+@do move 40 14
+@do write
+`w`w`r1`x
+@do move 39 14
+@do write
+`r1`7
+@do move 39 14
+@do write
+`w`w`r1`x
+@do move 38 14
+@do write
+`r1`7
+
+;the groom
+@do move 43 16
+@do write
+`r1`8
+@do move 43 16
+@do write
+`w`r1`x
+@do move 43 15
+@do write
+`r1`8
+@do move 43 15
+@do write
+`w`r1`x
+@do move 43 14
+@do write
+`r1`8
+@do move 43 14
+@do write
+`w`w`r1`x
+@do move 43 13
+@do write
+`r1`8
+@do move 43 13
+@do write
+`w`w`r1`x
+@do move 43 12
+@do write
+`r1`8
+@do move 43 12
+@do write
+`w`w`r1`x
+@do move 43 11
+@do write
+`r1`8
+@do move 43 11
+@do write
+`w`w`r1`x
+@do move 43 10
+@do write
+`r1`8
+@do move 43 10
+@do write
+`w`w`r1`x
+@do move 43 9
+@do write
+`r1`8
+@do move 43 9
+@do write
+`w`w`r1`x
+@do move 43 8
+@do write
+`r1`8
+@do move 43 8
+@do write
+`w`w`r1`x
+@do move 43 7
+@do write
+`r1`8
+@do move 43 7
+@do write
+`w`w`r1`$Ä
+@do move 44 7
+@do write
+`r1`8
+
+;bride
+@do move 43 16
+@do write
+`r1`%
+@do move 43 16
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 15
+@do write
+`r1`%
+@do move 43 15
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 14
+@do write
+`r1`%
+@do move 43 14
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 13
+@do write
+`r1`%
+@do move 43 13
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 12
+@do write
+`r1`%
+@do move 43 12
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 11
+@do write
+`r1`%
+@do move 43 11
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 10
+@do write
+`r1`%
+@do move 43 10
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 9
+@do write
+`r1`%
+@do move 43 9
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 8
+@do write
+`r1`%
+@do move 43 8
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`x
+@do move 43 7
+@do write
+`r1`%
+@do move 43 7
+@do write
+`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`w`r1`$Ä
+@do move 42 7
+@do write
+`r1`%
+@if `p28 is 1 then goto bridewed
+@if `p28 is 2 then goto groomwed
+@do goto end
+
+@closescript
+
+@label vows
+@show
+`c`r1`$Magistrate S. Caroline Dillon begins:`r0
+`@"`%I publish the Banns of Marriage between `$`s01 `%and `$`s02`%. If
+`%any of you know cause, or just impediment, why these two persons should
+`%not be joined together in holy Matrimony, ye are to declare it.
+`l`l`k
+
+`%And if the persons that are to be married dwell in divers Parishes, the
+`%Banns must be asked in both Parishes; and the Curate of the one Parish
+`%shall not solemnize Matrimony betwixt them, without a Certificate of
+`%the Banns being thrice asked, from the Curate of the other Parish.
+`l`k
+
+`%  DEARLY beloved, we are gathered together here in the sight of God, and`l
+`%in the face of this congregation, to join together this Man and this`l
+`%Woman in holy Matrimony; which is an honourable estate, instituted of`l
+`%God in the time of man's innocency, signifying unto us the mystical`l
+`%union that is betwixt Christ and his Church; which holy estate Christ`l
+`%adorned and beautified with his presence, and first miracle that he`l
+`%wrought, in Cana of Galilee; and is commended of Saint Paul to be`l
+`%honourable among all men: and therefore is not by any to be enterprised,`l
+`%nor taken in hand, unadvisedly, lightly, or wantonly, to satisfy men's`l
+`%carnal lusts and appetites, like brute beasts that have no understanding;`l
+`%but reverently, discreetly, advisedly, soberly, and in the fear of God;`l
+`%duly considering the causes for which Matrimony was ordained.`l
+`l`k
+
+`%  First, It was ordained for the procreation of children, to be brought`l
+`%up in the fear and nurture of the Lord, and to the praise of his holy Name.`l
+`l`k
+
+`%  Secondly, It was ordained for a remedy against sin, and to avoid`l
+`%fornication; that such persons as have not the gift of continency`l
+`%might marry, and keep themselves undefiled members of Christ's body.`l
+`l`k
+
+`%  Thirdly, It was ordained for the mutual society, help, and comfort,`l
+`%that the one ought to have of the other, both in prosperity and adversity.`l
+`%Into which holy estate these two persons present come now to be joined.`l
+`%Therefore if any man can shew any just cause, why they may not lawfully`l
+`%be joined together, let him now speak, or else hereafter for ever hold`l
+`%his peace.`l
+`l`k
+
+`%  I REQUIRE and charge you both, as ye will answer at the dreadful day of`l
+`%judgement when the secrets of all hearts shall be disclosed, that if`l
+`%either of you know any impediment, why ye may not be lawfully joined`l
+`%together in Matrimony, ye do now confess it. For be ye well assured,`l
+`%that so many as are coupled together otherwise than God's Word doth`l
+`%allow are not joined together by God; neither is their Matrimony lawful.`l
+`%At which day of Marriage, if any man do allege and declare any impediment,`l
+`%why they may not be coupled together in Matrimony, by God's law, or the`l
+`%laws of this Realm; and will be bound, and sufficient sureties with him,`l
+`%to the parties; or else put in a caution (to the full value of such charges`l
+`%as the persons to be married do thereby sustain) to prove his allegation:`l
+`%then the solemnization must be deferred, until such time as the truth be tried.`@"`l
+`l`k
+@if &sex is 1 then do
+@begin
+@do `s03 is `s02
+@do `s04 is `s01
+@end
+@if &sex is 0 then do
+@begin
+@do `s04 is `s02
+@do `s03 is `s01
+@end
+@show
+`c`r1`$Magistrate S. Caroline Dillon talks to `s03:`r0
+
+ `@"`%NWILT thou have this woman to thy wedded wife, to live together after`l
+`%God's ordinance in the holy estate of Matrimony? Wilt thou love her,`l
+`%comfort her, honour, and keep her in sickness and in health; and,`l
+`%forsaking all other, keep thee only unto her, so long as ye both shall live?`@"`l
+
+@if &sex is 1 then do
+        @begin
+        @do `v01 is 1
+        @choice
+YES
+no
+        @if responce is 2 then goto NOWAY
+        @end
+        @show
+`c`r1`$Magistrate S. Caroline Dillon talks to `s04:`r0
+
+`@"`%  NWILT thou have this man to thy wedded husband, to live together after`l
+`%God's ordinance in the holy estate of Matrimony? Wilt thou obey him, and`l
+`%serve him, love, honour, and keep him in sickness and in health; and,`l
+`%forsaking all other, keep thee only unto him, so long as ye both shall live?`@"`l
+
+@if &sex is 0 then do
+        @begin
+        @do `v01 is 1
+        @choice
+YES
+no
+        @if responce is 2 then goto NOWAY
+        @end
+        @show
+`c`r1`$Magistrate S. Caroline Dillon talks to both of you:`r0
+
+`%  Who giveth this woman to be married to this man?`l
+`% Then shall they give their troth to each other in this manner.`l
+`l`k
+
+`r1`$The Minister, receiving the Woman at her father hands, shall cause     
+the Man with his right hand to take the Woman by her right hand, and to
+say after him as followeth.                                            `r0
+
+`r1`$`s03 says his vows:`r0
+
+`@"`%I `s03. take thee `s04. to my wedded wife, to have and to`l
+`%hold from this day forward, for better for worse, for richer for poorer,`l
+`%in sickness and in health, to love and to cherish, till death us do part,`l
+`%according to God's holy ordinance; and thereto I plight thee my troth.`@"`l
+`l`k
+
+`r1`$Then shall they loose their hands; and the Woman, with her right hand
+taking the Man by his right hand, shall likewise say after the Minister,`r0
+
+`r1`$`s04 says her vows:`r0
+
+`@"`%I `s04. take thee `s03. to my wedded husband, to have and
+`%to hold from this day forward, for better for worse, for richer for poorer,
+`%in sickness and in health, to love, cherish, and to obey, till death us do
+`%part, according to God's holy ordinance; and thereto I give thee my troth.`@"`l
+`l`k
+
+`r1`$Then shall they again loose their hands; and the Man shall give unto
+the Woman a Ring, laying the same upon the book with the accustomed duty
+to the Priest and Clerk. And the Priest, taking the Ring, shall deliver
+it unto the Man, to put it upon the fourth finger of the Woman's left
+hand. And the Man holding the Ring there, and taught by the Priest, says,`r0
+
+`@"`%WITH this ring I thee wed, with my body I thee worship, and with all my`l
+`%worldly goods I thee endow: In the Name of the Father, and of the Son,`l
+`%and of the Holy Ghost. Amen.`@"`l
+`l`l`k
+
+`r1`$Then the Man leaving the Ring upon the fourth finger of the Woman's
+left hand, they shall both kneel down; and the Minister says,         `r0
+
+`@"`%  Let us pray.`l`l`l`l
+`%  O ETERNAL God, Creator and Preserver of all mankind, Giver of all`l
+`%spiritual grace, the Author of everlasting life: Send thy blessing`l
+`%upon these thy servants, this man and this woman, whom we bless in`l
+`%thy Name; that, as Isaac and Rebecca lived faithfully together, so`l
+`%these persons may surely perform and keep the vow and covenant betwixt`l
+`%them made, (whereof this Ring given and received is a token and pledge,)`l
+`%and may ever remain in perfect love and peace together, and live`l
+`%according to thy laws; through Jesus Christ our Lord. Amen.`@"`l
+`l`k
+
+`r1`$Then the Priest join their right hands together, and says,`r0
+`l`l`l
+
+`@"`%Those whom God hath joined together let no man put asunder.`@"`l
+
+`r1`$Then the Minister speak unto the people. `r0
+
+`@"`%FORASMUCH as `s02. and `s01. have consented together`l
+`%in holy wedlock, and`l have witnessed the same before God and this company,`l
+`%and thereto have given and pledged their troth either to other, and have`l
+`%declared the same by giving and receiving of a Ring, and by joining of`l
+`%hands; I pronounce that they be Man and Wife together, In the Name`l
+`%of the Father, and of the Son, and of the Holy Ghost. Amen.`l
+`l`l`l`l`k
+`k
+@deletefile npc/wed`p20.day
+@datasave npc/npcwed.idf `p70 &playernum
+@dataload npc/npc-`p70 &playernum `p25
+@do `p25 + 15
+@if `p25 > 200 then `p25 is 200
+@datasave npc/npc-`p70 &playernum `p25
+@datasave npc/npcstats `p &playernum 6
+
+@do goto end
+
+--------------------------------------------------------------------------------
+@#allguests
+        @do move 51 14
+        @do write
+`r1`!
+        @do move 37 12
+        @do write
+`r1`@
+        @do move 38 14
+        @do write
+`r1`7
+        @do move 52 12
+        @do write
+`r1`6
+        @do move 51 12
+        @do write
+`w`r1`$
+@closescript
+
+@label showweds
+        @do move 42 7
+        @do write
+`r1`%
+        @do move 43 7
+        @do write
+`r1`8
+@closescript
+
+@#guest1
+@if `p29 is 1 then do
+        @begin
+        @routine allguests
+        @routine showweds
+        @do moveback
+        @if `p26 NOT 1 then do
+                @begin
+                @do saybar
+`$Violet: `%I love weddings, I can't wait until I get married.
+                @end
+        @if `p26 IS 1 then do
+                @begin
+                @do saybar
+`$Guest1: `%I love weddings, I go to all of them.
+                @end
+        @end
+@closescript
+
+@#guest2
+@if `p29 is 1 then do
+        @begin
+        @routine allguests
+        @routine showweds
+        @do moveback
+        @do saybar
+`$Guest2: `%I love weddings, I go to all of them.
+        @end
+@closescript
+
+@#guest3
+@if `p29 is 1 then do
+        @begin
+        @routine allguests
+        @routine showweds
+        @do moveback
+        @do saybar
+`$Guest3: `%I love weddings, I go to all of them.
+        @end
+@closescript
+
+@#couple1
+@if `p29 is 1 then do
+        @begin
+        @routine allguests
+        @routine showweds
+        @do moveback
+        @do saybar
+`$Couple: `%I love weddings, I go to all of them.
+        @end
+@closescript
+
+@#bride
+@if `p29 is 1 then do
+        @begin
+        @routine showweds
+        @routine allguests
+        @do moveback
+        @do saybar
+`$`s01 and `s02 are kissing, you can't seem to get their attention now.
+        @end
+@closescript
+
+
+
+@label norings
+@do x is 59
+@do y is 10
+@do map is 74
+@loadmap &map
+@do quebar
+`$`N: `%OHH YAH!, I gotta get the `@rings `%TODAY! AHHHHHHH!!! I'll be back.
+@do quebar
+`$`N: `@THE RINGS, THE RINGS, how could I forget?
+@do addlog
+`$`N `%forgot the RINGs for their wedding!
+@drawmap
+@update
+@closescript
+
+@label NOWAY
+@drawmap
+@do addlog
+`$`s02 `%REJECTED `s01 at the alter!
+@do saybar
+`$`N: `%I can't take it anymore, I DON'T LOVE YOU!
+@datasave npc/npc-`p70.idf &playernum -50
+@do `p08 - 20
+@update
+@closescript
+
+@#leave
+@do x is 59
+@do y is 10
+@do map is 74
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@#END
+@closescript

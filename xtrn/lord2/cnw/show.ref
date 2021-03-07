@@ -1,0 +1,960 @@
+; Script file SHOW.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE sign2 000000580
+@DECLARE sign1 000000644
+@DECLARE greeter 000000731
+@DECLARE armor 000003001
+@DECLARE weapon 000003142
+@DECLARE item 000003325
+@DECLARE sell 000003533
+@DECLARE chances 000003641
+@DECLARE chancee 000007597
+@DECLARE skills 000007628
+@DECLARE skiller 000008471
+@DECLARE skillss 000011838
+@DECLARE warp 000011869
+@DECLARE warps 000011919
+@DECLARE warpd 000016276
+@DECLARE warpl 000018267
+@NOCHECK
+; End of .REF index
+
+;SpringFang's House of Wonders
+@#sign2
+@do moveback
+@do saybar
+`2Created by Thos Swallow
+
+@#sign1
+@do moveback
+@do saybar
+`3Spr`7ing`4Fa`6ng`2's House of Wonders `5v1.9
+
+@#greeter
+@do moveback
+@busy
+@offmap
+@clear screen
+@show
+`c
+
+       `2Welcome to `3Spr`7ing`4Fa`6ng`2's House of Wonders.  There are four other
+     floors here, all interconnected to each other.  Just so you won't
+     get confused or lost, each floor can be identified by the color of
+     the stairs leading to them.  Let me tell you about each floor.
+     `k
+     `c
+       `@The Place of Purchases `2is a wonderful place.  You can reach it
+     by taking the `%white `2stairs.  You can buy nearly every weapon, armour,
+     or item there.  There is also a place to sell your bulky items.  As
+     well as all this, you can also buy more chances at doing things, and
+     you can also buy skills.
+     `k
+     `c
+       `8If you look on the `@Fightin' `8floor, there is a statue of the once
+     famed `4K`5C`8D, the one who destroyed the `4Red Dragon`8!  It is said that if
+     you can beat his spirit in battle, you will gain the ultimate weapon.
+     `2But that's just a rumor.  It is accessed by using the `1blue `2stairs.
+
+       `2The magical Mystic Eye is also supposed to be located there.  It
+     allows you to transport back here at any time.  Also, check out the
+     special level-up booth, and the monster booth.  If you have any
+     questions about them, consult the info man that is there.
+     `k
+     `c
+       `@The Warp Zone `2is where you can purchase a membership and warp to
+     practically any town, city, shack, shanty, or any other notable place.
+     It is definitely worth your money.  You can find it by taking the nice
+     `#pink `2stairs.
+     `k
+     `c
+       `2Finally, `3Spr`7ing`4Fa`6ng`@'s Lair `2is the home of our kind and generous
+     ruler.  You can deposit money with him, have him heal you, go and
+     socialize with him, worship him, and have him declare you as the
+     `$Greatest Warrior in the Land`2, though, of course, everyone knows
+     that he is truly the greatest.  You can see him by taking the `$yellow
+     `2stairs.
+     `k
+     `c
+       `2Well, that's the low-down on this magical, mysterious place.  Hope
+     that all of your questions have been answered.
+
+                               `4Enjoy your stay!
+
+`\`k
+@drawmap
+@update
+@closescript
+
+@#armor
+@offmap
+@do moveback
+@clear screen
+@show
+`c
+`\
+@buymanager
+  10
+  12
+  13
+  14
+  37
+  59
+  @end
+@drawmap
+@update
+
+@#weapon
+@offmap
+@do moveback
+@clear screen
+@show
+`c
+`\
+@buymanager
+  1
+  6
+  4
+  9
+  15
+  16
+  60
+  38
+  35
+  36
+  49
+  39
+  59
+  58
+  @end
+@drawmap
+@update
+
+@#item
+@offmap
+@do moveback
+@clear screen
+@show
+`c
+`\
+@buymanager
+  1
+  3
+  5
+  43
+  20
+  11
+  17
+  40
+  29
+  55
+  66
+  50
+  28
+  30
+  32
+  33
+  27
+  26
+  @end
+@drawmap
+@update
+
+@#sell
+@offmap
+@do moveback
+@clear screen
+@show
+`c
+`\
+ @sellmanager
+  @end
+@drawmap
+@update
+
+@#chances
+@do moveback
+@datanewday money.shw
+ @do `p20 is money
+ @do `p20 + bank
+@dataload money.shw &playernum `p21
+@if `p21 < `p20 then do
+@begin
+@datasave money.shw &playernum `p20
+@end
+@if `p20 < `p21 then `p20 is `p21
+ @do `p20 / 10
+ @do `p21 is `p20
+ @if `p21 < 1000 then `p21 is 1000
+ @do `p20 * 10
+ @do `p20 / 13
+ @do `p22 is `p20
+ @if `p22 < 5000 then `p22 is 5000
+ @do `p20 * 13
+ @do `p20 / 750
+ @do `p23 is `p20
+ @if `p23 < 30 then `p23 is 30
+ @do `p20 * 750
+ @do `p20 / 15
+ @do `p25 is `p20
+ @if `p25 < 500 then `p25 is 500
+ @do `p20 * 15
+ @do `p20 / 20
+ @do `p24 is `p20
+ @if `p24 < 300 then `p24 is 300
+ @do `p20 * 20
+ @do `p20 / 5
+ @if `p20 < 10000 then `p20 is 10000
+@show
+`c
+`r0`c  `%`r1  The Chances Shop  `r0
+
+       `2This is where you can buy more chances at "once a day" sorts of
+     things.  Select what you would like another chance at.  Each item
+     costs a certain percentage of the max amount of money you have had
+     today.  There is, however, a minimum amount.
+
+`8You have $&money.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Gaining a level.        `#(`2$`p20`#)
+Fighting in the arena.  `#(`2$`p21`#)
+Going in Barak's house. `#(`2$`p22`#)
+Fishing.                `#(`2$`p23`#)
+Quests.                 `#(`2$`p24`#)
+Turns.                  `#(`2$`p25 `5for 100 turns`#)
+Leave.
+@if responce is 1 then do
+ @begin
+  @if `T04 is 0 then do
+   @begin
+    @show
+    `c
+    `2"`@You haven't failed today yet!  Fool!`2"
+    `\`k
+   @do goto chancee
+   @end
+  @if money LESS `p20 then do
+   @begin
+    @show
+    `c
+    `2"`@Try comeing back when you have enough money, you reject!`2"
+    `\`k
+   @do goto chancee
+   @end
+   @show
+   `c
+   `2"`@Let's just hope you don't screw up this time...`2"
+   `\`k
+      @do `T04 is 0
+      @do money - `p20
+ @end
+@if responce is 2 then do
+ @begin
+  @if bitcheck `t12 7 0 then do
+   @begin
+    @show
+    `c
+    `2"`@You haven't lost in the arena yet!`2"
+    `\`k
+   @do goto chancee
+   @end
+  @if money < `p21
+   @begin
+    @show
+    `c
+    `2"`@Um, you need at LEAST `0$`p21`@...`2"
+    `\`k
+   @do goto chancee
+   @end
+  @show
+  `c
+  `2"`@All done!  Now you can fight in the Arena again!`2"
+  `\`k
+  @bitset `t12 7 0
+  @do money - `p21
+ @do goto chancee
+ @end
+@if responce is 3 then do
+ @begin
+  @dataload barmom.idf &playernum `p20
+  @if `p20 is 0 then do
+   @begin
+    @show
+    `c
+    `2"`@Barak's mother hasn't thrown you out yet!`2"
+    `\`k
+   @do goto chancee
+   @end
+  @if money < `p22 then do
+   @begin
+    @show
+    `c
+    `2"`@You don't quite have the cash to pay for this.`2"
+    `\`k
+   @do goto chancee
+   @end
+  @datasave barmom.idf &playernum 0
+  @show
+  `c
+  `2"`@Now you can go and pick that lock again!`2"
+  `\`k
+  @do money - `p22
+  @do goto chancee
+ @end
+@if responce is 4 then do
+ @begin
+  @if money < `p23 then do
+   @begin
+    @show
+    `c
+    `2"`@You are truly sad.  You don't even have `0`p23 `@measly dollars...`2"
+    `\`k
+   @do goto chancee
+  @end
+ @show
+    `c
+    `2"`@Well, there's one more fish you can catch...  Hope it's a `0Sparkling
+   Green Salmon`@!`2"
+    `\`k
+  @do `T10 + 1
+  @do money - `p23
+  @do goto chancee
+ @end
+@if responce is 5 then do
+ @begin
+  @if money < `p24 then do
+   @begin
+    @show
+    `c
+    `2"`@It's `0$`p24 `@per quest, and I won't take anything less.`2"
+    `\`k
+    @do goto chancee
+   @end
+  @show
+  `c
+  `2"`@There's one more quest for ya!`2"
+  `\`k
+  @do `p31 + 1
+  @do money - `p24
+  @do goto chancee
+ @end
+@if responce is 6 then do
+ @begin
+  @if money < `p25 then do
+   @begin
+    @show
+    `c
+    `2"`0`p25 `@dollars isn't too much, is it?!?!?`2"
+    `\`k
+    @do goto chancee
+   @end
+  @show
+  `c
+  `2"`@One hundred more turns, coming right up!`2"
+  `\`k
+  @do `p11 + 100
+  @do money - `p25
+  @do goto chancee
+ @end
+@do goto chancee
+
+@#chancee
+@drawmap
+@update
+
+@#skills
+@do moveback
+ @do `p20 is money
+ @do `p20 + bank
+@datanewday money.shw
+ @do `p20 is money
+ @do `p20 + bank
+@dataload money.shw &playernum `p21
+@if `p21 < `p20 then do
+@begin
+@datasave money.shw &playernum `p20
+@end
+@if `p20 < `p21 then `p20 is `p21
+ @do `p20 / 10
+ @do `p21 is `p20
+ @if `p21 < 1000 then `p21 is 1000
+ @do `p20 * 10
+ @do `p20 / 6
+ @do `p22 is `p20
+ @if `p22 < 2000 then `p22 is 2000
+ @do `p20 * 6
+ @do `p20 / 20
+ @do `p23 is `p20
+ @if `p23 < 300 then `p23 is 300
+ @do `p20 * 20
+ @do `p20 / 20
+ @do `p25 is `p20
+ @if `p25 < 750 then `p25 is 750
+ @do `p20 * 20
+ @do `p20 / 5
+ @do `p24 is `p20
+ @if `p24 < 3000 then `p24 is 3000
+ @do `p20 * 5
+ @do `p20 / 18
+ @do `p95 is `p20
+ @if `p95 < 1000 then `p95 is 1000
+ @do `p20 * 18
+ @do `p20 / 19
+ @if `p20 < 500 then `p20 is 500
+
+@label skiller
+@show
+`c
+`r0`c  `%`r1  The Skills Shop  `r0
+
+       `2Level ups too slow for ya?  Then this is the place for you.  Just
+     show us the cash and we'll give you the stats.  Each thing costs a
+     certain percent of the max cash you have had today.
+
+`8You have $&money.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Hit Points.         `# (`2$`p21 `5per point`#)
+Positive Alignment. `# (`2$`p23 `5per point`#)
+Negative Alignment. `# (`2$`p23 `5per point`#)
+Strength.           `# (`2$`p22 `5per point`#)
+Defense.            `# (`2$`p24 `5per point`#)
+Quests.             `# (`2$`p25 `5per point`#)
+Charm.              `# (`2$`p20 `5per point`#)
+Gems.               `# (`2$`p95 `5per gem`#)
+Leave.
+@if responce is 1 then do
+ @begin
+  @if money < `p21 then do
+   @begin
+    @show
+    `c
+    `2"`@Hey, cheapskate!  I need `0`p21 `@bucks first!`2
+    `\`k
+   @do goto skiller
+   @end
+  @show
+  `c
+  `2"`@One more hit point for you!`2"
+  `\`k
+  @do `p03 + 1
+  @do money - `p21
+  @do goto skiller
+ @end
+@if responce is 2 then do
+ @begin
+  @if money < `p23 then do
+   @begin
+    @show
+    `c
+    `2"`@Alignment doesn't come that cheaply, freak!`2"
+    `\`k
+   @do goto skiller
+   @end
+  @show
+  `c
+  `2"`@Here's your alignment point!`2"
+  `\`k
+  @do `p07 + 1
+  @do money - `p23
+  @do goto skiller
+ @end
+@if responce is 3 then do
+ @begin
+  @if money < `p23 then do
+   @begin
+    @show
+    `c
+    `2"`@Alignment doesn't come that cheaply, freak!`2"
+    `\`k
+   @do goto skiller
+   @end
+  @show
+  `c
+  `2"`@We'll just subtract one alignment point, now.`2"
+  `\`k
+  @do `p07 - 1
+  @do money - `p23
+  @do goto skiller
+ @end
+@if responce is 4 then do
+ @begin
+  @if money < `p22 then do
+   @begin
+    @show
+    `c
+    `2"`@Strength is expensive round here...`2"
+    `\`k
+   @do goto skiller
+   @end
+  @show
+  `c
+  `2"`@You want strength?  You got it!`2"
+  `\`k
+  @do `p04 + 1
+  @do money - `p22
+  @do goto skiller
+ @end
+@if responce is 5 then do
+ @begin
+  @if money < `p24 then do
+   @begin
+    @show
+    `c
+    `2"`@Dodge points are a precious commodity!  Don't rip me off!`2"
+    `\`k
+   @do goto skiller
+   @end
+  @show
+  `c
+  `2"`@You oughta be able to dodge those monsters now!`2"
+  `\`k
+  @do `p05 + 1
+  @do money - `p24
+  @do goto skiller
+ @end
+@if responce is 6 then do
+ @begin
+  @if money < `p25 then do
+   @begin
+    @show
+    `c
+    `2"`@Come back when you've got the dough!`2"
+    `\`k
+   @do goto skiller
+   @end
+  @show
+  `c
+  `2"`@Now you've got a quest point, you cheater...`2"
+  `\`k
+  @do `p18 + 1
+  @do money - `p25
+  @do goto skiller
+ @end
+@if responce is 7 then do
+ @begin
+  @if money < `p20 then do
+   @begin
+    @show
+    `c
+    `2"`@You ugly jerk!  I need `0$`p20`@!`2"
+    `\`k
+   @do goto skiller
+   @end
+  @show
+  `c
+  `2"`@My, my!  You're a good lookin' one!`2"
+  `\`k
+  @do `p08 + 1
+  @do money - `p20
+  @do goto skiller
+ @end
+@if responce is 8 then do
+ @begin
+  @if money < `p95 then do
+   @begin
+    @show
+    `c
+    `2"`@You ain't getting any gems from me with that kind of money!`2"
+    `\`k
+   @do goto skiller
+   @end
+  @show
+  `c
+  `2"`@Yer a rich kid, now.`2"
+  `\`k
+  @do `p19 + 1
+  @do money - `p95
+  @do goto skiller
+ @end
+@if responce is 9 then do
+ @do goto skillss
+
+@#skillss
+ @drawmap
+ @update
+
+@#warp
+@offmap
+@do moveback
+@do goto warps
+
+@#warps
+@dataload swarp.shw &playernum `p20
+@if `p20 is 0 then do
+ @begin
+  @clear screen
+  @show
+  `c
+       `2You step up the the counter, and the man asks for your name.
+
+       `2"`$`n`2," you proudly state.
+
+       `2"`3Who?`2"  He looks at you for a moment.  "`3It would seem that you
+      do not have a membership yet.  For a measly `0$5000 `3you can buy 30
+      warps.`2"
+
+        He eyes you once again.  "`3Um, maybe that's a little steep for
+      the likes of you.  You must understand, however, that from here you
+      can warp to any city or shack.  Quests become a piece of cake once
+      you've bought a membership here, and found the Mystic Eye.`2" He stops
+      suddenly, clearing his throat.  "`3Well, what will it be?`2"
+
+
+      @do `v01 is 1
+      @choice
+      Sounds good, man.
+      P'shah.  I don't think so.
+     @if responce is 2 then do
+      @begin
+       @do goto warpl
+      @end
+     @if responce is 1 then do
+      @begin
+       @if money < 5000 then do
+        @begin
+         @show
+         `c
+       `2"Fool!  You need `0$5000`2!!!" the man screams.
+       `\`k
+       @do goto warps
+       @end
+       @do money - 5000
+       @do `p20 is 30
+       @datasave swarp.shw &playernum `p20
+       @show
+       `c
+       `2"`3I'm glad you came to your senses, s&man.  You now have a total of
+     `030 `3warps.  Now, then.  Where would you like to go?`2"
+     `\`k
+     @end
+    @end
+      @clear screen
+@show
+`c
+`r0`c  `%`r1  The Warp Zone  `r0
+                                                          `0`p20 `8warps left.
+@do write
+`x`x
+@do `v01 is 1
+@choice
+StoneBrook Village
+StoneBrook
+Greentree
+Porttown
+Runion Castle
+Shrine of Babos
+Uncle's Cabin
+East Graveyard
+West Graveyard
+Snowypass - East
+Snowypass - West
+Flagcity
+Bonetown
+Sosen Village
+ArrisVille
+Dark Forest gate
+More...
+Forget it.
+@if response is 17 then do
+  @begin
+   @do goto warpd
+  @end
+@if response is 18 then do
+  @begin
+   @do goto warpl
+  @end
+@do `p20 - 1
+@datasave swarp.shw &playernum `p20
+@show
+`c
+`\`\  `0"`2Okay s&sir, here we go, compliments of `3Spr`7ing`4Fa`6ng`2!`0"
+
+  `2Quite suddenly, you are there!
+`\`k
+@if response is 1 then do
+  @begin
+   @do x is 1
+   @do y is 12
+   @do map is 1360
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 2 then do
+  @begin
+   @do x is 36
+   @do y is 7
+   @do map is 1359
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 3 then do
+  @begin
+   @do x is 48
+   @do y is 14
+   @do map is 1356
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 4 then do
+  @begin
+   @do x is 38
+   @do y is 14
+   @do map is 956
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 5 then do
+  @begin
+   @do x is 27
+   @do y is 17
+   @do map is 1274
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 6 then do
+  @begin
+   @do x is 52
+   @do y is 12
+   @do map is 1193
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 7 then do
+  @begin
+   @do x is 64
+   @do y is 12
+   @do map is 1595
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 8 then do
+  @begin
+   @do x is 46
+   @do y is 12
+   @do map is 1594
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 9 then do
+  @begin
+   @do x is 27
+   @do y is 10
+   @do map is 1593
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 10 then do
+  @begin
+   @do x is 3
+   @do y is 15
+   @do map is 1591
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 11 then do
+  @begin
+   @do x is 76
+   @do y is 12
+   @do map is 1497
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 12 then do
+  @begin
+   @do x is 71
+   @do y is 17
+   @do map is 1092
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 13 then do
+  @begin
+   @do x is 39
+   @do y is 18
+   @do map is 1572
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 14 then do
+  @begin
+   @do x is 32
+   @do y is 8
+   @do map is 456
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 15 then do
+  @begin
+   @do x is 26
+   @do y is 11
+   @do map is 523
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 16 then do
+  @begin
+   @do x is 31
+   @do y is 9
+   @do map is 1354
+  @loadmap &map
+@drawmap
+@update
+  @end
+@end
+
+@#warpd
+@show
+`c
+`r0`c  `%`r1  The Warp Zone  `r0
+                                                          `0`p20 `8warps left.
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Tree House
+Music Cabin
+East Ferry
+West Ferry
+Koshi Entrance
+Dragon Tooth Castle
+Wizard Tower
+Castle ColdDrake
+StonePass Lodge
+Jack's Restaurant
+Back...
+Forget it.
+@end
+@if response is 11 then do
+  @begin
+   @do goto warps
+  @end
+@if response is 12 then do
+  @begin
+   @do goto warpl
+  @end
+@do `p20 - 1
+@datasave swarp.shw &playernum `p20
+@show
+`c
+`\`\  `0"`2Okay s&sir, here we go, compliments of `3Spr`7ing`4Fa`6ng`2!`0"
+
+  `2Quite suddenly, you are there!
+`\`k
+@if response is 1 then do
+  @begin
+   @do x is 37
+   @do y is 13
+   @do map is 1279
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 2 then do
+  @begin
+   @do x is 44
+   @do y is 8
+   @do map is 360
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 3 then do
+  @begin
+   @do x is 52
+   @do y is 12
+   @do map is 215
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 4 then do
+  @begin
+   @do x is 43
+   @do y is 14
+   @do map is 203
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 5 then do
+  @begin
+   @do x is 34
+   @do y is 12
+   @do map is 196
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 6 then do
+  @begin
+   @do x is 48
+   @do y is 10
+   @do map is 706
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 7 then do
+  @begin
+   @do x is 75
+   @do y is 4
+   @do map is 1255
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 8 then do
+  @begin
+   @do x is 46
+   @do y is 9
+   @do map is 320
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 9 then do
+  @begin
+   @do x is 35
+   @do y is 13
+   @do map is 880
+  @loadmap &map
+@drawmap
+@update
+  @end
+@if response is 10 then do
+  @begin
+   @do x is 14
+   @do y is 18
+   @do map is 1278
+  @loadmap &map
+@drawmap
+@update
+  @end
+
+@#warpl
+@drawmap
+@update
+

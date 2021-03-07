@@ -1,0 +1,52 @@
+
+
+                    L.O.R.D. II - Map Conversion Program
+
+                        (for lack of a better name)
+
+                              by Andrew DuBry
+
+컴컴�
+INTRO
+컴컴�
+
+This program is version 1.0beta. It will convert any LORD II map you have into
+a .BMP graphics file so you can view the entire world with your favorite
+viewer. However, it isn't "cool" yet so I'm calling it beta.
+
+What it WILL do: Simply copy l2map2.exe to any LORD2 directory you have and
+run l2map2.exe. It will give you a percent status as it converts the entire
+world into a bitmap called OUT.BMP. You can rename that after it's done.
+Only certain viewers will view this .BMP for some reason because I was only
+able to find an old .bmp header format.
+
+The .BMP will be about 2.5 megabytes in size, so make sure you have enough
+room first before running it. I would suggest using a graphics program to
+convert the .BMP into a nice little 65k .GIF or something if you can.
+
+컴컴컴컴컴컴컴컴
+FUTURE EXPANSION
+컴컴컴컴컴컴컴컴
+
+* get the proper .bmp header so all viewers can read it (send me any info plz!)
+* perhaps even save it in .jpg format (again, any nice info would be coolio)
+* improve the shading techniques on some of the higher ascii characters
+* add little user defineable stuff
+
+컴컴컴컴컴컴
+REGISTRATION
+컴컴컴컴컴컴
+
+This program is provided as freeware, of course, like most of my programs,
+which I'm sure none of you have :). However, I am planning to release my own
+entirely new LORD II World on Halloween 1997 as "macaroni-ware". So I'd
+appreciate it if you check out my World called Sword of Fate and send me
+donations for that World and/or comments; check the readme file when you get
+it. And send me comments on this program as well.
+
+You can reach me at:
+
+                          dubr0825@tao.sou.edu
+                          feelie@juno.com
+
+Merci Boucoups!

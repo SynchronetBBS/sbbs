@@ -1,0 +1,797 @@
+; Script file GORILLA.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE gorgirl 000002237
+@DECLARE export 000002380
+@DECLARE savedata 000002847
+@DECLARE loaddata 000002975
+@DECLARE shaman 000003075
+@DECLARE house5 000003177
+@DECLARE house1 000004735
+@DECLARE house2 000006217
+@DECLARE house3 000007777
+@DECLARE house4 000009345
+@DECLARE chief 000010904
+@DECLARE claim 000012804
+@DECLARE healer 000013357
+@DECLARE gatekeeper 000014385
+@DECLARE shoppe 000014779
+@DECLARE nomore 000014933
+@NOCHECK
+; End of .REF index
+
+;şÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄşÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄş
+;³ IGM: Gorilla Villa                   ³ Version: 8th               ³
+;³ Author: Talaphid@Juno.com            ³ Bugfix:                    ³
+;³ Added screens: N-NE of Sosen Village ³  Challenge the Dryad       ³
+;³ Mod'd Screens: 1 east of Porttown    ³  was bugged                ³
+;şÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄşÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄş
+;³ Offers five ownable safehouses (owner only). Sold at a price      ³
+;³determined by the Chief. Players can vie for the mantle of Chief   ³
+;³Healer (no chief preference). Stables -> porttown. Chief           ³
+;³collects proceeds of houses. Format of GORILLA2.DAT:               ³  
+;³# -- Owner of house 1                                              ³
+;³# -- Owner of house 2 (etc., for a total of 5 houses)              ³
+;³# -- Chief                                                         ³
+;³# -- Cost of a house                                               ³
+;³# -- amount in treasury                                            ³
+;³# -- str of dryad                                                  ³
+;³# -- def of dryad                                                  ³
+;³# -- hp of dryad                                                   ³
+;şÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄş
+;³ if you like this, look for Veiled Isle IGM coming soon from Tal!  ³
+;şÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄş
+;IGMs also by Talaphid (out to date of release)
+;Monastry       Divine Comedy           Scrye
+;Magi, the Teleportationist
+
+;<--GorGirl added by CNW-->
+@#GORGIRL
+@do `p70 is 75
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`$Gorilla Girl: `5Hi!
+@end
+
+
+@#EXPORT
+@offmap
+@do moveback
+@show
+`r0`c   `r1     The Stables     `r0
+
+ `6Uh-gil: `%"`2Greetings, s&sir. Want go Porttown?`%"
+@do `v01 is 1
+@choice
+Uh, nah. I think I'll ... hang out.
+Sure, I wanna make like a tree... and leaf.
+@if response not 1 then do
+ @begin
+@show
+`\`\  `6Uh-gil: `%"`2We go now!`%"
+`2.`L.`L. `5>bump< `2.`L.`L. `5>bump< `2.`L.`L. `5>bump<`2
+@do x is 42
+@do y is 16
+@do map is 956
+@loadmap &map
+@end
+@drawmap
+@update
+
+@#SAVEDATA
+@do delete gorilla2.dat
+@writefile gorilla2.dat
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+`p28
+`p29
+`p40
+`p41
+@#LOADDATA
+@readfile gorilla2.dat
+`p21
+`p22
+`p23
+`p24
+`p25
+`p26
+`p27
+`p28
+`p29
+`p40
+`p41
+@#SHAMAN
+@DO SAYBAR
+`0Gorilla `6Shaman`%: The portal beyond leads to outskirts of Gorilla Villa.
+
+@#HOUSE5
+;61,15
+@ROUTINE LOADDATA
+@DO MOVEBACK
+@if `p25 is 0 then do
+ @begin
+@show
+`r0`c           `2Tree for sale. Only `$`p27 gold`2.
+
+@choice
+Do it, buy your very own hangout!
+Nah... I just don't swing that way.
+@if RESPONSE is 2 then do
+ @begin
+ @do moveback
+ @drawmap
+ @closescript
+ @end
+@if RESPONSE is 1 then do
+ @begin
+  @if `p21 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p22 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p23 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p24 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if money < `p27 then do
+   @begin
+   @show
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%Reality check just bounced
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+   @end
+   ;Not sold.. no money
+  @if money > 49 then do
+   @begin
+    @do `p25 is &playernum
+    @do money - `p27
+    @do `p28 + `p27
+    @ROUTINE SAVEDATA
+   @end
+   ;SOLD!
+
+   ;Didn't want it!
+ @end
+ @key
+@update
+@drawmap
+@end
+;vvv Its owned!
+@if `p25 is &playernum then do
+ @begin
+ @do MAP is 77
+ @do X is 61
+ @do Y is 15
+ @loadmap &map
+ @update
+ @drawmap
+ @closescript
+ @end
+@do moveback
+@do `s01 is getname `p25
+@do saybar
+This is `s01's house -- not yours.
+
+@#HOUSE1
+@ROUTINE LOADDATA
+;61,15
+@DO MOVEBACK
+@if `p21 is 0 then do
+ @begin
+@show
+`r0`c           `2Tree for sale. Only `$`p27 gold`2.
+
+@choice
+Do it, buy your very own hangout!
+Nah... I just don't swing that way.
+@if RESPONSE is 2 then do
+ @begin
+ @do moveback
+ @drawmap
+ @closescript
+ @end
+@if RESPONSE is 1 then do
+ @begin
+  @if `p22 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p25 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p24 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p23 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if money < `p27 then do
+   @begin
+   @show
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%Reality check just bounced
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+   @end
+  @if money > `p27 then do
+   @begin
+    @do `p21 is &playernum
+    @do money - `p27
+    @do `p28 + `p27
+    @Routine SAVEDATA
+ @end
+ @end
+ @key
+@update
+@drawmap
+@end
+@if `p21 is &playernum then do
+ @begin
+ @do MAP is 77
+ @do X is 20
+ @do Y is 15
+ @loadmap &map
+ @update
+ @drawmap
+ @closescript
+ @end
+@do moveback
+@do `s01 is getname `p21
+@do saybar
+This is `s01's house -- not yours.
+
+@#HOUSE2
+@ROUtINE LOADDATA
+;33,17
+@DO MOVEBACK
+@if `p22 is 0 then do
+ @begin
+@show
+`r0`c           `2Tree for sale. Only `$`p27 gold`2.
+
+@choice
+Do it, buy your very own hangout!
+Nah... I just don't swing that way.
+@if RESPONSE is 2 then do
+ @begin
+ @do moveback
+ @drawmap
+ @closescript
+ @end
+@if RESPONSE is 1 then do
+ @begin
+  @if `p25 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p24 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p23 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p21 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if money < `p27 then do
+   @begin
+   @show
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%Reality check just bounced
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+   @end
+   ;Not sold.. no money
+  @if money > `p27 then do
+   @begin
+    @do `p22 is &playernum
+    @do money - `p27
+    @do `p28 + `p27
+    @ROUTINE SAVEDATA
+   @end
+   ;SOLD!
+
+   ;Didn't want it!
+ @end
+ @key
+@update
+@drawmap
+@end
+;vvv Its owned!
+@if `p22 is &playernum then do
+ @begin
+ @do MAP is 77
+ @do X is 33
+ @do Y is 17
+ @loadmap &map
+ @update
+ @drawmap
+ @closescript
+ @end
+@do moveback
+@do `s01 is getname `p22
+@do saybar
+This is `s01's house -- not yours.
+
+@#HOUSE3
+;45,12
+@ROUtINE LOADDATA
+;33,17
+@DO MOVEBACK
+@if `p23 is 0 then do
+ @begin
+@show
+`r0`c           `2Tree for sale. Only `$`p27 gold`2.
+
+@choice
+Do it, buy your very own hangout!
+Nah... I just don't swing that way.
+@if RESPONSE is 2 then do
+ @begin
+ @do moveback
+ @drawmap
+ @closescript
+ @end
+@if RESPONSE is 1 then do
+ @begin
+  @if `p25 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p24 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p22 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p21 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if money < `p27 then do
+   @begin
+   @show
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%Reality check just bounced
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+   @end
+   ;Not sold.. no money
+  @if money > `p27 then do
+   @begin
+    @do `p23 is &playernum
+    @do money - `p27
+    @do `p28 + `p27
+    @ROUTINE SAVEDATA
+   @end
+   ;SOLD!
+
+   ;Didn't want it!
+ @end
+ @key
+@update
+@drawmap
+@end
+;vvv Its owned!
+@if `p23 is &playernum then do
+ @begin
+ @do MAP is 77
+ @do X is 45
+ @do Y is 12
+ @loadmap &map
+ @update
+ @drawmap
+ @closescript
+ @end
+@do moveback
+@do `s01 is getname `p23
+@do saybar
+This is `s01's house -- not yours.
+
+@#HOUSE4
+;59,7
+@ROUtINE LOADDATA
+@DO MOVEBACK
+@if `p24 is 0 then do
+ @begin
+@show
+`r0`c           `2Tree for sale. Only `$`p27 gold`2.
+
+@choice
+Do it, buy your very own hangout!
+Nah... I just don't swing that way.
+@if RESPONSE is 2 then do
+ @begin
+ @do moveback
+ @drawmap
+ @closescript
+ @end
+@if RESPONSE is 1 then do
+ @begin
+  @if `p25 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p23 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p22 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if `p21 is &playernum then do
+   @begin
+   @show
+`2Nu-uh... only one house ta a player.
+@key
+@update
+@drawmap
+@closescript
+   @end
+  @if money < `p27 then do
+   @begin
+   @show
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`%Reality check just bounced
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-
+   @end
+   ;Not sold.. no money
+  @if money > `p27 then do
+   @begin
+    @do `p24 is &playernum
+    @do money - `p27
+    @do `p28 + `p27
+    @ROUTINE SAVEDATA
+   @end
+   ;SOLD!
+
+   ;Didn't want it!
+ @end
+ @key
+@update
+@drawmap
+@end
+;vvv Its owned!
+@if `p24 is &playernum then do
+ @begin
+ @do MAP is 77
+ @do X is 59
+ @do Y is 7
+ @loadmap &map
+ @update
+ @drawmap
+ @closescript
+ @end
+@do moveback
+@do `s01 is getname `p24
+@do saybar
+This is `s01's house -- not yours.
+
+
+@#CHIEF
+@ROUTINE LOADDATA
+;---------- Claim chief if nobody -------------------
+@if `p26 is 0 then do
+ @begin
+@do saybar
+`%Woah! NOBODY IS CHIEF! You walk right on in and claim the title.
+@DO ADDLOG
+                `%All hail `!`N`%, new chief of the Gorilla Villa!
+@DO ADDLOG
+                                `2-`0=`2-`0=`2-`0=`2-
+@key
+@do saybar
+`7A strange looking gorilla jumps down from the tree, and...
+@key
+@do saybar
+`7sprinkles you with magic powder! Suddenly...
+@key
+@do saybar
+`7a dryad springs forth from the tree! It is almost a mirror image of you...
+@key
+@do saybar
+`7And it will stay here, representing your claim to chief.
+@do `p29 is `p03
+@do `p40 is `p04
+@do `p40 + S&wep_num
+@do `p41 is `p05
+@do `p41 + S&arm_num
+@do moveback
+@do `p26 is &playernum
+@ROUTINE SAVEDATA
+@closescript
+ @end
+;---------- If chief, get money---------------------
+@if `p26 is &playernum then do
+ @begin
+@do saybar
+`%The treasury held `$`p28`%, which you quickly pocket.
+@do money + `p28
+@do `p28 is 0
+@routine SAVEDATA
+@key
+@do `p29 is `p03
+@do `p40 is `p04
+@do `p40 + S&wep_num
+@do `p41 is `p05
+@do `p41 + S&arm_num
+@routine SAVEDATA
+@do saybar
+`7A gorilla sprinkles you, and the dryad is renewed... `2(`0`p29`2/`0`p40`2/`0`p41`2)
+@key
+@show
+`c`2Change rates `7(`3currently `$`p27`7)`%
+@DO READNUM 4 `p27 
+@do `p27 is `v40
+@routine savedata
+@do moveback
+@update
+@drawmap
+@closescript
+@end
+;------------------ Challenge chief ---------------
+@do `s01 is getname `p26
+@ROUTINE LOADDATA
+@fight
+;name
+Guardian Dryad
+;string
+You attempt to take the mantle, and this Guardian materializes...
+;power kill
+You vanquish the defender!
+;gender
+2
+;weapon
+swings a branch|`p40
+throws an apple|`p40
+causes thorn-rain|`p40
+NONE|NONE
+NONE|NONE
+`p41
+0
+0
+`p29
+GORILLA.REF|CLAIM
+GAMETXT.REF|DIE
+NONE|NONE
+@DO MOVEBACK
+@DRAWMAP
+@UPDATE
+@#CLAIM
+@DO MOVEBACK
+@DRAWMAP
+@UPDATE
+@DO SAYBAR
+`%CONGRADULATIONS! YOU are now chief!
+@DO ADDLOG
+             `%All hail `!`N`%, victorous new chief of the Gorilla Villa!
+@DO ADDLOG
+                                `2-`0=`2-`0=`2-`0=`2-
+@do `p26 is &playernum
+@DO SAYBAR
+`7A gorilla jumps down from the tree, and spinkles powder on you.
+@KEY
+@DO SAYBAR
+`7A new Dryad bursts from the ground, this one resembles you...
+@DO `p29 is `p03
+@DO `p40 is `p04
+@do `p40 + S&wep_num
+@DO `p41 is `p05
+@do `p41 + S&arm_num
+@ROUTINE SAVEDATA
+
+@#HEALER
+; Healers, borrowed from a Seth routine
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `6Uh-Gorah, Powdermage    
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`\
+`2Uh-Gorah throws white flakes on you, and is then able to know your wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"Uh, you no well! I fix, but it take `$`p20`0 gold, yeah?
+
+@do write
+`x`x
+@choice
+Be healed, for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Uh, you no have money you need!"
+  @drawmap     
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"Look fine! No need heal! Go, come when ill!" 
+
+`k
+@drawmap
+@update
+
+@#GATEKEEPER
+@DO SAYBAR
+"Welcome to the Gorilla Villa!"
+; owner of house 1-5, chief #, house cost, treasury
+@if gorilla2.dat exist false then do
+ @begin
+ @do `p21 is 0
+ @do `p22 is 0
+ @do `p23 is 0
+ @do `p24 is 0
+ @do `p25 is 0
+ @do `p26 is 0
+ @do `p27 is 50
+ @do `p28 is 0
+ @do `p29 is 0
+ @do `p40 is 0
+ @do `p41 is 0
+ @ROUTINE SAVEDATA
+ @end
+@ROUTINE LOADDATA
+@closescript
+
+@#SHOPPE
+@DO MOVEBACK
+@offmap
+@busy
+@show
+`r0`c                           `$Gorilla Villa shoppe
+
+
+
+
+@buymanager
+5
+43
+20
+@drawmap
+@update
+@#NOMORE

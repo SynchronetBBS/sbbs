@@ -1,0 +1,511 @@
+; Script file THIEF.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE thief1 000001078
+@DECLARE thief2 000001178
+@DECLARE thief3 000001273
+@DECLARE thief4 000001381
+@DECLARE thief5 000001482
+@DECLARE stall 000001590
+@DECLARE vault 000001680
+@DECLARE table 000001769
+@DECLARE house1 000001891
+@DECLARE nightable2 000002704
+@DECLARE nightable3 000003000
+@DECLARE chest1 000003301
+@DECLARE chest2 000003562
+@DECLARE chest3 000003833
+@DECLARE chest4 000004148
+@DECLARE chest5 000004448
+@DECLARE chest6 000004765
+@DECLARE chest7 000005062
+@DECLARE chest8 000005368
+@DECLARE junk 000005673
+@DECLARE nightable1 000005773
+@DECLARE windowfall 000005866
+@DECLARE sign 000006321
+@DECLARE chest9 000006386
+@DECLARE chest 000006457
+@DECLARE nightstand 000006569
+@DECLARE fire 000006669
+@DECLARE door 000006742
+@DECLARE coffer 000006835
+@DECLARE toilet 000006935
+@DECLARE window 000006982
+@DECLARE master 000007070
+@DECLARE ststart 000007124
+@DECLARE desk 000008828
+@DECLARE ststart 000008882
+@NOCHECK
+; End of .REF index
+
+@#thief1
+@do saybar
+`%Did you get your guild license yet?  Go to the front desk.
+@do moveback
+
+@#thief2
+@do saybar
+`%What do you want?  Can't you see I am busy drinking!!
+@do moveback
+
+@#thief3
+@do saybar
+`%Be carefull with the Master, he can kill you faster you can blink.
+@do moveback
+
+@#thief4
+@do saybar
+`%Only the Master can buy anything that you steal off others.
+@do moveback
+
+@#thief5
+@do saybar
+`%Out of my way, I hear there is a house in Greentree that I can rob.
+@do moveback
+
+@#stall
+@do saybar
+`%If you don't mind?  This stall is already taken!!
+@do moveback
+
+@#vault
+@do saybar
+`%Sorry, nobody but the Master goes in the vault!!
+@do moveback
+
+@#TABLE
+@do saybar
+`%There is just food on the table so you try some.  `4[25 HP added]
+@do `p02 + 25
+@do moveback
+
+@#house1
+@if `i90 < 1 then do
+ @begin
+ @do saybar
+`%You cannot get in, the door is locked.  Look for some lockpicks!!
+ @do moveback
+ @end
+@if `i90 > 0 then do
+ @begin
+ @show
+ `r0`c                  Picking a Lock
+        
+        `8You carefully take your lockpicks out of your
+        `8thieves' tool kit and use it to pick the lock.
+        `8After a couple minutes and without anyone noticing
+        `8what you are doing, you make it inside.  Luckily
+        `8the owners are gone for a couple days or you
+        `8might be in deep trouble.  This is the place where
+        `8the crime family lives in this town.  Now you will
+        `8be the richest crime family.  =:-)
+ `k
+ @do map is 1085
+ @loadmap &map
+ @do y is 20
+ @do x is 40
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@#NIGHTABLE2
+@if bitcheck `t50 1 0 then do
+ @begin
+ @DO SAYBAR
+`%You find a Vase on the night table and put it in your backpack
+ @bitset `t50 1 1
+ @do `i91 + 1
+ @do moveback
+ @end
+@if bitcheck `t50 1 1 then do
+ @begin
+ @do saybar
+`%This night table is empty.
+ @do moveback
+ @end
+
+@#NIGHTABLE3
+@if bitcheck `t58 1 0 then do
+ @begin
+ @DO SAYBAR
+`%There is a ring sitting on the night table so you stuff it in your pack
+ @bitset `t58 1 1
+ @do `i92 + 1
+ @do moveback
+ @end
+@if bitcheck `t58 1 1 then do
+ @begin
+ @do saybar
+`%This night table is empty.
+ @do moveback
+ @end
+
+@#CHEST1
+@if bitcheck `t59 1 0 then do
+ @begin
+ @DO SAYBAR
+`%You find a gold coffer in this chest!
+ @bitset `t59 1 1
+ @do `i93 + 1
+ @do moveback
+ @end
+@if bitcheck `t59 1 1 then do
+ @begin
+ @do saybar
+`%This chest is empty.
+ @do moveback
+ @end
+
+@#CHEST2
+@if bitcheck `t57 1 1 then do
+ @begin
+ @do saybar
+`%This chest is empty.
+ @do moveback
+ @end
+@if bitcheck `t57 1 0 then do
+ @begin
+ @DO SAYBAR
+`%You find a small bag of jewels in this chest.
+ @bitset `t57 1 1
+ @do `i92 + 1
+ @do moveback
+ @end
+
+
+@#CHEST3
+@if bitcheck `t56 1 0 then do
+ @begin
+ @DO SAYBAR
+`%You find 400 gold and a vase all wrapped up in here so you take it all.
+ @do money + 400
+ @do `i91 + 1
+ @bitset `t56 1 1
+ @do moveback
+ @end
+@if bitcheck `t56 1 1 then do
+ @begin
+ @do saybar
+`%This chest is empty.
+ @do moveback
+ @end
+
+
+@#CHEST4
+@if bitcheck `t55 1 0 then do
+ @begin
+ @DO SAYBAR
+`%This chest has a necklace as well as a couple bracelets so you pocket them
+ @do `i92 + 3
+ @bitset `t55 1 1
+ @do moveback
+ @end
+@if bitcheck `t55 1 1 then do
+ @begin
+ @do saybar
+`%This chest is empty.
+ @do moveback
+ @end
+
+
+@#CHEST5
+@if bitcheck `t54 1 0 then do
+ @begin
+ @DO SAYBAR
+`%You find 154 gold and 3 rings in here but one of them is missing the gem.
+ @do money + 154
+ @do `i92 + 2
+ @bitset `t54 1 1
+ @do moveback
+ @end
+@if bitcheck `t54 1 1 then do
+ @begin
+ @do saybar
+`%This chest is empty.
+ @do moveback
+ @end
+
+
+@#CHEST6
+@if bitcheck `t53 1 0 then do
+ @begin
+ @DO SAYBAR
+`%There is a large Vase in here that looks imported, must be worth a lot!
+ @do `i91 + 1
+ @bitset `t53 1 1
+ @do moveback
+ @end
+@if bitcheck `t53 1 1 then do
+ @begin
+ @do saybar
+`%This chest is empty.
+ @do moveback
+ @end
+
+
+@#CHEST7
+@if bitcheck `t52 1 0 then do
+ @begin
+ @DO SAYBAR
+`%All that is in here is 2 bags of gold [$734], After counting it you pocket it
+ @do money + 734
+ @bitset `t52 1 1
+ @do moveback
+ @end
+@if bitcheck `t52 1 1 then do
+ @begin
+ @do saybar
+`%This chest is empty.
+ @do moveback
+ @end
+
+
+@#CHEST8
+@if bitcheck `t51 1 0 then do
+ @begin
+ @DO SAYBAR
+`%You find another gold coffer in here and 493 gold in that coffer.
+ @do `i93 + 1
+ @do money + 493
+ @bitset `t51 1 1
+ @do moveback
+ @end
+@if bitcheck `t51 1 1 then do
+ @begin
+ @do saybar
+`%This chest is empty.
+ @do moveback
+ @end
+
+@#JUNK
+@do saybar
+`%Everything in this room is useless, you wonder why they keep it all!
+
+@#NIGHTABLE1
+@do saybar
+`%This night table is empty of anything of value.
+@do moveback
+
+@#windowfall
+@show
+`1
+`1
+`1
+`1
+`%[`8You fell out of the window from the top floor,     `%]
+`%[`8If you survive this then you must be lucky.  But   `%]
+`%[`8you might want to watch out for those windows from `%]
+`%[`8now on because you might not be as lucky next time.`%]
+`k
+ @do `p02 - 25 
+ @if `p02 < 1 then do
+  @begin
+  @run diefire in gametxt.ref
+  @end
+ @do map is 151
+ @loadmap &map
+ @do y is 10
+ @do x is 60
+ @drawmap
+ @update
+@
+
+@#SIGN
+@DO SAYBAR
+`%Thieves Guild Union 101
+@do moveback
+
+@#CHEST9
+@DO SAYBAR
+`%There is nothing in the chest.
+@do moveback
+
+@#CHEST
+@DO SAYBAR
+`%This chest is locked, the owner must know how to keep thieves out!
+@do moveback
+
+@#nightstand
+@do saybar
+`%The drawers seem to be stuck, there must be something in it!
+@do moveback
+
+@#fire
+@do saybar
+`%You warm your hand over the fire.
+@do moveback
+
+@#door
+@do saybar
+`%The door is, unlocked?!?  This only thing here that isn't locked!
+
+@#coffer
+@do saybar
+`%From the looks of this coffer, it must be filled with gold
+@do moveback
+
+@#toilet
+@do saybar
+`%Ah, that felt good.
+
+@#window
+@do saybar
+`%Watch your step, you might fall out next time!
+@do moveback
+
+@#master
+@offmap
+@do moveback
+@do `v01 is 1
+@label ststart
+@show
+`r0`c  `%Thieves Guild Union 101
+
+  `%Standing before you is the master to the Thieves Guild Union 101
+  `%and from the looks of him you better watch your step around here.
+
+@do write
+`x`x
+@choice
+>`i91 0 `9Fence a `%Vase `9you stole from some place nearby         `@[`$$   `%500`@]
+>`i92 0 `9Fence a `%Necklace `9you stole from some place nearby     `@[`$$  `%1500`@]
+>`i93 0 `9Fence a `%Gold Coffer `9you stole from some place nearby  `@[`$$  `%5000`@]
+Leave before he kills you.
+@show
+`\
+@if responce is 4 then do begin
+ @begin
+ @do map is 1088
+ @loadmap &map
+ @do y is 7
+ @do x is 24
+ @drawmap
+ @update
+ @do saybar
+ `%Come back later on then.
+ @closescript
+ @end
+@if responce is 3 then do begin
+ @begin
+ @do money + 5000
+ @do `i93 - 1
+ @do map is 1088
+ @loadmap &map
+ @do y is 7
+ @do x is 24
+ @drawmap
+ @update
+ @do saybar
+ `8Thanks for that `%Gold Coffer`8.  I may be able to make some money off this!
+ @closescript
+ @end
+@if responce is 2 then do begin
+ @begin
+ @do money + 1500
+ @do `i92 - 1
+ @do map is 1088
+ @loadmap &map
+ @do y is 7
+ @do x is 24
+ @drawmap
+ @update
+ @do saybar
+ `8Thanks for that `%Necklace`8.  I may be able to make some money off this!
+ @closescript
+ @end
+@if responce is 1 then do begin
+ @begin
+ @do money + 500
+ @do `i91 - 1
+ @do map is 1088
+ @loadmap &map
+ @do y is 7
+ @do x is 24
+ @drawmap
+ @update
+ @do saybar
+ `8Thanks for that `%Vase`8.  I may be able to make some money off this!
+ @closescript
+ @end
+@if responce is 4 then goto ststart
+@if responce is 3 then goto ststart
+@if responce is 2 then goto ststart
+@if responce is 1 then goto ststart
+@drawmap
+@update
+@do moveback
+
+
+@#desk
+@offmap
+@do moveback
+@do `v01 is 1
+@label ststart
+@show
+`r0`c  `%Thieves Guild Union 101
+
+  `%You are standing at the front desk to the Thieves' Guild Union 101.
+  `%This is where you can fence your stuff you steal but first you need
+  `%to buy a license.  It is only 1000$.
+
+@do write
+`x`x
+@choice
+<`i90 1 `9Purchase a License for thieving on this continant     `@[`$$ `%1,000`@]
+<`i20 1 `9Purchase a map of the world                           `@[`$$ `%   25`@]
+`%Leave before he kills you.
+@show
+`\
+@if responce is 3 then do begin
+ @begin
+ @do map is 1090
+ @loadmap &map
+ @do y is 5
+ @do x is 53
+ @drawmap
+ @update
+ @do saybar
+ `%Come back later on then.
+ @closescript
+ @end
+@if responce is 2 then do begin
+ @begin
+ @do money - 25
+ @do `i20 + 1 
+ @do map is 1090
+ @loadmap &map
+ @do y is 5
+ @do x is 53
+ @drawmap
+ @update
+ @closescript
+ @end
+@if responce is 1 then do begin
+ @begin
+ @if money < 1000 then do
+  @begin
+  @show
+  `%"You don't have enough money you dork!"
+  `k
+  @do goto ststart
+  @end
+ @do money - 1000
+ @do `i90 + 1
+ @do map is 1090
+ @loadmap &map
+ @do y is 5
+ @do x is 53
+ @drawmap
+ @update
+ @do saybar
+ `%Have fun thieving!!!
+ @closescript
+ @end
+@if responce is 3 then goto ststart
+@if responce is 2 then goto ststart
+@if responce is 1 then goto ststart
+@drawmap
+@update
+@do moveback
+

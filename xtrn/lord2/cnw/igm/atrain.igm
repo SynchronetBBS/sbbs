@@ -1,0 +1,50 @@
+
+                     Arris Training Grounds by Jay Weber V1.01
+                        (C) 1997 ShroomTrip Software
+                           AN IGM FOR LORD2 v1.01a
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes, Always!
+
+
+  Description:
+
+  Pretty simple IGM for LORD2.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM ATRAIN
+
+  To uninstall, do the same thing again.
+
+  To test, go to screen 224 (block 41).
+
+   Author: Jay Weber (aka Elric, Anakha, and blade)
+   (C) 1997 ShroomTrip Software
+   http://www.afn.org/~afn50378/sthome.html
+   E-Mail: elric@innocent.com
+   Support: kender@innocent.com
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%Arris Training Grounds v1.01 `2by `!E`0lric
+replacescreen: 224 1 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0This IGM adds a second training center on the Arris continent. It also
+  adds a new arena (similar to the BownTown Arena) and a healer (Expensive.
+  The healer charges `$$2 `0per HP.)
+
+  Players can also purchase some weapons and armors from the Arena Master,
+  and fight 6 new training bosses in 6 new locations!

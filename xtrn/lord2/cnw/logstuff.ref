@@ -1,0 +1,54 @@
+;daily log functions are here
+
+@#readlog
+@pauseon
+@show
+`r0`c            `%The Daily Happenings for day `v11 of year `v12
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+@if lognow.txt exist false then do
+ @begin
+ @writefile lognow.txt
+
+  `2Young Nedrick comes home crying - he says he saw an old woman!  Eww!
+                                 `2-`0=`2-`%=`2-`0=`2-
+@pauseoff
+@end
+
+@if lognow.txt exist true then do
+ @begin
+ @displayfile lognow.txt
+ @end
+
+
+
+@label logprompt
+
+@do write
+`\          `2(`0Y`2)esterday news  (`0T`2)odays news again (`0C`2)ontinue [`0C`2] : `%
+@do readspecial `s01 CYT
+
+ @if `s01 is Y then do
+ @begin
+ @do `p20 is `v11
+ @do `p20 - 1
+ @do `p21 is `v12
+ @if `p20 < 0 then `p21 - 1
+ @if `p21 < 0 then `p21 is 0
+ @if `p20 < 0 then `p20 is `v10
+ @pauseon
+ @show
+`r0`c            `%The Daily Happenings for yesterday, day `p20 of year `p21
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ @if logold.txt exist true then do
+ @begin
+ @displayfile logold.txt
+ @end
+ @pauseoff
+
+ @do goto logprompt
+ @end
+
+@if `s01 is T then goto readlog
+
+@#alldone
