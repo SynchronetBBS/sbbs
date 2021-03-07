@@ -70,7 +70,7 @@ if(this.argc) {
 
 function print_header(sys)
 {
-	printf("\1n\1c%-25.25s \1h%-34.34s\1h\1gTime   Age Sex\r\n", sys.name, sys.host);
+	printf("\1n\1c%-28.28s\1h%-37.37s\1h\1gTime   Age Sex\r\n", sys.name, sys.host);
 }
 
 function list_user(user, sys)
@@ -82,7 +82,7 @@ function list_user(user, sys)
 		action += " (P)";
 	else if(user.msg_waiting)
 		action += " (M)";
-	print(format("\1h\1y%-25.25s \1n\1g%-31.31s%9s %3s %3s"	
+	print(format("\1h\1y %-28.28s\1n\1g%-33.33s%9s %3s %3s"
 		,user.name
 		,action
 		,system.secondstr(user.timeon)
