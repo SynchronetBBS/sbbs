@@ -1,27 +1,35 @@
 <?xjs
-    const logonlist_lib = load({}, 'logonlist_lib.js');
-    const options = load("modopts.js", "logonlist") || {};
+    var logonlist_lib = load({}, 'logonlist_lib.js');
+    var options = load("modopts.js", "logonlist") || {};
     if (options.last_few_callers === undefined) options.last_few_callers = 4;
-    const ll = logonlist_lib.get(-options.last_few_callers);
-    if (Array.isArray(ll)) {
+    var ll = logonlist_lib.get(-options.last_few_callers);
+    if (!Array.isArray(ll)) exit();
 ?>
 
-    <h4><? locale.write('label_title', 'sidebar_recent_visitors'); ?></h4>
-    <ul class="list-group">
-        <?xjs ll.reverse().forEach(function (e) { ?>
-            <li class="list-group-item striped">
-                <strong><? write(e.user.alias); ?></strong>
-                <br>
-                <em><? write(new Date(e.time * 1000).toLocaleString()); ?></em>
-                <br>
-                <?xjs if (e.user.location != '') { ?>
-                    <? locale.write('label_location', 'sidebar_recent_visitors'); ?>
-                    <strong><? write(e.user.location); ?></strong>
-                <?xjs } ?>
-                <? locale.write('label_connection', 'sidebar_recent_visitors'); ?>
-                <strong><? write(e.user.connection); ?></strong>
-            </li>
-        <?xjs }); ?>
-    </ul>
-
-<?xjs } ?>
+<h4>
+    <? locale.write('label_title', 'sidebar_recent_visitors'); ?>
+</h4>
+<ul class="list-group">
+    <? ll.reverse().forEach(function (e) { ?>
+        <li class="list-group-item striped">
+            <strong>
+                <? write(e.user.alias); ?>
+            </strong>
+            <br>
+            <em>
+                <? write(new Date(e.time * 1000).toLocaleString()); ?>
+            </em>
+            <br>
+            <? if (e.user.location != '') { ?>
+                <? locale.write('label_location', 'sidebar_recent_visitors'); ?>
+                <strong>
+                    <? write(e.user.location); ?>
+                </strong>
+            <? } ?>
+            <? locale.write('label_connection', 'sidebar_recent_visitors'); ?>
+            <strong>
+                <? write(e.user.connection); ?>
+            </strong>
+        </li>
+    <? }); ?>
+</ul>
