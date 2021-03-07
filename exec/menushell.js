@@ -25,37 +25,36 @@ load("sbbsdefs.js");
 load("menu-commands.js");
 
 var menu;
-for(var m in Commands.Menus) {
-	if(!Commands.Menus[m].Default)
-		continue;
+for (var m in Commands.Menus) {
+	if (!Commands.Menus[m].Default) continue;
 	menu = m;
 	break;
 }
 
-var putMsg = function(str) {
-	str = str.replace(/\\1/g, ascii(1));
+function putMsg(str) {
+	str = str.replace(/\\1/g, ascii(1)); // What in the sweet blue frig is this all about
 	console.putmsg(str);
 }
 
-var doMenu = function() {
+function doMenu() {
 
 	console.clear(LIGHTGRAY);
 
-	if(Commands.Menus[menu].Header != "")
+	if (Commands.Menus[menu].Header != "") {
 		bbs.menu(Commands.Menus[menu].Header.replace(/\..*$/, ""));
-	else
+	} else {
 		putMsg(Commands.Menus[menu].Title);
+	}
 	console.crlf();
 
 	var keys = [];
-	for(var command in Commands.Menus[menu].Commands) {
-		if(!user.compare_ars(Commands.Menus[menu].Commands[command].ARS)) {
+	for (var command in Commands.Menus[menu].Commands) {
+		if (!user.compare_ars(Commands.Menus[menu].Commands[command].ARS)) {
 			keys.push(null);
 			continue;
 		}
 		keys.push(Commands.Menus[menu].Commands[command].hotkey);
-		if(!Commands.Menus[menu].List)
-			continue;
+		if (!Commands.Menus[menu].List) continue;
 		putMsg(Commands.Menus[menu].Commands[command].text);
 		console.crlf();
 	}
@@ -63,37 +62,34 @@ var doMenu = function() {
 
 	putMsg(Commands.Menus[menu].Prompt);
 	var userInput = console.getkeys(keys.join(""));
-	if(typeof userInput == "undefined" || userInput == "")
-		return;
+	if (userInput === undefined || userInput == "") return;
 	var command = Commands.Menus[menu].Commands[keys.indexOf(userInput)];
 
-	if(typeof command.menu != "undefined") {
+	if (command.menu !== undefined) {
 		menu = command.menu;
 	} else {
 		try { // Let's not lose the entire session because of a bad command.
 			var path = command.command.split(".");
-			if(path[1] == "Externals")
+			if (path[1] == "Externals") {
 				bbs.exec_xtrn(path[2]);
-			else
+			} else {
 				Commands[path[1]][path[2]].Action();
-		} catch(err) {
+			}
+		} catch (err) {
 			log(LOG_ERR, err);
 		}
 	}
 
 }
 
-var main = function() {
-	while(bbs.online) {
+try {
+	while (bbs.online) {
 		getMenus();
 		doMenu();
 	}
-}
-
-try {
-	main();
 } catch(err) {
 	log(LOG_ERR, err);
+} finally {
+	bbs.hangup();
+	exit();
 }
-bbs.hangup();
-exit();
