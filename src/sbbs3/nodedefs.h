@@ -108,13 +108,11 @@ enum node_action {                  /* Node Action */
 	,NODE_LAST_ACTION				/* Must be last */
     };
 
-#if defined(_WIN32) || defined(__BORLANDC__)	/* necessary for compatibility with SBBS v2 */
-	#pragma pack(push,1)
-#endif
+#pragma pack(push,1)
 
 #define SIZEOF_NODE_T 15			/* Must == sizeof(node_t) */
 
-typedef struct _PACK {					/* Node information kept in node.dab */
+typedef struct {					/* Node information kept in node.dab */
 	uchar		status,                 /* Current Status of Node (enum node_status) */
 				errors,                 /* Number of Critical Errors */
 				action;                 /* Action User is doing on Node (enum node_action) */
@@ -130,8 +128,6 @@ typedef struct _PACK {					/* Node information kept in node.dab */
     uint32_t   extaux;					/* Extended aux dword for node */
 	} node_t;
 
-#if defined(_WIN32) || defined(__BORLANDC__)
 #pragma pack(pop)		/* original packing */
-#endif
 
 #endif /* Don't add anything after this line */
