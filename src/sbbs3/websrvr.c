@@ -1450,7 +1450,7 @@ static off_t sock_sendfile(http_session_t *session,char *path, off_t start, off_
 	off_t	ret=0;
 	ssize_t	i;
 	char	buf[OUTBUF_LEN];		/* Input buffer */
-	off_t	remain;
+	uint64_t remain;
 
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG,"%04d Sending %s",session->socket,path);
