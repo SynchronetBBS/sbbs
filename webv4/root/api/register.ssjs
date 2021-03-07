@@ -2,7 +2,7 @@ require('sbbsdefs.js', 'SYS_CLOSED');
 var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
-load(settings.web_lib + 'request.js');
+var request = require({}, settings.web_lib + 'request.js', 'request');
 
 if (user.alias !== settings.guest) exit();
 if (!settings.user_registration) exit();
@@ -38,7 +38,7 @@ function required(mask) {
 }
 
 function clean_param(param) {
-	if (Request.has_param(param)) return Request.get_param(param).replace(/[\x00-\x19\x7F]/g, '');
+	if (request.has_param(param)) return request.get_param(param).replace(/[\x00-\x19\x7F]/g, '');
 	return "";
 }
 
@@ -47,7 +47,7 @@ function in_range(n, min, max) {
 }
 
 function valid_param(p, min, max) {
-	if (!Request.has_param(p)) return false;
+	if (!request.has_param(p)) return false;
 	if (!in_range(clean_param(p).length, min, max)) return false;
 	return true;
 }
@@ -81,12 +81,12 @@ function newUser() {
 }
 
 // See if the hidden form fields were filled
-if (Request.get_param('send-me-free-stuff') != '' || Request.get_param('subscribe-to-newsletter') !== undefined) {
+if (request.get_param('send-me-free-stuff') != '' || request.get_param('subscribe-to-newsletter') !== undefined) {
 	log(LOG_WARNING, locale.strings.api_register.log_bot_attempt);
 	exit();
 }
 
-if (system.newuser_password !== '' && (!Request.has_param('newuser-password') || Request.get_param('newuser-password') != system.newuser_password)) {
+if (system.newuser_password !== '' && (!request.has_param('newuser-password') || request.get_param('newuser-password') != system.newuser_password)) {
 	reply.errors.push(locale.strings.api_register.error_bad_syspass);
 }
 
@@ -99,7 +99,7 @@ if (!valid_param('alias', MIN_ALIAS, LEN_ALIAS) || !system.check_name(clean_para
 	prepUser.handle = clean_param('alias');
 }
 
-if (!Request.has_param('password1') || !Request.has_param('password2') || clean_param('password1') != clean_param('password2')) {
+if (!request.has_param('password1') || !request.has_param('password2') || clean_param('password1') != clean_param('password2')) {
 	reply.errors.push(locale.strings.api_register.error_password_mismatch);
 } else if (!in_range(clean_param('password1').length, system.min_password_length, system.max_password_length)) {
 	reply.errors.push(format(locale.strings.api_register.error_password_length, system.min_password_length, system.max_password_length));
@@ -140,13 +140,13 @@ if (valid_param('phone', MIN_PHONE, LEN_PHONE)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_phone);
 }
 
-if (valid_param('gender', 1, 1) && ['X', 'M', 'F', 'O'].indexOf(Request.get_param('gender')) > -1) {
+if (valid_param('gender', 1, 1) && ['X', 'M', 'F', 'O'].indexOf(request.get_param('gender')) > -1) {
 	prepUser.birthdate = clean_param('gender');
 } else if (required(UQ_SEX)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_gender);
 }
 
-if (Request.has_param('birth') && clean_param('birth').match(/^\d\d\/\d\d\/\d\d$/) !== null) {
+if (request.has_param('birth') && clean_param('birth').match(/^\d\d\/\d\d\/\d\d$/) !== null) {
 	// Should really test for valid date (and date format per system config)
 	prepUser.birthdate = clean_param('birth');
 } else if (required(UQ_BIRTH)) {
@@ -159,3 +159,6 @@ reply = JSON.stringify(reply);
 http_reply.header['Content-Type'] = 'application/json';
 http_reply.header['Content-Length'] = reply.length;
 write(reply);
+
+prepUser = undefined;
+reply = undefined;
