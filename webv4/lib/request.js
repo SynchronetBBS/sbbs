@@ -1,5 +1,5 @@
 // Helpers for http_request
-var Request = {
+var request = {
 	// Query parameter p exists
 	has_param: function (p) {
 		return (Array.isArray(http_request.query[p]) && http_request.query[p].length);
@@ -22,3 +22,5 @@ var Request = {
 		}
 	}
 };
+
+request;
