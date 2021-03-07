@@ -1,4 +1,4 @@
-require('filebase.js', 'FileBase');
+require('filebase.js', 'OldFileBase');
 require('file_size.js', 'file_size_str');
 
 function count_files(dir) {
@@ -29,7 +29,7 @@ function listDirectories(lib) {
 }
 
 function listFiles(dir) {
-	return (new FileBase(file_area.dir[dir].code)).map(function (df) {
+	return (new OldFileBase(file_area.dir[dir].code)).map(function (df) {
         df.size = df.path ? file_size_str(file_size(df.path)) : 'Unknown';
         df._size = df.path ? file_size(df.path) : 0;
 		return df;

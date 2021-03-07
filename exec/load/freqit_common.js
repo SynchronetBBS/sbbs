@@ -4,7 +4,7 @@
  * NEW lists ones newer than 10 days.
  */
 
-require("filebase.js", 'FileBase');
+require("filebase.js", 'OldFileBase');
 
 var FREQIT = {
 	dircache:{},
@@ -22,7 +22,7 @@ var FREQIT = {
 		if (magic.secure && !protected)
 			return;
 		if (this.dircache[magic.dir] === undefined)
-			this.dircache[magic.dir] = new FileBase(magic.dir);
+			this.dircache[magic.dir] = new OldFileBase(magic.dir);
 		this.dircache[magic.dir].forEach(function(fent) {
 			if (wildmatch(fent.name, magic.match, true)) {
 				if (file === undefined || fent.uldate > file.uldate)
@@ -44,7 +44,7 @@ var FREQIT = {
 		function handle_list(list) {
 			list.forEach(function(dir) {
 				if (self.dircache[dir] === undefined)
-					self.dircache[dir] = new FileBase(dir);
+					self.dircache[dir] = new OldFileBase(dir);
 				self.dircache[dir].forEach(function(fent) {
 					if (wildmatch(fent.name, match, true))
 						self.add_file(fent.path, cb_data, cfg);
