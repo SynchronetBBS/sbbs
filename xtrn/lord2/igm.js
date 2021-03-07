@@ -203,14 +203,6 @@ var igm = parse_igm(igmf);
 var fname = igmf.name.replace(/\.[^\.]*$/, '');
 igmf.close();
 
-if (igm.name === '') {
-	lln('  `bError:`4  No IGM name found in '+argv[0]);
-	sln('');
-	sln('');
-	more();
-	exit(1);
-}
-
 var install = true;
 // TODO: Case insensitive crap...
 if (file_exists(fname + '.sav')) {
@@ -223,7 +215,7 @@ var tpdat;
 var tplst;
 var idx;
 if (install) {
-	if (install_igm(fname, igm)) {
+	if (install_igm(fname, igm) && igm.name !== undefined) {
 		sln('');
 		tpdat = new File(getfname('3rdparty.dat'));
 		lln('  Adding IGM name to the text file `0'+tpdat.name+'`2...');
@@ -245,7 +237,7 @@ if (install) {
 	}
 }
 else {
-	if (uninstall_igm(fname, igm)) {
+	if (uninstall_igm(fname, igm) && igm.name !== undefined) {
 		tpdat = new File(getfname('3rdparty.dat'));
 		lln('  Removing name from '+tpdat.name+', a text file...');
 		if (!tpdat.open('r+b')) {
