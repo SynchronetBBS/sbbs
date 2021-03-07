@@ -29,7 +29,7 @@ var prepUser = {
 	location : '',
 	phone : '',
 	birthdate : '',
-	gender : '',
+	gender : ' ',
 	password : ''
 };
 
@@ -141,7 +141,7 @@ if (valid_param('phone', MIN_PHONE, LEN_PHONE)) {
 }
 
 if (valid_param('gender', 1, 1) && ['X', 'M', 'F', 'O'].indexOf(request.get_param('gender')) > -1) {
-	prepUser.birthdate = clean_param('gender');
+	prepUser.gender = clean_param('gender');
 } else if (required(UQ_SEX)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_gender);
 }
