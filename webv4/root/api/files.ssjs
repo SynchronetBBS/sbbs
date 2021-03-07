@@ -5,7 +5,7 @@ load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
 load(settings.web_lib + 'files.js');
 var request = require({}, settings.web_lib + 'request.js', 'request');
-var Filebase = require({}, 'filebase.js', 'FileBase');
+var Filebase = require({}, 'filebase.js', 'OldFileBase');
 
 var CHUNK_SIZE = 1024;
 
@@ -22,7 +22,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') && request
 			) {
 				var dircode = file_area.dir[dir].code;
 				var fn = request.get_param('file').toLowerCase();
-				var fileBase = new FileBase(dircode);
+				var fileBase = new OldFileBase(dircode);
 				var file = null;
 				fileBase.some(function (e) {
 					if (e.name.toLowerCase() !== fn) {

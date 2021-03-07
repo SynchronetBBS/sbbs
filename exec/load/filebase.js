@@ -27,7 +27,7 @@
 var FM_EXTDESC = 1;
 var FM_ANON = (1<<1);
 
-function FileBase(dir) {
+function OldFileBase(dir) {
 	var f = new File(format("%s%s.ixb", file_area.dir[dir].data_dir, dir));
 	var dat = new File(format("%s%s.dat", file_area.dir[dir].data_dir, dir));
 	var exb = new File(format("%s%s.exb", file_area.dir[dir].data_dir, dir));
