@@ -4,41 +4,40 @@ var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
 load(settings.web_lib + 'files.js');
-require('filebase.js', 'FileBase');
+var request = require({}, settings.web_lib + 'request.js', 'request');
+var Filebase = require({}, 'filebase.js', 'FileBase');
 
 var CHUNK_SIZE = 1024;
 
 var reply = {};
-if ((http_request.method === 'GET' || http_request.method === 'POST') &&
-	typeof http_request.query.call !== 'undefined' && user.number > 0
-) {
+if ((http_request.method === 'GET' || http_request.method === 'POST') && request.has_param('call') && user.number > 0) {
 
-	switch (http_request.query.call[0].toLowerCase()) {
+	switch (request.get_param('call').toLowerCase()) {
 		case 'download-file':
-			if (typeof http_request.query.dir !== 'undefined' &&
-				typeof file_area.dir[http_request.query.dir[0]] !== 'undefined'	&&
-                file_area.dir[http_request.query.dir[0]].lib_index >= 0 &&
-                file_area.dir[http_request.query.dir[0]].index >= 0 &&
-				file_area.dir[http_request.query.dir[0]].can_download &&
-				typeof http_request.query.file !== 'undefined'
-				&& user.compare_ars(file_area.dir[http_request.query.dir[0]].download_ars)
+			var dir = request.get_param('dir');
+			if (dir !== undefined
+				&& file_area.dir[dir] !== undefined && file_area.dir[dir].lib_index >= 0 && file_area.dir[dir].index >= 0 && file_area.dir[dir].can_download
+				&& request.has_param('file')
+				&& user.compare_ars(file_area.dir[dir].download_ars)
 			) {
-				var dircode = file_area.dir[http_request.query.dir[0]].code;
+				var dircode = file_area.dir[dir].code;
+				var fn = request.get_param('file').toLowerCase();
 				var fileBase = new FileBase(dircode);
 				var file = null;
 				fileBase.some(function (e) {
-					if (e.name.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
+					if (e.name.toLowerCase() !== fn) {
 						return false;
-					} else if (typeof e.path !== 'undefined') {
+					} else if (e.path !== undefined) {
 						file = e;
 						return true;
 					}
 				});
+				fileBase = undefined;
 				if (file === null) {
 					reply.error = 'File not found';
 					break;
 				}
-				if (!file_area.dir[dircode].is_exempt && file.credits > (user.security.credits + user.security.free_credits)) {
+				if (!file_area.dir[dir].is_exempt && file.credits > (user.security.credits + user.security.free_credits)) {
 					reply.error = 'Not enough credits to download this file';
 					break;
 				}
@@ -64,6 +63,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 					yield(false);
 				}
 				f.close();
+				f = undefined;
 				reply = false;
 				user.downloaded_file(dircode, file.path);
 			}
@@ -80,3 +80,5 @@ reply = JSON.stringify(reply);
 http_reply.header['Content-Type'] = 'application/json';
 http_reply.header['Content-Length'] = reply.length;
 write(reply);
+
+reply = undefined;
