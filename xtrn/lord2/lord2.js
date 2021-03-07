@@ -5,6 +5,7 @@
 // TODO: Detect disconnections better
 // TODO: Clear flags after a timeout... stuck with battle bit and you're locked out.
 // TODO: Does using an item take a turn?
+// TODO: Hail, Attack, Other player presses 'A', can kill someone without them knowing.
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -950,16 +951,21 @@ function insane_run_ref(sec, fname, refret)
 				}
 				else if (args[2].toLowerCase() === 'getname') {
 					tmp = clamp_integer(getvar(args[3]), '8') - 1;
-					if (tmp >= pfile.length)
-						setvar(args[0], '');
-					else {
-						tmp = pfile.get(tmp);
+					if (tmp === player.Record) {
 						setvar(args[0], tmp.name);
+					}
+					else {
+						if (tmp >= pfile.length || tmp < 0)
+							setvar(args[0], '');
+						else {
+							tmp = pfile.get(tmp);
+							setvar(args[0], tmp.name);
+						}
 					}
 				}
 				else if (args[2].toLowerCase() === 'deleted') {
 					tmp = clamp_integer(getvar(args[3]), '8') - 1;
-					if (tmp >= pfile.length)
+					if (tmp >= pfile.length || tmp < 0)
 						setvar(args[0], 1);
 					else {
 						tmp = pfile.get(clamp_integer(getvar(args[3]), '8') - 1);
@@ -1335,7 +1341,6 @@ function insane_run_ref(sec, fname, refret)
 			// TODO: Implemented in line parser
 		},
 		'run':function(args) {
-			// TODO: Test if the ref that's ran actually returns here, or if it simple aborts execution!
 			var f = fname;
 			var s = replace_vars(args[0]).toLowerCase();
 
