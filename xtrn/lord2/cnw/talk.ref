@@ -801,12 +801,14 @@ You also earned 200 experience points and another quest point.`k
 @closescript
 
 @label leave
+@routine clearmenu
 @do `p20 is 1
 ;@do moveback
 @update
 @closescript
 
 @label leave2
+@routine clearmenu
 @do `p20 is 1
 ;@drawmap
 @do saybar
@@ -816,6 +818,7 @@ You also earned 200 experience points and another quest point.`k
 @closescript
 
 @label leave3
+@routine clearmenu
 @do `p20 is 1
 @dataload npc/npc-`p70.idf &playernum `p21
 @do `p22 random 10 1
@@ -831,6 +834,7 @@ You also earned 200 experience points and another quest point.`k
 @closescript
 
 @label leave4
+@routine clearmenu
 @do `p20 is 1
 ;@drawmap
 @do saybar
@@ -840,9 +844,25 @@ You also earned 200 experience points and another quest point.`k
 @closescript
 
 @label leave5
+@routine clearmenu
 @do `p20 is 1
 ;@do moveback
 @update
 @closescript
+
+@#clearmenu
+@do `p40 is 2
+@do `p41 is 63
+@label clearmenunext
+@drawpart `p41 `p40
+@do `p41 + 1
+@if `p41 is 81 then do
+@begin
+@do `p41 is 63
+@do `p40 + 1
+@if `p40 is 9 then goto doneclear
+@end
+@do goto clearmenunext
+@label doneclear
 @#NOMORE
 
