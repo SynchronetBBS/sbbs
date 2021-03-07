@@ -27,7 +27,6 @@
 void sbbs_t::scandirs(long mode)
 {
 	char	ch,str[256]="";
-	char 	tmp[512];
 	int		s;
 	uint	i,k;
 
@@ -100,7 +99,6 @@ void sbbs_t::scandirs(long mode)
 void sbbs_t::scanalldirs(long mode)
 {
 	char	str[256]="";
-	char 	tmp[512];
 	int		s;
 	uint	i,j,k,d;
 
