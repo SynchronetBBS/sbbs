@@ -337,26 +337,26 @@ echostat_msg_t fidomsg_to_echostat_msg(fmsghdr_t* hdr, fidoaddr_t* pkt_orig, con
 	return msg;
 }
 
-echostat_msg_t smsg_to_echostat_msg(smbmsg_t smsg, size_t msglen, fidoaddr_t addr)
+echostat_msg_t smsg_to_echostat_msg(const smbmsg_t* smsg, size_t msglen, fidoaddr_t addr)
 {
 	char* p;
 	echostat_msg_t emsg = {{0}};
 
-	SAFECOPY(emsg.to	, smsg.to);
-	SAFECOPY(emsg.from	, smsg.from);
-	SAFECOPY(emsg.subj	, smsg.subj);
-	emsg.msg_time		= smsg.hdr.when_written.time;
+	SAFECOPY(emsg.to	, smsg->to);
+	SAFECOPY(emsg.from	, smsg->from);
+	SAFECOPY(emsg.subj	, smsg->subj);
+	emsg.msg_time		= smsg->hdr.when_written.time;
 	emsg.localtime		= time(NULL);
-	SAFECOPY(emsg.msg_tz, smb_zonestr(smsg.hdr.when_written.zone, NULL));
-	if(smsg.from_net.type == NET_FIDO && smsg.from_net.addr != NULL)
-		emsg.origaddr	= *(fidoaddr_t*)smsg.from_net.addr;
-	if((p = smsg.ftn_msgid) != NULL)
+	SAFECOPY(emsg.msg_tz, smb_zonestr(smsg->hdr.when_written.zone, NULL));
+	if(smsg->from_net.type == NET_FIDO && smsg->from_net.addr != NULL)
+		emsg.origaddr	= *(fidoaddr_t*)smsg->from_net.addr;
+	if((p = smsg->ftn_msgid) != NULL)
 		SAFECOPY(emsg.msg_id, p);
-	if((p = smsg.ftn_reply) != NULL)
+	if((p = smsg->ftn_reply) != NULL)
 		SAFECOPY(emsg.reply_id, p);
-	if((p = smsg.ftn_pid) != NULL)
+	if((p = smsg->ftn_pid) != NULL)
 		SAFECOPY(emsg.pid, p);
-	if((p = smsg.ftn_tid) != NULL)
+	if((p = smsg->ftn_tid) != NULL)
 		SAFECOPY(emsg.tid, p);
 	else
 		SAFECOPY(emsg.tid, sbbsecho_pid());
@@ -439,25 +439,25 @@ const char* iniTimeStr(time_t t)
 	return tstr;
 }
 
-void fwrite_echostat_msg(FILE* fp, echostat_msg_t msg, const char* prefix)
+void fwrite_echostat_msg(FILE* fp, const echostat_msg_t* msg, const char* prefix)
 {
 	echostat_msg_t zero = {{0}};
-	if(memcmp(&msg, &zero, sizeof(msg)) == 0)
+	if(memcmp(msg, &zero, sizeof(*msg)) == 0)
 		return;
-	if(msg.to[0])		fprintf(fp, "%s.to = %s\n"			, prefix, msg.to);
-	if(msg.from[0])		fprintf(fp, "%s.from = %s\n"		, prefix, msg.from);
-	if(msg.subj[0])		fprintf(fp, "%s.subj = %s\n"		, prefix, msg.subj);
-	if(msg.msg_id[0])	fprintf(fp, "%s.msg_id = %s\n"		, prefix, msg.msg_id);
-	if(msg.reply_id[0])	fprintf(fp, "%s.reply_id = %s\n"	, prefix, msg.reply_id);
-	if(msg.pid[0])		fprintf(fp, "%s.pid = %s\n"			, prefix, msg.pid);
-	if(msg.tid[0])		fprintf(fp, "%s.tid = %s\n"			, prefix, msg.tid);
-	fprintf(fp, "%s.length = %lu\n"							, prefix, (ulong)msg.length);
-	fprintf(fp, "%s.msg_time = %s\n"						, prefix, iniTimeStr(msg.msg_time));
-	if(msg.msg_tz[0])	fprintf(fp, "%s.msg_tz = %s\n"		, prefix, msg.msg_tz);
-	fprintf(fp, "%s.localtime = %s\n"						, prefix, iniTimeStr(msg.localtime));
-	if(msg.origaddr.zone)
-		fprintf(fp, "%s.origaddr = %s\n"					, prefix, faddrtoa(&msg.origaddr));
-	fprintf(fp, "%s.pkt_orig = %s\n"						, prefix, faddrtoa(&msg.pkt_orig));
+	if(msg->to[0])			fprintf(fp, "%s.to = %s\n"		, prefix, msg->to);
+	if(msg->from[0])		fprintf(fp, "%s.from = %s\n"	, prefix, msg->from);
+	if(msg->subj[0])		fprintf(fp, "%s.subj = %s\n"	, prefix, msg->subj);
+	if(msg->msg_id[0])		fprintf(fp, "%s.msg_id = %s\n"	, prefix, msg->msg_id);
+	if(msg->reply_id[0])	fprintf(fp, "%s.reply_id = %s\n", prefix, msg->reply_id);
+	if(msg->pid[0])			fprintf(fp, "%s.pid = %s\n"		, prefix, msg->pid);
+	if(msg->tid[0])			fprintf(fp, "%s.tid = %s\n"		, prefix, msg->tid);
+	fprintf(fp, "%s.length = %lu\n"							, prefix, (ulong)msg->length);
+	fprintf(fp, "%s.msg_time = %s\n"						, prefix, iniTimeStr(msg->msg_time));
+	if(msg->msg_tz[0])		fprintf(fp, "%s.msg_tz = %s\n"	, prefix, msg->msg_tz);
+	fprintf(fp, "%s.localtime = %s\n"						, prefix, iniTimeStr(msg->localtime));
+	if(msg->origaddr.zone)
+		fprintf(fp, "%s.origaddr = %s\n"					, prefix, faddrtoa(&msg->origaddr));
+	fprintf(fp, "%s.pkt_orig = %s\n"						, prefix, faddrtoa(&msg->pkt_orig));
 }
 
 void fwrite_echostat(FILE* fp, echostat_t* stat)
@@ -469,8 +469,8 @@ void fwrite_echostat(FILE* fp, echostat_t* stat)
 		fprintf(fp, "Title = %s\n"				, desc);
 	for(int type = 0; type < ECHOSTAT_MSG_TYPES; type++) {
 		char prefix[32];
-		sprintf(prefix, "First%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, stat->first[type], prefix);
-		sprintf(prefix, "Last%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, stat->last[type], prefix);
+		sprintf(prefix, "First%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, &stat->first[type], prefix);
+		sprintf(prefix, "Last%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, &stat->last[type], prefix);
 		if(stat->total[type] != 0)
 			fprintf(fp,	"Total%s = %lu\n"					, echostat_msg_type[type], stat->total[type]);
 	}
@@ -1188,6 +1188,8 @@ int file_to_netmail(FILE* infile, const char* title, fidoaddr_t dest, const char
 	l=len=ftell(infile);
 	if(len>8192L)
 		len=8192L;
+	else if(len < 1)
+		return 0;
 	rewind(infile);
 	if((buf=(char *)malloc(len+1))==NULL) {
 		lprintf(LOG_ERR,"ERROR line %d allocating %lu for file to netmail buf",__LINE__,len);
@@ -2705,7 +2707,7 @@ bool unpack_bundle(const char* inbound)
 /****************************************************************************/
 int mv(const char *insrc, const char *indest, bool copy)
 {
-	char buf[4096],str[256];
+	char buf[4096];
 	char src[MAX_PATH+1];
 	char dest[MAX_PATH+1];
 	int  ind,outd;
@@ -2724,7 +2726,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 	}
 	if(isdir(dest)) {
 		backslash(dest);
-		strcat(dest, getfname(src));
+		SAFECAT(dest, getfname(src));
 	}
 	if(!copy && fexistcase(dest)) {
 		lprintf(LOG_WARNING,"MV ERROR: Destination file already exists '%s'",dest);
@@ -2746,7 +2748,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 	}
 	if((inp=fdopen(ind,"rb"))==NULL) {
 		close(ind);
-		lprintf(LOG_ERR,"MV ERROR %u (%s) fdopening '%s'",errno,strerror(errno),str);
+		lprintf(LOG_ERR,"MV ERROR %u (%s) fdopening '%s'",errno,strerror(errno),src);
 		return(-1);
 	}
 	setvbuf(inp,NULL,_IOFBF,8*1024);
@@ -2758,7 +2760,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 	if((outp=fdopen(outd,"wb"))==NULL) {
 		close(outd);
 		fclose(inp);
-		lprintf(LOG_ERR,"MV ERROR %u (%s) fdopening '%s'",errno,strerror(errno),str);
+		lprintf(LOG_ERR,"MV ERROR %u (%s) fdopening '%s'",errno,strerror(errno),dest);
 		return(-1);
 	}
 	setvbuf(outp,NULL,_IOFBF,8*1024);
@@ -3105,11 +3107,15 @@ char* getfmsg(FILE* stream, ulong* outlen)
 {
 	uchar* fbuf;
 	int ch;
-	long start;
+	off_t start;
 	ulong l,length;
 
 	length=0L;
-	start=ftell(stream);						/* Beginning of Message */
+	start=ftello(stream);						/* Beginning of Message */
+	if(start < 0) {
+		lprintf(LOG_ERR, "ERROR %d line %d getting file offset", errno, __LINE__);
+		return NULL;
+	}
 	while(1) {
 		ch=fgetc(stream);						/* Look for Terminating NULL */
 		if(ch==0 || ch==EOF)					/* Found end of message */
@@ -3123,7 +3129,7 @@ char* getfmsg(FILE* stream, ulong* outlen)
 		return(NULL);
 	}
 
-	(void)fseek(stream,start,SEEK_SET);
+	(void)fseeko(stream,start,SEEK_SET);
 	for(l=0;l<length;l++)
 		fbuf[l]=(uchar)fgetc(stream);
 	if(ch==0)
@@ -3670,10 +3676,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 					net_exists=1;
 					addr.net=seenbys.addr[u].net;
 					sprintf(str,"%d/",addr.net);
-					strcat(seenby,str);
+					SAFECAT(seenby,str);
 				}
 				sprintf(str,"%d",seenbys.addr[u].node);
-				strcat(seenby,str);
+				SAFECAT(seenby,str);
 				if(lastlen+strlen(seenby)<80) {
 					(void)fwrite(seenby,strlen(seenby),1,stream);
 					lastlen+=strlen(seenby);
@@ -3701,10 +3707,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 						net_exists=1;
 						addr.net=area.link[u].net;
 						sprintf(str,"%d/",addr.net);
-						strcat(seenby,str);
+						SAFECAT(seenby,str);
 					}
 					sprintf(str,"%d",area.link[u].node);
-					strcat(seenby,str);
+					SAFECAT(seenby,str);
 					if(lastlen+strlen(seenby)<80) {
 						(void)fwrite(seenby,strlen(seenby),1,stream);
 						lastlen+=strlen(seenby);
@@ -3730,10 +3736,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 						net_exists=1;
 						addr.net=scfg.faddr[u].net;
 						sprintf(str,"%d/",addr.net);
-						strcat(seenby,str);
+						SAFECAT(seenby,str);
 					}
 					sprintf(str,"%d",scfg.faddr[u].node);
-					strcat(seenby,str);
+					SAFECAT(seenby,str);
 					if(lastlen+strlen(seenby)<80) {
 						(void)fwrite(seenby,strlen(seenby),1,stream);
 						lastlen+=strlen(seenby);
@@ -3762,10 +3768,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 					net_exists=1;
 					addr.net=paths.addr[u].net;
 					sprintf(str,"%d/",addr.net);
-					strcat(seenby,str);
+					SAFECAT(seenby,str);
 				}
 				sprintf(str,"%d",paths.addr[u].node);
-				strcat(seenby,str);
+				SAFECAT(seenby,str);
 				if(lastlen+strlen(seenby)<80) {
 					(void)fwrite(seenby,strlen(seenby),1,stream);
 					lastlen+=strlen(seenby);
@@ -3786,10 +3792,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 					net_exists=1;
 					addr.net=sysaddr.net;
 					sprintf(str,"%d/",addr.net);
-					strcat(seenby,str);
+					SAFECAT(seenby,str);
 				}
 				sprintf(str,"%d",sysaddr.node);
-				strcat(seenby,str);
+				SAFECAT(seenby,str);
 				if(lastlen+strlen(seenby)<80)
 					(void)fwrite(seenby,strlen(seenby),1,stream);
 				else {
@@ -4258,13 +4264,14 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbo
 /**************************************/
 /* Send netmail, returns 0 on success */
 /**************************************/
-int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inbound)
+int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const char* inbound)
 {
 	char info[512],str[256],tmp[256],subj[256]
 		,*fmsgbuf=NULL,*p,*tp,*sp;
 	int i,match,usernumber = 0;
 	ulong length;
 	fidoaddr_t addr;
+	fmsghdr_t hdr = *inhdr;
 
 	hdr.destzone=sys_faddr.zone;
 	hdr.destpoint=hdr.origpoint=0;
@@ -4938,7 +4945,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			exported++;
 			exp++;
 			new_echostat_msg(stat, ECHOSTAT_MSG_EXPORTED
-				,smsg_to_echostat_msg(msg, strlen(fmsgbuf), scfg.sub[subnum]->faddr));
+				,smsg_to_echostat_msg(&msg, strlen(fmsgbuf), scfg.sub[subnum]->faddr));
 			FREE_AND_NULL(fmsgbuf);
 			printf("Exp: %lu ",exp);
 			smb_unlockmsghdr(&smb, &msg);
@@ -5566,7 +5573,8 @@ void find_stray_packets(void)
 		}
 		terminator = ~FIDO_PACKET_TERMINATOR;
 		(void)fseek(fp, (long)(flen-sizeof(terminator)), SEEK_SET);
-		(void)fread(&terminator, sizeof(terminator), 1, fp);
+		if(fread(&terminator, sizeof(terminator), 1, fp) != 1)
+			lprintf(LOG_WARNING, "Failure reading last byte from %s", packet);
 		fclose(fp);
 		if(!parse_pkthdr(&pkthdr, &pkt_orig, &pkt_dest, &pkt_type)) {
 			lprintf(LOG_WARNING,"Failure to parse packet (%s) header, type: %u"
@@ -5768,7 +5776,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			if(strncmp(fmsgbuf, "AREA:", 5) != 0) {					/* Netmail */
 				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
-				import_netmail("", hdr, fidomsg, inbound);
+				import_netmail("", &hdr, fidomsg, inbound);
 				(void)fseeko(fidomsg, next_msg, SEEK_SET);
 				printf("\n");
 				continue;
@@ -6540,7 +6548,7 @@ int main(int argc, char **argv)
 				lprintf(LOG_ERR,"ERROR line %d reading fido msghdr from %s",__LINE__,path);
 				continue;
 			}
-			i=import_netmail(path,hdr,fidomsg,cfg.inbound);
+			i=import_netmail(path, &hdr, fidomsg, cfg.inbound);
 			/**************************************/
 			/* Delete source netmail if specified */
 			/**************************************/

@@ -1286,6 +1286,9 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		}
 		if (session->req.send_location) {
 			ret=-1;
+			if(session->req.dynamic!=IS_CGI && session->req.dynamic!=IS_FASTCGI && (!chunked) && (!session->req.manual_length)) {
+				session->req.send_content = FALSE;
+			}
 			switch (session->req.send_location) {
 				case MOVED_PERM:
 					status_line=error_301;
@@ -1305,8 +1308,11 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 
 		if(stat_code==304 || stat_code==204 || (stat_code >= 100 && stat_code<=199)) {
 			session->req.send_content = FALSE;
-			chunked=FALSE;
 			send_entity = FALSE;
+		}
+
+		if (!session->req.send_content) {
+			chunked = FALSE;
 		}
 
 		/* Status-Line */
@@ -3577,7 +3583,7 @@ static BOOL check_request(http_session_t * session)
 			last_slash=path;
 		else
 			last_slash++;
-		strcpy(filename,last_slash);
+		SAFECOPY(filename,last_slash);
 	}
 
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
@@ -4789,7 +4795,9 @@ static BOOL exec_cgi(http_session_t *session)
 		if((p=strrchr(cgipath,'/'))!=NULL)
 		{
 			*p=0;
-			chdir(cgipath);
+			if(chdir(cgipath) != 0)
+				lprintf(LOG_ERR, "%04d !ERROR %d changing directory to %s"
+					,session->socket, errno, cgipath);
 		}
 
 		/* Execute command */
@@ -5746,9 +5754,11 @@ js_initcx(http_session_t *session)
 
     if((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
+	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
-	lprintf(LOG_DEBUG,"%04d JavaScript: Context created",session->socket);
+	lprintf(LOG_DEBUG,"%04d JavaScript: Context created with options: %lx"
+		,session->socket, (long)startup->js.options);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
@@ -5855,21 +5865,20 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 	size_t		p_sz=0, p2_sz=0;
 
 	JS_BEGINREQUEST(session->js_cx);
-	if(JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val))
+	if(JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val)) {
 		reply = JSVAL_TO_OBJECT(val);
-	if(JS_GetProperty(session->js_cx,reply,"status",&val))
-		JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
-	if(JS_GetProperty(session->js_cx,reply,"header",&val)) {
-		headers = JSVAL_TO_OBJECT(val);
-		heads=JS_Enumerate(session->js_cx,headers);
+		if(JS_GetProperty(session->js_cx,reply,"status",&val))
+			JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
+		if(JS_GetProperty(session->js_cx,reply,"header",&val)) {
+			headers = JSVAL_TO_OBJECT(val);
+			heads=JS_Enumerate(session->js_cx,headers);
+		}
 	}
 	if(heads != NULL) {
 		for(i=0;i<heads->length;i++)  {
 			JS_IdToValue(session->js_cx,heads->vector[i],&val);
 			JSVALUE_TO_RASTRING(session->js_cx, val, p, &p_sz, NULL);
 			if(p==NULL) {
-				if(p)
-					free(p);
 				if(p2)
 					free(p2);
 				return FALSE;
@@ -5883,7 +5892,7 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 					free(p2);
 				return FALSE;
 			}
-			if (!session->req.sent_headers) {
+			if (p2 != NULL && !session->req.sent_headers) {
 				h = get_header_type(p);
 				switch(h) {
 				case HEAD_LOCATION:
@@ -6742,7 +6751,7 @@ static void cleanup(int code)
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %u active clients", protected_uint32_value(active_clients));
 	else
-		(void)protected_uint32_destroy(active_clients);
+		protected_uint32_destroy(active_clients);
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0)
@@ -7279,5 +7288,5 @@ void DLLCALL web_server(void* arg)
 
 	} while(!terminate_server);
 
-	(void)protected_uint32_destroy(thread_count);
+	protected_uint32_destroy(thread_count);
 }

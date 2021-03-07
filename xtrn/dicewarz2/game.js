@@ -21,10 +21,11 @@ function open() {
 	splash("dicewarz2.bin");
 }
 function close() {
+	client.disconnect();
+	splash("exit.bin");
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
-	splash("exit.bin");
 }
 function loadGraphic(filename) {
 	var f=new Frame(1,1,80,24,undefined,frame);
@@ -101,10 +102,14 @@ function lobby() {
 	}	
 	function main() {
 		var hotkeys=true;
-		while(1) {
+		while(!js.terminated) {
 			cycle();
 			var cmd=input.getkey(hotkeys);
-			if(cmd === undefined) 
+			if(typeof cmd == "object") {
+				log(LOG_DEBUG,JSON.stringify(cmd));
+				cmd = cmd.key;
+			}
+			if(cmd === undefined || cmd === null) 
 				continue;
 			switch(cmd) {
 			case KEY_UP:
@@ -694,7 +699,7 @@ function playGame(gameNumber) {
 	}
 	function main()	{
 		
-		while(1) {
+		while(!js.terminated) {
 			cycle();
 			var cmd=input.getkey(hotkeys);
 			if(cmd === undefined)
@@ -1138,7 +1143,7 @@ function playGame(gameNumber) {
 				msgAlert("\1c\1hIt is your turn");
 				menu.draw();
 			}
-			else {
+			else if(!game.hidden_names) {
 				msgAlert("\1n\1cIt is " + game.players[game.turn].name + "'s turn");
 			}
 		}
@@ -1314,7 +1319,12 @@ function playGame(gameNumber) {
 			
 			listFrame.gotoxy(1,p+1);
 			listFrame.putmsg("\xDE",BG_BLACK|fg);
-			listFrame.putmsg(printPadded(plyr.name,16),bg|txt);
+			if(game.hidden_names) {
+				listFrame.putmsg(printPadded("<hidden>",16),bg|txt);
+			}
+			else {
+				listFrame.putmsg(printPadded(plyr.name,16),bg|txt);
+			}
 			listFrame.putmsg("\xDD",BG_BLACK|fg);
 			
 			infoFrame.gotoxy(1,p+1);

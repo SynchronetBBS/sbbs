@@ -403,57 +403,59 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 			p=strchr(tp,' ');
 			if(p) *p=0;
 			tp=getfname(tp);
-			SAFEPRINTF3(fpath,"%sfile/%04u.in/%s"  /* path is path/fname */
-				,cfg.data_dir, msg->idx.to, tp);
-			if(!fexistcase(fpath) && msg->idx.from)
-				SAFEPRINTF3(fpath,"%sfile/%04u.out/%s"  /* path is path/fname */
-					,cfg.data_dir, msg->idx.from,tp);
-			long length=(long)flength(fpath);
-			if(length<1)
-				bprintf(text[FileDoesNotExist], tp);
-			else if(!(useron.exempt&FLAG('T')) && cur_cps && !SYSOP
-				&& length/(long)cur_cps>(time_t)timeleft)
-				bputs(text[NotEnoughTimeToDl]);
-			else {
-				char 	tmp[512];
-				int		i;
-				SAFEPRINTF2(str, text[DownloadAttachedFileQ]
-					,getfname(fpath),ultoac(length,tmp));
-				if(length>0L && text[DownloadAttachedFileQ][0] && yesno(str)) {
-					{	/* Remote User */
-						xfer_prot_menu(XFER_DOWNLOAD);
-						mnemonics(text[ProtocolOrQuit]);
-						strcpy(str,"Q");
-						for(i=0;i<cfg.total_prots;i++)
-							if(cfg.prot[i]->dlcmd[0]
-								&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-								sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-								SAFECAT(str,tmp);
+			if(strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
+				SAFEPRINTF3(fpath,"%sfile/%04u.in/%s"  /* path is path/fname */
+					,cfg.data_dir, msg->idx.to, tp);
+				if(!fexistcase(fpath) && msg->idx.from)
+					SAFEPRINTF3(fpath,"%sfile/%04u.out/%s"  /* path is path/fname */
+						,cfg.data_dir, msg->idx.from,tp);
+				long length=(long)flength(fpath);
+				if(length<1)
+					bprintf(text[FileDoesNotExist], tp);
+				else if(!(useron.exempt&FLAG('T')) && cur_cps && !SYSOP
+					&& length/(long)cur_cps>(time_t)timeleft)
+					bputs(text[NotEnoughTimeToDl]);
+				else {
+					char 	tmp[512];
+					int		i;
+					SAFEPRINTF2(str, text[DownloadAttachedFileQ]
+						,getfname(fpath),ultoac(length,tmp));
+					if(length>0L && text[DownloadAttachedFileQ][0] && yesno(str)) {
+						{	/* Remote User */
+							xfer_prot_menu(XFER_DOWNLOAD);
+							mnemonics(text[ProtocolOrQuit]);
+							strcpy(str,"Q");
+							for(i=0;i<cfg.total_prots;i++)
+								if(cfg.prot[i]->dlcmd[0]
+									&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
+									sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
+									SAFECAT(str,tmp);
+								}
+							ch=(char)getkeys(str,0);
+							for(i=0;i<cfg.total_prots;i++)
+								if(cfg.prot[i]->dlcmd[0] && ch==cfg.prot[i]->mnemonic
+									&& chk_ar(cfg.prot[i]->ar,&useron,&client))
+									break;
+							if(i<cfg.total_prots) {
+								int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, false);
+								if(checkprotresult(cfg.prot[i],error,fpath)) {
+									if(del)
+										(void)remove(fpath);
+									logon_dlb+=length;	/* Update stats */
+									logon_dls++;
+									useron.dls=(ushort)adjustuserrec(&cfg,useron.number
+										,U_DLS,5,1);
+									useron.dlb=adjustuserrec(&cfg,useron.number
+										,U_DLB,10,length);
+									bprintf(text[FileNBytesSent]
+										,getfname(fpath),ultoac(length,tmp));
+									SAFEPRINTF(str
+										,"downloaded attached file: %s"
+										,getfname(fpath));
+									logline("D-",str);
+								}
+								autohangup();
 							}
-						ch=(char)getkeys(str,0);
-						for(i=0;i<cfg.total_prots;i++)
-							if(cfg.prot[i]->dlcmd[0] && ch==cfg.prot[i]->mnemonic
-								&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-								break;
-						if(i<cfg.total_prots) {
-							int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, false);
-							if(checkprotresult(cfg.prot[i],error,fpath)) {
-								if(del)
-									(void)remove(fpath);
-								logon_dlb+=length;	/* Update stats */
-								logon_dls++;
-								useron.dls=(ushort)adjustuserrec(&cfg,useron.number
-									,U_DLS,5,1);
-								useron.dlb=adjustuserrec(&cfg,useron.number
-									,U_DLB,10,length);
-								bprintf(text[FileNBytesSent]
-									,getfname(fpath),ultoac(length,tmp));
-								SAFEPRINTF(str
-									,"downloaded attached file: %s"
-									,getfname(fpath));
-								logline("D-",str);
-							}
-							autohangup();
 						}
 					}
 				}

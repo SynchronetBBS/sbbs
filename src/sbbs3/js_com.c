@@ -1,8 +1,4 @@
-/* js_com.c */
-
 /* Synchronet JavaScript "COM" Object */
-
-/* $Id: js_com.c,v 1.33 2020/04/20 01:47:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -169,7 +153,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		cp = NULL;
-	size_t		len;
+	size_t		len = 0;
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -578,12 +562,13 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 			p->last_error=i;
 			break;
 		case COM_PROP_BAUD_RATE:
-			JS_ValueToNumber(cx,*vp,&d);
-			p->baud_rate=(long)d;
-			rc=JS_SUSPENDREQUEST(cx);
-			if(p->is_open)
-				comSetBaudRate(p->com, p->baud_rate);
-			JS_RESUMEREQUEST(cx, rc);
+			if(JS_ValueToNumber(cx,*vp,&d)) {
+				p->baud_rate=(long)d;
+				rc=JS_SUSPENDREQUEST(cx);
+				if(p->is_open)
+					comSetBaudRate(p->com, p->baud_rate);
+				JS_RESUMEREQUEST(cx, rc);
+			}
 			break;
 		case COM_PROP_NETWORK_ORDER:
 			JS_ValueToBoolean(cx,*vp,&(p->network_byte_order));

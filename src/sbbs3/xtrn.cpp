@@ -1339,6 +1339,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
  
 		if(*gamedir == 0) {
 			lprintf(LOG_ERR, "No startup directory configured for DOS command-line: %s", cmdline);
+			fclose(dosemubatfp);
 			return -1;
 		}
 
@@ -1370,6 +1371,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			SAFEPRINTF2(str,"%s%s",cfg.exec_dir, external_bat_fn);
 			if (!fexist(str)) {
 				errormsg(WHERE,ERR_READ,str,0);
+				fclose(dosemubatfp);
 				return(-1);
 			} 
 		}
@@ -1378,6 +1380,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if (!(externalbatfp=fopen(externalbatsrc,"r"))) {
 			errormsg(WHERE,ERR_OPEN,externalbatsrc,0);
+			fclose(dosemubatfp);
 			return(-1);
 		} 
 
@@ -1433,7 +1436,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		sprintf(str, "%s/.dosemu", cfg.ctrl_dir);
 		if (!isdir(str)) {
-			mkdir(str, 0755);
+			if(mkdir(str, 0755) != 0) {
+				errormsg(WHERE,ERR_MKDIR, str, 0755);
+				fclose(dosemubatfp);
+				return -1;
+			}
 		}
 		strcat(str, "/disclaimer");
 		ftouch(str);

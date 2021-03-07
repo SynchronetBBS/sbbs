@@ -15,7 +15,7 @@ async function v4_fetch(url, method, body) {
 		const data = await response.json();
 		return data;
 	} catch (err) {
-		console.log('Error on fetch', url, init);
+		console.error('Error on fetch', url, init);
 	}
 }
 
@@ -34,6 +34,19 @@ function v4_post(url, data) {
 		}
 	}
 	return v4_fetch(url, 'POST', fd);
+}
+
+async function v4_fetch_jsonl(url) {
+	try {
+		const response = await fetch(url);
+		const text = await response.text();
+		return text.split(/\r\n/).reduce((a, c) => {
+			if (c !== '') a.push(JSON.parse(c));
+			return a;
+		}, []);
+	} catch (err) {
+		console.error('Error on fetch_jsonl', url, err);
+	}
 }
 
 async function login(evt) {
@@ -63,6 +76,24 @@ function scrollUp() {
 	window.scrollBy(0, -document.getElementById('navbar').offsetHeight);
 }
 
+// Add a parameter to the query string
+function insertParam(key, value) {
+    key = encodeURIComponent(key);
+    value = encodeURIComponent(value);
+    var kvp = window.location.search.substr(1).split('&');
+    var i = kvp.length,	x;
+    while (i--) {
+		x = kvp[i].split('=');
+		if (x[0] !== key) continue;
+		x[1] = value;
+		kvp[i] = x.join('=');
+		break;
+    }
+    if (i<0) kvp[kvp.length] = [key,value].join('=');
+    window.location.search = kvp.join('&');
+}
+
+
 function sendTelegram(alias) {
     function send_tg(evt) {
         if (typeof evt !== 'undefined') evt.preventDefault();
@@ -91,9 +122,9 @@ function registerEventListener(scope, callback, params) {
 }
 
 function darkmodeRequested() {
-	const ls = JSON.parse(localStorage.getItem('darkSwitch'));
-	if (ls) return true;
-	if (ls === false) return false;
+	const ls = localStorage.getItem('darkSwitch');
+	if (ls === "true") return true;
+	if (ls === "false") return false;
 	if ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) return true;
 	if ($('#darkSwitch').prop('checked')) return true;
 	return false;

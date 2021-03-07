@@ -1312,9 +1312,9 @@ void getar(char *desc, char *inar)
 		for(i=0;i<n;i++) {
 			for(j=0;j<7;j++)
                 if(!strnicmp(ar+i,wday[j],3)) {
-                    strcat(str,ultoa(j,tmp,10));
+                    SAFECAT(str,ultoa(j,tmp,10));
 					i+=2;
-					break; 
+					break;
 				}
 			if(j==7)
 				strncat(str,ar+i,1); 
@@ -1443,7 +1443,6 @@ void getar(char *desc, char *inar)
 			if(ar[i]!=' ' && ar[i]!='&')
 				strncat(str,ar+i,1);
 		SAFECOPY(ar,str);
-		len=strlen(ar); 
 	}
 	i=0;
 	sprintf(opt[i++],"Requirement String (%s)",ar);
@@ -2183,7 +2182,7 @@ void bail(int code)
 {
     if(code) {
 		printf("\nHit enter to continue...");
-		getchar();
+		(void)getchar();
 	}
     else if(forcesave) {
         load_main_cfg(&cfg, error, sizeof(error));
@@ -2222,7 +2221,7 @@ void errormsg(int line, const char* function, const char *source, const char* ac
     printf("          object: %s\n",object);
     printf("          access: %ld (%lx)\n",access,access);
     printf("\nHit enter to continue...");
-    getchar();
+    (void)getchar();
     puttext(1,1,80,uifc.scrn_len,scrn_buf);
 }
 

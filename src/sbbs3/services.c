@@ -81,7 +81,7 @@ typedef struct {
 	js_startup_t	js;
 	js_server_props_t js_server_props;
 	/* These are run-time state and stat vars */
-	uint32_t		clients;
+	protected_uint32_t clients;
 	ulong			served;
 	struct xpms_set	*set;
 	int				running;
@@ -105,7 +105,7 @@ typedef struct {
 } service_client_t;
 
 static service_t	*service=NULL;
-static uint32_t		services=0;
+static unsigned int	services=0;
 
 #if defined(__GNUC__)   // Catch printf-format errors with lprintf
 static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
@@ -177,7 +177,7 @@ static ulong active_clients(void)
 	ulong total_clients=0;
 
 	for(i=0;i<services;i++) 
-		total_clients+=service[i].clients;
+		total_clients += protected_uint32_value(service[i].clients);
 
 	return(total_clients);
 }
@@ -444,7 +444,9 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			,client->socket,client->service->protocol,client->user.alias);
 
 	val = BOOLEAN_TO_JSVAL(JS_TRUE);
-	JS_SetProperty(cx, obj, "logged_in", &val);
+	if(!JS_SetProperty(cx, obj, "logged_in", &val))
+		lprintf(LOG_ERR, "%04d %s Error setting logged in property for %s"
+			,client->socket, client->service->protocol, client->user.alias);
 
 	if(client->user.pass[0])
 		loginSuccess(startup->login_attempt_list, &client->addr);
@@ -604,7 +606,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	if((service_client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	service_client->service->clients++;
+	protected_uint32_adjust(&service_client->service->clients, 1);
 	update_clients();
 	service_client->service->served++;
 	served++;
@@ -617,6 +619,8 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	SAFECOPY(client.host,client.user);
 
 	sock=js_socket(cx,argv[0]);
+	if(sock < 0)
+		return JS_TRUE;
 
 	addr_len = sizeof(addr);
 	if(getpeername(sock, &addr.addr, &addr_len)==0) {
@@ -670,6 +674,8 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	SAFECOPY(client.host,client.user);
 
 	sock=js_socket(cx,argv[0]);
+	if(sock < 0)
+		return JS_TRUE;
 
 	addr_len = sizeof(addr);
 	if(getpeername(sock, &addr.addr, &addr_len)==0) {
@@ -713,17 +719,19 @@ js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	sock=js_socket(cx,argv[0]);
+	if(sock < 0)
+		return JS_TRUE;
 
 	if(sock!=INVALID_SOCKET) {
 
 		rc=JS_SUSPENDREQUEST(cx);
 		client_off(sock);
 
-		if(service_client->service->clients==0)
+		if(protected_uint32_value(service_client->service->clients) == 0)
 			lprintf(LOG_WARNING,"%s !client_remove() called with 0 service clients"
 				,service_client->service->protocol);
 		else {
-			service_client->service->clients--;
+			protected_uint32_adjust(&service_client->service->clients, -1);
 			update_clients();
 		}
 		JS_RESUMEREQUEST(cx, rc);
@@ -746,6 +754,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
+	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -825,7 +834,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 				,"Synchronet Services %s%c", VERSION, REVISION);
 			service_client->service->js_server_props.version_detail=
 				services_ver();
-			service_client->service->js_server_props.clients=0; // TODO: &service_client->service->clients
+			service_client->service->js_server_props.clients = &service_client->service->clients;
 			service_client->service->js_server_props.interfaces=
 				&service_client->service->interfaces;
 			service_client->service->js_server_props.options=
@@ -957,8 +966,7 @@ static BOOL handle_crypt_call(int status, service_client_t *service_client, cons
 static void js_service_failure_cleanup(service_t *service, SOCKET socket)
 {
 	close_socket(socket);
-	if(service->clients)
-		service->clients--;
+	protected_uint32_adjust(&service->clients, -1);
 	thread_down();
 	return;
 }
@@ -996,7 +1004,7 @@ static void js_service_thread(void* arg)
 	SetThreadName("sbbs/jsService");
 	thread_up(TRUE /* setuid */);
 	sbbs_srand();	/* Seed random number generator */
-	(void)protected_uint32_adjust(&threads_pending_start, -1);
+	protected_uint32_adjust(&threads_pending_start, -1);
 
 	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 
@@ -1015,8 +1023,7 @@ static void js_service_thread(void* arg)
 			lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
 				,socket, service->protocol, host_name);
 		close_socket(socket);
-		if(service->clients)
-			service->clients--;
+		protected_uint32_adjust(&service->clients, -1);
 		thread_down();
 		return;
 	}
@@ -1096,8 +1103,7 @@ static void js_service_thread(void* arg)
 			cryptDestroySession(service_client.tls_sess);
 		client_off(socket);
 		close_socket(socket);
-		if(service->clients)
-			service->clients--;
+		protected_uint32_adjust(&service->clients, -1);
 		thread_down();
 		return;
 	}
@@ -1166,8 +1172,7 @@ static void js_service_thread(void* arg)
 	}
 	FREE_AND_NULL(service_client.subscan);
 
-	if(service->clients)
-		service->clients--;
+	ulong remain = protected_uint32_adjust(&service->clients, -1);
 	update_clients();
 
 #ifdef _WIN32
@@ -1178,8 +1183,8 @@ static void js_service_thread(void* arg)
 
 	thread_down();
 	if(service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
-			,socket, service->protocol, service->clients, active_clients(), service->served);
+		lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients remain, %lu total, %lu served)"
+			,socket, service->protocol, remain, active_clients(), service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -1210,7 +1215,7 @@ static void js_static_service_thread(void* arg)
 	SetThreadName("sbbs/jsStatic");
 	thread_up(TRUE /* setuid */);
 	sbbs_srand();	/* Seed random number generator */
-	(void)protected_uint32_adjust(&threads_pending_start, -1);
+	protected_uint32_adjust(&threads_pending_start, -1);
 
 	memset(&service_client,0,sizeof(service_client));
 	service_client.set = service->set;
@@ -1275,11 +1280,10 @@ static void js_static_service_thread(void* arg)
 
 	jsrt_Release(js_runtime);
 
-	if(service->clients) {
+	if(protected_uint32_value(service->clients)) {
 		if(service->log_level >= LOG_WARNING)
 			lprintf(LOG_WARNING,"%s !service terminating with %u active clients"
-				, service->protocol, service->clients);
-		service->clients=0;
+				, service->protocol, protected_uint32_value(service->clients));
 	}
 
 	thread_down();
@@ -1315,7 +1319,7 @@ static void native_static_service_thread(void* arg)
 
 	SetThreadName("sbbs/static");
 	thread_up(TRUE /* setuid */);
-	(void)protected_uint32_adjust(&threads_pending_start, -1);
+	protected_uint32_adjust(&threads_pending_start, -1);
 
 #ifdef _WIN32
 	if(!DuplicateHandle(GetCurrentProcess(),
@@ -1334,6 +1338,14 @@ static void native_static_service_thread(void* arg)
 	}
 #else
 	socket_dup = dup(inst.socket);
+	if(socket_dup == -1) {
+		lprintf(LOG_ERR,"%04d %s !ERROR %d duplicating socket descriptor"
+			,inst.socket, inst.service->protocol, errno);
+		close_socket(inst.socket);
+		thread_down();
+		inst.service->running--;
+		return;
+	}
 #endif
 
 	/* RUN SCRIPT */
@@ -1380,7 +1392,7 @@ static void native_service_thread(void* arg)
 
 	SetThreadName("sbbs/native");
 	thread_up(TRUE /* setuid */);
-	(void)protected_uint32_adjust(&threads_pending_start, -1);
+	protected_uint32_adjust(&threads_pending_start, -1);
 
 	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 
@@ -1404,8 +1416,7 @@ static void native_service_thread(void* arg)
 		lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
 			,socket, service->protocol, host_name);
 		close_socket(socket);
-		if(service->clients)
-			service->clients--;
+		protected_uint32_adjust(&service->clients, -1);
 		thread_down();
 		return;
 	}
@@ -1450,6 +1461,13 @@ static void native_service_thread(void* arg)
 	}
 #else
 	socket_dup = dup(socket);
+	if(socket_dup == -1) {
+		lprintf(LOG_ERR,"%04d %s !ERROR %d duplicating socket descriptor"
+			,socket, service->protocol, errno);
+		close_socket(socket);
+		thread_down();
+		return;
+	}
 #endif
 
 	update_clients();
@@ -1473,8 +1491,7 @@ static void native_service_thread(void* arg)
 
 	system(fullcmd);
 
-	if(service->clients)
-		service->clients--;
+	ulong remain = protected_uint32_adjust(&service->clients, -1);
 	update_clients();
 
 #ifdef _WIN32
@@ -1485,8 +1502,8 @@ static void native_service_thread(void* arg)
 
 	thread_down();
 	if(service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
-			,socket, service->protocol, service->clients, active_clients(), service->served);
+		lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients remain, %lu total, %lu served)"
+			,socket, service->protocol, remain, active_clients(), service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -1628,7 +1645,10 @@ static void cleanup(int code)
 		lprintf(LOG_NOTICE,"0000 Services cleanup waiting on %d threads pending start",protected_uint32_value(threads_pending_start));
 		SLEEP(1000);
 	}
-	(void)protected_uint32_destroy(threads_pending_start);
+	protected_uint32_destroy(threads_pending_start);
+
+	for(unsigned i = 0; i < services; i++)
+		protected_uint32_destroy(service[i].clients);
 
 	FREE_AND_NULL(service);
 	services=0;
@@ -1789,7 +1809,7 @@ void DLLCALL services_thread(void* arg)
 
 		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
-		(void)protected_uint32_init(&threads_pending_start,0);
+		protected_uint32_init(&threads_pending_start,0);
 
 		if(!winsock_startup()) {
 			cleanup(1);
@@ -1840,6 +1860,9 @@ void DLLCALL services_thread(void* arg)
 			cleanup(1);
 			return;
 		}
+
+		for(i=0; i < (int)services; i++)
+			protected_uint32_init(&service[i].clients, 0);
 
 		update_clients();
 
@@ -1896,13 +1919,13 @@ void DLLCALL services_thread(void* arg)
 					if(inst) {
 						inst->socket=service[i].set->socks[j].sock;
 						inst->service=&service[i];
-						(void)protected_uint32_adjust(&threads_pending_start, 1);
+						protected_uint32_adjust(&threads_pending_start, 1);
 						_beginthread(native_static_service_thread, service[i].stack_size, inst);
 					}
 				}
 			}
 			else {										/* JavaScript */
-				(void)protected_uint32_adjust(&threads_pending_start, 1);
+				protected_uint32_adjust(&threads_pending_start, 1);
 				_beginthread(js_static_service_thread, service[i].stack_size, &service[i]);
 			}
 		}
@@ -1972,7 +1995,7 @@ void DLLCALL services_thread(void* arg)
 				if(service[i].set==NULL)
 					continue;
 				if(!(service[i].options&SERVICE_OPT_FULL_ACCEPT)
-					&& service[i].max_clients && service[i].clients >= service[i].max_clients)
+					&& service[i].max_clients && protected_uint32_value(service[i].clients) >= service[i].max_clients)
 					continue;
 				for(j=0; j<service[i].set->sock_count; j++) {
 					FD_SET(service[i].set->socks[j].sock,&socket_set);
@@ -2123,7 +2146,7 @@ void DLLCALL services_thread(void* arg)
 							,client_socket
 							,service[i].protocol, host_ip, inet_addrport(&client_addr));
 
-					if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
+					if(service[i].max_clients && protected_uint32_value(service[i].clients) + 1 > service[i].max_clients) {
 						lprintf(LOG_WARNING,"%04d %s !MAXIMUM CLIENTS (%u) reached, access denied"
 							,client_socket, service[i].protocol, service[i].max_clients);
 						close_socket(client_socket);
@@ -2163,7 +2186,7 @@ void DLLCALL services_thread(void* arg)
 					client->socket=client_socket;
 					client->addr=client_addr;
 					client->service=&service[i];
-					client->service->clients++;		/* this should be mutually exclusive */
+					protected_uint32_adjust(&client->service->clients, 1);
 					client->udp_buf=udp_buf;
 					client->udp_len=udp_len;
 					client->callback.limit			= service[i].js.time_limit;
@@ -2174,7 +2197,7 @@ void DLLCALL services_thread(void* arg)
 
 					udp_buf = NULL;
 
-					(void)protected_uint32_adjust(&threads_pending_start, 1);
+					protected_uint32_adjust(&threads_pending_start, 1);
 					if(service[i].options&SERVICE_OPT_NATIVE)	/* Native */
 						_beginthread(native_service_thread, service[i].stack_size, client);
 					else										/* JavaScript */

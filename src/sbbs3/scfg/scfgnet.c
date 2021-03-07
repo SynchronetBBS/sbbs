@@ -51,9 +51,9 @@ bool new_qhub(unsigned new_qhubnum)
 
 bool new_qhub_sub(qhub_t* qhub, unsigned subnum, sub_t* sub, unsigned confnum)
 {
-	if((qhub->sub=realloc(qhub->sub, sizeof(sub_t *)*(qhub->subs+1)))==NULL
-		|| (qhub->conf=(ushort *)realloc(qhub->conf, sizeof(ushort *)*(qhub->subs+1)))==NULL
-		|| (qhub->mode=(char *)realloc(qhub->mode, sizeof(uchar *)*(qhub->subs+1)))==NULL) {
+	if((qhub->sub=realloc(qhub->sub, sizeof(*qhub->sub)*(qhub->subs+1)))==NULL
+		|| (qhub->conf=(ushort *)realloc(qhub->conf, sizeof(*qhub->conf)*(qhub->subs+1)))==NULL
+		|| (qhub->mode=(char *)realloc(qhub->mode, sizeof(*qhub->mode)*(qhub->subs+1)))==NULL) {
 		/* ToDo: report error */
 		return false;
 	}
@@ -135,7 +135,7 @@ uint getsub(void)
 		opt[k][0]=0;
 		sprintf(str,"Select %s Sub-board",cfg.grp[i]->sname);
 		j=uifc.list(WIN_RHT|WIN_BOT|WIN_SAV,0,0,45,&sub_dflt,&sub_bar,str,opt);
-		if(j==-1 || j >= k)
+		if(j==-1 || j >= cfg.total_subs)
 			continue;
 		sub_dflt++;
 		sub_bar++;
@@ -1292,7 +1292,7 @@ BOOL import_qwk_conferences(uint qhubnum)
 	if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 		,filename,sizeof(filename)-1,K_EDIT)<=0)
 		return FALSE;
-	fexistcase(filename);
+	(void)fexistcase(filename);
 	FILE *fp;
 	if((fp = fopen(filename, "rt"))==NULL) {
 		uifc.msg("File Open Failure");
@@ -1329,7 +1329,7 @@ char *daystr(char days)
 	for(i=0;i<7;i++) {
 		if(days&(1<<i)) {
 			strcat(str,wday[i]);
-			strcat(str," "); 
+			SAFECAT(str," "); 
 		}
 	}
 	return(str);

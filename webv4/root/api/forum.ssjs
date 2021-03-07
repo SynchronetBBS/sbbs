@@ -160,6 +160,13 @@ if (Request.has_param('call') && (http_request.method === 'GET' || http_request.
                 }
                 break;
 
+            case 'get-thread':
+                if (Request.has_params(['sub', 'thread'])) {
+                    if (Request.has_param('count')) var count = Request.get_param('count');
+                    reply = getMessageThread(Request.get_param('sub'), Request.get_param('thread'), count || settings.page_size, Request.get_param('after'));
+                }
+                break;
+
             case 'list-groups':
                 reply = listGroups();
                 break;
@@ -169,10 +176,14 @@ if (Request.has_param('call') && (http_request.method === 'GET' || http_request.
                 break;
 
             case 'list-threads':
-                if (Request.has_params(['sub', 'offset'])) {
-                    if (Request.has_param('count')) var count = http_request.query.count[0];
-                    reply = listThreads(http_request.query.sub[0], http_request.query.offset[0], count || settings.page_size).threads;
+                if (Request.has_param('sub')) {
+                    if (Request.has_param('count')) var count = Request.get_param(count);
+                    reply = listThreads(Request.get_param('sub'), count || settings.page_size, Request.get_param('after'));
                 }
+                break;
+
+            case 'get-newest-message-per-sub':
+                if (Request.has_param('group')) reply = getNewestMessagePerSub(Request.get_param('group'));
                 break;
 
             default:
@@ -184,7 +195,15 @@ if (Request.has_param('call') && (http_request.method === 'GET' || http_request.
 
 }
 
-reply = JSON.stringify(reply);
-http_reply.header['Content-Type'] = 'application/json';
-http_reply.header['Content-Length'] = reply.length;
-write(reply);
+if (typeof reply === 'function') { // generator
+    var r;
+    http_reply.header['Content-Type'] = 'application/json';
+    while ((r = reply()) !== null) {
+        writeln(JSON.stringify(r));
+    }
+} else { // Normal reply
+    reply = JSON.stringify(reply);
+    http_reply.header['Content-Type'] = 'application/json';
+    http_reply.header['Content-Length'] = reply.length;
+    write(reply);
+}

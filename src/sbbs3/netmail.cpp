@@ -341,6 +341,8 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	useron.etoday = (ushort)adjustuserrec(&cfg, useron.number, U_ETODAY, 0, 1);
 	if(!(useron.exempt&FLAG('S')))
 		subtract_cdt(&cfg,&useron,cfg.netmail_cost);
+
+	bprintf(text[FidoNetMailSent], to, smb_faddrtoa(&dest_addr,tmp));
 	if(mode&WM_FILE)
 		SAFEPRINTF2(str,"sent NetMail file attachment to %s (%s)"
 			,to, smb_faddrtoa(&dest_addr,tmp));
@@ -735,6 +737,10 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			useron.etoday++;
 			putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
+			if(qnet)
+				bprintf(text[QWKNetMailSent], name, fulladdr);
+			else
+				bprintf(text[InternetMailSent], name, to);
 			safe_snprintf(str,sizeof(str), "%s (%s) sent %s NetMail to %s (%s) via QWK"
 				,sender, sender_id
 				,qnet ? "QWK":"Internet",name,qnet ? fulladdr : to);
@@ -913,6 +919,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
+	bprintf(text[FidoNetMailSent], hdr.to, smb_faddrtoa(&fidoaddr,tmp));
 	sprintf(str,"%s sent NetMail to %s @%s via QWK"
 		,sender_id
 		,hdr.to,smb_faddrtoa(&fidoaddr,tmp));
@@ -1240,6 +1247,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	useron.etoday += (ushort)rcpt_count;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
+	bprintf(text[InternetMailSent], to_list);
 	SAFEPRINTF(str, "sent Internet Mail to %s", to_list);
 	logline("EN",str);
 	return(true);
@@ -1445,6 +1453,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
+	bprintf(text[QWKNetMailSent], to, fulladdr);
 	SAFEPRINTF2(str,"sent QWK NetMail to %s (%s)"
 		,to,fulladdr);
 	logline("EN",str);

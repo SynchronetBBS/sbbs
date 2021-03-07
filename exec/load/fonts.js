@@ -34,7 +34,7 @@ function fonts(key)
 		if(parseInt(p, 10) || slotnames[p]) {	// load
 			load_font(slotnames[p] ? slotnames[p] : p, obj[p]);
 		} else {	// activate
-			if(p == 'requirements')
+			if(p == 'requirements' || p =='wantblink')
 				continue;
 			var slotval = slotnames[obj[p]];
 			var slotnum = parseInt(slotval, 10);
@@ -51,7 +51,7 @@ function fonts(key)
 					filename = obj[p] + '.f' + charheight;
 				load_font(slotnum, filename);
 			}
-			if(cterm.activate_font(cterm.font_styles[p], slotval == undefined ? obj[p] : slotnum) == false)
+			if(cterm.activate_font(cterm.font_styles[p], slotval == undefined ? obj[p] : slotnum, obj.wantblink) == false)
 				log(LOG_WARNING, "Failed to activate font: " + cterm.font_styles[p]);
 		}
 	}

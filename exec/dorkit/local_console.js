@@ -5,6 +5,7 @@
 require('graphic.js', 'Graphic');
 if (js.global.conio !== undefined && dk.console.local) {
 	conio.init();
+	conio.settitle(js.exec_file);
 	conio.clrscr();
 	conio.setcursortype(2);
 	dk.console.input_queue_callback.push(function() {
@@ -37,6 +38,26 @@ if (js.global.conio !== undefined && dk.console.local) {
 							return dk.console.key.KEY_PGUP;
 						case 0x51:
 							return dk.console.key.KEY_PGDOWN;
+						case 0x78:
+							return dk.console.key.KEY_ALT_1;
+						case 0x79:
+							return dk.console.key.KEY_ALT_2;
+						case 0x7a:
+							return dk.console.key.KEY_ALT_3;
+						case 0x7b:
+							return dk.console.key.KEY_ALT_4;
+						case 0x7c:
+							return dk.console.key.KEY_ALT_5;
+						case 0x7d:
+							return dk.console.key.KEY_ALT_6;
+						case 0x7e:
+							return dk.console.key.KEY_ALT_7;
+						case 0x7f:
+							return dk.console.key.KEY_ALT_8;
+						case 0x80:
+							return dk.console.key.KEY_ALT_9;
+						case 0x81:
+							return dk.console.key.KEY_ALT_0;
 						default:
 							if (ch >= 0x3a && ch <= 0x44)
 								return dk.console.key['KEY_F'+(ch - 0x39)];

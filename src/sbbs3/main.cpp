@@ -1253,9 +1253,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 
 	if(JSREPORT_IS_WARNING(report->flags)) {
 		if(JSREPORT_IS_STRICT(report->flags))
-			warning="strict warning";
+			warning="strict warning ";
 		else
-			warning="warning";
+			warning="warning ";
 		log_level = LOG_WARNING;
 	} else {
 		warning=nulstr;
@@ -1282,6 +1282,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 
     if((js_cx = JS_NewContext(*runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return NULL;
+	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
 	memset(&js_callback,0,sizeof(js_callback));
@@ -2860,6 +2861,7 @@ void event_thread(void* arg)
 					sbbs->putnodedat(i,&node);
 				}
 			}
+			sbbs->event_code = nulstr;
 
 			/* QWK Networking Call-out semaphores */
 			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
@@ -3321,7 +3323,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		SAFECOPY(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 		SAFEPRINTF2(syspage_semfile, "%ssyspage.%u", cfg.ctrl_dir, node_num);
-		remove(syspage_semfile);
+		(void)remove(syspage_semfile);
 	} else {	/* event thread needs exclusive-use temp_dir */
 		if(startup->temp_dir[0])
 			SAFECOPY(cfg.temp_dir,startup->temp_dir);
@@ -3966,8 +3968,6 @@ void sbbs_t::spymsg(const char* msg)
 #endif
 }
 
-#define MV_BUFLEN	4096
-
 /****************************************************************************/
 /* Moves or copies a file from one dir to another                           */
 /* both 'src' and 'dest' must contain full path and filename                */
@@ -3975,13 +3975,6 @@ void sbbs_t::spymsg(const char* msg)
 /****************************************************************************/
 int sbbs_t::mv(char *src, char *dest, char copy)
 {
-	char	str[MAX_PATH+1],*buf,atr=curatr;
-	int		ind,outd;
-	uint	chunk=MV_BUFLEN;
-	ulong	length,l;
-	time_t	ftime;
-	FILE *inp,*outp;
-
     if(!stricmp(src,dest))	 /* source and destination are the same! */
         return(0);
     if(!fexistcase(src)) {
@@ -4005,67 +3998,10 @@ int sbbs_t::mv(char *src, char *dest, char copy)
         return(0);
 	}
 #endif
-    attr(WHITE);
-    if((ind=nopen(src,O_RDONLY))==-1) {
-        errormsg(WHERE,ERR_OPEN,src,O_RDONLY);
-        return(-1);
+	if(!CopyFile(src, dest, /* fail if exists: */true)) {
+		errormsg(WHERE, "CopyFile", src, 0, dest);
+		return -1;
 	}
-    if((inp=fdopen(ind,"rb"))==NULL) {
-        close(ind);
-        errormsg(WHERE,ERR_FDOPEN,str,O_RDONLY);
-        return(-1);
-	}
-    setvbuf(inp,NULL,_IOFBF,32*1024);
-    if((outd=nopen(dest,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-        fclose(inp);
-        errormsg(WHERE,ERR_OPEN,dest,O_WRONLY|O_CREAT|O_TRUNC);
-        return(-1);
-	}
-    if((outp=fdopen(outd,"wb"))==NULL) {
-        close(outd);
-        fclose(inp);
-        errormsg(WHERE,ERR_FDOPEN,dest,O_WRONLY|O_CREAT|O_TRUNC);
-        return(-1);
-	}
-    setvbuf(outp,NULL,_IOFBF,8*1024);
-	ftime=filetime(ind);
-    length=(long)filelength(ind);
-    if(length) {	/* Something to copy */
-		if((buf=(char *)malloc(MV_BUFLEN))==NULL) {
-			fclose(inp);
-			fclose(outp);
-			errormsg(WHERE,ERR_ALLOC,nulstr,MV_BUFLEN);
-			return(-1);
-		}
-		l=0L;
-		while(l<length) {
-			bprintf("%2lu%%",l ? (long)(100.0/((float)length/l)) : 0L);
-			if(l+chunk>length)
-				chunk=length-l;
-			if(fread(buf,1,chunk,inp)!=chunk) {
-				free(buf);
-				fclose(inp);
-				fclose(outp);
-				errormsg(WHERE,ERR_READ,src,chunk);
-				return(-1);
-			}
-			if(fwrite(buf,1,chunk,outp)!=chunk) {
-				free(buf);
-				fclose(inp);
-				fclose(outp);
-				errormsg(WHERE,ERR_WRITE,dest,chunk);
-				return(-1);
-			}
-			l+=chunk;
-			bputs("\b\b\b");
-		}
-		bputs("   \b\b\b");  /* erase it */
-		attr(atr);
-		free(buf);
-	}
-    fclose(inp);
-    fclose(outp);
-	setfdate(dest,ftime);	/* Would be nice if we could use futime() instead */
     if(!copy && remove(src)) {
         errormsg(WHERE,ERR_REMOVE,src,0);
         return(-1);
@@ -4288,7 +4224,7 @@ void sbbs_t::reset_logon_vars(void)
 /****************************************************************************/
 void sbbs_t::catsyslog(int crash)
 {
-	char str[MAX_PATH+1];
+	char str[MAX_PATH+1] = "node.log";
 	char *buf;
 	int  i,file;
 	long length;
@@ -4889,8 +4825,8 @@ static void cleanup(int code)
 	listFree(&current_logins);
 	listFree(&current_connections);
 
-	(void)protected_uint32_destroy(node_threads_running);
-	(void)protected_uint32_destroy(ssh_sessions);
+	protected_uint32_destroy(node_threads_running);
+	protected_uint32_destroy(ssh_sessions);
 
 	status("Down");
 	thread_down();

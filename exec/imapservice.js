@@ -709,9 +709,11 @@ function parse_command(line)
 
 			line=line.replace(/^{([0-9]+)}$/, "$1");
 			client.socket.send("+ Give me more of that good stuff\r\n");
-			ret=client.socket.recv(parseInt(line));
-			line=client.socket.recvline(10240, 1800);
-	
+			var len = parseInt(line);
+			if(len) {
+				ret=client.socket.recv(len);
+				line=client.socket.recvline(10240, 1800);
+			}
 			return(ret);
 		}
 
@@ -733,7 +735,7 @@ function parse_command(line)
 			return(ret);
 		}
 
-		while(line.length) {
+		while(line) {
 			switch(line.charAt(0)) {
 				case '"':
 					args.push(parse_quotedstring());

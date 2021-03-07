@@ -40,7 +40,14 @@
 #include "gen_defs.h"	/* HANDLE */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
-#ifdef __unix__
+#if !__STDC_NO_ATOMICS__
+	#if defined __GNUC__ && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9)) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
+		#define __STDC_NO_ATOMICS__ 1
+	#elif defined __BORLANDC__ || defined _MSC_VER
+		#define __STDC_NO_ATOMICS__ 1
+	#endif
+#endif
+#if !__STDC_NO_ATOMICS__
 #include <stdbool.h>
 #ifdef __cplusplus
 #include <atomic>
@@ -157,16 +164,16 @@ DLLEXPORT int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void));
 /* working and being thread-safe on all platforms that support pthread	*/
 /* mutexes.																*/
 /************************************************************************/
-#ifdef __unix__
+#if !__STDC_NO_ATOMICS__
 #ifdef __cplusplus
 typedef std::atomic<int32_t> protected_int32_t;
 typedef std::atomic<uint32_t> protected_uint32_t;
 typedef std::atomic<int64_t> protected_int64_t;
 typedef std::atomic<uint64_t> protected_uint64_t;
-#define protected_int32_init(pval, val) (std::atomic_store<int32_t>(pval, val), 0)
-#define protected_uint32_init(pval, val) (std::atomic_store<uint32_t>(pval, val), 0)
-#define protected_int64_init(pval, val) (std::atomic_store<int64_t>(pval, val), 0)
-#define protected_uint64_init(pval, val) (std::atomic_store<uint64_t>(pval, val), 0)
+#define protected_int32_init(pval, val) std::atomic_store<int32_t>(pval, val)
+#define protected_uint32_init(pval, val) std::atomic_store<uint32_t>(pval, val)
+#define protected_int64_init(pval, val) std::atomic_store<int64_t>(pval, val)
+#define protected_uint64_init(pval, val) std::atomic_store<uint64_t>(pval, val)
 
 #define protected_int32_adjust(pval, adj) std::atomic_fetch_add<int32_t>(pval, adj)
 #define protected_uint32_adjust(pval, adj) std::atomic_fetch_add<uint32_t>(pval, adj)
@@ -188,10 +195,10 @@ typedef _Atomic(uint32_t) protected_uint32_t;
 typedef _Atomic(int64_t) protected_int64_t;
 typedef _Atomic(uint64_t) protected_uint64_t;
 
-#define protected_int32_init(pval, val) (atomic_init(pval, val), 0)
-#define protected_uint32_init(pval, val) (atomic_init(pval, val), 0)
-#define protected_int64_init(pval, val) (atomic_init(pval, val), 0)
-#define protected_uint64_init(pval, val) (atomic_init(pval, val), 0)
+#define protected_int32_init(pval, val) atomic_init(pval, val)
+#define protected_uint32_init(pval, val) atomic_init(pval, val)
+#define protected_int64_init(pval, val) atomic_init(pval, val)
+#define protected_uint64_init(pval, val) atomic_init(pval, val)
 
 #define protected_int32_adjust(pval, adj) atomic_fetch_add(pval, adj)
 #define protected_uint32_adjust(pval, adj) atomic_fetch_add(pval, adj)
@@ -209,10 +216,10 @@ typedef _Atomic(uint64_t) protected_uint64_t;
 #define protected_uint64_value(val) atomic_load(&val)
 #endif
 
-#define protected_int32_destroy(i)	0
-#define protected_uint32_destroy(i)	0
-#define protected_int64_destroy(i)	0
-#define protected_uint64_destroy(i)	0
+#define protected_int32_destroy(i)
+#define protected_uint32_destroy(i)
+#define protected_int64_destroy(i)
+#define protected_uint64_destroy(i)
 #else
 typedef struct {
 	int32_t				value;
@@ -237,14 +244,14 @@ typedef struct {
 #define protected_uint32_init(i, val)	protected_int32_init((protected_int32_t*)i, val)
 #define protected_uint64_init(i, val)	protected_int64_init((protected_int64_t*)i, val)
 /* Return 0 on success, non-zero on failure (see pthread_mutex_destroy): */
-#define protected_int32_destroy(i)	pthread_mutex_destroy(&i.mutex)
+#define protected_int32_destroy(i)	pthread_mutex_destroy(&(i).mutex)
 #define protected_uint32_destroy	protected_int32_destroy	
 #define protected_int64_destroy		protected_int32_destroy	
 #define protected_uint64_destroy	protected_int32_destroy	
-#define protected_int32_value(i)		protected_int32_adjust(&i,0)
-#define protected_uint32_value(i)		protected_uint32_adjust(&i,0)
-#define protected_int64_value(i)		protected_int64_adjust(&i,0)
-#define protected_uint64_value(i)		protected_uint64_adjust(&i,0)
+#define protected_int32_value(i)		protected_int32_adjust(&(i),0)
+#define protected_uint32_value(i)		protected_uint32_adjust(&(i),0)
+#define protected_int64_value(i)		protected_int64_adjust(&(i),0)
+#define protected_uint64_value(i)		protected_uint64_adjust(&(i),0)
 
 #define protected_int32_adjust_fetch(a, b)	protected_int32_adjust(a, b)
 #define protected_uint32_adjust_fetch(a, b)	protected_uint32_adjust(a, b)
@@ -252,8 +259,8 @@ typedef struct {
 #define protected_uint64_adjust_fetch(a, b)	protected_uint64_adjust(a, b)
 
 /* Return 0 on success, non-zero on failure (see pthread_mutex_init): */
-DLLEXPORT int DLLCALL protected_int32_init(protected_int32_t*,	int32_t value);
-DLLEXPORT int DLLCALL protected_int64_init(protected_int64_t*,	int64_t value);
+DLLEXPORT void DLLCALL protected_int32_init(protected_int32_t*,	int32_t value);
+DLLEXPORT void DLLCALL protected_int64_init(protected_int64_t*,	int64_t value);
 
 /* Return new value: */
 DLLEXPORT int32_t DLLCALL protected_int32_adjust(protected_int32_t*, int32_t adjustment);

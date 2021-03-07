@@ -1,4 +1,4 @@
-//$Id: game.js,v 1.18 2017/08/10 03:08:50 mcmlxxix Exp $
+//$Id: game.js,v 1.11 2012-03-30 15:22:57 mcmlxxix Exp $
 /*
 	SYNCHRONET MAZE RACE 
 	A Javascript remake 
@@ -7,7 +7,8 @@
 	For Synchronet v3.15+
 	Matt Johnson(2008)
 */
-const VERSION="$Revision: 1.18 $".replace(/\$/g,'').split(' ')[1];
+
+const VERSION="$Revision: 1.11 $".replace(/\$/g,'').split(' ')[1];
 
 var oldpass=console.ctrlkey_passthru;
 var root=js.exec_dir;
@@ -768,6 +769,9 @@ function race(gameNumber, profile)	{
 			return true;
 	}
 	function movePlayer(x,y) {
+		if(player.coords == undefined) {
+			player.coords = new Coords(x,y);
+		}
 		player.coords.x += x;
 		player.coords.y += y;
 		player.frame.move(x,y);
@@ -775,7 +779,7 @@ function race(gameNumber, profile)	{
 		data.storePlayerPosition(gameNumber,player);
 	}
 	function clearFog(p) {
-		if(game.fog) {
+		if(game.fog && p.coords != undefined) {
 			for(var x=p.coords.x-3;x<p.coords.x+3;x++) {
 				for(var y=p.coords.y-2;y<p.coords.y+2;y++) {
 					fog.clearData(x,y);

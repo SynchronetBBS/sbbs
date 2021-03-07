@@ -41,6 +41,7 @@ enum {
 	,PROP_MAXBYTES
 #endif
 	,PROP_GLOBAL
+	,PROP_OPTIONS
 };
 
 static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -106,6 +107,9 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 #endif
 		case PROP_GLOBAL:
 			*vp = OBJECT_TO_JSVAL(JS_GetGlobalObject(cx));	
+			break;
+		case PROP_OPTIONS:
+			*vp = UINT_TO_JSVAL(JS_GetOptions(cx));
 			break;
 	}
 
@@ -181,6 +185,7 @@ static jsSyncPropertySpec js_properties[] = {
 	{	"max_bytes",		PROP_MAXBYTES,		JSPROP_ENUMERATE,	311 },
 #endif
 	{	"global",			PROP_GLOBAL,		PROP_FLAGS,			314 },
+	{	"options",			PROP_OPTIONS,		PROP_FLAGS,			31802 },
 	{0}
 };
 
@@ -201,10 +206,11 @@ static char* prop_desc[] = {
 	,"maximum number of bytes available for heap"
 #endif
 	,"global (top level) object - <small>READ ONLY</small>"
+	,"option flags - <small>READ ONLY</small>"
 	/* New properties go here... */
 	,"full path and filename of JS file executed"
-	,"JS filename executed (with no path)"
 	,"directory of executed JS file"
+	,"JS filename executed (with no path)"
 	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
 	,"global scope for this script"
 	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "

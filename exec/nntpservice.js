@@ -18,7 +18,6 @@
 // -f        filter bogus client IP addresses
 // -na       no anonymous logins (requires user authentication)
 // -mail     expose entire mail database as newsgroup to Sysops
-// -auto     automatic login based on IP address (no password necessary)
 // -nolimit  unlimited message lengths
 // -notag    do not append tear/tagline to local messages for Q-rest accounts
 // -ascii	 convert ex-ASCII to ASCII
@@ -27,7 +26,6 @@
 //					Microsoft Outlook Express 6
 //					Netscape Communicator 4.77
 //					Xnews 5.04.25
-//					Mozilla 1.1 (Requires -auto, and a prior login via other method)
 
 const REVISION = "$Revision: 1.133 $".split(' ')[1];
 
@@ -41,7 +39,6 @@ load("newsutil.js");
 
 var debug = false;
 var no_anonymous = false;
-var auto_login = false;
 var msgs_read = 0;
 var msgs_posted = 0;
 var slave = false;
@@ -76,10 +73,6 @@ for(i=0;i<argc;i++) {
 		force_newsgroups = true;
 	else if(argv[i].toLowerCase()=="-filter")
 		filter_newsgroups = true;
-	else if(argv[i].toLowerCase()=="-auto") {
-		no_anonymous = true;
-		auto_login = true;
-	}
 }
 
 // Write a string to the client socket
@@ -274,36 +267,9 @@ while(client.socket.is_connected && !quit) {
 	}
 
 	if(!logged_in) {
-		if (auto_login) {
-			log(LOG_DEBUG,"Autologin Search: Started");
-			var oUser = new User;
-			sUser = false;
-			sPassword = ""
-			iLastOn = 0;
-			for (var i=1; i<=system.stats.total_users; i++) {
-				oUser.number = i;
-				if (oUser.ip_address == client.ip_address)
-					if (!(oUser.security.restrictions&UFLAG_Q)) //don't count qnet users
-						if (oUser.stats.laston_date > iLastOn) { //more recent than last match
-							iLastOn = oUser.stats.laston_date;
-							sUser = oUser.alias;
-							sPassword = oUser.security.password;
-							log(LOG_DEBUG,"!Autologin Search: Match Found ("+sUser+")");
-						}
-
-			}
-			oUser = null;
-			log(LOG_DEBUG,"Autologin Search: Finished");
-
-			if (sUser)
-				login(sUser,sPassword);
-		}
-
-		if(!logged_in) {
-			writeln("502 Authentication required");
-			log(LOG_WARNING,"!Authentication required");
-			continue;
-		}
+		writeln("480 Authentication required");
+		log(LOG_WARNING,"!Authentication required");
+		continue;
 	}
 
 	/* These commands require login/authentication */

@@ -2229,6 +2229,9 @@ int putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const char *s
 	if(!VALID_CFG(cfg) || usernumber<1 || str==NULL)
 		return(-1);
 
+	if(length > sizeof(str2) - 1)
+		return -10;
+
 	SAFEPRINTF(str2,"%suser/user.dat",cfg->data_dir);
 	if((file=nopen(str2,O_RDWR|O_DENYNONE))==-1)
 		return(errno);
@@ -2246,7 +2249,7 @@ int putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const char *s
 		}
 	}
 
-	strcpy(str2,str);
+	SAFECOPY(str2,str);
 	if(strlen(str2)<length) {
 		for(c=strlen(str2);c<length;c++)
 			str2[c]=ETX;

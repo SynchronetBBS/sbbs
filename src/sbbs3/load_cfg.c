@@ -413,7 +413,7 @@ char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 		else
 			SAFEPRINTF3(str,"%s%c%s",base,PATH_DELIM,path);
 	} else
-		strcpy(str,path);
+		SAFECOPY(str,path);
 
 #ifdef __unix__				/* Change backslashes to forward slashes on Unix */
 	for(p=str;*p;p++)
@@ -422,7 +422,7 @@ char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 #endif
 
 	backslashcolon(str);
-	strcat(str,".");                /* Change C: to C:. and C:\SBBS\ to C:\SBBS\. */
+	SAFECAT(str,".");               /* Change C: to C:. and C:\SBBS\ to C:\SBBS\. */
 	FULLPATH(abspath,str,buflen);	/* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC */
 	backslash(abspath);
 

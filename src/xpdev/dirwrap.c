@@ -1210,6 +1210,7 @@ BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 		return FALSE;
 	}
 
+	time_t	ftime = filetime(fileno(in));
 	while(!feof(in)) {
 		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), in);
 		if(rd < 1)
@@ -1223,6 +1224,7 @@ BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 
 	fclose(in);
 	fclose(out);
+	setfdate(dest,ftime);
 
 	return success;
 }

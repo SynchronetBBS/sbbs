@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 
 	lprintf("\nComparing user pointers ");
 	for(glp=0; glp<gl.gl_pathc; glp++) {
-		lprintf("%-5d\b\b\b\b\b",glp);
+		lprintf("%-5ld\b\b\b\b\b",glp);
 		SAFECOPY(str,gl.gl_pathv[glp]);
 		if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
 			continue; }

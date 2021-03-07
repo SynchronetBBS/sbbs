@@ -38,6 +38,7 @@ typedef struct {
 	ulong	time_limit;		/* maximum number of ticks (for infinite loop detection) */
 	ulong	gc_interval;	/* number of ticks between garbage collection attempts */
 	ulong	yield_interval;	/* number of ticks between time-slice yields */
+	ulong	options;
 	char	load_path[INI_MAX_VALUE_LEN];	/* additional (comma-separated) directories to search for load()ed scripts */
 } js_startup_t;
 
@@ -207,6 +208,22 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
 	{ BBS_OPT_HAPROXY_PROTO			,"HAPROXY_PROTO"		},
 	{ BBS_OPT_MUTE					,"MUTE"					},
+	/* terminator */										
+	{ 0								,NULL					}
+};
+
+static ini_bitdesc_t js_options[] = {
+
+	{ 1<<0	,"STRICT"				},
+	{ 1<<1	,"WERROR"				},
+	{ 1<<2	,"VAROBJFIX"			},
+	{ 1<<4	,"COMPILE_N_GO"			},
+	{ 1<<9	,"RELIMIT"				},
+	{ 1<<10	,"ANONFUNFIX"			},
+	{ 1<<11	,"JIT"					},
+	{ 1<<14	,"METHODJIT"			},
+	{ 1<<15	,"PROFILING"			},
+	{ 1<<16	,"METHODJIT_ALWAYS"		},
 	/* terminator */										
 	{ 0								,NULL					}
 };

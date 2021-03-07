@@ -318,6 +318,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_FALSE);
 		}
+		JS_SetOptions(bg->cx, p->startup->options);
 		JS_BEGINREQUEST(bg->cx);
 
 		if(!js_CreateCommonObjects(bg->cx
@@ -730,6 +731,7 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 			JSVALUE_TO_MSTRING(cx, argv[fnarg], filename, NULL);
 			JS_ReportError(cx,"symbol '%s' not defined by script '%s'", property, filename);
 			free(filename);
+			free(property);
 			return(JS_FALSE);
 		}
 	}
@@ -4175,12 +4177,13 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	/* number to string */
-	JS_ValueToNumber(cx,argv[0],&d);
+	if(JS_ValueToNumber(cx,argv[0],&d)) {
 
-	if((js_str = JS_NewStringCopyZ(cx, ltoaf((long)d,str)))==NULL)
-		return(JS_FALSE);
+		if((js_str = JS_NewStringCopyZ(cx, ltoaf((long)d,str)))==NULL)
+			return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	}
 	return(JS_TRUE);
 }
 

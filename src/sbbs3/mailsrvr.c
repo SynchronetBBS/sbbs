@@ -587,7 +587,7 @@ static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, c
 				lprintf(LOG_DEBUG,"%04d %s RX: %s",socket, prot, buf);
 			continue;
 		}
-		if(rsp!=NULL && strnicmp(buf,rsp,strlen(rsp))) {
+		if(strnicmp(buf,rsp,strlen(rsp))) {
 			lprintf(LOG_WARNING,"%04d %s !INVALID RESPONSE: '%s' Expected: '%s'", socket, prot, buf, rsp);
 			free(mopt);
 			return(-1);
@@ -811,18 +811,18 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			charset = "IBM437";
 	}
 
-	/* Default MIME Content-Type for non-Internet messages */
-	if(msg->from_net.type!=NET_INTERNET && msg->content_type==NULL) {
-		sockprintf(socket,prot,sess, "Content-Type: text/plain; charset=%s", charset);
-		sockprintf(socket,prot,sess, "Content-Transfer-Encoding: 8bit");
-	}
-
 	if(strListCount(file_list)) {	/* File attachments */
         mimeheaders(socket,prot,sess,mime_boundary);
         sockprintf(socket,prot,sess,"");
         mimeblurb(socket,prot,sess,mime_boundary);
         sockprintf(socket,prot,sess,"");
         mimetextpartheader(socket,prot,sess,mime_boundary, msg->text_subtype, charset);
+	} else {
+		/* Default MIME Content-Type for non-Internet messages */
+		if(msg->from_net.type!=NET_INTERNET && msg->content_type==NULL) {
+			sockprintf(socket,prot,sess, "Content-Type: text/plain; charset=%s", charset);
+			sockprintf(socket,prot,sess, "Content-Transfer-Encoding: 8bit");
+		}
 	}
 	if(!sockprintf(socket,prot,sess,""))	/* Header Terminator */
 		return(0);
@@ -907,8 +907,11 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 					break;
 			} else
 				*tp = '\0';
-			SAFEPRINTF2(filepath, "%s/%s", dirname, getfname(truncsp(p)));
-			strListPush(&file_list, filepath);
+			char* fname = getfname(truncsp(p));
+			if(strcspn(fname, ILLEGAL_FILENAME_CHARS) == strlen(fname)) {
+				SAFEPRINTF2(filepath, "%s/%s", dirname, fname);
+				strListPush(&file_list, filepath);
+			}
 			if(tp == NULL)
 				break;
 			p = tp + 1;
@@ -2254,7 +2257,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	*result = 0;
 	do {
 		if(*js_runtime==NULL) {
-			lprintf(LOG_DEBUG,"%04d %s JavaScript: Creating runtime: %lu bytes\n"
+			lprintf(LOG_DEBUG,"%04d %s JavaScript: Creating runtime: %lu bytes"
 				,sock, log_prefix, startup->js.max_bytes);
 
 			if((*js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL)
@@ -2264,6 +2267,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		if(*js_cx==NULL) {
 			if((*js_cx = JS_NewContext(*js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 				return FALSE;
+			JS_SetOptions(*js_cx, startup->js.options);
 		}
 		JS_BEGINREQUEST(*js_cx);
 
@@ -2631,7 +2635,7 @@ static int chk_received_hdr(SOCKET socket,const char* prot,const char *buf,IN_AD
 {
 	char		host_name[128];
 	char		*fromstr;
-	char		ip[16];
+	char		ip[16] = "ipv6-addr";
 	char		*p;
 	char		*p2;
 	char		*last;
@@ -5926,7 +5930,7 @@ static void cleanup(int code)
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %d active clients", protected_uint32_value(active_clients));
 	else
-		(void)protected_uint32_destroy(active_clients);
+		protected_uint32_destroy(active_clients);
 
 #ifdef _WINSOCKAPI_	
 	if(WSAInitialized && WSACleanup()!=0) 
@@ -6414,5 +6418,5 @@ void DLLCALL mail_server(void* arg)
 
 	} while(!terminate_server);
 
-	(void)protected_uint32_destroy(thread_count);
+	protected_uint32_destroy(thread_count);
 }

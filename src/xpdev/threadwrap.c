@@ -217,17 +217,17 @@ int DLLCALL pthread_mutex_destroy(pthread_mutex_t* mutex)
 /* Protected (thread-safe) Integers (e.g. atomic/interlocked variables) */
 /************************************************************************/
 
-#ifndef __unix__
-int	DLLCALL protected_int32_init(protected_int32_t* prot, int32_t value)
+#if __STDC_NO_ATOMICS__
+void DLLCALL protected_int32_init(protected_int32_t* prot, int32_t value)
 {
 	prot->value = value;
-	return pthread_mutex_init(&prot->mutex,NULL);
+	pthread_mutex_init(&prot->mutex,NULL);
 }
 
-int	DLLCALL protected_int64_init(protected_int64_t* prot, int64_t value)
+void DLLCALL protected_int64_init(protected_int64_t* prot, int64_t value)
 {
 	prot->value = value;
-	return pthread_mutex_init(&prot->mutex,NULL);
+	pthread_mutex_init(&prot->mutex,NULL);
 }
 
 int32_t DLLCALL protected_int32_adjust(protected_int32_t* i, int32_t adjustment)

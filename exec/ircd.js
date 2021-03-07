@@ -149,6 +149,7 @@ var new_socket_send;
 // Parse command-line arguments.
 config_filename="";
 var cmdline_port;
+var cmdline_addr;
 for (cmdarg=0;cmdarg<argc;cmdarg++) {
 	switch(argv[cmdarg].toLowerCase()) {
 		case "-f":
@@ -159,6 +160,9 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 			break;
 		case "-d":
 			debug=true;
+			break;
+		case "-a":
+			cmdline_addr = argv[++cmdarg].split(',');
 			break;
 	}
 }
@@ -174,7 +178,7 @@ if(this.server==undefined) {		// Running from JSexec?
 		default_port = mline_port;
 
 	server = { socket: false, terminated: false,
-		version_detail: jsexec_revision_detail, interface_ip_addr_list: ["0.0.0.0","::"] };
+		version_detail: jsexec_revision_detail, interface_ip_addr_list: (cmdline_addr || ["0.0.0.0","::"]) };
 	server.socket = create_new_socket(default_port)
 	if (!server.socket)
 		exit();

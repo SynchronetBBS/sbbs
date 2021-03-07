@@ -355,6 +355,8 @@ js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	str;
 	private_t*	p;
 	jsrefcount	rc;
+	int		fd;
+	off_t		pos;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -378,7 +380,43 @@ js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
+	// https://pubs.opengroup.org/onlinepubs/009695399/functions/xsh_chap02_05.html#tag_02_05_01
+	/* For the first handle, the first applicable condition below applies. After the actions
+	 * required below are taken, if the handle is still open, the application can close it.
+	 *   If it is a file descriptor, no action is required.
+	 *   If the only further action to be performed on any handle to this open file descriptor
+         *      is to close it, no action need be taken.
+	 *   If it is a stream which is unbuffered, no action need be taken.
+	 *   If it is a stream which is line buffered, and the last byte written to the stream was a
+	 *      <newline> (that is, as if a: putc('\n') was the most recent operation on that stream),
+	 *      no action need be taken.
+	 *   If it is a stream which is open for writing or appending (but not also open for reading),
+	 *      the application shall either perform an fflush(), or the stream shall be closed.
+	 *   If the stream is open for reading and it is at the end of the file ( feof() is true), no
+	 *      action need be taken.
+	 *   If the stream is open with a mode that allows reading and the underlying open file
+	 *      description refers to a device that is capable of seeking, the application shall
+	 *      either perform an fflush(), or the stream shall be closed.
+	 * Otherwise, the result is undefined.
+	 * For the second handle:
+	 *   If any previous active handle has been used by a function that explicitly changed the file
+	 *      offset, except as required above for the first handle, the application shall perform an
+	 *      lseek() or fseek() (as appropriate to the type of handle) to an appropriate location.
+	 */
+	/*
+	 * Since we don't want to overcomplicate this, it basically boils down to:
+	 * Call fflush() on the stream, lseek() on the descriptor, diddle the descriptor, then fseek() the
+	 * stream.
+	 *
+	 * The only option bit is the fflush() on the stream, but it never hurts and is sometimes
+	 * required by POSIX.
+	 */
+	fflush(p->fp);
+	pos = ftell(p->fp);
+	fd = fileno(p->fp);
+	lseek(fd, pos, SEEK_SET);
 	len = read(fileno(p->fp),buf,len);
+	fseek(p->fp, pos + (len >= 0 ? len : 0), SEEK_SET);
 	dbprintf(FALSE, p, "read %u raw bytes",len);
 	if(len<0)
 		len=0;
@@ -1533,7 +1571,10 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 				continue;
 			}
 			/* value */
-			JS_GetProperty(cx,object,cp,&set_argv[2]);
+			if(!JS_GetProperty(cx,object,cp,&set_argv[2])) {
+				FREE_AND_NULL(cp);
+				continue;
+			}
 			FREE_AND_NULL(cp);	/* Moved from before JS_GetProperty() call */
 			if(!js_iniSetValue_internal(cx,obj,3,set_argv,&list)) {
 				rval = JSVAL_FALSE;

@@ -58,6 +58,7 @@ static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
 static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
+static const char*	strJavaScriptOptions		="JavaScriptOptions";
 static const char*	strSemFileCheckFrequency	="SemFileCheckFrequency";
 
 #define DEFAULT_LOG_LEVEL				LOG_DEBUG
@@ -104,6 +105,7 @@ void sbbs_get_js_settings(
 	js->time_limit		= iniGetInteger(list,section,strJavaScriptTimeLimit		,defaults->time_limit);
 	js->gc_interval		= iniGetInteger(list,section,strJavaScriptGcInterval	,defaults->gc_interval);
 	js->yield_interval	= iniGetInteger(list,section,strJavaScriptYieldInterval	,defaults->yield_interval);
+	js->options			= iniGetBitField(list, section, strJavaScriptOptions	,js_options, defaults->options);
 
 	/* Get JavaScriptLoadPath, use default if key is missing, use blank if key value is blank */
     if((p=iniGetExistingString(list, section, strJavaScriptLoadPath, nulstr, value)) == NULL) {
@@ -128,6 +130,7 @@ BOOL sbbs_set_js_settings(
 			,JAVASCRIPT_TIME_LIMIT
 			,JAVASCRIPT_GC_INTERVAL
 			,JAVASCRIPT_YIELD_INTERVAL
+			,JAVASCRIPT_OPTIONS
             ,JAVASCRIPT_LOAD_PATH
 		};
 	SAFECOPY(global_defaults.load_path, JAVASCRIPT_LOAD_PATH);
@@ -226,6 +229,7 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	global->js.time_limit		= JAVASCRIPT_TIME_LIMIT;
 	global->js.gc_interval		= JAVASCRIPT_GC_INTERVAL;
 	global->js.yield_interval	= JAVASCRIPT_YIELD_INTERVAL;
+	global->js.options			= JAVASCRIPT_OPTIONS;
     SAFECOPY(global->js.load_path, JAVASCRIPT_LOAD_PATH);
 
 	/* Read .ini values here */

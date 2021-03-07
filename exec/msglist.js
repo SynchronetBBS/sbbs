@@ -322,6 +322,14 @@ function help()
 	console.pause();
 }
 
+function pause()
+{
+	if(typeof options.pause == "number")
+		mswait(Number(options.pause) * 1000);
+	else if(options.pause !== false)
+		console.pause();
+}
+
 function list_msg(msg, digits, selected, sort, msg_ctrl, exclude, is_operator)
 {
 	var color = color_cfg.column[0];
@@ -1038,11 +1046,13 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							break;
 						case 'A':
 						case 'R':
-							if(mail)
+							if(mail) {
 								mail_reply(list[current], key == 'A');
-							else {
+								pause();
+							} else {
 								console.clear();
 								bbs.post_msg(msgbase.subnum, list[current]);
+								pause();
 								return true;
 							}
 							break;
@@ -1056,13 +1066,16 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 								console.clearline();
 								var dest = prompt("To", "", K_NOCRLF);
 								if(dest) {
+									console.clear();
 									if(!bbs.forward_msg(list[current], dest))
 										alert("failed");
+									pause();
 								}
 							}
 							break;
 						case 'M':
 							mail_reply(list[current]);
+							pause();
 							break;
 						case 'D':
 							console.clearline();
@@ -1233,16 +1246,19 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				break;
 			case 'A':
 			case 'R':
-				if(mail)
+				if(mail) {
 					mail_reply(list[current], key.toUpperCase() == 'A');
-				else {
+					pause();
+				} else {
 					console.clear();
 					bbs.post_msg(msgbase.subnum, list[current]);
+					pause();
 					return true; // reload msgs
 				}
 				break;
 			case 'M':
 				mail_reply(list[current]);
+				pause();
 				break;
 			case 'S':
 				if(sort == undefined)

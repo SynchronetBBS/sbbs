@@ -2006,13 +2006,13 @@ int smb_create(smb_t* smb)
 		fclose(fp);
 	}
 	SAFEPRINTF(str,"%s.sda",smb->file);
-	remove(str);						/* if it exists, delete it */
+	(void)remove(str);						/* if it exists, delete it */
 	SAFEPRINTF(str,"%s.sha",smb->file);
-	remove(str);                        /* if it exists, delete it */
+	(void)remove(str);                        /* if it exists, delete it */
 	SAFEPRINTF(str,"%s.sch",smb->file);
-	remove(str);
+	(void)remove(str);
 	SAFEPRINTF(str,"%s.hash",smb->file);
-	remove(str);
+	(void)remove(str);
 	smb_unlocksmbhdr(smb);
 	return(SMB_SUCCESS);
 }

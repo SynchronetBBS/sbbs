@@ -354,10 +354,10 @@ void status_client_on(enum sbbs_status_service svc, BOOL on, SOCKET sock, client
 	pthread_mutex_lock(&status_mutex[svc]);
 	if(on) {
 		prot = client->protocol;
-		if (client == NULL || prot == NULL)
+		if (prot == NULL)
 			prot = "<null>";
 		user = client->user;
-		if (client == NULL || user == NULL)
+		if (user == NULL)
 			user = "<null>";
 		if(update) {
 			list_node_t*	node;
@@ -481,8 +481,8 @@ void status_thread(void *arg)
 
 	pthread_once(&init_once, init_lists);
 	startup->status(startup->cbdata, "Initializing");
-	strcpy(client.addr, startup->sock_fname);
-	strcpy(client.host, "<unix-domain>");
+	SAFECOPY(client.addr, startup->sock_fname);
+	SAFECOPY(client.host, "<unix-domain>");
 	client.protocol = "STATUS";
 	client.size = sizeof(client);
 
@@ -737,8 +737,8 @@ void status_thread(void *arg)
 		listRemoveNode(&status_sock, node, FALSE);
 	}
 	listUnlock(&status_sock);
-	(void)protected_uint32_destroy(thread_count);
-	(void)protected_uint32_destroy(active_clients);
+	protected_uint32_destroy(thread_count);
+	protected_uint32_destroy(active_clients);
 
 	startup->thread_up(startup->cbdata, FALSE, FALSE);
 	startup->terminated(startup->cbdata, rc);
