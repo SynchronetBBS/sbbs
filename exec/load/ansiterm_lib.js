@@ -204,6 +204,10 @@ var attributes = {
 	set: function(a) 		{ return set_attributes(a); }
 }
 
+var state = {
+	reset: function()		{ return "\x1bc"; }
+}
+
 var color = true;
 
 function set_attributes(a)
