@@ -117,3 +117,5 @@ reply = JSON.stringify(reply);
 http_reply.header['Content-Type'] = 'application/json';
 http_reply.header['Content-Length'] = reply.length;
 write(reply);
+
+reply = undefined;
