@@ -1749,7 +1749,7 @@ function load_player()
 		map = load_map(player.map);
 		// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
 		if (map === null) {
-			player.map = 0;
+			player.map = 1;
 			player.x = 0;
 			player.y = 0;
 		}
@@ -3668,7 +3668,7 @@ function hail()
 							op.map = 1;
 							players[op.Record].x = 0;
 							players[op.Record].y = 0;
-							players[op.Record].map = 0;
+							players[op.Record].map = 1;
 							players[op.Record].battle = 0;
 							players[op.Record].put();
 							if (op.money > 0)
