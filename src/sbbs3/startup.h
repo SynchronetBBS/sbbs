@@ -212,6 +212,13 @@ static ini_bitdesc_t bbs_options[] = {
 	{ 0								,NULL					}
 };
 
+#ifndef STARTUP_INI_JSOPT_BITDESC_TABLE
+#define STARTUP_INI_JSOPT_BITDESC_TABLE
+#endif
+
+#endif
+
+#ifdef STARTUP_INI_JSOPT_BITDESC_TABLE
 static ini_bitdesc_t js_options[] = {
 
 	{ 1<<0	,"STRICT"				},
@@ -224,10 +231,9 @@ static ini_bitdesc_t js_options[] = {
 	{ 1<<14	,"METHODJIT"			},
 	{ 1<<15	,"PROFILING"			},
 	{ 1<<16	,"METHODJIT_ALWAYS"		},
-	/* terminator */										
+	/* terminator */
 	{ 0								,NULL					}
 };
-
 #endif
 
 #ifdef __cplusplus
