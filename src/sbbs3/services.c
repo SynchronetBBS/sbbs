@@ -1284,6 +1284,7 @@ static void js_static_service_thread(void* arg)
 		if(service->log_level >= LOG_WARNING)
 			lprintf(LOG_WARNING,"%s !service terminating with %u active clients"
 				, service->protocol, protected_uint32_value(service->clients));
+		protected_uint32_set(&service->clients, 0);
 	}
 
 	thread_down();

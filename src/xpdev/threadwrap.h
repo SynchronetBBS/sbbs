@@ -175,6 +175,11 @@ typedef std::atomic<uint64_t> protected_uint64_t;
 #define protected_int64_init(pval, val) std::atomic_store<int64_t>(pval, val)
 #define protected_uint64_init(pval, val) std::atomic_store<uint64_t>(pval, val)
 
+#define protected_int32_set(pval, val) std::atomic_store<int32_t>(pval, val)
+#define protected_uint32_set(pval, val) std::atomic_store<uint32_t>(pval, val)
+#define protected_int64_set(pval, val) std::atomic_store<int64_t>(pval, val)
+#define protected_uint64_(pval, val) std::atomic_store<uint64_t>(pval, val)
+
 #define protected_int32_adjust(pval, adj) std::atomic_fetch_add<int32_t>(pval, adj)
 #define protected_uint32_adjust(pval, adj) std::atomic_fetch_add<uint32_t>(pval, adj)
 #define protected_int64_adjust(pval, adj) std::atomic_fetch_add<int64_t>(pval, adj)
@@ -199,6 +204,11 @@ typedef _Atomic(uint64_t) protected_uint64_t;
 #define protected_uint32_init(pval, val) atomic_init(pval, val)
 #define protected_int64_init(pval, val) atomic_init(pval, val)
 #define protected_uint64_init(pval, val) atomic_init(pval, val)
+
+#define protected_int32_set(pval, val) atomic_init(pval, val)
+#define protected_uint32_set(pval, val) atomic_init(pval, val)
+#define protected_int64_set(pval, val) atomic_init(pval, val)
+#define protected_uint64_set(pval, val) atomic_init(pval, val)
 
 #define protected_int32_adjust(pval, adj) atomic_fetch_add(pval, adj)
 #define protected_uint32_adjust(pval, adj) atomic_fetch_add(pval, adj)
