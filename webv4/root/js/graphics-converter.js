@@ -74,7 +74,7 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
     }
 
     function delete_workspace(workspace) {
-        workspace.container.parentNode.removeChild(container);
+        workspace.container.remove();
     }
 
     // Clip character # 'char' from the spritesheet and return it as ImageData
