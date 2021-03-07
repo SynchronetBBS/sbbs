@@ -850,7 +850,10 @@ var SpinningCursor7=840;
 var SpinningCursor8=841;
 var SpinningCursor9=842;
 var HowManyColumns=843;
+var InternetMailSent=844;
+var FidoNetMailSent=845;
+var QWKNetMailSent=846;
 
-var TOTAL_TEXT=844;
+var TOTAL_TEXT=847;
 
 this;
