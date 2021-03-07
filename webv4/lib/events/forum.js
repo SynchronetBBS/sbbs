@@ -1,4 +1,5 @@
 load(settings.web_lib + 'forum.js');
+var request = require({}, settings.web_lib + 'request.js', 'request');
 
 var last_subs;
 var last_groups;
@@ -25,8 +26,8 @@ function forum_emit(evt, data) {
         event: 'forum',
         data: JSON.stringify({
             type: evt,
-            data: data
-        })
+            data: data,
+        }),
     });
 }
 
@@ -75,9 +76,9 @@ function scan_threads(sub) {
 function cycle() {
     if (time() - last_run <= frequency) return;
     last_run = time();
-    if (is_real_user && Request.has_param('groups_unread')) scan_groups();
-    if (is_real_user && Request.has_param('subs_unread')) scan_subs(Request.get_param('subs_unread'));
-    if (Request.has_param('sub')) scan_threads(Request.get_param('sub'));
+    if (is_real_user && request.has_param('groups_unread')) scan_groups();
+    if (is_real_user && request.has_param('subs_unread')) scan_subs(request.get_param('subs_unread'));
+    if (request.has_param('sub')) scan_threads(request.get_param('sub'));
 }
 
 this;
