@@ -13,7 +13,8 @@ function listGroups() {
             index: grp.index,
             name: grp.name,
             description: grp.description,
-            sub_count: grp.sub_list.length
+            sub_count: grp.sub_list.length,
+            // unread: is_user() ? getGroupUnreadCount(grp.index) : null,
         });
     });
     return response;
@@ -21,36 +22,39 @@ function listGroups() {
 
 // Returns an array of objects of "useful" information about subs
 function listSubs(group) {
-    return msg_area.grp_list[group].sub_list.map(function (sub) {
-        return {
-            index: sub.index,
-            code: sub.code,
-            grp_index: sub.grp_index,
-            grp_name: sub.grp_name,
-            name: sub.name,
-            description: sub.description,
-            qwk_name: sub.qwk_name,
-            qwk_conf: sub.qwk_conf,
-            qwk_tagline: sub.qwknet_tagline,
-            newsgroup: sub.newsgroup,
-            ars: sub.ars,
-            read_ars: sub.read_ars,
-            can_read: sub.can_read,
-            post_ars: sub.post_ars,
-            can_post: sub.can_post,
-            operator_ars: sub.operator_ars,
-            is_operator: sub.is_operator,
-            moderated_ars: sub.moderated_ars,
-            is_moderated: sub.is_moderated,
-            scan_ptr: sub.scan_ptr,
-            scan_cfg: sub.scan_cfg,
+    return msg_area.grp_list[group].sub_list.map(function (e) {
+        const mb = new MsgBase(e.code);
+        if (!mb.open()) throw new Error(mb.error);
+        const ret = {
+            index: e.index,
+            code: e.code,
+            grp_index: e.grp_index,
+            grp_name: e.grp_name,
+            name: e.name,
+            description: e.description,
+            can_post: e.can_post,
+            is_operator: e.is_operator,
+            is_moderated: e.is_moderated,
+            scan_ptr: e.scan_ptr,
+            scan_cfg: e.scan_cfg,
+            // unread: is_user() ? getSubUnreadCount(mb) : null,
+            // newest: getNewestMessageInSub(mb),
         };
+        mb.close();
+        return ret;
     });
 }
 
 function getNewestMessageInSub(sub) {
-    const mb = new MsgBase(sub.code);
-    if (!mb.open()) return;
+
+    var mb;
+    if (sub instanceof MsgBase) {
+        mb = sub;
+    } else {
+        mb = new MsgBase(sub.code);
+        if (!mb.open()) throw new Error(mb.error);
+    }
+    
     var h;
     var ret;
     for (var m = mb.last_msg; m >= mb.first_msg; m--) {
@@ -59,12 +63,15 @@ function getNewestMessageInSub(sub) {
         ret = {
             from: h.from,
             subject: h.subject,
-            date: h.when_written_time, // should just be a timestamp; all date formatting should be client-side in forum.xjs
+            date: h.when_written_time,
         };
         break;
     }
-    mb.close();
+    
+    if (!(sub instanceof MsgBase)) mb.close();
+    
     return ret;
+
 }
 
 function getNewestMessagePerSub(grp) {
@@ -78,32 +85,34 @@ function getNewestMessagePerSub(grp) {
 }
 
 function getSubUnreadCount(sub) {
+
     var ret = {
         scanned: 0,
         total: 0,
     };
-    if (msg_area.sub[sub] === undefined) return ret;
-    try {
-        var sy = msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY;
-        var sn = msg_area.sub[sub].scan_cfg&SCAN_CFG_NEW;
-        var msgBase = new MsgBase(sub);
-        msgBase.open();
-        for (var m = msg_area.sub[sub].scan_ptr + 1; m <= msgBase.last_msg; m++) {
-            var h = msgBase.get_msg_header(m);
-            if (h === null || h.attr&MSG_DELETE || h.attr&MSG_NODISP) continue;
-            if ((sy && (h.to_ext === user.number || h.to === user.alias || h.to === user.name)) || sn) ret.scanned++;
-            ret.total++;
-            ret.newest = {
-                from: h.from,
-                subject: h.subject,
-                date: h.when_written_time
-            };
-        }
-        msgBase.close();
-    } catch (err) {
-        log(LOG_ERR, err);
+
+    var mb;
+    if (sub instanceof MsgBase) {
+        mb = sub;
+    } else {
+        if (msg_area.sub[sub] === undefined) return ret;
+        mb = new MsgBase(sub);
+        if (!mb.open()) throw new Error(mb.error);
     }
+
+    var sy = msg_area.sub[mb.cfg.code].scan_cfg&SCAN_CFG_YONLY;
+    var sn = msg_area.sub[mb.cfg.code].scan_cfg&SCAN_CFG_NEW;
+    for (var m = msg_area.sub[mb.cfg.code].scan_ptr + 1; m <= mb.last_msg; m++) {
+        var h = mb.get_msg_header(m);
+        if (h === null || h.attr&MSG_DELETE || h.attr&MSG_NODISP) continue;
+        if ((sy && (h.to_ext === user.number || h.to === user.alias || h.to === user.name)) || sn) ret.scanned++;
+        ret.total++;
+    }
+
+    if (!(sub instanceof MsgBase)) mb.close();
+    
     return ret;
+
 }
 
 function getSubUnreadCounts(group) {
@@ -202,11 +211,6 @@ function listThreads(sub, count, after) {
     var thread;
     var stop = Math.min(threads.order.length, offset + count);
     var ret = { total: threads.order.length, threads : [] };
-    if (sub.scan_cfg&SCAN_CFG_NEW) {
-        ret.scan_cfg = 'new';
-    } else if (sub.scan_cfg&SCAN_CFG_YONLY) {
-        ret.scan_cfg = 'you_only';
-    }
     for (var n = offset; n < stop; n++) {
         thread = threads.thread[threads.order[n]];
         msgs = Object.keys(thread.messages);
@@ -216,6 +220,7 @@ function listThreads(sub, count, after) {
             first: thread.messages[msgs[0]],
             last: thread.messages[msgs[msgs.length - 1]],
             messages: msgs.length,
+            sub: sub,
             unread: is_user() ? getUnreadInThread(sub, thread) : 0,
             votes: getThreadVoteTotals(thread),
         });
@@ -1072,7 +1077,7 @@ function getMessageThreads(sub, max) {
 
 }
 
-function getMessageThread(sub, thread, count, after) {
+function getMessageThread(sub, thread, count, after, reload) {
 
     thread = parseInt(thread, 10);
     if (isNaN(thread)) return [];
@@ -1084,7 +1089,15 @@ function getMessageThread(sub, thread, count, after) {
     var m; // Current message
     var r = 0; // Messages returned
     var n = 0; // Index into t.messages
-    if (after) n = mkeys.indexOf(after) + 1;
+    if (after) {
+        var i = mkeys.indexOf(after);
+        if (reload) {
+            if (i >= 0) count += i + 1;
+        } else {
+            if (i < 0) return [];
+            n = i + 1;
+        }
+    }
 
     const msgBase = new MsgBase(sub);
 
@@ -1111,15 +1124,154 @@ function getMessageThread(sub, thread, count, after) {
 
 }
 
-function isValidRequest() {
-    if (Request.has_param('group')) {
-        const grp = Request.get_param('group');
-        if (msg_area.grp_list[grp] === undefined) return false;
-        if (!user.compare_ars(msg_area.grp_list[grp].ars)) return false;
-    }
-    if (Request.has_param('sub')) {
-        const sub = Request.get_param('sub');
-        if (msg_area.sub[sub] === undefined) return false;
-    }
-    return true;
+function cleanSubject(subject) {
+    return subject.replace(/^(re:\s*)*/ig, '');
 }
+
+var forum = {
+
+    getThreadList: function getThreadList(sub) {
+
+        const threads = {};
+        const subjects = {}; // Map of "clean" subjects to threads
+        const messages = {}; // Map of messsage numbers to threads
+
+        function addThread(h, s) {
+            threads[h.thread_id] = {
+                first_message: {
+                    from: h.from,
+                    from_net_addr: h.from_net_addr,
+                    from_net_type: h.from_net_type,
+                    tags: h.tags,
+                    to: h.to,
+                    to_net_addr: h.to_net_addr,
+                    to_net_type: h.to_net_type,
+                    subject: h.subject,
+                    when_written_time: h.when_written_time,
+                },
+                messages: 1,
+                votes: {
+                    parent: {
+                        up: h.upvotes,
+                        down: h.downvotes,
+                    },
+                    total: {
+                        up: h.upvotes,
+                        down: h.downvotes,
+                    }
+                }
+            };
+            subjects[s] = h.thread_id;
+            messages[h.thread_id] = h.thread_id;
+        }
+
+        function addToThread(t, h, s, m) {
+            threads[t].messages++;
+            threads[t].last_message = {
+                from: h.from,
+                when_written_time: h.when_written_time,
+            };
+            threads[t].votes.total.up += h.upvotes;
+            threads[t].votes.total.down += h.downvotes;
+            if (subjects[s] === undefined) subjects[s] = t;
+            messages[m] = t;
+        }
+
+        const mb = new MsgBase(sub);
+        if (!mb.open()) return threads;
+        const headers = mb.get_all_msg_headers();
+        mb.close();
+
+        var s; // "clean" subject of current message
+        for (var h in headers) {
+            if (headers[h] === null) continue; // Unnecessary? Does get_all_message_headers exclude empty slots?
+            if (headers[h].attr&MSG_DELETE) continue;
+            s = cleanSubject(headers[h].subject);
+            // If we don't yet have a thread for this message's thread_id:
+            if (threads[headers[h].thread_id] === undefined) {
+                // If this message's thread_id points to a message that belongs to another thread:
+                if (messages[headers[h].thread_id] !== undefined) {
+                    // The record in messages[] for that message tells us which thread it belongs to
+                    addToThread(messages[headers[h].thread_id], headers[h], s, h);
+                // If this message's "clean" subject has been seen before:
+                } else if (subjects[s] !== undefined) {
+                    // The record in subjects[] for this subject tells us which thread shares this subject
+                    addToThread(subjects[s], headers[h], s, h);
+                // This is the first message in a new thread
+                } else {
+                    addThread(headers[h], s);
+                }
+            // We have a thread for this message's thread_id:
+            } else {
+                addToThread(headers[h].thread_id, headers[h], s, h);
+            }
+        }
+
+        return threads;
+
+    },
+
+    getThread: function getThread(sub, id, onMessage) {
+
+        id = parseInt(id, 10);
+        if (isNaN(id) || id < 0) return;
+
+        const mb = new MsgBase(sub);
+        if (!mb.open()) return;
+
+        if (id < mb.first_msg || id > mb.last_msg) {
+            mb.close();
+            return;
+        }
+        
+        var b;
+        var s;
+        const subjects = [];
+        const messages = [];
+
+        const headers = mb.get_all_msg_headers();
+        
+        for (var h in headers) {
+
+            if (headers[h] === null) continue; // Unnecessary? Does get_all_message_headers exclude empty slots?
+            if (headers[h].attr&MSG_DELETE) continue;
+
+            s = cleanSubject(headers[h].subject);
+            if (headers[h].thread_id !== id && messages.indexOf(headers[h].thread_id) < 0 && subjects.indexOf(s) < 0) continue;
+            messages.push(parseInt(h, 10));
+            if (subjects.indexOf(s) < 0) subjects.push(s);
+
+            b = mb.get_msg_body(parseInt(h, 10));
+            if (b === null) continue; // Not sure if this is a holdover from early vote msg days. Is body ever null on a real message?
+
+            onMessage({
+                body: b, // Do we use formatMessage here, or let the browser handle that? Leaning toward client-side formatting.
+                from: headers[h].from,
+                from_net_addr: headers[h].from_net_addr,
+                from_net_type: headers[h].from_net_type,
+                number: parseInt(h, 10),
+                subject: headers[h].subject,
+                tags: headers[h].tags,
+                thread_id: headers[h].thread_id, // for debug; remove this line at some point
+                thread_back: headers[h].thread_back,
+                thread_next: headers[h].thread_next,
+                thread_first: headers[h].thread_first,
+                to: headers[h].to,
+                to_net_addr: headers[h].to_net_addr,
+                to_net_type: headers[h].to_net_type,
+                votes: {
+                    up: headers[h].upvotes,
+                    down: headers[h].downvotes,
+                },
+                when_written_time: headers[h].when_written_time,
+            });
+
+        }
+
+        mb.close();
+
+    }
+
+};
+
+forum;
