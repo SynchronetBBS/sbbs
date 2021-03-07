@@ -6,6 +6,9 @@
 // TODO: Clear flags after a timeout... stuck with battle bit and you're locked out.
 // TODO: Does using an item take a turn?
 // TODO: Hail, Attack, Other player presses 'A', can kill someone without them knowing.
+// TODO: Detect player map zero and don't load it
+// TODO: The original does NOT treat something as a line unless it ends with CRLF, this means
+//       things can have LFs in them and still go in an @saybar.
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
