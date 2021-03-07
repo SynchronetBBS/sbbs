@@ -416,7 +416,7 @@ js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 	fd = fileno(p->fp);
 	lseek(fd, pos, SEEK_SET);
 	len = read(fileno(p->fp),buf,len);
-	fseek(p->fp, pos + (len >= 0 ? len : 0), SEEK_SET);
+	fseeko(p->fp, pos + (len >= 0 ? len : 0), SEEK_SET);
 	dbprintf(FALSE, p, "read %u raw bytes",len);
 	if(len<0)
 		len=0;
