@@ -837,14 +837,14 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 					dk.console.cleareol();
 					ctx.opts = options();
 				}},
-				{text:'  `2(`%D`2) Experience        : `%'+pretty_int(player.experience)+'`r0`2', shortcut:'D', callback:function(ctx) {
+				{text:'  `2(`%D`2) Experience        : `%'+pretty_int(player.p[0])+'`r0`2', shortcut:'D', callback:function(ctx) {
 					dk.console.gotoxy(26, 6);
 					conio.setcursortype(2);
-					player.experience = parseInt(dk.console.getstr({edit:player.experience.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:10, integer:true, min:0, max:2147483647}), 10);
+					player.p[0] = parseInt(dk.console.getstr({edit:player.p[0].toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:10, integer:true, min:0, max:2147483647}), 10);
 					conio.setcursortype(0);
 					dk.console.gotoxy(26, 6);
 					dk.console.attr.value = 2;
-					lw(pretty_int(player.experience));
+					lw(pretty_int(player.p[0]));
 					dk.console.cleareol();
 					ctx.opts = options();
 				}},
