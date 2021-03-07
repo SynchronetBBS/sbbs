@@ -970,8 +970,8 @@ bool upgrade_file_bases(bool hash)
 		closeextdesc(extfile);
 		free(ixbbuf);
 		if(new_count != file_count) {
-			printf("\nNew file base index has %u records instead of %u\n", (uint)new_count, (uint)file_count);
-			break;
+			printf("\n%s: New file base index has %u records instead of %u\n"
+				,scfg.dir[i]->code, (uint)new_count, (uint)file_count);
 		}
 	}
 	time_t diff = time(NULL) - start;
