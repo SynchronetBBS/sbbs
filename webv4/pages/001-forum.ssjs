@@ -1,4 +1,4 @@
-//Forum
+//HIDDEN:Forum
 
 exit();
 

@@ -1,4 +1,4 @@
-<!--HIDDEN:XJS Forum-->
+<!--Forum-->
 
 <?xjs
     var request = require({}, settings.web_lib + 'request.js', 'request');
