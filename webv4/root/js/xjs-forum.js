@@ -481,11 +481,6 @@ async function onNewestSubMessage(sub, msg) {
     if (elem !== null) showNewestMessage(elem, msg);
 }
 
-async function getNewestMessagePerSub(group) {
-    const data = await v4_get(`./api/forum.ssjs?call=get-newest-message-per-sub&group=${group}`);
-    Object.entries(data).forEach(([k, v]) => onNewestSubMessage(k, v));
-}
-
 function showSubUnreadCount(elem, s, u) { // sub link element, sub code, { total, scanned, newest }
     if (u.total - u.scanned > 0) elem.querySelector('span[data-unread-unscanned]').innerHTML = u.total - u.scanned;
     if (u.scanned > 0) elem.querySelector('span[data-unread-scanned]').innerHTML = u.scanned;
