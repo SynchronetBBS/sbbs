@@ -2,6 +2,13 @@
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
 	if (page.search(/^http(s)*:\/\//) > -1) exit();
 
+	if (page.search(/^001-forum.ssjs/) > -1) {
+		http_reply.status = '302 Found';
+		http_reply.header['Location'] = './?page=001-forum.xjs' + http_request.query_string.replace(/^\page=001-forum.ssjs/, '');
+		exit();
+	}
+
+
 	var settings = load('modopts.js', 'web') || { web_directory: web_root_dir + '/..' };
 	load(settings.web_directory + '/lib/init.js');
 	load(settings.web_lib + 'auth.js');
