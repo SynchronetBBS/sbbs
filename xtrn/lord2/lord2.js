@@ -430,15 +430,15 @@ function insane_run_ref(sec, fname, refret)
 				// TODO: Verify if input happens on invalid parameters or not
 				val = parseInt(getvar(args[1]), 10);
 				if (isNaN(val))
-					throw new Error('@do readnum invalid default');
-				if (args.length > 2) {
+					val = 0;
+				else if (args.length > 2) {
 					bg = parseInt(getvar(getvar(args[2])), 10);
 					if (isNaN(bg))
-						throw new Error('@do readnum invalid background');
-					if (args.length > 3) {
+						bg = 1;
+					else if (args.length > 3) {
 						fg = parseInt(getvar(getvar(args[2])), 10);
 						if (isNaN(fg))
-							throw new Error('@do readnum invalid foreground');
+							fg = 15;
 					}
 				}
 			}
@@ -486,14 +486,15 @@ function insane_run_ref(sec, fname, refret)
 				if (args.length > 2) {
 					svar = args[2];
 					if (args.length > 3) {
-						// TODO: What happens in invalid bg/fg?
+						// What happens in invalid bg/fg?
+						// See ODINKEEP.REF:1818... they're ignored!
 						bg = parseInt(getvar(getvar(args[2])), 10);
 						if (isNaN(bg))
-							throw new Error('@do readstring invalid background');
-						if (args.length > 4) {
+							bg = 1;
+						else if (args.length > 4) {
 							fg = parseInt(getvar(getvar(args[2])), 10);
 							if (isNaN(fg))
-								throw new Error('@do readnum invalid foreground');
+								fg = 15;
 						}
 					}
 				}
@@ -538,6 +539,7 @@ function insane_run_ref(sec, fname, refret)
 			setvar(args[2], hs);
 		},
 		'saybar':function(args) {
+			// TODO: This does not persist across other bar updates... see "[ please wait ]" in CNW GENRAN.REF and TRAVEL.REF
 			line++;
 			if (line >= files[fname].lines.length)
 				throw new Error('Trailing saybar at '+fname+':'+line);
@@ -2538,6 +2540,8 @@ function move_player(xoff, yoff) {
 	});
 	while (enemy !== undefined)
 		offline_battle();
+	// Figure out what happens when you die from REF damage... (ie: canoe dock)
+	// It seems you stay at negative HP and don't die until something hits *facepalm*.
 	erase_player();
 	update(true);
 	perday = getvar('`v05');
