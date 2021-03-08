@@ -801,7 +801,6 @@ var forum = {
 
         function addThread(h, s) {
             threads[h.thread_id] = {
-                id: h.thread_id,
                 first_message: {
                     from: h.from,
                     from_net_addr: h.from_net_addr,
@@ -813,7 +812,13 @@ var forum = {
                     subject: h.subject,
                     when_written_time: h.when_written_time,
                 },
+                id: h.thread_id,
+                last_message: {
+                    from: h.from,
+                    when_written_time: h.when_written_time,
+                },
                 messages: 1,
+                sub: sub,
                 votes: {
                     parent: {
                         up: h.upvotes,
