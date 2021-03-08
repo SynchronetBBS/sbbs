@@ -802,24 +802,23 @@ You also earned 200 experience points and another quest point.`k
 @closescript
 
 @label leave
-@routine clearmenu
 @do `p20 is 1
 ;@do moveback
 @update
+@do goto clearmenu
 @closescript
 
 @label leave2
-@routine clearmenu
 @do `p20 is 1
 ;@drawmap
 @do saybar
 `$Your CONSCIENCE: `%Don't over due it buddy.
 ;@do moveback
 @update
+@do goto clearmenu
 @closescript
 
 @label leave3
-@routine clearmenu
 @do `p20 is 1
 @dataload npc/npc-`p70.idf &playernum `p21
 @do `p22 random 10 1
@@ -832,23 +831,24 @@ You also earned 200 experience points and another quest point.`k
 `$`s01: `%YOU DON'T HAVE ENOUGH, GET OUT!
 ;@do moveback
 @update
+@do goto clearmenu
 @closescript
 
 @label leave4
-@routine clearmenu
 @do `p20 is 1
 ;@drawmap
 @do saybar
 `$`N: `%No thanks, maybe another time.
 ;@do moveback
 @update
+@do goto clearmenu
 @closescript
 
 @label leave5
-@routine clearmenu
 @do `p20 is 1
 ;@do moveback
 @update
+@do goto clearmenu
 @closescript
 
 @#clearmenu
