@@ -425,6 +425,12 @@ bool sbbs_t::upload(uint dirnum)
 	else                /* no end specified, so string ends at desc end */
 		safe_snprintf(fdesc,sizeof(fdesc),"%s%s",descbeg,upload_lastdesc);
 
+	char tags[64] = "";
+	if((cfg.dir[dirnum]->misc&DIR_FILETAGS) && (text[TagFileQ][0] == 0 || !noyes(text[TagFileQ]))) {
+		bputs(text[TagFilePrompt]);
+		getstr(tags, sizeof(tags)-1, K_EDIT|K_LINE|K_TRIM);
+	}
+
 	if(cfg.dir[dirnum]->misc&DIR_ANON && !(cfg.dir[dirnum]->misc&DIR_AONLY)
 		&& (dir_op(dirnum) || useron.exempt&FLAG('A'))) {
 		if(!noyes(text[AnonymousQ]))
@@ -434,6 +440,8 @@ bool sbbs_t::upload(uint dirnum)
 	bool result = false;
 	smb_hfield_str(&f, SMB_FILENAME, fname);
 	smb_hfield_str(&f, SMB_FILEDESC, fdesc);
+	if(tags[0])
+		smb_hfield_str(&f, SMB_TAGS, tags);
 	if(fexistcase(path)) {   /* File is on disk */
 		result = uploadfile(&f);
 	} else {

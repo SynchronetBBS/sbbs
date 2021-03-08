@@ -860,20 +860,35 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 									bprintf(text[CouldntRenameFile],path,tmp);
 								else {
 									bprintf(text[FileRenamed],path,tmp);
-									smb_hfield_str(f, SMB_FILENAME, str);
+									smb_new_hfield_str(f, SMB_FILENAME, str);
 									updatefile(&cfg, f);
 								} 
 							} 
 						} 
 					}
+					// Description
 					bputs(text[EditDescription]);
 					char fdesc[LEN_FDESC + 1];
 					SAFECOPY(fdesc, f->desc);
-					getstr(fdesc, sizeof(fdesc)-1, K_LINE|K_EDIT|K_AUTODEL);
+					getstr(fdesc, sizeof(fdesc)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 					if(sys_status&SS_ABORT)
 						break;
 					if(strcmp(fdesc, f->desc))
-						smb_hfield_str(f, SMB_FILEDESC, fdesc);
+						smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
+
+					// Tags
+					if((cfg.dir[dirnum]->misc & DIR_FILETAGS) || dir_op(dirnum)) {
+						char tags[64] = "";
+						bputs(text[TagFilePrompt]);
+						if(f->tags != NULL)
+							SAFECOPY(tags, f->tags);
+						getstr(tags, sizeof(tags)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
+						if(sys_status&SS_ABORT)
+							break;
+						if((f->tags == NULL && *tags != '\0') || (f->tags != NULL && strcmp(tags, f->tags)))
+							smb_new_hfield_str(f, SMB_TAGS, tags);
+					}
+					// Extended Description
 					if(f->extdesc != NULL && *f->extdesc) {
 						if(!noyes(text[DeleteExtDescriptionQ])) {
 							// TODO
@@ -888,14 +903,14 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					bputs(text[EditUploader]);
 					if(!getstr(uploader, sizeof(uploader), K_EDIT|K_AUTODEL))
 						break;
-					smb_hfield_str(f, SMB_FILEUPLOADER, uploader);
+					smb_new_hfield_str(f, SMB_FILEUPLOADER, uploader);
 					ultoa(f->cost,str,10);
 					bputs(text[EditCreditValue]);
 					getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL);
 					if(sys_status&SS_ABORT)
 						break;
 					f->cost = atol(str);
-					smb_hfield_bin(f, SMB_COST, f->cost);
+					smb_new_hfield(f, SMB_COST, sizeof(f->cost), &f->cost);
 					ultoa(f->hdr.times_downloaded,str,10);
 					bputs(text[EditTimesDownloaded]);
 					getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL);

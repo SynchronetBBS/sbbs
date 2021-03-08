@@ -43,8 +43,22 @@ void sbbs_t::fileinfo(smbfile_t* f)
 
 	bprintf(P_TRUNCATE, text[FiCredits]
 		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : ultoac((ulong)f->cost,tmp));
+	if(getfilesize(&cfg, f) > 0 &&  f->size == f->file_idx.idx.size) {
+		if(f->file_idx.hash.flags & SMB_HASH_CRC16) {
+			SAFEPRINTF(tmp, "%04x", f->file_idx.hash.data.crc16);
+			bprintf(P_TRUNCATE, text[FiChecksum], "CRC-16", tmp);
+		}
+		if(f->file_idx.hash.flags & SMB_HASH_CRC32) {
+			SAFEPRINTF(tmp, "%08x", f->file_idx.hash.data.crc32);
+			bprintf(P_TRUNCATE, text[FiChecksum], "CRC-32", tmp);
+		}
+		if(f->file_idx.hash.flags & SMB_HASH_MD5)
+			bprintf(P_TRUNCATE, text[FiChecksum], "MD5", MD5_hex(tmp, f->file_idx.hash.data.md5));
+	}
 	if(f->desc && f->desc[0])
 		bprintf(P_TRUNCATE, text[FiDescription],f->desc);
+	if(f->tags && f->tags[0])
+		bprintf(P_TRUNCATE, text[FiTags], f->tags);
 	char* p = f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from;
 	if(p != NULL && *p != '\0')
 		bprintf(P_TRUNCATE, text[FiUploadedBy], p);

@@ -307,12 +307,12 @@ enum {
 	,TempFileInfo
 	,TempDirTotal
 	,NFilesRemoved
-	,ResortWarning
-	,ResortLineFmt
-	,ResortEmptyDir
-	,Sorting
-	,Sorted
-	,Compressed
+	,TagFileQ
+	,TagFilePrompt
+	,FiTags
+	,Unused300
+	,Unused301
+	,Unused302
 	,FileAlreadyInQueue
 	,FileIsNotOnline
 	,FileAddedToBatDlQueue
@@ -338,7 +338,7 @@ enum {
 	,FiTransferTime
 	,FiAlternatePath
 	,InvalidAlternatePathN
-	,FileIsOpen
+	,FiChecksum
 	,HappyBirthday
 	,TimeToChangePw
 	,NewPasswordQ
