@@ -1,8 +1,6 @@
-/* $Id: update.js,v 1.10 2020/05/05 01:09:27 rswindell Exp $ */
+/* Synchronet v3.15+ update script (to be executed with jsexec) */
 
-/* Synchronet v3.15 update script (to be executed with jsexec) */
-
-const REVISION = "$Revision: 1.10 $".split(' ')[1];
+const REVISION = "1.11";
 
 var test = argv.indexOf("-test") >= 0;
 
@@ -207,4 +205,12 @@ for(var i in src_files) {
 	print("Building " + bin);
 	if(!test)
 		system.exec(system.exec_dir + "baja " + src_files[i]);
+}
+
+print("Checking for v3.19 file bases");
+var dir_idx = directory(system.data_dir + "dirs/*.sid");
+if(!dir_idx || !dir_idx.length) {
+	var cmdline = system.exec_dir + "upgrade_to_v319";
+	print("No v3.19 file bases found, running " + cmdline);
+	system.exec(cmdline);
 }
