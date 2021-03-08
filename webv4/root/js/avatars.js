@@ -56,7 +56,7 @@ const Avatars = new ( function () {
 
         const u = [];
         for (let e of [].concat(user)) {
-            const a = await sbbs.avatars.get(e);
+            const a = await sbbs.avatars.users.get(e);
             if (!a) {
                 u.push(e);
             } else {
@@ -70,12 +70,12 @@ const Avatars = new ( function () {
             if (e.data) {
                 gc.from_bin(atob(e.data), 10, 6, dataURL => {
                     const o = { ...e, dataURL };
-                    sbbs.avatars.set(o);
+                    sbbs.avatars.users.set(o);
                     draw(o);
                 }, true);
             } else {
                 const o = { user: e.user, data: null, dataURL: null, created: -1, updated: -1 };
-                sbbs.avatars.set(o);
+                sbbs.avatars.users.set(o);
                 draw(o);
             }
         });
