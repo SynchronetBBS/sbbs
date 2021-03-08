@@ -96,7 +96,6 @@
 
     // Upsert; returns false if no change or failed to upsert; returns true if change or new record
     async function updateData(schema, store, data) {
-        const db = await initDB(schema);
         const d = await getData(schema, store, data[schemas[schema][store].keyPath]);
         if (JSON.stringify(data) === JSON.stringify(d)) return false;
         return setData(schema, store, data);
