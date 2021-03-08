@@ -1,60 +1,16 @@
 require('sbbsdefs.js', 'MSG_DELETE');
 require('xjs.js', 'xjs_compile');
 load(settings.web_lib + 'mime-decode.js');
-load(settings.web_lib + 'avatars.js');
 
-var avatars = new Avatars();
-
-function listGroups() {
-    const response = [];
-    msg_area.grp_list.forEach(function (grp) {
-        if (grp.sub_list.length < 1) return;
-        response.push({
-            index: grp.index,
-            name: grp.name,
-            description: grp.description,
-            sub_count: grp.sub_list.length,
-            // unread: is_user() ? getGroupUnreadCount(grp.index) : null,
-        });
-    });
-    return response;
+function validString(s) {
+    return (typeof s === 'string' && s !== '');
 }
 
-// Returns an array of objects of "useful" information about subs
-function listSubs(group) {
-    return msg_area.grp_list[group].sub_list.map(function (e) {
-        const mb = new MsgBase(e.code);
-        if (!mb.open()) throw new Error(mb.error);
-        const ret = {
-            index: e.index,
-            code: e.code,
-            grp_index: e.grp_index,
-            grp_name: e.grp_name,
-            name: e.name,
-            description: e.description,
-            can_post: e.can_post,
-            is_operator: e.is_operator,
-            is_moderated: e.is_moderated,
-            scan_ptr: e.scan_ptr,
-            scan_cfg: e.scan_cfg,
-            // unread: is_user() ? getSubUnreadCount(mb) : null,
-            // newest: getNewestMessageInSub(mb),
-        };
-        mb.close();
-        return ret;
-    });
+function cleanSubject(subject) {
+    return subject.replace(/^(re:\s*)*/ig, '');
 }
 
-function getNewestMessageInSub(sub) {
-
-    var mb;
-    if (sub instanceof MsgBase) {
-        mb = sub;
-    } else {
-        mb = new MsgBase(sub.code);
-        if (!mb.open()) throw new Error(mb.error);
-    }
-    
+function getNewestMessageInSub(mb) {
     var h;
     var ret;
     for (var m = mb.last_msg; m >= mb.first_msg; m--) {
@@ -63,25 +19,11 @@ function getNewestMessageInSub(sub) {
         ret = {
             from: h.from,
             subject: h.subject,
-            date: h.when_written_time,
+            when_written_time: h.when_written_time,
         };
         break;
     }
-    
-    if (!(sub instanceof MsgBase)) mb.close();
-    
     return ret;
-
-}
-
-function getNewestMessagePerSub(grp) {
-    grp = parseInt(grp, 10);
-    if (isNaN(grp) || grp < 0 || !msg_area.grp_list[grp]) return [];
-    return msg_area.grp_list[grp].sub_list.reduce(function (a, c) {
-        const s = getNewestMessageInSub(c);
-        if (s !== undefined) a[c.code] = s;
-        return a;
-    }, {});
 }
 
 function getSubUnreadCount(sub) {
@@ -157,22 +99,6 @@ function getUnreadInThread(sub, thread, mkeys) {
     return count;
 }
 
-function getThreadVoteTotals(thread, mkeys) {
-    if (!mkeys) mkeys = Object.keys(thread.messages); // Not sure why it doesn't just do this already - does anything else call getThreadVoteTotals?
-    return mkeys.reduce(function (a, c, i) {
-        if (thread.messages[c].upvotes > 0) {
-            if (i == 0) a.up.p++;
-            a.up.t++;
-        }
-        if (thread.messages[c].downvotes > 0) {
-            if (i == 0) a.down.p++;
-            a.down.t++;
-        }
-        a.total = a.up.t + a.down.t;
-        return a;
-    }, { up: { p: 0, t: 0 }, down: { p: 0, t: 0 }, total: 0 });
-}
-
 // Called from lib/events/forum.js to scan a sub for updates
 // Very similar to listThreads, but the reply is smaller and there is no paging/offset
 function getThreadStats(sub, guest) {
@@ -194,83 +120,6 @@ function getThreadStats(sub, guest) {
             unread: guest ? 0 : getUnreadInThread(sub, thread, mkeys),
             votes: getThreadVoteTotals(thread, mkeys),
         };
-    });
-    return ret;
-}
-
-function listThreads(sub, count, after) {
-
-    count = parseInt(count, 10);
-    if (isNaN(count) || count < 1) return false;
-
-    var threads = getMessageThreads(sub, settings.max_messages);
-    var offset = 0;
-    if (after) offset = threads.order.indexOf(after) + 1;
-
-    var msgs;
-    var thread;
-    var stop = Math.min(threads.order.length, offset + count);
-    var ret = { total: threads.order.length, threads : [] };
-    for (var n = offset; n < stop; n++) {
-        thread = threads.thread[threads.order[n]];
-        msgs = Object.keys(thread.messages);
-        ret.threads.push({
-            id: thread.id,
-            subject: thread.subject,
-            first: thread.messages[msgs[0]],
-            last: thread.messages[msgs[msgs.length - 1]],
-            messages: msgs.length,
-            sub: sub,
-            unread: is_user() ? getUnreadInThread(sub, thread) : 0,
-            votes: getThreadVoteTotals(thread),
-        });
-    }
-
-    return ret;
-
-}
-
-function getVotesInThread(sub, thread) {
-    var ret = { t : { u : 0, d : 0 }, m : {} };
-    if (msg_area.sub[sub] === undefined) return ret;
-    if (typeof thread === 'number') {
-        var threads = getMessageThreads(sub, settings.max_messages);
-        if (threads.thread[thread] === undefined) return ret;
-        thread = threads.thread[thread];
-    }
-    var msgBase = new MsgBase(sub);
-    if (!msgBase.open()) return ret;
-    Object.keys(thread.messages).forEach(function (m) {
-        if (thread.messages[m].upvotes > 0 || thread.messages[m].downvotes > 0) {
-            ret.t.up += thread.messages[m].upvotes;
-            ret.t.down += thread.messages[m].downvotes;
-            ret.m[thread.messages[m].number] = {
-                u: thread.messages[m].upvotes,
-                d: thread.messages[m].downvotes,
-                v: msgBase.how_user_voted(thread.messages[m].number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias),
-            };
-        }
-    });
-    msgBase.close();
-    return ret;
-}
-
-function getVotesInThreads(sub) {
-    var threads = getMessageThreads(sub, settings.max_messages);
-    var ret = {};
-    Object.keys(threads.thread).forEach(function (t) {
-        Object.keys(threads.thread[t].messages).forEach(function (m, i) {
-            if (threads.thread[t].messages[m].upvotes < 1 && threads.thread[t].messages[m].downvotes < 1) return;
-            if (ret[t] === undefined) {
-                ret[t] = { p: { u: 0, d: 0 }, t: { u: 0, d: 0 } };
-                if (i < 1) {
-                    ret[t].p.u = threads.thread[t].messages[m].upvotes;
-                    ret[t].p.d = threads.thread[t].messages[m].downvotes;
-                }
-            }
-            ret[t].t.u += threads.thread[t].messages[m].upvotes;
-            ret[t].t.d += threads.thread[t].messages[m].downvotes;
-        });
     });
     return ret;
 }
@@ -434,31 +283,6 @@ function getMailBody(number) {
     return ret;
 }
 
-function addTwit(str) {
-    const f = new File(system.ctrl_dir + 'twitlist.cfg');
-    if (!f.open('a')) {
-        log(LOG_ERR, 'Failed to add ' + str + ' to twitlist');
-        return;
-    }
-    f.writeln(str);
-    f.close();
-}
-
-// Returns the user's signature, or an empty String
-function getSignature() {
-    var fn = format('%s/user/%04d.sig', system.data_dir, user.number);
-    if (!file_exists(fn)) return '';
-    var f = new File(fn);
-    f.open('r');
-    if (js.global.utf8_encode) {
-    	var signature = utf8_encode(f.read());
-    } else {
-        var signature = ascii_str(f.read());
-    }
-    f.close();
-    return signature;
-}
-
 // Post a messge to 'sub'
 // Called by postNew/postReply, not directly
 function postMessage(sub, header, body) {
@@ -523,115 +347,6 @@ function postMail(header, body) {
     }
     if (ret) user.sent_email();
     return ret;
-}
-
-// Post a new (non-reply) message to 'sub'
-function postNew(sub, to, subject, body) {
-    if (typeof sub !== 'string' ||
-        typeof to !== 'string' ||
-        to === '' ||
-        typeof subject !== 'string' ||
-        subject === '' ||
-        typeof body !== 'string' ||
-        body === ''
-    ) {
-        return false;
-    }
-    var header = {
-        to : to,
-        from : user.alias,
-        from_ext : user.number,
-        subject : subject
-    };
-    if (sub === 'mail') {
-	header.to_ext = system.matchuser(to);
-	if (header.to_ext === 0)
-		header.to_net_addr = header.to;
-        return postMail(header, body);
-    } else {
-        return postMessage(sub, header, body);
-    }
-}
-
-// Add a new message to 'sub' in reply to parent message 'pid'
-function postReply(sub, body, pid) {
-    var ret = false;
-    if (typeof sub !== 'string' || typeof body !== 'string' || typeof pid !== 'number') return ret;
-    try {
-        var msgBase = new MsgBase(sub);
-        msgBase.open();
-        var pHeader = msgBase.get_msg_header(pid);
-        msgBase.close();
-        if (pHeader === null) return ret;
-        var header = {
-            to: pHeader.from == user.alias ? pHeader.to : pHeader.from,
-            from: user.alias,
-            from_ext: user.number,
-            subject: pHeader.subject,
-            thread_id: pHeader.thread_id === undefined ? pHeader.number : pHeader.thread_id,
-            thread_back: pHeader.number,
-        };
-        if (sub === 'mail') {
-            if (typeof pHeader.from_net_addr !== 'undefined') header.to_net_addr = pHeader.from_net_addr;
-            ret = postMail(header, body);
-        } else {
-            ret = postMessage(sub, header, body);
-        }
-    } catch (err) {
-        log(err);
-    }
-    return ret;
-}
-
-function postPoll(sub, subject, votes, results, answers, comments) {
-
-    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) return false;
-    if (typeof msg_area.sub[sub] === 'undefined' || !msg_area.sub[sub].can_post) return false;
-    if (typeof subject !== 'string' || subject.length < 1) return false;
-    if (!Array.isArray(answers) || answers.length < 2) return false;
-
-    votes = parseInt(votes);
-    if (isNaN(votes) || votes < 1 || votes > 15) return false;
-    if (votes > answers) votes = answers;
-
-    results = parseInt(results);
-    if (isNaN(results) || results < 0 || results > 3) return false;
-
-    var header = {
-        attr: MSG_POLL,
-        subject: subject.substr(0, LEN_TITLE),
-        from: msg_area.sub[sub].settings&SUB_AONLY ? 'Anonymous' : (msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias),
-        from_ext: user.number,
-        to: 'All',
-        field_list: [],
-        auxattr: (results<<POLL_RESULTS_SHIFT) | MSG_HFIELDS_UTF8,
-        votes: votes
-    };
-
-    if (Array.isArray(comments)) {
-        comments.forEach(function (e) {
-            header.field_list.push({
-                type: SMB_COMMENT,
-                data: e.substr(0, LEN_TITLE),
-            });
-        });
-    }
-
-    answers.forEach(function (e) {
-        header.field_list.push({
-            type: SMB_POLL_ANSWER,
-            data: e.substr(0, LEN_TITLE),
-        });
-    });
-
-    var msgBase = new MsgBase(sub);
-    if (!msgBase.open()) return false;
-    var ret = msgBase.add_poll(header);
-    msgBase.close();
-
-    if (ret) user.posted_message();
-    return ret;
-
 }
 
 // Delete a message if
@@ -878,258 +593,206 @@ function formatMessage(body, ansi, exascii) {
 
 }
 
-function setScanCfg(sub, cfg) {
-
-    var opts = [
-        0,
-        SCAN_CFG_NEW,
-        SCAN_CFG_YONLY
-    ];
-
-    if (msg_area.sub[sub] === undefined) return false;
-
-    cfg = parseInt(cfg);
-    if (isNaN(cfg) || cfg < 0 || cfg > 2) return false;
-
-    if (cfg === 2) opts[cfg]|=SCAN_CFG_NEW;
-
-    msg_area.sub[sub].scan_cfg = opts[cfg];
-    return true;
-
-}
-
-function getMessageThreads(sub, max) {
-
-    var threads = {
-        thread: {},
-        order: [],
-    };
-    var subjects = {};
-
-    if (msg_area.sub[sub] === undefined) return threads;
-    if (!msg_area.sub[sub].can_read) return threads;
-
-    function addToThread(thread_id, header, subject) {
-        if (subject !== undefined) subjects[subject] = thread_id;
-        if (header.when_written_time > threads.thread[thread_id].newest) {
-            threads.thread[thread_id].newest = header.when_written_time;
-        }
-        if (is_user() && header.number > msg_area.sub[sub].scan_ptr) {
-            threads.thread[thread_id].unread++;
-        }
-        threads.thread[thread_id].messages[header.number] = {
-            attr: header.attr,
-            auxattr: header.auxattr,
-            number: header.number,
-            from: (header.attr&MSG_ANONYMOUS) ? "Anonymous" : (header.is_utf8 ? header.from : utf8_encode(header.from)),
-            from_ext: header.from_ext,
-            from_net_addr: header.from_net_addr,
-            to: header.is_utf8 ? header.to : utf8_encode(header.to),
-            when_written_time: header.when_written_time,
-            upvotes: (header.attr&MSG_POLL ? 0 : (header.upvotes || 0)),
-            downvotes: (header.attr&MSG_POLL ? 0 : (header.downvotes || 0)),
-            is_utf8: header.is_utf8
-        };
-        if (header.attr&MSG_POLL) {
-            header.field_list.sort(function (a, b) {
-                if (a.type === 0x62) return -1;
-                if (b.type === 0x62) return 1;
-                return 0;
-            });
-            threads.thread[thread_id].messages[header.number].poll_comments = [];
-            threads.thread[thread_id].messages[header.number].poll_answers = [];
-            header.field_list.forEach(function (e) {
-                if (e.type === SMB_COMMENT) {
-                    threads.thread[thread_id].messages[header.number].poll_comments.push(e);
-                } else if (e.type === SMB_POLL_ANSWER) {
-                    threads.thread[thread_id].messages[header.number].poll_answers.push(e);
-                }
-            });
-            threads.thread[thread_id].messages[header.number].votes = header.votes;
-            threads.thread[thread_id].messages[header.number].tally = header.tally || [];
-            threads.thread[thread_id].messages[header.number].subject = header.subject;
-        } else {
-            threads.thread[thread_id].votes.up += (header.upvotes || 0);
-            threads.thread[thread_id].votes.down += (header.downvotes || 0);
-        }
-    }
-
-    function getSomeMessageHeaders(msgBase, count) {
-        var start = msgBase.last_msg - count;
-        if (start < msgBase.first_msg) start = msgBase.first_msg;
-        var headers = {};
-        var c = 0;
-        for (var m = start; m <= msgBase.last_msg; m++) {
-            var header = msgBase.get_msg_header(m);
-            if (header === null || header.attr&MSG_DELETE) continue;
-            if (settings.forum_no_spam && is_spam(header)) continue;
-            headers[header.number] = header;
-            c++;
-            if (c >= count) break;
-        }
-        return headers;
-    }
-
-    var msgBase = new MsgBase(sub);
-    if (!msgBase.open()) return threads;
-    if ((typeof max == 'number' && max > 0) || typeof msgBase.get_all_msg_headers != 'function') {
-        var headers = getSomeMessageHeaders(msgBase, max);
-    } else {
-        var headers = msgBase.get_all_msg_headers();
-    }
-    msgBase.close();
-    if (!headers) return threads;
-
-    Object.keys(headers).forEach(function (h) {
-
-        if (headers[h] === null || headers[h].attr&MSG_DELETE) {
-            delete headers[h];
-            return;
-        }
-
-        if (settings.forum_no_spam && is_spam(header)) {
-            delete headers[h];
-            return;
-        }
-
-        if (sub === 'mail' &&
-            headers[h].to !== user.alias &&
-            headers[h].to !== user.name &&
-            headers[h].to_ext !== user.number &&
-            headers[h].from !== user.alias &&
-            headers[h].from !== user.name &&
-            headers[h].from_ext !== user.number
-        ) {
-            delete headers[h];
-            return;
-        }
-
-        var subject = headers[h].subject.replace(/^(re:\s*)*/ig, '');
-
-        if (subjects[subject] !== undefined) {
-            addToThread(subjects[subject], headers[h]);
-        } else if (headers[h].thread_id !== 0) {
-            if (threads.thread[headers[h].thread_id] === undefined) {
-                threads.thread[headers[h].thread_id] = {
-                    id: headers[h].thread_id,
-                    newest: 0,
-                    subject: headers[h].subject,
-                    messages: {},
-                    votes: {
-                        up: 0,
-                        down: 0
-                    },
-                    unread: 0
-                };
-            }
-            addToThread(headers[h].thread_id, headers[h], subject);
-        } else if (headers[h].thread_back !== 0) {
-            if (threads.thread[headers[h].thread_back] !== undefined) {
-                addToThread(headers[h].thread_back, headers[h], subject);
-            } else {
-                var threaded = false;
-                for (var t in threads.thread) {
-                    if (threads.thread[t].messages[headers[h].thread_back] !== undefined) {
-                        addToThread(t, headers[h], subject);
-                        threaded = true;
-                        break;
-                    }
-                }
-                if (!threaded) {
-                    threads.thread[headers[h].thread_back] = {
-                        id: headers[h].thread_back,
-                        newest: 0,
-                        subject: headers[h].subject,
-                        messages: {},
-                        votes: {
-                            up: 0,
-                            down: 0
-                        },
-                        unread: 0
-                    };
-                    addToThread(headers[h].thread_back, headers[h], subject);
-                }
-            }
-        } else {
-            threads.thread[headers[h].number] = {
-                id: headers[h].number,
-                newest: 0,
-                subject: headers[h].subject,
-                messages: {},
-                votes: {
-                    up: 0,
-                    down: 0
-                },
-                unread: 0
-            };
-            addToThread(headers[h].number, headers[h], subject);
-        }
-
-        delete headers[h];
-
-    });
-
-    threads.order = Object.keys(threads.thread).sort(function (a, b) {
-        return threads.thread[b].newest - threads.thread[a].newest;
-    });
-
-    return threads;
-
-}
-
-function getMessageThread(sub, thread, count, after, reload) {
-
-    thread = parseInt(thread, 10);
-    if (isNaN(thread)) return [];
-    count = parseInt(count, 10);
-    if (isNaN(count)) return [];
-
-    const t = getMessageThreads(sub, settings.max_messages).thread[thread];
-    const mkeys = Object.keys(t.messages);
-    var m; // Current message
-    var r = 0; // Messages returned
-    var n = 0; // Index into t.messages
-    if (after) {
-        var i = mkeys.indexOf(after);
-        if (reload) {
-            if (i >= 0) count += i + 1;
-        } else {
-            if (i < 0) return [];
-            n = i + 1;
-        }
-    }
-
-    const msgBase = new MsgBase(sub);
-
-    return function threadIterator() {
-        if (r >= count || n >= mkeys.length) {
-            if (msgBase.is_open) msgBase.close();
-            return null; // Done
-        }
-        if (!msgBase.is_open && !msgBase.open()) {
-            throw new Error('Failed to open ' + sub);
-        }
-        m = t.messages[mkeys[n]];
-        const body = msgBase.get_msg_body(m.number);
-        if (body === null) {
-            n++;
-            return threadIterator();
-        }
-        if (r == 0) m.subject = t.subject;
-        m.body = formatMessage(body);
-        n++;
-        r++;
-        return m;
-    }
-
-}
-
-function cleanSubject(subject) {
-    return subject.replace(/^(re:\s*)*/ig, '');
-}
-
 var forum = {
 
+    addTwit: function addTwit(str) {
+        const f = new File(system.ctrl_dir + 'twitlist.cfg');
+        if (!f.open('a')) {
+            log(LOG_ERR, 'Failed to add ' + str + ' to twitlist');
+            return;
+        }
+        f.writeln(str);
+        f.close();
+    },
+
+    // get-signature
+    // Returns the user's signature, or an empty String
+    getSignature: function getSignature() {
+        var f = new File(format('%s/user/%04d.sig', system.data_dir, user.number));
+        if (!f.exists || !f.open('r')) return '';
+        if (js.global.utf8_encode) {
+            var signature = utf8_encode(f.read());
+        } else {
+            var signature = ascii_str(f.read());
+        }
+        f.close();
+        return signature;
+    },
+
+    // list-groups
+    listGroups: function listGroups() {
+        const response = [];
+        msg_area.grp_list.forEach(function (grp) {
+            if (grp.sub_list.length < 1) return;
+            response.push({
+                index: grp.index,
+                name: grp.name,
+                description: grp.description,
+                sub_count: grp.sub_list.length,
+            });
+        });
+        return response;
+    },
+
+    // list-subs
+    listSubs: function listSubs(group) {
+        return msg_area.grp_list[group].sub_list.map(function (e) {
+            const mb = new MsgBase(e.code);
+            if (!mb.open()) throw new Error(mb.error);
+            const ret = {
+                index: e.index,
+                code: e.code,
+                grp_index: e.grp_index,
+                grp_name: e.grp_name,
+                name: e.name,
+                description: e.description,
+                can_post: e.can_post,
+                is_operator: e.is_operator,
+                is_moderated: e.is_moderated,
+                scan_ptr: e.scan_ptr,
+                scan_cfg: e.scan_cfg,
+                newest: getNewestMessageInSub(mb),
+            };
+            mb.close();
+            return ret;
+        });
+    },
+
+    // get-newest-message-per-sub (getNewestMessagePerSub)
+    getNewestMessagePerSub: function getNewestMessagePerSub(grp) {
+        grp = parseInt(grp, 10);
+        if (isNaN(grp) || grp < 0 || !msg_area.grp_list[grp]) return [];
+        return msg_area.grp_list[grp].sub_list.reduce(function (a, c) {
+            // const s = getNewestMessageInSub(c);
+            // if (s !== undefined) a[c.code] = s;
+            return a;
+        }, {});
+    },
+
+    // set-scan-cfg (setScanCfg)
+    setScanCfg: function setScanCfg(sub, cfg) {
+
+        var opts = [
+            0,
+            SCAN_CFG_NEW,
+            SCAN_CFG_YONLY
+        ];
+    
+        if (msg_area.sub[sub] === undefined) return false;
+    
+        cfg = parseInt(cfg);
+        if (isNaN(cfg) || cfg < 0 || cfg > 2) return false;
+    
+        if (cfg === 2) opts[cfg]|=SCAN_CFG_NEW;
+    
+        msg_area.sub[sub].scan_cfg = opts[cfg];
+        return true;
+    
+    },
+
+    // post
+    // Post a new (non-reply) message to 'sub'
+    postNew: function postNew(sub, to, subject, body) {
+        if (!validString(sub) || !validString(to) || !validString(subject) || !validString(body)) return false;
+        var header = {
+            to: to,
+            from: user.alias,
+            from_ext: user.number,
+            subject: subject
+        };
+        if (sub === 'mail') {
+            header.to_ext = system.matchuser(to);
+            if (header.to_ext === 0) header.to_net_addr = header.to;
+            return postMail(header, body);
+        } else {
+            return postMessage(sub, header, body);
+        }
+    },
+
+    // post-reply
+    // Add a new message to 'sub' in reply to parent message 'pid'
+    postReply: function postReply(sub, body, pid) {
+        var ret = false;
+        if (typeof sub !== 'string' || typeof body !== 'string' || typeof pid !== 'number') return ret;
+        try {
+            var msgBase = new MsgBase(sub);
+            msgBase.open();
+            var pHeader = msgBase.get_msg_header(pid);
+            msgBase.close();
+            if (pHeader === null) return ret;
+            var header = {
+                to: pHeader.from == user.alias ? pHeader.to : pHeader.from,
+                from: user.alias,
+                from_ext: user.number,
+                subject: pHeader.subject,
+                thread_id: pHeader.thread_id === undefined ? pHeader.number : pHeader.thread_id,
+                thread_back: pHeader.number,
+            };
+            if (sub === 'mail') {
+                if (typeof pHeader.from_net_addr !== 'undefined') header.to_net_addr = pHeader.from_net_addr;
+                ret = postMail(header, body);
+            } else {
+                ret = postMessage(sub, header, body);
+            }
+        } catch (err) {
+            log(err);
+        }
+        return ret;
+    },
+
+    // submit-poll
+    postPoll: function postPoll(sub, subject, votes, results, answers, comments) {
+
+        if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) return false;
+        if (typeof msg_area.sub[sub] === 'undefined' || !msg_area.sub[sub].can_post) return false;
+        if (typeof subject !== 'string' || subject.length < 1) return false;
+        if (!Array.isArray(answers) || answers.length < 2) return false;
+    
+        votes = parseInt(votes);
+        if (isNaN(votes) || votes < 1 || votes > 15) return false;
+        if (votes > answers) votes = answers;
+    
+        results = parseInt(results);
+        if (isNaN(results) || results < 0 || results > 3) return false;
+    
+        var header = {
+            attr: MSG_POLL,
+            subject: subject.substr(0, LEN_TITLE),
+            from: msg_area.sub[sub].settings&SUB_AONLY ? 'Anonymous' : (msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias),
+            from_ext: user.number,
+            to: 'All',
+            field_list: [],
+            auxattr: (results<<POLL_RESULTS_SHIFT) | MSG_HFIELDS_UTF8,
+            votes: votes
+        };
+    
+        if (Array.isArray(comments)) {
+            comments.forEach(function (e) {
+                header.field_list.push({
+                    type: SMB_COMMENT,
+                    data: e.substr(0, LEN_TITLE),
+                });
+            });
+        }
+    
+        answers.forEach(function (e) {
+            header.field_list.push({
+                type: SMB_POLL_ANSWER,
+                data: e.substr(0, LEN_TITLE),
+            });
+        });
+    
+        var msgBase = new MsgBase(sub);
+        if (!msgBase.open()) return false;
+        var ret = msgBase.add_poll(header);
+        msgBase.close();
+    
+        if (ret) user.posted_message();
+        return ret;
+    
+    },
+
+    // list-threads (getThreadList)
     getThreadList: function getThreadList(sub) {
 
         const threads = {};
@@ -1138,6 +801,7 @@ var forum = {
 
         function addThread(h, s) {
             threads[h.thread_id] = {
+                id: h.thread_id,
                 first_message: {
                     from: h.from,
                     from_net_addr: h.from_net_addr,
@@ -1184,7 +848,6 @@ var forum = {
 
         var s; // "clean" subject of current message
         for (var h in headers) {
-            if (headers[h] === null) continue; // Unnecessary? Does get_all_message_headers exclude empty slots?
             if (headers[h].attr&MSG_DELETE) continue;
             s = cleanSubject(headers[h].subject);
             // If we don't yet have a thread for this message's thread_id:
@@ -1211,6 +874,7 @@ var forum = {
 
     },
 
+    // get-thread (getThread)
     getThread: function getThread(sub, id, onMessage) {
 
         id = parseInt(id, 10);
@@ -1233,7 +897,6 @@ var forum = {
         
         for (var h in headers) {
 
-            if (headers[h] === null) continue; // Unnecessary? Does get_all_message_headers exclude empty slots?
             if (headers[h].attr&MSG_DELETE) continue;
 
             s = cleanSubject(headers[h].subject);
@@ -1270,7 +933,7 @@ var forum = {
 
         mb.close();
 
-    }
+    },
 
 };
 
