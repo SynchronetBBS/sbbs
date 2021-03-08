@@ -61,7 +61,7 @@ for(s in msg_area.grp[grp].sub_list) {
 			msgs--;
         }
         msgbase.close();
-        thissub.messages=msgs;
+        thissub.messages=thissub.posts;
         thissub.lastmsg=lastdate;
 	}
 	template.subs.push(thissub);
