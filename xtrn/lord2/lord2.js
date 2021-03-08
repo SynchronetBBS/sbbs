@@ -3230,7 +3230,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 	var str;
 	var keys;
 
-	keys = ('QNP'+extras).split('');
+	keys = ('QNP93'+extras).split('');
 	keys.push('KEY_PGUP');
 	keys.push('KEY_PGDOWN');
 
@@ -3310,6 +3310,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 			switch(choice.ch) {
 				case 'KEY_PGDOWN':
 				case 'N':
+				case '3':
 					cur += cnt;
 					if (cur >= itms.length)
 						cur = itms.length - 1;
@@ -3317,6 +3318,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 					break;
 				case 'KEY_PGUP':
 				case 'P':
+				case '9':
 					cur -= cnt;
 					if (cur < 0)
 						cur = 0;
