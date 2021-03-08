@@ -631,9 +631,9 @@ You also earned 200 experience points and another quest point.`k
         @end
 
 @label notalk
-@routine clearmenu
 @do `p20 is 0
 @update
+@goto clearmenu
 @closescript
 
 @#Flirt
