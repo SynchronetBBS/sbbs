@@ -6950,10 +6950,10 @@ void DLLCALL web_server(void* arg)
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
-	(void)protected_uint32_init(&thread_count, 0);
+	protected_uint32_init(&thread_count, 0);
 
 	do {
-		(void)protected_uint32_init(&active_clients,0);
+		protected_uint32_init(&active_clients,0);
 
 		/* Setup intelligent defaults */
 		if(startup->port==0)					startup->port=IPPORT_HTTP;
