@@ -1410,9 +1410,9 @@ int main(int argc, char **argv, char** env)
 			}
 			continue;
 		}
+		module=argv[argn];
 #ifndef JSDOOR
 		char ini_section[MAX_PATH + 1];
-		module=argv[argn];
 		SAFECOPY(ini_section, getfname(module));
 		if((p = getfext(ini_section)) != NULL)
 			*p = 0;
