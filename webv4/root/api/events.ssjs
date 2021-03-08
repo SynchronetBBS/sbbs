@@ -22,7 +22,7 @@ function ping() {
 
 function emit(obj) {
     Object.keys(obj).forEach(function (e) {
-        write(e + ': ' + (typeof obj[e] == 'object' ? JSON.stringify(obj[e]) : obj[e]) + '\n');
+        writeln(e + ': ' + (typeof obj[e] == 'object' ? JSON.stringify(obj[e]) : obj[e]));
     });
     write('\n');
     last_send = time();
@@ -53,6 +53,6 @@ while (client.socket.is_connected) {
             delete callbacks[e];
         }
     });
-    mswait(50);
+    mswait(1000);
     ping();
 }
