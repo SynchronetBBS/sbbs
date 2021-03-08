@@ -125,20 +125,23 @@
 			<div class="row">
 				<div class="col-sm-9">
 					<strong data-thread-subject></strong>
-					<p>
+					<br />
+					<small>
 						<? locale.write('label_thread_from'); ?> 
 						<strong data-thread-from></strong> 
 						<? locale.write('label_message_date'); ?> 
 						<span data-thread-date-start></span>
-					</p>
+					</small>
 					<div data-replies hidden>
-						<strong data-message-count></strong>
-						<span data-suffix-reply hidden><? locale.write('suffix_reply_count'); ?>.</span>
-						<span data-suffix-replies hidden><? locale.write('suffix_replies_count'); ?>.</span>
-						<? locale.write('label_thread_latest_reply'); ?>
-						<strong data-last-from></strong>
-						<? locale.write('label_message_date'); ?> 
-						<span data-last-time></span>
+						<small>
+							<strong data-message-count></strong>
+							<span data-suffix-reply hidden><? locale.write('suffix_reply_count'); ?>.</span>
+							<span data-suffix-replies hidden><? locale.write('suffix_replies_count'); ?>.</span>
+							<? locale.write('label_thread_latest_reply'); ?>
+							<strong data-last-from></strong>
+							<? locale.write('label_message_date'); ?> 
+							<span data-last-time></span>
+						</small>
 					</div>
 				</div>
 				<div class="col-sm-3">
@@ -323,14 +326,14 @@
     <script type="text/javascript">
 
         registerEventListener('forum', e => {
-            const data = JSON.parse(e.data);
-            if (data.type != 'threads') return;
-            onThreadStats(data.data);
+            // const data = JSON.parse(e.data);
+            // if (data.type != 'threads') return;
+            // onThreadStats(data.data);
         }, {
             sub: '<? request.write_param("sub"); ?>',
 		});
 
-		listThreads('<? write(sub.code); ?>', <? write(settings.page_size); ?>);
+		listThreads('<? write(sub.code); ?>');
 
     </script>
 
