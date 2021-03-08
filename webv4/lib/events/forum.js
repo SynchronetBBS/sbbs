@@ -34,10 +34,10 @@ function forum_emit(evt, data) {
 function scan_groups() {
     const scan = getGroupUnreadCounts();
     if (!last_groups) {
-        forum_emit('groups_unread', scan);
+        // forum_emit('groups_unread', scan);
     } else {
         const diff = shallow_diff(last_groups, scan);
-        if (diff) forum_emit('groups_unread', scan);
+        // if (diff) forum_emit('groups_unread', scan);
     }
     last_groups = scan;
 }
@@ -76,7 +76,7 @@ function scan_threads(sub) {
 function cycle() {
     if (time() - last_run <= frequency) return;
     last_run = time();
-    if (is_real_user && request.has_param('groups_unread')) scan_groups();
+    if (is_real_user && request.has_param('group_stats')) scan_groups();
     if (is_real_user && request.has_param('subs_unread')) scan_subs(request.get_param('subs_unread'));
     if (request.has_param('sub')) scan_threads(request.get_param('sub'));
 }
