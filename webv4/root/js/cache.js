@@ -2,7 +2,7 @@
 
     const schemas = {
         avatars: {
-            avatars: {
+            users: {
                 keyPath: 'user',
             },
         },
@@ -12,15 +12,11 @@
             },
             subs: {
                 keyPath: 'code',
-                indexes: {
-                    keyPath: 'grp_index',
-                }
+                indexes: [ 'grp_index' ],
             },
             threads: {
                 keyPath: 'id',
-                indexes: {
-                    keyPath: 'sub',
-                },
+                indexes: [ 'sub' ],
             },
         },
     };
@@ -41,7 +37,7 @@
                 for (const [k, v] of Object.entries(schemas[schema])) {
                     const os = db.createObjectStore(k, { keyPath: v.keyPath });
                     if (v.indexes !== undefined) {
-                        for (const i of Object.values(v.indexes)) {
+                        for (const i of v.indexes) {
                             os.createIndex(i, i);
                         }
                     }
@@ -98,22 +94,26 @@
         });
     }
 
-    window.sbbs = {
-        avatars: {
-            get: user => getData('avatars', 'avatars', user),
-            set: user => setData('avatars', 'avatars', user),
-        },
-        forum: {
-            getGroup: data => getData('forum', 'groups', data),
-            setGroup: data => setData('forum', 'groups', data),
-            getGroups: () => getData('forum', 'groups'),
-            getSub: data => getData('forum', 'subs', data),
-            setSub: data => setData('forum', 'subs', data),
-            getSubs: c => getDataByIndex('forum', 'subs', 'grp_index', c),
-            getThread: data => getData('forum', 'threads', data),
-            setThread: data => setData('forum', 'threads', data),
-            getThreads: q => getDataByIndex('forum', 'threads', 'sub', q),
-        },
+    // Upsert; returns false if no change or failed to upsert; returns true if change or new record
+    async function updateData(schema, store, data) {
+        const db = await initDB(schema);
+        const d = await getData(schema, store, data[schemas[schema][store].keyPath]);
+        if (JSON.stringify(data) === JSON.stringify(d)) return false;
+        return setData(schema, store, data);
     }
 
+    window.sbbs = {};
+    for (const schema in schemas) {
+        window.sbbs[schema] = {};
+        for (const store in schemas[schema]) {
+            window.sbbs[schema][store] = {
+                get: key => getData(schema, store, key),
+                getAll: () => getData(schema, store),
+                getAllByIndex: (i, c) => getDataByIndex(schema, store, i, c),
+                set: data => setData(schema, store, data),
+                update: data => updateData(schema, store, data),
+            };
+        }
+    }
+ 
 })();
