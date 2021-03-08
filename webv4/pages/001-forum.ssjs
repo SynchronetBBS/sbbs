@@ -1,5 +1,7 @@
 //Forum
 
+exit();
+
 require('sbbsdefs.js', 'SYS_CLOSED');
 load(settings.web_lib + 'forum.js');
 load(settings.web_lib + 'avatars.js');
