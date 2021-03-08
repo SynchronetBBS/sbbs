@@ -6048,12 +6048,12 @@ void DLLCALL mail_server(void* arg)
 	terminate_server=FALSE;
 
 	SetThreadName("sbbs/mailServer");
-	(void)protected_uint32_init(&thread_count, 0);
+	protected_uint32_init(&thread_count, 0);
 
 	do {
 		listInit(&current_logins, LINK_LIST_MUTEX);
 		listInit(&current_connections, LINK_LIST_MUTEX);
-		(void)protected_uint32_init(&active_clients, 0);
+		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
 		if(startup->relay_port==0)				startup->relay_port=IPPORT_SMTP;
