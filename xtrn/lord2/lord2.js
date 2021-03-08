@@ -1929,7 +1929,7 @@ rescan:
 			ret = handle(args);
 		}
 		catch(e) {
-			log(LOG_ERROR, "REF Error "+e.message+" at "+efile+":"+eline);
+			log(LOG_ERROR, (new Date()).toString() + ", Node "+dk.connection.node+": REF Error "+e.message+" at "+efile+":"+eline);
 		}
 		if (typeof ret === 'object') {
 			if (ret.itemexit)
