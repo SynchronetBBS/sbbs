@@ -373,17 +373,16 @@
 
 	<script type="text/javascript">
 		(async () => {
-			await listSubs('<? request.write_param('group'); ?>')
-			// getNewestMessagePerSub('<? request.write_param('group'); ?>');
+			await listSubs('<? request.write_param('group'); ?>');
 		})();
 		<? if (is_user()) { ?>
-            registerEventListener('forum', e => {
-                const data = JSON.parse(e.data);
-                if (data.type != 'subs_unread') return;
-                onSubUnreadCount(data.data);
-            }, {
-				subs_unread: '<? request.write_param("group"); ?>',
-			});
+            // registerEventListener('forum', e => {
+            //     const data = JSON.parse(e.data);
+            //     if (data.type != 'subs_unread') return;
+            //     // onSubUnreadCount(data.data);
+            // }, {
+			// 	subs_unread: '<? request.write_param("group"); ?>',
+			// });
 		<? } ?>
     </script>
 
@@ -417,10 +416,10 @@
 			<? if (is_user()) { ?>
 				registerEventListener('forum', e => {
 					const data = JSON.parse(e.data);
-					if (data.type != 'groups_unread') return;
-					onGroupUnreadCount(data.data);
+					if (data.type != 'group_stats') return;
+					onGroupStats(data.data);
 				}, {
-					groups_unread: null,
+					group_stats: null,
 				});
 			<? } ?>
         </script>
