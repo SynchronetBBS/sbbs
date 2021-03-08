@@ -1,7 +1,7 @@
 function LoadingMessage() {
 
     let pos = 0;
-    let cursor = ['|', '/', '—', '\\' ];
+    let cursor = [ '|', '/', '—', '\\' ];
     let evt;
 
     const flc = document.getElementById('forum-list-container');
@@ -229,12 +229,7 @@ function lastVisibleMessage() {
     return ret;
 }
 
-async function listMessages(sub, thread, count, after) {
-
-    const dlmm = document.getElementById('forum-load-more-messages');
-    const blmm = document.getElementById('load-more-messages');
-    dlmm.setAttribute('hidden', true);
-    blmm.setAttribute('disabled', true);
+async function listMessages(sub, thread) {
 
     let _data;
     const loadingMessage = new LoadingMessage();
@@ -297,9 +292,6 @@ async function listMessages(sub, thread, count, after) {
         if (append) document.getElementById('forum-list-container').appendChild(elem);
         if (users.indexOf(akey) < 0) users.push(akey);
     });
-
-    dlmm.removeAttribute('hidden');
-    blmm.removeAttribute('disabled');
 
     if (Avatars) Avatars.draw(users);
 
@@ -414,7 +406,7 @@ async function listThread(e) {
 
     const stats = elem.querySelector('div[data-stats]');
     if (e.unread) {
-        const sub = await sbbs.forum.getSub(e.sub);
+        const sub = await sbbs.forum.subs.get(e.sub);
         const urm = stats.querySelector('span[data-unread-messages]');
         if (urm !== null) { // If user is guest, this element will not exist
             urm.innerHTML = e.unread;
@@ -443,50 +435,29 @@ async function listThread(e) {
     if (append) document.getElementById('forum-list-container').appendChild(elem);
 }
 
-async function listThreads(sub, count, after) {
+function onThreadList(data) {
+    Object.values(data).forEach(listThread);
+}
 
-    const dlmt = document.getElementById('forum-load-more-threads');
-    const blmt = document.getElementById('load-more-threads');
-    dlmt.setAttribute('hidden', true);
-    blmt.setAttribute('disabled', true);
+async function listThreads(sub) {
 
     const lm = new LoadingMessage();
     lm.start();
     let response;
-    let data = await sbbs.forum.getThreads(v => v.sub === sub);
+    let data = await sbbs.forum.threads.getAllByIndex('sub', v => v.sub === sub);
     if (data === undefined || !data.length) { // We have no local cache
-        if (after) { // User clicked "Load more" but we don't know what the newest visible thread is meant to be
-            const lastThread = lastVisibleThread();
-            if (lastThread === null) { // No threads in view, so start at the beginning
-                response = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}`);
-            } else { // Threads are in view, but we have no cache
-                // Rebuild cache and get next 'count' threads
-                response = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}&after=${lastThread}&reload=true`);
-            }
-        } else { // A clean first load of the page, or reload of first 'count' threads
-            response = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}`);
-        }
-    } else if (after) {
-        response = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}&after=${data[data.length - 1].id}`);
-        data = data.concat(response.threads);
+        data = await v4_get(`./api/forum.ssjs?call=get-thread-list&sub=${sub}`);
+        Object.values(data).forEach(sbbs.forum.threads.set);
     } else {
-        // TO DO: check for NEWER threads than what we have on hand
-        // fetch however many newer threads there are
-        // prepend them to the list
+        // Refresh the local cache
+        v4_get(`./api/forum.ssjs?call=get-thread-list&sub=${sub}`).then(data => {
+            Object.values(data).forEach(sbbs.forum.threads.set); // should be an update instead
+            onThreadList(data);
+        });
     }
     lm.stop();
 
-    if (response) {
-        response.threads.forEach(e => {
-            sbbs.forum.setThread(e);
-            listThread(e);
-        });
-    } else {
-        data.forEach(listThread);
-    }
-
-    dlmt.removeAttribute('hidden');
-    blmt.removeAttribute('disabled');
+    onThreadList(data);
 
 }
 
@@ -501,10 +472,10 @@ function showNewestMessage(elem, msg) {
 }
 
 async function onNewestSubMessage(sub, msg) {
-    const rec = await sbbs.forum.getSub(sub);
+    const rec = await sbbs.forum.subs.get(sub);
     if (rec !== undefined) {
         rec.newest_message = msg;
-        sbbs.forum.setSub(rec);
+        sbbs.forum.subs.set(rec);
     }
     const elem = document.getElementById(`forum-sub-link-${sub}`);
     if (elem !== null) showNewestMessage(elem, msg);
@@ -522,10 +493,10 @@ function showSubUnreadCount(elem, s, u) { // sub link element, sub code, { total
 
 function onSubUnreadCount(data) {
     Object.entries(data).forEach(async ([k, v]) => {
-        const sub = await sbbs.forum.getSub(k);
+        const sub = await sbbs.forum.subs.get(k);
         if (sub !== undefined) {
             sub.unread = v;
-            await sbbs.forum.setSub(sub);
+            await sbbs.forum.subs.set(sub);
         }
         const elem = document.getElementById(`forum-sub-link-${k}`);
         if (elem !== null) showSubUnreadCount(elem, k, v);
@@ -533,6 +504,7 @@ function onSubUnreadCount(data) {
 }
 
 function onSubList(data) {
+    console.debug(data);
     data.sort((a, b) => a.index < b.index ? -1 : 1).forEach(e => {
         let elem;
         let append = false;
@@ -546,7 +518,6 @@ function onSubList(data) {
         elem.querySelector('strong[data-sub-name]').innerHTML = e.name;
         elem.querySelector('p[data-sub-description]').innerHTML = e.description;
         showNewestMessage(elem, e.newest);
-        if (e.unread !== null) showSubUnreadCount(elem, e.code, e.unread);
         if (append) document.getElementById('forum-list-container').appendChild(elem);
     });
 }
@@ -556,13 +527,16 @@ async function listSubs(group) {
     const lm = new LoadingMessage();
     lm.start();
  
-    let data = await sbbs.forum.getSubs(v => v.grp_index === group);
+    let data = await sbbs.forum.subs.getAllByIndex('grp_index', (v => v.grp_index === group));
     if (data === undefined || !data.length) {
         data = await v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`);
-        data.forEach(async e => await sbbs.forum.setSub(e));
+        data.forEach(sbbs.forum.subs.set);
     } else {
         // TO DO: add a TTL for this data instead of refreshing every time
-        v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`).then(onSubList);
+        v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`).then(data => {
+            data.forEach(sbbs.forum.subs.set); // should be an update instead
+            onSubList(data);
+        });
     }
     lm.stop();
     onSubList(data);
@@ -577,56 +551,55 @@ function showGroupUnreadCount(elem, u) {
     if (u.scanned > 0) elem.querySelector('span[data-unread-scanned]').innerHTML = u.scanned;
 }
 
-function onGroupUnreadCount(data) {
+function onGroupStats(data) {
     Object.entries(data).forEach(async ([k, v]) => {
-        const elem = document.getElementById(`forum-group-link-${k}`);
-        showGroupUnreadCount(elem, v);
-        const grp = await sbbs.forum.getGroup(parseInt(k, 10));
-        if (grp !== undefined) {
-            grp.unread = v;
-            await sbbs.forum.setGroup(grp);
-        }
+        // const elem = document.getElementById(`forum-group-link-${k}`);
+        // showGroupUnreadCount(elem, v);
+        // const grp = await sbbs.forum.getGroup(parseInt(k, 10));
+        // if (grp !== undefined) {
+        //     grp.unread = v;
+        //     await sbbs.forum.setGroup(grp);
+        // }
     });
 }
 
-function onGroupList(data) {
-    data.forEach(e => {
-        let elem;
-        let append = false;
-        const elemId = `forum-group-link-${e.index}`;
-        if ((elem = document.getElementById(elemId)) === null) {
-            elem = document.getElementById('forum-group-link-template').cloneNode(true);
-            elem.id = elem.id.replace(/template$/, e.index);
-            elem.setAttribute('href', `${elem.getAttribute('href')}&group=${e.index}`);
-            append = true;
-        }
-        elem.querySelector('strong[data-group-name]').innerHTML = e.name;
-        elem.querySelector('span[data-unread-unscanned]').innerHTML = '';
-        elem.querySelector('span[data-unread-scanned]').innerHTML = '';
-        elem.querySelector('span[data-group-description]').innerHTML = e.description;
-        elem.querySelector('span[data-group-sub-count]').innerHTML = e.sub_count;
-        if (e.unread !== null) showGroupUnreadCount(elem, e.unread);
-        if (append) document.getElementById('forum-list-container').appendChild(elem);
-    });
+function listGroup(e) {
+    let elem;
+    let append = false;
+    const elemId = `forum-group-link-${e.index}`;
+    if ((elem = document.getElementById(elemId)) === null) {
+        elem = document.getElementById('forum-group-link-template').cloneNode(true);
+        elem.id = elem.id.replace(/template$/, e.index);
+        elem.setAttribute('href', `${elem.getAttribute('href')}&group=${e.index}`);
+        append = true;
+    }
+    elem.querySelector('strong[data-group-name]').innerHTML = e.name;
+    elem.querySelector('span[data-unread-unscanned]').innerHTML = '';
+    elem.querySelector('span[data-unread-scanned]').innerHTML = '';
+    elem.querySelector('span[data-group-description]').innerHTML = e.description;
+    elem.querySelector('span[data-group-sub-count]').innerHTML = e.sub_count;
+    if (append) document.getElementById('forum-list-container').appendChild(elem);
 }
 
 async function listGroups() {
     const lm = new LoadingMessage();
     lm.start();
-    let data = await sbbs.forum.getGroups();
+    let data = await sbbs.forum.groups.getAll();
     if (data === undefined) {
         console.debug('groups not in cache, fetching');
         data = await v4_get('./api/forum.ssjs?call=list-groups');
-        data.forEach(async e => await sbbs.forum.setGroup(e));
+        lm.stop();
+        data.forEach(async e => {
+            sbbs.forum.groups.set(e);
+            listGroup(e);
+        });
     } else {
         // TO DO: add a TTL for this data instead of refreshing every time
-        v4_get('./api/forum.ssjs?call=list-groups').then(async data => {
-            for (const e of data) {
-                await sbbs.forum.setGroup(e);
-            }
-            onGroupList(data);
+        data.forEach(listGroup);
+        lm.stop();
+        data = await v4_get('./api/forum.ssjs?call=list-groups')
+        data.forEach(async e => {
+            if (await sbbs.forum.groups.update(e)) listGroup(e);
         });
     }
-    onGroupList(data);
-    lm.stop();
 }
