@@ -1298,6 +1298,21 @@ function getsvar(args, offset, vname)
 	return v;
 }
 
+/*
+ * Returns a string if variable name is a string, but only takes one arg.
+ */
+function getsvar1(name, vname)
+{
+	var v = getvar(name);
+	var fv = getvar(vname);
+
+	if (typeof fv === 'string') {
+		if (typeof v !== 'string')
+			return replace_vars(name);
+	}
+	return v;
+}
+
 function expand_ticks(str)
 {
 	if (typeof str !== 'string')
