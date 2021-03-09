@@ -21,8 +21,6 @@
 <!-- Viewing a thread (list of messages) -->
 <? if (request.has_param('sub') && request.has_param('thread')) { ?>
 
-    <? var thread = getMessageThreads(request.get_param('sub'), settings.max_messages).thread[request.get_param('thread')]; ?>
-	
 	<script type="text/javascript" src="./js/graphics-converter.js"></script>
 	<script type="text/javascript" src="./js/avatars.js"></script>
 	
@@ -91,7 +89,7 @@
         </li>
         <li>
             <a href="./?page=<? request.write_param('page'); ?>&sub=<? request.write_param('sub'); ?>&thread=<? request.write_param('thread'); ?>">
-                <? write(thread.subject); ?>
+				<span data-message-subject></span>
             </a>
         </li>
     </ol>
@@ -110,11 +108,8 @@
 	</div>
 
 	<script type="text/javascript">
-		listMessages('<? request.write_param('sub'); ?>', <? request.write_param('thread'); ?>, <? write(settings.page_size); ?>);
-		// Should subscribe here for updates to the thread; need to add some functions to lib/forum.js, lib/events/forum.js, root/js/xjs-forum.js
+		listMessages('<? request.write_param('sub'); ?>', <? request.write_param('thread'); ?>);
 	</script>
-	
-	<!-- get n messages of thread and append to forum-list-container -->
 
 <!-- Viewing a sub (list of threads) -->
 <? } else if (request.has_param('sub') && msg_area.sub[request.get_param('sub')] !== undefined) { ?>
@@ -347,15 +342,20 @@
 			</h4>
 			<span title="<? locale.write('badge_unread_messages'); ?>" class="badge ignored" data-unread-unscanned></span>
 			<span title="<? locale.write('badge_unread_messages'); ?>" class="badge scanned" data-unread-scanned></span>
-			<p data-sub-description></p>
-			<span data-newest-message-container hidden>
-				<? locale.write('label_sub_newest_message'); ?>:
-				<strong data-newest-message-subject></strong>
-				<? locale.write('label_thread_from'); ?>
-				<span data-newest-message-from></span>
-				<? locale.write('label_message_date'); ?>
-				<span data-newest-message-date></span>
-			</span>
+			<small>
+				<span data-sub-description></span>
+			</small>
+			<br />
+			<small>
+				<span data-newest-message-container hidden>
+					<? locale.write('label_sub_newest_message'); ?>:
+					<strong data-newest-message-subject></strong>
+					<? locale.write('label_thread_from'); ?>
+					<span data-newest-message-from></span>
+					<? locale.write('label_message_date'); ?>
+					<span data-newest-message-date></span>
+				</span>
+			</small>
 		</a>
 	</div>
 
@@ -399,8 +399,10 @@
 			</h3>
 			<span title="<? locale.write('badge_unread_messages'); ?>" class="badge ignored" data-unread-unscanned></span>
 			<span title="<? locale.write('badge_unread_messages'); ?>" class="badge scanned" data-unread-scanned></span>
-			<span data-group-description></span>:
-			<span data-group-sub-count></span> <? locale.write('sub_boards'); ?>
+			<small>
+				<span data-group-description></span>:
+				<span data-group-sub-count></span> <? locale.write('sub_boards'); ?>
+			</small>
 		</a>
 	</div>
 
