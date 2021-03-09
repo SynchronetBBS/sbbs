@@ -1,4 +1,4 @@
-const Avatars = new ( function () {
+const Avatars = new (function () {
 
     const gc = new GraphicsConverter('./images/cp437-ibm-vga8.png', 8, 16, 64, 4);
 
