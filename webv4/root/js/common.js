@@ -71,7 +71,7 @@ async function logout() {
 
 function scrollUp() {
 	if (window.location.hash === '') return;
-	if ($('#navbar').length < 1) return;
+	if (document.getElementById('navbar') === null) return;
 	window.scrollBy(0, -document.getElementById('navbar').offsetHeight);
 }
 
