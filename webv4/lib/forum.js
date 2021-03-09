@@ -450,149 +450,6 @@ function submitPollAnswers(sub, number, answers) {
     return ret;
 }
 
-// Deuce's URL-ifier
-function linkify(body) {
-    urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
-    body = body.replace(urlRE, function (str) {
-        var ret = '';
-        var p = 0;
-        var link = str.replace(/\.*$/, '');
-        var linktext = link;
-        if (link.indexOf('://') === -1) link = 'mailto:' + link;
-        return ('<a class="ulLink" href="' + link + '">' + linktext + '</a>' + str.substr(linktext.length));
-    });
-    return body;
-}
-
-// Somewhat modified version of Deuce's "magical quoting stuff" from v3
-function quotify(body) {
-
-    var blockquote_start = '<blockquote>';
-    var blockquote_end = '</blockquote>';
-
-    var quote_depth=0;
-    var prefixes = [];
-
-    const ret = body.split(/\r?\n/).reduce(function (a, c) {
-        var line = '';
-        var line_prefix = '';
-        var m = c.match(/^((?:\s?[^\s]{0,3}&gt;\s?)+)/);
-        if (m !== null) {
-            var p;
-            var broken = false;            
-            var new_prefixes = m[1].match(/\s?[^\s]{0,3}&gt;\s?/g);
-            line = c;
-            // If the new length is smaller than the old one, close the extras
-            for (p = new_prefixes.length; p < prefixes.length; p++) {
-                if (quote_depth < 1) continue;
-                line_prefix = line_prefix + blockquote_end;
-                quote_depth--;
-            }
-            for (p in new_prefixes) {
-                // Remove prefix from start of line
-                line = line.substr(new_prefixes[p].length);
-                if (prefixes[p] === undefined) {
-                    /* New depth */
-                    line_prefix = line_prefix + blockquote_start;
-                    quote_depth++;
-                } else if (broken) {
-                    line_prefix = line_prefix + blockquote_start;
-                    quote_depth++;
-                } else if (prefixes[p].replace(/^\s*(.*?)\s*$/, '$1') != new_prefixes[p].replace(/^\s*(.*?)\s*$/, '$1')) {
-                    // Close all remaining old prefixes and start one new one
-                    for (var o = p; o < prefixes.length && o < new_prefixes.length; o++) {
-                        if (quote_depth > 0) {
-                            line_prefix = blockquote_end + line_prefix;
-                            quote_depth--;
-                        }
-                    }
-                    line_prefix = blockquote_start + line_prefix;
-                    quote_depth++;
-                    broken = true;
-                }
-            }
-            prefixes = new_prefixes.slice();
-            line = line_prefix + line;
-        } else {
-            for (p = 0; p < prefixes.length; p++) {
-                if (quote_depth < 1) continue;
-                line_prefix = line_prefix + blockquote_end;
-                quote_depth--;
-            }
-            prefixes = [];
-            line = line_prefix + c;
-        }
-        return a + line + '\r\n';
-    }, '');
-
-    if (quote_depth !== 0) {
-        for (;quote_depth > 0; quote_depth--) {
-            ret += blockquote_end;
-        }
-    }
-
-    return ret.replace(/\<\/blockquote\>\r\n<blockquote\>/g, '\r\n');
-
-}
-
-// Format message body for the web
-function formatMessage(body, ansi, exascii) {
-
-    // Workaround for html_encode(body, true, false, false, false);
-    // which causes a crash if body is empty
-    if (body === '') return body;
-
-    if (typeof ansi === 'boolean' && ansi) {
-
-        body = html_encode(body, true, false, true, true);
-        body = body.replace(/\r?\n+(<\/span>)?$/,'$1');
-        body = linkify(body);
-
-        // Get the last line
-        var body_m = body.match(/\n([^\n]*)$/);
-        if (body_m !== null) {
-            body = '<pre>'+body;
-            body_m[1] = body_m[1].replace(/&[^;]*;/g,".");
-            body_m[1] = body_m[1].replace(/<[^>]*>/g,"");
-            var lenremain = 80 - body_m[1].length;
-            while (lenremain > 0) {
-                body += '&nbsp;';
-                lenremain--;
-            }
-            body += '</pre>';
-        } else {
-            /* If we couldn't get the last line, add a line of 80 columns */
-            var line = "";
-            for (n = 0; n < 80; n++) {
-                line += '&nbsp;';
-            }
-            body = '<pre>' + body + line + "</pre>";
-        }
-
-    } else {
-
-        // Strip CTRL-A
-        body = body.replace(/\1./g,'');
-        // Strip ANSI
-        body = body.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'');
-        body = body.replace(/\x1b[\x40-\x7e]/g,'');
-        // Strip unprintable control chars (NULL, BEL, DEL, ESC)
-        body = body.replace(/[\x00\x07\x1b\x7f]/g,'');
-
-        // Format for the web
-        body = word_wrap(body, body.length);
-        body = html_encode(body, exascii, false, false, false);
-        body = quotify(body);
-        body = linkify(body);
-        body = body.replace(/\r\n$/,'');
-        body = body.replace(/(\r?\n)/g, "<br>$1");
-
-    }
-
-    return body;
-
-}
-
 var forum = {
 
     addTwit: function addTwit(str) {
@@ -621,17 +478,16 @@ var forum = {
 
     // list-groups
     listGroups: function listGroups() {
-        const response = [];
-        msg_area.grp_list.forEach(function (grp) {
-            if (grp.sub_list.length < 1) return;
-            response.push({
-                index: grp.index,
-                name: grp.name,
-                description: grp.description,
-                sub_count: grp.sub_list.length,
+        return msg_area.grp_list.reduce(function (a, c) {
+            if (c.sub_list.length < 1) return a;
+            a.push({
+                index: c.index,
+                name: c.name,
+                description: c.description,
+                sub_count: c.sub_list.length,
             });
-        });
-        return response;
+            return a;
+        }, []);
     },
 
     // list-subs
