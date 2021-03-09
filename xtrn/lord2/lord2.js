@@ -1114,7 +1114,8 @@ y			}
 			var tmp;
 
 			// TODO: This implies that the line "@do" will execute the next line... but this is used for @if parsing... also, this will choke on comments.
-			if (args.length < 1 || args.length == 1 && args[0].toLowerCase() === 'do') {
+			// TODO: I likely just broke @do do XXX, hopefully nobody notices until I rewrite this.
+			if (args.length < 1 || args[0].toLowerCase() === 'do') {
 				if (line + 1 >= files[fname].lines.length)
 					throw new Error('do at end of file');
 				// Trailing do is not fatal... see jump.ref:21 in cnw
