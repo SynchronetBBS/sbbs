@@ -372,11 +372,11 @@ function insane_run_ref(sec, fname, refret)
 					case '7':
 					case '8':
 					case '9':
-						i++;
+						ret++;
 						break;
 				}
 			}
-			setvar(args[0], i);
+			setvar(args[0], ret);
 			return;
 		},
 		'pad':function(args) {
