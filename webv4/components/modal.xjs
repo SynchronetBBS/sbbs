@@ -6,8 +6,12 @@
             </div>
             <div class="modal-body" id="popUpModalBody"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" id="popUpModalCloseButton"><? write(locale.strings.main.button_close); ?></button>
-                <button type="button" class="btn btn-primary" id="popUpModalActionButton" hidden><? write(locale.strings.main.button_submit); ?></button>
+                <button type="button" class="btn btn-default" id="popUpModalCloseButton">
+                    <? write(locale.strings.main.button_close); ?>
+                </button>
+                <button type="button" class="btn btn-primary" id="popUpModalActionButton" style="display:none;visibility:hidden;">
+                    <? write(locale.strings.main.button_submit); ?>
+                </button>
             </div>
         </div>
     </div>
