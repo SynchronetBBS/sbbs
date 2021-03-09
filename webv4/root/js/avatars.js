@@ -42,5 +42,4 @@ const Avatars = new ( function () {
 
     }
 
-
 })();
