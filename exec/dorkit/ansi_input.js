@@ -189,5 +189,8 @@ var ai={
 			this.ansi_started = 0;
 		}
 		return;
-	}
+	},
+	close:function() {
+		this.input_queue.write("CONNECTION_CLOSED");
+	},
 };

@@ -1,6 +1,7 @@
 /*jslint bitwise, this, devel, getset, for*/
 // TODO: Auto-pause stuff...
 
+js.auto_terminate = false;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 js.on_exit("js.load_path_list.shift()");
 if (js.global.system !== undefined) {
@@ -130,7 +131,8 @@ var dk = {
 			KEY_ALT_9:'KEY_ALT_9',
 			KEY_ALT_0:'KEY_ALT_0',
 			POSITION_REPORT:'POSITION_REPORT',
-			UNKNOWN_ANSI:'UNKNOWN_ANSI'
+			UNKNOWN_ANSI:'UNKNOWN_ANSI',
+			CONNECTION_CLOSED:'CONNECTION_CLOSED'
 		},
 
 		x:1,					// Current column (1-based)
@@ -471,6 +473,31 @@ var dk = {
 		 */
 		input_queue_callback:[],
 
+		Private_connection_close:function() {
+			dk.connection.active = false;
+			if (dk.connection.inactive_time === undefined)
+				dk.connection.inactive_time = system.timer;
+			js.terminated = true;
+		},
+
+		Private_connection_check:function() {
+			var elapsed;
+
+			if (dk.connection.inactive_time !== undefined) {
+				elapsed = system.timer - dk.connection.inactive_time;
+				if (elapsed > dk.connection.disconnect_timeout)
+					js.auto_terminate = true;
+				mswait(1);
+				return true;
+			}
+			else if (js.terminated) {
+				dk.connection.inactive_time = system.timer;
+				mswait(1);
+				return true;
+			}
+			return false;
+		},
+
 		/*
 		 * Waits up to timeout millisections and returns true if a key
 		 * is pressed before the timeout.  For ANSI sequences, returns
@@ -482,6 +509,8 @@ var dk = {
 			var d;
 			var end = (new Date()).valueOf() + timeout;
 
+			if (this.Private_connection_check())
+				return true;
 			if (this.keybuf.length > 0) {
 				return true;
 			}
@@ -518,9 +547,13 @@ var dk = {
 			var ret;
 			var m;
 
+			if (this.Private_connection_check())
+				return this.key.CONNECTION_CLOSED;
 			if (this.keybuf.length > 0) {
 				ret = this.keybuf.shift();
-				return ret;
+				if (ret !== this.key.CONNECTION_CLOSED)
+					return ret;
+				this.Private_connection_close();
 			}
 			if (!this.waitkey(0)) {
 				return undefined;
@@ -570,10 +603,14 @@ var dk = {
 			'use strict';
 			var ret;
 
+			if (this.Private_connection_check())
+				return undefined;
 			while (1) {
 				if (this.keybuf.length > 0) {
 					do {
 						ret = this.keybuf.shift();
+						if (ret === this.key.CONNECTION_CLOSED)
+							this.Private_connection_close();
 					} while(ret.length > 1 && ret.indexOf('\x00') === -1);
 					return ret;
 				}
@@ -856,7 +893,10 @@ var dk = {
 		error_correcting:true,
 		time:undefined,
 		socket:undefined,
-		telnet:false
+		telnet:false,
+		active:true,
+		inactive_time:undefined,
+		disconnect_timeout:30
 	},
 	user:{
 		full_name:undefined,

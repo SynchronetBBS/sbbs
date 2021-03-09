@@ -12,3 +12,4 @@ while(!js.terminated) {
 		ai.add(k);
 	}
 }
+ai.close();
