@@ -6,19 +6,6 @@
                 keyPath: 'user',
             },
         },
-        forum: {
-            groups: {
-                keyPath: 'index',
-            },
-            subs: {
-                keyPath: 'code',
-                indexes: [ 'grp_index' ],
-            },
-            threads: {
-                keyPath: 'id',
-                indexes: [ 'sub' ],
-            },
-        },
     };
 
     function initDB(schema) {
@@ -46,7 +33,7 @@
         });
     }
 
-    async function getDataByIndex(schema, store, index, condition) {
+    async function getDataByIndex(schema, store, index, predicate, forEach) {
         const db = await initDB(schema);
         return new Promise(res => {
             const ret = [];
@@ -54,8 +41,10 @@
             i.openCursor().onsuccess = evt => {
                 const cursor = evt.target.result;
                 if (cursor) {
-                    if (condition(cursor.value)) ret.push(cursor.value);
-                    // if (cursor.value[index] === query[index]) ret.push(cursor.value);
+                    if (predicate(cursor.value)) {
+                        if (typeof forEach === 'function') forEach(cursor.value);
+                        ret.push(cursor.value);
+                    }
                     cursor.continue();
                 } else {
                     res(ret);
@@ -108,7 +97,7 @@
             window.sbbs[schema][store] = {
                 get: key => getData(schema, store, key),
                 getAll: () => getData(schema, store),
-                getAllByIndex: (i, c) => getDataByIndex(schema, store, i, c),
+                getAllByIndex: (index, predicate, forEach) => getDataByIndex(schema, store, index, predicate, forEach),
                 set: data => setData(schema, store, data),
                 update: data => updateData(schema, store, data),
             };
