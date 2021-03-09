@@ -208,8 +208,16 @@ for(var i in src_files) {
 }
 
 print("Checking for v3.19 file bases");
-var dir_idx = directory(system.data_dir + "dirs/*.sid");
-if(!dir_idx || !dir_idx.length) {
+var upgraded = true;
+for(var d in file_area.dir) {
+	upgraded = false;
+	dir_idx = directory(file_area.dir[d].data_dir + "*.sid");
+	if(dir_idx && dir_idx.length) {
+		upgraded = true;
+		break;
+	}
+}
+if(!upgraded) {
 	var cmdline = system.exec_dir + "upgrade_to_v319";
 	print("No v3.19 file bases found, running " + cmdline);
 	system.exec(cmdline);
