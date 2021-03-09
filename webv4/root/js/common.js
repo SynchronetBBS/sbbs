@@ -50,18 +50,17 @@ async function v4_fetch_jsonl(url) {
 }
 
 async function login(evt) {
-	if ($('#input-username').val() == '' || $('#input-password').val() == '') {
-		return;
-	}
-	if (typeof evt !== 'undefined') evt.preventDefault();
-	const res = await v4_post('./api/auth.ssjs', {
-		username: $('#input-username').val(),
-		password: $('#input-password').val()
-	});
+	evt.preventDefault();
+	const username = document.getElementById('input-username').value;
+	const password = document.getElementById('input-password').value;
+	if (username == '' || password == '') return;
+	const lf = document.querySelector('span[data-login-failure]');
+	lf.setAttribute('hidden', true);
+	const res = await v4_post('./api/auth.ssjs', { username, password });
 	if (res.authenticated) {
-		window.location.reload(true);
+		window.location.reload();
 	} else {
-		$('#login-form').append('<p class="text-danger">Login failed</p>');
+		lf.removeAttribute('hidden');
 	}
 }
 
@@ -93,24 +92,35 @@ function insertParam(key, value) {
     window.location.search = kvp.join('&');
 }
 
-
 function sendTelegram(alias) {
-    function send_tg(evt) {
-        if (typeof evt !== 'undefined') evt.preventDefault();
-		v4_post('./api/system.ssjs', { call: 'send-telegram', user: alias, telegram: $('#telegram').val() });
+
+	function sendTg(evt) {
+        if (evt !== undefined) evt.preventDefault();
+		v4_post('./api/system.ssjs', {
+			call: 'send-telegram',
+			user: alias,
+			telegram: document.querySelector('input[name=telegram]').value,
+		});
         $('#popUpModal').modal('hide');
     }
-	$('#popUpModalTitle').html(`Send a telegram to ${alias}`);
-	$('#popUpModalBody').html(
-        '<form id="send-telegram-form">'
-		+ '<input type="text" class="form-control" placeholder="My message" name="telegram" id="telegram">'
-        + '<input type="submit" value="submit" class="hidden">'
-        + '</form>'
-	);
-    $('#send-telegram-form').submit(send_tg);
-	$('#popUpModalActionButton').click(send_tg);
-    $('#popUpModalActionButton').show();
+
+	const label = document.querySelector('span[data-label-send-telegram]').cloneNode(true);
+	label.innerHTML = label.innerHTML.replace('%s', alias);
+	const title = document.getElementById('popUpModalTitle');
+	title.innerHTML = '';
+	title.appendChild(label);
+
+	const tgForm = document.getElementById('telegram-form-template').cloneNode(true);
+	tgForm.id = 'telegram-form';
+	document.getElementById('popUpModalBody').appendChild(tgForm);
+	tgForm.onsubmit = sendTg;
+
+	const btn = document.getElementById('popUpModalActionButton');
+	btn.style.display = '';
+	btn.style.visibility = '';
+	btn.onclick = sendTg;
 	$('#popUpModal').modal('show');
+
 }
 
 function registerEventListener(scope, callback, params) {
@@ -152,34 +162,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.onload =	function () {
 
-	$('#button-logout').click(logout);
-	$('#button-login').click(login);
-	$('#form-login').submit(login);
+	const loginForm = document.getElementById('form-login');
+	if (loginForm !== null) loginForm.onsubmit = login;
 
 	$('#popUpModal').on('hidden.bs.modal', () => {
 		$('#popUpModalActionButton').off('click');
-		$('#popUpModalTitle').empty();
-		$('#popUpModalBody').empty();
+		document.getElementById('popUpModalTitle').innerHTML = '';
+		document.getElementById('popUpModalBody').innerHTML = '';
 	});
-	$("#popUpModalCloseButton").click(() => $('#popUpModal').modal('hide'));
+	document.getElementById('popUpModalCloseButton').onclick = () => $('#popUpModal').modal('hide');
 
 	setTimeout(scrollUp, 25);
 	window.onhashchange = scrollUp;
 
-	if ($('#button-logout').length > 0) {
+	const logoutButton = document.getElementById('button-logout');
+	if (logoutButton !== null) {
+
+		logoutButton.onclick = logout;
 
 		registerEventListener('mail', e => {
             const data = JSON.parse(e.data);
             if (typeof data.count != 'number') return;
-            $('#badge-unread-mail').text(data.count < 1 ? '' : data.count);
-            $('#badge-unread-mail-inner').text(data.count < 1 ? '' : data.count);
+			document.getElementById('badge-unread-mail').innerText = data.count < 1 ? '' : data.count;
+			document.getElementById('badge-unread-mail-inner').innerText = data.count < 1 ? '' : data.count;
 		});
 		
 		registerEventListener('telegram', e => {
             const tg = JSON.parse(e.data).replace(/\1./g, '').replace(/\r?\n/g, '<br>');
-            $('#popUpModalTitle').html('New telegram(s) received');
-            $('#popUpModalBody').append(tg);
-            $('#popUpModalActionButton').hide();
+			const tr = document.querySelector('span[data-label-receive-telegram]').cloneNode(true);
+			const mt = document.getElementById('popUpModalTitle');
+			mt.innerHTML = '';
+			mt.appendChild(tr);
+			document.getElementById('popUpModalBody').innerHTML += tg;
+			const btn = document.getElementById('popUpModalActionButton');
+			btn.style.display = 'none';
+			btn.style.visibility = 'hidden';
             $('#popUpModal').modal('show');
 		});
 
