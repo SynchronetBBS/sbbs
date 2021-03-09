@@ -51,7 +51,7 @@ if (request.has_param('call') && (http_request.method === 'GET' || http_request.
             case 'get-thread':
                 if (request.has_params(['sub', 'thread'])) {
                     http_reply.header['Content-Type'] = 'text/plain; charset=utf8';
-                    getThread(request.get_param('sub'), request.get_param('thread'), function (m) {
+                    forum.getThread(request.get_param('sub'), request.get_param('thread'), function (m) {
                         writeln(JSON.stringify(m));
                     });
                     replied = true;
