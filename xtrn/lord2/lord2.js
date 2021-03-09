@@ -455,14 +455,15 @@ function insane_run_ref(sec, fname, refret)
 		'readspecial':function(args) {
 			var attr = scr.attr.value;
 			var ch;
+			var opts = args[1].toUpperCase();
 
 			if (args.length < 2)
 				throw new Error('@do readspecial requires two arguments');
 			do {
 				ch = getkey().toUpperCase();
 				if (ch === '\r' || ch === '\x1b')
-					ch = args[1].substr(0, 1);
-			} while (args[1].indexOf(ch) === -1);
+					ch = opts.substr(0, 1);
+			} while (opts.indexOf(ch) === -1);
 			setvar(args[0], ch);
 			dk.console.attr = 15;
 			sln(ch);
@@ -813,14 +814,14 @@ function insane_run_ref(sec, fname, refret)
 							l = l.substr(m[0].length);
 							switch(m[1]) {
 								case '=':
-									if (left.toString().toLowerCase() !== right.toLowerCase()) {
+									if (left.toString().toLowerCase() !== right.toString().toLowerCase()) {
 										if (cur > i)
 											cur--;
 										return;
 									}
 									break;
 								case '!':
-									if (left.toString().toLowerCase() === right.toLowerCase()) {
+									if (left.toString().toLowerCase() === right.toString().toLowerCase()) {
 										if (cur > i)
 											cur--;
 										return;
@@ -1067,9 +1068,28 @@ function insane_run_ref(sec, fname, refret)
 		},
 		'display':function(args) {
 			if (args.length > 2 && args[1].toLowerCase() === 'in') {
-				// TODO: Implement this!
-				throw new Error('@display not implemented!');
-			}
+				var label = getvar(args[0]).toString().toLowerCase();
+				var f = new File(getfname(getvar(args[2])));
+				var l;
+				var found = false;
+
+				if (!f.open('rb'))
+					throw new Error('@display unable to open '+f.name);
+				// First, find the label...
+				while ((l = f.readln()) !== null) {
+					if (l.toLowerCase().indexOf('@#'+label) === 0) {
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+					throw new Error('@display unable to find label @#'+label+' in '+f.name);
+				while ((l = f.readln()) !== null) {
+					if (l.indexOf('@#') === 0)
+						break;
+					lln(l);
+				}
+y			}
 			throw new Error('@display not implemented');
 		},
 		'displayfile':function(args) {
@@ -1132,7 +1152,7 @@ function insane_run_ref(sec, fname, refret)
 				else if (args[2].toLowerCase() === 'getname') {
 					tmp = clamp_integer(getvar(args[3]), '8') - 1;
 					if (tmp === player.Record) {
-						setvar(args[0], tmp.name);
+						setvar(args[0], player.name);
 					}
 					else {
 						if (tmp >= pfile.length || tmp < 0)
