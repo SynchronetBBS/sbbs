@@ -1480,7 +1480,7 @@ function insane_run_ref(sec, fname, refret)
 			rp.forEach(function(pl, i) {
 				player = pl;
 				// TODO: It is assumed this takes a stack frame.
-				insane_run_ref(format('`p%02d', getvar(args[2])), fname, refret);
+				insane_run_ref(getvar(args[2]), fname, refret);
 			});
 			player = op;
 		},
