@@ -548,7 +548,7 @@ function getkey()
 	ch = '\x00';
 	do {
 		ch = getkeyw();
-		if (ch === null || ch.length < 1) {
+		if (ch === undefined || ch === null || ch.length < 1) {
 			ch = '\x00';
 		}
 	} while (ch === '\x00');
