@@ -14,10 +14,10 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') && http_re
 		case 'get-avatar':
 			var avatar_lib = load({}, 'avatar_lib.js');
 			reply = http_request.query.user.map(function (e) {
-				const u = e.split('@');
+				const u = decodeURIComponent(e).split('@');
 				var ret;
 				if (u.length === 1) {
-					ret = avatar_lib.read_localuser(u[0]) || {};
+					ret = avatar_lib.read_localuser(system.matchuser(u[0])) || {};
 				} else {
 					ret = avatar_lib.read_netuser(u[0], u[1]) || {};
 				}
