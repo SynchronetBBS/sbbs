@@ -1387,7 +1387,7 @@ function insane_run_ref(sec, fname, refret)
 						tmp = getvar(args[++tmp2]).length;
 					}
 					else
-						tmp = getsvar(args, tmp2, args[0]);
+						tmp = getsvar1(args, tmp2, args[0]);
 					tmp2++;
 					if (getvar(args[0]).toString().toLowerCase() === tmp.toString().toLowerCase())
 						handlers.do(args.slice(tmp2 + 1));
