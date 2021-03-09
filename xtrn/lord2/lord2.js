@@ -436,7 +436,7 @@ function insane_run_ref(sec, fname, refret)
 					if (isNaN(bg))
 						bg = 1;
 					else if (args.length > 3) {
-						fg = parseInt(getvar(getvar(args[2])), 10);
+						fg = parseInt(getvar(getvar(args[3])), 10);
 						if (isNaN(fg))
 							fg = 15;
 					}
@@ -482,17 +482,20 @@ function insane_run_ref(sec, fname, refret)
 			if (args.length < 1)
 				throw('@do readstring requires at least one argument');
 			if (args.length > 1) {
-				val = getvar(args[1]);
+				// Note that this seems to be the only place NIL is actually documented *sigh*
+				val = replace_vars(args[1]);
+				if (val.toLowerCase() === 'nil')
+					val = '';
 				if (args.length > 2) {
 					svar = args[2];
 					if (args.length > 3) {
 						// What happens in invalid bg/fg?
 						// See ODINKEEP.REF:1818... they're ignored!
-						bg = parseInt(getvar(getvar(args[2])), 10);
+						bg = parseInt(getvar(getvar(args[3])), 10);
 						if (isNaN(bg))
 							bg = 1;
 						else if (args.length > 4) {
-							fg = parseInt(getvar(getvar(args[2])), 10);
+							fg = parseInt(getvar(getvar(args[4])), 10);
 							if (isNaN(fg))
 								fg = 15;
 						}
@@ -1153,7 +1156,7 @@ function insane_run_ref(sec, fname, refret)
 					setvar(args[0], random(clamp_integer(getvar(args[3]), 's32')) + clamp_integer(getvar(args[4]), 's32'));
 				}
 				else
-					setvar(args[0], getsvar(args[2], args[0]));
+					setvar(args[0], getsvar(args, 2, args[0]));
 				return;
 			}
 			if (args.length > 2 && args[1] == '-') {
@@ -1165,7 +1168,7 @@ function insane_run_ref(sec, fname, refret)
 				return;
 			}
 			if (args.length > 2 && args[1].toLowerCase() === 'add') {
-				setvar(args[0], getvar(args[0]) + getsvar(args[2], args[0]).toString());
+				setvar(args[0], getvar(args[0]) + getsvar(args, 2, args[0]).toString());
 				return;
 			}
 			if (args.length > 2 && args[1] == '/') {
@@ -1384,7 +1387,7 @@ function insane_run_ref(sec, fname, refret)
 						tmp = getvar(args[++tmp2]).length;
 					}
 					else
-						tmp = getsvar(args[tmp2], args[0]);
+						tmp = getsvar(args, tmp2, args[0]);
 					tmp2++;
 					if (getvar(args[0]).toString().toLowerCase() === tmp.toString().toLowerCase())
 						handlers.do(args.slice(tmp2 + 1));
