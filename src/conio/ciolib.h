@@ -698,8 +698,8 @@ CIOLIBEXPORT void CIOLIBCALL mousestate_res(int *x_res, int *y_res, uint8_t *but
 #define CIO_KEY_ALT_F(x)  ((x<11)?((0x67 + x) << 8):((0x80 + x) << 8))
 #define CIO_KEY_BACKTAB   (0x0f << 8)
 
-#define CIO_KEY_MOUSE     0x7d00	// This is the right mouse on Schneider/Amstrad PC1512 PC keyboards "F-14"
-#define CIO_KEY_QUIT	  0x7e00	// "F-15"
+#define CIO_KEY_MOUSE     0x7dE0	// This is the right mouse on Schneider/Amstrad PC1512 PC keyboards "F-14"
+#define CIO_KEY_QUIT	  0x7eE0	// "F-15"
 #define CIO_KEY_ABORTED   0x01E0	// ESC key by scancode
 
 #endif	/* Do not add anything after this line */
