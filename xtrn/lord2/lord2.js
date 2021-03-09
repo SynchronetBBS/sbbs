@@ -630,7 +630,7 @@ function insane_run_ref(sec, fname, refret)
 			if (!f.open('r+b'))
 				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			al = f.readAll();
-			while (al.length > len);
+			while (al.length > len)
 				al.shift();
 			f.position = 0;
 			al.forEach(function(l) {
@@ -876,9 +876,45 @@ function insane_run_ref(sec, fname, refret)
 				setvar(args[0], pl + 1);
 		},
 		'clear':function(args) {
-			if (args[0].toLowerCase() === 'screen') {
-				sclrscr();
-				return;
+			var i;
+			var str;
+
+			if (args.length < 1)
+				throw new Error('@clear requires a parameter');
+			switch (args[0].toLowerCase()) {
+				case 'screen':
+					sclrscr();
+					return;
+				case 'name':
+					dk.console.gotoxy(54, 14);
+					sw(spaces(21));
+					return;
+				case 'picture':
+					str = spaces(22);
+					for (i = 2; i < 13; i++) {
+						dk.console.gotoxy(54, i);
+						sw(str);
+					}
+					return;
+				case 'text':
+					str = spaces(21);
+					for (i = 2; i < 13; i++) {
+						dk.console.gotoxy(32, i);
+						sw(str);
+					}
+					return;
+				case 'all':
+					dk.console.clear(dk.console.attr.value);
+					curlinenum = 1;
+					return;
+				case 'userscreen':
+					for (i = 15; i < 24; i++) {
+						dk.console.gotoxy(0, i);
+						dk.console.cleareol();
+					}
+					dk.console.gotoxy(77, 23);
+					return;
+				
 			}
 			throw new Error('Unknown clear type at '+fname+':'+line);
 		},
@@ -1062,7 +1098,7 @@ function insane_run_ref(sec, fname, refret)
 				//if (files[fname].lines[line + 1].search(/^\s*@begin/i) === -1)
 				//	throw new Error('trailing do at '+fname+':'+line);
 				tmp = line;
-				while (files[fname].lines[++tmp].search(/^\s*;/) != -1) {
+				while (files[fname].lines[++tmp].search(/^\s*@/) === -1) {
 					if (tmp >= files[fname].lines.length)
 						break;
 				}
@@ -1374,16 +1410,23 @@ function insane_run_ref(sec, fname, refret)
 			}
 		},
 		'key':function(args) {
+			var orig_attr = dk.console.attr.value;
+			var mlen = 8;
+
 			if (args.length > 0) {
 				switch(args[0].toLowerCase()) {
 					case 'nodisplay':
 						getkey();
 						return;
 					case 'top':
-						dk.console.gotoxy(0,0);
+						dk.console.gotoxy(39, 14);
+						lw(' `0MORE ');
+						mlen = 6;
 						break;
 					case 'bottom':
-						dk.console.gotoxy(0,23);
+						dk.console.gotoxy(35,23);
+						lw(' `0MORE ');
+						mlen = 6;
 						break;
 					// Any other argument is the same as no argument... CNW reset.ref uses '@key noshow'
 					default:
@@ -1396,14 +1439,14 @@ function insane_run_ref(sec, fname, refret)
 			else {
 				// No, this would be the sane thing to do... don't do it.
 				//lw('\r');
+				lw('`r0  `2<`0MORE`2>');
 			}
-			dk.console.cleareol();
 			// NOTE: This doesn't actually use the "More" prompt that you can override... and it's not centred like the docs claim.
 			//lw(spaces(40-(displen(morestr)/2))+morestr);
-			lw('  `2<`0MORE`2>');
 			getkey();
-			lw('\r');
-			dk.console.cleareol();
+			lw(repeat_chars('\b', mlen));
+			lw(repeat_chars(' ', mlen));
+			dk.console.attr.value = orig_attr;
 		},
 		'label':function(args) {},
 		'loadcursor':function(args) {
@@ -1442,6 +1485,25 @@ function insane_run_ref(sec, fname, refret)
 				throw new Error('@moremap at end of file');
 			cl = files[fname].lines[line];
 			morestr = replace_vars(cl);
+		},
+		'name':function(args) {
+			var str;
+			var len;
+
+			if (args.length < 1)
+				throw new Error('@name requires an argument');
+			str = getvar(args[0]);
+			dk.console.gotoxy(53, 14);
+			// Truncate to 20 characters, center in 20 charaters, put space a start/end
+			var len = displen(getvar(args[0]));
+			if (len > 20) {	// Truncate
+				while (displen(str) > 20)
+					str = str.slice(0, -1);
+				len = displen(str);
+			}
+			// Center in 22 spaces...
+			str = spaces(Math.floor((23 - len) / 2)) + str + spaces(Math.ceil((23 - len) / 2));
+			lw(str);
 		},
 		'nocheck':function(args) {
 			// We don't really support this because there's no need for it.
@@ -1559,6 +1621,9 @@ function insane_run_ref(sec, fname, refret)
 		},
 		'saveglobals':function(args) {
 			world.put();
+		},
+		'say':function(args) {
+			throw new Error('@say not implemented');
 		},
 		'saveworld':function(args) {
 			world.put();
@@ -1946,12 +2011,14 @@ function load_player()
 	var p;
 
 	function post_load() {
-		map = load_map(player.map);
-		// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
-		if (map === null) {
-			player.map = 1;
-			player.x = 1;
-			player.y = 1;
+		if (world !== null) {
+			map = load_map(player.map);
+			// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
+			if (map === null) {
+				player.map = 1;
+				player.x = 1;
+				player.y = 1;
+			}
 		}
 		player.lastx = player.x;
 		player.lasty = player.y;
@@ -4289,7 +4356,12 @@ function load_time()
 		f.write(state.time+'\r\n');
 		f.close;
 		// TODO: Delete inactive players after 15 days.
-		run_ref('maint', 'maint.ref');
+		try {
+			run_ref('maint', 'maint.ref');
+		}
+		catch(e) {
+			log(LOG_ERROR, (new Date()).toString() + ", Node "+dk.connection.node+": REF Error "+e.message+" at maint");
+		}
 	}
 }
 
@@ -4343,11 +4415,6 @@ if (file_exists(getfname('fonts/lord2.fnt'))) {
 load_player();
 load_time();
 
-run_ref('rules', 'rules.ref');
-hail_cleanup();
-
-setup_time_warnings();
-
 var done = false;
 for (arg in argv) {
 	var m = argv[arg].match(/^(.*)\+(.*)$/);
@@ -4358,6 +4425,11 @@ for (arg in argv) {
 }
 if (done)
 	exit(0);
+
+run_ref('rules', 'rules.ref');
+hail_cleanup();
+
+setup_time_warnings();
 
 js.on_exit('killfiles.forEach(function(f) { if (f.is_open) { f.close(); } file_remove(f.name); });');
 

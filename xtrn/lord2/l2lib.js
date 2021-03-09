@@ -297,7 +297,7 @@ var World_Def = [
 	{
 		prop:'mapdatindex',
 		type:'Array:1600:SignedInteger16',
-		def:new Array(1600)
+		def:eval('var aret = []; while(aret.length < 1600) aret.push(0); aret;')
 	},
 	{
 		prop:'v',
@@ -307,7 +307,7 @@ var World_Def = [
 	{
 		prop:'s',
 		type:'Array:10:PString:80',
-		def:new Array(10)
+		def:eval('var aret = []; while(aret.length < 10) aret.push(""); aret;')
 	},
 	{
 		prop:'time',
@@ -317,7 +317,7 @@ var World_Def = [
 	{
 		prop:'hideonmap',
 		type:'Array:1600:Integer8',
-		def:new Array(1600)
+		def:eval('var aret = []; while(aret.length < 1600) aret.push(0); aret;')
 	},
 	{
 		prop:'extra',
@@ -537,7 +537,7 @@ function getkeyw()
 var curlinenum = 1;
 var curcolnum = 1;
 var morechk = true;
-var morestr = '`2<`0MORE`2>';
+var morestr = '`r0`2<`0MORE`2>';
 // Reads a key
 function getkey()
 {
@@ -1648,6 +1648,10 @@ if (!file_isdir(maildir)) {
 }
 maildir = backslash(maildir).replace(js.exec_dir, '');
 world = wfile.get(0);
+if (world === null) {
+	wfile.new();
+	world = wfile.get(0);
+}
 load_players();
 load_items();
 load_game();
