@@ -484,7 +484,7 @@ function insane_run_ref(sec, fname, refret)
 			if (args.length > 1) {
 				// Note that this seems to be the only place NIL is actually documented *sigh*
 				val = replace_vars(args[1]);
-				if (val.toLowerCase() === 'nil')
+				if (typeof val === 'string' && val.toLowerCase() === 'nil')
 					val = '';
 				if (args.length > 2) {
 					svar = args[2];
@@ -742,7 +742,7 @@ function insane_run_ref(sec, fname, refret)
 			dk.console.gotoxy(0, 23);
 			lw('`r5                                                                               ');
 			dk.console.gotoxy(2, 23);
-			lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
+			lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$'+pretty_int(player.money)+' `2gold.`r0');
 
 			if (items.length === 0) {
 				dk.console.gotoxy(0, 10);
@@ -777,7 +777,7 @@ function insane_run_ref(sec, fname, refret)
 						dk.console.gotoxy(0, 23);
 						lw('`r5                                                                               ');
 						dk.console.gotoxy(2, 23);
-						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
+						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$'+pretty_int(player.money)+' `2gold.`r0');
 						break;
 				}
 			}
@@ -1387,7 +1387,7 @@ function insane_run_ref(sec, fname, refret)
 						tmp = getvar(args[++tmp2]).length;
 					}
 					else
-						tmp = getsvar1(args, tmp2, args[0]);
+						tmp = getsvar1(args[tmp2], args[0]);
 					tmp2++;
 					if (getvar(args[0]).toString().toLowerCase() === tmp.toString().toLowerCase())
 						handlers.do(args.slice(tmp2 + 1));
@@ -1654,7 +1654,7 @@ function insane_run_ref(sec, fname, refret)
 rescan:
 			while (1) {
 				dk.console.gotoxy(39, 23);
-				lw('`2`r5You have `$&money `2gold.`r0');
+				lw('`2`r5You have `$'+pretty_int(player.money)+' `2gold.`r0');
 				inv = get_inventory();
 				if (inv.length === 0) {
 					dk.console.gotoxy(0, 6);
