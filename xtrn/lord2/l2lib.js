@@ -1292,7 +1292,10 @@ function getsvar(args, offset, vname)
 
 	if (typeof fv === 'string') {
 		if (typeof v !== 'string')
-			return replace_vars(args.splice(offset - 1).join(' '));
+			return replace_vars(args.slice(offset).join(' '));
+		// TODO: Not really sure how variable replacements with spces work.
+		// DAMN YOU SETH!!!
+		args[offset] = v;
 		return replace_vars(args.slice(offset).join(' '));
 	}
 	return v;
