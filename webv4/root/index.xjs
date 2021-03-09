@@ -1,13 +1,12 @@
 <?xjs
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
-	if (page.search(/^http(s)*:\/\//) > -1) exit();
+	if (page.search(/^http(s)*:\/\//) > -1) exit(); // Should send 404 or something more appropriate
 
-	if (page.search(/^001-forum.ssjs/) > -1) {
+	if (page.search(/^001-forum.ssjs/) === 0) {
 		http_reply.status = '302 Found';
 		http_reply.header['Location'] = './?page=001-forum.xjs' + http_request.query_string.replace(/^\page=001-forum.ssjs/, '');
 		exit();
 	}
-
 
 	var settings = load('modopts.js', 'web') || { web_directory: web_root_dir + '/..' };
 	load(settings.web_directory + '/lib/init.js');
@@ -31,7 +30,9 @@
 
 <? function _sidebar() { ?>
 	<? if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return; ?>
-		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar"><? writeSidebarModules(); ?></div>
+		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
+			<? writeSidebarModules(); ?>
+		</div>
 <? } ?>
 
 <?xjs
@@ -80,6 +81,7 @@
 			loadComponent('modal.xjs');
 			loadComponent('header.xjs');
 			loadComponent('navbar.xjs');
+			loadComponent('telegrams.xjs');
 		?>
 
 		<div class="container<? if (settings.layout_full_width) write('-fluid'); ?>">
