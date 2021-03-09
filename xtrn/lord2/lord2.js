@@ -1089,7 +1089,7 @@ function insane_run_ref(sec, fname, refret)
 						break;
 					lln(l);
 				}
-y			}
+			}
 			throw new Error('@display not implemented');
 		},
 		'displayfile':function(args) {
