@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		}
 	}
-	$('html').removeClass('hidden');
+	document.documentElement.style.removeProperty('display');
 });
 
 window.onload =	function () {
