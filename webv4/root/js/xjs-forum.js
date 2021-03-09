@@ -24,6 +24,110 @@ function LoadingMessage() {
 
 }
 
+// Deuce's URL-ifier
+function linkify(body) {
+    urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
+    body = body.replace(urlRE, function (str) {
+        var ret = '';
+        var p = 0;
+        var link = str.replace(/\.*$/, '');
+        var linktext = link;
+        if (link.indexOf('://') === -1) link = 'mailto:' + link;
+        return ('<a class="ulLink" href="' + link + '">' + linktext + '</a>' + str.substr(linktext.length));
+    });
+    return body;
+}
+
+// Somewhat modified version of Deuce's "magical quoting stuff" from v3
+function quotify(body) {
+
+    const blockquote_start = '<blockquote>';
+    const blockquote_end = '</blockquote>';
+
+    let quote_depth = 0;
+    let prefixes = [];
+
+    const ret = body.split(/\r?\n/).reduce((a, c) => {
+        let line = '';
+        let line_prefix = '';
+        const m = c.match(/^((?:\s?[^\s]{0,3}>\s?)+)/);
+        if (m !== null) {
+            let p;
+            let broken = false;            
+            let new_prefixes = m[1].match(/\s?[^\s]{0,3}>\s?/g);
+            line = c;
+            // If the new length is smaller than the old one, close the extras
+            for (p = new_prefixes.length; p < prefixes.length; p++) {
+                if (quote_depth < 1) continue;
+                line_prefix = line_prefix + blockquote_end;
+                quote_depth--;
+            }
+            for (p in new_prefixes) {
+                // Remove prefix from start of line
+                line = line.substr(new_prefixes[p].length);
+                if (prefixes[p] === undefined) {
+                    /* New depth */
+                    line_prefix = line_prefix + blockquote_start;
+                    quote_depth++;
+                } else if (broken) {
+                    line_prefix = line_prefix + blockquote_start;
+                    quote_depth++;
+                } else if (prefixes[p].replace(/^\s*(.*?)\s*$/, '$1') != new_prefixes[p].replace(/^\s*(.*?)\s*$/, '$1')) {
+                    // Close all remaining old prefixes and start one new one
+                    for (let o = p; o < prefixes.length && o < new_prefixes.length; o++) {
+                        if (quote_depth > 0) {
+                            line_prefix = blockquote_end + line_prefix;
+                            quote_depth--;
+                        }
+                    }
+                    line_prefix = blockquote_start + line_prefix;
+                    quote_depth++;
+                    broken = true;
+                }
+            }
+            prefixes = new_prefixes.slice();
+            line = line_prefix + line;
+        } else {
+            for (p = 0; p < prefixes.length; p++) {
+                if (quote_depth < 1) continue;
+                line_prefix = line_prefix + blockquote_end;
+                quote_depth--;
+            }
+            prefixes = [];
+            line = line_prefix + c;
+        }
+        return a + line + '\r\n';
+    }, '');
+
+    if (quote_depth !== 0) {
+        for (;quote_depth > 0; quote_depth--) {
+            ret += blockquote_end;
+        }
+    }
+
+    return ret.replace(/\<\/blockquote\>\r\n<blockquote\>/g, '\r\n');
+
+}
+
+// Format message body for the web
+function formatMessageBody(body) {
+    // Strip CTRL-A
+    body = body.replace(/\1./g,'');
+    // Strip ANSI
+    body = body.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'');
+    body = body.replace(/\x1b[\x40-\x7e]/g, '');
+    // Strip unprintable control chars (NULL, BEL, DEL, ESC)
+    body = body.replace(/[\x00\x07\x1b\x7f]/g,'');
+    // Format for the web
+    // body = word_wrap(body, body.length); // These were done server-side; may need client-side equivalents
+    // body = html_encode(body, exascii, false, false, false); // These were done server-side; may need client-side equivalents
+    body = quotify(body);
+    body = linkify(body);
+    body = body.replace(/\r\n$/,'');
+    body = body.replace(/(\r?\n)/g, "<br>$1");
+    return body;
+}
+
 function formatMessageDate(t) {
     return (new Date(t * 1000)).toLocaleString();
 }
@@ -221,46 +325,16 @@ function addPollField(type, target) {
 
 // Message list
 
-function lastVisibleMessage() {
-    const lastMessageElement = Array.from(document.querySelectorAll('li[data-message]')).pop();
-    if (!lastMessageElement) return null;
-    const ret = parseInt(lastMessageElement.getAttribute('data-message'), 10);
-    if (isNaN(ret) || ret < 0) return null;
-    return ret;
-}
-
 async function listMessages(sub, thread) {
 
-    let _data;
-    const loadingMessage = new LoadingMessage();
-    loadingMessage.start();
-    let data = JSON.parse(localStorage.getItem(`${sub}-${thread}`));
-    if (data === null) { // We have no local cache
-        if (after) { // User clicked "Load more" but we don't know what the newest visible message is meant to be
-            const lastMessage = lastVisibleMessage();
-            if (lastMessage === null) { // No messages in view, so start at the beginning
-                data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}`);
-            } else { // Messages are in view, but we have no cache
-                // Rebuild cache and get next 'count' messages
-                data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}&after=${lastMessage}&reload=true`);
-                const lmi = data.findIndex(e => e.number === lastMessage);
-                if (lmi > -1) _data = data.slice(lmi + 1); // If our lastMessage is cached, set _data to everything after it
-            }
-        } else { // A clean first load of the page, or reload of first 'count' messages
-            data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}`);
-        }
-    } else if (after) {
-        _data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}&after=${data[data.length - 1].number}`);
-        data = data.concat(_data);
-    } else {
-        // TO DO: check for any newer messages than the newest we have on hand; prepend them
-    }
-    localStorage.setItem(`${sub}-${thread}`, JSON.stringify(data));
-    loadingMessage.stop();
+    const lm = new LoadingMessage();
+    lm.start();
+    const data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}`);
+    lm.stop();
 
     // TO DO: what about poll messages? If they may show up in (_data || data) then they need to be handled differently and a template created in forum.xjs
     const users = [];
-    (_data || data).forEach((e, i) => {
+    data.forEach((e, i) => {
         let akey;
         let elem;
         let append = false;
@@ -272,7 +346,10 @@ async function listMessages(sub, thread) {
             append = true;
         }
         elem.querySelector('a[data-message-anchor]').id = e.number;
-        if (i == 0 && !after && e.subject !== undefined) elem.querySelector('strong[data-message-subject]').innerHTML = e.subject;
+        if (i == 0 && e.subject !== undefined) {
+            document.querySelector('span[data-message-subject]').innerHTML = e.subject; // Breadcrumb link to thread
+            elem.querySelector('strong[data-message-subject]').innerHTML = e.subject;
+        }
         elem.querySelector('strong[data-message-from]').innerHTML = e.from;
         if (e.from_net_addr) {
             akey = `${e.from}@${e.from_net_addr}`;
@@ -284,9 +361,9 @@ async function listMessages(sub, thread) {
         }
         elem.querySelector('strong[data-message-to]').innerHTML = e.to;
         elem.querySelector('strong[data-message-date]').innerHTML = formatMessageDate(e.when_written_time);
-        elem.querySelector('span[data-upvote-count]').innerHTML = e.upvotes;
-        elem.querySelector('span[data-downvote-count]').innerHTML = e.downvotes;
-        elem.querySelector('div[data-message-body]').innerHTML = e.body;
+        elem.querySelector('span[data-upvote-count]').innerHTML = e.votes.up;
+        elem.querySelector('span[data-downvote-count]').innerHTML = e.votes.down;
+        elem.querySelector('div[data-message-body]').innerHTML = formatMessageBody(e.body);
         elem.querySelector('a[data-direct-link]').setAttribute('href', `#${e.number}`);
         elem.removeAttribute('hidden');
         if (append) document.getElementById('forum-list-container').appendChild(elem);
@@ -367,16 +444,8 @@ function onThreadStats(data) {
 
 }
 
-function lastVisibleThread() {
-    const lastThreadElement = Array.from(document.querySelectorAll('li[data-thread]')).pop();
-    if (!lastThreadElement) return null;
-    const ret = parseInt(lastThreadElement.getAttribute('data-thread'), 10);
-    if (isNaN(ret) || ret < 0) return null;
-    return ret;
-}
-
 async function listThread(e) {
-    
+
     let elem;
     let append = false;
     const elemId = `forum-thread-link-${e.id}`;
@@ -442,27 +511,11 @@ function onThreadList(data) {
 }
 
 async function listThreads(sub) {
-
     const lm = new LoadingMessage();
     lm.start();
-    let data = await sbbs.forum.threads.getAllByIndex('sub', v => v.sub === sub);
-    if (data === undefined || !data.length) { // We have no local cache
-        data = await v4_get(`./api/forum.ssjs?call=get-thread-list&sub=${sub}`);
-        Object.values(data).forEach(sbbs.forum.threads.set);
-        onThreadList(data);
-    } else {
-        onThreadList(data);
-        // Refresh the local cache
-        v4_get(`./api/forum.ssjs?call=get-thread-list&sub=${sub}`).then(async data => {
-            const update = [];
-            for (const e of data) {
-                if (await sbbs.forum.threads.update(e)) update.push(e);
-            }
-            onThreadList(update);
-        });
-    }
+    const data = await v4_get(`./api/forum.ssjs?call=get-thread-list&sub=${sub}`);
     lm.stop();
-
+    onThreadList(data);
 }
 
 
@@ -476,11 +529,6 @@ function showNewestMessage(elem, msg) {
 }
 
 async function onNewestSubMessage(sub, msg) {
-    const rec = await sbbs.forum.subs.get(sub);
-    if (rec !== undefined) {
-        rec.newest_message = msg;
-        sbbs.forum.subs.set(rec);
-    }
     const elem = document.getElementById(`forum-sub-link-${sub}`);
     if (elem !== null) showNewestMessage(elem, msg);
 }
@@ -488,18 +536,6 @@ async function onNewestSubMessage(sub, msg) {
 function showSubUnreadCount(elem, s, u) { // sub link element, sub code, { total, scanned, newest }
     if (u.total - u.scanned > 0) elem.querySelector('span[data-unread-unscanned]').innerHTML = u.total - u.scanned;
     if (u.scanned > 0) elem.querySelector('span[data-unread-scanned]').innerHTML = u.scanned;
-}
-
-function onSubUnreadCount(data) {
-    Object.entries(data).forEach(async ([k, v]) => {
-        const sub = await sbbs.forum.subs.get(k);
-        if (sub !== undefined) {
-            sub.unread = v;
-            await sbbs.forum.subs.set(sub);
-        }
-        const elem = document.getElementById(`forum-sub-link-${k}`);
-        if (elem !== null) showSubUnreadCount(elem, k, v);
-    });
 }
 
 function onSubList(data) {
@@ -514,36 +550,18 @@ function onSubList(data) {
             append = true; // Should see about slotting this into the document in the correct order instead, in the rare case that a new sub pops up while viewing the page I guess
         }
         elem.querySelector('strong[data-sub-name]').innerHTML = e.name;
-        elem.querySelector('p[data-sub-description]').innerHTML = e.description;
+        elem.querySelector('span[data-sub-description]').innerHTML = e.description;
         showNewestMessage(elem, e.newest);
         if (append) document.getElementById('forum-list-container').appendChild(elem);
     });
 }
 
 async function listSubs(group) {
-
     const lm = new LoadingMessage();
     lm.start();
- 
-    let data = await sbbs.forum.subs.getAllByIndex('grp_index', (v => v.grp_index === group));
-    if (data === undefined || !data.length) {
-        data = await v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`);
-        data.forEach(sbbs.forum.subs.set);
-        onSubList(data);
-    } else {
-        // TO DO: add a TTL for this data instead of refreshing every time
-        onSubList(data);
-        v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`).then(async data => {
-            const update = [];
-            for (const e of data) {
-                const u = await sbbs.forum.subs.update(e);
-                if (u) update.push(e);
-            }
-            onSubList(update);
-        });
-    }
+    const data = await v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`);
     lm.stop();
-
+    onSubList(data);
 }
 
 
@@ -552,18 +570,6 @@ async function listSubs(group) {
 function showGroupUnreadCount(elem, u) {
     if (u.total - u.scanned > 0) elem.querySelector('span[data-unread-unscanned]').innerHTML = u.total - u.scanned;
     if (u.scanned > 0) elem.querySelector('span[data-unread-scanned]').innerHTML = u.scanned;
-}
-
-function onGroupStats(data) {
-    Object.entries(data).forEach(async ([k, v]) => {
-        // const elem = document.getElementById(`forum-group-link-${k}`);
-        // showGroupUnreadCount(elem, v);
-        // const grp = await sbbs.forum.getGroup(parseInt(k, 10));
-        // if (grp !== undefined) {
-        //     grp.unread = v;
-        //     await sbbs.forum.setGroup(grp);
-        // }
-    });
 }
 
 function listGroup(e) {
@@ -587,22 +593,7 @@ function listGroup(e) {
 async function listGroups() {
     const lm = new LoadingMessage();
     lm.start();
-    let data = await sbbs.forum.groups.getAll();
-    if (data === undefined) {
-        console.debug('groups not in cache, fetching');
-        data = await v4_get('./api/forum.ssjs?call=list-groups');
-        lm.stop();
-        data.forEach(async e => {
-            sbbs.forum.groups.set(e);
-            listGroup(e);
-        });
-    } else {
-        // TO DO: add a TTL for this data instead of refreshing every time
-        data.forEach(listGroup);
-        lm.stop();
-        data = await v4_get('./api/forum.ssjs?call=list-groups')
-        data.forEach(async e => {
-            if (await sbbs.forum.groups.update(e)) listGroup(e);
-        });
-    }
+    const data = await v4_get('./api/forum.ssjs?call=list-groups');
+    lm.stop();
+    data.forEach(listGroup);
 }
