@@ -420,7 +420,9 @@ void tevents_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_events && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-8.8s      %s",cfg.event[i]->code,cfg.event[i]->cmd);
+			sprintf(opt[i],"%-8.8s      %s"
+				,cfg.event[i]->code
+				,(cfg.event[i]->misc&EVENT_DISABLED) ? "<DISABLED>" : cfg.event[i]->cmd);
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_events)

@@ -274,8 +274,8 @@ function insane_run_ref(sec, fname, refret)
 		'addlog':function(args) {
 			var f = new File(getfname('lognow.txt'));
 			line++;
-			if (line > files[fname].lines.length)
-				return;
+			if (line >= files[fname].lines.length)
+				throw new Error('addlog at end of file');
 			if (f.open('ab')) {
 				cl = files[fname].lines[line];
 				f.write(replace_vars(cl)+'\r\n');
@@ -283,6 +283,7 @@ function insane_run_ref(sec, fname, refret)
 			}
 		},
 		'beep':function(args) {
+			throw new Error('TODO: Local-only beep not implemented');
 			// TODO: Only beeps locally!
 			return;
 		},
@@ -290,9 +291,13 @@ function insane_run_ref(sec, fname, refret)
 			player.name = getvar('`s10');
 		},
 		'delete':function(args) {
+			if (args.length < 1)
+				throw new Error('@do delete with no filename');
 			file_remove(getfname(getvar(args[0])));
 		},
 		'frontpad':function(args) {
+			if (args.length < 1)
+				throw new Error('@do frontpad with no argument');
 			var str = getvar(args[0]).toString();
 			var dl = broken_displen(str);
 			var l = parseInt(getvar(args[1]), 10);
@@ -301,16 +306,20 @@ function insane_run_ref(sec, fname, refret)
 			setvar(args[0], str);
 		},
 		'getkey':function(args) {
+			if (args.length < 1)
+				throw new Error('@do getkey with no argument');
 			if (!dk.console.waitkey(0))
 				setvar(args[0], '_');
 			lastkey = time();
 			setvar(args[0], dk.console.getkey());
 		},
 		'goto':function(args) {
+			if (args.length < 1)
+				throw new Error('@do goto with no argument');
 			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
 			args[0] = replace_vars(args[0]).toLowerCase();
 			if (files[fname].section[args[0]] === undefined)
-				throw new Error('Goto undefined label '+args[0]+' at '+fname+':'+line);
+				throw new Error('@do goto undefined label');
 			line = files[fname].section[args[0]].line;
 		},
 		'move':function(args) {
@@ -324,14 +333,18 @@ function insane_run_ref(sec, fname, refret)
 				y = clamp_integer(getvar(args[1]), '8');
 				if (y > dk.console.rows)
 					y = dk.console.rows;
-				if (x == 0) {
+				if (x === 0 && y > 0) {
 					dk.console.movey((y - 1) - scr.pos.y);
 				}
-				else if (y == 0) {
+				else if (y === 0 && x > 0) {
 					dk.console.movex((x - 1) - scr.pos.x);
 				}
-				else
+				else if (y > 0 && x > 0) {
 					dk.console.gotoxy(x - 1, y - 1);
+				}
+				else {
+					throw new Error('@do move with invalid arguments');
+				}
 				return;
 			}
 			throw new Error('Invalid move at '+fname+':'+line);
@@ -342,6 +355,8 @@ function insane_run_ref(sec, fname, refret)
 			update_update();
 		},
 		'numreturn':function(args) {
+			if (args.length < 2)
+				throw new Error('Insufficient arguments to @do numreturn');
 			var ret = 0;
 			var i;
 			var haystack = getvar(args[1]);
@@ -357,17 +372,21 @@ function insane_run_ref(sec, fname, refret)
 					case '7':
 					case '8':
 					case '9':
-						i++;
+						ret++;
 						break;
 				}
 			}
-			setvar(args[0], i);
+			setvar(args[0], ret);
 			return;
 		},
 		'pad':function(args) {
+			if (args.length < 2)
+				throw new Error('@do pad with insufficient arguments');
 			var str = getvar(args[0]).toString();
 			var dl = displen(str);
 			var l = parseInt(getvar(args[1]), 10);
+			if (isNaN(l))
+				throw new Error('@do pad with invalid length argument');
 
 			// NOTE: '@do pad' also trims down (see status screen in CNW with wildberries equipped)
 			//       however, REFDoor documentation specifically says it doesn't do this!
@@ -386,10 +405,12 @@ function insane_run_ref(sec, fname, refret)
 		'quebar':function(args) {
 			line++;
 			if (line >= files[fname].lines.length)
-				throw new Error('Trailing quebar at '+fname+':'+line);
+				throw new Error('@do quebar at end of file');
 			tfile_append(files[fname].lines[line]);
 		},
 		'readchar':function(args) {
+			if (args.length < 1)
+				throw new Error('@do readchar with no argument');
 			// TODO: It's possible to "abort" input and get a zero-length string.
 			setvar(args[0], getkey());
 		},
@@ -397,20 +418,29 @@ function insane_run_ref(sec, fname, refret)
 			var x = scr.pos.x;
 			var y = scr.pos.y;
 			var attr = scr.attr.value;
-			var len = getvar(args.shift());
 			var s;
 			var fg = 15;
 			var bg = 1;
-			var val = '';
+			var val = 0;
 
-			if (args.length > 1)
-				fg = getvar(args.shift());
-			if (args.length > 1)
-				fg = getvar(args.shift());
-			if (args.length > 0) {
-				val = parseInt(getvar(args[0]), 10);
+			if (args.length < 1)
+				throw new Error('@do readnum requires a length parameter');
+			var len = getvar(args[0]);
+			if (args.length > 1) {
+				// TODO: Verify if input happens on invalid parameters or not
+				val = parseInt(getvar(args[1]), 10);
 				if (isNaN(val))
-					throw new Error('Invalid default "'+args[0]+'" for readnum at '+fname+':'+line);
+					val = 0;
+				else if (args.length > 2) {
+					bg = parseInt(getvar(getvar(args[2])), 10);
+					if (isNaN(bg))
+						bg = 1;
+					else if (args.length > 3) {
+						fg = parseInt(getvar(getvar(args[3])), 10);
+						if (isNaN(fg))
+							fg = 15;
+					}
+				}
 			}
 			s = dk.console.getstr({crlf:false, len:len, edit:val.toString(), input_box:true, attr:new Attribute((bg<<4) | fg), integer:true, timeout:idle_timeout * 1000});
 			lastkey = time();
@@ -423,15 +453,20 @@ function insane_run_ref(sec, fname, refret)
 			dk.console.attr = attr;
 		},
 		'readspecial':function(args) {
+			var attr = scr.attr.value;
 			var ch;
 
+			if (args.length < 2)
+				throw new Error('@do readspecial requires two arguments');
 			do {
 				ch = getkey().toUpperCase();
-				if (ch === '\r')
+				if (ch === '\r' || ch === '\x1b')
 					ch = args[1].substr(0, 1);
 			} while (args[1].indexOf(ch) === -1);
 			setvar(args[0], ch);
+			dk.console.attr = 15;
 			sln(ch);
+			dk.console.attr = attr;
 		},
 		'readstring':function(args) {
 			var x = scr.pos.x;
@@ -439,12 +474,37 @@ function insane_run_ref(sec, fname, refret)
 			var attr = scr.attr.value;
 			var len = getvar(args[0]);
 			var s;
+			var val = '';
+			var svar = '`s10';
+			var bg = 1;
+			var fg = 15;
 
-			if (args.length === 2)
-				args.push('`s10');
-			s = dk.console.getstr({crlf:false, len:len, edit:(args[1].toLowerCase() === 'nil' ? '' : getvar(args[1])), input_box:true, attr:new Attribute(31), timeout:idle_timeout * 1000});
+			if (args.length < 1)
+				throw('@do readstring requires at least one argument');
+			if (args.length > 1) {
+				// Note that this seems to be the only place NIL is actually documented *sigh*
+				val = replace_vars(args[1]);
+				if (typeof val === 'string' && val.toLowerCase() === 'nil')
+					val = '';
+				if (args.length > 2) {
+					svar = args[2];
+					if (args.length > 3) {
+						// What happens in invalid bg/fg?
+						// See ODINKEEP.REF:1818... they're ignored!
+						bg = parseInt(getvar(getvar(args[3])), 10);
+						if (isNaN(bg))
+							bg = 1;
+						else if (args.length > 4) {
+							fg = parseInt(getvar(getvar(args[4])), 10);
+							if (isNaN(fg))
+								fg = 15;
+						}
+					}
+				}
+			}
+			s = dk.console.getstr({crlf:false, len:len, edit:val, input_box:true, attr:new Attribute((bg<<4) | fg), timeout:idle_timeout * 1000});
 			lastkey = time();
-			setvar(args[2], s);
+			setvar(svar, s);
 			dk.console.gotoxy(x, y);
 			while (remove_colour(s).length < len)
 				s += ' ';
@@ -453,10 +513,14 @@ function insane_run_ref(sec, fname, refret)
 			dk.console.attr = attr;
 		},
 		'rename':function(args) {
+			if (args.length < 2)
+				throw new Error('@do rename requires two arguments');
 			file_rename(getfname(getvar(args[0])), getfname(getvar(args[1])));
 		},
 		'replace':function(args) {
 			var hs;
+			if (args.length < 3)
+				throw new Error('@do replace requires three arguments');
 			var f = getvar(args[0]);
 			var r = getvar(args[1]);
 
@@ -466,6 +530,8 @@ function insane_run_ref(sec, fname, refret)
 		},
 		'replaceall':function(args) {
 			var hs;
+			if (args.length < 3)
+				throw new Error('@do replaceall requires three arguments');
 			var f = getvar(args[0]);
 			var r = getvar(args[1]);
 
@@ -476,6 +542,7 @@ function insane_run_ref(sec, fname, refret)
 			setvar(args[2], hs);
 		},
 		'saybar':function(args) {
+			// TODO: This does not persist across other bar updates... see "[ please wait ]" in CNW GENRAN.REF and TRAVEL.REF
 			line++;
 			if (line >= files[fname].lines.length)
 				throw new Error('Trailing saybar at '+fname+':'+line);
@@ -487,24 +554,35 @@ function insane_run_ref(sec, fname, refret)
 			status_bar();
 		},
 		'strip':function(args) {
+			if (args.length < 1)
+				throw new Error('@do strip requires an argument');
 			setvar(args[0], getvar(args[0]).trim());
 		},
 		'stripall':function(args) {
+			if (args.length < 1)
+				throw new Error('@do stripall requires an argument');
 			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
 		},
 		'stripbad':function(args) {
+			if (args.length < 1)
+				throw new Error('@do stripbad requires an argument');
 			setvar(args[0], clean_str(getvar(args[0])));
 		},
 		'stripcode':function(args) {
 			// TODO: How is this different than STRIPALL?
+			if (args.length < 1)
+				throw new Error('@do stripcode requires an argument');
 			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
 		},
 		'talk':function(args) {
 			var to;
+			if (args.length < 1)
+				throw new Error('@do talk requires an argument');
 			var l = replace_vars(getvar(args[0]));
 
 			if (args.length > 1)
 				to = getvar(args[1]).toLowerCase();
+			// TODO: Ensure that invalid 'to' doesn't send to all.
 			if (to === undefined || to === 'all') {
 				players.forEach(function(p, i) {
 					var f;
@@ -523,8 +601,11 @@ function insane_run_ref(sec, fname, refret)
 			else {
 				// TODO: Test alla this.
 				to = parseInt(to, 10);
+				// Can't throw an error because of the DANGEROUS FOREST (DANGERF2.REF line 829-ish).
+				// TODO: Go ahead and throw syntax errors, but catch()/log() them where the line is parsed?
 				if (isNaN(to))
-					throw new Error('Invalid talk to at '+fname+':'+line);
+					return;
+				//	throw new Error('Invalid talk to at '+fname+':'+line);
 				if (player.deleted === 1)
 					// TODO: Do we tell the player or something?
 					return;
@@ -539,16 +620,20 @@ function insane_run_ref(sec, fname, refret)
 			}
 		},
 		'trim':function(args) {
+			if (args.length < 2)
+				throw new Error('@do trim requires two arguments');
 			var f = new File(getfname(getvar(args[0])));
-			var len = getvar(args[1]);
+			var len = parseInt(getvar(args[1]), 10);
 			var al;
 
+			if (isNaN(len))
+				throw new Error('@do trim with invalid len');
 			if (!file_exists(f.name))
-				return;
+				throw new Error('@do trim of non-existant file');
 			if (!f.open('r+b'))
 				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			al = f.readAll();
-			while (al.length > len);
+			while (al.length > len)
 				al.shift();
 			f.position = 0;
 			al.forEach(function(l) {
@@ -558,19 +643,21 @@ function insane_run_ref(sec, fname, refret)
 			f.close();
 		},
 		'upcase':function(args) {
+			if (args.length < 1)
+				throw new Error('@do upcase requires an argument');
 			setvar(args[0], getvar(args[0]).toUpperCase());
 		},
 		'write':function(args) {
 			line++;
-			if (line > files[fname].lines.length)
-				return;
+			if (line >= files[fname].lines.length)
+				throw new Error('@do write at end of file');
 			cl = files[fname].lines[line];
 			lw(replace_vars(cl));
 		},
 	};
 	var handlers = {
 		// TODO: NPC Chat commands... see Jack Phlash REFDoor docs for deets.
-		// Appears to be used to end a slow/etc block
+		// Appears to be used to end a show/etc block
 		'':function(args) {},
 		'addchar':function(args) {
 			var tmp;
@@ -614,6 +701,8 @@ function insane_run_ref(sec, fname, refret)
 			}
 		},
 		'bitset':function(args) {
+			if (args.length < 3)
+				throw new Error('@bitset requires three arguments');
 			var bit = clamp_integer(getvar(args[1]), '32');
 			var s = clamp_integer(getvar(args[2]), '8');
 			var v = clamp_integer(getvar(args[0]), '32');
@@ -640,15 +729,20 @@ function insane_run_ref(sec, fname, refret)
 			var choice;
 			var y = scr.pos.y;
 
-			for (i = 0; i < itms.length; i++)
+			for (i = 0; i < itms.length; i++) {
 				itms[i] = parseInt(itms[i], 10);
+				// TODO: Does this abort or ignore?
+				if (isNaN(itms[i])) {
+					throw new Error('@buymanager inventory item ' + (i + 1) + ' is invalid');
+				}
+			}
 			// Don't clear the screen first?  Interesting...
 			dk.console.gotoxy(0, y);
 			lw('`r5`%  Item To Buy                         Price                                     ');
 			dk.console.gotoxy(0, 23);
 			lw('`r5                                                                               ');
 			dk.console.gotoxy(2, 23);
-			lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
+			lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$'+pretty_int(player.money)+' `2gold.`r0');
 
 			if (items.length === 0) {
 				dk.console.gotoxy(0, 10);
@@ -683,7 +777,7 @@ function insane_run_ref(sec, fname, refret)
 						dk.console.gotoxy(0, 23);
 						lw('`r5                                                                               ');
 						dk.console.gotoxy(2, 23);
-						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
+						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$'+pretty_int(player.money)+' `2gold.`r0');
 						break;
 				}
 			}
@@ -702,6 +796,10 @@ function insane_run_ref(sec, fname, refret)
 			var attr = dk.console.attr.value;
 			var choice;
 
+			if (cur < 0)
+				cur = 0;
+			if (cur >= allchoices.length)
+				cur = allchoices.length - 1;
 			function filter_choices() {
 				choices = [];
 				allchoices.forEach(function(l, i) {
@@ -715,28 +813,46 @@ function insane_run_ref(sec, fname, refret)
 							l = l.substr(m[0].length);
 							switch(m[1]) {
 								case '=':
-									if (left.toString().toLowerCase() !== right.toLowerCase())
+									if (left.toString().toLowerCase() !== right.toLowerCase()) {
+										if (cur > i)
+											cur--;
 										return;
+									}
 									break;
 								case '!':
-									if (left.toString().toLowerCase() === right.toLowerCase())
+									if (left.toString().toLowerCase() === right.toLowerCase()) {
+										if (cur > i)
+											cur--;
 										return;
+									}
 									break;
 								case '<':
-									if (parseInt(left, 10) >= parseInt(right, 10))
+									if (parseInt(left, 10) >= parseInt(right, 10)) {
+										if (cur > i)
+											cur--;
 										return;
+									}
 									break;
 								case '>':
-									if (parseInt(left, 10) <= parseInt(right, 10))
+									if (parseInt(left, 10) <= parseInt(right, 10)) {
+										if (cur > i)
+											cur--;
 										return;
+									}
 									break;
 								case '+':
-									if (!(left & (1 << parseInt(right, 10))))
+									if (!(left & (1 << parseInt(right, 10)))) {
+										if (cur > i)
+											cur--;
 										return;
+									}
 									break;
 								case '-':
-									if (left & (1 << parseInt(right, 10)))
+									if (left & (1 << parseInt(right, 10))) {
+										if (cur > i)
+											cur--;
 										return;
+									}
 									break;
 								default:
 									throw new Error('Unhandled filter choice!');
@@ -763,13 +879,51 @@ function insane_run_ref(sec, fname, refret)
 				setvar(args[0], pl + 1);
 		},
 		'clear':function(args) {
-			if (args[0].toLowerCase() === 'screen') {
-				sclrscr();
-				return;
+			var i;
+			var str;
+
+			if (args.length < 1)
+				throw new Error('@clear requires a parameter');
+			switch (args[0].toLowerCase()) {
+				case 'screen':
+					sclrscr();
+					return;
+				case 'name':
+					dk.console.gotoxy(54, 14);
+					sw(spaces(21));
+					return;
+				case 'picture':
+					str = spaces(22);
+					for (i = 2; i < 13; i++) {
+						dk.console.gotoxy(54, i);
+						sw(str);
+					}
+					return;
+				case 'text':
+					str = spaces(21);
+					for (i = 2; i < 13; i++) {
+						dk.console.gotoxy(32, i);
+						sw(str);
+					}
+					return;
+				case 'all':
+					dk.console.clear(dk.console.attr.value);
+					curlinenum = 1;
+					return;
+				case 'userscreen':
+					for (i = 15; i < 24; i++) {
+						dk.console.gotoxy(0, i);
+						dk.console.cleareol();
+					}
+					dk.console.gotoxy(77, 23);
+					return;
+				
 			}
 			throw new Error('Unknown clear type at '+fname+':'+line);
 		},
 		'clearblock':function(args) {
+			if (args.length < 2)
+				throw new Error('@clearblock requires two arguments');
 			var start = parseInt(getvar(args[0]), 10) - 1;
 			var end = parseInt(getvar(args[1]), 10);
 			var i;
@@ -779,6 +933,8 @@ function insane_run_ref(sec, fname, refret)
 			dk.console.attr.value = sattr;
 		},
 		'convert_file_to_ansi':function(args) {
+			if (args.length < 2)
+				throw new Error('@convert_file_to_ansi requires two arguments');
 			var inf = new File(getfname(getvar(args[0])));
 			var out = new File(getfname(getvar(args[1])));
 			var l;
@@ -796,6 +952,8 @@ function insane_run_ref(sec, fname, refret)
 			out.close();
 		},
 		'convert_file_to_ascii':function(args) {
+			if (args.length < 2)
+				throw new Error('@convert_file_to_ascii requires two arguments');
 			var inf = new File(getfname(getvar(args[0])));
 			var out = new File(getfname(getvar(args[1])));
 			var l;
@@ -813,15 +971,22 @@ function insane_run_ref(sec, fname, refret)
 			out.close();
 		},
 		'copyfile':function(args) {
+			if (args.length < 2)
+				throw new Error('@copyfile requires two arguments');
 			file_copy(getfname(getvar(args[0])), getfname(getvar(args[1])));
 		},
 		'dataload':function(args) {
+			if (args.length < 3)
+				throw new Error('@dataload requires three arguments');
 			var f = new File(getfname(getvar(args[0])));
-			var rec = getvar(args[1]);
+			var rec = parseInt(getvar(args[1]), 10);
 			var val;
 
+			if (isNaN(rec))
+				throw new Error('Invalid record parameter to @dataload');
 			if (!file_exists(f.name)) {
-				f.open('wb');
+				if (!f.open('wb'))
+					throw new Error('@dataload unable to create '+f.name);
 				f.writeBin(state.time, 4);
 				for (i = 0; i < 250; i++) {
 					if ((i + 1) === rec)
@@ -834,19 +999,22 @@ function insane_run_ref(sec, fname, refret)
 				return;
 			}
 			if (!f.open('rb'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('@dataload unable to open '+f.name);
 			f.position = rec * 4;
 			val = f.readBin(4);
 			f.close();
 			setvar(args[2], val);
 		},
 		'datanewday':function(args) {
+			if (args.length < 1)
+				throw new Error('@datanewday requires an argument');
 			var f = new File(getfname(getvar(args[0])));
 			var i;
 			var d;
 
 			if (!file_exists(f.name)) {
-				f.open('wb');
+				if (!f.open('wb'))
+					throw new Error('@datanewday Unable to create '+f.name);
 				f.writeBin(state.time, 4);
 				for (i = 0; i < 250; i++)
 					f.writeBin(0, 4);
@@ -854,7 +1022,7 @@ function insane_run_ref(sec, fname, refret)
 				return;
 			}
 			if (!f.open('r+b'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('@datanewday unable to open '+f.name);
 			d = f.readBin(4);
 			if (d != state.time) {
 				f.position = 0;
@@ -865,12 +1033,17 @@ function insane_run_ref(sec, fname, refret)
 			f.close();
 		},
 		'datasave':function(args) {
+			if (args.length < 3)
+				throw new Error('@datasave requires three arguments');
 			var f = new File(getfname(getvar(args[0])));
-			var rec = getvar(args[1]);
+			var rec = parseInt(getvar(args[1]), 10);
 			var val = replace_vars(getvar(args[2]));
 
+			if (isNaN(rec))
+				throw new Error('@datasave passed invalid rec parameter');
 			if (!file_exists(f.name)) {
-				f.open('wb');
+				if (!f.open('wb'))
+					throw new Error('@datasave unable to create '+f.name);
 				f.writeBin(state.time, 4);
 				for (i = 0; i < 250; i++) {
 					if ((i + 1) === rec)
@@ -882,33 +1055,35 @@ function insane_run_ref(sec, fname, refret)
 				return;
 			}
 			if (!f.open('r+b'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('@datasave unable to open '+f.name);
 			f.position = rec * 4;
 			f.writeBin(val, 4);
 			f.close();
 		},
 		'delete':function(args) {
+			if (args.length < 1)
+				throw new Error('@delete requires an argument');
 			file_remove(getfname(getvar(args[0])));
 		},
 		'display':function(args) {
 			if (args.length > 2 && args[1].toLowerCase() === 'in') {
 				// TODO: Implement this!
-				throw new Error('Display command not implemented!');
+				throw new Error('@display not implemented!');
 			}
-			throw new Error('Unsupported display at '+fname+':'+line);
+			throw new Error('@display not implemented');
 		},
 		'displayfile':function(args) {
 			// TODO: This seems to be the only way the moremap string is used.
 			var lines;
 			if (args.length < 1)
-				throw new Error('No filename for displayfile at '+fname+':'+line);
+				throw new Error('@displayfile called with no filename');
 			var f = new File(getfname(getvar(args[0])));
 			if (!file_exists(f.name)) {
 				lln('`0File '+getvar(args[0])+' missing - please inform sysop');
-				return;
+				throw new Error('@displayfile '+f.name+" doesn't exist");
 			}
 			if (!f.open('r'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('@displayfile unable to open '+f.name);
 			lines = f.readAll();
 			f.close();
 			lines.forEach(function(l) {
@@ -918,6 +1093,7 @@ function insane_run_ref(sec, fname, refret)
 		'do':function(args) {
 			var tmp;
 
+			// TODO: This implies that the line "@do" will execute the next line... but this is used for @if parsing... also, this will choke on comments.
 			if (args.length < 1 || args.length == 1 && args[0].toLowerCase() === 'do') {
 				if (line + 1 >= files[fname].lines.length)
 					throw new Error('do at end of file');
@@ -925,7 +1101,7 @@ function insane_run_ref(sec, fname, refret)
 				//if (files[fname].lines[line + 1].search(/^\s*@begin/i) === -1)
 				//	throw new Error('trailing do at '+fname+':'+line);
 				tmp = line;
-				while (files[fname].lines[++tmp].search(/^\s*;/) != -1) {
+				while (files[fname].lines[++tmp].search(/^\s*@/) === -1) {
 					if (tmp >= files[fname].lines.length)
 						break;
 				}
@@ -939,6 +1115,7 @@ function insane_run_ref(sec, fname, refret)
 				do_handlers[args[0].toLowerCase()](args.slice(1));
 				return;
 			}
+			// TODO: Also for @if handling... 'do begin' apparently to prevent choking on a *single* comment...
 			if (args.length == 2 && args[1].toLowerCase() === 'begin') {
 				line++;
 				return;
@@ -979,7 +1156,7 @@ function insane_run_ref(sec, fname, refret)
 					setvar(args[0], random(clamp_integer(getvar(args[3]), 's32')) + clamp_integer(getvar(args[4]), 's32'));
 				}
 				else
-					setvar(args[0], getsvar(args[2], args[0]));
+					setvar(args[0], getsvar(args, 2, args[0]));
 				return;
 			}
 			if (args.length > 2 && args[1] == '-') {
@@ -991,7 +1168,7 @@ function insane_run_ref(sec, fname, refret)
 				return;
 			}
 			if (args.length > 2 && args[1].toLowerCase() === 'add') {
-				setvar(args[0], getvar(args[0]) + getsvar(args[2], args[0]).toString());
+				setvar(args[0], getvar(args[0]) + getsvar(args, 2, args[0]).toString());
 				return;
 			}
 			if (args.length > 2 && args[1] == '/') {
@@ -1010,7 +1187,7 @@ function insane_run_ref(sec, fname, refret)
 				setvar(args[0], random(clamp_integer(getvar(args[2]), 's32')));
 				return;
 			}
-			if (args.length === 2 && args[1].toLowerCase() === 'copytoname') {
+			if (args.length > 2 && args[1].toLowerCase() === 'copytoname') {
 				player.name = getvar('`s10');
 				return;
 			}
@@ -1021,8 +1198,13 @@ function insane_run_ref(sec, fname, refret)
 			redraw_bar(true);
 		},
 		'drawpart':function(args) {
+			if (args.length < 2)
+				throw new Error('@drawpart requires two arguments');
 			var x = getvar(args[0]);
 			var y = getvar(args[1]);
+
+			if (x < 1 || x > 80 || y < 1 || y > 20)
+				throw new Error('@drawpart invalid X/Y: '+x+'/'+y);
 
 			erase(x - 1, y - 1);
 			update_space(x - 1, y - 1);
@@ -1031,6 +1213,8 @@ function insane_run_ref(sec, fname, refret)
 		'fight':function(args) {
 			var l = getlines();
 
+			if (l.length < 28)
+				throw new Error('@fight requires 28 data lines.');
 			function split_ref(str, prefix) {
 				var l = str.split('|');
 
@@ -1043,23 +1227,43 @@ function insane_run_ref(sec, fname, refret)
 
 			function add_attack(str) {
 				var l = str.split('|');
+				var strength;
 
+				// Does missing a | make the fight not happen?
 				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
 					return;
 
-				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:replace_vars(getvar(l[0]))});
+				strength = parseInt(getvar(l[1]), 10);
+				if (isNaN(strength))
+					throw new Error('@fight invalid strength '+l[1]);
+				enemy.attacks.push({strength:strength, hitaction:replace_vars(getvar(l[0]))});
 			}
 
+			var sex = parseInt(getvar(l[7]), 10);
+			if (isNaN(sex))
+				throw new Error('@fight sex is invalid');
+			var defence = parseInt(getvar(l[15]), 10);
+			if (isNaN(defence))
+				throw new Error('@fight defence is invalid');
+			var gold = parseInt(getvar(l[17]), 10);
+			if (isNaN(gold))
+				throw new Error('@fight gold is invalid');
+			var experience = parseInt(getvar(l[19]), 10);
+			if (isNaN(experience))
+				throw new Error('@fight experience is invalid');
+			var hp = parseInt(getvar(l[21]), 10);
+			if (isNaN(hp))
+				throw new Error('@fight hp is invalid');
 			enemy = {
 				name:getvar(l[1]),
 				see:replace_vars(getvar(l[3])),
 				killstr:replace_vars(getvar(l[5])),
-				sex:parseInt(getvar(l[7]), 10),
-				defence:parseInt(getvar(l[15]), 10),
-				gold:parseInt(getvar(l[17]), 10),
-				experience:parseInt(getvar(l[19]), 10),
-				hp:parseInt(getvar(l[21]), 10),
-				maxhp:parseInt(getvar(l[21]), 10),
+				sex:sex,
+				defence:defence,
+				gold:gold,
+				experience:experience,
+				hp:hp,
+				maxhp:hp,
 				attacks:[]
 			};
 			add_attack(l[9]);
@@ -1085,7 +1289,10 @@ function insane_run_ref(sec, fname, refret)
 			var tmp3;
 			var tmp4;
 
+			if (args.length < 5)
+				throw new Error('@if requires at least five arguments');
 			function check_begin(arg) {
+				// TODO: Fix this up for "comments" at end of line...
 				if (arg < args.length && args[arg].toLowerCase() === 'do') {
 					if (args.length > (arg + 1) && args[arg + 1].toLowerCase() === 'begin') {
 						// Check next line for @begin
@@ -1180,7 +1387,7 @@ function insane_run_ref(sec, fname, refret)
 						tmp = getvar(args[++tmp2]).length;
 					}
 					else
-						tmp = getsvar(args[tmp2], args[0]);
+						tmp = getsvar1(args[tmp2], args[0]);
 					tmp2++;
 					if (getvar(args[0]).toString().toLowerCase() === tmp.toString().toLowerCase())
 						handlers.do(args.slice(tmp2 + 1));
@@ -1206,16 +1413,23 @@ function insane_run_ref(sec, fname, refret)
 			}
 		},
 		'key':function(args) {
+			var orig_attr = dk.console.attr.value;
+			var mlen = 8;
+
 			if (args.length > 0) {
 				switch(args[0].toLowerCase()) {
 					case 'nodisplay':
 						getkey();
 						return;
 					case 'top':
-						dk.console.gotoxy(0,0);
+						dk.console.gotoxy(39, 14);
+						lw(' `0MORE ');
+						mlen = 6;
 						break;
 					case 'bottom':
-						dk.console.gotoxy(0,23);
+						dk.console.gotoxy(35,23);
+						lw(' `0MORE ');
+						mlen = 6;
 						break;
 					// Any other argument is the same as no argument... CNW reset.ref uses '@key noshow'
 					default:
@@ -1228,14 +1442,14 @@ function insane_run_ref(sec, fname, refret)
 			else {
 				// No, this would be the sane thing to do... don't do it.
 				//lw('\r');
+				lw('`r0  `2<`0MORE`2>');
 			}
-			dk.console.cleareol();
 			// NOTE: This doesn't actually use the "More" prompt that you can override... and it's not centred like the docs claim.
 			//lw(spaces(40-(displen(morestr)/2))+morestr);
-			lw('  `2<`0MORE`2>');
 			getkey();
-			lw('\r');
-			dk.console.cleareol();
+			lw(repeat_chars('\b', mlen));
+			lw(repeat_chars(' ', mlen));
+			dk.console.attr.value = orig_attr;
 		},
 		'label':function(args) {},
 		'loadcursor':function(args) {
@@ -1245,17 +1459,24 @@ function insane_run_ref(sec, fname, refret)
 			world.reLoad();
 		},
 		'loadmap':function(args) {
-			map = load_map(parseInt(getvar(args[0]), 10));
+			if (args.length < 1)
+				throw new Error('@loadmap requires a parameter');
+			var m = parseInt(getvar(args[0]), 10);
+			if (isNaN(m))
+				throw new Error('@loadmap passed invalid map');
+			map = load_map(m);
 		},
 		'loadworld':function(args) {
 			world = wfile.get(0);
 		},
 		'lordrank':function(args) {
+			if (args.length < 2)
+				throw new Error('@lordrank requires two parameters');
 			var f = new File(getfname(getvar(args[0])));
 			var rp = ranked_players(args[1]);
 
 			if (!f.open('ab'))
-				return;
+				throw new Error('@lordrank unable to open '+f.name);
 			rp.forEach(function(pl, i) {
 				f.write((pl.sexmale === 1 ? ' ' : '`#F')+' `2'+space_pad(pl.name, 21)+'`2'+pretty_int(pl.p[0], -14)+'`%'+pretty_int(pl.p[8], -5)+'     '+space_pad((pl.dead === 1 ? '`4Dead' : '`%Alive'), 6)+(pl.p[6] >= 0 ? '`0' : '`4') + pretty_int(pl.p[6], -7)+'`%    '+(pl.p[17] > 0 ? pretty_int(pl.p[17]) : '')+((pl.t[16] & (1<<7)) ? ' `r1`%K`r0' : '')+((pl.t[17] & (1<<7)) ? ' `r4`^D`r0' : '') + '\r\n');
 			});
@@ -1263,10 +1484,29 @@ function insane_run_ref(sec, fname, refret)
 		},
 		'moremap':function(args) {
 			line++;
-			if (line > files[fname].lines.length)
-				return;
+			if (line >= files[fname].lines.length)
+				throw new Error('@moremap at end of file');
 			cl = files[fname].lines[line];
 			morestr = replace_vars(cl);
+		},
+		'name':function(args) {
+			var str;
+			var len;
+
+			if (args.length < 1)
+				throw new Error('@name requires an argument');
+			str = getvar(args[0]);
+			dk.console.gotoxy(53, 14);
+			// Truncate to 20 characters, center in 20 charaters, put space a start/end
+			var len = displen(getvar(args[0]));
+			if (len > 20) {	// Truncate
+				while (displen(str) > 20)
+					str = str.slice(0, -1);
+				len = displen(str);
+			}
+			// Center in 22 spaces...
+			str = spaces(Math.floor((23 - len) / 2)) + str + spaces(Math.ceil((23 - len) / 2));
+			lw(str);
 		},
 		'nocheck':function(args) {
 			// We don't really support this because there's no need for it.
@@ -1290,12 +1530,14 @@ function insane_run_ref(sec, fname, refret)
 		'progname':function(args) {
 			// TODO: Status bar stuff.
 			line++;
-			if (line > files[fname].lines.length)
-				return;
+			if (line >= files[fname].lines.length)
+				throw new Error('@progname at end of file');
 			cl = files[fname].lines[line];
 			progname = replace_vars(cl);
 		},
 		'rank':function(args) {
+			if (args.length < 3)
+				throw new Error('@rank requires three arguments');
 			// TODO: No real clue what the filename is for...
 			var rp = ranked_players(args[1]);
 			var op = player;
@@ -1303,7 +1545,7 @@ function insane_run_ref(sec, fname, refret)
 			rp.forEach(function(pl, i) {
 				player = pl;
 				// TODO: It is assumed this takes a stack frame.
-				insane_run_ref(format('`p%02d', getvar(args[2])), fname, refret);
+				insane_run_ref(getvar(args[2]), fname, refret);
 			});
 			player = op;
 		},
@@ -1313,6 +1555,7 @@ function insane_run_ref(sec, fname, refret)
 			var l;
 
 			if (f.open('r')) {
+				// TODO: Verify what happens to blank lines...
 				while(vs.length > 0) {
 					l = f.readln();
 					if (l === null)
@@ -1321,6 +1564,8 @@ function insane_run_ref(sec, fname, refret)
 				}
 				f.close();
 			}
+			else
+				throw new Error('@readfile unable to open '+f.name);
 			// Documentation says it won't change variables if file too short...
 			// By felicity.ref ends up displaying junk...
 			//while (vs.length) {
@@ -1331,6 +1576,8 @@ function insane_run_ref(sec, fname, refret)
 			dk.console.gotoxy(saved_cursor.x, saved_cursor.y);
 		},
 		'routine':function(args) {
+			if (args < 1)
+				throw new Error('@routine requires at least one argument');
 			var s = replace_vars(args[0]).toLowerCase();
 			var fn = fname;
 			var ret;
@@ -1345,10 +1592,14 @@ function insane_run_ref(sec, fname, refret)
 		},
 		'run':function(args) {
 			var f = fname;
-			var s = replace_vars(args[0]).toLowerCase();
+			var s;
 
+			// Note, this needs to be first because an '@run' line does this with high call depth.
 			if (calldepth > 1)
 				return false;
+			if (args < 1)
+				throw new Error('@run requires at least one argument');
+			s = replace_vars(args[0]).toLowerCase();
 			if (args.length > 2 && args[1].toLowerCase() === 'in') {
 				f = getvar(args[2]).toLowerCase();
 			}
@@ -1361,9 +1612,7 @@ function insane_run_ref(sec, fname, refret)
 			if (files[f].section[s] === undefined) {
 				sln('');
 				lln('ERROR = '+s+' not found in '+fname+'!');
-				// Throwing this error breaks NPCs in baraks.
-				// But you still end up with no map and looking bad.
-				//throw new Error('Unable to find run section '+s+' in '+f+' at '+fname+':'+line);
+				throw new Error('@run unable to find run section '+s+' in '+f);
 			}
 			else {
 				fname = f;
@@ -1375,6 +1624,9 @@ function insane_run_ref(sec, fname, refret)
 		},
 		'saveglobals':function(args) {
 			world.put();
+		},
+		'say':function(args) {
+			throw new Error('@say not implemented');
 		},
 		'saveworld':function(args) {
 			world.put();
@@ -1402,7 +1654,7 @@ function insane_run_ref(sec, fname, refret)
 rescan:
 			while (1) {
 				dk.console.gotoxy(39, 23);
-				lw('`2`r5You have `$&money `2gold.`r0');
+				lw('`2`r5You have `$'+pretty_int(player.money)+' `2gold.`r0');
 				inv = get_inventory();
 				if (inv.length === 0) {
 					dk.console.gotoxy(0, 6);
@@ -1465,7 +1717,7 @@ rescan:
 		},
 		'shell':function(args) {
 			// TODO?  I mean... likely not.
-			throw new Error("Attempt to use a shell command.");
+			throw new Error("@shell not implemented");
 		},
 		'show':function(args) {
 			var l = getlines();
@@ -1475,6 +1727,7 @@ rescan:
 			var pages;
 			var sattr = 2;
 
+			// TODO: Verify that invalid argument results in no-show
 			if (args.length === 0) {
 				l.forEach(function(l) {
 					lln(replace_vars(l));
@@ -1530,8 +1783,11 @@ rescan:
 		},
 		'showlocal':function(args) {
 			// TODO: Like show, but only on local screen (see BEEP).
+			throw new Error('@showlocal not implemented');
 		},
 		'stripcode':function(args) {
+			if (args.length < 1)
+				throw new Error('@stripcode requires an argument');
 			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
 		},
 		'update':function(args) {
@@ -1568,10 +1824,10 @@ rescan:
 		},
 		'writefile':function(args) {
 			if (args.length < 1)
-				throw new Error('No filename for writefile at '+fname+':'+line);
+				throw new Error('@writefile requires a parameter');
 			var f = new File(getfname(getvar(args[0])));
 			if (!f.open('ab'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('Unable to open '+f.name);
 			getlines().forEach(function(l) {
 				f.write(replace_vars(l)+'\r\n');
 			});
@@ -1691,6 +1947,8 @@ rescan:
 		throw new Error('Unable to find section '+sec+' in '+fname);
 	line = files[fname].section[sec].line;
 
+	var eline;
+	var efile;
 	while (1) {
 		/* 
 		 * Actually ANY LINE where the first non-whitespace is not
@@ -1704,6 +1962,8 @@ rescan:
 			break;
 		getlines();
 		line++;
+		eline = line;
+		efile = fname;
 		if (line >= files[fname].lines.length)
 			break;
 		cl = files[fname].lines[line].replace(/^\s*/,'');
@@ -1733,7 +1993,12 @@ rescan:
 		args = cl.substr(1).split(/\s+/);
 		while (args !== undefined && args.length > 1 && args[args.length - 1] === '')
 			args.pop();
-		ret = handle(args);
+		try {
+			ret = handle(args);
+		}
+		catch(e) {
+			log(LOG_ERROR, (new Date()).toString() + ", Node "+dk.connection.node+": REF Error "+e.message+" at "+efile+":"+eline);
+		}
 		if (typeof ret === 'object') {
 			if (ret.itemexit)
 				refret.itemexit = true;
@@ -1749,12 +2014,14 @@ function load_player()
 	var p;
 
 	function post_load() {
-		map = load_map(player.map);
-		// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
-		if (map === null) {
-			player.map = 1;
-			player.x = 1;
-			player.y = 1;
+		if (world !== null) {
+			map = load_map(player.map);
+			// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
+			if (map === null) {
+				player.map = 1;
+				player.x = 1;
+				player.y = 1;
+			}
 		}
 		player.lastx = player.x;
 		player.lasty = player.y;
@@ -2343,6 +2610,8 @@ function move_player(xoff, yoff) {
 	});
 	while (enemy !== undefined)
 		offline_battle();
+	// Figure out what happens when you die from REF damage... (ie: canoe dock)
+	// It seems you stay at negative HP and don't die until something hits *facepalm*.
 	erase_player();
 	update(true);
 	perday = getvar('`v05');
@@ -3035,7 +3304,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 	var str;
 	var keys;
 
-	keys = ('QNP'+extras).split('');
+	keys = ('QNP93'+extras).split('');
 	keys.push('KEY_PGUP');
 	keys.push('KEY_PGDOWN');
 
@@ -3115,6 +3384,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 			switch(choice.ch) {
 				case 'KEY_PGDOWN':
 				case 'N':
+				case '3':
 					cur += cnt;
 					if (cur >= itms.length)
 						cur = itms.length - 1;
@@ -3122,6 +3392,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 					break;
 				case 'KEY_PGUP':
 				case 'P':
+				case '9':
 					cur -= cnt;
 					if (cur < 0)
 						cur = 0;
@@ -4088,7 +4359,12 @@ function load_time()
 		f.write(state.time+'\r\n');
 		f.close;
 		// TODO: Delete inactive players after 15 days.
-		run_ref('maint', 'maint.ref');
+		try {
+			run_ref('maint', 'maint.ref');
+		}
+		catch(e) {
+			log(LOG_ERROR, (new Date()).toString() + ", Node "+dk.connection.node+": REF Error "+e.message+" at maint");
+		}
 	}
 }
 
@@ -4142,11 +4418,6 @@ if (file_exists(getfname('fonts/lord2.fnt'))) {
 load_player();
 load_time();
 
-run_ref('rules', 'rules.ref');
-hail_cleanup();
-
-setup_time_warnings();
-
 var done = false;
 for (arg in argv) {
 	var m = argv[arg].match(/^(.*)\+(.*)$/);
@@ -4157,6 +4428,11 @@ for (arg in argv) {
 }
 if (done)
 	exit(0);
+
+run_ref('rules', 'rules.ref');
+hail_cleanup();
+
+setup_time_warnings();
 
 js.on_exit('killfiles.forEach(function(f) { if (f.is_open) { f.close(); } file_remove(f.name); });');
 

@@ -6,4 +6,4 @@ mods/*
 root/css/custom.css
 root/logo.gif
 root/.well-known
-
+root/robots.txt

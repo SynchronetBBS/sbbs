@@ -1,5 +1,3 @@
-/* $Id: frame.js,v 1.91 2020/08/01 19:32:23 rswindell Exp $ */
-
 /**
  	Javascript Frame Library
  	for Synchronet v3.15a+
@@ -865,10 +863,14 @@ Frame.prototype.scroll = function(x,y) {
 	else {
 		if(typeof x == "number" && x !== 0 && this.__settings__.h_scroll) {
 			this.__position__.offset.x += x;
+			if(this.__position__.offset.x + this.width >= this.data_width)
+				this.__position__.offset.x = this.data_width - this.width;
 			update = true;
 		}
 		if(typeof y == "number" && y !== 0 && this.__settings__.v_scroll) {
 			this.__position__.offset.y += y;
+			if(this.__position__.offset.y + this.height >= this.data_height)
+				this.__position__.offset.y = this.data_height - this.height;
 			update = true;
 		}
 		if(update)
@@ -933,7 +935,7 @@ Frame.prototype.end = function() {
 }
 Frame.prototype.pagedown = function() {
 	this.__position__.offset.y += this.height-1;
-	if(this.__position__.offset.y >= this.data_height)
+	if(this.__position__.offset.y + this.height >= this.data_height)
 		this.__position__.offset.y = this.data_height - this.height;
 	this.refresh();
 }

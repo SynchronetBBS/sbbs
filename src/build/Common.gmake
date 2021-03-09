@@ -448,7 +448,7 @@ $(OBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(OBJODIR)
 # Implicit C++ Compile Rule
 $(OBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(OBJODIR)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
+	$(QUIET)$(CXX) -std=c++11 $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
 
 # Implicit MT C Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(MTOBJODIR)
@@ -458,7 +458,7 @@ $(MTOBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(MTOBJODIR)
 # Implicit MT C++ Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -o $@ -c $<
+	$(QUIET)$(CXX) -std=c++11 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
 depend:
 	$(QUIET)$(DELETE) $(OBJODIR)/.depend

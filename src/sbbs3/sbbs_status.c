@@ -477,7 +477,7 @@ void status_thread(void *arg)
 		return;
 	}
 
-	(void)protected_uint32_init(&thread_count, 0);
+	protected_uint32_init(&thread_count, 0);
 
 	pthread_once(&init_once, init_lists);
 	startup->status(startup->cbdata, "Initializing");
@@ -505,7 +505,7 @@ void status_thread(void *arg)
 	if(startup->host_name[0]==0)
 		SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-	(void)protected_uint32_init(&active_clients, 0);
+	protected_uint32_init(&active_clients, 0);
 	update_clients();
 
 	startup->thread_up(startup->cbdata, TRUE, TRUE);
