@@ -1,0 +1,8 @@
+<div hidden>
+    <form id="telegram-form-template">
+        <input type="text" class="form-control" placeholder="My message" name="telegram">
+        <input type="submit" value="submit" class="hidden">
+    </form>
+    <span data-label-send-telegram><? locale.write('label_send_telegram', 'main'); ?></span>
+    <span data-label-receive-telegram><? locale.write('label_receive_telegram', 'main'); ?></span>
+</div>
