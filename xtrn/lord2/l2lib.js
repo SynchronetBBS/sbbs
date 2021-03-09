@@ -1282,13 +1282,19 @@ function getvar(name, replacing) {
 	return ret;
 }
 
-function getsvar(name, vname)
+/*
+ * Returns a string if variable name is a string
+ */
+function getsvar(args, offset, vname)
 {
-	var v = getvar(name);
+	var v = getvar(args[offset]);
 	var fv = getvar(vname);
 
-	if (typeof fv === 'string' && typeof v !== 'string')
-		return replace_vars(name);
+	if (typeof fv === 'string') {
+		if (typeof v !== 'string')
+			return replace_vars(args.splice(offset - 1).join(' '));
+		return replace_vars(args.slice(offset).join(' '));
+	}
 	return v;
 }
 
