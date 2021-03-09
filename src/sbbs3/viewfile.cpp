@@ -36,6 +36,7 @@ int sbbs_t::viewfile(smbfile_t* f, bool ext)
 
 	curdirnum=f->dir;	/* for ARS */
 	while(online) {
+		sys_status &= ~SS_ABORT;
 		if(ext)
 			fileinfo(f);
 		else
