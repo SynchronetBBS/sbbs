@@ -41,7 +41,7 @@ function EN_US(name) {
     });
     Object.defineProperty(this, 'strings', { value: strings });
 
-    var active_section = 'page_main';
+    var active_section = 'main';
     Object.defineProperty(this, 'section', {
         get: function () {
             return active_section;
