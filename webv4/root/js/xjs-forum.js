@@ -251,7 +251,7 @@ async function postReply(sub, id, body, parentElem, replyElem) {
 
 async function postNewPoll(sub) {
 
-    document.getElementById('newpoll-submit').setAttribute('disabled', true);
+    document.getElementById('newpoll-submit').disabled = true;
 
     if (document.querySelectorAll('input[name="newpoll-answers"]:checked').length !== 1) return;
 
