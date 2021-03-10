@@ -1,8 +1,6 @@
 'use strict';
 
 // TODO: More optimal horizontal lightbars
-// TODO: Detect disconnections better
-// TODO: Does using an item take a turn?
 // TODO: Hail, Attack, Other player presses 'A', can kill someone without them knowing.
 // TODO: Detect player map zero and don't load it
 // TODO: The original does NOT treat something as a line unless it ends with CRLF, this means
@@ -424,7 +422,6 @@ function insane_run_ref(sec, fname, refret)
 				throw new Error('@do readnum requires a length parameter');
 			var len = getvar(args[0]);
 			if (args.length > 1) {
-				// TODO: Verify if input happens on invalid parameters or not
 				val = parseInt(getvar(args[1]), 10);
 				if (isNaN(val))
 					val = 0;
@@ -599,8 +596,6 @@ function insane_run_ref(sec, fname, refret)
 			else {
 				// TODO: Test alla this.
 				to = parseInt(to, 10);
-				// Can't throw an error because of the DANGEROUS FOREST (DANGERF2.REF line 829-ish).
-				// TODO: Go ahead and throw syntax errors, but catch()/log() them where the line is parsed?
 				if (isNaN(to))
 					return;
 				//	throw new Error('Invalid talk to at '+fname+':'+line);
@@ -655,6 +650,7 @@ function insane_run_ref(sec, fname, refret)
 	};
 	var handlers = {
 		// TODO: NPC Chat commands... see Jack Phlash REFDoor docs for deets.
+		//       Looks like @say is just broken in LORD2 though.
 		// Appears to be used to end a show/etc block
 		'':function(args) {},
 		'addchar':function(args) {
@@ -672,7 +668,6 @@ function insane_run_ref(sec, fname, refret)
 				player.Record = tmp.Record;
 				ufile.new();
 			}
-			player.lastsaved = savetime();
 			player_put();
 			update_rec = ufile.get(player.Record);
 			while(update_rec === null) {
