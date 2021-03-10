@@ -156,9 +156,8 @@ async function addNew(sub) {
 
     if (document.getElementById('newmessage') !== null) return;
 
-    const elem = document.getElementById('forum-new-message-template').cloneNode(true);
+    const elem = document.querySelector('div[data-new-message-template').cloneNode(true);
     elem.id = 'newmessage';
-    elem.innerHTML = elem.innerHTML.replace(/SUB/g, sub);
 
     const li = document.createElement('li');
     li.id = 'newmessage-li';
@@ -166,72 +165,87 @@ async function addNew(sub) {
     li.appendChild(elem);
     document.getElementById('forum-list-container').appendChild(li);
 
-    elem.removeAttribute('hidden');
-
     const data = await v4_get('./api/forum.ssjs?call=get-signature');
     const nmb = elem.getElementsByTagName('textarea')[0];
-    nmb.value += `\r\n${data.signature}`;
+    nmb.value += `\r\n${data}`;
     nmb.setSelectionRange(0, 0);
-	window.location.hash = '#newmessage';
+
+    elem.removeAttribute('hidden');
+
+    window.location.hash = '#newmessage';
 	nmb.onkeydown = evt => evt.stopImmediatePropagation();
 
 }
 
 async function postNew(sub) {
 
-    document.getElementById('newmessage').getElementsByTagName('input')[2].setAttribute('disabled', true);
+    const elem = document.getElementById('newmessage');
+    elem.querySelector('input[data-new-message-submit]').disabled = true;
 
 	const data = await v4_post('./api/forum.ssjs', {
 		call: 'post',
 		sub,
-		to: document.getElementById('newmessage-to').value,
-		subject: document.getElementById('newmessage-subject').value,
-		body: document.getElementById('newmessage-body').value,
+		to: elem.querySelector('input[data-new-message-to]').value,
+		subject: elem.querySelector('input[data-new-message-subject]').value,
+		body: elem.querySelector('textarea[data-new-message-body]').value,
 	});
-
-    document.getElementById('newmessage').getElementsByTagName('input')[2].setAttribute('disabled', true);
 
     if (data.success) {
         const li = document.getElementById('newmessage-li');
-        li.parentNode.removeChild(li);
-		insertParam('notice', 'Your message has been posted.'); // This is stupid.
+        li.remove();
+		insertParam('notice', 'Your message has been posted.'); // This is stupid. Perhaps 'data' should contain the header etc. to be appended
 	}
 
 }
 
-async function addReply(sub, id) {
+async function addReply(sub, id, body, parentElem) {
 
     if (document.getElementById(`replybox-${id}`) !== null) return;
+    parentElem.querySelector('button[data-add-reply]').disabled = true;
 
-    const elem = document.getElementById('forum-message-reply-template').cloneNode(true);
+    const elem = document.querySelector('div[data-reply-message-template]').cloneNode(true);
     elem.id = `replybox-${id}`;
-    elem.innerHTML = elem.innerHTML.replace(/SUB/g, sub);
-    elem.innerHTML = elem.innerHTML.replace(/ID/g, id);
-    elem.removeAttribute('hidden');
 
+    const nmb = elem.querySelector('textarea[data-reply-message-body]');
 	const data = await v4_get('./api/forum.ssjs?call=get-signature');
-    const nmb = elem.getElementsByTagName('textarea')[0];
-    nmb.value += `\r\n${data.signature}`;
+    nmb.value += `\r\n${data}`;
     nmb.setSelectionRange(0, 0);
     nmb.onkeydown = evt => evt.stopImmediatePropagation();
 
+    const qb = elem.querySelector('button[data-quote-message-button');
+    qb.onclick = () => {
+        nmb.focus();
+        nmb.setRangeText(`> ${body.split(/\r*\n/).join('\r\n> ')}\r\n`, nmb.selectionStart, nmb.selectionEnd, 'end');
+        // cursor positioning is a bit wonky here; needs work
+    };
+
+    const sb = elem.querySelector('input[data-reply-message-submit]');
+    sb.onclick = (evt) => {
+        evt.preventDefault();
+        postReply(sub, id, nmb.value, parentElem, elem);
+    }
+
+    parentElem.appendChild(elem);
+    elem.removeAttribute('hidden');
+
 }
 
-async function postReply(sub, id) {
-    document.getElementById(`reply-button-${id}`).setAttribute('disabled', true);
+async function postReply(sub, id, body, parentElem, replyElem) {
+    replyElem.querySelector('input[data-reply-message-submit]').disabled = true;
+    const qb = replyElem.querySelector('button[data-quote-message-button');
+    qb.disabled = true;
 	const data = await v4_post('./api/forum.ssjs', {
 		call: 'post-reply',
 		sub,
-		body: body = document.getElementById(`reply-button-${id}`).value,
+		body: body,
 		pid: id,
 	});
 	if (data.success) {
-        document.getElementById(`quote-${id}`).setAttribute('disabled', false);
-        const rb = document.getElementById(`replybox-${id}`);
-        rb.parentNode.removeChild(rb);
-		insertParam('notice', 'Your message has been posted.'); // This is stupid.
+        qb.disabled = false;
+        replyElem.remove();
+		insertParam('notice', 'Your message has been posted.'); // This is stupid. As with postNew, just append the message to the view
 	} else {
-        document.getElementById(`reply-button-${id}`).setAttribute('disabled', false);
+        parentElem.querySelector('button[data-add-reply]').disabled = false;
 	}
 }
 
@@ -274,7 +288,7 @@ async function postNewPoll(sub) {
     document.getElementById('newpoll-submit').setAttribute('disabled', false);
 	if (res.success) {
         const np = document.getElementById('forum-new-poll');
-        np.parentNode.removeChild(np);
+        np.remove();
 		insertParam('notice', 'Your poll has been posted.'); // This is stupid
 	}
 
@@ -365,6 +379,7 @@ async function listMessages(sub, thread) {
         elem.querySelector('span[data-downvote-count]').innerHTML = e.votes.down;
         elem.querySelector('div[data-message-body]').innerHTML = formatMessageBody(e.body);
         elem.querySelector('a[data-direct-link]').setAttribute('href', `#${e.number}`);
+        elem.querySelector('button[data-add-reply]').onclick = evt => addReply(sub, e.number, e.body, elem);
         elem.removeAttribute('hidden');
         if (append) document.getElementById('forum-list-container').appendChild(elem);
         if (users.indexOf(akey) < 0) users.push(akey);
