@@ -39,8 +39,9 @@ var pending_timeout;
 
 function handle_timeout(reason)
 {
-	if (player.battle) {
+	if (player.battle || player.busy) {
 		pending_timeout = reason;
+		dk.console.active = false;
 		return;
 	}
 	switch (reason) {
@@ -50,6 +51,8 @@ function handle_timeout(reason)
 			break;
 		case 'IDLE':
 			run_ref('notime', 'help.ref');
+			break;
+		case 'DISCONNECT':
 			break;
 	}
 	run_ref('endgame', 'gametxt.ref');
@@ -207,6 +210,9 @@ function yes_no(y, title, question) {
 	do {
 		ch = getkey().toUpperCase();
 		switch (ch) {
+			case 'CONNECTION_CLOSED':
+				ch = '\r';
+				break;
 			case '8':
 			case 'KEY_UP':
 			case '4':
@@ -461,7 +467,7 @@ function insane_run_ref(sec, fname, refret)
 				throw new Error('@do readspecial requires two arguments');
 			do {
 				ch = getkey().toUpperCase();
-				if (ch === '\r' || ch === '\x1b')
+				if (ch === '\r' || ch === '\x1b' || ch === 'CONNECTION_CLOSED')
 					ch = opts.substr(0, 1);
 			} while (opts.indexOf(ch) === -1);
 			setvar(args[0], ch);
@@ -750,13 +756,14 @@ function insane_run_ref(sec, fname, refret)
 				lw('  `2They have nothing to sell.  (press `%Q `2to continue)');
 				do {
 					ch = getkey.toUpperCase();
-				} while(ch !== 'Q');
+				} while(ch !== 'Q' && ch !== 'CONNECTION_CLOSED');
 			}
 
 			while(1) {
 				choice = items_menu(itms, cur, true, false, '', y+1, 22)
 				cur = choice.cur;
 				switch(choice.ch) {
+					case 'CONNECTION_CLOSED':
 					case 'Q':
 						return;
 					case '\r':
@@ -1682,7 +1689,7 @@ rescan:
 					lw('`r0  `2You have nothing to sell.  (press `%Q `2to continue)');
 					do {
 						ch = getkey().toUpperCase();
-					} while (ch != 'Q');
+					} while (ch != 'Q' && ch !== 'CONNECTION_CLOSED');
 					return;
 				}
 
@@ -1793,6 +1800,7 @@ rescan:
 						case 'S':
 							p = 0;
 							break;
+						case 'CONNECTION_CLOSED':
 						case 'Q':
 							dk.console.attr.value = sattr;
 							return;
@@ -2147,7 +2155,7 @@ function mail_check(messenger)
 		update_bar('`2A messenger stops you with the following news. (press `0R`2 to read it)', true);
 		do {
 			ch = getkey().toUpperCase();
-		} while (ch !== 'R');
+		} while (ch !== 'R' && ch !== 'CONNECTION_CLOSED');
 		lw('`r0`c');
 	}
 
@@ -2339,6 +2347,7 @@ function hailed(pl)
 		}
 		if (dk.console.waitkey(game.delay)) {
 			switch(getkey().toUpperCase()) {
+				case 'CONNECTION_CLOSED':
 				case 'A':
 					exit = true;
 					break;
@@ -2720,7 +2729,7 @@ rescan:
 			lw('`2  You are carrying nothing!  (press `%Q`2 to continue)');
 			do {
 				ch = getkey().toUpperCase();
-			} while (ch != 'Q');
+			} while (ch != 'Q' && ch !== 'CONNECTION_CLOSED');
 			return;
 		}
 		else {
@@ -2890,6 +2899,7 @@ function hbar(x, y, opts, cur)
 				if (cur >= opts.length)
 					cur = 0;
 				break;
+			case 'CONNECTION_CLOSED':
 			case '\r':
 				return cur;
 		}
@@ -3172,7 +3182,7 @@ function mail_to(pl, quotes)
 					ch = '\r';
 				}
 			}
-		} while (ch !== '\r');
+		} while (ch !== '\r' && ch !== 'CONNECTION_CLOSED');
 		if (l.length === 0 && msg.length === 0) {
 			sln('');
 			lln('  `2Mail aborted');
@@ -3304,6 +3314,7 @@ function vbar(choices, args)
 				}
 				ret.cur = choices.length - 1;
 				break;
+			case 'CONNECTION_CLOSED':
 			case '\r':
 				movetoend();
 				return ret;
@@ -3723,7 +3734,7 @@ function hail()
 			lw('`r0  `2You have nothing to give, loser.  (press `%Q `2to continue)');
 			do {
 				ch = getkey().toUpperCase();
-			} while (ch !== 'Q');
+			} while (ch !== 'Q' && ch !== 'CONNECTION_CLOSED');
 		}
 		else {
 			if (online) {
@@ -3906,6 +3917,7 @@ function hail()
 					if (page != pages - 1)
 						erase_menu();
 					page = pages - 1;
+				case 'CONNECTION_CLOSED':
 				case '\r':
 					break;
 			}
@@ -4259,12 +4271,15 @@ function do_map()
 			case 'P':
 				run_ref('whoison', 'help.ref');
 				break;
+			case 'CONNECTION_CLOSED':
+				ch = 'Q';
+				break;
 			case 'Q':
 				dk.console.gotoxy(0, 22);
 				lw('`r0`2  Are you sure you want to quit back to the BBS? [`%Y`2] : ');
 				do {
 					ch = getkey().toUpperCase();
-				} while('YN\r'.indexOf(ch) === -1);
+				} while(['Y', 'N', '\r', 'CONNECTION_CLOSED'].indexOf(ch) === -1);
 				if (ch === 'N') {
 					dk.console.gotoxy(0, 22);
 					dk.console.cleareol();
