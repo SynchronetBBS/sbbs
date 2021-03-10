@@ -222,8 +222,11 @@ if (argv !== undefined) {
 /*
  * Renew if the config has changed
  */
-if (old_host != new_host)
+if (old_host != new_host) {
+	// If we change hosts, delete the old private key.
+	file_remove(ks_fname);
 	renew = true;
+}
 else if (new_domain_hash != old_domain_hash)
 	renew = true;
 else if (!at_least_a_third())
