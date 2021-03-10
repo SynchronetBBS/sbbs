@@ -35,6 +35,10 @@ if (request.has_param('call') && (http_request.method === 'GET' || http_request.
             //     }
             //     break;
 
+            case 'get-signature':
+                reply = forum.getSignature(user.number);
+                break;
+
             default:
                 handled = false;
                 break;
