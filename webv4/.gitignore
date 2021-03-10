@@ -7,3 +7,5 @@ root/css/custom.css
 root/logo.gif
 root/.well-known
 root/robots.txt
+
+!root/js/jquery.min.map
