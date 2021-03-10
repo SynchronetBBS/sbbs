@@ -23,6 +23,18 @@
 
 	<script type="text/javascript" src="./js/graphics-converter.js"></script>
 	<script type="text/javascript" src="./js/avatars.js"></script>
+
+	<!-- Template for a message reply input -->
+	<div class="reply" data-reply-message-template hidden>
+		<strong>
+			<? locale.write('label_form_reply'); ?>
+		</strong>
+		<textarea rows="8" class="form-control reply" data-reply-message-body></textarea>
+		<button class="btn" data-quote-message-button>
+			<? locale.write('button_quote_message'); ?>
+		</button>
+		<input class="btn btn-primary" type="submit" value="Submit" data-reply-message-submit />
+	</div>
 	
 	<div hidden>
 		<li id="forum-message-template" class="list-group-item striped" data-message>
@@ -50,13 +62,13 @@
 			</div>
 			<div class="message" data-message-body></div>
 			<div class="clearfix">
-				<button class="btn btn-default icon" title="<? locale.write('label_delete'); ?>" aria-label="<? locale.write('label_delete'); ?>">
+				<button class="btn btn-default icon" title="<? locale.write('label_delete'); ?>" aria-label="<? locale.write('label_delete'); ?>" data-delete-message hidden>
 					<span class="glyphicon glyphicon-trash"></span>
 				</button>
 				<a class="btn btn-default icon" title="<? locale.write('label_direct_link'); ?>" aria-label="<? locale.write('label_direct_link'); ?>" href="#" data-direct-link>
 					<span class="glyphicon glyphicon-link"></span>
 				</a>
-				<button class="btn btn-default icon" title="<? locale.write('label_reply'); ?>" aria-label="<? locale.write('label_reply'); ?>">
+				<button class="btn btn-default icon" title="<? locale.write('label_reply'); ?>" aria-label="<? locale.write('label_reply'); ?>" data-add-reply>
 					<span class="glyphicon glyphicon-comment"></span>
 				</button>
 				<button class="btn-uv btn btn-default icon" data-button-upvote>
@@ -114,6 +126,8 @@
 <!-- Viewing a sub (list of threads) -->
 <? } else if (request.has_param('sub') && msg_area.sub[request.get_param('sub')] !== undefined) { ?>
 
+	<? var sub = msg_area.sub[request.get_param('sub')]; ?>
+
 	<!-- Template for a link to a thread -->
 	<div hidden>
 		<a id="forum-thread-link-template" href="./?page=<? request.write_param('page'); ?>&sub=<? request.write_param('sub'); ?>" class="list-group-item striped" data-thread>
@@ -159,26 +173,14 @@
 	</div>
 
 	<!-- Template for a new message input -->
-    <div id="forum-new-message-template" hidden>
-        <input class="form-control" type="text" placeholder="<? locale.write('label_message_to'); ?>" />
+    <div data-new-message-template hidden>
+        <input class="form-control" type="text" placeholder="<? locale.write('label_message_to'); ?>" data-new-message-to />
         <br />
-        <input class="form-control" type="text" placeholder="<? locale.write('label_message_subject'); ?>" />
+        <input class="form-control" type="text" placeholder="<? locale.write('label_message_subject'); ?>" data-new-message-subject />
         <br />
-        <textarea class="form-control" rows="8"></textarea>
+        <textarea class="form-control" rows="8" data-new-message-body></textarea>
         <br />
-		<input class="btn btn-primary" type="submit" value="<? locale.write('button_submit', 'main') ?>" onclick="postNew('SUB')" />
-    </div>
-
-	<!-- Template for a message reply input -->
-    <div id="forum-message-reply-template" class="reply" hidden>
-		<strong>
-            <? locale.write('label_form_reply'); ?>
-        </strong>
-		<textarea rows="8" class="form-control reply" id="replytext-ID"></textarea>
-        <button id="quote-ID" class="btn" onclick="quotify('ID')">
-            <? locale.write('button_quote_message'); ?>
-        </button>
-		<input id="reply-button-ID" class="btn btn-primary" type="submit" value="Submit" onclick="postReply('SUB', 'ID')" />
+		<input class="btn btn-primary" type="submit" value="<? locale.write('button_submit', 'main') ?>" onclick="postNew('<? write(sub.code); ?>')" data-new-message-submit />
     </div>
 
 	<!-- Template for adding a new poll -->
@@ -289,8 +291,6 @@
             </a>
         </li>
     </ol>
-
-    <? var sub = msg_area.sub[request.get_param('sub')]; ?>
 
     <button class="btn btn-default icon" aria-label="<? locale.write('button_post_message'); ?>" title="<? locale.write('button_post_message'); ?>" onclick="addNew('<? write(sub.code); ?>')">
         <span class="glyphicon glyphicon-pencil"></span>
