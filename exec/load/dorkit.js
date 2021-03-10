@@ -492,6 +492,13 @@ var dk = {
 			}
 			else if (js.terminated) {
 				dk.connection.inactive_time = system.timer;
+				js.terminate = true;
+				mswait(1);
+				return true;
+			}
+			else if (dk.connection.active === false) {
+				dk.connection.inactive_time = system.timer;
+				js.terminate = true;
 				mswait(1);
 				return true;
 			}

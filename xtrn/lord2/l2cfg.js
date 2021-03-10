@@ -52,6 +52,9 @@ function menu(title, blank_line, opts, cur)
 		dk.console.gotoxy(0, y + mctx.cur);
 		lw(' ');
 		switch(ret) {
+			case 'CONNECTION_CLOSED':
+				done = true;
+				break;
 			case 'KEY_UP':
 			case '8':
 				mctx.cur--;
@@ -265,6 +268,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 						case 'KEY_ALT_7':
 							map.mapinfo[getoffset(x, y)].backcolour = 7;
 							break;
+						case 'CONNECTION_CLOSED':
 						case '\x1b':
 							dk.console.gotoxy(0, 22);
 							dk.console.attr.value = 2;
@@ -305,6 +309,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 							if (++x >= 80)
 								x = 0;
 							break;
+						case 'CONNECTION_CLOSED':
 						case 'q':
 							return;
 						case '?':
@@ -757,6 +762,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 					showname = !showname;
 					redraw = true;
 					break;
+				case 'CONNECTION_CLOSED':
 				case 'Q':
 					return false;
 			}
@@ -1384,20 +1390,22 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 	{text:'  `2(`4Q`2)uit & Save', shortcut:'Q', callback:function() {
 		var tmp;
 
-		dk.console.gotoxy(0, 23);
-		lln('  `0Saving changes.  Thanks for using this product.');
-		if (save.game !== undefined)
-			save.game.put();
-		if (save.world !== undefined)
-			save.world.put();
-		for (tmp in save.map) {
-			save.map[tmp].put();
-		}
-		for (tmp in save.player) {
-			save.player[tmp].put();
-		}
-		for (tmp in save.item) {
-			save.item[tmp].put();
+		if (dk.connection.active) {
+			dk.console.gotoxy(0, 23);
+			lln('  `0Saving changes.  Thanks for using this product.');
+			if (save.game !== undefined)
+				save.game.put();
+			if (save.world !== undefined)
+				save.world.put();
+			for (tmp in save.map) {
+				save.map[tmp].put();
+			}
+			for (tmp in save.player) {
+				save.player[tmp].put();
+			}
+			for (tmp in save.item) {
+				save.item[tmp].put();
+			}
 		}
 
 		return true
