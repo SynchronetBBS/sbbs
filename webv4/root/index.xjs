@@ -11,8 +11,9 @@
 	var settings = load('modopts.js', 'web') || { web_directory: web_root_dir + '/..' };
 	load(settings.web_directory + '/lib/init.js');
 	load(settings.web_lib + 'auth.js');
-	load(settings.web_lib + 'pages.js');
-	load(settings.web_lib + 'sidebar.js');
+	var pages = require({}, settings.web_lib + 'pages.js', 'pages');
+	var sidebar = require({}, settings.web_lib + 'sidebar.js', 'sidebar');
+	var components = require({}, settings.web_lib + 'components.js', 'components');
 
 	if (page.search(/\.link$/) > -1) {
 		var loc = getExternalLink(page);
@@ -20,36 +21,12 @@
         http_reply.header['Location'] = loc;
         exit();
     }
-	var pagePath = getPagePath(page);
+	var pagePath = pages.getPath(page);
 	if (pagePath == null) {
 		page = '000-home.xjs';
-		pagePath = getPagePath('000-home.xjs');
+		pagePath = pages.getPath('000-home.xjs');
 	}
-	var page_ctrl = getCtrlLine(pagePath);
-?>
-
-<? function _sidebar() { ?>
-	<? if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return; ?>
-		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
-			<? writeSidebarModules(); ?>
-		</div>
-<? } ?>
-
-<?xjs
-	function loadComponent(fn) {
-		return (function () {
-			const cdir = backslash(fullpath(settings.web_mods + 'components'));
-			if (file_isdir(cdir) && file_exists(cdir + fn)) {
-				js.exec(xjs_compile(cdir + fn), new function () {});
-				return true;
-			}
-			if (file_exists(settings.web_components + fn)) {
-				js.exec(xjs_compile(settings.web_components + fn), new function () {});
-				return true;
-			}
-			return false;
-		})();
-	}
+	var page_ctrl = pages.getCtrlLine(pagePath);
 ?>
 
 <!DOCTYPE html>
@@ -78,30 +55,30 @@
 		<script src="./js/common.js"></script>
 
 		<?xjs
-			loadComponent('modal.xjs');
-			loadComponent('header.xjs');
-			loadComponent('navbar.xjs');
-			loadComponent('telegrams.xjs');
+			components.load('modal.xjs');
+			components.load('header.xjs');
+			components.load('navbar.xjs');
+			components.load('telegrams.xjs');
 		?>
 
 		<div class="container<? if (settings.layout_full_width) write('-fluid'); ?>">
 			<div class="row row-offcanvas row-offcanvas-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?>">
-				<? if (settings.layout_sidebar_left) _sidebar(); ?>
+				<? if (settings.layout_sidebar_left) sidebar.write(); ?>
 				<div class="col-xs-12 col-sm-<? write(settings.layout_sidebar_off || page_ctrl.options.no_sidebar ? 12 : 9); ?>">
 					<div style="clear:both;">
 					<p class="pull-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?> visible-xs">
 						<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">
-							<span class="glyphicon glyphicon-tasks"></span><? write(locale.strings.main.label_sidebar); ?>
+							<span class="glyphicon glyphicon-tasks"></span><? locale.write('label_sidebar'); ?>
 						</button>
 					</p>
 					</div>
-					<? writePage(page); ?>
+					<? pages.write(page); ?>
 				</div>
-				<? if (!settings.layout_sidebar_left || settings.layout_sidebar_right) _sidebar(); ?>
+				<? if (!settings.layout_sidebar_left || settings.layout_sidebar_right) sidebar.write(); ?>
 			</div>
 		  	<hr>
 			<footer>
-				<? if (!loadComponent('footer.xjs')) { ?>
+				<? if (!components.load('footer.xjs')) { ?>
 					<p>&copy; <? write(system.name + ", " + strftime("%Y")); ?></p>
 				<? } ?>
 			</footer>
@@ -113,7 +90,7 @@
 				if (!$(this).next().hasClass('show')) {
 					$(this).parents('.dropdown-menu').first().find('.show').removeClass("show");
 				}
-			    var $subMenu = $(this).next(".dropdown-menu");
+			    const $subMenu = $(this).next(".dropdown-menu");
     			$subMenu.toggleClass('show');
     			$(this).parents('li.nav-item.dropdown.show').on('hidden.bs.dropdown', function (e) {
         			$('.dropdown-submenu .show').removeClass("show");
@@ -121,6 +98,7 @@
     			return false;
 			});
 		</script>
+
 	</body>
 
 </html>

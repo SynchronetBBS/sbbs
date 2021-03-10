@@ -1,3 +1,8 @@
+<?xjs
+    var pages = require({}, settings.web_lib + 'pages.js', 'pages');
+    locale.section = 'main';
+?>
+
 <? function subMenu(obj, title, path) { ?>
 	<li class="dropdown<? if (path.match(/\//g).length > 1) write('-submenu'); ?>">
 		<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
@@ -23,8 +28,8 @@
                     <? } else { ?>
                         <a class="dropdown-item" href="./?page=<? write((path || '') + e.page); ?>">
                     <? } ?>
-                            <? write(e.title); ?>
-                        </a>
+                        <? write(e.title); ?>
+                    </a>
                 </li>
 <?xjs
             }
@@ -36,7 +41,7 @@
     <div class="container<? if (settings.layout_full_width) write('-fluid'); ?>">
         <div class="navbar-header">
             <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                <span class="sr-only"><? write(locale.strings.main.label_sidebar); ?></span>
+                <span class="sr-only"><? locale.write('label_sidebar'); ?></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
@@ -45,7 +50,7 @@
         </div>
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav">
-                <? menu(getPageList(settings.web_pages)); ?>
+                <? menu(pages.getList(settings.web_pages)); ?>
             </ul>
 
             <ul class="nav navbar-nav navbar-right">
@@ -64,23 +69,27 @@
             	<? if (user.alias === settings.guest || user.number < 1) { ?>
                     <? if (settings.user_registration) { ?>
                         <li>
-                            <a href="./?page=000-register.xjs"><? write(locale.strings.main.menu_item_register); ?></a>
+                            <a href="./?page=000-register.xjs"><? locale.write('menu_item_register'); ?></a>
                         </li>
                     <? } ?>
                     <li class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                            <? write(locale.strings.main.menu_item_login); ?>
+                            <? locale.write('menu_item_login'); ?>
                             <span class="caret"></span>
                         </a>
                         <div id="login-form" class="dropdown-menu" style="padding:15px; padding-bottom:0px;">
                             <form id="form-login" action="./api/auth.ssjs" method="POST">
-                                <label for="input-username" class="sr-only"><? write(locale.strings.main.input_username); ?></label>
-                                <input id="input-username" name="username" title="<? write(locale.strings.main.input_username); ?>" type="text" class="dropdown form-control" placeholder="<? write(locale.strings.main.input_username); ?>">
-                                <label for="input-password" class="sr-only"><? write(locale.strings.main.input_password); ?></label>
-                                <input id="input-password" name="password" title="<? write(locale.strings.main.input_password); ?>" type="password" class="dropdown form-control" placeholder="<? write(locale.strings.main.input_password); ?>">
-                                <input id="button-login" class="dropdown btn btn-primary" type="submit" value="<? write(locale.strings.main.button_login); ?>">
+                                <label for="input-username" class="sr-only"><? locale.write('input_username'); ?></label>
+                                <input id="input-username" name="username" title="<? locale.write('input_username'); ?>" type="text" class="dropdown form-control" placeholder="<? locale.write('input_username'); ?>">
+                                <label for="input-password" class="sr-only"><? locale.write('input_password'); ?></label>
+                                <input id="input-password" name="password" title="<? locale.write('input_password'); ?>" type="password" class="dropdown form-control" placeholder="<? locale.write('input_password'); ?>">
+                                <input id="button-login" class="dropdown btn btn-primary" type="submit" value="<? locale.write('button_login'); ?>">
                             </form>
-                            <span data-login-failure class="text-danger" hidden><p><? write(locale.strings.main.message_login_failed); ?></p></span>
+                            <span data-login-failure class="text-danger" hidden>
+                                <p>
+                                    <? locale.write('message_login_failed'); ?>
+                                </p>
+                            </span>
                         </div>
                     </li>
                 <? } else { ?>
@@ -93,12 +102,12 @@
                         <ul class="dropdown-menu">
                             <li>
                                 <a href="./?page=000-mail.xjs">
-                                    <? write(locale.strings.main.menu_item_mail); ?>
-                                    <span class="badge scanned" title="<?xjs write(locale.strings.main.label_unread_mail); ?>" id="badge-unread-mail-inner"></span>
+                                    <? locale.write('menu_item_mail'); ?>
+                                    <span class="badge scanned" title="<?xjs locale.write('label_unread_mail'); ?>" id="badge-unread-mail-inner"></span>
                                 </a>
                             </li>
                             <li>
-                                <a id="button-logout" href="#"><? write(locale.strings.main.menu_item_logout); ?></a>
+                                <a id="button-logout" href="#"><? locale.write('menu_item_logout'); ?></a>
                             </li>
                         </ul>
                     </li>

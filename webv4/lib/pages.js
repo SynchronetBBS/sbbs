@@ -265,3 +265,13 @@ function writePage(page) {
 		write(getPage(page));
 	}
 }
+
+var pages = {
+	getCtrlLine: getCtrlLine,
+	getExternalLink: getExternalLink,
+	getPath: getPagePath,
+	getList: getPageList,
+	write: writePage,
+};
+
+pages;
