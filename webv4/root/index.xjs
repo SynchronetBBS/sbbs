@@ -20,7 +20,7 @@
         exit();
     }
 	var pagePath = pages.getPath(page);
-	if (pagePath === null) {
+	if (pagePath == null) {
 		page = '000-home.xjs';
 		pagePath = pages.getPath('000-home.xjs');
 	}
@@ -75,9 +75,7 @@
 		  	<hr>
 			<footer>
 				<? if (!components.load('footer.xjs')) { ?>
-					<p>
-						&copy; <? write(system.name + ", " + strftime("%Y")); ?>
-					</p>
+					<p>&copy; <? write(system.name + ", " + strftime("%Y")); ?></p>
 				<? } ?>
 			</footer>
 		</div>
@@ -95,5 +93,6 @@
     			return false;
 			});
 		</script>
+
 	</body>
 </html>

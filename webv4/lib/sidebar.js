@@ -75,7 +75,6 @@ function getSidebarModule(module) {
 var sidebar = {
 	write: function () {
 		const modules = getSidebarModules();
-		write('<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">');
 		write('<ul class="list-group">');
 		modules.forEach(function (module) {
 			if (module.search(/\.xjs\.ssjs$/i) >= 0) return;
@@ -85,7 +84,6 @@ var sidebar = {
 			write('</li>');
 		});
 		write('</ul>');
-		write('</div>');
 	}
 };
 
