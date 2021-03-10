@@ -55,6 +55,7 @@ static bool new_timed_event(unsigned new_event_num)
 	memset(new_event, 0, sizeof(*new_event));
 	new_event->node = NODE_ANY;
 	new_event->days = (uchar)0xff;
+	new_event->errlevel = LOG_ERR;
 
 	event_t** new_event_list = realloc(cfg.event, sizeof(event_t *)*(cfg.total_events + 1));
 	if (new_event_list == NULL) {
