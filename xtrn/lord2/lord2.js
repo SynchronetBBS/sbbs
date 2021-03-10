@@ -1,9 +1,7 @@
 'use strict';
 
 // TODO: More optimal horizontal lightbars
-// TODO: Save player after changes in case process crashes
 // TODO: Detect disconnections better
-// TODO: Clear flags after a timeout... stuck with battle bit and you're locked out.
 // TODO: Does using an item take a turn?
 // TODO: Hail, Attack, Other player presses 'A', can kill someone without them knowing.
 // TODO: Detect player map zero and don't load it
@@ -59,13 +57,6 @@ function handle_timeout(reason)
 	exit(0);
 }
 time_callback = handle_timeout;
-
-function savetime()
-{
-	var n = new Date();
-
-	return n.getHours()*60 + n.getMinutes();
-}
 
 var bar_timeout = 0;
 var current_saybar = spaces(76);
@@ -682,7 +673,7 @@ function insane_run_ref(sec, fname, refret)
 				ufile.new();
 			}
 			player.lastsaved = savetime();
-			player.put();
+			player_put();
 			update_rec = ufile.get(player.Record);
 			while(update_rec === null) {
 				ufile.new();
@@ -724,7 +715,7 @@ function insane_run_ref(sec, fname, refret)
 			// Turn red for other players, and run @#busy if other player interacts
 			// this toggles battle...
 			player.battle = 1;
-			player.put();
+			player_put();
 			update_update();
 		},
 		'buymanager':function(args) {
@@ -1544,7 +1535,7 @@ function insane_run_ref(sec, fname, refret)
 			// it looks like that's what it does...
 			player.busy = 1;
 			update_update();
-			player.put();
+			player_put();
 		},
 		'overheadmap':function(args) {
 			overheadmap(false);
@@ -1822,12 +1813,12 @@ rescan:
 		'update':function(args) {
 			player.busy = 0;
 			update();
-			player.put();
+			player_put();
 		},
 		'update_update':function(args) {
 			player.busy = 0;
 			update_update();
-			player.put();
+			player_put();
 		},
 		'version':function(args) {
 			// TODO: Figure this out...
@@ -2381,11 +2372,11 @@ function con_check()
 			case 'CONNECT':
 				player.battle = 1;
 				update_update();
-				player.put();
+				player_put();
 				hailed(parseInt(c[1], 10));
 				player.battle = 0;
 				update_update();
-				player.put();
+				player_put();
 				if (pending_timeout !== undefined)
 					handle_timeout(pending_timeout);
 				break;
@@ -2445,6 +2436,9 @@ function update(skip) {
 	var done;
 	var orig_attr = dk.console.attr.value;
 
+	// Save player if it's been half of the timeout time since last saved...
+	if (savetime() - player.lastsaved > (idle_timeout / 60 / 2))
+		player_put();
 	if (map !== undefined) {
 		erase_player();
 		dk.console.gotoxy(player.x - 1, player.y - 1);
@@ -2596,7 +2590,7 @@ function move_player(xoff, yoff) {
 			redraw_bar(true);
 			update();
 		}
-		player.put();
+		player_put();
 	}
 	else {
 		player.lastx = player.x;
@@ -2626,13 +2620,13 @@ function move_player(xoff, yoff) {
 				}
 				player.x = s.warptox;
 				player.y = s.warptoy;
-				player.put();
+				player_put();
 			}
 			else if (s.reffile !== '' && s.refsection !== '') {
 				run_ref(s.refsection, s.reffile);
 				player.battle = 0;
 				update_update();
-				player.put();
+				player_put();
 				if (pending_timeout !== undefined)
 					handle_timeout(pending_timeout);
 			}
@@ -2657,7 +2651,7 @@ function move_player(xoff, yoff) {
 			run_ref(map.refsection, map.reffile);
 			player.battle = 0;
 			update_update();
-			player.put();
+			player_put();
 			if (pending_timeout !== undefined)
 				handle_timeout(pending_timeout);
 			while (enemy !== undefined)
@@ -3559,7 +3553,7 @@ function online_battle(op, attack_first) {
 				lw('`2You find `$$'+pretty_int(enemy.gold)+'`2 and gain `%'+pretty_int(enemy.experience)+' `2experience in this battle.  `2<`0MORE`2>');
 				player.money = clamp_integer(player.money + enemy.gold, 's32');
 				player.p[0] = clamp_integer(player.p[0] + enemy.experience, 's32');
-				player.put();
+				player_put();
 				getkey();
 				run_ref('iwon', 'gametxt.ref');
 				ret = 'WON';
@@ -3632,14 +3626,14 @@ function online_battle(op, attack_first) {
 						your_hp();
 						if (player.p[1] < 1) {
 							player.p[1] = 0;
-							player.put();
+							player_put();
 							run_ref('die', 'gametxt.ref');
 							ret = 'LOST';
 							doneBattle = true;
 							doneMessages = true;
 							break;
 						}
-						player.put();
+						player_put();
 						doneMessages = true;
 						break;
 				}
@@ -3939,7 +3933,7 @@ function hail()
 	}
 	player.battle = 1;
 	update_update();
-	player.put();
+	player_put();
 	if (op.onnow === 0) {
 		op.battle = 1;
 		op.put(false);
@@ -4012,7 +4006,7 @@ function hail()
 							dk.console.gotoxy(1, 22);
 							lw("`r0  `$$"+pretty_int(ch)+" `2 gold transfered! `2(`0hit a key`2)");
 							player.money -= ch;
-							player.put();
+							player_put();
 							f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'));
 							if (!f.open('ab'))
 								throw new Error('Unable to open '+f.name);
@@ -4067,7 +4061,7 @@ function hail()
 				getkey();
 				player.battle = 0;
 				update_update();
-				player.put();
+				player_put();
 				if (pending_timeout !== undefined)
 					handle_timeout(pending_timeout);
 				hail_cleanup();
@@ -4127,7 +4121,7 @@ function hail()
 	}
 	player.battle = 0;
 	update_update();
-	player.put();
+	player_put();
 	hail_cleanup();
 	if (pending_timeout !== undefined)
 		handle_timeout(pending_timeout);
@@ -4505,7 +4499,12 @@ if (player.Record === undefined)
 	exit(0);
 
 if (player.battle) {
-	run_ref('busy', 'gametxt.ref');
+	if (player.lastsaved < (savetime() - (idle_timeout / 60 * 2))) {
+		player.battle = false;
+		player_put();
+	}
+	else
+		run_ref('busy', 'gametxt.ref');
 }
 
 run_ref('startgame', 'gametxt.ref');
@@ -4519,8 +4518,7 @@ if (pending_timeout !== undefined)
 	handle_timeout(pending_timeout);
 player.lastdayon = state.time;
 player.lastdayplayed = state.time;
-player.lastsaved = savetime();
-player.put();
+player_put();
 
 mail_check(false);
 do_map();
