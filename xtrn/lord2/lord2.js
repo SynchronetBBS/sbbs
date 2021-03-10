@@ -1,9 +1,7 @@
 'use strict';
 
 // TODO: More optimal horizontal lightbars
-// TODO: Save player after changes in case process crashes
 // TODO: Detect disconnections better
-// TODO: Clear flags after a timeout... stuck with battle bit and you're locked out.
 // TODO: Does using an item take a turn?
 // TODO: Hail, Attack, Other player presses 'A', can kill someone without them knowing.
 // TODO: Detect player map zero and don't load it
@@ -39,8 +37,9 @@ var pending_timeout;
 
 function handle_timeout(reason)
 {
-	if (player.battle) {
+	if (player.battle || player.busy) {
 		pending_timeout = reason;
+		dk.console.active = false;
 		return;
 	}
 	switch (reason) {
@@ -51,18 +50,13 @@ function handle_timeout(reason)
 		case 'IDLE':
 			run_ref('notime', 'help.ref');
 			break;
+		case 'DISCONNECT':
+			break;
 	}
 	run_ref('endgame', 'gametxt.ref');
 	exit(0);
 }
 time_callback = handle_timeout;
-
-function savetime()
-{
-	var n = new Date();
-
-	return n.getHours()*60 + n.getMinutes();
-}
 
 var bar_timeout = 0;
 var current_saybar = spaces(76);
@@ -207,6 +201,9 @@ function yes_no(y, title, question) {
 	do {
 		ch = getkey().toUpperCase();
 		switch (ch) {
+			case 'CONNECTION_CLOSED':
+				ch = '\r';
+				break;
 			case '8':
 			case 'KEY_UP':
 			case '4':
@@ -455,14 +452,15 @@ function insane_run_ref(sec, fname, refret)
 		'readspecial':function(args) {
 			var attr = scr.attr.value;
 			var ch;
+			var opts = args[1].toUpperCase();
 
 			if (args.length < 2)
 				throw new Error('@do readspecial requires two arguments');
 			do {
 				ch = getkey().toUpperCase();
-				if (ch === '\r' || ch === '\x1b')
-					ch = args[1].substr(0, 1);
-			} while (args[1].indexOf(ch) === -1);
+				if (ch === '\r' || ch === '\x1b' || ch === 'CONNECTION_CLOSED')
+					ch = opts.substr(0, 1);
+			} while (opts.indexOf(ch) === -1);
 			setvar(args[0], ch);
 			dk.console.attr = 15;
 			sln(ch);
@@ -675,7 +673,7 @@ function insane_run_ref(sec, fname, refret)
 				ufile.new();
 			}
 			player.lastsaved = savetime();
-			player.put();
+			player_put();
 			update_rec = ufile.get(player.Record);
 			while(update_rec === null) {
 				ufile.new();
@@ -717,7 +715,7 @@ function insane_run_ref(sec, fname, refret)
 			// Turn red for other players, and run @#busy if other player interacts
 			// this toggles battle...
 			player.battle = 1;
-			player.put();
+			player_put();
 			update_update();
 		},
 		'buymanager':function(args) {
@@ -749,13 +747,14 @@ function insane_run_ref(sec, fname, refret)
 				lw('  `2They have nothing to sell.  (press `%Q `2to continue)');
 				do {
 					ch = getkey.toUpperCase();
-				} while(ch !== 'Q');
+				} while(ch !== 'Q' && ch !== 'CONNECTION_CLOSED');
 			}
 
 			while(1) {
 				choice = items_menu(itms, cur, true, false, '', y+1, 22)
 				cur = choice.cur;
 				switch(choice.ch) {
+					case 'CONNECTION_CLOSED':
 					case 'Q':
 						return;
 					case '\r':
@@ -813,14 +812,14 @@ function insane_run_ref(sec, fname, refret)
 							l = l.substr(m[0].length);
 							switch(m[1]) {
 								case '=':
-									if (left.toString().toLowerCase() !== right.toLowerCase()) {
+									if (left.toString().toLowerCase() !== right.toString().toLowerCase()) {
 										if (cur > i)
 											cur--;
 										return;
 									}
 									break;
 								case '!':
-									if (left.toString().toLowerCase() === right.toLowerCase()) {
+									if (left.toString().toLowerCase() === right.toString().toLowerCase()) {
 										if (cur > i)
 											cur--;
 										return;
@@ -1067,8 +1066,27 @@ function insane_run_ref(sec, fname, refret)
 		},
 		'display':function(args) {
 			if (args.length > 2 && args[1].toLowerCase() === 'in') {
-				// TODO: Implement this!
-				throw new Error('@display not implemented!');
+				var label = getvar(args[0]).toString().toLowerCase();
+				var f = new File(getfname(getvar(args[2])));
+				var l;
+				var found = false;
+
+				if (!f.open('rb'))
+					throw new Error('@display unable to open '+f.name);
+				// First, find the label...
+				while ((l = f.readln()) !== null) {
+					if (l.toLowerCase().indexOf('@#'+label) === 0) {
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+					throw new Error('@display unable to find label @#'+label+' in '+f.name);
+				while ((l = f.readln()) !== null) {
+					if (l.indexOf('@#') === 0)
+						break;
+					lln(l);
+				}
 			}
 			throw new Error('@display not implemented');
 		},
@@ -1094,7 +1112,8 @@ function insane_run_ref(sec, fname, refret)
 			var tmp;
 
 			// TODO: This implies that the line "@do" will execute the next line... but this is used for @if parsing... also, this will choke on comments.
-			if (args.length < 1 || args.length == 1 && args[0].toLowerCase() === 'do') {
+			// TODO: I likely just broke @do do XXX, hopefully nobody notices until I rewrite this.
+			if (args.length < 1 || args[0].toLowerCase() === 'do') {
 				if (line + 1 >= files[fname].lines.length)
 					throw new Error('do at end of file');
 				// Trailing do is not fatal... see jump.ref:21 in cnw
@@ -1132,7 +1151,7 @@ function insane_run_ref(sec, fname, refret)
 				else if (args[2].toLowerCase() === 'getname') {
 					tmp = clamp_integer(getvar(args[3]), '8') - 1;
 					if (tmp === player.Record) {
-						setvar(args[0], tmp.name);
+						setvar(args[0], player.name);
 					}
 					else {
 						if (tmp >= pfile.length || tmp < 0)
@@ -1516,7 +1535,7 @@ function insane_run_ref(sec, fname, refret)
 			// it looks like that's what it does...
 			player.busy = 1;
 			update_update();
-			player.put();
+			player_put();
 		},
 		'overheadmap':function(args) {
 			overheadmap(false);
@@ -1661,7 +1680,7 @@ rescan:
 					lw('`r0  `2You have nothing to sell.  (press `%Q `2to continue)');
 					do {
 						ch = getkey().toUpperCase();
-					} while (ch != 'Q');
+					} while (ch != 'Q' && ch !== 'CONNECTION_CLOSED');
 					return;
 				}
 
@@ -1772,6 +1791,7 @@ rescan:
 						case 'S':
 							p = 0;
 							break;
+						case 'CONNECTION_CLOSED':
 						case 'Q':
 							dk.console.attr.value = sattr;
 							return;
@@ -1793,12 +1813,12 @@ rescan:
 		'update':function(args) {
 			player.busy = 0;
 			update();
-			player.put();
+			player_put();
 		},
 		'update_update':function(args) {
 			player.busy = 0;
 			update_update();
-			player.put();
+			player_put();
 		},
 		'version':function(args) {
 			// TODO: Figure this out...
@@ -2126,7 +2146,7 @@ function mail_check(messenger)
 		update_bar('`2A messenger stops you with the following news. (press `0R`2 to read it)', true);
 		do {
 			ch = getkey().toUpperCase();
-		} while (ch !== 'R');
+		} while (ch !== 'R' && ch !== 'CONNECTION_CLOSED');
 		lw('`r0`c');
 	}
 
@@ -2318,6 +2338,7 @@ function hailed(pl)
 		}
 		if (dk.console.waitkey(game.delay)) {
 			switch(getkey().toUpperCase()) {
+				case 'CONNECTION_CLOSED':
 				case 'A':
 					exit = true;
 					break;
@@ -2351,11 +2372,11 @@ function con_check()
 			case 'CONNECT':
 				player.battle = 1;
 				update_update();
-				player.put();
+				player_put();
 				hailed(parseInt(c[1], 10));
 				player.battle = 0;
 				update_update();
-				player.put();
+				player_put();
 				if (pending_timeout !== undefined)
 					handle_timeout(pending_timeout);
 				break;
@@ -2415,6 +2436,9 @@ function update(skip) {
 	var done;
 	var orig_attr = dk.console.attr.value;
 
+	// Save player if it's been half of the timeout time since last saved...
+	if (savetime() - player.lastsaved > (idle_timeout / 60 / 2))
+		player_put();
 	if (map !== undefined) {
 		erase_player();
 		dk.console.gotoxy(player.x - 1, player.y - 1);
@@ -2566,7 +2590,7 @@ function move_player(xoff, yoff) {
 			redraw_bar(true);
 			update();
 		}
-		player.put();
+		player_put();
 	}
 	else {
 		player.lastx = player.x;
@@ -2596,13 +2620,13 @@ function move_player(xoff, yoff) {
 				}
 				player.x = s.warptox;
 				player.y = s.warptoy;
-				player.put();
+				player_put();
 			}
 			else if (s.reffile !== '' && s.refsection !== '') {
 				run_ref(s.refsection, s.reffile);
 				player.battle = 0;
 				update_update();
-				player.put();
+				player_put();
 				if (pending_timeout !== undefined)
 					handle_timeout(pending_timeout);
 			}
@@ -2627,7 +2651,7 @@ function move_player(xoff, yoff) {
 			run_ref(map.refsection, map.reffile);
 			player.battle = 0;
 			update_update();
-			player.put();
+			player_put();
 			if (pending_timeout !== undefined)
 				handle_timeout(pending_timeout);
 			while (enemy !== undefined)
@@ -2699,7 +2723,7 @@ rescan:
 			lw('`2  You are carrying nothing!  (press `%Q`2 to continue)');
 			do {
 				ch = getkey().toUpperCase();
-			} while (ch != 'Q');
+			} while (ch != 'Q' && ch !== 'CONNECTION_CLOSED');
 			return;
 		}
 		else {
@@ -2869,6 +2893,7 @@ function hbar(x, y, opts, cur)
 				if (cur >= opts.length)
 					cur = 0;
 				break;
+			case 'CONNECTION_CLOSED':
 			case '\r':
 				return cur;
 		}
@@ -3151,7 +3176,7 @@ function mail_to(pl, quotes)
 					ch = '\r';
 				}
 			}
-		} while (ch !== '\r');
+		} while (ch !== '\r' && ch !== 'CONNECTION_CLOSED');
 		if (l.length === 0 && msg.length === 0) {
 			sln('');
 			lln('  `2Mail aborted');
@@ -3283,6 +3308,7 @@ function vbar(choices, args)
 				}
 				ret.cur = choices.length - 1;
 				break;
+			case 'CONNECTION_CLOSED':
 			case '\r':
 				movetoend();
 				return ret;
@@ -3527,7 +3553,7 @@ function online_battle(op, attack_first) {
 				lw('`2You find `$$'+pretty_int(enemy.gold)+'`2 and gain `%'+pretty_int(enemy.experience)+' `2experience in this battle.  `2<`0MORE`2>');
 				player.money = clamp_integer(player.money + enemy.gold, 's32');
 				player.p[0] = clamp_integer(player.p[0] + enemy.experience, 's32');
-				player.put();
+				player_put();
 				getkey();
 				run_ref('iwon', 'gametxt.ref');
 				ret = 'WON';
@@ -3600,14 +3626,14 @@ function online_battle(op, attack_first) {
 						your_hp();
 						if (player.p[1] < 1) {
 							player.p[1] = 0;
-							player.put();
+							player_put();
 							run_ref('die', 'gametxt.ref');
 							ret = 'LOST';
 							doneBattle = true;
 							doneMessages = true;
 							break;
 						}
-						player.put();
+						player_put();
 						doneMessages = true;
 						break;
 				}
@@ -3702,7 +3728,7 @@ function hail()
 			lw('`r0  `2You have nothing to give, loser.  (press `%Q `2to continue)');
 			do {
 				ch = getkey().toUpperCase();
-			} while (ch !== 'Q');
+			} while (ch !== 'Q' && ch !== 'CONNECTION_CLOSED');
 		}
 		else {
 			if (online) {
@@ -3885,6 +3911,7 @@ function hail()
 					if (page != pages - 1)
 						erase_menu();
 					page = pages - 1;
+				case 'CONNECTION_CLOSED':
 				case '\r':
 					break;
 			}
@@ -3906,7 +3933,7 @@ function hail()
 	}
 	player.battle = 1;
 	update_update();
-	player.put();
+	player_put();
 	if (op.onnow === 0) {
 		op.battle = 1;
 		op.put(false);
@@ -3979,7 +4006,7 @@ function hail()
 							dk.console.gotoxy(1, 22);
 							lw("`r0  `$$"+pretty_int(ch)+" `2 gold transfered! `2(`0hit a key`2)");
 							player.money -= ch;
-							player.put();
+							player_put();
 							f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'));
 							if (!f.open('ab'))
 								throw new Error('Unable to open '+f.name);
@@ -4034,7 +4061,7 @@ function hail()
 				getkey();
 				player.battle = 0;
 				update_update();
-				player.put();
+				player_put();
 				if (pending_timeout !== undefined)
 					handle_timeout(pending_timeout);
 				hail_cleanup();
@@ -4094,7 +4121,7 @@ function hail()
 	}
 	player.battle = 0;
 	update_update();
-	player.put();
+	player_put();
 	hail_cleanup();
 	if (pending_timeout !== undefined)
 		handle_timeout(pending_timeout);
@@ -4238,12 +4265,15 @@ function do_map()
 			case 'P':
 				run_ref('whoison', 'help.ref');
 				break;
+			case 'CONNECTION_CLOSED':
+				ch = 'Q';
+				break;
 			case 'Q':
 				dk.console.gotoxy(0, 22);
 				lw('`r0`2  Are you sure you want to quit back to the BBS? [`%Y`2] : ');
 				do {
 					ch = getkey().toUpperCase();
-				} while('YN\r'.indexOf(ch) === -1);
+				} while(['Y', 'N', '\r', 'CONNECTION_CLOSED'].indexOf(ch) === -1);
 				if (ch === 'N') {
 					dk.console.gotoxy(0, 22);
 					dk.console.cleareol();
@@ -4469,7 +4499,12 @@ if (player.Record === undefined)
 	exit(0);
 
 if (player.battle) {
-	run_ref('busy', 'gametxt.ref');
+	if (player.lastsaved < (savetime() - (idle_timeout / 60 * 2))) {
+		player.battle = false;
+		player_put();
+	}
+	else
+		run_ref('busy', 'gametxt.ref');
 }
 
 run_ref('startgame', 'gametxt.ref');
@@ -4483,8 +4518,7 @@ if (pending_timeout !== undefined)
 	handle_timeout(pending_timeout);
 player.lastdayon = state.time;
 player.lastdayplayed = state.time;
-player.lastsaved = savetime();
-player.put();
+player_put();
 
 mail_check(false);
 do_map();

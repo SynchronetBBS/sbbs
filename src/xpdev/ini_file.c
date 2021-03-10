@@ -1089,6 +1089,8 @@ str_list_t iniReadSectionList(FILE* fp, const char* prefix)
 		if(prefix!=NULL)
 			if(strnicmp(p,prefix,strlen(prefix))!=0)
 				continue;
+		if(strListFind(lp, p, /* case_sensitive */FALSE) >= 0)
+			continue;
 		if(strListAppend(&lp,p,items++)==NULL)
 			break;
 	}
@@ -1118,6 +1120,8 @@ str_list_t iniGetSectionList(str_list_t list, const char* prefix)
 		if(prefix!=NULL)
 			if(strnicmp(p,prefix,strlen(prefix))!=0)
 				continue;
+		if(strListFind(lp, p, /* case_sensitive */FALSE) >= 0)
+			continue;
 		if(strListAppend(&lp,p,items++)==NULL)
 			break;
 	}

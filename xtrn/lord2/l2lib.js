@@ -31,6 +31,19 @@ function getfname(str)
 	return js.exec_dir + str.toLowerCase();
 }
 
+function savetime()
+{
+	var n = new Date();
+
+	return n.getHours()*60 + n.getMinutes();
+}
+
+function player_put()
+{
+	player.lastsaved = savetime();
+	player.put();
+}
+
 var Player_Def = [
 	{	// 0
 		prop:'name',
@@ -514,6 +527,7 @@ function getkeyw()
 	var timeout = lastkey + idle_timeout;
 	var tl;
 	var now;
+	var ret;
 
 	do {
 		if (time_callback !== undefined) {
@@ -531,7 +545,13 @@ function getkeyw()
 		}
 	} while(!dk.console.waitkey(1000));
 	lastkey = time();
-	return dk.console.getkey();
+	ret = dk.console.getkey();
+	if (ret === dk.console.key.CONNECTION_CLOSED) {
+		if (time_callback !== undefined) {
+			time_callback('DISCONNECTED');
+		}
+	}
+	return ret;
 }
 
 var curlinenum = 1;
@@ -548,7 +568,7 @@ function getkey()
 	ch = '\x00';
 	do {
 		ch = getkeyw();
-		if (ch === null || ch.length < 1) {
+		if (ch === undefined || ch === null || ch.length < 1) {
 			ch = '\x00';
 		}
 	} while (ch === '\x00');
@@ -1148,7 +1168,7 @@ var vars = {
 	'`*':{type:'const', val:dk.connection.node},
 	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8'); } },
 	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8'); } },
-	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16'); if (world.hideonmap[player.map] === 0) player.lastmap = player.map; player.put(); } },
+	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16'); if (world.hideonmap[player.map] === 0) player.lastmap = player.map; player_put(); } },
 	dead:{type:'fn', get:function() { return player.dead }, set:function(dead) { player.dead = clamp_integer(dead, 's8') } },
 	sexmale:{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
 	narm:{type:'fn', get:function() { return player.armournumber }, set:function(narm) { player.armournumber = clamp_integer(narm, 's8') } },

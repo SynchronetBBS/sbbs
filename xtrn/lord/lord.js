@@ -2062,6 +2062,13 @@ function getkey()
 	ch = '\x00';
 	do {
 		ch = getkeyw();
+		if (ch === 'CONNECTION_CLOSED') {
+			if (player !== undefined) {
+				player.on_now = false;
+				player.put();
+			}
+			exit(0);
+		}
 		if (ch === null || ch.length !== 1) {
 			ch = '\x00';
 		}

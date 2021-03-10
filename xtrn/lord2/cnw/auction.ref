@@ -342,11 +342,13 @@
 
 @#VIEWLIST
 @do `p20 is 0
+@do `p41 is 0
 @label FINDNEXT2
 @do `p20 + 1
 @do `s08 is `p20.auc
 @if `s08 exists true then do
         @begin
+        @do `p41 + 1
         @do move 1 1
         @clear screen
         @readfile `s08
@@ -482,6 +484,8 @@
                 @end
         @end
 @if `p20 > 50 then `p20 is 0
+@if `p41 is 0 then goto start
+`p41 is 0
 @do goto FINDNEXT2
 
 @#DONEAUC

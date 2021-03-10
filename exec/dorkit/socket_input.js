@@ -67,6 +67,8 @@ while(!js.terminated) {
 	k = undefined;
 	if (socket_select([sock], 0.1).length == 1) {
 		k = telnet.interpret(sock.read(1));
+		if (k === '')
+			break;
 	}
 	if (k != undefined && k.length) {
 		for(i=0; i<k.length; i++)
@@ -75,3 +77,4 @@ while(!js.terminated) {
 	else
 		ai.add('');
 }
+ai.close();

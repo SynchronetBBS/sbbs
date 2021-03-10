@@ -57,6 +57,8 @@ function getkeys(str)
 	while(1) {
 		while(!dk.console.waitkey(10000));
 		key=dk.console.getkey().toUpperCase();
+		if (key === 'CONNECTION_CLOSED')
+			exit(0);
 		if(str.indexOf(key)!=-1)
 			break;
 	}

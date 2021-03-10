@@ -2,6 +2,7 @@
  * Implements the local console using conio
  */
 
+var dk_local_console_terminated = false;
 require('graphic.js', 'Graphic');
 if (js.global.conio !== undefined && dk.console.local) {
 	conio.init();
@@ -11,6 +12,12 @@ if (js.global.conio !== undefined && dk.console.local) {
 	dk.console.input_queue_callback.push(function() {
 		'use strict';
 
+		if (js.terminated !== dk_local_console_terminated) {
+			dk_local_console_terminated = js.terminated;
+			return(dk.console.key.CONNECTION_CLOSED);
+		}
+		if (dk_local_console_terminated)
+			return undefined;
 		var ch;
 		if (conio.kbhit) {
 			ch = conio.getch();
@@ -63,6 +70,16 @@ if (js.global.conio !== undefined && dk.console.local) {
 								return dk.console.key['KEY_F'+(ch - 0x39)];
 							if (ch >= 0x7a && ch <= 0x7b)
 								return dk.console.key['KEY_F'+(ch - 0x6f)];
+					}
+				}
+				return undefined;
+			}
+			else if (ch == 0xe0) {
+				if (conio.kbhit) {
+					ch = conio.getch();
+					switch(ch) {
+						case 0x7e:
+							return dk.console.key.CONNECTION_CLOSED;
 					}
 				}
 				return undefined;

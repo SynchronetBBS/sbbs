@@ -52,6 +52,9 @@ function menu(title, blank_line, opts, cur)
 		dk.console.gotoxy(0, y + mctx.cur);
 		lw(' ');
 		switch(ret) {
+			case 'CONNECTION_CLOSED':
+				done = true;
+				break;
 			case 'KEY_UP':
 			case '8':
 				mctx.cur--;
@@ -265,6 +268,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 						case 'KEY_ALT_7':
 							map.mapinfo[getoffset(x, y)].backcolour = 7;
 							break;
+						case 'CONNECTION_CLOSED':
 						case '\x1b':
 							dk.console.gotoxy(0, 22);
 							dk.console.attr.value = 2;
@@ -305,6 +309,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 							if (++x >= 80)
 								x = 0;
 							break;
+						case 'CONNECTION_CLOSED':
 						case 'q':
 							return;
 						case '?':
@@ -757,6 +762,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 					showname = !showname;
 					redraw = true;
 					break;
+				case 'CONNECTION_CLOSED':
 				case 'Q':
 					return false;
 			}
@@ -837,14 +843,14 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 					dk.console.cleareol();
 					ctx.opts = options();
 				}},
-				{text:'  `2(`%D`2) Experience        : `%'+pretty_int(player.p[0])+'`r0`2', shortcut:'D', callback:function(ctx) {
+				{text:'  `2(`%D`2) Experience        : `%'+pretty_int(player.experience)+'`r0`2', shortcut:'D', callback:function(ctx) {
 					dk.console.gotoxy(26, 6);
 					conio.setcursortype(2);
-					player.p[0] = parseInt(dk.console.getstr({edit:player.p[0].toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:10, integer:true, min:0, max:2147483647}), 10);
+					player.experience = parseInt(dk.console.getstr({edit:player.experience.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:10, integer:true, min:0, max:2147483647}), 10);
 					conio.setcursortype(0);
 					dk.console.gotoxy(26, 6);
 					dk.console.attr.value = 2;
-					lw(pretty_int(player.p[0]));
+					lw(pretty_int(player.experience));
 					dk.console.cleareol();
 					ctx.opts = options();
 				}},
@@ -893,9 +899,9 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 					while(1) {
 						lln('`r0`2`c  `r1`%Byte variables that are not set to 0...`r0');
 						sln('');
-						for (i = 0; i < 99; i++) {
+						for (i = 0; i < 100; i++) {
 							if (varnames.t[i] !== undefined) {
-								lln('  `2Var `0'+space_pad(i.toString(), 2)+'`2 is `%'+space_pad(player.t[i].toString(),10)+'`r0`2(`0'+varnames.t[i]+'`2)');
+								lln('  `2Var `0'+space_pad(i.toString(), 2)+'`2 is `%'+space_pad(player.t[i-1].toString(),10)+'`r0`2(`0'+varnames.t[i]+'`2)');
 							}
 						}
 						sln('');
@@ -929,9 +935,9 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 					while(1) {
 						lln('`r0`2`c  `r1`%Long vars being used...`r0');
 						sln('');
-						for (i = 0; i < 99; i++) {
+						for (i = 0; i < 100; i++) {
 							if (varnames.p[i] !== undefined) {
-								lln('  `2Var `0'+space_pad(i.toString(), 2)+'`2 is `%'+space_pad(player.p[i].toString(),10)+'`r0`2(`0'+varnames.p[i]+'`2)');
+								lln('  `2Var `0'+space_pad(i.toString(), 2)+'`2 is `%'+space_pad(player.p[i-1].toString(),10)+'`r0`2(`0'+varnames.p[i]+'`2)');
 							}
 						}
 						sln('');
@@ -1384,20 +1390,22 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 	{text:'  `2(`4Q`2)uit & Save', shortcut:'Q', callback:function() {
 		var tmp;
 
-		dk.console.gotoxy(0, 23);
-		lln('  `0Saving changes.  Thanks for using this product.');
-		if (save.game !== undefined)
-			save.game.put();
-		if (save.world !== undefined)
-			save.world.put();
-		for (tmp in save.map) {
-			save.map[tmp].put();
-		}
-		for (tmp in save.player) {
-			save.player[tmp].put();
-		}
-		for (tmp in save.item) {
-			save.item[tmp].put();
+		if (dk.connection.active) {
+			dk.console.gotoxy(0, 23);
+			lln('  `0Saving changes.  Thanks for using this product.');
+			if (save.game !== undefined)
+				save.game.put();
+			if (save.world !== undefined)
+				save.world.put();
+			for (tmp in save.map) {
+				save.map[tmp].put();
+			}
+			for (tmp in save.player) {
+				save.player[tmp].put();
+			}
+			for (tmp in save.item) {
+				save.item[tmp].put();
+			}
 		}
 
 		return true

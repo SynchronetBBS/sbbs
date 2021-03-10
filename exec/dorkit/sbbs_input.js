@@ -12,3 +12,4 @@ while(!js.terminated) {
 	k = console.inkey(0, 100);
 	ai.add(k);
 }
+ai.close();
