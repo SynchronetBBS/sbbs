@@ -118,7 +118,7 @@ void sys_cfg(void)
 				if(!i) {
 					cfg.new_install=new_install;
 					if(strcmp(sys_pass, cfg.sys_pass) != 0) {
-						if(fexist("ssl.cert") || fexist("cryptlib.key")) {
+						if(fexist("ssl.cert") || fexist("cryptlib.key") || fexist("letsyncrypt.key") {
 							CRYPT_KEYSET ssl_keyset;
 							CRYPT_CONTEXT ssl_context = -1;
 							int status;
@@ -134,6 +134,14 @@ void sys_cfg(void)
 							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "cryptlib.key", CRYPT_KEYOPT_NONE)))
 								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssh_server", sys_pass)))
 									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "ssh_server"))) {
+										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
+										cryptKeysetClose(ssl_keyset);
+									}
+
+							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "letsyncrypt.key", CRYPT_KEYOPT_NONE)))
+								// TODO: The name in the next two lines should be read from the Host line in the State section of the letsyncrypt.ini file.
+								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "acme-v02.api.letsencrypt.org", sys_pass)))
+									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "acme-v02.api.letsencrypt.org"))) {
 										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
 										cryptKeysetClose(ssl_keyset);
 									}
