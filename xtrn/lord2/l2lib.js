@@ -514,6 +514,7 @@ function getkeyw()
 	var timeout = lastkey + idle_timeout;
 	var tl;
 	var now;
+	var ret;
 
 	do {
 		if (time_callback !== undefined) {
@@ -531,7 +532,13 @@ function getkeyw()
 		}
 	} while(!dk.console.waitkey(1000));
 	lastkey = time();
-	return dk.console.getkey();
+	ret = dk.console.getkey();
+	if (ret === dk.console.key.CONNECTION_CLOSED) {
+		if (time_callback !== undefined) {
+			time_callback('DISCONNECTED');
+		}
+	}
+	return ret;
 }
 
 var curlinenum = 1;
