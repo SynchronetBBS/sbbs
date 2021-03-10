@@ -464,8 +464,8 @@ var forum = {
 
     // get-signature
     // Returns the user's signature, or an empty String
-    getSignature: function getSignature() {
-        var f = new File(format('%s/user/%04d.sig', system.data_dir, user.number));
+    getSignature: function getSignature(un) {
+        var f = new File(format('%s/user/%04d.sig', system.data_dir, un));
         if (!f.exists || !f.open('r')) return '';
         if (js.global.utf8_encode) {
             var signature = utf8_encode(f.read());
