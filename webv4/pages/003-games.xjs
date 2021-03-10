@@ -91,4 +91,7 @@ window.addEventListener('load', () => {
         elem.removeAttribute('hidden');
     });
 
+    <? if (http_request.query.code !== undefined && xtrn_area.prog[http_request.query.code[0]] !== undefined && xtrn_area.prog[http_request.query.code[0]].can_access) { ?>
+        window.addEventListener('load', () => launchXtrn('<? write(http_request.query.code[0]); ?>'));
+    <? } ?>
 </script>
