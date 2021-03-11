@@ -138,7 +138,7 @@ void sys_cfg(void)
 										cryptKeysetClose(ssl_keyset);
 									}
 
-							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "letsyncrypt.key", CRYPT_KEYOPT_NONE)))
+							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "letsyncrypt.key", CRYPT_KEYOPT_NONE))) {
 								char value[INI_MAX_VALUE_LEN];
 								char* host = "acme-v02.api.letsencrypt.org";
 								FILE* fp = fopen("letsyncrypt.ini", "r");
@@ -151,7 +151,7 @@ void sys_cfg(void)
 										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
 										cryptKeysetClose(ssl_keyset);
 									}
-
+							}
 							(void)ignoreme;
 						}
 					}
