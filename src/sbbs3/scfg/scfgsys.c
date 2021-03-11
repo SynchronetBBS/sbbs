@@ -139,9 +139,15 @@ void sys_cfg(void)
 									}
 
 							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "letsyncrypt.key", CRYPT_KEYOPT_NONE)))
-								// TODO: The name in the next two lines should be read from the Host line in the State section of the letsyncrypt.ini file.
-								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "acme-v02.api.letsencrypt.org", sys_pass)))
-									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "acme-v02.api.letsencrypt.org"))) {
+								char value[INI_MAX_VALUE_LEN];
+								char* host = "acme-v02.api.letsencrypt.org";
+								FILE* fp = fopen("letsyncrypt.ini", "r");
+								if(fp != NULL) {
+									host = iniReadString(fp, "state", "host", host, value);
+									fclose(fp);
+								}
+								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, host, sys_pass)))
+									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, host))) {
 										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
 										cryptKeysetClose(ssl_keyset);
 									}
