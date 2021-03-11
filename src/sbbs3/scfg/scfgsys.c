@@ -118,7 +118,7 @@ void sys_cfg(void)
 				if(!i) {
 					cfg.new_install=new_install;
 					if(strcmp(sys_pass, cfg.sys_pass) != 0) {
-						if(fexist("ssl.cert") || fexist("cryptlib.key") || fexist("letsyncrypt.key") {
+						if(fexist("ssl.cert") || fexist("cryptlib.key") || fexist("letsyncrypt.key")) {
 							CRYPT_KEYSET ssl_keyset;
 							CRYPT_CONTEXT ssl_context = -1;
 							int status;
