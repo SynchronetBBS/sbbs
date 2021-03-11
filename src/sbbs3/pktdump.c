@@ -73,7 +73,7 @@ const char* fmsgattr_str(uint16_t attr)
 
 int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 {
-	int			ch,lastch=0;
+	int			ch,lastch;
 	char		buf[128];
 	char		to[FIDO_NAME_LEN];
 	char		from[FIDO_NAME_LEN];
@@ -240,6 +240,7 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 		fprintf(bodyfp,"\n-start of message text-\n");
 
 		size_t count = 0;
+		lastch = 0;
 		while((ch=fgetc(fp))!=EOF && ch!=0) {
 			count++;
 			if((count == 1 || lastch == '\r') && ch == 1) {
@@ -251,9 +252,8 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 					break;
 				continue;
 			}
-			if(lastch=='\r' && ch!='\n')
-				fputc('\n',bodyfp);
-			fputc(lastch=ch,bodyfp);
+			fputc(ch == '\r' ? '\n' : ch, bodyfp);
+			lastch = ch;
 			if(good != NULL)
 				fputc(ch, good);
 		}
