@@ -142,7 +142,7 @@ function authenticate(alias, password, inc_logons) {
 	return usr;
 }
 
-function is_user() {
+function isUser() {
     return user.number > 0 && user.alias != settings.guest;
 }
 
