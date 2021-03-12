@@ -229,6 +229,7 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
 		return SMB_ERR_NOT_OPEN;
 	}
+	f->dir = smb->dirnum;
 	rewind(smb->sid_fp);
 	while(!feof(smb->sid_fp)) {
 		fileidxrec_t fidx;
