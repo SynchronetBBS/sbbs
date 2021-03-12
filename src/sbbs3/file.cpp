@@ -80,8 +80,9 @@ void sbbs_t::fileinfo(smbfile_t* f)
 	}
 	bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
 	if(f->extdesc != NULL && *f->extdesc) {
+		truncsp(f->extdesc);
 		putmsg((char*)f->extdesc,P_NOATCODES);
-		CRLF; 
+		newline();
 	}
 	if(f->size == -1) {
 		bprintf(text[FileIsNotOnline],f->name);
