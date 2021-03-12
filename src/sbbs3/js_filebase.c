@@ -381,6 +381,19 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 			return result;
 		}
 	}
+	prop_name = "cost";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		uint32_t cost = 0;
+		if(!JS_ValueToECMAUint32(cx, val, &cost)) {
+			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
+			return SMB_FAILURE;
+		}
+		if((result = smb_new_hfield(file, SMB_COST, sizeof(cost), &cost)) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
+		}
+	}
 
 	if(JS_GetProperty(cx, obj, "anon", &val) && val == JSVAL_TRUE)
 		file->hdr.attr |= FILE_ANONYMOUS;
@@ -858,6 +871,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
+	file.dir = p->smb.dirnum;
 	rc=JS_SUSPENDREQUEST(cx);
 	if(file.name != NULL) {
 		if(extdesc == NULL		// no extended description provided
