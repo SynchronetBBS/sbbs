@@ -1,5 +1,45 @@
 <!--Forum-->
 
+<!--
+	To do:
+
+	- Break templates into files under webv4/components/forum/
+	 - As XJS functions? Or to be written out via js.exec()?
+	- "BBS View" for message
+	 - client-side replacement for html_encode
+	- Search feature
+	 - Search within groups, group, subs, or sub
+	 - Search optionally within subject, to, from, body, date-range
+	 - Display results as a flat message list, grouped by group-sub if groups, sub if subs
+	 - Block stupid search terms that would produce insane results, or just accept it?
+	- New message scan
+	 - Show unread counts here by group, sub, thread
+	 - One flat page, or click through group then sub to see unreads?
+	 - Set scan pointer
+	  - just set it once new messages are shown? Warn user that this is their only chance to see this list?
+	  - include a "mark as read" button per sub?
+	  - do either one per user preference? Requires user preferences feature.
+	- User preferences (global, not forum specific)
+	 - Update signature
+	 - darkmode preference
+	 - new message scan preferences?
+	 - Edit user properties?
+	 - Avatar chooser?
+	 - forum preferences like "BBS view" for all messages, etc.?
+	- API handlers for post/reply msg, post poll, up/down vote, user preferences, mail
+	- Test
+	 - post message
+	 - reply to message
+	 - post poll
+	 - up/down vote
+	 - vote on poll
+	 - view poll results
+	 - send/receive email
+	  - and with attachments
+	 - delete message/mail
+	 - twitlist button
+-->
+
 <?xjs
     var request = require({}, settings.web_lib + 'request.js', 'request');
     var forum = require({}, settings.web_lib + 'forum.js', 'forum');
@@ -19,7 +59,7 @@
 </div>
 
 <!-- Viewing a thread (list of messages) -->
-<? if (request.has_param('sub') && request.has_param('thread')) { ?>
+<? if (request.hasParam('sub') && request.hasParam('thread')) { ?>
 
 	<script type="text/javascript" src="./js/graphics-converter.js"></script>
 	<script type="text/javascript" src="./js/avatars.js"></script>
@@ -85,22 +125,22 @@
 
     <ol class="breadcrumb">
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>">
+            <a href="./?page=<? request.writeParam('page'); ?>">
                 <? locale.write('title'); ?>
             </a>
         </li>
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>&group=<? request.write_param('group'); ?>">
-                <? write(msg_area.grp_list[msg_area.sub[request.get_param('sub')].grp_index].name); ?>
+            <a href="./?page=<? request.writeParam('page'); ?>&group=<? request.writeParam('group'); ?>">
+                <? write(msg_area.grp_list[msg_area.sub[request.getParam('sub')].grp_index].name); ?>
             </a>
         </li>
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>&sub=<? request.write_param('sub'); ?>">
-                <? write(msg_area.sub[request.get_param('sub')].name); ?>
+            <a href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>">
+                <? write(msg_area.sub[request.getParam('sub')].name); ?>
             </a>
         </li>
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>&sub=<? request.write_param('sub'); ?>&thread=<? request.write_param('thread'); ?>">
+            <a href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>&thread=<? request.writeParam('thread'); ?>">
 				<span data-message-subject></span>
             </a>
         </li>
@@ -114,23 +154,23 @@
 
 	<div id="forum-list-container" class="list-group"></div>
 	<div id="forum-load-more-messages" class="text-center" hidden>
-		<button id="load-more-messages" class="btn btn-primary" aria-label="<? locale.write('button_load_more', 'main'); ?>" title="<? locale.write('button_load_more', 'main'); ?>" onclick="listMessages('<? request.write_param('sub'); ?>', '<? request.write_param('thread'); ?>', <? write(settings.page_size); ?>, true)">
+		<button id="load-more-messages" class="btn btn-primary" aria-label="<? locale.write('button_load_more', 'main'); ?>" title="<? locale.write('button_load_more', 'main'); ?>" onclick="listMessages('<? request.writeParam('sub'); ?>', '<? request.writeParam('thread'); ?>', <? write(settings.page_size); ?>, true)">
 			<? locale.write('button_load_more', 'main'); ?>
 		</button>
 	</div>
 
 	<script type="text/javascript">
-		listMessages('<? request.write_param('sub'); ?>', <? request.write_param('thread'); ?>);
+		listMessages('<? request.writeParam('sub'); ?>', <? request.writeParam('thread'); ?>);
 	</script>
 
 <!-- Viewing a sub (list of threads) -->
-<? } else if (request.has_param('sub') && msg_area.sub[request.get_param('sub')] !== undefined) { ?>
+<? } else if (request.hasParam('sub') && msg_area.sub[request.getParam('sub')] !== undefined) { ?>
 
-	<? var sub = msg_area.sub[request.get_param('sub')]; ?>
+	<? var sub = msg_area.sub[request.getParam('sub')]; ?>
 
 	<!-- Template for a link to a thread -->
 	<div hidden>
-		<a id="forum-thread-link-template" href="./?page=<? request.write_param('page'); ?>&sub=<? request.write_param('sub'); ?>" class="list-group-item striped" data-thread>
+		<a id="forum-thread-link-template" href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>" class="list-group-item striped" data-thread>
 			<div class="row">
 				<div class="col-sm-9">
 					<strong data-thread-subject></strong>
@@ -155,7 +195,7 @@
 				</div>
 				<div class="col-sm-3">
 					<div class="pull-right" data-stats hidden>
-						<? if (is_user()) { ?>
+						<? if (isUser()) { ?>
 							<span data-unread-messages title="<? locale.write('badge_unread_messages'); ?>" class="badge" hidden></span>
 						<? } ?>
 						<span data-upvotes-badge title="<? locale.write('badge_upvotes'); ?>" class="badge upvote-bg" style="display:none;">
@@ -276,18 +316,18 @@
 
 	<ol class="breadcrumb">
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>">
+            <a href="./?page=<? request.writeParam('page'); ?>">
                 <? locale.write('title'); ?>
             </a>
         </li>
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>&group=<? write(msg_area.grp_list[msg_area.sub[request.get_param('sub')].grp_index].number); ?>">
-                <? write(msg_area.grp_list[msg_area.sub[request.get_param('sub')].grp_index].name); ?>
+            <a href="./?page=<? request.writeParam('page'); ?>&group=<? write(msg_area.grp_list[msg_area.sub[request.getParam('sub')].grp_index].number); ?>">
+                <? write(msg_area.grp_list[msg_area.sub[request.getParam('sub')].grp_index].name); ?>
             </a>
         </li>
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>&sub=<? request.write_param('sub'); ?>">
-                <? write(msg_area.sub[request.get_param('sub')].name); ?>
+            <a href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>">
+                <? write(msg_area.sub[request.getParam('sub')].name); ?>
             </a>
         </li>
     </ol>
@@ -325,7 +365,7 @@
             // if (data.type != 'threads') return;
             // onThreadStats(data.data);
         }, {
-            sub: '<? request.write_param("sub"); ?>',
+            sub: '<? request.writeParam("sub"); ?>',
 		});
 
 		listThreads('<? write(sub.code); ?>');
@@ -333,10 +373,10 @@
     </script>
 
 <!-- Viewing a group (list of subs) -->
-<? } else if (request.has_param('group') && msg_area.grp_list[request.get_param('group')] !== undefined) { ?>
+<? } else if (request.hasParam('group') && msg_area.grp_list[request.getParam('group')] !== undefined) { ?>
 
 	<div hidden>
-		<a id="forum-sub-link-template" href="./?page=<? request.write_param('page'); ?>" class="list-group-item striped">
+		<a id="forum-sub-link-template" href="./?page=<? request.writeParam('page'); ?>" class="list-group-item striped">
 			<h4>
 				<strong data-sub-name></strong>
 			</h4>
@@ -361,13 +401,13 @@
 
     <ol class="breadcrumb">
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>">
+            <a href="./?page=<? request.writeParam('page'); ?>">
                 <? locale.write('title'); ?>
             </a>
         </li>
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>&group=<? request.write_param('group'); ?>">
-                <? write(msg_area.grp_list[request.get_param('group')].name); ?>
+            <a href="./?page=<? request.writeParam('page'); ?>&group=<? request.writeParam('group'); ?>">
+                <? write(msg_area.grp_list[request.getParam('group')].name); ?>
             </a>
         </li>
     </ol>
@@ -376,15 +416,15 @@
 
 	<script type="text/javascript">
 		(async () => {
-			await listSubs('<? request.write_param('group'); ?>');
+			await listSubs('<? request.writeParam('group'); ?>');
 		})();
-		<? if (is_user()) { ?>
+		<? if (isUser()) { ?>
             // registerEventListener('forum', e => {
             //     const data = JSON.parse(e.data);
             //     if (data.type != 'subs_unread') return;
             //     // onSubUnreadCount(data.data);
             // }, {
-			// 	subs_unread: '<? request.write_param("group"); ?>',
+			// 	subs_unread: '<? request.writeParam("group"); ?>',
 			// });
 		<? } ?>
     </script>
@@ -393,7 +433,7 @@
 <? } else { ?>
 
 	<div hidden>
-		<a id="forum-group-link-template" href="./?page=<? request.write_param('page'); ?>" class="list-group-item striped">
+		<a id="forum-group-link-template" href="./?page=<? request.writeParam('page'); ?>" class="list-group-item striped">
 			<h3>
 				<strong data-group-name></strong>
 			</h3>
@@ -408,7 +448,7 @@
 
     <ol class="breadcrumb">
         <li>
-            <a href="./?page=<? request.write_param('page'); ?>">
+            <a href="./?page=<? request.writeParam('page'); ?>">
                 <? locale.write('title'); ?>
             </a>
         </li>
@@ -418,7 +458,7 @@
 
         <script type="text/javascript">
 			(async () => await listGroups())();
-			<? if (is_user()) { ?>
+			<? if (isUser()) { ?>
 				registerEventListener('forum', e => {
 					const data = JSON.parse(e.data);
 					if (data.type != 'group_stats') return;

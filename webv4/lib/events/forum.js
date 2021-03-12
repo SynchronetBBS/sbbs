@@ -5,7 +5,7 @@ var last_subs;
 var last_groups;
 var last_threads;
 var last_run = 0;
-const is_real_user = is_user();
+const is_real_user = isUser();
 const frequency = (settings.refresh_interval || 60000) / 1000;
 
 // Where 'a' is the previous data and 'b' is new
@@ -76,9 +76,9 @@ function scan_threads(sub) {
 function cycle() {
     if (time() - last_run <= frequency) return;
     last_run = time();
-    if (is_real_user && request.has_param('group_stats')) scan_groups();
-    if (is_real_user && request.has_param('subs_unread')) scan_subs(request.get_param('subs_unread'));
-    if (request.has_param('sub')) scan_threads(request.get_param('sub'));
+    if (is_real_user && request.hasParam('group_stats')) scan_groups();
+    if (is_real_user && request.hasParam('subs_unread')) scan_subs(request.getParam('subs_unread'));
+    if (request.hasParam('sub')) scan_threads(request.getParam('sub'));
 }
 
 this;

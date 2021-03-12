@@ -1,13 +1,4 @@
 <?xjs
-	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
-	if (page.search(/^http(s)*:\/\//) > -1) exit(); // Should send 404 or something more appropriate
-
-	if (page.search(/^001-forum.ssjs/) === 0) {
-		http_reply.status = '302 Found';
-		http_reply.header['Location'] = './?page=001-forum.xjs' + http_request.query_string.replace(/^\page=001-forum.ssjs/, '');
-		exit();
-	}
-
 	var settings = load('modopts.js', 'web') || { web_directory: web_root_dir + '/..' };
 	load(settings.web_directory + '/lib/init.js');
 	load(settings.web_lib + 'auth.js');
@@ -15,6 +6,13 @@
 	var sidebar = require({}, settings.web_lib + 'sidebar.js', 'sidebar');
 	var components = require({}, settings.web_lib + 'components.js', 'components');
 
+	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
+	if (page.search(/^http(s)*:\/\//) > -1) exit(); // Should send 404 or something more appropriate
+	if (page.search(/^001-forum.ssjs/) === 0) {
+		http_reply.status = '302 Found';
+		http_reply.header['Location'] = './?page=001-forum.xjs' + http_request.query_string.replace(/^\page=001-forum.ssjs/, '');
+		exit();
+	}
 	if (page.search(/\.link$/) > -1) {
 		var loc = getExternalLink(page);
         http_reply.status = '301 Moved Permanently';
@@ -22,7 +20,7 @@
         exit();
     }
 	var pagePath = pages.getPath(page);
-	if (pagePath == null) {
+	if (pagePath === null) {
 		page = '000-home.xjs';
 		pagePath = pages.getPath('000-home.xjs');
 	}
@@ -37,7 +35,9 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="icon" href="./images/favicon.ico">
-		<title><? write(page_ctrl.title + ': ' + system.name); ?></title>
+		<title>
+			<? write(page_ctrl.title + ': ' + system.name); ?>
+		</title>
 		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<link href="./css/offcanvas.css" rel="stylesheet">
 		<link href="./css/style.css" rel="stylesheet">
@@ -48,29 +48,25 @@
 			<link href="./css/custom.css" rel="stylesheet">
 		<? } ?>
 	</head>
-
 	<body>
-
 		<script src="./bootstrap/js/bootstrap.min.js"></script>
 		<script src="./js/common.js"></script>
-
 		<?xjs
 			components.load('modal.xjs');
 			components.load('header.xjs');
 			components.load('navbar.xjs');
 			components.load('telegrams.xjs');
 		?>
-
 		<div class="container<? if (settings.layout_full_width) write('-fluid'); ?>">
 			<div class="row row-offcanvas row-offcanvas-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?>">
 				<? if (settings.layout_sidebar_left) sidebar.write(); ?>
 				<div class="col-xs-12 col-sm-<? write(settings.layout_sidebar_off || page_ctrl.options.no_sidebar ? 12 : 9); ?>">
 					<div style="clear:both;">
-					<p class="pull-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?> visible-xs">
-						<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">
-							<span class="glyphicon glyphicon-tasks"></span><? locale.write('label_sidebar'); ?>
-						</button>
-					</p>
+						<p class="pull-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?> visible-xs">
+							<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">
+								<span class="glyphicon glyphicon-tasks"></span><? locale.write('label_sidebar'); ?>
+							</button>
+						</p>
 					</div>
 					<? pages.write(page); ?>
 				</div>
@@ -79,11 +75,12 @@
 		  	<hr>
 			<footer>
 				<? if (!components.load('footer.xjs')) { ?>
-					<p>&copy; <? write(system.name + ", " + strftime("%Y")); ?></p>
+					<p>
+						&copy; <? write(system.name + ", " + strftime("%Y")); ?>
+					</p>
 				<? } ?>
 			</footer>
 		</div>
-
 		<script src="./js/offcanvas.js"></script>
     	<script>
 			$('.dropdown-menu a.dropdown-toggle').on('click', function (e) {
@@ -98,7 +95,5 @@
     			return false;
 			});
 		</script>
-
 	</body>
-
 </html>

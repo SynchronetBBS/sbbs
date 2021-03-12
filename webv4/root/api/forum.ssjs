@@ -16,7 +16,7 @@ var replied = false;
 // Remember to test the 'mail' page afterward too, including block-sender
 
 // There must be an API call, and the user must not be a guest or unknown
-if (request.has_param('call') && (http_request.method === 'GET' || http_request.method === 'POST')) {
+if (request.hasParam('call') && (http_request.method === 'GET' || http_request.method === 'POST')) {
 
     var handled = false;
 
@@ -50,12 +50,12 @@ if (request.has_param('call') && (http_request.method === 'GET' || http_request.
     // Unauthenticated calls
     if (!handled) {
 
-        switch (request.get_param('call').toLowerCase()) {
+        switch (request.getParam('call').toLowerCase()) {
 
             case 'get-thread':
-                if (request.has_params(['sub', 'thread'])) {
+                if (request.hasParams(['sub', 'thread'])) {
                     http_reply.header['Content-Type'] = 'text/plain; charset=utf8';
-                    forum.getThread(request.get_param('sub'), request.get_param('thread'), function (m) {
+                    forum.getThread(request.getParam('sub'), request.getParam('thread'), function (m) {
                         writeln(JSON.stringify(m));
                     });
                     replied = true;
@@ -67,19 +67,19 @@ if (request.has_param('call') && (http_request.method === 'GET' || http_request.
                 break;
 
             case 'list-subs':
-                if (request.has_param('group')) reply = forum.listSubs(request.get_param('group'));
+                if (request.hasParam('group')) reply = forum.listSubs(request.getParam('group'));
                 break;
 
             case 'list-threads':
-                if (request.has_param('sub')) reply = forum.listThreads(request.get_param('sub'));
+                if (request.hasParam('sub')) reply = forum.listThreads(request.getParam('sub'));
                 break;
 
             case 'get-newest-message-per-sub':
-                if (request.has_param('group')) reply = forum.getNewestMessagePerSub(request.get_param('group'));
+                if (request.hasParam('group')) reply = forum.getNewestMessagePerSub(request.getParam('group'));
                 break;
 
             case 'get-thread-list':
-                if (request.has_param('sub')) reply = forum.getThreadList(request.get_param('sub'));
+                if (request.hasParam('sub')) reply = forum.getThreadList(request.getParam('sub'));
                 break;
 
             default:

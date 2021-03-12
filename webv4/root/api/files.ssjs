@@ -10,18 +10,18 @@ var Filebase = require({}, 'filebase.js', 'OldFileBase');
 var CHUNK_SIZE = 1024;
 
 var reply = {};
-if ((http_request.method === 'GET' || http_request.method === 'POST') && request.has_param('call') && user.number > 0) {
+if ((http_request.method === 'GET' || http_request.method === 'POST') && request.hasParam('call') && user.number > 0) {
 
-	switch (request.get_param('call').toLowerCase()) {
+	switch (request.getParam('call').toLowerCase()) {
 		case 'download-file':
-			var dir = request.get_param('dir');
+			var dir = request.getParam('dir');
 			if (dir !== undefined
 				&& file_area.dir[dir] !== undefined && file_area.dir[dir].lib_index >= 0 && file_area.dir[dir].index >= 0 && file_area.dir[dir].can_download
-				&& request.has_param('file')
+				&& request.hasParam('file')
 				&& user.compare_ars(file_area.dir[dir].download_ars)
 			) {
 				var dircode = file_area.dir[dir].code;
-				var fn = request.get_param('file').toLowerCase();
+				var fn = request.getParam('file').toLowerCase();
 				var fileBase = new OldFileBase(dircode);
 				var file = null;
 				fileBase.some(function (e) {

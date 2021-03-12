@@ -38,7 +38,7 @@ function required(mask) {
 }
 
 function clean_param(param) {
-	if (request.has_param(param)) return request.get_param(param).replace(/[\x00-\x19\x7F]/g, '');
+	if (request.hasParam(param)) return request.getParam(param).replace(/[\x00-\x19\x7F]/g, '');
 	return "";
 }
 
@@ -47,7 +47,7 @@ function in_range(n, min, max) {
 }
 
 function valid_param(p, min, max) {
-	if (!request.has_param(p)) return false;
+	if (!request.hasParam(p)) return false;
 	if (!in_range(clean_param(p).length, min, max)) return false;
 	return true;
 }
@@ -81,12 +81,12 @@ function newUser() {
 }
 
 // See if the hidden form fields were filled
-if (request.get_param('send-me-free-stuff') != '' || request.get_param('subscribe-to-newsletter') !== undefined) {
+if (request.getParam('send-me-free-stuff') != '' || request.getParam('subscribe-to-newsletter') !== undefined) {
 	log(LOG_WARNING, locale.strings.api_register.log_bot_attempt);
 	exit();
 }
 
-if (system.newuser_password !== '' && (!request.has_param('newuser-password') || request.get_param('newuser-password') != system.newuser_password)) {
+if (system.newuser_password !== '' && (!request.hasParam('newuser-password') || request.getParam('newuser-password') != system.newuser_password)) {
 	reply.errors.push(locale.strings.api_register.error_bad_syspass);
 }
 
@@ -99,7 +99,7 @@ if (!valid_param('alias', MIN_ALIAS, LEN_ALIAS) || !system.check_name(clean_para
 	prepUser.handle = clean_param('alias');
 }
 
-if (!request.has_param('password1') || !request.has_param('password2') || clean_param('password1') != clean_param('password2')) {
+if (!request.hasParam('password1') || !request.hasParam('password2') || clean_param('password1') != clean_param('password2')) {
 	reply.errors.push(locale.strings.api_register.error_password_mismatch);
 } else if (!in_range(clean_param('password1').length, system.min_password_length, system.max_password_length)) {
 	reply.errors.push(format(locale.strings.api_register.error_password_length, system.min_password_length, system.max_password_length));
@@ -140,13 +140,13 @@ if (valid_param('phone', MIN_PHONE, LEN_PHONE)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_phone);
 }
 
-if (valid_param('gender', 1, 1) && ['X', 'M', 'F', 'O'].indexOf(request.get_param('gender')) > -1) {
+if (valid_param('gender', 1, 1) && ['X', 'M', 'F', 'O'].indexOf(request.getParam('gender')) > -1) {
 	prepUser.gender = clean_param('gender');
 } else if (required(UQ_SEX)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_gender);
 }
 
-if (request.has_param('birth') && clean_param('birth').match(/^\d\d\/\d\d\/\d\d$/) !== null) {
+if (request.hasParam('birth') && clean_param('birth').match(/^\d\d\/\d\d\/\d\d$/) !== null) {
 	// Should really test for valid date (and date format per system config)
 	prepUser.birthdate = clean_param('birth');
 } else if (required(UQ_BIRTH)) {

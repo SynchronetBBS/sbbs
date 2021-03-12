@@ -4,30 +4,30 @@
 	var request = require({}, settings.web_lib + 'request.js', 'request');
 	load(settings.web_lib + 'files.js');
     locale.section = 'page_files';
-	if (request.has_param('dir') && file_area.dir[request.get_param('dir')]) {
+	if (request.hasParam('dir') && file_area.dir[request.getParam('dir')]) {
 ?>
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? request.write_param('page'); ?>">
+			<a href="./?page=<? request.writeParam('page'); ?>">
 				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? request.write_param('page'); ?>&amp;library=<? write(file_area.dir[request.get_param('dir')].lib_index); ?>">
-				<? write(file_area.dir[request.get_param('dir')].lib_name); ?>
+			<a href="./?page=<? request.writeParam('page'); ?>&amp;library=<? write(file_area.dir[request.getParam('dir')].lib_index); ?>">
+				<? write(file_area.dir[request.getParam('dir')].lib_name); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? request.write_param('page'); ?>&amp;dir=<? request.write_param('dir'); ?>">
-				<? request.write_param('dir'); ?>
+			<a href="./?page=<? request.writeParam('page'); ?>&amp;dir=<? request.writeParam('dir'); ?>">
+				<? request.writeParam('dir'); ?>
 			</a>
 		</li>
 	</ol>
 
 	<? function writeFileDetails(file) { ?>
-		<? const cd = file_area.dir[request.get_param('dir')].can_download && user.compare_ars(file_area.dir[request.get_param('dir')].download_ars); ?>
+		<? const cd = file_area.dir[request.getParam('dir')].can_download && user.compare_ars(file_area.dir[request.getParam('dir')].download_ars); ?>
 		<? if (cd) { ?>
-			<a href="./api/files.ssjs?call=download-file&amp;dir=<? request.write_param('dir'); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
+			<a href="./api/files.ssjs?call=download-file&amp;dir=<? request.writeParam('dir'); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
 		<? } else { ?>
 			<li class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
 		<? } ?>
@@ -63,27 +63,27 @@
 		</div>
 	</div>
 	<div id="file-list-container" class="list-group">
-	<?xjs listFiles(request.get_param('dir')).forEach(writeFileDetails); ?>
+	<?xjs listFiles(request.getParam('dir')).forEach(writeFileDetails); ?>
 	</div>
 
-<?xjs } else if (request.has_param('library') && file_area.lib_list[request.get_param('library')]) { ?>
+<?xjs } else if (request.hasParam('library') && file_area.lib_list[request.getParam('library')]) { ?>
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? request.write_param('page'); ?>">
+			<a href="./?page=<? request.writeParam('page'); ?>">
 				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? request.write_param('page'); ?>&amp;library=<? request.write_param('library'); ?>">
-				<? write(file_area.lib_list[request.get_param('library')].name); ?>
+			<a href="./?page=<? request.writeParam('page'); ?>&amp;library=<? request.writeParam('library'); ?>">
+				<? write(file_area.lib_list[request.getParam('library')].name); ?>
 			</a>
 		</li>
 	</ol>
 
 
 	<?xjs function writeDirectory(dir) { ?>
-		<a href="./?page=<? request.write_param('page'); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
+		<a href="./?page=<? request.writeParam('page'); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
 			<h4><strong><? write(dir.dir.name); ?></strong></h4>
 			<p>
 				<? write(dir.dir.description); ?>:
@@ -94,19 +94,19 @@
 	<?xjs } ?>
 
 	<div id="file-list-container" class="list-group">
-		<?xjs listDirectories(request.get_param('library')).forEach(writeDirectory); ?>
+		<?xjs listDirectories(request.getParam('library')).forEach(writeDirectory); ?>
 	</div>
 
 <?xjs } else { ?>
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? request.write_param('page'); ?>"><? locale.write('title'); ?></a>
+			<a href="./?page=<? request.writeParam('page'); ?>"><? locale.write('title'); ?></a>
 		</li>
 	</ol>
 
 	<?xjs function writeLibrary(library) { ?>
-		<a href="./?page=<? request.write_param('page'); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
+		<a href="./?page=<? request.writeParam('page'); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
 			<h3><strong><? write(library.name); ?></strong></h3>
 			<p>
 				<? write(library.description); ?>:
