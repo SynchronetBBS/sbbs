@@ -1,7 +1,7 @@
 <!--Files-->
 
 <?xjs
-	var request = require({}, settings.web_lib + 'request.js', 'request');
+	var request = webRequire('request.js', 'request');
 	load(settings.web_lib + 'files.js');
     locale.section = 'page_files';
 	if (request.hasParam('dir') && file_area.dir[request.getParam('dir')]) {
