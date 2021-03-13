@@ -932,8 +932,7 @@ static void receive_thread(void* arg)
 {
 	char		str[128];
 	char		buf[8192];
-	char		ext[513];
-	char		desc[513];
+	char		extdesc[513] = "";
 	char		tmp[MAX_PATH+1];
 	int			i;
 	int			rd;
@@ -1148,16 +1147,10 @@ static void receive_thread(void* arg)
 				if(extract_diz(&scfg, &f, /* diz_fnames */NULL, tmp, sizeof(tmp))) {
 					lprintf(LOG_DEBUG,"%04d <%s> DATA Parsing DIZ: %s",xfer.ctrl_sock, xfer.user->alias,tmp);
 					str_list_t lines = read_diz(tmp, /* max_line_len: */80);
-					format_diz(lines, ext, sizeof(ext), /* allow_ansi: */false);
+					format_diz(lines, extdesc, sizeof(extdesc), /* allow_ansi: */false);
 					strListFree(&lines);
-					if(!fdesc[0]) {			/* use for normal description */
-						SAFECOPY(desc,ext);
-						strip_exascii(desc, desc);	/* strip extended ASCII chars */
-						prep_file_desc(desc, desc);	/* strip control chars and dupe chars */
-						for(i=0;desc[i];i++)	/* find appropriate first char */
-							if(IS_ALPHANUMERIC(desc[i]))
-								break;
-						SAFECOPY(fdesc,desc+i);
+					if(!fdesc[0]) {						/* use for normal description */
+						prep_file_desc(extdesc, fdesc);	/* strip control chars and dupe chars */
 					}
 					ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
 				} else
@@ -1171,7 +1164,7 @@ static void receive_thread(void* arg)
 						,xfer.ctrl_sock, xfer.user->alias, f.name);
 				/* need to update the index here */
 			} else {
-				if(!addfile(&scfg, xfer.dir, &f, desc))
+				if(!addfile(&scfg, xfer.dir, &f, extdesc))
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR adding file (%s) to database"
 						,xfer.ctrl_sock, xfer.user->alias, f.name);
 			}
