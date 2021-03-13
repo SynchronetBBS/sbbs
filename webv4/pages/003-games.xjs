@@ -1,8 +1,7 @@
 <!--Games-->
 <?xjs
 
-    load("ftelnethelper.js");
-    load(settings.web_lib + 'ftelnet.js');
+    var ftelnet = webRequire('ftelnet.js', 'ftelnet');
 
     if (typeof settings.xtrn_blacklist === 'string') {
         settings.xtrn_blacklist = settings.xtrn_blacklist.toLowerCase().split(',');
@@ -25,28 +24,29 @@
 
 ?>
 
-<style>.fTelnetStatusBar { display : none; }</style>
+<style>.fTelnetStatusBar { display: none; }</style>
 
 <a name="fTelnet"></a>
 <div id="fTelnetContainer" class="fTelnetContainer" style="margin-bottom:1em;"></div>
 
 <div id="xtrn-list" class="list-group">
-	<div id="xtrn-list-template" class="list-group-item" style="display:none;">
+	<div id="xtrn-list-template" class="list-group-item" hidden>
 		<h4></h4>
 		<ul class="nav nav-pills">
-			<li id="xtrn-item-template" role="presentation" style="display:none;">
+			<li id="xtrn-item-template" role="presentation" hidden>
 			<a href="#fTelnet"></a>
 			</li>
 		</ul>
 	</div>
 </div>
 
-<script id="fTelnetScript" src="<?xjs write(get_url()); ?>"></script>
+<script id="fTelnetScript" src="<?xjs write(ftelnet.getURL()); ?>"></script>
 <script type="text/javascript">
-	window.addEventListener('load', (event) => {
-		var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
-		var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
-		var Options = new fTelnetOptions();
+
+window.addEventListener('load', () => {
+		const wsp = <? write(settings.wsp || ftelnet.getWSPort()); ?>;
+		const wssp = <? write(settings.wssp || ftelnet.getWSSPort()); ?>;
+		const Options = new fTelnetOptions();
 		Options.BareLFtoCRLF = false;
 		Options.BitsPerSecond = 57600;
 		Options.ConnectionType = 'rlogin';
@@ -54,19 +54,17 @@
 		Options.Enter = '\r';
 		Options.Font = 'CP437';
 		Options.ForceWss = false;
-		Options.Hostname = '<?xjs write(http_request.vhost); ?>';
+		Options.Hostname = '<? write(http_request.vhost); ?>';
 		Options.LocalEcho = false;
 		Options.Port = location.protocol == 'https:' ? wssp : wsp;
-		Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
-		Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
+		Options.RLoginClientUsername = '<? write(user.security.password); ?>';
+		Options.RLoginServerUsername = '<? write(user.alias); ?>';
 		Options.ScreenColumns = 80;
 		Options.ScreenRows = 25;
-		Options.SplashScreen = Options.SplashScreen = '<?xjs write(get_splash()); ?>';
-		Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
+		Options.SplashScreen = Options.SplashScreen = '<? write(ftelnet.getSplash()); ?>';
+		Options.WebSocketUrlPath = '?Port=<? write(ftelnet.getRloginPort()); ?>';
 		window.fTelnet = new fTelnetClient('fTelnetContainer', Options);
-		fTelnet.OnConnectionClose = function () {
-			window.location.reload();
-		};
+        fTelnet.OnConnectionClose = () => window.location.reload();
 	});
 
     async function launchXtrn(code) {
@@ -75,24 +73,22 @@
         fTelnet.Connect();
     }
 
-    var xtrn = <?xjs write(JSON.stringify(xtrn)); ?>;
-    Object.keys(xtrn).forEach(function (x) {
-        var e = $('#xtrn-list-template').clone();
-        $($(e).find('h4')[0]).text(x);
-        var ul = $($(e).find('ul')[0]);
-        xtrn[x].forEach(function (xx) {
-            var li = $('#xtrn-item-template').clone();
-            var a = $(li).find('a')[0];
-            $(a).text(xx.n);
-            $(a).click(function (evt) {
-                launchXtrn(xx.c);
-            });
-            $(ul).append(li);
-            $(li).show();
+    var xtrn = <? write(JSON.stringify(xtrn)); ?>;
+    Object.entries(xtrn).forEach(([k, v]) => {
+        const elem = document.getElementById('xtrn-list-template').cloneNode(true);
+        elem.querySelector('h4').innerText = k;
+        const ul = elem.querySelector('ul');
+        v.forEach(e => {
+            const li = document.getElementById('xtrn-item-template').cloneNode(true);
+            const a = li.querySelector('a');
+            a.innerText = e.n;
+            a.onclick = () => launchXtrn(e.c);
+            ul.appendChild(li);
+            li.removeAttribute('hidden');
         });
-        $(e).append(ul);
-        $('#xtrn-list').append(e);
-        $(e).show();
+        elem.appendChild(ul);
+        document.getElementById('xtrn-list').appendChild(elem);
+        elem.removeAttribute('hidden');
     });
 
 </script>
