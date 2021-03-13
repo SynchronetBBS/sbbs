@@ -1351,7 +1351,7 @@ void decompile(FILE *bin, FILE *srcfile)
 		}
 		src[0]=0;
 		if(labels[currpos])
-			sprintf(src,":label_%04" XP_PRIsize_t "x\n", (uint)currpos);
+			sprintf(src,":label_%04" XP_PRIsize_t "x\n", (size_t)currpos);
 		switch(uch) {
 			case CS_USE_INT_VAR:
 				usevar=TRUE;

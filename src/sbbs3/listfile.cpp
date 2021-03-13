@@ -927,9 +927,8 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 							if(remove(str))
 								bprintf(text[CouldntRemoveFile],str);
 							else {
-								sprintf(tmp,"deleted %s"
-									,str);
-								logline(nulstr,tmp); 
+								SAFEPRINTF(tmp, "deleted %s", str);
+								logline(nulstr, tmp); 
 							} 
 						} 
 					}
