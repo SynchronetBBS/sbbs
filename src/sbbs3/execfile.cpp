@@ -304,38 +304,33 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[R_Download]);
 				return(0); 
 			}
-			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_DOWNLOAD)) {
+			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_DOWNLOAD)
+				&& strcmp(csi->str, ALLFILES) != 0) {
 				bputs(text[SearchingAllDirs]);
-				for(i=0;i<usrdirs[curlib];i++)
+				for(i=0;i<usrdirs[curlib];i++) {
+					if(msgabort())
+						return 0;
 					if(i!=curdir[curlib] &&
 						(s=listfileinfo(usrdir[curlib][i],csi->str,FI_DOWNLOAD))!=0)
 						if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 							return(0);
+				}
 				bputs(text[SearchingAllLibs]);
 				for(i=0;i<usrlibs;i++) {
 					if(i==curlib) continue;
-					for(j=0;j<usrdirs[i];j++)
+					for(j=0;j<usrdirs[i];j++) {
+						if(msgabort())
+							return 0;
 						if((s=listfileinfo(usrdir[i][j],csi->str,FI_DOWNLOAD))!=0)
 							if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
-								return(0); 
+								return(0);
+					}
 				} 
 			}
 			return(0);
 		case CS_FILE_DOWNLOAD_USER: /* Download from user dir */
 			csi->logic=LOGIC_FALSE;
-			if(cfg.user_dir==INVALID_DIR) {
-				bputs(text[NoUserDir]);
-				return(0); 
-			}
-			if(useron.rest&FLAG('D')) {
-				bputs(text[R_Download]);
-				return(0); 
-			}
-			CRLF;
-			if(!listfileinfo(cfg.user_dir,nulstr,FI_USERXFER))
-				bputs(text[NoFilesForYou]);
-			else
-				csi->logic=LOGIC_TRUE;
+			bputs(text[NoUserDir]);
 			return(0);
 		case CS_FILE_DOWNLOAD_BATCH:
 			if(batdn_total() > 0
@@ -354,13 +349,16 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(!csi->str[0])
 				return(0);
 			for(x=y=0;x<usrlibs;x++) {
-				for(y=0;y<usrdirs[x];y++)
+				for(y=0;y<usrdirs[x];y++) {
+					if(msgabort())
+						return 0;
 					if(loadfile(&cfg, usrdir[x][y], csi->str, &f, file_detail_normal)) {
 						addtobatdl(&f);
 						smb_freefilemem(&f);
 						csi->logic=LOGIC_TRUE;
 						return 0;
 					}
+				}
 			}
 			return(0);
 
@@ -371,10 +369,13 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_VIEW:
 			if(!usrlibs) return(0);
 			csi->logic=LOGIC_TRUE;
-			if(listfiles(usrdir[curlib][curdir[curlib]], csi->str, 0, FL_VIEW))
+			if(listfiles(usrdir[curlib][curdir[curlib]], csi->str, 0, FL_VIEW)
+				|| strcmp(csi->str, ALLFILES) == 0)
 				return(0);
 			bputs(text[SearchingAllDirs]);
 			for(i=0;i<usrdirs[curlib];i++) {
+				if(msgabort())
+					return 0;
 				if(i==curdir[curlib]) continue;
 				if(listfiles(usrdir[curlib][i],csi->str,0,FL_VIEW))
 					break; 
@@ -384,9 +385,12 @@ int sbbs_t::exec_file(csi_t *csi)
 			bputs(text[SearchingAllLibs]);
 			for(i=0;i<usrlibs;i++) {
 				if(i==curlib) continue;
-				for(j=0;j<usrdirs[i];j++)
+				for(j=0;j<usrdirs[i];j++) {
+					if(msgabort())
+						return 0;
 					if(listfiles(usrdir[i][j],csi->str,0,FL_VIEW))
-						return(0); 
+						return(0);
+				}
 			}
 			csi->logic=LOGIC_FALSE;
 			bputs(text[FileNotFound]);
@@ -406,20 +410,27 @@ int sbbs_t::exec_file(csi_t *csi)
 			return(0);
 		case CS_FILE_LIST_EXTENDED: /* Extended Information on files */
 			if(!usrlibs) return(0);
-			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_INFO)) {
+			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_INFO)
+				&& strcmp(csi->str, ALLFILES) != 0) {
 				bputs(text[SearchingAllDirs]);
-				for(i=0;i<usrdirs[curlib];i++)
+				for(i=0;i<usrdirs[curlib];i++) {
+					if(msgabort())
+						return 0;
 					if(i!=curdir[curlib] && (s=listfileinfo(usrdir[curlib][i]
 						,csi->str,FI_INFO))!=0)
 						if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 							return(0);
+				}
 				bputs(text[SearchingAllLibs]);
 				for(i=0;i<usrlibs;i++) {
 					if(i==curlib) continue;
-					for(j=0;j<usrdirs[i];j++)
+					for(j=0;j<usrdirs[i];j++) {
+						if(msgabort())
+							return 0;
 						if((s=listfileinfo(usrdir[i][j],csi->str,FI_INFO))!=0)
 							if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
-								return(0); 
+								return(0);
+					}
 				} 
 			}
 			return(0);
@@ -456,25 +467,32 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[R_RemoveFiles]);
 				return(0); 
 			}
-			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_REMOVE)) {
+			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_REMOVE)
+				&& strcmp(csi->str, ALLFILES) != 0) {
 				if(cfg.user_dir!=INVALID_DIR
 					&& cfg.user_dir!=usrdir[curlib][curdir[curlib]])
 					if((s=listfileinfo(cfg.user_dir,csi->str,FI_REMOVE))!=0)
 						if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 							return(0);
 				bputs(text[SearchingAllDirs]);
-				for(i=0;i<usrdirs[curlib];i++)
+				for(i=0;i<usrdirs[curlib];i++) {
+					if(msgabort())
+						return 0;
 					if(i!=curdir[curlib] && i!=cfg.user_dir
 						&& (s=listfileinfo(usrdir[curlib][i],csi->str,FI_REMOVE))!=0)
 						if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 							return(0);
+				}
 				bputs(text[SearchingAllLibs]);
 				for(i=0;i<usrlibs;i++) {
 					if(i==curlib || i==cfg.user_dir) continue;
-					for(j=0;j<usrdirs[i]; j++)
+					for(j=0;j<usrdirs[i]; j++) {
+						if(msgabort())
+							return 0;
 						if((s=listfileinfo(usrdir[i][j],csi->str,FI_REMOVE))!=0)
 							if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
-								return(0); 
+								return(0);
+					}
 				} 
 			}
 			return(0);

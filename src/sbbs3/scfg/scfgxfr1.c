@@ -60,8 +60,6 @@ void xfer_opts()
 			,cfg.max_batup);
 		sprintf(opt[i++],"%-33.33s%u","Max Files in Batch DL Queue"
 			,cfg.max_batdn);
-		sprintf(opt[i++],"%-33.33s%u","Max Users in User Transfers"
-			,cfg.max_userxfer);
 		sprintf(opt[i++],"%-33.33s%u%%","Default Credit on Upload"
 			,cfg.cdt_up_pct);
 		sprintf(opt[i++],"%-33.33s%u%%","Default Credit on Download"
@@ -71,8 +69,6 @@ void xfer_opts()
 				,cfg.leech_pct,cfg.leech_sec);
 		else
 			strcpy(str,"Disabled");
-		sprintf(opt[i++],"%-33.33s%s","Long Filenames in Listings"
-			,cfg.file_misc&FM_NO_LFN ? "No":"Yes");
 		sprintf(opt[i++],"%-33.33s%s","Leech Protocol Detection",str);
 		strcpy(opt[i++],"Viewable Files...");
 		strcpy(opt[i++],"Testable Files...");
@@ -99,7 +95,7 @@ void xfer_opts()
 					refresh_cfg(&cfg);
 				}
 				return;
-			case 0:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Minimum Kilobytes Free Disk Space to Allow Uploads:`\n"
 					"\n"
@@ -111,7 +107,7 @@ void xfer_opts()
 					,ultoa(cfg.min_dspace,tmp,10),5,K_EDIT|K_NUMBER);
 				cfg.min_dspace=atoi(tmp);
 				break;
-			case 1:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Maximum Files in Batch Upload Queue:`\n"
 					"\n"
@@ -122,7 +118,7 @@ void xfer_opts()
 					,ultoa(cfg.max_batup,tmp,10),5,K_EDIT|K_NUMBER);
 				cfg.max_batup=atoi(tmp);
 				break;
-			case 2:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Maximum Files in Batch Download Queue:`\n"
 					"\n"
@@ -133,19 +129,7 @@ void xfer_opts()
 					,ultoa(cfg.max_batdn,tmp,10),5,K_EDIT|K_NUMBER);
 				cfg.max_batdn=atoi(tmp);
 				break;
-			case 3:
-				uifc.helpbuf=
-					"`Maximum Destination Users in User to User Transfer:`\n"
-					"\n"
-					"This is the maximum number of users allowed in the destination user list\n"
-					"of a user to user upload.\n"
-				;
-				uifc.input(WIN_MID,0,0
-					,"Maximum Destination Users in User to User Transfers"
-					,ultoa(cfg.max_userxfer,tmp,10),5,K_EDIT|K_NUMBER);
-				cfg.max_userxfer=atoi(tmp);
-				break;
-			case 4:
+			case __COUNTER__:
 	uifc.helpbuf=
 		"`Default Percentage of Credits to Credit Uploader on Upload:`\n"
 		"\n"
@@ -157,7 +141,7 @@ void xfer_opts()
 					,ultoa(cfg.cdt_up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 				cfg.cdt_up_pct=atoi(tmp);
 				break;
-			case 5:
+			case __COUNTER__:
 	uifc.helpbuf=
 		"`Default Percentage of Credits to Credit Uploader on Download:`\n"
 		"\n"
@@ -169,27 +153,8 @@ void xfer_opts()
 					,ultoa(cfg.cdt_dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 				cfg.cdt_dn_pct=atoi(tmp);
 				break;
-			case 6:
-				i=0;
-				uifc.helpbuf=
-					"`Long Filenames in File Listings:`\n"
-					"\n"
-					"If you want long filenames to be displayed in the BBS file listings, set\n"
-					"this option to `Yes`. Note: This feature requires Windows 98, Windows 2000\n"
-					"or later.\n"
-				;
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Long Filenames in Listings (Win98/Win2K)",uifcYesNoOpts);
-				if(!i && cfg.file_misc&FM_NO_LFN) {
-					cfg.file_misc&=~FM_NO_LFN;
-					uifc.changes=1;
-				} else if(i==1 && !(cfg.file_misc&FM_NO_LFN)) {
-					cfg.file_misc|=FM_NO_LFN;
-					uifc.changes=1;
-				}
-				break;
 
-			case 7:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Leech Protocol Detection Percentage:`\n"
 					"\n"
@@ -219,7 +184,7 @@ void xfer_opts()
 					,ultoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
 				cfg.leech_sec=atoi(tmp);
 				break;
-			case 8: 	/* Viewable file types */
+			case __COUNTER__: 	/* Viewable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fviews && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.fview[i]->ext,cfg.fview[i]->cmd);
@@ -337,7 +302,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 9:    /* Testable file types */
+			case __COUNTER__:    /* Testable file types */
 				while(1) {
 					for(i=0;i<cfg.total_ftests && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.ftest[i]->ext,cfg.ftest[i]->cmd);
@@ -472,7 +437,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 10:    /* Download Events */
+			case __COUNTER__:    /* Download Events */
 				while(1) {
 					for(i=0;i<cfg.total_dlevents && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.dlevent[i]->ext,cfg.dlevent[i]->cmd);
@@ -606,7 +571,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 11:	 /* Extractable file types */
+			case __COUNTER__:	 /* Extractable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fextrs && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s"
@@ -727,7 +692,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 12:	 /* Compressable file types */
+			case __COUNTER__:	 /* Compressable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.fcomp[i]->ext,cfg.fcomp[i]->cmd);
@@ -845,7 +810,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 13:	/* Transfer protocols */
+			case __COUNTER__:	/* Transfer protocols */
 				while(1) {
 					for(i=0;i<cfg.total_prots && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%c  %s"

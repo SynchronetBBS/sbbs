@@ -26,7 +26,7 @@
 /* Views file with:                                                         */
 /* (B)atch download, (V)iew file (E)xtended info, (Q)uit, or [Next]:        */
 /* call with ext=1 for default to extended info, or 0 for file view         */
-/* Returns -1 for Batch, 1 for Next, or 0 for Quit                          */
+/* Returns -1 for Batch, 1 for Next, -2 for Previous, or 0 for Quit         */
 /****************************************************************************/
 int sbbs_t::viewfile(smbfile_t* f, bool ext)
 {
@@ -38,13 +38,13 @@ int sbbs_t::viewfile(smbfile_t* f, bool ext)
 	while(online) {
 		sys_status &= ~SS_ABORT;
 		if(ext)
-			fileinfo(f);
+			showfileinfo(f);
 		else
 			viewfilecontents(f);
 		ASYNC;
 		SAFEPRINTF(str, text[FileInfoPrompt], fname);
 		mnemonics(str);
-		ch=(char)getkeys("BEVQN\r",0);
+		ch=(char)getkeys("BEVQPN\b-\r",0);
 		if(ch=='Q' || sys_status&SS_ABORT)
 			return(0);
 		switch(ch) {
@@ -58,6 +58,10 @@ int sbbs_t::viewfile(smbfile_t* f, bool ext)
 			case 'V':
 				ext=0;
 				continue;
+			case 'P':
+			case '\b':
+			case '-':
+				return -2;
 			case 'N':
 			case CR:
 				return(1); 

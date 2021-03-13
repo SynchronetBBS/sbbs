@@ -612,7 +612,6 @@ public:
 	int 	sub_op(uint subnum);
 
 	int		dir_op(uint dirnum);
-	int		getuserxfers(int fromuser, int destuser, char *fname);
 
 	void	getmsgptrs(void);
 	void	putmsgptrs(void);
@@ -958,7 +957,7 @@ public:
 	bool	recvfile(char* fname, char prot=0, bool autohang=true);
 
 	/* file.cpp */
-	void	fileinfo(smbfile_t*);
+	void	showfileinfo(smbfile_t*);
 	bool	removefcdt(smb_t*, smbfile_t*);
 	bool	removefile(smb_t*, smbfile_t*);
 	bool	movefile(smb_t*, smbfile_t*, int newdir);

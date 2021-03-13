@@ -878,8 +878,6 @@ enum {							/* Values for 'mode' in listfileinfo        */
 	,FI_OLD              		/* Search/Remove files not downloaded since */
 	,FI_OLDUL	 				/* Search/Remove files uploaded before      */
 	,FI_OFFLINE   				/* Search/Remove files not online			*/
-	,FI_USERXFER  				/* User Xfer Download                       */
-	,FI_CLOSE 	  				/* Close any open records					*/
 	};
 
 enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/

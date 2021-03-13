@@ -224,10 +224,9 @@ bool sbbs_t::upload(uint dirnum)
 	char	path[MAX_PATH+1];
 	char 	tmp[512];
     time_t	start,end;
-    uint	i,j,k,destuser[MAX_USERXFER],destusers=0;
+    uint	i,j,k;
 	ulong	space;
 	smbfile_t	f = {{}};
-    user_t	user;
 
 	/* Security Checks */
 	if(useron.rest&FLAG('U')) {
@@ -342,41 +341,6 @@ bool sbbs_t::upload(uint dirnum)
 		}
 	}
 	bputs(text[SearchedForDupes]);
-	if(dirnum==cfg.user_dir) {  /* User to User transfer */
-		bputs(text[EnterAfterLastDestUser]);
-		while((!dir_op(dirnum) && destusers<cfg.max_userxfer) || destusers<MAX_USERXFER) {
-			bputs(text[SendFileToUser]);
-			if(!getstr(str,LEN_ALIAS,cfg.uq&UQ_NOUPRLWR ? K_NONE:K_UPRLWR))
-				break;
-			if((user.number=finduser(str))!=0) {
-				if(!dir_op(dirnum) && user.number==useron.number) {
-					bputs(text[CantSendYourselfFiles]);
-					continue; 
-				}
-				for(i=0;i<destusers;i++)
-					if(user.number==destuser[i])
-						break;
-				if(i<destusers) {
-					bputs(text[DuplicateUser]);
-					continue; 
-				}
-				getuserdat(&cfg,&user);
-				if((user.rest&(FLAG('T')|FLAG('D')))
-					|| !chk_ar(cfg.lib[cfg.dir[cfg.user_dir]->lib]->ar,&user,/* client: */NULL)
-					|| !chk_ar(cfg.dir[cfg.user_dir]->dl_ar,&user,/* client: */NULL)) {
-					bprintf(text[UserWontBeAbleToDl],user.alias); 
-				} else {
-					bprintf(text[UserAddedToDestList],user.alias);
-					destuser[destusers++]=user.number; 
-				} 
-			}
-			else {
-				CRLF; 
-			} 
-		}
-		if(!destusers)
-			return(false); 
-	}
 	if(cfg.dir[dirnum]->misc&DIR_RATE) {
 		SYNC;
 		bputs(text[RateThisFile]);

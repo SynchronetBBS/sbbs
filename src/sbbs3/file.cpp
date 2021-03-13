@@ -25,7 +25,7 @@
 /****************************************************************************/
 /* Prints all information of file in file_t structure 'f'					*/
 /****************************************************************************/
-void sbbs_t::fileinfo(smbfile_t* f)
+void sbbs_t::showfileinfo(smbfile_t* f)
 {
 	char 	tmp[512];
 	char	tmp2[64];

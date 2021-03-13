@@ -386,8 +386,8 @@ int sbbs_t::exec_function(csi_t *csi)
 				bputs("not online...\r\n"); 
 			}
 			else {
-				l=FI_CLOSE;
-				bputs("currently open...\r\n"); 
+				// e.g. FI_CLOSE;
+				return 0;
 			}
 			if(!stricmp(csi->str,"ALL")) {
 				for(i=0;i<usrlibs;i++)
