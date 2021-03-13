@@ -41,16 +41,6 @@
 #include "gen_defs.h"
 #include "utf8_codepages.h"
 
-#ifndef _WIN32
-  /* This is included because it seems openSUSE Leap-15.2 apparently contains this:
-   * #define ESCDELAY _nc_ESCDELAY.
-   * which means we need to not set the ESCDELAY member (because we can't), or we
-   * need to rename the member to _nc_ESCDELAY.  Do the second because it's very
-   * *very* slightly less stupid.
-   */
-  #include "curs_fix.h"
-#endif
-
 #ifdef CIOLIBEXPORT
         #undef CIOLIBEXPORT
 #endif
@@ -379,7 +369,7 @@ typedef struct {
 	int		(*getvideoflags)	(void);
 	void	(*setscaling)	(int new_value);
 	int		(*getscaling)	(void);
-	int		*ESCDELAY;
+	int		*escdelay;
 	int		(*setpalette)	(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 	int		(*attr2palette)	(uint8_t attr, uint32_t *fg, uint32_t *bg);
 	int		(*setpixel)	(uint32_t x, uint32_t y, uint32_t colour);
