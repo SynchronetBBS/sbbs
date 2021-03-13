@@ -41,8 +41,9 @@
 -->
 
 <?xjs
-    var request = webRequire('request.js', 'request');
+	var components = webRequire('components.js', 'components');
 	var forum = webRequire('forum.js', 'forum');
+    var request = webRequire('request.js', 'request');
     locale.section = 'page_forum';
 ?>
 
@@ -64,64 +65,8 @@
 	<script type="text/javascript" src="./js/graphics-converter.js"></script>
 	<script type="text/javascript" src="./js/avatars.js"></script>
 
-	<!-- Template for a message reply input -->
-	<div class="reply" data-reply-message-template hidden>
-		<strong>
-			<? locale.write('label_form_reply'); ?>
-		</strong>
-		<textarea rows="8" class="form-control reply" data-reply-message-body></textarea>
-		<button class="btn" data-quote-message-button>
-			<? locale.write('button_quote_message'); ?>
-		</button>
-		<input class="btn btn-primary" type="submit" value="Submit" data-reply-message-submit />
-	</div>
-	
-	<div hidden>
-		<li id="forum-message-template" class="list-group-item striped" data-message>
-			<a data-message-anchor></a>
-			<h4>
-				<strong data-message-subject></strong>
-			</h4>
-			<div class="clearfix">
-				<div class="pull-left" style="margin-right:1em;" data-avatar></div>
-				<div>
-					<div data-badge-unread hidden>
-						<span class="badge unread">
-							<? locale.write('label_new_message'); ?>
-						</span>
-					</div>
-					<? locale.write('label_message_from'); ?> 
-					<strong data-message-from></strong><span data-message-from-address></span>
-					<br />
-					<? locale.write('label_message_to'); ?> 
-					<strong data-message-to></strong>
-					<br />
-					<? locale.write('label_message_date'); ?> 
-					<strong data-message-date></strong>
-				</div>
-			</div>
-			<div class="message" data-message-body></div>
-			<div class="clearfix">
-				<button class="btn btn-default icon" title="<? locale.write('label_delete'); ?>" aria-label="<? locale.write('label_delete'); ?>" data-delete-message hidden>
-					<span class="glyphicon glyphicon-trash"></span>
-				</button>
-				<a class="btn btn-default icon" title="<? locale.write('label_direct_link'); ?>" aria-label="<? locale.write('label_direct_link'); ?>" href="#" data-direct-link>
-					<span class="glyphicon glyphicon-link"></span>
-				</a>
-				<button class="btn btn-default icon" title="<? locale.write('label_reply'); ?>" aria-label="<? locale.write('label_reply'); ?>" data-add-reply>
-					<span class="glyphicon glyphicon-comment"></span>
-				</button>
-				<button class="btn-uv btn btn-default icon" data-button-upvote>
-					<span title="Upvotes" class="glyphicon glyphicon-arrow-up"></span>
-					<span title="Upvotes" data-upvote-count>0</span>
-				</button>
-				<button class="btn-dv btn btn-default icon" data-button-downvote>
-					<span title="Downvotes" class="glyphicon glyphicon-arrow-down"></span>
-					<span title="Downvotes" data-downvote-count>0</span>
-				</button>
-			</div>
-		</li>
-	</div>
+	<? components.load('forum/message.xjs'); ?>
+	<? components.load('forum/reply.xjs'); ?>
 
     <ol class="breadcrumb">
         <li>
@@ -153,11 +98,6 @@
     </div>
 
 	<div id="forum-list-container" class="list-group"></div>
-	<div id="forum-load-more-messages" class="text-center" hidden>
-		<button id="load-more-messages" class="btn btn-primary" aria-label="<? locale.write('button_load_more', 'main'); ?>" title="<? locale.write('button_load_more', 'main'); ?>" onclick="listMessages('<? request.writeParam('sub'); ?>', '<? request.writeParam('thread'); ?>', <? write(settings.page_size); ?>, true)">
-			<? locale.write('button_load_more', 'main'); ?>
-		</button>
-	</div>
 
 	<script type="text/javascript">
 		listMessages('<? request.writeParam('sub'); ?>', <? request.writeParam('thread'); ?>);
@@ -167,152 +107,9 @@
 <? } else if (request.hasParam('sub') && msg_area.sub[request.getParam('sub')] !== undefined) { ?>
 
 	<? var sub = msg_area.sub[request.getParam('sub')]; ?>
-
-	<!-- Template for a link to a thread -->
-	<div hidden>
-		<a id="forum-thread-link-template" href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>" class="list-group-item striped" data-thread>
-			<div class="row">
-				<div class="col-sm-9">
-					<strong data-thread-subject></strong>
-					<br />
-					<small>
-						<? locale.write('label_thread_from'); ?> 
-						<strong data-thread-from></strong> 
-						<? locale.write('label_message_date'); ?> 
-						<span data-thread-date-start></span>
-					</small>
-					<div data-replies hidden>
-						<small>
-							<strong data-message-count></strong>
-							<span data-suffix-reply hidden><? locale.write('suffix_reply_count'); ?>.</span>
-							<span data-suffix-replies hidden><? locale.write('suffix_replies_count'); ?>.</span>
-							<? locale.write('label_thread_latest_reply'); ?>
-							<strong data-last-from></strong>
-							<? locale.write('label_message_date'); ?> 
-							<span data-last-time></span>
-						</small>
-					</div>
-				</div>
-				<div class="col-sm-3">
-					<div class="pull-right" data-stats hidden>
-						<? if (isUser()) { ?>
-							<span data-unread-messages title="<? locale.write('badge_unread_messages'); ?>" class="badge" hidden></span>
-						<? } ?>
-						<span data-upvotes-badge title="<? locale.write('badge_upvotes'); ?>" class="badge upvote-bg" style="display:none;">
-							<span class="glyphicon glyphicon-arrow-up"></span>
-							<span data-upvotes></span>
-						</span>
-						<span data-downvotes-badge title="<? locale.write('badge_downvotes'); ?>" class="badge downvote-bg" style="display:none;">
-							<span class="glyphicon glyphicon-arrow-down"></span>
-							<span data-downvotes></span>
-						</span>
-					</div>
-				</div>
-			</div>
-		</a>
-	</div>
-
-	<!-- Template for a new message input -->
-    <div data-new-message-template hidden>
-        <input class="form-control" type="text" placeholder="<? locale.write('label_message_to'); ?>" data-new-message-to />
-        <br />
-        <input class="form-control" type="text" placeholder="<? locale.write('label_message_subject'); ?>" data-new-message-subject />
-        <br />
-        <textarea class="form-control" rows="8" data-new-message-body></textarea>
-        <br />
-		<input class="btn btn-primary" type="submit" value="<? locale.write('button_submit', 'main') ?>" onclick="postNew('<? write(sub.code); ?>')" data-new-message-submit />
-    </div>
-
-	<!-- Template for adding a new poll -->
-    <div id="forum-new-poll-template" hidden>
-        <strong>
-			<p><? locale.write('label_poll_add'); ?></p>
-        </strong>
-        <form id="newpoll-form-template" class="form-horizontal">
-            <div class="clearfix">
-				<strong>
-					<? locale.write('label_poll_add_question'); ?>
-				</strong>
-				<br />
-                <div class="col-sm-10 form-group">
-                    <input id="newpoll-subject-template" class="form-control" type="text" placeholder="<? locale.write('placeholder_required', 'main'); ?>" maxlength="70" />
-                </div>
-            </div>
-            <div id="newpoll-comment-group-template">
-				<strong>
-					<? locale.write('label_poll_add_comments'); ?>
-				</strong>
-				<br />
-			</div>
-            <div class="form-group">
-                <label for="newpoll-answers-template" class="col-sm-2 control-label">
-                <? locale.write('label_poll_add_selection'); ?>
-                </label>
-                <div class="col-sm-10">
-                    <label class="radio-inline">
-                        <input type="radio" name="newpoll-answers-template" value="1" checked /> <? locale.write('label_poll_selection_single'); ?> 
-                    </label>
-                    <label class="radio-inline">
-                        <input type="radio" name="newpoll-answers-template" value="2" /> <? locale.write('label_poll_selection_multiple'); ?>  
-                        <input type="number" name="newpoll-answer-count-template" min="1" max="15" value="1" />
-                    </label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="newpoll-results-template" class="col-sm-2 control-label">
-                <? locale.write('label_poll_show_results'); ?>
-                </label>
-                <div class="col-sm-10">
-                    <label class="radio-inline">
-                        <input type="radio" name="newpoll-results-template" value="0" checked /> <? locale.write('label_poll_show_results_voters'); ?> 
-                    </label>
-                    <label class="radio-inline">
-                        <input type="radio" name="newpoll-results-template" value="1" />  <? locale.write('label_poll_show_results_everyone'); ?> 
-                    </label>
-                    <label class="radio-inline">
-                        <input type="radio" name="newpoll-results-template" value="2" /> <? locale.write('label_poll_show_results_me_only_a'); ?> 
-                    </label>
-                    <label class="radio-inline">
-                        <input type="radio" name="newpoll-results-template" value="3" /> <? locale.write('label_poll_show_results_me_only_b'); ?> 
-                    </label>
-                </div>
-            </div>
-            <div id="newpoll-answer-group-template">
-				<strong>
-					<? locale.write('label_poll_add_answers'); ?>
-				</strong>
-				<br />
-			</div>
-            <div id="newpoll-button-template" class="form-group">
-                <div class="col-sm-offset-2 col-sm-10">
-                    <button id="newpoll-submit-template" type="button" class="btn btn-primary" onclick="postNewPoll('SUB')">
-                        <? locale.write('button_submit', 'main'); ?>
-                    </button>
-                    <div class="pull-right">
-                        <button type="button" title="<? locale.write('button_poll_add_comment'); ?>" class="btn btn-success" onclick="addPollField('comment', 'newpoll-comment-group')">
-                            <span class="glyphicon glyphicon-pencil"></span>
-                        </button> 
-                        <button type="button" title="<? locale.write('button_poll_add_answer'); ?>" class="btn btn-success" onclick="addPollField('answer', 'newpoll-answer-group')">
-                            <span class="glyphicon glyphicon-plus"></span>
-                        </button> 
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-
-	<!-- Template for adding a poll field (comment or answer) -->
-	<div id="forum-new-poll-field-container-template" name="forum-new-poll-TYPE" class="form-group" hidden>
-        <div class="col-sm-9">
-            <input id="forum-new-poll-field-TYPE-NUMBER-template" class="form-control" name="forum-new-poll-field-TYPE" type="text" maxlength="70">
-        </div>
-        <div class="col-sm-1">
-            <button type="button" class="btn btn-danger" onclick="$('#forum-new-poll-field-container-template').remove()">
-				<span class="glyphicon glyphicon-remove"></span>
-			</button>
-		</div>
-    </div>
-
+	<? components.load('forum/thread-link.xjs', [request.getParam('page'), request.getParam('sub')]); ?>
+	<? components.load('forum/post.xjs'); ?>
+	<? components.load('forum/post-poll.xjs', request.getParam('sub')); ?>
 
 	<ol class="breadcrumb">
         <li>
@@ -321,13 +118,13 @@
             </a>
         </li>
         <li>
-            <a href="./?page=<? request.writeParam('page'); ?>&group=<? write(msg_area.grp_list[msg_area.sub[request.getParam('sub')].grp_index].number); ?>">
-                <? write(msg_area.grp_list[msg_area.sub[request.getParam('sub')].grp_index].name); ?>
+            <a href="./?page=<? request.writeParam('page'); ?>&group=<? write(msg_area.grp_list[sub.grp_index].number); ?>">
+                <? write(msg_area.grp_list[sub.grp_index].name); ?>
             </a>
         </li>
         <li>
             <a href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>">
-                <? write(msg_area.sub[request.getParam('sub')].name); ?>
+                <? write(sub.name); ?>
             </a>
         </li>
     </ol>
@@ -352,11 +149,6 @@
     </div>
 
 	<div id="forum-list-container" class="list-group"></div>
-	<div id="forum-load-more-threads" class="text-center" hidden>
-		<button id="load-more-threads" class="btn btn-primary" aria-label="<? locale.write('button_load_more', 'main'); ?>" title="<? locale.write('button_load_more', 'main'); ?>" onclick="listThreads('<? write(sub.code); ?>', <? write(settings.page_size); ?>, true)">
-			<? locale.write('button_load_more', 'main'); ?>
-		</button>
-	</div>
 
     <script type="text/javascript">
 
@@ -375,29 +167,7 @@
 <!-- Viewing a group (list of subs) -->
 <? } else if (request.hasParam('group') && msg_area.grp_list[request.getParam('group')] !== undefined) { ?>
 
-	<div hidden>
-		<a id="forum-sub-link-template" href="./?page=<? request.writeParam('page'); ?>" class="list-group-item striped">
-			<h4>
-				<strong data-sub-name></strong>
-			</h4>
-			<span title="<? locale.write('badge_unread_messages'); ?>" class="badge ignored" data-unread-unscanned></span>
-			<span title="<? locale.write('badge_unread_messages'); ?>" class="badge scanned" data-unread-scanned></span>
-			<small>
-				<span data-sub-description></span>
-			</small>
-			<br />
-			<small>
-				<span data-newest-message-container hidden>
-					<? locale.write('label_sub_newest_message'); ?>:
-					<strong data-newest-message-subject></strong>
-					<? locale.write('label_thread_from'); ?>
-					<span data-newest-message-from></span>
-					<? locale.write('label_message_date'); ?>
-					<span data-newest-message-date></span>
-				</span>
-			</small>
-		</a>
-	</div>
+	<? components.load('forum/sub-link.xjs', request.getParam('page')); ?>
 
     <ol class="breadcrumb">
         <li>
@@ -432,19 +202,7 @@
 <!-- Viewing the group list -->
 <? } else { ?>
 
-	<div hidden>
-		<a id="forum-group-link-template" href="./?page=<? request.writeParam('page'); ?>" class="list-group-item striped">
-			<h3>
-				<strong data-group-name></strong>
-			</h3>
-			<span title="<? locale.write('badge_unread_messages'); ?>" class="badge ignored" data-unread-unscanned></span>
-			<span title="<? locale.write('badge_unread_messages'); ?>" class="badge scanned" data-unread-scanned></span>
-			<small>
-				<span data-group-description></span>:
-				<span data-group-sub-count></span> <? locale.write('sub_boards'); ?>
-			</small>
-		</a>
-	</div>
+	<? components.load('forum/group-link.xjs', request.getParam('page')); ?>
 
     <ol class="breadcrumb">
         <li>
