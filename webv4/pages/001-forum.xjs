@@ -3,8 +3,8 @@
 <!--
 	To do:
 
-	- Break templates into files under webv4/components/forum/
-	 - As XJS functions? Or to be written out via js.exec()?
+	x Break templates into files under webv4/components/forum/
+	 x As XJS functions? Or to be written out via js.exec()?
 	- "BBS View" for message
 	 - client-side replacement for html_encode
 	- Search feature
@@ -48,48 +48,19 @@
 ?>
 
 <script type="text/javascript" src="./js/xjs-forum.js"></script>
-<script type="text/javascript" src="./js/cache.js"></script>
 
-<!-- To do: Search (forum, group, sub, or thread), Sortation and data-attributes -->
-
-<div data-loading-template hidden>
-	<li class="list-group-item striped">
-		<? locale.write('loading_message', 'main'); ?>
-		<span data-spinning-cursor></span>
-	</li>
-</div>
+<? components.load('loading-message.xjs'); ?>
 
 <!-- Viewing a thread (list of messages) -->
 <? if (request.hasParam('sub') && request.hasParam('thread')) { ?>
 
 	<script type="text/javascript" src="./js/graphics-converter.js"></script>
+	<script type="text/javascript" src="./js/cache.js"></script>
 	<script type="text/javascript" src="./js/avatars.js"></script>
 
 	<? components.load('forum/message.xjs'); ?>
 	<? components.load('forum/reply.xjs'); ?>
-
-    <ol class="breadcrumb">
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>">
-                <? locale.write('title'); ?>
-            </a>
-        </li>
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>&group=<? request.writeParam('group'); ?>">
-                <? write(msg_area.grp_list[msg_area.sub[request.getParam('sub')].grp_index].name); ?>
-            </a>
-        </li>
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>">
-                <? write(msg_area.sub[request.getParam('sub')].name); ?>
-            </a>
-        </li>
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>&thread=<? request.writeParam('thread'); ?>">
-				<span data-message-subject></span>
-            </a>
-        </li>
-    </ol>
+	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'thread', request.getParam('sub'), request.getParam('thread') ]); ?>
 
     <div id="jump-unread-container" style="margin-bottom:1em;" hidden>
         <a class="btn btn-default" id="jump-unread" title="<? locale.write('button_jump_to_unread'); ?>" href="#">
@@ -110,24 +81,7 @@
 	<? components.load('forum/thread-link.xjs', [request.getParam('page'), request.getParam('sub')]); ?>
 	<? components.load('forum/post.xjs'); ?>
 	<? components.load('forum/post-poll.xjs', request.getParam('sub')); ?>
-
-	<ol class="breadcrumb">
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>">
-                <? locale.write('title'); ?>
-            </a>
-        </li>
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>&group=<? write(msg_area.grp_list[sub.grp_index].number); ?>">
-                <? write(msg_area.grp_list[sub.grp_index].name); ?>
-            </a>
-        </li>
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>&sub=<? request.writeParam('sub'); ?>">
-                <? write(sub.name); ?>
-            </a>
-        </li>
-    </ol>
+	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'sub', request.getParam('sub') ]); ?>
 
     <button class="btn btn-default icon" aria-label="<? locale.write('button_post_message'); ?>" title="<? locale.write('button_post_message'); ?>" onclick="addNew('<? write(sub.code); ?>')">
         <span class="glyphicon glyphicon-pencil"></span>
@@ -168,19 +122,7 @@
 <? } else if (request.hasParam('group') && msg_area.grp_list[request.getParam('group')] !== undefined) { ?>
 
 	<? components.load('forum/sub-link.xjs', request.getParam('page')); ?>
-
-    <ol class="breadcrumb">
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>">
-                <? locale.write('title'); ?>
-            </a>
-        </li>
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>&group=<? request.writeParam('group'); ?>">
-                <? write(msg_area.grp_list[request.getParam('group')].name); ?>
-            </a>
-        </li>
-    </ol>
+	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'group', request.getParam('group') ]); ?>
 
 	<div id="forum-list-container" class="list-group"></div>
 
@@ -203,14 +145,7 @@
 <? } else { ?>
 
 	<? components.load('forum/group-link.xjs', request.getParam('page')); ?>
-
-    <ol class="breadcrumb">
-        <li>
-            <a href="./?page=<? request.writeParam('page'); ?>">
-                <? locale.write('title'); ?>
-            </a>
-        </li>
-    </ol>
+	<? components.load('forum/breadcrumb.xjs'); ?>
 
 	<div id="forum-list-container" class="list-group"></div>
 
