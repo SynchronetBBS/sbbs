@@ -1228,8 +1228,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 
 		msg_tmp_fname(useron_xedit, msgtmp, sizeof(msgtmp));
 		if(stricmp(msgtmp,path)) {
-			if(removecase(msgtmp) != 0)
-				errormsg(WHERE, ERR_REMOVE, msgtmp, 0);
+			(void)removecase(msgtmp);
 			if(fexistcase(path))
 				CopyFile(path, msgtmp, /* failIfExists: */FALSE);
 		}
