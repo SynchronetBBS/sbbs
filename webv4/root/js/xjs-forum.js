@@ -1,29 +1,3 @@
-function LoadingMessage() {
-
-    let pos = 0;
-    let cursor = [ '|', '/', '—', '\\' ];
-    let evt;
-
-    const flc = document.getElementById('forum-list-container');
-    
-    this.start = function () {
-        const elem = document.querySelector('div[data-loading-template]').cloneNode(true);
-        const sc = elem.querySelector('span[data-spinning-cursor]');
-        elem.removeAttribute('hidden');
-        flc.appendChild(elem);
-        evt = setInterval(() => {
-            sc.innerHTML = cursor[pos % cursor.length];
-            pos++;
-        }, 250);
-    }
-    
-    this.stop = function () {
-        flc.removeChild(flc.querySelector('div[data-loading-template]'));
-        clearInterval(evt);
-    }
-
-}
-
 // Deuce's URL-ifier
 function linkify(body) {
     urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
