@@ -5,3 +5,4 @@ if (!settings.locale) {
 }
 
 var locale = new Locale();
+locale;
