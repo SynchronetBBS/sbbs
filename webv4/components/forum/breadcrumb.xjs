@@ -1,0 +1,40 @@
+<?xjs
+    var page = argv[0];
+    var list = argv[1]; // 'group', 'sub', or 'thread'
+    var path = argv[2]; // the group index or sub code
+    var name = argv[3]; // the group or sub name
+    var thread = argv[4]; // thread id
+?>
+
+<ol class="breadcrumb">
+    <li>
+        <a href="./?page=<? write(page); ?>">
+            <? locale.write('title'); ?>
+        </a>
+    </li>
+    <? if (list === 'group') { ?>
+        <li>
+            <a href="./?page=<? write(page); ?>&group=<? write(path); ?>">
+                <? write(msg_area.grp_list[path].name); ?>
+            </a>
+        </li>
+    <? } else if (list === 'sub' || list === 'thread') { ?>
+        <li>
+            <a href="./?page=<? write(page); ?>&group=<? write(msg_area.sub[path].grp_index); ?>">
+                <? write(msg_area.grp_list[msg_area.sub[path].grp_index].name); ?>
+            </a>
+        </li>
+        <li>
+            <a href="./?page=<? write(page); ?>&sub=<? write(path); ?>">
+                <? write(msg_area.sub[path].name); ?>
+            </a>
+        </li>
+    <? } ?>
+    <? if (list === 'thread') { ?>
+        <li>
+            <a href="./?page=<? write(page); ?>&sub=<? write(path); ?>&thread=<? write(thread); ?>">
+                <span data-message-subject></span>
+            </a>
+        </li>
+    <? } ?>
+</ol>
