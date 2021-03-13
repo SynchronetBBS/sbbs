@@ -384,7 +384,11 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 	else if((cfg.dir[dirnum]->misc & (DIR_FREE | DIR_FCHK)) == (DIR_FREE | DIR_FCHK))
 		cdt = getfilesize(&cfg, f);
 	char bytes[32];
-	byte_estimate_to_str(cdt, bytes, sizeof(bytes), /* units: */1, /* precision: */1);
+	unsigned units = 1;
+	do {
+		byte_estimate_to_str(cdt, bytes, sizeof(bytes), units, /* precision: */1);
+		units *= 1024;
+	} while(strlen(bytes) > 6 && units <= 1024 * 1024 * 1024);
 	attr(cfg.color[size_attr]);
 	if(useron.misc&BATCHFLAG) {
 		if(!cdt && !(cfg.dir[dirnum]->misc&DIR_FREE)) {
@@ -469,9 +473,9 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 							,long totalfiles)
 {
-	char	ch,str[256],fname[128],*p,remcdt=0,remfile=0;
+	char	ch,str[256],*p,remcdt=0,remfile=0;
 	int		c, d;
-	char 	tmp[512];
+	char 	path[MAX_PATH + 1];
 	uint	i,j,ml=0,md=0,udir,ulib;
 
 	for(ulib=0;ulib<usrlibs;ulib++)
@@ -593,7 +597,6 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
-//							padfname(str+c,tmp);
 							if(filematch(bf[i]->name, str+c)) {
 								if(!viewfile(bf[i], ch=='E'))
 									return(-1); 
@@ -635,14 +638,16 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 				return(-1);
 			if(d > 0) { 	/* d is string length */
 				strupr(str);
-				CRLF;
+				if(total > 1)
+					newline();
 				if(ch=='R') {
 					if(noyes(text[RemoveFileQ]))
 						return(2);
 					remcdt=remfile=1;
 					if(dir_op(smb->dirnum)) {
 						remcdt=!noyes(text[RemoveCreditsQ]);
-						remfile=!noyes(text[DeleteFileQ]); } 
+						remfile=!noyes(text[DeleteFileQ]);
+					}
 				}
 				else if(ch=='M') {
 					CRLF;
@@ -679,13 +684,14 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 						for(i=0;i<total;i++) {
 							if(filematch(bf[i]->name, str+c)) {
 								if(ch=='R') {
-									removefile(smb, bf[i]);
-									if(remfile) {
-										sprintf(tmp,"%s%s",cfg.dir[smb->dirnum]->path,fname);
-										remove(tmp); 
+									if(removefile(smb, bf[i])) {
+										if(remfile) {
+											if(remove(getfilepath(&cfg, bf[i], path)) != 0)
+												errormsg(WHERE, ERR_REMOVE, path);
+										}
+										if(remcdt)
+											removefcdt(smb, bf[i]);
 									}
-									if(remcdt)
-										removefcdt(smb, bf[i]); 
 								}
 								else if(ch=='M')
 									movefile(smb, bf[i], usrdir[ml][md]); 
@@ -695,17 +701,19 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 					if(strchr(str+c,'.'))
 						c+=strlen(str+c);
 					else if(str[c]<'A'+(char)total && str[c]>='A') {
+						smbfile_t* f = bf[str[c]-'A'];
 						if(ch=='R') {
-							removefile(smb, bf[str[c]-'A']);
-							if(remfile) {
-								sprintf(tmp,"%s%s",cfg.dir[smb->dirnum]->path,fname);
-								remove(tmp); 
+							if(removefile(smb, f)) {
+								if(remfile) {
+									if(remove(getfilepath(&cfg, f, path)) != 0)
+										errormsg(WHERE, ERR_REMOVE, path);
+								}
+								if(remcdt)
+									removefcdt(smb, f);
 							}
-							if(remcdt)
-								removefcdt(smb, bf[str[c]-'A']); 
 						}
 						else if(ch=='M')
-							movefile(smb, bf[str[c]-'A'], usrdir[ml][md]); 
+							movefile(smb, f, usrdir[ml][md]); 
 					} 
 				}
 				return(2); 
@@ -727,7 +735,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 /****************************************************************************/
 int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 {
-	char	str[258],path[258],dirpath[MAX_PATH + 1],done=0,ch;
+	char	str[MAX_PATH + 1],path[MAX_PATH + 1],dirpath[MAX_PATH + 1],done=0,ch;
 	char 	tmp[512];
 	int		error;
 	int		found=0;
@@ -779,62 +787,42 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 			strcpy(dirpath,cfg.altpath[f->hdr.altpath-1]);
 		else
 			strcpy(dirpath,cfg.dir[f->dir]->path);
-		if(mode==FI_CLOSE /* && !f.opencount */)
-			continue;
-		if(mode==FI_USERXFER) {
-#if 0
-			for(p=usrxfrbuf;p<usrxfrbuf+usrxfrlen;p+=24) {
-				sprintf(str,"%17.17s",p);   /* %4.4u %12.12s */
-				if(!strcmp(str+5,f.name) && useron.number==atoi(str))
-					break; 
-			}
-			if(p>=usrxfrbuf+usrxfrlen) /* file wasn't found */
-#endif
-				continue; 
-		}
 		if((mode==FI_REMOVE) && (!dir_op(dirnum) && stricmp(f->from
 			,useron.alias) && !(useron.exempt&FLAG('R'))))
 			continue;
 		found++;
 		if(mode==FI_INFO) {
-			if(!viewfile(f, true)) {
-				done=1;
-				found=-1; 
+			switch(viewfile(f, true)) {
+				case 0:
+					done=1;
+					found=-1;
+					break;
+				case -2:
+					m--;
+					if(m)
+						m--;
+					break;
 			} 
 		}
-		else
-			fileinfo(f);
-		if(mode==FI_CLOSE) {
-#if 0
-			if(!noyes(text[CloseFileRecordQ])) {
-				f.opencount=0;
-				putfiledat(&cfg,&f); 
-			} 
-#endif
+		else {
+			showfileinfo(f);
+			newline();
 		}
-		else if(mode==FI_REMOVE || mode==FI_OLD || mode==FI_OLDUL
+		if(mode==FI_REMOVE || mode==FI_OLD || mode==FI_OLDUL
 			|| mode==FI_OFFLINE) {
 			SYNC;
 //			CRLF;
-#if 0
-			if(f.opencount) {
-				mnemonics(text[QuitOrNext]);
-				strcpy(str,"QN\r"); 
-			}
-			else
-#endif
+			SAFECOPY(str, "VEQRNP\b-\r");
 			if(dir_op(dirnum)) {
 				mnemonics(text[SysopRemoveFilePrompt]);
-				strcpy(str,"VEFMCQRN\r"); 
+				SAFECAT(str,"FMC");
 			}
 			else if(useron.exempt&FLAG('R')) {
 				mnemonics(text[RExemptRemoveFilePrompt]);
-				strcpy(str,"VEMQRN\r"); 
+				SAFECAT(str,"M");
 			}
-			else {
+			else
 				mnemonics(text[UserRemoveFilePrompt]);
-				strcpy(str,"VEQRN\r"); 
-			}
 			switch(getkeys(str,0)) {
 				case 'V':
 					viewfilecontents(f);
@@ -949,22 +937,22 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 				case 'R':   /* remove file from database */
 					if(noyes(text[RemoveFileQ]))
 						break;
-					removefile(&smb, f);
-					SAFEPRINTF2(str,"%s%s",dirpath,f->name);
-					if(fexistcase(str)) {
-						if(dir_op(dirnum)) {
-							if(!noyes(text[DeleteFileQ])) {
-								if(remove(str))
-									bprintf(text[CouldntRemoveFile],str);
-								else {
-									sprintf(tmp,"deleted %s"
-										,str);
-									logline(nulstr,tmp); 
+					if(removefile(&smb, f)) {
+						getfilepath(&cfg, f, path);
+						if(fexistcase(path)) {
+							if(dir_op(dirnum)) {
+								if(!noyes(text[DeleteFileQ])) {
+									if(remove(path) != 0)
+										errormsg(WHERE, ERR_REMOVE, path);
+									else {
+										SAFEPRINTF(tmp, "deleted %s", path);
+										logline(nulstr,path); 
+									} 
 								} 
-							} 
+							}
+							else if(remove(str))    /* always remove if not sysop */
+								bprintf(text[CouldntRemoveFile],str);
 						}
-						else if(remove(str))    /* always remove if not sysop */
-							bprintf(text[CouldntRemoveFile],str); 
 					}
 					if(dir_op(dirnum) || useron.exempt&FLAG('R')) {
 						i=cfg.lib[cfg.dir[f->dir]->lib]->offline_dir;
@@ -1035,14 +1023,21 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					CRLF;
 					movefile(&smb, f, usrdir[i][j]);
 					break;
+				case 'P':	/* previous */
+				case '-':
+				case '\b':
+					m--;
+					if(m)
+						m--;
+					break;
 				case 'Q':   /* quit */
 					found=-1;
 					done=1;
 					break; 
 			} 
 		}
-		else if(mode==FI_DOWNLOAD || mode==FI_USERXFER) {
-			SAFEPRINTF2(path,"%s%s",dirpath,f->name);
+		else if(mode==FI_DOWNLOAD) {
+			getfilepath(&cfg, f, path);
 			if(getfilesize(&cfg, f) < 1L) { /* getfilesize will set this to -1 if non-existant */
 				SYNC;       /* and 0 byte files shouldn't be d/led */
 				mnemonics(text[QuitOrNext]);
@@ -1087,15 +1082,13 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 				continue; 
 			}
 			xfer_prot_menu(XFER_DOWNLOAD);
-//			openfile(&f);
 			SYNC;
 			mnemonics(text[ProtocolBatchQuitOrNext]);
 			sprintf(str,"B%cN\r",text[YNQP][2]);
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0]
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-					strcat(str,tmp); 
+					sprintf(str + strlen(str), "%c", cfg.prot[i]->mnemonic);
 				}
 	//		  ungetkey(useron.prot);
 			ch=(char)getkeys(str,0);
@@ -1105,7 +1098,6 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 			}
 			else if(ch=='B') {
 				if(!addtobatdl(f)) {
-//					closefile(&f);
 					break; 
 				} 
 			}
@@ -1120,7 +1112,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 						lncntr=0;
 						seqwait(cfg.dir[f->dir]->seqdev);
 						bprintf(text[RetrievingFile],f->name);
-						SAFEPRINTF2(str,"%s%s",dirpath,f->name);
+						getfilepath(&cfg, f, str);
 						SAFEPRINTF2(path,"%s%s",cfg.temp_dir,f->name);
 						mv(str,path,1); /* copy the file to temp dir */
 						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
@@ -1160,7 +1152,6 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					autohangup(); 
 				} 
 			} 
-//			closefile(&f); 
 		}
 		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?')) 
 			break; 
