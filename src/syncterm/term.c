@@ -1054,7 +1054,7 @@ static void transfer_complete(BOOL success)
 	lprintf(LOG_NOTICE,"Hit any key or wait %u seconds to continue...", timeout);
 	while(timeout > 0) {
 		if (kbhit()) {
-			if(getch()==0 && getch()<<8 == CIO_KEY_QUIT)
+			if(getch()==(CIO_KEY_QUIT & 0xff) && (getch()<<8) == (CIO_KEY_QUIT & 0xff00))
 				check_exit(FALSE);
 			break;
 		}
