@@ -61,14 +61,7 @@
 	<? components.load('forum/message.xjs'); ?>
 	<? components.load('forum/reply.xjs'); ?>
 	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'thread', request.getParam('sub'), request.getParam('thread') ]); ?>
-
-    <div id="jump-unread-container" style="margin-bottom:1em;" hidden>
-        <a class="btn btn-default" id="jump-unread" title="<? locale.write('button_jump_to_unread'); ?>" href="#">
-            <? locale.write('label_new_message'); ?>
-        </a>
-    </div>
-
-	<div id="forum-list-container" class="list-group"></div>
+	<? components.load('forum/container.xjs'); ?>
 
 	<script type="text/javascript">
 		listMessages('<? request.writeParam('sub'); ?>', <? request.writeParam('thread'); ?>);
@@ -102,9 +95,9 @@
         </button>
     </div>
 
-	<div id="forum-list-container" class="list-group"></div>
+	<? components.load('forum/container.xjs'); ?>
 
-    <script type="text/javascript">
+	<script type="text/javascript">
 
         registerEventListener('forum', e => {
             // const data = JSON.parse(e.data);
@@ -123,8 +116,7 @@
 
 	<? components.load('forum/sub-link.xjs', request.getParam('page')); ?>
 	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'group', request.getParam('group') ]); ?>
-
-	<div id="forum-list-container" class="list-group"></div>
+	<? components.load('forum/container.xjs'); ?>
 
 	<script type="text/javascript">
 		(async () => {
@@ -146,20 +138,19 @@
 
 	<? components.load('forum/group-link.xjs', request.getParam('page')); ?>
 	<? components.load('forum/breadcrumb.xjs'); ?>
+	<? components.load('forum/container.xjs'); ?>
 
-	<div id="forum-list-container" class="list-group"></div>
-
-        <script type="text/javascript">
-			(async () => await listGroups())();
-			<? if (isUser()) { ?>
-				registerEventListener('forum', e => {
-					const data = JSON.parse(e.data);
-					if (data.type != 'group_stats') return;
-					onGroupStats(data.data);
-				}, {
-					group_stats: null,
-				});
-			<? } ?>
-        </script>
+	<script type="text/javascript">
+		(async () => await listGroups())();
+		<? if (isUser()) { ?>
+			registerEventListener('forum', e => {
+				const data = JSON.parse(e.data);
+				if (data.type != 'group_stats') return;
+				onGroupStats(data.data);
+			}, {
+				group_stats: null,
+			});
+		<? } ?>
+	</script>
 
 <? } ?>
