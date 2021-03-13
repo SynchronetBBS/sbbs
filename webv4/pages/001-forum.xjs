@@ -41,8 +41,8 @@
 -->
 
 <?xjs
-    var request = require({}, settings.web_lib + 'request.js', 'request');
-    var forum = require({}, settings.web_lib + 'forum.js', 'forum');
+    var request = webRequire('request.js', 'request');
+	var forum = webRequire('forum.js', 'forum');
     locale.section = 'page_forum';
 ?>
 
