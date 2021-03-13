@@ -5036,7 +5036,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										y = CURR_MAXY;
 									}
 									GOTOXY(x, y);
-									PUTCH(0);
+									PUTCH(32);
 									GOTOXY(x, y);
 									break;
 								/* We abuse the ESC buffer for tab stops */
@@ -5118,7 +5118,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &ex, NULL);
 										MOVETEXT(sx, sy, ex - 1, sy, sx + 1, sy);
 									}
-									PUTCH(0);
+									PUTCH(32);
 									GOTOXY(x, y);
 									break;
 								default:
