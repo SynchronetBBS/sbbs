@@ -1,0 +1,47 @@
+<!-- Template for a link to a thread -->
+<?xjs
+    var page = argv[0];
+    var sub = argv[1];
+?>
+<div hidden>
+    <a id="forum-thread-link-template" href="./?page=<? write(page); ?>&sub=<? write(sub); ?>" class="list-group-item striped" data-thread>
+        <div class="row">
+            <div class="col-sm-9">
+                <strong data-thread-subject></strong>
+                <br />
+                <small>
+                    <? locale.write('label_thread_from'); ?> 
+                    <strong data-thread-from></strong> 
+                    <? locale.write('label_message_date'); ?> 
+                    <span data-thread-date-start></span>
+                </small>
+                <div data-replies hidden>
+                    <small>
+                        <strong data-message-count></strong>
+                        <span data-suffix-reply hidden><? locale.write('suffix_reply_count'); ?>.</span>
+                        <span data-suffix-replies hidden><? locale.write('suffix_replies_count'); ?>.</span>
+                        <? locale.write('label_thread_latest_reply'); ?>
+                        <strong data-last-from></strong>
+                        <? locale.write('label_message_date'); ?> 
+                        <span data-last-time></span>
+                    </small>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="pull-right" data-stats hidden>
+                    <? if (isUser()) { ?>
+                        <span data-unread-messages title="<? locale.write('badge_unread_messages'); ?>" class="badge" hidden></span>
+                    <? } ?>
+                    <span data-upvotes-badge title="<? locale.write('badge_upvotes'); ?>" class="badge upvote-bg" style="display:none;">
+                        <span class="glyphicon glyphicon-arrow-up"></span>
+                        <span data-upvotes></span>
+                    </span>
+                    <span data-downvotes-badge title="<? locale.write('badge_downvotes'); ?>" class="badge downvote-bg" style="display:none;">
+                        <span class="glyphicon glyphicon-arrow-down"></span>
+                        <span data-downvotes></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </a>
+</div>

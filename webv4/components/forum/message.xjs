@@ -1,0 +1,47 @@
+<!-- Template for a message (eg. when viewing a thread) -->
+<div hidden>
+    <li id="forum-message-template" class="list-group-item striped" data-message>
+        <a data-message-anchor></a>
+        <h4>
+            <strong data-message-subject></strong>
+        </h4>
+        <div class="clearfix">
+            <div class="pull-left" style="margin-right:1em;" data-avatar></div>
+            <div>
+                <div data-badge-unread hidden>
+                    <span class="badge unread">
+                        <? locale.write('label_new_message'); ?>
+                    </span>
+                </div>
+                <? locale.write('label_message_from'); ?> 
+                <strong data-message-from></strong><span data-message-from-address></span>
+                <br />
+                <? locale.write('label_message_to'); ?> 
+                <strong data-message-to></strong>
+                <br />
+                <? locale.write('label_message_date'); ?> 
+                <strong data-message-date></strong>
+            </div>
+        </div>
+        <div class="message" data-message-body></div>
+        <div class="clearfix">
+            <button class="btn btn-default icon" title="<? locale.write('label_delete'); ?>" aria-label="<? locale.write('label_delete'); ?>" data-delete-message hidden>
+                <span class="glyphicon glyphicon-trash"></span>
+            </button>
+            <a class="btn btn-default icon" title="<? locale.write('label_direct_link'); ?>" aria-label="<? locale.write('label_direct_link'); ?>" href="#" data-direct-link>
+                <span class="glyphicon glyphicon-link"></span>
+            </a>
+            <button class="btn btn-default icon" title="<? locale.write('label_reply'); ?>" aria-label="<? locale.write('label_reply'); ?>" data-add-reply>
+                <span class="glyphicon glyphicon-comment"></span>
+            </button>
+            <button class="btn-uv btn btn-default icon" data-button-upvote>
+                <span title="Upvotes" class="glyphicon glyphicon-arrow-up"></span>
+                <span title="Upvotes" data-upvote-count>0</span>
+            </button>
+            <button class="btn-dv btn btn-default icon" data-button-downvote>
+                <span title="Downvotes" class="glyphicon glyphicon-arrow-down"></span>
+                <span title="Downvotes" data-downvote-count>0</span>
+            </button>
+        </div>
+    </li>
+</div>

@@ -1,0 +1,10 @@
+<!-- Template for a new message input -->
+<div data-new-message-template hidden>
+    <input class="form-control" type="text" placeholder="<? locale.write('label_message_to'); ?>" data-new-message-to />
+    <br />
+    <input class="form-control" type="text" placeholder="<? locale.write('label_message_subject'); ?>" data-new-message-subject />
+    <br />
+    <textarea class="form-control" rows="8" data-new-message-body></textarea>
+    <br />
+    <input class="btn btn-primary" type="submit" value="<? locale.write('button_submit', 'main') ?>" onclick="postNew('<? write(sub.code); ?>')" data-new-message-submit />
+</div>

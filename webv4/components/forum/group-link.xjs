@@ -1,0 +1,16 @@
+<? var page = argv[0]; ?>
+
+<div hidden>
+    <!-- Template for a link to a message group -->
+    <a id="forum-group-link-template" href="./?page=<? write(page); ?>" class="list-group-item striped">
+        <h3>
+            <strong data-group-name></strong>
+        </h3>
+        <span title="<? locale.write('badge_unread_messages'); ?>" class="badge ignored" data-unread-unscanned></span>
+        <span title="<? locale.write('badge_unread_messages'); ?>" class="badge scanned" data-unread-scanned></span>
+        <small>
+            <span data-group-description></span>:
+            <span data-group-sub-count></span> <? locale.write('sub_boards'); ?>
+        </small>
+    </a>
+</div>

@@ -1,0 +1,26 @@
+<? var page = argv[0]; ?>
+
+<div hidden>
+    <!-- Template for a link to a sub-board -->
+    <a id="forum-sub-link-template" href="./?page=<? write(page); ?>" class="list-group-item striped">
+        <h4>
+            <strong data-sub-name></strong>
+        </h4>
+        <span title="<? locale.write('badge_unread_messages'); ?>" class="badge ignored" data-unread-unscanned></span>
+        <span title="<? locale.write('badge_unread_messages'); ?>" class="badge scanned" data-unread-scanned></span>
+        <small>
+            <span data-sub-description></span>
+        </small>
+        <br />
+        <small>
+            <span data-newest-message-container hidden>
+                <? locale.write('label_sub_newest_message'); ?>:
+                <strong data-newest-message-subject></strong>
+                <? locale.write('label_thread_from'); ?>
+                <span data-newest-message-from></span>
+                <? locale.write('label_message_date'); ?>
+                <span data-newest-message-date></span>
+            </span>
+        </small>
+    </a>
+</div>
