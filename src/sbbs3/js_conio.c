@@ -101,7 +101,7 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp=BOOLEAN_TO_JSVAL(cio_api.mouse);
 			break;
 		case PROP_ESCDELAY:
-			*vp=INT_TO_JSVAL(cio_api.ESCDELAY?*cio_api.ESCDELAY:0);
+			*vp=INT_TO_JSVAL(cio_api.escdelay?*cio_api.escdelay:0);
 			break;
 		case PROP_TEXTATTR:
 			*vp=INT_TO_JSVAL(cio_textinfo.attribute);
@@ -185,8 +185,8 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 			JS_ValueToBoolean(cx, *vp, &puttext_can_move);
 			break;
 		case PROP_ESCDELAY:
-			if(cio_api.ESCDELAY) {
-				if(!JS_ValueToInt32(cx, *vp, (int32*)cio_api.ESCDELAY))
+			if(cio_api.escdelay) {
+				if(!JS_ValueToInt32(cx, *vp, (int32*)cio_api.escdelay))
 					return JS_FALSE;
 			}
 			break;

@@ -359,8 +359,8 @@ int UIFCCALL uifcini32(uifcapi_t* uifcapi)
 	if(api->esc_delay < 10)
 		api->esc_delay=25;
 
-	if(cio_api.ESCDELAY)
-		*(cio_api.ESCDELAY)=api->esc_delay;
+	if(cio_api.escdelay)
+		*(cio_api.escdelay)=api->esc_delay;
 
 	for(i=0; i<MAX_BUFS; i++)
 		sav[i].buf=NULL;
