@@ -2,9 +2,9 @@
 	var settings = load('modopts.js', 'web') || { web_directory: web_root_dir + '/..' };
 	load(settings.web_directory + '/lib/init.js');
 	load(settings.web_lib + 'auth.js');
-	var pages = require({}, settings.web_lib + 'pages.js', 'pages');
-	var sidebar = require({}, settings.web_lib + 'sidebar.js', 'sidebar');
-	var components = require({}, settings.web_lib + 'components.js', 'components');
+	var pages = webRequire('pages.js', 'pages');
+	var sidebar = webRequire('sidebar.js', 'sidebar');
+	var components = webRequire('components.js', 'components');
 
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
 	if (page.search(/^http(s)*:\/\//) > -1) exit(); // Should send 404 or something more appropriate
