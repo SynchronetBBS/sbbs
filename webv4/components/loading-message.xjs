@@ -1,0 +1,34 @@
+<div data-loading-template hidden>
+	<li class="list-group-item striped">
+		<? locale.write('loading_message', 'main'); ?>
+		<span data-spinning-cursor></span>
+	</li>
+</div>
+
+<script type="text/javascript">
+    function LoadingMessage() {
+
+        let pos = 0;
+        let cursor = [ '|', '/', '—', '\\' ];
+        let evt;
+
+        const flc = document.getElementById('forum-list-container');
+
+        this.start = function () {
+            const elem = document.querySelector('div[data-loading-template]').cloneNode(true);
+            const sc = elem.querySelector('span[data-spinning-cursor]');
+            elem.removeAttribute('hidden');
+            flc.appendChild(elem);
+            evt = setInterval(() => {
+                sc.innerHTML = cursor[pos % cursor.length];
+                pos++;
+            }, 250);
+        }
+
+        this.stop = function () {
+            flc.removeChild(flc.querySelector('div[data-loading-template]'));
+            clearInterval(evt);
+        }
+
+    }
+</script>
