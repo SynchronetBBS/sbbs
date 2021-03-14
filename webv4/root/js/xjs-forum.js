@@ -93,8 +93,7 @@ function formatMessageBody(body) {
     // Strip unprintable control chars (NULL, BEL, DEL, ESC)
     body = body.replace(/[\x00\x07\x1b\x7f]/g,'');
     // Format for the web
-    // body = word_wrap(body, body.length); // These were done server-side; may need client-side equivalents
-    // body = html_encode(body, exascii, false, false, false); // These were done server-side; may need client-side equivalents
+    // body = word_wrap(body, body.length); // This was done server-side; but why was it done at all?
     body = quotify(body);
     body = linkify(body);
     body = body.replace(/\r\n$/,'');
@@ -462,67 +461,64 @@ function renderBBSView(body) {
                     case 'H':
                         high = 1;
                         break;
-                    case 'I':
-                        // blink
-                        break;
-                    case 'E':
-                        // bright bg (ice)
-                        break;
-                    case 'f':
-                        // blink font
-                        break;
-                    case 'F':
-                        // high blink font
+                    case 'I': // blink
+                    case 'E': // bright bg (ice)
+                    case 'f': // blink font
+                    case 'F': // high blink font
                         break;
                     case 'N':
                         high = 0;
                         break;
-                    case '-':
-                        // optimized normal
+                    case '-': // optimized normal                        
                         // we need to support pushing current attributes (\1+), then use this to pop them
                         // or if nothing has been pushed, then unset any special attributes (only 'high' for now)
                         break;
-                    case '_':
-                        // optimized normal
+                    case '_': // optimized normal
                         // when he says "the Background attribute", does he mean Bright-Background, or just any background colour?
                         break;
-                    case 'L':
-                        // Clear the screen
+                    case 'L': // Clear the screen
+                        // Same as ANSI parser case J? Easier to preserve the arrays since we're not homing the cursor
                         break;
-                    case "'":
-                        // Home the cursor
+                    case "'": // Home the cursor
+                        x = 0;
+                        y = 0;
                         break;
                     case 'J':
-                    case 'j':
-                        // Clear to end of screen but keep cursor in place
+                    case 'j': // Clear to end of screen but keep cursor in place
                         break;
-                    case '>':
-                        // Clear to end of line but keep cursor in place
+                    case '>': // Clear to end of line but keep cursor in place
                         break;
-                    case '<':
-                        // Cursor left
+                    case '<': // Cursor left
+                        if (x > 0) {
+                            x--;
+                        } else if (y > 0) { // Not sure if this is what would happen on terminal side; must test.
+                            x = 79;
+                            y--;
+                        }
                         break;
-                    case '[':
-                        // Carriage return - send cursor to beginning of line (x = 0)
+                    case '[': // CR
+                        x = 0;
                         break;
-                    case ']':
-                        // Line feed - cursor down (y++)
+                    case ']': // LF
+                        y++;
+                        if (data[y] === undefined) data[y] = [];
                         break;
-                    case '/':
-                        // Conditional newline - Send a new-line sequence (CRLF) only when the cursor is not already in the first column (new in v3.17)
+                    case '/': // Conditional newline - Send a new-line sequence (CRLF) only when the cursor is not already in the first column
+                        if (x > 0) {
+                            x = 0;
+                            y++;
+                            if (data[y] === undefined) data[y] = [];
+                        }
                         break;
-                    case '+':
-                        // push current attributes onto lifo stack
+                    case '+': // push current attributes onto lifo stack
                         break;
                     case 'D':
-                    case 'd':
-                        // current system date in mm/dd/yy or dd/mm/yy depending on system preference (we'll try to use browser locale instead)
+                    case 'd': // current date in mm/dd/yy or dd/mm/yy (should be system date & format, but we'll use browser date & locale)
                         break;
                     case 'T':
-                    case 't':
-                        // current system time in hh:mm am/pm or hh:mm:ss format depending on system preference (we'll try to use browser locale instead)
+                    case 't': // current system time in hh:mm am/pm or hh:mm:ss format (via browser, as with \1D)
                         break;
-                    case '"':
+                    case '"': // Display a file
                         // the following string would be a filename from the 'text' directory
                         // I guess we could support this and make a request for the file
                         // but this isn't needed as long as we're only using this function for the forum
