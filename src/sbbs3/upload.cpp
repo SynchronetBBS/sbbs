@@ -27,7 +27,7 @@
 bool sbbs_t::uploadfile(smbfile_t* f)
 {
 	char	path[MAX_PATH+1];
-	char	str[MAX_PATH+1];
+	char	str[MAX_PATH+1] = "";
 	char	ext[513] = "";
 	char	tmp[MAX_PATH+1];
     uint	i;
@@ -128,11 +128,10 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	bputs(text[SearchingForDupes]);
 	/* Note: Hashes file *after* running upload-testers (which could modify file) */
 	if(hashfile(&cfg, f)) {
+		bputs(text[SearchedForDupes]);
 		for(uint i=0, k=0; i < usrlibs; i++) {
+			progress(text[Scanning], i, usrlibs, 1);
 			for(uint j=0; j < usrdirs[i]; j++,k++) {
-				outchar('.');
-				if(k && (k%5) == 0)
-					bputs("\b\b\b\b\b     \b\b\b\b\b");
 				if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
 					&& findfile(&cfg, usrdir[i][j], /* filename: */NULL, f)) {
 					bprintf(text[FileAlreadyOnline], f->name);
@@ -147,8 +146,9 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 				}
 			}
 		}
-	}
-	bputs(text[SearchedForDupes]);
+		progress(text[Done], usrlibs, usrlibs);
+	} else
+		bputs(text[SearchedForDupes]);
 
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
 		lprintf(LOG_DEBUG, "Extracting DIZ from: %s", path);
@@ -156,7 +156,8 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 			lprintf(LOG_DEBUG, "Parsing DIZ: %s", str);
 
 			str_list_t lines = read_diz(str, /* max_line_len: */80);
-			format_diz(lines, ext, sizeof(ext), /* allow_ansi: */false);
+			if(lines != NULL)
+				format_diz(lines, ext, sizeof(ext), /* allow_ansi: */false);
 			strListFree(&lines);
 
 			if(f->desc == NULL || f->desc[0] == 0) {
@@ -319,20 +320,18 @@ bool sbbs_t::upload(uint dirnum)
 		if(!dir_op(dirnum)) return(false); 
 	}
 	bputs(text[SearchingForDupes]);
-	if(findfile(&cfg, dirnum, f.name, NULL)) {
+	if(findfile(&cfg, dirnum, fname, NULL)) {
 		bputs(text[SearchedForDupes]);
 		bprintf(text[FileAlreadyOnline],fname);
 		return(false); 	 /* File is already in database */
 	}
 	for(i=k=0;i<usrlibs;i++) {
+		progress(text[SearchingForDupes], i, usrlibs, 1);
 		for(j=0;j<usrdirs[i];j++,k++) {
-			outchar('.');
-			if(k && !(k%5))
-				bputs("\b\b\b\b\b     \b\b\b\b\b");
 			if(usrdir[i][j]==dirnum)
 				continue;	/* we already checked this dir */
 			if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
-				&& findfile(&cfg, usrdir[i][j], f.name, NULL)) {
+				&& findfile(&cfg, usrdir[i][j], fname, NULL)) {
 				bputs(text[SearchedForDupes]);
 				bprintf(text[FileAlreadyOnline],fname);
 				if(!dir_op(dirnum))
