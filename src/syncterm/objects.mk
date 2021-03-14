@@ -6,6 +6,7 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)ripper$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)rlogin$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet_io$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)telnets$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn_telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet$(OFILE) \
