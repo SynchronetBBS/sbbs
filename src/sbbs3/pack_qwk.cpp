@@ -31,6 +31,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	char	str[MAX_PATH+1],ch;
 	char 	tmp[MAX_PATH+1];
 	char	path[MAX_PATH+1];
+	char	error[256];
 	char*	fname;
 	int 	mode;
 	uint	i,j,k,conf;
@@ -68,9 +69,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	delfiles(cfg.temp_dir,ALLFILES);
 	SAFEPRINTF2(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexistcase(str)) {
-		if(extract_files_from_archive(str, /* file_list = ALL */NULL, cfg.temp_dir, /* max_files */0) > 0)
+		ulong file_count = extract_files_from_archive(str, /* file_list = ALL */NULL, cfg.temp_dir, /* max_files */0, error, sizeof(error));
+		if(file_count > 0) {
+			lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, str);
 			preqwk = TRUE;
-		else {
+		} else {
+			if(*error)
+				lprintf(LOG_NOTICE, "libarchive error (%s) extracting %s", error, str);
 			for(k=0;k<cfg.total_fextrs;k++)
 				if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
 					&& chk_ar(cfg.fextr[k]->ar,&useron,&client))

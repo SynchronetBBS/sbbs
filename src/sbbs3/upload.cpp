@@ -28,7 +28,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 {
 	char	path[MAX_PATH+1];
 	char	str[MAX_PATH+1] = "";
-	char	ext[513] = "";
+	char	ext[LEN_EXTDESC + 1] = "";
 	char	tmp[MAX_PATH+1];
     uint	i;
     long	length;

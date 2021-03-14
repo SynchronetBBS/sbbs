@@ -932,7 +932,7 @@ static void receive_thread(void* arg)
 {
 	char		str[128];
 	char		buf[8192];
-	char		extdesc[513] = "";
+	char		extdesc[LEN_EXTDESC + 1] = "";
 	char		tmp[MAX_PATH+1];
 	int			i;
 	int			rd;

@@ -879,7 +879,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 			&& (scfg->dir[p->smb.dirnum]->misc & DIR_DIZ)) {
 			char diz_fpath[MAX_PATH + 1];
 			if(extract_diz(scfg, &file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
-				char extbuf[513] = "";
+				char extbuf[LEN_EXTDESC + 1] = "";
 				str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
 				format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
 				strListFree(&lines);

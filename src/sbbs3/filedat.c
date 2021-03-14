@@ -568,19 +568,36 @@ char* format_filename(const char* fname, char* buf, size_t size, bool pad)
 	return buf;
 }
 
-ulong extract_files_from_archive(const char* archive, str_list_t file_list, const char* outdir, ulong max_files)
+ulong extract_files_from_archive(const char* archive, str_list_t file_list, const char* outdir, ulong max_files
+	,char* error, size_t maxerrlen)
 {
+	int result;
 	struct archive *ar;
 	struct archive_entry *entry;
 	ulong extracted = 0;
 
-	if((ar = archive_read_new()) == NULL)
+	if(error != NULL && maxerrlen >= 1)
+		*error = '\0';
+	if((ar = archive_read_new()) == NULL) {
+		safe_snprintf(error, maxerrlen, "archive_read_new() returned NULL");
 		return 0;
+	}
 	archive_read_support_filter_all(ar);
 	archive_read_support_format_all(ar);
-	if(archive_read_open_filename(ar, archive, 10240) != ARCHIVE_OK)
+	if((result = archive_read_open_filename(ar, archive, 10240)) != ARCHIVE_OK) {
+		safe_snprintf(error, maxerrlen, "archive_read_open_filename() returned %d: %s"
+			,result, archive_error_string(ar));
+		archive_read_free(ar);
 		return 0;
-	while(archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
+	}
+	while(1) {
+		result = archive_read_next_header(ar, &entry);
+		if(result != ARCHIVE_OK) {
+			if(result != ARCHIVE_EOF)
+				safe_snprintf(error, maxerrlen, "archive_read_next_header() returned %d: %s"
+					,result, archive_error_string(ar));
+			break;
+		}
 		const char* fname = archive_entry_pathname(entry);
 		if(fname == NULL)
 			continue;
@@ -603,7 +620,6 @@ ulong extract_files_from_archive(const char* archive, str_list_t file_list, cons
 		size_t size;
 		la_int64_t offset;
 
-		int result;
 		for(;;) {
 			result = archive_read_data_block(ar, &buff, &size, &offset);
 			if(result == ARCHIVE_EOF) {
@@ -611,7 +627,8 @@ ulong extract_files_from_archive(const char* archive, str_list_t file_list, cons
 				break;
 			}
 			if(result < ARCHIVE_OK) {
-//				const char* p = archive_error_string(ar);
+				safe_snprintf(error, maxerrlen, "archive_read_data_block() returned %d: %s"
+					,result, archive_error_string(ar));
 				break;
 			}
 			if(fwrite(buff, 1, size, fp) != size)
@@ -620,8 +637,10 @@ ulong extract_files_from_archive(const char* archive, str_list_t file_list, cons
 		fclose(fp);
 		if(result != ARCHIVE_EOF)
 			(void)remove(fpath);
-		if(max_files && extracted >= max_files)
+		if(max_files && extracted >= max_files) {
+			safe_snprintf(error, maxerrlen, "maximum number of files (%lu) extracted", max_files);
 			break;
+		}
 	}
 	archive_read_free(ar);
 	return extracted;
@@ -640,7 +659,7 @@ bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fnames, char* path, s
 	if(!fexistcase(archive))
 		return false;
 
-	if(extract_files_from_archive(archive, diz_fnames, cfg->temp_dir, /* max_files: */1) > 0) {
+	if(extract_files_from_archive(archive, diz_fnames, cfg->temp_dir, /* max_files: */1, /* error: */NULL, 0) > 0) {
 		for(i = 0; diz_fnames[i] != NULL; i++) {
 			safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]);
 			if(fexistcase(path))

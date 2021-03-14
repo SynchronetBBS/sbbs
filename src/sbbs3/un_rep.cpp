@@ -32,6 +32,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	char	rep_fname[MAX_PATH+1];
 	char	msg_fname[MAX_PATH+1];
 	char 	tmp[512];
+	char	error[256];
 	char	inbox[MAX_PATH+1];
 	char	block[QWK_BLOCK_LEN];
 	int 	file;
@@ -71,7 +72,12 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(LOG_NOTICE,nulstr,"REP file not received");
 		return(false); 
 	}
-	if(extract_files_from_archive(rep_fname, /* file_list = ALL */NULL, cfg.temp_dir, /* max_files */1000) < 1) {
+	ulong file_count = extract_files_from_archive(rep_fname, /* file_list = ALL */NULL, cfg.temp_dir, /* max_files */1000, error, sizeof(error));
+	if(file_count > 0) {
+		lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, rep_fname);
+	} else {
+		if(*error)
+			lprintf(LOG_NOTICE, "libarchive error (%s) extracting %s", error, rep_fname);
 		for(k=0;k<cfg.total_fextrs;k++)
 			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext) && chk_ar(cfg.fextr[k]->ar,&useron,&client))
 				break;

@@ -543,7 +543,7 @@ int main(int argc, char **argv)
 	char str[MAX_PATH+1];
 	char tmp[MAX_PATH+1];
 	char *p;
-	char exist,listgiven=0,namegiven=0,ext[513]
+	char exist,listgiven=0,namegiven=0,ext[LEN_EXTDESC + 1]
 		,auto_name[MAX_PATH+1]="FILES.BBS";
 	int i,j;
 	uint desc_offset=0, size_offset=0;
