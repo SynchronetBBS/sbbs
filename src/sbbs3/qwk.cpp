@@ -379,7 +379,7 @@ void sbbs_t::qwk_sec()
 	char 	tmp[512];
 	int		error;
 	int 	s;
-	uint	i,k;
+	uint	i;
 	ulong	msgcnt;
 	ulong	*sav_ptr;
 

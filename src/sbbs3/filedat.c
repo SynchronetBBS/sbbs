@@ -568,7 +568,7 @@ char* format_filename(const char* fname, char* buf, size_t size, bool pad)
 	return buf;
 }
 
-ulong extract_files_from_archive(const char* archive, const char** file_list, const char* outdir, ulong max_files)
+ulong extract_files_from_archive(const char* archive, str_list_t file_list, const char* outdir, ulong max_files)
 {
 	struct archive *ar;
 	struct archive_entry *entry;
