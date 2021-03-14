@@ -760,6 +760,9 @@ public:
 	void	carriage_return(int count=1);
 	void	line_feed(int count=1);
 	void	newline(int count=1);
+	void	cond_newline() { if(column > 0) newline(); }
+	void	cond_blankline() { if(column > 0) newline(); if(lastlinelen) newline(); }
+	void	cond_contline() { if(column > 0 && cols < TERM_COLS_DEFAULT) bputs(text[LongLineContinuationPrefix]); }
 	long	term_supports(long cmp_flags=0);
 	const char* term_type(long term_supports = -1);
 	const char* term_charset(long term_supports = -1);
