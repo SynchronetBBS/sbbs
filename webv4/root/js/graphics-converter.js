@@ -159,41 +159,40 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
                 opts = match[1].split(';').map(e => parseInt(e, 10));
                 switch (match[2]) {
                     case 'A':
-						y = Math.max(y - (opts[0] || 1), 0);
-						break;
-					case 'B':
-						y += (opts[0] || 1);
+                        y = Math.max(y - (isNaN(opts[0]) ? 1 : opts[0]), 0);
+                        break;
+                    case 'B':
+                        y += (isNaN(opts[0]) ? 1 : opts[0]);
                         data[y] = [];
-						break;
-					case 'C':
-						x = Math.min(x + (opts[0] || 1), 79);
-						break;
-					case 'D':
-						x = Math.max(x - (opts[0] || 1), 0);
-						break;
-					case 'f':
+                        break;
+                    case 'C':
+                        x = Math.min(x + (isNaN(opts[0]) ? 1 : opts[0]), 79);
+                        break;
+                    case 'D':
+                        x = Math.max(x - (isNaN(opts[0]) ? 1 : opts[0]), 0);
+                        break;
+                    case 'f':
                     case 'H':
-						y = opts[0] || 1;
-						x = opts[1] || 1;
+                        y = isNaN(opts[0]) ? 1 : opts[0];
+                        x = isNaN(opts[1]) ? 1 : opts[0];
                         if (y >= data.length) data[y] = [];
-						break;
+                        break;
 					case 'm':
-						for (let o in opts) {
-							let i = parseInt(opts[o], 10);
-							if (i == 0) {
-								fg = 7;
-								bg = 0;
-								high = 0;
-							} else if (i == 1) {
-								high = 1;
-							} else if (i == 5) {
-								// blink
-							} else if (i >= 30 && i <= 37) {
-								fg = i - 30;
-							} else if (i >= 40 && i <= 47) {
-								bg = i - 40;
-							}
-						}
+                        for (let o of opts) {
+                            if (o == 0) {
+                                fg = 7;
+                                bg = 0;
+                                high = 0;
+                            } else if (o == 1) {
+                                high = 1;
+                            } else if (o == 5) {
+                                // blink
+                            } else if (o >= 30 && o <= 37) {
+                                fg = o - 30;
+                            } else if (o >= 40 && o <= 47) {
+                                bg = o - 40;
+                            }
+                        }
 						break;
 					case 's': // push xy
 						_x = x;
@@ -228,11 +227,11 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
                     case '\x1a':
                         ans = '';
                         break;
-                    case '\r':
+                    case '\n':
                         y++;
                         data.push([]);
                         break;
-                    case '\n':
+                    case '\r':
                         x = 0;
                         break;
                     default:
