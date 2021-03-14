@@ -1619,6 +1619,7 @@ int main(int argc, char **argv)
 	umask(077);
 #endif
 
+#if 0
 #ifdef ALPHA
 	init_uifc(TRUE, TRUE);
 	uifc.showbuf(WIN_SAV|WIN_MID|WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "WARNING: ALPHA VERSION", 
@@ -1639,6 +1640,7 @@ int main(int argc, char **argv)
 	     "if you want a terminal that works.",
 	     NULL, NULL);
 	uifcbail();
+#endif
 #endif
 
 	/* Auto-connect URL */
