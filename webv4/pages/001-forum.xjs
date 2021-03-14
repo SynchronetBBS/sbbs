@@ -3,41 +3,40 @@
 <!--
 	To do:
 
-	x Break templates into files under webv4/components/forum/
-	 x As XJS functions? Or to be written out via js.exec()?
-	- "BBS View" for message
-	 - client-side replacement for html_encode
-	- Search feature
-	 - Search within groups, group, subs, or sub
-	 - Search optionally within subject, to, from, body, date-range
-	 - Display results as a flat message list, grouped by group-sub if groups, sub if subs
-	 - Block stupid search terms that would produce insane results, or just accept it?
-	- New message scan
-	 - Show unread counts here by group, sub, thread
-	 - One flat page, or click through group then sub to see unreads?
-	 - Set scan pointer
-	  - just set it once new messages are shown? Warn user that this is their only chance to see this list?
-	  - include a "mark as read" button per sub?
-	  - do either one per user preference? Requires user preferences feature.
-	- User preferences (global, not forum specific)
-	 - Update signature
-	 - darkmode preference
-	 - new message scan preferences?
-	 - Edit user properties?
-	 - Avatar chooser?
-	 - forum preferences like "BBS view" for all messages, etc.?
 	- API handlers for post/reply msg, post poll, up/down vote, user preferences, mail
+	- Make it possible for locales to live in mods/lib/locale (custom language file)
+	- "BBS View" for message
+		- client-side replacement for html_encode
+	- Search feature
+		- Search within groups, group, subs, or sub
+		- Search optionally within subject, to, from, body, date-range
+		- Display results as a flat message list, grouped by group-sub if groups, sub if subs
+		- Block stupid search terms that would produce insane results, or just accept it?
+	- New message scan
+		- Show unread counts here by group, sub, thread
+		- One flat page, or click through group then sub to see unreads?
+		- Set scan pointer
+			- just set it once new messages are shown? Warn user that this is their only chance to see this list?
+			- include a "mark as read" button per sub?
+			- do either one per user preference? Requires user preferences feature.
+	- User preferences (global, not forum specific)
+		- Update signature
+		- darkmode preference
+		- new message scan preferences?
+		- Edit user properties?
+		- Avatar chooser?
+		- forum preferences like "BBS view" for all messages, etc.?
 	- Test
-	 - post message
-	 - reply to message
-	 - post poll
-	 - up/down vote
-	 - vote on poll
-	 - view poll results
-	 - send/receive email
-	  - and with attachments
-	 - delete message/mail
-	 - twitlist button
+		- post message
+		- reply to message
+		- post poll
+		- up/down vote
+		- vote on poll
+		- view poll results
+		- send/receive email
+		- and with attachments
+		- delete message/mail
+		- twitlist button
 -->
 
 <?xjs
@@ -45,11 +44,10 @@
 	var forum = webRequire('forum.js', 'forum');
     var request = webRequire('request.js', 'request');
     locale.section = 'page_forum';
+	components.load('loading-message.xjs');
 ?>
 
 <script type="text/javascript" src="./js/xjs-forum.js"></script>
-
-<? components.load('loading-message.xjs'); ?>
 
 <!-- Viewing a thread (list of messages) -->
 <? if (request.hasParam('sub') && request.hasParam('thread')) { ?>
@@ -83,6 +81,7 @@
         <span class="glyphicon glyphicon-list-alt"></span>
     </button>
 
+	<!-- These should be moved into the new message scan view when it exists -->
     <div class="pull-right">
         <button id="scan-cfg-new" class="btn btn-default icon" aria-label="<? locale.write('button_scan_new'); ?>" title="<? locale.write('button_scan_new'); ?>" onclick="setScanCfg('<? write(sub.code); ?>', 1)">
             <span class="glyphicon glyphicon-ok-sign"></span>
@@ -98,17 +97,14 @@
 	<? components.load('forum/container.xjs'); ?>
 
 	<script type="text/javascript">
-
-        registerEventListener('forum', e => {
+        registerEventListener('forum', e => { // handlers should go in xjs-forum.js, we only need to subscribe and reference the handler here
             // const data = JSON.parse(e.data);
             // if (data.type != 'threads') return;
             // onThreadStats(data.data);
         }, {
             sub: '<? request.writeParam("sub"); ?>',
 		});
-
 		listThreads('<? write(sub.code); ?>');
-
     </script>
 
 <!-- Viewing a group (list of subs) -->
@@ -123,7 +119,7 @@
 			await listSubs('<? request.writeParam('group'); ?>');
 		})();
 		<? if (isUser()) { ?>
-            // registerEventListener('forum', e => {
+            // registerEventListener('forum', e => { // handlers should go in xjs-forum.js, we only need to subscribe and reference the handler here
             //     const data = JSON.parse(e.data);
             //     if (data.type != 'subs_unread') return;
             //     // onSubUnreadCount(data.data);
@@ -143,7 +139,7 @@
 	<script type="text/javascript">
 		(async () => await listGroups())();
 		<? if (isUser()) { ?>
-			registerEventListener('forum', e => {
+			registerEventListener('forum', e => { // handlers should go in xjs-forum.js, we only need to subscribe and reference the handler here
 				const data = JSON.parse(e.data);
 				if (data.type != 'group_stats') return;
 				onGroupStats(data.data);
