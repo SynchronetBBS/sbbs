@@ -768,8 +768,9 @@ var forum = {
             b = mb.get_msg_body(parseInt(h, 10));
             if (b === null) continue; // Not sure if this is a holdover from early vote msg days. Is body ever null on a real message?
 
+            if (!(headers[h].auxattr&MSG_HFIELDS_UTF8)) b = utf8_encode(b); // This should be configurable or use ftn_charset instead of blindly assuming cp437
             onMessage({
-                body: b, // Do we use formatMessage here, or let the browser handle that? Leaning toward client-side formatting.
+                body: b,
                 from: headers[h].from,
                 from_net_addr: headers[h].from_net_addr,
                 from_net_type: headers[h].from_net_type,
