@@ -35,6 +35,7 @@
 #include "rlogin.h"
 #include "raw.h"
 #include "ssh.h"
+#include "telnets.h"
 #ifndef __HAIKU__
 #include "modem.h"
 #endif
@@ -44,13 +45,9 @@
 #include "conn_telnet.h"
 
 struct conn_api conn_api;
-char *conn_types_enum[]={"Unknown","RLogin","RLoginReversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBSGhost",NULL};
-char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBS GHost",NULL};
-short unsigned int conn_ports[]={0,513,513,23,0,22,0,0,0
-#ifdef __unix__
-,65535
-#endif
-,0};
+char *conn_types_enum[]={"Unknown","RLogin","RLoginReversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBSGhost","TelnetS", NULL};
+char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBS GHost","TelnetS",NULL};
+short unsigned int conn_ports[]={0,513,513,23,0,22,0,0,0,65535,992,0};
 
 struct conn_buffer conn_inbuf;
 struct conn_buffer conn_outbuf;
@@ -364,6 +361,12 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.close=raw_close;
 			break;
 #ifndef WITHOUT_CRYPTLIB
+		case CONN_TYPE_TELNETS:
+			conn_api.connect=telnets_connect;
+			conn_api.close=telnets_close;
+			conn_api.binary_mode_on=telnet_binary_mode_on;
+			conn_api.binary_mode_off=telnet_binary_mode_off;
+			break;
 		case CONN_TYPE_SSH:
 			conn_api.connect=ssh_connect;
 			conn_api.close=ssh_close;
