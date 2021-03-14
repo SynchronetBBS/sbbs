@@ -7,7 +7,7 @@
 
 require("mailutil.js", 'mail_get_name');
 require("smbdefs.js", 'RFC822HEADER');
-					
+
 function write_news_header(hdr,writeln)
 {
 	/* Required header fields */
@@ -67,7 +67,22 @@ function write_news_header(hdr,writeln)
 		}
 	}
 	if(content_type==undefined) {
-		var charset = hdr.text_charset || (hdr.is_utf8 ? "UTF-8" : "IBM437");
+		var charset = hdr.text_charset;
+		if(!charset) {
+			if(hdr.is_utf8)
+				charset = "UTF-8";
+			else switch(hdr.ftn_charset) {
+				case "ASCII 1":
+					charset = "US-ASCII";
+					break;
+				case "CP866 2":
+					charset = "KOI8-R";
+					break;
+				default:
+					charset = "IBM437";
+					break;
+			}
+		}
 		writeln("Content-Type: text/plain; charset=" + charset);
 		writeln("Content-Transfer-Encoding: 8bit");
 	}
