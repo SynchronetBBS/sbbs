@@ -50,7 +50,7 @@ void modem_input_thread(void *args)
     }
     if(args != NULL)
         comLowerDTR(com);
-    conn_api.input_thread_running=0;
+    conn_api.input_thread_running=2;
 }
 
 void modem_output_thread(void *args)
@@ -91,7 +91,7 @@ void modem_output_thread(void *args)
                 break;
         }
     }
-    conn_api.output_thread_running=0;
+    conn_api.output_thread_running=2;
 }
 
 int modem_response(char *str, size_t maxlen, int timeout)
@@ -334,7 +334,7 @@ int serial_close(void)
 {
     conn_api.terminate=1;
 
-    while(conn_api.input_thread_running || conn_api.output_thread_running)
+    while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1)
         SLEEP(1);
     comClose(com);
     destroy_conn_buf(&conn_inbuf);
@@ -368,7 +368,7 @@ int modem_close(void)
     }
 
 CLOSEIT:
-    while(conn_api.input_thread_running || conn_api.output_thread_running) {
+    while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
         conn_recv_upto(garbage, sizeof(garbage), 0);
         SLEEP(1);
     }

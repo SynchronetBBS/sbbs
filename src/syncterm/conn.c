@@ -258,7 +258,7 @@ size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long 
 
 BOOL conn_connected(void)
 {
-	if(conn_api.input_thread_running && conn_api.output_thread_running)
+	if(conn_api.input_thread_running == 1 && conn_api.output_thread_running == 1)
 		return(TRUE);
 	return(FALSE);
 }
@@ -396,7 +396,7 @@ int conn_connect(struct bbslist *bbs)
 	if(conn_api.connect) {
 		if(conn_api.connect(bbs)) {
 			conn_api.terminate = 1;
-			while(conn_api.input_thread_running || conn_api.output_thread_running)
+			while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1)
 				SLEEP(1);
 		}
 		else {
