@@ -19,7 +19,7 @@
 
 extern int	telnet_log_level;
 
-static void *telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen)
+void *telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen)
 {
 	void *ret = malloc(inlen);
 
@@ -30,7 +30,7 @@ static void *telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen)
 	return ret;
 }
 
-static void *telnet_tx_parse_cb(const void *buf, size_t len, size_t *olen)
+void *telnet_tx_parse_cb(const void *buf, size_t len, size_t *olen)
 {
 	void *ret = malloc(len * 2);
 	void *parsed;
