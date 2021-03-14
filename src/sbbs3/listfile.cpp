@@ -388,7 +388,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 	do {
 		byte_estimate_to_str(cdt, bytes, sizeof(bytes), units, /* precision: */1);
 		units *= 1024;
-	} while(strlen(bytes) > 6 && units <= 1024 * 1024 * 1024);
+	} while(strlen(bytes) > 6 && units < 1024 * 1024 * 1024);
 	attr(cfg.color[size_attr]);
 	if(useron.misc&BATCHFLAG) {
 		if(!cdt && !(cfg.dir[dirnum]->misc&DIR_FREE)) {
@@ -806,7 +806,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 		}
 		else {
 			showfileinfo(f);
-			newline();
+//			newline();
 		}
 		if(mode==FI_REMOVE || mode==FI_OLD || mode==FI_OLDUL
 			|| mode==FI_OFFLINE) {
