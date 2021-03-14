@@ -11388,6 +11388,14 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 	bool copy = false;
 	BYTE *buf = origbuf;
 
+	/*
+	 * TODO: Downloads are broken when RIP is enabled...
+	 *       This should certainly be fixed someday.
+	 */
+	if (rip.enabled == false) {
+		return blen;
+	}
+
 	shadow_palette();
 	switch(rip.state) {
 		case RIP_STATE_BOL:
