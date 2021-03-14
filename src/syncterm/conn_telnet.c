@@ -15,117 +15,33 @@
 #include "uifcinit.h"
 
 #include "telnet_io.h"
+#include "rlogin.h"
 
-SOCKET telnet_sock=INVALID_SOCKET;
 extern int	telnet_log_level;
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
-void telnet_input_thread(void *args)
+static void *telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen)
 {
-	fd_set	rds;
-	int		rd;
-	int	buffered;
-	size_t	buffer;
-	char	rbuf[BUFFER_SIZE];
-	char	*buf;
-	struct bbslist *bbs = args;
+	void *ret = malloc(inlen);
 
-	SetThreadName("Telnet Input");
-	conn_api.input_thread_running=1;
-	while(telnet_sock != INVALID_SOCKET && !conn_api.terminate) {
-		FD_ZERO(&rds);
-		FD_SET(telnet_sock, &rds);
-#ifdef __linux__
-		{
-			struct timeval tv;
-			tv.tv_sec=0;
-			tv.tv_usec=500000;
-			rd=select(telnet_sock+1, &rds, NULL, NULL, &tv);
-		}
-#else
-		rd=select(telnet_sock+1, &rds, NULL, NULL, NULL);
-#endif
-		if(rd==-1) {
-			if(errno==EBADF)
-				break;
-			rd=0;
-		}
-		if(rd==1) {
-			rd=recv(telnet_sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
-			if(rd <= 0)
-				break;
-		}
-		if(rd>0)
-			buf=(char *)telnet_interpret(conn_api.rd_buf, rd, (BYTE *)rbuf, &rd, bbs);
-		buffered=0;
-		while(buffered < rd) {
-			pthread_mutex_lock(&(conn_inbuf.mutex));
-			buffer=conn_buf_wait_free(&conn_inbuf, rd-buffered, 100);
-			buffered+=conn_buf_put(&conn_inbuf, buf+buffered, buffer);
-			pthread_mutex_unlock(&(conn_inbuf.mutex));
-		}
-	}
-	conn_api.input_thread_running=0;
+	if (ret == NULL)
+		return ret;
+	if (telnet_interpret((BYTE *)buf, inlen, ret, olen) != ret)
+		memcpy(ret, buf, *olen);
+	return ret;
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
-void telnet_output_thread(void *args)
+static void *telnet_tx_parse_cb(const void *buf, size_t len, size_t *olen)
 {
-	fd_set	wds;
-	size_t		wr;
-	int		ret;
-	size_t	sent;
-	char	ebuf[BUFFER_SIZE*2];
-	char	*buf;
+	void *ret = malloc(len * 2);
+	void *parsed;
 
-	SetThreadName("Telnet Output");
-	conn_api.output_thread_running=1;
-	while(telnet_sock != INVALID_SOCKET && !conn_api.terminate) {
-		pthread_mutex_lock(&(conn_outbuf.mutex));
-		ret=0;
-		wr=conn_buf_wait_bytes(&conn_outbuf, 1, 100);
-		if(wr) {
-			wr=conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
-			pthread_mutex_unlock(&(conn_outbuf.mutex));
-			wr = telnet_expand(conn_api.wr_buf, wr, (BYTE *)ebuf, sizeof(ebuf)
-				,telnet_local_option[TELNET_BINARY_TX]!=TELNET_DO, (uchar**)&buf);
-			sent=0;
-			while(sent < wr) {
-				FD_ZERO(&wds);
-				FD_SET(telnet_sock, &wds);
-#ifdef __linux__
-				{
-					struct timeval tv;
-					tv.tv_sec=0;
-					tv.tv_usec=500000;
-					ret=select(telnet_sock+1, NULL, &wds, NULL, &tv);
-				}
-#else
-				ret=select(telnet_sock+1, NULL, &wds, NULL, NULL);
-#endif
-				if(ret==-1) {
-					if(errno==EBADF)
-						break;
-					ret=0;
-				}
-				if(ret==1) {
-					ret=sendsocket(telnet_sock, buf+sent, wr-sent);
-					if(ret==-1)
-						break;
-					sent+=ret;
-				}
-			}
-		}
-		else
-			pthread_mutex_unlock(&(conn_outbuf.mutex));
-		if(ret==-1)
-			break;
-	}
-	conn_api.output_thread_running=0;
+	*olen = telnet_expand(buf, len, ret, len * 2
+		,telnet_local_option[TELNET_BINARY_TX]!=TELNET_DO, (BYTE **)&parsed);
+
+	if (parsed != ret)
+		memcpy(ret, parsed, *olen);
+
+	return ret;
 }
 
 int telnet_connect(struct bbslist *bbs)
@@ -135,8 +51,8 @@ int telnet_connect(struct bbslist *bbs)
 
 	telnet_log_level = bbs->telnet_loglevel;
 
-	telnet_sock=conn_socket_connect(bbs);
-	if(telnet_sock==INVALID_SOCKET)
+	rlogin_sock=conn_socket_connect(bbs);
+	if(rlogin_sock==INVALID_SOCKET)
 		return(-1);
 
 	if(!create_conn_buf(&conn_inbuf, BUFFER_SIZE))
@@ -163,30 +79,15 @@ int telnet_connect(struct bbslist *bbs)
 
 	memset(telnet_local_option,0,sizeof(telnet_local_option));
 	memset(telnet_remote_option,0,sizeof(telnet_remote_option));
+	conn_api.rx_parse_cb = telnet_rx_parse_cb;
+	conn_api.tx_parse_cb = telnet_tx_parse_cb;
 
-	_beginthread(telnet_output_thread, 0, NULL);
-	_beginthread(telnet_input_thread, 0, bbs);
+	_beginthread(rlogin_output_thread, 0, NULL);
+	_beginthread(rlogin_input_thread, 0, bbs);
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
 
-	return(0);
-}
-
-int telnet_close(void)
-{
-	char	garbage[1024];
-
-	conn_api.terminate=1;
-	closesocket(telnet_sock);
-	while(conn_api.input_thread_running || conn_api.output_thread_running) {
-		conn_recv_upto(garbage, sizeof(garbage), 0);
-		SLEEP(1);
-	}
-	destroy_conn_buf(&conn_inbuf);
-	destroy_conn_buf(&conn_outbuf);
-	FREE_AND_NULL(conn_api.rd_buf);
-	FREE_AND_NULL(conn_api.wr_buf);
 	return(0);
 }
 
