@@ -10,7 +10,7 @@
 #include "conn.h"
 #include "uifcinit.h"
 
-static SOCKET sock=INVALID_SOCKET;
+SOCKET rlogin_sock=INVALID_SOCKET;
 
 #ifdef __BORLANDC__
 #pragma argsused
@@ -24,18 +24,18 @@ void rlogin_input_thread(void *args)
 
 	SetThreadName("RLogin Input");
 	conn_api.input_thread_running=1;
-	while(sock != INVALID_SOCKET && !conn_api.terminate) {
+	while(rlogin_sock != INVALID_SOCKET && !conn_api.terminate) {
 		FD_ZERO(&rds);
-		FD_SET(sock, &rds);
+		FD_SET(rlogin_sock, &rds);
 #ifdef __linux__
 		{
 			struct timeval tv;
 			tv.tv_sec=0;
 			tv.tv_usec=500000;
-			rd=select(sock+1, &rds, NULL, NULL, &tv);
+			rd=select(rlogin_sock+1, &rds, NULL, NULL, &tv);
 		}
 #else
-		rd=select(sock+1, &rds, NULL, NULL, NULL);
+		rd=select(rlogin_sock+1, &rds, NULL, NULL, NULL);
 #endif
 		if(rd==-1) {
 			if(errno==EBADF)
@@ -43,7 +43,7 @@ void rlogin_input_thread(void *args)
 			rd=0;
 		}
 		if(rd==1) {
-			rd=recv(sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
+			rd=recv(rlogin_sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
 			if(rd <= 0)
 				break;
 		}
@@ -55,7 +55,7 @@ void rlogin_input_thread(void *args)
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 	}
-	conn_api.input_thread_running=0;
+	conn_api.input_thread_running=2;
 }
 
 #ifdef __BORLANDC__
@@ -70,7 +70,7 @@ void rlogin_output_thread(void *args)
 
 	SetThreadName("RLogin Output");
 	conn_api.output_thread_running=1;
-	while(sock != INVALID_SOCKET && !conn_api.terminate) {
+	while(rlogin_sock != INVALID_SOCKET && !conn_api.terminate) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		ret=0;
 		wr=conn_buf_wait_bytes(&conn_outbuf, 1, 100);
@@ -80,16 +80,16 @@ void rlogin_output_thread(void *args)
 			sent=0;
 			while(sent < wr) {
 				FD_ZERO(&wds);
-				FD_SET(sock, &wds);
+				FD_SET(rlogin_sock, &wds);
 #ifdef __linux__
 				{
 					struct timeval tv;
 					tv.tv_sec=0;
 					tv.tv_usec=500000;
-					ret=select(sock+1, NULL, &wds, NULL, &tv);
+					ret=select(rlogin_sock+1, NULL, &wds, NULL, &tv);
 				}
 #else
-				ret=select(sock+1, NULL, &wds, NULL, NULL);
+				ret=select(rlogin_sock+1, NULL, &wds, NULL, NULL);
 #endif
 				if(ret==-1) {
 					if(errno==EBADF)
@@ -97,7 +97,7 @@ void rlogin_output_thread(void *args)
 					ret=0;
 				}
 				if(ret==1) {
-					ret=sendsocket(sock, conn_api.wr_buf+sent, wr-sent);
+					ret=sendsocket(rlogin_sock, conn_api.wr_buf+sent, wr-sent);
 					if(ret==-1)
 						break;
 					sent+=ret;
@@ -109,7 +109,7 @@ void rlogin_output_thread(void *args)
 		if(ret==-1)
 			break;
 	}
-	conn_api.output_thread_running=0;
+	conn_api.output_thread_running=2;
 }
 
 int rlogin_connect(struct bbslist *bbs)
@@ -127,8 +127,8 @@ int rlogin_connect(struct bbslist *bbs)
 		ruser=bbs->password;
 	}
 
-	sock=conn_socket_connect(bbs);
-	if(sock==INVALID_SOCKET)
+	rlogin_sock=conn_socket_connect(bbs);
+	if(rlogin_sock==INVALID_SOCKET)
 		return(-1);
 
 	if(!create_conn_buf(&conn_inbuf, BUFFER_SIZE))
@@ -178,17 +178,17 @@ int rlogin_connect(struct bbslist *bbs)
 		fd_set	rds;
 
 		FD_ZERO(&rds);
-		FD_SET(sock, &rds);
+		FD_SET(rlogin_sock, &rds);
 
 		tv.tv_sec=1;
 		tv.tv_usec=0;
 
 		/* Check to make sure GHost is actually listening */
-		sendsocket(sock, "\r\nMBBS: PING\r\n", 14);
+		sendsocket(rlogin_sock, "\r\nMBBS: PING\r\n", 14);
 
 		idx = 0;
-		while ((ret = select(sock+1, &rds, NULL, NULL, &tv))==1) {
-			recv(sock, rbuf+idx, 1, 0);
+		while ((ret = select(rlogin_sock+1, &rds, NULL, NULL, &tv))==1) {
+			recv(rlogin_sock, rbuf+idx, 1, 0);
 			rbuf[++idx] = 0;
 
 			/* It says ERROR, but this is a good response to PING. */
@@ -213,11 +213,11 @@ int rlogin_connect(struct bbslist *bbs)
 			999, /* Time remaining */
 			"GR" /* GR = ANSI, NG = ASCII */
 		);
-		sendsocket(sock, sbuf, strlen(sbuf));
+		sendsocket(rlogin_sock, sbuf, strlen(sbuf));
 
 		idx = 0;
-		while ((ret = select(sock+1, &rds, NULL, NULL, &tv))==1) {
-			recv(sock, rbuf+idx, 1, 0);
+		while ((ret = select(rlogin_sock+1, &rds, NULL, NULL, &tv))==1) {
+			recv(rlogin_sock, rbuf+idx, 1, 0);
 			rbuf[++idx] = 0;
 
 			/* GHost says it's launching the program, so pass terminal to user. */
@@ -252,8 +252,8 @@ int rlogin_close(void)
 	char garbage[1024];
 
 	conn_api.terminate=1;
-	closesocket(sock);
-	while(conn_api.input_thread_running || conn_api.output_thread_running) {
+	closesocket(rlogin_sock);
+	while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}

@@ -25,6 +25,7 @@ enum {
 	,CONN_TYPE_SERIAL
 	,CONN_TYPE_SHELL
 	,CONN_TYPE_MBBS_GHOST
+	,CONN_TYPE_TELNETS
 	,CONN_TYPE_TERMINATOR
 };
 
@@ -33,8 +34,12 @@ struct conn_api {
 	int (*close)(void);
 	void (*binary_mode_on)(void);
 	void (*binary_mode_off)(void);
+	void *(*rx_parse_cb)(const void* inbuf, size_t inlen, size_t *olen);
+	void *(*tx_parse_cb)(const void* inbuf, size_t inlen, size_t *olen);
 	int log_level;
 	int type;
+	int nostatus;
+	cterm_emulation_t emulation;
 	volatile int input_thread_running;
 	volatile int output_thread_running;
 	volatile int terminate;
@@ -59,9 +64,8 @@ struct conn_buffer {
  * Functions for stuff using connections
  */
 int conn_recv_upto(void *buffer, size_t buflen, unsigned int timeout);
-int conn_recv(void *buffer, size_t buflen, unsigned int timeout);
-int conn_peek(void *buffer, size_t buflen);
 int conn_send(const void *buffer, size_t buflen, unsigned int timeout);
+int conn_send_raw(const void *buffer, size_t buflen, unsigned int timeout);
 int conn_connect(struct bbslist *bbs);
 int conn_close(void);
 BOOL conn_connected(void);

@@ -286,7 +286,7 @@ static int try_curses_init(int mode)
 		cio_api.setvideoflags=curs_setvideoflags;
 		cio_api.getvideoflags=curs_getvideoflags;
 #if defined(NCURSES_VERSION_MAJOR) || defined (__NetBSD__)
-		cio_api.ESCDELAY=&ESCDELAY;
+		cio_api.escdelay=&ESCDELAY;
 #endif
 		cio_api.setfont = curs_setfont;
 		cio_api.getfont = curs_getfont;
@@ -319,7 +319,7 @@ static int try_ansi_init(int mode)
 		cio_api.setcursortype=ansi_setcursortype;
 		cio_api.getch=ansi_getch;
 		cio_api.textmode=ansi_textmode;
-		cio_api.ESCDELAY=&CIOLIB_ANSI_TIMEOUT;
+		cio_api.escdelay=&CIOLIB_ANSI_TIMEOUT;
 		cio_api.beep=ansi_beep;
 		cio_api.suspend=ansi_suspend;
 		return(1);

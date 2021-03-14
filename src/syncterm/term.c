@@ -706,7 +706,7 @@ void draw_transfer_window(char* title)
 	}
 	outline[0]=(char)0xc9;
 	outline[sizeof(outline)-2]=(char)0xbb;
-	puttext(left, top, left + TRANSFER_WIN_WIDTH - 1, top, outline);\
+	puttext(left, top, left + TRANSFER_WIN_WIDTH - 1, top, outline);
 
 	/* Title */
 	gotoxy(left+4,top);
@@ -1054,7 +1054,7 @@ static void transfer_complete(BOOL success)
 	lprintf(LOG_NOTICE,"Hit any key or wait %u seconds to continue...", timeout);
 	while(timeout > 0) {
 		if (kbhit()) {
-			if(getch()==0 && getch()<<8 == CIO_KEY_QUIT)
+			if(getch()==(CIO_KEY_QUIT & 0xff) && (getch()<<8) == (CIO_KEY_QUIT & 0xff00))
 				check_exit(FALSE);
 			break;
 		}
@@ -2157,8 +2157,8 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 	BYTE	digest[MD5_DIGEST_SIZE];
 	unsigned long slot;
 
-	if(ansi_replybuf[0]) \
-		conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
+	if(ansi_replybuf[0])
+		conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0);
 	ansi_replybuf[0] = 0;
 	if (get_cache_fn_base(bbs, fn_root, sizeof(fn_root)) == 0)
 		return;

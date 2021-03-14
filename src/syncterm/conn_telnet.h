@@ -9,6 +9,8 @@ extern SOCKET telnet_sock;
 void telnet_binary_mode_on(void);
 void telnet_binary_mode_off(void);
 int telnet_connect(struct bbslist *bbs);
-int telnet_close(void);
+void *telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen);
+void *telnet_tx_parse_cb(const void *buf, size_t len, size_t *olen);
+#define telnet_close rlogin_close
 
 #endif

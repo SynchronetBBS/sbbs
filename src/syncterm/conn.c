@@ -35,6 +35,7 @@
 #include "rlogin.h"
 #include "raw.h"
 #include "ssh.h"
+#include "telnets.h"
 #ifndef __HAIKU__
 #include "modem.h"
 #endif
@@ -44,13 +45,9 @@
 #include "conn_telnet.h"
 
 struct conn_api conn_api;
-char *conn_types_enum[]={"Unknown","RLogin","RLoginReversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBSGhost",NULL};
-char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBS GHost",NULL};
-short unsigned int conn_ports[]={0,513,513,23,0,22,0,0,0
-#ifdef __unix__
-,65535
-#endif
-,0};
+char *conn_types_enum[]={"Unknown","RLogin","RLoginReversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBSGhost","TelnetS", NULL};
+char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBS GHost","TelnetS",NULL};
+short unsigned int conn_ports[]={0,513,513,23,0,22,0,0,0,65535,992,0};
 
 struct conn_buffer conn_inbuf;
 struct conn_buffer conn_outbuf;
@@ -258,7 +255,7 @@ size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long 
 
 BOOL conn_connected(void)
 {
-	if(conn_api.input_thread_running && conn_api.output_thread_running)
+	if(conn_api.input_thread_running == 1 && conn_api.output_thread_running == 1)
 		return(TRUE);
 	return(FALSE);
 }
@@ -267,42 +264,37 @@ int conn_recv_upto(void *vbuffer, size_t buflen, unsigned timeout)
 {
 	char *buffer = (char *)vbuffer;
 	size_t	found=0;
+	size_t obuflen;
+	void *expanded;
+	size_t max_rx = buflen;
 
+	if (conn_api.rx_parse_cb != NULL) {
+		if (max_rx > 1)
+			max_rx /= 2;
+	}
 	pthread_mutex_lock(&(conn_inbuf.mutex));
 	if(conn_buf_wait_bytes(&conn_inbuf, 1, timeout))
-		found=conn_buf_get(&conn_inbuf, buffer, buflen);
+		found=conn_buf_get(&conn_inbuf, buffer, max_rx);
 	pthread_mutex_unlock(&(conn_inbuf.mutex));
+
+	if (found) {
+		if (conn_api.rx_parse_cb != NULL) {
+			expanded = conn_api.rx_parse_cb(buffer, found, &obuflen);
+			memcpy(vbuffer, expanded, obuflen);
+			free(expanded);
+			found = obuflen;
+		}
+		else {
+			expanded = buffer;
+			obuflen = buflen;
+		}
+	}
+
 	return(found);
 }
 
 
-int conn_recv(void *vbuffer, size_t buflen, unsigned timeout)
-{
-	char *buffer = (char *)vbuffer;
-	size_t found;
-
-	pthread_mutex_lock(&(conn_inbuf.mutex));
-	found=conn_buf_wait_bytes(&conn_inbuf, buflen, timeout);
-	if(found)
-		found=conn_buf_get(&conn_inbuf, buffer, found);
-	pthread_mutex_unlock(&(conn_inbuf.mutex));
-	return(found);
-}
-
-int conn_peek(void *vbuffer, size_t buflen)
-{
-	char *buffer = (char *)vbuffer;
-	size_t found;
-
-	pthread_mutex_lock(&(conn_inbuf.mutex));
-	found=conn_buf_wait_bytes(&conn_inbuf, buflen, 0);
-	if(found)
-		found=conn_buf_peek(&conn_inbuf, buffer, found);
-	pthread_mutex_unlock(&(conn_inbuf.mutex));
-	return(found);
-}
-
-int conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
+int conn_send_raw(const void *vbuffer, size_t buflen, unsigned int timeout)
 {
 	const char *buffer = vbuffer;
 	size_t found;
@@ -315,12 +307,42 @@ int conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 	return(found);
 }
 
+int conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
+{
+	const char *buffer = vbuffer;
+	size_t found;
+	size_t obuflen;
+	void *expanded;
+
+	if (conn_api.tx_parse_cb != NULL) {
+		expanded = conn_api.tx_parse_cb(buffer, buflen, &obuflen);
+	}
+	else {
+		expanded = (void *)buffer;
+		obuflen = buflen;
+	}
+
+	pthread_mutex_lock(&(conn_outbuf.mutex));
+	found=conn_buf_wait_free(&conn_outbuf, obuflen, timeout);
+	if(found)
+		found=conn_buf_put(&conn_outbuf, buffer, found);
+	pthread_mutex_unlock(&(conn_outbuf.mutex));
+
+	if (conn_api.tx_parse_cb != NULL) {
+		free(expanded);
+	}
+
+	return(found);
+}
+
 int conn_connect(struct bbslist *bbs)
 {
 	char	str[64];
 
 	memset(&conn_api, 0, sizeof(conn_api));
 
+	conn_api.nostatus = bbs->nostatus;
+	conn_api.emulation = get_emulation(bbs);
 	switch(bbs->conn_type) {
 		case CONN_TYPE_RLOGIN:
 		case CONN_TYPE_RLOGIN_REVERSED:
@@ -339,6 +361,12 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.close=raw_close;
 			break;
 #ifndef WITHOUT_CRYPTLIB
+		case CONN_TYPE_TELNETS:
+			conn_api.connect=telnets_connect;
+			conn_api.close=telnets_close;
+			conn_api.binary_mode_on=telnet_binary_mode_on;
+			conn_api.binary_mode_off=telnet_binary_mode_off;
+			break;
 		case CONN_TYPE_SSH:
 			conn_api.connect=ssh_connect;
 			conn_api.close=ssh_close;
@@ -371,7 +399,7 @@ int conn_connect(struct bbslist *bbs)
 	if(conn_api.connect) {
 		if(conn_api.connect(bbs)) {
 			conn_api.terminate = 1;
-			while(conn_api.input_thread_running || conn_api.output_thread_running)
+			while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1)
 				SLEEP(1);
 		}
 		else {

@@ -19,12 +19,12 @@
 #include "syncterm.h"
 #include "window.h"
 
-static SOCKET	sock;
+SOCKET	ssh_sock;
 CRYPT_SESSION	ssh_session;
 int				ssh_active=FALSE;
 pthread_mutex_t	ssh_mutex;
 
-static void cryptlib_error_message(int status, const char * msg)
+void cryptlib_error_message(int status, const char * msg)
 {
 	char	str[64];
 	char	str2[64];
@@ -58,11 +58,11 @@ void ssh_input_thread(void *args)
 	conn_api.input_thread_running=1;
 	while(ssh_active && !conn_api.terminate) {
 		FD_ZERO(&rds);
-		FD_SET(sock, &rds);
+		FD_SET(ssh_sock, &rds);
 		tv.tv_sec = 0;
 		tv.tv_usec = 100;
 
-		rd=select(sock+1, &rds, NULL, NULL, &tv);
+		rd=select(ssh_sock+1, &rds, NULL, NULL, &tv);
 		if(rd==-1) {
 			if(errno==EBADF)
 				break;
@@ -99,7 +99,7 @@ void ssh_input_thread(void *args)
 			}
 		}
 	}
-	conn_api.input_thread_running=0;
+	conn_api.input_thread_running=2;
 }
 
 void ssh_output_thread(void *args)
@@ -142,7 +142,7 @@ void ssh_output_thread(void *args)
 		else
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 	}
-	conn_api.output_thread_running=0;
+	conn_api.output_thread_running=2;
 }
 
 int ssh_connect(struct bbslist *bbs)
@@ -175,8 +175,8 @@ int ssh_connect(struct bbslist *bbs)
 		}
 	}
 
-	sock=conn_socket_connect(bbs);
-	if(sock==INVALID_SOCKET)
+	ssh_sock=conn_socket_connect(bbs);
+	if(ssh_sock==INVALID_SOCKET)
 		return(-1);
 
 	ssh_active=FALSE;
@@ -196,7 +196,7 @@ int ssh_connect(struct bbslist *bbs)
 	}
 
 	/* we need to disable Nagle on the socket. */
-	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, ( char * )&off, sizeof ( off ) );
+	setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, ( char * )&off, sizeof ( off ) );
 
 	SAFECOPY(password,bbs->password);
 	SAFECOPY(username,bbs->user);
@@ -256,7 +256,7 @@ int ssh_connect(struct bbslist *bbs)
 		uifc.pop("Setting Username");
 	}
 	/* Pass socket to cryptlib */
-	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, sock);
+	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, ssh_sock);
 	if(cryptStatusError(status)) {
 		char	str[1024];
 		sprintf(str,"Error %d passing socket",status);
@@ -281,14 +281,12 @@ int ssh_connect(struct bbslist *bbs)
 		uifc.pop(NULL);
 		uifc.pop("Setting Terminal Width");
 	}
-	/* Pass socket to cryptlib */
 	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_WIDTH, cols);
 
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
 		uifc.pop("Setting Terminal Height");
 	}
-	/* Pass socket to cryptlib */
 	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_HEIGHT, rows);
 
 	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
@@ -350,13 +348,13 @@ int ssh_close(void)
 	conn_api.terminate=1;
 	ssh_active=FALSE;
 	cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 0);
-	while(conn_api.input_thread_running || conn_api.output_thread_running) {
+	while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}
 	cl.DestroySession(ssh_session);
-	closesocket(sock);
-	sock=INVALID_SOCKET;
+	closesocket(ssh_sock);
+	ssh_sock=INVALID_SOCKET;
 	destroy_conn_buf(&conn_inbuf);
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);
