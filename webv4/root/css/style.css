@@ -53,6 +53,16 @@ span.message-header.unread {
 	background-color: #FCF8E3;
 }
 
+div.bbs-view {
+	background-color: #000000;
+	color: #A8A8A8;
+	font-family: Courier New, monospace;
+	line-height: 1;
+	overflow: hidden;
+	white-space: pre;
+	display: inline-block;
+}
+
 /*** Dark mode ***/
 
 /* default links, like the breadcrumbs */

@@ -311,8 +311,182 @@ function addPollField(type, target) {
 }
 
 
-// Message list
+function parseANSI(ans, target) {
 
+    const ANSI_COLORS = [
+        "#000000", // Black
+        "#A80000", // Red
+        "#00A800", // Green
+        "#A85400", // Brown
+        "#0000A8", // Blue
+        "#A800A8", // Magenta
+        "#00A8A8", // Cyan
+        "#A8A8A8", // Light Grey
+        "#545454", // Dark Grey (High Black)
+        "#FC5454", // Light Red
+        "#54FC54", // Light Green
+        "#FCFC54", // Yellow (High Brown)
+        "#5454FC", // Light Blue
+        "#FC54FC", // Light Magenta
+        "#54FCFC", // Light Cyan
+        "#FFFFFF", // White
+    ];
+    
+    let x = 0;
+    let y = 0;
+    let _x = 0;
+    let _y = 0;
+    let fg = 7;
+    let bg = 0;
+    let high = 0;
+    let match;
+    let opts;
+    const re = /^\u001b\[((?:[0-9]{0,2};?)*)([a-zA-Z])/;
+    const data = [[]];
+
+    while (ans.length) {
+        match = re.exec(ans);
+        if (match !== null) {
+            ans = ans.substr(match[0].length);
+            opts = match[1].split(';').map(e => parseInt(e, 10));
+            switch (match[2]) {
+                case 'A':
+                    y = Math.max(y - (isNaN(opts[0]) ? 1 : opts[0]), 0);
+                    break;
+                case 'B':
+                    y += (isNaN(opts[0]) ? 1 : opts[0]);
+                    if (data[y] === undefined) data[y] = [];
+                    break;
+                case 'C':
+                    x = Math.min(x + (isNaN(opts[0]) ? 1 : opts[0]), 79);
+                    break;
+                case 'D':
+                    x = Math.max(x - (isNaN(opts[0]) ? 1 : opts[0]), 0);
+                    break;
+                case 'f':
+                case 'H':
+                    y = isNaN(opts[0]) ? 1 : opts[0];
+                    x = isNaN(opts[1]) ? 1 : opts[0];
+                    if (data[y] === undefined) data[y] = [];
+                    break;
+                case 'm':
+                    for (let o of opts) {
+                        if (o == 0) {
+                            fg = 7;
+                            bg = 0;
+                            high = 0;
+                        } else if (o == 1) {
+                            high = 1;
+                        } else if (o == 5) {
+                            // blink
+                        } else if (o >= 30 && o <= 37) {
+                            fg = o - 30;
+                        } else if (o >= 40 && o <= 47) {
+                            bg = o - 40;
+                        }
+                    }
+                    break;
+                case 's': // push xy
+                    _x = x;
+                    _y = y;
+                    break;
+                case 'u': // pop xy
+                    x = _x;
+                    y = _y;
+                    break;
+                case 'J':
+                    if (opts.length == 1 && opts[0] == 2) {
+                        for (let yy = 0; yy < data.length; yy++) {
+                            if (!Array.isArray(data[yy])) data[yy] = [];
+                            for (let xx = 0; xx < 80; xx++) {
+                                data[yy][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg };
+                            }
+                        }
+                    }
+                    break;
+                case 'K':
+                    for (let xx = 0; xx < 80; xx++) {
+                        data[y][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg };
+                    }
+                    break;
+                default:
+                    // Unknown or unimplemented command
+                    break;
+            }
+        } else {
+            let ch = ans.substr(0, 1);
+            switch (ch) {
+                case '\x1a':
+                    ans = '';
+                    break;
+                case '\n':
+                    y++;
+                    if (data[y] === undefined) data[y] = [];
+                    break;
+                case '\r':
+                    x = 0;
+                    break;
+                default:
+                    data[y][x] = { c: ch, fg: fg + (high ? 8 : 0), bg };
+                    x++;
+                    if (x > 79) {
+                        x = 0;
+                        y++;
+                        if (data[y] === undefined) data[y] = [];
+                    }
+                    break;
+            }
+            ans = ans.substr(1);
+        }
+    }
+
+    let ofg;
+    let obg;
+    let span;
+    for (let y = 0; y < data.length; y++) {
+        for (let x = 0; x < data[y].length; x++) {
+            if (data[y][x]) {
+                if (!span || data[y][x].fg != ofg || data[y][x].bg != obg) {
+                    ofg = data[y][x].fg;
+                    obg = data[y][x].bg;
+                    span = document.createElement('span');
+                    span.style.setProperty('color', ANSI_COLORS[data[y][x].fg]);
+                    span.style.setProperty('background-color', ANSI_COLORS[data[y][x].bg]);
+                    target.appendChild(span);
+                }
+                span.innerText += data[y][x].c;
+            } else {
+                if (!span || ofg !== 7 || obg !== 0) {
+                    span = document.createElement('span');
+                    span.style.setProperty('color', ANSI_COLORS[7]);
+                    span.style.setProperty('background-color', ANSI_COLORS[0]);
+                    target.appendChild(span);
+                }
+                span.innerText += ' ';
+            }
+        }
+        span = null;
+        target.innerHTML += '\r\n';
+    }
+}
+
+function bbsView(elem, body) {
+    const btn = elem.querySelector('button[data-button-bbs-view]');
+    btn.disabled = true;
+    const pre = document.createElement('div');
+    pre.classList.add('bbs-view');
+    const target = elem.querySelector('div[data-message-body]')
+    target.innerHTML = '';
+    target.appendChild(pre);
+    parseANSI(body, pre);
+    btn.onclick = () => {
+        target.innerHTML = formatMessageBody(body);
+        btn.onclick = () => bbsView(elem, body);
+    }
+    btn.disabled = false;
+}
+
+// Message list
 async function listMessages(sub, thread) {
 
     const lm = new LoadingMessage();
@@ -352,8 +526,9 @@ async function listMessages(sub, thread) {
         elem.querySelector('span[data-upvote-count]').innerHTML = e.votes.up;
         elem.querySelector('span[data-downvote-count]').innerHTML = e.votes.down;
         elem.querySelector('div[data-message-body]').innerHTML = formatMessageBody(e.body);
+        elem.querySelector('button[data-button-bbs-view]').onclick = evt => bbsView(elem, e.body);
         elem.querySelector('a[data-direct-link]').setAttribute('href', `#${e.number}`);
-        elem.querySelector('button[data-add-reply]').onclick = evt => addReply(sub, e.number, e.body, elem);
+        elem.querySelector('button[data-button-add-reply]').onclick = evt => addReply(sub, e.number, e.body, elem);
         elem.removeAttribute('hidden');
         if (append) document.getElementById('forum-list-container').appendChild(elem);
         if (users.indexOf(akey) < 0) users.push(akey);
