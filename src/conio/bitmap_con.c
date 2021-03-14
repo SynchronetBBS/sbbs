@@ -94,6 +94,7 @@ struct video_stats vstat;
 static struct bitmap_callbacks callbacks;
 static unsigned char *font[4];
 static int force_redraws=0;
+static int force_cursor=0;
 struct rectlist *free_rects;
 pthread_mutex_t free_rect_lock;
 
@@ -447,6 +448,7 @@ static struct rectlist *get_full_rectangle_locked(struct bitmap_screen *screen)
 	size_t i;
 	struct rectlist *rect;
 
+	// TODO: Some sort of caching here would make things faster...?
 	if(callbacks.drawrect) {
 		rect = alloc_full_rect(screen);
 		if (!rect)
@@ -670,8 +672,16 @@ static void blinker_thread(void *data)
 			pthread_mutex_unlock(&screen->screenlock);
 			cb_drawrect(rect);
 		}
-		else
+		else {
+			if (force_cursor) {
+				rect = get_full_rectangle_locked(screen);
+			}
 			pthread_mutex_unlock(&screen->screenlock);
+			if (force_cursor) {
+				cb_drawrect(rect);
+				force_cursor = 0;
+			}
+		}
 		cb_flush();
 		pthread_mutex_unlock(&blinker_lock);
 	}
@@ -861,10 +871,15 @@ void bitmap_gotoxy(int x, int y)
 		return;
 	/* Move cursor location */
 	pthread_mutex_lock(&blinker_lock);
-	cio_textinfo.curx=x;
-	cio_textinfo.cury=y;
-	vstat.curs_col = x + cio_textinfo.winleft - 1;
-	vstat.curs_row = y + cio_textinfo.wintop - 1;
+	pthread_mutex_lock(&vstatlock);
+	if (vstat.curs_col != x + cio_textinfo.winleft - 1 || vstat.curs_row != y + cio_textinfo.wintop - 1) {
+		cio_textinfo.curx=x;
+		cio_textinfo.cury=y;
+		vstat.curs_col = x + cio_textinfo.winleft - 1;
+		vstat.curs_row = y + cio_textinfo.wintop - 1;
+		force_cursor = 1;
+	}
+	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&blinker_lock);
 }
 
