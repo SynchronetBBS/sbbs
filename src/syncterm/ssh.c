@@ -99,7 +99,7 @@ void ssh_input_thread(void *args)
 			}
 		}
 	}
-	conn_api.input_thread_running=0;
+	conn_api.input_thread_running=2;
 }
 
 void ssh_output_thread(void *args)
@@ -142,7 +142,7 @@ void ssh_output_thread(void *args)
 		else
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 	}
-	conn_api.output_thread_running=0;
+	conn_api.output_thread_running=2;
 }
 
 int ssh_connect(struct bbslist *bbs)
@@ -350,7 +350,7 @@ int ssh_close(void)
 	conn_api.terminate=1;
 	ssh_active=FALSE;
 	cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 0);
-	while(conn_api.input_thread_running || conn_api.output_thread_running) {
+	while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}

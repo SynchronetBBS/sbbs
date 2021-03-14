@@ -327,7 +327,7 @@ void pty_input_thread(void *args)
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 	}
-	conn_api.input_thread_running=0;
+	conn_api.input_thread_running=2;
 }
 
 #ifdef __BORLANDC__
@@ -383,7 +383,7 @@ void pty_output_thread(void *args)
 		if(ret==-1)
 			break;
 	}
-	conn_api.output_thread_running=0;
+	conn_api.output_thread_running=2;
 }
 
 int pty_connect(struct bbslist *bbs)
@@ -498,7 +498,7 @@ int pty_close(void)
 	kill(child_pid, SIGKILL);
 	waitpid(child_pid, &status, 0);
 
-	while(conn_api.input_thread_running || conn_api.output_thread_running) {
+	while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}
