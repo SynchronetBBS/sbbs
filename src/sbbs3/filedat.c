@@ -28,6 +28,8 @@
 #include "smblib.h"
 #include "load_cfg.h"	// smb_open_dir()
 #include "scfglib.h"
+#include "archive.h"
+#include "archive_entry.h"
 
  /****************************************************************************/
 /****************************************************************************/
@@ -566,17 +568,91 @@ char* format_filename(const char* fname, char* buf, size_t size, bool pad)
 	return buf;
 }
 
-bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fname, char* path, size_t maxlen)
+ulong extract_files_from_archive(const char* archive, const char** file_list, const char* outdir, ulong max_files)
+{
+	struct archive *ar;
+	struct archive_entry *entry;
+	ulong extracted = 0;
+
+	if((ar = archive_read_new()) == NULL)
+		return 0;
+	archive_read_support_filter_all(ar);
+	archive_read_support_format_all(ar);
+	if(archive_read_open_filename(ar, archive, 10240) != ARCHIVE_OK)
+		return 0;
+	while(archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
+		const char* fname = archive_entry_pathname(entry);
+		if(fname == NULL)
+			continue;
+		fname = getfname(fname);
+		if(file_list != NULL) {
+			int i;
+			for (i = 0; file_list[i] != NULL; i++)
+				if(wildmatch(fname, file_list[i], /* path: */false, /* case-sensitive: */false))
+					break;
+			if(file_list[i] == NULL)
+				continue;
+		}
+		char fpath[MAX_PATH + 1];
+		SAFEPRINTF2(fpath, "%s%s", outdir, fname);
+		FILE* fp = fopen(fpath, "wb");
+		if(fp == NULL)
+			continue;
+
+		const void *buff;
+		size_t size;
+		la_int64_t offset;
+
+		int result;
+		for(;;) {
+			result = archive_read_data_block(ar, &buff, &size, &offset);
+			if(result == ARCHIVE_EOF) {
+				extracted++;
+				break;
+			}
+			if(result < ARCHIVE_OK) {
+//				const char* p = archive_error_string(ar);
+				break;
+			}
+			if(fwrite(buff, 1, size, fp) != size)
+				break;
+		}
+		fclose(fp);
+		if(result != ARCHIVE_EOF)
+			(void)remove(fpath);
+		if(max_files && extracted >= max_files)
+			break;
+	}
+	archive_read_free(ar);
+	return extracted;
+}
+
+bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fnames, char* path, size_t maxlen)
 {
 	int i;
-	char* fext = getfext(f->name);
+	char archive[MAX_PATH + 1];
 	char* default_diz_fnames[] = { "FILE_ID.DIZ", "DESC.SDI", NULL };
+
+	getfilepath(cfg, f, archive);
+	if(diz_fnames == NULL)
+		diz_fnames = default_diz_fnames;
+
+	if(!fexistcase(archive))
+		return false;
+
+	if(extract_files_from_archive(archive, diz_fnames, cfg->temp_dir, /* max_files: */1) > 0) {
+		for(i = 0; diz_fnames[i] != NULL; i++) {
+			safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]);
+			if(fexistcase(path))
+				return true;
+		}
+		return false;
+	}
+
+	char* fext = getfext(f->name);
 
 	if(fext == NULL)
 		return false;
-
-	if(diz_fname == NULL)
-		diz_fname = default_diz_fnames;
 
 	for(i = 0; i < cfg->total_fextrs; i++)
 		if(stricmp(cfg->fextr[i]->ext, fext + 1) == 0 && chk_ar(cfg, cfg->fextr[i]->ar, /* user: */NULL, /* client: */NULL))
@@ -585,17 +661,13 @@ bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fname, char* path, si
 		return false;
 
 	fextr_t* fextr = cfg->fextr[i];
-	char archive[MAX_PATH + 1];
 	char cmd[512];
-	getfilepath(cfg, f, archive);
-	if(!fexistcase(archive))
-		return false;
-	for(i = 0; diz_fname[i] != NULL; i++) {
-		safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fname[i]);
+	for(i = 0; diz_fnames[i] != NULL; i++) {
+		safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]);
 		removecase(path);
 		if(fexistcase(path))	// failed to delete?
 			return false;
-		system(cmdstr(cfg, /* user: */NULL, fextr->cmd, archive, diz_fname[i], cmd, sizeof(cmd)));
+		system(cmdstr(cfg, /* user: */NULL, fextr->cmd, archive, diz_fnames[i], cmd, sizeof(cmd)));
 		if(fexistcase(path))
 			return true;
 	}

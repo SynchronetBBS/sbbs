@@ -2262,6 +2262,13 @@ int unpack(const char *infile, const char* outdir)
 	char str[256],tmp[512];
 	int ch,file;
 	unsigned u,j;
+	ulong file_count;
+
+	file_count = extract_files_from_archive(infile, /* file_list = ALL */NULL, outdir, 0);
+	if(file_count > 0) {
+		lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, infile);
+		return 0;
+	}
 
 	if((stream=fnopen(&file,infile,O_RDONLY))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) opening archive: %s",errno,strerror(errno),infile);

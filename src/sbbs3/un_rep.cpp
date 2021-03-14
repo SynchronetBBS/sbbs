@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "qwk.h"
+#include "filedat.h"
 
 /****************************************************************************/
 /* Unpacks .REP packet, 'repfile' is the path and filename of the packet    */
@@ -70,20 +71,22 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(LOG_NOTICE,nulstr,"REP file not received");
 		return(false); 
 	}
-	for(k=0;k<cfg.total_fextrs;k++)
-		if(!stricmp(cfg.fextr[k]->ext,useron.tmpext) && chk_ar(cfg.fextr[k]->ar,&useron,&client))
-			break;
-	if(k>=cfg.total_fextrs)
-		k=0;
-	ex=EX_STDOUT;
-	if(online!=ON_REMOTE)
-		ex|=EX_OFFLINE;
-	i=external(cmdstr(cfg.fextr[k]->cmd,rep_fname,ALLFILES,NULL),ex);
-	if(i) {
-		bputs(text[QWKExtractionFailed]);
-		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
-		logline(LOG_NOTICE,nulstr,"Extraction failed");
-		return(false); 
+	if(extract_files_from_archive(rep_fname, /* file_list = ALL */NULL, cfg.temp_dir, /* max_files */1000) < 1) {
+		for(k=0;k<cfg.total_fextrs;k++)
+			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext) && chk_ar(cfg.fextr[k]->ar,&useron,&client))
+				break;
+		if(k>=cfg.total_fextrs)
+			k=0;
+		ex=EX_STDOUT;
+		if(online!=ON_REMOTE)
+			ex|=EX_OFFLINE;
+		i=external(cmdstr(cfg.fextr[k]->cmd,rep_fname,ALLFILES,NULL),ex);
+		if(i) {
+			bputs(text[QWKExtractionFailed]);
+			logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
+			logline(LOG_NOTICE,nulstr,"Extraction failed");
+			return(false); 
+		}
 	}
 	SAFEPRINTF2(msg_fname,"%s%s.msg",cfg.temp_dir,cfg.sys_id);
 	if(!fexistcase(msg_fname)) {

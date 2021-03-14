@@ -648,15 +648,6 @@ void sbbs_t::qwk_sec()
 
 			delfiles(cfg.temp_dir,ALLFILES);
 			bprintf(text[UploadingREP],cfg.sys_id);
-			for(k=0;k<cfg.total_fextrs;k++)
-				if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
-					&& chk_ar(cfg.fextr[k]->ar,&useron,&client))
-					break;
-			if(k>=cfg.total_fextrs) {
-				bputs(text[QWKExtractionFailed]);
-				lprintf(LOG_ERR, "Couldn't extract REP packet - configuration error");
-				continue;
-			}
 
 			/******************/
 			/* Receive Packet */

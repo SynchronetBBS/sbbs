@@ -68,17 +68,21 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	delfiles(cfg.temp_dir,ALLFILES);
 	SAFEPRINTF2(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexistcase(str)) {
-		for(k=0;k<cfg.total_fextrs;k++)
-			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
-				&& chk_ar(cfg.fextr[k]->ar,&useron,&client))
-				break;
-		if(k>=cfg.total_fextrs)
-			k=0;
-		p=cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL);
-		if((i=external(p,ex))==0)
-			preqwk=1; 
-		else 
-			errormsg(WHERE,ERR_EXEC,p,i);
+		if(extract_files_from_archive(str, /* file_list = ALL */NULL, cfg.temp_dir, /* max_files */0) > 0)
+			preqwk = TRUE;
+		else {
+			for(k=0;k<cfg.total_fextrs;k++)
+				if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
+					&& chk_ar(cfg.fextr[k]->ar,&useron,&client))
+					break;
+			if(k>=cfg.total_fextrs)
+				k=0;
+			p=cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL);
+			if((i=external(p,ex))==0)
+				preqwk=1; 
+			else 
+				errormsg(WHERE,ERR_EXEC,p,i);
+		}
 	}
 
 	if(useron.qwk&QWK_EXPCTLA)
