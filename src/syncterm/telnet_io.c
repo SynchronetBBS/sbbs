@@ -47,35 +47,8 @@ static int lprintf(int level, const char *fmt, ...)
 
 void putcom(char* buf, size_t len)
 {
-
-	fd_set	wds;
-	FD_ZERO(&wds);
-	FD_SET(telnet_sock, &wds);
-	struct timeval tv;
-	tv.tv_sec=10;
-	tv.tv_usec=0;
-	/*
-	 * Note, this select() call was added when debugging file transfer
-	 * issues presumably because something made it appear to "hang forever".
-	 * Since blocking sockets are used, this is very much not a complete
-	 * fix as the buffer size will usually be greater than the one byte
-	 * select() guarantees you will be able to send().
-	 *
-	 * The original fix waited 1ms in select(), which is unlikely to actually
-	 * allow the ACK to come back fast enough to clear a full output buffer.
-	 * I've increased it to 10s and left the select() in place.
-	 */
-	if(select(telnet_sock+1, NULL, &wds, NULL, &tv) == 1) {
-		char	str[128];
-		char*	p=str;
-		size_t i;
-		for(i=0;i<len;i++)
-			p+=sprintf(p,"%u ", ((BYTE)buf[i]));
-
-		lprintf(LOG_DEBUG,"TX: %s", str);
-		sendsocket(telnet_sock, buf, len);
-	} else
-		lprintf(LOG_WARNING, "TX: putcom(%d) timeout", len);
+	conn_send_raw(buf, len, 10000);
+	return;
 }
 
 static void send_telnet_cmd(uchar cmd, uchar opt)
@@ -109,7 +82,7 @@ void request_telnet_opt(uchar cmd, uchar opt)
 	send_telnet_cmd(cmd,opt);
 }
 
-BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen, struct bbslist *bbs)
+BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
 {
 	BYTE	command;
 	BYTE	option;
@@ -177,7 +150,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen, struct
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
 						char buf[32];
-						const char *emu = get_emulation_str(get_emulation(bbs));
+						const char *emu = get_emulation_str(conn_api.emulation);
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
@@ -220,7 +193,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen, struct
 						int rows, cols;
 						BYTE buf[32];
 
-						get_cterm_size(&cols, &rows, bbs->nostatus);
+						get_cterm_size(&cols, &rows, conn_api.nostatus);
 						buf[0]=TELNET_IAC;
 						buf[1]=TELNET_SB;
 						buf[2]=TELNET_NEGOTIATE_WINDOW_SIZE;
