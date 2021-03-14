@@ -950,8 +950,7 @@ void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 	if(menu(prot_menu_file[type], P_NOERROR)) {
 		return;
 	}
-
-	CRLF;
+	cond_blankline();
 	int printed=0;
 	for(int i=0;i<cfg.total_prots;i++) {
 		if(!chk_ar(cfg.prot[i]->ar,&useron,&client))
@@ -971,7 +970,7 @@ void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 		bprintf(text[TransferProtLstFmt],cfg.prot[i]->mnemonic,cfg.prot[i]->name);
 		printed++;
 	}
-	CRLF;
+	newline();
 }
 
 void sbbs_t::node_stats(uint node_num)
