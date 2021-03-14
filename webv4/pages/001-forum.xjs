@@ -1,43 +1,48 @@
 <!--Forum-->
 
-<!--
-	To do:
+<?xjs
+	/*
+		To do:
 
-	- API handlers for post/reply msg, post poll, up/down vote, user preferences, mail
-	- Make it possible for locales to live in mods/lib/locale (custom language file)
-	- "BBS View" for message
-		- client-side replacement for html_encode
-	- Search feature
-		- Search within groups, group, subs, or sub
-		- Search optionally within subject, to, from, body, date-range
-		- Display results as a flat message list, grouped by group-sub if groups, sub if subs
-		- Block stupid search terms that would produce insane results, or just accept it?
-	- New message scan
-		- Show unread counts here by group, sub, thread
-		- One flat page, or click through group then sub to see unreads?
-		- Set scan pointer
-			- just set it once new messages are shown? Warn user that this is their only chance to see this list?
-			- include a "mark as read" button per sub?
-			- do either one per user preference? Requires user preferences feature.
-	- User preferences (global, not forum specific)
-		- Update signature
-		- darkmode preference
-		- new message scan preferences?
-		- Edit user properties?
-		- Avatar chooser?
-		- forum preferences like "BBS view" for all messages, etc.?
-	- Test
-		- post message
-		- reply to message
-		- post poll
-		- up/down vote
-		- vote on poll
-		- view poll results
-		- send/receive email
-		- and with attachments
-		- delete message/mail
-		- twitlist button
--->
+		- API handlers for post/reply msg, post poll, up/down vote, user preferences, mail
+		- Make it possible for locales to live in mods/lib/locale (custom language file)
+		- Support simple markup/markdown stuff in messages
+		- Message tags
+		- "BBS View" for message
+			- Add support for SYS_PCBOARD, SYS_WILDCAT, SYS_RENEGADE, SYS_CELERITY, SYS_WWIV
+			  - if each is enabled, handle those colour codes when rendering a BBS View message
+		- Search feature
+			- Search within groups, group, subs, or sub
+			- Search optionally within subject, to, from, body, date-range
+			- Display results as a flat message list, grouped by group-sub if groups, sub if subs
+			- Block stupid search terms that would produce insane results, or just accept it?
+		- New message scan
+			- Show unread counts here by group, sub, thread
+			- One flat page, or click through group then sub to see unreads?
+			- Set scan pointer
+				- just set it once new messages are shown? Warn user that this is their only chance to see this list?
+				- include a "mark as read" button per sub?
+				- do either one per user preference? Requires user preferences feature.
+		- User preferences (global, not forum specific)
+			- Update signature
+			- darkmode preference
+			- new message scan preferences?
+			- Edit user properties?
+			- Avatar chooser?
+			- forum preferences like "BBS view" for all messages, etc.?
+		- Test
+			- post message
+			- reply to message
+			- post poll
+			- up/down vote
+			- vote on poll
+			- view poll results
+			- send/receive email
+			- and with attachments
+			- delete message/mail
+			- twitlist button
+	*/
+?>
 
 <?xjs
 	var components = webRequire('components.js', 'components');
