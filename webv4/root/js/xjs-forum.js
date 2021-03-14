@@ -311,7 +311,7 @@ function addPollField(type, target) {
 }
 
 
-function parseANSI(ans, target) {
+function renderBBSView(body) {
 
     const ANSI_COLORS = [
         "#000000", // Black
@@ -341,83 +341,203 @@ function parseANSI(ans, target) {
     let high = 0;
     let match;
     let opts;
-    const re = /^\u001b\[((?:[0-9]{0,2};?)*)([a-zA-Z])/;
+    const re = /(?<ANSI>^\u001b\[((?:[0-9]{0,2};?)*)([a-zA-Z]))|(?<CTRLA>^\x01(.))/;
     const data = [[]];
 
-    while (ans.length) {
-        match = re.exec(ans);
+    while (body.length) {
+        match = re.exec(body);
         if (match !== null) {
-            ans = ans.substr(match[0].length);
-            opts = match[1].split(';').map(e => parseInt(e, 10));
-            switch (match[2]) {
-                case 'A':
-                    y = Math.max(y - (isNaN(opts[0]) ? 1 : opts[0]), 0);
-                    break;
-                case 'B':
-                    y += (isNaN(opts[0]) ? 1 : opts[0]);
-                    if (data[y] === undefined) data[y] = [];
-                    break;
-                case 'C':
-                    x = Math.min(x + (isNaN(opts[0]) ? 1 : opts[0]), 79);
-                    break;
-                case 'D':
-                    x = Math.max(x - (isNaN(opts[0]) ? 1 : opts[0]), 0);
-                    break;
-                case 'f':
-                case 'H':
-                    y = isNaN(opts[0]) ? 1 : opts[0];
-                    x = isNaN(opts[1]) ? 1 : opts[0];
-                    if (data[y] === undefined) data[y] = [];
-                    break;
-                case 'm':
-                    for (let o of opts) {
-                        if (o == 0) {
-                            fg = 7;
-                            bg = 0;
-                            high = 0;
-                        } else if (o == 1) {
-                            high = 1;
-                        } else if (o == 5) {
-                            // blink
-                        } else if (o >= 30 && o <= 37) {
-                            fg = o - 30;
-                        } else if (o >= 40 && o <= 47) {
-                            bg = o - 40;
-                        }
-                    }
-                    break;
-                case 's': // push xy
-                    _x = x;
-                    _y = y;
-                    break;
-                case 'u': // pop xy
-                    x = _x;
-                    y = _y;
-                    break;
-                case 'J':
-                    if (opts.length == 1 && opts[0] == 2) {
-                        for (let yy = 0; yy < data.length; yy++) {
-                            if (!Array.isArray(data[yy])) data[yy] = [];
-                            for (let xx = 0; xx < 80; xx++) {
-                                data[yy][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg };
+            console.debug(JSON.stringify(match), match.groups, match.groups.ANSI);
+            body = body.substr(match[0].length);
+            if (match.groups.ANSI !== undefined) {
+                opts = match[1].split(';').map(e => parseInt(e, 10));
+                switch (match[2]) {
+                    case 'A':
+                        y = Math.max(y - (isNaN(opts[0]) ? 1 : opts[0]), 0);
+                        break;
+                    case 'B':
+                        y += (isNaN(opts[0]) ? 1 : opts[0]);
+                        if (data[y] === undefined) data[y] = [];
+                        break;
+                    case 'C':
+                        x = Math.min(x + (isNaN(opts[0]) ? 1 : opts[0]), 79);
+                        break;
+                    case 'D':
+                        x = Math.max(x - (isNaN(opts[0]) ? 1 : opts[0]), 0);
+                        break;
+                    case 'f':
+                    case 'H':
+                        y = isNaN(opts[0]) ? 1 : opts[0];
+                        x = isNaN(opts[1]) ? 1 : opts[0];
+                        if (data[y] === undefined) data[y] = [];
+                        break;
+                    case 'm':
+                        for (let o of opts) {
+                            if (o == 0) {
+                                fg = 7;
+                                bg = 0;
+                                high = 0;
+                            } else if (o == 1) {
+                                high = 1;
+                            } else if (o == 5) {
+                                // blink
+                            } else if (o >= 30 && o <= 37) {
+                                fg = o - 30;
+                            } else if (o >= 40 && o <= 47) {
+                                bg = o - 40;
                             }
                         }
-                    }
-                    break;
-                case 'K':
-                    for (let xx = 0; xx < 80; xx++) {
-                        data[y][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg };
-                    }
-                    break;
-                default:
-                    // Unknown or unimplemented command
-                    break;
+                        break;
+                    case 's': // push xy
+                        _x = x;
+                        _y = y;
+                        break;
+                    case 'u': // pop xy
+                        x = _x;
+                        y = _y;
+                        break;
+                    case 'J':
+                        if (opts.length == 1 && opts[0] == 2) {
+                            for (let yy = 0; yy < data.length; yy++) {
+                                if (!Array.isArray(data[yy])) data[yy] = [];
+                                for (let xx = 0; xx < 80; xx++) {
+                                    data[yy][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg };
+                                }
+                            }
+                        }
+                        break;
+                    case 'K':
+                        for (let xx = 0; xx < 80; xx++) {
+                            data[y][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg };
+                        }
+                        break;
+                    default:
+                        // Unknown or unimplemented command
+                        break;
+                }
+            } else if (match.groups.CTRLA !== undefined) {
+                switch (match[5]) {
+                    case 'K':
+                    case 'k':
+                        fg = 0;
+                        break;
+                    case 'R':
+                    case 'r':
+                        fg = 1;
+                        break;
+                    case 'G':
+                    case 'g':
+                        fg = 2;
+                        break;
+                    case 'Y':
+                    case 'y':
+                        fg = 3;
+                        break;
+                    case 'B':
+                    case 'b':
+                        fg = 4;
+                        break;
+                    case 'M':
+                    case 'm':
+                        fg = 5;
+                        break;
+                    case 'C':
+                    case 'c':
+                        fg = 6;
+                        break;
+                    case 'W':
+                    case 'w':
+                        fg = 7;
+                        break;
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                        bg = parseInt(match[5], 10);
+                        break;
+                    case 'H':
+                        high = 1;
+                        break;
+                    case 'I':
+                        // blink
+                        break;
+                    case 'E':
+                        // bright bg (ice)
+                        break;
+                    case 'f':
+                        // blink font
+                        break;
+                    case 'F':
+                        // high blink font
+                        break;
+                    case 'N':
+                        high = 0;
+                        break;
+                    case '-':
+                        // optimized normal
+                        // we need to support pushing current attributes (\1+), then use this to pop them
+                        // or if nothing has been pushed, then unset any special attributes (only 'high' for now)
+                        break;
+                    case '_':
+                        // optimized normal
+                        // when he says "the Background attribute", does he mean Bright-Background, or just any background colour?
+                        break;
+                    case 'L':
+                        // Clear the screen
+                        break;
+                    case "'":
+                        // Home the cursor
+                        break;
+                    case 'J':
+                    case 'j':
+                        // Clear to end of screen but keep cursor in place
+                        break;
+                    case '>':
+                        // Clear to end of line but keep cursor in place
+                        break;
+                    case '<':
+                        // Cursor left
+                        break;
+                    case '[':
+                        // Carriage return - send cursor to beginning of line (x = 0)
+                        break;
+                    case ']':
+                        // Line feed - cursor down (y++)
+                        break;
+                    case '/':
+                        // Conditional newline - Send a new-line sequence (CRLF) only when the cursor is not already in the first column (new in v3.17)
+                        break;
+                    case '+':
+                        // push current attributes onto lifo stack
+                        break;
+                    case 'D':
+                    case 'd':
+                        // current system date in mm/dd/yy or dd/mm/yy depending on system preference (we'll try to use browser locale instead)
+                        break;
+                    case 'T':
+                    case 't':
+                        // current system time in hh:mm am/pm or hh:mm:ss format depending on system preference (we'll try to use browser locale instead)
+                        break;
+                    case '"':
+                        // the following string would be a filename from the 'text' directory
+                        // I guess we could support this and make a request for the file
+                        // but this isn't needed as long as we're only using this function for the forum
+                        break;
+                    default:
+                        // if parseInt(match[5], 10) > 127 and < 256 then move cursor right by that many spaces, wrap at col 80
+                        // Unknown or unhandled CTRL-A code
+                        break;
+                }
             }
         } else {
-            let ch = ans.substr(0, 1);
+            let ch = body.substr(0, 1);
             switch (ch) {
                 case '\x1a':
-                    ans = '';
+                    body = '';
                     break;
                 case '\n':
                     y++;
@@ -436,10 +556,12 @@ function parseANSI(ans, target) {
                     }
                     break;
             }
-            ans = ans.substr(1);
+            body = body.substr(1);
         }
     }
 
+    const pre = document.createElement('div');
+    pre.classList.add('bbs-view');
     let ofg;
     let obg;
     let span;
@@ -452,7 +574,7 @@ function parseANSI(ans, target) {
                     span = document.createElement('span');
                     span.style.setProperty('color', ANSI_COLORS[data[y][x].fg]);
                     span.style.setProperty('background-color', ANSI_COLORS[data[y][x].bg]);
-                    target.appendChild(span);
+                    pre.appendChild(span);
                 }
                 span.innerText += data[y][x].c;
             } else {
@@ -460,25 +582,25 @@ function parseANSI(ans, target) {
                     span = document.createElement('span');
                     span.style.setProperty('color', ANSI_COLORS[7]);
                     span.style.setProperty('background-color', ANSI_COLORS[0]);
-                    target.appendChild(span);
+                    pre.appendChild(span);
                 }
                 span.innerText += ' ';
             }
         }
         span = null;
-        target.innerHTML += '\r\n';
+        pre.innerHTML += '\r\n';
     }
+    return pre;
+
 }
 
 function bbsView(elem, body) {
     const btn = elem.querySelector('button[data-button-bbs-view]');
     btn.disabled = true;
-    const pre = document.createElement('div');
-    pre.classList.add('bbs-view');
+    const pre = renderBBSView(body);
     const target = elem.querySelector('div[data-message-body]')
     target.innerHTML = '';
     target.appendChild(pre);
-    parseANSI(body, pre);
     btn.onclick = () => {
         target.innerHTML = formatMessageBody(body);
         btn.onclick = () => bbsView(elem, body);
