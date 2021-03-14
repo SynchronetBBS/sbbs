@@ -346,7 +346,6 @@ function renderBBSView(body) {
     while (body.length) {
         match = re.exec(body);
         if (match !== null) {
-            console.debug(JSON.stringify(match), match.groups, match.groups.ANSI);
             body = body.substr(match[0].length);
             if (match.groups.ANSI !== undefined) {
                 opts = match[1].split(';').map(e => parseInt(e, 10));
