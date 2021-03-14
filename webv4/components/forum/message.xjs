@@ -25,13 +25,18 @@
         </div>
         <div class="message" data-message-body></div>
         <div class="clearfix">
-            <button class="btn btn-default icon" title="<? locale.write('label_delete'); ?>" aria-label="<? locale.write('label_delete'); ?>" data-delete-message hidden>
+            <!--
+            <button class="btn btn-default icon" title="<? locale.write('label_delete'); ?>" aria-label="<? locale.write('label_delete'); ?>" data-delete-message>
                 <span class="glyphicon glyphicon-trash"></span>
+            </button>
+            -->
+            <button class="btn btn-default icon" title="BBS View" aria-label="BBS View" data-button-bbs-view>
+                <span class="glyphicon glyphicon-console"></span>
             </button>
             <a class="btn btn-default icon" title="<? locale.write('label_direct_link'); ?>" aria-label="<? locale.write('label_direct_link'); ?>" href="#" data-direct-link>
                 <span class="glyphicon glyphicon-link"></span>
             </a>
-            <button class="btn btn-default icon" title="<? locale.write('label_reply'); ?>" aria-label="<? locale.write('label_reply'); ?>" data-add-reply>
+            <button class="btn btn-default icon" title="<? locale.write('label_reply'); ?>" aria-label="<? locale.write('label_reply'); ?>" data-button-add-reply>
                 <span class="glyphicon glyphicon-comment"></span>
             </button>
             <button class="btn-uv btn btn-default icon" data-button-upvote>
