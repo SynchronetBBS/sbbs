@@ -54,7 +54,8 @@
 #include "msg_id.h"
 #include "scfgsave.h"
 #include "getmail.h"
-#include "ver.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 #define MAX_OPEN_SMBS	10
 
@@ -118,7 +119,7 @@ const char* sbbsecho_pid(void)
 	static char str[256];
 
 	sprintf(str, "SBBSecho %u.%02u-%s %s/%s %s %s"
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,git_branch,git_hash,__DATE__,compiler);
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,GIT_BRANCH,GIT_HASH,__DATE__,compiler);
 
 	return str;
 }
@@ -207,7 +208,7 @@ int fwrite_via_control_line(FILE* fp, fidoaddr_t* addr)
 		,tm->tm_hour
 		,tm->tm_min
 		,tm->tm_sec
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,git_branch,git_hash);
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,GIT_BRANCH,GIT_HASH);
 }
 
 int fwrite_intl_control_line(FILE* fp, fmsghdr_t* hdr)
@@ -6081,7 +6082,7 @@ int main(int argc, char **argv)
 	printf("\nSBBSecho v%u.%02u-%s (%s/%s) - Synchronet FidoNet EchoMail Tosser\n"
 		,SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR
 		,PLATFORM_DESC
-		,git_branch, git_hash
+		,GIT_BRANCH, GIT_HASH
 		);
 
 	cmdline[0]=0;
