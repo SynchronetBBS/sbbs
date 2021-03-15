@@ -344,6 +344,9 @@ function renderBBSView(body) {
         "#FFFFFF", // White
     ];
 
+    // Index into ANSI_Colors
+    const CGA_Colors = [ 0, 4, 2, 6, 1, 5, 3, 7, 8, 12, 10, 14, 9, 13, 11, 15 ];
+
     const Codes = {
         ctrl_a: {
             K: { fg: 0 },
@@ -443,14 +446,14 @@ function renderBBSView(body) {
             // '"': {}, // Display a file
         },
         pcboard_bg: {
-            0: { bg: 0 },
-            1: { bg: 4 },
-            2: { bg: 2 },
-            3: { bg: 6 },
-            4: { bg: 1 },
-            5: { bg: 5 },
-            6: { bg: 3 },
-            7: { bg: 7 },
+            0: { bg: CGA_Colors[0] },
+            1: { bg: CGA_Colors[1] },
+            2: { bg: CGA_Colors[2] },
+            3: { bg: CGA_Colors[3] },
+            4: { bg: CGA_Colors[4] },
+            5: { bg: CGA_Colors[5] },
+            6: { bg: CGA_Colors[6] },
+            7: { bg: CGA_Colors[7] },
             // 8-F are blinking fg
         },
         pcboard_fg: {
@@ -459,161 +462,161 @@ function renderBBSView(body) {
                 high: 0,
             },
             1: {
-                fg: 4,
+                fg: CGA_Colors[1],
                 high: 0,
             },
             2: {
-                fg: 2,
+                fg: CGA_Colors[2],
                 high: 0,
             },
             3: {
-                fg: 6,
+                fg: CGA_Colors[3],
                 high: 0,
             },
             4: {
-                fg: 1,
+                fg: CGA_Colors[4],
                 high: 0,
             },
             5: {
-                fg: 5,
+                fg: CGA_Colors[5],
                 high: 0,
             },
             6: {
-                fg: 3,
+                fg: CGA_Colors[6],
                 high: 0,
             },
             7: {
-                fg: 7,
+                fg: CGA_Colors[7],
                 high: 0,
             },
             8: {
-                fg: 0,
+                fg: CGA_Colors[0],
                 high: 1,
             },
             9: {
-                fg: 4,
+                fg: CGA_Colors[1],
                 high: 1,
             },
             A: {
-                fg: 2,
+                fg: CGA_Colors[2],
                 high: 1,
             },
             B: {
-                fg: 6,
+                fg: CGA_Colors[3],
                 high: 1,
             },
             C: {
-                fg: 1,
+                fg: CGA_Colors[4],
                 high: 1,
             },
             D: {
-                fg: 5,
+                fg: CGA_Colors[5],
                 high: 1,
             },
             E: {
-                fg: 3,
+                fg: CGA_Colors[6],
                 high: 1,
             },
             F: {
-                fg: 7,
+                fg: CGA_Colors[7],
                 high: 1,
             },
         },
         pipe: {
             00: {
-                fg: 0,
+                fg: CGA_Colors[0],
                 high: 0,
             },
             01: {
-                fg: 4,
+                fg: CGA_Colors[1],
                 high: 0,
             },
             02: {
-                fg: 2,
+                fg: CGA_Colors[2],
                 high: 0,
             },
             03: {
-                fg: 6,
+                fg: CGA_Colors[3],
                 high: 0,
             },
             04: {
-                fg: 1,
+                fg: CGA_Colors[4],
                 high: 0,
             },
             05: {
-                fg: 5,
+                fg: CGA_Colors[5],
                 high: 0,
             },
             06: {
-                fg: 3,
+                fg: CGA_Colors[6],
                 high: 0,
             },
             07: {
-                fg: 7,
+                fg: CGA_Colors[7],
                 high: 0,
             },
             08: {
-                fg: 0,
+                fg: CGA_Colors[0],
                 high: 1,
             },
             09: {
-                fg: 4,
+                fg: CGA_Colors[1],
                 high: 1,
             },
             10: {
-                fg: 2,
+                fg: CGA_Colors[2],
                 high: 1,
             },
             11: {
-                fg: 6,
+                fg: CGA_Colors[3],
                 high: 1,
             },
             12: {
-                fg: 1,
+                fg: CGA_Colors[4],
                 high: 1,
             },
             13: {
-                fg: 5,
+                fg: CGA_Colors[5],
                 high: 1,
             },
             14: {
-                fg: 3,
+                fg: CGA_Colors[6],
                 high: 1,
             },
             15: {
-                fg: 7,
+                fg: CGA_Colors[7],
                 high: 1,
             },
             16: {
-                bg: 0,
+                bg: CGA_Colors[0],
                 high: 0,
             },
             17: {
-                bg: 4,
+                bg: CGA_Colors[1],
                 high: 0,
             },
             18: {
-                bg: 2,
+                bg: CGA_Colors[2],
                 high: 0,
             },
             19: {
-                bg: 6,
+                bg: CGA_Colors[3],
                 high: 0,
             },
             20: {
-                bg: 1,
+                bg: CGA_Colors[4],
                 high: 0,
             },
             21: {
-                bg: 5,
+                bg: CGA_Colors[5],
                 high: 0,
             },
             22: {
-                bg: 3,
+                bg: CGA_Colors[6],
                 high: 0,
             },
             23: {
-                bg: 7,
+                bg: CGA_Colors[7],
                 high: 0,
             },
             // 24 - 31 are ice bg or blinking fg
@@ -672,67 +675,67 @@ function renderBBSView(body) {
         },
         celerity: {
             k: {
-                fg: 0,
+                fg: CGA_Colors[0],
                 high: 0,
             },
             b: {
-                fg: 4,
+                fg: CGA_Colors[1],
                 high: 0,
             },
             g: {
-                fg: 2,
+                fg: CGA_Colors[2],
                 high: 0,
             },
             c: {
-                fg: 6,
+                fg: CGA_Colors[3],
                 high: 0,
             },
             r: {
-                fg: 1,
+                fg: CGA_Colors[4],
                 high: 0,
             },
             m: {
-                fg: 5,
+                fg: CGA_Colors[5],
                 high: 0,
             },
             y: {
-                fg: 3,
+                fg: CGA_Colors[6],
                 high: 0,
             },
             w: {
-                fg: 7,
+                fg: CGA_Colors[7],
                 high: 0,
             },
             d: {
-                fg: 0,
+                fg: CGA_Colors[0],
                 high: 1,
             },
             B: {
-                fg: 4,
+                fg: CGA_Colors[1],
                 high: 1,
             },
             G: {
-                fg: 2,
+                fg: CGA_Colors[2],
                 high: 1,
             },
             C: {
-                fg: 6,
+                fg: CGA_Colors[3],
                 high: 1,
             },
             R: {
-                fg: 1,
+                fg: CGA_Colors[4],
                 high: 1,
             },
             M: {
-                fg: 5,
+                fg: CGA_Colors[5],
                 high: 1,
             },
             Y: {
-                fg: 3,
+                fg: CGA_Colors[6],
                 high: 1,
             },
             W: {
-                fg: 7,
+                fg: CGA_Colors[7],
                 high: 1,
             },
             S: {
@@ -903,9 +906,6 @@ function renderBBSView(body) {
             }
         } else {
             let ch = body.substr(0, 1);
-            // To do:
-            // Control characters from http://www.ansi-bbs.org/ansi-bbs-core-server.html
-            // Test if conversion is necessary or if sbbs has already handled it
             switch (ch) {
                 case '\x00':
                 case '\x07':
