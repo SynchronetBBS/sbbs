@@ -319,9 +319,9 @@ function renderBBSView(body) {
     let high = 0;
     let match;
     let opts;
+    let data = [[]];
     const lifo = [];
-    const data = [[]];
-    const re = /^((?<ansi>\u001b\[((?:[\x30-\x3f]{0,2};?)*)[\x20-\x2f]*([\x40-\x7c]))|(\x01(?<ctrl_a>.))|(@(?<pcboard_bg>[a-fA-F0-9])(?<pcboard_fg>[a-fA-F0-9])@{0,1})|(\|(?<pipe>\d\d))|(\x03(?<wwiv>[0-9]))|(\|(?<celerity>[kbgcrmywdBGCRMYWS])))/;
+    const re = /^((?<ansi>\u001b\[((?:[\x30-\x3f]{0,2};?)*)([\x20-\x2f]*)([\x40-\x7c]))|(\x01(?<ctrl_a>.))|(@(?<pcboard_bg>[a-fA-F0-9])(?<pcboard_fg>[a-fA-F0-9])@{0,1})|(\|(?<pipe>\d\d))|(\x03(?<wwiv>[0-9]))|(\|(?<celerity>[kbgcrmywdBGCRMYWS])))/;
 
     const ANSI_Colors = [
         "#000000", // Black
@@ -753,27 +753,73 @@ function renderBBSView(body) {
         match = re.exec(body);
         if (match !== null) {
             body = body.substr(match[0].length);
-            if (match.groups.ansi !== undefined) {
-                opts = match[3].split(';').map(e => parseInt(e, 10));
-                switch (match[4]) {
-                    case 'A':
+            if (match.groups.ansi !== undefined) { // To do: mostly not dealing with illegal/invalid sequences yet
+                if (match[3] === '') {
+                    opts = [];
+                } else {
+                    opts = match[3].split(';').map(e => {
+                        const i = parseInt(e, 10);
+                        return isNaN(i) ? e : i;
+                    });
+                }
+                switch (match[5]) {
+                    case '@': // Insert Character(s)
+                        if (data[y] !== undefined) {
+                            let move = data[y].splice(x);
+                            let s = isNaN(opts[0]) ? 1 : opts[0];
+                            data[y].splice(x + n, 0, ...([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, s - 1)));
+                            data[y].splice(s, 0, ...move.slice(0, 79 - s)); // To do: hard-coded to 80 cols
+                            x = data[y].length - 1; // Where is the cursor supposed to be now?
+                        }
+                        break;
+                    case 'A': // Cursor up
                         y = Math.max(y - (isNaN(opts[0]) ? 1 : opts[0]), 0);
                         break;
-                    case 'B':
+                    case 'B': // Cursor down
                         y += (isNaN(opts[0]) ? 1 : opts[0]);
                         if (data[y] === undefined) data[y] = [];
                         break;
-                    case 'C':
+                    case 'C': // Cursor right
                         x = Math.min(x + (isNaN(opts[0]) ? 1 : opts[0]), 79);
                         break;
-                    case 'D':
+                    case 'D': // Cursor left
                         x = Math.max(x - (isNaN(opts[0]) ? 1 : opts[0]), 0);
                         break;
-                    case 'f':
+                    case 'f': // Cursor position
                     case 'H':
                         y = isNaN(opts[0]) ? 1 : opts[0];
                         x = isNaN(opts[1]) ? 1 : opts[0];
                         if (data[y] === undefined) data[y] = [];
+                        break;
+                    case 'J': // Erase in page
+                        if (!opts.length || opts[0] === 0) { // Erase from the current position to the end of the screen.
+                            if (data[yy] !== undefined) data[yy].splice(xx);
+                            data.splice(yy + 1);
+                        } else if (opts[0] === 1) { // Erase from the current position to the start of the screen.
+                            if (data[y] !== undefined) data[y].splice(0, x + 1, ...([].fill(undefined, 0, x)));
+                            data.splice(0, y, ...([].fill(undefined, 0, y - 1)));
+                        } else if (opts[0] == 2) { // Erase entire screen.
+                            data = [[]];
+                            // "As a violation of ECMA-048, also moves the cursor to position 1/1 as a number of BBS programs assume this behaviour."
+                            // http://www.ansi-bbs.org/ansi-bbs-core-server.html
+                            x = 0;
+                            y = 0;
+                        }
+                        break;
+                    case 'K': // Erase in Line
+                        if (data[y] !== undefined) {
+                            if (!opts.length || opts[0] === 0) { // Erase from the current position to the end of the line.
+                                data[y].splice(x);
+                            } else if (opts[0] === 1) { // Erase from the current position to the start of the line.
+                                data[y].splice(0, x, ...([].fill(undefined, 0, x)));
+                            } else if (opts[0] === 2) { // Erase entire line.
+                                data.splice(y, 1, undefined);
+                            }
+                        }
+                        break;
+                    case 'L': // Insert line(s)
+                        break;
+                    case 'M': // Delete line(s)
                         break;
                     case 'm':
                         for (let o of opts) {
@@ -793,28 +839,23 @@ function renderBBSView(body) {
                             }
                         }
                         break;
+                    case 'P': // Delete character
+                        break;
+                    case 'S': // Scroll up
+                        break;
                     case 's': // push xy
                         _x = x;
                         _y = y;
+                        break;
+                    case 'T': // Scroll down
                         break;
                     case 'u': // pop xy
                         x = _x;
                         y = _y;
                         break;
-                    case 'J':
-                        if (opts.length == 1 && opts[0] == 2) {
-                            for (let yy = 0; yy < data.length; yy++) {
-                                if (!Array.isArray(data[yy])) data[yy] = [];
-                                for (let xx = 0; xx < 80; xx++) {
-                                    data[yy][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg };
-                                }
-                            }
-                        }
+                    case 'X': // Erase character
                         break;
-                    case 'K':
-                        for (let xx = 0; xx < 80; xx++) {
-                            data[y][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg };
-                        }
+                    case 'Z': // Cursor backward tabulation
                         break;
                     default:
                         // Unknown or unimplemented command
