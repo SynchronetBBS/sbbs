@@ -45,7 +45,8 @@
 #include "multisock.h"
 #include "ssl.h"
 #include "cryptlib.h"
-#include "ver.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 /* Constants */
 static const char*	server_name="Synchronet Mail Server";
@@ -5981,7 +5982,7 @@ const char* DLLCALL mail_ver(void)
 #else
 		,""
 #endif
-		,git_branch, git_hash
+		,GIT_BRANCH, GIT_HASH
 		,__DATE__, __TIME__, compiler
 		);
 
@@ -6086,7 +6087,7 @@ void DLLCALL mail_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 
 		sbbs_srand();
 

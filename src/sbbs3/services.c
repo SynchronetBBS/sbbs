@@ -47,7 +47,8 @@
 #include "js_socket.h"
 #include "multisock.h"
 #include "ssl.h"
-#include "ver.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 /* Constants */
 
@@ -1693,7 +1694,7 @@ const char* DLLCALL services_ver(void)
 #else
 		,""
 #endif
-		,git_branch, git_hash
+		,GIT_BRANCH, GIT_HASH
 		,__DATE__, __TIME__, compiler
 		);
 
@@ -1808,7 +1809,7 @@ void DLLCALL services_thread(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 
 		protected_uint32_init(&threads_pending_start,0);
 
