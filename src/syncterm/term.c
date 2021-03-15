@@ -1580,6 +1580,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	FILE*	fp=NULL;
 	time_t	t,startfile,ftime=0;
 	int		old_hold=hold_update;
+	BOOL	extra_pass = FALSE;
 
 	if(safe_mode)
 		return;
@@ -1632,6 +1633,11 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					}
 					break;
 				}
+				if (extra_pass) {
+					// This is a hack for sz  0.12.21rc
+					lprintf(LOG_INFO, "No YMODEM header block after transfer, assuming end of batch");
+					goto end;
+				}
 				if(i==NOINP && (mode&GMODE)) {			/* Timeout */
 					mode &= ~GMODE;
 					lprintf(LOG_WARNING,"Falling back to %s",
@@ -1675,6 +1681,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					lprintf(LOG_INFO,"Received YMODEM termination block");
 					goto end;
 				}
+				extra_pass = FALSE;
 				file_bytes=total_bytes=0;
 				total_files=0;
 				i=sscanf(((char *)block)+strlen((char *)block)+1,"%"PRId64" %lo %lo %lo %d %"PRId64
@@ -1838,7 +1845,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 			break;
 		if((cps=(unsigned)(file_bytes/t))==0)
 			cps=1;
-		total_files--;
+		if (--total_files <= 0)
+			extra_pass = TRUE;
 		total_bytes-=file_bytes;
 		if(total_files>1 && total_bytes)
 			lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRId64
