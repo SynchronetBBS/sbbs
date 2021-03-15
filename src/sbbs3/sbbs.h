@@ -356,6 +356,7 @@ public:
 
     RingBuf	inbuf;
     RingBuf	outbuf;
+	bool	WaitForOutbufEmpty(int timeout) { return WaitForEvent(outbuf.empty_event, timeout) == WAIT_OBJECT_0; }
 	HANDLE	input_thread;
 	pthread_mutex_t	input_thread_mutex;
 	bool	input_thread_mutex_created;
