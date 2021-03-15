@@ -848,6 +848,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
+		if(!WaitForOutbufEmpty(5000))
+			lprintf(LOG_WARNING, "%s Timeout waiting for output buffer to empty", __FUNCTION__);
+
 		if(native) {
 			if(!(mode&EX_STDIN)) {
 				if(passthru_thread_running)
@@ -1883,6 +1886,16 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
+		if(!WaitForOutbufEmpty(5000))
+			lprintf(LOG_WARNING, "%s Timeout waiting for output buffer to empty", __FUNCTION__);
+
+		if(!(mode&EX_STDIN)) {
+			if(passthru_thread_running)
+				passthru_socket_activate(false);
+			else
+				pthread_mutex_unlock(&input_thread_mutex);
+		}
+
 		curatr=~0;			// Can't guarantee current attributes
 		attr(LIGHTGRAY);	// Force to "normal"
 
@@ -1894,13 +1907,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!(mode&EX_NOLOG))
 		close(err_pipe[0]);
-
-	if(!(mode&EX_STDIN)) {
-		if(passthru_thread_running)
-			passthru_socket_activate(false);
-		else
-			pthread_mutex_unlock(&input_thread_mutex);
-	}
 
 	return(errorlevel = WEXITSTATUS(i));
 }
