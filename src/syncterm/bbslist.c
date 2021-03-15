@@ -897,9 +897,9 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                             "~ Log File ~\n"
                             "        Log file name when logging is enabled\n\n"
                             "~ Log Transfers ~\n"
-                            "        Cycles through the various transfer log settings.\n\n"
+                            "        Selects the transfer log level.\n\n"
                             "~ Log Telnet Cmds ~\n"
-                            "        Cycles through the various telnet command log settings.\n\n"
+                            "        Selects the telnet command log level.\n\n"
                             "~ Append Log File ~\n"
                             "        Append log file (instead of overwrite) on each connection\n\n"
                             "~ Comm Rate ~\n"
@@ -943,9 +943,9 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                             "~ Log File ~\n"
                             "        Log file name when logging is enabled\n\n"
                             "~ Log Transfers ~\n"
-                            "        Cycles through the various transfer log settings.\n\n"
+                            "        Selects the transfer log level.\n\n"
                             "~ Log Telnet Cmds ~\n"
-                            "        Cycles through the various telnet command log settings.\n\n"
+                            "        Selects the telnet command log level.\n\n"
                             "~ Append Log File ~\n"
                             "        Append log file (instead of overwrite) on each connection\n\n"
                             "~ Comm Rate ~\n"
@@ -1209,22 +1209,40 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                     check_exit(FALSE);
                 break;
             case 12:
-                item->xfer_loglevel--;
-                if(item->xfer_loglevel<0)
-                    item->xfer_loglevel=LOG_DEBUG;
-                else if(item->xfer_loglevel<LOG_ERR)
-                    item->xfer_loglevel=0;
-                iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->xfer_loglevel,&ini_style);
-                changed=1;
+		uifc.helpbuf=	"`Log Transfers`\n\n"
+				"Select the varbosity level for logging.\n"
+				"The lower in the list the item, the more berbose the log.\n"
+				"Each level includes all messages in levels above it.";
+		i = item->xfer_loglevel;
+		switch(uifc.list(WIN_SAV, 0, 0, 0, &(item->xfer_loglevel), NULL, "Log Transfers", log_level_desc)) {
+			case -1:
+				item->xfer_loglevel = i;
+				check_exit(FALSE);
+				break;
+			default:
+				if (item->xfer_loglevel != i) {
+					iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->xfer_loglevel,&ini_style);
+					changed=1;
+				}
+		}
                 break;
             case 13:
-                item->telnet_loglevel--;
-                if(item->telnet_loglevel<0)
-                    item->telnet_loglevel=LOG_DEBUG;
-                else if(item->telnet_loglevel<LOG_ERR)
-                    item->telnet_loglevel=0;
-                iniSetEnum(&inifile,itemname,"TelnetLogLevel",log_levels,item->telnet_loglevel,&ini_style);
-                changed=1;
+		uifc.helpbuf=	"`Log Telnet Commands`\n\n"
+				"Select the varbosity level for logging.\n"
+				"The lower in the list the item, the more berbose the log.\n"
+				"Each level includes all messages in levels above it.";
+		i = item->telnet_loglevel;
+		switch(uifc.list(WIN_SAV, 0, 0, 0, &(item->telnet_loglevel), NULL, "Log Transfers", log_level_desc)) {
+			case -1:
+				item->telnet_loglevel = i;
+				check_exit(FALSE);
+				break;
+			default:
+				if (item->telnet_loglevel != i) {
+					iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->telnet_loglevel,&ini_style);
+					changed=1;
+				}
+		}
                 break;
             case 14:
                 item->append_logfile=!item->append_logfile;
