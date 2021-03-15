@@ -256,7 +256,9 @@ void sbbs_read_ini(
 	const char*	section;
 	const char* default_term_ansi;
 	const char*	default_dosemu_path;
+#if defined(__linux__)
 	const char*	default_dosemuconf_path;
+#endif
 	char		value[INI_MAX_VALUE_LEN];
 	str_list_t	list;
 	global_startup_t global_buf;
@@ -368,18 +370,20 @@ void sbbs_read_ini(
 		SAFECOPY(bbs->xtrn_term_dumb
 			,iniGetString(list,section,"ExternalTermDumb","dumb",value));
 
+	#if defined(__linux__) || defined(__FreeBSD__)
 	#if defined(__FreeBSD__)
 		default_dosemu_path="/usr/local/bin/doscmd";
 	#else
 		default_dosemu_path="/usr/bin/dosemu.bin";
 		default_dosemuconf_path="";
-	#endif
 
+		SAFECOPY(bbs->dosemuconf_path
+			,iniGetString(list,section,"DOSemuConfPath",default_dosemuconf_path,value));			
+	#endif
 		bbs->usedosemu=iniGetBool(list,section,"UseDOSemu",TRUE);
 		SAFECOPY(bbs->dosemu_path
 			,iniGetString(list,section,"DOSemuPath",default_dosemu_path,value));
-		SAFECOPY(bbs->dosemuconf_path
-			,iniGetString(list,section,"DOSemuConfPath",default_dosemuconf_path,value));			
+	#endif
 
 		SAFECOPY(bbs->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
@@ -839,12 +843,16 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetString(lp,section,"ExternalTermDumb",bbs->xtrn_term_dumb,&style))
 			break;
+#if defined(__linux__) || defined(__FreeBSD__)
 		if(!iniSetString(lp,section,"DOSemuPath",bbs->dosemu_path,&style))
-			break;
-		if(!iniSetString(lp,section,"DOSemuConfPath",bbs->dosemuconf_path,&style))
 			break;
 		if(!iniSetBool(lp,section,"UseDOSemu",bbs->usedosemu,&style))
 			break;
+#if defined(__linux__)
+		if(!iniSetString(lp,section,"DOSemuConfPath",bbs->dosemuconf_path,&style))
+			break;
+#endif
+#endif
 		if(!iniSetString(lp,section,strAnswerSound,bbs->answer_sound,&style))
 			break;
 		if(!iniSetString(lp,section,strHangupSound,bbs->hangup_sound,&style))
