@@ -143,8 +143,6 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	request_telnet_opt(TELNET_WONT,TELNET_BINARY_TX);
 
 	sys_status&=~SS_FILEXFER;
-	if(online==ON_REMOTE)
-		rioctl(IOFB);
 
 	// Save DSZLOG to logfile
 	if((stream=fnopen(NULL,protlog,O_RDONLY))!=NULL) {
