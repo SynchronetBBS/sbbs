@@ -1838,8 +1838,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 			break;
 		if((cps=(unsigned)(file_bytes/t))==0)
 			cps=1;
-		if (--total_files <= 0)
-			break;
+		total_files--;
 		total_bytes-=file_bytes;
 		if(total_files>1 && total_bytes)
 			lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRId64
