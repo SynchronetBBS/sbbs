@@ -848,7 +848,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
-		if(!WaitForOutbufEmpty(5000))
+		if(online && !WaitForOutbufEmpty(5000))
 			lprintf(LOG_WARNING, "%s Timeout waiting for output buffer to empty", __FUNCTION__);
 
 		if(native) {
@@ -1886,7 +1886,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
-		if(!WaitForOutbufEmpty(5000))
+		if(online && !WaitForOutbufEmpty(5000))
 			lprintf(LOG_WARNING, "%s Timeout waiting for output buffer to empty", __FUNCTION__);
 
 		if(!(mode&EX_STDIN)) {
