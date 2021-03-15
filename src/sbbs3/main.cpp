@@ -2452,7 +2452,11 @@ void output_thread(void* arg)
 				}
 				else {
 					// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
-					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5)))
+					/* This sets the write timeout for the flush, then sets it to zero
+					 * afterward... presumably because the read timeout gets set to
+					 * what the current write timeout is.
+					 */
+					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 30)))
 						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "setting write timeout");
 					if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
 						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "flushing data");
