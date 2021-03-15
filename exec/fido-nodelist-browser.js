@@ -169,7 +169,7 @@ function populate_domain_tree(filename, domain, tree, settings, frame) {
 	}
 	const domain_tree = tree.addTree(domain);
 	const idx = tree.items.length - 1;
-	var sframe;
+	// var sframe;
 	domain_tree.onOpen = function () {
 		populate_zone_tree(filename, domain_tree, settings);
 		if (settings.auto_close_domain) {
@@ -180,16 +180,16 @@ function populate_domain_tree(filename, domain, tree, settings, frame) {
 				}
 			});
 		}
-		if (nodelist.domain && nodelist.date) {
-			sframe = new Frame(frame.x, frame.y + 1, frame.width, 1, frame.attr, frame);
-			sframe.open();
-			sframe.putmsg(nodelist.domain + ' nodelist for ' + nodelist.date);
-		}
+		// if (nodelist.domain && nodelist.date) {
+		// 	sframe = new Frame(frame.x, frame.y + 1, frame.width, 1, frame.attr, frame);
+		// 	sframe.open();
+		// 	sframe.putmsg(nodelist.domain + ' nodelist for ' + nodelist.date);
+		// }
 		tree.refresh();
 	}
 	domain_tree.onClose = function () {
 		domain_tree.items = [];
-		if (sframe instanceof Frame) sframe.delete();
+		// if (sframe instanceof Frame) sframe.delete();
 	}
 }
 
