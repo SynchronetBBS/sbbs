@@ -310,6 +310,7 @@ function addPollField(type, target) {
 }
 
 function renderBBSView(body) {
+    let i;
     let x = 0;
     let y = 0;
     let _x = 0;
@@ -317,11 +318,12 @@ function renderBBSView(body) {
     let fg = 7;
     let bg = 0;
     let high = 0;
+    let move;
     let match;
     let opts;
     let data = [[]];
     const lifo = [];
-    const re = /^((?<ansi>\u001b\[((?:[\x30-\x3f]{0,2};?)*)([\x20-\x2f]*)([\x40-\x7c]))|(\x01(?<ctrl_a>.))|(@(?<pcboard_bg>[a-fA-F0-9])(?<pcboard_fg>[a-fA-F0-9])@{0,1})|(\|(?<pipe>\d\d))|(\x03(?<wwiv>[0-9]))|(\|(?<celerity>[kbgcrmywdBGCRMYWS])))/;
+    const re = /^((?<ansi>\u001b\[((?:[\x30-\x3f]{0,2};?)*)([\x20-\x2f]*)([\x40-\x7c]))|(\x01(?<ctrl_a>[KRGYBMCW0-7HN\-LJ<>\[\]\/\+]))|(@(?<pcboard_bg>[a-fA-F0-9])(?<pcboard_fg>[a-fA-F0-9])@{0,1})|(\|(?<pipe>\d\d))|(\x03(?<wwiv>[0-9]))|(\|(?<celerity>[kbgcrmywdS])))/i;
 
     const ANSI_Colors = [
         "#000000", // Black
@@ -765,11 +767,11 @@ function renderBBSView(body) {
                 switch (match[5]) {
                     case '@': // Insert Character(s)
                         if (data[y] !== undefined) {
-                            let move = data[y].splice(x);
+                            move = data[y].splice(x);
                             let s = isNaN(opts[0]) ? 1 : opts[0];
                             data[y].splice(x + n, 0, ...([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, s - 1)));
                             data[y].splice(s, 0, ...move.slice(0, 79 - s)); // To do: hard-coded to 80 cols
-                            x = data[y].length - 1; // Where is the cursor supposed to be now?
+                            x = data[y].length - 1; // To do: where is the cursor supposed to be now?
                         }
                         break;
                     case 'A': // Cursor up
@@ -800,6 +802,7 @@ function renderBBSView(body) {
                             data.splice(0, y, ...([].fill(undefined, 0, y - 1)));
                         } else if (opts[0] == 2) { // Erase entire screen.
                             data = [[]];
+                            // To do:
                             // "As a violation of ECMA-048, also moves the cursor to position 1/1 as a number of BBS programs assume this behaviour."
                             // http://www.ansi-bbs.org/ansi-bbs-core-server.html
                             x = 0;
@@ -818,8 +821,14 @@ function renderBBSView(body) {
                         }
                         break;
                     case 'L': // Insert line(s)
+                        i = isNaN(opts[0]) ? 1 : opts[0];
+                        move = data.splice(y, data.length - y, ...([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, i)));
+                        data = data.concat(move);
                         break;
                     case 'M': // Delete line(s)
+                        i = isNaN(opts[0]) ? 1 : opts[0];
+                        data = data.splice(y, i);
+                        data = data.concat([].fill({ c: ' ', fg: fg + (high ? 8 : 0 ), bg }, 0, i));
                         break;
                     case 'm':
                         for (let o of opts) {
@@ -839,21 +848,42 @@ function renderBBSView(body) {
                             }
                         }
                         break;
+                    case 'n': // Device Status Report
+                        // Defaults: opts[0] = 0
+                        // A request for a status report. ANSI-BBS terminals should handle at least the following values for p1
+                        // Request active cursor position
+                        // terminal must reply with CSIp1;p2R where p1 is the current line number counting from one, and p2 is the current column.
+                        // NOTE: This sequences should not be present in saved ANSI-BBS files
+                        // Source: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+                        break;
                     case 'P': // Delete character
                         break;
                     case 'S': // Scroll up
+                        i = isNaN(opts[0]) ? 1 : opts[0];
+                        data.splice(0, i);
+                        for (let n = 0; n < i; n++) {
+                            data.push([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, 79));
+                        }
                         break;
                     case 's': // push xy
                         _x = x;
                         _y = y;
                         break;
                     case 'T': // Scroll down
+                        i = isNaN(opts[0]) ? 1 : opts[0];
+                        for (let n = 0; n < i; n++) {
+                            data.unshift([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, 79));
+                        }
                         break;
                     case 'u': // pop xy
                         x = _x;
                         y = _y;
                         break;
                     case 'X': // Erase character
+                        if (data[y] !== undefined) {
+                            i = isNaN(opts[0]) ? 1 : opts[0];
+                            data[y].splice(x, i, ...([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, i)));
+                        }
                         break;
                     case 'Z': // Cursor backward tabulation
                         break;
@@ -873,9 +903,20 @@ function renderBBSView(body) {
             }
         } else {
             let ch = body.substr(0, 1);
+            // To do:
+            // Control characters from http://www.ansi-bbs.org/ansi-bbs-core-server.html
+            // Test if conversion is necessary or if sbbs has already handled it
             switch (ch) {
-                case '\x1a':
-                    body = '';
+                case '\x00':
+                case '\x07':
+                    break;
+                case '\x0C':
+                    data = [[]];
+                    x = 0;
+                    y = 0;
+                    break;
+                case '\b':
+                    if (x > 0) x--;
                     break;
                 case '\n':
                     y++;
