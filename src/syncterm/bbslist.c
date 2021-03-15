@@ -790,9 +790,127 @@ fc_str(char *str, int fc)
     sprintf(str, "Flow Control      %s", fc_names[fc_to_enum(fc)]);
 }
 
+/*
+ * Terminates a path with "..." if it's too long.
+ * Format must contain only a single '%s'.
+ */
+void printf_trunc(char *dst, size_t dstsz, char *fmt, char *path)
+{
+	char *mangled;
+	size_t fmt_len = strlen(fmt) - 2;
+	size_t remain_len = dstsz - fmt_len;
+	size_t full_len = fmt_len + strlen(path);
+
+	if (full_len >= dstsz) {
+		mangled = strdup(path);
+		if (mangled) {
+			mangled[remain_len - 1] = '\0';
+			mangled[remain_len - 2] = '.';
+			mangled[remain_len - 3] = '.';
+			mangled[remain_len - 4] = '.';
+			sprintf(dst, fmt, mangled);
+		}
+		else
+			sprintf(dst, fmt, "<Long>");
+	}
+	else {
+		sprintf(dst, fmt, path);
+	}
+}
+
+void configure_log(struct bbslist *item, const char *itemname, str_list_t inifile, int *changed)
+{
+	char opt[4][69];
+	char *opts[(sizeof(opt)/sizeof(opt[0]))+1];
+	int o;
+	int i;
+	int copt = 0;
+
+	for (o = 0; o < sizeof(opt) / sizeof(opt[0]); o++)
+		opts[o] = opt[o];
+	opts[o] = NULL;
+
+	for (;;) {
+		o = 0;
+		printf_trunc(opt[o], sizeof(opt[o]), "Log Filename             %s", item->logfile);
+		o++;
+		sprintf(opt[o++], "File Transfer Log Level  %s", log_level_desc[item->xfer_loglevel]);
+		sprintf(opt[o++], "Telnet Command Log Level %s", log_level_desc[item->telnet_loglevel]);
+		sprintf(opt[o++], "Append Log File          %s", item->append_logfile ? "Yes" : "No");
+
+		uifc.helpbuf =
+				"`Log Configuration`\n\n"
+				"~ Log File ~\n"
+				"        Log file name when logging is enabled\n\n"
+				"~ File Transfer Log Level ~\n"
+				"        Selects the transfer log level.\n\n"
+				"~ Telnet Command Log Level ~\n"
+				"        Selects the telnet command log level.\n\n"
+				"~ Append Log File ~\n"
+				"        Append log file (instead of overwrite) on each connection\n\n";
+		switch (uifc.list(WIN_SAV|WIN_ACT, 0, 0, 0, &copt, NULL, "Log Configuration", opts)) {
+			case -1:
+				return;
+			case 0:
+				uifc.helpbuf=
+						"`Log Filename`\n\n"
+						"Enter the path to the optional log file.";
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Log File",item->logfile,MAX_PATH,K_EDIT)>=0) {
+					iniSetString(&inifile,itemname,"LogFile",item->logfile,&ini_style);
+					*changed = 1;
+				}
+				else
+					check_exit(FALSE);
+				break;
+			case 1:
+				uifc.helpbuf=	"`File Transfer Log Level`\n\n"
+						"Select the varbosity level for logging.\n"
+						"The lower in the list the item, the more berbose the log.\n"
+						"Each level includes all messages in levels above it.";
+						i = item->xfer_loglevel;
+				switch(uifc.list(WIN_SAV|WIN_BOT|WIN_RHT, 0, 0, 0, &(item->xfer_loglevel), NULL, "File Transfer Log Level", log_level_desc)) {
+					case -1:
+						item->xfer_loglevel = i;
+						check_exit(FALSE);
+						break;
+					default:
+						if (item->xfer_loglevel != i) {
+							iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->xfer_loglevel,&ini_style);
+							*changed=1;
+						}
+				}
+                		break;
+			case 2:
+				uifc.helpbuf=	"`Telnet Command Log Level`\n\n"
+						"Select the varbosity level for logging.\n"
+						"The lower in the list the item, the more berbose the log.\n"
+						"Each level includes all messages in levels above it.";
+				i = item->telnet_loglevel;
+				switch(uifc.list(WIN_SAV|WIN_BOT|WIN_RHT, 0, 0, 0, &(item->telnet_loglevel), NULL, "Telnet Command Log Level", log_level_desc)) {
+					case -1:
+						item->telnet_loglevel = i;
+						check_exit(FALSE);
+						break;
+					default:
+						if (item->telnet_loglevel != i) {
+							iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->telnet_loglevel,&ini_style);
+							*changed=1;
+						}
+						break;
+				}
+				break;
+			case 3:
+				item->append_logfile=!item->append_logfile;
+				*changed=1;
+				iniSetBool(&inifile,itemname,"AppendLogFile",item->append_logfile,&ini_style);
+				break;
+		}
+	}
+}
+
 int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isdefault)
 {
-    char    opt[22][80];    /* 21=Holds number of menu items, 80=Number of columns */
+    char    opt[19][69];    /* 21=Holds number of menu items, 80=Number of columns */
     char    *opts[(sizeof(opt)/sizeof(opt[0]))+1];
     int     changed=0;
     int     copt=0,i,j;
@@ -848,17 +966,17 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
             fc_str(opt[i++], item->flow_control);
         else if (item->conn_type != CONN_TYPE_SHELL)
             sprintf(opt[i++], "TCP Port          %hu",item->port);
-        sprintf(opt[i++], "Username          %s",item->user);
+        printf_trunc(opt[i], sizeof(opt[i]), "Username          %s",item->user);
+	i++;
         sprintf(opt[i++], "Password          %s",item->password[0]?"********":"<none>");
         sprintf(opt[i++], "System Password   %s",item->syspass[0]?"********":"<none>");
         sprintf(opt[i++], "Screen Mode       %s",screen_modes[item->screen_mode]);
         sprintf(opt[i++], "Hide Status Line  %s",item->nostatus?"Yes":"No");
-        sprintf(opt[i++], "Download Path     %s",item->dldir);
-        sprintf(opt[i++], "Upload Path       %s",item->uldir);
-        sprintf(opt[i++], "Log File          %s",item->logfile);
-        sprintf(opt[i++], "Log Transfers     %s",log_level_desc[item->xfer_loglevel]);
-        sprintf(opt[i++], "Log Telnet Cmds   %s",log_level_desc[item->telnet_loglevel]);
-        sprintf(opt[i++], "Append Log File   %s",item->append_logfile ? "Yes":"No");
+        printf_trunc(opt[i], sizeof(opt[i]), "Download Path     %s", item->dldir);
+	i++;
+        printf_trunc(opt[i], sizeof(opt[i]), "Upload Path       %s", item->uldir);
+	i++;
+        strcpy(opt[i++], "Log Configuration");
         if(item->bpsrate)
             sprintf(str,"%ubps", item->bpsrate);
         else
@@ -894,14 +1012,8 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                             "        Default path to store downloaded files\n\n"
                             "~ Upload Path ~\n"
                             "        Default path for uploads\n\n"
-                            "~ Log File ~\n"
-                            "        Log file name when logging is enabled\n\n"
-                            "~ Log Transfers ~\n"
-                            "        Selects the transfer log level.\n\n"
-                            "~ Log Telnet Cmds ~\n"
-                            "        Selects the telnet command log level.\n\n"
-                            "~ Append Log File ~\n"
-                            "        Append log file (instead of overwrite) on each connection\n\n"
+                            "~ Log Configuration ~\n"
+                            "        Configure logging settings\n\n"
                             "~ Comm Rate ~\n"
                             "        Display speed\n\n"
                             "~ ANSI Music ~\n"
@@ -940,14 +1052,8 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                             "        Default path to store downloaded files\n\n"
                             "~ Upload Path ~\n"
                             "        Default path for uploads\n\n"
-                            "~ Log File ~\n"
-                            "        Log file name when logging is enabled\n\n"
-                            "~ Log Transfers ~\n"
-                            "        Selects the transfer log level.\n\n"
-                            "~ Log Telnet Cmds ~\n"
-                            "        Selects the telnet command log level.\n\n"
-                            "~ Append Log File ~\n"
-                            "        Append log file (instead of overwrite) on each connection\n\n"
+                            "~ Log Configuration ~\n"
+                            "        Configure logging settings\n\n"
                             "~ Comm Rate ~\n"
                             "        Display speed\n\n"
                             "~ ANSI Music ~\n"
@@ -1201,55 +1307,9 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                     check_exit(FALSE);
                 break;
             case 11:
-                uifc.helpbuf=   "`Log Filename`\n\n"
-                                "Enter the path to the optional log file.";
-                if(uifc.input(WIN_MID|WIN_SAV,0,0,"Log File",item->logfile,MAX_PATH,K_EDIT)>=0)
-                    iniSetString(&inifile,itemname,"LogFile",item->logfile,&ini_style);
-                else
-                    check_exit(FALSE);
+		configure_log(item, itemname, inifile, &changed);
                 break;
             case 12:
-		uifc.helpbuf=	"`Log Transfers`\n\n"
-				"Select the varbosity level for logging.\n"
-				"The lower in the list the item, the more berbose the log.\n"
-				"Each level includes all messages in levels above it.";
-		i = item->xfer_loglevel;
-		switch(uifc.list(WIN_SAV, 0, 0, 0, &(item->xfer_loglevel), NULL, "Log Transfers", log_level_desc)) {
-			case -1:
-				item->xfer_loglevel = i;
-				check_exit(FALSE);
-				break;
-			default:
-				if (item->xfer_loglevel != i) {
-					iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->xfer_loglevel,&ini_style);
-					changed=1;
-				}
-		}
-                break;
-            case 13:
-		uifc.helpbuf=	"`Log Telnet Commands`\n\n"
-				"Select the varbosity level for logging.\n"
-				"The lower in the list the item, the more berbose the log.\n"
-				"Each level includes all messages in levels above it.";
-		i = item->telnet_loglevel;
-		switch(uifc.list(WIN_SAV, 0, 0, 0, &(item->telnet_loglevel), NULL, "Log Transfers", log_level_desc)) {
-			case -1:
-				item->telnet_loglevel = i;
-				check_exit(FALSE);
-				break;
-			default:
-				if (item->telnet_loglevel != i) {
-					iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->telnet_loglevel,&ini_style);
-					changed=1;
-				}
-		}
-                break;
-            case 14:
-                item->append_logfile=!item->append_logfile;
-                changed=1;
-                iniSetBool(&inifile,itemname,"AppendLogFile",item->append_logfile,&ini_style);
-                break;
-            case 15:
                 uifc.helpbuf=   "`Comm Rate (in bits-per-second)`\n\n"
                                 "`For TCP connections:`\n"
                                 "Select the rate which received characters will be displayed.\n\n"
@@ -1268,7 +1328,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                         changed=1;
                 }
                 break;
-            case 16:
+            case 13:
                 uifc.helpbuf=music_helpbuf;             i=item->music;
                 if(uifc.list(WIN_SAV,0,0,0,&i,NULL,"ANSI Music Setup",music_names)!=-1) {
                     item->music=i;
@@ -1278,7 +1338,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 else
                     check_exit(FALSE);
                 break;
-            case 17:
+            case 14:
                 uifc.helpbuf=address_family_help;
                 i=item->address_family;
                 if(uifc.list(WIN_SAV, 0, 0, 0, &i, NULL, "Address Family", address_family_names)!=-1) {
@@ -1289,7 +1349,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 else
                     check_exit(FALSE);
                 break;
-            case 18:
+            case 15:
                 uifc.helpbuf=   "`Font`\n\n"
                                 "Select the desired font for this connection.\n\n"
                                 "Some fonts do not allow some modes.  When this is the case, an\n"
@@ -1307,12 +1367,12 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                     }
                 }
                 break;
-            case 19:
+            case 16:
                 item->hidepopups=!item->hidepopups;
                 changed=1;
                 iniSetBool(&inifile,itemname,"HidePopups",item->hidepopups,&ini_style);
                 break;
-            case 20:
+            case 17:
                 item->rip = !item->rip;
                 changed = 1;
                 if (item->rip) {
