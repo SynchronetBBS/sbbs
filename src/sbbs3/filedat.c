@@ -568,13 +568,14 @@ char* format_filename(const char* fname, char* buf, size_t size, bool pad)
 	return buf;
 }
 
-ulong extract_files_from_archive(const char* archive, str_list_t file_list, const char* outdir, ulong max_files
-	,char* error, size_t maxerrlen)
+ulong extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
+	,bool with_path, ulong max_files, str_list_t file_list, char* error, size_t maxerrlen)
 {
 	int result;
 	struct archive *ar;
 	struct archive_entry *entry;
 	ulong extracted = 0;
+	char fpath[MAX_PATH + 1];
 
 	if(error != NULL && maxerrlen >= 1)
 		*error = '\0';
@@ -598,23 +599,55 @@ ulong extract_files_from_archive(const char* archive, str_list_t file_list, cons
 					,result, archive_error_string(ar));
 			break;
 		}
-		const char* fname = archive_entry_pathname(entry);
-		if(fname == NULL)
+		const char* pathname = archive_entry_pathname(entry);
+		if(pathname == NULL)
 			continue;
-		fname = getfname(fname);
+		int filetype = archive_entry_filetype(entry);
+		if(filetype == AE_IFDIR) {
+			if(!with_path)
+				continue;
+			if(strstr(pathname, "..") != NULL) {
+				safe_snprintf(error, maxerrlen, "Illegal double-dots in path '%s'", pathname);
+				break;
+			}
+			SAFECOPY(fpath, outdir);
+			backslash(fpath);
+			SAFECAT(fpath, pathname);
+			if(mkpath(fpath) != 0) {
+				char err[256];
+				safe_snprintf(error, maxerrlen, "%d (%s) creating path '%s'", errno, safe_strerror(errno, err, sizeof(err)), fpath);
+				break;
+			}
+			continue;
+		}
+		if(filetype != AE_IFREG)
+			continue;
+		char* filename = getfname(pathname);
+		if(allowed_filename_chars != NULL
+			&& *allowed_filename_chars != '\0'
+			&& strspn(filename, allowed_filename_chars) != strlen(filename)) {
+			safe_snprintf(error, maxerrlen, "disallowed filename '%s'", pathname);
+			break;
+		}
+		if(!with_path)
+			pathname = filename;
 		if(file_list != NULL) {
 			int i;
 			for (i = 0; file_list[i] != NULL; i++)
-				if(wildmatch(fname, file_list[i], /* path: */false, /* case-sensitive: */false))
+				if(wildmatch(pathname, file_list[i], with_path, /* case-sensitive: */false))
 					break;
 			if(file_list[i] == NULL)
 				continue;
 		}
-		char fpath[MAX_PATH + 1];
-		SAFEPRINTF2(fpath, "%s%s", outdir, fname);
+		SAFECOPY(fpath, outdir);
+		backslash(fpath);
+		SAFECAT(fpath, pathname);
 		FILE* fp = fopen(fpath, "wb");
-		if(fp == NULL)
-			continue;
+		if(fp == NULL) {
+			char err[256];
+			safe_snprintf(error, maxerrlen, "%d (%s) opening/creating '%s'", errno, safe_strerror(errno, err, sizeof(err)), fpath);
+			break;
+		}
 
 		const void *buff;
 		size_t size;
@@ -659,7 +692,13 @@ bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fnames, char* path, s
 	if(!fexistcase(archive))
 		return false;
 
-	if(extract_files_from_archive(archive, diz_fnames, cfg->temp_dir, /* max_files: */1, /* error: */NULL, 0) > 0) {
+	if(extract_files_from_archive(archive
+		,/* outdir: */cfg->temp_dir
+		,/* allowed_filename_chars: */NULL /* any */
+		,/* with_path: */false
+		,/* max_files: */1
+		,/* file_list: */diz_fnames
+		,/* error: */NULL, 0) > 0) {
 		for(i = 0; diz_fnames[i] != NULL; i++) {
 			safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]);
 			if(fexistcase(path))

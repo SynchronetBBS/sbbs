@@ -72,7 +72,13 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(LOG_NOTICE,nulstr,"REP file not received");
 		return(false); 
 	}
-	ulong file_count = extract_files_from_archive(rep_fname, /* file_list = ALL */NULL, cfg.temp_dir, /* max_files */1000, error, sizeof(error));
+	ulong file_count = extract_files_from_archive(rep_fname
+		,/* outdir: */cfg.temp_dir
+		,/* allowed_filename_chars: */SAFEST_FILENAME_CHARS
+		,/* with_path: */false
+		,/* max_files */1000
+		,/* file_list: */NULL /* all files */
+		,error, sizeof(error));
 	if(file_count > 0) {
 		lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, rep_fname);
 	} else {

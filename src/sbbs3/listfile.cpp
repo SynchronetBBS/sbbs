@@ -33,7 +33,7 @@ int extdesclines(char *str);
 /* list the directory header.                                                */
 /* Returns -1 if the listing was aborted, otherwise total files listed		 */
 /*****************************************************************************/
-int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
+int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode)
 {
 	char	hdr[256],letter='A',*p;
 	uchar	flagprompt=0;
@@ -220,31 +220,24 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 			}
 			else {					/* short header */
 				if(tofile) {
-					sprintf(hdr,"(%u) %s ",i+1,cfg.lib[usrlib[i]]->sname);
-					write(tofile,crlf,2);
-					write(tofile,hdr,strlen(hdr)); 
+					c = fprintf(tofile,"\r\n(%u) %s ",i+1,cfg.lib[usrlib[i]]->sname) - 2;
 				}
 				else {
 					sprintf(hdr,text[ShortHdrLib],i+1,cfg.lib[usrlib[i]]->sname);
 					bputs("\r\1>\r\n");
 					bputs(hdr); 
+					c=bstrlen(hdr);
 				}
-				c=bstrlen(hdr);
 				if(tofile) {
-					sprintf(hdr,"(%u) %s",j+1,cfg.dir[dirnum]->lname);
-					write(tofile,hdr,strlen(hdr)); 
+					c += fprintf(tofile,"(%u) %s",j+1,cfg.dir[dirnum]->lname);
 				}
 				else {
 					sprintf(hdr,text[ShortHdrDir],j+1,cfg.dir[dirnum]->lname);
 					bputs(hdr); 
+					c+=bstrlen(hdr);
 				}
-				c+=bstrlen(hdr);
 				if(tofile) {
-					write(tofile,crlf,2);
-					sprintf(hdr,"%*s",c,nulstr);
-					memset(hdr,0xC4,c);
-					strcat(hdr,crlf);
-					write(tofile,hdr,strlen(hdr)); 
+					fprintf(tofile,"\r\n%.*s\r\n", c, "----------------------------------------------------------------");
 				}
 				else {
 					CRLF;
@@ -268,7 +261,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 			CRLF;
 		}
 		else if(tofile)
-			listfiletofile(f, dirnum, tofile);
+			listfiletofile(f, tofile);
 		else if(mode&FL_FINDDESC)
 			disp=listfile(f, dirnum, filespec, letter);
 		else
@@ -1161,33 +1154,13 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 }
 
 /****************************************************************************/
-/* Prints one file's information on a single line to a file 'file'          */
+/* Prints one file's information on a single line to a file stream 'fp'		*/
 /****************************************************************************/
-void sbbs_t::listfiletofile(smbfile_t* f, uint dirnum, int file)
+void sbbs_t::listfiletofile(smbfile_t* f, FILE* fp)
 {
-	char	str[512];
-    char	fpath[MAX_PATH + 1];
-	bool	exist=true;
-
-	SAFECOPY(str, f->name);
-	if(f->extdesc != NULL)
-		strcat(str, "+");
-	else
-		strcat(str, " ");
-	getfilepath(&cfg, f, fpath);
-	if(f->size == -1)
-		exist=false;
-	if(!f->cost)
-		strcat(str, "   FREE");
-	else
-		sprintf(str+strlen(str), "%7lu", (ulong)f->cost);
-	if(exist)
-		strcat(str," ");
-	else
-		strcat(str,"-");
-	strcat(str, f->desc);
-	write(file,str,strlen(str));
-	write(file,crlf,2);
+	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
+	fprintf(fp, "%-*s %10lu %s\r\n", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE)
+		,(ulong)getfilesize(&cfg, f), f->desc);
 }
 
 int extdesclines(char *str)

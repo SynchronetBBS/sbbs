@@ -69,7 +69,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	delfiles(cfg.temp_dir,ALLFILES);
 	SAFEPRINTF2(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexistcase(str)) {
-		ulong file_count = extract_files_from_archive(str, /* file_list = ALL */NULL, cfg.temp_dir, /* max_files */0, error, sizeof(error));
+		ulong file_count = extract_files_from_archive(str
+			,/* outdir: */cfg.temp_dir
+			,/* allowed_filename_chars: */NULL /* any */
+			,/* with_path: */false
+			,/* max_files: */0 /* unlimited */
+			,/* file_list: */NULL /* all files */
+			,error, sizeof(error));
 		if(file_count > 0) {
 			lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, str);
 			preqwk = TRUE;

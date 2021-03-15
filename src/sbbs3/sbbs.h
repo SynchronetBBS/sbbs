@@ -973,9 +973,9 @@ public:
 
 	/* listfile.cpp */
 	bool	listfile(smbfile_t*, uint dirnum, const char *search, const char letter);
-	int		listfiles(uint dirnum, const char *filespec, int tofile, long mode);
+	int		listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode);
 	int		listfileinfo(uint dirnum, const char *filespec, long mode);
-	void	listfiletofile(smbfile_t*, uint dirnum, int file);
+	void	listfiletofile(smbfile_t*, FILE*);
 	int		batchflagprompt(smb_t*, smbfile_t* bf[], ulong row[], uint total, long totalfiles);
 
 	/* bat_xfer.cpp */

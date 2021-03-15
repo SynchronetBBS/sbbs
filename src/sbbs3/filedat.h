@@ -60,7 +60,8 @@ DLLEXPORT char*			format_diz(str_list_t lines, char*, size_t maxlen, bool allow_
 DLLEXPORT char*			prep_file_desc(const char *src, char* dst);
 
 DLLEXPORT char*			cmdstr(scfg_t*, user_t*, const char* instr, const char* fpath, const char* fspec, char* cmd, size_t);
-DLLEXPORT ulong			extract_files_from_archive(const char* archive, str_list_t file_list, const char* outdir, ulong max_files, char* error, size_t);
+DLLEXPORT ulong			extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
+						                           ,bool with_path, ulong max_files, str_list_t file_list, char* error, size_t);
 
 /* Batch file transfer queues */
 DLLEXPORT char*			batch_list_name(scfg_t* , uint usernumber, enum XFER_TYPE, char* fname, size_t);

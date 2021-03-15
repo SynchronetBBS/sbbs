@@ -421,21 +421,20 @@ void sbbs_t::extract(uint dirnum)
 ulong sbbs_t::create_filelist(const char *name, long mode)
 {
     char	str[256];
-	int		file;
+	FILE*	fp;
 	uint	i,j,d;
 	ulong	l,k;
 
 	if(online == ON_REMOTE)
 		bprintf(text[CreatingFileList],name);
 	SAFEPRINTF2(str,"%s%s",cfg.temp_dir,name);
-	if((file=nopen(str,O_CREAT|O_WRONLY|O_APPEND))==-1) {
+	if((fp = fopen(str,"ab")) == NULL) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_APPEND);
 		return(0);
 	}
 	k=0;
 	if(mode&FL_ULTIME) {
-		SAFEPRINTF(str,"New files since: %s\r\n",timestr(ns_time));
-		write(file,str,strlen(str));
+		fprintf(fp, "New files since: %s\r\n", timestr(ns_time));
 	}
 	for(i=j=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,d++) {
@@ -446,7 +445,7 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 				&& (cfg.lib[usrlib[i]]->offline_dir==usrdir[i][j]
 				|| cfg.dir[usrdir[i][j]]->misc&DIR_NOSCAN))
 				continue;
-			l=listfiles(usrdir[i][j],nulstr,file,mode);
+			l=listfiles(usrdir[i][j], nulstr, fp, mode);
 			if((long)l==-1)
 				break;
 			k+=l;
@@ -455,10 +454,9 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 			break;
 	}
 	if(k>1) {
-		SAFEPRINTF(str,"\r\n%ld Files Listed.\r\n",k);
-		write(file,str,strlen(str));
+		fprintf(fp,"\r\n%ld Files Listed.\r\n",k);
 	}
-	close(file);
+	fclose(fp);
 	if(k)
 		bprintf(text[CreatedFileList],name);
 	else {

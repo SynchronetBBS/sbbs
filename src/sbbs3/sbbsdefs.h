@@ -53,6 +53,7 @@
 
 #define MAX_FILENAME_LEN		64
 #define ILLEGAL_FILENAME_CHARS	"\\/|<>:\";,%"
+#define SAFEST_FILENAME_CHARS	"-._0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 #define BIND_FAILURE_HELP	"!Another application or service may be using this port"
 #define UNKNOWN_LOAD_ERROR	"Unknown load error - Library mismatch?"

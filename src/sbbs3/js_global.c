@@ -28,6 +28,7 @@
 #include "js_request.h"
 #include "wordwrap.h"
 #include "utf8.h"
+#include "filedat.h"
 
 /* SpiderMonkey: */
 #include <jsapi.h>
@@ -3104,6 +3105,75 @@ js_fcompare(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_extract(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		archive = NULL;
+	char*		outdir = NULL;
+	char*		allowed_filename_chars = SAFEST_FILENAME_CHARS;
+	str_list_t	file_list = NULL;
+	bool		with_path = false;
+	int32		max_files = 0;
+	char		error[256] = "";
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+ 	if(!js_argc(cx, argc, 2))
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], archive, NULL);
+	HANDLE_PENDING(cx, archive);
+	if(JSVAL_NULL_OR_VOID(argv[1]))
+		JS_ReportError(cx, "Invalid output directory specified (null or undefined)");
+	else
+		JSVALUE_TO_MSTRING(cx, argv[1], outdir, NULL);
+	if(JS_IsExceptionPending(cx)) {
+		free(archive);
+		free(outdir);
+		return JS_FALSE;
+	}
+	uintN argn = 2;
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		with_path = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx, argv[argn], &max_files)) {
+			free(archive);
+			free(outdir);
+			strListFree(&file_list);
+			return JS_FALSE;
+		}
+		argn++;
+	}
+	for(; argn < argc; argn++) {
+		if(JSVAL_IS_STRING(argv[argn])) {
+			char path[MAX_PATH + 1];
+			JSVALUE_TO_STRBUF(cx, argv[argn], path, sizeof(path), NULL);
+			strListPush(&file_list, path);
+		}
+	}
+
+	rc=JS_SUSPENDREQUEST(cx);
+	ulong extracted = extract_files_from_archive(archive, outdir, allowed_filename_chars
+		,with_path, (ulong)max_files, file_list, error, sizeof(error));
+	strListFree(&file_list);
+	free(archive);
+	free(outdir);
+	JS_RESUMEREQUEST(cx, rc);
+	if(*error != '\0') {
+		if(extracted)
+			JS_ReportError(cx, "%s (after extracting %lu items successfully)", error, extracted);
+		else
+			JS_ReportError(cx, "%s", error);
+		return JS_FALSE;
+	}
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(extracted));
+	return(JS_TRUE);
+}
+
+static JSBool
 js_backup(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4730,6 +4800,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"file_compare",	js_fcompare,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/file1, path/file2")
 	,JSDOCSTR("compare 2 files, returning <i>true</i> if they are identical, <i>false</i> otherwise")
 	,314
+	},
+	{"archive_extract",	js_extract,		2,	JSTYPE_NUMBER,	JSDOCSTR("path/file, output_directory [,boolean with_path = <tt>false</tt>] [,number max_files = 0] [,string file/pattern [...]]")
+	,JSDOCSTR("extract files from an archive to specified output directory, returns the number of files extracted, will throw exception upon error")
+	,31900
 	},
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("path/pattern [,flags=<tt>GLOB_MARK</tt>]")
 	,JSDOCSTR("returns an array of directory entries, "
