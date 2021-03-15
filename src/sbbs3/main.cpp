@@ -2456,16 +2456,25 @@ void output_thread(void* arg)
 					 * afterward... presumably because the read timeout gets set to
 					 * what the current write timeout is.
 					 */
-					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 30)))
+					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5)))
 						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "setting write timeout");
-					if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
-						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "flushing data");
-						ssh_errors++;
-						if (err != CRYPT_ERROR_TIMEOUT) {
-							sbbs->online=FALSE;
-							i=buftop-bufbot;	// Pretend we sent it all
+					do {
+						if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
+							GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "flushing data");
+							ssh_errors++;
+							if (err == CRYPT_ERROR_TIMEOUT) {
+								(void)cryptPopData(sbbs->ssh_session, (void *)"", 0, &err);
+								if (cryptStatusError(err))
+									GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "popping SSH data after timeout");
+								else
+									err = CRYPT_ERROR_TIMEOUT;
+							}
+							else {
+								sbbs->online=FALSE;
+								i=buftop-bufbot;	// Pretend we sent it all
+							}
 						}
-					}
+					} while (err == CRYPT_ERROR_TIMEOUT);
 					// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
 					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0)))
 						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "setting write timeout");
