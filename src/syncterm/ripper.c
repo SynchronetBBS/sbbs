@@ -9532,7 +9532,16 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								}
 								break;
 							}
-						case '*':	// RIP_RESET_WINDOWS
+						case '*':	// RIP_RESET_WINDOWS !|*
+							/* This command will set the Text Window to a full 80x43 EGA hi-res text
+							 * mode, place the cursor in the upper left corner, clear the screen,
+							 * and zoom the Graphics Window to full 640x350 EGA screen.  Both
+							 * windows are filled with the current graphics background color.  Also,
+							 * all Mouse Regions and Mouse Buttons are deleted and the Clipboard is
+							 * erased.  A system One might use this function before entering a text
+							 * only mode that does not support RIP commands.  This command will also
+							 * restore the default 16-color RIP palette (see RIP_SET_PALETTE below).
+							 */
 							handled = true;
 							rv_reset("RESET", NULL);
 							break;
@@ -9542,12 +9551,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 * many subsequent graphics primitive commands.  There are four built-in
 							 * line styles plus provisions for custom line patterns.
 							 * 
-							 *      Style   Description           Binary            Hex              > v1.54
-							 *      ----------------------------------------------------             > v1.54
-							 *      00      Normal, Solid Line    1111111111111111  FFFF             > v1.54
-							 *      01      Dotted Line           0011001100110011  3333             > v1.54
-							 *      02      Centered Line         0001111000111111  1E3F             > v1.54
-							 *      03      Dashed Line           0001111100011111  1F1F             > v1.54
+							 *      Style   Description           Binary            Hex
+							 *      ----------------------------------------------------
+							 *      00      Normal, Solid Line    1111111111111111  FFFF
+							 *      01      Dotted Line           0011001100110011  3333
+							 *      02      Centered Line         0001111000111111  1E3F
+							 *      03      Dashed Line           0001111100011111  1F1F
 							 *      04      Custom Defined line (see about <user_pat> below)
 							 * 
 							 *      Thick   Description
@@ -9584,7 +9593,13 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								rip.line_pattern = arg2;
 							rip.line_width = arg3;
 							break;
-						case '>':	// RIP_ERASE_EOL
+						case '>':	// RIP_ERASE_EOL !|>
+							/* This command will erase the current text line in the TTY text window
+							 * from the current cursor location (inclusive) to the end of the line.
+							 * The erased region is filled with the current graphics background
+							 * color.  This differs from the ANSI command ESC[K which clears the
+							 * area with the current ANSI background color.
+							 */
 							handled = true;
 							uint32_t oldbg = cterm->bg_color;
 							cterm->bg_color = ega_colours[0];
@@ -9608,7 +9623,26 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							rip.y = y1;
 							write_text(&args[4]);
 							break;
-						case 'A':	// RIP_ARC
+						case 'A':	// RIP_ARC !|A <x> <y> <start_ang> <end_ang> <radius>
+							/* This command draws a circular arc, or a segment of a circle.  Drawing
+							 * begins at <start_ang> and terminates at <end_ang>.  The angles are
+							 * represented starting at zero for the 3 o'clock position and
+							 * increasing counterclockwise through a full circle to 360:
+							 * 
+							 *                           90
+							 *                            |
+							 *                      180---|--- 0
+							 *                            |
+							 *                           270
+							 * 
+							 * The arc drawing begins at the <start_angle> and continues counter-
+							 * clockwise to the <end_angle>.  A full circle will be displayed if
+							 * <start_ang>=0 and <end_ang>=360.  This command recognizes aspect
+							 * ratios like the circle command does.  It does not take advantage of
+							 * line patterns but does comply with line thickness.
+							 * 
+							 * If both angles are equal, nothing is drawn.
+							 */
 							handled = true;
 							if (no_viewport())
 								break;
@@ -9648,7 +9682,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								}
 							}
 							break;
-						case 'C':	// RIP_CIRCLE
+						case 'C':	// RIP_CIRCLE !|C <x_center> <y_center> <radius>
+							/* This command draws a circle in the current drawing color and line
+							 * thickness.  The <radius> is in pixel units.  This command understands
+							 * aspect ratios and will draw a truly circular circle instead of an
+							 * oblong circle (ellipse) like on other graphics systems.  The aspect
+							 * ratio is currently based on the EGA 640x350 resolution and is
+							 * understood by both the GUI designer and the Terminal Program.
+							 */
 							handled = true;
 							if (no_viewport())
 								break;
@@ -9662,12 +9703,30 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							pthread_mutex_unlock(&vstatlock);
 							full_ellipse(x1, y1, arg1, arg3, false);
 							break;
-						case 'E':
+						case 'E':	// RIP_ERASE_VIEW !|E
+							/* This command clears the Graphics Viewport to the current graphics
+							 * background color.  If the graphics viewport is not active (if the
+							 * boundaries are 0,0,0,0), then this command is ignored.  If the text
+							 * and graphics windows overlap, then this command will clear the
+							 * overlapping portion also.
+							 */
 							handled = true;
 							rv_erase("EGW", NULL);
 							break;
-						case 'F':	// RIP_FILL
-//break;
+						case 'F':	// RIP_FILL !|F <x> <y> <border>
+							/* This command performs a "flood fill" emanating from the given <x,y>
+							 * point.  The fill "oozes" in all directions up to <border> color, but
+							 * the border itself is not changed.  Whatever is inside the border
+							 * that's not the border color gets changed to the current fill color
+							 * and fill pattern.  If the border color does not completely enclose
+							 * the <x,y> point, the fill will continue to the edges of the viewport.
+							 * 
+							 * If the point on the screen that is chosen as the "fill point" is the
+							 * same color as the fill border color, then no Fill Operation will be
+							 * performed!  This restriction is necessary because of some limitations
+							 * of Flood Fill abilities in different hardware/software environments
+							 * like Microsoft Windows, etc).
+							 */
 							handled = true;
 							GET_XY();
 							if (x1 > (rip.viewport.ex - rip.viewport.sx) ||
@@ -9681,18 +9740,18 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (rip.viewport.ey >= vstat.scrnheight)
 								arg2 = vstat.scrnheight - 1;
 							pthread_mutex_unlock(&vstatlock);
-#if 0
-printf("Flooding %d/%d!\n", x1, y1);
-uint32_t xx;
-attr2palette(15, &fg, &xx);
+							#if 0	// This slow draw is useful for debugging flood fill issues...
+							printf("Flooding %d/%d!\n", x1, y1);
+							uint32_t xx;
+							attr2palette(15, &fg, &xx);
 
-for (i = 0; i < 50; i++) {
-SLEEP(50);
-setpixel(x1, y1, fg);
-SLEEP(50);
-setpixel(x1, y1, xx);
-}
-#endif
+							for (i = 0; i < 50; i++) {
+							SLEEP(50);
+							setpixel(x1, y1, fg);
+							SLEEP(50);
+							setpixel(x1, y1, xx);
+							}
+							#endif
 							struct ciolib_pixels *pix = getpixels(rip.viewport.sx, rip.viewport.sy, rip.viewport.ex, arg2, false);
 							FREE_AND_NULL(pix->pixelsb);
 							// Blammo goes the stack!
@@ -9710,15 +9769,26 @@ setpixel(x1, y1, xx);
 							setpixels(rip.viewport.sx, rip.viewport.sy, rip.viewport.ex, arg2, 0, 0, pix, NULL);
 							freepixels(pix);
 							break;
-						case 'H':	// RIP_HOME
+						case 'H':	// RIP_HOME !|H
+							/* This command positions the text cursor to the upper-left corner in
+							 * the TTY Text Window, if it is active.
+							 */
 							handled = true;
 							cterm_gotoxy(cterm, 1, 1);
 							break;
-						case 'I':	// RIP_PIE_SLICE
+						case 'I':	// RIP_PIE_SLICE !|I <x> <y> <start_ang> <end_ang> <radius>
+							/* This command draws a "pie slice".  The slice is circular.  It obeys
+							 * all of the same commands as the Arc command described above.  The
+							 * ends of the arc are connected to the Center-Point of the Arc with two
+							 * straight lines.  These two lines converge at the Center-Point.  The
+							 * interior of the Slice is filled with the current Fill Color and
+							 * Pattern.  The exterior (outline) of the Slice is drawn using the
+							 * current drawing color and line thickness.  The Line Pattern feature
+							 * does not apply to this command.
+							 */
 							break;
 						case 'L':	// RIP_LINE !|L <x0> <y0> <x1> <y1>
-							/*
-							 * This command will draw a line in the current drawing color, using the
+							/* This command will draw a line in the current drawing color, using the
 							 * current line style, pattern and thickness.  The line is drawn from
 							 * (x0,y0) to (x1,y1) in the graphics viewport.
 							 */
@@ -9726,8 +9796,18 @@ setpixel(x1, y1, xx);
 							GET_XY2();
 							draw_line(x1, y1, x2, y2);
 							break;
-						case 'V':	// RIP_OVAL_ARC (TODO: Are these seriously exactly the same?)
-						case 'O':	// RIP_OVAL
+						case 'V':	// RIP_OVAL_ARC !|V <x> <y> <st_ang> <e_ang> <radx> <rady>
+								// (TODO: Are these seriously exactly the same?)
+						case 'O':	// RIP_OVAL !|O <x> <y> <st_ang> <end_ang> <x_rad> <y_rad>
+							/* This command draws an elliptical arc similar to the circular RIP_ARC
+							 * command.  The center of the ellipse is (x,y) and the arc is drawn
+							 * starting from <st_ang> and proceeding counterclockwise to <end_ang>
+							 * (see RIP_ARC above for details).
+							 * 
+							 * The X radius is half the full width of the ellipse, the Y radius is
+							 * half the full height.  The ellipse is drawn according to the current
+							 * line thickness, but the current line pattern has no effect.
+							 */
 							handled = TRUE;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
@@ -9741,7 +9821,17 @@ setpixel(x1, y1, xx);
 							else
 								draw_ellipse(x1, y1, arg1, arg2, x2, y2);
 							break;
-						case 'P':	// RIP_POLYGON
+						case 'P':	// RIP_POLYGON !|P <npoints> <x1> <y1> ... <xn> <yn>
+							/* This command will draw a multi-sided closed polygon.  The polygon is
+							 * drawn using the current drawing color, line pattern and thickness.
+							 * The <npoints> parameter is between 2 and 512 and indicates how many
+							 * (x,y) coordinate pairs will follow, which is also the number of sides
+							 * of the polygon.  The polygon interior is not filled by RIP_POLYGON.
+							 * 
+							 * The polygon is enclosed by the last vertex between xn,yn and x1,y1.
+							 * In other words, you do not have to connect the end to the beginning -
+							 * it is automatically done for you.
+							 */
 							handled = true;
 							if (no_viewport())
 								break;
@@ -9778,7 +9868,16 @@ setpixel(x1, y1, xx);
 								draw_line(x1, y1, x2, y2);
 							}
 							break;
-						case 'Q':	// RIP_SET_PALETTE
+						case 'Q':	// RIP_SET_PALETTE !|Q <c1> <c2> ... <c16>
+							/* This command modifies the 16-color RIP palette by choosing from the
+							 * 64 colors in the master palette.  This allows you to alter the colors
+							 * in your RIPscrip graphics scenes.  Once a Set Palette command is
+							 * processed, any colors on the screen that had their corresponding
+							 * palette entries changed will instantly switch to the new color set.
+							 * You may obtain color cycling effects by using this command.  The
+							 * default 16-color RIP palette is restored by the RIP_RESET_WINDOWS
+							 * command.
+							 */
 							handled = true;
 							for (i = 0; i < 16; i++) {
 								arg1 = parse_mega(&args[i*2], 2);
@@ -9788,7 +9887,13 @@ setpixel(x1, y1, xx);
 							}
 							set_ega_palette();
 							break;
-						case 'R':	// RIP_RECTANGLE
+						case 'R':	// RIP_RECTANGLE !|R <x0> <y0> <x1> <y1>
+							/* This command draws a rectangle in the current drawing color, using
+							 * the current line style, pattern and thickness.  (x0,y0) and (x1,y1)
+							 * are any two opposing corners of the rectangle.  If x0=x1 or y0=y1
+							 * then the command will draw a single vertical or horizontal line.  The
+							 * rectangle interior is not filled by RIP_RECTANGLE.
+							 */
 							handled = true;
 							GET_XY2();
 							draw_line(x1, y1, x2, y1);
@@ -9836,7 +9941,26 @@ setpixel(x1, y1, xx);
 							rip.fill_color = arg2;
 							memcpy(rip.fill_pattern, rip_fill_patterns[arg1], 8);
 							break;
-						case 'T':	// RIP_TEXT
+						case 'T':	// RIP_TEXT !|T <text-string>
+							/* This command displays text at the current location in the graphics
+							 * window, as set with the RIP_MOVE command.  The text is also affected
+							 * by the most recent settings of these commands:
+							 * 
+							 *      Command            Description of Command
+							 *      ----------------------------------------------------------------
+							 *      RIP_FONT_STYLE     font style (character set, direction, size)
+							 *      RIP_WRITE_MODE     drawing mode (normal or XOR)
+							 *      RIP_COLOR          drawing color (from the 16-color RIP palette)
+							 * 
+							 * The drawing position is placed at the end of the last character
+							 * drawn.
+							 * 
+							 * The current drawing position is set immediately to the right of the
+							 * drawn text.  Subsequent Line, Circle or other such commands will not
+							 * affect this position.  This provides a means so that you can quickly
+							 * do another RIP_TEXT command (presumably in another color) at a later
+							 * time and have the text show up immediately after the previous text.
+							 */
 							handled = true;
 							write_text(&args[0]);
 							break;
@@ -9859,7 +9983,12 @@ setpixel(x1, y1, xx);
 							else if (arg1 == 1)
 								rip.xor = true;
 							break;
-						case 'X':	// RIP_PIXEL
+						case 'X':	// RIP_PIXEL !|X <x> <y>
+							/* This command will draw a single pixel in the current drawing color at
+							 * the given (x,y) graphics position.  This command is included for
+							 * completeness, but in practice it would be extremely inefficient to
+							 * make much use of it.
+							 */
 							handled = true;
 							if (no_viewport())
 								break;
@@ -9912,7 +10041,51 @@ setpixel(x1, y1, xx);
 								rip.font.size = arg3;
 							// arg4 is reserved... ignore.
 							break;
-						case 'Z':	// RIP_BEZIER
+						case 'Z':	// RIP_BEZIER !|Z <x1> <y1> <x2> <y2> <x3> <y3> <x4> <y4> <cnt>
+							/* This command provides customizable curves.  Four control points are
+							 * used to create the shape of the curve.  The curves beginning point is
+							 * at point (x1,y1) and it ends at (x4,y4).  Points (x2,y2) and (x3,y3)
+							 * are not necessarily on the curve, but are used to pull the curve in
+							 * their direction.  The diagram below indicates how points 2 and 3 can
+							 * be utilized to form the desired curve.  Note that points 2 and 3 are
+							 * not actually on the curve, but points 1 and 4 are.
+							 * 
+							 *                           X2
+							 * 
+							 *                          *****
+							 *                        **     ****
+							 *                       *           **            X4
+							 *                      *              **          *
+							 *                    X1                 *       **
+							 *                                        *    **
+							 *                                         ****
+							 * 
+							 *                                          X3
+							 * 
+							 * NOTE: Points 2 and 3 are not actually on the curve - points 1 and 4
+							 *       are.
+							 * 
+							 * The last parameter of this command is the <cnt> parameter.  This
+							 * determines how many "segments" the curve should be drawn in.  Each
+							 * segment is in fact, a straight line.  The more segments you allow,
+							 * the smoother the curve may be.  If a curve does not have a
+							 * significant amount of "curviness" then a low "count" can improve
+							 * performance of the curve drawing.  Bezier Curves use "floating point"
+							 * math internally for its processing.  All parameters specified for
+							 * this command are simple integers however.
+							 * 
+							 * Each segment of the Bezier Curve will be drawn using the current
+							 * line style pattern and thickness.  You can achieve some unusual
+							 * effects using patterned lines for Bezier Curves.  If XOR is active
+							 * when you draw a bezier curve, you will find gaps at the inter-
+							 * sections of each segment.
+							 * 
+							 * NOTE: This command is implemented in C using double floating point
+      							 * numbers.  To make sure you do not have round-off or precision
+      							 * errors in another language, you should also use an equivalent
+      							 * floating point type.  In Borland's Turbo Pascal, do not use
+      							 * REAL's, but use DOUBLE's instead!
+							 */
 							handled = true;
 							int xp[4], yp[4];
 							for (i = 0; i < 4; i++) {
@@ -9935,7 +10108,16 @@ setpixel(x1, y1, xx);
 							}
 							draw_line(x1, y1, xp[3], yp[3]);
 							break;
-						case 'a':	// RIP_ONE_PALETTE
+						case 'a':	// RIP_ONE_PALETTE !|a <color> <value>
+							/* This command changes one color in the 16-color palette.  The color
+							 * number is sent along with the new color value from the Master Color
+							 * Palette. The color <value> must be in the range of 0-63.  Once a Set
+							 * One Palette command is processed, any colors on the screen that
+							 * correspond to the <color> number will be changed instantly to the new
+							 * color value.  You may obtain color cycling effects by using this
+							 * command.  The default RIP palette is restored when by
+							 * RIP_RESET_WINDOWS.
+							 */
 							handled = true;
 							arg1 = parse_mega(&args[0], 2);
 							arg2 = parse_mega(&args[2], 2);
@@ -9963,16 +10145,38 @@ setpixel(x1, y1, xx);
 							if (arg1 >= 0 && arg1 <= 15)
 								rip.color = arg1;
 							break;
-						case 'e':
+						case 'e':	// RIP_ERASE_WINDOW !|e
+							/* This clears the TTY text window to the current graphics background
+							 * color and positions the cursor in the upper-left corner of the
+							 * window.  If the text window is inactive, then this command is
+							 * ignored.  If the text and graphics windows overlap, then this command
+							 * will clear the overlapping portion also.
+							 */
 							handled = true;
 							rv_erase("ETW", NULL);
 							break;
-						case 'g':	// RIP_GOTOXY
+						case 'g':	// RIP_GOTOXY !|g <x> <y>
+							/* This command sets the position of the text cursor in the TTY Text
+							 * window, if it is active.  If inactive (if the dimensions are
+							 * 0,0,0,0), then this command is ignored.  This command is equivalent
+							 * to the ANSI/VT-100 command goto x/y, <Esc>[x;yH, except that the
+							 * coordinates of that ANSI command are 1-based and the coordinates of
+							 * this RIPscrip command are 0-based.
+							 */
 							handled = true;
 							GET_XY();
 							cterm_gotoxy(cterm, x1 + 1, y1 + 1);
 							break;
-						case 'i':	// RIP_OVAL_PIE_SLICE
+						case 'i':	// RIP_OVAL_PIE_SLICE !|i <x> <y> <st_ang> <e_ang> <radx> <rady>
+							/* This command draws an  "elliptical pie slice".  It obeys all of the
+							 * same commands as the Elliptical Arc command described above.  The
+							 * ends of the arc are connected to the Center-Point of the Arc with two
+							 * straight lines.  These two lines converge at the Center-Point.  The
+							 * interior of the Slice is filled with the current Fill Color and
+							 * Pattern.  The exterior (outline) of the Slice is drawn using the
+							 * current drawing color and line thickness.  The Line Pattern feature
+							 * does not apply to this command.
+							 */
 							handled = TRUE;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
@@ -10000,7 +10204,19 @@ setpixel(x1, y1, xx);
 							set_line(x1, y1, x1 + (x2 * cos(arg2 * (M_PI / 180.0))),
 							    y1 - (y2 * sin(arg2 * (M_PI / 180.0))), fg, 0xffff, rip.line_width);
 							break;
-						case 'l':	// RIP_POLYLINE
+						case 'l':	// RIP_POLYLINE !|l <npoints> <x1> <y1> ... <xn> <yn>
+							/* This command will draw a multi-faceted line.  It is identical in
+							 * nature to the RIP_POLYGON command above, except that the last point
+							 * is NOT connected to the first point.  Generally speaking, a Poly-
+							 * Line is not an "enclosed area".  It should not be filled unless
+							 * you are very careful to close the shape so that it leaves a fillable
+							 * area.  The segments of the Poly-Line are drawn using the current
+							 * drawing color, line pattern, thickness and Drawing Write Mode.
+							 * 
+							 * The <npoints> parameter is between 2 and 512 and indicates how many
+							 * (x,y) coordinate pairs will follow, which is also the number of sides
+							 * of the Poly-Line.
+							 */
 							handled = true;
 							if (no_viewport())
 								break;
@@ -10027,7 +10243,13 @@ setpixel(x1, y1, xx);
 								}
 							}
 							break;
-						case 'm':	// RIP_MOVE
+						case 'm':	// RIP_MOVE !|m <x> <y>
+							/* This command moves the current graphics drawing cursor to (x,y).  You
+							 * could use this to draw text at a certain point, but you'd probably
+							 * use RIP_TEXT_XY instead.  This command is primarily provided for
+							 * future development which will make use of its ability to relocate the
+							 * current drawing position without physically drawing anything.
+							 */
 							handled = true;
 							GET_XY();
 							if (x1 > rip.viewport.ex - rip.viewport.sx + 1)
@@ -10045,7 +10267,19 @@ setpixel(x1, y1, xx);
 							full_ellipse(x1, y1, parse_mega(&args[4], 2), parse_mega(&args[6], 2), true);
 							break;
 						}
-						case 'p':	// RIP_FILL_POLYGON
+						case 'p':	// RIP_FILL_POLYGON !|p <npoints> <x1> <y1> ... <xn> <yn>
+							/* This command is identical to RIP_POLYGON, except that the interior of
+							 * the polygon is filled with the current fill color and fill pattern.
+							 * The actual outline of the polygon is drawn using the current drawing
+							 * color, line pattern and thickness.
+							 * 
+							 * NOTE:  You will get unusual effects if the lines of the polygon
+							 *        overlap, creating a polygon with internal "gaps".  (The rule
+							 *        is this: regions that are "inside" the polygon an even number
+							 *        of times due to overlap are NOT filled.)  The interior fill
+							 *        does not utilize Write Mode, but the outline of the polygon
+							 *        does.
+							 */
 							// DOES NOT DRAW LINES IN COLOR ZERO!!!
 							// Not bug-compliant with RIPterm
 							handled = true;
@@ -10140,7 +10374,36 @@ setpixel(x1, y1, xx);
 							}
 							free(argv);
 							break;
-						case 's':	// RIP_FILL_PATTERN
+						case 's':	// RIP_FILL_PATTERN !|s <c1> <c2> <c3> <c4> <c5> <c6> <c7> <c8> <col>
+							/* This command allows you to specify a user-defined, custom Fill
+							 * Pattern.  This pattern supersedes the predefined patterns of
+							 * RIP_FILL_STYLE.  A custom fill pattern is an 8x8 pixel array defining
+							 * which pixels should be drawn in the current fill color (as set by the
+							 * <col> parameter here).  The other pixels in the fill area are set to
+							 * the current background color (color 00, typically black).
+							 * 
+							 * Each of the eight parameters of this command, <c1> through <c8>
+							 * represent bit-patterns for a line of the 8x8 pixel array.  Each line
+							 * is comprised of 8 pixels.  The value of each parameter is the binary
+							 * representation of these 8 pixels as follows:
+							 * 
+							 *      Bit     7     6    5    4   3   2   1   0
+							 *      ----------------------------------------------
+							 *      c1     128   64   32   16   8   4   2   1
+							 *      c2     128   64   32   16   8   4   2   1
+							 *      c3     128   64   32   16   8   4   2   1
+							 *      c4     128   64   32   16   8   4   2   1
+							 *      c5     128   64   32   16   8   4   2   1
+							 *      c6     128   64   32   16   8   4   2   1
+							 *      c7     128   64   32   16   8   4   2   1
+							 *      c8     128   64   32   16   8   4   2   1
+							 * 
+							 * So, c1 is the top, and the most-significant bit is to the left.
+							 * 
+							 * NOTE:  The RIP_FILL_STYLE (predefined fill patterns) and this
+							 *        RIP_FILL_PATTERN (custom fill patterns) completely override
+							 *        each other's effects.
+							 */
 							handled = true;
 							if (parse_mega(&args[0], 2) < 0)
 								break;
@@ -10171,7 +10434,27 @@ setpixel(x1, y1, xx);
 							rip.fill_pattern[7] = parse_mega(&args[14], 2) & 0xff;
 							rip.fill_color = arg1;
 							break;
-						case 'v':
+						case 'v':	// RIP_VIEWPORT !|v <x0> <y0> <x1> <y1>
+							/* This command defines the (X,Y) pixel boundaries of the RIPscrip
+							 * graphics window, which will contain all RIPscrip graphics output.
+							 * ASCII/ANSI text will be displayed in the virtual TTY window defined
+							 * by the RIP_TEXT_WINDOW command above.  (x0,y0) defines the upper-left
+							 * corner of the graphics viewport, and (x1,y1) defines the lower-right
+							 * corner (inclusive).  The viewport may be disabled, so RIPscrip
+							 * graphics commands are ignored, by setting all parameters to zero (0).
+							 * 
+							 * Graphics displayed in the viewport are "truncated" at this rectangular
+							 * border, meaning if a circle would normally extend outside one of the
+							 * borders, it will be chopped, only displaying the portion of the
+							 * circle that is contained inside the viewport boundaries.
+							 * 
+							 * Coordinates are specified based on a 640x350 pixel resolution, meaning
+							 * X can be anywhere from 0 - 639, and Y can be anywhere from 0 - 349.
+							 * x0 must be less than x1 and y0 must be less than y1 unless all
+							 * parameters are set to zero, indicating that the graphics window is
+							 * disabled.
+							 */
+
 							handled = true;
 							GET_XY2();
 							// TODO: Range check...
@@ -10307,6 +10590,77 @@ setpixel(x1, y1, xx);
 				case 0:
 					switch(cmd) {
 						case '\x1b':	// RIP_QUERY !|1<escape> <mode> <res> <text>
+							/* The Query Text Variable RIPscrip command instructs the terminal to
+							 * immediately respond with some piece of information, whether
+							 * statically stored (i.e., in a database), stored internally in RAM
+							 * (dynamic information), or pre-defined Text Variables.
+							 * 
+							 * This command is unique in RIPscrip in the fact that the command
+							 * character that is used is NOT a printable character.  We use the
+							 * escape character (ASCII 27) to introduce this command as a measure of
+							 * security.  Since the query command can query the terminal for some
+							 * critical (potentially private) information, you would not want a user
+							 * to be able to query another user's terminal for something like his
+							 * address information, or something that he wouldn't want to otherwise
+							 * divulge to unauthorized people.  Since most hosts do not allow the
+							 * user to enter an escape character, this character is ideal for this
+							 * purpose.  Using escape allows only the Host (under most
+							 * circumstances) to be in control of any queries.
+							 * 
+							 * NOTE:  This command is very flexible in that you can specify
+							 *        control characters, pick-list definitions, Text Variables,
+							 *        and Host Command template definitions.  See the section
+							 *        entitled HOST COMMANDS for a more detailed explanation
+							 *        of these features.
+							 * 
+							 * Whether the information is transmitted instantly or not is dependent
+							 * on the <mode> parameter.  The <mode> parameter determines when data
+							 * queries are processed.  The possible settings for the <mode>
+							 * parameter are as follows:
+							 * 
+							 * 
+							 *     Mode     Description
+							 *     ----------------------------------------------------------------
+							 *      0    Process the query command NOW (upon receipt)
+							 *      1    Process when mouse clicked in Graphics Window
+							 *      2    Process when mouse clicked in Text Window (any text
+							 *           variables that return X or Y mouse coordinates return TEXT
+							 *           coordinates, not graphics coordinates in this mode.  These
+							 *           coordinates are two-digit values instead of the graphical
+							 *           values that are four digits).
+							 * 
+							 * Note that modes 1-2 do not return the results of the Query instantly.
+							 * They query commands are processed when the user clicks the mouse
+							 * either in the text window, or in the graphics window respectively.
+							 * These "queries after mouse clicks" are only acted upon if the user is
+							 * clicking on something other than a Button or a Mouse Field. To
+							 * disable these two special "deferred" query modes, issue the same
+							 * command with the query string of $OFF$.  This will disable this
+							 * mode.  Providing a <text> parameter of anything other than $OFF$ will
+							 * produce a revised query command (active).
+							 * 
+							 * Basically put, a Query command will be immediately acted upon by the
+							 * Terminal program when received.  The Query command's <text> parameter
+							 * can contain any number of Host Command "segments", which can instruct
+							 * the terminal "how to" send data to the host, and more specifically,
+							 * what data to send to the host.
+							 * 
+							 * Some examples of query statements might be any of the following:
+							 * 
+							 *                         ^m     Send a carriage return to the BBS now!
+							 *   My name is $FULL_NAME$^m     Send text "My name is <insert-name-
+							 *                                here>" followed by a  carriage return
+							 *                                to the BBS.  The <insert-name-here>
+							 *                                will be replaced with whatever the
+							 *                                variable $FULL_NAME$ contains.
+							 * 
+							 * See the section entitled HOST COMMANDS for a detailed explanation of
+							 * Host Commands, and what you can do with the Query command.
+							 * 
+							 * NOTE:  The <res> parameter is reserved for future use by TeleGrafix
+							 *        Communications, Inc..  It should be set to 000 for
+							 *        compatibility with future releases.
+							 */
 							handled = true;
 							arg1 = parse_mega(&args[0], 1);
 							arg2 = parse_mega(&args[1], 3);
@@ -10325,7 +10679,541 @@ setpixel(x1, y1, xx);
 							}
 							break;
 						case 'B':	// RIP_BUTTON_STYLE !|1B <wid> <hgt> <orient> <flags> <bevsize> <dfore> <dback> <bright> <dark> <surface> <grp_no> <flags2> <uline_col> <corner_col> <res>
-							// Refer to docs...
+							/* This RIPscrip command is probably one of the most complex in the
+							 * entire protocol.  It defines how subsequent RIP_BUTTON commands will
+							 * be interpreted.  The purpose of this command is to define what a
+							 * Button is and how they operate.  Buttons can have many different
+							 * configurations, flags, and styles.  With the diversity of modes that
+							 * the Button can take on, complexity is a necessary evil.
+							 * 
+							 * This command does not actually do anything visibly on the screen.
+							 * Simply put, this creates an internal definition for the Button mode
+							 * which will be used with RIP_BUTTON commands after the definition is
+							 * created.
+							 * 
+							 * Every Button can have an optional text label.  It can appear in
+							 * several different locations compared to the Button itself.  This is
+							 * specified in the <orient> parameter.  The actual text of the label is
+							 * not specified with this command, it is specified when you actually
+							 * create a Button (see RIP_BUTTON below).  The value that <orient> can
+							 * be is as follows:
+							 * 
+							 *         Value   Description of Orientation
+							 *         -------------------------------------------------
+							 *          00     Display label above button
+							 *          01     Display label to the left of button
+							 *          02     Display label in the center of the button
+							 *          03     Display label to the right of button
+							 *          04     Display label beneath the button
+							 * 
+							 * There are three basic "types" of Buttons.  There are Icon buttons,
+							 * Clipboard buttons and Plain buttons.  Each of these differ in the
+							 * way that they create the button's image.  A description of each type
+							 * is as follows:
+							 *
+							 *      ICON BUTTON (flag 128) - An Icon Button means that the
+							 *      actual image of the button will be created by loading a
+							 *      bitmap icon image from the disk and load it at the given
+							 *      locatino.  Any special effects (see below) can be applied
+							 *      to the Icon to further enhance the image.  The filename
+							 *      for the Icon is supplied with the RIP_BUTTON command, as
+							 *      is the Icon's upper left X/Y coordinate.  Icon Buttons
+							 *      are always stamped in COPY mode.
+							 *
+							 *      CLIPBOARD BUTTON (flag 1) - A clipboard button uses the
+							 *      current contents of the clipboard for the base image of
+							 *      the button.  If no clipboard is defined, then the button
+							 *      is ignored.  The clipboard is pasted in COPY mode at
+							 *      the X/Y location specified in the RIP_BUTTON command
+							 *      that defines the actual button instance.  Any special
+							 *      effects can be applied to this image to further enhance
+							 *      the overall button's image.
+							 *
+							 *      PLAIN BUTTON (flag 256) - A plain button is exactly that,
+							 *      plain.  No special graphics are used to create the button.
+							 *      The entire button region is simply filled-in with a solid
+							 *      colored rectangle using the <surface> color.  Any
+							 *      special effects can be further applied to enhance the
+							 *      button's appearance.
+							 * 
+							 * The <hgt> and <wid> parameters represent the fixed height and width
+							 * of the Button (applies only to Plain Buttons).  If both values are
+							 * greater than zero, then this will represent the actual size of the
+							 * Button (its dimensions are not specified by the RIP_BUTTON command).
+							 * If both of these are set to zero, then the actual RIP_BUTTON command
+							 * will specify the size of the particular Button (dynamic sizing).
+							 * 
+							 * The <bevsize> parameter is only used if the BEVEL FLAG (flag 512) is
+							 * specified.  When active, this parameter will determine how many
+							 * pixels thick the bevel should be.  This may be any value greater or
+							 * equal to zero.
+							 * 
+							 * There are a large number of flag values that can be combined to
+							 * achieve a great many effects.  There are two flag parameters for the
+							 * RIP_BUTTON_STYLE command, <flags> and <flags2>.  They are detailed in
+							 * the two tables that follow in this Section.  You may combine any of
+							 * the flags in the first table together simply by adding the "Value" of
+							 * each one together and representing that number as a MegaNum.
+							 * 
+							 * The <dfore> and <dback> parameters are used with the text label.  The
+							 * <dfore> parameter is the foreground color for the text.  It is always
+							 * used to determine the color of the text label.  The <dback> color is
+							 * the color of the dropshadow (if any).  This parameter is only used
+							 * when you have specified the "Dropshadow" flag in the <flags>
+							 * parameter (see below).
+							 * 
+							 * The <bright>, <dark> and <surface> parameters are used with Plain
+							 * Buttons and with the Special Effects styles (see <flags> below).
+							 * These colors represent the highlighted color, the shadowed color, and
+							 * the regular surface color that is used in Special Effects.  Typical
+							 * color combinations for these colors might be White, Dark-Gray and
+							 * Light-Gray respectively for a "chiseled steel" appearance.  Each of
+							 * these values can contain a two-digit value representing any valid
+							 * color code that may be used in the RIP_COLOR command.
+							 * 
+							 * In addition to the special effects colors, are two additional colors
+							 * that can be used, <uline_color> which is used for the color of the
+							 * underline (in the text label), and <corner_color> which is used to
+							 * display the colors of corners for things like the Bevel, Recess, etc.
+							 * 
+							 * The <grp_no> parameter determines which Button Group subsequent
+							 * RIP_BUTTON commands will be associated with.  Button Groups are used
+							 * to maintain groups of Buttons for things like Radio Buttons and/or
+							 * Checkbox Buttons.  See the section on the BUTTON COMMAND for more
+							 * information on these modes, and what Button Groups can offer.  This
+							 * value can range anywhere from 0-Z (i.e., 0-35).  You should not mix
+							 * Checkbox and Radio buttons in the same group. -- unpredictable things
+							 * may happen if you do.
+							 * 
+							 * Some <flags> are mutually exclusive.  For example, you can only have
+							 * one of the "Plain", "Icon", or "Clipboard" flags chosen at once.  To
+							 * better assist you in determining which values can be combined with
+							 * each other, the right-most five columns in the next two tables
+							 * explain if the specific flag can be used under a specific condition.
+							 * For example, you cannot choose the "Hot Icon" flag if you are dealing
+							 * with a Clipboard Button.  Another example is that you cannot
+							 * underline the hotkey character in the label if it is not a Mouse
+							 * Button.
+							 * 
+							 * The following table contains the possible flag values for the <flags>
+							 * parameter.  Each of these values may be combined to achieve a
+							 * "composite" group of flags.  See the preceding paragraphs for a more
+							 * detailed explanation of this method.
+							 * 
+							 * Value Description of Flags Field #1   Icon Clip  Plain Mouse No-Mouse
+							 * ---------------------------------------------------------------------
+							 *     1 Button is a "Clipboard Button"   N     Y     N     Y     Y
+							 *     2 Button is "Invertable"           Y     Y     Y     Y     N
+							 *     4 Reset screen after button click  Y     Y     Y     Y     N
+							 *     8 Display Chisel special effect    Y     Y     Y     Y     Y
+							 *    16 Display Recessed special effect  Y     Y     Y     Y     Y
+							 *    32 Dropshadow the label (if any)    Y     Y     Y     Y     Y
+							 *    64 Auto-stamp image onto Clipboard  Y     Y     Y     Y     Y
+							 *   128 Button is an "Icon Button"       Y     N     N     Y     Y
+							 *   256 Button is a "Plain Button"       N     N     Y     Y     Y
+							 *   512 Display Bevel special effect     Y     Y     Y     Y     Y
+							 *  1024 Button is a Mouse Button         Y     Y     Y     Y     N
+							 *  2048 Underline hot-key in label       Y     Y     Y     Y     N
+							 *  4096 Make Icon Button use Hot Icons   Y     N     N     Y     N
+							 *  8192 Adj. vertical centering of label Y     Y     Y     Y     Y
+							 * 16384 Button belongs to a Radio Group  Y     Y     Y     Y     N
+							 * 32768 Display Sunken special effect    Y     Y     Y     Y     Y
+							 * 
+							 * The Icon Button, Clipboard button and Plain flags have already been
+							 * discussed.  Following, will be more discussion of the various flags
+							 * used in the preceding table:
+							 *
+							 *      BUTTON IS INVERTABLE (flag 2) - This means that the button
+							 *      will be inverted when clicked.  This flag is only useful
+							 *      when combined with the "Button is a Mouse Button - flag
+							 *      1024) flag.  Even if the button has special effects, those
+							 *      will be inverted as well as they are considered part of
+							 *      the button - all except for the Recessed effect.  The
+							 *      recessed effect is NEVER considered part of the actual
+							 *      button image, and will never be part of the mouse field,
+							 *      button's image or anything - it is just extra graphics.
+							 *
+							 *      RESET SCREEN AFTER BUTTON CLICK (flag 4) - This flag is
+							 *      used when the button is considered a Mouse Button (flag
+							 *      1024).  What this means is that when the user clicks on
+							 *      the button, the screen will be reset exactly the same
+							 *      as a RIP_RESET_WINDOWS command will do.  The reset is
+							 *      performed before the host command is processed (if any).
+							 *
+							 *      DISPLAY CHISEL SPECIAL EFFECT (flag 8) - This displays
+							 *      a special effect on-top of the button image that gives
+							 *      the visual impression of an indented gutter just to the
+							 *      inside of the button's border.  The amount of indentation
+							 *      varies depending on the size of the button.  See below
+							 *      for a table of indentation values for the Chisel effect.
+							 *
+							 *      DISPLAY RECESSED SPECIAL EFFECT (flag 16) - This places
+							 *      a recessed one-pixel bevel around the exterior of the
+							 *      button.  It is never considered part of the button's
+							 *      image.  Its purpose is to give the button a more 3D look
+							 *      by making it appear that the button is "poking through"
+							 *      a hole in a dialog box.  This effect is accomplished by
+							 *      placing a black outline (one pixel wide) around the
+							 *      exterior of the button's image (including bevel, etc),
+							 *      then placing a one-pixel wide inverted bevel around the
+							 *      black outline.
+							 *
+							 *      DROPSHADOW THE LABEL IF ANY (flag 32) - This flag will
+							 *      instruct RIPscrip to place a dropshadowed version of the
+							 *      text label one pixel to the right and one pixel lower
+							 *      than the original label.  This is accomplished by drawing
+							 *      the label first in the <dback> color, then drawing the
+							 *      label offset up-left in the <dfore>.
+							 *
+							 *      AUTO-STAMP IMAGE ONTO CLIPBOARD (flag 64) - This option
+							 *      is also known as "Auto-Clip".  What this means is right
+							 *      after the first button's image is rendered (including any
+							 *      special effects), it is automatically copied onto the
+							 *      clipboard.  The Recessed special effect is not considered
+							 *      part of the button image for this flag and is not made
+							 *      part of the clipboard image.  After the image is copied
+							 *      onto the clipboard, the label is drawn (this is so that
+							 *      the label is not placed onto the clipboard), then a
+							 *      number of flags in the current Button Style definition
+							 *      are altered.  Specifically, the Icon and Plain flags are
+							 *      disabled, and Clipboard button enabled (thus making any
+							 *      subsequent buttons use the resultant Clipboard button
+							 *      image for their button's representation).  In addition,
+							 *      the chisel, bevel, auto-clip and sunken flags are
+							 *      disabled.  The final result is a Clipboard button with
+							 *      no special effects other than the Recessed effect (if
+							 *      any).  This is most often used with Icon Buttons where
+							 *      every subsequent button uses the same Icon over and over
+							 *      again - the net result of this is less "disk thrashing"
+							 *      whenever a button is created; in addition, buttons will
+							 *      draw faster too.
+							 *
+							 *      BUTTON IS AN ICON BUTTON (flag 128) - See previous
+							 *      discussions on button types above.
+							 *
+							 *      BUTTON IS A PLAIN BUTTON (flag 256) - See previous
+							 *      discussions on button types above.
+							 *
+							 *      DISPLAY BEVEL SPECIAL EFFECT (flag 512) - When this flag
+							 *      is active, a bevel will be drawn <size> pixels thick on
+							 *      the outside of the base image of the button.  This makes
+							 *      the button that many pixels wider and taller in each
+							 *      direction.  See the RIP_BUTTON for a more detailed
+							 *      description of the affects of the button's final size.
+							 *
+							 *      BUTTON IS A MOUSE BUTTON (flag 1024) - When this flag is
+							 *      enabled, the button becomes a clickable mouse region.
+							 *      When this option is in use, the Invert flag and several
+							 *      others are available (see the preceding chart).  When
+							 *      a button is a non-mouse button, then it is only used to
+							 *      draw a dialog box or an elaborate "static graphic" image
+							 *      of something that "looks" like a button.
+							 *
+							 *      UNDERLINE HOT-KEYS IN LABEL (flag 2048) - When this
+							 *      flag is active, the first occurence of the hot-key
+							 *      character in the button's label will be underlined using
+							 *      the <uline_col> color.  Special care must be taken when
+							 *      underlining the character, taking into consideration if
+							 *      the character has a segment that goes below the "baseline"
+							 *      of the font.  Consult the following section to determine
+							 *      what ASCII characters have these "descenders".  Characters
+							 *      with descenders have the underline drawn slightly lower
+							 *      than for characters without them.
+							 *
+							 *      MAKE ICON BUTTON USE HOT ICONS (flag 4096) - A Hot Icon
+							 *      is a button that has an alternative image when the button
+							 *      is "depressed".  Normally, when a button is an Icon
+							 *      button, some form of Icon File is used to create the image
+							 *      of the button (eg, EMAIL.ICN).  When the Hot Icon flag is
+							 *      in use, whenever that button is depressed, rather than
+							 *      using the normal Icon File for the button's image, a
+							 *      different Icon File is used for the button's image.  The
+							 *      filename would be the same filename as the original Icon,
+							 *      but with an extension of .HIC instead of .ICN.  When Hot
+							 *      Icon is in use, the alternative Icon is stamped in COPY
+							 *      mode.  If the file does not exist, then the original
+							 *      Icon's image is used, but pasted in NOT mode for the
+							 *      duration of the depression.
+							 *
+							 *      ADJ. VERTICAL CENTERING OF LABEL (flag 8192) - Some Labels
+							 *      may appear non-centered vertically when drawn using some
+							 *      fonts that are rather large.  With this in mind, you have
+							 *      the option to adjust the vertical centering.  What this
+							 *      does is take into consideration the height of any
+							 *      descenders of the label and calculate those into the
+							 *      overall height of the label before centering.  If this
+							 *      flag is not used, then the descenders are not taken into
+							 *      consideration when the vertical centering is calculated.
+							 *      See the Font Metric tables below for more detailed
+							 *      information on font sizes and their associated metrics.
+							 *      This command has no effect if the Label orientation is
+							 *      LEFT or RIGHT of the button.  It only applies to an
+							 *      orientation of TOP, BOTTOM or CENTER.
+							 *
+							 *      BUTTON BELONGS TO A RADIO GROUP (flag 16384) - When this
+							 *      flag is used, then any buttons defined in this button
+							 *      <group_no> are considered to be radio buttons where only
+							 *      one of the buttons can be clicked (selected) at any
+							 *      particular time.  If a button is not a radio button or
+							 *      a checkbox button, then the "selected" flag of the
+							 *      RIP_BUTTON command is ignored.  When a Radio Button is
+							 *      clicked, any other radio button in that button group that
+							 *      is selected is automatically de-selected and the current
+							 *      one selected.  Any host command is processed at the time
+							 *      of the button click.  If a Radio Button is drawn initally
+							 *      as selected, then that host command is processed at the
+							 *      time of its initial drawing.  See the section near the
+							 *      end of this document discussing TEMPLATES for a more
+							 *      complete description of Radio Buttons and how they
+							 *      interact with their Button Group and with each other.
+							 *
+							 *      DISPLAY SUNKEN SPECIAL EFFECT (flag 32768) - When this
+							 *      option is enabled, a one-pixel inverted bevel is drawn
+							 *      exactly one pixel to the inside of the base image of the
+							 *      button.  This and the chisel effect are the only two
+							 *      special effects which physically "overwrite" portions of
+							 *      the base button image.
+							 * 
+							 * This array defines which characters have descenders (portions of
+							 * their font that go below the baseline).  This information is used in
+							 * the vertical centering of button text labels.
+							 * 
+							 * char low_char[256] =
+							 * {
+							 *     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+							 *     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+							 *     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+							 *     0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,
+							 *     1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,
+							 *     0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+							 *     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+							 *     0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0
+							 * };
+							 * 
+							 * struct METRIC
+							 * {
+							 *     unsigned char top;    // Scan lines from TOP OF CELL to char top
+							 *     unsigned char bow;    // Scan lines from TOC to crest of char
+							 *     unsigned char base;   // Scan lines from TOC to baseline
+							 *     unsigned char drop;   // Scan lines from TOC to lowermost pixel
+							 * };
+							 * 
+							 * The METRIC structure can be described visually as follows:
+							 * 
+							 *                       0 --+----------+----------+
+							 *                           |          |          |
+							 *                      TOP__|__________|__________|
+							 *                           | #        |          |
+							 *                           | #        |          |
+							 *                           | #        |          |
+							 *                      BOW__|_#________|___   _ __|
+							 *                           | # ###    |   ### #  |
+							 *                           | ##   #   |  #   ##  |
+							 *                           | #     #  | #     #  |
+							 *                           | #     #  | #     #  |
+							 *                           | #     #  | #     #  |
+							 *                           | #     #  |  #   ##  |
+							 *                     BASE__|_#_____#__|___###_#__|
+							 *                           |          |       #  |
+							 *                           |          |       #  |
+							 *                           |          |       #  |
+							 *                           |          |  #   #   |
+							 *                     DROP__|__________|___###____|
+							 *                           |          |          |
+							 *                     END --+----------+----------+
+							 * 
+							 * Notice that the topmost scan line of a font cell is not necessarily
+							 * the top of the character.  The top field of the structure contains
+							 * the vertical offset from the top of the cell for all fonts in that
+							 * set.
+							 * 
+							 * 
+							 *     Default Font (Font 0)               Triplex Font (Font 1)
+							 * 
+							 * Size  Top    Bow   Base   Drop     Size   Top   Bow     Base   Drop
+							 * ------------------------------     --------------------------------
+							 *   1    0      2      6      7        1     6     10      18     22
+							 *   2    0      4     13     15        2     6     11      20     24
+							 *   3    0      6     20     23        3     8     13      23     28
+							 *   4    0      8     27     31        4     10    17      31     38
+							 *   5    0     10     34     39        5     13    23      41     50
+							 *   6    0     12     41     47        6     16    28      51     62
+							 *   7    0     14     48     55        7     20    34      62     76
+							 *   8    0     16     55     63        8     25    42      77     94
+							 *   9    0     18     62     71        9     30    51      93    114
+							 *  10    0     20     69     79       10     40    67     124    152
+							 * 
+							 * 
+							 *     Small Font (Font 2)                 Sans Serif Font (Font 3)
+							 * 
+							 * Size  Top    Bow   Base   Drop     Size   Top   Bow     Base   Drop
+							 * ------------------------------     --------------------------------
+							 *   1    2      3      5      6        1      7    11      19     23
+							 *   2    2      4      6      7        2      7    12      21     25
+							 *   3    2      3      6      7        3      9    14      24     29
+							 *   4    3      5      9     11        4     11    18      32     39
+							 *   5    4      7     12     14        5     14    24      42     51
+							 *   6    5      9     15     18        6     18    30      53     64
+							 *   7    6     10     13     22        7     22    36      64     78
+							 *   8    7     12     22     27        8     28    45      80     97
+							 *   9    9     15     27     33        9     33    54      96    117
+							 *  10   12     20     36     44       10     74   102     158    186
+							 * 
+							 * 
+							 * 
+							 *      Gothic Font (Font 4)                Script Font (Font 5)
+							 * 
+							 * Size  Top    Bow   Base   Drop     Size   Top   Bow     Base   Drop
+							 * ------------------------------     --------------------------------
+							 *   1    7     11     19     23        1     10    17      22     29
+							 *   2    7     12     21     25        2     10    18      24     32
+							 *   3    9     14     24     29        3     12    21      27     36
+							 *   4   11     18     32     39        4     16    28      37     49
+							 *   5   14     24     42     51        5     21    37      49     65
+							 *   6   18     30     53     64        6     26    46      61     80
+							 *   7   22     36     64     78        7     32    56      74     98
+							 *   8   28     45     80     97        8     40    70      92    122
+							 *   9   33     54     96    117        9     48    84     111    147
+							 *  10   44     72    128    156       10     63   111     147    195
+							 * 
+							 * 
+							 * 
+							 *     Simplex Font (Font 6)            Triplex Script Font (Font 7)
+							 * 
+							 * Size  Top    Bow   Base   Drop     Size   Top   Bow     Base   Drop
+							 * ------------------------------     --------------------------------
+							 *   1    9     13     21     25        1      5     9      17     21
+							 *   2    9     14     23     27        2      5    10      19     23
+							 *   3   11     16     26     31        3      7    12      22     27
+							 *   4   14     21     35     42        4      9    16      30     37
+							 *   5   18     28     46     56        5     12    22      40     49
+							 *   6   23     35     58     69        6     15    27      50     61
+							 *   7   28     42     70     84        7     19    33      61     75
+							 *   8   35     52     87    104        8     24    41      77     93
+							 *   9   42     63    105    126        9     29    50      92    113
+							 *  10   56     84    140    168       10     39    67     123    151
+							 * 
+							 * 
+							 * 
+							 *     Complex Font (Font 8)               European Font (Font 9)
+							 * 
+							 * Size  Top    Bow   Base   Drop     Size   Top   Bow     Base   Drop
+							 * ------------------------------     --------------------------------
+							 *   1    8     12     20     24        1      7    14      32     38
+							 *   2    8     13     22     26        2      7    15      35     41
+							 *   3   10     15     25     30        3      9    18      40     47
+							 *   4   13     20     34     41        4     12    24      54     64
+							 *   5   17     27     45     54        5     16    32      72     85
+							 *   6   22     34     57     68        6     20    40      96    106
+							 *   7   27     41     69     83        7     25    49     109    129
+							 *   8   34     51     86    103        8     31    61     136    161
+							 *   9   41     62    104    125        9     38    74     164    194
+							 *  10   54     83    139    167       10     51    99     219    259
+							 * 
+							 * 
+							 * 
+							 *      Bold Font (Font 10)
+							 * 
+							 * Size  Top    Bow   Base   Drop
+							 * ------------------------------
+							 *   1   11     17     35     39
+							 *   2   13     19     39     43
+							 *   3   14     22     44     49
+							 *   4   19     29     59     66
+							 *   5   27     39     79     88
+							 *   6   33     49     99    110
+							 *   7   39     59    119    133
+							 *   8   49     74    149    166
+							 *   9   59     89    179    200
+							 *  10   79    199    239    267
+							 * 
+							 * The Chisel effect draws a dropshadowed line around the inside of the
+							 * button.  How far from the borders of the button are determined by
+							 * this table:
+							 * 
+							 *         Height of Button     X inset     Y inset
+							 *         ----------------------------------------
+							 *             0 - 11              1          1
+							 *            12 - 24              3          2
+							 *            25 - 39              4          3
+							 *            40 - 74              6          5
+							 *            75 - 149             7          5
+							 *           150 - 199             8          6
+							 *           200 - 249            10          7
+							 *           250 - 299            11          8
+							 *           300 -                13          9
+							 * 
+							 * This table describes the possible flag settings for the <flags2>
+							 * parameter:
+							 * 
+							 * Val Description of Flags Field #2    Icon Clip Plain Mouse No-Mouse
+							 * -------------------------------------------------------------------
+							 *  1  Button is in a check box group     Y    Y    Y     Y       N
+							 *  2  Highlight hotkey character         Y    Y    Y     Y       N
+							 *  4  Explode (zoom out when clicked)    Y    Y    Y     Y       N
+							 *  8  Left Justify Label (top/ctr/btm)   Y    Y    Y     Y       Y
+							 * 16  Right Justify Label (top/ctr/btm)  Y    Y    Y     Y       Y
+							 * 
+							 * Following is a more complete description of the flags described in
+							 * the <flags2> parameter:
+							 *
+							 *      BUTTON IS IN A CHECK BOX GROUP (flag 1) - When this flag is
+							 *      selected, then the button <group_no> is considered a Check-
+							 *      box group.  When in this mode, the Radio Group flag is not
+							 *      accessible - A Button Group can be a Radio Button, a Check-
+							 *      box button or neither, but not more than one at the same
+							 *      time.  A Check-box button group is a group of buttons where
+							 *      each button in the group can be either ON or OFF in any
+							 *      combination.  In this way, more than one button in the
+							 *      group can be clicked at the same time.  See the TEMPLATES
+							 *      section later on in this document for a complete discussion
+							 *      of how the Host Commands are processed for Check-Box buttons.
+							 *      If a check-box button is drawn as "pre-selected", then the
+							 *      Host Command is processed immediately upon inital drawing of
+							 *      the button (when it is received).
+							 *
+							 *      HIGHLIGHT HOTKEY CHARACTER (flag 2) - When this flag is
+							 *      active, then the first occurence of the hotkey character
+							 *      in the label will be hilighted using the <uline_col> color.
+							 *      This gives the user a visual impression of what keystroke
+							 *      they need to type in order to activate the button without
+							 *      the mouse.
+							 *
+							 *      EXPLODE (ZOOM OUT WHEN CLICKED) (flag 4) - This optional
+							 *      flag is designed to "zoom out" from the button when the
+							 *      user clicks on it.  What is generally done is a dotted
+							 *      rectangle is drawn initially around the button and it is
+							 *      repeatedly redrawn over itself in XOR mode, constantly
+							 *      getting larger and larger until it hits the full size of
+							 *      the screen.  This gives the visual impression that the
+							 *      button is zooming out to another screen.  Each time another
+							 *      frame of the zooming rectangle is drawn, the previous
+							 *      rectangle on the inside of the new one is erased by XOR
+							 *      drawing the same rectangle over itself again.  This option
+							 *      does not need to be supported in order to be considered
+							 *      a RIPscrip terminal, although it would be nice.  In
+							 *      other words, this is not a "make or break" feature.
+							 *
+							 *      LEFT JUSTIFY LABEL (TOP/CTR/BTM) (flag 8) - If this option
+							 *      is enabled, then any TOP, CENTER or BOTTOM label orientations
+							 *      will be left justified to the left edge of the button.  The
+							 *      exact indentation of the label from the interior of the
+							 *      button's base image depends on whether the chisel effect
+							 *      is active.  If chisel is OFF, then the indentation is 10
+							 *      pixel.  If chisel is ON, then the indentation is 20 pixels.
+							 *      This option can be combined with the Adjust Vertical Centering
+							 *      flag only if the label orientation is CENTER.
+							 *
+							 *      RIGHT JUSTIFY LABEL (TOP/CTR/BTM) (flag 16) - If this option
+							 *      is enabled, then any TOP, CENTER or BOTTOM label orientations
+							 *      will be right justified to the right edge of the button.  The
+							 *      exact indentation of the label from the interior of the
+							 *      button's base image depends on whether the chisel effect
+							 *      is active.  If chisel is OFF, then the indentation is 10
+							 *      pixel.  If chisel is ON, then the indentation is 20 pixels.
+							 *      This option can be combined with the Adjust Vertical Centering
+							 *      flag only if the label orientation is CENTER.
+							 */
 							handled = true;
 							int argv[15];
 							static const int argslen[] = {2, 2, 2, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6};
@@ -10397,7 +11285,20 @@ setpixel(x1, y1, xx);
 							rip.bstyle.flags.left_justify = (argv[11] & BUTTON_FLAG2_LEFT_JUSTIFY);
 							rip.bstyle.flags.right_justify = (argv[11] & BUTTON_FLAG2_RIGHT_JUSTIFY);
 							break;
-						case 'C':	// RIP_GET_IMAGE
+						case 'C':	// RIP_GET_IMAGE !|1C <x0> <y0> <x1> <y1> <res>
+							/* This command instructs the terminal program to copy the rectangular
+							 * region defined by (x0,y0) to (x1,y1) onto an internal Clipboard for
+							 * future use.  This combined with the Paste Clipboard command can
+							 * provide an extremely powerful and efficient mechanism to avoid
+							 * baud-rate bandwidth limitations.  The (x0,y0) parameter MUST specify
+							 * the upper-left corner of the region and the (x1,y1) parameter MUST
+							 * specify the lower-right corner.  If the indicated coordinates are in
+							 * anyway invalid, the command is ignored.  The Clipboard is completely
+							 * overwritten by this command (the previous contents are lost).
+							 * 
+							 * NOTE:  The <res> parameter isRESERVED FOR FUTURE USE and
+							 *        should be set to zero.
+							 */
 							handled = true;
 							struct text_info ti;
 							GET_XY2();
@@ -10405,7 +11306,129 @@ setpixel(x1, y1, xx);
 							gettextinfo(&ti);
 							rip.clipboard = getpixels(x1 + rip.viewport.sx, y1 + rip.viewport.sy, x2 + rip.viewport.sx, y2 + rip.viewport.sy, false);
 							break;
-						case 'F':	// RIP_FILE_QUERY
+						case 'D':	// RIP_DEFINE !|1D <flags> <res> <text>
+							/* This command is used to create a text variable on the Client system
+							 * (i.e., the Terminal system).  A text variable is more fully covered
+							 * in the HOST COMMANDS section.  Simply put, a text variable is a piece
+							 * of information assigned to a 1-12 character identifier that can
+							 * either be saved to a local database file (static variables), or to
+							 * memory (dynamic variables).  Variable Identifiers can be 1-12
+							 * characters in length.  You may use any alphanumeric character and
+							 * underscores (_) in the identifier.  An underscore cannot be the first
+							 * character, nor can the first character of an identifier be a number.
+							 * 
+							 * The <flags> parameter of this command combines three separate values
+							 * into one MegaNum flag that determines how the variable definition
+							 * will operate.  Here are the possible flag values:
+							 * 
+							 *         Value     Description of Flag
+							 *         ---------------------------------------
+							 *         001     Save Variable to database
+							 *         002     Cannot specify a blank response
+							 *         004     Non-interactive query
+							 * 
+							 * When a variable is flagged as "Save to Database", it becomes a part
+							 * of the Client system's actual configuration.  The value is saved
+							 * indefinitely until either changed, or manually erased.  You may
+							 * choose not to allow the user to enter a blank response.  This
+							 * basically requires them to enter some piece of information for the
+							 * variable.
+							 * 
+							 * The last flag determines whether the definition is interactive or not.
+							 * An interactive definition will attempt to define the variable.  If it
+							 * does exist, it pops the value up on the screen asking the user to
+							 * confirm if the value is correct.  If it does not exist, a similar
+							 * pop-up box will appear asking the user to enter some data for the
+							 * given variable.
+							 * 
+							 * In a non-interactive situation, the Client system will check to see
+							 * if the variable exists.  If it does, then nothing happens (unless a
+							 * default response is specified in this command, whereby the Client's
+							 * variable is updated with the new information).  If the value is not
+							 * defined, then this definition becomes interactive by default, since
+							 * the user actually has to enter something anyway.
+							 * 
+							 * The <text> parameter for this command is also segmented in nature,
+							 * much like the RIP_BUTTON command is.  An example of a segmented
+							 * <text> parameter for the RIP_DEFINE command might be as follows:
+							 * 
+							 *           FULL_NAME,30:?What is your full name?John Doe
+							 * 
+							 * The actual syntax of the Variable Define text parameter is as
+							 * follows:
+							 * 
+							 *   variable-identifier[,field-width]:[?question-text?][default-value]
+							 * 
+							 * There are several different segments in this parameter as you can
+							 * see.  The first section is the variable- identifier.  Immediately
+							 * after it is an optional field-width.  If the field width is omitted,
+							 * it will default to a value of  60.  You should limit the values of
+							 * this width from 1-60.
+							 * 
+							 * Immediately following the identifier field-width parameter is a colon
+							 * (:).  The colon indicates that the variable identifier field is
+							 * completed and that the remainder of the text parameter is to contain
+							 * the question and/or the default response (if any).  If no question or
+							 * default response is provided, the text parameter would read
+							 * "TEXT_VAR,width:" with no additional data.
+							 * 
+							 * The question-text is specified by a question mark (?) followed by the
+							 * actual text of the question, followed by a trailing question mark.
+							 * The basic format of the question segment is as follows:
+							 * 
+							 *                     ?this is a question?
+							 * 
+							 * The remainder of the text parameter consists of a default-value for
+							 * the variable's contents.  It may be omitted if you wish, to make it
+							 * so that the user must enter his/her own value instead of some "canned
+							 * response".
+							 * 
+							 * NOTE:  The <res> parameter is reserved for future use by TeleGrafix
+							 *        Communications, Inc..  It should be set to 00 for
+							 *        compatibility with future releases.
+							 */
+							break;
+						case 'E':	// RIP_END_TEXT !|1E
+							// TODO: Pointless end text area thing.
+							/* This command indicates the end of a formatted text block.  Only one
+							 * of these "end" commands is necessary for each block.
+							 */
+							break;
+						case 'F':	// RIP_FILE_QUERY !|1F <mode> <res> <filename>
+							/* This command queries the existence of a particular file, regardless
+							 * of type.  It is intended for host systems to determine if a
+							 * particular Icon or RIP file exists on the terminal;s hard disk.
+							 * 
+							 * There are a variety of ways you can query for filenames.  The <mode>
+							 * parameter determines the command's response.  This command instructs
+							 * the terminal to send a response to the host immediately upon
+							 * execution.
+							 * 
+							 * The following table is a listing of the possible values for <mode>:
+							 * 
+							 * Mode  Description
+							 * ----------------------------------------------------------------------
+							 *  00   Simply query the existence of the file.  If it exists, a "1" is
+							 *       returned.  Otherwise a "0" is returned to the Host (without a
+							 *       carriage return).
+							 *  01   Same as 0, except a carriage return is added after the response.
+							 *  02   Queries the existence of a file.  If it does not exist, a "0" is
+							 *       returned to the Host followed by a carriage return.  If it does
+							 *       exist, the returned text is a "1." followed by the file size (in
+							 *       decimal).  The return sequence is terminated by a carriage
+							 *       return.  An example of the returned text could be "1.20345".
+							 *  03   Queries extended return information.  If the file does not
+							 *       exist, a "0" is returned followed by a carriage return.  If it
+							 *       does exist, the text returned to the Host is in the Format:
+							 *       1.size.date.time <cr>.  An example of a return statement could
+							 *       be "1.20345.01/02/93.03:04:30<cr>"
+							 *  04   Queries extended return information.  If the file does not
+							 *       exist, a "0" is returned followed by a carriage return.  If it
+							 *       does exist, the text returned to the Host is in the Format:
+							 *       1.filename.size.date.time <cr>. An example of a return statement
+							 *       could be "1.MYFILE.RIP.20345.01/02/93.03:04:30 <cr>".  Note that
+							 *       the file extension adds another period into the return text.
+							 */
 							handled = true;
 							arg1 = parse_mega(&args[0], 2);
 							if (arg1 < 0 || arg1 > 4)
@@ -10463,7 +11486,75 @@ setpixel(x1, y1, xx);
 									break;
 							}
 							break;
-						case 'I':	// RIP_LOAD_ICON
+						case 'G':	// RIP_COPY_REGION !|1G <x0> <y0> <x1> <y1> <res> <dest_line>
+							/* This command physically "copies" a rectangular region of the graphics
+							 * screen up or down.  The <dest_line> parameter is the Y position that
+							 * is the destination scan line to receive the region.  The Destination
+							 * of the copy can overlap the original region, but cannot be on the
+							 * same line.  You cannot move the image area left or right at all.  This
+							 * command is designated for vertical scrolling of graphical data either
+							 * up or down.
+							 * 
+							 * Due to hardware restrictions, the X0 and X1 parameters must be evenly
+							 * divisible by eight (8) (e.g., 0, 8, 16, etc.).  If the X0 and X1
+							 * parameters are NOT evenly divisible by eight, then the X0 parameter
+							 * will be reduced to the next most eight-pixel boundary, and the X1
+							 * parameter will be increased to the next eight-pixel boundary.  For
+							 * example, if X0=14, and X1=38, then X0 would be adjusted DOWN to 8,
+							 * and X1 would be adjusted UP to 40.  This is to ensure that the
+							 * desired graphical region is scrolled.
+							 * 
+							 * The original image area is left on the screen (is not cleared).  So if
+							 * you wish to perform some kind of scrolling effect, you will have to
+							 * clear the original area yourself.
+							 * 
+							 * If the destination region would place the image partially off-screen,
+							 * then the entire command is ignored!
+							 * 
+							 * This is one of the only graphical output commands that DOES NOT       > v1.54
+							 * adhere to the RIP_VIEWPORT command.  In other words, you can scroll   > v1.54
+							 * graphical data outside the current graphical viewport (even over the  > v1.54
+							 * text window!).                                                        > v1.54
+							 * 
+							 * NOTE:  The <res> parameter is reserved for future development by
+       							 * TeleGrafix.
+							 */
+							break;
+						case 'I':	// RIP_LOAD_ICON !|1I <x> <y> <mode> <clipboard> <res> <filename>
+							/* This command instructs the terminal to read an Icon from disk and
+							 * display it at the given upper-left (x,y) location.  If the width or
+							 * height of the Icon would make it go off the right or left edge of the
+							 * screen, the Icon will not be displayed.  The <mode> parameter defines
+							 * the modes in which the Icon will be displayed on the screen.  The
+							 * modes are identical to the RIP_PUT_IMAGE command, and are as follows:
+							 * 
+							 * The .ICN file extension does not need to be included as part of the
+							 * filename.  If omitted, it will automatically be appended to the
+							 * filename.  If an extension is provided, it will be used verbatim.
+							 * 
+							 *   Mode   Description                                         Logical
+							 *   ------------------------------------------------------------------
+							 *    00    Paste the image on-screen normally                   (COPY)
+							 *    01    Exclusive-OR  image with the one already on screen   (XOR)
+							 *    02    Logically OR  image with the one already on screen   (OR)
+							 *    03    Logically AND image with the one already on screen   (AND)
+							 *    04    Paste the inverse of the image on the screen         (NOT)
+							 * 
+							 * If the <clipboard> parameter is 1, then the image pasted on screen
+							 * AND also copied onto the Clipboard.  If 0, it is simply pasted on the
+							 * screen.
+							 * 
+							 * The <filename> parameter must not contain any sub-directory or path
+							 * information and must specify a valid Icon file name.  If the Icon
+							 * cannot be located or an error occurs on the disk, then a box should
+							 * be displayed on screen indicating that the given Icon File could not
+							 * be loaded.  This visual prompt indicates that something is amiss to
+							 * the end-user.
+							 * 
+							 * NOTE:  The 2-byte <res> parameter is RESERVED FOR THE FUTURE
+							 *        and unlike many other previously mentioned reserved
+							 *        parameters, should be set to "10".
+							 */
 							handled = true;
 							cache_path[0] = 0;
 							GET_XY();
@@ -10548,7 +11639,7 @@ setpixel(x1, y1, xx);
 								}
 							}
 							break;
-						case 'K':	// RIP_KILL_MOUSE_FIELDS
+						case 'K':	// RIP_KILL_MOUSE_FIELDS !|1K
 							/*
 							 * This command will "forget" all Mouse Regions.  Use it at the beginning
 							 * of each Scene, so that one scene's Mouse Regions don't get used in
@@ -10557,7 +11648,54 @@ setpixel(x1, y1, xx);
 							handled = true;
 							kill_mouse_fields();
 							break;
-						case 'M':
+						case 'M':	// RIP_MOUSE !|1M <num> <x0><y0><x1><y1> <clk><clr><res><text>
+							/* This command ties together three things:
+							 * 
+							 *      A region on the screen
+							 *      A mouse-click event
+							 *      A string of text to be transmitted by the terminal.
+							 * 
+							 * This command defines a rectangular region on the screen that functions
+							 * as a "hot" mouse area.  If the user clicks the [left] mouse button
+							 * while pointing inside the region, then the terminal must transmit the
+							 * <text> string to the Host.  The (x0,y0) parameter MUST be the
+							 * upper-left corner, and (x1,y1) MUST be the lower-right corner of the
+							 * region.
+							 * 
+							 * The <num> parameter used to be used in the older RIPscrip v1.0
+							 * specification but is now obsolete.  For upwards compatibility, it
+							 * should be set to "00".
+							 * 
+							 * The <clk> parameter, if 1, indicates that the region should be
+							 * visibly inverted while the mouse button is down.  This offers visual
+							 * feedback. If <clk> is 0, the region will not be inverted while
+							 * clicked.
+							 * 
+							 * The <clr> parameter, if 1, will physically zoom the text window to
+							 * full screen size and clear the screen.  This is useful if the <text>
+							 * parameter instructs the host to enter an area of the System that
+							 * doesn't support RIPscrip graphics.
+							 * 
+							 * The <text> parameter is a Host command that gets sent when the field
+							 * is clicked.  You may use a caret (^) to represent control characters,
+							 * (e.g., ^M for carriage return, ^G, ^C, etc.).
+							 * 
+							 * When this command is stored in-memory, it is converted to global
+							 * screen coordinates (for internal storage only).  This makes it so
+							 * that if you have mouse regions defined in multiple different
+							 * viewports, that each field will be properly inverted at the right
+							 * location regardless of the currently defined viewport.
+							 * 
+							 * NOTE: All Mouse Fields are scanned in "last in, first out" order.
+							 *       This means that the last-most received Mouse Field will be
+							 *       the first one scanned for a mouse click.
+							 * 
+							 * NOTE:  You are limited to a maximum of 128 Mouse Regions or
+							 *        Mouse Buttons (128 total).
+							 * 
+							 *        In addition, the 5-byte <res> parameter is RESERVED FOR
+							 *        FUTURE USE, and should be set to zeros (00000).
+							 */
 							handled = true;
 							x1 = parse_mega(&args[2], 2);
 							if (x1 < 0)
@@ -10600,7 +11738,28 @@ setpixel(x1, y1, xx);
 								rip.mfields = mf;
 							}
 							break;
-						case 'P':	// RIP_PUT_IMAGE
+						case 'P':	// RIP_PUT_IMAGE !|1P <x> <y> <mode> <res>
+							/* This command takes the contents of the Clipboard (if any) and pastes
+							 * the image onto the screen starting at the upper-left corner of the
+							 * image of (x,y).  If the right edge of the image would go off-screen,
+							 * the paste command is ignored.  The Height and Width of the clipboard
+							 * image is recorded on the Clipboard, so this command doesn't need to
+							 * supply it.
+							 * 
+							 * The <mode> parameter defines "how" the image will be pasted on the
+							 * screen:
+							 * 
+							 *   Mode   Description                                          Logical
+							 *   -------------------------------------------------------------------
+							 *    00    Paste the image on-screen normally                   (COPY)
+							 *    01    Exclusive-OR  image with the one already on screen   (XOR)
+							 *    02    Logically OR  image with the one already on screen   (OR)
+							 *    03    Logically AND image with the one already on screen   (AND)
+							 *    04    Paste the inverse of the image on the screen         (NOT)
+							 * 
+							 * NOTE:  The 1-byte <res> parameter is RESERVED FOR FUTURE USE
+							 *        and should be set to zero.
+							 */
 							handled = true;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
@@ -10665,23 +11824,240 @@ setpixel(x1, y1, xx);
 								}
 							}
 							break;
-						case 'T':	// RIP_BEGIN_TEXT
+						case 'R':	// RIP_READ_SCENE !|1R <res> <filename>
+							/* This command instructs the remote terminal to playback a local .RIP
+							 * file.  The current execution of RIPscrip commands will be temporarily
+							 * suspended and the contents of the designated RIP file will begin
+							 * executing.  Regardless of whether or not the current RIPscrip code
+							 * coming across the modem is in the middle of a line or not, the RIP
+							 * playback file will be assumed to start at the beginning of a line.
+							 * Therefore, if a RIP_READ_SCENE command is located in a .RIP file, it
+							 * must be the very last command on the line, followed by a carriage
+							 * return instead of a command delimiter (|).  This ensures that the
+							 * loaded .RIP file will begin executing properly with the correct
+							 * delimiters found in the correct places.
+							 * 
+							 * The RIP playback file can alter colors, fonts, or whatever.  Once the
+							 * playback of the file is complete, the remaining RIPscrip code that
+							 * was temporarily suspended will be resume execution.  Any changes that
+							 * appeared in the loaded playback file will remain in effect when the
+							 * resumed code is processed.  In other words, if you change a color or
+							 * a font in the playback file and leave them changed, they will remain
+							 * in effect during the resumed execution.
+							 * 
+							 * NOTE:  The <res> parameter is reserved for future development by
+							 *        TeleGrafix.  It should be set to "00000000" for compatibility
+							 *        with future releases.
+							 */
+							break;
+						case 'T':	// RIP_BEGIN_TEXT !|1T <x1> <y1> <x2> <y2> <res>
+							/* This command defines a rectangular portion of the graphics viewport
+							 * that is to display text, usually a long stream of text.  Following
+							 * this command should be a number of RIP_REGION_TEXT commands with the
+							 * text to be displayed.  The RIP_END_TEXT terminates this stream of
+							 * text, something like this:
+							 * 
+							 * RIP_BEGIN_TEXT
+							 *      RIP_REGION_TEXT
+							 *      RIP_REGION_TEXT
+							 *      RIP_REGION_TEXT
+							 *      :
+							 *      RIP_REGION_TEXT
+							 * RIP_END_TEXT
+							 * 
+							 * There must be at least one RIP_REGION_TEXT command in between the
+							 * header and the footer.  There may be as many as needed.
+							 * 
+							 * These commands ignore the current font "direction"; all text is
+							 * always displayed horizontally.
+							 * 
+							 * NOTE:  The "res" parameter is two bytes wide and is RESERVED for
+							 *        future use.
+							 */
 							// TODO: Justify things.
 							break;
-						case 't':	// RIP_REGION_TEXT
+						case 't':	// RIP_REGION_TEXT !|1t <justify> <text-string>
+							/* A number of these commands may come sandwiched between the
+							 * RIP_BEGIN_TEXT and RIP_END_TEXT commands.  The <text-string> is
+							 * already word-wrapped in such a way that it will fit inside the
+							 * rectangular region based on the current font, font size, and drawing
+							 * color.
+							 * 
+							 * There are two possible settings for the <justify> parameter:
+							 * 
+							 *   Justify   Description
+							 *   ------------------------------------------------------------------
+							 *     0       Don't right/left justify.  Left-justify only
+							 *     1       Perform right/left margin justification of this line of
+							 *             text.
+							 * 
+							 * If a text line falls off the bottom of the region, it is discarded --
+							 * the rectangular Text Region does not scroll.
+							 * 
+							 * This command is intended to import some sort of text file document
+							 * directly into a RIPscrip scene and format it nicely to fit inside a
+							 * simple rectangular area.  If the <justify> parameter is set to a
+							 * value of "1" for a given RIP_REGION_TEXT line, then that line will be
+							 * justified to both the left and right margins (the RIP_BEGIN_TEXT
+							 * boundaries).  This is so that the displayed text aligns on both sides
+							 * with the invisible boundaries.  This "justification" is done by
+							 * splitting each RIP_REGION_TEXT line up into chunks of word-groups,
+							 * broken up at their "white-space" locations.  Each spacer is then
+							 * padded by however many pixels are necessary to keep each spacer
+							 * uniformly of approximately equal size.  Only enough spare pixels are
+							 * added to make sure that the right-edge of the text region alignts
+							 * with the right border of the boundary.  The result is a nicely
+							 * formatted text block.
+							 */
 							// TODO: The things that are justified...
 							break;
-						case 'E':	// RIP_END_TEXT
-							// TODO: Pointless end text area thing.
-							break;
 						case 'U':	// RIP_BUTTON !|1U <x0> <y0> <x1> <y1> <hotkey> <flags> <res> <text>
+							/* This command physically creates a new Button using the previously
+							 * described RIP_BUTTON_STYLE command.  You may have at most 128
+							 * different Mouse Buttons (you may have any number of non-Mouse
+							 * Buttons).
+							 * 
+							 * The <x0> and <y0> parameters for this command designate the
+							 * upper-left corner of the Button.  This (X,Y) location may not be the
+							 * actual "absolute" corner position of the Button, as it may be
+							 * adjusted via the Special Effects functions that are part of the
+							 * RIP_BUTTON_STYLE command (see above).
+							 * 
+							 * The <x1> and <y1> parameters are only used for Plain Buttons when you
+							 * have not specified a specific Height and Width in the
+							 * RIP_BUTTON_STYLE command.  These parameters are used in Dynamically
+							 * Sized Buttons.  If the Height and Width in the RIP_BUTTON_STYLE are
+							 * non-zero, then these two parameters are set to zero.
+							 * 
+							 * The (x0,y0) and (x1,y1) parameters will be modified by the following
+							 * values for the different special effects:
+							 * 
+							 *   Effect Type   X0 Modifier   Y0 Modifier   X1 Modifier   Y1 Modifier
+							 *   -------------------------------------------------------------------
+							 *   Bevel         -bevel size   -bevel size   +bevel size   +bevel size
+							 *   Recess            -2            -2            +2            +2
+							 *   Sunken            0             0             0             0
+							 *   Chisel            0             0             0             0
+							 * 
+							 * The <hotkey> parameter is only used with Mouse Buttons.  It is the
+							 * ASCII code for the keystroke that will activate this Button.  It is
+							 * represented as a two-digit MegaNum.  If this character exists in the
+							 * text label, and the Underline flag or hilight hotkey flag is enabled
+							 * in the RIP_BUTTON_STYLE, then the character will be underlined in the
+							 * label.  Control codes are allowable, and a value of 255 (decimal)
+							 * corresponds to "any" key.
+							 * 
+							 * The <flags> parameter provides several different functions for each
+							 * button.  The possible "combinatorial" flags for this parameter are
+							 * listed in the following table.  Note that these values may be
+							 * combined together (by adding their values) to arrive at the final
+							 * flag parameter's value.
+							 * 	
+							 *         Value  Description
+							 *         --------------------------------------------------
+							 *           1    Draw button as already selected
+							 *           2    Button is "default" when <ENTER> is pressed
+							 * 
+							 * Using a flag of 1 means that the Button is already "selected".  By
+							 * selected, we mean that it is already clicked and should be initially
+							 * drawn as clicked.  This is typically used for Radio Buttons and/or
+							 * Check Boxes.  This only affects the image.  The Host Command WILL NOT
+							 * be automatically sent to the host when a selected Button is drawn. If
+							 * this parameter is set to 0, then the Button will be drawn in normal,
+							 * unselected mode.
+							 * 
+							 * The <text> parameter for this command is somewhat different than
+							 * those found in previously described RIPscrip commands.  All other
+							 * RIPscrip commands only have one text parameter.  This command
+							 * requires  anywhere from 0-3 text parameters.  The way RIPscrip
+							 * accomplishes this is by separating each block in the <text> parameter
+							 * with the delimiter "<>".  This text parameter delimiter is not needed
+							 * before the first text block, but is necessary between the 1st and 2nd
+							 * blocks, and the 2nd and 3rd blocks.  Here is an example of a typical
+							 * text parameter for this command:
+							 * 
+							 *      ICONFILE.ICN<>TEXT LABEL<>HOST COMMAND
+							 * 
+							 * The actual syntax of this text parameter is as follows:
+							 * 
+							 *      [icon-file][[<>text-label][<>host-command]]
+							 * 
+							 * The block described as ICONFILE.ICN is actually the Icon Filename
+							 * that will be used for the Button if it is an Icon Button.  If it is
+							 * not an Icon Button, then this block will read "<>" all by itself (a
+							 * "null" block).
+							 * 
+							 * The .ICN file extension does not need to be included as part of the
+							 * filename.  If omitted, it will automatically be appended to the
+							 * filename.  If an extension is provided, it will be used verbatim.
+							 * 
+							 * The "TEXT LABEL" block is actually the text that will be used to
+							 * descriptively label the Button.  You may also specify a "null" block
+							 * for no label (i.e., "<>").
+							 * 
+							 * The final block of the <text> parameter is the Host Command.  This
+							 * block contains any text that should be sent to the Host after this
+							 * Button is clicked.  This may contain any Control Characters,
+							 * Pick-List definitions, Text Variables or Template Definitions.  This
+							 * block might be "segmented" into multiple Host Command segments.  See
+							 * the section entitled HOST COMMANDS in this Manual for additional
+							 * information on these Host Command features.
+							 * 
+							 * When this command is stored in-memory, it is converted to global
+							 * screen coordinates (for internal storage only).  This makes it so
+							 * that if you have mouse button regions defined in multiple different
+							 * viewports, that each field will be properly inverted at the right
+							 * location regardless of the currently defined viewport.
+							 * 
+							 * NOTE: All Mouse Fields are scanned in "last in, first out" order.
+							 *       This means that the last-most received Mouse Button will be
+							 *       the first one scanned for a mouse click.
+							 * 
+							 * 
+							 * Not all of the blocks in the <text> parameter need to be specified.
+							 * Here are examples of the valid combinations of text blocks:
+							 * 
+							 *   Parameter Example       Description of the Text Parameter
+							 *   -------------------------------------------------------------------
+							 *   icon<>label<>host_cmd   Specify all three blocks
+							 *     <>label<>host_cmd     2 blocks specified; no icon
+							 *       icon<>label<>       2 blocks specified; no host  command
+							 *        icon<>label        2 blocks specified; no host  command
+							 *       <><>host_cmd        1 block  specified; no icon  or label
+							 *        <>label<>          1 block  specified; no icon  or host command
+							 *         <>label           1 block  specified; no icon  or host command
+							 *        icon<><>           1 block  specified; no label or host command
+							 *         icon<>            1 block  specified; no label or host command
+							 *          icon             1 block  specified; no label or host command
+							 *         <><><>            A blank text parameter; all blocks omitted
+							 *          <><>             A blank text parameter; all blocks omitted
+							 *           <>              A blank text parameter; all blocks omitted
+							 * 
+							 * NOTE:  The <res> parameter is reserved for future use by TeleGrafix
+							 *        Communications, Inc..  It should be set to 0 for compatibility
+							 *        with future releases.
+							 */
 							handled = true;
 							GET_XY2();
 							arg1 = parse_mega(&args[8], 2);
 							arg2 = parse_mega(&args[10], 1);
 							add_button(x1, y1, x2, y2, arg1, arg2, &args[11]);
 							break;
-						case 'W':	// RIP_WRITE_ICON
+						case 'W':	// RIP_WRITE_ICON !|1W <res> <filename>
+							/* This command takes the contents of the Clipboard and writes it to a
+							 * disk file.  This Icon file can be loaded later with a RIP_LOAD_ICON
+							 * command and stamped on the screen.
+							 * 
+							 * The command instructs the terminal to store an Icon on the terminal's
+							 * disk drive, or on some appropriate storage media.  Path or
+							 * sub-directory information is not allowed in the filename portion of
+							 * the command.  If the clipboard is nonexistent (i.e., at the beginning
+							 * of a scene), this command is ignored.  If an Icon by the same name
+							 * already exists on disk, it is overwritten.
+							 * 
+							 * NOTE:  The <res> parameter is RESERVED FOR FUTURE USE and
+							 *        should be set to zero.
+							 */
 							handled = true;
 							if (rip.clipboard == NULL)
 								break;
@@ -10734,6 +12110,86 @@ setpixel(x1, y1, xx);
 							}
 							break;
 					}
+			}
+			break;
+		case 9:
+			switch (sublevel) {
+				case 0:
+					switch(cmd) {
+						case '\x1b':	// RIP_ENTER_BLOCK_MODE !|9<escape> <proto> <file_type> <res> [filename] <>
+							/* This command is used to auto-initiate any desired File Transfer
+							 * Protocol.  The <filename> parameter is optional on downloads,
+							 * required for uploads, and if omitted must be replaced with a <>
+							 * parameter (end of string).
+							 * 
+							 * The <mode> parameter is to specify upload or download.  Use "1" for
+							 * upload mode, or "0" (zero) for download mode.  A filename is required
+							 * for uploads.  If the user has Data Security enabled on the terminal,
+							 * they are prompted to OK the upload before it proceeds.  If the user
+							 * does not authorize the upload, ten <Ctrl-X>'s (ASCII 24 or CAN) are
+							 * sent at one-tenth second intervals.  The <filetype> parameter is
+							 * ignored for uploads.
+							 * 
+							 * The <proto> parameter is the file transfer protocol specifier.
+							 * Possible values, and the protocols they refer to are:
+							 * 
+							 *     Value   Protocol            Filename Required?
+							 *     ----------------------------------------------
+							 *       0     Xmodem (checksum)          Yes
+							 *       1     Xmodem (CRC)               Yes
+							 *       2     Xmodem-1K                  Yes
+							 *       3     Xmodem-1K (G)              Yes
+							 *       4     Kermit                     Yes
+							 *       5     Ymodem (batch)             No
+							 *       6     Ymodem-G                   No
+							 *       7     Zmodem (crash recovery)    No
+							 * 
+							 * The <file_type> parameter determines what type of files are to be
+							 * received during the block transfer.  These are the valid parameters:
+							 * 
+							 * 
+							 *     Value   Description of Block Transfer Contents
+							 *     ---------------------------------------------------------------
+							 *       0     RIP file sequence (display it)
+							 *       1     RIP file sequence (store them)
+							 *       2     ICN file sequence (store them in proper directories)
+							 *       3     HLP file sequence (store it, and auto-load if needed)
+							 *       4     COMPOSITE DYNAMIC file sequence (batch protocols only)
+							 *       5     ACTIVE DYNAMIC file sequence (batch protocols only)
+							 * 
+							 * Whether the <filename> is specified or not, this command must have a
+							 * "<>" sequence after the filename (even if there is none).  Here are
+							 * examples of how it would look with and without a filename:
+							 * 
+							 * With a filename, using X-Modem/CRC:
+							 * 
+							 *      !|9<escape>01010000filename.icn<>
+							 * 
+							 * Without a filename, using Z-Modem
+							 * 
+							 *      !|9<escape>06040000<>
+							 * 
+							 * The special <file_type> of 4 & 5 (COMPOSITE DYNAMIC file sequences)
+							 * is somewhat different than the non-batch transfer methods.  This
+							 * allows each file uploaded to be individually processed based on their
+							 * file extensions.  If you use extensions other than .RIP or .ICN, then
+							 * this mode is not available to you as the necessary files will not be
+							 * able to be processed.  Any files that are "downloaded" from the Host
+							 * in DYNAMIC mode are placed into the appropriate sub-directories and
+							 * no further processing is performed.  .RIP files that are received are
+							 * "stored" and are not played back in COMPOSITE DYNAMIC mode.  In
+							 * ACTIVE DYNAMIC mode, they are stored and played back simultaneously.
+							 * 
+							 * NOTE:  This command must be terminated with a carriage return.
+							 *        A vertical bar (|) command delimiter cannot be used to
+							 *        separate this command from a subsequent one on the same
+							 *        line.  In other words, this command must be the last
+							 *        command on a line of text.  The protocol must begin on
+							 *        the very next line.
+							 */
+							break;
+					}
+					break;
 			}
 			break;
 	}
