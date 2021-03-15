@@ -1,0 +1,35 @@
+--- random/unix.c.orig	2021-03-15 18:02:42.743073000 -0400
++++ random/unix.c	2021-03-15 18:04:17.393934000 -0400
+@@ -398,7 +398,7 @@
+   #include <net/route.h>			/* For CTL_NET:AF_ROUTE:0:AF_INET:\
+ 									   NET_RT_FLAGS idents */
+   #include <sys/gmon.h>				/* For CTL_KERN:KERN_PROF identifiers */
+-  #if defined( __NetBSD__ )
++  #if defined( __NetBSD__ ) || defined( __OpenBSD__ )
+ 	#include <uvm/uvm_param.h>		/* For CTL_VM identifiers */
+   #else
+ 	#include <vm/vm_param.h>		/* For CTL_VM identifiers */
+@@ -414,7 +414,9 @@
+ static const SYSCTL_INFO sysctlInfo[] = {
+ 	/* Hardware info */
+ 	{ 2, { CTL_HW, HW_MACHINE } },	/* Machine class */
++#ifdef HW_MACHINE_ARCH
+ 	{ 2, { CTL_HW, HW_MACHINE_ARCH } }, /* Machine architecture */
++#endif
+ 	{ 2, { CTL_HW, HW_MODEL } },	/* Machine model */
+ #ifdef HW_IOSTATS
+ 	{ 2, { CTL_HW, HW_IOSTATS } },	/* struct io_sysctl for each device 
+@@ -517,11 +519,13 @@
+ 									/* Terminal chars sent/received */
+ #endif /* KERN_TKSTAT */
+ 	{ 2, { CTL_KERN, KERN_VERSION } }, /* System version string  */
++#ifdef KERN_VNODE
+ 	{ 2, { CTL_KERN, KERN_VNODE }, 15 }, 
+ 									/* struct xvnode for each vnode, see 
+ 									   /sys/sys/vnode.h.  Produces a huge 
+ 									   amount of output so typically gets
+ 									   truncated at SYSCTL_BUFFER_SIZE */
++#endif
+ 
+ 	/* Networking info */
+ 	{ 6, { CTL_NET, AF_ROUTE, 0, AF_INET, NET_RT_DUMP, 0 }, 5 },
