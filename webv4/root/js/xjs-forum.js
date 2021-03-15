@@ -309,8 +309,19 @@ function addPollField(type, target) {
 
 }
 
-
 function renderBBSView(body) {
+    let x = 0;
+    let y = 0;
+    let _x = 0;
+    let _y = 0;
+    let fg = 7;
+    let bg = 0;
+    let high = 0;
+    let match;
+    let opts;
+    const lifo = [];
+    const data = [[]];
+    const re = /^((?<ansi>\u001b\[((?:[\x30-\x3f]{0,2};?)*)[\x20-\x2f]*([\x40-\x7c]))|(\x01(?<ctrl_a>.))|(@(?<pcboard_bg>[a-fA-F0-9])(?<pcboard_fg>[a-fA-F0-9])@{0,1})|(\|(?<pipe>\d\d))|(\x03(?<wwiv>[0-9]))|(\|(?<celerity>[kbgcrmywdBGCRMYWS])))/;
 
     const ANSI_Colors = [
         "#000000", // Black
@@ -331,90 +342,420 @@ function renderBBSView(body) {
         "#FFFFFF", // White
     ];
 
-    const CTRL_A_Colors = {
-        'K': 0,
-        'R': 1,
-        'G': 2,
-        'Y': 3,
-        'B': 4,
-        'M': 5,
-        'C': 6,
-        'W': 7,
-    };
-
-    const PCBoard_Colors = {
-        '0': { index: 0, high: 0 },
-        '1': { index: 4, high: 0 },
-        '2': { index: 2, high: 0 },
-        '3': { index: 6, high: 0 },
-        '4': { index: 1, high: 0 },
-        '5': { index: 5, high: 0 },
-        '6': { index: 3, high: 0 },
-        '7': { index: 7, high: 0 },
-        '8': { index: 0, high: 1 },
-        '9': { index: 4, high: 1 },
-        'A': { index: 2, high: 1 },
-        'B': { index: 6, high: 1 },
-        'C': { index: 1, high: 1 },
-        'D': { index: 5, high: 1 },
-        'E': { index: 3, high: 1 },
-        'F': { index: 7, high: 1 },
-    };
-
-    const Pipe_Colors = {
-        fg: {
-            '00': { index: 0, high: 0 },
-            '01': { index: 4, high: 0 },
-            '02': { index: 2, high: 0 },
-            '03': { index: 6, high: 0 },
-            '04': { index: 1, high: 0 },
-            '05': { index: 5, high: 0 },
-            '06': { index: 3, high: 0 },
-            '07': { index: 7, high: 0 },
-            '08': { index: 0, high: 1 },
-            '09': { index: 4, high: 1 },
-            '10': { index: 2, high: 1 },
-            '11': { index: 6, high: 1 },
-            '12': { index: 1, high: 1 },
-            '13': { index: 5, high: 1 },
-            '14': { index: 3, high: 1 },
-            '15': { index: 7, high: 1 },
+    const Codes = {
+        ctrl_a: {
+            K: { fg: 0 },
+            R: { fg: 1 },
+            G: { fg: 2 },
+            Y: { fg: 3 },
+            B: { fg: 4 },
+            M: { fg: 5 },
+            C: { fg: 6 },
+            W: { fg: 7 },
+            0: { bg: 0 },
+            1: { bg: 1 },
+            2: { bg: 2 },
+            3: { bg: 3 },
+            4: { bg: 4 },
+            5: { bg: 5 },
+            6: { bg: 6 },
+            7: { bg: 7 },
+            H: { high: 1 },
+            N: { high: 0 },
+            '-': { // optimized normal
+                handler: () => {
+                    if (lifo.length) {
+                        const attr = lifo.pop();
+                        fg = attr.fg;
+                        bg = attr.bg;
+                        high = attr.high;
+                    } else {
+                        high = 0;
+                    }
+                }
+            },
+            L: { // Clear the screen
+                handler: () => data = [[]],
+            },
+            J: { // Clear to end of screen but keep cursor in place
+                handler: () => {
+                    for (let yy = y; yy < data.length; yy++) {
+                        if (data[yy] === undefined) continue;
+                        for (let xx = x + 1; xx < data[yy].length; xx++) {
+                            if (data[yy][xx] === undefined) continue;
+                            data[yy][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg }; // Could just make these undefined I guess
+                        }
+                    }
+                },
+            },
+            '>': { // Clear to end of line but keep cursor in place
+                handler: () => {
+                    for (let xx = x; xx < data[y].length; xx++) {
+                        if (data[y][xx] === undefined) continue;
+                        data[y][xx] = { c: ' ', fg: fg + (high ? 8 : 0), bg }; // Could just make these undefined I guess
+                    }
+                },
+            },
+            '<': { // Cursor left
+                handler: () => {
+                    if (x > 0) {
+                        x--;
+                    } else if (y > 0) { // Not sure if this is what would happen on terminal side; must test.
+                        x = 79;
+                        y--;
+                    }
+                },
+            },
+            "'": {
+                handler: () => {
+                    x = 0;
+                    y = 0;
+                },
+            },
+            '[': { handler: () => x = 0 }, // CR
+            ']': { // LF
+                handler: () => {
+                    y++;
+                    if (data[y] === undefined) data[y] = [];
+                },
+            }, 
+            '/': { // Conditional newline - Send a new-line sequence (CRLF) only when the cursor is not already in the first column
+                handler: () => {
+                    if (x < 1) return;
+                    this['['].handler();
+                    this[']'].handler();
+                },
+            }, 
+            '+': { handler: () => lifo.push({ fg, bg, high }) },
+            // '_': {}, // optimized normal, but only if blinking or (high?) background is set
+            // I: {}, // blink
+            // E: {}, // bright bg (ice)
+            // f: {}, // blink font
+            // F: {}, // high blink font
+            // D: { // current date in mm/dd/yy or dd/mm/yy
+            //     handler: () => {},
+            // },
+            // T: { // current system time in hh:mm am/pm or hh:mm:ss format
+            //     handler: () => {},
+            // },
+            // '"': {}, // Display a file
         },
-        bg: {
-            '16': { index: 0, high: 0 },
-            '17': { index: 4, high: 0 },
-            '18': { index: 2, high: 0 },
-            '19': { index: 6, high: 0 },
-            '20': { index: 1, high: 0 },
-            '21': { index: 5, high: 0 },
-            '22': { index: 3, high: 0 },
-            '23': { index: 7, high: 0 },
+        pcboard_bg: {
+            0: { bg: 0 },
+            1: { bg: 4 },
+            2: { bg: 2 },
+            3: { bg: 6 },
+            4: { bg: 1 },
+            5: { bg: 5 },
+            6: { bg: 3 },
+            7: { bg: 7 },
+            // 8-F are blinking fg
+        },
+        pcboard_fg: {
+            0: {
+                fg: 0,
+                high: 0,
+            },
+            1: {
+                fg: 4,
+                high: 0,
+            },
+            2: {
+                fg: 2,
+                high: 0,
+            },
+            3: {
+                fg: 6,
+                high: 0,
+            },
+            4: {
+                fg: 1,
+                high: 0,
+            },
+            5: {
+                fg: 5,
+                high: 0,
+            },
+            6: {
+                fg: 3,
+                high: 0,
+            },
+            7: {
+                fg: 7,
+                high: 0,
+            },
+            8: {
+                fg: 0,
+                high: 1,
+            },
+            9: {
+                fg: 4,
+                high: 1,
+            },
+            A: {
+                fg: 2,
+                high: 1,
+            },
+            B: {
+                fg: 6,
+                high: 1,
+            },
+            C: {
+                fg: 1,
+                high: 1,
+            },
+            D: {
+                fg: 5,
+                high: 1,
+            },
+            E: {
+                fg: 3,
+                high: 1,
+            },
+            F: {
+                fg: 7,
+                high: 1,
+            },
+        },
+        pipe: {
+            00: {
+                fg: 0,
+                high: 0,
+            },
+            01: {
+                fg: 4,
+                high: 0,
+            },
+            02: {
+                fg: 2,
+                high: 0,
+            },
+            03: {
+                fg: 6,
+                high: 0,
+            },
+            04: {
+                fg: 1,
+                high: 0,
+            },
+            05: {
+                fg: 5,
+                high: 0,
+            },
+            06: {
+                fg: 3,
+                high: 0,
+            },
+            07: {
+                fg: 7,
+                high: 0,
+            },
+            08: {
+                fg: 0,
+                high: 1,
+            },
+            09: {
+                fg: 4,
+                high: 1,
+            },
+            10: {
+                fg: 2,
+                high: 1,
+            },
+            11: {
+                fg: 6,
+                high: 1,
+            },
+            12: {
+                fg: 1,
+                high: 1,
+            },
+            13: {
+                fg: 5,
+                high: 1,
+            },
+            14: {
+                fg: 3,
+                high: 1,
+            },
+            15: {
+                fg: 7,
+                high: 1,
+            },
+            16: {
+                bg: 0,
+                high: 0,
+            },
+            17: {
+                bg: 4,
+                high: 0,
+            },
+            18: {
+                bg: 2,
+                high: 0,
+            },
+            19: {
+                bg: 6,
+                high: 0,
+            },
+            20: {
+                bg: 1,
+                high: 0,
+            },
+            21: {
+                bg: 5,
+                high: 0,
+            },
+            22: {
+                bg: 3,
+                high: 0,
+            },
+            23: {
+                bg: 7,
+                high: 0,
+            },
             // 24 - 31 are ice bg or blinking fg
         },
+        wwiv: {
+            0: {
+                fg: 7,
+                bg: 0,
+                high: 0,
+            },
+            1: {
+                fg: 6,
+                bg: 0,
+                high: 1,
+            },
+            2: {
+                fg: 3,
+                bg: 0,
+                high: 1,
+            },
+            3: {
+                fg: 5,
+                bg: 0,
+                high: 0,
+            },
+            4: {
+                fg: 7,
+                bg: 4,
+                high: 1,
+            },
+            5: {
+                fg: 2,
+                bg: 0,
+                high: 0,
+            },
+            6: { // Supposed to blink, but whatever.
+                fg: 2,
+                bg: 0,
+                high: 1,
+            },
+            7: {
+                fg: 4,
+                bg: 0,
+                high: 1,
+            },
+            8: {
+                fg: 4,
+                bg: 0,
+                high: 0,
+            },
+            9: {
+                fg: 6,
+                bg: 0,
+                high: 0,
+            },
+        },
+        celerity: {
+            k: {
+                fg: 0,
+                high: 0,
+            },
+            b: {
+                fg: 4,
+                high: 0,
+            },
+            g: {
+                fg: 2,
+                high: 0,
+            },
+            c: {
+                fg: 6,
+                high: 0,
+            },
+            r: {
+                fg: 1,
+                high: 0,
+            },
+            m: {
+                fg: 5,
+                high: 0,
+            },
+            y: {
+                fg: 3,
+                high: 0,
+            },
+            w: {
+                fg: 7,
+                high: 0,
+            },
+            d: {
+                fg: 0,
+                high: 1,
+            },
+            B: {
+                fg: 4,
+                high: 1,
+            },
+            G: {
+                fg: 2,
+                high: 1,
+            },
+            C: {
+                fg: 6,
+                high: 1,
+            },
+            R: {
+                fg: 1,
+                high: 1,
+            },
+            M: {
+                fg: 5,
+                high: 1,
+            },
+            Y: {
+                fg: 3,
+                high: 1,
+            },
+            W: {
+                fg: 7,
+                high: 1,
+            },
+            S: {
+                handler: () => {
+                    const _fg = fg;
+                    fg = bg;
+                    bg = _fg;
+                },
+            },
+        },
     };
-    
-    // To do: Celerity
-
-    let x = 0;
-    let y = 0;
-    let _x = 0;
-    let _y = 0;
-    let fg = 7;
-    let bg = 0;
-    let high = 0;
-    let match;
-    let opts;
-    const re = /^((?<ansi>\u001b\[((?:[0-9]{0,2};?)*)([a-zA-Z]))|(\x01(?<ctrla>.))|(?<pcboard>@(?<pcboardbg>[a-fA-F0-9])(?<pcboardfg>[a-fA-F0-9])@{0,1})|(\|(?<pipe>\d\d))|(\x03(?<wwiv>[0-9])))/;
-    const data = [[]];
+    Object.values(Codes).forEach(v => {
+        Object.keys(v).forEach(k => {
+            if (v[k.toUpperCase()] === undefined) v[k.toUpperCase()] = v[k];
+            if (v[k.toLowerCase()] === undefined) v[k.toLowerCase()] = v[k];
+        });
+    });
 
     while (body.length) {
         match = re.exec(body);
         if (match !== null) {
-            console.debug(match, match.groups);
             body = body.substr(match[0].length);
             if (match.groups.ansi !== undefined) {
-                opts = match[1].split(';').map(e => parseInt(e, 10));
-                switch (match[2]) {
+                opts = match[3].split(';').map(e => parseInt(e, 10));
+                switch (match[4]) {
                     case 'A':
                         y = Math.max(y - (isNaN(opts[0]) ? 1 : opts[0]), 0);
                         break;
@@ -436,6 +777,7 @@ function renderBBSView(body) {
                         break;
                     case 'm':
                         for (let o of opts) {
+                            if (isNaN(o)) continue;
                             if (o == 0) {
                                 fg = 7;
                                 bg = 0;
@@ -478,151 +820,15 @@ function renderBBSView(body) {
                         // Unknown or unimplemented command
                         break;
                 }
-            } else if (match.groups.ctrla !== undefined) {
-                const u = match.groups.ctrla.toUpperCase();
-                const i = parseInt(match.groups.ctrla, 10);
-                if (CTRL_A_Colors[u] !== undefined) {
-                    fg = CTRL_A_Colors[u];
-                } else if (!isNaN(i) && i >= 0 && i <= 7) {
-                    bg = i;
-                } else {
-                    switch (match.groups.ctrla) {
-                        case 'H':
-                        case 'h':
-                            high = 1;
-                            break;
-                        case 'I': // blink
-                        case 'E': // bright bg (ice)
-                        case 'f': // blink font
-                        case 'F': // high blink font
-                            break;
-                        case 'N':
-                            high = 0;
-                            break;
-                        case '-': // optimized normal                        
-                            // we need to support pushing current attributes (\1+), then use this to pop them
-                            // or if nothing has been pushed, then unset any special attributes (only 'high' for now)
-                            break;
-                        case '_': // optimized normal
-                            // when he says "the Background attribute", does he mean Bright-Background, or just any background colour?
-                            break;
-                        case 'L': // Clear the screen
-                            // Same as ANSI parser case J? Easier to preserve the arrays since we're not homing the cursor
-                            break;
-                        case "'": // Home the cursor
-                            x = 0;
-                            y = 0;
-                            break;
-                        case 'J':
-                        case 'j': // Clear to end of screen but keep cursor in place
-                            break;
-                        case '>': // Clear to end of line but keep cursor in place
-                            break;
-                        case '<': // Cursor left
-                            if (x > 0) {
-                                x--;
-                            } else if (y > 0) { // Not sure if this is what would happen on terminal side; must test.
-                                x = 79;
-                                y--;
-                            }
-                            break;
-                        case '[': // CR
-                            x = 0;
-                            break;
-                        case ']': // LF
-                            y++;
-                            if (data[y] === undefined) data[y] = [];
-                            break;
-                        case '/': // Conditional newline - Send a new-line sequence (CRLF) only when the cursor is not already in the first column
-                            if (x > 0) {
-                                x = 0;
-                                y++;
-                                if (data[y] === undefined) data[y] = [];
-                            }
-                            break;
-                        case '+': // push current attributes onto lifo stack
-                            break;
-                        case 'D':
-                        case 'd': // current date in mm/dd/yy or dd/mm/yy (should be system date & format, but we'll use browser date & locale)
-                            break;
-                        case 'T':
-                        case 't': // current system time in hh:mm am/pm or hh:mm:ss format (via browser, as with \1D)
-                            break;
-                        case '"': // Display a file
-                            // the following string would be a filename from the 'text' directory
-                            // I guess we could support this and make a request for the file
-                            // but this isn't needed as long as we're only using this function for the forum
-                            break;
-                        default:
-                            // if parseInt(match[5], 10) > 127 and < 256 then move cursor right by that many spaces, wrap at col 80
-                            // Unknown or unhandled CTRL-A code
-                            break;
-                    }
-                }
-            } else if (match.groups.pcboard !== undefined) {
-                const ub = match.groups.pcboardbg.toUpperCase();
-                if (PCBoard_Colors[ub] !== undefined && !PCBoard_Colors[ub].high) { // high bg here means blinking fg
-                    bg = PCBoard_Colors[ub].index;
-                }
-                const uf = match.groups.pcboardfg.toUpperCase();
-                if (PCBoard_Colors[uf] !== undefined) {
-                    fg = PCBoard_Colors[uf].index;
-                    high = PCBoard_Colors[uf].high;
-                }
-            } else if (match.groups.pipe !== undefined) {
-                if (Pipe_Colors.fg[match.groups.pipe] !== undefined) {
-                    fg = Pipe_Colors.fg[match.groups.pipe].index;
-                    high = Pipe_Colors.fg[match.groups.pipe].high;
-                } else if (Pipe_Colors.bg[match.groups.pipe] !== undefined) {
-                    bg = Pipe_Colors.bg[match.groups.pipe].index;
-                }
-            } else if (match.groups.wwiv !== undefined) {
-                switch (match.groups.wwiv) {
-                    case '0':
-                        fg = 7;
-                        high = 0;
-                        break;
-                    case '1':
-                        fg = 6;
-                        high = 1;
-                        break;
-                    case '2':
-                        fg = 3;
-                        high = 1;
-                        break;
-                    case '3':
-                        fg = 5;
-                        high = 0;
-                        break;
-                    case '4':
-                        fg = 7;
-                        bg = 4;
-                        high = 1;
-                        break;
-                    case '5':
-                        fg = 2;
-                        high = 0;
-                        break;
-                    case '6':
-                        fg = 2;
-                        high = 1;
-                        // Supposed to blink, but whatever
-                        break;
-                    case '7':
-                        fg = 4;
-                        high = 1;
-                        break;
-                    case '8':
-                        fg = 4;
-                        high = 0;
-                        break;
-                    case '9':
-                        fg = 6;
-                        high = 0;
-                        break;
-                    default:
-                        break;
-                }
+            } else {
+                Object.keys(match.groups).forEach(e => {
+                    if (match.groups[e] === undefined) return;
+                    if (Codes[e] === undefined || Codes[e][match.groups[e]] === undefined) return;
+                    if (Codes[e][match.groups[e]].fg !== undefined) fg = Codes[e][match.groups[e]].fg;
+                    if (Codes[e][match.groups[e]].bg !== undefined) bg = Codes[e][match.groups[e]].bg;
+                    if (Codes[e][match.groups[e]].high !== undefined) high = Codes[e][match.groups[e]].high;
+                    if (Codes[e][match.groups[e]].handler !== undefined) Codes[e][match.groups[e]].handler();
+                });
             }
         } else {
             let ch = body.substr(0, 1);
@@ -657,6 +863,7 @@ function renderBBSView(body) {
     let obg;
     let span;
     for (let y = 0; y < data.length; y++) {
+        if (data[y] === undefined) continue;
         for (let x = 0; x < data[y].length; x++) {
             if (data[y][x]) {
                 if (!span || data[y][x].fg != ofg || data[y][x].bg != obg) {
@@ -688,7 +895,7 @@ function renderBBSView(body) {
 function bbsView(elem, body) {
     const btn = elem.querySelector('button[data-button-bbs-view]');
     btn.disabled = true;
-    const pre = renderBBSView('\x014\x01h\x01rCTRL-A\x010\x01n\x01w, @1CPCBoard@07, |17|12Pipe (Mystic/Renegade/Telegard)|16|07, \x034WWIV\x030');//body);
+    const pre = renderBBSView(body);
     const target = elem.querySelector('div[data-message-body]')
     target.innerHTML = '';
     target.appendChild(pre);
