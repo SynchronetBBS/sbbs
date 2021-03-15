@@ -673,7 +673,7 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
     }
     section=iniGetSection(listfile,bbsname);
     iniGetString(section,NULL,"Address","",entry->addr);
-    entry->conn_type=iniGetEnum(section,NULL,"ConnectionType",conn_types_enum,CONN_TYPE_RLOGIN);
+    entry->conn_type=iniGetEnum(section,NULL,"ConnectionType",conn_types_enum,CONN_TYPE_SSH);
     entry->flow_control = fc_from_enum(iniGetEnum(section, NULL, "FlowControl", fc_enum, 0));
     entry->port=iniGetShortInt(section,NULL,"Port",conn_ports[entry->conn_type]);
     entry->added=iniGetDateTime(section,NULL,"Added",0);
