@@ -31,23 +31,23 @@
             </button>
             -->
             <div class="btn-group">
-                <button type="button" class="btn btn-default icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <button type="button" class="btn btn-default icon dropdown-toggle" title="<? locale.write('title_view_type'); ?>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <span class="glyphicon glyphicon-align-left"></span><span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu">
                     <li>
                         <a href="#" data-view-type="plain">
-                            Normal
+                            <? locale.write('link_view_normal'); ?>
                         </a>
                     </li>
                     <li>
                         <a href="#" data-view-type="html">
-                            BBS View (Text)
+                            <? locale.write('link_view_html_encoded'); ?>
                         </a>
                     </li>
                     <li>
                         <a href="#" data-view-type="png">
-                            BBS View (PNG)
+                            <? locale.write('link_view_image'); ?>
                         </a>
                     </li>
                 </ul>
