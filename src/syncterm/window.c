@@ -2,6 +2,7 @@
 
 #include <gen_defs.h>
 #include <ciolib.h>
+#include <vidmodes.h>
 #include "uifcinit.h"
 #include "term.h"
 #include "syncterm.h"
@@ -10,18 +11,28 @@ void
 get_term_win_size(int *width, int *height, int *nostatus)
 {
 	struct	text_info txtinfo;
+	int vmode = find_vmode(fake_mode);
 
 	gettextinfo(&txtinfo);
 
-	if(txtinfo.screenwidth < 80)
-		*width=40;
+	if (vmode != -1 && txtinfo.screenwidth >= vparams[vmode].cols) {
+			*width = vparams[vmode].cols;
+	}
 	else {
-		if(txtinfo.screenwidth <132)
-			*width=80;
-		else
-			*width=132;
+		if(txtinfo.screenwidth < 80)
+			*width=40;
+		else {
+			if(txtinfo.screenwidth <132)
+				*width=80;
+			else
+				*width=132;
+		}
 	}
 	*height=txtinfo.screenheight;
+	if (vmode != -1) {
+		if (txtinfo.screenheight >= vparams[vmode].rows)
+			*height = vparams[vmode].rows;
+	}
 	if(!*nostatus)
 		(*height)--;
 	if(*height<24) {

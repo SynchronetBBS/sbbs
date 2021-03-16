@@ -84,6 +84,7 @@ extern char *output_types[];
 extern int output_map[];
 extern char *output_descrs[];
 extern char *output_enum[];
+extern int fake_mode;
 
 void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults);
 char *get_syncterm_filename(char *fn, int fnlen, int type, int shared);
