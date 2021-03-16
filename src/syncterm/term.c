@@ -2824,10 +2824,12 @@ BOOL doterm(struct bbslist *bbs)
 					break;
 				case 0x2600:	/* ALT-L */
 					if(bbs->conn_type != CONN_TYPE_RLOGIN && bbs->conn_type != CONN_TYPE_RLOGIN_REVERSED && bbs->conn_type != CONN_TYPE_SSH) {
-						if(bbs->user[0]) {
-							conn_send(bbs->user,strlen(bbs->user),0);
-							conn_send(cterm->emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
-							SLEEP(10);
+						if (bbs->conn_type != CONN_TYPE_SSHNA) {
+							if(bbs->user[0]) {
+								conn_send(bbs->user,strlen(bbs->user),0);
+								conn_send(cterm->emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
+								SLEEP(10);
+							}
 						}
 						if(bbs->password[0]) {
 							conn_send(bbs->password,strlen(bbs->password),0);

@@ -966,10 +966,18 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
             fc_str(opt[i++], item->flow_control);
         else if (item->conn_type != CONN_TYPE_SHELL)
             sprintf(opt[i++], "TCP Port          %hu",item->port);
-        printf_trunc(opt[i], sizeof(opt[i]), "Username          %s",item->user);
-	i++;
-        sprintf(opt[i++], "Password          %s",item->password[0]?"********":"<none>");
-        sprintf(opt[i++], "System Password   %s",item->syspass[0]?"********":"<none>");
+        if (item->conn_type == CONN_TYPE_SSHNA) {
+		printf_trunc(opt[i], sizeof(opt[i]), "SSH Username      %s",item->user);
+		i++;
+		sprintf(opt[i++], "BBS Username      %s",item->password);
+		sprintf(opt[i++], "BBS Password      %s",item->syspass[0]?"********":"<none>");
+	}
+	else {
+		printf_trunc(opt[i], sizeof(opt[i]), "Username          %s",item->user);
+		i++;
+		sprintf(opt[i++], "Password          %s",item->password[0]?"********":"<none>");
+		sprintf(opt[i++], "System Password   %s",item->syspass[0]?"********":"<none>");
+	}
         sprintf(opt[i++], "Screen Mode       %s",screen_modes[item->screen_mode]);
         sprintf(opt[i++], "Hide Status Line  %s",item->nostatus?"Yes":"No");
         printf_trunc(opt[i], sizeof(opt[i]), "Download Path     %s", item->dldir);
@@ -1179,27 +1187,45 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 }
                 break;
             case 4:
-                uifc.helpbuf=   "`Username`\n\n"
-                                "Enter the username to attempt auto-login to the remote with.\n"
-                                "For SSH, this must be the SSH user name.";
+		if (item->conn_type == CONN_TYPE_SSHNA) {
+			uifc.helpbuf=   "`SSH Username`\n\n"
+					"Enter the username for passwordless SSH authentication.";
+		}
+		else {
+			uifc.helpbuf=   "`Username`\n\n"
+					"Enter the username to attempt auto-login to the remote with.\n"
+					"For SSH, this must be the SSH user name.";
+		}
                 uifc.input(WIN_MID|WIN_SAV,0,0,"Username",item->user,MAX_USER_LEN,K_EDIT);
                 check_exit(FALSE);
                 iniSetString(&inifile,itemname,"UserName",item->user,&ini_style);
                 break;
             case 5:
-                uifc.helpbuf=   "`Password`\n\n"
-                                "Enter your password for auto-login.\n"
-                                "For SSH, this must be the SSH password if it exists.\n";
+		if (item->conn_type == CONN_TYPE_SSHNA) {
+			uifc.helpbuf=   "`BBS Username`\n\n"
+					"Enter the username to be sent for auto-login (ALT-L).";
+		}
+		else {
+			uifc.helpbuf=   "`Password`\n\n"
+					"Enter your password for auto-login.\n"
+					"For SSH, this must be the SSH password if it exists.\n";
+		}
                 uifc.input(WIN_MID|WIN_SAV,0,0,"Password",item->password,MAX_PASSWD_LEN,K_EDIT);
                 check_exit(FALSE);
                 iniSetString(&inifile,itemname,"Password",item->password,&ini_style);
                 break;
             case 6:
-                uifc.helpbuf=   "`System Password`\n\n"
-                                "Enter your System password for auto-login.\n"
-                                "This password is sent after the username and password, so for non-\n"
-                                "Synchronet, or non-sysop accounts, this can be used for simple\n"
-                                "scripting.";
+		if (item->conn_type == CONN_TYPE_SSHNA) {
+			uifc.helpbuf=   "`BBS Password`\n\n"
+					"Enter your password for auto-login. (ALT-L)\n";
+		}
+		else {
+			uifc.helpbuf=   "`System Password`\n\n"
+					"Enter your System password for auto-login.\n"
+					"This password is sent after the username and password, so for non-\n"
+					"Synchronet, or non-sysop accounts, this can be used for simple\n"
+					"scripting.";
+		}
                 uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",item->syspass,MAX_SYSPASS_LEN,K_EDIT);
                 check_exit(FALSE);
                 iniSetString(&inifile,itemname,"SystemPassword",item->syspass,&ini_style);
@@ -1216,6 +1242,18 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                     default:
                         item->conn_type++;
                         iniSetEnum(&inifile,itemname,"ConnectionType",conn_types_enum,item->conn_type,&ini_style);
+
+			// TODO: NOTE: This is destructive!  Beware!  Ooooooo....
+			if (i == CONN_TYPE_SSHNA && item->conn_type != CONN_TYPE_SSHNA) {
+				SAFECOPY(item->user, item->password);
+				SAFECOPY(item->password, item->syspass);
+				item->syspass[0] = 0;
+			}
+			if (i != CONN_TYPE_SSHNA && item->conn_type == CONN_TYPE_SSHNA) {
+				SAFECOPY(item->syspass, item->password);
+				SAFECOPY(item->password, item->user);
+				item->user[0] = 0;
+			}
 
                         if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL
                                 && item->conn_type!=CONN_TYPE_SHELL
