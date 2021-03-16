@@ -1,9 +1,33 @@
+function stripCtrl(str) {
+    return str.replace(/[\x00\x07\x1b\x7f]/g,'');
+}
+
+function stripCtrlA(str) {
+    // Not just CTRL-A
+    return str.replace(/\1./g, '');
+}
+
+function stripANSI(str) {
+    str = str.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'');
+    str = str.replace(/\x1b[\x40-\x7e]/g, '');
+    return str;
+}
+
+function collectLinks(body) {
+    body = stripCtrlA(body);
+    body = stripANSI(body);
+    body = stripCtrl(body);
+    const urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
+    const match = body.match(urlRE);
+    return match;
+}
+
 // Deuce's URL-ifier
 function linkify(body) {
-    urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
+    const urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
     body = body.replace(urlRE, str => {
-        var link = str.replace(/\.*$/, '');
-        var linktext = link;
+        let link = str.replace(/\.*$/, '');
+        const linktext = link;
         if (link.indexOf('://') === -1) link = 'mailto:' + link;
         return ('<a class="ulLink" href="' + link + '">' + linktext + '</a>' + str.substr(linktext.length));
     });
@@ -83,13 +107,9 @@ function quotify(body) {
 
 // Format message body for the web
 function formatMessageBody(body) {
-    // Strip CTRL-A
-    body = body.replace(/\1./g,'');
-    // Strip ANSI
-    body = body.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'');
-    body = body.replace(/\x1b[\x40-\x7e]/g, '');
-    // Strip unprintable control chars (NULL, BEL, DEL, ESC)
-    body = body.replace(/[\x00\x07\x1b\x7f]/g,'');
+    body = stripCtrlA(body);
+    body = stripANSI(body);
+    body = stripCtrl(body);
     // Format for the web
     // body = word_wrap(body, body.length); // This was done server-side; but why was it done at all?
     body = quotify(body);
@@ -307,6 +327,13 @@ function addPollField(type, target) {
 
 }
 
+function appendLinks(body, target) {
+    const links = collectLinks(body);
+    if (links.length < 1) return;
+    target.innerHTML += '<p>';
+    links.forEach((e, i) => target.innerHTML += `[${i + 1}] <a class="ulLink" href="${e}">${e}</a><br />`);
+}
+
 async function bbsView(elem, body, a, evt) {
     evt.preventDefault();
     const target = elem.querySelector('div[data-message-body]');
@@ -317,10 +344,12 @@ async function bbsView(elem, body, a, evt) {
             break;
         case 'html':
             target.appendChild(Graphics.textToHTML(body));
+            appendLinks(body, target);
             break;
         case 'png':
             const pre = await Graphics.textToPNG(body);
             target.appendChild(pre);
+            appendLinks(body, target);
             break;
         default:
             break;
