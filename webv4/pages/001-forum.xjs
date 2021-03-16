@@ -58,6 +58,7 @@
 <? if (request.hasParam('sub') && request.hasParam('thread')) { ?>
 
 	<script type="text/javascript" src="./js/graphics-converter.js"></script>
+	<script type="text/javascript" src="./js/graphics.js"></script>
 	<script type="text/javascript" src="./js/cache.js"></script>
 	<script type="text/javascript" src="./js/avatars.js"></script>
 
