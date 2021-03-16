@@ -170,6 +170,7 @@ const Graphics = (() => {
         '\xff': '\u00a0', // NO-BREAK SPACE
     };
 
+    // Not sure what's worse - including this in the file, or computing it from CP437_UTF8; we'll go with this for now.
     const UTF8_CP437 = {
         '\u00c7': '\x80', // LATIN CAPITAL LETTER C WITH CEDILLA
         '\u00fc': '\x81', // LATIN SMALL LETTER U WITH DIAERESIS
@@ -1094,10 +1095,10 @@ const Graphics = (() => {
     }
 
     return {
-        binToPNG,   // Returns an HTMLImageElement
-        binToHTML,  // Returns a <div> HTMLElement
-        textToPNG,  // Returns an HTMLImageElement
-        textToHTML, // Returns a <div> HTMLElement
+        binToPNG,   // async Graphics.binToPNG([]bin, columns, dataURL), returns an HTMLImageElement or dataURL
+        binToHTML,  // Graphics.binToHTML([]bin, columns), returns a <div> HTMLElement
+        textToPNG,  // async Graphics.textToPNG(text, dataURL), returns an HTMLImageElement or dataURL
+        textToHTML, // Graphics.textToHTML(text), returns a <div> HTMLElement
     };
 
 })();
