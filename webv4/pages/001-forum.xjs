@@ -8,9 +8,6 @@
 		- Make it possible for locales to live in mods/lib/locale (custom language file)
 		- Support simple markup/markdown stuff in messages
 		- Message tags
-		- "BBS View" for message
-			- Add support for SYS_PCBOARD, SYS_WILDCAT, SYS_RENEGADE, SYS_CELERITY, SYS_WWIV
-			  - if each is enabled, handle those colour codes when rendering a BBS View message
 		- Search feature
 			- Search within groups, group, subs, or sub
 			- Search optionally within subject, to, from, body, date-range
@@ -57,7 +54,6 @@
 <!-- Viewing a thread (list of messages) -->
 <? if (request.hasParam('sub') && request.hasParam('thread')) { ?>
 
-	<script type="text/javascript" src="./js/graphics-converter.js"></script>
 	<script type="text/javascript" src="./js/graphics.js"></script>
 	<script type="text/javascript" src="./js/cache.js"></script>
 	<script type="text/javascript" src="./js/avatars.js"></script>
