@@ -309,19 +309,24 @@ function addPollField(type, target) {
 
 }
 
-async function bbsView(elem, body) {
-    const btn = elem.querySelector('button[data-button-bbs-view]');
-    btn.disabled = true;
-    const pre = await Graphics.textToHTML(body);
-    // const pre = await Graphics.textToPNG(body);
-    const target = elem.querySelector('div[data-message-body]')
+async function bbsView(elem, body, a, evt) {
+    evt.preventDefault();
+    const target = elem.querySelector('div[data-message-body]');
     target.innerHTML = '';
-    target.appendChild(pre);
-    btn.onclick = () => {
-        target.innerHTML = formatMessageBody(body);
-        btn.onclick = () => bbsView(elem, body);
+    switch (a.getAttribute('data-view-type')) {
+        case 'plain':
+            target.innerHTML = formatMessageBody(body);
+            break;
+        case 'html':
+            target.appendChild(Graphics.textToHTML(body));
+            break;
+        case 'png':
+            const pre = await Graphics.textToPNG(body);
+            target.appendChild(pre);
+            break;
+        default:
+            break;
     }
-    btn.disabled = false;
 }
 
 // Message list
@@ -364,8 +369,8 @@ async function listMessages(sub, thread) {
         elem.querySelector('span[data-upvote-count]').innerHTML = e.votes.up;
         elem.querySelector('span[data-downvote-count]').innerHTML = e.votes.down;
         elem.querySelector('div[data-message-body]').innerHTML = formatMessageBody(e.body);
-        elem.querySelector('button[data-button-bbs-view]').onclick = evt => bbsView(elem, e.body);
         elem.querySelector('a[data-direct-link]').setAttribute('href', `#${e.number}`);
+        elem.querySelectorAll('a[data-view-type]').forEach(a => a.onclick = evt => bbsView(elem, e.body, a, evt));
         elem.querySelector('button[data-button-add-reply]').onclick = evt => addReply(sub, e.number, e.body, elem);
         elem.removeAttribute('hidden');
         if (append) document.getElementById('forum-list-container').appendChild(elem);
