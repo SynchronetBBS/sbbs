@@ -5166,20 +5166,22 @@ void DLLCALL bbs_thread(void* arg)
 
 	startup->node_inbuf=node_inbuf;
 
-    /* open a socket and wait for a client */
-    ts_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
-    if(ts_set==NULL) {
+	/* open a socket and wait for a client */
+	ts_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
+	if(ts_set==NULL) {
 		lprintf(LOG_CRIT,"!ERROR %d creating Terminal Server socket set", ERROR_VALUE);
 		cleanup(1);
 		return;
 	}
-    telnet_cb.protocol="telnet";
-    telnet_cb.startup=startup;
+	if (!(startup->options & BBS_OPT_NO_TELNET)) {
+		telnet_cb.protocol="telnet";
+		telnet_cb.startup=startup;
 
-	/*
-	 * Add interfaces
-	 */
-	xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->telnet_interfaces, startup->telnet_port, "Telnet Server", sock_cb, startup->seteuid, &telnet_cb);
+		/*
+		 * Add interfaces
+		 */
+		xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->telnet_interfaces, startup->telnet_port, "Telnet Server", sock_cb, startup->seteuid, &telnet_cb);
+	}
 
 	if(startup->options&BBS_OPT_ALLOW_RLOGIN) {
 		/* open a socket and wait for a client */
