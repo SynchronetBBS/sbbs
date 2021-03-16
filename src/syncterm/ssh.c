@@ -229,26 +229,41 @@ int ssh_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
-	if(!password[0]) {
-		if (bbs->hidepopups)
-			init_uifc(FALSE, FALSE);
-		uifcinput("Password",MAX_PASSWD_LEN,password,K_PASSWORD,"Incorrect password.  Try again.");
-		if (bbs->hidepopups)
-			uifcbail();
+	if (bbs->conn_type == CONN_TYPE_SSHNA) {
+		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_OPTIONS, CRYPT_SSHOPTION_NONE_AUTH);
+		if(cryptStatusError(status)) {
+			char	str[1024];
+			sprintf(str,"Error %d disabling password auth",status);
+			if (!bbs->hidepopups)
+				uifcmsg("Error disabling password auth",str);
+			conn_api.terminate=1;
+			if (!bbs->hidepopups)
+				uifc.pop(NULL);
+			return(-1);
+		}
 	}
+	else {
+		if(!password[0]) {
+			if (bbs->hidepopups)
+				init_uifc(FALSE, FALSE);
+			uifcinput("Password",MAX_PASSWD_LEN,password,K_PASSWORD,"Incorrect password.  Try again.");
+			if (bbs->hidepopups)
+				uifcbail();
+		}
 
-	if (!bbs->hidepopups)
-		uifc.pop("Setting Password");
-	status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
-	if(cryptStatusError(status)) {
-		char	str[1024];
-		sprintf(str,"Error %d setting password",status);
 		if (!bbs->hidepopups)
-			uifcmsg("Error setting password",str);
-		conn_api.terminate=1;
-		if (!bbs->hidepopups)
-			uifc.pop(NULL);
-		return(-1);
+			uifc.pop("Setting Password");
+		status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
+		if(cryptStatusError(status)) {
+			char	str[1024];
+			sprintf(str,"Error %d setting password",status);
+			if (!bbs->hidepopups)
+				uifcmsg("Error setting password",str);
+			conn_api.terminate=1;
+			if (!bbs->hidepopups)
+				uifc.pop(NULL);
+			return(-1);
+		}
 	}
 
 	if (!bbs->hidepopups) {
