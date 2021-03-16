@@ -1,0 +1,13 @@
+--- js-1.8.5/js/src/jsutil.h.orig	2021-03-16 03:30:09.825129000 -0400
++++ js-1.8.5/js/src/jsutil.h	2021-03-16 03:30:36.201546000 -0400
+@@ -301,8 +301,8 @@
+     void *memory = js_malloc(numBytes);
+     if (!memory)
+         return NULL;
+-	*(size_t *)memory = n;
+-	memory = (void*)(uintptr_t(memory) + JSMinAlignment);
++    *(size_t *)memory = n;
++    memory = (void*)(uintptr_t(memory) + JSMinAlignment);
+     return new(memory) T[n];
+ }
+ 
