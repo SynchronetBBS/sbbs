@@ -846,6 +846,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		extdesc = NULL;
 	smbfile_t	file;
+	bool		use_diz_always = false;
 	jsrefcount	rc;
 
 	ZERO_VAR(file);
@@ -870,23 +871,29 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_TRUE;
 		argn++;
 	}
+	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		use_diz_always = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 
 	file.dir = p->smb.dirnum;
 	rc=JS_SUSPENDREQUEST(cx);
 	if(file.name != NULL) {
-		if(extdesc == NULL		// no extended description provided
+		if((extdesc == NULL	|| use_diz_always == true)
 			&& p->smb.dirnum < scfg->total_dirs
 			&& (scfg->dir[p->smb.dirnum]->misc & DIR_DIZ)) {
 			char diz_fpath[MAX_PATH + 1];
 			if(extract_diz(scfg, &file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
 				char extbuf[LEN_EXTDESC + 1] = "";
 				str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
-				format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
-				strListFree(&lines);
-				extdesc = strdup(extbuf);
-				remove(diz_fpath);
-				if(file.desc == NULL)
-					smb_new_hfield_str(&file, SMB_FILEDESC, prep_file_desc(extbuf, extbuf));
+				if(lines != NULL) {
+					format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
+					strListFree(&lines);
+					extdesc = strdup(extbuf);
+					remove(diz_fpath);
+					if(file.desc == NULL)
+						smb_new_hfield_str(&file, SMB_FILEDESC, prep_file_desc(extbuf, extbuf));
+				}
 			}
 		}
 		char fpath[MAX_PATH + 1];
@@ -1302,7 +1309,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"add_file",		js_add_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("file-object")
+		,JSDOCSTR("file-object [,use_diz_always=false]")
 		,JSDOCSTR("add a file to the file base")
 		,31900
 	},
