@@ -1,0 +1,158 @@
+--- ../cl-old/cryptlib.h	2021-03-16 04:15:50.265534000 -0400
++++ ./cryptlib.h	2021-03-16 06:53:47.582168000 -0400
+@@ -1215,6 +1215,7 @@
+ 	CRYPT_SESSINFO_SSH_CHANNEL_ARG1,/* SSH channel argument 1 */
+ 	CRYPT_SESSINFO_SSH_CHANNEL_ARG2,/* SSH channel argument 2 */
+ 	CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE,/* SSH channel active */
++	CRYPT_SESSINFO_SSH_OPTIONS,		/* SSH protocol options */
+ 	CRYPT_SESSINFO_SSL_OPTIONS,		/* SSL/TLS protocol options */
+ 	CRYPT_SESSINFO_SSL_SUBPROTOCOL,	/* SSL/TLS additional sub-protocol */
+ 	CRYPT_SESSINFO_SSL_WSPROTOCOL,	/* SSL/TLS WebSockets sub-protocol */
+@@ -1680,6 +1681,14 @@
+ #define CRYPT_SSLOPTION_SUITEB_256			0x200	/*  vanish in future releases) */
+ #ifdef _CRYPT_DEFINED
+ #define CRYPT_SSLOPTION_MAX					0x7F	/* Defines for range checking */
++#endif /* _CRYPT_DEFINED */
++
++/* SSH protocol options. */
++
++#define CRYPT_SSHOPTION_NONE				0x000
++#define CRYPT_SSHOPTION_NONE_AUTH			0x001	/* Try none authentication */
++#ifdef _CRYPT_DEFINED
++#define CRYPT_SSHOPTION_MAX					0x01	/* Defines for range checking */
+ #endif /* _CRYPT_DEFINED */
+ 
+ /****************************************************************************
+diff -ur ../cl-old/kernel/attr_acl.c ./kernel/attr_acl.c
+--- ../cl-old/kernel/attr_acl.c	2021-03-16 04:15:50.398060000 -0400
++++ ./kernel/attr_acl.c	2021-03-16 06:53:47.606473000 -0400
+@@ -3731,6 +3731,12 @@
+ 		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
+ 		MKPERM_SSH_EXT( RWx_xxx ),
+ 		ROUTE( OBJECT_TYPE_SESSION ) ),
++	MKACL_N(	/* SSH protocol options */
++		CRYPT_SESSINFO_SSH_OPTIONS,
++		ST_NONE, ST_NONE, ST_SESS_SSH, 
++		MKPERM_SSH_EXT( Rxx_RWx ),
++		ROUTE( OBJECT_TYPE_SESSION ),
++		RANGE( CRYPT_SSHOPTION_NONE, CRYPT_SSHOPTION_MAX ) ),
+ 
+ 	MKACL_N(	/* SSL/TLS protocol options */
+ 		CRYPT_SESSINFO_SSL_OPTIONS,
+@@ -4653,7 +4659,7 @@
+ 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
+ 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
+ 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6016, "Attribute value" );
+-	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6031, "Attribute value" );
++	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6032, "Attribute value" );
+ 	static_assert( CRYPT_CERTFORMAT_LAST == 12, "Attribute value" );
+ 
+ 	/* Perform a consistency check on the attribute ACLs.  The ACLs are
+diff -ur ../cl-old/session/ssh.c ./session/ssh.c
+--- ../cl-old/session/ssh.c	2021-03-16 04:15:50.257467000 -0400
++++ ./session/ssh.c	2021-03-16 06:53:47.638940000 -0400
+@@ -980,6 +980,18 @@
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE );
+ 
++	if( type == CRYPT_SESSINFO_SSH_OPTIONS )
++		{
++			int *valuePtr = ( int * ) data;
++
++			*valuePtr = CRYPT_SSHOPTION_NONE;
++			if( TEST_FLAG( sessionInfoPtr->protocolFlags, 
++						   SSH_PFLAG_DUMMYUSERAUTH ) )
++				*valuePtr |= CRYPT_SSHOPTION_NONE_AUTH;
++
++			return( CRYPT_OK );
++		}
++
+ 	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
+ 		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE )
+ 		{
+@@ -1010,11 +1022,13 @@
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_TYPE || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG1 || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
++			  type == CRYPT_SESSINFO_SSH_OPTIONS || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE );
+ 
+ 	/* Get the data value if it's an integer parameter */
+ 	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
+-		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE )
++		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
++		type == CRYPT_SESSINFO_SSH_OPTIONS)
+ 		value = *( ( int * ) data );
+ 
+ 	/* If we're selecting a channel and there's unwritten data from a
+@@ -1038,6 +1052,13 @@
+ 		return( createChannel( sessionInfoPtr ) );
+ 		}
+ 
++	if( type == CRYPT_SESSINFO_SSH_OPTIONS )
++		{
++		if (value & CRYPT_SSHOPTION_NONE_AUTH)
++			SET_FLAG( sessionInfoPtr->protocolFlags, SSH_PFLAG_DUMMYUSERAUTH );
++		return( CRYPT_OK );
++		}
++
+ 	/* If we 're setting the channel-active attribute, this implicitly
+ 	   activates or deactivates the channel rather than setting any
+ 	   attribute value */
+@@ -1165,8 +1186,6 @@
+ 		 SESSION_FLAG_NONE,			/* Flags */
+ 		SSH_PORT,					/* SSH port */
+ 		SESSION_NEEDS_USERID |		/* Client attributes */
+-			SESSION_NEEDS_PASSWORD | \
+-			SESSION_NEEDS_KEYORPASSWORD | \
+ 			SESSION_NEEDS_PRIVKEYSIGN,
+ 				/* The client private key is optional, but if present it has
+ 				   to be signature-capable */
+diff -ur ../cl-old/session/ssh2_authc.c ./session/ssh2_authc.c
+--- ../cl-old/session/ssh2_authc.c	2021-03-16 04:15:50.264206000 -0400
++++ ./session/ssh2_authc.c	2021-03-16 07:46:47.873769000 -0400
+@@ -315,13 +315,22 @@
+ 	assert( isWritePtr( authAlgo, sizeof( CRYPT_ALGO_TYPE ) ) );
+ 	assert( isWritePtr( furtherAuthRequired, sizeof( BOOLEAN ) ) );
+ 
+-	REQUIRES( isShortIntegerRangeNZ( length ) );
+ 	REQUIRES( usedPasswordAuth == TRUE || usedPasswordAuth == FALSE );
+ 
+ 	/* Clear return values */
+ 	*authAlgo = CRYPT_ALGO_NONE;
+ 	*furtherAuthRequired = FALSE;
+ 
++	if (length == 0 && GET_FLAG( sessionInfoPtr->protocolFlags, SSH_PFLAG_DUMMYUSERAUTH ) && !usedPasswordAuth)
++		{
++		CLEAR_FLAG( sessionInfoPtr->protocolFlags, SSH_PFLAG_DUMMYUSERAUTH );
++		*furtherAuthRequired = TRUE;
++		*authAlgo = CRYPT_PSEUDOALGO_PASSWORD;
++		return( CRYPT_OK );
++		}
++
++	REQUIRES( isShortIntegerRangeNZ( length ) );
++
+ 	/* Before we can try and interpret the response, we have to check for an
+ 	   empty response */
+ 	if( length >= LENGTH_SIZE && \
+@@ -647,6 +656,8 @@
+ 								  SSH_MSG_USERAUTH_REQUEST );
+ 	if( cryptStatusError( status ) )
+ 		return( status );
++	if (passwordPtr == NULL && GET_FLAG( sessionInfoPtr->protocolFlags, SSH_PFLAG_DUMMYUSERAUTH ))
++		return( OK_SPECIAL );
+ 	if( usePasswordAuth )
+ 		{
+ 		/*	byte	type = SSH_MSG_USERAUTH_REQUEST
+@@ -1220,6 +1231,11 @@
+ 	   auth required */
+ 	if( !hasPassword )
+ 		{
++		if (length == 0)
++			{
++			return( reportAuthFailure( sessionInfoPtr, CRYPT_PSEUDOALGO_PASSWORD, 
++									   requiredAuthAlgo, TRUE ) );
++			}
+ 		return( reportAuthFailure( sessionInfoPtr, CRYPT_ALGO_RSA, 
+ 								   requiredAuthAlgo, TRUE ) );
+ 		}

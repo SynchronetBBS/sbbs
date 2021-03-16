@@ -49,6 +49,7 @@ int init_crypt(void)
 	cl.SetAttributeString=cryptSetAttributeString;
 	cl.DestroySession=cryptDestroySession;
 	cl.AddRandom=cryptAddRandom;
+	cl.DeleteAttribute=cryptDeleteAttribute;
 #else
 	cryptlib=xp_dlopen(libnames,RTLD_LAZY, CRYPTLIB_VERSION/1000);
 	if(cryptlib==NULL)
@@ -98,6 +99,10 @@ int init_crypt(void)
 		return(-1);
 	}
 	if((cl.AddRandom=xp_dlsym(cryptlib,cryptAddRandom))==NULL) {
+		xp_dlclose(cryptlib);
+		return(-1);
+	}
+	if((cl.DeleteAttribute=xp_dlsym(cryptlib,cryptDeleteAttribute))==NULL) {
 		xp_dlclose(cryptlib);
 		return(-1);
 	}

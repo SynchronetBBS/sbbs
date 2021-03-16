@@ -37,6 +37,8 @@ struct crypt_funcs {
 		C_IN void C_PTR value, C_IN int valueLength );
 	int (*DestroySession)( C_IN CRYPT_SESSION session );
 	int (*AddRandom)( C_IN void C_PTR randomData, C_IN int randomDataLength );
+	int (*DeleteAttribute)( C_IN CRYPT_HANDLE cryptHandle,
+		C_IN CRYPT_ATTRIBUTE_TYPE attributeType);
 };
 
 #endif
