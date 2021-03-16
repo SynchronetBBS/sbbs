@@ -65,7 +65,8 @@
 #include "xpprintf.h"
 #include "ssl.h"
 #include "fastcgi.h"
-#include "ver.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
@@ -6782,7 +6783,7 @@ const char* DLLCALL web_ver(void)
 #else
 		,""
 #endif
-		,git_branch, git_hash
+		,GIT_BRANCH, GIT_HASH
 		,__DATE__, __TIME__, compiler);
 
 	return(ver);
@@ -7001,7 +7002,7 @@ void DLLCALL web_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 
 		if(!winsock_startup()) {
 			cleanup(1);
