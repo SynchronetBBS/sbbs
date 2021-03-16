@@ -636,7 +636,8 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 				if(ch=='R') {
 					if(noyes(text[RemoveFileQ]))
 						return(2);
-					remcdt=remfile=1;
+					remcdt = TRUE;
+					remfile = TRUE;
 					if(dir_op(smb->dirnum)) {
 						remcdt=!noyes(text[RemoveCreditsQ]);
 						remfile=!noyes(text[DeleteFileQ]);
@@ -698,7 +699,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 						if(ch=='R') {
 							if(removefile(smb, f)) {
 								if(remfile) {
-									if(remove(getfilepath(&cfg, f, path)) != 0)
+									if(remove(getfilepath(&cfg, f, path)) != 0 && fexist(path))
 										errormsg(WHERE, ERR_REMOVE, path);
 								}
 								if(remcdt)
