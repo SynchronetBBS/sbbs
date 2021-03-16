@@ -174,7 +174,6 @@ SMBUTIL_OBJS = \
 
 SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)sbbsecho$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ver$(OFILE) \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
 			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \

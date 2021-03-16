@@ -2473,7 +2473,8 @@ void output_thread(void* arg)
 							GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "flushing data");
 							ssh_errors++;
 							if (err == CRYPT_ERROR_TIMEOUT) {
-								(void)cryptPopData(sbbs->ssh_session, (void *)"", 0, &err);
+								int ret = cryptPopData(sbbs->ssh_session, (void *)"", 0, &err);
+								(void)ret;
 								if (cryptStatusError(err))
 									GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "popping SSH data after timeout");
 								else
