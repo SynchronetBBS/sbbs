@@ -1,3 +1,10 @@
+/*
+ * You should use webv4/root/js/graphics.js instead.
+ * I'll leave this file here for now in case some old pages depend on it,
+ * but I will probably remove it at some point, perhaps years from now.
+ * - ec, March 16, 2021
+ */
+
 function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet_columns, spritesheet_rows) {
 
     if (!spritesheet_src) spritesheet_src = '/images/cp437-ibm-vga8.png';
