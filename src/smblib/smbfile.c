@@ -361,6 +361,7 @@ int smb_renewfile(smb_t* smb, smbfile_t* file, int storage, const char* path)
 int smb_removefile(smb_t* smb, smbfile_t* file)
 {
 	int result;
+	int removed = 0;
 
 	if(!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
@@ -401,21 +402,33 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 		}
 		rewind(smb->sid_fp);
 		for(uint32_t i = 0; i < smb->status.total_files; i++) {
-			if(stricmp(fidx[i].name, file->name) == 0)
+			if(stricmp(fidx[i].name, file->name) == 0) {
+				removed++;
 				continue;
+			}
 			if(fwrite(fidx + i, sizeof(*fidx), 1, smb->sid_fp) != 1) {
+				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s re-writing index"
+					,__FUNCTION__);
 				result = SMB_ERR_WRITE;
 				break;
 			}
 		}
 		free(fidx);
 		if(result == SMB_SUCCESS) {
-			fflush(smb->sid_fp);
-			--smb->status.total_files;
-			if(chsize(fileno(smb->sid_fp), smb->status.total_files * sizeof(*fidx)) != 0)
-				result = SMB_ERR_DELETE;
-			else
-				result = smb_putstatus(smb);
+			if(removed < 1) {
+				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s name found: %s"
+					,__FUNCTION__, file->name);
+				result = SMB_ERR_NOT_FOUND;
+			} else {
+				fflush(smb->sid_fp);
+				smb->status.total_files -= removed;
+				if(chsize(fileno(smb->sid_fp), smb->status.total_files * sizeof(*fidx)) != 0) {
+					safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s error %d truncating index"
+						,__FUNCTION__, errno);
+					result = SMB_ERR_DELETE;
+				} else
+					result = smb_putstatus(smb);
+			}
 		}
 	}
 
