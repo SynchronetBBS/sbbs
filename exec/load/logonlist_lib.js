@@ -56,6 +56,7 @@ function get(num, days_ago)
 
 function maint(backup_level)
 {
+	file_touch(filename());
 	return file_backup(filename(), backup_level, /* rename: */true);
 }
 
