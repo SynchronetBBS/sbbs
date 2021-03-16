@@ -96,7 +96,7 @@
 	" %4u\b\b\b\b\1h%s \1n\1c(\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n\1~"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
 "\1?Delete message #%u '%s'"                          073 DeletePostQ
-"\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
+"\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address     "\     074 UserDefaultsAutoLogon
 	"\1n\1b: \1c%s\r\n"	 
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
 "\1_\r\n\1y\1hText to search for: "                      076 SearchStringPrompt
@@ -201,8 +201,8 @@
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
 "\r\n\r\nYou can't download.\r\n"                       165 R_Download
-"\r\n\1w\1hSearching all directories @ELLIPSIS@\r\n"      166 SearchingAllDirs
-"\1w\1hSearching all libraries @ELLIPSIS@\r\n"            167 SearchingAllLibs
+"\r\n\1w\1hSearching current library @ELLIPSIS@\r\n\1q"   166 SearchingAllDirs
+"\1w\1hSearching all libraries @ELLIPSIS@\r\n\1q"         167 SearchingAllLibs
 "\r\n\1w\1h%u Files Listed.\r\n"                          168 NFilesListed
 "\r\n\1w\1hEmpty directory.\r\n"                          169 EmptyDir
 "\r\n\1n\1cSearching for files "\                         170 NScanHdr
@@ -278,7 +278,7 @@
 "\r\n\7\1r\1h\1iBatch upload queue is full.\1n\r\n"         229 BatchUlQueueIsFull
 "\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\         230 FileAddedToUlQueue
 	"\1c - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you a file.\r\n"       231 UserToUserXferNodeMsg
+"Unused 231"                                               231 UserToUserXferNodeMsg
 "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
@@ -319,7 +319,7 @@
 "\r\nProtocol, ~Batch, ~Quit, or [~Next]: "             264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory\r\n"\                  265 BulkUpload
 	"(Enter '-' for description to skip file):\r\n"
-"\1_\1y\1h%s\1w%7uk\1b:"                                     266 BulkUploadDescPrompt
+"\1_\1y\1h%-12s\1w%7uk\1b:"                             266 BulkUploadDescPrompt
 "\r\n\1r\1h\1iNo files in batch queue.\1n"\                 267 NoFilesInBatchQueue
 	"\r\n\r\n\1mUse \1hD\1n\1m or \1hU\1n\1m to add files to the queue.\r\n"
 "\1_\r\n\1y\1hBatch: \1n"                                   268 BatchMenuPrompt
@@ -377,7 +377,7 @@
 "\1_\1h\1w%s was %sdownloaded by %s\r\n"\                  312 DownloadUserMsg
 	"\1n\1gYou were awarded %s credits.\r\n"
 "partially "                                            313 Partially
-"\r\n\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
+"\1l\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
 "\r\n\1n\1gDirectory        :\1h (%u) %s"                  315 FiDir
 "\r\n\1n\1gFilename         :\1h %s"                       316 FiFilename
 "\r\n\1n\1gFile size        :\1h %s (%s) bytes"            317 FiFileSize
@@ -428,10 +428,8 @@
 	"same time.\1n\r\n"
 "\7\1r\1h\1i%d critical errors have occurred. "\           359 CriticalErrors
 	"Type ;ERR at main menu.\1n\r\n"
-"\1_\1w\1hYou have %d User to User Transfer%s "\           360 UserXferForYou
-	"waiting for you\r\n"
-"\1_\1w\1hYou have sent %d unreceived User to "\           361 UnreceivedUserXfer
-	"User Transfer%s\r\n"
+"Unused360"                                                360 UserXferForYou
+"Unused361"                                                361 UnreceivedUserXfer
 "Read your mail now"                                    362 ReadYourMailNowQ
 "Sorry, the system is closed to new users.\r\n"         363 NoNewUsers
 "New User Password: "                                   364 NewUserPasswordPrompt
