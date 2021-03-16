@@ -1,7 +1,5 @@
 const Avatars = new (function () {
 
-    const gc = new GraphicsConverter('./images/cp437-ibm-vga8.png', 8, 16, 64, 4);
-
     function draw(data) {
         const img = new Image();
         img.addEventListener('load', () => {
@@ -26,13 +24,12 @@ const Avatars = new (function () {
         if (!u.length) return;
 
         const a = await v4_get(`./api/system.ssjs?call=get-avatar&user=${u.join('&user=')}`);
-        a.forEach(e => {
+        a.forEach(async e => {
             if (e.data) {
-                gc.from_bin(atob(e.data), 10, 6, dataURL => {
-                    const o = { ...e, dataURL };
-                    sbbs.avatars.users.set(o);
-                    draw(o);
-                }, true);
+                const dataURL = await Graphics.binToPNG(atob(e.data).split('').map(e => e.charCodeAt(0)), 10, true);
+                const o = { ...e, dataURL };
+                sbbs.avatars.users.set(o);
+                draw(o);
             } else {
                 const o = { user: e.user, data: null, dataURL: null, created: -1, updated: -1 };
                 sbbs.avatars.users.set(o);
