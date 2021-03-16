@@ -875,6 +875,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 	}
 	setvbuf(fp,NULL,_IOFBF,0x10000);
 
+	suspend_rip(true);
 	if(autozm)
 		zmodem_upload(bbs, fp, path);
 	else {
@@ -904,6 +905,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 				break;
 		}
 	}
+	suspend_rip(false);
 	uifcbail();
 	restorescreen(savscrn);
 	freescreen(savscrn);
@@ -941,6 +943,7 @@ void begin_download(struct bbslist *bbs)
 	i=0;
 	uifc.helpbuf="Select Protocol";
 	hold_update=FALSE;
+	suspend_rip(true);
 	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Protocol",opts)) {
 		case -1:
 			check_exit(FALSE);
@@ -963,6 +966,7 @@ void begin_download(struct bbslist *bbs)
 				xmodem_download(bbs, XMODEM|RECV,path);
 			break;
 	}
+	suspend_rip(false);
 	hold_update=old_hold;
 	uifcbail();
 	restorescreen(savscrn);
@@ -2613,11 +2617,13 @@ BOOL doterm(struct bbslist *bbs)
 							zrqbuf[++j]=0;
 							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
 								WRITE_OUTBUF();
+								suspend_rip(true);
 								if(!strcmp((char *)zrqbuf, (char *)zrqinit))
 									zmodem_download(bbs);
 								else
 									begin_upload(bbs, TRUE, inch);
 								setup_mouse_events(&ms);
+								suspend_rip(false);
 								zrqbuf[0]=0;
 								remain=1;
 							}
