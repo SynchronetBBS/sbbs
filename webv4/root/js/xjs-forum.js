@@ -1,9 +1,7 @@
 // Deuce's URL-ifier
 function linkify(body) {
     urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
-    body = body.replace(urlRE, function (str) {
-        var ret = '';
-        var p = 0;
+    body = body.replace(urlRE, str => {
         var link = str.replace(/\.*$/, '');
         var linktext = link;
         if (link.indexOf('://') === -1) link = 'mailto:' + link;
