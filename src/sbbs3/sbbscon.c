@@ -2045,42 +2045,43 @@ int main(int argc, char** argv)
     signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
     if(!capabilities_set) { /* capabilities were NOT set, fallback to original handling of thread options */
-    	if(new_uid_name[0]!=0) {        /*  check the user arg, if we have uid 0 */
-    		/* Can't recycle servers (re-bind ports) as non-root user */
-    		/* If DONT_BLAME_SYNCHRONET is set, keeps root credentials laying around */
+		if(new_uid_name[0]!=0) {        /*  check the user arg, if we have uid 0 */
+			/* Can't recycle servers (re-bind ports) as non-root user */
+			/* If DONT_BLAME_SYNCHRONET is set, keeps root credentials laying around */
 #if !defined(DONT_BLAME_SYNCHRONET)
-    		if(!thread_suid_broken) {
-     			if(bbs_startup.telnet_port < IPPORT_RESERVED
-    				|| ((bbs_startup.options & BBS_OPT_ALLOW_RLOGIN)
-    					&& bbs_startup.rlogin_port < IPPORT_RESERVED)
+			if(!thread_suid_broken) {
+				if(((bbs_startup.options & BBS_OPT_NO_TELNET) == 0
+						&& bbs_startup.telnet_port < IPPORT_RESERVED)
+					|| ((bbs_startup.options & BBS_OPT_ALLOW_RLOGIN)
+						&& bbs_startup.rlogin_port < IPPORT_RESERVED)
 #ifdef USE_CRYPTLIB
-    				|| ((bbs_startup.options & BBS_OPT_ALLOW_SSH)
-    					&& bbs_startup.ssh_port < IPPORT_RESERVED)
+					|| ((bbs_startup.options & BBS_OPT_ALLOW_SSH)
+						&& bbs_startup.ssh_port < IPPORT_RESERVED)
 #endif
-    				) {
+					) {
 					lputs(LOG_WARNING, "Disabling Terminal Server recycle support");
-    				bbs_startup.options|=BBS_OPT_NO_RECYCLE;
+					bbs_startup.options|=BBS_OPT_NO_RECYCLE;
 				}
-    			if(ftp_startup.port < IPPORT_RESERVED) {
+				if(ftp_startup.port < IPPORT_RESERVED) {
 					lputs(LOG_WARNING, "Disabling FTP Server recycle support");
-    				ftp_startup.options|=FTP_OPT_NO_RECYCLE;
+					ftp_startup.options|=FTP_OPT_NO_RECYCLE;
 				}
-    			if(web_startup.port < IPPORT_RESERVED) {
+				if(web_startup.port < IPPORT_RESERVED) {
 					lputs(LOG_WARNING, "Disabling Web Server recycle support");
-    				web_startup.options|=BBS_OPT_NO_RECYCLE;
+					web_startup.options|=BBS_OPT_NO_RECYCLE;
 				}
-    			if(((mail_startup.options & MAIL_OPT_ALLOW_POP3)
-    				&& mail_startup.pop3_port < IPPORT_RESERVED)
-    				|| mail_startup.smtp_port < IPPORT_RESERVED) {
+				if(((mail_startup.options & MAIL_OPT_ALLOW_POP3)
+					&& mail_startup.pop3_port < IPPORT_RESERVED)
+					|| mail_startup.smtp_port < IPPORT_RESERVED) {
 					lputs(LOG_WARNING, "Disabling Mail Server recycle support");
-    				mail_startup.options|=MAIL_OPT_NO_RECYCLE;
+					mail_startup.options|=MAIL_OPT_NO_RECYCLE;
 				}
 				/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
 				lputs(LOG_WARNING, "Disabling Services recycle support");
-    			services_startup.options|=BBS_OPT_NO_RECYCLE;
-    		}
+				services_startup.options|=BBS_OPT_NO_RECYCLE;
+			}
 #endif /* !defined(DONT_BLAME_SYNCHRONET) */
-    	}
+		}
     } /* end if(!capabilities_set) */
 	_beginthread(status_thread, 0, &status_startup);
 #endif /* defined(__unix__) */
