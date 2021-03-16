@@ -824,53 +824,57 @@ void sdl_video_event_thread(void *data)
 						     ev.key.keysym.sym == SDLK_UP ||
 						     ev.key.keysym.sym == SDLK_DOWN)) {
 							int w, h;
-							pthread_mutex_lock(&vstatlock);
-							w = cvstat.winwidth;
-							h = cvstat.winheight;
-							switch(ev.key.keysym.sym) {
-								case SDLK_LEFT:
-									if (w % (cvstat.scrnwidth)) {
-										w = w - w % cvstat.scrnwidth;
-									}
-									else {
-										w -= cvstat.scrnwidth;
-										if (w < cvstat.scrnwidth)
-											w = cvstat.scrnwidth;
-									}
-									break;
-								case SDLK_RIGHT:
-									w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
-									break;
-								case SDLK_UP:
-									if (h % (cvstat.scrnheight * cvstat.vmultiplier)) {
-										h = h - h % (cvstat.scrnheight * cvstat.vmultiplier);
-									}
-									else {
-										h -= (cvstat.scrnheight * cvstat.vmultiplier);
-										if (h < (cvstat.scrnheight * cvstat.vmultiplier))
-											h = cvstat.scrnheight * cvstat.vmultiplier;
-									}
-									break;
-								case SDLK_DOWN:
-									if (cvstat.scale_denominator != cvstat.scale_numerator) {
-										if (h % (cvstat.scrnheight * cvstat.vmultiplier) == 0) {
-											h = h * cvstat.scale_denominator / cvstat.scale_numerator;
+
+							// Don't allow ALT-DIR to change size when maximized...
+							if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
+								pthread_mutex_lock(&vstatlock);
+								w = cvstat.winwidth;
+								h = cvstat.winheight;
+								switch(ev.key.keysym.sym) {
+									case SDLK_LEFT:
+										if (w % (cvstat.scrnwidth)) {
+											w = w - w % cvstat.scrnwidth;
 										}
 										else {
-											h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
+											w -= cvstat.scrnwidth;
+											if (w < cvstat.scrnwidth)
+												w = cvstat.scrnwidth;
 										}
-									}
-									else
-										h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
-									break;
+										break;
+									case SDLK_RIGHT:
+										w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
+										break;
+									case SDLK_UP:
+										if (h % (cvstat.scrnheight * cvstat.vmultiplier)) {
+											h = h - h % (cvstat.scrnheight * cvstat.vmultiplier);
+										}
+										else {
+											h -= (cvstat.scrnheight * cvstat.vmultiplier);
+											if (h < (cvstat.scrnheight * cvstat.vmultiplier))
+												h = cvstat.scrnheight * cvstat.vmultiplier;
+										}
+										break;
+									case SDLK_DOWN:
+										if (cvstat.scale_denominator != cvstat.scale_numerator) {
+											if (h % (cvstat.scrnheight * cvstat.vmultiplier) == 0) {
+												h = h * cvstat.scale_denominator / cvstat.scale_numerator;
+											}
+											else {
+												h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
+											}
+										}
+										else
+											h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
+										break;
+								}
+								if (w > 16384 || h > 16384)
+									beep();
+								else {
+									cvstat.winwidth = w;
+									cvstat.winheight = h;
+								}
+								pthread_mutex_unlock(&vstatlock);
 							}
-							if (w > 16384 || h > 16384)
-								beep();
-							else {
-								cvstat.winwidth = w;
-								cvstat.winheight = h;
-							}
-							pthread_mutex_unlock(&vstatlock);
 							break;
 						}
 					}
