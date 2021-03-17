@@ -967,6 +967,7 @@ const Graphics = (() => {
     // Draw ImageData 'char' at coordinates 'x', 'y' on the canvas
     // Colours 'fg' and 'bg' are values from the COLOURS array
     function putCharacter(ws, cc, x, y, fg, bg) {
+        if (cc >= FontColumns * FontRows) return;
         const char = getCharacter(ws, cc);
         // Draw the character
         ws.ctx.globalCompositeOperation = 'source-over';
