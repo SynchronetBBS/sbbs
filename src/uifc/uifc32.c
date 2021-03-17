@@ -2168,6 +2168,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 
 		if(f == CR
 				|| (f >= 0xff && f != CIO_KEY_DC)
+				|| (f == 3840 && mode&K_TABEXIT)	// Backtab
 				|| (f == '\t' && mode&K_TABEXIT)
 				|| (f == '%' && mode&K_SCANNING)
 				|| f==CTRL_B
@@ -2321,6 +2322,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 							for(k=i;k<=j;k++)
 								str[k]=str[k+1];
 						}
+						if (soffset > 0)
+							soffset--;
 						continue;
 					}
 					break;
