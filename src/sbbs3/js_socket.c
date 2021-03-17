@@ -242,8 +242,10 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 				ret = -1;
 				if (status == CRYPT_ERROR_TIMEOUT)
 					ret = 0;
-				else if (status != CRYPT_ERROR_COMPLETE)
+				else if (status != CRYPT_ERROR_COMPLETE) {
 					GCES(ret, p, estr, "popping data");
+					do_js_close(p, false);
+				}
 			}
 		}
 		if (ret == -1) {
