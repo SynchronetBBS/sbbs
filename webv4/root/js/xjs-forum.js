@@ -328,7 +328,7 @@ function addPollField(type, target) {
 
 function appendLinks(body, target) {
     const links = collectLinks(body);
-    if (links.length < 1) return;
+    if (links === null || links.length < 1) return;
     target.innerHTML += '<p>';
     links.forEach((e, i) => target.innerHTML += `[${i + 1}] <a class="ulLink" href="${e}">${e}</a><br />`);
 }
