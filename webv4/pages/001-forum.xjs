@@ -3,8 +3,6 @@
 <?xjs
 	/*
 		To do:
-		- Viewing Mode:
-			- Sysop configurable: if subject contains [ansi] or whatever, automatically HTML or PNG encode message
 		- API handlers for post/reply msg, post poll, up/down vote, user preferences, mail
 		- Make it possible for locales to live in mods/lib/locale (custom language file)
 		- Support simple markup/markdown stuff in messages
@@ -28,7 +26,6 @@
 			- Edit user properties?
 			- Avatar chooser?
 			- forum preferences like "BBS view" for all messages, etc.?
-		- <template> elements are a thing; use them for reusable components instead of hidden things
 		- Test
 			- post message
 			- reply to message
