@@ -333,8 +333,8 @@ function appendLinks(body, target) {
     links.forEach((e, i) => target.innerHTML += `[${i + 1}] <a class="ulLink" href="${e}">${e}</a><br />`);
 }
 
-async function bbsView(elem, body, a, evt) {
-    evt.preventDefault();
+async function showMessageBody(elem, body, a, evt) {
+    if (evt !== undefined) evt.preventDefault();
     const target = elem.querySelector('div[data-message-body]');
     target.innerHTML = '';
     switch (a.getAttribute('data-view-type')) {
@@ -355,8 +355,16 @@ async function bbsView(elem, body, a, evt) {
     }
 }
 
-function bbsViewAll(mode) {
+function toggleViewAll(mode) {
     document.querySelectorAll(`a[data-view-type="${mode}"]`).forEach(e => e.click());
+}
+
+function matchAutoAnsiSubject(patterns, subject) {
+    return patterns.some(e => {
+        const r = new RegExp(e, 'i');
+        if (subject.search(r) < 0) return false;
+        return true;
+    });
 }
 
 // Message list
@@ -370,9 +378,11 @@ async function listMessages(sub, thread) {
     // TO DO: what about poll messages? If they may show up in (_data || data) then they need to be handled differently and a template created in forum.xjs
     const users = [];
     data.forEach((e, i) => {
+
         let akey;
         let elem;
         let append = false;
+
         const elemId = `forum-message-${e.number}`;
         if ((elem = document.getElementById(elemId)) === null) {
             elem = document.querySelector('#forum-message-template').content.querySelector('li').cloneNode(true);
@@ -380,11 +390,13 @@ async function listMessages(sub, thread) {
             elem.setAttribute('data-message', e.number);
             append = true;
         }
+
         elem.querySelector('a[data-message-anchor]').id = e.number;
         if (i == 0 && e.subject !== undefined) {
             document.querySelector('span[data-message-subject]').innerHTML = e.subject; // Breadcrumb link to thread
             elem.querySelector('strong[data-message-subject]').innerHTML = e.subject;
         }
+
         elem.querySelector('strong[data-message-from]').innerHTML = e.from;
         if (e.from_net_addr) {
             akey = `${e.from}@${e.from_net_addr}`;
@@ -394,17 +406,29 @@ async function listMessages(sub, thread) {
             akey = e.from;
             elem.querySelector('div[data-avatar]').setAttribute('data-avatar', `${e.from}`);
         }
+
         elem.querySelector('strong[data-message-to]').innerHTML = e.to;
         elem.querySelector('strong[data-message-date]').innerHTML = formatMessageDate(e.when_written_time);
         elem.querySelector('span[data-upvote-count]').innerHTML = e.votes.up;
         elem.querySelector('span[data-downvote-count]').innerHTML = e.votes.down;
-        elem.querySelector('div[data-message-body]').innerHTML = formatMessageBody(e.body);
         elem.querySelector('a[data-direct-link]').setAttribute('href', `#${e.number}`);
-        elem.querySelectorAll('a[data-view-type]').forEach(a => a.onclick = evt => bbsView(elem, e.body, a, evt));
+        elem.querySelectorAll('a[data-view-type]').forEach(a => a.onclick = evt => showMessageBody(elem, e.body, a, evt));
         elem.querySelector('button[data-button-add-reply]').onclick = evt => addReply(sub, e.number, e.body, elem);
-        elem.removeAttribute('hidden');
+
+        const autoViewMode = elem.getAttribute('data-auto-view-mode');
+        const autoAnsiSubject = elem.getAttribute('data-auto-ansi-subject').split(',');
+        const defaultViewMode = elem.getAttribute('data-default-message-view');
+        if (elem.getAttribute('data-auto-detect-ansi') == 'true' && e.body.search(/\u001b\[((?:[\x30-\x3f]{0,2};?)*)([\x20-\x2f]*)[\x40-\x7c]/) > -1) {
+            showMessageBody(elem, e.body, elem.querySelector(`a[data-view-type="${autoViewMode}"]`));
+        } else if (autoAnsiSubject.length && matchAutoAnsiSubject(autoAnsiSubject, e.subject)) {
+            showMessageBody(elem, e.body, elem.querySelector(`a[data-view-type="${autoViewMode}"]`));
+        } else {
+            showMessageBody(elem, e.body, elem.querySelector(`a[data-view-type="${defaultViewMode}"]`));
+        }
+
         if (append) document.getElementById('forum-list-container').appendChild(elem);
         if (users.indexOf(akey) < 0) users.push(akey);
+
     });
 
     if (Avatars) Avatars.draw(users);

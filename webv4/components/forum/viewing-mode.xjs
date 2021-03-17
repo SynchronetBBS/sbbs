@@ -8,17 +8,17 @@
         &nbsp;
     </li>
     <li class="no-before">
-        <a href="#" onclick="bbsViewAll('normal')">
+        <a href="#" onclick="toggleViewAll('normal')">
             <? locale.write('link_view_normal'); ?>
         </a>
     </li>
     <li>
-        <a href="#" onclick="bbsViewAll('html')">
+        <a href="#" onclick="toggleViewAll('html')">
             <? locale.write('link_view_html_encoded'); ?>
         </a>
     </li>
     <li>
-        <a href="#" onclick="bbsViewAll('image')">
+        <a href="#" onclick="toggleViewAll('image')">
             <? locale.write('link_view_image'); ?>
         </a>
     </li>

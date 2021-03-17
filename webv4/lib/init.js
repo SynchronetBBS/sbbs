@@ -37,7 +37,6 @@ load('array.js');
 				return v >= 1 ? null : (new Error('page_size must be >= 1'));
 			}
 		},
-		forum_extended_ascii: { default: true },
 		active_node_list: { default: true },
 		hide_empty_stats: { default: true },
 		files_inline: { default: false },
@@ -53,6 +52,16 @@ load('array.js');
 		ftelnet: { default: true },
 		vote_functions: { default: true },
 		xtrn_blacklist: { default: 'scfg' },
+		forum_default_message_view: { default: 'normal' },
+		forum_auto_ansi_subject: {
+			default: [ '^\\[ansi\\]' ],
+			parse: function (v) {
+				if (typeof v !== 'string') return new Error('Invalid forum_auto_ansi_subject setting ' + v);
+				return v.split(',');
+			}
+		},
+		forum_auto_detect_ansi: { default: true },
+		forum_auto_ansi_mode: { default: 'html' },
 	};
 
 	if (settings.darkmode_off) settings.darkmode_allow = false;

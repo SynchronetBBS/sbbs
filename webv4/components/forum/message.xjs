@@ -1,6 +1,6 @@
 <!-- Template for a message (eg. when viewing a thread) -->
 <template id="forum-message-template">
-    <li class="list-group-item striped" data-message>
+    <li class="list-group-item striped" data-message data-default-message-view="<? write(settings.forum_default_message_view); ?>" data-auto-ansi-subject="<? write(settings.forum_auto_ansi_subject); ?>" data-auto-detect-ansi="<? write(settings.forum_auto_detect_ansi); ?>" data-auto-view-mode="<? write(settings.forum_auto_ansi_mode); ?>">
         <a data-message-anchor></a>
         <h4>
             <strong data-message-subject></strong>
