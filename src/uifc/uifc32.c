@@ -2692,8 +2692,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(api->mode&UIFC_MOUSE)
 		title_len+=6;
 
-	if((unsigned)(top+height)>api->scrn_len-3)
-		height=(api->scrn_len-3)-top;
+	if((unsigned)(top+height)>=api->scrn_len)
+		height = api->scrn_len - top;
 	if(!width || (unsigned)width<title_len+6)
 		width=title_len+6;
 	if((unsigned)width>api->scrn_width)
