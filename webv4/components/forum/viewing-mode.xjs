@@ -1,0 +1,25 @@
+<ul class="breadcrumb">
+    <li>
+        <strong>
+            <? locale.write('title_view_type'); ?>:
+        </strong>
+    </li>
+    <li class="no-before">
+        &nbsp;
+    </li>
+    <li class="no-before">
+        <a href="#" onclick="bbsViewAll('normal')">
+            <? locale.write('link_view_normal'); ?>
+        </a>
+    </li>
+    <li>
+        <a href="#" onclick="bbsViewAll('html')">
+            <? locale.write('link_view_html_encoded'); ?>
+        </a>
+    </li>
+    <li>
+        <a href="#" onclick="bbsViewAll('image')">
+            <? locale.write('link_view_image'); ?>
+        </a>
+    </li>
+</ul>
