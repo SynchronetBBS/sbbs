@@ -5,7 +5,6 @@
 		To do:
 		- API handlers for post/reply msg, post poll, up/down vote, user preferences, mail
 		- Make it possible for locales to live in mods/lib/locale (custom language file)
-		- Support simple markup/markdown stuff in messages
 		- Message tags
 		- Search feature
 			- Search within groups, group, subs, or sub
