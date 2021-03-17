@@ -751,7 +751,7 @@ const Graphics = (() => {
                             if (data[y] !== undefined) {
                                 move = data[y].splice(x);
                                 let s = isNaN(opts[0]) ? 1 : opts[0];
-                                data[y].splice(x + n, 0, ...([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, s - 1)));
+                                data[y].splice(x + n, 0, ...((new Array(s)).fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, s - 1)));
                                 data[y].splice(s, 0, ...move.slice(0, 79 - s)); // To do: hard-coded to 80 cols
                                 x = data[y].length - 1; // To do: where is the cursor supposed to be now?
                             }
@@ -780,8 +780,8 @@ const Graphics = (() => {
                                 if (data[yy] !== undefined) data[yy].splice(xx);
                                 data.splice(yy + 1);
                             } else if (opts[0] === 1) { // Erase from the current position to the start of the screen.
-                                if (data[y] !== undefined) data[y].splice(0, x + 1, ...([].fill(undefined, 0, x)));
-                                data.splice(0, y, ...([].fill(undefined, 0, y - 1)));
+                                if (data[y] !== undefined) data[y].splice(0, x + 1, ...((new Array(x + 1)).fill(undefined, 0, x)));
+                                data.splice(0, y, ...((new Array(y)).fill(undefined, 0, y - 1)));
                             } else if (opts[0] == 2) { // Erase entire screen.
                                 data = [[]];
                                 // To do:
@@ -796,7 +796,7 @@ const Graphics = (() => {
                                 if (!opts.length || opts[0] === 0) { // Erase from the current position to the end of the line.
                                     data[y].splice(x);
                                 } else if (opts[0] === 1) { // Erase from the current position to the start of the line.
-                                    data[y].splice(0, x, ...([].fill(undefined, 0, x)));
+                                    data[y].splice(0, x, ...((new Array(x + 1)).fill(undefined, 0, x)));
                                 } else if (opts[0] === 2) { // Erase entire line.
                                     data.splice(y, 1, undefined);
                                 }
@@ -804,13 +804,13 @@ const Graphics = (() => {
                             break;
                         case 'L': // Insert line(s)
                             i = isNaN(opts[0]) ? 1 : opts[0];
-                            move = data.splice(y, data.length - y, ...([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, i)));
+                            move = data.splice(y, data.length - y, ...((new Array(i + 1)).fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, i)));
                             data = data.concat(move);
                             break;
                         case 'M': // Delete line(s)
                             i = isNaN(opts[0]) ? 1 : opts[0];
                             data = data.splice(y, i);
-                            data = data.concat([].fill({ c: ' ', fg: fg + (high ? 8 : 0 ), bg }, 0, i));
+                            data = data.concat((new Array(i + 1)).fill({ c: ' ', fg: fg + (high ? 8 : 0 ), bg }, 0, i));
                             break;
                         case 'm':
                             for (let o of opts) {
@@ -844,7 +844,7 @@ const Graphics = (() => {
                             i = isNaN(opts[0]) ? 1 : opts[0];
                             data.splice(0, i);
                             for (let n = 0; n < i; n++) {
-                                data.push([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, 79));
+                                data.push((new Array(80)).fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, 79));
                             }
                             break;
                         case 's': // push xy
@@ -854,7 +854,7 @@ const Graphics = (() => {
                         case 'T': // Scroll down
                             i = isNaN(opts[0]) ? 1 : opts[0];
                             for (let n = 0; n < i; n++) {
-                                data.unshift([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, 79));
+                                data.unshift((new Array(80)).fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, 79));
                             }
                             break;
                         case 'u': // pop xy
@@ -864,7 +864,7 @@ const Graphics = (() => {
                         case 'X': // Erase character
                             if (data[y] !== undefined) {
                                 i = isNaN(opts[0]) ? 1 : opts[0];
-                                data[y].splice(x, i, ...([].fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, i)));
+                                data[y].splice(x, i, ...((new Array(i + 1)).fill({ c: ' ', fg: fg + (high ? 8 : 0), bg }, 0, i)));
                             }
                             break;
                         case 'Z': // Cursor backward tabulation
@@ -1002,6 +1002,13 @@ const Graphics = (() => {
         return ANSI_Colors[CGA_Colors[n]];
     }
 
+    function longestRow(data) {
+        return data.reduce((a, c) => {
+            const len = c.reduce((a, c, i) => c === undefined ? a : i, 0);
+            return len > a ? len : a;
+        }, 0) + 1;
+    }
+
     async function binToPNG(bin, cols, dataURL) {
         const ws = await getWorkspace(cols, (bin.length / 2) / cols);
         let x = 0;
@@ -1049,11 +1056,8 @@ const Graphics = (() => {
 
     async function textToPNG(text, dataURL) {
         const data = parseText(text);
-        const longestRow = data.reduce((a, c) => {
-            if (c.length > a) return c.length;
-            return a;
-        }, 0);
-        const ws = await getWorkspace(longestRow, data.length);
+        const lr = longestRow(data);
+        const ws = await getWorkspace(lr, data.length);
         data.forEach((y, r) => {
             if (y === undefined) return;
             y.forEach((x, c) => {
@@ -1069,6 +1073,7 @@ const Graphics = (() => {
     function textToHTML(text, options) {
 
         const data = parseText(text, options);
+        const lr = longestRow(data);
 
         const elem = document.createElement('div');
         elem.classList.add('bbs-view');
@@ -1077,7 +1082,7 @@ const Graphics = (() => {
         let span;
         for (let y = 0; y < data.length; y++) {
             if (data[y] === undefined) continue;
-            for (let x = 0; x < data[y].length; x++) {
+            for (let x = 0; x < lr; x++) {
                 if (data[y][x]) {
                     if (!span || data[y][x].fg != ofg || data[y][x].bg != obg) {
                         ofg = data[y][x].fg;
@@ -1090,6 +1095,8 @@ const Graphics = (() => {
                     span.innerText += data[y][x].c;
                 } else {
                     if (!span || ofg !== 7 || obg !== 0) {
+                        ofg = 7;
+                        obg = 0;
                         span = document.createElement('span');
                         span.style.setProperty('color', ANSI_Colors[7]);
                         span.style.setProperty('background-color', ANSI_Colors[0]);
