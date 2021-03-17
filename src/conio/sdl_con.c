@@ -670,7 +670,7 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 			if(mod & KMOD_CTRL)
 				expect=sdl_keyval[i].ctrl;
 			else if(mod & KMOD_SHIFT) {
-				if(mod & KMOD_CAPS)
+				if((mod & KMOD_CAPS) && keysym != '\t')
 					expect=sdl_keyval[i].key;
 				else
 					expect=sdl_keyval[i].shift;
@@ -878,6 +878,8 @@ void sdl_video_event_thread(void *data)
 							break;
 						}
 					}
+					if ((ev.key.keysym.mod & KMOD_SHIFT) && (ev.key.keysym.sym == '\t'))
+						block_text = 1;
 					if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 127) {
 						// NUMLOCK makes 
 						if ((ev.key.keysym.mod & KMOD_NUM) && ((ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0)
@@ -890,7 +892,6 @@ void sdl_video_event_thread(void *data)
 						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
 					}
 					else if (!isprint(ev.key.keysym.sym)) {
-
 						if (ev.key.keysym.sym < 128)
 							sdl_add_key(ev.key.keysym.sym);
 					}
