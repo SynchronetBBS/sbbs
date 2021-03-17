@@ -105,6 +105,18 @@ function quotify(body) {
 
 }
 
+function markup(str) {
+    const re = /[^a-z0-9]((\*(?<bold>.+)\*)|(\/(?<italic>.+)\/)|(_(?<underline>.+)_)|(#(?<inverse>.+)#))[^a-z0-9]/gi;
+    const matches = str.matchAll(re);
+    for (const match of matches) {
+        if (match.groups.bold !== undefined) str = str.replace(match[1], `<strong>${match.groups.bold}</strong>`);
+        if (match.groups.italic !== undefined) str = str.replace(match[1], `<em>${match.groups.italic}</em>`);
+        if (match.groups.underline !== undefined) str = str.replace(match[1], `<u>${match.groups.underline}</u>`);
+        if (match.groups.inverse !== undefined) str = str.replace(match[1], `<span data-invert-color>${match.groups.inverse}</span>`);
+    }
+    return str;
+}
+
 // Format message body for the web
 function formatMessageBody(body) {
     body = stripCtrlA(body);
@@ -114,8 +126,9 @@ function formatMessageBody(body) {
     // body = word_wrap(body, body.length); // This was done server-side; but why was it done at all?
     body = quotify(body);
     body = linkify(body);
+    body = markup(body);
     body = body.replace(/\r\n$/,'');
-    body = body.replace(/(\r?\n)/g, "<br>$1");
+    body = body.replace(/(\r?\n)/g, '<br>$1');
     return body;
 }
 
@@ -333,6 +346,43 @@ function appendLinks(body, target) {
     links.forEach((e, i) => target.innerHTML += `[${i + 1}] <a class="ulLink" href="${e}">${e}</a><br />`);
 }
 
+function padZero(str, len) {
+    len = len || 2;
+    var zeros = new Array(len).join('0');
+    return (zeros + str).slice(-len);
+}
+
+function invertRGBComponent(n) {
+    return padZero((255 - n).toString(16));
+}
+
+function invertRGBArray(rgb) {
+    return `#${invertRGBComponent(rgb[0])}${invertRGBComponent(rgb[1])}${invertRGBComponent(rgb[2])}`;
+}
+
+function rgb2hex(rgb) {
+    const match = rgb.match(/^rgb(a{0,1})\((?<r>\d+),\s*(?<g>\d+),\s*(?<b>\d+)(,\s*(?<a>\d+)){0,1}\)$/);
+    return [
+        parseInt(match.groups.r, 10),
+        parseInt(match.groups.g, 10),
+        parseInt(match.groups.b, 10),
+        match.groups.a ? parseInt(match.groups.a, 10) : undefined,
+    ];
+}
+
+function invertRGB(rgb) {
+    return invertRGBArray(rgb2hex(rgb));
+}
+
+function getOpaqueBG(elem) {
+    const style = window.getComputedStyle(elem);
+    const bg = style.getPropertyValue('background-color');
+    const rgb = rgb2hex(bg);
+    if (rgb[3] !== 0) return bg;
+    if (elem.parentElement) return getOpaqueBG(elem.parentElement);
+    return bg;
+}
+
 async function showMessageBody(elem, body, a, evt) {
     if (evt !== undefined) evt.preventDefault();
     const target = elem.querySelector('div[data-message-body]');
@@ -340,6 +390,11 @@ async function showMessageBody(elem, body, a, evt) {
     switch (a.getAttribute('data-view-type')) {
         case 'normal':
             target.innerHTML = formatMessageBody(body);
+            target.querySelectorAll('span[data-invert-color]').forEach(e => {
+                const style = window.getComputedStyle(e);
+                e.style.setProperty('background-color', invertRGB(getOpaqueBG(e)));
+                e.style.setProperty('color', invertRGB(style.getPropertyValue('color')));
+            });
             break;
         case 'html':
             target.appendChild(Graphics.textToHTML(body));
@@ -413,6 +468,8 @@ async function listMessages(sub, thread) {
         elem.querySelectorAll('a[data-view-type]').forEach(a => a.onclick = evt => showMessageBody(elem, e.body, a, evt));
         elem.querySelector('button[data-button-add-reply]').onclick = evt => addReply(sub, e.number, e.body, elem);
 
+        if (append) document.getElementById('forum-list-container').appendChild(elem);
+
         const autoViewMode = elem.getAttribute('data-auto-view-mode');
         const autoAnsiSubject = elem.getAttribute('data-auto-ansi-subject');
         const defaultViewMode = elem.getAttribute('data-default-message-view');
@@ -424,7 +481,6 @@ async function listMessages(sub, thread) {
             showMessageBody(elem, e.body, elem.querySelector(`a[data-view-type="${defaultViewMode}"]`));
         }
 
-        if (append) document.getElementById('forum-list-container').appendChild(elem);
         if (users.indexOf(akey) < 0) users.push(akey);
 
     });
