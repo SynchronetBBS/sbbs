@@ -990,6 +990,12 @@ const Graphics = (() => {
             img.src = data;
         });
     }
+
+    function getDataURL(ws) {
+        const dataURL = ws.ctx.canvas.toDataURL();
+        deleteWorkspace(ws);
+        return dataURL;
+    }
     
     function cgaColor(n) {
         return ANSI_Colors[CGA_Colors[n]];
@@ -1006,7 +1012,7 @@ const Graphics = (() => {
             x = (x + 1) % cols;
             if (x === 0) y++;
         }
-        if (dataURL) return ws.ctx.canvas.toDataURL();
+        if (dataURL) return getDataURL(ws);
         return getPNG(ws);
     }
 
@@ -1055,7 +1061,7 @@ const Graphics = (() => {
                 putCharacter(ws, cc, c * FontCellWidth, r * FontCellHeight, ANSI_Colors[x.fg], ANSI_Colors[x.bg]);
             });
         });
-        if (dataURL) return ws.ctx.canvas.toDataURL();
+        if (dataURL) return getDataURL(ws);
         return getPNG(ws);
     }
 
