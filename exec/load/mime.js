@@ -354,7 +354,8 @@ abnf.obs_phrase="(?:"+abnf.word+"(?:"+abnf.word+"|\\.|"+abnf.CFWS+")*)";
 abnf.phrase=abnf.obs_phrase;
 
 // 3.2.5 Miscellaneous Tokens
-abnf.unstructured=abnf.obs_unstruct;
+//abnf.unstructured=abnf.obs_unstruct;
+abnf.unstructured="(?:(?:"+abnf.FWS+"?"+abnf.VCHAR+")*"+abnf.WSP+"*)";
 
 // 3.3 Date and Time Specification
 abnf.day_name="(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)";
@@ -603,7 +604,7 @@ function parse_header(str)
 	var m;
 	var re;
 
-	re=new RegExp("^("+abnf.field_name+")"+abnf.WSP+"*:"+rfc5322abnf.unstructured+""+abnf.CRLF,"i");
+	re=new RegExp("^("+abnf.field_name+")"+abnf.WSP+"*:"+abnf.unstructured+""+abnf.CRLF,"i");
 	m=re.exec(str);
 	if(m==null)
 		return(undefined);
