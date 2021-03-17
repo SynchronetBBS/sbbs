@@ -328,3 +328,7 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 	color: #111;
 	background-color: #DDD;
 }
+
+.breadcrumb li.no-before::before {
+	content: none;
+}
