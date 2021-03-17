@@ -1368,7 +1368,7 @@ function binify(seen)
 	var i;
 	var ret = {};
 	var s;
-	var base = -1;
+	var basemsg = -1;
 	var bstr = '';
 	var byte;
 	var bo;
@@ -1397,7 +1397,7 @@ function binify(seen)
 			// If the next bit isn't within 4 bytes, don't bother starting a string
 			if (s[i+1] > s[i]+32)
 				continue;
-			base = s[i];
+			basemsg = s[i];
 			bstr = ascii(1);
 			delete seen[s[i]];
 		}
