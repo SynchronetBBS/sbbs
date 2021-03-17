@@ -359,12 +359,10 @@ function toggleViewAll(mode) {
     document.querySelectorAll(`a[data-view-type="${mode}"]`).forEach(e => e.click());
 }
 
-function matchAutoAnsiSubject(patterns, subject) {
-    return patterns.some(e => {
-        const r = new RegExp(e, 'i');
-        if (subject.search(r) < 0) return false;
-        return true;
-    });
+function matchAutoAnsiSubject(pattern, subject) {
+    const r = new RegExp(pattern, 'i');
+    return (subject.search(r) > -1);
+
 }
 
 // Message list
@@ -416,11 +414,11 @@ async function listMessages(sub, thread) {
         elem.querySelector('button[data-button-add-reply]').onclick = evt => addReply(sub, e.number, e.body, elem);
 
         const autoViewMode = elem.getAttribute('data-auto-view-mode');
-        const autoAnsiSubject = elem.getAttribute('data-auto-ansi-subject').split(',');
+        const autoAnsiSubject = elem.getAttribute('data-auto-ansi-subject');
         const defaultViewMode = elem.getAttribute('data-default-message-view');
         if (elem.getAttribute('data-auto-detect-ansi') == 'true' && e.body.search(/\u001b\[((?:[\x30-\x3f]{0,2};?)*)([\x20-\x2f]*)[\x40-\x7c]/) > -1) {
             showMessageBody(elem, e.body, elem.querySelector(`a[data-view-type="${autoViewMode}"]`));
-        } else if (autoAnsiSubject.length && matchAutoAnsiSubject(autoAnsiSubject, e.subject)) {
+        } else if (autoAnsiSubject !== '' && matchAutoAnsiSubject(autoAnsiSubject, e.subject)) {
             showMessageBody(elem, e.body, elem.querySelector(`a[data-view-type="${autoViewMode}"]`));
         } else {
             showMessageBody(elem, e.body, elem.querySelector(`a[data-view-type="${defaultViewMode}"]`));

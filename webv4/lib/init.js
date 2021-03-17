@@ -53,13 +53,7 @@ load('array.js');
 		vote_functions: { default: true },
 		xtrn_blacklist: { default: 'scfg' },
 		forum_default_message_view: { default: 'normal' },
-		forum_auto_ansi_subject: {
-			default: [ '^\\[ansi\\]' ],
-			parse: function (v) {
-				if (typeof v !== 'string') return new Error('Invalid forum_auto_ansi_subject setting ' + v);
-				return v.split(',');
-			}
-		},
+		forum_auto_ansi_subject: { default: [ '^\\[ansi\\]' ] },
 		forum_auto_detect_ansi: { default: true },
 		forum_auto_ansi_mode: { default: 'html' },
 	};
