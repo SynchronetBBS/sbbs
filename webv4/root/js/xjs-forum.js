@@ -339,14 +339,14 @@ async function bbsView(elem, body, a, evt) {
     const target = elem.querySelector('div[data-message-body]');
     target.innerHTML = '';
     switch (a.getAttribute('data-view-type')) {
-        case 'plain':
+        case 'normal':
             target.innerHTML = formatMessageBody(body);
             break;
         case 'html':
             target.appendChild(Graphics.textToHTML(body));
             appendLinks(body, target);
             break;
-        case 'png':
+        case 'image':
             const pre = await Graphics.textToPNG(body);
             target.appendChild(pre);
             appendLinks(body, target);
@@ -354,6 +354,10 @@ async function bbsView(elem, body, a, evt) {
         default:
             break;
     }
+}
+
+function bbsViewAll(mode) {
+    document.querySelectorAll(`a[data-view-type="${mode}"]`).forEach(e => e.click());
 }
 
 // Message list
