@@ -3136,6 +3136,8 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	uintN argn = 2;
 	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
 		with_path = JSVAL_TO_BOOLEAN(argv[argn]);
+		if(with_path)
+			allowed_filename_chars = NULL;	// We trust this archive
 		argn++;
 	}
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
@@ -3170,7 +3172,33 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(extracted));
-	return(JS_TRUE);
+	return JS_TRUE;
+}
+
+static JSBool
+js_archive_type(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		archive = NULL;
+	char		type[256] = "";
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+ 	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], archive, NULL);
+	HANDLE_PENDING(cx, archive);
+	rc=JS_SUSPENDREQUEST(cx);
+	int result = archive_type(archive, type, sizeof(type));
+	free(archive);
+	JS_RESUMEREQUEST(cx, rc);
+	if(result >= 0) {
+		JSString* js_str = JS_NewStringCopyZ(cx, type);
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	}
+	return JS_TRUE;
 }
 
 static JSBool
@@ -4800,6 +4828,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"file_compare",	js_fcompare,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/file1, path/file2")
 	,JSDOCSTR("compare 2 files, returning <i>true</i> if they are identical, <i>false</i> otherwise")
 	,314
+	},
+	{"archive_type",	js_archive_type,	1,	JSTYPE_STRING,	JSDOCSTR("path/file")
+	,JSDOCSTR("get archive compression type")
+	,31900
 	},
 	{"archive_extract",	js_extract,		2,	JSTYPE_NUMBER,	JSDOCSTR("path/file, output_directory [,boolean with_path = <tt>false</tt>] [,number max_files = 0] [,string file/pattern [...]]")
 	,JSDOCSTR("extract files from an archive to specified output directory, returns the number of files extracted, will throw exception upon error")
