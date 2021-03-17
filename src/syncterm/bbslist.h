@@ -96,6 +96,7 @@ struct bbslist {
     char            ghost_program[9]; /* GHost program can only be 8 chars max. */
     int             rip;
     int             flow_control;
+    char            comment[1024];
 };
 
 extern char *music_names[];
