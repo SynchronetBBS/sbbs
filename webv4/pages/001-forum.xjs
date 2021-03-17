@@ -75,7 +75,7 @@
 
 	<? var sub = msg_area.sub[request.getParam('sub')]; ?>
 	<? components.load('forum/thread-link.xjs', [request.getParam('page'), request.getParam('sub')]); ?>
-	<? components.load('forum/post.xjs'); ?>
+	<? components.load('forum/post.xjs', request.getParam('sub')); ?>
 	<? components.load('forum/post-poll.xjs', request.getParam('sub')); ?>
 	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'sub', request.getParam('sub') ]); ?>
 

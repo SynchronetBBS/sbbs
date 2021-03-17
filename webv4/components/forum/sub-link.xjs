@@ -1,8 +1,8 @@
 <? var page = argv[0]; ?>
 
-<div hidden>
+<template id="forum-sub-link-template">
     <!-- Template for a link to a sub-board -->
-    <a id="forum-sub-link-template" href="./?page=<? write(page); ?>" class="list-group-item striped">
+    <a href="./?page=<? write(page); ?>" class="list-group-item striped">
         <h4>
             <strong data-sub-name></strong>
         </h4>
@@ -23,4 +23,4 @@
             </span>
         </small>
     </a>
-</div>
+</template>

@@ -1,11 +1,13 @@
 <!-- Template for a message reply input -->
-<div class="reply" data-reply-message-template hidden>
-    <strong>
-        <? locale.write('label_form_reply'); ?>
-    </strong>
-    <textarea rows="8" class="form-control reply" data-reply-message-body></textarea>
-    <button class="btn" data-quote-message-button>
-        <? locale.write('button_quote_message'); ?>
-    </button>
-    <input class="btn btn-primary" type="submit" value="Submit" data-reply-message-submit />
-</div>
+<template id="reply-message-template">
+    <div class="reply">
+        <strong>
+            <? locale.write('label_form_reply'); ?>
+        </strong>
+        <textarea rows="8" class="form-control reply" data-reply-message-body></textarea>
+        <button class="btn" data-quote-message-button>
+            <? locale.write('button_quote_message'); ?>
+        </button>
+        <input class="btn btn-primary" type="submit" value="Submit" data-reply-message-submit />
+    </div>
+</template>

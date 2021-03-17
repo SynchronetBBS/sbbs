@@ -3,8 +3,8 @@
     var page = argv[0];
     var sub = argv[1];
 ?>
-<div hidden>
-    <a id="forum-thread-link-template" href="./?page=<? write(page); ?>&sub=<? write(sub); ?>" class="list-group-item striped" data-thread>
+<template id="forum-thread-link-template">
+    <a href="./?page=<? write(page); ?>&sub=<? write(sub); ?>" class="list-group-item striped" data-thread>
         <div class="row">
             <div class="col-sm-9">
                 <strong data-thread-subject></strong>
@@ -44,4 +44,4 @@
             </div>
         </div>
     </a>
-</div>
+</template>

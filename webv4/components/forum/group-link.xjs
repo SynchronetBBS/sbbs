@@ -1,8 +1,6 @@
-<? var page = argv[0]; ?>
-
-<div hidden>
+<template id="forum-group-link-template">
     <!-- Template for a link to a message group -->
-    <a id="forum-group-link-template" href="./?page=<? write(page); ?>" class="list-group-item striped">
+    <a href="./?page=<? write(argv[0]); ?>" class="list-group-item striped">
         <h3>
             <strong data-group-name></strong>
         </h3>
@@ -13,4 +11,4 @@
             <span data-group-sub-count></span> <? locale.write('sub_boards'); ?>
         </small>
     </a>
-</div>
+</template>

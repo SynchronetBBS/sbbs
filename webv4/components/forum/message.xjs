@@ -1,6 +1,6 @@
 <!-- Template for a message (eg. when viewing a thread) -->
-<div hidden>
-    <li id="forum-message-template" class="list-group-item striped" data-message>
+<template id="forum-message-template">
+    <li class="list-group-item striped" data-message>
         <a data-message-anchor></a>
         <h4>
             <strong data-message-subject></strong>
@@ -68,4 +68,4 @@
             </button>
         </div>
     </li>
-</div>
+</template>

@@ -1,82 +1,84 @@
 <? var sub = argv[0]; ?>
 
 <!-- Template for adding a new poll -->
-<div id="forum-new-poll-template" hidden>
-    <strong>
-        <p><? locale.write('label_poll_add'); ?></p>
-    </strong>
-    <form id="newpoll-form-template" class="form-horizontal">
-        <div class="clearfix">
-            <strong>
-                <? locale.write('label_poll_add_question'); ?>
-            </strong>
-            <br />
-            <div class="col-sm-10 form-group">
-                <input id="newpoll-subject-template" class="form-control" type="text" placeholder="<? locale.write('placeholder_required', 'main'); ?>" maxlength="70" />
-            </div>
-        </div>
-        <div id="newpoll-comment-group-template">
-            <strong>
-                <? locale.write('label_poll_add_comments'); ?>
-            </strong>
-            <br />
-        </div>
-        <div class="form-group">
-            <label for="newpoll-answers-template" class="col-sm-2 control-label">
-            <? locale.write('label_poll_add_selection'); ?>
-            </label>
-            <div class="col-sm-10">
-                <label class="radio-inline">
-                    <input type="radio" name="newpoll-answers-template" value="1" checked /> <? locale.write('label_poll_selection_single'); ?> 
-                </label>
-                <label class="radio-inline">
-                    <input type="radio" name="newpoll-answers-template" value="2" /> <? locale.write('label_poll_selection_multiple'); ?>  
-                    <input type="number" name="newpoll-answer-count-template" min="1" max="15" value="1" />
-                </label>
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="newpoll-results-template" class="col-sm-2 control-label">
-            <? locale.write('label_poll_show_results'); ?>
-            </label>
-            <div class="col-sm-10">
-                <label class="radio-inline">
-                    <input type="radio" name="newpoll-results-template" value="0" checked /> <? locale.write('label_poll_show_results_voters'); ?> 
-                </label>
-                <label class="radio-inline">
-                    <input type="radio" name="newpoll-results-template" value="1" />  <? locale.write('label_poll_show_results_everyone'); ?> 
-                </label>
-                <label class="radio-inline">
-                    <input type="radio" name="newpoll-results-template" value="2" /> <? locale.write('label_poll_show_results_me_only_a'); ?> 
-                </label>
-                <label class="radio-inline">
-                    <input type="radio" name="newpoll-results-template" value="3" /> <? locale.write('label_poll_show_results_me_only_b'); ?> 
-                </label>
-            </div>
-        </div>
-        <div id="newpoll-answer-group-template">
-            <strong>
-                <? locale.write('label_poll_add_answers'); ?>
-            </strong>
-            <br />
-        </div>
-        <div id="newpoll-button-template" class="form-group">
-            <div class="col-sm-offset-2 col-sm-10">
-                <button id="newpoll-submit-template" type="button" class="btn btn-primary" onclick="postNewPoll('<? write(sub); ?>')">
-                    <? locale.write('button_submit', 'main'); ?>
-                </button>
-                <div class="pull-right">
-                    <button type="button" title="<? locale.write('button_poll_add_comment'); ?>" class="btn btn-success" onclick="addPollField('comment', 'newpoll-comment-group')">
-                        <span class="glyphicon glyphicon-pencil"></span>
-                    </button> 
-                    <button type="button" title="<? locale.write('button_poll_add_answer'); ?>" class="btn btn-success" onclick="addPollField('answer', 'newpoll-answer-group')">
-                        <span class="glyphicon glyphicon-plus"></span>
-                    </button> 
+<template id="forum-new-poll-template">
+    <div>
+        <strong>
+            <p><? locale.write('label_poll_add'); ?></p>
+        </strong>
+        <form id="newpoll-form-template" class="form-horizontal">
+            <div class="clearfix">
+                <strong>
+                    <? locale.write('label_poll_add_question'); ?>
+                </strong>
+                <br />
+                <div class="col-sm-10 form-group">
+                    <input id="newpoll-subject-template" class="form-control" type="text" placeholder="<? locale.write('placeholder_required', 'main'); ?>" maxlength="70" />
                 </div>
             </div>
-        </div>
-    </form>
-</div>
+            <div id="newpoll-comment-group-template">
+                <strong>
+                    <? locale.write('label_poll_add_comments'); ?>
+                </strong>
+                <br />
+            </div>
+            <div class="form-group">
+                <label for="newpoll-answers-template" class="col-sm-2 control-label">
+                <? locale.write('label_poll_add_selection'); ?>
+                </label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                        <input type="radio" name="newpoll-answers-template" value="1" checked /> <? locale.write('label_poll_selection_single'); ?> 
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="newpoll-answers-template" value="2" /> <? locale.write('label_poll_selection_multiple'); ?>  
+                        <input type="number" name="newpoll-answer-count-template" min="1" max="15" value="1" />
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="newpoll-results-template" class="col-sm-2 control-label">
+                <? locale.write('label_poll_show_results'); ?>
+                </label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                        <input type="radio" name="newpoll-results-template" value="0" checked /> <? locale.write('label_poll_show_results_voters'); ?> 
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="newpoll-results-template" value="1" />  <? locale.write('label_poll_show_results_everyone'); ?> 
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="newpoll-results-template" value="2" /> <? locale.write('label_poll_show_results_me_only_a'); ?> 
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="newpoll-results-template" value="3" /> <? locale.write('label_poll_show_results_me_only_b'); ?> 
+                    </label>
+                </div>
+            </div>
+            <div id="newpoll-answer-group-template">
+                <strong>
+                    <? locale.write('label_poll_add_answers'); ?>
+                </strong>
+                <br />
+            </div>
+            <div id="newpoll-button-template" class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                    <button id="newpoll-submit-template" type="button" class="btn btn-primary" onclick="postNewPoll('<? write(sub); ?>')">
+                        <? locale.write('button_submit', 'main'); ?>
+                    </button>
+                    <div class="pull-right">
+                        <button type="button" title="<? locale.write('button_poll_add_comment'); ?>" class="btn btn-success" onclick="addPollField('comment', 'newpoll-comment-group')">
+                            <span class="glyphicon glyphicon-pencil"></span>
+                        </button> 
+                        <button type="button" title="<? locale.write('button_poll_add_answer'); ?>" class="btn btn-success" onclick="addPollField('answer', 'newpoll-answer-group')">
+                            <span class="glyphicon glyphicon-plus"></span>
+                        </button> 
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</template>
 
 <!-- Template for adding a poll field (comment or answer) -->
 <div id="forum-new-poll-field-container-template" name="forum-new-poll-TYPE" class="form-group" hidden>

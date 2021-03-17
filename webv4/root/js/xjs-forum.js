@@ -147,7 +147,7 @@ async function addNew(sub) {
 
     if (document.getElementById('newmessage') !== null) return;
 
-    const elem = document.querySelector('div[data-new-message-template').cloneNode(true);
+    const elem = document.querySelector('#post-message-template').content.querySelector('div').cloneNode(true);
     elem.id = 'newmessage';
 
     const li = document.createElement('li');
@@ -192,9 +192,9 @@ async function postNew(sub) {
 async function addReply(sub, id, body, parentElem) {
 
     if (document.getElementById(`replybox-${id}`) !== null) return;
-    parentElem.querySelector('button[data-add-reply]').disabled = true;
+    parentElem.querySelector('button[data-button-add-reply]').disabled = true;
 
-    const elem = document.querySelector('div[data-reply-message-template]').cloneNode(true);
+    const elem = document.querySelector('#reply-message-template').content.querySelector('div').cloneNode(true);
     elem.id = `replybox-${id}`;
 
     const nmb = elem.querySelector('textarea[data-reply-message-body]');
@@ -287,13 +287,12 @@ async function postNewPoll(sub) {
 
 function addPoll(sub) {
 
-    if (document.getElementById('forum-new-poll') !== null) return;
+    if (document.querySelector('#forum-new-poll') !== null) return;
 
-    const elem = document.getElementById('forum-new-poll-template').cloneNode(true);
+    const elem = document.querySelector('#forum-new-poll-template').content.querySelector('div').cloneNode(true);
     elem.id = 'forum-new-poll';
     elem.innerHTML = elem.innerHTML.replace(/\-template/g, '');
     elem.innerHTML = elem.innerHTML.replace(/SUB/g, sub);
-    elem.removeAttribute('hidden');
 
     const li = document.createElement('li');
     li.id = 'newpoll-li';
@@ -376,7 +375,7 @@ async function listMessages(sub, thread) {
         let append = false;
         const elemId = `forum-message-${e.number}`;
         if ((elem = document.getElementById(elemId)) === null) {
-            elem = document.getElementById('forum-message-template').cloneNode(true);
+            elem = document.querySelector('#forum-message-template').content.querySelector('li').cloneNode(true);
             elem.id = elemId;
             elem.setAttribute('data-message', e.number);
             append = true;
@@ -489,7 +488,7 @@ async function listThread(e) {
     const elemId = `forum-thread-link-${e.id}`;
 
     if ((elem = document.getElementById(elemId)) === null) {
-        elem = document.getElementById('forum-thread-link-template').cloneNode(true);
+        elem = document.querySelector('#forum-thread-link-template').content.querySelector('a').cloneNode(true);
         elem.id = elemId;
         elem.setAttribute('data-thread', e.id);
         elem.setAttribute('href', `${elem.getAttribute('href')}&thread=${e.id}`);
@@ -582,7 +581,7 @@ function onSubList(data) {
         let append = false;
         const elemId = `forum-sub-link-${e.code}`;
         if ((elem = document.getElementById(elemId)) === null) {
-            elem = document.getElementById('forum-sub-link-template').cloneNode(true);
+            elem = document.querySelector('#forum-sub-link-template').content.querySelector('a').cloneNode(true);
             elem.id = elem.id.replace(/template$/, e.code);
             elem.setAttribute('href', `${elem.getAttribute('href')}&sub=${e.code}`);
             append = true; // Should see about slotting this into the document in the correct order instead, in the rare case that a new sub pops up while viewing the page I guess
@@ -615,7 +614,7 @@ function listGroup(e) {
     let append = false;
     const elemId = `forum-group-link-${e.index}`;
     if ((elem = document.getElementById(elemId)) === null) {
-        elem = document.getElementById('forum-group-link-template').cloneNode(true);
+        elem = document.getElementById('forum-group-link-template').content.querySelector('a').cloneNode(true);
         elem.id = elem.id.replace(/template$/, e.index);
         elem.setAttribute('href', `${elem.getAttribute('href')}&group=${e.index}`);
         append = true;
