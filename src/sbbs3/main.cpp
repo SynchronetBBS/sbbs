@@ -2443,6 +2443,13 @@ void output_thread(void* arg)
 				i=buftop-bufbot;	// Pretend we sent it all
 			}
 			else {
+				/*
+				 * Limit as per js_socket.c.
+				 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
+				 */
+				size_t sendbytes = buftop-bufbot;
+				if (sendbytes > 0x2000)
+					sendbytes = 0x2000;
 				if(cryptStatusError((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
 					/* Handle the SSH error here... */
 					GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "pushing data");
