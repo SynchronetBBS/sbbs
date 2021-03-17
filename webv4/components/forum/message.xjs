@@ -36,7 +36,7 @@
                 </button>
                 <ul class="dropdown-menu">
                     <li>
-                        <a href="#" data-view-type="plain">
+                        <a href="#" data-view-type="normal">
                             <? locale.write('link_view_normal'); ?>
                         </a>
                     </li>
@@ -46,7 +46,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-view-type="png">
+                        <a href="#" data-view-type="image">
                             <? locale.write('link_view_image'); ?>
                         </a>
                     </li>
