@@ -416,7 +416,17 @@ DLLCALL xptone_open_locked(void)
 		if(pu_api != NULL) {
 			handle_type=SOUND_DEVICE_PULSEAUDIO;
 			handle_rc++;
-			return(TRUE);
+			pthread_mutex_unlock(&handle_mutex);
+			xptone(0, 1, WAVE_SHAPE_SQUARE, FALSE);
+			pthread_mutex_lock(&handle_mutex);
+			if (pulseaudio_device_open_failed) {
+fprintf(stderr, "Pulse broke\n");
+				handle_type = SOUND_DEVICE_CLOSED;
+			}
+			else {
+fprintf(stderr, "Using pulse\n");
+				return(TRUE);
+			}
 		}
 	}
 #endif
@@ -632,6 +642,7 @@ DLLCALL xptone_open_locked(void)
 		return(TRUE);
 	}
 #endif
+
 	return(FALSE);
 }
 
