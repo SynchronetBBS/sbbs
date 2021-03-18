@@ -339,6 +339,7 @@ function addPollField(type, target) {
 
 }
 
+// This whole crap show is for supporting #inverse# markup
 function appendLinks(body, target) {
     const links = collectLinks(body);
     if (links === null || links.length < 1) return;
@@ -374,6 +375,9 @@ function invertRGB(rgb) {
     return invertRGBArray(rgb2hex(rgb));
 }
 
+// Turns out that finding the true background-color of a given element is a
+// huge pain in the bum-bum if it isn't explicitly set or inherited. So, we'll
+// climb the DOM and pick the first background-color with a non-zero alpha.
 function getOpaqueBG(elem) {
     const style = window.getComputedStyle(elem);
     const bg = style.getPropertyValue('background-color');
@@ -382,6 +386,7 @@ function getOpaqueBG(elem) {
     if (elem.parentElement) return getOpaqueBG(elem.parentElement);
     return bg;
 }
+// End of crap show
 
 async function showMessageBody(elem, body, a, evt) {
     if (evt !== undefined) evt.preventDefault();
@@ -390,10 +395,11 @@ async function showMessageBody(elem, body, a, evt) {
     switch (a.getAttribute('data-view-type')) {
         case 'normal':
             target.innerHTML = formatMessageBody(body);
+            let obg;
             target.querySelectorAll('span[data-invert-color]').forEach(e => {
-                const style = window.getComputedStyle(e);
-                e.style.setProperty('background-color', invertRGB(getOpaqueBG(e)));
-                e.style.setProperty('color', invertRGB(style.getPropertyValue('color')));
+                if (!obg) obg = invertRGB(getOpaqueBG(e));
+                e.style.setProperty('background-color', obg);
+                e.style.setProperty('color', invertRGB(window.getComputedStyle(e).getPropertyValue('color')));
             });
             break;
         case 'html':
