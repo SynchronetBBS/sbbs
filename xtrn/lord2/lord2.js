@@ -2012,7 +2012,9 @@ rescan:
 			ret = handle(args);
 		}
 		catch(e) {
-			log(LOG_ERROR, (new Date()).toString() + ", Node "+dk.connection.node+": REF Error "+e.message+" at "+efile+":"+eline);
+			log(LOG_ERROR, (new Date()).toString() + ", Node "+dk.connection.node
+				+" "+e.fileName+" line "+e.lineNumber
+				+": REF Error "+e.message+" at "+efile+":"+eline);
 		}
 		if (typeof ret === 'object') {
 			if (ret.itemexit)
@@ -4388,7 +4390,9 @@ function load_time()
 			run_ref('maint', 'maint.ref');
 		}
 		catch(e) {
-			log(LOG_ERROR, (new Date()).toString() + ", Node "+dk.connection.node+": REF Error "+e.message+" at maint");
+			log(LOG_ERROR, (new Date()).toString() + ", Node "+dk.connection.node
+				+" "+e.fileName+" line "+e.lineNumber
+				+": REF Error "+e.message+" at maint");
 		}
 	}
 }
