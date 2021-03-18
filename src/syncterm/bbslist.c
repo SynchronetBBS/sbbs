@@ -2109,6 +2109,7 @@ struct bbslist *show_bbslist(char *current, int connected)
     struct bbslist defaults;
     char    shared_list[MAX_PATH+1];
     char list_title[30];
+    int redraw = 0;
 
     glob_sbar = &sbar;
     glob_sopt = &sopt;
@@ -2184,8 +2185,9 @@ struct bbslist *show_bbslist(char *current, int connected)
 			uifc.list_height = uifc.scrn_len - 4;
                 val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
                     |WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
-                    |WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_FIXEDHEIGHT
+                    |WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_FIXEDHEIGHT|(redraw?WIN_NODRAW:0)
                     ,0,(uifc.scrn_len-(uifc.list_height)+1)/2-4,0,&opt,&bar,list_title,(char **)list);
+                redraw = 0;
                 if(val==listcount)
                     val=listcount|MSK_INS;
                 if(val==-7) { /* CTRL-E */
@@ -2221,8 +2223,10 @@ struct bbslist *show_bbslist(char *current, int connected)
                                     |WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
                                     |WIN_SEL|WIN_FIXEDHEIGHT
                                     ,0,(uifc.scrn_len-(uifc.list_height)+1)/2-4,0,&opt,&bar,list_title,(char **)list);
-				if (edit_comment(list[opt], settings.list_path))
+				if (edit_comment(list[opt], settings.list_path)) {
+                                    redraw = 1;
 				    break;
+                                }
                                 at_settings=!at_settings;
                                 break;
                             }
