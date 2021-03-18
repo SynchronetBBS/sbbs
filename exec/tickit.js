@@ -29,6 +29,8 @@ require("fido.js", 'FIDO');
 const LEN_FDESC = 58;
 
 var cfgfile;
+var force_replace = false;
+var use_diz_always = false;
 
 for (var i in argv) {
 	if(argv[i] == "-force-replace")
@@ -41,8 +43,6 @@ var tickit = new TickITCfg(cfgfile);
 var sbbsecho = new SBBSEchoCfg(tickit.gcfg.echocfg);
 var file_list = {};
 var files_imported = 0;
-var force_replace = false;
-var use_diz_always = false;
 
 const REVISION = "2.0";
 
