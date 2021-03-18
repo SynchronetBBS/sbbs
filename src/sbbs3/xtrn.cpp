@@ -582,14 +582,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		startup_info.dwFlags|=STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
     	startup_info.wShowWindow=SW_HIDE;
 	}
-	if(native && !(mode&EX_OFFLINE)) {
-
-		if(!(mode&EX_STDIN)) {
-			if(passthru_thread_running)
-				passthru_socket_activate(true);
-			else
-				pthread_mutex_lock(&input_thread_mutex);
-		}
+	if(native && !(mode & (EX_OFFLINE | EX_STDIN))) {
+		if(passthru_thread_running)
+			passthru_socket_activate(true);
+		else
+			pthread_mutex_lock(&input_thread_mutex);
 	}
 
     success=CreateProcess(
@@ -609,7 +606,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!success) {
 		XTRN_CLEANUP;
-		if(!(mode&EX_STDIN)) {
+		if(native && !(mode & (EX_OFFLINE | EX_STDIN))) {
 			if(passthru_thread_running)
 				passthru_socket_activate(false);
 			else
@@ -848,16 +845,14 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
-		if(online && !WaitForOutbufEmpty(5000))
+		if(!WaitForOutbufEmpty(5000))
 			lprintf(LOG_WARNING, "%s Timeout waiting for output buffer to empty", __FUNCTION__);
 
-		if(native) {
-			if(!(mode&EX_STDIN)) {
-				if(passthru_thread_running)
-					passthru_socket_activate(false);
-				else
-					pthread_mutex_unlock(&input_thread_mutex);
-			}
+		if(native && !(mode & EX_STDIN)) {
+			if(passthru_thread_running)
+				passthru_socket_activate(false);
+			else
+				pthread_mutex_unlock(&input_thread_mutex);
 		}
 
 		curatr=~0;			// Can't guarantee current attributes
@@ -1526,13 +1521,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 #endif
 	}
 
-	if(!(mode&EX_STDIN)) {
-		if(!(mode&EX_STDIN)) {
-			if(passthru_thread_running)
-				passthru_socket_activate(true);
-			else
-				pthread_mutex_lock(&input_thread_mutex);
-		}
+	if(!(mode & (EX_STDIN | EX_OFFLINE))) {
+		if(passthru_thread_running)
+			passthru_socket_activate(true);
+		else
+			pthread_mutex_lock(&input_thread_mutex);
 	}
 
 	if(!(mode&EX_NOLOG) && pipe(err_pipe)!=0) {
@@ -1558,7 +1551,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		winsize.ws_row=rows;
 		winsize.ws_col=cols;
 		if((pid=forkpty(&in_pipe[1],NULL,&term,&winsize))==-1) {
-			if(!(mode&EX_STDIN)) {
+			if(!(mode & (EX_STDIN | EX_OFFLINE))) {
 				if(passthru_thread_running)
 					passthru_socket_activate(false);
 				else
@@ -1583,7 +1576,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 
 		if((pid=FORK())==-1) {
-			if(!(mode&EX_STDIN)) {
+			if(!(mode & (EX_STDIN | EX_OFFLINE))) {
 				if(passthru_thread_running)
 					passthru_socket_activate(false);
 				else
@@ -1886,7 +1879,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
-		if(online && !WaitForOutbufEmpty(5000))
+		if(!WaitForOutbufEmpty(5000))
 			lprintf(LOG_WARNING, "%s Timeout waiting for output buffer to empty", __FUNCTION__);
 
 		if(!(mode&EX_STDIN)) {

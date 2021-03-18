@@ -568,6 +568,43 @@ char* format_filename(const char* fname, char* buf, size_t size, bool pad)
 	return buf;
 }
 
+int archive_type(const char* archive, char* str, size_t size)
+{
+	int result;
+	struct archive *ar;
+	struct archive_entry *entry;
+
+	if((ar = archive_read_new()) == NULL) {
+		safe_snprintf(str, size, "archive_read_new() returned NULL");
+		return -1;
+	}
+	archive_read_support_filter_all(ar);
+	archive_read_support_format_all(ar);
+	if((result = archive_read_open_filename(ar, archive, 10240)) != ARCHIVE_OK) {
+		safe_snprintf(str, size, "archive_read_open_filename() returned %d: %s"
+			,result, archive_error_string(ar));
+		archive_read_free(ar);
+		return result;
+	}
+	result = archive_compression(ar);
+	if(result >= 0) {
+		int comp = result;
+		result = archive_read_next_header(ar, &entry);
+		if(result != ARCHIVE_OK)
+			safe_snprintf(str, size, "archive_read_next_header() returned %d: %s"
+				,result, archive_error_string(ar));
+		else {
+			result = archive_format(ar);
+			if(comp > 0)
+				safe_snprintf(str, size, "%s/%s", archive_compression_name(ar), archive_format_name(ar));
+			else
+				safe_snprintf(str, size, "%s", archive_format_name(ar));
+		}
+	}
+	archive_read_free(ar);
+	return result;
+}
+
 ulong extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
 	,bool with_path, ulong max_files, str_list_t file_list, char* error, size_t maxerrlen)
 {

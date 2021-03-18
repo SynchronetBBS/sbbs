@@ -727,31 +727,38 @@ bool upgrade_file_bases(bool hash)
 			smb.status.attr |= SMB_NOHASH;
 		smb.status.max_age = scfg.dir[i]->maxage;
 		smb.status.max_msgs = scfg.dir[i]->maxfiles;
-		if((result = smb_create(&smb)) != SMB_SUCCESS)
+		if((result = smb_create(&smb)) != SMB_SUCCESS) {
+			fprintf(stderr, "Error %d (%s) creating %s\n", result, smb.last_error, smb.file);
 			return false;
+		}
 
 		char str[MAX_PATH+1];
 		int file;
 		int extfile = openextdesc(&scfg, i);
 
 		sprintf(str,"%s%s.ixb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
-		if((file=open(str,O_RDONLY|O_BINARY))==-1)
+		if((file=open(str,O_RDONLY|O_BINARY))==-1) {
+			smb_close(&smb);
 			continue;
+		}
 		long l=(long)filelength(file);
 		if(!l) {
 			close(file);
+			smb_close(&smb);
 			continue;
 		}
 		uchar* ixbbuf;
 		if((ixbbuf=(uchar *)malloc(l))==NULL) {
 			close(file);
 			printf("\7ERR_ALLOC %s %lu\n",str,l);
+			smb_close(&smb);
 			continue;
 		}
 		if(read(file,ixbbuf,l)!=(int)l) {
 			close(file);
 			printf("\7ERR_READ %s %lu\n",str,l);
 			free(ixbbuf);
+			smb_close(&smb);
 			continue;
 		}
 		close(file);
