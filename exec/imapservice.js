@@ -862,9 +862,9 @@ var unauthenticated_command_handlers = {
 				return md5_calc(ok + base64_decode(md5_calc(ik+text)), true);
 			}
 
-			function setcfg()
+			function setcfg(u)
 			{
-				cfgfile=new File(format(system.data_dir+"user/%04d.imap", user.number));
+				cfgfile=new File(format(system.data_dir+"user/%04d.imap", u.number));
 				if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
 					tagged(tag, "NO", "Can't open imap state file");
 					return;
@@ -884,7 +884,7 @@ var unauthenticated_command_handlers = {
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
 				}
-				setcfg();
+				setcfg(system.matchuser(args[1], false));
 				tagged(tag, "OK", "Howdy.");
 				state=Authenticated;
 			}
@@ -905,7 +905,7 @@ var unauthenticated_command_handlers = {
 				}
 				// First, try as-stored...
 				if (args[1] === hmac(u.security.password, challenge)) {
-					setcfg();
+					setcfg(u);
 					login(u.alias, u.security.password);
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
@@ -913,7 +913,7 @@ var unauthenticated_command_handlers = {
 				}
 				// Lower-case
 				if (args[1] === hmac(u.security.password.toLowerCase(), challenge)) {
-					setcfg();
+					setcfg(u);
 					login(u.alias, u.security.password);
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
@@ -921,7 +921,7 @@ var unauthenticated_command_handlers = {
 				}
 				// Upper-case
 				if (args[1] === hmac(u.security.password.toUpperCase(), challenge)) {
-					setcfg();
+					setcfg(u);
 					login(u.alias, u.security.password);
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
@@ -940,6 +940,7 @@ var unauthenticated_command_handlers = {
 			var tag=args[0];
 			var usr=args[1];
 			var pass=args[2];
+			var u;
 
 			if (!client.socket.ssl_session) {
 				tagged(tag, "NO", "Basic RFC stuff here! A client implementation MUST NOT send a LOGIN command if the LOGINDISABLED capability is advertised.");
@@ -949,7 +950,8 @@ var unauthenticated_command_handlers = {
 				tagged(tag, "NO", "No login for you.");
 				return;
 			}
-			cfgfile=new File(format(system.data_dir+"user/%04d.imap", user.number));
+			u = system.matchuser(usr, false);
+			cfgfile=new File(format(system.data_dir+"user/%04d.imap", u.number));
 			if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
 				tagged(tag, "NO", "Can't open imap state file");
 				return;
@@ -1427,12 +1429,14 @@ function save_cfg(lck)
 	var cfg;
 	var b;
 	var s;
+	var scpy;
 
 	if(user.number > 0) {
 		if (lck)
 			lock_cfg();
 		cfgfile.rewind();
 		for(sub in saved_config) {
+			scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
 			s=saved_config[sub].Seen;
 			delete saved_config[sub].Seen;
 			cfgfile.iniSetObject(sub,saved_config[sub]);
@@ -1446,7 +1450,7 @@ function save_cfg(lck)
 				if (Object.keys(s).length > 0)
 					cfgfile.iniSetObject(sub+'.seen',s);
 			}
-			saved_config[sub].Seen=s;
+			saved_config[sub].Seen=scpy;
 		}
 		cfgfile.flush();
 		if (lck)
@@ -1674,7 +1678,6 @@ var authenticated_command_handlers = {
 				old_saved = saved_config[base_code];
 			read_cfg(base_code, true);
 			index = read_index(base_code);
-			apply_seen(index);
 			delete saved_config[base_code];
 			if (old_saved != undefined)
 				saved_config[base_code] = old_saved;
