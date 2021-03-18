@@ -414,23 +414,9 @@ DLLCALL xptone_open_locked(void)
 			}
 		}
 		if(pu_api != NULL) {
-			if(!pulseaudio_initialized) {
-				pa_sample_spec ss;
-				ss.format = PA_SAMPLE_U8;
-				ss.rate = 22050;
-				ss.channels = 1;
-				if((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL)
-					pulseaudio_device_open_failed=TRUE;
-				else
-					pulseaudio_initialized=TRUE;
-				pu_api->simple_free(pu_handle);
-				pu_handle = NULL;
-			}
-			if(pulseaudio_initialized) {
-				handle_type=SOUND_DEVICE_PULSEAUDIO;
-				handle_rc++;
-				return(TRUE);
-			}
+			handle_type=SOUND_DEVICE_PULSEAUDIO;
+			handle_rc++;
+			return(TRUE);
 		}
 	}
 #endif
