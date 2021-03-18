@@ -1,0 +1,11 @@
+<template id="tag-container-template">
+    <div data-tag-list></div>
+</template>
+
+<template id="tag-template">
+    <a href="./?page=<? write(argv[0]); ?>" data-tag-link>
+        <span class="badge badge-tag">
+            <small data-tag-text></small>
+        </span>
+    </a>
+</template>

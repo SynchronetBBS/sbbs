@@ -36,6 +36,9 @@ span.badge.scanned {
 span.badge.total {
 }
 
+span.badge-tag {
+}
+
 /* Inline quoted text in a message. */
 blockquote {
 	font-size: 14px;

@@ -7,7 +7,7 @@
         </h4>
         <div class="clearfix">
             <div class="pull-left" style="margin-right:1em;" data-avatar></div>
-            <div>
+            <div data-stats>
                 <div data-badge-unread hidden>
                     <span class="badge unread">
                         <? locale.write('label_new_message'); ?>

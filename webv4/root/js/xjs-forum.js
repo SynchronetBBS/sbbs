@@ -426,6 +426,20 @@ function matchAutoAnsiSubject(pattern, subject) {
 
 }
 
+function listTags(tags, target) {
+    if (tags === undefined) return;
+    const tc = document.querySelector('#tag-container-template').content.cloneNode(true);
+    const tl = tc.querySelector('div[data-tag-list]');
+    tags.split(' ').forEach(tag => {
+        const tb = document.querySelector('#tag-template').content.querySelector('a').cloneNode(true);
+        const href = tb.getAttribute('href');
+        tb.setAttribute('href', `${href}&tag=${encodeURIComponent(tag)}`);
+        tb.querySelector('small').innerText = tag;
+        tl.appendChild(tb);
+    });
+    target.appendChild(tc);
+}
+
 // Message list
 async function listMessages(sub, thread) {
 
@@ -465,6 +479,8 @@ async function listMessages(sub, thread) {
             akey = e.from;
             elem.querySelector('div[data-avatar]').setAttribute('data-avatar', `${e.from}`);
         }
+
+        listTags(e.tags, elem.querySelector('div[data-stats]'));
 
         elem.querySelector('strong[data-message-to]').innerHTML = e.to;
         elem.querySelector('strong[data-message-date]').innerHTML = formatMessageDate(e.when_written_time);
@@ -594,6 +610,8 @@ async function listThread(e) {
         elem.querySelector('span[data-last-time]').innerHTML = formatMessageDate(e.last_message.when_written_time);
         elem.querySelector('div[data-replies]').removeAttribute('hidden');
     }
+
+    listTags(e.first_message.tags, elem.querySelector('div[data-left-column]'));
 
     const stats = elem.querySelector('div[data-stats]');
     // if (e.unread) {

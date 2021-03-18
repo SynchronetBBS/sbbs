@@ -6,7 +6,7 @@
 <template id="forum-thread-link-template">
     <a href="./?page=<? write(page); ?>&sub=<? write(sub); ?>" class="list-group-item striped" data-thread>
         <div class="row">
-            <div class="col-sm-9">
+            <div class="col-sm-9" data-left-column>
                 <strong data-thread-subject></strong>
                 <br />
                 <small>

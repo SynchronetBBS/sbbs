@@ -6,6 +6,10 @@
 		- API handlers for post/reply msg, post poll, up/down vote, user preferences, mail
 		- Make it possible for locales to live in mods/lib/locale (custom language file)
 		- Message tags
+			- Partially complete (they are shown in thread list and thread view)
+			- need to add message tagging field when posting/replying
+			- they are also links; they point to ?page=forum.xjs&tag=<tag>, which should be a search-by-tag view
+			- they are boring and grey
 		- Search feature
 			- Search within groups, group, subs, or sub
 			- Search optionally within subject, to, from, body, date-range
@@ -57,6 +61,7 @@
 	<script type="text/javascript" src="./js/avatars.js"></script>
 
 	<? components.load('forum/message.xjs'); ?>
+	<? components.load('forum/tags.xjs', request.getParam('page')); ?>
 	<? components.load('forum/reply.xjs'); ?>
 	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'thread', request.getParam('sub'), request.getParam('thread') ]); ?>
 	<? components.load('forum/viewing-mode.xjs'); ?>
@@ -71,6 +76,7 @@
 
 	<? var sub = msg_area.sub[request.getParam('sub')]; ?>
 	<? components.load('forum/thread-link.xjs', [request.getParam('page'), request.getParam('sub')]); ?>
+	<? components.load('forum/tags.xjs', request.getParam('page')); ?>
 	<? components.load('forum/post.xjs', request.getParam('sub')); ?>
 	<? components.load('forum/post-poll.xjs', request.getParam('sub')); ?>
 	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'sub', request.getParam('sub') ]); ?>
