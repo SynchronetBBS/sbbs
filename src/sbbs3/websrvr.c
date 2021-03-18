@@ -646,7 +646,14 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 		switch(sel) {
 			case 1:
 				if (session->is_tls) {
-					status = cryptPushData(session->tls_sess, buf+sent, len-sent, &tls_sent);
+					/*
+					 * Limit as per js_socket.c.
+					 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
+					 */
+					size_t sendbytes = len-sent;
+					if (sendbytes > 0x2000)
+						sendbytes = 0x2000;
+					status = cryptPushData(session->tls_sess, buf+sent, sendbytes, &tls_sent);
 					GCES(status, session, "pushing data");
 					if (status == CRYPT_ERROR_TIMEOUT) {
 						tls_sent = 0;

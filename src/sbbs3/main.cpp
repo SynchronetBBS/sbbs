@@ -2453,6 +2453,13 @@ void output_thread(void* arg)
 				i=buftop-bufbot;	// Pretend we sent it all
 			}
 			else {
+				/*
+				 * Limit as per js_socket.c.
+				 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
+				 */
+				size_t sendbytes = buftop-bufbot;
+				if (sendbytes > 0x2000)
+					sendbytes = 0x2000;
 				if(cryptStatusError((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
 					/* Handle the SSH error here... */
 					GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "pushing data");
@@ -2468,24 +2475,14 @@ void output_thread(void* arg)
 					 */
 					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5)))
 						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "setting write timeout");
-					do {
-						if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
-							GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "flushing data");
-							ssh_errors++;
-							if (err == CRYPT_ERROR_TIMEOUT) {
-								int ret = cryptPopData(sbbs->ssh_session, (void *)"", 0, &err);
-								(void)ret;
-								if (cryptStatusError(err))
-									GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "popping SSH data after timeout");
-								else
-									err = CRYPT_ERROR_TIMEOUT;
-							}
-							else {
-								sbbs->online=FALSE;
-								i=buftop-bufbot;	// Pretend we sent it all
-							}
+					if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
+						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "flushing data");
+						ssh_errors++;
+						if (err != CRYPT_ERROR_TIMEOUT) {
+							sbbs->online=FALSE;
+							i=buftop-bufbot;	// Pretend we sent it all
 						}
-					} while (err == CRYPT_ERROR_TIMEOUT);
+					}
 					// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
 					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0)))
 						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "setting write timeout");
@@ -2959,7 +2956,7 @@ void event_thread(void* arg)
 					|| (sbbs->cfg.qhub[i]->time
 						&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.qhub[i]->time
 						&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
-					&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
+							&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
 				SAFEPRINTF2(str,"%sqnet/%s.now"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				if(fexistcase(str)) {
@@ -5073,20 +5070,22 @@ void DLLCALL bbs_thread(void* arg)
 
 	startup->node_inbuf=node_inbuf;
 
-    /* open a socket and wait for a client */
-    ts_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
-    if(ts_set==NULL) {
+	/* open a socket and wait for a client */
+	ts_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
+	if(ts_set==NULL) {
 		lprintf(LOG_CRIT,"!ERROR %d creating Terminal Server socket set", ERROR_VALUE);
 		cleanup(1);
 		return;
 	}
-    telnet_cb.protocol="telnet";
-    telnet_cb.startup=startup;
+	if (!(startup->options & BBS_OPT_NO_TELNET)) {
+		telnet_cb.protocol="telnet";
+		telnet_cb.startup=startup;
 
-	/*
-	 * Add interfaces
-	 */
-	xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->telnet_interfaces, startup->telnet_port, "Telnet Server", sock_cb, startup->seteuid, &telnet_cb);
+		/*
+		 * Add interfaces
+		 */
+		xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->telnet_interfaces, startup->telnet_port, "Telnet Server", sock_cb, startup->seteuid, &telnet_cb);
+	}
 
 	if(startup->options&BBS_OPT_ALLOW_RLOGIN) {
 		/* open a socket and wait for a client */

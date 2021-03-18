@@ -97,6 +97,7 @@ static uint8_t *ripbuf = NULL;
 static size_t ripbuf_size = 0;
 static size_t ripbuf_pos = 0;
 static size_t ripbufpos = 0;
+static bool rip_suspended = false;
 
 static struct mouse_field *rip_pressed = NULL;
 
@@ -13154,6 +13155,23 @@ init_rip(int enabled)
 	if (enabled) {
 		memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 		set_ega_palette();
+	}
+}
+
+void
+suspend_rip(bool suspend)
+{
+	if (suspend) {
+		if (rip.enabled) {
+			rip_suspended = true;
+			rip.enabled = false;
+		}
+	}
+	else {
+		if (rip_suspended) {
+			rip_suspended = false;
+			rip.enabled = true;
+		}
 	}
 }
 

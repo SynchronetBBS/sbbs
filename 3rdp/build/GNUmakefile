@@ -27,6 +27,17 @@ ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
   endif
  endif
 endif
+# OS/2 and "GNU" (HURD?) also need this, but we never plan to support them.
+ifneq ($(os),darwin)
+ ifneq ($(os),linux)
+  ifneq ($(os),freebsd)
+   ifneq ($(os),sunos)
+    JS_CONFIGURE_ARGS += '--disable-tracejit'
+   endif
+  endif
+ endif
+endif
+
 JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
 
 .PHONY: cryptlib libmozjs
@@ -48,7 +59,7 @@ $(JS_SRC): | $(3RDPSRCDIR)
 $(JS_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(JS_IDIR)
 
-$(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.in.patch $(3RDP_ROOT)$(DIRSEP)build/imacro-asm-fix.patch $(3RDP_ROOT)$(DIRSEP)build/js-volatile-outside-functions.patch | $(JS_SRC) $(JS_IDIR)
+$(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.in.patch $(3RDP_ROOT)$(DIRSEP)build/imacro-asm-fix.patch $(3RDP_ROOT)$(DIRSEP)build/js-volatile-outside-functions.patch $(3RDP_ROOT)$(DIRSEP)build/js-Wno-misleading-indentation.patch | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzC $(JS_SRC) -f $(3RDPDISTDIR)$(DIRSEP)libmozjs.tgz
@@ -58,6 +69,7 @@ $(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)buil
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-configure.in.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < imacro-asm-fix.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-volatile-outside-functions.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-Wno-misleading-indentation.patch
 	-$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && autoconf-2.13
 	$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && env $(JS_CONFIGURE_ENV) ./configure $(JS_CONFIGURE_ARGS)
 	$(QUIET)$(MAKE) -C $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src
@@ -69,7 +81,7 @@ $(CRYPT_SRC): | $(3RDPSRCDIR)
 $(CRYPT_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(CRYPT_IDIR)
 
-$(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)build/terminal-params.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw32-static.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ranlib.patch $(3RDP_ROOT)$(DIRSEP)build/cl-win32-noasm.patch $(3RDP_ROOT)$(DIRSEP)build/cl-zz-country.patch $(3RDP_ROOT)$(DIRSEP)build/cl-algorithms.patch $(3RDP_ROOT)$(DIRSEP)build/cl-allow-duplicate-ext.patch $(3RDP_ROOT)$(DIRSEP)build/cl-macosx-minver.patch $(3RDP_ROOT)$(DIRSEP)build/cl-endian.patch $(3RDP_ROOT)$(DIRSEP)build/cl-cryptodev.patch $(3RDP_ROOT)$(DIRSEP)build/cl-posix-me-gently.patch $(3RDP_ROOT)$(DIRSEP)build/cl-tpm-linux.patch $(3RDP_ROOT)$(DIRSEP)build/cl-PAM-noprompts.patch $(3RDP_ROOT)$(DIRSEP)build/cl-zlib.patch $(3RDP_ROOT)$(DIRSEP)build/Dynamic-linked-static-lib.patch $(3RDP_ROOT)$(DIRSEP)build/SSL-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-bigger-maxattribute.patch $(3RDP_ROOT)$(DIRSEP)build/cl-vcxproj.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw-vcver.patch $(3RDP_ROOT)$(DIRSEP)build/cl-win32-build-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-gcc-non-const-time-val.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-odbc.patch $(3RDP_ROOT)$(DIRSEP)build/cl-noasm-defines.patch $(3RDP_ROOT)$(DIRSEP)build/cl-bn-noasm64-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-RSA-suites.patch $(3RDP_ROOT)$(DIRSEP)build/cl-fix-ECC-RSA.patch $(3RDP_ROOT)$(DIRSEP)build/cl-prefer-ECC.patch $(3RDP_ROOT)$(DIRSEP)build/cl-prefer-ECC-harder.patch $(3RDP_ROOT)$(DIRSEP)build/cl-more-RSA-ECC-fixes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-DH-key-init.patch $(3RDP_ROOT)$(DIRSEP)build/cl-clear-GCM-flag.patch $(3RDP_ROOT)$(DIRSEP)build/cl-use-ssh-ctr.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssh-list-ctr-modes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssh-incCtr.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssl-suite-blocksizes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-tpm.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-via-aes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-fix-ssh-ecc-ephemeral.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-just-use-cc.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-learn-numbers.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-no-safe-stack.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-allow-pkcs12.patch | $(CRYPT_SRC) $(CRYPT_IDIR)
+$(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)build/terminal-params.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw32-static.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ranlib.patch $(3RDP_ROOT)$(DIRSEP)build/cl-win32-noasm.patch $(3RDP_ROOT)$(DIRSEP)build/cl-zz-country.patch $(3RDP_ROOT)$(DIRSEP)build/cl-algorithms.patch $(3RDP_ROOT)$(DIRSEP)build/cl-allow-duplicate-ext.patch $(3RDP_ROOT)$(DIRSEP)build/cl-macosx-minver.patch $(3RDP_ROOT)$(DIRSEP)build/cl-endian.patch $(3RDP_ROOT)$(DIRSEP)build/cl-cryptodev.patch $(3RDP_ROOT)$(DIRSEP)build/cl-posix-me-gently.patch $(3RDP_ROOT)$(DIRSEP)build/cl-tpm-linux.patch $(3RDP_ROOT)$(DIRSEP)build/cl-PAM-noprompts.patch $(3RDP_ROOT)$(DIRSEP)build/cl-zlib.patch $(3RDP_ROOT)$(DIRSEP)build/Dynamic-linked-static-lib.patch $(3RDP_ROOT)$(DIRSEP)build/SSL-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-bigger-maxattribute.patch $(3RDP_ROOT)$(DIRSEP)build/cl-vcxproj.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw-vcver.patch $(3RDP_ROOT)$(DIRSEP)build/cl-win32-build-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-gcc-non-const-time-val.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-odbc.patch $(3RDP_ROOT)$(DIRSEP)build/cl-noasm-defines.patch $(3RDP_ROOT)$(DIRSEP)build/cl-bn-noasm64-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-RSA-suites.patch $(3RDP_ROOT)$(DIRSEP)build/cl-fix-ECC-RSA.patch $(3RDP_ROOT)$(DIRSEP)build/cl-prefer-ECC.patch $(3RDP_ROOT)$(DIRSEP)build/cl-prefer-ECC-harder.patch $(3RDP_ROOT)$(DIRSEP)build/cl-more-RSA-ECC-fixes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-DH-key-init.patch $(3RDP_ROOT)$(DIRSEP)build/cl-clear-GCM-flag.patch $(3RDP_ROOT)$(DIRSEP)build/cl-use-ssh-ctr.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssh-list-ctr-modes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssh-incCtr.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssl-suite-blocksizes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-tpm.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-via-aes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-fix-ssh-ecc-ephemeral.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-just-use-cc.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-learn-numbers.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-no-safe-stack.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-allow-pkcs12.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-uint64_t-redefine.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-random-openbsd.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-openbsd-threads.patch $(3RDP_ROOT)$(DIRSEP)/build/cl-allow-none-auth.patch | $(CRYPT_SRC) $(CRYPT_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(CRYPT_SRC)/*
 	$(QUIET)unzip -oa $(3RDPDISTDIR)$(DIRSEP)cryptlib.zip -d $(CRYPT_SRC)
@@ -116,6 +128,10 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)b
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-learn-numbers.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-safe-stack.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-pkcs12.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-uint64_t-redefine.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-random-openbsd.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-openbsd-threads.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-none-auth.patch
 ifeq ($(CC),mingw32-gcc)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts

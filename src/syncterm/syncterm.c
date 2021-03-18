@@ -112,6 +112,7 @@ int	safe_mode=0;
 FILE* log_fp;
 extern ini_style_t ini_style;
 BOOL quitting=FALSE;
+int fake_mode = -1;
 
 #ifdef _WINSOCKAPI_
 
@@ -1685,6 +1686,8 @@ int main(int argc, char **argv)
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		FREE_AND_NULL(last_bbs);
 		uifcbail();
+		if (bbs->screen_mode != SCREEN_MODE_CURRENT)
+			fake_mode = screen_to_ciolib(bbs->screen_mode);
 		textmode(screen_to_ciolib(bbs->screen_mode));
 		if (!bbs->hidepopups)
 			init_uifc(TRUE, TRUE);
@@ -1694,6 +1697,7 @@ int main(int argc, char **argv)
 			load_font_files();
 			uifcbail();
 			textmode(txtinfo.currmode);
+			fake_mode = -1;
 			init_uifc(TRUE, TRUE);
 			settitle("SyncTERM");
 		} else {
@@ -1734,6 +1738,7 @@ int main(int argc, char **argv)
 
 			if(doterm(bbs))
 				quitting=TRUE;
+			fake_mode = -1;
 			setvideoflags(0);
 
 			if(log_fp!=NULL) {

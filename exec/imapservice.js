@@ -1368,7 +1368,7 @@ function binify(seen)
 	var i;
 	var ret = {};
 	var s;
-	var base = -1;
+	var basemsg = -1;
 	var bstr = '';
 	var byte;
 	var bo;
@@ -1397,7 +1397,7 @@ function binify(seen)
 			// If the next bit isn't within 4 bytes, don't bother starting a string
 			if (s[i+1] > s[i]+32)
 				continue;
-			base = s[i];
+			basemsg = s[i];
 			bstr = ascii(1);
 			delete seen[s[i]];
 		}
@@ -2240,6 +2240,7 @@ function read_cfg(sub, lck)
 	var bseen;
 	var i;
 	var j;
+	var basemsg;
 
 	var byte;
 	var bit;
@@ -2286,7 +2287,7 @@ function read_cfg(sub, lck)
 		if (bseen == null)
 			continue;
 		for (j in bseen) {
-			base = parseInt(j, 10);
+			basemsg = parseInt(j, 10);
 			bstr = base64_decode(bseen[j]);
 			for (byte = 0; byte < bstr.length; byte++) {
 				asc = ascii(bstr[byte]);
@@ -2294,7 +2295,7 @@ function read_cfg(sub, lck)
 					continue;
 				for (bit=0; bit<8; bit++) {
 					if (asc & (1<<bit))
-						saved_config[this_sec].Seen[base+(byte*8+bit)]=1;
+						saved_config[this_sec].Seen[basemsg+(byte*8+bit)]=1;
 				}
 			}
 		}

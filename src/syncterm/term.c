@@ -875,6 +875,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 	}
 	setvbuf(fp,NULL,_IOFBF,0x10000);
 
+	suspend_rip(true);
 	if(autozm)
 		zmodem_upload(bbs, fp, path);
 	else {
@@ -904,6 +905,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 				break;
 		}
 	}
+	suspend_rip(false);
 	uifcbail();
 	restorescreen(savscrn);
 	freescreen(savscrn);
@@ -941,6 +943,7 @@ void begin_download(struct bbslist *bbs)
 	i=0;
 	uifc.helpbuf="Select Protocol";
 	hold_update=FALSE;
+	suspend_rip(true);
 	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Protocol",opts)) {
 		case -1:
 			check_exit(FALSE);
@@ -963,6 +966,7 @@ void begin_download(struct bbslist *bbs)
 				xmodem_download(bbs, XMODEM|RECV,path);
 			break;
 	}
+	suspend_rip(false);
 	hold_update=old_hold;
 	uifcbail();
 	restorescreen(savscrn);
@@ -1580,6 +1584,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	FILE*	fp=NULL;
 	time_t	t,startfile,ftime=0;
 	int		old_hold=hold_update;
+	BOOL	extra_pass = FALSE;
 
 	if(safe_mode)
 		return;
@@ -1632,6 +1637,11 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					}
 					break;
 				}
+				if (extra_pass) {
+					// This is a hack for sz  0.12.21rc
+					lprintf(LOG_INFO, "No YMODEM header block after transfer, assuming end of batch");
+					goto end;
+				}
 				if(i==NOINP && (mode&GMODE)) {			/* Timeout */
 					mode &= ~GMODE;
 					lprintf(LOG_WARNING,"Falling back to %s",
@@ -1675,6 +1685,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					lprintf(LOG_INFO,"Received YMODEM termination block");
 					goto end;
 				}
+				extra_pass = FALSE;
 				file_bytes=total_bytes=0;
 				total_files=0;
 				i=sscanf(((char *)block)+strlen((char *)block)+1,"%"PRId64" %lo %lo %lo %d %"PRId64
@@ -1838,7 +1849,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 			break;
 		if((cps=(unsigned)(file_bytes/t))==0)
 			cps=1;
-		total_files--;
+		if (--total_files <= 0)
+			extra_pass = TRUE;
 		total_bytes-=file_bytes;
 		if(total_files>1 && total_bytes)
 			lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRId64
@@ -2605,11 +2617,13 @@ BOOL doterm(struct bbslist *bbs)
 							zrqbuf[++j]=0;
 							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
 								WRITE_OUTBUF();
+								suspend_rip(true);
 								if(!strcmp((char *)zrqbuf, (char *)zrqinit))
 									zmodem_download(bbs);
 								else
 									begin_upload(bbs, TRUE, inch);
 								setup_mouse_events(&ms);
+								suspend_rip(false);
 								zrqbuf[0]=0;
 								remain=1;
 							}
@@ -2810,10 +2824,12 @@ BOOL doterm(struct bbslist *bbs)
 					break;
 				case 0x2600:	/* ALT-L */
 					if(bbs->conn_type != CONN_TYPE_RLOGIN && bbs->conn_type != CONN_TYPE_RLOGIN_REVERSED && bbs->conn_type != CONN_TYPE_SSH) {
-						if(bbs->user[0]) {
-							conn_send(bbs->user,strlen(bbs->user),0);
-							conn_send(cterm->emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
-							SLEEP(10);
+						if (bbs->conn_type != CONN_TYPE_SSHNA) {
+							if(bbs->user[0]) {
+								conn_send(bbs->user,strlen(bbs->user),0);
+								conn_send(cterm->emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
+								SLEEP(10);
+							}
 						}
 						if(bbs->password[0]) {
 							conn_send(bbs->password,strlen(bbs->password),0);

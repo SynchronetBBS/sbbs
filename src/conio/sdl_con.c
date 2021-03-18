@@ -670,7 +670,7 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 			if(mod & KMOD_CTRL)
 				expect=sdl_keyval[i].ctrl;
 			else if(mod & KMOD_SHIFT) {
-				if(mod & KMOD_CAPS)
+				if((mod & KMOD_CAPS) && keysym != '\t')
 					expect=sdl_keyval[i].key;
 				else
 					expect=sdl_keyval[i].shift;
@@ -824,56 +824,62 @@ void sdl_video_event_thread(void *data)
 						     ev.key.keysym.sym == SDLK_UP ||
 						     ev.key.keysym.sym == SDLK_DOWN)) {
 							int w, h;
-							pthread_mutex_lock(&vstatlock);
-							w = cvstat.winwidth;
-							h = cvstat.winheight;
-							switch(ev.key.keysym.sym) {
-								case SDLK_LEFT:
-									if (w % (cvstat.scrnwidth)) {
-										w = w - w % cvstat.scrnwidth;
-									}
-									else {
-										w -= cvstat.scrnwidth;
-										if (w < cvstat.scrnwidth)
-											w = cvstat.scrnwidth;
-									}
-									break;
-								case SDLK_RIGHT:
-									w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
-									break;
-								case SDLK_UP:
-									if (h % (cvstat.scrnheight * cvstat.vmultiplier)) {
-										h = h - h % (cvstat.scrnheight * cvstat.vmultiplier);
-									}
-									else {
-										h -= (cvstat.scrnheight * cvstat.vmultiplier);
-										if (h < (cvstat.scrnheight * cvstat.vmultiplier))
-											h = cvstat.scrnheight * cvstat.vmultiplier;
-									}
-									break;
-								case SDLK_DOWN:
-									if (cvstat.scale_denominator != cvstat.scale_numerator) {
-										if (h % (cvstat.scrnheight * cvstat.vmultiplier) == 0) {
-											h = h * cvstat.scale_denominator / cvstat.scale_numerator;
+
+							// Don't allow ALT-DIR to change size when maximized...
+							if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
+								pthread_mutex_lock(&vstatlock);
+								w = cvstat.winwidth;
+								h = cvstat.winheight;
+								switch(ev.key.keysym.sym) {
+									case SDLK_LEFT:
+										if (w % (cvstat.scrnwidth)) {
+											w = w - w % cvstat.scrnwidth;
 										}
 										else {
-											h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
+											w -= cvstat.scrnwidth;
+											if (w < cvstat.scrnwidth)
+												w = cvstat.scrnwidth;
 										}
-									}
-									else
-										h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
-									break;
+										break;
+									case SDLK_RIGHT:
+										w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
+										break;
+									case SDLK_UP:
+										if (h % (cvstat.scrnheight * cvstat.vmultiplier)) {
+											h = h - h % (cvstat.scrnheight * cvstat.vmultiplier);
+										}
+										else {
+											h -= (cvstat.scrnheight * cvstat.vmultiplier);
+											if (h < (cvstat.scrnheight * cvstat.vmultiplier))
+												h = cvstat.scrnheight * cvstat.vmultiplier;
+										}
+										break;
+									case SDLK_DOWN:
+										if (cvstat.scale_denominator != cvstat.scale_numerator) {
+											if (h % (cvstat.scrnheight * cvstat.vmultiplier) == 0) {
+												h = h * cvstat.scale_denominator / cvstat.scale_numerator;
+											}
+											else {
+												h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
+											}
+										}
+										else
+											h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
+										break;
+								}
+								if (w > 16384 || h > 16384)
+									beep();
+								else {
+									cvstat.winwidth = w;
+									cvstat.winheight = h;
+								}
+								pthread_mutex_unlock(&vstatlock);
 							}
-							if (w > 16384 || h > 16384)
-								beep();
-							else {
-								cvstat.winwidth = w;
-								cvstat.winheight = h;
-							}
-							pthread_mutex_unlock(&vstatlock);
 							break;
 						}
 					}
+					if ((ev.key.keysym.mod & KMOD_SHIFT) && (ev.key.keysym.sym == '\t'))
+						block_text = 1;
 					if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 127) {
 						// NUMLOCK makes 
 						if ((ev.key.keysym.mod & KMOD_NUM) && ((ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0)
@@ -886,7 +892,6 @@ void sdl_video_event_thread(void *data)
 						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
 					}
 					else if (!isprint(ev.key.keysym.sym)) {
-
 						if (ev.key.keysym.sym < 128)
 							sdl_add_key(ev.key.keysym.sym);
 					}
