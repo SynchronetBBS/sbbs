@@ -1,17 +1,17 @@
 @INCLUDE:%zmenu/head.msg@hc@HOT@n
-bşhş wRead/Post Messages…nbşhş wMessage Area Selection   nbşhş wElectronic Mail
-bÚnbÄÄ¿–hÚnbÄÄ¿—hÚnbÄÄ¿
-³ hcNnb³ wNew message scan…b³ hcJnb³ wJump to new msg area   b³ hcEnb³ wRead/Send E-mail
-b³ hcRnb³ wRead message prompt   bÀÄÄÙ   hc* nList sub-boards    bÀÄÄÙ
-³ hcLnb³ wList/View messages    hc/* nList groupsˆbşhş wOther Commands
-nb³ hcVnb³ wView/Vote-in Polls      hc{ }  w# nSelect sub-board   hbÚnbÄÄ¿
-³ hcQnb³ wQWK packet transfer„hc[ ] w/# nSelect group†b³ hcDnb³ wDefault user config
-b³ hcPnb³ wPost a msg or hc/Pnoll                               b³ hc&nb³ wMessage scan config
-b³ hcAnb³ wPost auto-message…bşhş wGo to’nb³ hcUnb³ wUser lists
-bÀÄÄÙ–hÚnbÄÄ¿—³ hcInb³ wInformation
- bşhş wMessage Searchˆnb³ hcTnb³ wFile Transfer section  b³hc/Anb³ wChange your avatar
-hbÚnbÄÄ¿–³ hcGnb³ wText file section…b³hc/Lnb³ wNode activity
-b³ hcFnb³ wFind text in messages b³ hcCnb³ wChat sectionŠb³hc^Knb³ wCtrl-key Menu
-b³ hcSnb³ wScan for msgs to you  b³ hcXnb³ wExternal programs…b³ hcOnb³ wLogoff BBS (or hc/On)
-bÀÄÄÙ–ÀÄÄÙ—ÀÄÄÙ @SYSONLY@nhc!n Sysop Menu@SYSONLY@
+bh wRead/Post Messagesnbh wMessage Area Selection   nbh wElectronic Mail
+bnbÄ¿hnbÄ¿hnbÄ¿
+ hcNnb wNew message scanb hcJnb wJump to new msg area   b hcEnb wRead/Send E-mail
+b hcRnb wRead message prompt   b   hc* nList sub-boards    b
+ hcLnb wList/View messages    hc/* nList groupsbh wOther Commands
+nb hcVnb wView/Vote-in Polls      hc{ }  w# nSelect sub-board   hbnbÄ¿
+ hcQnb wQWK packet transferhc[ ] w/# nSelect groupb hcDnb wDefault user config
+b hcPnb wPost a msg or hc/Pnoll                               b hc&nb wMessage scan config
+b hcAnb wPost auto-messagebh wGo tonb hcUnb wUser lists
+bhnbÄ¿ hcInb wInformation
+ bh wMessage Searchnb hcTnb wFile Transfer section  bhc/Anb wChange your avatar
+hbnbÄ¿ hcGnb wText file sectionbhc/Lnb wNode activity
+b hcFnb wFind text in messages b hcCnb wChat sectionbhc^Knb wCtrl-key Menu
+b hcSnb wScan for msgs to you  b hcXnb wExternal programsb hcOnb wLogoff BBS (or hc/On)
+b @SYSONLY@nhc!n Sysop Menu@SYSONLY@
 @HOT:OFF@@INCLUDE:%zmenu/tail.msg@
