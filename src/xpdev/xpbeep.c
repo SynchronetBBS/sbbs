@@ -417,7 +417,7 @@ DLLCALL xptone_open_locked(void)
 			handle_type=SOUND_DEVICE_PULSEAUDIO;
 			handle_rc++;
 			pthread_mutex_unlock(&handle_mutex);
-			xptone(0, 1, WAVE_SHAPE_SQUARE, FALSE);
+			xptone(0, 1, WAVE_SHAPE_SQUARE);
 			pthread_mutex_lock(&handle_mutex);
 			if (pulseaudio_device_open_failed) {
 fprintf(stderr, "Pulse broke\n");
