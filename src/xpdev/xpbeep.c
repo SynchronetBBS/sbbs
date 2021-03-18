@@ -415,7 +415,6 @@ DLLCALL xptone_open_locked(void)
 		}
 		if(pu_api != NULL) {
 			if(!pulseaudio_initialized) {
-#if 0
 				pa_sample_spec ss;
 				ss.format = PA_SAMPLE_U8;
 				ss.rate = 22050;
@@ -426,7 +425,6 @@ DLLCALL xptone_open_locked(void)
 					pulseaudio_initialized=TRUE;
 				pu_api->simple_free(pu_handle);
 				pu_handle = NULL;
-#endif
 			}
 			if(pulseaudio_initialized) {
 				handle_type=SOUND_DEVICE_PULSEAUDIO;
@@ -757,6 +755,7 @@ BOOL DLLCALL xptone_close_locked(void)
 #ifdef WITH_PULSEAUDIO
 	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
 		pu_api->simple_free(pu_handle);
+		pu_handle = NULL;
 	}
 #endif
 
