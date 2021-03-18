@@ -936,17 +936,21 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 		int ret;
 		int written=0;
 
-		alsa_api->snd_pcm_prepare(playback_handle);
-		while(written < sz) {
-			ret=alsa_api->snd_pcm_writei(playback_handle, samp+written, sz-written);
-			if(ret < 0) {
-				if(written==0) {
-					/* Go back and try OSS */
-					xptone_close_locked();
-					alsa_device_open_failed=TRUE;
-					xptone_open_locked();
+		while (written < sz) {
+			ret = alsa_api->snd_pcm_writei(playback_handle, samp + written, sz - written);
+			if (ret < 0) {
+				if (alsa_api->snd_pcm_prepare(playback_handle) == 0) {
+					ret = 0;
 				}
-				break;
+				else {
+					if (written == 0) {
+						/* Go back and try OSS */
+						xptone_close_locked();
+						alsa_device_open_failed = TRUE;
+						xptone_open_locked();
+					}
+					break;
+				}
 			}
 			written += ret;
 		}
