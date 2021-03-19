@@ -117,8 +117,8 @@ const SMB_PRIORITY_LOWEST		= 5;
 const SMB_SUMMARY			= 0x61; 	// Not currently used for messages								
 const SMB_COMMENT 			= 0x62; 	// Appear in message text, before body
 const SMB_TAGS				= 0x69; 	// Tags (ala hashtags) for a message
+const SMB_TAGS_MAXLEN		= 60;		// Tags strings are limited to this total length
 const SMB_TAG_DELIMITER		= ' ';		// Tags are space-separated
-const SMB_TAG_MAXLEN		= 60;		// Tags strings are limited to this total length
 const SMB_POLL_ANSWER		= 0xe0;		// One poll answer (the subject is the question)
 
 const FIDOCTRL     			= 0xa0;
