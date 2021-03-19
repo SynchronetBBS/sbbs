@@ -431,10 +431,11 @@ function listTags(tags, target) {
     const tc = document.querySelector('#tag-container-template').content.cloneNode(true);
     const tl = tc.querySelector('div[data-tag-list]');
     tags.split(' ').forEach(tag => {
-        const tb = document.querySelector('#tag-template').content.querySelector('a').cloneNode(true);
-        const href = tb.getAttribute('href');
-        tb.setAttribute('href', `${href}&tag=${encodeURIComponent(tag)}`);
-        tb.querySelector('small').innerText = tag;
+        const tb = document.querySelector('#tag-template').content.cloneNode(true);
+        const a = tb.querySelector('a');
+        const href = a.getAttribute('href');
+        a.setAttribute('href', `${href}&tag=${encodeURIComponent(tag)}`);
+        a.querySelector('small').innerText = tag;
         tl.appendChild(tb);
     });
     target.appendChild(tc);
@@ -484,8 +485,10 @@ async function listMessages(sub, thread) {
 
         elem.querySelector('strong[data-message-to]').innerHTML = e.to;
         elem.querySelector('strong[data-message-date]').innerHTML = formatMessageDate(e.when_written_time);
-        elem.querySelector('span[data-upvote-count]').innerHTML = e.votes.up;
-        elem.querySelector('span[data-downvote-count]').innerHTML = e.votes.down;
+        if (elem.querySelector('span[data-upvote-count]') !== null) {
+            elem.querySelector('span[data-upvote-count]').innerHTML = e.votes.up;
+            elem.querySelector('span[data-downvote-count]').innerHTML = e.votes.down;
+        }
         elem.querySelector('a[data-direct-link]').setAttribute('href', `#${e.number}`);
         elem.querySelectorAll('a[data-view-type]').forEach(a => a.onclick = evt => showMessageBody(elem, e.body, a, evt));
         elem.querySelector('button[data-button-add-reply]').onclick = evt => addReply(sub, e.number, e.body, elem);
@@ -628,14 +631,15 @@ async function listThread(e) {
     //         stats.removeAttribute('hidden');
     //     }
     // }
-
-    if (e.votes.parent.up || e.votes.total.up) {
-        stats.querySelector('span[data-upvotes]').innerHTML = `${e.votes.parent.up} / ${e.votes.total.up}`;
-        stats.querySelector('span[data-upvotes-badge]').style.setProperty('display', '');
-    }
-    if (e.votes.parent.down || e.votes.total.down) {
-        stats.querySelector('span[data-downvotes]').innerHTML = `${e.votes.parent.down} / ${e.votes.total.down}`;
-        stats.querySelector('span[data-downvotes-badge]').style.setProperty('display', '');
+    if (e.votes !== undefined) {
+        if (e.votes.parent.up || e.votes.total.up) {
+            stats.querySelector('span[data-upvotes]').innerHTML = `${e.votes.parent.up} / ${e.votes.total.up}`;
+            stats.querySelector('span[data-upvotes-badge]').style.setProperty('display', '');
+        }
+        if (e.votes.parent.down || e.votes.total.down) {
+            stats.querySelector('span[data-downvotes]').innerHTML = `${e.votes.parent.down} / ${e.votes.total.down}`;
+            stats.querySelector('span[data-downvotes-badge]').style.setProperty('display', '');
+        }
     }
     
     stats.removeAttribute('hidden');

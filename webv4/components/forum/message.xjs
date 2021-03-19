@@ -1,6 +1,6 @@
 <!-- Template for a message (eg. when viewing a thread) -->
 <template id="forum-message-template">
-    <li class="list-group-item striped" data-message data-default-message-view="<? write(settings.forum_default_message_view); ?>" data-auto-ansi-subject="<? write(settings.forum_auto_ansi_subject); ?>" data-auto-detect-ansi="<? write(settings.forum_auto_detect_ansi); ?>" data-auto-view-mode="<? write(settings.forum_auto_ansi_mode); ?>">
+    <li class="list-group-item striped <? write(argv[0]); ?>" data-message data-default-message-view="<? write(settings.forum_default_message_view); ?>" data-auto-ansi-subject="<? write(settings.forum_auto_ansi_subject); ?>" data-auto-detect-ansi="<? write(settings.forum_auto_detect_ansi); ?>" data-auto-view-mode="<? write(settings.forum_auto_ansi_mode); ?>">
         <a data-message-anchor></a>
         <h4>
             <strong data-message-subject></strong>
@@ -58,14 +58,16 @@
             <button class="btn btn-default icon" title="<? locale.write('label_reply'); ?>" aria-label="<? locale.write('label_reply'); ?>" data-button-add-reply>
                 <span class="glyphicon glyphicon-comment"></span>
             </button>
-            <button class="btn-uv btn btn-default icon" data-button-upvote>
-                <span title="Upvotes" class="glyphicon glyphicon-arrow-up"></span>
-                <span title="Upvotes" data-upvote-count>0</span>
-            </button>
-            <button class="btn-dv btn btn-default icon" data-button-downvote>
-                <span title="Downvotes" class="glyphicon glyphicon-arrow-down"></span>
-                <span title="Downvotes" data-downvote-count>0</span>
-            </button>
+            <? if (!argv[0]) { ?>
+                <button class="btn-uv btn btn-default icon" data-button-upvote>
+                    <span title="Upvotes" class="glyphicon glyphicon-arrow-up"></span>
+                    <span title="Upvotes" data-upvote-count>0</span>
+                </button>
+                <button class="btn-dv btn btn-default icon" data-button-downvote>
+                    <span title="Downvotes" class="glyphicon glyphicon-arrow-down"></span>
+                    <span title="Downvotes" data-downvote-count>0</span>
+                </button>
+            <? } ?>
         </div>
     </li>
 </template>

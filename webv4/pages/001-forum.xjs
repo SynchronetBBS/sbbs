@@ -3,16 +3,17 @@
 <?xjs
 	/*
 		To do:
+		- ANSI rendering - can we avoid re-rendering the same ANSI many times?
+			- local cache either way?
 		- API handlers for post/reply msg, post poll, up/down vote, user preferences, mail
 		- Make it possible for locales to live in mods/lib/locale (custom language file)
 		- Message tags
-			- Partially complete (they are shown in thread list and thread view)
+			- They link to this page with &tag=<tag>, which should trigger a search-by-tag view
 			- need to add message tagging field when posting/replying
-			- they are also links; they point to ?page=forum.xjs&tag=<tag>, which should be a search-by-tag view
-			- they are boring and grey
+				- There's a new SMB_TAGS_MAXLEN in smbdefs.js that we'll want to use to limit input size (client & server side)
 		- Search feature
 			- Search within groups, group, subs, or sub
-			- Search optionally within subject, to, from, body, date-range
+			- Search optionally within subject, to, from, body, date-range, tags
 			- Display results as a flat message list, grouped by group-sub if groups, sub if subs
 			- Block stupid search terms that would produce insane results, or just accept it?
 		- New message scan
@@ -22,13 +23,6 @@
 				- just set it once new messages are shown? Warn user that this is their only chance to see this list?
 				- include a "mark as read" button per sub?
 				- do either one per user preference? Requires user preferences feature.
-		- User preferences (global, not forum specific)
-			- Update signature
-			- darkmode preference
-			- new message scan preferences?
-			- Edit user properties?
-			- Avatar chooser?
-			- forum preferences like "BBS view" for all messages, etc.?
 		- Test
 			- post message
 			- reply to message
@@ -54,13 +48,15 @@
 <script type="text/javascript" src="./js/xjs-forum.js"></script>
 
 <!-- Viewing a thread (list of messages) -->
-<? if (request.hasParam('sub') && request.hasParam('thread')) { ?>
+<? if (request.hasParam('sub') && msg_area.sub[request.getParam('sub')] !== undefined && request.hasParam('thread')) { ?>
+
+	<? var sub = msg_area.sub[request.getParam('sub')]; ?>
 
 	<script type="text/javascript" src="./js/graphics.js"></script>
 	<script type="text/javascript" src="./js/cache.js"></script>
 	<script type="text/javascript" src="./js/avatars.js"></script>
 
-	<? components.load('forum/message.xjs'); ?>
+	<? components.load('forum/message.xjs', sub.settings&SUB_NOVOTING); ?>
 	<? components.load('forum/tags.xjs', request.getParam('page')); ?>
 	<? components.load('forum/reply.xjs'); ?>
 	<? components.load('forum/breadcrumb.xjs', [ request.getParam('page'), 'thread', request.getParam('sub'), request.getParam('thread') ]); ?>
@@ -75,7 +71,7 @@
 <? } else if (request.hasParam('sub') && msg_area.sub[request.getParam('sub')] !== undefined) { ?>
 
 	<? var sub = msg_area.sub[request.getParam('sub')]; ?>
-	<? components.load('forum/thread-link.xjs', [request.getParam('page'), request.getParam('sub')]); ?>
+	<? components.load('forum/thread-link.xjs', [request.getParam('page'), request.getParam('sub'), sub.settings&SUB_NOVOTING]); ?>
 	<? components.load('forum/tags.xjs', request.getParam('page')); ?>
 	<? components.load('forum/post.xjs', request.getParam('sub')); ?>
 	<? components.load('forum/post-poll.xjs', request.getParam('sub')); ?>
@@ -84,10 +80,11 @@
     <button class="btn btn-default icon" aria-label="<? locale.write('button_post_message'); ?>" title="<? locale.write('button_post_message'); ?>" onclick="addNew('<? write(sub.code); ?>')">
         <span class="glyphicon glyphicon-pencil"></span>
     </button>
-    <button class="btn btn-default icon" aria-label="<? locale.write('button_post_poll'); ?>" title="<? locale.write('button_post_poll'); ?>" onclick="addPoll('<? write(sub.code); ?>')">
-        <span class="glyphicon glyphicon-list-alt"></span>
-    </button>
-
+	<? if (!(sub.settings&SUB_NOVOTING)) { ?>
+		<button class="btn btn-default icon" aria-label="<? locale.write('button_post_poll'); ?>" title="<? locale.write('button_post_poll'); ?>" onclick="addPoll('<? write(sub.code); ?>')">
+			<span class="glyphicon glyphicon-list-alt"></span>
+		</button>
+	<? } ?>
 	<!-- These should be moved into the new message scan view when it exists -->
     <div class="pull-right">
         <button id="scan-cfg-new" class="btn btn-default icon" aria-label="<? locale.write('button_scan_new'); ?>" title="<? locale.write('button_scan_new'); ?>" onclick="setScanCfg('<? write(sub.code); ?>', 1)">

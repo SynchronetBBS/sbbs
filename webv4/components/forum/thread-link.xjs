@@ -2,6 +2,7 @@
 <?xjs
     var page = argv[0];
     var sub = argv[1];
+    var novoting = argv[2];
 ?>
 <template id="forum-thread-link-template">
     <a href="./?page=<? write(page); ?>&sub=<? write(sub); ?>" class="list-group-item striped" data-thread>
@@ -32,14 +33,16 @@
                     <? if (isUser()) { ?>
                         <span data-unread-messages title="<? locale.write('badge_unread_messages'); ?>" class="badge" hidden></span>
                     <? } ?>
-                    <span data-upvotes-badge title="<? locale.write('badge_upvotes'); ?>" class="badge upvote-bg" style="display:none;">
-                        <span class="glyphicon glyphicon-arrow-up"></span>
-                        <span data-upvotes></span>
-                    </span>
-                    <span data-downvotes-badge title="<? locale.write('badge_downvotes'); ?>" class="badge downvote-bg" style="display:none;">
-                        <span class="glyphicon glyphicon-arrow-down"></span>
-                        <span data-downvotes></span>
-                    </span>
+                    <? if (!novoting) { ?>
+                        <span data-upvotes-badge title="<? locale.write('badge_upvotes'); ?>" class="badge upvote-bg" style="display:none;">
+                            <span class="glyphicon glyphicon-arrow-up"></span>
+                            <span data-upvotes></span>
+                        </span>
+                        <span data-downvotes-badge title="<? locale.write('badge_downvotes'); ?>" class="badge downvote-bg" style="display:none;">
+                            <span class="glyphicon glyphicon-arrow-down"></span>
+                            <span data-downvotes></span>
+                        </span>
+                    <? } ?>
                 </div>
             </div>
         </div>
