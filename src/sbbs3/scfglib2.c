@@ -373,8 +373,9 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		get_int(cfg->dir[i]->maxage,instream);
 		get_int(cfg->dir[i]->up_pct,instream);
 		get_int(cfg->dir[i]->dn_pct,instream);
+		get_str(cfg->dir[i]->area_tag,instream);
 		get_int(c,instream);
-		for(j=0;j<24;j++)
+		for(j=0;j<6;j++)
 			get_int(n,instream); 
 	}
 

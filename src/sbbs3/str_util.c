@@ -802,6 +802,21 @@ char* subnewsgroupname(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 	return str;
 }
 
+char* dir_area_tag(scfg_t* cfg, dir_t* dir, char* str, size_t size)
+{
+	char* p;
+
+	memset(str, 0, size);
+	if(dir->area_tag[0])
+		strncpy(str, dir->area_tag, size - 1);
+	else {
+		strncpy(str, dir->sname, size - 1);
+		REPLACE_CHARS(str, ' ', '_', p);
+		strupr(str);
+	}
+	return str;
+}
+
 char* get_ctrl_dir(BOOL warn)
 {
 	char* p = getenv("SBBSCTRL");

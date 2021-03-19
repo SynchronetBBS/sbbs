@@ -53,6 +53,7 @@ static char* dir_prop_desc[] = {
 	,"directory internal code"
 	,"directory name"
 	,"directory description"
+	,"directory area tag for file echoes <i>(introduced in v3.19)</i>"
 	,"directory file storage location"
 	,"directory access requirements"
 	,"directory upload requirements"
@@ -184,6 +185,7 @@ static JSClass js_dir_class = {
 
 JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 {
+	char		str[128];
 	char		vpath[MAX_PATH+1];
 	JSObject*	alllibs;
 	JSObject*	alldirs;
@@ -450,6 +452,12 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 					return JS_FALSE;
 				val=STRING_TO_JSVAL(js_str);
 				if(!JS_SetProperty(cx, dirobj, "description", &val))
+					return JS_FALSE;
+
+				if((js_str=JS_NewStringCopyZ(cx, dir_area_tag(p->cfg, p->cfg->dir[d], str, sizeof(str))))==NULL)
+					return JS_FALSE;
+				val=STRING_TO_JSVAL(js_str);
+				if(!JS_SetProperty(cx, dirobj, "area_tag", &val))
 					return JS_FALSE;
 
 				if((js_str=JS_NewStringCopyZ(cx, p->cfg->dir[d]->path))==NULL)

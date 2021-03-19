@@ -603,8 +603,9 @@ void xfer_cfg()
 							continue;
 						ported++;
 						if(k==1) {
-							fprintf(stream,"Area %-8s  0     !      %s\n"
-								,cfg.dir[j]->code_suffix,cfg.dir[j]->lname);
+							fprintf(stream,"Area %-*s  0     !      %s\n"
+								,FIDO_AREATAG_LEN
+								,dir_area_tag(&cfg, cfg.dir[j], str, sizeof(str)) ,cfg.dir[j]->lname);
 							continue;
 						}
 						fprintf(stream,"%s\n%s\n%s\n%s\n%s\n%s\n"
@@ -761,8 +762,9 @@ void xfer_cfg()
 							while(*p && *p<=' ') p++;	/* Skip space */
 							while(*p>' ') p++;			/* Skip flags */
 							while(*p && *p<=' ') p++;	/* Skip space */
-							SAFECOPY(tmpdir.sname,tmp_code); 
-							SAFECOPY(tmpdir.lname,p); 
+							SAFECOPY(tmpdir.sname,tmp_code);
+							SAFECOPY(tmpdir.area_tag,tmp_code);
+							SAFECOPY(tmpdir.lname,p);
 							ported++;
 						}
 						else {
@@ -1132,6 +1134,7 @@ void dir_cfg(uint libnum)
 			sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.dir[i]->sname);
 			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
 				,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
+			sprintf(opt[n++],"%-27.27s%s","Area Tag",cfg.dir[i]->area_tag);
 			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
 				,cfg.dir[i]->arstr);
 			sprintf(opt[n++],"%-27.27s%s","Upload Requirements"
@@ -1216,31 +1219,38 @@ void dir_cfg(uint libnum)
 					}
 					break;
 				case 3:
+					uifc.helpbuf="FidoNet Area Tag!";
+					SAFECOPY(str, cfg.dir[i]->area_tag);
+					if(uifc.input(WIN_L2R|WIN_SAV,0,17,"FidoNet File Echo Area Tag"
+						,str, FIDO_AREATAG_LEN, K_EDIT | K_UPPER) > 0)
+						SAFECOPY(cfg.dir[i]->area_tag, str);
+					break;
+				case 4:
 					sprintf(str,"%s Access",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->arstr);
 					break;
-				case 4:
+				case 5:
 					sprintf(str,"%s Upload",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->ul_arstr);
 					break;
-				case 5:
+				case 6:
 					sprintf(str,"%s Download",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->dl_arstr);
 					break;
-				case 6:
+				case 7:
 					sprintf(str,"%s Operator",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->op_arstr);
 					break;
-				case 7:
+				case 8:
 					sprintf(str,"%s Exemption",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->ex_arstr);
 					break;
-				case 8:
+				case 9:
 					uifc.helpbuf = dir_transfer_path_help;
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Transfer File Path"
 						,cfg.dir[i]->path,sizeof(cfg.dir[i]->path)-1,K_EDIT);
 					break;
-				case 9:
+				case 10:
 					uifc.helpbuf=
 						"`Maximum Number of Files:`\n"
 						"\n"
@@ -1257,7 +1267,7 @@ void dir_cfg(uint libnum)
 					else
 						cfg.dir[i]->maxfiles=n;
 					break;
-				case 10:
+				case 11:
 					sprintf(str,"%u",cfg.dir[i]->maxage);
 					uifc.helpbuf=
 						"`Maximum Age of Files:`\n"
@@ -1273,7 +1283,7 @@ void dir_cfg(uint libnum)
 						,str,5,K_EDIT|K_NUMBER);
 					cfg.dir[i]->maxage=atoi(str);
 					break;
-				case 11:
+				case 12:
 	uifc.helpbuf=
 		"`Percentage of Credits to Credit Uploader on Upload:`\n"
 		"\n"
@@ -1289,7 +1299,7 @@ void dir_cfg(uint libnum)
 						,ultoa(cfg.dir[i]->up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 					cfg.dir[i]->up_pct=atoi(tmp);
 					break;
-				case 12:
+				case 13:
 	uifc.helpbuf=
 		"`Percentage of Credits to Credit Uploader on Download:`\n"
 		"\n"
@@ -1306,7 +1316,7 @@ void dir_cfg(uint libnum)
 						,ultoa(cfg.dir[i]->dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 					cfg.dir[i]->dn_pct=atoi(tmp);
 					break;
-				case 13:
+				case 14:
 					while(1) {
 						n=0;
 						sprintf(opt[n++],"%-30.30s%s","Check for File Existence"
@@ -1847,7 +1857,7 @@ void dir_cfg(uint libnum)
 						} 
 					}
 					break;
-			case 14:
+			case 15:
 				while(1) {
 					n=0;
 					sprintf(opt[n++],"%-27.27s%s","Extensions Allowed"

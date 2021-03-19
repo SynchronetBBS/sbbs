@@ -835,13 +835,11 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				put_int(cfg->dir[i]->maxage, stream);
 				put_int(cfg->dir[i]->up_pct, stream);
 				put_int(cfg->dir[i]->dn_pct, stream);
+				put_str(cfg->dir[i]->area_tag, stream);
 				c = 0;
 				put_int(c, stream);
-				n = 0;
-				for (k = 0; k < 8; k++)
-					put_int(n, stream);
 				n = 0xffff;
-				for (k = 0; k < 16; k++)
+				for (k = 0; k < 6; k++)
 					put_int(n, stream);
 			}
 		}

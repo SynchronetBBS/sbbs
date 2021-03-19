@@ -68,6 +68,7 @@ DLLEXPORT BOOL		str_has_ctrl(const char*);
 DLLEXPORT BOOL		str_is_ascii(const char*);
 DLLEXPORT char *	utf8_to_cp437_str(char* str);
 DLLEXPORT char *	subnewsgroupname(scfg_t*, sub_t*, char*, size_t);
+DLLEXPORT char *	dir_area_tag(scfg_t*, dir_t*, char*, size_t);
 DLLEXPORT char * 	get_ctrl_dir(BOOL warn);
 
 #ifdef __cplusplus
