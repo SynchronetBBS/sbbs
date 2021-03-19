@@ -80,8 +80,14 @@ void sbbs_t::showfileinfo(smbfile_t* f)
 	}
 	bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
 	if(f->extdesc != NULL && *f->extdesc) {
-		truncsp(f->extdesc);
-		putmsg((char*)f->extdesc,P_NOATCODES);
+		char* p = f->extdesc;
+		while(*p == '\r' || *p == '\n')
+			p++;
+		truncsp(p);
+		long p_mode = P_NOATCODES;
+		if(!(console&CON_RAW_IN))
+			p_mode |= P_WORDWRAP;
+		putmsg(p, p_mode);
 		newline();
 	}
 	if(f->size == -1) {
