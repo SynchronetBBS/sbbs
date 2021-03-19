@@ -589,7 +589,7 @@ int archive_type(const char* archive, char* str, size_t size)
 		archive_read_free(ar);
 		return result;
 	}
-	result = archive_compression(ar);
+	result = archive_filter_code(ar, 0);
 	if(result >= 0) {
 		int comp = result;
 		result = archive_read_next_header(ar, &entry);
@@ -599,7 +599,7 @@ int archive_type(const char* archive, char* str, size_t size)
 		else {
 			result = archive_format(ar);
 			if(comp > 0)
-				safe_snprintf(str, size, "%s/%s", archive_compression_name(ar), archive_format_name(ar));
+				safe_snprintf(str, size, "%s/%s", archive_filter_name(ar, 0), archive_format_name(ar));
 			else
 				safe_snprintf(str, size, "%s", archive_format_name(ar));
 		}

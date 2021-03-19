@@ -41,6 +41,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)inkey$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ident$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)jsdebug$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_archive$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_bbs$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE)\

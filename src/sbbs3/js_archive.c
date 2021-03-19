@@ -223,8 +223,8 @@ js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = STRING_TO_JSVAL(js_str);
 			JS_SetProperty(cx, obj, "symlink", &val);
 
-			val = INT_TO_JSVAL(archive_entry_symlink_type(entry));
-			JS_SetProperty(cx, obj, "symlink_type", &val);
+//			val = INT_TO_JSVAL(archive_entry_symlink_type(entry));
+//			JS_SetProperty(cx, obj, "symlink_type", &val);
 		}
 
 		if((p = archive_entry_hardlink(entry)) != NULL) {
@@ -268,7 +268,7 @@ js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_SetProperty(cx, obj, "format", &val);
 		}
 
-		if((p = archive_compression_name(ar)) != NULL) {
+		if((p = archive_filter_name(ar, 0)) != NULL) {
 			js_str = JS_NewStringCopyZ(cx, p);
 			if(js_str == NULL)
 				break;
