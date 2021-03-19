@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gen_defs.h"
-#include "genwrap.h"
 #include "sockwrap.h"
 #include "dirwrap.h"
 #include "multisock.h"
@@ -256,18 +255,22 @@ static void btox(char *hexstr, const char *srcbuf, size_t srcbuflen, size_t hexs
 
 static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(int level, const char *fmt, ...))
 {
+	fd_set         socket_set;
+	struct timeval tv;
 	size_t            i;
 	int            j,rd;
 	unsigned char           ch;
 	char           err[128];
-	struct pollfd pfd;
 
 	for (i=0;i<len;i++) {
-		pfd.fd = sock;
-		pfd.events = POLLIN;
-		pfd.revents = 0;
+		FD_ZERO(&socket_set);
+		FD_SET(sock,&socket_set);
 
-		if ((j = poll(&pfd, 1, 1000)) > 0) {
+		// We'll wait 1 secs to read from the socket.
+		tv.tv_sec=1;
+		tv.tv_usec=0;
+
+		if((j=select(sock+1,&socket_set,NULL,NULL,&tv))>0) {
 			rd = recv(sock,&ch,1,0);
 			if (rd == 0) {
 				lprintf(LOG_WARNING,"%04d multisock read_socket() - remote closed the connection",sock);
@@ -286,7 +289,7 @@ static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(in
 			return FALSE;
 
 		} else {
-			lprintf(LOG_WARNING,"%04d multisock read_socket() - poll() returned [%d] with error [%s].",sock,j,socket_strerror(socket_errno,err,sizeof(err)));
+			lprintf(LOG_WARNING,"%04d multisock read_socket() - select() returned [%d] with error [%s].",sock,j,socket_strerror(socket_errno,err,sizeof(err)));
 			return FALSE;
 		}
 	}
@@ -321,50 +324,44 @@ static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lpr
 SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, uint32_t flags, void **cb_data)
 {
+	fd_set         read_fs;
 	size_t         i;
+	struct timeval tv;
+	struct timeval *tvp;
+	SOCKET         max_sock=0;
 	SOCKET         ret;
 	char           hapstr[128];
 	char           haphex[256];
 	char           *p, *tok;
 	long           l;
 	void           *vp;
-	struct pollfd *pfds;
-	int timeo;
-	nfds_t cnt = 0;
 
-	if (xpms_set->sock_count < 1) {	// Just sleep()..
-		SLEEP(timeout);
-		return INVALID_SOCKET;
-	}
-
-	pfds = malloc(sizeof(struct pollfd) * xpms_set->sock_count);
-	if (pfds == NULL)
-		return INVALID_SOCKET;
-
+	FD_ZERO(&read_fs);
 	for(i=0; i<xpms_set->sock_count; i++) {
 		if(xpms_set->socks[i].sock == INVALID_SOCKET)
 			continue;
-		pfds[cnt].fd = xpms_set->socks[i].sock;
-		pfds[cnt].events = POLLIN;
-		pfds[cnt].revents = 0;
-		cnt++;
+		FD_SET(xpms_set->socks[i].sock, &read_fs);
+		if(xpms_set->socks[i].sock >= max_sock)
+			max_sock=xpms_set->socks[i].sock+1;
 	}
 
 	if(timeout==XPMS_FOREVER)
-		timeo = -1;
-	else
-		timeo = timeout;
-
-	switch(poll(pfds, cnt, timeo)) {
+		tvp=NULL;
+	else {
+		tv.tv_sec=timeout/1000;
+		tv.tv_usec=(timeout%1000)*1000;
+		tvp=&tv;
+	}
+	switch(select(max_sock, &read_fs, NULL, NULL, tvp)) {
 		case 0:
 			return INVALID_SOCKET;
 		case -1:
 			return SOCKET_ERROR;
 		default:
-			for (i = 0, cnt = 0; i < xpms_set->sock_count; i++) {
+			for(i=0; i<xpms_set->sock_count; i++) {
 				if(xpms_set->socks[i].sock == INVALID_SOCKET)
 					continue;
-				if (pfds[cnt++].revents & POLLIN) {
+				if(FD_ISSET(xpms_set->socks[i].sock, &read_fs)) {
 					if(cb_data)
 						*cb_data=xpms_set->socks[i].cb_data;
 					ret =  accept(xpms_set->socks[i].sock, &addr->addr, addrlen);
