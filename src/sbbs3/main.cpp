@@ -1458,6 +1458,10 @@ extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		if(js_CreateFileClass(js_cx, *glob)==NULL)
 			break;
 
+		/* Archive Class */
+		if(js_CreateArchiveClass(js_cx, *glob)==NULL)
+			break;
+
 		/* User class */
 		if(js_CreateUserClass(js_cx, *glob, cfg)==NULL)
 			break;
