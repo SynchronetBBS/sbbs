@@ -2770,6 +2770,7 @@ BOOL doterm(struct bbslist *bbs)
 					break;
 				case CIO_KEY_SHIFT_IC:	/* Shift-Insert - Paste */
 					do_paste();
+					key = 0;
 					break;
 				case 0x3000:	/* ALT-B - Scrollback */
 					setup_mouse_events(NULL);
@@ -2814,6 +2815,7 @@ BOOL doterm(struct bbslist *bbs)
 						}
 						showmouse();
 						_setcursortype(_NORMALCURSOR);
+						key = 0;
 					}
 					break;
 				case 0x2100:	/* ALT-F */
@@ -3331,7 +3333,7 @@ BOOL doterm(struct bbslist *bbs)
 						key='\b';
 						/* FALLTHROUGH to default */
 					default:
-						if(key<256) {
+						if(key<256 && key >= 0) {
 							ch[0]=key;
 							conn_send(ch,1,0);
 						}
