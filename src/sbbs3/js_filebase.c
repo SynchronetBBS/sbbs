@@ -880,8 +880,8 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if(file.name != NULL) {
 		if((extdesc == NULL	|| use_diz_always == true)
-			&& p->smb.dirnum < scfg->total_dirs
-			&& (scfg->dir[p->smb.dirnum]->misc & DIR_DIZ)) {
+			&& file.dir < scfg->total_dirs
+			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
 			char diz_fpath[MAX_PATH + 1];
 			if(extract_diz(scfg, &file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
 				char extbuf[LEN_EXTDESC + 1] = "";
@@ -890,10 +890,10 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 					format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
 					strListFree(&lines);
 					extdesc = strdup(extbuf);
-					remove(diz_fpath);
 					if(file.desc == NULL)
 						smb_new_hfield_str(&file, SMB_FILEDESC, prep_file_desc(extbuf, extbuf));
 				}
+				(void)remove(diz_fpath);
 			}
 		}
 		char fpath[MAX_PATH + 1];
