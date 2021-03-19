@@ -416,9 +416,13 @@ DLLCALL xptone_open_locked(void)
 		if(pu_api != NULL) {
 			handle_type=SOUND_DEVICE_PULSEAUDIO;
 			handle_rc++;
+#ifdef XPDEV_THREAD_SAFE
 			pthread_mutex_unlock(&handle_mutex);
+#endif
 			xptone(0, 1, WAVE_SHAPE_SQUARE);
+#ifdef XPDEV_THREAD_SAFE
 			pthread_mutex_lock(&handle_mutex);
+#endif
 			if (pulseaudio_device_open_failed) {
 				handle_type = SOUND_DEVICE_CLOSED;
 			}
