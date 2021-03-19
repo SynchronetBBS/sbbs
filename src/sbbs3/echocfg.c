@@ -60,11 +60,20 @@ void global_settings(void)
 	while(1) {
 		int i = 0;
 		char str[128];
+		char tmp[128];
 		char duration[64];
 		sprintf(opt[i++], "%-30s %s", "Mailer Type"
 			,cfg.flo_mailer ? "Binkley/FLO":"ArcMail/Attach");
 		sprintf(opt[i++], "%-30s %s", "Log Level", logLevelStringList[cfg.log_level]);
 		sprintf(opt[i++], "%-30s %s", "Log Timestamp Format", cfg.logtime);
+		if(cfg.max_log_size) {
+			SAFEPRINTF2(str, "%s bytes, keep %lu"
+				,byte_count_to_str(cfg.max_log_size, tmp, sizeof(tmp))
+				,cfg.max_logs_kept);
+		} else {
+			SAFECOPY(str, "Unlimited");
+		}
+		sprintf(opt[i++], "%-30s %s", "Maximum Log File Size", str);
 		sprintf(opt[i++], "%-30s %s", "Strict Packet Passwords", cfg.strict_packet_passwords ? "Enabled" : "Disabled");
 		sprintf(opt[i++], "%-30s %u", "Config File Backups", cfg.cfgfile_backups);
 		sprintf(opt[i++], "%-30s %s bytes", "Minimum Free Disk Space"
@@ -212,22 +221,34 @@ void global_settings(void)
 				break;
 
 			case 3:
-				cfg.strict_packet_passwords = !cfg.strict_packet_passwords;
+				byte_count_to_str(cfg.max_log_size, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Log File Size (in bytes, 0=unlimited)", str, 10, K_EDIT|K_UPPER) > 0) {
+					cfg.max_log_size = parse_byte_count(str, 1);
+					if(cfg.max_log_size) {
+						SAFEPRINTF(str, "%lu", cfg.max_logs_kept);
+						if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Number of old Log Files to Keep", str, 5, K_EDIT|K_NUMBER) > 0)
+							cfg.max_logs_kept = strtoul(str, NULL, 10);
+					}
+				}
 				break;
 
 			case 4:
+				cfg.strict_packet_passwords = !cfg.strict_packet_passwords;
+				break;
+
+			case 5:
 				sprintf(str, "%u", cfg.cfgfile_backups);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Configuration File Backups", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.cfgfile_backups = atoi(str);
 				break;
 
-			case 5:
+			case 6:
 				byte_count_to_str(cfg.min_free_diskspace, str, sizeof(str));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Minimum Free Disk Space (in bytes)", str, 10, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Minimum Free Disk Space (in bytes)", str, 10, K_EDIT|K_UPPER) > 0)
 					cfg.min_free_diskspace = parse_byte_count(str, 1);
 				break;
 
-			case 6:
+			case 7:
 			{
 				int k = !cfg.strip_soft_cr;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -237,7 +258,7 @@ void global_settings(void)
 				}
 				break;
 			}
-			case 7:
+			case 8:
 			{
 				int k = !cfg.strip_lf;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -247,7 +268,7 @@ void global_settings(void)
 				}
 				break;
 			}
-			case 8:
+			case 9:
 			{
 				int k = !cfg.auto_utf8;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -257,7 +278,7 @@ void global_settings(void)
 				}
 				break;
 			}
-			case 9:
+			case 10:
 			{
 				int k = !cfg.use_outboxes;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -267,35 +288,35 @@ void global_settings(void)
 				}
 				break;
 			}
-			case 10:
+			case 11:
 				duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "BSY Mutex File Timeout", duration, 10, K_EDIT) > 0)
 					cfg.bsy_timeout = (ulong)parse_duration(duration);
 				break;
 
-			case 11:
+			case 12:
 				duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Delay Between BSO Lock Attempts", duration, 10, K_EDIT) > 0)
 					cfg.bso_lock_delay = (ulong)parse_duration(duration);
 				break;
 
-			case 12:
+			case 13:
 				sprintf(str, "%lu", cfg.bso_lock_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum BSO Lock Attempts", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.bso_lock_attempts = atoi(str);
 				break;
 
-			case 13:
+			case 14:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Capabilities (BinkIT)", cfg.binkp_caps, sizeof(cfg.binkp_caps)-1, K_EDIT);
 				break;
 
-			case 14:
+			case 15:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Sysop Name (BinkIT)", cfg.binkp_sysop, sizeof(cfg.binkp_sysop)-1, K_EDIT);
 				break;
 
-			case 15:
+			case 16:
 			{
 				int k = !cfg.binkp_plainAuthOnly;
 				strcpy(opt[0], "Plain-Password Only");
@@ -313,7 +334,7 @@ void global_settings(void)
 				break;
 			}
 
-			case 16:
+			case 17:
 			{
 				if(cfg.binkp_plainAuthOnly) {
 					uifc.msg("CRAM-MD5 authentication/encryption has been disabled globally");

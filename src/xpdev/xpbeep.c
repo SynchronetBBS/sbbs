@@ -414,23 +414,19 @@ DLLCALL xptone_open_locked(void)
 			}
 		}
 		if(pu_api != NULL) {
-			if(!pulseaudio_initialized) {
-#if 0
-				pa_sample_spec ss;
-				ss.format = PA_SAMPLE_U8;
-				ss.rate = 22050;
-				ss.channels = 1;
-				if((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL)
-					pulseaudio_device_open_failed=TRUE;
-				else
-					pulseaudio_initialized=TRUE;
-				pu_api->simple_free(pu_handle);
-				pu_handle = NULL;
+			handle_type=SOUND_DEVICE_PULSEAUDIO;
+			handle_rc++;
+#ifdef XPDEV_THREAD_SAFE
+			pthread_mutex_unlock(&handle_mutex);
 #endif
+			xptone(0, 1, WAVE_SHAPE_SQUARE);
+#ifdef XPDEV_THREAD_SAFE
+			pthread_mutex_lock(&handle_mutex);
+#endif
+			if (pulseaudio_device_open_failed) {
+				handle_type = SOUND_DEVICE_CLOSED;
 			}
-			if(pulseaudio_initialized) {
-				handle_type=SOUND_DEVICE_PULSEAUDIO;
-				handle_rc++;
+			else {
 				return(TRUE);
 			}
 		}
@@ -648,6 +644,7 @@ DLLCALL xptone_open_locked(void)
 		return(TRUE);
 	}
 #endif
+
 	return(FALSE);
 }
 
@@ -757,6 +754,7 @@ BOOL DLLCALL xptone_close_locked(void)
 #ifdef WITH_PULSEAUDIO
 	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
 		pu_api->simple_free(pu_handle);
+		pu_handle = NULL;
 	}
 #endif
 
@@ -936,17 +934,21 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 		int ret;
 		int written=0;
 
-		alsa_api->snd_pcm_prepare(playback_handle);
-		while(written < sz) {
-			ret=alsa_api->snd_pcm_writei(playback_handle, samp+written, sz-written);
-			if(ret < 0) {
-				if(written==0) {
-					/* Go back and try OSS */
-					xptone_close_locked();
-					alsa_device_open_failed=TRUE;
-					xptone_open_locked();
+		while (written < sz) {
+			ret = alsa_api->snd_pcm_writei(playback_handle, samp + written, sz - written);
+			if (ret < 0) {
+				if (alsa_api->snd_pcm_prepare(playback_handle) == 0) {
+					ret = 0;
 				}
-				break;
+				else {
+					if (written == 0) {
+						/* Go back and try OSS */
+						xptone_close_locked();
+						alsa_device_open_failed = TRUE;
+						xptone_open_locked();
+					}
+					break;
+				}
 			}
 			written += ret;
 		}

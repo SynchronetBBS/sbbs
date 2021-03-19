@@ -3,7 +3,7 @@
 bÚnbÄÄ¿–hÚnbÄÄ¿—hÚnbÄÄ¿
 ³ hcNnb³ wNew message scan…b³ hcJnb³ wJump to new msg area   b³ hcEnb³ wRead/Send E-mail
 b³ hcRnb³ wRead message prompt   bÀÄÄÙ   hc* nList sub-boards    bÀÄÄÙ
-³ hcZnb³ wContinuous new scanˆhc/* nList groupsˆbşhş wOther Commands
+³ hcLnb³ wList/View messages          hc/* nList groupsˆbşhş wOther Commands
 nb³ hcVnb³ wView/Vote-in Polls      hc{ }  w# nSelect sub-board   hbÚnbÄÄ¿
 ³ hcQnb³ wQWK packet transfer„hc[ ] w/# nSelect group†b³ hcDnb³ wDefault user config
 b³ hcPnb³ wPost a msg or hc/Pnoll                               b³ hc&nb³ wMessage scan config
