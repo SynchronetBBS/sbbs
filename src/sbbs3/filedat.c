@@ -28,8 +28,10 @@
 #include "smblib.h"
 #include "load_cfg.h"	// smb_open_dir()
 #include "scfglib.h"
-#include "archive.h"
-#include "archive_entry.h"
+
+/* libarchive: */
+#include <archive.h>
+#include <archive_entry.h>
 
  /****************************************************************************/
 /****************************************************************************/
@@ -40,9 +42,10 @@ bool findfile(scfg_t* cfg, uint dirnum, const char *filename, smbfile_t* file)
 	if(cfg == NULL || filename == NULL)
 		return false;
 
-	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+	if(!smb_init_dir(cfg, &smb, dirnum))
 		return false;
-
+	if(smb_open_index(&smb) != SMB_SUCCESS)
+		return false;
 	int result = smb_findfile(&smb, filename, file);
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
