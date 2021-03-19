@@ -320,8 +320,9 @@ bool sbbs_t::upload(uint dirnum)
 		if(!dir_op(dirnum)) return(false); 
 	}
 	bputs(text[SearchingForDupes]);
-	if(findfile(&cfg, dirnum, fname, NULL)) {
-		bputs(text[SearchedForDupes]);
+	bool found = findfile(&cfg, dirnum, fname, NULL);
+	bputs(text[SearchedForDupes]);
+	if(found) {
 		bprintf(text[FileAlreadyOnline],fname);
 		return(false); 	 /* File is already in database */
 	}
