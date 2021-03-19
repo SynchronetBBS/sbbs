@@ -218,6 +218,8 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->auto_utf8					= true;
 	cfg->strip_soft_cr				= true;
 	cfg->min_free_diskspace			= 10*1024*1024;
+	cfg->max_logs_kept				= 10;
+	cfg->max_log_size				= 10*1024*1024;
 }
 
 char* pktTypeStringList[] = {"2+", "2e", "2.2", "2", NULL};		// Must match enum pkt_type
@@ -265,6 +267,8 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->umask					= iniGetInteger(ini, ROOT_SECTION, "umask", cfg->umask);
 	cfg->areafile_backups		= iniGetInteger(ini, ROOT_SECTION, "AreaFileBackups", cfg->areafile_backups);
 	cfg->cfgfile_backups		= iniGetInteger(ini, ROOT_SECTION, "CfgFileBackups", cfg->cfgfile_backups);
+	cfg->max_logs_kept			= iniGetInteger(ini, ROOT_SECTION, "MaxLogsKept", cfg->max_logs_kept);
+	cfg->max_log_size			= iniGetBytes(ini, ROOT_SECTION, "MaxLogSize", 1, cfg->max_log_size);
 	cfg->min_free_diskspace		= iniGetBytes(ini, ROOT_SECTION, "MinFreeDiskSpace", 1, cfg->min_free_diskspace);
 	cfg->strip_lf				= iniGetBool(ini, ROOT_SECTION, "StripLineFeeds", cfg->strip_lf);
 	cfg->strip_soft_cr			= iniGetBool(ini, ROOT_SECTION, "StripSoftCRs", cfg->strip_soft_cr);
@@ -513,6 +517,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetString(&ini,		ROOT_SECTION, "AreaFile"				,cfg->areafile					,style);
 	iniSetInteger(&ini,		ROOT_SECTION, "AreaFileBackups"			,cfg->areafile_backups			,style);
 	iniSetInteger(&ini,		ROOT_SECTION, "CfgFileBackups"			,cfg->cfgfile_backups			,style);
+	iniSetInteger(&ini,		ROOT_SECTION, "MaxLogsKept"				,cfg->max_logs_kept				,style);
+	iniSetBytes(&ini,		ROOT_SECTION, "MaxLogSize"				,1,cfg->max_log_size			,style);
 	iniSetBytes(&ini,		ROOT_SECTION, "MinFreeDiskSpace"		,1,cfg->min_free_diskspace		,style);
 	iniSetString(&ini,		ROOT_SECTION, "BadAreaFile"				,cfg->badareafile				,style);
 	iniSetString(&ini,		ROOT_SECTION, "EchoStats"				,cfg->echostats					,style);

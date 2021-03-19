@@ -6380,6 +6380,26 @@ int main(int argc, char **argv)
 			check_free_diskspace(cfg.nodecfg[u].outbox);
 	}
 
+	SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
+	if(!fmutex(path, program_id(), cfg.bsy_timeout)) {
+		lprintf(LOG_WARNING, "Mutex file exists (%s): SBBSecho appears to be already running", path);
+		bail(1);
+	}
+	mtxfile_locked = true;
+	atexit(cleanup);
+
+	if(cfg.max_log_size && ftello(fidologfile) >= cfg.max_log_size) {
+		lprintf(LOG_INFO, "Maximum log file size reached: %"PRId64" bytes", cfg.max_log_size);
+		fclose(fidologfile);
+
+		backup(cfg.logfile, cfg.max_logs_kept, /* rename: */true);
+		if((fidologfile = fopen(cfg.logfile,"a")) == NULL) {
+			fprintf(stderr,"ERROR %u (%s) line %d opening %s\n", errno, strerror(errno), __LINE__, cfg.logfile);
+			bail(1);
+			return -1;
+		}
+	}
+
 	truncsp(cmdline);
 	lprintf(LOG_DEBUG,"%s (PID %u) invoked with options: %s", sbbsecho_pid(), getpid(), cmdline);
 	lprintf(LOG_DEBUG,"Configured: %u archivers, %u linked-nodes, %u echolists", cfg.arcdefs, cfg.nodecfgs, cfg.listcfgs);
@@ -6389,14 +6409,6 @@ int main(int argc, char **argv)
 	lprintf(LOG_DEBUG,"Outbound (BSO root) directory: %s", cfg.outbound);
 	if(cfg.ignore_netmail_sent_attr && !cfg.delete_netmail)
 		lprintf(LOG_WARNING, "Ignore NetMail 'Sent' Attribute is enabled with Delete NetMail disabled: Duplicate NetMail msgs may be sent!");
-
-	SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
-	if(!fmutex(path, program_id(), cfg.bsy_timeout)) {
-		lprintf(LOG_WARNING, "Mutex file exists (%s): SBBSecho appears to be already running", path);
-		bail(1);
-	}
-	mtxfile_locked = true;
-	atexit(cleanup);
 
 	/******* READ IN AREAS.BBS FILE *********/
 	cfg.areas=0;		/* Total number of areas in AREAS.BBS */
