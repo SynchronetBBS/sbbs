@@ -212,6 +212,7 @@ struct alsa_api_struct *alsa_api=NULL;
 
 #ifdef XPDEV_THREAD_SAFE
 static void init_sample(void);
+static BOOL xp_play_sample_locked(const unsigned char *sample, size_t size, BOOL background);
 #endif
 
 /********************************************************************************/
@@ -418,10 +419,12 @@ DLLCALL xptone_open_locked(void)
 			handle_rc++;
 #ifdef XPDEV_THREAD_SAFE
 			pthread_mutex_unlock(&handle_mutex);
-#endif
+			pthread_mutex_lock(&sample_mutex);
+			if (samples_posted == 0)
+				xp_play_sample_locked((unsigned char *)"\x80", 1, FALSE);
+			pthread_mutex_unlock(&sample_mutex);
+#else
 			xptone(0, 1, WAVE_SHAPE_SQUARE);
-#ifdef XPDEV_THREAD_SAFE
-			pthread_mutex_lock(&handle_mutex);
 #endif
 			if (pulseaudio_device_open_failed) {
 				handle_type = SOUND_DEVICE_CLOSED;
@@ -995,19 +998,19 @@ void DLLCALL xp_play_sample_thread(void *data)
 			waited=FALSE;
 		posted_last=FALSE;
 		pthread_mutex_lock(&handle_mutex);
-		if(pthread_mutex_lock(&sample_mutex)!=0) {
-			pthread_mutex_unlock(&handle_mutex);
-			goto error_return;
-		}
 
 		if(handle_type==SOUND_DEVICE_CLOSED) {
 			must_close=TRUE;
 			if(!xptone_open_locked()) {
 				sem_post(&sample_complete_sem);
-				pthread_mutex_unlock(&sample_mutex);
 				pthread_mutex_unlock(&handle_mutex);
 				continue;
 			}
+		}
+
+		if(pthread_mutex_lock(&sample_mutex)!=0) {
+			pthread_mutex_unlock(&handle_mutex);
+			goto error_return;
 		}
 		this_sample_size=sample_size;
 		FREE_AND_NULL(sample);
@@ -1067,15 +1070,8 @@ init_sample(void)
 	sem_init(&sample_complete_sem, 0, 0);
 }
 
-/*
- * This MUST not return false after sample goes into the sample buffer in the background.
- * If it does, the caller won't be able to free() it.
- */
-BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t size, BOOL background)
+static BOOL xp_play_sample_locked(const unsigned char *sample, size_t size, BOOL background)
 {
-	pthread_once(&sample_initialized_pto, init_sample);
-
-	pthread_mutex_lock(&sample_mutex);
 	if(!sample_thread_running) {
 		_beginthread(xp_play_sample_thread, 0,NULL);
 		sem_wait(&sample_complete_sem);
@@ -1099,8 +1095,22 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t size, BOOL backg
 			samples_posted--;
 		}
 	}
+	return TRUE;
+}
+
+/*
+ * This MUST not return false after sample goes into the sample buffer in the background.
+ * If it does, the caller won't be able to free() it.
+ */
+BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t size, BOOL background)
+{
+	BOOL ret;
+	pthread_once(&sample_initialized_pto, init_sample);
+
+	pthread_mutex_lock(&sample_mutex);
+	ret = xp_play_sample_locked(sample, size, background);
 	pthread_mutex_unlock(&sample_mutex);
-	return(TRUE);
+	return(ret);
 }
 #else
 BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background)
