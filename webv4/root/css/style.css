@@ -37,6 +37,7 @@ span.badge.total {
 }
 
 span.badge-tag {
+	background-color: #8B008B;
 }
 
 /* Inline quoted text in a message. */
