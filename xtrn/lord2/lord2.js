@@ -3102,6 +3102,7 @@ function mail_to(pl, quotes)
 	var bt = 0;
 	var msg = [];
 	var f;
+	var t;
 	var op = pfile.get(pl);
 
 	if (op === null || op.deleted)
