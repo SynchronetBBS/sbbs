@@ -48,7 +48,7 @@
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="SBBS;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB;_DEBUG"/>
+    <USERDEFINES value="SBBS;RINGBUF_SEM;RINGBUF_MUTEX;RINGBUF_EVENT;USE_CRYPTLIB;_DEBUG"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
     <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;..\..\hash;$(BCB)\include;$(BCB)\include\vcl;..\..\..\3rdp\win32.release\cryptlib\include;..\..\comio"/>
