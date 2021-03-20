@@ -630,6 +630,9 @@ long create_archive(const char* archive, const char* format
 	int result;
 	struct archive *ar;
 
+	if(file_list == NULL || *file_list == NULL)
+		return 0;
+
 	if((ar = archive_write_new()) == NULL) {
 		safe_snprintf(error, maxerrlen, "archive_write_new returned NULL");
 		return -1;
@@ -646,8 +649,8 @@ long create_archive(const char* archive, const char* format
 	if((result = archive_write_open_filename(ar, archive)) != ARCHIVE_OK) {
 		safe_snprintf(error, maxerrlen, "archive_write_open_filename(%s) returned %d: %s"
 			,archive, result, archive_error_string(ar));
-		archive_read_free(ar);
-		return -3;
+		archive_write_free(ar);
+		return result;
 	}
 	ulong file_count = 0;
 	for(;file_list[file_count] != NULL; file_count++) {
@@ -673,18 +676,26 @@ long create_archive(const char* archive, const char* format
 		archive_entry_set_mtime(entry, st.st_mtime, 0);
 		archive_entry_set_filetype(entry, AE_IFREG);
 		archive_entry_set_perm(entry, 0644);
-		archive_write_header(ar, entry);
-		while(!feof(fp)) {
+		if((result = archive_write_header(ar, entry)) != ARCHIVE_OK)
+			safe_snprintf(error, maxerrlen, "archive_write_header returned %d", result);
+		else while(!feof(fp)) {
 			char buf[256 * 1024];
 			size_t len = fread(buf, 1, sizeof(buf), fp);
-			archive_write_data(ar, buf, len);
+			if((result = archive_write_data(ar, buf, len)) != ARCHIVE_OK) {
+				safe_snprintf(error, maxerrlen, "archive_write_data returned %d", result);
+				break;
+			}
 		}
 		fclose(fp);
 		archive_entry_free(entry);
+		if(result != ARCHIVE_OK)
+			break;
 	}
 	archive_write_close(ar);
 	archive_write_free(ar);
-	return file_list[file_count] == NULL ? file_count : -10;
+	if(file_list[file_count] != NULL)
+		return result ? result : -1;
+	return file_count;
 }
 
 ulong extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
