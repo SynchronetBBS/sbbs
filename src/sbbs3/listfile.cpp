@@ -428,7 +428,9 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 		CRLF; 
 	} else {
 		char* ext_desc = strdup((char*)ext);
+		truncsp(ext_desc);
 		ptr=(char*)ext_desc;
+		SKIP_CRLF(ptr);
 		while(ptr && *ptr && !msgabort()) {
 			cr=strchr(ptr,CR);
 			lf=strchr(ptr,LF);

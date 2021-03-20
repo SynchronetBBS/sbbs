@@ -81,8 +81,7 @@ void sbbs_t::showfileinfo(smbfile_t* f)
 	bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
 	if(f->extdesc != NULL && *f->extdesc) {
 		char* p = f->extdesc;
-		while(*p == '\r' || *p == '\n')
-			p++;
+		SKIP_CRLF(p);
 		truncsp(p);
 		long p_mode = P_NOATCODES;
 		if(!(console&CON_RAW_IN))
