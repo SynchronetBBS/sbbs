@@ -329,6 +329,138 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	return(FALSE);
 }
 
+/*
+ * Return TRUE if recv() will not block on socket
+ * Will block for timeout ms or forever if timeout is negative
+ *
+ * This means it will return true if recv() will return an error
+ * as well as if the socket is closed (and recv() will return 0)
+ */
+BOOL socket_readable(SOCKET sock, int timeout)
+{
+#ifdef _WIN32
+	fd_set rd_set;
+	struct timeval tv = {0};
+	struct timeval *tvp = &tv;
+
+	FD_ZERO(&rd_set);
+	FD_SET(sock, &rd_set);
+	if (timeout < 0)
+		tvp = NULL;
+	else {
+		tv.tv_sec = timeout / 1000;
+		tv.tv_usec = (timeout % 1000) * 1000;
+	}
+
+	switch (select(sock+1, &rd_set, NULL, NULL, tvp)) {
+		case 0:		// Nothing to read
+			return FALSE;
+		case 1:
+			return TRUE;
+	}
+	// Errors and unexpected cases
+	return TRUE;
+#else
+	struct pollfd pfd = {0};
+	pfd.fd = sock;
+	pfd.events = POLLIN;
+
+	if (poll(&pfd, 1, timeout) == 1)
+		return TRUE;
+	return FALSE;
+#endif
+}
+
+/*
+ * Return TRUE if send() will not block on socket
+ * Will block for timeout ms or forever if timeout is negative
+ *
+ * This means it will return true if send() will return an error
+ * as well as if the socket is closed (and send() will return 0)
+ */
+BOOL socket_writable(SOCKET sock, int timeout)
+{
+#ifdef _WIN32
+	fd_set wr_set;
+	struct timeval tv = {0};
+	struct timeval *tvp = &tv;
+
+	FD_ZERO(&wr_set);
+	FD_SET(sock, &wr_set);
+	if (timeout < 0)
+		tvp = NULL;
+	else {
+		tv.tv_sec = timeout / 1000;
+		tv.tv_usec = (timeout % 1000) * 1000;
+	}
+
+	switch (select(sock+1, NULL, &wr_set, NULL, tvp)) {
+		case 0:		// Nothing to read
+			return FALSE;
+		case 1:
+			return TRUE;
+	}
+	// Errors and unexpected cases
+	return TRUE;
+#else
+	struct pollfd pfd = {0};
+	pfd.fd = sock;
+	pfd.events = POLLOUT;
+
+	if (poll(&pfd, 1, timeout) == 1)
+		return TRUE;
+	return FALSE;
+#endif
+}
+
+/*
+ * Return TRUE if recv() will not block and will return zero
+ * or an error. This is *not* a test if a socket is
+ * disconnected, but rather that it is disconnected *AND* all
+ * data has been recv()ed.
+ */
+BOOL socket_recvdone(SOCKET sock, int timeout)
+{
+#ifdef _WIN32
+	fd_set rd_set;
+	struct timeval tv = {0};
+	struct timeval *tvp = &tv;
+	char ch;
+	int rd;
+
+	FD_ZERO(&rd_set);
+	FD_SET(sock, &rd_set);
+	if (timeout < 0)
+		tvp = NULL;
+	else {
+		tv.tv_sec = timeout / 1000;
+		tv.tv_usec = (timeout % 1000) * 1000;
+	}
+
+	switch (select(sock+1, &rd_set, NULL, NULL, tvp)) {
+		case -1:	// Error, call this disconnected
+			return TRUE;
+		case 0:		// Nothing to read
+			return FALSE;
+	}
+	rd = recv(sock,&ch,1,MSG_PEEK);
+	if (rd == 1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE))
+		return FALSE;
+	return TRUE;
+#else
+	struct pollfd pfd = {0};
+	pfd.fd = sock;
+	pfd.events = POLLIN;
+
+	if (poll(&pfd, 1, timeout) == 1) {
+		if (pfd.revents & POLLIN)
+			return FALSE;
+		return TRUE;
+	}
+	return FALSE;
+#endif
+}
+
 int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			   ,uint retries, uint wait_secs
 			   ,const char* prot

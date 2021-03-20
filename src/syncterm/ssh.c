@@ -47,28 +47,15 @@ void cryptlib_error_message(int status, const char * msg)
 
 void ssh_input_thread(void *args)
 {
-	fd_set	rds;
 	int status;
 	int rd;
 	size_t	buffered;
 	size_t	buffer;
-	struct timeval tv;
 
 	SetThreadName("SSH Input");
 	conn_api.input_thread_running=1;
 	while(ssh_active && !conn_api.terminate) {
-		FD_ZERO(&rds);
-		FD_SET(ssh_sock, &rds);
-		tv.tv_sec = 0;
-		tv.tv_usec = 100;
-
-		rd=select(ssh_sock+1, &rds, NULL, NULL, &tv);
-		if(rd==-1) {
-			if(errno==EBADF)
-				break;
-			rd=0;
-		}
-		if(rd == 0)
+		if (!socket_readable(ssh_sock, 10))
 			continue;
 
 		pthread_mutex_lock(&ssh_mutex);
