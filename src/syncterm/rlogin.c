@@ -17,7 +17,6 @@ SOCKET rlogin_sock=INVALID_SOCKET;
 #endif
 void rlogin_input_thread(void *args)
 {
-	fd_set	rds;
 	int		rd;
 	int	buffered;
 	size_t	buffer;
@@ -25,24 +24,7 @@ void rlogin_input_thread(void *args)
 	SetThreadName("RLogin Input");
 	conn_api.input_thread_running=1;
 	while(rlogin_sock != INVALID_SOCKET && !conn_api.terminate) {
-		FD_ZERO(&rds);
-		FD_SET(rlogin_sock, &rds);
-#ifdef __linux__
-		{
-			struct timeval tv;
-			tv.tv_sec=0;
-			tv.tv_usec=500000;
-			rd=select(rlogin_sock+1, &rds, NULL, NULL, &tv);
-		}
-#else
-		rd=select(rlogin_sock+1, &rds, NULL, NULL, NULL);
-#endif
-		if(rd==-1) {
-			if(errno==EBADF)
-				break;
-			rd=0;
-		}
-		if(rd==1) {
+		if (socket_readable(rlogin_sock, -1)) {
 			rd=recv(rlogin_sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
 			if(rd <= 0)
 				break;
@@ -79,24 +61,7 @@ void rlogin_output_thread(void *args)
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent=0;
 			while(sent < wr) {
-				FD_ZERO(&wds);
-				FD_SET(rlogin_sock, &wds);
-#ifdef __linux__
-				{
-					struct timeval tv;
-					tv.tv_sec=0;
-					tv.tv_usec=500000;
-					ret=select(rlogin_sock+1, NULL, &wds, NULL, &tv);
-				}
-#else
-				ret=select(rlogin_sock+1, NULL, &wds, NULL, NULL);
-#endif
-				if(ret==-1) {
-					if(errno==EBADF)
-						break;
-					ret=0;
-				}
-				if(ret==1) {
+				if (socket_writable(rlogin_sock, -1)) {
 					ret=sendsocket(rlogin_sock, conn_api.wr_buf+sent, wr-sent);
 					if(ret==-1)
 						break;
@@ -173,22 +138,16 @@ int rlogin_connect(struct bbslist *bbs)
 	if(bbs->conn_type == CONN_TYPE_MBBS_GHOST) {
 		char	sbuf[80];
 		char	rbuf[10];
-		struct timeval tv;
 		int		idx, ret;
-		fd_set	rds;
-
-		FD_ZERO(&rds);
-		FD_SET(rlogin_sock, &rds);
-
-		tv.tv_sec=1;
-		tv.tv_usec=0;
 
 		/* Check to make sure GHost is actually listening */
 		sendsocket(rlogin_sock, "\r\nMBBS: PING\r\n", 14);
 
 		idx = 0;
-		while ((ret = select(rlogin_sock+1, &rds, NULL, NULL, &tv))==1) {
-			recv(rlogin_sock, rbuf+idx, 1, 0);
+		while (socket_readable(rlogin_sock, 1000)) {
+			ret = recv(rlogin_sock, rbuf+idx, 1, 0);
+			if (ret == -1)
+				break;
 			rbuf[++idx] = 0;
 
 			/* It says ERROR, but this is a good response to PING. */
@@ -216,8 +175,10 @@ int rlogin_connect(struct bbslist *bbs)
 		sendsocket(rlogin_sock, sbuf, strlen(sbuf));
 
 		idx = 0;
-		while ((ret = select(rlogin_sock+1, &rds, NULL, NULL, &tv))==1) {
-			recv(rlogin_sock, rbuf+idx, 1, 0);
+		while (socket_readable(rlogin_sock, 1000)) {
+			ret = recv(rlogin_sock, rbuf+idx, 1, 0);
+			if (ret == -1)
+				break;
 			rbuf[++idx] = 0;
 
 			/* GHost says it's launching the program, so pass terminal to user. */
