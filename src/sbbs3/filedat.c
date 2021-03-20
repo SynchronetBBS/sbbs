@@ -683,10 +683,9 @@ long create_archive(const char* archive, const char* format
 			size_t len = fread(buf, 1, sizeof(buf), fp);
 			if((result = archive_write_data(ar, buf, len)) != len) {
 				safe_snprintf(error, maxerrlen, "archive_write_data returned %d instead of %d", result, (int)len);
-				result = -1;
 				break;
-			}
-			result = ARCHIVE_OK;
+			} else
+				result = ARCHIVE_OK;
 		}
 		fclose(fp);
 		archive_entry_free(entry);
@@ -696,7 +695,7 @@ long create_archive(const char* archive, const char* format
 	archive_write_close(ar);
 	archive_write_free(ar);
 	if(file_list[file_count] != NULL)
-		return result ? result : -1;
+		return result < 0 ? result : -1;
 	return file_count;
 }
 
