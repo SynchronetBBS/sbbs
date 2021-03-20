@@ -59,6 +59,9 @@ DLLEXPORT str_list_t	read_diz(const char* path, size_t max_line_len);
 DLLEXPORT char*			format_diz(str_list_t lines, char*, size_t maxlen, bool allow_ansi);
 DLLEXPORT char*			prep_file_desc(const char *src, char* dst);
 
+DLLEXPORT str_list_t	directory(const char* path);
+DLLEXPORT long			create_archive(const char* archive, const char* format
+						               ,bool with_path, str_list_t file_list, char* error, size_t maxerrlen);
 DLLEXPORT char*			cmdstr(scfg_t*, user_t*, const char* instr, const char* fpath, const char* fspec, char* cmd, size_t);
 DLLEXPORT ulong			extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
 						                           ,bool with_path, ulong max_files, str_list_t file_list, char* error, size_t);

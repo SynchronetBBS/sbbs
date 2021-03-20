@@ -37,6 +37,70 @@ typedef struct
 JSClass js_archive_class;
 
 static JSBool
+js_create(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv = JS_ARGV(cx, arglist);
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
+	char		format[32] = "zip";
+	str_list_t	file_list = NULL;
+	char		path[MAX_PATH + 1];
+	bool		with_path = false;
+	char		error[256] = "";
+	jsval		val;
+	jsrefcount	rc;
+	archive_private_t* p;
+
+	if((p = (archive_private_t*)js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+		return JS_FALSE;
+
+	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	uintN argn = 0;
+	if(argn < argc && JSVAL_IS_STRING(argv[argn])) {
+		JSString* js_str = JS_ValueToString(cx, argv[argn]);
+		if(js_str == NULL) {
+			JS_ReportError(cx, "string conversion error");
+			return JS_FALSE;
+		}
+		JSSTRING_TO_STRBUF(cx, js_str, format, sizeof(format), NULL);
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		with_path = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		JSObject* array = JSVAL_TO_OBJECT(argv[argn]);
+		if(!JS_IsArrayObject(cx, array)) {
+			JS_ReportError(cx, "invalid array object");
+			return JS_FALSE;
+		}
+		file_list = strListInit();
+		for(jsint i = 0;; i++)  {
+			if(!JS_GetElement(cx, array, i, &val))
+				break;
+			if(!JSVAL_IS_STRING(val))
+				break;
+			JSVALUE_TO_STRBUF(cx, val, path, sizeof(path), NULL);
+			strListPush(&file_list, path);
+		}
+		argn++;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	long file_count = create_archive(p->name, format, with_path, file_list, error, sizeof(error));
+	strListFree(&file_list);
+	JS_RESUMEREQUEST(cx, rc);
+	if(file_count < 0) {
+		JS_ReportError(cx, error);
+		return JS_FALSE;
+	}
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(file_count));
+	return JS_TRUE;
+}
+
+static JSBool
 js_extract(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv = JS_ARGV(cx, arglist);
@@ -296,7 +360,12 @@ js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 }
 
 static jsSyncMethodSpec js_archive_functions[] = {
-	{ "archive_extract",	js_extract,		1,	JSTYPE_NUMBER
+	{ "create",		js_create,		1,	JSTYPE_NUMBER
+		,JSDOCSTR("format [,boolean with_path = <tt>false</tt>] [,array file_list]")
+		,JSDOCSTR("create an archive of the specified format, returns the number of files archived, will throw exception upon error")
+		,31900
+	},
+	{ "extract",	js_extract,		1,	JSTYPE_NUMBER
 		,JSDOCSTR("output_directory [,boolean with_path = <tt>false</tt>] [,number max_files = 0] [,string file/pattern [...]]")
 		,JSDOCSTR("extract files from an archive to specified output directory, returns the number of files extracted, will throw exception upon error")
 		,31900
@@ -387,6 +456,30 @@ static void js_finalize_archive(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx, obj, NULL);
 }
 
+static JSBool js_archive_resolve(JSContext *cx, JSObject *obj, jsid id)
+{
+	char*			name=NULL;
+	JSBool			ret;
+
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+
+		JS_IdToValue(cx, id, &idval);
+		if(JSVAL_IS_STRING(idval))
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+	}
+
+	ret=js_SyncResolve(cx, obj, name, NULL, js_archive_functions, NULL, 0);
+	if(name)
+		free(name);
+	return ret;
+}
+
+static JSBool js_archive_enumerate(JSContext *cx, JSObject *obj)
+{
+	return js_archive_resolve(cx, obj, JSID_VOID);
+}
+
 JSClass js_archive_class = {
      "Archive"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -394,8 +487,8 @@ JSClass js_archive_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,JS_PropertyStub		/* getProperty	*/
 	,JS_StrictPropertyStub	/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_archive_enumerate	/* enumerate	*/
+	,js_archive_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,js_finalize_archive	/* finalize		*/
 };

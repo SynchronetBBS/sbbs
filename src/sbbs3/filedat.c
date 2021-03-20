@@ -578,13 +578,13 @@ int archive_type(const char* archive, char* str, size_t size)
 	struct archive_entry *entry;
 
 	if((ar = archive_read_new()) == NULL) {
-		safe_snprintf(str, size, "archive_read_new() returned NULL");
+		safe_snprintf(str, size, "archive_read_new returned NULL");
 		return -1;
 	}
 	archive_read_support_filter_all(ar);
 	archive_read_support_format_all(ar);
 	if((result = archive_read_open_filename(ar, archive, 10240)) != ARCHIVE_OK) {
-		safe_snprintf(str, size, "archive_read_open_filename() returned %d: %s"
+		safe_snprintf(str, size, "archive_read_open_filename returned %d: %s"
 			,result, archive_error_string(ar));
 		archive_read_free(ar);
 		return result;
@@ -594,7 +594,7 @@ int archive_type(const char* archive, char* str, size_t size)
 		int comp = result;
 		result = archive_read_next_header(ar, &entry);
 		if(result != ARCHIVE_OK)
-			safe_snprintf(str, size, "archive_read_next_header() returned %d: %s"
+			safe_snprintf(str, size, "archive_read_next_header returned %d: %s"
 				,result, archive_error_string(ar));
 		else {
 			result = archive_format(ar);
@@ -606,6 +606,85 @@ int archive_type(const char* archive, char* str, size_t size)
 	}
 	archive_read_free(ar);
 	return result;
+}
+
+str_list_t directory(const char* path)
+{
+	int			flags = GLOB_MARK;
+	glob_t		g;
+
+	if(glob(path, flags, NULL, &g) != 0)
+		return NULL;
+	str_list_t list = strListInit();
+	for(size_t i = 0; i < g.gl_pathc; i++) {
+		strListPush(&list, g.gl_pathv[i]);
+	}
+	globfree(&g);
+	return list;
+}
+
+// Return negative on error
+long create_archive(const char* archive, const char* format
+	,bool with_path, str_list_t file_list, char* error, size_t maxerrlen)
+{
+	int result;
+	struct archive *ar;
+
+	if((ar = archive_write_new()) == NULL) {
+		safe_snprintf(error, maxerrlen, "archive_write_new returned NULL");
+		return -1;
+	}
+	if(stricmp(format, "tgz") == 0) {
+		archive_write_add_filter_gzip(ar);
+		archive_write_set_format_pax_restricted(ar);
+	} else if(stricmp(format, "zip") == 0) {
+		archive_write_set_format_zip(ar);
+	} else {
+		safe_snprintf(error, maxerrlen, "unsupported format: %s", format);
+		return -2;
+	}
+	if((result = archive_write_open_filename(ar, archive)) != ARCHIVE_OK) {
+		safe_snprintf(error, maxerrlen, "archive_write_open_filename(%s) returned %d: %s"
+			,archive, result, archive_error_string(ar));
+		archive_read_free(ar);
+		return -3;
+	}
+	ulong file_count = 0;
+	for(;file_list[file_count] != NULL; file_count++) {
+		struct archive_entry* entry;
+		struct stat st;
+		const char* filename = file_list[file_count];
+		FILE* fp = fopen(filename, "rb");
+		if(fp == NULL) {
+			safe_snprintf(error, maxerrlen, "%d opening %s", errno, filename);
+			break;
+		}
+		fstat(fileno(fp), &st);
+		if((entry = archive_entry_new()) == NULL) {
+			safe_snprintf(error, maxerrlen, "archive_entry_new returned NULL");
+			fclose(fp);
+			break;
+		}
+		if(with_path)
+			archive_entry_set_pathname(entry, filename);
+		else
+			archive_entry_set_pathname(entry, getfname(filename));
+		archive_entry_set_size(entry, st.st_size);
+		archive_entry_set_mtime(entry, st.st_mtime, 0);
+		archive_entry_set_filetype(entry, AE_IFREG);
+		archive_entry_set_perm(entry, 0644);
+		archive_write_header(ar, entry);
+		while(!feof(fp)) {
+			char buf[256 * 1024];
+			size_t len = fread(buf, 1, sizeof(buf), fp);
+			archive_write_data(ar, buf, len);
+		}
+		fclose(fp);
+		archive_entry_free(entry);
+	}
+	archive_write_close(ar);
+	archive_write_free(ar);
+	return file_list[file_count] == NULL ? file_count : -10;
 }
 
 ulong extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
@@ -620,13 +699,13 @@ ulong extract_files_from_archive(const char* archive, const char* outdir, const 
 	if(error != NULL && maxerrlen >= 1)
 		*error = '\0';
 	if((ar = archive_read_new()) == NULL) {
-		safe_snprintf(error, maxerrlen, "archive_read_new() returned NULL");
+		safe_snprintf(error, maxerrlen, "archive_read_new returned NULL");
 		return 0;
 	}
 	archive_read_support_filter_all(ar);
 	archive_read_support_format_all(ar);
 	if((result = archive_read_open_filename(ar, archive, 10240)) != ARCHIVE_OK) {
-		safe_snprintf(error, maxerrlen, "archive_read_open_filename() returned %d: %s"
+		safe_snprintf(error, maxerrlen, "archive_read_open_filename returned %d: %s"
 			,result, archive_error_string(ar));
 		archive_read_free(ar);
 		return 0;
@@ -635,7 +714,7 @@ ulong extract_files_from_archive(const char* archive, const char* outdir, const 
 		result = archive_read_next_header(ar, &entry);
 		if(result != ARCHIVE_OK) {
 			if(result != ARCHIVE_EOF)
-				safe_snprintf(error, maxerrlen, "archive_read_next_header() returned %d: %s"
+				safe_snprintf(error, maxerrlen, "archive_read_next_header returned %d: %s"
 					,result, archive_error_string(ar));
 			break;
 		}
@@ -700,7 +779,7 @@ ulong extract_files_from_archive(const char* archive, const char* outdir, const 
 				break;
 			}
 			if(result < ARCHIVE_OK) {
-				safe_snprintf(error, maxerrlen, "archive_read_data_block() returned %d: %s"
+				safe_snprintf(error, maxerrlen, "archive_read_data_block returned %d: %s"
 					,result, archive_error_string(ar));
 				break;
 			}

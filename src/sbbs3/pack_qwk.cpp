@@ -728,8 +728,14 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/* Compress Packet */
 	/*******************/
 	SAFEPRINTF2(path,"%s%s",cfg.temp_dir,ALLFILES);
-	i=external(cmdstr(temp_cmd(),packet,path,NULL)
-		,ex|EX_WILDCARD);
+	i=0;
+	str_list_t file_list = directory(path);
+	if(create_archive(packet, useron.tmpext, /* with_path: */false, file_list, error, sizeof(error)) < 0) {
+		lprintf(LOG_ERR, "libarchive error (%s) creating %s", error, packet);
+		i = external(cmdstr(temp_cmd(),packet,path,NULL)
+			,ex|EX_WILDCARD);
+	}
+	strListFree(&file_list);
 	if(!fexist(packet)) {
 		bputs(text[QWKCompressionFailed]);
 		if(i)
