@@ -138,6 +138,17 @@ div.bbs-view {
 	background-color: #333;
 }
 
+.dark .well {
+	background-color: #333;
+	color: #ddd;
+	border-color: #888;
+}
+
+.dark .table-hover tr:hover {
+	background-color: #888;
+	color: #222;
+}
+
 /*** You probably don't need to mess with rules below this line. ***/
 
 blockquote {
