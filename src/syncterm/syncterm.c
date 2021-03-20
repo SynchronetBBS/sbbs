@@ -8,6 +8,11 @@
 
 #define NOCRYPT		/* Stop windows.h from loading wincrypt.h */
 					/* Is windows.h REALLY necessary?!?! */
+#define __WINCRYPT_H__	/* Really REALLY stop wincrypt.h har har
+			 * This is to workaround an issue in MinGW-w64 headers where
+			 * shlobj.h (which we need to include) unconditionally
+			 * includes wincrypt.h (which we need to not be included).
+			 */
 #define WIN32_LEAN_AND_MEAN
 #include <sys/stat.h>
 #ifdef _WIN32
@@ -22,9 +27,9 @@ static const KNOWNFOLDERID FOLDERID_InternetCache =		{0x352481E8,0x33BE,0x4251,{
 // Shared
 static const KNOWNFOLDERID FOLDERID_PublicDownloads =	{0x3D644C9B,0x1FB8,0x4f30,{0x9B,0x45,0xF6,0x70,0x23,0x5F,0x79,0xC0}};
 static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0xA9,0xDD,0x07,0x0D,0x1D,0x49,0x5D,0x97}};
+#endif
 #ifndef KF_FLAG_CREATE
 #define KF_FLAG_CREATE	0x00008000
-#endif
 #endif
 #include <xp_dl.h>	/* xp_dlopen() and friends */
 #endif
