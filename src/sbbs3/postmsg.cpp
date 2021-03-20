@@ -231,6 +231,11 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
 	}
+	if((cfg.sub[subnum]->misc&SUB_MSGTAGS)
+		&& (tags[0] || text[TagMessageQ][0] == 0 || !noyes(text[TagMessageQ]))) {
+		bputs(text[TagMessagePrompt]);
+		getstr(tags, sizeof(tags)-1, K_EDIT|K_LINE|K_TRIM);
+	}
 
 	bputs(text[WritingIndx]);
 
@@ -301,11 +306,6 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	editor_info_to_msg(&msg, editor, charset);
 	
-	if((cfg.sub[subnum]->misc&SUB_MSGTAGS)
-		&& (tags[0] || text[TagMessageQ][0] == 0 || !noyes(text[TagMessageQ]))) {
-		bputs(text[TagMessagePrompt]);
-		getstr(tags, sizeof(tags)-1, K_EDIT|K_LINE|K_TRIM);
-	}
 	if(tags[0])
 		smb_hfield_str(&msg, SMB_TAGS, tags);
 

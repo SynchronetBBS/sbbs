@@ -795,6 +795,8 @@ void sdl_video_event_thread(void *data)
 	SDL_Event	ev;
 	int		old_w, old_h;
 	int		block_text = 0;
+	static SDL_Keycode last_sym = SDLK_UNKNOWN;
+	static Uint16 last_mod = 0;
 
 	pthread_mutex_lock(&vstatlock);
 	old_w = cvstat.winwidth;
@@ -816,6 +818,8 @@ void sdl_video_event_thread(void *data)
 		else {
 			switch (ev.type) {
 				case SDL_KEYDOWN:			/* Keypress */
+					last_mod = ev.key.keysym.mod;
+					last_sym = ev.key.keysym.sym;
 					if ((ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)) && !(ev.key.keysym.mod & KMOD_MODE)) {
 						block_text = 1;
 						if ((ev.key.keysym.mod & KMOD_ALT) &&
@@ -878,6 +882,10 @@ void sdl_video_event_thread(void *data)
 							break;
 						}
 					}
+					if (ev.key.keysym.mod & KMOD_RALT) {	// Possible AltGr, let textinput sort it out...
+						block_text = 0;
+						break;
+					}
 					if ((ev.key.keysym.mod & KMOD_SHIFT) && (ev.key.keysym.sym == '\t'))
 						block_text = 1;
 					if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 127) {
@@ -897,10 +905,17 @@ void sdl_video_event_thread(void *data)
 					}
 					break;
 				case SDL_TEXTINPUT:
-					if (!block_text)
-						sdl_add_keys((uint8_t *)ev.text.text);
+					if (!block_text) {
+						unsigned int charcode = sdl_get_char_code(last_sym, last_mod & ~(KMOD_ALT));
+						// If the key is exactly what we would expect, use sdl_get_char_code()
+						if (*(uint8_t *)ev.text.text == charcode)
+							sdl_add_key(sdl_get_char_code(last_sym, last_mod));
+						else
+							sdl_add_keys((uint8_t *)ev.text.text);
+					}
 					break;
 				case SDL_KEYUP:
+					last_mod = ev.key.keysym.mod;
 					if (!(ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)))
 						block_text = 0;
 					break;

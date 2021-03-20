@@ -1,5 +1,5 @@
 @INCLUDE:%zmenu/head.msg@hc@HOT@n
-bşhş wRead/Post Messages…nbşhş wMessage Area Selection   nbşhş wElectronic Mail
+ bşhş wRead/Post Messages…nbşhş wMessage Area Selection   nbşhş wElectronic Mail
 bÚnbÄÄ¿–hÚnbÄÄ¿—hÚnbÄÄ¿
 ³ hcNnb³ wNew message scan…b³ hcJnb³ wJump to new msg area   b³ hcEnb³ wRead/Send E-mail
 b³ hcRnb³ wRead message prompt   bÀÄÄÙ   hc* nList sub-boards    bÀÄÄÙ

@@ -64,6 +64,7 @@
 #include <arpa/inet.h>		/* inet_ntoa */
 #include <netinet/tcp.h>	/* TCP_NODELAY */
 #include <unistd.h>			/* close */
+#include <poll.h>
 #if defined(__solaris__)
 	#include <sys/filio.h>  /* FIONBIO */
 	#define INADDR_NONE -1L
@@ -172,6 +173,7 @@ static  int wsa_error;
 #define ERROR_VALUE			((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
 #define socket_errno		WSAGetLastError()
 #define sendsocket(s,b,l)	send(s,b,l,0)
+#define poll(s, c, t)		WSAPoll(s, c, t)
 
 /* For getaddrinfo() */
 #ifndef AI_ADDRCONFIG
