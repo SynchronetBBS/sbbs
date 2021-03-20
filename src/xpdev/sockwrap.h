@@ -232,6 +232,32 @@ DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst);
 	#define inet_pton	xp_inet_pton
 #endif
 
+/*
+ * Return TRUE if recv() will not block on socket
+ * Will block for timeout ms or forever if timeout is negative
+ *
+ * This means it will return true if recv() will return an error
+ * as well as if the socket is closed (and recv() will return 0)
+ */
+DLLEXPORT BOOL socket_readable(SOCKET sock, int timeout);
+
+/*
+ * Return TRUE if send() will not block on socket
+ * Will block for timeout ms or forever if timeout is negative
+ *
+ * This means it will return true if send() will return an error
+ * as well as if the socket is closed (and send() will return 0)
+ */
+DLLEXPORT BOOL socket_writable(SOCKET sock, int timeout);
+
+/*
+ * Return TRUE if recv() will not block and will return zero
+ * or an error. This is *not* a test if a socket is
+ * disconnected, but rather that it is disconnected *AND* all
+ * data has been recv()ed.
+ */
+DLLEXPORT BOOL socket_recvdone(SOCKET sock, int timeout);
+
 #ifdef __cplusplus
 }
 #endif
