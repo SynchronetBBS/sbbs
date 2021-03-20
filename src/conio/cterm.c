@@ -1172,8 +1172,7 @@ scrolldown(struct cterminal *cterm)
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &maxx, &maxy);
 	MOVETEXT(minx, miny, maxx, maxy - 1, minx, miny + 1);
 	CURR_XY(&x, &y);
-	cterm_gotoxy(cterm, TERM_MINX, TERM_MINY);
-	cterm_clrblk(cterm, x, y, x + TERM_MAXX - 1, y);
+	cterm_clrblk(cterm, minx, miny, minx + TERM_MAXX - 1, miny);
 	GOTOXY(x, y);
 }
 
@@ -1205,8 +1204,7 @@ scrollup(struct cterminal *cterm)
 	}
 	MOVETEXT(minx, miny + 1, maxx, maxy, minx, miny);
 	CURR_XY(&x, &y);
-	cterm_gotoxy(cterm, TERM_MINX, TERM_MAXY);
-	cterm_clrblk(cterm, x, y, x + TERM_MAXX - 1, y);
+	cterm_clrblk(cterm, minx, maxy, minx + TERM_MAXX - 1, maxy);
 	GOTOXY(x, y);
 }
 
@@ -4393,7 +4391,7 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
-	char	*revision="$Revision: 1.313 $";
+	char	*revision="$Revision: 1.314 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;
