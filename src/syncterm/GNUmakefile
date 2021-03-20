@@ -97,6 +97,10 @@ ifndef bcc
  endif
 endif
 
+ifeq ($(os),win32)
+ EXTRA_LIBS += -luuid
+endif
+
 $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE):
 	cd ${MTOBJODIR} && $(AR) -x ../${CIOLIB-MT} ciolib_res$(OFILE)
 
