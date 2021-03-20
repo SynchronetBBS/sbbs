@@ -889,6 +889,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 				if(lines != NULL) {
 					format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
 					strListFree(&lines);
+					free(extdesc);
 					extdesc = strdup(extbuf);
 					if(file.desc == NULL)
 						smb_new_hfield_str(&file, SMB_FILEDESC, prep_file_desc(extbuf, extbuf));
