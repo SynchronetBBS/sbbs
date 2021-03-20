@@ -681,10 +681,12 @@ long create_archive(const char* archive, const char* format
 		else while(!feof(fp)) {
 			char buf[256 * 1024];
 			size_t len = fread(buf, 1, sizeof(buf), fp);
-			if((result = archive_write_data(ar, buf, len)) != ARCHIVE_OK) {
-				safe_snprintf(error, maxerrlen, "archive_write_data returned %d", result);
+			if((result = archive_write_data(ar, buf, len)) != len) {
+				safe_snprintf(error, maxerrlen, "archive_write_data returned %d instead of %d", result, (int)len);
+				result = -1;
 				break;
 			}
+			result = ARCHIVE_OK;
 		}
 		fclose(fp);
 		archive_entry_free(entry);
