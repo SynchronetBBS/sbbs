@@ -1138,6 +1138,27 @@ cterm_clreol(struct cterminal *cterm)
 	free(buf);
 }
 
+void
+cterm_clrblk(struct cterminal *cterm, int sx, int sy, int ex, int ey)
+{
+	int i;
+	struct vmem_cell *buf;
+	int chars = (ex - sx + 1) * (ey - sy + 1);
+
+	buf = malloc(chars * sizeof(*buf));
+	if (!buf)
+		return;
+	for (i = 0; i < chars ; i++) {
+		buf[i].ch = ' ';
+		buf[i].legacy_attr = cterm->attr;
+		buf[i].fg = cterm->fg_color;
+		buf[i].bg = cterm->bg_color;
+		buf[i].font = ciolib_attrfont(cterm->attr);
+	}
+	vmem_puttext(sx, sy, ex, ey, buf);
+	free(buf);
+}
+
 static void
 scrolldown(struct cterminal *cterm)
 {
@@ -1152,7 +1173,7 @@ scrolldown(struct cterminal *cterm)
 	MOVETEXT(minx, miny, maxx, maxy - 1, minx, miny + 1);
 	CURR_XY(&x, &y);
 	cterm_gotoxy(cterm, TERM_MINX, TERM_MINY);
-	cterm_clreol(cterm);
+	cterm_clrblk(cterm, x, y, x + TERM_MAXX - 1, y);
 	GOTOXY(x, y);
 }
 
@@ -1185,7 +1206,7 @@ scrollup(struct cterminal *cterm)
 	MOVETEXT(minx, miny + 1, maxx, maxy, minx, miny);
 	CURR_XY(&x, &y);
 	cterm_gotoxy(cterm, TERM_MINX, TERM_MAXY);
-	cterm_clreol(cterm);
+	cterm_clrblk(cterm, x, y, x + TERM_MAXX - 1, y);
 	GOTOXY(x, y);
 }
 
