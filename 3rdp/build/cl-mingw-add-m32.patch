@@ -1,0 +1,17 @@
+--- makefile.orig	2021-03-20 14:58:39.488459000 -0400
++++ makefile	2021-03-20 14:58:52.381979000 -0400
+@@ -1963,12 +1963,12 @@
+ 
+ MINGW32_NT-5.1:
+ 	$(MAKE) OSNAME=win32 target-init
+-	$(MAKE) $(DEFINES) CFLAGS="$(XCFLAGS) -O2"
++	$(MAKE) $(DEFINES) CFLAGS="$(XCFLAGS) -O2 -m32"
+ 
+ MINGW32_NT-6.1:
+ 	$(MAKE) OSNAME=win32 target-init
+ 	$(MAKE) OSNAME=win32 $(DEFINES) EXTRAOBJS="$(WIN32ASMOBJS)" \
+-		CFLAGS="$(XCFLAGS) -O2 -Wl,--subsystem,windows,--output-def,cl32.def -DSTATIC_LIB"
++		CFLAGS="$(XCFLAGS) -O2 -m32 -Wl,--subsystem,windows,--output-def,cl32.def -DSTATIC_LIB"
+ 
+ # NCR MP-RAS: Use the NCR cc.  The "-DNCR_UST" is needed to enable threading
+ #			  (User-Space Threads).

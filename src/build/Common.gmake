@@ -200,10 +200,12 @@ else
 endif
 BUILDPATH	?=	$(BUILD)
 
-gcc_machine		:= $(shell ${CC} -dumpmachine)
+gcc_machine		:= $(findstring mingw32,$(shell ${CC} -dumpmachine))
 ifeq ($(gcc_machine),mingw32)
  os		:= Win32
- CFLAGS	+=	-DMSVCRT_VERSION=0x0800
+ CFLAGS	+=	-DMSVCRT_VERSION=0x0800 -m32
+ LDFLAGS+=	-m32
+ WINDRESFLAGS+=	-Fpe-i386
 endif
 
 # Get OS
