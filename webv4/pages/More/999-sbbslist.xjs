@@ -1,123 +1,152 @@
 <!--HIDDEN:Synchronet BBS List-->
 
+<?xjs
+	// To do:
+	// sortation does nothing?
+	// fetch slicese of BBS list instead of entire thing? (speed up apparent page load)
+	// 	or at least fetch BBS list async
+	// default preview graphic if no preview available
+	// 	use 'synch' if software is sbbs
+	require('portdefs.js', 'standard_service_port');
+	var lib = load({}, 'sbbslist_lib.js');
+	var list = lib.read_list();
+	if (list === null) list = [];
+	// list = list.filter(function (e) {
+	// 	return e.entry && e.entry.autoverify && e.entry.autoverify.success
+	// });
+	// list.sort(lib.verify_compare);
+?>
+
+<script type="text/javascript" src="./js/graphics.js"></script>
+<script type="text/javascript" src="./js/lz-string.min.js"></script>
+
 <style>
-	.zoomedIn {
-		font-size : 10pt;
-		cursor : zoom-out;
-		line-height : 99%;
-		letter-spacing : -1px;
+	div.preview {
+		margin-right: 1em;
 	}
-	.zoomedOut {
-		font-size : 2pt;
-		cursor : zoom-in;
+	div.bbslist-label {
+		margin-right: 1em;
 	}
-	pre.ansi {
-		background-color : black;
+	td.bbslist-label {
+		vertical-align: top;
+	}
+	div.bbslist-container {
+		margin-top: 1em;
+	}
+	div.large {
+		cursor: zoom-out;
+	}
+	div.small {
+		cursor: zoom-in;
+	}
+	img.preview {
+		max-width: 100%;
+		height: auto;
 	}
 </style>
 
-<script type="text/javascript">
+<template id="bbs-list-entry">
+	<li class="list-group-item striped">
+		<div class="row">
+			<div class="col-sm-12 col-md-2" data-column-preview>
+				<div class="preview small" data-preview></div>
+			</div>
+			<div class="col-sm-12 col-md-10" data-column-details>
+				<h4 data-bbs-name></h4> <!-- to do: might be a link, might not be -->
+				<div data-description></div>
+				<p>
+				<table class="table table-condensed table-responsive table-hover">
+					<tbody data-bbs-details></tbody>
+				</table>
+			</div>
+		</div>
+	</li>
+</template>
 
-	function zoom(elem) {
-		if ($(elem).hasClass('zoomedIn')) {
-			$(elem).removeClass('zoomedIn');
-			$(elem).addClass('zoomedOut');
-		} else {
-			$(elem).removeClass('zoomedOut');
-			$(elem).addClass('zoomedIn');
-		}
-	}
+<template id="bbs-detail-row">
+	<tr>
+		<td class="col-md-2 bbslist-label">
+			<div class="bbslist-label" data-label></div>
+		</td>
+		<td class="col-md-10" data-value></td>
+	</tr>
+</template>
 
-</script>
-
-<div class="well well-sm"><h3>Synchronet BBS List</h3></div>
-
-<div class="list-group" style="margin-top:1em;">
-<?xjs
-
-	load('graphic.js');
-	require('portdefs.js', 'standard_service_port');
-	var lib = load({}, "sbbslist_lib.js");
-
-	function bbs_preview(bbs) {
-	    var graphic=new Graphic();
-	    graphic.BIN = lib.decode_preview(bbs.preview);
-		writeln(
-			'<div class="pull-left" ' +
-			'style="margin-right:5px;" ' +
-			'title="Click to Zoom in">'
-		);
-	    write(
-	    	'<pre class="ansi zoomedOut" onclick="zoom(this)">'
-	    );
-		var html = graphic.HTML;
-		html = html.replace(/background-color: black;/g, '');
-		html = html.replace(/\"color: #a8a8a8;/g, '"');
-		html = html.replace(/\ style=\" \"/g, '');
-		html = html.replace(/<span>([^<]*)<\/span>/g,'$1');
-		write(html);
-	    writeln('</pre>');
-	    writeln('</div>');
-	}
-
-	var list = lib.read_list();
-	if (list === null) list = [];
-	lib.sort(list, "verify");
-
-	list.forEach(
-		function (e) {
-			var items = {
-				Location : (typeof e.location === 'string' ? e.location : ''),
-				Sysops : e.sysop.map(function (ee) { return ee.name; }).join(', '),
-				Services : e.service.map(
-					function (ee) {
-                        if (!ee.protocol)
-                            return '';
-						var r = ee.protocol + ': ' + ee.address;
-						if (typeof ee.port === 'number'
-                            && ee.port != standard_service_port[ee.protocol])
-                            r += ':' + ee.port;
-                        if (ee.description !== undefined && ee.description.length > 0)
-                            r += ' (' + ee.description + ')';
-						return r;
-					}
-				).join ('<br>'),
-				Networks : e.network.map(
-					function (ee) {
-						var r = ee.name;
-						if (typeof ee.address === 'string' && ee.address !== '') {
-							r += ' (' + ee.address + ')';
-						}
-						return r;
-					}
-				).join('<br>'),
-				Software : (typeof e.software !== 'string' ? '' : e.software)
-
-			};
-			writeln('<li class="list-group-item striped">');
-			writeln('<p class="h4">');
-			if (typeof e.web_site === 'string' && e.web_site !== '') {
-				writeln('<a href="http://' + e.web_site + '">' + e.name + '</a>');
-			} else {
-				writeln(e.name);
-			}
-			writeln('</p>');
-			if (e.preview) bbs_preview(e);
-			writeln('<div>' + e.description.join(' ') + '</div><p>');
-			writeln('<table class="table table-condensed table-responsive">');
-			Object.keys(items).forEach(
-				function (ee) {
-					if (items[ee].length < 1) return;
-					writeln(
-						'<tr><td>' + ee + '</td><td>' + items[ee] + '</td></tr>'
-					);
-				}
-			);
-			writeln('</table>');
-			writeln('</li>');
-
-		}
-	);
-
-?>
+<div class="well well-sm">
+	<h3>
+		Synchronet BBS List
+	</h3>
 </div>
+
+<div class="list-group bbslist-container" data-list-container></div>
+
+<script type="text/javascript">
+	async function listBBS(e) {
+		const elem = document.querySelector('#bbs-list-entry').content.cloneNode(true);
+		elem.querySelector('h4').innerHTML += e.name;
+		const rows = {};
+		if (e.location) rows.Location = e.location;
+		if (e.sysop) rows.Sysop = e.sysop.map(s => s.name).join(', ');
+		if (e.service) {
+			rows.Services = e.service.map(s => {
+				if (!s.protocol) return '';
+				let r = `${s.protocol}: ${s.address}`;
+				if (s.port) r += `:${s.port}`;
+				if (s.description) r += ` (${s.description})`;
+				return r;
+			}).join('<br>');
+		}
+		if (e.network) {
+			rows.Networks = e.network.map(n => {
+				let r = n.name;
+				if (n.address != '') r += ` (${n.address})`;
+				return r;
+			}).join('<br>');
+		}
+		if (e.software) rows.Software = e.software;
+		Object.entries(rows).forEach(([k, v]) => {
+			const row = document.querySelector('#bbs-detail-row').content.cloneNode(true);
+			row.querySelector('div[data-label]').innerText = k;
+			row.querySelector('td[data-value]').innerHTML = v;
+			elem.querySelector('tbody[data-bbs-details]').appendChild(row);
+		});
+		elem.querySelector('div[data-description]').innerHTML += (e.description || '');
+		if (e.preview !== undefined) {
+			let bin;
+			if (e.preview[0] === '!LZ') {
+				bin = LZString.decompressFromBase64(e.preview.slice(1).join("")).split('').map(e => e.charCodeAt(0));
+			} else {
+				bin = atob(e.preview.join("")).split('');
+			}
+			const pd = elem.querySelector('div[data-preview]');
+			const cp = elem.querySelector('div[data-column-preview]');
+			const cd = elem.querySelector('div[data-column-details]');
+			const img = await Graphics.binToPNG(bin, 80);
+			img.classList.add('preview');
+			img.onclick = () => {
+				if (pd.classList.contains('large')) {
+					pd.classList.remove('large');
+					pd.classList.add('small');
+					cp.classList.remove('col-md-6');
+					cp.classList.add('col-md-2');
+					cd.classList.remove('col-md-6');
+					cd.classList.add('col-md-10');
+				} else {
+					pd.classList.remove('small');
+					pd.classList.add('large');
+					cp.classList.remove('col-md-2');
+					cp.classList.add('col-md-6');
+					cd.classList.remove('col-md-10');
+					cd.classList.add('col-md-6');
+				}
+			}
+			pd.appendChild(img);
+		}
+		document.querySelector('div[data-list-container]').appendChild(elem);
+	}
+	window.addEventListener('DOMContentLoaded', () => {
+		<? list.forEach(function (e) { ?>
+			listBBS(<? write(JSON.stringify(e)); ?>);
+		<? }); ?>
+	});
+</script>
