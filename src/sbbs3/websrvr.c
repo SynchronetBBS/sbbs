@@ -103,7 +103,7 @@ static scfg_t	scfg;
 static volatile BOOL	http_logging_thread_running=FALSE;
 static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
-static volatile ulong	sockets=0;
+static volatile ulong	client_highwater=0;
 static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminated=FALSE;
 static volatile BOOL	terminate_http_logging_thread=FALSE;
@@ -958,15 +958,12 @@ static void open_socket(SOCKET sock, void *cbdata)
 	strcpy(afa.af_name, "httpready");
 	setsockopt(sock, SOL_SOCKET, SO_ACCEPTFILTER, &afa, sizeof(afa));
 #endif
-
-	sockets++;
 }
 
 static void close_socket_cb(SOCKET sock, void *cbdata)
 {
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
-	sockets--;
 }
 
 static int close_socket(SOCKET *sock)
@@ -994,7 +991,6 @@ static int close_socket(SOCKET *sock)
 	if(startup!=NULL && startup->socket_open!=NULL) {
 		startup->socket_open(startup->cbdata,FALSE);
 	}
-	sockets--;
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
 			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, ERROR_VALUE);
@@ -6769,7 +6765,8 @@ static void cleanup(int code)
 	thread_down();
 	status("Down");
 	if(terminate_server || code)
-		lprintf(LOG_INFO,"#### Web Server thread terminated (%lu clients served)", served);
+		lprintf(LOG_INFO,"#### Web Server thread terminated (%lu clients served, %lu concurrently)"
+			,served, client_highwater);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -6922,6 +6919,7 @@ void DLLCALL web_server(void* arg)
 	char			*ssl_estr;
 	int				lvl;
 	int				i;
+	ulong			count;
 
 	startup=(web_startup_t*)arg;
 
@@ -7211,6 +7209,11 @@ void DLLCALL web_server(void* arg)
 				continue;
 			}
 
+			if((count = protected_uint32_value(active_clients)) > client_highwater) {
+				client_highwater = count;
+				lprintf(LOG_NOTICE, "%04d New active client highwater mark: %lu"
+					,client_socket, client_highwater);
+			}
 			if(startup->max_clients && protected_uint32_value(active_clients)>=startup->max_clients) {
 				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, startup->max_clients);
