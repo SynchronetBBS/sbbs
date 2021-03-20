@@ -80,36 +80,24 @@ function SBBSEchoCfg (fname)
 }
 SBBSEchoCfg.prototype.get_ticpw = function(node)
 {
-  if (!fidoaddr.is_valid(node)) throw 'get_ticpw: Invalid address ' + node;
-	var n = node;
-	while(n) {
-		if (this.ticpass[n] !== undefined)
-			return this.ticpass[n];
-		if (n === 'ALL')
-			break;
-		if (n.indexOf('@') !== -1)
-			n = n.replace(/@.*$/,'');
-		if (n.indexOf('ALL') !== -1)
-			n = n.replace(/[0-9]+[^0-9]ALL$/, 'ALL');
-		else
-			n = n.replace(/[0-9]+$/, 'ALL');
-	}
+	var addr = fidoaddr.parse(node);
+	if (!addr) throw new Error('get_ticpw: Invalid address ' + node);
+	if (this.ticpass[node] !== undefined)
+		return this.ticpass[node];
+	node = fidoaddr.to_str(addr);
+	if (this.ticpass[node] !== undefined)
+		return this.ticpass[node];
 	return undefined;
 };
 SBBSEchoCfg.prototype.get_pw = function(node)
 {
-  if (!fidoaddr.is_valid(node)) throw 'get_pw: Invalid address ' + node;
-	var n = node;
-	while(n) {
-		if (this.pktpass[n] !== undefined)
-			return this.pktpass[n];
-		if (n === 'ALL')
-			break;
-		if (n.indexOf('ALL') !== -1)
-			n = n.replace(/[0-9]+[^0-9]ALL$/, 'ALL');
-		else
-			n = n.replace(/[0-9]+$/, 'ALL');
-	}
+	var addr = fidoaddr.parse(node);
+	if (!addr) throw new Error('get_pw: Invalid address ' + node);
+	if (this.pktpass[node] !== undefined)
+		return this.pktpass[node];
+	node = fidoaddr.to_str(addr);
+	if (this.pktpass[node] !== undefined)
+		return this.pktpass[node];
 	return undefined;
 };
 
