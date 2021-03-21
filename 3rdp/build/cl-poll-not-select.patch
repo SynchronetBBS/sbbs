@@ -78,7 +78,7 @@ diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
 +#ifdef __WINDOWS__
  	if( FD_ISSET( netStream->netSocket, &exceptfds ) )
 +#else
-+	if (fds.revents | (POLLERR | POLLNVAL))
++	if (fds.revents & (POLLERR | POLLNVAL))
 +#endif
  		{
  		int socketErrorCode;
@@ -105,4 +105,3 @@ diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
  	return( CRYPT_OK );
  	}
  
-Only in ./tools: endian
