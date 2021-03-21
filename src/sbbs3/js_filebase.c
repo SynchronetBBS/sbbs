@@ -123,8 +123,10 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return JS_TRUE;
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		JS_ReportError(cx, "FileBase is not open");
+		return JS_FALSE;
+	}
 
 	uintN argn = 0;
 	if(argn < argc)	{
@@ -514,8 +516,10 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return JS_TRUE;
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		JS_ReportError(cx, "FileBase is not open");
+		return JS_FALSE;
+	}
 
 	smbfile_t file;
 	ZERO_VAR(file);
@@ -582,8 +586,10 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return JS_TRUE;
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		JS_ReportError(cx, "FileBase is not open");
+		return JS_FALSE;
+	}
 
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
@@ -658,8 +664,10 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return JS_TRUE;
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		JS_ReportError(cx, "FileBase is not open");
+		return JS_FALSE;
+	}
 
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
@@ -881,8 +889,10 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return JS_TRUE;
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		JS_ReportError(cx, "FileBase is not open");
+		return JS_FALSE;
+	}
 
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
@@ -954,8 +964,10 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return JS_TRUE;
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		JS_ReportError(cx, "FileBase is not open");
+		return JS_FALSE;
+	}
 
 	uintN argn = 0;
 	if(argn < argc) {
@@ -1017,8 +1029,10 @@ js_renew_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return JS_TRUE;
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		JS_ReportError(cx, "FileBase is not open");
+		return JS_FALSE;
+	}
 
 	uintN argn = 0;
 	if(argn < argc) {
@@ -1064,8 +1078,10 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return JS_TRUE;
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		JS_ReportError(cx, "FileBase is not open");
+		return JS_FALSE;
+	}
 
 	uintN argn = 0;
 	if(argn < argc)	{
