@@ -506,7 +506,7 @@ int conn_socket_connect(struct bbslist *bbs)
 				case EWOULDBLOCK:
 #endif
 					for(;sock!=INVALID_SOCKET;) {
-						if (socket_readable(sock, 1000)) {
+						if (socket_writable(sock, 1000)) {
 							if (socket_recvdone(sock, 0)) {
 								closesocket(sock);
 								sock=INVALID_SOCKET;
