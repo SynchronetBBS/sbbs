@@ -794,7 +794,7 @@ void maint(void)
 	uint32_t total_msgs = 0;
 	for(m=f=0;m<l;m++) {
 		idx = (idxrec_t*)(idxbuf + (m * idxreclen));
-		enum smb_msg_type type = smb_msg_type(idx[m].attr);
+		enum smb_msg_type type = smb_msg_type(idx->attr);
 		if(type == SMB_MSG_TYPE_NORMAL || type == SMB_MSG_TYPE_POLL)
 			total_msgs++;
 //		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
