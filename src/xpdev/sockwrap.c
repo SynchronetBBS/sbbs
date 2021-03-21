@@ -272,6 +272,7 @@ off_t recvfilesocket(int sock, int file, off_t *offset, off_t count)
 /* Return true if connected, optionally sets *rd_p to true if read data available */
 BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 {
+#ifdef _WIN32
 	char	ch;
 	int		i,rd;
 	fd_set	rd_set;
@@ -327,6 +328,42 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	}
 
 	return(FALSE);
+#else
+	struct pollfd pfd = {0};
+	int j;
+
+	if(rd_p!=NULL)
+		*rd_p=FALSE;
+
+	if(wr_p!=NULL)
+		*wr_p=FALSE;
+
+	if(sock==INVALID_SOCKET)
+		return(FALSE);
+
+	pfd.fd = sock;
+	pfd.events = POLLIN;
+	if (wr_p != NULL)
+		pfd.events |= POLLOUT;
+
+	j = poll(&pfd, 1, timeout);
+
+	if (j == 0)
+		return TRUE;
+
+	if (j == 1) {
+		if (wr_p != NULL && (pfd.revents & POLLOUT))
+			*wr_p = TRUE;
+		if (rd_p != NULL && (pfd.revents & POLLIN)) {
+			*rd_p = TRUE;
+			return TRUE;
+		}
+
+		if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+			return FALSE;
+	}
+	return FALSE;
+#endif
 }
 
 /*
@@ -494,32 +531,19 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigned timeout)
 {
 	int result;
+	socklen_t optlen;
 
 	result=connect(sock, addr, size);
 
 	if(result==SOCKET_ERROR) {
 		result=ERROR_VALUE;
 		if(result==EWOULDBLOCK || result==EINPROGRESS) {
-			fd_set		wsocket_set;
-			fd_set		esocket_set;
-			struct		timeval tv;
-			socklen_t	optlen=sizeof(result);
-			tv.tv_sec = timeout;
-			tv.tv_usec = 0;
-			FD_ZERO(&wsocket_set);
-			FD_SET(sock,&wsocket_set);
-			FD_ZERO(&esocket_set);
-			FD_SET(sock,&esocket_set);
-			switch(select(sock+1,NULL,&wsocket_set,&esocket_set,&tv)) {
-				case 1:
-					if(getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen)==SOCKET_ERROR)
-						result=ERROR_VALUE;
-					break;
-				case 0:
-					break;
-				case SOCKET_ERROR:
+			if (socket_writable(sock, timeout * 1000)) {
+				result = 0;
+			}
+			else {
+				if(getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen)==SOCKET_ERROR)
 					result=ERROR_VALUE;
-					break;
 			}
 		}
 	}
