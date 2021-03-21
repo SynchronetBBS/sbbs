@@ -441,9 +441,6 @@ int conn_socket_connect(struct bbslist *bbs)
 {
 	SOCKET			sock=INVALID_SOCKET;
 	int				nonblock;
-	struct timeval	tv;
-	fd_set			wfd;
-	fd_set			efd;
 	int				failcode=FAILURE_WHAT_FAILURE;
 	struct addrinfo	hints;
 	struct addrinfo	*res=NULL;
@@ -509,40 +506,15 @@ int conn_socket_connect(struct bbslist *bbs)
 				case EWOULDBLOCK:
 #endif
 					for(;sock!=INVALID_SOCKET;) {
-						tv.tv_sec=1;
-						tv.tv_usec=0;
-
-						FD_ZERO(&wfd);
-						FD_SET(sock, &wfd);
-						FD_ZERO(&efd);
-						FD_SET(sock, &efd);
-						switch(select(sock+1, NULL, &wfd, &efd, &tv)) {
-							case 0:
-								if(kbhit()) {
-									failcode=FAILURE_ABORTED;
-									closesocket(sock);
-									sock=INVALID_SOCKET;
-								}
-								break;
-							case -1:
+						if (socket_readable(sock, 1000)) {
+							if (socket_recvdone(sock, 0)) {
 								closesocket(sock);
 								sock=INVALID_SOCKET;
 								continue;
-							case 1:
-								if(FD_ISSET(sock, &efd)) {
-									closesocket(sock);
-									sock=INVALID_SOCKET;
-									continue;
-								}
-								else {
-									if(socket_check(sock, NULL, NULL, 0))
-										goto connected;
-									closesocket(sock);
-									sock=INVALID_SOCKET;
-									continue;
-								}
-							default:
-								break;
+							}
+							else {
+								goto connected;
+							}
 						}
 					}
 
@@ -560,7 +532,7 @@ connected:
 		res=NULL;
 		nonblock=0;
 		ioctlsocket(sock, FIONBIO, &nonblock);
-		if(socket_check(sock, NULL, NULL, 0)) {
+		if (!socket_recvdone(sock, 0)) {
 			int keepalives = TRUE;
 			setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepalives, sizeof(keepalives));
 
