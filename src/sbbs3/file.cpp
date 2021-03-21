@@ -54,6 +54,8 @@ void sbbs_t::showfileinfo(smbfile_t* f)
 		}
 		if(f->file_idx.hash.flags & SMB_HASH_MD5)
 			bprintf(P_TRUNCATE, text[FiChecksum], "MD5", MD5_hex(tmp, f->file_idx.hash.data.md5));
+		if(f->file_idx.hash.flags & SMB_HASH_SHA1)
+			bprintf(P_TRUNCATE, text[FiChecksum], "SHA-1", SHA1_hex(tmp, f->file_idx.hash.data.sha1));
 	}
 	if(f->desc && f->desc[0])
 		bprintf(P_TRUNCATE, text[FiDescription],f->desc);

@@ -2300,6 +2300,8 @@ enum {
 	,FILE_PROP_CRC32
 	,FILE_PROP_MD5_HEX
 	,FILE_PROP_MD5_B64
+	,FILE_PROP_SHA1_HEX
+	,FILE_PROP_SHA1_B64
 	/* ini style */
 	,FILE_INI_KEY_LEN
 	,FILE_INI_KEY_PREFIX
@@ -2447,8 +2449,9 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	ushort		c16=0;
 	uint32		c32=~0;
 	MD5			md5_ctx;
+	SHA1_CTX	sha1_ctx;
 	BYTE		block[4096];
-	BYTE		digest[MD5_DIGEST_SIZE];
+	BYTE		digest[SHA1_DIGEST_SIZE];
     jsint       tiny;
 	JSString*	js_str=NULL;
 	private_t*	p;
@@ -2567,6 +2570,8 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			/* fall-through */
 		case FILE_PROP_MD5_HEX:
 		case FILE_PROP_MD5_B64:
+		case FILE_PROP_SHA1_HEX:
+		case FILE_PROP_SHA1_B64:
 			*vp = JSVAL_VOID;
 			if(p->fp==NULL)
 				break;
@@ -2579,6 +2584,10 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				case FILE_PROP_MD5_HEX:
 				case FILE_PROP_MD5_B64:
 					MD5_open(&md5_ctx);
+					break;
+				case FILE_PROP_SHA1_HEX:
+				case FILE_PROP_SHA1_B64:
+					SHA1Init(&sha1_ctx);
 					break;
 			}
 
@@ -2603,6 +2612,10 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					case FILE_PROP_MD5_B64:
 						MD5_digest(&md5_ctx,block,rd);
 						break;
+					case FILE_PROP_SHA1_HEX:
+					case FILE_PROP_SHA1_B64:
+						SHA1Update(&sha1_ctx,block,rd);
+						break;
 					}
 			}
 			JS_RESUMEREQUEST(cx, rc);
@@ -2623,6 +2636,15 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					MD5_close(&md5_ctx,digest);
 					if(tiny==FILE_PROP_MD5_HEX)
 						MD5_hex(str,digest);
+					else
+						b64_encode(str,sizeof(str)-1,(char *)digest,sizeof(digest));
+					js_str=JS_NewStringCopyZ(cx, str);
+					break;
+				case FILE_PROP_SHA1_HEX:
+				case FILE_PROP_SHA1_B64:
+					SHA1Final(&sha1_ctx,digest);
+					if(tiny==FILE_PROP_SHA1_HEX)
+						SHA1_hex(str,digest);
 					else
 						b64_encode(str,sizeof(str)-1,(char *)digest,sizeof(digest));
 					js_str=JS_NewStringCopyZ(cx, str);
@@ -2702,6 +2724,8 @@ static jsSyncPropertySpec js_file_properties[] = {
 	{	"chksum"			,FILE_PROP_CHKSUM		,FILE_PROP_FLAGS,	311},
 	{	"md5_hex"			,FILE_PROP_MD5_HEX		,FILE_PROP_FLAGS,	311},
 	{	"md5_base64"		,FILE_PROP_MD5_B64		,FILE_PROP_FLAGS,	311},
+	{	"sha1_hex"			,FILE_PROP_SHA1_HEX		,FILE_PROP_FLAGS,	31900},
+	{	"sha1_base64"		,FILE_PROP_SHA1_B64		,FILE_PROP_FLAGS,	31900},
 	/* ini style elements */
 	{	"ini_key_len"				,FILE_INI_KEY_LEN				,JSPROP_ENUMERATE,	317},
 	{	"ini_key_prefix"			,FILE_INI_KEY_PREFIX			,JSPROP_ENUMERATE,	317},

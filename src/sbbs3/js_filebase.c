@@ -245,6 +245,12 @@ set_file_properties(JSContext *cx, JSObject* obj, smbfile_t* f, enum file_detail
 			|| !JS_DefineProperty(cx, obj, "md5", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 			return false;
 	}
+	if(f->file_idx.hash.flags & SMB_HASH_SHA1) {
+		char hex[128];
+		if((js_str = JS_NewStringCopyZ(cx, SHA1_hex(hex, f->file_idx.hash.data.sha1))) == NULL
+			|| !JS_DefineProperty(cx, obj, "sha1", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
+			return false;
+	}
 	if(f->tags != NULL
 		&& ((js_str = JS_NewStringCopyZ(cx, f->tags)) == NULL
 			|| !JS_DefineProperty(cx, obj, "tags", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
@@ -300,6 +306,20 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 			idx->hash.data.md5[i/2] += HEX_CHAR_TO_INT(*(cp + i + 1));
 		}
 		idx->hash.flags |= SMB_HASH_MD5;
+	}
+	if(JS_GetProperty(cx, obj, prop_name = "sha1", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp==NULL || strlen(cp) != SHA1_DIGEST_SIZE * 2) {
+			free(cp);
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return FALSE;
+		}
+		for(int i = 0; i < SHA1_DIGEST_SIZE * 2; i += 2) {
+			idx->hash.data.sha1[i/2] = HEX_CHAR_TO_INT(*(cp + i)) * 16;
+			idx->hash.data.sha1[i/2] += HEX_CHAR_TO_INT(*(cp + i + 1));
+		}
+		idx->hash.flags |= SMB_HASH_SHA1;
 	}
 	free(cp);
 	return TRUE;

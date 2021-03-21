@@ -504,6 +504,8 @@ int main(int argc, char **argv)
 							printf("%-10s: %08"PRIx32"\n","CRC-32",	hashes[h]->data.crc32);
 						if(hashes[h]->flags&SMB_HASH_MD5)
 							printf("%-10s: %s\n",	"MD5",		MD5_hex(str,hashes[h]->data.md5));
+						if(hashes[h]->flags&SMB_HASH_SHA1)
+							printf("%-10s: %s\n",	"SHA1",		SHA1_hex(str,hashes[h]->data.md5));
 
 #endif
 					}
