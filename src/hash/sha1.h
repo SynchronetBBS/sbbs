@@ -9,16 +9,18 @@
 
 #include "stdint.h"
 
+#define SHA1_DIGEST_SIZE 20
+
 typedef struct
 {
     uint32_t state[5];
     uint32_t count[2];
-    unsigned char buffer[64];
+    uint8_t buffer[64];
 } SHA1_CTX;
 
 void SHA1Transform(
     uint32_t state[5],
-    const unsigned char buffer[64]
+    const uint8_t buffer[64]
     );
 
 void SHA1Init(
@@ -27,17 +29,17 @@ void SHA1Init(
 
 void SHA1Update(
     SHA1_CTX * context,
-    const unsigned char *data,
+    const void * data,
     uint32_t len
     );
 
 void SHA1Final(
-    unsigned char digest[20],
+    uint8_t digest[SHA1_DIGEST_SIZE],
     SHA1_CTX * context
     );
 
 void SHA1_calc(
-    unsigned char *hash_out,
+    uint8_t *hash_out,
     const void *str,
     int len);
 
