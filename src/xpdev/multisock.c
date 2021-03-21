@@ -255,22 +255,13 @@ static void btox(char *hexstr, const char *srcbuf, size_t srcbuflen, size_t hexs
 
 static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(int level, const char *fmt, ...))
 {
-	fd_set         socket_set;
-	struct timeval tv;
 	size_t            i;
-	int            j,rd;
+	int            rd;
 	unsigned char           ch;
 	char           err[128];
 
 	for (i=0;i<len;i++) {
-		FD_ZERO(&socket_set);
-		FD_SET(sock,&socket_set);
-
-		// We'll wait 1 secs to read from the socket.
-		tv.tv_sec=1;
-		tv.tv_usec=0;
-
-		if((j=select(sock+1,&socket_set,NULL,NULL,&tv))>0) {
+		if (socket_readable(sock, 1000)) {
 			rd = recv(sock,&ch,1,0);
 			if (rd == 0) {
 				lprintf(LOG_WARNING,"%04d multisock read_socket() - remote closed the connection",sock);
@@ -284,13 +275,10 @@ static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(in
 				return FALSE;
 			}
 
-		} else if (j==0) {
+		} else {
 			lprintf(LOG_WARNING,"%04d multisock read_socket() - No data?",sock);
 			return FALSE;
 
-		} else {
-			lprintf(LOG_WARNING,"%04d multisock read_socket() - select() returned [%d] with error [%s].",sock,j,socket_strerror(socket_errno,err,sizeof(err)));
-			return FALSE;
 		}
 	}
 
@@ -324,11 +312,17 @@ static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lpr
 SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, uint32_t flags, void **cb_data)
 {
+#ifdef _WIN32	// Use select()
 	fd_set         read_fs;
-	size_t         i;
 	struct timeval tv;
 	struct timeval *tvp;
 	SOCKET         max_sock=0;
+#else	// Use poll()
+	struct pollfd *fds;
+	int poll_timeout;
+	nfds_t scnt = 0;
+#endif
+	size_t         i;
 	SOCKET         ret;
 	char           hapstr[128];
 	char           haphex[256];
@@ -336,6 +330,10 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	long           l;
 	void           *vp;
 
+	if (xpms_set->sock_count < 1)
+		return INVALID_SOCKET;
+
+#ifdef _WIN32
 	FD_ZERO(&read_fs);
 	for(i=0; i<xpms_set->sock_count; i++) {
 		if(xpms_set->socks[i].sock == INVALID_SOCKET)
@@ -362,6 +360,41 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 				if(xpms_set->socks[i].sock == INVALID_SOCKET)
 					continue;
 				if(FD_ISSET(xpms_set->socks[i].sock, &read_fs)) {
+#else
+	fds = calloc(xpms_set->sock_count, sizeof(*fds));
+	for (i = 0; i < xpms_set->sock_count; i++) {
+		if (xpms_set->socks[i].sock == INVALID_SOCKET)
+			continue;
+		fds[scnt].fd = xpms_set->socks[i].sock;
+		fds[scnt].events = POLLIN;
+		scnt++;
+	}
+
+	if (timeout == XPMS_FOREVER)
+		poll_timeout = -1;
+	else if (timeout > INT_MAX)
+		poll_timeout = INT_MAX;
+	else
+		poll_timeout = timeout;
+
+	switch (poll(fds, scnt, timeout)) {
+		case 0:
+			return INVALID_SOCKET;
+		case -1:
+			return SOCKET_ERROR;
+		default:
+			scnt = 0;
+			for(i=0; i<xpms_set->sock_count; i++) {
+				if(xpms_set->socks[i].sock == INVALID_SOCKET)
+					continue;
+				if ((fds[scnt].revents & POLLIN) == 0) {
+					closesocket(xpms_set->socks[i].sock);
+					xpms_set->lprintf(LOG_ERR, "%04d * Listening socket went bad", xpms_set->socks[i].sock);
+					xpms_set->socks[i].sock = INVALID_SOCKET;
+					continue;
+				}
+				else {
+#endif
 					if(cb_data)
 						*cb_data=xpms_set->socks[i].cb_data;
 					ret =  accept(xpms_set->socks[i].sock, &addr->addr, addrlen);
