@@ -1,20 +1,9 @@
 <!--HIDDEN:Synchronet BBS List-->
 
 <?xjs
-	// To do:
-	// sortation does nothing?
-	// fetch slicese of BBS list instead of entire thing? (speed up apparent page load)
-	// 	or at least fetch BBS list async
-	// default preview graphic if no preview available
-	// 	use 'synch' if software is sbbs
-	require('portdefs.js', 'standard_service_port');
 	var lib = load({}, 'sbbslist_lib.js');
 	var list = lib.read_list();
 	if (list === null) list = [];
-	// list = list.filter(function (e) {
-	// 	return e.entry && e.entry.autoverify && e.entry.autoverify.success
-	// });
-	// list.sort(lib.verify_compare);
 ?>
 
 <script type="text/javascript" src="./js/graphics.js"></script>
@@ -81,8 +70,11 @@
 <div class="list-group bbslist-container" data-list-container></div>
 
 <script type="text/javascript">
-	async function listBBS(e) {
-		const elem = document.querySelector('#bbs-list-entry').content.cloneNode(true);
+	const et = document.querySelector('#bbs-list-entry')
+	const tr = document.querySelector('#bbs-detail-row');
+	async function listBBS(e, i) {
+		let elem = et.content.cloneNode(true);
+		elem.querySelector('li').setAttribute('data-bbs-record', i)
 		elem.querySelector('h4').innerHTML += e.name;
 		const rows = {};
 		if (e.location) rows.Location = e.location;
@@ -99,18 +91,19 @@
 		if (e.network) {
 			rows.Networks = e.network.map(n => {
 				let r = n.name;
-				if (n.address != '') r += ` (${n.address})`;
+				if (n.address) r += ` (${n.address})`;
 				return r;
 			}).join('<br>');
 		}
 		if (e.software) rows.Software = e.software;
 		Object.entries(rows).forEach(([k, v]) => {
-			const row = document.querySelector('#bbs-detail-row').content.cloneNode(true);
+			const row = tr.content.cloneNode(true);
 			row.querySelector('div[data-label]').innerText = k;
 			row.querySelector('td[data-value]').innerHTML = v;
 			elem.querySelector('tbody[data-bbs-details]').appendChild(row);
 		});
 		elem.querySelector('div[data-description]').innerHTML += (e.description || '');
+		document.querySelector('div[data-list-container]').appendChild(elem);
 		if (e.preview !== undefined) {
 			let bin;
 			if (e.preview[0] === '!LZ') {
@@ -118,6 +111,7 @@
 			} else {
 				bin = atob(e.preview.join("")).split('');
 			}
+			elem = document.querySelector(`li[data-bbs-record="${i}"`);
 			const pd = elem.querySelector('div[data-preview]');
 			const cp = elem.querySelector('div[data-column-preview]');
 			const cd = elem.querySelector('div[data-column-details]');
@@ -142,11 +136,10 @@
 			}
 			pd.appendChild(img);
 		}
-		document.querySelector('div[data-list-container]').appendChild(elem);
 	}
 	window.addEventListener('DOMContentLoaded', () => {
-		<? list.forEach(function (e) { ?>
-			listBBS(<? write(JSON.stringify(e)); ?>);
+		<? list.forEach(function (e, i) { ?>
+			listBBS(<? write(JSON.stringify(e)); ?>, <? write(i); ?>);
 		<? }); ?>
 	});
 </script>
