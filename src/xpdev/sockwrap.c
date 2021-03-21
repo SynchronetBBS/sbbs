@@ -362,6 +362,12 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 		if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
 			return FALSE;
 	}
+
+	if (j == -1) {
+		if (errno == EINTR || errno == ENOMEM)
+			return TRUE;
+	}
+
 	return FALSE;
 #endif
 }
@@ -489,10 +495,15 @@ BOOL socket_recvdone(SOCKET sock, int timeout)
 	pfd.fd = sock;
 	pfd.events = POLLIN;
 
-	if (poll(&pfd, 1, timeout) == 1) {
-		if (pfd.revents & POLLIN)
-			return FALSE;
-		return TRUE;
+	switch (poll(&pfd, 1, timeout)) {
+		case 1:
+			if (pfd.revents & POLLIN)
+				return FALSE;
+			return TRUE;
+		case -1:
+			if (errno == EINTR || errno == ENOMEM)
+				return FALSE;
+			return TRUE;
 	}
 	return FALSE;
 #endif
