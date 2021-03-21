@@ -377,7 +377,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	else
 		poll_timeout = timeout;
 
-	switch (poll(fds, scnt, timeout)) {
+	switch (poll(fds, scnt, poll_timeout)) {
 		case 0:
 			return INVALID_SOCKET;
 		case -1:
