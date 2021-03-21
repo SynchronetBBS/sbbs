@@ -366,9 +366,10 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	if (j == -1) {
 		if (errno == EINTR || errno == ENOMEM)
 			return TRUE;
+		return FALSE;
 	}
 
-	return FALSE;
+	return TRUE;
 #endif
 }
 
