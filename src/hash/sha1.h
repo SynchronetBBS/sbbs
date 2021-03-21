@@ -7,7 +7,8 @@
    100% Public Domain
  */
 
-#include "stdint.h"
+#include <stddef.h>		/* size_t */
+#include <gen_defs.h>	/* uint32_t */
 
 #define SHA1_DIGEST_SIZE 20
 
