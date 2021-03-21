@@ -18,6 +18,10 @@ typedef struct
     uint8_t buffer[64];
 } SHA1_CTX;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void SHA1Transform(
     uint32_t state[5],
     const uint8_t buffer[64]
@@ -30,17 +34,23 @@ void SHA1Init(
 void SHA1Update(
     SHA1_CTX * context,
     const void * data,
-    uint32_t len
+    size_t len
     );
 
 void SHA1Final(
-    uint8_t digest[SHA1_DIGEST_SIZE],
-    SHA1_CTX * context
+    SHA1_CTX * context,
+    uint8_t digest[SHA1_DIGEST_SIZE]
     );
 
 void SHA1_calc(
     uint8_t *hash_out,
     const void *str,
-    int len);
+    size_t len);
+
+char* SHA1_hex(char* to, const uint8_t digest[SHA1_DIGEST_SIZE]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SHA1_H */

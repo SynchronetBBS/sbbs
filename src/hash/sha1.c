@@ -198,7 +198,7 @@ void SHA1Init(
 void SHA1Update(
     SHA1_CTX * context,
     const void * buf,
-    uint32_t len
+    size_t len
 )
 {
     uint32_t i;
@@ -229,8 +229,8 @@ void SHA1Update(
 /* Add padding and return the message digest. */
 
 void SHA1Final(
-    uint8_t digest[SHA1_DIGEST_SIZE],
-    SHA1_CTX * context
+    SHA1_CTX * context,
+    uint8_t digest[SHA1_DIGEST_SIZE]
 )
 {
     unsigned i;
@@ -281,15 +281,31 @@ void SHA1Final(
 
 void SHA1_calc(
     uint8_t *hash_out,
-    const void *str,
-    int len)
+    const void *data,
+    size_t len)
 {
     SHA1_CTX ctx;
     unsigned int ii;
 
     SHA1Init(&ctx);
     for (ii=0; ii<len; ii+=1)
-        SHA1Update(&ctx, (const uint8_t*)str + ii, 1);
-    SHA1Final((uint8_t *)hash_out, &ctx);
+        SHA1Update(&ctx, (const char*)data + ii, 1);
+    SHA1Final(&ctx, hash_out);
 }
 
+/* conversion for 20 byte binary sha1 to hex */
+char* SHA1_hex(char* to, const uint8_t digest[SHA1_DIGEST_SIZE])
+{
+	uint8_t const* from = digest;
+	const char *hexdigits = "0123456789abcdef";
+	const uint8_t *end = digest + SHA1_DIGEST_SIZE;
+	char *d = to;
+
+	while (from < end) {
+		*d++ = hexdigits[(*from >> 4)];
+		*d++ = hexdigits[(*from & 0x0F)];
+		from++;
+	}
+	*d = '\0';
+	return to;
+}
