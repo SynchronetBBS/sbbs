@@ -330,7 +330,8 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	return(FALSE);
 #else
 	struct pollfd pfd = {0};
-	int j;
+	int j, rd;
+	char ch;
 
 	if(rd_p!=NULL)
 		*rd_p=FALSE;
@@ -342,7 +343,7 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 		return(FALSE);
 
 	pfd.fd = sock;
-	pfd.events = POLLIN;
+	pfd.events = POLLIN | POLLHUP;
 	if (wr_p != NULL)
 		pfd.events |= POLLOUT;
 
@@ -354,13 +355,21 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	if (j == 1) {
 		if (wr_p != NULL && (pfd.revents & POLLOUT))
 			*wr_p = TRUE;
-		if (rd_p != NULL && (pfd.revents & POLLIN)) {
+		if (rd_p != NULL && (pfd.revents & POLLIN))
 			*rd_p = TRUE;
-			return TRUE;
-		}
 
-		if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+		if (pfd.revents & (POLLERR | POLLNVAL))
 			return FALSE;
+
+		if(pfd.revents & (POLLIN | POLLHUP) && (rd_p !=NULL || wr_p==NULL))  {
+			rd=recv(sock,&ch,1,MSG_PEEK);
+			if(rd==1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
+				if(rd_p!=NULL)
+					*rd_p=TRUE;
+				return(TRUE);
+			}
+			return FALSE;
+		}
 	}
 
 	if (j == -1) {
@@ -495,12 +504,18 @@ BOOL socket_recvdone(SOCKET sock, int timeout)
 	struct pollfd pfd = {0};
 	pfd.fd = sock;
 	pfd.events = POLLIN;
+	char ch;
+	int rd;
 
 	switch (poll(&pfd, 1, timeout)) {
 		case 1:
-			if (pfd.revents & POLLIN)
-				return FALSE;
-			return TRUE;
+			if (pfd.revents & (POLLIN | POLLHUP)) {
+				rd = recv(sock,&ch,1,MSG_PEEK);
+				if (rd == 1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE))
+					return FALSE;
+				return TRUE;
+			}
+			return FALSE;
 		case -1:
 			if (errno == EINTR || errno == ENOMEM)
 				return FALSE;
