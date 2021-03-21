@@ -24,6 +24,7 @@
 #include <ctype.h>		/* isspace()*/
 #include "smblib.h"
 #include "md5.h"
+#include "sha1.h"
 #include "crc16.h"
 #include "crc32.h"
 #include "genwrap.h"
@@ -80,6 +81,9 @@ int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 				if((compare[c]->flags&hash.flags&SMB_HASH_MD5)
 					&& memcmp(compare[c]->data.md5,hash.data.md5,sizeof(hash.data.md5)))
 					continue;	/* wrong MD5 */
+				if((compare[c]->flags&hash.flags&SMB_HASH_SHA1)
+					&& memcmp(compare[c]->data.sha1,hash.data.sha1,sizeof(hash.data.sha1)))
+					continue;	/* wrong SHA1 */
 
 				/* successful match! */
 				break;	/* can't match more than one, so stop comparing */
@@ -195,6 +199,8 @@ hash_t* smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 		hash->data.crc32=crc32((char*)data,length);
 	if(flags&SMB_HASH_MD5)
 		MD5_calc(hash->data.md5,data,length);
+	if(flags&SMB_HASH_SHA1)
+		SHA1_calc(hash->data.sha1, data, length);
 
 	return(hash);
 }
@@ -233,7 +239,7 @@ hash_t* smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mask)
 {
 	size_t		h=0;
-	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5;
+	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5|SMB_HASH_SHA1;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 	hash_t*		hash;
 	time_t		t=time(NULL);
@@ -410,7 +416,8 @@ int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 {
 	char buf[256 * 1024];
 	FILE*	fp;
-	MD5 ctx;
+	MD5 md5_ctx;
+	SHA1_CTX sha1_ctx;
 
 	if(size < 1)
 		return 0;
@@ -418,7 +425,8 @@ int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 	if((fp = fopen(path, "rb")) == NULL)
 		return 0;
 
-	MD5_open(&ctx);
+	MD5_open(&md5_ctx);
+	SHA1Init(&sha1_ctx);
 	data->crc16 = 0;
 	data->crc32 = 0;
 	off_t off = 0;
@@ -428,10 +436,12 @@ int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 			break;
 		data->crc32 = crc32i(~data->crc32, buf, rd);
 		data->crc16 = icrc16(data->crc16, buf, rd);
-		MD5_digest(&ctx ,buf, rd);
+		MD5_digest(&md5_ctx, buf, rd);
+		SHA1Update(&sha1_ctx, (unsigned char*)buf, rd);
 		off += rd;
 	}
 	fclose(fp);
-	MD5_close(&ctx, data->md5);
+	MD5_close(&md5_ctx, data->md5);
+	SHA1Final(data->sha1, &sha1_ctx);
 	return SMB_HASH_CRC16 | SMB_HASH_CRC32 | SMB_HASH_MD5;
 }
