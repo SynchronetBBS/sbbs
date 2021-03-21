@@ -41,7 +41,7 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv = JS_ARGV(cx, arglist);
 	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
-	char		format[32] = "zip";
+	char		format[32] = "";
 	str_list_t	file_list = NULL;
 	char		path[MAX_PATH + 1];
 	bool		with_path = false;
@@ -88,6 +88,11 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
+	if(*format == '\0') {
+		SAFECOPY(format, getfext(p->name) + 1);
+		if(*format == '\0')
+			SAFECOPY(format, "zip");
+	}
 	rc = JS_SUSPENDREQUEST(cx);
 	long file_count = create_archive(p->name, format, with_path, file_list, error, sizeof(error));
 	strListFree(&file_list);
@@ -361,7 +366,7 @@ js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 static jsSyncMethodSpec js_archive_functions[] = {
 	{ "create",		js_create,		1,	JSTYPE_NUMBER
-		,JSDOCSTR("format [,boolean with_path = <tt>false</tt>] [,array file_list]")
+		,JSDOCSTR("[string format] [,boolean with_path = <tt>false</tt>] [,array file_list]")
 		,JSDOCSTR("create an archive of the specified format, returns the number of files archived, will throw exception upon error")
 		,31900
 	},
