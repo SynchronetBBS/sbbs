@@ -31,8 +31,9 @@
 #include "dirwrap.h"	/* MAX_PATH */
 #include "filewrap.h"	/* SH_DENYRW */
 
-/* SMBLIB Headers */
+/* hash lib Headers */
 #include "md5.h"		/* MD5_DIGEST_SIZE */
+#include "sha1.h"
 
 /**********/
 /* Macros */
@@ -404,7 +405,7 @@ struct hash_data {
 	uint16_t	crc16;					/* CRC-16 of source */
 	uint32_t	crc32;					/* CRC-32 of source */
 	uint8_t		md5[MD5_DIGEST_SIZE];	/* MD5 digest of source */
-	uint8_t		sha1[20];				/* SHA1 hash of source */
+	uint8_t		sha1[SHA1_DIGEST_SIZE];	/* SHA1 hash of source */
 };
 
 typedef uint8_t	hashflags_t;

@@ -681,6 +681,8 @@ void dump_hashes(void)
 			printf("%-10s: %08"PRIx32"\n","CRC-32",	hash.data.crc32);
 		if(hash.flags&SMB_HASH_MD5)
 			printf("%-10s: %s\n",	"MD5",		MD5_hex(tmp,hash.data.md5));
+		if(hash.flags&SMB_HASH_SHA1)
+			printf("%-10s: %s\n",	"SHA1",		SHA1_hex(tmp,hash.data.sha1));
 	}
 
 	smb_close_hash(&smb);

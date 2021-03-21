@@ -442,6 +442,6 @@ int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 	}
 	fclose(fp);
 	MD5_close(&md5_ctx, data->md5);
-	SHA1Final(data->sha1, &sha1_ctx);
-	return SMB_HASH_CRC16 | SMB_HASH_CRC32 | SMB_HASH_MD5;
+	SHA1Final(&sha1_ctx, data->sha1);
+	return SMB_HASH_CRC16 | SMB_HASH_CRC32 | SMB_HASH_MD5 | SMB_HASH_SHA1;
 }
