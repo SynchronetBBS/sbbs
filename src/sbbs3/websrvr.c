@@ -6096,12 +6096,10 @@ BOOL post_to_file(http_session_t *session, FILE*fp, size_t ch_len)
 		bytes_read=recvbufsocket(session,buf,(ch_len-k)>sizeof(buf)?sizeof(buf):(ch_len-k));
 		if(!bytes_read) {
 			send_error(session,__LINE__,error_500);
-			fclose(fp);
 			return(FALSE);
 		}
 		if(fwrite(buf, bytes_read, 1, fp)!=1) {
 			send_error(session,__LINE__,error_500);
-			fclose(fp);
 			return(FALSE);
 		}
 		k+=bytes_read;
