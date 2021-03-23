@@ -362,6 +362,8 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 				if(FD_ISSET(xpms_set->socks[i].sock, &read_fs)) {
 #else
 	fds = calloc(xpms_set->sock_count, sizeof(*fds));
+	if (fds == NULL)
+		return INVALID_SOCKET;
 	for (i = 0; i < xpms_set->sock_count; i++) {
 		if (xpms_set->socks[i].sock == INVALID_SOCKET)
 			continue;
