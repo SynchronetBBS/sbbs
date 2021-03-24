@@ -1415,7 +1415,7 @@ extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		node_cfg=cfg;
 
 	/* Global Object */
-	if(!js_CreateGlobalObject(js_cx, cfg, methods, js_startup, glob))
+	if(!js_CreateGlobalObject(js_cx, node_cfg, methods, js_startup, glob))
 		return(FALSE);
 
 	do {
@@ -1451,7 +1451,7 @@ extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 			break;
 
 		/* FileBase Class */
-		if(js_CreateFileBaseClass(js_cx, *glob, cfg)==NULL)
+		if(js_CreateFileBaseClass(js_cx, *glob, node_cfg)==NULL)
 			break;
 
 		/* File Class */
