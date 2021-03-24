@@ -88,11 +88,11 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
-	if(*format == '\0') {
-		SAFECOPY(format, getfext(p->name) + 1);
-		if(*format == '\0')
-			SAFECOPY(format, "zip");
-	}
+	char* fext;
+	if(*format == '\0' && (fext = getfext(p->name)) != NULL)
+		SAFECOPY(format,  fext + 1);
+	if(*format == '\0')
+		SAFECOPY(format, "zip");
 	rc = JS_SUSPENDREQUEST(cx);
 	long file_count = create_archive(p->name, format, with_path, file_list, error, sizeof(error));
 	strListFree(&file_list);
