@@ -25,7 +25,7 @@
 /****************************************************************************/
 /* Prints all information of file in file_t structure 'f'					*/
 /****************************************************************************/
-void sbbs_t::showfileinfo(smbfile_t* f)
+void sbbs_t::showfileinfo(smbfile_t* f, bool show_extdesc)
 {
 	char 	tmp[512];
 	char	tmp2[64];
@@ -44,10 +44,12 @@ void sbbs_t::showfileinfo(smbfile_t* f)
 	bprintf(P_TRUNCATE, text[FiCredits]
 		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : ultoac((ulong)f->cost,tmp));
 	if(getfilesize(&cfg, f) > 0 &&  f->size == f->file_idx.idx.size) {
+#if 0 // I don't think anyone cares about the CRC-16 checksum value of a file
 		if(f->file_idx.hash.flags & SMB_HASH_CRC16) {
 			SAFEPRINTF(tmp, "%04x", f->file_idx.hash.data.crc16);
 			bprintf(P_TRUNCATE, text[FiChecksum], "CRC-16", tmp);
 		}
+#endif
 		if(f->file_idx.hash.flags & SMB_HASH_CRC32) {
 			SAFEPRINTF(tmp, "%08x", f->file_idx.hash.data.crc32);
 			bprintf(P_TRUNCATE, text[FiChecksum], "CRC-32", tmp);
@@ -81,7 +83,7 @@ void sbbs_t::showfileinfo(smbfile_t* f)
 			bprintf(text[InvalidAlternatePathN],f->hdr.altpath); 
 	}
 	bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
-	if(f->extdesc != NULL && *f->extdesc) {
+	if(show_extdesc && f->extdesc != NULL && *f->extdesc) {
 		char* p = f->extdesc;
 		SKIP_CRLF(p);
 		truncsp(p);

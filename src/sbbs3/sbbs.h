@@ -961,7 +961,7 @@ public:
 	bool	recvfile(char* fname, char prot=0, bool autohang=true);
 
 	/* file.cpp */
-	void	showfileinfo(smbfile_t*);
+	void	showfileinfo(smbfile_t*, bool show_extdesc = true);
 	bool	removefcdt(smb_t*, smbfile_t*);
 	bool	removefile(smb_t*, smbfile_t*);
 	bool	movefile(smb_t*, smbfile_t*, int newdir);

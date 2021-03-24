@@ -801,7 +801,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 			} 
 		}
 		else {
-			showfileinfo(f);
+			showfileinfo(f, /* show_extdesc: */mode != FI_DOWNLOAD);
 //			newline();
 		}
 		if(mode==FI_REMOVE || mode==FI_OLD || mode==FI_OLDUL
