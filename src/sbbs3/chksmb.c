@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 	time_t		now=time(NULL);
 
 	fprintf(stderr,"\nCHKSMB v3.19-%s %s/%s SMBLIB %s - Check Synchronet Message Base\n"
-		,PLATFORM_DESC, smb_lib_ver(), GIT_BRANCH, GIT_HASH);
+		,PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	if(argc<2) {
 		printf("%s",usage);
@@ -813,12 +813,12 @@ int main(int argc, char **argv)
 
 	fprintf(stderr,"\nChecking %s Index\n\n",smb.file);
 
-	if((offset=malloc(total*sizeof(uint32_t)))==NULL) {
-		printf("Error allocating %lu bytes of memory\n",total*sizeof(uint32_t));
+	if((offset=malloc(total*sizeof(*offset)))==NULL) {
+		printf("Error allocating %lu bytes of memory\n",total*sizeof(*offset));
 		return(++errors); 
 	}
-	if((number=malloc(total*sizeof(uint32_t)))==NULL) {
-		printf("Error allocating %lu bytes of memory\n",total*sizeof(uint32_t));
+	if((number=malloc(total*sizeof(*number)))==NULL) {
+		printf("Error allocating %lu bytes of memory\n",total*sizeof(*number));
 		return(++errors); 
 	}
 
