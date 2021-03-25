@@ -312,7 +312,7 @@ int main(int argc, char **argv)
 
 	off_t sdt_length = filelength(fileno(smb.sdt_fp));
 	if(sdt_length && (sdt_length % SDT_BLOCK_LEN) != 0)
-		printf("!Size of SDT file (%lu) not evenly divisble by block length (%u)\n"
+		printf("!Size of SDT file (%lu) not evenly divisible by block length (%u)\n"
 			,(ulong)sdt_length, SDT_BLOCK_LEN);
 
 	if(chkalloc && !(smb.status.attr&SMB_HYPERALLOC)) {
