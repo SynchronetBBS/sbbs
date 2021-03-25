@@ -21,7 +21,8 @@ extern int	telnet_log_level;
 
 void *telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen)
 {
-	void *ret = malloc(inlen);
+	// telnet_interpret() can add up to one byte to inbuf ('\r')
+	void *ret = malloc(inlen + 1);
 
 	if (ret == NULL)
 		return ret;
