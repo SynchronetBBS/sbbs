@@ -299,11 +299,11 @@ int main(int argc, char **argv)
 		continue;
 	}
 
-	if(((shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t)) != 0){
-		if((number=malloc((size_t)(((shd_hdrs/SHD_BLOCK_LEN)+2))*sizeof(uint32_t)))
+	if(((shd_hdrs/SHD_BLOCK_LEN)*sizeof(*number)) != 0){
+		if((number=malloc((size_t)(((shd_hdrs/SHD_BLOCK_LEN)+2))*sizeof(*number)))
 			==NULL) {
 			printf("Error allocating %lu bytes of memory\n"
-				,(ulong)((shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t)));
+				,(ulong)((shd_hdrs/SHD_BLOCK_LEN)*sizeof(*number)));
 			return(++errors); 
 		} 
 	}
