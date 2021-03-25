@@ -613,7 +613,7 @@ int main(int argc, char **argv)
 					tocrc++;
 				}
 				if(!(smb.status.attr & SMB_EMAIL)
-					&& (msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_BALLOT)
+					&& (msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_POLL)
 					&& msg.to_ext==NULL && msg.idx.to!=smb_name_crc(msg.to)) {
 					fprintf(stderr,"%sTo CRC mismatch\n",beep);
 					msgerr=TRUE;
