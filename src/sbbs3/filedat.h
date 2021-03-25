@@ -66,6 +66,7 @@ DLLEXPORT char*			cmdstr(scfg_t*, user_t*, const char* instr, const char* fpath,
 DLLEXPORT ulong			extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
 						                           ,bool with_path, ulong max_files, str_list_t file_list, char* error, size_t);
 DLLEXPORT int			archive_type(const char* archive, char* str, size_t size);
+extern const char*		supported_archive_formats[];
 
 /* Batch file transfer queues */
 DLLEXPORT char*			batch_list_name(scfg_t* , uint usernumber, enum XFER_TYPE, char* fname, size_t);

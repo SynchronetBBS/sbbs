@@ -623,7 +623,8 @@ str_list_t directory(const char* path)
 	return list;
 }
 
-// Return negative on error
+const char* supported_archive_formats[] = { "zip", "7z", "tgz", "tbz", NULL };
+// Returns negative on error
 long create_archive(const char* archive, const char* format
 	,bool with_path, str_list_t file_list, char* error, size_t maxerrlen)
 {
@@ -640,8 +641,13 @@ long create_archive(const char* archive, const char* format
 	if(stricmp(format, "tgz") == 0) {
 		archive_write_add_filter_gzip(ar);
 		archive_write_set_format_pax_restricted(ar);
+	} else if(stricmp(format, "tbz") == 0) {
+		archive_write_add_filter_bzip2(ar);
+		archive_write_set_format_pax_restricted(ar);
 	} else if(stricmp(format, "zip") == 0) {
 		archive_write_set_format_zip(ar);
+	} else if(stricmp(format, "7z") == 0) {
+		archive_write_set_format_7zip(ar);
 	} else {
 		safe_snprintf(error, maxerrlen, "unsupported format: %s", format);
 		return -2;
@@ -831,7 +837,7 @@ bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fnames, char* path, s
 		,/* file_list: */diz_fnames
 		,/* error: */NULL, 0) > 0) {
 		for(i = 0; diz_fnames[i] != NULL; i++) {
-			safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]);
+			safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]); // no slash
 			if(fexistcase(path))
 				return true;
 		}

@@ -503,14 +503,23 @@ void sbbs_t::qwk_sec()
 							useron.qwk&=~(QWK_EXPCTLA|QWK_RETCTLA);
 						break;
 					case 'T':
-						for(i=0;i<cfg.total_fcomps;i++)
-							uselect(1,i,text[ArchiveTypeHeading],cfg.fcomp[i]->ext,cfg.fcomp[i]->ar);
+					{
+						str_list_t ext_list = strListDup((str_list_t)supported_archive_formats);
+						for(i=0; i < cfg.total_fcomps; i++) {
+							if(strListFind(ext_list, cfg.fcomp[i]->ext, /* case-sensitive */FALSE) < 0
+								&& chk_ar(cfg.fcomp[i]->ar, &useron, &client))
+								strListPush(&ext_list, cfg.fcomp[i]->ext);
+						}
+						for(i=0; ext_list[i] != NULL; i++)
+							uselect(1, i, text[ArchiveTypeHeading], ext_list[i], NULL);
 						s=uselect(0,0,0,0,0);
 						if(s>=0) {
-							strcpy(useron.tmpext,cfg.fcomp[s]->ext);
+							SAFECOPY(useron.tmpext, ext_list[s]);
 							putuserrec(&cfg,useron.number,U_TMPEXT,3,useron.tmpext);
 						}
+						strListFree(&ext_list);
 						break;
+					}
 					case 'E':
 						if(!(useron.qwk&(QWK_EMAIL|QWK_ALLMAIL)))
 							useron.qwk|=QWK_EMAIL;
