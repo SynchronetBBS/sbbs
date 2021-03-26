@@ -413,3 +413,27 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 	}
 	return result;
 }
+
+// contains some copy/pasta from downloadedfile()
+bool sbbs_t::sendfile(smbfile_t* f, char prot, bool autohang)
+{
+	char path[MAX_PATH + 1];
+	char str[256];
+
+	SAFEPRINTF2(str, "from %s %s"
+		,cfg.lib[cfg.dir[f->dir]->lib]->sname
+		,cfg.dir[f->dir]->sname);
+	bool result = sendfile(getfilepath(&cfg, f, path), prot, str, autohang);
+	if(result == true) {
+		if(cfg.dir[f->dir]->misc&DIR_TFREE && cur_cps)
+			starttime += f->size / (ulong)cur_cps;
+		off_t length = getfilesize(&cfg, f);
+		if(length > 0 && !(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
+			logon_dlb += length;  /* Update 'this call' stats */
+			logon_dls++;
+		}
+		user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length);
+		user_event(EVENT_DOWNLOAD);
+	}
+	return result;
+}

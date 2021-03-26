@@ -957,6 +957,7 @@ public:
 	bool	checkdszlog(const char*);
 	bool	checkprotresult(prot_t*, int error, const char* fpath);
 	bool	checkprotresult(prot_t*, int error, smbfile_t*);
+	bool	sendfile(smbfile_t*, char prot, bool autohang);
 	bool	sendfile(char* fname, char prot=0, const char* description = NULL, bool autohang=true);
 	bool	recvfile(char* fname, char prot=0, bool autohang=true);
 

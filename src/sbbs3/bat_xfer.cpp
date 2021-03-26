@@ -229,12 +229,27 @@ BOOL sbbs_t::start_batch_download()
 
 	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
 
-	if(!iniGetSectionCount(ini, NULL)) {
+	size_t file_count = iniGetSectionCount(ini, NULL);
+	if(file_count < 1) {
 		bputs(text[DownloadQueueIsEmpty]);
 		iniFreeStringList(ini);
 		return(FALSE);
 	}
 	str_list_t filenames = iniGetSectionList(ini, NULL);
+
+	if(file_count == 1) {	// Only one file in the queue? Perform a non-batch (e.g. XMODEM) download
+		smbfile_t f = {{}};
+		BOOL result = FALSE;
+		if(batch_file_get(&cfg, ini, filenames[0], &f)) {
+			result = sendfile(&f, /* prot: */' ', /* autohang: */true);
+			if(result == TRUE)
+				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f.name);
+		}
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
+		smb_freefilemem(&f);
+		return result;
+	}
 
 	int64_t totalcdt = 0;
 	for(size_t i=0; filenames[i] != NULL; ++i) {
