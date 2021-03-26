@@ -1833,7 +1833,8 @@ rescan:
 					else
 						pl = pfile.get(i);
 					mp = load_map(pl.lastmap);
-					lln('  `2'+space_pad(pl.name, 29)+'`%'+space_pad(pl.p[8].toString(), 14)+'`0'+mp.name);
+					if (mp !== null)
+						lln('  `2'+space_pad(pl.name, 29)+'`%'+space_pad(pl.p[8].toString(), 14)+'`0'+mp.name);
 				}
 			});
 		},
