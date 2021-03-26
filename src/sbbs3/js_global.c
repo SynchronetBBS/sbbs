@@ -1943,6 +1943,13 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 									break;
 							}
 						}
+						if (k == 0) {
+							fg=7;
+							bg=0;
+							blink=FALSE;
+							bold=FALSE;
+							break;
+						}
 						break;
 					case 'C': /* Move right */
 						j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
