@@ -40,8 +40,10 @@ function savetime()
 
 function player_put()
 {
-	player.lastsaved = savetime();
-	player.put();
+	if (player.Record !== undefined) {
+		player.lastsaved = savetime();
+		player.put();
+	}
 }
 
 var Player_Def = [
