@@ -315,7 +315,7 @@ var World_Def = [
 	{
 		prop:'v',
 		type:'Array:40:SignedInteger',
-		def:new Array(40)
+		def:eval('var aret = []; while(aret.length < 40) aret.push(0); aret;')
 	},
 	{
 		prop:'s',
