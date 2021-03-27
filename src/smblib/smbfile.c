@@ -327,7 +327,7 @@ void smb_freefilemem(smbfile_t* file)
 /****************************************************************************/
 int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, const char* path)
 {
-	if(file->name == NULL) {
+	if(file->name == NULL || *file->name == '\0') {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s missing name", __FUNCTION__);
 		return SMB_ERR_HDR_FIELD;
 	}
