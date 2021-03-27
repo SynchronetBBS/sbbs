@@ -15,10 +15,6 @@
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 load("dorkit.js");
 dk.console.auto_pause = false;
-if (js.global.console !== undefined) {
-	console.ctrlkey_passthru = dk_old_ctrlkey_passthru;
-	console.ctrlkey_passthru = '+[';
-}
 delete dk.console.local_screen;
 delete dk.console.remote_screen;
 require("recordfile.js", "RecordFile");
