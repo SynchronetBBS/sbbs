@@ -4,7 +4,7 @@ if (typeof(system) !== 'undefined')
 load('ansi_input.js', argv[0]);
 var k;
 
-while(!js.terminated) {
+while(bbs.online && !js.terminated) {
 	if (parent_queue.poll(0))
 		break;
 	if (parent_queue.orphan)
