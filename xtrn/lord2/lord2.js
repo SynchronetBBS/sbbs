@@ -12,10 +12,6 @@ load("dorkit.js");
 if (dk.user.full_name == 'Local User')
 	dk.user.full_name = 'SYSOP';
 dk.console.auto_pause = false;
-if (js.global.console !== undefined) {
-	console.ctrlkey_passthru = dk_old_ctrlkey_passthru;
-	console.ctrlkey_passthru = '+[UOPTKZ';
-}
 
 require("l2lib.js", 'Player_Def');
 abortontime = true;
