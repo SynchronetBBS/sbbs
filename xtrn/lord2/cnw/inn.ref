@@ -1300,6 +1300,10 @@ I'd like to buy this place!
 Leave
 >`p20 1 <`p20 5 It wasn't Johnny!
 +`t11 7 Hand over the bastard
+@if response is 9 then do
+@begin
+@drawmap
+@end
 @if responce is 11 then do
         @begin
         @show
@@ -1609,6 +1613,10 @@ Get a room
 +`t12 5 Shoot the breeze with Ma
 How's the owner?
 Leave
+@if response is 9 then do
+@begin
+@drawmap
+@end
 @if response is 2 then do
  @begin
 @if bitcheck `t12 3 1 then do
