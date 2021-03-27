@@ -158,14 +158,14 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	ulong extracted = extract_files_from_archive(p->name, outdir, allowed_filename_chars
+	long extracted = extract_files_from_archive(p->name, outdir, allowed_filename_chars
 		,with_path, (ulong)max_files, file_list, error, sizeof(error));
 	strListFree(&file_list);
 	free(outdir);
 	JS_RESUMEREQUEST(cx, rc);
 	if(*error != '\0') {
-		if(extracted)
-			JS_ReportError(cx, "%s (after extracting %lu items successfully)", error, extracted);
+		if(extracted >= 0)
+			JS_ReportError(cx, "%s (after extracting %ld items successfully)", error, extracted);
 		else
 			JS_ReportError(cx, "%s", error);
 		return JS_FALSE;

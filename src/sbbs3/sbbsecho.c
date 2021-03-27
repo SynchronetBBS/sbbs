@@ -2264,7 +2264,7 @@ int unpack(const char *infile, const char* outdir)
 	char error[256];
 	int ch,file;
 	unsigned u,j;
-	ulong file_count;
+	long file_count;
 
 	file_count = extract_files_from_archive(infile, outdir
 		,/* allowed_filename_chars: */SAFEST_FILENAME_CHARS, /* with_path */false

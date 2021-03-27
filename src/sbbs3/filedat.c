@@ -705,20 +705,20 @@ long create_archive(const char* archive, const char* format
 	return file_count;
 }
 
-ulong extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
-	,bool with_path, ulong max_files, str_list_t file_list, char* error, size_t maxerrlen)
+long extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
+	,bool with_path, long max_files, str_list_t file_list, char* error, size_t maxerrlen)
 {
 	int result;
 	struct archive *ar;
 	struct archive_entry *entry;
-	ulong extracted = 0;
+	long extracted = 0;
 	char fpath[MAX_PATH + 1];
 
 	if(error != NULL && maxerrlen >= 1)
 		*error = '\0';
 	if((ar = archive_read_new()) == NULL) {
 		safe_snprintf(error, maxerrlen, "archive_read_new returned NULL");
-		return 0;
+		return -1;
 	}
 	archive_read_support_filter_all(ar);
 	archive_read_support_format_all(ar);
@@ -726,7 +726,7 @@ ulong extract_files_from_archive(const char* archive, const char* outdir, const 
 		safe_snprintf(error, maxerrlen, "archive_read_open_filename returned %d: %s"
 			,result, archive_error_string(ar));
 		archive_read_free(ar);
-		return 0;
+		return result >= 0 ? -1 : result;
 	}
 	while(1) {
 		result = archive_read_next_header(ar, &entry);
@@ -835,7 +835,7 @@ bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fnames, char* path, s
 		,/* with_path: */false
 		,/* max_files: */1
 		,/* file_list: */diz_fnames
-		,/* error: */NULL, 0) > 0) {
+		,/* error: */NULL, 0) >= 0) {
 		for(i = 0; diz_fnames[i] != NULL; i++) {
 			safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]); // no slash
 			if(fexistcase(path))

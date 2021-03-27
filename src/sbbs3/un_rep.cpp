@@ -72,7 +72,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(LOG_NOTICE,nulstr,"REP file not received");
 		return(false); 
 	}
-	ulong file_count = extract_files_from_archive(rep_fname
+	long file_count = extract_files_from_archive(rep_fname
 		,/* outdir: */cfg.temp_dir
 		,/* allowed_filename_chars: */SAFEST_FILENAME_CHARS
 		,/* with_path: */false

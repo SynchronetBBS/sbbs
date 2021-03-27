@@ -388,6 +388,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_ERR_MEM;
 		}
+		truncsp(*extdesc);
 	}
 	prop_name = "tags";
 	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
@@ -866,6 +867,24 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static void get_diz(scfg_t* scfg, smbfile_t* file, char** extdesc)
+{
+	char diz_fpath[MAX_PATH + 1];
+	if(extract_diz(scfg, file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
+		char extbuf[LEN_EXTDESC + 1] = "";
+		str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
+		if(lines != NULL) {
+			format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
+			strListFree(&lines);
+			free(*extdesc);
+			*extdesc = strdup(extbuf);
+			if(file->desc == NULL)
+				smb_new_hfield_str(file, SMB_FILEDESC, prep_file_desc(extbuf, extbuf));
+		}
+		(void)remove(diz_fpath);
+	}
+}
+
 static JSBool
 js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -912,20 +931,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		if((extdesc == NULL	|| use_diz_always == true)
 			&& file.dir < scfg->total_dirs
 			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
-			char diz_fpath[MAX_PATH + 1];
-			if(extract_diz(scfg, &file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
-				char extbuf[LEN_EXTDESC + 1] = "";
-				str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
-				if(lines != NULL) {
-					format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
-					strListFree(&lines);
-					free(extdesc);
-					extdesc = strdup(extbuf);
-					if(file.desc == NULL)
-						smb_new_hfield_str(&file, SMB_FILEDESC, prep_file_desc(extbuf, extbuf));
-				}
-				(void)remove(diz_fpath);
-			}
+			get_diz(scfg, &file, &extdesc);
 		}
 		char fpath[MAX_PATH + 1];
 		getfilepath(scfg, &file, fpath);
@@ -939,7 +945,6 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
-// NOTE: extended description not supported for update!
 static JSBool
 js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -947,9 +952,9 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*		argv = JS_ARGV(cx, arglist);
 	private_t*	p;
 	smbfile_t	file;
-	bool		renfile = false;
 	char*		filename = NULL;
 	JSObject*	fileobj = NULL;
+	bool		use_diz_always = false;
 	jsrefcount	rc;
 
 	ZERO_VAR(file);
@@ -980,14 +985,21 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
-		renfile = JSVAL_TO_BOOLEAN(argv[argn]);
+		use_diz_always = JSVAL_TO_BOOLEAN(argv[argn]);
 		argn++;
 	}
 
+	JSBool result = JS_TRUE;
+	char* extdesc = NULL;
 	rc=JS_SUSPENDREQUEST(cx);
 	if(filename != NULL && fileobj != NULL
-		&& (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
-		p->smb_result = parse_file_properties(cx, fileobj, &file, NULL);
+		&& (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_extdesc)) == SMB_SUCCESS) {
+		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc);
+		if((extdesc == NULL	|| use_diz_always == true)
+			&& file.dir < scfg->total_dirs
+			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
+			get_diz(scfg, &file, &extdesc);
+		}
 		if(p->smb_result == SMB_SUCCESS) {
 			char orgfname[MAX_PATH + 1];
 			char newfname[MAX_PATH + 1];
@@ -995,18 +1007,29 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 			SAFECOPY(orgfname, newfname);
 			*getfname(orgfname) = '\0';
 			SAFECAT(orgfname, filename);
-			if(strcmp(orgfname, newfname) != 0 && renfile && rename(orgfname, newfname) != 0)
+			if(strcmp(orgfname, newfname) != 0 && fexistcase(orgfname) && rename(orgfname, newfname) != 0) {
+				JS_ReportError(cx, "%d renaming '%s' to '%s'", errno, orgfname, newfname);
+				result = JS_FALSE;
 				p->smb_result = SMB_ERR_RENAME;
-			else
-				p->smb_result = smb_putfile(&p->smb, &file);
+			} else {
+				if(file.extdesc != NULL)
+					truncsp(file.extdesc);
+				if(strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0)
+					p->smb_result = smb_putfile(&p->smb, &file);
+				else {
+					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS)
+						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, newfname);
+				}
+			}
 		}
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
 	JS_RESUMEREQUEST(cx, rc);
 	smb_freefilemem(&file);
 	free(filename);
+	free(extdesc);
 
-	return JS_TRUE;
+	return result;
 }
 
 static JSBool
@@ -1096,13 +1119,16 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(fname == NULL)
 		return JS_TRUE;
 
+	JSBool result = JS_TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
 	smbfile_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_index)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
-		if(delfile && remove(getfilepath(scfg, &file, path)) != 0)
+		if(delfile && remove(getfilepath(scfg, &file, path)) != 0) {
+			JS_ReportError(cx, "%d removing '%s'", errno, path);
 			p->smb_result = SMB_ERR_DELETE;
-		else
+			result = JS_FALSE;
+		} else
 			p->smb_result = smb_removefile(&p->smb, &file);
 		smb_freefilemem(&file);
 	}
@@ -1110,7 +1136,7 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	free(fname);
 
-	return JS_TRUE;
+	return result;
 }
 
 /* FileBase Object Properties */
@@ -1316,17 +1342,17 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"get_file",		js_get_file,		2, JSTYPE_OBJECT
-		,JSDOCSTR("<filename-string | file-object> [,detail=FileBase.DETAIL.NORM]")
+		,JSDOCSTR("<filename | file-object> [,detail=FileBase.DETAIL.NORM]")
 		,JSDOCSTR("get a file object")
 		,31900
 	},
 	{"get_file_list",	js_get_file_list,	4, JSTYPE_ARRAY
-		,JSDOCSTR("[filespec-string] [,detail=FileBase.DETAIL.NORM] [,since_time=0] [,sort=true]")
+		,JSDOCSTR("[filespec] [,detail=FileBase.DETAIL.NORM] [,since_time=0] [,sort=true]")
 		,JSDOCSTR("get a list of file objects")
 		,31900
 	},
 	{"get_file_names",	js_get_file_names,	3, JSTYPE_ARRAY
-		,JSDOCSTR("[filespec-string] [,since-time=0] [,sort=true]")
+		,JSDOCSTR("[filespec] [,since-time=0] [,sort=true]")
 		,JSDOCSTR("get a list of file names")
 		,31900
 	},
@@ -1352,12 +1378,14 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	},
 	{"remove_file",		js_remove_file,		2, JSTYPE_BOOLEAN
 		,JSDOCSTR("filename [,delete=false]")
-		,JSDOCSTR("remove an existing file from the file base and optionally delete file")
+		,JSDOCSTR("remove an existing file from the file base and optionally delete file"
+				", may throw exception on errors (e.g. file remove failure)")
 		,31900
 	},
 	{"update_file",		js_update_file,		3, JSTYPE_BOOLEAN
-		,JSDOCSTR("filename-string, file-object [,rename=false]")
-		,JSDOCSTR("update an existing file in the file base")
+		,JSDOCSTR("filename, file-object [,use_diz_always=false]")
+		,JSDOCSTR("update an existing file in the file base"
+				", may throw exception on errors (e.g. file rename failure)")
 		,31900
 	},
 	{"renew_file",		js_renew_file,		1, JSTYPE_BOOLEAN
