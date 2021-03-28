@@ -74,7 +74,7 @@ void xfer_opts()
 		strcpy(opt[i++],"Testable Files...");
 		strcpy(opt[i++],"Download Events...");
 		strcpy(opt[i++],"Extractable Files...");
-		strcpy(opt[i++],"Compressable Files...");
+		strcpy(opt[i++],"Compressible Files...");
 		strcpy(opt[i++],"Transfer Protocols...");
 		strcpy(opt[i++],"Alternate File Paths...");
 		opt[i][0]=0;
@@ -692,7 +692,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case __COUNTER__:	 /* Compressable file types */
+			case __COUNTER__:	 /* Compressible file types */
 				while(1) {
 					for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.fcomp[i]->ext,cfg.fcomp[i]->cmd);
@@ -705,13 +705,13 @@ void xfer_opts()
 					if(savfcomp.cmd[0])
 						i|=WIN_PASTE;
 					uifc.helpbuf=
-						"`Compressable File Types:`\n"
+						"`Compressible File Types:`\n"
 						"\n"
 						"This is a list of compression methods available for different file types.\n"
 						"These will be used for items such as creating QWK packets, temporary\n"
 						"files from the transfer section, and more.\n"
 					;
-					i=uifc.list(i,0,0,50,&fcomp_dflt,&fcomp_bar,"Compressable File Types",opt);
+					i=uifc.list(i,0,0,50,&fcomp_dflt,&fcomp_bar,"Compressible File Types",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -786,13 +786,13 @@ void xfer_opts()
 							,cfg.fcomp[i]->arstr);
 						opt[j][0]=0;
 						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&fcomp_opt,0
-							,"Compressable File Type",opt)) {
+							,"Compressible File Type",opt)) {
 							case -1:
 								done=1;
 								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Compressable File Type Extension"
+									,"Compressible File Type Extension"
 									,cfg.fcomp[i]->ext,sizeof(cfg.fcomp[i]->ext)-1,K_EDIT);
 								break;
 							case 1:
@@ -802,7 +802,7 @@ void xfer_opts()
 									,cfg.fcomp[i]->cmd,sizeof(cfg.fcomp[i]->cmd)-1,K_EDIT);
 								break;
 							case 2:
-								sprintf(str,"Compressable File Type %s"
+								sprintf(str,"Compressible File Type %s"
 									,cfg.fcomp[i]->ext);
 								getar(str,cfg.fcomp[i]->arstr);
 								break; 
