@@ -22,15 +22,13 @@
  * flag /sbbs/data/tickit.now *.tic *.TIC
  */
 
-load("sbbsdefs.js");
+require("sbbsdefs.js", 'LEN_FDESC');
 require("fidocfg.js", 'TickITCfg');
 require("fido.js", 'FIDO');
 
-const LEN_FDESC = 58;
-
 var cfgfile;
 var force_replace = false;
-var use_diz_always = false;
+var use_diz_always = true;
 
 for (var i in argv) {
 	if(argv[i] == "-force-replace")
@@ -217,7 +215,7 @@ function process_tic(tic)
 	if (dir !== undefined) {
 		if (file_list[dir] === undefined)
 			file_list[dir] = [];
-		file = { name: tic.file, cost: tic.size, desc: tic.desc.trim(), extdesc: tic.ldesc };
+		file = { name: tic.file, cost: tic.size, desc: tic.desc, extdesc: tic.ldesc };
 		file_list[dir].push(file);
 //		log(LOG_INFO, JSON.stringify(file));
 	}
@@ -621,12 +619,11 @@ function parse_ticfile(fname)
 			}
 		}
 	}
-	if (tic.desc.length > LEN_FDESC) {
-		if(!tic.ldesc)
+	if (tic.desc !== undefined) {
+		if(tic.desc.length > LEN_FDESC && !tic.ldesc)
 			tic.ldesc = tic.desc.replace("  ", "\r\n");
-		tic.desc = format("%.*s", LEN_FDESC, tic.desc);
+		tic.desc = format("%.*s", LEN_FDESC, tic.desc.trim());
 	}
-
 	f.close();
 	f = new File(dir+tic.file);
 	if (!f.exists) {
