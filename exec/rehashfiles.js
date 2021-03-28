@@ -34,6 +34,7 @@ for(var i = 0; i < file_list.length; i++) {
 	file.crc16 = hash.crc16;
 	file.crc32 = hash.crc32;
 	file.md5 = hash.md5;
+	file.sha1 = hash.sha1;
 	if(!filebase.update_file(file.name, file)) {
 		alert(filebase.status + " " + filebase.last_error);
 		break;
