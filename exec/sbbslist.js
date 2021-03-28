@@ -267,7 +267,7 @@ function import_entry(name, text)
         if(debug) print(match[1] + " = " + match[2]);
         switch(match[1].toLowerCase()) {
             case 'birth':
-		if(match[2] && match[2].length)
+				if(match[2] && match[2].length)
                 	bbs.first_online = date_from_str(match[2]);
                 break;
             case 'software':
@@ -432,17 +432,17 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
             if(!list[l].entry)
                 continue;
             if(!list[l].imported && hdr.from_net_type) {
-                print(msg_from + " attempted to update/over-write local entry: " + bbs_name);
+                alert(msg_from + " attempted to update/over-write local entry: " + bbs_name);
                 continue;
             }
 			entry = list[l].entry;
             if(entry.created.by.toLowerCase() != hdr.from.toLowerCase()
 				|| (entry.created.at && entry.created.at != hdr.from_net_addr)) {
-                print(msg_from  + " did not create entry: " 
+                alert(msg_from  + " did not create entry: "
 					+ bbs_name + " (" + entry.created.by + "@" + entry.created.at + " did)");
                 continue;
             }
-            print((sbl_remove ? "Removing" : "Updating") 
+            print((sbl_remove ? "Removing" : "Updating")
 				+ " existing entry: " + bbs_name + " (by " + entry.created.by + ")");
 			if(sbl_remove) {
 				if(!lib.remove(entry))
@@ -1617,7 +1617,7 @@ function view(list, current)
 		printf("\1n  ");
 		printf(fmt, "Name\1w", lib.max_len.name, lib.max_len.name, bbs.name);
 		if(bbs.first_online)
-			printf("\1n\1c since \1h%s", bbs.first_online.substring(0,10));
+			printf("\1n\1c est \1h%s", bbs.first_online.substring(0,10));
 		if(bbs.software) {
 			console.attributes = LIGHTGRAY;
 			right_justify(bbs.software);
