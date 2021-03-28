@@ -25,6 +25,8 @@ if(!filebase.open()) {
 var name_list = filebase.get_file_names();
 
 while(!file_exists(dir.path + file.name) && !js.terminated) {
+	if(file.name)
+		alert(dir.path + file.name + " does not exist");
 	var list = directory(dir.path + '*');
 	for(var i = 0; i < list.length; i++) {
 		if(!file_isdir(list[i]) && name_list.indexOf(file_getname(list[i])) < 0)
