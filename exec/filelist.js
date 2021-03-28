@@ -7,7 +7,7 @@ var detail = -1;
 var dir_list = [];
 var filespec = "";
 var props = [];
-var fmt = "%10s %-13s  %-25s  %s";
+var fmt;
 for(var i = 0; i < argc; i++) {
 	var arg = argv[i];
 	if(arg[0] == '-') {
@@ -44,11 +44,29 @@ for(var i = 0; i < argc; i++) {
 		filespec = arg;
 }
 if(props.length < 1)
-	props = ["size", "name", "from", "desc"];
+	props = ["name", "size", "from", "desc", "extdesc"];
+if(!fmt) {
+	fmt = "%-13s %10s  %-25s  %s";
+	if(detail > 1)
+		fmt += "\n%s";
+}
 
 var output = [];
-for(var i in dir_list)
-	output = output.concat(listfiles(dir_list[i], filespec, detail, fmt, props));
+for(var i in dir_list) {
+	var dir_code = dir_list[i];
+	var dir = file_area.dir[dir_code];
+	if(!dir) {
+		alert("dir not found: " + dir_code);
+		continue;
+	}
+	if(options.hdr) {
+		var hdr = format("%-15s %-40s Files: %d", dir.lib_name, dir.description, dir.files);
+		output.push(hdr);
+		output.push(format("%.*s", hdr.length
+			, "-------------------------------------------------------------------------------"));
+	}
+	output = output.concat(listfiles(dir_code, filespec, detail, fmt, props));
+}
 //if(options.sort)
 //	output.sort();
 for(var i in output)
