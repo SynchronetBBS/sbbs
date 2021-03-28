@@ -605,6 +605,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 							return(-1); 
 					} 
 				}
+				cond_newline();
 				return(2); 
 			}
 			clearline();
