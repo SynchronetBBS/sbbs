@@ -231,14 +231,17 @@ js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		return JS_FALSE;
 	}
 
+	JSBool retval = JS_TRUE;
 	rc = JS_SUSPENDREQUEST(cx);
 	jsint len = 0;
 	while(1) {
 		result = archive_read_next_header(ar, &entry);
 		if(result != ARCHIVE_OK) {
-			if(result != ARCHIVE_EOF)
+			if(result != ARCHIVE_EOF) {
 				JS_ReportError(cx, "archive_read_next_header() returned %d: %s"
 					,result, archive_error_string(ar));
+				retval = JS_FALSE;
+			}
 			break;
 		}
 
@@ -361,7 +364,7 @@ js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	JS_RESUMEREQUEST(cx, rc);
 	*vp = OBJECT_TO_JSVAL(array);
 
-	return JS_TRUE;
+	return retval;
 }
 
 static jsSyncMethodSpec js_archive_functions[] = {
