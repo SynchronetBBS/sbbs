@@ -1,6 +1,6 @@
 /* Synchronet v3.15+ update script (to be executed with jsexec) */
 
-const REVISION = "1.11";
+const REVISION = "2.0";
 
 var test = argv.indexOf("-test") >= 0;
 
@@ -148,7 +148,7 @@ function update_gfile_indexes()
 	return count;
 }
 
-printf("Synchronet update.js revision %u\n", REVISION);
+printf("Synchronet update.js revision %s\n", REVISION);
 printf("Updating exec directory: ");
 printf("%s\n", update_exec_dir() ? "Success" : "FAILURE");
 printf("Updating users ip_address field: ");
