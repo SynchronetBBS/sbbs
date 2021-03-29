@@ -2087,9 +2087,6 @@ struct bbslist *show_bbslist(char *current, int connected)
     char    addy[LIST_ADDR_MAX+1];
     char    *settings_menu[]= {
                      "Default Connection Settings"
-#ifdef CONFIGURABLE_MOUSE_ACTIONS
-                    ,"Mouse Actions"
-#endif
                     ,"Current Screen Mode"
                     ,"Font Management"
                     ,"Program Settings"
@@ -2097,9 +2094,6 @@ struct bbslist *show_bbslist(char *current, int connected)
                 };
     char    *connected_settings_menu[]= {
                      "Default Connection Settings"
-#ifdef CONFIGURABLE_MOUSE_ACTIONS
-                    ,"Mouse Actions"
-#endif
                     ,"Font Management"
                     ,"Program Settings"
                     ,NULL
@@ -2456,10 +2450,6 @@ struct bbslist *show_bbslist(char *current, int connected)
                 uifc.helpbuf=   "`SyncTERM Settings Menu`\n\n"
                                 "~ Default Connection Settings ~\n"
                                 "        Modify the settings that are used by default for new entries\n\n"
-#ifdef CONFIGURABLE_MOUSE_ACTIONS
-                                "~ Mouse Actions ~\n"
-                                "        This feature is not yet functional\n\n"
-#endif
                                 "~ Current Screen Mode ~\n"
                                 "        Set the current screen size/mode\n\n"
                                 "~ Font Management ~\n"
@@ -2481,9 +2471,10 @@ struct bbslist *show_bbslist(char *current, int connected)
                             viewofflinescroll();
                             uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
                                 |WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
-                                |WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
-                                |WIN_SEL|WIN_INACT
+                                |WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
+                                |WIN_SEL|WIN_INACT|WIN_FIXEDHEIGHT
                                 ,0,0,0,&opt,&bar,list_title,(char **)list);
+                            draw_comment(list[opt]);
                         }
                         break;
                     case -2-CIO_KEY_MOUSE:
@@ -2493,8 +2484,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 			if (val == -2-0x0f00) {
                                 uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
                                     |WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
-                                    |WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
-                                    |WIN_SEL|WIN_INACT
+                                    |WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
+                                    |WIN_SEL|WIN_INACT|WIN_FIXEDHEIGHT
                                     ,0,0,0,&opt,&bar,list_title,(char **)list);
 				if (!edit_comment(list[opt], settings.list_path))
 					break;
@@ -2517,14 +2508,6 @@ struct bbslist *show_bbslist(char *current, int connected)
                     case 0:         /* Edit default connection settings */
                         edit_list(NULL, &defaults,settings.list_path,TRUE);
                         break;
-#ifdef CONFIGURABLE_MOUSE_ACTIONS
-                    case 1:         /* Mouse Actions setup */
-                        uifc.helpbuf=   "Mouse actions are not yet user conifurable."
-                                        "This item is here to remind me to implement it.";
-                        uifc.msg("This section not yet functional");
-                        check_exit(FALSE);
-                        break;
-#endif
                     case 1: {       /* Screen Mode */
                             struct text_info ti;
                             gettextinfo(&ti);
@@ -2543,9 +2526,10 @@ struct bbslist *show_bbslist(char *current, int connected)
                                 init_uifc(TRUE, TRUE);
                                 uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
                                     |WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
-                                    |WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
-                                    |WIN_SEL|WIN_INACT
+                                    |WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
+                                    |WIN_SEL|WIN_INACT|WIN_FIXEDHEIGHT
                                     ,0,0,0,&opt,&bar,list_title,(char **)list);
+                                draw_comment(list[opt]);
                             }
                             else if (check_exit(FALSE)) {
                                 free_list(&list[0],listcount);
