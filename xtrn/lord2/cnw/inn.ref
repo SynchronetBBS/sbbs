@@ -1372,6 +1372,7 @@ Leave
   of Greentree, that's all!"
 
 `k
+ @drawmap
  @do goto startma1
 
 
@@ -1381,6 +1382,7 @@ Leave
   of my life.  I am so proud of her!"
 
 `k
+ @drawmap
  @do goto startma1
  @end
 
@@ -1392,6 +1394,7 @@ Leave
 
 `k
  @do `v01 is 1
+ @drawmap
  @do goto startma1
  @end
 
@@ -1424,6 +1427,7 @@ Leave
 `\`k
  @bitset `t12 3 1
  @do `i41 is 1
+ @drawmap
  @do goto startma1
  @end
 
@@ -1436,6 +1440,7 @@ Leave
 
 `k
  @do `v01 is 1
+ @drawmap
  @do goto startma1
  @end
 
@@ -1483,6 +1488,7 @@ Leave
 `\`\  `0"I'm so happy for you," `2Ma smiles.
 
 `k
+ @drawmap
  @do goto startma1
  @end
 
@@ -1504,6 +1510,7 @@ Ok!
     @show
 `\`\  `2Damn it... You only have `$$&money`2!
 `\`k
+    @drawmap
     @do goto startma1
     @end
    @show
@@ -1529,6 +1536,7 @@ Ok!
 
 
 
+ @drawmap
  @do goto startma1
  @end
 
@@ -1618,6 +1626,7 @@ Leave
   of Greentree, that's all!"
 
 `k
+ @drawmap
  @do goto startma
 
 
@@ -1627,6 +1636,7 @@ Leave
   of my life.  I am so proud of her!"
 
 `k
+ @drawmap
  @do goto startma
  @end
 
@@ -1638,6 +1648,7 @@ Leave
 
 `k
  @do `v01 is 1
+ @drawmap
  @do goto startma
  @end
 
@@ -1670,6 +1681,7 @@ Leave
 `\`k
  @bitset `t12 3 1
  @do `i41 is 1
+ @drawmap
  @do goto startma
  @end
 
@@ -1682,6 +1694,7 @@ Leave
 
 `k
  @do `v01 is 1
+ @drawmap
  @do goto startma
  @end
 
@@ -1725,6 +1738,7 @@ Leave
 `\`\  `0"I'm so happy for you," `2Ma smiles.
 
 `k
+ @drawmap
  @do goto startma
  @end
 
@@ -1750,6 +1764,7 @@ Ok!
     @show
 `\`\  `2Damn it... You only have `$$&money`2!
 `\`k
+    @drawmap
     @do goto startma
     @end
    @show
@@ -1786,6 +1801,7 @@ Ok!
 
 
 
+ @drawmap
  @do goto startma
  @end
 
@@ -1803,6 +1819,7 @@ Ok!
   `0"Very tasty. I'd stay here just for that if I were you..."
 
 `k
+ @drawmap
  @do goto startma
  @end
 
