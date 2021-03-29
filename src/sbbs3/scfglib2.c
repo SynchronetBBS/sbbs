@@ -361,8 +361,6 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		get_str(cfg->dir[i]->upload_sem,instream);
 
 		get_int(cfg->dir[i]->maxfiles,instream);
-		if(cfg->dir[i]->maxfiles>MAX_FILES)
-			cfg->dir[i]->maxfiles=MAX_FILES;
 		get_str(cfg->dir[i]->exts,instream);
 		get_int(cfg->dir[i]->misc,instream);
 		get_int(cfg->dir[i]->seqdev,instream);
