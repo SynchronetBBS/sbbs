@@ -32,7 +32,6 @@ static bool new_dir(unsigned new_dirnum, unsigned libnum)
 	}
 	memset(new_directory, 0, sizeof(*new_directory));
 	new_directory->lib = libnum;
-	new_directory->maxfiles = MAX_FILES;
 	new_directory->misc = DEFAULT_DIR_OPTIONS;
 	new_directory->up_pct = cfg.cdt_up_pct;
 	new_directory->dn_pct = cfg.cdt_dn_pct;
@@ -712,7 +711,6 @@ void xfer_cfg()
 							continue;
 						memset(&tmpdir,0,sizeof(dir_t));
 						tmpdir.misc=DEFAULT_DIR_OPTIONS;
-						tmpdir.maxfiles=MAX_FILES;
 						tmpdir.up_pct=cfg.cdt_up_pct;
 						tmpdir.dn_pct=cfg.cdt_dn_pct; 
 
@@ -900,7 +898,6 @@ void xfer_cfg()
 							SAFECOPY(cfg.dir[j]->sname,tmpdir.sname);
 							SAFECOPY(cfg.dir[j]->lname,tmpdir.lname);
 							if(j==cfg.total_dirs) {
-								cfg.dir[j]->maxfiles=MAX_FILES;
 								cfg.dir[j]->up_pct=cfg.cdt_up_pct;
 								cfg.dir[j]->dn_pct=cfg.cdt_dn_pct; 
 							}
@@ -1165,8 +1162,12 @@ void dir_cfg(uint libnum)
 				SAFEPRINTF(str, "[%s]", path);
 			sprintf(opt[n++],"%-27.27s%s","Transfer File Path"
 				,str);
-			sprintf(opt[n++],"%-27.27s%u","Maximum Number of Files"
-				,cfg.dir[i]->maxfiles);
+			if(cfg.dir[i]->maxfiles)
+				sprintf(str, "%u", cfg.dir[i]->maxfiles);
+			else
+				SAFECOPY(str, "Unlimited");
+			sprintf(opt[n++],"%-27.27s%s","Maximum Number of Files"
+				,str);
 			if(cfg.dir[i]->maxage)
 				sprintf(str,"Enabled (%u days old)",cfg.dir[i]->maxage);
 			else
@@ -1257,15 +1258,9 @@ void dir_cfg(uint libnum)
 						"This value is the maximum number of files allowed in this directory.\n"
 					;
 					sprintf(str,"%u",cfg.dir[i]->maxfiles);
-					uifc.input(WIN_L2R|WIN_SAV,0,17,"Maximum Number of Files"
+					uifc.input(WIN_L2R|WIN_SAV,0,17,"Maximum Number of Files (0=Unlimited)"
 						,str,5,K_EDIT|K_NUMBER);
-					n=atoi(str);
-					if(n>MAX_FILES) {
-						sprintf(str,"Maximum Files is %u",MAX_FILES);
-						uifc.msg(str);
-					}
-					else
-						cfg.dir[i]->maxfiles=n;
+					cfg.dir[i]->maxfiles=atoi(str);
 					break;
 				case 11:
 					sprintf(str,"%u",cfg.dir[i]->maxage);
@@ -1365,8 +1360,8 @@ void dir_cfg(uint libnum)
 							,cfg.dir[i]->misc&DIR_MOVENEW ? "Yes":"No");
 						sprintf(opt[n++],"%-30.30s%s","Include Transfers In Stats"
 							,cfg.dir[i]->misc&DIR_NOSTAT ? "No":"Yes");
-						sprintf(opt[n++],"%-30.30s%s","Access Files not in Database"
-							,cfg.dir[i]->misc&DIR_FILES ? "Yes":"No");
+						sprintf(opt[n++],"%-30.30s%s","Calculate/Store Hash of Files"
+							,cfg.dir[i]->misc&DIR_NOHASH ? "No":"Yes");
 						sprintf(opt[n++],"%-30.30s%s","Template for New Directories"
 							,cfg.dir[i]->misc&DIR_TEMPLATE ? "Yes" : "No");
 						opt[n][0]=0;
@@ -1809,22 +1804,25 @@ void dir_cfg(uint libnum)
 								}
 								break;
 							case 20:
-								n=cfg.dir[i]->misc&DIR_FILES ? 0:1;
+								n=cfg.dir[i]->misc&DIR_NOHASH ? 1:0;
 								uifc.helpbuf=
-									"`Allow Access to Files Not in Database:`\n"
+									"`Calculate/Store Hashes of Files:`\n"
 									"\n"
-									"If this option is set to ~Yes~, then all files in this directory's\n"
-									"`Transfer File Path` will be visible/downloadable by users with access to\n"
-									"this directory.\n"
+									"Set to ~Yes~ to calculate and store the hashes of file contents when\n"
+									"adding files to this file base.\n"
+									"\n"
+									"The hashes (CRC-16, CRC-32, MD5, and SHA-1) are useful for detecting\n"
+									"duplicate files (i.e. and rejecting them) as well as allowing the\n"
+									"confirmation of data integrity for the downloaders of files."
 								;
 								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Allow Access to Files Not in Database"
+									,"Calculate/Store Hashes of Files"
 									,uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_FILES)) {
-									cfg.dir[i]->misc|=DIR_FILES;
+								if(n==0 && cfg.dir[i]->misc&DIR_NOHASH) {
+									cfg.dir[i]->misc &= ~DIR_NOHASH;
 									uifc.changes=1; 
-								} else if(n==1 && cfg.dir[i]->misc&DIR_FILES){
-									cfg.dir[i]->misc&=~DIR_FILES;
+								} else if(n==1 && !(cfg.dir[i]->misc&DIR_NOHASH)){
+									cfg.dir[i]->misc |= DIR_NOHASH;
 									uifc.changes=1; 
 								}
 								break;
