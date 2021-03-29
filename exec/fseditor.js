@@ -1483,6 +1483,25 @@ function handle_backspace()
 	}
 }
 
+function handle_delete()
+{
+	last_xpos=-1;
+	if(xpos>=line[ypos].text.length) {
+		/* delete the hardcr, */
+		line[ypos].hardcr=false;
+		if(!rewrap())
+			draw_line(ypos,xpos);
+		return;
+	}
+	line[ypos].text=line[ypos].text.substr(0,xpos)
+			+line[ypos].text.substr(xpos+1);
+	line[ypos].attr=line[ypos].attr.substr(0,xpos)
+			+line[ypos].attr.substr(xpos+1);
+	if(!rewrap())
+		draw_line(ypos,xpos);
+
+}
+
 function edit(quote_first)
 {
 	var prev_key;
@@ -1899,19 +1918,7 @@ function edit(quote_first)
 				console.line_counter=0;
 				return;
 			case KEY_DEL:	/* DELETE */
-				last_xpos=-1;
-				if(xpos>=line[ypos].text.length) {
-					/* delete the hardcr, */
-					line[ypos].hardcr=false;
-					handle_backspace();
-					break;
-				}
-				line[ypos].text=line[ypos].text.substr(0,xpos)
-						+line[ypos].text.substr(xpos+1);
-				line[ypos].attr=line[ypos].attr.substr(0,xpos)
-						+line[ypos].attr.substr(xpos+1);
-				if(!rewrap())
-					draw_line(ypos,xpos);
+				handle_delete();
 				break;
 			case 'B':
 				if(prev_key == '\x18') {	/* CTRL-X, ZDLE */
