@@ -83,8 +83,6 @@ const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 			return(prot->batulcmd);
 		case XFER_BATCH_DOWNLOAD:
 			return(prot->batdlcmd);
-		case XFER_BIDIR:
-			return(prot->bicmd);
 	}
 
 	return("invalid transfer type");

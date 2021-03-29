@@ -830,8 +830,8 @@ void xfer_opts()
 						"files either to or from a remote user. For each protocol, you can\n"
 						"specify the mnemonic (hot-key) to use to specify that protocol, the\n"
 						"command line to use for uploads, downloads, batch uploads, batch\n"
-						"downloads, bi-directional file transfers, support of DSZLOG, and (for\n"
-						"*nix only) if it uses socket I/O or the more common stdio.\n"
+						"downloads, support of DSZLOG, and (for *nix only) if it uses socket\n"
+						"I/O or the more common stdio.\n"
 						"\n"
 						"If the protocol doesn't support a certain method of transfer, or you\n"
 						"don't wish it to be available for a certain method of transfer, leave\n"
@@ -916,8 +916,6 @@ void xfer_opts()
 							,cfg.prot[i]->batulcmd);
 						sprintf(opt[j++],"%-30.30s%-40s","Batch Download Command Line"
 							,cfg.prot[i]->batdlcmd);
-						sprintf(opt[j++],"%-30.30s%-40s","Bi-dir Command Line"
-							,cfg.prot[i]->bicmd);
 						sprintf(opt[j++],"%-30.30s%s",   "Native Executable/Script"
 							,cfg.prot[i]->misc&PROT_NATIVE ? "Yes" : "No");
 						sprintf(opt[j++],"%-30.30s%s",	 "Supports DSZLOG"
@@ -973,12 +971,6 @@ void xfer_opts()
 									,cfg.prot[i]->batdlcmd,sizeof(cfg.prot[i]->batdlcmd)-1,K_EDIT);
 								break;
 							case 7:
-								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.prot[i]->bicmd,sizeof(cfg.prot[i]->bicmd)-1,K_EDIT);
-								break;
-							case 8:
 								l=cfg.prot[i]->misc&PROT_NATIVE ? 0:1;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
 									,"Native Executable/Script",uifcYesNoOpts);
@@ -988,7 +980,7 @@ void xfer_opts()
 									uifc.changes=1; 
 								}
 								break; 
-							case 9:
+							case 8:
 								l=cfg.prot[i]->misc&PROT_DSZLOG ? 0:1;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
 									,"Uses DSZLOG",uifcYesNoOpts);
@@ -998,7 +990,7 @@ void xfer_opts()
 									uifc.changes=1; 
 								}
 								break; 
-							case 10:
+							case 9:
 								l=cfg.prot[i]->misc&PROT_SOCKET ? 0:1l;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
 									,"Uses Socket I/O",uifcYesNoOpts);

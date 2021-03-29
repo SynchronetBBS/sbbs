@@ -884,7 +884,6 @@ enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 	,XFER_DOWNLOAD
 	,XFER_BATCH_UPLOAD
 	,XFER_BATCH_DOWNLOAD
-	,XFER_BIDIR
 };
 
 #define L_LOGON     1			/* Logon List maintenance                   */

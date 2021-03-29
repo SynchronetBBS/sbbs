@@ -965,8 +965,6 @@ void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 			continue;
 		if(type==XFER_BATCH_DOWNLOAD && cfg.prot[i]->batdlcmd[0]==0)
 			continue;
-		if(type==XFER_BIDIR && cfg.prot[i]->bicmd[0]==0)
-			continue;
 		if(printed && (cols < 80 || (printed%2)==0))
 			CRLF;
 		bprintf(text[TransferProtLstFmt],cfg.prot[i]->mnemonic,cfg.prot[i]->name);

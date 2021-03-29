@@ -375,7 +375,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 /****************************************************************************/
 void sbbs_t::qwk_sec()
 {
-	char	str[256],tmp2[256],ch,bi=0;
+	char	str[256],tmp2[256],ch;
 	char 	tmp[512];
 	int		error;
 	int 	s;
@@ -390,9 +390,6 @@ void sbbs_t::qwk_sec()
 	}
 	for(i=0;i<cfg.total_subs;i++)
 		sav_ptr[i]=subscan[i].ptr;
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
-			bi++;				/* number of bidirectional protocols configured */
 	if(useron.rest&FLAG('Q'))
 		getusrsubs();
 	delfiles(cfg.temp_dir,ALLFILES);
@@ -404,8 +401,6 @@ void sbbs_t::qwk_sec()
 		ASYNC;
 		bputs(text[QWKPrompt]);
 		sprintf(str,"?UDCSP\r%c",text[YNQP][2]);
-		if(bi)
-			strcat(str,"B");
 		ch=(char)getkeys(str,0);
 		if(ch>' ')
 			logch(ch,0);
