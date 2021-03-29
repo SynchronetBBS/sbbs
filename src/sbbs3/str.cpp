@@ -777,7 +777,8 @@ void sbbs_t::subinfo(uint subnum)
 	bprintf(text[SubInfoLongName],cfg.sub[subnum]->lname);
 	bprintf(text[SubInfoShortName],cfg.sub[subnum]->sname);
 	bprintf(text[SubInfoQWKName],cfg.sub[subnum]->qwkname);
-	bprintf(text[SubInfoMaxMsgs],cfg.sub[subnum]->maxmsgs);
+	if(cfg.sub[subnum]->maxmsgs)
+		bprintf(text[SubInfoMaxMsgs],cfg.sub[subnum]->maxmsgs);
 	if(cfg.sub[subnum]->misc&SUB_QNET)
 		bprintf(text[SubInfoTagLine],cfg.sub[subnum]->tagline);
 	if(cfg.sub[subnum]->misc&SUB_FIDO)
@@ -801,7 +802,8 @@ void sbbs_t::dirinfo(uint dirnum)
 	bprintf(text[DirInfoShortName],cfg.dir[dirnum]->sname);
 	if(cfg.dir[dirnum]->exts[0])
 		bprintf(text[DirInfoAllowedExts],cfg.dir[dirnum]->exts);
-	bprintf(text[DirInfoMaxFiles],cfg.dir[dirnum]->maxfiles);
+	if(cfg.dir[dirnum]->maxfiles)
+		bprintf(text[DirInfoMaxFiles],cfg.dir[dirnum]->maxfiles);
 	SAFEPRINTF2(str,"%s%s.msg",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if(fexist(str) && yesno(text[DirInfoViewFileQ]))
 		printfile(str,0);
