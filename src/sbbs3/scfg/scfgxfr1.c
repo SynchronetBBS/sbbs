@@ -1012,7 +1012,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 14:	/* Alternate file paths */
+			case __COUNTER__:	/* Alternate file paths */
 				while(1) {
 					for(i=0;i<cfg.altpaths;i++)
 						sprintf(opt[i],"%3d: %-40s",i+1,cfg.altpath[i]);
