@@ -3695,12 +3695,21 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	robj;
 	JSObject*	rarray;
 	BOOL		poll_for_write=FALSE;
+#ifdef _WIN32
 	fd_set		socket_set[3];
 	fd_set*		sets[3] = {NULL, NULL, NULL};
-	uintN		argn;
-	SOCKET		sock;
 	SOCKET		maxsock=0;
 	struct		timeval tv = {0, 0};
+	SOCKET		sock;
+#else
+	struct pollfd *fds;
+	int poll_timeout = 0;
+	nfds_t nfds;
+	short events;
+	int scount;
+	int k;
+#endif
+	uintN		argn;
 	jsuint		i;
 	jsuint		j;
 	jsuint      limit[3];
@@ -3717,8 +3726,13 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
 		else if(JSVAL_IS_OBJECT(argv[argn]))
 			inarray[inarray_cnt++] = JSVAL_TO_OBJECT(argv[argn]);
+#ifdef _WIN32
 		else if(JSVAL_IS_NUMBER(argv[argn]))
 			js_timeval(cx,argv[argn],&tv);
+#else
+		else if(JSVAL_IS_NUMBER(argv[argn]))
+			poll_timeout = js_polltimeout(cx, argv[argn]);
+#endif
 	}
 
 	if(inarray_cnt == 0)
@@ -3739,6 +3753,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 		/* Return array */
 		if((robj = JS_NewArrayObject(cx, 0, NULL))==NULL)
 			return(JS_FALSE);
+#ifdef _WIN32
 		FD_ZERO(&socket_set[0]);
 		if(poll_for_write)
 			sets[1]=&socket_set[0];
@@ -3773,6 +3788,56 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 
 			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(robj));
 		}
+#else
+		// First, count the number of sockets...
+		nfds = 0;
+		for (i = 0; i < limit[0]; i++) {
+			if(!JS_GetElement(cx, inarray[0], i, &val))
+				break;
+			nfds += js_socket_numsocks(cx, val);
+		}
+		if (nfds == 0)
+			return JS_TRUE;
+
+		fds = calloc(nfds, sizeof(*fds));
+		if (fds == NULL) {
+			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
+				, nfds, sizeof(*fds), getfname(__FILE__), __LINE__);
+			return JS_FALSE;
+		}
+		nfds = 0;
+		for (i = 0; i < limit[0]; i++) {
+			if(!JS_GetElement(cx, inarray[0], i, &val))
+				break;
+			nfds += js_socket_add(cx, val, &fds[nfds], poll_for_write ? POLLOUT : POLLIN);
+		}
+
+		rc = JS_SUSPENDREQUEST(cx);
+		if (poll(fds, nfds, poll_timeout) >= 0) {
+			nfds = 0;
+			for (i = 0; i < limit[0]; i++) {
+				if(!JS_GetElement(cx, inarray[0], i, &val))
+					break;
+				scount = js_socket_numsocks(cx, val);
+				for (k = 0; k < scount; k++) {
+					if (fds[nfds + k].revents & (poll_for_write ? POLLOUT : POLLIN | POLLHUP)) {
+						val=INT_TO_JSVAL(i);
+						JS_RESUMEREQUEST(cx, rc);
+						if(!JS_SetElement(cx, robj, len++, &val)) {
+							rc=JS_SUSPENDREQUEST(cx);
+							break;
+						}
+						rc=JS_SUSPENDREQUEST(cx);
+						break;
+					}
+				}
+				nfds += scount;
+			}
+
+			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(robj));
+		}
+		free(fds);
+#endif
 		JS_RESUMEREQUEST(cx, rc);
 
 		return(JS_TRUE);
@@ -3781,6 +3846,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 		/* Return object */
 		if((robj = JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(JS_FALSE);
+#ifdef _WIN32
 		for (j = 0; j < inarray_cnt; j++) {
 			if (limit[j] > 0) {
 				FD_ZERO(&socket_set[j]);
@@ -3830,6 +3896,122 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 			}
 			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(robj));
 		}
+#else
+		/*
+		 * So, we need to collapse all the FDs into a list with flags set...
+		 * readfd corresponds to POLLIN
+		 * writefd corresponds to POLLOUT
+		 * and exceptfd corresponds to POLLPRI
+		 *
+		 * We don't want duplicates, and we don't want to set things that
+		 * weren't requested.
+		 *
+		 * Brute-force method is to add them all to an array, sort the array,
+		 * then remove duplicates after ORing the events together.
+		 *
+		 * NOTE that some of the socket objects may actually be duplicates
+		 * themselves, and all of them should set with the appropriate status.
+		 *
+		 * Alternatively, we can just add them all in-order and pass a larger
+		 * array to poll().  This will certainly be more efficient when
+		 * generating the returned arrays.
+		 */
+		nfds = 0;
+		for (j = 0; j < inarray_cnt; j++) {
+			if (limit[j] > 0) {
+				for (i = 0; i < limit[j]; i++) {
+					if(!JS_GetElement(cx, inarray[0], i, &val))
+						break;
+					nfds += js_socket_numsocks(cx, val);
+				}
+			}
+		}
+		if (nfds == 0)
+			return JS_TRUE;
+
+		fds = calloc(nfds, sizeof(*fds));
+		if (fds == NULL) {
+			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
+				, nfds, sizeof(*fds), getfname(__FILE__), __LINE__);
+			return JS_FALSE;
+		}
+		nfds = 0;
+		for (j = 0; j < inarray_cnt; j++) {
+			if (limit[j] > 0) {
+				switch (j) {
+					case 0:
+						events = POLLIN;
+						break;
+					case 1:
+						events = POLLOUT;
+						break;
+					case 2:
+						events = POLLPRI;
+						break;
+				}
+				for (i = 0; i < limit[j]; i++) {
+					if(!JS_GetElement(cx, inarray[j], i, &val))
+						break;
+					nfds += js_socket_add(cx, val, &fds[nfds], poll_for_write ? POLLOUT : POLLIN);
+				}
+			}
+		}
+
+		rc = JS_SUSPENDREQUEST(cx);
+		if (poll(fds, nfds, poll_timeout) >= 0) {
+			nfds = 0;
+			for (j = 0; j < inarray_cnt; j++) {
+				if (limit[j] > 0) {
+					switch (j) {
+						case 0:
+							events = POLLIN | POLLHUP;
+							break;
+						case 1:
+							events = POLLOUT;
+							break;
+						case 2:
+							events = POLLPRI;
+							break;
+					}
+					len = 0;
+					JS_RESUMEREQUEST(cx, rc);
+					if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL) {
+						free(fds);
+						return(JS_FALSE);
+					}
+					val = OBJECT_TO_JSVAL(rarray);
+					if (!JS_SetProperty(cx, robj, props[j], &val)) {
+						free(fds);
+						return JS_FALSE;
+					}
+					rc=JS_SUSPENDREQUEST(cx);
+					for(i=0;i<limit[j];i++) {
+						JS_RESUMEREQUEST(cx, rc);
+						if(!JS_GetElement(cx, inarray[j], i, &val)) {
+							rc=JS_SUSPENDREQUEST(cx);
+							break;
+						}
+						rc=JS_SUSPENDREQUEST(cx);
+						scount = js_socket_numsocks(cx, val);
+						for (k = 0; k < scount; k++) {
+							if(fds[nfds + k].revents & (events | POLLERR | POLLNVAL)) {
+								val=INT_TO_JSVAL(i);
+								JS_RESUMEREQUEST(cx, rc);
+								if(!JS_SetElement(cx, rarray, len++, &val)) {
+									rc=JS_SUSPENDREQUEST(cx);
+									break;
+								}
+								rc=JS_SUSPENDREQUEST(cx);
+							}
+						}
+						nfds += scount;
+					}
+				}
+			}
+			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(robj));
+		}
+		free(fds);
+#endif
 		JS_RESUMEREQUEST(cx, rc);
 
 		return(JS_TRUE);
