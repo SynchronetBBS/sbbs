@@ -34,8 +34,10 @@
 #include "conn.h"
 #include "rlogin.h"
 #include "raw.h"
+#ifndef WITHOUT_CRYPTLIB
 #include "ssh.h"
 #include "telnets.h"
+#endif
 #ifndef __HAIKU__
 #include "modem.h"
 #endif

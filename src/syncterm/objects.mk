@@ -6,7 +6,6 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)ripper$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)rlogin$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet_io$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)telnets$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn_telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet$(OFILE) \
@@ -15,6 +14,5 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)menu$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)zmodem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)st_crypt$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)syncterm$(OFILE)
 
