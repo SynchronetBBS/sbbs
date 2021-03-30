@@ -1722,6 +1722,43 @@ void service_udp_sock_cb(SOCKET sock, void *cbdata)
    #endif
 }
 
+#ifndef _WIN32
+/*
+ * Sets up the fds for poll, and returns the total sockets
+ */
+static nfds_t setup_poll(struct pollfd **fds)
+{
+	int i, j;
+	nfds_t nfds = 0;
+
+	free(*fds);
+	for(i=0;i<(int)services;i++) {
+		if(service[i].options&SERVICE_OPT_STATIC)
+			continue;
+		if(service[i].set==NULL)
+			continue;
+		nfds += service[i].set->sock_count;
+	}
+
+	*fds = calloc(nfds, sizeof(**fds));
+	if (*fds == NULL)
+		return 0;
+	nfds = 0;
+	for(i=0;i<(int)services;i++) {
+		if(service[i].options&SERVICE_OPT_STATIC)
+			continue;
+		if(service[i].set==NULL)
+			continue;
+		for(j=0; j<service[i].set->sock_count; j++) {
+			(*fds)[nfds].fd = service[i].set->socks[j].sock;
+			(*fds)[nfds].events = POLLIN;
+			nfds++;
+		}
+	}
+	return nfds;
+}
+#endif
+
 void DLLCALL services_thread(void* arg)
 {
 	char*			p;
@@ -1745,14 +1782,20 @@ void DLLCALL services_thread(void* arg)
 	ulong			total_running;
 	time_t			t;
 	time_t			initialized=0;
-	fd_set			socket_set;
-	SOCKET			high_socket;
 	ulong			total_sockets;
-	struct timeval	tv;
 	service_client_t* client;
 	char			*ssl_estr;
 	int			level;
 	BOOL			need_cert = FALSE;
+#ifdef _WIN32
+	fd_set			socket_set;
+	SOCKET			high_socket;
+	struct timeval	tv;
+#else
+	struct pollfd *fds = NULL;
+	nfds_t nfds;
+	nfds_t nfdsi;
+#endif
 
 	startup=(services_startup_t*)arg;
 
@@ -1958,6 +2001,14 @@ void DLLCALL services_thread(void* arg)
 
 		lprintf(LOG_INFO,"0000 Services thread started (%lu service sockets bound)", total_sockets);
 
+#ifndef _WIN32
+		nfds = setup_poll(&fds);
+		if (nfds == 0) {
+			lprintf(LOG_CRIT, "!ERROR setting up poll() data");
+			cleanup(1);
+			return;
+		}
+#endif
 		/* Main Server Loop */
 		while(!terminated) {
 			YIELD();
@@ -1983,6 +2034,7 @@ void DLLCALL services_thread(void* arg)
 				}
 			}
 
+#ifdef _WIN32
 			/* Setup select() parms */
 			FD_ZERO(&socket_set);	
 			high_socket=0;
@@ -2027,7 +2079,49 @@ void DLLCALL services_thread(void* arg)
 				for(j=0; j<service[i].set->sock_count; j++) {
 					if(!FD_ISSET(service[i].set->socks[j].sock,&socket_set))
 						continue;
+#else
+			/* Clear poll FDs where necessary (ie: when !SERVICE_OPT_FULL_ACCEPT) */
+			nfdsi = 0;
+			for(i=0;i<(int)services;i++) {
+				if(service[i].options&SERVICE_OPT_STATIC)
+					continue;
+				if(service[i].set==NULL)
+					continue;
+				if(!(service[i].options&SERVICE_OPT_FULL_ACCEPT)) {
+					if (service[i].max_clients && protected_uint32_value(service[i].clients) >= service[i].max_clients) {
+						for(j=0; j<service[i].set->sock_count; j++)
+							fds[nfdsi + j].fd = -1;
+					}
+					else {
+						for(j=0; j<service[i].set->sock_count; j++)
+							fds[nfdsi + j].fd = service[i].set->socks[j].sock;
+					}
+				}
+				nfdsi += service[i].set->sock_count;
+			}
 
+			if ((result = poll(fds, nfds, startup->sem_chk_freq * 1000)) < 1) {
+				if(result==0)
+					continue;
+
+				if(ERROR_VALUE==EINTR)
+					lprintf(LOG_DEBUG,"0000 Services listening interrupted");
+				else
+					lprintf(LOG_WARNING,"0000 !ERROR %d polling sockets: %s"
+						, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
+				continue;
+			}
+			nfdsi = 0;
+			for(i=0;i<(int)services;i++) {
+				if(service[i].options&SERVICE_OPT_STATIC)
+					continue;
+				if(service[i].set==NULL)
+					continue;
+
+				for(j=0; j<service[i].set->sock_count; j++) {
+					if ((fds[nfdsi + j].revents & POLLIN) == 0)
+						continue;
+#endif
 					client_addr_len = sizeof(client_addr);
 
 					udp_len=0;
@@ -2202,8 +2296,14 @@ void DLLCALL services_thread(void* arg)
 					service[i].served++;
 					served++;
 				}
+#ifndef _WIN32
+				nfdsi += service[i].set->sock_count;
+#endif
 			}
 		}
+#ifndef _WIN32
+		free(fds);
+#endif
 
 		/* Close Service Sockets */
 		lprintf(LOG_DEBUG,"0000 Closing service sockets");

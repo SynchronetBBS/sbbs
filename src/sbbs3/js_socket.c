@@ -196,8 +196,6 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 {
 	ptrdiff_t	total=0;
 	int	copied,ret;
-	fd_set		socket_set;
-	struct		timeval tv = {0, 0};
 	char *estr;
 	time_t now = time(NULL);
 	int status;
@@ -227,10 +225,8 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 			if (p->sock == INVALID_SOCKET)
 				ret = -1;
 			else {
-				FD_ZERO(&socket_set);
-				FD_SET(p->sock,&socket_set);
-				tv.tv_sec = timeout;
-				if((ret = select(p->sock+1,&socket_set,NULL,NULL,&tv))==1)
+				ret = 0;
+				if (socket_readable(p->sock, timeout * 1000))
 					ret = recv(p->sock, buf, len, flags);
 			}
 		}
@@ -476,6 +472,7 @@ SOCKET DLLCALL js_socket(JSContext *cx, jsval val)
 	return(sock);
 }
 
+#ifdef _WIN32
 SOCKET DLLCALL js_socket_add(JSContext *cx, jsval val, fd_set *fds)
 {
 	js_socket_private_t	*p;
@@ -561,6 +558,98 @@ void DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv)
 			tv->tv_usec = (int)(jsd*1000000.0)%1000000;
 		}
 	}
+}
+#else
+size_t DLLCALL js_socket_numsocks(JSContext *cx, jsval val)
+{
+	js_socket_private_t	*p;
+	JSClass*	cl;
+	SOCKET		sock=INVALID_SOCKET;
+	size_t		i;
+	int32_t		intval;
+	size_t ret = 0;
+
+	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+		if(cl->flags&JSCLASS_HAS_PRIVATE) {
+			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
+				if(p->set) {
+					for(i=0; i<p->set->sock_count; i++) {
+						if(p->set->socks[i].sock == INVALID_SOCKET)
+							continue;
+						ret++;
+					}
+				}
+				else {
+					sock = p->sock;
+					if(sock != INVALID_SOCKET)
+						ret = 1;
+				}
+			}
+		}
+	} else if(val!=JSVAL_VOID) {
+		if(JS_ValueToInt32(cx,val,&intval)) {
+			if (intval != INVALID_SOCKET)
+				ret = 1;
+		}
+	}
+	return ret;
+}
+
+size_t DLLCALL js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events)
+{
+	js_socket_private_t	*p;
+	JSClass*	cl;
+	SOCKET		sock=INVALID_SOCKET;
+	size_t		i;
+	int32_t		intval;
+	size_t ret = 0;
+
+	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+		if(cl->flags&JSCLASS_HAS_PRIVATE) {
+			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
+				if(p->set) {
+					for(i=0; i<p->set->sock_count; i++) {
+						if(p->set->socks[i].sock == INVALID_SOCKET)
+							continue;
+						fds[ret].events = events;
+						fds[ret++].fd = p->set->socks[i].sock;
+					}
+				}
+				else {
+					sock = p->sock;
+					if(sock != INVALID_SOCKET) {
+						fds[ret].events = events;
+						fds[ret++].fd = sock;
+					}
+				}
+			}
+		}
+	} else if(val!=JSVAL_VOID) {
+		if(JS_ValueToInt32(cx,val,&intval)) {
+			sock = intval;
+			if(sock != INVALID_SOCKET) {
+				fds[ret].events = events;
+				fds[ret++].fd = sock;
+			}
+		}
+	}
+	return ret;
+}
+#endif
+
+int DLLCALL js_polltimeout(JSContext* cx, jsval val)
+{
+	jsdouble jsd;
+
+	if(JSVAL_IS_INT(val))
+		return JSVAL_TO_INT(val) * 1000;
+
+	if(JSVAL_IS_DOUBLE(val)) {
+		if(JS_ValueToNumber(cx,val,&jsd))
+			return jsd * 1000;
+	}
+
+	return 0;
 }
 
 static JSBool
@@ -730,11 +819,10 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	ushort		port;
 	JSString*	str;
 	js_socket_private_t*	p;
-	fd_set		socket_set;
-	struct		timeval tv = {0, 0};
 	jsrefcount	rc;
 	char		ip_str[256];
 	struct addrinfo	hints,*res,*cur;
+	int timeout = 10000; /* Default time-out */
 
 	if((p=(js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class))==NULL) {
 		return(JS_FALSE);
@@ -764,10 +852,8 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	ioctlsocket(p->sock,FIONBIO,&val);
 	result = SOCKET_ERROR;
 	for(cur=res; cur != NULL; cur=cur->ai_next) {
-		tv.tv_sec = 10;	/* default time-out */
-
 		if(argc>2)	/* time-out value specified */
-			js_timeval(cx,argv[2],&tv);
+			timeout = js_polltimeout(cx, argv[2]);
 
 		inet_addrtop((void *)cur->ai_addr, ip_str, sizeof(ip_str));
 		dbprintf(FALSE, p, "connecting to %s on port %u at %s", ip_str, port, p->hostname);
@@ -778,10 +864,8 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 		if(result == SOCKET_ERROR) {
 			result = ERROR_VALUE;
 			if(result == EWOULDBLOCK || result == EINPROGRESS) {
-				FD_ZERO(&socket_set);
-				FD_SET(p->sock,&socket_set);
 				result = ETIMEDOUT;
-				if(select(p->sock+1,NULL,&socket_set,NULL,&tv)==1) {
+				if (socket_readable(p->sock, timeout)) {
 					int so_error = -1;
 					socklen_t optlen = sizeof(so_error);
 					if(getsockopt(p->sock, SOL_SOCKET, SO_ERROR, (void*)&so_error, &optlen) == 0 && so_error == 0)
@@ -1569,6 +1653,8 @@ js_setsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class))==NULL) {
 		return(JS_FALSE);
 	}
+	if (p->sock == INVALID_SOCKET)
+		return JS_TRUE;
 
 	JSVALUE_TO_ASTRING(cx, argv[0], optname, 64, NULL);
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1641,15 +1727,22 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	js_socket_private_t*	p;
 	BOOL	poll_for_write=FALSE;
-	fd_set	socket_set;
-	fd_set*	rd_set=NULL;
-	fd_set*	wr_set=NULL;
 	uintN	argn;
 	int		result;
-	struct	timeval tv = {0, 0};
 	jsrefcount	rc;
+#ifdef _WIN32
 	size_t	i;
 	SOCKET	high=0;
+	fd_set  socket_set;
+	fd_set* rd_set=NULL;
+	fd_set* wr_set=NULL;
+	struct  timeval tv = {0, 0};
+#else
+	int timeout = 0;
+	struct pollfd *fds;
+	nfds_t nfds;
+	jsval objval = OBJECT_TO_JSVAL(obj);
+#endif
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1666,11 +1759,17 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	for(argn=0;argn<argc;argn++) {
 		if(JSVAL_IS_BOOLEAN(argv[argn]))
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
-		else if(JSVAL_IS_NUMBER(argv[argn]))
+		else if(JSVAL_IS_NUMBER(argv[argn])) {
+#ifdef _WIN32
 			js_timeval(cx,argv[argn],&tv);
+#else
+			timeout = js_polltimeout(cx, argv[argn]);
+#endif
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
+#ifdef _WIN32
 	FD_ZERO(&socket_set);
 	if(p->set) {
 		for(i=0; i<p->set->sock_count; i++) {
@@ -1692,10 +1791,28 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 		result = 1;
 	else
 		result = select(high+1,rd_set,wr_set,NULL,&tv);
+#else
+	if (p->peeked && !poll_for_write) {
+		result = 1;
+	}
+	else {
+		nfds = js_socket_numsocks(cx, objval);
+		fds = calloc(nfds, sizeof(*fds));
+		if (fds == NULL) {
+			JS_RESUMEREQUEST(cx, rc);
+			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
+				, nfds, sizeof(*fds), getfname(__FILE__), __LINE__);
+			return JS_FALSE;
+		}
+		nfds = js_socket_add(cx, objval, fds, poll_for_write ? POLLOUT : POLLIN);
+		result = poll(fds, nfds, timeout);
+		free(fds);
+	}
+#endif
 
 	p->last_error=ERROR_VALUE;
 
-	dbprintf(FALSE, p, "poll: select returned %d (errno %d)"
+	dbprintf(FALSE, p, "poll: select/poll returned %d (errno %d)"
 		,result,p->last_error);
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
@@ -2415,9 +2532,6 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	char	pstr[6];
 	jsrefcount	rc;
 	int nonblock;
-	struct timeval	tv;
-	fd_set			wfd;
-	fd_set			efd;
 	scfg_t *scfg;
 	char error[256];
 	uint16_t bindport = 0;
@@ -2623,35 +2737,17 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 					for(;p->sock!=INVALID_SOCKET;) {
 						// TODO: Do clever timeout stuff here.
-						tv.tv_sec=timeout;
-						tv.tv_usec=0;
-
-						FD_ZERO(&wfd);
-						FD_SET(p->sock, &wfd);
-						FD_ZERO(&efd);
-						FD_SET(p->sock, &efd);
-						switch(select(p->sock+1, NULL, &wfd, &efd, &tv)) {
-							case 0:
-								// fall-through
-							case -1:
-								closesocket(p->sock);
-								p->sock=INVALID_SOCKET;
-								continue;
-							case 1:
-								if(FD_ISSET(p->sock, &efd)) {
-									closesocket(p->sock);
-									p->sock=INVALID_SOCKET;
-									continue;
-								}
-								else {
-									if(socket_check(p->sock, NULL, NULL, 0))
-										goto connected;
-									closesocket(p->sock);
-									p->sock=INVALID_SOCKET;
-									continue;
-								}
-							default:
-								break;
+						if (socket_writable(p->sock, timeout * 1000)) {
+							if(!socket_recvdone(p->sock, 0))
+								goto connected;
+							closesocket(p->sock);
+							p->sock=INVALID_SOCKET;
+							continue;
+						}
+						else {
+							closesocket(p->sock);
+							p->sock=INVALID_SOCKET;
+							continue;
 						}
 					}
 
