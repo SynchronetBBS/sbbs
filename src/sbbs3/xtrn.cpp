@@ -1069,12 +1069,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	int		in_pipe[2];
 	int		out_pipe[2];
 	int		err_pipe[2];
-	fd_set ibits;
-	int	high_fd;
-	struct timeval timeout;
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
     bool	wwiv_flag=false;
  	char* p;
+	struct pollfd fds[2];
 
 	xtrn_mode = mode;
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
@@ -1689,6 +1687,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(mode&EX_STDOUT) {
 		if(!(mode&EX_STDIN))
 			close(out_pipe[1]);	/* close write-end of pipe */
+		fds[0].fd = out_pipe[0];
+		fds[0].events = POLLIN;
+		fds[1].fd = err_pipe[0];
+		fds[1].events = POLLIN;
+		fds[1].revents = 0;
 		while(!terminated) {
 			if(waitpid(pid, &i, WNOHANG)!=0)	/* child exited */
 				break;
@@ -1707,26 +1710,13 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					write(in_pipe[1],buf,wr);
 			}
 
-			/* Error Output */
-			FD_ZERO(&ibits);
-			if(!(mode&EX_NOLOG)) {
-				FD_SET(err_pipe[0],&ibits);
-				high_fd=err_pipe[0];
-			}
-			FD_SET(out_pipe[0],&ibits);
-			if(!(mode&EX_NOLOG)) {
-				if(out_pipe[0]>err_pipe[0])
-					high_fd=out_pipe[0];
-			} else
-				high_fd=out_pipe[0];
-			timeout.tv_sec=0;
-			timeout.tv_usec=1000;
 			bp=buf;
 			i=0;
 			if(mode&EX_NOLOG)
-				select(high_fd+1,&ibits,NULL,NULL,&timeout);
+				poll(fds, (mode & EX_NOLOG) ? 1 : 2, 1);
 			else {
-				while ((select(high_fd+1,&ibits,NULL,NULL,&timeout)>0) && FD_ISSET(err_pipe[0],&ibits) && (i<(int)sizeof(buf)-1))  {
+				while (poll(fds, (mode & EX_NOLOG) ? 1 : 2, 1) > 0 && (fds[1].revents & POLLIN)
+				    && (i < (int)sizeof(buf) - 1))  {
 					if((rd=read(err_pipe[0],bp,1))>0)  {
 						i+=rd;
 						bp++;
@@ -1735,11 +1725,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					}
 					else
 						break;
-					FD_ZERO(&ibits);
-					FD_SET(err_pipe[0],&ibits);
-					FD_SET(out_pipe[0],&ibits);
-					timeout.tv_sec=0;
-					timeout.tv_usec=1000;
 				}
 				if(i > 0) {
 					buf[i] = '\0';
@@ -1757,7 +1742,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				}
 			}
 
-			data_waiting=FD_ISSET(out_pipe[0],&ibits);
+			data_waiting=fds[0].revents & POLLIN;
 			if(i==0 && data_waiting==0)
 				continue;
 
@@ -1846,13 +1831,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		waitpid(pid, &i, 0);
 	else {
 		while(waitpid(pid, &i, WNOHANG)==0)  {
-			FD_ZERO(&ibits);
-			FD_SET(err_pipe[0],&ibits);
-			timeout.tv_sec=1;
-			timeout.tv_usec=0;
 			bp=buf;
 			i=0;
-			while ((select(err_pipe[0]+1,&ibits,NULL,NULL,&timeout)>0) && (i<XTRN_IO_BUF_LEN-1))  {
+			while (socket_readable(err_pipe[0], 1000) && (i<XTRN_IO_BUF_LEN-1))  {
 				if((rd=read(err_pipe[0],bp,1))>0)  {
 					i+=rd;
 					if(*bp=='\n') {
