@@ -338,8 +338,6 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 	int		result;
 	va_list argptr;
 	char	sbuf[1024];
-	fd_set	socket_set;
-	struct timeval tv;
 
     va_start(argptr,fmt);
     len=vsnprintf(sbuf,maxlen=sizeof(sbuf)-2,fmt,argptr);
@@ -357,20 +355,10 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 		return(0);
 	}
 
-	/* Check socket for writability (using select) */
-	tv.tv_sec=300;
-	tv.tv_usec=0;
-
-	FD_ZERO(&socket_set);
-	FD_SET(sock,&socket_set);
-
-	if((result=select(sock+1,NULL,&socket_set,NULL,&tv))<1) {
-		if(result==0)
-			lprintf(LOG_NOTICE,"%04d %s !TIMEOUT selecting socket for send"
-				,sock, prot);
-		else
-			lprintf(LOG_NOTICE,"%04d %s !ERROR %d selecting socket for send"
-				,sock, prot, ERROR_VALUE);
+	/* Check socket for writability */
+	if (!socket_writable(sock, 300000)) {
+		lprintf(LOG_NOTICE,"%04d %s !NOTICE socket did not become writable"
+			,sock, prot);
 		return(0);
 	}
 
@@ -436,8 +424,6 @@ static void sockerror(SOCKET socket, const char* prot, int rd, const char* actio
 static int sock_recvbyte(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *buf, time_t start)
 {
 	int len=0;
-	fd_set	socket_set;
-	struct	timeval	tv;
 	int ret;
 	int i;
 
@@ -467,24 +453,12 @@ static int sock_recvbyte(SOCKET sock, const char* prot, CRYPT_SESSION sess, char
 		}
 	}
 	else {
-		tv.tv_sec=startup->max_inactivity;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(sock,&socket_set);
-
-		i=select(sock+1,&socket_set,NULL,NULL,&tv);
-
-		if(i<1) {
-			if(i==0) {
-				if(startup->max_inactivity && (time(NULL)-start)>startup->max_inactivity) {
-					lprintf(LOG_WARNING,"%04d %s !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET"
-						,sock, prot, startup->max_inactivity);
-					return(-1);
-				}
-				return 0;
+		if (!socket_readable(sock, startup->max_inactivity * 1000)) {
+			if(startup->max_inactivity && (time(NULL)-start)>startup->max_inactivity) {
+				lprintf(LOG_WARNING,"%04d %s !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET"
+					,sock, prot, startup->max_inactivity);
+				return(-1);
 			}
-			sockerror(sock,prot,i,"select");
 			return 0;
 		}
 		i=recv(sock, buf, 1, 0);

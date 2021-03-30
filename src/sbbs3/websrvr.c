@@ -626,9 +626,6 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 	size_t sent=0;
 	int	tls_sent;
 	int result;
-	int sel;
-	fd_set	wr_set;
-	struct timeval tv;
 	int status;
 	BOOL local_failed = FALSE;
 
@@ -636,67 +633,56 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 		failed = &local_failed;
 
 	while(sent<len && session->socket!=INVALID_SOCKET && *failed == FALSE) {
-		FD_ZERO(&wr_set);
-		FD_SET(session->socket,&wr_set);
-		/* Convert timeout from ms to sec/usec */
-		tv.tv_sec=startup->max_inactivity;
-		tv.tv_usec=0;
-		sel=select(session->socket+1,NULL,&wr_set,NULL,&tv);
-		switch(sel) {
-			case 1:
-				if (session->is_tls) {
-					/*
-					 * Limit as per js_socket.c.
-					 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
-					 */
-					size_t sendbytes = len-sent;
-					if (sendbytes > 0x2000)
-						sendbytes = 0x2000;
-					status = cryptPushData(session->tls_sess, buf+sent, sendbytes, &tls_sent);
-					GCES(status, session, "pushing data");
-					if (status == CRYPT_ERROR_TIMEOUT) {
-						tls_sent = 0;
-						if(!cryptStatusOK(status=cryptPopData(session->tls_sess, "", 0, &status))) {
-							if (status != CRYPT_ERROR_TIMEOUT && status != CRYPT_ERROR_PARAM2)
-								GCES(status, session, "popping data after timeout");
-						}
-						status = CRYPT_OK;
+		if (socket_writable(session->socket, startup->max_inactivity * 1000)) {
+			if (session->is_tls) {
+				/*
+				 * Limit as per js_socket.c.
+				 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
+				 */
+				size_t sendbytes = len-sent;
+				if (sendbytes > 0x2000)
+					sendbytes = 0x2000;
+				status = cryptPushData(session->tls_sess, buf+sent, sendbytes, &tls_sent);
+				GCES(status, session, "pushing data");
+				if (status == CRYPT_ERROR_TIMEOUT) {
+					tls_sent = 0;
+					if(!cryptStatusOK(status=cryptPopData(session->tls_sess, "", 0, &status))) {
+						if (status != CRYPT_ERROR_TIMEOUT && status != CRYPT_ERROR_PARAM2)
+							GCES(status, session, "popping data after timeout");
 					}
-					if(cryptStatusOK(status)) {
-						HANDLE_CRYPT_CALL_EXCEPT(status = cryptFlushData(session->tls_sess), session, "flushing data", CRYPT_ERROR_COMPLETE);
-						if (cryptStatusError(status))
-							*failed=TRUE;
-						return tls_sent;
-					}
-					*failed=TRUE;
-					result = tls_sent;
+					status = CRYPT_OK;
 				}
-				else {
-					result=sendsocket(session->socket,buf+sent,len-sent);
-					if(result==SOCKET_ERROR) {
-						if(ERROR_VALUE==ECONNRESET)
-							lprintf(LOG_NOTICE,"%04d Connection reset by peer on send",session->socket);
-						else if(ERROR_VALUE==ECONNABORTED)
-							lprintf(LOG_NOTICE,"%04d Connection aborted by peer on send",session->socket);
-#ifdef EPIPE
-						else if(ERROR_VALUE==EPIPE)
-							lprintf(LOG_NOTICE,"%04d Unable to send to peer",session->socket);
-#endif
-						else
-							lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",session->socket,ERROR_VALUE);
+				if(cryptStatusOK(status)) {
+					HANDLE_CRYPT_CALL_EXCEPT(status = cryptFlushData(session->tls_sess), session, "flushing data", CRYPT_ERROR_COMPLETE);
+					if (cryptStatusError(status))
 						*failed=TRUE;
-						return(sent);
-					}
+					return tls_sent;
 				}
-				break;
-			case 0:
-				lprintf(LOG_WARNING,"%04d Timeout selecting socket for write",session->socket);
 				*failed=TRUE;
-				return(sent);
-			case -1:
-				lprintf(LOG_WARNING,"%04d !ERROR %d selecting socket for write",session->socket,ERROR_VALUE);
-				*failed=TRUE;
-				return(sent);
+				result = tls_sent;
+			}
+			else {
+				result=sendsocket(session->socket,buf+sent,len-sent);
+				if(result==SOCKET_ERROR) {
+					if(ERROR_VALUE==ECONNRESET)
+						lprintf(LOG_NOTICE,"%04d Connection reset by peer on send",session->socket);
+					else if(ERROR_VALUE==ECONNABORTED)
+						lprintf(LOG_NOTICE,"%04d Connection aborted by peer on send",session->socket);
+#ifdef EPIPE
+					else if(ERROR_VALUE==EPIPE)
+						lprintf(LOG_NOTICE,"%04d Unable to send to peer",session->socket);
+#endif
+					else
+						lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",session->socket,ERROR_VALUE);
+					*failed=TRUE;
+					return(sent);
+				}
+			}
+		}
+		else {
+			lprintf(LOG_WARNING,"%04d Timeout waiting for socket to become writable",session->socket);
+			*failed=TRUE;
+			return(sent);
 		}
 		sent+=result;
 	}
@@ -977,11 +963,9 @@ static int close_socket(SOCKET *sock)
 
 	/* required to ensure all data is sent */
 	shutdown(*sock,SHUT_WR);
-	while(socket_check(*sock, &rd, NULL, startup->max_inactivity*1000))  {
-		if (rd) {
-			if (recv(*sock,&ch,1,0) <= 0)
-				break;
-		}
+	while(socket_readable(*sock, startup->max_inactivity * 1000))  {
+		if (recv(*sock,&ch,1,0) <= 0)
+			break;
 		if (time(NULL) >= end)
 			break;
 	}
@@ -2097,35 +2081,21 @@ static int sess_recv(http_session_t *session, char *buf, size_t length, int flag
 static int sockreadline(http_session_t * session, char *buf, size_t length)
 {
 	char	ch;
-	int		sel;
 	DWORD	i;
 	DWORD	chucked=0;
-	fd_set	rd_set;
-	struct	timeval tv;
 
 	for(i=0;TRUE;) {
 		if(session->socket==INVALID_SOCKET)
 			return(-1);
 		if ((!session->is_tls) || (!session->tls_pending)) {
-			FD_ZERO(&rd_set);
-			FD_SET(session->socket,&rd_set);
-			/* Convert timeout from ms to sec/usec */
-			tv.tv_sec=startup->max_inactivity;
-			tv.tv_usec=0;
-			sel=select(session->socket+1,&rd_set,NULL,NULL,&tv);
-			switch(sel) {
-				case 1:
-					if (session->is_tls)
-						session->tls_pending=TRUE;
-					break;
-				case -1:
-					close_session_socket(session);
-					lprintf(LOG_DEBUG,"%04d !ERROR %d selecting socket for read",session->socket,ERROR_VALUE);
-					return(-1);
-				default:
-					/* Timeout */
-					lprintf(LOG_NOTICE,"%04d Session timeout due to inactivity (%d seconds)",session->socket,startup->max_inactivity);
-					return(-1);
+			if (socket_readable(session->socket, startup->max_inactivity * 1000)) {
+				if (session->is_tls)
+					session->tls_pending=TRUE;
+			}
+			else {
+				/* Timeout */
+				lprintf(LOG_NOTICE,"%04d Session timeout due to inactivity (%d seconds)",session->socket,startup->max_inactivity);
+				return(-1);
 			}
 		}
 
@@ -2179,10 +2149,6 @@ static int pipereadline(int pipe, char *buf, size_t length, char *fullbuf, size_
 	char	ch;
 	DWORD	i;
 	int		ret=0;
-#ifndef _WIN32
-	struct timeval tv={0,0};
-	fd_set  read_set;
-#endif
 
 	/* Terminate buffers */
 	if(buf != NULL)
@@ -2194,11 +2160,7 @@ static int pipereadline(int pipe, char *buf, size_t length, char *fullbuf, size_
 		ret=0;
 		ReadFile(pipe, &ch, 1, (DWORD*)&ret, NULL);
 #else
-		tv.tv_sec=startup->max_cgi_inactivity;
-		tv.tv_usec=0;
-		FD_ZERO(&read_set);
-		FD_SET(pipe, &read_set);
-		if(select(pipe+1, &read_set, NULL, NULL, &tv)<1)
+		if (!socket_readable(pipe, startup->max_cgi_inactivity * 1000))
 			return(-1);
 		ret=read(pipe, &ch, 1);
 #endif
@@ -3824,10 +3786,8 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 	char *path = strdup(orig_path);
 	char *port = split_port_part(path);
 	ulong val;
-	fd_set socket_set;
 	SOCKET sock;
 	struct addrinfo	hints,*res,*cur;
-	struct timeval tv;
 
 	// TODO: UNIX-domain sockets...
 	if (strncmp(path, "unix:", 5) == 0) {
@@ -3847,9 +3807,6 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 		return INVALID_SOCKET;
 	}
 	for(cur=res,result=1; result && cur; cur=cur->ai_next) {
-		tv.tv_sec = 1;	/* TODO: Make configurable! */
-		tv.tv_usec = 0;
-
 		sock = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
 		if (sock == INVALID_SOCKET)
 			continue;
@@ -3859,9 +3816,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 
 		if (result==SOCKET_ERROR) {
 			if((ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
-				FD_ZERO(&socket_set);
-				FD_SET(sock,&socket_set);
-				if(select(sock+1,NULL,&socket_set,NULL,&tv)==1)
+				if (socket_writable(sock, 1000 /* TODO: Make configurable! */))
 					result=0;	/* success */
 			}
 			else
@@ -4064,54 +4019,52 @@ static int fastcgi_read_wait_timeout(void *arg)
 			break;
 	}
 
-	if (socket_check(cd->sock, &rd, NULL, startup->max_cgi_inactivity*1000)) {
-		if (rd) {
-			if (recv(cd->sock, (void *)&cd->header, offsetof(struct fastcgi_header, len), MSG_WAITALL) != offsetof(struct fastcgi_header, len)) {
-				lprintf(LOG_ERR, "FastCGI failed to read header");
-				return ret;
-			}
-			if (cd->header.ver != FCGI_VERSION_1) {
-				lprintf(LOG_ERR, "Unknown FastCGI version %d", cd->header.ver);
-				return ret;
-			}
-			if (htons(cd->header.id) != 1) {
-				lprintf(LOG_ERR, "Unknown FastCGI session ID %d", htons(cd->header.id));
-				return ret;
-			}
-			switch(cd->header.type) {
-				case FCGI_STDOUT:
-					ret |= CGI_OUTPUT_READY;
-					break;
-				case FCGI_STDERR:
-					ret |= CGI_OUTPUT_READY;
-					break;
-				case FCGI_END_REQUEST:
-					ret |= CGI_PROCESS_TERMINATED;
-					cd->request_ended = 1;
-					// Fall-through
-				case FCGI_BEGIN_REQUEST:
-				case FCGI_ABORT_REQUEST:
-				case FCGI_PARAMS:
-				case FCGI_STDIN:
-				case FCGI_DATA:
-				case FCGI_GET_VALUES:
-				case FCGI_GET_VALUES_RESULT:
-				case FCGI_UNKNOWN_TYPE:
-					// Read and discard the entire message...
-					body = fastcgi_read_body(cd->sock);
-					if (body == NULL)
-						return ret;
-					free(body);
-					break;
-				default:
-					lprintf(LOG_ERR, "Unhandled FastCGI message type %d", cd->header.type);
-					// Read and discard the entire message...
-					body = fastcgi_read_body(cd->sock);
-					if (body == NULL)
-						return ret;
-					free(body);
-					break;
-			}
+	if (socket_readable(cd->sock, startup->max_cgi_inactivity*1000)) {
+		if (recv(cd->sock, (void *)&cd->header, offsetof(struct fastcgi_header, len), MSG_WAITALL) != offsetof(struct fastcgi_header, len)) {
+			lprintf(LOG_ERR, "FastCGI failed to read header");
+			return ret;
+		}
+		if (cd->header.ver != FCGI_VERSION_1) {
+			lprintf(LOG_ERR, "Unknown FastCGI version %d", cd->header.ver);
+			return ret;
+		}
+		if (htons(cd->header.id) != 1) {
+			lprintf(LOG_ERR, "Unknown FastCGI session ID %d", htons(cd->header.id));
+			return ret;
+		}
+		switch(cd->header.type) {
+			case FCGI_STDOUT:
+				ret |= CGI_OUTPUT_READY;
+				break;
+			case FCGI_STDERR:
+				ret |= CGI_OUTPUT_READY;
+				break;
+			case FCGI_END_REQUEST:
+				ret |= CGI_PROCESS_TERMINATED;
+				cd->request_ended = 1;
+				// Fall-through
+			case FCGI_BEGIN_REQUEST:
+			case FCGI_ABORT_REQUEST:
+			case FCGI_PARAMS:
+			case FCGI_STDIN:
+			case FCGI_DATA:
+			case FCGI_GET_VALUES:
+			case FCGI_GET_VALUES_RESULT:
+			case FCGI_UNKNOWN_TYPE:
+				// Read and discard the entire message...
+				body = fastcgi_read_body(cd->sock);
+				if (body == NULL)
+					return ret;
+				free(body);
+				break;
+			default:
+				lprintf(LOG_ERR, "Unhandled FastCGI message type %d", cd->header.type);
+				// Read and discard the entire message...
+				body = fastcgi_read_body(cd->sock);
+				if (body == NULL)
+					return ret;
+				free(body);
+				break;
 		}
 	}
 	else
@@ -4219,41 +4172,28 @@ static int fastcgi_done_wait(void *arg)
 
 	if (cd->request_ended)
 		return 1;
-	return (!socket_check(cd->sock, NULL, NULL, /* timeout: */0));
+	return (socket_recvdone(cd->sock, 0));
 }
 
 #ifdef __unix__
 struct cgi_data {
-	int out_pipe;	// out_pipe[0]
-	int err_pipe;	// err_pipe[0]
 	pid_t child;	// child
+	struct pollfd fds[2];
 };
 
 static int cgi_read_wait_timeout(void *arg)
 {
 	int ret = 0;
 	int status=0;
-	int high_fd;
-	fd_set read_set;
-	fd_set write_set;
 	struct cgi_data *cd = (struct cgi_data *)arg;
-	struct timeval tv;
 
-	high_fd = cd->err_pipe;
-	if (cd->out_pipe > cd->err_pipe)
-		high_fd = cd->out_pipe;
-	tv.tv_sec=startup->max_cgi_inactivity;
-	tv.tv_usec=0;
+	cd->fds[0].events = POLLIN;
+	cd->fds[1].events = POLLIN;
 
-	FD_ZERO(&read_set);
-	FD_SET(cd->out_pipe,&read_set);
-	FD_SET(cd->err_pipe,&read_set);
-	FD_ZERO(&write_set);
-
-	if(select(high_fd+1,&read_set,&write_set,NULL,&tv)>0)  {
-		if (FD_ISSET(cd->out_pipe,&read_set))
+	if (poll(cd->fds, 2, startup->max_cgi_inactivity * 1000) > 0)  {
+		if (cd->fds[0].revents & POLLIN)
 			ret |= CGI_OUTPUT_READY;
-		if(FD_ISSET(cd->err_pipe,&read_set))
+		if (cd->fds[1].revents & POLLIN)
 			ret |= CGI_ERROR_READY;
 	}
 
@@ -4266,21 +4206,21 @@ static int cgi_read_out(void *arg, char *buf, size_t sz)
 {
 	struct cgi_data *cd = (struct cgi_data *)arg;
 
-	return read(cd->out_pipe,buf,sz);
+	return read(cd->fds[0].fd, buf, sz);
 }
 
 static int cgi_read_err(void *arg, char *buf, size_t sz)
 {
 	struct cgi_data *cd = (struct cgi_data *)arg;
 
-	return read(cd->err_pipe,buf,sz);
+	return read(cd->fds[1].fd, buf, sz);
 }
 
 static int cgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, size_t fbufsz)
 {
 	struct cgi_data *cd = (struct cgi_data *)arg;
 
-	return pipereadline(cd->out_pipe, buf, bufsz, fbuf, fbufsz);
+	return pipereadline(cd->fds[0].fd, buf, bufsz, fbuf, fbufsz);
 }
 
 static int cgi_write_in(void *arg, char *buf, size_t bufsz)
@@ -4717,10 +4657,6 @@ static BOOL exec_cgi(http_session_t *session)
 	int		in_pipe[2];
 	int		out_pipe[2];
 	int		err_pipe[2];
-	struct timeval tv={0,0};
-	fd_set	read_set;
-	fd_set	write_set;
-	int		high_fd=0;
 	char	buf[1024];
 	BOOL	done_parsing_headers=FALSE;
 	BOOL	done_wait=FALSE;
@@ -4836,16 +4772,15 @@ static BOOL exec_cgi(http_session_t *session)
 
 	// TODO: For TLS-CGI, write each separate read...
 	if (session->tls_sess && session->req.post_len && session->req.post_data) {
-		tv.tv_sec=1;
-		tv.tv_usec=0;
-		FD_ZERO(&read_set);
-		high_fd = in_pipe[1];
-		FD_SET(in_pipe[1], &write_set);
 		sent = 0;
+		cd.fds[0].fd = in_pipe[1];
+		cd.fds[0].events = POLLOUT;
 		while(sent < session->req.post_len) {
-			if (select(high_fd+1, NULL, &write_set, NULL, &tv) > 0) {
-				if (FD_ISSET(in_pipe[1], &write_set))
+			if (poll(cd.fds, 1, 1000) > 0) {
+				if (cd.fds[0].revents & POLLIN)
 					i = write(in_pipe[1], &session->req.post_data[sent], session->req.post_len - sent);
+				else
+					i = 0;
 				if (i > 0)
 					sent += i;
 				else {
@@ -4857,7 +4792,7 @@ static BOOL exec_cgi(http_session_t *session)
 				}
 			}
 			else {
-				lprintf(LOG_INFO, "%04d FAILED selecting CGI stding for write", session->socket);
+				lprintf(LOG_INFO, "%04d FAILED polling CGI stding for write", session->socket);
 				close(in_pipe[1]);
 				close(out_pipe[0]);
 				close(err_pipe[0]);
@@ -4866,12 +4801,8 @@ static BOOL exec_cgi(http_session_t *session)
 		}
 	}
 
-	high_fd=out_pipe[0];
-	if(err_pipe[0]>high_fd)
-		high_fd=err_pipe[0];
-
-	cd.out_pipe = out_pipe[0];
-	cd.err_pipe = err_pipe[0];
+	cd.fds[0].fd = out_pipe[0];
+	cd.fds[1].fd = err_pipe[0];
 	cd.child = child;
 
 	int ret = do_cgi_stuff(session, &cgi, orig_keep);
@@ -4902,13 +4833,8 @@ static BOOL exec_cgi(http_session_t *session)
 	if (session->tls_sess)
 		close(in_pipe[1]);	/* close excess file descriptor */
 	/* Drain STDERR & STDOUT */
-	tv.tv_sec=1;
-	tv.tv_usec=0;
-	FD_ZERO(&read_set);
-	FD_SET(err_pipe[0],&read_set);
-	FD_SET(out_pipe[0],&read_set);
-	while(select(high_fd+1,&read_set,NULL,NULL,&tv)>0) {
-		if(FD_ISSET(err_pipe[0],&read_set)) {
+	while(poll(cd.fds, 2, 1000) > 0) {
+		if(cd.fds[1].revents & POLLIN) {
 			i=read(err_pipe[0],buf,sizeof(buf)-1);
 			if(i!=-1 && i!=0) {
 				buf[i]=0;
@@ -4916,8 +4842,8 @@ static BOOL exec_cgi(http_session_t *session)
 			}
 		}
 
-		if(FD_ISSET(out_pipe[0],&read_set))  {
-			i=read(out_pipe[0],buf,sizeof(buf));
+		if(cd.fds[0].revents & POLLIN)  {
+			i=read(cd.fds[0].fd, buf, sizeof(buf));
 			if(i!=-1 && i!=0)  {
 				int snt=0;
 				snt=writebuf(session,buf,i);
@@ -4928,12 +4854,6 @@ static BOOL exec_cgi(http_session_t *session)
 
 		if(i==0 || i==-1)
 			break;
-
-		tv.tv_sec=1;
-		tv.tv_usec=0;
-		FD_ZERO(&read_set);
-		FD_SET(err_pipe[0],&read_set);
-		FD_SET(out_pipe[0],&read_set);
 	}
 
 	close(out_pipe[0]);		/* close read-end of pipe */

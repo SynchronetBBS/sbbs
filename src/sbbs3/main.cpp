@@ -1868,11 +1868,12 @@ void input_thread(void *arg)
     int			i,rd,wr,avail;
 	ulong		total_recv=0;
 	ulong		total_pkts=0;
-	fd_set		socket_set;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
-	struct timeval	tv;
-	SOCKET		high_socket;
-	SOCKET		sock;
+	SOCKET sock;
+#ifndef _WIN32
+	struct pollfd fds[2];
+	int nfds;
+#endif
 
 	SetThreadName("sbbs/termInput");
 	thread_up(TRUE /* setuid */);
@@ -1889,55 +1890,32 @@ void input_thread(void *arg)
 		if(pthread_mutex_lock(&sbbs->input_thread_mutex)!=0)
 			sbbs->errormsg(WHERE,ERR_LOCK,"input_thread_mutex",0);
 
-		FD_ZERO(&socket_set);
-		FD_SET(sbbs->client_socket,&socket_set);
-		high_socket=sbbs->client_socket;
-#ifdef __unix__
-		if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
-			FD_SET(uspy_socket[sbbs->cfg.node_num-1],&socket_set);
-			if(uspy_socket[sbbs->cfg.node_num-1] > high_socket)
-				high_socket=uspy_socket[sbbs->cfg.node_num-1];
-		}
-#endif
-
-		tv.tv_sec=1;
-		tv.tv_usec=0;
-
-		if((i=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {
+#ifdef _WIN32
+		if (!socket_readable(sbbs->client_socket, 1000)) {
 			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
 				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
-			if(i==0) {
-				YIELD();	/* This kludge is necessary on some Linux distros */
-				continue;	/* to allow other threads to lock the input_thread_mutex */
-			}
-
-			if(sbbs->client_socket==INVALID_SOCKET)
-				break;
-#ifdef __unix__
-			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
-				if(!socket_check(uspy_socket[sbbs->cfg.node_num-1],NULL,NULL,0)) {
-					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
-					lprintf(LOG_NOTICE,"Closing local spy socket: %d",uspy_socket[sbbs->cfg.node_num-1]);
-					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
-					continue;
-				}
-			}
-#endif
-	       	if(ERROR_VALUE == ENOTSOCK)
-    	        lprintf(LOG_NOTICE,"Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
-			else if(ERROR_VALUE==ESHUTDOWN)
-				lprintf(LOG_NOTICE,"Node %d socket shutdown on input->select", sbbs->cfg.node_num);
-			else if(ERROR_VALUE==EINTR)
-				lprintf(LOG_DEBUG,"Node %d input thread interrupted",sbbs->cfg.node_num);
-            else if(ERROR_VALUE==ECONNRESET)
-				lprintf(LOG_NOTICE,"Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
-	        else if(ERROR_VALUE==ECONNABORTED)
-				lprintf(LOG_NOTICE,"Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
-			else
-				lprintf(LOG_WARNING,"Node %d !ERROR %d input->select socket %d"
-               		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
-			break;
+			YIELD();	/* This kludge is necessary on some Linux distros */
+			continue;	/* to allow other threads to lock the input_thread_mutex */
 		}
+#else
+		fds[0].fd = sbbs->client_socket;
+		fds[0].events = POLLIN;
+		fds[0].revents = 0;
+		nfds = 1;
+		if (uspy_socket[sbbs->cfg.node_num-1] != INVALID_SOCKET) {
+			fds[0].fd = uspy_socket[sbbs->cfg.node_num-1];
+			fds[0].events = POLLIN;
+			fds[0].revents = 0;
+			nfds++;
+		}
+
+		if (poll(fds, nfds, 1000) < 1) {
+			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
+			YIELD();	/* This kludge is necessary on some Linux distros */
+			continue;	/* to allow other threads to lock the input_thread_mutex */
+		}
+#endif
 
 		if(sbbs->client_socket==INVALID_SOCKET) {
 			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
@@ -1956,12 +1934,13 @@ void input_thread(void *arg)
  *         ------------
  */
 
-		if(FD_ISSET(sbbs->client_socket,&socket_set))
-			sock=sbbs->client_socket;
-#ifdef __unix__
-		else if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET
-				&& FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
-			if(!socket_check(uspy_socket[sbbs->cfg.node_num-1],NULL,NULL,0)) {
+#ifdef _WIN32
+		sock=sbbs->client_socket;
+#else
+		if (fds[0].revents | POLLIN)
+			sock = sbbs->client_socket;
+		else if(uspy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET && fds[1].revents | POLLIN) {
+			if(socket_recvdone(uspy_socket[sbbs->cfg.node_num-1], 0)) {
 				close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 				lprintf(LOG_NOTICE,"Closing local spy socket: %d",uspy_socket[sbbs->cfg.node_num-1]);
 				uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
@@ -1971,12 +1950,12 @@ void input_thread(void *arg)
 			}
 			sock=uspy_socket[sbbs->cfg.node_num-1];
 		}
-#endif
 		else {
 			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
 				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
 			continue;
 		}
+#endif
 
     	rd=RingBufFree(&sbbs->inbuf);
 
@@ -2168,10 +2147,7 @@ void sbbs_t::passthru_socket_activate(bool activate)
  */
 void passthru_thread(void* arg)
 {
-	fd_set	r_set;
 	sbbs_t	*sbbs = (sbbs_t*) arg;
-	struct	timeval	tv;
-	int		i;
 	int		rd;
 	char	inbuf[IO_THREAD_BUF_SIZE / 2];
 
@@ -2179,34 +2155,14 @@ void passthru_thread(void* arg)
 	thread_up(FALSE /* setuid */);
 
 	while(sbbs->online && sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
-		tv.tv_sec=1;
-		tv.tv_usec=0;
-
-		FD_ZERO(&r_set);
-		FD_SET(sbbs->passthru_socket,&r_set);
-		if((i=select(sbbs->passthru_socket+1,&r_set,NULL,NULL,&tv))<1) {
-			if(i==0) {
-				YIELD();	/* This kludge is necessary on some Linux distros */
-				continue;	/* to allow other threads to lock the input_thread_mutex */
-			}
-
-			if(sbbs->passthru_socket==INVALID_SOCKET)
-				break;
-	       	if(ERROR_VALUE == ENOTSOCK)
-    	        lprintf(LOG_NOTICE,"Node %d socket closed by peer on passthru->select", sbbs->cfg.node_num);
-			else if(ERROR_VALUE==ESHUTDOWN)
-				lprintf(LOG_NOTICE,"Node %d socket shutdown on passthru->select", sbbs->cfg.node_num);
-			else if(ERROR_VALUE==EINTR)
-				lprintf(LOG_DEBUG,"Node %d passthru thread interrupted",sbbs->cfg.node_num);
-            else if(ERROR_VALUE==ECONNRESET)
-				lprintf(LOG_NOTICE,"Node %d connection reset by peer on passthru->select", sbbs->cfg.node_num);
-	        else if(ERROR_VALUE==ECONNABORTED)
-				lprintf(LOG_NOTICE,"Node %d connection aborted by peer on passthru->select", sbbs->cfg.node_num);
-			else
-				lprintf(LOG_WARNING,"Node %d !ERROR %d passthru->select socket %d"
-               		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->passthru_socket);
-			break;
+		if (!socket_readable(sbbs->passthru_socket, 1000)) {
+			YIELD();	/* This kludge is necessary on some Linux distros */
+			continue;	/* to allow other threads to lock the input_thread_mutex */
 		}
+
+		if(sbbs->passthru_socket==INVALID_SOCKET)
+			break;
+
 		rd = RingBufFree(&sbbs->outbuf) / 2;
 		if(rd > (int)sizeof(inbuf))
 			rd = sizeof(inbuf);
@@ -2281,8 +2237,6 @@ void output_thread(void* arg)
 	ulong		bufbot=0;
 	ulong		buftop=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
-	fd_set		socket_set;
-	struct timeval tv;
 	ulong		mss=IO_THREAD_BUF_SIZE;
 	ulong		ssh_errors = 0;
 
@@ -2400,27 +2354,8 @@ void output_thread(void* arg)
 				continue;
 		}
 
-		/* Check socket for writability (using select) */
-		tv.tv_sec=0;
-		tv.tv_usec=1000;
-
-		FD_ZERO(&socket_set);
-		if(sbbs->client_socket==INVALID_SOCKET)		// Make the race condition less likely to actually happen... TODO: Fix race
-			continue;
-		FD_SET(sbbs->client_socket,&socket_set);
-
-		i=select(sbbs->client_socket+1,NULL,&socket_set,NULL,&tv);
-		if(i==SOCKET_ERROR) {
-			if(sbbs->client_socket!=INVALID_SOCKET)
-				lprintf(LOG_WARNING,"%s !ERROR %d selecting socket %u for send"
-					,node,ERROR_VALUE,sbbs->client_socket);
-			if(sbbs->cfg.node_num)	/* Only break if node output (not server) */
-				break;
-			RingBufReInit(&sbbs->outbuf);	/* Purge output ring buffer */
-			bufbot=buftop=0;				/* Purge linear buffer */
-			continue;
-		}
-		if(i<1) {
+		/* Check socket for writability */
+		if (!socket_writable(sbbs->client_socket, 1)) {
 			continue;
 		}
 

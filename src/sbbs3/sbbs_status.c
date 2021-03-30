@@ -434,8 +434,6 @@ void status_thread(void *arg)
 	SOCKET sock;
 	struct sockaddr_un addr;
 	socklen_t addrlen;
-	fd_set fd;
-	struct timeval tv;
 	SOCKET *csock;
 	char auth[1024];
 	ssize_t len;
@@ -542,11 +540,7 @@ void status_thread(void *arg)
 	pthread_mutex_lock(&status_thread_mutex);
 	while (!status_thread_terminated) {
 		pthread_mutex_unlock(&status_thread_mutex);
-		FD_ZERO(&fd);
-		FD_SET(sock, &fd);
-		memset(&tv, 0, sizeof(tv));
-		tv.tv_sec = 1;
-		if (select(sock+1, &fd, NULL, NULL, &tv) == 1) {
+		if (socket_readable(sock, 1000)) {
 			csock = malloc(sizeof(SOCKET));
 			if (csock == NULL) {
 				lprintf(LOG_CRIT, "Error allocating memory!");
@@ -558,11 +552,7 @@ void status_thread(void *arg)
 			if (*csock != INVALID_SOCKET) {
 				nb = 1;
 				ioctlsocket(*csock, FIONBIO, &nb);
-				FD_ZERO(&fd);
-				FD_SET(*csock, &fd);
-				memset(&tv, 0, sizeof(tv));
-				tv.tv_sec = 5;
-				if (select((*csock)+1, &fd, NULL, NULL, &tv) == 1) {
+				if (socket_readable(*csock, 5000)) {
 					len = recv(*csock, auth, sizeof(auth), 0);
 					if (len <= 0) {
 						closesocket(*csock);
@@ -712,7 +702,7 @@ void status_thread(void *arg)
 				else {
 					closesocket(*csock);
 					free(csock);
-					lprintf(LOG_WARNING, "select() for recv() failed");
+					lprintf(LOG_WARNING, "socket did not become readable");
 					pthread_mutex_lock(&status_thread_mutex);
 					continue;
 				}

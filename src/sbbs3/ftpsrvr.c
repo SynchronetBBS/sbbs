@@ -310,8 +310,6 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 	int		result;
 	va_list argptr;
 	char	sbuf[1024];
-	fd_set	socket_set;
-	struct timeval tv;
 	char	*estr;
 
     va_start(argptr,fmt);
@@ -330,20 +328,9 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 		return(0);
 	}
 
-	/* Check socket for writability (using select) */
-	tv.tv_sec=300;
-	tv.tv_usec=0;
-
-	FD_ZERO(&socket_set);
-	FD_SET(sock,&socket_set);
-
-	if((result=select(sock+1,NULL,&socket_set,NULL,&tv))<1) {
-		if(result==0)
-			lprintf(LOG_WARNING,"%04d !TIMEOUT selecting socket for send"
-				,sock);
-		else
-			lprintf(LOG_WARNING,"%04d !ERROR %d selecting socket for send"
-				,sock, ERROR_VALUE);
+	/* Check socket for writability */
+	if(!socket_writable(sock, 300000)) {
+		lprintf(LOG_WARNING,"%04d !WARNING socket not ready for write" ,sock);
 		return(0);
 	}
 
@@ -458,8 +445,6 @@ void recverror(SOCKET socket, int rd, int line)
 static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *lastactive)
 {
 	int len=0;
-	fd_set	socket_set;
-	struct	timeval	tv;
 	int ret;
 	int i;
 	char *estr;
@@ -476,7 +461,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 			GCES(ret, sock, sess, estr, "setting read timeout");
 		while (1) {
 			ret = cryptPopData(sess, buf, 1, &len);
-			/* Successive reads will be with the full timeout after a select() */
+			/* Successive reads will be with the full timeout after a socket_readable() */
 			cryptSetAttribute(sess, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity);
 			switch(ret) {
 				case CRYPT_OK:
@@ -506,50 +491,26 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 				return(0);
 			}
 
-			tv.tv_sec=startup->max_inactivity;
-			tv.tv_usec=0;
-
-			FD_ZERO(&socket_set);
-			FD_SET(sock,&socket_set);
-
-			i=select(sock+1,&socket_set,NULL,NULL,&tv);
-
-			if(i<1) {
-				if(i==0) {
-					if((time(NULL)-(*lastactive))>startup->max_inactivity) {
-						lprintf(LOG_WARNING,"%04d Disconnecting due to to inactivity",sock);
-						sockprintf(sock,sess,"421 Disconnecting due to inactivity (%u seconds)."
-							,startup->max_inactivity);
-						return(0);
-					}
-					continue;
+			if (!socket_readable(sock, startup->max_inactivity * 1000)) {
+				if((time(NULL)-(*lastactive))>startup->max_inactivity) {
+					lprintf(LOG_WARNING,"%04d Disconnecting due to to inactivity",sock);
+					sockprintf(sock,sess,"421 Disconnecting due to inactivity (%u seconds)."
+						,startup->max_inactivity);
+					return(0);
 				}
-				recverror(sock,i,__LINE__);
-				return(i);
 			}
 		}
 	}
 	else {
 		while (1) {
-			tv.tv_sec=startup->max_inactivity;
-			tv.tv_usec=0;
-
-			FD_ZERO(&socket_set);
-			FD_SET(sock,&socket_set);
-
-			i=select(sock+1,&socket_set,NULL,NULL,&tv);
-
-			if(i<1) {
-				if(i==0) {
-					if((time(NULL)-(*lastactive))>startup->max_inactivity) {
-						lprintf(LOG_WARNING,"%04d Disconnecting due to to inactivity",sock);
-						sockprintf(sock,sess,"421 Disconnecting due to inactivity (%u seconds)."
-							,startup->max_inactivity);
-						return(0);
-					}
-					continue;
+			if (!socket_readable(sock, startup->max_inactivity * 1000)) {
+				if((time(NULL)-(*lastactive))>startup->max_inactivity) {
+					lprintf(LOG_WARNING,"%04d Disconnecting due to to inactivity",sock);
+					sockprintf(sock,sess,"421 Disconnecting due to inactivity (%u seconds)."
+						,startup->max_inactivity);
+					return(0);
 				}
-				return(i);
+				continue;
 			}
 	#ifdef SOCKET_DEBUG_RECV_CHAR
 			socket_debug[sock]|=SOCKET_DEBUG_RECV_CHAR;
@@ -661,8 +622,6 @@ static void send_thread(void* arg)
 	user_t		uploader;
 	union xp_sockaddr	addr;
 	socklen_t	addr_len;
-	fd_set		socket_set;
-	struct timeval tv;
 	char		*estr;
 
 	xfer=*(xfer_t*)arg;
@@ -742,22 +701,8 @@ static void send_thread(void* arg)
 			break;
 		}
 
-		/* Check socket for writability (using select) */
-		tv.tv_sec=1;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(*xfer.data_sock,&socket_set);
-
-		i=select((*xfer.data_sock)+1,NULL,&socket_set,NULL,&tv);
-		if(i==SOCKET_ERROR) {
-			lprintf(LOG_WARNING,"%04d <%s> !DATA ERROR %d selecting socket %d for send"
-				,xfer.ctrl_sock, xfer.user->alias, ERROR_VALUE, *xfer.data_sock);
-			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"426 Transfer error.");
-			error=TRUE;
-			break;
-		}
-		if(i<1)
+		/* Check socket for writability */
+		if (!socket_writable(*xfer.data_sock, 1000))
 			continue;
 
 		(void)fseek(fp,xfer.filepos+total,SEEK_SET);
@@ -954,8 +899,6 @@ static void receive_thread(void* arg)
 	time_t		now;
 	time_t		start;
 	time_t		last_report;
-	fd_set		socket_set;
-	struct timeval tv;
 	CRYPT_SESSION	sess = -1;
 	char		*estr;
 
@@ -1029,22 +972,8 @@ static void receive_thread(void* arg)
 			break;
 		}
 
-		/* Check socket for readability (using select) */
-		tv.tv_sec=1;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(*xfer.data_sock,&socket_set);
-
-		i=select((*xfer.data_sock)+1,&socket_set,NULL,NULL,&tv);
-		if(i==SOCKET_ERROR) {
-			lprintf(LOG_WARNING,"%04d <%s> !DATA ERROR %d selecting socket %d for receive"
-				,xfer.ctrl_sock, xfer.user->alias, ERROR_VALUE, *xfer.data_sock);
-			sockprintf(xfer.ctrl_sock,sess,"426 Transfer error.");
-			error=TRUE;
-			break;
-		}
-		if(i<1)
+		/* Check socket for readability */
+		if (!socket_readable(*xfer.data_sock, 1000))
 			continue;
 
 #if defined(SOCKET_DEBUG_RECV_BUF)
@@ -1333,8 +1262,6 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 	union xp_sockaddr	server_addr;
 	BOOL		reuseaddr;
 	xfer_t*		xfer;
-	struct timeval	tv;
-	fd_set			socket_set;
 	char		host_ip[INET6_ADDRSTRLEN];
 
 	if((*inprogress)==TRUE) {
@@ -1434,23 +1361,9 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 					,ctrl_sock, user->alias,pasv_sock,host_ip,inet_addrport(addr));
 		}
 
-		/* Setup for select() */
-		tv.tv_sec=TIMEOUT_SOCKET_LISTEN;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(pasv_sock,&socket_set);
-
-#if defined(SOCKET_DEBUG_SELECT)
-		socket_debug[ctrl_sock]|=SOCKET_DEBUG_SELECT;
-#endif
-		result=select(pasv_sock+1,&socket_set,NULL,NULL,&tv);
-#if defined(SOCKET_DEBUG_SELECT)
-		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_SELECT;
-#endif
-		if(result<1) {
-			lprintf(LOG_WARNING,"%04d <%s> PASV !DATA select returned %d (error: %d)"
-				,ctrl_sock, user->alias,result,ERROR_VALUE);
+		if (!socket_readable(pasv_sock, TIMEOUT_SOCKET_LISTEN * 1000)) {
+			lprintf(LOG_WARNING,"%04d <%s> PASV !WARNING socket not readable"
+				,ctrl_sock, user->alias);
 			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d selecting socket for connection",ERROR_VALUE);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
