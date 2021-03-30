@@ -42,14 +42,11 @@ BOOL identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
 			   ,size_t maxlen, int timeout)
 {
 	char		req[128];
-	int			i;
 	int			result;
 	int			rd;
 	ulong		val;
 	SOCKET		sock=INVALID_SOCKET;
 	union xp_sockaddr	addr;
-	struct timeval	tv;
-	fd_set			socket_set;
 	BOOL		success=FALSE;
 
 	if(client_addr->addr.sa_family != AF_INET && client_addr->addr.sa_family != AF_INET6)
@@ -73,12 +70,7 @@ BOOL identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
 
 		if(result==SOCKET_ERROR
 			&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
-			tv.tv_sec=timeout;
-			tv.tv_usec=0;
-
-			FD_ZERO(&socket_set);
-			FD_SET(sock,&socket_set);
-			if(select(sock+1,NULL,&socket_set,NULL,&tv)==1)
+			if (socket_writable(sock, timeout * 1000))
 				result=0;	/* success */
 		}
 		if(result!=0) {
@@ -89,14 +81,7 @@ BOOL identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
 		val=0;
 		ioctlsocket(sock,FIONBIO,&val);	
 
-		tv.tv_sec=10;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(sock,&socket_set);
-
-		i=select(sock+1,NULL,&socket_set,NULL,&tv);
-		if(i<1) {
+		if(!socket_writable(sock, 10000)) {
 			sprintf(buf,"ERROR %d selecting socket for send",ERROR_VALUE);
 			break;
 		}
@@ -107,14 +92,7 @@ BOOL identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
 			break;
 		}
 
-		tv.tv_sec=10;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(sock,&socket_set);
-
-		i=select(sock+1,&socket_set,NULL,NULL,&tv);
-		if(i<1) {
+		if(!socket_readable(sock, 10000)) {
 			sprintf(buf,"ERROR %d detecting response",ERROR_VALUE);
 			break;
 		}

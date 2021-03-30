@@ -643,15 +643,12 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	char		rsp[512];
 	char		buf[4097];
 	int			rd;
-	int			result;
 	BOOL		data_avail;
 	ulong		total=0;
 	SOCKET		data_sock;
 	union xp_sockaddr	addr;
 	socklen_t	addr_len;
 	FILE*		fp=NULL;
-	struct timeval	tv;
-	fd_set			socket_set;
 
 	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr.in))==INVALID_SOCKET)
 		return(false);
@@ -684,16 +681,7 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	}
 
 	if(!(csi->ftp_mode&CS_FTP_PASV)) {	/* Normal (Active) FTP */
-
-		/* Setup for select() */
-		tv.tv_sec=TIMEOUT_SOCK_LISTEN;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(data_sock,&socket_set);
-
-		result=select(data_sock+1,&socket_set,NULL,NULL,&tv);
-		if(result<1) {
+		if(!socket_readable(data_sock, TIMEOUT_SOCK_LISTEN * 1000)) {
 			csi->socket_error=ERROR_VALUE;
 			closesocket(data_sock);
 			return(false);
@@ -770,15 +758,12 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 	char		path[MAX_PATH+1];
 	char		buf[4097];
 	int			rd;
-	int			result;
 	ulong		total=0;
 	SOCKET		data_sock;
 	union xp_sockaddr	addr;
 	socklen_t	addr_len;
 	FILE*		fp=NULL;
 	bool		error=false;
-	struct timeval	tv;
-	fd_set			socket_set;
 
 	SAFECOPY(path,src);
 
@@ -823,16 +808,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 	}
 
 	if(!(csi->ftp_mode&CS_FTP_PASV)) {	/* Normal (Active) FTP */
-
-		/* Setup for select() */
-		tv.tv_sec=TIMEOUT_SOCK_LISTEN;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(data_sock,&socket_set);
-
-		result=select(data_sock+1,&socket_set,NULL,NULL,&tv);
-		if(result<1) {
+		if(!socket_readable(data_sock, TIMEOUT_SOCK_LISTEN * 1000)) {
 			csi->socket_error=ERROR_VALUE;
 			closesocket(data_sock);
 			fclose(fp);
