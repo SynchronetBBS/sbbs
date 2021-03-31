@@ -1064,8 +1064,8 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 	char*		title = NULL;
 	int32		left=0;
 	int32		top=0;
-	int32		width=0;
-	int32		height=0;
+	int32		width=INT_MAX;
+	int32		height=INT_MAX;
 	int32		mode=0;
 	int		*cur = NULL;
 	int		*bar = NULL;
