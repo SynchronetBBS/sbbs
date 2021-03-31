@@ -255,7 +255,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 	/* check for writability */
 	if (!socket_writable(sock, timeout * 1000)) {
-		result =- 1;
+		result = -1;
 		mail_close_socket(&sock, &sess);
 		return(result);
 	}
