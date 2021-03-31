@@ -1354,13 +1354,13 @@ extern "C" {
 
 	DLLEXPORT SOCKET	DLLCALL js_socket(JSContext *cx, jsval val);
 	DLLEXPORT int js_polltimeout(JSContext* cx, jsval val);
-#ifdef _WIN32
+#ifdef PREFER_POLL
+	DLLEXPORT size_t js_socket_numsocks(JSContext *cx, jsval val);
+	DLLEXPORT size_t js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events);
+#else
 	DLLEXPORT void		DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv);
     DLLEXPORT SOCKET	DLLCALL js_socket_add(JSContext *cx, jsval val, fd_set *fds);
 	DLLEXPORT BOOL		DLLCALL js_socket_isset(JSContext *cx, jsval val, fd_set *fds);
-#else
-	DLLEXPORT size_t js_socket_numsocks(JSContext *cx, jsval val);
-	DLLEXPORT size_t js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events);
 #endif
 
 	/* js_queue.c */
