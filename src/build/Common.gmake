@@ -214,7 +214,7 @@ ifndef os
 endif
 os      :=	$(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 
-ifneq ($(os),Win32)
+ifneq ($(os),win32)
  CFLAGS +=	-DPREFER_POLL
 endif
 
