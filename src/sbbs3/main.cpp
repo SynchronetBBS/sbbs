@@ -1873,11 +1873,6 @@ void input_thread(void *arg)
 #ifdef PREFER_POLL
 	struct pollfd fds[2];
 	int nfds;
-#else
-	fd_set		socket_set;
-	struct timeval	tv;
-	SOCKET		high_socket;
-	SOCKET		sock;
 #endif
 
 	SetThreadName("sbbs/termInput");
