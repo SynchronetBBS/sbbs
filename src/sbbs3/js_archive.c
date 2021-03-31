@@ -29,11 +29,6 @@
 
 #include <stdbool.h>
 
-typedef struct
-{
-	char name[MAX_PATH + 1];
-} archive_private_t;
-
 JSClass js_archive_class;
 
 static JSBool
@@ -48,9 +43,9 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 	char		error[256] = "";
 	jsval		val;
 	jsrefcount	rc;
-	archive_private_t* p;
+	const char* filename;
 
-	if((p = (archive_private_t*)js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
 		return JS_FALSE;
 
 	if(!js_argc(cx, argc, 1))
@@ -89,12 +84,12 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	char* fext;
-	if(*format == '\0' && (fext = getfext(p->name)) != NULL)
+	if(*format == '\0' && (fext = getfext(filename)) != NULL)
 		SAFECOPY(format,  fext + 1);
 	if(*format == '\0')
 		SAFECOPY(format, "zip");
 	rc = JS_SUSPENDREQUEST(cx);
-	long file_count = create_archive(p->name, format, with_path, file_list, error, sizeof(error));
+	long file_count = create_archive(filename, format, with_path, file_list, error, sizeof(error));
 	strListFree(&file_list);
 	JS_RESUMEREQUEST(cx, rc);
 	if(file_count < 0) {
@@ -117,10 +112,10 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	int32		max_files = 0;
 	char		error[256] = "";
 	jsrefcount	rc;
-	archive_private_t* p;
+	const char* filename;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p = (archive_private_t*)js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
 		return JS_FALSE;
 
  	if(!js_argc(cx, argc, 1))
@@ -158,7 +153,7 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	long extracted = extract_files_from_archive(p->name, outdir, allowed_filename_chars
+	long extracted = extract_files_from_archive(filename, outdir, allowed_filename_chars
 		,with_path, (ulong)max_files, file_list, error, sizeof(error));
 	strListFree(&file_list);
 	free(outdir);
@@ -180,13 +175,13 @@ js_archive_type(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	char		type[256] = "";
 	jsrefcount	rc;
-	archive_private_t* p;
+	const char* filename;
 
-	if((p = (archive_private_t*)js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	int result = archive_type(p->name, type, sizeof(type));
+	int result = archive_type(filename, type, sizeof(type));
 	JS_RESUMEREQUEST(cx, rc);
 	if(result >= 0) {
 		JSString* js_str = JS_NewStringCopyZ(cx, type);
@@ -196,21 +191,29 @@ js_archive_type(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	return JS_TRUE;
 }
 
-/* getter */
 static JSBool
-js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+js_directory(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *argv = JS_ARGV(cx, arglist);
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
 	jsval val;
 	jsrefcount	rc;
 	JSObject* array;
 	JSString* js_str;
 	struct archive *ar;
 	struct archive_entry *entry;
+	bool hash = false;
 	int	result;
-	archive_private_t* p;
+	const char* filename;
 
-	if((p = (archive_private_t*)js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
 		return JS_FALSE;
+
+	uintN argn = 0;
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		hash = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 
 	if((ar = archive_read_new()) == NULL) {
 		JS_ReportError(cx, "archive_read_new() returned NULL");
@@ -218,7 +221,7 @@ js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	}
 	archive_read_support_filter_all(ar);
 	archive_read_support_format_all(ar);
-	if((result = archive_read_open_filename(ar, p->name, 10240)) != ARCHIVE_OK) {
+	if((result = archive_read_open_filename(ar, filename, 10240)) != ARCHIVE_OK) {
 		JS_ReportError(cx, "archive_read_open_filename() returned %d: %s"
 			,result, archive_error_string(ar));
 		archive_read_free(ar);
@@ -356,26 +359,97 @@ js_archive_directory(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_SetProperty(cx, obj, "fflags", &val);
 		}
 
+		if(hash && archive_entry_filetype(entry) == AE_IFREG) {
+			MD5 md5_ctx;
+			SHA1_CTX sha1_ctx;
+			uint8_t md5[MD5_DIGEST_SIZE];
+			uint8_t sha1[SHA1_DIGEST_SIZE];
+			uint16_t crc16 = 0;
+			uint32_t crc32 = 0;
+
+			MD5_open(&md5_ctx);
+			SHA1Init(&sha1_ctx);
+
+			const void *buff;
+			size_t size;
+			la_int64_t offset;
+
+			for(;;) {
+				result = archive_read_data_block(ar, &buff, &size, &offset);
+				if(result != ARCHIVE_OK)
+					break;
+				crc32 = crc32i(~crc32, buff, size);
+				crc16 = icrc16(crc16, buff, size);
+				MD5_digest(&md5_ctx, buff, size);
+				SHA1Update(&sha1_ctx, buff, size);
+			}
+			MD5_close(&md5_ctx, md5);
+			SHA1Final(&sha1_ctx, sha1);
+			val = UINT_TO_JSVAL(crc16);
+			if(!JS_SetProperty(cx, obj, "crc16", &val))
+				break;
+			val = UINT_TO_JSVAL(crc32);
+			if(!JS_SetProperty(cx, obj, "crc32", &val))
+				break;
+			char hex[128];
+			if((js_str = JS_NewStringCopyZ(cx, MD5_hex(hex, md5))) == NULL)
+				break;
+			val = STRING_TO_JSVAL(js_str);
+			if(!JS_SetProperty(cx, obj, "md5", &val))
+				break;
+			if((js_str = JS_NewStringCopyZ(cx, SHA1_hex(hex, sha1))) == NULL)
+				break;
+			val = STRING_TO_JSVAL(js_str);
+			if(!JS_SetProperty(cx, obj, "sha1", &val))
+				break;
+		}
+
 		val = OBJECT_TO_JSVAL(obj);
         if(!JS_SetElement(cx, array, len++, &val))
 			break;
 	}
 	archive_read_free(ar);
 	JS_RESUMEREQUEST(cx, rc);
-	*vp = OBJECT_TO_JSVAL(array);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
 
 	return retval;
 }
 
 static jsSyncMethodSpec js_archive_functions[] = {
 	{ "create",		js_create,		1,	JSTYPE_NUMBER
-		,JSDOCSTR("[string format] [,boolean with_path = <tt>false</tt>] [,array file_list]")
+		,JSDOCSTR("[string format] [,boolean with_path = false] [,array file_list]")
 		,JSDOCSTR("create an archive of the specified format, returns the number of files archived, will throw exception upon error")
 		,31900
 	},
 	{ "extract",	js_extract,		1,	JSTYPE_NUMBER
-		,JSDOCSTR("output_directory [,boolean with_path = <tt>false</tt>] [,number max_files = 0] [,string file/pattern [...]]")
+		,JSDOCSTR("output_directory [,boolean with_path = false] [,number max_files = 0] [,string file/pattern [...]]")
 		,JSDOCSTR("extract files from an archive to specified output directory, returns the number of files extracted, will throw exception upon error")
+		,31900
+	},
+	{ "directory",	js_directory,	1,	JSTYPE_ARRAY
+		,JSDOCSTR("[,boolean hash = false]")
+		,JSDOCSTR("return directory listing of archive as an array of objects<br>"
+			"archived object properties:<br>"
+			"<ul>"
+			"<li>string type - 'file', 'link', or 'directory'"
+			"<li>string name - file path/name"
+			"<li>string path - source path"
+			"<li>string symlink"
+			"<li>string hardlink"
+			"<li>number size - in bytes"
+			"<li>number time - in time_t format"
+			"<li>number mode"
+			"<li>string user"
+			"<li>string group"
+			"<li>string format"
+			"<li>string compression"
+			"<li>string fflags"
+			"<li>number crc16 - 16-bit CRC, when hash is true and type is file"
+			"<li>number crc32 - 32-bit CRC, when hash is true and type is file"
+			"<li>string md5 - hexadecimal MD-5 sum, when hash is true and type is file"
+			"<li>string sha1 - hexadecimal SHA-1 sum, when hash is true and type is file"
+			"</ul>"
+			"when <tt>hash</tt> is <tt>true</tt>, calculates and returns hash/digest values of files in stored archive")
 		,31900
 	},
 	{0}
@@ -387,7 +461,7 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *argv = JS_ARGV(cx, arglist);
 	JSString* str;
-	archive_private_t* p;
+	char* filename;
 
 	obj = JS_NewObject(cx, &js_archive_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
@@ -396,14 +470,9 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if((p=(archive_private_t*)calloc(1,sizeof(*p)))==NULL) {
-		JS_ReportError(cx, "calloc failed");
-		return JS_FALSE;
-	}
+	JSSTRING_TO_MSTRING(cx, str, filename, NULL);
 
-	JSSTRING_TO_STRBUF(cx, str, p->name, sizeof(p->name), NULL);
-
-	if(!JS_SetPrivate(cx, obj, p)) {
+	if(!JS_SetPrivate(cx, obj, filename)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		return JS_FALSE;
 	}
@@ -413,41 +482,11 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if(!JS_DefineProperty(cx, obj, "directory", JSVAL_VOID, js_archive_directory, NULL, 0)) {
-		JS_ReportError(cx, "JS_DefineProperty failed");
-		return JS_FALSE;
-	}
-
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"Class used for opening, creating, reading, or writing files on the local file system<p>"
-		"Special features include:</h2><ol type=disc>"
-			"<li>Exclusive-access files (default) or shared files<ol type=circle>"
-				"<li>optional record-locking"
-				"<li>buffered or non-buffered I/O"
-				"</ol>"
-			"<li>Support for binary files<ol type=circle>"
-				"<li>native or network byte order (endian)"
-				"<li>automatic Unix-to-Unix (<i>UUE</i>), yEncode (<i>yEnc</i>) or Base64 encoding/decoding"
-				"</ol>"
-			"<li>Support for ASCII text files<ol type=circle>"
-				"<li>supports line-based I/O<ol type=square>"
-					"<li>entire file may be read or written as an array of strings"
-					"<li>individual lines may be read or written one line at a time"
-					"</ol>"
-				"<li>supports fixed-length records<ol type=square>"
-					"<li>optional end-of-text (<i>etx</i>) character for automatic record padding/termination"
-					"<li>Synchronet <tt>.dat</tt> files use an <i>etx</i> value of 3 (Ctrl-C)"
-					"</ol>"
-				"<li>supports <tt>.ini</tt> formated configuration files<ol type=square>"
-					"<li>concept and support of <i>root</i> ini sections added in v3.12"
-					"</ol>"
-				"<li>optional ROT13 encoding/translation"
-				"</ol>"
-			"<li>Dynamically-calculated industry standard checksums (e.g. CRC-16, CRC-32, MD5)"
-			"</ol>"
-			,310
-			);
-	js_DescribeSyncConstructor(cx,obj,"To create a new File object: <tt>var f = new File(<i>filename</i>)</tt>");
+	js_DescribeSyncObject(cx,obj,"Class used for opening, creating, reading, or writing archive files on the local file system<p>"
+		,31900
+		);
+	js_DescribeSyncConstructor(cx,obj,"To create a new Archive object: <tt>var a = new Archive(<i>filename</i>)</tt>");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", file_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -456,9 +495,9 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 static void js_finalize_archive(JSContext *cx, JSObject *obj)
 {
-	archive_private_t* p;
+	void* p;
 
-	if((p = (archive_private_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if((p = JS_GetPrivate(cx, obj)) == NULL)
 		return;
 	free(p);
 	JS_SetPrivate(cx, obj, NULL);
