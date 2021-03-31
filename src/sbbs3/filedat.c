@@ -829,11 +829,18 @@ bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fnames, char* path, s
 	if(!fexistcase(archive))
 		return false;
 
+	for(i = 0; diz_fnames[i] != NULL; i++) {
+		safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]); // no slash
+		removecase(path);
+		if(fexistcase(path))	// failed to delete?
+			return false;
+	}
+
 	if(extract_files_from_archive(archive
 		,/* outdir: */cfg->temp_dir
 		,/* allowed_filename_chars: */NULL /* any */
 		,/* with_path: */false
-		,/* max_files: */1
+		,/* max_files: */strListCount(diz_fnames)
 		,/* file_list: */diz_fnames
 		,/* error: */NULL, 0) >= 0) {
 		for(i = 0; diz_fnames[i] != NULL; i++) {
@@ -859,9 +866,6 @@ bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fnames, char* path, s
 	char cmd[512];
 	for(i = 0; diz_fnames[i] != NULL; i++) {
 		safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]);
-		removecase(path);
-		if(fexistcase(path))	// failed to delete?
-			return false;
 		system(cmdstr(cfg, /* user: */NULL, fextr->cmd, archive, diz_fnames[i], cmd, sizeof(cmd)));
 		if(fexistcase(path))
 			return true;
@@ -882,6 +886,10 @@ str_list_t read_diz(const char* path, size_t max_line_len)
 
 char* format_diz(str_list_t lines, char* str, size_t maxlen, bool allow_ansi)
 {
+	if(lines == NULL) {
+		*str = '\0';
+		return NULL;
+	}
 	strListTruncateTrailingWhitespaces(lines);
 	if(!allow_ansi) {
 		for(size_t i = 0; lines[i] != NULL; i++) {
