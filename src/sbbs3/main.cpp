@@ -1870,9 +1870,14 @@ void input_thread(void *arg)
 	ulong		total_pkts=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	SOCKET sock;
-#ifndef _WIN32
+#ifdef PREFER_POLL
 	struct pollfd fds[2];
 	int nfds;
+#else
+	fd_set		socket_set;
+	struct timeval	tv;
+	SOCKET		high_socket;
+	SOCKET		sock;
 #endif
 
 	SetThreadName("sbbs/termInput");
@@ -1890,7 +1895,7 @@ void input_thread(void *arg)
 		if(pthread_mutex_lock(&sbbs->input_thread_mutex)!=0)
 			sbbs->errormsg(WHERE,ERR_LOCK,"input_thread_mutex",0);
 
-#ifdef _WIN32
+#ifdef _WIN32	// No spy sockets
 		if (!socket_readable(sbbs->client_socket, 1000)) {
 			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
 				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
@@ -1898,6 +1903,7 @@ void input_thread(void *arg)
 			continue;	/* to allow other threads to lock the input_thread_mutex */
 		}
 #else
+#ifdef PREFER_POLL
 		fds[0].fd = sbbs->client_socket;
 		fds[0].events = POLLIN;
 		fds[0].revents = 0;
@@ -1915,6 +1921,9 @@ void input_thread(void *arg)
 			YIELD();	/* This kludge is necessary on some Linux distros */
 			continue;	/* to allow other threads to lock the input_thread_mutex */
 		}
+#else
+#error Spy sockets without poll() was removed in commit 3971ef4dcc3db19f400a648b6110718e56a64cf3
+#endif
 #endif
 
 		if(sbbs->client_socket==INVALID_SOCKET) {
@@ -1934,12 +1943,13 @@ void input_thread(void *arg)
  *         ------------
  */
 
-#ifdef _WIN32
+#ifdef _WIN32	// No spy sockets
 		sock=sbbs->client_socket;
 #else
-		if (fds[0].revents | POLLIN)
+#ifdef PREFER_POLL
+		if (fds[0].revents & POLLIN)
 			sock = sbbs->client_socket;
-		else if(uspy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET && fds[1].revents | POLLIN) {
+		else if(uspy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET && fds[1].revents & POLLIN) {
 			if(socket_recvdone(uspy_socket[sbbs->cfg.node_num-1], 0)) {
 				close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 				lprintf(LOG_NOTICE,"Closing local spy socket: %d",uspy_socket[sbbs->cfg.node_num-1]);
@@ -1955,6 +1965,9 @@ void input_thread(void *arg)
 				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
 			continue;
 		}
+#else
+#error Spy sockets without poll() was removed in commit 3971ef4dcc3db19f400a648b6110718e56a64cf3
+#endif
 #endif
 
     	rd=RingBufFree(&sbbs->inbuf);

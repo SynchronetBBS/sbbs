@@ -1072,7 +1072,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
     bool	wwiv_flag=false;
  	char* p;
+#ifdef PREFER_POLL
 	struct pollfd fds[2];
+#else
+#error select() implementation was removed in 3971ef4d
+#endif
 
 	xtrn_mode = mode;
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);

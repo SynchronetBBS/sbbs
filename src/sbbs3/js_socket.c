@@ -472,7 +472,83 @@ SOCKET DLLCALL js_socket(JSContext *cx, jsval val)
 	return(sock);
 }
 
-#ifdef _WIN32
+#ifdef PREFER_POLL
+size_t DLLCALL js_socket_numsocks(JSContext *cx, jsval val)
+{
+	js_socket_private_t	*p;
+	JSClass*	cl;
+	SOCKET		sock=INVALID_SOCKET;
+	size_t		i;
+	int32_t		intval;
+	size_t ret = 0;
+
+	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+		if(cl->flags&JSCLASS_HAS_PRIVATE) {
+			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
+				if(p->set) {
+					for(i=0; i<p->set->sock_count; i++) {
+						if(p->set->socks[i].sock == INVALID_SOCKET)
+							continue;
+						ret++;
+					}
+				}
+				else {
+					sock = p->sock;
+					if(sock != INVALID_SOCKET)
+						ret = 1;
+				}
+			}
+		}
+	} else if(val!=JSVAL_VOID) {
+		if(JS_ValueToInt32(cx,val,&intval)) {
+			if (intval != INVALID_SOCKET)
+				ret = 1;
+		}
+	}
+	return ret;
+}
+
+size_t DLLCALL js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events)
+{
+	js_socket_private_t	*p;
+	JSClass*	cl;
+	SOCKET		sock=INVALID_SOCKET;
+	size_t		i;
+	int32_t		intval;
+	size_t ret = 0;
+
+	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+		if(cl->flags&JSCLASS_HAS_PRIVATE) {
+			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
+				if(p->set) {
+					for(i=0; i<p->set->sock_count; i++) {
+						if(p->set->socks[i].sock == INVALID_SOCKET)
+							continue;
+						fds[ret].events = events;
+						fds[ret++].fd = p->set->socks[i].sock;
+					}
+				}
+				else {
+					sock = p->sock;
+					if(sock != INVALID_SOCKET) {
+						fds[ret].events = events;
+						fds[ret++].fd = sock;
+					}
+				}
+			}
+		}
+	} else if(val!=JSVAL_VOID) {
+		if(JS_ValueToInt32(cx,val,&intval)) {
+			sock = intval;
+			if(sock != INVALID_SOCKET) {
+				fds[ret].events = events;
+				fds[ret++].fd = sock;
+			}
+		}
+	}
+	return ret;
+}
+#else
 SOCKET DLLCALL js_socket_add(JSContext *cx, jsval val, fd_set *fds)
 {
 	js_socket_private_t	*p;
@@ -558,82 +634,6 @@ void DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv)
 			tv->tv_usec = (int)(jsd*1000000.0)%1000000;
 		}
 	}
-}
-#else
-size_t DLLCALL js_socket_numsocks(JSContext *cx, jsval val)
-{
-	js_socket_private_t	*p;
-	JSClass*	cl;
-	SOCKET		sock=INVALID_SOCKET;
-	size_t		i;
-	int32_t		intval;
-	size_t ret = 0;
-
-	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
-		if(cl->flags&JSCLASS_HAS_PRIVATE) {
-			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
-				if(p->set) {
-					for(i=0; i<p->set->sock_count; i++) {
-						if(p->set->socks[i].sock == INVALID_SOCKET)
-							continue;
-						ret++;
-					}
-				}
-				else {
-					sock = p->sock;
-					if(sock != INVALID_SOCKET)
-						ret = 1;
-				}
-			}
-		}
-	} else if(val!=JSVAL_VOID) {
-		if(JS_ValueToInt32(cx,val,&intval)) {
-			if (intval != INVALID_SOCKET)
-				ret = 1;
-		}
-	}
-	return ret;
-}
-
-size_t DLLCALL js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events)
-{
-	js_socket_private_t	*p;
-	JSClass*	cl;
-	SOCKET		sock=INVALID_SOCKET;
-	size_t		i;
-	int32_t		intval;
-	size_t ret = 0;
-
-	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
-		if(cl->flags&JSCLASS_HAS_PRIVATE) {
-			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
-				if(p->set) {
-					for(i=0; i<p->set->sock_count; i++) {
-						if(p->set->socks[i].sock == INVALID_SOCKET)
-							continue;
-						fds[ret].events = events;
-						fds[ret++].fd = p->set->socks[i].sock;
-					}
-				}
-				else {
-					sock = p->sock;
-					if(sock != INVALID_SOCKET) {
-						fds[ret].events = events;
-						fds[ret++].fd = sock;
-					}
-				}
-			}
-		}
-	} else if(val!=JSVAL_VOID) {
-		if(JS_ValueToInt32(cx,val,&intval)) {
-			sock = intval;
-			if(sock != INVALID_SOCKET) {
-				fds[ret].events = events;
-				fds[ret++].fd = sock;
-			}
-		}
-	}
-	return ret;
 }
 #endif
 
@@ -1730,18 +1730,18 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	uintN	argn;
 	int		result;
 	jsrefcount	rc;
-#ifdef _WIN32
+#ifdef PREFER_POLL
+	int timeout = 0;
+	struct pollfd *fds;
+	nfds_t nfds;
+	jsval objval = OBJECT_TO_JSVAL(obj);
+#else
 	size_t	i;
 	SOCKET	high=0;
 	fd_set  socket_set;
 	fd_set* rd_set=NULL;
 	fd_set* wr_set=NULL;
 	struct  timeval tv = {0, 0};
-#else
-	int timeout = 0;
-	struct pollfd *fds;
-	nfds_t nfds;
-	jsval objval = OBJECT_TO_JSVAL(obj);
 #endif
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1760,16 +1760,33 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 		if(JSVAL_IS_BOOLEAN(argv[argn]))
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
 		else if(JSVAL_IS_NUMBER(argv[argn])) {
-#ifdef _WIN32
-			js_timeval(cx,argv[argn],&tv);
-#else
+#ifdef PREFER_POLL
 			timeout = js_polltimeout(cx, argv[argn]);
+#else
+			js_timeval(cx,argv[argn],&tv);
 #endif
 		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-#ifdef _WIN32
+#ifdef PREFER_POLL
+	if (p->peeked && !poll_for_write) {
+		result = 1;
+	}
+	else {
+		nfds = js_socket_numsocks(cx, objval);
+		fds = calloc(nfds, sizeof(*fds));
+		if (fds == NULL) {
+			JS_RESUMEREQUEST(cx, rc);
+			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
+				, nfds, sizeof(*fds), getfname(__FILE__), __LINE__);
+			return JS_FALSE;
+		}
+		nfds = js_socket_add(cx, objval, fds, poll_for_write ? POLLOUT : POLLIN);
+		result = poll(fds, nfds, timeout);
+		free(fds);
+	}
+#else
 	FD_ZERO(&socket_set);
 	if(p->set) {
 		for(i=0; i<p->set->sock_count; i++) {
@@ -1791,23 +1808,6 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 		result = 1;
 	else
 		result = select(high+1,rd_set,wr_set,NULL,&tv);
-#else
-	if (p->peeked && !poll_for_write) {
-		result = 1;
-	}
-	else {
-		nfds = js_socket_numsocks(cx, objval);
-		fds = calloc(nfds, sizeof(*fds));
-		if (fds == NULL) {
-			JS_RESUMEREQUEST(cx, rc);
-			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
-				, nfds, sizeof(*fds), getfname(__FILE__), __LINE__);
-			return JS_FALSE;
-		}
-		nfds = js_socket_add(cx, objval, fds, poll_for_write ? POLLOUT : POLLIN);
-		result = poll(fds, nfds, timeout);
-		free(fds);
-	}
 #endif
 
 	p->last_error=ERROR_VALUE;
