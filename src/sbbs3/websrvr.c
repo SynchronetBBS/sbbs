@@ -956,7 +956,6 @@ static int close_socket(SOCKET *sock)
 	int		result;
 	char	ch;
 	time_t	end = time(NULL) + startup->max_inactivity;
-	BOOL	rd;
 
 	if(sock==NULL || *sock==INVALID_SOCKET)
 		return -1;
@@ -4004,7 +4003,6 @@ static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
 static int fastcgi_read_wait_timeout(void *arg)
 {
 	int ret = 0;
-	BOOL rd;
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 	struct fastcgi_body *body;
 
