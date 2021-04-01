@@ -238,6 +238,8 @@ var Typeahead = function (options) {
         attr: console.attributes,
         focus: true,
         maxResults: 0,
+        autoDelete: false,
+        gotInput: false,
     };
 
     var display = {
@@ -460,6 +462,10 @@ var Typeahead = function (options) {
                 }
                 break;
             default:
+                if (properties.autoDelete && !properties.gotInput) {
+                    properties.text = '';
+                    properties.position = 0;
+                }
                 if (properties.text.length === properties.len) break;
                 key = strip_ctrl(key);
                 if (properties.position !== properties.text.length) {
@@ -476,6 +482,7 @@ var Typeahead = function (options) {
                 change = true;
                 break;
         }
+        properties.gotInput = true;
         if (change) {
             display.inputFrame.clear();
             display.inputFrame.putmsg(properties.text);
