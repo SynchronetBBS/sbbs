@@ -108,7 +108,8 @@ function get_address() {
         x: 1,
         y: 1,
         prompt: '\0014\001h\001wAddress: ',
-        text: 'gopher.floodgap.com:70'
+        text: 'gopher.floodgap.com:70',
+        autoDelete: true,
     });
     const ret = typeahead.getstr().split(':');
     typeahead.close();
