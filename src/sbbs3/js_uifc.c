@@ -369,6 +369,8 @@ static JSBool js_showbuf_ctx_constructor(JSContext *cx, uintN argc, jsval *argli
 		JS_ReportError(cx, "calloc failed");
 		return JS_FALSE;
 	}
+	p->height = INT_MAX;
+	p->width = INT_MAX;
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		return JS_FALSE;
