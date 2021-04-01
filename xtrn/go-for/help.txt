@@ -5,8 +5,8 @@
 hc           o w go to the root directory of the current server
 hc u or [left] w go back
 hc     [right] w go forward
-hc       [tab] w highlight the next item
-hc` (backtick) w highlight the previous item
+hc  s or [tab] w highlight the next item
+hc      w or ` w highlight the previous item
 hc     [enter] w select the current item
 hc   j or [up] w scroll up
 hc k or [down] w scroll down
