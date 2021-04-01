@@ -191,8 +191,9 @@ js_archive_type(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	return JS_TRUE;
 }
 
+// TODO: consider making 'path' and 'case-sensitive' arguments to wildmatch() configurable via method arguments
 static JSBool
-js_directory(JSContext *cx, uintN argc, jsval *arglist)
+js_list(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv = JS_ARGV(cx, arglist);
 	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
@@ -205,6 +206,7 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 	bool hash = false;
 	int	result;
 	const char* filename;
+	char pattern[MAX_PATH + 1] = "";
 
 	if((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
 		return JS_FALSE;
@@ -212,6 +214,15 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 	uintN argn = 0;
 	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
 		hash = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		JSString* js_str = JS_ValueToString(cx, argv[argn]);
+		if(js_str == NULL) {
+			JS_ReportError(cx, "string conversion error");
+			return JS_FALSE;
+		}
+		JSSTRING_TO_STRBUF(cx, js_str, pattern, sizeof(pattern), NULL);
 		argn++;
 	}
 
@@ -250,6 +261,9 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 
 		const char* p = archive_entry_pathname(entry);
 		if(p == NULL)
+			continue;
+
+		if(*pattern && !wildmatch(p, pattern, /* path: */false, /* case-sensitive: */false))
 			continue;
 
 		const char* type;
@@ -426,28 +440,28 @@ static jsSyncMethodSpec js_archive_functions[] = {
 		,JSDOCSTR("extract files from an archive to specified output directory, returns the number of files extracted, will throw exception upon error")
 		,31900
 	},
-	{ "directory",	js_directory,	1,	JSTYPE_ARRAY
-		,JSDOCSTR("[,boolean hash = false]")
-		,JSDOCSTR("return directory listing of archive as an array of objects<br>"
+	{ "list",		js_list,		1,	JSTYPE_ARRAY
+		,JSDOCSTR("[,boolean hash = false] [,string file/pattern]")
+		,JSDOCSTR("get list of archive contents as an array of objects<br>"
 			"archived object properties:<br>"
 			"<ul>"
-			"<li>string type - 'file', 'link', or 'directory'"
-			"<li>string name - file path/name"
-			"<li>string path - source path"
-			"<li>string symlink"
-			"<li>string hardlink"
-			"<li>number size - in bytes"
-			"<li>number time - in time_t format"
-			"<li>number mode"
-			"<li>string user"
-			"<li>string group"
-			"<li>string format"
-			"<li>string compression"
-			"<li>string fflags"
-			"<li>number crc16 - 16-bit CRC, when hash is true and type is file"
-			"<li>number crc32 - 32-bit CRC, when hash is true and type is file"
-			"<li>string md5 - hexadecimal MD-5 sum, when hash is true and type is file"
-			"<li>string sha1 - hexadecimal SHA-1 sum, when hash is true and type is file"
+			"<li>string <tt>type</tt> - item type: 'file', 'link', or 'directory'"
+			"<li>string <tt>name</tt> - item path/name"
+			"<li>string <tt>path</tt> - source path"
+			"<li>string <tt>symlink</tt>"
+			"<li>string <tt>hardlink</tt>"
+			"<li>number <tt>size</tt> - item size in bytes"
+			"<li>number <tt>time</tt> - modification date/time in time_t format"
+			"<li>number <tt>mode</tt> - permissions/mode flags"
+			"<li>string <tt>user</tt> - owner name"
+			"<li>string <tt>group</tt> - owner group"
+			"<li>string <tt>format</tt> - archive format"
+			"<li>string <tt>compression</tt> - compression method"
+			"<li>string <tt>fflags</tt>"
+			"<li>number <tt>crc16</tt> - 16-bit CRC, when hash is true and type is file"
+			"<li>number <tt>crc32</tt> - 32-bit CRC, when hash is true and type is file"
+			"<li>string <tt>md5</tt> - hexadecimal MD-5 sum, when hash is true and type is file"
+			"<li>string <tt>sha1</tt> - hexadecimal SHA-1 sum, when hash is true and type is file"
 			"</ul>"
 			"when <tt>hash</tt> is <tt>true</tt>, calculates and returns hash/digest values of files in stored archive")
 		,31900
