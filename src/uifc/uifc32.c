@@ -2699,8 +2699,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		height = api->scrn_len - top;
 	if(!width || (unsigned)width<title_len+6)
 		width=title_len+6;
-	if((unsigned)width>api->scrn_width)
-		width=api->scrn_width;
+	if((unsigned)(width + left) > api->scrn_width)
+		width = api->scrn_width - left + 1;
 	if(mode&WIN_L2R)
 		left=(api->scrn_width-width+2)/2;
 	else if(mode&WIN_RHT)
