@@ -475,7 +475,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSBool retval = JS_TRUE;
 	rc = JS_SUSPENDREQUEST(cx);
-	jsint len = 0;
 	while(1) {
 		result = archive_read_next_header(ar, &entry);
 		if(result != ARCHIVE_OK) {

@@ -880,7 +880,6 @@ static void receive_thread(void* arg)
 	char		buf[8192];
 	char		extdesc[LEN_EXTDESC + 1] = "";
 	char		tmp[MAX_PATH+1];
-	int			i;
 	int			rd;
 	off_t		total=0;
 	off_t		last_total=0;
