@@ -1147,9 +1147,11 @@ static void js_service_thread(void* arg)
 		if(service->log_level >= LOG_ERR)
 			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)",socket,spath);
 	} else {
+		service_client.callback.events_supported = TRUE;
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL, js_glob);
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		js_handle_events(js_cx, &service_client.callback, &terminated);
 		js_EvalOnExit(js_cx, js_glob, &service_client.callback);
 	}
 	JS_RemoveObjectRoot(js_cx, &js_glob);
@@ -1259,8 +1261,10 @@ static void js_static_service_thread(void* arg)
 			break;
 		}
 
+		service_client.callback.events_supported = TRUE;
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL, js_glob);
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		js_handle_events(js_cx, &service_client.callback, &terminated);
 		js_EvalOnExit(js_cx, js_glob, &service_client.callback);
 		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
