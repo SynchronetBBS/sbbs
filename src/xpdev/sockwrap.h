@@ -230,6 +230,7 @@ DLLEXPORT void set_socket_errno(int);
 DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst);
 #if defined(_WIN32) // mingw and WinXP's WS2_32.DLL don't have inet_pton():
 	#define inet_pton	xp_inet_pton
+DLLEXPORT int socketpair(int domain, int type, int protocol, SOCKET *sv);
 #endif
 
 /*

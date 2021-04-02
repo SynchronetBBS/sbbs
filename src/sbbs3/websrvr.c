@@ -7157,6 +7157,7 @@ void DLLCALL web_server(void* arg)
 			session->js_callback.limit=startup->js.time_limit;
 			session->js_callback.gc_interval=startup->js.gc_interval;
 			session->js_callback.yield_interval=startup->js.yield_interval;
+			session->js_callback.events_supported = FALSE;
 			pthread_mutex_unlock(&session->struct_filled);
 			session=NULL;
 			served++;
