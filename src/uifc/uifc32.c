@@ -2699,8 +2699,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		height = api->scrn_len - top;
 	if(!width || (unsigned)width<title_len+6)
 		width=title_len+6;
-	if((unsigned)width>api->scrn_width)
-		width=api->scrn_width;
+	if((unsigned)(width + left) > api->scrn_width)
+		width = api->scrn_width - left + 1;
 	if(mode&WIN_L2R)
 		left=(api->scrn_width-width+2)/2;
 	else if(mode&WIN_RHT)
@@ -2798,7 +2798,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			tmp_buffer2[k].ch='u'; k++;
 			tmp_buffer2[k].ch='e'; k+=2;
 			tmp_buffer2[k].ch=api->chars->help_hitanykey_right; k++;
-			for(j=k;j<k+(((width-4)/2-12));j++)
+			for(j=k;j<k+(((width-4)/2-12))+(width&1);j++)
 				tmp_buffer2[j].ch=api->chars->help_bottom;
 		}
 		else {

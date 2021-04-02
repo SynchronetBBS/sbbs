@@ -312,15 +312,15 @@ static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lpr
 SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, uint32_t flags, void **cb_data)
 {
-#ifdef _WIN32	// Use select()
+#ifdef PREFER_POLL
+	struct pollfd *fds;
+	int poll_timeout;
+	nfds_t scnt = 0;
+#else
 	fd_set         read_fs;
 	struct timeval tv;
 	struct timeval *tvp;
 	SOCKET         max_sock=0;
-#else	// Use poll()
-	struct pollfd *fds;
-	int poll_timeout;
-	nfds_t scnt = 0;
 #endif
 	size_t         i;
 	SOCKET         ret;
@@ -333,34 +333,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	if (xpms_set->sock_count < 1)
 		return INVALID_SOCKET;
 
-#ifdef _WIN32
-	FD_ZERO(&read_fs);
-	for(i=0; i<xpms_set->sock_count; i++) {
-		if(xpms_set->socks[i].sock == INVALID_SOCKET)
-			continue;
-		FD_SET(xpms_set->socks[i].sock, &read_fs);
-		if(xpms_set->socks[i].sock >= max_sock)
-			max_sock=xpms_set->socks[i].sock+1;
-	}
-
-	if(timeout==XPMS_FOREVER)
-		tvp=NULL;
-	else {
-		tv.tv_sec=timeout/1000;
-		tv.tv_usec=(timeout%1000)*1000;
-		tvp=&tv;
-	}
-	switch(select(max_sock, &read_fs, NULL, NULL, tvp)) {
-		case 0:
-			return INVALID_SOCKET;
-		case -1:
-			return SOCKET_ERROR;
-		default:
-			for(i=0; i<xpms_set->sock_count; i++) {
-				if(xpms_set->socks[i].sock == INVALID_SOCKET)
-					continue;
-				if(FD_ISSET(xpms_set->socks[i].sock, &read_fs)) {
-#else
+#ifdef PREFER_POLL
 	fds = calloc(xpms_set->sock_count, sizeof(*fds));
 	if (fds == NULL)
 		return INVALID_SOCKET;
@@ -399,6 +372,33 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 					continue;
 				}
 				if (fds[scnt++].revents & POLLIN) {
+#else
+	FD_ZERO(&read_fs);
+	for(i=0; i<xpms_set->sock_count; i++) {
+		if(xpms_set->socks[i].sock == INVALID_SOCKET)
+			continue;
+		FD_SET(xpms_set->socks[i].sock, &read_fs);
+		if(xpms_set->socks[i].sock >= max_sock)
+			max_sock=xpms_set->socks[i].sock+1;
+	}
+
+	if(timeout==XPMS_FOREVER)
+		tvp=NULL;
+	else {
+		tv.tv_sec=timeout/1000;
+		tv.tv_usec=(timeout%1000)*1000;
+		tvp=&tv;
+	}
+	switch(select(max_sock, &read_fs, NULL, NULL, tvp)) {
+		case 0:
+			return INVALID_SOCKET;
+		case -1:
+			return SOCKET_ERROR;
+		default:
+			for(i=0; i<xpms_set->sock_count; i++) {
+				if(xpms_set->socks[i].sock == INVALID_SOCKET)
+					continue;
+				if(FD_ISSET(xpms_set->socks[i].sock, &read_fs)) {
 #endif
 					if(cb_data)
 						*cb_data=xpms_set->socks[i].cb_data;
@@ -620,12 +620,12 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 						inet_addrtop(addr, hapstr, sizeof(hapstr));
 						xpms_set->lprintf(LOG_INFO,"%04d * HAPROXY Source [%s]",ret,hapstr);
 
-#ifndef _WIN32
+#ifdef PREFER_POLL
 						free(fds);
 #endif
 						return ret;
 					} else {
-#ifndef _WIN32
+#ifdef PREFER_POLL
 						free(fds);
 #endif
 						return ret;
@@ -635,7 +635,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	}
 
 error_return:
-#ifndef _WIN32
+#ifdef PREFER_POLL
 	free(fds);
 #endif
 	return INVALID_SOCKET;

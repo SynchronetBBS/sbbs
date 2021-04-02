@@ -303,7 +303,7 @@ static void getBlock(unsigned char **codeStr, char *menuBlock)
 	menuBlock[0]=0;
 	if(**codeStr=='_')
 		(*codeStr)++;
-	while(**codeStr != '_' && **codeStr != '|') {
+	while(**codeStr && **codeStr != '_' && **codeStr != '|') {
 		*(menuBlock++) = *((*codeStr)++);
 		*menuBlock=0;
 	}
@@ -345,7 +345,7 @@ static int readSmallMenu(unsigned char *codeStr) {
 	int  yy;
 	int  zz;
 	unsigned char *origCodeStr=codeStr;
-	char buf[256];
+	char buf[260];
 
 	switch ((char)codeStr[0]) {
 		case 'a':

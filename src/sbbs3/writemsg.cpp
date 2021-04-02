@@ -1613,8 +1613,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 		return false;
 
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
-	if(removecase(msgtmp) != 0)
-		return false;
+	(void)removecase(msgtmp);
 	msgtotxt(smb, msg, msgtmp, /* header: */false, /* mode: */GETMSGTXT_ALL);
 	if(!editfile(msgtmp, /* msg: */true))
 		return false;

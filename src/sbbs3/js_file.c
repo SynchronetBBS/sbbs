@@ -287,10 +287,6 @@ js_raw_pollin(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	jsrefcount	rc;
 	int32		timeout = -1;
-#ifdef __unix__
-	fd_set		rd;
-	struct	timeval tv = {0, 0};
-#endif
 
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_file_class))==NULL) {
 		return(JS_FALSE);
@@ -307,13 +303,11 @@ js_raw_pollin(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(FALSE));
 	rc=JS_SUSPENDREQUEST(cx);
 #ifdef __unix__
-	if (timeout >= 0) {
-		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout%1000)*1000;
-	}
-	FD_ZERO(&rd);
-	FD_SET(fileno(p->fp), &rd);
-	if (select(fileno(p->fp)+1, &rd, NULL, NULL, timeout < 0 ? NULL : &tv) == 1)
+	/*
+	 * TODO: macOS poll() page has the ominous statement that "The poll() system call currently does not support devices."
+	 *       But, since we don't support OS X in Synchronet that's likely OK?
+	 */
+	if (socket_readable(fileno(p->fp), timeout))
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(TRUE));
 #else
 	while(timeout) {

@@ -322,8 +322,12 @@ static jsSyncPropertySpec js_uifc_list_class_properties[] = {
 };
 static jsSyncPropertySpec js_uifc_showbuf_class_properties[] = {
 /*       name               ,tinyid                 ,flags,             ver */
-    {   "cur"		,PROP_CUR 				,JSPROP_ENUMERATE,  31802 },
-    {   "bar"  		      ,PROP_BAR    				,JSPROP_ENUMERATE,  31802 },
+    {   "cur"           ,PROP_CUR    ,JSPROP_ENUMERATE,  31802 },
+    {   "bar"           ,PROP_BAR    ,JSPROP_ENUMERATE,  31802 },
+    {   "left"          ,PROP_LEFT   ,JSPROP_ENUMERATE,  31802 },
+    {   "top"           ,PROP_TOP    ,JSPROP_ENUMERATE,  31802 },
+    {   "width"         ,PROP_WIDTH  ,JSPROP_ENUMERATE,  31802 },
+    {   "height"        ,PROP_HEIGHT ,JSPROP_ENUMERATE,  31802 },
     {0}
 };
 static jsSyncPropertySpec js_uifc_getstrxy_class_properties[] = {
@@ -365,6 +369,8 @@ static JSBool js_showbuf_ctx_constructor(JSContext *cx, uintN argc, jsval *argli
 		JS_ReportError(cx, "calloc failed");
 		return JS_FALSE;
 	}
+	p->height = INT_MAX;
+	p->width = INT_MAX;
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		return JS_FALSE;
@@ -1060,8 +1066,8 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 	char*		title = NULL;
 	int32		left=0;
 	int32		top=0;
-	int32		width=0;
-	int32		height=0;
+	int32		width=INT_MAX;
+	int32		height=INT_MAX;
 	int32		mode=0;
 	int		*cur = NULL;
 	int		*bar = NULL;
@@ -1101,7 +1107,7 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 			free(str);
 			return(JS_FALSE);
 		}
-		if(JS_GetClass(cx, objarg) == &js_uifc_list_ctx_class) {
+		if(JS_GetClass(cx, objarg) == &js_uifc_showbuf_ctx_class) {
 			p = JS_GetPrivate(cx, objarg);
 			if (p != NULL) {
 				cur = &(p->cur);

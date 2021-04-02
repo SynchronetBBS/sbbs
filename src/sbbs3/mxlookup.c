@@ -184,8 +184,6 @@ int dns_getmx(char* name, char* mx, char* mx2
 	dns_msghdr_t	msghdr;
 	dns_query_t		query;
 	dns_rr_t*		rr;
-	struct timeval	tv;
-	fd_set			socket_set;
 	int				sess = -1;
 
 	mx[0]=0;
@@ -255,19 +253,9 @@ int dns_getmx(char* name, char* mx, char* mx2
 		len-=sizeof(msghdr.length);
 	}
 
-	/* check for writability (using select) */
-	tv.tv_sec=timeout;
-	tv.tv_usec=0;
-
-	FD_ZERO(&socket_set);
-	FD_SET(sock,&socket_set);
-
-	i=select(sock+1,NULL,&socket_set,NULL,&tv);
-	if(i<1) {
-		if(i==SOCKET_ERROR)
-			result=ERROR_VALUE;
-		else 
-			result=-1;
+	/* check for writability */
+	if (!socket_writable(sock, timeout * 1000)) {
+		result = -1;
 		mail_close_socket(&sock, &sess);
 		return(result);
 	}
@@ -287,19 +275,9 @@ int dns_getmx(char* name, char* mx, char* mx2
 		return(result);
 	}
 
-	/* check for readability (using select) */
-	tv.tv_sec=timeout;
-	tv.tv_usec=0;
-
-	FD_ZERO(&socket_set);
-	FD_SET(sock,&socket_set);
-
-	i=select(sock+1,&socket_set,NULL,NULL,&tv);
-	if(i<1) {
-		if(i==SOCKET_ERROR)
-			result=ERROR_VALUE;
-		else 
-			result=-1;
+	/* check for readability */
+	if (!socket_readable(sock, timeout * 1000)) {
+		result = -1;
 		mail_close_socket(&sock, &sess);
 		return(result);
 	}

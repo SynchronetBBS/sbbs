@@ -108,7 +108,8 @@ function get_address() {
         x: 1,
         y: 1,
         prompt: '\0014\001h\001wAddress: ',
-        text: 'gopher.floodgap.com:70'
+        text: 'gopher.floodgap.com:70',
+        autoDelete: true,
     });
     const ret = typeahead.getstr().split(':');
     typeahead.close();
@@ -423,6 +424,7 @@ function main() {
         state.input.key = state.input.key.toLowerCase();
         switch (state.input.key) {
             // Highlight next link
+            case 's':
             case '\t':
                 if (state.item_type == '1' || state.item_type == '7') {
                     lowlight(state.doc[state.item], state.item);
@@ -432,6 +434,7 @@ function main() {
                 }
                 break;
             // Highlight previous link
+            case 'w':
             case '`':
                 if (state.item_type == '1' || state.item_type == '7') {
                     lowlight(state.doc[state.item], state.item);
@@ -463,7 +466,11 @@ function main() {
                 break;
             // Get root directory of current server
             case 'o':
-                go_get(state.host, state.port, '', '1');
+                if (state.host === 'go-for') {
+                    go_back();
+                } else {
+                    go_get(state.host, state.port, '', '1');
+                }
                 break;
             // Go back (history)
             case 'u':
@@ -504,6 +511,12 @@ function main() {
                     bbs.send_file(state.fn);
                     reset_display();
                     go_get(state.host, state.port, state.selector, state.item_type, true, false);
+                }
+                break;
+            case 'q':
+                if (state.host === 'go-for') {
+                    state.input.key = '';
+                    go_back();
                 }
                 break;
             default:

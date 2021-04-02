@@ -936,7 +936,7 @@ static char *get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 
 	case SYNCTERM_DEFAULT_TRANSFER_PATH:
 		/* I'd love to use the "right" setting here, but don't know how */
-		if(FSFindFolder(shared?kLocalDomain:kUserDomain, kDesktopFolderType, kCreateFolder, &ref)!=noErr)
+		if(FSFindFolder(shared?kLocalDomain:kUserDomain, kDownloadsFolderType, kCreateFolder, &ref)!=noErr)
 			return(NULL);
 		if(FSRefMakePath(&ref, (unsigned char*)fn, fnlen)!=noErr)
 			return(NULL);
