@@ -53,6 +53,16 @@
 
 scfg_t		scfg;
 
+void js_do_lock_input(JSContext *cx, JSBool lock)
+{
+	return;
+}
+
+size_t js_cx_input_pending(JSContext *cx)
+{
+	return 0;
+}
+
 void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
 {
 	void *ret = JS_GetInstancePrivate(cx, obj, cls, NULL);

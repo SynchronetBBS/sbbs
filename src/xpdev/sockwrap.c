@@ -733,3 +733,81 @@ DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst)
 	freeaddrinfo(res);
 	return 1;
 }
+
+#ifdef _WIN32
+DLLEXPORT int
+socketpair(int domain, int type, int protocol, SOCKET *sv)
+{
+	union xp_sockaddr la = {0};
+	const int ra = 1;
+	SOCKET ls;
+	SOCKET *check;
+	fd_set rfd;
+	struct timeval tv;
+	size_t sa_len;
+
+	sv[0] = sv[1] = INVALID_SOCKET;
+	ls = socket(domain, type, protocol);
+	if (ls == INVALID_SOCKET)
+		goto fail;
+	switch (domain) {
+		case PF_INET:
+			if (inet_ptoaddr("127.0.0.1", &la, sizeof(la)) == NULL)
+				goto fail;
+			sa_len = sizeof(la.in);
+			break;
+		case PF_INET6:
+			if (inet_ptoaddr("::1", &la, sizeof(la)) == NULL)
+				goto fail;
+			sa_len = sizeof(la.in6);
+			break;
+		default:
+			goto fail;
+	}
+	inet_setaddrport(&la, 0);
+	if (setsockopt(ls, SOL_SOCKET, SO_REUSEADDR, (const char *)&ra, sizeof(ra)) == -1)
+		goto fail;
+	if (bind(ls, &la.addr, sa_len) == -1)
+		goto fail;
+	if (getsockname(ls, &la.addr, &sa_len) == -1)
+		goto fail;
+	if (listen(ls, 1) == -1)
+		goto fail;
+	sv[0] = socket(la.addr.sa_family, type, protocol);
+	if (sv[0] == INVALID_SOCKET)
+		goto fail;
+	if (connect(sv[0], &la.addr, sa_len) == -1)
+		goto fail;
+	sv[1] = accept(ls, NULL, NULL);
+	if (sv[1] == INVALID_SOCKET)
+		goto fail;
+	closesocket(ls);
+	ls = INVALID_SOCKET;
+
+	if (send(sv[1], (const char *)&sv, sizeof(sv), 0) != sizeof(sv))
+		goto fail;
+	tv.tv_sec = 0;
+	tv.tv_usec = 50000;
+	FD_ZERO(&rfd);
+	FD_SET(sv[0], &rfd);
+	if (select(sv[0] + 1, &rfd, NULL, NULL, &tv) != 1)
+		goto fail;
+	if (recv(sv[0], (char *)&check, sizeof(check), 0) != sizeof(check))
+		goto fail;
+	if (check != sv)
+		goto fail;
+	return 0;
+
+fail:
+	if (ls != INVALID_SOCKET)
+		closesocket(ls);
+	if (sv[0] != INVALID_SOCKET)
+		closesocket(sv[0]);
+	sv[0] = INVALID_SOCKET;
+	if (sv[1] != INVALID_SOCKET)
+		closesocket(sv[1]);
+	sv[1] = INVALID_SOCKET;
+	return -1;
+}
+#endif
+

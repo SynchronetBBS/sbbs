@@ -1078,7 +1078,11 @@ long js_exec(const char *fname, const char* buf, char** args)
 	if (abort) {
 		result = EXIT_FAILURE;
 	} else {
+		cb.keepGoing = FALSE;
+		cb.events_supported = TRUE;
 		exec_result = JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		js_handle_events(js_cx, &cb, &terminated);
+
 		char	*p;
 		if(buf != NULL) {
 			JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
@@ -1213,6 +1217,7 @@ int main(int argc, char **argv, char** env)
 	cb.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
 	cb.gc_interval=JAVASCRIPT_GC_INTERVAL;
 	cb.auto_terminate=TRUE;
+	cb.events = NULL;
 
 	DESCRIBE_COMPILER(compiler);
 

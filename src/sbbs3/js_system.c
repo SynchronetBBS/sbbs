@@ -103,8 +103,9 @@ enum {
 	,SYS_PROP_TEMP_PATH
 	,SYS_PROP_CMD_SHELL
 
-	/* last */
 	,SYS_PROP_LOCAL_HOSTNAME
+	/* last */
+	,SYS_PROP_NAME_SERVERS
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -116,6 +117,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	JSString*	js_str;
 	ulong		val;
 	jsrefcount	rc;
+	JSObject *robj;
+	jsval jval;
+	str_list_t list;
+	int i;
 
 	js_system_private_t* sys;
 	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
@@ -321,6 +326,23 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_RESUMEREQUEST(cx, rc);
 			p=str;
 			break;
+		case SYS_PROP_NAME_SERVERS:
+			rc=JS_SUSPENDREQUEST(cx);
+			robj = JS_NewArrayObject(cx, 0, NULL);
+			if (robj == NULL)
+				return JS_FALSE;
+			*vp = OBJECT_TO_JSVAL(robj);
+			list = getNameServerList();
+			if (list != NULL) {
+				for (i = 0; list[i]; i++) {
+					jval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, list[i]));
+					if (!JS_SetElement(cx, robj, i, &jval))
+						break;
+				}
+			}
+			freeNameServerList(list);
+			JS_RESUMEREQUEST(cx, rc);
+			break;
 	}
 
 	if(p!=NULL) {	/* string property */
@@ -440,8 +462,9 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{	"clock_ticks_per_second",	SYS_PROP_CLOCK_PER_SEC	,SYSOBJ_FLAGS,	311  },
 	{	"timer",					SYS_PROP_TIMER			,SYSOBJ_FLAGS,	314	 },
 
-	/* last */
 	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME	,SYSOBJ_FLAGS,	311  },
+	{	"name_servers",			SYS_PROP_NAME_SERVERS,SYSOBJ_FLAGS,	31802  },
+	/* last */
 	{0}
 };
 
@@ -515,8 +538,9 @@ static char* sys_prop_desc[] = {
 	,"number of clock ticks per second"
 	,"high-resolution timer, in seconds (fractional seconds supported)"
 
-	/* INSERT new tabled properties here */
 	,"private host name that uniquely identifies this system on the local network"
+	,"array of nameservers in use by the system"
+	/* INSERT new tabled properties here */
 
 	/* Manually created (non-tabled) properties */
 	,"public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inet_addr</i>)"

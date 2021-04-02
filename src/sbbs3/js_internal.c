@@ -20,7 +20,9 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "sockwrap.h"
 #include "js_request.h"
+#include "js_socket.h"
 
 /* SpiderMonkey: */
 #include <jsdbgapi.h>
@@ -42,6 +44,7 @@ enum {
 #endif
 	,PROP_GLOBAL
 	,PROP_OPTIONS
+	,PROP_KEEPGOING
 };
 
 static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -111,6 +114,12 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case PROP_OPTIONS:
 			*vp = UINT_TO_JSVAL(JS_GetOptions(cx));
 			break;
+		case PROP_KEEPGOING:
+			if (cb->events_supported)
+				*vp = BOOLEAN_TO_JSVAL(cb->keepGoing);
+			else
+				*vp = JSVAL_FALSE;
+			break;
 	}
 
 	return(JS_TRUE);
@@ -158,6 +167,10 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 				return JS_FALSE;
 			break;
 #endif
+		case PROP_KEEPGOING:
+			if (cb->events_supported)
+				JS_ValueToBoolean(cx, *vp, &cb->keepGoing);
+			break;
 	}
 
 	return(JS_TRUE);
@@ -186,6 +199,7 @@ static jsSyncPropertySpec js_properties[] = {
 #endif
 	{	"global",			PROP_GLOBAL,		PROP_FLAGS,			314 },
 	{	"options",			PROP_OPTIONS,		PROP_FLAGS,			31802 },
+	{	"do_callbacks",		PROP_KEEPGOING,		JSPROP_ENUMERATE,			31802 },
 	{0}
 };
 
@@ -207,6 +221,7 @@ static char* prop_desc[] = {
 #endif
 	,"global (top level) object - <small>READ ONLY</small>"
 	,"option flags - <small>READ ONLY</small>"
+	,"do callbacks after script finishes running"
 	/* New properties go here... */
 	,"full path and filename of JS file executed"
 	,"directory of executed JS file"
@@ -690,6 +705,659 @@ static JSBool js_flatten(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_setTimeout(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	struct js_event_list *ev;
+	js_callback_t*	cb;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSFunction *ecb;
+	uint64_t now = xp_timer() * 1000;
+	jsdouble timeout;
+
+	if((cb=(js_callback_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if (!cb->events_supported) {
+		JS_ReportError(cx, "events not supported");
+		return JS_FALSE;
+	}
+
+	if (argc < 2) {
+		JS_ReportError(cx, "js.setTimeout() requires two parameters");
+		return JS_FALSE;
+	}
+	ecb = JS_ValueToFunction(cx, argv[0]);
+	if (ecb == NULL) {
+		return JS_FALSE;
+	}
+	if (argc > 2) {
+		if (!JS_ValueToObject(cx, argv[2], &obj))
+			return JS_FALSE;
+	}
+	if (!JS_ValueToNumber(cx, argv[1], &timeout)) {
+		return JS_FALSE;
+	}
+	ev = malloc(sizeof(*ev));
+	if (ev == NULL) {
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
+		return JS_FALSE;
+	}
+	ev->prev = NULL;
+	ev->next = cb->events;
+	if (ev->next)
+		ev->next->prev = ev;
+	ev->type = JS_EVENT_TIMEOUT;
+	ev->cx = obj;
+	JS_AddObjectRoot(cx, &ev->cx);
+	ev->cb = ecb;
+	ev->data.timeout.end = now + timeout;
+	ev->id = cb->next_eid++;
+	cb->events = ev;
+
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ev->id));
+	return JS_TRUE;
+}
+
+JSBool
+js_clear_event(JSContext *cx, uintN argc, jsval *arglist, enum js_event_type et)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	int32 id;
+	js_callback_t*	cb;
+	struct js_event_list *ev;
+	struct js_event_list *nev;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if (argc < 1) {
+		JS_ReportError(cx, "js.clearTimeout() requires an id");
+		return JS_FALSE;
+	}
+	if (!JS_ValueToInt32(cx, argv[0], &id)) {
+		return JS_FALSE;
+	}
+	if((cb=(js_callback_t*)JS_GetPrivate(cx, obj))==NULL)
+		return(JS_FALSE);
+	if (!cb->events_supported) {
+		JS_ReportError(cx, "events not supported");
+		return JS_FALSE;
+	}
+
+	for (ev = cb->events; ev; ev = nev) {
+		nev = ev->next;
+		if (ev->type == et && ev->id == id) {
+			if (ev->next)
+				ev->next->prev = ev->prev;
+			if (ev->prev)
+				ev->prev->next = ev->next;
+			else
+				cb->events = ev->next;
+			JS_RemoveObjectRoot(cx, &ev->cx);
+			free(ev);
+		}
+	}
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_clearTimeout(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_clear_event(cx, argc, arglist, JS_EVENT_TIMEOUT);
+}
+
+static JSBool
+js_clearInterval(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_clear_event(cx, argc, arglist, JS_EVENT_INTERVAL);
+}
+
+static JSBool
+js_setInterval(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	struct js_event_list *ev;
+	js_callback_t*	cb;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSFunction *ecb;
+	uint64_t now = xp_timer() * 1000;
+	jsdouble period;
+
+	if((cb=(js_callback_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if (!cb->events_supported) {
+		JS_ReportError(cx, "events not supported");
+		return JS_FALSE;
+	}
+
+	if (argc < 2) {
+		JS_ReportError(cx, "js.setInterval() requires two parameters");
+		return JS_FALSE;
+	}
+	ecb = JS_ValueToFunction(cx, argv[0]);
+	if (ecb == NULL) {
+		return JS_FALSE;
+	}
+	if (!JS_ValueToNumber(cx, argv[1], &period)) {
+		return JS_FALSE;
+	}
+	if (argc > 2) {
+		if (!JS_ValueToObject(cx, argv[2], &obj))
+			return JS_FALSE;
+	}
+	ev = malloc(sizeof(*ev));
+	if (ev == NULL) {
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
+		return JS_FALSE;
+	}
+	ev->prev = NULL;
+	ev->next = cb->events;
+	if (ev->next)
+		ev->next->prev = ev;
+	ev->type = JS_EVENT_INTERVAL;
+	ev->cx = obj;
+	JS_AddObjectRoot(cx, &ev->cx);
+	ev->cb = ecb;
+	ev->data.interval.last = now;
+	ev->data.interval.period = period;
+	ev->id = cb->next_eid++;
+	cb->events = ev;
+
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ev->id));
+	return JS_TRUE;
+}
+
+static JSBool
+js_addEventListener(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	char *name;
+	JSFunction *cbf;
+	struct js_listener_entry *listener;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	js_callback_t *cb;
+
+	if((cb=(js_callback_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if (argc < 2) {
+		JS_ReportError(cx, "js.addEventListener() requires exactly two parameters");
+		return JS_FALSE;
+	}
+
+	cbf = JS_ValueToFunction(cx, argv[1]);
+	if (cbf == NULL) {
+		return JS_FALSE;
+	}
+
+	JSVALUE_TO_MSTRING(cx, argv[0], name, NULL);
+	HANDLE_PENDING(cx, name);
+
+	listener = malloc(sizeof(*listener));
+	if (listener == NULL) {
+		free(name);
+		JS_ReportError(cx, "error allocating %ul bytes", sizeof(*listener));
+		return JS_FALSE;
+	}
+
+	listener->func = cbf;
+	listener->id = cb->next_eid++;
+	listener->next = cb->listeners;
+	listener->name = name;
+	cb->listeners = listener;
+
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(listener->id));
+	return JS_TRUE;
+}
+
+static JSBool
+js_removeEventListener(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	int32 id;
+	struct js_listener_entry *listener;
+	struct js_listener_entry **plistener;
+	char *name;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	js_callback_t *cb;
+
+	if((cb=(js_callback_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if (argc < 1) {
+		JS_ReportError(cx, "js.removeEventListener() requires exactly one parameter");
+		return JS_FALSE;
+	}
+
+	if (JSVAL_IS_INT(argv[0])) {
+		// Remove by ID
+		if (!JS_ValueToInt32(cx, argv[0], &id))
+			return JS_FALSE;
+		for (listener = cb->listeners, plistener = &cb->listeners; listener; listener = (*plistener)->next) {
+			if (listener->id == id) {
+				(*plistener)->next = listener->next;
+				free(listener);
+			}
+			else
+				*plistener = listener;
+		}
+	}
+	else {
+		// Remove by name
+		JSVALUE_TO_MSTRING(cx, argv[0], name, NULL);
+		HANDLE_PENDING(cx, name);
+		for (listener = cb->listeners, plistener = &cb->listeners; listener; listener = (*plistener)->next) {
+			if (strcmp(listener->name, name) == 0) {
+				(*plistener)->next = listener->next;
+				free(listener);
+			}
+			else
+				*plistener = listener;
+		}
+		free(name);
+	}
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	return JS_TRUE;
+}
+
+static JSBool
+js_dispatchEvent(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	struct js_listener_entry *listener;
+	struct js_runq_entry *rqe;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	char *name;
+	js_callback_t *cb;
+
+	if((cb=(js_callback_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if (argc < 1) {
+		JS_ReportError(cx, "js.dispatchEvent() requires a event name");
+		return JS_FALSE;
+	}
+
+	if (argc > 1) {
+		if (!JSVAL_IS_OBJECT(argv[1])) {
+			JS_ReportError(cx, "second argument must be an object");
+			return JS_FALSE;
+		}
+		obj = JSVAL_TO_OBJECT(argv[1]);
+	}
+
+	JSVALUE_TO_MSTRING(cx, argv[0], name, NULL);
+	HANDLE_PENDING(cx, name);
+
+	for (listener = cb->listeners; listener; listener = listener->next) {
+		if (strcmp(name, listener->name) == 0) {
+			rqe = malloc(sizeof(*rqe));
+			if (rqe == NULL) {
+				JS_ReportError(cx, "error allocating %ul bytes", sizeof(*rqe));
+				free(name);
+				return JS_FALSE;
+			}
+			rqe->func = listener->func;
+			rqe->cx = obj;
+			JS_AddObjectRoot(cx, &rqe->cx);
+			rqe->next = NULL;
+			if (cb->rq_tail != NULL)
+				cb->rq_tail->next = rqe;
+			cb->rq_tail = rqe;
+			if (cb->rq_head == NULL)
+				cb->rq_head = rqe;
+		}
+	}
+	free(name);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	return JS_TRUE;
+}
+
+static void
+js_clear_events(JSContext *cx, js_callback_t *cb)
+{
+	struct js_event_list *ev;
+	struct js_event_list *nev;
+	struct js_runq_entry *rq;
+	struct js_runq_entry *nrq;
+	struct js_listener_entry *le;
+	struct js_listener_entry *nle;
+
+	for (ev = cb->events, nev = NULL; ev; ev = nev) {
+		nev = ev->next;
+		JS_RemoveObjectRoot(cx, &ev->cx);
+		free(ev);
+	}
+	cb->next_eid = 0;
+	cb->events = NULL;
+
+	for (rq = cb->rq_head; rq; rq = nrq) {
+		nrq = rq->next;
+		JS_RemoveObjectRoot(cx, &rq->cx);
+		free(rq);
+	}
+	cb->rq_head = NULL;
+	cb->rq_tail = NULL;
+
+	for (le = cb->listeners; le; le = nle) {
+		nle = le->next;
+		free(le);
+	}
+	cb->listeners = NULL;
+}
+
+JSBool
+js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
+{
+	struct js_event_list **head = &cb->events;
+	int timeout;
+	int i;
+	uint64_t now;
+	struct js_event_list *ev;
+	struct js_event_list *tev;
+	struct js_event_list *cev;
+	jsval rval = JSVAL_NULL;
+	jsrefcount rc;
+	JSBool ret = JS_TRUE;
+	BOOL input_locked = FALSE;
+#ifdef PREFER_POLL
+	struct pollfd *fds;
+	nfds_t sc;
+	nfds_t cfd;
+#else
+	fd_set rfds;
+	fd_set wfds;
+	struct timeval tv;
+	SOCKET hsock;
+#endif
+
+	if (!cb->events_supported)
+		return JS_FALSE;
+
+	while (cb->keepGoing && !JS_IsExceptionPending(cx) && cb->events && !*terminated) {
+		timeout = -1;	// Infinity by default...
+		now = xp_timer() * 1000;
+		ev = NULL;
+		tev = NULL;
+		cev = NULL;
+#ifdef PREFER_POLL
+		fds = NULL;
+		sc = 0;
+		cfd = 0;
+#else
+		hsock = 0;
+#endif
+		
+#ifdef PREFER_POLL
+		for (ev = *head; ev; ev = ev->next) {
+			if (ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE
+			    || ev->type == JS_EVENT_SOCKET_WRITABLE || ev->type == JS_EVENT_SOCKET_WRITABLE_ONCE
+			    || ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_CONSOLE_INPUT
+			    || ev->type == JS_EVENT_CONSOLE_INPUT_ONCE)
+				sc++;
+		}
+
+		if (sc) {
+			fds = calloc(sc, sizeof(*fds));
+			if (fds == NULL) {
+				JS_ReportError(cx, "error allocating %d elements of %ul bytes", sc, sizeof(*fds));
+				return JS_FALSE;
+			}
+		}
+#else
+		FD_ZERO(&rfds);
+		FD_ZERO(&wfds);
+#endif
+
+		rc = JS_SUSPENDREQUEST(cx);
+		if (cb->rq_head)
+			timeout = 0;
+		for (ev = *head; ev; ev = ev->next) {
+			switch (ev->type) {
+				case JS_EVENT_SOCKET_READABLE_ONCE:
+				case JS_EVENT_SOCKET_READABLE:
+#ifdef PREFER_POLL
+					fds[cfd].fd = ev->data.sock;
+					fds[cfd].events = POLLIN;
+					cfd++;
+#else
+					FD_SET(ev->data.sock, &rfds);
+					if (ev->data.sock > hsock)
+						hsock = ev->data.sock;
+#endif
+					break;
+				case JS_EVENT_SOCKET_WRITABLE_ONCE:
+				case JS_EVENT_SOCKET_WRITABLE:
+#ifdef PREFER_POLL
+					fds[cfd].fd = ev->data.sock;
+					fds[cfd].events = POLLOUT;
+					cfd++;
+#else
+					FD_SET(ev->data.sock, &wfds);
+					if (ev->data.sock > hsock)
+						hsock = ev->data.sock;
+#endif
+					break;
+				case JS_EVENT_SOCKET_CONNECT:
+#ifdef PREFER_POLL
+					fds[cfd].fd = ev->data.connect.sv[0];
+					fds[cfd].events = POLLIN;
+					cfd++;
+#else
+					FD_SET(ev->data.connect.sv[0], &rfds);
+					if (ev->data.sock > hsock)
+						hsock = ev->data.sock;
+#endif
+					break;
+				case JS_EVENT_INTERVAL:
+					// TODO: Handle clock wrapping
+					if (ev->data.interval.last + ev->data.interval.period <= now) {
+						timeout = 0;
+						tev = ev;
+					}
+					else {
+						i = ev->data.interval.last + ev->data.interval.period - now;
+						if (timeout == -1 || i < timeout) {
+							timeout = i;
+							tev = ev;
+						}
+					}
+					break;
+				case JS_EVENT_TIMEOUT:
+					// TODO: Handle clock wrapping
+					if (now >= ev->data.timeout.end) {
+						timeout = 0;
+						tev = ev;
+					}
+					else {
+						i = ev->data.timeout.end - now;
+						if (timeout == -1 || i < timeout) {
+							timeout = i;
+							tev = ev;
+						}
+					}
+					break;
+				case JS_EVENT_CONSOLE_INPUT_ONCE:
+				case JS_EVENT_CONSOLE_INPUT:
+					if (!input_locked)
+						js_do_lock_input(cx, TRUE);
+					if (js_cx_input_pending(cx) != 0) {
+						js_do_lock_input(cx, FALSE);
+						timeout = 0;
+						cev = ev;
+					}
+					else {
+						input_locked = TRUE;
+#ifdef PREFER_POLL
+						fds[cfd].fd = ev->data.sock;
+						fds[cfd].events = POLLIN;
+						cfd++;
+#else
+						FD_SET(ev->data.sock, &rfds);
+						if (ev->data.sock > hsock)
+							hsock = ev->data.sock;
+#endif
+					}
+					break;
+			}
+		}
+
+		// TODO: suspend/resume request
+#ifdef PREFER_POLL
+		switch (poll(fds, cfd, timeout)) {
+#else
+		tv.tv_sec = timeout / 1000;
+		tv.tv_usec = (timeout % 1000) * 1000;
+		switch (select(hsock + 1, &rfds, &wfds, NULL, &tv)) {
+#endif
+			case 0:		// Timeout
+				JS_RESUMEREQUEST(cx, rc);
+				if (tev && tev->cx && tev->cb)
+					ev = tev;
+				else if (cev && cev->cx && cev->cb)
+					ev = cev;
+				else {
+					if (cb->rq_head == NULL) {
+						JS_ReportError(cx, "Timeout with no event!");
+						ret = JS_FALSE;
+						goto done;
+					}
+				}
+				break;
+			case -1:	// Error...
+				JS_RESUMEREQUEST(cx, rc);
+				if (ERROR_VALUE != EINTR) {
+					JS_ReportError(cx, "poll() returned with error %d", ERROR_VALUE);
+					ret = JS_FALSE;
+					goto done;
+				}
+				break;
+			default:	// Zero or more sockets ready
+				JS_RESUMEREQUEST(cx, rc);
+#ifdef PREFER_POLL
+				cfd = 0;
+#endif
+				for (ev = *head; ev; ev = ev->next) {
+					if (ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE) {
+#ifdef PREFER_POLL
+						if (fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
+#else
+						if (FD_ISSET(ev->data.sock, &rfds)) {
+#endif
+							break;
+						}
+#ifdef PREFER_POLL
+						cfd++;
+#endif
+					}
+					else if (ev->type == JS_EVENT_SOCKET_WRITABLE || ev->type == JS_EVENT_SOCKET_WRITABLE_ONCE) {
+#ifdef PREFER_POLL
+						if (fds[cfd].revents & ~(POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI)) {
+#else
+						if (FD_ISSET(ev->data.sock, &wfds)) {
+#endif
+							break;
+						}
+#ifdef PREFER_POLL
+						cfd++;
+#endif
+					}
+					else if (ev->type == JS_EVENT_SOCKET_CONNECT) {
+#ifdef PREFER_POLL
+						if (fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
+#else
+						if (FD_ISSET(ev->data.connect.sv[0], &wfds)) {
+#endif
+							closesocket(ev->data.connect.sv[0]);
+							break;
+						}
+#ifdef PREFER_POLL
+						cfd++;
+#endif
+					}
+					else if (ev->type == JS_EVENT_CONSOLE_INPUT) {
+#ifdef PREFER_POLL
+						if (fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
+#else
+						if (FD_ISSET(ev->data.sock, &wfds)) {
+#endif
+							break;
+						}
+#ifdef PREFER_POLL
+						cfd++;
+#endif
+					}
+				}
+				break;
+		}
+		if (ev == NULL) {
+			if (cb->rq_head == NULL) {
+				JS_ReportError(cx, "poll() returned ready, but didn't find anything");
+				ret = JS_FALSE;
+				goto done;
+			}
+			else {
+				struct js_runq_entry    *rqe = cb->rq_head;
+				cb->rq_head = rqe->next;
+				if (cb->rq_head == NULL)
+					cb->rq_tail = NULL;
+				ret = JS_CallFunction(cx, rqe->cx, rqe->func, 0, NULL, &rval);
+				JS_RemoveObjectRoot(cx, &rqe->cx);
+				free(rqe);
+			}
+		}
+		else {
+			// Deal with things before running the callback
+			if (ev->type == JS_EVENT_CONSOLE_INPUT) {
+				if (input_locked)
+					js_do_lock_input(cx, FALSE);
+			}
+
+			ret = JS_CallFunction(cx, ev->cx, ev->cb, 0, NULL, &rval);
+
+			// Clean up/update after call
+			if (ev->type == JS_EVENT_SOCKET_CONNECT) {
+				// TODO: call recv() and pass result to callback?
+				closesocket(ev->data.connect.sv[0]);
+			}
+			else if (ev->type == JS_EVENT_INTERVAL)
+				ev->data.interval.last += ev->data.interval.period;
+
+			// Remove one-shot events
+			if (ev->type == JS_EVENT_SOCKET_READABLE_ONCE || ev->type == JS_EVENT_SOCKET_WRITABLE_ONCE
+			    || ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_TIMEOUT
+			    || ev->type == JS_EVENT_CONSOLE_INPUT_ONCE) {
+				if (ev->next)
+					ev->next->prev = ev->prev;
+				if (ev->prev)
+					ev->prev->next = ev->next;
+				else
+					*head = ev->next;
+				JS_RemoveObjectRoot(cx, &ev->cx);
+				free(ev);
+			}
+		}
+
+done:
+#ifdef PREFER_POLL
+		free(fds);
+#endif
+		if (input_locked)
+			js_do_lock_input(cx, FALSE);
+
+		if (!ret)
+			break;
+	}
+	js_clear_events(cx, cb);
+	return ret;
+}
+
 static jsSyncMethodSpec js_functions[] = {
 	{"eval",            js_eval,            0,	JSTYPE_UNDEF,	JSDOCSTR("script")
 	,JSDOCSTR("evaluate a JavaScript string in its own (secure) context, returning the result")
@@ -731,6 +1399,36 @@ static jsSyncMethodSpec js_functions[] = {
 	"An anonymous object can be created using '<tt>new function(){}</tt>'. <br>"
 	"NOTE: Use <tt>js.exec.apply()</tt> if you need to pass a variable number of arguments to the executed script.")
 	,31702
+	},
+	{"setTimeout",	js_setTimeout,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, time[, thisObj]")
+	,JSDOCSTR("install a timeout.  callback() will be called time ms after the function is called. "
+	 "returns an id which can be passed to clearTimeout()")
+	,31802
+	},
+	{"setInterval",	js_setInterval,			2,	JSTYPE_OBJECT,	JSDOCSTR("callback, period[, thisObj]")
+	,JSDOCSTR("install a timeout.  callback() will be called every period ms after setInterval() is called."
+	 "returns and id which can be passed to clearIntervat()")
+	,31802
+	},
+	{"clearTimeout",	js_clearTimeout,	1,	JSTYPE_VOID,	JSDOCSTR("id")
+	,JSDOCSTR("remove a timeout")
+	,31802
+	},
+	{"clearInterval",	js_clearInterval,	1,	JSTYPE_VOID,	JSDOCSTR("id")
+	,JSDOCSTR("remove an interval")
+	,31802
+	},
+	{"addEventListener",	js_addEventListener,	2,	JSTYPE_NUMBER,	JSDOCSTR("eventName, callback")
+	,JSDOCSTR("Add a listener that is ran after js.dispatchEvent(eventName) is called.  Returns an id to be passed to js.removeEventListener")
+	,31802
+	},
+	{"removeEventListener",	js_removeEventListener,	1,	JSTYPE_VOID,	JSDOCSTR("id")
+	,JSDOCSTR("Remove listeners added with js.addEventListener().  id can be a string or an id returned by addEventListener.  This does not remove already triggered callbacks from the runqueue.")
+	,31802
+	},
+	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [, thisObj]")
+	,JSDOCSTR("Add all listeners of eventName to the runqueue.  If obj is passed, specifies this in the callback (the js object is used otherwise).")
+	,31802
 	},
 	{0}
 };
