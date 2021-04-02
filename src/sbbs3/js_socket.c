@@ -33,7 +33,7 @@ static void dbprintf(BOOL error, js_socket_private_t* p, char* fmt, ...);
 static bool do_CryptFlush(js_socket_private_t *p);
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val);
 static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len);
-static void do_js_close(js_socket_private_t *p, bool finalize);
+static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize);
 static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type);
 static JSBool js_accept(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_bind(JSContext *cx, uintN argc, jsval *arglist);
@@ -42,6 +42,7 @@ static JSBool js_connect(JSContext *cx, uintN argc, jsval *arglist);
 static void js_finalize_socket(JSContext *cx, JSObject *obj);
 static JSBool js_ioctlsocket(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_listen(JSContext *cx, uintN argc, jsval *arglist);
+static js_callback_t * js_get_callback(JSContext *cx);
 static JSBool js_getsockopt(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_peek(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_poll(JSContext *cx, uintN argc, jsval *arglist);
@@ -59,13 +60,16 @@ static JSBool js_setsockopt(JSContext *cx, uintN argc, jsval *arglist);
 static int js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i);
 static JSBool js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_socket_enumerate(JSContext *cx, JSObject *obj);
-static BOOL js_socket_peek_byte(js_socket_private_t *p);
+static BOOL js_socket_peek_byte(JSContext *cx, js_socket_private_t *p);
 static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp);
-static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, int flags, int timeout);
+static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf, size_t len, int flags, int timeout);
 static JSBool js_socket_resolve(JSContext *cx, JSObject *obj, jsid id);
 static int js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *offset, off_t count);
 static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, size_t len, int flush);
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp);
+static JSBool js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once);
+static JSBool js_on(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_once(JSContext *cx, uintN argc, jsval *arglist);
 
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
 {
@@ -153,12 +157,70 @@ static bool do_CryptFlush(js_socket_private_t *p)
 	return true;
 }
 
-static void do_js_close(js_socket_private_t *p, bool finalize)
+static void
+remove_js_socket_event(JSContext *cx, js_callback_t *cb, SOCKET sock)
 {
+	struct js_event_list *ev;
+	struct js_event_list *nev;
+
+	if (!cb->events_supported) {
+		return;
+	}
+
+	for (ev = cb->events; ev; ev = nev) {
+		nev = ev->next;
+		if (ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE
+		    || ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE) {
+			if (ev->data.sock == sock) {
+				if (ev->next)
+					ev->next->prev = ev->prev;
+				if (ev->prev)
+					ev->prev->next = ev->next;
+				else
+					cb->events = ev->next;
+				JS_RemoveObjectRoot(cx, &ev->cx);
+				free(ev);
+			}
+		}
+		else if(ev->type == JS_EVENT_SOCKET_CONNECT) {
+			if (ev->data.connect.sock == sock) {
+				if (ev->next)
+					ev->next->prev = ev->prev;
+				if (ev->prev)
+					ev->prev->next = ev->next;
+				else
+					cb->events = ev->next;
+				closesocket(ev->data.connect.sv[0]);
+				JS_RemoveObjectRoot(cx, &ev->cx);
+				free(ev);
+			}
+		}
+	}
+}
+
+static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
+{
+	size_t i;
+
 	if(p->session != -1) {
 		cryptDestroySession(p->session);
 		p->session=-1;
 	}
+
+	// Delete any event handlers for the socket
+	if (p->js_cb) {
+		if (p->set) {
+			for (i = 0; i < p->set->sock_count; i++) {
+				if (p->set->socks[i].sock != INVALID_SOCKET)
+					remove_js_socket_event(cx, p->js_cb, p->set->socks[i].sock);
+			}
+		}
+		else {
+			if (p->sock != INVALID_SOCKET)
+				remove_js_socket_event(cx, p->js_cb, p->sock);
+		}
+	}
+
 	if(p->sock==INVALID_SOCKET) {
 		p->is_connected = FALSE;
 		return;
@@ -171,18 +233,19 @@ static void do_js_close(js_socket_private_t *p, bool finalize)
 		if (!finalize)
 			shutdown(p->sock, SHUT_RDWR);
 	}
+
 	// This is a lie for external sockets... don't tell anyone.
 	p->sock = INVALID_SOCKET;
 	p->is_connected = FALSE;
 }
 
-static BOOL js_socket_peek_byte(js_socket_private_t *p)
+static BOOL js_socket_peek_byte(JSContext *cx, js_socket_private_t *p)
 {
 	if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
 		return FALSE;
 	if (p->peeked)
 		return TRUE;
-	if (js_socket_recv(p, &p->peeked_byte, 1, 0, 0) == 1) {
+	if (js_socket_recv(cx, p, &p->peeked_byte, 1, 0, 0) == 1) {
 		p->peeked = TRUE;
 		return TRUE;
 	}
@@ -192,7 +255,7 @@ static BOOL js_socket_peek_byte(js_socket_private_t *p)
 /* Returns > 0 upon successful data received (even if there was an error or disconnection) */
 /* Returns -1 upon error (and no data received) */
 /* Returns 0 upon timeout or disconnection (and no data received) */
-static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, int flags, int timeout)
+static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf, size_t len, int flags, int timeout)
 {
 	ptrdiff_t	total=0;
 	int	copied,ret;
@@ -204,7 +267,7 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 		return total;
 	if (p->session != -1) {
 		if (flags & MSG_PEEK)
-			js_socket_peek_byte(p);
+			js_socket_peek_byte(cx, p);
 		if (p->peeked) {
 			*(uint8_t *)buf = p->peeked_byte;
 			buf=((uint8_t *)buf) + 1;
@@ -240,7 +303,7 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 					ret = 0;
 				else if (status != CRYPT_ERROR_COMPLETE) {
 					GCES(ret, p, estr, "popping data");
-					do_js_close(p, false);
+					do_js_close(cx, p, false);
 				}
 			}
 		}
@@ -392,7 +455,7 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 	if((p=(js_socket_private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
-	do_js_close(p, true);
+	do_js_close(cx, p, true);
 
 	if(!p->external)
 		free(p->set);
@@ -420,7 +483,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	do_js_close(p, false);
+	do_js_close(cx, p, false);
 	dbprintf(FALSE, p, "closed");
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -809,6 +872,144 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+struct js_connect_event_args {
+	SOCKET sv[2];
+	SOCKET sock;
+	int socktype;
+	char *host;
+	BOOL nonblocking;
+	ushort port;
+};
+
+static void
+js_connect_event_thread(void *args)
+{
+	struct js_connect_event_args *a = args;
+	struct addrinfo	hints,*res,*cur;
+	int result;
+	ulong val;
+	char sresult;
+
+	SetThreadName("sbbs/jsConnect");
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_socktype = a->socktype;
+	hints.ai_flags = AI_ADDRCONFIG;
+	result = getaddrinfo(a->host, NULL, &hints, &res);
+	if(result != 0)
+		goto done;
+	/* always set to blocking here */
+	val = 0;
+	ioctlsocket(a->sock, FIONBIO, &val);
+	result = SOCKET_ERROR;
+	for(cur=res; cur != NULL; cur=cur->ai_next) {
+		inet_setaddrport((void *)cur->ai_addr, a->port);
+
+		result = connect(a->sock, cur->ai_addr, cur->ai_addrlen);
+		if(result == 0)
+			break;
+	}
+	sresult = result;
+	/* Restore original setting here */
+	ioctlsocket(a->sock,FIONBIO,(ulong*)&(a->nonblocking));
+	send(a->sv[1], &sresult, 1, 0);
+
+done:
+	closesocket(a->sv[1]);
+	free(a);
+}
+
+static JSBool
+js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t *p, ushort port, JSObject *obj)
+{
+	SOCKET sv[2];
+	struct js_event_list *ev;
+	JSFunction *ecb;
+	js_callback_t *cb = js_get_callback(cx);
+	struct js_connect_event_args *args;
+	jsval *argv=JS_ARGV(cx, arglist);
+
+	if (p->sock == INVALID_SOCKET) {
+		JS_ReportError(cx, "invalid socket");
+		return JS_FALSE;
+	}
+
+	if (cb == NULL) {
+		return JS_FALSE;
+	}
+
+	if (!cb->events_supported) {
+		JS_ReportError(cx, "events not supported");
+		return JS_FALSE;
+	}
+
+	ecb = JS_ValueToFunction(cx, argv[2]);
+	if (ecb == NULL) {
+		return JS_FALSE;
+	}
+
+	// Create socket pair...
+#ifdef _WIN32
+	if (socketpair(AF_INET, SOCK_STREAM, 0, sv) == -1) {
+#else
+	if (socketpair(PF_UNIX, SOCK_STREAM, 0, sv) == -1) {
+#endif
+		JS_ReportError(cx, "Error %d creating socket pair", ERROR_VALUE);
+		return JS_FALSE;
+	}
+
+	// Create event
+	ev = malloc(sizeof(*ev));
+	if (ev == NULL) {
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
+		closesocket(sv[0]);
+		closesocket(sv[1]);
+		return JS_FALSE;
+	}
+	ev->prev = NULL;
+	ev->next = cb->events;
+	if (ev->next)
+		ev->next->prev = ev;
+	ev->type = JS_EVENT_SOCKET_CONNECT;
+	ev->cx = obj;
+	JS_AddObjectRoot(cx, &ev->cx);
+	ev->cb = ecb;
+	ev->data.connect.sv[0] = sv[0];
+	ev->data.connect.sv[1] = sv[1];
+	ev->data.sock = p->sock;
+	ev->id = cb->next_eid++;
+	p->js_cb = cb;
+	cb->events = ev;
+
+	// Start thread
+	args = malloc(sizeof(*args));
+	if (args == NULL) {
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*args));
+		closesocket(sv[0]);
+		closesocket(sv[1]);
+		return JS_FALSE;
+	}
+	args->sv[0] = sv[0];
+	args->sv[1] = sv[1];
+	args->sock = p->sock;
+	args->socktype = p->type;
+	args->host = strdup(p->hostname);
+	args->port = port;
+	args->nonblocking = p->nonblocking;
+	if (args->host == NULL) {
+		JS_ReportError(cx, "error duplicating hostname");
+		closesocket(sv[0]);
+		closesocket(sv[1]);
+		free(args);
+		return JS_FALSE;
+	}
+	_beginthread(js_connect_event_thread, 0 /* Can be smaller... */, args);
+
+	// Success!
+	p->is_connected = TRUE;
+	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+	return JS_TRUE;
+}
+
 static JSBool
 js_connect(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -834,6 +1035,13 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	JSSTRING_TO_MSTRING(cx, str, p->hostname, NULL);
 	port = js_port(cx,argv[1],p->type);
 	rc=JS_SUSPENDREQUEST(cx);
+
+	if (argc > 2 && JSVAL_IS_OBJECT(argv[2]) && JS_ObjectIsFunction(cx, JSVAL_TO_OBJECT(argv[2]))) {
+		JSBool bgr = js_connect_event(cx, argc, arglist, p, port, obj);
+		JS_RESUMEREQUEST(cx, rc);
+		return bgr;
+	}
+
 	dbprintf(FALSE, p, "resolving hostname: %s", p->hostname);
 
 	memset(&hints, 0, sizeof(hints));
@@ -1201,7 +1409,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	len = js_socket_recv(p,buf,len,0,timeout);
+	len = js_socket_recv(cx,p,buf,len,0,timeout);
 	JS_RESUMEREQUEST(cx, rc);
 	if(len<0) {
 		p->last_error=ERROR_VALUE;
@@ -1386,7 +1594,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	if(p->session==-1)
-		len = js_socket_recv(p,buf,len,MSG_PEEK,120);
+		len = js_socket_recv(cx, p,buf,len,MSG_PEEK,120);
 	else
 		len=0;
 	JS_RESUMEREQUEST(cx, rc);
@@ -1494,7 +1702,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 			}
 		}
 
-		if((got=js_socket_recv(p, &ch, 1, 0, i?1:timeout))!=1) {
+		if((got=js_socket_recv(cx, p, &ch, 1, 0, i?1:timeout))!=1) {
 			if(p->session == -1)
 				p->last_error = ERROR_VALUE;
 			if (i == 0) {			// no data received
@@ -1555,18 +1763,18 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	switch(size) {
 		case sizeof(BYTE):
-			if((rd=js_socket_recv(p,&b,size,MSG_WAITALL,120))==size)
+			if((rd=js_socket_recv(cx, p,&b,size,MSG_WAITALL,120))==size)
 				JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(b));
 			break;
 		case sizeof(WORD):
-			if((rd=js_socket_recv(p,(BYTE*)&w,size,MSG_WAITALL,120))==size) {
+			if((rd=js_socket_recv(cx, p,(BYTE*)&w,size,MSG_WAITALL,120))==size) {
 				if(p->network_byte_order)
 					w=ntohs(w);
 				JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(w));
 			}
 			break;
 		case sizeof(DWORD):
-			if((rd=js_socket_recv(p,(BYTE*)&l,size,MSG_WAITALL,120))==size) {
+			if((rd=js_socket_recv(cx, p,(BYTE*)&l,size,MSG_WAITALL,120))==size) {
 				if(p->network_byte_order)
 					l=ntohl(l);
 				JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL(l));
@@ -1821,6 +2029,179 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+static js_callback_t *
+js_get_callback(JSContext *cx)
+{
+	JSObject*	scope = JS_GetScopeChain(cx);
+	JSObject*	pscope;
+	jsval val = JSVAL_NULL;
+	JSObject *pjs_obj;
+
+	pscope = scope;
+	while ((!JS_LookupProperty(cx, pscope, "js", &val) || val==JSVAL_VOID || !JSVAL_IS_OBJECT(val)) && pscope != NULL) {
+		pscope = JS_GetParent(cx, pscope);
+		if (pscope == NULL) {
+			JS_ReportError(cx, "Walked to global, no js object!");
+			return NULL;
+		}
+	}
+	pjs_obj = JSVAL_TO_OBJECT(val);
+	return JS_GetPrivate(cx, pjs_obj);
+}
+
+static void
+js_install_one_socket_event(JSContext *cx, JSObject *obj, JSFunction *ecb, js_callback_t *cb, js_socket_private_t *p, SOCKET sock, enum js_event_type et)
+{
+	struct js_event_list *ev;
+
+	ev = malloc(sizeof(*ev));
+	if (ev == NULL) {
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
+		return;
+	}
+	ev->prev = NULL;
+	ev->next = cb->events;
+	if (ev->next)
+		ev->next->prev = ev;
+	ev->type = et;
+	ev->cx = obj;
+	JS_AddObjectRoot(cx, &ev->cx);
+	ev->cb = ecb;
+	ev->data.sock = sock;
+	ev->id = cb->next_eid;
+	p->js_cb = cb;
+	cb->events = ev;
+}
+
+static JSBool
+js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	js_callback_t*	cb;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSFunction *ecb;
+	js_socket_private_t*	p;
+	size_t i;
+	char operation[16];
+	enum js_event_type et;
+	size_t slen;
+
+	if((p=(js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class))==NULL) {
+		return(JS_FALSE);
+	}
+
+	if (argc != 2) {
+		JS_ReportError(cx, "js.on() and js.once() require exactly two parameters");
+		return JS_FALSE;
+	}
+	ecb = JS_ValueToFunction(cx, argv[1]);
+	if (ecb == NULL) {
+		return JS_FALSE;
+	}
+	JSVALUE_TO_STRBUF(cx, argv[0], operation, sizeof(operation), &slen);
+	HANDLE_PENDING(cx, NULL);
+	if (strcmp(operation, "read") == 0) {
+		if (once)
+			et = JS_EVENT_SOCKET_READABLE_ONCE;
+		else
+			et = JS_EVENT_SOCKET_READABLE;
+	}
+	else if (strcmp(operation, "write") == 0) {
+		if (once)
+			et = JS_EVENT_SOCKET_WRITABLE_ONCE;
+		else
+			et = JS_EVENT_SOCKET_WRITABLE;
+	}
+	else {
+		JS_ReportError(cx, "event parameter must be 'read' or 'write'");
+		return JS_FALSE;
+	}
+
+	cb = js_get_callback(cx);
+	if (cb == NULL) {
+		return JS_FALSE;
+	}
+	if (!cb->events_supported) {
+		JS_ReportError(cx, "events not supported");
+		return JS_FALSE;
+	}
+
+
+	if (p->set) {
+		for (i = 0; i < p->set->sock_count; i++) {
+			if (p->set->socks[i].sock != INVALID_SOCKET)
+				js_install_one_socket_event(cx, obj, ecb, cb, p, p->set->socks[i].sock, et);
+		}
+	}
+	else {
+		if (p->sock != INVALID_SOCKET)
+			js_install_one_socket_event(cx, obj, ecb, cb, p, p->sock, et);
+	}
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(cb->next_eid));
+	cb->next_eid++;
+
+	if (JS_IsExceptionPending(cx))
+		return JS_FALSE;
+	return JS_TRUE;
+}
+
+static JSBool
+js_clear_socket_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	enum js_event_type et;
+	char operation[16];
+	size_t slen;
+
+	if (argc != 2) {
+		JS_ReportError(cx, "js.clearOn() and js.clearOnce() require exactly two parameters");
+		return JS_FALSE;
+	}
+	JSVALUE_TO_STRBUF(cx, argv[0], operation, sizeof(operation), &slen);
+	HANDLE_PENDING(cx, NULL);
+	if (strcmp(operation, "read") == 0) {
+		if (once)
+			et = JS_EVENT_SOCKET_READABLE_ONCE;
+		else
+			et = JS_EVENT_SOCKET_READABLE;
+	}
+	else if (strcmp(operation, "write") == 0) {
+		if (once)
+			et = JS_EVENT_SOCKET_WRITABLE_ONCE;
+		else
+			et = JS_EVENT_SOCKET_WRITABLE;
+	}
+	else {
+		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+		return JS_TRUE;
+	}
+
+	return js_clear_event(cx, argc, arglist, et);
+}
+
+static JSBool
+js_once(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_install_event(cx, argc, arglist, TRUE);
+}
+
+static JSBool
+js_clearOnce(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_clear_socket_event(cx, argc, arglist, TRUE);
+}
+
+static JSBool
+js_on(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_install_event(cx, argc, arglist, FALSE);
+}
+
+static JSBool
+js_clearOn(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_clear_socket_event(cx, argc, arglist, TRUE);
+}
 
 /* Socket Object Properties */
 enum {
@@ -1994,7 +2375,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 							cryptDestroySession(p->session);
 						p->session=-1;
 						ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
-						do_js_close(p, false);
+						do_js_close(cx, p, false);
 					}
 				}
 			}
@@ -2003,7 +2384,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					cryptDestroySession(p->session);
 					p->session=-1;
 					ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
-					do_js_close(p, false);
+					do_js_close(cx, p, false);
 				}
 			}
 			JS_RESUMEREQUEST(cx, rc);
@@ -2069,7 +2450,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				if (p->peeked)
 					rd = TRUE;
 				else if (p->session != -1)
-					rd = js_socket_peek_byte(p);
+					rd = js_socket_peek_byte(cx, p);
 				else
 					socket_check(p->sock,&rd,NULL,0);
 			}
@@ -2082,7 +2463,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			}
 			cnt=0;
 			if (p->session != -1) {
-				if (js_socket_peek_byte(p))
+				if (js_socket_peek_byte(cx, p))
 					*vp=DOUBLE_TO_JSVAL((double)1);
 				else
 					*vp = JSVAL_ZERO;
@@ -2295,6 +2676,22 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	,JSDOCSTR("poll socket for read or write ability (default is <i>read</i>), "
 	"default timeout value is 0.0 seconds (immediate timeout)")
 	,310
+	},
+	{"on",		js_on,		2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
+	,JSDOCSTR("execute callback whenever socket is readable/writable.  Returns an id to be passed to js.clearOn()")
+	,31802
+	},
+	{"once",	js_once,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
+	,JSDOCSTR("execute callback next time socket is readable/writable  Returns and id to be passed to js.clearOnce()")
+	,31802
+	},
+	{"clearOn",	js_clearOn,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), id")
+	,JSDOCSTR("remove callback installed by Socket.on()")
+	,31802
+	},
+	{"clearOnce",	js_clearOnce,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), id")
+	,JSDOCSTR("remove callback installed by Socket.once()")
+	,31802
 	},
 	{0}
 };
