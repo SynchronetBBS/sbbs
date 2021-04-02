@@ -865,7 +865,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 			result = ERROR_VALUE;
 			if(result == EWOULDBLOCK || result == EINPROGRESS) {
 				result = ETIMEDOUT;
-				if (socket_readable(p->sock, timeout)) {
+				if (socket_writable(p->sock, timeout)) {
 					int so_error = -1;
 					socklen_t optlen = sizeof(so_error);
 					if(getsockopt(p->sock, SOL_SOCKET, SO_ERROR, (void*)&so_error, &optlen) == 0 && so_error == 0)
