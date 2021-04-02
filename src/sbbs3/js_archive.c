@@ -429,10 +429,111 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 	return retval;
 }
 
+static JSBool
+js_read(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv = JS_ARGV(cx, arglist);
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
+	jsrefcount	rc;
+	struct archive *ar;
+	struct archive_entry *entry;
+	int	result;
+	const char* filename;
+	char pattern[MAX_PATH + 1] = "";
+
+	if((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+		return JS_FALSE;
+
+ 	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	uintN argn = 0;
+	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		JSString* js_str = JS_ValueToString(cx, argv[argn]);
+		if(js_str == NULL) {
+			JS_ReportError(cx, "string conversion error");
+			return JS_FALSE;
+		}
+		JSSTRING_TO_STRBUF(cx, js_str, pattern, sizeof(pattern), NULL);
+		argn++;
+	}
+
+	if((ar = archive_read_new()) == NULL) {
+		JS_ReportError(cx, "archive_read_new() returned NULL");
+		return JS_FALSE;
+	}
+	archive_read_support_filter_all(ar);
+	archive_read_support_format_all(ar);
+	if((result = archive_read_open_filename(ar, filename, 10240)) != ARCHIVE_OK) {
+		JS_ReportError(cx, "archive_read_open_filename() returned %d: %s"
+			,result, archive_error_string(ar));
+		archive_read_free(ar);
+		return JS_FALSE;
+	}
+
+	JSBool retval = JS_TRUE;
+	rc = JS_SUSPENDREQUEST(cx);
+	jsint len = 0;
+	while(1) {
+		result = archive_read_next_header(ar, &entry);
+		if(result != ARCHIVE_OK) {
+			if(result != ARCHIVE_EOF) {
+				JS_ReportError(cx, "archive_read_next_header() returned %d: %s"
+					,result, archive_error_string(ar));
+				retval = JS_FALSE;
+			}
+			break;
+		}
+
+		if(archive_entry_filetype(entry) != AE_IFREG)
+			continue;
+
+		const char* pathname = archive_entry_pathname(entry);
+		if(pathname == NULL)
+			continue;
+
+		if(stricmp(pathname, pattern) != 0)
+			continue;
+
+		char* p = NULL;
+		size_t total = 0;
+		const void *buff;
+		size_t size;
+		la_int64_t offset;
+
+		for(;;) {
+			result = archive_read_data_block(ar, &buff, &size, &offset);
+			if(result != ARCHIVE_OK)
+				break;
+			char* np = realloc(p, total + size);
+			if(np == NULL)
+				break;
+			p = np;
+			memcpy(p + total, buff, size);
+			total += size;
+		}
+		JSString* js_str = JS_NewStringCopyN(cx, p, total);
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+		free(p);
+		break;
+	}
+	archive_read_free(ar);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return retval;
+}
+
 static jsSyncMethodSpec js_archive_functions[] = {
 	{ "create",		js_create,		1,	JSTYPE_NUMBER
 		,JSDOCSTR("[string format] [,boolean with_path = false] [,array file_list]")
 		,JSDOCSTR("create an archive of the specified format, returns the number of files archived, will throw exception upon error")
+		,31900
+	},
+	{ "read",		js_read,		1,	JSTYPE_STRING
+		,JSDOCSTR("string path/filename")
+		,JSDOCSTR("read and return the contents of the specified archived text file")
 		,31900
 	},
 	{ "extract",	js_extract,		1,	JSTYPE_NUMBER
