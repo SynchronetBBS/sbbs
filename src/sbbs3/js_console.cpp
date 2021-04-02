@@ -1998,6 +1998,21 @@ js_getlines(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
+void
+js_do_lock_input(JSContext *cx, JSBool lock)
+{
+	sbbs_t*		sbbs;
+
+	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
+		return;
+
+	if(lock) {
+		pthread_mutex_lock(&sbbs->input_thread_mutex);
+	} else {
+		pthread_mutex_unlock(&sbbs->input_thread_mutex);
+	}
+}
+
 static JSBool
 js_lock_input(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -2107,6 +2122,136 @@ js_term_updated(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 
     return JS_TRUE;
+}
+
+size_t
+js_cx_input_pending(JSContext *cx)
+{
+	sbbs_t*		sbbs;
+
+	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
+		return 0;
+
+	return sbbs->keybuf_level() + RingBufFull(&sbbs->inbuf);
+}
+
+static JSBool
+js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	js_callback_t*	cb;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSFunction *ecb;
+	char operation[16];
+	enum js_event_type et;
+	size_t slen;
+	struct js_event_list *ev;
+	sbbs_t *sbbs;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return(JS_FALSE);
+
+	if (argc != 2) {
+		JS_ReportError(cx, "console.on() and console.once() require exactly two parameters");
+		return JS_FALSE;
+	}
+	ecb = JS_ValueToFunction(cx, argv[1]);
+	if (ecb == NULL) {
+		return JS_FALSE;
+	}
+	JSVALUE_TO_STRBUF(cx, argv[0], operation, sizeof(operation), &slen);
+	HANDLE_PENDING(cx, NULL);
+	if (strcmp(operation, "read") == 0) {
+		if (once)
+			et = JS_EVENT_CONSOLE_INPUT_ONCE;
+		else
+			et = JS_EVENT_CONSOLE_INPUT;
+	}
+	else {
+		JS_ReportError(cx, "event parameter must be 'read'");
+		return JS_FALSE;
+	}
+
+	cb = &sbbs->js_callback;
+	if (cb == NULL) {
+		return JS_FALSE;
+	}
+	if (!cb->events_supported) {
+		JS_ReportError(cx, "events not supported");
+		return JS_FALSE;
+	}
+
+	ev = (struct js_event_list *)malloc(sizeof(*ev));
+	if (ev == NULL) {
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
+		return JS_FALSE;
+	}
+	ev->prev = NULL;
+	ev->next = cb->events;
+	if (ev->next)
+		ev->next->prev = ev;
+	ev->type = et;
+	ev->cx = obj;
+	JS_AddObjectRoot(cx, &ev->cx);
+	ev->cb = ecb;
+	ev->id = cb->next_eid++;
+	ev->data.sock = sbbs->client_socket;
+	cb->events = ev;
+
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ev->id));
+	return JS_TRUE;
+}
+
+static JSBool
+js_clear_console_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	enum js_event_type et;
+	char operation[16];
+	size_t slen;
+
+	if (argc != 2) {
+		JS_ReportError(cx, "console.clearOn() and console.clearOnce() require exactly two parameters");
+		return JS_FALSE;
+	}
+	JSVALUE_TO_STRBUF(cx, argv[0], operation, sizeof(operation), &slen);
+	HANDLE_PENDING(cx, NULL);
+	if (strcmp(operation, "read") == 0) {
+		if (once)
+			et = JS_EVENT_CONSOLE_INPUT_ONCE;
+		else
+			et = JS_EVENT_CONSOLE_INPUT;
+	}
+	else {
+		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+		return JS_TRUE;
+	}
+
+	return js_clear_event(cx, argc, arglist, et);
+}
+
+static JSBool
+js_once(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_install_event(cx, argc, arglist, TRUE);
+}
+
+static JSBool
+js_clearOnce(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_clear_console_event(cx, argc, arglist, TRUE);
+}
+
+static JSBool
+js_on(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_install_event(cx, argc, arglist, FALSE);
+}
+
+static JSBool
+js_clearOn(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_clear_console_event(cx, argc, arglist, TRUE);
 }
 
 static jsSyncMethodSpec js_console_functions[] = {
@@ -2361,6 +2506,22 @@ static jsSyncMethodSpec js_console_functions[] = {
 	{"scroll_hotspots",	js_scroll_hotspots,		0,	JSTYPE_VOID,	JSDOCSTR("[rows=1]")
 		,JSDOCSTR("scroll all current mouse hot-spots by the specific number of rows")
 		,31800
+		},
+	{"on",			js_on,				2,	JSTYPE_NUMBER,	JSDOCSTR("type, callback")
+		,JSDOCSTR("calls callback whenever the condition type specifies is possible.  Currently, only 'read' is supported for type.  Returns an id suitable for use with clearOn")
+		,31802
+		},
+	{"once",		js_once,			2,	JSTYPE_NUMBER,	JSDOCSTR("type, callback")
+		,JSDOCSTR("calls callback the first time the condition type specifies is possible.  Currently, only 'read' is supported for type.  Returns an id suitable for use with clearOnce")
+		,31802
+		},
+	{"clearOn",		js_clearOn,			2,	JSTYPE_VOID,	JSDOCSTR("type, id")
+		,JSDOCSTR("removes a callback installed by on")
+		,31802
+		},
+	{"clearOnce",		js_clearOnce,			2,	JSTYPE_VOID,	JSDOCSTR("type, id")
+		,JSDOCSTR("removes a callback installed by once")
+		,31802
 		},
 	{0}
 };
