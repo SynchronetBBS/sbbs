@@ -713,7 +713,7 @@ js_setTimeout(JSContext *cx, uintN argc, jsval *arglist)
 	js_callback_t*	cb;
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	JSFunction *ecb;
-	uint64_t now = xp_timer() * 1000;
+	uint64_t now = (uint64_t)(xp_timer() * 1000);
 	jsdouble timeout;
 
 	if((cb=(js_callback_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -752,7 +752,7 @@ js_setTimeout(JSContext *cx, uintN argc, jsval *arglist)
 	ev->cx = obj;
 	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
-	ev->data.timeout.end = now + timeout;
+	ev->data.timeout.end = (uint64_t)(now + timeout);
 	ev->id = cb->next_eid++;
 	cb->events = ev;
 
@@ -823,7 +823,7 @@ js_setInterval(JSContext *cx, uintN argc, jsval *arglist)
 	js_callback_t*	cb;
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	JSFunction *ecb;
-	uint64_t now = xp_timer() * 1000;
+	uint64_t now = (uint64_t)(xp_timer() * 1000);
 	jsdouble period;
 
 	if((cb=(js_callback_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -863,7 +863,7 @@ js_setInterval(JSContext *cx, uintN argc, jsval *arglist)
 	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
 	ev->data.interval.last = now;
-	ev->data.interval.period = period;
+	ev->data.interval.period =(uint64_t)period;
 	ev->id = cb->next_eid++;
 	cb->events = ev;
 
@@ -1082,7 +1082,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 
 	while (cb->keepGoing && !JS_IsExceptionPending(cx) && cb->events && !*terminated) {
 		timeout = -1;	// Infinity by default...
-		now = xp_timer() * 1000;
+		now = (uint64_t)(xp_timer() * 1000);
 		ev = NULL;
 		tev = NULL;
 		cev = NULL;
@@ -1162,7 +1162,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 						tev = ev;
 					}
 					else {
-						i = ev->data.interval.last + ev->data.interval.period - now;
+						i = (int)(ev->data.interval.last + ev->data.interval.period - now);
 						if (timeout == -1 || i < timeout) {
 							timeout = i;
 							tev = ev;
@@ -1176,7 +1176,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 						tev = ev;
 					}
 					else {
-						i = ev->data.timeout.end - now;
+						i = (int)(ev->data.timeout.end - now);
 						if (timeout == -1 || i < timeout) {
 							timeout = i;
 							tev = ev;
