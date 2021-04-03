@@ -1420,6 +1420,12 @@ extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		return(FALSE);
 
 	do {
+		/*
+		 * NOTE: Where applicable, anything added here should also be added to
+		 *       the same function in jsdoor.c (ie: anything not Synchronet
+		 *       specific).
+		 */
+
 		/* System Object */
 		if(js_CreateSystemObject(js_cx, *glob, node_cfg, uptime, host_name, socklib_desc)==NULL)
 			break;
