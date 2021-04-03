@@ -1364,6 +1364,8 @@ void dir_cfg(uint libnum)
 							,cfg.dir[i]->misc&DIR_NOHASH ? "No":"Yes");
 						sprintf(opt[n++],"%-30.30s%s","Template for New Directories"
 							,cfg.dir[i]->misc&DIR_TEMPLATE ? "Yes" : "No");
+						sprintf(opt[n++],"%-30.30s%s","Allow File Tagging"
+							,cfg.dir[i]->misc&DIR_FILETAGS ? "Yes" : "No");
 						opt[n][0]=0;
 						uifc.helpbuf=
 							"`Directory Toggle Options:`\n"
@@ -1850,6 +1852,26 @@ void dir_cfg(uint libnum)
 								if(n==1 && cfg.dir[i]->misc&DIR_TEMPLATE) {
 									uifc.changes = TRUE;
 									cfg.dir[i]->misc&=~DIR_TEMPLATE; 
+								}
+								break;
+							case 22:
+								n=(cfg.dir[i]->misc&DIR_FILETAGS) ? 0:1;
+								uifc.helpbuf=
+									"`Allow Addition of Tags to Files:`\n"
+									"\n"
+								;
+								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+									,"Allow Addition of Tags to Files",uifcYesNoOpts);
+								if(n==-1)
+									break;
+								if(!n && !(cfg.dir[i]->misc & DIR_FILETAGS)) {
+									uifc.changes = TRUE;
+									cfg.dir[i]->misc |= DIR_FILETAGS;
+									break; 
+								}
+								if(n==1 && (cfg.dir[i]->misc&DIR_FILETAGS)) {
+									uifc.changes = TRUE;
+									cfg.dir[i]->misc &= ~DIR_FILETAGS; 
 								}
 								break;
 						} 
