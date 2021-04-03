@@ -1,4 +1,5 @@
-// Add files to a file base/area directory
+// Add files to a file base/area directory for SBBS v3.19+
+// Replaces functionality of the old ADDFILES program written in C
 
 require("sbbsdefs.js", 'LEN_FDESC');
 
@@ -14,12 +15,13 @@ const default_excludes = [
 if(argv.indexOf("-help") >= 0 || argv.indexOf("-?") >= 0) {
 	print("usage: [-options] [dir-code] [listfile]");
 	print("options:");
-	print("-lib=<name>     add files in all directories of specified lib");
-	print("-from=<name>    specify uploader's user name");
+	print("-all            add files in all libraries/directories (implies -auto)");
+	print("-lib=<name>     add files in all directories of specified library (implies -auto)");
+	print("-from=<name>    specify uploader's user name (may require quotes)");
 	print("-ex=<filename>  add to excluded filename list");
 	print("                (default: " + default_excludes.join(',') + ")");
 	print("-diz            always extract/use description in archive");
-	print("-update         update existing file entries");
+	print("-update         update existing file entries (default is to skip them)");
 	print("-date[=fmt]     include today's date in description");
 	print("-fdate[=fmt]    include file's date in description");
 	print("-adate[=fmt]    include newest archived file date in description");
@@ -71,6 +73,7 @@ for(var i = 0; i < argc; i++) {
 			}
 			for(var j = 0; j < file_area.lib[lib].dir_list.length; j++)
 				dir_list.push(file_area.lib[lib].dir_list[j].code);
+			options.auto = true;
 			continue;
 		}
 		if(arg.indexOf("-from=") == 0) {
@@ -95,6 +98,7 @@ for(var i = 0; i < argc; i++) {
 		if(arg == '-' || arg == '-all') {
 			for(var dir in file_area.dir)
 				dir_list.push(dir);
+			options.auto = true;
 			continue;
 		}
 		if(arg[1] == 'v') {
@@ -137,6 +141,8 @@ for(var d = 0; d < dir_list.length; d++) {
 		alert("Directory '" + code + "' does not exist in configuration");
 		continue;
 	}
+	if(options.auto && (dir.settings & DIR_NOAUTO))
+		continue;
 	print("Adding files to " + dir.lib_name + " " + dir.name);
 	
 	var filebase = new FileBase(code);
@@ -155,13 +161,8 @@ for(var d = 0; d < dir_list.length; d++) {
 	var file_list = [];
 
 	if(listfile) {
-		var listpath = file_getcase(dir.path + listfile);
-		if(!listpath) {
-			var tmp = file_getcase(listfile);
-			if(tmp)
-				listpath = tmp;
-		}
-		var f = new File(file_getcase(listpath));
+		var listpath = file_getcase(dir.path + listfile) || file_getcase(listfile);
+		var f = new File(listpath);
 		if(f.exists) {
 			print("Opening " + f.name);
 			if(!f.open('r')) {
@@ -171,7 +172,7 @@ for(var d = 0; d < dir_list.length; d++) {
 			file_list = parse_file_list(f.readAll());
 			f.close();
 		} else {
-			alert(dir.path + listfile + " does not exist");
+			alert(dir.path + file_getname(listfile) + " does not exist");
 		}
 	}
 	else {
@@ -197,7 +198,7 @@ for(var d = 0; d < dir_list.length; d++) {
 		file.extdesc = lfexpand(file.extdesc);
 		if(verbosity > 1)
 			print(JSON.stringify(file));
-		var exists = name_list.indexOf(file.name.toUpperCase()) >= 0;
+		var exists = name_list.indexOf(filebase.get_file_name(file.name).toUpperCase()) >= 0;
 		if(exists && !options.update) {
 			if(verbosity)
 				print("already added");
@@ -247,6 +248,8 @@ print(added + " files added");
 if(updated)
 	print(updated + " files updated");
 
+// Parse a FILES.BBS (or similar) file listing file
+// Note: file descriptions must begin with an alphabetic character
 function parse_file_list(lines)
 {
 	var file_list = [];
