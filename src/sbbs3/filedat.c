@@ -402,13 +402,17 @@ bool batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t
 	fprintf(fp, "\n[%s]\n", f->name);
 	if(f->dir >= 0 && f->dir < cfg->total_dirs)
 		fprintf(fp, "dir=%s\n", cfg->dir[f->dir]->code);
-	fprintf(fp, "desc=%s\n", f->desc);
+	if(f->desc != NULL)
+		fprintf(fp, "desc=%s\n", f->desc);
+	if(f->tags != NULL)
+		fprintf(fp, "tags=%s\n", f->tags);
 	fclose(fp);
 	return true;
 }
 
 bool batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t* f)
 {
+	char* p;
 	char value[INI_MAX_VALUE_LEN + 1];
 
 	if(!iniSectionExists(ini, filename))
@@ -417,7 +421,10 @@ bool batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t
 	if(f->dir < 0 || f->dir >= cfg->total_dirs)
 		return false;
 	smb_hfield_str(f, SMB_FILENAME, filename);
-	smb_hfield_str(f, SMB_FILEDESC, iniGetString(ini, filename, "desc", NULL, value));
+	if((p = iniGetString(ini, filename, "desc", NULL, value)) != NULL)
+		smb_hfield_str(f, SMB_FILEDESC, p);
+	if((p = iniGetString(ini, filename, "tags", NULL, value)) != NULL)
+		smb_hfield_str(f, SMB_TAGS, p);
 	return true;
 }
 
