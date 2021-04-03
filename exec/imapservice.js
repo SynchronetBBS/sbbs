@@ -716,6 +716,9 @@ function parse_command(line)
 				ret=client.socket.recv(len);
 				line=client.socket.recvline(10240, 1800);
 			}
+			else {
+				line = undefined;
+			}
 			return(ret);
 		}
 
