@@ -723,6 +723,29 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_get_file_name(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
+	jsval*		argv = JS_ARGV(cx, arglist);
+	char*		filepath = NULL;
+	char		filename[SMB_FILEIDX_NAMELEN + 1] = "";
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+ 	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	uintN argn = 0;
+	JSVALUE_TO_MSTRING(cx, argv[argn], filepath, NULL);
+	HANDLE_PENDING(cx, filepath);
+	JSString* js_str;
+	if((js_str = JS_NewStringCopyZ(cx, smb_fileidxname(getfname(filepath), filename, sizeof(filename)))) != NULL)
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
@@ -1362,9 +1385,14 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 			)
 		,31900
 	},
+	{"get_file_name",	js_get_file_name,	1, JSTYPE_STRING
+		,JSDOCSTR("path/filename")
+		,JSDOCSTR("returns index-formatted (e.g. shortened) version of filename without path (file base does not have to be open)")
+		,31900
+	},
 	{"get_file_names",	js_get_file_names,	3, JSTYPE_ARRAY
 		,JSDOCSTR("[filespec] [,since-time=0] [,sort=true [,order]]")
-		,JSDOCSTR("get a list of file names (strings)"
+		,JSDOCSTR("get a list of filenames (strings) from file base index"
 			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_A</tt>")
 		,31900
 	},
@@ -1458,7 +1486,6 @@ JSClass js_filebase_class = {
 };
 
 /* FileBase Constructor (open file base) */
-
 static JSBool
 js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
