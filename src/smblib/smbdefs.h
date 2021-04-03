@@ -523,10 +523,7 @@ typedef struct {		/* Message/File header */
     /* 24 */ uint32_t	thread_back;		/* Message number for backwards threading (aka thread_orig) */
     /* 28 */ uint32_t	thread_next;		/* Next message in thread */
     /* 2c */ uint32_t	thread_first;		/* First reply to this message */
-	union {
 	/* 30 */ uint16_t	delivery_attempts;	/* Delivery attempt counter (for SMTP) */
-	/* 30 */ uint16_t	altpath;			/* Alternate file storage path (when non-zero) */
-	};
 	/* 32 */ int16_t	votes;				/* Votes value (response to poll) or maximum votes per ballot (poll) */
 	/* 34 */ uint32_t	thread_id;			/* Number of original message in thread (or 0 if unknown) */
 	union {	/* 38-3f */

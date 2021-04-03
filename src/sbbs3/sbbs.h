@@ -607,7 +607,6 @@ public:
 	ulong 	timeleft;		/* Number of seconds user has left online */
 
 	char 	*comspec;		/* Pointer to environment variable COMSPEC */
-	ushort	altul;			/* Upload to alternate path flag */
 	char 	cid[LEN_CID+1]; /* Caller ID (IP Address) of current caller */
 	char 	*noaccess_str;	/* Why access was denied via ARS */
 	long 	noaccess_val;	/* Value of parameter not met in ARS */

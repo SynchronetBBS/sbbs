@@ -780,10 +780,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 		curdirnum = dirnum;
 		if(mode==FI_OFFLINE && getfilesize(&cfg, f) >= 0)
 			continue;
-		if(f->hdr.altpath>0 && f->hdr.altpath<=cfg.altpaths)
-			strcpy(dirpath,cfg.altpath[f->hdr.altpath-1]);
-		else
-			strcpy(dirpath,cfg.dir[f->dir]->path);
+		SAFECOPY(dirpath, cfg.dir[f->dir]->path);
 		if((mode==FI_REMOVE) && (!dir_op(dirnum) && stricmp(f->from
 			,useron.alias) && !(useron.exempt&FLAG('R'))))
 			continue;
@@ -902,14 +899,6 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					if(sys_status&SS_ABORT)
 						break;
 					f->hdr.times_downloaded=atoi(str);
-					if(cfg.altpaths || f->hdr.altpath) {
-						ultoa(f->hdr.altpath,str,10);
-						bputs(text[EditAltPath]);
-						getstr(str,3,K_NUMBER|K_EDIT|K_AUTODEL);
-						f->hdr.altpath=atoi(str);
-						if(f->hdr.altpath>cfg.altpaths)
-							f->hdr.altpath=0; 
-					}
 					if(sys_status&SS_ABORT)
 						break;
 					inputnstime32((time32_t*)&f->hdr.when_imported.time);

@@ -11,7 +11,7 @@ different:
 | Metadata                 | code.dab | code.ini |
 | Allocation Tables        | N/A      | code.s?a |
 
-If these new filebase  file extensions look familiar to you, that's because
+If these new filebase file extensions look familiar to you, that's because
 we're using the Synchronet Message Base format/library (v3.0 now) for the
 underlying database. This means that the SMB tools you may be familiar with
 (e.g. CHKSMB, FIXSMB, SMBUTIL) also work on the new filebases.
@@ -45,8 +45,8 @@ is no longer the case. Except for the %~ command-line specifier, those
 short/long filename conversion functions are no longer in use anywhere within
 Synchronet for Windows - it's native filenames through-out. The filebase
 conversion process (upgrade_to_v319) on Windows will attempt to automatically
-resolve the full/long filenames and store those names and only those name in
-the filebase.
+resolve the full/long filenames and store those names and only those names in
+the new filebases.
 
 Note: abbreviated versions of long filenames are displayed in some situations
 to accommodate the limited width of a traditional BBS user terminal. An effort
@@ -61,7 +61,7 @@ Filenames with /extensions/ longer than 3 characters, e.g. ".jpeg", ".tar.gz",
 can be added to the filebases, but the configurable compressible, extractable,
 and viewable file types/extensions remain limited to 3 characters in SCFG.
 Similarly, a maximum length of 3 character archive "types" are stored per BBS
-user record (for the user's QWK packet format and temp archive preference).
+user record (for each user's QWK packet format and temp archive preference).
 
 _Large Files_
 
@@ -126,15 +126,15 @@ be replaced with custom modules.
 
 _TickIT_
 
-The new FileBase JS class is now used to import files directly from .TIC files
-(via tickit.js) so no dependency or invocation of any external utilities
-(e.g. addfiles) is required.
+The new FileBase JS class is now used to import files directly from FidoNet
+-style .TIC files (via tickit.js) so no dependency or invocation of any
+external utilities (e.g. addfiles) is required.
 
 _Utilities_
 
 The native utilities ADDFILES, FILELIST, DELFILES, and DUPEFIND have been
 replaced with similarly named and purposed JavaScript utility scripts to be
-in invoked with JSexec:
+invoked with JSexec:
 - addfiles.js for importing lists of files into filebases
 - postfile.js for importing a single file into a filebase
 - filelist.js for generating file listings from filebases
@@ -160,9 +160,10 @@ server, though now much faster than before.
 _libarchive_
 
 The libarchive library (http://libarchive.org/) has now been integrated into
-Synchronet (and exposed via the "Archive" JavaScript class) so the creation,
-listing/viewing, and extraction of archived files can now be performed without
-the invocation of or dependency on external programs (e.g. unzip, pkunzip).
+Synchronet (and exposed via the new "Archive" JavaScript class) and integrated
+into SBBSecho so that the creation, listing/viewing, and extraction of
+archived files can now be performed "in-process" without the invocation of or
+dependency on external programs (e.g. Info-Zip unzip or PKUNZIP).
 
 Formats fully supported:
 - zip
@@ -170,7 +171,7 @@ Formats fully supported:
 - gzipped-tar
 - bzipped-tar
 
-Formats supported for viewing/extraction only:
+Formats supported for viewing and extraction only:
 - rar
 - lha/lzh
 - iso
@@ -178,24 +179,13 @@ Formats supported for viewing/extraction only:
 - cab
 
 This means that for most BBSes, no "Compressible" or "Extractable" file types
-need to be configured in SCFG->File Options.
+need to be configured in SCFG->File Options. Additionally, by setting
+"Archive Format" to "ZIP" for SCFG->Networks->QWK->Hubs, no "pack" or "unpack"
+command-line need be configured.
 
-For list the contents of archives, the new archive.js utility script may be
+For listing the contents of archives, the new archive.js utility script may be
 installed as a "Viewable File Type" handler for the commonly supported file
-extensions:
-
-- 7z   ?archive list %f 
-- exe  ?archive list %f 
-- bz   ?archive list %f 
-- gz   ?archive list %f 
-- iso  ?archive list %f 
-- lha  ?archive list %f 
-- lzh  ?archive list %f 
-- tbz  ?archive list %f 
-- tgz  ?archive list %f 
-- rar  ?archive list %f 
-- xar  ?archive list %f
-- zip  ?archive list %f 
+extensions by running 'jsexec archive.js install'.
 
 _DIZ_
 
@@ -208,7 +198,7 @@ Each file transfer directory configured in SCFG->File Areas may now have an
 "Area Tag" explicitly set for FidoNet-style file distribution networks. If
 an Area Tag is not explicitly set, then the directory's short name is used
 (with spaces replaced with underscores) automatically. tickit.js now uses
-this new "area_tag" file_area.dir[] JS property for its AutoAreas feature.
+this new "area_tag" file_area.dir[] JS property for its "AutoAreas" feature.
 
 _User to User Files_
 
@@ -225,10 +215,14 @@ As a result, the "CLOSE" file transfer operator command has been removed.
 
 _Alternate File Paths_
 
-"ALTUL" sysop command.
+The support for "Alternate File Paths" has been removed. There are better
+modern operating/file system solutions to the original problem solved with
+this feature.
+
+As a result, the "ALTUL" file transfer operator command has been removed.
 
 _Bi-directional File Transfers_
 
-The protocol drivers that supported bi-directional file transfer (Bi-Modem,
+The protocol drivers that supported bi-directional file transfers (Bi-Modem,
 HS/Link) are now long unsupported DOS/OS2 programs with no equivalent in the
-modern world.
+modern world. Bye bye Bi-modem. :-(

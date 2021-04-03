@@ -3449,7 +3449,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
     usrgrps = 0;
     usrlibs = 0;
     comspec = 0;
-    altul = 0;
     noaccess_str = 0;
     noaccess_val = 0;
     cur_output_rate = output_rate_unlimited;
@@ -4140,7 +4139,6 @@ void sbbs_t::reset_logon_vars(void)
     autoterm=0;
 	cterm_version = 0;
     lbuflen=0;
-    altul=0;
     timeleft_warn=0;
 	keybufbot=keybuftop=0;
     logon_uls=logon_ulb=logon_dls=logon_dlb=0;

@@ -319,9 +319,7 @@ BOOL sbbs_t::start_batch_download()
 				seqwait(cfg.dir[batdn_dir[i]]->seqdev);
 				bprintf(text[RetrievingFile],fname);
 				SAFEPRINTF2(str,"%s%s"
-					,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
-					? cfg.altpath[batdn_alt[i]-1]
-					: cfg.dir[batdn_dir[i]]->path
+					,cfg.dir[batdn_dir[i]]->path
 					,fname);
 				mv(str,path,1); /* copy the file to temp dir */
 				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
@@ -459,9 +457,7 @@ bool sbbs_t::create_batchup_lst()
 		smbfile_t f = {{}};
 		if(!batch_file_get(&cfg, ini, filename, &f))
 			continue;
-		fprintf(fp, "%s", f.hdr.altpath > 0 && f.hdr.altpath <= cfg.altpaths
-			? cfg.altpath[f.hdr.altpath - 1] : cfg.dir[f.dir]->path);
-		fprintf(fp, "%s\r\n", filename);
+		fprintf(fp, "%s%s\r\n", cfg.dir[f.dir]->path, filename);
 		smb_freemsgmem(&f);
 	}
 	fclose(fp);

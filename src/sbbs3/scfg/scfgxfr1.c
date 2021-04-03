@@ -42,15 +42,12 @@ void xfer_opts()
 	static int dlevent_dflt;
 	static int dlevent_bar;
 	static int dlevent_opt;
-	static int altpath_dflt;
-	static int altpath_bar;
 	static fextr_t savfextr;
 	static fview_t savfview;
 	static ftest_t savftest;
 	static fcomp_t savfcomp;
 	static prot_t savprot;
 	static dlevent_t savdlevent;
-	static char savaltpath[LEN_DIR+1];
 
 	while(1) {
 		i=0;
@@ -76,7 +73,6 @@ void xfer_opts()
 		strcpy(opt[i++],"Extractable Files...");
 		strcpy(opt[i++],"Compressible Files...");
 		strcpy(opt[i++],"Transfer Protocols...");
-		strcpy(opt[i++],"Alternate File Paths...");
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`File Transfer Configuration:`\n"
@@ -1004,91 +1000,6 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case __COUNTER__:	/* Alternate file paths */
-				while(1) {
-					for(i=0;i<cfg.altpaths;i++)
-						sprintf(opt[i],"%3d: %-40s",i+1,cfg.altpath[i]);
-					opt[i][0]=0;
-					i=WIN_ACT|WIN_SAV;	/* save cause size can change */
-					if((int)cfg.altpaths<MAX_OPTS)
-						i|=WIN_INS|WIN_XTR;
-					if(cfg.altpaths)
-						i|=WIN_DEL|WIN_COPY|WIN_CUT;
-					if(savaltpath[0])
-						i|=WIN_PASTE;
-					uifc.helpbuf=
-						"`Alternate File Paths:`\n"
-						"\n"
-						"This option allows the sysop to add and configure alternate file paths\n"
-						"for files stored on drives and directories other than the configured\n"
-						"`File Transfer Path` of a file directory. This option is useful for sysops\n"
-						"that have file directories where they wish to have files listed from\n"
-						"multiple locations (CD-ROMs or hard disks).\n"
-					;
-					i=uifc.list(i,0,0,50,&altpath_dflt,&altpath_bar,"Alternate File Paths",opt);
-					if(i==-1)
-						break;
-					int msk = i & MSK_ON;
-					i &= MSK_OFF;
-					if(msk == MSK_DEL || msk == MSK_CUT) {
-						if(msk == MSK_CUT)
-							SAFECOPY(savaltpath, cfg.altpath[i]);
-						free(cfg.altpath[i]);
-						cfg.altpaths--;
-						while(i<cfg.altpaths) {
-							cfg.altpath[i]=cfg.altpath[i+1];
-							i++; 
-						}
-						uifc.changes=1;
-						continue; 
-					}
-					if(msk == MSK_INS) {
-						if((cfg.altpath=(char **)realloc(cfg.altpath
-							,sizeof(char *)*(cfg.altpaths+1)))==NULL) {
-							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.altpaths+1);
-							cfg.altpaths=0;
-							bail(1);
-							continue; 
-						}
-						if(!cfg.altpaths) {
-							if((cfg.altpath[0]=(char *)malloc(LEN_DIR+1))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,LEN_DIR+1);
-								continue; 
-							}
-							memset(cfg.altpath[0],0,LEN_DIR+1); 
-						}
-						else {
-							for(j=cfg.altpaths;j>i;j--)
-								cfg.altpath[j]=cfg.altpath[j-1];
-							if((cfg.altpath[i]=(char *)malloc(LEN_DIR+1))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,LEN_DIR+1);
-								continue; 
-							}
-							if(i>=cfg.altpaths)
-								j=i-1;
-							else
-								j=i+1;
-							memcpy(cfg.altpath[i],cfg.altpath[j],LEN_DIR+1); 
-						}
-						cfg.altpaths++;
-						uifc.changes=1;
-						continue; 
-					}
-					if(msk == MSK_COPY) {
-						SAFECOPY(savaltpath,cfg.altpath[i]);
-						continue; 
-					}
-					if(msk == MSK_PASTE) {
-						memcpy(cfg.altpath[i],savaltpath,LEN_DIR+1);
-						uifc.changes=1;
-						continue; 
-					}
-					if (msk != 0)
-						continue;
-					sprintf(str,"Path %d",i+1);
-					uifc.input(WIN_MID|WIN_SAV,0,0,str,cfg.altpath[i],LEN_DIR,K_EDIT); 
-				}
-				break; 
 		} 
 	}
 }

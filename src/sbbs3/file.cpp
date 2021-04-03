@@ -74,14 +74,6 @@ void sbbs_t::showfileinfo(smbfile_t* f, bool show_extdesc)
 	ulong timetodl = gettimetodl(&cfg, f, cur_cps);
 	if(timetodl > 0)
 		bprintf(text[FiTransferTime],sectostr(timetodl,tmp));
-	if(f->hdr.altpath) {
-		if(f->hdr.altpath<=cfg.altpaths) {
-			if(SYSOP)
-				bprintf(text[FiAlternatePath],cfg.altpath[f->hdr.altpath-1]); 
-		}
-		else
-			bprintf(text[InvalidAlternatePathN],f->hdr.altpath); 
-	}
 	bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
 	if(show_extdesc && f->extdesc != NULL && *f->extdesc) {
 		char* p = f->extdesc;
@@ -203,13 +195,13 @@ bool sbbs_t::movefile(smb_t* smb, smbfile_t* f, int newdir)
 		,cfg.dir[newdir]->sname);
 	logline(nulstr,str);
 
-	if(!f->hdr.altpath) {	/* move actual file */
-		char oldpath[MAX_PATH + 1];
-		getfilepath(&cfg, f, oldpath);
-		f->dir = newdir;
-		char newpath[MAX_PATH + 1];
-		getfilepath(&cfg, f, newpath);
-		mv(oldpath, newpath, /* copy */false); 
-	}
+	/* move actual file */
+	char oldpath[MAX_PATH + 1];
+	getfilepath(&cfg, f, oldpath);
+	f->dir = newdir;
+	char newpath[MAX_PATH + 1];
+	getfilepath(&cfg, f, newpath);
+	mv(oldpath, newpath, /* copy */false); 
+	
 	return true;
 }

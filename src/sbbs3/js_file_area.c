@@ -27,7 +27,6 @@
 static char* file_area_prop_desc[] = {
 	 "minimum amount of available disk space (in kilobytes) required for user uploads to be allowed"
 	,"file area settings (bitfield) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	,"array of alternative file paths.  NOTE: this array is zero-based, but alt path fields are one-based."
 	,NULL
 };
 
@@ -191,7 +190,6 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	JSObject*	alldirs;
 	JSObject*	libobj;
 	JSObject*	dirobj;
-	JSObject*	alt_list;
 	JSObject*	lib_list;
 	JSObject*	dir_list;
 	JSString*	js_str;
@@ -228,29 +226,6 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			free(name);
 		val=UINT_TO_JSVAL(p->cfg->file_misc);
 		JS_DefineProperty(cx, areaobj, "settings", val, NULL, NULL, JSPROP_ENUMERATE);
-		if(name)
-			return(JS_TRUE);
-	}
-
-	if(name==NULL || strcmp(name, "alt_paths")==0) {
-		if(name)
-			free(name);
-		/* file_area.alt_paths[] */
-		if((alt_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
-			return JS_FALSE;
-
-		val=OBJECT_TO_JSVAL(alt_list);
-		if(!JS_SetProperty(cx, areaobj, "alt_paths", &val)) 
-			return JS_FALSE;
-
-		for (l=0; l<p->cfg->altpaths; l++) {
-			if((js_str=JS_NewStringCopyZ(cx, p->cfg->altpath[l]))==NULL)
-				return JS_FALSE;
-			val=STRING_TO_JSVAL(js_str);
-
-			if(!JS_SetElement(cx, alt_list, l, &val))
-				return JS_FALSE;
-		}
 		if(name)
 			return(JS_TRUE);
 	}

@@ -79,8 +79,6 @@ enum {
 	,BBS_PROP_RLOGIN_TERM
 	,BBS_PROP_CLIENT_NAME
 
-	,BBS_PROP_ALTUL
-
 	,BBS_PROP_ERRORLEVEL		/* READ ONLY */
 
 	/* READ ONLY */
@@ -204,8 +202,6 @@ enum {
 	,"password specified during RLogin negotiation"
 	,"terminal specified during RLogin negotiation"
 	,"client name"
-
-	,"current alternate upload path number"
 
 	,"error level returned from last executed external program"
 
@@ -453,10 +449,6 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case BBS_PROP_CLIENT_NAME:
 			p=sbbs->client_name;
-			break;
-
-		case BBS_PROP_ALTUL:
-			val=sbbs->altul;
 			break;
 
 		case BBS_PROP_ERRORLEVEL:
@@ -954,11 +946,6 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 				SAFECOPY(sbbs->client_name,p);
 			break;
 
-		case BBS_PROP_ALTUL:
-			if(val<sbbs->cfg.altpaths)
-				sbbs->altul=(ushort)val;
-			break;
-
 		case BBS_PROP_COMMAND_STR:
 			if(p != NULL)
 				sprintf(sbbs->main_csi.str, "%.*s", 1024, p);
@@ -1036,7 +1023,6 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"rlogin_password"	,BBS_PROP_RLOGIN_PASS	,JSPROP_ENUMERATE	,315},
 	{	"rlogin_terminal"	,BBS_PROP_RLOGIN_TERM	,JSPROP_ENUMERATE	,316},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,310},
-	{	"alt_ul_dir"		,BBS_PROP_ALTUL			,JSPROP_ENUMERATE	,310},
 	{	"errorlevel"		,BBS_PROP_ERRORLEVEL	,PROP_READONLY		,312},
 
 	{	"smb_group"			,BBS_PROP_SMB_GROUP			,PROP_READONLY	,310},

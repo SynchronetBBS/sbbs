@@ -96,8 +96,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 						padfname(str,f->name);
 						strcpy(tmp,f->name);
 						truncsp(tmp);
-						sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths
-							? cfg.altpath[f->altpath-1] : cfg.dir[f->dir]->path
+						sprintf(path,"%s%s", cfg.dir[f->dir]->path
 							,unpadfname(f->name,fname)); 
 					}
 					fclose(stream);
@@ -253,10 +252,7 @@ bool sbbs_t::upload(uint dirnum)
 	if(sys_status&SS_EVENT && online==ON_REMOTE && !dir_op(dirnum))
 		bprintf(text[UploadBeforeEvent],timeleft/60);
 
-	if(altul)
-		SAFECOPY(path,cfg.altpath[altul-1]);
-	else
-		SAFECOPY(path,cfg.dir[dirnum]->path);
+	SAFECOPY(path,cfg.dir[dirnum]->path);
 
 	if(!isdir(path)) {
 		bprintf(text[DirectoryDoesNotExist], path);
@@ -275,7 +271,6 @@ bool sbbs_t::upload(uint dirnum)
 	bprintf(text[DiskNBytesFree],ultoac(space,tmp));
 
 	f.dir=curdirnum=dirnum;
-	f.hdr.altpath=altul;
 	bputs(text[Filename]);
 	if(getstr(fname, sizeof(fname) - 1, 0) < 1 || strchr(fname,'?') || strchr(fname,'*')
 		|| !checkfname(fname) || (trashcan(fname,"file") && !dir_op(dirnum))) {
@@ -473,9 +468,8 @@ bool sbbs_t::bulkupload(uint dirnum)
 
 	memset(&f,0,sizeof(f));
 	f.dir=dirnum;
-	f.hdr.altpath=altul;
 	bprintf(text[BulkUpload],cfg.lib[cfg.dir[dirnum]->lib]->sname,cfg.dir[dirnum]->sname);
-	SAFECOPY(path, altul>0 && altul<=cfg.altpaths ? cfg.altpath[altul-1] : cfg.dir[dirnum]->path);
+	SAFECOPY(path, cfg.dir[dirnum]->path);
 
 	int result = smb_open_dir(&cfg, &smb, dirnum);
 	if(result != SMB_SUCCESS) {

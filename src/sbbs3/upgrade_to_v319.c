@@ -638,7 +638,6 @@ bool upgrade_file_bases(bool hash)
 			file.hdr.when_imported.time = f->dateuled;
 			file.hdr.last_downloaded = f->datedled;
 			file.hdr.times_downloaded = f->timesdled;
-			file.hdr.altpath = f->altpath;
 			smb_hfield_str(&file, SMB_FILENAME, getfname(fpath));
 			smb_hfield_str(&file, SMB_FILEDESC, f->desc);
 			smb_hfield_str(&file, SENDER, f->uler);

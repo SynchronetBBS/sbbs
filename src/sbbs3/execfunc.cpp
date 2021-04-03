@@ -301,10 +301,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			}
 			return(0);
 		case CS_FILE_SET_ALT_PATH:
-			altul=atoi(csi->str);
-			if(altul>cfg.altpaths)
-				altul=0;
-			bprintf(text[AltULPathIsNow],altul ? cfg.altpath[altul-1] : text[OFF]);
+			bprintf("Alternate Upload Paths are Unsupported\r\n");
 			return(0);
 		case CS_FILE_RESORT_DIRECTORY:
 			lprintf(LOG_WARNING, "deprecated function: RESORT_DIRECTORY");
