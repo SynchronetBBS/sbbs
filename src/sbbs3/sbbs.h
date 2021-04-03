@@ -1363,7 +1363,7 @@ extern "C" {
 	DLLEXPORT void		DLLCALL	js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir, JSObject *);
 	DLLEXPORT char*		DLLCALL js_getstring(JSContext *cx, JSString *str);
 	DLLEXPORT JSBool	js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated);
-	DLLEXPORT JSBool	js_clear_event(JSContext *cx, uintN argc, jsval *arglist, enum js_event_type et);
+	DLLEXPORT JSBool	js_clear_event(JSContext *cx, jsval *arglist, js_callback_t *cb, enum js_event_type et, int ididx);
 
 	/* js_system.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent

@@ -2152,6 +2152,7 @@ js_clear_socket_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
 	enum js_event_type et;
 	char operation[16];
 	size_t slen;
+	js_callback_t*	cb;
 
 	if (argc != 2) {
 		JS_ReportError(cx, "js.clearOn() and js.clearOnce() require exactly two parameters");
@@ -2176,7 +2177,11 @@ js_clear_socket_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
 		return JS_TRUE;
 	}
 
-	return js_clear_event(cx, argc, arglist, et);
+	cb = js_get_callback(cx);
+	if (cb == NULL) {
+		return JS_FALSE;
+	}
+	return js_clear_event(cx, arglist, cb, et, 1);
 }
 
 static JSBool

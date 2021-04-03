@@ -761,26 +761,16 @@ js_setTimeout(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 JSBool
-js_clear_event(JSContext *cx, uintN argc, jsval *arglist, enum js_event_type et)
+js_clear_event(JSContext *cx, jsval *arglist, js_callback_t *cb, enum js_event_type et, int ididx)
 {
-	jsval	*argv=JS_ARGV(cx, arglist);
 	int32 id;
-	js_callback_t*	cb;
+	jsval	*argv=JS_ARGV(cx, arglist);
 	struct js_event_list *ev;
 	struct js_event_list *nev;
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc < 1) {
-		JS_ReportError(cx, "js.clearTimeout() requires an id");
+	if (!JS_ValueToInt32(cx, argv[ididx], &id)) {
 		return JS_FALSE;
 	}
-	if (!JS_ValueToInt32(cx, argv[0], &id)) {
-		return JS_FALSE;
-	}
-	if((cb=(js_callback_t*)JS_GetPrivate(cx, obj))==NULL)
-		return(JS_FALSE);
 	if (!cb->events_supported) {
 		JS_ReportError(cx, "events not supported");
 		return JS_FALSE;
@@ -804,15 +794,33 @@ js_clear_event(JSContext *cx, uintN argc, jsval *arglist, enum js_event_type et)
 }
 
 static JSBool
+js_internal_clear_event(JSContext *cx, uintN argc, jsval *arglist, enum js_event_type et)
+{
+	js_callback_t*	cb;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if (argc < 1) {
+		JS_ReportError(cx, "js.clearTimeout() requires an id");
+		return JS_FALSE;
+	}
+	if((cb=(js_callback_t*)JS_GetPrivate(cx, obj))==NULL)
+		return(JS_FALSE);
+
+	return js_clear_event(cx, arglist, cb, et, 0);
+}
+
+static JSBool
 js_clearTimeout(JSContext *cx, uintN argc, jsval *arglist)
 {
-	return js_clear_event(cx, argc, arglist, JS_EVENT_TIMEOUT);
+	return js_internal_clear_event(cx, argc, arglist, JS_EVENT_TIMEOUT);
 }
 
 static JSBool
 js_clearInterval(JSContext *cx, uintN argc, jsval *arglist)
 {
-	return js_clear_event(cx, argc, arglist, JS_EVENT_INTERVAL);
+	return js_internal_clear_event(cx, argc, arglist, JS_EVENT_INTERVAL);
 }
 
 static JSBool
