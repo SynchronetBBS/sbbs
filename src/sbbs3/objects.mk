@@ -250,6 +250,7 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)jsdoor$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)jsdebug$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_archive$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_conio$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_request$(OFILE) \
