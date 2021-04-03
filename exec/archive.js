@@ -25,6 +25,9 @@ switch(cmd) {
 	case 'extract':
 		Archive(fname).extract.apply(null, argv);
 		break;
+	case 'read':
+		print(Archive(fname).read(argv[0]));
+		break;
 	case 'type':
 		print(Archive(fname).type);
 		break;
