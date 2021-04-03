@@ -270,7 +270,7 @@ enum {
 	,EditCreditValue
 	,EditTimesDownloaded
 	,EditOpenCount
-	,EditAltPath
+	,Unused260
 	,YouOnlyHaveNCredits
 	,NotEnoughCredits
 	,NotEnoughTimeToDl
@@ -309,7 +309,7 @@ enum {
 	,NFilesRemoved
 	,TagFileQ
 	,TagFilePrompt
-	,FiTags
+	,Unused299
 	,Unused300
 	,Unused301
 	,Unused302
@@ -336,8 +336,8 @@ enum {
 	,FiDateDled
 	,FiTimesDled
 	,FiTransferTime
-	,FiAlternatePath
-	,InvalidAlternatePathN
+	,FiTags
+	,Unused327
 	,FiChecksum
 	,HappyBirthday
 	,TimeToChangePw
@@ -605,7 +605,7 @@ enum {
 	,CreditedAccount
 	,ANSICaptureIsNow
 	,RetrievingFile
-	,AltULPathIsNow
+	,Unused595
 	,PrivatePostQ
 	,PostTo
 	,NoToUser
