@@ -69,7 +69,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	delfiles(cfg.temp_dir,ALLFILES);
 	SAFEPRINTF2(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexistcase(str)) {
-		ulong file_count = extract_files_from_archive(str
+		long file_count = extract_files_from_archive(str
 			,/* outdir: */cfg.temp_dir
 			,/* allowed_filename_chars: */NULL /* any */
 			,/* with_path: */false
