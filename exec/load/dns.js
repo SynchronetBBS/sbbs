@@ -167,19 +167,19 @@ function DNS(servers) {
 					             ).replace(/(0000:)+/, ':').replace(/(^|:)0{1,3}/g, '$1');
 				case 33:  // SRV
 					tmp = {};
-					tmp.priority = string_to_int16(resp.substr(offset, 2);
+					tmp.priority = string_to_int16(resp.substr(offset, 2));
 					offset += 2;
-					tmp.weight = string_to_int16(resp.substr(offset, 2);
+					tmp.weight = string_to_int16(resp.substr(offset, 2));
 					offset += 2;
-					tmp.port = string_to_int16(resp.substr(offset, 2);
+					tmp.port = string_to_int16(resp.substr(offset, 2));
 					offset += 2;
 					tmp.target = get_name(resp, offset).name;
 					return tmp;
 				case 35:  // NAPTR
 					tmp = {};
-					tmp.order = string_to_int16(resp.substr(offset, 2);
+					tmp.order = string_to_int16(resp.substr(offset, 2));
 					offset += 2;
-					tmp.preference = string_to_int16(resp.substr(offset, 2);
+					tmp.preference = string_to_int16(resp.substr(offset, 2));
 					offset += 2;
 					tmp2 = get_string(resp, offset);
 					tmp.flags = tmp2.string;
@@ -194,9 +194,9 @@ function DNS(servers) {
 					return tmp;
 				case 256: // URI
 					tmp = {};
-					tmp.priority = string_to_int16(resp.substr(offset, 2);
+					tmp.priority = string_to_int16(resp.substr(offset, 2));
 					offset += 2;
-					tmp.weight = string_to_int16(resp.substr(offset, 2);
+					tmp.weight = string_to_int16(resp.substr(offset, 2));
 					offset += 2;
 					tmp.target = get_string(resp, offset).string;
 					tmp.target = tmp.target.replace(/\\"/g, '"');
