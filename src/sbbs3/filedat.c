@@ -897,6 +897,7 @@ char* format_diz(str_list_t lines, char* str, size_t maxlen, bool allow_ansi)
 			strip_ctrl(lines[i], lines[i]);
 		}
 	}
+	strListFastDeleteBlanks(lines);
 	return strListCombine(lines, str, maxlen, "\r\n");
 }
 
