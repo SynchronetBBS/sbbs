@@ -312,6 +312,7 @@ typedef struct {							/* QWK Network Hub */
 				call[LEN_CMD+1],			/* Call-out command line to execute */
 				pack[LEN_CMD+1],			/* Packing command line */
 				unpack[LEN_CMD+1];			/* Unpacking command line */
+	char		fmt[4]; 					/* Archive format */
 	uint16_t	time,						/* Time to call-out */
 				node,						/* Node to do the call-out */
 				freq,						/* Frequency of call-outs */

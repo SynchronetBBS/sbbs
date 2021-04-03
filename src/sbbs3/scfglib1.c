@@ -625,7 +625,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			}
 		}
 		get_int(cfg->qhub[i]->misc, instream);
-		for(j=0;j<30;j++)
+		get_str(cfg->qhub[i]->fmt,instream);
+		for(j=0;j<28;j++)
 			get_int(n,instream);
 	}
 

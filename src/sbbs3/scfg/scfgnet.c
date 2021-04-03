@@ -238,8 +238,7 @@ void net_cfg()
 								if(!new_qhub(i))
 									continue;
 								SAFECOPY(cfg.qhub[i]->id,str);
-								SAFECOPY(cfg.qhub[i]->pack,"%@zip -jD %f %s");
-								SAFECOPY(cfg.qhub[i]->unpack,"%@unzip -Coj %f %s -d %g");
+								SAFECOPY(cfg.qhub[i]->fmt, "ZIP");
 								SAFECOPY(cfg.qhub[i]->call,"*qnet-ftp %s hub.address YOURPASS");
 								cfg.qhub[i]->node = NODE_ANY;
 								cfg.qhub[i]->days=0x7f; /* all days */
@@ -824,6 +823,7 @@ void qhub_edit(int num)
 	while(!done) {
 		i=0;
 		sprintf(opt[i++],"%-27.27s%s","Hub System ID",cfg.qhub[num]->id);
+		sprintf(opt[i++],"%-27.27s%s","Archive Format",cfg.qhub[num]->fmt);
 		sprintf(opt[i++],"%-27.27s%s","Pack Command Line",cfg.qhub[num]->pack);
 		sprintf(opt[i++],"%-27.27s%s","Unpack Command Line",cfg.qhub[num]->unpack);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Command Line",cfg.qhub[num]->call);
@@ -859,8 +859,13 @@ void qhub_edit(int num)
 			"\n"
 			"The `Hub System ID` must match the QWK System ID of this network hub.\n"
 			"\n"
+			"The `Archive Format` should be set to an archive/compression format\n"
+			"that the hub will expect your REP packets to be submitted with\n"
+			"(typically, ZIP).\n"
+			"\n"
 			"The `Pack` and `Unpack Command Lines` are used for creating and extracting\n"
-			"REP (reply) and QWK message packets (files, usually in PKZIP format).\n"
+			"REP (reply) and QWK message packets using an external archive utility\n"
+			"(these command-lines are optional).\n"
 			"\n"
 			"The `Call-out Command Line` is executed when your system attempts a packet\n"
 			"exchange with the QWKnet hub (e.g. executes a script).\n"
@@ -904,7 +909,7 @@ void qhub_edit(int num)
 			case -1:
 				done=1;
 				break;
-			case 0:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`QWK Network Hub System ID:`\n"
 					"\n"
@@ -916,7 +921,17 @@ void qhub_edit(int num)
 					,cfg.qhub[num]->id,LEN_QWKID,K_UPPER|K_EDIT))
 					strcpy(cfg.qhub[num]->id,str);
 				break;
-			case 1:
+			case __COUNTER__:
+				uifc.helpbuf=
+					"`REP Packet Archive Format:`\n"
+					"\n"
+					"This is the archive format used for REP packets created for this QWK\n"
+					"network hub (typically, this would be `ZIP`).\n"
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,0,"REP Packet Archive Format"
+					,cfg.qhub[num]->fmt,sizeof(cfg.qhub[num]->fmt)-1,K_EDIT|K_UPPER);
+				break;
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`REP Packet Creation Command:`\n"
 					"\n"
@@ -928,7 +943,7 @@ void qhub_edit(int num)
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
 					,cfg.qhub[num]->pack,sizeof(cfg.qhub[num]->pack)-1,K_EDIT);
 				break;
-			case 2:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`QWK Packet Extraction Command:`\n"
 					"\n"
@@ -940,7 +955,7 @@ void qhub_edit(int num)
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
 					,cfg.qhub[num]->unpack,sizeof(cfg.qhub[num]->unpack)-1,K_EDIT);
 				break;
-			case 3:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`QWK Network Hub Call-out Command Line:`\n"
 					"\n"
@@ -952,7 +967,7 @@ void qhub_edit(int num)
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
 					,cfg.qhub[num]->call,sizeof(cfg.qhub[num]->call)-1,K_EDIT);
 				break;
-			case 4:
+			case __COUNTER__:
 				if(cfg.qhub[num]->node == NODE_ANY)
 					SAFECOPY(str, "Any");
 				else
@@ -971,7 +986,7 @@ void qhub_edit(int num)
 						cfg.qhub[num]->node = NODE_ANY;
 				}
 				break;
-			case 5:
+			case __COUNTER__:
 				j=0;
 				while(1) {
 					for(i=0;i<7;i++)
@@ -992,7 +1007,7 @@ void qhub_edit(int num)
 					uifc.changes=1; 
 				}
 				break;
-			case 6:
+			case __COUNTER__:
 				i=1;
 				uifc.helpbuf=
 					"`Perform Call-out at a Specific Time:`\n"
@@ -1046,27 +1061,27 @@ void qhub_edit(int num)
 					} 
 				}
 				break;
-			case 7:
+			case __COUNTER__:
 				cfg.qhub[num]->misc^=QHUB_NOKLUDGES;
 				uifc.changes=1;
 				break;
-			case 8:
+			case __COUNTER__:
 				cfg.qhub[num]->misc^=QHUB_NOVOTING;
 				uifc.changes=1;
 				break;
-			case 9:
+			case __COUNTER__:
 				cfg.qhub[num]->misc^=QHUB_NOHEADERS;
 				uifc.changes=1;
 				break;
-			case 10:
+			case __COUNTER__:
 				cfg.qhub[num]->misc^=QHUB_UTF8;
 				uifc.changes=1;
 				break;
-			case 11:
+			case __COUNTER__:
 				cfg.qhub[num]->misc^=QHUB_EXT;
 				uifc.changes=1;
 				break;
-			case 12:
+			case __COUNTER__:
 				i = cfg.qhub[num]->misc&QHUB_CTRL_A;
 				i++;
 				if(i == QHUB_CTRL_A) i = 0;
@@ -1074,10 +1089,10 @@ void qhub_edit(int num)
 				cfg.qhub[num]->misc |= i;
 				uifc.changes=1;
 				break;
-			case 13:
+			case __COUNTER__:
 				import_qwk_conferences(num);
 				break;
-			case 14:
+			case __COUNTER__:
 				qhub_sub_edit(num);
 				break; 
 		} 
