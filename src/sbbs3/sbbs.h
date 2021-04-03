@@ -296,6 +296,82 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "getmail.h"
 #include "msg_id.h"
 
+#if defined(JAVASCRIPT)
+enum js_event_type {
+	JS_EVENT_SOCKET_READABLE_ONCE,
+	JS_EVENT_SOCKET_READABLE,
+	JS_EVENT_SOCKET_WRITABLE_ONCE,
+	JS_EVENT_SOCKET_WRITABLE,
+	JS_EVENT_SOCKET_CONNECT,
+	JS_EVENT_INTERVAL,
+	JS_EVENT_TIMEOUT,
+	JS_EVENT_CONSOLE_INPUT_ONCE,
+	JS_EVENT_CONSOLE_INPUT
+};
+
+struct js_event_interval {
+	uint64_t last;	// The tick the last event should have triggered at
+	uint64_t period;
+};
+
+struct js_event_timeout {
+	uint64_t end;	// Time the timeout expires
+};
+
+struct js_event_connect {
+	SOCKET sv[2];
+	SOCKET sock;
+};
+
+struct js_event_list {
+	struct js_event_list *prev;
+	struct js_event_list *next;
+	JSFunction *cb;
+	JSObject *cx;
+	union {
+		SOCKET	sock;
+		struct js_event_connect connect;
+		struct js_event_interval interval;
+		struct js_event_timeout timeout;
+	} data;
+	int32 id;
+	enum js_event_type type;
+};
+
+struct js_runq_entry {
+	JSFunction *func;
+	JSObject *cx;
+	struct js_runq_entry *next;
+};
+
+struct js_listener_entry {
+	char *name;
+	JSFunction *func;
+	int32 id;
+	struct js_listener_entry *next;
+};
+
+typedef struct js_callback {
+	struct js_event_list	*events;
+	struct js_runq_entry    *rq_head;
+	struct js_runq_entry    *rq_tail;
+	struct js_listener_entry *listeners;
+	volatile BOOL*	terminated;
+	struct js_callback	*parent_cb;
+	uint32_t		counter;
+	uint32_t		limit;
+	uint32_t		yield_interval;
+	uint32_t		gc_interval;
+	uint32_t		gc_attempts;
+	uint32_t		offline_counter;
+	int32			next_eid;
+	BOOL			auto_terminate;
+	BOOL			keepGoing;
+	BOOL			bg;
+	BOOL			events_supported;
+} js_callback_t;
+#endif
+
 /* Synchronet Node Instance class definition */
 #if defined(__cplusplus) && defined(JAVASCRIPT)
 
@@ -1287,6 +1363,8 @@ extern "C" {
 	DLLEXPORT void		DLLCALL js_EvalOnExit(JSContext*, JSObject*, js_callback_t*);
 	DLLEXPORT void		DLLCALL	js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir, JSObject *);
 	DLLEXPORT char*		DLLCALL js_getstring(JSContext *cx, JSString *str);
+	DLLEXPORT JSBool	js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated);
+	DLLEXPORT JSBool	js_clear_event(JSContext *cx, uintN argc, jsval *arglist, enum js_event_type et);
 
 	/* js_system.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
@@ -1367,6 +1445,8 @@ extern "C" {
 
 	/* js_console.cpp */
 	JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent);
+	DLLEXPORT size_t js_cx_input_pending(JSContext *cx);
+	DLLEXPORT void js_do_lock_input(JSContext *cx, JSBool lock);
 
 	/* js_bbs.cpp */
 	JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent);

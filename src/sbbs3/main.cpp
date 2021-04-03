@@ -1291,6 +1291,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 	js_callback.yield_interval = startup->js.yield_interval;
 	js_callback.terminated = &terminated;
 	js_callback.auto_terminate = TRUE;
+	js_callback.events_supported = TRUE;
 
 	bool success=false;
 	bool rooted=false;
@@ -1901,16 +1902,9 @@ void input_thread(void *arg)
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
-		if(pthread_mutex_lock(&sbbs->input_thread_mutex)!=0)
-			sbbs->errormsg(WHERE,ERR_LOCK,"input_thread_mutex",0);
-
 #ifdef _WIN32	// No spy sockets
-		if (!socket_readable(sbbs->client_socket, 1000)) {
-			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
-				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
-			YIELD();	/* This kludge is necessary on some Linux distros */
-			continue;	/* to allow other threads to lock the input_thread_mutex */
-		}
+		if (!socket_readable(sbbs->client_socket, 1000))
+			continue;
 #else
 #ifdef PREFER_POLL
 		fds[0].fd = sbbs->client_socket;
@@ -1924,22 +1918,15 @@ void input_thread(void *arg)
 			nfds++;
 		}
 
-		if (poll(fds, nfds, 1000) < 1) {
-			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
-				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
-			YIELD();	/* This kludge is necessary on some Linux distros */
-			continue;	/* to allow other threads to lock the input_thread_mutex */
-		}
+		if (poll(fds, nfds, 1000) < 1)
+			continue;
 #else
 #error Spy sockets without poll() was removed in commit 3971ef4dcc3db19f400a648b6110718e56a64cf3
 #endif
 #endif
 
-		if(sbbs->client_socket==INVALID_SOCKET) {
-			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
-				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
+		if(sbbs->client_socket==INVALID_SOCKET)
 			break;
-		}
 
 /*         ^          ^
  *      \______    ______/
@@ -1963,22 +1950,17 @@ void input_thread(void *arg)
 				close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 				lprintf(LOG_NOTICE,"Closing local spy socket: %d",uspy_socket[sbbs->cfg.node_num-1]);
 				uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
-				if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
-					sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
 				continue;
 			}
 			sock=uspy_socket[sbbs->cfg.node_num-1];
 		}
 		else {
-			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
-				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
 			continue;
 		}
 #else
 #error Spy sockets without poll() was removed in commit 3971ef4dcc3db19f400a648b6110718e56a64cf3
 #endif
 #endif
-
     	rd=RingBufFree(&sbbs->inbuf);
 
 		if(rd==0) { // input buffer full
@@ -1988,15 +1970,15 @@ void input_thread(void *arg)
             while((rd=RingBufFree(&sbbs->inbuf))==0 && time(NULL)-start<5) {
                 YIELD();
             }
-			if(rd==0) {	/* input buffer still full */
-				if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
-					sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
+			if(rd==0)	/* input buffer still full */
 				continue;
-			}
 		}
 
 	    if(rd > (int)sizeof(inbuf))
         	rd=sizeof(inbuf);
+
+		if(pthread_mutex_lock(&sbbs->input_thread_mutex)!=0)
+			sbbs->errormsg(WHERE,ERR_LOCK,"input_thread_mutex",0);
 
 #ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode && sock==sbbs->client_socket) {
@@ -2028,6 +2010,9 @@ void input_thread(void *arg)
 
 		if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
 			sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
+
+		if (rd == 0 && !socket_recvdone(sock, 0))
+			continue;
 
 		if(rd == SOCKET_ERROR)
 		{
@@ -2177,10 +2162,8 @@ void passthru_thread(void* arg)
 	thread_up(FALSE /* setuid */);
 
 	while(sbbs->online && sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
-		if (!socket_readable(sbbs->passthru_socket, 1000)) {
-			YIELD();	/* This kludge is necessary on some Linux distros */
-			continue;	/* to allow other threads to lock the input_thread_mutex */
-		}
+		if (!socket_readable(sbbs->passthru_socket, 1000))
+			continue;
 
 		if(sbbs->passthru_socket==INVALID_SOCKET)
 			break;

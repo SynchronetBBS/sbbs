@@ -707,12 +707,17 @@ function parse_command(line)
 		{
 			var ret='';
 
+			if (line.search(/^{([0-9]+)}$/) !== 0)
+				throw new Error('invalid string literal ('+line+'), aborting');
 			line=line.replace(/^{([0-9]+)}$/, "$1");
 			client.socket.send("+ Give me more of that good stuff\r\n");
 			var len = parseInt(line);
 			if(len) {
 				ret=client.socket.recv(len);
 				line=client.socket.recvline(10240, 1800);
+			}
+			else {
+				line = undefined;
 			}
 			return(ret);
 		}

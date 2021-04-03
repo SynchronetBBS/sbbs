@@ -171,6 +171,13 @@
  *                              useAllAvailableSubBoards 'false' setting was being
  *                              ignored when it was set to false when changing
  *                              to another sub-board.
+ * 2021-04-02 Eric Oulashin     Version 1.11
+ *                              When configured to use all available sub-boards,
+ *                              still don't allow choosing a sub-board that has
+ *                              polls disabled.  This fixes an issue where SlyVote
+ *                              was showing all available message groups but
+ *                              some could be empty due to having no sub-boards
+ *                              that allow polls.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -240,8 +247,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.10";
-var SLYVOTE_DATE = "2020-05-22";
+var SLYVOTE_VERSION = "1.11";
+var SLYVOTE_DATE = "2021-04-02";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -616,38 +623,20 @@ function CreateMsgGrpMenu(pListTopRow, pDrawColRetObj, pMsgGrps)
 	grpMenu.ampersandHotkeysInItems = false;
 	grpMenu.scrollbarEnabled = true;
 	grpMenu.AddAdditionalQuitKeys("qQ");
-	if (gSlyVoteCfg.useAllAvailableSubBoards)
+	var grpNameLen = pDrawColRetObj.textLen - 2;
+	// Count the number of groups.  If it's more than the number per page in
+	// the menu, then subtract 1 from grpNameLen to account for the scrollbar.
+	var numGrps = 0;
+	for (var grpIdx in pMsgGrps)
+		++numGrps;
+	if (numGrps > grpMenu.GetNumItemsPerPage())
+		--grpNameLen;
+	// Add the groups to the menu
+	for (var grpIdx in pMsgGrps)
 	{
-		grpMenu.NumItems = function() {
-			return msg_area.grp_list.length;
-		};
-		grpMenu.GetItem = function(pItemIndex) {
-			var menuItemObj = this.MakeItemWithRetval(-1);
-			if ((pItemIndex >= 0) && (pItemIndex < msg_area.grp_list.length))
-			{
-				menuItemObj.text = msg_area.grp_list[pItemIndex].name;
-				menuItemObj.retval = pItemIndex;
-			}
-			return menuItemObj;
-		};
-	}
-	else
-	{
-		var grpNameLen = pDrawColRetObj.textLen - 2;
-		// Count the number of groups.  If it's more than the number per page in
-		// the menu, then subtract 1 from grpNameLen to account for the scrollbar.
-		var numGrps = 0;
-		for (var grpIdx in pMsgGrps)
-			++numGrps;
-		if (numGrps > grpMenu.GetNumItemsPerPage())
-			--grpNameLen;
-		// Add the groups to the menu
-		for (var grpIdx in pMsgGrps)
-		{
-			var grpName = msg_area.grp_list[grpIdx].name;
-			var itemText = format("%-" + grpNameLen + "s", grpName.substr(0, grpNameLen));
-			grpMenu.Add(itemText, grpIdx);
-		}
+		var grpName = msg_area.grp_list[grpIdx].name;
+		var itemText = format("%-" + grpNameLen + "s", grpName.substr(0, grpNameLen));
+		grpMenu.Add(itemText, grpIdx);
 	}
 	return grpMenu;
 }

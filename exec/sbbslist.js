@@ -10,7 +10,7 @@
 
 // TODO: Daily maintenance, warning local creators and purging old unverified entries
 
-var REVISION = "$Revision: 1.66 $".split(' ')[1];
+var REVISION = "$Revision: 1.67 $".split(' ')[1];
 var version_notice = "Synchronet BBS List v4(" + REVISION + ")";
 
 load("sbbsdefs.js");
@@ -1080,8 +1080,7 @@ function browse(list)
 	var new_page = false;
 	var start_screen_row = 3;
 	var num_entries_on_page = 0;
-	var prompt_row = 0;
-	var previous_prompt_row = 0;
+	var prompt_row = console.screen_rows;
 	while(js.global.bbs.online && !js.terminated) {
 //		console.clear(LIGHTGRAY);
 		console.home();
@@ -1152,20 +1151,10 @@ function browse(list)
 		}
 		redraw_whole_list = true;
 		previous = current;
-		previous_prompt_row = prompt_row;
-		prompt_row = num_entries_on_page + 3;
 
+		// Display the command prompt
 		if (console_supports_cursor_movement)
-		{
-			/* If we displayed a new page and the prompt row is higher than it
-			   was previously, then erase the previous prompt text */
-			if ((new_page || determine_top_ret_obj.new_page) && (prompt_row < previous_prompt_row))
-			{
-				console.gotoxy(1, previous_prompt_row);
-				console.cleartoeol("\1n");
-			}
 			console.gotoxy(1, prompt_row);
-		}
 //		console.attributes=LIGHTGRAY;
 		var prompt_str = format(cmd_prompt_fmt, "List")
 		               + format("~Sort, ~Reverse, ~GoTo, ~Find, fmt:0-%u, ~More, ~Quit, or [View] ~?", list_formats.length-1)
