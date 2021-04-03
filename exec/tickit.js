@@ -38,6 +38,8 @@ for (var i in argv) {
 }
 
 var tickit = new TickITCfg(cfgfile);
+if(tickit.gcfg.forcereplace === true)
+	force_replace = true;
 var sbbsecho = new SBBSEchoCfg(tickit.gcfg.echocfg);
 var file_list = {};
 var files_imported = 0;
@@ -141,9 +143,9 @@ function process_tic(tic)
 			handler = cfg.handler;
 			handler_arg = cfg.handlerarg;
 		}
-		if (cfg.forcereplace !== undefined) {
+		if (cfg.forcereplace === true) {
 			log(LOG_INFO, "ForceReplace enabled for area "+tic.area.toUpperCase()+".");
-			force_replace_area = cfg.forcereplace;
+			force_replace_area = true;
 		}
 	}
 
