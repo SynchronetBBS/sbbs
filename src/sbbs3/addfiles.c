@@ -165,7 +165,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		fprintf(stderr, "!Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
 		return;
 	}
-	str_list_t fname_list = loadfilenames(&scfg, &smb, ALLFILES, /* time: */0, /* sort: */FALSE, /* count: */NULL);
+	str_list_t fname_list = loadfilenames(&smb, ALLFILES, /* time: */0, FILE_SORT_NATURAL, /* count: */NULL);
 	if(mode&SEARCH_DIR) {
 		SAFECOPY(str,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[dirnum]->path);
 		printf("Searching %s\n\n",str);
@@ -463,7 +463,7 @@ void synclist(char *inpath, int dirnum)
 		return;
 	}
 	size_t file_count;
-	file_list = loadfiles(&scfg, &smb, NULL, 0, /* extdesc: */FALSE, /* sort: */TRUE, &file_count);
+	file_list = loadfiles(&smb, NULL, 0, /* extdesc: */FALSE, FILE_SORT_NATURAL, &file_count);
 
 	printf("\nSynchronizing %s with %s %s\n\n"
 		,listpath,scfg.lib[scfg.dir[dirnum]->lib]->sname,scfg.dir[dirnum]->sname);

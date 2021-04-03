@@ -4886,14 +4886,6 @@ void DLLCALL bbs_thread(void* arg)
 
 	status("Initializing");
 
-	/* Defeat the lameo hex0rs - the name and copyright must remain intact */
-	if(crc32(COPYRIGHT_NOTICE,0)!=COPYRIGHT_CRC
-		|| crc32(VERSION_NOTICE,10)!=SYNCHRONET_CRC) {
-		lprintf(LOG_CRIT,"!CORRUPTED LIBRARY FILE");
-		cleanup(1);
-		return;
-	}
-
 	memset(text, 0, sizeof(text));
     memset(&scfg, 0, sizeof(scfg));
 

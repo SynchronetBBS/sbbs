@@ -112,6 +112,20 @@ another file in a filebase already. Each directory is configurable as to
 whether or not to hash its files or use it for duplicate file detection
 (by name or hash).
 
+_Sorting_
+
+The new filebases are indexed in the order in which the files are imported
+into the database. Sorting of the files for display purposes in the terminal
+and FTP servers is optional and configured by the sysop:
+ Name Ascending (case-insensitive)
+ Name Descending (case-insensitive)
+ Name Ascending (case-sensitive)
+ Name Descending (case-sensitive)
+ Date Ascending
+ Date Descending
+
+As a result, the "RESORT" file transfer operator command has been removed.
+
 _Tags_
 
 Individual files can now be tagged for easy searching/grouping. This feature

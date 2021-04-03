@@ -57,11 +57,11 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 		return 0;
 
 	size_t file_count = 0;
-	smbfile_t* file_list = loadfiles(&cfg, &smb
+	smbfile_t* file_list = loadfiles(&smb
 		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
 		, (mode&FL_ULTIME) ? ns_time : 0
 		, file_detail_extdesc
-		, /* sort: */true
+		, (enum file_sort)cfg.dir[dirnum]->sort
 		, &file_count);
 	if(file_list == NULL || file_count < 1) {
 		smb_close(&smb);
@@ -750,11 +750,11 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 		return 0;
 
 	size_t file_count = 0;
-	smbfile_t* file_list = loadfiles(&cfg, &smb
+	smbfile_t* file_list = loadfiles(&smb
 		, filespec
 		, /* time_t */0
 		, file_detail_extdesc
-		, /* sort: */true
+		, (enum file_sort)cfg.dir[dirnum]->sort
 		, &file_count);
 	if(file_list == NULL || file_count < 1) {
 		smb_close(&smb);

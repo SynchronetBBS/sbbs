@@ -568,7 +568,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	time_t		t = 0;
 	char*		filespec = NULL;
 	enum file_detail detail = file_detail_normal;
-	BOOL		sort = TRUE;
+	enum file_sort sort = FILE_SORT_NAME_A;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -587,6 +587,9 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
+	if(p->smb.dirnum != INVALID_DIR)
+		sort = scfg->dir[p->smb.dirnum]->sort;
+
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
 		JSVALUE_TO_MSTRING(cx, argv[argn], filespec, NULL);
@@ -604,8 +607,12 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
-		sort = JSVAL_TO_BOOLEAN(argv[argn]);
-		argn++;
+		if(argv[argn++] == JSVAL_FALSE)
+			sort = FILE_SORT_NATURAL;
+		else if(argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
+			sort = JSVAL_TO_INT(argv[argn]);
+			argn++;
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -618,7 +625,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	size_t file_count;
-	smbfile_t* file_list = loadfiles(scfg, &p->smb, filespec, t, detail, sort, &file_count);
+	smbfile_t* file_list = loadfiles(&p->smb, filespec, t, detail, sort, &file_count);
 	if(file_list != NULL) {
 		for(size_t i = 0; i < file_count; i++) {
 			JSObject* fobj;
@@ -646,7 +653,7 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	time_t		t = 0;
 	char*		filespec = NULL;
-	BOOL		sort = TRUE;
+	enum file_sort sort = FILE_SORT_NAME_A;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -665,6 +672,9 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
+	if(p->smb.dirnum != INVALID_DIR)
+		sort = scfg->dir[p->smb.dirnum]->sort;
+
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
 		JSVALUE_TO_MSTRING(cx, argv[argn], filespec, NULL);
@@ -678,8 +688,12 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
-		sort = JSVAL_TO_BOOLEAN(argv[argn]);
-		argn++;
+		if(argv[argn++] == JSVAL_FALSE)
+			sort = FILE_SORT_NATURAL;
+		else if(argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
+			sort = JSVAL_TO_INT(argv[argn]);
+			argn++;
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -691,7 +705,7 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	str_list_t file_list = loadfilenames(scfg, &p->smb, filespec, t, sort, NULL);
+	str_list_t file_list = loadfilenames(&p->smb, filespec, t, sort, NULL);
 	if(file_list != NULL) {
 		for(size_t i = 0; file_list[i] != NULL; i++) {
 			JSString* js_str;
@@ -1319,7 +1333,7 @@ static char* filebase_prop_desc[] = {
 	,"maximum number of files before expiration - <small>READ ONLY</small>"
 	,"maximum age (in days) of files to store - <small>READ ONLY</small>"
 	,"file base attributes - <small>READ ONLY</small>"
-	,"directory number (0-based) - <small>READ ONLY</small>"
+	,"directory number (0-based, -1 if invalid) - <small>READ ONLY</small>"
 	,"<i>true</i> if the file base has been opened successfully - <small>READ ONLY</small>"
 	,NULL
 };
@@ -1342,13 +1356,16 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"get_file_list",	js_get_file_list,	4, JSTYPE_ARRAY
-		,JSDOCSTR("[filespec] [,detail=FileBase.DETAIL.NORM] [,since_time=0] [,sort=true]")
-		,JSDOCSTR("get a list of file objects")
+		,JSDOCSTR("[filespec] [,detail=FileBase.DETAIL.NORM] [,since-time=0] [,sort=true [,order]]")
+		,JSDOCSTR("get a list of file objects"
+			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_A</tt>"
+			)
 		,31900
 	},
 	{"get_file_names",	js_get_file_names,	3, JSTYPE_ARRAY
-		,JSDOCSTR("[filespec] [,since-time=0] [,sort=true]")
-		,JSDOCSTR("get a list of file names (strings)")
+		,JSDOCSTR("[filespec] [,since-time=0] [,sort=true [,order]]")
+		,JSDOCSTR("get a list of file names (strings)"
+			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_A</tt>")
 		,31900
 	},
 	{"get_file_path",	js_get_file_path,	1, JSTYPE_STRING
@@ -1508,7 +1525,6 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 {
 	JSObject*	obj;
 	JSObject*	constructor;
-	JSObject*	detail;
 	jsval		val;
 
 	obj = JS_InitClass(cx, parent, NULL
@@ -1521,7 +1537,7 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 
 	if(JS_GetProperty(cx, parent, js_filebase_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JS_ValueToObject(cx, val, &constructor);
-		detail = JS_DefineObject(cx, constructor, "DETAIL", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+		JSObject* detail = JS_DefineObject(cx, constructor, "DETAIL", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 		if(detail != NULL) {
 			JS_DefineProperty(cx, detail, "MIN", INT_TO_JSVAL(file_detail_index), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -1530,6 +1546,23 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 			JS_DefineProperty(cx, detail, "EXT", INT_TO_JSVAL(file_detail_extdesc), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_extdesc + 1), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+		}
+		JSObject* sort = JS_DefineObject(cx, constructor, "SORT", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(sort != NULL) {
+			JS_DefineProperty(cx, sort, "NATURAL", INT_TO_JSVAL(FILE_SORT_NATURAL), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, sort, "NAME_A", INT_TO_JSVAL(FILE_SORT_NAME_A), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, sort, "NAME_D", INT_TO_JSVAL(FILE_SORT_NAME_D), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, sort, "NAME_AC", INT_TO_JSVAL(FILE_SORT_NAME_AC), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, sort, "NAME_DC", INT_TO_JSVAL(FILE_SORT_NAME_DC), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, sort, "DATE_A", INT_TO_JSVAL(FILE_SORT_DATE_A), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, sort, "DATE_D", INT_TO_JSVAL(FILE_SORT_DATE_D), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 		}
 	}

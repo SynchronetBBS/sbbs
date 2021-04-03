@@ -39,12 +39,12 @@ DLLEXPORT time_t		dir_newfiletime(scfg_t*, uint dirnum);
 DLLEXPORT time_t		lastfiletime(smb_t*); // Reads the last index record
 
 DLLEXPORT bool			findfile(scfg_t* cfg, uint dirnum, const char *filename, smbfile_t*);
-DLLEXPORT bool			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*, enum file_detail detail);
-DLLEXPORT smbfile_t*	loadfiles(scfg_t*, smb_t*, const char* filespec, time_t, enum file_detail detail, bool sort, size_t* count);
+DLLEXPORT bool			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*, enum file_detail);
+DLLEXPORT smbfile_t*	loadfiles(smb_t*, const char* filespec, time_t, enum file_detail, enum file_sort, size_t* count);
 DLLEXPORT void			sortfiles(smbfile_t*, size_t count, enum file_sort);
 DLLEXPORT void			freefiles(smbfile_t*, size_t count);
-DLLEXPORT str_list_t	loadfilenames(scfg_t*, smb_t*, const char* filespec, time_t t, bool sort, size_t* count);
-DLLEXPORT void			sortfilenames(str_list_t, size_t count, enum file_sort order);
+DLLEXPORT str_list_t	loadfilenames(smb_t*, const char* filespec, time_t t, enum file_sort, size_t* count);
+DLLEXPORT void			sortfilenames(str_list_t, size_t count, enum file_sort);
 DLLEXPORT bool			updatefile(scfg_t*, smbfile_t*);
 DLLEXPORT char*			getfilepath(scfg_t*, smbfile_t*, char* path);
 DLLEXPORT off_t			getfilesize(scfg_t*, smbfile_t*);

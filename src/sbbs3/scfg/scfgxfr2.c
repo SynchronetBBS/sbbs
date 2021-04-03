@@ -23,6 +23,16 @@
 #define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_MULT|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
 #define CUT_LIBNUM	USHRT_MAX
 
+char* file_sort_desc[] = {
+	"Name Ascending (case-insensitive)",
+	"Name Descending (case-insensitive)",
+	"Date Ascending",
+	"Date Descending",
+	"Name Ascending (case-sensitive)",
+	"Name Descending (case-sensitive)",
+	NULL
+};
+
 static bool new_dir(unsigned new_dirnum, unsigned libnum)
 {
 	dir_t* new_directory = malloc(sizeof(dir_t));
@@ -1891,10 +1901,7 @@ void dir_cfg(uint libnum)
 					sprintf(opt[n++],"%-27.27s%s","Upload Semaphore File"
 						,cfg.dir[i]->upload_sem);
 					sprintf(opt[n++],"%-27.27s%s","Sort Value and Direction"
-						, cfg.dir[i]->sort==SORT_NAME_A ? "Name Ascending"
-						: cfg.dir[i]->sort==SORT_NAME_D ? "Name Descending"
-						: cfg.dir[i]->sort==SORT_DATE_A ? "Date Ascending"
-						: "Date Descending");
+						,file_sort_desc[cfg.dir[i]->sort]);
 					sprintf(opt[n++],"%-27.27sNow %u / Was %u","Directory Index", i, cfg.dir[i]->dirnum);
 					opt[n][0]=0;
 					uifc.helpbuf=
@@ -1902,7 +1909,7 @@ void dir_cfg(uint libnum)
 						"\n"
 						"This is the advanced options menu for the selected file directory.\n"
 					;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,4,60,&adv_dflt,0
+						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,4,65,&adv_dflt,0
 							,"Advanced Options",opt);
 						if(n==-1)
 							break;
@@ -1944,38 +1951,22 @@ void dir_cfg(uint libnum)
 									,cfg.dir[i]->upload_sem,sizeof(cfg.dir[i]->upload_sem)-1,K_EDIT);
 								break;
 							case 3:
-								n=0;
-								strcpy(opt[0],"Name Ascending");
-								strcpy(opt[1],"Name Descending");
-								strcpy(opt[2],"Date Ascending");
-								strcpy(opt[3],"Date Descending");
-								opt[4][0]=0;
+								n = cfg.dir[i]->sort;
 								uifc.helpbuf=
 									"`Sort Value and Direction:`\n"
 									"\n"
-									"This option allows you to determine the sort value and direction. Files\n"
-									"that are uploaded are automatically sorted by filename or upload date,\n"
-									"ascending or descending. If you change the sort value or direction after\n"
-									"a directory already has files in it, use the sysop transfer menu `;RESORT`\n"
-									"command to resort the directory with the new sort parameters.\n"
+									"This option allows you to determine the sort value and direction for\n"
+									"the display of file listings.\n"
+									"\n"
+									"The dates available for sorting are the file import/upload date/time.\n"
+									"\n"
+									"The natural (and thus fastest) sort order is `Date Ascending`."
 								;
 								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Sort Value and Direction",opt);
-								if(n==0 && cfg.dir[i]->sort!=SORT_NAME_A) {
-									cfg.dir[i]->sort=SORT_NAME_A;
-									uifc.changes=1;
-								}
-								else if(n==1 && cfg.dir[i]->sort!=SORT_NAME_D) {
-									cfg.dir[i]->sort=SORT_NAME_D;
-									uifc.changes=1;
-								}
-								else if(n==2 && cfg.dir[i]->sort!=SORT_DATE_A) {
-									cfg.dir[i]->sort=SORT_DATE_A;
-									uifc.changes=1;
-								}
-								else if(n==3 && cfg.dir[i]->sort!=SORT_DATE_D) {
-									cfg.dir[i]->sort=SORT_DATE_D;
-									uifc.changes=1;
+									,"Sort Value and Direction", file_sort_desc);
+								if(n >= 0 && cfg.dir[i]->sort != n) {
+									cfg.dir[i]->sort = n;
+									uifc.changes = TRUE;
 								}
 								break; 
 							case 4:

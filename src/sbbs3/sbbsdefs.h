@@ -41,9 +41,7 @@
 
 #define VERSION_NOTICE		"Synchronet BBS for " PLATFORM_DESC\
 								"  Version " VERSION
-#define SYNCHRONET_CRC		0x9BCDD162
-#define COPYRIGHT_NOTICE	"Copyright 2020 Rob Swindell"
-#define COPYRIGHT_CRC		0xB12E96E6
+#define COPYRIGHT_NOTICE	"Copyright 2021 Rob Swindell"
 
 #define SBBSCTRL_DEFAULT	"/sbbs/ctrl"
 
@@ -291,13 +289,14 @@
 #define ERR_SEEK	"seeking"		/* SEEKing error */
 
 enum file_sort {                    /* Values for dir[x].sort */
-     SORT_NAME_A	= 0	            /* Sort by filename, ascending (case-insensitive) */
-    ,SORT_NAME_D    = 1             /* Sort by filename, descending (case-insensitive) */
-	,SORT_NAME_AC	= 4				/* Sort by filename, ascending (case-sensitive) */
-	,SORT_NAME_DC   = 5             /* Sort by filename, descending (case-sensitive) */
-    ,SORT_DATE_A    = 2             /* Sort by upload date, ascending */
-    ,SORT_DATE_D    = 3             /* Sort by upload date, descending */
-    };
+     FILE_SORT_NAME_A   = 0	        /* Sort by filename, ascending (case-insensitive) */
+    ,FILE_SORT_NAME_D   = 1         /* Sort by filename, descending (case-insensitive) */
+	,FILE_SORT_NAME_AC  = 4			/* Sort by filename, ascending (case-sensitive) */
+	,FILE_SORT_NAME_DC  = 5         /* Sort by filename, descending (case-sensitive) */
+    ,FILE_SORT_DATE_A   = 2         /* Sort by upload date, ascending */
+    ,FILE_SORT_DATE_D   = 3         /* Sort by upload date, descending */
+	,FILE_SORT_NATURAL  = FILE_SORT_DATE_A
+};
 
 /* Values for grp[x].sort */
 enum area_sort {

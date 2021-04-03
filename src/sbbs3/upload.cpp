@@ -478,7 +478,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 	}
 	action=NODE_ULNG;
 	SYNC;
-	str_list_t list = loadfilenames(&cfg, &smb, ALLFILES, /* time_t */0, /* sort */false, NULL);
+	str_list_t list = loadfilenames(&smb, ALLFILES, /* time_t */0, FILE_SORT_NATURAL, NULL);
 	smb_close(&smb);
 	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL && !msgabort()) {

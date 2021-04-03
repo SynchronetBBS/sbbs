@@ -110,19 +110,20 @@ static int filename_compare_dc(const void *arg1, const void *arg2)
    return strcmp(*(char**) arg2, *(char**) arg1);
 }
 
+// Note: does not support sorting by date
 void sortfilenames(str_list_t filelist, size_t count, enum file_sort order)
 {
 	switch(order) {
-		case SORT_NAME_A:
+		case FILE_SORT_NAME_A:
 			qsort(filelist, count, sizeof(*filelist), filename_compare_a);
 			break;
-		case SORT_NAME_D:
+		case FILE_SORT_NAME_D:
 			qsort(filelist, count, sizeof(*filelist), filename_compare_d);
 			break;
-		case SORT_NAME_AC:
+		case FILE_SORT_NAME_AC:
 			qsort(filelist, count, sizeof(*filelist), filename_compare_ac);
 			break;
-		case SORT_NAME_DC:
+		case FILE_SORT_NAME_DC:
 			qsort(filelist, count, sizeof(*filelist), filename_compare_dc);
 			break;
 		default:
@@ -131,7 +132,8 @@ void sortfilenames(str_list_t filelist, size_t count, enum file_sort order)
 }
 
 // Return an optionally-sorted dynamically-allocated string list of filenames added since date/time (t)
-str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, bool sort, size_t* count)
+// Note: does not support sorting by date (exception: natural sort order of date-ascending)
+str_list_t loadfilenames(smb_t* smb, const char* filespec, time_t t, enum file_sort order, size_t* count)
 {
 	size_t count_;
 
@@ -171,14 +173,14 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 		file_list[*count] = strdup(fidx.name);
 		(*count)++;
 	}
-	if(sort)
-		sortfilenames(file_list, *count, (enum file_sort)cfg->dir[smb->dirnum]->sort);
+	if(order != FILE_SORT_NATURAL)
+		sortfilenames(file_list, *count, order);
 
 	return file_list;
 }
 
 // Load and optionally-sort files from an open filebase into a dynamically-allocated list of "objects"
-smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, enum file_detail detail, bool sort, size_t* count)
+smbfile_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail detail, enum file_sort order, size_t* count)
 {
 	*count = 0;
 
@@ -218,8 +220,8 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, en
 			break;
 		(*count)++;
 	}
-	if(sort)
-		sortfiles(file_list, *count, (enum file_sort)cfg->dir[smb->dirnum]->sort);
+	if(order != FILE_SORT_NATURAL)
+		sortfiles(file_list, *count, order);
 
 	return file_list;
 }
@@ -275,22 +277,22 @@ static int file_compare_date_d(const void* v1, const void* v2)
 void sortfiles(smbfile_t* filelist, size_t count, enum file_sort order)
 {
 	switch(order) {
-		case SORT_NAME_A:
+		case FILE_SORT_NAME_A:
 			qsort(filelist, count, sizeof(*filelist), file_compare_name_a);
 			break;
-		case SORT_NAME_D:
+		case FILE_SORT_NAME_D:
 			qsort(filelist, count, sizeof(*filelist), file_compare_name_d);
 			break;
-		case SORT_NAME_AC:
+		case FILE_SORT_NAME_AC:
 			qsort(filelist, count, sizeof(*filelist), file_compare_name_ac);
 			break;
-		case SORT_NAME_DC:
+		case FILE_SORT_NAME_DC:
 			qsort(filelist, count, sizeof(*filelist), file_compare_name_dc);
 			break;
-		case SORT_DATE_A:
+		case FILE_SORT_DATE_A:
 			qsort(filelist, count, sizeof(*filelist), file_compare_date_a);
 			break;
-		case SORT_DATE_D:
+		case FILE_SORT_DATE_D:
 			qsort(filelist, count, sizeof(*filelist), file_compare_date_d);
 			break; 
 	}
