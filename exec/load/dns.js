@@ -89,16 +89,16 @@ function DNS(servers) {
 			var tmp4;
 
 			switch(type) {
-				case 1:	// A
+				case 1:	 // A
 					return ascii(resp[offset]) + '.' +
 					       ascii(resp[offset + 1]) + '.' +
 					       ascii(resp[offset + 2]) + '.' +
 					       ascii(resp[offset + 3]);
-				case 2:  // NS
+				case 2:   // NS
 					return get_name(resp, offset).name;
-				case 5:  // CNAME
+				case 5:   // CNAME
 					return get_name(resp, offset).name;
-				case 6:  // SOA
+				case 6:   // SOA
 					tmp = {};
 					tmp2 = 0;
 					tmp3 = get_name(resp, offset + tmp2);
@@ -118,7 +118,7 @@ function DNS(servers) {
 					tmp.minimum = string_to_int32(resp.substr(offset + tmp2, 4));
 					tmp2 += 4;
 					return tmp;
-				case 11: // WKS
+				case 11:  // WKS
 					tmp = {};
 					tmp.address = ascii(resp[offset]) + '.' +
 					              ascii(resp[offset + 1]) + '.' +
@@ -135,17 +135,17 @@ function DNS(servers) {
 						}
 					}
 					return tmp;
-				case 12: // PTR
+				case 12:  // PTR
 					return get_name(resp, offset).name;
-				case 13: // HINFO
+				case 13:  // HINFO
 					tmp = get_string(resp, offset);
 					return {'cpu':tmp.string, 'os':get_string(resp, offset + tmp.len).string};
-				case 15: // MX
+				case 15:  // MX
 					tmp = {};
 					tmp.preference = string_to_int16(resp.substr(offset, 2));
 					tmp.exchange = get_name(resp, offset + 2).name;
 					return tmp;
-				case 16: // TXT
+				case 16:  // TXT
 					tmp = [];
 					tmp2 = 0;
 					do {
@@ -154,7 +154,7 @@ function DNS(servers) {
 						tmp2 += tmp3.len;
 					} while (tmp2 < len);
 					return tmp;
-				case 28:
+				case 28:  // AAAA
 					return format("%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
 					               ascii(resp[offset + 0]),  ascii(resp[offset + 1]),
 					               ascii(resp[offset + 2]),  ascii(resp[offset + 3]),
@@ -165,13 +165,50 @@ function DNS(servers) {
 					               ascii(resp[offset + 12]), ascii(resp[offset + 13]),
 					               ascii(resp[offset + 14]), ascii(resp[offset + 15])
 					             ).replace(/(0000:)+/, ':').replace(/(^|:)0{1,3}/g, '$1');
-				case 3:  // MD
-				case 4:  // MF
-				case 7:  // MB
-				case 8:  // MG
-				case 9:  // MR
-				case 10: // NULL
-				case 14: // MINFO
+				case 33:  // SRV
+					tmp = {};
+					tmp.priority = string_to_int16(resp.substr(offset, 2);
+					offset += 2;
+					tmp.weight = string_to_int16(resp.substr(offset, 2);
+					offset += 2;
+					tmp.port = string_to_int16(resp.substr(offset, 2);
+					offset += 2;
+					tmp.target = get_name(resp, offset).name;
+					return tmp;
+				case 35:  // NAPTR
+					tmp = {};
+					tmp.order = string_to_int16(resp.substr(offset, 2);
+					offset += 2;
+					tmp.preference = string_to_int16(resp.substr(offset, 2);
+					offset += 2;
+					tmp2 = get_string(resp, offset);
+					tmp.flags = tmp2.string;
+					offset += tmp2.len;
+					tmp2 = get_string(resp, offset);
+					tmp.services = tmp2.string;
+					offset += tmp2.len;
+					tmp2 = get_string(resp, offset);
+					tmp.regexp = tmp2.string;
+					offset += tmp2.len;
+					tmp.replacement = get_name(resp, offset).name;
+					return tmp;
+				case 256: // URI
+					tmp = {};
+					tmp.priority = string_to_int16(resp.substr(offset, 2);
+					offset += 2;
+					tmp.weight = string_to_int16(resp.substr(offset, 2);
+					offset += 2;
+					tmp.target = get_string(resp, offset).string;
+					tmp.target = tmp.target.replace(/\\"/g, '"');
+					tmp.target = tmp.target.replace(/^"(.*)"$/, '$1');
+					return tmp;
+				case 3:   // MD
+				case 4:   // MF
+				case 7:   // MB
+				case 8:   // MG
+				case 9:   // MR
+				case 10:  // NULL
+				case 14:  // MINFO
 					return {'raw':resp.substr(offset, len)};
 			}
 		}
@@ -312,7 +349,10 @@ DNS.types = {
 	'MINFO':14,
 	'MX':15,
 	'TXT':16,
-	'AAAA':28
+	'AAAA':28,
+	'SRV':33,
+	'NAPTR':35,
+	'URI':256
 };
 
 DNS.classes = {
