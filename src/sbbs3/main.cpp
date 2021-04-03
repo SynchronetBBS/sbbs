@@ -435,6 +435,10 @@ void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
 {
 	void *ret = JS_GetInstancePrivate(cx, obj, cls, NULL);
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	if(ret == NULL)
 		JS_ReportError(cx, "'%s' instance: No Private Data or Class Mismatch"
 			, cls == NULL ? "???" : cls->name);
@@ -698,6 +702,10 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 {
 	uint i;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	for(i=0;props[i].name;i++) {
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if(!JS_DefinePropertyWithTinyId(cx, obj,
@@ -719,6 +727,10 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 {
 	uint i;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	for(i=0;funcs[i].name;i++)
 		if(!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
 			return(JS_FALSE);
@@ -731,6 +743,10 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 	uint i;
 	jsval	val;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	if(props) {
 		for(i=0;props[i].name;i++) {
 			if(name==NULL || strcmp(name, props[i].name)==0) {
