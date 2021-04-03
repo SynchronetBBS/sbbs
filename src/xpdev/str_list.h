@@ -70,9 +70,11 @@ DLLEXPORT char*			strListInsertFormat(str_list_t* list, size_t index, const char
 
 /* Remove a string at a specific index */
 DLLEXPORT char*			strListRemove(str_list_t*, size_t index);
+DLLEXPORT char*			strListFastRemove(str_list_t, size_t index);
 
 /* Remove and free a string at a specific index */
 DLLEXPORT BOOL			strListDelete(str_list_t*, size_t index);
+DLLEXPORT BOOL			strListFastDelete(str_list_t, size_t index);
 
 /* Replace a string at a specific index */
 DLLEXPORT char*			strListReplace(const str_list_t, size_t index, const char* str);
@@ -152,6 +154,9 @@ DLLEXPORT int			strListTruncateStrings(str_list_t, const char* set);
 DLLEXPORT int			strListStripStrings(str_list_t, const char* set);
 /* Remove duplicate strings from list, return the new list length */
 DLLEXPORT int			strListDedupe(str_list_t*, BOOL case_sensitive);
+/* Remove blank strings from list, return the new list length */
+DLLEXPORT int			strListDeleteBlanks(str_list_t*);
+DLLEXPORT int			strListFastDeleteBlanks(str_list_t);
 
 /************/
 /* File I/O */

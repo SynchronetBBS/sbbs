@@ -151,11 +151,45 @@ char* strListRemove(str_list_t* list, size_t index)
 	return(str);
 }
 
+// Remove without realloc
+char* strListFastRemove(str_list_t list, size_t index)
+{
+	char*	str;
+	size_t	i;
+	size_t	count;
+
+	count = strListCount(list);
+
+	if(index == STR_LIST_LAST_INDEX && count)
+		index = count-1;
+
+	if(index >= count)	/* invalid index, do nothing */
+		return NULL;
+
+	str = list[index];
+	for(i = index; i < count; i++)
+		list[i] = list[i + 1];
+
+	return str;
+}
+
 BOOL strListDelete(str_list_t* list, size_t index)
 {
 	char*	str;
 
 	if((str=strListRemove(list, index))==NULL)
+		return(FALSE);
+
+	free(str);
+
+	return(TRUE);
+}
+
+BOOL strListFastDelete(str_list_t list, size_t index)
+{
+	char*	str;
+
+	if((str=strListFastRemove(list, index))==NULL)
 		return(FALSE);
 
 	free(str);
@@ -799,6 +833,38 @@ int strListDedupe(str_list_t* list, BOOL case_sensitive)
 			else
 				j++;
 		}
+	}
+	return i;
+}
+
+int strListDeleteBlanks(str_list_t* list)
+{
+	size_t		i;
+
+	if(list == NULL || *list == NULL)
+		return 0;
+
+	for(i = 0; (*list)[i] != NULL; ) {
+		if((*list)[i][0] == '\0')
+			strListDelete(list, i);
+		else
+			i++;
+	}
+	return i;
+}
+
+int strListFastDeleteBlanks(str_list_t list)
+{
+	size_t		i;
+
+	if(list == NULL || *list == NULL)
+		return 0;
+
+	for(i = 0; list[i] != NULL; ) {
+		if(list[i][0] == '\0')
+			strListFastDelete(list, i);
+		else
+			i++;
 	}
 	return i;
 }
