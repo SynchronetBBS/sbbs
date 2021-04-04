@@ -1159,8 +1159,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 					cfd++;
 #else
 					FD_SET(ev->data.connect.sv[0], &rfds);
-					if (ev->data.sock > hsock)
-						hsock = ev->data.sock;
+					if (ev->data.connect.sv[0] > hsock)
+						hsock = ev->data.connect.sv[0];
 #endif
 					break;
 				case JS_EVENT_INTERVAL:

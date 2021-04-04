@@ -976,7 +976,7 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	ev->cb = ecb;
 	ev->data.connect.sv[0] = sv[0];
 	ev->data.connect.sv[1] = sv[1];
-	ev->data.sock = p->sock;
+	ev->data.connect.sock = p->sock;
 	ev->id = cb->next_eid++;
 	p->js_cb = cb;
 	cb->events = ev;
