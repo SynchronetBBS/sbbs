@@ -2582,9 +2582,6 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 		,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 		return(NULL);
 
-	if (obj == NULL)
-		return NULL;
-
 	JS_SetPrivate(cx, obj, sbbs);
 
 	/* Create an array of pre-defined colors */
