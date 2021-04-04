@@ -725,7 +725,6 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_get_file_name(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
 	jsval*		argv = JS_ARGV(cx, arglist);
 	char*		filepath = NULL;
 	char		filename[SMB_FILEIDX_NAMELEN + 1] = "";

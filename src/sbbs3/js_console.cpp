@@ -2211,6 +2211,9 @@ js_clear_console_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
 	size_t slen;
 	sbbs_t *sbbs;
 
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return(JS_FALSE);
+
 	if (argc != 2) {
 		JS_ReportError(cx, "console.clearOn() and console.clearOnce() require exactly two parameters");
 		return JS_FALSE;
