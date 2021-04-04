@@ -1689,9 +1689,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			close(out_pipe[1]);	/* close write-end of pipe */
 		fds[0].fd = out_pipe[0];
 		fds[0].events = POLLIN;
-		fds[1].fd = err_pipe[0];
-		fds[1].events = POLLIN;
-		fds[1].revents = 0;
+		if(!(mode&EX_NOLOG)) {
+			fds[1].fd = err_pipe[0];
+			fds[1].events = POLLIN;
+			fds[1].revents = 0;
+		}
 		while(!terminated) {
 			if(waitpid(pid, &i, WNOHANG)!=0)	/* child exited */
 				break;
@@ -1713,9 +1715,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			bp=buf;
 			i=0;
 			if(mode&EX_NOLOG)
-				poll(fds, (mode & EX_NOLOG) ? 1 : 2, 1);
+				poll(fds, 1, 1);
 			else {
-				while (poll(fds, (mode & EX_NOLOG) ? 1 : 2, 1) > 0 && (fds[1].revents & POLLIN)
+				while (poll(fds, 2, 1) > 0 && (fds[1].revents & POLLIN)
 				    && (i < (int)sizeof(buf) - 1))  {
 					if((rd=read(err_pipe[0],bp,1))>0)  {
 						i+=rd;
