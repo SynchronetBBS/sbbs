@@ -1140,7 +1140,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
 	} else {
 		p->last_error=ERROR_VALUE;
-		dbprintf(TRUE, p, "send of %u bytes failed",len);
+		dbprintf(TRUE, p, "send of %lu bytes failed",len);
 	}
 	free(cp);
 	JS_RESUMEREQUEST(cx, rc);
@@ -1175,11 +1175,11 @@ js_sendline(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(js_socket_sendsocket(p,cp,len,FALSE)==len && js_socket_sendsocket(p,"\r\n",2,TRUE)==2) {
-		dbprintf(FALSE, p, "sent %u bytes",len+2);
+		dbprintf(FALSE, p, "sent %lu bytes",len+2);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=ERROR_VALUE;
-		dbprintf(TRUE, p, "send of %u bytes failed",len+2);
+		dbprintf(TRUE, p, "send of %lu bytes failed",len+2);
 	}
 	free(cp);
 	JS_RESUMEREQUEST(cx, rc);
@@ -1250,15 +1250,15 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(cur=res; cur; cur=cur->ai_next) {
 		inet_addrtop((void *)cur->ai_addr, ip_addr, sizeof(ip_addr));
-		dbprintf(FALSE, p, "sending %d bytes to %s port %u at %s"
+		dbprintf(FALSE, p, "sending %lu bytes to %s port %u at %s"
 			,len, ip_addr, port, p->hostname);
 		inet_setaddrport((void *)cur->ai_addr, port);
 		if(sendto(p->sock,cp,len,0 /* flags */,cur->ai_addr,cur->ai_addrlen)==len) {
-			dbprintf(FALSE, p, "sent %u bytes",len);
+			dbprintf(FALSE, p, "sent %lu bytes",len);
 			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		} else {
 			p->last_error=ERROR_VALUE;
-			dbprintf(TRUE, p, "send of %u bytes failed to %s",len, ip_addr);
+			dbprintf(TRUE, p, "send of %lu bytes failed to %s",len, ip_addr);
 		}
 	}
 	free(cp);
