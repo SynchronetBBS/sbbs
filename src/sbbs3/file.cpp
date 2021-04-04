@@ -169,13 +169,11 @@ bool sbbs_t::removefcdt(file_t* f)
 			&& f->hdr.times_downloaded)  /* all downloads */
 			cdt+=((ulong)((long)f->hdr.times_downloaded
 				*f->cost*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
-		if(cdt) {
-			adjustuserrec(&cfg,u,U_MIN,10,-cdt);
-			sprintf(str,"%lu minute",cdt);
-			sprintf(tmp,text[FileRemovedUserMsg]
-				,f->name,cdt ? str : text[No]);
-			putsmsg(&cfg,u,tmp);
-		}
+		adjustuserrec(&cfg,u,U_MIN,10,-cdt);
+		sprintf(str,"%lu minute",cdt);
+		sprintf(tmp,text[FileRemovedUserMsg]
+			,f->name,cdt ? str : text[No]);
+		putsmsg(&cfg,u,tmp);
 	}
 	else {
 		if(cfg.dir[f->dir]->misc&DIR_CDTUL)
@@ -192,12 +190,10 @@ bool sbbs_t::removefcdt(file_t* f)
 				return false;
 			cdt = atol(str); 
 		}
-		if(cdt) {
-			adjustuserrec(&cfg,u,U_CDT,10,-cdt);
-			sprintf(tmp,text[FileRemovedUserMsg]
-				,f->name,cdt ? ultoac(cdt,str) : text[No]);
-			putsmsg(&cfg,u,tmp);
-		}
+		adjustuserrec(&cfg,u,U_CDT,10,-cdt);
+		sprintf(tmp,text[FileRemovedUserMsg]
+			,f->name,cdt ? ultoac(cdt,str) : text[No]);
+		putsmsg(&cfg,u,tmp);
 	}
 
 	adjustuserrec(&cfg,u,U_ULB,10,(long)-f->size);
