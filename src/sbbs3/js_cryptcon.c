@@ -1129,7 +1129,7 @@ JSObject* DLLCALL js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			JS_DeepFreezeObject(cx, algo);
 		}
 		mode = JS_DefineObject(cx, constructor, "MODE", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-		if(JS_GetProperty(cx, constructor, "MODE", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		if(mode != NULL && JS_GetProperty(cx, constructor, "MODE", &val) && !JSVAL_NULL_OR_VOID(val)) {
 			JS_DefineProperty(cx, mode, "None", INT_TO_JSVAL(CRYPT_MODE_NONE), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, mode, "ECB", INT_TO_JSVAL(CRYPT_MODE_ECB), NULL, NULL
