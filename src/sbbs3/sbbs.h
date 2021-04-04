@@ -875,7 +875,7 @@ public:
 	void	insert_indicator(void);
 
 	/* getkey.cpp */
-	char	getkey(long mode); 		/* Waits for a key hit local or remote  */
+	char	getkey(long mode = K_NONE);
 	long	getkeys(const char *str, ulong max, long mode = K_UPPER);
 	void	ungetkey(char ch, bool insert = false);		/* Places 'ch' into the input buffer    */
 	void	ungetstr(const char* str, bool insert = false);
@@ -888,7 +888,7 @@ public:
 	void	mnemonics(const char *str);
 
 	/* inkey.cpp */
-	int		inkey(long mode, unsigned long timeout=0);
+	int		inkey(long mode = K_NONE, unsigned long timeout=0);
 	char	handle_ctrlkey(char ch, long mode=0);
 
 									// Terminal mouse reporting mode (mouse_mode)
