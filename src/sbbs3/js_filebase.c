@@ -1533,7 +1533,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 	p->smb.dirnum = getdirnum(scfg, base);
-	if(p->smb.dirnum >= 0 && p->smb.dirnum < scfg->total_dirs) {
+	if(p->smb.dirnum < scfg->total_dirs) {
 		safe_snprintf(p->smb.file, sizeof(p->smb.file), "%s%s"
 			,scfg->dir[p->smb.dirnum]->data_dir, scfg->dir[p->smb.dirnum]->code);
 	} else { /* unknown code */
