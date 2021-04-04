@@ -329,8 +329,6 @@ js_cryptkeyset_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		return JS_TRUE;
-		JS_ReportError(cx, getprivate_failure, WHERE);
-		return JS_FALSE;
 	}
 
     JS_IdToValue(cx, id, &idval);
