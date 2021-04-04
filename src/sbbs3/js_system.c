@@ -1227,66 +1227,44 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return JS_FALSE;
 
-	for(i=0;i<argc;i++) {
+	for(i=0;i<argc && from == NULL;i++) {
 		if(!JSVAL_IS_STRING(argv[i]))
 			continue;
-		if(from==NULL) {
-			JSVALUE_TO_MSTRING(cx, argv[i], p, NULL);
-			if(JS_IsExceptionPending(cx)) {
-				if(prot)
-					free(prot);
-				if(action)
-					free(action);
-				if(reason)
-					free(reason);
-				if(host)
-					free(host);
-				if(ip_addr)
-					free(ip_addr);
-				if(to)
-					free(to);
-				if(from)
-					free(from);
-				if(p)
-					free(p);
-				return JS_FALSE;
-			}
-			if(p==NULL)
-				continue;
-			if(prot==NULL)
-				prot=p;
-			else if(action==NULL)
-				action=p;
-			else if(reason==NULL)
-				reason=p;
-			else if(host==NULL)
-				host=p;
-			else if(ip_addr==NULL)
-				ip_addr=p;
-			else if(to==NULL)
-				to=p;
-			else if(from==NULL)
-				from=p;
-			else
-				free(p);
+		JSVALUE_TO_MSTRING(cx, argv[i], p, NULL);
+		if(p == NULL || JS_IsExceptionPending(cx)) {
+			free(prot);
+			free(action);
+			free(reason);
+			free(host);
+			free(ip_addr);
+			free(to);
+			free(p);
+			return JS_FALSE;
 		}
+		if(prot==NULL)
+			prot=p;
+		else if(action==NULL)
+			action=p;
+		else if(reason==NULL)
+			reason=p;
+		else if(host==NULL)
+			host=p;
+		else if(ip_addr==NULL)
+			ip_addr=p;
+		else if(to==NULL)
+			to=p;
+		else
+			from=p;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	ret=spamlog(sys->cfg,prot,action,reason,host,ip_addr,to,from);
-	if(prot)
-		free(prot);
-	if(action)
-		free(action);
-	if(reason)
-		free(reason);
-	if(host)
-		free(host);
-	if(ip_addr)
-		free(ip_addr);
-	if(to)
-		free(to);
-	if(from)
-		free(from);
+	free(prot);
+	free(action);
+	free(reason);
+	free(host);
+	free(ip_addr);
+	free(to);
+	free(from);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
 	return(JS_TRUE);
@@ -1328,41 +1306,29 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 			continue;
 		if(host==NULL) {
 			JSVALUE_TO_MSTRING(cx, argv[i], p, NULL);
-			if(JS_IsExceptionPending(cx)) {
-				if(prot)
-					free(prot);
-				if(user)
-					free(user);
-				if(text)
-					free(text);
-				if(host)
-					free(host);
-				if(p)
-					free(p);
+			if(JS_IsExceptionPending(cx) || p == NULL) {
+				free(prot);
+				free(user);
+				free(text);
+				free(p);
 				return JS_FALSE;
 			}
+			if(prot==NULL)
+				prot=p;
+			else if(user==NULL)
+				user=p;
+			else if(text==NULL)
+				text=p;
+			else
+				host=p;
 		}
-		if(p==NULL)
-			continue;
-		if(prot==NULL)
-			prot=p;
-		else if(user==NULL)
-			user=p;
-		else if(text==NULL)
-			text=p;
-		else if(host==NULL)
-			host=p;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	ret=hacklog(sys->cfg,prot,user,text,host,&addr);
-	if(prot)
-		free(prot);
-	if(user)
-		free(user);
-	if(text)
-		free(text);
-	if(host)
-		free(host);
+	free(prot);
+	free(user);
+	free(text);
+	free(host);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
 	return(JS_TRUE);
@@ -1390,31 +1356,19 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return JS_FALSE;
 
-	for(i=0;i<argc;i++) {
+	for(i=0; i<argc && fname == NULL; i++) {
 		if(!JSVAL_IS_STRING(argv[i]))
 			continue;
-		if(fname==NULL) {
-			JSVALUE_TO_MSTRING(cx, argv[i], p, NULL);
-			if(JS_IsExceptionPending(cx)) {
-				if(prot)
-					free(prot);
-				if(reason)
-					free(reason);
-				if(host)
-					free(host);
-				if(ip_addr)
-					free(ip_addr);
-				if(from)
-					free(from);
-				if(fname)
-					free(fname);
-				if(p)
-					free(p);
-				return JS_FALSE;
-			}
+		JSVALUE_TO_MSTRING(cx, argv[i], p, NULL);
+		if(JS_IsExceptionPending(cx) || p == NULL) {
+			free(prot);
+			free(reason);
+			free(host);
+			free(ip_addr);
+			free(from);
+			free(p);
+			return JS_FALSE;
 		}
-		if(p==NULL)
-			continue;
 		if(prot==NULL)
 			prot=p;
 		else if(reason==NULL)
@@ -1425,23 +1379,17 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 			ip_addr=p;
 		else if(from==NULL)
 			from=p;
-		else if(fname==NULL)
+		else
 			fname=p;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	ret=filter_ip(sys->cfg,prot,reason,host,ip_addr,from,fname);
-	if(prot)
-		free(prot);
-	if(reason)
-		free(reason);
-	if(host)
-		free(host);
-	if(ip_addr)
-		free(ip_addr);
-	if(from)
-		free(from);
-	if(fname)
-		free(fname);
+	free(prot);
+	free(reason);
+	free(host);
+	free(ip_addr);
+	free(from);
+	free(fname);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
 	return(JS_TRUE);
