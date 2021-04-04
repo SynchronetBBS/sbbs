@@ -1,8 +1,4 @@
-/* crc16.c */
-
 /* CCITT 16-bit CRC table and calculation function */
-
-/* $Id: crc16.c,v 1.8 2018/07/24 01:12:53 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -10,27 +6,15 @@
  *																			*
  * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
- * This program is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU General Public License				*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
- * See the GNU General Public License for more details: gpl.txt or			*
- * http://www.fsf.org/copyleft/gpl.html										*
- *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -38,7 +22,7 @@
 #include <string.h>	/* strlen */
 #include "crc16.h"
 
-CRCEXPORT uint16_t crc16tbl[] = {
+uint16_t crc16tbl[] = {
 0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7,
 0x8108, 0x9129, 0xA14A, 0xB16B, 0xC18C, 0xD1AD, 0xE1CE, 0xF1EF,
 0x1231, 0x0210, 0x3273, 0x2252, 0x52B5, 0x4294, 0x72F7, 0x62D6,
@@ -73,16 +57,25 @@ CRCEXPORT uint16_t crc16tbl[] = {
 0x6E17, 0x7E36, 0x4E55, 0x5E74, 0x2E93, 0x3EB2, 0x0ED1, 0x1EF0
 };
 
-uint16_t CRCCALL crc16(const char* data, unsigned long len)
+uint16_t crc16(const char* data, size_t len)
 {
 	uint16_t crc = 0;
-	unsigned long l;
+	size_t l;
 
 	if(len==0 && data!=NULL)
 		len=strlen(data);
 	for(l=0;l<len;l++)
 		crc = ucrc16(data[l],crc);
  
-    return(crc);
+    return crc;
 }
 
+uint16_t icrc16(uint16_t crc, const char* data, size_t len)
+{
+	size_t l;
+
+	for(l=0; l<len; l++)
+		crc = ucrc16(data[l], crc);
+ 
+    return crc;
+}

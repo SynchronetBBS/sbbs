@@ -540,8 +540,9 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			put_int(cfg->qhub[i]->mode[j],stream); 
 		}
 		put_int(cfg->qhub[i]->misc, stream);
+		put_str(cfg->qhub[i]->fmt,stream);
 		n=0;
-		for(j=0;j<30;j++)
+		for(j=0;j<28;j++)
 			put_int(n,stream); 
 	}
 	n=0;
@@ -835,13 +836,11 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				put_int(cfg->dir[i]->maxage, stream);
 				put_int(cfg->dir[i]->up_pct, stream);
 				put_int(cfg->dir[i]->dn_pct, stream);
+				put_str(cfg->dir[i]->area_tag, stream);
 				c = 0;
 				put_int(c, stream);
-				n = 0;
-				for (k = 0; k < 8; k++)
-					put_int(n, stream);
 				n = 0xffff;
-				for (k = 0; k < 16; k++)
+				for (k = 0; k < 6; k++)
 					put_int(n, stream);
 			}
 		}
@@ -1091,55 +1090,4 @@ void DLLCALL refresh_cfg(scfg_t* cfg)
 	CLOSE_OPEN_FILE(file);
 
 	SAFEPRINTF(str,"%srecycle",cfg->ctrl_dir);		ftouch(str);
-}
-
-int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
-{
-	if(smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr&SMB_EMAIL))
-		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
-	if(smb->subnum >= cfg->total_subs)
-		return (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
-	if(cfg->sub[smb->subnum]->misc&SUB_HYPER) {
-		smb->status.attr |= SMB_HYPERALLOC;
-		return SMB_HYPERALLOC;
-	}
-	if(cfg->sub[smb->subnum]->misc&SUB_FAST)
-		return SMB_FASTALLOC;
-	return SMB_SELFPACK;
-}
-
-/* Open Synchronet Message Base and create, if necessary (e.g. first time opened) */
-/* If return value is not SMB_SUCCESS, sub-board is not left open */
-int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
-{
-	int retval;
-	smbstatus_t smb_status = {0};
-
-	if(subnum != INVALID_SUB && subnum >= cfg->total_subs)
-		return SMB_FAILURE;
-	memset(smb, 0, sizeof(smb_t));
-	if(subnum == INVALID_SUB) {
-		SAFEPRINTF(smb->file, "%smail", cfg->data_dir);
-		smb_status.max_crcs	= cfg->mail_maxcrcs;
-		smb_status.max_msgs	= 0;
-		smb_status.max_age	= cfg->mail_maxage;
-		smb_status.attr		= SMB_EMAIL;
-	} else {
-		SAFEPRINTF2(smb->file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
-		smb_status.max_crcs	= cfg->sub[subnum]->maxcrcs;
-		smb_status.max_msgs	= cfg->sub[subnum]->maxmsgs;
-		smb_status.max_age	= cfg->sub[subnum]->maxage;
-		smb_status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
-	}
-	smb->retry_time = cfg->smb_retry_time;
-	if((retval = smb_open(smb)) == SMB_SUCCESS) {
-		if(smb_fgetlength(smb->shd_fp) < sizeof(smbhdr_t) + sizeof(smb->status)) {
-			smb->status = smb_status;
-			if((retval = smb_create(smb)) != SMB_SUCCESS)
-				smb_close(smb);
-		}
-		if(retval == SMB_SUCCESS)
-			smb->subnum = subnum;
-	}
-	return retval;
 }

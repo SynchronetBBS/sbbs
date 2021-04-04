@@ -45,6 +45,9 @@ char error[256];
 int  backup_level=5;
 char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code", NULL };
 
+/* convenient space-saving global constants */
+const char* nulstr="";
+
 char *invalid_code=
 	"`Invalid Internal Code:`\n\n"
 	"Internal codes can be up to eight characters in length and can only\n"

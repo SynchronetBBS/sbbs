@@ -312,6 +312,9 @@ BOOL iniSectionExists(str_list_t list, const char* section)
 {
 	size_t	i;
 
+	if(list==NULL)
+		return(FALSE);
+
 	if(section==ROOT_SECTION)
 		return(TRUE);
 

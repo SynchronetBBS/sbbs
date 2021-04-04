@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
+#include "filedat.h"
 
 extern "C" void client_on(SOCKET sock, client_t* client, BOOL update);
 
@@ -217,8 +218,46 @@ bool sbbs_t::logon()
 	useron.ltoday++;
 
 	gettimeleft();
-	safe_snprintf(str, sizeof(str), "%sfile/%04u.dwn",cfg.data_dir,useron.number);
-	batch_add_list(str);
+
+	/* Inform the user of what's in their batch upload queue */
+	{
+		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_UPLOAD);
+		str_list_t filenames = iniGetSectionList(ini, NULL);
+		for(size_t i = 0; filenames[i] != NULL; i++) {
+			const char* filename = filenames[i];
+			file_t f = {{}};
+			if(batch_file_get(&cfg, ini, filename, &f)) {
+				bprintf(text[FileAddedToUlQueue], f.name, i + 1, cfg.max_batup);
+				smb_freefilemem(&f);
+			} else
+				batch_file_remove(&cfg, useron.number, XFER_BATCH_UPLOAD, filename);
+		}
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
+	}
+
+	/* Inform the user of what's in their batch download queue */
+	{
+		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
+		str_list_t filenames = iniGetSectionList(ini, NULL);
+		for(size_t i = 0; filenames[i] != NULL; i++) {
+			const char* filename = filenames[i];
+			file_t f = {{}};
+			if(batch_file_load(&cfg, ini, filename, &f)) {
+				char tmp2[256];
+				getfilesize(&cfg, &f);
+				bprintf(text[FileAddedToBatDlQueue]
+					,f.name, i + 1, cfg.max_batdn
+					,ultoac((ulong)f.cost,tmp)
+					,ultoac((ulong)f.size,tmp2)
+					,sectostr((ulong)f.size / (ulong)cur_cps,str));
+				smb_freefilemem(&f);
+			} else
+				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+		}
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
+	}
 	if(!(sys_status&SS_QWKLOGON)) { 	 /* QWK Nodes don't go through this */
 
 		if(cfg.sys_pwdays && useron.pass[0]
@@ -511,10 +550,6 @@ bool sbbs_t::logon()
 
 	if(criterrs && SYSOP)
 		bprintf(text[CriticalErrors],criterrs);
-	if((i=getuserxfers(0,useron.number,0))!=0)
-		bprintf(text[UserXferForYou],i,i>1 ? "s" : nulstr); 
-	if((i=getuserxfers(useron.number,0,0))!=0)
-		bprintf(text[UnreceivedUserXfer],i,i>1 ? "s" : nulstr);
 	SYNC;
 	sys_status&=~SS_PAUSEON;	/* Turn off the pause override flag */
 	if(online==ON_REMOTE)

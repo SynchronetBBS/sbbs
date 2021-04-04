@@ -31,15 +31,15 @@
 #include "smblib.h"
 #include "getstats.h"
 #include "msgdate.h"
+#include "scfglib.h"
 
 #ifndef USHRT_MAX
 	#define USHRT_MAX ((unsigned short)~0)
 #endif
 
 /* convenient space-saving global variables */
-char* crlf="\r\n";
-char* nulstr="";
-
+static const char* crlf="\r\n";
+static const char* nulstr="";
 static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
 
 #define VALID_CFG(cfg)	(cfg!=NULL && cfg->size==sizeof(scfg_t))
@@ -683,7 +683,7 @@ char* username(scfg_t* cfg, int usernumber, char *name)
 /****************************************************************************/
 /* Puts 'name' into slot 'number' in user/name.dat							*/
 /****************************************************************************/
-int putusername(scfg_t* cfg, int number, char *name)
+int putusername(scfg_t* cfg, int number, const char *name)
 {
 	char str[256];
 	int file;
@@ -1576,46 +1576,6 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 	return sock;
 }
 
-static int getdirnum(scfg_t* cfg, char* code)
-{
-	size_t i;
-
-	for(i=0;i<cfg->total_dirs;i++)
-		if(stricmp(cfg->dir[i]->code,code)==0)
-			return(i);
-	return(-1);
-}
-
-static int getlibnum(scfg_t* cfg, char* code)
-{
-	size_t i;
-
-	for(i=0;i<cfg->total_dirs;i++)
-		if(stricmp(cfg->dir[i]->code,code)==0)
-			return(cfg->dir[i]->lib);
-	return(-1);
-}
-
-static int getsubnum(scfg_t* cfg, char* code)
-{
-	size_t i;
-
-	for(i=0;i<cfg->total_subs;i++)
-		if(stricmp(cfg->sub[i]->code,code)==0)
-			return(i);
-	return(-1);
-}
-
-static int getgrpnum(scfg_t* cfg, char* code)
-{
-	size_t i;
-
-	for(i=0;i<cfg->total_subs;i++)
-		if(stricmp(cfg->sub[i]->code,code)==0)
-			return(cfg->sub[i]->grp);
-	return(-1);
-}
-
 static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 {
 	BOOL	result,not,or,equal;
@@ -2456,51 +2416,51 @@ BOOL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback)
 	return(TRUE);
 }
 
-BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, long bytes)
+BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 {
 	if(user==NULL)
 		return(FALSE);
 
 	user->dls=(ushort)adjustuserrec(cfg, user->number, U_DLS, 5, files);
-	user->dlb=adjustuserrec(cfg, user->number, U_DLB, 10, bytes);
+	user->dlb=adjustuserrec(cfg, user->number, U_DLB, 10, (long)bytes);
 
 	return(TRUE);
 }
 
 #ifdef SBBS
 BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
-	uint dirnum, const char* filename, ulong bytes)
+	uint dirnum, const char* filename, off_t bytes)
 {
-	file_t f = {{0}};
+	file_t f;
 
-	f.dir = dirnum;
-	padfname(getfname(filename), f.name);
-	if(!getfileixb(cfg, &f) || !getfiledat(cfg, &f))
+	if(!loadfile(cfg, dirnum, filename, &f, file_detail_normal))
 		return FALSE;
 
 	if(!bytes)
-		bytes = f.size;
+		bytes = getfilesize(cfg, &f);
 
-	f.timesdled++;
-	f.datedled=time32(NULL);
-	if(!putfiledat(cfg, &f) || !putfileixb(cfg, &f))
+	f.hdr.times_downloaded++;
+	f.hdr.last_downloaded = time32(NULL);
+	if(!updatefile(cfg, &f)) {
+		smb_freefilemem(&f);
 		return FALSE;
+	}
 
 	/**************************/
 	/* Update Uploader's Info */
 	/**************************/
 	user_t uploader = {0};
-	uploader.number=matchuser(cfg, f.uler, TRUE /*sysop_alias*/);
+	uploader.number=matchuser(cfg, f.from, TRUE /*sysop_alias*/);
 	if(uploader.number
 		&& uploader.number != user->number 
 		&& getuserdat(cfg, &uploader) == 0
-		&& uploader.firston < f.dateuled) {
-		ulong l = f.cdt;
-		if(!(cfg->dir[f.dir]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
+		&& (uint32_t)uploader.firston < f.hdr.when_imported.time) {
+		ulong l = (ulong)f.cost;
+		if(!(cfg->dir[dirnum]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
 			l=0;
-		ulong mod=(ulong)(l*(cfg->dir[f.dir]->dn_pct/100.0));
+		ulong mod=(ulong)(l*(cfg->dir[dirnum]->dn_pct/100.0));
 		adjustuserrec(cfg, uploader.number, U_CDT, 10, mod);
-		if(cfg->text != NULL && !(cfg->dir[f.dir]->misc&DIR_QUIET)) {
+		if(cfg->text != NULL && !(cfg->dir[dirnum]->misc&DIR_QUIET)) {
 			char str[256];
 			char tmp[128];
 			char prefix[128]="";
@@ -2513,7 +2473,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 					SAFEPRINTF2(username,"%s [%s]", user->alias, client->addr);
 			} else
 				SAFECOPY(username, user->alias);
-			if(strcmp(cfg->dir[f.dir]->code, "TEMP") == 0 || bytes < (ulong)f.size)
+			if(strcmp(cfg->dir[dirnum]->code, "TEMP") == 0 || bytes < (ulong)f.size)
 				SAFECOPY(prefix, cfg->text[Partially]);
 			if(client != NULL) {
 				SAFECAT(prefix, client->protocol);
@@ -2531,23 +2491,24 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	/* Update Downloader's Info */
 	/****************************/
 	user_downloaded(cfg, user, /* files: */1, bytes);
-	if(!is_download_free(cfg, f.dir, user, client))
-		subtract_cdt(cfg, user, f.cdt);
+	if(!is_download_free(cfg, dirnum, user, client))
+		subtract_cdt(cfg, user, (long)f.cost);
 
-	if(!(cfg->dir[f.dir]->misc&DIR_NOSTAT))
-		inc_sys_download_stats(cfg, /* files: */1, bytes);
+	if(!(cfg->dir[dirnum]->misc&DIR_NOSTAT))
+		inc_sys_download_stats(cfg, /* files: */1, (ulong)bytes);
 
+	smb_freefilemem(&f);
 	return TRUE;
 }
 #endif
 
-BOOL user_uploaded(scfg_t* cfg, user_t* user, int files, long bytes)
+BOOL user_uploaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 {
 	if(user==NULL)
 		return(FALSE);
 
 	user->uls=(ushort)adjustuserrec(cfg, user->number, U_ULS, 5, files);
-	user->ulb=adjustuserrec(cfg, user->number, U_ULB, 10, bytes);
+	user->ulb=adjustuserrec(cfg, user->number, U_ULB, 10, (long)bytes);
 
 	return(TRUE);
 }
@@ -3172,7 +3133,7 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	char	exempt[MAX_PATH+1];
 	char	tstr[64];
     FILE*	fp;
-    time32_t now=time32(NULL);
+    time_t	now = time(NULL);
 
 	if(ip_addr==NULL)
 		return(FALSE);
@@ -3196,7 +3157,7 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
     fprintf(fp, "\n; %s %s ", prot, reason);
 	if(username != NULL)
 		fprintf(fp, "by %s ", username);
-    fprintf(fp,"on %s\n", timestr(cfg, now, tstr));
+    fprintf(fp,"on %.24s\n", ctime_r(&now, tstr));
 
 	if(host!=NULL)
 		fprintf(fp,"; Hostname: %s\n",host);
@@ -3597,6 +3558,14 @@ BOOL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 	fclose(fp);
 
 	return result;
+}
+
+BOOL newmsgs(smb_t* smb, time_t t)
+{
+	char index_fname[MAX_PATH + 1];
+
+	SAFEPRINTF(index_fname, "%s.sid", smb->file);
+	return fdate(index_fname) >= t;
 }
 
 /****************************************************************************/

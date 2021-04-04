@@ -146,7 +146,8 @@ int main(int argc, char **argv)
 {
 	char	dir[128],str[128];
 	int 	i,j,file,set,sub,mod;
-	long	l,f,flags,flagoff,length,offset;
+	long	l,f,flags,flagoff,offset;
+	off_t	length;
 	FILE	*stream;
 
 	printf("\nALLUSERS v2.10 - Bulk User Editor for Synchronet User Database\n");
@@ -220,12 +221,12 @@ int main(int argc, char **argv)
 						exit(1); 
 					}
 					setvbuf(stream,NULL,_IOFBF,2048);
-					length=filelength(file);
+					length=(ulong)filelength(file);
 					printf("\n%s Flags %s Set #%d\n",sub ? "Removing":"Adding"
 						,sub ? "from":"to",set);
 					for(offset=0;offset<length;offset+=U_LEN) {
 						printf("%lu of %lu (%u modified)\r"
-							,(offset/U_LEN)+1,length/U_LEN,mod);
+							,(offset/U_LEN)+1,(ulong)(length/U_LEN),mod);
 						if(lockuser(stream,offset)) {
 							printf("Error locking offset %lu\n",offset);
 							continue; 
@@ -290,7 +291,7 @@ int main(int argc, char **argv)
 						,flagoff==U_REST ? "Restrictions":"Exemptions");
 					for(offset=0;offset<length;offset+=U_LEN) {
 						printf("%lu of %lu (%u modified)\r"
-							,(offset/U_LEN)+1,length/U_LEN,mod);
+							,(offset/U_LEN)+1,(ulong)(length/U_LEN),mod);
 						if(lockuser(stream,offset)) {
 							printf("Error locking offset %lu\n",offset);
 							continue; 
@@ -343,7 +344,7 @@ int main(int argc, char **argv)
 					printf("\nChanging Levels\n");
 					for(offset=0;offset<length;offset+=U_LEN) {
 						printf("%lu of %lu (%u modified)\r"
-							,(offset/U_LEN)+1,length/U_LEN,mod);
+							,(offset/U_LEN)+1,(ulong)(length/U_LEN),mod);
 						if(lockuser(stream,offset)) {
 							printf("Error locking offset %lu\n",offset);
 							continue; 

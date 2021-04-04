@@ -40,7 +40,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	int 		i,j,x,file;
 	long		l;
 	long		length;
-	ulong		offset;
+	off_t		offset;
 	uint32_t	crc=0xffffffffUL;
 	FILE*		instream;
 	node_t		node;
@@ -271,7 +271,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		} 
 	}
 
-	msg.hdr.offset=offset;
+	msg.hdr.offset=(uint32_t)offset;
 
 	username(&cfg,usernumber,str);
 	smb_hfield_str(&msg,RECIPIENT,str);

@@ -255,9 +255,11 @@ void sbbs_read_ini(
 {
 	const char*	section;
 	const char* default_term_ansi;
+#if defined(__linux__) || defined(__FreeBSD__)
 	const char*	default_dosemu_path;
 #if defined(__linux__)
 	const char*	default_dosemuconf_path;
+#endif
 #endif
 	char		value[INI_MAX_VALUE_LEN];
 	str_list_t	list;

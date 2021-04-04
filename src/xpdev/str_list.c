@@ -1,8 +1,4 @@
-/* str_list.c */
-
 /* Functions to deal with NULL-terminated string lists */
-
-/* $Id: str_list.c,v 1.61 2020/05/26 02:46:15 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -167,11 +151,45 @@ char* strListRemove(str_list_t* list, size_t index)
 	return(str);
 }
 
+// Remove without realloc
+char* strListFastRemove(str_list_t list, size_t index)
+{
+	char*	str;
+	size_t	i;
+	size_t	count;
+
+	count = strListCount(list);
+
+	if(index == STR_LIST_LAST_INDEX && count)
+		index = count-1;
+
+	if(index >= count)	/* invalid index, do nothing */
+		return NULL;
+
+	str = list[index];
+	for(i = index; i < count; i++)
+		list[i] = list[i + 1];
+
+	return str;
+}
+
 BOOL strListDelete(str_list_t* list, size_t index)
 {
 	char*	str;
 
 	if((str=strListRemove(list, index))==NULL)
+		return(FALSE);
+
+	free(str);
+
+	return(TRUE);
+}
+
+BOOL strListFastDelete(str_list_t list, size_t index)
+{
+	char*	str;
+
+	if((str=strListFastRemove(list, index))==NULL)
 		return(FALSE);
 
 	free(str);
@@ -815,6 +833,38 @@ int strListDedupe(str_list_t* list, BOOL case_sensitive)
 			else
 				j++;
 		}
+	}
+	return i;
+}
+
+int strListDeleteBlanks(str_list_t* list)
+{
+	size_t		i;
+
+	if(list == NULL || *list == NULL)
+		return 0;
+
+	for(i = 0; (*list)[i] != NULL; ) {
+		if((*list)[i][0] == '\0')
+			strListDelete(list, i);
+		else
+			i++;
+	}
+	return i;
+}
+
+int strListFastDeleteBlanks(str_list_t list)
+{
+	size_t		i;
+
+	if(list == NULL || *list == NULL)
+		return 0;
+
+	for(i = 0; list[i] != NULL; ) {
+		if(list[i][0] == '\0')
+			strListFastDelete(list, i);
+		else
+			i++;
 	}
 	return i;
 }

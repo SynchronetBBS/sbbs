@@ -21,129 +21,46 @@
 
 #include "sbbs.h"
 #include "telnet.h"
+#include "filedat.h"
 
 /****************************************************************************/
+/* Call this function *AFTER* a file has been successfully downloaded		*/
 /* Updates downloader, uploader and downloaded file data                    */
 /* Must have offset, dir and name fields filled prior to call.              */
 /****************************************************************************/
-void sbbs_t::downloadfile(file_t* f)
+void sbbs_t::downloadedfile(file_t* f)
 {
-    char		str[MAX_PATH+1],fname[13];
+    char		str[MAX_PATH+1];
 	char 		tmp[512];
-    int			i,file;
-	long		mod;
-	long		length;
-    ulong		l;
-	user_t		uploader;
+	off_t		length;
 
-	getfiledat(&cfg,f); /* Get current data - right after download */
-	if((length=f->size)<0L)
-		length=0L;
-	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
-		logon_dlb+=length;  /* Update 'this call' stats */
+	length = getfilesize(&cfg, f);
+	if(length > 0 && !(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
+		logon_dlb += length;  /* Update 'this call' stats */
 		logon_dls++;
 	}
-	bprintf(text[FileNBytesSent],f->name,ultoac(length,tmp));
+	bprintf(text[FileNBytesSent],f->name,ultoac((ulong)length,tmp));
 	SAFEPRINTF3(str,"downloaded %s from %s %s"
 		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	logline("D-",str);
-	/****************************/
-	/* Update Downloader's Info */
-	/****************************/
-	user_downloaded(&cfg, &useron, 1, length);
-	if(!is_download_free(&cfg,f->dir,&useron,&client))
-		subtract_cdt(&cfg,&useron,f->cdt);
-	/**************************/
-	/* Update Uploader's Info */
-	/**************************/
-	i=matchuser(&cfg,f->uler,TRUE /*sysop_alias*/);
-	memset(&uploader, 0, sizeof(uploader));
-	uploader.number=i;
-	getuserdat(&cfg,&uploader);
-	if(i && i!=useron.number && uploader.firston<f->dateuled) {
-		l=f->cdt;
-		if(!(cfg.dir[f->dir]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
-			l=0;
-		if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps) { /* Give min instead of cdt */
-			mod=((ulong)(l*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
-			adjustuserrec(&cfg,i,U_MIN,10,mod);
-			SAFEPRINTF(tmp,"%lu minute",mod);
-		} else {
-			mod=(ulong)(l*(cfg.dir[f->dir]->dn_pct/100.0));
-			adjustuserrec(&cfg,i,U_CDT,10,mod);
-			ultoac(mod,tmp);
-		}
-		if(!(cfg.dir[f->dir]->misc&DIR_QUIET)) {
-			SAFEPRINTF4(str,text[DownloadUserMsg]
-				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? temp_file : f->name
-				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? text[Partially] : nulstr
-				,useron.alias,tmp);
-			putsmsg(&cfg,i,str);
-		}
-	}
-	/*******************/
-	/* Update IXB File */
-	/*******************/
-	f->datedled=time32(NULL);
-	SAFEPRINTF2(str,"%s%s.ixb",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
-	if((file=nopen(str,O_RDWR))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return;
-	}
-	length=(long)filelength(file);
-	if(length%F_IXBSIZE) {
-		close(file);
-		errormsg(WHERE,ERR_LEN,str,length);
-		return;
-	}
-	strcpy(fname,f->name);
-	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[i]=fname[i+1];
-	for(l=0;l<(ulong)length;l+=F_IXBSIZE) {
-		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
-		str[11]=0;
-		if(!stricmp(fname,str))
-			break;
-	}
-	if(l>=(ulong)length) {
-		close(file);
-		errormsg(WHERE,ERR_CHK,f->name,0);
-		return;
-	}
-	lseek(file,l+18,SEEK_SET);
-	write(file,&f->datedled,4);  /* Write the current time stamp for datedled */
-	close(file);
-	/*******************/
-	/* Update DAT File */
-	/*******************/
-	f->timesdled++;
-	putfiledat(&cfg,f);
-	/******************************************/
-	/* Update User to User index if necessary */
-	/******************************************/
-	if(f->dir==cfg.user_dir) {
-		rmuserxfers(&cfg,0,useron.number,f->name);
-		if(!getuserxfers(0,0,f->name)) { /* check if any ixt entries left */
-			remove(getfilepath(&cfg,f,str));
-			removefiledat(&cfg,f);
-		}
-	}
+
+	user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length);
 
 	user_event(EVENT_DOWNLOAD);
 }
 
 /****************************************************************************/
 /* This function is called when a file is unsuccessfully downloaded.        */
-/* It logs the tranfer time and checks for possible leech protocol use.     */
+/* It logs the transfer time and checks for possible leech protocol use.    */
 /****************************************************************************/
-void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
+void sbbs_t::notdownloaded(off_t size, time_t start, time_t end)
 {
     char	str[256],tmp2[256];
 	char 	tmp[512];
 
 	SAFEPRINTF2(str,"Estimated Time: %s  Transfer Time: %s"
-		,sectostr(cur_cps ? size/cur_cps : 0,tmp)
+		,sectostr(cur_cps ? (uint)(size/cur_cps) : 0,tmp)
 		,sectostr((uint)(end-start),tmp2));
 	logline(nulstr,str);
 	if(cfg.leech_pct && cur_cps                 /* leech detection */
@@ -166,8 +83,6 @@ const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 			return(prot->batulcmd);
 		case XFER_BATCH_DOWNLOAD:
 			return(prot->batdlcmd);
-		case XFER_BIDIR:
-			return(prot->bicmd);
 	}
 
 	return("invalid transfer type");
@@ -177,7 +92,7 @@ const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 /* Handles start and stop routines for transfer protocols                   */
 /****************************************************************************/
 int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
-					 ,char *fpath, char *fspec, bool cd, bool autohangup)
+					 ,const char *fpath, const char *fspec, bool cd, bool autohangup)
 {
 	char	protlog[256],*p;
 	char*	cmdline;
@@ -226,8 +141,6 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	request_telnet_opt(TELNET_WONT,TELNET_BINARY_TX);
 
 	sys_status&=~SS_FILEXFER;
-	if(online==ON_REMOTE)
-		rioctl(IOFB);
 
 	// Save DSZLOG to logfile
 	if((stream=fnopen(NULL,protlog,O_RDONLY))!=NULL) {
@@ -306,7 +219,7 @@ bool sbbs_t::checkdszlog(const char* fpath)
 
 	SAFEPRINTF(path,"%sPROTOCOL.LOG",cfg.node_dir);
 	if((fp=fopen(path,"r"))==NULL)
-		return(false);
+		return false;
 
 	SAFECOPY(rpath, fpath);
 	fexistcase(rpath);
@@ -355,38 +268,48 @@ bool sbbs_t::checkdszlog(const char* fpath)
 
 /****************************************************************************/
 /* Checks dsz compatible log file for errors in transfer                    */
-/* Returns 1 if the file in the struct file_t was successfuly transfered    */
+/* Returns 1 if the file in the struct file_t was successfully transfered   */
 /****************************************************************************/
-bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
+bool sbbs_t::checkprotresult(prot_t* prot, int error, const char* fpath)
 {
-	char str[512];
-	char tmp[128];
 	bool success;
-	char fpath[MAX_PATH+1];
 
-	getfilepath(&cfg,f,fpath);
 	if(prot->misc&PROT_DSZLOG)
 		success=checkdszlog(fpath);
 	else
 		success=(error==0);
 
-	if(!success) {
-		bprintf(text[FileNotSent],f->name);
+	if(!success)
+		bprintf(text[FileNotSent], getfname(fpath));
+
+	return success;
+}
+
+bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
+{
+	char str[512];
+	char tmp[128];
+	char fpath[MAX_PATH+1];
+
+	getfilepath(&cfg, f, fpath);
+	if(!checkprotresult(prot, error, fpath)) {
 		if(f->dir<cfg.total_dirs)
 			SAFEPRINTF4(str,"attempted to download %s (%s) from %s %s"
-				,f->name,ultoac(f->size,tmp)
+				,f->name,ultoac((ulong)f->size,tmp)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
 			SAFECOPY(str,"attempted to download QWK packet");
-		else if(f->dir==cfg.total_dirs+1)
+		else if(f->dir == cfg.total_dirs + 1)
 			SAFEPRINTF(str,"attempted to download attached file: %s"
 				,f->name);
+		else
+			SAFEPRINTF2(str,"attempted to download file (%s) from unknown dir: %ld"
+				,f->name, (long)f->dir);
 		logline(LOG_NOTICE,"D!",str);
-		return(false);
+		return false; 
 	}
-	return(true);
+	return true;
 }
-
 
 
 /************************************************************************/
@@ -453,7 +376,7 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		ch=(char)getkeys(keys,0);
 
 		if(ch==text[YNQP][2] || sys_status&SS_ABORT)
-			return(false);
+			return false; 
 	}
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
@@ -471,9 +394,9 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		logon_dlb += length;	/* Update stats */
 		logon_dls++;
 		useron.dls = (ushort)adjustuserrec(&cfg, useron.number, U_DLS, 5, 1);
-		useron.dlb = adjustuserrec(&cfg,useron.number, U_DLB, 10, length);
+		useron.dlb = adjustuserrec(&cfg,useron.number, U_DLB, 10, (long)length);
 		char bytes[32];
-		ultoac(length, bytes);
+		ultoac((ulong)length, bytes);
 		bprintf(text[FileNBytesSent], getfname(fname), bytes);
 		char str[128];
 		SAFEPRINTF3(str, "downloaded %s: %s (%s bytes)"
@@ -485,6 +408,30 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		bprintf(text[FileNotSent], getfname(fname));
 		SAFEPRINTF2(str,"attempted to download %s: %s", desc == NULL ? "file" : desc, fname);
 		logline(LOG_NOTICE,"D!",str);
+	}
+	return result;
+}
+
+// contains some copy/pasta from downloadedfile()
+bool sbbs_t::sendfile(file_t* f, char prot, bool autohang)
+{
+	char path[MAX_PATH + 1];
+	char str[256];
+
+	SAFEPRINTF2(str, "from %s %s"
+		,cfg.lib[cfg.dir[f->dir]->lib]->sname
+		,cfg.dir[f->dir]->sname);
+	bool result = sendfile(getfilepath(&cfg, f, path), prot, str, autohang);
+	if(result == true) {
+		if(cfg.dir[f->dir]->misc&DIR_TFREE && cur_cps)
+			starttime += f->size / (ulong)cur_cps;
+		off_t length = getfilesize(&cfg, f);
+		if(length > 0 && !(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
+			logon_dlb += length;  /* Update 'this call' stats */
+			logon_dls++;
+		}
+		user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length);
+		user_event(EVENT_DOWNLOAD);
 	}
 	return result;
 }

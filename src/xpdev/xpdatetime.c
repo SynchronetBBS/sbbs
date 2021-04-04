@@ -171,6 +171,20 @@ xpDateTime_t DLLCALL time_to_xpDateTime(time_t ti, xpTimeZone_t zone)
 		,zone==xpTimeZone_LOCAL ? xpTimeZone_local() : zone);
 }
 
+xpDate_t DLLCALL time_to_xpDate(time_t ti)
+{
+	xpDate_t never;
+	struct tm tm;
+
+	ZERO_VAR(never);
+	ZERO_VAR(tm);
+	if(localtime_r(&ti,&tm)==NULL)
+		return never;
+
+	return xpDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
+		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec, /* zone: */0).date;
+}
+
 xpDateTime_t DLLCALL gmtime_to_xpDateTime(time_t ti)
 {
 	xpDateTime_t	never;
