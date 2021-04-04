@@ -7,7 +7,7 @@ if(!fbase.open()) {
 	alert("failed to open base");
 	exit(1);
 }
-var file_list = fbase.get_file_list(argv[1] || "*", FileBase.DETAIL.NORM);
+var file_list = fbase.get_list(argv[1] || "*", FileBase.DETAIL.NORM);
 for(var i in file_list) {
 	var file = file_list[i];
 	var copy = JSON.parse(JSON.stringify(file));
@@ -18,7 +18,7 @@ for(var i in file_list) {
 	}
 	if(JSON.stringify(copy) != JSON.stringify(file)) {
 		alert("changed");
-		print(fbase.update_file(copy.name, file));
+		print(fbase.update(copy.name, file));
 		print(fbase.status);
 		print(fbase.last_error);
 	}

@@ -1,6 +1,6 @@
 // Deal with archive files using Synchronet v3.19 Archive class
 
-// Install with 'jsexec archive.js install'
+// Install "Viewable File Types" using 'jsexec archive.js install'
 
 "use strict";
 

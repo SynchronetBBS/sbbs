@@ -688,7 +688,7 @@ function import_file_list(dir, list, uploader)
 		var file = list[i];
 		file.from = uploader;
 		log(LOG_INFO, "Adding file (" + file.name + ") to: " + dir);
-		if(!fb.add_file(file, use_diz_always)) {
+		if(!fb.add(file, use_diz_always)) {
 			fb.close();
 			return "Error " + fb.last_error + " adding file to: " + dir;
 		} else

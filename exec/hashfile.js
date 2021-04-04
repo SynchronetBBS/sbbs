@@ -21,7 +21,7 @@ if(!filebase.open()) {
 	exit(1);
 }
 
-print(JSON.stringify(filebase.hash_file(argv[1]), null, 4));
+print(JSON.stringify(filebase.hash(argv[1]), null, 4));
 
 print(filebase.last_error);
 /*

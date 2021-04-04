@@ -22,7 +22,7 @@ if(!filebase.open()) {
 	exit(1);
 }
 
-var name_list = filebase.get_file_names();
+var name_list = filebase.get_names();
 
 while(!file_exists(dir.path + file.name) && !js.terminated) {
 	if(file.name)
@@ -35,7 +35,7 @@ while(!file_exists(dir.path + file.name) && !js.terminated) {
 	file.name = prompt("File name");
 }
 
-if(filebase.get_file(file.name)) {
+if(filebase.get(file.name)) {
 	alert("File '" + file.name + "' already added.");
 	exit(1);
 }
@@ -49,7 +49,7 @@ while(!file.from && !js.terminated) {
 }
 
 print("Adding " + file.name + " to " + filebase.file);
-if(filebase.add_file(file))
+if(filebase.add(file))
 	print(format("File (%s) added successfully to: ", file.name) + code);
 else
 	alert("Error " + filebase.last_error + " adding file to: " + code);

@@ -26,6 +26,10 @@ for(var i = 0; i < argc; i++) {
 			fmt = "json";
 			continue;
 		}
+		if(opt == "arc") {
+			fmt = "arc";
+			continue;
+		}
 		if(opt.indexOf("fmt=") == 0) {
 			fmt = opt.slice(4);
 			continue;
@@ -72,6 +76,26 @@ for(var i in dir_list) {
 for(var i in output)
 	print(output[i]);
 
+function archive_contents(path, list)
+{
+	var output = [];
+	for(var i = 0; i < list.length; i++) {
+		var fname = path + list[i];
+		print(fname);
+		output.push(fname);
+		var contents;
+		try {
+			contents = Archive(fname).list();
+		} catch(e) {
+//			alert(e);
+			continue;
+		}
+		for(var j = 0; j < contents.length; j++)
+			output.push(contents[j].name + " " + contents[j].size);
+	}
+	return output;
+}
+
 function listfiles(dir_code, filespec, detail, fmt, props)
 {
 	var base = new FileBase(dir_code);
@@ -79,13 +103,15 @@ function listfiles(dir_code, filespec, detail, fmt, props)
 		return base.last_error;
 	var output = [];
 	if(detail < 0) {
-		var list = base.get_file_names(filespec, options.sort);
+		var list = base.get_names(filespec, options.sort);
 		if(fmt == 'json')
 			output = JSON.stringify(list, null, 4).split('\n');
+		else if(fmt == 'arc')
+			output = archive_contents(file_area.dir[dir_code].path, list);
 		else
 			output = list;
 	} else {
-		var list = base.get_file_list(filespec, detail, options.sort);
+		var list = base.get_list(filespec, detail, options.sort);
 		if(fmt == 'json')
 			output.push(JSON.stringify(list, null, 4));
 		else {

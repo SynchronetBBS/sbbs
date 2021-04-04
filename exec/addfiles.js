@@ -151,7 +151,7 @@ for(var d = 0; d < dir_list.length; d++) {
 		continue;
 	}
 
-	var name_list = filebase.get_file_names();
+	var name_list = filebase.get_names();
 	// Convert to uppercase
 	for(var i = 0; i < name_list.length; i++) {
 		name_list[i] = name_list[i].toUpperCase();
@@ -198,7 +198,7 @@ for(var d = 0; d < dir_list.length; d++) {
 		file.extdesc = lfexpand(file.extdesc);
 		if(verbosity > 1)
 			print(JSON.stringify(file));
-		var exists = name_list.indexOf(filebase.get_file_name(file.name).toUpperCase()) >= 0;
+		var exists = name_list.indexOf(filebase.get_name(file.name).toUpperCase()) >= 0;
 		if(exists && !options.update) {
 			if(verbosity)
 				print("already added");
@@ -217,7 +217,7 @@ for(var d = 0; d < dir_list.length; d++) {
 			file.desc = datestr(archive_date(path)) + " " + file.desc;
 		file.cost = file_size(path);
 		if(exists) {
-			var hash = filebase.hash_file(file.name);
+			var hash = filebase.hash(file.name);
 			if(hash) {
 				file.size = hash.size;
 				file.crc16 = hash.crc16;
@@ -225,7 +225,7 @@ for(var d = 0; d < dir_list.length; d++) {
 				file.md5 = hash.md5;
 				file.sha1 = hash.sha1;
 			}
-			if(!filebase.update_file(file.name, file, options.diz)) {
+			if(!filebase.update(file.name, file, options.diz)) {
 				alert("Error " + filebase.last_error + " updating " + file.name);
 			} else {
 				print("Updated " + file.name);
@@ -233,7 +233,7 @@ for(var d = 0; d < dir_list.length; d++) {
 			}
 		} else {
 			// Add file here:
-			if(!filebase.add_file(file, options.diz)) {
+			if(!filebase.add(file, options.diz)) {
 				alert("Error " + filebase.last_error + " adding " + file.name);
 			} else {
 				print("Added " + file.name);
