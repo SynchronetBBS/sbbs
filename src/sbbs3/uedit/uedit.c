@@ -138,7 +138,7 @@ int confirm(char *prompt)
 /****************************************************************************/
 /* Takes a string in the format HH:MM:SS and returns in seconds             */
 /****************************************************************************/
-time_t DLLCALL strtosec(char *str)
+time_t strtosec(char *str)
 {
 	char *p1;
 	char *p2;

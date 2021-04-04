@@ -518,7 +518,7 @@ static char* cryptkeyset_keyopt_prop_desc[] = {
 };
 #endif
 
-JSObject* DLLCALL js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
+JSObject* js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	cksobj;
 	JSObject*	constructor;

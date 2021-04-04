@@ -5021,7 +5021,7 @@ static BOOL exec_cgi(http_session_t *session)
 /* JavaScript stuff */
 /********************/
 
-JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx
+JSObject* js_CreateHttpReplyObject(JSContext* cx
 										   ,JSObject* parent, http_session_t *session)
 {
 	JSObject*	reply;
@@ -5060,7 +5060,7 @@ JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx
 	return(reply);
 }
 
-JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
+JSObject* js_CreateHttpRequestObject(JSContext* cx
 											 ,JSObject* parent, http_session_t *session)
 {
 /*	JSObject*	cookie; */
@@ -6635,7 +6635,7 @@ void http_session_thread(void* arg)
 
 }
 
-void DLLCALL web_terminate(void)
+void web_terminate(void)
 {
    	lprintf(LOG_INFO,"Web Server terminate");
 	terminate_server=TRUE;
@@ -6692,7 +6692,7 @@ static void cleanup(int code)
 		startup->terminated(startup->cbdata,code);
 }
 
-const char* DLLCALL web_ver(void)
+const char* web_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
@@ -6818,7 +6818,7 @@ void http_logging_thread(void* arg)
 	http_logging_thread_running=FALSE;
 }
 
-void DLLCALL web_server(void* arg)
+void web_server(void* arg)
 {
 	time_t			start;
 	WORD			host_port;

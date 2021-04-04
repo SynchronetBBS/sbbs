@@ -240,7 +240,7 @@ static char* prop_desc[] = {
 };
 #endif
 
-JSBool DLLCALL
+JSBool
 js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 {
 	js_callback_t *top_cb;
@@ -1480,7 +1480,7 @@ static JSClass js_internal_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
+void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 {
 	char*	p;
 	jsval	rval;
@@ -1545,7 +1545,7 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 		cb->auto_terminate = TRUE;
 }
 
-JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback_t* cb, js_startup_t* startup)
+JSObject* js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback_t* cb, js_startup_t* startup)
 {
 	JSObject*	obj;
 
@@ -1600,7 +1600,7 @@ void msvc_invalid_parameter_handler(const wchar_t* expression,
 }
 #endif
 
-void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, const char* startup_dir, JSObject *scope)
+void js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, const char* startup_dir, JSObject *scope)
 {
 	JSString*	str;
 	jsval		val;

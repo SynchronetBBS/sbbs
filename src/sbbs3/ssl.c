@@ -7,12 +7,12 @@
 #include "ssl.h"
 //#include "js_socket.h"	// TODO... move this stuff in here?
 
-void DLLCALL free_crypt_attrstr(char *attr)
+void free_crypt_attrstr(char *attr)
 {
 	free(attr);
 }
 
-char* DLLCALL get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
+char* get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
 {
 	int		len = 0;
 	char	*estr = NULL;
@@ -31,12 +31,12 @@ char* DLLCALL get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE a
 	return NULL;
 }
 
-char* DLLCALL get_crypt_error(CRYPT_HANDLE sess)
+char* get_crypt_error(CRYPT_HANDLE sess)
 {
 	return get_crypt_attribute(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE);
 }
 
-static int DLLCALL crypt_ll(int error)
+static int crypt_ll(int error)
 {
 	switch(error) {
 		case CRYPT_ERROR_INCOMPLETE:
@@ -81,7 +81,7 @@ static const char *crypt_lstr(int level)
 	return "!!!!!!!!";
 }
 
-bool DLLCALL get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const char *action, int *lvl)
+bool get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const char *action, int *lvl)
 {
 	char	*emsg = NULL;
 	bool	allocated = false;
@@ -253,14 +253,14 @@ static void internal_do_cryptInit(void)
 	return;
 }
 
-int DLLCALL do_cryptInit(void)
+int do_cryptInit(void)
 {
 	if (pthread_once(&crypt_init_once, internal_do_cryptInit) != 0)
 		return 0;
 	return cryptlib_initialized;
 }
 
-bool DLLCALL is_crypt_initialized(void)
+bool is_crypt_initialized(void)
 {
 	return cryptlib_initialized;
 }
@@ -277,7 +277,7 @@ void unlock_ssl_cert(void)
 
 #define DO(action, handle, x)	get_crypt_error_string(x, handle, estr, action, level)
 
-CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char **estr, int *level)
+CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 {
 	CRYPT_KEYSET		ssl_keyset;
 	CRYPT_CONTEXT		ssl_context = -1;	// MSVC requires this to be initialized

@@ -559,7 +559,7 @@ int sockreadline(SOCKET socket, CRYPT_SESSION sess, char* buf, int len, time_t* 
 	return(rd);
 }
 
-void DLLCALL ftp_terminate(void)
+void ftp_terminate(void)
 {
    	lprintf(LOG_INFO,"FTP Server terminate");
 	terminate_server=TRUE;
@@ -4886,7 +4886,7 @@ static void cleanup(int code, int line)
 		startup->terminated(startup->cbdata,code);
 }
 
-const char* DLLCALL ftp_ver(void)
+const char* ftp_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
@@ -4908,7 +4908,7 @@ const char* DLLCALL ftp_ver(void)
 	return(ver);
 }
 
-void DLLCALL ftp_server(void* arg)
+void ftp_server(void* arg)
 {
 	char*			p;
 	char			path[MAX_PATH+1];

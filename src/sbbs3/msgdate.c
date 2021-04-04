@@ -27,7 +27,7 @@
 /****************************************************************************/
 /* Convert when_t structure to RFC822 date header field (string)			*/
 /****************************************************************************/
-char* DLLCALL msgdate(when_t when, char* buf)
+char* msgdate(when_t when, char* buf)
 {
 	struct tm	tm;
 	char		plus='+';
@@ -61,7 +61,7 @@ char* DLLCALL msgdate(when_t when, char* buf)
 /* Convert RFC822 date header field to when_t structure						*/
 /* dd mon yyyy hh:mm:ss [zone]												*/
 /****************************************************************************/
-when_t DLLCALL rfc822date(char* date)
+when_t rfc822date(char* date)
 {
 	char*	p=date;
 	char	str[32];

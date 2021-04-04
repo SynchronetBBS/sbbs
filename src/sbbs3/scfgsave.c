@@ -38,7 +38,7 @@ static int  pslen;
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
+BOOL save_cfg(scfg_t* cfg, int backup_level)
 {
 	int i;
 
@@ -67,7 +67,7 @@ BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
+BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1];
 	int 	i,file;
@@ -133,7 +133,7 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
+BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1],c=0;
 	int 	file;
@@ -311,7 +311,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
+BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1],c;
 	char	dir[LEN_DIR+1]="";
@@ -623,7 +623,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
+BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1],cmd[LEN_CMD+1],c;
 	char	path[MAX_PATH+1];
@@ -873,7 +873,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
+BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1];
 	int 	i,j,file;
@@ -948,7 +948,7 @@ BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
+BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1];
 	uchar	c;
@@ -1073,7 +1073,7 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 	return(TRUE);
 }
 
-void DLLCALL refresh_cfg(scfg_t* cfg)
+void refresh_cfg(scfg_t* cfg)
 {
 	char	str[MAX_PATH+1];
     int		i;

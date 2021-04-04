@@ -355,7 +355,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	return(true);
 }
 
-extern "C" void DLLCALL signal_sub_sem(scfg_t* cfg, uint subnum)
+extern "C" void signal_sub_sem(scfg_t* cfg, uint subnum)
 {
 	char str[MAX_PATH+1];
 
@@ -369,7 +369,7 @@ extern "C" void DLLCALL signal_sub_sem(scfg_t* cfg, uint subnum)
 		ftouch(cmdstr(cfg,NULL,cfg->sub[subnum]->post_sem,nulstr,nulstr,str,sizeof(str)));
 }
 
-extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
+extern "C" int msg_client_hfields(smbmsg_t* msg, client_t* client)
 {
 	int		i;
 	char	port[16];
@@ -404,7 +404,7 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 /* Adds/generates Message-IDs when needed */
 /* Auto-sets the UTF-8 indicators for UTF-8 encoded header fields and body text */
 /* If you want to save a message body with CP437 chars that also happen to be valid UTF-8 sequences, you'll need to preset the ftn_charset header */
-extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client, const char* server, char* msgbuf, smbmsg_t* remsg)
+extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client, const char* server, char* msgbuf, smbmsg_t* remsg)
 {
 	ushort	xlat=XLAT_NONE;
 	int 	i;
@@ -531,7 +531,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	return(i);
 }
 
-extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgfmt, const char* votefmt)
+extern "C" int votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgfmt, const char* votefmt)
 {
 	int result;
 	smbmsg_t remsg;
@@ -604,7 +604,7 @@ extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const cha
 	return result;
 }
 
-extern "C" int DLLCALL closepoll(scfg_t* cfg, smb_t* smb, uint32_t msgnum, const char* username)
+extern "C" int closepoll(scfg_t* cfg, smb_t* smb, uint32_t msgnum, const char* username)
 {
 	int result;
 	smbmsg_t msg;
@@ -625,7 +625,7 @@ extern "C" int DLLCALL closepoll(scfg_t* cfg, smb_t* smb, uint32_t msgnum, const
 	return result;
 }
 
-extern "C" int DLLCALL postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
+extern "C" int postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
 {
 	if(msg->hdr.when_imported.time == 0) {
 		msg->hdr.when_imported.time = time32(NULL);
@@ -640,7 +640,7 @@ extern "C" int DLLCALL postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
 }
 
 // Send an email and a short-message to a local user about something important (e.g. a system error)
-extern "C" int DLLCALL notify(scfg_t* cfg, uint usernumber, const char* subject, const char* text)
+extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const char* text)
 {
 	int			i;
 	smb_t		smb = {0};

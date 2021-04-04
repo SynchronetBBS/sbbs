@@ -3106,7 +3106,7 @@ js_file_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
+JSObject* js_CreateFileClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	obj;
 
@@ -3121,7 +3121,7 @@ JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
 	return(obj);
 }
 
-JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode)
+JSObject* js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode)
 {
 	JSObject* obj;
 	private_t*	p;

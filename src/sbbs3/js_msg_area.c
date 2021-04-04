@@ -93,7 +93,7 @@ struct js_msg_area_priv {
 	uint		subnum;
 };
 
-BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum)
+BOOL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum)
 {
 	char		str[128];
 	JSString*	js_str;
@@ -379,7 +379,7 @@ static JSClass js_sub_class = {
 	,js_msg_area_finalize	/* finalize		*/
 };
 
-JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
+JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 {
 	JSObject*	allgrps;
 	JSObject*	allsubs;
@@ -638,7 +638,7 @@ static JSClass js_msg_area_class = {
 	,js_msg_area_finalize	/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 								  ,user_t* user, client_t* client, subscan_t* subscan)
 {
 	JSObject* obj;

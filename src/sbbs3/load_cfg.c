@@ -282,7 +282,7 @@ void prep_cfg(scfg_t* cfg)
 	cfg->prepped=TRUE;	/* data prepared for run-time, DO NOT SAVE TO DISK! */
 }
 
-void DLLCALL free_cfg(scfg_t* cfg)
+void free_cfg(scfg_t* cfg)
 {
 #ifdef USE_CRYPTLIB
 	if (cfg->tls_certificate != -1 && cfg->prepped)
@@ -300,7 +300,7 @@ void DLLCALL free_cfg(scfg_t* cfg)
 		free_text(cfg->text);
 }
 
-void DLLCALL free_text(char* text[])
+void free_text(char* text[])
 {
 	int i;
 
@@ -395,7 +395,7 @@ static void free_attr_cfg(scfg_t* cfg)
 	cfg->total_colors=0;
 }
 
-char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
+char* prep_dir(const char* base, char* path, size_t buflen)
 {
 #ifdef __unix__
 	char	*p;
@@ -475,7 +475,7 @@ char* prep_code(char *str, const char* prefix)
 /****************************************************************************/
 /* Auto-toggle daylight savings time in US time-zones						*/
 /****************************************************************************/
-ushort DLLCALL sys_timezone(scfg_t* cfg)
+ushort sys_timezone(scfg_t* cfg)
 {
 	time_t	now;
 	struct tm tm;
@@ -494,7 +494,7 @@ ushort DLLCALL sys_timezone(scfg_t* cfg)
 }
 
 
-int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
+int smb_storage_mode(scfg_t* cfg, smb_t* smb)
 {
 	if(smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr&SMB_EMAIL))
 		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
@@ -511,7 +511,7 @@ int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
 
 /* Open Synchronet Message Base and create, if necessary (e.g. first time opened) */
 /* If return value is not SMB_SUCCESS, sub-board is not left open */
-int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
+int smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 {
 	int retval;
 	smbstatus_t smb_status = {0};
@@ -545,7 +545,7 @@ int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 	return retval;
 }
 
-BOOL DLLCALL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+BOOL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
 {
 	if(dirnum >= cfg->total_dirs)
 		return FALSE;
@@ -555,7 +555,7 @@ BOOL DLLCALL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
 	return TRUE;
 }
 
-int DLLCALL smb_open_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+int smb_open_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
 {
 	int retval;
 

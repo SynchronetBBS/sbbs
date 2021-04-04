@@ -5856,7 +5856,7 @@ static void sendmail_thread(void* arg)
 	sendmail_running=FALSE;
 }
 
-void DLLCALL mail_terminate(void)
+void mail_terminate(void)
 {
   	lprintf(LOG_INFO,"Mail Server terminate");
 	terminate_server=TRUE;
@@ -5940,7 +5940,7 @@ static void cleanup(int code)
 		startup->terminated(startup->cbdata,code);
 }
 
-const char* DLLCALL mail_ver(void)
+const char* mail_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
@@ -5963,7 +5963,7 @@ const char* DLLCALL mail_ver(void)
 	return(ver);
 }
 
-void DLLCALL mail_server(void* arg)
+void mail_server(void* arg)
 {
 	char*			p;
 	char			path[MAX_PATH+1];

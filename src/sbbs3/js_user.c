@@ -1592,7 +1592,7 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
+JSObject* js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
 	JSObject*	userclass;
 
@@ -1607,7 +1607,7 @@ JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cf
 	return(userclass);
 }
 
-JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char* name
+JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char* name
 									  ,user_t* user, client_t* client, BOOL global_user)
 {
 	JSObject*	userobj;
@@ -1658,7 +1658,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 /****************************************************************************/
 /* Creates all the user-specific objects: user, msg_area, file_area			*/
 /****************************************************************************/
-JSBool DLLCALL
+JSBool
 js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg, user_t* user, client_t* client
 					 ,char* html_index_file, subscan_t* subscan)
 {

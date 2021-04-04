@@ -66,7 +66,7 @@ bool route_circ(char *via, char *id)
 	return(false);
 }
 
-extern "C" int DLLCALL qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t maxlen)
+extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t maxlen)
 {
 	char node[64],str[256],path[MAX_PATH+1],*p;
 	int file,i;

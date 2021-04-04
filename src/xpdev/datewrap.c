@@ -40,7 +40,7 @@
 #include "datewrap.h"
 
 /* Return difference (in seconds) in time() result from standard */
-time_t DLLCALL checktime(void)
+time_t checktime(void)
 {
 	time_t		t=0x2D24BD00L;	/* Correct time_t value on Jan-1-1994 */
 	struct tm	gmt;
@@ -53,7 +53,7 @@ time_t DLLCALL checktime(void)
 }
 
 /* Compensates for struct tm "weirdness" */
-time_t DLLCALL sane_mktime(struct tm* tm)
+time_t sane_mktime(struct tm* tm)
 {
 	if(tm->tm_year>=1900)
 		tm->tm_year-=1900;
@@ -65,7 +65,7 @@ time_t DLLCALL sane_mktime(struct tm* tm)
 }
 
 /* Compensates for struct tm "weirdness" */
-time_t DLLCALL sane_timegm(struct tm* tm)
+time_t sane_timegm(struct tm* tm)
 {
 	if(tm->tm_year>=1900)
 		tm->tm_year-=1900;
@@ -76,7 +76,7 @@ time_t DLLCALL sane_timegm(struct tm* tm)
 	return timegm(tm);
 }
 
-time32_t DLLCALL time32(time32_t* tp)
+time32_t time32(time32_t* tp)
 {
 	time_t t;
 
@@ -88,12 +88,12 @@ time32_t DLLCALL time32(time32_t* tp)
 	return (time32_t)t;
 }
 
-time32_t DLLCALL mktime32(struct tm* tm)
+time32_t mktime32(struct tm* tm)
 {
 	return (time32_t)mktime(tm);	/* don't use sane_mktime since tm->tm_mon is assumed to be already zero-based */
 }
 
-struct tm* DLLCALL localtime32(const time32_t* t32, struct tm* tm)
+struct tm* localtime32(const time32_t* t32, struct tm* tm)
 {
 	time_t	t=*t32;
 	struct tm* tmp;
@@ -118,7 +118,7 @@ struct tm* DLLCALL localtime32(const time32_t* t32, struct tm* tm)
 	#include <sys/time.h>	/* stuct timeval, gettimeofday() */
 #endif
 
-void DLLCALL xp_getdate(struct date* nyd)
+void xp_getdate(struct date* nyd)
 {
 	time_t tim;
 	struct tm dte;
@@ -130,7 +130,7 @@ void DLLCALL xp_getdate(struct date* nyd)
 	nyd->da_mon=dte.tm_mon+1;
 }
 
-void DLLCALL gettime(struct time* nyt)
+void gettime(struct time* nyt)
 {
 #if defined(_WIN32)
 	SYSTEMTIME systime;
@@ -165,7 +165,7 @@ void DLLCALL gettime(struct time* nyt)
 /* The native Win32 versions of these functions are already thread-safe.	*/
 /****************************************************************************/
 
-struct tm* DLLCALL gmtime_r(const time_t* t, struct tm* tm)
+struct tm* gmtime_r(const time_t* t, struct tm* tm)
 {
 	struct tm* tmp = gmtime(t);
 
@@ -176,7 +176,7 @@ struct tm* DLLCALL gmtime_r(const time_t* t, struct tm* tm)
 	return(tm);
 }
 
-struct tm* DLLCALL localtime_r(const time_t* t, struct tm* tm)
+struct tm* localtime_r(const time_t* t, struct tm* tm)
 {
 	struct tm* tmp = localtime(t);
 
@@ -187,7 +187,7 @@ struct tm* DLLCALL localtime_r(const time_t* t, struct tm* tm)
 	return(tm);
 }
 
-char* DLLCALL ctime_r(const time_t *t, char *buf)
+char* ctime_r(const time_t *t, char *buf)
 {
 	char* p = ctime(t);
 
@@ -198,7 +198,7 @@ char* DLLCALL ctime_r(const time_t *t, char *buf)
 	return(buf);
 }
 
-char* DLLCALL asctime_r(const struct tm *tm, char *buf)
+char* asctime_r(const struct tm *tm, char *buf)
 {
 	char* p = asctime(tm);
 

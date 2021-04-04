@@ -176,7 +176,7 @@ static JSClass js_client_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
+JSObject* js_CreateClientObject(JSContext* cx, JSObject* parent
 										,const char* name, client_t* client, SOCKET sock, CRYPT_CONTEXT session)
 {
 	JSObject*	obj;

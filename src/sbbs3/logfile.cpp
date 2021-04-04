@@ -23,7 +23,7 @@
 
 const char* log_line_ending = "\r\n";
 
-extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, const char* prot, const char* user, const char* text, const char* host, union xp_sockaddr* addr)
+extern "C" BOOL hacklog(scfg_t* cfg, const char* prot, const char* user, const char* text, const char* host, union xp_sockaddr* addr)
 {
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
@@ -60,7 +60,7 @@ BOOL sbbs_t::hacklog(char* prot, char* text)
 	return ::hacklog(&cfg, prot, useron.alias, text, client_name, &client_addr);
 }
 
-extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
+extern "C" BOOL spamlog(scfg_t* cfg, char* prot, char* action
 								,char* reason, char* host, char* ip_addr
 								,char* to, char* from)
 {
@@ -103,7 +103,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	return true;
 }
 
-extern "C" int DLLCALL errorlog(scfg_t* cfg, int level, const char* host, const char* text)
+extern "C" int errorlog(scfg_t* cfg, int level, const char* host, const char* text)
 {
 	FILE*	fp;
 	char	buf[128];

@@ -39,7 +39,7 @@
 #include "sbbs.h"
 #include "ini_file.h"	/* ini file API */
 
-int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* error, size_t errlen)
+int set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* error, size_t errlen)
 {
 	char		cfgfile[MAX_PATH+1];
 	FILE*		fp;

@@ -50,7 +50,7 @@
 /* updating the time stamp to the latest dated semaphore file and returning	*/
 /* TRUE if any where newer than the initial value.							*/
 /****************************************************************************/
-BOOL DLLCALL semfile_check(time_t* t, const char* fname)
+BOOL semfile_check(time_t* t, const char* fname)
 {
 	time_t	ft;
 
@@ -70,7 +70,7 @@ BOOL DLLCALL semfile_check(time_t* t, const char* fname)
 /* updating the time stamp to the latest dated semaphore file and returning	*/
 /* a pointer to the filename if any where newer than the initial timestamp.	*/
 /****************************************************************************/
-char* DLLCALL semfile_list_check(time_t* t, str_list_t filelist)
+char* semfile_list_check(time_t* t, str_list_t filelist)
 {
 	char*	signaled=NULL;
 	size_t		i;
@@ -82,7 +82,7 @@ char* DLLCALL semfile_list_check(time_t* t, str_list_t filelist)
 	return(signaled);
 }
 
-str_list_t DLLCALL semfile_list_init(const char* parent, 
+str_list_t semfile_list_init(const char* parent, 
 							   const char* action, const char* service)
 {
 	char	path[MAX_PATH+1];
@@ -114,17 +114,17 @@ str_list_t DLLCALL semfile_list_init(const char* parent,
 	return(list);
 }
 
-void DLLCALL semfile_list_add(str_list_t* filelist, const char* path)
+void semfile_list_add(str_list_t* filelist, const char* path)
 {
 	strListPush(filelist, path);
 }
 
-void DLLCALL semfile_list_free(str_list_t* filelist)
+void semfile_list_free(str_list_t* filelist)
 {
 	strListFree(filelist);
 }
 
-BOOL DLLCALL semfile_signal(const char* fname, const char* text)
+BOOL semfile_signal(const char* fname, const char* text)
 {
 	int file;
 	struct utimbuf ut;

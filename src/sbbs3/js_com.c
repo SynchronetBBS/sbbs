@@ -826,7 +826,7 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-JSObject* DLLCALL js_CreateCOMClass(JSContext* cx, JSObject* parent)
+JSObject* js_CreateCOMClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	comobj;
 
@@ -841,7 +841,7 @@ JSObject* DLLCALL js_CreateCOMClass(JSContext* cx, JSObject* parent)
 	return(comobj);
 }
 
-JSObject* DLLCALL js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, COM_HANDLE com)
+JSObject* js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, COM_HANDLE com)
 {
 	JSObject*	obj;
 	private_t*	p;
