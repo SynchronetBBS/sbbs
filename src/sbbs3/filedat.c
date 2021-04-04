@@ -719,7 +719,9 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 	long extracted = 0;
 	char fpath[MAX_PATH + 1];
 
-	if(error != NULL && maxerrlen >= 1)
+	if(error == NULL)
+		maxerrlen = 0;
+	if(maxerrlen >= 1)
 		*error = '\0';
 	if((ar = archive_read_new()) == NULL) {
 		safe_snprintf(error, maxerrlen, "archive_read_new returned NULL");
