@@ -505,7 +505,7 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, long mode)
 	}
 	c=0;
 	if(mode&K_EDIT) {
-		strcpy(str,strout);
+		SAFECOPY(str,strout);
 		bputs(str);
 		c=strlen(str); 
 	}
@@ -544,7 +544,7 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, long mode)
 	attr(LIGHTGRAY);
 	CRLF;
 	if(!(sys_status&SS_ABORT))
-		strcpy(strout,str);
+		SAFECOPY(strout,str);
 	return(c);
 }
 
