@@ -138,3 +138,9 @@ ifdef CRYPTLIBDIR
  CRYPT_LDFLAGS += -L$(CRYPTLIBDIR)
 endif
 
+####################
+# libarchive stuff #
+####################
+ifeq ($(os),win32)
+ LDFLAGS += -L$(3RDP_ROOT)/win32.release/libarchive/bin
+endif

@@ -1,8 +1,5 @@
 /* Synchronet message base (SMB) hash-related functions */
 
-/* $Id: smbhash.c,v 1.36 2019/04/11 01:00:30 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -39,12 +24,13 @@
 #include <ctype.h>		/* isspace()*/
 #include "smblib.h"
 #include "md5.h"
+#include "sha1.h"
 #include "crc16.h"
 #include "crc32.h"
 #include "genwrap.h"
 
 /* If return value is SMB_ERR_NOT_FOUND, hash file is left open */
-int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
+int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
 						 long source_mask, BOOL mark)
 {
 	int		retval;
@@ -87,15 +73,18 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 				if((compare[c]->flags&hash.flags&SMB_HASH_MASK)==0)	
 					continue;	/* no matching hashes */
 				if((compare[c]->flags&hash.flags&SMB_HASH_CRC16)
-					&& compare[c]->crc16!=hash.crc16)
+					&& compare[c]->data.crc16!=hash.data.crc16)
 					continue;	/* wrong crc-16 */
 				if((compare[c]->flags&hash.flags&SMB_HASH_CRC32)
-					&& compare[c]->crc32!=hash.crc32)
+					&& compare[c]->data.crc32!=hash.data.crc32)
 					continue;	/* wrong crc-32 */
 				if((compare[c]->flags&hash.flags&SMB_HASH_MD5)
-					&& memcmp(compare[c]->md5,hash.md5,sizeof(hash.md5)))
+					&& memcmp(compare[c]->data.md5,hash.data.md5,sizeof(hash.data.md5)))
 					continue;	/* wrong MD5 */
-				
+				if((compare[c]->flags&hash.flags&SMB_HASH_SHA1)
+					&& memcmp(compare[c]->data.sha1,hash.data.sha1,sizeof(hash.data.sha1)))
+					continue;	/* wrong SHA1 */
+
 				/* successful match! */
 				break;	/* can't match more than one, so stop comparing */
 			}
@@ -123,7 +112,7 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 	return(SMB_ERR_NOT_FOUND);
 }
 
-int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes, BOOL skip_marked)
+int smb_addhashes(smb_t* smb, hash_t** hashes, BOOL skip_marked)
 {
 	int		retval;
 	size_t	h;
@@ -187,7 +176,7 @@ static char* strip_ctrla(uchar* dst, const uchar* src)
 
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned flags
+hash_t* smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 						 ,const void* data, size_t length)
 {
 	hash_t*	hash;
@@ -205,11 +194,13 @@ hash_t* SMBCALL smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned fla
 	hash->source=source;
 	hash->flags=flags;
 	if(flags&SMB_HASH_CRC16)
-		hash->crc16=crc16((char*)data,length);
+		hash->data.crc16=crc16((char*)data,length);
 	if(flags&SMB_HASH_CRC32)
-		hash->crc32=crc32((char*)data,length);
+		hash->data.crc32=crc32((char*)data,length);
 	if(flags&SMB_HASH_MD5)
-		MD5_calc(hash->md5,data,length);
+		MD5_calc(hash->data.md5,data,length);
+	if(flags&SMB_HASH_SHA1)
+		SHA1_calc(hash->data.sha1, data, length);
 
 	return(hash);
 }
@@ -217,7 +208,7 @@ hash_t* SMBCALL smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned fla
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Supports string hash "pre-processing" (e.g. lowercase, strip whitespace)	*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned flags
+hash_t* smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 							,const char* str)
 {
 	char*	p=NULL;
@@ -245,10 +236,10 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned 
 
 /* Allocates and calculates all hashes for a single message					*/
 /* Returns NULL on failure													*/
-hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mask)
+hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mask)
 {
 	size_t		h=0;
-	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5;
+	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5|SMB_HASH_SHA1;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 	hash_t*		hash;
 	time_t		t=time(NULL);
@@ -289,7 +280,7 @@ hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mas
 	return(hashes);
 }
 
-void SMBCALL smb_freehashes(hash_t** hashes)
+void smb_freehashes(hash_t** hashes)
 {
 	size_t		n;
 
@@ -297,14 +288,14 @@ void SMBCALL smb_freehashes(hash_t** hashes)
 }
 
 /* Calculates and stores the hashes for a single message					*/
-int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update)
+int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update)
 {
 	size_t		n;
 	int			retval=SMB_SUCCESS;
 	hash_t		found;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 
-	if(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))
+	if(smb->status.attr&(SMB_EMAIL | SMB_NOHASH | SMB_FILE_DIRECTORY))
 		return(SMB_SUCCESS);
 
 	hashes=smb_msghashes(msg,text,SMB_HASH_SOURCE_DUPE);
@@ -326,7 +317,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 }
 
 /* length=0 specifies ASCIIZ data											*/
-int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
+int smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 								 ,unsigned flags, const void* data, size_t length)
 {
 	int			retval;
@@ -360,7 +351,7 @@ int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	return(retval);
 }
 
-int SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
+int smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 								 ,unsigned flags, const void* data, size_t length)
 {
 	int retval;
@@ -378,7 +369,7 @@ int SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	return(retval);
 }
 
-uint16_t SMBCALL smb_subject_crc(const char* subj)
+uint16_t smb_subject_crc(const char* subj)
 {
 	char*	str;
 	uint16_t	crc;
@@ -402,7 +393,7 @@ uint16_t SMBCALL smb_subject_crc(const char* subj)
 	return(crc);
 }
 
-uint16_t SMBCALL smb_name_crc(const char* name)
+uint16_t smb_name_crc(const char* name)
 {
 	char*	str;
 	uint16_t	crc;
@@ -418,4 +409,39 @@ uint16_t SMBCALL smb_name_crc(const char* name)
 	free(str);
 
 	return(crc);
+}
+
+// Returns hashflags_t on success
+int smb_hashfile(const char* path, off_t size, struct hash_data* data)
+{
+	char buf[256 * 1024];
+	FILE*	fp;
+	MD5 md5_ctx;
+	SHA1_CTX sha1_ctx;
+
+	if(size < 1)
+		return 0;
+
+	if((fp = fopen(path, "rb")) == NULL)
+		return 0;
+
+	MD5_open(&md5_ctx);
+	SHA1Init(&sha1_ctx);
+	data->crc16 = 0;
+	data->crc32 = 0;
+	off_t off = 0;
+	while(!feof(fp) && off < size) {
+		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), fp);
+		if(rd < 1)
+			break;
+		data->crc32 = crc32i(~data->crc32, buf, rd);
+		data->crc16 = icrc16(data->crc16, buf, rd);
+		MD5_digest(&md5_ctx, buf, rd);
+		SHA1Update(&sha1_ctx, (unsigned char*)buf, rd);
+		off += rd;
+	}
+	fclose(fp);
+	MD5_close(&md5_ctx, data->md5);
+	SHA1Final(&sha1_ctx, data->sha1);
+	return SMB_HASH_CRC16 | SMB_HASH_CRC32 | SMB_HASH_MD5 | SMB_HASH_SHA1;
 }

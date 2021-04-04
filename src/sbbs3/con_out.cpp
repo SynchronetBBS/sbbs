@@ -1163,18 +1163,13 @@ void sbbs_t::ctrl_a(char x)
 			cursor_left();
 			break;
 		case '/':	/* Conditional new-line */
-			if(column > 0)
-				newline();
+			cond_newline();
 			break;
 		case '\\':	/* Conditional New-line / Continuation prefix (if cols < 80) */
-			if(column > 0 && cols < TERM_COLS_DEFAULT)
-				bputs(text[LongLineContinuationPrefix]);
+			cond_contline();
 			break;
 		case '?':	/* Conditional blank-line */
-			if(column > 0)
-				newline();
-			if(lastlinelen)
-				newline();
+			cond_blankline();
 			break;
 		case '[':   /* Carriage return */
 			carriage_return();

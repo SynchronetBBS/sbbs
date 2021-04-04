@@ -33,6 +33,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdbool.h>
 #include "sbbs.h"
 #include "sbbs4defs.h"
 #include "ini_file.h"
@@ -112,6 +113,7 @@ BOOL upgrade_users(void)
 	int		ret;
 	size_t	len;
 	user_t	user;
+	int		userdat;
 
 	printf("Upgrading user database...     ");
 
@@ -123,15 +125,21 @@ BOOL upgrade_users(void)
 		return(FALSE);
 	}
 
+	if((userdat = openuserdat(&scfg, /* for_modify: */FALSE)) < 0) {
+		perror("user.dat");
+		return FALSE;
+	}
+
 	fprintf(out,"%-*.*s\r\n",USER_REC_LEN,USER_REC_LEN,tabLineCreator(user_dat_columns));
 
 	total=lastuser(&scfg);
 	for(i=1;i<=total;i++) {
 		printf("\b\b\b\b\b%5u",total-i);
 		memset(&user,0,sizeof(user));
-		user.number=i;
-		if((ret=getuserdat(&scfg,&user))!=0) {
+		user.number = i;
+		if((ret=fgetuserdat(&scfg, &user, userdat))!=0) {
 			printf("\nError %d reading user.dat\n",ret);
+			closeuserdat(userdat);
 			return(FALSE);
 		}
 		/******************************************/
@@ -244,7 +252,7 @@ BOOL upgrade_users(void)
 		len+=sprintf(rec+len,"%u\t%c\t%s\t%s\t%s\t%s\t%s\t%s\t"
 			,user.rows
 			,user.prot
-			,user.xedit ? scfg.xedit[user.xedit]->code : ""
+			,user.xedit && user.xedit <= scfg.total_xedits ? scfg.xedit[user.xedit-1]->code : ""
 			,scfg.shell[user.shell]->code
 			,user.tmpext
 			,user.cursub
@@ -256,10 +264,12 @@ BOOL upgrade_users(void)
 		if((ret=fprintf(out,"%-*.*s\r\n",USER_REC_LEN,USER_REC_LEN,rec))!=USER_REC_LINE_LEN) {
 			printf("!Error %d (errno: %d) writing %u bytes to user.tab\n"
 				,ret, errno, USER_REC_LINE_LEN);
+			closeuserdat(userdat);
 			return(FALSE);
 		}
 	}
 	fclose(out);
+	closeuserdat(userdat);
 
 	printf("\n\tdata/user/user.dat -> %s (%u users)\n", outpath,total);
 
@@ -267,29 +277,29 @@ BOOL upgrade_users(void)
 }
 
 typedef struct {
-	time_t	time;
-	ulong	ltoday;
-	ulong	ttoday;
-	ulong	uls;
-	ulong	ulb;
-	ulong	dls;
-	ulong	dlb;
-	ulong	ptoday;
-	ulong	etoday;
-	ulong	ftoday;
+	time32_t	time;
+	uint32_t	ltoday;
+	uint32_t	ttoday;
+	uint32_t	uls;
+	uint32_t	ulb;
+	uint32_t	dls;
+	uint32_t	dlb;
+	uint32_t	ptoday;
+	uint32_t	etoday;
+	uint32_t	ftoday;
 } csts_t;
 
 BOOL upgrade_stats(void)
 {
-	char	inpath[MAX_PATH+1];
-	char	outpath[MAX_PATH+1];
-	BOOL	success;
-	ulong	count;
+	char		inpath[MAX_PATH+1];
+	char		outpath[MAX_PATH+1];
+	BOOL		success;
+	ulong		count;
 	time32_t	t;
-	stats_t	stats;
-	FILE*	in;
-	FILE*	out;
-	csts_t	csts;
+	stats_t		stats;
+	FILE*		in;
+	FILE*		out;
+	csts_t		csts;
 	str_list_t	list;
 
 	printf("Upgrading statistics data...\n");
@@ -317,7 +327,7 @@ BOOL upgrade_stats(void)
 		return(FALSE);
 	}
 
-	iniSetDateTime(&list,	ROOT_SECTION	,"TimeStamp"	,TRUE, t		,NULL);
+	iniSetDateTime(&list,	ROOT_SECTION	,"TimeStamp"	,/* include time: */TRUE, t, NULL);
 	iniSetInteger(&list,	ROOT_SECTION	,"Logons"		,stats.logons	,NULL);
 	iniSetInteger(&list,	ROOT_SECTION	,"LogonsToday"	,stats.ltoday	,NULL);
 	iniSetInteger(&list,	ROOT_SECTION	,"Timeon"		,stats.timeon	,NULL);
@@ -424,11 +434,12 @@ BOOL upgrade_event_data(void)
 	for(i=0;i<scfg.total_events;i++) {
 		t=0;
 		fread(&t,1,sizeof(t),in);
-		iniSetHexInt(&list, "Events", scfg.event[i]->code, t, NULL);
+		iniSetDateTime(&list, "Events", scfg.event[i]->code, /* include time: */TRUE, t, NULL);
 	}
 	t=0;
 	fread(&t,1,sizeof(t),in);
-	iniSetHexInt(&list,ROOT_SECTION,"QWKPrePack",t,NULL);
+	if(t != 0)
+		iniSetDateTime(&list,ROOT_SECTION,"QWKPrePack", /* include time: */TRUE,t,NULL);
 	fclose(in);
 
 	printf("-> %s (%u timed events)\n", outpath, i);
@@ -443,7 +454,7 @@ BOOL upgrade_event_data(void)
 		for(i=0;i<scfg.total_qhubs;i++) {
 			t=0;
 			fread(&t,1,sizeof(t),in);
-			iniSetHexInt(&list,"QWKNetworkHubs",scfg.qhub[i]->id,t,NULL);
+			iniSetDateTime(&list,"QWKNetworkHubs",scfg.qhub[i]->id, /* include time: */TRUE,t,NULL);
 		}
 		fclose(in);
 	}
@@ -931,107 +942,13 @@ BOOL upgrade_ftp_aliases(void)
 	return(success);
 }
 
-BOOL upgrade_socket_options(void)
-{
-	char*	p;
-	char*	key;
-	char*	val;
-	char*	section;
-	char	inpath[MAX_PATH+1];
-	char	outpath[MAX_PATH+1];
-	FILE*	in;
-	FILE*	out;
-	BOOL	success;
-	size_t	i;
-	size_t	total;
-	str_list_t	inlist;
-	str_list_t	outlist;
-
-	style.section_separator = "";
-	iniSetDefaultStyle(style);
-
-	SAFEPRINTF(inpath,"%ssockopts.cfg",scfg.ctrl_dir);
-	SAFEPRINTF(outpath,"%ssockopts.ini",scfg.ctrl_dir);
-
-	if(!fexistcase(inpath))
-		return(TRUE);
-
-	printf("Upgrading Socket Options...\n");
-
-	if(!overwrite(outpath))
-		return(TRUE);
-	if((out=fopen(outpath,"w"))==NULL) {
-		perror(outpath);
-		return(FALSE);
-	}
-
-	if((outlist = strListInit())==NULL) {
-		printf("!malloc failure\n");
-		return(FALSE);
-	}
-	printf("\t%s ",inpath);
-	if((in=fopen(inpath,"r"))==NULL) {
-		perror("open failure");
-		return(FALSE);
-	}
-
-	if((inlist = strListReadFile(in,NULL,4096))==NULL) {
-		printf("!failure reading %s\n",inpath);
-		return(FALSE);
-	}
-
-	total=0;
-	for(i=0;inlist[i]!=NULL;i++) {
-		p=truncsp(inlist[i]);
-		SKIP_WHITESPACE(p);
-		if(*p==';') {
-			strListPush(&outlist,p);
-			continue;
-		} else if(*p==0)
-			continue;
-		key=p;
-		FIND_WHITESPACE(p);
-		if(*p==0)
-			continue;
-		*(p++)=0;
-		SKIP_WHITESPACE(p);
-		val=p;
-		section=ROOT_SECTION;
-		if(!stricmp(key,"tcp_nodelay"))
-			section="telnet|rlogin";
-		else if(!stricmp(key,"keepalive"))
-			section="tcp";
-		iniSetString(&outlist,section,key,val,NULL);
-		total++;
-	}
-
-	printf("-> %s (%u Socket Options)\n", outpath, total);
-	fclose(in);
-	strListFree(&inlist);
-
-	success=iniWriteFile(out, outlist);
-
-	fclose(out);
-
-	if(!success) {
-		printf("!iniWriteFile failure\n");
-		return(FALSE);
-	}
-
-	strListFree(&outlist);
-
-	return(success);
-}
-
-
-
 #define upg_iniSetString(list,section,key,val) \
 		if(*val) iniSetString(list,section,key,val,NULL)
 
 #define upg_iniSetInteger(list,section,key,val) \
 		if(val) iniSetInteger(list,section,key,val,NULL)
 
-BOOL upgrade_msg_areas(void)
+BOOL upgrade_msg_area_cfg(void)
 {
 	char	str[128];
 	char	outpath[MAX_PATH+1];
@@ -1071,9 +988,8 @@ BOOL upgrade_msg_areas(void)
 		upg_iniSetString(&outlist,str,"CodePrefix",scfg.grp[i]->code_prefix);
 	}
 	for(i=0; i<scfg.total_subs; i++) {
-		sprintf(str,"%s",scfg.sub[i]->code_suffix);
+		sprintf(str,"Sub:%s:%s", scfg.grp[scfg.sub[i]->grp]->sname, scfg.sub[i]->code_suffix);
 		iniAppendSection(&outlist,str,NULL);
-		upg_iniSetString(&outlist,str,"Group",scfg.grp[scfg.sub[i]->grp]->sname);
 		upg_iniSetString(&outlist,str,"Name",scfg.sub[i]->sname);
 		upg_iniSetString(&outlist,str,"Newsgroup",scfg.sub[i]->newsgroup);
 		upg_iniSetString(&outlist,str,"QwkName",scfg.sub[i]->qwkname);
@@ -1115,6 +1031,136 @@ BOOL upgrade_msg_areas(void)
 	return(success);
 }
 
+int file_uldate_compare(const void* v1, const void* v2)
+{
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
+
+	return f1->dateuled - f2->dateuled;
+}
+
+bool upgrade_file_areas(void)
+{
+	int result;
+	ulong total_files = 0;
+	time_t start = time(NULL);
+
+	printf("Upgrading File areas...\n");
+
+	for(int i = 0; i < scfg.total_dirs; i++) {
+		smb_t smb;
+
+		SAFEPRINTF2(smb.file, "%s%s", scfg.dir[i]->data_dir, scfg.dir[i]->code);
+		if((result = smb_open(&smb)) != SMB_SUCCESS) {
+			fprintf(stderr, "Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
+			return false;
+		}
+		smb.status.attr = SMB_FILE_DIRECTORY|SMB_NOHASH;
+		smb.status.max_age = scfg.dir[i]->maxage;
+		smb.status.max_msgs = scfg.dir[i]->maxfiles;
+		if((result = smb_create(&smb)) != SMB_SUCCESS)
+			return false;
+
+		char str[MAX_PATH+1];
+		int file;
+		int extfile = openextdesc(&scfg, i);
+
+		sprintf(str,"%s%s.ixb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
+		if((file=open(str,O_RDONLY|O_BINARY))==-1)
+			continue;
+		long l=filelength(file);
+		if(!l) {
+			close(file);
+			continue;
+		}
+		uchar* ixbbuf;
+		if((ixbbuf=(uchar *)malloc(l))==NULL) {
+			close(file);
+			printf("\7ERR_ALLOC %s %lu\n",str,l);
+			continue;
+		}
+		if(read(file,ixbbuf,l)!=(int)l) {
+			close(file);
+			printf("\7ERR_READ %s %lu\n",str,l);
+			free(ixbbuf);
+			continue;
+		}
+		close(file);
+		size_t file_count = l / F_IXBSIZE;
+		file_t* filelist = malloc(sizeof(file_t) * file_count);
+		memset(filelist, 0, sizeof(file_t) * file_count);
+		file_t* f = filelist;
+		long m=0L;
+		while(m<l) {
+			int j;
+			f->dir = i;
+			for(j=0;j<12 && m<l;j++)
+				if(j==8)
+					f->name[j]=ixbbuf[m]>' ' ? '.' : ' ';
+				else
+					f->name[j]=ixbbuf[m++]; /* Turns FILENAMEEXT into FILENAME.EXT */
+			f->name[j]=0;
+			f->datoffset=ixbbuf[m]|((long)ixbbuf[m+1]<<8)|((long)ixbbuf[m+2]<<16);
+			f->dateuled=(ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)|((long)ixbbuf[m+5]<<16)
+				|((long)ixbbuf[m+6]<<24));
+			f->datedled =(ixbbuf[m+7]|((long)ixbbuf[m+8]<<8)|((long)ixbbuf[m+9]<<16)
+				|((long)ixbbuf[m+10]<<24));
+			m+=11;
+			f++;
+		};
+
+		/* SMB index is sorted by import (upload) time */
+		qsort(filelist, file_count, sizeof(*filelist), file_uldate_compare);
+
+		for(size_t fi = 0; fi < file_count; fi++) {
+			f = &filelist[fi];
+			if(!getfiledat(&scfg, f)) {
+				fprintf(stderr, "Error getting file data for %s %s\n", scfg.dir[i]->code, f->name);
+				continue;
+			}
+			char fpath[MAX_PATH+1];
+			getfilepath(&scfg, f, fpath);
+			smbfile_t file;
+			memset(&file, 0, sizeof(file));
+			file.hdr.when_written.time = (time32_t)fdate(fpath);
+			file.hdr.when_imported.time = f->dateuled;
+			file.hdr.last_downloaded = f->datedled;
+			file.hdr.times_downloaded = f->timesdled;
+			file.hdr.altpath = f->altpath;
+			smb_hfield_str(&file, SMB_FILENAME, getfname(fpath));
+			smb_hfield_str(&file, SMB_FILEDESC, f->desc);
+			smb_hfield_str(&file, SENDER, f->uler);
+			smb_hfield_bin(&file, SMB_COST, f->cdt);
+			if(f->misc&FM_ANON)
+				file.hdr.attr |= MSG_ANONYMOUS;
+			{
+				const char* body = NULL;
+				char extdesc[F_EXBSIZE+1] = {0};
+				if(f->misc&FM_EXTDESC) {
+					fgetextdesc(&scfg, i, f->datoffset, extdesc, extfile);
+					truncsp(extdesc);
+					body = extdesc;
+				}
+				result = smb_addfile(&smb, &file, SMB_FASTALLOC, body);
+			}
+			if(result != SMB_SUCCESS) {
+				fprintf(stderr, "Error %d (%s) adding file to %s\n", result, smb.last_error, smb.file);
+			} else {
+				total_files++;
+				time_t diff = time(NULL) - start;
+				printf("\r%-16s (%-5u areas remain) %u files imported (%u files/second)"
+					, scfg.dir[i]->code, scfg.total_dirs - (i + 1), total_files, diff ? total_files / diff : total_files);
+			}
+		}
+		free(filelist);
+		smb_close(&smb);
+		closeextdesc(extfile);
+		free(ixbbuf);
+	}
+	printf("\r%u files imported in %u directories%40s\n", total_files, scfg.total_dirs,"");
+
+	return true;
+}
 
 char *usage="\nusage: v4upgrade [ctrl_dir]\n";
 
@@ -1139,7 +1185,7 @@ int main(int argc, char** argv)
 	if(p==NULL) {
 		printf("\nSBBSCTRL environment variable not set.\n");
 		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-		exit(1); 
+		return EXIT_FAILURE + __COUNTER__;
 	}
 
 	memset(&scfg,0,sizeof(scfg));
@@ -1152,61 +1198,63 @@ int main(int argc, char** argv)
 	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
-		exit(1);
+		return EXIT_FAILURE + __COUNTER__;
 	}
 
 	iniSetDefaultStyle(style);
 
 	if(!upgrade_users())
-		return(1);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_stats())
-		return(2);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_event_data())
-		return(3);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_filters())
-		return(4);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_list("Twits", "twitlist.cfg", "twitlist.ini", TRUE, NULL))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_list("RLogin allow", "rlogin.cfg", "rlogin.ini", TRUE, NULL))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_list("E-Mail aliases", "alias.cfg", "alias.ini", FALSE, NULL))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
 	
 	if(!upgrade_list("E-Mail domains", "domains.cfg", "domains.ini", TRUE, NULL))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_list("Allowed mail relayers", "relay.cfg", "relay.ini", TRUE, NULL))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_list("SPAM bait addresses", "spambait.cfg", "spambait.ini", TRUE, NULL))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
 
+#if 0 /* temporary disable for testing purposes only */
 	if(!upgrade_list("Blocked spammers", "spamblock.cfg", "spamblock.ini", TRUE, NULL))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
+#endif
 
 	if(!upgrade_list("DNS black-lists", "dns_blacklist.cfg", "dns_blacklist.ini", TRUE, "notice"))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_list("DNS black-list exemptions", "dnsbl_exempt.cfg", "dnsbl_exempt.ini", TRUE, NULL))
-		return(5);
+		return EXIT_FAILURE + __COUNTER__;
 
 	if(!upgrade_ftp_aliases())
-		return(-1);
-
-	if(!upgrade_socket_options())
-		return(-1);
+		return EXIT_FAILURE + __COUNTER__;
 
 	/* attr.cfg */
 
-	if(!upgrade_msg_areas())
-		return(-1);
+	if(!upgrade_msg_area_cfg())
+		return EXIT_FAILURE + __COUNTER__;
+
+	if(!upgrade_file_areas())
+		return EXIT_FAILURE + __COUNTER__;
 
 	printf("Upgrade successful.\n");
-    return(0);
+    return EXIT_SUCCESS;
 }

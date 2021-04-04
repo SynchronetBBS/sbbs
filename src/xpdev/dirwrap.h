@@ -1,7 +1,4 @@
 /* Directory system-call wrappers */
-// vi: tabstop=4
-
-/* $Id: dirwrap.h,v 1.55 2019/09/20 08:59:34 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -54,13 +39,14 @@
 extern "C" {
 #endif
 
+#define ALLFILES "*"	/* matches all files in a directory */
+
 /****************/
 /* RTL-specific */
 /****************/
 
 #if defined(__unix__)
 
-	#define ALLFILES "*"	/* matches all files in a directory */
 	#include <sys/types.h>
 	#include <sys/stat.h>
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
@@ -81,7 +67,6 @@ extern "C" {
 
 	#include <direct.h>		/* mkdir() */
 
-	#define ALLFILES "*.*"	/* matches all files in a directory */
 	#ifdef __WATCOMC__
 		#define MKDIR(dir)		mkdir(dir)
 	#else
@@ -236,7 +221,7 @@ DLLEXPORT ulong		DLLCALL getfreediskspace(const char* path, ulong unit);
 DLLEXPORT uint64_t	DLLCALL getfilesizetotal(const char *path);
 DLLEXPORT long		DLLCALL delfiles(const char *inpath, const char *spec, size_t keep);
 DLLEXPORT char*		DLLCALL backslash(char* path);
-DLLEXPORT BOOL 		DLLCALL wildmatch(const char *fname, const char *spec, BOOL path);
+DLLEXPORT BOOL 		DLLCALL wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensitive);
 DLLEXPORT BOOL 		DLLCALL wildmatchi(const char *fname, const char *spec, BOOL path);
 DLLEXPORT int		DLLCALL	mkpath(const char* path);
 

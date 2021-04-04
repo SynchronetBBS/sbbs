@@ -582,14 +582,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		startup_info.dwFlags|=STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
     	startup_info.wShowWindow=SW_HIDE;
 	}
-	if(native && !(mode&EX_OFFLINE)) {
-
-		if(!(mode&EX_STDIN)) {
-			if(passthru_thread_running)
-				passthru_socket_activate(true);
-			else
-				pthread_mutex_lock(&input_thread_mutex);
-		}
+	if(native && !(mode & (EX_OFFLINE | EX_STDIN))) {
+		if(passthru_thread_running)
+			passthru_socket_activate(true);
+		else
+			pthread_mutex_lock(&input_thread_mutex);
 	}
 
     success=CreateProcess(
@@ -609,7 +606,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!success) {
 		XTRN_CLEANUP;
-		if(!(mode&EX_STDIN)) {
+		if(native && !(mode & (EX_OFFLINE | EX_STDIN))) {
 			if(passthru_thread_running)
 				passthru_socket_activate(false);
 			else
@@ -848,13 +845,14 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
-		if(native) {
-			if(!(mode&EX_STDIN)) {
-				if(passthru_thread_running)
-					passthru_socket_activate(false);
-				else
-					pthread_mutex_unlock(&input_thread_mutex);
-			}
+		if(!WaitForOutbufEmpty(5000))
+			lprintf(LOG_WARNING, "%s Timeout waiting for output buffer to empty", __FUNCTION__);
+
+		if(native && !(mode & EX_STDIN)) {
+			if(passthru_thread_running)
+				passthru_socket_activate(false);
+			else
+				pthread_mutex_unlock(&input_thread_mutex);
 		}
 
 		curatr=~0;			// Can't guarantee current attributes
@@ -1525,13 +1523,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 #endif
 	}
 
-	if(!(mode&EX_STDIN)) {
-		if(!(mode&EX_STDIN)) {
-			if(passthru_thread_running)
-				passthru_socket_activate(true);
-			else
-				pthread_mutex_lock(&input_thread_mutex);
-		}
+	if(!(mode & (EX_STDIN | EX_OFFLINE))) {
+		if(passthru_thread_running)
+			passthru_socket_activate(true);
+		else
+			pthread_mutex_lock(&input_thread_mutex);
 	}
 
 	if(!(mode&EX_NOLOG) && pipe(err_pipe)!=0) {
@@ -1557,7 +1553,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		winsize.ws_row=rows;
 		winsize.ws_col=cols;
 		if((pid=forkpty(&in_pipe[1],NULL,&term,&winsize))==-1) {
-			if(!(mode&EX_STDIN)) {
+			if(!(mode & (EX_STDIN | EX_OFFLINE))) {
 				if(passthru_thread_running)
 					passthru_socket_activate(false);
 				else
@@ -1582,7 +1578,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 
 		if((pid=FORK())==-1) {
-			if(!(mode&EX_STDIN)) {
+			if(!(mode & (EX_STDIN | EX_OFFLINE))) {
 				if(passthru_thread_running)
 					passthru_socket_activate(false);
 				else
@@ -1868,6 +1864,16 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
+		if(!WaitForOutbufEmpty(5000))
+			lprintf(LOG_WARNING, "%s Timeout waiting for output buffer to empty", __FUNCTION__);
+
+		if(!(mode&EX_STDIN)) {
+			if(passthru_thread_running)
+				passthru_socket_activate(false);
+			else
+				pthread_mutex_unlock(&input_thread_mutex);
+		}
+
 		curatr=~0;			// Can't guarantee current attributes
 		attr(LIGHTGRAY);	// Force to "normal"
 
@@ -1880,19 +1886,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(!(mode&EX_NOLOG))
 		close(err_pipe[0]);
 
-	if(!(mode&EX_STDIN)) {
-		if(passthru_thread_running)
-			passthru_socket_activate(false);
-		else
-			pthread_mutex_unlock(&input_thread_mutex);
-	}
-
 	return(errorlevel = WEXITSTATUS(i));
 }
 
 #endif	/* !WIN32 */
 
-const char* quoted_string(const char* str, char* buf, size_t maxlen)
+static const char* quoted_string(const char* str, char* buf, size_t maxlen)
 {
 	if(strchr(str,' ')==NULL)
 		return(str);
@@ -2109,176 +2108,3 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 
     return(cmd);
 }
-
-/****************************************************************************/
-/* Returns command line generated from instr with %c replacments            */
-/* This is the C-exported version											*/
-/****************************************************************************/
-extern "C"
-char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
-						,const char* fspec, char* cmd)
-{
-	char	str[MAX_PATH+1];
-    int		i,j,len;
-	static char	buf[512];
-
-	if(cmd==NULL)	cmd=buf;
-    len=strlen(instr);
-	int maxlen = (int)sizeof(buf) - 1;
-    for(i=j=0; i<len && j < maxlen; i++) {
-        if(instr[i]=='%') {
-            i++;
-            cmd[j]=0;
-			int avail = maxlen - j;
-			char ch=instr[i];
-			if(IS_ALPHA(ch))
-				ch=toupper(ch);
-            switch(ch) {
-                case 'A':   /* User alias */
-					if(user!=NULL)
-						strncat(cmd,QUOTED_STRING(instr[i],user->alias,str,sizeof(str)), avail);
-                    break;
-                case 'B':   /* Baud (DTE) Rate */
-                    break;
-                case 'C':   /* Connect Description */
-					if(user!=NULL)
-						strncat(cmd,user->modem, avail);
-                    break;
-                case 'D':   /* Connect (DCE) Rate */
-                    break;
-                case 'E':   /* Estimated Rate */
-                    break;
-                case 'F':   /* File path */
-                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
-                    break;
-                case 'G':   /* Temp directory */
-                    strncat(cmd,cfg->temp_dir, avail);
-                    break;
-                case 'H':   /* Port Handle or Hardware Flow Control */
-                    break;
-                case 'I':   /* IP address */
-					if(user!=NULL)
-						strncat(cmd,user->note, avail);
-                    break;
-                case 'J':
-                    strncat(cmd,cfg->data_dir, avail);
-                    break;
-                case 'K':
-                    strncat(cmd,cfg->ctrl_dir, avail);
-                    break;
-                case 'L':   /* Lines per message */
-					if(user!=NULL)
-						strncat(cmd,ultoa(cfg->level_linespermsg[user->level],str,10), avail);
-                    break;
-                case 'M':   /* Minutes (credits) for user */
-					if(user!=NULL)
-						strncat(cmd,ultoa(user->min,str,10), avail);
-                    break;
-                case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-                    strncat(cmd,cfg->node_dir, avail);
-                    break;
-                case 'O':   /* SysOp */
-                    strncat(cmd,QUOTED_STRING(instr[i],cfg->sys_op,str,sizeof(str)), avail);
-                    break;
-                case 'P':   /* Client protocol */
-                    break;
-                case 'Q':   /* QWK ID */
-                    strncat(cmd,cfg->sys_id, avail);
-                    break;
-                case 'R':   /* Rows */
-					if(user!=NULL)
-						strncat(cmd,ultoa(user->rows,str,10), avail);
-                    break;
-                case 'S':   /* File Spec */
-                    strncat(cmd, fspec, avail);
-                    break;
-                case 'T':   /* Time left in seconds */
-                    break;
-                case 'U':   /* UART I/O Address (in hex) */
-                    strncat(cmd,ultoa(cfg->com_base,str,16), avail);
-                    break;
-                case 'V':   /* Synchronet Version */
-                    sprintf(str,"%s%c",VERSION,REVISION);
-					strncat(cmd,str, avail);
-                    break;
-                case 'W':   /* Columns/width */
-                    break;
-                case 'X':
-					if(user!=NULL)
-						strncat(cmd,cfg->shell[user->shell]->code, avail);
-                    break;
-                case '&':   /* Address of msr */
-                    break;
-                case 'Y':
-                    break;
-                case 'Z':
-                    strncat(cmd,cfg->text_dir, avail);
-                    break;
-				case '~':	/* DOS-compatible (8.3) filename */
-#ifdef _WIN32
-					char sfpath[MAX_PATH+1];
-					SAFECOPY(sfpath,fpath);
-					GetShortPathName(fpath,sfpath,sizeof(sfpath));
-					strncat(cmd,sfpath, avail);
-#else
-                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
-#endif
-					break;
-                case '!':   /* EXEC Directory */
-                    strncat(cmd,cfg->exec_dir, avail);
-                    break;
-                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
-#ifndef __unix__
-                    strncat(cmd,cfg->exec_dir, avail);
-#endif
-                    break;
-
-                case '#':   /* Node number (same as SBBSNNUM environment var) */
-                    sprintf(str,"%d",cfg->node_num);
-                    strncat(cmd,str, avail);
-                    break;
-                case '*':
-                    sprintf(str,"%03d",cfg->node_num);
-                    strncat(cmd,str, avail);
-                    break;
-                case '$':   /* Credits */
-					if(user!=NULL)
-						strncat(cmd,ultoa(user->cdt+user->freecdt,str,10), avail);
-                    break;
-                case '%':   /* %% for percent sign */
-                    strncat(cmd,"%", avail);
-                    break;
-				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
-#ifndef __unix__
-					strncat(cmd,".exe", avail);
-#endif
-					break;
-				case '?':	/* Platform */
-#ifdef __OS2__
-					strcpy(str,"OS2");
-#else
-					strcpy(str,PLATFORM_DESC);
-#endif
-					strlwr(str);
-					strncat(cmd,str, avail);
-					break;
-				case '^':	/* Architecture */
-					strncat(cmd, ARCHITECTURE_DESC, avail);
-					break;
-                default:    /* unknown specification */
-                    if(IS_DIGIT(instr[i]) && user!=NULL) {
-                        sprintf(str,"%0*d",instr[i]&0xf,user->number);
-                        strncat(cmd,str, avail);
-					}
-                    break;
-			}
-            j=strlen(cmd);
-		}
-        else
-            cmd[j++]=instr[i];
-	}
-    cmd[j]=0;
-
-    return(cmd);
-}
-

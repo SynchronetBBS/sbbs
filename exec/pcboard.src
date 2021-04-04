@@ -46,7 +46,7 @@ cmdstr HELP
 cmdstr F
 	file_select_area
 	if_true
-		setstr "*.*"
+		setstr "*"
 		file_list
 		end_if
 	end_cmd
@@ -54,7 +54,7 @@ cmdstr F
 cmdstr EXT
 	file_select_area
 	if_true
-		setstr "*.*"
+		setstr "*"
 		file_list_extended
 		end_if
 	end_cmd

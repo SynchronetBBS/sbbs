@@ -13,7 +13,7 @@ var sort_property = 'name';
 
 // These max lengths are derived from the bbs_t structure definition in xtrn/sbl/sbldefs.h:
 const max_len = {
-	name:				25,		/* Synchronet allows 40, I think this restricted by 25-char QWK msg subjs in sbldefs.h */
+	name:				40,		/* Synchronet allows 40, I think this restricted by 25-char QWK msg subjs in sbldefs.h */
 	phone_number:		25,		/* only the first 12 chars are backwards compatible with SBL v3 */
 	location:			30,
 	sysop_name:			25,
@@ -658,11 +658,11 @@ function new_system(name, nodes, stats)
 function check_entry(bbs)
 {
 	if(!bbs.name || !bbs.name.length || bbs.name.length > max_len.name) {
-		log("Problem with BBS name: " + bbs.name);
+		log(LOG_WARNING, "Problem with BBS name: " + bbs.name);
 		return false;
 	}
 	if(!bbs.service || !bbs.service.length) {
-		log(bbs.name + " has no services");
+		log(LOG_WARNING, bbs.name + " has no services");
 		return false;
 	}
 /** this is valid in SBL
@@ -672,7 +672,7 @@ function check_entry(bbs)
 	}
 **/
 	if(!bbs.entry || !bbs.entry.created || !bbs.entry.created.by) {
-		log(bbs.name + " has no entry.created.by property");
+		log(LOG_WARNING, bbs.name + " has no entry.created.by property");
 		return false;
 	}
 	return true;	// All is good

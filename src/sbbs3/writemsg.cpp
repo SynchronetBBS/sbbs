@@ -1111,7 +1111,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				break;
 			}
 			else if(!stricmp(strin,"/T")) { /* Edit title/subject */
-				if(title[0]) {
+				if(title != nulstr) { // hack
 					bputs(text[SubjectPrompt]);
 					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 					SYNC;
@@ -1283,7 +1283,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 		buf[0]=0;
 		bputs(text[NewFile]); 
 	}
-	if(!msgeditor(buf,nulstr,nulstr)) {
+	if(!msgeditor(buf,nulstr,/* title: */(char*)nulstr)) {
 		free(buf);
 		return false; 
 	}
@@ -1605,7 +1605,8 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	char	msgtmp[MAX_PATH+1];
 	uint16_t	xlat;
 	int 	file,i,j,x;
-	long	length,offset;
+	long	length;
+	off_t	offset;
 	FILE	*instream;
 
 	if(!msg->hdr.total_dfields)
@@ -1662,7 +1663,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 		smb_close_da(smb);
 	}
 
-	msg->hdr.offset=offset;
+	msg->hdr.offset=(uint32_t)offset;
 	if((file=open(msgtmp,O_RDONLY|O_BINARY))==-1
 		|| (instream=fdopen(file,"rb"))==NULL) {
 		smb_unlocksmbhdr(smb);
@@ -1672,7 +1673,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	}
 
 	setvbuf(instream,NULL,_IOFBF,2*1024);
-	fseek(smb->sdt_fp,offset,SEEK_SET);
+	fseeko(smb->sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
 	fwrite(&xlat,2,1,smb->sdt_fp);
 	x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
@@ -1704,7 +1705,8 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	char str[256],*buf;
 	uint i;
 	int newgrp,newsub,storage;
-	ulong offset,length;
+	off_t offset;
+	ulong length;
 	smbmsg_t	newmsg=*msg;
 	smb_t		newsmb;
 
@@ -1786,10 +1788,10 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 		smb_close_da(&newsmb); 
 	}
 
-	newmsg.hdr.offset=offset;
+	newmsg.hdr.offset=(uint32_t)offset;
 	newmsg.hdr.version=smb_ver();
 
-	fseek(newsmb.sdt_fp,offset,SEEK_SET);
+	fseeko(newsmb.sdt_fp,offset,SEEK_SET);
 	fwrite(buf,length,1,newsmb.sdt_fp);
 	fflush(newsmb.sdt_fp);
 	free(buf);

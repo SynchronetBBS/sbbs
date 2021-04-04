@@ -72,6 +72,7 @@ typedef struct {							/* Message group info */
 typedef struct {							/* Transfer Directory Info */
 	char		code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
 	char		code_suffix[LEN_CODE+1];	/* Eight character code suffix */
+	char		area_tag[FIDO_AREATAG_LEN+1];
 	char		lname[LEN_SLNAME+1],		/* Long name - used for listing */
 				sname[LEN_SSNAME+1],		/* Short name - used for prompts */
 				arstr[LEN_ARSTR+1],			/* Access Requirements */
@@ -311,6 +312,7 @@ typedef struct {							/* QWK Network Hub */
 				call[LEN_CMD+1],			/* Call-out command line to execute */
 				pack[LEN_CMD+1],			/* Packing command line */
 				unpack[LEN_CMD+1];			/* Unpacking command line */
+	char		fmt[4]; 					/* Archive format */
 	uint16_t	time,						/* Time to call-out */
 				node,						/* Node to do the call-out */
 				freq,						/* Frequency of call-outs */

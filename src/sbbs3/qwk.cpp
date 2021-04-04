@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "qwk.h"
+#include "filedat.h"
 
 /****************************************************************************/
 /* Converts a long to an msbin real number. required for QWK NDX file		*/
@@ -374,28 +375,21 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 /****************************************************************************/
 void sbbs_t::qwk_sec()
 {
-	char	str[256],tmp2[256],ch,bi=0;
+	char	str[256],tmp2[256],ch;
 	char 	tmp[512];
 	int		error;
 	int 	s;
-	uint	i,k;
-	ulong	l;
+	uint	i;
 	ulong	msgcnt;
 	ulong	*sav_ptr;
-	file_t	fd;
 
-	memset(&fd,0,sizeof(fd));
 	getusrdirs();
-	fd.dir=cfg.total_dirs;
 	if((sav_ptr=(ulong *)malloc(sizeof(ulong)*cfg.total_subs))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ulong)*cfg.total_subs);
 		return;
 	}
 	for(i=0;i<cfg.total_subs;i++)
 		sav_ptr[i]=subscan[i].ptr;
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
-			bi++;				/* number of bidirectional protocols configured */
 	if(useron.rest&FLAG('Q'))
 		getusrsubs();
 	delfiles(cfg.temp_dir,ALLFILES);
@@ -407,8 +401,6 @@ void sbbs_t::qwk_sec()
 		ASYNC;
 		bputs(text[QWKPrompt]);
 		sprintf(str,"?UDCSP\r%c",text[YNQP][2]);
-		if(bi)
-			strcat(str,"B");
 		ch=(char)getkeys(str,0);
 		if(ch>' ')
 			logch(ch,0);
@@ -506,14 +498,23 @@ void sbbs_t::qwk_sec()
 							useron.qwk&=~(QWK_EXPCTLA|QWK_RETCTLA);
 						break;
 					case 'T':
-						for(i=0;i<cfg.total_fcomps;i++)
-							uselect(1,i,text[ArchiveTypeHeading],cfg.fcomp[i]->ext,cfg.fcomp[i]->ar);
+					{
+						str_list_t ext_list = strListDup((str_list_t)supported_archive_formats);
+						for(i=0; i < cfg.total_fcomps; i++) {
+							if(strListFind(ext_list, cfg.fcomp[i]->ext, /* case-sensitive */FALSE) < 0
+								&& chk_ar(cfg.fcomp[i]->ar, &useron, &client))
+								strListPush(&ext_list, cfg.fcomp[i]->ext);
+						}
+						for(i=0; ext_list[i] != NULL; i++)
+							uselect(1, i, text[ArchiveTypeHeading], ext_list[i], NULL);
 						s=uselect(0,0,0,0,0);
 						if(s>=0) {
-							strcpy(useron.tmpext,cfg.fcomp[s]->ext);
+							SAFECOPY(useron.tmpext, ext_list[s]);
 							putuserrec(&cfg,useron.number,U_TMPEXT,3,useron.tmpext);
 						}
+						strListFree(&ext_list);
 						break;
+					}
 					case 'E':
 						if(!(useron.qwk&(QWK_EMAIL|QWK_ALLMAIL)))
 							useron.qwk|=QWK_EMAIL;
@@ -571,82 +572,7 @@ void sbbs_t::qwk_sec()
 			continue;
 		}
 
-
-		if(ch=='B') {   /* Bidirectional QWK and REP packet transfer */
-			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
-			if(!fexistcase(str) && !pack_qwk(str,&msgcnt,0)) {
-				for(i=0;i<cfg.total_subs;i++)
-					subscan[i].ptr=sav_ptr[i];
-				remove(str);
-				last_ns_time=ns_time;
-				continue;
-			}
-			bprintf(text[UploadingREP],cfg.sys_id);
-			xfer_prot_menu(XFER_BIDIR);
-			mnemonics(text[ProtocolOrQuit]);
-			sprintf(tmp2,"%c",text[YNQP][2]);
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-					strcat(tmp2,tmp);
-				}
-			ch=(char)getkeys(tmp2,0);
-			if(ch==text[YNQP][2] || sys_status&SS_ABORT || !online) {
-				for(i=0;i<cfg.total_subs;i++)
-					subscan[i].ptr=sav_ptr[i];	/* re-load saved pointers */
-				last_ns_time=ns_time;
-				continue;
-			}
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->bicmd[0] && cfg.prot[i]->mnemonic==ch
-					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-					break;
-			if(i<cfg.total_prots) {
-				batup_total=1;
-				batup_dir[0]=cfg.total_dirs;
-				sprintf(batup_name[0],"%s.rep",cfg.sys_id);
-				batdn_total=1;
-				batdn_dir[0]=cfg.total_dirs;
-				sprintf(batdn_name[0],"%s.qwk",cfg.sys_id);
-				if(!create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false)
-					|| !create_batchup_lst()
-					|| !create_bimodem_pth()) {
-					batup_total=batdn_total=0;
-					continue;
-				}
-				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
-				sprintf(tmp2,"%s.qwk",cfg.sys_id);
-				padfname(tmp2,fd.name);
-				sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
-				sprintf(tmp2,"%sBATCHUP.LST",cfg.node_dir);
-				error=protocol(cfg.prot[i],XFER_BIDIR,str,tmp2,true);
-				batdn_total=batup_total=0;
-				if(!checkprotresult(cfg.prot[i],error,&fd)) {
-					last_ns_time=ns_time;
-					for(i=0;i<cfg.total_subs;i++)
-						subscan[i].ptr=sav_ptr[i]; /* re-load saved pointers */
-				}
-				else {
-					qwk_success(msgcnt,1,0);
-					for(i=0;i<cfg.total_subs;i++)
-						sav_ptr[i]=subscan[i].ptr;
-				}
-				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
-				if(fexistcase(str))
-					remove(str);
-				unpack_rep();
-				delfiles(cfg.temp_dir,ALLFILES);
-				//autohangup();
-				}
-			else {
-				last_ns_time=ns_time;
-				for(i=0;i<cfg.total_subs;i++)
-					subscan[i].ptr=sav_ptr[i];
-			}
-
-		}
-
-		else if(ch=='D') {   /* Download QWK Packet of new messages */
+		if(ch=='D') {   /* Download QWK Packet of new messages */
 			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 			if(!fexistcase(str) && !pack_qwk(str,&msgcnt,0)) {
 				for(i=0;i<cfg.total_subs;i++)
@@ -656,12 +582,13 @@ void sbbs_t::qwk_sec()
 				continue;
 			}
 
-			l=(long)flength(str);
-			bprintf(text[FiFilename],getfname(str));
-			bprintf(text[FiFileSize],ultoac(l,tmp)
+			off_t l=flength(str);
+			bprintf(text[FiFilename], getfname(str));
+			bprintf(text[FiFileSize], ultoac((ulong)l,tmp)
 				, byte_estimate_to_str(l, tmp2, sizeof(tmp), /* units: */1024, /* precision: */1));
+
 			if(l>0L && cur_cps)
-				i=l/(ulong)cur_cps;
+				i=(uint)(l/(ulong)cur_cps);
 			else
 				i=0;
 			bprintf(text[FiTransferTime],sectostr(i,tmp));
@@ -696,9 +623,8 @@ void sbbs_t::qwk_sec()
 			if(i<cfg.total_prots) {
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				sprintf(tmp2,"%s.qwk",cfg.sys_id);
-				padfname(tmp2,fd.name);
 				error=protocol(cfg.prot[i],XFER_DOWNLOAD,str,nulstr,false);
-				if(!checkprotresult(cfg.prot[i],error,&fd)) {
+				if(!checkprotresult(cfg.prot[i], error, tmp2)) {
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)
 						subscan[i].ptr=sav_ptr[i]; /* re-load saved pointers */
@@ -726,15 +652,6 @@ void sbbs_t::qwk_sec()
 
 			delfiles(cfg.temp_dir,ALLFILES);
 			bprintf(text[UploadingREP],cfg.sys_id);
-			for(k=0;k<cfg.total_fextrs;k++)
-				if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
-					&& chk_ar(cfg.fextr[k]->ar,&useron,&client))
-					break;
-			if(k>=cfg.total_fextrs) {
-				bputs(text[QWKExtractionFailed]);
-				lprintf(LOG_ERR, "Couldn't extract REP packet - configuration error");
-				continue;
-			}
 
 			/******************/
 			/* Receive Packet */
@@ -802,7 +719,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	uint 	x,y;
 	long	l;
 	ulong	qwk=useron.qwk;
-	file_t	f;
+	file_t f = {{}};
 
 	sprintf(str,"%-25.25s",buf);	/* Note: must be space-padded, left justified */
 	strupr(str);
@@ -968,29 +885,26 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	}
 
 	else if(!strncmp(str,"FREQ ",5)) {                  /* file request */
-		padfname(str+5,f.name);
+		const char* fname = str + 5;
+		SKIP_WHITESPACE(fname);
 		for(x=y=0;x<usrlibs;x++) {
 			for(y=0;y<usrdirs[x];y++)
-				if(findfile(&cfg,usrdir[x][y],f.name))
+				if(loadfile(&cfg, usrdir[x][y], fname, &f, file_detail_normal))
 					break;
 			if(y<usrdirs[x])
 				break;
 		}
 		if(x>=usrlibs) {
-			bprintf("\r\n%s",f.name);
+			bprintf("\r\n%s",fname);
 			bputs(text[FileNotFound]);
 		}
 		else {
-			f.dir=usrdir[x][y];
-			getfileixb(&cfg,&f);
-			f.size=0;
-			getfiledat(&cfg,&f);
-			if(f.size==-1L)
-				bprintf(text[FileIsNotOnline],f.name);
+			if(getfilesize(&cfg, &f) < 0)
+				bprintf(text[FileIsNotOnline], f.name);
 			else
 				addtobatdl(&f);
 		}
-
+		smb_freefilemem(&f);
 	}
 
 	else {

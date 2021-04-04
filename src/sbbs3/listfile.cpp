@@ -1,8 +1,4 @@
-/* listfile.cpp */
-
 /* Synchronet file database listing functions */
-
-/* $Id: listfile.cpp,v 1.66 2020/05/11 08:57:18 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,102 +13,62 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "filedat.h"
 
 #define BF_MAX	26	/* Batch Flag max: A-Z */	
 
 int extdesclines(char *str);
 
 /*****************************************************************************/
-/* List files in directory 'dir' that match 'filespec'. Filespec must be 	 */
-/* padded. ex: FILE*   .EXT, not FILE*.EXT. 'mode' determines other critiria */
+/* List files in directory 'dir' that match 'filespec'.						 */
+/* 'mode' determines other criteria											 */
 /* the files must meet before they'll be listed. 'mode' bit FL_NOHDR doesn't */
 /* list the directory header.                                                */
 /* Returns -1 if the listing was aborted, otherwise total files listed		 */
 /*****************************************************************************/
-int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
+int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode)
 {
-	char	str[256],hdr[256],letter='A',*p,*datbuf,ext[513];
-	char 	tmp[512];
-	uchar*	ixbbuf;
+	char	hdr[256],letter='A',*p;
 	uchar	flagprompt=0;
 	int		c, d;
 	uint	i,j;
-	int		file,found=0,lastbat=0,disp;
-	long	m=0,n,anchor=0,next,datbuflen;
-	int32_t	l;
+	int		found=0,lastbat=0,disp;
+	size_t	m=0;
+	long	anchor=0,next;
+	file_t* bf[BF_MAX];	/* bf is batch flagged files */
+	smb_t	smb;
 	ulong	file_row[26];
-	file_t	f,bf[26];	/* bf is batch flagged files */
 
+	if(!smb_init_dir(&cfg, &smb, dirnum))
+		return 0;
 	if(mode&FL_ULTIME) {
-		last_ns_time=now;
-		sprintf(str,"%s%s.dab",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-		if((file=nopen(str,O_RDONLY))!=-1) {
-			read(file,&l,4);
-			close(file);
-			if(ns_time>(time_t)l)
-				return(0); 
-		}
+		last_ns_time = now;
+		if(!newfiles(&smb, ns_time))	// this is fast
+			return 0;
 	}
-	sprintf(str,"%s%s.ixb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	if((file=nopen(str,O_RDONLY))==-1)
-		return(0);
-	l=(long)filelength(file);
-	if(!l) {
-		close(file);
-		return(0); 
+	if(smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS)
+		return 0;
+
+	size_t file_count = 0;
+	file_t* file_list = loadfiles(&smb
+		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
+		, (mode&FL_ULTIME) ? ns_time : 0
+		, file_detail_extdesc
+		, (enum file_sort)cfg.dir[dirnum]->sort
+		, &file_count);
+	if(file_list == NULL || file_count < 1) {
+		smb_close(&smb);
+		free(file_list);
+		return 0;
 	}
-	if((ixbbuf=(uchar *)malloc(l))==NULL) {
-		close(file);
-		errormsg(WHERE,ERR_ALLOC,str,l);
-		return(0); 
-	}
-	if(lread(file,ixbbuf,l)!=l) {
-		close(file);
-		errormsg(WHERE,ERR_READ,str,l);
-		free((char *)ixbbuf);
-		return(0); 
-	}
-	close(file);
-	sprintf(str,"%s%s.dat",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	if((file=nopen(str,O_RDONLY))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		free((char *)ixbbuf);
-		return(0); 
-	}
-	datbuflen=(long)filelength(file);
-	if((datbuf=(char *)malloc(datbuflen))==NULL) {
-		close(file);
-		errormsg(WHERE,ERR_ALLOC,str,datbuflen);
-		free((char *)ixbbuf);
-		return(0); 
-	}
-	if(lread(file,datbuf,datbuflen)!=datbuflen) {
-		close(file);
-		errormsg(WHERE,ERR_READ,str,datbuflen);
-		free((char *)datbuf);
-		free((char *)ixbbuf);
-		return(0); 
-	}
-	close(file);
+
 	if(!tofile) {
 		action=NODE_LFIL;
 		getnodedat(cfg.node_num,&thisnode,0);
@@ -124,34 +80,35 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 		} 
 	}
 
-	while(online && found<MAX_FILES) {
+	m = 0; // current file index
+	file_t* f;
+	while(online) {
 		if(found<0)
 			found=0;
-		if(m>=l || flagprompt) {		  /* End of list */
+		if(m>=file_count || flagprompt) {		  /* End of list */
 			if(useron.misc&BATCHFLAG && !tofile && found && found!=lastbat
 				&& !(mode&(FL_EXFIND|FL_VIEW))) {
 				flagprompt=0;
 				lncntr=0;
-				if((i=batchflagprompt(dirnum,bf,file_row,letter-'A',l/F_IXBSIZE))==2) {
+				if((i=batchflagprompt(&smb, bf, file_row, letter-'A', file_count))==2) {
 					m=anchor;
 					found-=letter-'A';
 					letter='A'; 
 				}
 				else if(i==3) {
-					if((long)anchor-((letter-'A')*F_IXBSIZE)<0) {
+					if((long)anchor-(letter-'A')<0) {
 						m=0;
 						found=0; 
 					}
 					else {
-						m=anchor-((letter-'A')*F_IXBSIZE);
+						m=anchor-(letter-'A');
 						found-=letter-'A'; 
 					}
 					letter='A'; 
 				}
 				else if((int)i==-1) {
-					free((char *)ixbbuf);
-					free((char *)datbuf);
-					return(-1); 
+					found = -1;
+					break;
 				}
 				else
 					break;
@@ -161,6 +118,8 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 			else
 				break; 
 		}
+		if(m < file_count)
+			f = &file_list[m];
 
 		if(letter>'Z')
 			letter='A';
@@ -168,60 +127,47 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 			anchor=m;
 
 		if(msgabort()) {		 /* used to be !tofile && msgabort() */
-			free((char *)ixbbuf);
-			free((char *)datbuf);
-			return(-1); 
+			found = -1;
+			break;
 		}
-		for(j=0;j<12 && m<l;j++)
-			if(j==8)
-				str[j]=ixbbuf[m]>' ' ? '.' : ' ';
-			else
-				str[j]=ixbbuf[m++];		/* Turns FILENAMEEXT into FILENAME.EXT */
-		str[j]=0;
+#if 0 /* unnecessary? */
 		if(!(mode&(FL_FINDDESC|FL_EXFIND)) && filespec[0]
 			&& !filematch(str,filespec)) {
 			m+=11;
 			continue; 
 		}
-		n=ixbbuf[m]|((long)ixbbuf[m+1]<<8)|((long)ixbbuf[m+2]<<16);
-		if(n>=datbuflen) {	/* out of bounds */
-			m+=11;
-			continue; 
-		}
+#endif
 		if(mode&(FL_FINDDESC|FL_EXFIND)) {
-			getrec((char *)&datbuf[n],F_DESC,LEN_FDESC,tmp);
-			strupr(tmp);
-			p=strstr(tmp,filespec);
+			p = (f->desc == NULL) ? NULL : strcasestr(f->desc, filespec);
 			if(!(mode&FL_EXFIND) && p==NULL) {
-				m+=11;
+				m++;
 				continue; 
 			}
-			getrec((char *)&datbuf[n],F_MISC,1,tmp);
-			j=tmp[0];  /* misc bits */
-			if(j) j-=' ';
-			if(mode&FL_EXFIND && j&FM_EXTDESC) { /* search extended description */
-				getextdesc(&cfg,dirnum,n,ext);
-				strupr(ext);
-				if(!strstr(ext,filespec) && !p) {	/* not in description or */
-					m+=11;						 /* extended description */
+			if(mode&FL_EXFIND && f->extdesc != NULL) { /* search extended description */
+				if(!strcasestr((char*)f->extdesc, filespec) && p == NULL) {	/* not in description or */
+					m++;											 /* extended description */
 					continue; 
 				}
 			}
-			else if(!p) {			 /* no extended description and not in desc */
-				m+=11;
-				continue; } 
+			else if(p == NULL) {			 /* no extended description and not in desc */
+				m++;
+				continue; 
+			} 
 		}
+/** necessary?
 		if(mode&FL_ULTIME) {
 			if(ns_time>(ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)|((long)ixbbuf[m+5]<<16)
 				|((long)ixbbuf[m+6]<<24))) {
 				m+=11;
-				continue; } 
+				continue; 
+			}
 		}
+**/
 		if(useron.misc&BATCHFLAG && letter=='A' && found && !tofile
 			&& !(mode&(FL_EXFIND|FL_VIEW))
 			&& (!mode || !(useron.misc&EXPERT)))
 			bputs(text[FileListBatchCommands]);
-		m+=11;
+		m++;
 		if(!found && !(mode&(FL_EXFIND|FL_VIEW))) {
 			for(i=0;i<usrlibs;i++)
 				if(usrlib[i]==cfg.dir[dirnum]->lib)
@@ -244,61 +190,54 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 							: strlen(cfg.dir[dirnum]->lname)+17;
 						if(i>8 || j>8) d++;
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("…Õ");            /* use to start with \r\n */
+						bputs("\xc9\xcd");            /* use to start with \r\n */
 						for(c=0;c<d;c++)
-							outchar('Õ');
-						bputs("ª\r\n∫ ");
+							outchar('\xcd');
+						bputs("\xbb\r\n\xba ");
 						sprintf(hdr,text[BoxHdrLib],i+1,cfg.lib[usrlib[i]]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("∫\r\n∫ ");
+						bputs("\xba\r\n\xba ");
 						sprintf(hdr,text[BoxHdrDir],j+1,cfg.dir[dirnum]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("∫\r\n∫ ");
-						sprintf(hdr,text[BoxHdrFiles],l/F_IXBSIZE);
+						bputs("\xba\r\n\xba ");
+						sprintf(hdr,text[BoxHdrFiles], file_count);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("∫\r\n»Õ");
+						bputs("\xba\r\n\xc8\xcd");
 						for(c=0;c<d;c++)
-							outchar('Õ');
-						bputs("º\r\n"); 
+							outchar('\xcd');
+						bputs("\xbc\r\n"); 
 					}
 				}
 			}
 			else {					/* short header */
 				if(tofile) {
-					sprintf(hdr,"(%u) %s ",i+1,cfg.lib[usrlib[i]]->sname);
-					write(tofile,crlf,2);
-					write(tofile,hdr,strlen(hdr)); 
+					c = fprintf(tofile,"\r\n(%u) %s ",i+1,cfg.lib[usrlib[i]]->sname) - 2;
 				}
 				else {
 					sprintf(hdr,text[ShortHdrLib],i+1,cfg.lib[usrlib[i]]->sname);
 					bputs("\r\1>\r\n");
 					bputs(hdr); 
+					c=bstrlen(hdr);
 				}
-				c=bstrlen(hdr);
 				if(tofile) {
-					sprintf(hdr,"(%u) %s",j+1,cfg.dir[dirnum]->lname);
-					write(tofile,hdr,strlen(hdr)); 
+					c += fprintf(tofile,"(%u) %s",j+1,cfg.dir[dirnum]->lname);
 				}
 				else {
 					sprintf(hdr,text[ShortHdrDir],j+1,cfg.dir[dirnum]->lname);
 					bputs(hdr); 
+					c+=bstrlen(hdr);
 				}
-				c+=bstrlen(hdr);
 				if(tofile) {
-					write(tofile,crlf,2);
-					sprintf(hdr,"%*s",c,nulstr);
-					memset(hdr,0xC4,c);
-					strcat(hdr,crlf);
-					write(tofile,hdr,strlen(hdr)); 
+					fprintf(tofile,"\r\n%.*s\r\n", c, "----------------------------------------------------------------");
 				}
 				else {
 					CRLF;
@@ -313,42 +252,22 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 		next=m;
 		disp=1;
 		if(mode&(FL_EXFIND|FL_VIEW)) {
-			f.dir=dirnum;
-			strcpy(f.name,str);
-			m-=11;
-			f.datoffset=n;
-			f.dateuled=ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)
-				|((long)ixbbuf[m+5]<<16)|((long)ixbbuf[m+6]<<24);
-			f.datedled=ixbbuf[m+7]|((long)ixbbuf[m+8]<<8)
-				|((long)ixbbuf[m+9]<<16)|((long)ixbbuf[m+10]<<24);
-			m+=11;
-			f.size=0;
-			getfiledat(&cfg,&f);
 			if(!found)
 				bputs("\r\1>");
-			if(mode&FL_EXFIND) {
-				if(!viewfile(&f,1)) {
-					free((char *)ixbbuf);
-					free((char *)datbuf);
-					return(-1); } 
+			if(!viewfile(f, INT_TO_BOOL(mode&FL_EXFIND))) {
+				found = -1;
+				break;
 			}
-			else {
-				if(!viewfile(&f,0)) {
-					free((char *)ixbbuf);
-					free((char *)datbuf);
-					return(-1); 
-				} 
-			} 
+			CRLF;
 		}
-
 		else if(tofile)
-			listfiletofile(str,&datbuf[n],dirnum,tofile);
+			listfiletofile(f, tofile);
 		else if(mode&FL_FINDDESC)
-			disp=listfile(str,&datbuf[n],dirnum,filespec,letter,n);
+			disp=listfile(f, dirnum, filespec, letter);
 		else
-			disp=listfile(str,&datbuf[n],dirnum,nulstr,letter,n);
+			disp=listfile(f, dirnum, nulstr, letter);
 		if(!disp && letter>'A') {
-			next=m-F_IXBSIZE;
+			next=m-1;
 			letter--; 
 		}
 		else {
@@ -356,24 +275,17 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 			found++; 
 		}
 		if(sys_status&SS_ABORT) {
-			free((char *)ixbbuf);
-			free((char *)datbuf);
-			return(-1); 
+			found = -1;
+			break;
 		}
 		if(mode&(FL_EXFIND|FL_VIEW))
 			continue;
 		if(useron.misc&BATCHFLAG && !tofile) {
 			if(disp) {
-				strcpy(bf[letter-'A'].name,str);
-				m-=11;
-				bf[letter-'A'].datoffset=n;
-				bf[letter-'A'].dateuled=ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)
-					|((long)ixbbuf[m+5]<<16)|((long)ixbbuf[m+6]<<24);
-				bf[letter-'A'].datedled=ixbbuf[m+7]|((long)ixbbuf[m+8]<<8)
-					|((long)ixbbuf[m+9]<<16)|((long)ixbbuf[m+10]<<24);
+				bf[letter-'A'] = f;
 				file_row[letter-'A'] = currow;
 			}
-			m+=11;
+			m++;
 			if(flagprompt || letter=='Z' || !disp ||
 				(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?')
 				&& !(mode&FL_FINDDESC))
@@ -382,31 +294,31 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 				flagprompt=0;
 				lncntr=0;
 				lastbat=found;
-				if((int)(i=batchflagprompt(dirnum,bf,file_row,letter-'A'+1,l/F_IXBSIZE))<1) {
-					free((char *)ixbbuf);
-					free((char *)datbuf);
+				if((int)(i=batchflagprompt(&smb, bf, file_row, letter-'A'+1, file_count))<1) {
 					if((int)i==-1)
-						return(-1);
-					else
-						return(found); 
+						found = -1;
+					break;
 				}
 				if(i==2) {
 					next=anchor;
 					found-=(letter-'A')+1; 
 				}
 				else if(i==3) {
-					if((long)anchor-((letter-'A'+1)*F_IXBSIZE)<0) {
+					if((long)anchor-((letter-'A'+1))<0) {
 						next=0;
 						found=0; 
 					}
 					else {
-						next=anchor-((letter-'A'+1)*F_IXBSIZE);
-						found-=letter-'A'+1; } 
+						next=anchor-((letter-'A'+1));
+						found-=letter-'A'+1; 
+					} 
 				}
 				getnodedat(cfg.node_num,&thisnode,0);
 				nodesync();
-				letter='A';	}
-			else letter++; 
+				letter='A';	
+			}
+			else
+				letter++; 
 		}
 		if(useron.misc&BATCHFLAG && !tofile
 			&& lncntr>=rows-2) {
@@ -419,250 +331,133 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 			break; 
 	}
 
-	free((char *)ixbbuf);
-	free((char *)datbuf);
-	return(found);
+	freefiles(file_list, file_count);
+	smb_close(&smb);
+	return found;
 }
 
 /****************************************************************************/
 /* Prints one file's information on a single line                           */
 /* Return 1 if displayed, 0 otherwise										*/
 /****************************************************************************/
-bool sbbs_t::listfile(const char *fname, const char *buf, uint dirnum
-	, const char *search, const char letter, ulong datoffset)
+bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char letter)
 {
-	char	str[256],ext[513]="",*ptr,*cr,*lf,exist=1;
+	char	*ptr,*cr,*lf;
+	bool	exist = true;
+	char*	ext=NULL;
 	char	path[MAX_PATH+1];
-	char 	tmp[512];
-    uchar	alt;
     int		i,j;
-    ulong	cdt;
-	off_t	size;
+    off_t	cdt;
 	int		size_attr=clr_filecdt;
 
-	if(buf[F_MISC]!=ETX && (buf[F_MISC]-' ')&FM_EXTDESC && useron.misc&EXTDESC) {
-		getextdesc(&cfg,dirnum,datoffset,ext);
-		if(useron.misc&BATCHFLAG && lncntr+extdesclines(ext)>=rows-2 && letter!='A')
-			return(false); 
+	if(f->extdesc != NULL && *f->extdesc && (useron.misc&EXTDESC)) {
+		ext = f->extdesc;
+		if((useron.misc&BATCHFLAG) && lncntr+extdesclines(ext)>=rows-2 && letter!='A')
+			return false;
 	}
 
 	attr(cfg.color[clr_filename]);
-	bputs(fname);
+	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
+	bprintf("%-*s", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE));
+	getfilepath(&cfg, f, path);
 
-	getrec(buf,F_ALTPATH,2,str);
-	alt=(uchar)ahtoul(str);
-	sprintf(path,"%s%s",alt>0 && alt<=cfg.altpaths ? cfg.altpath[alt-1]:cfg.dir[dirnum]->path
-		,unpadfname(fname,tmp));
-
-	if(buf[F_MISC]!=ETX && (buf[F_MISC]-' ')&FM_EXTDESC) {
-		if(!(useron.misc&EXTDESC))
-			outchar('+');
-		else
-			outchar(' '); 
-	}
+	if(f->extdesc != NULL && *f->extdesc && !(useron.misc&EXTDESC))
+		outchar('+');
 	else
-		outchar(' ');
+		outchar(' '); 
 	if(useron.misc&BATCHFLAG) {
 		attr(cfg.color[clr_filedesc]);
 		bprintf("%c",letter); 
 	}
-	getrec(buf,F_CDT,LEN_FCDT,str);
-	cdt=atol(str);
-	if(cfg.dir[dirnum]->misc&DIR_FCHK) {
-		if(!fexistcase(path)) {
-			exist=0;
-			size_attr = clr_err; 
-		}
-		else if((cfg.dir[dirnum]->misc&DIR_FREE) && (size=flength(path)) >= 0)
-			cdt = size;
+	cdt = f->cost;
+	if(f->size == -1) {
+		exist = false;
+		size_attr = clr_err; 
 	}
+	else if((cfg.dir[dirnum]->misc & (DIR_FREE | DIR_FCHK)) == (DIR_FREE | DIR_FCHK))
+		cdt = getfilesize(&cfg, f);
+	char bytes[32];
+	unsigned units = 1;
+	do {
+		byte_estimate_to_str(cdt, bytes, sizeof(bytes), units, /* precision: */1);
+		units *= 1024;
+	} while(strlen(bytes) > 6 && units < 1024 * 1024 * 1024);
 	attr(cfg.color[size_attr]);
 	if(useron.misc&BATCHFLAG) {
 		if(!cdt && !(cfg.dir[dirnum]->misc&DIR_FREE)) {
 			attr(curatr^(HIGH|BLINK));
 			bputs("  FREE"); 
 		}
-		else if(cdt>=(1024*1024*1024))
-			bprintf("%5.1fG",cdt/(1024.0*1024.0*1024.0));
-		else if(cdt>=(1024*1024))
-			bprintf("%5.1fM",cdt/(1024.0*1024.0));
-		else if(cdt>=1024)
-			bprintf("%5.1fK",cdt/1024.0); 
-		else
-			bprintf("%5luB", cdt);
+		else 
+			bprintf("%6s", bytes);
 	}
 	else {
 		if(!cdt && !(cfg.dir[dirnum]->misc&DIR_FREE)) {  /* FREE file */
 			attr(curatr^(HIGH|BLINK));
 			bputs("   FREE"); 
 		}
-		else if(cdt>=(1024*1024*1024))
-			bprintf("%6.1fG",cdt/(1024.0*1024.0*1024.0));
-		else if(cdt>=(1024*1024))
-			bprintf("%6.1fM",cdt/(1024.0*1024.0));
-		else if(cdt>=1024)
-			bprintf("%6.1fK",cdt/1024.0); 
-		else
-			bprintf("%6luB", cdt);
+		else 
+			bprintf("%7s", bytes);
 	}
 	if(exist)
 		outchar(' ');
 	else
 		outchar('-');
-	getrec(buf,F_DESC,LEN_FDESC,str);
 	attr(cfg.color[clr_filedesc]);
 
-#ifdef _WIN32
- 
-	if(exist && !(cfg.file_misc&FM_NO_LFN)) {
-		fexistcase(path);	/* Get real (long?) filename */
-		ptr=getfname(path);
-		if(stricmp(ptr,tmp) && stricmp(ptr,str))
-			bprintf("%.*s\r\n%21s",LEN_FDESC,ptr,"");
-	}
-
-#endif
-
-	if(!ext[0]) {
-		if(search[0]) { /* high-light string in string */
-			strcpy(tmp,str);
-			strupr(tmp);
-			ptr=strstr(tmp,search);
-			i=strlen(search);
-			j=ptr-tmp;
-			bprintf("%.*s",j,str);
-			attr(cfg.color[clr_filedesc]^HIGH);
-			bprintf("%.*s",i,str+j);
-			attr(cfg.color[clr_filedesc]);
-			bprintf("%.*s",(int)(strlen(str)-(j+i)),str+j+i); 
+	if(ext == NULL) {
+		char* fdesc = f->desc;
+		SKIP_WHITESPACE(fdesc);
+		if(fdesc == NULL || *fdesc == '\0')
+			bputs(P_TRUNCATE, f->name);
+		else if(search[0]) { /* high-light string in string */
+			ptr = strcasestr(fdesc, search);
+			if(ptr != NULL) {
+				i=strlen(search);
+				j=ptr - fdesc;
+				bprintf("%.*s",j,fdesc);
+				attr(cfg.color[clr_filedesc]^HIGH);
+				bprintf("%.*s",i,fdesc+j);
+				attr(cfg.color[clr_filedesc]);
+				bprintf("%.*s",(int)strlen(fdesc)-(j+i),fdesc+j+i);
+			}
 		}
-		else
-			bputs(str);
+		else {
+			bputs(P_TRUNCATE, fdesc);
+		}
 		CRLF; 
-	}
-	ptr=ext;
-	while(*ptr && ptr<ext+512 && !msgabort()) {
-		cr=strchr(ptr,CR);
-		lf=strchr(ptr,LF);
-		if(lf && (lf<cr || !cr)) cr=lf;
-		if(cr>ptr+LEN_FDESC)
-			cr=ptr+LEN_FDESC;
-		else if(cr)
-			*cr=0;
-		sprintf(str,"%.*s\r\n",LEN_FDESC,ptr);
-		putmsg(str,P_NOATCODES|P_SAVEATR);
-		if(!cr) {
-			if(strlen(ptr)>LEN_FDESC)
+	} else {
+		char* ext_desc = strdup((char*)ext);
+		truncsp(ext_desc);
+		ptr=(char*)ext_desc;
+		SKIP_CRLF(ptr);
+		while(ptr && *ptr && !msgabort()) {
+			cr=strchr(ptr,CR);
+			lf=strchr(ptr,LF);
+			if(lf && (lf<cr || !cr)) cr=lf;
+			if(cr>ptr+LEN_FDESC)
 				cr=ptr+LEN_FDESC;
-			else
-				break; 
+			else if(cr)
+				*cr=0;
+			char str[256];
+			sprintf(str,"%.*s\r\n",LEN_FDESC,ptr);
+			putmsg(str,P_NOATCODES|P_SAVEATR);
+			if(!cr) {
+				if(strlen(ptr)>LEN_FDESC)
+					cr=ptr+LEN_FDESC;
+				else
+					break; 
+			}
+			if(!(*(cr+1)) || !(*(cr+2)))
+				break;
+			bprintf("%21s",nulstr);
+			ptr=cr;
+			if(!(*ptr)) ptr++;
+			while(*ptr==LF || *ptr==CR) ptr++; 
 		}
-		if(!(*(cr+1)) || !(*(cr+2)))
-			break;
-		bprintf("%21s",nulstr);
-		ptr=cr;
-		if(!(*ptr)) ptr++;
-		while(*ptr==LF || *ptr==CR) ptr++; 
+		free(ext_desc);
 	}
-	return(true);
-}
-
-/****************************************************************************/
-/* Remove credits from uploader of file 'f'                                 */
-/****************************************************************************/
-bool sbbs_t::removefcdt(file_t* f)
-{
-	char	str[128];
-	char 	tmp[512];
-	int		u;
-	long	cdt;
-
-	if((u=matchuser(&cfg,f->uler,TRUE /*sysop_alias*/))==0) {
-	   bputs(text[UnknownUser]);
-	   return(false); 
-	}
-	cdt=0L;
-	if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps) {
-		if(cfg.dir[f->dir]->misc&DIR_CDTUL)
-			cdt=((ulong)(f->cdt*(cfg.dir[f->dir]->up_pct/100.0))/cur_cps)/60;
-		if(cfg.dir[f->dir]->misc&DIR_CDTDL
-			&& f->timesdled)  /* all downloads */
-			cdt+=((ulong)((long)f->timesdled
-				*f->cdt*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
-		adjustuserrec(&cfg,u,U_MIN,10,-cdt);
-		sprintf(str,"%lu minute",cdt);
-		sprintf(tmp,text[FileRemovedUserMsg]
-			,f->name,cdt ? str : text[No]);
-		putsmsg(&cfg,u,tmp); 
-	}
-	else {
-		if(cfg.dir[f->dir]->misc&DIR_CDTUL)
-			cdt=(ulong)(f->cdt*(cfg.dir[f->dir]->up_pct/100.0));
-		if(cfg.dir[f->dir]->misc&DIR_CDTDL
-			&& f->timesdled)  /* all downloads */
-			cdt+=(ulong)((long)f->timesdled
-				*f->cdt*(cfg.dir[f->dir]->dn_pct/100.0));
-		adjustuserrec(&cfg,u,U_CDT,10,-cdt);
-		sprintf(tmp,text[FileRemovedUserMsg]
-			,f->name,cdt ? ultoac(cdt,str) : text[No]);
-		putsmsg(&cfg,u,tmp); 
-	}
-
-	adjustuserrec(&cfg,u,U_ULB,10,-f->size);
-	adjustuserrec(&cfg,u,U_ULS,5,-1);
-	return(true);
-}
-
-bool sbbs_t::removefile(file_t* f)
-{
-	char str[256];
-
-	if(removefiledat(&cfg,f)) {
-		SAFEPRINTF3(str,"removed %s from %s %s"
-			,f->name
-			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-		logline("U-",str);
-		return(true);
-	}
-	SAFEPRINTF2(str,"%s %s",cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-	errormsg(WHERE, ERR_REMOVE, f->name, 0, str);
-	return(false);
-}
-
-/****************************************************************************/
-/* Move file 'f' from f.dir to newdir                                       */
-/****************************************************************************/
-bool sbbs_t::movefile(file_t* f, int newdir)
-{
-	char str[MAX_PATH+1],path[MAX_PATH+1],fname[128],ext[1024];
-	int olddir=f->dir;
-
-	if(findfile(&cfg,newdir,f->name)) {
-		bprintf(text[FileAlreadyThere],f->name);
-		return(false); 
-	}
-	getextdesc(&cfg,olddir,f->datoffset,ext);
-	if(cfg.dir[olddir]->misc&DIR_MOVENEW)
-		f->dateuled=time32(NULL);
-	unpadfname(f->name,fname);
-	removefiledat(&cfg,f);
-	f->dir=newdir;
-	addfiledat(&cfg,f);
-	bprintf(text[MovedFile],f->name
-		,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-	sprintf(str,"moved %s to %s %s",f->name
-		,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-	logline(nulstr,str);
-	if(!f->altpath) {	/* move actual file */
-		sprintf(str,"%s%s",cfg.dir[olddir]->path,fname);
-		if(fexistcase(str)) {
-			sprintf(path,"%s%s",cfg.dir[f->dir]->path,getfname(str));
-			mv(str,path,0); 
-		} 
-	}
-	if(f->misc&FM_EXTDESC)
-		putextdesc(&cfg,f->dir,f->datoffset,ext);
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -670,29 +465,28 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 /* Returns -1 if 'Q' or Ctrl-C, 0 if skip, 1 if [Enter], 2 otherwise        */
 /* or 3, backwards. 														*/
 /****************************************************************************/
-int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
+int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 							,long totalfiles)
 {
-	char	ch,str[256],fname[128],*p,remcdt=0,remfile=0;
+	char	ch,str[256],*p,remcdt=0,remfile=0;
 	int		c, d;
-	char 	tmp[512];
+	char 	path[MAX_PATH + 1];
 	uint	i,j,ml=0,md=0,udir,ulib;
-	file_t	f;
 
 	for(ulib=0;ulib<usrlibs;ulib++)
-		if(usrlib[ulib]==cfg.dir[dirnum]->lib)
+		if(usrlib[ulib]==cfg.dir[smb->dirnum]->lib)
 			break;
 	for(udir=0;udir<usrdirs[ulib];udir++)
-		if(usrdir[ulib][udir]==dirnum)
+		if(usrdir[ulib][udir]==smb->dirnum)
 			break;
 
 	CRLF;
 	while(online) {
 		bprintf(text[BatchFlagPrompt]
 			,ulib+1
-			,cfg.lib[cfg.dir[dirnum]->lib]->sname
+			,cfg.lib[cfg.dir[smb->dirnum]->lib]->sname
 			,udir+1
-			,cfg.dir[dirnum]->sname
+			,cfg.dir[smb->dirnum]->sname
 			,total, totalfiles);
 		ch=getkey(K_UPPER);
 		clearline();
@@ -714,12 +508,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 				return(2); 
 			}
 			if(total==1) {
-				f.dir=dirnum;
-				strcpy(f.name,bf[0].name);
-				f.datoffset=bf[0].datoffset;
-				f.size=0;
-				getfiledat(&cfg,&f);
-				addtobatdl(&f);
+				addtobatdl(bf[0]);
 				if(ch=='D')
 					start_batch_download();
 				CRLF;
@@ -730,49 +519,40 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 			for(i=0; i < total; i++)
 				add_hotspot((char)('A' + i), /* hungry: */true, -1, -1, row[i]);
 			bputs(text[BatchDlFlags]);
-			d=getstr(str,BF_MAX,K_UPPER|K_LOWPRIO|K_NOCRLF);
+			d=getstr(str, BF_MAX, K_NOCRLF);
 			clear_hotspots();
 			mouse_hotspots = saved_hotspots;
 			lncntr=0;
 			if(sys_status&SS_ABORT)
 				return(-1);
-			if(d) { 	/* d is string length */
+			if(d > 0) { 	/* d is string length */
+				strupr(str);
 				CRLF;
 				lncntr=0;
 				for(c=0;c<d;c++) {
-					if(batdn_total>=cfg.max_batdn) {
+					if(batdn_total() >= cfg.max_batdn) {
 						bprintf(text[BatchDlQueueIsFull],str+c);
 						break; 
 					}
 					if(str[c]=='*' || strchr(str+c,'.')) {     /* filename or spec given */
-						f.dir=dirnum;
+//						f.dir=dirnum;
 						p=strchr(str+c,' ');
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
-							if(batdn_total>=cfg.max_batdn) {
+							if(batdn_total() >= cfg.max_batdn) {
 								bprintf(text[BatchDlQueueIsFull],str+c);
 								break; 
 							}
-							padfname(str+c,tmp);
-							if(filematch(bf[i].name,tmp)) {
-								strcpy(f.name,bf[i].name);
-								f.datoffset=bf[i].datoffset;
-								f.size=0;
-								getfiledat(&cfg,&f);
-								addtobatdl(&f); 
+							if(filematch(bf[i]->name, str+c)) {
+								addtobatdl(bf[i]); 
 							} 
 						} 
 					}
 					if(strchr(str+c,'.'))
 						c+=strlen(str+c);
 					else if(str[c]<'A'+(char)total && str[c]>='A') {
-						f.dir=dirnum;
-						strcpy(f.name,bf[str[c]-'A'].name);
-						f.datoffset=bf[str[c]-'A'].datoffset;
-						f.size=0;
-						getfiledat(&cfg,&f);
-						addtobatdl(&f);
+						addtobatdl(bf[str[c]-'A']);
 					} 
 				}
 				if(ch=='D')
@@ -786,14 +566,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 
 		if(ch=='E' || ch=='V') {    /* Extended Info */
 			if(total==1) {
-				f.dir=dirnum;
-				strcpy(f.name,bf[0].name);
-				f.datoffset=bf[0].datoffset;
-				f.dateuled=bf[0].dateuled;
-				f.datedled=bf[0].datedled;
-				f.size=0;
-				getfiledat(&cfg,&f);
-				if(!viewfile(&f,ch=='E'))
+				if(!viewfile(bf[0], ch=='E'))
 					return(-1);
 				return(2); 
 			}
@@ -802,31 +575,25 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 			for(i=0; i < total; i++)
 				add_hotspot((char)('A' + i), /* hungry: */true, -1, -1, row[i]);
 			bputs(text[BatchDlFlags]);
-			d=getstr(str,BF_MAX,K_UPPER|K_LOWPRIO|K_NOCRLF);
+			d=getstr(str, BF_MAX, K_NOCRLF);
 			clear_hotspots();
 			mouse_hotspots = saved_hotspots;
 			lncntr=0;
 			if(sys_status&SS_ABORT)
 				return(-1);
-			if(d) { 	/* d is string length */
+			if(d > 0) { 	/* d is string length */
+				strupr(str);
 				CRLF;
 				lncntr=0;
 				for(c=0;c<d;c++) {
 					if(str[c]=='*' || strchr(str+c,'.')) {     /* filename or spec given */
-						f.dir=dirnum;
+//						f.dir=dirnum;
 						p=strchr(str+c,' ');
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
-							padfname(str+c,tmp);
-							if(filematch(bf[i].name,tmp)) {
-								strcpy(f.name,bf[i].name);
-								f.datoffset=bf[i].datoffset;
-								f.dateuled=bf[i].dateuled;
-								f.datedled=bf[i].datedled;
-								f.size=0;
-								getfiledat(&cfg,&f);
-								if(!viewfile(&f,ch=='E'))
+							if(filematch(bf[i]->name, str+c)) {
+								if(!viewfile(bf[i], ch=='E'))
 									return(-1); 
 							} 
 						} 
@@ -834,16 +601,11 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 					if(strchr(str+c,'.'))
 						c+=strlen(str+c);
 					else if(str[c]<'A'+(char)total && str[c]>='A') {
-						f.dir=dirnum;
-						strcpy(f.name,bf[str[c]-'A'].name);
-						f.datoffset=bf[str[c]-'A'].datoffset;
-						f.dateuled=bf[str[c]-'A'].dateuled;
-						f.datedled=bf[str[c]-'A'].datedled;
-						f.size=0;
-						getfiledat(&cfg,&f);
-						if(!viewfile(&f,ch=='E'))
-							return(-1); } 
+						if(!viewfile(bf[str[c]-'A'], ch=='E'))
+							return(-1); 
+					} 
 				}
+				cond_newline();
 				return(2); 
 			}
 			clearline();
@@ -852,7 +614,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 
 		if((ch=='R' || ch=='M')     /* Delete or Move */
 			&& !(useron.rest&FLAG('R'))
-			&& (dir_op(dirnum) || useron.exempt&FLAG('R'))) {
+			&& (dir_op(smb->dirnum) || useron.exempt&FLAG('R'))) {
 			if(total==1) {
 				strcpy(str,"A");
 				d=1; 
@@ -863,33 +625,37 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 				for(i=0; i < total; i++)
 					add_hotspot((char)('A' + i), /* hungry: */true, -1, -1, row[i]);
 				bputs(text[BatchDlFlags]);
-				d=getstr(str,BF_MAX,K_UPPER|K_LOWPRIO|K_NOCRLF);
+				d=getstr(str, BF_MAX, K_NOCRLF);
 				clear_hotspots();
 				mouse_hotspots = saved_hotspots;
 			}
 			lncntr=0;
 			if(sys_status&SS_ABORT)
 				return(-1);
-			if(d) { 	/* d is string length */
-				CRLF;
+			if(d > 0) { 	/* d is string length */
+				strupr(str);
+				if(total > 1)
+					newline();
 				if(ch=='R') {
 					if(noyes(text[RemoveFileQ]))
 						return(2);
-					remcdt=remfile=1;
-					if(dir_op(dirnum)) {
+					remcdt = TRUE;
+					remfile = TRUE;
+					if(dir_op(smb->dirnum)) {
 						remcdt=!noyes(text[RemoveCreditsQ]);
-						remfile=!noyes(text[DeleteFileQ]); } 
+						remfile=!noyes(text[DeleteFileQ]);
+					}
 				}
 				else if(ch=='M') {
 					CRLF;
 					for(i=0;i<usrlibs;i++)
 						bprintf(text[MoveToLibLstFmt],i+1,cfg.lib[usrlib[i]]->lname);
 					SYNC;
-					bprintf(text[MoveToLibPrompt],cfg.dir[dirnum]->lib+1);
+					bprintf(text[MoveToLibPrompt],cfg.dir[smb->dirnum]->lib+1);
 					if((int)(ml=getnum(usrlibs))==-1)
 						return(2);
 					if(!ml)
-						ml=cfg.dir[dirnum]->lib;
+						ml=cfg.dir[smb->dirnum]->lib;
 					else
 						ml--;
 					CRLF;
@@ -908,66 +674,44 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 				lncntr=0;
 				for(c=0;c<d;c++) {
 					if(str[c]=='*' || strchr(str+c,'.')) {     /* filename or spec given */
-						f.dir=dirnum;
+//						f.dir=dirnum;
 						p=strchr(str+c,' ');
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
-							padfname(str+c,tmp);
-							if(filematch(bf[i].name,tmp)) {
-								strcpy(f.name,bf[i].name);
-								unpadfname(f.name,fname);
-								f.datoffset=bf[i].datoffset;
-								f.dateuled=bf[i].dateuled;
-								f.datedled=bf[i].datedled;
-								f.size=0;
-								getfiledat(&cfg,&f);
-								if(f.opencount) {
-									bprintf(text[FileIsOpen]
-										,f.opencount,f.opencount>1 ? "s":nulstr);
-									continue; 
-								}
+							if(filematch(bf[i]->name, str+c)) {
 								if(ch=='R') {
-									removefile(&f);
-									if(remfile) {
-										sprintf(tmp,"%s%s",cfg.dir[f.dir]->path,fname);
-										remove(tmp); 
+									if(removefile(smb, bf[i])) {
+										if(remfile) {
+											if(remove(getfilepath(&cfg, bf[i], path)) != 0)
+												errormsg(WHERE, ERR_REMOVE, path);
+										}
+										if(remcdt)
+											removefcdt(bf[i]);
 									}
-									if(remcdt)
-										removefcdt(&f); 
 								}
 								else if(ch=='M')
-									movefile(&f,usrdir[ml][md]); 
+									movefile(smb, bf[i], usrdir[ml][md]); 
 							} 
 						} 
 					}
 					if(strchr(str+c,'.'))
 						c+=strlen(str+c);
 					else if(str[c]<'A'+(char)total && str[c]>='A') {
-						f.dir=dirnum;
-						strcpy(f.name,bf[str[c]-'A'].name);
-						unpadfname(f.name,fname);
-						f.datoffset=bf[str[c]-'A'].datoffset;
-						f.dateuled=bf[str[c]-'A'].dateuled;
-						f.datedled=bf[str[c]-'A'].datedled;
-						f.size=0;
-						getfiledat(&cfg,&f);
-						if(f.opencount) {
-							bprintf(text[FileIsOpen]
-								,f.opencount,f.opencount>1 ? "s":nulstr);
-							continue; 
-						}
+						file_t* f = bf[str[c]-'A'];
 						if(ch=='R') {
-							removefile(&f);
-							if(remfile) {
-								sprintf(tmp,"%s%s",cfg.dir[f.dir]->path,fname);
-								remove(tmp); 
+							if(removefile(smb, f)) {
+								if(remfile) {
+									if(remove(getfilepath(&cfg, f, path)) != 0 && fexist(path))
+										errormsg(WHERE, ERR_REMOVE, path);
+								}
+								if(remcdt)
+									removefcdt(f);
 							}
-							if(remcdt)
-								removefcdt(&f); 
 						}
 						else if(ch=='M')
-							movefile(&f,usrdir[ml][md]); } 
+							movefile(smb, f, usrdir[ml][md]); 
+					} 
 				}
 				return(2); 
 			}
@@ -986,79 +730,40 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 /* action depending on 'mode.'                                              */
 /* Returns number of files matching filespec that were found                */
 /****************************************************************************/
-int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
+int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 {
-	char	str[258],path[258],dirpath[256],done=0,ch,fname[13],ext[513];
+	char	str[MAX_PATH + 1],path[MAX_PATH + 1],dirpath[MAX_PATH + 1],done=0,ch;
 	char 	tmp[512];
-	uchar	*ixbbuf,*usrxfrbuf=NULL,*p;
-	int		file;
 	int		error;
 	int		found=0;
     uint	i,j;
-	long	usrxfrlen=0;
-    long	m,l;
-	long	usrcdt;
+    size_t	m;
     time_t	start,end,t;
-    file_t	f;
+    file_t*	f;
 	struct	tm tm;
+	smb_t	smb;
 
-	sprintf(str,"%sxfer.ixt",cfg.data_dir);
-	if(mode==FI_USERXFER) {
-		if(flength(str)<1L)
-			return(0);
-		if((file=nopen(str,O_RDONLY))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-			return(0); 
-		}
-		usrxfrlen=(long)filelength(file);
-		if((usrxfrbuf=(uchar *)malloc(usrxfrlen))==NULL) {
-			close(file);
-			errormsg(WHERE,ERR_ALLOC,str,usrxfrlen);
-			return(0); 
-		}
-		if(read(file,usrxfrbuf,usrxfrlen)!=usrxfrlen) {
-			close(file);
-			free(usrxfrbuf);
-			errormsg(WHERE,ERR_READ,str,usrxfrlen);
-			return(0); 
-		}
-		close(file); 
+	if(!smb_init_dir(&cfg, &smb, dirnum))
+		return 0;
+	if(smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS)
+		return 0;
+
+	size_t file_count = 0;
+	file_t* file_list = loadfiles(&smb
+		, filespec
+		, /* time_t */0
+		, file_detail_extdesc
+		, (enum file_sort)cfg.dir[dirnum]->sort
+		, &file_count);
+	if(file_list == NULL || file_count < 1) {
+		smb_close(&smb);
+		free(file_list);
+		return 0;
 	}
-	sprintf(str,"%s%s.ixb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	if((file=nopen(str,O_RDONLY))==-1)
-		return(0);
-	l=(long)filelength(file);
-	if(!l) {
-		FREE_AND_NULL(usrxfrbuf);
-		close(file);
-		return(0); 
-	}
-	if((ixbbuf=(uchar *)malloc(l))==NULL) {
-		close(file);
-		FREE_AND_NULL(usrxfrbuf);
-		errormsg(WHERE,ERR_ALLOC,str,l);
-		return(0); 
-	}
-	if(lread(file,ixbbuf,l)!=l) {
-		close(file);
-		errormsg(WHERE,ERR_READ,str,l);
-		free((char *)ixbbuf);
-		if(usrxfrbuf)
-			free(usrxfrbuf);
-		return(0); 
-	}
-	close(file);
-	sprintf(str,"%s%s.dat",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	if((file=nopen(str,O_RDONLY))==-1) {
-		errormsg(WHERE,ERR_READ,str,O_RDONLY);
-		free((char *)ixbbuf);
-		if(usrxfrbuf)
-			free(usrxfrbuf);
-		return(0); 
-	}
-	close(file);
+
 	m=0;
-	while(online && !done && m<l) {
+	while(online && !done && m < file_count) {
+		f = &file_list[m];
 		if(mode==FI_REMOVE && dir_op(dirnum))
 			action=NODE_SYSP;
 		else action=NODE_LFIL;
@@ -1066,167 +771,140 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			found=-1;
 			break; 
 		}
-		for(i=0;i<12 && m<l;i++)
-			if(i==8)
-				str[i]=ixbbuf[m]>' ' ? '.' : ' ';
-			else
-				str[i]=ixbbuf[m++];     /* Turns FILENAMEEXT into FILENAME.EXT */
-		str[i]=0;
-		unpadfname(str,fname);
-		if(filespec[0] && !filematch(str,filespec)) {
-			m+=11;
-			continue; 
-		}
-		f.datoffset=ixbbuf[m]|((long)ixbbuf[m+1]<<8)|((long)ixbbuf[m+2]<<16);
-		f.dateuled=ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)
-			|((long)ixbbuf[m+5]<<16)|((long)ixbbuf[m+6]<<24);
-		f.datedled=ixbbuf[m+7]|((long)ixbbuf[m+8]<<8)
-			|((long)ixbbuf[m+9]<<16)|((long)ixbbuf[m+10]<<24);
-		m+=11;
-		if(mode==FI_OLD && f.datedled>ns_time)
+		m++;
+		if(mode==FI_OLD && f->hdr.last_downloaded > ns_time)
 			continue;
-		if((mode==FI_OLDUL || mode==FI_OLD) && f.dateuled>ns_time)
+		if((mode==FI_OLDUL || mode==FI_OLD) && f->hdr.when_written.time > ns_time)
 			continue;
-		f.dir=curdirnum=dirnum;
-		strcpy(f.name,str);
-		f.size=0;
-		getfiledat(&cfg,&f);
-		if(mode==FI_OFFLINE && f.size>=0)
+		curdirnum = dirnum;
+		if(mode==FI_OFFLINE && getfilesize(&cfg, f) >= 0)
 			continue;
-		if(f.altpath>0 && f.altpath<=cfg.altpaths)
-			strcpy(dirpath,cfg.altpath[f.altpath-1]);
-		else
-			strcpy(dirpath,cfg.dir[f.dir]->path);
-		if(mode==FI_CLOSE && !f.opencount)
-			continue;
-		if(mode==FI_USERXFER) {
-			for(p=usrxfrbuf;p<usrxfrbuf+usrxfrlen;p+=24) {
-				sprintf(str,"%17.17s",p);   /* %4.4u %12.12s */
-				if(!strcmp(str+5,f.name) && useron.number==atoi(str))
-					break; 
-			}
-			if(p>=usrxfrbuf+usrxfrlen) /* file wasn't found */
-				continue; 
-		}
-		if((mode==FI_REMOVE) && (!dir_op(dirnum) && stricmp(f.uler
+		SAFECOPY(dirpath, cfg.dir[f->dir]->path);
+		if((mode==FI_REMOVE) && (!dir_op(dirnum) && stricmp(f->from
 			,useron.alias) && !(useron.exempt&FLAG('R'))))
 			continue;
 		found++;
 		if(mode==FI_INFO) {
-			if(!viewfile(&f,1)) {
-				done=1;
-				found=-1; } 
+			switch(viewfile(f, true)) {
+				case 0:
+					done=1;
+					found=-1;
+					break;
+				case -2:
+					m--;
+					if(m)
+						m--;
+					break;
+			} 
 		}
-		else
-			fileinfo(&f);
-		if(mode==FI_CLOSE) {
-			if(!noyes(text[CloseFileRecordQ])) {
-				f.opencount=0;
-				putfiledat(&cfg,&f); } 
+		else {
+			showfileinfo(f, /* show_extdesc: */mode != FI_DOWNLOAD);
+//			newline();
 		}
-		else if(mode==FI_REMOVE || mode==FI_OLD || mode==FI_OLDUL
+		if(mode==FI_REMOVE || mode==FI_OLD || mode==FI_OLDUL
 			|| mode==FI_OFFLINE) {
 			SYNC;
-			CRLF;
-			if(f.opencount) {
-				mnemonics(text[QuitOrNext]);
-				strcpy(str,"QN\r"); 
-			}
-			else if(dir_op(dirnum)) {
+//			CRLF;
+			SAFECOPY(str, "VEQRNP\b-\r");
+			if(dir_op(dirnum)) {
 				mnemonics(text[SysopRemoveFilePrompt]);
-				strcpy(str,"VEFMCQRN\r"); 
+				SAFECAT(str,"FMC");
 			}
 			else if(useron.exempt&FLAG('R')) {
 				mnemonics(text[RExemptRemoveFilePrompt]);
-				strcpy(str,"VEMQRN\r"); 
+				SAFECAT(str,"M");
 			}
-			else {
+			else
 				mnemonics(text[UserRemoveFilePrompt]);
-				strcpy(str,"VEQRN\r"); 
-			}
 			switch(getkeys(str,0)) {
 				case 'V':
-					viewfilecontents(&f);
+					viewfilecontents(f);
 					CRLF;
 					ASYNC;
 					pause();
-					m-=F_IXBSIZE;
+					m--;
 					continue;
 				case 'E':   /* edit file information */
 					if(dir_op(dirnum)) {
 						bputs(text[EditFilename]);
-						strcpy(str,fname);
-						if(!getstr(str,12,K_EDIT|K_AUTODEL))
+						SAFECOPY(str, f->name);
+						if(!getstr(str, MAX_FILENAME_LEN, K_EDIT|K_AUTODEL))
 							break;
-						if(strcmp(str,fname)) { /* rename */
-							padfname(str,path);
-							if(stricmp(str,fname)
-								&& findfile(&cfg,f.dir,path))
+						if(strcmp(str,f->name) != 0) { /* rename */
+							if(stricmp(str,f->name)
+								&& findfile(&cfg, f->dir, path, NULL))
 								bprintf(text[FileAlreadyThere],path);
 							else {
-								SAFEPRINTF2(path,"%s%s",dirpath,fname);
+								SAFEPRINTF2(path,"%s%s",dirpath,f->name);
 								SAFEPRINTF2(tmp,"%s%s",dirpath,str);
 								if(fexistcase(path) && rename(path,tmp))
 									bprintf(text[CouldntRenameFile],path,tmp);
 								else {
 									bprintf(text[FileRenamed],path,tmp);
-									strcpy(fname,str);
-									removefiledat(&cfg,&f);
-									strcpy(f.name,padfname(str,tmp));
-									addfiledat(&cfg,&f); 
+									smb_new_hfield_str(f, SMB_FILENAME, str);
+									updatefile(&cfg, f);
 								} 
 							} 
 						} 
 					}
+					// Description
 					bputs(text[EditDescription]);
-					getstr(f.desc,LEN_FDESC,K_LINE|K_EDIT|K_AUTODEL);
+					char fdesc[LEN_FDESC + 1];
+					SAFECOPY(fdesc, f->desc);
+					getstr(fdesc, sizeof(fdesc)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 					if(sys_status&SS_ABORT)
 						break;
-					if(f.misc&FM_EXTDESC) {
+					if(strcmp(fdesc, f->desc))
+						smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
+
+					// Tags
+					if((cfg.dir[dirnum]->misc & DIR_FILETAGS) || dir_op(dirnum)) {
+						char tags[64] = "";
+						bputs(text[TagFilePrompt]);
+						if(f->tags != NULL)
+							SAFECOPY(tags, f->tags);
+						getstr(tags, sizeof(tags)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
+						if(sys_status&SS_ABORT)
+							break;
+						if((f->tags == NULL && *tags != '\0') || (f->tags != NULL && strcmp(tags, f->tags)))
+							smb_new_hfield_str(f, SMB_TAGS, tags);
+					}
+					// Extended Description
+					if(f->extdesc != NULL && *f->extdesc) {
 						if(!noyes(text[DeleteExtDescriptionQ])) {
-							f.misc&=~FM_EXTDESC; }
+							// TODO
+						} 
 					}
 					if(!dir_op(dirnum)) {
-						putfiledat(&cfg,&f);
+						updatefile(&cfg, f);
 						break; 
 					}
+					char uploader[LEN_ALIAS + 1];
+					SAFECOPY(uploader, f->from);
 					bputs(text[EditUploader]);
-					if(!getstr(f.uler,LEN_ALIAS,K_EDIT|K_AUTODEL))
+					if(!getstr(uploader, sizeof(uploader), K_EDIT|K_AUTODEL))
 						break;
-					ultoa(f.cdt,str,10);
+					smb_new_hfield_str(f, SMB_FILEUPLOADER, uploader);
+					ultoa(f->cost,str,10);
 					bputs(text[EditCreditValue]);
 					getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL);
 					if(sys_status&SS_ABORT)
 						break;
-					f.cdt=atol(str);
-					ultoa(f.timesdled,str,10);
+					f->cost = atol(str);
+					smb_new_hfield(f, SMB_COST, sizeof(f->cost), &f->cost);
+					ultoa(f->hdr.times_downloaded,str,10);
 					bputs(text[EditTimesDownloaded]);
 					getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL);
 					if(sys_status&SS_ABORT)
 						break;
-					f.timesdled=atoi(str);
-					if(f.opencount) {
-						ultoa(f.opencount,str,10);
-						bputs(text[EditOpenCount]);
-						getstr(str,3,K_NUMBER|K_EDIT|K_AUTODEL);
-						f.opencount=atoi(str); 
-					}
-					if(cfg.altpaths || f.altpath) {
-						ultoa(f.altpath,str,10);
-						bputs(text[EditAltPath]);
-						getstr(str,3,K_NUMBER|K_EDIT|K_AUTODEL);
-						f.altpath=atoi(str);
-						if(f.altpath>cfg.altpaths)
-							f.altpath=0; 
-					}
+					f->hdr.times_downloaded=atoi(str);
 					if(sys_status&SS_ABORT)
 						break;
-					putfiledat(&cfg,&f);
-					inputnstime32(&f.dateuled);
-					update_uldate(&cfg, &f);
+					inputnstime32((time32_t*)&f->hdr.when_imported.time);
+					updatefile(&cfg, f);
 					break;
 				case 'F':   /* delete file only */
-					SAFEPRINTF2(str,"%s%s",dirpath,fname);
+					SAFEPRINTF2(str,"%s%s",dirpath,f->name);
 					if(!fexistcase(str))
 						bprintf(text[FileDoesNotExist],str);
 					else {
@@ -1234,9 +912,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							if(remove(str))
 								bprintf(text[CouldntRemoveFile],str);
 							else {
-								sprintf(tmp,"deleted %s"
-									,str);
-								logline(nulstr,tmp); 
+								SAFEPRINTF(tmp, "deleted %s", str);
+								logline(nulstr, tmp); 
 							} 
 						} 
 					}
@@ -1244,69 +921,40 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				case 'R':   /* remove file from database */
 					if(noyes(text[RemoveFileQ]))
 						break;
-					removefile(&f);
-					SAFEPRINTF2(str,"%s%s",dirpath,fname);
-					if(fexistcase(str)) {
-						if(dir_op(dirnum)) {
-							if(!noyes(text[DeleteFileQ])) {
-								if(remove(str))
-									bprintf(text[CouldntRemoveFile],str);
-								else {
-									sprintf(tmp,"deleted %s"
-										,str);
-									logline(nulstr,tmp); 
+					if(removefile(&smb, f)) {
+						getfilepath(&cfg, f, path);
+						if(fexistcase(path)) {
+							if(dir_op(dirnum)) {
+								if(!noyes(text[DeleteFileQ])) {
+									if(remove(path) != 0)
+										errormsg(WHERE, ERR_REMOVE, path);
+									else {
+										SAFEPRINTF(tmp, "deleted %s", path);
+										logline(nulstr,path); 
+									} 
 								} 
-							} 
+							}
+							else if(remove(str))    /* always remove if not sysop */
+								bprintf(text[CouldntRemoveFile],str);
 						}
-						else if(remove(str))    /* always remove if not sysop */
-							bprintf(text[CouldntRemoveFile],str); 
 					}
 					if(dir_op(dirnum) || useron.exempt&FLAG('R')) {
-						i=cfg.lib[cfg.dir[f.dir]->lib]->offline_dir;
+						i=cfg.lib[cfg.dir[f->dir]->lib]->offline_dir;
 						if(i!=dirnum && i!=INVALID_DIR
-							&& !findfile(&cfg,i,f.name)) {
+							&& !findfile(&cfg, i, f->name, NULL)) {
 							sprintf(str,text[AddToOfflineDirQ]
-								,fname,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
+								,f->name,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
 							if(yesno(str)) {
-								getextdesc(&cfg,f.dir,f.datoffset,ext);
-								f.dir=i;
-								addfiledat(&cfg,&f);
-								if(f.misc&FM_EXTDESC)
-									putextdesc(&cfg,f.dir,f.datoffset,ext); 
+								addfile(&cfg, i, f, f->extdesc);
 							} 
 						} 
 					}
-					if(dir_op(dirnum) || stricmp(f.uler,useron.alias)) {
+					if(dir_op(dirnum) || stricmp(f->from, useron.alias)) {
 						if(noyes(text[RemoveCreditsQ]))
 	/* Fall through */      break; 
 					}
 				case 'C':   /* remove credits only */
-					if((i=matchuser(&cfg,f.uler,TRUE /*sysop_alias*/))==0) {
-						bputs(text[UnknownUser]);
-						break; 
-					}
-					if(dir_op(dirnum)) {
-						usrcdt=(ulong)(f.cdt*(cfg.dir[f.dir]->up_pct/100.0));
-						if(f.timesdled)     /* all downloads */
-							usrcdt+=(ulong)((long)f.timesdled
-								*f.cdt*(cfg.dir[f.dir]->dn_pct/100.0));
-						ultoa(usrcdt,str,10);
-						bputs(text[CreditsToRemove]);
-						getstr(str,10,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL);
-						f.cdt=atol(str); 
-					}
-					usrcdt=adjustuserrec(&cfg,i,U_CDT,10,-(long)f.cdt);
-					if(i==useron.number)
-						useron.cdt=usrcdt;
-					sprintf(str,text[FileRemovedUserMsg]
-						,f.name,f.cdt ? ultoac(f.cdt,tmp) : text[No]);
-					putsmsg(&cfg,i,str);
-					usrcdt=adjustuserrec(&cfg,i,U_ULB,10,-f.size);
-					if(i==useron.number)
-						useron.ulb=usrcdt;
-					usrcdt=adjustuserrec(&cfg,i,U_ULS,5,-1);
-					if(i==useron.number)
-						useron.uls=(ushort)usrcdt;
+					removefcdt(f);
 					break;
 				case 'M':   /* move the file to another dir */
 					CRLF;
@@ -1332,16 +980,24 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						j=usrdirs[i]-1;
 					else j--;
 					CRLF;
-					movefile(&f,usrdir[i][j]);
+					movefile(&smb, f, usrdir[i][j]);
+					break;
+				case 'P':	/* previous */
+				case '-':
+				case '\b':
+					m--;
+					if(m)
+						m--;
 					break;
 				case 'Q':   /* quit */
 					found=-1;
 					done=1;
-					break; } 
+					break; 
+			} 
 		}
-		else if(mode==FI_DOWNLOAD || mode==FI_USERXFER) {
-			SAFEPRINTF2(path,"%s%s",dirpath,fname);
-			if(f.size<1L) { /* getfiledat will set this to -1 if non-existant */
+		else if(mode==FI_DOWNLOAD) {
+			getfilepath(&cfg, f, path);
+			if(getfilesize(&cfg, f) < 1L) { /* getfilesize will set this to -1 if non-existant */
 				SYNC;       /* and 0 byte files shouldn't be d/led */
 				mnemonics(text[QuitOrNext]);
 				if(getkeys("\rQ",0)=='Q') {
@@ -1350,8 +1006,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				}
 				continue; 
 			}
-			if(!is_download_free(&cfg,f.dir,&useron,&client)
-				&& f.cdt>(useron.cdt+useron.freecdt)) {
+			if(!is_download_free(&cfg,f->dir,&useron,&client)
+				&& f->cost>(useron.cdt+useron.freecdt)) {
 				SYNC;
 				bprintf(text[YouOnlyHaveNCredits]
 					,ultoac(useron.cdt+useron.freecdt,tmp));
@@ -1362,7 +1018,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				}
 				continue; 
 			}
-			if(!chk_ar(cfg.dir[f.dir]->dl_ar,&useron,&client)) {
+			if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron,&client)) {
 				SYNC;
 				bputs(text[CantDownloadFromDir]);
 				mnemonics(text[QuitOrNext]);
@@ -1372,7 +1028,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				}
 				continue; 
 			}
-			if(!(cfg.dir[f.dir]->misc&DIR_TFREE) && f.timetodl>timeleft && !dir_op(dirnum)
+
+			if(!(cfg.dir[f->dir]->misc&DIR_TFREE) && gettimetodl(&cfg, f, cur_cps) > timeleft && !dir_op(dirnum)
 				&& !(useron.exempt&FLAG('T'))) {
 				SYNC;
 				bputs(text[NotEnoughTimeToDl]);
@@ -1384,15 +1041,13 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				continue; 
 			}
 			xfer_prot_menu(XFER_DOWNLOAD);
-			openfile(&f);
 			SYNC;
 			mnemonics(text[ProtocolBatchQuitOrNext]);
 			sprintf(str,"B%cN\r",text[YNQP][2]);
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0]
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-					strcat(str,tmp); 
+					sprintf(str + strlen(str), "%c", cfg.prot[i]->mnemonic);
 				}
 	//		  ungetkey(useron.prot);
 			ch=(char)getkeys(str,0);
@@ -1401,9 +1056,9 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				done=1; 
 			}
 			else if(ch=='B') {
-				if(!addtobatdl(&f)) {
-					closefile(&f);
-					break; } 
+				if(!addtobatdl(f)) {
+					break; 
+				} 
 			}
 			else if(ch!=CR && ch!='N') {
 				for(i=0;i<cfg.total_prots;i++)
@@ -1411,97 +1066,68 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 						break;
 				if(i<cfg.total_prots) {
-					{
-						delfiles(cfg.temp_dir,ALLFILES);
-						if(cfg.dir[f.dir]->seqdev) {
-							lncntr=0;
-							seqwait(cfg.dir[f.dir]->seqdev);
-							bprintf(text[RetrievingFile],fname);
-							SAFEPRINTF2(str,"%s%s",dirpath,fname);
-							SAFEPRINTF2(path,"%s%s",cfg.temp_dir,fname);
-							mv(str,path,1); /* copy the file to temp dir */
-							if(getnodedat(cfg.node_num,&thisnode,true)==0) {
-								thisnode.aux=0xf0;
-								putnodedat(cfg.node_num,&thisnode);
-							}
-							CRLF; 
+					delfiles(cfg.temp_dir,ALLFILES);
+					if(cfg.dir[f->dir]->seqdev) {
+						lncntr=0;
+						seqwait(cfg.dir[f->dir]->seqdev);
+						bprintf(text[RetrievingFile],f->name);
+						getfilepath(&cfg, f, str);
+						SAFEPRINTF2(path,"%s%s",cfg.temp_dir,f->name);
+						mv(str,path,1); /* copy the file to temp dir */
+						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+							thisnode.aux=0xf0;
+							putnodedat(cfg.node_num,&thisnode);
 						}
-						for(j=0;j<cfg.total_dlevents;j++)
-							if(!stricmp(cfg.dlevent[j]->ext,f.name+9)
+						CRLF; 
+					}
+					const char* file_ext = getfext(f->name);
+					if(file_ext != NULL) {
+						for(j=0; j<cfg.total_dlevents; j++) {
+							if(!stricmp(cfg.dlevent[j]->ext, file_ext + 1)
 								&& chk_ar(cfg.dlevent[j]->ar,&useron,&client)) {
 								bputs(cfg.dlevent[j]->workstr);
 								external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL)
 									,EX_OUTL);
 								CRLF; 
 							}
-						getnodedat(cfg.node_num,&thisnode,1);
-						action=NODE_DLNG;
-						t=now+f.timetodl;
-						localtime_r(&t,&tm);
-						thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
-						putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
-						start=time(NULL);
-						error=protocol(cfg.prot[i],XFER_DOWNLOAD,path,nulstr,false);
-						end=time(NULL);
-						if(cfg.dir[f.dir]->misc&DIR_TFREE)
-							starttime+=end-start;
-						if(checkprotresult(cfg.prot[i],error,&f))
-							downloadfile(&f);
-						else
-							notdownloaded(f.size,start,end); 
-						delfiles(cfg.temp_dir,ALLFILES);
-						autohangup(); 
-					} 
+						}
+					}
+					getnodedat(cfg.node_num,&thisnode,1);
+					action=NODE_DLNG;
+					t=now + gettimetodl(&cfg, f, cur_cps);
+					localtime_r(&t,&tm);
+					thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
+					putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
+					start=time(NULL);
+					error=protocol(cfg.prot[i],XFER_DOWNLOAD,path,nulstr,false);
+					end=time(NULL);
+					if(cfg.dir[f->dir]->misc&DIR_TFREE)
+						starttime+=end-start;
+					if(checkprotresult(cfg.prot[i],error, f))
+						downloadedfile(f);
+					else
+						notdownloaded(f->size, start, end); 
+					delfiles(cfg.temp_dir,ALLFILES);
+					autohangup(); 
 				} 
-			}
-			closefile(&f); 
+			} 
 		}
 		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?')) 
 			break; 
 	}
-	free((char *)ixbbuf);
-	if(usrxfrbuf)
-		free(usrxfrbuf);
+	freefiles(file_list, file_count);
+	smb_close(&smb);
 	return(found);
 }
 
 /****************************************************************************/
-/* Prints one file's information on a single line to a file 'file'          */
+/* Prints one file's information on a single line to a file stream 'fp'		*/
 /****************************************************************************/
-void sbbs_t::listfiletofile(char *fname, char *buf, uint dirnum, int file)
+void sbbs_t::listfiletofile(file_t* f, FILE* fp)
 {
-    char	str[256];
-	char 	tmp[512];
-    uchar	alt;
-    ulong	cdt;
-	bool	exist=true;
-
-	strcpy(str,fname);
-	if(buf[F_MISC]!=ETX && (buf[F_MISC]-' ')&FM_EXTDESC)
-		strcat(str,"+");
-	else
-		strcat(str," ");
-	write(file,str,13);
-	getrec((char *)buf,F_ALTPATH,2,str);
-	alt=(uchar)ahtoul(str);
-	sprintf(str,"%s%s",alt>0 && alt<=cfg.altpaths ? cfg.altpath[alt-1]
-		: cfg.dir[dirnum]->path,unpadfname(fname,tmp));
-	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexistcase(str))
-		exist=false;
-	getrec((char *)buf,F_CDT,LEN_FCDT,str);
-	cdt=atol(str);
-	if(!cdt)
-		strcpy(str,"   FREE");
-	else
-		sprintf(str,"%7lu",cdt);
-	if(exist)
-		strcat(str," ");
-	else
-		strcat(str,"-");
-	write(file,str,8);
-	getrec((char *)buf,F_DESC,LEN_FDESC,str);
-	write(file,str,strlen(str));
-	write(file,crlf,2);
+	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
+	fprintf(fp, "%-*s %10lu %s\r\n", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE)
+		,(ulong)getfilesize(&cfg, f), f->desc);
 }
 
 int extdesclines(char *str)

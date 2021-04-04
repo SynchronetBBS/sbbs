@@ -82,9 +82,7 @@ function TickITCfg(fname) {
 		var dir = file_area.dir[code];
 		if(auto_areas.indexOf(dir.lib_name) < 0)
 			continue;
-		if(dir.name.indexOf(' ') >= 0) // Invalid areatag
-			continue;
-		this.acfg[dir.name.toLowerCase()] = { dir: code };
+		this.acfg[dir.area_tag.toLowerCase()] = { dir: code };
 	}
 	sects = tcfg.iniGetSections();
 	for (i=0; i<sects.length; i++) {

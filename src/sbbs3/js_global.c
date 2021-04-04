@@ -2629,7 +2629,50 @@ js_md5_calc(JSContext* cx, uintN argc, jsval* arglist)
 	free(inbuf);
 
 	if(hex)
-		MD5_hex((BYTE*)outbuf,digest);
+		MD5_hex(outbuf,digest);
+	else
+		b64_encode(outbuf,sizeof(outbuf),(char*)digest,sizeof(digest));
+	JS_RESUMEREQUEST(cx, rc);
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_sha1_calc(JSContext* cx, uintN argc, jsval* arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	BYTE		digest[SHA1_DIGEST_SIZE];
+	JSBool		hex=JS_FALSE;
+	size_t		inbuf_len;
+	char*		inbuf = NULL;
+	char		outbuf[64];
+	JSString*	js_str;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return(JS_TRUE);
+
+	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, &inbuf_len);
+	HANDLE_PENDING(cx, inbuf);
+	if(inbuf==NULL)
+		return(JS_TRUE);
+
+	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
+		hex=JSVAL_TO_BOOLEAN(argv[1]);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	SHA1_calc(digest,inbuf,inbuf_len);
+	free(inbuf);
+
+	if(hex)
+		SHA1_hex(outbuf,digest);
 	else
 		b64_encode(outbuf,sizeof(outbuf),(char*)digest,sizeof(digest));
 	JS_RESUMEREQUEST(cx, rc);
@@ -3603,10 +3646,7 @@ js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToBoolean(cx, argv[argn++], &path);
 	
 	rc=JS_SUSPENDREQUEST(cx);
-	if(case_sensitive)
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(wildmatch(fname, spec, path)));
-	else
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(wildmatchi(fname, spec, path)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(wildmatch(fname, spec, path, case_sensitive)));
 	free(fname);
 	if(spec != spec_def)
 		free(spec);
@@ -5026,6 +5066,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("text [,hex=<tt>false</tt>]")
 	,JSDOCSTR("calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal")
 	,311
+	},
+	{"sha1_calc",		js_sha1_calc,		1,	JSTYPE_STRING,	JSDOCSTR("text [,hex=false]")
+	,JSDOCSTR("calculate and return 160-bit SHA-1 digest of text string, result encoded in base64 (default) or hexadecimal")
+	,31900
 	},
 	{"gethostbyname",	js_resolve_ip,		1,	JSTYPE_ALIAS },
 	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("hostname [,array=<tt>false</tt>]")

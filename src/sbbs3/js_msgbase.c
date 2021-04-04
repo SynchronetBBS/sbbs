@@ -1042,7 +1042,7 @@ static BOOL msg_offset_by_id(private_t* p, char* id, int32_t* offset)
 	if((p->smb_result = smb_getmsgidx_by_msgid(&(p->smb),&msg,id))!=SMB_SUCCESS)
 		return(FALSE);
 
-	*offset = msg.offset;
+	*offset = msg.idx_offset;
 	return(TRUE);
 }
 
@@ -1135,7 +1135,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 			include_votes = JSVAL_TO_BOOLEAN(argv[n]);
 		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset) {							/* Get by offset */
-				if(!JS_ValueToInt32(cx, argv[n], (int32*)&msg.offset))
+				if(!JS_ValueToInt32(cx, argv[n], (int32*)&msg.idx_offset))
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
@@ -1167,7 +1167,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 	if((idxobj=JS_NewObject(cx,NULL,proto,obj))==NULL)
 		return JS_TRUE;
 
-	set_msg_idx_properties(cx, idxobj, &msg.idx, msg.offset);
+	set_msg_idx_properties(cx, idxobj, &msg.idx, msg.idx_offset);
 
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(idxobj));
 
@@ -1209,7 +1209,7 @@ js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 	}
     JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
 
-	uint32_t total_msgs = index_length / sizeof(*idx);
+	uint32_t total_msgs = (uint32_t)(index_length / sizeof(*idx));
 	if(total_msgs > priv->smb.status.total_msgs)
 		total_msgs = priv->smb.status.total_msgs;
 	if(total_msgs < 1) {
@@ -1381,7 +1381,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	}
 
 	LAZY_UINTEGER("number", p->msg.hdr.number, JSPROP_ENUMERATE);
-	LAZY_UINTEGER("offset", p->msg.offset, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("offset", p->msg.idx_offset, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("to",p->msg.to, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("from",p->msg.from, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("subject",p->msg.subj, JSPROP_ENUMERATE);
@@ -1740,7 +1740,7 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 	/* Now parse message offset/id and get message */
 	if(n < argc && JSVAL_IS_NUMBER(argv[n])) {
 		if(by_offset) {							/* Get by offset */
-			if(!JS_ValueToInt32(cx,argv[n++],(int32*)&(p->msg).offset)) {
+			if(!JS_ValueToInt32(cx,argv[n++],(int32*)&(p->msg).idx_offset)) {
 				free(p);
 				return JS_FALSE;
 			}
@@ -1884,7 +1884,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	}
     JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(retobj));
 
-	uint32_t total_msgs = index_length / sizeof(*idx);
+	uint32_t total_msgs = (uint32_t)(index_length / sizeof(*idx));
 	if(total_msgs > priv->smb.status.total_msgs)
 		total_msgs = priv->smb.status.total_msgs;
 	if(total_msgs < 1) {
@@ -2103,7 +2103,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
 		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset) {							/* Get by offset */
-				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.idx_offset))
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
@@ -2116,7 +2116,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			rc=JS_SUSPENDREQUEST(cx);
 			if(!msg_offset_by_id(p
 					,cstr
-					,&msg.offset)) {
+					,&msg.idx_offset)) {
 				free(cstr);
 				JS_RESUMEREQUEST(cx, rc);
 				return JS_TRUE;	/* ID not found */
@@ -2139,7 +2139,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			JS_ReportError(cx, "Message header has 'expanded fields'");
 			return JS_FALSE;
 		}
-		msg.offset = mp->msg.offset;
+		msg.idx_offset = mp->msg.idx_offset;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2214,7 +2214,7 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
 		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset) {							/* Get by offset */
-				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.idx_offset))
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
@@ -2232,7 +2232,7 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 			rc=JS_SUSPENDREQUEST(cx);
 			if(!msg_offset_by_id(p
 					,cstr
-					,&msg.offset)) {
+					,&msg.idx_offset)) {
 				free(cstr);
 				JS_RESUMEREQUEST(cx, rc);
 				return JS_TRUE;	/* ID not found */
@@ -2356,7 +2356,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
 		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset) {							/* Get by offset */
-				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.idx_offset))
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
@@ -2372,7 +2372,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 			rc=JS_SUSPENDREQUEST(cx);
 			if(!msg_offset_by_id(p
 					,cstr
-					,&msg.offset)) {
+					,&msg.idx_offset)) {
 				free(cstr);
 				JS_RESUMEREQUEST(cx, rc);
 				return JS_TRUE;	/* ID not found */
@@ -2470,7 +2470,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
 		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset) {							/* Get by offset */
-				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.idx_offset))
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
@@ -2486,7 +2486,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 			rc=JS_SUSPENDREQUEST(cx);
 			if(!msg_offset_by_id(p
 					,cstr
-					,&msg.offset)) {
+					,&msg.idx_offset)) {
 				free(cstr);
 				JS_RESUMEREQUEST(cx, rc);
 				return JS_TRUE;	/* ID not found */

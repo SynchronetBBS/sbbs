@@ -23,10 +23,12 @@
 #include "load_cfg.h"
 #include "filedat.h"
 #include "nopen.h"
+#include "smblib.h"
 #include "str_util.h"
 #include <stdarg.h>
+#include <stdbool.h>
 
-#define DELFILES_VER "1.01"
+#define DELFILES_VER "3.19"
 
 char tmp[256];
 char *crlf="\r\n";
@@ -75,33 +77,45 @@ int lprintf(const char *fmat, ...)
 	return(chcount);
 }
 
+bool delfile(const char *filename)
+{
+	if(remove(filename) != 0) {
+		fprintf(stderr, "ERROR %u (%s) removing file %s\n"
+			,errno, strerror(errno), filename);
+		return false;
+	}
+	return true;
+}
+
 int main(int argc, char **argv)
 {
-	char str[256],fname[MAX_PATH+1],not[MAX_NOTS][9],nots=0,*p;
-	int i,j,dirnum,libnum,file;
-	ulong l,m;
+	char revision[16];
+	char str[256],not[MAX_NOTS][LEN_EXTCODE + 1],nots=0,*p;
+	char fpath[MAX_PATH+1];
+	int i,j,dirnum,libnum;
+	size_t fi;
 	long misc=0;
-	time_t now;
-	file_t workfile;
+	time_t now = time(NULL);
 	scfg_t cfg;
 	glob_t gl;
-	uchar *ixbbuf;
 
 	setvbuf(stdout,NULL,_IONBF,0);
 
-	fprintf(stderr,"\nDELFILES Version %s (%s) - Removes files from Synchronet "
-		"Filebase\n" ,DELFILES_VER, PLATFORM_DESC );
+	sscanf("$Revision: 1.54 $", "%*s %s", revision);
+
+	fprintf(stderr,"\nDELFILES Version %s-%s (rev %s) - Removes files from Synchronet "
+		"Filebase\n" ,DELFILES_VER, PLATFORM_DESC, revision);
 
 	if(argc<2) {
-		printf("\n   usage: DELFILES [dir_code] [switches]\n");
-		printf("\nswitches: -LIB name All directories of specified library\n");
-		printf("          -ALL      Search all directories\n");
-		printf("          -NOT code Exclude specific directory\n");
-		printf("          -OFF      Remove files that are offline "
+		printf("\n   usage: %s <dir_code or * for ALL> [switches]\n", argv[0]);
+		printf("\nswitches: -lib name All directories of specified library\n");
+		printf("          -all      Search all directories\n");
+		printf("          -not code Exclude specific directory\n");
+		printf("          -off      Remove files that are offline "
 			"(don't exist on disk)\n");
-		printf("          -NOL      Remove files with no link "
+		printf("          -nol      Remove files with no link "
 			"(don't exist in database)\n");
-		printf("          -RPT      Report findings only "
+		printf("          -rpt      Report findings only "
 			"(don't delete any files)\n");
 		return(0); 
 	}
@@ -162,7 +176,8 @@ int main(int argc, char **argv)
 				printf("\nDirectory internal code must follow /NOT parameter.\n");
 				return(1); 
 			}
-			sprintf(not[nots++],"%.8s",argv[i]); 
+			SAFECOPY(not[nots], argv[i]); 
+			nots++;
 		}
 		else if(!stricmp(argv[i]+1,"OFF"))
 			misc|=OFFLINE;
@@ -187,117 +202,88 @@ int main(int argc, char **argv)
 		if(!(misc&ALL) && i!=dirnum && cfg.dir[i]->lib!=libnum)
 			continue;
 		for(j=0;j<nots;j++)
-			if(!stricmp(not[j],cfg.dir[i]->code))
+			if(!stricmp(not[j], cfg.dir[i]->code))
 				break;
 		if(j<nots)
 			continue;
 
+		smb_t smb;
+		int result = smb_open_dir(&cfg, &smb, i);
+		if(result != SMB_SUCCESS) {
+			fprintf(stderr, "!ERROR %d (%s) opening %s\n", result, smb.last_error, smb.file);
+			continue;
+		}
+
 		if(misc&NO_LINK && cfg.dir[i]->misc&DIR_FCHK) {
-			strcpy(tmp,cfg.dir[i]->path);
-			SAFEPRINTF(str,"%s*.*",tmp);
-			printf("\nSearching %s for unlinked files\n",str);
-			if(!glob(str, GLOB_MARK, NULL, &gl)) {
+			printf("\nSearching %s for unlinked files\n", cfg.dir[i]->path);
+			sprintf(str, "%s%s", cfg.dir[i]->path, ALLFILES);
+			if(glob(str, GLOB_MARK, NULL, &gl) == 0) {
 				for(j=0; j<(int)gl.gl_pathc; j++) {
+					const char* fname = gl.gl_pathv[j];
 					/* emulate _A_NORMAL */
-					if(isdir(gl.gl_pathv[j]))
+					if(isdir(fname))
 						continue;
-					if(access(gl.gl_pathv[j], R_OK|W_OK))
+					if(access(fname, R_OK|W_OK))
 						continue;
-					padfname(gl.gl_pathv[j],str);
-					/* strupr(str); */
-					if(!findfile(&cfg, i,str)) {
-						sprintf(str,"%s%s",tmp,gl.gl_pathv[j]);
-						printf("Removing %s (not in database)\n",gl.gl_pathv[j]);
-						if(!(misc&REPORT) && remove(str))
-							printf("Error removing %s\n",str); 
-					} 
-				} 
+					if(!smb_findfile(&smb, getfname(fname), /* file: */NULL)) {
+						printf("Not in database: %s\n", fname);
+						if(!(misc&REPORT))
+							delfile(fname);
+					}
+				}
 			}
 			globfree(&gl);
 		}
 
-		if(!cfg.dir[i]->maxage && !(misc&OFFLINE))
+		if(!cfg.dir[i]->maxage && !(misc&OFFLINE)) {
+			smb_close(&smb);
 			continue;
-
-		printf("\nScanning %s %s\n",cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->lname);
-
-		sprintf(str,"%s%s.ixb",cfg.dir[i]->data_dir,cfg.dir[i]->code);
-		if((file=nopen(str,O_RDONLY|O_BINARY))==-1)
-			continue;
-		l=filelength(file);
-		if(!l) {
-			close(file);
-			continue; 
 		}
-		if((ixbbuf=malloc(l))==NULL) {
-			close(file);
-			printf("\7ERR_ALLOC %s %lu\n",str,l);
-			continue; 
-		}
-		if(read(file,ixbbuf,l)!=(int)l) {
-			close(file);
-			printf("\7ERR_READ %s %lu\n",str,l);
-			free((char *)ixbbuf);
-			continue; 
-		}
-		close(file);
 
-		m=0L;
-		now=time(NULL);
-		while(m<l) {
-			memset(&workfile,0,sizeof(file_t));
-			for(j=0;j<12 && m<l;j++)
-				if(j==8)
-					fname[j]='.';
-				else
-					fname[j]=ixbbuf[m++];
-			fname[j]=0;
-			strcpy(workfile.name,fname);
-			unpadfname(workfile.name,fname);
-			workfile.dir=i;
-			SAFEPRINTF2(str,"%s%s"
-				,workfile.altpath>0 && workfile.altpath<=cfg.altpaths
-					? cfg.altpath[workfile.altpath-1]
-				: cfg.dir[workfile.dir]->path,fname);
-			workfile.datoffset=ixbbuf[m]|((long)ixbbuf[m+1]<<8)
-				|((long)ixbbuf[m+2]<<16);
-			workfile.dateuled=(ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)
-				|((long)ixbbuf[m+5]<<16)|((long)ixbbuf[m+6]<<24));
-			workfile.datedled=(ixbbuf[m+7]|((long)ixbbuf[m+8]<<8)
-				|((long)ixbbuf[m+9]<<16)|((long)ixbbuf[m+10]<<24));
-			m+=11;
-			if(cfg.dir[i]->maxage && cfg.dir[i]->misc&DIR_SINCEDL && workfile.datedled
-				&& (now-workfile.datedled)/86400L>cfg.dir[i]->maxage) {
-					printf("Deleting %s (%ld days since last download)\n",fname
-						,(long)(now-workfile.datedled)/86400L);
-					getfiledat(&cfg, &workfile);
+		printf("\nScanning %s %s\n", cfg.lib[cfg.dir[i]->lib]->sname, cfg.dir[i]->lname);
+
+		size_t file_count;
+		file_t* file_list = loadfiles(&smb, NULL, 0, /* extdesc: */FALSE, FILE_SORT_NATURAL, &file_count);
+
+		for(fi = 0; fi < file_count; fi++) {
+			file_t* f = &file_list[fi];
+			getfilepath(&cfg, f, fpath);
+			if(cfg.dir[i]->maxage && cfg.dir[i]->misc&DIR_SINCEDL && f->hdr.last_downloaded
+				&& (now - f->hdr.last_downloaded)/86400L > cfg.dir[i]->maxage) {
+					printf("Deleting %s (%ld days since last download)\n"
+						,f->name
+						,(long)(now - f->hdr.last_downloaded)/86400L);
 					if(!(misc&REPORT)) {
-						removefiledat(&cfg, &workfile);
-						if(remove(str))
-							printf("Error removing %s\n",str); 
+						if(smb_removefile(&smb, f) == SMB_SUCCESS)
+							delfile(fpath);
+						else
+							printf("ERROR (%s) removing file from database\n", smb.last_error);
 					} 
 			}
 			else if(cfg.dir[i]->maxage
-				&& !(workfile.datedled && cfg.dir[i]->misc&DIR_SINCEDL)
-				&& (now-workfile.dateuled)/86400L>cfg.dir[i]->maxage) {
-					printf("Deleting %s (uploaded %ld days ago)\n",fname
-						,(long)(now-workfile.dateuled)/86400L);
-					getfiledat(&cfg, &workfile);
+				&& !(f->hdr.last_downloaded && cfg.dir[i]->misc&DIR_SINCEDL)
+				&& (now - f->hdr.when_imported.time)/86400L > cfg.dir[i]->maxage) {
+					printf("Deleting %s (uploaded %ld days ago)\n"
+						,f->name
+						,(long)(now - f->hdr.when_imported.time)/86400L);
 					if(!(misc&REPORT)) {
-						removefiledat(&cfg, &workfile);
-						if(remove(str))
-							printf("Error removing %s\n",str); 
+						if(smb_removefile(&smb, f) == SMB_SUCCESS)
+							delfile(fpath);
+						else
+							printf("ERROR (%s) removing file from database\n", smb.last_error);
 					} 
 			}
-			else if(misc&OFFLINE && cfg.dir[i]->misc&DIR_FCHK && !fexist(str)) {
-					printf("Removing %s (doesn't exist)\n",fname);
-					getfiledat(&cfg, &workfile);
-					if(!(misc&REPORT))
-						removefiledat(&cfg, &workfile); 
+			else if(misc&OFFLINE && cfg.dir[i]->misc&DIR_FCHK && !fexist(fpath)) {
+					printf("Removing %s (doesn't exist)\n", f->name);
+					if(!(misc&REPORT)) {
+						if(smb_removefile(&smb, f) != SMB_SUCCESS)
+							printf("ERROR (%s) removing file from database\n", smb.last_error);
+					}
 			} 
 		}
+		freefiles(file_list, file_count);
 
-		free((char *)ixbbuf); 
+		smb_close(&smb);
 	}
 
 	return(0);
