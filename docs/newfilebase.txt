@@ -36,7 +36,8 @@ _Long Filenames_
 While filenames stored in the filebases *used* to be limited to MS-DOS
 compatible 8.3 formatted names, longer filenames are now supported on all
 platforms. Additionally, some previously invalid filename characters (e.g.
-spaces) are now allowed.
+spaces) are now allowed and files without extensions (i.e. no '.' in their
+filename are now supported).
 
 Although Synchronet for Windows previously used Win32 API functions for short
 <-> long filename conversions in the Windows builds of Synchronet, resulting
