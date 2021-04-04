@@ -704,8 +704,15 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(nulstr);
 	}
 
+	if(strcmp(sp, "CONTINUE") == 0) {
+		char ch = getkey(K_UPPER);
+		if(ch == text[YNQP][1] || ch == text[YNQP][2])
+			sys_status|=SS_ABORT;
+		return(nulstr);
+	}
+
 	if(strncmp(sp, "WAIT:", 5) == 0) {
-		inkey(K_NONE, atoi(sp + 5));
+		inkey(K_NONE, atoi(sp + 5) * 100);
 		return(nulstr);
 	}
 
