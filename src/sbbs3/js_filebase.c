@@ -1367,14 +1367,14 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"get",				js_get_file,		2, JSTYPE_OBJECT
-		,JSDOCSTR("<filename | file-meta-object> [,detail=FileBase.DETAIL.NORM]")
+		,JSDOCSTR("filename or file-meta-object [,detail=FileBase.DETAIL.NORM]")
 		,JSDOCSTR("get a file metadata object")
 		,31900
 	},
 	{"get_list",		js_get_file_list,	4, JSTYPE_ARRAY
 		,JSDOCSTR("[filespec] [,detail=FileBase.DETAIL.NORM] [,since-time=0] [,sort=true [,order]]")
 		,JSDOCSTR("get a list (array) of file metadata objects"
-			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_A</tt>"
+			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_AI</tt>"
 			)
 		,31900
 	},
@@ -1541,6 +1541,27 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+#ifdef BUILD_JSDOCS
+static char* filebase_detail_prop_desc[] = {
+	 "Include indexed-filenames only",
+	 "Normal level of file detail (e.g. full filenames, minimal meta data)",
+	 "Normal level of file detail plus extended descriptions",
+	 "Maximum file detail, include undefined/null property values",
+	 NULL
+};
+
+static char* filebase_sort_prop_desc[] = {
+	"Natural sort order (same as DATE_A)",
+	"Filename ascending, case insensitive sort order",
+	"Filename descending, case insensitive sort order",
+	"Filename ascending, case sensitive sort order",
+	"Filename descending, case sensitive sort order",
+	"Import date/time ascending sort order",
+	"Import date/time descending sort order",
+	NULL
+};
+#endif
+
 JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
 	JSObject*	obj;
@@ -1567,6 +1588,10 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_extdesc + 1), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_DescribeSyncObject(cx, obj, "Detail level", 31900);
+			js_CreateArrayOfStrings(cx, obj, "_property_desc_list", filebase_detail_prop_desc, JSPROP_READONLY);
+#endif
 		}
 		JSObject* sort = JS_DefineObject(cx, constructor, "SORT", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 		if(sort != NULL) {
@@ -1584,6 +1609,10 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, sort, "DATE_D", INT_TO_JSVAL(FILE_SORT_DATE_D), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_DescribeSyncObject(cx, obj, "Sort order", 31900);
+			js_CreateArrayOfStrings(cx, obj, "_property_desc_list", filebase_sort_prop_desc, JSPROP_READONLY);
+#endif
 		}
 	}
 	return obj;
