@@ -191,7 +191,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* client_user_name, cha
 					rd=getstr((char*)buf,sizeof(buf)-1,l);
 					if(!rd)
 						continue;
-					strcat((char*)buf,crlf);
+					SAFECAT((char*)buf,crlf);
 					rd+=2;
 					gotline=true;
 				}
