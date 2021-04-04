@@ -1182,8 +1182,7 @@ enum {
 	,FB_PROP_LAST_FILE		/* last file number */
 	,FB_PROP_LAST_FILE_TIME	/* last file index time */
 	,FB_PROP_FILES 			/* total files */
-	,FB_PROP_NEW_FILE_TIME
-	,FB_PROP_MAX_CRCS		/* Maximum number of CRCs to keep in history */
+	,FB_PROP_UPDATE_TIME
     ,FB_PROP_MAX_FILES		/* Maximum number of file to keep in dir */
     ,FB_PROP_MAX_AGE		/* Maximum age of file to keep in dir (in days) */
 	,FB_PROP_ATTR			/* Attributes for this file base (SMB_HYPER,etc) */
@@ -1215,7 +1214,7 @@ static JSBool js_filebase_set(JSContext *cx, JSObject *obj, jsid id, JSBool stri
 			if(!JS_ValueToInt32(cx,*vp,(int32*)&(p->smb).retry_delay))
 				return JS_FALSE;
 			break;
-		case FB_PROP_NEW_FILE_TIME:
+		case FB_PROP_UPDATE_TIME:
 			if(!JS_ValueToInt32(cx, *vp, (int32*)&t))
 				return JS_FALSE;
 			update_newfiletime(&(p->smb), t);
@@ -1281,11 +1280,8 @@ static JSBool js_filebase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_RESUMEREQUEST(cx, rc);
 			*vp=UINT_TO_JSVAL(p->smb.status.total_files);
 			break;
-		case FB_PROP_NEW_FILE_TIME:
+		case FB_PROP_UPDATE_TIME:
 			*vp = UINT_TO_JSVAL((uint32_t)newfiletime(&p->smb));
-			break;
-		case FB_PROP_MAX_CRCS:
-			*vp=UINT_TO_JSVAL(p->smb.status.max_crcs);
 			break;
 		case FB_PROP_MAX_FILES:
 			*vp=UINT_TO_JSVAL(p->smb.status.max_files);
@@ -1329,8 +1325,7 @@ static jsSyncPropertySpec js_filebase_properties[] = {
 	{	"last_file"			,FB_PROP_LAST_FILE		,FB_PROP_FLAGS,		31900 },
 	{	"last_file_time"	,FB_PROP_LAST_FILE_TIME	,FB_PROP_FLAGS,		31900 },
 	{	"files"				,FB_PROP_FILES			,FB_PROP_FLAGS,		31900 },
-	{	"new_file_time"		,FB_PROP_NEW_FILE_TIME	,JSPROP_ENUMERATE,	31900 },
-	{	"max_crcs"			,FB_PROP_MAX_CRCS		,FB_PROP_FLAGS,		31900 },
+	{	"update_time"		,FB_PROP_UPDATE_TIME	,JSPROP_ENUMERATE,	31900 },
 	{	"max_files"			,FB_PROP_MAX_FILES  	,FB_PROP_FLAGS,		31900 },
 	{	"max_age"			,FB_PROP_MAX_AGE   		,FB_PROP_FLAGS,		31900 },
 	{	"attributes"		,FB_PROP_ATTR			,FB_PROP_FLAGS,		31900 },
@@ -1351,7 +1346,7 @@ static char* filebase_prop_desc[] = {
 	,"last file number - <small>READ ONLY</small>"
 	,"timestamp of last file - <small>READ ONLY</small>"
 	,"total number of files - <small>READ ONLY</small>"
-	,"timestamp of directory (only writable when file base is closed)"
+	,"timestamp of file base index (only writable when file base is closed)"
 	,"maximum number of file CRCs to store (for dupe checking) - <small>READ ONLY</small>"
 	,"maximum number of files before expiration - <small>READ ONLY</small>"
 	,"maximum age (in days) of files to store - <small>READ ONLY</small>"
@@ -1373,72 +1368,72 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,JSDOCSTR("close file base (if open)")
 		,31900
 	},
-	{"get_file",		js_get_file,		2, JSTYPE_OBJECT
-		,JSDOCSTR("<filename | file-object> [,detail=FileBase.DETAIL.NORM]")
-		,JSDOCSTR("get a file object")
+	{"get",				js_get_file,		2, JSTYPE_OBJECT
+		,JSDOCSTR("<filename | file-meta-object> [,detail=FileBase.DETAIL.NORM]")
+		,JSDOCSTR("get a file metadata object")
 		,31900
 	},
-	{"get_file_list",	js_get_file_list,	4, JSTYPE_ARRAY
+	{"get_list",		js_get_file_list,	4, JSTYPE_ARRAY
 		,JSDOCSTR("[filespec] [,detail=FileBase.DETAIL.NORM] [,since-time=0] [,sort=true [,order]]")
-		,JSDOCSTR("get a list of file objects"
+		,JSDOCSTR("get a list (array) of file metadata objects"
 			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_A</tt>"
 			)
 		,31900
 	},
-	{"get_file_name",	js_get_file_name,	1, JSTYPE_STRING
+	{"get_name",		js_get_file_name,	1, JSTYPE_STRING
 		,JSDOCSTR("path/filename")
 		,JSDOCSTR("returns index-formatted (e.g. shortened) version of filename without path (file base does not have to be open)")
 		,31900
 	},
-	{"get_file_names",	js_get_file_names,	3, JSTYPE_ARRAY
+	{"get_names",		js_get_file_names,	3, JSTYPE_ARRAY
 		,JSDOCSTR("[filespec] [,since-time=0] [,sort=true [,order]]")
-		,JSDOCSTR("get a list of filenames (strings) from file base index"
+		,JSDOCSTR("get a list of index-formatted (e.g. shortened) filenames (strings) from file base index"
 			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_A</tt>")
 		,31900
 	},
-	{"get_file_path",	js_get_file_path,	1, JSTYPE_STRING
+	{"get_path",		js_get_file_path,	1, JSTYPE_STRING
 		,JSDOCSTR("filename")
 		,JSDOCSTR("get the full path to the local file")
 		,31900
 	},
-	{"get_file_size",	js_get_file_size,	1, JSTYPE_NUMBER
+	{"get_size",		js_get_file_size,	1, JSTYPE_NUMBER
 		,JSDOCSTR("filename")
 		,JSDOCSTR("get the size of the local file, in bytes, or -1 if it does not exist")
 		,31900
 	},
-	{"get_file_time",	js_get_file_time,	1, JSTYPE_NUMBER
+	{"get_time",		js_get_file_time,	1, JSTYPE_NUMBER
 		,JSDOCSTR("filename")
 		,JSDOCSTR("get the modification date/time stamp of the local file")
 		,31900
 	},
-	{"add_file",		js_add_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("file-object [,use_diz_always=false]")
+	{"add",				js_add_file,		1, JSTYPE_BOOLEAN
+		,JSDOCSTR("file-meta-object [,use_diz_always=false]")
 		,JSDOCSTR("add a file to the file base")
 		,31900
 	},
-	{"remove_file",		js_remove_file,		2, JSTYPE_BOOLEAN
+	{"remove",			js_remove_file,		2, JSTYPE_BOOLEAN
 		,JSDOCSTR("filename [,delete=false]")
 		,JSDOCSTR("remove an existing file from the file base and optionally delete file"
 				", may throw exception on errors (e.g. file remove failure)")
 		,31900
 	},
-	{"update_file",		js_update_file,		3, JSTYPE_BOOLEAN
-		,JSDOCSTR("filename, file-object [,use_diz_always=false]")
+	{"update",			js_update_file,		3, JSTYPE_BOOLEAN
+		,JSDOCSTR("filename, file-meta-object [,use_diz_always=false]")
 		,JSDOCSTR("update an existing file in the file base"
 				", may throw exception on errors (e.g. file rename failure)")
 		,31900
 	},
-	{"renew_file",		js_renew_file,		1, JSTYPE_BOOLEAN
+	{"renew",			js_renew_file,		1, JSTYPE_BOOLEAN
 		,JSDOCSTR("filename")
 		,JSDOCSTR("remove and re-add (as new) an existing file in the file base")
 		,31900
 	},
-	{"hash_file",		js_hash_file,		1, JSTYPE_OBJECT
+	{"hash",			js_hash_file,		1, JSTYPE_OBJECT
 		,JSDOCSTR("filename_or_fullpath")
 		,JSDOCSTR("calculate hashes of a file's contents (file base does not have to be open)")
 		,31900
 	},
-	{"dump_file",		js_dump_file,		1, JSTYPE_ARRAY
+	{"dump",			js_dump_file,		1, JSTYPE_ARRAY
 		,JSDOCSTR("filename")
 		,JSDOCSTR("dump file metadata to an array of strings for diagnostic uses")
 		,31900
@@ -1570,7 +1565,7 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "NORM", INT_TO_JSVAL(file_detail_normal), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, detail, "EXT", INT_TO_JSVAL(file_detail_extdesc), NULL, NULL
+			JS_DefineProperty(cx, detail, "EXTENDED", INT_TO_JSVAL(file_detail_extdesc), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_extdesc + 1), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -1579,13 +1574,13 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 		if(sort != NULL) {
 			JS_DefineProperty(cx, sort, "NATURAL", INT_TO_JSVAL(FILE_SORT_NATURAL), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, sort, "NAME_A", INT_TO_JSVAL(FILE_SORT_NAME_A), NULL, NULL
+			JS_DefineProperty(cx, sort, "NAME_AI", INT_TO_JSVAL(FILE_SORT_NAME_A), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, sort, "NAME_D", INT_TO_JSVAL(FILE_SORT_NAME_D), NULL, NULL
+			JS_DefineProperty(cx, sort, "NAME_DI", INT_TO_JSVAL(FILE_SORT_NAME_D), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, sort, "NAME_AC", INT_TO_JSVAL(FILE_SORT_NAME_AC), NULL, NULL
+			JS_DefineProperty(cx, sort, "NAME_AS", INT_TO_JSVAL(FILE_SORT_NAME_AC), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, sort, "NAME_DC", INT_TO_JSVAL(FILE_SORT_NAME_DC), NULL, NULL
+			JS_DefineProperty(cx, sort, "NAME_DS", INT_TO_JSVAL(FILE_SORT_NAME_DC), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, sort, "DATE_A", INT_TO_JSVAL(FILE_SORT_DATE_A), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);

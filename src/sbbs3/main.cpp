@@ -4280,8 +4280,7 @@ void sbbs_t::logoffstats()
 		}
 		stats.uls+=(uint32_t)logon_uls;
 		stats.ulb+=(uint32_t)logon_ulb;
-//		stats.dls+=logon_dls;	// Now handled in user_downloaded_file()
-//		stats.dlb+=logon_dlb;	// Now handled in user_downloaded_file()
+		// logon_dls and logons_dlb are now handled in user_downloaded_file()
 		stats.etoday+=logon_emails;
 		stats.ftoday+=logon_fbacks;
 

@@ -71,7 +71,7 @@ static char* dir_prop_desc[] = {
 	,"percent of file size awarded uploader in credits upon subsequent downloads"
 	,"directory link (for HTML index)"
 	,"number of files currently in this directory <i>(introduced in v3.18c)</i>"
-	,"timestamp of newest file in this directory <i>(introduced in v3.19)</i>"
+	,"timestamp of file base index of this directory <i>(introduced in v3.19)</i>"
 	,"user has sufficient access to view this directory (e.g. list files) <i>(introduced in v3.18)</i>"
 	,"user has sufficient access to upload files to this directory"
 	,"user has sufficient access to download files from this directory"
@@ -110,7 +110,7 @@ js_file_area_finalize(JSContext *cx, JSObject *obj)
 /***************************************/
 enum {
 	 DIR_PROP_FILES
-	,DIR_PROP_NEW_FILE_TIME
+	,DIR_PROP_UPDATE_TIME
 	,DIR_PROP_CAN_ACCESS
 	,DIR_PROP_CAN_UPLOAD
 	,DIR_PROP_CAN_DOWNLOAD
@@ -122,7 +122,7 @@ static struct JSPropertySpec js_dir_properties[] = {
 /*		 name				,tinyid		,flags	*/
 
 	{	"files"			,DIR_PROP_FILES			,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
-	{	"new_file_time"	,DIR_PROP_NEW_FILE_TIME	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"update_time"	,DIR_PROP_UPDATE_TIME	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
 	{	"can_access"	,DIR_PROP_CAN_ACCESS	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
 	{	"can_upload"	,DIR_PROP_CAN_UPLOAD	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
 	{	"can_download"	,DIR_PROP_CAN_DOWNLOAD	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
@@ -147,7 +147,7 @@ static JSBool js_dir_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case DIR_PROP_FILES:
 			*vp = UINT_TO_JSVAL(getfiles(p->cfg, p->dirnum));
 			break;
-		case DIR_PROP_NEW_FILE_TIME:
+		case DIR_PROP_UPDATE_TIME:
 			*vp = UINT_TO_JSVAL((uint32_t)dir_newfiletime(p->cfg, p->dirnum));
 			break;
 		case DIR_PROP_CAN_ACCESS:
