@@ -549,7 +549,7 @@ bool upgrade_file_bases(bool hash)
 	for(int i = 0; i < scfg.total_dirs; i++) {
 		smb_t smb;
 
-		SAFEPRINTF2(smb.file, "%s%s", scfg.dir[i]->data_dir, scfg.dir[i]->code);
+		(void)smb_init_dir(&scfg, &smb, i);
 		if((result = smb_open(&smb)) != SMB_SUCCESS) {
 			fprintf(stderr, "Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
 			return false;
@@ -571,12 +571,14 @@ bool upgrade_file_bases(bool hash)
 		sprintf(str,"%s%s.ixb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
 		if((file=open(str,O_RDONLY|O_BINARY))==-1) {
 			smb_close(&smb);
+			closeextdesc(extfile);
 			continue;
 		}
 		long l=(long)filelength(file);
 		if(!l) {
 			close(file);
 			smb_close(&smb);
+			closeextdesc(extfile);
 			continue;
 		}
 		uchar* ixbbuf;
@@ -584,6 +586,7 @@ bool upgrade_file_bases(bool hash)
 			close(file);
 			printf("\7ERR_ALLOC %s %lu\n",str,l);
 			smb_close(&smb);
+			closeextdesc(extfile);
 			continue;
 		}
 		if(read(file,ixbbuf,l)!=(int)l) {
@@ -591,6 +594,7 @@ bool upgrade_file_bases(bool hash)
 			printf("\7ERR_READ %s %lu\n",str,l);
 			free(ixbbuf);
 			smb_close(&smb);
+			closeextdesc(extfile);
 			continue;
 		}
 		close(file);
@@ -598,6 +602,9 @@ bool upgrade_file_bases(bool hash)
 		oldfile_t* filelist = malloc(sizeof(*filelist) * file_count);
 		if(filelist == NULL) {
 			printf("malloc failure");
+			free(ixbbuf);
+			smb_close(&smb);
+			closeextdesc(extfile);
 			return false;
 		}
 		memset(filelist, 0, sizeof(*filelist) * file_count);
