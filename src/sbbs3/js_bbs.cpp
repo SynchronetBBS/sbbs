@@ -1527,7 +1527,7 @@ js_revert_text(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	i--;
 
-	if(i<0 || i>=TOTAL_TEXT) {
+	if(i>=TOTAL_TEXT) {
 		for(i=0;i<TOTAL_TEXT;i++) {
 			if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
 				free(sbbs->text[i]);
