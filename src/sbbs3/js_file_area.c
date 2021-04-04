@@ -64,7 +64,7 @@ static char* dir_prop_desc[] = {
 	,"directory data storage location"
 	,"toggle options (bitfield)"
 	,"sequential (slow storage) device number"
-	,"sort order (see <tt>SORT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
+	,"sort order (see <tt>FileBase.SORT</tt> for valid values)"
 	,"configured maximum number of files"
 	,"configured maximum age (in days) of files before expiration"
 	,"percent of file size awarded uploader in credits upon file upload"
