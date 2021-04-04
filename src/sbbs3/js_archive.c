@@ -569,6 +569,14 @@ static jsSyncMethodSpec js_archive_functions[] = {
 	{0}
 };
 
+#ifdef BUILD_JSDOCS
+static char* archive_prop_desc[] = {
+
+	 "format/compression type of archive file - <small>READ ONLY</small>"
+	,NULL
+};
+#endif
+
 static JSBool
 js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -601,7 +609,7 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		,31900
 		);
 	js_DescribeSyncConstructor(cx,obj,"To create a new Archive object: <tt>var a = new Archive(<i>filename</i>)</tt>");
-	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", file_prop_desc, JSPROP_READONLY);
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", archive_prop_desc, JSPROP_READONLY);
 #endif
 
 	return JS_TRUE;
