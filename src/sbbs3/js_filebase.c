@@ -468,8 +468,6 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 		SAFECOPY(path, filename);
 	else {
 		file.name = filename;
-		// read index record, if it exists (for altpath)
-		smb_findfile(&p->smb, filename, &file);
 		getfilepath(scfg, &file, path);
 	}
 	off_t size = flength(path);
