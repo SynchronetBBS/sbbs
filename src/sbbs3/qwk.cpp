@@ -689,6 +689,11 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 	long		l;
 	uint32_t	last;
 
+	if(reset && !IS_DIGIT(*buf)) {
+		getlastmsg(subnum,&(subscan[subnum].ptr),/* time_t* */NULL);
+		return;
+	}
+
 	if(buf[2]=='/' && buf[5]=='/') {    /* date specified */
 		time_t t=dstrtounix(&cfg,buf);
 		subscan[subnum].ptr=getmsgnum(subnum,t);
@@ -697,15 +702,13 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 	l=atol(buf);
 	if(l>=0)							  /* ptr specified */
 		subscan[subnum].ptr=l;
-	else if(l) {						  /* relative ptr specified */
+	else {								  /* relative (to last msg) ptr specified */
 		getlastmsg(subnum,&last,/* time_t* */NULL);
 		if(-l>(long)last)
 			subscan[subnum].ptr=0;
 		else
 			subscan[subnum].ptr=last+l;
 	}
-	else if(reset)
-		getlastmsg(subnum,&(subscan[subnum].ptr),/* time_t* */NULL);
 }
 
 
@@ -774,7 +777,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 			qwksetptr(subnum,str+7,1);
 			return;
 		}
-		}
+	}
 
 	if(!strncmp(str,"RESETALL ",9)) {              /* set all ptrs */
 		for(x=y=0;x<usrgrps;x++)
