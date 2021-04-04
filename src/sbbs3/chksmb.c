@@ -105,13 +105,21 @@ BOOL contains_ctrl_chars(char* str)
 
 void print_hash(hash_t* hash)
 {
+	char str[128];
+
 	printf("\t%-20s = %lu\n"		,"hash.number"	, (ulong)hash->number);
 	printf("\t%-20s = 0x%08lX\n"	,"hash.time"	, (ulong)hash->time);
 	printf("\t%-20s = %lu\n"		,"hash.length"	, (ulong)hash->length);
 	printf("\t%-20s = 0x%02X\n"		,"hash.source"	, (unsigned)hash->source);
 	printf("\t%-20s = 0x%02X\n"		,"hash.flags"	, (unsigned)hash->flags);
-	printf("\t%-20s = 0x%04hX\n"	,"hash.crc16"	, hash->data.crc16);
-	printf("\t%-20s = 0x%08X\n"		,"hash.crc32"	, hash->data.crc32);
+	if(hash->flags & SMB_HASH_CRC16)
+		printf("\t%-20s = 0x%04hX\n"	,"hash.crc16"	, hash->data.crc16);
+	if(hash->flags & SMB_HASH_CRC32)
+		printf("\t%-20s = 0x%08X\n"		,"hash.crc32"	, hash->data.crc32);
+	if(hash->flags & SMB_HASH_MD5)
+		printf("\t%-20s = %s\n"			,"hash.md5"		, MD5_hex(str, hash->data.md5));
+	if(hash->flags & SMB_HASH_SHA1)
+		printf("\t%-20s = %s\n"			,"hash.sha1"	, SHA1_hex(str, hash->data.sha1));
 }
 
 char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
@@ -505,7 +513,7 @@ int main(int argc, char **argv)
 						if(hashes[h]->flags&SMB_HASH_MD5)
 							printf("%-10s: %s\n",	"MD5",		MD5_hex(str,hashes[h]->data.md5));
 						if(hashes[h]->flags&SMB_HASH_SHA1)
-							printf("%-10s: %s\n",	"SHA1",		SHA1_hex(str,hashes[h]->data.md5));
+							printf("%-10s: %s\n",	"SHA-1",	SHA1_hex(str,hashes[h]->data.md5));
 
 #endif
 					}
