@@ -225,6 +225,10 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	free(fname);
 	len=filelength(file);
+	if(len < 1) {
+		close(file);
+		return(JS_TRUE);
+	}
 	if((buf=malloc((size_t)len))==NULL) {
 		close(file);
 		return(JS_TRUE);
