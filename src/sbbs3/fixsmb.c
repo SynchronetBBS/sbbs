@@ -1,8 +1,5 @@
 /* Synchronet message base (SMB) index re-generator */
 
-/* $Id: fixsmb.c,v 1.46 2018/04/30 06:05:12 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -44,6 +29,8 @@
 #include "genwrap.h"	/* PLATFORM_DESC */
 #include "str_list.h"	/* strList API */
 #include "crc16.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 smb_t	smb;
 BOOL	renumber=FALSE;
@@ -60,22 +47,23 @@ int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
 void sort_index(smb_t* smb)
 {
 	ulong		l;
-	idxrec_t*	idx;
+	uint8_t*	idxbuf;
+	size_t		idxreclen = smb_idxreclen(smb);
 
 	printf("Sorting index... ");
-	if((idx=malloc(sizeof(idxrec_t)*smb->status.total_msgs))==NULL) {
+	if((idxbuf = malloc(idxreclen * smb->status.total_msgs))==NULL) {
 		perror("malloc");
 		return;
 	}
 
 	rewind(smb->sid_fp);
 	for(l=0;l<smb->status.total_msgs;l++)
-		if(fread(&idx[l],sizeof(idxrec_t),1,smb->sid_fp)<1) {
+		if(smb_fread(smb, idxbuf + (l * idxreclen), idxreclen, smb->sid_fp) != idxreclen) {
 			perror("reading index");
 			break;
 		}
 
-	qsort(idx,l,sizeof(idxrec_t)
+	qsort(idxbuf, l, idxreclen
 		,(int(*)(const void*, const void*))compare_index);
 
 	rewind(smb->sid_fp);
@@ -83,13 +71,13 @@ void sort_index(smb_t* smb)
 
 	printf("\nRe-writing index... \n");
 	smb->status.total_msgs=l;
-	for(l=0;l<smb->status.total_msgs;l++)
-		if(fwrite(&idx[l],sizeof(idxrec_t),1,smb->sid_fp)<1) {
+	for(l=0;l<smb->status.total_msgs;l++) {
+		if(smb_fwrite(smb, idxbuf + (l * idxreclen), idxreclen, smb->sid_fp) != idxreclen) {
 			perror("writing index");
 			break;
 		}
-
-	free(idx);
+	}
+	free(idxbuf);
 	printf("\n");
 }
 
@@ -110,7 +98,8 @@ int fixsmb(char* sub)
 	char*		text;
 	char		c;
 	int 		i,w;
-	ulong		l,length,size,n;
+	ulong		l,size,n;
+	off_t		length;
 	smbmsg_t	msg;
 	uint32_t*	numbers = NULL;
 	long		total = 0;
@@ -205,11 +194,12 @@ int fixsmb(char* sub)
 	} else
 		length=filelength(fileno(smb.shd_fp));
 
-	n=0;	/* messsage offset */
+	n=0;	/* message offset */
 	for(l=smb.status.header_offset;l<length;l+=size) {
 		size=SHD_BLOCK_LEN;
 		printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
 		fflush(stdout);
+		ZERO_VAR(msg);
 		msg.idx.offset=l;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 			printf("\n(%06lX) smb_lockmsghdr returned %d:\n%s\n",l,i,smb.last_error);
@@ -222,7 +212,8 @@ int fixsmb(char* sub)
 			continue;
 		}
 		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
-		printf("#%-5"PRIu32" (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
+		printf("#%-5"PRIu32" (%06lX) %-25.25s ",msg.hdr.number,l
+			,msg.hdr.type == SMB_MSG_TYPE_FILE ? msg.subj : msg.from);
 
 		dupe_msgnum = FALSE;
 		for(i=0; i<total && !dupe_msgnum; i++)
@@ -267,7 +258,7 @@ int fixsmb(char* sub)
 		else if(msg.hdr.number==0)
 			printf("Not indexing invalid message number (0)!\n");
 		else {
-			msg.offset=n;
+			msg.idx_offset=n;
 			if(renumber)
 				msg.hdr.number=n+1;
 			if(msg.hdr.number > highest)
@@ -327,15 +318,12 @@ int fixsmb(char* sub)
 
 int main(int argc, char **argv)
 {
-	char		revision[16];
 	int 		i;
 	str_list_t	list;
 	int			retval = EXIT_SUCCESS;
 
-	sscanf("$Revision: 1.46 $", "%*s %s", revision);
-
-	printf("\nFIXSMB v2.10-%s (rev %s) SMBLIB %s - Rebuild Synchronet Message Base\n\n"
-		,PLATFORM_DESC,revision,smb_lib_ver());
+	printf("\nFIXSMB v3.19-%s %s/%s SMBLIB %s - Rebuild Synchronet Message Base\n\n"
+		,PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	list=strListInit();
 

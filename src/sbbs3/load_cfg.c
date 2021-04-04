@@ -176,9 +176,6 @@ void prep_cfg(scfg_t* cfg)
 	for(i=0;i<cfg->total_libs;i++) {
 		if(cfg->lib[i]->parent_path[0])
 			prep_dir(cfg->ctrl_dir, cfg->lib[i]->parent_path, sizeof(cfg->lib[i]->parent_path));
-	}
-
-	for(i=0;i<cfg->total_libs;i++) {
 		if((cfg->lib[i]->misc&LIB_DIRS) == 0 || cfg->lib[i]->parent_path[0] == 0)
 			continue;
 		char path[MAX_PATH+1];
@@ -494,4 +491,86 @@ ushort DLLCALL sys_timezone(scfg_t* cfg)
 	}
 
 	return(cfg->sys_timezone);
+}
+
+
+int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
+{
+	if(smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr&SMB_EMAIL))
+		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
+	if(smb->subnum >= cfg->total_subs)
+		return (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
+	if(cfg->sub[smb->subnum]->misc&SUB_HYPER) {
+		smb->status.attr |= SMB_HYPERALLOC;
+		return SMB_HYPERALLOC;
+	}
+	if(cfg->sub[smb->subnum]->misc&SUB_FAST)
+		return SMB_FASTALLOC;
+	return SMB_SELFPACK;
+}
+
+/* Open Synchronet Message Base and create, if necessary (e.g. first time opened) */
+/* If return value is not SMB_SUCCESS, sub-board is not left open */
+int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
+{
+	int retval;
+	smbstatus_t smb_status = {0};
+
+	if(subnum != INVALID_SUB && subnum >= cfg->total_subs)
+		return SMB_FAILURE;
+	memset(smb, 0, sizeof(smb_t));
+	if(subnum == INVALID_SUB) {
+		SAFEPRINTF(smb->file, "%smail", cfg->data_dir);
+		smb_status.max_crcs	= cfg->mail_maxcrcs;
+		smb_status.max_msgs	= 0;
+		smb_status.max_age	= cfg->mail_maxage;
+		smb_status.attr		= SMB_EMAIL;
+	} else {
+		SAFEPRINTF2(smb->file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
+		smb_status.max_crcs	= cfg->sub[subnum]->maxcrcs;
+		smb_status.max_msgs	= cfg->sub[subnum]->maxmsgs;
+		smb_status.max_age	= cfg->sub[subnum]->maxage;
+		smb_status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
+	}
+	smb->retry_time = cfg->smb_retry_time;
+	if((retval = smb_open(smb)) == SMB_SUCCESS) {
+		if(smb_fgetlength(smb->shd_fp) < sizeof(smbhdr_t) + sizeof(smb->status)) {
+			smb->status = smb_status;
+			if((retval = smb_create(smb)) != SMB_SUCCESS)
+				smb_close(smb);
+		}
+		if(retval == SMB_SUCCESS)
+			smb->subnum = subnum;
+	}
+	return retval;
+}
+
+BOOL DLLCALL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+{
+	if(dirnum >= cfg->total_dirs)
+		return FALSE;
+	memset(smb, 0, sizeof(smb_t));
+	SAFEPRINTF2(smb->file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	smb->retry_time = cfg->smb_retry_time;
+	return TRUE;
+}
+
+int DLLCALL smb_open_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+{
+	int retval;
+
+	if(!smb_init_dir(cfg, smb, dirnum))
+		return SMB_FAILURE;
+	if((retval = smb_open(smb)) != SMB_SUCCESS)
+		return retval;
+	smb->dirnum = dirnum;
+	if(filelength(fileno(smb->shd_fp)) < 1) {
+		smb->status.max_files	= cfg->dir[dirnum]->maxfiles;
+		smb->status.max_age		= cfg->dir[dirnum]->maxage;
+		smb->status.attr		= SMB_FILE_DIRECTORY;
+		if(cfg->dir[dirnum]->misc & DIR_NOHASH)
+			smb->status.attr |= SMB_NOHASH;
+		smb_create(smb);
+	}
+	return SMB_SUCCESS;
 }

@@ -208,7 +208,7 @@ cmdkey Q
 	end_cmd
 
 cmdkey L
-	setstr "*.*"
+	setstr "*"
 	file_list
         end_cmd
 

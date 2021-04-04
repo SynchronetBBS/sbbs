@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "qwk.h"
+#include "filedat.h"
 
 /****************************************************************************/
 /* Creates QWK packet, returning 1 if successful, 0 if not. 				*/
@@ -28,7 +29,9 @@
 bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 {
 	char	str[MAX_PATH+1],ch;
-	char 	tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
+	char 	tmp[MAX_PATH+1];
+	char	path[MAX_PATH+1];
+	char	error[256];
 	char*	fname;
 	int 	mode;
 	uint	i,j,k,conf;
@@ -36,8 +39,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	uint32_t posts;
 	uint32_t mailmsgs=0;
 	uint32_t u;
-	ulong	totalcdt,totaltime
-			,files,submsgs,msgs,netfiles=0,preqwk=0;
+	ulong	files,submsgs,msgs,netfiles=0,preqwk=0;
 	uint32_t	lastmsg;
 	ulong	subs_scanned=0;
 	float	f;	/* Sparky is responsible */
@@ -67,17 +69,31 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	delfiles(cfg.temp_dir,ALLFILES);
 	SAFEPRINTF2(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexistcase(str)) {
-		for(k=0;k<cfg.total_fextrs;k++)
-			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
-				&& chk_ar(cfg.fextr[k]->ar,&useron,&client))
-				break;
-		if(k>=cfg.total_fextrs)
-			k=0;
-		p=cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL);
-		if((i=external(p,ex))==0)
-			preqwk=1; 
-		else 
-			errormsg(WHERE,ERR_EXEC,p,i);
+		long file_count = extract_files_from_archive(str
+			,/* outdir: */cfg.temp_dir
+			,/* allowed_filename_chars: */NULL /* any */
+			,/* with_path: */false
+			,/* max_files: */0 /* unlimited */
+			,/* file_list: */NULL /* all files */
+			,error, sizeof(error));
+		if(file_count > 0) {
+			lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, str);
+			preqwk = TRUE;
+		} else {
+			if(*error)
+				lprintf(LOG_NOTICE, "libarchive error (%s) extracting %s", error, str);
+			for(k=0;k<cfg.total_fextrs;k++)
+				if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
+					&& chk_ar(cfg.fextr[k]->ar,&useron,&client))
+					break;
+			if(k>=cfg.total_fextrs)
+				k=0;
+			p=cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL);
+			if((i=external(p,ex))==0)
+				preqwk=1; 
+			else 
+				errormsg(WHERE,ERR_EXEC,p,i);
+		}
 	}
 
 	if(useron.qwk&QWK_EXPCTLA)
@@ -616,11 +632,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			SAFEPRINTF3(str,"%sqnet/%s.out/%s",cfg.data_dir,id,dirent->d_name);
 			if(isdir(str))
 				continue;
-			SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
+			SAFEPRINTF2(path,"%s%s",cfg.temp_dir,dirent->d_name);
 			lncntr=0;	/* Defeat pause */
 			lprintf(LOG_INFO,"Including %s in packet",str);
 			bprintf(text[RetrievingFile],str);
-			if(!mv(str,tmp2,/* copy: */TRUE))
+			if(!mv(str,path,/* copy: */TRUE))
 				netfiles++;
 		}
 		if(dir!=NULL)
@@ -628,47 +644,40 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		if(netfiles)
 			CRLF; 
 	}
-
-	if(batdn_total) {
-		for(i=0,totalcdt=0;i<batdn_total;i++)
-			if(!is_download_free(&cfg,batdn_dir[i],&useron,&client))
-				totalcdt+=batdn_cdt[i];
-		if(totalcdt>useron.cdt+useron.freecdt) {
-			bprintf(text[YouOnlyHaveNCredits]
-				,ultoac(useron.cdt+useron.freecdt,tmp)); 
-		}
-		else {
-			for(i=0,totaltime=0;i<batdn_total;i++) {
-				if(!(cfg.dir[batdn_dir[i]]->misc&DIR_TFREE) && cur_cps)
-					totaltime+=batdn_size[i]/(ulong)cur_cps; 
+	{
+		int64_t totalcdt = 0;
+		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
+		str_list_t filenames = iniGetSectionList(ini, NULL);
+		for(size_t i = 0; filenames[i] != NULL; i++) {
+			const char* filename = filenames[i];
+			file_t f = {{}};
+			if(!batch_file_load(&cfg, ini, filename, &f))
+				continue;
+			if(!is_download_free(&cfg, f.dir, &useron, &client)) {
+				if(totalcdt + f.cost > (int64_t)(useron.cdt+useron.freecdt)) {
+					bprintf(text[YouOnlyHaveNCredits]
+						,ultoac(useron.cdt+useron.freecdt,tmp));
+					batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+					continue;
+				}
+				totalcdt += f.cost;
 			}
-			if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime>timeleft)
-				bputs(text[NotEnoughTimeToDl]);
-			else {
-				for(i=0;i<batdn_total;i++) {
-					lncntr=0;
-					unpadfname(batdn_name[i],tmp);
-					SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,tmp);
-					if(!fexistcase(tmp2)) {
-						seqwait(cfg.dir[batdn_dir[i]]->seqdev);
-						bprintf(text[RetrievingFile],tmp);
-						SAFEPRINTF2(str,"%s%s"
-							,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
-							? cfg.altpath[batdn_alt[i]-1]
-							: cfg.dir[batdn_dir[i]]->path
-							,tmp);
-						mv(str,tmp2,/* copy: */TRUE); /* copy the file to temp dir */
-						getnodedat(cfg.node_num,&thisnode,/* copy: */TRUE);
-						thisnode.aux=0xfe;
-						putnodedat(cfg.node_num,&thisnode);
-						CRLF; 
-					} 
-				} 
-			} 
-		} 
+			lncntr=0;
+			SAFEPRINTF2(tmp, "%s%s", cfg.temp_dir, filename);
+			if(!fexistcase(tmp)) {
+				seqwait(cfg.dir[f.dir]->seqdev);
+				getfilepath(&cfg, &f, path);
+				bprintf(text[RetrievingFile], path);
+				if(mv(path, tmp,/* copy: */TRUE) != 0) /* copy the file to temp dir */
+					batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+				CRLF;
+			}
+		}
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
 	}
 
-	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total && !voting_data
+	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total() && !voting_data
 		&& (prepack || !preqwk)) {
 		if(online == ON_REMOTE)
 			bputs(text[QWKNoNewMessages]);
@@ -681,28 +690,28 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/***********************/
 		SAFEPRINTF(str,"%sQWK/HELLO",cfg.text_dir);
 		if(fexistcase(str)) {
-			SAFEPRINTF(tmp2,"%sHELLO",cfg.temp_dir);
-			mv(str,tmp2,/* copy: */TRUE); 
+			SAFEPRINTF(path,"%sHELLO",cfg.temp_dir);
+			mv(str,path,/* copy: */TRUE); 
 		}
 		SAFEPRINTF(str,"%sQWK/BBSNEWS",cfg.text_dir);
 		if(fexistcase(str)) {
-			SAFEPRINTF(tmp2,"%sBBSNEWS",cfg.temp_dir);
-			mv(str,tmp2,/* copy: */TRUE); 
+			SAFEPRINTF(path,"%sBBSNEWS",cfg.temp_dir);
+			mv(str,path,/* copy: */TRUE); 
 		}
 		SAFEPRINTF(str,"%sQWK/GOODBYE",cfg.text_dir);
 		if(fexistcase(str)) {
-			SAFEPRINTF(tmp2,"%sGOODBYE",cfg.temp_dir);
-			mv(str,tmp2,/* copy: */TRUE); 
+			SAFEPRINTF(path,"%sGOODBYE",cfg.temp_dir);
+			mv(str,path,/* copy: */TRUE); 
 		}
 		SAFEPRINTF(str,"%sQWK/BLT-*",cfg.text_dir);
 		glob(str,0,NULL,&g);
 		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
-			padfname(fname,str);
-			if(IS_DIGIT(str[4]) && IS_DIGIT(str[9])) {
+			char* fext = getfext(fname);
+			if(IS_DIGIT(str[4]) && fext != NULL && IS_DIGIT(*(fext + 1))) {
 				SAFEPRINTF2(str,"%sQWK/%s",cfg.text_dir,fname);
-				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,fname);
-				mv(str,tmp2,/* copy: */TRUE); 
+				SAFEPRINTF2(path,"%s%s",cfg.temp_dir,fname);
+				mv(str,path,/* copy: */TRUE); 
 			}
 		}
 		globfree(&g);
@@ -718,15 +727,21 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*******************/
 	/* Compress Packet */
 	/*******************/
-	SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
-	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL)
-		,ex|EX_WILDCARD);
+	SAFEPRINTF2(path,"%s%s",cfg.temp_dir,ALLFILES);
+	if(strListFind((str_list_t)supported_archive_formats, useron.tmpext, /* case_sensitive */FALSE) >= 0) {
+		str_list_t file_list = directory(path);
+		long file_count = create_archive(packet, useron.tmpext, /* with_path: */false, file_list, error, sizeof(error));
+		strListFree(&file_list);
+		if(file_count < 0)
+			lprintf(LOG_ERR, "libarchive error (%s) creating %s", error, packet);
+		else
+			lprintf(LOG_INFO, "libarchive created %s from %ld files", packet, file_count);
+	} else {
+		if((i = external(cmdstr(temp_cmd(),packet,path,NULL), ex|EX_WILDCARD)) != 0)
+			errormsg(WHERE,ERR_EXEC,cmdstr(temp_cmd(),packet,path,NULL),i);
+	}
 	if(!fexist(packet)) {
 		bputs(text[QWKCompressionFailed]);
-		if(i)
-			errormsg(WHERE,ERR_EXEC,cmdstr(temp_cmd(),packet,tmp2,NULL),i);
-		else
-			lprintf(LOG_ERR, "Couldn't compress QWK packet");
 		return(false); 
 	}
 

@@ -142,7 +142,7 @@ void sbbs_t::logentry(const char *code, const char *entry)
 /****************************************************************************/
 /* Writes 'str' verbatim into node.log 										*/
 /****************************************************************************/
-void sbbs_t::log(char *str)
+void sbbs_t::log(const char *str)
 {
 	if(logfile_fp==NULL || online==ON_LOCAL) return;
 	if(logcol>=78 || (78-logcol)<strlen(str)) {

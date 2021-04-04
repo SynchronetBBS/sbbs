@@ -219,7 +219,7 @@ cmdstr F
 		if_false
 			end_cmd
 			end_if
-		setstr "*.*"
+		setstr "*"
 		file_list
 		end_cmd
 

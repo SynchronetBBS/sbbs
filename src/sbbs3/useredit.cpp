@@ -1,7 +1,5 @@
 /* Synchronet online sysop user editor */
 
-/* $Id: useredit.cpp,v 1.75 2020/08/04 04:26:03 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -39,6 +25,7 @@
 
 #include "sbbs.h"
 #include "petdefs.h"
+#include "filedat.h"
 
 #define SEARCH_TXT 0
 #define SEARCH_ARS 1
@@ -1032,11 +1019,20 @@ void sbbs_t::maindflts(user_t* user)
 					putuserrec(&cfg,user->number,U_SHELL,8,cfg.shell[i]->code);
 				break;
 			case 'A':
-				for(i=0;i<cfg.total_fcomps;i++)
-					uselect(1,i,text[ArchiveTypeHeading],cfg.fcomp[i]->ext,cfg.fcomp[i]->ar);
+			{
+				str_list_t ext_list = strListDup((str_list_t)supported_archive_formats);
+				for(i=0; i < cfg.total_fcomps; i++) {
+					if(strListFind(ext_list, cfg.fcomp[i]->ext, /* case-sensitive */FALSE) < 0
+						&& chk_ar(cfg.fcomp[i]->ar, &useron, &client))
+						strListPush(&ext_list, cfg.fcomp[i]->ext);
+				}
+				for(i=0; ext_list[i] != NULL; i++)
+					uselect(1,i,text[ArchiveTypeHeading], ext_list[i], NULL);
 				if((i=uselect(0,0,0,0,0))>=0)
-					putuserrec(&cfg,user->number,U_TMPEXT,3,cfg.fcomp[i]->ext);
+					putuserrec(&cfg,user->number,U_TMPEXT,3,ext_list[i]);
+				strListFree(&ext_list);
 				break;
+			}
 			case 'L':
 				bputs(text[HowManyColumns]);
 				if((i = getnum(TERM_COLS_MAX)) < 0)

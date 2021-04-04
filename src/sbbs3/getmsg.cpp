@@ -403,10 +403,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 			p=strchr(tp,' ');
 			if(p) *p=0;
 			tp=getfname(tp);
-			file_t	fd;
-			fd.dir=cfg.total_dirs+1;			/* temp dir for file attachments */
 			if(strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
-				padfname(tp,fd.name);
 				SAFEPRINTF3(fpath,"%sfile/%04u.in/%s"  /* path is path/fname */
 					,cfg.data_dir, msg->idx.to, tp);
 				if(!fexistcase(fpath) && msg->idx.from)
@@ -441,7 +438,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 									break;
 							if(i<cfg.total_prots) {
 								int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, false);
-								if(checkprotresult(cfg.prot[i],error,&fd)) {
+								if(checkprotresult(cfg.prot[i],error,fpath)) {
 									if(del)
 										(void)remove(fpath);
 									logon_dlb+=length;	/* Update stats */
@@ -451,10 +448,10 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 									useron.dlb=adjustuserrec(&cfg,useron.number
 										,U_DLB,10,length);
 									bprintf(text[FileNBytesSent]
-										,fd.name,ultoac(length,tmp));
+										,getfname(fpath),ultoac(length,tmp));
 									SAFEPRINTF(str
 										,"downloaded attached file: %s"
-										,fd.name);
+										,getfname(fpath));
 									logline("D-",str);
 								}
 								autohangup();
@@ -569,7 +566,7 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 		smb_close(&smb);
 		return(0);
 	}
-	msg.offset=0;
+	msg.idx_offset=0;
 	msg.hdr.number=0;
 	if(smb_getmsgidx(&smb,&msg)) {				/* Get first message index */
 		smb_close(&smb);
@@ -597,13 +594,13 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 	}
 
 	if(ptr-msg.idx.number < lastidx.number-ptr) {
-		msg.offset=0;
+		msg.idx_offset=0;
 		msg.idx.number=0;
 		while(msg.idx.number<ptr) {
 			msg.hdr.number=0;
 			if(smb_getmsgidx(&smb,&msg) || msg.idx.number>=ptr)
 				break;
-			msg.offset++;
+			msg.idx_offset++;
 		}
 		smb_close(&smb);
 		return(msg.idx.time);

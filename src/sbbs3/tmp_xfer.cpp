@@ -1,9 +1,4 @@
-/* tmp_xfer.cpp */
-
 /* Synchronet temp directory file transfer routines */
-// vi: tabstop=4
-
-/* $Id: tmp_xfer.cpp,v 1.51 2020/05/14 07:50:00 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -18,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -44,6 +27,7 @@
 /*****************************************************************************/
 void sbbs_t::temp_xfer()
 {
+#if 0	// TODO
     char	str[256],tmp2[256],done=0,ch;
 	char 	tmp[512];
 	int		error;
@@ -195,7 +179,7 @@ void sbbs_t::temp_xfer()
 					if(cfg.dir[temp_dirnum]->misc&DIR_TFREE)
 						starttime+=end-start;
 					if(checkprotresult(cfg.prot[i],error,&f))
-						downloadfile(&f);
+						downloadedfile(&f);
 					else
 						notdownloaded(f.size,start,end);
 					autohangup(); 
@@ -279,6 +263,7 @@ void sbbs_t::temp_xfer()
 	}
 	free(cfg.dir[dirnum]);
 	cfg.total_dirs--;
+#endif
 }
 
 /*****************************************************************************/
@@ -286,6 +271,7 @@ void sbbs_t::temp_xfer()
 /*****************************************************************************/
 void sbbs_t::extract(uint dirnum)
 {
+#if 0 // NFB-TODO
     char	fname[13],str[256],excmd[256],path[256],done
 				,tmp[256],intmp=0;
     uint	i,j;
@@ -348,11 +334,11 @@ void sbbs_t::extract(uint dirnum)
 		bputs(text[UnextractableFile]);
 		return; 
 	}
-	if(!intmp && !findfile(&cfg,dirnum,f.name)) {    /* not temp dir */
+	if(!intmp && !findfile(&cfg, dirnum, f.name, NULL)) {    /* not temp dir */
 		bputs(text[SearchingAllDirs]);
 		for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
 			if(i==dirnum) continue;
-			if(findfile(&cfg,usrdir[curlib][i],f.name))
+			if(findfile(&cfg, usrdir[curlib][i], f.name, NULL))
 				break; 
 		}
 		if(i==usrdirs[curlib]) { /* not found in cur lib */
@@ -360,7 +346,7 @@ void sbbs_t::extract(uint dirnum)
 			for(i=j=0;i<usrlibs;i++) {
 				if(i==curlib) continue;
 				for(j=0;j<usrdirs[i] && !msgabort();j++)
-					if(findfile(&cfg,usrdir[i][j],f.name))
+					if(findfile(&cfg, usrdir[i][j], f.name, NULL))
 						break;
 				if(j<usrdirs[i])
 					break; 
@@ -425,6 +411,7 @@ void sbbs_t::extract(uint dirnum)
 				break; 
 		} 
 	}
+#endif
 }
 
 /****************************************************************************/
@@ -434,21 +421,20 @@ void sbbs_t::extract(uint dirnum)
 ulong sbbs_t::create_filelist(const char *name, long mode)
 {
     char	str[256];
-	int		file;
+	FILE*	fp;
 	uint	i,j,d;
 	ulong	l,k;
 
 	if(online == ON_REMOTE)
 		bprintf(text[CreatingFileList],name);
 	SAFEPRINTF2(str,"%s%s",cfg.temp_dir,name);
-	if((file=nopen(str,O_CREAT|O_WRONLY|O_APPEND))==-1) {
+	if((fp = fopen(str,"ab")) == NULL) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_APPEND);
 		return(0);
 	}
 	k=0;
 	if(mode&FL_ULTIME) {
-		SAFEPRINTF(str,"New files since: %s\r\n",timestr(ns_time));
-		write(file,str,strlen(str));
+		fprintf(fp, "New files since: %s\r\n", timestr(ns_time));
 	}
 	for(i=j=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,d++) {
@@ -459,7 +445,7 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 				&& (cfg.lib[usrlib[i]]->offline_dir==usrdir[i][j]
 				|| cfg.dir[usrdir[i][j]]->misc&DIR_NOSCAN))
 				continue;
-			l=listfiles(usrdir[i][j],nulstr,file,mode);
+			l=listfiles(usrdir[i][j], nulstr, fp, mode);
 			if((long)l==-1)
 				break;
 			k+=l;
@@ -468,10 +454,9 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 			break;
 	}
 	if(k>1) {
-		SAFEPRINTF(str,"\r\n%ld Files Listed.\r\n",k);
-		write(file,str,strlen(str));
+		fprintf(fp,"\r\n%ld Files Listed.\r\n",k);
 	}
-	close(file);
+	fclose(fp);
 	if(k)
 		bprintf(text[CreatedFileList],name);
 	else {
@@ -489,7 +474,7 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 /* This function returns the command line for the temp file extension for	*/
 /* current user online. 													*/
 /****************************************************************************/
-char * sbbs_t::temp_cmd(void)
+const char* sbbs_t::temp_cmd(void)
 {
 	int i;
 

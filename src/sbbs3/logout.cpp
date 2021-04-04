@@ -57,10 +57,8 @@ void sbbs_t::logout()
 
 	if(useron.rest&FLAG('G')) {
 		putuserrec(&cfg,useron.number,U_NAME,LEN_NAME,nulstr);		
-		batdn_total=0; 
+		clearbatdl();
 	}
-
-	batch_create_list();
 
 	if(sys_status&SS_USERON && thisnode.status!=NODE_QUIET && !(useron.rest&FLAG('Q')))
 		for(i=1;i<=cfg.sys_nodes;i++)
@@ -86,7 +84,6 @@ void sbbs_t::logout()
 		lprintf(LOG_DEBUG, "executing logout module: %s", cfg.logout_mod);
 		exec_bin(cfg.logout_mod,&main_csi);
 	}
-	backout();
 	SAFEPRINTF2(path,"%smsgs/%4.4u.msg",cfg.data_dir,useron.number);
 	if(fexistcase(path) && !flength(path))		/* remove any 0 byte message files */
 		remove(path);
@@ -152,60 +149,6 @@ void sbbs_t::logout()
 	answertime=now; // In case we're re-logging on
 
 	lprintf(LOG_DEBUG, "logout completed");
-}
-
-/****************************************************************************/
-/* Backout of transactions and statuses for this node 						*/
-/****************************************************************************/
-void sbbs_t::backout()
-{
-	char path[MAX_PATH+1],code[128],*buf;
-	int i,file;
-	long length,l;
-	file_t f;
-
-	SAFEPRINTF(path,"%sbackout.dab",cfg.node_dir);
-	if(flength(path)<1L) {
-		remove(path);
-		return; 
-	}
-	if((file=nopen(path,O_RDONLY))==-1) {
-		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
-		return; 
-	}
-	length=(long)filelength(file);
-	if((buf=(char *)malloc(length))==NULL) {
-		close(file);
-		errormsg(WHERE,ERR_ALLOC,path,length);
-		return; 
-	}
-	if(read(file,buf,length)!=length) {
-		close(file);
-		free(buf);
-		errormsg(WHERE,ERR_READ,path,length);
-		return; 
-	}
-	close(file);
-	for(l=0;l<length;l+=BO_LEN) {
-		switch(buf[l]) {
-			case BO_OPENFILE:	/* file left open */
-				memcpy(code,buf+l+1,8);
-				code[8]=0;
-				for(i=0;i<cfg.total_dirs;i++)			/* search by code */
-					if(!stricmp(cfg.dir[i]->code,code))
-						break;
-				if(i<cfg.total_dirs) {		/* found internal code */
-					f.dir=i;
-					memcpy(&f.datoffset,buf+l+9,4);
-					closefile(&f); 
-				}
-				break;
-			default:
-				errormsg(WHERE,ERR_CHK,path,buf[l]); 
-		} 
-	}
-	free(buf);
-	remove(path);	/* always remove the backout file */
 }
 
 /****************************************************************************/

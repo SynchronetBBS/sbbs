@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "qwk.h"
+#include "filedat.h"
 
 /****************************************************************************/
 /* Unpacks .REP packet, 'repfile' is the path and filename of the packet    */
@@ -31,6 +32,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	char	rep_fname[MAX_PATH+1];
 	char	msg_fname[MAX_PATH+1];
 	char 	tmp[512];
+	char	error[256];
 	char	inbox[MAX_PATH+1];
 	char	block[QWK_BLOCK_LEN];
 	int 	file;
@@ -70,20 +72,33 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(LOG_NOTICE,nulstr,"REP file not received");
 		return(false); 
 	}
-	for(k=0;k<cfg.total_fextrs;k++)
-		if(!stricmp(cfg.fextr[k]->ext,useron.tmpext) && chk_ar(cfg.fextr[k]->ar,&useron,&client))
-			break;
-	if(k>=cfg.total_fextrs)
-		k=0;
-	ex=EX_STDOUT;
-	if(online!=ON_REMOTE)
-		ex|=EX_OFFLINE;
-	i=external(cmdstr(cfg.fextr[k]->cmd,rep_fname,ALLFILES,NULL),ex);
-	if(i) {
-		bputs(text[QWKExtractionFailed]);
-		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
-		logline(LOG_NOTICE,nulstr,"Extraction failed");
-		return(false); 
+	long file_count = extract_files_from_archive(rep_fname
+		,/* outdir: */cfg.temp_dir
+		,/* allowed_filename_chars: */SAFEST_FILENAME_CHARS
+		,/* with_path: */false
+		,/* max_files */1000
+		,/* file_list: */NULL /* all files */
+		,error, sizeof(error));
+	if(file_count > 0) {
+		lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, rep_fname);
+	} else {
+		if(*error)
+			lprintf(LOG_NOTICE, "libarchive error (%s) extracting %s", error, rep_fname);
+		for(k=0;k<cfg.total_fextrs;k++)
+			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext) && chk_ar(cfg.fextr[k]->ar,&useron,&client))
+				break;
+		if(k>=cfg.total_fextrs)
+			k=0;
+		ex=EX_STDOUT;
+		if(online!=ON_REMOTE)
+			ex|=EX_OFFLINE;
+		i=external(cmdstr(cfg.fextr[k]->cmd,rep_fname,ALLFILES,NULL),ex);
+		if(i) {
+			bputs(text[QWKExtractionFailed]);
+			logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
+			logline(LOG_NOTICE,nulstr,"Extraction failed");
+			return(false); 
+		}
 	}
 	SAFEPRINTF2(msg_fname,"%s%s.msg",cfg.temp_dir,cfg.sys_id);
 	if(!fexistcase(msg_fname)) {

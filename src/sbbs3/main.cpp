@@ -105,6 +105,12 @@ static	link_list_t current_connections;
 int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
 #endif
 
+/* convenient space-saving global variables */
+extern "C" {
+const char* crlf="\r\n";
+const char* nulstr="";
+};
+
 #define GCES(status, node, sess, action) do {                          \
 	char *GCES_estr;                                                    \
 	int GCES_level;                                                      \
@@ -429,6 +435,10 @@ void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
 {
 	void *ret = JS_GetInstancePrivate(cx, obj, cls, NULL);
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	if(ret == NULL)
 		JS_ReportError(cx, "'%s' instance: No Private Data or Class Mismatch"
 			, cls == NULL ? "???" : cls->name);
@@ -692,6 +702,10 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 {
 	uint i;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	for(i=0;props[i].name;i++) {
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if(!JS_DefinePropertyWithTinyId(cx, obj,
@@ -713,6 +727,10 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 {
 	uint i;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	for(i=0;funcs[i].name;i++)
 		if(!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
 			return(JS_FALSE);
@@ -725,6 +743,10 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 	uint i;
 	jsval	val;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	if(props) {
 		for(i=0;props[i].name;i++) {
 			if(name==NULL || strcmp(name, props[i].name)==0) {
@@ -1410,10 +1432,16 @@ extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		node_cfg=cfg;
 
 	/* Global Object */
-	if(!js_CreateGlobalObject(js_cx, cfg, methods, js_startup, glob))
+	if(!js_CreateGlobalObject(js_cx, node_cfg, methods, js_startup, glob))
 		return(FALSE);
 
 	do {
+		/*
+		 * NOTE: Where applicable, anything added here should also be added to
+		 *       the same function in jsdoor.c (ie: anything not Synchronet
+		 *       specific).
+		 */
+
 		/* System Object */
 		if(js_CreateSystemObject(js_cx, *glob, node_cfg, uptime, host_name, socklib_desc)==NULL)
 			break;
@@ -1445,8 +1473,16 @@ extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		if(js_CreateMsgBaseClass(js_cx, *glob, cfg)==NULL)
 			break;
 
+		/* FileBase Class */
+		if(js_CreateFileBaseClass(js_cx, *glob, node_cfg)==NULL)
+			break;
+
 		/* File Class */
 		if(js_CreateFileClass(js_cx, *glob)==NULL)
+			break;
+
+		/* Archive Class */
+		if(js_CreateArchiveClass(js_cx, *glob)==NULL)
 			break;
 
 		/* User class */
@@ -2609,8 +2645,6 @@ void event_thread(void* arg)
 					sbbs->getusrsubs();
 					bool success = sbbs->unpack_rep(g.gl_pathv[i]);
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
-					sbbs->batch_create_list();	/* FREQs? */
-					sbbs->batdn_total=0;
 					sbbs->online=FALSE;
 					sbbs->console&=~CON_L_ECHO;
 
@@ -2664,11 +2698,8 @@ void event_thread(void* arg)
 					sbbs->console|=CON_L_ECHO;
 					sbbs->getmsgptrs();
 					sbbs->getusrsubs();
-					sbbs->batdn_total=0;
 
 					sbbs->last_ns_time=sbbs->ns_time=sbbs->useron.ns_time;
-					SAFEPRINTF2(bat_list,"%sfile/%04u.dwn",sbbs->cfg.data_dir,sbbs->useron.number);
-					sbbs->batch_add_list(bat_list);
 
 					SAFEPRINTF3(str,"%sfile%c%04u.qwk"
 						,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
@@ -2723,7 +2754,6 @@ void event_thread(void* arg)
 						sbbs->console|=CON_L_ECHO;
 						sbbs->getmsgptrs();
 						sbbs->getusrsubs();
-						sbbs->batdn_total=0;
 						SAFEPRINTF3(str,"%sfile%c%04u.qwk"
 							,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
 						if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
@@ -2878,7 +2908,7 @@ void event_thread(void* arg)
 					|| (sbbs->cfg.qhub[i]->time
 						&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.qhub[i]->time
 						&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
-					&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
+							&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
 				SAFEPRINTF2(str,"%sqnet/%s.now"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				if(fexistcase(str)) {
@@ -3418,19 +3448,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	usrdir=NULL;
 	usrlib_total=0;
 
-	batup_desc=NULL;
-	batup_name=NULL;
-	batup_misc=NULL;
-	batup_dir=NULL;
-	batup_alt=NULL;
-
-	batdn_name=NULL;
-	batdn_dir=NULL;
-	batdn_offset=NULL;
-	batdn_size=NULL;
-	batdn_alt=NULL;
-	batdn_cdt=NULL;
-
 	/* used by update_qwkroute(): */
 	qwknode=NULL;
 	total_qwknodes=0;
@@ -3454,7 +3471,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
     usrgrps = 0;
     usrlibs = 0;
     comspec = 0;
-    altul = 0;
     noaccess_str = 0;
     noaccess_val = 0;
     cur_output_rate = output_rate_unlimited;
@@ -3607,9 +3623,6 @@ bool sbbs_t::init()
 		putnodedat(cfg.node_num,&thisnode);
 	}
 
-/** Put in if(cfg.node_num) ? (not needed for server and event threads) */
-	backout();
-
 	/* Reset COMMAND SHELL */
 
 	main_csi.str=(char *)malloc(1024);
@@ -3700,73 +3713,6 @@ bool sbbs_t::init()
 		for(i=0;i<cfg.total_libs;i++)
 			if((usrdir[i]=(uint *)malloc(sizeof(uint)*l))==NULL) {
 				errormsg(WHERE, ERR_ALLOC, "usrdir[x]", sizeof(uint)*l);
-				return(false);
-			}
-	}
-
-	if(cfg.max_batup) {
-
-		if((batup_desc=(char **)malloc(sizeof(char *)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_desc", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		if((batup_name=(char **)malloc(sizeof(char *)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_name", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		if((batup_misc=(long *)malloc(sizeof(long)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_misc", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		if((batup_dir=(uint *)malloc(sizeof(uint)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_dir", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		if((batup_alt=(ushort *)malloc(sizeof(ushort)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_alt", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		for(i=0;i<cfg.max_batup;i++) {
-			if((batup_desc[i]=(char *)malloc(LEN_FDESC+1))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "batup_desc[x]", LEN_FDESC+1);
-				return(false);
-			}
-			if((batup_name[i]=(char *)malloc(13))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "batup_name[x]", 13);
-				return(false);
-			}
-		}
-	}
-
-	if(cfg.max_batdn) {
-
-		if((batdn_name=(char **)malloc(sizeof(char *)*cfg.max_batdn))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batdn_name", sizeof(char *)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_dir=(uint *)malloc(sizeof(uint)*cfg.max_batdn))==NULL)  {
-			errormsg(WHERE, ERR_ALLOC, "batdn_dir", sizeof(uint)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_offset=(long *)malloc(sizeof(long)*cfg.max_batdn))==NULL)  {
-			errormsg(WHERE, ERR_ALLOC, "batdn_offset", sizeof(long)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_size=(ulong *)malloc(sizeof(ulong)*cfg.max_batdn))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batdn_size", sizeof(ulong)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_cdt=(ulong *)malloc(sizeof(ulong)*cfg.max_batdn))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batdn_cdt", sizeof(long)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_alt=(ushort *)malloc(sizeof(ushort)*cfg.max_batdn))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batdn_alt", sizeof(ushort)*cfg.max_batdn);
-			return(false);
-		}
-		for(i=0;i<cfg.max_batdn;i++)
-			if((batdn_name[i]=(char *)malloc(13))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "batdn_name[x]", 13);
 				return(false);
 			}
 	}
@@ -3881,29 +3827,6 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(usrlib);
 	FREE_AND_NULL(usrdirs);
 	FREE_AND_NULL(usrdir);
-
-	/* Batch upload vars */
-	for(i=0;i<cfg.max_batup && batup_desc!=NULL && batup_name!=NULL;i++) {
-		FREE_AND_NULL(batup_desc[i]);
-		FREE_AND_NULL(batup_name[i]);
-	}
-
-	FREE_AND_NULL(batup_desc);
-	FREE_AND_NULL(batup_name);
-	FREE_AND_NULL(batup_misc);
-	FREE_AND_NULL(batup_dir);
-	FREE_AND_NULL(batup_alt);
-
-	/* Batch download vars */
-	for(i=0;i<cfg.max_batdn && batdn_name!=NULL;i++)
-		FREE_AND_NULL(batdn_name[i]);
-
-	FREE_AND_NULL(batdn_name);
-	FREE_AND_NULL(batdn_dir);
-	FREE_AND_NULL(batdn_offset);
-	FREE_AND_NULL(batdn_size);
-	FREE_AND_NULL(batdn_cdt);
-	FREE_AND_NULL(batdn_alt);
 
 	listFree(&savedlines);
 	listFree(&smb_list);
@@ -4238,12 +4161,10 @@ void sbbs_t::reset_logon_vars(void)
     autoterm=0;
 	cterm_version = 0;
     lbuflen=0;
-    altul=0;
     timeleft_warn=0;
 	keybufbot=keybuftop=0;
     logon_uls=logon_ulb=logon_dls=logon_dlb=0;
     logon_posts=logon_emails=logon_fbacks=0;
-    batdn_total=batup_total=0;
     usrgrps=usrlibs=0;
     curgrp=curlib=0;
 	for(i=0;i<cfg.total_libs;i++)
@@ -4357,10 +4278,9 @@ void sbbs_t::logoffstats()
 			stats.ttoday+=(uint32_t)(now-logontime)/60;
 			stats.ptoday+=logon_posts;
 		}
-		stats.uls+=logon_uls;
-		stats.ulb+=logon_ulb;
-		stats.dls+=logon_dls;
-		stats.dlb+=logon_dlb;
+		stats.uls+=(uint32_t)logon_uls;
+		stats.ulb+=(uint32_t)logon_ulb;
+		// logon_dls and logons_dlb are now handled in user_downloaded_file()
 		stats.etoday+=logon_emails;
 		stats.ftoday+=logon_fbacks;
 
@@ -4964,14 +4884,6 @@ void DLLCALL bbs_thread(void* arg)
 		startup->seteuid(TRUE);
 
 	status("Initializing");
-
-	/* Defeat the lameo hex0rs - the name and copyright must remain intact */
-	if(crc32(COPYRIGHT_NOTICE,0)!=COPYRIGHT_CRC
-		|| crc32(VERSION_NOTICE,10)!=SYNCHRONET_CRC) {
-		lprintf(LOG_CRIT,"!CORRUPTED LIBRARY FILE");
-		cleanup(1);
-		return;
-	}
 
 	memset(text, 0, sizeof(text));
     memset(&scfg, 0, sizeof(scfg));

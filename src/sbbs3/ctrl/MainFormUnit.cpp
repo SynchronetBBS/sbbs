@@ -293,9 +293,6 @@ static int lputs(void* p, int level, const char *str)
 
 static void log_msg(TRichEdit* Log, log_msg_t* msg)
 {
-    while(MaxLogLen && Log->Lines->Count >= MaxLogLen)
-        Log->Lines->Delete(0);
-
     AnsiString Line=SystemTimeToDateTime(msg->time).FormatString(LOG_TIME_FMT)+"  ";
     Line+=AnsiString(msg->buf).Trim();
 	if(msg->repeated)
@@ -305,7 +302,13 @@ static void log_msg(TRichEdit* Log, log_msg_t* msg)
     Log->SelAttributes->Assign(
         MainForm->LogAttributes(msg->level, Log->Color, Log->Font));
 	Log->Lines->Add(Line);
-    SendMessage(Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
+}
+
+static void logged_msgs(TRichEdit* Log)
+{
+    while(MaxLogLen && Log->Lines->Count >= MaxLogLen)
+        Log->Lines->Delete(0);
+	SendMessage(Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
 }
 
 static void bbs_log_msg(log_msg_t* msg)
@@ -3393,60 +3396,86 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 {
     log_msg_t   msg;
     log_msg_t*  pmsg;
+	ulong count;
+	const int max_lines = 1000;
 
     if(!TelnetPause->Checked) {
-        while(GetServerLogLine(bbs_log,NTSVC_NAME_BBS,&msg))
-            bbs_log_msg(&msg);
+		count = 0;
+        while(count < max_lines && GetServerLogLine(bbs_log,NTSVC_NAME_BBS,&msg))
+            bbs_log_msg(&msg), count++;
 
-        while(GetServerLogLine(event_log,NTSVC_NAME_EVENT,&msg))
-            event_log_msg(&msg);
-
-        while((pmsg=(log_msg_t*)listShiftNode(&bbs_log_list)) != NULL) {
+        while(count < max_lines && (pmsg=(log_msg_t*)listShiftNode(&bbs_log_list)) != NULL) {
             bbs_log_msg(pmsg);
             free(pmsg);
+			count++;
         }
+		if(count)
+			logged_msgs(TelnetForm->Log);
 
-        while((pmsg=(log_msg_t*)listShiftNode(&event_log_list)) != NULL) {
+		count = 0;
+        while(count < max_lines && GetServerLogLine(event_log,NTSVC_NAME_EVENT,&msg))
+            event_log_msg(&msg), count++;
+
+        while(count < max_lines && (pmsg=(log_msg_t*)listShiftNode(&event_log_list)) != NULL) {
             event_log_msg(pmsg);
             free(pmsg);
+			count++;
         }
+		if(count)
+			logged_msgs(EventsForm->Log);
     }
 
     if(!FtpPause->Checked) {
-        while(GetServerLogLine(ftp_log,NTSVC_NAME_FTP,&msg))
-            ftp_log_msg(&msg);
+		count = 0;
+        while(count < max_lines && GetServerLogLine(ftp_log,NTSVC_NAME_FTP,&msg))
+            ftp_log_msg(&msg), count++;
 
-        while((pmsg=(log_msg_t*)listShiftNode(&ftp_log_list)) != NULL) {
+        while(count < max_lines && (pmsg=(log_msg_t*)listShiftNode(&ftp_log_list)) != NULL) {
             ftp_log_msg(pmsg);
             free(pmsg);
+			count++;
         }
+		if(count)
+			logged_msgs(FtpForm->Log);
     }
     if(!MailPause->Checked) {
-        while(GetServerLogLine(mail_log,NTSVC_NAME_MAIL,&msg))
-            mail_log_msg(&msg);
+		count = 0;
+        while(count < max_lines && GetServerLogLine(mail_log,NTSVC_NAME_MAIL,&msg))
+            mail_log_msg(&msg), count++;
 
-        while((pmsg=(log_msg_t*)listShiftNode(&mail_log_list)) != NULL) {
+        while(count < max_lines && (pmsg=(log_msg_t*)listShiftNode(&mail_log_list)) != NULL) {
             mail_log_msg(pmsg);
             free(pmsg);
+			count++;
         }
+		if(count)
+			logged_msgs(MailForm->Log);
     }
     if(!WebPause->Checked) {
-        while(GetServerLogLine(web_log,NTSVC_NAME_WEB,&msg))
-            web_log_msg(&msg);
+		count = 0;
+        while(count < max_lines && GetServerLogLine(web_log,NTSVC_NAME_WEB,&msg))
+            web_log_msg(&msg), count++;
 
-        while((pmsg=(log_msg_t*)listShiftNode(&web_log_list)) != NULL) {
+        while(count < max_lines && (pmsg=(log_msg_t*)listShiftNode(&web_log_list)) != NULL) {
             web_log_msg(pmsg);
             free(pmsg);
+			count++;
         }
+		if(count)
+			logged_msgs(WebForm->Log);
     }
     if(!ServicesPause->Checked) {
-        while(GetServerLogLine(services_log,NTSVC_NAME_SERVICES,&msg))
-            services_log_msg(&msg);
+		count = 0;
+        while(count < max_lines && GetServerLogLine(services_log,NTSVC_NAME_SERVICES,&msg))
+            services_log_msg(&msg), count++;
 
-        while((pmsg=(log_msg_t*)listShiftNode(&services_log_list)) != NULL) {
+        while(count < max_lines && (pmsg=(log_msg_t*)listShiftNode(&services_log_list)) != NULL) {
             services_log_msg(pmsg);
             free(pmsg);
+			count++;
         }
+		if(count)
+			logged_msgs(ServicesForm->Log);
     }
 }
 //---------------------------------------------------------------------------

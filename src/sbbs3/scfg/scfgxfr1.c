@@ -42,15 +42,12 @@ void xfer_opts()
 	static int dlevent_dflt;
 	static int dlevent_bar;
 	static int dlevent_opt;
-	static int altpath_dflt;
-	static int altpath_bar;
 	static fextr_t savfextr;
 	static fview_t savfview;
 	static ftest_t savftest;
 	static fcomp_t savfcomp;
 	static prot_t savprot;
 	static dlevent_t savdlevent;
-	static char savaltpath[LEN_DIR+1];
 
 	while(1) {
 		i=0;
@@ -60,8 +57,6 @@ void xfer_opts()
 			,cfg.max_batup);
 		sprintf(opt[i++],"%-33.33s%u","Max Files in Batch DL Queue"
 			,cfg.max_batdn);
-		sprintf(opt[i++],"%-33.33s%u","Max Users in User Transfers"
-			,cfg.max_userxfer);
 		sprintf(opt[i++],"%-33.33s%u%%","Default Credit on Upload"
 			,cfg.cdt_up_pct);
 		sprintf(opt[i++],"%-33.33s%u%%","Default Credit on Download"
@@ -71,16 +66,13 @@ void xfer_opts()
 				,cfg.leech_pct,cfg.leech_sec);
 		else
 			strcpy(str,"Disabled");
-		sprintf(opt[i++],"%-33.33s%s","Long Filenames in Listings"
-			,cfg.file_misc&FM_NO_LFN ? "No":"Yes");
 		sprintf(opt[i++],"%-33.33s%s","Leech Protocol Detection",str);
 		strcpy(opt[i++],"Viewable Files...");
 		strcpy(opt[i++],"Testable Files...");
 		strcpy(opt[i++],"Download Events...");
 		strcpy(opt[i++],"Extractable Files...");
-		strcpy(opt[i++],"Compressable Files...");
+		strcpy(opt[i++],"Compressible Files...");
 		strcpy(opt[i++],"Transfer Protocols...");
-		strcpy(opt[i++],"Alternate File Paths...");
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`File Transfer Configuration:`\n"
@@ -99,7 +91,7 @@ void xfer_opts()
 					refresh_cfg(&cfg);
 				}
 				return;
-			case 0:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Minimum Kilobytes Free Disk Space to Allow Uploads:`\n"
 					"\n"
@@ -111,7 +103,7 @@ void xfer_opts()
 					,ultoa(cfg.min_dspace,tmp,10),5,K_EDIT|K_NUMBER);
 				cfg.min_dspace=atoi(tmp);
 				break;
-			case 1:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Maximum Files in Batch Upload Queue:`\n"
 					"\n"
@@ -122,7 +114,7 @@ void xfer_opts()
 					,ultoa(cfg.max_batup,tmp,10),5,K_EDIT|K_NUMBER);
 				cfg.max_batup=atoi(tmp);
 				break;
-			case 2:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Maximum Files in Batch Download Queue:`\n"
 					"\n"
@@ -133,19 +125,7 @@ void xfer_opts()
 					,ultoa(cfg.max_batdn,tmp,10),5,K_EDIT|K_NUMBER);
 				cfg.max_batdn=atoi(tmp);
 				break;
-			case 3:
-				uifc.helpbuf=
-					"`Maximum Destination Users in User to User Transfer:`\n"
-					"\n"
-					"This is the maximum number of users allowed in the destination user list\n"
-					"of a user to user upload.\n"
-				;
-				uifc.input(WIN_MID,0,0
-					,"Maximum Destination Users in User to User Transfers"
-					,ultoa(cfg.max_userxfer,tmp,10),5,K_EDIT|K_NUMBER);
-				cfg.max_userxfer=atoi(tmp);
-				break;
-			case 4:
+			case __COUNTER__:
 	uifc.helpbuf=
 		"`Default Percentage of Credits to Credit Uploader on Upload:`\n"
 		"\n"
@@ -157,7 +137,7 @@ void xfer_opts()
 					,ultoa(cfg.cdt_up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 				cfg.cdt_up_pct=atoi(tmp);
 				break;
-			case 5:
+			case __COUNTER__:
 	uifc.helpbuf=
 		"`Default Percentage of Credits to Credit Uploader on Download:`\n"
 		"\n"
@@ -169,27 +149,8 @@ void xfer_opts()
 					,ultoa(cfg.cdt_dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 				cfg.cdt_dn_pct=atoi(tmp);
 				break;
-			case 6:
-				i=0;
-				uifc.helpbuf=
-					"`Long Filenames in File Listings:`\n"
-					"\n"
-					"If you want long filenames to be displayed in the BBS file listings, set\n"
-					"this option to `Yes`. Note: This feature requires Windows 98, Windows 2000\n"
-					"or later.\n"
-				;
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Long Filenames in Listings (Win98/Win2K)",uifcYesNoOpts);
-				if(!i && cfg.file_misc&FM_NO_LFN) {
-					cfg.file_misc&=~FM_NO_LFN;
-					uifc.changes=1;
-				} else if(i==1 && !(cfg.file_misc&FM_NO_LFN)) {
-					cfg.file_misc|=FM_NO_LFN;
-					uifc.changes=1;
-				}
-				break;
 
-			case 7:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Leech Protocol Detection Percentage:`\n"
 					"\n"
@@ -219,7 +180,7 @@ void xfer_opts()
 					,ultoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
 				cfg.leech_sec=atoi(tmp);
 				break;
-			case 8: 	/* Viewable file types */
+			case __COUNTER__: 	/* Viewable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fviews && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.fview[i]->ext,cfg.fview[i]->cmd);
@@ -337,7 +298,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 9:    /* Testable file types */
+			case __COUNTER__:    /* Testable file types */
 				while(1) {
 					for(i=0;i<cfg.total_ftests && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.ftest[i]->ext,cfg.ftest[i]->cmd);
@@ -472,7 +433,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 10:    /* Download Events */
+			case __COUNTER__:    /* Download Events */
 				while(1) {
 					for(i=0;i<cfg.total_dlevents && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.dlevent[i]->ext,cfg.dlevent[i]->cmd);
@@ -606,7 +567,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 11:	 /* Extractable file types */
+			case __COUNTER__:	 /* Extractable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fextrs && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s"
@@ -727,7 +688,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 12:	 /* Compressable file types */
+			case __COUNTER__:	 /* Compressible file types */
 				while(1) {
 					for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.fcomp[i]->ext,cfg.fcomp[i]->cmd);
@@ -740,13 +701,13 @@ void xfer_opts()
 					if(savfcomp.cmd[0])
 						i|=WIN_PASTE;
 					uifc.helpbuf=
-						"`Compressable File Types:`\n"
+						"`Compressible File Types:`\n"
 						"\n"
 						"This is a list of compression methods available for different file types.\n"
 						"These will be used for items such as creating QWK packets, temporary\n"
 						"files from the transfer section, and more.\n"
 					;
-					i=uifc.list(i,0,0,50,&fcomp_dflt,&fcomp_bar,"Compressable File Types",opt);
+					i=uifc.list(i,0,0,50,&fcomp_dflt,&fcomp_bar,"Compressible File Types",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -821,13 +782,13 @@ void xfer_opts()
 							,cfg.fcomp[i]->arstr);
 						opt[j][0]=0;
 						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&fcomp_opt,0
-							,"Compressable File Type",opt)) {
+							,"Compressible File Type",opt)) {
 							case -1:
 								done=1;
 								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Compressable File Type Extension"
+									,"Compressible File Type Extension"
 									,cfg.fcomp[i]->ext,sizeof(cfg.fcomp[i]->ext)-1,K_EDIT);
 								break;
 							case 1:
@@ -837,7 +798,7 @@ void xfer_opts()
 									,cfg.fcomp[i]->cmd,sizeof(cfg.fcomp[i]->cmd)-1,K_EDIT);
 								break;
 							case 2:
-								sprintf(str,"Compressable File Type %s"
+								sprintf(str,"Compressible File Type %s"
 									,cfg.fcomp[i]->ext);
 								getar(str,cfg.fcomp[i]->arstr);
 								break; 
@@ -845,7 +806,7 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 13:	/* Transfer protocols */
+			case __COUNTER__:	/* Transfer protocols */
 				while(1) {
 					for(i=0;i<cfg.total_prots && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%c  %s"
@@ -865,8 +826,8 @@ void xfer_opts()
 						"files either to or from a remote user. For each protocol, you can\n"
 						"specify the mnemonic (hot-key) to use to specify that protocol, the\n"
 						"command line to use for uploads, downloads, batch uploads, batch\n"
-						"downloads, bi-directional file transfers, support of DSZLOG, and (for\n"
-						"*nix only) if it uses socket I/O or the more common stdio.\n"
+						"downloads, support of DSZLOG, and (for *nix only) if it uses socket\n"
+						"I/O or the more common stdio.\n"
 						"\n"
 						"If the protocol doesn't support a certain method of transfer, or you\n"
 						"don't wish it to be available for a certain method of transfer, leave\n"
@@ -951,8 +912,6 @@ void xfer_opts()
 							,cfg.prot[i]->batulcmd);
 						sprintf(opt[j++],"%-30.30s%-40s","Batch Download Command Line"
 							,cfg.prot[i]->batdlcmd);
-						sprintf(opt[j++],"%-30.30s%-40s","Bi-dir Command Line"
-							,cfg.prot[i]->bicmd);
 						sprintf(opt[j++],"%-30.30s%s",   "Native Executable/Script"
 							,cfg.prot[i]->misc&PROT_NATIVE ? "Yes" : "No");
 						sprintf(opt[j++],"%-30.30s%s",	 "Supports DSZLOG"
@@ -1008,12 +967,6 @@ void xfer_opts()
 									,cfg.prot[i]->batdlcmd,sizeof(cfg.prot[i]->batdlcmd)-1,K_EDIT);
 								break;
 							case 7:
-								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.prot[i]->bicmd,sizeof(cfg.prot[i]->bicmd)-1,K_EDIT);
-								break;
-							case 8:
 								l=cfg.prot[i]->misc&PROT_NATIVE ? 0:1;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
 									,"Native Executable/Script",uifcYesNoOpts);
@@ -1023,7 +976,7 @@ void xfer_opts()
 									uifc.changes=1; 
 								}
 								break; 
-							case 9:
+							case 8:
 								l=cfg.prot[i]->misc&PROT_DSZLOG ? 0:1;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
 									,"Uses DSZLOG",uifcYesNoOpts);
@@ -1033,7 +986,7 @@ void xfer_opts()
 									uifc.changes=1; 
 								}
 								break; 
-							case 10:
+							case 9:
 								l=cfg.prot[i]->misc&PROT_SOCKET ? 0:1l;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
 									,"Uses Socket I/O",uifcYesNoOpts);
@@ -1047,91 +1000,6 @@ void xfer_opts()
 					} 
 				}
 				break;
-			case 14:	/* Alternate file paths */
-				while(1) {
-					for(i=0;i<cfg.altpaths;i++)
-						sprintf(opt[i],"%3d: %-40s",i+1,cfg.altpath[i]);
-					opt[i][0]=0;
-					i=WIN_ACT|WIN_SAV;	/* save cause size can change */
-					if((int)cfg.altpaths<MAX_OPTS)
-						i|=WIN_INS|WIN_XTR;
-					if(cfg.altpaths)
-						i|=WIN_DEL|WIN_COPY|WIN_CUT;
-					if(savaltpath[0])
-						i|=WIN_PASTE;
-					uifc.helpbuf=
-						"`Alternate File Paths:`\n"
-						"\n"
-						"This option allows the sysop to add and configure alternate file paths\n"
-						"for files stored on drives and directories other than the configured\n"
-						"`File Transfer Path` of a file directory. This option is useful for sysops\n"
-						"that have file directories where they wish to have files listed from\n"
-						"multiple locations (CD-ROMs or hard disks).\n"
-					;
-					i=uifc.list(i,0,0,50,&altpath_dflt,&altpath_bar,"Alternate File Paths",opt);
-					if(i==-1)
-						break;
-					int msk = i & MSK_ON;
-					i &= MSK_OFF;
-					if(msk == MSK_DEL || msk == MSK_CUT) {
-						if(msk == MSK_CUT)
-							SAFECOPY(savaltpath, cfg.altpath[i]);
-						free(cfg.altpath[i]);
-						cfg.altpaths--;
-						while(i<cfg.altpaths) {
-							cfg.altpath[i]=cfg.altpath[i+1];
-							i++; 
-						}
-						uifc.changes=1;
-						continue; 
-					}
-					if(msk == MSK_INS) {
-						if((cfg.altpath=(char **)realloc(cfg.altpath
-							,sizeof(char *)*(cfg.altpaths+1)))==NULL) {
-							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.altpaths+1);
-							cfg.altpaths=0;
-							bail(1);
-							continue; 
-						}
-						if(!cfg.altpaths) {
-							if((cfg.altpath[0]=(char *)malloc(LEN_DIR+1))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,LEN_DIR+1);
-								continue; 
-							}
-							memset(cfg.altpath[0],0,LEN_DIR+1); 
-						}
-						else {
-							for(j=cfg.altpaths;j>i;j--)
-								cfg.altpath[j]=cfg.altpath[j-1];
-							if((cfg.altpath[i]=(char *)malloc(LEN_DIR+1))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,LEN_DIR+1);
-								continue; 
-							}
-							if(i>=cfg.altpaths)
-								j=i-1;
-							else
-								j=i+1;
-							memcpy(cfg.altpath[i],cfg.altpath[j],LEN_DIR+1); 
-						}
-						cfg.altpaths++;
-						uifc.changes=1;
-						continue; 
-					}
-					if(msk == MSK_COPY) {
-						SAFECOPY(savaltpath,cfg.altpath[i]);
-						continue; 
-					}
-					if(msk == MSK_PASTE) {
-						memcpy(cfg.altpath[i],savaltpath,LEN_DIR+1);
-						uifc.changes=1;
-						continue; 
-					}
-					if (msk != 0)
-						continue;
-					sprintf(str,"Path %d",i+1);
-					uifc.input(WIN_MID|WIN_SAV,0,0,str,cfg.altpath[i],LEN_DIR,K_EDIT); 
-				}
-				break; 
 		} 
 	}
 }

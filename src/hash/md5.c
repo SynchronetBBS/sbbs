@@ -34,7 +34,7 @@ documentation and/or software.
 	#define LITTLE_ENDIAN	/* Little Endian by default */
 #endif
 
-void MD5CALL MD5_open(MD5 *md5)
+void MD5_open(MD5 *md5)
 {
   md5->count[0] = md5->count[1] = 0;
   /* Load magic initialization constants.*/
@@ -194,7 +194,7 @@ static void MD5Transform(uint32_t state[4], const BYTE block[64])
   memset(x, 0, sizeof(x));
 }
 
-void MD5CALL MD5_digest(MD5 *md5, const void *input, size_t inputLen)
+void MD5_digest(MD5 *md5, const void *input, size_t inputLen)
 {
   unsigned int i, index, partLen;
   /* Compute number of bytes mod 64 */
@@ -229,7 +229,7 @@ void MD5CALL MD5_digest(MD5 *md5, const void *input, size_t inputLen)
 #define ENCODE(p,n) (p)[0]=n,(p)[1]=n>>8,(p)[2]=n>>16,(p)[3]=n>>24
 #endif
 
-void MD5CALL MD5_close(MD5 *md5, BYTE digest[MD5_DIGEST_SIZE])
+void MD5_close(MD5 *md5, BYTE digest[MD5_DIGEST_SIZE])
 {
   BYTE bits[8];
   unsigned int index, padLen;
@@ -257,7 +257,7 @@ void MD5CALL MD5_close(MD5 *md5, BYTE digest[MD5_DIGEST_SIZE])
   memset(md5, 0, sizeof(MD5));
 }
 
-BYTE* MD5CALL MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len)
+BYTE* MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len)
 {
 	MD5 ctx;
 
@@ -270,20 +270,20 @@ BYTE* MD5CALL MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len
 
 /* conversion for 16 character binary md5 to hex */
 
-BYTE* MD5CALL MD5_hex(BYTE* to, const BYTE digest[MD5_DIGEST_SIZE])
+char* MD5_hex(char* to, const BYTE digest[MD5_DIGEST_SIZE])
 {
 	BYTE const* from = digest;
-    static char *hexdigits = "0123456789abcdef";
-    const BYTE *end = digest + MD5_DIGEST_SIZE;
-    char *d = (char *)to;
+	const char *hexdigits = "0123456789abcdef";
+	const BYTE *end = digest + MD5_DIGEST_SIZE;
+	char *d = to;
 
-    while (from < end) {
+	while (from < end) {
 		*d++ = hexdigits[(*from >> 4)];
 		*d++ = hexdigits[(*from & 0x0F)];
 		from++;
-    }
-    *d = '\0';
-    return to;
+	}
+	*d = '\0';
+	return to;
 }
 
 #ifdef MD5_TEST

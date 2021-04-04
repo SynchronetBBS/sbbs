@@ -60,7 +60,6 @@
 #endif
 
 #include <sys/types.h>	/* _dev_t */
-#include <sys/stat.h>	/* struct stat */
 
 #include <stdio.h>		/* sprintf */
 #include <stdlib.h>		/* rand */
@@ -68,7 +67,7 @@
 
 #include "genwrap.h"	/* strupr/strlwr */
 #include "dirwrap.h"	/* DLLCALL */
-#include "filewrap.h"	/* filetime() */
+#include "filewrap.h"	/* stat */
 
 #if !defined(S_ISDIR)
 	#define S_ISDIR(x)	((x)&S_IFDIR)
@@ -1095,7 +1094,7 @@ BOOL DLLCALL isfullpath(const char* filename)
 /* Optionally not allowing * to match PATH_DELIM (for paths)				*/
 /****************************************************************************/
 
-BOOL DLLCALL wildmatch(const char *fname, const char *spec, BOOL path)
+BOOL DLLCALL wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensitive)
 {
 	char *specp;
 	char *fnamep;
@@ -1127,12 +1126,14 @@ BOOL DLLCALL wildmatch(const char *fname, const char *spec, BOOL path)
 				else
 					wildend=strchr(fnamep, 0);
 				for(;wildend >= fnamep;wildend--) {
-					if(wildmatch(wildend, specp, path))
+					if(wildmatch(wildend, specp, path, case_sensitive))
 						return(TRUE);
 				}
 				return(FALSE);
 			default:
-				if(*specp != *fnamep)
+				if(case_sensitive && *specp != *fnamep)
+					return(FALSE);
+				if((!case_sensitive) && toupper(*specp) != toupper(*fnamep))
 					return(FALSE);
 		}
 		if(!(*specp && *fnamep))
@@ -1142,6 +1143,8 @@ BOOL DLLCALL wildmatch(const char *fname, const char *spec, BOOL path)
 		specp++;
 	if(*specp==*fnamep)
 		return(TRUE);
+	if((!case_sensitive) && toupper(*specp) == toupper(*fnamep))
+		return(TRUE);
 	return(FALSE);
 }
 
@@ -1150,22 +1153,7 @@ BOOL DLLCALL wildmatch(const char *fname, const char *spec, BOOL path)
 /****************************************************************************/
 BOOL DLLCALL wildmatchi(const char *fname, const char *spec, BOOL path)
 {
-	char* s1;
-	char* s2;
-	BOOL result;
-
-	if((s1=strdup(fname))==NULL)
-		return(FALSE);
-	if((s2=strdup(spec))==NULL) {
-		free(s1);
-		return(FALSE);
-	}
-	strupr(s1);
-	strupr(s2);
-	result = wildmatch(s1, s2, path);
-	free(s1);
-	free(s2);
-	return(result);
+	return wildmatch(fname, spec, path, /* case_sensitive: */FALSE);
 }
 
 /****************************************************************************/

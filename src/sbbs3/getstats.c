@@ -48,16 +48,16 @@ BOOL DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats)
 /****************************************************************************/
 long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 {
-	char str[256];
-	long l;
+	char path[MAX_PATH + 1];
+	off_t l;
 
-	if(dirnum>=cfg->total_dirs)	/* out of range */
-		return(0);
-	sprintf(str,"%s%s.ixb",cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
-	l=(long)flength(str);
-	if(l>0L)
-		return(l/F_IXBSIZE);
-	return(0);
+	if(dirnum >= cfg->total_dirs)	/* out of range */
+		return 0;
+	SAFEPRINTF2(path, "%s%s.sid", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	l = flength(path);
+	if(l <= 0)
+		return 0;
+	return (long)(l / sizeof(fileidxrec_t));
 }
 
 /****************************************************************************/
@@ -73,7 +73,7 @@ ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
 		l = flength(path);
 		if(l < sizeof(idxrec_t))
 			return 0;
-		return l / sizeof(idxrec_t);
+		return (ulong)(l / sizeof(idxrec_t));
 	}
 	smb_t smb = {{0}};
 	SAFEPRINTF2(smb.file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
