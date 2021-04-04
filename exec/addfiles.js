@@ -41,7 +41,7 @@ function datestr(t)
 function archive_date(file)
 {
 	try {
-		var list = Archive(file).directory;
+		var list = Archive(file).list();
 	} catch(e) {
 		return file_date(file);
 	}
