@@ -1521,7 +1521,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"Class used for accessing the file transfer databases", 31900);
+	js_DescribeSyncObject(cx,obj,"Class used for accessing file databases", 31900);
 	js_DescribeSyncConstructor(cx,obj,"To create a new FileBase object: "
 		"<tt>var filebase = new FileBase('<i>code</i>')</tt><br>"
 		"where <i>code</i> is a directory internal code."
@@ -1589,7 +1589,7 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_extdesc + 1), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
-			js_DescribeSyncObject(cx, detail, "Detail level", 31900);
+			js_DescribeSyncObject(cx, detail, "Detail level numeric constants", 0);
 			js_CreateArrayOfStrings(cx, detail, "_property_desc_list", filebase_detail_prop_desc, JSPROP_READONLY);
 #endif
 		}
@@ -1610,7 +1610,7 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 			JS_DefineProperty(cx, sort, "DATE_D", INT_TO_JSVAL(FILE_SORT_DATE_D), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
-			js_DescribeSyncObject(cx, sort, "Sort order", 31900);
+			js_DescribeSyncObject(cx, sort, "Sort order numeric constants", 0);
 			js_CreateArrayOfStrings(cx, sort, "_property_desc_list", filebase_sort_prop_desc, JSPROP_READONLY);
 #endif
 		}
