@@ -1758,7 +1758,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		free(cp);
-		dbprintf(TRUE, p, "write of %u bytes failed",len);
+		dbprintf(TRUE, p, "write of %lu bytes failed", (ulong)len);
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
