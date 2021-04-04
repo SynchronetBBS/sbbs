@@ -1455,7 +1455,7 @@ static off_t sock_sendfile(http_session_t *session,char *path, off_t start, off_
 		else {
 			remain=-1L;
 		}
-		while((i=read(file, buf, (uint)(remain>sizeof(buf)?sizeof(buf):remain)))>0) {
+		while((i=read(file, buf, (size_t)(remain>sizeof(buf)?sizeof(buf):remain)))>0) {
 			if(writebuf(session,buf,i)!=i) {
 				lprintf(LOG_WARNING,"%04d !ERROR sending %s",session->socket,path);
 				close(file);
