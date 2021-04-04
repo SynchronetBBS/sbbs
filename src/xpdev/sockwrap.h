@@ -173,6 +173,12 @@ static  int wsa_error;
 #define ERROR_VALUE			((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
 #define socket_errno		WSAGetLastError()
 #define sendsocket(s,b,l)	send(s,b,l,0)
+typedef ULONG nfds_t;
+/*
+ * NOTE: WSAPoll() has a bug where a non-blocking socket which has connect()
+ *       called on it that is trying to connect to a closed port will timeout
+ *       instead of returning a failure, even with POLLOUT specified.
+ */
 #define poll(s, c, t)		WSAPoll(s, c, t)
 
 /* For getaddrinfo() */
