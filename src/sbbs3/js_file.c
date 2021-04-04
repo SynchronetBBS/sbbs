@@ -1657,11 +1657,11 @@ js_raw_write(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if(write(fileno(p->fp),cp,len)==(size_t)len) {
 		free(cp);
-		dbprintf(FALSE, p, "wrote %u raw bytes",len);
+		dbprintf(FALSE, p, "wrote %lu raw bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		free(cp);
-		dbprintf(TRUE, p, "raw write of %u bytes failed",len);
+		dbprintf(TRUE, p, "raw write of %lu bytes failed",len);
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -1754,7 +1754,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 			}
 			free(cp);
 		}
-		dbprintf(FALSE, p, "wrote %u bytes",tlen);
+		dbprintf(FALSE, p, "wrote %lu bytes", (ulong)tlen);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		free(cp);
