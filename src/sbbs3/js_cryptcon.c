@@ -934,7 +934,7 @@ JSClass js_cryptcon_class = {
 	,js_finalize_cryptcon		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateCryptconObject(JSContext* cx, CRYPT_CONTEXT ctx)
+JSObject* js_CreateCryptconObject(JSContext* cx, CRYPT_CONTEXT ctx)
 {
 	JSObject *obj;
 	struct js_cryptcon_private_data *p;
@@ -1055,7 +1055,7 @@ static char* cryptcon_mode_prop_desc[] = {
 };
 #endif
 
-JSObject* DLLCALL js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
+JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	ccobj;
 	JSObject*	constructor;

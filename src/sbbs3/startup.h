@@ -245,9 +245,6 @@ extern "C" {
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
-#ifdef DLLCALL
-#undef DLLCALL
-#endif
 
 #ifdef _WIN32
 	#ifdef SBBS_EXPORTS
@@ -255,22 +252,16 @@ extern "C" {
 	#else
 		#define DLLEXPORT __declspec(dllimport)
 	#endif
-	#ifdef __BORLANDC__
-		#define DLLCALL
-	#else
-		#define DLLCALL
-	#endif
 #else
 	#define DLLEXPORT
-	#define DLLCALL
 #endif
 
 /* arg is pointer to static bbs_startup_t* */
-DLLEXPORT void			DLLCALL bbs_thread(void* arg);
-DLLEXPORT void			DLLCALL bbs_terminate(void);
-DLLEXPORT const char*	DLLCALL js_ver(void);
-DLLEXPORT const char*	DLLCALL bbs_ver(void);
-DLLEXPORT long			DLLCALL	bbs_ver_num(void);
+DLLEXPORT void			bbs_thread(void* arg);
+DLLEXPORT void			bbs_terminate(void);
+DLLEXPORT const char*	js_ver(void);
+DLLEXPORT const char*	bbs_ver(void);
+DLLEXPORT long			bbs_ver_num(void);
 
 #ifdef __cplusplus
 }

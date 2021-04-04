@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "xpprintf.h"	/* Hurrah for Deuce! */
 
-char* DLLCALL
+char*
 js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 {
 	char*		op;
@@ -82,7 +82,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 	return p2;
 }
 
-void DLLCALL
+void
 js_sprintf_free(char* p)
 {
 	xp_asprintf_free(p);

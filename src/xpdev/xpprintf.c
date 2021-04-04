@@ -49,7 +49,7 @@
 #include "gen_defs.h"
 
 #if defined(_MSC_VER) || defined(__MSVCRT__)
-int DLLCALL vasprintf(char **strptr, const char *format, va_list va)
+int vasprintf(char **strptr, const char *format, va_list va)
 {
 	va_list	va2;
 	int		ret;
@@ -68,7 +68,7 @@ int DLLCALL vasprintf(char **strptr, const char *format, va_list va)
 	return ret;
 }
 
-int DLLCALL asprintf(char **strptr, const char *format, ...)
+int asprintf(char **strptr, const char *format, ...)
 {
 	va_list	va;
 	int		ret;
@@ -85,12 +85,12 @@ int DLLCALL asprintf(char **strptr, const char *format, ...)
 /* Maximum length of a format specifier including the % */
 #define MAX_FORMAT_LEN	256
 
-void DLLCALL xp_asprintf_free(char *format)
+void xp_asprintf_free(char *format)
 {
 	free(format);
 }
 
-int DLLCALL xp_printf_get_type(const char *format)
+int xp_printf_get_type(const char *format)
 {
 	const char	*p;
 	int		modifier=0;
@@ -317,7 +317,7 @@ int DLLCALL xp_printf_get_type(const char *format)
  * that the type passed to sprintf() is the type passed to
  * xp_asprintf_next().
  */
-char* DLLCALL xp_asprintf_next(char *format, int type, ...)
+char* xp_asprintf_next(char *format, int type, ...)
 {
 	va_list vars;
 	char			*p;
@@ -1282,7 +1282,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 	return(format);
 }
 
-char* DLLCALL xp_asprintf_start(const char *format)
+char* xp_asprintf_start(const char *format)
 {
 	char	*ret;
 	char	*p;
@@ -1313,7 +1313,7 @@ char* DLLCALL xp_asprintf_start(const char *format)
 	return(ret);
 }
 
-char* DLLCALL xp_asprintf_end(char *format, size_t *lenret)
+char* xp_asprintf_end(char *format, size_t *lenret)
 {
 	char	*p;
 	size_t	len;
@@ -1333,7 +1333,7 @@ char* DLLCALL xp_asprintf_end(char *format, size_t *lenret)
 	return(format);
 }
 
-char* DLLCALL xp_vasprintf(const char *format, va_list va)
+char* xp_vasprintf(const char *format, va_list va)
 {
 	char	*working;
 	char	*next;
@@ -1400,7 +1400,7 @@ char* DLLCALL xp_vasprintf(const char *format, va_list va)
 	return(next);
 }
 
-char* DLLCALL xp_asprintf(const char *format, ...)
+char* xp_asprintf(const char *format, ...)
 {
 	char	*ret;
 	va_list	va;

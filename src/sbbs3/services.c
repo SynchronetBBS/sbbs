@@ -1517,7 +1517,7 @@ static void native_service_thread(void* arg)
 }
 
 
-void DLLCALL services_terminate(void)
+void services_terminate(void)
 {
 	uint32_t i;
 
@@ -1683,7 +1683,7 @@ static void cleanup(int code)
 		startup->terminated(startup->cbdata,code);
 }
 
-const char* DLLCALL services_ver(void)
+const char* services_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
@@ -1768,7 +1768,7 @@ static nfds_t setup_poll(struct pollfd **fds)
 }
 #endif
 
-void DLLCALL services_thread(void* arg)
+void services_thread(void* arg)
 {
 	char*			p;
 	char			path[MAX_PATH+1];

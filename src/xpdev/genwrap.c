@@ -59,7 +59,7 @@
 /****************************************************************************/
 /* Used to replace snprintf()  guarantees to terminate.			  			*/
 /****************************************************************************/
-int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
+int safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 {
 	va_list argptr;
 	int     numchars;
@@ -99,7 +99,7 @@ size_t strlcpy(char *dst, const char *src, size_t size)
 /****************************************************************************/
 /* Case insensitive version of strstr()	- currently heavy-handed			*/
 /****************************************************************************/
-char* DLLCALL strcasestr(const char* haystack, const char* needle)
+char* strcasestr(const char* haystack, const char* needle)
 {
 	const char* p;
 	size_t len = strlen(needle);
@@ -115,7 +115,7 @@ char* DLLCALL strcasestr(const char* haystack, const char* needle)
 /****************************************************************************/
 /* Return last character of string											*/
 /****************************************************************************/
-char* DLLCALL lastchar(const char* str)
+char* lastchar(const char* str)
 {
 	size_t	len;
 
@@ -130,7 +130,7 @@ char* DLLCALL lastchar(const char* str)
 /****************************************************************************/
 /* Return character value of C-escaped (\) character						*/
 /****************************************************************************/
-char DLLCALL c_unescape_char(char ch)
+char c_unescape_char(char ch)
 {
 	switch(ch) {
 		case 'e':	return(ESC);	/* non-standard */
@@ -149,7 +149,7 @@ char DLLCALL c_unescape_char(char ch)
 /* Return character value of C-escaped (\) character literal sequence		*/
 /* supports \x## (hex) and \### sequences (for octal or decimal)			*/
 /****************************************************************************/
-char DLLCALL c_unescape_char_ptr(const char* str, char** endptr)
+char c_unescape_char_ptr(const char* str, char** endptr)
 {
 	char	ch;
 
@@ -196,7 +196,7 @@ char DLLCALL c_unescape_char_ptr(const char* str, char** endptr)
 /****************************************************************************/
 /* Unescape a C string, in place											*/
 /****************************************************************************/
-char* DLLCALL c_unescape_str(char* str)
+char* c_unescape_str(char* str)
 {
 	char	ch;
 	char*	buf;
@@ -218,7 +218,7 @@ char* DLLCALL c_unescape_str(char* str)
 	return(str);
 }
 
-char* DLLCALL c_escape_char(char ch)
+char* c_escape_char(char ch)
 {
 	switch(ch) {
 		case 0:		return("\\x00");
@@ -238,7 +238,7 @@ char* DLLCALL c_escape_char(char ch)
 	return(NULL);
 }
 
-char* DLLCALL c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only)
+char* c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only)
 {
 	const char*	s;
 	char*		d;
@@ -263,7 +263,7 @@ char* DLLCALL c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_
  * 
  * Moved from ini_file.c/parseBytes()
  */
-int64_t DLLCALL parse_byte_count(const char* str, ulong unit)
+int64_t parse_byte_count(const char* str, ulong unit)
 {
 	char*	p=NULL;
 	double	bytes;
@@ -304,7 +304,7 @@ static const double one_kibibyte = 1024.0;
    and a single letter multiplier/suffix.
    For values evenly divisible by 1024, no suffix otherwise.
 */
-char* DLLCALL byte_count_to_str(int64_t bytes, char* str, size_t size)
+char* byte_count_to_str(int64_t bytes, char* str, size_t size)
 {
 	if(bytes && fmod((double)bytes,one_tebibyte)==0)
 		safe_snprintf(str, size, "%gT",bytes/one_tebibyte);
@@ -325,7 +325,7 @@ char* DLLCALL byte_count_to_str(int64_t bytes, char* str, size_t size)
    This function also appends 'B' for exact byte counts (< 1024).
    'unit' is the smallest divisor used.
 */
-char* DLLCALL byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong unit, int precision)
+char* byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong unit, int precision)
 {
 	if(bytes >= one_tebibyte)
 		safe_snprintf(str, size, "%1.*fT", precision, bytes/one_tebibyte);
@@ -346,7 +346,7 @@ char* DLLCALL byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong 
 /* (Y)ears, (W)eeks, (D)ays, (H)ours, and (M)inutes */
 /* suffixes/multipliers are supported. */
 /* Return value is in seconds */
-double DLLCALL parse_duration(const char* str)
+double parse_duration(const char* str)
 {
 	char*	p=NULL;
 	double	t;
@@ -369,7 +369,7 @@ double DLLCALL parse_duration(const char* str)
  * with a single letter multiplier/suffix: 
  * (Y)ears, (W)eeks, (D)ays, (H)ours, (M)inutes, or (S)econds
  */
-char* DLLCALL duration_to_str(double value, char* str, size_t size)
+char* duration_to_str(double value, char* str, size_t size)
 {
 	if(value && fmod(value,365.0*24.0*60.0*60.0)==0)
 		safe_snprintf(str, size, "%gY",value/(365.0*24.0*60.0*60.0));
@@ -391,7 +391,7 @@ char* DLLCALL duration_to_str(double value, char* str, size_t size)
  * with a word clarifier / modifier: 
  * year[s], week[s], day[s], hour[s], minute[s] or second[s]
  */
-char* DLLCALL duration_to_vstr(double value, char* str, size_t size)
+char* duration_to_vstr(double value, char* str, size_t size)
 {
 	if(value && fmod(value,365.0*24.0*60.0*60.0)==0) {
 		value /= (365.0*24.0*60.0*60.0);
@@ -424,7 +424,7 @@ char* DLLCALL duration_to_vstr(double value, char* str, size_t size)
 /* Convert ASCIIZ string to upper case										*/
 /****************************************************************************/
 #if defined(__unix__)
-char* DLLCALL strupr(char* str)
+char* strupr(char* str)
 {
 	char*	p=str;
 
@@ -437,7 +437,7 @@ char* DLLCALL strupr(char* str)
 /****************************************************************************/
 /* Convert ASCIIZ string to lower case										*/
 /****************************************************************************/
-char* DLLCALL strlwr(char* str)
+char* strlwr(char* str)
 {
 	char*	p=str;
 
@@ -467,7 +467,7 @@ char* strrev(char* str)
 /* Implementations of the recursive (thread-safe) version of strtok			*/
 /* Thanks to Apache Portable Runtime (APR)									*/
 /****************************************************************************/
-char* DLLCALL strtok_r(char *str, const char *delim, char **last)
+char* strtok_r(char *str, const char *delim, char **last)
 {
     char* token;
 
@@ -505,7 +505,7 @@ char* DLLCALL strtok_r(char *str, const char *delim, char **last)
 /****************************************************************************/
 /* Initialize (seed) the random number generator							*/
 /****************************************************************************/
-void DLLCALL xp_randomize(void)
+void xp_randomize(void)
 {
 #if !(defined(HAS_SRANDOMDEV_FUNC) && defined(HAS_RANDOM_FUNC))
 	unsigned seed=~0;
@@ -550,7 +550,7 @@ void DLLCALL xp_randomize(void)
 /****************************************************************************/
 /* Return random number between 0 and n-1									*/
 /****************************************************************************/
-long DLLCALL xp_random(int n)
+long xp_random(int n)
 {
 #ifdef HAS_RANDOM_FUNC
 	long			curr;
@@ -586,7 +586,7 @@ long DLLCALL xp_random(int n)
 /* There may be a native GNU C Library function to this...					*/
 /****************************************************************************/
 #if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
-char* DLLCALL ultoa(ulong val, char* str, int radix)
+char* ultoa(ulong val, char* str, int radix)
 {
 	switch(radix) {
 		case 8:
@@ -609,7 +609,7 @@ char* DLLCALL ultoa(ulong val, char* str, int radix)
 /****************************************************************************/
 /* Write the version details of the current operating system into str		*/
 /****************************************************************************/
-char* DLLCALL os_version(char *str)
+char* os_version(char *str)
 {
 #if defined(__OS2__) && defined(__BORLANDC__)
 
@@ -676,7 +676,7 @@ char* DLLCALL os_version(char *str)
 	return(str);
 }
 
-char* DLLCALL os_cmdshell(void)
+char* os_cmdshell(void)
 {
 	char*	shell=getenv(OS_CMD_SHELL_ENV_VAR);
 
@@ -696,7 +696,7 @@ char* DLLCALL os_cmdshell(void)
 /* Microsoft (DOS/Win32) real-time system clock implementation.	*/
 /****************************************************************/
 #ifdef __unix__
-clock_t DLLCALL msclock(void)
+clock_t msclock(void)
 {
 	long long int usecs;
 	struct timeval tv;
@@ -710,7 +710,7 @@ clock_t DLLCALL msclock(void)
 /****************************************************************************/
 /* Skips all white-space chars at beginning of 'str'						*/
 /****************************************************************************/
-char* DLLCALL skipsp(char* str)
+char* skipsp(char* str)
 {
 	SKIP_WHITESPACE(str);
 	return(str);
@@ -719,7 +719,7 @@ char* DLLCALL skipsp(char* str)
 /****************************************************************************/
 /* Truncates all white-space chars off end of 'str'	(needed by STRERRROR)	*/
 /****************************************************************************/
-char* DLLCALL truncsp(char* str)
+char* truncsp(char* str)
 {
 	size_t i,len;
 
@@ -737,7 +737,7 @@ char* DLLCALL truncsp(char* str)
 /* Truncates common white-space chars off end of \n-terminated lines in		*/
 /* 'dst' and retains original line break format	(e.g. \r\n or \n)			*/
 /****************************************************************************/
-char* DLLCALL truncsp_lines(char* dst)
+char* truncsp_lines(char* dst)
 {
 	char* sp;
 	char* dp;
@@ -765,7 +765,7 @@ char* DLLCALL truncsp_lines(char* dst)
 /****************************************************************************/
 /* Truncates carriage-return and line-feed chars off end of 'str'			*/
 /****************************************************************************/
-char* DLLCALL truncnl(char* str)
+char* truncnl(char* str)
 {
 	size_t i,len;
 
@@ -783,7 +783,7 @@ char* DLLCALL truncnl(char* str)
 /* Return errno from the proper C Library implementation					*/
 /* (single/multi-threaded)													*/
 /****************************************************************************/
-int DLLCALL	get_errno(void)
+int get_errno(void)
 {
 	return(errno);
 }
@@ -792,7 +792,7 @@ int DLLCALL	get_errno(void)
 /* Returns the current value of the systems best timer (in SECONDS)			*/
 /* Any value < 0 indicates an error											*/
 /****************************************************************************/
-long double	DLLCALL	xp_timer(void)
+long double	xp_timer(void)
 {
 	long double ret;
 #if defined(__unix__)
@@ -826,7 +826,7 @@ long double	DLLCALL	xp_timer(void)
 }
 
 /* Returns TRUE if specified process is running */
-BOOL DLLCALL check_pid(pid_t pid)
+BOOL check_pid(pid_t pid)
 {
 #if defined(__unix__)
 	return(kill(pid,0)==0);
@@ -847,7 +847,7 @@ BOOL DLLCALL check_pid(pid_t pid)
 }
 
 /* Terminate (unconditionally) the specified process */
-BOOL DLLCALL terminate_pid(pid_t pid)
+BOOL terminate_pid(pid_t pid)
 {
 #if defined(__unix__)
 	return(kill(pid,SIGKILL)==0);

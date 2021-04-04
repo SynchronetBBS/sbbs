@@ -100,7 +100,7 @@ uint sbbs_t::finduser(const char* instr, bool silent_failure)
 /****************************************************************************/
 /* Return date/time that the specified event should run next				*/
 /****************************************************************************/
-extern "C" time_t DLLCALL getnexteventtime(event_t* event)
+extern "C" time_t getnexteventtime(event_t* event)
 {
 	struct tm tm;
 	time_t	t = time(NULL);
@@ -143,7 +143,7 @@ extern "C" time_t DLLCALL getnexteventtime(event_t* event)
 /* Return time of next forced timed event									*/
 /* 'event' may be NULL														*/
 /****************************************************************************/
-extern "C" time_t DLLCALL getnextevent(scfg_t* cfg, event_t* event)
+extern "C" time_t getnextevent(scfg_t* cfg, event_t* event)
 {
     int     i;
 	time_t	event_time=0;

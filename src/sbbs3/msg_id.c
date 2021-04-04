@@ -62,7 +62,7 @@ static ulong msgid_serialno(smbmsg_t* msg)
 /* Returns NULL if the message is from FidoNet and doesn't have a MSGID		*/
 /* Pass NULL for msgid if (single-threaded) caller wishes to use static buf	*/
 /****************************************************************************/
-char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg, char* msgid, size_t maxlen)
+char* ftn_msgid(sub_t *sub, smbmsg_t* msg, char* msgid, size_t maxlen)
 {
 	static char msgidbuf[256];
 	
@@ -90,7 +90,7 @@ char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg, char* msgid, size_t maxlen)
 /****************************************************************************/
 /* Return a general purpose (RFC-822) message-ID							*/
 /****************************************************************************/
-char* DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, size_t maxlen)
+char* get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, size_t maxlen)
 {
 	char*	host;
 
@@ -132,7 +132,7 @@ char* DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, si
 /* Get (or generate) the original message-ID for a reply message			*/
 /* Returns NULL if not a valid reply message								*/
 /****************************************************************************/
-char* DLLCALL get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, size_t maxlen)
+char* get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, size_t maxlen)
 {
 	smbmsg_t remsg;
 
@@ -157,7 +157,7 @@ char* DLLCALL get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, s
 /* Add auto-generated message-IDs to a message, if doesn't already have		*/
 /* The message base (smb) must be already opened							*/
 /****************************************************************************/
-BOOL DLLCALL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
+BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 {
 	char msg_id[256];
 
@@ -210,7 +210,7 @@ BOOL DLLCALL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg
 /* Migrated from sbbs_t::postmsg()											*/
 /* The message base (smb) must be already opened successfully				*/
 /****************************************************************************/
-BOOL DLLCALL add_reply_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
+BOOL add_reply_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 {
 	char* p;
 	char replyid[256];
@@ -238,7 +238,7 @@ BOOL DLLCALL add_reply_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* rem
 /****************************************************************************/
 /* FTN-compliant "Program Identifier"/PID									*/
 /****************************************************************************/
-char* DLLCALL msg_program_id(char* pid, size_t maxlen)
+char* msg_program_id(char* pid, size_t maxlen)
 {
 	char compiler[64];
 

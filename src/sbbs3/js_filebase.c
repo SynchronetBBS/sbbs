@@ -1565,7 +1565,7 @@ static char* filebase_sort_prop_desc[] = {
 };
 #endif
 
-JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
+JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
 	JSObject*	obj;
 	JSObject*	constructor;

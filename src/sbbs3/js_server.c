@@ -251,7 +251,7 @@ static JSClass js_server_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateServerObject(JSContext* cx, JSObject* parent
+JSObject* js_CreateServerObject(JSContext* cx, JSObject* parent
 										,js_server_props_t* props)
 {
 	JSObject*	obj;

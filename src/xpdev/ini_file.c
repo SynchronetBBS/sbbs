@@ -322,7 +322,7 @@ BOOL iniSectionExists(str_list_t list, const char* section)
 	return(list[i]!=NULL);
 }
 
-str_list_t DLLCALL	iniGetSection(str_list_t list, const char *section)
+str_list_t iniGetSection(str_list_t list, const char *section)
 {
 	size_t		i;
 	str_list_t	retval;
@@ -1246,7 +1246,7 @@ str_list_t iniGetKeyList(str_list_t list, const char* section)
 }
 
 
-named_string_t** DLLCALL
+named_string_t**
 iniReadNamedStringList(FILE* fp, const char* section)
 {
 	char*	name;
@@ -1294,7 +1294,7 @@ iniReadNamedStringList(FILE* fp, const char* section)
 	return(lp);
 }
 
-named_string_t** DLLCALL
+named_string_t**
 iniGetNamedStringList(str_list_t list, const char* section)
 {
 	char*	name;

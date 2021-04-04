@@ -182,7 +182,7 @@ static JSClass js_dir_class = {
 	,js_file_area_finalize	/* finalize		*/
 };
 
-JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
+JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 {
 	char		str[128];
 	char		vpath[MAX_PATH+1];
@@ -621,7 +621,7 @@ static JSClass js_file_area_class = {
 	,js_file_area_finalize	/* finalize		*/
 };
 
-DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 					,user_t* user, client_t* client, char* html_index_file) {
 	JSObject* obj;
 	struct js_file_area_priv *p;

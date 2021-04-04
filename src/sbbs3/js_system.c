@@ -2616,7 +2616,7 @@ JSClass js_system_class = {
 	,js_system_finalize		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
+JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 										,scfg_t* cfg, time_t uptime, char* host_name, char* socklib_desc)
 {
 	jsval		val;

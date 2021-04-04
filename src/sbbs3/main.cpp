@@ -402,7 +402,7 @@ static BOOL winsock_startup(void)
 
 #endif
 
-DLLEXPORT void DLLCALL sbbs_srand()
+DLLEXPORT void sbbs_srand()
 {
 	DWORD seed;
 
@@ -422,7 +422,7 @@ DLLEXPORT void DLLCALL sbbs_srand()
 	sbbs_random(10);	/* Throw away first number */
 }
 
-int DLLCALL sbbs_random(int n)
+int sbbs_random(int n)
 {
 	return(xp_random(n));
 }
@@ -431,7 +431,7 @@ int DLLCALL sbbs_random(int n)
 
 static js_server_props_t js_server_props;
 
-void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
+void* js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
 {
 	void *ret = JS_GetInstancePrivate(cx, obj, cls, NULL);
 
@@ -446,7 +446,7 @@ void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
 }
 
 JSBool
-DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const char* str[],uintN flags)
+js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const char* str[],uintN flags)
 {
 	JSObject*	array;
 	JSString*	js_str;
@@ -481,7 +481,7 @@ DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* nam
 /* Convert from Synchronet-specific jsSyncMethodSpec to JSAPI's JSFunctionSpec */
 
 JSBool
-DLLCALL js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char* str, int ver)
+js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char* str, int ver)
 {
 	JSString* js_str = JS_NewStringCopyZ(cx, str);
 
@@ -498,7 +498,7 @@ DLLCALL js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char* str, int
 }
 
 JSBool
-DLLCALL js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char* str)
+js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char* str)
 {
 	JSString* js_str = JS_NewStringCopyZ(cx, str);
 
@@ -534,7 +534,7 @@ static const char *js_type_str[] = {
 };
 
 JSBool
-DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
+js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 {
 	uint		i;
 	long		ver;
@@ -572,7 +572,7 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 }
 
 JSBool
-DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
+js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 {
 	int			i;
 	jsuint		len=0;
@@ -673,7 +673,7 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
  * 2) The speed penalty won't be seen in production code anyways
  */
 JSBool
-DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
+js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
 {
 	JSBool	ret=JS_TRUE;
 
@@ -698,7 +698,7 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 #else // NON-JSDOCS
 
 JSBool
-DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
+js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 {
 	uint i;
 
@@ -723,7 +723,7 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 
 
 JSBool
-DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
+js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 {
 	uint i;
 
@@ -738,7 +738,7 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 }
 
 JSBool
-DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
+js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
 {
 	uint i;
 	jsval	val;
@@ -795,7 +795,7 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 
 /* This is a stream-lined version of JS_DefineConstDoubles */
 JSBool
-DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* ints, int flags)
+js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* ints, int flags)
 {
 	uint	i;
 	jsval	val;
@@ -1410,7 +1410,7 @@ bool sbbs_t::js_create_user_objects(JSContext* cx, JSObject* glob)
 	return result;
 }
 
-extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
+extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 										,scfg_t* cfg				/* common */
 										,scfg_t* node_cfg			/* node-specific */
 										,jsSyncMethodSpec* methods	/* global */
@@ -4712,7 +4712,7 @@ void sbbs_t::daily_maint(void)
 	sys_status&=~SS_DAILY;
 }
 
-const char* DLLCALL js_ver(void)
+const char* js_ver(void)
 {
 #ifdef JAVASCRIPT
 	return(JS_GetImplementationVersion());
@@ -4722,7 +4722,7 @@ const char* DLLCALL js_ver(void)
 }
 
 /* Returns char string of version and revision */
-const char* DLLCALL bbs_ver(void)
+const char* bbs_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
@@ -4746,12 +4746,12 @@ const char* DLLCALL bbs_ver(void)
 }
 
 /* Returns binary-coded version and revision (e.g. 0x31000 == 3.10a) */
-long DLLCALL bbs_ver_num(void)
+long bbs_ver_num(void)
 {
 	return(VERSION_HEX);
 }
 
-void DLLCALL bbs_terminate(void)
+void bbs_terminate(void)
 {
    	lprintf(LOG_INFO,"BBS Server terminate");
 	terminate_server=true;
@@ -4796,7 +4796,7 @@ static void cleanup(int code)
 		startup->terminated(startup->cbdata,code);
 }
 
-void DLLCALL bbs_thread(void* arg)
+void bbs_thread(void* arg)
 {
 	char			host_name[256];
 	char*			identity;
