@@ -499,9 +499,6 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 	if(!JS_ValueToInt32(cx, *vp, &i))
 		return JS_FALSE;
 	switch(tiny) {
-		case PROP_CHANGES:
-			uifc->changes=i;
-			break;
 		case PROP_MODE:
 			uifc->mode=i;
 			break;
