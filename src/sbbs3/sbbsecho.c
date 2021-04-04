@@ -2292,7 +2292,7 @@ int unpack(const char *infile, const char* outdir)
 				break;
 			}
 			sprintf(tmp,"%02X",ch);
-			strcat(str,tmp);
+			SAFECAT(str,tmp);
 		}
 		if(!stricmp(str,cfg.arcdef[u].hexid))
 			break;
