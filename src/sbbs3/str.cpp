@@ -60,8 +60,7 @@ void sbbs_t::userlist(long mode)
 			if(!chk_ar(cfg.grp[usrgrp[curgrp]]->ar,&user,/* client: */NULL))
 				continue;
 			if(!chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->ar,&user,/* client: */NULL)
-				|| (cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar!=NULL 
-					&& cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar[0]
+				|| (cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar[0]
 					&& !chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar,&user,/* client: */NULL)))
 				continue; 
 		}
