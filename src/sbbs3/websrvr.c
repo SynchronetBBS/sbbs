@@ -5805,6 +5805,7 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 			if(p==NULL) {
 				if(p2)
 					free(p2);
+				JS_DestroyIdArray(session->js_cx, heads);
 				return FALSE;
 			}
 			if(JS_GetProperty(session->js_cx,headers,p,&val))
@@ -5814,6 +5815,7 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 					free(p);
 				if(p2)
 					free(p2);
+				JS_DestroyIdArray(session->js_cx, heads);
 				return FALSE;
 			}
 			if (p2 != NULL && !session->req.sent_headers) {
@@ -5853,6 +5855,7 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 		if(p2)
 			free(p2);
 		JS_ClearScope(session->js_cx, headers);
+		JS_DestroyIdArray(session->js_cx, heads);
 	}
 	JS_ENDREQUEST(session->js_cx);
 	return(send_headers(session,session->req.status,chunked));
