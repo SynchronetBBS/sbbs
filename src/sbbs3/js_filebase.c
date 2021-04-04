@@ -1589,8 +1589,8 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_extdesc + 1), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
-			js_DescribeSyncObject(cx, obj, "Detail level", 31900);
-			js_CreateArrayOfStrings(cx, obj, "_property_desc_list", filebase_detail_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, detail, "Detail level", 31900);
+			js_CreateArrayOfStrings(cx, detail, "_property_desc_list", filebase_detail_prop_desc, JSPROP_READONLY);
 #endif
 		}
 		JSObject* sort = JS_DefineObject(cx, constructor, "SORT", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -1610,8 +1610,8 @@ JSObject* DLLCALL js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t
 			JS_DefineProperty(cx, sort, "DATE_D", INT_TO_JSVAL(FILE_SORT_DATE_D), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
-			js_DescribeSyncObject(cx, obj, "Sort order", 31900);
-			js_CreateArrayOfStrings(cx, obj, "_property_desc_list", filebase_sort_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, sort, "Sort order", 31900);
+			js_CreateArrayOfStrings(cx, sort, "_property_desc_list", filebase_sort_prop_desc, JSPROP_READONLY);
 #endif
 		}
 	}
