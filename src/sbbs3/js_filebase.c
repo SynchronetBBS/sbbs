@@ -144,6 +144,7 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 			JSObject* array;
 			if((array = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
 				free(filename);
+				strListFree(&list);
 				JS_ReportError(cx, "JS_NewArrayObject failure");
 				return JS_FALSE;
 			}
@@ -275,6 +276,7 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 	}
 	if(JS_GetProperty(cx, obj, prop_name = "size", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToECMAUint32(cx, val, &idx->idx.size)) {
+			free(cp);
 			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
 			return FALSE;
 		}
@@ -285,6 +287,7 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 	}
 	if(JS_GetProperty(cx, obj, prop_name = "crc32", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToECMAUint32(cx, val, &idx->hash.data.crc32)) {
+			free(cp);
 			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
 			return FALSE;
 		}
@@ -380,6 +383,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 		JSVALUE_TO_MSTRING(cx, val, *extdesc, NULL);
 		HANDLE_PENDING(cx, *extdesc);
 		if(*extdesc == NULL) {
+			free(cp);
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_ERR_MEM;
 		}
@@ -403,6 +407,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		uint32_t cost = 0;
 		if(!JS_ValueToECMAUint32(cx, val, &cost)) {
+			free(cp);
 			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
 			return SMB_FAILURE;
 		}
@@ -529,9 +534,9 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		free(filename);
 		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
 			return JS_TRUE;
-		free(filename);
 		filename = strdup(file.file_idx.name);
 		argn++;
 	}
