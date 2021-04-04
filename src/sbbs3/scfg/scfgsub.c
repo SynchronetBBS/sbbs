@@ -36,7 +36,7 @@ bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long mi
 	new_subboard->misc |= misc;
 	if(new_subboard->misc&(SUB_FIDO | SUB_INET))
 		new_subboard->misc |= SUB_NOVOTING;
-	new_subboard->pmode = P_MARKUP | P_HIDEMARKS;
+	new_subboard->pmode = P_MARKUP | P_HIDEMARKS | P_NOATCODES;
 	new_subboard->maxmsgs = 500;
 
 	/* Use last sub in group (if exists) as a template for new subs */
@@ -511,54 +511,56 @@ void sub_cfg(uint grpnum)
 				case 13:
 					while(1) {
 						n=0;
-						sprintf(opt[n++],"%-27.27s%s","Allow Private Posts"
+						sprintf(opt[n++],"%-30.30s%s","Allow Private Posts"
 							,cfg.sub[i]->misc&SUB_PRIV ? cfg.sub[i]->misc&SUB_PONLY
 							? "Only":"Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Allow Anonymous Posts"
+						sprintf(opt[n++],"%-30.30s%s","Allow Anonymous Posts"
 							,cfg.sub[i]->misc&SUB_ANON ? cfg.sub[i]->misc&SUB_AONLY
 							? "Only":"Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Post Using Real Names"
+						sprintf(opt[n++],"%-30.30s%s","Post Using Real Names"
 							,cfg.sub[i]->misc&SUB_NAME ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Users Can Edit Posts"
+						sprintf(opt[n++],"%-30.30s%s","Users Can Edit Posts"
 							,cfg.sub[i]->misc&SUB_EDIT ? cfg.sub[i]->misc&SUB_EDITLAST 
 							? "Last" : "Yes" : "No");
-						sprintf(opt[n++],"%-27.27s%s","Users Can Delete Posts"
+						sprintf(opt[n++],"%-30.30s%s","Users Can Delete Posts"
 							,cfg.sub[i]->misc&SUB_DEL ? cfg.sub[i]->misc&SUB_DELLAST
 							? "Last" : "Yes" : "No");
-						sprintf(opt[n++],"%-27.27s%s","Default On for New Scan"
+						sprintf(opt[n++],"%-30.30s%s","Default On for New Scan"
 							,cfg.sub[i]->misc&SUB_NSDEF ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Forced On for New Scan"
+						sprintf(opt[n++],"%-30.30s%s","Forced On for New Scan"
 							,cfg.sub[i]->misc&SUB_FORCED ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Default On for Your Scan"
+						sprintf(opt[n++],"%-30.30s%s","Default On for Your Scan"
 							,cfg.sub[i]->misc&SUB_SSDEF ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Public 'To' User"
+						sprintf(opt[n++],"%-30.30s%s","Public 'To' User"
 							,cfg.sub[i]->misc&SUB_TOUSER ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Allow Message Voting"
+						sprintf(opt[n++],"%-30.30s%s","Allow Message Voting"
 							,cfg.sub[i]->misc&SUB_NOVOTING ? "No":"Yes");
-						sprintf(opt[n++],"%-27.27s%s","Allow Message Quoting"
+						sprintf(opt[n++],"%-30.30s%s","Allow Message Quoting"
 							,cfg.sub[i]->misc&SUB_QUOTE ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Allow Message Tagging"
+						sprintf(opt[n++],"%-30.30s%s","Allow Message Tagging"
 							,cfg.sub[i]->misc&SUB_MSGTAGS ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Suppress User Signatures"
+						sprintf(opt[n++],"%-30.30s%s","Suppress User Signatures"
 							,cfg.sub[i]->misc&SUB_NOUSERSIG ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Permanent Operator Msgs"
+						sprintf(opt[n++],"%-30.30s%s","Permanent Operator Msgs"
 							,cfg.sub[i]->misc&SUB_SYSPERM ? "Yes":"No");
 	#if 0 /* this is not actually implemented (yet?) */
-						sprintf(opt[n++],"%-27.27s%s","Kill Read Messages"
+						sprintf(opt[n++],"%-30.30s%s","Kill Read Messages"
 							,cfg.sub[i]->misc&SUB_KILL ? "Yes"
 							: (cfg.sub[i]->misc&SUB_KILLP ? "Pvt" : "No"));
 	#endif
-						sprintf(opt[n++],"%-27.27s%s","Compress Messages (LZH)"
+						sprintf(opt[n++],"%-30.30s%s","Compress Messages (LZH)"
 							,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
-						sprintf(opt[n++],"%-27.27s%s","Apply Markup Codes"
+						sprintf(opt[n++],"%-30.30s%s","Apply Markup Codes"
 							,cfg.sub[i]->pmode&P_MARKUP ? ((cfg.sub[i]->pmode&P_HIDEMARKS)  ? "Hide" : "Yes") : "No");
-						sprintf(opt[n++],"%-27.27s%s","Extra Attribute Codes"
+						sprintf(opt[n++],"%-30.30s%s","Extra Attribute Codes"
 							,cfg.sub[i]->pmode&P_NOXATTRS ? "No" : "Yes");
-						sprintf(opt[n++],"%-27.27s%s","Word-wrap Messages"
+						sprintf(opt[n++],"%-30.30s%s","Word-wrap Messages"
 							,cfg.sub[i]->n_pmode&P_WORDWRAP ? "No" : "Yes");
-						sprintf(opt[n++],"%-27.27s%s","Auto-detect UTF-8 Msgs"
+						sprintf(opt[n++],"%-30.30s%s","Auto-detect UTF-8 Msgs"
 							,cfg.sub[i]->pmode&P_AUTO_UTF8 ? "Yes" : "No");
-						sprintf(opt[n++],"%-27.27s%s","Template for New Subs"
+						sprintf(opt[n++],"%-30.30s%s","Expand @-codes in Sysop Msgs"
+							,cfg.sub[i]->pmode&P_NOATCODES ? "No" : "Yes");
+						sprintf(opt[n++],"%-30.30s%s","Template for New Subs"
 							,cfg.sub[i]->misc&SUB_TEMPLATE ? "Yes" : "No");
 
 						opt[n][0]=0;
@@ -568,7 +570,7 @@ void sub_cfg(uint grpnum)
 							"This menu allows you to toggle certain options for the selected\n"
 							"sub-board between two or more settings, such as `Yes` and `No`.\n"
 						;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,1,36,&tog_dflt, &tog_bar
+						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,1,0,&tog_dflt, &tog_bar
 							,"Toggle Options",opt);
 						if(n==-1)
 							break;
@@ -1132,6 +1134,28 @@ void sub_cfg(uint grpnum)
 								else if(n == 1 && (cfg.sub[i]->pmode&P_AUTO_UTF8)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->pmode ^= P_AUTO_UTF8;
+								}
+								break;
+							case __COUNTER__:
+								n=(cfg.sub[i]->pmode&P_NOATCODES) ? 1:0;
+								uifc.helpbuf=
+									"`Expand @-codes in Sysop-Posted Messages:`\n"
+									"\n"
+									"Set this option to `Yes` to enable the interpretation and expansion of\n"
+									"message variables (@-codes) in messages posted by the local sysop\n"
+									"(user #1).\n"
+								;
+								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+									,"Expand @-codes in Sysop-Posted Messages",uifcYesNoOpts);
+								if(n==-1)
+									break;
+								if(n == 0 && (cfg.sub[i]->pmode & P_NOATCODES)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode ^= P_NOATCODES;
+								}
+								else if(n == 1 && !(cfg.sub[i]->pmode & P_NOATCODES)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode ^= P_NOATCODES;
 								}
 								break;
 							case __COUNTER__:
