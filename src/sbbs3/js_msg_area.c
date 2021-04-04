@@ -279,8 +279,7 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || is_user_subop(p->cfg, p->subnum, p->user, p->client));
 			break;
 		case SUB_PROP_IS_MODERATED:
-			if(p->cfg->sub[p->subnum]->mod_ar != NULL
-				&& p->cfg->sub[p->subnum]->mod_ar[0] != 0
+			if(p->cfg->sub[p->subnum]->mod_ar[0] != 0
 				&& p->user != NULL 
 				&& chk_ar(p->cfg,p->cfg->sub[p->subnum]->mod_ar, p->user, p->client))
 				*vp = JSVAL_TRUE;
