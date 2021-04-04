@@ -26,7 +26,7 @@
 /* If sent is non-zero, it returns the number of mail sent by usernumber    */
 /* If usernumber is 0, it returns all mail on the system                    */
 /****************************************************************************/
-int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr)
+int getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr)
 {
     char    path[MAX_PATH+1];
     int     i=0;
@@ -72,7 +72,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr)
 /***************************/
 /* Delete file attachments */
 /***************************/
-BOOL DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
+BOOL delfattach(scfg_t* cfg, smbmsg_t* msg)
 {
     char dir[MAX_PATH+1];
 	char path[MAX_PATH+1];
@@ -110,7 +110,7 @@ BOOL DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
 /* of pointers to mail_t (message numbers and attributes)                   */
 /* smb_open(&smb) must be called prior										*/
 /****************************************************************************/
-mail_t* DLLCALL loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
+mail_t* loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 			   ,int which, long mode)
 {
 	ulong		l=0;
@@ -172,7 +172,7 @@ mail_t* DLLCALL loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 	return(mail);
 }
 
-void DLLCALL freemail(mail_t* mail)
+void freemail(mail_t* mail)
 {
 	if(mail!=NULL)
 		free(mail);

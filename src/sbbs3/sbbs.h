@@ -1185,65 +1185,55 @@ public:
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
-#ifdef DLLCALL
-#undef DLLCALL
-#endif
 #ifdef _WIN32
 	#ifdef __MINGW32__
 		#define DLLEXPORT
-		#define DLLCALL
 	#else
 		#ifdef SBBS_EXPORTS
 			#define DLLEXPORT	__declspec(dllexport)
 		#else
 			#define DLLEXPORT	__declspec(dllimport)
 		#endif
-		#ifdef __BORLANDC__
-			#define DLLCALL
-		#else
-			#define DLLCALL
-		#endif
 	#endif
 #else	/* !_WIN32 */
 	#define DLLEXPORT
-	#define DLLCALL
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 	/* ansiterm.cpp */
-	DLLEXPORT char*		DLLCALL ansi_attr(int attr, int curattr, char* str, BOOL color);
+	DLLEXPORT char*		ansi_attr(int attr, int curattr, char* str, BOOL color);
 
 	/* main.cpp */
 	extern const char* nulstr;
 	extern const char* crlf;
-	DLLEXPORT int		DLLCALL sbbs_random(int);
-	DLLEXPORT void		DLLCALL sbbs_srand(void);
+	DLLEXPORT int		sbbs_random(int);
+	DLLEXPORT void		sbbs_srand(void);
 
 	/* postmsg.cpp */
-	DLLEXPORT int		DLLCALL savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, const char* server, char* msgbuf, smbmsg_t* remsg);
-	DLLEXPORT int		DLLCALL votemsg(scfg_t*, smb_t*, smbmsg_t*, const char* msgfmt, const char* votefmt);
-	DLLEXPORT int		DLLCALL postpoll(scfg_t*, smb_t*, smbmsg_t*);
-	DLLEXPORT int		DLLCALL closepoll(scfg_t*, smb_t*, uint32_t msgnum, const char* username);
-	DLLEXPORT void		DLLCALL signal_sub_sem(scfg_t*, uint subnum);
-	DLLEXPORT int		DLLCALL msg_client_hfields(smbmsg_t*, client_t*);
-	DLLEXPORT int		DLLCALL notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
+	DLLEXPORT int		savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, const char* server, char* msgbuf, smbmsg_t* remsg);
+	DLLEXPORT int		votemsg(scfg_t*, smb_t*, smbmsg_t*, const char* msgfmt, const char* votefmt);
+	DLLEXPORT int		postpoll(scfg_t*, smb_t*, smbmsg_t*);
+	DLLEXPORT int		closepoll(scfg_t*, smb_t*, uint32_t msgnum, const char* username);
+	DLLEXPORT void		signal_sub_sem(scfg_t*, uint subnum);
+	DLLEXPORT int		msg_client_hfields(smbmsg_t*, client_t*);
+	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 
 	/* logfile.cpp */
-	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, int level, const char* host, const char* text);
+	DLLEXPORT int		errorlog(scfg_t* cfg, int level, const char* host, const char* text);
 
-	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, const char* prot, const char* user, const char* text
+	DLLEXPORT BOOL		hacklog(scfg_t* cfg, const char* prot, const char* user, const char* text
 										,const char* host, union xp_sockaddr* addr);
-	DLLEXPORT BOOL		DLLCALL spamlog(scfg_t* cfg, char* prot, char* action, char* reason
+	DLLEXPORT BOOL		spamlog(scfg_t* cfg, char* prot, char* action, char* reason
 										,char* host, char* ip_addr, char* to, char* from);
 
 	/* data.cpp */
-	DLLEXPORT time_t	DLLCALL getnextevent(scfg_t* cfg, event_t* event);
-	DLLEXPORT time_t	DLLCALL getnexteventtime(event_t* event);
+	DLLEXPORT time_t	getnextevent(scfg_t* cfg, event_t* event);
+	DLLEXPORT time_t	getnexteventtime(event_t* event);
 
 	/* sockopt.c */
-	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section
+	DLLEXPORT int		set_socket_options(scfg_t* cfg, SOCKET sock, const char* section
 		,char* error, size_t errlen);
 
 	/* qwk.cpp */
@@ -1303,17 +1293,17 @@ extern "C" {
 	#endif
 
 	/* main.cpp */
-	DLLEXPORT JSBool	DLLCALL js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char*, int ver);
-	DLLEXPORT JSBool	DLLCALL js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char*);
-	DLLEXPORT JSBool	DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec*);
-	DLLEXPORT JSBool	DLLCALL js_DefineSyncProperties(JSContext* cx, JSObject* obj, jsSyncPropertySpec*);
-	DLLEXPORT JSBool	DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags);
-	DLLEXPORT JSBool	DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
-	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
+	DLLEXPORT JSBool	js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char*, int ver);
+	DLLEXPORT JSBool	js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char*);
+	DLLEXPORT JSBool	js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec*);
+	DLLEXPORT JSBool	js_DefineSyncProperties(JSContext* cx, JSObject* obj, jsSyncPropertySpec*);
+	DLLEXPORT JSBool	js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags);
+	DLLEXPORT JSBool	js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
+	DLLEXPORT JSBool	js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
 														,const char* name, const char* str[], unsigned flags);
-	DLLEXPORT void*		DLLCALL js_GetClassPrivate(JSContext*, JSObject*, JSClass*);
+	DLLEXPORT void*		js_GetClassPrivate(JSContext*, JSObject*, JSClass*);
 
-	DLLEXPORT BOOL	DLLCALL js_CreateCommonObjects(JSContext* cx
+	DLLEXPORT BOOL	js_CreateCommonObjects(JSContext* cx
 													,scfg_t* cfg				/* common */
 													,scfg_t* node_cfg			/* node-specific */
 													,jsSyncMethodSpec* methods	/* global */
@@ -1334,7 +1324,7 @@ extern "C" {
 													);
 
 	/* js_server.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateServerObject(JSContext* cx, JSObject* parent
+	DLLEXPORT JSObject* js_CreateServerObject(JSContext* cx, JSObject* parent
 										,js_server_props_t* props);
 
 	/* js_global.c */
@@ -1353,94 +1343,94 @@ extern "C" {
 		str_list_t			exit_func;
 		struct js_onexit_scope	*onexit;
 	} global_private_t;
-	DLLEXPORT BOOL DLLCALL js_argc(JSContext *cx, unsigned argc, unsigned min);
-	DLLEXPORT BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*, JSObject**);
+	DLLEXPORT BOOL js_argc(JSContext *cx, unsigned argc, unsigned min);
+	DLLEXPORT BOOL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*, JSObject**);
 
 	/* js_internal.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateInternalJsObject(JSContext*, JSObject* parent, js_callback_t*, js_startup_t*);
-	DLLEXPORT JSBool	DLLCALL js_CommonOperationCallback(JSContext*, js_callback_t*);
-	DLLEXPORT void		DLLCALL js_EvalOnExit(JSContext*, JSObject*, js_callback_t*);
-	DLLEXPORT void		DLLCALL	js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir, JSObject *);
-	DLLEXPORT char*		DLLCALL js_getstring(JSContext *cx, JSString *str);
+	DLLEXPORT JSObject* js_CreateInternalJsObject(JSContext*, JSObject* parent, js_callback_t*, js_startup_t*);
+	DLLEXPORT JSBool	js_CommonOperationCallback(JSContext*, js_callback_t*);
+	DLLEXPORT void		js_EvalOnExit(JSContext*, JSObject*, js_callback_t*);
+	DLLEXPORT void		js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir, JSObject *);
+	DLLEXPORT char*		js_getstring(JSContext *cx, JSString *str);
 	DLLEXPORT JSBool	js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated);
 	DLLEXPORT JSBool	js_clear_event(JSContext *cx, jsval *arglist, js_callback_t *cb, enum js_event_type et, int ididx);
 
 	/* js_system.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
+	DLLEXPORT JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 													,scfg_t* cfg, time_t uptime
 													,char* host_name
 													,char* socklib_desc);
 
 	/* js_client.c */
 #ifdef USE_CRYPTLIB
-	DLLEXPORT JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
+	DLLEXPORT JSObject* js_CreateClientObject(JSContext* cx, JSObject* parent
 													,const char* name, client_t* client, SOCKET sock, CRYPT_CONTEXT session);
 #endif
 	/* js_user.c */
-	DLLEXPORT JSObject*	DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
-	DLLEXPORT JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+	DLLEXPORT JSObject*	js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
+	DLLEXPORT JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,char* name, user_t* user, client_t* client, BOOL global_user);
-	DLLEXPORT JSBool	DLLCALL js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
+	DLLEXPORT JSBool	js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, char* html_index_file
 													,subscan_t* subscan);
 	/* js_file_area.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+	DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, char* html_index_file);
 
 	/* js_msg_area.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+	DLLEXPORT JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, subscan_t* subscan);
-	DLLEXPORT BOOL		DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg
+	DLLEXPORT BOOL		js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg
 													,JSObject* subobj, uint subnum);
 
 	/* js_xtrn_area.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+	DLLEXPORT JSObject* js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client);
 
 	/* js_msgbase.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
-	DLLEXPORT BOOL		DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* hdrobj, smbmsg_t*);
-	DLLEXPORT BOOL		DLLCALL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* hdrobj, smb_t**, smbmsg_t**, post_t**);
+	DLLEXPORT JSObject* js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
+	DLLEXPORT BOOL		js_ParseMsgHeaderObject(JSContext* cx, JSObject* hdrobj, smbmsg_t*);
+	DLLEXPORT BOOL		js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* hdrobj, smb_t**, smbmsg_t**, post_t**);
 
 	/* js_filebase.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateFileBaseClass(JSContext*, JSObject* parent, scfg_t*);
+	DLLEXPORT JSObject* js_CreateFileBaseClass(JSContext*, JSObject* parent, scfg_t*);
 
 	/* js_socket.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent);
 #ifdef USE_CRYPTLIB
-	DLLEXPORT JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent
+	DLLEXPORT JSObject* js_CreateSocketObject(JSContext* cx, JSObject* parent
 													,char *name, SOCKET sock, CRYPT_CONTEXT session);
 #endif
-	DLLEXPORT JSObject* DLLCALL js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent
+	DLLEXPORT JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent
 													,char *name, struct xpms_set *set);
 
-	DLLEXPORT SOCKET	DLLCALL js_socket(JSContext *cx, jsval val);
+	DLLEXPORT SOCKET	js_socket(JSContext *cx, jsval val);
 	DLLEXPORT int js_polltimeout(JSContext* cx, jsval val);
 #ifdef PREFER_POLL
 	DLLEXPORT size_t js_socket_numsocks(JSContext *cx, jsval val);
 	DLLEXPORT size_t js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events);
 #else
-	DLLEXPORT void		DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv);
-    DLLEXPORT SOCKET	DLLCALL js_socket_add(JSContext *cx, jsval val, fd_set *fds);
-	DLLEXPORT BOOL		DLLCALL js_socket_isset(JSContext *cx, jsval val, fd_set *fds);
+	DLLEXPORT void		js_timeval(JSContext* cx, jsval val, struct timeval* tv);
+    DLLEXPORT SOCKET	js_socket_add(JSContext *cx, jsval val, fd_set *fds);
+	DLLEXPORT BOOL		js_socket_isset(JSContext *cx, jsval val, fd_set *fds);
 #endif
 
 	/* js_queue.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateQueueClass(JSContext* cx, JSObject* parent);
-	DLLEXPORT JSObject* DLLCALL js_CreateQueueObject(JSContext* cx, JSObject* parent
+	DLLEXPORT JSObject* js_CreateQueueClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateQueueObject(JSContext* cx, JSObject* parent
 													,char *name, msg_queue_t* q);
 	BOOL js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name);
 
 	/* js_file.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent);
-	DLLEXPORT JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode);
+	DLLEXPORT JSObject* js_CreateFileClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode);
 
 	/* js_archive.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateArchiveClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent);
 
 	/* js_sprintf.c */
-	DLLEXPORT char*		DLLCALL js_sprintf(JSContext* cx, uint argn, unsigned argc, jsval *argv);
-	DLLEXPORT void		DLLCALL js_sprintf_free(char *);
+	DLLEXPORT char*		js_sprintf(JSContext* cx, uint argn, unsigned argc, jsval *argv);
+	DLLEXPORT void		js_sprintf_free(char *);
 
 	/* js_console.cpp */
 	JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent);
@@ -1457,17 +1447,17 @@ extern "C" {
 	JSObject* js_CreateConioObject(JSContext* cx, JSObject* parent);
 
 	/* js_com.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateCOMClass(JSContext* cx, JSObject* parent);
-	DLLEXPORT JSObject* DLLCALL js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, COM_HANDLE sock);
+	DLLEXPORT JSObject* js_CreateCOMClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, COM_HANDLE sock);
 
 	/* js_cryptcon.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateCryptContextClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent);
 
 	/* js_cryptkeyset.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent);
 
 	/* js_cryptcert.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent);
 
 #endif
 

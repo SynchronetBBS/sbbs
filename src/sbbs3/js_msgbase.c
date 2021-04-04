@@ -1000,7 +1000,7 @@ err:
 }
 
 /* obj *may* have been previously returned from get_msg_header() */
-BOOL DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
+BOOL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
 {
 	privatemsg_t*	p;
 
@@ -1015,7 +1015,7 @@ BOOL DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg
 }
 
 /* obj must've been previously returned from get_msg_header() */
-BOOL DLLCALL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* obj, smb_t** smb, smbmsg_t** msg, post_t** post)
+BOOL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* obj, smb_t** smb, smbmsg_t** msg, post_t** post)
 {
 	privatemsg_t*	p;
 
@@ -3434,7 +3434,7 @@ static struct JSPropertySpec js_msgbase_static_properties[] = {
 	{0}
 };
 
-JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
+JSObject* js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
 	JSObject*	obj;
 	JSObject*	constructor;

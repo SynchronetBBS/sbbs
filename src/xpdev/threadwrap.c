@@ -45,7 +45,7 @@
 #endif
 
 #include "genwrap.h"	/* SLEEP() */
-#include "threadwrap.h"	/* DLLCALL */
+#include "threadwrap.h"
 
 /****************************************************************************/
 /* Wrapper for Win32 create/begin thread function							*/
@@ -53,7 +53,7 @@
 /****************************************************************************/
 #if defined(__unix__)
 #if defined(_POSIX_THREADS)
-ulong DLLCALL _beginthread(void( *start_address )( void * )
+ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist)
 {
 	pthread_t	thread;
@@ -105,7 +105,7 @@ ulong DLLCALL _beginthread(void( *start_address )( void * )
 /****************************************************************************/
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
-pthread_mutex_t DLLCALL pthread_mutex_initializer_np(BOOL recursive)
+pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive)
 {
 	pthread_mutex_t	mutex;
 #if defined(_POSIX_THREADS)
@@ -127,7 +127,7 @@ pthread_mutex_t DLLCALL pthread_mutex_initializer_np(BOOL recursive)
 
 #if !defined(_POSIX_THREADS)
 
-int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void))
+int pthread_once(pthread_once_t *oc, void (*init)(void))
 {
 	if (oc == NULL || init == NULL)
 		return EINVAL;
@@ -150,7 +150,7 @@ int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void))
 	return EINVAL;
 }
 
-int DLLCALL pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
+int pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
 {
 	(void)attr;
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
@@ -163,7 +163,7 @@ int DLLCALL pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
 #endif
 }
 
-int DLLCALL pthread_mutex_lock(pthread_mutex_t* mutex)
+int pthread_mutex_lock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
 	return (WaitForSingleObject(*mutex, INFINITE)==WAIT_OBJECT_0 ? 0 : EBUSY);
@@ -175,7 +175,7 @@ int DLLCALL pthread_mutex_lock(pthread_mutex_t* mutex)
 #endif
 }
 
-int DLLCALL pthread_mutex_trylock(pthread_mutex_t* mutex)
+int pthread_mutex_trylock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
 	return (WaitForSingleObject(*mutex, 0)==WAIT_OBJECT_0 ? 0 : EBUSY);
@@ -187,7 +187,7 @@ int DLLCALL pthread_mutex_trylock(pthread_mutex_t* mutex)
 #endif
 }
 
-int DLLCALL pthread_mutex_unlock(pthread_mutex_t* mutex)
+int pthread_mutex_unlock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
 	return (ReleaseMutex(*mutex) ? 0 : GetLastError());
@@ -199,7 +199,7 @@ int DLLCALL pthread_mutex_unlock(pthread_mutex_t* mutex)
 #endif
 }
 
-int DLLCALL pthread_mutex_destroy(pthread_mutex_t* mutex)
+int pthread_mutex_destroy(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
 	return (CloseHandle(*mutex) ? 0 : GetLastError());
@@ -218,19 +218,19 @@ int DLLCALL pthread_mutex_destroy(pthread_mutex_t* mutex)
 /************************************************************************/
 
 #if __STDC_NO_ATOMICS__
-void DLLCALL protected_int32_init(protected_int32_t* prot, int32_t value)
+void protected_int32_init(protected_int32_t* prot, int32_t value)
 {
 	prot->value = value;
 	pthread_mutex_init(&prot->mutex,NULL);
 }
 
-void DLLCALL protected_int64_init(protected_int64_t* prot, int64_t value)
+void protected_int64_init(protected_int64_t* prot, int64_t value)
 {
 	prot->value = value;
 	pthread_mutex_init(&prot->mutex,NULL);
 }
 
-int32_t DLLCALL protected_int32_adjust(protected_int32_t* i, int32_t adjustment)
+int32_t protected_int32_adjust(protected_int32_t* i, int32_t adjustment)
 {
 	int32_t	newval;
 	pthread_mutex_lock(&i->mutex);
@@ -239,7 +239,7 @@ int32_t DLLCALL protected_int32_adjust(protected_int32_t* i, int32_t adjustment)
 	return newval;
 }
 
-uint32_t DLLCALL protected_uint32_adjust(protected_uint32_t* i, int32_t adjustment)
+uint32_t protected_uint32_adjust(protected_uint32_t* i, int32_t adjustment)
 {
 	uint32_t newval;
 	pthread_mutex_lock(&i->mutex);
@@ -248,7 +248,7 @@ uint32_t DLLCALL protected_uint32_adjust(protected_uint32_t* i, int32_t adjustme
 	return newval;
 }
 
-int64_t DLLCALL protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
+int64_t protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
 {
 	int64_t	newval;
 	pthread_mutex_lock(&i->mutex);
@@ -257,7 +257,7 @@ int64_t DLLCALL protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
 	return newval;
 }
 
-uint64_t DLLCALL protected_uint64_adjust(protected_uint64_t* i, int64_t adjustment)
+uint64_t protected_uint64_adjust(protected_uint64_t* i, int64_t adjustment)
 {
 	uint64_t newval;
 	pthread_mutex_lock(&i->mutex);
@@ -266,7 +266,7 @@ uint64_t DLLCALL protected_uint64_adjust(protected_uint64_t* i, int64_t adjustme
 	return newval;
 }
 
-int32_t DLLCALL protected_int32_set(protected_int32_t* i, int32_t val)
+int32_t protected_int32_set(protected_int32_t* i, int32_t val)
 {
 	int32_t	newval;
 	pthread_mutex_lock(&i->mutex);
@@ -275,7 +275,7 @@ int32_t DLLCALL protected_int32_set(protected_int32_t* i, int32_t val)
 	return newval;
 }
 
-uint32_t DLLCALL protected_uint32_set(protected_uint32_t* i, uint32_t val)
+uint32_t protected_uint32_set(protected_uint32_t* i, uint32_t val)
 {
 	uint32_t newval;
 	pthread_mutex_lock(&i->mutex);
@@ -284,7 +284,7 @@ uint32_t DLLCALL protected_uint32_set(protected_uint32_t* i, uint32_t val)
 	return newval;
 }
 
-int64_t DLLCALL protected_int64_set(protected_int64_t* i, int64_t val)
+int64_t protected_int64_set(protected_int64_t* i, int64_t val)
 {
 	int64_t	newval;
 	pthread_mutex_lock(&i->mutex);
@@ -293,7 +293,7 @@ int64_t DLLCALL protected_int64_set(protected_int64_t* i, int64_t val)
 	return newval;
 }
 
-uint64_t DLLCALL protected_uint64_set(protected_uint64_t* i, uint64_t val)
+uint64_t protected_uint64_set(protected_uint64_t* i, uint64_t val)
 {
 	uint64_t newval;
 	pthread_mutex_lock(&i->mutex);

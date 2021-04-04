@@ -483,7 +483,7 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-JSObject* DLLCALL js_CreateQueueClass(JSContext* cx, JSObject* parent)
+JSObject* js_CreateQueueClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	obj;
 
@@ -499,7 +499,7 @@ JSObject* DLLCALL js_CreateQueueClass(JSContext* cx, JSObject* parent)
 	return(obj);
 }
 
-JSObject* DLLCALL js_CreateQueueObject(JSContext* cx, JSObject* parent, char *name, msg_queue_t* q)
+JSObject* js_CreateQueueObject(JSContext* cx, JSObject* parent, char *name, msg_queue_t* q)
 {
 	JSObject*		obj;
 

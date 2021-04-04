@@ -43,7 +43,7 @@
 #include <sys/time.h>	/* timespec */
 #include <stdlib.h>	/* NULL */
 
-int DLLCALL
+int
 sem_trywait_block(sem_t *sem, unsigned long timeout)
 {
 	int	retval;
@@ -67,7 +67,7 @@ sem_trywait_block(sem_t *sem, unsigned long timeout)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-int DLLCALL sem_init(sem_t* psem, int pshared, unsigned int value)
+int sem_init(sem_t* psem, int pshared, unsigned int value)
 {
 
 	if((*(psem)=CreateSemaphore(NULL,value,INT_MAX,NULL))==NULL)
@@ -76,7 +76,7 @@ int DLLCALL sem_init(sem_t* psem, int pshared, unsigned int value)
 	return 0;
 }
 
-int DLLCALL sem_trywait_block(sem_t* psem, unsigned long timeout)
+int sem_trywait_block(sem_t* psem, unsigned long timeout)
 {
 	if(WaitForSingleObject(*(psem),timeout)!=WAIT_OBJECT_0) {
 		errno=EAGAIN;
@@ -86,7 +86,7 @@ int DLLCALL sem_trywait_block(sem_t* psem, unsigned long timeout)
 	return 0;
 }
 
-int DLLCALL sem_post(sem_t* psem)
+int sem_post(sem_t* psem)
 {
 	if(ReleaseSemaphore(*(psem),1,NULL)==TRUE)
 		return 0;
@@ -94,7 +94,7 @@ int DLLCALL sem_post(sem_t* psem)
 	return -1;
 }
 
-int DLLCALL sem_getvalue(sem_t* psem, int* vp)
+int sem_getvalue(sem_t* psem, int* vp)
 {
 #if 0		/* This only works on 9x *sniff* */
 	ReleaseSemaphore(*(psem),0,(LPLONG)vp);
@@ -115,7 +115,7 @@ int DLLCALL sem_getvalue(sem_t* psem, int* vp)
 #endif
 }
 
-int DLLCALL sem_destroy(sem_t* psem)
+int sem_destroy(sem_t* psem)
 {
 	if(CloseHandle(*(psem))==TRUE)
 		return 0;

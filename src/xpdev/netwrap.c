@@ -45,7 +45,7 @@
 	#include <iphlpapi.h>	/* GetNetworkParams */
 #endif
 
-str_list_t DLLCALL getNameServerList(void)
+str_list_t getNameServerList(void)
 {
 #ifdef __unix__	/* Look up DNS server address */
 	FILE*	fp;
@@ -96,7 +96,7 @@ str_list_t DLLCALL getNameServerList(void)
 #endif
 }
 
-const char* DLLCALL getHostNameByAddr(const char* str)
+const char* getHostNameByAddr(const char* str)
 {
 	HOSTENT*	h;
 	uint32_t	ip;
@@ -120,7 +120,7 @@ const char* DLLCALL getHostNameByAddr(const char* str)
 }
 
 /* In case we want to DLL-export getNameServerList in the future */
-void DLLCALL freeNameServerList(str_list_t list)
+void freeNameServerList(str_list_t list)
 {
 	strListFree(&list);
 }

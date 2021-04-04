@@ -25,7 +25,7 @@ static void trigger_thread(void *args)
 	}
 }
 
-JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line)
+JSRuntime * jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line)
 {
 	JSRuntime *ret;
 
@@ -42,7 +42,7 @@ JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char 
 	return ret;
 }
 
-void DLLCALL jsrt_Release(JSRuntime *rt)
+void jsrt_Release(JSRuntime *rt)
 {
 	list_node_t	*node;
 

@@ -73,7 +73,7 @@ char *faddrtoa(fidoaddr_t addr)
 	return(str);
 }
 
-char* DLLCALL strip_ctrl(char *str)
+char* strip_ctrl(char *str)
 {
 	char tmp[1024];
 	int i,j;

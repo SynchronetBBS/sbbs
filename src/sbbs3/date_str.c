@@ -29,7 +29,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 /****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
 /****************************************************************************/
-time32_t DLLCALL dstrtounix(scfg_t* cfg, const char *instr)
+time32_t dstrtounix(scfg_t* cfg, const char *instr)
 {
 	const char*	p;
 	const char*	day;
@@ -80,7 +80,7 @@ time32_t DLLCALL dstrtounix(scfg_t* cfg, const char *instr)
 /****************************************************************************/
 /* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
 /****************************************************************************/
-char* DLLCALL unixtodstr(scfg_t* cfg, time32_t t, char *str)
+char* unixtodstr(scfg_t* cfg, time32_t t, char *str)
 {
 	struct tm tm;
 	time_t unix_time=t;
@@ -111,7 +111,7 @@ char* DLLCALL unixtodstr(scfg_t* cfg, time32_t t, char *str)
 /****************************************************************************/
 /* Takes the value 'sec' and makes a string the format HH:MM:SS             */
 /****************************************************************************/
-char* DLLCALL sectostr(uint sec,char *str)
+char* sectostr(uint sec,char *str)
 {
     uchar hour,min,sec2;
 
@@ -123,7 +123,7 @@ char* DLLCALL sectostr(uint sec,char *str)
 }
 
 /* Returns a shortened version of "HH:MM:SS" formatted seconds value */
-char* DLLCALL seconds_to_str(uint seconds, char* str)
+char* seconds_to_str(uint seconds, char* str)
 {
 	char* p = sectostr(seconds, str);
 	while(*p=='0' || *p==':')
@@ -133,7 +133,7 @@ char* DLLCALL seconds_to_str(uint seconds, char* str)
 
 /****************************************************************************/
 /****************************************************************************/
-char* DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
+char* hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
 {
 	if(cfg->sys_misc&SM_MILITARY)
 		sprintf(str,"%02d:%02d "
@@ -149,7 +149,7 @@ char* DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
 /* Generates a 24 character ASCII string that represents the time_t pointer */
 /* Used as a replacement for ctime()                                        */
 /****************************************************************************/
-char* DLLCALL timestr(scfg_t* cfg, time32_t t, char* str)
+char* timestr(scfg_t* cfg, time32_t t, char* str)
 {
     char*		mer;
 	uchar		hour;

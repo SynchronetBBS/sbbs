@@ -125,7 +125,7 @@ static jsSyncPropertySpec js_event_properties[] = {
 	{ NULL }
 };
 
-BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* xtrn)
+BOOL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* xtrn)
 {
 	JSString* js_str;
 
@@ -282,7 +282,7 @@ struct js_xtrn_area_priv {
 	client_t	*client;
 };
 
-JSBool DLLCALL js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
+JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 {
 	JSObject*	allsec;
 	JSObject*	allprog;
@@ -615,7 +615,7 @@ static JSClass js_xtrn_area_class = {
 	,js_xtrn_area_finalize	/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+JSObject* js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 										  ,user_t* user, client_t* client)
 {
 	JSObject* obj;

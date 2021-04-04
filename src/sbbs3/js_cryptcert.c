@@ -3046,7 +3046,7 @@ JSClass js_cryptcert_class = {
 	,js_finalize_cryptcert		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateCryptCertObject(JSContext* cx, CRYPT_CERTIFICATE cert)
+JSObject* js_CreateCryptCertObject(JSContext* cx, CRYPT_CERTIFICATE cert)
 {
 	JSObject *obj;
 	struct js_cryptcert_private_data *p;
@@ -3180,7 +3180,7 @@ static char* cryptcert_format_prop_desc[] = {
 };
 #endif
 
-JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
+JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	cksobj;
 	JSObject*	constructor;

@@ -27,7 +27,7 @@
 /* Reads data from dsts.dab into stats structure                            */
 /* If node is zero, reads from ctrl\dsts.dab, otherwise from each node		*/
 /****************************************************************************/
-BOOL DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats)
+BOOL getstats(scfg_t* cfg, char node, stats_t* stats)
 {
     char str[MAX_PATH+1];
     int file;
@@ -46,7 +46,7 @@ BOOL DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats)
 /****************************************************************************/
 /* Returns the number of files in the directory 'dirnum'                    */
 /****************************************************************************/
-long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
+long getfiles(scfg_t* cfg, uint dirnum)
 {
 	char path[MAX_PATH + 1];
 	off_t l;
@@ -63,7 +63,7 @@ long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 /****************************************************************************/
 /* Returns total number of posts in a sub-board 							*/
 /****************************************************************************/
-ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
+ulong getposts(scfg_t* cfg, uint subnum)
 {
 	if(cfg->sub[subnum]->misc & SUB_NOVOTING) {
 		char path[MAX_PATH + 1];

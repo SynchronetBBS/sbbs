@@ -64,8 +64,8 @@ typedef struct {
 	DWORD*					options;
 	BOOL*					recycle_now;
 	int*					log_level;
-	void DLLCALL			(*thread)(void* arg);
-	void DLLCALL			(*terminate)(void);
+	void 					(*thread)(void* arg);
+	void					(*terminate)(void);
 	void					(WINAPI *ctrl_handler)(DWORD);
 	HANDLE					log_handle;
 	HANDLE					event_handle;

@@ -5,7 +5,7 @@
 #ifndef STATIC_LINK
 #if defined(__unix__)
 
-DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
+DLLEXPORT dll_handle xp_dlopen(const char **names, int mode, int major)
 {
 	const char	*name;
 	char		fname[MAX_PATH+1];
@@ -59,7 +59,7 @@ DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
 	return(NULL);
 }
 #elif defined(_WIN32)
-DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
+DLLEXPORT dll_handle xp_dlopen(const char **names, int mode, int major)
 {
 	char		fname[MAX_PATH+1];
 	dll_handle	ret=NULL;
