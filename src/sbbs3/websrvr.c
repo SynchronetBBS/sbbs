@@ -3818,6 +3818,8 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 			if((ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
 				if (socket_writable(sock, 1000 /* TODO: Make configurable! */))
 					result=0;	/* success */
+				else
+					closesocket(sock);
 			}
 			else
 				closesocket(sock);
