@@ -1,15 +1,14 @@
 _New FileBases_
 
-File database (filebase) files are stored in the same database location
-(directory) as before (e.g. data/dirs/), but the filenames (extensions) are
-different:
+The new FileBase files are stored in the same database location as before
+(e.g. data/dirs/), but the file extensions are different:
 
 ^ Purpose                  ^   Old    ^   New    ^
 | Index (e.g. filenames)   | code.ixb | code.sid |
 | Data (e.g. descriptions) | code.dat | code.shd |
 | Extended Descriptions    | code.exb | code.sdt |
 | Metadata                 | code.dab | code.ini |
-| Allocation Tables        | N/A      | code.s?a |
+| Allocation Tables        | N/A      | code.sda and code.sha |
 
 If these new filebase file extensions look familiar to you, that's because
 we're using the Synchronet Message Base format/library (v3.0 now) for the
@@ -17,10 +16,11 @@ underlying database. This means that the SMB tools you may be familiar with
 (e.g. CHKSMB, FIXSMB, SMBUTIL) also work on the new filebases.
 
 The conversion of the filebases to the new format should occur automatically
-when you run 'jsexec update' which in turn will execute 'upgrade_to_v319' when
-appropriate (just one time). Once converted, you can delete the old files
-or leave them in place in case you need to revert back to Synchronet v3.18 for
-any reason. The old filebase files won't harm anything if left.
+when you run 'jsexec update' which in turn will execute the program
+'upgrade_to_v319' when appropriate (just one time). Once converted, you can
+delete the old files or leave them in place in case you need to revert back to
+Synchronet v3.18 for any reason. The old filebase files won't harm anything if
+left.
 
 The creation of each new filebase will automatically calculate and store the
 hashes of the contents of the actual files available for download. These
@@ -29,11 +29,11 @@ If you wish to opt-out of the file hashing (which consumes the majority of the
 time during the upgrade process), you can turn off file hashing in the
 per-directory Toggle Options in SCFG->File Areas. You would have to perform
 this opt-out for the directories of choice *before* you run 'jsexec update' /
-'upgrade_to_v319'.
+'upgrade_to_v319'. You should not normally need to run 'upgrade_to_v319'.
 
 _Long Filenames_
 
-While filenames stored in the filebases *used* to be limited to MS-DOS
+While filenames stored in the filebases used to be limited to MS-DOS
 compatible 8.3 formatted names, longer filenames are now supported on all
 platforms. Additionally, some previously invalid filename characters (e.g.
 spaces) are now allowed and files without extensions (i.e. no '.' in their
@@ -45,9 +45,9 @@ in the unfortunate Micros~1 shorted filenames stored and sometimes seen, that
 is no longer the case. Except for the %~ command-line specifier, those
 short/long filename conversion functions are no longer in use anywhere within
 Synchronet for Windows - it's native filenames through-out. The filebase
-conversion process (upgrade_to_v319) on Windows will attempt to automatically
-resolve the full/long filenames and store those names and only those names in
-the new filebases.
+conversion process (upgrade_to_v319 / 'jsexec update') on Windows will attempt
+to automatically resolve the native/long filenames and store those names and
+only those names in the new filebases.
 
 Note: abbreviated versions of long filenames are displayed in some situations
 to accommodate the limited width of a traditional BBS user terminal. An effort
@@ -93,7 +93,7 @@ of 10 lines or 512 total characters. There is no technical limit to the length
 of extended file descriptions, though a limit of 1024 characters imported from
 description files embedded in archives (e.g. FILE_ID.DIZ) is being imposed. If
 you have a need for longer (than 1024 character) extended descriptions
-imported from embedded description files, please provide details.
+imported from embedded description files, please provide me with details.
 
 _Batches_
 
@@ -115,6 +115,7 @@ whether or not to hash its files or use it for duplicate file detection
 
 _Sorting_
 
+While the old filebases 
 The new filebases are indexed in the order in which the files are imported
 into the database. Sorting of the files for display purposes in the terminal
 and FTP servers is optional and configured by the sysop:
@@ -136,8 +137,8 @@ _JavaScript_
 
 The new "FileBase" class is used (similar to the existing MsgBase class) to
 open and access filebases from JavaScript modules. Using this class, the
-entire pre-existing hard-coded methods of listing and transferring files can
-be replaced with custom modules.
+defaults methods of listing and transferring files can be replaced with
+custom modules.
 
 _TickIT_
 
@@ -158,9 +159,9 @@ invoked with JSexec:
 
 _Performance_
 
-From the nature and use of the new filebase API, file listings are much faster
-(e.g. large file listings from the Synchronet FTP server) as well as filename
-/pattern, description text, and duplicate-file searching.
+Due to the nature and use of the new filebase API, file listings are much
+faster (e.g. large file listings from the Synchronet FTP server) as well as
+filename/pattern, description text, and duplicate-file searching.
 
 _FTP Server_
 

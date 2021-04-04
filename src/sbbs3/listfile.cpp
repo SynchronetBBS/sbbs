@@ -687,7 +687,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 												errormsg(WHERE, ERR_REMOVE, path);
 										}
 										if(remcdt)
-											removefcdt(smb, bf[i]);
+											removefcdt(bf[i]);
 									}
 								}
 								else if(ch=='M')
@@ -706,7 +706,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 										errormsg(WHERE, ERR_REMOVE, path);
 								}
 								if(remcdt)
-									removefcdt(smb, f);
+									removefcdt(f);
 							}
 						}
 						else if(ch=='M')
@@ -738,7 +738,6 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 	int		found=0;
     uint	i,j;
     size_t	m;
-	long	usrcdt;
     time_t	start,end,t;
     file_t*	f;
 	struct	tm tm;
@@ -955,32 +954,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 	/* Fall through */      break; 
 					}
 				case 'C':   /* remove credits only */
-					if((i=matchuser(&cfg,f->from,TRUE /*sysop_alias*/))==0) {
-						bputs(text[UnknownUser]);
-						break; 
-					}
-					if(dir_op(dirnum)) {
-						usrcdt=(ulong)(f->cost*(cfg.dir[f->dir]->up_pct/100.0));
-						if(f->hdr.times_downloaded)     /* all downloads */
-							usrcdt+=(ulong)((long)f->hdr.times_downloaded
-								*f->cost*(cfg.dir[f->dir]->dn_pct/100.0));
-						ultoa(usrcdt,str,10);
-						bputs(text[CreditsToRemove]);
-						getstr(str,10,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL);
-						f->cost=atol(str); 
-					}
-					usrcdt=adjustuserrec(&cfg,i,U_CDT,10,-(long)f->cost);
-					if(i==useron.number)
-						useron.cdt=usrcdt;
-					sprintf(str,text[FileRemovedUserMsg]
-						,f->name,f->cost ? ultoac(f->cost,tmp) : text[No]);
-					putsmsg(&cfg,i,str);
-					usrcdt=adjustuserrec(&cfg,i,U_ULB,10,(long)-f->size);
-					if(i==useron.number)
-						useron.ulb=usrcdt;
-					usrcdt=adjustuserrec(&cfg,i,U_ULS,5,-1);
-					if(i==useron.number)
-						useron.uls=(ushort)usrcdt;
+					removefcdt(f);
 					break;
 				case 'M':   /* move the file to another dir */
 					CRLF;

@@ -1038,7 +1038,7 @@ public:
 
 	/* file.cpp */
 	void	showfileinfo(file_t*, bool show_extdesc = true);
-	bool	removefcdt(smb_t*, file_t*);
+	bool	removefcdt(file_t*);
 	bool	removefile(smb_t*, file_t*);
 	bool	movefile(smb_t*, file_t*, int newdir);
 	char *	getfilespec(char *str);

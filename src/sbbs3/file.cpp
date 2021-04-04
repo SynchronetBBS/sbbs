@@ -148,11 +148,61 @@ long sbbs_t::delfiles(const char *inpath, const char *spec, size_t keep)
 }
 
 /****************************************************************************/
-/* Remove credits from uploader of file 'f'                                 */
+/* Remove credits or minutes and adjust statistics of uploader of file 'f'	*/
 /****************************************************************************/
-bool sbbs_t::removefcdt(smb_t* smb, file_t* f)
+bool sbbs_t::removefcdt(file_t* f)
 {
-	return false;
+	char	str[128];
+	char 	tmp[512];
+	int		u;
+	long	cdt;
+
+	if((u=matchuser(&cfg,f->from,TRUE /*sysop_alias*/))==0) {
+	   bputs(text[UnknownUser]);
+	   return(false); 
+	}
+	cdt=0L;
+	if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps) {
+		if(cfg.dir[f->dir]->misc&DIR_CDTUL)
+			cdt=((ulong)(f->cost*(cfg.dir[f->dir]->up_pct/100.0))/cur_cps)/60;
+		if(cfg.dir[f->dir]->misc&DIR_CDTDL
+			&& f->hdr.times_downloaded)  /* all downloads */
+			cdt+=((ulong)((long)f->hdr.times_downloaded
+				*f->cost*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
+		if(cdt) {
+			adjustuserrec(&cfg,u,U_MIN,10,-cdt);
+			sprintf(str,"%lu minute",cdt);
+			sprintf(tmp,text[FileRemovedUserMsg]
+				,f->name,cdt ? str : text[No]);
+			putsmsg(&cfg,u,tmp);
+		}
+	}
+	else {
+		if(cfg.dir[f->dir]->misc&DIR_CDTUL)
+			cdt=(ulong)(f->cost*(cfg.dir[f->dir]->up_pct/100.0));
+		if(cfg.dir[f->dir]->misc&DIR_CDTDL
+			&& f->hdr.times_downloaded)  /* all downloads */
+			cdt+=(ulong)((long)f->hdr.times_downloaded
+				*f->cost*(cfg.dir[f->dir]->dn_pct/100.0));
+		if(dir_op(f->dir)) {
+			ultoa(cdt, str, 10);
+			bputs(text[CreditsToRemove]);
+			getstr(str, 10, K_NUMBER|K_LINE|K_EDIT|K_AUTODEL);
+			if(sys_status&SS_ABORT)
+				return false;
+			cdt = atol(str); 
+		}
+		if(cdt) {
+			adjustuserrec(&cfg,u,U_CDT,10,-cdt);
+			sprintf(tmp,text[FileRemovedUserMsg]
+				,f->name,cdt ? ultoac(cdt,str) : text[No]);
+			putsmsg(&cfg,u,tmp);
+		}
+	}
+
+	adjustuserrec(&cfg,u,U_ULB,10,(long)-f->size);
+	adjustuserrec(&cfg,u,U_ULS,5,-1);
+	return(true);
 }
 
 /****************************************************************************/
