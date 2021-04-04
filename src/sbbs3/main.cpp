@@ -4198,8 +4198,8 @@ void sbbs_t::catsyslog(int crash)
 			return;
 		}
 	}
-	length=(long)ftell(logfile_fp);
-	if(length) {
+	length = ftell(logfile_fp);
+	if(length > 0) {
 		if((buf=(char *)malloc(length))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,str,length);
 			return;
