@@ -543,7 +543,7 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, long mode)
 	attr(LIGHTGRAY);
 	CRLF;
 	if(!(sys_status&SS_ABORT))
-		SAFECOPY(strout,str);
+		strcpy(strout,str);	// Not SAFECOPY()able
 	return(c);
 }
 
