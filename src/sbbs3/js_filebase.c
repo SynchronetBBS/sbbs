@@ -1346,7 +1346,6 @@ static char* filebase_prop_desc[] = {
 	,"timestamp of last file - <small>READ ONLY</small>"
 	,"total number of files - <small>READ ONLY</small>"
 	,"timestamp of file base index (only writable when file base is closed)"
-	,"maximum number of file CRCs to store (for dupe checking) - <small>READ ONLY</small>"
 	,"maximum number of files before expiration - <small>READ ONLY</small>"
 	,"maximum age (in days) of files to store - <small>READ ONLY</small>"
 	,"file base attributes - <small>READ ONLY</small>"
