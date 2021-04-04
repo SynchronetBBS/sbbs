@@ -44,7 +44,7 @@ uint sbbs_t::finduser(const char* instr, bool silent_failure)
 		if(str2[0] && strcmp(str2,"DELETED USER"))
 			return(i); 
 	}
-	strcpy(str,instr);
+	SAFECOPY(str,instr);
 	strupr(str);
 	SAFEPRINTF(str3,"%suser/name.dat",cfg.data_dir);
 	if(flength(str3)<1L)
@@ -65,7 +65,7 @@ uint sbbs_t::finduser(const char* instr, bool silent_failure)
 			str2[c]=0;
 			if(!c)		/* deleted user */
 				continue;
-			strcpy(str3,str2);
+			SAFECOPY(str3,str2);
 			strupr(str2);
 			if(pass==1 && !strcmp(str,str2)) {
 				fclose(stream);
