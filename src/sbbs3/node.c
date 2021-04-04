@@ -174,8 +174,8 @@ void getnodedat(int number, node_t *node, int lockit)
 	if(count>=(LOOP_NODEDAB/2))
 		printf("NODE.DAB (node %d) COLLISION (READ) - Count: %d\n"
 			,number+1, count);
-	else if(count==LOOP_NODEDAB) {
-		printf("!Error reading nodefile for node %d\n",number+1);
+	if(count>=LOOP_NODEDAB) {
+		printf("!Error %d reading nodefile for node %d\n", errno, number+1);
 	}
 }
 
