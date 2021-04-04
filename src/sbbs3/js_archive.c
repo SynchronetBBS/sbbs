@@ -599,7 +599,7 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if(!JS_DefineProperty(cx, obj, "type", JSVAL_VOID, js_archive_type, NULL, 0)) {
+	if(!JS_DefineProperty(cx, obj, "type", JSVAL_VOID, js_archive_type, NULL, JSPROP_ENUMERATE|JSPROP_READONLY)) {
 		JS_ReportError(cx, "JS_DefineProperty failed");
 		return JS_FALSE;
 	}
