@@ -28,7 +28,7 @@ int sbbs_t::exec_file(csi_t *csi)
 	char	str[256],ch;
 	int		s;
 	ulong 	i,j,x,y;
-	smbfile_t	f;
+	file_t	f;
 
 	switch(*(csi->ip++)) {
 

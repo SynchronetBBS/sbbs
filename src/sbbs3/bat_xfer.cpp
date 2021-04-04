@@ -117,7 +117,7 @@ void sbbs_t::batchmenu()
 					bputs(text[DownloadQueueLstHdr]);
 					for(size_t i = 0; filenames[i]; ++i) {
 						const char* filename = filenames[i];
-						smbfile_t f = {{}};
+						file_t f = {{}};
 						if(!batch_file_load(&cfg, ini, filename, &f))
 							continue;
 						getfilesize(&cfg, &f);
@@ -238,7 +238,7 @@ BOOL sbbs_t::start_batch_download()
 	str_list_t filenames = iniGetSectionList(ini, NULL);
 
 	if(file_count == 1) {	// Only one file in the queue? Perform a non-batch (e.g. XMODEM) download
-		smbfile_t f = {{}};
+		file_t f = {{}};
 		BOOL result = FALSE;
 		if(batch_file_get(&cfg, ini, filenames[0], &f)) {
 			result = sendfile(&f, /* prot: */' ', /* autohang: */true);
@@ -253,7 +253,7 @@ BOOL sbbs_t::start_batch_download()
 
 	int64_t totalcdt = 0;
 	for(size_t i=0; filenames[i] != NULL; ++i) {
-		smbfile_t f = {{}};
+		file_t f = {{}};
 		if(batch_file_load(&cfg, ini, filenames[i], &f)) {
 			totalcdt += f.cost;
 			smb_freefilemem(&f);
@@ -270,7 +270,7 @@ BOOL sbbs_t::start_batch_download()
 	int64_t totalsize = 0;
 	int64_t totaltime = 0;
 	for(size_t i=0; filenames[i] != NULL; ++i) {
-		smbfile_t f = {{}};
+		file_t f = {{}};
 		if(!batch_file_get(&cfg, ini, filenames[i], &f))
 			continue;
 		if(!(cfg.dir[f.dir]->misc&DIR_TFREE) && cur_cps)
@@ -405,7 +405,7 @@ bool sbbs_t::create_batchdn_lst(bool native)
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
 	for(size_t i = 0; filenames[i] != NULL; ++i) {
 		const char* filename = filenames[i];
-		smbfile_t f = {};
+		file_t f = {};
 		f.dir = batch_file_dir(&cfg, ini, filename);
 		if(!loadfile(&cfg, f.dir, filename, &f, file_detail_index)) {
 			errormsg(WHERE, "loading file", filename, i);
@@ -454,7 +454,7 @@ bool sbbs_t::create_batchup_lst()
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
 	for(size_t i = 0; filenames[i] != NULL; ++i) {
 		const char* filename = filenames[i];
-		smbfile_t f = {{}};
+		file_t f = {{}};
 		if(!batch_file_get(&cfg, ini, filename, &f))
 			continue;
 		fprintf(fp, "%s%s\r\n", cfg.dir[f.dir]->path, filename);
@@ -493,7 +493,7 @@ void sbbs_t::batch_upload()
 		if(fexist(src))
 			mv(src, dest, /* copy: */FALSE);
 
-		smbfile_t f = {{}};
+		file_t f = {{}};
 		if(!batch_file_get(&cfg, ini, filename, &f))
 			continue;
 		if(uploadfile(&f))
@@ -534,7 +534,7 @@ void sbbs_t::batch_upload()
 		if(x<usrlibs) {
 			bprintf(text[FileAlreadyOnline], dirent->d_name);
 		} else {
-			smbfile_t f = {{}};
+			file_t f = {{}};
 			f.dir = cfg.upload_dir;
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
 			uploadfile(&f);
@@ -561,7 +561,7 @@ void sbbs_t::batch_download(int xfrprot)
 		char* filename = filenames[i];
 		lncntr=0;                               /* defeat pause */
 		if(xfrprot==-1 || checkprotresult(cfg.prot[xfrprot], 0, filename)) {
-			smbfile_t f = {{}};
+			file_t f = {{}};
 			if(!batch_file_load(&cfg, ini, filename, &f)) {
 				errormsg(WHERE, "loading file", filename, i);
 				continue;
@@ -589,7 +589,7 @@ void sbbs_t::batch_add_list(char *list)
 	int		file;
 	uint	i,j,k;
     FILE *	stream;
-	smbfile_t	f;
+	file_t	f;
 
 	if((stream=fnopen(&file,list,O_RDONLY))!=NULL) {
 		bputs(text[SearchingAllLibs]);
@@ -628,7 +628,7 @@ void sbbs_t::batch_add_list(char *list)
 /**************************************************************************/
 /* Add file 'f' to batch download queue. Return 1 if successful, 0 if not */
 /**************************************************************************/
-bool sbbs_t::addtobatdl(smbfile_t* f)
+bool sbbs_t::addtobatdl(file_t* f)
 {
     char	str[256],tmp2[256];
 	char 	tmp[512];
@@ -669,7 +669,7 @@ bool sbbs_t::addtobatdl(smbfile_t* f)
 		totalsize = 0;
 		for(i=0; filenames[i] != NULL; ++i) {
 			const char* filename = filenames[i];
-			smbfile_t bf = {{}};
+			file_t bf = {{}};
 			if(!batch_file_load(&cfg, ini, filename, &bf))
 				continue;
 			totalcost += bf.cost;

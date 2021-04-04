@@ -2431,7 +2431,7 @@ BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	uint dirnum, const char* filename, off_t bytes)
 {
-	smbfile_t f;
+	file_t f;
 
 	if(!loadfile(cfg, dirnum, filename, &f, file_detail_normal))
 		return FALSE;

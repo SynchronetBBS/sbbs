@@ -28,7 +28,7 @@
 /* call with ext=1 for default to extended info, or 0 for file view         */
 /* Returns -1 for Batch, 1 for Next, -2 for Previous, or 0 for Quit         */
 /****************************************************************************/
-int sbbs_t::viewfile(smbfile_t* f, bool ext)
+int sbbs_t::viewfile(file_t* f, bool ext)
 {
 	char	ch,str[256];
 	char	fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
@@ -107,7 +107,7 @@ void sbbs_t::viewfiles(uint dirnum, char *fspec)
 
 /****************************************************************************/
 /****************************************************************************/
-void sbbs_t::viewfilecontents(smbfile_t* f)
+void sbbs_t::viewfilecontents(file_t* f)
 {
 	char	cmd[128];
 	char	path[MAX_PATH+1];

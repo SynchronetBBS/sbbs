@@ -225,7 +225,7 @@ bool sbbs_t::logon()
 		str_list_t filenames = iniGetSectionList(ini, NULL);
 		for(size_t i = 0; filenames[i] != NULL; i++) {
 			const char* filename = filenames[i];
-			smbfile_t f = {{}};
+			file_t f = {{}};
 			if(batch_file_get(&cfg, ini, filename, &f)) {
 				bprintf(text[FileAddedToUlQueue], f.name, i + 1, cfg.max_batup);
 				smb_freefilemem(&f);
@@ -242,7 +242,7 @@ bool sbbs_t::logon()
 		str_list_t filenames = iniGetSectionList(ini, NULL);
 		for(size_t i = 0; filenames[i] != NULL; i++) {
 			const char* filename = filenames[i];
-			smbfile_t f = {{}};
+			file_t f = {{}};
 			if(batch_file_load(&cfg, ini, filename, &f)) {
 				char tmp2[256];
 				getfilesize(&cfg, &f);

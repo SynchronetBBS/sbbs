@@ -38,23 +38,23 @@ DLLEXPORT bool			update_newfiletime(smb_t*, time_t);
 DLLEXPORT time_t		dir_newfiletime(scfg_t*, uint dirnum);
 DLLEXPORT time_t		lastfiletime(smb_t*); // Reads the last index record
 
-DLLEXPORT bool			findfile(scfg_t* cfg, uint dirnum, const char *filename, smbfile_t*);
-DLLEXPORT bool			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*, enum file_detail);
-DLLEXPORT smbfile_t*	loadfiles(smb_t*, const char* filespec, time_t, enum file_detail, enum file_sort, size_t* count);
-DLLEXPORT void			sortfiles(smbfile_t*, size_t count, enum file_sort);
-DLLEXPORT void			freefiles(smbfile_t*, size_t count);
+DLLEXPORT bool			findfile(scfg_t* cfg, uint dirnum, const char *filename, file_t*);
+DLLEXPORT bool			loadfile(scfg_t*, uint dirnum, const char* filename, file_t*, enum file_detail);
+DLLEXPORT file_t*	loadfiles(smb_t*, const char* filespec, time_t, enum file_detail, enum file_sort, size_t* count);
+DLLEXPORT void			sortfiles(file_t*, size_t count, enum file_sort);
+DLLEXPORT void			freefiles(file_t*, size_t count);
 DLLEXPORT str_list_t	loadfilenames(smb_t*, const char* filespec, time_t t, enum file_sort, size_t* count);
 DLLEXPORT void			sortfilenames(str_list_t, size_t count, enum file_sort);
-DLLEXPORT bool			updatefile(scfg_t*, smbfile_t*);
-DLLEXPORT char*			getfilepath(scfg_t*, smbfile_t*, char* path);
-DLLEXPORT off_t			getfilesize(scfg_t*, smbfile_t*);
-DLLEXPORT time_t		getfiletime(scfg_t*, smbfile_t*);
-DLLEXPORT ulong			gettimetodl(scfg_t*, smbfile_t*, uint rate_cps);
-DLLEXPORT bool			hashfile(scfg_t*, smbfile_t*);
-DLLEXPORT bool			addfile(scfg_t*, uint dirnum, smbfile_t*, const char* extdesc);
+DLLEXPORT bool			updatefile(scfg_t*, file_t*);
+DLLEXPORT char*			getfilepath(scfg_t*, file_t*, char* path);
+DLLEXPORT off_t			getfilesize(scfg_t*, file_t*);
+DLLEXPORT time_t		getfiletime(scfg_t*, file_t*);
+DLLEXPORT ulong			gettimetodl(scfg_t*, file_t*, uint rate_cps);
+DLLEXPORT bool			hashfile(scfg_t*, file_t*);
+DLLEXPORT bool			addfile(scfg_t*, uint dirnum, file_t*, const char* extdesc);
 DLLEXPORT bool			removefile(scfg_t*, uint dirnum, const char* filename);
 DLLEXPORT char*			format_filename(const char* fname, char* buf, size_t, bool pad);
-DLLEXPORT bool			extract_diz(scfg_t*, smbfile_t*, str_list_t diz_fname, char* path, size_t);
+DLLEXPORT bool			extract_diz(scfg_t*, file_t*, str_list_t diz_fname, char* path, size_t);
 DLLEXPORT str_list_t	read_diz(const char* path, size_t max_line_len);
 DLLEXPORT char*			format_diz(str_list_t lines, char*, size_t maxlen, bool allow_ansi);
 DLLEXPORT char*			prep_file_desc(const char *src, char* dst);
@@ -75,13 +75,13 @@ DLLEXPORT str_list_t	batch_list_read(scfg_t* , uint usernumber, enum XFER_TYPE);
 DLLEXPORT bool			batch_list_write(scfg_t*, uint usernumber, enum XFER_TYPE, str_list_t list);
 DLLEXPORT bool			batch_list_clear(scfg_t*, uint usernumber, enum XFER_TYPE);
 
-DLLEXPORT bool			batch_file_add(scfg_t*, uint usernumber, enum XFER_TYPE, smbfile_t*);
+DLLEXPORT bool			batch_file_add(scfg_t*, uint usernumber, enum XFER_TYPE, file_t*);
 DLLEXPORT bool			batch_file_exists(scfg_t*, uint usernumber, enum XFER_TYPE, const char* filename);
 DLLEXPORT bool			batch_file_remove(scfg_t*, uint usernumber, enum XFER_TYPE, const char* filename);
 DLLEXPORT size_t		batch_file_count(scfg_t*, uint usernumber, enum XFER_TYPE);
-DLLEXPORT bool			batch_file_get(scfg_t*, str_list_t, const char* filename, smbfile_t*);
+DLLEXPORT bool			batch_file_get(scfg_t*, str_list_t, const char* filename, file_t*);
 DLLEXPORT int			batch_file_dir(scfg_t*, str_list_t, const char* filename);
-DLLEXPORT bool			batch_file_load(scfg_t*, str_list_t, const char* filename, smbfile_t*);
+DLLEXPORT bool			batch_file_load(scfg_t*, str_list_t, const char* filename, file_t*);
 
 #ifdef __cplusplus
 }

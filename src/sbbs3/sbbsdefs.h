@@ -1047,6 +1047,7 @@ typedef struct {
 } post_t;
 typedef idxrec_t mail_t;				/* defined in smbdefs.h */
 typedef fidoaddr_t faddr_t;				/* defined in smbdefs.h */
+typedef smbfile_t file_t;				/* defined in smbdefs.h */
 
 typedef struct {						/* System/Node Statistics */
 	uint32_t	logons,						/* Total Logons on System */

@@ -719,7 +719,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	uint 	x,y;
 	long	l;
 	ulong	qwk=useron.qwk;
-	smbfile_t f = {{}};
+	file_t f = {{}};
 
 	sprintf(str,"%-25.25s",buf);	/* Note: must be space-padded, left justified */
 	strupr(str);

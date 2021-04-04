@@ -142,7 +142,7 @@ typedef struct {						/* File (transfers) Data */
 			misc;						/* Miscellaneous bits */
 	uint32_t	cdt;						/* Credit value for this file */
 
-} file_t;
+} oldfile_t;
 
                                     /* Bit values for file_t.misc */
 #define FM_EXTDESC  (1<<0)          /* Extended description exists */
@@ -191,7 +191,7 @@ char* unpadfname(const char *filename, char *str)
 /****************************************************************************/
 /* Returns full (case-corrected) path to specified file						*/
 /****************************************************************************/
-char* getoldfilepath(scfg_t* cfg, file_t* f, char* path)
+char* getoldfilepath(scfg_t* cfg, oldfile_t* f, char* path)
 {
 	char	fname[MAX_PATH+1];
 
@@ -215,8 +215,8 @@ char* getoldfilepath(scfg_t* cfg, file_t* f, char* path)
 
 int file_uldate_compare(const void* v1, const void* v2)
 {
-	file_t* f1 = (file_t*)v1;
-	file_t* f2 = (file_t*)v2;
+	oldfile_t* f1 = (oldfile_t*)v1;
+	oldfile_t* f2 = (oldfile_t*)v2;
 
 	return f1->dateuled - f2->dateuled;
 }
@@ -226,7 +226,7 @@ int file_uldate_compare(const void* v1, const void* v2)
 /* Need fields .name ,.dir and .offset to get other info    				*/
 /* Does not fill .dateuled or .datedled fields.                             */
 /****************************************************************************/
-BOOL getfiledat(scfg_t* cfg, file_t* f)
+BOOL getfiledat(scfg_t* cfg, oldfile_t* f)
 {
 	char buf[F_LEN+1],str[MAX_PATH+1];
 	int file;
@@ -289,7 +289,7 @@ BOOL getfiledat(scfg_t* cfg, file_t* f)
 /* Puts filedata into DIR_code.DAT file                                     */
 /* Called from removefiles                                                  */
 /****************************************************************************/
-BOOL putfiledat(scfg_t* cfg, file_t* f)
+BOOL putfiledat(scfg_t* cfg, oldfile_t* f)
 {
     char buf[F_LEN+1],str[MAX_PATH+1],tmp[128];
     int file;
@@ -338,7 +338,7 @@ BOOL putfiledat(scfg_t* cfg, file_t* f)
 /* Need fields .name and .dir filled.                                       */
 /* only fills .offset, .dateuled, and .datedled                             */
 /****************************************************************************/
-BOOL getfileixb(scfg_t* cfg, file_t* f)
+BOOL getfileixb(scfg_t* cfg, oldfile_t* f)
 {
 	char			str[MAX_PATH+1],fname[13];
 	uchar *	ixbbuf;
@@ -389,7 +389,7 @@ BOOL getfileixb(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 /* Updates the datedled and dateuled index record fields for a file			*/
 /****************************************************************************/
-BOOL putfileixb(scfg_t* cfg, file_t* f)
+BOOL putfileixb(scfg_t* cfg, oldfile_t* f)
 {
 	char	str[MAX_PATH+1],fname[13];
 	uchar*	ixbbuf;
@@ -493,7 +493,7 @@ void putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 /****************************************************************************/
 /* Update the upload date for the file 'f'                                  */
 /****************************************************************************/
-int update_uldate(scfg_t* cfg, file_t* f)
+int update_uldate(scfg_t* cfg, oldfile_t* f)
 {
 	char str[MAX_PATH+1],fname[13];
 	int i,file;
@@ -595,13 +595,13 @@ bool upgrade_file_bases(bool hash)
 		}
 		close(file);
 		size_t file_count = l / F_IXBSIZE;
-		file_t* filelist = malloc(sizeof(file_t) * file_count);
+		oldfile_t* filelist = malloc(sizeof(*filelist) * file_count);
 		if(filelist == NULL) {
 			printf("malloc failure");
 			return false;
 		}
-		memset(filelist, 0, sizeof(file_t) * file_count);
-		file_t* f = filelist;
+		memset(filelist, 0, sizeof(*filelist) * file_count);
+		oldfile_t* f = filelist;
 		long m=0L;
 		while(m + F_IXBSIZE <= l) {
 			int j;
@@ -633,7 +633,7 @@ bool upgrade_file_bases(bool hash)
 			}
 			char fpath[MAX_PATH+1];
 			getoldfilepath(&scfg, f, fpath);
-			smbfile_t file;
+			file_t file;
 			memset(&file, 0, sizeof(file));
 			file.hdr.when_imported.time = f->dateuled;
 			file.hdr.last_downloaded = f->datedled;

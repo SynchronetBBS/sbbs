@@ -137,7 +137,7 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(filename == NULL)
 		return JS_FALSE;
 
-	smbfile_t file;
+	file_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		str_list_t list = smb_msghdr_str_list(&file);
 		if(list != NULL) {
@@ -163,7 +163,7 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static bool
-set_file_properties(JSContext *cx, JSObject* obj, smbfile_t* f, enum file_detail detail)
+set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail detail)
 {
 	jsval		val;
 	JSString*	js_str;
@@ -323,7 +323,7 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 }
 
 static int
-parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extdesc)
+parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc)
 {
 	char*		cp = NULL;
 	size_t		cp_sz = 0;
@@ -445,7 +445,7 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
 
-	smbfile_t file;
+	file_t file;
 	ZERO_VAR(file);
 
 	uintN argn = 0;
@@ -517,7 +517,7 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	smbfile_t file;
+	file_t file;
 	ZERO_VAR(file);
 
 	uintN argn = 0;
@@ -625,7 +625,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	size_t file_count;
-	smbfile_t* file_list = loadfiles(&p->smb, filespec, t, detail, sort, &file_count);
+	file_t* file_list = loadfiles(&p->smb, filespec, t, detail, sort, &file_count);
 	if(file_list != NULL) {
 		for(size_t i = 0; i < file_count; i++) {
 			JSObject* fobj;
@@ -753,7 +753,7 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		filename = NULL;
 	jsrefcount	rc;
-	smbfile_t file;
+	file_t file;
 
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
@@ -805,7 +805,7 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		filename = NULL;
 	jsrefcount	rc;
-	smbfile_t	file;
+	file_t	file;
 
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
@@ -856,7 +856,7 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		filename = NULL;
 	jsrefcount	rc;
-	smbfile_t file;
+	file_t file;
 
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
@@ -899,7 +899,7 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
-static void get_diz(scfg_t* scfg, smbfile_t* file, char** extdesc)
+static void get_diz(scfg_t* scfg, file_t* file, char** extdesc)
 {
 	char diz_fpath[MAX_PATH + 1];
 	if(extract_diz(scfg, file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
@@ -924,7 +924,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*		argv = JS_ARGV(cx, arglist);
 	private_t*	p;
 	char*		extdesc = NULL;
-	smbfile_t	file;
+	file_t	file;
 	bool		use_diz_always = false;
 	jsrefcount	rc;
 
@@ -983,7 +983,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
 	jsval*		argv = JS_ARGV(cx, arglist);
 	private_t*	p;
-	smbfile_t	file;
+	file_t	file;
 	char*		filename = NULL;
 	JSObject*	fileobj = NULL;
 	bool		use_diz_always = false;
@@ -1099,7 +1099,7 @@ js_renew_file(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	smbfile_t file;
+	file_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_index)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		p->smb_result = smb_renewfile(&p->smb, &file, SMB_SELFPACK, getfilepath(scfg, &file, path));
@@ -1153,7 +1153,7 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSBool result = JS_TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
-	smbfile_t file;
+	file_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_index)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		if(delfile && remove(getfilepath(scfg, &file, path)) != 0) {

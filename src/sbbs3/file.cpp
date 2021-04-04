@@ -25,7 +25,7 @@
 /****************************************************************************/
 /* Prints all information of file in file_t structure 'f'					*/
 /****************************************************************************/
-void sbbs_t::showfileinfo(smbfile_t* f, bool show_extdesc)
+void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 {
 	char 	tmp[512];
 	char	tmp2[64];
@@ -150,14 +150,14 @@ long sbbs_t::delfiles(const char *inpath, const char *spec, size_t keep)
 /****************************************************************************/
 /* Remove credits from uploader of file 'f'                                 */
 /****************************************************************************/
-bool sbbs_t::removefcdt(smb_t* smb, smbfile_t* f)
+bool sbbs_t::removefcdt(smb_t* smb, file_t* f)
 {
 	return false;
 }
 
 /****************************************************************************/
 /****************************************************************************/
-bool sbbs_t::removefile(smb_t* smb, smbfile_t* f)
+bool sbbs_t::removefile(smb_t* smb, file_t* f)
 {
 	char str[256];
 	int result;
@@ -176,7 +176,7 @@ bool sbbs_t::removefile(smb_t* smb, smbfile_t* f)
 
 /****************************************************************************/
 /****************************************************************************/
-bool sbbs_t::movefile(smb_t* smb, smbfile_t* f, int newdir)
+bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 {
 	if(findfile(&cfg, newdir, f->name, NULL)) {
 		bprintf(text[FileAlreadyThere], f->name);

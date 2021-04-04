@@ -28,7 +28,7 @@
 /* Updates downloader, uploader and downloaded file data                    */
 /* Must have offset, dir and name fields filled prior to call.              */
 /****************************************************************************/
-void sbbs_t::downloadedfile(smbfile_t* f)
+void sbbs_t::downloadedfile(file_t* f)
 {
     char		str[MAX_PATH+1];
 	char 		tmp[512];
@@ -285,7 +285,7 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, const char* fpath)
 	return success;
 }
 
-bool sbbs_t::checkprotresult(prot_t* prot, int error, smbfile_t* f)
+bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
 {
 	char str[512];
 	char tmp[128];
@@ -413,7 +413,7 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 }
 
 // contains some copy/pasta from downloadedfile()
-bool sbbs_t::sendfile(smbfile_t* f, char prot, bool autohang)
+bool sbbs_t::sendfile(file_t* f, char prot, bool autohang)
 {
 	char path[MAX_PATH + 1];
 	char str[256];

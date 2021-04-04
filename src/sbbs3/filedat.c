@@ -35,7 +35,7 @@
 
  /****************************************************************************/
 /****************************************************************************/
-bool findfile(scfg_t* cfg, uint dirnum, const char *filename, smbfile_t* file)
+bool findfile(scfg_t* cfg, uint dirnum, const char *filename, file_t* file)
 {
 	smb_t smb;
 
@@ -180,7 +180,7 @@ str_list_t loadfilenames(smb_t* smb, const char* filespec, time_t t, enum file_s
 }
 
 // Load and optionally-sort files from an open filebase into a dynamically-allocated list of "objects"
-smbfile_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail detail, enum file_sort order, size_t* count)
+file_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail detail, enum file_sort order, size_t* count)
 {
 	*count = 0;
 
@@ -192,14 +192,14 @@ smbfile_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detai
 			return NULL;
 	}
 
-	smbfile_t* file_list = calloc(smb->status.total_files, sizeof(smbfile_t));
+	file_t* file_list = calloc(smb->status.total_files, sizeof(file_t));
 	if(file_list == NULL)
 		return NULL;
 
 	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
 	long offset = start;
 	while(!feof(smb->sid_fp)) {
-		smbfile_t* f = &file_list[*count];
+		file_t* f = &file_list[*count];
 
 		if(smb_fread(smb, &f->file_idx, sizeof(f->file_idx), smb->sid_fp) != sizeof(f->file_idx))
 			break;
@@ -228,53 +228,53 @@ smbfile_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detai
 
 static int file_compare_name_a(const void* v1, const void* v2)
 {
-	smbfile_t* f1 = (smbfile_t*)v1;
-	smbfile_t* f2 = (smbfile_t*)v2;
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
 
 	return stricmp(f1->name, f2->name);
 }
 
 static int file_compare_name_ac(const void* v1, const void* v2)
 {
-	smbfile_t* f1 = (smbfile_t*)v1;
-	smbfile_t* f2 = (smbfile_t*)v2;
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
 
 	return strcmp(f1->name, f2->name);
 }
 
 static int file_compare_name_d(const void* v1, const void* v2)
 {
-	smbfile_t* f1 = (smbfile_t*)v1;
-	smbfile_t* f2 = (smbfile_t*)v2;
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
 
 	return stricmp(f2->name, f1->name);
 }
 
 static int file_compare_name_dc(const void* v1, const void* v2)
 {
-	smbfile_t* f1 = (smbfile_t*)v1;
-	smbfile_t* f2 = (smbfile_t*)v2;
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
 
 	return strcmp(f2->name, f1->name);
 }
 
 static int file_compare_date_a(const void* v1, const void* v2)
 {
-	smbfile_t* f1 = (smbfile_t*)v1;
-	smbfile_t* f2 = (smbfile_t*)v2;
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
 
 	return f1->hdr.when_imported.time - f2->hdr.when_imported.time;
 }
 
 static int file_compare_date_d(const void* v1, const void* v2)
 {
-	smbfile_t* f1 = (smbfile_t*)v1;
-	smbfile_t* f2 = (smbfile_t*)v2;
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
 
 	return f2->hdr.when_imported.time - f1->hdr.when_imported.time;
 }
 
-void sortfiles(smbfile_t* filelist, size_t count, enum file_sort order)
+void sortfiles(file_t* filelist, size_t count, enum file_sort order)
 {
 	switch(order) {
 		case FILE_SORT_NAME_A:
@@ -298,14 +298,14 @@ void sortfiles(smbfile_t* filelist, size_t count, enum file_sort order)
 	}
 }
 
-void freefiles(smbfile_t* filelist, size_t count)
+void freefiles(file_t* filelist, size_t count)
 {
 	for(size_t i = 0; i < count; i++)
 		smb_freefilemem(&filelist[i]);
 	free(filelist);
 }
 
-bool loadfile(scfg_t* cfg, uint dirnum, const char* filename, smbfile_t* file, enum file_detail detail)
+bool loadfile(scfg_t* cfg, uint dirnum, const char* filename, file_t* file, enum file_detail detail)
 {
 	smb_t smb;
 
@@ -393,7 +393,7 @@ bool batch_file_exists(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const 
 	return result;
 }
 
-bool batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t* f)
+bool batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, file_t* f)
 {
 	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */true);
 	if(fp == NULL)
@@ -410,7 +410,7 @@ bool batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t
 	return true;
 }
 
-bool batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t* f)
+bool batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, file_t* f)
 {
 	char* p;
 	char value[INI_MAX_VALUE_LEN + 1];
@@ -434,7 +434,7 @@ int batch_file_dir(scfg_t* cfg, str_list_t ini, const char* filename)
 	return getdirnum(cfg, iniGetString(ini, filename, "dir", NULL, value));
 }
 
-bool batch_file_load(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t* f)
+bool batch_file_load(scfg_t* cfg, str_list_t ini, const char* filename, file_t* f)
 {
 	if(!iniSectionExists(ini, filename))
 		return false;
@@ -444,7 +444,7 @@ bool batch_file_load(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_
 	return loadfile(cfg, f->dir, filename, f, file_detail_normal);
 }
 
-bool updatefile(scfg_t* cfg, smbfile_t* file)
+bool updatefile(scfg_t* cfg, file_t* file)
 {
 	smb_t smb;
 
@@ -464,7 +464,7 @@ bool removefile(scfg_t* cfg, uint dirnum, const char* filename)
 		return false;
 
 	int result;
-	smbfile_t file;
+	file_t file;
 	if((result = smb_loadfile(&smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		result = smb_removefile(&smb, &file);
 		smb_freefilemem(&file);
@@ -479,7 +479,7 @@ bool removefile(scfg_t* cfg, uint dirnum, const char* filename)
 /* If the directory is configured to allow file-checking and the file does	*/
 /* not exist, the size element is set to -1.								*/
 /****************************************************************************/
-char* getfilepath(scfg_t* cfg, smbfile_t* f, char* path)
+char* getfilepath(scfg_t* cfg, file_t* f, char* path)
 {
 	bool fchk = true;
 	const char* name = f->name == NULL ? f->file_idx.name : f->name;
@@ -494,7 +494,7 @@ char* getfilepath(scfg_t* cfg, smbfile_t* f, char* path)
 	return path;
 }
 
-off_t getfilesize(scfg_t* cfg, smbfile_t* f)
+off_t getfilesize(scfg_t* cfg, file_t* f)
 {
 	char fpath[MAX_PATH + 1];
 	if(f->size > 0)
@@ -503,7 +503,7 @@ off_t getfilesize(scfg_t* cfg, smbfile_t* f)
 	return f->size;
 }
 
-time_t getfiletime(scfg_t* cfg, smbfile_t* f)
+time_t getfiletime(scfg_t* cfg, file_t* f)
 {
 	char fpath[MAX_PATH + 1];
 	if(f->time > 0)
@@ -512,7 +512,7 @@ time_t getfiletime(scfg_t* cfg, smbfile_t* f)
 	return f->time;
 }
 
-ulong gettimetodl(scfg_t* cfg, smbfile_t* f, uint rate_cps)
+ulong gettimetodl(scfg_t* cfg, file_t* f, uint rate_cps)
 {
 	if(getfilesize(cfg, f) < 1)
 		return 0;
@@ -521,7 +521,7 @@ ulong gettimetodl(scfg_t* cfg, smbfile_t* f, uint rate_cps)
 	return (ulong)(f->size / rate_cps);
 }
 
-bool hashfile(scfg_t* cfg, smbfile_t* f)
+bool hashfile(scfg_t* cfg, file_t* f)
 {
 	bool result = false;
 	smb_t smb;
@@ -542,7 +542,7 @@ bool hashfile(scfg_t* cfg, smbfile_t* f)
 	return result;
 }
 
-bool addfile(scfg_t* cfg, uint dirnum, smbfile_t* f, const char* extdesc)
+bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc)
 {
 	char fpath[MAX_PATH + 1];
 	smb_t smb;
@@ -821,7 +821,7 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 	return extracted;
 }
 
-bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fnames, char* path, size_t maxlen)
+bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size_t maxlen)
 {
 	int i;
 	char archive[MAX_PATH + 1];

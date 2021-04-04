@@ -104,7 +104,7 @@ void updatestats(ulong size)
 	close(file);
 }
 
-bool reupload(smb_t* smb, smbfile_t* f)
+bool reupload(smb_t* smb, file_t* f)
 {
 	char path[MAX_PATH + 1];
 	if(!smb_renewfile(smb, f, SMB_SELFPACK, getfilepath(&scfg, f, path))) {
@@ -115,7 +115,7 @@ bool reupload(smb_t* smb, smbfile_t* f)
 }
 
 
-bool get_file_diz(smbfile_t* f, char* ext, size_t maxlen)
+bool get_file_diz(file_t* f, char* ext, size_t maxlen)
 {
 	char path[MAX_PATH + 1];
 	printf("Extracting DIZ from: %s\n", getfilepath(&scfg, f, path));
@@ -158,7 +158,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 	DIR*	dir;
 	DIRENT*	dirent;
 	smb_t smb;
-	smbfile_t f;
+	file_t f;
 
 	int result = smb_open_dir(&scfg, &smb, dirnum);
 	if(result != SMB_SUCCESS) {
@@ -442,8 +442,8 @@ void synclist(char *inpath, int dirnum)
 	int		found;
 	long	l;
 	FILE*	stream;
-	smbfile_t*	f;
-	smbfile_t*	file_list;
+	file_t*	f;
+	file_t*	file_list;
 	smb_t	smb;
 
 	SAFECOPY(listpath,inpath);
@@ -547,7 +547,7 @@ int main(int argc, char **argv)
 	uint desc_offset=0, size_offset=0;
 	long l;
 	smb_t	smb;
-	smbfile_t	f;
+	file_t	f;
 	uint dirnum = INVALID_DIR;
 
 	fprintf(stderr,"\nADDFILES v%s-%s %s/%s - Adds Files to Synchronet "

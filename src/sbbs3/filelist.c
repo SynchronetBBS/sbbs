@@ -339,7 +339,7 @@ int main(int argc, char **argv)
 		if(max_age)
 			t = time(NULL) - (max_age * 24 * 60 * 60);
 		ulong file_count;
-		smbfile_t* file_list = loadfiles(&smb
+		file_t* file_list = loadfiles(&smb
 			,/* filespec: */pattern, /* time: */t, /* extdesc: */TRUE, scfg.dir[i]->sort, &file_count);
 
 		if(misc&AUTO) {
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
 				longest_filename = fnamelen;
 		}
 		for(m = 0; m < file_count && !ferror(out); m++) {
-			smbfile_t file = file_list[m];
+			file_t file = file_list[m];
 
 			if(misc&PAD) {
 				char* ext = getfext(file.name);

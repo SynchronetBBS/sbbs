@@ -243,10 +243,10 @@ int main(int argc, char **argv)
 		printf("\nScanning %s %s\n", cfg.lib[cfg.dir[i]->lib]->sname, cfg.dir[i]->lname);
 
 		size_t file_count;
-		smbfile_t* file_list = loadfiles(&smb, NULL, 0, /* extdesc: */FALSE, FILE_SORT_NATURAL, &file_count);
+		file_t* file_list = loadfiles(&smb, NULL, 0, /* extdesc: */FALSE, FILE_SORT_NATURAL, &file_count);
 
 		for(fi = 0; fi < file_count; fi++) {
-			smbfile_t* f = &file_list[fi];
+			file_t* f = &file_list[fi];
 			getfilepath(&cfg, f, fpath);
 			if(cfg.dir[i]->maxage && cfg.dir[i]->misc&DIR_SINCEDL && f->hdr.last_downloaded
 				&& (now - f->hdr.last_downloaded)/86400L > cfg.dir[i]->maxage) {

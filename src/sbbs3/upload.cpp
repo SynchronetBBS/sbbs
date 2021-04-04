@@ -24,7 +24,7 @@
 
 /****************************************************************************/
 /****************************************************************************/
-bool sbbs_t::uploadfile(smbfile_t* f)
+bool sbbs_t::uploadfile(file_t* f)
 {
 	char	path[MAX_PATH+1];
 	char	str[MAX_PATH+1] = "";
@@ -226,7 +226,7 @@ bool sbbs_t::upload(uint dirnum)
     time_t	start,end;
     uint	i,j,k;
 	ulong	space;
-	smbfile_t	f = {{}};
+	file_t	f = {{}};
 
 	/* Security Checks */
 	if(useron.rest&FLAG('U')) {
@@ -462,7 +462,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 	char	path[MAX_PATH+1];
 	char	desc[LEN_FDESC + 1];
 	smb_t	smb;
-    smbfile_t f;
+    file_t f;
 	DIR*	dir;
 	DIRENT*	dirent;
 

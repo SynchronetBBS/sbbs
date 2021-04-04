@@ -615,7 +615,7 @@ static void send_thread(void* arg)
 	off_t		length;
 	BOOL		error=FALSE;
 	FILE*		fp;
-	smbfile_t	f;
+	file_t		f;
 	xfer_t		xfer;
 	time_t		now;
 	time_t		start;
@@ -888,7 +888,7 @@ static void receive_thread(void* arg)
 	BOOL		error=FALSE;
 	BOOL		filedat;
 	FILE*		fp;
-	smbfile_t	f;
+	file_t	f;
 	xfer_t		xfer;
 	time_t		now;
 	time_t		start;
@@ -1983,7 +1983,7 @@ static void get_dirperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, 
 	*p=0;
 }
 
-static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, smbfile_t *file)
+static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
 {
 	if (!chk_ar(&scfg,lib->ar,user,client))
 		return FALSE;
@@ -2000,7 +2000,7 @@ static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, s
 	return TRUE;
 }
 
-static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, smbfile_t *file)
+static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
 {
 	if (user->rest&FLAG('D'))
 		return FALSE;
@@ -2015,7 +2015,7 @@ static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, s
 	return TRUE;
 }
 
-static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, smbfile_t *file)
+static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
 {
 	if (user->rest&FLAG('D'))
 		return FALSE;
@@ -2029,7 +2029,7 @@ static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client,
 	return TRUE;
 }
 
-static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, smbfile_t *file, char *permstr)
+static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file, char *permstr)
 {
 	char *p = permstr;
 
@@ -2049,7 +2049,7 @@ static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client,
 	*p = 0;
 }
 
-static void get_owner_name(smbfile_t *file, char *namestr)
+static void get_owner_name(file_t *file, char *namestr)
 {
 	char *p;
 
@@ -3730,10 +3730,10 @@ static void ctrl_thread(void* arg)
 					}
 					time_t start = time(NULL);
 					size_t file_count = 0;
-					smbfile_t* file_list = loadfiles(&smb
+					file_t* file_list = loadfiles(&smb
 						,/* filespec */NULL, /* time: */0, file_detail_normal, scfg.dir[dir]->sort, &file_count);
 					for(size_t i = 0; i < file_count; i++) {
-						smbfile_t* f = &file_list[i];
+						file_t* f = &file_list[i];
 						if (cmd[3] != 'D' && strcmp(f->name, mls_fname) != 0)
 							continue;
 						if (cmd[3] == 'T')
@@ -4017,10 +4017,10 @@ static void ctrl_thread(void* arg)
 				}
 				time_t start = time(NULL);
 				size_t file_count = 0;
-				smbfile_t* file_list = loadfiles(&smb
+				file_t* file_list = loadfiles(&smb
 					,filespec, /* time: */0, file_detail_normal, scfg.dir[dir]->sort, &file_count);
 				for(size_t i = 0; i < file_count; i++) {
-					smbfile_t* f = &file_list[i];
+					file_t* f = &file_list[i];
 					if(detail) {
 						f->size = f->cost;
 						t = f->hdr.when_imported.time;
@@ -4306,10 +4306,10 @@ static void ctrl_thread(void* arg)
 						}
 						time_t start = time(NULL);
 						size_t file_count = 0;
-						smbfile_t* file_list = loadfiles(&smb
+						file_t* file_list = loadfiles(&smb
 							,/* filespec */NULL, /* time: */0, file_detail_normal, scfg.dir[dir]->sort, &file_count);
 						for(size_t i = 0; i < file_count; i++) {
-							smbfile_t* f = &file_list[i];
+							file_t* f = &file_list[i];
 							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
 								,f->name, f->desc);
 						}
@@ -4366,7 +4366,7 @@ static void ctrl_thread(void* arg)
 				/* Verify credits */
 				if(!getsize && !getdate && !delecmd
 					&& !is_download_free(&scfg,dir,&user,&client)) {
-					smbfile_t f;
+					file_t f;
 					if(filedat)
 						loadfile(&scfg, dir, p, &f, file_detail_normal);
 					else
@@ -4577,7 +4577,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(append || filepos) {	/* RESUME */
-					smbfile_t f;
+					file_t f;
 					if(!loadfile(&scfg, dir, p, &f, file_detail_normal)) {
 						if(filepos) {
 							lprintf(LOG_WARNING,"%04d <%s> file (%s) not in database for %.4s command"

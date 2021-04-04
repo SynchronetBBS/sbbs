@@ -618,7 +618,7 @@ public:
 	const char*	current_msg_subj;
 	const char*	current_msg_from;
 	const char*	current_msg_to;
-	smbfile_t*	current_file;	
+	file_t*	current_file;	
 
 			/* Global command shell variables */
 	uint	global_str_vars;
@@ -1016,14 +1016,14 @@ public:
 	bool	backup(const char* fname, int backup_level, bool rename);
 
 	/* upload.cpp */
-	bool	uploadfile(smbfile_t* f);
+	bool	uploadfile(file_t* f);
 	char	sbbsfilename[128],sbbsfiledesc[128]; /* env vars */
 	bool	upload(uint dirnum);
     char	upload_lastdesc[LEN_FDESC+1];
 	bool	bulkupload(uint dirnum);
 
 	/* download.cpp */
-	void	downloadedfile(smbfile_t* f);
+	void	downloadedfile(file_t* f);
 	void	notdownloaded(off_t size, time_t start, time_t end);
 	int		protocol(prot_t* prot, enum XFER_TYPE, const char *fpath, const char *fspec, bool cd, bool autohangup=true);
 	const char*	protcmdline(prot_t* prot, enum XFER_TYPE type);
@@ -1031,29 +1031,29 @@ public:
 	void	autohangup(void);
 	bool	checkdszlog(const char*);
 	bool	checkprotresult(prot_t*, int error, const char* fpath);
-	bool	checkprotresult(prot_t*, int error, smbfile_t*);
-	bool	sendfile(smbfile_t*, char prot, bool autohang);
+	bool	checkprotresult(prot_t*, int error, file_t*);
+	bool	sendfile(file_t*, char prot, bool autohang);
 	bool	sendfile(char* fname, char prot=0, const char* description = NULL, bool autohang=true);
 	bool	recvfile(char* fname, char prot=0, bool autohang=true);
 
 	/* file.cpp */
-	void	showfileinfo(smbfile_t*, bool show_extdesc = true);
-	bool	removefcdt(smb_t*, smbfile_t*);
-	bool	removefile(smb_t*, smbfile_t*);
-	bool	movefile(smb_t*, smbfile_t*, int newdir);
+	void	showfileinfo(file_t*, bool show_extdesc = true);
+	bool	removefcdt(smb_t*, file_t*);
+	bool	removefile(smb_t*, file_t*);
+	bool	movefile(smb_t*, file_t*, int newdir);
 	char *	getfilespec(char *str);
 	bool	checkfname(char *fname);
-	bool	addtobatdl(smbfile_t*);
+	bool	addtobatdl(file_t*);
 	bool	clearbatdl(void);
 	bool	clearbatul(void);
 	long	delfiles(const char *inpath, const char *spec, size_t keep = 0);
 
 	/* listfile.cpp */
-	bool	listfile(smbfile_t*, uint dirnum, const char *search, const char letter);
+	bool	listfile(file_t*, uint dirnum, const char *search, const char letter);
 	int		listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode);
 	int		listfileinfo(uint dirnum, const char *filespec, long mode);
-	void	listfiletofile(smbfile_t*, FILE*);
-	int		batchflagprompt(smb_t*, smbfile_t* bf[], ulong row[], uint total, long totalfiles);
+	void	listfiletofile(file_t*, FILE*);
+	int		batchflagprompt(smb_t*, file_t* bf[], ulong row[], uint total, long totalfiles);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
@@ -1071,9 +1071,9 @@ public:
 	ulong	create_filelist(const char *name, long mode);
 
 	/* viewfile.cpp */
-	int		viewfile(smbfile_t* f, bool extdesc);
+	int		viewfile(file_t* f, bool extdesc);
 	void	viewfiles(uint dirnum, char *fspec);
-	void	viewfilecontents(smbfile_t* f);
+	void	viewfilecontents(file_t* f);
 
 	/* xtrn.cpp */
 	int		external(const char* cmdline, long mode, const char* startup_dir=NULL);

@@ -1990,6 +1990,8 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			return current_file->name;
 		if(strcmp(sp, "FILE_DESC") == 0)
 			return current_file->desc;
+		if(strcmp(sp, "FILE_TAGS") == 0)
+			return current_file->tags;
 		if(strcmp(sp, "FILE_UPLOADER") == 0)
 			return current_file->from;
 		if(strcmp(sp, "FILE_SIZE") == 0) {

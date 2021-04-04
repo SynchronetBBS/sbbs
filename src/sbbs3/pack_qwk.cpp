@@ -650,7 +650,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		str_list_t filenames = iniGetSectionList(ini, NULL);
 		for(size_t i = 0; filenames[i] != NULL; i++) {
 			const char* filename = filenames[i];
-			smbfile_t f = {{}};
+			file_t f = {{}};
 			if(!batch_file_load(&cfg, ini, filename, &f))
 				continue;
 			if(!is_download_free(&cfg, f.dir, &useron, &client)) {

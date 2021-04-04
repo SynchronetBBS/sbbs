@@ -42,7 +42,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 	int		found=0,lastbat=0,disp;
 	size_t	m=0;
 	long	anchor=0,next;
-	smbfile_t* bf[BF_MAX];	/* bf is batch flagged files */
+	file_t* bf[BF_MAX];	/* bf is batch flagged files */
 	smb_t	smb;
 	ulong	file_row[26];
 
@@ -57,7 +57,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 		return 0;
 
 	size_t file_count = 0;
-	smbfile_t* file_list = loadfiles(&smb
+	file_t* file_list = loadfiles(&smb
 		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
 		, (mode&FL_ULTIME) ? ns_time : 0
 		, file_detail_extdesc
@@ -81,7 +81,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 	}
 
 	m = 0; // current file index
-	smbfile_t* f;
+	file_t* f;
 	while(online) {
 		if(found<0)
 			found=0;
@@ -340,7 +340,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 /* Prints one file's information on a single line                           */
 /* Return 1 if displayed, 0 otherwise										*/
 /****************************************************************************/
-bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char letter)
+bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char letter)
 {
 	char	*ptr,*cr,*lf;
 	bool	exist = true;
@@ -465,7 +465,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 /* Returns -1 if 'Q' or Ctrl-C, 0 if skip, 1 if [Enter], 2 otherwise        */
 /* or 3, backwards. 														*/
 /****************************************************************************/
-int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
+int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 							,long totalfiles)
 {
 	char	ch,str[256],*p,remcdt=0,remfile=0;
@@ -698,7 +698,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 					if(strchr(str+c,'.'))
 						c+=strlen(str+c);
 					else if(str[c]<'A'+(char)total && str[c]>='A') {
-						smbfile_t* f = bf[str[c]-'A'];
+						file_t* f = bf[str[c]-'A'];
 						if(ch=='R') {
 							if(removefile(smb, f)) {
 								if(remfile) {
@@ -740,7 +740,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
     size_t	m;
 	long	usrcdt;
     time_t	start,end,t;
-    smbfile_t*	f;
+    file_t*	f;
 	struct	tm tm;
 	smb_t	smb;
 
@@ -750,7 +750,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 		return 0;
 
 	size_t file_count = 0;
-	smbfile_t* file_list = loadfiles(&smb
+	file_t* file_list = loadfiles(&smb
 		, filespec
 		, /* time_t */0
 		, file_detail_extdesc
@@ -1149,7 +1149,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 /****************************************************************************/
 /* Prints one file's information on a single line to a file stream 'fp'		*/
 /****************************************************************************/
-void sbbs_t::listfiletofile(smbfile_t* f, FILE* fp)
+void sbbs_t::listfiletofile(file_t* f, FILE* fp)
 {
 	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
 	fprintf(fp, "%-*s %10lu %s\r\n", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE)
