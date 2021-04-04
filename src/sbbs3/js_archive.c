@@ -125,7 +125,7 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Invalid output directory specified (null or undefined)");
 	else
 		JSVALUE_TO_MSTRING(cx, argv[0], outdir, NULL);
-	if(JS_IsExceptionPending(cx)) {
+	if(JS_IsExceptionPending(cx) || outdir == NULL) {
 		free(outdir);
 		return JS_FALSE;
 	}
