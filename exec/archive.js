@@ -20,10 +20,11 @@ switch(cmd) {
 		writeln(JSON.stringify(Archive(fname).list(verbose, argv[0]), null, 4));
 		break;
 	case 'create':
-		Archive(fname).create.apply(null, argv);
+		print(Archive(fname).create(directory(argv[0])) + " files archived");
 		break;
 	case 'extract':
-		Archive(fname).extract.apply(null, argv);
+		var a = Archive(fname);
+		print(a.extract.apply(a, argv) + " files extracted");
 		break;
 	case 'read':
 		print(Archive(fname).read(argv[0]));
