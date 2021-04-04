@@ -504,7 +504,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(p)
 			*(p++)=0;
 		else
-			p=nulstr;
+			p=(char*)nulstr;
 
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\nCOM%d\n%lu BAUD,N,8,1\n%u\n"
 			,cfg.sys_name						/* Name of BBS */
@@ -522,7 +522,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(p)
 			*(p++)=0;
 		else
-			p=nulstr;
+			p=(char*)nulstr;
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%d\n%u\n%lu\n"
 			,tmp								/* User's firstname */
 			,p									/* User's lastname */
@@ -1577,8 +1577,6 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 
 	SAFEPRINTF(str,"%shangup.now",cfg.node_dir);
 	(void)removecase(str);
-	SAFEPRINTF2(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
-	(void)removecase(str);
 
 	mode=0; 	
 	if(cfg.xtrn[xtrnnum]->misc&XTRN_SH)
@@ -1628,9 +1626,6 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		if((logfile_fp=fopen(str,"a+b"))==NULL)
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 	}
-
-	SAFEPRINTF2(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
-	batch_add_list(str);
 
 	SAFEPRINTF(str,"%shangup.now",cfg.node_dir);
 	if(fexistcase(str)) {

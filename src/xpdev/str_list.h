@@ -1,8 +1,4 @@
-/* str_list.h */
-
 /* Functions to deal with NULL-terminated string lists */
-
-/* $Id: str_list.h,v 1.32 2020/04/24 07:02:17 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -86,9 +70,11 @@ DLLEXPORT char*			strListInsertFormat(str_list_t* list, size_t index, const char
 
 /* Remove a string at a specific index */
 DLLEXPORT char*			strListRemove(str_list_t*, size_t index);
+DLLEXPORT char*			strListFastRemove(str_list_t, size_t index);
 
 /* Remove and free a string at a specific index */
 DLLEXPORT BOOL			strListDelete(str_list_t*, size_t index);
+DLLEXPORT BOOL			strListFastDelete(str_list_t, size_t index);
 
 /* Replace a string at a specific index */
 DLLEXPORT char*			strListReplace(const str_list_t, size_t index, const char* str);
@@ -113,7 +99,7 @@ DLLEXPORT BOOL			strListSwap(const str_list_t, size_t index1, size_t index2);
 #define		strListPush(list, str)	strListAppend(list, str, STR_LIST_LAST_INDEX)
 #define		strListPop(list)		strListRemove(list, STR_LIST_LAST_INDEX)
 
-/* Add to an exiting or new string list by splitting specified string (str) */
+/* Add to an existing or new string list by splitting specified string (str) */
 /* into multiple strings, separated by one of the delimit characters */
 DLLEXPORT str_list_t	strListSplit(str_list_t*, char* str, const char* delimit);
 
@@ -168,6 +154,9 @@ DLLEXPORT int			strListTruncateStrings(str_list_t, const char* set);
 DLLEXPORT int			strListStripStrings(str_list_t, const char* set);
 /* Remove duplicate strings from list, return the new list length */
 DLLEXPORT int			strListDedupe(str_list_t*, BOOL case_sensitive);
+/* Remove blank strings from list, return the new list length */
+DLLEXPORT int			strListDeleteBlanks(str_list_t*);
+DLLEXPORT int			strListFastDeleteBlanks(str_list_t);
 
 /************/
 /* File I/O */

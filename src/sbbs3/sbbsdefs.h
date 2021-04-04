@@ -34,16 +34,14 @@
 /* Constants */
 /*************/
 
-#define VERSION 	"3.18"  /* Version: Major.minor  */
-#define REVISION	'c'     /* Revision: lowercase letter */
-#define VERSION_NUM	(31800	 + (tolower(REVISION)-'a'))
-#define VERSION_HEX	(0x31800 + (tolower(REVISION)-'a'))
+#define VERSION 	"3.19"  /* Version: Major.minor  */
+#define REVISION	'a'     /* Revision: lowercase letter */
+#define VERSION_NUM	(31900	 + (tolower(REVISION)-'a'))
+#define VERSION_HEX	(0x31900 + (tolower(REVISION)-'a'))
 
 #define VERSION_NOTICE		"Synchronet BBS for " PLATFORM_DESC\
 								"  Version " VERSION
-#define SYNCHRONET_CRC		0x9BCDD162
-#define COPYRIGHT_NOTICE	"Copyright 2020 Rob Swindell"
-#define COPYRIGHT_CRC		0xB12E96E6
+#define COPYRIGHT_NOTICE	"Copyright 2021 Rob Swindell"
 
 #define SBBSCTRL_DEFAULT	"/sbbs/ctrl"
 
@@ -51,7 +49,9 @@
 
 #define FNOPEN_BUF_SIZE		(2*1024)
 
+#define MAX_FILENAME_LEN		64
 #define ILLEGAL_FILENAME_CHARS	"\\/|<>:\";,%"
+#define SAFEST_FILENAME_CHARS	"-._0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 #define BIND_FAILURE_HELP	"!Another application or service may be using this port"
 #define UNKNOWN_LOAD_ERROR	"Unknown load error - Library mismatch?"
@@ -85,9 +85,6 @@
 #define MAX_SUBS		65534
 #define MAX_DIRS		65534
 #define MAX_XTRNS		65534
-
-#define MAX_FILES	  10000 /* Maximum number of files per dir			*/
-#define MAX_USERXFER	500 /* Maximum number of dest. users of usrxfer */
 
 #define MAX_TEXTDAT_ITEM_LEN	2000
 
@@ -261,10 +258,8 @@
 #define DIR_NOSTAT		(1<<19)		/* Do not include transfers in system stats */
 #define DIR_FILES		(1<<20)		/* List/access files not in database */
 #define DIR_TEMPLATE	(1<<21)		/* Use this dir as template for new dirs (in this lib) */
-
-                                    /* Bit values for file_t.misc */
-#define FM_EXTDESC  (1<<0)          /* Extended description exists */
-#define FM_ANON 	(1<<1)			/* Anonymous upload */
+#define DIR_NOHASH		(1<<22)		/* Don't auto calculate/store file content hashes */
+#define DIR_FILETAGS	(1<<23)		/* Allow files to have user-specified tags */
 
 									/* Bit values for cfg.file_misc				*/
 #define FM_NO_LFN	(1<<0)			/* No long filenames in listings			*/
@@ -293,12 +288,15 @@
 #define ERR_IOCTL	"sending IOCTL"	/* IOCTL error */
 #define ERR_SEEK	"seeking"		/* SEEKing error */
 
-enum {                              /* Values for dir[x].sort */
-     SORT_NAME_A                    /* Sort by filename, ascending */
-    ,SORT_NAME_D                    /* Sort by filename, descending */
-    ,SORT_DATE_A                    /* Sort by upload date, ascending */
-    ,SORT_DATE_D                    /* Sort by upload date, descending */
-    };
+enum file_sort {                    /* Values for dir[x].sort */
+     FILE_SORT_NAME_A   = 0	        /* Sort by filename, ascending (case-insensitive) */
+    ,FILE_SORT_NAME_D   = 1         /* Sort by filename, descending (case-insensitive) */
+	,FILE_SORT_NAME_AC  = 4			/* Sort by filename, ascending (case-sensitive) */
+	,FILE_SORT_NAME_DC  = 5         /* Sort by filename, descending (case-sensitive) */
+    ,FILE_SORT_DATE_A   = 2         /* Sort by upload date, ascending */
+    ,FILE_SORT_DATE_D   = 3         /* Sort by upload date, descending */
+	,FILE_SORT_NATURAL  = FILE_SORT_DATE_A
+};
 
 /* Values for grp[x].sort */
 enum area_sort {
@@ -508,7 +506,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_ZIPCODE 	10	/* Zip/Postal code								*/
 #define LEN_MODEM		 8	/* User modem type description					*/
 #define LEN_FDESC		58	/* File description 							*/
-#define LEN_FCDT		 9	/* 9 digits for file credit values				*/
+#define LEN_EXTDESC		1024 /* extended file description */
 #define LEN_TITLE		70	/* Message title								*/
 #define LEN_MAIN_CMD	28	/* Unused Storage in user.dat					*/
 #define LEN_COLS		3
@@ -601,23 +599,6 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_CURDIR	U_LOGONTIME+8	/* Current dir (internal code  */
 #define U_UNUSED	U_CURDIR+16
 #define U_LEN		(U_UNUSED+4+2)
-
-/****************************************************************************/
-/* Offsets into DIR .DAT file for different fields for each file 			*/
-/****************************************************************************/
-#define F_CDT		0				/* Offset in DIR#.DAT file for cdts		*/
-#define F_DESC		(F_CDT+LEN_FCDT)/* Description							*/
-#define F_ULER		(F_DESC+LEN_FDESC+2)   /* Uploader						*/
-#define F_TIMESDLED (F_ULER+30+2) 	/* Number of times downloaded 			*/
-#define F_OPENCOUNT	(F_TIMESDLED+5+2)
-#define F_MISC		(F_OPENCOUNT+3+2)
-#define F_ALTPATH	(F_MISC+1)		/* Two hex digit alternate path */
-#define F_LEN		(F_ALTPATH+2+2) /* Total length of all fdat in file		*/
-
-#define F_IXBSIZE	22				/* Length of each index entry			*/
-
-#define F_EXBSIZE	512				/* Length of each ext-desc entry		*/
-
 
 #define SIF_MAXBUF  0x7000			/* Maximum buffer size of SIF data		*/
 
@@ -881,8 +862,6 @@ enum {							/* Values for 'mode' in listfileinfo        */
 	,FI_OLD              		/* Search/Remove files not downloaded since */
 	,FI_OLDUL	 				/* Search/Remove files uploaded before      */
 	,FI_OFFLINE   				/* Search/Remove files not online			*/
-	,FI_USERXFER  				/* User Xfer Download                       */
-	,FI_CLOSE 	  				/* Close any open records					*/
 	};
 
 enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
@@ -890,7 +869,6 @@ enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 	,XFER_DOWNLOAD
 	,XFER_BATCH_UPLOAD
 	,XFER_BATCH_DOWNLOAD
-	,XFER_BIDIR
 };
 
 #define L_LOGON     1			/* Logon List maintenance                   */
@@ -917,11 +895,6 @@ enum {							/* Values of mode for userlist function     */
 	,UL_SUB      				/* List all users with access to cursub     */
 	,UL_DIR						/* List all users with access to curdir 	*/
 	};
-
-
-#define BO_LEN		16			/* backout.dab record length				*/
-
-#define BO_OPENFILE 0			/* Backout types */
 
 /**********/
 /* Macros */
@@ -1060,25 +1033,6 @@ typedef struct {						/* Users information */
 
 } user_t;
 
-typedef struct {						/* File (transfers) Data */
-	char    name[13],					/* Name of file FILENAME.EXT */
-			desc[LEN_FDESC+1],			/* Uploader's Description */
-			uler[LEN_ALIAS+1];			/* User who uploaded */
-	uchar	opencount;					/* Times record is currently open */
-	time32_t  date,						/* File date/time */
-			dateuled,					/* Date/Time (Unix) Uploaded */
-			datedled;					/* Date/Time (Unix) Last downloaded */
-	uint16_t	dir,						/* Directory file is in */
-			altpath,
-			timesdled,					/* Total times downloaded */
-			timetodl;					/* How long transfer time */
-	int32_t	datoffset,					/* Offset into .DAT file */
-			size,						/* Size of file */
-			misc;						/* Miscellaneous bits */
-	uint32_t	cdt;						/* Credit value for this file */
-
-} file_t;
-
 typedef struct {
 	idxrec_t	idx;					/* defined in smbdefs.h */
 	uint32_t	num;					/* 1-based offset */
@@ -1093,6 +1047,7 @@ typedef struct {
 } post_t;
 typedef idxrec_t mail_t;				/* defined in smbdefs.h */
 typedef fidoaddr_t faddr_t;				/* defined in smbdefs.h */
+typedef smbfile_t file_t;				/* defined in smbdefs.h */
 
 typedef struct {						/* System/Node Statistics */
 	uint32_t	logons,						/* Total Logons on System */

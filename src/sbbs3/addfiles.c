@@ -1,4 +1,4 @@
-/* Program to add files to a Synchronet file database */
+/* Add files to a Synchronet file database(s) */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -26,10 +26,14 @@
 #include "userdat.h"
 #include "filedat.h"
 #include "load_cfg.h"
+#include "smblib.h"
+#include "git_branch.h"
+#include "git_hash.h"
+
 #include <stdbool.h>
 #include <stdarg.h>
 
-#define ADDFILES_VER "3.05"
+#define ADDFILES_VER "3.19"
 
 scfg_t scfg;
 
@@ -74,103 +78,6 @@ int lprintf(int level, const char *fmat, ...)
 	return(chcount);
 }
 
-void prep_desc(char *str)
-{
-	char tmp[1024];
-	int i,j;
-
-	for(i=j=0;str[i] && j < sizeof(tmp)-1;i++) {
-		if(j && str[i]==' ' && tmp[j-1]==' ' && (mode&KEEP_SPACE))
-			tmp[j++]=str[i];
-		else if(j && str[i]<=' ' && str[i] > 0&& tmp[j-1]==' ')
-			continue;
-		else if(i && !IS_ALPHANUMERIC(str[i]) && str[i]==str[i-1])
-			continue;
-		else if(str[i]>=' ' || str[i]<0)
-			tmp[j++]=str[i];
-		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
-			tmp[j++]=' ';
-	}
-	tmp[j]=0;
-	strcpy(str,tmp);
-}
-
-/*****************************************************************************/
-/* Returns command line generated from instr with %c replacments             */
-/*****************************************************************************/
-char *mycmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr)
-{
-    static char cmd[MAX_PATH+1];
-    char str[MAX_PATH+1];
-    int i,j,len;
-#ifdef _WIN32
-	char sfpath[MAX_PATH+1];
-#endif
-
-	len=strlen(instr);
-	for(i=j=0;i<len && j<128;i++) {
-		if(instr[i]=='%') {
-			i++;
-			cmd[j]=0;
-			switch(toupper(instr[i])) {
-				case 'F':   /* File path */
-					SAFECAT(cmd,fpath);
-					break;
-				case '~':	/* DOS-compatible (8.3) filename */
-#ifdef _WIN32
-					SAFECOPY(sfpath,fpath);
-					GetShortPathName(fpath,sfpath,sizeof(sfpath));
-					SAFECAT(cmd,sfpath);
-#else
-                    SAFECAT(cmd,fpath);
-#endif
-					break;
-				case 'G':   /* Temp directory */
-					SAFECAT(cmd,scfg.temp_dir);
-					break;
-                case 'J':
-                    SAFECAT(cmd,scfg.data_dir);
-                    break;
-                case 'K':
-                    SAFECAT(cmd,scfg.ctrl_dir);
-                    break;
-				case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-					SAFECAT(cmd,scfg.node_dir);
-					break;
-				case 'S':   /* File Spec */
-					SAFECAT(cmd,fspec);
-					break;
-                case 'Z':
-                    SAFECAT(cmd,scfg.text_dir);
-                    break;
-				case '!':   /* EXEC Directory */
-					SAFECAT(cmd,scfg.exec_dir);
-					break;
-                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
-#ifndef __unix__
-                    SAFECAT(cmd,scfg.exec_dir);
-#endif
-                    break;
-				case '#':   /* Node number (same as SBBSNNUM environment var) */
-					sprintf(str,"%d",scfg.node_num);
-					SAFECAT(cmd,str);
-					break;
-				case '%':   /* %% for percent sign */
-					SAFECAT(cmd,"%");
-					break;
-				default:    /* unknown specification */
-					break;
-			}
-			j=strlen(cmd);
-		}
-		else
-			cmd[j++]=instr[i];
-	}
-	cmd[j]=0;
-
-	return(cmd);
-}
-
 /****************************************************************************/
 /* Updates dstst.dab file													*/
 /****************************************************************************/
@@ -197,62 +104,44 @@ void updatestats(ulong size)
 	close(file);
 }
 
-bool get_file_diz(file_t* f, const char* filepath, char* ext)
+bool reupload(smb_t* smb, file_t* f)
 {
-	int i,file;
-	char tmp[MAX_PATH+1];
-	char tmpext[513];
-
-	for(i=0;i<scfg.total_fextrs;i++)
-		if(!stricmp(scfg.fextr[i]->ext,f->name+9)
-			&& chk_ar(&scfg,scfg.fextr[i]->ar,/* user: */NULL, /* client: */NULL))
-			break;
-	// If we could not find an extractor which matches our requirements, use any
-	if(i >= scfg.total_fextrs) {
-		for(i=0;i<scfg.total_fextrs;i++)
-			if(!stricmp(scfg.fextr[i]->ext,f->name+9))
-				break;
-	}
-	if(i >= scfg.total_fextrs)
+	char path[MAX_PATH + 1];
+	if(!smb_renewfile(smb, f, SMB_SELFPACK, getfilepath(&scfg, f, path))) {
+		fprintf(stderr, "!Error renewing: %s\n", f->name);
 		return false;
-
-	SAFEPRINTF(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-	removecase(tmp);
-	system(mycmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
-	if(!fexistcase(tmp)) {
-		SAFEPRINTF(tmp,"%sDESC.SDI",scfg.temp_dir);
-		removecase(tmp);
-		system(mycmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL));
-		fexistcase(tmp);
 	}
-
-	if((file=nopen(tmp,O_RDONLY|O_BINARY)) == -1)
-		return false;
-
-	memset(ext,0,513);
-	read(file,ext,512);
-	for(i=512;i;i--)
-		if(ext[i-1]>' ' || ext[i-1]<0)
-			break;
-	ext[i]=0;
-	if(mode&ASCII_ONLY)
-		strip_exascii(ext, ext);
-	if(!(mode&KEEP_DESC)) {
-		sprintf(tmpext,"%.256s",ext);
-		prep_desc(tmpext);
-		for(i=0;tmpext[i];i++)
-			if(IS_ALPHA(tmpext[i]))
-				break;
-		sprintf(f->desc,"%.*s",LEN_FDESC,tmpext+i);
-		for(i=0;(f->desc[i]>=' ' || f->desc[i]<0) && i<LEN_FDESC;i++)
-			;
-		f->desc[i]=0; }
-	close(file);
-	f->misc|=FM_EXTDESC;
 	return true;
 }
 
-void addlist(char *inpath, file_t f, uint dskip, uint sskip)
+
+bool get_file_diz(file_t* f, char* ext, size_t maxlen)
+{
+	char path[MAX_PATH + 1];
+	printf("Extracting DIZ from: %s\n", getfilepath(&scfg, f, path));
+	char diz_fpath[MAX_PATH + 1];
+	if(!extract_diz(&scfg, f, /* diz_fnames */NULL, diz_fpath, sizeof(diz_fpath))) {
+		printf("DIZ does not exist in: %s\n", getfilepath(&scfg, f, path));
+		return false;
+	}
+	printf("Parsing DIZ: %s\n", diz_fpath);
+	str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
+	format_diz(lines, ext, maxlen, /* allow_ansi: */false);
+	strListFree(&lines);
+	remove(diz_fpath);
+
+	if(mode&ASCII_ONLY)
+		strip_exascii(ext, ext);
+
+	if(!(mode&KEEP_DESC)) {
+		char* fdesc = strdup(ext);
+		smb_new_hfield_str(f, SMB_FILEDESC, prep_file_desc(fdesc, fdesc));
+		free(fdesc);
+	}
+	return true;
+}
+
+void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint sskip)
 {
 	char str[MAX_PATH+1];
 	char tmp[MAX_PATH+1];
@@ -263,53 +152,54 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 	char *p;
 	char ext[1024];
 	int i;
-	long l;
+	off_t l;
 	BOOL exist;
 	FILE *stream;
 	DIR*	dir;
 	DIRENT*	dirent;
+	smb_t smb;
+	file_t f;
 
+	int result = smb_open_dir(&scfg, &smb, dirnum);
+	if(result != SMB_SUCCESS) {
+		fprintf(stderr, "!Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
+		return;
+	}
+	str_list_t fname_list = loadfilenames(&smb, ALLFILES, /* time: */0, FILE_SORT_NATURAL, /* count: */NULL);
 	if(mode&SEARCH_DIR) {
-		SAFECOPY(str,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[f.dir]->path);
+		SAFECOPY(str,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[dirnum]->path);
 		printf("Searching %s\n\n",str);
 		dir=opendir(str);
 
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-			sprintf(tmp,"%s%s"
-				,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[f.dir]->path
+			sprintf(filepath, "%s%s"
+				,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[dirnum]->path
 				,dirent->d_name);
-			if(isdir(tmp))
+			if(isdir(filepath))
 				continue;
-#ifdef _WIN32
-			GetShortPathName(tmp, filepath, sizeof(filepath));
-#else
-			SAFECOPY(filepath,tmp);
-#endif
-			f.misc=0;
-			f.desc[0]=0;
+			const char* fname = getfname(filepath);
+			printf("%s  ", fname);
+			if(strListFind(fname_list, fname, /* case-sensitive: */FALSE) && (mode&NO_UPDATE)) {
+				printf("already added.\n");
+				continue;
+			}
 			memset(ext, 0, sizeof(ext));
-			f.cdt=flength(filepath);
+			memset(&f, 0, sizeof(f));
+			char fdesc[LEN_FDESC + 1] = {0};
+			uint32_t cdt = (uint32_t)flength(filepath);
 			time_t file_timestamp = fdate(filepath);
-			padfname(getfname(filepath),f.name);
-			printf("%s  %10"PRIu32"  %s\n"
-				,f.name,f.cdt,unixtodstr(&scfg,(time32_t)file_timestamp,str));
-			exist=findfile(&scfg,f.dir,f.name);
+			printf("%10"PRIu32"  %s\n"
+				,cdt, unixtodstr(&scfg,(time32_t)file_timestamp,str));
+			exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 			if(exist) {
 				if(mode&NO_UPDATE)
 					continue;
-				if(!getfileixb(&scfg,&f)) {
-					fprintf(stderr, "!ERROR reading index of directory %u\n", f.dir);
-					continue;
-				}
-				if((mode&CHECK_DATE) && file_timestamp <= f.dateuled)
+				if((mode&CHECK_DATE) && file_timestamp <= f.idx.time)
 					continue;
 				if(mode&ULDATE_ONLY) {
-					f.dateuled=time32(NULL);
-					update_uldate(&scfg, &f);
-					continue;
-				}
-				if(f.misc & FM_EXTDESC)
-					getextdesc(&scfg, f.dir, f.datoffset, ext);
+					reupload(&smb, &f);
+					continue; 
+				} 
 			}
 
 			if(mode&TODAYS_DATE) {		/* put today's date in desc */
@@ -320,7 +210,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 					strftime(f.desc, sizeof(f.desc), datefmt, &tm);
 				} else
 					unixtodstr(&scfg, (time32_t)now, f.desc);
-				SAFECAT(f.desc,"  ");
+				SAFECAT(fdesc,"  ");
 			}
 			else if(mode&FILE_DATE) {		/* get the file date and put into desc */
 				if(datefmt) {
@@ -329,35 +219,45 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 					strftime(f.desc, sizeof(f.desc), datefmt, &tm);
 				} else
 					unixtodstr(&scfg,(time32_t)file_timestamp,f.desc);
-				SAFECAT(f.desc,"  ");
+				SAFECAT(fdesc,"  ");
 			}
 
-			if(mode&FILE_ID)
-				get_file_diz(&f, filepath, ext);
+			char* ext_desc = NULL;
+			if(mode&FILE_ID) {
+				if(get_file_diz(&f, ext, sizeof(ext))) {
+					ext_desc = ext;
+				}
+			}
 
-			f.dateuled=time32(NULL);
-			f.altpath=cur_altpath;
-			prep_desc(f.desc);
+			prep_file_desc(fdesc, fdesc);
 			if(mode&ASCII_ONLY)
-				strip_exascii(f.desc, f.desc);
+				strip_exascii(fdesc, fdesc);
+
+			smb_hfield_str(&f, SMB_FILENAME, fname);
+			smb_hfield_str(&f, SMB_FILEDESC, fdesc);
+			smb_hfield_str(&f, SENDER, uploader);
+			smb_hfield_bin(&f, SMB_COST, cdt);
+
+			truncsp(ext_desc);
 			if(exist) {
-				putfiledat(&scfg,&f);
+				result = smb_updatemsg(&smb, &f);
 				if(!(mode&NO_NEWDATE))
-					update_uldate(&scfg, &f);
+					reupload(&smb, &f);
 			}
 			else
-				addfiledat(&scfg,&f);
-			if(f.misc&FM_EXTDESC) {
-				truncsp(ext);
-				putextdesc(&scfg,f.dir,f.datoffset,ext);
-			}
+				result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, filepath);
+			smb_freefilemem(&f);
+			if(result != SMB_SUCCESS)
+				fprintf(stderr, "!Error %d (%s) adding file to %s", result, smb.last_error, smb.file);
 			if(mode&UL_STATS)
-				updatestats(f.cdt);
-			files++;
+				updatestats(cdt);
+			files++; 
 		}
 		if(dir!=NULL)
 			closedir(dir);
-		return;
+		smb_close(&smb);
+		strListFree(&fname_list);
+		return; 
 	}
 
 
@@ -367,22 +267,23 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		fprintf(stderr,"Error %d (%s) opening %s\n"
 			,errno,strerror(errno),listpath);
 		sprintf(listpath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
-				: scfg.dir[f.dir]->path,inpath);
+				: scfg.dir[dirnum]->path,inpath);
 		fexistcase(listpath);
 		if((stream=fopen(listpath,"r"))==NULL) {
 			printf("Can't open: %s\n"
 				   "        or: %s\n",inpath,listpath);
-			return;
-		}
+			smb_close(&smb);
+			strListFree(&fname_list);
+			return; 
+		} 
 	}
 
 	printf("Adding %s to %s %s\n\n"
-		,listpath,scfg.lib[scfg.dir[f.dir]->lib]->sname,scfg.dir[f.dir]->sname);
+		,listpath,scfg.lib[scfg.dir[dirnum]->lib]->sname,scfg.dir[dirnum]->sname);
 
 	fgets(nextline,255,stream);
 	do {
-		f.misc=0;
-		f.desc[0]=0;
+		char fdesc[LEN_FDESC + 1] = {0};
 		memset(ext, 0, sizeof(ext));
 		SAFECOPY(curline,nextline);
 		nextline[0]=0;
@@ -393,11 +294,6 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		printf("%s\n",curline);
 		SAFECOPY(fname,curline);
 
-#if 0	/* Files without dots are valid on modern systems */
-		p=strchr(fname,'.');
-		if(!p || p==fname || p>fname+8)    /* no dot or invalid dot location */
-			continue;
-#endif
 		p=strchr(fname,' ');
 		if(p) *p=0;
 #if 0 // allow import of bare filename list
@@ -407,68 +303,37 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		if(!IS_ALPHANUMERIC(*fname)) {	// filename doesn't begin with an alpha-numeric char?
 			continue;
 		}
-		SAFEPRINTF2(filepath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
-			: scfg.dir[f.dir]->path,fname);
 
-#ifdef _WIN32
-		{
-			char shortpath[MAX_PATH+1];
-			GetShortPathName(filepath, shortpath, sizeof(shortpath));
-			SAFECOPY(fname, getfname(shortpath));
+		sprintf(filepath, "%s%s", cur_altpath ? scfg.altpath[cur_altpath-1]
+			: scfg.dir[dirnum]->path,fname);
+
+		if(strcspn(fname,"\\/|<>+[]:=\";,")!=strlen(fname)) {
+			fprintf(stderr, "!Illegal filename: %s\n", fname);
+			continue;
 		}
-#else
-		fexistcase(filepath);
-		SAFECOPY(fname, getfname(filepath));
-#endif
 
-		padfname(fname,f.name);
-		if(strcspn(f.name,"\\/|<>+[]:=\";,")!=strlen(f.name))
-			continue;
-
-		for(i=0;i<12;i++)
-			if(f.name[i]<' ' || (mode&ASCII_ONLY && (uchar)f.name[i]>0x7e))
-				break;
-
-		if(i<12)					/* Ctrl chars or EX-ASCII in filename? */
-			continue;
 		time_t file_timestamp = fdate(filepath);
-		exist=findfile(&scfg,f.dir,f.name);
+		exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 		if(exist) {
 			if(mode&NO_UPDATE)
 				continue;
-			if(!getfileixb(&scfg,&f)) {
-				fprintf(stderr, "!ERROR reading index of directory %u\n", f.dir);
-				continue;
-			}
-			if((mode&CHECK_DATE) && file_timestamp <= f.dateuled)
+			if((mode&CHECK_DATE) && file_timestamp <= f.idx.time)
 				continue;
 			if(mode&ULDATE_ONLY) {
-				f.dateuled=time32(NULL);
-				update_uldate(&scfg, &f);
-				continue;
-			}
-			if (f.misc & FM_EXTDESC)
-				getextdesc(&scfg, f.dir, f.datoffset, ext);
+				reupload(&smb, &f);
+				continue; 
+			} 
+		}
+
+		if(mode&FILE_DATE) {		/* get the file date and put into desc */
+			unixtodstr(&scfg,(time32_t)file_timestamp, fdesc);
+			strcat(fdesc, "  "); 
 		}
 
 		if(mode&TODAYS_DATE) {		/* put today's date in desc */
-			time_t now = time(NULL);
-			if(datefmt) {
-				struct tm tm = {0};
-				localtime_r(&now, &tm);
-				strftime(f.desc, sizeof(f.desc), datefmt, &tm);
-			} else
-				unixtodstr(&scfg, (time32_t)now, f.desc);
-			SAFECAT(f.desc,"  ");
-		}
-		else if(mode&FILE_DATE) {		/* get the file date and put into desc */
-			if(datefmt) {
-				struct tm tm = {0};
-				localtime_r(&file_timestamp, &tm);
-				strftime(f.desc, sizeof(f.desc), datefmt, &tm);
-			} else
-				unixtodstr(&scfg,(time32_t)file_timestamp,f.desc);
-			SAFECAT(f.desc,"  ");
+			l=time32(NULL);
+			unixtodstr(&scfg,(time32_t)l,fdesc);
+			strcat(fdesc, "  "); 
 		}
 
 		if(dskip && strlen(curline)>=dskip) p=curline+dskip;
@@ -478,21 +343,22 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			SKIP_WHITESPACE(p);
 		}
 		SAFECOPY(tmp,p);
-		prep_desc(tmp);
-		sprintf(f.desc+strlen(f.desc),"%.*s",(int)(LEN_FDESC-strlen(f.desc)),tmp);
+		prep_file_desc(tmp, tmp);
+		sprintf(fdesc + strlen(fdesc), "%.*s", (int)(LEN_FDESC-strlen(fdesc)), tmp);
 
+		char* ext_desc = NULL;
 		if(nextline[0]==' ' || strlen(p)>LEN_FDESC) {	/* ext desc */
 			if(!(mode&NO_EXTEND)) {
 				memset(ext, 0, sizeof(ext));
-				f.misc|=FM_EXTDESC;
-				sprintf(ext,"%s\r\n",p);
+				sprintf(ext,"%s\r\n",p); 
+				ext_desc = ext;
 			}
 
 			if(nextline[0]==' ') {
 				SAFECOPY(str,nextline);				   /* tack on to end of desc */
 				p=str+dskip;
 				while(*p>0 && *p<=' ') p++;
-				i=LEN_FDESC-strlen(f.desc);
+				i=LEN_FDESC-strlen(fdesc);
 				if(i>1) {
 					p[i-1]=0;
 					truncsp(p);
@@ -509,8 +375,8 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 				truncsp(nextline);
 				printf("%s\n",nextline);
 				if(!(mode&NO_EXTEND)) {
-					f.misc|=FM_EXTDESC;
 					p=nextline+dskip;
+					ext_desc = ext;
 					while(*p==' ') p++;
 					SAFECAT(ext,p);
 					SAFECAT(ext,"\r\n");
@@ -519,7 +385,6 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 				fgets(nextline,255,stream);
 			}
 		}
-
 
 		l=flength(filepath);
 		if(l<0L) {
@@ -533,28 +398,31 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		if(sskip) l=atol(fname+sskip);
 
 		if(mode&FILE_ID)
-			get_file_diz(&f, filepath, ext);
+			get_file_diz(&f, ext, sizeof(ext));
 
-		f.cdt=l;
-		f.dateuled=time32(NULL);
-		f.altpath=cur_altpath;
-		prep_desc(f.desc);
+		prep_file_desc(fdesc, fdesc);
 		if(mode&ASCII_ONLY)
-			strip_exascii(f.desc, f.desc);
+			strip_exascii(fdesc, fdesc);
+		memset(&f, 0, sizeof(f));
+		uint32_t cdt = (uint32_t)l;
+		smb_hfield_bin(&f, SMB_COST, cdt);
+		smb_hfield_str(&f, SMB_FILENAME, fname);
+		smb_hfield_str(&f, SMB_FILEDESC, fdesc);
+		smb_hfield_str(&f, SENDER, uploader);
 		if(exist) {
-			putfiledat(&scfg,&f);
+			result = smb_updatemsg(&smb, &f);
 			if(!(mode&NO_NEWDATE))
-				update_uldate(&scfg, &f);
+				reupload(&smb, &f);
 		}
 		else
-			addfiledat(&scfg,&f);
-		if(f.misc&FM_EXTDESC) {
-			truncsp(ext);
-			putextdesc(&scfg,f.dir,f.datoffset,ext);
-		}
+			result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, filepath);
+		smb_freefilemem(&f);
+		if(result != SMB_SUCCESS)
+			fprintf(stderr, "!ERROR %d (%s) writing to %s\n"
+				, result, smb.last_error, smb.file);
 
 		if(mode&UL_STATS)
-			updatestats(l);
+			updatestats((ulong)l);
 		files++;
 	} while(!feof(stream) && !ferror(stream));
 	fclose(stream);
@@ -562,44 +430,21 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		printf("\nDeleting %s\n",listpath);
 		remove(listpath);
 	}
-
+	smb_close(&smb);
+	strListFree(&fname_list);
 }
 
 void synclist(char *inpath, int dirnum)
 {
 	char	str[1024];
-	char	fname[MAX_PATH+1];
 	char	listpath[MAX_PATH+1];
-	uchar*	ixbbuf;
 	char*	p;
-	int		i,file,found;
-	long	l,m,length;
+	int		found;
+	long	l;
 	FILE*	stream;
-	file_t	f;
-
-	sprintf(str,"%s%s.ixb",scfg.dir[dirnum]->data_dir,scfg.dir[dirnum]->code);
-	if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
-		printf("ERR_OPEN %s\n",str);
-		return;
-	}
-	length=filelength(file);
-	if(length%F_IXBSIZE) {
-		close(file);
-		printf("ERR_LEN (%ld) of %s\n",length,str);
-		return;
-	}
-	if((ixbbuf=(uchar *)malloc(length))==NULL) {
-		close(file);
-		printf("ERR_ALLOC %s\n",str);
-		return;
-	}
-	if(read(file,ixbbuf,length)!=length) {
-		close(file);
-		free((char *)ixbbuf);
-		printf("ERR_READ %s\n",str);
-		return;
-	}
-	close(file);
+	file_t*	f;
+	file_t*	file_list;
+	smb_t	smb;
 
 	SAFECOPY(listpath,inpath);
 	if((stream=fopen(listpath,"r"))==NULL) {
@@ -612,18 +457,19 @@ void synclist(char *inpath, int dirnum)
 		}
 	}
 
+	int result = smb_open_dir(&scfg, &smb, dirnum);
+	if(result != SMB_SUCCESS) {
+		fprintf(stderr, "!Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
+		return;
+	}
+	size_t file_count;
+	file_list = loadfiles(&smb, NULL, 0, /* extdesc: */FALSE, FILE_SORT_NATURAL, &file_count);
+
 	printf("\nSynchronizing %s with %s %s\n\n"
 		,listpath,scfg.lib[scfg.dir[dirnum]->lib]->sname,scfg.dir[dirnum]->sname);
 
-	for(l=0;l<length;l+=F_IXBSIZE) {
-		m=l;
-		for(i=0;i<12 && l<length;i++)
-			if(i==8)
-				str[i]=ixbbuf[m]>' ' ? '.' : ' ';
-			else
-				str[i]=ixbbuf[m++]; 	/* Turns FILENAMEEXT into FILENAME.EXT */
-		str[i]=0;
-		unpadfname(str,fname);
+	for(l = 0; l < (long)file_count; l++) {
+		f = &file_list[l];
 		rewind(stream);
 		found=0;
 		while(!found) {
@@ -632,34 +478,28 @@ void synclist(char *inpath, int dirnum)
 			truncsp(str);
 			p=strchr(str,' ');
 			if(p) *p=0;
-			if(!stricmp(str,fname))
-				found=1;
+			if(!stricmp(str, f->name))
+				found=1; 
 		}
 		if(found)
 			continue;
-		padfname(fname,f.name);
-		printf("%s not found in list - ",f.name);
-		f.dir=dirnum;
-		f.datoffset=ixbbuf[m]|((long)ixbbuf[m+1]<<8)|((long)ixbbuf[m+2]<<16);
-		if(!getfiledat(&scfg,&f)) {
-			fprintf(stderr, "!ERROR reading index of directory %u\n", f.dir);
-			continue;
+		printf("%s not found in list - ", f->name);
+		if(smb_removefile(&smb, f) != SMB_SUCCESS)
+			fprintf(stderr, "!ERROR (%s) removing file from database\n", smb.last_error);
+		else {
+			if(remove(getfilepath(&scfg, f, str)))
+				printf("Error removing %s\n",str);
+			removed++;
+			printf("Removed from database\n");
 		}
-		if(f.opencount) {
-			printf("currently OPEN by %u users\n",f.opencount);
-			continue;
-		}
-		removefiledat(&scfg,&f);
-		if(remove(getfilepath(&scfg,&f,str)))
-			printf("Error removing %s\n",str);
-		removed++;
-		printf("Removed from database\n");
 	}
+	freefiles(file_list, file_count);
 
 	if(mode&DEL_LIST) {
 		printf("\nDeleting %s\n",listpath);
 		remove(listpath);
 	}
+	smb_close(&smb);
 	fclose(stream);
 }
 
@@ -698,24 +538,24 @@ char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "
 int main(int argc, char **argv)
 {
 	char error[512];
-	char revision[16];
 	char str[MAX_PATH+1];
 	char tmp[MAX_PATH+1];
 	char *p;
-	char exist,listgiven=0,namegiven=0,ext[513]
+	char exist,listgiven=0,namegiven=0,ext[LEN_EXTDESC + 1]
 		,auto_name[MAX_PATH+1]="FILES.BBS";
 	int i,j;
 	uint desc_offset=0, size_offset=0;
 	long l;
+	smb_t	smb;
 	file_t	f;
+	uint dirnum = INVALID_DIR;
 
-	sscanf("$Revision: 1.63 $", "%*s %s", revision);
-
-	fprintf(stderr,"\nADDFILES v%s-%s (rev %s) - Adds Files to Synchronet "
+	fprintf(stderr,"\nADDFILES v%s-%s %s/%s - Adds Files to Synchronet "
 		"Filebase\n"
 		,ADDFILES_VER
 		,PLATFORM_DESC
-		,revision
+		,GIT_BRANCH
+		,GIT_HASH
 		);
 
 	if(argc<2) {
@@ -739,6 +579,7 @@ int main(int argc, char **argv)
 	}
 	SAFECOPY(scfg.temp_dir,"../temp");
 	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
+	memset(&smb, 0, sizeof(smb));
 
 	if(argv[1][0]=='*' || argv[1][0]=='-') {
 		if(argv[1][1]=='?') {
@@ -761,18 +602,18 @@ int main(int argc, char **argv)
 
 		if(i>=scfg.total_dirs) {
 			printf("Directory code '%s' not found.\n",argv[1]);
-			exit(1);
-		}
+			exit(1); 
+		} 
+		dirnum = i;
 	}
 
-	memset(&f,0,sizeof(file_t));
-	f.dir=i;
-	SAFECOPY(f.uler,"-> ADDFILES <-");
+	memset(&f,0,sizeof(f));
+	const char* uploader = "-> ADDFILES <-";
 
 	for(j=2;j<argc;j++) {
 		if(argv[j][0]=='*')     /* set the uploader name (legacy) */
-			SAFECOPY(f.uler,argv[j]+1);
-		else
+			uploader = argv[j]+1;
+		else 
 			if(argv[j][0]=='-'
 			|| argv[j][0]=='/'
 			) {      /* options */
@@ -811,7 +652,7 @@ int main(int argc, char **argv)
 							puts(usage);
 							return(-1);
 						}
-						SAFECOPY(f.uler,argv[j]);
+						uploader = argv[j];
 						i=strlen(argv[j])-1;
 						break;
 					case 'Z':
@@ -869,18 +710,18 @@ int main(int argc, char **argv)
 				&& IS_DIGIT(argv[j+1][0])) { /* skip x characters before description */
 				if(argc > j+2
 					&& IS_DIGIT(argv[j+2][0])) { /* skip x characters before size */
-					addlist(argv[j]+1,f,atoi(argv[j+1]),atoi(argv[j+2]));
+					addlist(argv[j]+1, dirnum, uploader, atoi(argv[j+1]), atoi(argv[j+2]));
 					j+=2;
 				}
 				else {
-					addlist(argv[j]+1,f,atoi(argv[j+1]),0);
-					j++;
-				}
+					addlist(argv[j]+1, dirnum, uploader, atoi(argv[j+1]), 0);
+					j++; 
+				} 
 			}
 			else
-				addlist(argv[j]+1,f,0,0);
+				addlist(argv[j]+1, dirnum, uploader, 0, 0);
 			if(mode&SYNC_LIST)
-				synclist(argv[j]+1,f.dir);
+				synclist(argv[j]+1, dirnum); 
 		}
 		else if(argv[j][0]=='.') {      /* alternate file path */
 			cur_altpath=atoi(argv[j]+1);
@@ -891,86 +732,69 @@ int main(int argc, char **argv)
 		}
 		else {
 			namegiven=1;
-			padfname(argv[j],f.name);
-			f.desc[0]=0;
-			memset(ext, 0, sizeof(ext));
-#if 0
-			strupr(f.name);
-#endif
+			const char* fname = argv[j];
+			char fdesc[LEN_FDESC + 1] = {0};
+
 			if(j+1==argc) {
-				printf("%s no description given.\n",f.name);
-				SAFECOPY(f.desc, "no description given");
+				printf("%s no description given.\n",fname);
+				SAFECOPY(fdesc, "no description given");
 			}
+
 			sprintf(str,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
-				: scfg.dir[f.dir]->path,argv[j]);
-			if(mode&TODAYS_DATE) {
-				time_t now = time(NULL);
-				if(datefmt) {
-					struct tm tm = {0};
-					localtime_r(&now, &tm);
-					strftime(f.desc, sizeof(f.desc), datefmt, &tm);
-				} else
-					SAFECOPY(f.desc, unixtodstr(&scfg, (time32_t)now, tmp));
-				SAFECAT(f.desc, "  ");
-			}
-			else if(mode&FILE_DATE) {
-				time_t file_timestamp = fdate(str);
-				if(datefmt) {
-					struct tm tm = {0};
-					localtime_r(&file_timestamp, &tm);
-					strftime(f.desc, sizeof(f.desc), datefmt, &tm);
-				} else
-					SAFECOPY(f.desc, unixtodstr(&scfg,(time32_t)file_timestamp,tmp));
-				SAFECAT(f.desc, "  ");
-			}
-			if(j+1 < argc) {
-				j++;
-				SAFECAT(f.desc, argv[j]);
-			}
-			l=flength(str);
+				: scfg.dir[dirnum]->path, fname);
+			if(mode&FILE_DATE)
+				sprintf(fdesc, "%s  ", unixtodstr(&scfg,(time32_t)fdate(str),tmp));
+			if(mode&TODAYS_DATE)
+				sprintf(fdesc, "%s  ", unixtodstr(&scfg,time32(NULL),tmp));
+			sprintf(tmp, "%.*s", (int)(LEN_FDESC-strlen(fdesc)), argv[++j]);
+			SAFECOPY(fdesc, tmp);
+			l=(long)flength(str);
 			if(l==-1) {
 				printf("%s not found.\n",str);
 				continue;
 			}
-			exist=findfile(&scfg,f.dir,f.name);
+			if(SMB_IS_OPEN(&smb))
+				smb_close(&smb);
+
+			int result = smb_open_dir(&scfg, &smb, dirnum);
+			if(result != SMB_SUCCESS) {
+				fprintf(stderr, "!ERROR %d (%s) opening %s\n", result, smb.last_error, smb.file);
+				exit(EXIT_FAILURE);
+			}
+
+			exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 			if(exist) {
 				if(mode&NO_UPDATE)
 					continue;
-				if(!getfileixb(&scfg,&f)) {
-					fprintf(stderr, "!ERROR reading index of directory %u\n", f.dir);
-					continue;
-				}
-				if((mode&CHECK_DATE) && fdate(str) <= f.dateuled)
+				if((mode&CHECK_DATE) && fdate(str) <= f.idx.time)
 					continue;
 				if(mode&ULDATE_ONLY) {
-					f.dateuled=time32(NULL);
-					update_uldate(&scfg, &f);
-					continue;
-				}
-				if (f.misc & FM_EXTDESC)
-					getextdesc(&scfg, f.dir, f.datoffset, ext);
+					reupload(&smb, &f);
+					continue; 
+				} 
 			}
-			f.cdt=l;
-			f.dateuled=time32(NULL);
-			f.altpath=cur_altpath;
-			prep_desc(f.desc);
+			memset(&f, 0, sizeof(f));
+			prep_file_desc(fdesc, fdesc);
 			if(mode&ASCII_ONLY)
-				strip_exascii(f.desc, f.desc);
-			printf("%s %7"PRIu32" %s\n",f.name,f.cdt,f.desc);
-			if(mode&FILE_ID)
-				get_file_diz(&f, str, ext);
+				strip_exascii(fdesc, fdesc);
+			smb_hfield_str(&f, SMB_FILENAME, fname);
+			smb_hfield_str(&f, SMB_FILEDESC, fdesc);
+			smb_hfield_str(&f, SENDER, uploader);
+			uint32_t cdt = (uint32_t)l;
+			smb_hfield_bin(&f, SMB_COST, cdt);
 
+			printf("%s %7"PRIu64" %s\n",fname, (int64_t)l, fdesc);
+			char* ext_desc = NULL;
+			if(get_file_diz(&f, ext, sizeof(ext)))
+				ext_desc = ext;
 			if(exist) {
-				putfiledat(&scfg,&f);
 				if(!(mode&NO_NEWDATE))
-					update_uldate(&scfg, &f);
+					reupload(&smb, &f);
+				else
+					result = smb_updatemsg(&smb, &f);
 			}
 			else
-				addfiledat(&scfg,&f);
-
-			if(f.misc&FM_EXTDESC)
-				putextdesc(&scfg,f.dir,f.datoffset,ext);
-
+				result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, str);
 			if(mode&UL_STATS)
 				updatestats(l);
 			files++;
@@ -983,23 +807,23 @@ int main(int argc, char **argv)
 				continue;
 			if(scfg.dir[i]->misc&DIR_NOAUTO)
 				continue;
-			f.dir=i;
+			dirnum = i;
 			if(mode&SEARCH_DIR) {
-				addlist("",f,desc_offset,size_offset);
-				continue;
+				addlist("", dirnum, uploader, desc_offset, size_offset);
+				continue; 
 			}
-			sprintf(str,"%s%s.lst",scfg.dir[f.dir]->path,scfg.dir[f.dir]->code);
+			sprintf(str,"%s%s.lst",scfg.dir[dirnum]->path,scfg.dir[dirnum]->code);
 			if(fexistcase(str) && flength(str)>0L) {
 				printf("Auto-adding %s\n",str);
-				addlist(str,f,desc_offset,size_offset);
+				addlist(str, dirnum, uploader, desc_offset, size_offset);
 				if(mode&SYNC_LIST)
 					synclist(str,i);
 				continue;
 			}
-			SAFEPRINTF2(str,"%s%s",scfg.dir[f.dir]->path,auto_name);
+			SAFEPRINTF2(str,"%s%s",scfg.dir[dirnum]->path,auto_name);
 			if(fexistcase(str) && flength(str)>0L) {
 				printf("Auto-adding %s\n",str);
-				addlist(str,f,desc_offset,size_offset);
+				addlist(str, dirnum, uploader, desc_offset, size_offset);
 				if(mode&SYNC_LIST)
 					synclist(str,i);
 				continue;
@@ -1009,12 +833,11 @@ int main(int argc, char **argv)
 
 	else {
 		if(!listgiven && !namegiven) {
-			sprintf(str,"%s%s.lst",scfg.dir[f.dir]->path, scfg.dir[f.dir]->code);
+			sprintf(str,"%s%s.lst",scfg.dir[dirnum]->path, scfg.dir[dirnum]->code);
 			if(!fexistcase(str) || flength(str)<=0L)
-				SAFEPRINTF2(str,"%s%s",scfg.dir[f.dir]->path, auto_name);
-			addlist(str,f,desc_offset,size_offset);
+				SAFEPRINTF2(str,"%s%s",scfg.dir[dirnum]->path, auto_name);
 			if(mode&SYNC_LIST)
-				synclist(str,f.dir);
+				synclist(str, dirnum);
 		}
 	}
 

@@ -23,6 +23,16 @@
 #define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_MULT|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
 #define CUT_LIBNUM	USHRT_MAX
 
+char* file_sort_desc[] = {
+	"Name Ascending (case-insensitive)",
+	"Name Descending (case-insensitive)",
+	"Date Ascending",
+	"Date Descending",
+	"Name Ascending (case-sensitive)",
+	"Name Descending (case-sensitive)",
+	NULL
+};
+
 static bool new_dir(unsigned new_dirnum, unsigned libnum)
 {
 	dir_t* new_directory = malloc(sizeof(dir_t));
@@ -32,7 +42,6 @@ static bool new_dir(unsigned new_dirnum, unsigned libnum)
 	}
 	memset(new_directory, 0, sizeof(*new_directory));
 	new_directory->lib = libnum;
-	new_directory->maxfiles = MAX_FILES;
 	new_directory->misc = DEFAULT_DIR_OPTIONS;
 	new_directory->up_pct = cfg.cdt_up_pct;
 	new_directory->dn_pct = cfg.cdt_dn_pct;
@@ -603,8 +612,9 @@ void xfer_cfg()
 							continue;
 						ported++;
 						if(k==1) {
-							fprintf(stream,"Area %-8s  0     !      %s\n"
-								,cfg.dir[j]->code_suffix,cfg.dir[j]->lname);
+							fprintf(stream,"Area %-*s  0     !      %s\n"
+								,FIDO_AREATAG_LEN
+								,dir_area_tag(&cfg, cfg.dir[j], str, sizeof(str)) ,cfg.dir[j]->lname);
 							continue;
 						}
 						fprintf(stream,"%s\n%s\n%s\n%s\n%s\n%s\n"
@@ -711,7 +721,6 @@ void xfer_cfg()
 							continue;
 						memset(&tmpdir,0,sizeof(dir_t));
 						tmpdir.misc=DEFAULT_DIR_OPTIONS;
-						tmpdir.maxfiles=MAX_FILES;
 						tmpdir.up_pct=cfg.cdt_up_pct;
 						tmpdir.dn_pct=cfg.cdt_dn_pct; 
 
@@ -761,8 +770,9 @@ void xfer_cfg()
 							while(*p && *p<=' ') p++;	/* Skip space */
 							while(*p>' ') p++;			/* Skip flags */
 							while(*p && *p<=' ') p++;	/* Skip space */
-							SAFECOPY(tmpdir.sname,tmp_code); 
-							SAFECOPY(tmpdir.lname,p); 
+							SAFECOPY(tmpdir.sname,tmp_code);
+							SAFECOPY(tmpdir.area_tag,tmp_code);
+							SAFECOPY(tmpdir.lname,p);
 							ported++;
 						}
 						else {
@@ -898,7 +908,6 @@ void xfer_cfg()
 							SAFECOPY(cfg.dir[j]->sname,tmpdir.sname);
 							SAFECOPY(cfg.dir[j]->lname,tmpdir.lname);
 							if(j==cfg.total_dirs) {
-								cfg.dir[j]->maxfiles=MAX_FILES;
 								cfg.dir[j]->up_pct=cfg.cdt_up_pct;
 								cfg.dir[j]->dn_pct=cfg.cdt_dn_pct; 
 							}
@@ -1132,6 +1141,7 @@ void dir_cfg(uint libnum)
 			sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.dir[i]->sname);
 			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
 				,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
+			sprintf(opt[n++],"%-27.27s%s","Area Tag",cfg.dir[i]->area_tag);
 			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
 				,cfg.dir[i]->arstr);
 			sprintf(opt[n++],"%-27.27s%s","Upload Requirements"
@@ -1162,8 +1172,12 @@ void dir_cfg(uint libnum)
 				SAFEPRINTF(str, "[%s]", path);
 			sprintf(opt[n++],"%-27.27s%s","Transfer File Path"
 				,str);
-			sprintf(opt[n++],"%-27.27s%u","Maximum Number of Files"
-				,cfg.dir[i]->maxfiles);
+			if(cfg.dir[i]->maxfiles)
+				sprintf(str, "%u", cfg.dir[i]->maxfiles);
+			else
+				SAFECOPY(str, "Unlimited");
+			sprintf(opt[n++],"%-27.27s%s","Maximum Number of Files"
+				,str);
 			if(cfg.dir[i]->maxage)
 				sprintf(str,"Enabled (%u days old)",cfg.dir[i]->maxage);
 			else
@@ -1216,48 +1230,49 @@ void dir_cfg(uint libnum)
 					}
 					break;
 				case 3:
+					uifc.helpbuf="FidoNet Area Tag!";
+					SAFECOPY(str, cfg.dir[i]->area_tag);
+					if(uifc.input(WIN_L2R|WIN_SAV,0,17,"FidoNet File Echo Area Tag"
+						,str, FIDO_AREATAG_LEN, K_EDIT | K_UPPER) > 0)
+						SAFECOPY(cfg.dir[i]->area_tag, str);
+					break;
+				case 4:
 					sprintf(str,"%s Access",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->arstr);
 					break;
-				case 4:
+				case 5:
 					sprintf(str,"%s Upload",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->ul_arstr);
 					break;
-				case 5:
+				case 6:
 					sprintf(str,"%s Download",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->dl_arstr);
 					break;
-				case 6:
+				case 7:
 					sprintf(str,"%s Operator",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->op_arstr);
 					break;
-				case 7:
+				case 8:
 					sprintf(str,"%s Exemption",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->ex_arstr);
 					break;
-				case 8:
+				case 9:
 					uifc.helpbuf = dir_transfer_path_help;
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Transfer File Path"
 						,cfg.dir[i]->path,sizeof(cfg.dir[i]->path)-1,K_EDIT);
 					break;
-				case 9:
+				case 10:
 					uifc.helpbuf=
 						"`Maximum Number of Files:`\n"
 						"\n"
 						"This value is the maximum number of files allowed in this directory.\n"
 					;
 					sprintf(str,"%u",cfg.dir[i]->maxfiles);
-					uifc.input(WIN_L2R|WIN_SAV,0,17,"Maximum Number of Files"
+					uifc.input(WIN_L2R|WIN_SAV,0,17,"Maximum Number of Files (0=Unlimited)"
 						,str,5,K_EDIT|K_NUMBER);
-					n=atoi(str);
-					if(n>MAX_FILES) {
-						sprintf(str,"Maximum Files is %u",MAX_FILES);
-						uifc.msg(str);
-					}
-					else
-						cfg.dir[i]->maxfiles=n;
+					cfg.dir[i]->maxfiles=atoi(str);
 					break;
-				case 10:
+				case 11:
 					sprintf(str,"%u",cfg.dir[i]->maxage);
 					uifc.helpbuf=
 						"`Maximum Age of Files:`\n"
@@ -1273,7 +1288,7 @@ void dir_cfg(uint libnum)
 						,str,5,K_EDIT|K_NUMBER);
 					cfg.dir[i]->maxage=atoi(str);
 					break;
-				case 11:
+				case 12:
 	uifc.helpbuf=
 		"`Percentage of Credits to Credit Uploader on Upload:`\n"
 		"\n"
@@ -1289,7 +1304,7 @@ void dir_cfg(uint libnum)
 						,ultoa(cfg.dir[i]->up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 					cfg.dir[i]->up_pct=atoi(tmp);
 					break;
-				case 12:
+				case 13:
 	uifc.helpbuf=
 		"`Percentage of Credits to Credit Uploader on Download:`\n"
 		"\n"
@@ -1306,7 +1321,7 @@ void dir_cfg(uint libnum)
 						,ultoa(cfg.dir[i]->dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 					cfg.dir[i]->dn_pct=atoi(tmp);
 					break;
-				case 13:
+				case 14:
 					while(1) {
 						n=0;
 						sprintf(opt[n++],"%-30.30s%s","Check for File Existence"
@@ -1355,10 +1370,12 @@ void dir_cfg(uint libnum)
 							,cfg.dir[i]->misc&DIR_MOVENEW ? "Yes":"No");
 						sprintf(opt[n++],"%-30.30s%s","Include Transfers In Stats"
 							,cfg.dir[i]->misc&DIR_NOSTAT ? "No":"Yes");
-						sprintf(opt[n++],"%-30.30s%s","Access Files not in Database"
-							,cfg.dir[i]->misc&DIR_FILES ? "Yes":"No");
+						sprintf(opt[n++],"%-30.30s%s","Calculate/Store Hash of Files"
+							,cfg.dir[i]->misc&DIR_NOHASH ? "No":"Yes");
 						sprintf(opt[n++],"%-30.30s%s","Template for New Directories"
 							,cfg.dir[i]->misc&DIR_TEMPLATE ? "Yes" : "No");
+						sprintf(opt[n++],"%-30.30s%s","Allow File Tagging"
+							,cfg.dir[i]->misc&DIR_FILETAGS ? "Yes" : "No");
 						opt[n][0]=0;
 						uifc.helpbuf=
 							"`Directory Toggle Options:`\n"
@@ -1799,22 +1816,25 @@ void dir_cfg(uint libnum)
 								}
 								break;
 							case 20:
-								n=cfg.dir[i]->misc&DIR_FILES ? 0:1;
+								n=cfg.dir[i]->misc&DIR_NOHASH ? 1:0;
 								uifc.helpbuf=
-									"`Allow Access to Files Not in Database:`\n"
+									"`Calculate/Store Hashes of Files:`\n"
 									"\n"
-									"If this option is set to ~Yes~, then all files in this directory's\n"
-									"`Transfer File Path` will be visible/downloadable by users with access to\n"
-									"this directory.\n"
+									"Set to ~Yes~ to calculate and store the hashes of file contents when\n"
+									"adding files to this file base.\n"
+									"\n"
+									"The hashes (CRC-16, CRC-32, MD5, and SHA-1) are useful for detecting\n"
+									"duplicate files (i.e. and rejecting them) as well as allowing the\n"
+									"confirmation of data integrity for the downloaders of files."
 								;
 								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Allow Access to Files Not in Database"
+									,"Calculate/Store Hashes of Files"
 									,uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_FILES)) {
-									cfg.dir[i]->misc|=DIR_FILES;
+								if(n==0 && cfg.dir[i]->misc&DIR_NOHASH) {
+									cfg.dir[i]->misc &= ~DIR_NOHASH;
 									uifc.changes=1; 
-								} else if(n==1 && cfg.dir[i]->misc&DIR_FILES){
-									cfg.dir[i]->misc&=~DIR_FILES;
+								} else if(n==1 && !(cfg.dir[i]->misc&DIR_NOHASH)){
+									cfg.dir[i]->misc |= DIR_NOHASH;
 									uifc.changes=1; 
 								}
 								break;
@@ -1844,10 +1864,30 @@ void dir_cfg(uint libnum)
 									cfg.dir[i]->misc&=~DIR_TEMPLATE; 
 								}
 								break;
+							case 22:
+								n=(cfg.dir[i]->misc&DIR_FILETAGS) ? 0:1;
+								uifc.helpbuf=
+									"`Allow Addition of Tags to Files:`\n"
+									"\n"
+								;
+								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+									,"Allow Addition of Tags to Files",uifcYesNoOpts);
+								if(n==-1)
+									break;
+								if(!n && !(cfg.dir[i]->misc & DIR_FILETAGS)) {
+									uifc.changes = TRUE;
+									cfg.dir[i]->misc |= DIR_FILETAGS;
+									break; 
+								}
+								if(n==1 && (cfg.dir[i]->misc&DIR_FILETAGS)) {
+									uifc.changes = TRUE;
+									cfg.dir[i]->misc &= ~DIR_FILETAGS; 
+								}
+								break;
 						} 
 					}
 					break;
-			case 14:
+			case 15:
 				while(1) {
 					n=0;
 					sprintf(opt[n++],"%-27.27s%s","Extensions Allowed"
@@ -1861,10 +1901,7 @@ void dir_cfg(uint libnum)
 					sprintf(opt[n++],"%-27.27s%s","Upload Semaphore File"
 						,cfg.dir[i]->upload_sem);
 					sprintf(opt[n++],"%-27.27s%s","Sort Value and Direction"
-						, cfg.dir[i]->sort==SORT_NAME_A ? "Name Ascending"
-						: cfg.dir[i]->sort==SORT_NAME_D ? "Name Descending"
-						: cfg.dir[i]->sort==SORT_DATE_A ? "Date Ascending"
-						: "Date Descending");
+						,file_sort_desc[cfg.dir[i]->sort]);
 					sprintf(opt[n++],"%-27.27sNow %u / Was %u","Directory Index", i, cfg.dir[i]->dirnum);
 					opt[n][0]=0;
 					uifc.helpbuf=
@@ -1872,7 +1909,7 @@ void dir_cfg(uint libnum)
 						"\n"
 						"This is the advanced options menu for the selected file directory.\n"
 					;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,4,60,&adv_dflt,0
+						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,4,65,&adv_dflt,0
 							,"Advanced Options",opt);
 						if(n==-1)
 							break;
@@ -1914,38 +1951,22 @@ void dir_cfg(uint libnum)
 									,cfg.dir[i]->upload_sem,sizeof(cfg.dir[i]->upload_sem)-1,K_EDIT);
 								break;
 							case 3:
-								n=0;
-								strcpy(opt[0],"Name Ascending");
-								strcpy(opt[1],"Name Descending");
-								strcpy(opt[2],"Date Ascending");
-								strcpy(opt[3],"Date Descending");
-								opt[4][0]=0;
+								n = cfg.dir[i]->sort;
 								uifc.helpbuf=
 									"`Sort Value and Direction:`\n"
 									"\n"
-									"This option allows you to determine the sort value and direction. Files\n"
-									"that are uploaded are automatically sorted by filename or upload date,\n"
-									"ascending or descending. If you change the sort value or direction after\n"
-									"a directory already has files in it, use the sysop transfer menu `;RESORT`\n"
-									"command to resort the directory with the new sort parameters.\n"
+									"This option allows you to determine the sort value and direction for\n"
+									"the display of file listings.\n"
+									"\n"
+									"The dates available for sorting are the file import/upload date/time.\n"
+									"\n"
+									"The natural (and thus fastest) sort order is `Date Ascending`."
 								;
 								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Sort Value and Direction",opt);
-								if(n==0 && cfg.dir[i]->sort!=SORT_NAME_A) {
-									cfg.dir[i]->sort=SORT_NAME_A;
-									uifc.changes=1;
-								}
-								else if(n==1 && cfg.dir[i]->sort!=SORT_NAME_D) {
-									cfg.dir[i]->sort=SORT_NAME_D;
-									uifc.changes=1;
-								}
-								else if(n==2 && cfg.dir[i]->sort!=SORT_DATE_A) {
-									cfg.dir[i]->sort=SORT_DATE_A;
-									uifc.changes=1;
-								}
-								else if(n==3 && cfg.dir[i]->sort!=SORT_DATE_D) {
-									cfg.dir[i]->sort=SORT_DATE_D;
-									uifc.changes=1;
+									,"Sort Value and Direction", file_sort_desc);
+								if(n >= 0 && cfg.dir[i]->sort != n) {
+									cfg.dir[i]->sort = n;
+									uifc.changes = TRUE;
 								}
 								break; 
 							case 4:

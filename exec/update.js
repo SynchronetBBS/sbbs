@@ -1,8 +1,6 @@
-/* $Id: update.js,v 1.10 2020/05/05 01:09:27 rswindell Exp $ */
+/* Synchronet v3.15+ update script (to be executed with jsexec) */
 
-/* Synchronet v3.15 update script (to be executed with jsexec) */
-
-const REVISION = "$Revision: 1.10 $".split(' ')[1];
+const REVISION = "2.0";
 
 var test = argv.indexOf("-test") >= 0;
 
@@ -150,7 +148,7 @@ function update_gfile_indexes()
 	return count;
 }
 
-printf("Synchronet update.js revision %u\n", REVISION);
+printf("Synchronet update.js revision %s\n", REVISION);
 printf("Updating exec directory: ");
 printf("%s\n", update_exec_dir() ? "Success" : "FAILURE");
 printf("Updating users ip_address field: ");
@@ -207,4 +205,20 @@ for(var i in src_files) {
 	print("Building " + bin);
 	if(!test)
 		system.exec(system.exec_dir + "baja " + src_files[i]);
+}
+
+print("Checking for v3.19 file bases");
+var upgraded = true;
+for(var d in file_area.dir) {
+	upgraded = false;
+	dir_idx = directory(file_area.dir[d].data_dir + "*.sid");
+	if(dir_idx && dir_idx.length) {
+		upgraded = true;
+		break;
+	}
+}
+if(!upgraded) {
+	var cmdline = system.exec_dir + "upgrade_to_v319";
+	print("No v3.19 file bases found, running " + cmdline);
+	system.exec(cmdline);
 }

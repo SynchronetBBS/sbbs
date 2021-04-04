@@ -61,6 +61,11 @@ long	aftol(char *str);              /* Converts flag string to long */
 char*	ltoaf(long l, char *str);     /* Converts long to flag string */
 uint	attrstr(char *str);		/* Convert ATTR string into attribute int */
 
+int		getdirnum(scfg_t*, const char* code);
+int		getlibnum(scfg_t*, const char* code);
+int		getsubnum(scfg_t*, const char* code);
+int		getgrpnum(scfg_t*, const char* code);
+
 #ifdef __cplusplus
 }
 #endif

@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "qwk.h"
+#include "filedat.h"
 
 static void log_qwk_import_stats(sbbs_t* sbbs, ulong msgs, time_t start)
 {
@@ -39,6 +40,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 {
 	char	str[MAX_PATH+1],fname[MAX_PATH+1];
 	char 	tmp[512];
+	char	error[256] = "";
 	char	inbox[MAX_PATH+1];
 	uchar	block[QWK_BLOCK_LEN];
 	int 	k,file;
@@ -74,10 +76,24 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		return(false);
 	}
 	delfiles(cfg.temp_dir,ALLFILES);
-	i=external(cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),EX_OFFLINE);
-	if(i) {
-		errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),i);
-		return(false); 
+	long file_count = extract_files_from_archive(packet
+		,/* outdir: */cfg.temp_dir
+		,/* allowed_filename_chars: */NULL /* any */
+		,/* with_path: */false
+		,/* max_files: */0 /* unlimited */
+		,/* file_list: */NULL /* all files */
+		,error, sizeof(error));
+	if(file_count >= 0) {
+		lprintf(LOG_DEBUG, "libarchive extracted %ld files from %s", file_count, packet);
+	} else {
+		lprintf(LOG_ERR, "libarchive error %ld (%s) extracting %s", file_count, error, packet);
+		if(*cfg.qhub[hubnum]->unpack == '\0')
+			return false;
+		i=external(cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),EX_OFFLINE);
+		if(i) {
+			errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),i);
+			return(false); 
+		}
 	}
 	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
 	if(!fexistcase(str)) {

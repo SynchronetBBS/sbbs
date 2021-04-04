@@ -1,0 +1,244 @@
+_New FileBases_
+
+The new FileBase files are stored in the same database location as before
+(e.g. data/dirs/), but the file extensions are different:
+
+^ Purpose                  ^   Old    ^   New    ^
+| Index (e.g. filenames)   | code.ixb | code.sid |
+| Data (e.g. descriptions) | code.dat | code.shd |
+| Extended Descriptions    | code.exb | code.sdt |
+| Metadata                 | code.dab | code.ini |
+| Allocation Tables        | N/A      | code.sda and code.sha |
+
+If these new filebase file extensions look familiar to you, that's because
+we're using the Synchronet Message Base format/library (v3.0 now) for the
+underlying database. This means that the SMB tools you may be familiar with
+(e.g. CHKSMB, FIXSMB, SMBUTIL) also work on the new filebases.
+
+The conversion of the filebases to the new format should occur automatically
+when you run 'jsexec update' which in turn will execute the program
+'upgrade_to_v319' when appropriate (just one time). Once converted, you can
+delete the old files or leave them in place in case you need to revert back to
+Synchronet v3.18 for any reason. The old filebase files won't harm anything if
+left.
+
+The creation of each new filebase will automatically calculate and store the
+hashes of the contents of the actual files available for download. These
+hashes are useful for duplicate file detection and data integrity assurance.
+If you wish to opt-out of the file hashing (which consumes the majority of the
+time during the upgrade process), you can turn off file hashing in the
+per-directory Toggle Options in SCFG->File Areas. You would have to perform
+this opt-out for the directories of choice *before* you run 'jsexec update' /
+'upgrade_to_v319'. You should not normally need to run 'upgrade_to_v319'.
+
+_Long Filenames_
+
+While filenames stored in the filebases used to be limited to MS-DOS
+compatible 8.3 formatted names, longer filenames are now supported on all
+platforms. Additionally, some previously invalid filename characters (e.g.
+spaces) are now allowed and files without extensions (i.e. no '.' in their
+filename are now supported).
+
+Although Synchronet for Windows previously used Win32 API functions for short
+<-> long filename conversions in the Windows builds of Synchronet, resulting
+in the unfortunate Micros~1 shorted filenames stored and sometimes seen, that
+is no longer the case. Except for the %~ command-line specifier, those
+short/long filename conversion functions are no longer in use anywhere within
+Synchronet for Windows - it's native filenames through-out. The filebase
+conversion process (upgrade_to_v319 / 'jsexec update') on Windows will attempt
+to automatically resolve the native/long filenames and store those names and
+only those names in the new filebases.
+
+Note: abbreviated versions of long filenames are displayed in some situations
+to accommodate the limited width of a traditional BBS user terminal. An effort
+is made to always display the full file extension/suffix however
+(e.g. "longfilename.jpeg" may be *displayed* as "longfil.jpeg").
+
+Note: only 64 characters of each filename (always including any extension) are
+indexed for searches and duplicate checking, but the entire filename, up to
+64K characters in length, is stored intact in the filebase.
+
+Filenames with /extensions/ longer than 3 characters, e.g. ".jpeg", ".tar.gz",
+can be added to the filebases, but the configurable compressible, extractable,
+and viewable file types/extensions remain limited to 3 characters in SCFG.
+Similarly, a maximum length of 3 character archive "types" are stored per BBS
+user record (for each user's QWK packet format and temp archive preference).
+
+_Large Files_
+
+Files greater in size than 2GB or 4GB (depending) were previously a problem.
+Though there are still some 32-bit file length limitations (e.g. only files
+smaller than 4GB in size will be hashed), there is better and increasing
+support for larger files in general.
+
+Note: the ZMODEM transfer protocol as designed by Chuck Forsberg only supports
+files up to 4GB in size and in many cases, files greater than or equal to 2GB
+in size will prove difficult or impossible to transfer between some ZMODEM
+implementations. In general, it is recommended to use an alternate transfer
+protocol (e.g. YMODEM[-G], FTP, HTTP) for files >= 2GB in length.
+
+_Large Directories_
+
+Due to the new filebase design, directories with more than 10,000 files are
+now supported (though, not encouraged).
+
+_Descriptions_
+
+The file "summary" or single-line "short description" remains limited to 58
+characters in length for practical purposes. Though longer file summaries
+(up to 64KB) can be stored in the filebase, they are not recommended.
+
+Extended (multi-line) descriptions may now span more than the previous limit
+of 10 lines or 512 total characters. There is no technical limit to the length
+of extended file descriptions, though a limit of 1024 characters imported from
+description files embedded in archives (e.g. FILE_ID.DIZ) is being imposed. If
+you have a need for longer (than 1024 character) extended descriptions
+imported from embedded description files, please provide me with details.
+
+_Batches_
+
+File upload and download batch queues used to be maintained in memory (though
+they were written to disk files to be retained between user logons), they are
+now entirely maintained in disk files (data/user/*.upload and *.dnload in .ini
+file format). This means that custom batch management can now be performed
+easily by modules or non-Terminal Server scripts.
+
+_Hashes_
+
+Files are now hashed, by default, using multiple hashing algorithms (CRC16,
+CRC32, MD5, and SHA1) for duplicate file detection and for reporting to users
+(e.g. to insure data integrity). For a file to be considered a duplicate
+(i.e. and rejected for upload) it must have the same size and hash values as
+another file in a filebase already. Each directory is configurable as to
+whether or not to hash its files or use it for duplicate file detection
+(by name or hash).
+
+_Sorting_
+
+While the old filebases 
+The new filebases are indexed in the order in which the files are imported
+into the database. Sorting of the files for display purposes in the terminal
+and FTP servers is optional and configured by the sysop:
+ Name Ascending (case-insensitive)
+ Name Descending (case-insensitive)
+ Name Ascending (case-sensitive)
+ Name Descending (case-sensitive)
+ Date Ascending
+ Date Descending
+
+As a result, the "RESORT" file transfer operator command has been removed.
+
+_Tags_
+
+Individual files can now be tagged for easy searching/grouping. This feature
+will be utilized/enhanced more in the future.
+
+_JavaScript_
+
+The new "FileBase" class is used (similar to the existing MsgBase class) to
+open and access filebases from JavaScript modules. Using this class, the
+defaults methods of listing and transferring files can be replaced with
+custom modules.
+
+_TickIT_
+
+The new FileBase JS class is now used to import files directly from FidoNet
+-style .TIC files (via tickit.js) so no dependency or invocation of any
+external utilities (e.g. addfiles) is required.
+
+_Utilities_
+
+The native utilities ADDFILES, FILELIST, DELFILES, and DUPEFIND have been
+replaced with similarly named and purposed JavaScript utility scripts to be
+invoked with JSexec:
+- addfiles.js for importing lists of files into filebases
+- postfile.js for importing a single file into a filebase
+- filelist.js for generating file listings from filebases
+- delfiles.js for removing files from filebases
+- dupefind.js for discovering and reporting duplicate files in the filebases
+
+_Performance_
+
+Due to the nature and use of the new filebase API, file listings are much
+faster (e.g. large file listings from the Synchronet FTP server) as well as
+filename/pattern, description text, and duplicate-file searching.
+
+_FTP Server_
+
+Due to the removal of support for rendering FTP-downloaded content (e.g.
+HTML files) in modern web browsers, the FTP Server no longer supports dynamic
+HTML index file generation (e.g. 00index.html). Instead, we will focus on
+better support for filebase browsing and file transfers via HTTP and HTTPS in
+addition to the traditional FTP and FTPS uses. The dynamic generation of
+the ASCII file listings via FTP (e.g. 00index) is still supported by the FTP
+server, though now much faster than before.
+
+_libarchive_
+
+The libarchive library (http://libarchive.org/) has now been integrated into
+Synchronet (and exposed via the new "Archive" JavaScript class) and integrated
+into SBBSecho so that the creation, listing/viewing, and extraction of
+archived files can now be performed "in-process" without the invocation of or
+dependency on external programs (e.g. Info-Zip unzip or PKUNZIP).
+
+Formats fully supported:
+- zip
+- 7zip
+- gzipped-tar
+- bzipped-tar
+
+Formats supported for viewing and extraction only:
+- rar
+- lha/lzh
+- iso
+- xar
+- cab
+
+This means that for most BBSes, no "Compressible" or "Extractable" file types
+need to be configured in SCFG->File Options. Additionally, by setting
+"Archive Format" to "ZIP" for SCFG->Networks->QWK->Hubs, no "pack" or "unpack"
+command-line need be configured.
+
+For listing the contents of archives, the new archive.js utility script may be
+installed as a "Viewable File Type" handler for the commonly supported file
+extensions by running 'jsexec archive.js install'.
+
+_DIZ_
+
+Description files embedded in archives (e.g. FILE_ID.DIZ) are now supported
+more uniformly and seamlessly.
+
+_File Echoes_
+
+Each file transfer directory configured in SCFG->File Areas may now have an
+"Area Tag" explicitly set for FidoNet-style file distribution networks. If
+an Area Tag is not explicitly set, then the directory's short name is used
+(with spaces replaced with underscores) automatically. tickit.js now uses
+this new "area_tag" file_area.dir[] JS property for its "AutoAreas" feature.
+
+_User to User Files_
+
+The user to user file transfer feature has been removed. Send file attachments
+with email/netmail if you want to send files to users.
+
+_Opened Files_
+
+The "open" (reference) counter for files is now gone. If you want to remove
+a file from the filebase while a user has it in their batch download queue or
+is actively downloading it, nothing is preventing you from doing so.
+
+As a result, the "CLOSE" file transfer operator command has been removed.
+
+_Alternate File Paths_
+
+The support for "Alternate File Paths" has been removed. There are better
+modern operating/file system solutions to the original problem solved with
+this feature.
+
+As a result, the "ALTUL" file transfer operator command has been removed.
+
+_Bi-directional File Transfers_
+
+The protocol drivers that supported bi-directional file transfers (Bi-Modem,
+HS/Link) are now long unsupported DOS/OS2 programs with no equivalent in the
+modern world. Bye bye Bi-modem. :-(

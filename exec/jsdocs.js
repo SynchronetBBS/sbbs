@@ -3,8 +3,6 @@
 // This script generates HTML documentation of the Synchronet JavaScript object model
 // Requires a Debug build of the Synchronet executable(s)
 
-// $Id: jsdocs.js,v 1.40 2020/04/20 06:31:15 rswindell Exp $
-
 const table_tag = "<table border=1 width=100%>";
 
 const li_tag =	"<li onclick = 'this.className = (this.className == \"showList\") ? \"defaultStyles\" : \"showList\";'\n" +
@@ -320,7 +318,9 @@ if(js.global.msg_area != undefined)		document_object("msg_area"	,msg_area);
 if(js.global.file_area != undefined)	document_object("file_area"	,file_area);
 if(js.global.xtrn_area != undefined)	document_object("xtrn_area"	,xtrn_area);
 if(js.global.MsgBase != undefined)		document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
+if(js.global.FileBase != undefined)		document_object("FileBase"	,new FileBase(file_area.lib_list[0].dir_list[0].code), "class");
 if(js.global.File != undefined)			document_object("File"		,new File(system.devnull), "class");
+if(js.global.Archive != undefined)		document_object("Archive"	,new Archive(system.devnull), "class");
 if(js.global.Queue != undefined)		document_object("Queue"		,new Queue(), "class");
 if(js.global.Socket != undefined) {
 	var sock=new Socket();

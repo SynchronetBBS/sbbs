@@ -98,42 +98,6 @@ uint sbbs_t::finduser(const char* instr, bool silent_failure)
 }
 
 /****************************************************************************/
-/* Returns the number of user transfers in XFER.IXT for either a dest user  */
-/* source user, or filename.												*/
-/****************************************************************************/
-int sbbs_t::getuserxfers(int fromuser, int destuser, char *fname)
-{
-	char str[256];
-	int file,found=0;
-	FILE *stream;
-
-	SAFEPRINTF(str,"%sxfer.ixt",cfg.data_dir);
-	if(!fexist(str))
-		return(0);
-	if(!flength(str)) {
-		remove(str);
-		return(0); 
-	}
-	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		return(0); 
-	}
-	while(!ferror(stream)) {
-		if(!fgets(str,81,stream))
-			break;
-		str[22]=0;
-		if(fname!=NULL && fname[0] && !strncmp(str+5,fname,12))
-				found++;
-		else if(fromuser && atoi(str+18)==fromuser)
-				found++;
-		else if(destuser && atoi(str)==destuser)
-				found++; 
-	}
-	fclose(stream);
-	return(found);
-}
-
-/****************************************************************************/
 /* Return date/time that the specified event should run next				*/
 /****************************************************************************/
 extern "C" time_t DLLCALL getnexteventtime(event_t* event)

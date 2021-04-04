@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "filedat.h"
 
 #ifdef JAVASCRIPT
 
@@ -26,7 +27,6 @@
 static char* file_area_prop_desc[] = {
 	 "minimum amount of available disk space (in kilobytes) required for user uploads to be allowed"
 	,"file area settings (bitfield) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	,"array of alternative file paths.  NOTE: this array is zero-based, but alt path fields are one-based."
 	,NULL
 };
 
@@ -52,6 +52,7 @@ static char* dir_prop_desc[] = {
 	,"directory internal code"
 	,"directory name"
 	,"directory description"
+	,"directory area tag for file echoes <i>(introduced in v3.19)</i>"
 	,"directory file storage location"
 	,"directory access requirements"
 	,"directory upload requirements"
@@ -63,13 +64,14 @@ static char* dir_prop_desc[] = {
 	,"directory data storage location"
 	,"toggle options (bitfield)"
 	,"sequential (slow storage) device number"
-	,"sort order (see <tt>SORT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
+	,"sort order (see <tt>FileBase.SORT</tt> for valid values)"
 	,"configured maximum number of files"
 	,"configured maximum age (in days) of files before expiration"
 	,"percent of file size awarded uploader in credits upon file upload"
 	,"percent of file size awarded uploader in credits upon subsequent downloads"
 	,"directory link (for HTML index)"
 	,"number of files currently in this directory <i>(introduced in v3.18c)</i>"
+	,"timestamp of file base index of this directory <i>(introduced in v3.19)</i>"
 	,"user has sufficient access to view this directory (e.g. list files) <i>(introduced in v3.18)</i>"
 	,"user has sufficient access to upload files to this directory"
 	,"user has sufficient access to download files from this directory"
@@ -108,6 +110,7 @@ js_file_area_finalize(JSContext *cx, JSObject *obj)
 /***************************************/
 enum {
 	 DIR_PROP_FILES
+	,DIR_PROP_UPDATE_TIME
 	,DIR_PROP_CAN_ACCESS
 	,DIR_PROP_CAN_UPLOAD
 	,DIR_PROP_CAN_DOWNLOAD
@@ -119,6 +122,7 @@ static struct JSPropertySpec js_dir_properties[] = {
 /*		 name				,tinyid		,flags	*/
 
 	{	"files"			,DIR_PROP_FILES			,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"update_time"	,DIR_PROP_UPDATE_TIME	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
 	{	"can_access"	,DIR_PROP_CAN_ACCESS	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
 	{	"can_upload"	,DIR_PROP_CAN_UPLOAD	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
 	{	"can_download"	,DIR_PROP_CAN_DOWNLOAD	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
@@ -142,6 +146,9 @@ static JSBool js_dir_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	switch(tiny) {
 		case DIR_PROP_FILES:
 			*vp = UINT_TO_JSVAL(getfiles(p->cfg, p->dirnum));
+			break;
+		case DIR_PROP_UPDATE_TIME:
+			*vp = UINT_TO_JSVAL((uint32_t)dir_newfiletime(p->cfg, p->dirnum));
 			break;
 		case DIR_PROP_CAN_ACCESS:
 			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || can_user_access_dir(p->cfg, p->dirnum, p->user, p->client));
@@ -177,12 +184,12 @@ static JSClass js_dir_class = {
 
 JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 {
+	char		str[128];
 	char		vpath[MAX_PATH+1];
 	JSObject*	alllibs;
 	JSObject*	alldirs;
 	JSObject*	libobj;
 	JSObject*	dirobj;
-	JSObject*	alt_list;
 	JSObject*	lib_list;
 	JSObject*	dir_list;
 	JSString*	js_str;
@@ -219,29 +226,6 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			free(name);
 		val=UINT_TO_JSVAL(p->cfg->file_misc);
 		JS_DefineProperty(cx, areaobj, "settings", val, NULL, NULL, JSPROP_ENUMERATE);
-		if(name)
-			return(JS_TRUE);
-	}
-
-	if(name==NULL || strcmp(name, "alt_paths")==0) {
-		if(name)
-			free(name);
-		/* file_area.alt_paths[] */
-		if((alt_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
-			return JS_FALSE;
-
-		val=OBJECT_TO_JSVAL(alt_list);
-		if(!JS_SetProperty(cx, areaobj, "alt_paths", &val)) 
-			return JS_FALSE;
-
-		for (l=0; l<p->cfg->altpaths; l++) {
-			if((js_str=JS_NewStringCopyZ(cx, p->cfg->altpath[l]))==NULL)
-				return JS_FALSE;
-			val=STRING_TO_JSVAL(js_str);
-
-			if(!JS_SetElement(cx, alt_list, l, &val))
-				return JS_FALSE;
-		}
 		if(name)
 			return(JS_TRUE);
 	}
@@ -443,6 +427,12 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 					return JS_FALSE;
 				val=STRING_TO_JSVAL(js_str);
 				if(!JS_SetProperty(cx, dirobj, "description", &val))
+					return JS_FALSE;
+
+				if((js_str=JS_NewStringCopyZ(cx, dir_area_tag(p->cfg, p->cfg->dir[d], str, sizeof(str))))==NULL)
+					return JS_FALSE;
+				val=STRING_TO_JSVAL(js_str);
+				if(!JS_SetProperty(cx, dirobj, "area_tag", &val))
 					return JS_FALSE;
 
 				if((js_str=JS_NewStringCopyZ(cx, p->cfg->dir[d]->path))==NULL)

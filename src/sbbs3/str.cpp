@@ -777,7 +777,8 @@ void sbbs_t::subinfo(uint subnum)
 	bprintf(text[SubInfoLongName],cfg.sub[subnum]->lname);
 	bprintf(text[SubInfoShortName],cfg.sub[subnum]->sname);
 	bprintf(text[SubInfoQWKName],cfg.sub[subnum]->qwkname);
-	bprintf(text[SubInfoMaxMsgs],cfg.sub[subnum]->maxmsgs);
+	if(cfg.sub[subnum]->maxmsgs)
+		bprintf(text[SubInfoMaxMsgs],cfg.sub[subnum]->maxmsgs);
 	if(cfg.sub[subnum]->misc&SUB_QNET)
 		bprintf(text[SubInfoTagLine],cfg.sub[subnum]->tagline);
 	if(cfg.sub[subnum]->misc&SUB_FIDO)
@@ -801,7 +802,8 @@ void sbbs_t::dirinfo(uint dirnum)
 	bprintf(text[DirInfoShortName],cfg.dir[dirnum]->sname);
 	if(cfg.dir[dirnum]->exts[0])
 		bprintf(text[DirInfoAllowedExts],cfg.dir[dirnum]->exts);
-	bprintf(text[DirInfoMaxFiles],cfg.dir[dirnum]->maxfiles);
+	if(cfg.dir[dirnum]->maxfiles)
+		bprintf(text[DirInfoMaxFiles],cfg.dir[dirnum]->maxfiles);
 	SAFEPRINTF2(str,"%s%s.msg",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if(fexist(str) && yesno(text[DirInfoViewFileQ]))
 		printfile(str,0);
@@ -950,8 +952,7 @@ void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 	if(menu(prot_menu_file[type], P_NOERROR)) {
 		return;
 	}
-
-	CRLF;
+	cond_blankline();
 	int printed=0;
 	for(int i=0;i<cfg.total_prots;i++) {
 		if(!chk_ar(cfg.prot[i]->ar,&useron,&client))
@@ -964,14 +965,12 @@ void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 			continue;
 		if(type==XFER_BATCH_DOWNLOAD && cfg.prot[i]->batdlcmd[0]==0)
 			continue;
-		if(type==XFER_BIDIR && cfg.prot[i]->bicmd[0]==0)
-			continue;
 		if(printed && (cols < 80 || (printed%2)==0))
 			CRLF;
 		bprintf(text[TransferProtLstFmt],cfg.prot[i]->mnemonic,cfg.prot[i]->name);
 		printed++;
 	}
-	CRLF;
+	newline();
 }
 
 void sbbs_t::node_stats(uint node_num)

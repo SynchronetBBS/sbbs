@@ -1,7 +1,4 @@
 /* Synchronet message base (SMB) alloc/free routines */
-// vi: tabstop=4
-
-/* $Id: smballoc.c,v 1.14 2019/04/11 01:00:29 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -46,10 +31,11 @@
 /* smb_close_da() should be called after									*/
 /* Returns negative on error												*/
 /****************************************************************************/
-long SMBCALL smb_allocdat(smb_t* smb, ulong length, uint16_t refs)
+off_t smb_allocdat(smb_t* smb, off_t length, uint16_t refs)
 {
     uint16_t  i;
-	ulong	j,l,blocks,offset=0L;
+	ulong	j,l,blocks;
+	off_t offset=0;
 
 	if(smb->sda_fp==NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
@@ -75,7 +61,7 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, uint16_t refs)
 		return(SMB_ERR_DAT_OFFSET);
 	}
 	clearerr(smb->sda_fp);
-	if(fseek(smb->sda_fp,(offset/SDT_BLOCK_LEN)*sizeof(refs),SEEK_SET)) {
+	if(fseeko(smb->sda_fp,(offset/SDT_BLOCK_LEN)*sizeof(refs),SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to: %ld", __FUNCTION__
 			,(offset/SDT_BLOCK_LEN)*sizeof(refs));
 		return(SMB_ERR_SEEK);
@@ -95,9 +81,10 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, uint16_t refs)
 /* Allocates space for data, but doesn't search for unused blocks           */
 /* Returns negative on error												*/
 /****************************************************************************/
-long SMBCALL smb_fallocdat(smb_t* smb, ulong length, uint16_t refs)
+off_t smb_fallocdat(smb_t* smb, off_t length, uint16_t refs)
 {
-	ulong	l,blocks,offset;
+	ulong	l,blocks;
+	off_t offset;
 
 	if(smb->sda_fp==NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
@@ -133,13 +120,13 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, uint16_t refs)
 /* Returns non-zero on error												*/
 /* Always unlocks the SMB header (when not hyper-alloc)						*/
 /****************************************************************************/
-int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
+int smb_freemsgdat(smb_t* smb, off_t offset, ulong length, uint16_t refs)
 {
 	BOOL	da_opened=FALSE;
 	int		retval=SMB_SUCCESS;
 	uint16_t	i;
 	long	l,blocks;
-	ulong	sda_offset;
+	off_t	sda_offset;
 	off_t	flen;
 
 	if(smb->status.attr&SMB_HYPERALLOC)	/* do nothing */
@@ -166,7 +153,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 	// Free from the last block first
 	for(l=blocks-1; l >= 0; l--) {
 		sda_offset=((offset/SDT_BLOCK_LEN)+l)*sizeof(i);
-		if(fseek(smb->sda_fp,sda_offset,SEEK_SET)) {
+		if(fseeko(smb->sda_fp,sda_offset,SEEK_SET)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' seeking to %lu (0x%lX) of allocation file", __FUNCTION__
 				,get_errno(),STRERROR(get_errno())
@@ -188,7 +175,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 
 		// Completely free? and at end of SDA? Just truncate record from end of file
 		if(i == 0 && ftell(smb->sda_fp) == flen) {
-			if(chsize(fileno(smb->sda_fp), sda_offset) == 0) {
+			if(chsize(fileno(smb->sda_fp), (long)sda_offset) == 0) {
 				flen = sda_offset;
 				continue;
 			}
@@ -211,7 +198,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 	}
 	fflush(smb->sda_fp);
 	if(filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN > (long)(filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)))
-		chsize(fileno(smb->sdt_fp), (filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)) * SDT_BLOCK_LEN);
+		chsize(fileno(smb->sdt_fp), (long)(filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)) * SDT_BLOCK_LEN);
 	if(da_opened)
 		smb_close_da(smb);
 	smb_unlocksmbhdr(smb);
@@ -223,7 +210,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 /* SMB header should be locked before calling this function					*/
 /* Returns non-zero on error												*/
 /****************************************************************************/
-int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
+int smb_incdat(smb_t* smb, off_t offset, ulong length, uint16_t refs)
 {
 	uint16_t	i;
 	ulong	l,blocks;
@@ -235,7 +222,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 	clearerr(smb->sda_fp);
 	blocks=smb_datblocks(length);
 	for(l=0;l<blocks;l++) {
-		if(fseek(smb->sda_fp,((offset/SDT_BLOCK_LEN)+l)*sizeof(i),SEEK_SET)) {
+		if(fseeko(smb->sda_fp,((offset/SDT_BLOCK_LEN)+l)*sizeof(i),SEEK_SET)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %ld", __FUNCTION__
 				,((offset/SDT_BLOCK_LEN)+l)*sizeof(i));
 			return(SMB_ERR_SEEK);
@@ -267,7 +254,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 /* The opposite function of smb_freemsg()									*/
 /* Always unlocks the SMB header (when not hyper-alloc)						*/
 /****************************************************************************/
-int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
+int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i=SMB_SUCCESS;
 	BOOL	da_opened=FALSE;
@@ -302,7 +289,7 @@ int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 /* De-allocates blocks for header record									*/
 /* Returns non-zero on error												*/
 /****************************************************************************/
-int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
+int smb_freemsghdr(smb_t* smb, off_t offset, ulong length)
 {
 	uchar	c=0;
 	long	l,blocks;
@@ -319,13 +306,13 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 
 	sha_offset = offset/SHD_BLOCK_LEN;
 	if(filelength(fileno(smb->sha_fp)) <= (sha_offset + blocks)) {
-		if(chsize(fileno(smb->sha_fp), sha_offset) == 0) {
-			chsize(fileno(smb->shd_fp), smb->status.header_offset + offset);
+		if(chsize(fileno(smb->sha_fp), (long)sha_offset) == 0) {
+			chsize(fileno(smb->shd_fp), (long)(smb->status.header_offset + offset));
 			return SMB_SUCCESS;
 		}
 	}
 
-	if(fseek(smb->sha_fp, sha_offset, SEEK_SET)) {
+	if(fseeko(smb->sha_fp, sha_offset, SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %ld", __FUNCTION__, (long)sha_offset);
 		return(SMB_ERR_SEEK);
 	}
@@ -340,7 +327,7 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 
 /****************************************************************************/
 /****************************************************************************/
-int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
+int smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i;
 	uint16_t	x;
@@ -356,7 +343,7 @@ int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 /****************************************************************************/
 /* Frees all allocated header and data blocks (1 reference) for 'msg'       */
 /****************************************************************************/
-int SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg)
+int smb_freemsg(smb_t* smb, smbmsg_t* msg)
 {
 	int 	i;
 
@@ -382,7 +369,7 @@ int SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg)
 /* smb_close_ha() should be called after									*/
 /* Returns negative value on error 											*/
 /****************************************************************************/
-long SMBCALL smb_allochdr(smb_t* smb, ulong length)
+off_t smb_allochdr(smb_t* smb, ulong length)
 {
 	uchar	c;
 	ulong	i,l,blocks,offset=0;
@@ -425,7 +412,7 @@ long SMBCALL smb_allochdr(smb_t* smb, ulong length)
 /* Allocates space for header, but doesn't search for unused blocks          */
 /* Returns negative value on error 											*/
 /****************************************************************************/
-long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
+off_t smb_fallochdr(smb_t* smb, ulong length)
 {
 	uchar	c=1;
 	ulong	l,blocks,offset;
@@ -457,7 +444,7 @@ long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
 /* this function should be most likely not be called from anywhere but	*/
 /* smb_addmsghdr()														*/
 /************************************************************************/
-long SMBCALL smb_hallochdr(smb_t* smb)
+off_t smb_hallochdr(smb_t* smb)
 {
 	ulong offset;
 
@@ -488,9 +475,9 @@ long SMBCALL smb_hallochdr(smb_t* smb)
 /* unlocked until all data fields for this message have been written	*/
 /* to the SDT file														*/
 /************************************************************************/
-long SMBCALL smb_hallocdat(smb_t* smb)
+off_t smb_hallocdat(smb_t* smb)
 {
-	long offset;
+	off_t offset;
 
 	if(smb->sdt_fp==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -518,5 +505,5 @@ long SMBCALL smb_hallocdat(smb_t* smb)
 	/* Make sure even block boundry */
 	offset+=PAD_LENGTH_FOR_ALIGNMENT(offset,SDT_BLOCK_LEN);
 
-	return(offset);
+	return (long)offset;
 }

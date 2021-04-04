@@ -65,7 +65,8 @@
 #include "xpprintf.h"
 #include "ssl.h"
 #include "fastcgi.h"
-#include "ver.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
@@ -212,8 +213,8 @@ typedef struct  {
 	BOOL		finished;				/* Done processing request. */
 	BOOL		read_chunked;
 	BOOL		write_chunked;
-	long		range_start;
-	long		range_end;
+	off_t		range_start;
+	off_t		range_end;
 	BOOL		accept_ranges;
 	time_t		if_range;
 	BOOL		path_info_index;
@@ -1430,13 +1431,13 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	return (ret);
 }
 
-static off_t sock_sendfile(http_session_t *session,char *path,unsigned long start, unsigned long end)
+static off_t sock_sendfile(http_session_t *session,char *path, off_t start, off_t end)
 {
 	int		file;
 	off_t	ret=0;
 	ssize_t	i;
 	char	buf[OUTBUF_LEN];		/* Input buffer */
-	unsigned long		remain;
+	uint64_t remain;
 
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG,"%04d Sending %s",session->socket,path);
@@ -1454,7 +1455,7 @@ static off_t sock_sendfile(http_session_t *session,char *path,unsigned long star
 		else {
 			remain=-1L;
 		}
-		while((i=read(file, buf, remain>sizeof(buf)?sizeof(buf):remain))>0) {
+		while((i=read(file, buf, (size_t)(remain>sizeof(buf)?sizeof(buf):remain)))>0) {
 			if(writebuf(session,buf,i)!=i) {
 				lprintf(LOG_WARNING,"%04d !ERROR sending %s",session->socket,path);
 				close(file);
@@ -1737,7 +1738,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_digest(&ctx, ":", 1);
 	MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
 	MD5_close(&ctx, digest);
-	MD5_hex((BYTE*)ha1, digest);
+	MD5_hex(ha1, digest);
 
 	/* H(A1)l */
 	pass=strdup(thisuser.pass);
@@ -1749,7 +1750,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_digest(&ctx, ":", 1);
 	MD5_digest(&ctx, pass, strlen(pass));
 	MD5_close(&ctx, digest);
-	MD5_hex((BYTE*)ha1l, digest);
+	MD5_hex(ha1l, digest);
 
 	/* H(A1)u */
 	strupr(pass);
@@ -1760,7 +1761,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_digest(&ctx, ":", 1);
 	MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
 	MD5_close(&ctx, digest);
-	MD5_hex((BYTE*)ha1u, digest);
+	MD5_hex(ha1u, digest);
 	free(pass);
 
 	/* H(A2) */
@@ -1775,7 +1776,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 		return(FALSE);
 	}
 	MD5_close(&ctx, digest);
-	MD5_hex((BYTE*)ha2, digest);
+	MD5_hex(ha2, digest);
 
 	/* Check password as in user.dat */
 	calculate_digest(session, ha1, ha2, digest);
@@ -3624,7 +3625,7 @@ static BOOL check_request(http_session_t * session)
 						for(sp=spath, nsp=find_first_slash(sp+1); nsp; nsp=find_first_slash(sp+1)) {
 							*nsp=0;
 							nsp++;
-							if(wildmatch(sp, pspec, TRUE)) {
+							if(wildmatch(sp, pspec, TRUE, /* case_sensitive: */TRUE)) {
 								read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
 							}
 							sp=nsp;
@@ -3632,7 +3633,7 @@ static BOOL check_request(http_session_t * session)
 						free(spath);
 						free(pspec);
 					}
-					else if(wildmatch(filename,spec,TRUE)) {
+					else if(wildmatch(filename,spec,TRUE, /* case_sensitive: */TRUE)) {
 						read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
 					}
 					free(spec);
@@ -6702,7 +6703,7 @@ const char* DLLCALL web_ver(void)
 #else
 		,""
 #endif
-		,git_branch, git_hash
+		,GIT_BRANCH, GIT_HASH
 		,__DATE__, __TIME__, compiler);
 
 	return(ver);
@@ -6922,7 +6923,7 @@ void DLLCALL web_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 
 		if(!winsock_startup()) {
 			cleanup(1);

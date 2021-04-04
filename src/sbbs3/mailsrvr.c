@@ -45,7 +45,8 @@
 #include "multisock.h"
 #include "ssl.h"
 #include "cryptlib.h"
-#include "ver.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 /* Constants */
 static const char*	server_name="Synchronet Mail Server";
@@ -1296,7 +1297,7 @@ static void pop3_thread(void* arg)
 			strlwr(user.pass);	/* this is case-sensitive, so convert to lowercase */
 			strcat(challenge,user.pass);
 			MD5_calc(digest,challenge,strlen(challenge));
-			MD5_hex((BYTE*)str,digest);
+			MD5_hex(str,digest);
 			if(strcmp(str,response)) {
 				lprintf(LOG_NOTICE,"%04d %s [%s] !FAILED APOP authentication: %s"
 					,socket, client.protocol, host_ip, username);
@@ -2837,7 +2838,7 @@ static void smtp_thread(void* arg)
 	ulong		lines=0;
 	ulong		hdr_lines=0;
 	ulong		hdr_len=0;
-	ulong		length;
+	off_t		length;
 	ulong		badcmds=0;
 	ulong		login_attempts;
 	ulong		waiting;
@@ -3252,14 +3253,14 @@ static void smtp_thread(void* arg)
 					else
 						safe_snprintf(str,sizeof(str),"%s%s%s",head,sender_addr,tail);
 
-					if((telegram_buf=(char*)malloc(length+strlen(str)+1))==NULL) {
+					if((telegram_buf=(char*)malloc((size_t)(length+strlen(str)+1)))==NULL) {
 						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %lu bytes of memory for telegram from %s"
 							,socket, client.protocol, client_id, length+strlen(str)+1,sender_addr);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						continue; 
 					}
 					strcpy(telegram_buf,str);	/* can't use SAFECOPY here */
-					if(fread(telegram_buf+strlen(str),1,length,msgtxt)!=length) {
+					if(fread(telegram_buf+strlen(str),1,(size_t)length,msgtxt)!=length) {
 						lprintf(LOG_ERR,"%04d %s %s !ERROR reading %lu bytes from telegram file"
 							,socket, client.protocol, client_id, length);
 						sockprintf(socket,client.protocol,session, insuf_stor);
@@ -3689,14 +3690,14 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 
-				if((msgbuf=(char*)malloc(length+1))==NULL) {
+				if((msgbuf=(char*)malloc((size_t)(length+1)))==NULL) {
 					lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %lu bytes of memory"
 						,socket, client.protocol, client_id, length+1);
 					sockprintf(socket,client.protocol,session, insuf_stor);
 					subnum=INVALID_SUB;
 					continue;
 				}
-				fread(msgbuf,length,1,msgtxt);
+				fread(msgbuf,(size_t)length,1,msgtxt);
 				msgbuf[length]=0;	/* ASCIIZ */
 
 				/* Do external JavaScript processing here? */
@@ -3757,7 +3758,7 @@ static void smtp_thread(void* arg)
 						for(i=0;hashes[i];i++)
 							lprintf(LOG_DEBUG,"%04d %s %s Message %s crc32=%x flags=%x length=%u"
 								,socket, client.protocol, client_id, smb_hashsourcetype(hashes[i]->source)
-								,hashes[i]->crc32, hashes[i]->flags, hashes[i]->length);
+								,hashes[i]->data.crc32, hashes[i]->flags, hashes[i]->length);
 
 						lprintf(LOG_DEBUG, "%04d %s %s Searching SPAM database for a match", socket, client.protocol, client_id);
 						if((i=smb_findhash(&spam, hashes, &found, sources, /* Mark: */TRUE))==SMB_SUCCESS) {
@@ -4270,7 +4271,7 @@ static void smtp_thread(void* arg)
 				md5_data[i]=secret[i]^0x5c;	/* opad */
 			memcpy(md5_data+i,digest,sizeof(digest));
 			MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
-			MD5_hex((BYTE*)str,digest);
+			MD5_hex(str,digest);
 			if(strcmp(p,str)) {
 				lprintf(LOG_WARNING,"%04d SMTP %s !%s FAILED CRAM-MD5 authentication"
 					,socket, client_id, relay_user.alias);
@@ -5721,8 +5722,7 @@ static void sendmail_thread(void* arg)
 								md5_data[i]=secret[i]^0x5c;	/* opad */
 							memcpy(md5_data+i,digest,sizeof(digest));
 							MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
-							
-							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex((BYTE*)str,digest));
+							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex(str,digest));
 							b64_encode(p=resp,sizeof(resp),buf,strlen(buf));
 							break;
 						default:
@@ -5956,7 +5956,7 @@ const char* DLLCALL mail_ver(void)
 #else
 		,""
 #endif
-		,git_branch, git_hash
+		,GIT_BRANCH, GIT_HASH
 		,__DATE__, __TIME__, compiler
 		);
 
@@ -6061,7 +6061,7 @@ void DLLCALL mail_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 
 		sbbs_srand();
 

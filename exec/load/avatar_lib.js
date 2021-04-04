@@ -195,6 +195,8 @@ function read_netuser(username, netaddr)
 function read(usernum, username, netaddr, bbsid)
 {
 	var usernum = parseInt(usernum, 10);
+	if(!usernum && !username)
+		return false;
 	var obj = cache_get(usernum >= 1 ? usernum : username, netaddr);
 	if(obj !== undefined)	// null and false are also valid cached avatar values
 		return obj;

@@ -1,7 +1,5 @@
 /* Synchronet message base (SMB) high-level "add message" function */
 
-/* $Id: smbadd.c,v 1.46 2020/04/12 06:09:33 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -39,22 +25,23 @@
 #include "genwrap.h"
 #include "crc32.h"
 #include "lzh.h"
+#include "datewrap.h"
 
 /****************************************************************************/
 /****************************************************************************/
-int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
+int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 					   ,uint16_t xlat, const uchar* body, const uchar* tail)
 {
 	uchar*		lzhbuf=NULL;
 	long		lzhlen;
 	int			retval;
 	size_t		n;
-	size_t		l;
+	off_t		l;
 	off_t		length;
 	size_t		taillen=0;
 	size_t		bodylen=0;
 	size_t		chklen=0;
-	long		offset;
+	off_t		offset;
 	uint32_t	crc=0xffffffff;
 	hash_t		found;
 	hash_t**	hashes=NULL;	/* This is a NULL-terminated list of hashes */
@@ -83,7 +70,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			break;
 
 		msg->hdr.number=smb->status.last_msg+1;
-		if(!(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))) {
+		if(!(smb->status.attr&(SMB_EMAIL | SMB_NOHASH | SMB_FILE_DIRECTORY))) {
 
 			hashes=smb_msghashes(msg,body,SMB_HASH_SOURCE_DUPE);
 
@@ -111,7 +98,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 
 			/* Calculate CRC-32 of message text (before encoding, if any) */
 			if(smb->status.max_crcs && dupechk_hashes&(1<<SMB_HASH_SOURCE_BODY)) {
-				for(l=0;l<chklen;l++)
+				for(l=0;l<(off_t)chklen;l++)
 					crc=ucrc32(body[l],crc); 
 				crc=~crc;
 
@@ -164,12 +151,16 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			}
 
 			if(offset<0) {
-				retval=offset;
+				retval=(int)offset;
 				break;
 			}
-			msg->hdr.offset=offset;
+			msg->hdr.offset=(uint32_t)offset;
 
-			smb_fseek(smb->sdt_fp,offset,SEEK_SET);
+			if(smb_fseek(smb->sdt_fp,offset,SEEK_SET) != 0) {
+				sprintf(smb->last_error, "%s seek error %d", __FUNCTION__, errno);
+				retval=SMB_ERR_SEEK;
+				break;
+			}
 
 			if(bodylen) {
 				if((retval=smb_dfield(msg,TEXT_BODY,bodylen))!=SMB_SUCCESS)
@@ -298,10 +289,10 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			}
 		}
 
-		if(!(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))
+		if(!(smb->status.attr&(SMB_EMAIL | SMB_NOHASH | SMB_FILE_DIRECTORY))
 			&& smb_addhashes(smb,hashes,/* skip_marked? */FALSE)==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
-		if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
+		if(msg->hdr.type == SMB_MSG_TYPE_NORMAL && msg->to == NULL)	/* no recipient, don't add header (required for bulkmail) */
 			break;
 
 		retval=smb_addmsghdr(smb,msg,storage); /* calls smb_unlocksmbhdr() */
@@ -320,7 +311,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 	return(retval);
 }
 
-int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
+int smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 {
 	int			retval;
 
@@ -358,7 +349,7 @@ int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 	return retval;
 }
 
-int SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage)
+int smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage)
 {
 	int			retval;
 
@@ -398,7 +389,7 @@ int SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage)
 	return retval;
 }
 
-int SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
+int smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
 {
 	smbmsg_t	remsg;
 	int			retval;

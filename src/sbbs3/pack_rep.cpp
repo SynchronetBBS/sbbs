@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "qwk.h"
+#include "filedat.h"
 
 /****************************************************************************/
 /* Creates an REP packet for upload to QWK hub 'hubnum'.                    */
@@ -32,6 +33,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	char 		tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
 	char		hubid_upper[LEN_QWKID+1];
 	char		hubid_lower[LEN_QWKID+1];
+	char		error[256];
 	int 		mode;
 	const char* fmode;
 	uint		i,j,k;
@@ -61,7 +63,21 @@ bool sbbs_t::pack_rep(uint hubnum)
 	SAFEPRINTF2(str,"%s%s.REP",cfg.data_dir,hubid_upper);
 	if(fexistcase(str)) {
 		lprintf(LOG_INFO,"Updating %s", str);
-		external(cmdstr(cfg.qhub[hubnum]->unpack,str,ALLFILES,NULL),EX_OFFLINE);
+		long file_count = extract_files_from_archive(str
+			,/* outdir: */cfg.temp_dir
+			,/* allowed_filename_chars: */NULL /* any */
+			,/* with_path: */false
+			,/* max_files: */0 /* unlimited */
+			,/* file_list: */NULL /* all files */
+			,error, sizeof(error));
+		if(file_count > 0) {
+			lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, str);
+		} else {
+			if(*error)
+				lprintf(LOG_NOTICE, "libarchive error (%s) extracting %s", error, str);
+			if(*cfg.qhub[hubnum]->unpack)
+				external(cmdstr(cfg.qhub[hubnum]->unpack,str,ALLFILES,NULL),EX_OFFLINE);
+		}
 	} else
 		lprintf(LOG_INFO,"Creating %s", str);
 	/*************************************************/
@@ -268,14 +284,23 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/*******************/
 	SAFEPRINTF2(str,"%s%s.REP",cfg.data_dir,hubid_upper);
 	SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
-	i=external(cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL)
-		,EX_OFFLINE|EX_WILDCARD);
-	if(!fexistcase(str)) {
-		lprintf(LOG_WARNING,"%s",remove_ctrl_a(text[QWKCompressionFailed],tmp));
+	if(strListFind((str_list_t)supported_archive_formats, cfg.qhub[hubnum]->fmt, /* case_sensitive */FALSE) >= 0) {
+		str_list_t file_list = directory(tmp2);
+		long file_count = create_archive(str, cfg.qhub[hubnum]->fmt, /* with_path: */false, file_list, error, sizeof(error));
+		strListFree(&file_list);
+		if(file_count < 0)
+			lprintf(LOG_ERR, "libarchive error %ld (%s) creating %s", file_count, error, str);
+		else
+			lprintf(LOG_INFO, "libarchive created %s from %ld files", str, file_count);
+	} else {
+		i=external(cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL)
+			,EX_OFFLINE|EX_WILDCARD);
 		if(i)
 			errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL),i);
-		else
-			lprintf(LOG_ERR, "Couldn't compress REP packet");
+	}
+	if(!fexistcase(str)) {
+		lprintf(LOG_WARNING,"%s",remove_ctrl_a(text[QWKCompressionFailed],tmp));
+		lprintf(LOG_ERR, "Couldn't compress REP packet");
 		return(false); 
 	}
 	SAFEPRINTF2(str,"%sqnet/%s.out/",cfg.data_dir,hubid_lower);

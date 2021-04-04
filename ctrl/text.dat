@@ -96,7 +96,7 @@
 	" %4u\b\b\b\b\1h%s \1n\1c(\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n\1~"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
 "\1?Delete message #%u '%s'"                          073 DeletePostQ
-"\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
+"\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address     "\     074 UserDefaultsAutoLogon
 	"\1n\1b: \1c%s\r\n"	 
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
 "\1_\r\n\1y\1hText to search for: "                      076 SearchStringPrompt
@@ -201,8 +201,8 @@
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
 "\r\n\r\nYou can't download.\r\n"                       165 R_Download
-"\r\n\1w\1hSearching all directories @ELLIPSIS@\r\n"      166 SearchingAllDirs
-"\1w\1hSearching all libraries @ELLIPSIS@\r\n"            167 SearchingAllLibs
+"\r\n\1w\1hSearching current library @ELLIPSIS@\r\n\1q"   166 SearchingAllDirs
+"\1w\1hSearching all libraries @ELLIPSIS@\r\n\1q"         167 SearchingAllLibs
 "\r\n\1w\1h%u Files Listed.\r\n"                          168 NFilesListed
 "\r\n\1w\1hEmpty directory.\r\n"                          169 EmptyDir
 "\r\n\1n\1cSearching for files "\                         170 NScanHdr
@@ -278,7 +278,7 @@
 "\r\n\7\1r\1h\1iBatch upload queue is full.\1n\r\n"         229 BatchUlQueueIsFull
 "\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\         230 FileAddedToUlQueue
 	"\1c - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you a file.\r\n"       231 UserToUserXferNodeMsg
+"Unused 231"                                               231 UserToUserXferNodeMsg
 "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
@@ -312,14 +312,14 @@
 "\1_\1y\1hCredit value     : \1n"                           257 EditCreditValue
 "\1_\1y\1hTimes downloaded : \1n"                           258 EditTimesDownloaded
 "\1_\1y\1hOpen count       : \1n"                           259 EditOpenCount
-"\1_\1y\1hAlternate Path   : \1n"                           260 EditAltPath
+"UNUSED260"                                                 260 Unused260
 "\r\n\1w\1hYou only have %s credits.\r\n"                 261 YouOnlyHaveNCredits
 "\r\nYou don't have enough credits.\r\n"                262 NotEnoughCredits
 "\r\n\1w\1hNot enough time left to transfer.\r\n"         263 NotEnoughTimeToDl
 "\r\nProtocol, ~Batch, ~Quit, or [~Next]: "             264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory\r\n"\                  265 BulkUpload
 	"(Enter '-' for description to skip file):\r\n"
-"\1_\1y\1h%s\1w%7uk\1b:"                                     266 BulkUploadDescPrompt
+"\1_\1y\1h%-12s\1w%7uk\1b:"                             266 BulkUploadDescPrompt
 "\r\n\1r\1h\1iNo files in batch queue.\1n"\                 267 NoFilesInBatchQueue
 	"\r\n\r\n\1mUse \1hD\1n\1m or \1hU\1n\1m to add files to the queue.\r\n"
 "\1_\r\n\1y\1hBatch: \1n"                                   268 BatchMenuPrompt
@@ -356,16 +356,14 @@
 "\r\nUploader: %s\r\nFilename: %s\r\n"                  294 TempFileInfo
 "\r\n%s bytes in %u files\r\n"                          295 TempDirTotal
 "\r\n%u files removed.\r\n"                             296 NFilesRemoved
-"\1r\1h\1iAll other nodes should NOT be in use "\          297 ResortWarning
-	"during resort/compression.\1n\r\n"
-"\1-\1c%-15.15s \1y\1h%-25.25s "                            298 ResortLineFmt
-"\1bEmpty\1n\r\n"                                         299 ResortEmptyDir
-"\1wSorting @ELLIPSIS@"                                   300 Sorting
-"\b\b\b\b\b\b\b\b\b\b\1bSorted    \1n\r\n"                301 Sorted
-"\b\b\b\b\b\b\b\b\b\b\1bCompressed %u slots "\           302 Compressed
-	"(%s bytes)\1n\r\n"
-"\1w\1h\r\n%s is already in the queue.\r\n"               303 FileAlreadyInQueue
-"\1w\1h\1/File is not online.\r\n"                       304 FileIsNotOnline
+"Tag this file"                                         297 TagFileQ
+"\1h\1yEnter (space-separated) Tags: "                  298 TagFilePrompt
+"UNUSED299"                                             299 Unused299
+"UNUSED300"                                             300 Unused300
+"UNUSED301"                                             301 Unused301
+"UNUSED302"                                             302 Unused302
+"\1w\1h\r\n%s is already in the queue.\r\n"             303 FileAlreadyInQueue
+"\1w\1h\1/File is not online.\r\n"                      304 FileIsNotOnline
 "\1n\r\n\1m\1h%s \1n\1madded to batch download queue -\r\n"\ 305 FileAddedToBatDlQueue
 	"\1cFiles: \1h%u\1n\1c (\1h%u\1n\1c Max)  Credits: \1h%s\1n\1c"\
 	"  Bytes: \1h%s\1n\1c  Time: \1h%s\r\n"
@@ -379,7 +377,7 @@
 "\1_\1h\1w%s was %sdownloaded by %s\r\n"\                  312 DownloadUserMsg
 	"\1n\1gYou were awarded %s credits.\r\n"
 "partially "                                            313 Partially
-"\r\n\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
+"\1l\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
 "\r\n\1n\1gDirectory        :\1h (%u) %s"                  315 FiDir
 "\r\n\1n\1gFilename         :\1h %s"                       316 FiFilename
 "\r\n\1n\1gFile size        :\1h %s (%s) bytes"            317 FiFileSize
@@ -391,9 +389,9 @@
 "\r\n\1n\1gLast downloaded  :\1h %s"                       323 FiDateDled
 "\r\n\1n\1gTimes downloaded :\1h %u"                       324 FiTimesDled
 "\r\n\1n\1gTime to download :\1h %s"                       325 FiTransferTime
-"\r\n\1n\1gAlternate Path   :\1h %s"                       326 FiAlternatePath
-"\r\n\1r\1h\1iInvalid Alternate Path Number: %u\1n"         327 InvalidAlternatePathN
-"\1_\1/\1w\1hFile is currently open by %d user%s.\r\n"    328 FileIsOpen
+"\r\n\1n\1gTags             :\1h %s"                       326 FiTags
+"UNUSED327"                                                327 Unused327
+"\r\n\1n\1gFile %-6.6s      :\1h %s"                       328 FiChecksum
 "\7\7\r\n\1h\1rH\1ba\1gp\1yp\1cy \1mB\1wi\1rr\1gt\1bh\1cd\1ma\1yy "\  329 HappyBirthday
 	"\1wt\1ro \1gy\1bo\1cu\r\n\7\7\1mH\1ya\1wp\1rp\1gy "\
 	"\1bB\1ci\1mr\1yt\1wh\1rd\1ga\1by \1ct\1mo \1yy\1wo\1ru\1g.\1b.\1c.\r\n\r\n"
@@ -430,10 +428,8 @@
 	"same time.\1n\r\n"
 "\7\1r\1h\1i%d critical errors have occurred. "\           359 CriticalErrors
 	"Type ;ERR at main menu.\1n\r\n"
-"\1_\1w\1hYou have %d User to User Transfer%s "\           360 UserXferForYou
-	"waiting for you\r\n"
-"\1_\1w\1hYou have sent %d unreceived User to "\           361 UnreceivedUserXfer
-	"User Transfer%s\r\n"
+"Unused360"                                                360 UserXferForYou
+"Unused361"                                                361 UnreceivedUserXfer
 "Read your mail now"                                    362 ReadYourMailNowQ
 "Sorry, the system is closed to new users.\r\n"         363 NoNewUsers
 "New User Password: "                                   364 NewUserPasswordPrompt
@@ -737,7 +733,7 @@
 "\r\n%u credits have been added to your account.\r\n"  592 CreditedAccount
 "\r\nANSI Capture is now %s\r\n"                        593 ANSICaptureIsNow
 "\1n\1m\r\nRetrieving \1h%s\1n\1m..."                        594 RetrievingFile
-"\1n\r\nAlternate upload path now: %s\r\n"               595 AltULPathIsNow
+"UNUSED595"                                             595 Unused595
 "\r\nPrivate"                                           596 PrivatePostQ
 "\r\n\1_\1y\1hPost to: "                                   597 PostTo
 "\r\nPrivate posts require a destination user "\        598 NoToUser

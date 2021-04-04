@@ -50,10 +50,12 @@
 #include "nopen.h"
 #include "crc32.h"
 #include "userdat.h"
+#include "filedat.h"
 #include "msg_id.h"
 #include "scfgsave.h"
 #include "getmail.h"
-#include "ver.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 #define MAX_OPEN_SMBS	10
 
@@ -117,7 +119,7 @@ const char* sbbsecho_pid(void)
 	static char str[256];
 
 	sprintf(str, "SBBSecho %u.%02u-%s %s/%s %s %s"
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,git_branch,git_hash,__DATE__,compiler);
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,GIT_BRANCH,GIT_HASH,__DATE__,compiler);
 
 	return str;
 }
@@ -206,7 +208,7 @@ int fwrite_via_control_line(FILE* fp, fidoaddr_t* addr)
 		,tm->tm_hour
 		,tm->tm_min
 		,tm->tm_sec
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,git_branch,git_hash);
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,GIT_BRANCH,GIT_HASH);
 }
 
 int fwrite_intl_control_line(FILE* fp, fmsghdr_t* hdr)
@@ -553,121 +555,6 @@ bool delfile(const char *filename, int line)
 		return false;
 	}
 	return true;
-}
-
-/*****************************************************************************/
-/* Returns command line generated from instr with %c replacments             */
-/*****************************************************************************/
-char *mycmdstr(scfg_t* cfg, const char *instr, const char *fpath, const char *fspec)
-{
-    static char cmd[MAX_PATH+1];
-    char str[256],str2[128];
-    int i,j,len;
-
-	len=strlen(instr);
-	for(i=j=0;i<len && j<128;i++) {
-		if(instr[i]=='%') {
-			i++;
-			cmd[j]=0;
-			switch(toupper(instr[i])) {
-				case 'F':   /* File path */
-					SAFECAT(cmd,fpath);
-					break;
-				case 'G':   /* Temp directory */
-					if(cfg->temp_dir[0]!='\\'
-						&& cfg->temp_dir[0]!='/'
-						&& cfg->temp_dir[1]!=':') {
-						SAFECOPY(str,cfg->node_dir);
-						SAFECAT(str,cfg->temp_dir);
-						if(FULLPATH(str2,str,40))
-							strcpy(str,str2);
-						backslash(str);
-						SAFECAT(cmd,str);}
-					else
-						SAFECAT(cmd,cfg->temp_dir);
-					break;
-				case 'J':
-					if(cfg->data_dir[0]!='\\'
-						&& cfg->data_dir[0]!='/'
-						&& cfg->data_dir[1]!=':') {
-						SAFECOPY(str,cfg->node_dir);
-						SAFECAT(str,cfg->data_dir);
-						if(FULLPATH(str2,str,40))
-							SAFECOPY(str,str2);
-						backslash(str);
-						SAFECAT(cmd,str);
-					}
-					else
-						SAFECAT(cmd,cfg->data_dir);
-					break;
-				case 'K':
-					if(cfg->ctrl_dir[0]!='\\'
-						&& cfg->ctrl_dir[0]!='/'
-						&& cfg->ctrl_dir[1]!=':') {
-						SAFECOPY(str,cfg->node_dir);
-						SAFECAT(str,cfg->ctrl_dir);
-						if(FULLPATH(str2,str,40))
-							SAFECOPY(str,str2);
-						backslash(str);
-						SAFECAT(cmd,str);
-					}
-					else
-						SAFECAT(cmd,cfg->ctrl_dir);
-					break;
-				case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-					SAFECAT(cmd,cfg->node_dir);
-					break;
-				case 'O':   /* SysOp */
-					SAFECAT(cmd,cfg->sys_op);
-					break;
-				case 'Q':   /* QWK ID */
-					SAFECAT(cmd,cfg->sys_id);
-					break;
-				case 'S':   /* File Spec */
-					SAFECAT(cmd,fspec);
-					break;
-				case '!':   /* EXEC Directory */
-					SAFECAT(cmd,cfg->exec_dir);
-					break;
-                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
-#ifndef __unix__
-                    SAFECAT(cmd,cfg->exec_dir);
-#endif
-                    break;
-				case '#':   /* Node number (same as SBBSNNUM environment var) */
-					sprintf(str,"%d",cfg->node_num);
-					SAFECAT(cmd,str);
-					break;
-				case '*':
-					sprintf(str,"%03d",cfg->node_num);
-					SAFECAT(cmd,str);
-					break;
-				case '%':   /* %% for percent sign */
-					SAFECAT(cmd,"%");
-					break;
-				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
-#ifndef __unix__
-					SAFECAT(cmd,".exe");
-#endif
-					break;
-				case '?':	/* Platform */
-					SAFECOPY(str,PLATFORM_DESC);
-					strlwr(str);
-					SAFECAT(cmd,str);
-					break;
-				default:    /* unknown specification */
-					lprintf(LOG_ERR,"ERROR Checking Command Line '%s'",instr);
-					bail(1);
-					break;
-			}
-			j=strlen(cmd);
-		}
-		else
-			cmd[j++]=instr[i];
-}
-	cmd[j]=0;
-
-	return(cmd);
 }
 
 /****************************************************************************/
@@ -2373,9 +2260,21 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 int unpack(const char *infile, const char* outdir)
 {
 	FILE *stream;
-	char str[256],tmp[128];
+	char str[256],tmp[512];
+	char error[256];
 	int ch,file;
 	unsigned u,j;
+	long file_count;
+
+	file_count = extract_files_from_archive(infile, outdir
+		,/* allowed_filename_chars: */SAFEST_FILENAME_CHARS, /* with_path */false
+		,/* max_files: */0, /* file_list = ALL */NULL, error, sizeof(error));
+	if(file_count > 0) {
+		lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, infile);
+		return 0;
+	}
+	if(*error)
+		lprintf(LOG_NOTICE, "libarchive error (%s) extracting %s", error, infile);
 
 	if((stream=fnopen(&file,infile,O_RDONLY))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) opening archive: %s",errno,strerror(errno),infile);
@@ -2405,7 +2304,7 @@ int unpack(const char *infile, const char* outdir)
 		return(1);
 	}
 
-	return execute(mycmdstr(&scfg,cfg.arcdef[u].unpack,infile, outdir));
+	return execute(cmdstr(&scfg, /* user: */NULL, cfg.arcdef[u].unpack,infile, outdir, tmp, sizeof(tmp)));
 }
 
 /******************************************************************************
@@ -2417,6 +2316,7 @@ int pack(const char *srcfile, const char *destfile, fidoaddr_t dest)
 {
 	nodecfg_t*	nodecfg;
 	arcdef_t*	archive;
+	char tmp[512];
 
 	if(!cfg.arcdefs) {
 		lprintf(LOG_DEBUG, "ERROR: pack() called with no archive types configured!");
@@ -2429,7 +2329,13 @@ int pack(const char *srcfile, const char *destfile, fidoaddr_t dest)
 
 	lprintf(LOG_DEBUG,"Packing packet (%s) into bundle (%s) for %s using %s"
 		,srcfile, destfile, smb_faddrtoa(&dest, NULL), archive->name);
-	return execute(mycmdstr(&scfg, archive->pack, destfile, srcfile));
+	if(strListFind((str_list_t)supported_archive_formats, archive->name, /* case_sensitive */FALSE) >= 0) {
+		const char* file_list[] = { srcfile, NULL };
+		if(create_archive(destfile, archive->name, /* with_path: */false, (str_list_t)file_list, tmp, sizeof(tmp)) == 1)
+			return 0;
+		lprintf(LOG_ERR, "libarchive error (%s) creating %s", tmp, destfile);
+	}
+	return execute(cmdstr(&scfg, /* user: */NULL, archive->pack, destfile, srcfile, tmp, sizeof(tmp)));
 }
 
 /* Reads a single FTS-1 stored message header from the specified file stream and terminates C-strings */
@@ -2824,7 +2730,8 @@ int mv(const char *insrc, const char *indest, bool copy)
 	char src[MAX_PATH+1];
 	char dest[MAX_PATH+1];
 	int  ind,outd;
-	long length,chunk=4096,l;
+	off_t length;
+	long chunk=4096,l;
     FILE *inp,*outp;
 
 	SAFECOPY(src, insrc);
@@ -2881,7 +2788,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 	int result = 0;
 	while(l<length) {
 		if(l+chunk>length)
-			chunk=length-l;
+			chunk=(long)(length-l);
 		if(fread(buf,1,chunk,inp) != chunk) {
 			result = -2;
 			break;
@@ -2932,7 +2839,7 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
 ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 {
 	int i;
-	long l,total;
+	ulong l,total;
 	idxrec_t idx;
 
 	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) {
@@ -2941,14 +2848,14 @@ ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 	}
 
 	/* total msgs in sub */
-	total=filelength(fileno(smb->sid_fp))/sizeof(idxrec_t);
+	total=(ulong)filelength(fileno(smb->sid_fp))/sizeof(idxrec_t);
 
 	if(!total) {			/* empty */
 		smb_unlocksmbhdr(smb);
 		return(0);
 	}
 
-	if(((*post)=(post_t*)malloc(sizeof(post_t)*total))    /* alloc for max */
+	if(((*post)=(post_t*)malloc((size_t)(sizeof(post_t)*total)))    /* alloc for max */
 		==NULL) {
 		smb_unlocksmbhdr(smb);
 		lprintf(LOG_ERR,"ERROR line %d allocating %lu bytes for %s",__LINE__
@@ -3276,6 +3183,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 {
 	uchar	ch,stail[MAX_TAILLEN+1],*sbody;
 	char	msg_id[256],str[128],*p;
+	char	cmd[512];
 	bool	done,cr;
 	int 	i;
 	ushort	xlat=XLAT_NONE,net;
@@ -3652,7 +3560,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	i=smb_addmsg(smbfile, &msg, smb_storage_mode(&scfg, smbfile), dupechk_hashes, xlat, sbody, stail);
 	if(i == SMB_SUCCESS) {
 		if(subnum != INVALID_SUB && scfg.sub[subnum]->post_sem[0])
-			ftouch(mycmdstr(&scfg, scfg.sub[subnum]->post_sem, "", ""));
+			ftouch(cmdstr(&scfg, /* user: */NULL, scfg.sub[subnum]->post_sem, "", "", cmd, sizeof(cmd)));
 	} else {
 		lprintf(LOG_ERR,"ERROR %d (%s) line %d adding message to %s"
 			,i, smbfile->last_error, __LINE__, subnum==INVALID_SUB ? "mail":scfg.sub[subnum]->code);
@@ -5281,7 +5189,7 @@ int export_netmail(void)
 
 	memset(&msg, 0, sizeof(msg));
 	rewind(email->sid_fp);
-	for(;!feof(email->sid_fp);msg.offset++) {
+	for(;!feof(email->sid_fp);msg.idx_offset++) {
 
 		smb_freemsgmem(&msg);
 		if(fread(&msg.idx, sizeof(msg.idx), 1, email->sid_fp) != 1)
@@ -5360,7 +5268,7 @@ int export_netmail(void)
 			if((i = smb_updatemsg(email, &msg)) != SMB_SUCCESS)
 				lprintf(LOG_ERR,"!ERROR %d (%s) line %d deleting mail msg #%u"
 					,i, email->last_error, __LINE__, msg.hdr.number);
-			(void)fseek(email->sid_fp, (msg.offset+1)*sizeof(msg.idx), SEEK_SET);
+			(void)fseek(email->sid_fp, (msg.idx_offset+1)*sizeof(msg.idx), SEEK_SET);
 		} else {
 			if((i = smb_putmsghdr(email, &msg)) != SMB_SUCCESS)
 				lprintf(LOG_ERR,"!ERROR %d (%s) line %d updating msg header for mail msg #%u"
@@ -5647,7 +5555,7 @@ void find_stray_packets(void)
 	FILE*	fp;
 	size_t	f;
 	glob_t	g;
-	long	flen;
+	off_t	flen;
 	uint16_t	terminator;
 	fidoaddr_t	pkt_orig;
 	fidoaddr_t	pkt_dest;
@@ -5683,7 +5591,7 @@ void find_stray_packets(void)
 			continue;
 		}
 		terminator = ~FIDO_PACKET_TERMINATOR;
-		(void)fseek(fp, flen-sizeof(terminator), SEEK_SET);
+		(void)fseek(fp, (long)(flen-sizeof(terminator)), SEEK_SET);
 		if(fread(&terminator, sizeof(terminator), 1, fp) != 1)
 			lprintf(LOG_WARNING, "Failure reading last byte from %s", packet);
 		fclose(fp);
@@ -6180,7 +6088,7 @@ int main(int argc, char **argv)
 	printf("\nSBBSecho v%u.%02u-%s (%s/%s) - Synchronet FidoNet EchoMail Tosser\n"
 		,SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR
 		,PLATFORM_DESC
-		,git_branch, git_hash
+		,GIT_BRANCH, GIT_HASH
 		);
 
 	cmdline[0]=0;

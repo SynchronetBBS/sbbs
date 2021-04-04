@@ -20,11 +20,12 @@
 #include "scfgdefs.h"
 #include "str_util.h"
 #include "load_cfg.h"
+#include "smblib.h"
 #include "nopen.h"
 #include "crc32.h"
 #include <stdarg.h>
 
-#define DUPEFIND_VER "1.02"
+#define DUPEFIND_VER "3.19"
 
 char* crlf="\r\n";
 
@@ -65,37 +66,38 @@ int lprintf(const char *fmat, ...)
 	return(chcount);
 }
 
-char *display_filename(scfg_t *cfg, ushort dir_num,ushort fil_off)
+char *display_filename(scfg_t *cfg, uint dirnum, uint32_t fil_off)
 {
 	static char str[256];
-	char fname[13];
-	int file;
-
-	sprintf(str,"%s%s.ixb",cfg->dir[dir_num]->data_dir,cfg->dir[dir_num]->code);
-	if((file=nopen(str,O_RDONLY))==-1)
-		return("UNKNOWN");
-	lseek(file,(long)(22*(fil_off-1)),SEEK_SET);
-	read(file,fname,11);
-	close(file);
-
-	sprintf(str,"%-8.8s.%c%c%c",fname,fname[8],fname[9],fname[10]);
-	return(str);
+	static smb_t smb;
+	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+		return smb.last_error;
+	smb_fseek(smb.sid_fp, (fil_off - 1) * sizeof(fileidxrec_t), SEEK_SET);
+	fileidxrec_t idx;
+	if(smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx)) {
+		smb_close(&smb);
+		return smb.last_error;
+	}
+	smb_close(&smb);
+	SAFECOPY(str, idx.name);
+	return str;
 }
 
 int main(int argc,char **argv)
 {
-	char str[256],*ixbbuf,*p;
-	ulong **fcrc,*foundcrc,total_found=0L;
+	char str[256], *p;
+	uint32_t **fcrc,*foundcrc;
+	ulong total_found=0L;
 	ulong g;
-	ushort i,j,k,h,start_lib=0,end_lib=0,found=-1;
-	int file;
-    long l,m;
+	uint i,j,k,h,start_lib=0,end_lib=0,found=-1;
 	scfg_t cfg;
 
 	setvbuf(stdout,NULL,_IONBF,0);
 
-	fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
-		"Finder\n", DUPEFIND_VER, PLATFORM_DESC);
+	char revision[16];
+	sscanf("$Revision: 1.54 $", "%*s %s", revision);
+	fprintf(stderr,"\nDUPEFIND v%s-%s (rev %s) - Synchronet Duplicate File "
+		"Finder\n", DUPEFIND_VER, PLATFORM_DESC, revision);
 
     p = get_ctrl_dir(/* warn: */TRUE);
 
@@ -126,63 +128,58 @@ int main(int argc,char **argv)
 	if(argc>2)
         end_lib=atoi(argv[2])-1;
 
-	if((fcrc=(ulong **)malloc(cfg.total_dirs*sizeof(ulong *)))==NULL) {
+	if((fcrc = malloc(cfg.total_dirs*sizeof(uint32_t *)))==NULL) {
 		printf("Not enough memory for CRCs.\r\n");
 		return(1); 
 	}
+	memset(fcrc, 0, cfg.total_dirs*sizeof(uint32_t *));
 
 	for(i=0;i<cfg.total_dirs;i++) {
-		fprintf(stderr,"Reading directory index %u of %u\r",i+1,cfg.total_dirs);
-        sprintf(str,"%s%s.ixb",cfg.dir[i]->data_dir,cfg.dir[i]->code);
-		if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
-			fcrc[i]=(ulong *)malloc(1*sizeof(ulong));
-            fcrc[i][0]=0;
-			continue; 
+		if(cfg.dir[i]->lib < start_lib || cfg.dir[i]->lib > end_lib)
+			continue;
+		printf("Reading directory %u of %u\r",i+1,cfg.total_dirs);
+		smb_t smb;
+		int result = smb_open_dir(&cfg, &smb, i);
+		if(result != SMB_SUCCESS) {
+			fprintf(stderr, "!ERROR %d (%s) opening %s\n"
+				,result, smb.last_error, smb.file);
+			continue;
 		}
-        l=filelength(file);
-		if(!l || (cfg.dir[i]->lib<start_lib || cfg.dir[i]->lib>end_lib)) {
-            close(file);
-			fcrc[i]=(ulong *)malloc(1*sizeof(ulong));
-			fcrc[i][0]=0;
-            continue; 
+		if(smb.status.total_files < 1) {
+			smb_close(&smb);
+			continue;
 		}
-		if((fcrc[i]=(ulong *)malloc((l/22+2)*sizeof(ulong)))==NULL) {
+		if((fcrc[i] = malloc(smb.status.total_files * sizeof(uint32_t)))==NULL) {
             printf("Not enough memory for CRCs.\r\n");
             return(1); 
 		}
-		fcrc[i][0]=(ulong)(l/22);
-        if((ixbbuf=(char *)malloc(l))==NULL) {
-            close(file);
-            printf("\7Error allocating memory for index %s.\r\n",str);
-            continue; 
+		j=0;
+		fcrc[i][j++] = smb.status.total_files;
+		rewind(smb.sid_fp);
+		while(!feof(smb.sid_fp)) {
+			fileidxrec_t idx;
+			if(smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx))
+				break;
+			char filename[sizeof(idx.name) + 1];
+			SAFECOPY(filename, idx.name);
+			fcrc[i][j++]=crc32(filename, 0);
 		}
-        if(read(file,ixbbuf,l)!=l) {
-            close(file);
-            printf("\7Error reading %s.\r\n",str);
-			free(ixbbuf);
-            continue; 
-		}
-        close(file);
-		j=1;
-		m=0L;
-		while(m<l) {
-			sprintf(str,"%-11.11s",(ixbbuf+m));
-			strupr(str);
-			fcrc[i][j++]=crc32(str,0);
-			m+=22; 
-		}
-		free(ixbbuf); 
+		smb_close(&smb);
 	}
 	lputs("\n");
 
-	foundcrc=0L;
+	foundcrc = NULL;
 	for(i=0;i<cfg.total_dirs;i++) {
 		if(cfg.dir[i]->lib<start_lib || cfg.dir[i]->lib>end_lib)
 			continue;
 		lprintf("Scanning %s %s\n",cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
+		if(fcrc[i] == NULL)
+			continue;
 		for(k=1;k<fcrc[i][0];k++) {
 			for(j=i+1;j<cfg.total_dirs;j++) {
 				if(cfg.dir[j]->lib<start_lib || cfg.dir[j]->lib>end_lib)
+					continue;
+				if(fcrc[j] == NULL)
 					continue;
 				for(h=1;h<fcrc[j][0];h++) {
 					if(fcrc[i][k]==fcrc[j][h]) {
@@ -190,14 +187,14 @@ int main(int argc,char **argv)
 							found=k;
 							for(g=0;g<total_found;g++) {
 								if(foundcrc[g]==fcrc[i][k])
-									g=total_found+1; 
+									break; 
 							}
 							if(g==total_found) {
 								++total_found;
-								if((foundcrc=(ulong *)realloc(foundcrc
-									,total_found*sizeof(ulong)))==NULL) {
-								printf("Out of memory reallocating\r\n");
-								return(1); 
+								if((foundcrc = realloc(foundcrc
+									,total_found*sizeof(uint32_t)))==NULL) {
+									printf("Out of memory reallocating\r\n");
+									return(1); 
 								} 
 							}
 							else

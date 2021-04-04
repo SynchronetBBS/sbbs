@@ -1,4 +1,4 @@
-/* Synchronet command shell/module interpretter */
+/* Synchronet command shell/module interpreter */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -802,7 +802,7 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 
 	memcpy(&bin,csi,sizeof(csi_t));
 	clearvars(&bin);
-	bin.length = filelength(file);
+	bin.length = (long)filelength(file);
 	if(bin.length < 1) {
 		close(file);
 		errormsg(WHERE, ERR_LEN, str, bin.length);
@@ -1157,7 +1157,8 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 
 int sbbs_t::exec(csi_t *csi)
 {
-	char	str[256],*path;
+	char	str[256];
+	const char* path;
 	char 	tmp[512];
 	uchar	buf[1025],ch;
 	int 	i,j,file;
@@ -1227,7 +1228,7 @@ int sbbs_t::exec(csi_t *csi)
 							}
 							else if(text[i][0]==0) {
 								free(text[i]);
-								text[i]=nulstr; 
+								text[i]=(char*)nulstr; 
 							} 
 						}
 						if(i<TOTAL_TEXT) {
