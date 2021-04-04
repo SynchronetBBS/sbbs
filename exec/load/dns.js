@@ -14,27 +14,32 @@
  * dns = new DNS();
  * dns.resolve('example.com', handle);
  *
- * The DNS_blocking does not use events, so callback arguments are optional:
+ * In synchronous mode, DNS does not use events, so callback arguments are optional:
  *
  * load('dns.js');
- * dns = new DNS_blocking();
+ * dns = new DNS(true);
  * log(LOG_ERROR, dns.resolve('example.com').toSource());
  *
  */
 
 require('sockdefs.js', 'SOCK_DGRAM');
 
-function DNS(servers) {
+function DNS(synchronous, servers) {
 	var nextid = 0;
-	var synchronous = false;
 
-	if (this.synchronous === undefined) {
-		Object.defineProperty(this, 'synchronous', {get: function() {
-			 return synchronous;
-		}});
-	}
+	if (synchronous === undefined)
+		synchronous = false;
+
+	Object.defineProperty(this, 'synchronous', {get: function() {
+		 return synchronous;
+	}});
 	this.outstanding = {};
 	this.sockets = [];
+
+	if (this.synchronous)
+		this.query = this.synchronous_query;
+	else
+		this.query = this.asynchronous_query;
 
 	function handle_response() {
 		var resp = this.dnsObject.handle_response(this);
@@ -50,7 +55,8 @@ function DNS(servers) {
 		var sock = new Socket(SOCK_DGRAM, "dns", server.indexOf(':') >= 0);
 		sock.bind();
 		sock.connect(server, 53);
-		sock.cbID = sock.on('read', handle_response);
+		if (!this.synchronous)
+			sock.cbID = sock.on('read', handle_response);
 		sock.dnsObject = this;
 		this.sockets.push(sock);
 	}, this);
@@ -68,21 +74,6 @@ function DNS(servers) {
 		return ret;
 	};
 }
-
-function DNS_blocking(servers) {
-	var synchronous = false;
-
-	Object.defineProperty(this, 'synchronous', {get: function() {
-		 return synchronous;
-	}});
-	DNS.call(this, servers);
-
-	// Disable callbacks
-	this.sockets.forEach(function(sock) {
-		sock.clearOn('read', sock.cbID);
-	});
-}
-DNS_blocking.prototype = Object.create(DNS.prototype);
 
 /*
  * Class properties and methods
@@ -497,7 +488,7 @@ DNS.prototype.handle_response = function(sock) {
 	return {'q':q, 'ret':ret};
 }
 
-DNS.prototype.query = function(queries, /* queryStr, type, class, */callback, thisObj, recursive, timeout, failures, failed) {
+DNS.prototype.asynchronous_query = function(queries, /* queryStr, type, class, */callback, thisObj, recursive, timeout, failures, failed) {
 	var query;
 
 	if (callback === undefined)
@@ -533,7 +524,7 @@ DNS.prototype.query = function(queries, /* queryStr, type, class, */callback, th
 	return undefined;
 };
 
-DNS_blocking.prototype.query = function(queries, callback, thisObj, recursive, timeout, failures, failed) {
+DNS.prototype.synchronous_query = function(queries, callback, thisObj, recursive, timeout, failures, failed) {
 	var query;
 	var ret;
 	var socket_array = [];
@@ -609,7 +600,7 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 	if (host === undefined)
 		throw new Error('No host specified');
 
-	if (this.synchronous && callback === undefined)
+	if (!this.synchronous && callback === undefined)
 		throw new Error('No callback specified');
 	if (thisObj === undefined)
 		thisObj = this;
@@ -711,7 +702,7 @@ DNS.prototype.resolveTypeClass = function(host, type, class, callback, thisObj)
 	if (class === undefined)
 		throw new Error('No class specified');
 
-	if (this.synchronous && callback === undefined)
+	if (!this.synchronous && callback === undefined)
 		throw new Error('No callback specified');
 	ctx.callback = callback;
 
@@ -748,7 +739,7 @@ DNS.prototype.reverse = function(ip, callback, thisObj)
 	if (ip === undefined)
 		throw new Error('No IP specified');
 
-	if (this.synchronous && callback === undefined)
+	if (!this.synchronous && callback === undefined)
 		throw new Error('No callback specified');
 
 	if (thisObj === undefined)
@@ -810,7 +801,7 @@ DNS.prototype.resolveMX = function(host, callback, thisObj)
 	if (host === undefined)
 		throw new Error('No host specified');
 
-	if (this.synchronous && callback === undefined)
+	if (!this.synchronous && callback === undefined)
 		throw new Error('No callback specified');
 
 	if (thisObj === undefined)
