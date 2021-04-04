@@ -115,18 +115,21 @@ whether or not to hash its files or use it for duplicate file detection
 
 _Sorting_
 
-While the old filebases 
-The new filebases are indexed in the order in which the files are imported
-into the database. Sorting of the files for display purposes in the terminal
-and FTP servers is optional and configured by the sysop:
- Name Ascending (case-insensitive)
- Name Descending (case-insensitive)
- Name Ascending (case-sensitive)
- Name Descending (case-sensitive)
- Date Ascending
- Date Descending
+While the old filebase indexes were re-ordered/sorted whenever a new file was
+added, the new filebase indexes are sorted dynamically, when appropriate
+(e.g. when viewed).
 
 As a result, the "RESORT" file transfer operator command has been removed.
+
+The new filebases are naturally indexed in the order in which the files are
+imported into the database. Sorting of the files for display purposes in the
+terminal and FTP servers is optional and configured by the sysop:
+  Name Ascending (case-insensitive)
+  Name Descending (case-insensitive)
+  Name Ascending (case-sensitive)
+  Name Descending (case-sensitive)
+  Date Ascending
+  Date Descending
 
 _Tags_
 
