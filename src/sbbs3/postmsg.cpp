@@ -190,7 +190,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		wm_mode|=WM_ANON;
 	}
 
-	if(cfg.sub[subnum]->mod_ar!=NULL && cfg.sub[subnum]->mod_ar[0] && chk_ar(cfg.sub[subnum]->mod_ar,&useron,&client))
+	if(cfg.sub[subnum]->mod_ar[0] && chk_ar(cfg.sub[subnum]->mod_ar,&useron,&client))
 		msgattr|=MSG_MODERATED;
 
 	if(cfg.sub[subnum]->misc&SUB_SYSPERM && sub_op(subnum))
