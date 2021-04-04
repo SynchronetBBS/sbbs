@@ -1343,7 +1343,7 @@ char *daystr(char days)
 	str[0]=0;
 	for(i=0;i<7;i++) {
 		if(days&(1<<i)) {
-			strcat(str,wday[i]);
+			SAFECAT(str,wday[i]);
 			SAFECAT(str," "); 
 		}
 	}
