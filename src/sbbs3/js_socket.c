@@ -915,6 +915,7 @@ js_connect_event_thread(void *args)
 
 done:
 	closesocket(a->sv[1]);
+	freeaddrinfo(res);
 	free(a);
 }
 
@@ -3332,8 +3333,8 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	else {
 		if (!JS_GetArrayLength(cx, obj, &count)) {
-			free(protocol);
-			return JS_FALSE;
+			JS_ReportError(cx, "zero-length array");
+			goto fail;
 		}
 		for (i = 0; (jsuint)i < count; i++) {
 			if (!JS_GetElement(cx, obj, i, &v)) {
@@ -3407,8 +3408,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 
 fail:
-	if (protocol)
-		free(protocol);
+	free(protocol);
 	free(set);
 	return JS_FALSE;
 }
