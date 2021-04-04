@@ -699,6 +699,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(nulstr);
 	}
 
+	if(strcmp(sp, "GETKEY") == 0) {
+		getkey();
+		return(nulstr);
+	}
+
+	if(strncmp(sp, "WAIT:", 5) == 0) {
+		inkey(K_NONE, atoi(sp + 5));
+		return(nulstr);
+	}
+
 	if(!strcmp(sp,"PAUSE") || !strcmp(sp,"MORE")) {
 		pause();
 		return(nulstr);
