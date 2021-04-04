@@ -207,7 +207,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	/* Read message text from stream (file or stdin) */
 	msgtxtlen=0;
 	while(!feof(fp)) {
-		i=fread(buf,1,sizeof(buf),fp);
+		i=fread(buf,sizeof(buf),1,fp);
 		if(i<1)
 			break;
 		if((msgtxt = realloc(msgtxt,msgtxtlen+i+1))==NULL) {
@@ -501,7 +501,7 @@ void listmsgs(ulong start, ulong count)
 		count=~0;
 	while(l<count) {
 		fseek(smb.sid_fp,((start-1L) + l)*idxreclen,SEEK_SET);
-		if(!fread(&msg.idx,1,sizeof(msg.idx),smb.sid_fp))
+		if(!fread(&msg.idx,sizeof(msg.idx),1,smb.sid_fp))
 			break;
 		i=smb_lockmsghdr(&smb,&msg);
 		if(i) {
@@ -573,7 +573,7 @@ void dumpindex(ulong start, ulong count)
 		count=~0;
 	while(l<count) {
 		fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);
-		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
+		if(!fread(&idx,sizeof(idx),1,smb.sid_fp))
 			break;
 		printf("%10"PRIu32"  ", idx.number);
 		switch(smb_msg_type(idx.attr)) {
@@ -594,7 +594,7 @@ void dumpindex(ulong start, ulong count)
 		if(smb_msg_type(idx.attr) == SMB_MSG_TYPE_FILE && idxreclen == sizeof(fileidxrec_t)) {
 			fileidxrec_t fidx;
 			fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);
-			if(!fread(&fidx,1,sizeof(fidx),smb.sid_fp))
+			if(!fread(&fidx,sizeof(fidx),1,smb.sid_fp))
 				break;
 			printf("  %02X  %.*s", fidx.hash.flags, (int)sizeof(fidx.name), fidx.name);
 		}
@@ -619,7 +619,7 @@ void viewmsgs(ulong start, ulong count, BOOL verbose)
 		count=~0;
 	while(l<count) {
 		fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);
-		if(!fread(&msg.idx,1,sizeof(msg.idx),smb.sid_fp))
+		if(!fread(&msg.idx,sizeof(msg.idx),1,smb.sid_fp))
 			break;
 		i=smb_lockmsghdr(&smb,&msg);
 		if(i) {
@@ -1002,11 +1002,10 @@ void packmsgs(ulong packable)
 		fseek(smb.sda_fp,0L,SEEK_SET);
 		for(l=m=0;l<length;l+=2) {
 			printf("\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
-			/* TODO: Only works on LE (size mismatch) */
-			i=0;
-			if(!fread(&i,2,1,smb.sda_fp))
+			uint16_t val = 0;
+			if(!fread(&val,sizeof(val),1,smb.sda_fp))
 				break;
-			if(!i)
+			if(val == 0)
 				m++; 
 		}
 
@@ -1143,7 +1142,7 @@ void packmsgs(ulong packable)
 	for(l=0;l<smb.status.total_msgs;l++) {
 		fseek(smb.sid_fp, l * idxreclen,SEEK_SET);
 		printf("%lu of %"PRIu32"\r",l+1,smb.status.total_msgs);
-		if(!fread(&msg.idx, 1, sizeof(msg.idx), smb.sid_fp))
+		if(!fread(&msg.idx, sizeof(msg.idx), 1, smb.sid_fp))
 			break;
 		if(msg.idx.attr&MSG_DELETE) {
 			printf("\nDeleted index %lu: msg number %lu\n", l,(ulong) msg.idx.number);
@@ -1421,7 +1420,7 @@ void readmsgs(ulong start, ulong count)
 	while(!done) {
 		if(domsg) {
 			fseek(smb.sid_fp,msg.idx_offset*idxreclen,SEEK_SET);
-			if(!fread(&msg.idx,1,sizeof(msg.idx),smb.sid_fp))
+			if(!fread(&msg.idx,sizeof(msg.idx),1,smb.sid_fp))
 				break;
 			i=smb_lockmsghdr(&smb,&msg);
 			if(i) {
