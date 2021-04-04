@@ -1990,31 +1990,33 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			return current_file->name;
 		if(strcmp(sp, "FILE_DESC") == 0)
 			return current_file->desc;
+		if(strcmp(sp, "FILE_TAGS") == 0)
+			return current_file->tags;
 		if(strcmp(sp, "FILE_UPLOADER") == 0)
-			return current_file->uler;
+			return current_file->from;
 		if(strcmp(sp, "FILE_SIZE") == 0) {
 			safe_snprintf(str, maxlen, "%ld", (long)current_file->size);
 			return str;
 		}
 		if(strcmp(sp, "FILE_CREDITS") == 0) {
-			safe_snprintf(str, maxlen, "%lu", (ulong)current_file->cdt);
+			safe_snprintf(str, maxlen, "%lu", (ulong)current_file->cost);
 			return str;
 		}
 		if(strcmp(sp, "FILE_TIME") == 0)
-			return timestr(current_file->date);
+			return timestr(current_file->time);
 		if(strcmp(sp, "FILE_TIME_ULED") == 0)
-			return timestr(current_file->dateuled);
+			return timestr(current_file->hdr.when_imported.time);
 		if(strcmp(sp, "FILE_TIME_DLED") == 0)
-			return timestr(current_file->datedled);
+			return timestr(current_file->hdr.last_downloaded);
 		if(strcmp(sp, "FILE_DATE") == 0)
-			return datestr(current_file->date);
+			return datestr(current_file->time);
 		if(strcmp(sp, "FILE_DATE_ULED") == 0)
-			return datestr(current_file->dateuled);
+			return datestr(current_file->hdr.when_imported.time);
 		if(strcmp(sp, "FILE_DATE_DLED") == 0)
-			return datestr(current_file->datedled);
+			return datestr(current_file->hdr.last_downloaded);
 
 		if(strcmp(sp, "FILE_TIMES_DLED") == 0) {
-			safe_snprintf(str, maxlen, "%d", current_file->timesdled);
+			safe_snprintf(str, maxlen, "%lu", (ulong)current_file->hdr.times_downloaded);
 			return str;
 		}
 	}

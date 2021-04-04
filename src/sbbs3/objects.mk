@@ -41,6 +41,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)inkey$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ident$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)jsdebug$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_archive$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_bbs$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE)\
@@ -54,6 +55,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_internal$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_msg_area$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_msgbase$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_filebase$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_queue$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_request$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_rtpool$(OFILE)\
@@ -95,7 +97,6 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scfgsave$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)sockopts$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)sortdir$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)str$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)telgate$(OFILE)\
@@ -174,7 +175,6 @@ SMBUTIL_OBJS = \
 
 SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)sbbsecho$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ver$(OFILE) \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
 			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
@@ -184,6 +184,7 @@ SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
+			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)rechocfg$(OFILE) \
 			$(OBJODIR)$(DIRSEP)msg_id$(OFILE) \
@@ -222,7 +223,8 @@ FILELIST_OBJS = \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
-			$(OBJODIR)$(DIRSEP)filedat$(OFILE)
+			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)userdat$(OFILE)
 
 MAKEUSER_OBJS = \
 			$(OBJODIR)$(DIRSEP)makeuser$(OFILE) \
@@ -248,6 +250,7 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)jsdoor$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)jsdebug$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_archive$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_conio$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_request$(OFILE) \
@@ -317,6 +320,7 @@ DELFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE)
 
 DUPEFIND_OBJS = \
@@ -352,4 +356,15 @@ SHOWSTAT_OBJS = \
 PKTDUMP_OBJS =		$(OBJODIR)$(DIRSEP)pktdump$(OFILE)
 
 FMSGDUMP_OBJS = 	$(OBJODIR)$(DIRSEP)fmsgdump$(OFILE)
+
+UPGRADE_TO_V319_OBJS =	$(OBJODIR)$(DIRSEP)upgrade_to_v319$(OFILE) \
+			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
+			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
+			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
+			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
+			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
+			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
 

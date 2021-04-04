@@ -55,7 +55,6 @@ DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
 DLLEXPORT char *	strip_ansi(char* str);
 DLLEXPORT char *	strip_exascii(const char *str, char* dest);
 DLLEXPORT char *	strip_space(const char *str, char* dest);
-DLLEXPORT char *	prep_file_desc(const char *str, char* dest);
 DLLEXPORT char *	strip_ctrl(const char *str, char* dest);
 DLLEXPORT char *	strip_char(const char* str, char* dest, char);
 DLLEXPORT char *	net_addr(net_t* net);
@@ -69,6 +68,7 @@ DLLEXPORT BOOL		str_has_ctrl(const char*);
 DLLEXPORT BOOL		str_is_ascii(const char*);
 DLLEXPORT char *	utf8_to_cp437_str(char* str);
 DLLEXPORT char *	subnewsgroupname(scfg_t*, sub_t*, char*, size_t);
+DLLEXPORT char *	dir_area_tag(scfg_t*, dir_t*, char*, size_t);
 DLLEXPORT char * 	get_ctrl_dir(BOOL warn);
 
 #ifdef __cplusplus

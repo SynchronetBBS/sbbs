@@ -33,7 +33,6 @@ extern "C" {
 
 DLLEXPORT when_t	rfc822date(char* p);
 DLLEXPORT char *	msgdate(when_t when, char* buf);
-DLLEXPORT BOOL		newmsgs(smb_t*, time_t);
 
 #ifdef __cplusplus
 }

@@ -517,7 +517,7 @@ int main(int argc, char **argv)
 	sprintf(str,"%snode.exb",ctrl_dir);
 	nodeexb=sopen(str,O_RDWR|O_BINARY,SH_DENYNO);
 
-	sys_nodes=filelength(nodefile)/sizeof(node_t);
+	sys_nodes=(int)(filelength(nodefile)/sizeof(node_t));
 	if(!sys_nodes) {
 		printf("%s reflects 0 nodes!\n",str);
 		exit(1); }

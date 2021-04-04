@@ -48,7 +48,7 @@ static char* format_string(sbbs_t* sbbs, csi_t* csi)
 	return xp_asprintf_end(fmt, NULL);
 }
 
-int sbbs_t::exec_misc(csi_t* csi, char *path)
+int sbbs_t::exec_misc(csi_t* csi, const char *path)
 {
 	char	str[512],tmp[512],buf[1025],ch,op,*p,**pp,**pp1,**pp2;
 	ushort	w;
@@ -1576,7 +1576,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				free(text[i]);
 			j=strlen(cmdstr((char *)csi->ip,path,csi->str,buf));
 			if(!j)
-				text[i]=nulstr;
+				text[i]=(char*)nulstr;
 			else
 				text[i]=(char *)malloc(j+1);
 			if(!text[i]) {

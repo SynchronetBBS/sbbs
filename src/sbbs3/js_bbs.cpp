@@ -79,8 +79,6 @@ enum {
 	,BBS_PROP_RLOGIN_TERM
 	,BBS_PROP_CLIENT_NAME
 
-	,BBS_PROP_ALTUL
-
 	,BBS_PROP_ERRORLEVEL		/* READ ONLY */
 
 	/* READ ONLY */
@@ -204,8 +202,6 @@ enum {
 	,"password specified during RLogin negotiation"
 	,"terminal specified during RLogin negotiation"
 	,"client name"
-
-	,"current alternate upload path number"
 
 	,"error level returned from last executed external program"
 
@@ -374,16 +370,16 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 
 		case BBS_PROP_LOGON_ULB:
-			val=sbbs->logon_ulb;
+			val=(uint32_t)sbbs->logon_ulb;	// TODO: fix for > 4GB!
 			break;
 		case BBS_PROP_LOGON_DLB:
-			val=sbbs->logon_dlb;
+			val=(uint32_t)sbbs->logon_dlb;	// TODO: fix for > 4GB!
 			break;
 		case BBS_PROP_LOGON_ULS:
-			val=sbbs->logon_uls;
+			val=(uint32_t)sbbs->logon_uls;	// TODO: fix for > 4GB!
 			break;
 		case BBS_PROP_LOGON_DLS:
-			val=sbbs->logon_dls;
+			val=(uint32_t)sbbs->logon_dls;	// TODO: fix for > 4GB!
 			break;
 		case BBS_PROP_LOGON_POSTS:
 			val=sbbs->logon_posts;
@@ -453,10 +449,6 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case BBS_PROP_CLIENT_NAME:
 			p=sbbs->client_name;
-			break;
-
-		case BBS_PROP_ALTUL:
-			val=sbbs->altul;
 			break;
 
 		case BBS_PROP_ERRORLEVEL:
@@ -638,7 +630,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case BBS_PROP_MSG_OFFSET:
 			if(sbbs->current_msg!=NULL)
-				val=sbbs->current_msg->offset;
+				val=sbbs->current_msg->idx_offset;
 			break;
 		case BBS_PROP_MSG_NUMBER:
 			if(sbbs->current_msg!=NULL)
@@ -705,43 +697,43 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				p=sbbs->current_file->uler;
+				p=sbbs->current_file->from;
 			break;
 		case BBS_PROP_FILE_DATE:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->date;
+				val=(uint32)sbbs->current_file->time;
 			break;
 		case BBS_PROP_FILE_DATE_ULED:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->dateuled;
+				val=sbbs->current_file->hdr.when_imported.time;
 			break;
 		case BBS_PROP_FILE_DATE_DLED:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->datedled;
+				val=sbbs->current_file->hdr.last_downloaded;
 			break;
 		case BBS_PROP_FILE_TIMES_DLED:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->timesdled;
+				val=sbbs->current_file->hdr.times_downloaded;
 			break;
 		case BBS_PROP_FILE_SIZE:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
-			else
-				val=sbbs->current_file->size;
+			else // TODO: fix for 64-bit file sizes
+				val=(uint32)sbbs->current_file->size;
 			break;
 		case BBS_PROP_FILE_CREDITS:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->cdt;
+				val=sbbs->current_file->cost;
 			break;
 		case BBS_PROP_FILE_DIR:
 			if(sbbs->current_file==NULL)
@@ -753,14 +745,14 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->misc;
+				val=sbbs->current_file->hdr.attr;
 			break;
 
 		case BBS_PROP_BATCH_UPLOAD_TOTAL:
-			val=sbbs->batup_total;
+			val = sbbs->batup_total();
 			break;
 		case BBS_PROP_BATCH_DNLOAD_TOTAL:
-			val=sbbs->batdn_total;
+			val = sbbs->batdn_total();
 			break;
 
 		case BBS_PROP_COMMAND_STR:
@@ -954,11 +946,6 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 				SAFECOPY(sbbs->client_name,p);
 			break;
 
-		case BBS_PROP_ALTUL:
-			if(val<sbbs->cfg.altpaths)
-				sbbs->altul=(ushort)val;
-			break;
-
 		case BBS_PROP_COMMAND_STR:
 			if(p != NULL)
 				sprintf(sbbs->main_csi.str, "%.*s", 1024, p);
@@ -1036,7 +1023,6 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"rlogin_password"	,BBS_PROP_RLOGIN_PASS	,JSPROP_ENUMERATE	,315},
 	{	"rlogin_terminal"	,BBS_PROP_RLOGIN_TERM	,JSPROP_ENUMERATE	,316},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,310},
-	{	"alt_ul_dir"		,BBS_PROP_ALTUL			,JSPROP_ENUMERATE	,310},
 	{	"errorlevel"		,BBS_PROP_ERRORLEVEL	,PROP_READONLY		,312},
 
 	{	"smb_group"			,BBS_PROP_SMB_GROUP			,PROP_READONLY	,310},
@@ -1512,7 +1498,7 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 
 	len=strlen(p);
 	if(!len) {
-		sbbs->text[i]=nulstr;
+		sbbs->text[i]=(char*)nulstr;
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		free(p);
 	} else {
@@ -1614,7 +1600,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		else if(sbbs->text[i][0]==0) {
 			free(sbbs->text[i]);
-			sbbs->text[i]=nulstr;
+			sbbs->text[i]=(char*)nulstr;
 		}
 	}
 	if(i<TOTAL_TEXT)
@@ -2884,34 +2870,6 @@ js_bulkupload(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_resort_dir(JSContext *cx, uintN argc, jsval *arglist)
-{
-	jsval *argv=JS_ARGV(cx, arglist);
-	uint		dirnum=0;
-	sbbs_t*		sbbs;
-	jsrefcount	rc;
-
-	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
-		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
-
-	if(dirnum>=sbbs->cfg.total_dirs) {
-		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-		return(JS_TRUE);
-	}
-
-	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->resort(dirnum);
-	JS_RESUMEREQUEST(cx, rc);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
-	return(JS_TRUE);
-}
-
-static JSBool
 js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -3480,7 +3438,6 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 	const char	*def=ALLFILES;
 	char*		afspec=NULL;
 	char*		fspec=(char *)def;
-	char		buf[MAX_PATH+1];
 	uint		dirnum;
     JSString*	js_str;
 	sbbs_t*		sbbs;
@@ -3518,9 +3475,6 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(!(mode&(FL_FINDDESC|FL_EXFIND)))
-		fspec=padfname(fspec,buf);
-
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->listfiles(dirnum,fspec,0 /* tofile */,mode)));
 	if(afspec)
 		free(afspec);
@@ -3536,7 +3490,6 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 	uint32		mode=FI_INFO;
 	const char	*def=ALLFILES;
 	char*		fspec=(char *)def;
-	char		buf[MAX_PATH+1];
 	uint		dirnum;
     JSString*	js_str;
 	sbbs_t*		sbbs;
@@ -3573,7 +3526,7 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->listfileinfo(dirnum,padfname(fspec,buf),mode)));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->listfileinfo(dirnum, fspec, mode)));
 	if(fspec != def)
 		free(fspec);
 	JS_RESUMEREQUEST(cx, rc);
@@ -4462,10 +4415,6 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
 	,JSDOCSTR("add files (already in local storage path) to file directory "
 		"specified by number or internal code")
-	,310
-	},
-	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
-	,JSDOCSTR("re-sort the file directory specified by number or internal code)")
 	,310
 	},
 	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt> or search_string] [,mode=<tt>FL_NONE</tt>]")

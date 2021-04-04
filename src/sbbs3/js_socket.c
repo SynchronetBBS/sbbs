@@ -379,7 +379,7 @@ static int js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *off
 	int			i;
 
 	if(p->session==-1)
-		return sendfilesocket(p->sock, file, offset, count);
+		return (int)sendfilesocket(p->sock, file, offset, count);
 
 	len=filelength(file);
 
@@ -516,7 +516,7 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 	return(0);
 }
 
-SOCKET DLLCALL js_socket(JSContext *cx, jsval val)
+SOCKET js_socket(JSContext *cx, jsval val)
 {
 	void*		vp;
 	JSClass*	cl;
@@ -536,7 +536,7 @@ SOCKET DLLCALL js_socket(JSContext *cx, jsval val)
 }
 
 #ifdef PREFER_POLL
-size_t DLLCALL js_socket_numsocks(JSContext *cx, jsval val)
+size_t js_socket_numsocks(JSContext *cx, jsval val)
 {
 	js_socket_private_t	*p;
 	JSClass*	cl;
@@ -571,7 +571,7 @@ size_t DLLCALL js_socket_numsocks(JSContext *cx, jsval val)
 	return ret;
 }
 
-size_t DLLCALL js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events)
+size_t js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events)
 {
 	js_socket_private_t	*p;
 	JSClass*	cl;
@@ -612,7 +612,7 @@ size_t DLLCALL js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short
 	return ret;
 }
 #else
-SOCKET DLLCALL js_socket_add(JSContext *cx, jsval val, fd_set *fds)
+SOCKET js_socket_add(JSContext *cx, jsval val, fd_set *fds)
 {
 	js_socket_private_t	*p;
 	JSClass*	cl;
@@ -648,7 +648,7 @@ SOCKET DLLCALL js_socket_add(JSContext *cx, jsval val, fd_set *fds)
 	return sock;
 }
 
-BOOL DLLCALL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
+BOOL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 {
 	js_socket_private_t	*p;
 	JSClass*	cl;
@@ -685,7 +685,7 @@ BOOL DLLCALL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 	return FALSE;
 }
 
-void DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv)
+void js_timeval(JSContext* cx, jsval val, struct timeval* tv)
 {
 	jsdouble jsd;
 
@@ -700,7 +700,7 @@ void DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv)
 }
 #endif
 
-int DLLCALL js_polltimeout(JSContext* cx, jsval val)
+int js_polltimeout(JSContext* cx, jsval val)
 {
 	jsdouble jsd;
 
@@ -709,7 +709,7 @@ int DLLCALL js_polltimeout(JSContext* cx, jsval val)
 
 	if(JSVAL_IS_DOUBLE(val)) {
 		if(JS_ValueToNumber(cx,val,&jsd))
-			return jsd * 1000;
+			return (int)(jsd * 1000);
 	}
 
 	return 0;
@@ -2795,7 +2795,7 @@ static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
 
 /* Socket Constructor (creates socket descriptor) */
 
-JSObject* DLLCALL js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_CONTEXT session)
+JSObject* js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_CONTEXT session)
 {
 	JSObject*	obj;
 	js_socket_private_t*	p;
@@ -3513,7 +3513,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
+JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	sockobj;
 	JSObject*	sockproto;
@@ -3563,7 +3563,7 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 	return(sockobj);
 }
 
-JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOCKET sock, CRYPT_CONTEXT session)
+JSObject* js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOCKET sock, CRYPT_CONTEXT session)
 {
 	JSObject*	obj;
 
@@ -3575,7 +3575,7 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	return(obj);
 }
 
-JSObject* DLLCALL js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *name, struct xpms_set *set)
+JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *name, struct xpms_set *set)
 {
 	JSObject*	obj;
 	js_socket_private_t*	p;

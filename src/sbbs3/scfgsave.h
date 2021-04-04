@@ -21,7 +21,6 @@
 #define _SCFGSAVE_H_
 
 #include "scfgdefs.h"
-#include "smbdefs.h"
 #include "dllexport.h"
 
 #ifdef __cplusplus
@@ -36,8 +35,6 @@ DLLEXPORT BOOL		write_file_cfg(scfg_t* cfg, int backup_level);
 DLLEXPORT BOOL		write_chat_cfg(scfg_t* cfg, int backup_level);
 DLLEXPORT BOOL		write_xtrn_cfg(scfg_t* cfg, int backup_level);
 DLLEXPORT void		refresh_cfg(scfg_t* cfg);
-DLLEXPORT int		smb_storage_mode(scfg_t*, smb_t*);
-DLLEXPORT int		smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
 
 #ifdef __cplusplus
 }

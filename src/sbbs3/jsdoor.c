@@ -284,6 +284,10 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		if(js_CreateFileClass(js_cx, *glob)==NULL)
 			break;
 
+		/* Archive Class */
+		if(js_CreateArchiveClass(js_cx, *glob)==NULL)
+			break;
+
 		/* COM Class */
 		if(js_CreateCOMClass(js_cx, *glob)==NULL)
 			break;

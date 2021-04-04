@@ -36,7 +36,7 @@ ulong first_msg()
 {
 	smbmsg_t msg;
 
-	msg.offset=0;
+	msg.idx_offset=0;
 	msg.hdr.number=0;
 	if(smb_getmsgidx(&smb,&msg))			/* Get first message index */
 		return(0);
@@ -84,7 +84,8 @@ int main(int argc, char **argv)
 {
 	char str[256],*p;
 	int i,j,file;
-	ulong length,max_users=0xffffffff;
+	off_t length;
+	ulong max_users=0xffffffff;
 	uint32_t l;
 	sub_status_t *sub_status;
 	scfg_t	cfg;

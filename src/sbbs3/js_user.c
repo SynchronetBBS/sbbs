@@ -1334,7 +1334,7 @@ static jsSyncMethodSpec js_user_functions[] = {
 	{"get_time_left",	js_get_time_left,	1,	JSTYPE_NUMBER,	JSDOCSTR("start_time")
 	,JSDOCSTR("Returns the user's available remaining time online, in seconds,<br>"
 	"based on the passed <i>start_time</i> value (in time_t format)<br>"
-	"Note: this method does not account for pending forced timed events"
+	"Note: this method does not account for pending forced timed events<br>"
 	"Note: for the pre-defined user object on the BBS, you almost certainly want bbs.get_time_left() instead.")
 	,31401
 	},

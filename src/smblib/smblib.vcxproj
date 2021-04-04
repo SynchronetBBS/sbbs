@@ -118,6 +118,7 @@
     <ClCompile Include="..\hash\crc16.c" />
     <ClCompile Include="..\hash\crc32.c" />
     <ClCompile Include="..\hash\md5.c" />
+    <ClCompile Include="..\hash\sha1.c" />
     <ClCompile Include="smbadd.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>

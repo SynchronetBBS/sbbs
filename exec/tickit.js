@@ -1,6 +1,5 @@
 /*
  * An intentionally simple TIC handler for Synchronet.
- * $Id: tickit.js,v 1.56 2020/05/16 20:11:37 rswindell Exp $
  *
  * How to set up... add a timed event:
  * Internal Code                   TICKIT
@@ -23,11 +22,13 @@
  * flag /sbbs/data/tickit.now *.tic *.TIC
  */
 
-load("sbbsdefs.js");
+require("sbbsdefs.js", 'LEN_FDESC');
 require("fidocfg.js", 'TickITCfg');
 require("fido.js", 'FIDO');
 
 var cfgfile;
+var force_replace = false;
+var use_diz_always = true;
 
 for (var i in argv) {
 	if(argv[i] == "-force-replace")
@@ -37,11 +38,13 @@ for (var i in argv) {
 }
 
 var tickit = new TickITCfg(cfgfile);
+if(tickit.gcfg.forcereplace === true)
+	force_replace = true;
 var sbbsecho = new SBBSEchoCfg(tickit.gcfg.echocfg);
-var files_bbs={};
-var force_replace = false;
+var file_list = {};
+var files_imported = 0;
 
-const REVISION = "$Revision: 1.56 $".split(' ')[1];
+const REVISION = "2.0";
 
 var tickitVersion = "TickIT "+REVISION;
 // emit tickitVersion to the log for general purposes - wk42
@@ -49,9 +52,6 @@ log(LOG_INFO, tickitVersion);
 // emit system.temp_dir to the log for debug purposes; mainly with which
 // temp directory is used when tickit.js is executed (event vs jsexec) - wk42
 log(LOG_DEBUG, "Using system.temp_dir = '"+system.temp_dir+"'");
-// also let's log the logs_dir so we know where it is for the addfiles
-// log if addfileslogcap is set in the ini... this is a manual setting - wk42
-log(LOG_DEBUG, "Using system.logs_dir = '"+system.logs_dir+"'");
 
 if (!String.prototype.repeat) {
   String.prototype.repeat = function(count) {
@@ -116,7 +116,6 @@ function process_tic(tic)
 	var handler;
 	var handler_arg;
 
-	log(LOG_INFO, "Processing...");
 	log(LOG_INFO, "Working with '"+tic.file+"' in '"+tic.area.toUpperCase()+"'.");
 
 	if (tickit.gcfg.path !== undefined)
@@ -144,9 +143,9 @@ function process_tic(tic)
 			handler = cfg.handler;
 			handler_arg = cfg.handlerarg;
 		}
-		if (cfg.forcereplace !== undefined) {
+		if (cfg.forcereplace === true) {
 			log(LOG_INFO, "ForceReplace enabled for area "+tic.area.toUpperCase()+".");
-			force_replace_area = cfg.forcereplace;
+			force_replace_area = true;
 		}
 	}
 
@@ -216,16 +215,11 @@ function process_tic(tic)
 	}
 
 	if (dir !== undefined) {
-		if (files_bbs[dir] === undefined)
-			files_bbs[dir] = '';
-
-		files_bbs[dir] += format("%-12s %10s ", tic.file, tic.size);
-		ld = tic.ldesc.split(/\r?\n/);
-		for (i=0; i<ld.length; i++) {
-			if (i)
-				files_bbs[dir] += " ".repeat(24);
-			files_bbs[dir] += ld[i]+"\r\n";
-		}
+		if (file_list[dir] === undefined)
+			file_list[dir] = [];
+		file = { name: tic.file, cost: tic.size, desc: tic.desc, extdesc: tic.ldesc };
+		file_list[dir].push(file);
+//		log(LOG_INFO, JSON.stringify(file));
 	}
 	log(LOG_INFO, "Deleting TIC file '"+tic.tic_filename+"'.");
 	file_remove(tic.tic_filename);
@@ -548,6 +542,11 @@ function parse_ticfile(fname)
 
 			if (key !== 'desc' && key !== 'ldesc')
 				key = key.replace(/^\s*/,'');
+			if (key == 'desc' && tic.desc) {
+				if (!tic.ldesc)
+					tic.ldesc = tic.desc;
+				key = 'ldesc';
+			}
 			switch(key) {
 				// These are not passed unmodified.
 				// Single value, single line...
@@ -564,7 +563,7 @@ function parse_ticfile(fname)
 				case 'path':
 					// log the path lines for informational purposes before we apply
 					// the circular path detection. - wk42
-					log(LOG_INFO, "Path "+val);
+					log(LOG_DEBUG, "Path "+val);
 					// Circular path detection...
 					for (i=0; i<system.fido_addr_list.length; i++) {
 						if (val === system.fido_addr_list[i]) {
@@ -582,7 +581,7 @@ function parse_ticfile(fname)
 					// we'll log this one for informational purposes and throw it
 					// away so we can create our own later in forward_tic() with our
 					// tickit.js revision line. - wk42
-					log(LOG_INFO, "Created "+val);
+					log(LOG_DEBUG, "Created "+val);
 					break;
 
 				// All the rest are passed through unmodified
@@ -597,6 +596,7 @@ function parse_ticfile(fname)
 				case 'magic':
 				case 'replaces':
 				case 'crc':
+				case 'desc':
 					outtic.push(line);
 					tic[key] = val;
 					break;
@@ -607,7 +607,6 @@ function parse_ticfile(fname)
 					break;
 
 				// Multi-line values
-				case 'desc':
 				case 'ldesc':
 					outtic.push(line);
 					if (tic[key] === undefined)
@@ -622,10 +621,11 @@ function parse_ticfile(fname)
 			}
 		}
 	}
-
-	if (tic.ldesc === undefined || tic.ldesc.length <= tic.desc.length)
-		tic.ldesc = tic.desc;
-
+	if (tic.desc !== undefined) {
+		if(tic.desc.length > LEN_FDESC && !tic.ldesc)
+			tic.ldesc = tic.desc.replace("  ", "\r\n");
+		tic.desc = format("%.*s", LEN_FDESC, tic.desc.trim());
+	}
 	f.close();
 	f = new File(dir+tic.file);
 	if (!f.exists) {
@@ -637,6 +637,7 @@ function parse_ticfile(fname)
 		log(LOG_WARNING, "File '"+f.name+"' length mismatch. File is "+f.length+", expected "+tic.size+".");
 		return false;
 	}
+	tic.size = f.length;
 	if (tic.crc !== undefined) {
 		// File needs to be open to calculate the CRC32.
 		if (!f.open("rb")) {
@@ -656,10 +657,10 @@ function parse_ticfile(fname)
 	else {
 		// there may or may not be @domain on the from line in the
 		// TIC file. look for both address forms. - wk42
-		log(LOG_INFO, "Verifying password for sender: "+tic.from);
+		log(LOG_DEBUG, "Verifying password for sender: "+tic.from);
 		if (!sbbsecho.match_ticpw(tic.from, tic.pw)) {
 			var alink = FIDO.parse_addr(tic.from).toString();
-			log(LOG_INFO, "Verifying password with domain this time: "+alink);
+			log(LOG_DEBUG, "Verifying password with domain this time: "+alink);
 			if (!sbbsecho.match_ticpw(alink, tic.pw)) {
 				// if we get here and there is no match, then we have
 				// defined the wrong password somewhere... - wk42
@@ -677,26 +678,38 @@ function parse_ticfile(fname)
 	return tic;
 }
 
+function import_file_list(dir, list, uploader)
+{
+	log(LOG_INFO, "Importing file list into: " + dir);
+	var fb = new FileBase(dir);
+	if(!fb.open())
+		return "Error " + fb.last_error + " opening filebase: " + dir;
+	for(var i = 0; i < list.length; i++) {
+		var file = list[i];
+		file.from = uploader;
+		log(LOG_INFO, "Adding file (" + file.name + ") to: " + dir);
+		if(!fb.add(file, use_diz_always)) {
+			fb.close();
+			return "Error " + fb.last_error + " adding file to: " + dir;
+		} else
+			files_imported++;
+	}
+	fb.close();
+	return true;
+}
+
 // need the tic for some more processing
 function import_files(tic)
 {
 	log(LOG_INFO, "Importing...");
 	var i;
 	var cmd;
-	var f=new File(system.temp_dir+"tickit-files.bbs");
 
-	for (i in files_bbs) {
+	for (i in file_list) {
 		if (file_area.dir[i] === undefined) {
 			log(LOG_ERROR, "Invalid directory "+i+" when importing!");
 			continue;
 		}
-
-		if (!f.open("wb")) {
-			log(LOG_ERROR, "Unable to create '"+f.name+"'.");
-			return false;
-		}
-		f.write(files_bbs[i]);
-		f.close();
 
 		// figure out the uploader name if there is an override in place
 		// globally or per area. - wk42
@@ -704,35 +717,14 @@ function import_files(tic)
 		var cfg = tickit.acfg[tic.area.toLowerCase()];
 		if (cfg !== undefined && cfg.uploader !== undefined) {
 			uploader = cfg.uploader.toString();
-			log(LOG_INFO, "Using '"+tic.area.toUpperCase()+"' area uploader: "+uploader);
+			log(LOG_DEBUG, "Using '"+tic.area.toUpperCase()+"' area uploader: "+uploader);
 		} else if (tickit.gcfg.uploader !== undefined) {
 			uploader = tickit.gcfg.uploader.toString();
-			log(LOG_INFO, "Using global uploader: "+uploader);
+			log(LOG_DEBUG, "Using global uploader: "+uploader);
 		}
-		cmd = system.exec_dir+"addfiles "+i;
-		if (uploader !== undefined && uploader !== "")
-			cmd += ' -x "' + uploader + '"';
-		cmd += " -zd +"+f.name+" 24 13";
-		if (tickit.gcfg.addfileslogcap) {
-			// catch addfiles output only if global AddFilesLogCap is
-			// enabled. this is so we can try to determine what causes
-			// addfiles to abort early and not import some files for
-			// some reason. we're going to write this to the
-			// system.logs_dir because system.temp_dir is cleaned
-			// regularly and indiscriminately - wk42
-			if (system.platform === 'Win32')
-				cmd += " 1>>" + system.logs_dir + "addfiles.log 2>&1";
-			else
-				cmd += " >>" + system.logs_dir + "addfiles.log 2>&1";
-		}
-		log(LOG_INFO, "Executing: '"+cmd+"'.");
-		log(LOG_INFO, "addfiles returned: "+system.exec(cmd));
+		import_file_list(i, file_list[i], uploader);
 	}
-	// clear the files_bbs array since we're now importing the files one
-	// file at a time as they are processed. this is a quick hack to
-	// enable per area uploader names and i didn't take the time to try
-	// to refactor this properly. it works for now - wk42
-	files_bbs = {};
+	file_list = {};
 }
 
 function main() {
@@ -811,6 +803,8 @@ function main() {
 			}
 		}
 	}
+	if(files_imported > 0)
+		log(LOG_INFO, files_imported + " files imported successfully");
 }
 
 main();

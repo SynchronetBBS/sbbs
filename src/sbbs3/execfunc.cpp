@@ -25,7 +25,6 @@
 int sbbs_t::exec_function(csi_t *csi)
 {
 	char	str[256];
-	char 	tmp[512];
 	uchar*	p;
 	int		s;
 	uint 	i,j,k;
@@ -302,38 +301,11 @@ int sbbs_t::exec_function(csi_t *csi)
 			}
 			return(0);
 		case CS_FILE_SET_ALT_PATH:
-			altul=atoi(csi->str);
-			if(altul>cfg.altpaths)
-				altul=0;
-			bprintf(text[AltULPathIsNow],altul ? cfg.altpath[altul-1] : text[OFF]);
+			bprintf("Alternate Upload Paths are Unsupported\r\n");
 			return(0);
 		case CS_FILE_RESORT_DIRECTORY:
-			for(i=1;i<=cfg.sys_nodes;i++)
-				if(i!=cfg.node_num) {
-					getnodedat(i,&node,0);
-					if(node.status==NODE_INUSE
-						|| node.status==NODE_QUIET)
-						break; 
-				}
-
-			if(i<=cfg.sys_nodes) {
-				bputs(text[ResortWarning]);
-				return(0); 
-			}
-
-			if(!stricmp(csi->str,"ALL")) {     /* all libraries */
-				for(i=0;i<usrlibs;i++)
-					for(j=0;j<usrdirs[i];j++)
-						resort(usrdir[i][j]);
-				return(0); 
-			}
-			if(!stricmp(csi->str,"LIB")) {     /* current library */
-				for(i=0;i<usrdirs[curlib];i++)
-					resort(usrdir[curlib][i]);
-				return(0); 
-			}
-			resort(usrdir[curlib][curdir[curlib]]);
-			return(0);
+			lprintf(LOG_WARNING, "deprecated function: RESORT_DIRECTORY");
+			return 0;
 
 		case CS_FILE_GET:
 			if(!fexist(csi->str)) {
@@ -387,9 +359,8 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_FILE_FIND_OFFLINE:
 		case CS_FILE_FIND_OLD_UPLOADS:
 			if(!usrlibs) return(0);
-			if(!getfilespec(tmp))
+			if(!getfilespec(str))
 				return(0);
-			padfname(tmp,str);
 			k=0;
 			bputs("\r\nSearching ");
 			if(!stricmp(csi->str,"ALL"))
@@ -412,8 +383,8 @@ int sbbs_t::exec_function(csi_t *csi)
 				bputs("not online...\r\n"); 
 			}
 			else {
-				l=FI_CLOSE;
-				bputs("currently open...\r\n"); 
+				// e.g. FI_CLOSE;
+				return 0;
 			}
 			if(!stricmp(csi->str,"ALL")) {
 				for(i=0;i<usrlibs;i++)

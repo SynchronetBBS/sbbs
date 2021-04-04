@@ -275,18 +275,18 @@ int main(int argc, char **argv)
 			continue; 
 		}
 		smb_unlocksmbhdr(&smb);
-		msg.offset=smb.status.total_msgs;
-		if(!msg.offset) {
+		msg.idx_offset=smb.status.total_msgs;
+		if(!msg.idx_offset) {
 			smb_close(&smb);
 			printf("Empty.\n");
 			continue; 
 		}
-		while(!kbhit() && !ferror(smb.sid_fp) && msg.offset) {
-			msg.offset--;
-			fseek(smb.sid_fp,msg.offset*sizeof(idxrec_t),SEEK_SET);
+		while(!kbhit() && !ferror(smb.sid_fp) && msg.idx_offset) {
+			msg.idx_offset--;
+			fseek(smb.sid_fp,msg.idx_offset*sizeof(idxrec_t),SEEK_SET);
 			if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
 				break;
-			fprintf(stderr,"%-5u\r",msg.offset+1);
+			fprintf(stderr,"%-5u\r",msg.idx_offset+1);
 			if(msg.idx.to==smm || msg.idx.to==sbl)
 				continue;
 			if(max_age && now-msg.idx.time>((time_t)max_age*24UL*60UL*60UL))

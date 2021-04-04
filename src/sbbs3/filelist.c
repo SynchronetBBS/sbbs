@@ -28,9 +28,10 @@
 #include "nopen.h"
 #include "filedat.h"
 #include "dat_rec.h"
+#include "smblib.h"
 #include <stdarg.h>
 
-#define FILELIST_VER "3.15"
+#define FILELIST_VER "3.19"
 
 #define MAX_NOTS 25
 
@@ -67,11 +68,33 @@ void stripctrlz(char *str)
 	strcpy(str,tmp);
 }
 
+char* byteStr(unsigned long value)
+{
+	static char tmp[128];
+
+	if(value>=(1024*1024*1024))
+		sprintf(tmp, "%5.1fG", value/(1024.0*1024.0*1024.0));
+	else if(value>=(1024*1024))
+		sprintf(tmp, "%5.1fM", value/(1024.0*1024.0));
+	else if(value>=1024)
+		sprintf(tmp, "%5.1fK", value/1024.0); 
+	else
+		sprintf(tmp, "%5luB", value);
+	return tmp;
+}
+
+void fprint_extdesc(FILE* fp, char* ext_desc, int desc_off)
+{
+	for(char* line = strtok(ext_desc, "\n"); line != NULL; line = strtok(NULL, "\n")) {
+		truncsp(line);
+		fprintf(fp, "\n%*s %s", desc_off, "", line);
+	}
+}
 
 #define ALL 	(1L<<0)
 #define PAD 	(1L<<1)
 #define HDR 	(1L<<2)
-#define CDT_	(1L<<3)
+#define CREDITS	(1L<<3)
 #define EXT 	(1L<<4)
 #define ULN 	(1L<<5)
 #define ULD 	(1L<<6)
@@ -93,14 +116,13 @@ int main(int argc, char **argv)
 {
 	char	revision[16];
 	char	error[512];
-	char	str[256],fname[256],ext,not[MAX_NOTS][9];
-	uchar	*datbuf,*ixbbuf;
-	int 	i,j,file,dirnum,libnum,desc_off,lines,nots=0
-			,omode=O_WRONLY|O_CREAT|O_TRUNC;
-	ulong	l,m,n,cdt,misc=0,total_cdt=0,total_files=0,dir_files,datbuflen;
-	time32_t uld,dld,now;
+	char	*p,str[256],fname[256],ext,not[MAX_NOTS][9];
+	int 	i,j,dirnum,libnum,desc_off,lines,nots=0;
+	char*	omode="w";
+	char*	pattern=NULL;
+	ulong	m,cdt,misc=0,total_cdt=0,total_files=0,dir_files;
 	long	max_age=0;
-	FILE	*in,*out=NULL;
+	FILE*	out=NULL;
 
 	sscanf("$Revision: 1.22 $", "%*s %s", revision);
 
@@ -122,14 +144,15 @@ int main(int argc, char **argv)
 		printf("switches: -lib name All directories of specified library\n");
 		printf("          -not code Exclude specific directory\n");
 		printf("          -new days Include only new files in listing (days since upload)\n");
-		printf("          -cat      Concatenate to existing outfile\n");
+		printf("          -inc pattern Only list files matching 'pattern'\n");
+		printf("          -cat      Concatenate to existing 'outfile'\n");
 		printf("          -pad      Pad filename with spaces\n");
 		printf("          -hdr      Include directory headers\n");
 		printf("          -cdt      Include credit value\n");
 		printf("          -tot      Include credit totals\n");
 		printf("          -uln      Include uploader's name\n");
 		printf("          -uld      Include upload date\n");
-		printf("          -dfd      Include DOS file date\n");
+		printf("          -dfd      Include current file date\n");
 		printf("          -dld      Include download date\n");
 		printf("          -dls      Include total downloads\n");
 		printf("          -nod      Exclude normal descriptions\n");
@@ -143,7 +166,12 @@ int main(int argc, char **argv)
 		exit(0); 
 	}
 
-	now=time32(NULL);
+	p=getenv("SBBSCTRL");
+	if(p==NULL) {
+		printf("\nSBBSCTRL environment variable not set.\n");
+		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
+		exit(1);
+	}
 
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);
@@ -227,14 +255,22 @@ int main(int argc, char **argv)
 			}
 			max_age=strtol(argv[i],NULL,0);
 		}
+		else if(!stricmp(argv[i],"-inc")) {
+			i++;
+			if(i>=argc) {
+				printf("\nFilename pattern must follow -inc parameter.\n");
+				exit(1); 
+			}
+			pattern = argv[i];
+		}
 		else if(!stricmp(argv[i],"-pad"))
 			misc|=PAD;
 		else if(!stricmp(argv[i],"-cat"))
-			omode=O_WRONLY|O_CREAT|O_APPEND;
+			omode="a";
 		else if(!stricmp(argv[i],"-hdr"))
 			misc|=HDR;
 		else if(!stricmp(argv[i],"-cdt"))
-			misc|=CDT_;
+			misc|=CREDITS;
 		else if(!stricmp(argv[i],"-tot"))
 			misc|=TOT;
 		else if(!stricmp(argv[i],"-ext"))
@@ -260,18 +296,17 @@ int main(int argc, char **argv)
 		else if(!stricmp(argv[i],"--"))
 			misc|=MINUS;
 		else if(!stricmp(argv[i],"-*"))
-			misc|=(HDR|PAD|CDT_|PLUS|MINUS);
+			misc|=(HDR|PAD|CREDITS|PLUS|MINUS);
 
 		else if(i!=1) {
 			if(argv[i][0]=='*' || strcmp(argv[i],"-")==0) {
 				misc|=AUTO;
 				continue; 
 			}
-			if((j=nopen(argv[i],omode))==-1) {
-				printf("\nError opening/creating %s for output.\n",argv[i]);
+			if((out=fopen(argv[i], omode)) == NULL) {
+				perror(argv[i]);
 				exit(1); 
 			}
-			out=fdopen(j,"wb"); 
 		} 
 	}
 
@@ -293,119 +328,79 @@ int main(int argc, char **argv)
 		if(misc&AUTO && scfg.dir[i]->seqdev) 	/* CD-ROM */
 			continue;
 		printf("\n%-*s %s",LEN_GSNAME,scfg.lib[scfg.dir[i]->lib]->sname,scfg.dir[i]->lname);
-		sprintf(str,"%s%s.ixb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
-		if((file=nopen(str,O_RDONLY))==-1)
+
+		smb_t smb;
+		int result = smb_open_dir(&scfg, &smb, i);
+		if(result != SMB_SUCCESS) {
+			fprintf(stderr, "!ERROR %d (%s) opening file base: %s\n", result, smb.last_error, scfg.dir[i]->code);
 			continue;
-		l=filelength(file);
+		}
+		time_t t = 0;
+		if(max_age)
+			t = time(NULL) - (max_age * 24 * 60 * 60);
+		ulong file_count;
+		file_t* file_list = loadfiles(&smb
+			,/* filespec: */pattern, /* time: */t, /* extdesc: */TRUE, scfg.dir[i]->sort, &file_count);
+
 		if(misc&AUTO) {
 			sprintf(str,"%sFILES.BBS",scfg.dir[i]->path);
-			if((j=nopen(str,omode))==-1) {
-				printf("\nError opening/creating %s for output.\n",str);
+			if((out=fopen(str, omode)) == NULL) {
+				perror(str);
 				exit(1); 
 			}
-			out=fdopen(j,"wb"); 
 		}
 		if(misc&HDR) {
 			sprintf(fname,"%-*s      %-*s       Files: %4lu"
 				,LEN_GSNAME,scfg.lib[scfg.dir[i]->lib]->sname
-				,LEN_SLNAME,scfg.dir[i]->lname,l/F_IXBSIZE);
-			fprintf(out,"%s\r\n",fname);
+				,LEN_SLNAME,scfg.dir[i]->lname, (ulong)smb.status.total_files);
+			fprintf(out,"%s\n",fname);
 			memset(fname,'-',strlen(fname));
-			fprintf(out,"%s\r\n",fname); 
+			fprintf(out,"%s\n",fname); 
 		}
-		if(!l) {
-			close(file);
+		if(!smb.status.total_files) {
 			if(misc&AUTO) fclose(out);
 			continue; 
 		}
-		if((ixbbuf=(uchar *)malloc(l))==NULL) {
-			close(file);
-			if(misc&AUTO) fclose(out);
-			printf("\7ERR_ALLOC %s %lu\n",str,l);
-			continue; 
+		int longest_filename = 12;
+		for(m = 0; m < file_count; m++) {
+			int fnamelen = strlen(file_list[m].name);
+			if(fnamelen > longest_filename)
+				longest_filename = fnamelen;
 		}
-		if(read(file,ixbbuf,l)!=(int)l) {
-			close(file);
-			if(misc&AUTO) fclose(out);
-			printf("\7ERR_READ %s %lu\n",str,l);
-			free((char *)ixbbuf);
-			continue; 
-		}
-		close(file);
-		sprintf(str,"%s%s.dat",scfg.dir[i]->data_dir,scfg.dir[i]->code);
-		if((file=nopen(str,O_RDONLY))==-1) {
-			printf("\7ERR_OPEN %s %u\n",str,O_RDONLY);
-			free((char *)ixbbuf);
-			if(misc&AUTO) fclose(out);
-			continue; 
-		}
-		datbuflen=filelength(file);
-		if((datbuf=malloc(datbuflen))==NULL) {
-			close(file);
-			printf("\7ERR_ALLOC %s %lu\n",str,datbuflen);
-			free((char *)ixbbuf);
-			if(misc&AUTO) fclose(out);
-			continue; 
-		}
-		if(read(file,datbuf,datbuflen)!=(int)datbuflen) {
-			close(file);
-			printf("\7ERR_READ %s %lu\n",str,datbuflen);
-			free((char *)datbuf);
-			free((char *)ixbbuf);
-			if(misc&AUTO) fclose(out);
-			continue; 
-		}
-		close(file);
-		m=0L;
-		while(m<l && !ferror(out)) {
-			for(j=0;j<12 && m<l;j++)
-				if(j==8)
-					str[j]=ixbbuf[m]>' ' ? '.' : ' ';
-				else
-					str[j]=ixbbuf[m++]; /* Turns FILENAMEEXT into FILENAME.EXT */
-			str[j]=0;
-			unpadfname(str,fname);
-			n=ixbbuf[m]|((long)ixbbuf[m+1]<<8)|((long)ixbbuf[m+2]<<16);
-			uld=(ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)|((long)ixbbuf[m+5]<<16)
-				|((long)ixbbuf[m+6]<<24));
-			dld=(ixbbuf[m+7]|((long)ixbbuf[m+8]<<8)|((long)ixbbuf[m+9]<<16)
-				|((long)ixbbuf[m+10]<<24));
-			m+=11;
+		for(m = 0; m < file_count && !ferror(out); m++) {
+			file_t file = file_list[m];
 
-			if(n>=datbuflen 							/* index out of bounds */
-				|| datbuf[n+F_DESC+LEN_FDESC]!=CR) {	/* corrupted data */
-				fprintf(stderr,"\n\7%s%s is corrupted!\n"
-					,scfg.dir[i]->data_dir,scfg.dir[i]->code);
-				exit(-1); 
-			}
-			
-			if(max_age && ((now - uld) / (24*60*60) > max_age))
-				continue;
-
-			fprintf(out,"%-12.12s",misc&PAD ? str : fname);
+			if(misc&PAD) {
+				char* ext = getfext(file.name);
+				if(ext == NULL)
+					ext="";
+				fprintf(out,"%-*.*s%s"
+					, (int)(longest_filename - strlen(ext))
+					, (int)(strlen(file.name) - strlen(ext))
+					, file.name, ext);
+			} else
+				fprintf(out,"%-*s", longest_filename, file.name);
 
 			total_files++;
 			dir_files++;
 
-			if(misc&PLUS && datbuf[n+F_MISC]!=ETX
-				&& (datbuf[n+F_MISC]-' ')&FM_EXTDESC)
+			if(misc&PLUS && file.extdesc != NULL && file.extdesc[0])
 				fputc('+',out);
 			else
 				fputc(' ',out);
 
-			desc_off=12;
-			if(misc&(CDT_|TOT)) {
-				getrec((char *)&datbuf[n],F_CDT,LEN_FCDT,str);
-				cdt=atol(str);
+			desc_off = longest_filename;
+			if(misc&(CREDITS|TOT)) {
+				cdt=file.cost;
 				total_cdt+=cdt;
-				if(misc&CDT_) {
-					fprintf(out,"%7lu",cdt);
-					desc_off+=7; 
+				if(misc&CREDITS) {
+//					fprintf(out,"%7lu",cdt);
+					desc_off += fprintf(out, "%7s", byteStr(cdt));
 				} 
 			}
 
 			if(misc&MINUS) {
-				SAFEPRINTF2(str,"%s%s",scfg.dir[i]->path,fname);
+				sprintf(str,"%s%s",scfg.dir[i]->path,file.name);
 				if(!fexistcase(str))
 					fputc('-',out);
 				else
@@ -416,88 +411,56 @@ int main(int argc, char **argv)
 			desc_off++;
 
 			if(misc&DFD) {
-				SAFEPRINTF2(str,"%s%s",scfg.dir[i]->path,fname);
-				fprintf(out,"%s ",unixtodstr(&scfg,(time32_t)fdate(str),str));
-				desc_off+=9; 
+				// TODO: Fix to support alt-file-paths:
+				sprintf(str,"%s%s",scfg.dir[i]->path,file.name);
+				desc_off += fprintf(out,"%s ",unixtodstr(&scfg,(time32_t)fdate(str),str));
 			}
 
 			if(misc&ULD) {
-				fprintf(out,"%s ",unixtodstr(&scfg,uld,str));
-				desc_off+=9; 
+				desc_off += fprintf(out,"%s ",unixtodstr(&scfg,file.hdr.when_imported.time,str));
 			}
 
 			if(misc&ULN) {
-				getrec((char *)&datbuf[n],F_ULER,25,str);
-				fprintf(out,"%-25s ",str);
-				desc_off+=26; 
+				desc_off += fprintf(out,"%-25s ",file.from);
 			}
 
 			if(misc&DLD) {
-				fprintf(out,"%s ",unixtodstr(&scfg,dld,str));
-				desc_off+=9; 
+				desc_off += fprintf(out,"%s ",unixtodstr(&scfg,file.hdr.last_downloaded,str));
 			}
 
 			if(misc&DLS) {
-				getrec((char *)&datbuf[n],F_TIMESDLED,5,str);
-				j=atoi(str);
-				fprintf(out,"%5u ",j);
-				desc_off+=6; 
+				desc_off += fprintf(out,"%5u ",file.hdr.times_downloaded);
 			}
 
-			if(datbuf[n+F_MISC]!=ETX && (datbuf[n+F_MISC]-' ')&FM_EXTDESC)
+			if(file.extdesc != NULL && file.extdesc[0])
 				ext=1;	/* extended description exists */
 			else
 				ext=0;	/* it doesn't */
 
 			if(!(misc&NOD) && !(misc&NOE && ext)) {
-				getrec((char *)&datbuf[n],F_DESC,LEN_FDESC,str);
-				fprintf(out,"%s",str); 
+				fprintf(out,"%s",file.desc); 
 			}
 
 			if(misc&EXT && ext) {							/* Print ext desc */
 
-				sprintf(str,"%s%s.exb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
-				if(!fexist(str))
-					continue;
-				if((j=nopen(str,O_RDONLY))==-1) {
-					printf("\7ERR_OPEN %s %u\n",str,O_RDONLY);
-					continue; 
-				}
-				if((in=fdopen(j,"rb"))==NULL) {
-					close(j);
-					continue; 
-				}
-				fseek(in,(n/F_LEN)*512L,SEEK_SET);
 				lines=0;
 				if(!(misc&NOE)) {
-					fprintf(out,"\r\n");
+					truncsp((char*)file.extdesc);
+					fprint_extdesc(out, file.extdesc, (misc&JST) ? desc_off : 0);
 					lines++; 
 				}
-				while(!feof(in) && !ferror(in)
-					&& ftell(in)<(long)((n/F_LEN)+1)*512L) {
-					if(!fgets(str,128,in) || !str[0])
-						break;
-					stripctrlz(str);
-					if(lines) {
-						if(misc&JST)
-							fprintf(out,"%*s",desc_off,"");
-						fputc(' ',out);				/* indent one character */ }
-					fprintf(out,"%s",str);
-					lines++; 
-				}
-				fclose(in); 
 			}
-			fprintf(out,"\r\n"); 
+			fprintf(out,"\n"); 
 		}
-		free((char *)datbuf);
-		free((char *)ixbbuf);
+		smb_close(&smb);
 		if(dir_files)
-			fprintf(out,"\r\n"); /* blank line at end of dir */
+			fprintf(out,"\n"); /* blank line at end of dir */
 		if(misc&AUTO) fclose(out); 
+		freefiles(file_list, file_count);
 	}
 
 	if(misc&TOT && !(misc&AUTO))
-		fprintf(out,"TOTALS\n------\n%lu credits/bytes in %lu files.\r\n"
+		fprintf(out,"TOTALS\n------\n%lu credits/bytes in %lu files.\n"
 			,total_cdt,total_files);
 	printf("\nDone.\n");
 	return(0);

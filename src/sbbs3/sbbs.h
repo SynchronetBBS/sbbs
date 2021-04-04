@@ -291,7 +291,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "str_util.h"
 #include "date_str.h"
 #include "load_cfg.h"
-#include "filedat.h"
 #include "getstats.h"
 #include "msgdate.h"
 #include "getmail.h"
@@ -433,6 +432,7 @@ public:
 
     RingBuf	inbuf;
     RingBuf	outbuf;
+	bool	WaitForOutbufEmpty(int timeout) { return WaitForEvent(outbuf.empty_event, timeout) == WAIT_OBJECT_0; }
 	HANDLE	input_thread;
 	pthread_mutex_t	input_thread_mutex;
 	bool	input_thread_mutex_created;
@@ -515,23 +515,8 @@ public:
 	int 	nodefile;		/* File handle for node.dab */
 	pthread_mutex_t	nodefile_mutex;
 	int		node_ext;		/* File handle for node.exb */
-
-							/* Batch download queue */
-	char 	**batdn_name;	/* Filenames */
-	ushort	*batdn_alt; 	/* Alternate path */
-	uint 	*batdn_dir, 	/* Directory for each file */
-			 batdn_total;	/* Total files */
-	long 	*batdn_offset;	/* Offset for data */
-	ulong	*batdn_size;	/* Size of file in bytes */
-	ulong	*batdn_cdt; 	/* Credit value of file */
-
-							/* Batch upload queue */
-	char 	**batup_desc,	/* Description for each file */
-			**batup_name;	/* Filenames */
-	long	*batup_misc;	/* Miscellaneous bits */
-	ushort	*batup_alt; 	/* Alternate path */
-	uint 	*batup_dir, 	/* Directory for each file */
-			batup_total;	/* Total files */
+	size_t	batup_total();
+	size_t	batdn_total();
 
 	/*********************************/
 	/* Color Configuration Variables */
@@ -584,14 +569,14 @@ public:
 	long 	sys_status; 	/* System Status */
 	subscan_t	*subscan;	/* User sub configuration/scan info */
 
-	ulong	logon_ulb,		/* Upload Bytes This Call */
+	int64_t	logon_ulb,		/* Upload Bytes This Call */
 			logon_dlb,		/* Download Bytes This Call */
 			logon_uls,		/* Uploads This Call */
-			logon_dls,		/* Downloads This Call */
-			logon_posts,	/* Posts This Call */
+			logon_dls;		/* Downloads This Call */
+	ulong	logon_posts,	/* Posts This Call */
 			logon_emails,	/* Emails This Call */
 			logon_fbacks;	/* Feedbacks This Call */
-	uchar	logon_ml;		/* ML of the user upon logon */
+	uchar	logon_ml;		/* Security level of the user upon logon */
 
 	uint 	main_cmds;		/* Number of Main Commands this call */
 	uint 	xfer_cmds;		/* Number of Xfer Commands this call */
@@ -622,7 +607,6 @@ public:
 	ulong 	timeleft;		/* Number of seconds user has left online */
 
 	char 	*comspec;		/* Pointer to environment variable COMSPEC */
-	ushort	altul;			/* Upload to alternate path flag */
 	char 	cid[LEN_CID+1]; /* Caller ID (IP Address) of current caller */
 	char 	*noaccess_str;	/* Why access was denied via ARS */
 	long 	noaccess_val;	/* Value of parameter not met in ARS */
@@ -634,7 +618,7 @@ public:
 	const char*	current_msg_subj;
 	const char*	current_msg_from;
 	const char*	current_msg_to;
-	file_t*		current_file;
+	file_t*	current_file;	
 
 			/* Global command shell variables */
 	uint	global_str_vars;
@@ -668,7 +652,7 @@ public:
 			/* Command Shell Methods */
 	int		exec(csi_t *csi);
 	int		exec_function(csi_t *csi);
-	int		exec_misc(csi_t *csi, char *path);
+	int		exec_misc(csi_t *csi, const char *path);
 	int		exec_net(csi_t *csi);
 	int		exec_msg(csi_t *csi);
 	int		exec_file(csi_t *csi);
@@ -704,7 +688,6 @@ public:
 	int 	sub_op(uint subnum);
 
 	int		dir_op(uint dirnum);
-	int		getuserxfers(int fromuser, int destuser, char *fname);
 
 	void	getmsgptrs(void);
 	void	putmsgptrs(void);
@@ -808,7 +791,9 @@ public:
 	/* con_out.cpp */
 	size_t	bstrlen(const char *str, long mode = 0);
 	int		bputs(const char *str, long mode = 0);	/* BBS puts function */
+	int		bputs(long mode, const char* str) { return bputs(str, mode); }
 	int		rputs(const char *str, size_t len=0);	/* BBS raw puts function */
+	int		rputs(long mode, const char* str) { return rputs(str, mode); }
 	int		bprintf(const char *fmt, ...)			/* BBS printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
@@ -851,6 +836,9 @@ public:
 	void	carriage_return(int count=1);
 	void	line_feed(int count=1);
 	void	newline(int count=1);
+	void	cond_newline() { if(column > 0) newline(); }
+	void	cond_blankline() { if(column > 0) newline(); if(lastlinelen) newline(); }
+	void	cond_contline() { if(column > 0 && cols < TERM_COLS_DEFAULT) bputs(text[LongLineContinuationPrefix]); }
 	long	term_supports(long cmp_flags=0);
 	const char* term_type(long term_supports = -1);
 	const char* term_charset(long term_supports = -1);
@@ -971,7 +959,6 @@ public:
 
 	/* logout.cpp */
 	void	logout(void);
-	void	backout(void);
 
 	/* newuser.cpp */
 	BOOL	newuser(void);					/* Get new user							*/
@@ -1036,44 +1023,43 @@ public:
 	bool	bulkupload(uint dirnum);
 
 	/* download.cpp */
-	void	downloadfile(file_t* f);
-	void	notdownloaded(ulong size, time_t start, time_t end);
-	int		protocol(prot_t* prot, enum XFER_TYPE, char *fpath, char *fspec, bool cd, bool autohangup=true);
+	void	downloadedfile(file_t* f);
+	void	notdownloaded(off_t size, time_t start, time_t end);
+	int		protocol(prot_t* prot, enum XFER_TYPE, const char *fpath, const char *fspec, bool cd, bool autohangup=true);
 	const char*	protcmdline(prot_t* prot, enum XFER_TYPE type);
 	void	seqwait(uint devnum);
 	void	autohangup(void);
 	bool	checkdszlog(const char*);
+	bool	checkprotresult(prot_t*, int error, const char* fpath);
 	bool	checkprotresult(prot_t*, int error, file_t*);
+	bool	sendfile(file_t*, char prot, bool autohang);
 	bool	sendfile(char* fname, char prot=0, const char* description = NULL, bool autohang=true);
 	bool	recvfile(char* fname, char prot=0, bool autohang=true);
 
 	/* file.cpp */
-	void	fileinfo(file_t* f);
-	void	openfile(file_t* f);
-	void	closefile(file_t* f);
-	bool	removefcdt(file_t* f);
-	bool	removefile(file_t* f);
-	bool	movefile(file_t* f, int newdir);
+	void	showfileinfo(file_t*, bool show_extdesc = true);
+	bool	removefcdt(file_t*);
+	bool	removefile(smb_t*, file_t*);
+	bool	movefile(smb_t*, file_t*, int newdir);
 	char *	getfilespec(char *str);
 	bool	checkfname(char *fname);
-	bool	addtobatdl(file_t* f);
+	bool	addtobatdl(file_t*);
+	bool	clearbatdl(void);
+	bool	clearbatul(void);
 	long	delfiles(const char *inpath, const char *spec, size_t keep = 0);
 
 	/* listfile.cpp */
-	bool	listfile(const char *fname, const char *buf, uint dirnum
-				,const char *search, const char letter, ulong datoffset);
-	int		listfiles(uint dirnum, const char *filespec, int tofile, long mode);
-	int		listfileinfo(uint dirnum, char *filespec, long mode);
-	void	listfiletofile(char *fname, char *buf, uint dirnum, int file);
-	int		batchflagprompt(uint dirnum, file_t bf[], ulong row[], uint total, long totalfiles);
+	bool	listfile(file_t*, uint dirnum, const char *search, const char letter);
+	int		listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode);
+	int		listfileinfo(uint dirnum, const char *filespec, long mode);
+	void	listfiletofile(file_t*, FILE*);
+	int		batchflagprompt(smb_t*, file_t* bf[], ulong row[], uint total, long totalfiles);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
-	void	batch_create_list(void);
 	void	batch_add_list(char *list);
 	bool	create_batchup_lst(void);
 	bool	create_batchdn_lst(bool native);
-	bool	create_bimodem_pth(void);
 	void	batch_upload(void);
 	void	batch_download(int xfrprot);
 	BOOL	start_batch_download(void);
@@ -1081,16 +1067,13 @@ public:
 	/* tmp_xfer.cpp */
 	void	temp_xfer(void);
 	void	extract(uint dirnum);
-	char *	temp_cmd(void);					/* Returns temp file command line */
+	const char*	temp_cmd(void);					/* Returns temp file command line */
 	ulong	create_filelist(const char *name, long mode);
 
 	/* viewfile.cpp */
-	int		viewfile(file_t* f, int ext);
+	int		viewfile(file_t* f, bool extdesc);
 	void	viewfiles(uint dirnum, char *fspec);
 	void	viewfilecontents(file_t* f);
-
-	/* sortdir.cpp */
-	void	resort(uint dirnum);
 
 	/* xtrn.cpp */
 	int		external(const char* cmdline, long mode, const char* startup_dir=NULL);
@@ -1108,14 +1091,14 @@ public:
 
 	/* logfile.cpp */
 	void	logentry(const char *code,const char *entry);
-	void	log(char *str);				/* Writes 'str' to node log */
+	void	log(const char *str);				/* Writes 'str' to node log */
 	void	logch(char ch, bool comma);	/* Writes 'ch' to node log */
 	void	logline(const char *code,const char *str); /* Writes 'str' on it's own line in log (LOG_INFO level) */
 	void	logline(int level, const char *code,const char *str);
 	void	logofflist(void);              /* List of users logon activity */
 	bool	errormsg_inside;
 	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
-				,long access, const char *extinfo=NULL);
+				,long access=0, const char *extinfo=NULL);
 	BOOL	hacklog(char* prot, char* text);
 
 	/* qwk.cpp */
@@ -1233,6 +1216,8 @@ extern "C" {
 	DLLEXPORT char*		DLLCALL ansi_attr(int attr, int curattr, char* str, BOOL color);
 
 	/* main.cpp */
+	extern const char* nulstr;
+	extern const char* crlf;
 	DLLEXPORT int		DLLCALL sbbs_random(int);
 	DLLEXPORT void		DLLCALL sbbs_srand(void);
 
@@ -1260,10 +1245,6 @@ extern "C" {
 	/* sockopt.c */
 	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section
 		,char* error, size_t errlen);
-
-	/* xtrn.cpp */
-	DLLEXPORT char*		DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr
-									,const char* fpath, const char* fspec, char* cmd);
 
 	/* qwk.cpp */
 	DLLEXPORT int		qwk_route(scfg_t*, const char *inaddr, char *fulladdr, size_t maxlen);
@@ -1421,6 +1402,9 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* hdrobj, smbmsg_t*);
 	DLLEXPORT BOOL		DLLCALL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* hdrobj, smb_t**, smbmsg_t**, post_t**);
 
+	/* js_filebase.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateFileBaseClass(JSContext*, JSObject* parent, scfg_t*);
+
 	/* js_socket.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent);
 #ifdef USE_CRYPTLIB
@@ -1450,6 +1434,9 @@ extern "C" {
 	/* js_file.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode);
+
+	/* js_archive.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateArchiveClass(JSContext* cx, JSObject* parent);
 
 	/* js_sprintf.c */
 	DLLEXPORT char*		DLLCALL js_sprintf(JSContext* cx, uint argn, unsigned argc, jsval *argv);

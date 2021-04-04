@@ -273,6 +273,9 @@ typedef intmax_t	intptr_t;
 typedef int32_t         time32_t;
 
 #if defined(_WIN32)
+#  if defined _MSC_VER && !defined _FILE_OFFSET_BITS
+#    define _FILE_OFFSET_BITS 64
+#  endif
 #  if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS==64)
 #    define off_t       int64_t
 #    define PRIdOFF     PRId64
@@ -459,22 +462,22 @@ typedef struct {
 #define IS_DIGIT(c)						isdigit((unsigned char)(c))
 #define IS_HEXDIGIT(c)					isxdigit((unsigned char)(c))
 #define IS_OCTDIGIT(c)					((c) >= '0' && (c) <= '7')
-#define SKIP_WHITESPACE(p)              while(*(p) && IS_WHITESPACE(*(p)))        (p)++;
-#define FIND_WHITESPACE(p)              while(*(p) && !IS_WHITESPACE(*(p)))       (p)++;
-#define SKIP_CHAR(p,c)                  while(*(p)==c)                            (p)++;
-#define FIND_CHAR(p,c)                  while(*(p) && *(p)!=c)                    (p)++;
-#define SKIP_CHARSET(p,s)               while(*(p) && strchr(s,*(p))!=NULL)       (p)++;
-#define FIND_CHARSET(p,s)               while(*(p) && strchr(s,*(p))==NULL)       (p)++;
+#define SKIP_WHITESPACE(p)              while((p) && *(p) && IS_WHITESPACE(*(p)))        (p)++;
+#define FIND_WHITESPACE(p)              while((p) && *(p) && !IS_WHITESPACE(*(p)))       (p)++;
+#define SKIP_CHAR(p,c)                  while((p) && *(p)==c)                            (p)++;
+#define FIND_CHAR(p,c)                  while((p) && *(p) && *(p)!=c)                    (p)++;
+#define SKIP_CHARSET(p,s)               while((p) && *(p) && strchr(s,*(p))!=NULL)       (p)++;
+#define FIND_CHARSET(p,s)               while((p) && *(p) && strchr(s,*(p))==NULL)       (p)++;
 #define SKIP_CRLF(p)					SKIP_CHARSET(p, "\r\n")
 #define FIND_CRLF(p)					FIND_CHARSET(p, "\r\n")
-#define SKIP_ALPHA(p)                   while(*(p) && IS_ALPHA(*(p)))             (p)++;
-#define FIND_ALPHA(p)                   while(*(p) && !IS_ALPHA(*(p)))            (p)++;
-#define SKIP_ALPHANUMERIC(p)            while(*(p) && IS_ALPHANUMERIC(*(p)))      (p)++;
-#define FIND_ALPHANUMERIC(p)            while(*(p) && !IS_ALPHANUMERIC(*(p)))     (p)++;
-#define SKIP_DIGIT(p)                   while(*(p) && IS_DIGIT(*(p)))             (p)++;
-#define FIND_DIGIT(p)                   while(*(p) && !IS_DIGIT(*(p)))            (p)++;
-#define SKIP_HEXDIGIT(p)                while(*(p) && IS_HEXDIGIT(*(p)))          (p)++;
-#define FIND_HEXDIGIT(p)                while(*(p) && !IS_HEXDIGIT(*(p)))         (p)++;
+#define SKIP_ALPHA(p)                   while((p) && *(p) && IS_ALPHA(*(p)))             (p)++;
+#define FIND_ALPHA(p)                   while((p) && *(p) && !IS_ALPHA(*(p)))            (p)++;
+#define SKIP_ALPHANUMERIC(p)            while((p) && *(p) && IS_ALPHANUMERIC(*(p)))      (p)++;
+#define FIND_ALPHANUMERIC(p)            while((p) && *(p) && !IS_ALPHANUMERIC(*(p)))     (p)++;
+#define SKIP_DIGIT(p)                   while((p) && *(p) && IS_DIGIT(*(p)))             (p)++;
+#define FIND_DIGIT(p)                   while((p) && *(p) && !IS_DIGIT(*(p)))            (p)++;
+#define SKIP_HEXDIGIT(p)                while((p) && *(p) && IS_HEXDIGIT(*(p)))          (p)++;
+#define FIND_HEXDIGIT(p)                while((p) && *(p) && !IS_HEXDIGIT(*(p)))         (p)++;
 
 #define HEX_CHAR_TO_INT(ch) 			(((ch)&0xf)+(((ch)>>6)&1)*9)
 #define DEC_CHAR_TO_INT(ch)				((ch)&0xf)

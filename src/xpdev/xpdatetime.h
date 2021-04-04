@@ -79,6 +79,7 @@ DLLEXPORT xpDateTime_t	DLLCALL xpDateTime_create(unsigned year, unsigned month, 
 DLLEXPORT xpDateTime_t	DLLCALL xpDateTime_now(void);
 DLLEXPORT time_t		DLLCALL xpDateTime_to_time(xpDateTime_t);
 DLLEXPORT time_t		DLLCALL xpDateTime_to_localtime(xpDateTime_t);
+DLLEXPORT xpDate_t		DLLCALL time_to_xpDate(time_t);
 DLLEXPORT xpDateTime_t	DLLCALL time_to_xpDateTime(time_t, xpTimeZone_t);
 DLLEXPORT xpDateTime_t	DLLCALL gmtime_to_xpDateTime(time_t);
 DLLEXPORT xpTimeZone_t	DLLCALL xpTimeZone_local(void);
