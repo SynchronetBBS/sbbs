@@ -1,27 +1,23 @@
-// $Id: ircd_channel.js,v 1.34 2019/08/06 20:44:39 deuce Exp $
-//
-// ircd_channel.js                
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
-//
-// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
-// ** Everything related to channels and their operation.
-//
+/*
 
-////////// Constants / Defines //////////
-const CHANNEL_REVISION = "$Revision: 1.34 $".split(' ')[1];
+ ircd/channel.js
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details:
+ https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+
+ Everything related to channels in the IRCd and their operation.
+
+ Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+
+*/
 
 const CHANMODE_NONE		=(1<<0); // NONE
 const CHANMODE_BAN		=(1<<1); // b
@@ -87,8 +83,11 @@ function Channel(nam) {
 ////////// Functions //////////
 
 function ChanMode_tweaktmpmode(tmp_bit,add) {
-	if (!this.chan.modelist[CHANMODE_OP][this.user.id] && 
-	    !this.user.server && !this.user.uline && !(this.mode&USERMODE_ADMIN)) {
+	if (   !this.chan.modelist[CHANMODE_OP][this.user.id]
+		&& !this.user.server
+		&& !this.user.uline
+		&& !(this.mode&USERMODE_ADMIN)
+	) {
 		this.user.numeric482(this.chan.nam);
 		return 0;
 	}
@@ -102,15 +101,17 @@ function ChanMode_tweaktmpmode(tmp_bit,add) {
 }
 
 function ChanMode_tweaktmpmodelist(tmp_bit,add,arg) {
-	if (!this.chan.modelist[CHANMODE_OP][this.user.id] &&
-	    !this.user.server && !this.user.uline && !(this.mode&USERMODE_ADMIN)) {
+	if (   !this.chan.modelist[CHANMODE_OP][this.user.id]
+		&& !this.user.server
+		&& !this.user.uline
+		&& !(this.mode&USERMODE_ADMIN)
+	) {
 		this.user.numeric482(this.chan.nam);
 		return 0;
 	}
 	for (lstitem in this.tmplist[tmp_bit][add]) {
 		// Is this argument in our list for this mode already?
-		if (this.tmplist[tmp_bit][add][lstitem].toUpperCase() ==
-		    arg.toUpperCase())
+		if (this.tmplist[tmp_bit][add][lstitem].toUpperCase() == arg.toUpperCase())
 			return 0;
 	}
 	// It doesn't exist on our mode, push it in.
@@ -122,8 +123,7 @@ function ChanMode_tweaktmpmodelist(tmp_bit,add,arg) {
 	else
 		oadd = true;
 	for (x in this.tmplist[tmp_bit][oadd]) {
-		if (this.tmplist[tmp_bit][oadd][x].toUpperCase() ==
-		    arg.toUpperCase()) {
+		if (this.tmplist[tmp_bit][oadd][x].toUpperCase() == arg.toUpperCase()) {
 			delete this.tmplist[tmp_bit][oadd][x];
 			return 0;
 		}
@@ -137,13 +137,14 @@ function ChanMode_affect_mode_list(list_bit) {
 			tmp_nick = Users[this.tmplist[list_bit][add][z].toUpperCase()];
 			if (!tmp_nick)
 				tmp_nick = search_nickbuf(this.tmplist[list_bit][add][z]);
-			if (tmp_nick && (add=="true") &&
-			    !this.chan.modelist[list_bit][tmp_nick.id]) {
+			if (tmp_nick && (add=="true") && !this.chan.modelist[list_bit][tmp_nick.id]) {
 				this.addmodes += MODE[list_bit].modechar;
 				this.addmodeargs += " " + tmp_nick.nick;
 				this.chan.modelist[list_bit][tmp_nick.id] = tmp_nick;
-			} else if (tmp_nick && (add=="false") &&
-			    this.chan.modelist[list_bit][tmp_nick.id]) {
+			} else if (tmp_nick
+						&& (add=="false")
+						&& this.chan.modelist[list_bit][tmp_nick.id]
+			) {
 				this.delmodes += MODE[list_bit].modechar;
 				this.delmodeargs += " " + tmp_nick.nick;
 				delete this.chan.modelist[list_bit][tmp_nick.id];
@@ -382,14 +383,24 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	// later display.  We also play with the channel bit switches here.
 	for (cm in MODE) {
 		if (MODE[cm].state) {
-			if ((cm&CHANMODE_KEY) && (cmode.addbits&CHANMODE_KEY)&& 
-			    cmode.state_arg[cm] && chan.arg[cm] &&
-			    !this.server && !this.parent && !bounce_modes) {
-				this.numeric(467, chan.nam +
-					" :Channel key already set.");
-			} else if ((cmode.addbits&cm) && (!(chan.mode&cm) ||
-			    ((cm==CHANMODE_LIMIT)&&(chan.arg[CHANMODE_LIMIT]!=
-			     cmode.state_arg[CHANMODE_LIMIT])) ) ) {
+			if (   (cm&CHANMODE_KEY)
+				&& (cmode.addbits&CHANMODE_KEY)
+				&& cmode.state_arg[cm]
+				&& chan.arg[cm]
+				&& !this.server
+				&& !this.parent
+				&& !bounce_modes
+			) {
+				this.numeric(467, format("%s :Channel key already set.", chan.nam));
+			} else if (   (cmode.addbits&cm)
+						&& (
+							   !(chan.mode&cm)
+							|| (
+								  (cm==CHANMODE_LIMIT)
+								&&(chan.arg[CHANMODE_LIMIT]!=cmode.state_arg[CHANMODE_LIMIT])
+							   )
+						   )
+			) {
 				cmode.addmodes += MODE[cm].modechar;
 				chan.mode |= cm;
 				if (MODE[cm].args && MODE[cm].state) {
@@ -413,7 +424,13 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	// we simply display a list of bans on the channel.
 	if (cmode.addbits&CHANMODE_BAN) {
 		for (the_ban in chan.modelist[CHANMODE_BAN]) {
-			this.numeric(367, chan.nam + " " + chan.modelist[CHANMODE_BAN][the_ban] + " " + chan.bancreator[the_ban] + " " + chan.bantime[the_ban]);
+			this.numeric(367, format(
+				"%s %s %s %s",
+				chan.nam,
+				chan.modelist[CHANMODE_BAN][the_ban],
+				chan.bancreator[the_ban],
+				chan.bantime[the_ban]
+			));
 		}
 		this.numeric(368, chan.nam + " :End of Channel Ban List.");
 	}
@@ -422,8 +439,10 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	for (z in cmode.tmplist[CHANMODE_BAN][true]) { // +b
 		var set_ban = create_ban_mask(
 			cmode.tmplist[CHANMODE_BAN][add][z]);
-		if ((chan.count_modelist(CHANMODE_BAN) >= max_bans) &&
-		     !this.server && !this.parent) {
+		if (   (chan.count_modelist(CHANMODE_BAN) >= max_bans)
+			&& !this.server
+			&& !this.parent
+		) {
 			this.numeric(478, chan.nam + " " + set_ban + " :" +
 				"Cannot add ban, channel's ban list is full.");
 		} else if (set_ban && !chan.isbanned(set_ban)) {
@@ -437,8 +456,9 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 
 	for (z in cmode.tmplist[CHANMODE_BAN][false]) { // -b
 		for (ban in chan.modelist[CHANMODE_BAN]) {
-			if (cmode.tmplist[CHANMODE_BAN][false][z].toUpperCase()
-			    == chan.modelist[CHANMODE_BAN][ban].toUpperCase()) {
+			if (   cmode.tmplist[CHANMODE_BAN][false][z].toUpperCase()
+			    == chan.modelist[CHANMODE_BAN][ban].toUpperCase()
+			) {
 				cmode.delmodes += "b";
 				cmode.delmodeargs += " " +
 					cmode.tmplist[CHANMODE_BAN][false][z];
@@ -559,8 +579,9 @@ function IRCClient_do_join(chan_name,join_key) {
 					+ " :Cannot join channel (+i: invite only)");
 				return 0;
 			}
-			if ((chan.mode&CHANMODE_LIMIT) && (true_array_len(chan.users)
-			     	>= chan.arg[CHANMODE_LIMIT]) ) {
+			if (   (chan.mode&CHANMODE_LIMIT)
+				&& (true_array_len(chan.users) >= chan.arg[CHANMODE_LIMIT])
+			) {
 				this.numeric("471", chan.nam
 					+ " :Cannot join channel (+l: channel is full)");
 				return 0;
@@ -592,10 +613,13 @@ function IRCClient_do_join(chan_name,join_key) {
 			}
 		}
 		if (chan_name[0] != "&") {
-			this.bcast_to_servers_raw(":" + this.nick + " SJOIN "
-				+ chan.created + " " + chan.nam,BAHAMUT);
-			this.bcast_to_servers_raw(":" + this.nick + " JOIN "
-				+ chan.nam + " " + chan.created,DREAMFORGE);
+			this.bcast_to_servers_raw(
+				format(":%s SJOIN %s %s",
+					this.nick,
+					chan.created,
+					chan.nam
+				)
+			);
 		}
 	} else {
 		// create a new channel
@@ -610,16 +634,16 @@ function IRCClient_do_join(chan_name,join_key) {
 			chan.modelist[CHANMODE_OP][this.id] = this;
 		}
 		if (chan_name[0] != "&") {
-			this.bcast_to_servers_raw(":" + servername + " SJOIN "
-				+ chan.created + " " + chan.nam + " "
-				+ chan.chanmode() + " :" + create_op + this.nick,BAHAMUT);
-			this.bcast_to_servers_raw(":" + this.nick + " JOIN "
-				+ chan.nam,DREAMFORGE);
-			if (create_op) {
-				server_bcast_to_servers(":" + servername + " MODE "
-					+ chan.nam + " +o " + this.nick + " "
-					+ chan.created,DREAMFORGE);
-			}
+			this.bcast_to_servers_raw(
+				format(":%s SJOIN %s %s %s :%s%s",
+					servername,
+					chan.created,
+					chan.nam,
+					chan.chanmode(),
+					create_op,
+					this.nick
+				)
+			);
 		}
 	}
 	if (this.invited.toUpperCase() == chan.nam.toUpperCase())

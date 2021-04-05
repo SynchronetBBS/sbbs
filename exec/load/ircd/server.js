@@ -1,33 +1,28 @@
-// $Id: ircd_server.js,v 1.60 2020/04/03 22:21:51 deuce Exp $
-//
-// ircd_channel.js                
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
-//
-// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
-// ** Server to server operation is governed here.
-//
+/*
 
-////////// Constants / Defines //////////
-const SERVER_REVISION = "$Revision: 1.60 $".split(' ')[1];
+ ircd/server.js
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details:
+ https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+
+ IRCd inter-server communication.
+
+ Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+
+*/
 
 // Various N:Line permission bits
 const NLINE_CHECK_QWKPASSWD		=(1<<0);	// q
 const NLINE_IS_QWKMASTER		=(1<<1);	// w
 const NLINE_CHECK_WITH_QWKMASTER	=(1<<2);	// k
-const NLINE_IS_DREAMFORGE		=(1<<3);	// d
 
 ////////// Objects //////////
 function IRC_Server() {
@@ -53,7 +48,6 @@ function IRC_Server() {
 	this.outgoing = false;
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
-	this.type = BAHAMUT; /* Assume bahamut by default */
 	////////// FUNCTIONS
 	// Functions we use to control clients (specific)
 	this.quit = Server_Quit;
@@ -380,16 +374,6 @@ function Server_Work(cmdline) {
 					chan.created = cmd2_int;
 				}
 				cmd.shift();
-			} else if ( (cmdend_int == cmd[cmdend])
-					&& (this.type == DREAMFORGE) ) {
-				/* DreamForge style TS */
-				if (cmdend_int > chan.created) {
-					break;
-				} else if ((cmdend_int < chan.created) && ThisOrigin.server) {
-					bounce_modes = true;
-					chan.created = cmdend_int;
-				}
-				cmd.pop(); /* Strip the TS. */
 			}
 			cmd.shift();
 			cmd.shift();
@@ -409,11 +393,13 @@ function Server_Work(cmdline) {
 		if (cmd[1][0] == ":")
 			cmd[1] = cmd[1].slice(1);
 		if (wildmatch(servername, cmd[1])) {
-			umode_notice(USERMODE_SPY,"Spy",
-				"MOTD requested by " + ThisOrigin.nick+
-				" (" + ThisOrigin.uprefix + "@" +
-				ThisOrigin.hostname + ") [" +
-				ThisOrigin.servername + "]");
+			umode_notice(USERMODE_STATS_LINKS,"StatsLinks",format(
+				"MOTD requested by %s (%s@%s) [%s]",
+				ThisOrigin.nick,
+				ThisOrigin.uprefix,
+				ThisOrigin.hostname,
+				ThisOrigin.servername
+			));
 			ThisOrigin.motd();
 		} else {
 			var dest_server = searchbyserver(cmd[1]);
@@ -432,8 +418,9 @@ function Server_Work(cmdline) {
 					gnotice("Server " + this.nick + " trying to introduce nick " + collide.nick
 						+ " twice?! Ignoring.");
 					break;
-				} else if ((parseInt(collide.created) >
-				    parseInt(cmd[3])) && this.hub) {
+				} else if (   (parseInt(collide.created) > parseInt(cmd[3]))
+							&& this.hub
+				) {
 					// Nuke our side of things, allow this newly
 					// introduced nick to overrule.
 					collide.numeric(436, collide.nick + " :Nickname Collision KILL.");
@@ -454,8 +441,6 @@ function Server_Work(cmdline) {
 				}
 			}
 			var uprefixptr = 5; /* Bahamut */
-			if (this.type == DREAMFORGE)
-				uprefixptr = 4;
 			if (!this.hub) {
 				if(!this.check_nickname(cmd[1],true)) {
 					gnotice("Server " + this.nick + " trying to introduce invalid nickname: " + cmd[1]
@@ -479,36 +464,22 @@ function Server_Work(cmdline) {
 					break;
 				}
 			}
-			if (cmd[uprefixptr+1][0] == ".")	/* CR "hidden mask" fix. */
-				cmd[uprefixptr+1] = cmd[uprefixptr+1].slice(1);
 			var new_id = "id" + next_client_id;
 			next_client_id++;
 			Users[cmd[1].toUpperCase()] = new IRC_User(new_id);
 			var NewNick = Users[cmd[1].toUpperCase()];
 			NewNick.local = false; // not local. duh.
 			NewNick.nick = cmd[1];
-			/* What the hell.  CR reverses these at random. */
-			if (parseInt(cmd[2]) > 100) {
-				NewNick.created = cmd[2];
-				NewNick.hops = cmd[3];
-			} else {
-				NewNick.hops = cmd[2];
-				NewNick.created = cmd[3];
-			}
+			NewNick.hops = cmd[2];
+			NewNick.created = cmd[3];
 			NewNick.uprefix = cmd[uprefixptr];
 			NewNick.hostname = cmd[uprefixptr+1];
 			NewNick.servername = cmd[uprefixptr+2];
 			var rnptr = 10; /* Bahamut */
-			if (this.type == DREAMFORGE)
-				rnptr = 8;
 			NewNick.realname = IRC_string(cmdline,rnptr);
 			NewNick.parent = this.nick;
-			if (this.type == DREAMFORGE)
-				NewNick.ip = 0;
-			else /* Bahamut */
-				NewNick.ip = int_to_ip(cmd[9]);
-			if (this.type == BAHAMUT)
-				NewNick.setusermode(cmd[4]);
+			NewNick.ip = int_to_ip(cmd[9]);
+			NewNick.setusermode(cmd[4]);
 			for (u in ULines) {
 				if (ULines[u] == cmd[uprefixptr+2]) {
 					NewNick.uline = true;
@@ -516,26 +487,28 @@ function Server_Work(cmdline) {
 				}
 			}
 			var true_hops = parseInt(NewNick.hops)+1;
-			this.bcast_to_servers_raw("NICK "
-				+ NewNick.nick + " "
-				+ true_hops + " "
-				+ NewNick.created + " "
-				+ NewNick.get_usermode(true) + " "
-				+ NewNick.uprefix + " "
-				+ NewNick.hostname + " "
-				+ NewNick.servername + " "
-				+ "0 "
-				+ ip_to_int(NewNick.ip)
-				+ " :" + NewNick.realname,BAHAMUT);
-			this.bcast_to_servers_raw("NICK "
-				+ NewNick.nick + " "
-				+ true_hops + " "
-				+ NewNick.created + " "
-				+ NewNick.uprefix + " "
-				+ NewNick.hostname + " "
-				+ NewNick.servername + " "
-				+ "0 "
-				+ ":" + NewNick.realname,DREAMFORGE);
+			this.bcast_to_servers_raw(
+				format("NICK %s %s %s %s %s %s %s 0 %s :%s",
+					NewNick.nick,
+					true_hops,
+					NewNick.created,
+					NewNick.get_usermode(true),
+					NewNick.uprefix,
+					NewNick.hostname,
+					NewNick.servername,
+					ip_to_int(NewNick.ip),
+					NewNick.realname
+				)
+			);
+			umode_notice(USERMODE_DEBUG,"RemoteClient",format(
+				"NICK %s %s@%s %s %s :%s",
+				NewNick.nick,
+				NewNick.uprefix,
+				NewNick.hostname,
+				NewNick.servername,
+				NewNick.ip,
+				NewNick.realname
+			));
 		} else { // we're a user changing our nick.
 			var ctuc = cmd[1].toUpperCase();
 			if ((Users[ctuc])&&Users[ctuc].nick.toUpperCase() !=
@@ -606,14 +579,14 @@ function Server_Work(cmdline) {
 			var dest_server = searchbyserver(cmd[4]);
 			if (!dest_server) {
 				break;
-			} else if ((dest_server == -1) &&
-			    (this.flags&NLINE_IS_QWKMASTER)) {
+			} else if (   (dest_server == -1)
+						&& (this.flags&NLINE_IS_QWKMASTER)
+			) {
 				var qwkid = cmd[2].toLowerCase();
 				var hunt = qwkid + ".synchro.net";
 				var my_server = 0;
 				for (ur in Unregistered) {
-					if (Unregistered[ur].nick ==
-					    hunt) {
+					if (Unregistered[ur].nick == hunt) {
 						my_server = Unregistered[ur];
 						break;
 					}
@@ -765,8 +738,9 @@ function Server_Work(cmdline) {
 				var my_modechar = cmd[3][tmpmc];
 				if (my_modechar == "+")
 					continue;
-				if ((my_modechar == "k") ||
-				    (my_modechar == "l")) {
+				if (   (my_modechar == "k")
+					|| (my_modechar == "l")
+				) {
 					tmp_modeargs++;
 					incoming_modes[my_modechar] = cmd[tmp_modeargs];
 				} else {
@@ -788,7 +762,7 @@ function Server_Work(cmdline) {
 			/* The following corrects a bug in Bahamut.. */
 			if ((cmd[4] == "") && cmd[5])
 				tmp_modeargs++;
-			
+
 			tmp_modeargs++; /* Jump to start of string */
 			chan_members = IRC_string(cmdline,tmp_modeargs).split(' ');
 
@@ -798,7 +772,7 @@ function Server_Work(cmdline) {
 				break;
 			}
 
-			cm_array = new Array; /* True array */
+			cm_array = [];
 
 			for (cm in chan_members) {
 				var isop = false;
@@ -860,8 +834,6 @@ function Server_Work(cmdline) {
 				chan.users[member_obj.id] = member_obj;
 				var joinstr = "JOIN " + chan.nam;
 				member_obj.bcast_to_channel(chan, joinstr, false);
-				member_obj.bcast_to_servers_raw(":" + member_obj.nick
-					+ " " + joinstr, DREAMFORGE);
 				if (chan.created >= parseInt(cmd[1])) {
 					if (is_op) {
 						chan.modelist[CHANMODE_OP][member_obj.id]=member_obj.id;
@@ -874,7 +846,6 @@ function Server_Work(cmdline) {
 						var mode1str = "MODE " + chan.nam + " "
 							+ push_sync_modes + push_sync_args;
 						this.bcast_to_channel(chan,mode1str);
-						this.bcast_to_servers(mode1str,DREAMFORGE);
 						push_sync_modes = "+";
 						push_sync_args = "";
 						num_sync_modes = 0;
@@ -890,7 +861,6 @@ function Server_Work(cmdline) {
 						var mode2str = "MODE " + chan.nam + " "
 							+ push_sync_modes + push_sync_args;
 						this.bcast_to_channel(chan,mode2str);
-						this.bcast_to_servers(mode2str,DREAMFORGE);
 						push_sync_modes = "+";
 						push_sync_args = "";
 						num_sync_modes = 0;
@@ -902,19 +872,21 @@ function Server_Work(cmdline) {
 				var mode3str = "MODE " + chan.nam + " "
 					+ push_sync_modes + push_sync_args;
 				this.bcast_to_channel(chan, mode3str);
-				this.bcast_to_servers(mode3str,DREAMFORGE);
 			}
 
 			// Synchronize the TS to what we received.
 			if (chan.created > parseInt(cmd[1]))
 				chan.created = parseInt(cmd[1]);
 
-			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " "
-				+ "SJOIN "
-				+ chan.created + " "
-				+ chan.nam + " "
-				+ chan.chanmode(true) + " "
-				+ ":" + new_chan_members,BAHAMUT)
+			this.bcast_to_servers_raw(
+				format(":%s SJOIN %s %s %s :%s",
+					ThisOrigin.nick,
+					chan.created,
+					chan.nam,
+					chan.chanmode(true),
+					new_chan_members
+				)
+			);
 		} else {
 			if (ThisOrigin.server) {
 				umode_notice(USERMODE_OPER,"Notice", "Server " + ThisOrigin.nick
@@ -926,8 +898,13 @@ function Server_Work(cmdline) {
 			ThisOrigin.channels[chan.nam.toUpperCase()] = chan;
 			chan.users[ThisOrigin.id] = ThisOrigin;
 			ThisOrigin.bcast_to_channel(chan, "JOIN " + chan.nam, false);
-			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " SJOIN " + chan.created +" "+ chan.nam,BAHAMUT);
-			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " JOIN " + chan.nam,DREAMFORGE);
+			this.bcast_to_servers_raw(
+				format(":%s SJOIN %s %s",
+					ThisOrigin.nick,
+					chan.created,
+					chan.nam
+				)
+			);
 		}
 		break;
 	case "SQUIT":
@@ -1111,17 +1088,17 @@ function Server_Work(cmdline) {
 
 		var akill_reason = IRC_string(cmdline,8);
 
-		var snd_prefix = ":" + ThisOrigin.nick + " ";
-
 		/* Propagate this to the network */
-		this.bcast_to_servers_raw(snd_prefix + cmdline,DREAMFORGE);
-		this.bcast_to_servers_raw(snd_prefix + "AKILL "
-			+ cmd[4] + " "				/* host */
-			+ cmd[3] + " "				/* user */
-			+ (cmd[7]-cmd[6]) + " "		/* length */
-			+ cmd[5] + " "				/* akiller */
-			+ ":" + akill_reason		/* reason */
-		,BAHAMUT);
+		this.bcast_to_servers_raw(
+			format(":%s AKILL %s %s %s %s :%s",
+				ThisOrigin.nick,
+				cmd[4],				/* host */
+				cmd[3],				/* user */
+				(cmd[7]-cmd[6]),	/* length */
+				cmd[5],				/* akiller */
+				akill_reason		/* reason */
+			)
+		);
 
 		var this_uh = cmd[3] + "@" + cmd[4];
 		if (isklined(this_uh))
@@ -1134,10 +1111,6 @@ function Server_Work(cmdline) {
 	case "CAPAB":
 	case "BURST":
 	case "SVSMODE":
-	case "NETINFO": /* Dreamforge/Unreal/CR */
-	case "SMO": /* Dreamforge/Unreal/CR -- Send Usermode */
-	case "EOS": /* Dreamforge/Unreal/CR -- End Of Synch */
-	case "TUNL": /* Dreamforge/Unreal/CR */
 	case "SETHOST": /* We do not honour SETHOST. */
 		break; // Silently ignore for now.
 	default:
@@ -1164,18 +1137,16 @@ function server_bcast_to_servers(str,type) {
 	}
 }
 
-function IRCClient_bcast_to_servers(str,type) {
+function IRCClient_bcast_to_servers(str) {
 	for(thisClient in Local_Servers) {
-		var srv = Local_Servers[thisClient];
-		if ( (srv.nick != this.parent) && (!type || (srv.type == type)))
+		if (Local_Servers[thisClient].nick != this.parent)
 			Local_Servers[thisClient].originatorout(str,this);
 	}
 }
 
-function IRCClient_bcast_to_servers_raw(str,type) {
+function IRCClient_bcast_to_servers_raw(str) {
 	for(thisClient in Local_Servers) {
-		var srv = Local_Servers[thisClient];
-		if ( (srv.nick != this.parent) && (!type || (srv.type == type)))
+		if (Local_Servers[thisClient].nick != this.parent)
 			Local_Servers[thisClient].rawout(str);
 	}
 }
@@ -1186,8 +1157,6 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 
 	if (is_netsplit) {
 		this.netsplit(str);
-		/* Fix for DreamForge's lack of NOQUIT */
-		this.bcast_to_servers_raw("SQUIT " + this.nick + " :" + str,DREAMFORGE);
 	} else if (this.local) {
 		this.netsplit(servername + " " + this.nick);
 		if (!suppress_bcast)
@@ -1267,22 +1236,26 @@ function IRCClient_server_info(sni_server) {
 }
 
 function IRCClient_server_nick_info(sni_client) {
-	var actual_hops = parseInt(sni_client.hops) + 1;
-	var sendstr = "NICK " + sni_client.nick + " " + actual_hops + " " + sni_client.created + " ";
-	if (this.type == BAHAMUT)
-		sendstr += sni_client.get_usermode(true) + " ";
-	sendstr += sni_client.uprefix + " " + sni_client.hostname + " " + sni_client.servername + " 0 ";
-	if (this.type == BAHAMUT)
-		sendstr += ip_to_int(sni_client.ip) + " ";
-	sendstr += ":" + sni_client.realname;
+	this.rawout(
+		format("NICK %s %s %s %s %s %s %s 0 %s :%s",
+			sni_client.nick,
+			parseInt(sni_client.hops) + 1,
+			sni_client.created,
+			sni_client.get_usermode(true),
+			sni_client.uprefix,
+			sni_client.hostname,
+			sni_client.servername,
+			ip_to_int(sni_client.ip),
+			sni_client.realname
+		)
+	);
 
-	this.rawout(sendstr);
-
-	if (this.type == DREAMFORGE)
-		this.rawout(":" + sni_client.nick + " MODE " + sni_client.nick + " :" + sni_client.get_usermode(true));
-
-	if (sni_client.away)
-		this.rawout(":" + sni_client.nick + " AWAY :" + sni_client.away);
+	if (sni_client.away) {
+		this.rawout(format(":%s AWAY :%s",
+			sni_client.nick,
+			sni_client.away
+		));
+	}
 }
 
 function IRCClient_reintroduce_nick(nick) {
@@ -1290,55 +1263,40 @@ function IRCClient_reintroduce_nick(nick) {
 
 	for (uchan in nick.channels) {
 		var chan = nick.channels[uchan];
-		if (this.type == DREAMFORGE) {
-			this.rawout(":" + nick.nick + " JOIN " + chan.nam);
-			if (chan.modelist[CHANMODE_OP][nick.id])
-				this.ircout("MODE " + chan.nam + " +o " + nick.nick + " " + chan.created);
-			if (chan.modelist[CHANMODE_VOICE][nick.id])
-				this.ircout("MODE " + chan.nam + " +v " + nick.nick + " " + chan.created);
-		} else { /* Bahamut */
-			var cmodes = "";
-			if (chan.modelist[CHANMODE_OP][nick.id])
-				cmodes += "@";
-			if (chan.modelist[CHANMODE_VOICE][nick.id])
-				cmodes += "+";
-			this.rawout("SJOIN " + chan.created + " " + chan.nam + " " + chan.chanmode(true)
-				+ " :" + cmodes + nick.nick);
+		var cmodes = "";
+		if (chan.modelist[CHANMODE_OP][nick.id])
+			cmodes += "@";
+		if (chan.modelist[CHANMODE_VOICE][nick.id])
+			cmodes += "+";
+		this.rawout(
+			format("SJOIN %s %s %s :%s%s",
+				chan.created,
+				chan.nam,
+				chan.chanmode(true),
+				cmodes,
+				nick.nick
+			)
+		);
+		if (chan.topic) {
+			this.rawout(
+				format("TOPIC %s %s %s :%s",
+					chan.nam,
+					chan.topicchangedby,
+					chan.topictime,
+					chan.topic
+				)
+			);
 		}
-		if (chan.topic)
-			this.rawout("TOPIC " + chan.nam + " " + chan.topicchangedby + " " + chan.topictime
-				+ " :" + chan.topic);
 	}
 }
 
 function IRCClient_server_chan_info(sni_chan) {
-	if (this.type == DREAMFORGE) {
-		var df_chan_occs = sni_chan.occupants().split(' ');
-		for (dfocc in df_chan_occs) {
-			var cmember = df_chan_occs[dfocc];
-			var mem_is_op = false;
-			var mem_is_voice = false;
-			if (cmember[0] == "@") {
-				cmember = cmember.slice(1);
-				mem_is_op = true;
-			}
-			if (cmember[0] == "+") {
-				cmember = cmember.slice(1);
-				mem_is_voice = true;
-			}
-			this.rawout(":" + cmember + " JOIN " + sni_chan.nam);
-			if (mem_is_op)
-				this.ircout("MODE " + sni_chan.nam + " +o " + cmember + " "
-					+ sni_chan.created);
-			if (mem_is_voice)
-				this.ircout("MODE " + sni_chan.nam + " +v " + cmember + " "
-					+ sni_chan.created);
-		}
-		this.ircout("MODE " + sni_chan.nam + " " + sni_chan.chanmode(true) + " " + sni_chan.created);
-	} else { /* Bahamut */
-		this.rawout("SJOIN " + sni_chan.created + " " + sni_chan.nam + " " + sni_chan.chanmode(true)
-			+ " :" + sni_chan.occupants())
-	}
+	this.rawout(format("SJOIN %s %s %s :%s",
+			sni_chan.created,
+			sni_chan.nam,
+			sni_chan.chanmode(true),
+			sni_chan.occupants()
+	));
 	var modecounter=0;
 	var modestr="+";
 	var modeargs="";
@@ -1349,20 +1307,22 @@ function IRCClient_server_chan_info(sni_chan) {
 			modeargs += " ";
 		modeargs += sni_chan.modelist[CHANMODE_BAN][aBan];
 		if (modecounter >= max_modes) {
-			var outstr = "MODE " + sni_chan.nam + " " + modestr + " " + modeargs;
-			if (this.type == DREAMFORGE)
-				outstr += " " + sni_chan.created;
-			this.ircout(outstr);
+			this.ircout(format("MODE %s %s %s",
+				sni_chan.nam,
+				modestr,
+				modeargs
+			));
 			modecounter=0;
 			modestr="+";
 			modeargs="";
 		}
 	}
 	if (modeargs) {
-		var outstr = "MODE " + sni_chan.nam + " " + modestr + " " + modeargs;
-		if (this.type == DREAMFORGE)
-			outstr += " " + sni_chan.created;
-		this.ircout(outstr);
+		this.ircout(format("MODE %s %s %s",
+			sni_chan.nam,
+			modestr,
+			modeargs
+		));
 	}
 }
 

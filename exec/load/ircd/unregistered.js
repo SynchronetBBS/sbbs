@@ -1,34 +1,31 @@
-// $Id: ircd_unreg.js,v 1.53 2020/04/04 03:34:03 deuce Exp $
-//
-// ircd_unreg.js
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
-//
-// Copyright 2003-2010 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
-// ** Handle unregistered clients.
-//
+/*
 
-const UNREG_REVISION = "$Revision: 1.53 $".split(' ')[1];
+ ircd/unregistered.js
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details:
+ https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+
+ How unregistered clients are handled in the IRCd.
+
+ Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+
+*/
 
 ////////// Objects //////////
 function Unregistered_Client(id,socket) {
 	////////// VARIABLES
 	// Bools/Flags that change depending on connection state.
-	this.pinged = false;	   // Sent PING?
-	this.local = true;	   // FIXME: this is redundant.
-	this.criteria_met = false; // Have we met registration criteria?
+	this.pinged = false;		// Sent PING?
+	this.local = true;			// FIXME: this is redundant.
+	this.criteria_met = false;	// Have we met registration criteria?
 	// Variables containing user/server information as we receive it.
 	this.id = id;
 	this.nick = "*";
@@ -48,7 +45,6 @@ function Unregistered_Client(id,socket) {
 	////////// FUNCTIONS
 	// Functions we use to control clients (specific)
 	this.work = Unregistered_Commands;
-//	this.JSON_Unregistered_Commands = JSON_Unregistered_Commands;
 	this.IRC_Unregistered_Commands = IRC_Unregistered_Commands;
 	this.quit = Unregistered_Quit;
 	this.check_timeout = IRCClient_check_timeout;
@@ -73,13 +69,17 @@ function Unregistered_Client(id,socket) {
 	Local_Sockets[id] = socket.descriptor;
 	Local_Sockets_Map[id] = this;
 	rebuild_socksel_array = true;
-	log(format("%04u",socket.descriptor)
-		+ " Accepted new connection: " + this.ip
-		+ " port " + socket.remote_port);
-	if ((this.ip.slice(0,4) == "127.") ||
-	    (this.ip.slice(0,3) == "10.") ||
-	    (this.ip.slice(0,8) == "192.168.") ||
-	    (this.ip.slice(0,7) == "172.16." )) {
+	log(format("%04u Accepted new connection: %s port %s",
+		socket.descriptor,
+		this.ip,
+		socket.remote_port
+	));
+	if (   (this.ip.slice(0,4) == "127.")
+		|| (this.ip.slice(0,3) == "10.")
+		|| (this.ip.slice(0,8) == "192.168.")
+		|| (this.ip.slice(0,7) == "100.64.")
+		|| (this.ip.slice(0,7) == "172.16." )
+	) {
 		this.hostname = servername;
 		this.pending_resolve_time = false;
 	} else {
@@ -99,7 +99,7 @@ function Unregistered_Commands(cmdline) {
 		cmdline = cmdline.slice(1);
 
 	if (debug)
-		log(LOG_DEBUG,"[UNREG]: " + cmdline);
+		log("[UNREG]: " + cmdline);
 
 	this.IRC_Unregistered_Commands(cmdline);
 }
@@ -128,7 +128,7 @@ function IRC_Unregistered_Commands(cmdline) {
 		return 0;
 
 	var legal_command = true; /* For tracking STATS M */
-	
+
 	switch(command) {
 		case "PING":
 			if (!cmd[1]) {
@@ -137,6 +137,7 @@ function IRC_Unregistered_Commands(cmdline) {
 			}
 			this.rawout("PONG " + servername + " :" + IRC_string(cmdline,1));
 			break;
+		case "CAP":
 		case "CAPAB":
 			break; // Silently ignore, for now.
 		case "NICK":
@@ -166,23 +167,25 @@ function IRC_Unregistered_Commands(cmdline) {
 				break;
 			}
 			if (Servers[cmd[1].toLowerCase()]) {
-	     			if (parseInt(cmd[2]) < 2)
+				if (parseInt(cmd[2]) < 2)
 					this.quit("Server already exists.");
 				return 0;
 			}
 			var this_nline = 0;
 			var qwk_slave = false;
 			var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
-     			if (parseInt(cmd[2]) < 2) {
+			if (parseInt(cmd[2]) < 2) {
 				for (nl in NLines) {
-					if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
-					    wildmatch(cmd[1],NLines[nl].servername)) {
+					if (   (NLines[nl].flags&NLINE_CHECK_QWKPASSWD)
+						&& wildmatch(cmd[1],NLines[nl].servername)
+					) {
 						if (check_qwk_passwd(qwkid,this.password)) {
 							this_nline = NLines[nl];
 							break;
 						}
-					} else if ((NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER) &&
-						   wildmatch(cmd[1],NLines[nl].servername)) {
+					} else if (   (NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER)
+								&& wildmatch(cmd[1],NLines[nl].servername)
+					) {
 							for (qwkm_nl in NLines) {
 								if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
 									var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
@@ -190,24 +193,33 @@ function IRC_Unregistered_Commands(cmdline) {
 										this.quit("No QWK master available for authorization.");
 										return 0;
 									} else {
-										qwk_master.rawout(":" + servername + " PASS " + this.password + " :" + qwkid + " QWK");
+										qwk_master.rawout(format(
+											":%s PASS %s :%s QWK",
+											servername,
+											this.password,
+											qwkid
+										));
 										qwk_slave = true;
 									}
 								}
 							}
-					} else if ((NLines[nl].password == this.password) &&
-						   (wildmatch(cmd[1],NLines[nl].servername))
-						  ) {
-							this_nline = NLines[nl];
-							break;
+					} else if (   (NLines[nl].password == this.password)
+								&& (wildmatch(cmd[1],NLines[nl].servername))
+					) {
+						this_nline = NLines[nl];
+						break;
 					}
 				}
 			}
-			if ( (!this_nline ||
-			      ( (this_nline.password == "*") && !this.outgoing
-				&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
-			     ) && !qwk_slave) {
-	     			if (parseInt(cmd[2]) < 2)
+			if (   !qwk_slave
+				&& (   !this_nline
+					|| (   (this_nline.password == "*")
+						&& !this.outgoing
+						&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD)
+					)
+				)
+			) {
+				if (parseInt(cmd[2]) < 2)
 					this.quit("UR Server not configured.");
 				return 0;
 			}
@@ -247,8 +259,6 @@ function IRC_Unregistered_Commands(cmdline) {
 					}
 				}
 			}
-			if (this_nline.flags&NLINE_IS_DREAMFORGE)
-				new_server.type = DREAMFORGE;
 			new_server.finalize_server_connect("TS",this.sendps);
 			this.replaced_with = new_server;
 			break;
@@ -357,13 +367,9 @@ function Unregistered_Welcome() {
 	var my_iline;
 	// FIXME: We don't compare connecting port.
 	for(thisILine in ILines) {
-		if ((wildmatch(this.uprefix + "@" +
-		    this.ip,
-		    ILines[thisILine].ipmask)) &&
-		    (wildmatch(this.uprefix + "@" +
-		    this.hostname,
-		    ILines[thisILine].hostmask))
-		   ) {
+		if (   (wildmatch(this.uprefix + "@" + this.ip, ILines[thisILine].ipmask))
+			&& (wildmatch(this.uprefix + "@" + this.hostname, ILines[thisILine].hostmask))
+		) {
 			my_iline = ILines[thisILine];
 			break;
 		}
@@ -425,9 +431,18 @@ function Unregistered_Welcome() {
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
 	var nickstr = "NICK " + this.nick + " 1 " + new_user.created + " ";
-	server_bcast_to_servers(nickstr + "+ " + this.uprefix + " " + this.hostname + " " + servername + " 0 " + ip_to_int(new_user.ip) + " :" + this.realname,BAHAMUT);
-	server_bcast_to_servers(nickstr + this.uprefix + " " + this.hostname + " " + servername + " 0 " + " :" + this.realname,DREAMFORGE);
-	// we're no longer unregistered.
+	server_bcast_to_servers(
+		format("NICK %s 1 %s + %s %s %s 0 %s :%s",
+			this.nick,
+			new_user.created,
+			this.uprefix,
+			this.hostname,
+			servername,
+			ip_to_int(new_user.ip),
+			this.realname
+		)
+	);
+	/* we're no longer unregistered. */
 	this.replaced_with = new_user;
 	delete Unregistered[this.id];
 	delete this;
