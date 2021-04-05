@@ -1,27 +1,23 @@
-// $Id: ircd_user.js,v 1.53 2020/04/03 23:27:54 deuce Exp $
-//
-// ircd_unreg.js
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
-//
-// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
-// ** Handle registered clients.
-//
+/*
 
-////////// Constants / Defines //////////
-const USER_REVISION = "$Revision: 1.53 $".split(' ')[1];
+ ircd/user.js
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details:
+ https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+
+ Handling of regular user-to-server communication in the IRCd.
+
+ Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+
+*/
 
 const USERMODE_NONE			=(1<<0); // NONE
 const USERMODE_OPER			=(1<<1); // o
@@ -34,7 +30,7 @@ const USERMODE_CLIENT		=(1<<7); // c
 const USERMODE_REJECTED		=(1<<8); // r
 const USERMODE_KILL			=(1<<9); // k
 const USERMODE_FLOOD		=(1<<10); // f
-const USERMODE_SPY			=(1<<11); // y
+const USERMODE_STATS_LINKS	=(1<<11); // y
 const USERMODE_DEBUG		=(1<<12); // d
 const USERMODE_ROUTING		=(1<<13); // n
 const USERMODE_HELP			=(1<<14); // h
@@ -52,7 +48,7 @@ USERMODE_CHAR["c"] = USERMODE_CLIENT;
 USERMODE_CHAR["r"] = USERMODE_REJECTED;
 USERMODE_CHAR["k"] = USERMODE_KILL;
 USERMODE_CHAR["f"] = USERMODE_FLOOD;
-USERMODE_CHAR["y"] = USERMODE_SPY;
+USERMODE_CHAR["y"] = USERMODE_STATS_LINKS;
 USERMODE_CHAR["d"] = USERMODE_DEBUG;
 USERMODE_CHAR["n"] = USERMODE_ROUTING;
 USERMODE_CHAR["h"] = USERMODE_HELP;
@@ -67,7 +63,7 @@ USERMODE_BCAST["h"] = true;
 USERMODE_BCAST["A"] = true;
 
 // FIXME: Services modes are broadcast but not displayed to the user.
-USERMODE_SERVICES = new Object;
+USERMODE_SERVICES = {};
 
 // Various permissions that can be set on an O:Line
 const OLINE_CAN_REHASH		=(1<<0);	// r
@@ -311,7 +307,7 @@ function User_Work(cmdline) {
 			this.numeric(409,":No origin specified.");
 			break;
 		}
-    if (cmd[1][0] == ":") cmd[1] = cmd[1].slice(1);
+	if (cmd[1][0] == ":") cmd[1] = cmd[1].slice(1);
 		if (cmd[2]) {
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
@@ -606,8 +602,7 @@ function User_Work(cmdline) {
 		this.do_connect(cmd[1],cmd[2]);
 		break;
 	case "DEBUG":
-		if (!((this.mode&USERMODE_OPER) &&
-		      (this.flags&OLINE_CAN_DEBUG))) {
+		if (!((this.mode&USERMODE_OPER) && (this.flags&OLINE_CAN_DEBUG))) {
 			this.numeric481();
 			break;
 		}
@@ -669,8 +664,7 @@ function User_Work(cmdline) {
 		}
 		break;
 	case "DIE":
-		if (!((this.mode&USERMODE_OPER) &&
-		      (this.flags&OLINE_CAN_DIE))) {
+		if (!((this.mode&USERMODE_OPER) && (this.flags&OLINE_CAN_DIE))) {
 			this.numeric481();
 			break;
 		}
@@ -687,8 +681,7 @@ function User_Work(cmdline) {
 	case "ERROR":
 		break; // silently ignore
 	case "GLOBOPS":
-		if (!((this.mode&USERMODE_OPER) &&
-		      (this.flags&OLINE_CAN_GLOBOPS))) {
+		if (!((this.mode&USERMODE_OPER) && (this.flags&OLINE_CAN_GLOBOPS))) {
 			this.numeric481();
 			break;
 		}
@@ -762,8 +755,7 @@ function User_Work(cmdline) {
 		this.numeric("303", isonstr);
 		break;
 	case "KILL":
-		if (!(this.mode&USERMODE_OPER) ||
-		    !(this.flags&OLINE_CAN_LKILL)) {
+		if (!(this.mode&USERMODE_OPER) || !(this.flags&OLINE_CAN_LKILL)) {
 			this.numeric481();
 			break;
 		}
@@ -936,8 +928,7 @@ function User_Work(cmdline) {
 		this.numeric(272, ":End of SILENCE List.");
 		break;
 	case "LOCOPS":
-		if (!((this.mode&USERMODE_OPER) &&
-		      (this.flags&OLINE_CAN_LOCOPS))) {
+		if (!((this.mode&USERMODE_OPER) && (this.flags&OLINE_CAN_LOCOPS))) {
 			this.numeric481();
 			break;
 		}
@@ -962,9 +953,13 @@ function User_Work(cmdline) {
 				break;
 			}
 		}
-		umode_notice(USERMODE_SPY,"Spy","MOTD requested by " +
-			this.nick + " (" + this.uprefix + "@" +
-			this.hostname + ") [" + this.servername + "]");
+		umode_notice(USERMODE_STATS_LINKS,"StatsLinks",format(
+			"MOTD requested by %s (%s@%s) [%s]",
+			this.nick,
+			this.uprefix,
+			this.hostname,
+			this.servername
+		));
 		this.motd();
 		break;
 	case "NAMES":
@@ -1067,19 +1062,18 @@ function User_Work(cmdline) {
 		}
 		var oper_success = false;
 		for (ol in OLines) {
-			if( (cmd[1].toUpperCase() ==
-			     OLines[ol].nick.toUpperCase())
-			   &&
-			    (wildmatch(this.uprefix + "@" +
-			     this.hostname,OLines[ol].hostmask)
-			    )
-			   &&
-			      (((cmd[2] == OLines[ol].password) &&
-			      !(OLines[ol].flags&OLINE_CHECK_SYSPASSWD)
-			     ) || (
-			      (OLines[ol].flags&OLINE_CHECK_SYSPASSWD)
-			      && system.check_syspass(cmd[2])
-			  ) ) ) {
+			if (  (cmd[1].toUpperCase() == OLines[ol].nick.toUpperCase())
+				&& (wildmatch(this.uprefix + "@" + this.hostname,OLines[ol].hostmask))
+				&& (
+						(  (cmd[2] == OLines[ol].password)
+							&& !(OLines[ol].flags&OLINE_CHECK_SYSPASSWD)
+						)
+					|| (
+						(OLines[ol].flags&OLINE_CHECK_SYSPASSWD)
+						&& system.check_syspass(cmd[2])
+					)
+				)
+			) {
 				oper_success=true;
 				this.ircclass = OLines[ol].ircclass;
 				this.flags = OLines[ol].flags;
@@ -1126,8 +1120,7 @@ function User_Work(cmdline) {
 		this.quit(IRC_string(cmdline,1));
 		break;
 	case "REHASH":
-		if (!((this.mode&USERMODE_OPER) &&
-		      (this.flags&OLINE_CAN_REHASH))) {
+		if (!((this.mode&USERMODE_OPER) && (this.flags&OLINE_CAN_REHASH))) {
 			this.numeric481();
 			break;
 		}
@@ -1138,10 +1131,10 @@ function User_Work(cmdline) {
 				umode_notice(USERMODE_SERVER,"Notice",this.nick
 					+ " is clearing temp klines while whistling innocently");
 				for (kl in KLines) {
-					if(KLines[kl].type ==
-					   "k")
-							delete KLines[kl];
+					if(KLines[kl].type == "k") {
+						delete KLines[kl];
 					}
+				}
 				break;
 			case "GC":
 				if (js.gc!=undefined) {
@@ -1172,8 +1165,7 @@ function User_Work(cmdline) {
 		}
 		break;
 	case "RESTART":
-		if (!((this.mode&USERMODE_OPER) &&
-		      (this.flags&OLINE_CAN_RESTART))) {
+		if (!((this.mode&USERMODE_OPER) && (this.flags&OLINE_CAN_RESTART))) {
 			this.numeric481();
 			break;
 		}
@@ -1189,8 +1181,7 @@ function User_Work(cmdline) {
 		terminate_everything(rs_str);
 		break;
 	case "SQUIT":
-		if (!((this.mode&USERMODE_OPER) &&
-		      (this.flags&OLINE_CAN_LSQUITCON))) {
+		if (!((this.mode&USERMODE_OPER) && (this.flags&OLINE_CAN_LSQUITCON))) {
 			this.numeric481();
 			break;
 		}
@@ -1358,16 +1349,14 @@ function User_Work(cmdline) {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " VERSION :"
-					+ dest_server.nick);
+				dest_server.rawout(":" + this.nick + " VERSION :" + dest_server.nick);
 				break;
 			}
 		}
 		this.numeric351();
 		break;
 	case "WALLOPS":
-		if (!((this.mode&USERMODE_OPER) &&
-		      (this.flags&OLINE_CAN_WALLOPS))) {
+		if (!((this.mode&USERMODE_OPER) && (this.flags&OLINE_CAN_WALLOPS))) {
 			this.numeric481();
 			break;
 		}
@@ -1538,8 +1527,6 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 
 	if (!suppress_bcast)
 		this.bcast_to_servers(tmp);
-	else if (is_netsplit)
-		this.bcast_to_servers(tmp,DREAMFORGE); /* DF doesn't have NOQUIT */
 
 	if (this.local) {
 		if(server.client_remove!=undefined)
