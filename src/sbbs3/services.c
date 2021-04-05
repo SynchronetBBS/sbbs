@@ -2313,7 +2313,7 @@ void services_thread(void* arg)
 			}
 		}
 #ifdef PREFER_POLL
-		free(fds);
+		FREE_AND_NULL(fds);
 #endif
 
 		/* Close Service Sockets */
