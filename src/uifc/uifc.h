@@ -52,11 +52,6 @@
 #endif
 
 #ifdef _WIN32
-        #ifdef __BORLANDC__
-                #define UIFCCALL
-        #else
-                #define UIFCCALL
-        #endif
         #if defined(UIFC_IMPORTS) || defined(UIFC_EXPORTS)
                 #if defined(UIFC_IMPORTS)
                         #define UIFCEXPORT __declspec( dllimport )
@@ -70,7 +65,6 @@
                 #define UIFCEXPORTVAR	extern
         #endif
 #else
-        #define UIFCCALL
         #define UIFCEXPORT
         #define UIFCEXPORTVAR	extern
 #endif
@@ -530,8 +524,8 @@ UIFCEXPORTVAR char* uifcYesNoOpts[];
 /* Returns 0 on success, non-zero on failure.								*/
 /****************************************************************************/
 int uifcini(uifcapi_t*);	/* Original implementation based on conio		*/
-UIFCEXPORT int UIFCCALL uifcinix(uifcapi_t*);	/* Standard I/O implementation					*/
-UIFCEXPORT int UIFCCALL uifcini32(uifcapi_t*);	/* modern implementation	*/
+UIFCEXPORT int uifcinix(uifcapi_t*);	/* Standard I/O implementation		*/
+UIFCEXPORT int uifcini32(uifcapi_t*);	/* modern implementation			*/
 /****************************************************************************/
 
 #ifdef __cplusplus

@@ -139,9 +139,6 @@ static ini_bitdesc_t ftp_options[] = {
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
-#ifdef DLLCALL
-#undef DLLCALL
-#endif
 
 #ifdef _WIN32
 	#ifdef FTPSRVR_EXPORTS
@@ -149,23 +146,17 @@ static ini_bitdesc_t ftp_options[] = {
 	#else
 		#define DLLEXPORT __declspec(dllimport)
 	#endif
-	#ifdef __BORLANDC__
-		#define DLLCALL
-	#else
-		#define DLLCALL
-	#endif
 #else
 	#define DLLEXPORT
-	#define DLLCALL
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 /* arg is pointer to static ftp_startup_t */
-DLLEXPORT void			DLLCALL ftp_server(void* arg);
-DLLEXPORT void			DLLCALL ftp_terminate(void);
-DLLEXPORT const char*	DLLCALL ftp_ver(void);
+DLLEXPORT void			ftp_server(void* arg);
+DLLEXPORT void			ftp_terminate(void);
+DLLEXPORT const char*	ftp_ver(void);
 #ifdef __cplusplus
 }
 #endif

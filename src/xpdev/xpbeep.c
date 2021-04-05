@@ -218,7 +218,7 @@ static BOOL xp_play_sample_locked(const unsigned char *sample, size_t size, BOOL
 /********************************************************************************/
 /* Calculate and generate a sound wave pattern (thanks to Deuce!)				*/
 /********************************************************************************/
-void DLLCALL xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape)
+void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape)
 {
 	int	i;
 	int midpoint;
@@ -344,7 +344,7 @@ static int portaudio_callback(void *inputBuffer
 #endif
 
 #ifdef WITH_SDL_AUDIO
-void DLLCALL sdl_fillbuf(void *userdata, Uint8 *stream, int len)
+void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 {
 	int	copylen=len;
 	int maxlen=sdl_audio_buf_len-sdl_audio_buf_pos;
@@ -373,7 +373,7 @@ void DLLCALL sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 pthread_once_t sample_initialized_pto = PTHREAD_ONCE_INIT;
 #endif
 static BOOL
-DLLCALL xptone_open_locked(void)
+xptone_open_locked(void)
 {
 #ifdef _WIN32
 	WAVEFORMATEX	w;
@@ -652,7 +652,7 @@ DLLCALL xptone_open_locked(void)
 }
 
 BOOL
-DLLCALL xptone_open(void)
+xptone_open(void)
 {
 	BOOL ret;
 #ifdef XPDEV_THREAD_SAFE
@@ -666,7 +666,7 @@ DLLCALL xptone_open(void)
 	return ret;
 }
 
-static void DLLCALL
+static void
 xptone_complete_locked(void)
 {
 	if(handle_type==SOUND_DEVICE_CLOSED) {
@@ -727,7 +727,7 @@ xptone_complete_locked(void)
 #endif
 }
 
-void DLLCALL
+void
 xptone_complete(void)
 {
 #ifdef XPDEV_THREAD_SAFE
@@ -739,7 +739,7 @@ xptone_complete(void)
 #endif
 }
 
-BOOL DLLCALL xptone_close_locked(void)
+BOOL xptone_close_locked(void)
 {
 	xptone_complete_locked();
 
@@ -805,7 +805,7 @@ BOOL DLLCALL xptone_close_locked(void)
 }
 
 BOOL
-DLLCALL xptone_close(void)
+xptone_close(void)
 {
 	BOOL ret;
 
@@ -976,7 +976,7 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 }
 
 #ifdef XPDEV_THREAD_SAFE
-void DLLCALL xp_play_sample_thread(void *data)
+void xp_play_sample_thread(void *data)
 {
 	BOOL			must_close;
 	BOOL			posted_last=TRUE;
@@ -1102,7 +1102,7 @@ static BOOL xp_play_sample_locked(const unsigned char *sample, size_t size, BOOL
  * This MUST not return false after sample goes into the sample buffer in the background.
  * If it does, the caller won't be able to free() it.
  */
-BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t size, BOOL background)
+BOOL xp_play_sample(const unsigned char *sample, size_t size, BOOL background)
 {
 	BOOL ret;
 	pthread_once(&sample_initialized_pto, init_sample);
@@ -1113,7 +1113,7 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t size, BOOL backg
 	return(ret);
 }
 #else
-BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background)
+BOOL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background)
 {
 	BOOL must_close=FALSE;
 	BOOL ret;
@@ -1135,7 +1135,7 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 /* Play a tone through the wave/DSP output device (sound card) - Deuce			*/
 /********************************************************************************/
 
-BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
+BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 {
 	unsigned char	*wave;
 	int samples;
@@ -1177,7 +1177,7 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 /* Generate a tone at specified frequency for specified milliseconds		*/
 /* Thanks to Casey Martin (and Deuce) for this code							*/
 /****************************************************************************/
-void DLLCALL unix_beep(int freq, int dur)
+void unix_beep(int freq, int dur)
 {
 	static int console_fd=-1;
 
@@ -1221,7 +1221,7 @@ void DLLCALL unix_beep(int freq, int dur)
 /********************************************************************************/
 /* Play sound through DSP/wave device, if unsuccessful, play through PC speaker	*/
 /********************************************************************************/
-void DLLCALL xpbeep(double freq, DWORD duration)
+void xpbeep(double freq, DWORD duration)
 {
 	if(xptone(freq,duration,WAVE_SHAPE_SINE_SAW_HARM))
 		return;

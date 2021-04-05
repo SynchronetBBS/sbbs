@@ -558,7 +558,7 @@ static short int lzh_decode_position(lzh_t* lzh, uint8_t *inbuf, int32_t *incnt,
 
 /* Encoding/Compressing */
 /* Returns length of outbuf */
-int32_t LZHCALL lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
+int32_t lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
 {
 	short int  i, c, len, r, s, last_match_length;
 	int32_t incnt,outlen; /* textsize=0; */
@@ -688,7 +688,7 @@ int32_t LZHCALL lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
 
 /* Decoding/Uncompressing */
 /* Returns length of outbuf */
-int32_t LZHCALL lzh_decode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
+int32_t lzh_decode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
 {
 	short int  i, j, k, r, c;
 	uint32_t	count;

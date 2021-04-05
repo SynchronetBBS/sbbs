@@ -8,14 +8,14 @@
 	#include <dlfcn.h>
 
 	typedef void * dll_handle;
-	DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **name, int mode, int major);
+	DLLEXPORT dll_handle xp_dlopen(const char **name, int mode, int major);
 	#define xp_dlsym(handle, name)				dlsym(handle, #name)
 	#define xp_dlclose(handle)					dlclose(handle)
 #elif defined(_WIN32)
 	#include <windows.h>
 
 	typedef HMODULE dll_handle;
-	DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **name, int mode, int major);
+	DLLEXPORT dll_handle xp_dlopen(const char **name, int mode, int major);
 	#define xp_dlsym(handle, name)				((void *)GetProcAddress(handle, #name))
 	#define xp_dlclose(handle)					(FreeLibrary(handle)?0:-1)
 
