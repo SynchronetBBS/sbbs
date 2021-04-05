@@ -928,7 +928,7 @@ js_removeEventListener(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32 id;
 	struct js_listener_entry *listener;
-	struct js_listener_entry **plistener;
+	struct js_listener_entry **pnext;
 	char *name;
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	js_callback_t *cb;
@@ -945,26 +945,26 @@ js_removeEventListener(JSContext *cx, uintN argc, jsval *arglist)
 		// Remove by ID
 		if (!JS_ValueToInt32(cx, argv[0], &id))
 			return JS_FALSE;
-		for (listener = cb->listeners, plistener = &cb->listeners; listener; listener = (*plistener)->next) {
+		for (listener = cb->listeners, pnext = &cb->listeners; listener; listener = (*pnext)) {
 			if (listener->id == id) {
-				(*plistener)->next = listener->next;
+				(*pnext) = listener->next;
 				free(listener);
 			}
 			else
-				*plistener = listener;
+				pnext = &listener->next;
 		}
 	}
 	else {
 		// Remove by name
 		JSVALUE_TO_MSTRING(cx, argv[0], name, NULL);
 		HANDLE_PENDING(cx, name);
-		for (listener = cb->listeners, plistener = &cb->listeners; listener; listener = (*plistener)->next) {
+		for (listener = cb->listeners, pnext = &cb->listeners; listener; listener = (*pnext)) {
 			if (strcmp(listener->name, name) == 0) {
-				(*plistener)->next = listener->next;
+				(*pnext) = listener->next;
 				free(listener);
 			}
 			else
-				*plistener = listener;
+				pnext = &listener->next;
 		}
 		free(name);
 	}
