@@ -560,6 +560,11 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	jsval		old_js_argc = JSVAL_VOID;
 	jsval		rval;
 	int32		result=0;
+	struct js_event_list	*events;
+	struct js_runq_entry    *rq_head;
+	struct js_runq_entry    *rq_tail;
+	struct js_listener_entry *listeners;
+
 
 	if(js_cx == NULL)
 		js_cx = this->js_cx;
@@ -682,6 +687,14 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 #endif
 	}
 	js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
+	events = js_callback.events;
+	js_callback.events = NULL;
+	rq_head = js_callback.rq_head;
+	js_callback.rq_head = NULL;
+	rq_tail = js_callback.rq_tail;
+	js_callback.rq_tail = NULL;
+	listeners = js_callback.listeners;
+	js_callback.listeners = NULL;
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 	js_handle_events(js_cx, &js_callback, &terminated);
 	sys_status &=~ SS_ABORT;
@@ -714,6 +727,11 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	}
 
 	JS_GC(js_cx);
+
+	js_callback.events = events;
+	js_callback.rq_head = rq_head;
+	js_callback.rq_tail = rq_tail;
+	js_callback.listeners = listeners;
 
 	JS_ENDREQUEST(js_cx);
 
