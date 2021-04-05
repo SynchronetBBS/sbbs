@@ -159,7 +159,7 @@ static bbs_startup_t* startup=NULL;
 static const char* status(const char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
+		startup->status(startup->cbdata,str);
 	return str;
 }
 
