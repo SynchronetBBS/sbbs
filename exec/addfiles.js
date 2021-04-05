@@ -26,6 +26,7 @@ if(argv.indexOf("-help") >= 0 || argv.indexOf("-?") >= 0) {
 	print("-fdate[=fmt]    include file's date in description");
 	print("-adate[=fmt]    include newest archived file date in description");
 	print("                (fmt = optional strftime date/time format string)");
+	print("-delete         delete list after import");
 	print("-v              increase verbosity of output");
 	print("-debug          enable debug output");
 	exit(0);
@@ -160,8 +161,9 @@ for(var d = 0; d < dir_list.length; d++) {
 	}
 	var file_list = [];
 
+	var listpath;
 	if(listfile) {
-		var listpath = file_getcase(dir.path + listfile) || file_getcase(listfile);
+		listpath = file_getcase(dir.path + listfile) || file_getcase(listfile);
 		var f = new File(listpath);
 		if(f.exists) {
 			print("Opening " + f.name);
@@ -173,6 +175,7 @@ for(var d = 0; d < dir_list.length; d++) {
 			f.close();
 		} else {
 			alert(dir.path + file_getname(listfile) + " does not exist");
+			continue;
 		}
 	}
 	else {
@@ -241,7 +244,14 @@ for(var d = 0; d < dir_list.length; d++) {
 			}
 		}
 	}
-	
+	if(listpath && options.delete) {
+		if(verbosity)
+			print("Deleting list file: " + listpath);
+		if(file_remove(listpath))
+			print("List file deleted: " + listpath);
+		else
+			alert("Failed to delete list file: " + listpath);
+	}
 	filebase.close();
 }
 print(added + " files added");
