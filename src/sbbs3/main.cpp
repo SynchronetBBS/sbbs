@@ -230,10 +230,10 @@ int eputs(int level, const char *str)
 			startup->errormsg(startup->cbdata, level, errmsg);
 	}
 
-    if(startup==NULL || startup->event_lputs==NULL || level > startup->log_level)
-        return(0);
+	if(startup==NULL || startup->event_lputs==NULL || level > startup->log_level)
+		return(0);
 
-    return(startup->event_lputs(startup->event_cbdata,level,str));
+	return(startup->event_lputs(startup->event_cbdata,level,str));
 }
 
 int lprintf(int level, const char *fmt, ...)
