@@ -880,6 +880,52 @@ js_setInterval(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_setImmediate(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	JSFunction *cbf;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	js_callback_t *cb;
+	struct js_runq_entry *rqe;
+
+	if((cb=(js_callback_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if (argc < 1) {
+		JS_ReportError(cx, "js.setImmediate() requires a callback");
+		return JS_FALSE;
+	}
+
+	cbf = JS_ValueToFunction(cx, argv[0]);
+	if (cbf == NULL) {
+		return JS_FALSE;
+	}
+
+	if (argc > 1) {
+		if (!JS_ValueToObject(cx, argv[1], &obj))
+			return JS_FALSE;
+	}
+
+	rqe = malloc(sizeof(*rqe));
+	if (rqe == NULL) {
+		JS_ReportError(cx, "error allocating %ul bytes", sizeof(*rqe));
+		return JS_FALSE;
+	}
+	rqe->func = cbf;
+	rqe->cx = obj;
+	JS_AddObjectRoot(cx, &rqe->cx);
+	rqe->next = NULL;
+	if (cb->rq_tail != NULL)
+		cb->rq_tail->next = rqe;
+	cb->rq_tail = rqe;
+	if (cb->rq_head == NULL)
+		cb->rq_head = rqe;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	return JS_TRUE;
+}
+
+static JSBool
 js_addEventListener(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval	*argv=JS_ARGV(cx, arglist);
@@ -1437,6 +1483,10 @@ static jsSyncMethodSpec js_functions[] = {
 	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [, thisObj]")
 	,JSDOCSTR("Add all listeners of eventName to the runqueue.  If obj is passed, specifies this in the callback (the js object is used otherwise).")
 	,31802
+	},
+	{"setImmediate",	js_setImmediate,	1,	JSTYPE_VOID,	JSDOCSTR("callback[, thisObj]")
+	,JSDOCSTR("adds the callback to the end of the run queue, where it will be called after all pending events are processed")
+	,31900
 	},
 	{0}
 };
