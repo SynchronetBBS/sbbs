@@ -1931,12 +1931,10 @@ void input_thread(void *arg)
 #ifdef PREFER_POLL
 		fds[0].fd = sbbs->client_socket;
 		fds[0].events = POLLIN;
-		fds[0].revents = 0;
 		nfds = 1;
 		if (uspy_socket[sbbs->cfg.node_num-1] != INVALID_SOCKET) {
-			fds[0].fd = uspy_socket[sbbs->cfg.node_num-1];
-			fds[0].events = POLLIN;
-			fds[0].revents = 0;
+			fds[1].fd = uspy_socket[sbbs->cfg.node_num-1];
+			fds[1].events = POLLIN;
 			nfds++;
 		}
 

@@ -1692,7 +1692,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if(!(mode&EX_NOLOG)) {
 			fds[1].fd = err_pipe[0];
 			fds[1].events = POLLIN;
-			fds[1].revents = 0;
 		}
 		while(!terminated) {
 			if(waitpid(pid, &i, WNOHANG)!=0)	/* child exited */
@@ -1717,7 +1716,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			if(mode&EX_NOLOG)
 				poll(fds, 1, 1);
 			else {
-				while (poll(fds, 2, 1) > 0 && (fds[1].revents & POLLIN)
+				while (poll(fds, 2, 1) > 0 && (fds[1].revents)
 				    && (i < (int)sizeof(buf) - 1))  {
 					if((rd=read(err_pipe[0],bp,1))>0)  {
 						i+=rd;
@@ -1744,7 +1743,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				}
 			}
 
-			data_waiting=fds[0].revents & POLLIN;
+			data_waiting=fds[0].revents;
 			if(i==0 && data_waiting==0)
 				continue;
 

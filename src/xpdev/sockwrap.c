@@ -305,7 +305,7 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 		if (pfd.revents & (POLLERR | POLLNVAL))
 			return FALSE;
 
-		if(pfd.revents & (POLLIN | POLLHUP) && (rd_p !=NULL || wr_p==NULL))  {
+		if(pfd.revents & ~(POLLOUT) && (rd_p !=NULL || wr_p==NULL))  {
 			rd=recv(sock,&ch,1,MSG_PEEK);
 			if(rd==1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
 				if(rd_p!=NULL)
@@ -483,7 +483,7 @@ BOOL socket_recvdone(SOCKET sock, int timeout)
 
 	switch (poll(&pfd, 1, timeout)) {
 		case 1:
-			if (pfd.revents & (POLLIN | POLLHUP)) {
+			if (pfd.revents) {
 				rd = recv(sock,&ch,1,MSG_PEEK);
 				if (rd == 1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE))
 					return FALSE;
