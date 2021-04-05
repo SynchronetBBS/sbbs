@@ -46,7 +46,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="./"><? write(settings.brand || system.name); ?></a>
+            <a class="navbar-brand" href="<? write(settings.brand_link || './'); ?>"><? write(settings.brand || system.name); ?></a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav">
