@@ -2685,19 +2685,19 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	},
 	{"on",		js_on,		2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
 	,JSDOCSTR("execute callback whenever socket is readable/writable.  Returns an id to be passed to js.clearOn()")
-	,31802
+	,31900
 	},
 	{"once",	js_once,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
 	,JSDOCSTR("execute callback next time socket is readable/writable  Returns and id to be passed to js.clearOnce()")
-	,31802
+	,31900
 	},
 	{"clearOn",	js_clearOn,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), id")
 	,JSDOCSTR("remove callback installed by Socket.on()")
-	,31802
+	,31900
 	},
 	{"clearOnce",	js_clearOnce,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), id")
 	,JSDOCSTR("remove callback installed by Socket.once()")
-	,31802
+	,31900
 	},
 	{0}
 };
