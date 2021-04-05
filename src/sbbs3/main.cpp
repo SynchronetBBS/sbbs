@@ -241,11 +241,11 @@ int lprintf(int level, const char *fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
-    va_start(argptr,fmt);
-    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	va_start(argptr,fmt);
+	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
-    va_end(argptr);
-    return(lputs(level,sbuf));
+	va_end(argptr);
+	return(lputs(level,sbuf));
 }
 
 /* Picks the right log callback function (event or term) based on the sbbs->cfg.node_num value */
