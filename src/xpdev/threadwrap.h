@@ -1,8 +1,5 @@
 /* Thread-related cross-platform development wrappers */
 
-/* $Id: threadwrap.h,v 1.52 2019/07/24 04:15:24 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -38,7 +23,7 @@
 #define _THREADWRAP_H
 
 #include "gen_defs.h"	/* HANDLE */
-#include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
+#include "wrapdll.h"	/* DLLEXPORT and */
 
 #if !__STDC_NO_ATOMICS__
 	#if defined __GNUC__ && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9)) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
@@ -130,11 +115,11 @@ pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive);
 
 #else
 
-DLLEXPORT int DLLCALL pthread_mutex_init(pthread_mutex_t*, void* attr);
-DLLEXPORT int DLLCALL pthread_mutex_lock(pthread_mutex_t*);
-DLLEXPORT int DLLCALL pthread_mutex_trylock(pthread_mutex_t*);
-DLLEXPORT int DLLCALL pthread_mutex_unlock(pthread_mutex_t*);
-DLLEXPORT int DLLCALL pthread_mutex_destroy(pthread_mutex_t*);
+DLLEXPORT int pthread_mutex_init(pthread_mutex_t*, void* attr);
+DLLEXPORT int pthread_mutex_lock(pthread_mutex_t*);
+DLLEXPORT int pthread_mutex_trylock(pthread_mutex_t*);
+DLLEXPORT int pthread_mutex_unlock(pthread_mutex_t*);
+DLLEXPORT int pthread_mutex_destroy(pthread_mutex_t*);
 
 #define SetThreadName(c)
 
@@ -144,7 +129,7 @@ typedef struct {
 } pthread_once_t;
 
 #define PTHREAD_ONCE_INIT	{0};
-DLLEXPORT int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void));
+DLLEXPORT int pthread_once(pthread_once_t *oc, void (*init)(void));
 
 #endif
 
@@ -269,18 +254,18 @@ typedef struct {
 #define protected_uint64_adjust_fetch(a, b)	protected_uint64_adjust(a, b)
 
 /* Return 0 on success, non-zero on failure (see pthread_mutex_init): */
-DLLEXPORT void DLLCALL protected_int32_init(protected_int32_t*,	int32_t value);
-DLLEXPORT void DLLCALL protected_int64_init(protected_int64_t*,	int64_t value);
+DLLEXPORT void protected_int32_init(protected_int32_t*,	int32_t value);
+DLLEXPORT void protected_int64_init(protected_int64_t*,	int64_t value);
 
 /* Return new value: */
-DLLEXPORT int32_t DLLCALL protected_int32_adjust(protected_int32_t*, int32_t adjustment);
-DLLEXPORT int32_t DLLCALL protected_int32_set(protected_int32_t*, int32_t val);
-DLLEXPORT uint32_t DLLCALL protected_uint32_adjust(protected_uint32_t*, int32_t adjustment);
-DLLEXPORT uint32_t DLLCALL protected_uint32_set(protected_uint32_t*, uint32_t val);
-DLLEXPORT int64_t DLLCALL protected_int64_adjust(protected_int64_t*, int64_t adjustment);
-DLLEXPORT int64_t DLLCALL protected_int64_set(protected_int64_t*, int64_t val);
-DLLEXPORT uint64_t DLLCALL protected_uint64_adjust(protected_uint64_t*, int64_t adjustment);
-DLLEXPORT uint64_t DLLCALL protected_uint64_set(protected_uint64_t*, uint64_t adjustment);
+DLLEXPORT int32_t protected_int32_adjust(protected_int32_t*, int32_t adjustment);
+DLLEXPORT int32_t protected_int32_set(protected_int32_t*, int32_t val);
+DLLEXPORT uint32_t protected_uint32_adjust(protected_uint32_t*, int32_t adjustment);
+DLLEXPORT uint32_t protected_uint32_set(protected_uint32_t*, uint32_t val);
+DLLEXPORT int64_t protected_int64_adjust(protected_int64_t*, int64_t adjustment);
+DLLEXPORT int64_t protected_int64_set(protected_int64_t*, int64_t val);
+DLLEXPORT uint64_t protected_uint64_adjust(protected_uint64_t*, int64_t adjustment);
+DLLEXPORT uint64_t protected_uint64_set(protected_uint64_t*, uint64_t adjustment);
 
 #endif
 

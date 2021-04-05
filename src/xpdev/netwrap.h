@@ -1,8 +1,4 @@
-/* netwrap.h */
-
 /* Network related wrapper functions */
-
-/* $Id: netwrap.h,v 1.5 2018/07/24 01:13:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -48,9 +32,9 @@
 extern "C" {
 #endif
 
-DLLEXPORT const char* 	DLLCALL getHostNameByAddr(const char*);
-DLLEXPORT str_list_t	DLLCALL getNameServerList(void);
-DLLEXPORT void			DLLCALL freeNameServerList(str_list_t);
+DLLEXPORT const char* 	getHostNameByAddr(const char*);
+DLLEXPORT str_list_t	getNameServerList(void);
+DLLEXPORT void			freeNameServerList(str_list_t);
 
 #if defined(__cplusplus)
 }

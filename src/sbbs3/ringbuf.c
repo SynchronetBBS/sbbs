@@ -77,7 +77,7 @@
 /****************************************************************************/
 /* Returns 0 on success, non-zero on failure								*/
 /****************************************************************************/
-int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
+int RingBufInit( RingBuf* rb, DWORD size
 #ifndef RINGBUF_USE_STD_RTL
 	,void *(os_malloc)(size_t)
 	,void (os_free)(void *)
@@ -108,7 +108,7 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
 	return(0);
 }
 
-void RINGBUFCALL RingBufDispose( RingBuf* rb)
+void RingBufDispose( RingBuf* rb)
 {
     if(rb->pStart!=NULL)
 		os_free(rb->pStart);
@@ -137,7 +137,7 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
 #define RINGBUF_FILL_LEVEL(rb)	(rb->pHead >= rb->pTail ? (rb->pHead - rb->pTail) \
 								: (rb->size - (rb->pTail - (rb->pHead + 1))))
 
-DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
+DWORD RingBufFull( RingBuf* rb )
 {
 	DWORD	retval;
 
@@ -154,7 +154,7 @@ DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
 	return(retval);
 }
 
-DWORD RINGBUFCALL RingBufFree( RingBuf* rb )
+DWORD RingBufFree( RingBuf* rb )
 {
 	DWORD retval;
 
@@ -163,7 +163,7 @@ DWORD RINGBUFCALL RingBufFree( RingBuf* rb )
 	return(retval);
 }
 
-DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
+DWORD RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
 {
 	DWORD max, first, remain, fill_level;
 
@@ -224,7 +224,7 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
 }
 
 /* Pass NULL dst to just foward pointer (after Peek) */
-DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
+DWORD RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 {
 	DWORD max, first, remain, len;
 
@@ -284,7 +284,7 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 	return(cnt);
 }
 
-DWORD RINGBUFCALL RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
+DWORD RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
 {
 	DWORD max, first, remain, len;
 
@@ -325,7 +325,7 @@ DWORD RINGBUFCALL RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
 }
 
 /* Reset head and tail pointers */
-void RINGBUFCALL RingBufReInit(RingBuf* rb)
+void RingBufReInit(RingBuf* rb)
 {
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_lock(&rb->mutex);

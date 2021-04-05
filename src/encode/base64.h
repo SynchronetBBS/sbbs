@@ -42,22 +42,16 @@
 	#else
 		#define B64EXPORT	__declspec(dllexport)
 	#endif
-	#if defined(__BORLANDC__)
-		#define B64CALL
-	#else
-		#define B64CALL
-	#endif
 #else	/* !_WIN32 */
 	#define B64EXPORT
-	#define B64CALL
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-B64EXPORT int B64CALL b64_encode(char *target, size_t tlen, const char *source, size_t slen);
-B64EXPORT int B64CALL b64_decode(char *target, size_t tlen, const char *source, size_t slen);
+B64EXPORT int b64_encode(char *target, size_t tlen, const char *source, size_t slen);
+B64EXPORT int b64_decode(char *target, size_t tlen, const char *source, size_t slen);
 
 #ifdef __cplusplus
 }

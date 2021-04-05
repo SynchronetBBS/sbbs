@@ -34,15 +34,15 @@ enum WAVE_SHAPE {
 #ifdef __cplusplus
 extern "C" {
 #endif
-DLLEXPORT void DLLCALL xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape);
-DLLEXPORT BOOL DLLCALL xptone_open(void);
-DLLEXPORT BOOL DLLCALL xptone_close(void);
-DLLEXPORT void DLLCALL xpbeep(double freq, DWORD duration);
-DLLEXPORT BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background);
-DLLEXPORT void DLLCALL xptone_complete(void);
-DLLEXPORT BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE);
+DLLEXPORT void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape);
+DLLEXPORT BOOL xptone_open(void);
+DLLEXPORT BOOL xptone_close(void);
+DLLEXPORT void xpbeep(double freq, DWORD duration);
+DLLEXPORT BOOL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background);
+DLLEXPORT void xptone_complete(void);
+DLLEXPORT BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE);
 #ifdef __unix__
-DLLEXPORT void DLLCALL unix_beep(int freq, int dur);
+DLLEXPORT void unix_beep(int freq, int dur);
 #endif
 #ifdef __cplusplus
 }

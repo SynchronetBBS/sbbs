@@ -241,27 +241,27 @@ struct cterminal {
 	int		(*ciolib_cputs)			(struct cterminal *,char *);
 	int		(*ciolib_setfont)		(struct cterminal *,int font, int force, int font_num);
 #else
-	void	CIOLIBCALL (*ciolib_gotoxy)		(int,int);
-	int		CIOLIBCALL (*ciolib_wherex)		(void);
-	int		CIOLIBCALL (*ciolib_wherey)		(void);
-	int		CIOLIBCALL (*ciolib_gettext)		(int,int,int,int,void *);
-	int		CIOLIBCALL (*ciolib_vmem_gettext)	(int,int,int,int,struct vmem_cell *);
-	void	CIOLIBCALL (*ciolib_gettextinfo)	(struct text_info *);
-	void	CIOLIBCALL (*ciolib_textattr)		(int);
-	void	CIOLIBCALL (*ciolib_setcursortype)	(int);
-	int		CIOLIBCALL (*ciolib_movetext)		(int,int,int,int,int,int);
-	void	CIOLIBCALL (*ciolib_clreol)		(void);
-	void	CIOLIBCALL (*ciolib_clrscr)		(void);
-	void	CIOLIBCALL (*ciolib_setvideoflags)	(int flags);
-	int		CIOLIBCALL (*ciolib_getvideoflags)	(void);
-	void	CIOLIBCALL (*ciolib_setscaling)		(int new_value);
-	int		CIOLIBCALL (*ciolib_getscaling)		(void);
-	int		CIOLIBCALL (*ciolib_putch)			(int);
-	int		CIOLIBCALL (*ciolib_puttext)		(int,int,int,int,void *);
-	int		CIOLIBCALL (*ciolib_vmem_puttext)	(int,int,int,int,struct vmem_cell *);
-	void	CIOLIBCALL (*ciolib_window)		(int,int,int,int);
-	int		CIOLIBCALL (*ciolib_cputs)			(char *);
-	int		CIOLIBCALL (*ciolib_setfont)		(int font, int force, int font_num);
+	void	(*ciolib_gotoxy)		(int,int);
+	int		(*ciolib_wherex)		(void);
+	int		(*ciolib_wherey)		(void);
+	int		(*ciolib_gettext)		(int,int,int,int,void *);
+	int		(*ciolib_vmem_gettext)	(int,int,int,int,struct vmem_cell *);
+	void	(*ciolib_gettextinfo)	(struct text_info *);
+	void	(*ciolib_textattr)		(int);
+	void	(*ciolib_setcursortype)	(int);
+	int		(*ciolib_movetext)		(int,int,int,int,int,int);
+	void	(*ciolib_clreol)		(void);
+	void	(*ciolib_clrscr)		(void);
+	void	(*ciolib_setvideoflags)	(int flags);
+	int		(*ciolib_getvideoflags)	(void);
+	void	(*ciolib_setscaling)		(int new_value);
+	int		(*ciolib_getscaling)		(void);
+	int		(*ciolib_putch)			(int);
+	int		(*ciolib_puttext)		(int,int,int,int,void *);
+	int		(*ciolib_vmem_puttext)	(int,int,int,int,struct vmem_cell *);
+	void	(*ciolib_window)		(int,int,int,int);
+	int		(*ciolib_cputs)			(char *);
+	int		(*ciolib_setfont)		(int font, int force, int font_num);
 #endif
 	int 	*_wscroll;
 	int		*puttext_can_move;
@@ -273,13 +273,13 @@ struct cterminal {
 extern "C" {
 #endif
 
-CIOLIBEXPORT struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation);
-CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal *cterm, const void *buf, int buflen, char *retbuf, size_t retsize, int *speed);
-CIOLIBEXPORT int CIOLIBCALL cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
-CIOLIBEXPORT void CIOLIBCALL cterm_closelog(struct cterminal *cterm);
-CIOLIBEXPORT void CIOLIBCALL cterm_end(struct cterminal *cterm);
-CIOLIBEXPORT void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr);
-CIOLIBEXPORT void CIOLIBCALL cterm_start(struct cterminal *cterm);
+CIOLIBEXPORT struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation);
+CIOLIBEXPORT char* cterm_write(struct cterminal *cterm, const void *buf, int buflen, char *retbuf, size_t retsize, int *speed);
+CIOLIBEXPORT int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
+CIOLIBEXPORT void cterm_closelog(struct cterminal *cterm);
+CIOLIBEXPORT void cterm_end(struct cterminal *cterm);
+CIOLIBEXPORT void cterm_clearscreen(struct cterminal *cterm, char attr);
+CIOLIBEXPORT void cterm_start(struct cterminal *cterm);
 void cterm_gotoxy(struct cterminal *cterm, int x, int y);
 void setwindow(struct cterminal *cterm);
 void cterm_clreol(struct cterminal *cterm);

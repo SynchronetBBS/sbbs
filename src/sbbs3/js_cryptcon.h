@@ -7,6 +7,6 @@ struct js_cryptcon_private_data {
 
 extern JSClass js_cryptcon_class;
 
-JSObject* DLLCALL js_CreateCryptconObject(JSContext* cx, CRYPT_CONTEXT ctx);
+JSObject* js_CreateCryptconObject(JSContext* cx, CRYPT_CONTEXT ctx);
 
 #endif

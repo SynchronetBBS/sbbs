@@ -86,7 +86,7 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 /* Initialization function, see uifc.h for details.							*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
-int UIFCCALL uifcinix(uifcapi_t* uifcapi)
+int uifcinix(uifcapi_t* uifcapi)
 {
 	static char* yesNoOpts[] = {"Yes", "No", NULL};
 
