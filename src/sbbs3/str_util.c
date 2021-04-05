@@ -767,7 +767,7 @@ char* utf8_to_cp437_str(char* str)
 		,/* decode error char: */CP437_INVERTED_EXCLAMATION_MARK);
 }
 
-char* subnewsgroupname(scfg_t* cfg, sub_t* sub, char* str, size_t size)
+char* sub_newsgroup_name(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 {
 	memset(str, 0, size);
 	if(sub->newsgroup[0])
@@ -798,6 +798,21 @@ char* subnewsgroupname(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 		c--;
 		if (str[c] == '.')
 			str[c] = '_';
+	}
+	return str;
+}
+
+char* sub_area_tag(scfg_t* cfg, sub_t* sub, char* str, size_t size)
+{
+	char* p;
+
+	memset(str, 0, size);
+	if(sub->newsgroup[0])
+		strncpy(str, sub->newsgroup, size - 1);
+	else {
+		strncpy(str, sub->sname, size - 1);
+		REPLACE_CHARS(str, ' ', '_', p);
+		strupr(str);
 	}
 	return str;
 }
