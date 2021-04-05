@@ -403,12 +403,16 @@ DNS.prototype.handle_response = function(sock) {
 
 	ret.id = id;
 	ret.response = !!(ascii(resp[2]) & 1);
+	if (!ret.response)
+		return null;
 	ret.opcode = (ascii(resp[2]) & 0x1e) >> 1;
+	if (ret.opcode !== 0)
+		return null;
 	ret.authoritative = !!(ascii(resp[2]) & (1<<5));
 	ret.truncation = !!(ascii(resp[2]) & (1<<6));
 	ret.recusrion = !!(ascii(resp[2]) & (1<<7));
 	ret.reserved = ascii(resp[3]) & 7;
-	ret.rcode = ascii(resp[3] & 0xf1) >> 3;
+	ret.rcode = ascii(resp[3] & 0xf0) >> 4;
 
 	queries = string_to_int16(resp.substr(4, 2));
 	answers = string_to_int16(resp.substr(6, 2));
@@ -498,9 +502,9 @@ DNS.prototype.asynchronous_query = function(queries, /* queryStr, type, class, *
 	if (recursive === undefined)
 		recursive = true;
 	if (timeout === undefined)
-		timeout = 1000;
+		timeout = 5000;
 	if (failures === undefined)
-		failures = 1;
+		failures = 3;
 	if (failed === undefined)
 		failed = 0;
 
@@ -539,9 +543,9 @@ DNS.prototype.synchronous_query = function(queries, callback, thisObj, recursive
 	if (recursive === undefined)
 		recursive = true;
 	if (timeout === undefined)
-		timeout = 1000;
+		timeout = 5000;
 	if (failures === undefined)
-		failures = 1;
+		failures = 3;
 	if (failed === undefined)
 		failed = 0;
 
@@ -716,6 +720,8 @@ DNS.prototype.resolveTypeClass = function(host, type, class, callback, thisObj)
 		if (resp !== undefined && resp.answers !== undefined) {
 			resp.answers.forEach(function(ans) {
 				if (resp.queries[0].type != ans.type || resp.queries[0].class != ans.class)
+					return;
+				if (resp.rcode !== 0)
 					return;
 				this.ret.push(ans.rdata);
 			}, this);
