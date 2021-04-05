@@ -2006,6 +2006,8 @@ void services_thread(void* arg)
 					free_crypt_attrstr(ssl_estr);
 				}
 			}
+			else
+				need_cert = FALSE;
 		}
 
 		lprintf(LOG_INFO,"0000 Services thread started (%lu service sockets bound)", total_sockets);
