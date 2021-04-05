@@ -199,7 +199,7 @@ static jsSyncPropertySpec js_properties[] = {
 #endif
 	{	"global",			PROP_GLOBAL,		PROP_FLAGS,			314 },
 	{	"options",			PROP_OPTIONS,		PROP_FLAGS,			31802 },
-	{	"do_callbacks",		PROP_KEEPGOING,		JSPROP_ENUMERATE,			31802 },
+	{	"do_callbacks",		PROP_KEEPGOING,		JSPROP_ENUMERATE,			31900 },
 	{0}
 };
 
@@ -1457,32 +1457,32 @@ static jsSyncMethodSpec js_functions[] = {
 	{"setTimeout",	js_setTimeout,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, time[, thisObj]")
 	,JSDOCSTR("install a timeout.  callback() will be called time ms after the function is called. "
 	 "returns an id which can be passed to clearTimeout()")
-	,31802
+	,31900
 	},
 	{"setInterval",	js_setInterval,			2,	JSTYPE_OBJECT,	JSDOCSTR("callback, period[, thisObj]")
 	,JSDOCSTR("install a timeout.  callback() will be called every period ms after setInterval() is called."
 	 "returns and id which can be passed to clearIntervat()")
-	,31802
+	,31900
 	},
 	{"clearTimeout",	js_clearTimeout,	1,	JSTYPE_VOID,	JSDOCSTR("id")
 	,JSDOCSTR("remove a timeout")
-	,31802
+	,31900
 	},
 	{"clearInterval",	js_clearInterval,	1,	JSTYPE_VOID,	JSDOCSTR("id")
 	,JSDOCSTR("remove an interval")
-	,31802
+	,31900
 	},
 	{"addEventListener",	js_addEventListener,	2,	JSTYPE_NUMBER,	JSDOCSTR("eventName, callback")
 	,JSDOCSTR("Add a listener that is ran after js.dispatchEvent(eventName) is called.  Returns an id to be passed to js.removeEventListener")
-	,31802
+	,31900
 	},
 	{"removeEventListener",	js_removeEventListener,	1,	JSTYPE_VOID,	JSDOCSTR("id")
 	,JSDOCSTR("Remove listeners added with js.addEventListener().  id can be a string or an id returned by addEventListener.  This does not remove already triggered callbacks from the runqueue.")
-	,31802
+	,31900
 	},
 	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [, thisObj]")
 	,JSDOCSTR("Add all listeners of eventName to the end of the runqueue.  If obj is passed, specifies this in the callback (the js object is used otherwise).")
-	,31802
+	,31900
 	},
 	{"setImmediate",	js_setImmediate,	1,	JSTYPE_VOID,	JSDOCSTR("callback[, thisObj]")
 	,JSDOCSTR("adds the callback to the end of the run queue, where it will be called after all pending events are processed")
