@@ -1,8 +1,4 @@
-/* lzh.h */
-
 /* Synchronet LZH compression library */
-
-/* $Id: lzh.h,v 1.13 2019/03/22 21:29:12 rswindell Exp $ */
 
 /**************************************************************************** 
  * @format.tab-size 4		(Plain Text/Source Code File Header)			* 
@@ -16,18 +12,6 @@
  * Anonymous FTP access to the most recent released source is available at	*
  * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
  *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
- * For Synchronet coding style and modification guidelines, see				*
- * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
- *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
@@ -39,11 +23,6 @@
 #endif
 
 #ifdef _WIN32
-	#ifdef __BORLANDC__
-		#define LZHCALL
-	#else
-		#define LZHCALL
-	#endif
 	#ifdef LZHDLL	/* LZH functions in DLL */
 		#ifdef LZH_EXPORTS
 			#define LZHEXPORT __declspec( dllexport )
@@ -54,7 +33,6 @@
 		#define LZHEXPORT
 	#endif
 #else	/* !_WIN32 */
-	#define LZHCALL
 	#define LZHEXPORT
 #endif
 
@@ -63,8 +41,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-LZHEXPORT int32_t LZHCALL lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf);
-LZHEXPORT int32_t LZHCALL lzh_decode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf);
+LZHEXPORT int32_t lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf);
+LZHEXPORT int32_t lzh_decode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf);
 #ifdef __cplusplus
 }
 #endif

@@ -151,9 +151,6 @@ static ini_bitdesc_t web_options[] = {
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
-#ifdef DLLCALL
-#undef DLLCALL
-#endif
 
 #ifdef _WIN32
 	#ifdef WEBSRVR_EXPORTS
@@ -161,22 +158,16 @@ static ini_bitdesc_t web_options[] = {
 	#else
 		#define DLLEXPORT __declspec(dllimport)
 	#endif
-	#ifdef __BORLANDC__
-		#define DLLCALL
-	#else
-		#define DLLCALL
-	#endif
 #else
 	#define DLLEXPORT
-	#define DLLCALL
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-DLLEXPORT void			DLLCALL web_server(void* arg);
-DLLEXPORT void			DLLCALL web_terminate(void);
-DLLEXPORT const char*	DLLCALL web_ver(void);
+DLLEXPORT void			web_server(void* arg);
+DLLEXPORT void			web_terminate(void);
+DLLEXPORT const char*	web_ver(void);
 #ifdef __cplusplus
 }
 #endif

@@ -33,7 +33,7 @@
 #endif
 
 #include "gen_defs.h"	/* ulong */
-#include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
+#include "wrapdll.h"	/* DLLEXPORT */
 
 #if defined(__cplusplus)
 extern "C" {
@@ -105,8 +105,8 @@ extern "C" {
 	#define GLOB_NOMATCH    3       /* No matches found.  */
 	#define GLOB_NOSYS      4       /* Not implemented.  */
 
-	DLLEXPORT int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t*);
-	DLLEXPORT void	DLLCALL globfree(glob_t*);
+	DLLEXPORT int	glob(const char *pattern, int flags, void* unused, glob_t*);
+	DLLEXPORT void	globfree(glob_t*);
 
 #endif
 
@@ -140,10 +140,10 @@ extern "C" {
 
 	/* Prototypes.
 	 */
-	DLLEXPORT DIR* DLLCALL opendir  (const char *__dirname);
-	DLLEXPORT struct dirent* DLLCALL readdir  (DIR *__dir);
-	DLLEXPORT int DLLCALL closedir (DIR *__dir);
-	DLLEXPORT void DLLCALL rewinddir(DIR *__dir);
+	DLLEXPORT DIR* opendir  (const char *__dirname);
+	DLLEXPORT struct dirent* readdir  (DIR *__dir);
+	DLLEXPORT int closedir (DIR *__dir);
+	DLLEXPORT void rewinddir(DIR *__dir);
 #elif !defined(__WATCOMC__)
 	#include <dirent.h>	/* POSIX directory functions */
 #endif
@@ -200,37 +200,37 @@ extern "C" {
 #endif
 
 /* General file system wrappers for all platforms and compilers */
-DLLEXPORT BOOL		DLLCALL fexist(const char *filespec);
-DLLEXPORT BOOL		DLLCALL fexistcase(char *filespec);	/* fixes upr/lwr case fname */
-DLLEXPORT off_t		DLLCALL flength(const char *filename);
-DLLEXPORT time_t	DLLCALL fdate(const char *filename);
-DLLEXPORT time_t	DLLCALL fcdate(const char* filename);
-DLLEXPORT int		DLLCALL setfdate(const char* filename, time_t t);
-DLLEXPORT BOOL		DLLCALL	isdir(const char *filename);
-DLLEXPORT BOOL		DLLCALL	isabspath(const char *filename);
-DLLEXPORT BOOL		DLLCALL isfullpath(const char* filename);
-DLLEXPORT char*		DLLCALL getfname(const char* path);
-DLLEXPORT char*		DLLCALL getfext(const char* path);
-DLLEXPORT int		DLLCALL getfattr(const char* filename);
-DLLEXPORT int		DLLCALL getfmode(const char* filename);
-DLLEXPORT ulong		DLLCALL getfilecount(const char *path);
-DLLEXPORT char*		DLLCALL getdirname(const char* path);
-DLLEXPORT long		DLLCALL	getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only);
-DLLEXPORT ulong		DLLCALL getdisksize(const char* path, ulong unit);
-DLLEXPORT ulong		DLLCALL getfreediskspace(const char* path, ulong unit);
-DLLEXPORT uint64_t	DLLCALL getfilesizetotal(const char *path);
-DLLEXPORT long		DLLCALL delfiles(const char *inpath, const char *spec, size_t keep);
-DLLEXPORT char*		DLLCALL backslash(char* path);
-DLLEXPORT BOOL 		DLLCALL wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensitive);
-DLLEXPORT BOOL 		DLLCALL wildmatchi(const char *fname, const char *spec, BOOL path);
-DLLEXPORT int		DLLCALL	mkpath(const char* path);
+DLLEXPORT BOOL		fexist(const char *filespec);
+DLLEXPORT BOOL		fexistcase(char *filespec);	/* fixes upr/lwr case fname */
+DLLEXPORT off_t		flength(const char *filename);
+DLLEXPORT time_t	fdate(const char *filename);
+DLLEXPORT time_t	fcdate(const char* filename);
+DLLEXPORT int		setfdate(const char* filename, time_t t);
+DLLEXPORT BOOL		isdir(const char *filename);
+DLLEXPORT BOOL		isabspath(const char *filename);
+DLLEXPORT BOOL		isfullpath(const char* filename);
+DLLEXPORT char*		getfname(const char* path);
+DLLEXPORT char*		getfext(const char* path);
+DLLEXPORT int		getfattr(const char* filename);
+DLLEXPORT int		getfmode(const char* filename);
+DLLEXPORT ulong		getfilecount(const char *path);
+DLLEXPORT char*		getdirname(const char* path);
+DLLEXPORT long		getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only);
+DLLEXPORT ulong		getdisksize(const char* path, ulong unit);
+DLLEXPORT ulong		getfreediskspace(const char* path, ulong unit);
+DLLEXPORT uint64_t	getfilesizetotal(const char *path);
+DLLEXPORT long		delfiles(const char *inpath, const char *spec, size_t keep);
+DLLEXPORT char*		backslash(char* path);
+DLLEXPORT BOOL 		wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensitive);
+DLLEXPORT BOOL 		wildmatchi(const char *fname, const char *spec, BOOL path);
+DLLEXPORT int		mkpath(const char* path);
 
 
 #if defined(__unix__)
-DLLEXPORT void DLLCALL _splitpath(const char *path, char *drive, char *dir, 
+DLLEXPORT void _splitpath(const char *path, char *drive, char *dir, 
 								  char *fname, char *ext);
-DLLEXPORT char * DLLCALL _fullpath(char *target, const char *path, size_t size);
-DLLEXPORT int DLLCALL removecase(const char *path);
+DLLEXPORT char * _fullpath(char *target, const char *path, size_t size);
+DLLEXPORT int removecase(const char *path);
 #else
 	#define	removecase(x)	remove(x)
 #endif

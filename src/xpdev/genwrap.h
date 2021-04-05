@@ -1,8 +1,5 @@
 /* General cross-platform development wrappers */
 
-/* $Id: genwrap.h,v 1.122 2020/08/08 23:25:46 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -41,7 +26,7 @@
 #include <string.h>		/* strerror() */
 #include <time.h>		/* clock_t */
 #include "gen_defs.h"	/* ulong */
-#include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
+#include "wrapdll.h"	/* DLLEXPORT and */
 
 #if defined(__unix__)
 	#include <sched.h>		/* sched_yield */
@@ -242,13 +227,13 @@ extern "C" {
 #endif
 
 #if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
-	DLLEXPORT char* DLLCALL ultoa(ulong, char*, int radix);
+	DLLEXPORT char* ultoa(ulong, char*, int radix);
 #endif
 
 #if defined(__unix__)
-	DLLEXPORT char*	DLLCALL strupr(char* str);
-	DLLEXPORT char*	DLLCALL strlwr(char* str);
-	DLLEXPORT char* DLLCALL	strrev(char* str);
+	DLLEXPORT char*	strupr(char* str);
+	DLLEXPORT char*	strlwr(char* str);
+	DLLEXPORT char* strrev(char* str);
 	#if !defined(stricmp)
 		#define stricmp			strcasecmp
 		#define strnicmp		strncasecmp
@@ -260,28 +245,28 @@ extern "C" {
 #endif
 
 #if defined(_WIN32)
-	DLLEXPORT char* DLLCALL strcasestr(const char* haystack, const char* needle);
+	DLLEXPORT char* strcasestr(const char* haystack, const char* needle);
 #endif
 
 /* Skip white-space chars at beginning of string */
-DLLEXPORT char*		DLLCALL skipsp(char* str);
+DLLEXPORT char*		skipsp(char* str);
 /* Truncate white-space chars off end of string */
-DLLEXPORT char*		DLLCALL truncsp(char* str);
+DLLEXPORT char*		truncsp(char* str);
 /* Truncate white-space chars off end of every \n-terminated line in string */
-DLLEXPORT char*		DLLCALL truncsp_lines(char* str);
+DLLEXPORT char*		truncsp_lines(char* str);
 /* Truncate new-line chars off end of string */
-DLLEXPORT char*		DLLCALL truncnl(char* str);
+DLLEXPORT char*		truncnl(char* str);
 
 #define STRERROR(x)		strerror(x)
 
 /* Re-entrant version of strerror() */
-DLLEXPORT char*		DLLCALL safe_strerror(int errnum, char* buf, size_t buflen);
+DLLEXPORT char*		safe_strerror(int errnum, char* buf, size_t buflen);
 
 /*********************/
 /* Utility Functions */
 /*********************/
 /* Thunking for multi-threaded specific implementations of "errno" */
-DLLEXPORT int DLLCALL	get_errno(void);
+DLLEXPORT int get_errno(void);
 
 /**********************************/
 /* Common Utility Macro Functions */
@@ -362,37 +347,37 @@ DLLEXPORT int DLLCALL	get_errno(void);
 /* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
 #if !defined(__unix__)
 
-	DLLEXPORT char*			DLLCALL		strtok_r(char *str, const char *delim, char **last);
+	DLLEXPORT char*	strtok_r(char *str, const char *delim, char **last);
 #endif
 
 /* Mimic the Borland randomize() and random() CRTL functions */
-DLLEXPORT void		DLLCALL xp_randomize(void);
-DLLEXPORT long		DLLCALL	xp_random(int);
+DLLEXPORT void		xp_randomize(void);
+DLLEXPORT long		xp_random(int);
 
-DLLEXPORT long double  	DLLCALL	xp_timer(void);
-DLLEXPORT char*		DLLCALL os_version(char *str);
-DLLEXPORT char*		DLLCALL os_cmdshell(void);
-DLLEXPORT char*		DLLCALL	lastchar(const char* str);
-DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
+DLLEXPORT long double xp_timer(void);
+DLLEXPORT char*		os_version(char *str);
+DLLEXPORT char*		os_cmdshell(void);
+DLLEXPORT char*		lastchar(const char* str);
+DLLEXPORT int		safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
     __attribute__ ((format (printf, 3 , 4)));            // 1 is 'this'
 #endif
 ;
 
 /* C string/char escape-sequence processing */
-DLLEXPORT char*		DLLCALL c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only);
-DLLEXPORT char*		DLLCALL c_escape_char(char ch);
-DLLEXPORT char*		DLLCALL c_unescape_str(char* str);
-DLLEXPORT char		DLLCALL c_unescape_char_ptr(const char* str, char** endptr);
-DLLEXPORT char		DLLCALL c_unescape_char(char ch);
+DLLEXPORT char*		c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only);
+DLLEXPORT char*		c_escape_char(char ch);
+DLLEXPORT char*		c_unescape_str(char* str);
+DLLEXPORT char		c_unescape_char_ptr(const char* str, char** endptr);
+DLLEXPORT char		c_unescape_char(char ch);
 
 /* Power-of-2 byte count string parser (e.g. "100K" returns 102400 if unit is 1) */
-DLLEXPORT int64_t	DLLCALL	parse_byte_count(const char*, ulong unit);
-DLLEXPORT double	DLLCALL parse_duration(const char*);
-DLLEXPORT char*		DLLCALL duration_to_str(double value, char* str, size_t size);
-DLLEXPORT char*		DLLCALL duration_to_vstr(double value, char* str, size_t size);
-DLLEXPORT char*		DLLCALL byte_count_to_str(int64_t bytes, char* str, size_t size);
-DLLEXPORT char*		DLLCALL byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong unit, int precision);
+DLLEXPORT int64_t	parse_byte_count(const char*, ulong unit);
+DLLEXPORT double	parse_duration(const char*);
+DLLEXPORT char*		duration_to_str(double value, char* str, size_t size);
+DLLEXPORT char*		duration_to_vstr(double value, char* str, size_t size);
+DLLEXPORT char*		byte_count_to_str(int64_t bytes, char* str, size_t size);
+DLLEXPORT char*		byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong unit, int precision);
 
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
 typedef		clock_t				msclock_t;
@@ -404,8 +389,8 @@ typedef		clock_t				msclock_t;
 	msclock_t	msclock(void);
 #endif
 
-DLLEXPORT BOOL		DLLCALL check_pid(pid_t);
-DLLEXPORT BOOL		DLLCALL	terminate_pid(pid_t);
+DLLEXPORT BOOL		check_pid(pid_t);
+DLLEXPORT BOOL		terminate_pid(pid_t);
 
 #if defined(__cplusplus)
 }

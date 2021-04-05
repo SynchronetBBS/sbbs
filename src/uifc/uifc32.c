@@ -207,7 +207,7 @@ int inkey(void)
 	return(c);
 }
 
-int UIFCCALL uifcini32(uifcapi_t* uifcapi)
+int uifcini32(uifcapi_t* uifcapi)
 {
 	unsigned	i;
 	struct	text_info txtinfo;

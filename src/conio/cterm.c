@@ -1270,7 +1270,7 @@ clear2bol(struct cterminal * cterm)
 	free(buf);
 }
 
-void CIOLIBCALL
+void
 cterm_clearscreen(struct cterminal *cterm, char attr)
 {
 	int getw;
@@ -4389,7 +4389,7 @@ cterm_reset(struct cterminal *cterm)
 	}
 }
 
-struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
+struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
 	char	*revision="$Revision: 1.314 $";
 	char *in;
@@ -4461,7 +4461,7 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	return cterm;
 }
 
-void CIOLIBCALL cterm_start(struct cterminal *cterm)
+void cterm_start(struct cterminal *cterm)
 {
 	struct text_info ti;
 
@@ -4758,7 +4758,7 @@ static void parse_macro_intro(struct cterminal *cterm)
 #define uctputs(c, p)	ctputs(c, (char *)p)
 #define ustrcat(b, s)	strcat((char *)b, (const char *)s)
 
-CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
+CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	const unsigned char *buf = (unsigned char *)vbuf;
 	unsigned char ch[2];
@@ -5541,7 +5541,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	return(retbuf);
 }
 
-int CIOLIBCALL cterm_openlog(struct cterminal *cterm, char *logfile, int logtype)
+int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype)
 {
 	if(!cterm->started)
 		cterm_start(cterm);
@@ -5553,7 +5553,7 @@ int CIOLIBCALL cterm_openlog(struct cterminal *cterm, char *logfile, int logtype
 	return(1);
 }
 
-void CIOLIBCALL cterm_closelog(struct cterminal *cterm)
+void cterm_closelog(struct cterminal *cterm)
 {
 	if(!cterm->started)
 		cterm_start(cterm);
@@ -5565,7 +5565,7 @@ void CIOLIBCALL cterm_closelog(struct cterminal *cterm)
 }
 
 FILE *dbg;
-void CIOLIBCALL cterm_end(struct cterminal *cterm)
+void cterm_end(struct cterminal *cterm)
 {
 	int i;
 
