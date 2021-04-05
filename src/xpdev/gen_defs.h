@@ -427,8 +427,8 @@ typedef struct {
 #endif
 
 #define SAFECAT(dst, src) do { \
-	if(strlen(dst) + strlen(src) < sizeof(dst)) { \
-		strcat(dst, src); \
+	if(strlen((char*)(dst)) + strlen((char*)(src)) < sizeof(dst)) { \
+		strcat((char*)(dst), (char*)(src)); \
 	} \
 } while(0)
 
