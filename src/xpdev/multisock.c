@@ -364,7 +364,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 			for(i=0; i<xpms_set->sock_count; i++) {
 				if(xpms_set->socks[i].sock == INVALID_SOCKET)
 					continue;
-				if (fds[scnt].revents & (POLLERR | POLLNVAL)) {
+				if (fds[scnt].revents & ~(POLLIN)) {
 					scnt++;
 					closesocket(xpms_set->socks[i].sock);
 					xpms_set->lprintf(LOG_ERR, "%04d * Listening socket went bad", xpms_set->socks[i].sock);

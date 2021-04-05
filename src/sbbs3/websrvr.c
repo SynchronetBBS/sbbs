@@ -4192,9 +4192,9 @@ static int cgi_read_wait_timeout(void *arg)
 	cd->fds[1].events = POLLIN;
 
 	if (poll(cd->fds, 2, startup->max_cgi_inactivity * 1000) > 0)  {
-		if (cd->fds[0].revents & POLLIN)
+		if (cd->fds[0].revents)
 			ret |= CGI_OUTPUT_READY;
-		if (cd->fds[1].revents & POLLIN)
+		if (cd->fds[1].revents)
 			ret |= CGI_ERROR_READY;
 	}
 
@@ -4778,7 +4778,7 @@ static BOOL exec_cgi(http_session_t *session)
 		cd.fds[0].events = POLLOUT;
 		while(sent < session->req.post_len) {
 			if (poll(cd.fds, 1, 1000) > 0) {
-				if (cd.fds[0].revents & POLLIN)
+				if (cd.fds[0].revents)
 					i = write(in_pipe[1], &session->req.post_data[sent], session->req.post_len - sent);
 				else
 					i = 0;
@@ -4835,7 +4835,7 @@ static BOOL exec_cgi(http_session_t *session)
 		close(in_pipe[1]);	/* close excess file descriptor */
 	/* Drain STDERR & STDOUT */
 	while(poll(cd.fds, 2, 1000) > 0) {
-		if(cd.fds[1].revents & POLLIN) {
+		if(cd.fds[1].revents) {
 			i=read(err_pipe[0],buf,sizeof(buf)-1);
 			if(i!=-1 && i!=0) {
 				buf[i]=0;
@@ -4843,7 +4843,7 @@ static BOOL exec_cgi(http_session_t *session)
 			}
 		}
 
-		if(cd.fds[0].revents & POLLIN)  {
+		if(cd.fds[0].revents)  {
 			i=read(cd.fds[0].fd, buf, sizeof(buf));
 			if(i!=-1 && i!=0)  {
 				int snt=0;

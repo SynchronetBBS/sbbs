@@ -2083,7 +2083,7 @@ void services_thread(void* arg)
 					continue;
 
 				for(j=0; j<service[i].set->sock_count; j++) {
-					if ((fds[nfdsi + j].revents & POLLIN) == 0)
+					if ((fds[nfdsi + j].revents) == 0)
 						continue;
 #else
 			/* Setup select() parms */
