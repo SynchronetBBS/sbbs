@@ -40,20 +40,6 @@ char *utos(char *str)
 	return(out);
 }
 
-char *stou(char *str)
-{
-	static char out[128];
-	int i;
-
-	for(i=0;str[i];i++)
-		if(str[i]==' ')
-			out[i]='_';
-		else
-			out[i]=str[i];
-	out[i]=0;
-	return(out);
-}
-
 static bool new_grp(unsigned new_grpnum)
 {
 	grp_t* new_group = malloc(sizeof(grp_t));
@@ -871,20 +857,20 @@ void msgs_cfg()
 							fprintf(stream,"%-*s %-*s %s\n"
 								,LEN_EXTCODE, extcode
 								,FIDO_AREATAG_LEN
-								,cfg.sub[j]->newsgroup[0] ? cfg.sub[j]->newsgroup : stou(cfg.sub[j]->sname)
+								,sub_area_tag(&cfg, cfg.sub[j], str, sizeof(str))
 								,str2);
-							continue; 
+							continue;
 						}
 						if(k==2) {		/* BACKBONE.NA */
 							fprintf(stream,"%-*s %s\n"
 								,FIDO_AREATAG_LEN
-								,cfg.sub[j]->newsgroup[0] ? cfg.sub[j]->newsgroup : stou(cfg.sub[j]->sname)
+								,sub_area_tag(&cfg, cfg.sub[j], str, sizeof(str))
 								,cfg.sub[j]->lname);
 							continue; 
 						}
 						if(k==3) {		/* newsgroup.lst */
 							fprintf(stream,"%s %s\n"
-								,subnewsgroupname(&cfg, cfg.sub[j], str, sizeof(str))
+								,sub_newsgroup_name(&cfg, cfg.sub[j], str, sizeof(str))
 								,cfg.sub[j]->lname);
 							continue;
 						}

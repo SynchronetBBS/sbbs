@@ -53,8 +53,9 @@ static char* msg_sub_prop_desc[] = {
 	,"sub-board internal code"
 	,"sub-board name"
 	,"sub-board description"
-	,"sub-board QWK name"
-	,"newsgroup name (as configured or dymamically generated)"
+	,"QWK conference name"
+	,"area tag for FidoNet-style echoes, a.k.a. EchoTag <i>(introduced in v3.19)</i>"
+	,"newsgroup name (as configured or dynamically generated)"
 	,"sub-board access requirements"
 	,"sub-board reading requirements"
 	,"sub-board posting requirements"
@@ -142,7 +143,14 @@ BOOL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, ui
 	if(!JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
-	if((js_str=JS_NewStringCopyZ(cx, subnewsgroupname(cfg, sub, str, sizeof(str))))==NULL)
+
+	if((js_str=JS_NewStringCopyZ(cx, sub_area_tag(cfg, sub, str, sizeof(str))))==NULL)
+		return(FALSE);
+	if(!JS_DefineProperty(cx, subobj, "area_tag", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
+
+	if((js_str=JS_NewStringCopyZ(cx, sub_newsgroup_name(cfg, sub, str, sizeof(str))))==NULL)
 		return(FALSE);
 	if(!JS_DefineProperty(cx, subobj, "newsgroup", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
