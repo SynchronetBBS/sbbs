@@ -1481,7 +1481,7 @@ static jsSyncMethodSpec js_functions[] = {
 	,31802
 	},
 	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [, thisObj]")
-	,JSDOCSTR("Add all listeners of eventName to the runqueue.  If obj is passed, specifies this in the callback (the js object is used otherwise).")
+	,JSDOCSTR("Add all listeners of eventName to the end of the runqueue.  If obj is passed, specifies this in the callback (the js object is used otherwise).")
 	,31802
 	},
 	{"setImmediate",	js_setImmediate,	1,	JSTYPE_VOID,	JSDOCSTR("callback[, thisObj]")
