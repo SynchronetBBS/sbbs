@@ -1134,7 +1134,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 	if (!cb->events_supported)
 		return JS_FALSE;
 
-	while (cb->keepGoing && !JS_IsExceptionPending(cx) && cb->events && !*terminated) {
+	while (cb->keepGoing && !JS_IsExceptionPending(cx) && (cb->events || cb->rq_head) && !*terminated) {
 		timeout = -1;	// Infinity by default...
 		now = (uint64_t)(xp_timer() * 1000);
 		ev = NULL;
@@ -1147,7 +1147,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 #else
 		hsock = 0;
 #endif
-		
+
 #ifdef PREFER_POLL
 		for (ev = *head; ev; ev = ev->next) {
 			if (ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE
