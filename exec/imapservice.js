@@ -1441,21 +1441,22 @@ function save_cfg(lck)
 			lock_cfg();
 		cfgfile.rewind();
 		for(sub in saved_config) {
+			s = undefined;
 			if (saved_config[sub].Seen !== undefined) {
 				scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
 				s=saved_config[sub].Seen;
 				delete saved_config[sub].Seen;
-				cfgfile.iniSetObject(sub,saved_config[sub]);
-				if(s != undefined) {
-					// First, try any "binary" Seen compression
-					b = binify(s);
-					cfgfile.iniRemoveSection(sub+'.bseen');
-					if (b != undefined)
-						cfgfile.iniSetObject(sub+'.bseen',b);
-					cfgfile.iniRemoveSection(sub+'.seen');
-					if (Object.keys(s).length > 0)
-						cfgfile.iniSetObject(sub+'.seen',s);
-				}
+			}
+			cfgfile.iniSetObject(sub,saved_config[sub]);
+			if(s != undefined) {
+				// First, try any "binary" Seen compression
+				b = binify(s);
+				cfgfile.iniRemoveSection(sub+'.bseen');
+				if (b != undefined)
+					cfgfile.iniSetObject(sub+'.bseen',b);
+				cfgfile.iniRemoveSection(sub+'.seen');
+				if (Object.keys(s).length > 0)
+					cfgfile.iniSetObject(sub+'.seen',s);
 				saved_config[sub].Seen=scpy;
 			}
 		}
