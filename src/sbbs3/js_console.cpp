@@ -2513,19 +2513,19 @@ static jsSyncMethodSpec js_console_functions[] = {
 		},
 	{"on",			js_on,				2,	JSTYPE_NUMBER,	JSDOCSTR("type, callback")
 		,JSDOCSTR("calls callback whenever the condition type specifies is possible.  Currently, only 'read' is supported for type.  Returns an id suitable for use with clearOn")
-		,31802
+		,31900
 		},
 	{"once",		js_once,			2,	JSTYPE_NUMBER,	JSDOCSTR("type, callback")
 		,JSDOCSTR("calls callback the first time the condition type specifies is possible.  Currently, only 'read' is supported for type.  Returns an id suitable for use with clearOnce")
-		,31802
+		,31900
 		},
 	{"clearOn",		js_clearOn,			2,	JSTYPE_VOID,	JSDOCSTR("type, id")
 		,JSDOCSTR("removes a callback installed by on")
-		,31802
+		,31900
 		},
 	{"clearOnce",		js_clearOnce,			2,	JSTYPE_VOID,	JSDOCSTR("type, id")
 		,JSDOCSTR("removes a callback installed by once")
-		,31802
+		,31900
 		},
 	{0}
 };
