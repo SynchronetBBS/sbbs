@@ -59,11 +59,9 @@ int set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* err
 	/* Set user defined socket options */
 	iniFileName(cfgfile,sizeof(cfgfile),cfg->ctrl_dir,"sockopts.ini");
 	if((fp=iniOpenFile(cfgfile,FALSE))==NULL) {
-#ifdef JSDOOR
 		int optval = 1;
 		// Set the only sane choice...
 		setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&optval, sizeof(optval));
-#endif
 		return(0);
 	}
 	list=iniReadFile(fp);
