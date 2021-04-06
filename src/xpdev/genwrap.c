@@ -698,12 +698,7 @@ char* os_cmdshell(void)
 #ifdef __unix__
 clock_t msclock(void)
 {
-	long long int usecs;
-	struct timeval tv;
-	if(gettimeofday(&tv,NULL)==1)
-		return(-1);
-	usecs=((long long int)tv.tv_sec)*((long long int)1000000)+tv.tv_usec;
-	return((clock_t)(usecs/(1000000/MSCLOCKS_PER_SEC)));
+	return (clock_t)(xp_timer() * 1000);
 }
 #endif
 
@@ -796,12 +791,14 @@ long double	xp_timer(void)
 {
 	long double ret;
 #if defined(__unix__)
-	struct timeval tv;
-	if(gettimeofday(&tv,NULL)==1)
-		return(-1);
-	ret=tv.tv_usec;
-	ret /= 1000000;
-	ret += tv.tv_sec;
+	struct timespec ts;
+
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+		ret = ts.tv_sec;
+		ret += ((long double)ts.tv_nsec) / 1000000000;
+	}
+	else
+		ret = -1;
 #elif defined(_WIN32)
 	LARGE_INTEGER	freq;
 	LARGE_INTEGER	tick;
@@ -820,7 +817,7 @@ long double	xp_timer(void)
 		ret /= 1000;
 	}
 #else
-	ret=time(NULL);	/* Weak implementation */
+#error no high-resolution time for this platform
 #endif
 	return(ret);
 }
