@@ -149,7 +149,7 @@ int main(int argc,char **argv)
 			smb_close(&smb);
 			continue;
 		}
-		if((fcrc[i] = malloc(smb.status.total_files * sizeof(uint32_t)))==NULL) {
+		if((fcrc[i] = malloc((smb.status.total_files + 1) * sizeof(uint32_t)))==NULL) {
             printf("Not enough memory for CRCs.\r\n");
             return(1); 
 		}
