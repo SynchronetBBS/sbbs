@@ -392,12 +392,19 @@ void sub_cfg(uint grpnum)
 					break;
 				case 2:
 					uifc.helpbuf=
-						"`Sub-board QWK Name:`\n"
+						"`Sub-board QWK Conference Name:`\n"
 						"\n"
-						"This is the name of the sub-board used for QWK off-line readers.\n"
+						"This is the name of the sub-board to be used in the CONTROL.DAT file\n"
+						"included in QWK packets for display by QWK off-line readers.\n"
+						"\n"
+						"For QWK Extended (QWKE) packets, the included Conference Names will be\n"
+						"automatically generated from each message group short name and each\n"
+						"sub-board's long name.\n"
+						"\n"
+						"QWK Conference Names are not used in QWK networks."
 					;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for QWK Packets"
-						,cfg.sub[i]->qwkname,10,K_EDIT);
+					uifc.input(WIN_MID|WIN_SAV,0,17,"QWK Conference Name"
+						,cfg.sub[i]->qwkname, sizeof(cfg.sub[i]->qwkname)-1, K_EDIT);
 					break;
 				case 3:
 					uifc.helpbuf=sub_code_help;
