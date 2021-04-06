@@ -1685,7 +1685,7 @@ int main(int argc, char **argv)
 						break;
 					default:
 						fprintf(statfp,"Unrecognized command '%s'\n\n",argv[i]);
-						fprintf(statfp,usage);
+						fprintf(statfp,"%s",usage);
 						bail(1); 
 						return -1;
 				} 
@@ -1825,14 +1825,14 @@ int main(int argc, char **argv)
 
 	if(!(mode&(SEND|RECV))) {
 		fprintf(statfp,"!No command specified\n\n");
-		fprintf(statfp,usage);
+		fprintf(statfp,"%s",usage);
 		bail(1); 
 		return -1;
 	}
 
 	if(mode&(SEND|XMODEM) && !fnames) { /* Sending with any or recv w/XMODEM */
 		fprintf(statfp,"!Must specify filename or filelist\n\n");
-		fprintf(statfp,usage);
+		fprintf(statfp,"%s",usage);
 		bail(1); 
 		return -1;
 	}
