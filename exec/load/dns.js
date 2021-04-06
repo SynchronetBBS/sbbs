@@ -108,18 +108,6 @@ DNS.classes = {
 	'HS':4
 };
 
-DNS.prototype.handle_timeout = function(os) {
-	os.failed++;
-
-	delete this.outstanding[os.id];
-
-	if (os.failed > os.failures)
-		os.callback.call(os);
-	else
-		os.obj.query(os.query, os.callback, os.thisObj, os.recursive,
-		    os.timeout, os.failures, os.failed);
-};
-
 DNS.prototype.generate_query = function(queries, recursive) {
 	var id;
 	var namebits = {};
@@ -418,8 +406,6 @@ DNS.prototype.handle_response = function(sock) {
 	answers = string_to_int16(resp.substr(6, 2));
 	nameservers = string_to_int16(resp.substr(8, 2));
 	arecords = string_to_int16(resp.substr(10, 2));
-	if (answers === 0)
-		return null;
 	if (q.timeoutid !== undefined)
 		js.clearTimeout(q.timeoutid);
 	offset = 12;
@@ -508,6 +494,16 @@ DNS.prototype.asynchronous_query = function(queries, /* queryStr, type, class, *
 	if (failed === undefined)
 		failed = 0;
 
+	function handle_timeout() {
+		this.failed++;
+		delete this.obj.outstanding[this.id];
+		if (this.failed >= this.failures)
+			this.callback.call(this);
+		else
+			this.obj.query(this.query, this.callback, this.thisObj, this.recursive, this.timeout, this.failures,
+			    this.failed);
+	}
+
 	queries.forEach(function(q) {
 		query = this.generate_query([q], recursive);
 
@@ -517,8 +513,7 @@ DNS.prototype.asynchronous_query = function(queries, /* queryStr, type, class, *
 			this.outstanding[query.id].timeout = timeout;
 			this.outstanding[query.id].failures = failures;
 			this.outstanding[query.id].failed = failed;
-			this.outstanding[query.id].timeoutid = js.setTimeout(this.handle_timeout, timeout,
-			    this.outstanding[query.id]);
+			this.outstanding[query.id].timeoutid = js.setTimeout(handle_timeout, timeout, this.outstanding[query.id]);
 
 			this.sockets.forEach(function(sock) {
 				sock.write(query.buf);
@@ -657,24 +652,28 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 	function handle_response(resp) {
 		var rectype;
 
-		switch(resp.queries[0].type) {
-			case DNS.types.A:
-				rectype = 'A';
-				break;
-			case DNS.types.AAAA:
-				rectype = 'AAAA';
-				break;
-		};
+		if (resp !== undefined) {
+			switch(resp.queries[0].type) {
+				case DNS.types.A:
+					rectype = 'A';
+					break;
+				case DNS.types.AAAA:
+					rectype = 'AAAA';
+					break;
+			};
+		}
 		if (rectype === undefined)
 			return;
 
 		this[rectype].addrs = [];
 
-		resp.answers.forEach(function(ans) {
-			if (resp.queries[0].type != ans.type || resp.queries[0].class != ans.class)
-				return;
-			this[rectype].addrs.push(ans.rdata);
-		}, this);
+		if (resp !== undefined && resp.answers !== undefined) {
+			resp.answers.forEach(function(ans) {
+				if (resp.queries[0].type != ans.type || resp.queries[0].class != ans.class)
+					return;
+				this[rectype].addrs.push(ans.rdata);
+			}, this);
+		}
 		if (this.callback !== undefined)
 			js.dispatchEvent(this.unique_id + '.resp'+rectype, this);
 		else
