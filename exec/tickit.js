@@ -29,10 +29,13 @@ require("fido.js", 'FIDO');
 var cfgfile;
 var force_replace = false;
 var use_diz_always = true;
+var debug = false;
 
 for (var i in argv) {
 	if(argv[i] == "-force-replace")
 		force_replace = true;
+	else if(argv[i] == "-debug")
+		debug = true;
 	else if(argv[i][0] != '-')
 		cfgfile = argv[i];
 }
@@ -764,18 +767,23 @@ function main() {
 	for (var i = 0; i < areas.length; i++) {
 		var cfg = tickit.acfg[areas[i]];
 		if (cfg !== undefined && cfg.akamatching === true) {
-			log(LOG_DEBUG, areas[i].toUpperCase()+" using area AKA match.");
+			if(debug)
+				log(LOG_DEBUG, areas[i].toUpperCase()+" using area AKA match.");
 		} else if (cfg !== undefined && cfg.sourceaddress !== undefined) {
 			var aaddr = cfg.sourceaddress.toString();
 			if (aaddr.indexOf("@") > -1)
 				aaddr = aaddr.slice(0,aaddr.indexOf("@"));
-			log(LOG_DEBUG, areas[i].toUpperCase()+" using area source address: "+aaddr);
+			if(debug)
+				log(LOG_DEBUG, areas[i].toUpperCase()+" using area source address: "+aaddr);
 		} else if (tickit.gcfg.akamatching) {
-			log(LOG_DEBUG, areas[i].toUpperCase()+" using global AKA match.");
+			if(debug)
+				log(LOG_DEBUG, areas[i].toUpperCase()+" using global AKA match.");
 		} else if (tickit.gcfg.sourceaddress) {
-			log(LOG_DEBUG, areas[i].toUpperCase()+" using global source address "+saddr);
+			if(debug)
+				log(LOG_DEBUG, areas[i].toUpperCase()+" using global source address "+saddr);
 		} else {
-			log(LOG_DEBUG, areas[i].toUpperCase()+" using main system address: "+saddr);
+			if(debug)
+				log(LOG_DEBUG, areas[i].toUpperCase()+" using main system address: "+saddr);
 		}
 	}
 
