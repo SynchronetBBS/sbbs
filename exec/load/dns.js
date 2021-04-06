@@ -55,9 +55,10 @@ function DNS(synchronous, servers) {
 		var sock = new Socket(SOCK_DGRAM, "dns", server.indexOf(':') >= 0);
 		sock.bind();
 		sock.connect(server, 53);
-		if (!this.synchronous)
+		if (!this.synchronous) {
 			sock.cbID = sock.on('read', handle_response);
-		sock.dnsObject = this;
+			sock.dnsObject = this;
+		}
 		this.sockets.push(sock);
 	}, this);
 
@@ -394,7 +395,7 @@ DNS.prototype.handle_response = function(sock) {
 	if (!ret.response)
 		return null;
 	ret.opcode = (ascii(resp[2]) & 0x1e) >> 1;
-	if (ret.opcode !== 0)
+	if (ret.opcode !== 0 && ret.opcode !== 2)
 		return null;
 	ret.authoritative = !!(ascii(resp[2]) & (1<<5));
 	ret.truncation = !!(ascii(resp[2]) & (1<<6));
@@ -595,6 +596,7 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 	this.sockets.forEach(function(sock) {
 		ctx.unique_id += '.'+sock.local_port;
 	});
+	ctx.unique_id += this.increment_id().toString();
 
 	if (host === undefined)
 		throw new Error('No host specified');
@@ -652,7 +654,7 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 	function handle_response(resp) {
 		var rectype;
 
-		if (resp !== undefined) {
+		if (resp !== null && resp !== undefined) {
 			switch(resp.queries[0].type) {
 				case DNS.types.A:
 					rectype = 'A';
@@ -665,9 +667,10 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 		if (rectype === undefined)
 			return;
 
-		this[rectype].addrs = [];
+		if (this[rectype].addrs === undefined)
+			this[rectype].addrs = [];
 
-		if (resp !== undefined && resp.answers !== undefined) {
+		if (resp !== null && resp.answers !== undefined) {
 			resp.answers.forEach(function(ans) {
 				if (resp.queries[0].type != ans.type || resp.queries[0].class != ans.class)
 					return;
@@ -691,10 +694,6 @@ DNS.prototype.resolveTypeClass = function(host, type, class, callback, thisObj)
 	var respA;
 	var respAAAA;
 	var ret;
-
-	this.sockets.forEach(function(sock) {
-		ctx.unique_id += '.'+sock.local_port;
-	});
 
 	if (host === undefined)
 		throw new Error('No host specified');
