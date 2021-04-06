@@ -534,7 +534,7 @@ static char* sys_prop_desc[] = {
 	,"platform-specific command processor/shell"
 
 	/* clock */
-	,"amount of elapsed processor time in clock 'ticks'"
+	,"amount of elapsed time in clock 'ticks'"
 	,"number of clock ticks per second"
 	,"high-resolution timer, in seconds (fractional seconds supported)"
 
