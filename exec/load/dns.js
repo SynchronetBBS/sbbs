@@ -646,7 +646,7 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 		this.AAAA.done = true;
 		if (this.A.done) {
 			if (this.final !== undefined)
-				js.dispatchEvent(ctx.unique_id + '.final', this);
+				js.dispatchEvent(this.unique_id + '.final', this);
 			else
 				this.final_callback(this);
 		}
@@ -675,7 +675,7 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 				return;
 			this[rectype].addrs.push(ans.rdata);
 		}, this);
-		if (ctx.callback !== undefined)
+		if (this.callback !== undefined)
 			js.dispatchEvent(this.unique_id + '.resp'+rectype, this);
 		else
 			this['resp'+rectype+'_callback']();
