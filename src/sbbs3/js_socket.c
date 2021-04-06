@@ -170,7 +170,7 @@ remove_js_socket_event(JSContext *cx, js_callback_t *cb, SOCKET sock)
 	for (ev = cb->events; ev; ev = nev) {
 		nev = ev->next;
 		if (ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE
-		    || ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE) {
+		    || ev->type == JS_EVENT_SOCKET_WRITABLE || ev->type == JS_EVENT_SOCKET_WRITABLE_ONCE) {
 			if (ev->data.sock == sock) {
 				if (ev->next)
 					ev->next->prev = ev->prev;
@@ -2206,7 +2206,7 @@ js_on(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_clearOn(JSContext *cx, uintN argc, jsval *arglist)
 {
-	return js_clear_socket_event(cx, argc, arglist, TRUE);
+	return js_clear_socket_event(cx, argc, arglist, FALSE);
 }
 
 /* Socket Object Properties */
