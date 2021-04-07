@@ -110,7 +110,7 @@ for(var i in dir_list) {
 }
 
 log("Searching for duplicates in " + total_files + " files (" 
-	+ file_size_str(total_bytes) + " bytes) ...");
+	+ file_size_str(total_bytes, /* unit */1, /* precision */1) + " bytes) ...");
 var dupe = { name: [], hash: []};
 var name_bytes = 0;
 var hash_bytes = 0;
@@ -133,7 +133,7 @@ for(var n in hash) {
 }
 
 if(options.names) {
-	log(dupe.name.length + " duplicate file names (" + file_size_str(name_bytes) + " bytes)");
+	log(dupe.name.length + " duplicate file names (" + file_size_str(name_bytes,1 , 1) + " bytes)");
 	if(options.json)
 		writeln(JSON.stringify(dupe.name, null, 4));
 	else
@@ -141,7 +141,7 @@ if(options.names) {
 }
 if(hash_type) {
 	log(dupe.hash.length + " duplicate file " + hash_type.toUpperCase() + " sums of at least " 
-		+ min_size + " bytes (" + file_size_str(hash_bytes) + " bytes)");
+		+ min_size + " bytes (" + file_size_str(hash_bytes, 1, 1) + " bytes)");
 	if(options.json)
 		writeln(JSON.stringify(dupe.hash, null, 4));
 	else
