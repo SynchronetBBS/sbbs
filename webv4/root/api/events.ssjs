@@ -7,7 +7,7 @@ load(settings.web_lib + 'request.js');
 js.time_limit = 0;
 
 http_reply.header['Cache-Control'] = 'no-cache';
-http_reply.header['Content-type'] = 'text/event-stream';
+http_reply.header['Content-Type'] = 'text/event-stream';
 http_reply.header['X-Accel-Buffering'] = 'no'; // probably not needed by everyone (nginx)
 
 const keepalive = 15;
