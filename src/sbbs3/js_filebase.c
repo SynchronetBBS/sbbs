@@ -180,7 +180,7 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 		return false;
 
-	if((f->from != NULL || detail > file_detail_extdesc)
+	if(((f->from != NULL && *f->from != '\0') || detail > file_detail_extdesc)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
@@ -190,12 +190,12 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		&& !JS_DefineProperty(cx, obj, "anon", val, NULL, NULL, flags))
 		return false;
 
-	if((f->tags != NULL || detail > file_detail_extdesc)
+	if(((f->tags != NULL && *f->tags != '\0') || detail > file_detail_extdesc)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->tags)) == NULL
 			|| !JS_DefineProperty(cx, obj, "tags", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if((f->desc != NULL || detail > file_detail_extdesc)
+	if(((f->desc != NULL && *f->desc != '\0') || detail > file_detail_extdesc)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->desc)) == NULL
 			|| !JS_DefineProperty(cx, obj, "desc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
