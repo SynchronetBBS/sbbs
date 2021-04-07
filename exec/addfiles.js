@@ -13,22 +13,22 @@ const default_excludes = [
 ];
 
 if(argv.indexOf("-help") >= 0 || argv.indexOf("-?") >= 0) {
-	print("usage: [-options] [dir-code] [listfile]");
-	print("options:");
-	print("-all            add files in all libraries/directories (implies -auto)");
-	print("-lib=<name>     add files in all directories of specified library (implies -auto)");
-	print("-from=<name>    specify uploader's user name (may require quotes)");
-	print("-ex=<filename>  add to excluded filename list");
-	print("                (default: " + default_excludes.join(',') + ")");
-	print("-diz            always extract/use description in archive");
-	print("-update         update existing file entries (default is to skip them)");
-	print("-date[=fmt]     include today's date in description");
-	print("-fdate[=fmt]    include file's date in description");
-	print("-adate[=fmt]    include newest archived file date in description");
-	print("                (fmt = optional strftime date/time format string)");
-	print("-delete         delete list after import");
-	print("-v              increase verbosity of output");
-	print("-debug          enable debug output");
+	writeln("usage: [-options] [dir-code] [listfile]");
+	writeln("options:");
+	writeln("  -all            add files in all libraries/directories (implies -auto)");
+	writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
+	writeln("  -from=<name>    specify uploader's user name (may require quotes)");
+	writeln("  -ex=<filename>  add to excluded filename list");
+	writeln("                  (default: " + default_excludes.join(',') + ")");
+	writeln("  -diz            always extract/use description in archive");
+	writeln("  -update         update existing file entries (default is to skip them)");
+	writeln("  -date[=fmt]     include today's date in description");
+	writeln("  -fdate[=fmt]    include file's date in description");
+	writeln("  -adate[=fmt]    include newest archived file date in description");
+	writeln("                  (fmt = optional strftime date/time format string)");
+	writeln("  -delete         delete list after import");
+	writeln("  -v              increase verbosity of output");
+	writeln("  -debug          enable debug output");
 	exit(0);
 }
 
@@ -126,7 +126,7 @@ if(!dir_list.length) {
 	var code;
 	while(!file_area.dir[code] && !js.terminated) {
 		for(var d in file_area.dir)
-			print(d);
+			writeln(d);
 		code = prompt("Directory code");
 	}
 	dir_list.push(code);
@@ -144,7 +144,7 @@ for(var d = 0; d < dir_list.length; d++) {
 	}
 	if(options.auto && (dir.settings & DIR_NOAUTO))
 		continue;
-	print("Adding files to " + dir.lib_name + " " + dir.name);
+	writeln("Adding files to " + dir.lib_name + " " + dir.name);
 	
 	var filebase = new FileBase(code);
 	if(!filebase.open("r")) {
@@ -157,7 +157,7 @@ for(var d = 0; d < dir_list.length; d++) {
 	for(var i = 0; i < name_list.length; i++) {
 		name_list[i] = name_list[i].toUpperCase();
 		if(options.debug)
-			print(name_list[i]);
+			writeln(name_list[i]);
 	}
 	var file_list = [];
 
@@ -166,7 +166,7 @@ for(var d = 0; d < dir_list.length; d++) {
 		listpath = file_getcase(dir.path + listfile) || file_getcase(listfile);
 		var f = new File(listpath);
 		if(f.exists) {
-			print("Opening " + f.name);
+			writeln("Opening " + f.name);
 			if(!f.open('r')) {
 				alert("Error " + f.error + " (" + strerror(f.error) + ") opening " + f.name);
 				exit(1);
@@ -190,21 +190,21 @@ for(var d = 0; d < dir_list.length; d++) {
 		var file = file_list[i];
 		file.from = uploader;
 		if(options.debug)
-			print(JSON.stringify(file, null, 4));
+			writeln(JSON.stringify(file, null, 4));
 		else if(verbosity)
-			printf("%s ", file.name);
+			write(file.name + " ");
 		if(exclude.indexOf(file.name.toUpperCase()) >= 0) {
 			if(verbosity)
-				print("excluded (ignored)");
+				writeln("excluded (ignored)");
 			continue;
 		}
 		file.extdesc = lfexpand(file.extdesc);
 		if(verbosity > 1)
-			print(JSON.stringify(file));
+			writeln(JSON.stringify(file));
 		var exists = name_list.indexOf(filebase.get_name(file.name).toUpperCase()) >= 0;
 		if(exists && !options.update) {
 			if(verbosity)
-				print("already added");
+				writeln("already added");
 			continue;
 		}
 		var path = file_area.dir[code].path + file.name;
@@ -231,7 +231,7 @@ for(var d = 0; d < dir_list.length; d++) {
 			if(!filebase.update(file.name, file, options.diz)) {
 				alert("Error " + filebase.last_error + " updating " + file.name);
 			} else {
-				print("Updated " + file.name);
+				writeln("Updated " + file.name);
 				updated++;
 			}
 		} else {
@@ -239,24 +239,24 @@ for(var d = 0; d < dir_list.length; d++) {
 			if(!filebase.add(file, options.diz)) {
 				alert("Error " + filebase.last_error + " adding " + file.name);
 			} else {
-				print("Added " + file.name);
+				writeln("Added " + file.name);
 				added++;
 			}
 		}
 	}
 	if(listpath && options.delete) {
 		if(verbosity)
-			print("Deleting list file: " + listpath);
+			writeln("Deleting list file: " + listpath);
 		if(file_remove(listpath))
-			print("List file deleted: " + listpath);
+			writeln("List file deleted: " + listpath);
 		else
 			alert("Failed to delete list file: " + listpath);
 	}
 	filebase.close();
 }
-print(added + " files added");
+writeln(added + " files added");
 if(updated)
-	print(updated + " files updated");
+	writeln(updated + " files updated");
 
 // Parse a FILES.BBS (or similar) file listing file
 // Note: file descriptions must begin with an alphabetic character
@@ -266,7 +266,7 @@ function parse_file_list(lines)
 	for(var i = 0; i < lines.length; i++) {
 		var line = lines[i];
 		var match = line.match(/(^[\w]+[\w\-\!\#\.]*)\W+[^A-Za-z]*(.*)/);
-//		print('fname line match: ' + JSON.stringify(match));
+//		writeln('fname line match: ' + JSON.stringify(match));
 		if(match && match.length > 1) {
 			var file = { name: match[1], desc: match[2] };
 			if(file.desc && file.desc.length > LEN_FDESC)
@@ -280,7 +280,7 @@ function parse_file_list(lines)
 				alert("Ignoring line: " + line);
 			continue;
 		}
-//		print('match: ' + JSON.stringify(match));
+//		writeln('match: ' + JSON.stringify(match));
 		if(match && match.length > 1 && file_list.length) {
 			var file = file_list[file_list.length - 1];
 			if(!file.extdesc)
