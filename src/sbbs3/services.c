@@ -543,6 +543,7 @@ static void
 js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
 	char	line[64];
+	char	user[LEN_ALIAS * 2] = "";
 	char	file[MAX_PATH+1];
 	char*	prot="???";
 	SOCKET	sock=0;
@@ -554,6 +555,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))!=NULL) {
 		prot=client->service->protocol;
 		sock=client->socket;
+		if(client->user.number)
+			SAFEPRINTF(user, " <%s>", client->user.alias);
 	}
 
 	if(report==NULL) {
@@ -583,8 +586,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(client == NULL || client->service == NULL || client->service->log_level >= log_level)
-		lprintf(log_level,"%04d %s !JavaScript %s%s%s: %s",sock,prot,warning,file,line,message);
+	if(client == NULL || client->service == NULL || client->service->log_level >= log_level) {
+		lprintf(log_level,"%04d %s%s !JavaScript %s%s%s: %s", sock, prot, user, warning, file, line, message);
+	}
 	JS_RESUMEREQUEST(cx, rc);
 }
 
