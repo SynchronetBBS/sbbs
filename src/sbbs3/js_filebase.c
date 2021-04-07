@@ -468,6 +468,7 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(getfname(filename) != filename)
 		SAFECOPY(path, filename);
 	else {
+		file.dir = p->smb.dirnum;
 		file.name = filename;
 		getfilepath(scfg, &file, path);
 	}
