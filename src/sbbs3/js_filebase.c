@@ -180,7 +180,7 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 		return false;
 
-	if(f->from != NULL
+	if(f->from != NULL || detail > file_detail_extdesc
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
@@ -190,12 +190,17 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		&& !JS_DefineProperty(cx, obj, "anon", val, NULL, NULL, flags))
 		return false;
 
-	if(f->desc != NULL
+	if(f->tags != NULL || detail > file_detail_extdesc
+		&& ((js_str = JS_NewStringCopyZ(cx, f->tags)) == NULL
+			|| !JS_DefineProperty(cx, obj, "tags", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
+	if(f->desc != NULL || detail > file_detail_extdesc
 		&& ((js_str = JS_NewStringCopyZ(cx, f->desc)) == NULL
 			|| !JS_DefineProperty(cx, obj, "desc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(f->extdesc != NULL && *f->extdesc != '\0'
+	if((f->extdesc != NULL && *f->extdesc != '\0') || detail > file_detail_extdesc
 		&& ((js_str = JS_NewStringCopyZ(cx, f->extdesc)) == NULL
 			|| !JS_DefineProperty(cx, obj, "extdesc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
@@ -249,10 +254,6 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 			|| !JS_DefineProperty(cx, obj, "sha1", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 			return false;
 	}
-	if(f->tags != NULL
-		&& ((js_str = JS_NewStringCopyZ(cx, f->tags)) == NULL
-			|| !JS_DefineProperty(cx, obj, "tags", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
-		return false;
 
 	return true;
 }
@@ -356,7 +357,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if((result = smb_new_hfield_str(file, SMB_FILEUPLOADER, cp)) != SMB_SUCCESS) {
+		if((file->from != NULL || *cp != '\0') && (result = smb_new_hfield_str(file, SMB_FILEUPLOADER, cp)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -371,7 +372,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if((result = smb_new_hfield_str(file, SMB_FILEDESC, cp)) != SMB_SUCCESS) {
+		if((file->desc != NULL || *cp != '\0') && (result = smb_new_hfield_str(file, SMB_FILEDESC, cp)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -397,7 +398,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if((result = smb_new_hfield_str(file, SMB_TAGS, cp)) != SMB_SUCCESS) {
+		if((file->tags != NULL || *cp != '\0') && (result = smb_new_hfield_str(file, SMB_TAGS, cp)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -411,7 +412,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
 			return SMB_FAILURE;
 		}
-		if((result = smb_new_hfield(file, SMB_COST, sizeof(cost), &cost)) != SMB_SUCCESS) {
+		if((file->cost != 0 || cost != 0) && (result = smb_new_hfield(file, SMB_COST, sizeof(cost), &cost)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
