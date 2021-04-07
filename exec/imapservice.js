@@ -808,6 +808,7 @@ var any_state_command_handlers = {
 			var elapsed=0;
 
 			client.socket.send("+ Ooo, Idling... my favorite.\r\n");
+			js.gc(true);
 			while(1) {
 				line=client.socket.recvline(10240, 5);
 				if(line==null) {
@@ -1409,17 +1410,17 @@ function binify(seen)
 			delete seen[s[i]];
 		}
 		else {
-			bo = Math.floor((s[i]-base)/8);
+			bo = Math.floor((s[i]-basemsg)/8);
 			while (bstr.length < bo)
 				bstr += ascii(0);
 			byte = ascii(bstr[bo]);
-			bit = (s[i]-base)-(bo*8);
+			bit = (s[i]-basemsg)-(bo*8);
 			byte |= 1<<bit;
 			delete seen[s[i]];
 			bstr = bstr.substr(0, bo)+ascii(byte);
 			// Last bit?
 			if (i+1 == s.length || s[i+1] > s[i]+32) {
-				ret[base]=base64_encode(bstr);
+				ret[basemsg]=base64_encode(bstr);
 				bstr = '';
 			}
 		}
@@ -1779,25 +1780,27 @@ function do_store(seq, uid, item, data)
 				changed=true;
 			}
 		}
-		if(mod_seen && base.cfg != undefined) {
-			lock_cfg();
-			read_cfg(base.cfg.code, false);
-			if(saved_config[base.cfg.code] == undefined) {
-				saved_config[base.cfg.code] = {};
-			}
-			if(saved_config[base.cfg.code].Seen == undefined) {
-				saved_config[base.cfg.code].Seen = {};
-				saved_config[base.cfg.code].Seen[header.number]=0;
-			}
-			saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
-			save_cfg(false);
-			apply_seen(index);
-			unlock_cfg();
-		}
 		if(!silent)
 			send_fetch_response(seq[i], ["FLAGS"], uid);
+		if (!client.socket.is_connected)
+			break;
+		js.gc();
 	}
-	js.gc();
+	if(mod_seen && base.cfg != undefined) {
+		lock_cfg();
+		read_cfg(base.cfg.code, false);
+		if(saved_config[base.cfg.code] == undefined) {
+			saved_config[base.cfg.code] = {};
+		}
+		if(saved_config[base.cfg.code].Seen == undefined) {
+			saved_config[base.cfg.code].Seen = {};
+			saved_config[base.cfg.code].Seen[header.number]=0;
+		}
+		saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
+		save_cfg(false);
+		apply_seen(index);
+		unlock_cfg();
+	}
 	if(changed)
 		index=read_index(base);
 }
@@ -2085,6 +2088,8 @@ function do_search(args, uid)
 		}
 		if(!failed)
 			result.push(uid?idx.number:idx.offset);
+		if (!client.socket.is_connected)
+			break;
 	}
 
 	untagged("SEARCH "+result.join(" "));
@@ -2158,6 +2163,8 @@ var selected_command_handlers = {
 			apply_seen(index);
 			for(i in seq) {
 				send_fetch_response(seq[i], data_items, false);
+				if (!client.socket.is_connected)
+					break;
 			}
 			js.gc();
 			tagged(tag, "OK", "There they are!");
@@ -2209,6 +2216,8 @@ var selected_command_handlers = {
 					apply_seen(index);
 					for(i in seq) {
 						send_fetch_response(seq[i], data_items, true);
+						if (!client.socket.is_connected)
+							break;
 					}
 					js.gc();
 					tagged(tag, "OK", "There they are (with UIDs)!");
