@@ -1,22 +1,22 @@
 // file_size.js
 
-// $Id: file_size.js,v 1.2 2005/03/08 03:07:17 rswindell Exp $
-
 // Function for returning a string representation of a file size
 
-function file_size_str(size, bytes, float)
+function file_size_str(size, bytes, precision)
 {
-	if(float !== undefined)
-		return file_size_float(size, /* unit: */bytes, /* precision */float);
+	if(precision !== undefined)
+		return file_size_float(size, /* unit: */bytes, precision);
 	if(bytes) {
 		if(size < 1000)        /* Bytes */
 			return format("%ldB",size);
 		if(size<10000)         /* Bytes with comma */
 			return format("%ld,%03ldB",(size/1000),(size%1000));
 	}
+	if(size == 0)
+		return "0K";
 	size = size/1024;
 	if(size<1000)  /* KB */
-		return format("%ldK",size);
+		return format("%1.2fK",size);
 	if(size<100000)  /* KB With comma */
 		return format("%ld,%03ldK",(size/1000),(size%1000));
 	size = size/1024;
@@ -60,22 +60,21 @@ function file_size_str(size, bytes, float)
 }
 
 // ported from xpdev/genwrap.c byte_estimate_to_str()
-function file_size_float(bytes, unit, precision)
+function file_size_float(size, unit, precision)
 {
 	const one_tebibyte = 1024.0*1024.0*1024.0*1024.0;
 	const one_gibibyte = 1024.0*1024.0*1024.0;
 	const one_mebibyte = 1024.0*1024.0;
 	const one_kibibyte = 1024.0;
 
-	if(bytes >= one_tebibyte)
-		return format("%1.*fT", precision, bytes/one_tebibyte);
-	if(bytes >= one_gibibyte || unit == one_gibibyte)
-		return format("%1.*fG", precision, bytes/one_gibibyte);
-	if(bytes >= one_mebibyte || unit == one_mebibyte)
-		return format("%1.*fM", precision, bytes/one_mebibyte);
-	else if(bytes >= one_kibibyte || unit == one_kibibyte)
-		return format("%1.*fK", precision, bytes/one_kibibyte);
+	if(size >= one_tebibyte)
+		return format("%1.*fT", precision, size/one_tebibyte);
+	if(size >= one_gibibyte || unit == one_gibibyte)
+		return format("%1.*fG", precision, size/one_gibibyte);
+	if(size >= one_mebibyte || unit == one_mebibyte)
+		return format("%1.*fM", precision, size/one_mebibyte);
+	else if(size >= one_kibibyte || unit == one_kibibyte)
+		return format("%1.*fK", precision, size/one_kibibyte);
 	else
-		return format("%luB", bytes);
-
+		return format("%luB", size);
 }
