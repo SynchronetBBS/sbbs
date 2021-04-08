@@ -155,11 +155,14 @@ str_list_t loadfilenames(smb_t* smb, const char* filespec, time_t t, enum file_s
 		return NULL;
 
 	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
-	while(!feof(smb->sid_fp)) {
+	size_t offset = start;
+	while(!feof(smb->sid_fp) && offset < smb->status.total_files) {
 		fileidxrec_t fidx;
 
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
+
+		offset++;
 
 		if(fidx.idx.number == 0)	/* invalid message number, ignore */
 			continue;
@@ -197,9 +200,10 @@ file_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail d
 		return NULL;
 
 	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
-	long offset = start;
-	while(!feof(smb->sid_fp)) {
-		file_t* f = &file_list[*count];
+	size_t offset = start;
+	size_t cnt = 0;
+	while(!feof(smb->sid_fp) && offset < smb->status.total_files) {
+		file_t* f = &file_list[cnt];
 
 		if(smb_fread(smb, &f->file_idx, sizeof(f->file_idx), smb->sid_fp) != sizeof(f->file_idx))
 			break;
@@ -215,14 +219,17 @@ file_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail d
 			if(!wildmatch(f->file_idx.name, filespec, /* path: */false, /* case-sensitive: */false))
 				continue;
 		}
-		int result = smb_getfile(smb, f, detail);
-		if(result != SMB_SUCCESS)
-			break;
-		(*count)++;
+		cnt++;
 	}
 	if(order != FILE_SORT_NATURAL)
-		sortfiles(file_list, *count, order);
+		sortfiles(file_list, cnt, order);
 
+	// Read (and set convenience pointers) *after* sorting the list
+	for((*count) = 0; (*count) < cnt; (*count)++) {
+		int result = smb_getfile(smb, &file_list[*count], detail);
+		if(result != SMB_SUCCESS)
+			break;
+	}
 	return file_list;
 }
 
@@ -231,7 +238,7 @@ static int file_compare_name_a(const void* v1, const void* v2)
 	file_t* f1 = (file_t*)v1;
 	file_t* f2 = (file_t*)v2;
 
-	return stricmp(f1->name, f2->name);
+	return stricmp(f1->file_idx.name, f2->file_idx.name);
 }
 
 static int file_compare_name_ac(const void* v1, const void* v2)
@@ -239,7 +246,7 @@ static int file_compare_name_ac(const void* v1, const void* v2)
 	file_t* f1 = (file_t*)v1;
 	file_t* f2 = (file_t*)v2;
 
-	return strcmp(f1->name, f2->name);
+	return strcmp(f1->file_idx.name, f2->file_idx.name);
 }
 
 static int file_compare_name_d(const void* v1, const void* v2)
@@ -247,7 +254,7 @@ static int file_compare_name_d(const void* v1, const void* v2)
 	file_t* f1 = (file_t*)v1;
 	file_t* f2 = (file_t*)v2;
 
-	return stricmp(f2->name, f1->name);
+	return stricmp(f2->file_idx.name, f1->file_idx.name);
 }
 
 static int file_compare_name_dc(const void* v1, const void* v2)
@@ -255,7 +262,7 @@ static int file_compare_name_dc(const void* v1, const void* v2)
 	file_t* f1 = (file_t*)v1;
 	file_t* f2 = (file_t*)v2;
 
-	return strcmp(f2->name, f1->name);
+	return strcmp(f2->file_idx.name, f1->file_idx.name);
 }
 
 static int file_compare_date_a(const void* v1, const void* v2)
