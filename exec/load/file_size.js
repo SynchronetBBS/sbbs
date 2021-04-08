@@ -16,7 +16,7 @@ function file_size_str(size, bytes, precision)
 		return "0K";
 	size = size/1024;
 	if(size<1000)  /* KB */
-		return format("%1.2fK",size);
+		return format("%ldK", Math.ceil(size));
 	if(size<100000)  /* KB With comma */
 		return format("%ld,%03ldK",(size/1000),(size%1000));
 	size = size/1024;
