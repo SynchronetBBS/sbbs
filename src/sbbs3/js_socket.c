@@ -2091,6 +2091,10 @@ js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
 		return(JS_FALSE);
 	}
 
+	/*
+	 * NOTE: If you allow a thisObj here, you'll need to deal with js_GetClassPrivate
+	 *       in js_internal.c where the object is assumed to be a socket.
+	 */
 	if (argc != 2) {
 		JS_ReportError(cx, "js.on() and js.once() require exactly two parameters");
 		return JS_FALSE;
