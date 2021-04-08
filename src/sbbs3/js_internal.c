@@ -1120,6 +1120,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 	jsrefcount rc;
 	JSBool ret = JS_TRUE;
 	BOOL input_locked = FALSE;
+	js_socket_private_t*	jssp;
+	socklen_t slen;
 #ifdef PREFER_POLL
 	struct pollfd *fds;
 	nfds_t sc;
@@ -1371,6 +1373,12 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 			if (ev->type == JS_EVENT_CONSOLE_INPUT) {
 				if (input_locked)
 					js_do_lock_input(cx, FALSE);
+			}
+			if (ev->type == JS_EVENT_SOCKET_CONNECT) {
+				if ((jssp = (js_socket_private_t*)JS_GetPrivate(cx, ev->cx)) != NULL) {
+					slen=sizeof(ev->data.connect.sock);
+					getpeername(ev->data.connect.sock, &jssp->remote_addr.addr, &slen);
+				}
 			}
 
 			ret = JS_CallFunction(cx, ev->cx, ev->cb, 0, NULL, &rval);
