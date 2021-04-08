@@ -1376,7 +1376,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 			}
 			if (ev->type == JS_EVENT_SOCKET_CONNECT) {
 				if ((jssp = (js_socket_private_t*)JS_GetPrivate(cx, ev->cx)) != NULL) {
-					slen=sizeof(ev->data.connect.sock);
+					slen = sizeof(jssp->remote_addr.addr);
 					getpeername(ev->data.connect.sock, &jssp->remote_addr.addr, &slen);
 				}
 			}
