@@ -270,6 +270,32 @@ off_t recvfilesocket(int sock, int file, off_t *offset, off_t count)
 
 
 /* Return true if connected, optionally sets *rd_p to true if read data available */
+/*
+ * The exact conditions where rd_p is set to TRUE and the return value
+ * is true or false are complex, but the intent appears to be as follows:
+ *
+ * If the remote has half-closed the socket, rd_p should be FALSE and
+ * the function should return FALSE.
+ *
+ * If we have half-closed the socket, wr_p should be TRUE and the function
+ * should return TRUE.
+ *
+ * If the socket is completely closed, wr_p should be TRUE, rd_p should be
+ * FALSE, and the function should return FALSE, unless rd_p is NULL in which
+ * case, the function should return TRUE.
+ *
+ * When the function is open in both directions, wr_p will indicate write
+ * buffers are available, rd_p will indicate data is available to be recv()ed
+ * and the return value should be TRUE.
+ *
+ * If the socket is invalid, rd_p should be FALSE, wr_p should be FALSE, and
+ * the function should return FALSE.
+ *
+ * These rules have various exceptions when errors are returned by select(),
+ * poll(), or recv(), which will generally cause a FALSE return with rd_p
+ * being FALSE and wr_p being FALSE if select/poll failed, or indicating
+ * available write buffers otherwise.
+ */
 BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 {
 #ifdef PREFER_POLL
@@ -297,12 +323,13 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 		return TRUE;
 
 	if (j == 1) {
-		if (wr_p != NULL && (pfd.revents & POLLOUT))
+		if (wr_p != NULL && (pfd.revents & POLLOUT)) {
 			*wr_p = TRUE;
-		if (rd_p != NULL && (pfd.revents & POLLIN))
-			*rd_p = TRUE;
+			if (rd_p == NULL)
+				return TRUE;
+		}
 
-		if (pfd.revents & (POLLERR | POLLNVAL))
+		if (pfd.revents & (POLLERR | POLLNVAL | POLLHUP))
 			return FALSE;
 
 		if(pfd.revents & ~(POLLOUT) && (rd_p !=NULL || wr_p==NULL))  {
@@ -310,19 +337,18 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 			if(rd==1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
 				if(rd_p!=NULL)
 					*rd_p=TRUE;
-				return(TRUE);
+				return TRUE;
 			}
-			return FALSE;
 		}
+		return FALSE;
 	}
 
 	if (j == -1) {
 		if (errno == EINTR || errno == ENOMEM)
 			return TRUE;
-		return FALSE;
 	}
 
-	return TRUE;
+	return FALSE;
 #else
 	char	ch;
 	int		i,rd;
