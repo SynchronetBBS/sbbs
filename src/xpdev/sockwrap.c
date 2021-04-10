@@ -275,16 +275,19 @@ off_t recvfilesocket(int sock, int file, off_t *offset, off_t count)
  * is true or false are complex, but the intent appears to be as follows:
  *
  * If the remote has half-closed the socket, rd_p should be FALSE and
- * the function should return FALSE.
+ * the function should return FALSE, unless rd_p is NULL in which case
+ * the function should return TRUE.  wr_p will indicate that transmit
+ * buffers are available.
  *
- * If we have half-closed the socket, wr_p should be TRUE and the function
- * should return TRUE.
+ * If we have half-closed the socket, wr_p should be TRUE, the function
+ * should return TRUE, and rd_p will indicate if there is data available
+ * to be received.
  *
  * If the socket is completely closed, wr_p should be TRUE, rd_p should be
  * FALSE, and the function should return FALSE, unless rd_p is NULL in which
  * case, the function should return TRUE.
  *
- * When the function is open in both directions, wr_p will indicate write
+ * When the function is open in both directions, wr_p will indicate transmit
  * buffers are available, rd_p will indicate data is available to be recv()ed
  * and the return value should be TRUE.
  *
