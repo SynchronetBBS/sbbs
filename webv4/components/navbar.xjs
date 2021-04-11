@@ -65,7 +65,7 @@
                             </div>
                         </div>
                     </li>
-                <? } ?>            	
+                <? } ?>
             	<? if (user.alias === settings.guest || user.number < 1) { ?>
                     <? if (settings.user_registration) { ?>
                         <li>
