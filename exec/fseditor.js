@@ -1453,7 +1453,7 @@ function save_file()
 	var f=new File(output_filename());
 	if(!f.open("wb")) {
 		console.clear();
-		js.report_error(f.error + " (" + errno_str + ") opening " + f.name, true);
+		throw new Error(f.error + " (" + errno_str + ") opening " + f.name);
 		return false;
 	}
 	var s=make_strings(/* soft-CRs: */Boolean(options.soft_cr), /* embed-colors: */true);
