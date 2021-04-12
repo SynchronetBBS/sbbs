@@ -219,6 +219,7 @@ install: all
 	$(INSBIN) $(REPODIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(BUILDPATH)/scfg $(SBBSDIR)/exec/scfg
 	$(INSBIN) $(REPODIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/umonitor $(SBBSDIR)/exec/umonitor
 	$(INSBIN) $(REPODIR)/src/sbbs3/uedit/$(CCPRE).$(machine).exe.$(BUILDPATH)/uedit $(SBBSDIR)/exec/uedit
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/upgrade_to_v319 $(SBBSDIR)/exec/upgrade_to_v319
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
