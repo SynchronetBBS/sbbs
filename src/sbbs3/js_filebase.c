@@ -750,6 +750,48 @@ js_get_file_name(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_format_file_name(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval*		argv = JS_ARGV(cx, arglist);
+	char*		filepath = NULL;
+	int32		size = 12;
+	bool		pad = false;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+ 	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	uintN argn = 0;
+	JSVALUE_TO_MSTRING(cx, argv[argn], filepath, NULL);
+	HANDLE_PENDING(cx, filepath);
+	argn++;
+	if(argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
+		JS_ValueToInt32(cx, argv[argn], &size);
+		argn++;
+	}
+	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		pad = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
+	if(size < 1) {
+		JS_ReportError(cx, "Invalid size: %d", size);
+		return JS_FALSE;
+	}
+	char* buf = calloc(size + 1, 1);
+	if(buf == NULL) {
+		JS_ReportError(cx, "malloc failure: %d", size + 1);
+		return JS_FALSE;
+	}
+	JSString* js_str;
+	if((js_str = JS_NewStringCopyZ(cx, format_filename(getfname(filepath), buf, size, pad))) != NULL)
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	free(buf);
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
@@ -1439,6 +1481,11 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	{"dump",			js_dump_file,		1, JSTYPE_ARRAY
 		,JSDOCSTR("filename")
 		,JSDOCSTR("dump file metadata to an array of strings for diagnostic uses")
+		,31900
+	},
+	{"format_name",		js_format_file_name,1, JSTYPE_STRING
+		,JSDOCSTR("path/filename [,number size=13] [,boolean pad=false]")
+		,JSDOCSTR("returns formatted (e.g. shortened) version of filename without path (file base does not have to be open) for display")
 		,31900
 	},
 	{0}
