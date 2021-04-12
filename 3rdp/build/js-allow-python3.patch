@@ -1,0 +1,37 @@
+--- js-1.8.5/js/src/configure.in.orig	2021-04-12 00:03:40.437035000 -0400
++++ js-1.8.5/js/src/configure.in	2021-04-12 00:05:54.841827000 -0400
+@@ -981,7 +981,7 @@
+     AC_MSG_RESULT([yes])    
+ fi
+ 
+-MOZ_PATH_PROGS(PYTHON, $PYTHON python2.7 python2.6 python2.5 python)
++MOZ_PATH_PROGS(PYTHON, $PYTHON python3 python3.7 python3.6 python3.5 python3.4 python3.3 python3.2 python3.1 python3.0 python2.7 python2.6 python2.5 python)
+ if test -z "$PYTHON"; then
+     AC_MSG_ERROR([python was not found in \$PATH])
+ fi
+@@ -1912,15 +1912,16 @@
+ 
+ dnl We require version 2.4 or newer of Python to build,
+ dnl and 2.5 or newer on Windows.
+-AC_MSG_CHECKING([for Python version >= $PYTHON_VERSION but not 3.x])
+-changequote(,)
+-$PYTHON -c "import sys; sys.exit(sys.version[:3] < sys.argv[1] or sys.version[:2] != '2.')" $PYTHON_VERSION
+-_python_res=$?
+-changequote([,])
+-if test "$_python_res" != 0; then
+-    AC_MSG_ERROR([Python $PYTHON_VERSION or higher (but not Python 3.x) is required.])
+-fi
+-AC_MSG_RESULT([yes])
++dnl Cyan fixed this
++dnl AC_MSG_CHECKING([for Python version >= $PYTHON_VERSION but not 3.x])
++dnl changequote(,)
++dnl $PYTHON -c "import sys; sys.exit(sys.version[:3] < sys.argv[1] or sys.version[:2] != '2.')" $PYTHON_VERSION
++dnl _python_res=$?
++dnl changequote([,])
++dnl if test "$_python_res" != 0; then
++dnl     AC_MSG_ERROR([Python $PYTHON_VERSION or higher (but not Python 3.x) is required.])
++dnl fi
++dnl AC_MSG_RESULT([yes])
+ 
+ dnl ========================================================
+ dnl System overrides of the defaults for target

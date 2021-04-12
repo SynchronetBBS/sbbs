@@ -59,7 +59,7 @@ $(JS_SRC): | $(3RDPSRCDIR)
 $(JS_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(JS_IDIR)
 
-$(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.in.patch $(3RDP_ROOT)$(DIRSEP)build/imacro-asm-fix.patch $(3RDP_ROOT)$(DIRSEP)build/js-volatile-outside-functions.patch $(3RDP_ROOT)$(DIRSEP)build/js-Wno-misleading-indentation.patch | $(JS_SRC) $(JS_IDIR)
+$(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.in.patch $(3RDP_ROOT)$(DIRSEP)build/imacro-asm-fix.patch $(3RDP_ROOT)$(DIRSEP)build/js-volatile-outside-functions.patch $(3RDP_ROOT)$(DIRSEP)build/js-Wno-misleading-indentation.patch $(3RDP_ROOT)$(DIRSEP)build/js-allow-python3.patch | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzC $(JS_SRC) -f $(3RDPDISTDIR)$(DIRSEP)libmozjs.tgz
@@ -70,6 +70,7 @@ $(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)buil
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < imacro-asm-fix.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-volatile-outside-functions.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-Wno-misleading-indentation.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-allow-python3.patch
 	-$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && autoconf-2.13
 	$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && env $(JS_CONFIGURE_ENV) ./configure $(JS_CONFIGURE_ARGS)
 	$(QUIET)$(MAKE) -C $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src
