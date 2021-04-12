@@ -1,2 +1,2 @@
-// ie: load("loadfonts.js", "-P", "-H", "/path/to/unused/font",
+// Use this to load fonts
 load("fonts.js", "preload", "default");
