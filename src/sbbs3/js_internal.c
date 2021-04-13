@@ -1122,6 +1122,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 	BOOL input_locked = FALSE;
 	js_socket_private_t*	jssp;
 	socklen_t slen;
+	JSFunction* evf;
+	JSObject*   evo;
 #ifdef PREFER_POLL
 	struct pollfd *fds;
 	nfds_t sc;
@@ -1369,6 +1371,11 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 			}
 		}
 		else {
+			// Store a copy of object and function pointers
+			evf = ev->cb;
+			evo = ev->cx;
+			JS_AddObjectRoot(cx, &evo);
+
 			// Deal with things before running the callback
 			if (ev->type == JS_EVENT_CONSOLE_INPUT) {
 				if (input_locked)
@@ -1381,17 +1388,13 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 				}
 			}
 
-			ret = JS_CallFunction(cx, ev->cx, ev->cb, 0, NULL, &rval);
-
-			// Clean up/update after call
+			// Clean up one-shots before call
 			if (ev->type == JS_EVENT_SOCKET_CONNECT) {
 				// TODO: call recv() and pass result to callback?
 				closesocket(ev->data.connect.sv[0]);
 			}
-			else if (ev->type == JS_EVENT_INTERVAL)
-				ev->data.interval.last += ev->data.interval.period;
 
-			// Remove one-shot events
+			// Remove one-shot events before call
 			if (ev->type == JS_EVENT_SOCKET_READABLE_ONCE || ev->type == JS_EVENT_SOCKET_WRITABLE_ONCE
 			    || ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_TIMEOUT
 			    || ev->type == JS_EVENT_CONSOLE_INPUT_ONCE) {
@@ -1403,6 +1406,15 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 					*head = ev->next;
 				JS_RemoveObjectRoot(cx, &ev->cx);
 				free(ev);
+				ev = NULL;
+			}
+
+			ret = JS_CallFunction(cx, evo, evf, 0, NULL, &rval);
+			JS_RemoveObjectRoot(cx, &evo);
+
+			if (ev) {
+				if (ev->type == JS_EVENT_INTERVAL)
+					ev->data.interval.last += ev->data.interval.period;
 			}
 		}
 
