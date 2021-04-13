@@ -552,6 +552,11 @@ extern "C" int votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgf
 		if(smb_getmsgidx_by_msgid(smb, &remsg, msg->reply_id) == SMB_SUCCESS)
 			msg->hdr.thread_back = remsg.idx.number;	/* poll or message being voted on */
 	}
+	if(msg->hdr.thread_back == 0) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s thread_back field is zero (reply_id=%s, ftn_reply=%s)"
+			,__FUNCTION__, msg->reply_id, msg->ftn_reply);
+		return SMB_ERR_HDR_FIELD;
+	}
 	if(smb_voted_already(smb, msg->hdr.thread_back, msg->from, (enum smb_net_type)msg->from_net.type, msg->from_net.addr))
 		return SMB_DUPE_MSG;
 	remsg.hdr.number = msg->hdr.thread_back;
