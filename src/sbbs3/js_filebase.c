@@ -731,7 +731,7 @@ static JSBool
 js_get_file_name(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval*		argv = JS_ARGV(cx, arglist);
-	char*		filepath = NULL;
+	char		filepath[MAX_PATH + 1] = "";
 	char		filename[SMB_FILEIDX_NAMELEN + 1] = "";
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
@@ -740,8 +740,7 @@ js_get_file_name(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	uintN argn = 0;
-	JSVALUE_TO_MSTRING(cx, argv[argn], filepath, NULL);
-	HANDLE_PENDING(cx, filepath);
+	JSVALUE_TO_STRBUF(cx, argv[argn], filepath, sizeof(filepath), NULL);
 	JSString* js_str;
 	if((js_str = JS_NewStringCopyZ(cx, smb_fileidxname(getfname(filepath), filename, sizeof(filename)))) != NULL)
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
@@ -753,7 +752,7 @@ static JSBool
 js_format_file_name(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval*		argv = JS_ARGV(cx, arglist);
-	char*		filepath = NULL;
+	char		filepath[MAX_PATH + 1] = "";
 	int32		size = 12;
 	bool		pad = false;
 
@@ -763,8 +762,7 @@ js_format_file_name(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	uintN argn = 0;
-	JSVALUE_TO_MSTRING(cx, argv[argn], filepath, NULL);
-	HANDLE_PENDING(cx, filepath);
+	JSVALUE_TO_STRBUF(cx, argv[argn], filepath, sizeof(filepath), NULL);
 	argn++;
 	if(argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
 		JS_ValueToInt32(cx, argv[argn], &size);
@@ -820,9 +818,9 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		free(filename);
 		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
 			return JS_TRUE;
-		free(filename);
 		filename = strdup(file.file_idx.name);
 		argn++;
 	}
@@ -872,9 +870,9 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		free(filename);
 		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
 			return JS_TRUE;
-		free(filename);
 		filename = strdup(file.file_idx.name);
 		argn++;
 	}
@@ -923,9 +921,9 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		free(filename);
 		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
 			return JS_TRUE;
-		free(filename);
 		filename = strdup(file.file_idx.name);
 		argn++;
 	}
