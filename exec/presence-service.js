@@ -42,11 +42,10 @@ function broadcast(evt, data) {
 	const sdata = JSON.stringify({ event: evt, data: data });
 	for (var c in clients) {
 		clients[c].once('write', (function (sdata) {
-			/* It's possible that onClientData has nuked this socket already.
-			 * Check that 'this' still has 'sendline' to avoid an exception.
-			 */
-			if (this.sendline !== undefined) this.sendline(sdata);
-		}).bind(clients[c], sdata)); // Using bind "temporarily" pending better closure+callback stuff
+			if (this.sendline !== undefined) { // client went away between queueing and running this callback? Alls I knows is that this.sendline may be undefined here.
+				this.sendline(sdata);
+			}
+		}).bind(clients[c], sdata)); // bind because otherwise 'sdata is undefined'
 	}
 }
 
@@ -237,25 +236,22 @@ function onRemoteData() {
 	imsg.parse_active_users(msg, onRemoteLogon, onRemoteLogoff);
 }
 
-function onClientData() {
-	if (this.is_connected) return;
-	delete clients[this.descriptor];
-	// This would be the place to nuke any on/once listeners still in place for 'this'
-	if (idle()) refresh(true); // We are now idling, so lengthen the refresh intervals
-}
-
 function onClient() {
-	const sock = server.socket.accept();
+	const sock = this.accept();
 	if (!sock) {
 		log(LOG_DEBUG, '!Error accepting connection: ' + sock.error);
 		return;
 	}
-	if (idle()) refresh(false); // We are no longer idling, so shorten the refresh intervals
+	if (idle()) refresh(false);
 	clients[sock.descriptor] = sock;
-	sock.on('read', onClientData);
-	sock.once('write', (function (sessions) {
-		sock.sendline(JSON.stringify(sessions));
-	}).bind(sock, sessions)); // Using bind "temporarily" pending better closure+callback stuff
+	sock.once('read', function () {
+		if (this.is_connected) this.close();
+		delete clients[this.descriptor];
+		if (idle()) refresh(true);
+	});
+	sock.once('write', function () {
+		this.sendline(JSON.stringify(sessions));
+	});
 }
 
 if (this.server === undefined) { // jsexec
@@ -288,11 +284,10 @@ if (settings.remote) {
 	/* This service may run indefinitely, so we should reload the BBS list once in
 	 * a while so we'll pick up new systems to poll and drop any old ones.
 	 */
-	js.setInterval(imsg.read_sys_list.bind(imsg), settings.remote_list_refresh);
-	js.setImmediate(imsg.read_sys_list.bind(imsg));
+	js.setInterval(imsg.read_sys_list.bind(imsg), settings.remote_list_refresh); // bind because otherwise 'this.sys_list is undefined'
+	js.setImmediate(imsg.read_sys_list.bind(imsg)); // bind because otherwise 'this.sys_list is undefined'
 }
 
 refresh(true); // Start in 'idle' mode, set refresh timers, do an initial poll
 
-js.auto_terminate = true;
 js.do_callbacks = true;
