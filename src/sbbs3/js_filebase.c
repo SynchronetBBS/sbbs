@@ -765,7 +765,8 @@ js_format_file_name(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_STRBUF(cx, argv[argn], filepath, sizeof(filepath), NULL);
 	argn++;
 	if(argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
-		JS_ValueToInt32(cx, argv[argn], &size);
+		if(!JS_ValueToInt32(cx, argv[argn], &size))
+			return JS_FALSE;
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
