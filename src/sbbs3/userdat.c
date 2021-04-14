@@ -2217,66 +2217,73 @@ int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 }
 
 /****************************************************************************/
-/* Places into user.dat at the offset for usernumber+start for length bytes */
-/* Called from various locations											*/
+/* Write a string (str) into user.dat at the offset for usernumber + start	*/
+/* 'length' may be auto-determined (from 'start') by passing 0 for length	*/
+/* If 'str' is longer than 'length', only 'length' characters are written	*/
 /****************************************************************************/
-int putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const char *str)
+int putuserrec(scfg_t* cfg, int usernumber, int start, int length, const char *str)
 {
-	char	str2[256];
+	const char*	p;
+	char	buf[256];
+	char	path[MAX_PATH + 1];
 	int		file;
-	uint	c,i;
+	uint	i;
 
-	if(!VALID_CFG(cfg) || usernumber<1 || str==NULL)
-		return(-1);
+	if(!VALID_CFG(cfg) || usernumber < 1 || str == NULL)
+		return -1;
 
-	if(length > sizeof(str2) - 1)
-		return -10;
-
-	SAFEPRINTF(str2,"%suser/user.dat",cfg->data_dir);
-	if((file=nopen(str2,O_RDWR|O_DENYNONE))==-1)
-		return(errno);
-
-	if(filelength(file)<((long)usernumber-1)*U_LEN) {
-		close(file);
-		return(-4);
-	}
-
-	if(length==0) {	/* auto-length */
-		length=user_rec_len(start);
-		if((long)length < 0) {
-			close(file);
+	if(length == 0) {	/* auto-length */
+		length = user_rec_len(start);
+		if(length < 1)
 			return -2;
-		}
+	}
+	size_t slen = strlen(str);
+	if(slen >= (size_t)length)
+		p = str;
+	else {
+		if(length > sizeof(buf))
+			return -10;
+		memset(buf, ETX, length);
+		memcpy(buf, str, slen);
+		p = buf;
 	}
 
-	SAFECOPY(str2,str);
-	if(strlen(str2)<length) {
-		for(c=strlen(str2);c<length;c++)
-			str2[c]=ETX;
-		str2[c]=0;
+	SAFEPRINTF(path, "%suser/user.dat", cfg->data_dir);
+	if((file = nopen(path, O_RDWR|O_DENYNONE))==-1)
+		return errno;
+
+	off_t offset = (usernumber - 1) * U_LEN;
+	if(filelength(file) < offset) {
+		close(file);
+		return -4;
 	}
-	lseek(file,(long)((long)((long)((long)usernumber-1)*U_LEN)+start),SEEK_SET);
+
+	offset += start;
+	if(lseek(file, offset, SEEK_SET) != offset) {
+		close(file);
+		return -5;
+	}
 
 	i=0;
-	while(i<LOOP_NODEDAB
-		&& lock(file,(long)((long)(usernumber-1)*U_LEN)+start,length)==-1) {
+	while(i < LOOP_NODEDAB
+		&& lock(file, offset, length) == -1) {
 		if(i)
 			mswait(100);
 		i++;
 	}
 
-	if(i>=LOOP_NODEDAB) {
+	if(i >= LOOP_NODEDAB) {
 		close(file);
-		return(-3);
+		return -3;
 	}
 
-	int wr = write(file, str2, length);
-	unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
+	int wr = write(file, p, length);
+	unlock(file, offset, length);
 	close(file);
 	if(wr != length)
-		return -4;
-	dirtyuserdat(cfg,usernumber);
-	return(0);
+		return -6;
+	dirtyuserdat(cfg, usernumber);
+	return 0;
 }
 
 /****************************************************************************/
