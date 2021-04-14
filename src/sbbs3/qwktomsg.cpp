@@ -488,8 +488,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 		smb_hfield_str(msg, FIDOCHARSET, charset);
 	}
 
-	if(online==ON_REMOTE)
-		bputs(text[WritingIndx]);
+	bputs(P_REMOTE, text[WritingIndx]);
 
 	if(smb->status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);

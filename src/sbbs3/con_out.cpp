@@ -47,12 +47,16 @@ char* sbbs_t::auto_utf8(const char* str, long* mode)
    P_AUTO_UTF8
    P_NOATCODES
    P_TRUNCATE
+   P_REMOTE
  ****************************************************************************/
 int sbbs_t::bputs(const char *str, long mode)
 {
 	int i;
     ulong l=0;
 	long term = term_supports();
+
+	if((mode & P_REMOTE) && online != ON_REMOTE)
+		return 0;
 
 	if(online==ON_LOCAL && console&CON_L_ECHO) 	/* script running as event */
 		return(lputs(LOG_INFO, str));
