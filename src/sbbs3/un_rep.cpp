@@ -338,8 +338,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				useron.etoday++;
 				putuserrec(&cfg,useron.number,U_ETODAY,5
 					,ultoa(useron.etoday,tmp,10));
-				if(online == ON_REMOTE)
-					bprintf(text[Emailed],username(&cfg,usernum,tmp),usernum);
+				bprintf(P_REMOTE, text[Emailed],username(&cfg,usernum,tmp),usernum);
 				SAFEPRINTF2(str,"sent QWK e-mail to %s #%d"
 					,username(&cfg,usernum,tmp),usernum);
 				logline("E+",str);
@@ -374,7 +373,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		else {	/* message on a sub-board */
 				/**************************/
 			if((n=resolve_qwkconf(confnum))==INVALID_SUB) {
-				bprintf(text[QWKInvalidConferenceN],confnum);
+				bprintf(P_REMOTE, text[QWKInvalidConferenceN],confnum);
 				SAFEPRINTF(str,"Invalid QWK conference number %ld", confnum);
 				logline(LOG_NOTICE,"P!",str);
 				errors++;
@@ -514,9 +513,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				,/* fromhub: */0, &smb, /* touser: */0, &msg, &dupe)) {
 				logon_posts++;
 				user_posted_msg(&cfg, &useron, 1);
-				if(online == ON_REMOTE)
-					bprintf(text[Posted],cfg.grp[cfg.sub[n]->grp]->sname
-						,cfg.sub[n]->lname);
+				bprintf(P_REMOTE, text[Posted],cfg.grp[cfg.sub[n]->grp]->sname
+					,cfg.sub[n]->lname);
 				SAFEPRINTF2(str,"posted QWK message on %s %s"
 					,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
 				signal_sub_sem(&cfg,n);
