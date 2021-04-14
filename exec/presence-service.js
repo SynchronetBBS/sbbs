@@ -108,33 +108,30 @@ function scanLocal() {
 			if (current[u] === undefined || current[u].sessions[s] === undefined) {
 				delete sessions.local.users[u].sessions[s];
 				broadcast('logoff', {
-					system: 'local',
 					user: u,
 					session: s,
 				});
 			} else {
-				const updates = {};
+				var update = false;
 				if (current[u].xtrn !== sessions.local.users[u].xtrn) {
 					sessions.local.users[u].xtrn = current[u].xtrn;
-					updates.xtrn = sessions.local.users[u].xtrn;
+					update = true;
 				}
 				if (current[u].sessions[s].action !== sessions.local.users[u].sessions[s].action) {
 					sessions.local.users[u].sessions[s].action = current[u].sessions[s].action;
-					updates.sessions = {};
-					updates.sessions[s] = { action: sessions.local.users[u].sessions[s].action };
+					update = true;
 				}
-				if (Object.keys(updates).length > 0) {
+				if (update) {
 					broadcast('update', {
-						system: 'local',
-						user: u,
-						data: updates,
+						user: sessions.local.users[u],
+						session: s,
 					});
 				}
 				delete current[u].sessions[s];
 			}
 		}
 		if (Object.keys(sessions.local.users[u].sessions).length < 1) delete sessions.local.users[u];
-		if (Object.keys(current[u].sessions).length < 1) delete current[u];
+		if (current[u] !== undefined && current[u].sessions !== undefined && Object.keys(current[u].sessions).length < 1) delete current[u];
 	}
 
 	for (var u in current) {
@@ -142,10 +139,8 @@ function scanLocal() {
 		for (var s in current[u].sessions) {
 			sessions.local.users[u].sessions[s] = current[u].sessions[s];
 			broadcast('logon', {
-				system: 'local',
-				user: u,
+				user: sessions.local.users[u],
 				session: s,
-				data: sessions.local.users[u],
 			});
 		}
 	}
@@ -168,6 +163,10 @@ function onRemoteLogon(usr, sys) {
 			name: sys.name,
 			users: {}
 		};
+		broadcast('system', {
+			host: sys.host,
+			name: sys.name
+		});
 	}
 
 	sys.users.forEach(function (e) {
@@ -186,17 +185,17 @@ function onRemoteLogon(usr, sys) {
 			sessions.remote[sys.host].users[e.name].sessions[skey] = { action: e.action };
 			broadcast('logon', {
 				system: sys.name,
-				user: e.name,
+				host: sys.host,
+				user: sessions.remote[sys.host].users[e.name],
 				session: skey,
-				data: sessions.remote[sys.host].users[e.name],
 			});
 		} else if (sessions.remote[sys.host].users[e.name].sessions[skey].action !== e.action) {
 			sessions.remote[sys.host].users[e.name].sessions[skey].action = e.action;
 			broadcast('update', {
 				system: sys.name,
-				user: e.name,
+				host: sys.host,
+				user: sessions.remote[sys.host].users[e.name],
 				session: skey,
-				data: sessions.remote[sys.host].users[e.name],
 			});
 		}
 	});
@@ -213,6 +212,7 @@ function onRemoteLogoff(usr, sys) {
 	if (!Object.keys(sessions.remote[sys.host].users[usr.name].sessions).length) delete sessions.remote[sys.host].users[usr.name];
 	broadcast('logoff', {
 		system: sys.name,
+		host: sys.host,
 		user: usr.name,
 		session: skey,
 	});
@@ -250,7 +250,7 @@ function onClient() {
 		if (idle()) refresh(true);
 	});
 	sock.once('write', function () {
-		this.sendline(JSON.stringify(sessions));
+		this.sendline(JSON.stringify({ event: 'state', data: sessions }));
 	});
 }
 
