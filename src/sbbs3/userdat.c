@@ -3076,7 +3076,7 @@ BOOL is_user_subop(scfg_t* cfg, uint subnum, user_t* user, client_t* client)
 	if(user->level>=SYSOP_LEVEL)
 		return TRUE;
 
-	return cfg->sub[subnum]->op_ar!=NULL && cfg->sub[subnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[subnum]->op_ar,user,client);
+	return cfg->sub[subnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[subnum]->op_ar,user,client);
 }
 
 /****************************************************************************/
@@ -3091,7 +3091,7 @@ BOOL is_user_dirop(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
 	if(user->level >= SYSOP_LEVEL)
 		return TRUE;
 
-	return cfg->dir[dirnum]->op_ar!=NULL && cfg->dir[dirnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client);
+	return cfg->dir[dirnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client);
 }
 
 /****************************************************************************/
