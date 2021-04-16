@@ -69,7 +69,7 @@ int strListFind(const str_list_t list, const char* str, BOOL case_sensitive)
 {
 	size_t		i;
 
-	if(list==NULL)
+	if(list == NULL || str == NULL)
 		return -1;
 
 	for(i=0; list[i]!=NULL; i++) {
