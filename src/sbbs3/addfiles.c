@@ -207,18 +207,18 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 				if(datefmt) {
 					struct tm tm = {0};
 					localtime_r(&now, &tm);
-					strftime(f.desc, sizeof(f.desc), datefmt, &tm);
+					strftime(fdesc, sizeof(fdesc), datefmt, &tm);
 				} else
-					unixtodstr(&scfg, (time32_t)now, f.desc);
+					unixtodstr(&scfg, (time32_t)now, fdesc);
 				SAFECAT(fdesc,"  ");
 			}
 			else if(mode&FILE_DATE) {		/* get the file date and put into desc */
 				if(datefmt) {
 					struct tm tm = {0};
 					localtime_r(&file_timestamp, &tm);
-					strftime(f.desc, sizeof(f.desc), datefmt, &tm);
+					strftime(fdesc, sizeof(fdesc), datefmt, &tm);
 				} else
-					unixtodstr(&scfg,(time32_t)file_timestamp,f.desc);
+					unixtodstr(&scfg,(time32_t)file_timestamp,fdesc);
 				SAFECAT(fdesc,"  ");
 			}
 
@@ -363,8 +363,8 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 					p[i-1]=0;
 					truncsp(p);
 					if(p[0]) {
-						SAFECAT(f.desc," ");
-						SAFECAT(f.desc,p);
+						SAFECAT(fdesc," ");
+						SAFECAT(fdesc,p);
 					}
 				}
 			}
@@ -836,6 +836,7 @@ int main(int argc, char **argv)
 			sprintf(str,"%s%s.lst",scfg.dir[dirnum]->path, scfg.dir[dirnum]->code);
 			if(!fexistcase(str) || flength(str)<=0L)
 				SAFEPRINTF2(str,"%s%s",scfg.dir[dirnum]->path, auto_name);
+			addlist(str, dirnum, uploader, desc_offset, size_offset);
 			if(mode&SYNC_LIST)
 				synclist(str, dirnum);
 		}
