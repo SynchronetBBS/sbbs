@@ -40,7 +40,7 @@ DLLEXPORT time_t		lastfiletime(smb_t*); // Reads the last index record
 
 DLLEXPORT bool			findfile(scfg_t* cfg, uint dirnum, const char *filename, file_t*);
 DLLEXPORT bool			loadfile(scfg_t*, uint dirnum, const char* filename, file_t*, enum file_detail);
-DLLEXPORT file_t*	loadfiles(smb_t*, const char* filespec, time_t, enum file_detail, enum file_sort, size_t* count);
+DLLEXPORT file_t*		loadfiles(smb_t*, const char* filespec, time_t, enum file_detail, enum file_sort, size_t* count);
 DLLEXPORT void			sortfiles(file_t*, size_t count, enum file_sort);
 DLLEXPORT void			freefiles(file_t*, size_t count);
 DLLEXPORT str_list_t	loadfilenames(smb_t*, const char* filespec, time_t t, enum file_sort, size_t* count);
@@ -50,6 +50,7 @@ DLLEXPORT char*			getfilepath(scfg_t*, file_t*, char* path);
 DLLEXPORT off_t			getfilesize(scfg_t*, file_t*);
 DLLEXPORT time_t		getfiletime(scfg_t*, file_t*);
 DLLEXPORT ulong			gettimetodl(scfg_t*, file_t*, uint rate_cps);
+DLLEXPORT ulong			getuserxfers(scfg_t*, const char* from, uint to);
 DLLEXPORT bool			hashfile(scfg_t*, file_t*);
 DLLEXPORT bool			addfile(scfg_t*, uint dirnum, file_t*, const char* extdesc);
 DLLEXPORT bool			removefile(scfg_t*, uint dirnum, const char* filename);

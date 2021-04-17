@@ -779,6 +779,15 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 		curdirnum = dirnum;
 		if(mode==FI_OFFLINE && getfilesize(&cfg, f) >= 0)
 			continue;
+		if(mode==FI_USERXFER) {
+			str_list_t dest_user_list = strListSplitCopy(NULL, f->to_list, ",");
+			char usernum[16];
+			SAFEPRINTF(usernum, "%u", useron.number);
+			int dest_user = strListFind(dest_user_list, usernum, /* case-sensitive: */true);
+			strListFree(&dest_user_list);
+			if(dest_user < 0)
+				continue;
+		}
 		SAFECOPY(dirpath, cfg.dir[f->dir]->path);
 		if((mode==FI_REMOVE) && (!dir_op(dirnum) && stricmp(f->from
 			,useron.alias) && !(useron.exempt&FLAG('R'))))
@@ -995,7 +1004,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					break; 
 			} 
 		}
-		else if(mode==FI_DOWNLOAD) {
+		else if(mode==FI_DOWNLOAD || mode==FI_USERXFER) {
 			getfilepath(&cfg, f, path);
 			if(getfilesize(&cfg, f) < 1L) { /* getfilesize will set this to -1 if non-existant */
 				SYNC;       /* and 0 byte files shouldn't be d/led */

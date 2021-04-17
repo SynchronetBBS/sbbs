@@ -330,7 +330,18 @@ int sbbs_t::exec_file(csi_t *csi)
 			return(0);
 		case CS_FILE_DOWNLOAD_USER: /* Download from user dir */
 			csi->logic=LOGIC_FALSE;
-			bputs(text[NoUserDir]);
+			if(cfg.user_dir==INVALID_DIR) {
+				bputs(text[NoUserDir]);
+				return(0); 
+			}
+			if(useron.rest&FLAG('D')) {
+				bputs(text[R_Download]);
+				return(0); 
+			}
+			if(!listfileinfo(cfg.user_dir,nulstr,FI_USERXFER))
+				bputs(text[NoFilesForYou]);
+			else
+				csi->logic=LOGIC_TRUE;
 			return(0);
 		case CS_FILE_DOWNLOAD_BATCH:
 			if(batdn_total() > 0
