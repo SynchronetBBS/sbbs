@@ -545,9 +545,12 @@ function str_cmds(str)
 				str=str.substr(7);
 				if(str.toUpperCase()=="ALL") {
 					for(i=0; i<file_area.lib_list.length; i++) {
+						if(console.aborted)
+							break;
 						for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-							if(file_area.lib_list[i].offline_dir != undefined
-								&& file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
+							if(console.aborted)
+								break;
+							if(file_area.lib_list[i].dir_list[j].is_offline)
 								continue;
 							bbs.bulk_upload(file_area.lib_list[i].dir_list[j].number);
 						}
@@ -556,8 +559,9 @@ function str_cmds(str)
 				}
 				if(str.toUpperCase()=="LIB") {
 					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
-						if(file_area.lib_list[bbs.curlib].offline_dir != undefined
-							&& file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+						if(console.aborted)
+							break;
+						if(file_area.lib_list[bbs.curlib].dir_list[i].is_offline)
 							continue;
 						bbs.bulk_upload(file_area.lib_list[bbs.curlib].dir_list[i].number);
 					}
@@ -631,13 +635,6 @@ function str_cmds(str)
 				s=bbs.get_filespec();
 				if(s==null)
 					return;
-				s=s.replace(/^(.*)(\..*)?$/,
-					function(s, p1, p2, oset, s) {
-						if(p2==undefined)
-							return(format("%-8.8s    ",p1));
-						return(format("%-8.8s%-4.4s",p1,p2));
-					}
-				);
 				write("\r\nSearching ");
 				if(str.toUpperCase()=="ALL")
 					write("all libraries");
@@ -665,9 +662,12 @@ function str_cmds(str)
 				k=0;
 				if(str.toUpperCase()=="ALL") {
 					for(i=0;i<file_area.lib_list.length;i++) {
+						if(console.aborted)
+							break;
 						for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
-							if(file_area.lib_list[i].offline_dir != undefined
-								&& file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
+							if(console.aborted)
+								break;
+							if(file_area.lib_list[i].dir_list[j].is_offline)
 								continue;
 							l=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number,s,m);
 							if(l==-1)
@@ -678,8 +678,9 @@ function str_cmds(str)
 				}
 				else if(str.toUpperCase()=="LIB") {
 					for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
-						if(file_area.lib_list[bbs.curlib].offline_dir != undefined
-							&& file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+						if(console.aborted)
+							break;
+						if(file_area.lib_list[bbs.curlib].dir_list[i].is_offline)
 							continue;
 						l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[j].number,s,m);
 						if(l==-1)
