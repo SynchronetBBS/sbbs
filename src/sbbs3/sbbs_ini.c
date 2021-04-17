@@ -605,7 +605,7 @@ void sbbs_read_ini(
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
 
 		SAFECOPY(services->services_ini
-			,iniGetString(list, section, strIniFileName, "servicse.ini", value));
+			,iniGetString(list, section, strIniFileName, "services.ini", value));
 
 		SAFECOPY(services->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
