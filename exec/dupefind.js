@@ -7,21 +7,6 @@ load("file_size.js");
 
 "use strict";
 
-if(argv.indexOf("-help") >= 0 || argv.indexOf("-?") >= 0) {
-	writeln("usage: [-options] [[dir_code] [...]]");
-	writeln("options:");
-	writeln("  -lib=<name>     search for duplicates in specified library only");
-	writeln("  -min=<bytes>    specify minimum file size to compare hash/sum");
-    writeln("  -ex=<filename>  add to excluded file name list");
-	writeln("  -crc32          search for duplicate CRC-32 sums");
-	writeln("  -md5            search for duplicate MD5 sums");
-	writeln("  -sha1           search for duplicate SHA-1 sums (the default)");
-	writeln("  -names          search for duplicate file names (case-insensitive)");
-	writeln("  -json           use JSON formatted output");
-	writeln("  -v              increase verbosity of output");
-	exit(0);
-}
-
 var detail = 0;
 var min_size = 1024;
 var dir_list = [];
@@ -31,7 +16,23 @@ var options = {};
 for(var i = 0; i < argc; i++) {
 	var arg = argv[i];
 	if(arg[0] == '-') {
-		var opt = arg.slice(1);
+		var opt = arg;
+		while(opt[0] == '-')
+			opt = opt.slice(1);
+		if(opt == "help" || opt == "?") {
+			writeln("usage: [-options] [[dir_code] [...]]");
+			writeln("options:");
+			writeln("  -lib=<name>     search for duplicates in specified library only");
+			writeln("  -min=<bytes>    specify minimum file size to compare hash/sum");
+			writeln("  -ex=<filename>  add to excluded file name list (case-insensitive)");
+			writeln("  -names          search for duplicate file names (case-insensitive)");
+			writeln("  -sha1           search for duplicate SHA-1 sums (the default)");
+			writeln("  -crc32          search for duplicate CRC-32 sums");
+			writeln("  -md5            search for duplicate MD5 sums");
+			writeln("  -json           use JSON formatted output");
+			writeln("  -v              increase verbosity of output");
+			exit(0);
+		}
 		if(opt.indexOf("ex=") == 0) {
 			exclude.push(opt.slice(3).toUpperCase());
 			continue;
