@@ -107,7 +107,7 @@ void updatestats(ulong size)
 bool reupload(smb_t* smb, file_t* f)
 {
 	char path[MAX_PATH + 1];
-	if(!smb_renewfile(smb, f, SMB_SELFPACK, getfilepath(&scfg, f, path))) {
+	if(smb_renewfile(smb, f, SMB_SELFPACK, getfilepath(&scfg, f, path)) != SMB_SUCCESS) {
 		fprintf(stderr, "!Error renewing: %s\n", f->name);
 		return false;
 	}
@@ -313,6 +313,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		}
 
 		time_t file_timestamp = fdate(filepath);
+		memset(&f, 0, sizeof(f));
 		exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 		if(exist) {
 			if(mode&NO_UPDATE)
@@ -403,7 +404,6 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		prep_file_desc(fdesc, fdesc);
 		if(mode&ASCII_ONLY)
 			strip_exascii(fdesc, fdesc);
-		memset(&f, 0, sizeof(f));
 		uint32_t cdt = (uint32_t)l;
 		smb_hfield_bin(&f, SMB_COST, cdt);
 		smb_hfield_str(&f, SMB_FILENAME, fname);
