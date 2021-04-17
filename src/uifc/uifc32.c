@@ -1849,6 +1849,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 	int s_top=SCRN_TOP;
 	int s_left=SCRN_LEFT;
 	int s_right=SCRN_RIGHT;
+	int s_bottom=api->scrn_len-3;
 	int hbrdrsize=2;
 	int tbrdrwidth=1;
 
@@ -1877,6 +1878,8 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 		width=(s_right-s_left+1);
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2-2;
+	else if(mode&WIN_BOT)
+		top=s_bottom-height-top;
 	if(mode&WIN_L2R)
 		left=(s_right-s_left-width+1)/2;
 	if(left<=-(s_left))
@@ -1886,6 +1889,19 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 	if(mode&WIN_SAV)
 		vmem_gettext(s_left+left,s_top+top,s_left+left+width+1
 			,s_top+top+height,save_buf);
+	if(mode&WIN_ORG) { /* Clear around menu */
+		if(top)
+			vmem_puttext(1,2,api->scrn_width,s_top+top-1,blk_scrn);
+		if((unsigned)(s_top+height+top)<=api->scrn_len)
+			vmem_puttext(1,s_top+height+top,api->scrn_width,api->scrn_len,blk_scrn);
+		if(left)
+			vmem_puttext(1,s_top+top,s_left+left-1,s_top+height+top
+				,blk_scrn);
+		if(s_left+left+width<=s_right)
+			vmem_puttext(s_left+left+width,s_top+top,/* s_right+2 */api->scrn_width
+				,s_top+height+top,blk_scrn);
+	}
+
 	iwidth=width-plen-slen;
 	while(iwidth<1 && plen>4) {
 		plen=strlen(prompt);
