@@ -1907,7 +1907,7 @@ void services_thread(void* arg)
 		if(uptime==0)
 			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
-		iniFileName(services_ini,sizeof(services_ini),scfg.ctrl_dir,"services.ini");
+		iniFileName(services_ini,sizeof(services_ini),scfg.ctrl_dir, startup->services_ini);
 
 		if((service=read_services_ini(services_ini, service, &services))==NULL) {
 			cleanup(1);
