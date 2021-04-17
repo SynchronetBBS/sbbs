@@ -185,6 +185,11 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 			|| !JS_DefineProperty(cx, obj, "from", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
+	if(((f->to_list != NULL && *f->to_list != '\0') || detail > file_detail_extdesc)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->to_list)) == NULL
+			|| !JS_DefineProperty(cx, obj, "to_list", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
 	val = BOOLEAN_TO_JSVAL(f->idx.attr & FILE_ANONYMOUS);
 	if((val == JSVAL_TRUE || detail > file_detail_extdesc)
 		&& !JS_DefineProperty(cx, obj, "anon", val, NULL, NULL, flags))
@@ -343,6 +348,21 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			return SMB_FAILURE;
 		}
 		if((result = smb_new_hfield_str(file, SMB_FILENAME, cp)) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
+		}
+	}
+
+	prop_name = "to_list";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_FAILURE;
+		}
+		if((file->to_list != NULL || *cp != '\0') && (result = smb_new_hfield_str(file, RECIPIENTLIST, cp)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;

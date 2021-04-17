@@ -57,6 +57,8 @@ void xfer_opts()
 			,cfg.max_batup);
 		sprintf(opt[i++],"%-33.33s%u","Max Files in Batch DL Queue"
 			,cfg.max_batdn);
+		sprintf(opt[i++],"%-33.33s%u","Max Users in User Transfers"
+			,cfg.max_userxfer);
 		sprintf(opt[i++],"%-33.33s%u%%","Default Credit on Upload"
 			,cfg.cdt_up_pct);
 		sprintf(opt[i++],"%-33.33s%u%%","Default Credit on Download"
@@ -124,6 +126,18 @@ void xfer_opts()
 				uifc.input(WIN_MID,0,0,"Maximum Files in Batch Download Queue"
 					,ultoa(cfg.max_batdn,tmp,10),5,K_EDIT|K_NUMBER);
 				cfg.max_batdn=atoi(tmp);
+				break;
+			case __COUNTER__:
+				uifc.helpbuf=
+					"`Maximum Destination Users in User to User Transfers:`\n"
+					"\n"
+					"This is the maximum number of users allowed in the destination user list\n"
+					"of a user to user file upload.\n"
+				;
+				uifc.input(WIN_MID,0,0
+					,"Maximum Destination Users in User to User Transfers"
+					,ultoa(cfg.max_userxfer,tmp,10),5,K_EDIT|K_NUMBER);
+				cfg.max_userxfer=atoi(tmp);
 				break;
 			case __COUNTER__:
 	uifc.helpbuf=

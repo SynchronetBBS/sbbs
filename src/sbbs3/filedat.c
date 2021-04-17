@@ -480,6 +480,42 @@ bool removefile(scfg_t* cfg, uint dirnum, const char* filename)
 	return result == SMB_SUCCESS;
 }
 
+ulong getuserxfers(scfg_t* cfg, const char* from, uint to)
+{
+	smb_t smb;
+	ulong found = 0;
+
+	if(cfg == NULL)
+		return 0;
+	if(cfg->user_dir >= cfg->total_dirs)
+		return 0;
+
+	if(smb_open_dir(cfg, &smb, cfg->user_dir) != SMB_SUCCESS)
+		return 0;
+
+	char usernum[16];
+	SAFEPRINTF(usernum, "%u", to);
+	size_t count = 0;
+	file_t* list = loadfiles(&smb, /* filespec */ NULL, /* since: */0, file_detail_normal, FILE_SORT_NATURAL, &count);
+	for(size_t i = 0; i < count; i++) {
+		file_t* f = &list[i];
+		if(from != NULL && (f->from == NULL || stricmp(f->from, from) != 0))
+			continue;
+		if(to != 0) {
+			str_list_t dest_user_list = strListSplitCopy(NULL, f->to_list, ",");
+			int dest_user = strListFind(dest_user_list, usernum, /* case-sensitive: */true);
+			strListFree(&dest_user_list);
+			if(dest_user < 0)
+				continue;
+		}
+		found++;
+	}
+
+	smb_close(&smb);
+	freefiles(list, count);
+	return found;
+}
+
 /****************************************************************************/
 /* Returns full (case-corrected) path to specified file						*/
 /* 'path' should be MAX_PATH + 1 chars in size								*/
