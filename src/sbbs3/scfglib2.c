@@ -335,10 +335,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		if(!stricmp(cfg->dir[i]->sname,"SYSOP"))			/* Sysop upload directory */
 			cfg->sysop_dir=i;
-#if 0 // TODO: Remove or re-implement
 		else if(!stricmp(cfg->dir[i]->sname,"USER"))		/* User to User xfer dir */
 			cfg->user_dir=i;
-#endif
 		else if(!stricmp(cfg->dir[i]->sname,"UPLOADS"))  /* Upload directory */
 			cfg->upload_dir=i;
 		else if(!stricmp(cfg->dir[i]->sname,"OFFLINE"))	/* Offline files dir */

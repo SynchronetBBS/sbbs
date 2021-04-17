@@ -2439,6 +2439,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	uint dirnum, const char* filename, off_t bytes)
 {
 	file_t f;
+	bool removed = false;
 
 	if(!loadfile(cfg, dirnum, filename, &f, file_detail_normal))
 		return FALSE;
@@ -2446,9 +2447,28 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	if(!bytes)
 		bytes = getfilesize(cfg, &f);
 
+	if(dirnum == cfg->user_dir) {
+
+		str_list_t dest_user_list = strListSplitCopy(NULL, f.to_list, ",");
+		char usernum[16];
+		SAFEPRINTF(usernum, "%u", user->number);
+		int i = strListFind(dest_user_list, usernum, /* case-sensitive: */true);
+		if(i >= 0) {
+			strListFastDelete(dest_user_list, i);
+			char tmp[512];
+			smb_hfield_replace_str(&f, RECIPIENTLIST, strListCombine(dest_user_list, tmp, sizeof(tmp), ","));
+		}
+		if(strListCount(dest_user_list) < 1) {
+			char path[MAX_PATH + 1];
+			if(remove(getfilepath(cfg, &f, path)) == 0)
+				removed = removefile(cfg, dirnum, f.name);
+		}
+		strListFree(&dest_user_list);
+	}
+
 	f.hdr.times_downloaded++;
 	f.hdr.last_downloaded = time32(NULL);
-	if(!updatefile(cfg, &f)) {
+	if(!removed && !updatefile(cfg, &f)) {
 		smb_freefilemem(&f);
 		return FALSE;
 	}

@@ -550,6 +550,10 @@ bool sbbs_t::logon()
 
 	if(criterrs && SYSOP)
 		bprintf(text[CriticalErrors],criterrs);
+	if((i=getuserxfers(&cfg, /* from: */NULL, useron.number)) != 0)
+		bprintf(text[UserXferForYou],i,i>1 ? "s" : nulstr); 
+	if((i=getuserxfers(&cfg, useron.alias, /* to: */0)) != 0)
+		bprintf(text[UnreceivedUserXfer],i,i>1 ? "s" : nulstr);
 	SYNC;
 	sys_status&=~SS_PAUSEON;	/* Turn off the pause override flag */
 	if(online==ON_REMOTE)

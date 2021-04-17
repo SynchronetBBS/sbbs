@@ -227,6 +227,7 @@ bool sbbs_t::upload(uint dirnum)
     uint	i,j,k;
 	ulong	space;
 	file_t	f = {{}};
+	str_list_t dest_user_list = NULL;
 
 	/* Security Checks */
 	if(useron.rest&FLAG('U')) {
@@ -372,13 +373,50 @@ bool sbbs_t::upload(uint dirnum)
 	}
 	else
 		upload_lastdesc[0]=0;
+	if(dirnum == cfg.user_dir) {  /* User to User transfer */
+		bputs(text[EnterAfterLastDestUser]);
+		while(dir_op(dirnum) || strListCount(dest_user_list) < cfg.max_userxfer) {
+			bputs(text[SendFileToUser]);
+			if(!getstr(str,LEN_ALIAS,cfg.uq&UQ_NOUPRLWR ? K_NONE:K_UPRLWR))
+				break;
+			user_t user;
+			if((user.number=finduser(str))!=0) {
+				if(!dir_op(dirnum) && user.number==useron.number) {
+					bputs(text[CantSendYourselfFiles]);
+					continue; 
+				}
+				char usernum[16];
+				SAFEPRINTF(usernum, "%u", user.number);
+				if(strListFind(dest_user_list, usernum, /* case-sensitive: */true) >= 0) {
+					bputs(text[DuplicateUser]);
+					continue; 
+				}
+				getuserdat(&cfg,&user);
+				if((user.rest&(FLAG('T')|FLAG('D')))
+					|| !chk_ar(cfg.lib[cfg.dir[cfg.user_dir]->lib]->ar,&user,/* client: */NULL)
+					|| !chk_ar(cfg.dir[cfg.user_dir]->dl_ar,&user,/* client: */NULL)) {
+					bprintf(text[UserWontBeAbleToDl],user.alias); 
+				} else {
+					bprintf(text[UserAddedToDestList],user.alias,usernum);
+					strListPush(&dest_user_list, usernum);
+				} 
+			}
+			else {
+				CRLF;
+			}
+		}
+		if(strListCount(dest_user_list) < 1)
+			return false;
+	}
 
 	char fdesc[LEN_FDESC + 1] = "";
 	bputs(text[EnterDescNow]);
 	i=LEN_FDESC-(strlen(descbeg)+strlen(descend));
 	getstr(upload_lastdesc,i,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
-	if(sys_status&SS_ABORT)
+	if(sys_status&SS_ABORT) {
+		strListFree(&dest_user_list);
 		return(false);
+	}
 	if(descend[0])      /* end of desc specified, so pad desc with spaces */
 		safe_snprintf(fdesc,sizeof(fdesc),"%s%-*s%s",descbeg,i,upload_lastdesc,descend);
 	else                /* no end specified, so string ends at desc end */
@@ -399,6 +437,8 @@ bool sbbs_t::upload(uint dirnum)
 	bool result = false;
 	smb_hfield_str(&f, SMB_FILENAME, fname);
 	smb_hfield_str(&f, SMB_FILEDESC, fdesc);
+	if(strListCount(dest_user_list) > 0)
+		smb_hfield_str(&f, RECIPIENTLIST, strListCombine(dest_user_list, tmp, sizeof(tmp), ","));
 	if(tags[0])
 		smb_hfield_str(&f, SMB_TAGS, tags);
 	if(fexistcase(path)) {   /* File is on disk */
@@ -448,6 +488,7 @@ bool sbbs_t::upload(uint dirnum)
 		} 
 	}
 	smb_freefilemem(&f);
+	strListFree(&dest_user_list);
 	return result;
 }
 
@@ -498,7 +539,11 @@ bool sbbs_t::bulkupload(uint dirnum)
 			uint32_t cdt = (uint32_t)flength(str);
 			smb_hfield_bin(&f, SMB_COST, cdt);
 			bprintf(text[BulkUploadDescPrompt], format_filename(f.name, fname, 12, /* pad: */FALSE), cdt/1024);
-			getstr(desc, LEN_FDESC, K_LINE);
+			if(strcmp(f.name, fname) != 0)
+				SAFECOPY(desc, f.name);
+			else
+				desc[0] = 0;
+			getstr(desc, LEN_FDESC, K_LINE|K_EDIT|K_AUTODEL);
 			if(sys_status&SS_ABORT)
 				break;
 			if(strcmp(desc,"-")==0)	/* don't add this file */
