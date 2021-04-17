@@ -75,7 +75,7 @@ function pick_area()
 {
 	areas = Object.keys(tickit.acfg).sort();
 	areas = areas.map(function(v){return v.toUpperCase();});
-	area = uifc.list(WIN_ORG|WIN_SAV|WIN_BOT|WIN_MID, "Select Area", areas);
+	area = uifc.list(WIN_ORG|WIN_MID, "Select Area", areas);
 	if (area >= 0)
 		return areas[area];
 	return undefined;
@@ -83,7 +83,7 @@ function pick_area()
 
 function pick_origin()
 {
-	var addr = uifc.list(WIN_ORG|WIN_SAV|WIN_BOT|WIN_MID, "Select Origin", system.fido_addr_list);
+	var addr = uifc.list(WIN_ORG|WIN_MID, "Select Origin", system.fido_addr_list);
 	if (addr >= 0)
 		return system.fido_addr_list[addr];
 	return undefined;
@@ -158,7 +158,7 @@ function get_zone(addr)
 	return parseInt(m[1], 10);
 }
 
-function hatch_file(file, area, origin)
+function hatch_file(file, area, origin, replaces)
 {
 	var seenbys={};
 	var links={};
@@ -245,6 +245,8 @@ function hatch_file(file, area, origin)
 			lfile.replace(/^.*\\\/([^\\\/]+)$/,'$1');
 			tf.write('Lfile '+lfile+'\r\n');
 		}
+		if (replaces)
+			tf.write('Replaces ' + replaces + '\r\n');
 		tf.write('Size '+file_size(file.path)+'\r\n');
 		tf.write('Date '+file_date(file.path)+'\r\n');
 		tf.write('Desc '+file.desc+'\r\n');
@@ -296,6 +298,7 @@ function main() {
 	var file;
 	var area;
 	var origin;
+	var replaces;
 
 	uifc.init('HatchIT');
 	js.on_exit('uifc.bail()');
@@ -308,15 +311,21 @@ function main() {
 	origin = pick_origin();
 	if (origin === undefined)
 		return;
-	var msg = 'Hatch file '+file.name+' into '+area+' from '+origin+'\r\n\r\n'+
-		'Desc: '+file.desc+'\r\n\r\n'+
-		'Long Desc:\r\n'+file.extdesc;
+	replaces = uifc.input(WIN_ORG|WIN_MID, "Replaces (ENTER=none)");
+	if(replaces === undefined)
+		return;
+	var msg = 'Hatch file `'+file.name+'` into `'+area+'` from `'+origin+'`\r\n\r\n'+
+		'Desc: `'+file.desc+'`';
+	if (file.extdesc)
+		msg += '\r\n\r\nLong Desc:\r\n`' + file.extdesc +'`';
+	if (replaces)
+		msg += "\r\n\r\nReplaces: `" + replaces + '`';
 	if (uifc.showhelp !== undefined) {
 		uifc.help_text = msg;
 		uifc.showhelp();
 	}
-	if (uifc.list(WIN_MID, "Proceed?", ["No", "Yes"]) == 1) {
-		hatch_file(file, area, origin);
+	if (uifc.list(WIN_ORG|WIN_MID, "Proceed?", ["No", "Yes"]) == 1) {
+		hatch_file(file, area, origin, replaces);
 	}
 }
 
