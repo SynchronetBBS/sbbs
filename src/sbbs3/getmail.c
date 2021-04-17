@@ -94,7 +94,7 @@ BOOL delfattach(scfg_t* cfg, smbmsg_t* msg)
 		if(sp) tp=sp+1;
 		if(strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
 			SAFEPRINTF2(path, "%s/%s", dir, tp);
-			if(remove(path) != 0)
+			if(fexist(path) && remove(path) != 0)
 				return FALSE;
 		}
 		if(!p)
