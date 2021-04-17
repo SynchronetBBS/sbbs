@@ -66,6 +66,8 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 	char* p = f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from;
 	if(p != NULL && *p != '\0')
 		bprintf(P_TRUNCATE, text[FiUploadedBy], p);
+	if(f->to_list != NULL && *f->to_list != '\0')
+		bprintf(P_TRUNCATE, text[FiUploadedTo], f->to_list);
 	bprintf(P_TRUNCATE, text[FiDateUled],timestr(f->hdr.when_imported.time));
 	if(getfiletime(&cfg, f) > 0)
 		bprintf(P_TRUNCATE, text[FiFileDate],timestr(f->time));
