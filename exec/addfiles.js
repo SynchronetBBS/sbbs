@@ -12,26 +12,6 @@ const default_excludes = [
 	"SFFILES.BBS"
 ];
 
-if(argv.indexOf("-help") >= 0 || argv.indexOf("-?") >= 0) {
-	writeln("usage: [-options] [dir-code] [listfile]");
-	writeln("options:");
-	writeln("  -all            add files in all libraries/directories (implies -auto)");
-	writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
-	writeln("  -from=<name>    specify uploader's user name (may require quotes)");
-	writeln("  -ex=<filename>  add to excluded filename list");
-	writeln("                  (default: " + default_excludes.join(',') + ")");
-	writeln("  -diz            always extract/use description in archive");
-	writeln("  -update         update existing file entries (default is to skip them)");
-	writeln("  -date[=fmt]     include today's date in description");
-	writeln("  -fdate[=fmt]    include file's date in description");
-	writeln("  -adate[=fmt]    include newest archived file date in description");
-	writeln("                  (fmt = optional strftime date/time format string)");
-	writeln("  -delete         delete list after import");
-	writeln("  -v              increase verbosity of output");
-	writeln("  -debug          enable debug output");
-	exit(0);
-}
-
 function datestr(t)
 {
 	if(date_fmt)
@@ -62,12 +42,34 @@ var verbosity = 0;
 for(var i = 0; i < argc; i++) {
 	var arg = argv[i];
 	if(arg[0] == '-') {
-		if(arg.indexOf("-ex=") == 0) {
-			exclude.push(arg.slice(4).toUpperCase());
+		var opt = arg;
+		while(opt[0] == '-')
+			opt = opt.slice(1);
+		if(opt == '?' || opt.toLowerCase() == "help") {
+			writeln("usage: [-options] [dir-code] [listfile]");
+			writeln("options:");
+			writeln("  -all            add files in all libraries/directories (implies -auto)");
+			writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
+			writeln("  -from=<name>    specify uploader's user name (may require quotes)");
+			writeln("  -ex=<filename>  add to excluded filename list");
+			writeln("                  (default: " + default_excludes.join(',') + ")");
+			writeln("  -diz            always extract/use description in archive");
+			writeln("  -update         update existing file entries (default is to skip them)");
+			writeln("  -date[=fmt]     include today's date in description");
+			writeln("  -fdate[=fmt]    include file's date in description");
+			writeln("  -adate[=fmt]    include newest archived file date in description");
+			writeln("                  (fmt = optional strftime date/time format string)");
+			writeln("  -delete         delete list after import");
+			writeln("  -v              increase verbosity of output");
+			writeln("  -debug          enable debug output");
+			exit(0);
+		}
+		if(opt.indexOf("ex=") == 0) {
+			exclude.push(opt.slice(3).toUpperCase());
 			continue;
 		}
-		if(arg.indexOf("-lib=") == 0) {
-			var lib = arg.slice(5);
+		if(opt.indexOf("lib=") == 0) {
+			var lib = opt.slice(4);
 			if(!file_area.lib[lib]) {
 				alert("Library not found: " + lib);
 				exit(1);
@@ -77,38 +79,38 @@ for(var i = 0; i < argc; i++) {
 			options.auto = true;
 			continue;
 		}
-		if(arg.indexOf("-from=") == 0) {
-			uploader = arg.slice(6);
+		if(opt.indexOf("from=") == 0) {
+			uploader = opt.slice(5);
 			continue;
 		}
-		if(arg.indexOf("-date=") == 0) {
-			date_fmt = arg.slice(6);
+		if(opt.indexOf("date=") == 0) {
+			date_fmt = opt.slice(5);
 			options.date = true;
 			continue;
 		}
-		if(arg.indexOf("-fdate=") == 0) {
-			date_fmt = arg.slice(7);
+		if(opt.indexOf("fdate=") == 0) {
+			date_fmt = opt.slice(6);
 			options.fdate = true;
 			continue;
 		}
-		if(arg.indexOf("-adate=") == 0) {
-			date_fmt = arg.slice(7);
+		if(opt.indexOf("adate=") == 0) {
+			date_fmt = opt.slice(6);
 			options.adate = true;
 			continue;
 		}
-		if(arg == '-' || arg == '-all') {
+		if(opt == "all") {
 			for(var dir in file_area.dir)
 				dir_list.push(dir);
 			options.auto = true;
 			continue;
 		}
-		if(arg[1] == 'v') {
-			var j = 1;
-			while(arg[j++] == 'v')
+		if(opt[0] == 'v') {
+			var j = 0;
+			while(opt[j++] == 'v')
 				verbosity++;
 			continue;
 		}
-		options[arg.slice(1)] = true;
+		options[opt] = true;
 	} else {
 		if(!dir_list.length)
 			dir_list.push(arg);
