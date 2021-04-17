@@ -9,9 +9,9 @@
  ò€ hy[ ] c/# ncSelect library   b€  hy& ncFile scan config
    hyD ncDownload fileáb€ò€  hyR ncRemove/edit file
    hyU ncUpload fileâb€€€€€€€€€€4 hwGo to nb€€€€€€€€€€  hyI ncInformation
-   hyZ ncUpload to sysop      b€ò€  hyV ncView file contents
-   bƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ€hy Q ncMain/Message section  b€ hy/L ncNode activity
-   hyB ncBatch/Bi-dir xfers   b€ hyC ncChat sectionâb€ hy^K ncCtrl-key menu
-                          b€ hyT ncTemp dir/Archive cmds b€  hyO ncLogoff BBS (or hy/Onc)
+  hy/D ncDownload from user   b€ò€  hyV ncView file contents
+  hy/U ncUpload to userÜb€ hyQ ncMain/Message section  b€ hy/L ncNode activity
+   hyZ ncUpload to sysopÖb€ hyC ncChat sectionâb€ hy^K ncCtrl-key menu
+   hyB ncBatch/Bi-dir xfers   b€ hyT ncTemp dir/Archive cmds b€  hyO ncLogoff BBS (or hy/Onc)
 b ò€ò€  @SYSONLY@hy!nc Sysop Menu@SYSONLY@
 @HOT:OFF@@INCLUDE:%zmenu/tail.msg@
