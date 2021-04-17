@@ -12,9 +12,22 @@ function datestr(t)
 	return system.datestr(t);
 }
 
+function archive_date(file)
+{
+	try {
+		var list = Archive(file).list();
+	} catch(e) {
+		return file_date(file);
+	}
+	var t = 0;
+	for(var i = 0; i < list.length; i++)
+		t = Math.max(list[i].time, t);
+	return t;
+}
+
 var sort_prop = "name";
 var exclude_list = [];
-var options = { sort: false};
+var options = { sort: false, case_sensitive: true };
 var json_space;
 var detail = -1;
 var dir_list = [];
@@ -55,19 +68,21 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -lib=<name>     list files in all directories of specified library");
 			writeln("  -ex=<filespec>  add filename or spec to excluded filename list");
 			writeln("  -hdr            include header for each directory");
-			writeln("  -sort[=prop]    enable case-sensitive output sorting");
-			writeln("  -isort[=prop]   enable case-insensitive output sorting");
+			writeln("  -sort[=prop]    enable/configure file sorting");
+			writeln("  -i              perform case-insensitive global sorting");
 			writeln("  -reverse        reverse the sort order");
 			writeln("  -json[=spaces]  use JSON formatted output");
 			writeln("  -new=<days>     include new files uploaded in past <days>");
-			writeln("  -p=[list]       specify comma-separated list of property names to print");
+			writeln("  -p=<list>       specify comma-separated list of property names to print");
+			writeln("  -cdt            include credit value instead of file size");
 			writeln("  -ext            include extended file descriptions");
 			writeln("  -ext=<prefix>   specify extended file description prefix");
 			writeln("  -fmt=<fmt>      specify output format string (printf syntax)");
 			writeln("  -date=<fmt>     specify date/time display format (strftime syntax)");
 			writeln("  -size=<fmt>     specify size/byte display format (0-" + (size_fmts.length - 1) + ")");
-			writeln("  -name=<len>     specify filename length");
+			writeln("  -name=<len>     specify filename length (default: 12)");
 			writeln("  -pad            pad filename with spaces");
+			writeln("  -adate          use latest archived file date/time instead of file time");
 			writeln("  -v              increase verbosity (detail) of output");
 			exit(0);
 		}
@@ -108,9 +123,8 @@ for(var i = 0; i < argc; i++) {
 			options.sort = true;
 			continue;
 		}
-		if(opt.indexOf("isort=") == 0) {
-			sort_prop = opt.slice(6);
-			options.isort = true;
+		if(opt == "i") {
+			options.case_sensitive = false;
 			continue;
 		}
 		if(opt[0] == 'v') {
@@ -190,6 +204,11 @@ if(fmt != "json") {
 				offset += size_fmts[size_fmt][2] + 1;
 			}
 		}
+		if(detail > FileBase.DETAIL.EXTENDED) {
+			props.push("time");
+			f += " %-8s";
+			offset += 9;
+		}
 		if(detail >= FileBase.DETAIL.NORM) {
 			props.push("desc");
 			f += " %-58s";
@@ -226,13 +245,17 @@ for(var i = 0; i < dir_list.length; i++) {
 	if(!base.open())
 		throw new Error(base.last_error);
 	if(detail < 0)
-		file_list = file_list.concat(base.get_names(filespec, since, /* sort: */false));
+		file_list = file_list.concat(base.get_names(filespec, since, options.sort));
 	else {
-		var list = base.get_list(filespec, detail, since, /* sort: */false);
+		var list = base.get_list(filespec, detail, since, options.sort);
 		for(var j = 0; j < list.length; j++) {
 			list[j].dir = dir_code;
 			if(list[j].extdesc)
 				list[j].extdesc = "\n" + list[j].extdesc;
+			if(options.adate)
+				list[j].time = archive_date(base.get_path(list[j]));
+			if(options.cdt)
+				list[j].size = list[j].cost;
 		}
 		file_list = file_list.concat(list);
 	}
@@ -242,40 +265,42 @@ for(var i = 0; i < dir_list.length; i++) {
 if(!file_list.length)
 	exit(0);
 
-if(options.isort) {
-	log("Sorting " + file_list.length + " files...");
-	if(typeof file_list[0] == "string")
-		file_list.sort(
-			function(a, b) {
-				if (a.toLowerCase() < b.toLowerCase()) return -1;
-				if (a.toLowerCase() > b.toLowerCase()) return 1;
-				return 0;
-			}
-		);
-	else {
-		file_list.sort(
-			function(a, b) {
-				var a = String(a[sort_prop]).toLowerCase();
-				var b = String(b[sort_prop]).toLowerCase();
-				if (a < b) return -1;
-				if (a > b) return 1;
-				return 0;
-			}
-		);
+if(!options.hdr && options.sort) {
+	if(options.case_sensitive) {
+		log("Sorting " + file_list.length + " files...");
+		if(typeof file_list[0] == "string")
+			file_list.sort(
+				function(a, b) {
+					if (a.toLowerCase() < b.toLowerCase()) return -1;
+					if (a.toLowerCase() > b.toLowerCase()) return 1;
+					return 0;
+				}
+			);
+		else {
+			file_list.sort(
+				function(a, b) {
+					var a = String(a[sort_prop]).toLowerCase();
+					var b = String(b[sort_prop]).toLowerCase();
+					if (a < b) return -1;
+					if (a > b) return 1;
+					return 0;
+				}
+			);
+		}
 	}
-}
-else if(options.sort) {
-	log("Sorting " + file_list.length + " files...");
-	if(typeof file_list[0] == "string")
-		file_list.sort();
 	else {
-		file_list.sort(
-			function(a, b) {
-				if (a[sort_prop] < b[sort_prop]) return -1;
-				if (a[sort_prop] > b[sort_prop]) return 1;
-				return 0;
-			}
-		);
+		log("Sorting " + file_list.length + " files...");
+		if(typeof file_list[0] == "string")
+			file_list.sort();
+		else {
+			file_list.sort(
+				function(a, b) {
+					if (a[sort_prop] < b[sort_prop]) return -1;
+					if (a[sort_prop] > b[sort_prop]) return 1;
+					return 0;
+				}
+			);
+		}
 	}
 }
 if(options.reverse)
@@ -351,7 +376,10 @@ function list_file(file, fmt, props)
 		var p = file[name];
 		switch(typeof p) {
 			case "undefined":
-				a.push('');
+				if(name == 'desc')
+					a.push(file.name);
+				else
+					a.push('');
 				break;
 			case "string":
 				if(name == 'name')
