@@ -153,7 +153,7 @@
 "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
 "\1n\1?\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
 "\r\n\1r\1hNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
-"\r\n\r\nYou can't use the external programs.\r\n"      123 R_ExternalPrograms
+"\1?You can't use the external programs.\r\n"             123 R_ExternalPrograms
 "\r\n\1-\1gUsage Statistics for \1h%s #%d\1n\r\n\r\n"       124 UserStats
 "\1-\1gSub-boards of \1h%-40s       \1n\1gPosts"\             125 SubLstHdr
 	"\r\n\r\n\1h"
@@ -200,21 +200,21 @@
 	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h"  
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
-"\r\n\r\nYou can't download.\r\n"                       165 R_Download
-"\r\n\1w\1hSearching current library @ELLIPSIS@\r\n\1q"   166 SearchingAllDirs
+"\1?You can't download.\r\n"                              165 R_Download
+"\1/\1w\1hSearching current library @ELLIPSIS@\r\n\1q"   166 SearchingAllDirs
 "\1w\1hSearching all libraries @ELLIPSIS@\r\n\1q"         167 SearchingAllLibs
 "\r\n\1w\1h%u Files Listed.\r\n"                          168 NFilesListed
 "\r\n\1w\1hEmpty directory.\r\n"                          169 EmptyDir
-"\r\n\1n\1cSearching for files "\                         170 NScanHdr
+"\1?\1cSearching for files "\                             170 NScanHdr
 	"uploaded after\1\\ \1h%s\1n\r\n"
-"\r\n\r\nYou can't remove files.\r\n"                   171 R_RemoveFiles
-"\r\n\r\nThis directory is full.\r\n"                   172 DirFull
-"\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
-"\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
-"\1_\r\n\r\n\1y\1hFilespec: \1n\1~"                     175 FileSpec
-"SY: "                                                  176 SystemPassword
-"\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
-"\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
+"\1?You can't remove files.\r\n"                           171 R_RemoveFiles
+"\1?This directory is full.\r\n"                           172 DirFull
+"\1?You can't upload.\r\n"                                 173 R_Upload
+"\1?You can't upload here.\r\n"                            174 CantUploadHere
+"\1_\1?\1y\1hFilespec: \1n\1~"                             175 FileSpec
+"SY: "                                                     176 SystemPassword
+"\1?No sysop directory is configured.\r\n"                 177 NoSysopDir
+"\1?You can't upload to the sysop.\r\n"                    178 CantUploadToSysop
 "\1-\1gDirectories of \1h%-40.40s     "\                   179 DirLstHdr
 	"\1n\1gFiles\r\n\r\n\1h"
 "\1n\1g(\1h%u\1n\1g) %-40.40s %12.12s \1h%4u\r\n"             180 DirLstFmt
@@ -228,10 +228,10 @@
 	"credit value\r\n"
 "All downloads are rewarded with %d%% of the "\         187 TpDownload
 	"credit value\r\n"
-"\r\n\r\nNo user directory specified.\r\n"              188 NoUserDir
+"\1?No user directory is configured.\r\n"               188 NoUserDir
 "\r\nThere are no files for you.\r\n"                   189 NoFilesForYou
-"\r\n\r\nUser transfer directory is full.\r\n"          190 UserDirFull
-"\r\n\r\nYou can't send files to users.\r\n"            191 CantUploadToUser
+"\1?User transfer directory is full.\r\n"               190 UserDirFull
+"\1?You can't send files to users.\r\n"                 191 CantUploadToUser
 "\1n\1cLibrary   : (%u) %s\1y\1h"                           192 BoxHdrLib
 "\1n\1cDirectory : (%u) %s\1y\1h"                           193 BoxHdrDir
 "\1n\1cFiles     : %u\1y\1h"                               194 BoxHdrFiles
@@ -261,8 +261,8 @@
 "\7\r\n\1r\1h\1i%s wouldn't be able to "\                  215 UserWontBeAbleToDl
 	"download it!\1n\r\n\r\n"
 "\7\r\n\1r\1h\1iYou can't send yourself files.\1n\r\n\r\n"  216 CantSendYourselfFiles
-"\r\n\1-\1gAdded to destination user list: "\             217 UserAddedToDestList
-	"\1w\1h%s\r\n\r\n\1n"
+"\r\n\1-\1gAdded to destination user list: "\               217 UserAddedToDestList
+	"\1w\1h%s #%s\r\n\r\n\1n"
 "\r\n\1-\1gHow do you rate the content of this file "\    218 RateThisFile
 	"(\1h\1wG\1n\1g, \1h\1wR\1n\1g, or \1h\1wX\1n\1g): \1n"
 "[%c] "                                                 219 Rated
@@ -428,8 +428,10 @@
 	"same time.\1n\r\n"
 "\7\1r\1h\1i%d critical errors have occurred. "\           359 CriticalErrors
 	"Type ;ERR at main menu.\1n\r\n"
-"Unused360"                                                360 UserXferForYou
-"Unused361"                                                361 UnreceivedUserXfer
+"\1_\1w\1hYou have %d User to User File Transfer%s "\      360 UserXferForYou
+	"waiting for you\r\n"
+"\1_\1w\1hYou have sent %d unreceived User to "\           361 UnreceivedUserXfer
+	"User File Transfer%s\r\n"
 "Read your mail now"                                    362 ReadYourMailNowQ
 "Sorry, the system is closed to new users.\r\n"         363 NoNewUsers
 "New User Password: "                                   364 NewUserPasswordPrompt
