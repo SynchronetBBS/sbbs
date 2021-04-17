@@ -60,6 +60,7 @@ static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
 static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
 static const char*	strJavaScriptOptions		="JavaScriptOptions";
 static const char*	strSemFileCheckFrequency	="SemFileCheckFrequency";
+static const char*	strIniFileName				="iniFileName";
 
 #define DEFAULT_LOG_LEVEL				LOG_DEBUG
 #define DEFAULT_BIND_RETRY_COUNT		2
@@ -603,6 +604,9 @@ void sbbs_read_ini(
 		SAFECOPY(services->temp_dir
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
 
+		SAFECOPY(services->services_ini
+			,iniGetString(list, section, strIniFileName, "servicse.ini", value));
+
 		SAFECOPY(services->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
 		SAFECOPY(services->hangup_sound
@@ -1139,6 +1143,9 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,strAnswerSound,services->answer_sound,&style))
 			break;
 		if(!iniSetString(lp,section,strHangupSound,services->hangup_sound,&style))
+			break;
+
+		if(!iniSetString(lp, section, strIniFileName, services->services_ini, &style))
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,service_options,services->options,&style))
