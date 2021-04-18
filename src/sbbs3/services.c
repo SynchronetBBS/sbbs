@@ -323,8 +323,13 @@ static void badlogin(SOCKET sock, char* prot, char* user, char* passwd, char* ho
 
 	SAFEPRINTF(reason,"%s LOGIN", prot);
 	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
-	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
+	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, reason, user, passwd, host, addr);
+#ifdef _WIN32
+		if(startup->sound.hack[0] && !(startup->options&BBS_OPT_MUTE))
+			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 		inet_addrtop(addr, addr_ip, sizeof(addr_ip));
 		SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
@@ -453,6 +458,12 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		loginSuccess(startup->login_attempt_list, &client->addr);
 
 	JS_SET_RVAL(cx, arglist,BOOLEAN_TO_JSVAL(JS_TRUE));
+
+#ifdef _WIN32
+	if(startup->sound.login[0] && !(startup->options&BBS_OPT_MUTE)
+		&& !(service->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 	return(JS_TRUE);
 }
@@ -1176,6 +1187,12 @@ static void js_service_thread(void* arg)
 			lprintf(LOG_INFO,"%04d %s Logging out %s"
 				,socket, service->protocol, service_client.user.alias);
 		logoutuserdat(&scfg,&service_client.user,time(NULL),service_client.logintime);
+
+#ifdef _WIN32
+		if(startup->sound.logout[0] && !(startup->options&BBS_OPT_MUTE)
+			&& !(service->options&BBS_OPT_MUTE))
+			PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 	}
 	FREE_AND_NULL(service_client.subscan);
 
@@ -1183,9 +1200,9 @@ static void js_service_thread(void* arg)
 	update_clients();
 
 #ifdef _WIN32
-	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)
+	if(startup->sound.hangup[0] && !(startup->options&BBS_OPT_MUTE)
 		&& !(service->options&BBS_OPT_MUTE))
-		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
+		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
 	thread_down();
@@ -1505,9 +1522,9 @@ static void native_service_thread(void* arg)
 	update_clients();
 
 #ifdef _WIN32
-	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)
+	if(startup->sound.hangup[0] && !(startup->options&BBS_OPT_MUTE)
 		&& !(service->options&BBS_OPT_MUTE))
-		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
+		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
 	thread_down();
@@ -2275,9 +2292,9 @@ void services_thread(void* arg)
 					}
 
 	#ifdef _WIN32
-					if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)
+					if(startup->sound.answer[0] && !(startup->options&BBS_OPT_MUTE)
 						&& !(service[i].options&BBS_OPT_MUTE))
-						PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+						PlaySound(startup->sound.answer, NULL, SND_ASYNC|SND_FILENAME);
 	#endif
 
 					if((client=malloc(sizeof(service_client_t)))==NULL) {

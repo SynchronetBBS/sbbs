@@ -32,8 +32,8 @@ void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
     }
     AutoStartCheckBox->Checked=MainForm->ServicesAutoStart;
 
-    AnswerSoundEdit->Text=AnsiString(MainForm->services_startup.answer_sound);
-    HangupSoundEdit->Text=AnsiString(MainForm->services_startup.hangup_sound);
+    AnswerSoundEdit->Text=AnsiString(MainForm->services_startup.sound.answer);
+    HangupSoundEdit->Text=AnsiString(MainForm->services_startup.sound.hangup);
     HostnameCheckBox->Checked
         =!(MainForm->services_startup.options&BBS_OPT_NO_HOST_LOOKUP);
 
@@ -82,9 +82,9 @@ void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
 
     MainForm->ServicesAutoStart=AutoStartCheckBox->Checked;
 
-    SAFECOPY(MainForm->services_startup.answer_sound
+    SAFECOPY(MainForm->services_startup.sound.answer
         ,AnswerSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->services_startup.hangup_sound
+    SAFECOPY(MainForm->services_startup.sound.hangup
         ,HangupSoundEdit->Text.c_str());
 
 	if(HostnameCheckBox->Checked==false)

@@ -88,8 +88,8 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
     else
         MaxConConEdit->Text=AnsiString((int)MainForm->bbs_startup.max_concurrent_connections);
     AutoStartCheckBox->Checked=MainForm->SysAutoStart;
-    AnswerSoundEdit->Text=AnsiString(MainForm->bbs_startup.answer_sound);
-    HangupSoundEdit->Text=AnsiString(MainForm->bbs_startup.hangup_sound);
+    AnswerSoundEdit->Text=AnsiString(MainForm->bbs_startup.sound.answer);
+    HangupSoundEdit->Text=AnsiString(MainForm->bbs_startup.sound.hangup);
     CmdLogCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_DEBUG_TELNET;
     TelnetGaCheckBox->Checked
     	=!(MainForm->bbs_startup.options&BBS_OPT_NO_TELNET_GA);
@@ -137,9 +137,9 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->bbs_startup.max_concurrent_connections=MaxConConEdit->Text.ToIntDef(0);
 
     MainForm->SysAutoStart=AutoStartCheckBox->Checked;
-    SAFECOPY(MainForm->bbs_startup.answer_sound
+    SAFECOPY(MainForm->bbs_startup.sound.answer
         ,AnswerSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->bbs_startup.hangup_sound
+    SAFECOPY(MainForm->bbs_startup.sound.hangup
         ,HangupSoundEdit->Text.c_str());
 	if(TelnetGaCheckBox->Checked==false)
     	MainForm->bbs_startup.options|=BBS_OPT_NO_TELNET_GA;

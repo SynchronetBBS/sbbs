@@ -48,11 +48,9 @@ typedef struct {
 	BOOL	(*setuid)(BOOL force);
 
 	/* Paths */
-    char    ctrl_dir[128];
-	char    temp_dir[128];
-	char	answer_sound[128];
-	char	hangup_sound[128];
-	char	ini_fname[128];		// sbbs.ini path/filename
+    char    ctrl_dir[INI_MAX_VALUE_LEN];
+	char    temp_dir[INI_MAX_VALUE_LEN];
+	char	ini_fname[INI_MAX_VALUE_LEN];		// sbbs.ini path/filename
 	char	services_ini[128];	// services.ini filename
 
 	/* Misc */
@@ -62,6 +60,8 @@ typedef struct {
 	int		log_level;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
+
+	struct startup_sound_settings sound;
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

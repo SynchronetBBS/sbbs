@@ -1617,6 +1617,11 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 		lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat", socket);
 	memset(&session->user,0,sizeof(session->user));
 	session->last_user_num=session->user.number;
+
+#ifdef _WIN32
+	if(startup->sound.logout[0] && !(startup->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 }
 
 BOOL http_checkuser(http_session_t * session)
@@ -1842,8 +1847,8 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, reason, user, passwd, host, addr);
 #ifdef _WIN32
-		if(startup->hack_sound[0] && !(startup->options&BBS_OPT_MUTE))
-			PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+		if(startup->sound.hack[0] && !(startup->options&BBS_OPT_MUTE))
+			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
@@ -2010,8 +2015,8 @@ static BOOL check_ars(http_session_t * session)
 		,session->socket,session->req.auth.username,session->req.ars);
 
 #ifdef _WIN32
-	if(startup->hack_sound[0] && !(startup->options&BBS_OPT_MUTE))
-		PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+	if(startup->sound.hack[0] && !(startup->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
 	return(FALSE);
@@ -5441,6 +5446,11 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist,BOOLEAN_TO_JSVAL(JS_TRUE));
 
+#ifdef _WIN32
+	if(startup->sound.login[0] && !(startup->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+
 	return(JS_TRUE);
 }
 
@@ -6373,8 +6383,8 @@ void http_session_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d !!! DANGER WILL ROBINSON, DANGER !!!", session.socket);
 
 #ifdef _WIN32
-	if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE))
-		PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+	if(startup->sound.answer[0] && !(startup->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.answer, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
 	session.finished=FALSE;
@@ -6611,8 +6621,8 @@ void http_session_thread(void* arg)
 	}
 
 #ifdef _WIN32
-	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE))
-		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
+	if(startup->sound.hangup[0] && !(startup->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
 	close_session_socket(&session);

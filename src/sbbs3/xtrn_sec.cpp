@@ -799,7 +799,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,-1 								/* Display on/off */
 			,0									/* Printer on/off */
 			,sys_status&SS_SYSPAGE ? -1:0		/* Page Bell on/off */
-			,startup->answer_sound[0] ? -1:0	/* Caller Alarm on/off */
+			,startup->sound.answer[0] ? -1:0	/* Caller Alarm on/off */
 			,' ' 								/* Sysop next flag */
 			,0									/* Error corrected */
 			,(term & NO_EXASCII) ? '7'			/* Graphics mode */

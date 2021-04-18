@@ -46,6 +46,8 @@ static const char*	strBindRetryCount="BindRetryCount";
 static const char*	strBindRetryDelay="BindRetryDelay";
 static const char*	strAnswerSound="AnswerSound";
 static const char*	strHangupSound="HangupSound";
+static const char*	strLoginSound="LoginSound";
+static const char*	strLogoutSound="LogoutSound";
 static const char*	strHackAttemptSound="HackAttemptSound";
 static const char*	strLoginAttemptDelay="LoginAttemptDelay";
 static const char*	strLoginAttemptThrottle="LoginAttemptThrottle";
@@ -85,6 +87,16 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 #if defined(_WINSOCKAPI_)	 
 	WSACleanup();	 
 #endif
+}
+
+static BOOL iniSetStringWithGlobalDefault(str_list_t* lp, const char* section, const char* key
+	,const char* value, const char* global_value, ini_style_t* style)
+{
+	if(strcmp(value, global_value) == 0) {
+		iniRemoveKey(lp, section, key);
+		return iniKeyExists(*lp, section, key) == FALSE;
+	}
+	return iniSetString(lp, section, key, value, style) != NULL;
 }
 
 static void sbbs_fix_js_settings(js_startup_t* js)
@@ -169,6 +181,48 @@ BOOL sbbs_set_js_settings(
 	return(!failure);
 }
 
+void sbbs_get_sound_settings(str_list_t list, const char* section, struct startup_sound_settings* sound
+	,struct startup_sound_settings* defaults)
+{
+	char	value[INI_MAX_VALUE_LEN];
+    char*   p;
+
+	if((p = iniGetString(list, section, strAnswerSound, defaults->answer, value)) != NULL && *p != '\0')
+        SAFECOPY(sound->answer, value);
+
+	if((p = iniGetString(list, section, strLoginSound, defaults->login, value)) != NULL && *p != '\0')
+        SAFECOPY(sound->login, value);
+
+	if((p = iniGetString(list, section, strLogoutSound, defaults->logout, value)) != NULL && *p != '\0')
+        SAFECOPY(sound->logout, value);
+
+	if((p = iniGetString(list, section, strHangupSound, defaults->hangup, value)) != NULL && *p != '\0')
+        SAFECOPY(sound->hangup, value);
+
+	if((p = iniGetString(list, section, strHackAttemptSound, defaults->hack, value)) != NULL && *p != '\0')
+        SAFECOPY(sound->hack, value);
+}
+
+BOOL sbbs_set_sound_settings(
+	 str_list_t* lp
+	,const char* section
+	,struct startup_sound_settings* sound
+	,struct startup_sound_settings* defaults
+	,ini_style_t* style)
+{
+	if(!iniSetStringWithGlobalDefault(lp ,section, strAnswerSound, sound->answer, defaults->answer, style))
+		return FALSE;
+	if(!iniSetStringWithGlobalDefault(lp, section, strLoginSound, sound->login, defaults->login, style))
+		return FALSE;
+	if(!iniSetStringWithGlobalDefault(lp, section, strLogoutSound, sound->logout, defaults->logout, style))
+		return FALSE;
+	if(!iniSetStringWithGlobalDefault(lp, section, strHangupSound, sound->hangup, defaults->logout, style))
+		return FALSE;
+	if(!iniSetStringWithGlobalDefault(lp, section, strHackAttemptSound, sound->hack, defaults->hack, style))
+		return FALSE;
+	return TRUE;
+}
+
 static struct login_attempt_settings get_login_attempt_settings(str_list_t list, const char* section, global_startup_t* global)
 {
 	struct login_attempt_settings settings;
@@ -233,8 +287,8 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	global->js.options			= JAVASCRIPT_OPTIONS;
     SAFECOPY(global->js.load_path, JAVASCRIPT_LOAD_PATH);
 
-	/* Read .ini values here */
 	sbbs_get_js_settings(list, section, &global->js, &global->js);
+	sbbs_get_sound_settings(list, section, &global->sound, &global->sound);
 }
 
 
@@ -388,10 +442,7 @@ void sbbs_read_ini(
 			,iniGetString(list,section,"DOSemuPath",default_dosemu_path,value));
 	#endif
 
-		SAFECOPY(bbs->answer_sound
-			,iniGetString(list,section,strAnswerSound,nulstr,value));
-		SAFECOPY(bbs->hangup_sound
-			,iniGetString(list,section,strHangupSound,nulstr,value));
+		sbbs_get_sound_settings(list, section, &bbs->sound, &global->sound);
 
 		bbs->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
@@ -452,12 +503,7 @@ void sbbs_read_ini(
 		SAFECOPY(ftp->index_file_name
 			,iniGetString(list,section,"IndexFileName","00index",value));
 
-		SAFECOPY(ftp->answer_sound
-			,iniGetString(list,section,strAnswerSound,nulstr,value));
-		SAFECOPY(ftp->hangup_sound
-			,iniGetString(list,section,strHangupSound,nulstr,value));
-		SAFECOPY(ftp->hack_sound
-			,iniGetString(list,section,strHackAttemptSound,nulstr,value));
+		sbbs_get_sound_settings(list, section, &ftp->sound, &global->sound);
 
 		SAFECOPY(ftp->temp_dir
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
@@ -555,6 +601,7 @@ void sbbs_read_ini(
 			,iniGetString(list,section,"InboundSound",nulstr,value));
 		SAFECOPY(mail->outbound_sound
 			,iniGetString(list,section,"OutboundSound",nulstr,value));
+		sbbs_get_sound_settings(list, section, &mail->sound, &global->sound);
 
 		SAFECOPY(mail->newmail_notice
 			,iniGetString(list,section,"NewMailNotice","%.0s\1n\1mNew e-mail from \1h%s \1n<\1h%s\1n>\r\n", value));
@@ -607,10 +654,7 @@ void sbbs_read_ini(
 		SAFECOPY(services->services_ini
 			,iniGetString(list, section, strIniFileName, "services.ini", value));
 
-		SAFECOPY(services->answer_sound
-			,iniGetString(list,section,strAnswerSound,nulstr,value));
-		SAFECOPY(services->hangup_sound
-			,iniGetString(list,section,strHangupSound,nulstr,value));
+		sbbs_get_sound_settings(list, section, &services->sound, &global->sound);
 
 		services->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
@@ -683,12 +727,7 @@ void sbbs_read_ini(
 		web->max_cgi_inactivity
 			=iniGetShortInt(list,section,"MaxCgiInactivity",WEB_DEFAULT_MAX_CGI_INACTIVITY);	/* seconds */
 
-		SAFECOPY(web->answer_sound
-			,iniGetString(list,section,strAnswerSound,nulstr,value));
-		SAFECOPY(web->hangup_sound
-			,iniGetString(list,section,strHangupSound,nulstr,value));
-		SAFECOPY(web->hack_sound
-			,iniGetString(list,section,strHackAttemptSound,nulstr,value));
+		sbbs_get_sound_settings(list, section, &web->sound, &global->sound);
 
 		web->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
@@ -734,7 +773,7 @@ BOOL sbbs_write_ini(
 
 	memset(&style, 0, sizeof(style));
 	style.key_prefix = "\t";
-	style.section_separator = "";
+style.section_separator = "";
 	style.value_separator = " = ";
 	style.bit_separator = " | ";
 
@@ -859,9 +898,8 @@ BOOL sbbs_write_ini(
 			break;
 #endif
 #endif
-		if(!iniSetString(lp,section,strAnswerSound,bbs->answer_sound,&style))
-			break;
-		if(!iniSetString(lp,section,strHangupSound,bbs->hangup_sound,&style))
+
+		if(!sbbs_set_sound_settings(lp, section, &bbs->sound, &global->sound, &style))
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,bbs_options,bbs->options,&style))
@@ -948,11 +986,7 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"IndexFileName",ftp->index_file_name,&style))
 			break;
 
-		if(!iniSetString(lp,section,strAnswerSound,ftp->answer_sound,&style))
-			break;
-		if(!iniSetString(lp,section,strHangupSound,ftp->hangup_sound,&style))
-			break;
-		if(!iniSetString(lp,section,strHackAttemptSound,ftp->hack_sound,&style))
+		if(!sbbs_set_sound_settings(lp, section, &ftp->sound, &global->sound, &style))
 			break;
 	
 		if(!iniSetBitField(lp,section,strOptions,ftp_options,ftp->options,&style))
@@ -1069,6 +1103,10 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetString(lp,section,"OutboundSound",mail->outbound_sound,&style))
 			break;
+
+		if(!sbbs_set_sound_settings(lp, section, &mail->sound, &global->sound, &style))
+			break;
+
 #if 0
 		if(!iniSetStringLiteral(lp,section,"NewMailNotice",mail->newmail_notice,&style))
 			break;
@@ -1140,9 +1178,7 @@ BOOL sbbs_write_ini(
 		else if(!iniSetString(lp,section,strTempDirectory,services->temp_dir,&style))
 			break;
 
-		if(!iniSetString(lp,section,strAnswerSound,services->answer_sound,&style))
-			break;
-		if(!iniSetString(lp,section,strHangupSound,services->hangup_sound,&style))
+		if(!sbbs_set_sound_settings(lp, section, &services->sound, &global->sound, &style))
 			break;
 
 		if(!iniSetString(lp, section, strIniFileName, services->services_ini, &style))
@@ -1240,11 +1276,7 @@ BOOL sbbs_write_ini(
 		if(!iniSetShortInt(lp,section,"MaxCgiInactivity",web->max_cgi_inactivity,&style))
 			break;
 
-		if(!iniSetString(lp,section,strAnswerSound,web->answer_sound,&style))
-			break;
-		if(!iniSetString(lp,section,strHangupSound,web->hangup_sound,&style))
-			break;
-		if(!iniSetString(lp,section,strHackAttemptSound,web->hack_sound,&style))
+		if(!sbbs_set_sound_settings(lp, section, &web->sound, &global->sound, &style))
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,web_options,web->options,&style))

@@ -146,6 +146,11 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 		} 
 	}
 
+#ifdef _WIN32
+	if(startup->sound.login[0] && !(startup->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+
 	return(LOGIC_TRUE);
 }
 
@@ -167,6 +172,10 @@ void sbbs_t::badlogin(char* user, char* passwd, const char* protocol, xp_sockadd
 	if(user!=NULL && startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		::hacklog(&cfg, reason, user, passwd, host_name, addr);
+#ifdef _WIN32
+		if(startup->sound.hack[0] && !(startup->options&BBS_OPT_MUTE))
+			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 		char ipaddr[INET6_ADDRSTRLEN];
