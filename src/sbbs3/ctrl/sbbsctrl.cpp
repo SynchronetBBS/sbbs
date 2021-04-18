@@ -63,6 +63,7 @@ USEFORM("PreviewFormUnit.cpp", PreviewForm);
 USEFORM("WebFormUnit.cpp", WebForm);
 USEFORM("WebCfgDlgUnit.cpp", WebCfgDlg);
 USEFORM("LoginAttemptsFormUnit.cpp", LoginAttemptsForm);
+USEFORM("C:\src\sbbs3\ctrl\SoundCfgDlgUnit.cpp", SoundCfgDlg);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
@@ -89,6 +90,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
          Application->CreateForm(__classid(TEventsForm), &EventsForm);
          Application->CreateForm(__classid(TServicesForm), &ServicesForm);
          Application->CreateForm(__classid(TLoginAttemptsForm), &LoginAttemptsForm);
+         Application->CreateForm(__classid(TSoundCfgDlg), &SoundCfgDlg);
          if(cmd[0] && isdir(cmd))
             SAFECOPY(MainForm->global.ctrl_dir,cmd);
          sbbs_get_ini_fname(MainForm->ini_file, MainForm->global.ctrl_dir, NULL /* auto-hostname */);

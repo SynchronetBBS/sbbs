@@ -1,6 +1,6 @@
 object PropertiesDlg: TPropertiesDlg
-  Left = 688
-  Top = 261
+  Left = 1041
+  Top = 844
   BorderStyle = bsDialog
   Caption = 'Control Panel Properties'
   ClientHeight = 234
@@ -43,9 +43,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 7
     Width = 254
     Height = 221
-    ActivePage = SettingsTabSheet
+    ActivePage = Sound
     Anchors = [akLeft, akTop, akBottom]
-    TabIndex = 0
+    TabIndex = 5
     TabOrder = 2
     object SettingsTabSheet: TTabSheet
       Caption = 'Settings'
@@ -482,14 +482,6 @@ object PropertiesDlg: TPropertiesDlg
         AutoSize = False
         Caption = 'Temp Directory'
       end
-      object ErrorSoundLabel: TLabel
-        Left = 7
-        Top = 114
-        Width = 65
-        Height = 20
-        AutoSize = False
-        Caption = 'Error Sound'
-      end
       object CtrlDirEdit: TEdit
         Left = 98
         Top = 10
@@ -541,7 +533,7 @@ object PropertiesDlg: TPropertiesDlg
         Caption = 'Undockable Windows'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 4
       end
       object FileAssociationsCheckBox: TCheckBox
         Left = 7
@@ -552,26 +544,7 @@ object PropertiesDlg: TPropertiesDlg
         Caption = 'Use File Associations'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
-      end
-      object ErrorSoundEdit: TEdit
-        Left = 98
-        Top = 114
-        Width = 112
-        Height = 21
-        Hint = 'Sound file to play when an error condition is logged'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 4
-      end
-      object ErrorSoundButton: TButton
-        Left = 214
-        Top = 114
-        Width = 20
-        Height = 21
-        Caption = '...'
         TabOrder = 5
-        OnClick = ErrorSoundButtonClick
       end
     end
     object JavaScriptTabSheet: TTabSheet
@@ -592,7 +565,7 @@ object PropertiesDlg: TPropertiesDlg
         Height = 19
         AutoSize = False
         Caption = 'Context Stack'
-        Enabled = false
+        Enabled = False
       end
       object Label12: TLabel
         Left = 7
@@ -644,10 +617,10 @@ object PropertiesDlg: TPropertiesDlg
         Width = 137
         Height = 21
         Hint = 'Size of context stack (in bytes)'
+        Enabled = False
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-        Enabled = false
       end
       object JS_TimeLimitEdit: TEdit
         Left = 98
@@ -692,6 +665,46 @@ object PropertiesDlg: TPropertiesDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 5
+      end
+    end
+    object Sound: TTabSheet
+      Caption = 'Sound'
+      ImageIndex = 5
+      object ErrorSoundLabel: TLabel
+        Left = 7
+        Top = 10
+        Width = 65
+        Height = 20
+        AutoSize = False
+        Caption = 'Error Sound'
+      end
+      object ConfigureSoundButton: TButton
+        Left = 8
+        Top = 40
+        Width = 225
+        Height = 25
+        Caption = 'Configure Common Server Event Sounds'
+        TabOrder = 0
+        OnClick = ConfigureSoundButtonClick
+      end
+      object ErrorSoundEdit: TEdit
+        Left = 72
+        Top = 10
+        Width = 138
+        Height = 21
+        Hint = 'Sound file to play when an error condition is logged'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+      end
+      object ErrorSoundButton: TButton
+        Left = 214
+        Top = 10
+        Width = 20
+        Height = 21
+        Caption = '...'
+        TabOrder = 2
+        OnClick = ErrorSoundButtonClick
       end
     end
   end

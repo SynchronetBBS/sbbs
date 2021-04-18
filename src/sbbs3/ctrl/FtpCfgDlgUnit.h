@@ -49,12 +49,6 @@ __published:
     TCheckBox *DebugDataCheckBox;
     TCheckBox *LogFileCheckBox;
     TTabSheet *SoundTabSheet;
-    TLabel *AnswerSoundLabel;
-    TEdit *AnswerSoundEdit;
-    TButton *AnswerSoundButton;
-    TLabel *HangupSoundLabel;
-    TEdit *HangupSoundEdit;
-    TButton *HangupSoundButton;
     TLabel *MaxClientesLabel;
     TEdit *MaxClientsEdit;
     TLabel *MaxInactivityLabel;
@@ -75,9 +69,6 @@ __published:
     TEdit *IndexFileNameEdit;
     TLabel *QwkTimeoutLabel;
     TEdit *QwkTimeoutEdit;
-    TLabel *HackAttemptSoundLabel;
-    TEdit *HackAttemptSoundEdit;
-    TButton *HackAttemptSoundButton;
     TTabSheet *PasvTabSheet;
     TLabel *PasvIpLabel;
     TEdit *PasvIPv4AddrEdit;
@@ -88,14 +79,13 @@ __published:
     TCheckBox *PasvIpLookupCheckBox;
     TLabel *MaxConConLabel;
     TEdit *MaxConConEdit;
+    TButton *ConfigureSoundButton;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
-	void __fastcall AnswerSoundButtonClick(TObject *Sender);
-	void __fastcall HangupSoundButtonClick(TObject *Sender);
 	void __fastcall AutoIndexCheckBoxClick(TObject *Sender);
-    void __fastcall HackAttemptSoundButtonClick(TObject *Sender);
     void __fastcall PasvIpLookupCheckBoxClick(TObject *Sender);
     void __fastcall AllowQWKCheckBoxClick(TObject *Sender);
+    void __fastcall ConfigureSoundButtonClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TFtpCfgDlg(TComponent* AOwner);

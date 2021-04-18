@@ -17,8 +17,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 3
     Width = 278
     Height = 186
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = SoundTabSheet
+    TabIndex = 4
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -365,59 +365,14 @@ object TelnetCfgDlg: TTelnetCfgDlg
     object SoundTabSheet: TTabSheet
       Caption = 'Sound'
       ImageIndex = 2
-      object AnswerSoundLabel: TLabel
-        Left = 7
-        Top = 10
-        Width = 65
-        Height = 20
-        AutoSize = False
-        Caption = 'Connect'
-      end
-      object HnagupSoundLabel: TLabel
-        Left = 7
-        Top = 36
-        Width = 65
-        Height = 20
-        AutoSize = False
-        Caption = 'Disconnect'
-      end
-      object AnswerSoundEdit: TEdit
-        Left = 72
-        Top = 10
-        Width = 169
-        Height = 21
-        Hint = 'Sound file to play when accepting an incoming connection'
-        ParentShowHint = False
-        ShowHint = True
+      object ConfigureSoundButton: TButton
+        Left = 8
+        Top = 8
+        Width = 257
+        Height = 25
+        Caption = 'Configure Common Server Event Sounds'
         TabOrder = 0
-      end
-      object AnswerSoundButton: TButton
-        Left = 247
-        Top = 10
-        Width = 20
-        Height = 21
-        Caption = '...'
-        TabOrder = 1
-        OnClick = AnswerSoundButtonClick
-      end
-      object HangupSoundEdit: TEdit
-        Left = 72
-        Top = 36
-        Width = 169
-        Height = 21
-        Hint = 'Sound file to play when disconnecting'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 2
-      end
-      object HangupSoundButton: TButton
-        Left = 247
-        Top = 36
-        Width = 20
-        Height = 21
-        Caption = '...'
-        TabOrder = 3
-        OnClick = HangupSoundButtonClick
+        OnClick = ConfigureSoundButtonClick
       end
     end
   end
