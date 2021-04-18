@@ -92,7 +92,7 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 static BOOL iniSetStringWithGlobalDefault(str_list_t* lp, const char* section, const char* key
 	,const char* value, const char* global_value, ini_style_t* style)
 {
-	if(strcmp(value, global_value) == 0) {
+	if(value != global_value && strcmp(value, global_value) == 0) {
 		iniRemoveKey(lp, section, key);
 		return iniKeyExists(*lp, section, key) == FALSE;
 	}
@@ -807,6 +807,9 @@ style.section_separator = "";
 
 		/* JavaScript operating parameters */
 		if(!sbbs_set_js_settings(lp,section,&global->js,NULL,&style))
+			break;
+
+		if(!sbbs_set_sound_settings(lp, section, &global->sound, &global->sound, &style))
 			break;
 	}
 
