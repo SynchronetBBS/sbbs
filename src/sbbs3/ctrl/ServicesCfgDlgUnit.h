@@ -25,19 +25,12 @@ __published:	// IDE-managed Components
     TEdit *NetworkInterfaceEdit;
     TCheckBox *HostnameCheckBox;
     TTabSheet *SoundTabSheet;
-    TLabel *AnswerSoundLabel;
-    TLabel *HangupSoundLabel;
-    TEdit *AnswerSoundEdit;
-    TButton *AnswerSoundButton;
-    TEdit *HangupSoundEdit;
-    TButton *HangupSoundButton;
     TButton *OKBtn;
     TButton *CancelBtn;
     TButton *ApplyBtn;
     TButton *OKButton;
     TButton *CancelButton;
     TButton *ApplyButton;
-    TOpenDialog *OpenDialog;
     TTabSheet *ServicesTabSheet;
     TCheckListBox *CheckListBox;
     TValueListEditor *ValueListEditor;
@@ -46,10 +39,9 @@ __published:	// IDE-managed Components
     TMenuItem *ServiceRemove;
     TValueListEditor *GlobalValueListEditor;
     TLabel *GlobalSettingsLabel;
+    TButton *ConfigureSoundButton;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall OKButtonClick(TObject *Sender);
-    void __fastcall AnswerSoundButtonClick(TObject *Sender);
-    void __fastcall HangupSoundButtonClick(TObject *Sender);
     void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
     void __fastcall CheckListBoxClick(TObject *Sender);
     void __fastcall ValueListEditorValidate(TObject *Sender, int ACol,
@@ -61,6 +53,7 @@ __published:	// IDE-managed Components
     void __fastcall GlobalValueListEditorValidate(TObject *Sender,
           int ACol, int ARow, const AnsiString KeyName,
           const AnsiString KeyValue);
+    void __fastcall ConfigureSoundButtonClick(TObject *Sender);
 private:	// User declarations
 	char iniFilename[MAX_PATH+1];
     str_list_t ini;

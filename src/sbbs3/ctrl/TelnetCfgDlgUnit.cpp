@@ -40,6 +40,7 @@
 #include "MainFormUnit.h"
 #include "TextFileEditUnit.h"
 #include "TelnetCfgDlgUnit.h"
+#include "soundCfgDlgUnit.h"
 #include <stdio.h>			// sprintf()
 #include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------
@@ -88,8 +89,6 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
     else
         MaxConConEdit->Text=AnsiString((int)MainForm->bbs_startup.max_concurrent_connections);
     AutoStartCheckBox->Checked=MainForm->SysAutoStart;
-    AnswerSoundEdit->Text=AnsiString(MainForm->bbs_startup.sound.answer);
-    HangupSoundEdit->Text=AnsiString(MainForm->bbs_startup.sound.hangup);
     CmdLogCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_DEBUG_TELNET;
     TelnetGaCheckBox->Checked
     	=!(MainForm->bbs_startup.options&BBS_OPT_NO_TELNET_GA);
@@ -137,10 +136,6 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->bbs_startup.max_concurrent_connections=MaxConConEdit->Text.ToIntDef(0);
 
     MainForm->SysAutoStart=AutoStartCheckBox->Checked;
-    SAFECOPY(MainForm->bbs_startup.sound.answer
-        ,AnswerSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->bbs_startup.sound.hangup
-        ,HangupSoundEdit->Text.c_str());
 	if(TelnetGaCheckBox->Checked==false)
     	MainForm->bbs_startup.options|=BBS_OPT_NO_TELNET_GA;
     else
@@ -189,26 +184,6 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TTelnetCfgDlg::AnswerSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=AnswerSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	AnswerSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-    }
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TTelnetCfgDlg::HangupSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=HangupSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	HangupSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-	}
-}
-//---------------------------------------------------------------------------
-
 void __fastcall TTelnetCfgDlg::RLoginEnabledCheckBoxClick(TObject *Sender)
 {
     RLoginPortEdit->Enabled = RLoginEnabledCheckBox->Checked;
@@ -242,6 +217,11 @@ void __fastcall TTelnetCfgDlg::SshEnabledCheckBoxClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-
-
+void __fastcall TTelnetCfgDlg::ConfigureSoundButtonClick(TObject *Sender)
+{
+    SoundCfgDlg->sound = &MainForm->bbs_startup.sound;
+    SoundCfgDlg->Caption = "Terminal Server Sound Configuration";
+    SoundCfgDlg->ShowModal();
+}
+//---------------------------------------------------------------------------
 

@@ -41,8 +41,8 @@
 #include "MainFormUnit.h"
 #include "WebCfgDlgUnit.h"
 #include "TextFileEditUnit.h"
+#include "SoundCfgDlgUnit.h"
 #include <stdio.h>			// sprintf()
-#include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -103,10 +103,6 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
     CGIExtEdit->Text=AnsiString(str);
 
     CGICheckBox->Checked=!(MainForm->web_startup.options&WEB_OPT_NO_CGI);
-
-    AnswerSoundEdit->Text=AnsiString(MainForm->web_startup.sound.answer);
-    HangupSoundEdit->Text=AnsiString(MainForm->web_startup.sound.hangup);
-    HackAttemptSoundEdit->Text=AnsiString(MainForm->web_startup.sound.hack);
 
 	DebugTxCheckBox->Checked=MainForm->web_startup.options&WEB_OPT_DEBUG_TX;
 	DebugRxCheckBox->Checked=MainForm->web_startup.options&WEB_OPT_DEBUG_RX;
@@ -173,13 +169,6 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
     else
 	    MainForm->web_startup.options&=~WEB_OPT_NO_CGI;
 
-    SAFECOPY(MainForm->web_startup.sound.answer
-        ,AnswerSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->web_startup.sound.hangup
-        ,HangupSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->web_startup.sound.hack
-        ,HackAttemptSoundEdit->Text.c_str());
-
 	if(DebugTxCheckBox->Checked==true)
     	MainForm->web_startup.options|=WEB_OPT_DEBUG_TX;
     else
@@ -202,33 +191,6 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
 	    MainForm->web_startup.options&=~WEB_OPT_VIRTUAL_HOSTS;
 
     MainForm->SaveIniSettings(Sender);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWebCfgDlg::AnswerSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=AnswerSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	AnswerSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-    }
-}
-//---------------------------------------------------------------------------
-void __fastcall TWebCfgDlg::HangupSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=HangupSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	HangupSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-	}
-}
-//---------------------------------------------------------------------------
-void __fastcall TWebCfgDlg::HackAttemptSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=HackAttemptSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	HackAttemptSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-	}
 }
 //---------------------------------------------------------------------------
 
@@ -290,6 +252,14 @@ void __fastcall TWebCfgDlg::TlsEnableCheckBoxClick(TObject *Sender)
     TlsPortEdit->Enabled = enabled;
     TlsPortLabel->Enabled = enabled;
     HSTSEnableCheckBox->Enabled = enabled;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TWebCfgDlg::ConfigureSoundButtonClick(TObject *Sender)
+{
+    SoundCfgDlg->sound = &MainForm->web_startup.sound;
+    SoundCfgDlg->Caption = "Web Server Sound Configuration";
+    SoundCfgDlg->ShowModal();
 }
 //---------------------------------------------------------------------------
 

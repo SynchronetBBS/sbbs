@@ -12,7 +12,8 @@
       EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
       TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
       ServicesCfgDlgUnit.obj ..\sbbs_ini.obj PreviewFormUnit.obj WebFormUnit.obj 
-      WebCfgDlgUnit.obj LoginAttemptsFormUnit.obj"/>
+      WebCfgDlgUnit.obj LoginAttemptsFormUnit.obj 
+      SoundCfgDlgUnit.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -25,7 +26,8 @@
       EventsFormUnit.dfm ConfigWizardUnit.dfm ServicesFormUnit.dfm 
       TelnetCfgDlgUnit.dfm MailCfgDlgUnit.dfm FtpCfgDlgUnit.dfm 
       ServicesCfgDlgUnit.dfm PreviewFormUnit.dfm WebFormUnit.dfm 
-      WebCfgDlgUnit.dfm LoginAttemptsFormUnit.dfm"/>
+      WebCfgDlgUnit.dfm LoginAttemptsFormUnit.dfm 
+      SoundCfgDlgUnit.dfm"/>
     <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib services.lib 
       ..\..\xpdev\bcc.win32.lib.debug\xpdev_mt.lib websrvr.lib"/>
     <LIBRARIES value="bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib soaprtl.lib bcbie.lib 
@@ -58,8 +60,8 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
-      -I$(BCB)\include -I$(BCB)\include\vcl 
+    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev 
+      -I..\..\smblib -I..\..\hash -I$(BCB)\include -I$(BCB)\include\vcl 
       -I..\..\..\3rdp\win32.release\cryptlib\include -I..\..\comio -src_suffix 
       cpp -DSBBS -DRINGBUF_SEM -DRINGBUF_MUTEX -DUSE_CRYPTLIB -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
@@ -115,6 +117,7 @@
       <FILE FILENAME="websrvr.lib" FORMNAME="" UNITNAME="websrvr.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="WebCfgDlgUnit.cpp" FORMNAME="WebCfgDlg" UNITNAME="WebCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="LoginAttemptsFormUnit.cpp" FORMNAME="LoginAttemptsForm" UNITNAME="LoginAttemptsFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="SoundCfgDlgUnit.cpp" FORMNAME="SoundCfgDlg" UNITNAME="SoundCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
@@ -124,8 +127,8 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
-MinorVer=18
-Release=1
+MinorVer=19
+Release=0
 Build=0
 Debug=0
 PreRelease=0
@@ -138,13 +141,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
-FileVersion=3.18.1.0
+FileVersion=3.19.0.0
 InternalName=
-LegalCopyright=(C) 2020 Rob Swindell
+LegalCopyright=(C) 2021 Rob Swindell
 LegalTrademarks=
 OriginalFilename=sbbsctrl.exe
 ProductName=Synchronet BBS
-ProductVersion=3.18b
+ProductVersion=3.19a
 Comments=
 
 [Excluded Packages]
@@ -214,9 +217,7 @@ Item26=..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
 
 [HistoryLists\hlDebugSourcePath]
 Count=3
-Item0=$(BCB)\source\vcl;C:\src\xpdev\;C:\src\sbbs3\
-Item1=$(BCB)\source\vcl;C:\src\xpdev\
-Item2=$(BCB)\source\vcl
+Item0=$(BCB)\source\vcl
 
 [HistoryLists\hlConditionals]
 Count=9
@@ -231,14 +232,14 @@ Item7=SBBS;SMB_GETMSGTXT;_DEBUG
 Item8=SBBS;SMB_GETMSGTXT
 
 [Debugging]
-DebugSourceDirs=$(BCB)\source\vcl;C:\src\xpdev\;C:\src\sbbs3\
+DebugSourceDirs=$(BCB)\source\vcl
 
 [Parameters]
 RunParams=
 Launcher=
 UseLauncher=0
 DebugCWD=
-HostApplication=C:\src\sbbs3\ctrl\sbbsctrl.exe
+HostApplication=
 RemoteHost=
 RemotePath=
 RemoteLauncher=

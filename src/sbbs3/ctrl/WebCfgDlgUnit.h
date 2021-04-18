@@ -68,15 +68,6 @@ __published:	// IDE-managed Components
     TCheckBox *DebugRxCheckBox;
     TCheckBox *AccessLogCheckBox;
     TTabSheet *SoundTabSheet;
-    TLabel *AnswerSoundLabel;
-    TLabel *HangupSoundLabel;
-    TLabel *HackAttemptSoundLabel;
-    TEdit *AnswerSoundEdit;
-    TButton *AnswerSoundButton;
-    TEdit *HangupSoundEdit;
-    TButton *HangupSoundButton;
-    TEdit *HackAttemptSoundEdit;
-    TButton *HackAttemptSoundButton;
     TButton *OKBtn;
     TButton *CancelBtn;
     TButton *ApplyBtn;
@@ -109,16 +100,15 @@ __published:	// IDE-managed Components
     TLabel *AuthTypesLabel;
     TEdit *AuthTypesEdit;
     TCheckBox *HSTSEnableCheckBox;
+    TButton *ConfigureSoundButton;
     void __fastcall FormShow(TObject *Sender);
-    void __fastcall AnswerSoundButtonClick(TObject *Sender);
-    void __fastcall HangupSoundButtonClick(TObject *Sender);
-    void __fastcall HackAttemptSoundButtonClick(TObject *Sender);
     void __fastcall OKBtnClick(TObject *Sender);
     void __fastcall AccessLogCheckBoxClick(TObject *Sender);
     void __fastcall CGIEnvButtonClick(TObject *Sender);
     void __fastcall WebHandlersButtonClick(TObject *Sender);
     void __fastcall CGICheckBoxClick(TObject *Sender);
     void __fastcall TlsEnableCheckBoxClick(TObject *Sender);
+    void __fastcall ConfigureSoundButtonClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TWebCfgDlg(TComponent* Owner);

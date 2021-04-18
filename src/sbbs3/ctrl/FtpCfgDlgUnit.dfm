@@ -1,6 +1,6 @@
 object FtpCfgDlg: TFtpCfgDlg
-  Left = 1282
-  Top = 534
+  Left = 1021
+  Top = 407
   BorderStyle = bsDialog
   Caption = 'FTP Server Configuration'
   ClientHeight = 245
@@ -20,8 +20,8 @@ object FtpCfgDlg: TFtpCfgDlg
     Top = 3
     Width = 278
     Height = 199
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = SoundTabSheet
+    TabIndex = 4
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -348,86 +348,14 @@ object FtpCfgDlg: TFtpCfgDlg
     object SoundTabSheet: TTabSheet
       Caption = 'Sound'
       ImageIndex = 2
-      object AnswerSoundLabel: TLabel
-        Left = 7
-        Top = 10
-        Width = 65
-        Height = 20
-        AutoSize = False
-        Caption = 'Connect'
-      end
-      object HangupSoundLabel: TLabel
-        Left = 7
-        Top = 36
-        Width = 65
-        Height = 20
-        AutoSize = False
-        Caption = 'Disconnect'
-      end
-      object HackAttemptSoundLabel: TLabel
-        Left = 7
-        Top = 62
-        Width = 65
-        Height = 20
-        AutoSize = False
-        Caption = 'Hack Attempt'
-      end
-      object AnswerSoundEdit: TEdit
-        Left = 85
-        Top = 10
-        Width = 156
-        Height = 24
-        Hint = 'Sound file to play when users connect'
-        ParentShowHint = False
-        ShowHint = True
+      object ConfigureSoundButton: TButton
+        Left = 8
+        Top = 8
+        Width = 257
+        Height = 25
+        Caption = 'Configure Common Server Event Sounds'
         TabOrder = 0
-      end
-      object AnswerSoundButton: TButton
-        Left = 247
-        Top = 10
-        Width = 20
-        Height = 21
-        Caption = '...'
-        TabOrder = 1
-        OnClick = AnswerSoundButtonClick
-      end
-      object HangupSoundEdit: TEdit
-        Left = 85
-        Top = 36
-        Width = 156
-        Height = 24
-        Hint = 'Sound file to play when users disconnect'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 2
-      end
-      object HangupSoundButton: TButton
-        Left = 247
-        Top = 36
-        Width = 20
-        Height = 21
-        Caption = '...'
-        TabOrder = 3
-        OnClick = HangupSoundButtonClick
-      end
-      object HackAttemptSoundEdit: TEdit
-        Left = 85
-        Top = 62
-        Width = 156
-        Height = 24
-        Hint = 'Sound file to play when hack attempts are detected'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 4
-      end
-      object HackAttemptSoundButton: TButton
-        Left = 247
-        Top = 62
-        Width = 20
-        Height = 21
-        Caption = '...'
-        TabOrder = 5
-        OnClick = HackAttemptSoundButtonClick
+        OnClick = ConfigureSoundButtonClick
       end
     end
   end

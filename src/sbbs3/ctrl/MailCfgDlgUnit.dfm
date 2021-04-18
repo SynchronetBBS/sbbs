@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 3
     Width = 278
     Height = 199
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = SoundTabSheet
+    TabIndex = 5
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -502,7 +502,7 @@ object MailCfgDlg: TMailCfgDlg
         Checked = True
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 3
         TabStop = True
         OnClick = DNSRadioButtonClick
       end
@@ -514,7 +514,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Host name or IP address of your ISP'#39's DNS server'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 5
       end
       object TcpDnsCheckBox: TCheckBox
         Left = 203
@@ -536,7 +536,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Use Relay Server'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 4
         OnClick = DNSRadioButtonClick
       end
       object DeliveryAttemptsEdit: TEdit
@@ -581,7 +581,7 @@ object MailCfgDlg: TMailCfgDlg
           'efinite)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 6
       end
     end
     object RelayTabSheet: TTabSheet
@@ -792,6 +792,15 @@ object MailCfgDlg: TMailCfgDlg
         Caption = '...'
         TabOrder = 3
         OnClick = OutboundSoundButtonClick
+      end
+      object ConfigureSoundButton: TButton
+        Left = 4
+        Top = 88
+        Width = 261
+        Height = 25
+        Caption = 'Configure Common Server Event Sounds'
+        TabOrder = 6
+        OnClick = ConfigureSoundButtonClick
       end
     end
     object DNSBLTabSheet: TTabSheet

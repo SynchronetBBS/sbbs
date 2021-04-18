@@ -140,6 +140,7 @@ __published:
     TLabel *TLSPOP3PortLabel;
     TEdit *TLSPOP3PortEdit;
     TCheckBox *TLSPOP3EnabledCheckBox;
+    TButton *ConfigureSoundButton;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
@@ -154,6 +155,7 @@ __published:
     void __fastcall RelayAuthRadioButtonClick(TObject *Sender);
     void __fastcall UseSubPortCheckBoxClick(TObject *Sender);
     void __fastcall TLSSubPortCheckBoxClick(TObject *Sender);
+    void __fastcall ConfigureSoundButtonClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TMailCfgDlg(TComponent* AOwner);

@@ -26,8 +26,8 @@
 #include "MainFormUnit.h"
 #include "FtpCfgDlgUnit.h"
 #include "TextFileEditUnit.h"
+#include "SoundCfgDlgUnit.h"
 #include <stdio.h>			// sprintf()
-#include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 TFtpCfgDlg *FtpCfgDlg;
@@ -72,9 +72,6 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     MaxConConEdit->Text = AnsiString((int)MainForm->ftp_startup.max_concurrent_connections);
 
     IndexFileNameEdit->Text=AnsiString(MainForm->ftp_startup.index_file_name);
-    AnswerSoundEdit->Text=AnsiString(MainForm->ftp_startup.sound.answer);
-    HangupSoundEdit->Text=AnsiString(MainForm->ftp_startup.sound.hangup);
-    HackAttemptSoundEdit->Text=AnsiString(MainForm->ftp_startup.sound.hack);    
     CmdLogCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_RX;
 	DebugTxCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_TX;
 	DebugDataCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_DATA;
@@ -135,13 +132,6 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     SAFECOPY(MainForm->ftp_startup.index_file_name
         ,IndexFileNameEdit->Text.c_str());
 
-    SAFECOPY(MainForm->ftp_startup.sound.answer
-        ,AnswerSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->ftp_startup.sound.hangup
-        ,HangupSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->ftp_startup.sound.hack
-        ,HackAttemptSoundEdit->Text.c_str());
-
 	if(DebugTxCheckBox->Checked==true)
     	MainForm->ftp_startup.options|=FTP_OPT_DEBUG_TX;
     else
@@ -183,35 +173,6 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TFtpCfgDlg::AnswerSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=AnswerSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	AnswerSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-    }
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TFtpCfgDlg::HangupSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=HangupSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	HangupSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-	}
-}
-//---------------------------------------------------------------------------
-void __fastcall TFtpCfgDlg::HackAttemptSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=HackAttemptSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	HackAttemptSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-	}
-}
-//---------------------------------------------------------------------------
-
 void __fastcall TFtpCfgDlg::AutoIndexCheckBoxClick(TObject *Sender)
 {
     IndexFileNameEdit->Enabled=AutoIndexCheckBox->Checked;
@@ -229,6 +190,14 @@ void __fastcall TFtpCfgDlg::AllowQWKCheckBoxClick(TObject *Sender)
 {
     QwkTimeoutEdit->Enabled = AllowQWKCheckBox->Checked;
     QwkTimeoutLabel->Enabled = AllowQWKCheckBox->Checked;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFtpCfgDlg::ConfigureSoundButtonClick(TObject *Sender)
+{
+    SoundCfgDlg->sound = &MainForm->ftp_startup.sound;
+    SoundCfgDlg->Caption = "FTP Server Sound Configuration";
+    SoundCfgDlg->ShowModal();
 }
 //---------------------------------------------------------------------------
 
