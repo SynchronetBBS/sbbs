@@ -58,19 +58,16 @@ typedef struct {
 	BOOL	(*setuid)(BOOL);
 
 	/* Paths */
-	char	ssjs_ext[16];			/* Server-Side JavaScript file extension */
-	char**	cgi_ext;				/* CGI Extensions */
-	char	cgi_dir[128];			/* relative to root_dir (all files executable) */
-    char    ctrl_dir[128];
-    char	root_dir[128];			/* HTML root directory */
-    char	error_dir[128];			/* relative to root_dir */
-    char	temp_dir[128];
-    char**	index_file_name;		/* Index filenames */
-	char	logfile_base[128];		/* Logfile base name (date is appended) */
-	char	answer_sound[128];
-	char	hangup_sound[128];
-    char	hack_sound[128];
-	char	ini_fname[128];
+	char	ssjs_ext[16];							/* Server-Side JavaScript file extension */
+	char**	cgi_ext;								/* CGI Extensions */
+	char	cgi_dir[INI_MAX_VALUE_LEN];				/* relative to root_dir (all files executable) */
+    char    ctrl_dir[INI_MAX_VALUE_LEN];
+    char	root_dir[INI_MAX_VALUE_LEN];			/* HTML root directory */
+    char	error_dir[INI_MAX_VALUE_LEN];			/* relative to root_dir */
+    char	temp_dir[INI_MAX_VALUE_LEN];
+    char**	index_file_name;						/* Index filenames */
+	char	logfile_base[INI_MAX_VALUE_LEN];		/* Logfile base name (date is appended) */
+	char	ini_fname[INI_MAX_VALUE_LEN];
 
 	/* Misc */
     char	host_name[128];
@@ -83,6 +80,8 @@ typedef struct {
 	char	default_cgi_content[128];
 	char	default_auth_list[128];
 	uint16_t	outbuf_drain_timeout;
+
+	struct startup_sound_settings sound;
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

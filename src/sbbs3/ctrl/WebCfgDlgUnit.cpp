@@ -104,9 +104,9 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
 
     CGICheckBox->Checked=!(MainForm->web_startup.options&WEB_OPT_NO_CGI);
 
-    AnswerSoundEdit->Text=AnsiString(MainForm->web_startup.answer_sound);
-    HangupSoundEdit->Text=AnsiString(MainForm->web_startup.hangup_sound);
-    HackAttemptSoundEdit->Text=AnsiString(MainForm->web_startup.hack_sound);
+    AnswerSoundEdit->Text=AnsiString(MainForm->web_startup.sound.answer);
+    HangupSoundEdit->Text=AnsiString(MainForm->web_startup.sound.hangup);
+    HackAttemptSoundEdit->Text=AnsiString(MainForm->web_startup.sound.hack);
 
 	DebugTxCheckBox->Checked=MainForm->web_startup.options&WEB_OPT_DEBUG_TX;
 	DebugRxCheckBox->Checked=MainForm->web_startup.options&WEB_OPT_DEBUG_RX;
@@ -173,11 +173,11 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
     else
 	    MainForm->web_startup.options&=~WEB_OPT_NO_CGI;
 
-    SAFECOPY(MainForm->web_startup.answer_sound
+    SAFECOPY(MainForm->web_startup.sound.answer
         ,AnswerSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->web_startup.hangup_sound
+    SAFECOPY(MainForm->web_startup.sound.hangup
         ,HangupSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->web_startup.hack_sound
+    SAFECOPY(MainForm->web_startup.sound.hack
         ,HackAttemptSoundEdit->Text.c_str());
 
 	if(DebugTxCheckBox->Checked==true)

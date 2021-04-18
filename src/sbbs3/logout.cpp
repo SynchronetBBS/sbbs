@@ -148,6 +148,11 @@ void sbbs_t::logout()
 	sys_status&=~SS_USERON;
 	answertime=now; // In case we're re-logging on
 
+#ifdef _WIN32
+	if(startup->sound.logout[0] && !(startup->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+
 	lprintf(LOG_DEBUG, "logout completed");
 }
 

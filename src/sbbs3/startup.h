@@ -52,6 +52,14 @@ struct login_attempt_settings {
 	ulong	filter_threshold;
 };
 
+struct startup_sound_settings {
+	char	answer[INI_MAX_VALUE_LEN];
+	char	login[INI_MAX_VALUE_LEN];
+	char	logout[INI_MAX_VALUE_LEN];
+	char	hangup[INI_MAX_VALUE_LEN];
+	char	hack[INI_MAX_VALUE_LEN];
+};
+
 typedef struct {
 
 	char	ctrl_dir[INI_MAX_VALUE_LEN];
@@ -66,6 +74,7 @@ typedef struct {
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 	struct login_attempt_settings login_attempt;
+	struct startup_sound_settings sound;
 
 } global_startup_t;
 
@@ -112,13 +121,11 @@ typedef struct {
 	BOOL	(*setuid)(BOOL force);
 
 	/* Paths */
-    char    ctrl_dir[128];
-    char	dosemu_path[128];
-    char    dosemuconf_path[128];
-    char	temp_dir[128];
-	char	answer_sound[128];
-	char	hangup_sound[128];
-	char	ini_fname[128];
+    char    ctrl_dir[INI_MAX_VALUE_LEN];
+    char	dosemu_path[INI_MAX_VALUE_LEN];
+    char    dosemuconf_path[INI_MAX_VALUE_LEN];
+    char	temp_dir[INI_MAX_VALUE_LEN];
+	char	ini_fname[INI_MAX_VALUE_LEN];
 
 	/* Miscellaneous */
 	BOOL    usedosemu;
@@ -134,6 +141,7 @@ typedef struct {
 	/* JavaScript operating parameters */
 	js_startup_t js;
 
+	struct startup_sound_settings sound;
 	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
 	uint	max_concurrent_connections;

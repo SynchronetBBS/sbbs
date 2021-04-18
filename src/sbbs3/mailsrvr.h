@@ -75,20 +75,20 @@ typedef struct {
 	BOOL	(*setuid)(BOOL force);
 
 	/* Paths */
-    char    ctrl_dir[128];
-	char    temp_dir[128];
-	char	ini_fname[128];
+    char    ctrl_dir[INI_MAX_VALUE_LEN];
+	char    temp_dir[INI_MAX_VALUE_LEN];
+	char	ini_fname[INI_MAX_VALUE_LEN];
 
 	/* Strings */
     char	dns_server[128];
     char	default_user[128];
     char	dnsbl_tag[32];		// Tag to add to blacklisted subject
 	char	dnsbl_hdr[32];		// Header field to add to msg header
-	char	inbound_sound[128];
-	char	outbound_sound[128];
-    char	pop3_sound[128];
-	char	newmail_notice[256];
-	char	forward_notice[256];
+	char	inbound_sound[INI_MAX_VALUE_LEN];
+	char	outbound_sound[INI_MAX_VALUE_LEN];
+    char	pop3_sound[INI_MAX_VALUE_LEN];
+	char	newmail_notice[INI_MAX_VALUE_LEN];
+	char	forward_notice[INI_MAX_VALUE_LEN];
 
 	/* Misc */
     char	host_name[128];
@@ -106,6 +106,8 @@ typedef struct {
 
 	/* JavaScript operating parameters */
 	js_startup_t js;
+
+	struct startup_sound_settings sound;
 
 	/* Login Attempt parameters */
 	struct login_attempt_settings login_attempt;
