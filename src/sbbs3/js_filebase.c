@@ -1219,7 +1219,7 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool result = JS_TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
 	file_t file;
-	if((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_index)) == SMB_SUCCESS) {
+	if((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_normal)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		if(delfile && remove(getfilepath(scfg, &file, path)) != 0) {
 			JS_ReportError(cx, "%d removing '%s'", errno, path);
@@ -1452,7 +1452,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	{"get_names",		js_get_file_names,	3, JSTYPE_ARRAY
 		,JSDOCSTR("[filespec] [,since-time=0] [,sort=true [,order]]")
 		,JSDOCSTR("get a list of index-formatted (e.g. shortened) filenames (strings) from file base index"
-			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_A</tt>")
+			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_AI</tt>")
 		,31900
 	},
 	{"get_path",		js_get_file_path,	1, JSTYPE_STRING
