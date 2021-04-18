@@ -7,8 +7,8 @@
 #include "TextFileEditUnit.h"
 #include "ServicesCfgDlgUnit.h"
 #include "CodeInputFormUnit.h"
+#include "SoundCfgDlgUnit.h"
 #include <stdio.h>			// sprintf()
-#include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -32,8 +32,6 @@ void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
     }
     AutoStartCheckBox->Checked=MainForm->ServicesAutoStart;
 
-    AnswerSoundEdit->Text=AnsiString(MainForm->services_startup.sound.answer);
-    HangupSoundEdit->Text=AnsiString(MainForm->services_startup.sound.hangup);
     HostnameCheckBox->Checked
         =!(MainForm->services_startup.options&BBS_OPT_NO_HOST_LOOKUP);
 
@@ -82,11 +80,6 @@ void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
 
     MainForm->ServicesAutoStart=AutoStartCheckBox->Checked;
 
-    SAFECOPY(MainForm->services_startup.sound.answer
-        ,AnswerSoundEdit->Text.c_str());
-    SAFECOPY(MainForm->services_startup.sound.hangup
-        ,HangupSoundEdit->Text.c_str());
-
 	if(HostnameCheckBox->Checked==false)
     	MainForm->services_startup.options|=BBS_OPT_NO_HOST_LOOKUP;
     else
@@ -100,26 +93,6 @@ void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
 
     MainForm->SaveSettings(Sender);
 
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TServicesCfgDlg::AnswerSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=AnswerSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	AnswerSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-    }
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TServicesCfgDlg::HangupSoundButtonClick(TObject *Sender)
-{
-	OpenDialog->FileName=HangupSoundEdit->Text;
-	if(OpenDialog->Execute()==true) {
-    	HangupSoundEdit->Text=OpenDialog->FileName;
-        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
-	}
 }
 
 //---------------------------------------------------------------------------
@@ -218,6 +191,11 @@ void __fastcall TServicesCfgDlg::GlobalValueListEditorValidate(
         ,KeyName.c_str(), KeyValue.c_str(), /* style: */NULL);
 }
 //---------------------------------------------------------------------------
-
-
+void __fastcall TServicesCfgDlg::ConfigureSoundButtonClick(TObject *Sender)
+{
+    SoundCfgDlg->sound = &MainForm->services_startup.sound;
+    SoundCfgDlg->Caption = "Services Sound Configuration";
+    SoundCfgDlg->ShowModal();
+}
+//---------------------------------------------------------------------------
 

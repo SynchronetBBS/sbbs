@@ -109,9 +109,6 @@ __published:
     TLabel *LogLevelLabel;
     TLabel *Label16;
     TEdit *JS_LoadPathEdit;
-    TLabel *ErrorSoundLabel;
-    TEdit *ErrorSoundEdit;
-    TButton *ErrorSoundButton;
     TOpenDialog *OpenDialog;
     TTabSheet *SecurityTabSheet;
     TGroupBox *FailedLoginAttemptGroupBox;
@@ -128,6 +125,11 @@ __published:
         TLabel *LoginAttemptFilterThresholdLabel;
         TEdit *LoginAttemptFilterThresholdEdit;
     TButton *HelpBtn;
+    TTabSheet *Sound;
+    TButton *ConfigureSoundButton;
+    TLabel *ErrorSoundLabel;
+    TEdit *ErrorSoundEdit;
+    TButton *ErrorSoundButton;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);
@@ -138,6 +140,7 @@ __published:
     void __fastcall LogFontButtonClick(TObject *Sender);
     void __fastcall ErrorSoundButtonClick(TObject *Sender);
     void __fastcall HelpBtnClick(TObject *Sender);
+    void __fastcall ConfigureSoundButtonClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TPropertiesDlg(TComponent* AOwner);

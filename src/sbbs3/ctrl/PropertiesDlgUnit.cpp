@@ -44,6 +44,7 @@
 #include "MailFormUnit.h"
 #include "ServicesFormUnit.h"
 #include "PropertiesDlgUnit.h"
+#include "SoundCfgDlgUnit.h"
 #include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
@@ -216,4 +217,13 @@ void __fastcall TPropertiesDlg::HelpBtnClick(TObject *Sender)
     ShellExecute(Handle, "open", url.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 }
 //---------------------------------------------------------------------------
+
+void __fastcall TPropertiesDlg::ConfigureSoundButtonClick(TObject *Sender)
+{
+    SoundCfgDlg->sound = &MainForm->global.sound;
+    SoundCfgDlg->Caption = "Server Event Sound Configuration";
+    SoundCfgDlg->ShowModal();
+}
+//---------------------------------------------------------------------------
+
 

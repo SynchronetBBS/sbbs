@@ -26,6 +26,7 @@
 #include "MainFormUnit.h"
 #include "MailCfgDlgUnit.h"
 #include "TextFileEditUnit.h"
+#include "SoundCfgDlgUnit.h"
 #include <stdio.h>			// sprintf()
 #include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------
@@ -493,4 +494,12 @@ void __fastcall TMailCfgDlg::TLSSubPortCheckBoxClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+
+void __fastcall TMailCfgDlg::ConfigureSoundButtonClick(TObject *Sender)
+{
+    SoundCfgDlg->sound = &MainForm->mail_startup.sound;
+    SoundCfgDlg->Caption = "Mail Server Sound Configuration";
+    SoundCfgDlg->ShowModal();
+}
+//---------------------------------------------------------------------------
 

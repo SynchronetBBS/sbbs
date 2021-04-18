@@ -58,12 +58,6 @@ __published:
     TTabSheet *GeneralTabSheet;
     TTabSheet *TelnetTabSheet;
     TTabSheet *SoundTabSheet;
-    TLabel *AnswerSoundLabel;
-    TEdit *AnswerSoundEdit;
-    TButton *AnswerSoundButton;
-    TLabel *HnagupSoundLabel;
-    TEdit *HangupSoundEdit;
-    TButton *HangupSoundButton;
     TCheckBox *CmdLogCheckBox;
     TCheckBox *AutoStartCheckBox;
     TLabel *FirstNodeLabel;
@@ -101,13 +95,13 @@ __published:
     TEdit *MaxConConEdit;
     TLabel *SshConnectTimeoutLabel;
     TEdit *SshConnTimeoutEdit;
+    TButton *ConfigureSoundButton;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
-	void __fastcall AnswerSoundButtonClick(TObject *Sender);
-	void __fastcall HangupSoundButtonClick(TObject *Sender);
     void __fastcall RLoginEnabledCheckBoxClick(TObject *Sender);
     void __fastcall RLoginIPallowButtonClick(TObject *Sender);
     void __fastcall SshEnabledCheckBoxClick(TObject *Sender);
+    void __fastcall ConfigureSoundButtonClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TTelnetCfgDlg(TComponent* AOwner);
