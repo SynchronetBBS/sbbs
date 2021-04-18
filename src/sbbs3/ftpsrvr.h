@@ -63,13 +63,10 @@ typedef struct {
     BOOL	(*setuid)(BOOL force);
 
 	/* Paths */
-    char    ctrl_dir[128];
+    char    ctrl_dir[INI_MAX_VALUE_LEN];
     char	index_file_name[64];
-    char	temp_dir[128];
-	char	answer_sound[128];
-	char	hangup_sound[128];
-    char	hack_sound[128];
-	char	ini_fname[128];
+    char	temp_dir[INI_MAX_VALUE_LEN];
+	char	ini_fname[INI_MAX_VALUE_LEN];
 
 	/* Misc */
     char	host_name[128];
@@ -78,6 +75,8 @@ typedef struct {
 	int		log_level;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
+
+	struct startup_sound_settings sound;
 
 	/* Login Attempt parameters */
 	struct login_attempt_settings login_attempt;

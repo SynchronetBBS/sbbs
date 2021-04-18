@@ -4386,8 +4386,8 @@ void node_thread(void* arg)
 	}
 
 #ifdef _WIN32
-	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE))
-		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
+	if(startup->sound.hangup[0] && !(startup->options&BBS_OPT_MUTE))
+		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
 	sbbs->hangup();	/* closes sockets, calls client_off, and shuts down the output_thread */
@@ -5337,8 +5337,8 @@ NO_SSH:
 		}
 
 #ifdef _WIN32
-		if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE))
-			PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+		if(startup->sound.answer[0] && !(startup->options&BBS_OPT_MUTE))
+			PlaySound(startup->sound.answer, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
 		/* Purge (flush) any pending input or output data */

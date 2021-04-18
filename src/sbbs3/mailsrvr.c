@@ -955,8 +955,13 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* prot, const ch
 	if(addr!=NULL) {
 		SAFEPRINTF(reason,"%s LOGIN", prot);
 		count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
-		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
+		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 			hacklog(&scfg, reason, user, passwd, host, addr);
+#ifdef _WIN32
+			if(startup->sound.hack[0] && !(startup->options&MAIL_OPT_MUTE)) 
+				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+		}
 		inet_addrtop(addr, ip, sizeof(ip));
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 			SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
@@ -1338,7 +1343,10 @@ static void pop3_thread(void* arg)
 			lprintf(LOG_INFO,"%04d %s [%s] %s logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
 		SAFEPRINTF2(str,"%s: %s", client.protocol, user.alias);
 		status(str);
-
+#ifdef _WIN32
+		if(startup->sound.login[0] && !(startup->options&MAIL_OPT_MUTE)) 
+			PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 		SAFEPRINTF(smb.file,"%smail",scfg.data_dir);
 		if(smb_islocked(&smb)) {
 			lprintf(LOG_WARNING,"%04d %s <%s> !MAIL BASE LOCKED: %s",socket, client.protocol, user.alias, smb.last_error);
@@ -1706,6 +1714,10 @@ static void pop3_thread(void* arg)
 			sockprintf(socket,client.protocol,session,"-ERR UNSUPPORTED COMMAND: %s",buf);
 		}
 		if(user.number) {
+#ifdef _WIN32
+			if(startup->sound.logout[0] && !(startup->options&MAIL_OPT_MUTE)) 
+				PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 			if(!logoutuserdat(&scfg,&user,time(NULL),client.time))
 				lprintf(LOG_ERR,"%04d %s <%s> !ERROR in logoutuserdat", socket, client.protocol, user.alias);
 		}
@@ -4205,6 +4217,10 @@ static void smtp_thread(void* arg)
 				,socket,client.protocol, client_id, relay_user.alias, auth_login ? "LOGIN" : "PLAIN");
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);
+#ifdef _WIN32
+			if(startup->sound.login[0] && !(startup->options&MAIL_OPT_MUTE)) 
+				PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 			continue;
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
@@ -4299,6 +4315,10 @@ static void smtp_thread(void* arg)
 				,socket, client.protocol, client_id, relay_user.alias);
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);
+#ifdef _WIN32
+			if(startup->sound.login[0] && !(startup->options&MAIL_OPT_MUTE)) 
+				PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 			continue;
 		}
 		if(!strnicmp(buf,"AUTH",4)) {
@@ -5014,6 +5034,13 @@ static void smtp_thread(void* arg)
 			,socket, client.protocol, client_id, remain, ++stats.smtp_served);
 	}
 	free(mailproc_to_match);
+
+#ifdef _WIN32
+	if(relay_user.number) {
+		if(startup->sound.logout[0] && !(startup->options&MAIL_OPT_MUTE)) 
+			PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
+	}
+#endif
 
 	/* Must be last */
 	mail_close_socket(&socket, &session);
