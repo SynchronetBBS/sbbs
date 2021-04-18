@@ -16106,6 +16106,7 @@ object MainForm: TMainForm
     Left = 576
   end
   object SaveDialog: TSaveDialog
+    Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Left = 600
   end
   object LogTimer: TTimer
