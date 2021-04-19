@@ -7,10 +7,11 @@ load("file_size.js");
 
 "use strict";
 
-var detail = 0;
+var detail = FileBase.DETAIL.NORM;
 var min_size = 1024;
 var dir_list = [];
 var exclude = [];
+var json_space = 4;
 var hash_type;
 var options = {};
 for(var i = 0; i < argc; i++) {
@@ -29,8 +30,9 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -sha1           search for duplicate SHA-1 sums (the default)");
 			writeln("  -crc32          search for duplicate CRC-32 sums");
 			writeln("  -md5            search for duplicate MD5 sums");
-			writeln("  -json           use JSON formatted output");
-			writeln("  -v              increase verbosity of output");
+			writeln("  -json[=space]   create JSON formatted output");
+			writeln("  -v              increase verbosity of JSON output");
+			writeln("  -dedupe         remove/delete duplicate files");
 			exit(0);
 		}
 		if(opt.indexOf("ex=") == 0) {
@@ -55,6 +57,11 @@ for(var i = 0; i < argc; i++) {
 			var j = 0;
 			while(opt[j++] == 'v')
 				detail++;
+			continue;
+		}
+		if(opt.indexOf("json=") == 0) {
+			options.json = true;
+			json_space = parseInt(opt.slice(5), 10);
 			continue;
 		}
 		switch(opt) {
@@ -93,6 +100,7 @@ for(var i in dir_list) {
 		if(exclude.indexOf(file.name.toUpperCase()) >= 0)
 			continue;
 		file.dir = dir_code;
+		file.path = base.get_path(file.name);
 		if(options.names) {
 			var fname = file.name.toLowerCase();
 			if(!name[fname])
@@ -135,16 +143,20 @@ for(var n in hash) {
 
 if(options.names) {
 	log(dupe.name.length + " duplicate file names (" + file_size_str(name_bytes,1 , 1) + " bytes)");
-	if(options.json)
-		writeln(JSON.stringify(dupe.name, null, 4));
+	if(options.dedupe)
+		writeln(remove_list(dupe.name, "name") + " files removed");
+	else if(options.json)
+		writeln(JSON.stringify(dupe.name, null, json_space));
 	else
 		print_list(dupe.name, "name");
 }
 if(hash_type) {
 	log(dupe.hash.length + " duplicate file " + hash_type.toUpperCase() + " sums of at least " 
 		+ min_size + " bytes (" + file_size_str(hash_bytes, 1, 1) + " bytes)");
-	if(options.json)
-		writeln(JSON.stringify(dupe.hash, null, 4));
+	if(options.dedupe)
+		writeln(remove_list(dupe.hash, hash_type) + " files removed");
+	else if(options.json)
+		writeln(JSON.stringify(dupe.hash, null, json_space));
 	else
 		print_list(dupe.hash, hash_type);
 }
@@ -152,10 +164,40 @@ if(hash_type) {
 function print_list(list, key)
 {
 	for(var i = 0; i < list.length; i++) {
-		writeln("Duplicate file " + key + " #" + (i + 1) + ": " + list[i][0][key]);
+		var value = list[i][0][key];
+		if(key == 'crc32')
+			value = format("%08X", value);
+		writeln("Duplicate file " + key + " #" + (i + 1) + ": " + value);
 		for(var j = 0; j < list[i].length; j++) {
-			var f = list[i][j];
-			writeln(format("  %s%s", file_area.dir[f.dir].path, f.name));
+			var file = list[i][j];
+			writeln("  " + file.path);
 		}
 	}
+}
+
+function remove_list(list, key)
+{
+	var removed = 0;
+	for(var i = 0; i < list.length; i++) {
+		var value = list[i][0][key];
+		if(key == 'crc32')
+			value = format("%08X", value);
+		writeln("Duplicates of file " + key + " #" + (i + 1) + ": " + value);
+		writeln("  Keeping " + list[i][0].path);
+		for(var j = 1; j < list[i].length; j++) {
+			var file = list[i][j];
+			var base = new FileBase(file.dir);
+			if(!base.open()) {
+				alert(base.errror);
+				break;
+			}
+			writeln("  Removing " + file.path);
+			if(base.remove(file.name, /* delete: */true))
+				removed++;
+			else
+				alert(base.error);
+			base.close();
+		}
+	}
+	return removed;
 }
