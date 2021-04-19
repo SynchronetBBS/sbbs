@@ -149,7 +149,7 @@ void sbbs_t::logout()
 	answertime=now; // In case we're re-logging on
 
 #ifdef _WIN32
-	if(startup->sound.logout[0] && !(startup->options&BBS_OPT_MUTE))
+	if(startup->sound.logout[0] && !sound_muted(&cfg))
 		PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 

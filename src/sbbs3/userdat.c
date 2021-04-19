@@ -3688,6 +3688,25 @@ BOOL set_sysop_availability(scfg_t* scfg, BOOL available)
 	return remove(sysop_available_semfile(scfg)) == 0;
 }
 
+static char* sound_muted_semfile(scfg_t* scfg)
+{
+	static char semfile[MAX_PATH+1];
+	SAFEPRINTF(semfile, "%ssound.muted", scfg->ctrl_dir);
+	return semfile;
+}
+
+BOOL sound_muted(scfg_t* scfg)
+{
+	return fexist(sound_muted_semfile(scfg));
+}
+
+BOOL set_sound_muted(scfg_t* scfg, BOOL muted)
+{
+	if(muted)
+		return ftouch(sound_muted_semfile(scfg));
+	return remove(sound_muted_semfile(scfg)) == 0;
+}
+
 /************************************/
 /* user .ini file get/set functions */
 /************************************/

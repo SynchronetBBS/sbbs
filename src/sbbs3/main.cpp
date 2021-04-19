@@ -4386,7 +4386,7 @@ void node_thread(void* arg)
 	}
 
 #ifdef _WIN32
-	if(startup->sound.hangup[0] && !(startup->options&BBS_OPT_MUTE))
+	if(startup->sound.hangup[0] && !sound_muted(&scfg))
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
@@ -5337,7 +5337,7 @@ NO_SSH:
 		}
 
 #ifdef _WIN32
-		if(startup->sound.answer[0] && !(startup->options&BBS_OPT_MUTE))
+		if(startup->sound.answer[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.answer, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 

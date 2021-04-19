@@ -128,6 +128,8 @@ DLLEXPORT time_t gettimeleft(scfg_t*, user_t*, time_t starttime);
 DLLEXPORT BOOL	check_name(scfg_t*, const char* name);
 DLLEXPORT BOOL	sysop_available(scfg_t*);
 DLLEXPORT BOOL	set_sysop_availability(scfg_t*, BOOL available);
+DLLEXPORT BOOL	sound_muted(scfg_t*);
+DLLEXPORT BOOL	set_sound_muted(scfg_t*, BOOL muted);
 
 DLLEXPORT int	lookup_user(scfg_t*, link_list_t*, const char* name);
 

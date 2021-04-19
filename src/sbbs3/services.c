@@ -326,7 +326,7 @@ static void badlogin(SOCKET sock, char* prot, char* user, char* passwd, char* ho
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, reason, user, passwd, host, addr);
 #ifdef _WIN32
-		if(startup->sound.hack[0] && !(startup->options&BBS_OPT_MUTE))
+		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 	}
@@ -460,7 +460,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist,BOOLEAN_TO_JSVAL(JS_TRUE));
 
 #ifdef _WIN32
-	if(startup->sound.login[0] && !(startup->options&BBS_OPT_MUTE)
+	if(startup->sound.login[0] && !sound_muted(&scfg)
 		&& !(service->options&BBS_OPT_MUTE))
 		PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
 #endif
@@ -1189,7 +1189,7 @@ static void js_service_thread(void* arg)
 		logoutuserdat(&scfg,&service_client.user,time(NULL),service_client.logintime);
 
 #ifdef _WIN32
-		if(startup->sound.logout[0] && !(startup->options&BBS_OPT_MUTE)
+		if(startup->sound.logout[0] && !sound_muted(&scfg)
 			&& !(service->options&BBS_OPT_MUTE))
 			PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 #endif
@@ -1200,7 +1200,7 @@ static void js_service_thread(void* arg)
 	update_clients();
 
 #ifdef _WIN32
-	if(startup->sound.hangup[0] && !(startup->options&BBS_OPT_MUTE)
+	if(startup->sound.hangup[0] && !sound_muted(&scfg)
 		&& !(service->options&BBS_OPT_MUTE))
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
@@ -1522,7 +1522,7 @@ static void native_service_thread(void* arg)
 	update_clients();
 
 #ifdef _WIN32
-	if(startup->sound.hangup[0] && !(startup->options&BBS_OPT_MUTE)
+	if(startup->sound.hangup[0] && !sound_muted(&scfg)
 		&& !(service->options&BBS_OPT_MUTE))
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
@@ -2292,7 +2292,7 @@ void services_thread(void* arg)
 					}
 
 	#ifdef _WIN32
-					if(startup->sound.answer[0] && !(startup->options&BBS_OPT_MUTE)
+					if(startup->sound.answer[0] && !sound_muted(&scfg)
 						&& !(service[i].options&BBS_OPT_MUTE))
 						PlaySound(startup->sound.answer, NULL, SND_ASYNC|SND_FILENAME);
 	#endif

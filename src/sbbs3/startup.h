@@ -185,12 +185,12 @@ static struct init_field {
 #define BBS_OPT_ALLOW_SSH			(1<<12)	/* Allow logins via BSD SSH			*/
 #define BBS_OPT_NO_DOS				(1<<13) /* Don't attempt to run 16-bit DOS programs */
 #define BBS_OPT_NO_NEWDAY_EVENTS	(1<<14)	/* Don't check for a new day in event thread */
-#define BBS_OPT_NO_TELNET		(1<<15)	/* Don't accept incoming telnet connections */
+#define BBS_OPT_NO_TELNET			(1<<15)	/* Don't accept incoming telnet connections */
 #define BBS_OPT_HAPROXY_PROTO   	(1<<26)	/* Incoming requests are via HAproxy */
 #define BBS_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
 #define BBS_OPT_GET_IDENT			(1<<28)	/* Get Identity (RFC 1413)			*/
-#define BBS_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled				*/
-#define BBS_OPT_MUTE				(1<<31)	/* Mute sounds						*/
+#define BBS_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled - Not supported */
+#define BBS_OPT_MUTE				(1<<31)	/* Mute sounds - DEPRECATED (controlled via semfile) */
 
 /* bbs_startup_t.options bits that require re-init/recycle when changed */
 #define BBS_INIT_OPTS	(BBS_OPT_ALLOW_RLOGIN|BBS_OPT_ALLOW_SSH|BBS_OPT_NO_EVENTS|BBS_OPT_NO_SPY_SOCKETS \
