@@ -849,7 +849,7 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_index)) == SMB_SUCCESS) {
+	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		JSString* js_str;
 		if((js_str = JS_NewStringCopyZ(cx, getfilepath(scfg, &file, path))) != NULL)
@@ -901,7 +901,7 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_index)) == SMB_SUCCESS) {
+	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		getfilepath(scfg, &file, path);
 	    JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((jsdouble)getfilesize(scfg, &file)));
