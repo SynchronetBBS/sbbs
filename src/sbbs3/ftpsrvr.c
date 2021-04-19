@@ -1724,7 +1724,7 @@ void ftp_printfile(SOCKET sock, CRYPT_SESSION sess, const char* name, unsigned c
 static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp_sockaddr* addr)
 {
 #ifdef _WIN32
-	if(startup->sound.hack[0] && !(startup->options&FTP_OPT_MUTE)) 
+	if(startup->sound.hack[0] && !sound_muted(&scfg)) 
 		PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
@@ -2198,7 +2198,7 @@ static void ctrl_thread(void* arg)
 	free(arg);
 
 #ifdef _WIN32
-	if(startup->sound.answer[0] && !(startup->options&FTP_OPT_MUTE)) 
+	if(startup->sound.answer[0] && !sound_muted(&scfg)) 
 		PlaySound(startup->sound.answer, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
@@ -2566,7 +2566,7 @@ static void ctrl_thread(void* arg)
 			putuserdat(&scfg, &user);
 
 #ifdef _WIN32
-			if(startup->sound.login[0] && !(startup->options&FTP_OPT_MUTE)) 
+			if(startup->sound.login[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 			continue;
@@ -4807,14 +4807,14 @@ static void ctrl_thread(void* arg)
 			lprintf(LOG_ERR,"%04d <%s> !ERROR in logoutuserdat", sock, user.alias);
 		lprintf(LOG_INFO,"%04d <%s> logged off", sock, user.alias);
 #ifdef _WIN32
-		if(startup->sound.logout[0] && !(startup->options&FTP_OPT_MUTE)) 
+		if(startup->sound.logout[0] && !sound_muted(&scfg)) 
 			PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
 	}
 
 #ifdef _WIN32
-	if(startup->sound.hangup[0] && !(startup->options&FTP_OPT_MUTE)) 
+	if(startup->sound.hangup[0] && !sound_muted(&scfg)) 
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 

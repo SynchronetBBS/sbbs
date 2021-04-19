@@ -1619,7 +1619,7 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 	session->last_user_num=session->user.number;
 
 #ifdef _WIN32
-	if(startup->sound.logout[0] && !(startup->options&BBS_OPT_MUTE))
+	if(startup->sound.logout[0] && !sound_muted(&scfg))
 		PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 }
@@ -1847,7 +1847,7 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, reason, user, passwd, host, addr);
 #ifdef _WIN32
-		if(startup->sound.hack[0] && !(startup->options&BBS_OPT_MUTE))
+		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 	}
@@ -2015,7 +2015,7 @@ static BOOL check_ars(http_session_t * session)
 		,session->socket,session->req.auth.username,session->req.ars);
 
 #ifdef _WIN32
-	if(startup->sound.hack[0] && !(startup->options&BBS_OPT_MUTE))
+	if(startup->sound.hack[0] && !sound_muted(&scfg))
 		PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
@@ -5447,7 +5447,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist,BOOLEAN_TO_JSVAL(JS_TRUE));
 
 #ifdef _WIN32
-	if(startup->sound.login[0] && !(startup->options&BBS_OPT_MUTE))
+	if(startup->sound.login[0] && !sound_muted(&scfg))
 		PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
@@ -6383,7 +6383,7 @@ void http_session_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d !!! DANGER WILL ROBINSON, DANGER !!!", session.socket);
 
 #ifdef _WIN32
-	if(startup->sound.answer[0] && !(startup->options&BBS_OPT_MUTE))
+	if(startup->sound.answer[0] && !sound_muted(&scfg))
 		PlaySound(startup->sound.answer, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
@@ -6621,7 +6621,7 @@ void http_session_thread(void* arg)
 	}
 
 #ifdef _WIN32
-	if(startup->sound.hangup[0] && !(startup->options&BBS_OPT_MUTE))
+	if(startup->sound.hangup[0] && !sound_muted(&scfg))
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 

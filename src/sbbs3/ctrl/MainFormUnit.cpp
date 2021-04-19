@@ -1999,7 +1999,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
 void __fastcall TMainForm::DisplayMainPanels(TObject* Sender)
 {
-	if(bbs_startup.options&BBS_OPT_MUTE)
+	if(sound_muted(&cfg))
 		SoundToggle->Checked=false;
 	else
 		SoundToggle->Checked=true;
@@ -2557,35 +2557,11 @@ void __fastcall TMainForm::HelpAboutMenuItemClick(TObject *Sender)
 //---------------------------------------------------------------------------
 BOOL MuteService(SC_HANDLE svc, SERVICE_STATUS* status, BOOL mute)
 {
-	if(svc==NULL || controlService==NULL)
-    	return(FALSE);
-
-	return controlService(svc
-        ,mute ? SERVICE_CONTROL_MUTE:SERVICE_CONTROL_UNMUTE, status);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::SoundToggleExecute(TObject *Sender)
 {
     SoundToggle->Checked=!SoundToggle->Checked;
-
-    if(!SoundToggle->Checked) {
-	    bbs_startup.options|=BBS_OPT_MUTE;
-	    ftp_startup.options|=FTP_OPT_MUTE;
-	    web_startup.options|=FTP_OPT_MUTE;
-	    mail_startup.options|=MAIL_OPT_MUTE;
-	    services_startup.options|=MAIL_OPT_MUTE;
-	} else {
-	    bbs_startup.options&=~BBS_OPT_MUTE;
-	    ftp_startup.options&=~FTP_OPT_MUTE;
-	    web_startup.options&=~FTP_OPT_MUTE;
-	    mail_startup.options&=~MAIL_OPT_MUTE;
-	    services_startup.options&=~MAIL_OPT_MUTE;
-    }
-    MuteService(bbs_svc,&bbs_svc_status,!SoundToggle->Checked);
-    MuteService(ftp_svc,&ftp_svc_status,!SoundToggle->Checked);
-    MuteService(web_svc,&web_svc_status,!SoundToggle->Checked);
-    MuteService(mail_svc,&mail_svc_status,!SoundToggle->Checked);
-    MuteService(services_svc,&services_svc_status,!SoundToggle->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::BBSStatisticsLogMenuItemClick(TObject *Sender)
@@ -2699,10 +2675,16 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
     static  time_t start;
     ulong   up;
     static  bool sysop_available;
+	static	bool sound_muted;
 
     if(ChatToggle->Checked != sysop_available) {
         sysop_available = ChatToggle->Checked;
         set_sysop_availability(&cfg, sysop_available);
+    }
+	
+    if(SoundToggle->Checked != !sound_muted) {
+        sound_muted = !SoundToggle->Checked;
+        set_sound_muted(&cfg, sound_muted);
     }
 	
 	if(clearLoginAttemptList) {
@@ -3147,11 +3129,12 @@ void __fastcall TMainForm::reload_config(void)
     	ChatToggle->Checked=true;
     else
     	ChatToggle->Checked=false;
-        
-    if(bbs_startup.options&BBS_OPT_MUTE)
+
+	if(sound_muted(&cfg))
     	SoundToggle->Checked=false;
     else
     	SoundToggle->Checked=true;
+
 	SetControls();
 }
 //---------------------------------------------------------------------------

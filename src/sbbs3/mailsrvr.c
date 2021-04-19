@@ -958,7 +958,7 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* prot, const ch
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 			hacklog(&scfg, reason, user, passwd, host, addr);
 #ifdef _WIN32
-			if(startup->sound.hack[0] && !(startup->options&MAIL_OPT_MUTE)) 
+			if(startup->sound.hack[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 		}
@@ -1028,7 +1028,7 @@ static void pop3_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d %s session thread started", socket, client.protocol);
 
 #ifdef _WIN32
-	if(startup->pop3_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
+	if(startup->pop3_sound[0] && !sound_muted(&scfg)) 
 		PlaySound(startup->pop3_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
@@ -1344,7 +1344,7 @@ static void pop3_thread(void* arg)
 		SAFEPRINTF2(str,"%s: %s", client.protocol, user.alias);
 		status(str);
 #ifdef _WIN32
-		if(startup->sound.login[0] && !(startup->options&MAIL_OPT_MUTE)) 
+		if(startup->sound.login[0] && !sound_muted(&scfg)) 
 			PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 		SAFEPRINTF(smb.file,"%smail",scfg.data_dir);
@@ -1715,7 +1715,7 @@ static void pop3_thread(void* arg)
 		}
 		if(user.number) {
 #ifdef _WIN32
-			if(startup->sound.logout[0] && !(startup->options&MAIL_OPT_MUTE)) 
+			if(startup->sound.logout[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 			if(!logoutuserdat(&scfg,&user,time(NULL),client.time))
@@ -2935,7 +2935,7 @@ static void smtp_thread(void* arg)
 	lprintf(LOG_DEBUG,"%04d %s Session thread started", socket, client.protocol);
 
 #ifdef _WIN32
-	if(startup->inbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
+	if(startup->inbound_sound[0] && !sound_muted(&scfg)) 
 		PlaySound(startup->inbound_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 	SAFEPRINTF(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
@@ -4218,7 +4218,7 @@ static void smtp_thread(void* arg)
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);
 #ifdef _WIN32
-			if(startup->sound.login[0] && !(startup->options&MAIL_OPT_MUTE)) 
+			if(startup->sound.login[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 			continue;
@@ -4316,7 +4316,7 @@ static void smtp_thread(void* arg)
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);
 #ifdef _WIN32
-			if(startup->sound.login[0] && !(startup->options&MAIL_OPT_MUTE)) 
+			if(startup->sound.login[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 			continue;
@@ -5037,7 +5037,7 @@ static void smtp_thread(void* arg)
 
 #ifdef _WIN32
 	if(relay_user.number) {
-		if(startup->sound.logout[0] && !(startup->options&MAIL_OPT_MUTE)) 
+		if(startup->sound.logout[0] && !sound_muted(&scfg)) 
 			PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 	}
 #endif
@@ -5605,7 +5605,7 @@ static void sendmail_thread(void* arg)
 			SAFEPRINTF2(str,"Sending (%u of %u)", u+1, msgs);
 			status(str);
 #ifdef _WIN32
-			if(startup->outbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
+			if(startup->outbound_sound[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->outbound_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
