@@ -572,63 +572,14 @@ function str_cmds(str)
 			}
 
 			if(str=="HELP") {
-				writeln("ALTUL [path]");
-				writeln("\tSets the ALT upload path to <path>.  If path is omitted, turns off the");
-				writeln("\talt upload path.");
-			}
-			if(word=="ALTUL") {
-				str=str.substr(6);
-				bbs.alt_ul_dir=(str+0);
-				printf(bbs.text(text.AltULPathIsNow),bbs.alt_ul_dir?bbs.alt_ul_dir:bbs.text(text.OFF));
-				return;
-			}
-
-			if(str=="HELP") {
-				writeln("RESORT [ALL|LIB|blank]");
-				writeln("\tResorts the specified file areas.");
-			}
-			if(word=="RESORT") {
-				for(i=0;i<system.nodes;i++) {
-					if(i!=bbs.node_num-1) {
-						if(system.node_list[i].stats==NODE_INUSE
-								|| system.node_list[i].stats==NODE_QUIET)
-							break;
-					}
-				}
-				if(i<system.nodes) {
-					write(bbs.text(text.ResortWarning));
-					return;
-				}
-				if(str.search(/^ALL$/i)!=-1) {
-					for(i=0;i<file_area.lib_list.length;i++) {
-						for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
-							bbs.resort_dir(file_area.lib_list[i].dir_list[j].number);
-						}
-					}
-				}
-				else if(str.search(/^LIB$/i)!=-1) {
-					for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
-						bbs.resort_dir(file_area.lib_list[bbs.curlib].dir_list[j].number);
-					}
-				}
-				else {
-					bbs.resort_dir(undefined);
-				}
-				str=str.substr(7);
-				return;
-			}
-
-			if(str=="HELP") {
 				writeln("OLDUL [ALL|LIB|blank]");
 				writeln("\tLists all files uploaded before your last scan time.");
 				writeln("OLD [ALL|LIB|blank]");
 				writeln("\tLists all files not downloaded since your last scan time.");
 				writeln("OFFLINE [ALL|LIB|blank]");
 				writeln("\tLists all offline files.");
-				writeln("CLOSE [ALL|LIB|blank]");
-				writeln("\tLists all files currently open.");
 			}
-			if(word=="OLDUL" || word=="OLD" || word=="OFFLINE" || word=="CLOSE") {
+			if(word=="OLDUL" || word=="OLD" || word=="OFFLINE") {
 				str=str.replace(/^[A-Z]*\s/,"");
 				if(file_area.lib_list.length<1)
 					return;
@@ -654,10 +605,6 @@ function str_cmds(str)
 				else if(word=="OFFLINE") {
 					write("not online...\r\n");
 					m=FI_OFFLINE;
-				}
-				else {
-					write("currently open...\r\n");
-					m=FI_CLOSE;
 				}
 				k=0;
 				if(str.toUpperCase()=="ALL") {
