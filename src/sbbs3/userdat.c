@@ -3691,7 +3691,7 @@ BOOL set_sysop_availability(scfg_t* scfg, BOOL available)
 static char* sound_muted_semfile(scfg_t* scfg)
 {
 	static char semfile[MAX_PATH+1];
-	SAFEPRINTF(semfile, "%ssound.muted", scfg->ctrl_dir);
+	SAFEPRINTF(semfile, "%ssound.mute", scfg->ctrl_dir);
 	return semfile;
 }
 
