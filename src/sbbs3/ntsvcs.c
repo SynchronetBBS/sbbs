@@ -185,12 +185,6 @@ static void svc_ctrl_handler(sbbs_ntsvc_t* svc, DWORD dwCtrlCode)
 		case SERVICE_CONTROL_RECYCLE:
 			*svc->recycle_now=TRUE;
 			break;
-		case SERVICE_CONTROL_MUTE:
-			*svc->options|=BBS_OPT_MUTE;
-			break;
-		case SERVICE_CONTROL_UNMUTE:
-			*svc->options&=~BBS_OPT_MUTE;
-			break;
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			svc->terminate();
@@ -632,14 +626,6 @@ static const char* control_desc(DWORD ctrl)
 		/* Synchronet-specific */
 		case SERVICE_CONTROL_RECYCLE:
 			return("Recycling");
-		case SERVICE_CONTROL_MUTE:
-			return("Muting");
-		case SERVICE_CONTROL_UNMUTE:
-			return("Un-muting");
-		case SERVICE_CONTROL_SYSOP_AVAILABLE:
-			return("Sysop Available");
-		case SERVICE_CONTROL_SYSOP_UNAVAILABLE:	
-			return("Sysop Unavailable");
 	}
 	SAFEPRINTF(str,"Control: %d", ctrl);
 	return(str);
@@ -1304,12 +1290,6 @@ int main(int argc, char** argv)
 
 		if(!stricmp(arg,"recycle"))
 			return control(argv[i+1],SERVICE_CONTROL_RECYCLE);
-
-		if(!stricmp(arg,"mute"))
-			return control(argv[i+1],SERVICE_CONTROL_MUTE);
-
-		if(!stricmp(arg,"unmute"))
-			return control(argv[i+1],SERVICE_CONTROL_UNMUTE);
 	}
 
 	if(start_services) {
@@ -1341,8 +1321,6 @@ int main(int argc, char** argv)
     printf("%-20s %s\n","start","to start services");
     printf("%-20s %s\n","stop","to stop services");
 	printf("%-20s %s\n","recycle","to recycle services");
-	printf("%-20s %s\n","mute","to mute (sounds of) services");
-	printf("%-20s %s\n","unmute","to unmute (sounds of) services");
 
 	printf("\nAvailable Services:\n\n");
 	printf("%-20s %s\n","Name","Description");
