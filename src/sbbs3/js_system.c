@@ -2657,11 +2657,9 @@ JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 
 	/***********************/
 
-#ifndef JSDOOR
 	val=DOUBLE_TO_JSVAL((double)uptime);
 	if(!JS_SetProperty(cx, sysobj, "uptime", &val))
 		return(NULL);
-#endif
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,sysobj,"Global system-related properties and methods",310);
