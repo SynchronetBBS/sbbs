@@ -7,11 +7,14 @@
 require("smbdefs.js", 'SMB_PRIORITY_HIGHEST');
 
 var keep = false;
-
-for(i=0;i<argc;i++)
+var cov_token;
+for(i=0;i<argc;i++) {
 	if(argv[i]=="-k")
 		keep=true;
-
+	else if(argv[i].indexOf('-cov-token=') == 0) {
+		cov_token = argv[i].slice(11);
+	}
+}
 var date_str = strftime("%b-%d-%Y");	/* mmm-dd-yyyy */
 
 var temp_dir = backslash(system.temp_path) + "sbbs-" + date_str;
@@ -48,6 +51,7 @@ var exclude_dirs = [
 	"install",
 	"text",
 	"web",
+	"webv4",
 	"xtrn",
 	"src/crt",
 	"src/doors",
@@ -88,7 +92,7 @@ var builds
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
 	/* Requires Visual C++ 2019 */
-	builds.push(["src/sbbs3"			,'build.bat /v:m "/p:Configuration=Release" "/p:WarningLevel=0"'
+	builds.push(["src/sbbs3"			,'release.bat /v:m /p:WarningLevel=0'
 																,"> " + build_output]);
 	/* Requires C++Builder */
 	builds.push(["src/xpdev"			,"make"
@@ -103,7 +107,7 @@ if(platform=="win32") {
 																,"> " + build_output]);
 } else {	/* Unix */
 	builds.unshift(["src/sbbs3"			,"make git_branch.h git_hash.h"]);
-	builds.push(["src/sbbs3"			,"make RELEASE=1 all"		,"2> " + build_output]);
+	builds.push(["src/sbbs3"			,"cov-build --dir ../../cov-int make RELEASE=1 all" ,"2> " + build_output]);
 	builds.push(["src/sbbs3"			,"make RELEASE=1 gtkutils"	,"2> " + build_output]);
 }
 
@@ -120,6 +124,8 @@ var win32_dist
 		"3rdp/win32.release/mozjs/bin/*.dll",
 		"3rdp/win32.release/nspr/bin/*.dll",
 		"3rdp/win32.release/cryptlib/bin/*.dll",
+		"3rdp/win32.release/libarchive/bin/*.dll",
+		"3rdp/win32.release/zlib/bin/*.dll",
 		"s:/sbbs/exec/dosxtrn.exe"
 	];
 
@@ -266,6 +272,15 @@ if(platform=="win32") {
 	cmd_line = "pkzip25 -add " + archive 
 		+ " -exclude=v4upgrade.exe " + win32_dist.join(" ");
 } else {
+	cmd_line = 'tar czvf sbbs-cov.tgz cov-int && ' +
+			'curl --form token=' + cov_token + ' ' +
+			'--form email=rob@synchro.net ' +
+			'--form file=@sbbs-cov.tgz ' +
+			'--form version=' + system.version + system.revision + ' ' +
+			'--form description="Synchronet for ' + system.platform + '" ' +
+			'https://scan.coverity.com/builds?project=Synchronet';
+	log(LOG_INFO, "Executing: " + cmd_line);
+	system.exec(cmd_line);
 	archive = "sbbs_dev.tgz";
 	cmd_line = "pax -s :.*/::p -wzf " + archive + " " + nix_dist.join(" ");
 }
@@ -273,7 +288,7 @@ if(platform=="win32") {
 log(LOG_INFO, "Executing: " + cmd_line);
 system.exec(cmd_line);
 
-dest = file_area.dir["sbbs"].path+archive;	
+dest = file_area.dir["sbbs"].path+archive;
 
 log(LOG_INFO,format("Copying %s to %s",archive,dest));
 if(!file_copy(archive,dest))
@@ -320,8 +335,8 @@ function send_email(subject, body, priority)
 		return(false);
 	}
 
-	var hdr = { 
-		from: "Synchronet testbuild.js", 
+	var hdr = {
+		from: "Synchronet testbuild.js",
 		subject: subject || (system.platform + " build failure"),
 		priority: priority
 	};
