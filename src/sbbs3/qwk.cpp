@@ -1135,15 +1135,16 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 			notice = text[PollVoteNotice];
 		}
 		result = votemsg(&cfg, &smb, &msg, notice, text[VoteNoticeFmt]);
-		if(result == SMB_DUPE_MSG)
-			lprintf(LOG_DEBUG, "Duplicate vote-msg (%s) from %s", msg.id, qnet_id);
+		if(result == SMB_DUPE_MSG) {
+			lprintf(LOG_INFO, "Duplicate vote-msg (%s) from %s", msg.id, qnet_id);
+		}
+		else if(result == SMB_ERR_HDR_FIELD) {
+			lprintf(LOG_INFO, "Error %s (%d) writing %s vote-msg (%s) to %s"
+				,smb.last_error, result, qnet_id, msg.id, smb.file);
+			result = SMB_SUCCESS; // ignore vote failures for old messages
+		}
 		else if(result != SMB_SUCCESS) {
-			if(hubnum >= 0) {
-				lprintf(LOG_DEBUG, "Error %s (%d) writing %s vote-msg (%s) to %s"
-					,smb.last_error, result, qnet_id, msg.id, smb.file);
-				result = SMB_SUCCESS; // ignore vote failures for old messages
-			} else
-				errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+			errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
 		}
 	}
 	else if(strnicmp(section, "close:", 6) == 0) {
