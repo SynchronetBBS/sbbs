@@ -29,10 +29,6 @@
 	Please note that the program takes two arguments which determine the minimum
 	minimum security level to add notes and also the root file name for data storage.
 
-	while this file has been uploaded to the \sbbs\exec\ repository, it may be advisable
-	to move it to its own directory in \sbbs\xtrn\ so that the related data files and log files
-	can be easily maintained.
-	
 	Command line parameters:
 
 	 4: Command Line               *..\xtrn\postit\postit.js <root filename> <minimum security level>
