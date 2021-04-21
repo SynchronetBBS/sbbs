@@ -810,12 +810,6 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 		if(filetype != AE_IFREG)
 			continue;
 		char* filename = getfname(pathname);
-		if(allowed_filename_chars != NULL
-			&& *allowed_filename_chars != '\0'
-			&& strspn(filename, allowed_filename_chars) != strlen(filename)) {
-			safe_snprintf(error, maxerrlen, "disallowed filename '%s'", pathname);
-			break;
-		}
 		if(!with_path)
 			pathname = filename;
 		if(file_list != NULL) {
@@ -825,6 +819,12 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 					break;
 			if(file_list[i] == NULL)
 				continue;
+		}
+		if(allowed_filename_chars != NULL
+			&& *allowed_filename_chars != '\0'
+			&& strspn(filename, allowed_filename_chars) != strlen(filename)) {
+			safe_snprintf(error, maxerrlen, "disallowed filename '%s'", pathname);
+			break;
 		}
 		SAFECOPY(fpath, outdir);
 		backslash(fpath);
