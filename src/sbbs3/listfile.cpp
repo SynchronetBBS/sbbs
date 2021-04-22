@@ -642,8 +642,8 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 					remcdt = TRUE;
 					remfile = TRUE;
 					if(dir_op(smb->dirnum)) {
-						remcdt=!noyes(text[RemoveCreditsQ]);
 						remfile=!noyes(text[DeleteFileQ]);
+						remcdt=!noyes(text[RemoveCreditsQ]);
 					}
 				}
 				else if(ch=='M') {
