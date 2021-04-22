@@ -231,7 +231,7 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 		return false; 
 	}
 
-	if(!addfile(&cfg, newdir, f, f->extdesc))
+	if(!addfile(&cfg, newdir, f, f->extdesc, /* client: */NULL))
 		return false;
 	removefile(smb, f);
 	bprintf(text[MovedFile],f->name

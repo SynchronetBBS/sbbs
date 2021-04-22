@@ -23,6 +23,7 @@
 #define _FILEDAT_H_
 
 #include "scfgdefs.h"	// scfg_t
+#include "client.h"
 #include "dllexport.h"
 #include "smblib.h"
 
@@ -52,13 +53,14 @@ DLLEXPORT time_t		getfiletime(scfg_t*, file_t*);
 DLLEXPORT ulong			gettimetodl(scfg_t*, file_t*, uint rate_cps);
 DLLEXPORT ulong			getuserxfers(scfg_t*, const char* from, uint to);
 DLLEXPORT bool			hashfile(scfg_t*, file_t*);
-DLLEXPORT bool			addfile(scfg_t*, uint dirnum, file_t*, const char* extdesc);
+DLLEXPORT bool			addfile(scfg_t*, uint dirnum, file_t*, const char* extdesc, client_t*);
 DLLEXPORT bool			removefile(scfg_t*, uint dirnum, const char* filename);
 DLLEXPORT char*			format_filename(const char* fname, char* buf, size_t, bool pad);
 DLLEXPORT bool			extract_diz(scfg_t*, file_t*, str_list_t diz_fname, char* path, size_t);
 DLLEXPORT str_list_t	read_diz(const char* path);
 DLLEXPORT char*			format_diz(str_list_t lines, char*, size_t maxlen, bool allow_ansi);
 DLLEXPORT char*			prep_file_desc(const char *src, char* dst);
+DLLEXPORT int			file_client_hfields(file_t*, client_t*);
 
 DLLEXPORT str_list_t	directory(const char* path);
 DLLEXPORT long			create_archive(const char* archive, const char* format
