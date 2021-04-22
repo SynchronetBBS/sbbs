@@ -923,13 +923,13 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 	return false;
 }
 
-str_list_t read_diz(const char* path, size_t max_line_len)
+str_list_t read_diz(const char* path)
 {
 	FILE* fp = fopen(path, "r");
 	if(fp == NULL)
 		return NULL;
 
-	str_list_t lines = strListReadFile(fp, NULL, max_line_len);
+	str_list_t lines = strListReadFile(fp, NULL, /* max_line_len: */255);
 	fclose(fp);
 	return lines;
 }

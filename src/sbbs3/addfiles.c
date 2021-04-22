@@ -125,7 +125,7 @@ bool get_file_diz(file_t* f, char* ext, size_t maxlen)
 		return false;
 	}
 	printf("Parsing DIZ: %s\n", diz_fpath);
-	str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
+	str_list_t lines = read_diz(diz_fpath);
 	format_diz(lines, ext, maxlen, /* allow_ansi: */false);
 	strListFree(&lines);
 	remove(diz_fpath);

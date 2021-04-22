@@ -1075,7 +1075,7 @@ static void receive_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d <%s> DATA Extracting DIZ from: %s",xfer.ctrl_sock, xfer.user->alias,xfer.filename);
 				if(extract_diz(&scfg, &f, /* diz_fnames */NULL, tmp, sizeof(tmp))) {
 					lprintf(LOG_DEBUG,"%04d <%s> DATA Parsing DIZ: %s",xfer.ctrl_sock, xfer.user->alias,tmp);
-					str_list_t lines = read_diz(tmp, /* max_line_len: */80);
+					str_list_t lines = read_diz(tmp);
 					format_diz(lines, extdesc, sizeof(extdesc), /* allow_ansi: */false);
 					strListFree(&lines);
 					if(!fdesc[0]) {						/* use for normal description */
