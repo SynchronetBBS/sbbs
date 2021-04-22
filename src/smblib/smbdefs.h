@@ -596,6 +596,7 @@ typedef struct {				/* Message or File */
 				*from_ip,		/* From IP address (e.g. "192.168.1.2") */
 				*from_host,		/* From host name */
 				*from_prot,		/* From protocol (e.g. "Telnet", "NNTP", "HTTP", etc.) */
+				*from_port,		/* From TCP/UDP port number */
 				*replyto,		/* Reply-to name */
 				*replyto_ext,	/* Reply-to extension */
 				*replyto_list,	/* Comma-separated list of mailboxes, RFC822-style */
