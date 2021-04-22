@@ -186,7 +186,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	smb_hfield_bin(f, SMB_COST, cdt);
 	smb_hfield_str(f, SENDER, useron.alias);
 	bprintf(text[FileNBytesReceived],f->name,ultoac(length,tmp));
-	if(!addfile(&cfg, f->dir, f, ext))
+	if(!addfile(&cfg, f->dir, f, ext, &client))
 		return false;
 
 	safe_snprintf(str,sizeof(str),"uploaded %s to %s %s"

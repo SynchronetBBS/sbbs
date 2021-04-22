@@ -185,6 +185,26 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 			|| !JS_DefineProperty(cx, obj, "from", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
+	if(((f->from_ip != NULL && *f->from_ip != '\0') || detail > file_detail_extdesc)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->from_ip)) == NULL
+			|| !JS_DefineProperty(cx, obj, "from_ip_addr", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
+	if(((f->from_host != NULL && *f->from_host != '\0') || detail > file_detail_extdesc)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->from_host)) == NULL
+			|| !JS_DefineProperty(cx, obj, "from_host_name", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
+	if(((f->from_prot != NULL && *f->from_prot != '\0') || detail > file_detail_extdesc)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->from_prot)) == NULL
+			|| !JS_DefineProperty(cx, obj, "from_protocol", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
+	if(((f->from_port != NULL && *f->from_port != '\0') || detail > file_detail_extdesc)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->from_port)) == NULL
+			|| !JS_DefineProperty(cx, obj, "from_port", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
 	if(((f->to_list != NULL && *f->to_list != '\0') || detail > file_detail_extdesc)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->to_list)) == NULL
 			|| !JS_DefineProperty(cx, obj, "to_list", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
@@ -378,6 +398,66 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			return SMB_FAILURE;
 		}
 		if((file->from != NULL || *cp != '\0') && (result = smb_new_hfield_str(file, SMB_FILEUPLOADER, cp)) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
+		}
+	}
+
+	prop_name = "from_ip_addr";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp == NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_FAILURE;
+		}
+		if(smb_hfield_str(file, SENDERIPADDR, cp) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
+		}
+	}
+
+	prop_name = "from_host_name";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp == NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_FAILURE;
+		}
+		if(smb_hfield_str(file, SENDERHOSTNAME, cp) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
+		}
+	}
+
+	prop_name = "from_protocol";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp == NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_FAILURE;
+		}
+		if(smb_hfield_str(file, SENDERPROTOCOL, cp) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
+		}
+	}
+
+	prop_name = "from_port";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp == NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_FAILURE;
+		}
+		if(smb_hfield_str(file, SENDERPORT, cp) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -989,7 +1069,8 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*		argv = JS_ARGV(cx, arglist);
 	private_t*	p;
 	char*		extdesc = NULL;
-	file_t	file;
+	file_t		file;
+	client_t*	client = NULL;
 	bool		use_diz_always = false;
 	jsrefcount	rc;
 
@@ -1021,6 +1102,13 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		use_diz_always = JSVAL_TO_BOOLEAN(argv[argn]);
 		argn++;
 	}
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
+		JSObject* objarg = JSVAL_TO_OBJECT(argv[argn]);
+		JSClass* cl;
+		if((cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
+			client = JS_GetPrivate(cx, objarg);
+		}
+	}
 
 	file.dir = p->smb.dirnum;
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1032,6 +1120,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		char fpath[MAX_PATH + 1];
 		getfilepath(scfg, &file, fpath);
+		file_client_hfields(&file, client);
 		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, fpath);
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
@@ -1471,7 +1560,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"add",				js_add_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("file-meta-object [,use_diz_always=false]")
+		,JSDOCSTR("file-meta-object [,use_diz_always=false] [,object client=none]")
 		,JSDOCSTR("add a file to the file base")
 		,31900
 	},
