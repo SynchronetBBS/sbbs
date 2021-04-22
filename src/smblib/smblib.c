@@ -773,6 +773,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case SENDERPROTOCOL:
 			msg->from_prot=(char*)hfield_dat;
 			break;
+		case SENDERPORT:
+			msg->from_port=(char*)hfield_dat;
+			break;
 		case REPLYTO:
 			msg->replyto=(char*)hfield_dat;
 			break;
@@ -910,6 +913,7 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->from_ip=NULL;
 	msg->from_host=NULL;
 	msg->from_prot=NULL;
+	msg->from_port=NULL;
 	memset(&msg->from_net,0,sizeof(net_t));
 
 	msg->replyto=NULL;
