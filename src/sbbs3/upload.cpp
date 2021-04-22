@@ -154,7 +154,7 @@ bool sbbs_t::uploadfile(file_t* f)
 		if(extract_diz(&cfg, f, /* diz_fnames: */NULL, str, sizeof(str))) {
 			lprintf(LOG_DEBUG, "Parsing DIZ: %s", str);
 
-			str_list_t lines = read_diz(str, /* max_line_len: */80);
+			str_list_t lines = read_diz(str);
 			if(lines != NULL)
 				format_diz(lines, ext, sizeof(ext), /* allow_ansi: */false);
 			strListFree(&lines);

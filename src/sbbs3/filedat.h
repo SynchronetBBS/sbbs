@@ -56,7 +56,7 @@ DLLEXPORT bool			addfile(scfg_t*, uint dirnum, file_t*, const char* extdesc);
 DLLEXPORT bool			removefile(scfg_t*, uint dirnum, const char* filename);
 DLLEXPORT char*			format_filename(const char* fname, char* buf, size_t, bool pad);
 DLLEXPORT bool			extract_diz(scfg_t*, file_t*, str_list_t diz_fname, char* path, size_t);
-DLLEXPORT str_list_t	read_diz(const char* path, size_t max_line_len);
+DLLEXPORT str_list_t	read_diz(const char* path);
 DLLEXPORT char*			format_diz(str_list_t lines, char*, size_t maxlen, bool allow_ansi);
 DLLEXPORT char*			prep_file_desc(const char *src, char* dst);
 

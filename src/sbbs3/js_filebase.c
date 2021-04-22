@@ -969,7 +969,7 @@ static void get_diz(scfg_t* scfg, file_t* file, char** extdesc)
 	char diz_fpath[MAX_PATH + 1];
 	if(extract_diz(scfg, file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
 		char extbuf[LEN_EXTDESC + 1] = "";
-		str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
+		str_list_t lines = read_diz(diz_fpath);
 		if(lines != NULL) {
 			format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
 			strListFree(&lines);
