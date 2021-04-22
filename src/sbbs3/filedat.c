@@ -585,7 +585,28 @@ bool hashfile(scfg_t* cfg, file_t* f)
 	return result;
 }
 
-bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc)
+int file_client_hfields(file_t* f, client_t* client)
+{
+	int		i;
+
+	if(client == NULL)
+		return -1;
+
+	if(*client->addr && (i = smb_hfield_str(f, SENDERIPADDR, client->addr)) != SMB_SUCCESS)
+		return i;
+	if(*client->host && (i = smb_hfield_str(f, SENDERHOSTNAME, client->host)) != SMB_SUCCESS)
+		return i;
+	if(client->protocol != NULL && (i = smb_hfield_str(f, SENDERPROTOCOL, client->protocol)) != SMB_SUCCESS)
+		return i;
+	if(client->port) {
+		char	port[16];
+		SAFEPRINTF(port,"%u",client->port);
+		return smb_hfield_str(f, SENDERPORT, port);
+	}
+	return SMB_SUCCESS;
+}
+
+bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, client_t* client)
 {
 	char fpath[MAX_PATH + 1];
 	smb_t smb;
@@ -594,6 +615,7 @@ bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc)
 		return false;
 
 	getfilepath(cfg, f, fpath);
+	file_client_hfields(f, client);
 	int result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, fpath);
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
