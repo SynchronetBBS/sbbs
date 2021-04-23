@@ -2309,6 +2309,7 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 {
 	jsval idval;
 	int32		i=0;
+	uint32		u=0;
     jsint       tiny;
 	private_t*	p;
 	jsrefcount	rc;
@@ -2346,26 +2347,26 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			break;
 		case FILE_PROP_POSITION:
 			if(p->fp!=NULL) {
-				if(!JS_ValueToInt32(cx,*vp,&i))
+				if(!JS_ValueToECMAUint32(cx, *vp, &u))
 					return(JS_FALSE);
 				rc=JS_SUSPENDREQUEST(cx);
-				fseek(p->fp,i,SEEK_SET);
+				fseek(p->fp, u, SEEK_SET);
 				JS_RESUMEREQUEST(cx, rc);
 			}
 			break;
 		case FILE_PROP_DATE:
-			if(!JS_ValueToInt32(cx,*vp,&i))
+			if(!JS_ValueToECMAUint32(cx, *vp, &u))
 				return(JS_FALSE);
 			rc=JS_SUSPENDREQUEST(cx);
-			setfdate(p->name,i);
+			setfdate(p->name, u);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case FILE_PROP_LENGTH:
 			if(p->fp!=NULL) {
-				if(!JS_ValueToInt32(cx,*vp,&i))
+				if(!JS_ValueToECMAUint32(cx, *vp, &u))
 					return(JS_FALSE);
 				rc=JS_SUSPENDREQUEST(cx);
-				chsize(fileno(p->fp),i);
+				chsize(fileno(p->fp), u);
 				JS_RESUMEREQUEST(cx, rc);
 			}
 			break;
