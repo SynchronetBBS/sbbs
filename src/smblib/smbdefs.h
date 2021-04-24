@@ -168,6 +168,9 @@
 #define SENDERTIME			0x0d		/* authentication/connection time */
 #define SENDERSERVER		0x0e		/* server hostname that authenticated user */
 
+#define SMB_AUTHOR			0x10
+#define SMB_AUTHOR_ORG		0x16
+
 #define REPLYTO 			0x20		/* Name only */
 #define REPLYTOAGENT		0x21
 #define REPLYTONETTYPE		0x22
@@ -597,6 +600,8 @@ typedef struct {				/* Message or File */
 				*from_host,		/* From host name */
 				*from_prot,		/* From protocol (e.g. "Telnet", "NNTP", "HTTP", etc.) */
 				*from_port,		/* From TCP/UDP port number */
+				*author,		/* Author */
+				*author_org,	/* Author's organization */
 				*replyto,		/* Reply-to name */
 				*replyto_ext,	/* Reply-to extension */
 				*replyto_list,	/* Comma-separated list of mailboxes, RFC822-style */

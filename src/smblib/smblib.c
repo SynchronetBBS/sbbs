@@ -776,6 +776,12 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case SENDERPORT:
 			msg->from_port=(char*)hfield_dat;
 			break;
+		case SMB_AUTHOR:
+			msg->author=(char*)hfield_dat;
+			break;
+		case SMB_AUTHOR_ORG:
+			msg->author_org=(char*)hfield_dat;
+			break;
 		case REPLYTO:
 			msg->replyto=(char*)hfield_dat;
 			break;
@@ -926,6 +932,8 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->to_list=NULL;
 	memset(&msg->to_net,0,sizeof(net_t));
 
+	msg->author=NULL;
+	msg->author_org=NULL;
 	msg->cc_list=NULL;
 	msg->subj=NULL;
 	msg->summary=NULL;
