@@ -286,6 +286,7 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)filedat$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)sauce$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)getstats$(OFILE)\
 
 SEXYZ_OBJS = \
