@@ -702,7 +702,6 @@ int sbbs_t::outchar(char ch)
 				if(lncntr || lastlinelen)
 					lncntr++;
 				lbuflen=0;
-				column=0;
 				break;
 			case FF:	// 12
 				lncntr=0;
