@@ -1,8 +1,4 @@
-/* ans2asc.c */
-
-/* Convert ANSI messages to Synchronet .asc (Ctrl-A code) format */
-
-/* $Id: ans2asc.c,v 1.16 2020/05/09 23:17:43 rswindell Exp $ */
+/* Convert ANSI messages to Synchronet Ctrl-A code format */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,28 +13,18 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>		/* isdigit */
 #include <string.h>		/* strcmp */
+#include "sauce.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 #ifndef CTRL_Z
 #define CTRL_Z 0x1a
@@ -46,20 +32,20 @@
 
 static void print_usage(const char* prog)
 {
-	char revision[16];
-
-	sscanf("$Revision: 1.16 $", "%*s %s", revision);
-
-	fprintf(stderr,"\nSynchronet ANSI-Terminal-Sequence to Ctrl-A-Code Conversion Utility v%s\n",revision);
+	fprintf(stderr,"\nSynchronet ANSI-Terminal-Sequence to Ctrl-A-Code Conversion Utility %s/%s\n"
+		,GIT_BRANCH
+		,GIT_HASH
+	);
 	fprintf(stderr,"\nusage: %s infile.ans [outfile.asc | outfile.msg] [[option] [...]]\n",prog);
 	fprintf(stderr,"\noptions:\n\n");
-	fprintf(stderr,"-ice              treat blink as bright-background (iCE colors)\n");
-	fprintf(stderr,"-<columns>        insert conditional-newlines to force wrap (e.g. -80)\n");
-	fprintf(stderr,"-newline          append a newline (CRLF) sequence to output file\n");
-	fprintf(stderr,"-clear            insert a clear screen code at beginning of output file\n");
-	fprintf(stderr,"-pause            append a pause (hit a key) code to end of output file\n");
-	fprintf(stderr,"-space            use space characters for cursor-right movement/alignment\n");
-	fprintf(stderr,"-delay <interval> insert a 1/10th second delay code at output byte interval\n");
+	fprintf(stderr,"  -ice            treat blink as bright-background (iCE colors)\n");
+	fprintf(stderr,"  -<columns>      insert conditional-newlines to force wrap (e.g. -80)\n");
+	fprintf(stderr,"  -normal         use 'save/normal/restore' attributes for conditional new-lines\n");
+	fprintf(stderr,"  -newline        append a newline (CRLF) sequence to output file\n");
+	fprintf(stderr,"  -clear          insert a clear screen code at beginning of output file\n");
+	fprintf(stderr,"  -pause          append a pause (hit a key) code to end of output file\n");
+	fprintf(stderr,"  -space          use space characters for cursor-right movement/alignment\n");
+	fprintf(stderr,"  -delay <int>    insert a 1/10th second delay code at output byte interval\n");
 	fprintf(stderr,"                  (lower interval values result in more delays, slower display)\n");
 }
 
@@ -69,7 +55,8 @@ int main(int argc, char **argv)
 	int i,ch,ni;
 	FILE *in=stdin;
 	FILE *out=stdout;
-	int ice=0;
+	bool ice=false;
+	bool normal=false;
 	int cols=0;
 	int column=0;
 	int delay=0;
@@ -96,16 +83,18 @@ int main(int argc, char **argv)
 				}
 			}
 			else if(strcmp(argv[i], "-ice") == 0)
-				ice = 1;
+				ice = true;
 			else if(strcmp(argv[i], "-clear") == 0)
 				clear = 1;
 			else if(strcmp(argv[i], "-pause") == 0)
 				pause = 1;
 			else if(strcmp(argv[i], "-space") == 0)
 				space = 1;
+			else if(strcmp(argv[i], "-normal") == 0)
+				normal = true;
 			else if(strcmp(argv[i], "-newline") == 0)
 				newline++;
-			else if(isdigit(argv[i][1]))
+			else if(IS_DIGIT(argv[i][1]))
 				cols = atoi(argv[i] + 1);
 			else {
 				print_usage(argv[0]);
@@ -124,26 +113,40 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(in != stdin && cols < 1) {
+		struct sauce_charinfo info;
+		if(sauce_fread_charinfo(in, /* type: */NULL, &info)) {
+			cols = info.width;
+			ice = info.ice_color;
+		}
+	}
+
+	const char* cond_newline = normal ? "\1+\1N\1/\1-" : "\1/";
+
 	if(clear)
 		fprintf(out,"\1N\1L");
 	esc=0;
 	while((ch=fgetc(in))!=EOF && ch != CTRL_Z) {
 		if(ch=='[' && esc) {    /* ANSI escape sequence */
+			if(cols && column >= cols) {
+				fprintf(out, cond_newline);	// Conditional-newline
+				column = 0;
+			}
 			ni=0;				/* zero number index */
 			memset(n,1,sizeof(n));
 			while((ch=fgetc(in))!=EOF) {
-				if(isdigit(ch)) {			/* 1 digit */
+				if(IS_DIGIT(ch)) {			/* 1 digit */
 					n[ni]=ch&0xf;
 					ch=fgetc(in);
 					if(ch==EOF)
 						break;
-					if(isdigit(ch)) {		/* 2 digits */
+					if(IS_DIGIT(ch)) {		/* 2 digits */
 						n[ni]*=10;
 						n[ni]+=ch&0xf;
 						ch=fgetc(in);
 						if(ch==EOF)
 							break;
-						if(isdigit(ch)) {	/* 3 digits */
+						if(IS_DIGIT(ch)) {	/* 3 digits */
 							n[ni]*=10;
 							n[ni]+=ch&0xf;
 							ch=fgetc(in); 
@@ -157,9 +160,9 @@ int main(int argc, char **argv)
 					case '=':
 					case '?':
 						ch=fgetc(in);	   /* First digit */
-						if(isdigit(ch)) ch=fgetc(in);	/* l or h ? */
-						if(isdigit(ch)) ch=fgetc(in);
-						if(isdigit(ch)) fgetc(in);
+						if(IS_DIGIT(ch)) ch=fgetc(in);	/* l or h ? */
+						if(IS_DIGIT(ch)) ch=fgetc(in);
+						if(IS_DIGIT(ch)) fgetc(in);
 						break;
 					case 'f':
 					case 'H':
@@ -294,7 +297,7 @@ int main(int argc, char **argv)
 					break;
 				default:
 					if(cols && column >= cols) {
-						fprintf(out, "\1/");	// Conditional-newline
+						fprintf(out, cond_newline);	// Conditional-newline
 						column = 0;
 					}
 					fputc(ch,out);
