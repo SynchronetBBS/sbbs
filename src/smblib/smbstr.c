@@ -43,6 +43,9 @@ char* smb_hfieldtype(uint16_t type)
 		case SENDERTIME:		return("SenderTime");
 		case SENDERSERVER:		return("SenderServer");
 
+		case SMB_AUTHOR:		return("Author");
+		case SMB_AUTHOR_ORG:		return("AuthorOrg");
+
 		case REPLYTO:			return("Reply-To");				/* RFC-compliant */
 		case REPLYTOAGENT:		return("Reply-ToAgent");
 		case REPLYTONETTYPE:	return("Reply-ToNetType");
