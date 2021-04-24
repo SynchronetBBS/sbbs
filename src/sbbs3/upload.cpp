@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "sauce.h"
 #include "filedat.h"
 
 /****************************************************************************/
@@ -152,15 +153,17 @@ bool sbbs_t::uploadfile(file_t* f)
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
 		lprintf(LOG_DEBUG, "Extracting DIZ from: %s", path);
 		if(extract_diz(&cfg, f, /* diz_fnames: */NULL, str, sizeof(str))) {
+			struct sauce_charinfo sauce;
 			lprintf(LOG_DEBUG, "Parsing DIZ: %s", str);
 
-			str_list_t lines = read_diz(str);
+			char* lines = read_diz(str, &sauce);
 			if(lines != NULL)
-				format_diz(lines, ext, sizeof(ext), /* allow_ansi: */false);
-			strListFree(&lines);
+				format_diz(lines, ext, sizeof(ext), sauce.width, sauce.ice_color);
+			free(lines);
+			file_sauce_hfields(f, &sauce);
 
 			if(f->desc == NULL || f->desc[0] == 0) {
-				char	desc[LEN_FDESC];
+				char	desc[LEN_FDESC + 1];
 				SAFECOPY(desc, (char*)ext);
 				strip_exascii(desc, desc);
 				prep_file_desc(desc, desc);
@@ -169,7 +172,7 @@ bool sbbs_t::uploadfile(file_t* f)
 						break;
 				if(desc[i] == '\0')
 					i = 0;
-				smb_hfield_str(f, SMB_FILEDESC, desc + i);
+				smb_new_hfield_str(f, SMB_FILEDESC, desc + i);
 			}
 			remove(str);
 		} else
@@ -537,7 +540,6 @@ bool sbbs_t::bulkupload(uint dirnum)
 			smb_freemsgmem(&f);
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
 			uint32_t cdt = (uint32_t)flength(str);
-			smb_hfield_bin(&f, SMB_COST, cdt);
 			bprintf(text[BulkUploadDescPrompt], format_filename(f.name, fname, 12, /* pad: */FALSE), cdt/1024);
 			if(strcmp(f.name, fname) != 0)
 				SAFECOPY(desc, f.name);

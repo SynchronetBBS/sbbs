@@ -91,6 +91,7 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 	uchar	exatr=0;
 	char	mark = '\0';
 	int 	i;
+	long	col = column;
 	ulong	l=0;
 	uint	lines_printed = 0;
 	struct mouse_hotspot hot_spot = {0};
@@ -143,7 +144,9 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 				}
 				// fallthrough
 			default: // printing char
-				if(((*mode)&P_TRUNCATE) && column >= (cols - 1)) {
+				if(((*mode) & P_INDENT) && column < col)
+					cursor_right(col - column);
+				else if(((*mode)&P_TRUNCATE) && column >= (cols - 1)) {
 					l++;
 					continue;
 				} else if((*mode)&P_WRAP) {

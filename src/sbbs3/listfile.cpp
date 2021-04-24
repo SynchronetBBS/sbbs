@@ -45,6 +45,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 	file_t* bf[BF_MAX];	/* bf is batch flagged files */
 	smb_t	smb;
 	ulong	file_row[26];
+	size_t	longest = 0;
 
 	if(!smb_init_dir(&cfg, &smb, dirnum))
 		return 0;
@@ -67,6 +68,12 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 		smb_close(&smb);
 		free(file_list);
 		return 0;
+	}
+
+	for(i = 0; i < file_count; i++) {
+		size_t len = strlen(file_list[i].name);
+		if(len > longest)
+			longest = len;
 	}
 
 	if(!tofile) {
@@ -263,9 +270,9 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 		else if(tofile)
 			listfiletofile(f, tofile);
 		else if(mode&FL_FINDDESC)
-			disp=listfile(f, dirnum, filespec, letter);
+			disp=listfile(f, dirnum, filespec, letter, longest);
 		else
-			disp=listfile(f, dirnum, nulstr, letter);
+			disp=listfile(f, dirnum, nulstr, letter, longest);
 		if(!disp && letter>'A') {
 			next=m-1;
 			letter--; 
@@ -340,9 +347,9 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 /* Prints one file's information on a single line                           */
 /* Return 1 if displayed, 0 otherwise										*/
 /****************************************************************************/
-bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char letter)
+bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char letter, size_t namelen)
 {
-	char	*ptr,*cr,*lf;
+	char	*ptr;
 	bool	exist = true;
 	char*	ext=NULL;
 	char	path[MAX_PATH+1];
@@ -356,9 +363,14 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
 			return false;
 	}
 
+	cond_newline();
 	attr(cfg.color[clr_filename]);
-	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
-	bprintf("%-*s", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE));
+	char fname[SMB_FILEIDX_NAMELEN + 1];
+	if(namelen < 12 || cols < 132)
+		namelen = 12;
+	else if(namelen > sizeof(fname) - 1)
+		namelen = sizeof(fname) - 1;
+	bprintf("%-*s", namelen, format_filename(f->name, fname, namelen, /* pad: */TRUE));
 	getfilepath(&cfg, f, path);
 
 	if(f->extdesc != NULL && *f->extdesc && !(useron.misc&EXTDESC))
@@ -427,35 +439,13 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
 		}
 		CRLF; 
 	} else {
-		char* ext_desc = strdup((char*)ext);
-		truncsp(ext_desc);
-		ptr=(char*)ext_desc;
-		SKIP_CRLF(ptr);
-		while(ptr && *ptr && !msgabort()) {
-			cr=strchr(ptr,CR);
-			lf=strchr(ptr,LF);
-			if(lf && (lf<cr || !cr)) cr=lf;
-			if(cr>ptr+LEN_FDESC)
-				cr=ptr+LEN_FDESC;
-			else if(cr)
-				*cr=0;
-			char str[256];
-			sprintf(str,"%.*s\r\n",LEN_FDESC,ptr);
-			putmsg(str,P_NOATCODES|P_SAVEATR);
-			if(!cr) {
-				if(strlen(ptr)>LEN_FDESC)
-					cr=ptr+LEN_FDESC;
-				else
-					break; 
-			}
-			if(!(*(cr+1)) || !(*(cr+2)))
-				break;
-			bprintf("%21s",nulstr);
-			ptr=cr;
-			if(!(*ptr)) ptr++;
-			while(*ptr==LF || *ptr==CR) ptr++; 
-		}
-		free(ext_desc);
+		truncsp(ext);
+		while(strncmp(ext, "\r\n", 2) == 0
+			|| strnicmp(ext, "\001N", 2) == 0
+			|| strnicmp(ext, "\0010", 2) == 0
+			|| strnicmp(ext, "\001W", 2) == 0)
+			ext += 2;
+		putmsg(ext, P_INDENT | P_NOATCODES | P_CPM_EOF | P_TRUNCATE);
 	}
 	return true;
 }
