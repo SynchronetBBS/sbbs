@@ -91,6 +91,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)readmsgs$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)readtext$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)sauce$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scandirs$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scansubs$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE)\
@@ -190,6 +191,7 @@ SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)msg_id$(OFILE) \
 			$(OBJODIR)$(DIRSEP)msgdate$(OFILE) \
 			$(OBJODIR)$(DIRSEP)getmail$(OFILE) \
+			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
 			$(SMB_OBJS)
 
 ECHOCFG_OBJS = \
@@ -211,7 +213,8 @@ ADDFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)msgdate$(OFILE) \
-			$(OBJODIR)$(DIRSEP)filedat$(OFILE)
+			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)sauce$(OFILE)
 
 FILELIST_OBJS = \
 			$(OBJODIR)$(DIRSEP)filelist$(OFILE) \
@@ -224,6 +227,7 @@ FILELIST_OBJS = \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE)
 
 MAKEUSER_OBJS = \
@@ -320,6 +324,7 @@ DELFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE)
 
@@ -359,6 +364,7 @@ FMSGDUMP_OBJS = 	$(OBJODIR)$(DIRSEP)fmsgdump$(OFILE)
 
 UPGRADE_TO_V319_OBJS =	$(OBJODIR)$(DIRSEP)upgrade_to_v319$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
