@@ -370,7 +370,7 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
 		namelen = 12;
 	else if(namelen > sizeof(fname) - 1)
 		namelen = sizeof(fname) - 1;
-	bprintf("%-*s", namelen, format_filename(f->name, fname, namelen, /* pad: */TRUE));
+	bprintf("%-*s", (int)namelen, format_filename(f->name, fname, namelen, /* pad: */TRUE));
 	getfilepath(&cfg, f, path);
 
 	if(f->extdesc != NULL && *f->extdesc && !(useron.misc&EXTDESC))
