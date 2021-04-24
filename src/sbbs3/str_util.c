@@ -94,6 +94,114 @@ char* strip_ansi(char* str)
 	return str;
 }
 
+// Sort of a stripped down version of ANS2ASC
+char* convert_ansi(const char* src, char* dest, size_t len, int width, BOOL ice_color)
+{
+	const char* s = src;
+	char* d = dest;
+	char* p;
+	ulong n[10];
+	size_t nc;
+	int column = 0;
+	while(*s != '\0' && d < dest + len) {
+		if(*s == ESC && *(s + 1) == '[') {
+			s += 2;
+			nc = 0;
+			do {
+				n[nc] = strtoul(s, &p, 10);
+				if(p == s || p == NULL)
+					break;
+				nc++;
+				s = p;
+				if(*s != ';')
+					break;
+				s++;
+			} while(nc < sizeof(n) / sizeof(n[0]));
+			while(*s != '\0' && (*s < '@' || *s > '~'))
+				s++;
+			if(*s == 'C') {	// Cursor right
+				if(n[0] < 1)
+					n[0] = 1;
+				while(n[0] >= 1 && d < dest + len) {
+					*(d++) = ' ';
+					n[0]--;
+					column++;
+				}
+			} else if(*s == 'm') { // Color / Attributes
+				for(size_t i = 0; i < nc && d < dest + len; i++) {
+					*(d++) = CTRL_A;
+					switch(n[i]) {
+						case 0:
+						case 2:
+							*(d++) = 'N';
+							break;
+						case 1:
+							*(d++) = 'H';
+							break;
+						case 3:
+						case 4:
+						case 5: 				/* blink */
+						case 6:
+						case 7:
+							*(d++) = ice_color ? 'E': 'I';
+							break;
+						case 30:
+							*(d++) = 'K';
+							break;
+						case 31:
+							*(d++) = 'R';
+							break;
+						case 32:
+							*(d++) = 'G';
+							break;
+						case 33:
+							*(d++) = 'Y';
+							break;
+						case 34:
+							*(d++) = 'B';
+							break;
+						case 35:
+							*(d++) = 'M';
+							break;
+						case 36:
+							*(d++) = 'C';
+							break;
+						case 37:
+							*(d++) = 'W';
+							break;
+						case 40:
+						case 41:
+						case 42:
+						case 43:
+						case 44:
+						case 45:
+						case 46:
+						case 47:
+							*(d++) = '0' + ((int)n[i] - 40);
+							break;
+					}
+				}
+			}
+			if(*s != '\0') // Skip "final byte"
+				s++;
+		} else {
+			if(*s == '\r' || *s == '\n') {
+				*(d++) = *(s++);
+				column = 0;
+			} else {
+				if(width && column >= width) {
+					d += sprintf(d, "\1+\1N\1/\1-");	// Save, normal, cond-newline, restore
+					column = 0;
+				}
+				*(d++) = *(s++);
+				column++;
+			}
+		}
+	}
+	*d = '\0';
+	return dest;
+}
+
 char* strip_exascii(const char *str, char* dest)
 {
 	int	i,j;
