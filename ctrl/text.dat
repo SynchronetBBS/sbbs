@@ -360,8 +360,8 @@
 "\1h\1yEnter (space-separated) Tags: "                  298 TagFilePrompt
 "UNUSED299"                                             299 Unused299
 "UNUSED300"                                             300 Unused300
-"UNUSED301"                                             301 Unused301
-"UNUSED302"                                             302 Unused302
+"\r\n\1n\1gAuthor           :\1h %s"                    301 FiAuthor
+"\r\n\1n\1gGroup            :\1h %s"                    302 FiGroup
 "\1w\1h\r\n%s is already in the queue.\r\n"             303 FileAlreadyInQueue
 "\1w\1h\1/File is not online.\r\n"                      304 FileIsNotOnline
 "\1n\r\n\1m\1h%s \1n\1madded to batch download queue -\r\n"\ 305 FileAddedToBatDlQueue
