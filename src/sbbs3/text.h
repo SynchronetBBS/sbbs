@@ -311,8 +311,8 @@ enum {
 	,TagFilePrompt
 	,Unused299
 	,Unused300
-	,Unused301
-	,Unused302
+	,FiAuthor
+	,FiGroup
 	,FileAlreadyInQueue
 	,FileIsNotOnline
 	,FileAddedToBatDlQueue

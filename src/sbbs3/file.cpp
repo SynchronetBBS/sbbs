@@ -30,6 +30,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 	char 	tmp[512];
 	char	tmp2[64];
 	char	path[MAX_PATH+1];
+	bool	is_op = dir_op(f->dir);
 
 	current_file = f;
 	getfilepath(&cfg, f, path);
@@ -63,9 +64,21 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 		bprintf(P_TRUNCATE, text[FiDescription],f->desc);
 	if(f->tags && f->tags[0])
 		bprintf(P_TRUNCATE, text[FiTags], f->tags);
+	if(f->author)
+		bprintf(P_TRUNCATE, text[FiAuthor], f->author);
+	if(f->author_org)
+		bprintf(P_TRUNCATE, text[FiGroup], f->author_org);
 	char* p = f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from;
 	if(p != NULL && *p != '\0')
 		bprintf(P_TRUNCATE, text[FiUploadedBy], p);
+	if(is_op) {
+		if(f->from_ip != NULL)
+			bprintf(P_TRUNCATE, text[FiUploadedBy], f->from_ip);
+		if(f->from_host != NULL)
+			bprintf(P_TRUNCATE, text[FiUploadedBy], f->from_host);
+		if(f->from_prot != NULL)
+			bprintf(P_TRUNCATE, text[FiUploadedBy], f->from_prot);
+	}
 	if(f->to_list != NULL && *f->to_list != '\0')
 		bprintf(P_TRUNCATE, text[FiUploadedTo], f->to_list);
 	bprintf(P_TRUNCATE, text[FiDateUled],timestr(f->hdr.when_imported.time));
@@ -81,10 +94,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 		char* p = f->extdesc;
 		SKIP_CRLF(p);
 		truncsp(p);
-		long p_mode = P_NOATCODES;
-		if(!(console&CON_RAW_IN))
-			p_mode |= P_WORDWRAP;
-		putmsg(p, p_mode);
+		putmsg(p, P_NOATCODES | P_CPM_EOF);
 		newline();
 	}
 	if(f->size == -1) {

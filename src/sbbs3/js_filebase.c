@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "sauce.h"
 #include "filedat.h"
 #include "js_request.h"
 #include <stdbool.h>
@@ -203,6 +204,16 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 	if(((f->from_port != NULL && *f->from_port != '\0') || detail > file_detail_extdesc)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_port)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_port", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
+	if(((f->author != NULL && *f->author != '\0') || detail > file_detail_extdesc)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->author)) == NULL
+			|| !JS_DefineProperty(cx, obj, "author", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
+
+	if(((f->author_org != NULL && *f->author_org != '\0') || detail > file_detail_extdesc)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->author_org)) == NULL
+			|| !JS_DefineProperty(cx, obj, "author_org", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
 	if(((f->to_list != NULL && *f->to_list != '\0') || detail > file_detail_extdesc)
@@ -458,6 +469,36 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			return SMB_FAILURE;
 		}
 		if(smb_hfield_str(file, SENDERPORT, cp) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
+		}
+	}
+
+	prop_name = "author";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp == NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_FAILURE;
+		}
+		if(smb_hfield_str(file, SMB_AUTHOR, cp) != SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+			return result;
+		}
+	}
+
+	prop_name = "author_org";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp == NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_FAILURE;
+		}
+		if(smb_hfield_str(file, SMB_AUTHOR_ORG, cp) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -1049,12 +1090,14 @@ static void get_diz(scfg_t* scfg, file_t* file, char** extdesc)
 	char diz_fpath[MAX_PATH + 1];
 	if(extract_diz(scfg, file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
 		char extbuf[LEN_EXTDESC + 1] = "";
-		str_list_t lines = read_diz(diz_fpath);
+		struct sauce_charinfo sauce;
+		char* lines = read_diz(diz_fpath, &sauce);
 		if(lines != NULL) {
-			format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
-			strListFree(&lines);
+			format_diz(lines, extbuf, sizeof(extbuf), sauce.width, sauce.ice_color);
+			free(lines);
 			free(*extdesc);
 			*extdesc = strdup(extbuf);
+			file_sauce_hfields(file, &sauce);
 			if(file->desc == NULL)
 				smb_new_hfield_str(file, SMB_FILEDESC, prep_file_desc(extbuf, extbuf));
 		}
