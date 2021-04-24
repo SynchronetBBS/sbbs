@@ -52,6 +52,7 @@ DLLEXPORT str_list_t findstr_list(const char* fname);
 DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
 DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
 DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
+DLLEXPORT char *	convert_ansi(const char* src, char* dest, size_t, int width, BOOL ice_color);
 DLLEXPORT char *	strip_ansi(char* str);
 DLLEXPORT char *	strip_exascii(const char *str, char* dest);
 DLLEXPORT char *	strip_space(const char *str, char* dest);
