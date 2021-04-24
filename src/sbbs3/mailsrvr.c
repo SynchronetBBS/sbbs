@@ -1747,15 +1747,15 @@ static void pop3_thread(void* arg)
 	update_clients();
 	client_off(socket);
 
+	SOCKET sock = socket;
+	mail_close_socket(&socket, &session);
+	/* Must be last */
 	{ 
 		int32_t remain = thread_down();
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
 			lprintf(LOG_DEBUG,"%04d %s [%s] session thread terminated (%u threads remain, %lu clients served)"
-				,socket, client.protocol, host_ip, remain, ++stats.pop3_served);
+				,sock, client.protocol, host_ip, remain, ++stats.pop3_served);
 	}
-
-	/* Must be last */
-	mail_close_socket(&socket, &session);
 }
 
 static ulong rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, const char* rbl_addr)
@@ -5028,22 +5028,22 @@ static void smtp_thread(void* arg)
 	update_clients();
 	client_off(socket);
 
-	{
-		int32_t remain = thread_down();
-		lprintf(LOG_INFO,"%04d %s %s Session thread terminated (%u threads remain, %lu clients served)"
-			,socket, client.protocol, client_id, remain, ++stats.smtp_served);
-	}
-	free(mailproc_to_match);
-
 #ifdef _WIN32
 	if(relay_user.number) {
 		if(startup->sound.logout[0] && !sound_muted(&scfg)) 
 			PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 	}
 #endif
+	SOCKET sock = socket;
+	mail_close_socket(&socket, &session);
 
 	/* Must be last */
-	mail_close_socket(&socket, &session);
+	{
+		int32_t remain = thread_down();
+		lprintf(LOG_INFO,"%04d %s %s Session thread terminated (%u threads remain, %lu clients served)"
+			,sock, client.protocol, client_id, remain, ++stats.smtp_served);
+	}
+	free(mailproc_to_match);
 }
 
 BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
