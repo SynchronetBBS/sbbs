@@ -216,9 +216,9 @@ $(JSEXEC): $(JSEXEC_OBJS) $(SBBS)
 	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSEXEC_OBJS) -lsbbs $(JS_LIBS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
 # ANS2ASC
-$(ANS2ASC): $(OBJODIR)/ans2asc.o
+$(ANS2ASC): $(OBJODIR)/ans2asc.o $(OBJODIR)/sauce.o $(XPDEV_LIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(OBJODIR)/ans2asc.o
+	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -lm -o $@ $?
 
 # ASC2ANS
 $(ASC2ANS): $(OBJODIR)/asc2ans.o

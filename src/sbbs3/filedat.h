@@ -26,6 +26,7 @@
 #include "client.h"
 #include "dllexport.h"
 #include "smblib.h"
+#include "sauce.h"
 
 #include <stdbool.h>
 
