@@ -158,8 +158,6 @@ str_list_t smb_msghdr_str_list(smbmsg_t* msg)
 		tt=msg->expiration;
 		strListAppendFormat(&list, HFIELD_NAME_FMT "%.24s", "expiration", ctime_r(&tt, tmp));
 	}
-	if(msg->cost)
-		strListAppendFormat(&list, HFIELD_NAME_FMT "%u", "cost", msg->cost);
 
 	/* data fields */
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%06"PRIX32"h"	,"data_offset"		,msg->hdr.offset);
