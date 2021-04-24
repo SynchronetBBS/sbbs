@@ -42,6 +42,7 @@
 #include "cryptlib.h"
 #include "xpprintf.h"		// vasprintf
 #include "md5.h"
+#include "sauce.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -1074,19 +1075,22 @@ static void receive_thread(void* arg)
 			if(scfg.dir[f.dir]->misc&DIR_DIZ) {
 				lprintf(LOG_DEBUG,"%04d <%s> DATA Extracting DIZ from: %s",xfer.ctrl_sock, xfer.user->alias,xfer.filename);
 				if(extract_diz(&scfg, &f, /* diz_fnames */NULL, tmp, sizeof(tmp))) {
+					struct sauce_charinfo sauce;
 					lprintf(LOG_DEBUG,"%04d <%s> DATA Parsing DIZ: %s",xfer.ctrl_sock, xfer.user->alias,tmp);
-					str_list_t lines = read_diz(tmp);
-					format_diz(lines, extdesc, sizeof(extdesc), /* allow_ansi: */false);
-					strListFree(&lines);
+					char* lines = read_diz(tmp, &sauce);
+					format_diz(lines, extdesc, sizeof(extdesc), sauce.width, sauce.ice_color);
+					free(lines);
 					if(!fdesc[0]) {						/* use for normal description */
 						prep_file_desc(extdesc, fdesc);	/* strip control chars and dupe chars */
 					}
+					file_sauce_hfields(&f, &sauce);
 					ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
 				} else
 					lprintf(LOG_DEBUG,"%04d <%s> DATA DIZ does not exist in: %s",xfer.ctrl_sock, xfer.user->alias ,xfer.filename);
 			} /* FILE_ID.DIZ support */
 
-			smb_hfield_str(&f, SMB_FILEDESC, fdesc);
+			if(f.desc == NULL)
+				smb_new_hfield_str(&f, SMB_FILEDESC, fdesc);
 			if(filedat) {
 				if(!updatefile(&scfg, &f))
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR updating file (%s) in database"

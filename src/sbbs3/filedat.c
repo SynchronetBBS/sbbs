@@ -28,6 +28,7 @@
 #include "smblib.h"
 #include "load_cfg.h"	// smb_open_dir()
 #include "scfglib.h"
+#include "sauce.h"
 
 /* libarchive: */
 #include <archive.h>
@@ -606,6 +607,25 @@ int file_client_hfields(file_t* f, client_t* client)
 	return SMB_SUCCESS;
 }
 
+int file_sauce_hfields(file_t* f, struct sauce_charinfo* info)
+{
+	int		i;
+
+	if(info == NULL)
+		return -1;
+
+	if(*info->author && (i = smb_hfield_str(f, SMB_AUTHOR, info->author)) != SMB_SUCCESS)
+		return i;
+
+	if(*info->group && (i = smb_hfield_str(f, SMB_AUTHOR_ORG, info->group)) != SMB_SUCCESS)
+		return i;
+
+	if(f->desc == NULL && *info->title && (i = smb_hfield_str(f, SMB_FILEDESC, info->title)) != SMB_SUCCESS)
+		return i;
+
+	return SMB_SUCCESS;
+}
+
 bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, client_t* client)
 {
 	char fpath[MAX_PATH + 1];
@@ -892,7 +912,7 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 {
 	int i;
 	char archive[MAX_PATH + 1];
-	char* default_diz_fnames[] = { "FILE_ID.DIZ", "DESC.SDI", NULL };
+	char* default_diz_fnames[] = { "FILE_ID.ANS", "FILE_ID.DIZ", "DESC.SDI", NULL };
 
 	getfilepath(cfg, f, archive);
 	if(diz_fnames == NULL)
@@ -945,39 +965,56 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 	return false;
 }
 
-str_list_t read_diz(const char* path)
+char* read_diz(const char* path, struct sauce_charinfo* sauce)
 {
-	FILE* fp = fopen(path, "r");
+	if(sauce != NULL)
+		memset(sauce, 0, sizeof(*sauce));
+
+	off_t len = flength(path);
+	FILE* fp = fopen(path, "rb");
 	if(fp == NULL)
 		return NULL;
 
-	str_list_t lines = strListReadFile(fp, NULL, /* max_line_len: */255);
+	if(sauce != NULL)
+		sauce_fread_charinfo(fp, /* type: */NULL, sauce);
+
+	if(len > LEN_EXTDESC)
+		len = LEN_EXTDESC;
+
+	char* buf = calloc((size_t)len + 1, 1);
+	if(buf != NULL)
+		fread(buf, (size_t)len, 1, fp);
 	fclose(fp);
-	return lines;
+
+	char* eof = strchr(buf, CTRL_Z);	// CP/M EOF
+	if(eof != NULL)
+		*eof = '\0';
+	return buf;
 }
 
-char* format_diz(str_list_t lines, char* str, size_t maxlen, bool allow_ansi)
+char* format_diz(const char* src, char* dest, size_t maxlen, int width, bool ice)
 {
-	if(lines == NULL) {
-		*str = '\0';
-		return NULL;
+	if(src == NULL) {
+		*dest = '\0';
+		return dest;
 	}
-	strListTruncateTrailingWhitespaces(lines);
-	if(!allow_ansi) {
-		for(size_t i = 0; lines[i] != NULL; i++) {
-			strip_ansi(lines[i]);
-			strip_ctrl(lines[i], lines[i]);
-		}
-	}
-	strListFastDeleteBlanks(lines);
-	return strListCombine(lines, str, maxlen, "\r\n");
+	convert_ansi(src, dest, maxlen - 1, width, ice);
+	return dest;
 }
 
 // Take a verbose extended description (e.g. FILE_ID.DIZ)
 // and convert to suitable short description
-char* prep_file_desc(const char *src, char* dest)
+char* prep_file_desc(const char* ext, char* dest)
 {
 	int out;
+	char* src;
+	char* buf = strdup(ext);
+	if(buf == NULL)
+		src = (char*)ext;
+	else {
+		src = buf;
+		strip_ctrl(src, src);
+	}
 
 	FIND_ALPHANUMERIC(src);
 	for(out = 0; *src != '\0' && out < LEN_FDESC; src++) {
@@ -995,6 +1032,7 @@ char* prep_file_desc(const char *src, char* dest)
 		dest[out++] = *src;
 	}
 	dest[out] = '\0';
+	free(buf);
 	return dest;
 }
 

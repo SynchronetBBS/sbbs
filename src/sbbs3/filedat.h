@@ -57,10 +57,11 @@ DLLEXPORT bool			addfile(scfg_t*, uint dirnum, file_t*, const char* extdesc, cli
 DLLEXPORT bool			removefile(scfg_t*, uint dirnum, const char* filename);
 DLLEXPORT char*			format_filename(const char* fname, char* buf, size_t, bool pad);
 DLLEXPORT bool			extract_diz(scfg_t*, file_t*, str_list_t diz_fname, char* path, size_t);
-DLLEXPORT str_list_t	read_diz(const char* path);
-DLLEXPORT char*			format_diz(str_list_t lines, char*, size_t maxlen, bool allow_ansi);
+DLLEXPORT char*			read_diz(const char* path, struct sauce_charinfo*);
+DLLEXPORT char*			format_diz(const char* src, char* dest, size_t maxlen, int width, bool ice_color);
 DLLEXPORT char*			prep_file_desc(const char *src, char* dst);
 DLLEXPORT int			file_client_hfields(file_t*, client_t*);
+DLLEXPORT int			file_sauce_hfields(file_t*, struct sauce_charinfo*);
 
 DLLEXPORT str_list_t	directory(const char* path);
 DLLEXPORT long			create_archive(const char* archive, const char* format

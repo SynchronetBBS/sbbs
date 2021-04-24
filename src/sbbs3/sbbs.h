@@ -1049,7 +1049,7 @@ public:
 	long	delfiles(const char *inpath, const char *spec, size_t keep = 0);
 
 	/* listfile.cpp */
-	bool	listfile(file_t*, uint dirnum, const char *search, const char letter);
+	bool	listfile(file_t*, uint dirnum, const char *search, const char letter, size_t namelen);
 	int		listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode);
 	int		listfileinfo(uint dirnum, const char *filespec, long mode);
 	void	listfiletofile(file_t*, FILE*);

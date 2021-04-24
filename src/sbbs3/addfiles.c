@@ -125,9 +125,9 @@ bool get_file_diz(file_t* f, char* ext, size_t maxlen)
 		return false;
 	}
 	printf("Parsing DIZ: %s\n", diz_fpath);
-	str_list_t lines = read_diz(diz_fpath);
-	format_diz(lines, ext, maxlen, /* allow_ansi: */false);
-	strListFree(&lines);
+	char* lines = read_diz(diz_fpath, NULL);
+	format_diz(lines, ext, maxlen, 0, false);
+	free(lines);
 	remove(diz_fpath);
 
 	if(mode&ASCII_ONLY)

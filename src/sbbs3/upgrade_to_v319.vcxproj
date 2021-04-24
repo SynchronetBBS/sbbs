@@ -94,6 +94,7 @@
   <ItemGroup>
     <ClCompile Include="dat_rec.c" />
     <ClCompile Include="filedat.c" />
+    <ClCompile Include="sauce.c" />
     <ClCompile Include="upgrade_to_v319.c" />
     <ClCompile Include="userdat.c" />
   </ItemGroup>
