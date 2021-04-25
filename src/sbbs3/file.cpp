@@ -226,6 +226,7 @@ bool sbbs_t::removefile(smb_t* smb, file_t* f)
 			,f->name
 			,cfg.lib[cfg.dir[smb->dirnum]->lib]->sname,cfg.dir[smb->dirnum]->sname);
 		logline("U-",str);
+		f->hdr.attr |= MSG_DELETE;
 		return true;
 	}
 	errormsg(WHERE, ERR_REMOVE, f->name, result, smb->last_error);

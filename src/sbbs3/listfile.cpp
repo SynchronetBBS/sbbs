@@ -364,7 +364,7 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
 	}
 
 	cond_newline();
-	attr(cfg.color[clr_filename]);
+	attr(cfg.color[(f->hdr.attr & MSG_DELETE) ? clr_err : clr_filename]);
 	char fname[SMB_FILEIDX_NAMELEN + 1];
 	if(namelen < 12 || cols < 132)
 		namelen = 12;
