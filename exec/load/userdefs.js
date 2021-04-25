@@ -53,7 +53,8 @@ const QWK_NOCTRL	= (1<<12);	// No extraneous control files
 const QWK_EXT		= (1<<13);	// QWK Extended (QWKE) format				
 const QWK_MSGID		= (1<<14);	// Include @MSGID and @REPLY in msgs		
 const QWK_HEADERS	= (1<<16);	// Include HEADERS.DAT file					
-const QWK_VOTING	= (1<<17);	// Include VOTING.DAT						
+const QWK_VOTING	= (1<<17);	// Include VOTING.DAT
+const QWK_UTF8      = (1<<18);	// Include UTF-8 characters
 
 //**********************************************************************
 // user.chat_settings						
