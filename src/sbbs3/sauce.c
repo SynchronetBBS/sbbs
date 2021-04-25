@@ -37,7 +37,7 @@ bool sauce_fread_record(FILE* fp, sauce_record_t* record)
 		&& memcmp(record->id, SAUCE_ID, SAUCE_LEN_ID) == 0
 		&& memcmp(record->ver, SAUCE_VERSION, SAUCE_LEN_VERSION) == 0;
 	
-	fseeko(fp, offset, SEEK_SET);
+	(void)fseeko(fp, offset, SEEK_SET);
 	return result;
 }
 
