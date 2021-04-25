@@ -131,7 +131,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 				break;
 			if((mode&P_UTF8) && !term_supports(UTF8))
 				utf8_normalize_str(buf);
-			if(putmsgfrag(buf, &mode, org_cols, obj) != '\0') // early-EOF?
+			if(putmsgfrag(buf, mode, org_cols, obj) != '\0') // early-EOF?
 				break;
 		}
 		free(buf);
