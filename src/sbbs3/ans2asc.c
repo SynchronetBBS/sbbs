@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	while((ch=fgetc(in))!=EOF && ch != CTRL_Z) {
 		if(ch=='[' && esc) {    /* ANSI escape sequence */
 			if(cols && column >= cols) {
-				fprintf(out, cond_newline);	// Conditional-newline
+				fprintf(out, "%s", cond_newline);	// Conditional-newline
 				column = 0;
 			}
 			ni=0;				/* zero number index */
@@ -297,7 +297,7 @@ int main(int argc, char **argv)
 					break;
 				default:
 					if(cols && column >= cols) {
-						fprintf(out, cond_newline);	// Conditional-newline
+						fprintf(out, "%s", cond_newline);	// Conditional-newline
 						column = 0;
 					}
 					fputc(ch,out);
