@@ -25,15 +25,15 @@
 #include "petdefs.h"
 #include "cp437defs.h"
 
-char* sbbs_t::auto_utf8(const char* str, long* mode)
+char* sbbs_t::auto_utf8(const char* str, long& mode)
 {
 	if(strncmp(str, "\xEF\xBB\xBF", 3) == 0) {
-		*mode |= P_UTF8;
+		mode |= P_UTF8;
 		return (char*)(str + 3);
 	}
-	if((*mode)&P_AUTO_UTF8) {
+	if(mode & P_AUTO_UTF8) {
 		if(!str_is_ascii(str) && utf8_str_is_valid(str))
-			*mode |= P_UTF8;
+			mode |= P_UTF8;
 	}
 	return (char*)str;
 }
@@ -61,7 +61,7 @@ int sbbs_t::bputs(const char *str, long mode)
 	if(online==ON_LOCAL && console&CON_L_ECHO) 	/* script running as event */
 		return(lputs(LOG_INFO, str));
 
-	str = auto_utf8(str, &mode);
+	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
 	while(l < len && online) {
 		switch(str[l]) {
@@ -137,7 +137,7 @@ int sbbs_t::bputs(const char *str, long mode)
 /****************************************************************************/
 size_t sbbs_t::bstrlen(const char *str, long mode)
 {
-	str = auto_utf8(str, &mode);
+	str = auto_utf8(str, mode);
 	size_t count = 0;
 	const char* end = str + strlen(str);
 	while (str < end) {

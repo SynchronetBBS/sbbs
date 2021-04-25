@@ -736,7 +736,7 @@ public:
 	char*	quotes_fname(int xedit, char* buf, size_t len);
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
 	char	putmsg(const char *str, long mode, long org_cols = 0, JSObject* obj = NULL);
-	char	putmsgfrag(const char* str, long* mode, long org_cols = 0, JSObject* obj = NULL);
+	char	putmsgfrag(const char* str, long& mode, long org_cols = 0, JSObject* obj = NULL);
 	bool	msgabort(void);
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
@@ -851,7 +851,7 @@ public:
 	size_t	print_utf8_as_cp437(const char*, size_t);
 	int		attr(int);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
-	char*	auto_utf8(const char*, long* mode);
+	char*	auto_utf8(const char*, long& mode);
 	enum output_rate {
 		output_rate_unlimited,
 		output_rate_300 = 300,
