@@ -5,13 +5,24 @@
 "use strict";
 
 var cmd = argv.shift();
-var fname = argv.shift();
-var verbose = false;
-var i = argv.indexOf('-v');
-if(i >= 0) {
-	verbose = true;
+var verbose = 0;
+var json = false;
+var sort = false;
+var i;
+while((i = argv.indexOf('-v')) >= 0) {
+	verbose++;
 	argv.splice(i, 1);
 }
+if((i = argv.indexOf('-json')) >= 0) {
+	json = true;
+	argv.splice(i, 1);
+}
+if((i = argv.indexOf('-sort')) >= 0) {
+	sort = true;
+	argv.splice(i, 1);
+}
+var fname = argv.shift();
+
 switch(cmd) {
 	case 'list':
 		list(fname, verbose);
@@ -43,17 +54,27 @@ function list(filename, verbose)
 {
 	var list;
 	try {
-		 list = Archive(filename).list(verbose);
+		 list = Archive(filename).list(Boolean(verbose));
 	} catch(e) {
 		alert(file_getname(filename) + ": Unsupported archive format");
 		return;
 	}
-	
+
+	if(sort)
+		list.sort(function(a,b) { if(a.name < b.name) return -1; return a.name > b.name; } );
+
+	if(json) {
+		writeln(JSON.stringify(list, null, 4));
+		return;
+	}
+
 	var dir_fmt = "\x01n%s";
 	var file_fmt = "\x01n \x01c\x01h%-*s \x01n\x01c%10lu  ";
 	if(verbose)
 		file_fmt += "\x01h%08lX  ";
 	file_fmt += "\x01h\x01w%s";
+	if(verbose > 1)
+		file_fmt += "  %s";
 	if(!js.global.console) {
 		dir_fmt = strip_ctrl(dir_fmt);
 		file_fmt = strip_ctrl(file_fmt);
@@ -74,7 +95,8 @@ function list(filename, verbose)
 			if(verbose)
 				writeln(format(file_fmt
 					,longest_name, fname, list[i].size, list[i].crc32
-					,system.timestr(list[i].time).slice(4)));
+					,system.timestr(list[i].time).slice(4)
+					,list[i].format));
 			else
 				writeln(format(file_fmt
 					,longest_name, fname, list[i].size
@@ -100,7 +122,7 @@ function install()
 		'xar',
 		'zip'
 	];
-	
+
 	var cnflib = load({}, "cnflib.js");
 	var file_cnf = cnflib.read("file.cnf");
 	if(!file_cnf) {
@@ -118,4 +140,4 @@ function install()
 		exit(-1);
 	}
 	exit(0);
-}	
+}
