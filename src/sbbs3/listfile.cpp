@@ -492,6 +492,10 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 			return(0);
 		if(ch=='P' || ch=='-')
 			return(3);
+		if(ch=='T') {
+			useron.misc ^= EXTDESC;
+			return 2;
+		}
 		if(ch=='B' || ch=='D') {    /* Flag for batch download */
 			if(useron.rest&FLAG('D')) {
 				bputs(text[R_Download]);
