@@ -256,13 +256,10 @@
 #define DIR_MOVENEW		(1<<17)		/* Files marked as new when moved */
 #define DIR_QUIET		(1<<18)		/* Do not notify uploader of downloads */
 #define DIR_NOSTAT		(1<<19)		/* Do not include transfers in system stats */
-#define DIR_FILES		(1<<20)		/* List/access files not in database */
+#define DIR_FILES		(1<<20)		/* List/access files not in database (not used) */
 #define DIR_TEMPLATE	(1<<21)		/* Use this dir as template for new dirs (in this lib) */
 #define DIR_NOHASH		(1<<22)		/* Don't auto calculate/store file content hashes */
 #define DIR_FILETAGS	(1<<23)		/* Allow files to have user-specified tags */
-
-									/* Bit values for cfg.file_misc				*/
-#define FM_NO_LFN	(1<<0)			/* No long filenames in listings			*/
 
 									/* Bit values for cfg.msg_misc (upper 16-bits default to on) */
 #define MM_REALNAME	(1<<16)			/* Allow receipt of e-mail using real names	*/
@@ -669,30 +666,21 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define ON_REMOTE   2  		/* Online remotely								*/
 
 							/* Various SYSTEM parameters for sys_status		*/
-#define SS_UNUSED	(1L<<0)	/* Unused          								*/
-#define SS_INITIAL  (1L<<1)	/* The bbs data has been initialized.			*/
 #define SS_TMPSYSOP (1L<<2)	/* Temporary Sysop Status						*/
 #define SS_USERON   (1L<<3)	/* A User is logged on to the BBS				*/
 #define SS_LCHAT    (1L<<4) /* Local chat in progress						*/
-#define SS_CAP		(1L<<5)	/* Capture is on								*/
 #define SS_ANSCAP	(1L<<6) /* Capture ANSI codes too						*/
-#define SS_FINPUT	(1L<<7) /* Using file for input 						*/
-#define SS_COMISR	(1L<<8) /* Com port ISR is installed					*/
 #define SS_DAILY	(1L<<9) /* Execute System Daily Event on logoff 		*/
 #define SS_INUEDIT	(1L<<10) /* Inside Alt-Useredit section 				*/
 #define SS_ABORT	(1L<<11) /* Global abort input or output flag			*/
 #define SS_SYSPAGE	(1L<<12) /* Paging sysop								*/
-#define SS_SYSALERT (1L<<13) /* Notify sysop when users hangs up			*/
 #define SS_GURUCHAT (1L<<14) /* Guru chat in progress						*/
-#define SS_UNUSED2	(1L<<15) /* not used in v3 (used to be SS_NODEDAB)		*/
 #define SS_EVENT	(1L<<16) /* Time shortened due to upcoming event		*/
 #define SS_PAUSEON	(1L<<17) /* Pause on, overriding user default			*/
 #define SS_PAUSEOFF (1L<<18) /* Pause off, overriding user default			*/
 #define SS_IN_CTRLP (1L<<19) /* Inside ctrl-p send node message func		*/
 #define SS_NEWUSER	(1L<<20) /* New User online 							*/
-#define SS_MDMDEBUG (1L<<21) /* Modem debug output							*/
 #define SS_NEST_PF	(1L<<22) /* Nested in printfile function				*/
-#define SS_DCDHIGH	(1L<<23) /* Assume DCD is high always					*/
 #define SS_SPLITP	(1L<<24) /* Split-screen private chat					*/
 #define SS_NEWDAY	(1L<<25) /* Date changed while online					*/
 #define SS_RLOGIN	(1L<<26) /* Current login via BSD RLogin				*/
@@ -818,7 +806,6 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_CHKTIME	XTRN_CHKTIME	/* Check time left						*/
 #define EX_NOECHO	XTRN_NOECHO		/* Don't echo stdin to stdout 			*/
 #define EX_STDIO	(EX_STDIN|EX_STDOUT)
-#define EX_JS_CX	(1<<24)		/* New JavaScript context */
 #define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
 #define EX_UNSPECIFIED	-1
