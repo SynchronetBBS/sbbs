@@ -1,5 +1,3 @@
-/* $Id: sbbsdefs.js,v 1.103 2020/05/24 10:23:03 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,20 +11,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -77,30 +63,20 @@ var   SYS_SYSVDELM	=(1<<31);	/* Sysops can see deleted msgs				*/
 						    	/********************************************/
     							/* bbs.sys_status							*/
 							    /********************************************/
-var   SS_UNUSED		=(1<<0);	/* Unused          							*/
-var   SS_INITIAL	=(1<<1);	/* The bbs data has been initialized.       */
 var   SS_TMPSYSOP	=(1<<2);	/* Temporary Sysop Status					*/
 var   SS_USERON		=(1<<3);	/* A User is logged on to the BBS			*/
 var   SS_LCHAT		=(1<<4);	/* Local chat in progress					*/
-var   SS_CAP		=(1<<5);	/* Capture is on							*/
-var   SS_ANSCAP		=(1<<6);	/* Capture ANSI codes too					*/
-var   SS_FINPUT		=(1<<7);	/* Using file for input 					*/
-var   SS_COMISR		=(1<<8);	/* Com port ISR is installed				*/
 var   SS_DAILY		=(1<<9);	/* Execute System Daily Event on logoff 	*/
 var   SS_INUEDIT	=(1<<10);	/* Inside Alt-Useredit section 				*/
 var   SS_ABORT		=(1<<11);	/* Global abort input or output flag		*/
 var   SS_SYSPAGE	=(1<<12);	/* Paging sysop								*/
-var   SS_SYSALERT	=(1<<13);	/* Notify sysop when users hangs up			*/
 var   SS_GURUCHAT	=(1<<14);	/* Guru chat in progress					*/
-var   SS_UNUSED2	=(1<<15);	/* not used in v3 (used to be SS_NODEDAB)	*/
 var   SS_EVENT		=(1<<16);	/* Time shortened due to upcoming event		*/
 var   SS_PAUSEON	=(1<<17);	/* Pause on, overriding user default		*/
 var   SS_PAUSEOFF	=(1<<18);	/* Pause off, overriding user default		*/
 var   SS_IN_CTRLP	=(1<<19);	/* Inside ctrl-p send node message func		*/
 var   SS_NEWUSER	=(1<<20);	/* New User online 							*/
-var   SS_MDMDEBUG	=(1<<21);	/* Modem debug output						*/
 var   SS_NEST_PF	=(1<<22);	/* Nested in printfile function				*/
-var   SS_DCDHIGH	=(1<<23);	/* Assume DCD is high always				*/
 var   SS_SPLITP		=(1<<24);	/* Split-screen private chat				*/
 var   SS_NEWDAY		=(1<<25);	/* Date changed while online				*/
 var   SS_RLOGIN		=(1<<26);	/* Current login via BSD RLogin				*/
@@ -117,7 +93,6 @@ var   SS_FASTLOGON  =(1<<31);	/* Fast logon                               */
 var   BBS_OPT_XTRN_MINIMIZED	=(1<<1); /* Run externals minimized			*/
 var   BBS_OPT_AUTO_LOGON		=(1<<2); /* Auto-logon via IP				*/
 var   BBS_OPT_DEBUG_TELNET		=(1<<3); /* Debug telnet commands			*/
-var   BBS_OPT_SYSOP_AVAILABLE	=(1<<4); /* Available for chat				*/
 var   BBS_OPT_ALLOW_RLOGIN		=(1<<5); /* Allow logins via BSD RLogin		*/
 var   BBS_OPT_NO_QWK_EVENTS		=(1<<7); /* Don't run QWK-related events	*/
 var   BBS_OPT_NO_TELNET_GA		=(1<<8); /* Don't send periodic Telnet GAs	*/
@@ -127,10 +102,10 @@ var   BBS_OPT_NO_HOST_LOOKUP	=(1<<11);/* Don't lookup hostname			*/
 var   BBS_OPT_ALLOW_SSH			=(1<<12);/* Allow logins via BSD SSH		*/
 var   BBS_OPT_NO_DOS			=(1<<13);/* Can't to run 16-bit DOS prog	*/
 var   BBS_OPT_NO_NEWDAY_EVENTS	=(1<<14);/* Don't check for a new day 		*/
+var   BBS_OPT_NO_TELNET			=(1<<15);/* Don't accept incoming telnet	*/
 var   BBS_OPT_HAPROXY_PROTO   	=(1<<26);/* Incoming requests via HAproxy 	*/
 var   BBS_OPT_NO_RECYCLE		=(1<<27);/* Disable recycling of server		*/
 var   BBS_OPT_GET_IDENT			=(1<<28);/* Get Identity (RFC 1413)			*/
-var   BBS_OPT_MUTE				=(1<<31);/* Mute sounds						*/
 								/********************************************/
 
 						    	/********************************************/
@@ -230,6 +205,8 @@ var   P_AUTO_UTF8	=(1<<14);	/* Message may be UTF-8, auto-detect		*/
 var   P_NOXATTRS	=(1<<15);	/* No "Extra Attribute Codes" supported		*/
 var   P_MARKUP		=(1<<16);	/* Support StyleCodes/Rich/StructuredText	*/
 var   P_HIDEMARKS	=(1<<17);	/* Hide the mark-up tags					*/
+var   P_REMOTE		=(1<<18);	/* Only print when online == ON_REMOTE		*/
+var   P_INDENT		=(1<<19);	/* Indent lines to current cursor column	*/
 							    /********************************************/
 
     							/********************************************/
@@ -290,6 +267,7 @@ var   NMAIL_KILL	=(1<<3);	/* Default Fido netmail to kill after sent	*/
 var   NMAIL_ALIAS 	=(1<<4);	/* Use Aliases when sending NetMail			*/
 var   NMAIL_FILE	=(1<<5);	/* Allow file attachments in sent NetMail	*/
 var   NMAIL_DIRECT	=(1<<6);	/* Default Fido netmail to direct			*/
+var   NMAIL_CHSRCADDR = (1<<7);	/* Allow sender to choose source address 	*/
 					    		/********************************************/
 
     							/********************************************/
@@ -349,6 +327,11 @@ var   DIR_ULTIME	=(1<<14);	/* Deduct time during uploads				*/
 var   DIR_CDTMIN	=(1<<15);	/* Give uploader minutes instead of cdt		*/
 var   DIR_SINCEDL	=(1<<16);	/* Purge based on days since last dl		*/
 var   DIR_MOVENEW	=(1<<17);	/* Files marked as new when moved			*/
+var   DIR_QUIET     =(1<<18);	/* Do not notify uploader of downloads 		*/
+var   DIR_NOSTAT    =(1<<19);	/* Do not include transfers in system stats */
+var   DIR_TEMPLATE  =(1<<21);	/* Use this dir as template for new dirs	*/
+var   DIR_NOHASH    =(1<<22);	/* Don't auto calculate/store file hashes 	*/
+var   DIR_FILETAGS  =(1<<23);	/* Allow files to have user-specified tags 	*/
 					    		/********************************************/
 
 					    		/********************************************/
@@ -375,6 +358,10 @@ var XTRN_LWRCASE	=(1<<17);	/* Use lowercase drop-file names			*/
 var XTRN_SH			=(1<<18);	/* Use command shell to execute				*/
 var XTRN_PAUSE		=(1<<19);	/* Force a screen pause on exit				*/
 var XTRN_NOECHO		=(1<<20);	/* Don't echo stdin to stdout				*/
+var XTRN_QUOTEWRAP	=(1<<21);	/* Word-wrap quoted message text			*/
+var XTRN_SAVECOLUMNS=(1<<22);	/* Save/share current terminal width to msg	*/
+var XTRN_UTF8		=(1<<23);	/* External program supports UTF-8			*/
+var XTRN_TEMP_DIR	=(1<<24);	/* Place drop files in temp dir				*/
 					    		/********************************************/
 
 								/********************************************/
@@ -499,6 +486,7 @@ var	SCAN_FIND		=(1<<4);	/* Find text in messages				    */
 var	SCAN_UNREAD		=(1<<5);	/* Display un-read messages to you only		*/
 var SCAN_MSGSONLY	=(1<<6);	/* Do not do a new file scan even if the    */
 var SCAN_POLLS		=(1<<7);	/* Scan for polls only (no messages)		*/
+var SCAN_INDEX		=(1<<8);	// List the msg index or exec listmsgs_mod
 								/* user enabled Automatic New File Scan		*/
 					    		/********************************************/
 
