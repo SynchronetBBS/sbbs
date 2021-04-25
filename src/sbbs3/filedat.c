@@ -971,6 +971,9 @@ char* read_diz(const char* path, struct sauce_charinfo* sauce)
 		memset(sauce, 0, sizeof(*sauce));
 
 	off_t len = flength(path);
+	if(len < 1)
+		return NULL;
+
 	FILE* fp = fopen(path, "rb");
 	if(fp == NULL)
 		return NULL;
@@ -982,13 +985,15 @@ char* read_diz(const char* path, struct sauce_charinfo* sauce)
 		len = LEN_EXTDESC;
 
 	char* buf = calloc((size_t)len + 1, 1);
-	if(buf != NULL)
-		fread(buf, (size_t)len, 1, fp);
+	if(buf != NULL) {
+		size_t rd = fread(buf, 1, (size_t)len, fp);
+		buf[rd] = 0;
+		char* eof = strchr(buf, CTRL_Z);	// CP/M EOF
+		if(eof != NULL)
+			*eof = '\0';
+	}
 	fclose(fp);
 
-	char* eof = strchr(buf, CTRL_Z);	// CP/M EOF
-	if(eof != NULL)
-		*eof = '\0';
 	return buf;
 }
 
