@@ -709,9 +709,8 @@ int putusername(scfg_t* cfg, int number, const char *name)
 		return(-3);
 	}
 	if(length<(((long)number-1)*(LEN_ALIAS+2))) {
-		SAFEPRINTF2(str,"%*s",LEN_ALIAS,nulstr);
+		SAFEPRINTF2(str,"%*s\r\n",LEN_ALIAS,nulstr);
 		memset(str,ETX,LEN_ALIAS);
-		strcat(str,crlf);
 		lseek(file,0L,SEEK_END);
 		while(filelength(file)<((long)number*(LEN_ALIAS+2)))
 			write(file,str,(LEN_ALIAS+2));
