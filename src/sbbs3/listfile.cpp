@@ -378,7 +378,7 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
 	else
 		outchar(' '); 
 	if(useron.misc&BATCHFLAG) {
-		attr(cfg.color[clr_filedesc]);
+		attr(curatr ^ HIGH);
 		bprintf("%c",letter); 
 	}
 	cdt = f->cost;
