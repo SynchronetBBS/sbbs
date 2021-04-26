@@ -1152,7 +1152,7 @@ int main(int argc, char **argv)
 		printf("%-39.39s: %-8lu %13s bytes used\n"
 			,"Total Active Messages"
 			,totalmsgs,ultoac(totalmsgbytes,str));
-	if(totallzhmsgs && totalmsgs!=smb.status.total_msgs)
+	if(totallzhmsgs)
 		printf("%-39.39s: %-8lu %13s bytes saved\n"
 			,"Total LZH Compressed Messages"
 			,totallzhmsgs,ultoac(totallzhsaved,str));
