@@ -84,23 +84,23 @@ void bail(int code)
 	exit(code);
 }
 
-char *loadmsgtail(smbmsg_t msg)
+char *loadmsgtail(smbmsg_t* msg)
 {
 	char	*buf=NULL;
 	uint16_t	xlat;
 	int 	i;
 	long	l=0,length;
 
-	for(i=0;i<msg.hdr.total_dfields;i++) {
-		if(msg.dfield[i].type!=TEXT_TAIL)
+	for(i=0;i<msg->hdr.total_dfields;i++) {
+		if(msg->dfield[i].type!=TEXT_TAIL)
 			continue;
-		fseek(smb.sdt_fp,msg.hdr.offset+msg.dfield[i].offset
+		fseek(smb.sdt_fp,msg->hdr.offset+msg->dfield[i].offset
 			,SEEK_SET);
 		fread(&xlat,2,1,smb.sdt_fp);
 		if(xlat!=XLAT_NONE) 		/* no translations supported */
 			continue;
-		length=msg.dfield[i].length-2;
-		if((buf=realloc(buf,l+msg.dfield[i].length+1))==NULL)
+		length=msg->dfield[i].length-2;
+		if((buf=realloc(buf,l+msg->dfield[i].length+1))==NULL)
 			return(buf);
 		l+=fread(buf+l,1,length,smb.sdt_fp);
 		buf[l]=0; 
@@ -109,7 +109,7 @@ char *loadmsgtail(smbmsg_t msg)
 }
 
 
-void gettag(smbmsg_t msg, char *tag)
+void gettag(smbmsg_t* msg, char *tag)
 {
 	char *buf,*p;
 
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
 					}
 					if(cmd&NODES && msg.from_net.type==NET_QWK) {
 						if(mode&TAGS)
-							gettag(msg,tag);
+							gettag(&msg,tag);
 						if(mode&FEED)
 							sprintf(str,"%s/%s",cfg.sys_id,(char *)msg.from_net.addr);
 						else
