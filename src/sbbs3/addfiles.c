@@ -460,6 +460,7 @@ void synclist(char *inpath, int dirnum)
 	int result = smb_open_dir(&scfg, &smb, dirnum);
 	if(result != SMB_SUCCESS) {
 		fprintf(stderr, "!Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
+		fclose(stream);
 		return;
 	}
 	size_t file_count;
