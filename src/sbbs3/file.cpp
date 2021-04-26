@@ -72,12 +72,19 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 	if(p != NULL && *p != '\0')
 		bprintf(P_TRUNCATE, text[FiUploadedBy], p);
 	if(is_op) {
+		*tmp = '\0';
 		if(f->from_ip != NULL)
-			bprintf(P_TRUNCATE, text[FiUploadedBy], f->from_ip);
-		if(f->from_host != NULL)
-			bprintf(P_TRUNCATE, text[FiUploadedBy], f->from_host);
-		if(f->from_prot != NULL)
-			bprintf(P_TRUNCATE, text[FiUploadedBy], f->from_prot);
+			SAFEPRINTF(tmp, "[%s] ", f->from_ip);
+		if(f->from_host != NULL) {
+			SAFEPRINTF(tmp2, "%s ", f->from_host);
+			SAFECAT(tmp, tmp2);
+		}
+		if(f->from_prot != NULL) {
+			SAFEPRINTF(tmp2, "via %s ", f->from_prot);
+			SAFECAT(tmp, tmp2);
+		}
+		if(*tmp != '\0')
+			bprintf(P_TRUNCATE, text[FiUploadedBy], tmp);
 	}
 	if(f->to_list != NULL && *f->to_list != '\0')
 		bprintf(P_TRUNCATE, text[FiUploadedTo], f->to_list);
