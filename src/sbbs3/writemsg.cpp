@@ -863,7 +863,6 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 	}
 	close(file);
 	if((stream=fnopen(&file,str,O_WRONLY|O_TRUNC))==NULL) {
-		close(file);
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_TRUNC);
 		free(buf);
 		return; 
