@@ -244,6 +244,7 @@ bool sbbs_t::removefile(smb_t* smb, file_t* f)
 /****************************************************************************/
 bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 {
+	file_t orgfile = *f;
 	if(findfile(&cfg, newdir, f->name, NULL)) {
 		bprintf(text[FileAlreadyThere], f->name);
 		return false; 
@@ -251,7 +252,8 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 
 	if(!addfile(&cfg, newdir, f, f->extdesc, /* client: */NULL))
 		return false;
-	removefile(smb, f);
+	if(!removefile(smb, &orgfile))
+		return false;
 	bprintf(text[MovedFile],f->name
 		,cfg.lib[cfg.dir[newdir]->lib]->sname,cfg.dir[newdir]->sname);
 	char str[MAX_PATH+1];
