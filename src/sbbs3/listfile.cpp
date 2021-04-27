@@ -494,6 +494,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 			return(3);
 		if(ch=='T') {
 			useron.misc ^= EXTDESC;
+			putuserrec(&cfg, useron.number, U_MISC, 0, ultoa(useron.misc,str,16));
 			return 2;
 		}
 		if(ch=='B' || ch=='D') {    /* Flag for batch download */
