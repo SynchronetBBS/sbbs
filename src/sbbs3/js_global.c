@@ -2201,12 +2201,18 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 								: tm.tm_hour>12 ? tm.tm_hour-12
 								: tm.tm_hour, tm.tm_min, tm.tm_hour>11 ? "pm":"am");
 						break;
-						
 					case 'L':
 						currrow=0;
 						hpos=0;
 						outbuf[j++]='\r';
 						outbuf[j++]='\n';
+						break;
+					case '/':	// conditional new-line
+						if(hpos > 0) {
+							hpos=0;
+							outbuf[j++]='\r';
+							outbuf[j++]='\n';
+						}
 						break;
 					case ']':
 						currrow++;
