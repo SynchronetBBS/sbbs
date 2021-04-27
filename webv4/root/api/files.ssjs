@@ -49,7 +49,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') && request
 				}
 				http_reply.header['Content-Type'] = mt;
 				if (mt === 'application/octet-stream') {
-					http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
+					http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.name + '"';
 				} else {
 					http_reply.header['Content-Disposition'] = 'inline';
 				}
