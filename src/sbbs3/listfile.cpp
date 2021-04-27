@@ -146,6 +146,8 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 #endif
 		if(mode&(FL_FINDDESC|FL_EXFIND)) {
 			p = (f->desc == NULL) ? NULL : strcasestr(f->desc, filespec);
+			if(p == NULL)
+				p = strcasestr(f->name, filespec);
 			if(!(mode&FL_EXFIND) && p==NULL) {
 				m++;
 				continue; 
