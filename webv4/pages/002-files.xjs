@@ -34,7 +34,7 @@
 		<strong><? write(file.name); ?></strong> (<? write(file.size); ?>)
 		<p><em>Uploaded <? write(system.timestr(file.uldate)); ?></em></p>
 		<?xjs if (typeof file.extdesc === 'undefined') { ?>
-			<p><? write(file.desc); ?></p>
+			<p><? if (file.desc !== undefined) write(file.desc); ?></p>
 		<?xjs } else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])|\x01/) > -1) { ?>
 			<pre class="ansi"><? write(html_encode(file.extdesc, true, false, true, true)); ?></pre>
 		<?xjs } else { ?>
