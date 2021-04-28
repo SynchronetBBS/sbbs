@@ -426,8 +426,9 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			put_int(c,stream); // unused
 			put_int(cfg->sub[i]->pmode,stream);
 			put_int(cfg->sub[i]->n_pmode,stream);
+			put_str(cfg->sub[i]->area_tag, stream);
 			n=0;
-			for(k=0;k<22;k++)
+			for(k=0;k<4;k++)
 				put_int(n,stream);
 
 			if(all_msghdr || (cfg->sub[i]->misc&SUB_HDRMOD && !no_msghdr)) {

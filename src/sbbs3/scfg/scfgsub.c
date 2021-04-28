@@ -140,12 +140,6 @@ void sub_cfg(uint grpnum)
 		"a full message area description (Long Name) is unnecessary.\n"
 		"\n"
 		"Sub-board Short Names are limited to 25 characters in length.\n"
-		"\n"
-		"For sub-boards that are FidoNet-networked (using FTN), it is customary\n"
-		"to use the standardized `Echo Tag` or `Area Tag` as the sub-board Short Name\n"
-		"replacing underscore (`_`) characters with spaces.  This will make the\n"
-		"task of importing-from or exporting-to EchoLists (e.g. `BACKBONE.NA`) or\n"
-		"an Area File (e.g. `areas.bbs`) much easier."
 		;
 	char* sub_code_help =
 		"`Sub-board Internal Code Suffix:`\n"
@@ -333,6 +327,7 @@ void sub_cfg(uint grpnum)
 			sprintf(opt[n++],"%-27.27s%s","QWK Name",cfg.sub[i]->qwkname);
 			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
 				,cfg.grp[cfg.sub[i]->grp]->code_prefix, cfg.sub[i]->code_suffix);
+			sprintf(opt[n++],"%-27.27s%s","FidoNet Area Tag", cfg.sub[i]->area_tag);
 			sprintf(opt[n++],"%-27.27s%s","Newsgroup Name",cfg.sub[i]->newsgroup);
 			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
 				,cfg.sub[i]->arstr);
@@ -421,41 +416,51 @@ void sub_cfg(uint grpnum)
 					break;
 				case 4:
 					uifc.helpbuf=
+						"`FidoNet Area Tag:`\n"
+						"\n"
+						"This field may be used to specify the FidoNet-style `Echo/Area Tag` for\n"
+						"this message area. If no tag name is configured here, a tag name will be\n"
+						"automatically generated from the Sub-board's `Short Name`.\n"
+						"\n"
+						"This tag should ~ not ~ contain spaces."
+					;
+					uifc.input(WIN_MID|WIN_SAV, 0, 17, "FidoNet Area Tag"
+						,cfg.sub[i]->area_tag, sizeof(cfg.sub[i]->area_tag)-1, K_EDIT|K_UPPER);
+					break;
+				case 5:
+					uifc.helpbuf=
 						"`Newsgroup Name:`\n"
 						"\n"
 						"This is the name of the sub-board used for newsgroup readers. If no name\n"
 						"is configured here, a name will be automatically generated from the\n"
 						"Sub-board's Short Name and message group's Short Name.\n"
 						"\n"
-						"This field may also be used to specify the FidoNet-style `Echo Tag` for\n"
-						"this message area.\n"
-						"\n"
 						"This name should ~ not ~ contain spaces."
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,""
 						,cfg.sub[i]->newsgroup,sizeof(cfg.sub[i]->newsgroup)-1,K_EDIT);
 					break;
-				case 5:
+				case 6:
 					sprintf(str,"%s Access",cfg.sub[i]->sname);
 					getar(str,cfg.sub[i]->arstr);
 					break;
-				case 6:
+				case 7:
 					sprintf(str,"%s Reading",cfg.sub[i]->sname);
 					getar(str,cfg.sub[i]->read_arstr);
 					break;
-				case 7:
+				case 8:
 					sprintf(str,"%s Posting",cfg.sub[i]->sname);
 					getar(str,cfg.sub[i]->post_arstr);
 					break;
-				case 8:
+				case 9:
 					sprintf(str,"%s Operator",cfg.sub[i]->sname);
 					getar(str,cfg.sub[i]->op_arstr);
 					break;
-				case 9:
+				case 10:
 					sprintf(str,"%s Moderated Posting User",cfg.sub[i]->sname);
 					getar(str,cfg.sub[i]->mod_arstr);
 					break;
-				case 10:
+				case 11:
 					sprintf(str,"%"PRIu32,cfg.sub[i]->maxmsgs);
 					uifc.helpbuf=
 						"`Maximum Number of Messages:`\n"
@@ -475,7 +480,7 @@ void sub_cfg(uint grpnum)
 					cfg.sub[i]->maxmsgs=atoi(str);
 					cfg.sub[i]->misc|=SUB_HDRMOD;
 					break;
-				case 11:
+				case 12:
 					sprintf(str,"%u",cfg.sub[i]->maxage);
 					uifc.helpbuf=
 						"`Maximum Age of Messages:`\n"
@@ -497,7 +502,7 @@ void sub_cfg(uint grpnum)
 					cfg.sub[i]->maxage=atoi(str);
 					cfg.sub[i]->misc|=SUB_HDRMOD;
 					break;
-				case 12:
+				case 13:
 					sprintf(str,"%"PRIu32,cfg.sub[i]->maxcrcs);
 					uifc.helpbuf=
 						"`Maximum Number of CRCs:`\n"
@@ -515,7 +520,7 @@ void sub_cfg(uint grpnum)
 					cfg.sub[i]->maxcrcs=atol(str);
 					cfg.sub[i]->misc|=SUB_HDRMOD;
 					break;
-				case 13:
+				case 14:
 					while(1) {
 						n=0;
 						sprintf(opt[n++],"%-30.30s%s","Allow Private Posts"
@@ -1194,7 +1199,7 @@ void sub_cfg(uint grpnum)
 							} 
 						}
 					break;
-				case 14:
+				case 15:
 					while(1) {
 						n=0;
 						sprintf(opt[n++],"%-27.27s%s","Append Tag/Origin Line"
@@ -1427,7 +1432,7 @@ void sub_cfg(uint grpnum)
 						} 
 					}
 					break;
-				case 15:
+				case 16:
 					while(1) {
 						n=0;
 						if(cfg.sub[i]->qwkconf)

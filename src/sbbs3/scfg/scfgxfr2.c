@@ -1141,7 +1141,7 @@ void dir_cfg(uint libnum)
 			sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.dir[i]->sname);
 			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
 				,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
-			sprintf(opt[n++],"%-27.27s%s","Area Tag",cfg.dir[i]->area_tag);
+			sprintf(opt[n++],"%-27.27s%s","FidoNet Area Tag",cfg.dir[i]->area_tag);
 			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
 				,cfg.dir[i]->arstr);
 			sprintf(opt[n++],"%-27.27s%s","Upload Requirements"
@@ -1230,7 +1230,15 @@ void dir_cfg(uint libnum)
 					}
 					break;
 				case 3:
-					uifc.helpbuf="FidoNet Area Tag!";
+					uifc.helpbuf=
+						"`FidoNet Area Tag:`\n"
+						"\n"
+						"This field may be used to specify the FidoNet-style `Echo/Area Tag` for\n"
+						"this file area. If no tag name is configured here, a tag name will be\n"
+						"automatically generated from the Directory's `Short Name`.\n"
+						"\n"
+						"This tag should ~ not ~ contain spaces."
+						;
 					SAFECOPY(str, cfg.dir[i]->area_tag);
 					if(uifc.input(WIN_L2R|WIN_SAV,0,17,"FidoNet File Echo Area Tag"
 						,str, FIDO_AREATAG_LEN, K_EDIT | K_UPPER) > 0)
