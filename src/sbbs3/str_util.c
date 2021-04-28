@@ -915,13 +915,15 @@ char* sub_area_tag(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 	char* p;
 
 	memset(str, 0, size);
-	if(sub->newsgroup[0])
+	if(sub->area_tag[0])
+		strncpy(str, sub->area_tag, size - 1);
+	else if(sub->newsgroup[0])
 		strncpy(str, sub->newsgroup, size - 1);
 	else {
 		strncpy(str, sub->sname, size - 1);
 		REPLACE_CHARS(str, ' ', '_', p);
-		strupr(str);
 	}
+	strupr(str);
 	return str;
 }
 
@@ -935,8 +937,8 @@ char* dir_area_tag(scfg_t* cfg, dir_t* dir, char* str, size_t size)
 	else {
 		strncpy(str, dir->sname, size - 1);
 		REPLACE_CHARS(str, ' ', '_', p);
-		strupr(str);
 	}
+	strupr(str);
 	return str;
 }
 

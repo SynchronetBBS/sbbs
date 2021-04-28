@@ -1791,16 +1791,8 @@ bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
 {
 	FILE* fp = NULL;
 
-	/* Replace spaces in the sub short-name with underscores (for use as the echotag) */
 	char echotag[FIDO_AREATAG_LEN+1];
-	if(sub->newsgroup[0])
-		SAFECOPY(echotag, sub->newsgroup);
-	else {
-		SAFECOPY(echotag, sub->sname);
-		char* p;
-		REPLACE_CHARS(echotag, ' ', '_', p);
-	}
-	strupr(echotag);
+	sub_area_tag(&scfg, sub, echotag, sizeof(echotag));
 
 	for(unsigned u=0; u < cfg.areas; u++) {
 		if(stricmp(cfg.area[u].tag, echotag) == 0)
