@@ -149,8 +149,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 				continue;
 			SAFECOPY(tmp_code, areatag);			// Copy tag to internal code suffix
 			SAFECOPY(tmpsub.sname, utos(areatag));	// ... to short name, converting underscores to spaces
-			if(strlen(areatag) > sizeof(tmpsub.sname) - 1)
-				SAFECOPY(tmpsub.newsgroup, areatag);
+			SAFECOPY(tmpsub.area_tag, areatag);
 			SAFECOPY(tmpsub.lname, iniGetString(ini, areatag, "Title", "", value));
 		} else {
 			if(feof(stream))
@@ -279,8 +278,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 					SAFECOPY(tmp_code,p);		/* Copy tag to internal code */
 					SAFECOPY(tmpsub.lname,utos(p));
 					SAFECOPY(tmpsub.sname,tmpsub.lname);
-					if(strlen(p) > sizeof(tmpsub.sname) - 1)
-						SAFECOPY(tmpsub.newsgroup, p);
+					SAFECOPY(tmpsub.area_tag, p);
 				}
 				else if(type == IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS) { /* AREAS.BBS SBBSecho */
 					p=str;
@@ -294,8 +292,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 					truncstr(p," \t");			/* Truncate tag */
 					SAFECOPY(tmpsub.lname,utos(p));
 					SAFECOPY(tmpsub.sname,tmpsub.lname);
-					if(strlen(p) > sizeof(tmpsub.sname) - 1)
-						SAFECOPY(tmpsub.newsgroup, p);
+					SAFECOPY(tmpsub.area_tag, p);
 				}
 				else if(type == IMPORT_LIST_TYPE_BACKBONE_NA) { /* BACKBONE.NA */
 					p=str;
@@ -305,8 +302,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 					*tp=0;						/* Truncate echo tag */
 					SAFECOPY(tmp_code,p);		/* Copy tag to internal code suffix */
 					SAFECOPY(tmpsub.sname,utos(p));	/* ... to short name, converting underscores to spaces */
-					if(strlen(p) > sizeof(tmpsub.sname) - 1)
-						SAFECOPY(tmpsub.newsgroup, p);
+					SAFECOPY(tmpsub.area_tag, p);
 					p=tp+1;
 					SKIP_WHITESPACE(p);			/* Find description */
 					SAFECOPY(tmpsub.lname,p);	/* Copy description to long name */
@@ -327,6 +323,8 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 		if(tmpsub.lname[0] == 0) {
 			if(tmpsub.newsgroup[0])
 				SAFECOPY(tmpsub.lname, tmpsub.newsgroup);
+			else if(tmpsub.area_tag[0])
+				SAFECOPY(tmpsub.lname, tmpsub.area_tag);
 			else
 				SAFECOPY(tmpsub.lname, tmpsub.sname);
 		}
@@ -342,6 +340,9 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			if(cfg.sub[j]->grp == grpnum) {
 				if(cfg.sub[j]->newsgroup[0] || tmpsub.newsgroup[0]) {
 					if(stricmp(cfg.sub[j]->newsgroup, tmpsub.newsgroup) == 0)
+						break;
+				} else if(cfg.sub[j]->area_tag[0] || tmpsub.area_tag[0]) {
+					if(stricmp(cfg.sub[j]->area_tag, tmpsub.area_tag) == 0)
 						break;
 				} else {
 					if(stricmp(cfg.sub[j]->sname, tmpsub.sname) == 0)
@@ -392,6 +393,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			SAFECOPY(cfg.sub[j]->lname,tmpsub.lname);
 			SAFECOPY(cfg.sub[j]->newsgroup,tmpsub.newsgroup);
 			SAFECOPY(cfg.sub[j]->qwkname,tmpsub.qwkname);
+			SAFECOPY(cfg.sub[j]->area_tag, tmpsub.area_tag);
 			if(tmpsub.data_dir[0])
 				SAFECOPY(cfg.sub[j]->data_dir,tmpsub.data_dir);
 			if(strcasestr(tmpsub.lname, "sysop") != NULL && strcasestr(tmpsub.lname, "only") != NULL) {

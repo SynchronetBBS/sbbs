@@ -40,6 +40,7 @@ typedef struct {							/* Message sub board info */
 				post_sem[LEN_DIR+1],		/* Semaphore file for this sub */
 				tagline[81],				/* Optional QWK net tag line */
 				newsgroup[LEN_DIR+1];		/* Newsgroup name */
+	char		area_tag[FIDO_AREATAG_LEN+1];
 	uchar		ar[LEN_ARSTR+1],
 				read_ar[LEN_ARSTR+1],
 				post_ar[LEN_ARSTR+1],
