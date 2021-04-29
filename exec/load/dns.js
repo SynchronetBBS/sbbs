@@ -391,17 +391,18 @@ DNS.prototype.handle_response = function(sock) {
 	delete this.outstanding[id];
 
 	ret.id = id;
-	ret.response = !!(ascii(resp[2]) & 1);
+	ret.response = !!(ascii(resp[2]) & 0x80);
 	if (!ret.response)
 		return null;
-	ret.opcode = (ascii(resp[2]) & 0x1e) >> 1;
+	ret.opcode = (ascii(resp[2]) & 0x78) >> 3;
 	if (ret.opcode !== 0 && ret.opcode !== 2)
 		return null;
-	ret.authoritative = !!(ascii(resp[2]) & (1<<5));
-	ret.truncation = !!(ascii(resp[2]) & (1<<6));
-	ret.recusrion = !!(ascii(resp[2]) & (1<<7));
-	ret.reserved = ascii(resp[3]) & 7;
-	ret.rcode = ascii(resp[3] & 0xf0) >> 4;
+	ret.authoritative = !!(ascii(resp[2]) & (1<<2));
+	ret.truncation = !!(ascii(resp[2]) & (1<<1));
+	ret.recusrion_desired = !!(ascii(resp[2]) & (1));
+	ret.recusrion_available = !!(ascii(resp[2]) & (1<<7));
+	ret.reserved = (ascii(resp[3]) & 0x70) >> 4;
+	ret.rcode = ascii(resp[3] & 0x0f);
 
 	queries = string_to_int16(resp.substr(4, 2));
 	answers = string_to_int16(resp.substr(6, 2));
