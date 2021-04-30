@@ -69,6 +69,17 @@ enum rip_state {
 	,RIP_STATE_FLUSHING		// Magical state
 };
 
+enum ansi_state {
+	ANSI_STATE_NONE,
+	ANSI_STATE_GOT_ESC,
+	ANSI_STATE_GOT_CSI,
+	ANSI_STATE_GOT_STRING,
+	ANSI_STATE_GOT_LIMITED_STRING,
+	ANSI_STATE_GOT_ESC_IN_STRING,
+	ANSI_STATE_GOT_ESC_IN_LIMITED_STRING,
+	ANSI_STATE_GOT_IB,
+};
+
 enum rip_line_thickness {
 	 RIP_LINE_THICK_THIN = 1
 	,RIP_LINE_THICK_THICK = 3
@@ -251,6 +262,8 @@ static struct {
 	int *ymap;
 	int *xunmap;
 	int *yunmap;
+	bool text_disabled;
+	enum ansi_state ansi_state;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -279,6 +292,9 @@ static struct {
 	350,
 	true,
 	NULL, NULL,
+	NULL, NULL,
+	false,
+	ANSI_STATE_NONE,
 };
 
 static const uint16_t rip_line_patterns[4] = {
@@ -7576,6 +7592,8 @@ rv_reset(const char * const var, const void * const data)
 	rip.line_width = 0;
 	rip.curstype = _NORMALCURSOR;
 	rip.borders = true;
+	rip.text_disabled = false;
+	rip.ansi_state = ANSI_STATE_NONE;
 	_setcursortype(rip.curstype);
 	reinit_screen(C80X43, NULL, 8, 8);
 	memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
@@ -10749,9 +10767,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							GET_XY2();
 							if (x1 == 0 && x2 == 0 && y1 == 0 && y2 == 0) {
-								puts("TODO: Disable text output");
+								rip.text_disabled = true;
+								rip.ansi_state = ANSI_STATE_NONE;
 								break;
 							}
+							rip.text_disabled = false;
+
 							arg1 = parse_mega(&args[8], 1);
 							if (arg1 < 0 || arg1 > 1)
 								break;
@@ -13073,6 +13094,92 @@ pendingcmp(const char *str, const BYTE *buf)
 	return 0;
 }
 
+/*
+ * This strips out everything except valid ANSI and returns the
+ * new size.
+ */
+size_t
+ansi_only(BYTE* buf, unsigned count)
+{
+	BYTE* out = buf;
+	unsigned i;
+
+	for (i = 0; i < count; i++) {
+		switch (rip.ansi_state) {
+			case ANSI_STATE_NONE:
+				if (buf[i] == '\x1b') {
+					*(out++) = buf[i];
+					rip.ansi_state = ANSI_STATE_GOT_ESC;
+				}
+				break;
+			case ANSI_STATE_GOT_ESC:
+				*(out++) = buf[i];
+				if (buf[i] < '0' || buf[i] > '~') {
+					rip.ansi_state = ANSI_STATE_NONE;
+					break;
+				}
+				switch (buf[i]) {
+					case 'X':
+						rip.ansi_state = ANSI_STATE_GOT_STRING;
+						break;
+					case 'P':
+					case ']':
+					case '^':
+					case '_':
+						rip.ansi_state = ANSI_STATE_GOT_LIMITED_STRING;
+						break;
+					case '[':
+						rip.ansi_state = ANSI_STATE_GOT_CSI;
+						break;
+					default:
+						rip.ansi_state = ANSI_STATE_NONE;
+						break;
+				}
+				break;
+			case ANSI_STATE_GOT_LIMITED_STRING:
+				*(out++) = buf[i];
+				if (buf[i] == '\x1b') {
+					rip.ansi_state = ANSI_STATE_GOT_ESC_IN_STRING;
+					break;
+				}
+				if (buf[i] < 0x08 || (buf[i] > 0x0d && buf[i] < 0x20) || (buf[i] > 0x7e)) {
+					rip.ansi_state = ANSI_STATE_NONE;
+					break;
+				}
+			case ANSI_STATE_GOT_ESC_IN_LIMITED_STRING:
+				*(out++) = buf[i];
+				rip.ansi_state = ANSI_STATE_NONE;
+				break;
+			case ANSI_STATE_GOT_ESC_IN_STRING:
+				*(out++) = buf[i];
+				if (buf[i] == 'X' || buf[i] == '\\')
+					rip.ansi_state = ANSI_STATE_NONE;
+				break;
+			case ANSI_STATE_GOT_STRING:
+				*(out++) = buf[i];
+				if (buf[i] == '\x1b')
+					rip.ansi_state = ANSI_STATE_GOT_ESC_IN_STRING;
+				break;
+			case ANSI_STATE_GOT_CSI:
+				*(out++) = buf[i];
+				if (buf[i] >= '@' && buf[i] <= '~')
+					rip.ansi_state = ANSI_STATE_NONE;
+				else if(buf[i] >= ' ' && buf[i] <= '/')
+					rip.ansi_state = ANSI_STATE_GOT_IB;
+				else if(buf[i] < '0' || buf[i] > '?')
+					rip.ansi_state = ANSI_STATE_NONE;
+				break;
+			case ANSI_STATE_GOT_IB:
+				if(buf[i] < '0' || buf[i] > '?')
+					rip.ansi_state = ANSI_STATE_NONE;
+				else if(buf[i] < ' ' || buf[i] > '/')
+					rip.ansi_state = ANSI_STATE_NONE;
+				break;
+		}
+	}
+	return out - buf;
+}
+
 // This may end up stuffing up to three bytes into the buffer...
 size_t
 parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
@@ -13350,6 +13457,8 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 			memcpy(origbuf, buf, rip_start);
 			free(buf);
 		}
+		if (rip.text_disabled)
+			return ansi_only(origbuf, rip_start);
 		return rip_start;
 	}
 	// Everything is fine...
@@ -13357,12 +13466,18 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 		memcpy(origbuf, buf, blen);
 		free(buf);
 	}
+	if (rip.text_disabled)
+		return ansi_only(origbuf, blen);
 	return blen;
 }
 
 void
 init_rip(int enabled)
 {
+	FREE_AND_NULL(rip.xmap);
+	FREE_AND_NULL(rip.ymap);
+	FREE_AND_NULL(rip.xunmap);
+	FREE_AND_NULL(rip.yunmap);
 	memset(&rip, 0, sizeof(rip));
 	rip.state = RIP_STATE_BOL;
 	rip.newstate = RIP_STATE_FLUSHING;
@@ -13386,10 +13501,6 @@ init_rip(int enabled)
 	rip.x_max = 640;
 	rip.y_dim = 350;
 	rip.y_max = 350;
-	FREE_AND_NULL(rip.xmap);
-	FREE_AND_NULL(rip.ymap);
-	FREE_AND_NULL(rip.xunmap);
-	FREE_AND_NULL(rip.yunmap);
 
 	pending_len = 0;
 	if (pending)
@@ -13460,21 +13571,21 @@ rip_getch(void)
 	hold_update = false;
 	struct mouse_field *pressed;
 
-	if (rip.enabled == false) {
-		ch = getch();
-		if(ch==0 || ch==0xe0)
-			ch |= getch() << 8;
-		return ch;
-	}
 	if (ripbuf) {
 		ch = ripbuf[ripbufpos++];
-		if (ripbuf[ripbufpos] == 0) {
+		if (ripbufpos == ripbuf_pos) {
 			free(ripbuf);
 			ripbuf = NULL;
 			ripbuf_size = 0;
 			ripbuf_pos = 0;
 			ripbufpos = 0;
 		}
+		return ch;
+	}
+	if (rip.enabled == false) {
+		ch = getch();
+		if(ch==0 || ch==0xe0)
+			ch |= getch() << 8;
 		return ch;
 	}
 
