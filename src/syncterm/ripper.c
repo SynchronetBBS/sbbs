@@ -247,6 +247,10 @@ static struct {
 	int x_max;
 	int y_max;
 	bool borders;
+	int *xmap;
+	int *ymap;
+	int *xunmap;
+	int *yunmap;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -274,6 +278,7 @@ static struct {
 	640,
 	350,
 	true,
+	NULL, NULL,
 };
 
 static const uint16_t rip_line_patterns[4] = {
@@ -7632,37 +7637,85 @@ map_rip_color(int color)
 static int
 unmap_rip_x(int x)
 {
-	double dx = x;
-	dx *= rip.x_dim;
-	dx /= rip.x_max;
-	return roundl(dx);
+	int i;
+
+	if (rip.xunmap == NULL) {
+		rip.xunmap = malloc(rip.x_dim * sizeof(int));
+		if (rip.xunmap == NULL) {
+			double dx = x;
+			dx *= rip.x_max;
+			dx /= rip.x_dim;
+			return roundl(dx);
+		}
+		for (i = 0; i < rip.x_dim; i++)
+			rip.xunmap[i] = roundl(((double)i) * rip.x_dim / rip.x_max);
+	}
+	if (x >= rip.x_dim)
+		x = rip.x_dim;
+	return rip.xunmap[x];
 }
 
 static int
 unmap_rip_y(int y)
 {
-	double dy = y;
-	dy *= rip.y_dim;
-	dy /= rip.y_max;
-	return roundl(dy);
+	int i;
+
+	if (rip.yunmap == NULL) {
+		rip.yunmap = malloc(rip.y_dim * sizeof(int));
+		if (rip.yunmap == NULL) {
+			double dy = y;
+			dy *= rip.y_max;
+			dy /= rip.y_dim;
+			return roundl(dy);
+		}
+		for (i = 0; i < rip.y_dim; i++)
+			rip.yunmap[i] = roundl(((double)i) * rip.y_dim / rip.y_max);
+	}
+	if (y >= rip.y_dim)
+		y = rip.y_dim;
+	return rip.yunmap[y];
 }
 
 static int
 map_rip_x(int x)
 {
-	double dx = x;
-	dx *= rip.x_max;
-	dx /= rip.x_dim;
-	return roundl(dx);
+	int i;
+
+	if (rip.xmap == NULL) {
+		rip.xmap = malloc(rip.x_dim * sizeof(int));
+		if (rip.xmap == NULL) {
+			double dx = x;
+			dx *= rip.x_max;
+			dx /= rip.x_dim;
+			return roundl(dx);
+		}
+		for (i = 0; i < rip.x_dim; i++)
+			rip.xmap[i] = roundl(((double)i) * rip.x_max / rip.x_dim);
+	}
+	if (x >= rip.x_dim)
+		x = rip.x_dim;
+	return rip.xmap[x];
 }
 
 static int
 map_rip_y(int y)
 {
-	double dy = y;
-	dy *= rip.y_max;
-	dy /= rip.y_dim;
-	return roundl(dy);
+	int i;
+
+	if (rip.ymap == NULL) {
+		rip.ymap = malloc(rip.y_dim * sizeof(int));
+		if (rip.ymap == NULL) {
+			double dy = y;
+			dy *= rip.y_max;
+			dy /= rip.y_dim;
+			return roundl(dy);
+		}
+		for (i = 0; i < rip.y_dim; i++)
+			rip.ymap[i] = roundl(((double)i) * rip.y_max / rip.y_dim);
+	}
+	if (y >= rip.y_dim)
+		y = rip.y_dim;
+	return rip.ymap[y];
 }
 
 static void
@@ -9634,7 +9687,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	args = parse_string(rawargs);
 
 //SLEEP(100);
-printf("Level: %d, Sublevel: %d, Cmd: '%c', args: '%s'\n", level, sublevel, cmd, args);
+//printf("Level: %d, Sublevel: %d, Cmd: '%c', args: '%s'\n", level, sublevel, cmd, args);
 	switch (level) {
 		case 0:
 			switch (sublevel) {
@@ -10335,6 +10388,10 @@ printf("Level: %d, Sublevel: %d, Cmd: '%c', args: '%s'\n", level, sublevel, cmd,
 							rip.viewport.sy = 0;
 							rip.viewport.ex = x1 - 1;
 							rip.viewport.ey = y1 - 1;
+							FREE_AND_NULL(rip.xmap);
+							FREE_AND_NULL(rip.ymap);
+							FREE_AND_NULL(rip.xunmap);
+							FREE_AND_NULL(rip.yunmap);
 							break;
 						case 'g':	// RIP_GOTOXY !|g <x> <y>
 							/* This command sets the position of the text cursor in the TTY Text
@@ -13329,6 +13386,10 @@ init_rip(int enabled)
 	rip.x_max = 640;
 	rip.y_dim = 350;
 	rip.y_max = 350;
+	FREE_AND_NULL(rip.xmap);
+	FREE_AND_NULL(rip.ymap);
+	FREE_AND_NULL(rip.xunmap);
+	FREE_AND_NULL(rip.yunmap);
 
 	pending_len = 0;
 	if (pending)
