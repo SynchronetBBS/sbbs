@@ -242,6 +242,11 @@ static struct {
 	struct ciolib_pixels *clipboard;
 	int lchars;
 	int curstype;
+	int x_dim;
+	int y_dim;
+	int x_max;
+	int y_max;
+	bool borders;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -264,6 +269,11 @@ static struct {
 	NULL,
 	0,
 	_NORMALCURSOR,
+	640,
+	350,
+	640,
+	350,
+	true,
 };
 
 static const uint16_t rip_line_patterns[4] = {
@@ -351,6 +361,52 @@ static const uint16_t ega_palette[64][3] = {
 	{0xffff, 0x5555, 0xffff},
 	{0xffff, 0xffff, 0x5555},
 	{0xffff, 0xffff, 0xffff}
+};
+
+static const uint8_t default_mapped[256][3] = {
+{ 0, 0, 0}, { 0, 0,42}, { 0,42, 0}, { 0,42,42}, {42, 0, 0}, {42, 0,42},
+{42,21, 0}, {42,42,42}, {21,21,21}, {21,21,63}, {21,63,21}, {21,63,63},
+{63,21,21}, {63,21,63}, {63,63,21}, {63,63,63}, { 0, 0, 0}, { 4, 4, 4},
+{ 8, 8, 8}, {13,13,13}, {17,17,17}, {21,21,21}, {25,25,25}, {29,29,29},
+{34,34,34}, {38,38,38}, {42,42,42}, {46,46,46}, {50,50,50}, {55,55,55},
+{59,59,59}, {63,63,63}, { 0, 0, 0}, { 0, 0,21}, { 0, 0,42}, { 0, 0,63},
+{ 0, 9, 0}, { 0, 9,21}, { 0, 9,42}, { 0, 9,63}, { 0,18, 0}, { 0,18,21},
+{ 0,18,42}, { 0,18,63}, { 0,27, 0}, { 0,27,21}, { 0,27,42}, { 0,27,63},
+{ 0,36, 0}, { 0,36,21}, { 0,36,42}, { 0,36,63}, { 0,45, 0}, { 0,45,21},
+{ 0,45,42}, { 0,45,63}, { 0,54, 0}, { 0,54,21}, { 0,54,42}, { 0,54,63},
+{ 0,63, 0}, { 0,63,21}, { 0,63,42}, { 0,63,63}, {10, 0, 0}, {10, 0,21},
+{10, 0,42}, {10, 0,63}, {10, 9, 0}, {10, 9,21}, {10, 9,42}, {10, 9,63},
+{10,18, 0}, {10,18,21}, {10,18,42}, {10,18,63}, {10,27, 0}, {10,27,21},
+{10,27,42}, {10,27,63}, {10,36, 0}, {10,36,21}, {10,36,42}, {10,36,63},
+{10,45, 0}, {10,45,21}, {10,45,42}, {10,45,63}, {10,54, 0}, {10,54,21},
+{10,54,42}, {10,54,63}, {10,63, 0}, {10,63,21}, {10,63,42}, {10,63,63},
+{21, 0, 0}, {21, 0,21}, {21, 0,42}, {21, 0,63}, {21, 9, 0}, {21, 9,21},
+{21, 9,42}, {21, 9,63}, {21,18, 0}, {21,18,21}, {21,18,42}, {21,18,63},
+{21,27, 0}, {21,27,21}, {21,27,42}, {21,27,63}, {21,36, 0}, {21,36,21},
+{21,36,42}, {21,36,63}, {21,45, 0}, {21,45,21}, {21,45,42}, {21,45,63},
+{21,54, 0}, {21,54,21}, {21,54,42}, {21,54,63}, {21,63, 0}, {21,63,21},
+{21,63,42}, {21,63,63}, {31, 0, 0}, {31, 0,21}, {31, 0,42}, {31, 0,63},
+{31, 9, 0}, {31, 9,21}, {31, 9,42}, {31, 9,63}, {31,18, 0}, {31,18,21},
+{31,18,42}, {31,18,63}, {31,27, 0}, {31,27,21}, {31,27,42}, {31,27,63},
+{31,36, 0}, {31,36,21}, {31,36,42}, {31,36,63}, {31,45, 0}, {31,45,21},
+{31,45,42}, {31,45,63}, {31,54, 0}, {31,54,21}, {31,54,42}, {31,54,63},
+{31,63, 0}, {31,63,21}, {31,63,42}, {31,63,63}, {42, 0, 0}, {42, 0,21},
+{42, 0,42}, {42, 0,63}, {42, 9, 0}, {42, 9,21}, {42, 9,42}, {42, 9,63},
+{42,18, 0}, {42,18,21}, {42,18,42}, {42,18,63}, {42,27, 0}, {42,27,21},
+{42,27,42}, {42,27,63}, {42,36, 0}, {42,36,21}, {42,36,42}, {42,36,63},
+{42,45, 0}, {42,45,21}, {42,45,42}, {42,45,63}, {42,54, 0}, {42,54,21},
+{42,54,42}, {42,54,63}, {42,63, 0}, {42,63,21}, {42,63,42}, {42,63,63},
+{52, 0, 0}, {52, 0,21}, {52, 0,42}, {52, 0,63}, {52, 9, 0}, {52, 9,21},
+{52, 9,42}, {52, 9,63}, {52,18, 0}, {52,18,21}, {52,18,42}, {52,18,63},
+{52,27, 0}, {52,27,21}, {52,27,42}, {52,27,63}, {52,36, 0}, {52,36,21},
+{52,36,42}, {52,36,63}, {52,45, 0}, {52,45,21}, {52,45,42}, {52,45,63},
+{52,54, 0}, {52,54,21}, {52,54,42}, {52,54,63}, {52,63, 0}, {52,63,21},
+{52,63,42}, {52,63,63}, {63, 0, 0}, {63, 0,21}, {63, 0,42}, {63, 0,63},
+{63, 9, 0}, {63, 9,21}, {63, 9,42}, {63, 9,63}, {63,18, 0}, {63,18,21},
+{63,18,42}, {63,18,63}, {63,27, 0}, {63,27,21}, {63,27,42}, {63,27,63},
+{63,36, 0}, {63,36,21}, {63,36,42}, {63,36,63}, {63,45, 0}, {63,45,21},
+{63,45,42}, {63,45,63}, {63,54, 0}, {63,54,21}, {63,54,42}, {63,54,63},
+{63,63, 0}, {63,63,21}, {63,63,42}, {63,63,63}
 };
 
 static uint8_t curr_ega_palette[16] = {
@@ -7509,11 +7565,12 @@ rv_reset(const char * const var, const void * const data)
 	rip.color = 0;
 	rip.viewport.sx = 0;
 	rip.viewport.sy = 0;
-	rip.viewport.ex = 639;
-	rip.viewport.ey = 349;
+	rip.viewport.ex = rip.x_dim - 1;
+	rip.viewport.ey = rip.y_dim - 1;
 	rip.line_pattern = rip_line_patterns[0];
 	rip.line_width = 0;
 	rip.curstype = _NORMALCURSOR;
+	rip.borders = true;
 	_setcursortype(rip.curstype);
 	reinit_screen(C80X43, NULL, 8, 8);
 	memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
@@ -7550,6 +7607,78 @@ rv_restore(const char * const var, const void * const data)
 	return NULL;
 }
 
+static uint32_t
+map_rip_color(int color)
+{
+	uint32_t col = 0;
+	struct dac_colors *dac = NULL;
+
+	if (color < 16)
+		col = ega_colours[color];
+	else if (color < 256) {
+		col = 0x80000000
+		    | ((default_mapped[color][0] << 2 | (default_mapped[color][0] & 3)) << 16)
+		    | ((default_mapped[color][1] << 2 | (default_mapped[color][1] & 3)) << 8)
+		    | ((default_mapped[color][2] << 2 | (default_mapped[color][2] & 3)));
+	}
+	else
+		fprintf(stderr, "Unable to map %d\n", color);
+	if (dac) {
+		col = 0x80000000 | (dac->red << 16) | (dac->green << 8) | (dac->blue);
+	}
+	return col;
+}
+
+static int
+unmap_rip_x(int x)
+{
+	double dx = x;
+	dx *= rip.x_dim;
+	dx /= rip.x_max;
+	return roundl(dx);
+}
+
+static int
+unmap_rip_y(int y)
+{
+	double dy = y;
+	dy *= rip.y_dim;
+	dy /= rip.y_max;
+	return roundl(dy);
+}
+
+static int
+map_rip_x(int x)
+{
+	double dx = x;
+	dx *= rip.x_max;
+	dx /= rip.x_dim;
+	return roundl(dx);
+}
+
+static int
+map_rip_y(int y)
+{
+	double dy = y;
+	dy *= rip.y_max;
+	dy /= rip.y_dim;
+	return roundl(dy);
+}
+
+static void
+scale_setpixel(int x, int y, uint32_t color)
+{
+	if (!(color & 0x80000000) && color < 256)
+		color = map_rip_color(color);
+	setpixel(map_rip_x(x), map_rip_y(y), color);
+}
+
+static void
+rip_setpixel(int x, int y, int color)
+{
+	setpixel(map_rip_x(x), map_rip_y(y), map_rip_color(color));
+}
+
 static char *
 rv_erase(const char * const var, const void * const data)
 {
@@ -7561,7 +7690,7 @@ rv_erase(const char * const var, const void * const data)
 				return NULL;
 			for (y = rip.viewport.sy; y <= rip.viewport.ey; y++) {
 				for (x = rip.viewport.sx; x <= rip.viewport.ex; x++)
-					setpixel(x, y, ega_colours[0]);
+					rip_setpixel(x, y, 0);
 			}
 			return NULL;
 		case 'T':
@@ -7847,10 +7976,10 @@ draw_pixel(int x, int y)
 		pix = getpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0);
 		if (pix == NULL)
 			return;
-		setpixel(rip.viewport.sx + x, rip.viewport.sy + y, ega_colours[pixel2color(pix->pixels[0]) ^ rip.color]);
+		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, pixel2color(pix->pixels[0]) ^ rip.color);
 	}
 	else {
-		setpixel(rip.viewport.sx + x, rip.viewport.sy + y, ega_colours[rip.color]);
+		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, rip.color);
 	}
 }
 
@@ -7862,7 +7991,7 @@ set_pixel(int x, int y, uint32_t fg)
 		return;
 	if (y < 0 || y > (rip.viewport.ey - rip.viewport.sy))
 		return;
-	setpixel(rip.viewport.sx + x, rip.viewport.sy + y, fg);
+	scale_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, fg);
 }
 
 static void
@@ -7874,9 +8003,9 @@ fill_pixel(int x, int y)
 		return;
 
 	if (rip.fill_pattern[y & 0x07] & (0x80 >> (x & 0x07)))
-		setpixel(x, y, ega_colours[rip.fill_color]);
+		rip_setpixel(x, y, rip.fill_color);
 	else
-		setpixel(x, y, ega_colours[0]);
+		rip_setpixel(x, y, 0);
 }
 
 static int
@@ -8852,8 +8981,8 @@ do_popup(const char * const str)
 	if (width < 29 + 29 + (strlen(question) * 8))
 		width = 29 + 29 + (strlen(question) * 8);
 	// TODO: Scale to actual screen...
-	x1 = (640 - width) / 2;
-	y1 = (350 - height) / 2;
+	x1 = (rip.x_dim - width) / 2;
+	y1 = (rip.y_dim - height) / 2;
 	x2 = x1 + width - 1;
 	y2 = y1 + height - 1;
 	pix = getpixels(x1, y1, x2, y2, false);
@@ -8910,7 +9039,7 @@ do_popup(const char * const str)
 	set_line(x2 - 12, y2 - 7, x1 + 12, y2 - 7, black, 0xffff, 1);
 	set_line(x1 + 12, y2 - 7, x1 + 12, y1 + 26, black, 0xffff, 1);
 
-	x = (640 - strlen(question) * 8) / 2;
+	x = (rip.x_dim - strlen(question) * 8) / 2;
 	y = y1 + 12;
 	oc = rip.color;
 	ox = rip.x;
@@ -8963,6 +9092,9 @@ do_popup(const char * const str)
 		switch(ch) {
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);
+				// HACK...
+				mevent.startx_res = unmap_rip_x(mevent.startx_res);
+				mevent.starty_res = unmap_rip_y(mevent.starty_res);
 				if (mevent.event == CIOLIB_MOUSE_MOVE) {
 					if (mevent.startx_res >= x1 + 14 && mevent.startx_res <= x2 - 14 &&
 					    mevent.starty_res >= y1 + 27 && mevent.starty_res <= y2 - 8) {
@@ -9143,7 +9275,7 @@ static void
 reinit_screen(enum text_modes mode, uint8_t *font, int fx, int fy)
 {
 	// TODO: Mystery rows in 8x8 mode...
-	struct ciolib_pixels *pix = getpixels(0, 0, 639, 349, false);
+	struct ciolib_pixels *pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
 	struct cterminal oldcterm = *cterm;
 	int old_hold = hold_update;
 	int cols = 80;
@@ -9201,7 +9333,7 @@ reinit_screen(enum text_modes mode, uint8_t *font, int fx, int fy)
 	gotoxy(1, 1);
 	// This is to force a vmem flush...
 	freepixels(getpixels(0, 0, 1, 1, true));
-	setpixels(0, 0, 639, 349, 0, 0, pix, NULL);
+	setpixels(0, 0, rip.x_max - 1, rip.y_max - 1, 0, 0, pix, NULL);
 	setwindow(cterm);
 	hold_update = old_hold;
 	freepixels(pix);
@@ -9263,8 +9395,10 @@ full_ellipse(int xc, int yc, int a, int b, bool fill)
 				}
 			}
 			if (rip.color) {
-				draw_pixel(xc+x, yc-y);
-				draw_pixel(xc-x, yc+y);
+				if (rip.borders) {
+					draw_pixel(xc+x, yc-y);
+					draw_pixel(xc-x, yc+y);
+				}
 			}
 		}
 		draw_pixel(xc+x, yc+y);
@@ -9500,7 +9634,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	args = parse_string(rawargs);
 
 //SLEEP(100);
-//printf("Level: %d, Sublevel: %d, Cmd: '%c', args: '%s'\n", level, sublevel, cmd, args);
+printf("Level: %d, Sublevel: %d, Cmd: '%c', args: '%s'\n", level, sublevel, cmd, args);
 	switch (level) {
 		case 0:
 			switch (sublevel) {
@@ -9734,7 +9868,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							    y1 > (rip.viewport.ey - rip.viewport.sy))
 								break;
 							arg1 = parse_mega(&args[4], 2);
-							if (arg1 < 0 || arg1 > 15)
+							if (arg1 < 0 || arg1 > 255)
 								break;
 							arg2 = rip.viewport.ey;
 							pthread_mutex_lock(&vstatlock);
@@ -9748,9 +9882,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 
 							for (i = 0; i < 50; i++) {
 							SLEEP(50);
-							setpixel(x1, y1, fg);
+							scape_setpixel(x1, y1, fg);
 							SLEEP(50);
-							setpixel(x1, y1, xx);
+							scale_setpixel(x1, y1, xx);
 							}
 							#endif
 							struct ciolib_pixels *pix = getpixels(rip.viewport.sx, rip.viewport.sy, rip.viewport.ex, arg2, false);
@@ -9796,6 +9930,41 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							GET_XY2();
 							draw_line(x1, y1, x2, y2);
+							break;
+						case 'K':	// RIP_FILLED_RECTANGLE (v2.A2)
+							handled = true;
+							if (no_viewport())
+								break;
+							GET_XY2();
+							// Yes, it really works this way... TODO: Check if others do too.
+							if (x1 > x2) {
+								arg1 = x2;
+								x2 = x1;
+								x1 = arg1;
+							}
+							if (y1 > y2) {
+								arg1 = y2;
+								y2 = y1;
+								y1 = arg1;
+							}
+							for (arg1 = y1; arg1 <= y2; arg1++) {
+								for (arg2 = x1; arg2 <= x2; arg2++) {
+									fill_pixel(arg2, arg1);
+								}
+							}
+							if (rip.borders) {
+								draw_line(x1, y1, x2, y1);
+								draw_line(x2, y1, x2, y2);
+								draw_line(x2, y2, x1, y2);
+								draw_line(x1, y2, x1, y1);
+							}
+							break;
+						case 'N':	// RIP_SET_BORDER (v2.A3)
+							handled = true;
+							arg1 = parse_mega(&args[0], 2);
+							if (arg1 == -1)
+								break;
+							rip.borders = arg1;
 							break;
 						case 'V':	// RIP_OVAL_ARC !|V <x> <y> <st_ang> <e_ang> <radx> <rady>
 								// (TODO: Are these seriously exactly the same?)
@@ -9937,7 +10106,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							arg2 = parse_mega(&args[2], 2);
 							if (arg2 == -1)
 								break;
-							if (arg2 > 15)
+							if (arg2 > 255)
 								break;
 							rip.fill_color = arg2;
 							memcpy(rip.fill_pattern, rip_fill_patterns[arg1], 8);
@@ -10122,7 +10291,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							arg1 = parse_mega(&args[0], 2);
 							arg2 = parse_mega(&args[2], 2);
-							if (arg1 < 0 || arg1 > 15)
+							if (arg1 < 0 || arg1 > 255)
 								break;
 							if (arg2 < 0 || arg2 > 63)
 								break;
@@ -10143,7 +10312,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 */
 							handled = true;
 							arg1 = parse_mega(&args[0], 2);
-							if (arg1 >= 0 && arg1 <= 15)
+							if (arg1 >= 0 && arg1 <= 255)
 								rip.color = arg1;
 							break;
 						case 'e':	// RIP_ERASE_WINDOW !|e
@@ -10155,6 +10324,17 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 */
 							handled = true;
 							rv_erase("ETW", NULL);
+							break;
+						case 'f':	// RIP_SET_WORLD_FRAME (v2.A0)
+							handled = true;
+							GET_XY();
+							rip.x_dim = x1;
+							rip.y_dim = y1;
+							// TODO: Hack... we should likely scale both directions...
+							rip.viewport.sx = 0;
+							rip.viewport.sy = 0;
+							rip.viewport.ex = x1 - 1;
+							rip.viewport.ey = y1 - 1;
 							break;
 						case 'g':	// RIP_GOTOXY !|g <x> <y>
 							/* This command sets the position of the text cursor in the TTY Text
@@ -10288,8 +10468,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							arg1 = parse_mega(&args[0], 2);
 							struct point *argv = malloc(sizeof(struct point) * arg1);
-							x1 = 639;
-							y1 = 349;
+							x1 = rip.x_dim - 1;
+							y1 = rip.x_dim - 1;
 							x2 = 0;
 							y2 = 0;
 							// Read lines and calculate extents
@@ -10423,7 +10603,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (parse_mega(&args[14], 2) < 0)
 								break;
 							arg1 = parse_mega(&args[16], 2);
-							if (arg1 < 0 || arg1 > 16)
+							if (arg1 < 0 || arg1 > 255)
 								break;
 							rip.fill_pattern[0] = parse_mega(&args[0], 2) & 0xff;
 							rip.fill_pattern[1] = parse_mega(&args[2], 2) & 0xff;
@@ -11233,21 +11413,21 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							arg1 = argv[3] & (BUTTON_FLAG1_CLIPBOARD | BUTTON_FLAG1_ICON | BUTTON_FLAG1_PLAIN);	// Flags
 							if (arg1 & (arg1 - 1))
 								break;
-							if (argv[5] > 15)	// dfore
+							if (argv[5] > 255)	// dfore
 								break;
-							if (argv[6] > 15)	// back
+							if (argv[6] > 255)	// back
 								break;
-							if (argv[7] > 15)	// bright
+							if (argv[7] > 255)	// bright
 								break;
-							if (argv[8] > 15)	// dark
+							if (argv[8] > 255)	// dark
 								break;
-							if (argv[9] > 15)	// surface
+							if (argv[9] > 255)	// surface
 								break;
-							if (argv[10] > 35)	// group_no
+							if (argv[10] > 255)	// group_no
 								break;
-							if (argv[12] > 15)	// uline_col
+							if (argv[12] > 255)	// uline_col
 								break;
-							if (argv[13] > 15)	// corner_col
+							if (argv[13] > 255)	// corner_col
 								break;
 							rip.bstyle.width = argv[0];
 							rip.bstyle.height = argv[1];
@@ -11817,7 +11997,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 														arg3 &= 0x0F;
 														break;
 												}
-												setpixel(rip.viewport.sx + x1 + x, rip.viewport.sy + y1 + y, ega_colours[arg3]);
+												rip_setpixel(rip.viewport.sx + x1 + x, rip.viewport.sy + y1 + y, arg3);
 											}
 										}
 										break;
@@ -12196,7 +12376,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	}
 	free(args);
 	if (!handled) {
-		printf("Unhandled command: Level: %d, SubLevel: %d, cmd: %d\n", level, sublevel, cmd);
+		printf("Unhandled command: Level: %d, SubLevel: %d, cmd: %d, args: %s\n", level, sublevel, cmd, args);
 		fflush(stdout);
 	}
 }
@@ -12323,7 +12503,7 @@ draw_glyph(uint8_t ch)
 		for (i = 0; i < 8; i++) {
 			for (j = 0; j < 8; j++) {
 				if (this_font[fontoffset] & (0x80 >> j))
-					setpixel(amiga_x + j, amiga_y - 1 + i, cterm->fg_color);
+					scale_setpixel(amiga_x + j, amiga_y - 1 + i, cterm->fg_color);
 			}
 			fontoffset++;
 		}
@@ -12367,13 +12547,13 @@ draw_glyph(uint8_t ch)
 			for (j = 0; j < width; j++) {
 				if ((*pd) & (1 << (currbit))) {
 					if (doubled) {
-						setpixel(amiga_x + (j*2), amiga_y + voff + (i*2), cterm->fg_color);
-						setpixel(amiga_x + (j*2)+1, amiga_y + voff + (i*2), cterm->fg_color);
-						setpixel(amiga_x + (j*2), amiga_y + voff + (i*2)+1, cterm->fg_color);
-						setpixel(amiga_x + (j*2)+1, amiga_y + voff + (i*2)+1, cterm->fg_color);
+						scale_setpixel(amiga_x + (j*2), amiga_y + voff + (i*2), cterm->fg_color);
+						scale_setpixel(amiga_x + (j*2)+1, amiga_y + voff + (i*2), cterm->fg_color);
+						scale_setpixel(amiga_x + (j*2), amiga_y + voff + (i*2)+1, cterm->fg_color);
+						scale_setpixel(amiga_x + (j*2)+1, amiga_y + voff + (i*2)+1, cterm->fg_color);
 					}
 					else
-						setpixel(amiga_x + j, amiga_y + voff + i, cterm->fg_color);
+						scale_setpixel(amiga_x + j, amiga_y + voff + i, cterm->fg_color);
 				}
 				if (--currbit == -1) {
 					pd++;
@@ -12451,7 +12631,7 @@ do_skypix(char *buf, size_t len)
 		case 1:		// Set Pixel
 			rip.x = argv[1];
 			rip.y = argv[2];
-			setpixel(rip.x, rip.y, cterm->fg_color);
+			scale_setpixel(rip.x, rip.y, cterm->fg_color);
 			break;
 		case 2:		// Draw line
 			set_line(rip.x, rip.y, argv[1], argv[2], cterm->fg_color, 0xffff, 1);
@@ -12464,7 +12644,7 @@ do_skypix(char *buf, size_t len)
 		case 4:		// Rectangle Fill...
 			for (y = argv[2]; y <= argv[4]; y++) {
 				for (x = argv[1]; x <= argv[3]; x++) {
-					setpixel(x, y, cterm->fg_color);
+					scale_setpixel(x, y, cterm->fg_color);
 				}
 			}
 			break;
@@ -13134,8 +13314,8 @@ init_rip(int enabled)
 	rip.y = 0;
 	rip.viewport.sx = 0;
 	rip.viewport.sy = 0;
-	rip.viewport.ex = 639;
-	rip.viewport.ey = 349;
+	rip.viewport.ex = rip.x_dim - 1;
+	rip.viewport.ey = rip.y_dim - 1;
 	rip.color = 7;
 	rip.font.num = 0;
 	rip.font.vertical = 0;
@@ -13145,6 +13325,10 @@ init_rip(int enabled)
 	memcpy(rip.fill_pattern, "\xff\xff\xff\xff\xff\xff\xff\xff", 8);
 	rip.line_pattern = 0xffff;
 	rip.line_width = 1;
+	rip.x_dim = 640;
+	rip.x_max = 640;
+	rip.y_dim = 350;
+	rip.y_max = 350;
 
 	pending_len = 0;
 	if (pending)
@@ -13242,6 +13426,10 @@ rip_getch(void)
 	if (ch == CIO_KEY_MOUSE) {
 		ch = -1;
 		getmouse(&mevent);
+		mevent.startx_res = unmap_rip_x(mevent.startx_res);
+		mevent.starty_res = unmap_rip_y(mevent.starty_res);
+		mevent.endx_res = unmap_rip_x(mevent.endx_res);
+		mevent.endy_res = unmap_rip_y(mevent.endy_res);
 		if (mevent.event == CIOLIB_BUTTON_1_PRESS) {
 			for (rip_pressed = rip.mfields; rip_pressed; rip_pressed = rip_pressed->next) {
 				if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
