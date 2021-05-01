@@ -189,11 +189,14 @@ int sortorder[sizeof(sort_order)/sizeof(struct sort_order_info)];
 
 char *screen_modes[]={     "Current", "80x25", "80x28", "80x30", "80x43", "80x50", "80x60", "132x37 (16:9)", "132x52 (5:4)", "132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", "Atari XEP80", "Custom", "EGA 80x25", NULL};
 static char *screen_modes_enum[]={"Current", "80x25", "80x28", "80x30", "80x43", "80x50", "80x60", "132x37",        "132x52",       "132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128-40col",   "C128-80col",   "Atari", "Atari-XEP80", "Custom", "EGA80x25", NULL};
+
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 static char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};
 
 char *rate_names[]={"300", "600", "1200", "2400", "4800", "9600", "19200", "38400", "57600", "76800", "115200", "Current", NULL};
 int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200, 0};
+
+static char *rip_versions[] = {"Off", "RIPv1", "RIPv3"};
 
 static char *fc_names[] = {"RTS/CTS", "XON/XOFF", "RTS/CTS and XON/XOFF", "None", NULL};
 static char *fc_enum[] = {"RTSCTS", "XONXOFF", "RTSCTS_XONXOFF", "None", NULL};
@@ -687,7 +690,7 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
     entry->screen_mode=iniGetEnum(section,NULL,"ScreenMode",screen_modes_enum,SCREEN_MODE_CURRENT);
     entry->nostatus=iniGetBool(section,NULL,"NoStatus",FALSE);
     entry->hidepopups=iniGetBool(section,NULL,"HidePopups",FALSE);
-    entry->rip=iniGetBool(section,NULL,"RIP",FALSE);
+    entry->rip=iniGetEnum(section,NULL,"RIP",rip_versions,RIP_VERSION_NONE);
     iniGetString(section,NULL,"DownloadPath",home,entry->dldir);
     iniGetString(section,NULL,"UploadPath",home,entry->uldir);
 
@@ -909,6 +912,28 @@ void configure_log(struct bbslist *item, const char *itemname, str_list_t inifil
 	}
 }
 
+static int
+get_rip_version(int oldver, int *changed)
+{
+	int cur = oldver;
+	int bar = 0;
+
+	uifc.helpbuf=   "`RIP Version`\n\n"
+	    "RIP v1 requires EGA mode while RIP v3\n"
+	    "works in any screen mode.";
+	switch(uifc.list(WIN_SAV,0,0,0,&cur,&bar,"RIP Mode",rip_versions)) {
+		case -1:
+			check_exit(FALSE);
+			break;
+		case RIP_VERSION_NONE:
+		case RIP_VERSION_1:
+		case RIP_VERSION_3:
+			if (cur != oldver)
+				*changed = 1;
+	}
+	return cur;
+}
+
 int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isdefault)
 {
     char    opt[19][69];    /* 21=Holds number of menu items, 80=Number of columns */
@@ -994,7 +1019,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
         sprintf(opt[i++], "Address Family    %s",address_family_names[item->address_family]);
         sprintf(opt[i++], "Font              %s",item->font);
         sprintf(opt[i++], "Hide Popups       %s",item->hidepopups?"Yes":"No");
-        sprintf(opt[i++], "RIP               %s",item->rip?"Yes":"No");
+        sprintf(opt[i++], "RIP               %s",rip_versions[item->rip]);
         opt[i][0]=0;
         uifc.changes=0;
 
@@ -1282,9 +1307,9 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                         break;
                     default:
                         iniSetEnum(&inifile,itemname,"ScreenMode",screen_modes_enum,item->screen_mode,&ini_style);
-                        if (item->rip && item->screen_mode != SCREEN_MODE_EGA_80X25 && item->screen_mode != SCREEN_MODE_80X43) {
-                            item->rip = FALSE;
-                            iniSetBool(&inifile,itemname,"RIP",item->rip,&ini_style);
+                        if (item->rip == RIP_VERSION_1 && item->screen_mode != SCREEN_MODE_EGA_80X25 && item->screen_mode != SCREEN_MODE_80X43) {
+                            item->rip = RIP_VERSION_3;
+                            iniSetEnum(&inifile,itemname,"RIP",rip_versions,item->rip,&ini_style);
                         }
                         if(item->screen_mode == SCREEN_MODE_C64) {
                             SAFECOPY(item->font,font_names[33]);
@@ -1411,13 +1436,12 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 iniSetBool(&inifile,itemname,"HidePopups",item->hidepopups,&ini_style);
                 break;
             case 17:
-                item->rip = !item->rip;
-                changed = 1;
-                if (item->rip) {
+                item->rip = get_rip_version(item->rip, &changed);
+                if (item->rip == RIP_VERSION_1) {
                     item->screen_mode = 4;
                     iniSetEnum(&inifile,itemname,"ScreenMode",screen_modes_enum,item->screen_mode,&ini_style);
                 }
-                iniSetBool(&inifile,itemname,"RIP",item->rip,&ini_style);
+                iniSetEnum(&inifile,itemname,"RIP",rip_versions,item->rip,&ini_style);
         }
         if(uifc.changes)
             changed=1;
@@ -1467,7 +1491,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
     iniSetEnum(&inifile, bbs->name, "AddressFamily", address_families, bbs->address_family, &ini_style);
     iniSetString(&inifile,bbs->name,"Font",bbs->font,&ini_style);
     iniSetBool(&inifile,bbs->name,"HidePopups",bbs->hidepopups,&ini_style);
-    iniSetBool(&inifile,bbs->name,"RIP",bbs->rip,&ini_style);
+    iniSetEnum(&inifile,bbs->name,"RIP",rip_versions,bbs->rip,&ini_style);
     iniSetString(&inifile,bbs->name,"Comment",bbs->comment,&ini_style);
     if((listfile=fopen(listpath,"w"))!=NULL) {
         iniWriteFile(listfile,inifile);

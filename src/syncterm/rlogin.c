@@ -45,7 +45,6 @@ void rlogin_input_thread(void *args)
 #endif
 void rlogin_output_thread(void *args)
 {
-	fd_set	wds;
 	int		wr;
 	int		ret;
 	int	sent;

@@ -440,7 +440,9 @@ static uint32_t color_value(uint32_t col)
 {
 	if (col & 0x80000000)
 		return col;
-	return (0xff << 24) | (palette[col].red << 16) | (palette[col].green << 8) | palette[col].blue;
+	if (col < sizeof(palette) / sizeof(palette[0]))
+		return (0xff << 24) | (palette[col].red << 16) | (palette[col].green << 8) | palette[col].blue;
+	fprintf(stderr, "Invalid colour value: %08x\n", col);
 }
 
 static struct rectlist *get_full_rectangle_locked(struct bitmap_screen *screen)
