@@ -264,6 +264,8 @@ static struct {
 	int *yunmap;
 	bool text_disabled;
 	enum ansi_state ansi_state;
+	int clipx;
+	int clipy;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -295,6 +297,7 @@ static struct {
 	NULL, NULL,
 	false,
 	ANSI_STATE_NONE,
+	0, 0,
 };
 
 static const uint16_t rip_line_patterns[4] = {
@@ -7197,7 +7200,20 @@ static void draw_line(int x1, int y1, int x2, int y2);
 static void reinit_screen(enum text_modes mode, uint8_t *font, int fontx, int fonty);
 static bool no_viewport(void);
 
-static const char ripver[] = "RIPSCRIP015410";
+//static const char ripver[] = "RIPSCRIP015410";
+static const char ripver[] = "RIPSCRIP030001";
+
+#define RIP_MOUSE_EVENT_NONE 0
+#define RIP_MOUSE_EVENT_TEXT 1
+#define RIP_MOUSE_EVENT_GRAPHICS 2
+struct rip_mouse_event {
+	int     x;
+	int     y;
+	uint8_t buttons;
+	uint8_t type;
+};
+
+static struct rip_mouse_event rip_mouse_event;
 
 static const struct builtin_rip_variable builtins[] = {
 	{"ADOW", rv_date, NULL},		// Abbreviated Day of Week
@@ -7335,7 +7351,7 @@ get_text_variable(const char * const var)
 	}
 	vardef = bsearch(var, builtins, sizeof(builtins) / sizeof(builtins[0]), sizeof(builtins[0]), bicmp);
 	if (vardef == NULL) {
-		puts("TODO: User variables");
+		printf("TODO: User variables (%s)\n", var);
 		return(calloc(1, 1));
 	}
 	return vardef->func(var, vardef->data);
@@ -7469,7 +7485,7 @@ rv_time(const char * const var, const void * const data)
 					return strdup(str);
 			}
 	}
-	puts("TODO: RIP Variables");
+	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
@@ -7520,54 +7536,57 @@ rv_sound(const char * const var, const void * const data)
 				xptone(i, 2, WAVE_SHAPE_SINE);
 			return NULL;
 	}
-	puts("TODO: RIP Variables");
+	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
 static char *
 rv_mouse(const char * const var, const void * const data)
 {
-	int x,y;
-	uint8_t but;
 	char str[128];
+	int fwidth = 4;
+
+	switch (rip_mouse_event.type) {
+		case RIP_MOUSE_EVENT_NONE:
+			mousestate_res(&rip_mouse_event.x, &rip_mouse_event.y, &rip_mouse_event.buttons);
+			break;
+		case RIP_MOUSE_EVENT_TEXT:
+			fwidth = 2;
+			break;
+	}
 
 	switch (var[0]) {
 		case 'X':
 			switch(var[1]) {
 				case 0:
-					mousestate_res(&x, NULL, NULL);
-					snprintf(str, sizeof(str), "%04d", x);
+					snprintf(str, sizeof(str), "%0*d", fwidth, rip_mouse_event.x);
 					return strdup(str);
 				case 'Y':
 					switch(var[2]) {
 						case 0:
-							mousestate_res(&x, &y, NULL);
-							snprintf(str, sizeof(str), "%04x:%04x", x, y);
+							snprintf(str, sizeof(str), "%0*x:%0*x", fwidth, rip_mouse_event.x, fwidth, rip_mouse_event.y);
 							return strdup(str);
 						case 'M':
-							mousestate_res(&x, &y, &but);
-							snprintf(str, sizeof(str), "%04x:%04x:%d%d%d", x, y, but & 1, but >> 1 & 1, but >> 2 & 1);
+							snprintf(str, sizeof(str), "%0*x:%0*x:%d%d%d", fwidth, rip_mouse_event.x, fwidth, rip_mouse_event.y, rip_mouse_event.buttons & 1, rip_mouse_event.buttons >> 1 & 1, rip_mouse_event.buttons >> 2 & 1);
 							return strdup(str);
 					}
 					break;
 			}
 			break;
 		case 'Y':
-			mousestate_res(NULL, &y, NULL);
-			snprintf(str, sizeof(str), "%04d", y);
+			snprintf(str, sizeof(str), "%0*d", fwidth, rip_mouse_event.y);
 			return strdup(str);
 		case 'M':
 			switch(var[1]) {
 				case 0:
-					mousestate_res(NULL, NULL, &but);
-					snprintf(str, sizeof(str), "%d%d%d", but & 1, but >> 1 & 1, but >> 2 & 1);
+					snprintf(str, sizeof(str), "%d%d%d", rip_mouse_event.buttons & 1, rip_mouse_event.buttons >> 1 & 1, rip_mouse_event.buttons >> 2 & 1);
 					return strdup(str);
 				case 'S':
 					return strdup("YES");
 			}
 			break;
 	}
-	puts("TODO: RIP Variables");
+	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
@@ -7619,14 +7638,20 @@ rv_reset(const char * const var, const void * const data)
 static char *
 rv_save(const char * const var, const void * const data)
 {
-	puts("TODO: RIP Variables");
+	if (strcmp(var, "SMF")) {
+		// Save mouse fields...
+	}
+	printf("TODO: Save RIP Variables (%s)\n", var);
 	return NULL;
 }
 
 static char *
 rv_restore(const char * const var, const void * const data)
 {
-	puts("TODO: RIP Variables");
+	if (strcmp(var, "RMF")) {
+		// Restore mouse fields...
+	}
+	printf("TODO: Restore RIP Variables (%s)\n", var);
 	return NULL;
 }
 
@@ -7769,7 +7794,7 @@ rv_erase(const char * const var, const void * const data)
 			cterm_gotoxy(cterm, 1, 1);
 			return NULL;
 	}
-	puts("TODO: RIP Variables");
+	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
@@ -7783,14 +7808,14 @@ rv_mouse_kill(const char * const var, const void * const data)
 static char *
 rv_disable(const char * const var, const void * const data)
 {
-	puts("TODO: RIP Variables");
+	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
 static char *
 rv_termstat(const char * const var, const void * const data)
 {
-	puts("TODO: RIP Variables");
+	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
@@ -7876,21 +7901,22 @@ rv_termset(const char * const var, const void * const data)
 static char *
 rv_hotkey(const char * const var, const void * const data)
 {
-	puts("TODO: RIP Variables");
+	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
 static char *
 rv_exploit(const char * const var, const void * const data)
 {
-	puts("TODO: RIP Variables");
+	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
 static char *
 rv_paste(const char * const var, const void * const data)
 {
-	puts("TODO: RIP Variables");
+	if (rip.clipboard)
+		setpixels(rip.clipx, rip.clipy, rip.clipx + rip.clipboard->width - 1, rip.clipy + rip.clipboard->height - 1, 0, 0, rip.clipboard, NULL);
 	return NULL;
 }
 
@@ -10928,12 +10954,17 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									handle_command_str(&args[4]);
 									break;
 								case 1:
-									free(rip.graphics_click);
-									rip.graphics_click = strdup(&args[4]);
+									FREE_AND_NULL(rip.graphics_click);
+									if (strcmp(&args[4], "$OFF$"))
+										rip.graphics_click = strdup(&args[4]);
 									break;
 								case 2:
-									free(rip.text_click);
-									rip.text_click = strdup(&args[4]);
+									FREE_AND_NULL(rip.text_click);
+									if (strcmp(&args[4], "$OFF$"))
+										rip.text_click = strdup(&args[4]);
+									break;
+								default:
+									printf("Unhandled QUERY type %d\n", arg1);
 									break;
 							}
 							break;
@@ -11564,6 +11595,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							freepixels(rip.clipboard);
 							gettextinfo(&ti);
 							rip.clipboard = getpixels(x1 + rip.viewport.sx, y1 + rip.viewport.sy, x2 + rip.viewport.sx, y2 + rip.viewport.sy, false);
+							rip.clipx = x1 + rip.viewport.sx;
+							rip.clipy = y1 + rip.viewport.sy;
 							break;
 						case 'D':	// RIP_DEFINE !|1D <flags> <res> <text>
 							/* This command is used to create a text variable on the Client system
@@ -11959,13 +11992,13 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							x1 = parse_mega(&args[2], 2);
 							if (x1 < 0)
 								break;
-							x2 = parse_mega(&args[4], 2);
+							y1 = parse_mega(&args[4], 2);
+							if (y1 < 0)
+								break;
+							x2 = parse_mega(&args[6], 2);
 							if (x2 < 0)
 								break;
 							if (x2 > rip.viewport.ex - rip.viewport.sx)
-								break;
-							y1 = parse_mega(&args[6], 2);
-							if (y1 < 0)
 								break;
 							y2 = parse_mega(&args[8], 2);
 							if (y2 < 0)
@@ -13668,7 +13701,30 @@ rip_getch(void)
 				}
 			}
 			else {
-				puts("TODO: Check graphics/text clicks");
+				if (rip.text_click) {
+					if (mevent.endx >= cterm->left_margin - 1 && mevent.endx <= cterm->right_margin - 1
+					    && mevent.endy >= cterm->top_margin - 1 && mevent.endy <= cterm->bottom_margin - 1) {
+						rip_mouse_event.x = mevent.endx;
+						rip_mouse_event.y = mevent.endy;
+						rip_mouse_event.buttons = mevent.bstate | 1;
+						mousestate(&rip_mouse_event.x, &rip_mouse_event.y, &rip_mouse_event.buttons);
+						rip_mouse_event.type = RIP_MOUSE_EVENT_TEXT;
+						handle_command_str(rip.text_click);
+						rip_mouse_event.type = RIP_MOUSE_EVENT_NONE;
+					}
+				}
+				if (rip.graphics_click) {
+					if (mevent.endx_res >= rip.viewport.sx && mevent.endx_res <= rip.viewport.ex
+					    && mevent.endy_res >= rip.viewport.sy && mevent.endy_res <= rip.viewport.ey) {
+						rip_mouse_event.x = mevent.endx_res;
+						rip_mouse_event.y = mevent.endy_res;
+						rip_mouse_event.buttons = mevent.bstate | 1;
+						mousestate_res(&rip_mouse_event.x, &rip_mouse_event.y, &rip_mouse_event.buttons);
+						rip_mouse_event.type = RIP_MOUSE_EVENT_GRAPHICS;
+						handle_command_str(rip.graphics_click);
+						rip_mouse_event.type = RIP_MOUSE_EVENT_NONE;
+					}
+				}
 			}
 		}
 	}
