@@ -1194,8 +1194,8 @@ void bitmap_clrscr(void)
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
-	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
-		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright; x++) {
+	for(y = cio_textinfo.wintop-1; y < cio_textinfo.winbottom && y < vstat.rows; y++) {
+		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright && x < vstat.cols; x++) {
 			set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, fill, ciolib_fg, ciolib_bg);
 			bitmap_draw_one_char(x+1, y+1);
 		}
