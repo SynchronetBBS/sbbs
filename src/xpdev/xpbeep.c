@@ -756,7 +756,8 @@ BOOL xptone_close_locked(void)
 
 #ifdef WITH_PULSEAUDIO
 	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
-		pu_api->simple_free(pu_handle);
+		if (pu_handle)
+			pu_api->simple_free(pu_handle);
 		pu_handle = NULL;
 	}
 #endif
