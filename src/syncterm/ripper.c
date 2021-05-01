@@ -226,6 +226,7 @@ static struct {
 	enum rip_state state;
 	enum rip_state newstate;
 	bool enabled;
+	int version;
 	int x;
 	int y;
 	struct {
@@ -270,6 +271,7 @@ static struct {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
 	true,
+	3,
 	0,
 	0,
 	{0, 0, 639, 349},
@@ -7177,7 +7179,7 @@ static void do_rip_string(const char *buf, size_t len);
 static bool handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, unsigned maxlen, enum rip_state ns);
 static void unrip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, unsigned maxlen);
 static void write_text(const char *str);
-static char * rv_static(const char * const var, const void * const data);
+static char * rv_version(const char * const var, const void * const data);
 static char * rv_date(const char * const var, const void * const data);
 static char * rv_time(const char * const var, const void * const data);
 static char * rv_sound(const char * const var, const void * const data);
@@ -7197,11 +7199,10 @@ static void kill_mouse_fields(void);
 static void shadow_palette(void);
 static void normal_palette(void);
 static void draw_line(int x1, int y1, int x2, int y2);
-static void reinit_screen(enum text_modes mode, uint8_t *font, int fontx, int fonty);
+static void reinit_screen(uint8_t *font, int fontx, int fonty);
 static bool no_viewport(void);
 
-//static const char ripver[] = "RIPSCRIP015410";
-static const char ripver[] = "RIPSCRIP030001";
+static const char *ripver[] = {"", "RIPSCRIP015410", "RIPSCRIP030001"};
 
 #define RIP_MOUSE_EVENT_NONE 0
 #define RIP_MOUSE_EVENT_TEXT 1
@@ -7274,7 +7275,7 @@ static const struct builtin_rip_variable builtins[] = {
 	{"RESTORE9", rv_restore, NULL},
 	{"RESTOREALL", rv_restore, NULL},
 	{"REVPHASER", rv_sound, NULL},
-	{"RIPVER", rv_static, ripver},// RIPscrip version
+	{"RIPVER", rv_version, NULL},// RIPscrip version
 	{"RMF", rv_restore, NULL},
 	{"RTW", rv_restore, NULL},
 	{"SAVE", rv_save, NULL},
@@ -7358,9 +7359,9 @@ get_text_variable(const char * const var)
 }
 
 static char *
-rv_static(const char * const var, const void * const data)
+rv_version(const char * const var, const void * const data)
 {
-	return strdup(data);
+	return strdup(ripver[rip.version]);
 }
 
 static char *
@@ -7614,7 +7615,7 @@ rv_reset(const char * const var, const void * const data)
 	rip.text_disabled = false;
 	rip.ansi_state = ANSI_STATE_NONE;
 	_setcursortype(rip.curstype);
-	reinit_screen(C80X43, NULL, 8, 8);
+	reinit_screen((uint8_t*)conio_fontdata[0].eight_by_eight, 8, 8);
 	memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 	set_ega_palette();
 	cterm->left_margin = 1;
@@ -7764,7 +7765,7 @@ map_rip_y(int y)
 static void
 scale_setpixel(int x, int y, uint32_t color)
 {
-	if (!(color & 0x80000000) && color < 256)
+	if (!(color & 0x80000000))
 		color = map_rip_color(color);
 	setpixel(map_rip_x(x), map_rip_y(y), color);
 }
@@ -7846,6 +7847,8 @@ rv_termset(const char * const var, const void * const data)
 							if (cterm->left_margin == 1 && cterm->right_margin == 1 &&
 							    cterm->top_margin == 1 && cterm->bottom_margin == 1)
 								return strdup("NO");
+							if (rip.text_disabled)
+								return strdup("NO");
 							if (rip.curstype == _NOCURSOR)
 								return strdup("NO");
 							return strdup("YES");
@@ -7871,20 +7874,30 @@ rv_termset(const char * const var, const void * const data)
 					return NULL;
 			}
 			break;
-		case 'S':
+		case 'S': {
+			void *font;
+			int width;
+			int height;
+
+			pthread_mutex_lock(&vstatlock);
+			font = vstat.forced_font;
+			width = vstat.charwidth;
+			height = vstat.charheight;
+			pthread_mutex_unlock(&vstatlock);
 			switch(var[5]) {
 				case 'F':
 					gettextinfo(&ti);
 					term.nostatus = TRUE;
-					reinit_screen(ti.currmode, vstat.forced_font, vstat.charwidth, vstat.charheight);
+					reinit_screen(font, width, height);
 					return NULL;
 				case 'N':
 					gettextinfo(&ti);
 					term.nostatus = FALSE;
-					reinit_screen(ti.currmode, vstat.forced_font, vstat.charwidth, vstat.charheight);
+					reinit_screen(font, width, height);
 					return NULL;
 			}
 			break;
+		}
 		case 'V':
 			switch(var[6]) {
 				case 'F':
@@ -9369,47 +9382,52 @@ kill_mouse_fields(void)
 
 // TODO: this currently doesn't seem to work (shocker!)
 static void
-reinit_screen(enum text_modes mode, uint8_t *font, int fx, int fy)
+reinit_screen(uint8_t *font, int fx, int fy)
 {
 	// TODO: Mystery rows in 8x8 mode...
 	struct ciolib_pixels *pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
 	struct cterminal oldcterm = *cterm;
 	int old_hold = hold_update;
 	int cols = 80;
+	int rows = 43;
 	void *nvmem;
 
 	hold_update = 0;
 	cterm_end(cterm);
 	normal_palette();
-	// First, switch to the new mode...
-	textmode(mode);
 	// TODO: You know this is insane right?
 	// Patch vstat font, font size, and cols
-	pthread_mutex_lock(&vstatlock);
-	vstat.forced_font = font;
-	vstat.charwidth = fx;
-	vstat.charheight = fy;
 	if (font == ripfnt7x8)
 		cols = 91;
 	if (font == ripfnt7x14)
 		cols = 91;
 	if (font == ripfnt16x14)
 		cols = 40;
-	vstat.cols = cols;
-	// We need to update gettextinfo() results as well...
-	cio_textinfo.screenwidth = cols;
-	// And this crappy thing.
-	term.width = cols;
-	// Now, make the vmem array large enough for the new bits...
-	nvmem = realloc(vstat.vmem->vmem, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
-	// And use it.
-	vstat.vmem->vmem = nvmem;
+	pthread_mutex_lock(&vstatlock);
+	rows = vstat.scrnheight / fy;
+	if (font != vstat.forced_font || fx != vstat.charwidth || fy != vstat.charheight) {
+		vstat.forced_font = font;
+		vstat.charwidth = fx;
+		vstat.charheight = fy;
+		vstat.cols = cols;
+		vstat.rows = rows;
+		// We need to update gettextinfo() results as well...
+		cio_textinfo.screenwidth = cols;
+		cio_textinfo.screenheight = rows;
+		// And this crappy thing.
+		term.width = cols;
+		term.height = rows;
+		// Now, make the vmem array large enough for the new bits...
+		nvmem = realloc(vstat.vmem->vmem, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
+		// And use it.
+		vstat.vmem->vmem = nvmem;
+	}
 	pthread_mutex_unlock(&vstatlock);
 	// Initialize it...
 	clrscr();
 	get_term_win_size(&term.width, &term.height, &term.nostatus);
 	term.width = cols;
-	cterm = cterm_init((mode == C80X43 ? 43 : 25) + (term.nostatus ? 0 : -1), vstat.cols, oldcterm.x, oldcterm.y, oldcterm.backlines, oldcterm.backwidth, oldcterm.scrollback, oldcterm.emulation);
+	cterm = cterm_init(rows + (term.nostatus ? 0 : -1), cols, oldcterm.x, oldcterm.y, oldcterm.backlines, oldcterm.backwidth, oldcterm.scrollback, oldcterm.emulation);
 	cterm->apc_handler = oldcterm.apc_handler;
 	cterm->apc_handler_data = oldcterm.apc_handler_data;
 	cterm->mouse_state_change = oldcterm.mouse_state_change;
@@ -9928,11 +9946,16 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
 							pthread_mutex_lock(&vstatlock);
-							// This seems to be 
-							arg3 = (arg1 * 7750 / 10000);
+							if (vstat.scale_numerator == 729 && vstat.scale_denominator == 1000) {
+								// Detect EGA mode and use the same value as RIPterm did.
+								arg3 = (arg1 * 7750 / 10000);
+							}
+							else {
+								arg3 = arg1 * vstat.scale_numerator / vstat.scale_denominator;
+							}
+							pthread_mutex_unlock(&vstatlock);
 							if (arg1 == 1)
 								arg3 = 1;
-							pthread_mutex_unlock(&vstatlock);
 							full_ellipse(x1, y1, arg1, arg3, false);
 							break;
 						case 'E':	// RIP_ERASE_VIEW !|E
@@ -10427,6 +10450,13 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							GET_XY();
 							rip.x_dim = x1;
 							rip.y_dim = y1;
+							pthread_mutex_lock(&vstatlock);
+							rip.x_max = vstat.scrnwidth;
+							if (rip.x_max > rip.x_dim)
+								rip.x_max = rip.x_dim;
+							rip.y_max = vstat.scrnheight;
+							if (rip.y_max > rip.y_dim)
+								rip.y_max = rip.y_dim;
 							// TODO: Hack... we should likely scale both directions...
 							rip.viewport.sx = 0;
 							rip.viewport.sy = 0;
@@ -10436,6 +10466,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							FREE_AND_NULL(rip.ymap);
 							FREE_AND_NULL(rip.xunmap);
 							FREE_AND_NULL(rip.yunmap);
+							pthread_mutex_unlock(&vstatlock);
 							break;
 						case 'g':	// RIP_GOTOXY !|g <x> <y>
 							/* This command sets the position of the text cursor in the TTY Text
@@ -10807,32 +10838,33 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							struct text_info ti;
 							gettextinfo(&ti);
-							arg3 = vstat.charwidth;
+							if (arg1)
+								cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
+							else
+								cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
+							pthread_mutex_lock(&vstatlock);
+							if (x1 == cterm->left_margin - 1 && x2 == cterm->right_margin - 1
+							    && y1 == cterm->top_margin - 1 && y2 == cterm->bottom_margin - 1
+							    && arg2 == vstat.charwidth) {
+								pthread_mutex_unlock(&vstatlock);
+								break;
+							}
+							pthread_mutex_unlock(&vstatlock);
 							switch(arg2) {
 								case 0:
-									if (ti.currmode == C80X43 && arg3 == 8)
-										break;
-									reinit_screen(C80X43, NULL, 8, 8);
+									reinit_screen((uint8_t*)conio_fontdata[0].eight_by_eight, 8, 8);
 									break;
 								case 1:
-									if (ti.currmode == C80X43 && arg3 == 7)
-										break;
-									reinit_screen(C80X43, ripfnt7x8, 7, 8);
+									reinit_screen(ripfnt7x8, 7, 8);
 									break;
 								case 2:
-									if (ti.currmode == EGA80X25 && arg3 == 8)
-										break;
-									reinit_screen(EGA80X25, NULL, 8, 14);
+									reinit_screen((uint8_t*)conio_fontdata[0].eight_by_fourteen, 8, 14);
 									break;
 								case 3:
-									if (ti.currmode == EGA80X25 && arg3 == 7)
-										break;
-									reinit_screen(EGA80X25, ripfnt7x14, 7, 14);
+									reinit_screen(ripfnt7x14, 7, 14);
 									break;
 								case 4:
-									if (ti.currmode == EGA80X25 && arg3 == 16)
-										break;
-									reinit_screen(EGA80X25, ripfnt16x14, 16, 14);
+									reinit_screen(ripfnt16x14, 16, 14);
 									break;
 							}
 							arg3 = 0;
@@ -10855,10 +10887,6 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							cterm->bottom_margin = y2 + 1;
 
 							cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
-							if (arg1)
-								cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
-							else
-								cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
 							if (arg3) {
 								setwindow(cterm);
 								arg3 = hold_update;
@@ -12064,8 +12092,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								gettextinfo(&ti);
 
 								int bline = y1 + rip.viewport.sy + rip.clipboard->height - 1;
+								pthread_mutex_lock(&vstatlock);
 								if (bline >= vstat.scrnheight)
 									bline = vstat.scrnheight - 1;
+								pthread_mutex_unlock(&vstatlock);
 								if (x1 + rip.viewport.sx + rip.clipboard->width - 1 > rip.viewport.ex)
 									break;
 								switch(arg1) {
@@ -13042,20 +13072,20 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 		fwrite(pending, 1, pending_len, cterm->logfile);
 	if (strcmp(pending, "\x1b[!") == 0) {
 		gettextinfo(&ti);
-		if (ti.currmode == C80X43 || ti.currmode == EGA80X25)
-			conn_send(ripver, 14, 1000);
+		if (rip.version)
+			conn_send(ripver[rip.version], 14, 1000);
 	}
 	else if (strcmp(pending, "\x1b[0!") == 0) {
 		gettextinfo(&ti);
-		if (ti.currmode == C80X43 || ti.currmode == EGA80X25)
-			conn_send(ripver, 14, 1000);
+		if (rip.version)
+			conn_send(ripver[rip.version], 14, 1000);
 	}
 	else if (strcmp(pending, "\x1b[1!") == 0) {
 		rip.enabled = false;
 	}
 	else if (strcmp(pending, "\x1b[2!") == 0) {
 		gettextinfo(&ti);
-		if (ti.currmode == C80X43 || ti.currmode == EGA80X25)
+		if (rip.version)
 			rip.enabled = true;
 	}
 	else if (pending[0] == '\x1b' && pending[1] == '[') {
@@ -13514,7 +13544,8 @@ init_rip(int enabled)
 	memset(&rip, 0, sizeof(rip));
 	rip.state = RIP_STATE_BOL;
 	rip.newstate = RIP_STATE_FLUSHING;
-	rip.enabled = enabled;
+	rip.enabled = version != RIP_VERSION_NONE;
+	rip.version = version;
 	rip.x = 0;
 	rip.y = 0;
 	rip.viewport.sx = 0;
@@ -13531,9 +13562,15 @@ init_rip(int enabled)
 	rip.line_pattern = 0xffff;
 	rip.line_width = 1;
 	rip.x_dim = 640;
-	rip.x_max = 640;
+	pthread_mutex_lock(&vstatlock);
+	rip.x_max = vstat.scrnwidth;
+	if (rip.x_max > rip.x_dim)
+		rip.x_max = rip.x_dim;
 	rip.y_dim = 350;
-	rip.y_max = 350;
+	rip.y_max = vstat.scrnheight;
+	if (rip.y_max > rip.y_dim)
+		rip.y_max = rip.y_dim;
+	pthread_mutex_unlock(&vstatlock);
 
 	pending_len = 0;
 	if (pending)
@@ -13541,7 +13578,7 @@ init_rip(int enabled)
 	moredata_len = 0;
 	if (moredata)
 		moredata[0] = 0;
-	if (enabled) {
+	if (version) {
 		memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 		set_ega_palette();
 	}

@@ -66,6 +66,12 @@ enum {
     ,ADDRESS_FAMILY_INET6
 };
 
+enum {
+	 RIP_VERSION_NONE
+	,RIP_VERSION_1
+	,RIP_VERSION_3
+};
+
 /* NOTE: changing this may require updating sort_order in bbslist.c */
 struct bbslist {
     char            name[LIST_NAME_MAX+1];

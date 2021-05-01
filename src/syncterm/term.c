@@ -2251,7 +2251,7 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 						MD5_calc(digest, buf, rc);
 				}
 				fclose(f);
-				MD5_hex((BYTE *)buf, digest);
+				MD5_hex(buf, digest);
 				conn_send(buf, strlen(buf), 0);
 			}
 			conn_send("\n", 1, 0);
