@@ -13535,7 +13535,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 }
 
 void
-init_rip(int enabled)
+init_rip(int version)
 {
 	FREE_AND_NULL(rip.xmap);
 	FREE_AND_NULL(rip.ymap);
