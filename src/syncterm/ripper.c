@@ -8067,7 +8067,12 @@ pixel2color(uint32_t pix)
 			break;
 	}
 	if (i == 16) {
-		printf("TODO: Unable to convert color %08" PRIx32 " to palette color\n", pix);
+		for (i = 0; i < 256; i++) {
+			if (map_rip_color(i) == pix)
+				break;
+		}
+		if (i == 256)
+			printf("TODO: Unable to convert color %08" PRIx32 " to palette color\n", pix);
 		return 0;
 	}
 	return i;
@@ -9418,7 +9423,9 @@ reinit_screen(uint8_t *font, int fx, int fy)
 		term.width = cols;
 		term.height = rows;
 		// Now, make the vmem array large enough for the new bits...
+		// TODO: Handle failures!
 		nvmem = realloc(vstat.vmem->vmem, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
+		memset(nvmem, 0, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
 		// And use it.
 		vstat.vmem->vmem = nvmem;
 	}
@@ -10385,11 +10392,18 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							arg1 = parse_mega(&args[16], 2);
 							x2 = xp[0];
 							y2 = yp[0];
+							// TODO: We should be able to parallelize this...
 							for (arg2 = 1; arg2 < arg1; arg2++) {
 								double tf = ((double)arg2) / arg1;
 								double tr = ((double)(arg1 - arg2)) / arg1;
-								x1 = pow(tr, 3) * xp[0] + 3 * tf * pow(tr, 2) * xp[1] + 3 * pow(tf, 2) * tr * xp[2] + pow(tf, 3) * xp[3];
-								y1 = pow(tr, 3) * yp[0] + 3 * tf * pow(tr, 2) * yp[1] + 3 * pow(tf, 2) * tr * yp[2] + pow(tf, 3) * yp[3];
+								double tfs = pow(tf, 2);
+								double tfstr = tfs * tr;
+								double tfc = pow(tf, 3);
+								double trs = pow(tr, 2);
+								double tftrs = tf * trs;
+								double trc = pow(tr, 3);
+								x1 = trc * xp[0] + 3 * tftrs * xp[1] + 3 * tfstr * xp[2] + tfc * xp[3];
+								y1 = trc * yp[0] + 3 * tftrs * yp[1] + 3 * tfstr * yp[2] + tfc * yp[3];
 								//x1 = tr * tr * tr * xp[0] + 3 * tf * tr * tr * xp[1] + 3 * tf * tf * tr * xp[2] + tf * tf * tf * xp[3];
 								//y1 = tr * tr * tr * yp[0] + 3 * tf * tr * tr * yp[1] + 3 * tf * tf * tr * yp[2] + tf * tf * tf * yp[3];
 								draw_line(x2, y2, x1, y1);
