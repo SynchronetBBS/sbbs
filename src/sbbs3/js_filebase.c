@@ -1258,6 +1258,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	char*		filename = NULL;
 	JSObject*	fileobj = NULL;
 	bool		use_diz_always = false;
+	bool		readd_always = false;
 	jsrefcount	rc;
 
 	ZERO_VAR(file);
@@ -1291,6 +1292,10 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 		use_diz_always = JSVAL_TO_BOOLEAN(argv[argn]);
 		argn++;
 	}
+	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		readd_always = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 
 	JSBool result = JS_TRUE;
 	char* extdesc = NULL;
@@ -1317,7 +1322,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 			} else {
 				if(file.extdesc != NULL)
 					truncsp(file.extdesc);
-				if(strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0)
+				if(!readd_always && strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0)
 					p->smb_result = smb_putfile(&p->smb, &file);
 				else {
 					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS) {
@@ -1721,7 +1726,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"update",			js_update_file,		3, JSTYPE_BOOLEAN
-		,JSDOCSTR("filename, file-meta-object [,use_diz_always=false]")
+		,JSDOCSTR("filename, file-meta-object [,use_diz_always=false] [,readd_always=false]")
 		,JSDOCSTR("update an existing file in the file base"
 				", may throw exception on errors (e.g. file rename failure)")
 		,31900
