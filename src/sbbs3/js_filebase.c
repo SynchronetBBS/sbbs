@@ -1613,7 +1613,7 @@ static jsSyncPropertySpec js_filebase_properties[] = {
 #ifdef BUILD_JSDOCS
 static char* filebase_prop_desc[] = {
 
-	 "last occurred file base error - <small>READ ONLY</small>"
+	 "last occurred file base error description - <small>READ ONLY</small>"
 	,"return value of last <i>SMB Library</i> function call - <small>READ ONLY</small>"
 	,"base path and filename of file base - <small>READ ONLY</small>"
 	,"file base open/lock retry timeout (in seconds)"
@@ -1645,7 +1645,35 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	},
 	{"get",				js_get_file,		2, JSTYPE_OBJECT
 		,JSDOCSTR("filename or file-meta-object [,detail=FileBase.DETAIL.NORM]")
-		,JSDOCSTR("get a file metadata object")
+		,JSDOCSTR("get a file metadata object or <tt>null</tt> on failure. "
+			"The file-meta-object may contain the following properties (depending on <i>detail</i> value):<br>"
+			"<table>"
+			"<tr><td align=top><tt>name</tt><td>Filename <i>(required)</i>"
+			"<tr><td align=top><tt>desc</tt><td>Description (summary, 58 chars or less)"
+			"<tr><td align=top><tt>extdesc</tt><td>Extended description (multi-line description, e.g. DIZ)"
+			"<tr><td align=top><tt>author</tt><td>File author name (e.g. from SAUCE record)"
+			"<tr><td align=top><tt>author_org</tt><td>File author organization (group, e.g. from SAUCE record)"
+			"<tr><td align=top><tt>from</tt><td>Uploader's user name (e.g. for awarding credits)"
+			"<tr><td align=top><tt>from_ip_addr</tt><td>Uploader's IP address (if available, for security tracking)"
+			"<tr><td align=top><tt>from_host_name</tt><td>Uploader's host name (if available, for security tracking)"
+			"<tr><td align=top><tt>from_protocol</tt><td>TCP/IP protocol used by uploader (if available, for security tracking)"
+			"<tr><td align=top><tt>from_port</tt><td>TCP/UDP port number used by uploader (if available, for security tracking)"
+			"<tr><td align=top><tt>to_list</tt><td>Comma-separated listed of recipient user numbers (for user-to-user transfers)"
+			"<tr><td align=top><tt>tags</tt><td>Space-separated list of tags"
+			"<tr><td align=top><tt>anon</tt><td><tt>true</tt> if the file was uploaded anonymously"
+			"<tr><td align=top><tt>size</tt><td>File size, in bytes, at the time of upload"
+			"<tr><td align=top><tt>cost</tt><td>File credit value (0=free)"
+			"<tr><td align=top><tt>time</tt><td>File modification date/time (in time_t format)"
+			"<tr><td align=top><tt>added</tt><td>Date/time file was uploaded/imported (in time_t format)"
+			"<tr><td align=top><tt>last_downlaoded</tt><td>Date/time file was last downloaded (in time_t format) or 0=never"
+			"<tr><td align=top><tt>times_downloaded</tt><td>Total number of times file has been downloaded"
+			"<tr><td align=top><tt>crc16</tt><td>16-bit CRC of file contents"
+			"<tr><td align=top><tt>crc32</tt><td>32-bit CRC of file contents"
+			"<tr><td align=top><tt>md5</tt><td>128-bit MD5 digest of file contents (hexadecimal)"
+			"<tr><td align=top><tt>sha1</tt><td>160-bit SHA-1 digest of file contents (hexadecimal)"
+			"<tr><td align=top><tt>content</tt><td>Array of archived file details (<tt>name, size, time, crc32, md5<tt>, etc.)"
+			"</table>"
+		)
 		,31900
 	},
 	{"get_list",		js_get_file_list,	4, JSTYPE_ARRAY
@@ -1683,7 +1711,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	},
 	{"add",				js_add_file,		1, JSTYPE_BOOLEAN
 		,JSDOCSTR("file-meta-object [,use_diz_always=false] [,object client=none]")
-		,JSDOCSTR("add a file to the file base")
+		,JSDOCSTR("add a file to the file base, returning <tt>true</tt> on success or <tt>false</tt> upon failure.")
 		,31900
 	},
 	{"remove",			js_remove_file,		2, JSTYPE_BOOLEAN
