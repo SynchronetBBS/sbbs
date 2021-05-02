@@ -283,8 +283,9 @@ SMBEXPORT int 		smb_open_fp(smb_t*, FILE**, int share);
 SMBEXPORT void		smb_close_fp(FILE**);
 
 /* New FileBase API: */
-enum file_detail { file_detail_index, file_detail_normal, file_detail_extdesc };
-SMBEXPORT int		smb_addfile(smb_t*, smbfile_t*, int storage, const char* extdesc, const char* path);
+enum file_detail { file_detail_index, file_detail_normal, file_detail_extdesc, file_detail_content };
+SMBEXPORT int		smb_addfile(smb_t*, smbfile_t*, int storage, const char* extdesc, const char* content, const char* path);
+SMBEXPORT int		smb_addfile_withlist(smb_t*, smbfile_t*, int storage, const char* extdesc, str_list_t, const char* path);
 SMBEXPORT int		smb_renewfile(smb_t*, smbfile_t*, int storage, const char* path);
 SMBEXPORT int		smb_getfile(smb_t*, smbfile_t*, enum file_detail);
 SMBEXPORT int		smb_putfile(smb_t*, smbfile_t*);

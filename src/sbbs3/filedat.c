@@ -29,6 +29,7 @@
 #include "load_cfg.h"	// smb_open_dir()
 #include "scfglib.h"
 #include "sauce.h"
+#include "crc32.h"
 
 /* libarchive: */
 #include <archive.h>
@@ -636,8 +637,11 @@ bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, client_t*
 
 	getfilepath(cfg, f, fpath);
 	file_client_hfields(f, client);
-	int result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, fpath);
+	str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
+		,(cfg->dir[dirnum]->misc & DIR_NOHASH) == 0, /* error: */NULL, /* size: */0);
+	int result = smb_addfile_withlist(&smb, f, SMB_SELFPACK, extdesc, list, fpath);
 	smb_close(&smb);
+	strListFree(&list);
 	return result == SMB_SUCCESS;
 }
 
@@ -696,6 +700,108 @@ int archive_type(const char* archive, char* str, size_t size)
 	}
 	archive_read_free(ar);
 	return result;
+}
+
+str_list_t list_archive_contents(const char* filename, const char* pattern, bool hash, char* error, size_t maxerrlen)
+{
+	int result;
+	struct archive *ar;
+	struct archive_entry *entry;
+
+	if((ar = archive_read_new()) == NULL) {
+		safe_snprintf(error, maxerrlen, "archive_read_new() returned NULL");
+		return NULL;
+	}
+	archive_read_support_filter_all(ar);
+	archive_read_support_format_all(ar);
+	if((result = archive_read_open_filename(ar, filename, 10240)) != ARCHIVE_OK) {
+		safe_snprintf(error, maxerrlen, "archive_read_open_filename() returned %d: %s"
+			,result, archive_error_string(ar));
+		archive_read_free(ar);
+		return NULL;
+	}
+
+	str_list_t list = strListInit();
+    if(list == NULL) {
+		safe_snprintf(error, maxerrlen, "strListInit() returned NULL");
+		archive_read_free(ar);
+		return NULL;
+	}
+
+	while(1) {
+		result = archive_read_next_header(ar, &entry);
+		if(result != ARCHIVE_OK) {
+			if(result != ARCHIVE_EOF) {
+				safe_snprintf(error, maxerrlen, "archive_read_next_header() returned %d: %s"
+					,result, archive_error_string(ar));
+				archive_read_free(ar);
+				strListFree(&list);
+				return NULL;
+			}
+			break;
+		}
+
+		const char* pathname = archive_entry_pathname(entry);
+		if(pathname == NULL)
+			continue;
+
+		if(pattern != NULL && *pattern && !wildmatch(pathname, pattern, /* path: */false, /* case-sensitive: */false))
+			continue;
+
+		const char* type;
+		switch(archive_entry_filetype(entry)) {
+			case AE_IFREG:
+				type = "file";
+				break;
+			case AE_IFLNK:
+				type = "link";
+				break;
+			case AE_IFDIR:
+				type = "directory";
+				break;
+			default:
+				continue;
+		}
+
+		iniSetString(&list, pathname, "type", type, /* style: */NULL);
+		iniSetBytes(&list, pathname, "size", 1, archive_entry_size(entry), /* style: */NULL);
+		iniSetDateTime(&list, pathname, "time", true, archive_entry_mtime(entry), NULL);
+		iniSetInteger(&list, pathname, "mode", archive_entry_mode(entry), NULL);
+		iniSetString(&list, pathname, "format", archive_format_name(ar), NULL);
+		iniSetString(&list, pathname, "compression", archive_filter_name(ar, 0), NULL);
+
+		if(hash && archive_entry_filetype(entry) == AE_IFREG) {
+			MD5 md5_ctx;
+			SHA1_CTX sha1_ctx;
+			uint8_t md5[MD5_DIGEST_SIZE];
+			uint8_t sha1[SHA1_DIGEST_SIZE];
+			uint32_t crc32 = 0;
+
+			MD5_open(&md5_ctx);
+			SHA1Init(&sha1_ctx);
+
+			const void *buff;
+			size_t size;
+			la_int64_t offset;
+
+			for(;;) {
+				result = archive_read_data_block(ar, &buff, &size, &offset);
+				if(result != ARCHIVE_OK)
+					break;
+				crc32 = crc32i(~crc32, buff, size);
+				MD5_digest(&md5_ctx, buff, size);
+				SHA1Update(&sha1_ctx, buff, size);
+			}
+			MD5_close(&md5_ctx, md5);
+			SHA1Final(&sha1_ctx, sha1);
+			iniSetHexInt(&list, pathname, "crc32", crc32, NULL);
+			char hex[128];
+			iniSetString(&list, pathname, "md5", MD5_hex(hex, md5), NULL);
+			iniSetString(&list, pathname, "sha1", SHA1_hex(hex, sha1), NULL);
+		}
+	}
+	archive_read_free(ar);
+	return list;
 }
 
 str_list_t directory(const char* path)

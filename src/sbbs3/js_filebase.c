@@ -165,6 +165,51 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static bool
+set_content_properties(JSContext *cx, JSObject* obj, const char* fname, str_list_t ini)
+{
+	const char*	val;
+	jsval		js_val;
+	JSString*	js_str;
+	const char* key;
+	const uintN flags = JSPROP_ENUMERATE | JSPROP_READONLY;
+
+	if(fname == NULL
+		|| (js_str = JS_NewStringCopyZ(cx, fname)) == NULL
+		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
+		return false;
+
+	const char* key_list[] = { "type", "time", "format", "compression", "md5", "sha1", NULL };
+	for(size_t i = 0; key_list[i] != NULL; i++) {
+		key = key_list[i];
+		if((val = iniGetString(ini, NULL, key, NULL, NULL)) != NULL
+			&& ((js_str = JS_NewStringCopyZ(cx, val)) == NULL
+				|| !JS_DefineProperty(cx, obj, key, STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+			return false;
+	}
+
+	key = "size";
+	js_val = DOUBLE_TO_JSVAL((jsdouble)iniGetBytes(ini, NULL, key, 1, -1));
+	if(!JS_DefineProperty(cx, obj, key, js_val, NULL, NULL, flags))
+		return false;
+
+	key = "mode";
+	if(iniKeyExists(ini, NULL, key)) {
+		js_val = INT_TO_JSVAL(iniGetInteger(ini, NULL, key, 0));
+		if(!JS_DefineProperty(cx, obj, key, js_val, NULL, NULL, flags))
+			return false;
+	}
+
+	key = "crc32";
+	if(iniKeyExists(ini, NULL, key)) {
+		js_val = UINT_TO_JSVAL(iniGetLongInt(ini, NULL, key, 0));
+		if(!JS_DefineProperty(cx, obj, key, js_val, NULL, NULL, flags))
+			return false;
+	}
+
+	return true;
+}
+
+static bool
 set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail detail)
 {
 	jsval		val;
@@ -181,67 +226,67 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 		return false;
 
-	if(((f->from != NULL && *f->from != '\0') || detail > file_detail_extdesc)
+	if(((f->from != NULL && *f->from != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->from_ip != NULL && *f->from_ip != '\0') || detail > file_detail_extdesc)
+	if(((f->from_ip != NULL && *f->from_ip != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_ip)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_ip_addr", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->from_host != NULL && *f->from_host != '\0') || detail > file_detail_extdesc)
+	if(((f->from_host != NULL && *f->from_host != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_host)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_host_name", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->from_prot != NULL && *f->from_prot != '\0') || detail > file_detail_extdesc)
+	if(((f->from_prot != NULL && *f->from_prot != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_prot)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_protocol", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->from_port != NULL && *f->from_port != '\0') || detail > file_detail_extdesc)
+	if(((f->from_port != NULL && *f->from_port != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_port)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_port", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->author != NULL && *f->author != '\0') || detail > file_detail_extdesc)
+	if(((f->author != NULL && *f->author != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->author)) == NULL
 			|| !JS_DefineProperty(cx, obj, "author", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->author_org != NULL && *f->author_org != '\0') || detail > file_detail_extdesc)
+	if(((f->author_org != NULL && *f->author_org != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->author_org)) == NULL
 			|| !JS_DefineProperty(cx, obj, "author_org", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->to_list != NULL && *f->to_list != '\0') || detail > file_detail_extdesc)
+	if(((f->to_list != NULL && *f->to_list != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->to_list)) == NULL
 			|| !JS_DefineProperty(cx, obj, "to_list", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
 	val = BOOLEAN_TO_JSVAL(f->idx.attr & FILE_ANONYMOUS);
-	if((val == JSVAL_TRUE || detail > file_detail_extdesc)
+	if((val == JSVAL_TRUE || detail > file_detail_content)
 		&& !JS_DefineProperty(cx, obj, "anon", val, NULL, NULL, flags))
 		return false;
 
-	if(((f->tags != NULL && *f->tags != '\0') || detail > file_detail_extdesc)
+	if(((f->tags != NULL && *f->tags != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->tags)) == NULL
 			|| !JS_DefineProperty(cx, obj, "tags", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->desc != NULL && *f->desc != '\0') || detail > file_detail_extdesc)
+	if(((f->desc != NULL && *f->desc != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->desc)) == NULL
 			|| !JS_DefineProperty(cx, obj, "desc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->extdesc != NULL && *f->extdesc != '\0') || detail > file_detail_extdesc)
+	if(((f->extdesc != NULL && *f->extdesc != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->extdesc)) == NULL
 			|| !JS_DefineProperty(cx, obj, "extdesc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(f->cost > 0 || detail > file_detail_extdesc) {
+	if(f->cost > 0 || detail > file_detail_content) {
 		val = UINT_TO_JSVAL(f->cost);
 		if(!JS_DefineProperty(cx, obj, "cost", val, NULL, NULL, flags))
 			return false;
@@ -253,17 +298,17 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 	val = UINT_TO_JSVAL(f->hdr.when_written.time);
 	if(!JS_DefineProperty(cx, obj, "time", val, NULL, NULL, flags))
 		return false;
-	if(f->hdr.when_imported.time > 0 || detail > file_detail_extdesc) {
+	if(f->hdr.when_imported.time > 0 || detail > file_detail_content) {
 		val = UINT_TO_JSVAL(f->hdr.when_imported.time);
 		if(!JS_DefineProperty(cx, obj, "added", val, NULL, NULL, flags))
 			return false;
 	}
-	if(f->hdr.last_downloaded > 0 || detail > file_detail_extdesc) {
+	if(f->hdr.last_downloaded > 0 || detail > file_detail_content) {
 		val = UINT_TO_JSVAL(f->hdr.last_downloaded);
 		if(!JS_DefineProperty(cx, obj, "last_downloaded", val, NULL, NULL, flags))
 			return false;
 	}
-	if(f->hdr.times_downloaded > 0 || detail > file_detail_extdesc) {
+	if(f->hdr.times_downloaded > 0 || detail > file_detail_content) {
 		val = UINT_TO_JSVAL(f->hdr.times_downloaded);
 		if(!JS_DefineProperty(cx, obj, "times_downloaded", val, NULL, NULL, flags))
 			return false;
@@ -289,6 +334,32 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		if((js_str = JS_NewStringCopyZ(cx, SHA1_hex(hex, f->file_idx.hash.data.sha1))) == NULL
 			|| !JS_DefineProperty(cx, obj, "sha1", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 			return false;
+	}
+
+	if(detail >= file_detail_content) {
+		JSObject* array;
+		if((array = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
+			JS_ReportError(cx, "array allocation failure, line %d", __LINE__);
+			return false;
+		}
+		str_list_t ini = strListSplit(NULL, f->content, "\r\n");
+		str_list_t file_list = iniGetSectionList(ini, NULL);
+		if(file_list != NULL) {
+			for(size_t i = 0; file_list[i] != NULL; i++) {
+				JSObject* fobj;
+				if((fobj = JS_NewObject(cx, NULL, NULL, array)) == NULL) {
+					JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
+					return false;
+				}
+				str_list_t section = iniGetSection(ini, file_list[i]);
+				set_content_properties(cx, fobj, file_list[i], section);
+				JS_DefineElement(cx, array, i, OBJECT_TO_JSVAL(fobj), NULL, NULL, JSPROP_ENUMERATE);
+				iniFreeStringList(section);
+			}
+			strListFree(&file_list);
+		}
+		strListFree(&ini);
+		JS_DefineProperty(cx, obj, "content", OBJECT_TO_JSVAL(array), NULL, NULL, JSPROP_ENUMERATE);
 	}
 
 	return true;
@@ -1164,7 +1235,10 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		char fpath[MAX_PATH + 1];
 		getfilepath(scfg, &file, fpath);
 		file_client_hfields(&file, client);
-		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, fpath);
+		str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
+			,(scfg->dir[file.dir]->misc & DIR_NOHASH) == 0, /* error: */NULL, /* size: */0);
+		p->smb_result = smb_addfile_withlist(&p->smb, &file, SMB_SELFPACK, extdesc, list, fpath);
+		strListFree(&list);
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
 	JS_RESUMEREQUEST(cx, rc);
@@ -1246,8 +1320,13 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 				if(strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0)
 					p->smb_result = smb_putfile(&p->smb, &file);
 				else {
-					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS)
-						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, newfname);
+					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS) {
+						str_list_t list = list_archive_contents(newfname, /* pattern: */NULL
+							,file.dir < scfg->total_dirs && (scfg->dir[file.dir]->misc & DIR_NOHASH) == 0
+							,/* error: */NULL, /* size: */0);
+						p->smb_result = smb_addfile_withlist(&p->smb, &file, SMB_SELFPACK, extdesc, list, newfname);
+						strListFree(&list);
+					}
 				}
 			}
 		}
@@ -1749,6 +1828,7 @@ static char* filebase_detail_prop_desc[] = {
 	 "Include indexed-filenames only",
 	 "Normal level of file detail (e.g. full filenames, minimal meta data)",
 	 "Normal level of file detail plus extended descriptions",
+	 "Normal level of file detail plus extended descriptions and archived contents",
 	 "Maximum file detail, include undefined/null property values",
 	 NULL
 };
@@ -1789,10 +1869,12 @@ JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "EXTENDED", INT_TO_JSVAL(file_detail_extdesc), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_extdesc + 1), NULL, NULL
+			JS_DefineProperty(cx, detail, "CONTENTS", INT_TO_JSVAL(file_detail_content), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_content + 1), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
-			js_DescribeSyncObject(cx, detail, "Detail level numeric constants", 0);
+			js_DescribeSyncObject(cx, detail, "Detail level numeric constants (in increasing verbosity)", 0);
 			js_CreateArrayOfStrings(cx, detail, "_property_desc_list", filebase_detail_prop_desc, JSPROP_READONLY);
 #endif
 		}
