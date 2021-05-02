@@ -267,6 +267,7 @@ static struct {
 	enum ansi_state ansi_state;
 	int clipx;
 	int clipy;
+	struct mouse_field *saved_mfields;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -7196,6 +7197,8 @@ static char * rv_hotkey(const char * const var, const void * const data);
 static char * rv_exploit(const char * const var, const void * const data);
 static char * rv_paste(const char * const var, const void * const data);
 static void kill_mouse_fields(void);
+static void kill_saved_mouse_fields(void);
+static void copy_mouse_fields(struct mouse_field *from, struct mouse_field **to);
 static void shadow_palette(void);
 static void normal_palette(void);
 static void draw_line(int x1, int y1, int x2, int y2);
@@ -7337,8 +7340,15 @@ set_ega_palette(void)
 static int
 bicmp(const void *str, const void *vd)
 {
+	int ret;
+	char *tmpstr = strdup(str);
+	char *openparen = strchr(tmpstr, '(');
+	if (openparen != NULL)
+		*openparen = '\0';
 	const struct builtin_rip_variable *vardef = vd;
-	return strcmp(str, vardef->name);
+	ret = strcmp(tmpstr, vardef->name);
+	free(tmpstr);
+	return ret;
 }
 
 static char *
@@ -7639,8 +7649,11 @@ rv_reset(const char * const var, const void * const data)
 static char *
 rv_save(const char * const var, const void * const data)
 {
-	if (strcmp(var, "SMF")) {
+	if (strcmp(var, "SMF") == 0) {
 		// Save mouse fields...
+		kill_saved_mouse_fields();
+		copy_mouse_fields(rip.mfields, &rip.saved_mfields);
+		return NULL;
 	}
 	printf("TODO: Save RIP Variables (%s)\n", var);
 	return NULL;
@@ -7649,8 +7662,11 @@ rv_save(const char * const var, const void * const data)
 static char *
 rv_restore(const char * const var, const void * const data)
 {
-	if (strcmp(var, "RMF")) {
+	if (strcmp(var, "RMF") == 0) {
 		// Restore mouse fields...
+		kill_mouse_fields();
+		copy_mouse_fields(rip.saved_mfields, &rip.mfields);
+		return NULL;
 	}
 	printf("TODO: Restore RIP Variables (%s)\n", var);
 	return NULL;
@@ -8159,6 +8175,33 @@ char_width(char ch)
 		mult = stroke_mults[rip.font.size];
 		div = stroke_divs[rip.font.size];
 		return (char_width_raw(ch) * mult / div);
+	}
+}
+
+static void
+char_top_base(char ch, int *top, int *bottom)
+{
+	int		fontoffset;
+	uint8_t		*this_font;
+	int		y;
+
+	if (rip.font.num == 0) {
+		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
+		fontoffset=('A') * 8;
+		*top = -1;
+		*bottom = -1;
+		for (y = 0; y < 8; y++) {
+			if (this_font[fontoffset]) {
+				if (*top == -1)
+					*top = y * rip.font.size;
+				*bottom = y * rip.font.size;
+			}
+			fontoffset++;
+		}
+	}
+	else {
+		*top = (int)font_metrics[rip.font.num][rip.font.size - 1].top;
+		*bottom = (int)font_metrics[rip.font.num][rip.font.size - 1].base;
 	}
 }
 
@@ -8808,8 +8851,6 @@ draw_button(struct rip_button_style *but, bool inverted)
 		rip.bstyle.flags.autostamp = false;
 		rip.bstyle.flags.sunken = false;
 	}
-	if (but->flags.vadjust)
-		puts("TODO: Vertical adjust flag");
 	if (but->flags.left_justify)
 		puts("TODO: Left Justify flag");
 	if (but->flags.right_justify)
@@ -8831,7 +8872,10 @@ draw_button(struct rip_button_style *but, bool inverted)
 				bottom = -1;
 				for (p = but->label; *p; p++) {
 					width += char_width(*p);
-					char_top_bottom(*p, &x, &y);
+					if (but->flags.vadjust)
+						char_top_bottom(*p, &x, &y);
+					else
+						char_top_base(*p, &x, &y);
 					if (x >= 0 && (top == -1 || x < top))
 						top = x;
 					if (y >= 0 && y > bottom)
@@ -9340,6 +9384,67 @@ handle_command_str(const char *incmd)
 		ripbuf_size = 0;
 		ripbuf_pos = 0;
 		ripbufpos = 0;
+	}
+}
+
+static void
+kill_saved_mouse_fields(void)
+{
+	struct mouse_field *field;
+
+	while (rip.saved_mfields) {
+		field = rip.saved_mfields;
+		rip.saved_mfields = field->next;
+		switch(field->type) {
+			case MOUSE_FIELD_BUTTON:
+				free(field->data.button->icon);
+				free(field->data.button->label);
+				free(field->data.button->command);
+				free(field->data.button);
+				free(field);
+				break;
+			case MOUSE_FIELD_HOT:
+				free(field->data.hot->command);
+				free(field->data.hot);
+				free(field);
+				break;
+		}
+	}
+}
+
+static void
+copy_mouse_fields(struct mouse_field *from, struct mouse_field **to)
+{
+	struct mouse_field *new_field;
+	struct mouse_field *src;
+	struct mouse_field **dst;
+
+	for (src = from, dst = to; src; src = src->next, dst = &((*dst)->next)) {
+		new_field = malloc(sizeof(struct mouse_field));
+		if (new_field == NULL) {
+			*dst = NULL;
+			return;
+		}
+		memcpy(new_field, src, sizeof(*src));
+		switch (new_field->type) {
+			case MOUSE_FIELD_BUTTON:
+				new_field->data.button = malloc(sizeof(*new_field->data.button));
+				memcpy(new_field->data.button, src->data.button, sizeof(*src->data.button));
+				if (new_field->data.button->icon)
+					new_field->data.button->icon = strdup(new_field->data.button->icon);
+				if (new_field->data.button->label)
+					new_field->data.button->label = strdup(new_field->data.button->label);
+				if (new_field->data.button->command)
+					new_field->data.button->command = strdup(new_field->data.button->command);
+				break;
+			case MOUSE_FIELD_HOT:
+				new_field->data.hot = malloc(sizeof(*new_field->data.hot));
+				memcpy(new_field->data.hot, src->data.hot, sizeof(*src->data.hot));
+				if (new_field->data.hot->command)
+					new_field->data.hot->command = strdup(new_field->data.hot->command);
+				break;
+		}
+		*dst = new_field;
 	}
 }
 
