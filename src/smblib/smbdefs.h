@@ -632,6 +632,10 @@ typedef struct {				/* Message or File */
 		uchar*	text;			/* Message body text (optional) */
 		char*	extdesc;		/* File extended description */
 	};
+	union {
+		uchar*	tail;			/* Message body tail (optional) */
+		char*	content;		/* Archive content list */
+	};
 	char*		tags;			/* Message tags (space-delimited) */
 	char*		editor;			/* Message editor (if known) */
 	char*		mime_version;	/* MIME Version (if applicable) */

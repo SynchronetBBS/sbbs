@@ -1141,6 +1141,10 @@ void smb_freemsgmem(smbmsg_t* msg)
 		free(msg->text);
 		msg->text = NULL;
 	}
+	if(msg->tail != NULL) {
+		free(msg->tail);
+		msg->tail = NULL;
+	}
 }
 
 /****************************************************************************/
