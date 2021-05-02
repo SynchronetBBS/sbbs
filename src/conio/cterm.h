@@ -238,7 +238,7 @@ struct cterminal {
 	int		(*ciolib_putch)			(struct cterminal *,int);
 	int		(*ciolib_puttext)		(struct cterminal *,int,int,int,int,void *);
 	void	(*ciolib_window)		(struct cterminal *,int,int,int,int);
-	int		(*ciolib_cputs)			(struct cterminal *,char *);
+	int		(*ciolib_cputs)			(struct cterminal *,const char *);
 	int		(*ciolib_setfont)		(struct cterminal *,int font, int force, int font_num);
 #else
 	void	(*ciolib_gotoxy)		(int,int);
@@ -260,7 +260,7 @@ struct cterminal {
 	int		(*ciolib_puttext)		(int,int,int,int,void *);
 	int		(*ciolib_vmem_puttext)	(int,int,int,int,struct vmem_cell *);
 	void	(*ciolib_window)		(int,int,int,int);
-	int		(*ciolib_cputs)			(char *);
+	int		(*ciolib_cputs)			(const char *);
 	int		(*ciolib_setfont)		(int font, int force, int font_num);
 #endif
 	int 	*_wscroll;
