@@ -245,7 +245,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 					reupload(&smb, &f);
 			}
 			else
-				result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, filepath);
+				result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, NULL, filepath);
 			smb_freefilemem(&f);
 			if(result != SMB_SUCCESS)
 				fprintf(stderr, "!Error %d (%s) adding file to %s", result, smb.last_error, smb.file);
@@ -415,7 +415,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 				reupload(&smb, &f);
 		}
 		else
-			result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, filepath);
+			result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, NULL, filepath);
 		smb_freefilemem(&f);
 		if(result != SMB_SUCCESS)
 			fprintf(stderr, "!ERROR %d (%s) writing to %s\n"
@@ -795,7 +795,7 @@ int main(int argc, char **argv)
 					result = smb_updatemsg(&smb, &f);
 			}
 			else
-				result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, str);
+				result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc, NULL, str);
 			if(mode&UL_STATS)
 				updatestats(l);
 			files++;
