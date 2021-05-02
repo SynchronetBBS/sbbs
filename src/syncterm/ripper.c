@@ -7614,6 +7614,21 @@ rv_reset(const char * const var, const void * const data)
 	}
 	// TODO: Figure out what all gets reset here...
 	rip.color = 0;
+	pthread_mutex_lock(&vstatlock);
+	rip.x_max = vstat.scrnwidth;
+	rip.y_max = vstat.scrnheight;
+	pthread_mutex_unlock(&vstatlock);
+	rip.x_dim = 640;
+	rip.y_dim = 350;
+	if (rip.x_max > rip.x_dim)
+		rip.x_max = rip.x_dim;
+	if (rip.y_max > rip.y_dim)
+		rip.y_max = rip.y_dim;
+	// TODO: Hack... we should likely scale both directions...
+	FREE_AND_NULL(rip.xmap);
+	FREE_AND_NULL(rip.ymap);
+	FREE_AND_NULL(rip.xunmap);
+	FREE_AND_NULL(rip.yunmap);
 	rip.viewport.sx = 0;
 	rip.viewport.sy = 0;
 	rip.viewport.ex = rip.x_dim - 1;

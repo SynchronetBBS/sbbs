@@ -23,13 +23,7 @@
 #include "vidmodes.h"
 #include "bitmap_con.h"
 
-struct palette_entry {
-	uint8_t	red;
-	uint8_t	green;
-	uint8_t	blue;
-};
-
-static struct palette_entry palette[65536];
+static uint32_t palette[65536];
 
 #if 0
 
@@ -441,8 +435,9 @@ static uint32_t color_value(uint32_t col)
 	if (col & 0x80000000)
 		return col;
 	if (col < sizeof(palette) / sizeof(palette[0]))
-		return (0xff << 24) | (palette[col].red << 16) | (palette[col].green << 8) | palette[col].blue;
+		return palette[col];
 	fprintf(stderr, "Invalid colour value: %08x\n", col);
+	return 0xff000000;
 }
 
 static struct rectlist *get_full_rectangle_locked(struct bitmap_screen *screen)
@@ -1545,9 +1540,7 @@ int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&screena.screenlock);
 	pthread_mutex_lock(&screenb.screenlock);
-	palette[index].red = r>>8;
-	palette[index].green = g>>8;
-	palette[index].blue = b>>8;
+	palette[index] = (0xff << 24) | ((r>>8) << 16) | ((g>>8) << 8) | (b>>8);
 	screena.update_pixels = 1;
 	screenb.update_pixels = 1;
 	pthread_mutex_unlock(&screenb.screenlock);
@@ -1676,9 +1669,7 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 	pthread_mutex_lock(&screena.screenlock);
 	pthread_mutex_lock(&screenb.screenlock);
 	for (i = 0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++) {
-		palette[i].red = dac_default[i].red;
-		palette[i].green = dac_default[i].green;
-		palette[i].blue = dac_default[i].blue;
+		palette[i] = (0xff << 24) | (dac_default[i].red << 16) | (dac_default[i].green << 8) | dac_default[i].blue;
 	}
 	pthread_mutex_unlock(&screenb.screenlock);
 	pthread_mutex_unlock(&screena.screenlock);

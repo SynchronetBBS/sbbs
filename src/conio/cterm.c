@@ -598,7 +598,7 @@ static void ciolib_window(struct cterminal *cterm,int sx, int sy, int ex, int ey
 	GOTOXY(1,1);
 }
 
-static int ciolib_cputs(struct cterminal *cterm, char *str)
+static int ciolib_cputs(struct cterminal *cterm, const char *str)
 {
 	int		pos;
 	int		ret=0;
