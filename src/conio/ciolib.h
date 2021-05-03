@@ -337,7 +337,7 @@ typedef struct {
 	void	(*delline)		(void);
 	void	(*insline)		(void);
 	int		(*cprintf)		(const char *,...);
-	int		(*cputs)		(char *);
+	int		(*cputs)		(const char *);
 	void	(*textbackground)	(int);
 	void	(*textcolor)	(int);
 	int		(*getmouse)		(struct mouse_event *mevent);
@@ -409,7 +409,7 @@ CIOLIBEXPORT void ciolib_wscroll(void);
 CIOLIBEXPORT void ciolib_gotoxy(int x, int y);
 CIOLIBEXPORT void ciolib_clreol(void);
 CIOLIBEXPORT void ciolib_clrscr(void);
-CIOLIBEXPORT int ciolib_cputs(char *str);
+CIOLIBEXPORT int ciolib_cputs(const char *str);
 CIOLIBEXPORT int ciolib_cprintf(const char *fmat, ...);
 CIOLIBEXPORT void ciolib_textbackground(int colour);
 CIOLIBEXPORT void ciolib_textcolor(int colour);
