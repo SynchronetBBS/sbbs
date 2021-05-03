@@ -811,7 +811,9 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 			|| mode==FI_OFFLINE) {
 			SYNC;
 //			CRLF;
-			SAFECOPY(str, "VEQRNP\b-\r");
+			SAFECOPY(str, "VEQRN\r");
+			if(m > 1)
+				SAFECAT(str, "P-\b");
 			if(dir_op(dirnum)) {
 				mnemonics(text[SysopRemoveFilePrompt]);
 				SAFECAT(str,"FMC");
@@ -1049,7 +1051,9 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 			xfer_prot_menu(XFER_DOWNLOAD);
 			SYNC;
 			mnemonics(text[ProtocolBatchQuitOrNext]);
-			sprintf(str,"B%cN\r",text[YNQP][2]);
+			SAFEPRINTF(str,"B%cN\r",text[YNQP][2]);
+			if(m > 1)
+				SAFECAT(str, "\b-");
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0]
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
@@ -1065,6 +1069,12 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 				if(!addtobatdl(f)) {
 					break; 
 				} 
+			}
+			else if(ch == '\b' || ch == '-') { /* previous */
+				m--;
+				if(m)
+					m--;
+				continue;
 			}
 			else if(ch!=CR && ch!='N') {
 				for(i=0;i<cfg.total_prots;i++)
