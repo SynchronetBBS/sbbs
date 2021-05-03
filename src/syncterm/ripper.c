@@ -7691,7 +7691,6 @@ static uint32_t
 map_rip_color(int color)
 {
 	uint32_t col = 0;
-	struct dac_colors *dac = NULL;
 
 	if (color < 16)
 		col = ega_colours[color];
@@ -7703,9 +7702,6 @@ map_rip_color(int color)
 	}
 	else
 		fprintf(stderr, "Unable to map %d\n", color);
-	if (dac) {
-		col = 0x80000000 | (dac->red << 16) | (dac->green << 8) | (dac->blue);
-	}
 	return col;
 }
 
@@ -9872,6 +9868,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	int x, y;
 	char cache_path[MAX_PATH + 1];
 	FILE *icn;
+	int *targets;
 
 	args = parse_string(rawargs);
 
@@ -10512,7 +10509,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							arg1 = parse_mega(&args[16], 2);
 							x2 = xp[0];
 							y2 = yp[0];
+							targets = malloc((arg1 + 2) * 2 * sizeof(*targets));
+							i = 0;
+							targets[i++] = x2;
+							targets[i++] = y2;
 							// TODO: We should be able to parallelize this...
+							#pragma clang loop vectorize(enable)
 							for (arg2 = 1; arg2 < arg1; arg2++) {
 								double tf = ((double)arg2) / arg1;
 								double tr = ((double)(arg1 - arg2)) / arg1;
@@ -10526,11 +10528,18 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								y1 = trc * yp[0] + 3 * tftrs * yp[1] + 3 * tfstr * yp[2] + tfc * yp[3];
 								//x1 = tr * tr * tr * xp[0] + 3 * tf * tr * tr * xp[1] + 3 * tf * tf * tr * xp[2] + tf * tf * tf * xp[3];
 								//y1 = tr * tr * tr * yp[0] + 3 * tf * tr * tr * yp[1] + 3 * tf * tf * tr * yp[2] + tf * tf * tf * yp[3];
-								draw_line(x2, y2, x1, y1);
-								x2 = x1;
-								y2 = y1;
+								targets[i++] = x1;
+								targets[i++] = y1;
+								//draw_line(x2, y2, x1, y1);
+								//x2 = x1;
+								//y2 = y1;
 							}
-							draw_line(x1, y1, xp[3], yp[3]);
+							targets[i++] = xp[3];
+							targets[i++] = yp[3];
+							for (j = 2; j < i; j += 2) {
+								draw_line(targets[j - 2], targets[j - 1], targets[j], targets[j + 1]);
+							}
+							//draw_line(x1, y1, xp[3], yp[3]);
 							break;
 						case 'a':	// RIP_ONE_PALETTE !|a <color> <value>
 							/* This command changes one color in the 16-color palette.  The color
