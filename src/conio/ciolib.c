@@ -100,7 +100,7 @@ CIOLIBEXPORT void ciolib_wscroll(void);
 CIOLIBEXPORT void ciolib_gotoxy(int x, int y);
 CIOLIBEXPORT void ciolib_clreol(void);
 CIOLIBEXPORT void ciolib_clrscr(void);
-CIOLIBEXPORT int ciolib_cputs(char *str);
+CIOLIBEXPORT int ciolib_cputs(const char *str);
 CIOLIBEXPORT int	ciolib_cprintf(const char *fmat, ...);
 CIOLIBEXPORT void ciolib_textbackground(int colour);
 CIOLIBEXPORT void ciolib_textcolor(int colour);
@@ -700,7 +700,7 @@ CIOLIBEXPORT char * ciolib_getpass(const char *prompt)
 	if(cio_api.getpass)
 		return(cio_api.getpass(prompt));
 
-	ciolib_cputs((char *)prompt);
+	ciolib_cputs(prompt);
 	while((ch=ciolib_getch())!='\n') {
 		switch(ch) {
 			case 0:		/* Skip extended keys */
@@ -1052,7 +1052,7 @@ CIOLIBEXPORT int ciolib_cprintf(const char *fmat, ...)
 /* The Borland version does not translate \n into \r\n... this does.
  * Returns last character printed (!)
  */
-CIOLIBEXPORT int ciolib_cputs(char *str)
+CIOLIBEXPORT int ciolib_cputs(const char *str)
 {
 	int		pos;
 	int		ret=0;
