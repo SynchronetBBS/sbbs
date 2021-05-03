@@ -1662,6 +1662,7 @@ int smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 
 	msg->idx.offset=(uint32_t)(smb->status.header_offset + l);
 	msg->idx_offset=smb->status.total_msgs;
+	msg->hdr.attr &= ~MSG_DELETE;
 	i=smb_putmsg(smb,msg);
 	if(i==SMB_SUCCESS) {
 		smb->status.last_msg++;
