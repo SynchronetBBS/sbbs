@@ -494,7 +494,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if(smb_hfield_str(file, SENDERIPADDR, cp) != SMB_SUCCESS) {
+		if(smb_new_hfield_str(file, SENDERIPADDR, cp) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -509,7 +509,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if(smb_hfield_str(file, SENDERHOSTNAME, cp) != SMB_SUCCESS) {
+		if(smb_new_hfield_str(file, SENDERHOSTNAME, cp) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -524,7 +524,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if(smb_hfield_str(file, SENDERPROTOCOL, cp) != SMB_SUCCESS) {
+		if(smb_new_hfield_str(file, SENDERPROTOCOL, cp) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -539,7 +539,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if(smb_hfield_str(file, SENDERPORT, cp) != SMB_SUCCESS) {
+		if(smb_new_hfield_str(file, SENDERPORT, cp) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -554,7 +554,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if(smb_hfield_str(file, SMB_AUTHOR, cp) != SMB_SUCCESS) {
+		if(smb_new_hfield_str(file, SMB_AUTHOR, cp) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -569,7 +569,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if(smb_hfield_str(file, SMB_AUTHOR_ORG, cp) != SMB_SUCCESS) {
+		if(smb_new_hfield_str(file, SMB_AUTHOR_ORG, cp) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
@@ -1234,7 +1234,8 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		char fpath[MAX_PATH + 1];
 		getfilepath(scfg, &file, fpath);
-		file_client_hfields(&file, client);
+		if(file.from_ip == NULL)
+			file_client_hfields(&file, client);
 		str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
 			,(scfg->dir[file.dir]->misc & DIR_NOHASH) == 0, /* error: */NULL, /* size: */0);
 		p->smb_result = smb_addfile_withlist(&p->smb, &file, SMB_SELFPACK, extdesc, list, fpath);
