@@ -615,13 +615,13 @@ int file_sauce_hfields(file_t* f, struct sauce_charinfo* info)
 	if(info == NULL)
 		return -1;
 
-	if(*info->author && (i = smb_hfield_str(f, SMB_AUTHOR, info->author)) != SMB_SUCCESS)
+	if(*info->author && (i = smb_new_hfield_str(f, SMB_AUTHOR, info->author)) != SMB_SUCCESS)
 		return i;
 
-	if(*info->group && (i = smb_hfield_str(f, SMB_AUTHOR_ORG, info->group)) != SMB_SUCCESS)
+	if(*info->group && (i = smb_new_hfield_str(f, SMB_AUTHOR_ORG, info->group)) != SMB_SUCCESS)
 		return i;
 
-	if(f->desc == NULL && *info->title && (i = smb_hfield_str(f, SMB_FILEDESC, info->title)) != SMB_SUCCESS)
+	if(f->desc == NULL && *info->title && (i = smb_new_hfield_str(f, SMB_FILEDESC, info->title)) != SMB_SUCCESS)
 		return i;
 
 	return SMB_SUCCESS;
@@ -636,7 +636,8 @@ bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, client_t*
 		return false;
 
 	getfilepath(cfg, f, fpath);
-	file_client_hfields(f, client);
+	if(f->from_ip == NULL)
+		file_client_hfields(f, client);
 	str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
 		,(cfg->dir[dirnum]->misc & DIR_NOHASH) == 0, /* error: */NULL, /* size: */0);
 	int result = smb_addfile_withlist(&smb, f, SMB_SELFPACK, extdesc, list, fpath);
