@@ -178,17 +178,29 @@ static size_t find_section_index(str_list_t list, const char* section)
 	return(i);
 }
 
+static size_t section_start(str_list_t list, size_t index)
+{
+	char* p = list[index];
+	if(p != NULL) {
+		SKIP_WHITESPACE(p);
+		if(*p == INI_OPEN_SECTION_CHAR) // A new section starts immediately?
+			return strListCount(list);
+	}
+	return index;
+}
+
 static size_t find_section(str_list_t list, const char* section)
 {
 	size_t	i;
+	char* p;
 
 	if(section==ROOT_SECTION)
-		return(0);
+		return section_start(list, 0);
 
 	i=find_section_index(list,section);
 	if(list[i]!=NULL)
 		i++;
-	return(i);
+	return section_start(list, i);
 }
 
 static char* key_name(char* p, char** vp, BOOL literals_supported)
@@ -428,6 +440,43 @@ BOOL iniRemoveSections(str_list_t* list, const char* prefix)
 	strListFree(&sections);
 
 	return(TRUE);
+}
+
+// This sorts comments too, so should not be used on human created/edited files
+BOOL iniSortSections(str_list_t* list, BOOL sort_keys)
+{
+	size_t i;
+	str_list_t root_keys;
+	str_list_t new_list;
+	str_list_t keys;
+	str_list_t section_list = iniGetSectionList(*list, /* prefix */NULL);
+
+	root_keys = iniGetSection(*list, ROOT_SECTION);
+	if(section_list == NULL && root_keys == NULL)
+		return TRUE;
+
+	if(sort_keys)
+		strListSortAlphaCase(root_keys);
+
+	if(section_list != NULL)
+		strListSortAlphaCase(section_list);
+	new_list = strListInit();
+	if(new_list == NULL) {
+		strListFree(&section_list);
+		return FALSE;
+	}
+	strListAppendList(&new_list, root_keys);
+	strListFree(&root_keys);
+	for(i = 0; section_list != NULL && section_list[i] != NULL; i++) {
+		keys = iniGetSection(*list, section_list[i]);
+		if(sort_keys)
+			strListSortAlphaCase(keys);
+		iniAppendSectionWithKeys(&new_list, section_list[i], keys, /* ini_style_t */NULL);
+		strListFree(&keys);
+	}
+	strListFree(list);
+	*list = new_list;
+	return TRUE;
 }
 
 BOOL iniRenameSection(str_list_t* list, const char* section, const char* newname)
@@ -2410,10 +2459,14 @@ void main(int argc, char** argv)
 	str_list_t	list;
 
 	for(i=1;i<argc;i++) {
-		if((fp=iniOpenFile(argv[i],FALSE)) == NULL)
+		if((fp=iniOpenFile(argv[i],FALSE)) == NULL) {
+			perror(argv[i]);
 			continue;
+		}
 		if((list=iniReadFile(fp)) != NULL) {
-			printf("%s\n",iniGetString(list," test | bogus ","key","default",str));
+			iniSortSections(&list, TRUE);
+			for(size_t j = 0; list[j] != NULL; j++)
+				printf("%s\n", list[j]);
 			strListFree(&list);
 		}
 		fclose(fp);
