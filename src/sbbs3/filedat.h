@@ -67,7 +67,7 @@ DLLEXPORT int			file_sauce_hfields(file_t*, struct sauce_charinfo*);
 DLLEXPORT str_list_t	directory(const char* path);
 DLLEXPORT long			create_archive(const char* archive, const char* format
 						               ,bool with_path, str_list_t file_list, char* error, size_t maxerrlen);
-DLLEXPORT str_list_t	list_archive_contents(const char* archive, const char* pattern, bool hash, char* error, size_t maxerrlen);
+DLLEXPORT str_list_t	list_archive_contents(const char* archive, const char* pattern, bool hash, bool sort, char* error, size_t maxerrlen);
 DLLEXPORT char*			cmdstr(scfg_t*, user_t*, const char* instr, const char* fpath, const char* fspec, char* cmd, size_t);
 DLLEXPORT long			extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
 						                           ,bool with_path, long max_files, str_list_t file_list, char* error, size_t);
