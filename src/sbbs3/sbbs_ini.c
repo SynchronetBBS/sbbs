@@ -773,7 +773,7 @@ BOOL sbbs_write_ini(
 
 	memset(&style, 0, sizeof(style));
 	style.key_prefix = "\t";
-style.section_separator = "";
+	style.section_separator = "";
 	style.value_separator = " = ";
 	style.bit_separator = " | ";
 
@@ -781,6 +781,7 @@ style.section_separator = "";
 		return(FALSE);
 
 	if(global==NULL) {
+		memset(&global_buf,0,sizeof(global_buf));
 		get_ini_globals(list, &global_buf);
 		global = &global_buf;
 	}
