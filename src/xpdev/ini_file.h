@@ -276,6 +276,7 @@ DLLEXPORT BOOL 			iniRemoveValue(str_list_t*, const char* section, const char* k
 DLLEXPORT BOOL 			iniRemoveSection(str_list_t*, const char* section);
 DLLEXPORT BOOL 			iniRemoveSections(str_list_t*, const char* prefix);
 DLLEXPORT BOOL 			iniRenameSection(str_list_t*, const char* section, const char* newname);
+DLLEXPORT BOOL 			iniSortSections(str_list_t*, BOOL sort_keys);
 
 DLLEXPORT BOOL 			iniHasInclude(const str_list_t);
 
