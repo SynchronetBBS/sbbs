@@ -483,22 +483,26 @@ static int QSORT_CALLBACK_TYPE strListCompareAlphaCaseReverse(const void *arg1, 
 
 void strListSortAlpha(str_list_t list)
 {
-	qsort(list,strListCount(list),sizeof(char*),strListCompareAlpha);
+	if(list != NULL)
+		qsort(list,strListCount(list),sizeof(char*),strListCompareAlpha);
 }
 
 void strListSortAlphaReverse(str_list_t list)
 {
-	qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaReverse);
+	if(list != NULL)
+		qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaReverse);
 }
 
 void strListSortAlphaCase(str_list_t list)
 {
-	qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaCase);
+	if(list != NULL)
+		qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaCase);
 }
 
 void strListSortAlphaCaseReverse(str_list_t list)
 {
-	qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaCaseReverse);
+	if(list != NULL)
+		qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaCaseReverse);
 }
 
 str_list_t strListDup(str_list_t list)
@@ -506,6 +510,8 @@ str_list_t strListDup(str_list_t list)
 	str_list_t	ret;
 	size_t		count=0;
 
+	if(list == NULL)
+		return NULL;
 	ret = strListInit();
 	for(; *list; list++)
 		strListAppend(&ret, *list, count++);
