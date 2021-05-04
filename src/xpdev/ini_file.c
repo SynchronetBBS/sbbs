@@ -462,6 +462,7 @@ BOOL iniSortSections(str_list_t* list, BOOL sort_keys)
 	new_list = strListInit();
 	if(new_list == NULL) {
 		strListFree(&section_list);
+		strListFree(&root_keys);
 		return FALSE;
 	}
 	strListAppendList(&new_list, root_keys);
@@ -473,6 +474,7 @@ BOOL iniSortSections(str_list_t* list, BOOL sort_keys)
 		iniAppendSectionWithKeys(&new_list, section_list[i], keys, /* ini_style_t */NULL);
 		strListFree(&keys);
 	}
+	strListFree(&section_list);
 	strListFree(list);
 	*list = new_list;
 	return TRUE;
