@@ -639,7 +639,7 @@ bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, client_t*
 	if(f->from_ip == NULL)
 		file_client_hfields(f, client);
 	str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
-		,(cfg->dir[dirnum]->misc & DIR_NOHASH) == 0, /* error: */NULL, /* size: */0);
+		,(cfg->dir[dirnum]->misc & DIR_NOHASH) == 0, /* sort: */TRUE, /* error: */NULL, /* size: */0);
 	int result = smb_addfile_withlist(&smb, f, SMB_SELFPACK, extdesc, list, fpath);
 	smb_close(&smb);
 	strListFree(&list);
@@ -703,7 +703,7 @@ int archive_type(const char* archive, char* str, size_t size)
 	return result;
 }
 
-str_list_t list_archive_contents(const char* filename, const char* pattern, bool hash, char* error, size_t maxerrlen)
+str_list_t list_archive_contents(const char* filename, const char* pattern, bool hash, bool sort, char* error, size_t maxerrlen)
 {
 	int result;
 	struct archive *ar;
@@ -802,6 +802,8 @@ str_list_t list_archive_contents(const char* filename, const char* pattern, bool
 		}
 	}
 	archive_read_free(ar);
+	if(sort)
+		iniSortSections(&list, /* sort_keys: */TRUE);
 	return list;
 }
 
