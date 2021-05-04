@@ -661,7 +661,7 @@ bool upgrade_file_bases(bool hash)
 						body = extdesc;
 				}
 				str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
-					,(scfg.dir[i]->misc & DIR_NOHASH) == 0, /* error: */NULL, /* size: */0);
+					,(scfg.dir[i]->misc & DIR_NOHASH) == 0, /* sort: */TRUE, /* error: */NULL, /* size: */0);
 				result = smb_addfile_withlist(&smb, &file, SMB_FASTALLOC, body, list, fpath);
 				strListFree(&list);
 			}
