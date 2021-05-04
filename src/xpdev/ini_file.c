@@ -192,7 +192,6 @@ static size_t section_start(str_list_t list, size_t index)
 static size_t find_section(str_list_t list, const char* section)
 {
 	size_t	i;
-	char* p;
 
 	if(section==ROOT_SECTION)
 		return section_start(list, 0);
