@@ -456,6 +456,7 @@ static void local_draw_rect(struct rectlist *rect)
 	int ctop = rect->rect.height;
 	int cbottom = -1;
 	int idx;
+	uint32_t last_pixel = 0x55555555;
 
 	if (bitmap_width != cleft || bitmap_height != ctop)
 		return;
@@ -487,27 +488,30 @@ static void local_draw_rect(struct rectlist *rect)
 					continue;
 				}
 			}
+			if (last_pixel != rect->data[idx]) {
+				last_pixel = rect->data[idx];
+				r = rect->data[idx] >> 16 & 0xff;
+				g = rect->data[idx] >> 8 & 0xff;
+				b = rect->data[idx] & 0xff;
+				r = (r<<8)|r;
+				g = (g<<8)|g;
+				b = (b<<8)|b;
+				pixel = base_pixel;
+				if (r_shift >= 0)
+					pixel |= (r << r_shift) & visual.red_mask;
+				else
+					pixel |= (r >> (0-r_shift)) & visual.red_mask;
+				if (g_shift >= 0)
+					pixel |= (g << g_shift) & visual.green_mask;
+				else
+					pixel |= (g >> (0-g_shift)) & visual.green_mask;
+				if (b_shift >= 0)
+					pixel |= (b << b_shift) & visual.blue_mask;
+				else
+					pixel |= (b >> (0-b_shift)) & visual.blue_mask;
+			}
 			for(yscale=0; yscale<x_cvstat.scaling*x_cvstat.vmultiplier; yscale++) {
 				for(xscale=0; xscale<x_cvstat.scaling; xscale++) {
-					r = rect->data[idx] >> 16 & 0xff;
-					g = rect->data[idx] >> 8 & 0xff;
-					b = rect->data[idx] & 0xff;
-					r = (r<<8)|r;
-					g = (g<<8)|g;
-					b = (b<<8)|b;
-					pixel = base_pixel;
-					if (r_shift >= 0)
-						pixel |= (r << r_shift) & visual.red_mask;
-					else
-						pixel |= (r >> (0-r_shift)) & visual.red_mask;
-					if (g_shift >= 0)
-						pixel |= (g << g_shift) & visual.green_mask;
-					else
-						pixel |= (g >> (0-g_shift)) & visual.green_mask;
-					if (b_shift >= 0)
-						pixel |= (b << b_shift) & visual.blue_mask;
-					else
-						pixel |= (b >> (0-b_shift)) & visual.blue_mask;
 #ifdef XPutPixel
 					XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel);
 #else
