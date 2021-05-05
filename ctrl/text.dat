@@ -282,9 +282,9 @@
 "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
-	"\1w~Q\1yuit or [~Next]: \1w"
+	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
 "\r\n~Quit or [~Next]: "                                233 QuitOrNext
-"~Remove, ~Move, ~Edit, ~View, ~Quit, or [~Next]: "      234 RExemptRemoveFilePrompt
+"~Remove, ~Move, ~Edit, ~View, ~Quit, ~Prev or [~Next]: " 234 RExemptRemoveFilePrompt
 "\1n(%d) %s\r\n"                                         235 MoveToLibLstFmt
 "\1_\r\n\1y\1hLibrary [%d]: \1n"                            236 MoveToLibPrompt
 "\1n(%d) %s\r\n"                                         237 MoveToDirLstFmt
@@ -292,8 +292,8 @@
 "%s moved to %s %s.\r\n"                                239 MovedFile
 "\r\nClose file record"                                 240 CloseFileRecordQ
 "~Remove, ~Credits only, ~File only, ~Move, ~Edit, "\   241 SysopRemoveFilePrompt
-	"~View, ~Quit, or [~Next]: "
-"~Remove, ~Edit, ~View, ~Quit, or [~Next]: "            242 UserRemoveFilePrompt
+	"~View, ~Quit, ~Prev or [~Next]: "
+"~Remove, ~Edit, ~View, ~Quit, ~Prev or [~Next]: "      242 UserRemoveFilePrompt
 "\r\n\1n\1r\1hFile does not exist: \1c%s\1n\r\n"        243 FileDoesNotExist
 "\7\r\n\1r\1h\1iCouldn't remove '%s'.\1n\r\n"               244 CouldntRemoveFile
 "Delete file"                                           245 DeleteFileQ
