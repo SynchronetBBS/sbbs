@@ -268,6 +268,9 @@ static struct {
 	int clipx;
 	int clipy;
 	struct mouse_field *saved_mfields;
+	struct {
+		int sx, sy, ex, ey, xpos, ypos;
+	} text_region;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -301,6 +304,8 @@ static struct {
 	false,
 	ANSI_STATE_NONE,
 	0, 0,
+	NULL,
+	{0, 0, 0, 0, 0, 0},
 };
 
 static const uint16_t rip_line_patterns[4] = {
@@ -7752,6 +7757,13 @@ map_rip_x(int x)
 {
 	int i;
 
+	if (x < 0 || x >= rip.x_dim) {
+		double dx = x;
+		dx *= rip.x_max;
+		dx /= rip.x_dim;
+		return roundl(dx);
+	}
+
 	if (rip.xmap == NULL) {
 		rip.xmap = malloc(rip.x_dim * sizeof(int));
 		if (rip.xmap == NULL) {
@@ -7772,6 +7784,13 @@ static int
 map_rip_y(int y)
 {
 	int i;
+
+	if (y < 0 || y >= rip.y_dim) {
+		double dy = y;
+		dy *= rip.y_max;
+		dy /= rip.y_dim;
+		return roundl(dy);
+	}
 
 	if (rip.ymap == NULL) {
 		rip.ymap = malloc(rip.y_dim * sizeof(int));
@@ -8056,7 +8075,7 @@ buffer_data(const BYTE *buf, unsigned len)
 static int
 next_char(const char *buf, size_t *pos)
 {
-	if (buf[*pos] == '\\') {
+	while (buf[*pos] == '\\') {
 		(*pos)++;
 		if (buf[*pos] == '\r') {
 			(*pos)++;
@@ -8065,7 +8084,11 @@ next_char(const char *buf, size_t *pos)
 		}
 		else if (buf[*pos] == '\n')
 			(*pos)++;
+		else
+			return (uint8_t)buf[*pos];
 	}
+	if (buf[*pos] == '!')
+		return -1;
 	else if (buf[*pos] == '|')
 		return -1;
 	else if (buf[*pos] == '\r')
@@ -8249,6 +8272,17 @@ char_top_bottom(char ch, int *top, int *bottom)
 	}
 }
 
+static int
+font_height()
+{
+	int mult = stroke_mults[rip.font.size];
+	int div = stroke_divs[rip.font.size];
+
+	if (rip.font.num == 0)
+		return 8 * rip.font.size;
+	return (((char)rip_fonts[rip.font.num - 1][0x88]) - ((char)rip_fonts[rip.font.num - 1][0x8a])) * mult / div;
+}
+
 static void
 write_char(char ch)
 {
@@ -8289,7 +8323,7 @@ write_char(char ch)
 						if (this_font[fontoffset] & (0x80 >> x)) {
 							// NOTE: Bitmap fonts don't use write mode...
 							//draw_pixel(rip.x + (x * rip.font.size) + xs, rip.y + (y * rip.font.size)+ ys);
-							set_pixel(rip.x + (x * rip.font.size) + xs, rip.y + (y * rip.font.size)+ ys, ega_colours[rip.color]);
+							set_pixel(rip.x + (x * rip.font.size) + xs, rip.y + (y * rip.font.size)+ ys, map_rip_color(rip.color));
 						}
 					}
 				}
@@ -8766,14 +8800,14 @@ draw_button(struct rip_button_style *but, bool inverted)
 		cc = ega_colours[0x0f ^ but->ccorner];
 	}
 	else {
-		fg = ega_colours[but->cfore];
+		fg = map_rip_color(but->cfore);
 		bg = ega_colours[0];
-		ds = ega_colours[but->cdshadow];
-		ch = ega_colours[but->chighlight];
-		cs = ega_colours[but->cshadow];
-		su = ega_colours[but->csurface];
-		ul = ega_colours[but->culine];
-		cc = ega_colours[but->ccorner];
+		ds = map_rip_color(but->cdshadow);
+		ch = map_rip_color(but->chighlight);
+		cs = map_rip_color(but->cshadow);
+		su = map_rip_color(but->csurface);
+		ul = map_rip_color(but->culine);
+		cc = map_rip_color(but->ccorner);
 	}
 
 	ox = but->box.x1;
@@ -9592,7 +9626,7 @@ draw_ellipse(int x1, int y1, int arg1, int arg2, int x2, int y2)
 		    y1 - nearbyint(sin((M_PI / 180.0) * arg3) * y2),
 		    x1 + nearbyint(cos((1.0 + arg3) * (M_PI / 180.0)) * x2),
 		    y1 - nearbyint(sin((1.0 + arg3) * (M_PI / 180.0)) * y2),
-		    ega_colours[rip.color], 0xffff, rip.line_width);
+		    map_rip_color(rip.color), 0xffff, rip.line_width);
 	}
 }
 
@@ -10023,10 +10057,16 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							GET_XY2();
 							arg1 = parse_mega(&args[8], 2);
 							pthread_mutex_lock(&vstatlock);
-							arg3 = ceil((arg1 * vstat.scrnheight) / (((double)(vstat.scrnwidth)) * 3 / 4));
+							if (vstat.scale_numerator == 729 && vstat.scale_denominator == 1000) {
+								// Detect EGA mode and use the same value as RIPterm did.
+								arg3 = (arg1 * 7750 / 10000);
+							}
+							else {
+								arg3 = arg1 * vstat.scale_numerator / vstat.scale_denominator;
+							}
 							pthread_mutex_unlock(&vstatlock);
 							if (abs(arg3 - arg1) == 360)
-								full_ellipse(x1, y2, x2, y2, false);
+								full_ellipse(x1, y1, x2, y2, false);
 							else
 								draw_ellipse(x1, y1, x2, y2, arg1, arg3);
 							break;
@@ -10134,9 +10174,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							struct ciolib_pixels *pix = getpixels(rip.viewport.sx, rip.viewport.sy, rip.viewport.ex, arg2, false);
 							FREE_AND_NULL(pix->pixelsb);
 							// Blammo goes the stack!
-							fg = ega_colours[arg1];
+							fg = map_rip_color(arg1);
 							uint32_t ffg, fbg;
-							ffg = ega_colours[rip.fill_color];
+							ffg = map_rip_color(rip.fill_color);
 							fbg = ega_colours[0];
 							if (x1 < pix->width && y1 < pix->height)
 								broken_flood_fill(pix, x1, y1, fg, ffg, fbg, rip.fill_color == 0, y1);
@@ -10165,6 +10205,27 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 * current drawing color and line thickness.  The Line Pattern feature
 							 * does not apply to this command.
 							 */
+							handled = true;
+							if (no_viewport())
+								break;
+							GET_XY2();
+							arg1 = parse_mega(&args[8], 2);
+							pthread_mutex_lock(&vstatlock);
+							if (vstat.scale_numerator == 729 && vstat.scale_denominator == 1000) {
+								// Detect EGA mode and use the same value as RIPterm did.
+								arg3 = (arg1 * 7750 / 10000);
+							}
+							else {
+								arg3 = arg1 * vstat.scale_numerator / vstat.scale_denominator;
+							}
+							pthread_mutex_unlock(&vstatlock);
+							if (abs(arg3 - arg1) == 360)
+								full_ellipse(x1, y1, x2, y2, false);
+							else
+								draw_ellipse(x1, y1, x2, y2, arg1, arg3);
+							draw_line(x1, y1, x1 + nearbyint(cos(M_PI / 180.0) * arg1) * x2, y1 + nearbyint(sin(M_PI / 180.0) * arg1) * y2);
+							draw_line(x1, y1, x1 + nearbyint(cos(M_PI / 180.0) * arg3) * x2, y1 + nearbyint(sin(M_PI / 180.0) * arg3) * y2);
+							puts("TODO: Needs to fill...");
 							break;
 						case 'L':	// RIP_LINE !|L <x0> <y0> <x1> <y1>
 							/* This command will draw a line in the current drawing color, using the
@@ -10249,7 +10310,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							fg = ega_colours[rip.color];
+							fg = map_rip_color(rip.color);
 							arg1 = parse_mega(&args[0], 2);
 							for (i = 0; i < arg1; i++) {
 								if (i == 0) {
@@ -10407,7 +10468,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (no_viewport())
 								break;
 							GET_XY();
-							set_pixel(x1, y1, ega_colours[rip.color]);
+							set_pixel(x1, y1, map_rip_color(rip.color));
 							break;
 						case 'Y':	// RIP_FONT_STYLE !|Y <font> <direction> <size> <res>
 							/*
@@ -10561,7 +10622,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							curr_ega_palette[arg1] = arg2;
 							attr2palette(arg1, &fg, NULL);
 							setpalette(fg, ega_palette[arg2][0], ega_palette[arg2][1], ega_palette[arg2][2]);
-							ega_colours[arg1] = fg;
+							// TODO: Extended palette.
+							if (arg1 < 16)
+								ega_colours[arg1] = fg;
 							break;
 						case 'c':	// RIP_COLOR !|c <color>
 							/* This command sets the color for drawing lines, circles, arcs,
@@ -10647,7 +10710,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								arg2 += 360;
 							// TODO: Use 'o' command ellipse when possible...
 							puts("TODO: Needs to fill...");
-							fg = ega_colours[rip.color];
+							fg = map_rip_color(rip.color);
 							set_line(x1, y1, x1 + (x2 * cos(arg1 * (M_PI / 180.0))),
 							    y1 - (y2 * sin(arg1 * (M_PI / 180.0))), fg, 0xffff, rip.line_width);
 							for (arg3 = arg1; arg3 < arg2; arg3++) {
@@ -12082,7 +12145,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 										co |= (((planes[(row * 2) + (j / 8)] >> (7 - (j & 7))) & 1) << 1);
 										co |= (((planes[(row * 1) + (j / 8)] >> (7 - (j & 7))) & 1) << 2);
 										co |= (((planes[(row * 0) + (j / 8)] >> (7 - (j & 7))) & 1) << 3);
-										*(op++) = ega_colours[co];
+										*(op++) = map_rip_color(co);
 									}
 								}
 								if (pix) {
@@ -12339,7 +12402,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 * NOTE:  The "res" parameter is two bytes wide and is RESERVED for
 							 *        future use.
 							 */
-							// TODO: Justify things.
+							handled = true;
+							GET_XY2();
+							rip.text_region.sx = x1;
+							rip.text_region.sy = y1;
+							rip.text_region.ex = x2;
+							rip.text_region.ey = y2;
+							rip.text_region.xpos = 0;
+							rip.text_region.ypos = 0;
 							break;
 						case 't':	// RIP_REGION_TEXT !|1t <justify> <text-string>
 							/* A number of these commands may come sandwiched between the
@@ -12375,6 +12445,36 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 * formatted text block.
 							 */
 							// TODO: The things that are justified...
+							handled = true;
+							arg1 = parse_mega(&args[0], 1);
+							if (arg1) {
+								printf("TODO: Justify %d\n", arg1);
+							}
+							{
+								int oldsx = rip.viewport.sx;
+								int oldsy = rip.viewport.sy;
+								int oldex = rip.viewport.ex;
+								int oldey = rip.viewport.ey;
+								int oldx = rip.x;
+								int oldy = rip.y;
+
+								rip.viewport.sx = rip.text_region.sx;
+								rip.viewport.sy = rip.text_region.sy;
+								rip.viewport.ex = rip.text_region.ex;
+								rip.viewport.ey = rip.text_region.ey;
+								rip.x = rip.text_region.xpos;
+								rip.y = rip.text_region.ypos;
+
+								write_text(&args[1]);
+								rip.text_region.ypos += font_height();
+
+								rip.viewport.sx = oldsx;
+								rip.viewport.sy = oldsy;
+								rip.viewport.ex = oldex;
+								rip.viewport.ey = oldey;
+								rip.x = oldx;
+								rip.y = oldy;
+							}
 							break;
 						case 'U':	// RIP_BUTTON !|1U <x0> <y0> <x1> <y1> <hotkey> <flags> <res> <text>
 							/* This command physically creates a new Button using the previously
@@ -12658,16 +12758,17 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 			}
 			break;
 	}
-	free(args);
 	if (!handled) {
 		printf("Unhandled command: Level: %d, SubLevel: %d, cmd: %d, args: %s\n", level, sublevel, cmd, args);
 		fflush(stdout);
 	}
+	free(args);
 }
 
 static void
 do_rip_string(const char *buf, size_t len)
 {
+	enum do_states rs = NEED_BANG;	// Reset state...
 	enum do_states ds = NEED_BANG;
 	int ch;
 	size_t pos;
@@ -12680,54 +12781,56 @@ do_rip_string(const char *buf, size_t len)
 		switch (ds) {
 			case NEED_BANG:
 				ch = next_char(buf, &pos);
-				if (ch == '!' || ch == '\x01' || ch == '\x02')
+				if ((ch == -1 && buf[pos] == '!') || ch == '\x01' || ch == '\x02')
 					ds = NEED_PIPE;
 				break;
 			case NEED_PIPE:
-				if (next_char(buf, &pos) == -1) {
+				if (next_char(buf, &pos) == -1 && buf[pos] == '|') {
 					level = 0;
 					sublevel = 0;
 					cmd = -1;
 					ds = NEED_LEVEL;
+					break;
 				}
+				ds = rs;
 				break;
 			case NEED_LEVEL:
 				ch = next_char(buf, &pos);
-				if (ch == -1)
-					break;
 				if (ch >= '1' && ch <= '9') {
 					level = ch - '0';
 					ds = NEED_SUBLEVEL;
+					break;
 				}
-				else {
-					level = 0;
-					sublevel = 0;
-					cmd = ch;
-					arg_start = 0;
-					ds = ARGUMENTS;
+				else if (ch == -1) {
+					ds = rs;
+					break;
 				}
+				level = 0;
+				sublevel = 0;
+				cmd = ch;
+				arg_start = 0;
+				ds = ARGUMENTS;
 				break;
 			case NEED_SUBLEVEL:
 				ch = next_char(buf, &pos);
-				if (ch == -1) {
-					ds = NEED_LEVEL;
-					break;
-				}
 				if (ch >= '1' && ch <= '9') {
 					sublevel = ch - '0';
 					ds = NEED_COMMAND;
+					break;
 				}
-				else {
-					sublevel = 0;
-					cmd = ch;
-					arg_start = 0;
-					ds = ARGUMENTS;
+				else if (ch == -1) {
+					ds = rs;
+					break;
 				}
+				sublevel = 0;
+				cmd = ch;
+				arg_start = 0;
+				ds = ARGUMENTS;
 				break;
 			case NEED_COMMAND:
 				ch = next_char(buf, &pos);
 				if (ch == -1) {
-					ds = NEED_LEVEL;
+					ds = rs;
 					break;
 				}
 				cmd = ch;
@@ -12738,9 +12841,13 @@ do_rip_string(const char *buf, size_t len)
 				ch = next_char(buf, &pos);
 				if (arg_start == 0)
 					arg_start = pos;
-				if (ch == -1 || ch == '\r') {
+				if (ch == -1 || ch == '!' || ch == '|') {
 					do_rip_command(level, sublevel, cmd, &buf[arg_start]);
-					ds = NEED_LEVEL;
+					if (buf[pos] == '|')
+						ds = NEED_LEVEL;
+					else
+						ds = NEED_PIPE;
+					rs = NEED_PIPE;
 				}
 				break;
 		}
@@ -13693,8 +13800,6 @@ init_rip(int version)
 	rip.y = 0;
 	rip.viewport.sx = 0;
 	rip.viewport.sy = 0;
-	rip.viewport.ex = rip.x_dim - 1;
-	rip.viewport.ey = rip.y_dim - 1;
 	rip.color = 7;
 	rip.font.num = 0;
 	rip.font.vertical = 0;
@@ -13714,6 +13819,8 @@ init_rip(int version)
 	if (rip.y_max > rip.y_dim)
 		rip.y_max = rip.y_dim;
 	pthread_mutex_unlock(&vstatlock);
+	rip.viewport.ex = rip.x_dim - 1;
+	rip.viewport.ey = rip.y_dim - 1;
 
 	pending_len = 0;
 	if (pending)
