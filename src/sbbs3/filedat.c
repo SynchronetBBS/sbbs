@@ -803,7 +803,7 @@ str_list_t list_archive_contents(const char* filename, const char* pattern, bool
 	}
 	archive_read_free(ar);
 	if(sort)
-		iniSortSections(&list, /* sort_keys: */TRUE);
+		iniSortSections(&list, /* sort_keys: */FALSE);
 	return list;
 }
 
