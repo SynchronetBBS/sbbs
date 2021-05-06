@@ -7241,6 +7241,7 @@ static const struct builtin_rip_variable builtins[] = {
 	{"BEEP", rv_sound, NULL},		// Beep Sound (ala Ctrl-G)
 	{"BLIP", rv_sound, NULL},
 	{"COFF", rv_termset, NULL},
+	{"COMPAT", rv_termset, NULL},
 	{"CON", rv_termset, NULL},
 	{"CURSOR", rv_termstat, NULL},
 	{"CURX", rv_termstat, NULL},
@@ -7811,8 +7812,6 @@ map_rip_y(int y)
 static void
 scale_setpixel(int x, int y, uint32_t color)
 {
-	if (!(color & 0x80000000))
-		color = map_rip_color(color);
 	setpixel(map_rip_x(x), map_rip_y(y), color);
 }
 
@@ -7884,6 +7883,27 @@ rv_termset(const char * const var, const void * const data)
 						case 'N':
 							rip.curstype = _NORMALCURSOR;
 							_setcursortype(rip.curstype);
+							return NULL;
+						case 'M':
+							rip.x_dim = 640;
+							rip.y_dim = 350;
+							pthread_mutex_lock(&vstatlock);
+							rip.x_max = vstat.scrnwidth;
+							if (rip.x_max > rip.x_dim)
+								rip.x_max = rip.x_dim;
+							rip.y_max = vstat.scrnheight;
+							if (rip.y_max > rip.y_dim)
+								rip.y_max = rip.y_dim;
+							// TODO: Hack... we should likely scale both directions...
+							rip.viewport.sx = 0;
+							rip.viewport.sy = 0;
+							rip.viewport.ex = rip.x_dim - 1;
+							rip.viewport.ey = rip.y_dim - 1;
+							FREE_AND_NULL(rip.xmap);
+							FREE_AND_NULL(rip.ymap);
+							FREE_AND_NULL(rip.xunmap);
+							FREE_AND_NULL(rip.yunmap);
+							pthread_mutex_unlock(&vstatlock);
 							return NULL;
 					}
 					break;
@@ -10625,6 +10645,108 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							// TODO: Extended palette.
 							if (arg1 < 16)
 								ega_colours[arg1] = fg;
+							break;
+						case 'b':	// RIP_EXTENDED_TEXT_WINDOW (v2.A4)
+							handled = true;
+							GET_XY2();
+							arg1 = parse_mega(&args[8], 2);
+							arg2 = parse_mega(&args[10], 2);
+							arg3 = parse_mega(&args[12], 1);
+							arg4 = parse_mega(&args[13], 4);
+							x1 = map_rip_x(x1 + rip.viewport.sx);
+							x2 = map_rip_x(x2 + rip.viewport.sy);
+							y1 = map_rip_y(y1 + rip.viewport.sx);
+							y2 = map_rip_y(y2 + rip.viewport.sy);
+
+							// Step 1, choose the biggest font that fits...
+							// we have 8x16, 8x14, 8x8, 7x14, and 7x8 to pick from...
+							int maxwidth = 16;
+							if (!(arg4 & 0x10) && arg3 != 4)
+								maxwidth = 8;
+							else if (x2 - x1 + 1 < maxwidth * arg1)
+								maxwidth = 8;
+							if (x2 - x1 + 1 < maxwidth * arg1)
+								maxwidth = 7;
+
+							int maxheight = 16;
+							if (maxwidth == 16)
+								maxheight = 14;
+							else if (y2 - y1 + 1 < maxheight * arg2)
+								maxheight = 14;
+							if (y2 - y1 + 1 < maxheight * arg2)
+								maxheight = 8;
+
+							// Step 2, shrink text size if needed
+							if (x2 - x1 + 1 < maxwidth * arg1)
+								arg1 = (x2 - x1 + 1) / maxwidth;
+							if (y2 - y1 + 1 < maxheight * arg2)
+								arg2 = (y2 - y1 + 1) / maxheight;
+
+							// Now, check the desired font.
+							if (!(arg4 & 0x10)) {
+								switch (arg3) {
+									case 0:
+										if (maxheight > 8)
+											maxheight = 8;
+										break;
+									case 1:
+										if (maxheight > 8)
+											maxheight = 8;
+										if (maxwidth > 7)
+											maxwidth = 7;
+										break;
+									case 3:
+										if (maxwidth > 7)
+											maxwidth = 7;
+										break;
+								}
+							}
+
+							// Step 3, center as best we can
+							int xoffset = (((x2 - x1 + 1) - (maxwidth * arg1)) / 2) / maxwidth;
+							int yoffset = (((y2 - y1 + 1) - (maxheight * arg2)) / 2) / maxheight;
+
+							// Step 4, set the text window
+							void *fnt;
+							if (maxwidth == 16 && maxheight == 14)
+								fnt = ripfnt16x14;
+							else if (maxwidth == 8 && maxheight == 16)
+								fnt = conio_fontdata[0].eight_by_sixteen;
+							else if (maxwidth == 8 && maxheight == 14)
+								fnt = conio_fontdata[0].eight_by_fourteen;
+							else if (maxwidth == 8 && maxheight == 8)
+								fnt = conio_fontdata[0].eight_by_eight;
+							else if (maxwidth == 7 && maxheight == 14)
+								fnt = ripfnt7x14;
+							else if (maxwidth == 7 && maxheight == 8)
+								fnt = ripfnt7x8;
+							else {
+								printf("Unsupported font size %dx%d\n", maxwidth, maxheight);
+								fnt = ripfnt7x8;
+								maxwidth = 7;
+								maxheight = 8;
+							}
+							reinit_screen(fnt, maxwidth, maxheight);
+
+							cterm->left_margin = (x1 / maxwidth) + xoffset;
+							cterm->top_margin = (y1 / maxheight) + yoffset;
+							cterm->right_margin = cterm->left_margin + arg1 - 1;
+							cterm->bottom_margin = cterm->top_margin + arg2 - 1;
+							setwindow(cterm);
+							gotoxy(1, 1);
+							cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
+
+							// Step 5, apply flags
+							if (arg4 & 0x01)
+								cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
+							else
+								cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
+							if (arg4 & 0x02)
+								_setcursortype(rip.curstype);
+							if (arg4 & 0x20)	// Clear area...
+								for (i = x1; i <= x2; i++)
+									for (j = y1; j <= y2; j++)
+										rip_setpixel(i, j, 0);
 							break;
 						case 'c':	// RIP_COLOR !|c <color>
 							/* This command sets the color for drawing lines, circles, arcs,
@@ -13829,8 +13951,10 @@ init_rip(int version)
 	if (moredata)
 		moredata[0] = 0;
 	if (version) {
+		shadow_palette();
 		memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 		set_ega_palette();
+		normal_palette();
 	}
 }
 
