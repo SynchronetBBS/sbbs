@@ -7607,6 +7607,24 @@ rv_mouse(const char * const var, const void * const data)
 	return NULL;
 }
 
+static uint32_t
+map_rip_color(int color)
+{
+	uint32_t col = 0;
+
+	if (color < 16)
+		col = ega_colours[color];
+	else if (color < 256) {
+		col = 0x80000000
+		    | ((default_mapped[color][0] << 2 | (default_mapped[color][0] & 3)) << 16)
+		    | ((default_mapped[color][1] << 2 | (default_mapped[color][1] & 3)) << 8)
+		    | ((default_mapped[color][2] << 2 | (default_mapped[color][2] & 3)));
+	}
+	else
+		fprintf(stderr, "Unable to map %d\n", color);
+	return col;
+}
+
 static char *
 rv_reset(const char * const var, const void * const data)
 {
@@ -7656,8 +7674,8 @@ rv_reset(const char * const var, const void * const data)
 	cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
 	cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
 	cterm->attr = 15;
-	cterm->fg_color = ega_colours[15];
-	cterm->bg_color = ega_colours[0];
+	cterm->fg_color = map_rip_color(15);
+	cterm->bg_color = map_rip_color(0);
 	setwindow(cterm);
 	cterm_gotoxy(cterm, 1, 1);
 	clrscr();
@@ -7691,24 +7709,6 @@ rv_restore(const char * const var, const void * const data)
 	}
 	printf("TODO: Restore RIP Variables (%s)\n", var);
 	return NULL;
-}
-
-static uint32_t
-map_rip_color(int color)
-{
-	uint32_t col = 0;
-
-	if (color < 16)
-		col = ega_colours[color];
-	else if (color < 256) {
-		col = 0x80000000
-		    | ((default_mapped[color][0] << 2 | (default_mapped[color][0] & 3)) << 16)
-		    | ((default_mapped[color][1] << 2 | (default_mapped[color][1] & 3)) << 8)
-		    | ((default_mapped[color][2] << 2 | (default_mapped[color][2] & 3)));
-	}
-	else
-		fprintf(stderr, "Unable to map %d\n", color);
-	return col;
 }
 
 static int
@@ -8821,7 +8821,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 	}
 	else {
 		fg = map_rip_color(but->cfore);
-		bg = ega_colours[0];
+		bg = map_rip_color(0);
 		ds = map_rip_color(but->cdshadow);
 		ch = map_rip_color(but->chighlight);
 		cs = map_rip_color(but->cshadow);
@@ -9141,12 +9141,12 @@ do_popup(const char * const str)
 	int ret;
 	struct ciolib_pixels *pix;
 
-	black = ega_colours[0];
-	yellow = ega_colours[14];
-	white = ega_colours[15];
-	dark = ega_colours[8];
-	light = ega_colours[7];
-	blue = ega_colours[1];
+	black = map_rip_color(0);
+	yellow = map_rip_color(14);
+	white = map_rip_color(15);
+	dark = map_rip_color(8);
+	light = map_rip_color(7);
+	blue = map_rip_color(1);
 	p = (char *)str;
 	if (str[0] == '*') {
 		must_answer = true;
@@ -9657,46 +9657,61 @@ draw_ellipse(int x1, int y1, int arg1, int arg2, int x2, int y2)
 static void
 full_ellipse(int xc, int yc, int a, int b, bool fill)
 {
+	if (b == 0) {
+		b = 1;
+		a--;
+	}
+	if (a <= 0)
+		a = 1;
 	int x = 0, y = b;
-	long a2 = (long)a*a, b2 = (long)b*b;
+	long a2 = (long)a*a;
+	long b2 = (long)b*b;
 	long crit1 = -(a2/4 + a%2 + b2);
 	long crit2 = -(b2/4 + b%2 + a2);
 	long crit3 = -(b2/4 + b%2);
-	long t = -a2*y; /* t = e(x+1/2,y-1/2) - (a²+b²)/4 */
+	long t = -(a2*y); /* t = e(x+1/2,y-1/2) - (a²+b²)/4 */
 	long dxt = 2*b2*x, dyt = -2*a2*y;
 	long d2xt = 2*b2, d2yt = 2*a2;
 	int fy;
+	bool skip = false;
 
 	while(y>=0 && x<=a) {
-		if(x!=0 || y!=0) {
-			if (fill) {
-				if (x == 0) {
+		if (!skip) {
+			if(x!=0 || y!=0) {
+				if (fill) {
+					if (x == 0) {
+						for (fy = yc - y + 1; fy < yc + y; fy++) {
+							fill_pixel(xc, fy);
+						}
+					}
+				}
+				if (rip.color)
+					draw_pixel(xc-x, yc-y);
+			}
+			if(x!=0 && y!=0) {
+				if (fill) {
 					for (fy = yc - y + 1; fy < yc + y; fy++) {
-						fill_pixel(xc, fy);
+						fill_pixel(xc - x, fy);
+						fill_pixel(xc + x, fy);
+					}
+				}
+				if (rip.color) {
+					if (rip.borders) {
+						draw_pixel(xc+x, yc-y);
+						draw_pixel(xc-x, yc+y);
 					}
 				}
 			}
-			if (rip.color)
-				draw_pixel(xc-x, yc-y);
+			draw_pixel(xc+x, yc+y);
 		}
-		if(x!=0 && y!=0) {
-			if (fill) {
-				for (fy = yc - y + 1; fy < yc + y; fy++) {
-					fill_pixel(xc - x, fy);
-					fill_pixel(xc + x, fy);
-				}
-			}
-			if (rip.color) {
-				if (rip.borders) {
-					draw_pixel(xc+x, yc-y);
-					draw_pixel(xc-x, yc+y);
-				}
-			}
-		}
-		draw_pixel(xc+x, yc+y);
+		skip = false;
 		if(t + b2*x <= crit1 ||   /* e(x+1,y-1/2) <= 0 */
-		    t+a2*y <= crit3)     /* e(x+1/2,y) <= 0 */
+		    t+a2*y <= crit3) {    /* e(x+1/2,y) <= 0 */
 			incx();
+			// Angle move, skip next...
+			if (!(t + b2*x <= crit1 || t+a2*y <= crit3) && (t - a2*y > crit2))
+				skip = true;
+		}
 		else if(t - a2*y > crit2) /* e(x+1/2,y-1) > 0 */
 			incy();
 		else {
@@ -9743,7 +9758,7 @@ bff_push(struct saved_point **stack, int x, int y)
  */
 
 static void
-broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32_t fillfg, uint32_t fillbg, bool iszero, int oy)
+broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32_t fillfg, uint32_t fillbg, bool iszero, int oy, struct saved_point** orig_stack)
 {
 	bool nextline = false;
 	bool prevline = false;
@@ -9751,9 +9766,12 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 	int noff;
 	int poff;
 	int vx, vy;
-	struct saved_point *stack = NULL;
+	struct saved_point **stack = orig_stack;
+	struct saved_point *new_stack = NULL;
 	struct saved_point *this = NULL;
 
+	if (stack == NULL)
+		stack = &new_stack;
 	if (x < 0 || y < 0)
 		return;
 	if (x >= pix->width)
@@ -9815,7 +9833,7 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 						if (pix->pixels[poff] != edge) {
 							prevline = true;
 							if ((pix->pixels[poff] & 0x40000000) == 0)
-								bff_push(&stack, x, y - 1);
+								bff_push(stack, x, y - 1);
 						}
 					}
 				}
@@ -9831,7 +9849,7 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 						if (pix->pixels[noff] != edge) {
 							nextline = true;
 							if ((pix->pixels[noff] & 0x40000000) == 0)
-								bff_push(&stack, x, y + 1);
+								bff_push(stack, x, y + 1);
 						}
 					}
 				}
@@ -9846,10 +9864,12 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 			poff++;
 	}
 
-	for (this = stack; this; this = stack) {
-		stack = stack->next;
-		broken_flood_fill(pix, this->x, this->y, edge, fillfg, fillbg, iszero, y);
-		free(this);
+	if (orig_stack == NULL) {
+		for (this = *stack; this; this = *stack) {
+			*stack = (*stack)->next;
+			broken_flood_fill(pix, this->x, this->y, edge, fillfg, fillbg, iszero, y, stack);
+			free(this);
+		}
 	}
 }
 
@@ -10030,7 +10050,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 */
 							handled = true;
 							uint32_t oldbg = cterm->bg_color;
-							cterm->bg_color = ega_colours[0];
+							cterm->bg_color = map_rip_color(0);
 							cterm_clreol(cterm);
 							cterm->bg_color = oldbg;
 							break;
@@ -10186,7 +10206,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 
 							for (i = 0; i < 50; i++) {
 							SLEEP(50);
-							scape_setpixel(x1, y1, fg);
+							scale_setpixel(x1, y1, fg);
 							SLEEP(50);
 							scale_setpixel(x1, y1, xx);
 							}
@@ -10197,9 +10217,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							fg = map_rip_color(arg1);
 							uint32_t ffg, fbg;
 							ffg = map_rip_color(rip.fill_color);
-							fbg = ega_colours[0];
+							fbg = map_rip_color(0);
 							if (x1 < pix->width && y1 < pix->height)
-								broken_flood_fill(pix, x1, y1, fg, ffg, fbg, rip.fill_color == 0, y1);
+								broken_flood_fill(pix, x1, y1, fg, ffg, fbg, rip.fill_color == 0, y1, NULL);
 							else
 								puts("TODO: Flood fill off screen");
 							for (i = 0; i < pix->width * pix->height; i++) {
