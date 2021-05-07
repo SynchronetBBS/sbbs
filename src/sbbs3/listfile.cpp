@@ -472,7 +472,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 		if(usrdir[ulib][udir]==smb->dirnum)
 			break;
 
-	CRLF;
+	cond_newline();
 	while(online) {
 		bprintf(text[BatchFlagPrompt]
 			,ulib+1
