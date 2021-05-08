@@ -44,7 +44,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 	long	anchor=0,next;
 	file_t* bf[BF_MAX];	/* bf is batch flagged files */
 	smb_t	smb;
-	ulong	file_row[26];
+	ulong	file_row[BF_MAX];
 	size_t	longest = 0;
 
 	if(!smb_init_dir(&cfg, &smb, dirnum))
@@ -472,7 +472,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 		if(usrdir[ulib][udir]==smb->dirnum)
 			break;
 
-	cond_newline();
+	cond_blankline();
 	while(online) {
 		bprintf(text[BatchFlagPrompt]
 			,ulib+1
