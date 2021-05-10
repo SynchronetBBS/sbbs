@@ -217,6 +217,7 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->auto_add_to_areafile		= true;
 	cfg->auto_utf8					= true;
 	cfg->strip_soft_cr				= true;
+	cfg->require_linked_node_cfg	= true;
 	cfg->min_free_diskspace			= 10*1024*1024;
 	cfg->max_logs_kept				= 10;
 	cfg->max_log_size				= 10*1024*1024;
@@ -290,6 +291,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	SAFECOPY(cfg->areamgr,		  iniGetString(ini, ROOT_SECTION, "AreaManager", "SYSOP", value));
 	cfg->auto_add_subs			= iniGetBool(ini, ROOT_SECTION, "AutoAddSubs", cfg->auto_add_subs);
 	cfg->auto_add_to_areafile	= iniGetBool(ini, ROOT_SECTION, "AutoAddToAreaFile", cfg->auto_add_to_areafile);
+	cfg->require_linked_node_cfg= iniGetBool(ini, ROOT_SECTION, "RequireLinkedNodeCfg", cfg->require_linked_node_cfg);
 
 	/* NetMail options: */
 	SAFECOPY(cfg->default_recipient, iniGetString(ini, ROOT_SECTION, "DefaultRecipient", "", value));
@@ -550,6 +552,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,		ROOT_SECTION, "AreaAddFromEcholistsOnly",cfg->add_from_echolists_only	,style);
 	iniSetBool(&ini,		ROOT_SECTION, "AutoAddSubs"				,cfg->auto_add_subs				,style);
 	iniSetBool(&ini,		ROOT_SECTION, "AutoAddToAreaFile"		,cfg->auto_add_to_areafile		,style);
+	iniSetBool(&ini,		ROOT_SECTION, "RequireLinkedNodeCfg"	,cfg->require_linked_node_cfg	,style);
 	iniSetDuration(&ini,	ROOT_SECTION, "BsyTimeout"				,cfg->bsy_timeout				,style);
 	iniSetDuration(&ini,	ROOT_SECTION, "BsoLockDelay"			,cfg->bso_lock_delay			,style);
 	iniSetLongInt(&ini,		ROOT_SECTION, "BsoLockAttempts"			,cfg->bso_lock_attempts			,style);
