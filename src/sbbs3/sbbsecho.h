@@ -210,6 +210,7 @@ typedef struct {
 	bool		auto_add_to_areafile;
 	bool		auto_utf8;
 	bool		use_outboxes;
+	bool		require_linked_node_cfg;
 	ulong		bsy_timeout;
 	ulong		bso_lock_attempts;
 	ulong		bso_lock_delay;			/* in seconds */

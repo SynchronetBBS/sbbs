@@ -6388,7 +6388,7 @@ int main(int argc, char **argv)
 				}
 				fidoaddr_t link = atofaddr(p);
 				cfg.area[areanum].link[cfg.area[areanum].links] = link;
-				if(findnodecfg(&cfg, link, /* exact: */false) == NULL) {
+				if(findnodecfg(&cfg, link, /* exact: */cfg.require_linked_node_cfg) == NULL) {
 					printf("\n");
 					lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
 						,cfg.area[areanum].tag, faddrtoa(&link), cfg.cfgfile);
