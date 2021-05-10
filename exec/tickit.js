@@ -628,6 +628,8 @@ function parse_ticfile(fname)
 		if(tic.desc.length > LEN_FDESC && !tic.ldesc)
 			tic.ldesc = tic.desc.replace("  ", "\r\n");
 		tic.desc = format("%.*s", LEN_FDESC, tic.desc.trim());
+		if(tic.ldesc == tic.desc)
+			delete tic.ldesc;
 	}
 	f.close();
 	f = new File(dir+tic.file);
