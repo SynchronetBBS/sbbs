@@ -434,8 +434,8 @@ static uint32_t color_value(uint32_t col)
 {
 	if (col & 0x80000000)
 		return col;
-	if (col < sizeof(palette) / sizeof(palette[0]))
-		return palette[col];
+	if ((col & 0xffffff) < sizeof(palette) / sizeof(palette[0]))
+		return (col & 0xff000000) | palette[col & 0xffffff];
 	fprintf(stderr, "Invalid colour value: %08x\n", col);
 	return 0xff000000;
 }
