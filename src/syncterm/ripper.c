@@ -9863,7 +9863,7 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 					}
 				}
 				if (rip.borders) {
-					if (sa < qangle && ea > qangle)
+					if (sa <= qangle && ea >= qangle)
 						set_pixel(xc-x, yc-y, colour);
 				}
 			}
@@ -9876,18 +9876,18 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 				}
 				if (rip.borders) {
 					// Top-right quadrant.
-					if (sa < angle && ea > angle)
+					if (sa <= angle && ea >= angle)
 						set_pixel(xc+x, yc-y, colour);
 					// Bottom-left quadrant.
 					qangle = 180 + angle;
-					if (sa < qangle && ea > qangle)
+					if (sa <= qangle && ea >= qangle)
 						set_pixel(xc-x, yc+y, colour);
 				}
 			}
 			// Bottom-right quadrant
 			qangle = 360 - angle;
 			if (rip.borders) {
-				if (sa < qangle && ea > qangle)
+				if (sa <= qangle && ea >= qangle)
 					set_pixel(xc+x, yc+y, colour);
 			}
 		}
