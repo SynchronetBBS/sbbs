@@ -921,7 +921,7 @@ get_rip_version(int oldver, int *changed)
 	uifc.helpbuf=   "`RIP Version`\n\n"
 	    "RIP v1 requires EGA mode while RIP v3\n"
 	    "works in any screen mode.";
-	switch(uifc.list(WIN_SAV,0,0,0,&cur,&bar,"RIP Mode",rip_versions)) {
+	switch(uifc.list(WIN_SAV,0,0,0,&cur,NULL,"RIP Mode",rip_versions)) {
 		case -1:
 			check_exit(FALSE);
 			break;

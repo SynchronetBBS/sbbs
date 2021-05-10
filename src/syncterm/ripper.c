@@ -7773,8 +7773,11 @@ map_rip_x(int x)
 			dx /= rip.x_dim;
 			return roundl(dx);
 		}
-		for (i = 0; i < rip.x_dim; i++)
+		for (i = 0; i < rip.x_dim; i++) {
 			rip.xmap[i] = roundl(((double)i) * rip.x_max / rip.x_dim);
+			if (rip.xmap[i] >= rip.x_max)
+				rip.xmap[i] = rip.x_max - 1;
+		}
 	}
 	if (x >= rip.x_dim)
 		x = rip.x_dim;
@@ -7801,8 +7804,11 @@ map_rip_y(int y)
 			dy /= rip.y_dim;
 			return roundl(dy);
 		}
-		for (i = 0; i < rip.y_dim; i++)
+		for (i = 0; i < rip.y_dim; i++) {
 			rip.ymap[i] = roundl(((double)i) * rip.y_max / rip.y_dim);
+			if (rip.ymap[i] >= rip.y_max)
+				rip.ymap[i] = rip.y_max - 1;
+		}
 	}
 	if (y >= rip.y_dim)
 		y = rip.y_dim;
@@ -8107,9 +8113,9 @@ next_char(const char *buf, size_t *pos)
 		else
 			return (uint8_t)buf[*pos];
 	}
-	if (buf[*pos] == '!')
+	/*if (buf[*pos] == '!')
 		return -1;
-	else if (buf[*pos] == '|')
+	else */if (buf[*pos] == '|')
 		return -1;
 	else if (buf[*pos] == '\r')
 		return -1;
@@ -8180,6 +8186,15 @@ set_pixel(int x, int y, uint32_t fg)
 }
 
 static void
+native_fill_pixel(int x, int y)
+{
+	if (rip.fill_pattern[y & 0x07] & (0x80 >> (x & 0x07)))
+		setpixel(x, y, map_rip_color(rip.fill_color));
+	else
+		setpixel(x, y, map_rip_color(0));
+}
+
+static void
 fill_pixel(int x, int y)
 {
 	x += rip.viewport.sx;
@@ -8187,10 +8202,10 @@ fill_pixel(int x, int y)
 	if (x > rip.viewport.ex || y > rip.viewport.ey)
 		return;
 
-	if (rip.fill_pattern[y & 0x07] & (0x80 >> (x & 0x07)))
-		rip_setpixel(x, y, rip.fill_color);
-	else
-		rip_setpixel(x, y, 0);
+	// Handle the translation here for nicer fills...
+	x = map_rip_x(x);
+	y = map_rip_y(y);
+	native_fill_pixel(x, y);
 }
 
 static int
@@ -8599,6 +8614,7 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 	int *maxc, *maxs, *maxe, *maxo, *maxd;
 	int x, y;
 	int swap = 0;
+	int lx, ly;
 
 	int dx = abs(x2 - x1);
 	int dy = abs(y2 - y1);
@@ -8664,6 +8680,16 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 	for ((*maxc) = *maxs; (((*maxs) < (*maxe)) ? ((*maxc) <= (*maxe)) : ((*maxc) >= (*maxe))); (*maxc) += *maxo) {
 		if (pat & (0x8000 >> ppos)) {
 			set_pixel(x, y, color);
+		}
+		else {
+			// Set fill border...
+			if (color & 0x40000000) {
+				lx = map_rip_x(x);
+				ly = map_rip_y(y);
+				struct ciolib_pixels *pixels = getpixels(lx, ly, lx, ly, false);
+				set_pixel(x, y, pixels->pixels[0] | 0x40000000);
+				freepixels(pixels);
+			}
 		}
 		if (de >= 0) {
 			*minc = (*minc) + *mino;
@@ -8787,6 +8813,160 @@ static void invert_rect(int x1, int y1, int x2, int y2)
 		}
 	}
 	setpixels(x1, y1, x2, y2, 0, 0, pix, NULL);
+	freepixels(pix);
+}
+
+static void do_fill(bool overwrite)
+{
+	struct ciolib_pixels *pix;
+	int x, cx, y;
+	int pixel;
+	bool fill = false;
+	bool in_line = false;
+	uint32_t col;
+
+	pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
+	FREE_AND_NULL(pix->pixelsb);
+	if (pix == NULL)
+		return;
+
+	// Horizontal even-odd top-left to bottom-right.
+	pixel = 0;
+	for (y = 0; y < pix->height; y++) {
+		in_line = fill = false;
+		for (x = 0; x < pix->width; x++) {
+			if (in_line) {
+				if (!(pix->pixels[pixel] & 0x40000000)) {
+					fill = !fill;
+					in_line = false;
+				}
+			}
+			else {
+				if (pix->pixels[pixel] & 0x40000000) {
+					in_line = true;
+				}
+			}
+			if (fill & !in_line)
+				pix->pixels[pixel] |= 0x20000000;
+			pixel++;
+		}
+	}
+
+	// Horizontal even-odd bottom-right to top-left
+	pixel = pix->height * pix->width - 1;
+	for (y = 0; y < pix->height; y++) {
+		in_line = fill = false;
+		for (x = 0; x < pix->width; x++) {
+			if (in_line) {
+				if (!(pix->pixels[pixel] & 0x40000000)) {
+					fill = !fill;
+					in_line = false;
+				}
+			}
+			else {
+				if (pix->pixels[pixel] & 0x40000000) {
+					in_line = true;
+				}
+			}
+			if (fill & !in_line)
+				pix->pixels[pixel] |= 0x10000000;
+			pixel--;
+		}
+	}
+
+	// Vertical even-odd top-left to bottom-right.
+	for (x = 0; x < pix->width; x++) {
+		pixel = x;
+		in_line = fill = false;
+		for (y = 0; y < pix->height; y++) {
+			if (in_line) {
+				if (!(pix->pixels[pixel] & 0x40000000)) {
+					fill = !fill;
+					in_line = false;
+				}
+			}
+			else {
+				if (pix->pixels[pixel] & 0x40000000) {
+					in_line = true;
+				}
+			}
+			if (fill & !in_line)
+				pix->pixels[pixel] |= 0x08000000;
+			pixel += pix->width;
+		}
+	}
+
+	// Vertical even-odd bottom-right to top-left
+	for (x = 0; x < pix->width; x++) {
+		pixel = (pix->height * pix->width) - x - 1;
+		in_line = fill = false;
+		for (y = 0; y < pix->height; y++) {
+			if (in_line) {
+				if (!(pix->pixels[pixel] & 0x40000000)) {
+					fill = !fill;
+					in_line = false;
+				}
+			}
+			else {
+				if (pix->pixels[pixel] & 0x40000000) {
+					in_line = true;
+				}
+			}
+			if (fill & !in_line)
+				pix->pixels[pixel] |= 0x04000000;
+			pixel -= pix->width;
+		}
+	}
+
+	// Horizontal gap-fill
+	pixel = 0;
+	for (y = 0; y < pix->height; y++) {
+		pixel++;
+		for (x = 1; x < pix->width - 1; x++) {
+			int filled = pix->pixels[pixel] & 0x3c000000;
+			if (filled && filled != 0x3c000000) {
+				if (((pix->pixels[pixel - 1] & 0xff000000) == 0x3c000000)
+				    || ((pix->pixels[pixel + 1] & 0xff000000) == 0x3c000000))
+					pix->pixels[pixel] |= 0x3c000000;
+			}
+			pixel++;
+		}
+		pixel++;
+	}
+
+	// Vertical gap-fill
+	for (x = 0; x < pix->width; x++) {
+		pixel = x;
+		pixel += pix->width;
+		for (y = 1; y < pix->height - 1; y++) {
+			int filled = pix->pixels[pixel] & 0x3c000000;
+			if (filled && filled != 0x3c000000) {
+				if (((pix->pixels[pixel - pix->width] & 0xff000000) == 0x3c000000)
+				    || ((pix->pixels[pixel + pix->width] & 0xff000000) == 0x3c000000))
+					pix->pixels[pixel] |= 0x3c000000;
+			}
+			pixel += pix->width;
+		}
+		pixel += pix->width;
+	}
+
+	// Update the screen
+	pixel = 0;
+	for (y = 0; y < pix->height; y++) {
+		for (x = 0; x < pix->width; x++) {
+			switch ((pix->pixels[pixel] >> 26) & 0x1f) {
+				case 0:
+					break;
+				case 15:
+					native_fill_pixel(x, y);
+					break;
+				case 16:
+					setpixel(x, y, pix->pixels[pixel] & 0x80ffffff);
+					break;
+			}
+			pixel++;
+		}
+	}
 	freepixels(pix);
 }
 
@@ -9568,6 +9748,8 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	void *nvmem;
 
 	hold_update = 0;
+	cterm->logfile = NULL;
+	cterm->log = CTERM_LOG_NONE;
 	cterm_end(cterm);
 	normal_palette();
 	// TODO: You know this is insane right?
@@ -9619,6 +9801,8 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	cterm->bg_color = oldcterm.bg_color - 16;
 	cterm->fg_color = oldcterm.fg_color - 16;
 	cterm_start(cterm);
+	cterm->logfile = oldcterm.logfile;
+	cterm->log = oldcterm.log;
 	shadow_palette();
 	set_ega_palette();
 	attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
@@ -9631,31 +9815,12 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	freepixels(pix);
 }
 
-static void
-draw_ellipse(int x1, int y1, int arg1, int arg2, int x2, int y2)
-{
-	int arg3;
-
-	if (arg1 < 0 || arg2 < 0 || x2 < 0 || y2 < 0)
-		return;
-	if (arg2 < arg1)
-		arg2 += 360;
-	// TODO: Use 'o' command ellipse when possible...
-	for (arg3 = arg1; arg3 <= arg2; arg3++) {
-		set_line(x1 + nearbyint(cos((M_PI / 180.0) * arg3) * x2),
-		    y1 - nearbyint(sin((M_PI / 180.0) * arg3) * y2),
-		    x1 + nearbyint(cos((1.0 + arg3) * (M_PI / 180.0)) * x2),
-		    y1 - nearbyint(sin((1.0 + arg3) * (M_PI / 180.0)) * y2),
-		    map_rip_color(rip.color), 0xffff, rip.line_width);
-	}
-}
-
 // M. Douglas McIlroy
 // There Is No Royal Road to Programs - A Trilogy on Raster Ellipses and Programming Methodology
 #define incx() x++, dxt += d2xt, t += dxt
 #define incy() y--, dyt += d2yt, t += dyt
 static void
-full_ellipse(int xc, int yc, int a, int b, bool fill)
+full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t colour)
 {
 	if (b == 0) {
 		b = 1;
@@ -9675,9 +9840,21 @@ full_ellipse(int xc, int yc, int a, int b, bool fill)
 	int fy;
 	bool skip = false;
 
+	bool partial = true;
+	if (ea != sa && ((ea + 360) % 360) == ((sa + 360) % 360))
+		partial = false;
+
+	double angle;
+	double qangle;
+
 	while(y>=0 && x<=a) {
+		angle = atan((x * (M_PI / 180.0)) / (y *(M_PI / 180.0)));
+		angle /= (M_PI / 180.0);
+		angle = 90 - angle;
 		if (!skip) {
 			if(x!=0 || y!=0) {
+				// Top-left quadrant.
+				qangle = 180 - angle;
 				if (fill) {
 					if (x == 0) {
 						for (fy = yc - y + 1; fy < yc + y; fy++) {
@@ -9685,8 +9862,10 @@ full_ellipse(int xc, int yc, int a, int b, bool fill)
 						}
 					}
 				}
-				if (rip.color)
-					draw_pixel(xc-x, yc-y);
+				if (rip.borders) {
+					if (sa < qangle && ea > qangle)
+						set_pixel(xc-x, yc-y, colour);
+				}
 			}
 			if(x!=0 && y!=0) {
 				if (fill) {
@@ -9695,14 +9874,22 @@ full_ellipse(int xc, int yc, int a, int b, bool fill)
 						fill_pixel(xc + x, fy);
 					}
 				}
-				if (rip.color) {
-					if (rip.borders) {
-						draw_pixel(xc+x, yc-y);
-						draw_pixel(xc-x, yc+y);
-					}
+				if (rip.borders) {
+					// Top-right quadrant.
+					if (sa < angle && ea > angle)
+						set_pixel(xc+x, yc-y, colour);
+					// Bottom-left quadrant.
+					qangle = 180 + angle;
+					if (sa < qangle && ea > qangle)
+						set_pixel(xc-x, yc+y, colour);
 				}
 			}
-			draw_pixel(xc+x, yc+y);
+			// Bottom-right quadrant
+			qangle = 360 - angle;
+			if (rip.borders) {
+				if (sa < qangle && ea > qangle)
+					set_pixel(xc+x, yc+y, colour);
+			}
 		}
 		skip = false;
 		if(t + b2*x <= crit1 ||   /* e(x+1,y-1/2) <= 0 */
@@ -9712,17 +9899,21 @@ full_ellipse(int xc, int yc, int a, int b, bool fill)
 			if (!(t + b2*x <= crit1 || t+a2*y <= crit3) && (t - a2*y > crit2))
 				skip = true;
 		}
-		else if(t - a2*y > crit2) /* e(x+1/2,y-1) > 0 */
+		else if(t - a2*y > crit2) { /* e(x+1/2,y-1) > 0 */
 			incy();
+			// Angle move, skip next...
+			if (t + b2*x <= crit1 || t+a2*y <= crit3)
+				skip = true;
+		}
 		else {
 			incx();
 			incy();
 		}
 	}
-	if (rip.line_width == 3 && rip.color) {
+	if (rip.line_width == 3 && rip.borders) {
 		rip.line_width = 1;
-		full_ellipse(xc, yc, a - 1, b - 1, false);
-		full_ellipse(xc, yc, a + 1, b + 1, false);
+		full_ellipse(xc, yc, sa, ea, a - 1, b - 1, false, colour & 0xcfffffff);
+		full_ellipse(xc, yc, sa, ea, a + 1, b + 1, false, colour & 0xcfffffff);
 		rip.line_width = 3;
 	}
 }
@@ -9730,17 +9921,19 @@ full_ellipse(int xc, int yc, int a, int b, bool fill)
 struct saved_point {
 	int x;
 	int y;
+	int oy;
 	struct saved_point *next;
 };
 
 static void
-bff_push(struct saved_point **stack, int x, int y)
+bff_push(struct saved_point **stack, int x, int y, int oy)
 {
 	struct saved_point *new = malloc(sizeof(*new));
 
 	if (new) {
 		new->x = x;
 		new->y = y;
+		new->oy = oy;
 		new->next = *stack;
 		*stack = new;
 	}
@@ -9779,15 +9972,14 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 	if (y >= pix->height)
 		return;
 	foff = y * pix->width + x;
-	if (pix->pixels[foff] == edge)
+	if ((pix->pixels[foff] & 0x80ffffff) == edge)
 		return;
 	if (pix->pixels[foff] & 0x40000000)
 		return;
-	foff = y * pix->width + x;
 
 	// For simplicity sake, we just move left to an edge.
 	if (x > 0) {
-		while (foff > 0 && pix->pixels[foff - 1] != edge) {
+		while (foff > 0 && (pix->pixels[foff - 1] & 0x80ffffff) != edge) {
 			foff--;
 			if (--x == 0)
 				break;
@@ -9812,7 +10004,7 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 		noff = -1;
 
 	for (;x < pix->width; x++) {
-		if (pix->pixels[foff] == edge)
+		if ((pix->pixels[foff] & 0x80ffffff) == edge)
 			break;
 		if (pix->pixels[foff] & 0x40000000)
 			break;
@@ -9825,15 +10017,15 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 			// Now, check previous line...
 			if (poff >= 0) {
 				if (prevline) {
-					if (pix->pixels[poff] == edge)
+					if ((pix->pixels[poff] & 0x80ffffff) == edge)
 						prevline = false;
 				}
 				else {
 					if (x != 0 && x != (pix->width - 1)) {
-						if (pix->pixels[poff] != edge) {
+						if ((pix->pixels[poff] & 0x80ffffff) != edge) {
 							prevline = true;
 							if ((pix->pixels[poff] & 0x40000000) == 0)
-								bff_push(stack, x, y - 1);
+								bff_push(stack, x, y - 1, y);
 						}
 					}
 				}
@@ -9841,15 +10033,15 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 			// And the next line
 			if (noff >= 0) {
 				if (nextline) {
-					if (pix->pixels[noff] == edge)
+					if ((pix->pixels[noff] & 0x80ffffff) == edge)
 						nextline = false;
 				}
 				else {
 					if (x != 0 && x != (pix->width - 1)) {
-						if (pix->pixels[noff] != edge) {
+						if ((pix->pixels[noff] & 0x80ffffff) != edge) {
 							nextline = true;
 							if ((pix->pixels[noff] & 0x40000000) == 0)
-								bff_push(stack, x, y + 1);
+								bff_push(stack, x, y + 1, y);
 						}
 					}
 				}
@@ -9867,7 +10059,7 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 	if (orig_stack == NULL) {
 		for (this = *stack; this; this = *stack) {
 			*stack = (*stack)->next;
-			broken_flood_fill(pix, this->x, this->y, edge, fillfg, fillbg, iszero, y, stack);
+			broken_flood_fill(pix, this->x, this->y, edge, fillfg, fillbg, iszero, this->oy, stack);
 			free(this);
 		}
 	}
@@ -9931,6 +10123,113 @@ struct point {
 		break;
 
 static void
+rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int cnt, uint32_t fg)
+{
+	int x, y;
+	int step;
+	int i, j;
+
+	int* targets = malloc((cnt + 2) * 2 * sizeof(*targets));
+	i = 0;
+	targets[i++] = x1;
+	targets[i++] = y1;
+	#pragma clang loop vectorize(enable)
+	for (step = 1; step < cnt; step++) {
+		double tf = ((double)step) / cnt;
+		double tr = ((double)(cnt - step)) / cnt;
+		double tfs = pow(tf, 2);
+		double tfstr = tfs * tr;
+		double tfc = pow(tf, 3);
+		double trs = pow(tr, 2);
+		double tftrs = tf * trs;
+		double trc = pow(tr, 3);
+		x = trc * x1 + 3 * tftrs * x2 + 3 * tfstr * x3 + tfc * x4;
+		y = trc * y1 + 3 * tftrs * y2 + 3 * tfstr * y3 + tfc * y4;
+		targets[i++] = x;
+		targets[i++] = y;
+	}
+	targets[i++] = x4;
+	targets[i++] = y4;
+	for (j = 2; j < i; j += 2) {
+		set_line(targets[j - 2], targets[j - 1], targets[j], targets[j + 1], fg, rip.line_pattern, rip.line_width);
+	}
+}
+
+static void
+rip_poly_bezier(const char *args, bool filled, bool closed)
+{
+	int num = parse_mega(&args[0], 2);
+	int count = parse_mega(&args[2], 2);
+	int i;
+	int type;
+	int x1, y1, x2, y2, x3, y3, x4, y4;
+	int sx = parse_mega(&args[5], 2);
+	int sy = parse_mega(&args[7], 2);
+	int lx = sx;
+	int ly = sy;
+	uint32_t fg = map_rip_color(rip.color);
+	int ch = 4;
+	bool last_was_bez = false;
+
+	if (filled)
+		fg |= 0x40000000;
+
+	for (i = 0; i < num; i++) {
+		type = parse_mega(&args[ch], 1);
+		ch++;
+		switch (type) {
+			case -1:	// Finished?
+				printf("Stopping at %d of %d\n", i, num);
+				break;
+			case 0:	// Straight
+				x1 = parse_mega(&args[ch], 2);
+				y1 = parse_mega(&args[ch+2], 2);
+				ch += 4;
+				if (!last_was_bez)
+					set_line(lx, ly, x1, y1, fg, rip.line_pattern, rip.line_width);
+				lx = x1;
+				ly = y1;
+				last_was_bez = false;
+				break;
+			case 1:	// Bezier
+			case 2:	// Other bezier.
+			case 5:	// ??? yet another bezier...
+			case 6:	// ??? yet another bezier...
+				x1 = parse_mega(&args[ch], 2);
+				y1 = parse_mega(&args[ch+2], 2);
+				x2 = parse_mega(&args[ch+4], 2);
+				y2 = parse_mega(&args[ch+6], 2);
+				x3 = parse_mega(&args[ch+8], 2);
+				y3 = parse_mega(&args[ch+10], 2);
+				ch += 12;
+				if (args[ch] == 0) {
+					x4 = sx;
+					y4 = sy;
+				}
+				else {
+					x4 = parse_mega(&args[ch + 1], 2);
+					y4 = parse_mega(&args[ch + 3], 2);
+				}
+				rip_bezier(x1, y1, x2, y2, x3, y3, x4, y4, count, fg);
+				lx = x4;
+				ly = y4;
+				last_was_bez = true;
+				break;
+			default:
+				printf("TODO: Unhandled poly_bez type %d\n", type);
+				return;
+		}
+	}
+	if (closed && (lx != sx || ly != sy))
+		set_line(lx, ly, sx, sy, fg, rip.line_pattern, rip.line_width);
+	if (filled) {
+		do_fill(false);
+	}
+}
+
+#define ADJUST_LIMIT(name, var) if (var < min##name) min##name = var; if (var > max##name) max##name = var;
+
+static void
 do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 {
 	int x1, y1, x2, y2;
@@ -9943,6 +10242,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	char cache_path[MAX_PATH + 1];
 	FILE *icn;
 	int *targets;
+	int ex, ey;
 
 	args = parse_string(rawargs);
 
@@ -10105,10 +10405,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								arg3 = arg1 * vstat.scale_numerator / vstat.scale_denominator;
 							}
 							pthread_mutex_unlock(&vstatlock);
-							if (abs(arg3 - arg1) == 360)
-								full_ellipse(x1, y1, x2, y2, false);
-							else
-								draw_ellipse(x1, y1, x2, y2, arg1, arg3);
+							full_ellipse(x1, y1, x2, y2, arg1, arg3, false, map_rip_color(rip.color));
 							break;
 						case 'B':	// RIP_BAR !|B <x0> <y0> <x1> <y1>
 							/*
@@ -10160,7 +10457,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							pthread_mutex_unlock(&vstatlock);
 							if (arg1 == 1)
 								arg3 = 1;
-							full_ellipse(x1, y1, arg1, arg3, false);
+							full_ellipse(x1, y1, 0, 360, arg1, arg3, false, map_rip_color(rip.color));
 							break;
 						case 'E':	// RIP_ERASE_VIEW !|E
 							/* This command clears the Graphics Viewport to the current graphics
@@ -10199,6 +10496,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (rip.viewport.ey >= vstat.scrnheight)
 								arg2 = vstat.scrnheight - 1;
 							pthread_mutex_unlock(&vstatlock);
+							struct ciolib_pixels *pix = getpixels(rip.viewport.sx, rip.viewport.sy, rip.viewport.ex, arg2, false);
 							#if 0	// This slow draw is useful for debugging flood fill issues...
 							printf("Flooding %d/%d!\n", x1, y1);
 							uint32_t xx;
@@ -10211,19 +10509,21 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							scale_setpixel(x1, y1, xx);
 							}
 							#endif
-							struct ciolib_pixels *pix = getpixels(rip.viewport.sx, rip.viewport.sy, rip.viewport.ex, arg2, false);
 							FREE_AND_NULL(pix->pixelsb);
 							// Blammo goes the stack!
 							fg = map_rip_color(arg1);
 							uint32_t ffg, fbg;
 							ffg = map_rip_color(rip.fill_color);
 							fbg = map_rip_color(0);
+							for (i = 0; i < pix->width * pix->height; i++) {
+								pix->pixels[i] &= 0x80ffffff;
+							}
 							if (x1 < pix->width && y1 < pix->height)
 								broken_flood_fill(pix, x1, y1, fg, ffg, fbg, rip.fill_color == 0, y1, NULL);
 							else
 								puts("TODO: Flood fill off screen");
 							for (i = 0; i < pix->width * pix->height; i++) {
-								pix->pixels[i] &= 0xbfffffff;
+								pix->pixels[i] &= 0x80ffffff;
 							}
 							setpixels(rip.viewport.sx, rip.viewport.sy, rip.viewport.ex, arg2, 0, 0, pix, NULL);
 							freepixels(pix);
@@ -10259,13 +10559,30 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								arg3 = arg1 * vstat.scale_numerator / vstat.scale_denominator;
 							}
 							pthread_mutex_unlock(&vstatlock);
-							if (abs(arg3 - arg1) == 360)
-								full_ellipse(x1, y1, x2, y2, false);
-							else
-								draw_ellipse(x1, y1, x2, y2, arg1, arg3);
-							draw_line(x1, y1, x1 + nearbyint(cos(M_PI / 180.0) * arg1) * x2, y1 + nearbyint(sin(M_PI / 180.0) * arg1) * y2);
-							draw_line(x1, y1, x1 + nearbyint(cos(M_PI / 180.0) * arg3) * x2, y1 + nearbyint(sin(M_PI / 180.0) * arg3) * y2);
-							puts("TODO: Needs to fill...");
+							fg = map_rip_color(rip.color) | 0x40000000;
+							full_ellipse(x1, y1, x2, y2, arg1, arg3, false, fg);
+							// This circle may not actually be circular... can't just use sin/cos
+							ex = roundl((x2 * y2) / (sqrt(y2 * y2 + x2 * x2 * pow((tan(arg1 * (M_PI / 180.0))), 2))));
+							if (arg1 > 90 && arg1 < 270)
+								ex = 0 - ex;
+							ex += x1;
+							ey = roundl((x2*y2*tan(arg1 * (M_PI / 180.0)))/(sqrt(y2*y2+x2*x2*pow((tan(arg1 * (M_PI / 180.0))), 2))));
+							if (arg1 > 90 && arg1 < 270)
+								ey = 0 - ey;
+							ey = y1 - ey;
+
+							set_line(x1, y1, ex, ey, fg, 0xffff, rip.line_width);
+							ex = round((x2*y2)/(sqrt(y2*y2+x2*x2*pow((tan(arg3 * (M_PI / 180.0))), 2))));
+							if (arg3 > 90 && arg3 < 270)
+								ex = 0 - ex;
+							ex += x1;
+							ey = roundl((x2*y2*tan(arg3 * (M_PI / 180.0)))/(sqrt(y2*y2+x2*x2*pow((tan(arg3 * (M_PI / 180.0))), 2))));
+							if (arg3 > 90 && arg3 < 270)
+								ey = 0 - ey;
+							ey = y1 - ey;
+							set_line(x1, y1, x1 + nearbyint(cos(M_PI / 180.0) * arg3) * x2, y1 + nearbyint(sin(M_PI / 180.0) * arg3) * y2, fg, 0xffff, rip.line_width);
+							// TODO: Lazy lazy fill...
+							do_fill(false);
 							break;
 						case 'L':	// RIP_LINE !|L <x0> <y0> <x1> <y1>
 							/* This command will draw a line in the current drawing color, using the
@@ -10331,10 +10648,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							y2 = parse_mega(&args[10], 2);
 							if (x2 < 0 || y2 < 0)
 								break;
-							if (abs(arg2 - arg1) == 360)
-								full_ellipse(x1, y1, x2, y2, false);
-							else
-								draw_ellipse(x1, y1, arg1, arg2, x2, y2);
+							full_ellipse(x1, y1, arg1, arg2, x2, y2, false, map_rip_color(rip.color));
 							break;
 						case 'P':	// RIP_POLYGON !|P <npoints> <x1> <y1> ... <xn> <yn>
 							/* This command will draw a multi-sided closed polygon.  The polygon is
@@ -10608,39 +10922,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								yp[i] = parse_mega(&args[2 + i * 4], 2);
 							}
 							arg1 = parse_mega(&args[16], 2);
-							x2 = xp[0];
-							y2 = yp[0];
-							targets = malloc((arg1 + 2) * 2 * sizeof(*targets));
-							i = 0;
-							targets[i++] = x2;
-							targets[i++] = y2;
-							// TODO: We should be able to parallelize this...
-							#pragma clang loop vectorize(enable)
-							for (arg2 = 1; arg2 < arg1; arg2++) {
-								double tf = ((double)arg2) / arg1;
-								double tr = ((double)(arg1 - arg2)) / arg1;
-								double tfs = pow(tf, 2);
-								double tfstr = tfs * tr;
-								double tfc = pow(tf, 3);
-								double trs = pow(tr, 2);
-								double tftrs = tf * trs;
-								double trc = pow(tr, 3);
-								x1 = trc * xp[0] + 3 * tftrs * xp[1] + 3 * tfstr * xp[2] + tfc * xp[3];
-								y1 = trc * yp[0] + 3 * tftrs * yp[1] + 3 * tfstr * yp[2] + tfc * yp[3];
-								//x1 = tr * tr * tr * xp[0] + 3 * tf * tr * tr * xp[1] + 3 * tf * tf * tr * xp[2] + tf * tf * tf * xp[3];
-								//y1 = tr * tr * tr * yp[0] + 3 * tf * tr * tr * yp[1] + 3 * tf * tf * tr * yp[2] + tf * tf * tf * yp[3];
-								targets[i++] = x1;
-								targets[i++] = y1;
-								//draw_line(x2, y2, x1, y1);
-								//x2 = x1;
-								//y2 = y1;
-							}
-							targets[i++] = xp[3];
-							targets[i++] = yp[3];
-							for (j = 2; j < i; j += 2) {
-								draw_line(targets[j - 2], targets[j - 1], targets[j], targets[j + 1]);
-							}
-							//draw_line(x1, y1, xp[3], yp[3]);
+							rip_bezier(xp[0], yp[0], xp[1], yp[1], xp[2], yp[2], xp[3], yp[3], arg1, map_rip_color(rip.color));
 							break;
 						case 'a':	// RIP_ONE_PALETTE !|a <color> <value>
 							/* This command changes one color in the 16-color palette.  The color
@@ -10850,20 +11132,41 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (arg2 < arg1)
 								arg2 += 360;
-							// TODO: Use 'o' command ellipse when possible...
-							puts("TODO: Needs to fill...");
-							fg = map_rip_color(rip.color);
-							set_line(x1, y1, x1 + (x2 * cos(arg1 * (M_PI / 180.0))),
-							    y1 - (y2 * sin(arg1 * (M_PI / 180.0))), fg, 0xffff, rip.line_width);
-							for (arg3 = arg1; arg3 < arg2; arg3++) {
-								set_line(x1 + (x2 * cos(arg3 * (M_PI / 180.0))),
-								    y1 - (y2 * sin(arg3 * (M_PI / 180.0))),
-								    x1 + (x2 * cos((arg3 + 1) * (M_PI / 180.0))),
-								    y1 - (y2 * sin((arg3 + 1) * (M_PI / 180.0))),
-								    fg, 0xffff, rip.line_width);
-							}
-							set_line(x1, y1, x1 + (x2 * cos(arg2 * (M_PI / 180.0))),
-							    y1 - (y2 * sin(arg2 * (M_PI / 180.0))), fg, 0xffff, rip.line_width);
+							fg = map_rip_color(rip.color) | 0x40000000;
+							ex = roundl((x2 * y2) / (sqrt(y2 * y2 + x2 * x2 * pow((tan(arg1 * (M_PI / 180.0))), 2))));
+							if (arg1 > 90 && arg1 < 270)
+								ex = 0 - ex;
+							ex += x1;
+							ey = roundl((x2*y2*tan(arg1 * (M_PI / 180.0)))/(sqrt(y2*y2+x2*x2*pow((tan(arg1 * (M_PI / 180.0))), 2))));
+							if (arg1 > 90 && arg1 < 270)
+								ey = 0 - ey;
+							ey = y1 - ey;
+							//ex = x1 + (x2 * cos(arg1 * (M_PI / 180.0)));
+							//ey = y1 - (y2 * sin(arg1 * (M_PI / 180.0)));
+							set_line(x1, y1, ex, ey, fg, 0xffff, rip.line_width);
+							full_ellipse(x1, y1, arg1, arg2, x2, y2, false, fg);
+
+							ex = round((x2*y2)/(sqrt(y2*y2+x2*x2*pow((tan(arg2 * (M_PI / 180.0))), 2))));
+							if (arg2 > 90 && arg2 < 270)
+								ex = 0 - ex;
+							ex += x1;
+							ey = roundl((x2*y2*tan(arg2 * (M_PI / 180.0)))/(sqrt(y2*y2+x2*x2*pow((tan(arg2 * (M_PI / 180.0))), 2))));
+							if (arg2 > 90 && arg2 < 270)
+								ey = 0 - ey;
+							ey = y1 - ey;
+							//ex = x1 + (x2 * cos(arg2 * (M_PI / 180.0)));
+							//ey = y1 - (y2 * sin(arg2 * (M_PI / 180.0)));
+							set_line(x1, y1, ex, ey, fg, 0xffff, rip.line_width);
+							do_fill(false);
+							break;
+						case 'j':	// RIP_POINT (Not in Alpha docs)
+							/* This command will draw a single point in the current line style
+							 */
+							handled = true;
+							if (no_viewport())
+								break;
+							GET_XY();
+							draw_line(x1, y1, x1, y1);
 							break;
 						case 'l':	// RIP_POLYLINE !|l <npoints> <x1> <y1> ... <xn> <yn>
 							/* This command will draw a multi-faceted line.  It is identical in
@@ -10921,11 +11224,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							rip.y = y1;
 							break;
 						case 'o':	// RIP_FILLED_OVAL
-							// TODO: Various issues... mose especially a 1x1 isn't a + shape, but a - shape.
 						{
 							handled = true;
 							GET_XY();
-							full_ellipse(x1, y1, parse_mega(&args[4], 2), parse_mega(&args[6], 2), true);
+							full_ellipse(x1, y1, 0, 360, parse_mega(&args[4], 2), parse_mega(&args[6], 2), true, map_rip_color(rip.color));
 							break;
 						}
 						case 'p':	// RIP_FILL_POLYGON !|p <npoints> <x1> <y1> ... <xn> <yn>
@@ -10941,8 +11243,51 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 *        does not utilize Write Mode, but the outline of the polygon
 							 *        does.
 							 */
+#if 0
+							if (rip.version == RIP_VERSION_3) {
+								handled = true;
+								if (no_viewport())
+									break;
+								fg = map_rip_color(rip.color) | 0x40000000;
+								arg1 = parse_mega(&args[0], 2);
+								for (i = 0; i < arg1; i++) {
+									if (i == 0) {
+										x1 = parse_mega(&args[2], 2);
+										if (x1 == -1)
+											break;
+										y1 = parse_mega(&args[4], 2);
+										if (y1 == -1)
+											break;
+									}
+									else {
+										x2 = parse_mega(&args[2 + i * 4], 2);
+										if (x2 == -1)
+											break;
+										y2 = parse_mega(&args[4 + i * 4], 2);
+										if (y2 == -1)
+											break;
+										set_line(x1, y1, x2, y2, fg
+										    , rip.line_pattern, rip.line_width);
+										x1 = x2;
+										y1 = y2;
+									}
+								}
+								if (i > 0) {
+									x2 = parse_mega(&args[2], 2);
+									if (x1 == -1)
+										break;
+									y2 = parse_mega(&args[4], 2);
+									if (y1 == -1)
+										break;
+									set_line(x1, y1, x2, y2, fg
+									    , rip.line_pattern, rip.line_width);
+									do_fill(false);
+								}
+								break;
+							}
+#endif
 							// DOES NOT DRAW LINES IN COLOR ZERO!!!
-							// Not bug-compliant with RIPterm
+							// Not bug-compliant with RIPterm (But getting very close!)
 							handled = true;
 							if (no_viewport())
 								break;
@@ -11095,6 +11440,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							rip.fill_pattern[7] = parse_mega(&args[14], 2) & 0xff;
 							rip.fill_color = arg1;
 							break;
+						case 't':	// RIP_POLY_BEZIER_LINE (v2.A2)
+							handled = true;
+							rip_poly_bezier(args, false, false);
+							break;
 						case 'v':	// RIP_VIEWPORT !|v <x0> <y0> <x1> <y1>
 							/* This command defines the (X,Y) pixel boundaries of the RIPscrip
 							 * graphics window, which will contain all RIPscrip graphics output.
@@ -11242,6 +11591,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								gotoxy(1, 1);
 								hold_update = arg3;
 							}
+							break;
+						case 'x':	// RIP_FILLED_POLY_BEZIER (v2.A2)
+							handled = true;
+							rip_poly_bezier(args, true, true);
+							break;
+						case 'z':	// RIP_POLY_BEZIER (v2.A1)
+							handled = true;
+							rip_poly_bezier(args, false, true);
 							break;
 					}
 			}
@@ -12923,7 +13280,7 @@ do_rip_string(const char *buf, size_t len)
 		switch (ds) {
 			case NEED_BANG:
 				ch = next_char(buf, &pos);
-				if ((ch == -1 && buf[pos] == '!') || ch == '\x01' || ch == '\x02')
+				if ((ch == -1 && buf[pos] == '!') || ch == '\x01' || ch == '\x02' || ch == '!')
 					ds = NEED_PIPE;
 				break;
 			case NEED_PIPE:
@@ -13364,7 +13721,7 @@ do_skypix(char *buf, size_t len)
 			olw = rip.line_width;
 			rip.fill_color = (cterm->attr >> 4) & 0x0f;
 			rip.line_width = 1;
-			full_ellipse(argv[1], argv[2], argv[3], argv[4], true);
+			full_ellipse(argv[1], argv[2], 0, 360, argv[3], argv[4], true, map_rip_color(rip.color));
 			rip.fill_color = oc;
 			rip.line_width = olw;
 			break;
