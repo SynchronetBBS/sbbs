@@ -833,15 +833,15 @@ int main(int argc, char **argv)
 	"`Area File` (e.g. areas.bbs) for advanced AreaFix/AreaMgr operations."
 	;
 		i=0;
-		sprintf(opt[i++],"Global Settings...");
-		sprintf(opt[i++],"Linked Nodes...");
-		sprintf(opt[i++],"Archive Types...");
-		sprintf(opt[i++],"NetMail Settings...");
-		sprintf(opt[i++],"EchoMail Settings...");
-		sprintf(opt[i++],"Paths and Filenames...");
-		sprintf(opt[i++],"Robots...");
-		sprintf(opt[i++],"Domains...");
-		sprintf(opt[i++],"EchoLists...");
+		sprintf(opt[i++],"Global Settings");
+		sprintf(opt[i++],"Linked Nodes");
+		sprintf(opt[i++],"Archive Types");
+		sprintf(opt[i++],"NetMail Settings");
+		sprintf(opt[i++],"EchoMail Settings");
+		sprintf(opt[i++],"Paths and Filenames");
+		sprintf(opt[i++],"Robots");
+		sprintf(opt[i++],"Domains");
+		sprintf(opt[i++],"EchoLists");
 		if(uifc.changes && !cfg.used_include)
 			snprintf(opt[i++],MAX_OPLN-1,"Save Changes to %s", getfname(cfg.cfgfile));
 		opt[i][0]=0;
@@ -1851,6 +1851,10 @@ int main(int argc, char **argv)
 	"`Maximum Age of Imported EchoMail` allows you to optionally set an age\n"
 	"    limit of EchoMail messages that may be imported.\n"
 	"    This setting defaults to `60 days`.\n"
+	"\n"
+	"`Require Area-Linked Nodes to be Configured` allows you to specify\n"
+	"    whether or not each linked node in the area file must be configured\n"
+	"    in the `Linked Nodes` list.\n"
 	;
 
 					i=0;
@@ -1887,6 +1891,8 @@ int main(int argc, char **argv)
 					else
 						SAFECOPY(str, "None");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%s","Maximum Age of Imported EchoMail", str);
+					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%s","Require Area-Linked Nodes to be Configured"
+						,cfg.require_linked_node_cfg ? "Yes" : "No");
 					opt[i][0]=0;
 					j=uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&echomail_opt,0,"EchoMail Settings",opt);
 					if(j==-1)
@@ -2040,7 +2046,14 @@ int main(int argc, char **argv)
 								,str, 10, K_EDIT) >= 0)
 								cfg.max_echomail_age = (ulong)parse_duration(str);
 							break;
-
+						case 14:
+							k = !cfg.require_linked_node_cfg;
+							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+								,"Require Nodes Linked to Areas in Area File to be Configured",uifcYesNoOpts)) {
+								case 0:	cfg.require_linked_node_cfg = true;  break;
+								case 1:	cfg.require_linked_node_cfg = false; break;
+							}
+							break;
 					}
 				}
 				break;
