@@ -8816,6 +8816,27 @@ static void invert_rect(int x1, int y1, int x2, int y2)
 	freepixels(pix);
 }
 
+/*
+ * TODO: This is slow and still broken.  While it's fine for the
+ *       pie slices because of their inherent simplicity, it's
+ *       not at all good for the poly bezier.  The root of the
+ *       problem is really detecting line crossings given just
+ *       the raster data.  With the poly line, it's not as hard
+ *       since the extents of the lines are known and are fairly
+ *       simple to calculate... which is not true for beziers.
+ *
+ * How this works is it advances looking for line edges, when it
+ * reaches the first non-edge pixel after an edge pixel, it toggles
+ * the fill boolean, and marks the pixels with a bit in the high
+ * byte of the colour.  It does this in four different directions,
+ * and any point that was hit by all four directions is filled.
+ * Finally, any non-border pixel that touches a filled pixel
+ * horizontally or vertically is also filled.
+ *
+ * TODO: The various loops could all be combined to run all passes
+ *       at the same time.  The X and Y loop variables aren't
+ *       actually used in the the loops.
+ */
 static void do_fill(bool overwrite)
 {
 	struct ciolib_pixels *pix;
