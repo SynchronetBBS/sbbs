@@ -518,6 +518,13 @@ int conn_socket_connect(struct bbslist *bbs)
 								goto connected;
 							}
 						}
+						else {
+							if (kbhit()) {
+								failcode = FAILURE_ABORTED;
+								closesocket(sock);
+								sock = INVALID_SOCKET;
+							}
+						}
 					}
 
 connected:
