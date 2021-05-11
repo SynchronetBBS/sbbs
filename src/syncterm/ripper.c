@@ -9869,9 +9869,10 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 	double qangle;
 
 	while(y>=0 && x<=a) {
-		angle = atan((x * (M_PI / 180.0)) / (y *(M_PI / 180.0)));
-		angle /= (M_PI / 180.0);
-		angle = 90 - angle;
+		angle = atan((x * M_PI / 180.0) / (y * M_PI / 180.0));
+		angle *= 180.0;
+		angle /= M_PI;
+		angle = lround(90.0 - angle);
 		if (!skip) {
 			if(x!=0 || y!=0) {
 				// Top-left quadrant.
