@@ -207,7 +207,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	/* Read message text from stream (file or stdin) */
 	msgtxtlen=0;
 	while(!feof(fp)) {
-		i=fread(buf,sizeof(buf),1,fp);
+		i=fread(buf,1,sizeof(buf),fp);
 		if(i<1)
 			break;
 		if((msgtxt = realloc(msgtxt,msgtxtlen+i+1))==NULL) {
@@ -369,7 +369,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	smb_freemsgmem(&msg);
 
 	// MSVC can't do %zu for size_t until MSVC 2017 it seems...
-	fprintf(statfp, "Message (%" PRIu64 " bytes) added to %s successfully\n", (uint64_t)strlen((char *)msgtxt), smb.file);
+	fprintf(statfp, "Message (%ld bytes) added to %s successfully\n", msgtxtlen, smb.file);
 	FREE_AND_NULL(msgtxt);
 }
 
