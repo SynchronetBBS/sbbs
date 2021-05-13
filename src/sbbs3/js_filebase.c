@@ -368,7 +368,7 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 }
 
 static int
-parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc)
+parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc, char** metadata)
 {
 	char*		cp = NULL;
 	size_t		cp_sz = 0;
@@ -535,6 +535,18 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			return SMB_ERR_MEM;
 		}
 		truncsp(*extdesc);
+	}
+	prop_name = "metadata";
+	if(metadata != NULL && JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		FREE_AND_NULL(*metadata);
+		JSVALUE_TO_MSTRING(cx, val, *metadata, NULL);
+		HANDLE_PENDING(cx, *metadata);
+		if(*metadata == NULL) {
+			free(cp);
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return SMB_ERR_MEM;
+		}
+		truncsp(*metadata);
 	}
 	prop_name = "tags";
 	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
@@ -1117,6 +1129,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*		argv = JS_ARGV(cx, arglist);
 	private_t*	p;
 	char*		extdesc = NULL;
+	char*		metadata = NULL;
 	file_t		file;
 	client_t*	client = NULL;
 	bool		use_diz_always = false;
@@ -1141,7 +1154,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
-		p->smb_result = parse_file_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file, &extdesc);
+		p->smb_result = parse_file_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file, &extdesc, &metadata);
 		if(p->smb_result != SMB_SUCCESS)
 			return JS_TRUE;
 		argn++;
@@ -1170,7 +1183,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		getfilepath(scfg, &file, fpath);
 		if(file.from_ip == NULL)
 			file_client_hfields(&file, client);
-		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, /* contents: */NULL, fpath);
+		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, metadata, fpath);
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
 	JS_RESUMEREQUEST(cx, rc);
@@ -1231,10 +1244,11 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSBool result = JS_TRUE;
 	char* extdesc = NULL;
+	char* metadata = NULL;
 	rc=JS_SUSPENDREQUEST(cx);
 	if(filename != NULL && fileobj != NULL
 		&& (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_extdesc)) == SMB_SUCCESS) {
-		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc);
+		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc, &metadata);
 		if((extdesc == NULL	|| use_diz_always == true)
 			&& file.dir < scfg->total_dirs
 			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
@@ -1258,7 +1272,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 					p->smb_result = smb_putfile(&p->smb, &file);
 				else {
 					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS) {
-						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, /* contents: */NULL, newfname);
+						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, metadata, newfname);
 					}
 				}
 			}
