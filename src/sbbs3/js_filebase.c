@@ -291,7 +291,7 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 			return false;
 	}
 
-	if(((f->content != NULL && *f->content != '\0') || detail >= file_detail_content)
+	if(((f->content != NULL && *f->content != '\0') || detail > file_detail_content)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->content)) == NULL
 			|| !JS_DefineProperty(cx, obj, "metadata", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
