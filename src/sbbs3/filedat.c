@@ -638,11 +638,8 @@ bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, client_t*
 	getfilepath(cfg, f, fpath);
 	if(f->from_ip == NULL)
 		file_client_hfields(f, client);
-	str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
-		,(cfg->dir[dirnum]->misc & DIR_NOHASH) == 0, /* sort: */TRUE, /* error: */NULL, /* size: */0);
-	int result = smb_addfile_withlist(&smb, f, SMB_SELFPACK, extdesc, list, fpath);
+	int result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, /* contents: */NULL, fpath);
 	smb_close(&smb);
-	strListFree(&list);
 	return result == SMB_SUCCESS;
 }
 
