@@ -165,51 +165,6 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static bool
-set_content_properties(JSContext *cx, JSObject* obj, const char* fname, str_list_t ini)
-{
-	const char*	val;
-	jsval		js_val;
-	JSString*	js_str;
-	const char* key;
-	const uintN flags = JSPROP_ENUMERATE | JSPROP_READONLY;
-
-	if(fname == NULL
-		|| (js_str = JS_NewStringCopyZ(cx, fname)) == NULL
-		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
-		return false;
-
-	const char* key_list[] = { "type", "time", "format", "compression", "md5", "sha1", NULL };
-	for(size_t i = 0; key_list[i] != NULL; i++) {
-		key = key_list[i];
-		if((val = iniGetString(ini, NULL, key, NULL, NULL)) != NULL
-			&& ((js_str = JS_NewStringCopyZ(cx, val)) == NULL
-				|| !JS_DefineProperty(cx, obj, key, STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
-			return false;
-	}
-
-	key = "size";
-	js_val = DOUBLE_TO_JSVAL((jsdouble)iniGetBytes(ini, NULL, key, 1, -1));
-	if(!JS_DefineProperty(cx, obj, key, js_val, NULL, NULL, flags))
-		return false;
-
-	key = "mode";
-	if(iniKeyExists(ini, NULL, key)) {
-		js_val = INT_TO_JSVAL(iniGetInteger(ini, NULL, key, 0));
-		if(!JS_DefineProperty(cx, obj, key, js_val, NULL, NULL, flags))
-			return false;
-	}
-
-	key = "crc32";
-	if(iniKeyExists(ini, NULL, key)) {
-		js_val = UINT_TO_JSVAL(iniGetLongInt(ini, NULL, key, 0));
-		if(!JS_DefineProperty(cx, obj, key, js_val, NULL, NULL, flags))
-			return false;
-	}
-
-	return true;
-}
-
-static bool
 set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail detail)
 {
 	jsval		val;
@@ -336,31 +291,10 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 			return false;
 	}
 
-	if(detail >= file_detail_content) {
-		JSObject* array;
-		if((array = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
-			JS_ReportError(cx, "array allocation failure, line %d", __LINE__);
-			return false;
-		}
-		str_list_t ini = strListSplit(NULL, f->content, "\r\n");
-		str_list_t file_list = iniGetSectionList(ini, NULL);
-		if(file_list != NULL) {
-			for(size_t i = 0; file_list[i] != NULL; i++) {
-				JSObject* fobj;
-				if((fobj = JS_NewObject(cx, NULL, NULL, array)) == NULL) {
-					JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
-					return false;
-				}
-				str_list_t section = iniGetSection(ini, file_list[i]);
-				set_content_properties(cx, fobj, file_list[i], section);
-				JS_DefineElement(cx, array, i, OBJECT_TO_JSVAL(fobj), NULL, NULL, JSPROP_ENUMERATE);
-				iniFreeStringList(section);
-			}
-			strListFree(&file_list);
-		}
-		strListFree(&ini);
-		JS_DefineProperty(cx, obj, "content", OBJECT_TO_JSVAL(array), NULL, NULL, JSPROP_ENUMERATE);
-	}
+	if(((f->content != NULL && *f->content != '\0') || detail >= file_detail_content)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->content)) == NULL
+			|| !JS_DefineProperty(cx, obj, "metadata", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+		return false;
 
 	return true;
 }
@@ -1670,7 +1604,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 			"<tr><td align=top><tt>crc32</tt><td>32-bit CRC of file contents"
 			"<tr><td align=top><tt>md5</tt><td>128-bit MD5 digest of file contents (hexadecimal)"
 			"<tr><td align=top><tt>sha1</tt><td>160-bit SHA-1 digest of file contents (hexadecimal)"
-			"<tr><td align=top><tt>content</tt><td>Array of archived file details (<tt>name, size, time, crc32, md5<tt>, etc.)"
+			"<tr><td align=top><tt>metadata</tt><td>File metadata in JSON format"
 			"</table>"
 		)
 		,31900
@@ -1737,7 +1671,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	},
 	{"dump",			js_dump_file,		1, JSTYPE_ARRAY
 		,JSDOCSTR("filename")
-		,JSDOCSTR("dump file metadata to an array of strings for diagnostic uses")
+		,JSDOCSTR("dump file header fields to an array of strings for diagnostic uses")
 		,31900
 	},
 	{"format_name",		js_format_file_name,1, JSTYPE_STRING
@@ -1853,9 +1787,9 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 static char* filebase_detail_prop_desc[] = {
 	 "Include indexed-filenames only",
-	 "Normal level of file detail (e.g. full filenames, minimal meta data)",
+	 "Normal level of file detail (e.g. full filenames, minimal metadata)",
 	 "Normal level of file detail plus extended descriptions",
-	 "Normal level of file detail plus extended descriptions and archived contents",
+	 "Normal level of file detail plus extended descriptions and JSON-metadata",
 	 "Maximum file detail, include undefined/null property values",
 	 NULL
 };
@@ -1896,7 +1830,7 @@ JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "EXTENDED", INT_TO_JSVAL(file_detail_extdesc), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, detail, "CONTENTS", INT_TO_JSVAL(file_detail_content), NULL, NULL
+			JS_DefineProperty(cx, detail, "METADATA", INT_TO_JSVAL(file_detail_content), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_content + 1), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
