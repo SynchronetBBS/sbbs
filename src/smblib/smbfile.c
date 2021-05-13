@@ -357,7 +357,7 @@ int smb_addfile_withlist(smb_t* smb, smbfile_t* file, int storage, const char* e
 	char* content = NULL;
 	int result;
 
-	if(list != NULL) {
+	if(list != NULL && *list != NULL) {
 		size_t size = strListCount(list) * 1024;
 		content = calloc(1, size);
 		if(content == NULL)
