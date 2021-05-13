@@ -2041,6 +2041,8 @@ void input_thread(void *arg)
 #endif
 				if(!sbbs->online)	// sbbs_t::hangup() called?
 					break;
+				if(ERROR_VALUE == EAGAIN)
+					continue;
 	        	if(ERROR_VALUE == ENOTSOCK)
     	            lprintf(LOG_NOTICE,"Node %d socket closed by peer on receive", sbbs->cfg.node_num);
         	    else if(ERROR_VALUE==ECONNRESET)
