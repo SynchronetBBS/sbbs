@@ -764,12 +764,13 @@ str_list_t list_archive_contents(const char* filename, const char* pattern, bool
 				continue;
 		}
 
-		iniSetString(&list, pathname, "type", type, /* style: */NULL);
-		iniSetBytes(&list, pathname, "size", 1, archive_entry_size(entry), /* style: */NULL);
-		iniSetDateTime(&list, pathname, "time", true, archive_entry_mtime(entry), NULL);
-		iniSetInteger(&list, pathname, "mode", archive_entry_mode(entry), NULL);
-		iniSetString(&list, pathname, "format", archive_format_name(ar), NULL);
-		iniSetString(&list, pathname, "compression", archive_filter_name(ar, 0), NULL);
+		strListAppendFormat(&list, "[%s]", pathname);
+		strListAppendFormat(&list, "type=%s", type);
+		strListAppendFormat(&list, "size=%"PRId64, archive_entry_size(entry));
+		strListAppendFormat(&list, "time=%"PRId64,archive_entry_mtime(entry));
+		strListAppendFormat(&list, "mode=%d", archive_entry_mode(entry));
+		strListAppendFormat(&list, "format=%s", archive_format_name(ar));
+		strListAppendFormat(&list, "compression=%s", archive_filter_name(ar, 0));
 
 		if(hash && archive_entry_filetype(entry) == AE_IFREG) {
 			MD5 md5_ctx;
@@ -795,10 +796,10 @@ str_list_t list_archive_contents(const char* filename, const char* pattern, bool
 			}
 			MD5_close(&md5_ctx, md5);
 			SHA1Final(&sha1_ctx, sha1);
-			iniSetHexInt(&list, pathname, "crc32", crc32, NULL);
+			strListAppendFormat(&list, "crc32=0x%lx", crc32);
 			char hex[128];
-			iniSetString(&list, pathname, "md5", MD5_hex(hex, md5), NULL);
-			iniSetString(&list, pathname, "sha1", SHA1_hex(hex, sha1), NULL);
+			strListAppendFormat(&list, "md5=%s", MD5_hex(hex, md5));
+			strListAppendFormat(&list, "sha1=%s", SHA1_hex(hex, sha1));
 		}
 	}
 	archive_read_free(ar);
