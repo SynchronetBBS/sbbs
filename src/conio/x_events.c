@@ -27,6 +27,7 @@
 #define BITMAP_CIOLIB_DRIVER
 #include "bitmap_con.h"
 #include "link_list.h"
+#include "scale.h"
 #include "x_events.h"
 #include "x_cio.h"
 #include "utf8_codepages.h"
@@ -449,16 +450,25 @@ static int video_init()
 static void local_draw_rect(struct rectlist *rect)
 {
 	int x,y,xscale,yscale,xoff=0,yoff=0;
+	int xscaling, yscaling;
+	int rxscaling, ryscaling;
 	unsigned int r, g, b;
 	unsigned long pixel;
-	int cleft = rect->rect.width;
-	int cright = -1;
-	int ctop = rect->rect.height;
+	int cleft;
+	int cright = -100;
+	int ctop;
 	int cbottom = -1;
 	int idx;
+	int ridx;
+	int ridx_part;
 	uint32_t last_pixel = 0x55555555;
+	static uint32_t* target = NULL;
+	size_t targetsz = 0;
+	uint32_t* source;
+	int width, height;
+	int lheight, lines;
 
-	if (bitmap_width != cleft || bitmap_height != ctop)
+	if (bitmap_width != rect->rect.width || bitmap_height != rect->rect.height)
 		return;
 
 	xoff = (x11_window_width - xim->width) / 2;
@@ -468,12 +478,26 @@ static void local_draw_rect(struct rectlist *rect)
 	if (yoff < 0)
 		yoff = 0;
 
+	// Scale...
+	xscaling = x_cvstat.scaling;
+	yscaling = x_cvstat.scaling*x_cvstat.vmultiplier;
+	source = do_scale(rect, &target, &targetsz, &xscaling, &yscaling, &width, &height);
+	rxscaling = width / rect->rect.width;
+	ryscaling = height / rect->rect.height;
+	cleft = width;
+	ctop = height;
+	lines = 0;
+	lheight = x_cvstat.charheight * ryscaling;
+
 	/* TODO: Translate into local colour depth */
-	for(y=0;y<rect->rect.height;y++) {
-		idx = y*rect->rect.width;
-		for(x=0; x<rect->rect.width; x++) {
+	for(y=0;y<height;y++) {
+		idx = y * width;
+		ridx = y / ryscaling * rect->rect.width;
+		ridx_part = 0;
+		for(x=0; x<width; x++) {
 			if (last) {
-				if (last->data[idx] != rect->data[idx]) {
+				// TODO: Based on source pixel, not target pixel. :(
+				if (last->data[ridx] != rect->data[ridx]) {
 					if (x < cleft)
 						cleft = x;
 					if (x > cright)
@@ -484,15 +508,29 @@ static void local_draw_rect(struct rectlist *rect)
 						cbottom = y;
 				}
 				else {
-					idx++;
-					continue;
+					if (source == rect->data) {
+						idx += (rxscaling);
+						x += (rxscaling - 1);
+						ridx++;
+						continue;
+					}
+					else {
+						if (cright < x - rxscaling * 2
+						    && (x >= width - (rxscaling * 3)
+						    || last->data[ridx + 1] == rect->data[ridx + 1])) {
+							idx += (rxscaling);
+							x += (rxscaling - 1);
+							ridx++;
+							continue;
+						}
+					}
 				}
 			}
-			if (last_pixel != rect->data[idx]) {
-				last_pixel = rect->data[idx];
-				r = rect->data[idx] >> 16 & 0xff;
-				g = rect->data[idx] >> 8 & 0xff;
-				b = rect->data[idx] & 0xff;
+			if (last_pixel != source[idx]) {
+				last_pixel = source[idx];
+				r = source[idx] >> 16 & 0xff;
+				g = source[idx] >> 8 & 0xff;
+				b = source[idx] & 0xff;
 				r = (r<<8)|r;
 				g = (g<<8)|g;
 				b = (b<<8)|b;
@@ -510,28 +548,49 @@ static void local_draw_rect(struct rectlist *rect)
 				else
 					pixel |= (b >> (0-b_shift)) & visual.blue_mask;
 			}
-			for(yscale=0; yscale<x_cvstat.scaling*x_cvstat.vmultiplier; yscale++) {
-				for(xscale=0; xscale<x_cvstat.scaling; xscale++) {
+			for(yscale=0; yscale<yscaling; yscale++) {
+				for(xscale=0; xscale<xscaling; xscale++) {
 #ifdef XPutPixel
-					XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel);
+					XPutPixel(xim, (x + rect->rect.x) * xscaling + xscale
+					    , (y + rect->rect.y) * yscaling + yscale, pixel);
 #else
-					x11.XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel);
+					x11.XPutPixel(xim, (x + rect->rect.x) * xscaling + xscale
+					    , (y + rect->rect.y) * yscaling + yscale, pixel);
 #endif
 				}
 			}
 			idx++;
+			ridx_part++;
+			if (ridx_part >= rxscaling) {
+				ridx_part = 0;
+				ridx++;
+			}
 		}
+		lines++;
 		/* This line was changed */
-		if (last && (((y & 0x1f) == 0x1f) || (y == rect->rect.height-1)) && cright >= 0) {
-			x11.XPutImage(dpy, win, gc, xim, cleft*x_cvstat.scaling, ctop*x_cvstat.scaling*x_cvstat.vmultiplier, cleft*x_cvstat.scaling + xoff, ctop*x_cvstat.scaling*x_cvstat.vmultiplier + yoff, (cright-cleft+1)*x_cvstat.scaling, (cbottom-ctop+1)*x_cvstat.scaling*x_cvstat.vmultiplier);
-			cleft = rect->rect.width;
-			cright = cbottom = -1;
-			ctop = rect->rect.height;
+		if (last && ((lines == lheight) || (y == height - 1)) && cright >= 0) {
+#ifdef USE_XBRZ
+			if (source != rect->data) {
+				cleft -= 2 * rxscaling;
+				if (cleft < 0)
+					cleft = 0;
+				cright += 2 * rxscaling;
+				if (cright >= width)
+					cright = width - 1;
+			}
+#endif
+			lines = 0;
+			x11.XPutImage(dpy, win, gc, xim, cleft * xscaling, ctop * yscaling
+			    , cleft * xscaling + xoff, ctop * yscaling + yoff
+			    , (cright - cleft + 1) * xscaling, (cbottom - ctop + 1) * yscaling);
+			cleft = width;
+			cright = cbottom = -100;
+			ctop = height;
 		}
 	}
 
 	if (last == NULL)
-		x11.XPutImage(dpy, win, gc, xim, rect->rect.x*x_cvstat.scaling, rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier, rect->rect.x*x_cvstat.scaling + xoff, rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier + yoff, rect->rect.width*x_cvstat.scaling, rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
+		x11.XPutImage(dpy, win, gc, xim, rect->rect.x*xscaling, rect->rect.y*yscaling, rect->rect.x*xscaling + xoff, rect->rect.y*yscaling + yoff, width * xscaling, height * yscaling);
 	else
 		bitmap_drv_free_rect(last);
 	last = rect;
@@ -644,11 +703,14 @@ static int x11_event(XEvent *ev)
 			break;
 		/* Graphics related events */
 		case ConfigureNotify:
-			x11_window_xpos=ev->xconfigure.x;
-			x11_window_ypos=ev->xconfigure.y;
-			x11_window_width=ev->xconfigure.width;
-			x11_window_height=ev->xconfigure.height;
-			handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
+			if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y
+			    || x11_window_width != ev->xconfigure.width || x11_window_height != ev->xconfigure.height) {
+				x11_window_xpos=ev->xconfigure.x;
+				x11_window_ypos=ev->xconfigure.y;
+				x11_window_width=ev->xconfigure.width;
+				x11_window_height=ev->xconfigure.height;
+				handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
+			}
 			break;
 		case NoExpose:
 			break;
