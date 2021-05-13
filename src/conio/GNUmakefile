@@ -15,7 +15,9 @@ ifdef NO_X
  CFLAGS	+=	-DNO_X
 else
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)x_events$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)x_cio$(OFILE)
+			$(MTOBJODIR)$(DIRSEP)x_cio$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)scale$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)xbr$(OFILE)
  NEED_BITMAP := 1
 endif
 
