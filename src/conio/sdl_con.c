@@ -549,6 +549,8 @@ static void setup_surfaces_locked(void)
 	SDL_Event	ev;
 	int charwidth, charheight, cols, rows, vmultiplier;
 	SDL_Texture *newtexture;
+	int idealh;
+	int idealmh;
 
 	if(fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -561,10 +563,12 @@ static void setup_surfaces_locked(void)
 	cols = cvstat.cols;
 	rows = cvstat.rows;
 	vmultiplier = cvstat.vmultiplier;
+	idealh = roundl((long double)cvstat.winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+	idealmh = roundl((long double)cvstat.scrnwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
 
 	if (win == NULL) {
 		// SDL2: This is slow sometimes... not sure why.
-		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, cvstat.winheight, flags, &win, &renderer) == 0) {
+		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, idealh, flags, &win, &renderer) == 0) {
 			sdl.RenderClear(renderer);
 			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 
@@ -578,15 +582,15 @@ static void setup_surfaces_locked(void)
 		}
 	}
 	else {
-		sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, cvstat.scrnheight);
-		sdl.SetWindowSize(win, cvstat.winwidth, cvstat.winheight);
+		sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, idealh);
+		sdl.SetWindowSize(win, cvstat.winwidth, idealh);
 		newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 		sdl.RenderClear(renderer);
 		if (texture)
 			sdl.DestroyTexture(texture);
 		texture = newtexture;
 	}
-	sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, cvstat.scrnheight);
+	sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, idealmh);
 
 	if(win!=NULL) {
 		bitmap_drv_request_pixels();
@@ -1034,6 +1038,9 @@ void sdl_video_event_thread(void *data)
 								pthread_mutex_unlock(&sdl_headlock);
 								for (; list; list = old_next) {
 									SDL_Rect src;
+									SDL_Rect dst;
+									int idealw;
+									int idealh;
 
 									old_next = list->next;
 									if (list->next == NULL) {
@@ -1065,7 +1072,22 @@ void sdl_video_event_thread(void *data)
 											memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
 										}
 										sdl.UnlockTexture(texture);
-										sdl.RenderCopy(renderer, texture, &src, NULL);
+										dst.x = 0;
+										dst.y = 0;
+										dst.w = cvstat.winwidth;
+										dst.h = cvstat.winheight;
+										// Get correct aspect ratio for dst...
+										idealw = roundl((long double)dst.h * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
+										idealh = roundl((long double)dst.w * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+										if (idealw < cvstat.winwidth) {
+											dst.x += (cvstat.winwidth - idealw) / 2;
+											dst.w = idealw;
+										}
+										else if(idealh < cvstat.winheight) {
+											dst.y += (cvstat.winheight - idealh) / 2;
+											dst.h = idealh;
+										}
+										sdl.RenderCopy(renderer, texture, &src, &dst);
 									}
 									bitmap_drv_free_rect(list);
 								}
