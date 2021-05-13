@@ -1236,10 +1236,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		getfilepath(scfg, &file, fpath);
 		if(file.from_ip == NULL)
 			file_client_hfields(&file, client);
-		str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
-			,(scfg->dir[file.dir]->misc & DIR_NOHASH) == 0, /* sort: */TRUE, /* error: */NULL, /* size: */0);
-		p->smb_result = smb_addfile_withlist(&p->smb, &file, SMB_SELFPACK, extdesc, list, fpath);
-		strListFree(&list);
+		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, /* contents: */NULL, fpath);
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
 	JS_RESUMEREQUEST(cx, rc);
@@ -1327,11 +1324,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 					p->smb_result = smb_putfile(&p->smb, &file);
 				else {
 					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS) {
-						str_list_t list = list_archive_contents(newfname, /* pattern: */NULL
-							,file.dir < scfg->total_dirs && (scfg->dir[file.dir]->misc & DIR_NOHASH) == 0
-							,/* sort: */TRUE, /* error: */NULL, /* size: */0);
-						p->smb_result = smb_addfile_withlist(&p->smb, &file, SMB_SELFPACK, extdesc, list, newfname);
-						strListFree(&list);
+						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, /* contents: */NULL, newfname);
 					}
 				}
 			}

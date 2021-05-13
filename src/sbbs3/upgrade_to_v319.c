@@ -660,10 +660,7 @@ bool upgrade_file_bases(bool hash)
 					if(*extdesc)
 						body = extdesc;
 				}
-				str_list_t list = list_archive_contents(fpath, /* pattern: */NULL
-					,(scfg.dir[i]->misc & DIR_NOHASH) == 0, /* sort: */TRUE, /* error: */NULL, /* size: */0);
-				result = smb_addfile_withlist(&smb, &file, SMB_FASTALLOC, body, list, fpath);
-				strListFree(&list);
+				result = smb_addfile(&smb, &file, SMB_FASTALLOC, body, /* contents: */NULL, fpath);
 			}
 			if(result != SMB_SUCCESS) {
 				fprintf(stderr, "\n!Error %d (%s) adding file to %s\n", result, smb.last_error, smb.file);
