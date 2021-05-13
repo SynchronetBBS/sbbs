@@ -797,405 +797,378 @@ static int win_to_res_ypos(int winpos)
 void sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
-	int		old_w, old_h;
 	int		block_text = 0;
 	static SDL_Keycode last_sym = SDLK_UNKNOWN;
 	static Uint16 last_mod = 0;
 
-	pthread_mutex_lock(&vstatlock);
-	old_w = cvstat.winwidth;
-	old_h = cvstat.winheight;
-	pthread_mutex_unlock(&vstatlock);
-
 	while(1) {
-		if(sdl.WaitEventTimeout(&ev, 1)!=1) {
-			pthread_mutex_lock(&vstatlock);
-			if (cvstat.winwidth != old_w || cvstat.winheight != old_h) {
-				sdl_setwinsize_locked(cvstat.winwidth, cvstat.winheight);
-				setup_surfaces_locked();
-				old_w = cvstat.winwidth;
-				old_h = cvstat.winheight;
-				sdl_getwinsize_locked(&cvstat.winwidth, &cvstat.winheight);
-			}
-			pthread_mutex_unlock(&vstatlock);
-		}
-		else {
-			switch (ev.type) {
-				case SDL_KEYDOWN:			/* Keypress */
-					last_mod = ev.key.keysym.mod;
-					last_sym = ev.key.keysym.sym;
-					if ((ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)) && !(ev.key.keysym.mod & KMOD_MODE)) {
-						block_text = 1;
-						if ((ev.key.keysym.mod & KMOD_ALT) &&
-						    (ev.key.keysym.sym == SDLK_LEFT ||
-						     ev.key.keysym.sym == SDLK_RIGHT ||
-						     ev.key.keysym.sym == SDLK_UP ||
-						     ev.key.keysym.sym == SDLK_DOWN)) {
-							int w, h;
+		if(sdl.WaitEventTimeout(&ev, 1)!=1)
+			continue;
+		switch (ev.type) {
+			case SDL_KEYDOWN:			/* Keypress */
+				last_mod = ev.key.keysym.mod;
+				last_sym = ev.key.keysym.sym;
+				if ((ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)) && !(ev.key.keysym.mod & KMOD_MODE)) {
+					block_text = 1;
+					if ((ev.key.keysym.mod & KMOD_ALT) &&
+					    (ev.key.keysym.sym == SDLK_LEFT ||
+					     ev.key.keysym.sym == SDLK_RIGHT ||
+					     ev.key.keysym.sym == SDLK_UP ||
+					     ev.key.keysym.sym == SDLK_DOWN)) {
+						int w, h;
 
-							// Don't allow ALT-DIR to change size when maximized...
-							if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
-								pthread_mutex_lock(&vstatlock);
-								w = cvstat.winwidth;
-								h = cvstat.winheight;
-								switch(ev.key.keysym.sym) {
-									case SDLK_LEFT:
-										if (w % (cvstat.scrnwidth)) {
-											w = w - w % cvstat.scrnwidth;
-										}
-										else {
-											w -= cvstat.scrnwidth;
-											if (w < cvstat.scrnwidth)
-												w = cvstat.scrnwidth;
-										}
-										break;
-									case SDLK_RIGHT:
-										w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
-										break;
-									case SDLK_UP:
-										if (h % (cvstat.scrnheight * cvstat.vmultiplier)) {
-											h = h - h % (cvstat.scrnheight * cvstat.vmultiplier);
-										}
-										else {
-											h -= (cvstat.scrnheight * cvstat.vmultiplier);
-											if (h < (cvstat.scrnheight * cvstat.vmultiplier))
-												h = cvstat.scrnheight * cvstat.vmultiplier;
-										}
-										break;
-									case SDLK_DOWN:
-										if (cvstat.scale_denominator != cvstat.scale_numerator) {
-											if (h % (cvstat.scrnheight * cvstat.vmultiplier) == 0) {
-												h = h * cvstat.scale_denominator / cvstat.scale_numerator;
-											}
-											else {
-												h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
-											}
-										}
-										else
-											h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
-										break;
-								}
-								if (w > 16384 || h > 16384)
-									beep();
-								else {
-									cvstat.winwidth = w;
-									cvstat.winheight = h;
-								}
-								pthread_mutex_unlock(&vstatlock);
-							}
-							break;
-						}
-					}
-					if (ev.key.keysym.mod & KMOD_RALT) {	// Possible AltGr, let textinput sort it out...
-						block_text = 0;
-						break;
-					}
-					if ((ev.key.keysym.mod & KMOD_SHIFT) && (ev.key.keysym.sym == '\t'))
-						block_text = 1;
-					if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 127) {
-						// NUMLOCK makes 
-						if ((ev.key.keysym.mod & KMOD_NUM) && ((ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0)
-						    || ev.key.keysym.sym == SDLK_KP_DIVIDE
-						    || ev.key.keysym.sym == SDLK_KP_MULTIPLY
-						    || ev.key.keysym.sym == SDLK_KP_MINUS
-						    || ev.key.keysym.sym == SDLK_KP_PLUS
-						    || ev.key.keysym.sym == SDLK_KP_PERIOD))
-							break;
-						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
-					}
-					else if (!isprint(ev.key.keysym.sym)) {
-						if (ev.key.keysym.sym < 128)
-							sdl_add_key(ev.key.keysym.sym);
-					}
-					break;
-				case SDL_TEXTINPUT:
-					if (!block_text) {
-						unsigned int charcode = sdl_get_char_code(last_sym, last_mod & ~(KMOD_ALT));
-						// If the key is exactly what we would expect, use sdl_get_char_code()
-						if (*(uint8_t *)ev.text.text == charcode)
-							sdl_add_key(sdl_get_char_code(last_sym, last_mod));
-						else
-							sdl_add_keys((uint8_t *)ev.text.text);
-					}
-					break;
-				case SDL_KEYUP:
-					last_mod = ev.key.keysym.mod;
-					if (!(ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)))
-						block_text = 0;
-					break;
-				case SDL_MOUSEMOTION:
-					if(!ciolib_mouse_initialized)
-						break;
-					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x),win_to_text_ypos(ev.motion.y), win_to_res_xpos(ev.motion.x), win_to_res_ypos(ev.motion.y));
-					break;
-				case SDL_MOUSEBUTTONDOWN:
-					if(!ciolib_mouse_initialized)
-						break;
-					switch(ev.button.button) {
-						case SDL_BUTTON_LEFT:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
-							break;
-						case SDL_BUTTON_MIDDLE:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
-							break;
-						case SDL_BUTTON_RIGHT:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
-							break;
-					}
-					break;
-				case SDL_MOUSEWHEEL:
-					if (!ciolib_mouse_initialized)
-						break;
-					if (ev.wheel.y) {
-#if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL > 3)
-						if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
-							ev.wheel.y = 0 - ev.wheel.y;
-#endif
-						if (ev.wheel.y > 0)
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1, -1, -1);
-						if (ev.wheel.y < 0)
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1, -1, -1);
-					}
-					break;
-				case SDL_MOUSEBUTTONUP:
-					if(!ciolib_mouse_initialized)
-						break;
-					switch(ev.button.button) {
-						case SDL_BUTTON_LEFT:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
-							break;
-						case SDL_BUTTON_MIDDLE:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
-							break;
-						case SDL_BUTTON_RIGHT:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
-							break;
-					}
-					break;
-				case SDL_QUIT:
-					/*
-					 * SDL2: Do we still need the reaper?
-					 * This is what exit()s programs when the
-					 * X is hit.
-					 */
-					if (ciolib_reaper)
-						sdl_user_func(SDL_USEREVENT_QUIT);
-					else
-						sdl_add_key(CIO_KEY_QUIT);
-					break;
-				case SDL_WINDOWEVENT:
-					switch(ev.window.event) {
-						case SDL_WINDOWEVENT_SIZE_CHANGED:
-							// SDL2: User resized window
-						case SDL_WINDOWEVENT_RESIZED:
-							{
-								// SDL2: Something resized window
-								const char *newh;
-
-								pthread_mutex_lock(&vstatlock);
-								if ((ev.window.data1 % cvstat.scrnwidth) || (ev.window.data2 % cvstat.scrnheight))
-									newh = "2";
-								else
-									newh = "0";
-								pthread_mutex_lock(&win_mutex);
-								if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
-									sdl.GetWindowSize(win, &cvstat.winwidth, &cvstat.winheight);
-								if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
-									SDL_Texture *newtexture;
-									sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh);
-									newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
-									sdl.RenderClear(renderer);
-									if (texture)
-										sdl.DestroyTexture(texture);
-									texture = newtexture;
-									bitmap_drv_request_pixels();
-								}
-								pthread_mutex_unlock(&win_mutex);
-								pthread_mutex_unlock(&vstatlock);
-								break;
-							}
-						case SDL_WINDOWEVENT_EXPOSED:
-							bitmap_drv_request_pixels();
-							break;
-					}
-					break;
-				case SDL_USEREVENT: {
-					struct rectlist *list;
-					struct rectlist *old_next;
-					switch(ev.user.code) {
-						case SDL_USEREVENT_QUIT:
-							sdl_ufunc_retval=0;
-							if (ciolib_reaper)
-								exit(0);
-							sem_post(&sdl_ufunc_ret);
-							return;
-						case SDL_USEREVENT_FLUSH:
-							pthread_mutex_lock(&win_mutex);
-							if (win != NULL) {
-								pthread_mutex_lock(&sdl_headlock);
-								list = update_list;
-								update_list = update_list_tail = NULL;
-								pthread_mutex_unlock(&sdl_headlock);
-								for (; list; list = old_next) {
-									SDL_Rect src;
-									SDL_Rect dst;
-									int idealw;
-									int idealh;
-
-									old_next = list->next;
-									if (list->next == NULL) {
-										void *pixels;
-										int pitch;
-										int row;
-										int tw, th;
-
-										src.x = 0;
-										src.y = 0;
-										src.w = list->rect.width;
-										src.h = list->rect.height;
-										sdl.QueryTexture(texture, NULL, NULL, &tw, &th);
-										sdl.LockTexture(texture, &src, &pixels, &pitch);
-										if (pitch != list->rect.width * sizeof(list->data[0])) {
-											// If this happens, we need to copy a row at a time...
-											for (row = 0; row < list->rect.height && row < th; row++) {
-												if (pitch < list->rect.width * sizeof(list->data[0]))
-													memcpy(pixels, &list->data[list->rect.width * row], pitch);
-												else
-													memcpy(pixels, &list->data[list->rect.width * row], list->rect.width * sizeof(list->data[0]));
-												pixels = (void *)((char*)pixels + pitch);
-											}
-										}
-										else {
-											int ch = list->rect.height;
-											if (ch > th)
-												ch = th;
-											memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
-										}
-										sdl.UnlockTexture(texture);
-										dst.x = 0;
-										dst.y = 0;
-										dst.w = cvstat.winwidth;
-										dst.h = cvstat.winheight;
-										// Get correct aspect ratio for dst...
-										idealw = roundl((long double)dst.h * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
-										idealh = roundl((long double)dst.w * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
-										if (idealw < cvstat.winwidth) {
-											dst.x += (cvstat.winwidth - idealw) / 2;
-											dst.w = idealw;
-										}
-										else if(idealh < cvstat.winheight) {
-											dst.y += (cvstat.winheight - idealh) / 2;
-											dst.h = idealh;
-										}
-										sdl.RenderCopy(renderer, texture, &src, &dst);
-									}
-									bitmap_drv_free_rect(list);
-								}
-								sdl.RenderPresent(renderer);
-							}
-							pthread_mutex_unlock(&win_mutex);
-							break;
-						case SDL_USEREVENT_SETNAME:
-							pthread_mutex_lock(&win_mutex);
-							sdl.SetWindowTitle(win, (char *)ev.user.data1);
-							pthread_mutex_unlock(&win_mutex);
-							free(ev.user.data1);
-							break;
-						case SDL_USEREVENT_SETICON:
-							if(sdl_icon != NULL)
-								sdl.FreeSurface(sdl_icon);
-							sdl_icon=sdl.CreateRGBSurfaceFrom(ev.user.data1
-									, *(unsigned long *)ev.user.data2
-									, *(unsigned long *)ev.user.data2
-									, 32
-									, *(unsigned long *)ev.user.data2*4
-									, *(DWORD *)"\377\0\0\0"
-									, *(DWORD *)"\0\377\0\0"
-									, *(DWORD *)"\0\0\377\0"
-									, *(DWORD *)"\0\0\0\377"
-							);
-							pthread_mutex_lock(&win_mutex);
-							sdl.SetWindowIcon(win, sdl_icon);
-							pthread_mutex_unlock(&win_mutex);
-							free(ev.user.data2);
-							break;
-						case SDL_USEREVENT_SETTITLE:
-							pthread_mutex_lock(&win_mutex);
-							sdl.SetWindowTitle(win, (char *)ev.user.data1);
-							pthread_mutex_unlock(&win_mutex);
-							free(ev.user.data1);
-							break;
-						case SDL_USEREVENT_SETVIDMODE:
+						// Don't allow ALT-DIR to change size when maximized...
+						if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
 							pthread_mutex_lock(&vstatlock);
-							setup_surfaces_locked();
-							old_w = cvstat.winwidth;
-							old_h = cvstat.winheight;
-							pthread_mutex_unlock(&vstatlock);
-							sdl_ufunc_retval=0;
-							sem_post(&sdl_ufunc_ret);
-							break;
-						case SDL_USEREVENT_HIDEMOUSE:
-							sdl.ShowCursor(SDL_DISABLE);
-							break;
-						case SDL_USEREVENT_SHOWMOUSE:
-							sdl.ShowCursor(SDL_ENABLE);
-							break;
-						case SDL_USEREVENT_INIT:
-							if(!sdl_init_good) {
-								if(sdl.WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO) {
-									pthread_mutex_lock(&win_mutex);
-									_beginthread(sdl_mouse_thread, 0, NULL);
-									sdl_init_good=1;
-									pthread_mutex_unlock(&win_mutex);
-								}
-							}
-							sdl_ufunc_retval=0;
-							sem_post(&sdl_ufunc_ret);
-							break;
-						case SDL_USEREVENT_GETWINPOS:
-							sdl.GetWindowPosition(win, ev.user.data1, ev.user.data2);
-							sem_post(&sdl_ufunc_ret);
-							break;
-						case SDL_USEREVENT_MOUSEPOINTER:
-						{
-							int cid = INT_MIN;
-							SDL_Cursor *oc = curs;
-							switch((intptr_t)ev.user.data1) {
-								case CIOLIB_MOUSEPTR_ARROW:
-									break;	// Default
-								case CIOLIB_MOUSEPTR_BAR:
-									cid = SDL_SYSTEM_CURSOR_IBEAM;
+							w = cvstat.winwidth;
+							h = cvstat.winheight;
+							switch(ev.key.keysym.sym) {
+								case SDLK_LEFT:
+									if (w % (cvstat.scrnwidth)) {
+										w = w - w % cvstat.scrnwidth;
+									}
+									else {
+										w -= cvstat.scrnwidth;
+										if (w < cvstat.scrnwidth)
+											w = cvstat.scrnwidth;
+									}
+									break;
+								case SDLK_RIGHT:
+									w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
+									break;
+								case SDLK_UP:
+									if (h % (cvstat.scrnheight * cvstat.vmultiplier)) {
+										h = h - h % (cvstat.scrnheight * cvstat.vmultiplier);
+									}
+									else {
+										h -= (cvstat.scrnheight * cvstat.vmultiplier);
+										if (h < (cvstat.scrnheight * cvstat.vmultiplier))
+											h = cvstat.scrnheight * cvstat.vmultiplier;
+									}
+									break;
+								case SDLK_DOWN:
+									h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
 									break;
 							}
-							if (cid == INT_MIN) {
-								sdl.SetCursor(sdl.GetDefaultCursor());
-								curs = NULL;
-							}
+							if (w > 16384 || h > 16384)
+								beep();
 							else {
-								curs = sdl.CreateSystemCursor(cid);
-								if (curs == NULL)
-									sdl.SetCursor(sdl.GetDefaultCursor());
-								else
-									sdl.SetCursor(curs);
+								cvstat.winwidth = w;
+								cvstat.winheight = h;
 							}
-							if (oc)
-								sdl.FreeCursor(oc);
-							break;
+							setup_surfaces_locked();
+							pthread_mutex_unlock(&vstatlock);
 						}
+						break;
 					}
+				}
+				if (ev.key.keysym.mod & KMOD_RALT) {	// Possible AltGr, let textinput sort it out...
+					block_text = 0;
 					break;
 				}
-				case SDL_SYSWMEVENT:			/* ToDo... This is where Copy/Paste needs doing */
-
-				/* Ignore this stuff */
-				case SDL_JOYAXISMOTION:
-				case SDL_JOYBALLMOTION:
-				case SDL_JOYHATMOTION:
-				case SDL_JOYBUTTONDOWN:
-				case SDL_JOYBUTTONUP:
-				default:
+				if ((ev.key.keysym.mod & KMOD_SHIFT) && (ev.key.keysym.sym == '\t'))
+					block_text = 1;
+				if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 127) {
+					// NUMLOCK makes 
+					if ((ev.key.keysym.mod & KMOD_NUM) && ((ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0)
+					    || ev.key.keysym.sym == SDLK_KP_DIVIDE
+					    || ev.key.keysym.sym == SDLK_KP_MULTIPLY
+					    || ev.key.keysym.sym == SDLK_KP_MINUS
+					    || ev.key.keysym.sym == SDLK_KP_PLUS
+					    || ev.key.keysym.sym == SDLK_KP_PERIOD))
+						break;
+					sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
+				}
+				else if (!isprint(ev.key.keysym.sym)) {
+					if (ev.key.keysym.sym < 128)
+						sdl_add_key(ev.key.keysym.sym);
+				}
+				break;
+			case SDL_TEXTINPUT:
+				if (!block_text) {
+					unsigned int charcode = sdl_get_char_code(last_sym, last_mod & ~(KMOD_ALT));
+					// If the key is exactly what we would expect, use sdl_get_char_code()
+					if (*(uint8_t *)ev.text.text == charcode)
+						sdl_add_key(sdl_get_char_code(last_sym, last_mod));
+					else
+						sdl_add_keys((uint8_t *)ev.text.text);
+				}
+				break;
+			case SDL_KEYUP:
+				last_mod = ev.key.keysym.mod;
+				if (!(ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)))
+					block_text = 0;
+				break;
+			case SDL_MOUSEMOTION:
+				if(!ciolib_mouse_initialized)
 					break;
+				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x),win_to_text_ypos(ev.motion.y), win_to_res_xpos(ev.motion.x), win_to_res_ypos(ev.motion.y));
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				if(!ciolib_mouse_initialized)
+					break;
+				switch(ev.button.button) {
+					case SDL_BUTTON_LEFT:
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						break;
+					case SDL_BUTTON_MIDDLE:
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						break;
+					case SDL_BUTTON_RIGHT:
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						break;
+				}
+				break;
+			case SDL_MOUSEWHEEL:
+				if (!ciolib_mouse_initialized)
+					break;
+				if (ev.wheel.y) {
+#if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL > 3)
+					if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+						ev.wheel.y = 0 - ev.wheel.y;
+#endif
+					if (ev.wheel.y > 0)
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1, -1, -1);
+					if (ev.wheel.y < 0)
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1, -1, -1);
+				}
+				break;
+			case SDL_MOUSEBUTTONUP:
+				if(!ciolib_mouse_initialized)
+					break;
+				switch(ev.button.button) {
+					case SDL_BUTTON_LEFT:
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						break;
+					case SDL_BUTTON_MIDDLE:
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						break;
+					case SDL_BUTTON_RIGHT:
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						break;
+				}
+				break;
+			case SDL_QUIT:
+				/*
+				 * SDL2: Do we still need the reaper?
+				 * This is what exit()s programs when the
+				 * X is hit.
+				 */
+				if (ciolib_reaper)
+					sdl_user_func(SDL_USEREVENT_QUIT);
+				else
+					sdl_add_key(CIO_KEY_QUIT);
+				break;
+			case SDL_WINDOWEVENT:
+				switch(ev.window.event) {
+					case SDL_WINDOWEVENT_SIZE_CHANGED:
+						// SDL2: User resized window
+					case SDL_WINDOWEVENT_RESIZED:
+						{
+							// SDL2: Something resized window
+							const char *newh;
+
+							pthread_mutex_lock(&vstatlock);
+							if ((ev.window.data1 % cvstat.scrnwidth) || (ev.window.data2 % cvstat.scrnheight))
+								newh = "2";
+							else
+								newh = "0";
+							pthread_mutex_lock(&win_mutex);
+							sdl.GetWindowSize(win, &cvstat.winwidth, &cvstat.winheight);
+							if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
+								SDL_Texture *newtexture;
+								sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh);
+								newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
+								sdl.RenderClear(renderer);
+								if (texture)
+									sdl.DestroyTexture(texture);
+								texture = newtexture;
+							}
+							sdl.RenderClear(renderer);
+							bitmap_drv_request_pixels();
+							pthread_mutex_unlock(&win_mutex);
+							pthread_mutex_unlock(&vstatlock);
+							break;
+						}
+					case SDL_WINDOWEVENT_EXPOSED:
+						bitmap_drv_request_pixels();
+						break;
+				}
+				break;
+			case SDL_USEREVENT: {
+				struct rectlist *list;
+				struct rectlist *old_next;
+				switch(ev.user.code) {
+					case SDL_USEREVENT_QUIT:
+						sdl_ufunc_retval=0;
+						if (ciolib_reaper)
+							exit(0);
+						sem_post(&sdl_ufunc_ret);
+						return;
+					case SDL_USEREVENT_FLUSH:
+						pthread_mutex_lock(&win_mutex);
+						if (win != NULL) {
+							pthread_mutex_lock(&sdl_headlock);
+							list = update_list;
+							update_list = update_list_tail = NULL;
+							pthread_mutex_unlock(&sdl_headlock);
+							for (; list; list = old_next) {
+								SDL_Rect src;
+								SDL_Rect dst;
+								int idealw;
+								int idealh;
+
+								old_next = list->next;
+								if (list->next == NULL) {
+									void *pixels;
+									int pitch;
+									int row;
+									int tw, th;
+
+									src.x = 0;
+									src.y = 0;
+									src.w = list->rect.width;
+									src.h = list->rect.height;
+									sdl.QueryTexture(texture, NULL, NULL, &tw, &th);
+									sdl.LockTexture(texture, &src, &pixels, &pitch);
+									if (pitch != list->rect.width * sizeof(list->data[0])) {
+										// If this happens, we need to copy a row at a time...
+										for (row = 0; row < list->rect.height && row < th; row++) {
+											if (pitch < list->rect.width * sizeof(list->data[0]))
+												memcpy(pixels, &list->data[list->rect.width * row], pitch);
+											else
+												memcpy(pixels, &list->data[list->rect.width * row], list->rect.width * sizeof(list->data[0]));
+											pixels = (void *)((char*)pixels + pitch);
+										}
+									}
+									else {
+										int ch = list->rect.height;
+										if (ch > th)
+											ch = th;
+										memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
+									}
+									sdl.UnlockTexture(texture);
+									dst.x = 0;
+									dst.y = 0;
+									dst.w = cvstat.winwidth;
+									dst.h = cvstat.winheight;
+									// Get correct aspect ratio for dst...
+									idealw = roundl((long double)dst.h * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
+									idealh = roundl((long double)dst.w * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+									if (idealw < cvstat.winwidth) {
+										dst.x = (cvstat.winwidth - idealw) / 2;
+										dst.w = idealw;
+									}
+									else if(idealh < cvstat.winheight) {
+										dst.y = (cvstat.winheight - idealh) / 2;
+										dst.h = idealh;
+									}
+									sdl.RenderCopy(renderer, texture, &src, &dst);
+								}
+								bitmap_drv_free_rect(list);
+							}
+							sdl.RenderPresent(renderer);
+						}
+						pthread_mutex_unlock(&win_mutex);
+						break;
+					case SDL_USEREVENT_SETNAME:
+						pthread_mutex_lock(&win_mutex);
+						sdl.SetWindowTitle(win, (char *)ev.user.data1);
+						pthread_mutex_unlock(&win_mutex);
+						free(ev.user.data1);
+						break;
+					case SDL_USEREVENT_SETICON:
+						if(sdl_icon != NULL)
+							sdl.FreeSurface(sdl_icon);
+						sdl_icon=sdl.CreateRGBSurfaceFrom(ev.user.data1
+								, *(unsigned long *)ev.user.data2
+								, *(unsigned long *)ev.user.data2
+								, 32
+								, *(unsigned long *)ev.user.data2*4
+								, *(DWORD *)"\377\0\0\0"
+								, *(DWORD *)"\0\377\0\0"
+								, *(DWORD *)"\0\0\377\0"
+								, *(DWORD *)"\0\0\0\377"
+						);
+						pthread_mutex_lock(&win_mutex);
+						sdl.SetWindowIcon(win, sdl_icon);
+						pthread_mutex_unlock(&win_mutex);
+						free(ev.user.data2);
+						break;
+					case SDL_USEREVENT_SETTITLE:
+						pthread_mutex_lock(&win_mutex);
+						sdl.SetWindowTitle(win, (char *)ev.user.data1);
+						pthread_mutex_unlock(&win_mutex);
+						free(ev.user.data1);
+						break;
+					case SDL_USEREVENT_SETVIDMODE:
+						pthread_mutex_lock(&vstatlock);
+						setup_surfaces_locked();
+						pthread_mutex_unlock(&vstatlock);
+						sdl_ufunc_retval=0;
+						sem_post(&sdl_ufunc_ret);
+						break;
+					case SDL_USEREVENT_HIDEMOUSE:
+						sdl.ShowCursor(SDL_DISABLE);
+						break;
+					case SDL_USEREVENT_SHOWMOUSE:
+						sdl.ShowCursor(SDL_ENABLE);
+						break;
+					case SDL_USEREVENT_INIT:
+						if(!sdl_init_good) {
+							if(sdl.WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO) {
+								pthread_mutex_lock(&win_mutex);
+								_beginthread(sdl_mouse_thread, 0, NULL);
+								sdl_init_good=1;
+								pthread_mutex_unlock(&win_mutex);
+							}
+						}
+						sdl_ufunc_retval=0;
+						sem_post(&sdl_ufunc_ret);
+						break;
+					case SDL_USEREVENT_GETWINPOS:
+						sdl.GetWindowPosition(win, ev.user.data1, ev.user.data2);
+						sem_post(&sdl_ufunc_ret);
+						break;
+					case SDL_USEREVENT_MOUSEPOINTER:
+					{
+						int cid = INT_MIN;
+						SDL_Cursor *oc = curs;
+						switch((intptr_t)ev.user.data1) {
+							case CIOLIB_MOUSEPTR_ARROW:
+								break;	// Default
+							case CIOLIB_MOUSEPTR_BAR:
+								cid = SDL_SYSTEM_CURSOR_IBEAM;
+								break;
+						}
+						if (cid == INT_MIN) {
+							sdl.SetCursor(sdl.GetDefaultCursor());
+							curs = NULL;
+						}
+						else {
+							curs = sdl.CreateSystemCursor(cid);
+							if (curs == NULL)
+								sdl.SetCursor(sdl.GetDefaultCursor());
+							else
+								sdl.SetCursor(curs);
+						}
+						if (oc)
+							sdl.FreeCursor(oc);
+						break;
+					}
+				}
+				break;
 			}
+			case SDL_SYSWMEVENT:			/* ToDo... This is where Copy/Paste needs doing */
+
+			/* Ignore this stuff */
+			case SDL_JOYAXISMOTION:
+			case SDL_JOYBALLMOTION:
+			case SDL_JOYHATMOTION:
+			case SDL_JOYBUTTONDOWN:
+			case SDL_JOYBUTTONUP:
+			default:
+				break;
 		}
 	}
 	return;
