@@ -1047,6 +1047,7 @@ public:
 	bool	clearbatdl(void);
 	bool	clearbatul(void);
 	bool	editfilename(file_t*);
+	bool	editfiledesc(file_t*);
 	bool	editfileinfo(file_t*);
 	long	delfiles(const char *inpath, const char *spec, size_t keep = 0);
 

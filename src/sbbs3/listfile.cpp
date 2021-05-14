@@ -811,7 +811,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 			|| mode==FI_OFFLINE) {
 			SYNC;
 //			CRLF;
-			SAFECOPY(str, "VEQRN\r");
+			SAFECOPY(str, "VDEQRN\r");
 			if(m > 1)
 				SAFECAT(str, "P-\b");
 			if(dir_op(dirnum)) {
@@ -832,12 +832,16 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					pause();
 					m--;
 					continue;
+				case 'D':	/* edit file description */
+					editfiledesc(f);
+					break;
 				case 'E':   /* edit file information */
 					if(dir_op(dirnum)) {
 						if(!editfilename(f))
 							break;
 					}
-					editfileinfo(f);
+					if(editfiledesc(f))
+						editfileinfo(f);
 					break;
 				case 'F':   /* delete file only */
 					SAFEPRINTF2(str,"%s%s",dirpath,f->name);

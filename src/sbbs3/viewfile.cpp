@@ -47,7 +47,10 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 			viewfilecontents(f);
 		ASYNC;
 		mnemonics(str);
-		ch=(char)getkeys("BEVQPN\b-\r",0);
+		SAFECOPY(str, "BEVQPN\b-\r");
+		if(can_edit)
+			SAFECAT(str, "D");
+		ch=(char)getkeys(str, 0);
 		if(ch=='Q' || sys_status&SS_ABORT)
 			return(0);
 		switch(ch) {
@@ -55,10 +58,15 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 				addtobatdl(f);
 				CRLF;
 				return(-1);
+			case 'D':
+				editfiledesc(f);
+				continue;
 			case 'E':
-				if(ext && can_edit)
+				if(ext && can_edit) {
+					if(!editfiledesc(f))
+						continue;
 					editfileinfo(f);
-				else
+				} else
 					ext = true;
 				continue;
 			case 'V':
