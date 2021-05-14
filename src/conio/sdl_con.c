@@ -24,6 +24,7 @@
 #include "vidmodes.h"
 #define BITMAP_CIOLIB_DRIVER
 #include "bitmap_con.h"
+#include "scale.h"
 
 #include "SDL.h"
 
@@ -37,6 +38,8 @@ unsigned char		sdl_key=0;				/* Index into keybuf for next key in buffer */
 unsigned char		sdl_keynext=0;			/* Index into keybuf for next free position */
 
 int sdl_exitcode=0;
+
+bool internal_scaling = true;	// Protected by the win mutex
 
 SDL_Window	*win=NULL;
 SDL_Cursor	*curs=NULL;
@@ -565,12 +568,14 @@ static void setup_surfaces_locked(void)
 	vmultiplier = cvstat.vmultiplier;
 	idealh = roundl((long double)cvstat.winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
 	idealmh = roundl((long double)cvstat.scrnwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+	internal_scaling = true;
+	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
 	if (win == NULL) {
 		// SDL2: This is slow sometimes... not sure why.
 		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, idealh, flags, &win, &renderer) == 0) {
 			sdl.RenderClear(renderer);
-			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
+			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.winwidth, idealh);
 
 			if (texture) 
 				sdl.DestroyTexture(texture);
@@ -582,9 +587,9 @@ static void setup_surfaces_locked(void)
 		}
 	}
 	else {
-		sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, idealh);
+		sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, idealmh);
 		sdl.SetWindowSize(win, cvstat.winwidth, idealh);
-		newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
+		newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.winwidth, idealh);
 		sdl.RenderClear(renderer);
 		if (texture)
 			sdl.DestroyTexture(texture);
@@ -969,16 +974,23 @@ void sdl_video_event_thread(void *data)
 							const char *newh;
 
 							pthread_mutex_lock(&vstatlock);
-							if ((ev.window.data1 % cvstat.scrnwidth) || (ev.window.data2 % cvstat.scrnheight))
-								newh = "2";
-							else
-								newh = "0";
 							pthread_mutex_lock(&win_mutex);
+							if ((ev.window.data1 % cvstat.scrnwidth) && (ev.window.data2 % cvstat.scrnheight)) {
+								newh = "2";
+								internal_scaling = false;
+							}
+							else {
+								newh = "0";
+								internal_scaling = true;
+							}
 							sdl.GetWindowSize(win, &cvstat.winwidth, &cvstat.winheight);
 							if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
 								SDL_Texture *newtexture;
 								sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh);
-								newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
+								if (internal_scaling)
+									newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.winwidth, cvstat.winheight);
+								else
+									newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 								sdl.RenderClear(renderer);
 								if (texture)
 									sdl.DestroyTexture(texture);
@@ -1025,43 +1037,78 @@ void sdl_video_event_thread(void *data)
 									int row;
 									int tw, th;
 
-									src.x = 0;
-									src.y = 0;
-									src.w = list->rect.width;
-									src.h = list->rect.height;
-									sdl.QueryTexture(texture, NULL, NULL, &tw, &th);
-									sdl.LockTexture(texture, &src, &pixels, &pitch);
-									if (pitch != list->rect.width * sizeof(list->data[0])) {
-										// If this happens, we need to copy a row at a time...
-										for (row = 0; row < list->rect.height && row < th; row++) {
-											if (pitch < list->rect.width * sizeof(list->data[0]))
-												memcpy(pixels, &list->data[list->rect.width * row], pitch);
-											else
-												memcpy(pixels, &list->data[list->rect.width * row], list->rect.width * sizeof(list->data[0]));
-											pixels = (void *)((char*)pixels + pitch);
+									if (internal_scaling) {
+										struct graphics_buffer *gb;
+										gb = do_scale(list, cvstat.winwidth / cvstat.scrnwidth, cvstat.winheight / cvstat.scrnheight,
+										    (double)cvstat.scale_numerator / cvstat.scale_denominator);
+										src.x = 0;
+										src.y = 0;
+										src.w = gb->w;
+										src.h = gb->h;
+										sdl.QueryTexture(texture, NULL, NULL, &tw, &th);
+										sdl.LockTexture(texture, &src, &pixels, &pitch);
+										if (pitch != gb->w * sizeof(gb->data[0])) {
+											// If this happens, we need to copy a row at a time...
+											for (row = 0; row < gb->h && row < th; row++) {
+												if (pitch < gb->w * sizeof(gb->data[0]))
+													memcpy(pixels, &gb->data[gb->w * row], pitch);
+												else
+													memcpy(pixels, &gb->data[gb->w * row], gb->w * sizeof(gb->data[0]));
+												pixels = (void *)((char*)pixels + pitch);
+											}
 										}
+										else {
+											int ch = gb->h;
+											if (ch > th)
+												ch = th;
+											memcpy(pixels, gb->data, gb->w * ch * sizeof(gb->data[0]));
+										}
+										sdl.UnlockTexture(texture);
+										dst.x = 0;
+										dst.y = 0;
+										dst.w = gb->w;
+										dst.h = gb->h;
+										release_buffer(gb);
 									}
 									else {
-										int ch = list->rect.height;
-										if (ch > th)
-											ch = th;
-										memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
-									}
-									sdl.UnlockTexture(texture);
-									dst.x = 0;
-									dst.y = 0;
-									dst.w = cvstat.winwidth;
-									dst.h = cvstat.winheight;
-									// Get correct aspect ratio for dst...
-									idealw = roundl((long double)dst.h * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
-									idealh = roundl((long double)dst.w * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
-									if (idealw < cvstat.winwidth) {
-										dst.x = (cvstat.winwidth - idealw) / 2;
-										dst.w = idealw;
-									}
-									else if(idealh < cvstat.winheight) {
-										dst.y = (cvstat.winheight - idealh) / 2;
-										dst.h = idealh;
+										src.x = 0;
+										src.y = 0;
+										src.w = list->rect.width;
+										src.h = list->rect.height;
+										sdl.QueryTexture(texture, NULL, NULL, &tw, &th);
+										sdl.LockTexture(texture, &src, &pixels, &pitch);
+										if (pitch != list->rect.width * sizeof(list->data[0])) {
+											// If this happens, we need to copy a row at a time...
+											for (row = 0; row < list->rect.height && row < th; row++) {
+												if (pitch < list->rect.width * sizeof(list->data[0]))
+													memcpy(pixels, &list->data[list->rect.width * row], pitch);
+												else
+													memcpy(pixels, &list->data[list->rect.width * row], list->rect.width * sizeof(list->data[0]));
+												pixels = (void *)((char*)pixels + pitch);
+											}
+										}
+										else {
+											int ch = list->rect.height;
+											if (ch > th)
+												ch = th;
+											memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
+										}
+										sdl.UnlockTexture(texture);
+										dst.x = 0;
+										dst.y = 0;
+										dst.w = cvstat.winwidth;
+										dst.h = cvstat.winheight;
+										// Get correct aspect ratio for dst...
+										idealw = roundl((long double)dst.h * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
+										idealh = roundl((long double)dst.w * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+										if (idealw < cvstat.winwidth) {
+											dst.x = (cvstat.winwidth - idealw) / 2;
+											dst.w = idealw;
+										}
+										else if(idealh < cvstat.winheight) {
+											dst.y = (cvstat.winheight - idealh) / 2;
+											dst.h = idealh;
+										}
 									}
 									sdl.RenderCopy(renderer, texture, &src, &dst);
 								}
