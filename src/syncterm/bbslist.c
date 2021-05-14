@@ -1587,8 +1587,8 @@ void change_settings(int connected)
     char    inipath[MAX_PATH+1];
     FILE    *inifile;
     str_list_t  inicontents;
-    char    opts[12][80];
-    char    *opt[13];
+    char    opts[13][80];
+    char    *opt[14];
     char    *subopts[8];
     int     i,j,k,l;
     char    str[64];
@@ -1632,6 +1632,8 @@ void change_settings(int connected)
                         "        The complete path to the user's BBS list.\n\n"
                         "~ TERM For Shell ~\n"
                         "        The value to set the TERM envirnonment variable to goes here.\n\n"
+                        "~ Blocky Scaling ~\n"
+                        "        Toggle \"blocky\" scaling.\n\n"
                         "~ Custom Screen Mode ~\n"
                         "        Configure the Custom screen mode.\n\n";
         SAFEPRINTF(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
@@ -1649,10 +1651,13 @@ void change_settings(int connected)
         SAFEPRINTF(opts[8],"Modem Dial String       %s",settings.mdm.dial_string);
         SAFEPRINTF(opts[9],"List Path               %s",settings.list_path);
         SAFEPRINTF(opts[10],"TERM For Shell          %s",settings.TERM);
-        if (connected)
-            opt[11] = NULL;
-        else
-            sprintf(opts[11],"Custom Screen Mode");
+        sprintf(opts[11],"Blocky Scaling          %s", settings.blocky ? "On" : "Off");
+        if (connected) {
+            opt[12] = NULL;
+	}
+        else {
+            sprintf(opts[12],"Custom Screen Mode");
+	}
         switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
             case -1:
                 check_exit(FALSE);
@@ -1858,6 +1863,14 @@ void change_settings(int connected)
                     check_exit(FALSE);
                 break;
             case 11:
+		settings.blocky = !settings.blocky;
+               	iniSetBool(&inicontents,"SyncTERM","BlockyScaling",settings.blocky,&ini_style);
+		if (settings.blocky)
+			cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
+		else
+			cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
+		break;
+            case 12:
                 uifc.helpbuf=   "`Custom Screen Mode`\n\n"
                                 "~ Rows ~\n"
                                 "        Sets the number of rows in the custom screen mode\n"
