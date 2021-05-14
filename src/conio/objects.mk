@@ -4,6 +4,5 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansi_cio$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)vidmodes$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)allfonts$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)mouse$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scale$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)syncicon64$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)utf8_codepages$(OFILE)
