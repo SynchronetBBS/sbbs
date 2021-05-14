@@ -241,7 +241,7 @@ enum {
 	,ProtocolBatchOrQuit
 	,BatchUlQueueIsFull
 	,FileAddedToUlQueue
-	,UserToUserXferNodeMsg
+	,FileInfoEditPrompt
 	,FileInfoPrompt
 	,QuitOrNext
 	,RExemptRemoveFilePrompt

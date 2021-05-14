@@ -1046,6 +1046,8 @@ public:
 	bool	addtobatdl(file_t*);
 	bool	clearbatdl(void);
 	bool	clearbatul(void);
+	bool	editfilename(file_t*);
+	bool	editfileinfo(file_t*);
 	long	delfiles(const char *inpath, const char *spec, size_t keep = 0);
 
 	/* listfile.cpp */

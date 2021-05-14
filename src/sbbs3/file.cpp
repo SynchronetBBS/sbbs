@@ -273,3 +273,92 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 	
 	return true;
 }
+
+bool sbbs_t::editfilename(file_t* f)
+{
+	char str[MAX_FILENAME_LEN + 1];
+	char tmp[MAX_PATH + 1];
+	char path[MAX_PATH + 1];
+	char dirpath[MAX_PATH + 1];
+
+	bputs(text[EditFilename]);
+	SAFECOPY(str, f->name);
+	if(!getstr(str, sizeof(str) - 1, K_EDIT|K_AUTODEL))
+		return false;
+	if(strcmp(str,f->name) != 0) { /* rename */
+		if(stricmp(str,f->name)
+			&& findfile(&cfg, f->dir, path, NULL))
+			bprintf(text[FileAlreadyThere],path);
+		else {
+			SAFEPRINTF2(path,"%s%s",dirpath,f->name);
+			SAFEPRINTF2(tmp,"%s%s",dirpath,str);
+			if(fexistcase(path) && rename(path,tmp))
+				bprintf(text[CouldntRenameFile],path,tmp);
+			else {
+				bprintf(text[FileRenamed],path,tmp);
+				smb_new_hfield_str(f, SMB_FILENAME, str);
+				updatefile(&cfg, f);
+			} 
+		} 
+	}
+	return true;
+}
+
+bool sbbs_t::editfileinfo(file_t* f)
+{
+	char str[MAX_PATH + 1];
+
+	// Description
+	bputs(text[EditDescription]);
+	char fdesc[LEN_FDESC + 1];
+	SAFECOPY(fdesc, f->desc);
+	getstr(fdesc, sizeof(fdesc)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
+	if(sys_status&SS_ABORT)
+		return false;
+	if(strcmp(fdesc, f->desc))
+		smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
+
+	// Tags
+	if((cfg.dir[f->dir]->misc & DIR_FILETAGS) || dir_op(f->dir)) {
+		char tags[64] = "";
+		bputs(text[TagFilePrompt]);
+		if(f->tags != NULL)
+			SAFECOPY(tags, f->tags);
+		getstr(tags, sizeof(tags)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
+		if(sys_status&SS_ABORT)
+			return false;
+		if((f->tags == NULL && *tags != '\0') || (f->tags != NULL && strcmp(tags, f->tags)))
+			smb_new_hfield_str(f, SMB_TAGS, tags);
+	}
+	// Extended Description
+	if(f->extdesc != NULL && *f->extdesc) {
+		if(!noyes(text[DeleteExtDescriptionQ])) {
+			// TODO
+		} 
+	}
+	if(dir_op(f->dir)) {
+		char uploader[LEN_ALIAS + 1];
+		SAFECOPY(uploader, f->from);
+		bputs(text[EditUploader]);
+		if(!getstr(uploader, sizeof(uploader), K_EDIT|K_AUTODEL))
+			return false;
+		smb_new_hfield_str(f, SMB_FILEUPLOADER, uploader);
+		ultoa(f->cost,str,10);
+		bputs(text[EditCreditValue]);
+		getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL);
+		if(sys_status&SS_ABORT)
+			return false;
+		f->cost = atol(str);
+		smb_new_hfield(f, SMB_COST, sizeof(f->cost), &f->cost);
+		ultoa(f->hdr.times_downloaded,str,10);
+		bputs(text[EditTimesDownloaded]);
+		getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL);
+		if(sys_status&SS_ABORT)
+			return false;
+		f->hdr.times_downloaded=atoi(str);
+		if(sys_status&SS_ABORT)
+			return false;
+		inputnstime32((time32_t*)&f->hdr.when_imported.time);
+	}
+	return updatefile(&cfg, f);
+}
