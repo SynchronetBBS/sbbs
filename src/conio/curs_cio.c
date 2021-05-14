@@ -111,7 +111,7 @@ static int _putch(unsigned char ch, BOOL refresh_now, int cp)
 	cchar_t	cha;
 	wchar_t wch[2] = {0};
 	attr_t	attr = 0;
-	short	cpair;
+	short	cpair = 0;
 
 	attr_get(&attr, &cpair, NULL);
 	attr &= ~A_COLOR;
