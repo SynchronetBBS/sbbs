@@ -8,6 +8,7 @@ static int r2y_inited;
 static void pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height);
 static void interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight);
+static void interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwidth);
 static void multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, int xmult, int ymult);
 
 static struct graphics_buffer *free_list;
@@ -104,6 +105,7 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 	struct graphics_buffer *csrc;
 	uint32_t* nt;
 	int fheight;
+	int fwidth;
 
 	switch (*xscale) {
 		case 1:
@@ -172,10 +174,18 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 	}
 
 	// Calculate the scaled height from ratio...
-	fheight = lround((double)(rect->rect.height * (*yscale)) / ratio);
+	if (ratio < 1)
+		fheight = lround((double)(rect->rect.height * (*yscale)) / ratio);
+	else
+		fheight = rect->rect.height * *yscale;
+
+	if (ratio > 1)
+		fwidth = lround((double)(rect->rect.width * (*xscale)) / ratio);
+	else
+		fwidth = rect->rect.width * *xscale;
 
 	// Now make sure target is big enough...
-	size_t needsz = rect->rect.width * (*xscale) * fheight * sizeof(uint32_t);
+	size_t needsz = fwidth * fheight * sizeof(uint32_t);
 	if (needsz > ret1->sz) {
 		nt = realloc(ret1->data, needsz);
 		if (nt == NULL)
@@ -259,10 +269,21 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 	}
 
 	// And finally, interpolate if needed
-	if (ratio != 1) {
+	if (ratio < 1) {
 		interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
 		ctarget->h = fheight;
 		ctarget->w = csrc->w;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
+	}
+
+	if (ratio > 1) {
+		interpolate_width(csrc->data, ctarget->data, csrc->w, csrc->h, fwidth);
+		ctarget->h = csrc->h;
+		ctarget->w = fwidth;
 		csrc = ctarget;
 		if (ctarget == ret1)
 			ctarget = ret2;
@@ -493,6 +514,46 @@ uint32_t blend(const uint32_t c1, const uint32_t c2, const double weight)
 	CLAMP(v);
 
 	return y2r[(y<<16)|(u<<8)|v];
+}
+
+/*
+ * This does non-integer *width* scaling.  It does not scale in the other
+ * direction.  This does the interpolation using Y'UV to prevent dimming of
+ * pixels.
+ */
+static void
+interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwidth)
+{
+	int x, y;
+	const double mult = (double)width / newwidth;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < newwidth; x++) {
+			// First, calculate which two pixels this is between.
+			const double xpos = mult * x;
+			const int xposi = xpos;
+			if (x == xpos) {
+				// Exact match!
+				*dst = src[width * y + x];
+			}
+			else {
+				const double weight = xpos - xposi;
+				// Now pick the two pixels
+				const uint32_t pix1 = src[y * width + xposi] & 0xffffff;
+				uint32_t pix2;
+				if (xposi < width - 1)
+					pix2 = src[y * width + xposi + 1] & 0xffffff;
+				else
+					pix2 = src[y * width + xposi] & 0xffffff;
+				if (pix1 == pix2)
+					*dst = pix1;
+				else {
+					*dst = blend(pix1, pix2, weight);
+				}
+			}
+			dst++;
+		}
+	}
 }
 
 /*
