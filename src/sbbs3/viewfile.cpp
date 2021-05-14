@@ -35,14 +35,17 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 	format_filename(f->name, fname, sizeof(fname)-1, /* pad: */FALSE);
 
 	curdirnum=f->dir;	/* for ARS */
+	bool	can_edit = dir_op(f->dir) || useron.exempt&FLAG('R') || stricmp(f->from, useron.alias) == 0;
 	while(online) {
 		sys_status &= ~SS_ABORT;
-		if(ext)
+		SAFEPRINTF(str, text[FileInfoPrompt], fname);
+		if(ext) {
 			showfileinfo(f);
-		else
+			if(can_edit)
+				SAFEPRINTF(str, text[FileInfoEditPrompt], fname);
+		} else
 			viewfilecontents(f);
 		ASYNC;
-		SAFEPRINTF(str, text[FileInfoPrompt], fname);
 		mnemonics(str);
 		ch=(char)getkeys("BEVQPN\b-\r",0);
 		if(ch=='Q' || sys_status&SS_ABORT)
@@ -53,10 +56,13 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 				CRLF;
 				return(-1);
 			case 'E':
-				ext=1;
+				if(ext && can_edit)
+					editfileinfo(f);
+				else
+					ext = true;
 				continue;
 			case 'V':
-				ext=0;
+				ext = false;
 				continue;
 			case 'P':
 			case '\b':
