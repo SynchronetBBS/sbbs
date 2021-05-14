@@ -18,7 +18,7 @@ char* ltoa(long val, char* str, int radix);
 
 #endif
 
-#ifdef _MSVC
+#if defined(_MSC_VER) || defined(__MSVCRT__)
 #if defined(__cplusplus)
 extern "C" {
 #endif

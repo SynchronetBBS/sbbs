@@ -7,6 +7,7 @@
 #include <dirwrap.h>
 #include <ini_file.h>
 #include <uifc.h>
+#include <xpprintf.h>
 #include "filepick.h"
 
 #include "syncterm.h"
