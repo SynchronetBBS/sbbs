@@ -304,10 +304,8 @@ bool sbbs_t::editfilename(file_t* f)
 	return true;
 }
 
-bool sbbs_t::editfileinfo(file_t* f)
+bool sbbs_t::editfiledesc(file_t* f)
 {
-	char str[MAX_PATH + 1];
-
 	// Description
 	bputs(text[EditDescription]);
 	char fdesc[LEN_FDESC + 1];
@@ -317,6 +315,13 @@ bool sbbs_t::editfileinfo(file_t* f)
 		return false;
 	if(strcmp(fdesc, f->desc))
 		smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
+
+	return updatefile(&cfg, f);
+}
+
+bool sbbs_t::editfileinfo(file_t* f)
+{
+	char str[MAX_PATH + 1];
 
 	// Tags
 	if((cfg.dir[f->dir]->misc & DIR_FILETAGS) || dir_op(f->dir)) {
