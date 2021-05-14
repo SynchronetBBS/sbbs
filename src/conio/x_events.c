@@ -545,6 +545,7 @@ static void local_draw_rect(struct rectlist *rect)
 				else
 					pixel |= (b >> (0-b_shift)) & visual.blue_mask;
 			}
+			// TODO: These loops shouldn't be necessary anymore...
 			for(yscale=0; yscale<yscaling; yscale++) {
 				for(xscale=0; xscale<xscaling; xscale++) {
 #ifdef XPutPixel
