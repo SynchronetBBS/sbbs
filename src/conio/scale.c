@@ -120,41 +120,44 @@ do_scale(struct rectlist* rect, int xscale, int yscale, double ratio)
 	xscale = 1;
 	total_yscaling = yscale;
 	yscale = 1;
-	if (!(cio_api.options & CONIO_OPT_BLOCKY_SCALING)) {
-		if ((total_xscaling & 1) == 1 && (total_xscaling == total_yscaling || (total_yscaling % total_xscaling == 0))) {
-			pointymult = total_xscaling;
-			total_xscaling /= pointymult;
-			xscale *= pointymult;
-			total_yscaling /= pointymult;
-			yscale *= pointymult;
-		}
-		while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
-			pointy5++;
-			total_xscaling /= 5;
-			xscale *= 5;
-			total_yscaling /= 5;
-			yscale *= 5;
-		}
-		while (total_xscaling > 1 && ((total_xscaling % 3) == 0) && ((total_yscaling % 3) == 0)) {
-			pointy3++;
-			total_xscaling /= 3;
-			xscale *= 3;
-			total_yscaling /= 3;
-			yscale *= 3;
-		}
-		while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
-			xbr4++;
-			total_xscaling /= 4;
-			xscale *= 4;
-			total_yscaling /= 4;
-			yscale *= 4;
-		}
-		while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
-			xbr2++;
-			total_xscaling /= 2;
-			xscale *= 2;
-			total_yscaling /= 2;
-			yscale *= 2;
+	// If x/y scaling isn't a simple multiple, block scale everything...
+	if ((total_yscaling % total_xscaling) == 0) {
+		if (!(cio_api.options & CONIO_OPT_BLOCKY_SCALING)) {
+			if ((total_xscaling & 1) == 1 && total_xscaling > 5) {
+				pointymult = total_xscaling;
+				total_xscaling /= pointymult;
+				xscale *= pointymult;
+				total_yscaling /= pointymult;
+				yscale *= pointymult;
+			}
+			while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
+				pointy5++;
+				total_xscaling /= 5;
+				xscale *= 5;
+				total_yscaling /= 5;
+				yscale *= 5;
+			}
+			while (total_xscaling > 1 && ((total_xscaling % 3) == 0) && ((total_yscaling % 3) == 0)) {
+				pointy3++;
+				total_xscaling /= 3;
+				xscale *= 3;
+				total_yscaling /= 3;
+				yscale *= 3;
+			}
+			while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
+				xbr4++;
+				total_xscaling /= 4;
+				xscale *= 4;
+				total_yscaling /= 4;
+				yscale *= 4;
+			}
+			while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
+				xbr2++;
+				total_xscaling /= 2;
+				xscale *= 2;
+				total_yscaling /= 2;
+				yscale *= 2;
+			}
 		}
 	}
 
@@ -215,6 +218,18 @@ do_scale(struct rectlist* rect, int xscale, int yscale, double ratio)
 	csrc->w = rect->rect.width;
 	csrc->h = rect->rect.height;
 
+#if 0
+fprintf(stderr, "Plan:\n"
+"pointymulti: %d\n"
+"pointy5:     %d\n"
+"pointy3:     %d\n"
+"xBR4:        %d\n"
+"xBR2:        %d\n"
+"Multiply:    %dx%d\n"
+"hinterp:     %zu -> %zu\n"
+"winterp:     %zu -> %zu\n",
+pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->h * yscale, ratio < 1 ? fheight : csrc->h * yscale, csrc->w * xscale, ratio > 1 ? fwidth : csrc->w * xscale);
+#endif
 	// And scale...
 	if (ymult != 1 || xmult != 1) {
 		multiply_scale(csrc->data, ctarget->data, csrc->w, csrc->h, xmult, ymult);
@@ -683,33 +698,29 @@ static void
 interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight)
 {
 	int x, y;
+	bool em = false;
 	const double mult = (double)height / newheight;
 
 	for (y = 0; y < newheight; y++) {
-		for (x = 0; x < width; x++) {
-			// First, calculate which two pixels this is between.
-			const double ypos = mult * y;
-			const int yposi = ypos;
-			if (y == ypos) {
-				// Exact match!
-				*dst = src[width * yposi + x];
-			}
-			else {
-				const double weight = ypos - yposi;
+		const double ypos = mult * y;
+		const int yposi = ypos;
+		em = (y == ypos || yposi >= height - 1);
+		if (em) {
+			memcpy(dst, &src[yposi * width], width * sizeof(dst[0]));
+			dst += width;
+		}
+		else {
+			const double weight = ypos - yposi;
+			for (x = 0; x < width; x++) {
 				// Now pick the two pixels
 				const uint32_t pix1 = src[yposi * width + x] & 0xffffff;
-				uint32_t pix2;
-				if (yposi < height - 1)
-					pix2 = src[(yposi + 1) * width + x] & 0xffffff;
-				else
-					pix2 = src[yposi * width + x] & 0xffffff;
+				const uint32_t pix2 = src[(yposi + 1) * width + x] & 0xffffff;
 				if (pix1 == pix2)
 					*dst = pix1;
-				else {
+				else
 					*dst = blend(pix1, pix2, weight);
-				}
+				dst++;
 			}
-			dst++;
 		}
 	}
 }
@@ -717,8 +728,6 @@ interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newh
 static void
 multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, int xmult, int ymult)
 {
-	int nheight = height * ymult;
-	int nwidth = width * xmult;
 	int x, y;
 	int mx, my;
 	uint32_t* slstart;

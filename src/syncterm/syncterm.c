@@ -1816,7 +1816,7 @@ int main(int argc, char **argv)
 	// Save changed settings
 	gettextinfo(&txtinfo);
 	// Only save window info if we're in the startup mode...
-	if (txtinfo.currmode == settings.startup_mode || (settings.startup_mode == SCREEN_MODE_CURRENT && txtinfo.currmode == C80)) {
+	if (txtinfo.currmode == screen_to_ciolib(settings.startup_mode) || (settings.startup_mode == SCREEN_MODE_CURRENT && txtinfo.currmode == C80)) {
 		ww = wh = sf = -1;
 		get_window_info(&ww, &wh, NULL, NULL);
 		sf = getscaling();
