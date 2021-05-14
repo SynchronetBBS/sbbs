@@ -89,7 +89,7 @@ release_buffer(struct graphics_buffer *buf)
 }
 
 struct graphics_buffer *
-do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
+do_scale(struct rectlist* rect, int xscale, int yscale, double ratio)
 {
 	struct graphics_buffer* ret1 = get_buffer();
 	struct graphics_buffer* ret2 = get_buffer();
@@ -100,7 +100,6 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 	int xbr4 = 0;
 	int ymult = 1;
 	int xmult = 1;
-	int newscale = 1;
 	int total_xscaling = 1;
 	int total_yscaling = 1;
 	struct graphics_buffer *ctarget;
@@ -108,92 +107,84 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 	uint32_t* nt;
 	int fheight;
 	int fwidth;
+	bool swapxy = false;
 
-	switch (*xscale) {
-		case 1:
-			break;
-		case 2:
-			xbr2 = 1;
-			break;
-		case 3:
-			pointy3 = 1;
-			break;
-		case 4:
-			xbr4 = 1;
-			break;
-		case 5:
-			pointy5 = 1;
-			break;
-		case 6:
-			pointy3 = 1;
-			xbr2 = 1;
-			break;
-		case 7:
-			pointymult = 7;
-			break;
-		case 13:
-			pointymult = 13;
-			break;
-		default:
-			total_xscaling = *xscale;
-			*xscale = 1;
-			total_yscaling = *yscale;
-			*yscale = 1;
-			if ((total_xscaling & 1) == 1 && (total_xscaling == total_yscaling || total_xscaling == total_yscaling * 2)) {
-				pointymult = total_xscaling;
-				total_xscaling /= pointymult;
-				*xscale *= pointymult;
-				total_yscaling /= pointymult;
-				*yscale *= pointymult;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
-				pointy5++;
-				total_xscaling /= 5;
-				*xscale *= 5;
-				total_yscaling /= 5;
-				*yscale *= 5;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 3) == 0) && ((total_yscaling % 3) == 0)) {
-				pointy3++;
-				total_xscaling /= 3;
-				*xscale *= 3;
-				total_yscaling /= 3;
-				*yscale *= 3;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
-				xbr4++;
-				total_xscaling /= 4;
-				*xscale *= 4;
-				total_yscaling /= 4;
-				*yscale *= 4;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
-				xbr2++;
-				total_xscaling /= 2;
-				*xscale *= 2;
-				total_yscaling /= 2;
-				*yscale *= 2;
-			}
-			break;
+	if (xscale > yscale) {
+		swapxy = true;
+		total_xscaling = xscale;
+		xscale = yscale;
+		yscale = total_xscaling;
+	}
+	total_xscaling = xscale;
+	xscale = 1;
+	total_yscaling = yscale;
+	yscale = 1;
+	if ((total_xscaling & 1) == 1 && (total_xscaling == total_yscaling || (total_yscaling % total_xscaling == 0))) {
+		pointymult = total_xscaling;
+		total_xscaling /= pointymult;
+		xscale *= pointymult;
+		total_yscaling /= pointymult;
+		yscale *= pointymult;
+	}
+	while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
+		pointy5++;
+		total_xscaling /= 5;
+		xscale *= 5;
+		total_yscaling /= 5;
+		yscale *= 5;
+	}
+	while (total_xscaling > 1 && ((total_xscaling % 3) == 0) && ((total_yscaling % 3) == 0)) {
+		pointy3++;
+		total_xscaling /= 3;
+		xscale *= 3;
+		total_yscaling /= 3;
+		yscale *= 3;
+	}
+	while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
+		xbr4++;
+		total_xscaling /= 4;
+		xscale *= 4;
+		total_yscaling /= 4;
+		yscale *= 4;
+	}
+	while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
+		xbr2++;
+		total_xscaling /= 2;
+		xscale *= 2;
+		total_yscaling /= 2;
+		yscale *= 2;
 	}
 
-	if (*xscale != *yscale) {
-		if (*yscale == *xscale * 2)
-			ymult *= 2;
-		else
-			return NULL;
+	xmult = total_xscaling;
+	xscale *= xmult;
+	total_xscaling = 1;
+
+	ymult = total_yscaling;
+	yscale *= ymult;
+	total_yscaling = 1;
+
+	if (swapxy) {
+		int tmp;
+
+		tmp = ymult;
+		ymult = xmult;
+		xmult = tmp;
+
+		tmp = xscale;
+		xscale = yscale;
+		yscale = tmp;
 	}
 
 	// Calculate the scaled height from ratio...
 	if (ratio < 1)
-		fheight = lround((double)(rect->rect.height * (*yscale)) / ratio);
+		fheight = lround((double)(rect->rect.height * (yscale)) / ratio);
 	else
-		fheight = rect->rect.height * *yscale;
+		fheight = rect->rect.height * yscale;
 
 	if (ratio > 1)
-		fwidth = lround((double)(rect->rect.width * (*xscale)) / ratio);
+		fwidth = lround((double)(rect->rect.width * (xscale)) / ratio);
 	else
-		fwidth = rect->rect.width * *xscale;
+		fwidth = rect->rect.width * xscale;
 
 	// Now make sure target is big enough...
 	size_t needsz = fwidth * fheight * sizeof(uint32_t);
@@ -222,6 +213,18 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 	csrc->h = rect->rect.height;
 
 	// And scale...
+	if (ymult != 1 || xmult != 1) {
+		multiply_scale(csrc->data, ctarget->data, csrc->w, csrc->h, xmult, ymult);
+		ctarget->w = csrc->w * xmult;
+		ctarget->h = csrc->h * ymult;
+		ymult = 1;
+		xmult = 1;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
+	}
 	if (pointymult > 1 && pointymult & 1) {
 		pointy_scale_odd(csrc->data, ctarget->data, csrc->w, csrc->h, pointymult);
 		ctarget->w = csrc->w * pointymult;
@@ -249,18 +252,6 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 		pointy3--;
 		ctarget->w = csrc->w * 3;
 		ctarget->h = csrc->h * 3;
-		csrc = ctarget;
-		if (ctarget == ret1)
-			ctarget = ret2;
-		else
-			ctarget = ret1;
-	}
-	if (ymult != 1 || xmult != 1) {
-		multiply_scale(csrc->data, ctarget->data, csrc->w, csrc->h, xmult, ymult);
-		ctarget->w = csrc->w * xmult;
-		ctarget->h = csrc->h * ymult;
-		ymult = 1;
-		xmult = 1;
 		csrc = ctarget;
 		if (ctarget == ret1)
 			ctarget = ret2;
@@ -313,8 +304,6 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 			ctarget = ret1;
 	}
 
-	*xscale = newscale;
-	*yscale = newscale;
 	release_buffer(ctarget);
 	return csrc;
 }
