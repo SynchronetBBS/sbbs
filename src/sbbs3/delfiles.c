@@ -27,6 +27,8 @@
 #include "str_util.h"
 #include <stdarg.h>
 #include <stdbool.h>
+#include "git_branch.h"
+#include "git_hash.h"
 
 #define DELFILES_VER "3.19"
 
@@ -89,7 +91,6 @@ bool delfile(const char *filename)
 
 int main(int argc, char **argv)
 {
-	char revision[16];
 	char str[256],not[MAX_NOTS][LEN_EXTCODE + 1],nots=0,*p;
 	char fpath[MAX_PATH+1];
 	int i,j,dirnum,libnum;
@@ -101,10 +102,8 @@ int main(int argc, char **argv)
 
 	setvbuf(stdout,NULL,_IONBF,0);
 
-	sscanf("$Revision: 1.54 $", "%*s %s", revision);
-
-	fprintf(stderr,"\nDELFILES Version %s-%s (rev %s) - Removes files from Synchronet "
-		"Filebase\n" ,DELFILES_VER, PLATFORM_DESC, revision);
+	fprintf(stderr,"\nDELFILES Version %s-%s %s/%s - Removes files from Synchronet "
+		"Filebase\n" ,DELFILES_VER, PLATFORM_DESC, GIT_BRANCH, GIT_HASH);
 
 	if(argc<2) {
 		printf("\n   usage: %s <dir_code or * for ALL> [switches]\n", argv[0]);
@@ -243,7 +242,7 @@ int main(int argc, char **argv)
 		printf("\nScanning %s %s\n", cfg.lib[cfg.dir[i]->lib]->sname, cfg.dir[i]->lname);
 
 		size_t file_count;
-		file_t* file_list = loadfiles(&smb, NULL, 0, /* extdesc: */FALSE, FILE_SORT_NATURAL, &file_count);
+		file_t* file_list = loadfiles(&smb, NULL, /* since: */0, file_detail_normal, FILE_SORT_NATURAL, &file_count);
 
 		for(fi = 0; fi < file_count; fi++) {
 			file_t* f = &file_list[fi];
