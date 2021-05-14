@@ -1253,6 +1253,7 @@ void load_settings(struct syncterm_settings *set)
 	set->scaling_factor=iniReadInteger(inifile,"SyncTERM","ScalingFactor",0);
 	set->window_width=iniReadInteger(inifile,"SyncTERM","WindowWidth",0);
 	set->window_height=iniReadInteger(inifile,"SyncTERM","WindowHeight",0);
+	set->blocky=iniReadBool(inifile,"SyncTERM","BlockyScaling",FALSE);
 	// TODO: Add this to the UI somewhere.
 	set->left_just=iniReadBool(inifile,"SyncTERM","LeftJustify",FALSE);
 
@@ -1597,8 +1598,16 @@ int main(int argc, char **argv)
 			SAFECOPY(url,argv[i]);
     }
 
+	if (settings.blocky)
+		cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
+	else
+		cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
 	if(initciolib(ciolib_mode))
 		return(1);
+	if (settings.blocky)
+		cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
+	else
+		cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
 	ciolib_reaper=FALSE;
 	seticon(syncterm_icon.pixel_data,syncterm_icon.width);
 	if (settings.scaling_factor)

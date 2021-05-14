@@ -305,6 +305,7 @@ typedef struct {
 #define CONIO_OPT_SET_NAME			512
 #define CONIO_OPT_SET_ICON			1024
 #define CONIO_OPT_EXTENDED_PALETTE	2048
+#define CONIO_OPT_BLOCKY_SCALING	4096
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,void *);
 	int		(*vmem_puttext)		(int,int,int,int,struct vmem_cell *);

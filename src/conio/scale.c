@@ -1,3 +1,4 @@
+#include "ciolib.h"
 #include "scale.h"
 #include "xbr.h"
 
@@ -119,40 +120,42 @@ do_scale(struct rectlist* rect, int xscale, int yscale, double ratio)
 	xscale = 1;
 	total_yscaling = yscale;
 	yscale = 1;
-	if ((total_xscaling & 1) == 1 && (total_xscaling == total_yscaling || (total_yscaling % total_xscaling == 0))) {
-		pointymult = total_xscaling;
-		total_xscaling /= pointymult;
-		xscale *= pointymult;
-		total_yscaling /= pointymult;
-		yscale *= pointymult;
-	}
-	while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
-		pointy5++;
-		total_xscaling /= 5;
-		xscale *= 5;
-		total_yscaling /= 5;
-		yscale *= 5;
-	}
-	while (total_xscaling > 1 && ((total_xscaling % 3) == 0) && ((total_yscaling % 3) == 0)) {
-		pointy3++;
-		total_xscaling /= 3;
-		xscale *= 3;
-		total_yscaling /= 3;
-		yscale *= 3;
-	}
-	while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
-		xbr4++;
-		total_xscaling /= 4;
-		xscale *= 4;
-		total_yscaling /= 4;
-		yscale *= 4;
-	}
-	while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
-		xbr2++;
-		total_xscaling /= 2;
-		xscale *= 2;
-		total_yscaling /= 2;
-		yscale *= 2;
+	if (!(cio_api.options & CONIO_OPT_BLOCKY_SCALING)) {
+		if ((total_xscaling & 1) == 1 && (total_xscaling == total_yscaling || (total_yscaling % total_xscaling == 0))) {
+			pointymult = total_xscaling;
+			total_xscaling /= pointymult;
+			xscale *= pointymult;
+			total_yscaling /= pointymult;
+			yscale *= pointymult;
+		}
+		while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
+			pointy5++;
+			total_xscaling /= 5;
+			xscale *= 5;
+			total_yscaling /= 5;
+			yscale *= 5;
+		}
+		while (total_xscaling > 1 && ((total_xscaling % 3) == 0) && ((total_yscaling % 3) == 0)) {
+			pointy3++;
+			total_xscaling /= 3;
+			xscale *= 3;
+			total_yscaling /= 3;
+			yscale *= 3;
+		}
+		while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
+			xbr4++;
+			total_xscaling /= 4;
+			xscale *= 4;
+			total_yscaling /= 4;
+			yscale *= 4;
+		}
+		while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
+			xbr2++;
+			total_xscaling /= 2;
+			xscale *= 2;
+			total_yscaling /= 2;
+			yscale *= 2;
+		}
 	}
 
 	xmult = total_xscaling;
