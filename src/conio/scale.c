@@ -1,3 +1,6 @@
+#include <stdbool.h>
+#include <stdlib.h>
+
 #include "ciolib.h"
 #include "scale.h"
 #include "xbr.h"
