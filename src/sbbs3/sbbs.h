@@ -738,6 +738,7 @@ public:
 	char	putmsg(const char *str, long mode, long org_cols = 0, JSObject* obj = NULL);
 	char	putmsgfrag(const char* str, long& mode, long org_cols = 0, JSObject* obj = NULL);
 	bool	msgabort(void);
+	void	clearabort() { sys_status &= ~SS_ABORT; }
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
 	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);

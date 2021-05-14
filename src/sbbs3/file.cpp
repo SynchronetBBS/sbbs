@@ -117,13 +117,15 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 /* Returns padded file specification.                                       */
 /* Returns NULL if input was aborted.                                       */
 /****************************************************************************/
-char * sbbs_t::getfilespec(char *str)
+char* sbbs_t::getfilespec(char *str)
 {
 	bputs(text[FileSpecStarDotStar]);
 	if(!getstr(str, MAX_FILENAME_LEN, K_NONE))
 		strcpy(str, ALLFILES);
-	if(sys_status&SS_ABORT)
-		return(0);
+	if(msgabort()) {
+		clearabort();
+		return NULL;
+	}
 	return(str);
 }
 
@@ -205,8 +207,10 @@ bool sbbs_t::removefcdt(file_t* f)
 			ultoa(cdt, str, 10);
 			bputs(text[CreditsToRemove]);
 			getstr(str, 10, K_NUMBER|K_LINE|K_EDIT|K_AUTODEL);
-			if(sys_status&SS_ABORT)
+			if(msgabort()) {
+				clearabort();
 				return false;
+			}
 			cdt = atol(str); 
 		}
 		adjustuserrec(&cfg,u,U_CDT,10,-cdt);
@@ -285,23 +289,26 @@ bool sbbs_t::editfilename(file_t* f)
 	SAFECOPY(str, f->name);
 	if(!getstr(str, sizeof(str) - 1, K_EDIT|K_AUTODEL))
 		return false;
-	if(strcmp(str,f->name) != 0) { /* rename */
-		if(stricmp(str,f->name)
-			&& findfile(&cfg, f->dir, path, NULL))
-			bprintf(text[FileAlreadyThere],path);
-		else {
-			SAFEPRINTF2(path,"%s%s",dirpath,f->name);
-			SAFEPRINTF2(tmp,"%s%s",dirpath,str);
-			if(fexistcase(path) && rename(path,tmp))
-				bprintf(text[CouldntRenameFile],path,tmp);
-			else {
-				bprintf(text[FileRenamed],path,tmp);
-				smb_new_hfield_str(f, SMB_FILENAME, str);
-				updatefile(&cfg, f);
-			} 
-		} 
+	if(msgabort()) {
+		clearabort();
+		return false;
 	}
-	return true;
+	if(strcmp(str,f->name) == 0)  
+		return true;
+	/* rename */
+	if(stricmp(str,f->name)	&& findfile(&cfg, f->dir, path, NULL)) {
+		bprintf(text[FileAlreadyThere],path);
+		return false;
+	}
+	SAFEPRINTF2(path,"%s%s",dirpath,f->name);
+	SAFEPRINTF2(tmp,"%s%s",dirpath,str);
+	if(fexistcase(path) && rename(path,tmp) != 0) {
+		bprintf(text[CouldntRenameFile],path,tmp);
+		return false;
+	}
+	bprintf(text[FileRenamed],path,tmp);
+	smb_new_hfield_str(f, SMB_FILENAME, str);
+	return updatefile(&cfg, f);
 }
 
 bool sbbs_t::editfiledesc(file_t* f)
@@ -311,11 +318,13 @@ bool sbbs_t::editfiledesc(file_t* f)
 	char fdesc[LEN_FDESC + 1];
 	SAFECOPY(fdesc, f->desc);
 	getstr(fdesc, sizeof(fdesc)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
-	if(sys_status&SS_ABORT)
+	if(msgabort()) {
+		clearabort();
 		return false;
-	if(strcmp(fdesc, f->desc))
-		smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
-
+	}
+	if(strcmp(fdesc, f->desc) == 0)
+		return true;
+	smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
 	return updatefile(&cfg, f);
 }
 
@@ -330,17 +339,21 @@ bool sbbs_t::editfileinfo(file_t* f)
 		if(f->tags != NULL)
 			SAFECOPY(tags, f->tags);
 		getstr(tags, sizeof(tags)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
-		if(sys_status&SS_ABORT)
+		if(msgabort()) {
+			clearabort();
 			return false;
+		}
 		if((f->tags == NULL && *tags != '\0') || (f->tags != NULL && strcmp(tags, f->tags)))
 			smb_new_hfield_str(f, SMB_TAGS, tags);
 	}
+#if 0
 	// Extended Description
 	if(f->extdesc != NULL && *f->extdesc) {
 		if(!noyes(text[DeleteExtDescriptionQ])) {
 			// TODO
 		} 
 	}
+#endif
 	if(dir_op(f->dir)) {
 		char uploader[LEN_ALIAS + 1];
 		SAFECOPY(uploader, f->from);
@@ -351,18 +364,24 @@ bool sbbs_t::editfileinfo(file_t* f)
 		ultoa(f->cost,str,10);
 		bputs(text[EditCreditValue]);
 		getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL);
-		if(sys_status&SS_ABORT)
+		if(msgabort()) {
+			clearabort();
 			return false;
+		}
 		f->cost = atol(str);
 		smb_new_hfield(f, SMB_COST, sizeof(f->cost), &f->cost);
 		ultoa(f->hdr.times_downloaded,str,10);
 		bputs(text[EditTimesDownloaded]);
 		getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL);
-		if(sys_status&SS_ABORT)
+		if(msgabort()) {
+			clearabort();
 			return false;
+		}
 		f->hdr.times_downloaded=atoi(str);
-		if(sys_status&SS_ABORT)
+		if(msgabort()) {
+			clearabort();
 			return false;
+		}
 		inputnstime32((time32_t*)&f->hdr.when_imported.time);
 	}
 	return updatefile(&cfg, f);
