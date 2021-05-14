@@ -122,10 +122,8 @@ char* sbbs_t::getfilespec(char *str)
 	bputs(text[FileSpecStarDotStar]);
 	if(!getstr(str, MAX_FILENAME_LEN, K_NONE))
 		strcpy(str, ALLFILES);
-	if(msgabort()) {
-		clearabort();
+	if(msgabort(true))
 		return NULL;
-	}
 	return(str);
 }
 
@@ -207,10 +205,8 @@ bool sbbs_t::removefcdt(file_t* f)
 			ultoa(cdt, str, 10);
 			bputs(text[CreditsToRemove]);
 			getstr(str, 10, K_NUMBER|K_LINE|K_EDIT|K_AUTODEL);
-			if(msgabort()) {
-				clearabort();
+			if(msgabort(true))
 				return false;
-			}
 			cdt = atol(str); 
 		}
 		adjustuserrec(&cfg,u,U_CDT,10,-cdt);
@@ -289,10 +285,8 @@ bool sbbs_t::editfilename(file_t* f)
 	SAFECOPY(str, f->name);
 	if(!getstr(str, sizeof(str) - 1, K_EDIT|K_AUTODEL))
 		return false;
-	if(msgabort()) {
-		clearabort();
+	if(msgabort(true))
 		return false;
-	}
 	if(strcmp(str,f->name) == 0)  
 		return true;
 	/* rename */
@@ -318,10 +312,8 @@ bool sbbs_t::editfiledesc(file_t* f)
 	char fdesc[LEN_FDESC + 1];
 	SAFECOPY(fdesc, f->desc);
 	getstr(fdesc, sizeof(fdesc)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
-	if(msgabort()) {
-		clearabort();
+	if(msgabort(true))
 		return false;
-	}
 	if(strcmp(fdesc, f->desc) == 0)
 		return true;
 	smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
@@ -339,10 +331,8 @@ bool sbbs_t::editfileinfo(file_t* f)
 		if(f->tags != NULL)
 			SAFECOPY(tags, f->tags);
 		getstr(tags, sizeof(tags)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
-		if(msgabort()) {
-			clearabort();
+		if(msgabort(true))
 			return false;
-		}
 		if((f->tags == NULL && *tags != '\0') || (f->tags != NULL && strcmp(tags, f->tags)))
 			smb_new_hfield_str(f, SMB_TAGS, tags);
 	}
@@ -364,24 +354,18 @@ bool sbbs_t::editfileinfo(file_t* f)
 		ultoa(f->cost,str,10);
 		bputs(text[EditCreditValue]);
 		getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL);
-		if(msgabort()) {
-			clearabort();
+		if(msgabort(true))
 			return false;
-		}
 		f->cost = atol(str);
 		smb_new_hfield(f, SMB_COST, sizeof(f->cost), &f->cost);
 		ultoa(f->hdr.times_downloaded,str,10);
 		bputs(text[EditTimesDownloaded]);
 		getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL);
-		if(msgabort()) {
-			clearabort();
+		if(msgabort(true))
 			return false;
-		}
 		f->hdr.times_downloaded=atoi(str);
-		if(msgabort()) {
-			clearabort();
+		if(msgabort(true))
 			return false;
-		}
 		inputnstime32((time32_t*)&f->hdr.when_imported.time);
 	}
 	return updatefile(&cfg, f);

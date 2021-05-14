@@ -1347,22 +1347,21 @@ int sbbs_t::attr(int atr)
 }
 
 /****************************************************************************/
-/* Checks to see if user has hit Pause or Abort. Returns 1 if user aborted. */
-/* If the user hit Pause, waits for a key to be hit.                        */
-/* Emulates remote XON/XOFF flow control on local console                   */
-/* Preserves SS_ABORT flag state, if already set.                           */
-/* Called from various listing procedures that wish to check for abort      */
+/* Checks to see if user has hit abort (Ctrl-C). Returns 1 if user aborted. */
+/* When 'clear' is false (the default), preserves SS_ABORT flag state.		*/
 /****************************************************************************/
-bool sbbs_t::msgabort()
+bool sbbs_t::msgabort(bool clear)
 {
 	static ulong counter;
 
 	if(sys_status&SS_SYSPAGE && !(++counter%100))
 		sbbs_beep(sbbs_random(800),1);
 
-	checkline();
-	if(sys_status&SS_ABORT)
+	if(sys_status&SS_ABORT) {
+		if(clear)
+			sys_status &= ~SS_ABORT;
 		return(true);
+	}
 	if(!online)
 		return(true);
 	return(false);
