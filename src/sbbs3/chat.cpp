@@ -691,11 +691,12 @@ bool sbbs_t::sysop_page(void)
 		|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron,&client))
 		|| useron.exempt&FLAG('C')) {
 
-		logline("C", "paged sysop for chat");
-		sprintf(str, "%s paged you to chat", useron.alias);
-		notify(&cfg, 1, str, NULL);
-
-		ftouch(syspage_semfile);
+		if(!(sys_status&SS_SYSPAGE)) {
+			logline("C", "paged sysop for chat");
+			sprintf(str, "%s paged you to chat", useron.alias);
+			notify(&cfg, 1, str, NULL);
+			ftouch(syspage_semfile);
+		}
 		for(i=0;i<cfg.total_pages;i++)
 			if(chk_ar(cfg.page[i]->ar,&useron,&client))
 				break;
