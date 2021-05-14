@@ -3,6 +3,7 @@
  * event thread.
  */
  
+#include <math.h>
 #include <unistd.h>
 #include <stdbool.h>
 

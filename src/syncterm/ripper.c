@@ -23,6 +23,7 @@
 #if defined(__unix__)
 	#include <unistd.h>
 #endif
+#include <time.h>
 #include <vidmodes.h>
 #include <xpbeep.h>
 
