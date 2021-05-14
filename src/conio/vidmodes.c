@@ -67,7 +67,7 @@ struct video_params vparams[] = {
 	/* BW 80x28 */
 	{BW80X28, GREYSCALE_PALETTE,          80, 28, 12, 13, 14, 8, 1, 7, 0,   1,    1, 640,  392},
 	/* BW 80x43 */
-	{BW80X43, GREYSCALE_PALETTE,          80, 43,  7,  7, 14, 8, 1, 7, 0,   1,    1, 640,  350},
+	{BW80X43, GREYSCALE_PALETTE,          80, 43,  7,  7, 14, 8, 1, 7, 0, 729, 1000, 640,  350},
 	/* BW 80x50 */
 	{BW80X50, GREYSCALE_PALETTE,          80, 50,  7,  7,  8, 8, 1, 7, 0, 833, 1000, 640,  400},
 	/* BW 80x60 */
@@ -87,11 +87,11 @@ struct video_params vparams[] = {
 	/* Magical C4350 Mode */
 	{C4350, COLOUR_PALETTE,               80, 50,  7,  7,  8, 8, 1, 7, 0, 833, 1000, 640,  400},
 	/* Commodore 64 40x25 mode */
-	{C64_40X25, C64_PALETTE,              40, 25,  0,  7,  8, 8, 1, 0x6e, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 1, 1, 320, 200},
+	{C64_40X25, C64_PALETTE,              40, 25,  0,  7,  8, 8, 1, 0x6e, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 240, 312, 320, 200},
 	/* Commodore 128 40x25 mode */
-	{C128_40X25, C64_PALETTE,             40, 25,  0,  7,  8, 8, 1, 0xbd, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 1, 1, 320, 200},
+	{C128_40X25, C64_PALETTE,             40, 25,  0,  7,  8, 8, 1, 0xbd, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 240, 312, 320, 200},
 	/* Commodore 128 80x25 mode */
-	{C128_80X25, COLOUR_PALETTE,          80, 25,  0,  7,  8, 8, 2, 7,    CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 1, 1, 640, 200},
+	{C128_80X25, COLOUR_PALETTE,          80, 25,  0,  7,  8, 8, 2, 7,    CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 240, 312, 640, 200},
 	/* Atari 800 40x24 mode */
 	{ATARI_40X24, ATARI_PALETTE,          40, 24,  0,  7,  8, 8, 1, 7, 0,   1,    1, 320,  192},
 	/* Atari 800 XEP80 80x25 mode */
