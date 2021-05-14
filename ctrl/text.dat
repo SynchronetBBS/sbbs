@@ -279,7 +279,7 @@
 "\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\         230 FileAddedToUlQueue
 	"\1c - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
 "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              231 FileInfoEditPrompt
-	"\1w~E\1ydit info, "\
+	"\1w~E\1ydit info/\1w~D\1yesc, "\
 	"\1w~V\1yiew file, "\
 	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
 "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
@@ -287,7 +287,7 @@
 	"\1w~V\1yiew file, "\
 	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
 "\r\n~Quit or [~Next]: "                                233 QuitOrNext
-"~Remove, ~Move, ~Edit, ~View, ~Quit, ~Prev or [~Next]: " 234 RExemptRemoveFilePrompt
+"~Remove, ~Move, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: " 234 RExemptRemoveFilePrompt
 "\1n(%d) %s\r\n"                                         235 MoveToLibLstFmt
 "\1_\r\n\1y\1hLibrary [%d]: \1n"                            236 MoveToLibPrompt
 "\1n(%d) %s\r\n"                                         237 MoveToDirLstFmt
@@ -295,8 +295,8 @@
 "%s moved to %s %s.\r\n"                                239 MovedFile
 "\r\nClose file record"                                 240 CloseFileRecordQ
 "~Remove, ~Credits only, ~File only, ~Move, ~Edit, "\   241 SysopRemoveFilePrompt
-	"~View, ~Quit, ~Prev or [~Next]: "
-"~Remove, ~Edit, ~View, ~Quit, ~Prev or [~Next]: "      242 UserRemoveFilePrompt
+	"~Desc, ~View, ~Quit, ~Prev or [~Next]: "
+"~Remove, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: "   242 UserRemoveFilePrompt
 "\r\n\1n\1r\1hFile does not exist: \1c%s\1n\r\n"        243 FileDoesNotExist
 "\7\r\n\1r\1h\1iCouldn't remove '%s'.\1n\r\n"               244 CouldntRemoveFile
 "Delete file"                                           245 DeleteFileQ
@@ -306,7 +306,7 @@
 "\1_\1y\1hCredits to remove: \1n"                           249 CreditsToRemove
 "\1_\1w\1h%s was removed.\r\n"\                            250 FileRemovedUserMsg
 	"\1n\1gYou lost %s credits.\r\n"
-"\1_\r\n\1y\1hFilename         : \1n"                       251 EditFilename
+"\1_\1?\1y\1hFilename         : \1n"                        251 EditFilename
 "\r\n\1r\1h\1iError renaming %s to %s\1n\r\n"               252 CouldntRenameFile
 "%s renamed to %s\r\n"                                  253 FileRenamed
 "\1_\1y\1hDescription      : \1n"                           254 EditDescription
