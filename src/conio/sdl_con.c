@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>		/* NULL */
 #include <stdlib.h>
 #include <string.h>
