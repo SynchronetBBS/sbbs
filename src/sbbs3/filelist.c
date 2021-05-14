@@ -340,7 +340,7 @@ int main(int argc, char **argv)
 			t = time(NULL) - (max_age * 24 * 60 * 60);
 		ulong file_count;
 		file_t* file_list = loadfiles(&smb
-			,/* filespec: */pattern, /* time: */t, /* extdesc: */TRUE, scfg.dir[i]->sort, &file_count);
+			,/* filespec: */pattern, /* time: */t, file_detail_extdesc, scfg.dir[i]->sort, &file_count);
 
 		if(misc&AUTO) {
 			sprintf(str,"%sFILES.BBS",scfg.dir[i]->path);
