@@ -278,7 +278,10 @@
 "\r\n\7\1r\1h\1iBatch upload queue is full.\1n\r\n"         229 BatchUlQueueIsFull
 "\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\         230 FileAddedToUlQueue
 	"\1c - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
-"Unused 231"                                               231 UserToUserXferNodeMsg
+"\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              231 FileInfoEditPrompt
+	"\1w~E\1ydit info, "\
+	"\1w~V\1yiew file, "\
+	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
 "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
