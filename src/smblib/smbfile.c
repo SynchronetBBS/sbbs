@@ -385,6 +385,7 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 {
 	int result;
 	int removed = 0;
+	char fname[SMB_FILEIDX_NAMELEN + 1] = "";
 
 	if(!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
@@ -411,6 +412,7 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 	smb_close_da(smb);
 
 	// Now remove from index:
+	smb_fileidxname(file->name, fname, sizeof(fname));
 	if(result == SMB_SUCCESS) {
 		rewind(smb->sid_fp);
 		fileidxrec_t* fidx = malloc(smb->status.total_files * sizeof(*fidx));
@@ -425,7 +427,7 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 		}
 		rewind(smb->sid_fp);
 		for(uint32_t i = 0; i < smb->status.total_files; i++) {
-			if(stricmp(fidx[i].name, file->name) == 0) {
+			if(stricmp(fidx[i].name, fname) == 0) {
 				removed++;
 				continue;
 			}
@@ -439,8 +441,8 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 		free(fidx);
 		if(result == SMB_SUCCESS) {
 			if(removed < 1) {
-				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s name found: %s"
-					,__FUNCTION__, file->name);
+				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s name not found: %s"
+					,__FUNCTION__, fname);
 				result = SMB_ERR_NOT_FOUND;
 			} else {
 				fflush(smb->sid_fp);
