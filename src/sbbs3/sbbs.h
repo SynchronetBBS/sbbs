@@ -737,7 +737,7 @@ public:
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
 	char	putmsg(const char *str, long mode, long org_cols = 0, JSObject* obj = NULL);
 	char	putmsgfrag(const char* str, long& mode, long org_cols = 0, JSObject* obj = NULL);
-	bool	msgabort(void);
+	bool	msgabort(bool clear = false);
 	void	clearabort() { sys_status &= ~SS_ABORT; }
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
