@@ -2554,6 +2554,8 @@ struct bbslist *show_bbslist(char *current, int connected)
                             i=ti.currmode;
                             i=ciolib_to_screen(ti.currmode);
                             i--;
+                            if (i < 0)
+				i = 0;
                             j=i;
                             i=uifc.list(WIN_SAV,0,0,0,&i,&j,"Screen Mode",screen_modes+1);
                             if(i>=0) {
