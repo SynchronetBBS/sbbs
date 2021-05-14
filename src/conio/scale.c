@@ -1,34 +1,113 @@
 #include "scale.h"
 #include "xbr.h"
 
+uint32_t r2y[1<<24];
+uint32_t y2r[1<<24];
+static int r2y_inited;
+
 static void pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height);
+static void interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight);
+static void multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, int xmult, int ymult);
 
-uint32_t*
-do_scale(struct rectlist* rect, uint32_t **target, size_t *targetsz, int* xscale, int* yscale, int* w, int* h)
+static struct graphics_buffer *free_list;
+
+#define CLAMP(x) do { \
+	if (x < 0) \
+		x = 0; \
+	else if (x > 255) \
+		x = 255; \
+} while(0)
+
+void
+init_r2y(void)
 {
+	int r, g, b;
+	int y, u, v;
+	const double luma = 255.0 / 219;
+	const double col  = 255.0 / 224;
+
+	if (r2y_inited)
+		return;
+	for (r = 0; r < 256; r++) {
+		for (g = 0; g < 256; g++) {
+			for (b = 0; b < 256; b++) {
+				y =  16 + ( 65.738 * r + 129.057 * g +  25.064 * b + 128) / 256;
+				CLAMP(y);
+				u = 128 + (-37.945 * r -  74.494 * g + 112.439 * b + 128) / 256;
+				CLAMP(u);
+				v = 128 + (112.439 * r -  94.154 * g -  18.285 * b + 128) / 256;
+				CLAMP(v);
+
+				r2y[(r<<16) | (g<<8) | b] = (y<<16)|(u<<8)|v;
+			}
+		}
+	}
+	for (y = 0; y < 256; y++) {
+		for (u = 0; u < 256; u++) {
+			for (v = 0; v < 256; v++) {
+				const int c = y - 16;
+				const int d = u - 128;
+				const int e = v - 128;
+				r = luma * c                                     + col * 1.402 * e;
+				CLAMP(r);
+				g = luma * c - col * 1.772 * (0.114 / 0.587) * d - col * 1.402 * (0.299 / 0.587) * e;
+				CLAMP(g);
+				b = luma * c + col * 1.772 * d;
+				CLAMP(b);
+
+				y2r[(y<<16) | (u<<8) | v] = (r<<16)|(g<<8)|b;
+			}
+		}
+	}
+	r2y_inited = 1;
+}
+
+struct graphics_buffer *
+get_buffer(void)
+{
+	struct graphics_buffer* ret = NULL;
+
+	if (free_list) {
+		ret = free_list;
+		free_list = free_list->next;
+		ret->next = NULL;
+		return ret;
+	}
+
+	ret = calloc(1, sizeof(struct graphics_buffer));
+	return ret;
+}
+
+void
+release_buffer(struct graphics_buffer *buf)
+{
+	buf->next = free_list;
+	free_list = buf;
+}
+
+struct graphics_buffer *
+do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
+{
+	struct graphics_buffer* ret1 = get_buffer();
+	struct graphics_buffer* ret2 = get_buffer();
 	int pointy5 = 0;
 	int pointy3 = 0;
 	int xbr2 = 0;
 	int xbr4 = 0;
+	int ymult = 1;
+	int xmult = 1;
 	int newscale = 1;
-	int total_scaling = 1;
-	static uint32_t *tmptarget = NULL;
-	static size_t tmptargetsz = 0;
-	uint32_t *ctarget;
-	uint32_t *csrc = rect->data;
+	int total_xscaling = 1;
+	int total_yscaling = 1;
+	struct graphics_buffer *ctarget;
+	struct graphics_buffer *csrc;
 	uint32_t* nt;
-	int swidth = rect->rect.width;
-	int sheight = rect->rect.height;
+	int fheight;
 
-	*w = rect->rect.width;
-	*h = rect->rect.height;
-	// As a first pass, only do equal integer scaling
-	if (*xscale != *yscale)
-		return rect->data;
 	switch (*xscale) {
 		case 1:
-			return rect->data;
+			break;
 		case 2:
 			xbr2 = 1;
 			break;
@@ -45,105 +124,155 @@ do_scale(struct rectlist* rect, uint32_t **target, size_t *targetsz, int* xscale
 			pointy3 = 1;
 			xbr2 = 1;
 			break;
+		case 7:	// TODO: Do we want a pointy7 and pointy11?
+			xmult = 7;
+			ymult = 7;
+			break;
 		default:
-			total_scaling = *xscale;
+			total_xscaling = *xscale;
 			*xscale = 1;
-			while (total_scaling > 1 && ((total_scaling % 5) == 0)) {
+			total_yscaling = *yscale;
+			*yscale = 1;
+			while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
 				pointy5++;
-				total_scaling /= 5;
+				total_xscaling /= 5;
 				*xscale *= 5;
+				total_yscaling /= 5;
+				*yscale *= 5;
 			}
-			while (total_scaling > 1 && ((total_scaling % 3) == 0)) {
+			while (total_xscaling > 1 && ((total_xscaling % 3) == 0) && ((total_yscaling % 3) == 0)) {
 				pointy3++;
-				total_scaling /= 3;
+				total_xscaling /= 3;
 				*xscale *= 3;
+				total_yscaling /= 3;
+				*yscale *= 3;
 			}
-			while (total_scaling > 1 && ((total_scaling % 4) == 0)) {
+			while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
 				xbr4++;
-				total_scaling /= 4;
+				total_xscaling /= 4;
 				*xscale *= 4;
+				total_yscaling /= 4;
+				*yscale *= 4;
 			}
-			while (total_scaling > 1 && ((total_scaling % 2) == 0)) {
+			while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
 				xbr2++;
-				total_scaling /= 2;
+				total_xscaling /= 2;
 				*xscale *= 2;
+				total_yscaling /= 2;
+				*yscale *= 2;
 			}
-			if (*xscale == 1)
-				return rect->data;
 			break;
 	}
 
-	// Now make sure target is big enough...
-	size_t needsz = rect->rect.width * rect->rect.height * (*xscale) * (*xscale) * sizeof(uint32_t);
-	if (needsz > *targetsz) {
-		nt = realloc(*target, needsz);
-		if (nt == NULL)
-			return rect->data;
-		*target = nt;
-		*targetsz = needsz;
-	}
-	ctarget = *target;
-
-	// And if we need an extra target, do the same there...
-	if (pointy3 + pointy5 + xbr4 + xbr2 > 1) {
-		if (needsz > tmptargetsz) {
-			nt = realloc(tmptarget, needsz);
-			if (nt == NULL)
-				return rect->data;
-			tmptarget = nt;
-			tmptargetsz = needsz;
-		}
-	}
-
-	// And finally, scale...
-	while (xbr4 > 0) {
-		xbr_filter(csrc, ctarget, swidth, sheight, 4);
-		xbr4--;
-		swidth *= 4;
-		sheight *= 4;
-		csrc = ctarget;
-		if (ctarget == tmptarget)
-			ctarget = *target;
+	if (*xscale != *yscale) {
+		if (*yscale == *xscale * 2)
+			ymult *= 2;
 		else
-			ctarget = tmptarget;
+			return NULL;
+	}
+
+	// Calculate the scaled height from ratio...
+	fheight = lround((double)(rect->rect.height * (*yscale)) / ratio);
+
+	// Now make sure target is big enough...
+	size_t needsz = rect->rect.width * (*xscale) * fheight * sizeof(uint32_t);
+	if (needsz > ret1->sz) {
+		nt = realloc(ret1->data, needsz);
+		if (nt == NULL)
+			return NULL;
+		ret1->data = nt;
+		ret1->sz = needsz;
+	}
+
+	if (needsz > ret2->sz) {
+		nt = realloc(ret2->data, needsz);
+		if (nt == NULL)
+			return NULL;
+		ret2->data = nt;
+		ret2->sz = needsz;
+	}
+
+	// Copy rect into first buffer
+	// TODO: Unify bitmap rects and scaling buffers so this can just whomp on over.
+	csrc = ret1;
+	ctarget = ret2;
+	memcpy(csrc->data, rect->data, rect->rect.width * rect->rect.height * sizeof(rect->data[0]));
+	csrc->w = rect->rect.width;
+	csrc->h = rect->rect.height;
+
+	// And scale...
+	if (ymult != 1 || xmult != 1) {
+		multiply_scale(csrc->data, ctarget->data, csrc->w, csrc->h, xmult, ymult);
+		ctarget->w = csrc->w * xmult;
+		ctarget->h = csrc->h * ymult;
+		ymult = 1;
+		xmult = 1;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
+	}
+	while (xbr4 > 0) {
+		xbr_filter(csrc->data, ctarget->data, csrc->w, csrc->h, 4);
+		xbr4--;
+		ctarget->w = csrc->w * 4;
+		ctarget->h = csrc->h * 4;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
 	}
 	while (xbr2 > 0) {
-		xbr_filter(csrc, ctarget, swidth, sheight, 2);
+		xbr_filter(csrc->data, ctarget->data, csrc->w, csrc->h, 2);
 		xbr2--;
-		swidth *= 2;
-		sheight *= 2;
+		ctarget->w = csrc->w * 2;
+		ctarget->h = csrc->h * 2;
 		csrc = ctarget;
-		if (ctarget == tmptarget)
-			ctarget = *target;
+		if (ctarget == ret1)
+			ctarget = ret2;
 		else
-			ctarget = tmptarget;
+			ctarget = ret1;
 	}
 	while (pointy5 > 0) {
-		pointy_scale5(csrc, ctarget, swidth, sheight);
+		pointy_scale5(csrc->data, ctarget->data, csrc->w, csrc->h);
 		pointy5--;
-		swidth *= 5;
-		sheight *= 5;
+		ctarget->w = csrc->w * 5;
+		ctarget->h = csrc->h * 5;
 		csrc = ctarget;
-		if (ctarget == tmptarget)
-			ctarget = *target;
+		if (ctarget == ret1)
+			ctarget = ret2;
 		else
-			ctarget = tmptarget;
+			ctarget = ret1;
 	}
 	while (pointy3 > 0) {
-		pointy_scale3(csrc, ctarget, swidth, sheight);
+		pointy_scale3(csrc->data, ctarget->data, csrc->w, csrc->h);
 		pointy3--;
-		swidth *= 3;
-		sheight *= 3;
+		ctarget->w = csrc->w * 3;
+		ctarget->h = csrc->h * 3;
 		csrc = ctarget;
-		if (ctarget == tmptarget)
-			ctarget = *target;
+		if (ctarget == ret1)
+			ctarget = ret2;
 		else
-			ctarget = tmptarget;
+			ctarget = ret1;
 	}
-	*w *= *xscale;
-	*h *= *xscale;
+
+	// And finally, interpolate if needed
+	if (ratio != 1) {
+		interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
+		ctarget->h = fheight;
+		ctarget->w = csrc->w;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
+	}
+
 	*xscale = newscale;
 	*yscale = newscale;
+	release_buffer(ctarget);
 	return csrc;
 }
 
@@ -337,5 +466,95 @@ pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height)
 		d += w6;
 		if (y == 0)
 			prevline = -width;
+	}
+}
+
+static __attribute__((always_inline))
+uint32_t blend(const uint32_t c1, const uint32_t c2, const double weight)
+{
+	uint8_t yuv1[4];
+	uint8_t yuv2[4];
+	int y, u, v;
+	const double iw = 1.0 - weight;
+
+	*(uint32_t *)yuv1 = r2y[c1];
+	*(uint32_t *)yuv2 = r2y[c2];
+#ifdef __BIG_ENDIAN__
+	y = yuv1[1] * iw + yuv2[1] * weight;
+	u = yuv1[2] * iw + yuv2[2] * weight;
+	v = yuv1[3] * iw + yuv2[3] * weight;
+#else
+	y = yuv1[2] * iw + yuv2[2] * weight;
+	u = yuv1[1] * iw + yuv2[1] * weight;
+	v = yuv1[0] * iw + yuv2[0] * weight;
+#endif
+	CLAMP(y);
+	CLAMP(u);
+	CLAMP(v);
+
+	return y2r[(y<<16)|(u<<8)|v];
+}
+
+/*
+ * This does non-integer *height* scaling.  It does not scale in the other
+ * direction.  This does the interpolation using Y'UV to prevent dimming of
+ * pixels.
+ */
+static void
+interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight)
+{
+	int x, y;
+	const double mult = (double)height / newheight;
+
+	for (y = 0; y < newheight; y++) {
+		for (x = 0; x < width; x++) {
+			// First, calculate which two pixels this is between.
+			const double ypos = mult * y;
+			const int yposi = ypos;
+			if (y == ypos) {
+				// Exact match!
+				*dst = src[width * yposi + x];
+			}
+			else {
+				const double weight = ypos - yposi;
+				// Now pick the two pixels
+				const uint32_t pix1 = src[yposi * width + x] & 0xffffff;
+				uint32_t pix2;
+				if (yposi < height - 1)
+					pix2 = src[(yposi + 1) * width + x] & 0xffffff;
+				else
+					pix2 = src[yposi * width + x] & 0xffffff;
+				if (pix1 == pix2)
+					*dst = pix1;
+				else {
+					*dst = blend(pix1, pix2, weight);
+				}
+			}
+			dst++;
+		}
+	}
+}
+
+static void
+multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, int xmult, int ymult)
+{
+	int nheight = height * ymult;
+	int nwidth = width * xmult;
+	int x, y;
+	int mx, my;
+	uint32_t* slstart;
+
+	for (y = 0; y < height; y++) {
+		slstart = src;
+		for (my = 0; my < ymult; my++) {
+			src = slstart;
+			for (x = 0; x < width; x++) {
+				for (mx = 0; mx < xmult; mx++) {
+					*dst = *src;
+					dst++;
+				}
+				src++;
+			}
+		}
 	}
 }

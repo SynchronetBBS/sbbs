@@ -30,6 +30,7 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include "scale.h"
 
 #define LB_MASK       0x00FEFEFE
 #define RED_BLUE_MASK 0x00FF00FF
@@ -38,8 +39,6 @@
 #ifdef PI
 #undef PI
 #endif
-
-uint32_t r2y[1<<24];
 
 static uint32_t pixel_diff(uint32_t x, uint32_t y)
 {
@@ -189,6 +188,13 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y)
         }                                                                                           \
     }                                                                                               \
 } while (0)
+
+#define CLAMP(x) do { \
+	if (x < 0) \
+		x = 0; \
+	else if (x > 255) \
+		x = 255; \
+} while(0)
 
 void
 xbr_filter(uint32_t *data, uint32_t *out, int width, int height, int n)

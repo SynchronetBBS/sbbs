@@ -85,7 +85,7 @@ static unsigned long base_pixel;
 static int r_shift;
 static int g_shift;
 static int b_shift;
-static struct rectlist *last = NULL;
+static struct graphics_buffer *last = NULL;
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -208,9 +208,13 @@ static struct {
 
 static void resize_xim(void)
 {
+	int width = bitmap_width * x_cvstat.scaling;
+	double ratio = (double)x_cvstat.scale_numerator / x_cvstat.scale_denominator;
+	int height = lround((double)(bitmap_height * x_cvstat.scaling * x_cvstat.vmultiplier) / ratio);
+
 	if (xim) {
-		if (bitmap_width*x_cvstat.scaling == xim->width
-		    && bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier == xim->height) {
+		if (width == xim->width
+		    && height == xim->height) {
 			return;
 		}
 #ifdef XDestroyImage
@@ -220,11 +224,11 @@ static void resize_xim(void)
 #endif
 	}
 	if (last) {
-		bitmap_drv_free_rect(last);
+		release_buffer(last);
 		last = NULL;
 	}
-    xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,bitmap_width*x_cvstat.scaling,bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier,32,0);
-    xim->data=(char *)malloc(xim->bytes_per_line*xim->height);
+	xim = x11.XCreateImage(dpy, &visual, depth, ZPixmap, 0, NULL, width, height, 32, 0);
+	xim->data=(char *)calloc(1, xim->bytes_per_line*xim->height);
 }
 
 /* Swiped from FreeBSD libc */
@@ -346,6 +350,7 @@ static int init_window()
 static void map_window()
 {
     XSizeHints *sh;
+	int scaled_height;
 
     sh = x11.XAllocSizeHints();
     if (sh == NULL) {
@@ -357,7 +362,9 @@ static void map_window()
 	sh->base_height = bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier;
 
     sh->min_width = sh->width_inc = sh->min_aspect.x = sh->max_aspect.x = bitmap_width;
-    sh->min_height = sh->height_inc = sh->min_aspect.y = sh->max_aspect.y = bitmap_height;
+
+	scaled_height = ceil((double)bitmap_height*x_cvstat.vmultiplier / ((double)x_cvstat.scale_numerator / x_cvstat.scale_denominator));
+    sh->min_height = sh->height_inc = sh->min_aspect.y = sh->max_aspect.y = scaled_height;
     sh->flags = USSize | PMinSize | PSize | PResizeInc | PAspect;
 
     x11.XSetWMNormalHints(dpy, win, sh);
@@ -371,10 +378,11 @@ static void map_window()
 /* Resize the window. This function is called after a mode change. */
 static void resize_window()
 {
-    x11.XResizeWindow(dpy, win, bitmap_width*x_cvstat.scaling, bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier);
-    resize_xim();
+	int scaled_height = ceil((double)bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier / ((double)x_cvstat.scale_numerator / x_cvstat.scale_denominator));
+	x11.XResizeWindow(dpy, win, bitmap_width*x_cvstat.scaling, scaled_height);
+	resize_xim();
 
-    return;
+	return;
 }
 
 static void init_mode_internal(int mode)
@@ -386,7 +394,7 @@ static void init_mode_internal(int mode)
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	if (last) {
-		bitmap_drv_free_rect(last);
+		release_buffer(last);
 		last = NULL;
 	}
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
@@ -451,7 +459,6 @@ static void local_draw_rect(struct rectlist *rect)
 {
 	int x,y,xscale,yscale,xoff=0,yoff=0;
 	int xscaling, yscaling;
-	int rxscaling, ryscaling;
 	unsigned int r, g, b;
 	unsigned long pixel;
 	int cleft;
@@ -459,14 +466,9 @@ static void local_draw_rect(struct rectlist *rect)
 	int ctop;
 	int cbottom = -1;
 	int idx;
-	int ridx;
-	int ridx_part;
 	uint32_t last_pixel = 0x55555555;
-	static uint32_t* target = NULL;
-	size_t targetsz = 0;
-	uint32_t* source;
-	int width, height;
-	int lheight, lines;
+	struct graphics_buffer *source;
+	int lines;
 
 	if (bitmap_width != rect->rect.width || bitmap_height != rect->rect.height)
 		return;
@@ -481,23 +483,32 @@ static void local_draw_rect(struct rectlist *rect)
 	// Scale...
 	xscaling = x_cvstat.scaling;
 	yscaling = x_cvstat.scaling*x_cvstat.vmultiplier;
-	source = do_scale(rect, &target, &targetsz, &xscaling, &yscaling, &width, &height);
-	rxscaling = width / rect->rect.width;
-	ryscaling = height / rect->rect.height;
-	cleft = width;
-	ctop = height;
+	source = do_scale(rect, &xscaling, &yscaling, (double)x_cvstat.scale_numerator / x_cvstat.scale_denominator);
+	bitmap_drv_free_rect(rect);
+	if (source == NULL)
+		return;
+	cleft = source->w;
+	ctop = source->h;
 	lines = 0;
-	lheight = x_cvstat.charheight * ryscaling;
+
+	xoff = (x11_window_width - source->w) / 2;
+	if (xoff < 0)
+		xoff = 0;
+	yoff = (x11_window_height - source->h) / 2;
+	if (yoff < 0)
+		yoff = 0;
+
+	if (last && (last->w != source->w || last->h != source->h)) {
+		release_buffer(last);
+		last = NULL;
+	}
 
 	/* TODO: Translate into local colour depth */
-	for(y=0;y<height;y++) {
-		idx = y * width;
-		ridx = y / ryscaling * rect->rect.width;
-		ridx_part = 0;
-		for(x=0; x<width; x++) {
+	idx = 0;
+	for (y = 0; y < source->h; y++) {
+		for (x = 0; x < source->w; x++) {
 			if (last) {
-				// TODO: Based on source pixel, not target pixel. :(
-				if (last->data[ridx] != rect->data[ridx]) {
+				if (last->data[idx] != source->data[idx]) {
 					if (x < cleft)
 						cleft = x;
 					if (x > cright)
@@ -508,29 +519,15 @@ static void local_draw_rect(struct rectlist *rect)
 						cbottom = y;
 				}
 				else {
-					if (source == rect->data) {
-						idx += (rxscaling);
-						x += (rxscaling - 1);
-						ridx++;
-						continue;
-					}
-					else {
-						if (cright < x - rxscaling * 2
-						    && (x >= width - (rxscaling * 3)
-						    || last->data[ridx + 1] == rect->data[ridx + 1])) {
-							idx += (rxscaling);
-							x += (rxscaling - 1);
-							ridx++;
-							continue;
-						}
-					}
+					idx++;
+					continue;
 				}
 			}
-			if (last_pixel != source[idx]) {
-				last_pixel = source[idx];
-				r = source[idx] >> 16 & 0xff;
-				g = source[idx] >> 8 & 0xff;
-				b = source[idx] & 0xff;
+			if (last_pixel != source->data[idx]) {
+				last_pixel = source->data[idx];
+				r = source->data[idx] >> 16 & 0xff;
+				g = source->data[idx] >> 8 & 0xff;
+				b = source->data[idx] & 0xff;
 				r = (r<<8)|r;
 				g = (g<<8)|g;
 				b = (b<<8)|b;
@@ -560,54 +557,36 @@ static void local_draw_rect(struct rectlist *rect)
 				}
 			}
 			idx++;
-			ridx_part++;
-			if (ridx_part >= rxscaling) {
-				ridx_part = 0;
-				ridx++;
-			}
 		}
 		lines++;
 		/* This line was changed */
-		if (last && ((lines == lheight) || (y == height - 1)) && cright >= 0) {
-#ifdef USE_XBRZ
-			if (source != rect->data) {
-				cleft -= 2 * rxscaling;
-				if (cleft < 0)
-					cleft = 0;
-				cright += 2 * rxscaling;
-				if (cright >= width)
-					cright = width - 1;
-			}
-#endif
+		// TODO: Previously this did one update per display line...
+		if (last && (cbottom != y || y == source->h - 1) && cright >= 0) {
 			lines = 0;
 			x11.XPutImage(dpy, win, gc, xim, cleft * xscaling, ctop * yscaling
 			    , cleft * xscaling + xoff, ctop * yscaling + yoff
 			    , (cright - cleft + 1) * xscaling, (cbottom - ctop + 1) * yscaling);
-			cleft = width;
+			cleft = source->w;
 			cright = cbottom = -100;
-			ctop = height;
+			ctop = source->h;
 		}
 	}
 
 	if (last == NULL)
-		x11.XPutImage(dpy, win, gc, xim, rect->rect.x*xscaling, rect->rect.y*yscaling, rect->rect.x*xscaling + xoff, rect->rect.y*yscaling + yoff, width * xscaling, height * yscaling);
+		x11.XPutImage(dpy, win, gc, xim, rect->rect.x*xscaling, rect->rect.y*yscaling, rect->rect.x*xscaling + xoff, rect->rect.y*yscaling + yoff, source->w * xscaling, source->h * yscaling);
 	else
-		bitmap_drv_free_rect(last);
-	last = rect;
+		release_buffer(last);
+	last = source;
 }
 
 static void handle_resize_event(int width, int height)
 {
 	int newFSH=1;
 	int newFSW=1;
-
-	// No change
-	if((width == x_cvstat.charwidth * x_cvstat.cols * x_cvstat.scaling)
-			&& (height == x_cvstat.charheight * x_cvstat.rows * x_cvstat.scaling*x_cvstat.vmultiplier))
-		return;
+	double ratio = (double)x_cvstat.scale_numerator / x_cvstat.scale_denominator;
 
 	newFSH=width/bitmap_width;
-	newFSW=height/bitmap_height;
+	newFSW=floor((double)height / bitmap_height * ratio);
 	if(newFSW<1)
 		newFSW=1;
 	if(newFSH<1)
@@ -627,9 +606,11 @@ static void handle_resize_event(int width, int height)
 	 */
 	if (newFSH != newFSW)
 		resize_window();
+#if 0	// TODO: Is this even worth looking at?
 	else if((width % (x_cvstat.charwidth * x_cvstat.cols) != 0)
 			|| (height % (x_cvstat.charheight * x_cvstat.rows) != 0))
 		resize_window();
+#endif
 	else
 		resize_xim();
 	bitmap_drv_request_pixels();
@@ -680,7 +661,7 @@ static void expose_rect(int x, int y, int width, int height)
 
 	/* Since we're exposing, we *have* to redraw */
 	if (last) {
-		bitmap_drv_free_rect(last);
+		release_buffer(last);
 		last = NULL;
 		bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 	}
