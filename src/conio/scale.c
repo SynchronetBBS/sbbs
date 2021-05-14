@@ -7,6 +7,7 @@ static int r2y_inited;
 
 static void pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height);
+static void pointy_scale_odd(uint32_t* src, uint32_t* dest, int width, int height, int mult);
 static void interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight);
 static void interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwidth);
 static void multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, int xmult, int ymult);
@@ -92,6 +93,7 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 {
 	struct graphics_buffer* ret1 = get_buffer();
 	struct graphics_buffer* ret2 = get_buffer();
+	int pointymult = 1;
 	int pointy5 = 0;
 	int pointy3 = 0;
 	int xbr2 = 0;
@@ -126,15 +128,24 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 			pointy3 = 1;
 			xbr2 = 1;
 			break;
-		case 7:	// TODO: Do we want a pointy7 and pointy11?
-			xmult = 7;
-			ymult = 7;
+		case 7:
+			pointymult = 7;
+			break;
+		case 13:
+			pointymult = 13;
 			break;
 		default:
 			total_xscaling = *xscale;
 			*xscale = 1;
 			total_yscaling = *yscale;
 			*yscale = 1;
+			if ((total_xscaling & 1) == 1 && (total_xscaling == total_yscaling || total_xscaling == total_yscaling * 2)) {
+				pointymult = total_xscaling;
+				total_xscaling /= pointymult;
+				*xscale *= pointymult;
+				total_yscaling /= pointymult;
+				*yscale *= pointymult;
+			}
 			while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
 				pointy5++;
 				total_xscaling /= 5;
@@ -211,6 +222,39 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 	csrc->h = rect->rect.height;
 
 	// And scale...
+	if (pointymult > 1 && pointymult & 1) {
+		pointy_scale_odd(csrc->data, ctarget->data, csrc->w, csrc->h, pointymult);
+		ctarget->w = csrc->w * pointymult;
+		ctarget->h = csrc->h * pointymult;
+		pointymult = 1;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
+	}
+	while (pointy5 > 0) {
+		pointy_scale5(csrc->data, ctarget->data, csrc->w, csrc->h);
+		pointy5--;
+		ctarget->w = csrc->w * 5;
+		ctarget->h = csrc->h * 5;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
+	}
+	while (pointy3 > 0) {
+		pointy_scale3(csrc->data, ctarget->data, csrc->w, csrc->h);
+		pointy3--;
+		ctarget->w = csrc->w * 3;
+		ctarget->h = csrc->h * 3;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
+	}
 	if (ymult != 1 || xmult != 1) {
 		multiply_scale(csrc->data, ctarget->data, csrc->w, csrc->h, xmult, ymult);
 		ctarget->w = csrc->w * xmult;
@@ -245,28 +289,6 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 		else
 			ctarget = ret1;
 	}
-	while (pointy5 > 0) {
-		pointy_scale5(csrc->data, ctarget->data, csrc->w, csrc->h);
-		pointy5--;
-		ctarget->w = csrc->w * 5;
-		ctarget->h = csrc->h * 5;
-		csrc = ctarget;
-		if (ctarget == ret1)
-			ctarget = ret2;
-		else
-			ctarget = ret1;
-	}
-	while (pointy3 > 0) {
-		pointy_scale3(csrc->data, ctarget->data, csrc->w, csrc->h);
-		pointy3--;
-		ctarget->w = csrc->w * 3;
-		ctarget->h = csrc->h * 3;
-		csrc = ctarget;
-		if (ctarget == ret1)
-			ctarget = ret2;
-		else
-			ctarget = ret1;
-	}
 
 	// And finally, interpolate if needed
 	if (ratio < 1) {
@@ -295,6 +317,110 @@ do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio)
 	*yscale = newscale;
 	release_buffer(ctarget);
 	return csrc;
+}
+
+static void
+pointy_scale_odd(uint32_t* src, uint32_t* dest, int width, int height, int mult)
+{
+	int x, y;
+	uint32_t* s;
+	uint32_t* d;
+	int prevline, prevcol, nextline, nextcol;
+	int i, j;
+	int mid = mult / 2;
+	int multoff = mult - 1;
+	int dline = width * mult;
+	int dbott;
+	int dstripe = dline * mult;
+
+	s = src;
+	d = dest;
+	prevline = 0;
+	nextline = width;
+	for (y = 0; y < height; y++) {
+		if (y == height - 1)
+			nextline = 0;
+		prevcol = 0;
+		nextcol = 1;
+		for (x = 0; x < width; x++) {
+			if (x == width - 1)
+				nextcol = 0;
+
+			for (i = 0; i < mid; i++) {
+				d = &dest[dstripe * y + dline * i + x * mult];
+				dbott = dline * (multoff - i * 2);
+
+				for (j = 0; j < mid - i; j++) {
+					if (s[prevline + prevcol] == s[0]) {
+						d[j] = s[0];
+					}
+					else if (s[prevline] == s[prevcol]) {
+						d[j] = s[prevcol];
+					}
+					else {
+						d[j] = s[0];
+					}
+
+					if (s[prevline + nextcol] == s[0]) {
+						d[multoff - j] = s[0];
+					}
+					else if (s[prevline] == s[nextcol]) {
+						d[multoff - j] = s[nextcol];
+					}
+					else {
+						d[multoff - j] = s[0];
+					}
+
+					if (s[prevcol + nextline] == s[0]) {
+						d[dbott + j] = s[0];
+					}
+					else if(s[prevcol] == s[nextline]) {
+						d[dbott + j] = s[prevcol];
+					}
+					else {
+						d[dbott + j] = s[0];
+					}
+
+					if (s[nextcol + nextline] == s[0]) {
+						d[dbott + multoff - j] = s[0];
+					}
+					else if (s[nextcol] == s[nextline]) {
+						d[dbott + multoff - j] = s[nextcol];
+					}
+					else {
+						d[dbott + multoff - j] = s[0];
+					}
+				}
+
+				// And the rest is always kept the same
+				for (; j < mid; j++) {
+					d[j] = s[0];
+					d[multoff - j] = s[0];
+					d[dbott + j] = s[0];
+					d[dbott + multoff - j] = s[0];
+				}
+
+				// And the middle dot.
+				d[j] = s[0];
+				d[dbott + j] = s[0];
+			}
+
+			d = &dest[dstripe * y + dline * i + x * mult];
+
+			for (j = 0; j < mid; j++) {
+				d[j] = s[0];
+				d[multoff - j] = s[0];
+			}
+			d[j] = s[0];
+
+			s++;
+
+			if (x == 0)
+				prevcol = -1;
+		}
+		if (y == 0)
+			prevline = -width;
+	}
 }
 
 static void
