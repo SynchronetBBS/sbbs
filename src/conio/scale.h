@@ -15,4 +15,4 @@ struct graphics_buffer * get_buffer(void);
 void release_buffer(struct graphics_buffer *);
 void init_r2y(void);
 
-struct graphics_buffer * do_scale(struct rectlist* rect, int* xscale, int* yscale, double ratio);
+struct graphics_buffer * do_scale(struct rectlist* rect, int xscale, int yscale, double ratio);

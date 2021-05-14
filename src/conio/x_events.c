@@ -457,8 +457,7 @@ static int video_init()
 
 static void local_draw_rect(struct rectlist *rect)
 {
-	int x,y,xscale,yscale,xoff=0,yoff=0;
-	int xscaling, yscaling;
+	int x, y, xoff = 0, yoff = 0;
 	unsigned int r, g, b;
 	unsigned long pixel;
 	int cleft;
@@ -481,9 +480,7 @@ static void local_draw_rect(struct rectlist *rect)
 		yoff = 0;
 
 	// Scale...
-	xscaling = x_cvstat.scaling;
-	yscaling = x_cvstat.scaling*x_cvstat.vmultiplier;
-	source = do_scale(rect, &xscaling, &yscaling, (double)x_cvstat.scale_numerator / x_cvstat.scale_denominator);
+	source = do_scale(rect, x_cvstat.scaling, x_cvstat.scaling * x_cvstat.vmultiplier, (double)x_cvstat.scale_numerator / x_cvstat.scale_denominator);
 	bitmap_drv_free_rect(rect);
 	if (source == NULL)
 		return;
@@ -545,18 +542,11 @@ static void local_draw_rect(struct rectlist *rect)
 				else
 					pixel |= (b >> (0-b_shift)) & visual.blue_mask;
 			}
-			// TODO: These loops shouldn't be necessary anymore...
-			for(yscale=0; yscale<yscaling; yscale++) {
-				for(xscale=0; xscale<xscaling; xscale++) {
 #ifdef XPutPixel
-					XPutPixel(xim, (x + rect->rect.x) * xscaling + xscale
-					    , (y + rect->rect.y) * yscaling + yscale, pixel);
+			XPutPixel(xim, (x + rect->rect.x), (y + rect->rect.y), pixel);
 #else
-					x11.XPutPixel(xim, (x + rect->rect.x) * xscaling + xscale
-					    , (y + rect->rect.y) * yscaling + yscale, pixel);
+			x11.XPutPixel(xim, (x + rect->rect.x), (y + rect->rect.y), pixel);
 #endif
-				}
-			}
 			idx++;
 		}
 		lines++;
@@ -564,9 +554,9 @@ static void local_draw_rect(struct rectlist *rect)
 		// TODO: Previously this did one update per display line...
 		if (last && (cbottom != y || y == source->h - 1) && cright >= 0) {
 			lines = 0;
-			x11.XPutImage(dpy, win, gc, xim, cleft * xscaling, ctop * yscaling
-			    , cleft * xscaling + xoff, ctop * yscaling + yoff
-			    , (cright - cleft + 1) * xscaling, (cbottom - ctop + 1) * yscaling);
+			x11.XPutImage(dpy, win, gc, xim, cleft, ctop
+			    , cleft + xoff, ctop + yoff
+			    , (cright - cleft + 1), (cbottom - ctop + 1));
 			cleft = source->w;
 			cright = cbottom = -100;
 			ctop = source->h;
@@ -574,7 +564,7 @@ static void local_draw_rect(struct rectlist *rect)
 	}
 
 	if (last == NULL)
-		x11.XPutImage(dpy, win, gc, xim, rect->rect.x*xscaling, rect->rect.y*yscaling, rect->rect.x*xscaling + xoff, rect->rect.y*yscaling + yoff, source->w * xscaling, source->h * yscaling);
+		x11.XPutImage(dpy, win, gc, xim, rect->rect.x, rect->rect.y, rect->rect.x + xoff, rect->rect.y + yoff, source->w, source->h);
 	else
 		release_buffer(last);
 	last = source;
