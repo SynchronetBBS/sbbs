@@ -87,11 +87,12 @@ int sbbs_t::inkey(long mode, unsigned long timeout)
 {
 	int	ch=0;
 
-	ch=kbincom(this,timeout); 
+	ch=kbincom(this,timeout);
+
+	if(sys_status&SS_SYSPAGE) 
+		sbbs_beep(400 + sbbs_random(800), ch == NOINP ? 100 : 10);
 
 	if(ch == NOINP) {
-		if(sys_status&SS_SYSPAGE) 
-			sbbs_beep(sbbs_random(800),100);
 		if(mode & K_NUL)	// distinguish between timeout and '\0'
 			return NOINP;
 		return 0;
