@@ -1355,7 +1355,7 @@ bool sbbs_t::msgabort(bool clear)
 	static ulong counter;
 
 	if(sys_status&SS_SYSPAGE && !(++counter%100))
-		sbbs_beep(sbbs_random(800),1);
+		sbbs_beep(400 + sbbs_random(800), 10);
 
 	if(sys_status&SS_ABORT) {
 		if(clear)
