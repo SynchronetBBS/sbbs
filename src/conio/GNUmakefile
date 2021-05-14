@@ -14,8 +14,8 @@ endif
 ifdef NO_X
  CFLAGS	+=	-DNO_X
 else
- OBJS	+=	$(MTOBJODIR)$(DIRSEP)x_events$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)x_cio$(OFILE) \
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)x_events$(OFILE)
+ OBJS	+=      $(MTOBJODIR)$(DIRSEP)x_cio$(OFILE)
  NEED_BITMAP := 1
 endif
 
@@ -36,9 +36,9 @@ ifeq ($(shell if [ -e /usr/include/ncursesw/ncurses.h ] ; then echo YES ; fi),YE
 endif
 
 ifdef NEED_BITMAP
- OBJS	+=	$(MTOBJODIR)$(DIRSEP)bitmap_con$(OFILE) \
-		$(MTOBJODIR)$(DIRSEP)scale$(OFILE) \
-		$(MTOBJODIR)$(DIRSEP)xbr$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)bitmap_con$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)scale$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)xbr$(OFILE)
 endif
 
 # CIOLIB Library Link Rule
