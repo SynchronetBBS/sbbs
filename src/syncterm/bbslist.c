@@ -1699,7 +1699,7 @@ void change_settings(int connected)
 #ifdef NO_X
                                 " SDL, then Curses\n\n"
 #else
-                                " SDL, X11 then Curses\n\n"
+                                " X11, SDL, then Curses\n\n"
 #endif
 #else
                                 " SDL, then Windows Console\n\n"
