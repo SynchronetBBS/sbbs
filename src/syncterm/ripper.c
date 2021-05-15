@@ -10156,7 +10156,9 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 	i = 0;
 	targets[i++] = x1;
 	targets[i++] = y1;
+#ifndef _MSC_VER
 	#pragma clang loop vectorize(enable)
+#endif
 	for (step = 1; step < cnt; step++) {
 		double tf = ((double)step) / cnt;
 		double tr = ((double)(cnt - step)) / cnt;
