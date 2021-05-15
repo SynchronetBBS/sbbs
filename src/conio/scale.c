@@ -302,7 +302,7 @@ pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->h * yscale, ratio 
 	}
 
 	// And finally, interpolate if needed
-	if (ratio < 1) {
+	if (fheight != csrc->h) {
 		interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
 		ctarget->h = fheight;
 		ctarget->w = csrc->w;
@@ -313,7 +313,7 @@ pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->h * yscale, ratio 
 			ctarget = ret1;
 	}
 
-	if (ratio > 1) {
+	if (fwidth != csrc->w) {
 		interpolate_width(csrc->data, ctarget->data, csrc->w, csrc->h, fwidth);
 		ctarget->h = csrc->h;
 		ctarget->w = fwidth;
