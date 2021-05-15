@@ -216,6 +216,10 @@ static void resize_xim(void)
 	if (xim) {
 		if (width == xim->width
 		    && height == xim->height) {
+			if (last) {
+				release_buffer(last);
+				last = NULL;
+			}
 			x11.XFillRectangle(dpy, win, gc, 0, 0, x11_window_width, x11_window_height);
 			return;
 		}
