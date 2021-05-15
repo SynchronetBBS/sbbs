@@ -279,7 +279,6 @@ bool sbbs_t::editfilename(file_t* f)
 	char str[MAX_FILENAME_LEN + 1];
 	char tmp[MAX_PATH + 1];
 	char path[MAX_PATH + 1];
-	char dirpath[MAX_PATH + 1];
 
 	bputs(text[EditFilename]);
 	SAFECOPY(str, f->name);
@@ -294,8 +293,8 @@ bool sbbs_t::editfilename(file_t* f)
 		bprintf(text[FileAlreadyThere],path);
 		return false;
 	}
-	SAFEPRINTF2(path,"%s%s",dirpath,f->name);
-	SAFEPRINTF2(tmp,"%s%s",dirpath,str);
+	SAFEPRINTF2(path,"%s%s", cfg.dir[f->dir]->path, f->name);
+	SAFEPRINTF2(tmp,"%s%s", cfg.dir[f->dir]->path, str);
 	if(fexistcase(path) && rename(path,tmp) != 0) {
 		bprintf(text[CouldntRenameFile],path,tmp);
 		return false;
