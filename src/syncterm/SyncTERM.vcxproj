@@ -131,6 +131,7 @@
     <ClCompile Include="ssh.c" />
     <ClCompile Include="st_crypt.c" />
     <ClCompile Include="syncterm.c" />
+    <ClCompile Include="telnets.c" />
     <ClCompile Include="telnet_io.c" />
     <ClCompile Include="term.c" />
     <ClCompile Include="uifcinit.c" />
