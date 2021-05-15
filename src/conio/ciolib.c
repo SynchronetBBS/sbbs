@@ -397,15 +397,15 @@ CIOLIBEXPORT int initciolib(int mode)
 
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
+#ifndef NO_X
+			if(!try_x_init(mode))
+#endif
 #if defined(WITH_SDL)
-			if(!try_sdl_init(CIOLIB_MODE_SDL))
+				if(!try_sdl_init(CIOLIB_MODE_SDL))
 #endif
 #ifdef _WIN32
-				if(!try_conio_init(mode))
+					if(!try_conio_init(mode))
 #else
-#ifndef NO_X
-				if(!try_x_init(mode))
-#endif
 					if(!try_curses_init(mode))
 #endif
 						try_ansi_init(mode);
