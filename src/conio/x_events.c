@@ -216,6 +216,7 @@ static void resize_xim(void)
 	if (xim) {
 		if (width == xim->width
 		    && height == xim->height) {
+			x11.XFillRectangle(dpy, win, gc, 0, 0, x11_window_width, x11_window_height);
 			return;
 		}
 #ifdef XDestroyImage
@@ -230,6 +231,7 @@ static void resize_xim(void)
 	}
 	xim = x11.XCreateImage(dpy, &visual, depth, ZPixmap, 0, NULL, width, height, 32, 0);
 	xim->data=(char *)calloc(1, xim->bytes_per_line*xim->height);
+	x11.XFillRectangle(dpy, win, gc, 0, 0, x11_window_width, x11_window_height);
 }
 
 /* Swiped from FreeBSD libc */
