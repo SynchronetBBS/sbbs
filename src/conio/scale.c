@@ -186,14 +186,12 @@ do_scale(struct rectlist* rect, int xscale, int yscale, double ratio)
 	}
 
 	// Calculate the scaled height from ratio...
-	if (ratio < 1)
-		fheight = lround((double)(rect->rect.height * (yscale)) / ratio);
-	else
+	fheight = lround((double)(rect->rect.height * (yscale)) / ratio);
+	if (fheight < rect->rect.height * yscale)
 		fheight = rect->rect.height * yscale;
 
-	if (ratio > 1)
-		fwidth = lround((double)(rect->rect.width * (xscale)) / ratio);
-	else
+	fwidth = lround((double)(rect->rect.width * (xscale)) * ratio);
+	if (fwidth < rect->rect.width * xscale)
 		fwidth = rect->rect.width * xscale;
 
 	// Now make sure target is big enough...

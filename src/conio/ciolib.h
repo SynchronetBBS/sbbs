@@ -118,11 +118,13 @@ enum {
 #define BLINK 128
 #endif
 
-#define CIOLIB_VIDEO_ALTCHARS		(1<<0)	// Attribute bit 3 selects alternate char set
-#define CIOLIB_VIDEO_NOBRIGHT		(1<<1)	// Attribute bit 3 does not increase intensity
-#define CIOLIB_VIDEO_BGBRIGHT		(1<<2)	// Attribute bit 7 selects high intensity background, not blink
-#define CIOLIB_VIDEO_BLINKALTCHARS	(1<<3)	// Attribute bit 7 selects alternate char set
-#define CIOLIB_VIDEO_NOBLINK		(1<<4)	// Attribute bit 7 has no effect
+#define CIOLIB_VIDEO_ALTCHARS             (1<<0)	// Attribute bit 3 selects alternate char set
+#define CIOLIB_VIDEO_NOBRIGHT             (1<<1)	// Attribute bit 3 does not increase intensity
+#define CIOLIB_VIDEO_BGBRIGHT             (1<<2)	// Attribute bit 7 selects high intensity background, not blink
+#define CIOLIB_VIDEO_BLINKALTCHARS        (1<<3)	// Attribute bit 7 selects alternate char set
+#define CIOLIB_VIDEO_NOBLINK              (1<<4)	// Attribute bit 7 has no effect
+#define CIOLIB_VIDEO_EXPAND               (1<<5)	// Use an extra blank column between characters from the font
+#define CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND (1<<6)	// Per VGA, when using CIOLIB_VIDEO_EXPAND, repeat the last column for chars 0xC0 - 0xDF inclusive
 
 enum text_modes
 {
@@ -181,6 +183,9 @@ enum text_modes
 
 	ST132X37_16_9,
 	ST132X52_5_4,
+
+	/* New modes we've added 'cause they're stupid */
+	VGA80X25,
 
 	/* Cruft... */
 

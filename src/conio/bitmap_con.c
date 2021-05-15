@@ -127,6 +127,7 @@ static int bitmap_loadfont_locked(char *filename)
 {
 	static char current_filename[MAX_PATH];
 	unsigned int fontsize;
+	int fdw;
 	int fw;
 	int fh;
 	int i;
@@ -159,7 +160,8 @@ static int bitmap_loadfont_locked(char *filename)
 	}
 
 	fh=vstat.charheight;
-	fw=vstat.charwidth/8+(vstat.charwidth%8?1:0);
+	fdw = vstat.charwidth - (vstat.flags & VIDMODES_FLAG_EXPAND) ? 1 : 0;
+	fw = fdw / 8 + (fdw % 8 ? 1 : 0);
 
 	fontsize=fw*fh*256*sizeof(unsigned char);
 
@@ -190,7 +192,7 @@ static int bitmap_loadfont_locked(char *filename)
 	for (i=0; i<sizeof(font)/sizeof(font[0]); i++) {
 		if (current_font[i] < 0)
 			continue;
-		switch(vstat.charwidth) {
+		switch(fdw) {
 			case 8:
 				switch(vstat.charheight) {
 					case 8:
@@ -476,9 +478,12 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 {
 	uint32_t fg;
 	uint32_t bg;
+	int fdw;
 	int		xoffset=(xpos-1)*vstat.charwidth;
 	int		yoffset=(ypos-1)*vstat.charheight;
 	int		x;
+	int		fdx;
+	uint8_t fb = 0;
 	int		y;
 	int		fontoffset;
 	unsigned char *this_font;
@@ -542,12 +547,33 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	}
 	if (this_font == NULL)
 		this_font = font[0];
-	fontoffset=(sch & 0xff) * (vstat.charheight * ((vstat.charwidth + 7) / 8));
+	fdw = vstat.charwidth - (vstat.flags & VIDMODES_FLAG_EXPAND) ? 1 : 0;
+	fontoffset=(sch & 0xff) * (vstat.charheight * ((fdw + 7) / 8));
 
 	draw_fg = ((!(sch & 0x8000)) || vstat.no_blink);
 	for(y=0; y<vstat.charheight; y++) {
 		for(x=0; x<vstat.charwidth; x++) {
-			if(this_font[fontoffset] & (0x80 >> (x & 7)) && draw_fg) {
+			fdx = x;
+			fb = this_font[fontoffset];
+			if ((x & 0x07) == 7)
+				fontoffset++;
+			if (vstat.flags & VIDMODES_FLAG_EXPAND) {
+				if (x == vstat.charwidth - 1) {
+					fontoffset--;
+					fdx--;
+					if (!(vstat.flags & VIDMODES_FLAG_LINE_GRAPHICS_EXPAND)) {
+						fb = 0;
+					}
+					else if ((sch & 0xff) >= 0xC0 && (sch & 0xff) <= 0xDF) {
+						fb = this_font[fontoffset];
+					}
+					else
+						fb = 0;
+					
+				}
+			}
+
+			if(fb & (0x80 >> (fdx & 7)) && draw_fg) {
 				if (screena.screen[PIXEL_OFFSET(screena, xoffset + x, yoffset + y)] != fg) {
 					screena.update_pixels = 1;
 					screena.screen[PIXEL_OFFSET(screena, xoffset + x, yoffset + y)] = fg;
@@ -559,7 +585,8 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 					screena.screen[PIXEL_OFFSET(screena, xoffset + x, yoffset + y)] = bg;
 				}
 			}
-			if(this_font[fontoffset] & (0x80 >> (x & 7))) {
+
+			if(fb & (0x80 >> (fdx & 7))) {
 				if (screenb.screen[PIXEL_OFFSET(screenb, xoffset + x, yoffset + y)]!=fg) {
 					screenb.update_pixels = 1;
 					screenb.screen[PIXEL_OFFSET(screenb, xoffset + x, yoffset + y)]=fg;
@@ -571,8 +598,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 					screenb.screen[PIXEL_OFFSET(screenb, xoffset+x, yoffset+y)]=bg;
 				}
 			}
-			if ((x & 0x07) == 7)
-				fontoffset++;
+
 		}
 		if (x & 0x07)
 			fontoffset++;

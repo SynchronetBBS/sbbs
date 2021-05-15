@@ -1948,6 +1948,8 @@ int screen_to_ciolib(int screen)
 			return(CIOLIB_MODE_CUSTOM);
 		case SCREEN_MODE_EGA_80X25:
 			return(EGA80X25);
+		case SCREEN_MODE_VGA_80X25:
+			return(VGA80X25);
 	}
 	gettextinfo(&ti);
 	return(ti.currmode);
