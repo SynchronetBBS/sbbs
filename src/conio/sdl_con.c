@@ -323,6 +323,76 @@ void sdl_flush(void)
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 }
 
+/*
+ * Returns true if the specified width/height can use the
+ * internal scaler
+ *
+ * vstat lock must be held
+ */
+static bool
+window_can_scale_internally(int winwidth, int winheight)
+{
+	int idealmw;
+	int idealmh;
+	int idealh;
+	int idealw;
+
+	// First, figure out if width or height controlls the image size.
+	idealmw = lround((double)cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth);
+	idealmh = lround((double)cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight);
+	idealw = lround(winheight * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
+	idealh = lround(winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+
+	if (idealw < winwidth) {
+		// Height controls size...
+		if (winheight % idealmh == 0)
+			return true;
+	}
+	else {
+		// Width controls size...
+		if (winwidth % idealmw == 0)
+			return true;
+	}
+	return false;
+}
+
+static void
+internal_scaling_factors(int winwidth, int winheight, int *x, int *y)
+{
+	int idealmh;
+	int idealmw;
+	int idealh;
+	int idealw;
+
+	// First, figure out if width or height controlls the image size.
+	idealmw = lround((double)cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth);
+	idealmh = lround((double)cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight);
+	idealw = lround((double)winheight * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
+	idealh = lround((double)winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+
+
+	if (idealw < winwidth) {
+		// Height controls size...
+		if (idealh == winheight) {
+			idealmw = cvstat.scrnwidth;
+			*x = lround((double)idealw / idealmw);
+			*y = lround((double)idealh / idealmh);
+			return;
+		}
+	}
+	else {
+		// Width controls size...
+		if (idealw == winwidth) {
+			idealmh = cvstat.scrnheight;
+			*x = lround((double)idealw / idealmw);
+			*y = lround((double)idealh / idealmh);
+			return;
+		}
+	}
+	*x = 1;
+	*y = 1;
+}
+
 static int sdl_init_mode(int mode)
 {
 	int oldcols;
@@ -370,6 +440,7 @@ static int sdl_init_mode(int mode)
 		vstat.vmultiplier = 1;
 
 	cvstat = vstat;
+	internal_scaling = window_can_scale_internally(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&blinker_lock);
 
@@ -420,6 +491,7 @@ void sdl_setwinsize_locked(int w, int h)
 		h = cvstat.scrnheight;
 	cvstat.winwidth = vstat.winwidth = w;
 	cvstat.winheight = vstat.winheight = h;
+	internal_scaling = window_can_scale_internally(cvstat.winwidth, cvstat.winheight);
 }
 
 void sdl_setwinsize(int w, int h)
@@ -862,6 +934,7 @@ void sdl_video_event_thread(void *data)
 							else {
 								cvstat.winwidth = w;
 								cvstat.winheight = h;
+								internal_scaling = window_can_scale_internally(w, h);
 							}
 							setup_surfaces_locked();
 							pthread_mutex_unlock(&vstatlock);
@@ -977,13 +1050,12 @@ void sdl_video_event_thread(void *data)
 
 							pthread_mutex_lock(&vstatlock);
 							pthread_mutex_lock(&win_mutex);
-							if ((ev.window.data1 % cvstat.scrnwidth) && (ev.window.data2 % cvstat.scrnheight)) {
-								newh = "2";
-								internal_scaling = false;
+							internal_scaling = window_can_scale_internally(ev.window.data1, ev.window.data2);
+							if (internal_scaling) {
+								newh = "0";
 							}
 							else {
-								newh = "0";
-								internal_scaling = true;
+								newh = "2";
 							}
 							sdl.GetWindowSize(win, &cvstat.winwidth, &cvstat.winheight);
 							if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
@@ -1041,7 +1113,9 @@ void sdl_video_event_thread(void *data)
 
 									if (internal_scaling) {
 										struct graphics_buffer *gb;
-										gb = do_scale(list, cvstat.winwidth / cvstat.scrnwidth, cvstat.winheight / cvstat.scrnheight,
+										int xscale, yscale;
+										internal_scaling_factors(cvstat.winwidth, cvstat.winheight, &xscale, &yscale);
+										gb = do_scale(list, xscale, yscale,
 										    (double)cvstat.scale_numerator / cvstat.scale_denominator);
 										src.x = 0;
 										src.y = 0;
