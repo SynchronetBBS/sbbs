@@ -980,6 +980,10 @@ static int x11_event(XEvent *ev)
 								nlock = 1;
 							case XK_Left:
 							case XK_KP_Left:
+								if (ev->xkey.state & Mod1Mask) {
+									if (x_cvstat.scaling > 1)
+										x_cvstat.scaling--;
+								}
 								scan = 75;
 								goto docode;
 
@@ -995,6 +999,10 @@ static int x11_event(XEvent *ev)
 							case XK_Right:
 							case XK_KP_Right:
 								scan = 77;
+								if (ev->xkey.state & Mod1Mask) {
+									if (x_cvstat.scaling < 7)
+										x_cvstat.scaling++;
+								}
 								goto docode;
 
 							case XK_KP_Add:
