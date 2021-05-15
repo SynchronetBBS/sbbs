@@ -625,7 +625,10 @@ pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height)
 	}
 }
 
-static __attribute__((always_inline))
+static
+#ifndef _MSC_VER
+__attribute__((always_inline))
+#endif
 uint32_t blend(const uint32_t c1, const uint32_t c2, const double weight)
 {
 	uint8_t yuv1[4];
