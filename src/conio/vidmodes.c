@@ -115,6 +115,8 @@ struct video_params vparams[] = {
 	/* Awesome modes */
 	{ST132X37_16_9, COLOUR_PALETTE,      132, 37, 14, 15, 16, 8, 1, 7, 0,   1,    1, 1056, 600},
 	{ST132X52_5_4, COLOUR_PALETTE,       132, 52, 14, 15, 16, 8, 1, 7, 0,   1,    1, 1056, 823},
+	/* Stupid modes */
+	{VGA80X25, COLOUR_PALETTE,            80, 25, 14, 15, 16, 9, 1, 7, CIOLIB_VIDEO_EXPAND | CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND, 740, 1000, 720, 400},
 	/* Custom mode */
 	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE, 80,  25, 14, 15, 16, 8, 1, 7, 0,   1,    1,   -1,  -1},
 };
@@ -318,6 +320,14 @@ int load_vmode(struct video_stats *vs, int mode)
 	vs->bright_altcharset=vparams[i].flags & CIOLIB_VIDEO_ALTCHARS;
 	vs->no_blink=vparams[i].flags & CIOLIB_VIDEO_NOBLINK;
 	vs->blink_altcharset=vparams[i].flags & CIOLIB_VIDEO_BLINKALTCHARS;
+	if (vparams[i].flags & CIOLIB_VIDEO_EXPAND)
+		vs->flags |= VIDMODES_FLAG_EXPAND;
+	else
+		vs->flags &= ~VIDMODES_FLAG_EXPAND;
+	if (vparams[i].flags & CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND)
+		vs->flags |= VIDMODES_FLAG_LINE_GRAPHICS_EXPAND;
+	else
+		vs->flags &= ~VIDMODES_FLAG_LINE_GRAPHICS_EXPAND;
 	if(vs->curs_row < 0)
 		vs->curs_row=0;
 	if(vs->curs_row >= vparams[i].rows)
