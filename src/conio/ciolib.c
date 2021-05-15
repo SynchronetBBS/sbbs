@@ -200,8 +200,7 @@ static int try_sdl_init(int mode)
 }
 #endif
 
-#ifndef _WIN32
- #ifndef NO_X
+#ifndef NO_X
 static int try_x_init(int mode)
 {
 #if defined(WITH_SDL)
@@ -255,8 +254,9 @@ static int try_x_init(int mode)
 	}
 	return(0);
 }
- #endif
+#endif
 
+#ifndef _WIN32
 static int try_curses_init(int mode)
 {
 #if defined(WITH_SDL)
