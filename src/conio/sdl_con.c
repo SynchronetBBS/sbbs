@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>		/* NULL */
@@ -567,8 +568,8 @@ static void setup_surfaces_locked(void)
 	cols = cvstat.cols;
 	rows = cvstat.rows;
 	vmultiplier = cvstat.vmultiplier;
-	idealh = roundl((long double)cvstat.winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
-	idealmh = roundl((long double)cvstat.scrnwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+	idealh = lround((long double)cvstat.winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+	idealmh = lround((long double)cvstat.scrnwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
 	internal_scaling = true;
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
@@ -1100,8 +1101,8 @@ void sdl_video_event_thread(void *data)
 										dst.w = cvstat.winwidth;
 										dst.h = cvstat.winheight;
 										// Get correct aspect ratio for dst...
-										idealw = roundl((long double)dst.h * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
-										idealh = roundl((long double)dst.w * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
+										idealw = lround((long double)dst.h * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
+										idealh = lround((long double)dst.w * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
 										if (idealw < cvstat.winwidth) {
 											dst.x = (cvstat.winwidth - idealw) / 2;
 											dst.w = idealw;
