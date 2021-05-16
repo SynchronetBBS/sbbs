@@ -1385,7 +1385,6 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 		return(false); 
 	}
 
-	setvbuf(instream,NULL,_IOFBF,2*1024);
 	fseeko(smb.sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
 	fwrite(&xlat,2,1,smb.sdt_fp);

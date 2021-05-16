@@ -1671,7 +1671,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 		return false;
 	}
 
-	setvbuf(instream,NULL,_IOFBF,2*1024);
+	setvbuf(instream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 	fseeko(smb->sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
 	fwrite(&xlat,2,1,smb->sdt_fp);

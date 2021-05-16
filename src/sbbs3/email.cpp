@@ -227,7 +227,6 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		return(false); 
 	}
 
-	setvbuf(instream,NULL,_IOFBF,2*1024);
 	smb_fseek(smb.sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
 	smb_fwrite(&smb,&xlat,2,smb.sdt_fp);
