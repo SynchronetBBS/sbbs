@@ -874,8 +874,8 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 									} 
 								} 
 							}
-							else if(remove(str))    /* always remove if not sysop */
-								bprintf(text[CouldntRemoveFile],str);
+							else if(remove(path))    /* always remove if not sysop */
+								bprintf(text[CouldntRemoveFile],path);
 						}
 					}
 					if(dir_op(dirnum) || useron.exempt&FLAG('R')) {
