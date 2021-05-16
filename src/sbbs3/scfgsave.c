@@ -89,7 +89,7 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 		|| (stream=fdopen(file,"wb"))==NULL) {
 		return(FALSE); 
 	}
-	setvbuf(stream,NULL,_IOFBF,2048);
+	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
 	put_int(cfg->node_num,stream);
 	put_str(cfg->node_name,stream);
@@ -151,7 +151,7 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		|| (stream=fdopen(file,"wb"))==NULL) {
 		return(FALSE); 
 	}
-	setvbuf(stream,NULL,_IOFBF,2048);
+	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
 	put_str(cfg->sys_name,stream);
 	put_str(cfg->sys_id,stream);
@@ -334,7 +334,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		|| (stream=fdopen(file,"wb"))==NULL) {
 		return(FALSE); 
 	}
-	setvbuf(stream,NULL,_IOFBF,2048);
+	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
 	put_int(cfg->max_qwkmsgs,stream);
 	put_int(cfg->mail_maxcrcs,stream);
@@ -643,7 +643,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 		|| (stream=fdopen(file,"wb"))==NULL) {
 		return(FALSE); 
 	}
-	setvbuf(stream,NULL,_IOFBF,2048);
+	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
 	put_int(cfg->min_dspace,stream);
 	put_int(cfg->max_batup,stream);
@@ -891,7 +891,7 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 		|| (stream=fdopen(file,"wb"))==NULL) {
 		return(FALSE); 
 	}
-	setvbuf(stream,NULL,_IOFBF,2048);
+	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
 	put_int(cfg->total_gurus,stream);
 	for(i=0;i<cfg->total_gurus;i++) {
@@ -967,7 +967,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 		|| (stream=fdopen(file,"wb"))==NULL) {
 		return(FALSE); 
 	}
-	setvbuf(stream,NULL,_IOFBF,2048);
+	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
 	put_int(cfg->total_swaps,stream);
 	for(i=0;i<cfg->total_swaps;i++)
