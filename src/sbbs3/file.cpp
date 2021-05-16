@@ -228,8 +228,7 @@ bool sbbs_t::removefile(smb_t* smb, file_t* f)
 	int result;
 
 	if((result = smb_removefile(smb ,f)) == SMB_SUCCESS) {
-		SAFEPRINTF4(str,"%s removed %s from %s %s"
-			,useron.alias
+		SAFEPRINTF3(str,"removed %s from %s %s"
 			,f->name
 			,cfg.lib[cfg.dir[smb->dirnum]->lib]->sname,cfg.dir[smb->dirnum]->sname);
 		logline("U-",str);
@@ -252,7 +251,7 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 
 	if(!addfile(&cfg, newdir, f, f->extdesc, /* client: */NULL))
 		return false;
-	if(!removefile(smb, &orgfile))
+	if(!removefile(smb, &orgfile))	// Use ::removefile() here instead?
 		return false;
 	bprintf(text[MovedFile],f->name
 		,cfg.lib[cfg.dir[newdir]->lib]->sname,cfg.dir[newdir]->sname);
@@ -308,12 +307,13 @@ bool sbbs_t::editfiledesc(file_t* f)
 {
 	// Description
 	bputs(text[EditDescription]);
-	char fdesc[LEN_FDESC + 1];
-	SAFECOPY(fdesc, f->desc);
+	char fdesc[LEN_FDESC + 1] = "";
+	if(f->desc != NULL)
+		SAFECOPY(fdesc, f->desc);
 	getstr(fdesc, sizeof(fdesc)-1, K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 	if(msgabort(true))
 		return false;
-	if(strcmp(fdesc, f->desc) == 0)
+	if(f->desc != NULL && strcmp(fdesc, f->desc) == 0)
 		return true;
 	smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
 	return updatefile(&cfg, f);
