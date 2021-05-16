@@ -676,7 +676,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
-							if(filematch(bf[i]->name, str+c)) {
+							if(!(bf[i]->hdr.attr & MSG_DELETE) && filematch(bf[i]->name, str+c)) {
 								if(ch=='R') {
 									if(removefile(smb, bf[i])) {
 										if(remfile) {
@@ -696,18 +696,20 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 						c+=strlen(str+c);
 					else if(str[c]<'A'+(char)total && str[c]>='A') {
 						file_t* f = bf[str[c]-'A'];
-						if(ch=='R') {
-							if(removefile(smb, f)) {
-								if(remfile) {
-									if(remove(getfilepath(&cfg, f, path)) != 0 && fexist(path))
-										errormsg(WHERE, ERR_REMOVE, path);
+						if(!(f->hdr.attr & MSG_DELETE)) {
+							if(ch=='R') {
+								if(removefile(smb, f)) {
+									if(remfile) {
+										if(remove(getfilepath(&cfg, f, path)) != 0 && fexist(path))
+											errormsg(WHERE, ERR_REMOVE, path);
+									}
+									if(remcdt)
+										removefcdt(f);
 								}
-								if(remcdt)
-									removefcdt(f);
 							}
+							else if(ch=='M')
+								movefile(smb, f, usrdir[ml][md]);
 						}
-						else if(ch=='M')
-							movefile(smb, f, usrdir[ml][md]); 
 					} 
 				}
 				return(2); 
@@ -769,6 +771,8 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 			break; 
 		}
 		m++;
+		if(f->hdr.attr & MSG_DELETE)
+			continue;
 		if(mode==FI_OLD && f->hdr.last_downloaded > ns_time)
 			continue;
 		if((mode==FI_OLDUL || mode==FI_OLD) && f->hdr.when_written.time > ns_time)
