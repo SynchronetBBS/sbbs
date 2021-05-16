@@ -152,11 +152,13 @@ str_list_t loadfilenames(smb_t* smb, const char* filespec, time_t t, enum file_s
 			return NULL;
 	}
 
+	if(fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET) != 0)
+		return NULL;
+
 	char** file_list = calloc(smb->status.total_files + 1, sizeof(char*));
 	if(file_list == NULL)
 		return NULL;
 
-	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
 	size_t offset = start;
 	while(!feof(smb->sid_fp) && offset < smb->status.total_files) {
 		fileidxrec_t fidx;
@@ -197,11 +199,13 @@ file_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail d
 			return NULL;
 	}
 
+	if(fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET) != 0)
+		return NULL;
+
 	file_t* file_list = calloc(smb->status.total_files, sizeof(file_t));
 	if(file_list == NULL)
 		return NULL;
 
-	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
 	size_t offset = start;
 	size_t cnt = 0;
 	while(!feof(smb->sid_fp) && offset < smb->status.total_files) {
@@ -407,7 +411,10 @@ bool batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, file_t* f
 	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */true);
 	if(fp == NULL)
 		return false;
-	fseek(fp, 0, SEEK_END);
+	if(fseek(fp, 0, SEEK_END) != 0) {
+		fclose(fp);
+		return false;
+	}
 	fprintf(fp, "\n[%s]\n", f->name);
 	if(f->dir >= 0 && f->dir < cfg->total_dirs)
 		fprintf(fp, "dir=%s\n", cfg->dir[f->dir]->code);
@@ -760,7 +767,11 @@ long create_archive(const char* archive, const char* format
 			safe_snprintf(error, maxerrlen, "%d opening %s", errno, filename);
 			break;
 		}
-		fstat(fileno(fp), &st);
+		if(fstat(fileno(fp), &st) != 0) {
+			safe_snprintf(error, maxerrlen, "%d fstat %s", errno, filename);
+			fclose(fp);
+			break;
+		}
 		if((entry = archive_entry_new()) == NULL) {
 			safe_snprintf(error, maxerrlen, "archive_entry_new returned NULL");
 			fclose(fp);
