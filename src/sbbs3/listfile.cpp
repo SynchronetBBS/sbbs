@@ -844,39 +844,36 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 						editfileinfo(f);
 					break;
 				case 'F':   /* delete file only */
-					SAFEPRINTF2(str,"%s%s",dirpath,f->name);
-					if(!fexistcase(str))
-						bprintf(text[FileDoesNotExist],str);
+					getfilepath(&cfg, f, path);
+					if(!fexistcase(path))
+						bprintf(text[FileDoesNotExist], path);
 					else {
 						if(!noyes(text[DeleteFileQ])) {
-							if(remove(str))
-								bprintf(text[CouldntRemoveFile],str);
-							else {
-								SAFEPRINTF(tmp, "deleted %s", str);
-								logline(nulstr, tmp); 
-							} 
+							if(remove(path) != 0) {
+								bprintf(text[CouldntRemoveFile], path);
+								errormsg(WHERE, ERR_REMOVE, path);
+							} else
+								lprintf(LOG_NOTICE, "deleted %s", path);
 						} 
 					}
 					break;
 				case 'R':   /* remove file from database */
 					if(noyes(text[RemoveFileQ]))
 						break;
-					if(removefile(&smb, f)) {
-						getfilepath(&cfg, f, path);
-						if(fexistcase(path)) {
-							if(dir_op(dirnum)) {
-								if(!noyes(text[DeleteFileQ])) {
-									if(remove(path) != 0)
-										errormsg(WHERE, ERR_REMOVE, path);
-									else {
-										SAFEPRINTF(tmp, "deleted %s", path);
-										logline(nulstr,path); 
-									} 
-								} 
-							}
-							else if(remove(path))    /* always remove if not sysop */
-								bprintf(text[CouldntRemoveFile],path);
+					if(!removefile(&smb, f)) {
+						errormsg(WHERE, ERR_REMOVE, f->name);
+						break;
+					}
+					getfilepath(&cfg, f, path);
+					if(fexistcase(path)) {
+						if(dir_op(dirnum) && noyes(text[DeleteFileQ]))
+							break;
+						if(remove(path) != 0) {
+							bprintf(text[CouldntRemoveFile], path);
+							errormsg(WHERE, ERR_REMOVE, path);
+							break;
 						}
+						lprintf(LOG_NOTICE, "deleted %s", path);
 					}
 					if(dir_op(dirnum) || useron.exempt&FLAG('R')) {
 						i=cfg.lib[cfg.dir[f->dir]->lib]->offline_dir;
