@@ -59,10 +59,6 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	get_str(cfg->node_name,instream);
 	get_str(cfg->node_phone,instream);
 	get_str(cfg->node_comspec,instream);
-	#ifdef __OS2__
-	if(!cfg->node_comspec[0])
-		strcpy(cfg->node_comspec,"C:\\OS2\\MDOS\\COMMAND.COM");
-	#endif
 	get_int(cfg->node_misc,instream);
 	get_int(cfg->node_ivt,instream);
 	get_int(cfg->node_swap,instream);
@@ -84,10 +80,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	if(!cfg->text_dir[0])
 		SAFECOPY(cfg->text_dir, "../text/");
 	get_str(cfg->temp_dir,instream); 				/* temp directory */
-#if 0 /* removed Sep-9-2003, always use nodex/temp (rrs) */
-	if(!cfg->temp_dir[0])
-#endif
-		SAFECOPY(cfg->temp_dir,"temp");
+	SAFECOPY(cfg->temp_dir,"temp");
 
 	for(i=0;i<10;i++)  						/* WFC 0-9 DOS commands */
 		get_str(cfg->wfc_cmd[i],instream); 
@@ -138,20 +131,6 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	get_str(cfg->sys_guru,instream);
 	get_str(cfg->sys_pass,instream);
 	get_int(cfg->sys_nodes,instream);
-
-#if 0	/* removed Jan-10-2003: cfg->node_num may be old or uninitialized */
-	if(!cfg->sys_nodes || cfg->sys_nodes<cfg->node_num || cfg->sys_nodes>MAX_NODES) {
-		if(!cfg->sys_nodes)
-			safe_snprintf(error, maxerrlen,"Total nodes on system must be non-zero.");
-		else if(cfg->sys_nodes>MAX_NODES)
-			safe_snprintf(error, maxerrlen,"Total nodes exceeds %u.",MAX_NODES);
-		else
-			safe_snprintf(error, maxerrlen,"Total nodes (%u) < node number in NODE.CNF (%u)"
-				,cfg->sys_nodes,cfg->node_num);
-		fclose(instream);
-		return(FALSE); 
-	}
-#endif
 
 	for(i=0;i<cfg->sys_nodes;i++) {
 		get_str(cfg->node_path[i],instream);
@@ -313,15 +292,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	for(i=0;i<100 && !feof(instream);i++) {
 		get_int(cfg->level_timeperday[i],instream);
-#if 0	/* removed May 06, 2002 */
-		if(cfg->level_timeperday[i]>500)
-			cfg->level_timeperday[i]=500;
-#endif
 		get_int(cfg->level_timepercall[i],instream);
-#if 0	/* removed May 06, 2002 */
-		if(cfg->level_timepercall[i]>500)
-			cfg->level_timepercall[i]=500;
-#endif
 		get_int(cfg->level_callsperday[i],instream);
 		get_int(cfg->level_freecdtperday[i],instream);
 		get_int(cfg->level_linespermsg[i],instream);
@@ -507,12 +478,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		get_str(cfg->sub[i]->origline,instream);
 		get_str(cfg->sub[i]->post_sem,instream);
 
-#if 0
-		fread(str,1,LEN_DIR+1,instream);				/* skip EchoMail path */
-		offset+=LEN_DIR+1;
-#else
 		get_str(cfg->sub[i]->newsgroup,instream);
-#endif
 
 		get_int(cfg->sub[i]->faddr,instream);			/* FidoNet address */
 		get_int(cfg->sub[i]->maxmsgs,instream);
@@ -786,33 +752,6 @@ void make_data_dirs(scfg_t* cfg)
 		if(cfg->dir[i]->misc & DIR_FCHK) 
 			md(cfg->dir[i]->path);
 	}
-
-#if 0
-	int		i;
-
-	for(i=0;i<cfg->total_subs;i++) {
-		if(cfg->sub[i]->data_dir[0]
-			&& (!i || stricmp(cfg->sub[i]->data_dir,cfg->sub[i-1]->data_dir))) {
-			backslash(cfg->sub[i]->data_dir);
-			md(cfg->sub[i]->data_dir);
-		}
-	}
-
-	for(i=0;i<cfg->total_dirs;i++) {
-		if(cfg->dir[i]->data_dir[0]
-			&& (!i || stricmp(cfg->dir[i]->data_dir,cfg->dir[i-1]->data_dir))) {
-			backslash(cfg->dir[i]->data_dir);
-			md(cfg->dir[i]->data_dir);
-		}
-		if(cfg->dir[i]->misc&DIR_FCHK) 
-			md(cfg->dir[i]->path); 
-	}
-
-	for(i=0;i<cfg->total_txtsecs;i++) {
-		sprintf(str,"%stext/%s",cfg->data_dir,cfg->txtsec[i]->code);
-		md(str);
-	}
-#endif
 }
 
 int getdirnum(scfg_t* cfg, const char* code)
