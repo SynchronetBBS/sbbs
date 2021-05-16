@@ -20,6 +20,8 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 const char* log_line_ending = "\r\n";
 
@@ -113,8 +115,10 @@ extern "C" int errorlog(scfg_t* cfg, int level, const char* host, const char* te
 	SAFEPRINTF(path, "%serror.log", cfg->logs_dir);
 	if((fp = fnopen(NULL,path,O_WRONLY|O_CREAT|O_APPEND))==NULL)
 		return -1; 
-	fprintf(fp,"%.24s %s%s%s%s%s"
+	fprintf(fp,"%.24s %s/%s %s%s%s%s%s"
 		,ctime_r(&now, buf)
+		,GIT_BRANCH
+		,GIT_HASH
 		,host==NULL ? "":host
 		,log_line_ending
 		,text
