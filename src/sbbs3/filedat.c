@@ -460,7 +460,7 @@ bool updatefile(scfg_t* cfg, file_t* file)
 	if(smb_open_dir(cfg, &smb, file->dir) != SMB_SUCCESS)
 		return false;
 
-	int result = smb_updatemsg(&smb, file) == SMB_SUCCESS;
+	int result = smb_updatemsg(&smb, file);
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
 }
