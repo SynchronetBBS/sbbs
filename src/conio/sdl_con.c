@@ -10,9 +10,7 @@
 #include "dirwrap.h"
 #include "xpbeep.h"
 #include "threadwrap.h"
-#ifdef __unix__
 #include <xp_dl.h>
-#endif
 
 #if (defined CIOLIB_IMPORTS)
  #undef CIOLIB_IMPORTS
@@ -469,6 +467,44 @@ int sdl_init(int mode)
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 #ifdef _WIN32
 		FreeConsole();
+		// code that tells windows we're High DPI aware so it doesn't scale our windows
+		// taken from Yamagi Quake II
+
+		typedef enum D3_PROCESS_DPI_AWARENESS {
+			D3_PROCESS_DPI_UNAWARE = 0,
+			D3_PROCESS_SYSTEM_DPI_AWARE = 1,
+			D3_PROCESS_PER_MONITOR_DPI_AWARE = 2
+		} YQ2_PROCESS_DPI_AWARENESS;
+
+		/* For Vista, Win7 and Win8 */
+		BOOL(WINAPI *SetProcessDPIAware)(void) = NULL;
+
+		/* Win8.1 and later */
+		HRESULT(WINAPI *SetProcessDpiAwareness)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
+
+		const char* user32dll[] = {"User32", NULL};
+		dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
+
+		if (userDLL)
+		{
+			SetProcessDPIAware = xp_dlsym(userDLL, "SetProcessDPIAware");
+		}
+
+
+		const char* shcoredll[] = {"SHCore", NULL};
+		dll_handle shcoreDLL = xp_dlopen(shcoredll, RTLD_LAZY, 0);
+
+		if (shcoreDLL)
+		{
+			SetProcessDpiAwareness = xp_dlsym(shcoreDLL, "SetProcessDpiAwareness");
+		}
+
+		if (SetProcessDpiAwareness) {
+			SetProcessDpiAwareness(D3_PROCESS_PER_MONITOR_DPI_AWARE);
+		}
+		else if (SetProcessDPIAware) {
+			SetProcessDPIAware();
+		}
 #endif
 		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
 		return(0);
