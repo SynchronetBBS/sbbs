@@ -5708,7 +5708,7 @@ NO_SSH:
 			if(result != 0) {
 				inet_ntop(tmp_addr.sin_family, &tmp_addr.sin_addr, addr_str, sizeof(addr_str));
 				lprintf(LOG_ERR,"Node %d !ERROR %d (%d) connecting to passthru socket: %s port %u"
-					,new_node->cfg.node_num, result, ERROR_VALUE, addr_str, addr_str, htons(tmp_addr.sin_port));
+					,new_node->cfg.node_num, result, ERROR_VALUE, addr_str, htons(tmp_addr.sin_port));
 				close_socket(new_node->passthru_socket);
 				new_node->passthru_socket=INVALID_SOCKET;
 				close_socket(tmp_sock);
