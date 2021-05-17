@@ -251,7 +251,7 @@ int init_sdl_video(void)
 
 	if (userDLL)
 	{
-		SetProcessDPIAware = xp_dlsym(userDLL, "SetProcessDPIAware");
+		SetProcessDPIAware = xp_dlsym(userDLL, SetProcessDPIAware);
 	}
 
 
@@ -260,7 +260,7 @@ int init_sdl_video(void)
 
 	if (shcoreDLL)
 	{
-		SetProcessDpiAwareness = xp_dlsym(shcoreDLL, "SetProcessDpiAwareness");
+		SetProcessDpiAwareness = xp_dlsym(shcoreDLL, SetProcessDpiAwareness);
 	}
 
 	if (SetProcessDpiAwareness) {
