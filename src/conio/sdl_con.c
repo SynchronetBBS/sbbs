@@ -633,6 +633,10 @@ static void setup_surfaces_locked(void)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
 		flags |= SDL_WINDOW_RESIZABLE;
+#if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL >= 1)
+        flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+#endif
+
 
 	pthread_mutex_lock(&win_mutex);
 	charwidth = cvstat.charwidth;
