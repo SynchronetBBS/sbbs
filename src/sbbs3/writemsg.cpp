@@ -1607,14 +1607,19 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	long	length;
 	off_t	offset;
 	FILE	*instream;
+	bool	is_msg = (msg->hdr.type == SMB_MSG_TYPE_NORMAL);
 
-	if(!msg->hdr.total_dfields)
-		return false;
+	if(!msg->hdr.total_dfields) {
+		if(!is_msg)
+			smb_dfield(msg, TEXT_BODY, 0);
+		else
+			return false;
+	}
 
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
 	(void)removecase(msgtmp);
-	msgtotxt(smb, msg, msgtmp, /* header: */false, /* mode: */GETMSGTXT_ALL);
-	if(!editfile(msgtmp, /* msg: */true))
+	msgtotxt(smb, msg, msgtmp, /* header: */false, /* mode: */is_msg ? GETMSGTXT_ALL : GETMSGTXT_BODY_ONLY);
+	if(!editfile(msgtmp, is_msg))
 		return false;
 	length=(long)flength(msgtmp);
 	if(length<1L)
@@ -1644,18 +1649,20 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	msg->dfield[0].type=TEXT_BODY;				/* Make one single data field */
 	msg->dfield[0].length=length;
 	msg->dfield[0].offset=0;
-	for(x=1;x<msg->hdr.total_dfields;x++) { 	/* Clear the other data fields */
-		msg->dfield[x].type=UNUSED; 			/* so we leave the header length */
-		msg->dfield[x].length=0;				/* unchanged */
-		msg->dfield[x].offset=0; 
+	if(is_msg) {
+		for(x=1;x<msg->hdr.total_dfields;x++) { 	/* Clear the other data fields */
+			msg->dfield[x].type=UNUSED; 			/* so we leave the header length */
+			msg->dfield[x].length=0;				/* unchanged */
+			msg->dfield[x].offset=0; 
+		}
 	}
-
 
 	if(smb->status.attr&SMB_HYPERALLOC)
 		offset=smb_hallocdat(smb); 
 	else {
-		if((smb->subnum!=INVALID_SUB && cfg.sub[smb->subnum]->misc&SUB_FAST)
-			|| (smb->subnum==INVALID_SUB && cfg.sys_misc&SM_FASTMAIL))
+		if(is_msg
+			&& ((smb->subnum!=INVALID_SUB && cfg.sub[smb->subnum]->misc&SUB_FAST)
+				|| (smb->subnum==INVALID_SUB && cfg.sys_misc&SM_FASTMAIL)))
 			offset=smb_fallocdat(smb,length,1);
 		else
 			offset=smb_allocdat(smb,length,1);

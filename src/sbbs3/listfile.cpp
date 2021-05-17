@@ -43,7 +43,6 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 	size_t	m=0;
 	long	anchor=0,next;
 	file_t* bf[BF_MAX];	/* bf is batch flagged files */
-	smb_t	smb;
 	ulong	file_row[BF_MAX];
 	size_t	longest = 0;
 
@@ -740,7 +739,6 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
     time_t	start,end,t;
     file_t*	f;
 	struct	tm tm;
-	smb_t	smb;
 
 	if(!smb_init_dir(&cfg, &smb, dirnum))
 		return 0;

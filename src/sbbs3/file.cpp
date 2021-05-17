@@ -335,14 +335,13 @@ bool sbbs_t::editfileinfo(file_t* f)
 		if((f->tags == NULL && *tags != '\0') || (f->tags != NULL && strcmp(tags, f->tags)))
 			smb_new_hfield_str(f, SMB_TAGS, tags);
 	}
-#if 0
-	// Extended Description
-	if(f->extdesc != NULL && *f->extdesc) {
-		if(!noyes(text[DeleteExtDescriptionQ])) {
-			// TODO
-		} 
+	if(!noyes(text[EditExtDescriptionQ])) {
+		if(editmsg(&smb, f)) {
+			if(f->extdesc != NULL)
+				smb_freemsgtxt(f->extdesc);
+			f->extdesc = smb_getmsgtxt(&smb, f, GETMSGTXT_BODY_ONLY);
+		}
 	}
-#endif
 	if(dir_op(f->dir)) {
 		char uploader[LEN_ALIAS + 1];
 		SAFECOPY(uploader, f->from);
