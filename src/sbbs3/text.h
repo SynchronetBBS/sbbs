@@ -265,11 +265,11 @@ enum {
 	,CouldntRenameFile
 	,FileRenamed
 	,EditDescription
-	,DeleteExtDescriptionQ
+	,Unused255
 	,EditUploader
 	,EditCreditValue
 	,EditTimesDownloaded
-	,EditOpenCount
+	,EditExtDescriptionQ
 	,Unused260
 	,YouOnlyHaveNCredits
 	,NotEnoughCredits
