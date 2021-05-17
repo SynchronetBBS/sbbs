@@ -294,7 +294,7 @@
 "\1_\r\n\1y\1hDirectory [%d]: \1n"                          238 MoveToDirPrompt
 "%s moved to %s %s.\r\n"                                239 MovedFile
 "\r\nClose file record"                                 240 CloseFileRecordQ
-"~Remove, ~Credits only, ~File only, ~Move, ~Edit, "\   241 SysopRemoveFilePrompt
+"~Remove, ~Credits, ~File only, ~Move, ~Edit, "\        241 SysopRemoveFilePrompt
 	"~Desc, ~View, ~Quit, ~Prev or [~Next]: "
 "~Remove, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: "   242 UserRemoveFilePrompt
 "\r\n\1n\1r\1hFile does not exist: \1c%s\1n\r\n"        243 FileDoesNotExist
@@ -310,11 +310,11 @@
 "\r\n\1r\1h\1iError renaming %s to %s\1n\r\n"               252 CouldntRenameFile
 "%s renamed to %s\r\n"                                  253 FileRenamed
 "\1_\1y\1hDescription      : \1n"                           254 EditDescription
-"Delete extended description"                           255 DeleteExtDescriptionQ
+"UNUSED255"                                                 255 Unused255
 "\1_\1y\1hUploader         : \1n"                           256 EditUploader
 "\1_\1y\1hCredit value     : \1n"                           257 EditCreditValue
 "\1_\1y\1hTimes downloaded : \1n"                           258 EditTimesDownloaded
-"\1_\1y\1hOpen count       : \1n"                           259 EditOpenCount
+"Edit extended description"                                 259 EditExtDescriptionQ
 "UNUSED260"                                                 260 Unused260
 "\r\n\1w\1hYou only have %s credits.\r\n"                 261 YouOnlyHaveNCredits
 "\r\nYou don't have enough credits.\r\n"                262 NotEnoughCredits
