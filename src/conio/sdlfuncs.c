@@ -231,6 +231,44 @@ int init_sdl_video(void)
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2" );
 	sdl.SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1" );
 #ifdef _WIN32
+	// code that tells windows we're High DPI aware so it doesn't scale our windows
+	// taken from Yamagi Quake II
+
+	typedef enum D3_PROCESS_DPI_AWARENESS {
+		D3_PROCESS_DPI_UNAWARE = 0,
+		D3_PROCESS_SYSTEM_DPI_AWARE = 1,
+		D3_PROCESS_PER_MONITOR_DPI_AWARE = 2
+	} YQ2_PROCESS_DPI_AWARENESS;
+
+	/* For Vista, Win7 and Win8 */
+	BOOL(WINAPI *SetProcessDPIAware)(void) = NULL;
+
+	/* Win8.1 and later */
+	HRESULT(WINAPI *SetProcessDpiAwareness)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
+
+	const char* user32dll[] = {"User32", NULL};
+	dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
+
+	if (userDLL)
+	{
+		SetProcessDPIAware = xp_dlsym(userDLL, "SetProcessDPIAware");
+	}
+
+
+	const char* shcoredll[] = {"SHCore", NULL};
+	dll_handle shcoreDLL = xp_dlopen(shcoredll, RTLD_LAZY, 0);
+
+	if (shcoreDLL)
+	{
+		SetProcessDpiAwareness = xp_dlsym(shcoreDLL, "SetProcessDpiAwareness");
+	}
+
+	if (SetProcessDpiAwareness) {
+		SetProcessDpiAwareness(D3_PROCESS_PER_MONITOR_DPI_AWARE);
+	}
+	else if (SetProcessDPIAware) {
+		SetProcessDPIAware();
+	}
 	/* Fail to windib (ie: No mouse attached) */
 	if(sdl.Init(SDL_INIT_VIDEO) == 0) {
 		sdl_video_initialized=TRUE;
