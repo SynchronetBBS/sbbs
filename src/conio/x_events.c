@@ -669,6 +669,35 @@ static void expose_rect(int x, int y, int width, int height)
 	bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 }
 
+static bool
+xlat_mouse_xy(int *x, int *y)
+{
+	int xoff, yoff;
+
+	xoff = (x11_window_width - xim->width) / 2;
+	if (xoff < 0)
+		xoff = 0;
+	yoff = (x11_window_height - xim->height) / 2;
+	if (yoff < 0)
+		yoff = 0;
+
+	if (*x < xoff)
+		return false;
+	if (*y < yoff)
+		return false;
+	*x -= xoff;
+	*y -= yoff;
+	if (*x >= xim->width)
+		return false;
+	if (*y >= xim->height)
+		return false;
+	*x *= x_cvstat.scrnwidth;
+	*y *= x_cvstat.scrnheight;
+	*x /= xim->width;
+	*y /= xim->height;
+	return true;
+}
+
 static int x11_event(XEvent *ev)
 {
 	if (x11.XFilterEvent(ev, win))
@@ -803,16 +832,12 @@ static int x11_event(XEvent *ev)
 		case MotionNotify:
 			{
 				XMotionEvent *me = (XMotionEvent *)ev;
+				if (!xlat_mouse_xy(&me->x, &me->y))
+					break;
 				int x_res = me->x;
 				int y_res = me->y;
 
-				x_res /= x_cvstat.scaling;
-				y_res /= x_cvstat.scaling;
-				y_res /= x_cvstat.vmultiplier;
-				me->x /= x_cvstat.scaling;
 				me->x /= x_cvstat.charwidth;
-				me->y /= x_cvstat.scaling;
-				me->y /= x_cvstat.vmultiplier;
 				me->y /= x_cvstat.charheight;
 				me->x++;
 				me->y++;
@@ -830,16 +855,12 @@ static int x11_event(XEvent *ev)
 		case ButtonRelease:
 			{
 				XButtonEvent *be = (XButtonEvent *)ev;
+				if (!xlat_mouse_xy(&be->x, &be->y))
+					break;
 				int x_res = be->x;
 				int y_res = be->y;
 
-				x_res /= x_cvstat.scaling;
-				y_res /= x_cvstat.scaling;
-				y_res /= x_cvstat.vmultiplier;
-				be->x/=x_cvstat.scaling;
 				be->x/=x_cvstat.charwidth;
-				be->y/=x_cvstat.scaling;
-				be->y/=x_cvstat.vmultiplier;
 				be->y/=x_cvstat.charheight;
 				be->x++;
 				be->y++;
@@ -859,16 +880,12 @@ static int x11_event(XEvent *ev)
 		case ButtonPress:
 			{
 				XButtonEvent *be = (XButtonEvent *)ev;
+				if (!xlat_mouse_xy(&be->x, &be->y))
+					break;
 				int x_res = be->x;
 				int y_res = be->y;
 
-				x_res /= x_cvstat.scaling;
-				y_res /= x_cvstat.scaling;
-				y_res /= x_cvstat.vmultiplier;
-				be->x/=x_cvstat.scaling;
 				be->x/=x_cvstat.charwidth;
-				be->y/=x_cvstat.scaling;
-				be->y/=x_cvstat.vmultiplier;
 				be->y/=x_cvstat.charheight;
 				be->x++;
 				be->y++;
