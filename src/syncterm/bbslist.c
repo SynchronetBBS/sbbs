@@ -1675,7 +1675,8 @@ void change_settings(int connected)
                 j=settings.startup_mode;
                 uifc.helpbuf=   "`Startup Screen Mode`\n\n"
                                 "Select the screen mode/size for at startup\n";
-                switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Screen Mode",screen_modes)) {
+		i = sizeof(screen_modes)/sizeof(screen_modes[0]);
+                switch(i=uifc.list(WIN_SAV,0,0,0,&j,&i,"Startup Screen Mode",screen_modes)) {
                     case -1:
                         check_exit(FALSE);
                         continue;
