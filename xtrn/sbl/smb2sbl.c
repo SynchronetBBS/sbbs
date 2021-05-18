@@ -145,37 +145,6 @@ time_t dstrtounix(char *instr)
 }
 
 /****************************************************************************/
-/* Updates 16-bit "rcrc" with character 'ch'                                */
-/****************************************************************************/
-void ucrc16(uchar ch, ushort *rcrc) {
-	ushort i, cy;
-    uchar nch=ch;
- 
-for (i=0; i<8; i++) {
-    cy=*rcrc & 0x8000;
-    *rcrc<<=1;
-    if (nch & 0x80) *rcrc |= 1;
-    nch<<=1;
-    if (cy) *rcrc ^= 0x1021; }
-}
-
-/****************************************************************************/
-/* Returns 16-crc of string (not counting terminating NULL) 				*/
-/****************************************************************************/
-ushort crc16(char *str)
-{
-	int 	i=0;
-	ushort	crc=0;
-
-ucrc16(0,&crc);
-while(str[i])
-	ucrc16(str[i++],&crc);
-ucrc16(0,&crc);
-ucrc16(0,&crc);
-return(crc);
-}
-
-/****************************************************************************/
 /* Truncates white-space chars off end of 'str'								*/
 /* This is a *special* version of trunccrsp that truncates at first CR char	*/
 /****************************************************************************/
@@ -205,12 +174,6 @@ int main(int argc, char **argv)
 
 	fprintf(stderr,"\nSMB2SBL v2.%s-%s - Updates SBL via SMB - Copyright 2003 "
 		"Rob Swindell\n\n",revision,PLATFORM_DESC);
-
-#if 0
-	if(putenv("TZ=UCT0"))
-		fprintf(stderr,"!putenv() FAILED\n");
-	tzset();
-#endif
 
 	if(argc<3) {
 		fprintf(stderr,"usage: smb2sbl <smb_file> <sbl.dab>\n\n");

@@ -60,38 +60,6 @@ smb_t		smb;
 char		revision[16];
 
 /****************************************************************************/
-/* Updates 16-bit "rcrc" with character 'ch'                                */
-/****************************************************************************/
-void ucrc16(uchar ch, ushort *rcrc) {
-	ushort i, cy;
-    uchar nch=ch;
- 
-for (i=0; i<8; i++) {
-    cy=*rcrc & 0x8000;
-    *rcrc<<=1;
-    if (nch & 0x80) *rcrc |= 1;
-    nch<<=1;
-    if (cy) *rcrc ^= 0x1021; }
-}
-
-/****************************************************************************/
-/* Returns 16-crc of string (not counting terminating NULL) 				*/
-/****************************************************************************/
-ushort crc16(char *str)
-{
-	int 	i=0;
-	ushort	crc=0;
-
-ucrc16(0,&crc);
-while(str[i])
-	ucrc16(str[i++],&crc);
-ucrc16(0,&crc);
-ucrc16(0,&crc);
-return(crc);
-}
-
-
-/****************************************************************************/
 /* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
 /****************************************************************************/
 char* unixtodstr(time_t unix_time, char *str)
@@ -358,7 +326,7 @@ int main(int argc, char **argv)
 		length+=2;
 
 		memset(&msg,0,sizeof(smbmsg_t));
-		memcpy(msg.hdr.id,"SHD\x1a",4);
+		memcpy(msg.hdr.msghdr_id,"SHD\x1a",4);
 		msg.hdr.version=smb_ver();
 		msg.hdr.when_written.time=now;
 		msg.hdr.when_imported.time=now;
