@@ -1962,12 +1962,18 @@ int ciolib_to_screen(int ciolib)
 			return(SCREEN_MODE_80X25);
 		case C80X28 :
 			return(SCREEN_MODE_80X28);
+		case C80X30:
+			return(SCREEN_MODE_80X30);
 		case C80X43 :
 			return(SCREEN_MODE_80X43);
 		case C80X50 :
 			return(SCREEN_MODE_80X50);
 		case C80X60 :
 			return(SCREEN_MODE_80X60);
+		case ST132X37_16_9:
+			return(SCREEN_MODE_132X37);
+		case ST132X52_5_4:
+			return(SCREEN_MODE_132x52);
 		case VESA_132X25 :
 			return(SCREEN_MODE_132X25);
 		case VESA_132X28 :
