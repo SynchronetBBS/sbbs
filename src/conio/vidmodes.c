@@ -107,7 +107,7 @@ struct video_params vparams[] = {
 	/* VESA 34x132 mode */
 	{VESA_132X34, COLOUR_PALETTE,        132, 34, 12, 13, 14, 8, 1, 7, 0, 601, 1000, 1056, 476},
 	/* VESA 43x132 mode */
-	{VESA_132X43, COLOUR_PALETTE,        132, 43,  7,  7, 14, 8, 1, 7, 0, 442, 1000, 1056, 350},
+	{VESA_132X43, COLOUR_PALETTE,        132, 43,  7,  7,  8, 8, 1, 7, 0, 442, 1000, 1056, 350},
 	/* VESA 50x132 mode */
 	{VESA_132X50, COLOUR_PALETTE,        132, 50,  7,  7,  8, 8, 1, 7, 0, 505, 1000, 1056, 400},
 	/* VESA 60x132 mode */
