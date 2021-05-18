@@ -1604,7 +1604,7 @@ void change_settings(int connected)
         inicontents=strListInit();
     }
 
-    for(i=0; i<12; i++)
+    for(i=0; i<13; i++)
         opt[i]=opts[i];
     opt[i]=NULL;
 
