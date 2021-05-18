@@ -551,8 +551,7 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 			zm->transfer_start_pos=0;
 		if((cps=(unsigned)((current_pos-zm->transfer_start_pos)/t))==0)
 			cps=1;		/* cps so far */
-		l=zm->current_file_size/cps;	/* total transfer est time */
-		l-=t;			/* now, it's est time left */
+		l = (zm->current_file_size - current_pos) / cps;	/* remaining transfer est time */
 		if(l<0) l=0;
 		cprintf("File (%u of %u): %-.*s"
 			,zm->current_file_num, zm->total_files, TRANSFER_WIN_WIDTH - 20, zm->current_file_name);
