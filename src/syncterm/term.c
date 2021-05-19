@@ -2991,7 +2991,7 @@ BOOL doterm(struct bbslist *bbs)
 					gotoxy(i,j);
 					key = 0;
 					break;
-				case 0x8d00:	/* CTRL-Up */
+				case 0x9800:	/* ALT-Up */
 					if(bbs->conn_type != CONN_TYPE_SERIAL) {
 						if(speed)
 							speed=rates[get_rate_num(speed)+1];
@@ -3000,7 +3000,7 @@ BOOL doterm(struct bbslist *bbs)
 						key = 0;
 					}
 					break;
-				case 0x9100:	/* CTRL-Down */
+				case 0xa000:	/* ALT-Down */
 					if(bbs->conn_type != CONN_TYPE_SERIAL) {
 						i=get_rate_num(speed);
 						if(i==0)
