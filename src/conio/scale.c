@@ -290,16 +290,22 @@ do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int as
 	size_t needsz = fwidth * fheight * sizeof(uint32_t);
 	if (needsz > ret1->sz) {
 		nt = realloc(ret1->data, needsz);
-		if (nt == NULL)
+		if (nt == NULL) {
+			release_buffer(ret1);
+			release_buffer(ret2);
 			return NULL;
+		}
 		ret1->data = nt;
 		ret1->sz = needsz;
 	}
 
 	if (needsz > ret2->sz) {
 		nt = realloc(ret2->data, needsz);
-		if (nt == NULL)
+		if (nt == NULL) {
+			release_buffer(ret1);
+			release_buffer(ret2);
 			return NULL;
+		}
 		ret2->data = nt;
 		ret2->sz = needsz;
 	}
