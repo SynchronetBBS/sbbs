@@ -21,7 +21,7 @@
 	<string>SyncTERM</string>
 
 	<key>CFBundleShortVersionString</key>
-	<string>1.2a</string>
+	<string>1.2b</string>
 
 	<key>CFBundleGetInfoString</key>
 	<string>An ANSI-BBS terminal which supports telnet, rlogin, and SSH</string>

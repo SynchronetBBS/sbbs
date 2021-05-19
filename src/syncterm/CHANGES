@@ -1,3 +1,21 @@
+Version 1.2
+-----------
+Aspect ratio enforcement
+Support internal smooth scaling
+Support toggling scaling blocky vs smooth
+Support for telnets
+Support for SSH "none" auth method
+Support for VGA mode
+Start of RIP and SkyPix support (incomplete)
+Added a comment field to listings
+Default connection type changed to SSH
+ALT-Left/ALT-Right for window size snapping, ALT-Up/ALT-Down for speed
+Use the colodore C64 palette with "most common" adjustments
+On Windows, indicate "awareness" for "High DPI"
+Prefer X11 mode over SDL mode
+Fix scrolling with left/right margins
+Resumed ZModem ETA estimation fix
+
 Version 1.1
 -----------
 Don't wait for keypress after file transfer completes

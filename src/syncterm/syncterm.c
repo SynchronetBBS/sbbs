@@ -61,8 +61,8 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include "window.h"
 #include "scale.h"
 
-char* syncterm_version = "SyncTERM 1.2a"
-#define ALPHA
+char* syncterm_version = "SyncTERM 1.2b"
+//#define ALPHA
 #ifdef _DEBUG
 	" Debug ("__DATE__")"
 #endif
