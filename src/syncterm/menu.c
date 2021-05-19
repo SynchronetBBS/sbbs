@@ -144,7 +144,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"Send Login ("ALT_KEY_NAMEP"-L)"
 						,"Upload ("ALT_KEY_NAMEP"-U)"
 						,"Download ("ALT_KEY_NAMEP"-D)"
-						,"Change Output Rate (Ctrl-Up/Ctrl-Down)"
+						,"Change Output Rate (" ALT_KEY_NAMEP "-Up/" ALT_KEY_NAMEP "-Down)"
 						,"Change Log Level"
 						,"Capture Control ("ALT_KEY_NAMEP"-C)"
 						,"ANSI Music Control ("ALT_KEY_NAMEP"-M)"
