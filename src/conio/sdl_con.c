@@ -330,65 +330,27 @@ void sdl_flush(void)
 static bool
 window_can_scale_internally(int winwidth, int winheight)
 {
-	int idealmw;
-	int idealmh;
-	int idealh;
-	int idealw;
-
-	// First, figure out if width or height controlls the image size.
-	idealmw = lround((double)cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth);
-	idealmh = lround((double)cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight);
-	idealw = lround(winheight * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
-	idealh = lround(winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
-
-	if (idealw < winwidth) {
-		// Height controls size...
-		if (winheight % idealmh == 0)
-			return true;
-	}
-	else {
-		// Width controls size...
-		if (winwidth % idealmw == 0)
-			return true;
-	}
+	int fw, fh;
+	aspect_fix(&winwidth, &winheight, cvstat.aspect_width, cvstat.aspect_height);
+	fw = winwidth;
+	fh = winheight;
+	aspect_reverse(&winwidth, &winheight, cvstat.scrnwidth, cvstat.scrnheight, cvstat.aspect_width, cvstat.aspect_height);
+	if (fw == winwidth || fh == winheight)
+		return true;
 	return false;
 }
 
 static void
 internal_scaling_factors(int winwidth, int winheight, int *x, int *y)
 {
-	int idealmh;
-	int idealmw;
-	int idealh;
-	int idealw;
-
-	// First, figure out if width or height controlls the image size.
-	idealmw = lround((double)cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth);
-	idealmh = lround((double)cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight);
-	idealw = lround((double)winheight * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
-	idealh = lround((double)winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
-
-
-	if (idealw < winwidth) {
-		// Height controls size...
-		if (idealh == winheight) {
-			idealmw = cvstat.scrnwidth;
-			*x = lround((double)idealw / idealmw);
-			*y = lround((double)idealh / idealmh);
-			return;
-		}
-	}
-	else {
-		// Width controls size...
-		if (idealw == winwidth) {
-			idealmh = cvstat.scrnheight;
-			*x = lround((double)idealw / idealmw);
-			*y = lround((double)idealh / idealmh);
-			return;
-		}
-	}
-	*x = 1;
-	*y = 1;
+	aspect_fix(&winwidth, &winheight, cvstat.aspect_width, cvstat.aspect_height);
+	aspect_reverse(&winwidth, &winheight, cvstat.scrnwidth, cvstat.scrnheight, cvstat.aspect_width, cvstat.aspect_height);
+	*x = winwidth / cvstat.scrnwidth;
+	*y = winheight / cvstat.scrnheight;
+	if (*x < 1 || *x > 14)
+		*x = 1;
+	if (*y < 1 || *y > 14)
+		*y = 1;
 }
 
 static int sdl_init_mode(int mode)
@@ -410,8 +372,9 @@ static int sdl_init_mode(int mode)
 	pthread_mutex_lock(&vstatlock);
 	oldcols = cvstat.cols;
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
-	vstat.winwidth = ((double)cvstat.winwidth / (cvstat.scrnwidth)) * (vstat.scrnwidth);
-	vstat.winheight = ((double)cvstat.winheight / (cvstat.scrnheight * cvstat.vmultiplier)) * (vstat.scrnheight * vstat.vmultiplier);
+	vstat.winwidth = lround((double)cvstat.winwidth / cvstat.scrnwidth * vstat.scrnwidth);
+	vstat.winheight = lround((double)cvstat.winheight / cvstat.scrnheight * vstat.scrnheight);
+	aspect_correct(&vstat.winwidth, &cvstat.winheight, cvstat.aspect_width, cvstat.aspect_height);
 	if (oldcols != vstat.cols) {
 		if (oldcols == 0) {
 			if (ciolib_initial_window_width > 0)
@@ -434,8 +397,6 @@ static int sdl_init_mode(int mode)
 		vstat.winwidth = vstat.scrnwidth;
 	if (vstat.winheight < vstat.scrnheight)
 		vstat.winheight = vstat.scrnheight;
-	if(vstat.vmultiplier < 1)
-		vstat.vmultiplier = 1;
 
 	cvstat = vstat;
 	internal_scaling = window_can_scale_internally(vstat.winwidth, vstat.winheight);
@@ -622,9 +583,11 @@ static void setup_surfaces_locked(void)
 {
 	int		flags=0;
 	SDL_Event	ev;
-	int charwidth, charheight, cols, rows, vmultiplier;
+	int charwidth, charheight, cols, rows;
 	SDL_Texture *newtexture;
+	int idealw;
 	int idealh;
+	int idealmw;
 	int idealmh;
 
 	if(fullscreen)
@@ -641,19 +604,25 @@ static void setup_surfaces_locked(void)
 	charheight = cvstat.charheight;
 	cols = cvstat.cols;
 	rows = cvstat.rows;
-	vmultiplier = cvstat.vmultiplier;
-	idealh = lround((long double)cvstat.winwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
-	idealmh = lround((long double)cvstat.scrnwidth * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
-	internal_scaling = true;
-	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+	idealmw = cvstat.scrnwidth;
+	idealmh = cvstat.scrnheight;
+	aspect_correct(&idealmw, &idealmh, cvstat.aspect_width, cvstat.aspect_height);
+	idealw = cvstat.winwidth;
+	idealh = cvstat.winheight;
+	aspect_fix(&idealw, &idealh, cvstat.aspect_width, cvstat.aspect_height);
+	internal_scaling = window_can_scale_internally(idealw, idealh);
+	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, internal_scaling ? "0" : "2");
 
 	if (win == NULL) {
 		// SDL2: This is slow sometimes... not sure why.
-		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, idealh, flags, &win, &renderer) == 0) {
+		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, cvstat.winheight, flags, &win, &renderer) == 0) {
 			sdl.RenderClear(renderer);
-			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.winwidth, idealh);
+			if (internal_scaling)
+				newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, idealw, idealh);
+			else
+				newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 
-			if (texture) 
+			if (texture)
 				sdl.DestroyTexture(texture);
 			texture = newtexture;
 		}
@@ -663,15 +632,18 @@ static void setup_surfaces_locked(void)
 		}
 	}
 	else {
-		sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, idealmh);
-		sdl.SetWindowSize(win, cvstat.winwidth, idealh);
-		newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.winwidth, idealh);
+		sdl.SetWindowMinimumSize(win, idealmw, idealmh);
+		sdl.SetWindowSize(win, idealw, idealh);
+		if (internal_scaling)
+			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, idealw, idealh);
+		else
+			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 		sdl.RenderClear(renderer);
 		if (texture)
 			sdl.DestroyTexture(texture);
 		texture = newtexture;
 	}
-	sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, idealmh);
+	sdl.SetWindowMinimumSize(win, idealmw, idealmh);
 
 	if(win!=NULL) {
 		bitmap_drv_request_pixels();
@@ -900,37 +872,50 @@ void sdl_video_event_thread(void *data)
 
 						// Don't allow ALT-DIR to change size when maximized...
 						if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
+							bool wc;
 							pthread_mutex_lock(&vstatlock);
 							w = cvstat.winwidth;
 							h = cvstat.winheight;
+							aspect_fix(&w, &h, cvstat.aspect_width, cvstat.aspect_height);
+							if (cvstat.aspect_width == 0 || cvstat.aspect_height == 0)
+								wc = true;
+							else
+								wc = lround((double)(h * cvstat.aspect_width) / cvstat.aspect_height * cvstat.scrnwidth / cvstat.scrnheight) > w;
 							switch(ev.key.keysym.sym) {
 								case SDLK_LEFT:
-									if (w % (cvstat.scrnwidth)) {
-										w = w - w % cvstat.scrnwidth;
+									if (wc) {
+										if (w % (cvstat.scrnwidth)) {
+											w = w - w % cvstat.scrnwidth;
+										}
+										else {
+											w -= cvstat.scrnwidth;
+											if (w < cvstat.scrnwidth)
+												w = cvstat.scrnwidth;
+										}
 									}
 									else {
-										w -= cvstat.scrnwidth;
-										if (w < cvstat.scrnwidth)
-											w = cvstat.scrnwidth;
+										if (h % (cvstat.scrnheight)) {
+											h = h - h % cvstat.scrnheight;
+										}
+										else {
+											h -= cvstat.scrnheight;
+											if (h < cvstat.scrnheight)
+												h = cvstat.scrnheight;
+										}
 									}
 									break;
 								case SDLK_RIGHT:
-									w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
-									break;
-								case SDLK_UP:
-									if (h % (cvstat.scrnheight * cvstat.vmultiplier)) {
-										h = h - h % (cvstat.scrnheight * cvstat.vmultiplier);
-									}
-									else {
-										h -= (cvstat.scrnheight * cvstat.vmultiplier);
-										if (h < (cvstat.scrnheight * cvstat.vmultiplier))
-											h = cvstat.scrnheight * cvstat.vmultiplier;
-									}
-									break;
-								case SDLK_DOWN:
-									h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
+									if (wc)
+										w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
+									else
+										h = (h - h % cvstat.scrnheight) + cvstat.scrnheight;
 									break;
 							}
+							if (wc)
+								h = INT_MAX;
+							else
+								w = INT_MAX;
+							aspect_fix(&w, &h, cvstat.aspect_width, cvstat.aspect_height);
 							if (w > 16384 || h > 16384)
 								beep();
 							else {
@@ -1063,8 +1048,13 @@ void sdl_video_event_thread(void *data)
 							if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
 								SDL_Texture *newtexture;
 								sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh);
-								if (internal_scaling)
-									newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.winwidth, cvstat.winheight);
+								if (internal_scaling) {
+									int idealw, idealh;
+									idealw = cvstat.winwidth;
+									idealh = cvstat.winheight;
+									aspect_fix(&idealw, &idealh, cvstat.aspect_width, cvstat.aspect_height);
+									newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, idealw, idealh);
+								}
 								else
 									newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 								sdl.RenderClear(renderer);
@@ -1118,7 +1108,7 @@ void sdl_video_event_thread(void *data)
 										int xscale, yscale;
 										internal_scaling_factors(cvstat.winwidth, cvstat.winheight, &xscale, &yscale);
 										gb = do_scale(list, xscale, yscale,
-										    (double)cvstat.scale_numerator / cvstat.scale_denominator);
+										    cvstat.aspect_width, cvstat.aspect_height);
 										src.x = 0;
 										src.y = 0;
 										src.w = gb->w;
@@ -1142,8 +1132,8 @@ void sdl_video_event_thread(void *data)
 											memcpy(pixels, gb->data, gb->w * ch * sizeof(gb->data[0]));
 										}
 										sdl.UnlockTexture(texture);
-										dst.x = 0;
-										dst.y = 0;
+										dst.x = (cvstat.winwidth - gb->w) / 2;
+										dst.y = (cvstat.winheight - gb->h) / 2;
 										dst.w = gb->w;
 										dst.h = gb->h;
 										release_buffer(gb);
@@ -1172,21 +1162,12 @@ void sdl_video_event_thread(void *data)
 											memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
 										}
 										sdl.UnlockTexture(texture);
-										dst.x = 0;
-										dst.y = 0;
 										dst.w = cvstat.winwidth;
 										dst.h = cvstat.winheight;
 										// Get correct aspect ratio for dst...
-										idealw = lround((long double)dst.h * cvstat.scale_numerator / cvstat.scale_denominator * cvstat.scrnwidth / cvstat.scrnheight);
-										idealh = lround((long double)dst.w * cvstat.scale_denominator / cvstat.scale_numerator * cvstat.scrnheight / cvstat.scrnwidth);
-										if (idealw < cvstat.winwidth) {
-											dst.x = (cvstat.winwidth - idealw) / 2;
-											dst.w = idealw;
-										}
-										else if(idealh < cvstat.winheight) {
-											dst.y = (cvstat.winheight - idealh) / 2;
-											dst.h = idealh;
-										}
+										aspect_fix(&dst.w, &dst.h, cvstat.aspect_width, cvstat.aspect_height);
+										dst.x = (cvstat.winwidth - dst.w) / 2;
+										dst.y = (cvstat.winheight - dst.h) / 2;
 									}
 									sdl.RenderCopy(renderer, texture, &src, &dst);
 								}
