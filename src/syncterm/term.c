@@ -802,11 +802,6 @@ void erase_transfer_window(void) {
 
 void ascii_upload(FILE *fp);
 void raw_upload(FILE *fp);
-#define XMODEM_128B		(1<<10)	/* Use 128 byte block size (ick!) */
-void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
-void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch);
-void xmodem_download(struct bbslist *bbs, long mode, char *path);
-void zmodem_download(struct bbslist *bbs);
 
 void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 {
@@ -2126,7 +2121,7 @@ void capture_control(struct bbslist *bbs)
 		updated=TRUE; \
 	}
 
-static int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
+int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 {
 	get_syncterm_filename(fn, fnsz, SYNCTERM_PATH_CACHE, FALSE);
 	backslash(fn);
@@ -2532,7 +2527,7 @@ BOOL doterm(struct bbslist *bbs)
 	/* Main input loop */
 	oldmc=hold_update;
 	showmouse();
-	init_rip(bbs->rip);
+	init_rip(bbs);
 	if (bbs->rip)
 		ms.mode = MM_RIP;
 	setup_mouse_events(&ms);

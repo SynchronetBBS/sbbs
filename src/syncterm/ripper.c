@@ -32,6 +32,8 @@
 #include "term.h"
 #include "window.h"
 #include "amigafont.h"
+#include "ripper.h"
+#include "sexyz.h"
 
 // TODO: Output parsing... (yech)
 // TODO: Actually make the graphics viewport work properly
@@ -272,6 +274,7 @@ static struct {
 	struct {
 		int sx, sy, ex, ey, xpos, ypos;
 	} text_region;
+	struct bbslist *bbs;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -307,6 +310,7 @@ static struct {
 	0, 0,
 	NULL,
 	{0, 0, 0, 0, 0, 0},
+	NULL,
 };
 
 static const uint16_t rip_line_patterns[4] = {
@@ -12487,25 +12491,28 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (strchr(&args[6], '\\'))
 								break;
+							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+								break;
+							strcat(cache_path, &args[6]);
 							struct stat st;
 							char str[1024];
 							char dstr[64];
 							struct tm tm;
 							switch(arg1) {
 								case 0:
-									if (access(&args[6], R_OK))
+									if (access(cache_path, R_OK))
 										conn_send("0", 1, 1000);
 									else
 										conn_send("1", 1, 1000);
 									break;
 								case 1:
-									if (access(&args[6], R_OK))
+									if (access(cache_path, R_OK))
 										conn_send("0\r", 2, 1000);
 									else
 										conn_send("1\r", 2, 1000);
 									break;
 								case 2:
-									if (stat(&args[6], &st))
+									if (stat(cache_path, &st))
 										conn_send("0\r", 2, 1000);
 									else {
 										sprintf(str, "1.%" PRIdOFF "\n", st.st_size);
@@ -12513,7 +12520,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									}
 									break;
 								case 3:
-									if (stat(&args[6], &st))
+									if (stat(cache_path, &st))
 										conn_send("0\r", 2, 1000);
 									else {
 										localtime_r(&st.st_atime, &tm);
@@ -12523,7 +12530,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									}
 									break;
 								case 4:
-									if (stat(&args[6], &st))
+									if (stat(cache_path, &st))
 										conn_send("0\r", 2, 1000);
 									else {
 										localtime_r(&st.st_atime, &tm);
@@ -12604,7 +12611,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 *        parameters, should be set to "10".
 							 */
 							handled = true;
-							cache_path[0] = 0;
+							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+								break;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
 							arg2 = parse_mega(&args[6], 1);
@@ -13148,7 +13156,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (rip.clipboard == NULL)
 								break;
-							cache_path[0] = 0;
+							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+								break;
 							strcat(cache_path, &args[1]);
 							icn = fopen(cache_path, "wb");
 							if (icn != NULL) {
@@ -13274,6 +13283,113 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 *        command on a line of text.  The protocol must begin on
 							 *        the very next line.
 							 */
+							arg1 = parse_mega(&args[0], 1);
+							arg2 = parse_mega(&args[1], 1);
+							arg3 = parse_mega(&args[2], 2);
+							arg4 = parse_mega(&args[4], 4);
+							handled = true;
+							if (arg1 < 0 || arg1 > 1)
+								break;
+							if (arg2 < 0 || arg2 == 4 || arg2 > 7)
+								break;
+							if (arg3 < 0 || arg3 == 0 || arg3 == 5)
+								break;
+							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+								break;
+							size_t cpln = strlen(cache_path);
+							if (arg1 == 0) {	// Download (from BBS)
+								char *dldir = strdup(rip.bbs->dldir);
+								strcpy(rip.bbs->dldir, cache_path);
+								char *p = strstr(&args[8], "<>");
+								if (p == NULL) {
+									strcpy(rip.bbs->dldir, dldir);
+									free(dldir);
+									break;
+								}
+								size_t fnln = p - &args[8];
+								if (cpln + fnln >= cpln) {
+									strcpy(rip.bbs->dldir, dldir);
+									free(dldir);
+									break;
+								}
+								strncpy(&cache_path[cpln], &args[8], sizeof(cache_path) - cpln);
+								suspend_rip(true);
+								switch(arg2) {
+									case 0:
+										xmodem_download(rip.bbs, XMODEM|RECV, cache_path);
+										break;
+									case 1:
+										xmodem_download(rip.bbs, XMODEM|CRC|RECV, cache_path);
+										break;
+									case 2:
+										xmodem_download(rip.bbs, XMODEM|CRC|RECV, cache_path);
+										break;
+									case 3:
+										xmodem_download(rip.bbs, XMODEM|GMODE|CRC|RECV, cache_path);
+										break;
+									case 5:
+										xmodem_download(rip.bbs, YMODEM|CRC|RECV, cache_path);
+										break;
+									case 6:
+										xmodem_download(rip.bbs, YMODEM|GMODE|CRC|RECV, cache_path);
+										break;
+									case 7:
+										zmodem_download(rip.bbs);
+										break;
+								}
+								strcpy(rip.bbs->dldir, dldir);
+								free(dldir);
+								suspend_rip(false);
+							}
+							else {			// Upload (to BBS)
+								char *uldir = strdup(rip.bbs->uldir);
+								strcpy(rip.bbs->uldir, cache_path);
+								char *p = strstr(&args[8], "<>");
+								if (p == NULL) {
+									strcpy(rip.bbs->uldir, uldir);
+									free(uldir);
+									break;
+								}
+								size_t fnln = p - &args[8];
+								if (cpln + fnln >= cpln) {
+									strcpy(rip.bbs->uldir, uldir);
+									free(uldir);
+									break;
+								}
+								strncpy(&cache_path[cpln], &args[8], sizeof(cache_path) - cpln);
+								FILE* fp = fopen(cache_path, "rb");
+								if (fp == NULL) {
+									strcpy(rip.bbs->uldir, uldir);
+									free(uldir);
+									break;
+								}
+								setvbuf(fp, NULL, _IOFBF, 0x10000);
+								suspend_rip(true);
+								switch(arg2) {
+									case 0:
+										xmodem_upload(rip.bbs, fp, cache_path, XMODEM_128B|XMODEM|SEND, 0);
+										break;
+									case 1:
+										xmodem_upload(rip.bbs, fp, cache_path, XMODEM_128B|XMODEM|CRC|SEND, 0);
+										break;
+									case 2:
+										xmodem_upload(rip.bbs, fp, cache_path, XMODEM|CRC|SEND, 0);
+										break;
+									case 3:
+										xmodem_upload(rip.bbs, fp, cache_path, XMODEM|GMODE|CRC|SEND, 0);
+										break;
+									case 5:
+										xmodem_upload(rip.bbs, fp, cache_path, YMODEM|CRC|SEND, 0);
+										break;
+									case 6:
+										xmodem_upload(rip.bbs, fp, cache_path, YMODEM|GMODE|CRC|SEND, 0);
+										break;
+									case 7:
+										zmodem_upload(rip.bbs, fp, cache_path);
+										break;
+								}
+								suspend_rip(false);
+							}
 							break;
 					}
 					break;
@@ -14307,7 +14423,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 }
 
 void
-init_rip(int version)
+init_rip(struct bbslist *bbs)
 {
 	FREE_AND_NULL(rip.xmap);
 	FREE_AND_NULL(rip.ymap);
@@ -14316,8 +14432,8 @@ init_rip(int version)
 	memset(&rip, 0, sizeof(rip));
 	rip.state = RIP_STATE_BOL;
 	rip.newstate = RIP_STATE_FLUSHING;
-	rip.enabled = version != RIP_VERSION_NONE;
-	rip.version = version;
+	rip.enabled = bbs->rip != RIP_VERSION_NONE;
+	rip.version = bbs->rip;
 	rip.x = 0;
 	rip.y = 0;
 	rip.viewport.sx = 0;
@@ -14343,6 +14459,7 @@ init_rip(int version)
 	pthread_mutex_unlock(&vstatlock);
 	rip.viewport.ex = rip.x_dim - 1;
 	rip.viewport.ey = rip.y_dim - 1;
+	rip.bbs = bbs;
 
 	pending_len = 0;
 	if (pending)
@@ -14350,7 +14467,7 @@ init_rip(int version)
 	moredata_len = 0;
 	if (moredata)
 		moredata[0] = 0;
-	if (version) {
+	if (bbs->rip) {
 		shadow_palette();
 		memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 		set_ega_palette();
