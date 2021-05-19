@@ -15,4 +15,7 @@ struct graphics_buffer * get_buffer(void);
 void release_buffer(struct graphics_buffer *);
 void init_r2y(void);
 
-struct graphics_buffer * do_scale(struct rectlist* rect, int xscale, int yscale, double ratio);
+struct graphics_buffer * do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int aspect_height);
+void aspect_correct(int *x, int *y, int aspect_width, int aspect_height);
+void aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, int aspect_height);
+void aspect_fix(int *x, int *y, int aspect_width, int aspect_height);

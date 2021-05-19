@@ -61,11 +61,10 @@ struct  video_params {
 	int curs_end;
 	int charheight;
 	int charwidth;
-	int	vmultiplier;
 	int	default_attr;
 	int	flags;
-	int	scale_numerator;
-	int	scale_denominator;
+	int	aspect_width;
+	int	aspect_height;
 	int	xres;
 	int	yres;
 };
@@ -98,13 +97,12 @@ struct video_stats {
 	int blink_altcharset;
 	int currattr;
 	int scaling;
-	int vmultiplier;
 	int scrnwidth;
 	int scrnheight;
 	int winwidth;
 	int winheight;
-	int scale_numerator;
-	int scale_denominator;
+	int aspect_width;
+	int aspect_height;
 	uint32_t flags;
 #define VIDMODES_FLAG_PALETTE_VMEM         1
 #define VIDMODES_FLAG_EXPAND               2

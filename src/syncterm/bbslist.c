@@ -1555,6 +1555,8 @@ custom_mode_adjusted(int *cur, char **opt)
             vparams[cvmode].cols = settings.custom_cols;
             vparams[cvmode].rows = settings.custom_rows;
             vparams[cvmode].charheight = settings.custom_fontheight;
+            vparams[cvmode].aspect_width = settings.custom_aw;
+            vparams[cvmode].aspect_height = settings.custom_ah;
         }
         return;
     }
@@ -1566,6 +1568,8 @@ custom_mode_adjusted(int *cur, char **opt)
         vparams[cvmode].cols = settings.custom_cols;
         vparams[cvmode].rows = settings.custom_rows;
         vparams[cvmode].charheight = settings.custom_fontheight;
+        vparams[cvmode].aspect_width = settings.custom_aw;
+        vparams[cvmode].aspect_height = settings.custom_ah;
         textmode(ti.currmode);
     }
     init_uifc(TRUE, TRUE);
@@ -1590,7 +1594,7 @@ void change_settings(int connected)
     str_list_t  inicontents;
     char    opts[13][80];
     char    *opt[14];
-    char    *subopts[8];
+    char    *subopts[10];
     int     i,j,k,l;
     char    str[64];
     int cur=0;
@@ -1883,10 +1887,12 @@ void change_settings(int connected)
                 j = 0;
                 for (k=0; k==0;) {
                     // Beware case 2 below if adding things
-                    asprintf(&subopts[0], "Rows      (%d)", settings.custom_rows);
-                    asprintf(&subopts[1], "Columns   (%d)", settings.custom_cols);
-                    asprintf(&subopts[2], "Font Size (%s)", settings.custom_fontheight == 8 ? "8x8" : settings.custom_fontheight == 14 ? "8x14" : "8x16");
-                    subopts[3] = NULL;
+                    asprintf(&subopts[0], "Rows                (%d)", settings.custom_rows);
+                    asprintf(&subopts[1], "Columns             (%d)", settings.custom_cols);
+                    asprintf(&subopts[2], "Font Size           (%s)", settings.custom_fontheight == 8 ? "8x8" : settings.custom_fontheight == 14 ? "8x14" : "8x16");
+                    asprintf(&subopts[3], "Aspect Ratio Width  (%d)", settings.custom_aw);
+                    asprintf(&subopts[4], "Aspect Ratio Height (%d)", settings.custom_ah);
+                    subopts[5] = NULL;
                     switch (uifc.list(WIN_SAV,0,0,0,&j,NULL,"Video Output Mode",subopts)) {
                         case -1:
                             check_exit(FALSE);
@@ -1930,10 +1936,10 @@ void change_settings(int connected)
                         case 2:
                             uifc.helpbuf=   "`Font Size`\n\n"
                                             "Choose the font size for the custom mode.";
-                            subopts[4] = "8x8";
-                            subopts[5] = "8x14";
-                            subopts[6] = "8x16";
-                            subopts[7] = NULL;
+                            subopts[6] = "8x8";
+                            subopts[7] = "8x14";
+                            subopts[8] = "8x16";
+                            subopts[9] = NULL;
                             switch(settings.custom_fontheight) {
                                 case 8:
                                     l = 0;
@@ -1965,10 +1971,46 @@ void change_settings(int connected)
                                     custom_mode_adjusted(&cur, opt);
                                     break;
                             }
+                        case 3:
+                            uifc.helpbuf=   "`Aspect Ratio Width`\n\n"
+                                            "Width part of the aspect ratio.  Historically, this has been 4";
+                            sprintf(str,"%d",settings.custom_aw);
+                            if (uifc.input(WIN_SAV|WIN_MID, 0, 0, "Aspect Ratio Width", str, 9, K_NUMBER|K_EDIT)!=-1) {
+                                l = atoi(str);
+                                if (l <= 0) {
+                                    uifc.msg("Aspec Ratio Width must be greater than zero");
+                                    check_exit(FALSE);
+                                }
+                                else {
+                                    settings.custom_aw = l;
+                                    iniSetInteger(&inicontents, "SyncTERM", "CustomAspectWidth", settings.custom_aw, &ini_style);
+                                    custom_mode_adjusted(&cur, opt);
+                                }
+                            }
+                            break;
+                        case 4:
+                            uifc.helpbuf=   "`Aspect Ratio Height`\n\n"
+                                            "Height part of the aspect ratio.  Historically, this has been 3";
+                            sprintf(str,"%d",settings.custom_ah);
+                            if (uifc.input(WIN_SAV|WIN_MID, 0, 0, "Aspect Ratio Height", str, 9, K_NUMBER|K_EDIT)!=-1) {
+                                l = atoi(str);
+                                if (l <= 0) {
+                                    uifc.msg("Aspec Ratio Height must be greater than zero");
+                                    check_exit(FALSE);
+                                }
+                                else {
+                                    settings.custom_ah = l;
+                                    iniSetInteger(&inicontents, "SyncTERM", "CustomAspectHeight", settings.custom_ah, &ini_style);
+                                    custom_mode_adjusted(&cur, opt);
+                                }
+                            }
+                            break;
                     }
                     free(subopts[0]);
                     free(subopts[1]);
                     free(subopts[2]);
+                    free(subopts[3]);
+                    free(subopts[4]);
                 }
         }
     }
