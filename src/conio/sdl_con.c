@@ -724,7 +724,9 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 			/*
 			 * Using the modifiers, look up the expected scan code.
 			 */
-			if(mod & KMOD_CTRL)
+			if(mod & KMOD_ALT)
+				expect = sdl_keyval[i].alt;
+			else if(mod & KMOD_CTRL)
 				expect=sdl_keyval[i].ctrl;
 			else if(mod & KMOD_SHIFT) {
 				if((mod & KMOD_CAPS) && keysym != '\t')
@@ -737,19 +739,6 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 					expect=sdl_keyval[i].shift;
 				else
 					expect=sdl_keyval[i].key;
-			}
-
-			/*
-			 * Now handle the ALT case so that expect will
-			 * be what we expect to return
-			 */
-			if(mod & KMOD_ALT) {
-				/* Yes, this is a "normal" ALT combo */
-				if(keysym==expect)
-					return(sdl_keyval[i].alt);
-
-				/* AltGr apparently... give up */
-				return(0x0001ffff);
 			}
 
 			return(expect);
@@ -865,9 +854,7 @@ void sdl_video_event_thread(void *data)
 					block_text = 1;
 					if ((ev.key.keysym.mod & KMOD_ALT) &&
 					    (ev.key.keysym.sym == SDLK_LEFT ||
-					     ev.key.keysym.sym == SDLK_RIGHT ||
-					     ev.key.keysym.sym == SDLK_UP ||
-					     ev.key.keysym.sym == SDLK_DOWN)) {
+					     ev.key.keysym.sym == SDLK_RIGHT)) {
 						int w, h;
 
 						// Don't allow ALT-DIR to change size when maximized...
