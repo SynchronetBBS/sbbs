@@ -218,7 +218,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 
 int init_sdl_video(void)
 {
-	char	*drivername;
+	const char	*drivername;
 
 	if(sdl_video_initialized)
 		return(0);

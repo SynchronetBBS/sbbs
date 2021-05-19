@@ -15,7 +15,7 @@ struct sdlfuncs {
 	void	(HACK_HACK_HACK *Quit)	(void);
 	int	(HACK_HACK_HACK *PeepEvents)	(SDL_Event *events, int numevents,
 					SDL_eventaction action, Uint32 minType, Uint32 maxType);
-	char	*(HACK_HACK_HACK *GetCurrentVideoDriver)	(void);
+	const char *(HACK_HACK_HACK *GetCurrentVideoDriver)	(void);
 	Uint8	(HACK_HACK_HACK *EventState)	(Uint32 type, int state);
 	SDL_Surface *(HACK_HACK_HACK *CreateRGBSurfaceFrom)(void *pixels, int width, int height, int depth, int pitch,
 							Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask);
@@ -41,14 +41,14 @@ struct sdlfuncs {
 	SDL_Keymod (HACK_HACK_HACK *GetModState)	(void);
 	void (HACK_HACK_HACK *SetWindowSize)	(SDL_Window *window, int w, int h);
 	void (HACK_HACK_HACK *DestroyTexture)	(SDL_Texture *texture);
-	void (HACK_HACK_HACK *SetWindowFullscreen)	(SDL_Window *window, Uint32 flags);
-	void (HACK_HACK_HACK *LockTexture)	(SDL_Texture *texture, const SDL_Rect *rect, void **pixels, int *pitch);
+	int (HACK_HACK_HACK *SetWindowFullscreen)	(SDL_Window *window, Uint32 flags);
+	int (HACK_HACK_HACK *LockTexture)	(SDL_Texture *texture, const SDL_Rect *rect, void **pixels, int *pitch);
 	void (HACK_HACK_HACK *UnlockTexture)	(SDL_Texture *texture);
-	void (HACK_HACK_HACK *QueryTexture)	(SDL_Texture *texture, Uint32 *format, int *access, int *w, int *h);
+	int (HACK_HACK_HACK *QueryTexture)	(SDL_Texture *texture, Uint32 *format, int *access, int *w, int *h);
 	void (HACK_HACK_HACK *GetWindowPosition)	(SDL_Window *window, int *x, int *y);
 	void (HACK_HACK_HACK *SetWindowPosition)	(SDL_Window *window, int x, int y);
 	void (HACK_HACK_HACK *SetWindowMinimumSize)	(SDL_Window *window, int w, int y);
-	void (HACK_HACK_HACK *SetClipboardText)	(const char *);
+	int (HACK_HACK_HACK *SetClipboardText)	(const char *);
 	char *(HACK_HACK_HACK *GetClipboardText)	(void);
 	SDL_Cursor *(HACK_HACK_HACK *CreateSystemCursor)	(SDL_SystemCursor id);
 	SDL_Cursor *(HACK_HACK_HACK *GetDefaultCursor)	(void);
