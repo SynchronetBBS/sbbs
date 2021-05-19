@@ -210,9 +210,9 @@ static struct {
 static void resize_xim(void)
 {
 	int width = bitmap_width * x_cvstat.scaling;
-	double ratio = (double)x_cvstat.scale_numerator / x_cvstat.scale_denominator;
-	int height = lround((double)(bitmap_height * x_cvstat.scaling * x_cvstat.vmultiplier) / ratio);
+	int height = bitmap_height * x_cvstat.scaling;
 
+	aspect_correct(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
 	if (xim) {
 		if (width == xim->width
 		    && height == xim->height) {
@@ -310,7 +310,7 @@ static int init_window()
 	wa.border_pixel = black;
 	depth = best_depth;
     win = x11.XCreateWindow(dpy, DefaultRootWindow(dpy), 0, 0,
-			      640*x_cvstat.scaling, 400*x_cvstat.scaling*x_cvstat.vmultiplier, 2, depth, InputOutput, &visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
+			      640*x_cvstat.scaling, 400*x_cvstat.scaling, 2, depth, InputOutput, &visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
 
 	classhints=x11.XAllocClassHint();
 	if (classhints)
@@ -356,37 +356,44 @@ static int init_window()
  */
 static void map_window()
 {
-    XSizeHints *sh;
+	XSizeHints *sh;
 	int scaled_height;
+	int minwidth = bitmap_width;
+	int minheight = bitmap_height;
 
-    sh = x11.XAllocSizeHints();
-    if (sh == NULL) {
+	sh = x11.XAllocSizeHints();
+	if (sh == NULL) {
 		fprintf(stderr, "Could not get XSizeHints structure");
 		exit(1);
 	}
 
-	sh->base_width = bitmap_width*x_cvstat.scaling;
-	sh->base_height = bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier;
+	sh->base_width = bitmap_width * x_cvstat.scaling;
+	sh->base_height = bitmap_height * x_cvstat.scaling;
 
-    sh->min_width = sh->width_inc = sh->min_aspect.x = sh->max_aspect.x = bitmap_width;
+	aspect_correct(&sh->base_width, &sh->base_height, x_cvstat.aspect_width, x_cvstat.aspect_height);
+	aspect_correct(&minwidth, &minheight, x_cvstat.aspect_width, x_cvstat.aspect_height);
 
-	scaled_height = ceil((double)bitmap_height*x_cvstat.vmultiplier / ((double)x_cvstat.scale_numerator / x_cvstat.scale_denominator));
-    sh->min_height = sh->height_inc = sh->min_aspect.y = sh->max_aspect.y = scaled_height;
-    sh->flags = USSize | PMinSize | PSize | PResizeInc | PAspect;
+	sh->min_width = sh->width_inc = sh->min_aspect.x = sh->max_aspect.x = minwidth;
+	sh->min_height = sh->height_inc = sh->min_aspect.y = sh->max_aspect.y = minheight;
 
-    x11.XSetWMNormalHints(dpy, win, sh);
-    x11.XMapWindow(dpy, win);
+	sh->flags = USSize | PMinSize | PSize | PResizeInc | PAspect;
 
-    x11.XFree(sh);
+	x11.XSetWMNormalHints(dpy, win, sh);
+	x11.XMapWindow(dpy, win);
 
-    return;
+	x11.XFree(sh);
+
+	return;
 }
 
 /* Resize the window. This function is called after a mode change. */
 static void resize_window()
 {
-	int scaled_height = ceil((double)bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier / ((double)x_cvstat.scale_numerator / x_cvstat.scale_denominator));
-	x11.XResizeWindow(dpy, win, bitmap_width*x_cvstat.scaling, scaled_height);
+	int width = bitmap_width * x_cvstat.scaling;
+	int height = bitmap_height * x_cvstat.scaling;
+
+	aspect_correct(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
+	x11.XResizeWindow(dpy, win, width, height);
 	resize_xim();
 
 	return;
@@ -415,8 +422,6 @@ static void init_mode_internal(int mode)
 	}
 	if(vstat.scaling < 1)
 		vstat.scaling = 1;
-	if(vstat.vmultiplier < 1)
-		vstat.vmultiplier = 1;
 
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
@@ -449,8 +454,6 @@ static int video_init()
        lot easier. */
 	if(x_cvstat.scaling<1)
 		x_setscaling(1);
-	if(x_cvstat.vmultiplier<1)
-		x_cvstat.vmultiplier=1;
     if(init_window())
 		return(-1);
 
@@ -487,7 +490,7 @@ static void local_draw_rect(struct rectlist *rect)
 		yoff = 0;
 
 	// Scale...
-	source = do_scale(rect, x_cvstat.scaling, x_cvstat.scaling * x_cvstat.vmultiplier, (double)x_cvstat.scale_numerator / x_cvstat.scale_denominator);
+	source = do_scale(rect, x_cvstat.scaling, x_cvstat.scaling, x_cvstat.aspect_width, x_cvstat.aspect_height);
 	bitmap_drv_free_rect(rect);
 	if (source == NULL)
 		return;
@@ -581,10 +584,10 @@ static void handle_resize_event(int width, int height)
 {
 	int newFSH=1;
 	int newFSW=1;
-	double ratio = (double)x_cvstat.scale_numerator / x_cvstat.scale_denominator;
 
-	newFSH=width/bitmap_width;
-	newFSW=floor((double)height / bitmap_height * ratio);
+	aspect_fix(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
+	newFSH=width / bitmap_width;
+	newFSW=height / bitmap_height;
 	if(newFSW<1)
 		newFSW=1;
 	if(newFSH<1)
@@ -604,11 +607,6 @@ static void handle_resize_event(int width, int height)
 	 */
 	if (newFSH != newFSW)
 		resize_window();
-#if 0	// TODO: Is this even worth looking at?
-	else if((width % (x_cvstat.charwidth * x_cvstat.cols) != 0)
-			|| (height % (x_cvstat.charheight * x_cvstat.rows) != 0))
-		resize_window();
-#endif
 	else
 		resize_xim();
 	bitmap_drv_request_pixels();
@@ -636,7 +634,7 @@ static void expose_rect(int x, int y, int width, int height)
 	}
 
 	sx=(x-xoff)/x_cvstat.scaling;
-	sy=(y-yoff)/(x_cvstat.scaling*x_cvstat.vmultiplier);
+	sy=(y-yoff)/(x_cvstat.scaling);
 	if (sx < 0)
 		sx = 0;
 	if (sy < 0)
@@ -651,11 +649,11 @@ static void expose_rect(int x, int y, int width, int height)
 	if((ex+1)%x_cvstat.scaling) {
 		ex += x_cvstat.scaling-(ex%x_cvstat.scaling);
 	}
-	if((ey+1)%(x_cvstat.scaling*x_cvstat.vmultiplier)) {
-		ey += x_cvstat.scaling*x_cvstat.vmultiplier-(ey%(x_cvstat.scaling*x_cvstat.vmultiplier));
+	if((ey+1)%(x_cvstat.scaling)) {
+		ey += x_cvstat.scaling-(ey%(x_cvstat.scaling));
 	}
 	ex=ex/x_cvstat.scaling;
-	ey=ey/(x_cvstat.scaling*x_cvstat.vmultiplier);
+	ey=ey/(x_cvstat.scaling);
 
 	/* Since we're exposing, we *have* to redraw */
 	if (last) {
@@ -710,7 +708,9 @@ static int x11_event(XEvent *ev)
 			}
 			break;
 		/* Graphics related events */
-		case ConfigureNotify:
+		case ConfigureNotify: {
+			int width, height;
+
 			if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y
 			    || x11_window_width != ev->xconfigure.width || x11_window_height != ev->xconfigure.height) {
 				x11_window_xpos=ev->xconfigure.x;
@@ -718,8 +718,39 @@ static int x11_event(XEvent *ev)
 				x11_window_width=ev->xconfigure.width;
 				x11_window_height=ev->xconfigure.height;
 				handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
+				break;
+			}
+			width = bitmap_width * x_cvstat.scaling;
+			height = bitmap_height * x_cvstat.scaling;
+
+			aspect_correct(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
+			if (ev->xconfigure.width != width || ev->xconfigure.height != height) {
+				// We can't have the size we requested... accept the size we got.
+				int newFSH=1;
+				int newFSW=1;
+
+				width = ev->xconfigure.width;
+				height = ev->xconfigure.height;
+				aspect_fix(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
+				newFSH=width / bitmap_width;
+				newFSW=height / bitmap_height;
+				if(newFSW<1)
+					newFSW=1;
+				if(newFSH<1)
+					newFSH=1;
+				if(newFSH<newFSW)
+					x_setscaling(newFSH);
+				else
+					x_setscaling(newFSW);
+				old_scaling = x_cvstat.scaling;
+				if(x_cvstat.scaling > 16)
+					x_setscaling(16);
+
+				resize_xim();
+				bitmap_drv_request_pixels();
 			}
 			break;
+		}
 		case NoExpose:
 			break;
 		case GraphicsExpose:

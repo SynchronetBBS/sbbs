@@ -26,6 +26,102 @@ static struct graphics_buffer *free_list;
 		x = 255; \
 } while(0)
 
+/*
+ * Corrects width/height to have the specified aspect ratio
+ */
+void
+aspect_fix(int *x, int *y, int aspect_width, int aspect_height)
+{
+	int bestx, besty;
+
+	// Nothing we can do here...
+	if (aspect_width == 0 || aspect_height == 0)
+		return;
+	bestx = lround((double)*y * aspect_width / aspect_height);
+	besty = lround((double)*x * aspect_height / aspect_width);
+
+	if (bestx < *x && bestx > 0)
+		*x = bestx;
+	else
+		*y = besty;
+}
+
+/*
+ * Given a width/height of a source image, adjust it to match the current aspect
+ * ratio.  Will not reduce either number
+ */
+void
+aspect_correct(int *x, int *y, int aspect_width, int aspect_height)
+{
+	int width = *x;
+	int height;
+
+	if (!aspect_height || !aspect_width)
+		return;
+	height = lround((double)(width * aspect_height) / aspect_width);
+	if (height < *y) {
+		height = *y;
+		width = lround(((double)height * aspect_width) / aspect_height);
+	}
+
+	*x = width;
+	*y = height;
+}
+
+/*
+ * Essentially the opposite of the above.  Given an output width/height, translates to
+ * the size of the source image.
+ *
+ * Note that this is much trickier as the "source" bitmap may have been integer scaled
+ * differently in both directions... so what this does is reverse the aspect ratio
+ * calculation, then find the next lowest even multiple of the mode bitmap size.
+ */
+void
+aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, int aspect_height)
+{
+	int width = *x;
+	int height = *y;
+	int cheight;
+	int cwidth;
+
+	if (!aspect_height || !aspect_width) {
+		width = scrnwidth * (*x / scrnwidth);
+		if (width < scrnwidth)
+			width = scrnwidth;
+		height = scrnheight * (*x / scrnheight);
+		if (height < scrnheight)
+			height = scrnheight;
+		return;
+	}
+	// First, find the "controlling" dimension... the one that won't be scaled (ie: the one that gets smaller)
+	cwidth = lround((double)(height * aspect_width) / aspect_height * scrnwidth / scrnheight);
+	cheight = lround((double)(width * aspect_height) / aspect_width * scrnheight / scrnwidth);
+	if (cwidth > width) {
+		// Width controls, so this is simply finding the largest width multiple that fits in the box
+		width = scrnwidth * (*x / scrnwidth);
+		if (width < scrnwidth)
+			width = scrnwidth;
+
+		// Now we need to find the largest bitmap height that would fit in the output height
+		// So, we scale the height to bitmap size...
+		height = lround((double)*y / ((double)scrnwidth / scrnheight) * ((double)aspect_width / aspect_height));
+		// And do the same calculation...
+		height = lround((double)scrnheight * ((double)height / scrnheight));
+	}
+	else if (cheight > height) {
+		// Height controls
+		height = scrnheight * (*x / scrnheight);
+		if (height < scrnheight)
+			height = scrnheight;
+
+		width = lround((double)*x / ((double)scrnheight / scrnwidth) * ((double)aspect_height / aspect_width));
+		width = lround((double)scrnwidth * ((double)width / scrnwidth));
+	}
+
+	*x = width;
+	*y = height;
+}
+
 void
 init_r2y(void)
 {
@@ -94,7 +190,7 @@ release_buffer(struct graphics_buffer *buf)
 }
 
 struct graphics_buffer *
-do_scale(struct rectlist* rect, int xscale, int yscale, double ratio)
+do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int aspect_height)
 {
 	struct graphics_buffer* ret1 = get_buffer();
 	struct graphics_buffer* ret2 = get_buffer();
@@ -185,14 +281,10 @@ do_scale(struct rectlist* rect, int xscale, int yscale, double ratio)
 		yscale = tmp;
 	}
 
-	// Calculate the scaled height from ratio...
-	fheight = lround((double)(rect->rect.height * (yscale)) / ratio);
-	if (fheight < rect->rect.height * yscale)
-		fheight = rect->rect.height * yscale;
-
-	fwidth = lround((double)(rect->rect.width * (xscale)) * ratio);
-	if (fwidth < rect->rect.width * xscale)
-		fwidth = rect->rect.width * xscale;
+	// Calculate the scaled height from rxscaleatio...
+	fwidth = rect->rect.width * xscale;
+	fheight = rect->rect.height * yscale;
+	aspect_correct(&fwidth, &fheight, aspect_width, aspect_height);
 
 	// Now make sure target is big enough...
 	size_t needsz = fwidth * fheight * sizeof(uint32_t);
@@ -222,6 +314,7 @@ do_scale(struct rectlist* rect, int xscale, int yscale, double ratio)
 
 #if 0
 fprintf(stderr, "Plan:\n"
+"start:       %dx%d\n"
 "pointymulti: %d\n"
 "pointy5:     %d\n"
 "pointy3:     %d\n"
@@ -230,7 +323,7 @@ fprintf(stderr, "Plan:\n"
 "Multiply:    %dx%d\n"
 "hinterp:     %zu -> %zu\n"
 "winterp:     %zu -> %zu\n",
-pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->h * yscale, ratio < 1 ? fheight : csrc->h * yscale, csrc->w * xscale, ratio > 1 ? fwidth : csrc->w * xscale);
+csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->h * yscale, fheight, csrc->w * xscale, fwidth);
 #endif
 	// And scale...
 	if (ymult != 1 || xmult != 1) {

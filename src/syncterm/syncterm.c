@@ -59,6 +59,7 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include "term.h"
 #include "uifcinit.h"
 #include "window.h"
+#include "scale.h"
 
 char* syncterm_version = "SyncTERM 1.2a"
 #define ALPHA
@@ -1248,6 +1249,8 @@ void load_settings(struct syncterm_settings *set)
 	set->custom_cols = iniReadInteger(inifile, "SyncTERM", "CustomCols", 80);
 	set->custom_rows = iniReadInteger(inifile, "SyncTERM", "CustomRows", 25);
 	set->custom_fontheight = iniReadInteger(inifile, "SyncTERM", "CustomFontHeight", 16);
+	set->custom_aw = iniReadInteger(inifile, "SyncTERM", "CustomAspectWidth", 4);
+	set->custom_ah = iniReadInteger(inifile, "SyncTERM", "CustomAspectHeight", 3);
 	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, FALSE);
 	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
 	set->scaling_factor=iniReadInteger(inifile,"SyncTERM","ScalingFactor",0);
@@ -1465,8 +1468,11 @@ int main(int argc, char **argv)
 	vparams[cvmode].cols = settings.custom_cols;
 	vparams[cvmode].rows = settings.custom_rows;
 	vparams[cvmode].charheight = settings.custom_fontheight;
+	vparams[cvmode].aspect_width = settings.custom_aw;
+	vparams[cvmode].aspect_height = settings.custom_ah;
 	ciolib_initial_window_height = settings.window_height;
 	ciolib_initial_window_width = settings.window_width;
+	aspect_correct(&ciolib_initial_window_width, &ciolib_initial_window_height, settings.custom_aw, settings.custom_ah);
 	ciolib_mode=settings.output_mode;
 	if(settings.startup_mode != SCREEN_MODE_CURRENT)
 		text_mode=screen_to_ciolib(settings.startup_mode);

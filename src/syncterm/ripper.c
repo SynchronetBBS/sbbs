@@ -10420,12 +10420,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							GET_XY2();
 							arg1 = parse_mega(&args[8], 2);
 							pthread_mutex_lock(&vstatlock);
-							if (vstat.scale_numerator == 729 && vstat.scale_denominator == 1000) {
+							if (vstat.scrnwidth == 640 && vstat.scrnheight == 350) {
 								// Detect EGA mode and use the same value as RIPterm did.
 								arg3 = (arg1 * 7750 / 10000);
 							}
 							else {
-								arg3 = arg1 * vstat.scale_numerator / vstat.scale_denominator;
+								arg3 = arg1 * ((double)vstat.scrnwidth / vstat.scrnheight) / ((double)vstat.aspect_width / vstat.aspect_height);
 							}
 							pthread_mutex_unlock(&vstatlock);
 							full_ellipse(x1, y1, x2, y2, arg1, arg3, false, map_rip_color(rip.color));
@@ -10470,12 +10470,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
 							pthread_mutex_lock(&vstatlock);
-							if (vstat.scale_numerator == 729 && vstat.scale_denominator == 1000) {
+							if (vstat.scrnwidth == 640 && vstat.scrnheight == 350) {
 								// Detect EGA mode and use the same value as RIPterm did.
 								arg3 = (arg1 * 7750 / 10000);
 							}
 							else {
-								arg3 = arg1 * vstat.scale_numerator / vstat.scale_denominator;
+								arg3 = arg1 * ((double)vstat.scrnwidth / vstat.scrnheight) / ((double)vstat.aspect_width / vstat.aspect_height);
 							}
 							pthread_mutex_unlock(&vstatlock);
 							if (arg1 == 1)
@@ -10574,12 +10574,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							GET_XY2();
 							arg1 = parse_mega(&args[8], 2);
 							pthread_mutex_lock(&vstatlock);
-							if (vstat.scale_numerator == 729 && vstat.scale_denominator == 1000) {
+							if (vstat.scrnwidth == 640 && vstat.scrnheight == 350) {
 								// Detect EGA mode and use the same value as RIPterm did.
 								arg3 = (arg1 * 7750 / 10000);
 							}
 							else {
-								arg3 = arg1 * vstat.scale_numerator / vstat.scale_denominator;
+								arg3 = arg1 * ((double)vstat.scrnwidth / vstat.scrnheight) / ((double)vstat.aspect_width / vstat.aspect_height);
 							}
 							pthread_mutex_unlock(&vstatlock);
 							fg = map_rip_color(rip.color) | 0x40000000;

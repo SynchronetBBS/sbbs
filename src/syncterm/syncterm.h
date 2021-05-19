@@ -62,6 +62,8 @@ struct syncterm_settings {
 	int		custom_cols;
 	int		custom_rows;
 	int		custom_fontheight;
+	int		custom_aw;
+	int		custom_ah;
 	int		window_width;
 	int		window_height;
 	int		left_just;
