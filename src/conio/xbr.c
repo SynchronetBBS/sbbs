@@ -74,8 +74,8 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y)
         const unsigned i = df(PH,PD) + df(PH,I5) + df(PF,I4) + df(PF,PB) + (df(PE,PI)<<2);          \
         if (e <= i) {                                                                               \
             const unsigned px = df(PE,PF) <= df(PE,PH) ? PF : PH;                                   \
-            if (e < i && (!eq(PF,PB) && !eq(PH,PD) || eq(PE,PI)                                     \
-                          && (!eq(PF,I4) && !eq(PH,I5))                                             \
+            if ((e < i) && ((!eq(PF,PB) && !eq(PH,PD)) || (eq(PE,PI)                                \
+                          && (!eq(PF,I4) && !eq(PH,I5)))                                            \
                           || eq(PE,PG) || eq(PE,PC))) {                                             \
                 const unsigned ke = df(PF,PG);                                                      \
                 const unsigned ki = df(PH,PC);                                                      \
