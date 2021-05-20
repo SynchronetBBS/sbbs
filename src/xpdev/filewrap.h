@@ -71,6 +71,8 @@
 		#define ftello			ftell
 	#endif
 
+	#define mkstemp(t)	_open(_mktemp(t), O_RDWR | O_CREAT | O_EXCL)
+
 #elif defined(__unix__)
 
 	#ifdef __solaris__
