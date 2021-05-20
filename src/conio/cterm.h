@@ -277,7 +277,7 @@ CIOLIBEXPORT struct cterminal* cterm_init(int height, int width, int xpos, int y
 CIOLIBEXPORT char* cterm_write(struct cterminal *cterm, const void *buf, int buflen, char *retbuf, size_t retsize, int *speed);
 CIOLIBEXPORT int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
 CIOLIBEXPORT void cterm_closelog(struct cterminal *cterm);
-CIOLIBEXPORT void cterm_end(struct cterminal *cterm);
+CIOLIBEXPORT void cterm_end(struct cterminal *cterm, int free_fonts);
 CIOLIBEXPORT void cterm_clearscreen(struct cterminal *cterm, char attr);
 CIOLIBEXPORT void cterm_start(struct cterminal *cterm);
 void cterm_gotoxy(struct cterminal *cterm, int x, int y);

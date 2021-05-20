@@ -1764,6 +1764,13 @@ int main(int argc, char **argv)
 				fprintf(log_fp,"%.15s Log opened\n", ctime(&now)+4);
 			}
 
+			for(i=CONIO_FIRST_FREE_FONT; i<256; i++) {
+				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
+				FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
+				FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
+				FREE_AND_NULL(conio_fontdata[i].desc);
+			}
+			load_font_files();
 			if(doterm(bbs))
 				quitting=TRUE;
 			fake_mode = -1;
@@ -1777,13 +1784,6 @@ int main(int argc, char **argv)
 				log_fp=NULL;
 			}
 			textmode(txtinfo.currmode);
-			for(i=CONIO_FIRST_FREE_FONT; i<256; i++) {
-				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
-				FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
-				FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
-				FREE_AND_NULL(conio_fontdata[i].desc);
-			}
-			load_font_files();
 			settitle("SyncTERM");
 		}
 		if(quitting || url[0]) {
@@ -1822,6 +1822,12 @@ int main(int argc, char **argv)
 			free(bbs);
 		}
 		bbs=NULL;
+	}
+	for(i=CONIO_FIRST_FREE_FONT; i<256; i++) {
+		FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
+		FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
+		FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
+		FREE_AND_NULL(conio_fontdata[i].desc);
 	}
 	if (bbs_alloc)
 		free(bbs);

@@ -917,7 +917,6 @@ static int
 get_rip_version(int oldver, int *changed)
 {
 	int cur = oldver;
-	int bar = 0;
 
 	uifc.helpbuf=   "`RIP Version`\n\n"
 	    "RIP v1 requires EGA mode while RIP v3\n"
@@ -1550,7 +1549,7 @@ custom_mode_adjusted(int *cur, char **opt)
 
     gettextinfo(&ti);
     if (ti.currmode != CIOLIB_MODE_CUSTOM) {
-        cvmode = find_vmode(ti.currmode);
+        cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
         if (cvmode >= 0) {
             vparams[cvmode].cols = settings.custom_cols;
             vparams[cvmode].rows = settings.custom_rows;
@@ -1563,7 +1562,7 @@ custom_mode_adjusted(int *cur, char **opt)
 
     uifcbail();
     textmode(0);
-    cvmode = find_vmode(ti.currmode);
+    cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
     if (cvmode >= 0) {
         vparams[cvmode].cols = settings.custom_cols;
         vparams[cvmode].rows = settings.custom_rows;

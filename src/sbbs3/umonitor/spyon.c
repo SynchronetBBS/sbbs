@@ -161,7 +161,7 @@ int spyon(char *sockname)  {
 			}
 		}
 	}
-	cterm_end(cterm);
+	cterm_end(cterm, 1);
 	puttext(1,1,ti.screenwidth,ti.screenheight,scrn);
 	window(ti.winleft,ti.wintop,ti.winright,ti.winbottom);
 	textattr(ti.attribute);

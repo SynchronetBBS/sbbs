@@ -5565,7 +5565,7 @@ void cterm_closelog(struct cterminal *cterm)
 }
 
 FILE *dbg;
-void cterm_end(struct cterminal *cterm)
+void cterm_end(struct cterminal *cterm, int free_fonts)
 {
 	int i;
 
@@ -5575,11 +5575,13 @@ void cterm_end(struct cterminal *cterm)
 		FREE_AND_NULL(BD->vmem);
 		FREE_AND_NULL(BD);
 #else
-		for(i=CONIO_FIRST_FREE_FONT; i < 256; i++) {
-			FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
-			FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
-			FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
-			FREE_AND_NULL(conio_fontdata[i].desc);
+		if (free_fonts) {
+			for(i=CONIO_FIRST_FREE_FONT; i < 256; i++) {
+				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
+				FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
+				FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
+				FREE_AND_NULL(conio_fontdata[i].desc);
+			}
 		}
 #endif
 		if(cterm->playnote_thread_running) {
