@@ -711,10 +711,11 @@ static int x11_event(XEvent *ev)
 		case ConfigureNotify: {
 			int width, height;
 
-			if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y
-			    || x11_window_width != ev->xconfigure.width || x11_window_height != ev->xconfigure.height) {
+			if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y) {
 				x11_window_xpos=ev->xconfigure.x;
 				x11_window_ypos=ev->xconfigure.y;
+			}
+			if (x11_window_width != ev->xconfigure.width || x11_window_height != ev->xconfigure.height) {
 				x11_window_width=ev->xconfigure.width;
 				x11_window_height=ev->xconfigure.height;
 				handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
