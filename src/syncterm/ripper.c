@@ -9775,7 +9775,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	hold_update = 0;
 	cterm->logfile = NULL;
 	cterm->log = CTERM_LOG_NONE;
-	cterm_end(cterm);
+	cterm_end(cterm, 0);
 	normal_palette();
 	// TODO: You know this is insane right?
 	// Patch vstat font, font size, and cols

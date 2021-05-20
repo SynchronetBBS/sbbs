@@ -1080,8 +1080,6 @@ void sdl_video_event_thread(void *data)
 							for (; list; list = old_next) {
 								SDL_Rect src;
 								SDL_Rect dst;
-								int idealw;
-								int idealh;
 
 								old_next = list->next;
 								if (list->next == NULL) {

@@ -2555,7 +2555,7 @@ BOOL doterm(struct bbslist *bbs)
 							check_exit(FALSE);
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
-							cterm_end(cterm);
+							cterm_end(cterm, 0);
 							cterm=NULL;
 							conn_close();
 							hidemouse();
@@ -2881,7 +2881,7 @@ BOOL doterm(struct bbslist *bbs)
 							setup_mouse_events(&ms);
 							cterm_clearscreen(cterm,cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
-							cterm_end(cterm);
+							cterm_end(cterm, 0);
 							cterm=NULL;
 							conn_close();
 							hidemouse();
@@ -2912,7 +2912,7 @@ BOOL doterm(struct bbslist *bbs)
 						case -1:
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
-							cterm_end(cterm);
+							cterm_end(cterm, 0);
 							cterm=NULL;
 							conn_close();
 							hidemouse();
@@ -2953,7 +2953,7 @@ BOOL doterm(struct bbslist *bbs)
 #endif
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
-							cterm_end(cterm);
+							cterm_end(cterm, 0);
 							cterm=NULL;
 							conn_close();
 							hidemouse();
