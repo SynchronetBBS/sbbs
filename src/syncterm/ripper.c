@@ -8845,11 +8845,10 @@ static void invert_rect(int x1, int y1, int x2, int y2)
 static void do_fill(bool overwrite)
 {
 	struct ciolib_pixels *pix;
-	int x, cx, y;
+	int x, y;
 	int pixel;
 	bool fill = false;
 	bool in_line = false;
-	uint32_t col;
 
 	pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
 	FREE_AND_NULL(pix->pixelsb);
@@ -10268,7 +10267,6 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	int x, y;
 	char cache_path[MAX_PATH + 1];
 	FILE *icn;
-	int *targets;
 	int ex, ey;
 
 	args = parse_string(rawargs);
@@ -13520,9 +13518,14 @@ draw_glyph(uint8_t ch)
 			amiga_x = 0;
 			return;
 		}
+		gettextinfo(&ti);
+		vmode = find_vmode(ti.currmode);
 		if (ch == '\n') {
-			// TODO: Scroll etc...
 			amiga_y += 8;
+			if (vmode >= 0 && amiga_y >= vparams[vmode].charheight * vparams[vmode].rows) {
+				cterm_scrollup(cterm);
+				amiga_y -= 8;
+			}
 			return;
 		}
 		// Bitmap 8x8 font
@@ -13537,22 +13540,38 @@ draw_glyph(uint8_t ch)
 			fontoffset++;
 		}
 		amiga_x += 8;
-		gettextinfo(&ti);
-		vmode = find_vmode(ti.currmode);
 		if (vmode >= 0) {
 			if (amiga_x >= vparams[vmode].charwidth * vparams[vmode].cols) {
 				amiga_x = 0;
 				amiga_y += 8;
-				// TODO: Scroll/Whatever...
+				if (amiga_y >= vparams[vmode].charheight * vparams[vmode].rows) {
+					cterm_scrollup(cterm);
+					amiga_y -= 8;
+				}
 			}
 		}
 	}
 	else {
 		if (ch == '\r')
 			amiga_x = 0;
+		gettextinfo(&ti);
+		vmode = find_vmode(ti.currmode);
 		if (ch == '\n') {
 			// TODO: Scroll/Whatever...
 			amiga_y += (amiga_font->height << doubled);
+			if (vmode >= 0 && amiga_y >= vparams[vmode].charheight * vparams[vmode].rows) {
+				struct ciolib_pixels *pix = getpixels(0, amiga_font->height << doubled, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1, 0);
+				if (pix) {
+					setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1, 0, 0, pix, NULL);
+					freepixels(pix);
+					amiga_y -= (amiga_font->height << doubled);
+					for (int ypos = (vparams[vmode].charheight - 1) * vparams[vmode].rows; ypos < vparams[vmode].charheight * vparams[vmode].rows; ypos++) {
+						for (int xpos = 0; xpos < vparams[vmode].charwidth * vparams[vmode].cols; xpos++) {
+							scale_setpixel(xpos, ypos, cterm->bg_color);
+						}
+					}
+				}
+			}
 		}
 		if (ch < amiga_font->first)
 			return;
@@ -13592,13 +13611,24 @@ draw_glyph(uint8_t ch)
 		}
 		amiga_x += fs << doubled;
 		amiga_x += fk << doubled;
-		gettextinfo(&ti);
-		vmode = find_vmode(ti.currmode);
 		if (vmode >= 0) {
 			if (amiga_x >= vparams[vmode].charwidth * vparams[vmode].cols) {
 				amiga_x = 0;
 				amiga_y += (amiga_font->height << doubled);
-				// TODO: Scroll/Whatever...
+				
+				if (amiga_y >= vparams[vmode].charheight * vparams[vmode].rows) {
+					struct ciolib_pixels *pix = getpixels(0, amiga_font->height << doubled, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1, 0);
+					if (pix) {
+						setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1, 0, 0, pix, NULL);
+						freepixels(pix);
+						amiga_y -= (amiga_font->height << doubled);
+						for (int ypos = (vparams[vmode].charheight - 1) * vparams[vmode].rows; ypos < vparams[vmode].charheight * vparams[vmode].rows; ypos++) {
+							for (int xpos = 0; xpos < vparams[vmode].charwidth * vparams[vmode].cols; xpos++) {
+								scale_setpixel(xpos, ypos, cterm->bg_color);
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -13607,8 +13637,13 @@ draw_glyph(uint8_t ch)
 static void
 amiga_cputs(char *str)
 {
+	struct text_info ti;
+	gettextinfo(&ti);
+	int vmode = find_vmode(ti.currmode);
 	while (*str) {
 		draw_glyph(*(str++));
+		if (vmode != -1 && amiga_font != NULL)
+			cterm_gotoxy(cterm, (amiga_x / vparams[vmode].charwidth) + 1, ((amiga_y + ((amiga_font->height - amiga_font->baseline - 1) << doubled)) / vparams[vmode].charheight) + 1);
 	}
 }
 
@@ -13629,6 +13664,7 @@ do_skypix(char *buf, size_t len)
 	int vmode;
 	char *sarg = NULL;
 	FILE *font;
+	char cache_path[MAX_PATH + 1];
 
 	if (skypix == false) {
 		skypix = true;
@@ -13668,7 +13704,7 @@ do_skypix(char *buf, size_t len)
 			rip.y = argv[2];
 			break;
 		case 3:		// Flood fill...
-			printf("TODO: SkyPix Flood Fill\n");
+			printf("TODO: SkyPix Flood Fill mode %ld\n", argv[0]);
 			break;
 		case 4:		// Rectangle Fill...
 			for (y = argv[2]; y <= argv[4]; y++) {
@@ -13721,9 +13757,11 @@ do_skypix(char *buf, size_t len)
 				vmode = find_vmode(ti.currmode);
 				if (vmode == -1)
 					break;
-				cterm_gotoxy(cterm, (amiga_x / vparams[vmode].charwidth) + 1, ((amiga_y + ((amiga_font->height - amiga_font->baseline - 1) << doubled)) / vparams[vmode].charheight) + 1);
-				free(amiga_font);
-				amiga_font = NULL;
+				if (amiga_font != NULL) {
+					cterm_gotoxy(cterm, (amiga_x / vparams[vmode].charwidth) + 1, ((amiga_y + ((amiga_font->height - amiga_font->baseline - 1) << doubled)) / vparams[vmode].charheight) + 1);
+					free(amiga_font);
+					amiga_font = NULL;
+				}
 				//cterm->font_render = NULL;
 				break;
 			}
@@ -13874,10 +13912,27 @@ do_skypix(char *buf, size_t len)
 			setcolour(cterm->fg_color, cterm->bg_color);
 			break;
 		case 16:	// XModem transfer(!)
-			printf("TODO: SkyPix XModem Transfer\n");
+			if (sarg != NULL && (argv[1] == 20 || argv[1] == 1)) {
+				p = strchr(sarg, ':');
+				if (p == NULL)
+					p = sarg;
+				else
+					p++;
+				if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+					break;
+				char *dldir = strdup(rip.bbs->dldir);
+				strcpy(rip.bbs->dldir, cache_path);
+				strcat(cache_path, p);
+				suspend_rip(true);
+				xmodem_download(rip.bbs, XMODEM|CRC|RECV, cache_path);
+				suspend_rip(false);
+				strcpy(rip.bbs->dldir, dldir);
+				free(dldir);
+			}
+else fprintf(stderr, "sargs = %p, argv[1] = %ld\n", sarg, argv[1]);
 			break;
 		case 17:	// Set display mode...
-			printf("TODO: SkyPix Set Display Mode\n");
+			printf("TODO: SkyPix Set Display Mode (%ld)\n", argv[0]);
 			break;
 		case 18:	// Set background
 			cterm->attr = (cterm->attr & 0x0f) | (argv[1] << 4);
@@ -14378,7 +14433,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 							break;
 						}
 					}
-					if (pendingcmp("\x1b[16;", buf) == 0) {
+					if (pendingcmp("\x1b[16;", &buf[rip_start]) == 0) {
 						rip.state = RIP_STATE_SKYPIX_STR;
 						break;
 					}
