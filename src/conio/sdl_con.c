@@ -583,7 +583,6 @@ static void setup_surfaces_locked(void)
 {
 	int		flags=0;
 	SDL_Event	ev;
-	int charwidth, charheight, cols, rows;
 	SDL_Texture *newtexture;
 	int idealw;
 	int idealh;
@@ -600,10 +599,6 @@ static void setup_surfaces_locked(void)
 
 
 	pthread_mutex_lock(&win_mutex);
-	charwidth = cvstat.charwidth;
-	charheight = cvstat.charheight;
-	cols = cvstat.cols;
-	rows = cvstat.rows;
 	idealmw = cvstat.scrnwidth;
 	idealmh = cvstat.scrnheight;
 	aspect_correct(&idealmw, &idealmh, cvstat.aspect_width, cvstat.aspect_height);

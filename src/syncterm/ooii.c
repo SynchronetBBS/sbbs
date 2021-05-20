@@ -345,7 +345,7 @@ static int readSmallMenu(unsigned char *codeStr) {
 	int  yy;
 	int  zz;
 	unsigned char *origCodeStr=codeStr;
-	char buf[260];
+	char buf[266];
 
 	switch ((char)codeStr[0]) {
 		case 'a':
