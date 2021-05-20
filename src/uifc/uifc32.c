@@ -1003,7 +1003,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 		if(!(mode&WIN_NOBRDR)) {
 			/* Shadow */
-			if(bclr==BLUE) {
+			if(api->bclr==BLUE) {
 				vmem_gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
 					,s_top+top+height-1,shade);
 				for(i=0;i<height*2;i++)
