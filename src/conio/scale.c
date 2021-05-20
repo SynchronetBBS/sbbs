@@ -728,7 +728,7 @@ static
 #ifndef _MSC_VER
 __attribute__((always_inline))
 #endif
-uint32_t blend(const uint32_t c1, const uint32_t c2, const double weight)
+inline uint32_t blend(const uint32_t c1, const uint32_t c2, const double weight)
 {
 	uint8_t yuv1[4];
 	uint8_t yuv2[4];
