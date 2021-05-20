@@ -1591,7 +1591,7 @@ void change_settings(int connected)
     char    inipath[MAX_PATH+1];
     FILE    *inifile;
     str_list_t  inicontents;
-    char    opts[13][80];
+    char    opts[13][1049];
     char    *opt[14];
     char    *subopts[10];
     int     i,j,k,l;

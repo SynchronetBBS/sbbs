@@ -1989,7 +1989,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 /* Returns number of successfully-received files */
 int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_received)
 {
-	char		fpath[MAX_PATH+1];
+	char		fpath[MAX_PATH*2+2];
 	FILE*		fp;
 	int64_t		l;
 	BOOL		skip;

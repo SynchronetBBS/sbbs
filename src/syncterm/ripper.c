@@ -8504,7 +8504,7 @@ write_text(const char *str)
 static void
 draw_line(int x1, int y1, int x2, int y2)
 {
-	int *minc, *mins, *mine, *mino, *mind;
+	int *minc, *mins, *mino, *mind;
 	int *maxc, *maxs, *maxe, *maxo, *maxd;
 	int x, y;
 	int swap = 0;
@@ -8539,7 +8539,6 @@ draw_line(int x1, int y1, int x2, int y2)
 	if (dx >= dy) {
 		minc = &y;
 		mins = &y1;
-		mine = &y2;
 		mino = &yoff;
 		mind = &dy;
 
@@ -8552,7 +8551,6 @@ draw_line(int x1, int y1, int x2, int y2)
 	else {
 		minc = &x;
 		mins = &x1;
-		mine = &x2;
 		mino = &xoff;
 		mind = &dx;
 
@@ -8615,7 +8613,7 @@ draw_line(int x1, int y1, int x2, int y2)
 static void
 set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width)
 {
-	int *minc, *mins, *mine, *mino, *mind;
+	int *minc, *mins, *mino, *mind;
 	int *maxc, *maxs, *maxe, *maxo, *maxd;
 	int x, y;
 	int swap = 0;
@@ -8651,7 +8649,6 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 	if (dx >= dy) {
 		minc = &y;
 		mins = &y1;
-		mine = &y2;
 		mino = &yoff;
 		mind = &dy;
 
@@ -8664,7 +8661,6 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 	else {
 		minc = &x;
 		mins = &x1;
-		mine = &x2;
 		mino = &xoff;
 		mind = &dx;
 
@@ -9004,7 +9000,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 	int width, height;
 	int ox, oy;
 	int i, x, y;
-	uint32_t fg, bg, ds, ch, cs, su, ul, cc;
+	uint32_t bg, ch, cs, su, ul, cc;
 	int xinset, yinset;
 	char *p;
 	int top, bottom;
@@ -9015,9 +9011,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 	// TODO: Handle Checkboxes
 	// TODO: Handle plain buttons
 	if (inverted) {
-		fg = ega_colours[0x0f ^ but->cfore];
 		bg = ega_colours[0x0f ^ 0];
-		ds = ega_colours[0x0f ^ but->cdshadow];
 		ch = ega_colours[0x0f ^ but->chighlight];
 		cs = ega_colours[0x0f ^ but->cshadow];
 		su = ega_colours[0x0f ^ but->csurface];
@@ -9025,9 +9019,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 		cc = ega_colours[0x0f ^ but->ccorner];
 	}
 	else {
-		fg = map_rip_color(but->cfore);
 		bg = map_rip_color(0);
-		ds = map_rip_color(but->cdshadow);
 		ch = map_rip_color(but->chighlight);
 		cs = map_rip_color(but->cshadow);
 		su = map_rip_color(but->csurface);
@@ -9334,11 +9326,9 @@ do_popup(const char * const str)
 	int x, y, x1, y1, x2, y2, width, height, maxwidth;
 	bool must_answer = false;
 	uint32_t black;
-	uint32_t yellow;
 	uint32_t white;
 	uint32_t dark;
 	uint32_t light;
-	uint32_t blue;
 	int oc, ox, oy;
 	int ch;
 	struct mouse_event mevent;
@@ -9347,11 +9337,9 @@ do_popup(const char * const str)
 	struct ciolib_pixels *pix;
 
 	black = map_rip_color(0);
-	yellow = map_rip_color(14);
 	white = map_rip_color(15);
 	dark = map_rip_color(8);
 	light = map_rip_color(7);
-	blue = map_rip_color(1);
 	p = (char *)str;
 	if (str[0] == '*') {
 		must_answer = true;
@@ -9865,10 +9853,6 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 	int fy;
 	bool skip = false;
 
-	bool partial = true;
-	if (ea != sa && ((ea + 360) % 360) == ((sa + 360) % 360))
-		partial = false;
-
 	double angle;
 	double qangle;
 
@@ -10161,7 +10145,6 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 	i = 0;
 	targets[i++] = x1;
 	targets[i++] = y1;
-	#pragma clang loop vectorize(enable)
 	for (step = 1; step < cnt; step++) {
 		double tf = ((double)step) / cnt;
 		double tr = ((double)(cnt - step)) / cnt;

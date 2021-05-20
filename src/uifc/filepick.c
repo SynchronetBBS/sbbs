@@ -251,15 +251,15 @@ int mousetofield(int currfield, int opts, int height, int width, int listheight,
 
 int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char *msk, int opts)
 {
-	char	cfile[MAX_PATH*5+1];		/* Current full path to file */
-	char	cpath[MAX_PATH+1];			/* Current path */
+	char	cfile[MAX_PATH*8+1];		/* Current full path to file */
+	char	cpath[(MAX_PATH<<2)+1];			/* Current path */
 	char	drive[3];
 	char	tdir[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
 	char	ext[MAX_PATH+1];
 	char	cmsk[MAX_PATH*4+1];			/* Current file mask */
 	char	cglob[MAX_PATH*4+1];		/* File glob patter */
-	char	dglob[MAX_PATH*4+1];		/* Directory glob pattern */
+	char	dglob[MAX_PATH*4+2];		/* Directory glob pattern */
 	char	*p;
 	glob_t	fgl;						/* Files */
 	glob_t	dgl;						/* Directories */
