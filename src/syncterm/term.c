@@ -1118,7 +1118,7 @@ BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
 				  };
 	struct zmodem_cbdata *cb=(struct zmodem_cbdata *)cbdata;
 	zmodem_t	*zm=(zmodem_t *)zm_void;
-	char		fpath[MAX_PATH+1];
+	char		fpath[MAX_PATH*2+2];
 	BOOL		loop=TRUE;
 	int			old_hold=hold_update;
 
@@ -1561,7 +1561,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 {
 	xmodem_t	xm;
 	/* The better to -Wunused you with my dear! */
-	char	str[MAX_PATH+1];
+	char	str[MAX_PATH*2+2];
 	char	fname[MAX_PATH+1];
 	int		i=0;
 	int		fnum=0;
@@ -2787,7 +2787,7 @@ BOOL doterm(struct bbslist *bbs)
 					break;
 				case 0x1200:	/* ALT-E */
 					{
-						char title[LIST_NAME_MAX + 12];
+						char title[LIST_NAME_MAX + 13];
 						struct ciolib_screen *savscrn;
 						savscrn = savescreen();
 						setfont(0, FALSE, 1);
@@ -2966,7 +2966,7 @@ BOOL doterm(struct bbslist *bbs)
 #endif
 							{
 								struct ciolib_screen *savscrn;
-								char title[LIST_NAME_MAX + 12];
+								char title[LIST_NAME_MAX + 13];
 
 								savscrn = savescreen();
 								setfont(0, FALSE, 1);
