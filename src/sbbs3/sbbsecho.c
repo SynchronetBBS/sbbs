@@ -1519,7 +1519,8 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	FILE *nmfile,*afilein,*afileout,*fwdfile;
 	char str[1024],fields[1024],code[LEN_EXTCODE+1],echotag[FIDO_AREATAG_LEN+1],comment[256]
 		,outpath[MAX_PATH+1]
-		,*outname,*p,*tp,nomatch=0,match=0;
+		,*p,*tp,nomatch=0,match=0;
+	int	file;
 	unsigned j,k,x,y;
 	unsigned u;
 	size_t add_count, added = 0;
@@ -1528,28 +1529,27 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	add_count = strListCount(add_area);
 	del_count = strListCount(del_area);
 
-	SAFECOPY(outpath,cfg.areafile);
-	*getfname(outpath)=0;
-	if((outname=tempnam(outpath,"AREAS"))==NULL) {
-		lprintf(LOG_ERR,"ERROR tempnam(%s,AREAS)",outpath);
-		return;
-	}
 	if((nmfile=tmpfile())==NULL) {
 		lprintf(LOG_ERR,"ERROR in tmpfile()");
-		free(outname);
 		return;
 	}
-	if((afileout=fopen(outname,"w+"))==NULL) {
-		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,outname);
+	SAFECOPY(outpath,cfg.areafile);
+	*getfname(outpath)=0;
+	SAFECAT(outpath, "AREASXXXXXX");
+	if((file = mkstemp(outpath)) == -1) {
+		lprintf(LOG_ERR, "ERROR %u (%s) line %d opening %s", errno, strerror(errno), __LINE__, outpath);
 		fclose(nmfile);
-		free(outname);
+		return;
+	}
+	if((afileout=fdopen(file, "w+"))==NULL) {
+		lprintf(LOG_ERR,"ERROR %u (%s) line %d fdopening %s",errno,strerror(errno),__LINE__,outpath);
+		fclose(nmfile);
 		return;
 	}
 	if((afilein=fopen(cfg.areafile,"r"))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,cfg.areafile);
 		fclose(afileout);
 		fclose(nmfile);
-		free(outname);
 		return;
 	}
 	while(!feof(afilein)) {
@@ -1781,10 +1781,9 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	if(added || deleted) {
 		if(cfg.areafile_backups == 0 || !backup(cfg.areafile, cfg.areafile_backups, /* ren: */TRUE))
 			delfile(cfg.areafile, __LINE__);					/* Delete AREAS.BBS */
-		if(rename(outname,cfg.areafile))		   /* Rename new AREAS.BBS file */
-			lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,outname,cfg.areafile);
+		if(rename(outpath,cfg.areafile))		   /* Rename new AREAS.BBS file */
+			lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,outpath,cfg.areafile);
 	}
-	free(outname);
 }
 
 bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
