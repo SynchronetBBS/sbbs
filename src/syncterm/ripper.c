@@ -10091,6 +10091,7 @@ broken_flood_fill(struct ciolib_pixels *pix, int x, int y, uint32_t edge, uint32
 	}
 }
 
+#if 0
 static void
 flood_fill(struct ciolib_pixels *pix, int x1, int y1, uint32_t edge, uint32_t fillfg, uint32_t fillbg)
 {
@@ -10120,6 +10121,7 @@ flood_fill(struct ciolib_pixels *pix, int x1, int y1, uint32_t edge, uint32_t fi
 	if (y1 > 0)
 		flood_fill(pix, x1, y1 - 1, edge, fillfg, fillbg);
 }
+#endif
 
 struct point {
 	int x;
