@@ -12492,6 +12492,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
 								break;
 							strcat(cache_path, &args[6]);
+							fexistcase(cache_path);
 							struct stat st;
 							char str[1024];
 							char dstr[64];
@@ -12621,6 +12622,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							strcat(cache_path, &args[9]);
 							if (strchr(cache_path, '.') == NULL)
 								strcat(cache_path, ".ICN");
+							fexistcase(cache_path);
 							icn = fopen(cache_path, "rb");
 							if (icn != NULL) {
 								struct ciolib_pixels *pix = malloc(sizeof(struct ciolib_pixels));
@@ -13355,6 +13357,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									break;
 								}
 								strncpy(&cache_path[cpln], &args[8], sizeof(cache_path) - cpln);
+								fexistcase(cache_path);
 								FILE* fp = fopen(cache_path, "rb");
 								if (fp == NULL) {
 									strcpy(rip.bbs->uldir, uldir);
