@@ -357,7 +357,6 @@ static int init_window()
 static void map_window()
 {
 	XSizeHints *sh;
-	int scaled_height;
 	int minwidth = bitmap_width;
 	int minheight = bitmap_height;
 
