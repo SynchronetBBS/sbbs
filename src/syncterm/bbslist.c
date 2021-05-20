@@ -2607,10 +2607,13 @@ struct bbslist *show_bbslist(char *current, int connected)
                                 uifcbail();
                                 textmode(screen_to_ciolib(i));
                                 init_uifc(TRUE, TRUE);
+                		uifc.list_height = listcount + 5;
+                		if (uifc.list_height > (uifc.scrn_len - 4))
+					uifc.list_height = uifc.scrn_len - 4;
                                 uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
                                     |WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
                                     |WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
-                                    |WIN_SEL|WIN_INACT|WIN_FIXEDHEIGHT
+                                    |WIN_SEL|WIN_INACT|WIN_FIXEDHEIGHT|WIN_NODRAW
                                     ,0,0,0,&opt,&bar,list_title,(char **)list);
                                 draw_comment(list[opt]);
                             }
