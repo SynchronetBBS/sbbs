@@ -1142,7 +1142,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 			strcpy(fn,"./");
 		}
 		else {
-			if(type==SYNCTERM_DEFAULT_TRANSFER_PATH || type==SYNCTERM_PATH_CACHE) {
+			if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
 				strcpy(fn, home);
 				backslash(fn);
 #if defined(__APPLE__) && defined(__MACH__)
@@ -1164,6 +1164,14 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 			sprintf(fn,"%.*s",fnlen,home);
 			strncat(fn, "/.syncterm", fnlen-strlen(fn)-1);
 			backslash(fn);
+			if(type==SYNCTERM_PATH_CACHE) {
+				if(!isdir(fn))
+					if(MKDIR(fn))
+						fn[0]=0;
+				strcat(fn,"cache");
+				backslash(fn);
+				return(fn);
+			}
 		}
 	}
 	else {

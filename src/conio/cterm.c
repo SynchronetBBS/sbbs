@@ -1176,8 +1176,8 @@ scrolldown(struct cterminal *cterm)
 	GOTOXY(x, y);
 }
 
-static void
-scrollup(struct cterminal *cterm)
+void
+cterm_scrollup(struct cterminal *cterm)
 {
 	int minx = TERM_MINX;
 	int miny = TERM_MINY;
@@ -1216,7 +1216,7 @@ cond_scrollup(struct cterminal *cterm)
 	TERM_XY(&x, &y);
 	if (x >= TERM_MINX && x <= TERM_MAXX &&
 	    y >= TERM_MINY && y <= TERM_MAXY)
-		scrollup(cterm);
+		cterm_scrollup(cterm);
 }
 
 static void
@@ -2262,7 +2262,7 @@ adjust_currpos(struct cterminal *cterm, int xadj, int yadj, int scroll)
 			ty += yadj;
 		if (scroll) {
 			while(ty > TERM_MAXY) {
-				scrollup(cterm);
+				cterm_scrollup(cterm);
 				ty--;
 			}
 			while(ty < TERM_MINY) {
@@ -3549,7 +3549,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'S':	/* Scroll Up */
 							seq_default(seq, 0, 1);
 							for(j=0; j<seq->param_int[0]; j++)
-								scrollup(cterm);
+								cterm_scrollup(cterm);
 							break;
 						case 'T':	/* Scroll Down */
 							seq_default(seq, 0, 1);

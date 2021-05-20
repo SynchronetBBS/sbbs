@@ -283,6 +283,7 @@ CIOLIBEXPORT void cterm_start(struct cterminal *cterm);
 void cterm_gotoxy(struct cterminal *cterm, int x, int y);
 void setwindow(struct cterminal *cterm);
 void cterm_clreol(struct cterminal *cterm);
+void cterm_scrollup(struct cterminal *cterm);
 
 #ifdef __cplusplus
 }
