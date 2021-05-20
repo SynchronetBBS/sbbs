@@ -4,9 +4,6 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 
 CFLAGS += $(XPDEV-MT_CFLAGS) $(HASH_CFLAGS) $(ENCODE_CFLAGS) $(CIOLIB-MT_CFLAGS)
 
-# Deuce doesn't want to add "useless parens" in xbr.c
-CFLAGS += -Wno-parentheses
-
 ifeq ($(os),win32)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
