@@ -493,10 +493,9 @@ local_draw_rect(struct rectlist *rect)
 
 	// Scale...
 	source = do_scale(rect, x_cvstat.scaling, x_cvstat.scaling, x_cvstat.aspect_width, x_cvstat.aspect_height);
-	if (source == NULL) {
-		bitmap_drv_free_rect(rect);
+	bitmap_drv_free_rect(rect);
+	if (source == NULL)
 		return;
-	}
 	cleft = source->w;
 	ctop = source->h;
 
