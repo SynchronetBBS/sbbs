@@ -13292,7 +13292,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									break;
 								}
 								size_t fnln = p - &args[8];
-								if (cpln + fnln >= cpln) {
+								if (cpln + fnln >= sizeof(cache_path)) {
 									strcpy(rip.bbs->dldir, dldir);
 									free(dldir);
 									break;
@@ -13336,7 +13336,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									break;
 								}
 								size_t fnln = p - &args[8];
-								if (cpln + fnln >= cpln) {
+								if (cpln + fnln >= sizeof(cache_path)) {
 									strcpy(rip.bbs->uldir, uldir);
 									free(uldir);
 									break;
