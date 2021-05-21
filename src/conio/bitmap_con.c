@@ -1427,6 +1427,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		if (mask == NULL) {
 			for (x = sx; x <= ex; x++) {
 				screena.screen[PIXEL_OFFSET(screena, x, y)] = pixels->pixels[pos];
+				screena.rect->data[PIXEL_OFFSET(screena, x, y)] = color_value(pixels->pixels[pos]);
 				if (pixels->pixelsb) {
 					screenb.screen[PIXEL_OFFSET(screenb, x, y)] = pixels->pixelsb[pos];
 					screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = color_value(pixels->pixelsb[pos]);
