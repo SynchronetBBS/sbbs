@@ -185,6 +185,8 @@ get_buffer(void)
 void
 release_buffer(struct graphics_buffer *buf)
 {
+	if (buf == NULL)
+		return;
 	buf->next = free_list;
 	free_list = buf;
 }
@@ -724,30 +726,29 @@ pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height)
 	}
 }
 
-static
-uint32_t blend(const uint32_t c1, const uint32_t c2, const double weight)
+static uint32_t
+blend(const uint32_t c1, const uint32_t c2, int weight)
 {
 	uint8_t yuv1[4];
 	uint8_t yuv2[4];
-	int y, u, v;
-	const double iw = 1.0 - weight;
+	uint8_t yuv3[4];
+	const double iw = 256 - weight;
 
 	*(uint32_t *)yuv1 = r2y[c1];
 	*(uint32_t *)yuv2 = r2y[c2];
 #ifdef __BIG_ENDIAN__
-	y = yuv1[1] * iw + yuv2[1] * weight;
-	u = yuv1[2] * iw + yuv2[2] * weight;
-	v = yuv1[3] * iw + yuv2[3] * weight;
+	yuv3[0] = 0;
+	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 256;
+	yuv3[2] = (yuv1[2] * iw + yuv2[2] * weight) / 256;
+	yuv3[3] = (yuv1[3] * iw + yuv2[3] * weight) / 256;
 #else
-	y = yuv1[2] * iw + yuv2[2] * weight;
-	u = yuv1[1] * iw + yuv2[1] * weight;
-	v = yuv1[0] * iw + yuv2[0] * weight;
+	yuv3[3] = 0;
+	yuv3[2] = (yuv1[2] * iw + yuv2[2] * weight) / 256;
+	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 256;
+	yuv3[0] = (yuv1[0] * iw + yuv2[0] * weight) / 256;
 #endif
-	CLAMP(y);
-	CLAMP(u);
-	CLAMP(v);
 
-	return y2r[(y<<16)|(u<<8)|v];
+	return y2r[*(uint32_t*)yuv3];
 }
 
 /*
@@ -773,12 +774,12 @@ interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwi
 			else {
 				const double weight = xpos - xposi;
 				// Now pick the two pixels
-				const uint32_t pix1 = src[y * width + xposi] & 0xffffff;
+				const uint32_t pix1 = src[y * width + xposi];
 				uint32_t pix2;
 				if (xposi < width - 1)
-					pix2 = src[y * width + xposi + 1] & 0xffffff;
+					pix2 = src[y * width + xposi + 1];
 				else
-					pix2 = src[y * width + xposi] & 0xffffff;
+					pix2 = src[y * width + xposi];
 				if (pix1 == pix2)
 					*dst = pix1;
 				else {
@@ -799,23 +800,53 @@ static void
 interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight)
 {
 	int x, y;
-	bool em = false;
 	const double mult = (double)height / newheight;
+	double ypos = 0;
+	int last_yposi = 0;
+	int ywn = width;
+	static uint32_t *nline = NULL;
+	static uint32_t *tline = NULL;
+	static size_t nsz = 0;
+	static size_t tsz = 0;
+	uint32_t *stmp;
 
+	if (nsz < width * 4) {
+		stmp = realloc(nline, width * 4);
+		if (stmp == NULL)
+			goto fail;
+		nline = stmp;
+		nsz = width * 4;
+	}
+	if (tsz < width * 4) {
+		stmp = realloc(tline, width * 4);
+		if (stmp == NULL)
+			goto fail;
+		tline = stmp;
+		tsz = width * 4;
+	}
+
+	memcpy(tline, src, width * sizeof(*tline));
+	memcpy(nline, src + width, width * sizeof(*tline));
 	for (y = 0; y < newheight; y++) {
-		const double ypos = mult * y;
 		const int yposi = ypos;
-		em = (y == ypos || yposi >= height - 1);
-		if (em) {
-			memcpy(dst, &src[yposi * width], width * sizeof(dst[0]));
+		if (yposi != last_yposi) {
+			ywn += width;
+			last_yposi = yposi;
+			stmp = tline;
+			tline = nline;
+			nline = stmp;
+			memcpy(nline, &src[ywn], nsz);
+		}
+		if (y == ypos || yposi >= height - 1) {
+			memcpy(dst, tline, tsz);
 			dst += width;
 		}
 		else {
-			const double weight = ypos - yposi;
+			const uint8_t weight = ypos * 256;
 			for (x = 0; x < width; x++) {
 				// Now pick the two pixels
-				const uint32_t pix1 = src[yposi * width + x] & 0xffffff;
-				const uint32_t pix2 = src[(yposi + 1) * width + x] & 0xffffff;
+				const uint32_t pix1 = tline[x];
+				const uint32_t pix2 = nline[x];
 				if (pix1 == pix2)
 					*dst = pix1;
 				else
@@ -823,7 +854,19 @@ interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newh
 				dst++;
 			}
 		}
+		ypos += mult;
 	}
+
+	return;
+fail:
+	free(nline);
+	free(tline);
+	nline = NULL;
+	tline = NULL;
+	nsz = 0;
+	tsz = 0;
+	memcpy(src, dst, width * height * sizeof(*src));
+	fprintf(stderr, "Allocation failure in interpolate_height()!");
 }
 
 static void
