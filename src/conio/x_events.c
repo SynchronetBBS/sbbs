@@ -464,7 +464,8 @@ static int video_init()
     return(0);
 }
 
-static void local_draw_rect(struct rectlist *rect)
+static void
+local_draw_rect(struct rectlist *rect)
 {
 	int x, y, xoff = 0, yoff = 0;
 	unsigned int r, g, b;
@@ -476,10 +477,12 @@ static void local_draw_rect(struct rectlist *rect)
 	int idx;
 	uint32_t last_pixel = 0x55555555;
 	struct graphics_buffer *source;
-	int lines;
+	bool isRGB8 = false;
 
-	if (bitmap_width != rect->rect.width || bitmap_height != rect->rect.height)
+	if (bitmap_width != rect->rect.width || bitmap_height != rect->rect.height) {
+		bitmap_drv_free_rect(rect);
 		return;
+	}
 
 	xoff = (x11_window_width - xim->width) / 2;
 	if (xoff < 0)
@@ -490,12 +493,12 @@ static void local_draw_rect(struct rectlist *rect)
 
 	// Scale...
 	source = do_scale(rect, x_cvstat.scaling, x_cvstat.scaling, x_cvstat.aspect_width, x_cvstat.aspect_height);
-	bitmap_drv_free_rect(rect);
-	if (source == NULL)
+	if (source == NULL) {
+		bitmap_drv_free_rect(rect);
 		return;
+	}
 	cleft = source->w;
 	ctop = source->h;
-	lines = 0;
 
 	xoff = (x11_window_width - source->w) / 2;
 	if (xoff < 0)
@@ -511,6 +514,9 @@ static void local_draw_rect(struct rectlist *rect)
 
 	/* TODO: Translate into local colour depth */
 	idx = 0;
+	if (visual.red_mask == 0xff0000 && visual.green_mask == 0x00ff00 && visual.blue_mask == 0x0000ff)
+		isRGB8 = true;
+
 	for (y = 0; y < source->h; y++) {
 		for (x = 0; x < source->w; x++) {
 			if (last) {
@@ -529,40 +535,44 @@ static void local_draw_rect(struct rectlist *rect)
 					continue;
 				}
 			}
-			if (last_pixel != source->data[idx]) {
-				last_pixel = source->data[idx];
-				r = source->data[idx] >> 16 & 0xff;
-				g = source->data[idx] >> 8 & 0xff;
-				b = source->data[idx] & 0xff;
-				r = (r<<8)|r;
-				g = (g<<8)|g;
-				b = (b<<8)|b;
-				pixel = base_pixel;
-				if (r_shift >= 0)
-					pixel |= (r << r_shift) & visual.red_mask;
-				else
-					pixel |= (r >> (0-r_shift)) & visual.red_mask;
-				if (g_shift >= 0)
-					pixel |= (g << g_shift) & visual.green_mask;
-				else
-					pixel |= (g >> (0-g_shift)) & visual.green_mask;
-				if (b_shift >= 0)
-					pixel |= (b << b_shift) & visual.blue_mask;
-				else
-					pixel |= (b >> (0-b_shift)) & visual.blue_mask;
+			if (isRGB8) {
+				pixel = source->data[idx];
+				((uint32_t*)xim->data)[idx] = pixel;
 			}
+			else {
+				if (last_pixel != source->data[idx]) {
+					last_pixel = source->data[idx];
+					r = source->data[idx] >> 16 & 0xff;
+					g = source->data[idx] >> 8 & 0xff;
+					b = source->data[idx] & 0xff;
+					r = (r<<8)|r;
+					g = (g<<8)|g;
+					b = (b<<8)|b;
+					pixel = base_pixel;
+					if (r_shift >= 0)
+						pixel |= (r << r_shift) & visual.red_mask;
+					else
+						pixel |= (r >> (0-r_shift)) & visual.red_mask;
+					if (g_shift >= 0)
+						pixel |= (g << g_shift) & visual.green_mask;
+					else
+						pixel |= (g >> (0-g_shift)) & visual.green_mask;
+					if (b_shift >= 0)
+						pixel |= (b << b_shift) & visual.blue_mask;
+					else
+						pixel |= (b >> (0-b_shift)) & visual.blue_mask;
+				}
 #ifdef XPutPixel
-			XPutPixel(xim, (x + rect->rect.x), (y + rect->rect.y), pixel);
+				XPutPixel(xim, x, y, pixel);
 #else
-			x11.XPutPixel(xim, (x + rect->rect.x), (y + rect->rect.y), pixel);
+				x11.XPutPixel(xim, x, y, pixel);
 #endif
+			}
 			idx++;
 		}
-		lines++;
 		/* This line was changed */
 		// TODO: Previously this did one update per display line...
-		if (last && (cbottom != y || y == source->h - 1) && cright >= 0) {
-			lines = 0;
+		if (last && cright >= 0 && (cbottom != y || y == source->h - 1)) {
 			x11.XPutImage(dpy, win, gc, xim, cleft, ctop
 			    , cleft + xoff, ctop + yoff
 			    , (cright - cleft + 1), (cbottom - ctop + 1));
@@ -573,7 +583,7 @@ static void local_draw_rect(struct rectlist *rect)
 	}
 
 	if (last == NULL)
-		x11.XPutImage(dpy, win, gc, xim, rect->rect.x, rect->rect.y, rect->rect.x + xoff, rect->rect.y + yoff, source->w, source->h);
+		x11.XPutImage(dpy, win, gc, xim, 0, 0, xoff, yoff, source->w, source->h);
 	else
 		release_buffer(last);
 	last = source;
@@ -1231,7 +1241,7 @@ void x11_event_thread(void *args)
 			case -1:
 				/*
 				* Errno might be wrong, so we just select again.
-				* This could cause a problem is something really
+				* This could cause a problem if something really
 				* was wrong with select....
 				*/
 

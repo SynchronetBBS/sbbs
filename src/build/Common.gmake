@@ -437,9 +437,9 @@ ifdef DEBUG
  CFLAGS	+=	-D_DEBUG
  CFLAGS +=	-Wall -Wno-char-subscripts
 else # RELEASE
- # -finline functions breaks the baja build badly.
- # This also means that -O3 won't work either.
- CFLAGS	:= -O2 -fomit-frame-pointer -ffast-math -funroll-loops $(CFLAGS)
+ # -finline-functions (used to) break the baja build badly.
+ # This also meant that -O3 wouldn't work either.
+ CFLAGS	:= -O3 -fomit-frame-pointer -ffast-math -funroll-loops $(CFLAGS)
 endif
 
 -include targets.mk
