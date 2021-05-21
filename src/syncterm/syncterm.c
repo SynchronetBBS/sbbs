@@ -1044,7 +1044,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 			}
 			if(we_got_this) {
 				// Convert unicode to string using snprintf()
-				if (type == SYNCTERM_DEFAULT_TRANSFER_PATH) {
+				if (type == SYNCTERM_DEFAULT_TRANSFER_PATH || type == SYNCTERM_PATH_CACHE) {
 					if(snprintf(fn, fnlen, "%S", path) >= fnlen)
 						we_got_this=FALSE;
 				}
