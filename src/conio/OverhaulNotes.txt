@@ -1,0 +1,107 @@
+1)  NO GLOBALS (ESCDELAY etc will be in the struct with accessors)
+2)  An init function that returns a struct with a bunch of function pointers in
+    it.
+3)  UIFC will need to have the ability for the ciolib struct to be passed to
+    it.
+4)  Will support multiple independent windows.
+5)  There will be a compatability library for JUST conio stuff.
+6)  Any advanced features not in the conio API will not be present.
+7)  Unicode (UTF-8) support... likely X11 first, followed by Curses, SDL and
+    Win32.
+8)  ANSI mode may never get proper unicode support... or at least not until
+    everything else works.
+9)  Unicode support will support GR access of the C1 set.  Most importantly,
+    this means CSI (\x9b).  This is actually somewhat silly since it will take
+    two bytes regardless, but if UCS-2 or something gets added in the future,
+    it may make a difference, and there's no reason to show control codes.
+10) Greatly expanded attribute sets, and in UTF-8 mode there will be no
+    hackiness.  The great bright/bold debate will rage on though... possibly a
+    new set/reset mode will be added to control it.
+11) Double-height/Double-width/Double-size modes.  As is tradition, all the
+    cells covered by the glyph must be the same character and attributes.  This
+    opens a whole can of worms regarding how further updates work etc.  I'll
+    strive to keep it sane and compatible, which may be impossible.
+12) A Unicode cell will potentially have multiple codepoints "in" it.
+
+For CONIOng:
+Layers:
+0  - Solid fixed background (doesn't scoll)
+1  - Text area background (scrolls, text area)
+2  - Text area background bitmap (scrolls, text area)
+3  - Text area background pixel (scrolls, text area)
+4  - Bitmap background (doesn't scroll)
+5  - Pixel background (doesn't scroll)
+6  - Text area foreground (scrolls, text area)
+7  - Text area foreground bitmap (scrolls, text area)
+8  - Text area foreground pixel (scrolls, text area)
+9  - Bitmap foreground (doesn't scroll)
+10 - Pixel foreground layer (doesn't scroll)
+
+Layer Attributes:
+Layer 0:  "colour"
+Layer 1:  <none>
+Layer 2:  <none>
+Layer 3:  "hidden"
+Layer 4:  <none>
+Layer 5:  "hidden"
+Layer 6:  <none>
+Layer 7:  <none>
+Layer 8:  "hidden"
+Layer 9:  <none>
+Layer 10: "hidden"
+
+A text area can be defined as having a given width and height with the
+top-left corner positioned at any pixel location.  Text areas use a fixed
+width font, and have multiple planes... text background, background bitmap,
+background pixels, text foreground, foreground bitmap, foreground pixels
+It will have the following attributes:
+Fonts
+Codepage
+Tab stops
+Cursor position
+Auto-wrap
+Blink enabled
+Cursor vidible
+Palette definition
+Foreground visible
+Foreground bitmaps visible
+Foreground pixels visible
+Background visible
+Background bitmaps visible
+Background pixels visible
+Z-index
+"Current" cell attributes (see below)
+
+Each character cell will have the following attributes:
+Codepoints (array)
+Foreground colour
+Background colour
+Font
+Flags
+- Fast Blink
+- Slow Blink
+- Bold
+- Italic
+- Negative
+- Concealed
+- Underline
+- Overstrike
+- Double underline
+- Double overstrike
+- Double-wide
+- Double-high
+- Superscript
+- Subscript
+
+Bitmap layers contain zero or more bitmaps (likely WebP, maybe others)
+which have a stacking order in the layer. Attributes:
+position
+hidden
+paused (not animated)
+Z-index
+
+Pixel layers are simply an array of pixels that may be directly
+manipulated.  No attributes are planned.
+
+For the bitmap and pixel layers associated with a text area, they will
+scroll with the text in that area.
