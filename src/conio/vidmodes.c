@@ -121,6 +121,8 @@ struct video_params vparams[] = {
 	{ST132X52_5_4, COLOUR_PALETTE,       132, 52, 14, 15, 16, 8, 7, 0,  5, 4, 1056, 823},
 	/* Stupid modes */
 	{VGA80X25, COLOUR_PALETTE,            80, 25, 14, 15, 16, 9, 7, CIOLIB_VIDEO_EXPAND | CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND, 4, 3, 720, 400},
+	/* DigitalMon */
+	{LCD80X25, COLOUR_PALETTE,            80, 25, 14, 15, 16, 8, 7, 0,  8, 5, 640,  400},
 	/* Custom mode */
 	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE, 80,  25, 14, 15, 16, 8, 7, 0,  0, 0,   -1,  -1},
 };
