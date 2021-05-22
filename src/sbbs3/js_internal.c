@@ -1330,7 +1330,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 #ifdef PREFER_POLL
 						if (fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
 #else
-						if (FD_ISSET(ev->data.connect.sv[0], &wfds)) {
+						if (FD_ISSET(ev->data.connect.sv[0], &rfds)) {
 #endif
 							closesocket(ev->data.connect.sv[0]);
 							break;
@@ -1343,7 +1343,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
 #ifdef PREFER_POLL
 						if (fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
 #else
-						if (FD_ISSET(ev->data.sock, &wfds)) {
+						if (FD_ISSET(ev->data.sock, &rfds)) {
 #endif
 							break;
 						}
