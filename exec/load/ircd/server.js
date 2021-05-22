@@ -37,15 +37,13 @@ function IRC_Server() {
 	this.flags = 0;
 	this.hops = 0;
 	this.hostname = "";
-	this.id = 0;
 	this.ip = "";
 	this.ircclass = 0;
-	this.linkparent="";
+	this.linkparent = "";
 	this.nick = "";
 	this.parent = 0;
 	this.info = "";
-	this.idletime = time();
-	this.outgoing = false;
+	this.idletime = system.timer;
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
 	////////// FUNCTIONS
@@ -57,8 +55,8 @@ function IRC_Server() {
 	this.ircout=ircout;
 	this.originatorout=originatorout;
 	this.rawout=rawout;
-	this.sendq = new IRC_Queue();
-	this.recvq = new IRC_Queue();
+	this.sendq = new IRC_Queue(this);
+	this.recvq = new IRC_Queue(this);
 	// IRC protocol sending functions
 	this.bcast_to_channel=IRCClient_bcast_to_channel;
 	this.bcast_to_servers=IRCClient_bcast_to_servers;
@@ -74,9 +72,9 @@ function IRC_Server() {
 	this.finalize_server_connect=IRCClient_finalize_server_connect;
 	// Global Functions
 	this.check_timeout=IRCClient_check_timeout;
-	this.check_queues=IRCClient_check_queues;
 	this.set_chanmode=IRCClient_set_chanmode;
 	this.check_nickname=IRCClient_check_nickname;
+	this.do_msg=IRCClient_do_msg;
 	// Output helper functions (shared)
 }
 
@@ -84,504 +82,637 @@ function IRC_Server() {
 
 function Server_Work(cmdline) {
 	var clockticks = system.timer;
-	var cmd;
-	var command;
+	var cmd, p;
+	var tmp, i, j, k, n; /* Temp vars used during command processing */
+	var origin;
 
-	if (debug)
-		log(format("[%s<-%s]: %s",servername,this.nick,cmdline));
+	log(LOG_DEBUG,format("[%s<-%s]: %s",ServerName,this.nick,cmdline));
 
-	cmd = cmdline.split(" ");
+	cmd = IRC_parse(cmdline);
 
-	if (cmdline[0] == ":") {
-		// Silently ignore NULL originator commands.
-		if (!cmd[1])
-			return 0;
-		origin = cmd[0].slice(1);
-		command = cmd[1].toUpperCase();
-		cmdline = cmdline.slice(cmdline.indexOf(" ")+1);
-		// resplit cmd[]
-		cmd = cmdline.split(" ");
-	} else {
-		command = cmd[0].toUpperCase();
-		origin = this.nick;
+	if (!cmd.source.name) {
+		cmd.source.name = this.nick;
+		cmd.source.is_server = true;
 	}
 
-	var killtype;
-	var ThisOrigin;
-	if (origin.match(/[.]/)) {
-		ThisOrigin = Servers[origin.toLowerCase()];
-		killtype = "SQUIT";
-	} else {
-		ThisOrigin = Users[origin.toUpperCase()];
-		killtype = "KILL";
-	}
-	if (!ThisOrigin) {
-		umode_notice(USERMODE_OPER,"Notice","Server " + this.nick +
-			" trying to pass message for non-existent origin: " +
-			origin);
-		this.rawout(killtype + " " + origin + " :" + servername + " (" + origin + "(?) <- " + this.nick + ")");
+	if (cmd.source.is_server)
+		origin = Servers[cmd.source.name.toLowerCase()];
+	else
+		origin = Users[cmd.source.name.toUpperCase()];
+
+	if (!origin) {
+		umode_notice(USERMODE_OPER,"Notice",format(
+			"Server %s trying to pass message for non-existent origin: %s",
+			this.nick,
+			cmd.source.name
+		));
+		if (Enforcement) {
+			this.rawout(format("%s %s :%s (%s(?) <- %s)",
+				cmd.source.is_server ? "SQUIT" : "KILL",
+				cmd.source.name,
+				ServerName,
+				cmd.source.name,
+				this.nick
+			));
+		} else {
+			this.quit(format(
+				"Server %s trying to pass message for non-existent origin: %s",
+				this.nick,
+				cmd.source.name
+			));
+		}
 		return 0;
 	}
 
-	this.idletime = time();
+	this.idletime = system.timer;
 
-	if (command.match(/^[0-9]+/)) { // passing on a numeric to the client
-		if (!cmd[1])
-			return 0; // uh...?
-		var destination = Users[cmd[1].toUpperCase()];
-		if (!destination)
+	p = cmd.params;
+
+	if (cmd.verb.match(/^[0-9]+/)) { /* Passing on a numeric to a client */
+		if (!p[0])
 			return 0;
-		destination.rawout(":" + ThisOrigin.nick + " " + cmdline);
+		var tmp = Users[p[0].toUpperCase()];
+		if (!tmp)
+			return 0;
+		tmp.rawout(cmdline); /* We don't process numerics directly, pass on */
 		return 1;
 	}
 
-	var legal_command = true; /* For tracking STATS M */
-
-	switch(command) {
-	// PING at the top thanks to RFC1459
-	case "PING":
-		if (!cmd[1])
+	switch(cmd.verb) {
+	case "PING": /* RFC1459 says to respond to these first */
+		if (!p[0])
 			break;
-		if (cmd[2] && (cmd[2][0] == ":"))
-			cmd[2] = cmd[2].slice(1);
-		var tmp_server;
-		if (cmd[2])
-			tmp_server = searchbyserver(cmd[2]);
-		if (tmp_server && (tmp_server != -1) && (tmp_server.id != ThisOrigin.id)) {
-			tmp_server.rawout(":" + ThisOrigin.nick + " PING " + ThisOrigin.nick + " :" + tmp_server.nick);
+		if (p[1])
+			tmp = searchbyserver(p[1]);
+		if (tmp && tmp != -1 && tmp.id != origin.id) {
+			tmp.rawout(format(
+				":%s PING %s :%s",
+				origin.nick,
+				origin.nick,
+				tmp.nick
+			));
 			break;
 		}
-		if (cmd[1][0] == ":")
-			cmd[1] = cmd[1].slice(1);
-		if (!cmd[2])
-			this.ircout("PONG " + servername + " :" + cmd[1]);
-		else
-			this.ircout("PONG " + cmd[2] + " :" + cmd[1]);
+		if (!p[1]) {
+			this.ircout(format(
+				"PONG %s :%s",
+				ServerName,
+				p[0]
+			))
+			break;
+		}
+		this.ircout(format(
+			"PONG %s :%s",
+			p[1],
+			p[0]
+		));
 		break;
 	case "ADMIN":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		if (cmd[1][0] == ":")
-			cmd[1] = cmd[1].slice(1);
-		if (wildmatch(servername,cmd[1])) {
-			ThisOrigin.do_admin();
-		} else {
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " ADMIN :" + dest_server.nick);
+		if (wildmatch(ServerName,p[0])) {
+			origin.do_admin();
+			break;
 		}
+		tmp = searchbyserver(p[0]);
+		if (!tmp)
+			break;
+		tmp.rawout(format(
+			":%s ADMIN :%s",
+			origin.nick,
+			tmp.nick
+		));
 		break;
 	case "AKILL":
-		var this_uh;
-
-		if (!cmd[6])
+		if (!p[5])
 			break;
-		if (!ThisOrigin.uline) {
-			umode_notice(USERMODE_OPER,"Notice","Non-U:Lined server "
-				+ ThisOrigin.nick + " trying to utilize AKILL.");
+
+		if (!origin.uline) {
+			umode_notice(USERMODE_OPER,"Notice",format(
+				"Non-U:Lined server %s trying to utilize AKILL.",
+				origin.nick
+			));
 			break;
 		}
 
-		this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + cmdline);
+		this.bcast_to_servers_raw(format(
+			":%s %s",
+			origin.nick,
+			p.join(" ")
+		));
 
-		this_uh = cmd[2] + "@" + cmd[1];
-		if (isklined(this_uh))
+		k = p[1] + "@" + p[0];
+		if (isklined(k))
 			break;
-		KLines.push(new KLine(this_uh,IRC_string(cmdline,6),"A"));
-		scan_for_klined_clients();
+		KLines.push(new KLine(k,p[5],"A"));
+		Scan_For_Banned_Clients();
 		break;
 	case "AWAY":
-		if (ThisOrigin.server)
+		if (origin.server)
 			break;
-		var send_away = "AWAY";
-		var my_ircstr = IRC_string(cmdline,1);
-		if (!my_ircstr) {
-			ThisOrigin.away = "";
-		} else {
-			ThisOrigin.away = my_ircstr;
-			send_away += " :" + my_ircstr;
-		}
-		this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + send_away);
+		origin.away = p[0] ? p[0] : "";
+		this.bcast_to_servers_raw(format(
+			":%s AWAY%s",
+			origin.nick,
+			p[0] ? format(" :%s", p[0]) : ""
+		));
 		break;
 	case "CHATOPS":
-		if (!cmd[1])
+		if (!p[0])
 			break;
-		var my_ircstr = IRC_string(cmdline,1);
-		umode_notice(USERMODE_CHATOPS,"ChatOps","from " +
-			ThisOrigin.nick + ": " + my_ircstr);
-		this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " +
-			"CHATOPS :" + my_ircstr);
+		umode_notice(USERMODE_CHATOPS,"ChatOps",format(
+			"from %s: %s",
+			origin.nick,
+			p[0]
+		));
+		this.bcast_to_servers_raw(format(
+			":%s CHATOPS :%s",
+			origin.nick,
+			p[0]
+		));
 		break;
 	case "CONNECT":
-		if (!cmd[3] || !this.hub || ThisOrigin.server)
+		if (!p[2] || !this.hub || origin.server)
 			break;
-		if (wildmatch(servername, cmd[3])) {
-			ThisOrigin.do_connect(cmd[1],cmd[2]);
-		} else {
-			var dest_server = searchbyserver(cmd[3]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " CONNECT " + cmd[1] + " " + cmd[2] + " "
-				+ dest_server.nick);
+		if (wildmatch(ServerName, p[2])) {
+			origin.do_connect(p[0],p[1]);
+			break;
 		}
+		tmp = searchbyserver(p[2]);
+		if (!tmp)
+			break;
+		tmp.rawout(format(
+			":%s CONNECT %s %s %s",
+			origin.nick,
+			p[0],
+			p[1],
+			tmp.nick
+		));
 		break;
 	case "GLOBOPS":
-		if (!cmd[1])
+		if (!p[0])
 			break;
-		var my_ircstr = IRC_string(cmdline,1);
-		ThisOrigin.globops(my_ircstr);
+		origin.globops(p[0]);
 		break;
 	case "GNOTICE":
-		if (!cmd[1])
+		if (!p[0])
 			break;
-		var my_ircstr = IRC_string(cmdline,1);
-		umode_notice(USERMODE_ROUTING,"Routing","from " + ThisOrigin.nick + ": " + my_ircstr);
-		this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + "GNOTICE :" + my_ircstr);
+		umode_notice(USERMODE_ROUTING,"Routing",format(
+			"from %s: %s",
+			origin.nick,
+			p[0]
+		));
+		this.bcast_to_servers_raw(format(
+			":%s GNOTICE :%s",
+			origin.nick,
+			p[0]
+		));
 		break;
 	case "ERROR":
-		var my_ircstr = IRC_string(cmdline,1);
-		gnotice("ERROR from " + this.nick + " [(+)0@" + this.hostname + "] -- " + my_ircstr);
-		ThisOrigin.quit(my_ircstr);
+		if (!p[0])
+			p[0] = "No error message received.";
+		gnotice(format(
+			"ERROR from %s [(+)0@%s] -- %s",
+			this.nick,
+			this.hostname,
+			p[0]
+		));
+		ThisOrigin.quit(p[0]);
 		break;
 	case "INFO":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		if (cmd[1][0] == ":")
-			cmd[1] = cmd[1].slice(1);
-		if (wildmatch(servername, cmd[1])) {
-			ThisOrigin.do_info();
-		} else {
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " INFO :" + dest_server.nick);
+		if (wildmatch(ServerName, p[0])) {
+			origin.do_info();
+			break;
 		}
+		tmp = searchbyserver(p[0]);
+		if (!tmp)
+			break;
+		tmp.rawout(format(
+			":%s INFO :%s",
+			origin.nick,
+			tmp.nick
+		));
 		break;
 	case "INVITE":
-		if (!cmd[2] || ThisOrigin.server)
+		if (!p[1] || origin.server)
 			break;
-		if (cmd[2][0] == ":")
-			cmd[2] = cmd[2].slice(1);
-		var chan = Channels[cmd[2].toUpperCase()];
-		if (!chan)
+		tmp = Channels[cmd[2].toUpperCase()];
+		if (!tmp)
 			break;
-		if (!chan.modelist[CHANMODE_OP][ThisOrigin.id])
+		if (!tmp.modelist[CHANMODE_OP][origin.id])
 			break;
-		var nick = Users[cmd[1].toUpperCase()];
-		if (!nick)
+		j = Users[p[0].toUpperCase()];
+		if (!j)
 			break;
-		if (!nick.channels[chan.nam.toUpperCase()])
+		if (!j.channels[tmp.nam.toUpperCase()])
 			break;
-		nick.originatorout("INVITE " + nick.nick + " :" + chan.nam,ThisOrigin);
-		nick.invited = chan.nam.toUpperCase();
+		j.originatorout(format(
+			"INVITE %s :%s",
+			j.nick,
+			tmp.nam
+		),origin);
+		j.invited = tmp.nam.toUpperCase();
 		break;
 	case "JOIN":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		if (cmd[1][0] == ":")
-			cmd[1]=cmd[1].slice(1);
-		var the_channels = cmd[1].split(",");
-		for (jchan in the_channels) {
-			if (the_channels[jchan][0] != "#")
+		k = p[0].split(",");
+		for (i in k) {
+			if (k[i][0] != "#")
 				continue;
-			ThisOrigin.do_join(the_channels[jchan].slice(0,max_chanlen),"");
+			origin.do_join(k[i].slice(0,MAX_CHANLEN),"");
 		}
 		break;
 	case "KICK":
-		var chanid;
-		var nickid;
-		var str;
-		var kick_reason;
-
-		if (!cmd[2])
+		if (!p[1])
 			break;
-		chanid = Channels[cmd[1].toUpperCase()];
-		if (!chanid)
+		tmp = Channels[p[0].toUpperCase()];
+		if (!tmp)
 			break;
-		nickid = Users[cmd[2].toUpperCase()];
-		if (!nickid)
-			nickid = search_nickbuf(cmd[2]);
-		if (!nickid)
+		j = Users[p[1].toUpperCase()];
+		if (!j)
+			j = search_nickbuf(p[1]);
+		if (!j)
 			break;
-		if (!nickid.channels[chanid.nam.toUpperCase()])
+		if (!j.channels[tmp.nam.toUpperCase()])
 			break;
-		if (cmd[3])
-			kick_reason = IRC_string(cmdline,3).slice(0,max_kicklen);
+/*		if (p[2])
+			kick_reason = IRC_string(cmdline,3).slice(0,MAX_KICKLEN);
 		else
-			kick_reason = ThisOrigin.nick;
-		str = "KICK " + chanid.nam + " " + nickid.nick + " :" + kick_reason;
-		ThisOrigin.bcast_to_channel(chanid, str, false);
-		this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + str);
-		nickid.rmchan(chanid);
+			kick_reason = ThisOrigin.nick; */
+		origin.bcast_to_channel(tmp, format(
+			"KICK %s %s :%s",
+			tmp.nam,
+			j.nick,
+			p[2] ? p[2] : j.nick
+		),false /* bounceback */);
+		this.bcast_to_servers_raw(format(
+			":%s KICK %s %s :%s",
+			origin.nick,
+			tmp.nam,
+			j.nick,
+			p[2] ? p[2] : j.nick
+		));
+		j.rmchan(tmp);
 		break;
 	case "KILL":
-		if (!cmd[1] || !cmd[2])
+		if (!p[1])
 			break;
-		if (cmd[1].match(/[.]/))
+		if (p[0].match(/[.]/))
 			break;
-		if (cmd[2] == ":")
-			break;
-		var reason = IRC_string(cmdline,2);
-		var kills = cmd[1].split(",");
-		for(kill in kills) {
-			var target = Users[kills[kill].toUpperCase()];
-			if (!target)
-				target = search_nickbuf(kills[kill]);
-			if (target && (this.hub || (target.parent == this.nick)) ) {
-				umode_notice(USERMODE_KILL,"Notice","Received KILL message for " + target.nuh
-					+ ". From " + ThisOrigin.nick + " Path: " + target.nick + "!Synchronet!"
-					+ ThisOrigin.nick + " (" + reason + ")");
-				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " KILL " + target.nick + " :" + reason);
-				target.quit("KILLED by " + ThisOrigin.nick + " (" + reason + ")",true);
-			} else if (target && !this.hub) {
-				umode_notice(USERMODE_OPER,"Notice","Non-Hub server " + this.nick + " trying to KILL "
-					+ target.nick);
-				this.reintroduce_nick(target);
+		/* var reason = p[1] */
+		k = p[0].split(",");
+		for (i in k) {
+			tmp = Users[k[i].toUpperCase()];
+			if (!tmp)
+				tmp = search_nickbuf(k[i]);
+			if (!tmp)
+				continue;
+			if (!Enforcement || this.hub || (tmp.parent == this.nick)) {
+				umode_notice(USERMODE_KILL,"Notice",format(
+					"Received KILL message for %s. From %s Path: %s!Synchronet!%s (%s)",
+					tmp.nuh,
+					origin.nick,
+					tmp.nick,
+					origin.nick,
+					p[1]
+				));
+				this.bcast_to_servers_raw(format(
+					":%s KILL %s :%s",
+					origin.nick,
+					tmp.nick,
+					p[1]
+				));
+				tmp.quit(format(
+					"KILLED by %s (%s)",
+					origin.nick,
+					p[1]
+				),true /* suppress_bcast */);
+				continue;
+			}
+			if (!this.hub && Enforcement) {
+				umode_notice(USERMODE_OPER,"Notice",format(
+					"Non-Hub server %s trying to KILL %s",
+					this.nick,
+					tmp.nick
+				));
+				this.reintroduce_nick(tmp);
 			}
 		}
 		break;
 	case "LINKS":
-		if (!cmd[1] || !cmd[2] || ThisOrigin.server)
+		if (!p[1] || origin.server)
 			break;
-		if (match_irc_mask(servername, cmd[1])) {
-			ThisOrigin.do_links(cmd[2]);
-		} else {
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " LINKS " + dest_server.nick + " " + cmd[2]);
+		if (match_irc_mask(ServerName, p[0])) {
+			origin.do_links(p[1]);
+			break;
 		}
+		tmp = searchbyserver(p[0]);
+		if (!tmp)
+			break;
+		tmp.rawout(format(
+			":%s LINKS %s %s",
+			origin.nick,
+			tmp.nick,
+			p[1]
+		));
 		break;
 	case "MODE":
-		if (!cmd[1] || !cmd[2])
+		if (!p[1])
 			break;
-		if (cmd[1][0] == "#") {
-			var chan = Channels[cmd[1].toUpperCase()];
-			if (!chan)
-				break;
-			var modeline;
-			var cmdend = cmd.length - 1;
-			var cmd2_int = parseInt(cmd[2]);
-			var cmdend_int = parseInt(cmd[cmdend]);
-			var bounce_modes = false;
-			/* Detect if this is a TSMODE.  If so, handle. */
-			if (cmd2_int == cmd[2]) {
-				if (cmd2_int > chan.created) {
-					break;
-				} else if ((cmd2_int < chan.created) && ThisOrigin.server) {
-					bounce_modes = true;
-					chan.created = cmd2_int;
-				}
-				cmd.shift();
+		if (p[0][0] != "#") { /* Setting a user mode */
+			tmp = origin.setusermode(p[1]);
+			if (tmp) {
+				this.bcast_to_servers_raw(format(
+					":%s MODE %s %s",
+					origin.nick,
+					origin.nick,
+					tmp
+				));
 			}
-			cmd.shift();
-			cmd.shift();
-			var modeline = cmd.join(" ");
-			ThisOrigin.set_chanmode(chan,modeline,bounce_modes);
-		} else { // assume it's for a user
-			var my_modes = ThisOrigin.setusermode(IRC_string(cmd[2],0));
-			if (my_modes) {
-				this.bcast_to_servers_raw(":" + ThisOrigin.nick
-					+ " MODE " + ThisOrigin.nick + " " + my_modes);
-			}
+			break;
 		}
+		/* Setting a channel mode */
+		tmp = Channels[p[0].toUpperCase()];
+		if (!tmp)
+			break;
+		j = false; /* bounce our side? */
+		if (parseInt(p[1]) > tmp.created) /* TS violation TODO: bounce their side */
+			break;
+		if (parseInt(p[1]) < tmp.created && origin.server)
+			j = true;
+		p.shift();
+		origin.set_chanmode(tmp,p.join(" "),j);
 		break;
 	case "MOTD":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		if (cmd[1][0] == ":")
-			cmd[1] = cmd[1].slice(1);
-		if (wildmatch(servername, cmd[1])) {
+		if (wildmatch(ServerName, p[0])) {
 			umode_notice(USERMODE_STATS_LINKS,"StatsLinks",format(
 				"MOTD requested by %s (%s@%s) [%s]",
-				ThisOrigin.nick,
-				ThisOrigin.uprefix,
-				ThisOrigin.hostname,
-				ThisOrigin.servername
+				origin.nick,
+				origin.uprefix,
+				origin.hostname,
+				origin.servername
 			));
-			ThisOrigin.motd();
-		} else {
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " MOTD :" + dest_server.nick);
+			origin.motd();
+			break;
 		}
+		tmp = searchbyserver(p[0]);
+		if (!tmp)
+			break;
+		tmp.rawout(format(
+			":%s MOTD :%s",
+			origin.nick,
+			tmp.nick
+		));
 		break;
 	case "NICK":
-		if (!cmd[2])
+		if (!p[1])
 			break;
-		if (ThisOrigin.server && cmd[8]) {
-			var collide = Users[cmd[1].toUpperCase()];
-			if (collide) {
-				if (collide.parent == this.nick) {
-					gnotice("Server " + this.nick + " trying to introduce nick " + collide.nick
-						+ " twice?! Ignoring.");
+		if (origin.server && p[9]) { /* New nick being introduced */
+			tmp = Users[p[0].toUpperCase()];
+			if (tmp) { /* Nickname collision */
+				if (tmp.parent == this.nick) {
+					gnotice(format(
+						"Server %s trying to introduce nick %s twice?! Ignoring.",
+						this.nick,
+						tmp.nick
+					));
 					break;
-				} else if (   (parseInt(collide.created) > parseInt(cmd[3]))
-							&& this.hub
-				) {
-					// Nuke our side of things, allow this newly
-					// introduced nick to overrule.
-					collide.numeric(436, collide.nick + " :Nickname Collision KILL.");
-					this.bcast_to_servers("KILL " + collide.nick + " :Nickname Collision.");
-					collide.quit("Nickname Collision",true);
-				} else if (!this.hub) {
-					gnotice("Server " + this.nick + " trying to collide nick " + collide.nick
-						+ " forwards, reversing.");
-					// Don't collide our side of things from a leaf
-					this.ircout("KILL " + cmd[1] + " :Inverse Nickname Collision.");
-					// Reintroduce our nick, because the remote end
-					// probably killed it already on our behalf.
-					this.reintroduce_nick(collide);
+				}
+				if (tmp.created > parseInt(p[2]) && (this.hub || !Enforcement)) {
+					/* We're on the wrong side. */
+					tmp.numeric(436, tmp.nick + " :Nickname Collision KILL.");
+					this.bcast_to_servers(format(
+						"KILL %s :Nickname Collision.",
+						tmp.nick
+					));
+					tmp.quit("Nickname Collision",true);
 					break;
-				} else if (this.hub) {
-					// Other side should nuke on our behalf.
+				}
+				if (!this.hub && Enforcement) {
+					gnotice(format(
+						"Server %s trying to collide nick %s forwards. Reversing.",
+						this.nick,
+						tmp.nick
+					));
+					this.ircout(format(
+						"KILL %s :Inverse Nickname Collision.",
+						p[0]
+					));
+					this.reintroduce_nick(tmp);
+					break;
+				}
+				if (this.hub) {
+					/* Our TS greater than what was passed to us. */
+					/* Other side should nuke on our behalf. */
 					break;
 				}
 			}
-			var uprefixptr = 5; /* Bahamut */
 			if (!this.hub) {
-				if(!this.check_nickname(cmd[1],true)) {
-					gnotice("Server " + this.nick + " trying to introduce invalid nickname: " + cmd[1]
-						+ ", killed.");
-					this.ircout("KILL " + cmd[1] + " :Bogus Nickname.");
+				if (!this.check_nickname(p[0],true)) {
+					gnotice(format(
+						"Server %s trying to introduce invalid nickname: %s",
+						this.nick,
+						p[0]
+					));
+					if (Enforcement) {
+						this.ircout(format(
+							"KILL %s :Bogus Nickname.",
+							p[0]
+						));
+					} else {
+						this.quit(format(
+							"Server %s trying to introduce invalid nickname: %s",
+							this.nick, cmd[1]
+						))
+					}
 					break;
 				}
-				cmd[2] = 1; // Force hops to 1.
-				cmd[3] = time(); // Force TS on nick.
-				cmd[7] = this.nick // Force server name
-			} else { // if we're a hub
-				var test_server = searchbyserver(cmd[uprefixptr+2]);
-				if (!test_server || (this.nick !=
-				    test_server.parent)) {
-					if (debug && test_server)
-						log(LOG_DEBUG,"this.nick: " + this.nick + " test_server.parent: " + test_server.parent);
-					umode_notice(USERMODE_OPER,"Notice","Server " + this.nick
-						+ " trying to introduce nick from server not behind it: "
-						+ cmd[1] + "@" + cmd[uprefixptr+2]);
-					this.ircout("KILL " + cmd[1] + " :Invalid Origin.");
+				/* Don't trust what a leaf tells us */
+				p[1] = 1;
+				p[2] = time();
+				p[6] = this.nick;
+			} else { /* Hub (trusted) */
+				tmp = searchbyserver(p[6]);
+				if (!tmp || (this.nick != tmp.parent)) {
+					umode_notice(USERMODE_OPER,"Notice",format(
+						"Server %s trying illegal NICK %s@%s (parent: %s)",
+						origin.nick,
+						p[0],
+						p[6],
+						tmp ? tmp.parent : "none"
+					));
+					if (Enforcement) {
+						this.ircout(format(
+							"KILL %s :Invalid Origin.",
+							p[0]
+						));
+					} else {
+						this.quit(format(
+							"Server %s trying illegal NICK %s@%s (parent: %s)",
+							origin.nick,
+							p[0],
+							p[6],
+							tmp ? tmp.parent : "none"
+						));
+					}
 					break;
 				}
 			}
-			var new_id = "id" + next_client_id;
-			next_client_id++;
-			Users[cmd[1].toUpperCase()] = new IRC_User(new_id);
-			var NewNick = Users[cmd[1].toUpperCase()];
-			NewNick.local = false; // not local. duh.
-			NewNick.nick = cmd[1];
-			NewNick.hops = cmd[2];
-			NewNick.created = cmd[3];
-			NewNick.uprefix = cmd[uprefixptr];
-			NewNick.hostname = cmd[uprefixptr+1];
-			NewNick.servername = cmd[uprefixptr+2];
-			var rnptr = 10; /* Bahamut */
-			NewNick.realname = IRC_string(cmdline,rnptr);
-			NewNick.parent = this.nick;
-			NewNick.ip = int_to_ip(cmd[9]);
-			NewNick.setusermode(cmd[4]);
-			for (u in ULines) {
-				if (ULines[u] == cmd[uprefixptr+2]) {
-					NewNick.uline = true;
+			Users[p[0].toUpperCase()] = new IRC_User(Generate_ID());
+			j = Users[p[0].toUpperCase()];
+			j.local = false;
+			j.nick = p[0];
+			j.hops = parseInt(p[1]);
+			j.created = parseInt(p[2]);
+			j.uprefix = p[4];
+			j.hostname = p[5];
+			j.servername = p[6];
+			j.realname = p[9];
+			j.parent = this.nick;
+			j.ip = int_to_ip(p[8]);
+			j.setusermode(p[3]);
+			for (i in ULines) {
+				if (ULines[i] == p[6]) {
+					j.uline = true;
 					break;
 				}
 			}
-			var true_hops = parseInt(NewNick.hops)+1;
 			this.bcast_to_servers_raw(
 				format("NICK %s %s %s %s %s %s %s 0 %s :%s",
-					NewNick.nick,
-					true_hops,
-					NewNick.created,
-					NewNick.get_usermode(true),
-					NewNick.uprefix,
-					NewNick.hostname,
-					NewNick.servername,
-					ip_to_int(NewNick.ip),
-					NewNick.realname
+					j.nick,
+					j.hops + 1,
+					j.created,
+					j.get_usermode(true),
+					j.uprefix,
+					j.hostname,
+					j.servername,
+					ip_to_int(j.ip),
+					j.realname
 				)
 			);
 			umode_notice(USERMODE_DEBUG,"RemoteClient",format(
 				"NICK %s %s@%s %s %s :%s",
-				NewNick.nick,
-				NewNick.uprefix,
-				NewNick.hostname,
-				NewNick.servername,
-				NewNick.ip,
-				NewNick.realname
+				j.nick,
+				j.uprefix,
+				j.hostname,
+				j.servername,
+				j.ip,
+				j.realname,
+				j.id
 			));
-		} else { // we're a user changing our nick.
-			var ctuc = cmd[1].toUpperCase();
-			if ((Users[ctuc])&&Users[ctuc].nick.toUpperCase() !=
-			    ThisOrigin.nick.toUpperCase()) {
-				gnotice("Server " + this.nick + " trying to collide nick via NICK changeover: "
-					+ ThisOrigin.nick + " -> " + cmd[1]);
-				server_bcast_to_servers("KILL " + ThisOrigin.nick + " :Bogus nickname changeover.");
-				ThisOrigin.quit("Bogus nickname changeover.");
-				this.ircout("KILL " + cmd[1] + " :Bogus nickname changeover.");
-				this.reintroduce_nick(Users[ctuc]);
+			break;
+		} else { /* A user changing their nick */
+			tmp = Users[p[0].toUpperCase()];
+			if (tmp && tmp.nick.toUpperCase() != origin.nick.toUpperCase()) {
+				gnotice(format(
+					"Server %s trying to collide via NICK changeover: %s -> %s",
+					this.nick,
+					origin.nick,
+					p[0]
+				));
+				if (Enforcement) {
+					server_bcast_to_servers(format(
+						"KILL %s :Bogus nickname changeover.",
+						origin.nick
+					));
+					origin.quit("Bogus nickname changeover.");
+					this.ircout(format(
+						"KILL %s :Bogus nickname changeover.",
+						p[0]
+					));
+					this.reintroduce_nick(tmp);
+				} else {
+					this.quit(format(
+						"Server %s trying to collide via NICK changeover: %s -> %s",
+						this.nick,
+						origin.nick,
+						p[0]
+					));
+				}
 				break;
 			}
-			if (ThisOrigin.check_nickname(cmd[1]) < 1) {
-				gnotice("Server " + this.nick + " trying to change to bogus nick: "
-					+ ThisOrigin.nick + " -> " + cmd[1]);
-				this.bcast_to_servers_raw("KILL " + ThisOrigin.nick + " :Bogus nickname switch detected.");
-				this.ircout("KILL " + cmd[1] + " :Bogus nickname switch detected.");
-				ThisOrigin.quit("Bogus nickname switch detected.",true);
+			if (origin.check_nickname(p[0]) < 1) {
+				gnotice(format(
+					"Server %s trying to change to bogus nick: %s -> %s",
+					this.nick,
+					origin.nick,
+					p[0]
+				));
+				if (Enforcement) {
+					this.bcast_to_servers_raw(format(
+						"KILL %s :Bogus nickname switch detected.",
+						origin.nick
+					));
+					this.ircout(format(
+						"KILL %s :Bogus nickname switch detected.",
+						p[0]
+					));
+					origin.quit("Bogus nickname switch detected.",true);
+				} else {
+					this.quit(format(
+						"Server %s trying to change to bogus nick: %s -> %s",
+						this.nick,
+						origin.nick,
+						p[0]
+					));
+				}
 				break;
 			}
 			if (this.hub)
-				ThisOrigin.created = parseInt(IRC_string(cmd[2],0));
+				origin.created = parseInt(p[1]);
 			else
-				ThisOrigin.created = time();
-			ThisOrigin.bcast_to_uchans_unique("NICK " + cmd[1]);
-			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " NICK " + cmd[1] + " :" + ThisOrigin.created);
-			if (ctuc != ThisOrigin.nick.toUpperCase()) {
-				push_nickbuf(ThisOrigin.nick,cmd[1]);
-				Users[cmd[1].toUpperCase()] = ThisOrigin;
-				delete Users[ThisOrigin.nick.toUpperCase()];
+				origin.created = time();
+			origin.bcast_to_uchans_unique(format(
+				"NICK %s",
+				p[0]
+			));
+			this.bcast_to_servers_raw(format(
+				":%s NICK %s :%s",
+				origin.nick,
+				p[0],
+				origin.created
+			));
+			if (p[0].toUpperCase() != origin.nick.toUpperCase()) { 
+				push_nickbuf(origin.nick,p[0]);
+				Users[p[0].toUpperCase()] = origin;
+				delete Users[origin.nick.toUpperCase()];
 			}
-			ThisOrigin.nick = cmd[1];
+			origin.nick = p[0];
 		}
 		break;
 	case "NOTICE":
-		// FIXME: servers should be able to send notices.
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[1])
 			break;
-		if (this.nick != ThisOrigin.parent)
-			break;  /* Fix for CR bouncing back msgs. */
-		var my_ircstr = IRC_string(cmdline,2);
-		if (!cmd[2] || !my_ircstr)
-			break;
-		var targets = cmd[1].split(",");
-		for (nt in targets) {
-			if (targets[nt][0] != "&")
-				ThisOrigin.do_msg(targets[nt],"NOTICE",my_ircstr);
+		tmp = p[0].split(",");
+		for (i in tmp) {
+			if (tmp[i][0] != "&" && tmp[i][0] != "*")
+				origin.do_msg(tmp[i],"NOTICE",p[1]);
 		}
 		break;
 	case "PART":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		var the_channels = cmd[1].split(",");
-		for(pchan in the_channels) {
-			ThisOrigin.do_part(the_channels[pchan]);
+		tmp = p[0].split(",");
+		for (i in tmp) {
+			origin.do_part(tmp[i]);
 		}
 		break;
 	case "PASS":
-		var result;
-
-		if (!this.hub || !cmd[3])
+		break; /* XXX FIXME XXX */
+		if (!this.hub || !p[2])
 			break;
-		if (cmd[3] != "QWK")
+		if (p[2] != "QWK")
 			break;
-		if (cmd[2][0] == ":")
-			cmd[2] = cmd[2].slice(1);
-		if (cmd[4]) { // pass the message on to target.
-			var dest_server = searchbyserver(cmd[4]);
-			if (!dest_server) {
+		if (p[3]) { /* pass the message on to target. */
+			tmp = searchbyserver(p[3]);
+			if (!tmp)
 				break;
-			} else if (   (dest_server == -1)
-						&& (this.flags&NLINE_IS_QWKMASTER)
-			) {
+			if (tmp == -1 && this.flags&NLINE_IS_QWKMASTER) {
 				var qwkid = cmd[2].toLowerCase();
 				var hunt = qwkid + ".synchro.net";
 				var my_server = 0;
@@ -599,12 +730,12 @@ function Server_Work(cmdline) {
 				}
 				Servers[my_server.nick.toLowerCase()] = new IRC_Server();
 				var ns = Servers[my_server.id];
-				ns.id = my_server.id;
+				ns.id = my_server.nick.toLowerCase();
 				ns.nick = my_server.nick;
 				ns.info = my_server.realname;
 				ns.socket = my_server.socket;
 				delete Unregistered[my_server.id];
-				ns.finalize_server_connect("QWK",true);
+				ns.finalize_server_connect("QWK");
 				break;
 			} else if (dest_server) {
 				if (dest_server == -1)
@@ -624,530 +755,484 @@ function Server_Work(cmdline) {
 				}
 			}
 		}
-		// If we got here, we must be the qwk master. Process.
-		if (check_qwk_passwd(cmd[2],cmd[1]))
+		/* If we got here, we must be the qwk master. Process. */
+		if (Check_QWK_Password(p[1],p[0]))
 			result = "OK";
 		else
 			result = "VOID";
-		this.rawout(":" + servername + " PASS " + result + " :" + cmd[2] + " QWK " + ThisOrigin.nick);
+		this.rawout(":" + ServerName + " PASS " + result + " :" + cmd[2] + " QWK " + ThisOrigin.nick);
 		break;
 	case "PONG":
-		if (cmd[2]) {
-			if (cmd[2][0] == ":")
-				cmd[2] = cmd[2].slice(1);
-			var my_server = searchbyserver(cmd[2]);
-			if (!my_server) {
+		if (p[1]) {
+			tmp = searchbyserver(p[1]);
+			if (!tmp)
 				break;
-			} else if (my_server == -1) {
-				var my_nick = Users[cmd[2].toUpperCase()];
-				if (my_nick)
-					my_nick.rawout(":" + ThisOrigin.nick + " PONG " + cmd[1] + " :" + my_nick.nick);
-				else
-					this.pinged = false;
-				break;
-			} else if (my_server) {
-				my_server.rawout(":" + ThisOrigin.nick + " PONG " + cmd[1] + " :" + cmd[2]);
+			if (tmp == -1) {
+				j = Users[p[1].toUpperCase()];
+				if (j) {
+					j.rawout(format(
+						":%s PONG %s :%s",
+						origin.nick,
+						p[0],
+						j.nick
+					));
+				}
+			} else if (tmp) {
+				tmp.rawout(format(
+					":%s PONG %s :%s",
+					origin.nick,
+					p[0],
+					p[1]
+				));
 				break;
 			}
 		}
 		this.pinged = false;
 		break;
 	case "PRIVMSG":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[1] || origin.server)
 			break;
-		if (this.nick != ThisOrigin.parent)
-			break;	/* Fix for CR bouncing back msgs. */
-		var my_ircstr = IRC_string(cmdline,2);
-		if (!cmd[2] || !my_ircstr)
-			break;
-		var targets = cmd[1].split(",");
-		for (pm in targets) {
-			if (targets[pm][0] != "&")
-				ThisOrigin.do_msg(targets[pm],"PRIVMSG",my_ircstr);
+		tmp = p[0].split(",");
+		for (i in tmp) {
+			if (tmp[i][0] != "&")
+				origin.do_msg(tmp[i],"PRIVMSG",p[1]);
 		}
 		break;
 	case "QUIT":
-		ThisOrigin.quit(IRC_string(cmdline,1));
+		if (!p[0])
+			p[0] = origin.nick;
+		origin.quit(p[0]);
 		break;
 	case "SERVER":
-		if (!cmd[3])
+		if (!p[2])
 			break;
-		// FIXME: when on Earth does this happen? :P?
-		var hops = parseInt(cmd[2]);
-		if ((hops == 1) && !this.info) {
-			umode_notice(USERMODE_OPER,"Notice", "Server " + cmd[1] + " updating info after handshake???");
-			this.nick = cmd[1];
+		if (p[1] == 1 && !this.info) {
+			umode_notice(USERMODE_OPER,"Notice",format(
+				"Server %s updating info after handshake???",
+				p[0]
+			));
+			this.nick = p[0];
 			this.hops = 1;
-			this.info = IRC_string(cmdline,3);
-			this.linkparent = servername;
+			this.info = p[2];
+			this.linkparent = ServerName;
 			this.parent = this.nick;
-			var newsrv = this;
-		} else if (hops > 1) {
+		} else if (p[1] > 1) {
 			if (this.hub) {
-				if (searchbyserver(cmd[1])) {
-					this.quit("Server " + cmd[1] + " already exists.");
-					return 0;
+				if (searchbyserver(p[0])) {
+					umode_notice(USERMODE_OPER,"Notice",format(
+						"Server %s trying to introduce %s but it already exists.",
+						this.nick,
+						p[0]
+					));
+					if (Enforcement) {
+						this.rawout(format(
+							":%s SQUIT %s :Server already exists.",
+							ServerName,
+							p[0]
+						));
+					} else {	
+						this.quit(format(
+							"Server %s already exists.",
+							p[0]
+						));
+					}
+					break;
 				}
-				var lcserver = cmd[1].toLowerCase();
-				var new_id = "id" + next_client_id;
-				next_client_id++;
-				Servers[lcserver] = new IRC_Server();
-				var newsrv = Servers[lcserver];
-				newsrv.hops = cmd[2];
-				newsrv.nick = cmd[1];
-				newsrv.info = IRC_string(cmdline,3);
-				newsrv.parent = this.nick;
-				newsrv.linkparent = ThisOrigin.nick;
-				newsrv.local = false;
-				for (u in ULines) {
-					if (ULines[u] == cmd[1]) {
-						newsrv.uline = true;
+				Servers[p[0].toLowerCase()] = new IRC_Server();
+				tmp = Servers[p[0].toLowerCase()];
+				tmp.id = p[0].toLowerCase();
+				tmp.hops = parseInt(p[1]);
+				tmp.nick = p[0];
+				tmp.info = p[2];
+				tmp.parent = this.nick;
+				tmp.linkparent = origin.nick;
+				tmp.local = false;
+				for (i in ULines) {
+					if (ULines[i] == p[0]) {
+						tmp.uline = true;
 						break;
 					}
 				}
+				this.bcast_to_servers_raw(format(
+					":%s SERVER %s %d :%s",
+					tmp.linkparent,
+					tmp.nick,
+					tmp.hops + 1,
+					tmp.info
+				));
 			} else {
-				umode_notice(USERMODE_ROUTING,"Routing","from " + servername
-					+ ": Non-Hub link " + this.nick + " introduced " + cmd[1] + "(*).");
-				this.quit("Too many servers.  You have no H:Line to introduce " + cmd[1] + ".",true);
-				return 0;
+				umode_notice(USERMODE_ROUTING,"Routing",format(
+					"from %s: Non-Hub link %s introduced %s(*).",
+					ServerName,
+					this.nick,
+					p[0]
+				));
+				this.quit(format(
+					"Too many servers.  You have no H:Line to introduce %s.",
+					p[0]
+				),true /* suppress_bcast */);
+				break;
 			}
 		} else {
-			umode_notice(USERMODE_OPER,"Notice","Refusing to comply with supposedly bogus SERVER command from "
-				+ this.nick + ": " + cmdline);
+			umode_notice(USERMODE_OPER,"Notice",format(
+				"Refusing to comply with supposedly bogus SERVER command from %s: %s",
+				this.nick,
+				p.join(" ")
+			));
 			break;
 		}
-		this.bcast_to_servers_raw(":" + newsrv.linkparent + " SERVER " + newsrv.nick + " "
-			+ (parseInt(newsrv.hops)+1) + " :" + newsrv.info);
 		break;
 	case "SJOIN":
-		if (!cmd[2])
-			break;
-		if (cmd[2][0] != "#")
+		if (!p[1] || p[1][0] != "#")
 			break;
 
-		var chan_members;
-		var cm_array;
-		var mode_args;
+		tmp = Channels[p[1].toUpperCase()];
+		if (!tmp) {
+			Channels[p[1].toUpperCase()] = new Channel(p[1].toUpperCase());
+			tmp = Channels[p[1].toUpperCase()];
+			tmp.nam = p[1];
+			tmp.created = parseInt(p[0]);
+		}
 
-		if (cmd[3]) {
-			var incoming_modes = new Object;
-			var tmp_modeargs = 3;
+		if (p[2]) {
+			this.set_chanmode(
+				tmp, /* Channel object */
+				p.splice(2,p.length-4).join(" "), /* Channel mode */
+				(tmp.created == parseInt(p[0])) ? false : true /* TS */
+			);
 
-			/* Parse the modes and break them down */
-			for (tmpmc in cmd[3]) {
-				var my_modechar = cmd[3][tmpmc];
-				if (my_modechar == "+")
-					continue;
-				if (   (my_modechar == "k")
-					|| (my_modechar == "l")
-				) {
-					tmp_modeargs++;
-					incoming_modes[my_modechar] = cmd[tmp_modeargs];
-				} else {
-					incoming_modes[my_modechar] = true;
-				}
-			}
+			j = p[p.length-1].split(" "); /* Channel members */
 
-			/* Reconstruct our modes into a string now */
-			var mode_args_chars = "+";
-			var mode_args_args = "";
-			for (my_mc in incoming_modes) {
-				mode_args_chars += my_mc;
-				if ((my_mc == "k") || (my_mc == "l")) {
-					mode_args_args += " " + incoming_modes[my_mc];
-				}
-			}
-			mode_args = mode_args_chars + mode_args_args;
-
-			/* The following corrects a bug in Bahamut.. */
-			if ((cmd[4] == "") && cmd[5])
-				tmp_modeargs++;
-
-			tmp_modeargs++; /* Jump to start of string */
-			chan_members = IRC_string(cmdline,tmp_modeargs).split(' ');
-
-			if (chan_members == "") {
-				umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to SJOIN empty channel "
-					+ cmd[2] + " before processing.");
+			if (!j[0]) {
+				umode_notice(USERMODE_OPER,"Notice",format(
+					"Server %s trying to SJOIN empty channel %s before processing.",
+					this.nick,
+					p[1]
+				));
 				break;
 			}
 
-			cm_array = [];
-
-			for (cm in chan_members) {
-				var isop = false;
-				var isvoice = false;
-				if (chan_members[cm][0] == "@") {
-					isop = true;
-					chan_members[cm] = chan_members[cm].slice(1);
-				}
-				if (chan_members[cm][0] == "+") {
-					isvoice = true;
-					chan_members[cm] = chan_members[cm].slice(1);
-				}
-				var tmp_nick = Users[chan_members[cm].toUpperCase()];
-				if (!tmp_nick)
+			for (i in j) {
+				k = new SJOIN_Nick(j[i]);
+				n = Users[k.nick.toUpperCase()];
+				if (!n)
 					continue;
-				cm_array.push(new SJOIN_Nick(tmp_nick,isop,isvoice));
-			}
 
-			if (cm_array.length < 1) {
-				umode_notice(USERMODE_OPER,"Notice","Server " + this.nick
-					+ " trying to SJOIN empty channel "
-					+ cmd[2] + " post processing.");
-				break;
-			}
+				if (!n.channels[tmp.nam.toUpperCase()]) {
+					tmp.users[n.id] = n;
+					n.channels[tmp.nam.toUpperCase()] = tmp;
+					n.bcast_to_channel(tmp, format(
+						"JOIN %s",
+						tmp.nam
+					), false /*bcast*/);
+				}
 
-		}
-
-		var cn_tuc = cmd[2].toUpperCase();
-		var chan = Channels[cn_tuc];
-		if (!chan) {
-			Channels[cn_tuc]=new Channel(cn_tuc);
-			chan = Channels[cn_tuc];
-			chan.nam = cmd[2];
-			chan.created = parseInt(cmd[1]);
-		}
-
-		if (cmd[3]) {
-			var bounce_modes = true;
-			if (!ThisOrigin.local || (chan.created == parseInt(cmd[1])))
-				bounce_modes = false;
-			if (chan.created >= parseInt(cmd[1]))
-				this.set_chanmode(chan, mode_args, bounce_modes);
-
-			var num_sync_modes = 0;
-			var push_sync_modes = "+";
-			var push_sync_args = "";
-			var new_chan_members = "";
-			for (member in cm_array) {
-				if (new_chan_members)
-					new_chan_members += " ";
-
-				var member_obj = cm_array[member].nick;
-				var is_voice = cm_array[member].isvoice;
-				var is_op = cm_array[member].isop;
-
-				if (member_obj.channels[chan.nam.toUpperCase()])
-					continue;
-				member_obj.channels[chan.nam.toUpperCase()] = chan;
-				chan.users[member_obj.id] = member_obj;
-				var joinstr = "JOIN " + chan.nam;
-				member_obj.bcast_to_channel(chan, joinstr, false);
-				if (chan.created >= parseInt(cmd[1])) {
-					if (is_op) {
-						chan.modelist[CHANMODE_OP][member_obj.id]=member_obj.id;
-						push_sync_modes += "o";
-						push_sync_args += " " + member_obj.nick;
-						num_sync_modes++;
-						new_chan_members += "@";
-					}
-					if (num_sync_modes >= max_modes) {
-						var mode1str = "MODE " + chan.nam + " "
-							+ push_sync_modes + push_sync_args;
-						this.bcast_to_channel(chan,mode1str);
-						push_sync_modes = "+";
-						push_sync_args = "";
-						num_sync_modes = 0;
-					}
-					if (is_voice) {
-						chan.modelist[CHANMODE_VOICE][member_obj.id]=member_obj;
-						push_sync_modes += "v";
-						push_sync_args += " " + member_obj.nick;
-						num_sync_modes++;
-						new_chan_members += "+";
-					}
-					if (num_sync_modes >= max_modes) {
-						var mode2str = "MODE " + chan.nam + " "
-							+ push_sync_modes + push_sync_args;
-						this.bcast_to_channel(chan,mode2str);
-						push_sync_modes = "+";
-						push_sync_args = "";
-						num_sync_modes = 0;
+				if (tmp.created >= parseInt(p[0])) { /* We have TS superiority */
+					if (k.isop)
+						tmp.modelist[CHANMODE_OP][n.id] = n.id;
+					if (k.isvoice)
+						tmp.modelist[CHANMODE_VOICE][n.id] = n.id;
+					if (k.isop || k.isvoice) {
+						origin.bcast_to_channel(tmp, format(
+							"MODE %s +%s%s %s",
+							tmp.nam,
+							k.isop ? "o" : "",
+							k.isvoice ? "v" : "",
+							n.nick
+						), false /*bcast*/);
 					}
 				}
-				new_chan_members += member_obj.nick;
-			}
-			if (num_sync_modes) {
-				var mode3str = "MODE " + chan.nam + " "
-					+ push_sync_modes + push_sync_args;
-				this.bcast_to_channel(chan, mode3str);
 			}
 
-			// Synchronize the TS to what we received.
-			if (chan.created > parseInt(cmd[1]))
-				chan.created = parseInt(cmd[1]);
+			if (tmp.created > parseInt(p[0]))
+				tmp.created = parseInt(p[0]);
 
 			this.bcast_to_servers_raw(
 				format(":%s SJOIN %s %s %s :%s",
-					ThisOrigin.nick,
-					chan.created,
-					chan.nam,
-					chan.chanmode(true),
-					new_chan_members
+					origin.nick,
+					tmp.created,
+					tmp.nam,
+					tmp.chanmode(true /* pass args */),
+					p[p.length-1]
 				)
 			);
-		} else {
-			if (ThisOrigin.server) {
-				umode_notice(USERMODE_OPER,"Notice", "Server " + ThisOrigin.nick
-					+ " trying to SJOIN itself to a channel?!");
+		} else { /* User single SJOIN */
+			if (origin.server) {
+				umode_notice(USERMODE_OPER,"Notice",format(
+					"Server %s trying to SJOIN itself to a channel?!",
+					origin.nick
+				));
 				break;
 			}
-			if (ThisOrigin.channels[chan.nam.toUpperCase()])
+			if (origin.channels[tmp.nam.toUpperCase()])
 				break;
-			ThisOrigin.channels[chan.nam.toUpperCase()] = chan;
-			chan.users[ThisOrigin.id] = ThisOrigin;
-			ThisOrigin.bcast_to_channel(chan, "JOIN " + chan.nam, false);
+			origin.channels[tmp.nam.toUpperCase()] = tmp;
+			tmp.users[origin.id] = origin;
+			origin.bcast_to_channel(tmp, format(
+				"JOIN %s",
+				tmp.nam
+			), false /*bcast*/);
 			this.bcast_to_servers_raw(
 				format(":%s SJOIN %s %s",
-					ThisOrigin.nick,
-					chan.created,
-					chan.nam
+					origin.nick,
+					tmp.created,
+					tmp.nam
 				)
 			);
 		}
 		break;
 	case "SQUIT":
-		var sq_server;
-		var reason;
-
-		if (!cmd[1] || !this.hub)
-			sq_server = this;
+		if (!p[0] || !this.hub)
+			tmp = this;
 		else
-			sq_server = searchbyserver(cmd[1]);
-		if (!sq_server)
+			tmp = searchbyserver(p[0]);
+		if (!tmp)
 			break;
-		reason = IRC_string(cmdline,2);
-		if (!reason || !cmd[2])
-			reason = ThisOrigin.nick;
-		if (sq_server == -1) {
-			this.bcast_to_servers_raw("SQUIT " + this.nick + " :Forwards SQUIT.");
+		if (!p[1]) /* Reason */
+			p[1] = origin.nick;
+		if (tmp == -1) {
+			this.bcast_to_servers_raw(format(
+				"SQUIT %s :Forwards SQUIT.",
+				this.nick
+			));
 			this.quit("Forwards SQUIT.",true);
 			break;
 		}
-		// message from our uplink telling us a server is gone
-		if (this.nick == sq_server.parent) {
-			sq_server.quit(reason,false,false,ThisOrigin);
+		/* message from our uplink telling us a server is gone */
+		if (this.nick == tmp.parent) {
+			tmp.quit(p[1],false,false,origin);
 			break;
 		}
-		// oper or server going for squit of a server
-		if (!sq_server.local) {
-			sq_server.rawout(":" + ThisOrigin.nick + " SQUIT " + sq_server.nick + " :" + reason);
+		/* oper or server going for squit of a server */
+		if (!tmp.local) {
+			tmp.rawout(format(
+				":%s SQUIT %s :%s",
+				origin.nick,
+				tmp.nick,
+				p[1]
+			));
 			break;
 		}
-		var msg = "Received SQUIT " + cmd[1] + " from " +
-			ThisOrigin.nick + "(" + reason + ")";
-		server_bcast_to_servers("GNOTICE :" + msg);
-		umode_notice(USERMODE_ROUTING,"Routing","from " +
-			servername + ": " + msg);
-		sq_server.quit(reason);
+		server_bcast_to_servers(format(
+			"GNOTICE :Received SQUIT %s from %s (%s)",
+			p[0],
+			origin.nick,
+			p[1]
+		));
+		umode_notice(USERMODE_ROUTING,"Routing",format(
+			"from %s: Received SQUIT %s from %s (%s)",
+			ServerName,
+			p[0],
+			origin.nick,
+			p[1]
+		));
+		tmp.quit(p[1]);
 		break;
 	case "STATS":
-		if (!cmd[2] || ThisOrigin.server)
+		if (!p[1] || origin.server)
 			break;
-		if (cmd[2][0] == ":")
-			cmd[2] = cmd[2].slice(1);
-		if (wildmatch(servername, cmd[2])) {
-			ThisOrigin.do_stats(cmd[1][0]);
-		} else {
-			var dest_server = searchbyserver(cmd[2]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " STATS " + cmd[1][0] + " :" + dest_server.nick);
+		if (wildmatch(ServerName, p[1])) {
+			origin.do_stats(p[0][0]);
+			break;
 		}
+		tmp = searchbyserver(p[1]);
+		if (!tmp)
+			break;
+		tmp.rawout(format(
+			":%s STATS %s :%s",
+			origin.nick,
+			p[0][0],
+			tmp.nick
+		));
 		break;
 	case "SUMMON":
-		if (!cmd[2] || ThisOrigin.server)
+		if (!p[1] || origin.server)
 			break;
-		if (cmd[2][0] == ":")
-			cmd[2] = cmd[2].slice(1);
-		if (wildmatch(servername, cmd[2])) {
-			if (enable_users_summon) {
-				ThisOrigin.do_summon(cmd[1]);
-			} else {
-				ThisOrigin.numeric445();
-				break;
-			}
-		} else {
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " SUMMON " + cmd[1] + " :" + dest_server.nick);
+		if (wildmatch(ServerName, p[1])) {
+			if (SUMMON)
+				origin.do_summon(p[0]);
+			else
+				origin.numeric445();
+			break;
 		}
+		tmp = searchbyserver(p[1]);
+		if (!tmp)
+			break;
+		tmp.rawout(format(
+			":%s SUMMON %s :%s",
+			origin.nick,
+			p[1],
+			tmp.nick
+		));
 		break;
 	case "TIME":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		if (cmd[1][0] == ":")
-			cmd[1] = cmd[1].slice(1);
-		if (wildmatch(servername, cmd[1])) {
-			ThisOrigin.numeric391();
-		} else {
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " TIME :" + dest_server.nick);
+		if (wildmatch(ServerName, p[0])) {
+			origin.numeric391();
+			break;
 		}
+		tmp = searchbyserver(p[0]);
+		if (!tmp)
+			break;
+		tmp.rawout(format(
+			":%s TIME :%s",
+			origin.nick,
+			tmp.nick
+		));
 		break;
 	case "TOPIC":
-		if (!cmd[4])
+		if (!p[3])
 			break;
-		var chan = Channels[cmd[1].toUpperCase()];
-		if (!chan)
+		tmp = Channels[p[0].toUpperCase()];
+		if (!tmp)
 			break;
-		var the_topic = IRC_string(cmdline,4);
-		if (the_topic == chan.topic)
+		if (p[3] == tmp.topic)
 			break;
-		chan.topic = the_topic;
-		if (this.hub)
-			chan.topictime = cmd[3];
-		else
-			chan.topictime = time();
-		chan.topicchangedby = cmd[2];
-		var str = "TOPIC " + chan.nam + " :" + chan.topic;
-		ThisOrigin.bcast_to_channel(chan,str,false);
-		this.bcast_to_servers_raw(":" + ThisOrigin.nick + " TOPIC " + chan.nam + " " + cmd[2] + " "
-			+ chan.topictime + " :" + chan.topic);
+		tmp.topictime = this.hub ? p[2] : time();
+		tmp.topic = p[3];
+		tmp.topicchangedby = p[1];
+		origin.bcast_to_channel(tmp, format(
+			"TOPIC %s :%s",
+			tmp.nam,
+			tmp.topic
+		),false /*bcast*/);
+		this.bcast_to_servers_raw(format(
+			":%s TOPIC %s %s %d :%s",
+			origin.nick,
+			tmp.nam,
+			p[1],
+			tmp.topictime,
+			tmp.topic
+		));
 		break;
 	case "TRACE":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		ThisOrigin.do_trace(cmd[1]);
+		origin.do_trace(p[0]);
 		break;
 	case "USERS":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		if (cmd[1][0] == ":")
-			cmd[1] = cmd[1].slice(1);
-		if (searchbyserver(cmd[1]) == -1) {
+		tmp = searchbyserver(p[0]);
+		if (!tmp)
+			break;
+		if (tmp == -1) {
 			ThisOrigin.numeric351();
-		} else {
-			// psst, pass it on
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " USERS :" + dest_server.nick);
+			break;
 		}
+		tmp.rawout(format(
+			":%s USERS :%s",
+			origin.nick,
+			tmp.nick
+		));
 		break;
 	case "VERSION":
-		if (!cmd[1] || ThisOrigin.server)
+		if (!p[0] || origin.server)
 			break;
-		if (cmd[1][0] == ":")
-			cmd[1] = cmd[1].slice(1);
-		if (searchbyserver(cmd[1]) == -1) {
-			// it's for us, return the message
-			ThisOrigin.numeric351();
-		} else {
-			// psst, pass it on
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break; // someone messed up.
-			dest_server.rawout(":" + ThisOrigin.nick + " VERSION :" + dest_server.nick);
+		tmp = searchbyserver(p[0]);
+		if (!tmp)
+			break;
+		if (tmp == -1) {
+			origin.numeric351();
+			break;
 		}
+		tmp.rawout(format(
+			":%s VERSION :%s",
+			origin.nick,
+			tmp.nick
+		));
 		break;
 	case "WALLOPS":
-		if (!cmd[1])
+		if (!p[0])
 			break;
-		var str = ":" + ThisOrigin.nick + " WALLOPS :" +
-			IRC_string(cmdline,1);
-		wallopers(str);
-		this.bcast_to_servers_raw(str);
+		Write_All_Opers(format(
+			":%s WALLOPS :%s",
+			origin.nick,
+			p[0]
+		));
+		this.bcast_to_servers_raw(format(
+			":%s WALLOPS :%s",
+			origin.nick,
+			p[0]
+		));
 		break;
 	case "WHOIS":
-		if (!cmd[2] || ThisOrigin.server)
+		if (!p[1] || origin.server)
 			break;
-		if (searchbyserver(cmd[1]) == -1) {
-			var wi_nicks = IRC_string(cmd[2],0).split(",");
-			for (wi_nick in wi_nicks) {
-			var wi = Users[wi_nicks[wi_nick].toUpperCase()];
-				if (wi)
-					ThisOrigin.do_whois(wi);
-				else
-					ThisOrigin.numeric401(wi_nicks[wi_nick]);
-			} 
-		ThisOrigin.numeric(318, wi_nicks[0]+" :End of /WHOIS list.");
-		} else {
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server)
-				break;
-			dest_server.rawout(":" + ThisOrigin.nick + " WHOIS "
-				+ dest_server.nick + " :" + IRC_string(cmd[2],0));
-		}
-		break;
-	case "TKL": /* DreamForge/Unreal style global network line modification */
-		if (!ThisOrigin.uline) {
-			umode_notice(USERMODE_OPER,"Notice","Non-U:Lined server "
-				+ ThisOrigin.nick + " trying to utilize TKL.");
+		tmp = searchbyserver(p[0]);
+		if (!tmp)
+			break;
+		if (tmp == -1) {
+			k = p[1].split(",");
+			for (i in k) {
+				n = Users[k[i].toUpperCase()];
+				if (n) {
+					origin.do_whois(n);
+					continue;
+				}
+				origin.numeric401(k[i]);
+			}
+			origin.numeric(318, format(
+				"%s :End of /WHOIS list.",
+				k[0]
+			));
 			break;
 		}
-		if (cmd[2] != "G") /* We don't support anything other than G:Lines. */
-			break;
-		var tkl_add = false;
-		if (cmd[1] == "+")
-			tkl_add = true;
-
-		var akill_reason = IRC_string(cmdline,8);
-
-		/* Propagate this to the network */
-		this.bcast_to_servers_raw(
-			format(":%s AKILL %s %s %s %s :%s",
-				ThisOrigin.nick,
-				cmd[4],				/* host */
-				cmd[3],				/* user */
-				(cmd[7]-cmd[6]),	/* length */
-				cmd[5],				/* akiller */
-				akill_reason		/* reason */
-			)
-		);
-
-		var this_uh = cmd[3] + "@" + cmd[4];
-		if (isklined(this_uh))
-			break;
-		KLines.push(new KLine(this_uh,akill_reason,"A"));
-		scan_for_klined_clients();
-		break;
-	case "SAMODE": /* :source o #channel modechange modeparams */
+		tmp.rawout(format(
+			":%s WHOIS %s :%s",
+			origin.nick,
+			tmp.nick,
+			p[1]
+		));
 		break;
 	case "CAPAB":
 	case "BURST":
-	case "SVSMODE":
-	case "SETHOST": /* We do not honour SETHOST. */
-		break; // Silently ignore for now.
+		return 0; /* Silently ignore these commands */
 	default:
-		umode_notice(USERMODE_OPER,"Notice","Server " + ThisOrigin.nick + " sent unrecognized command: "
-			+ cmdline);
+		umode_notice(USERMODE_OPER,"Notice",format(
+			"Server %s sent unrecognized command: %s %s",
+			origin.nick,
+			cmd.verb,
+			p.join(" ")
+		));
 		return 0;
 	}
 
 	/* This part only executed if the command was legal. */
 
-	if (!Profile[command])
-		Profile[command] = new StatsM;
-	Profile[command].executions++;
+	if (!Profile[cmd.verb])
+		Profile[cmd.verb] = new StatsM;
+	Profile[cmd.verb].executions++;
 	Profile.ticks += system.timer - clockticks;
 }
 
 ////////// Functions //////////
 
 function server_bcast_to_servers(str,type) {
-	for(thisClient in Local_Servers) {
-		var srv = Local_Servers[thisClient];
-		if (!type || (srv.type == type))
-			srv.rawout(str);
+	var i;
+
+	for (i in Local_Servers) {
+		if (!type || (Local_Servers[i].type == type))
+			Local_Servers[i].rawout(str);
 	}
 }
 
 function IRCClient_bcast_to_servers(str) {
-	for(thisClient in Local_Servers) {
-		if (Local_Servers[thisClient].nick != this.parent)
-			Local_Servers[thisClient].originatorout(str,this);
+	var i;
+
+	for (i in Local_Servers) {
+		if (Local_Servers[i].nick != this.parent)
+			Local_Servers[i].originatorout(str,this);
 	}
 }
 
 function IRCClient_bcast_to_servers_raw(str) {
-	for(thisClient in Local_Servers) {
-		if (Local_Servers[thisClient].nick != this.parent)
-			Local_Servers[thisClient].rawout(str);
+	var i;
+
+	for (i in Local_Servers) {
+		if (Local_Servers[i].nick != this.parent)
+			Local_Servers[i].rawout(str);
 	}
 }
 
@@ -1158,7 +1243,7 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 	if (is_netsplit) {
 		this.netsplit(str);
 	} else if (this.local) {
-		this.netsplit(servername + " " + this.nick);
+		this.netsplit(ServerName + " " + this.nick);
 		if (!suppress_bcast)
 			this.bcast_to_servers_raw("SQUIT " + this.nick + " :" + str);
 	} else if (origin) {
@@ -1174,65 +1259,111 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		this.netsplit();
 	}
 
-	if (this.local) {
-		if (server.client_remove!=undefined)
-			server.client_remove(this.socket);
-
-		// FIXME: wrong phrasing below
-		gnotice("Closing Link: " + this.nick + " (" + str + ")");
-		this.rawout("ERROR :Closing Link: [" + this.uprefix + "@" + this.hostname + "] (" + str + ")");
-
-		if (this.socket!=undefined)
-			this.socket.close();
-		delete Local_Sockets[this.id];
-	}
-	if (this.outgoing) {
+	if (this.socket.outbound) {
 		if (YLines[this.ircclass].active > 0) {
 			YLines[this.ircclass].active--;
-			log(LOG_DEBUG, "Class "+this.ircclass+" down to "+YLines[this.ircclass].active+" active out of "+YLines[this.ircclass].maxlinks);
+			log(LOG_DEBUG, format("Class %s down to %d active out of %d",
+				this.ircclass,
+				YLines[this.ircclass].active,
+				YLines[this.ircclass].maxlinks
+			));
+		} else {
+			log(LOG_ERR, format("Class %d YLine going negative", this.ircclass));
 		}
-		else
-			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
 	}
-	delete Local_Sockets[this.id];
-	delete Local_Sockets_Map[this.id];
-	delete Local_Servers[this.id];
+
+	if (this.local) {
+		this.recvq.purge();
+		this.sendq.purge();
+
+		if (server.client_remove !== undefined)
+			server.client_remove(this.socket);
+
+		gnotice("Closing Link: " + this.nick + " (" + str + ")");
+
+		if (this.socket !== undefined) {
+			if (this.socket.is_connected) {
+				this.socket.send(format(
+					"ERROR :Closing Link: [%s@%s] (%s)",
+					this.uprefix,
+					this.hostname,
+					str
+				));
+			}
+			log(LOG_NOTICE,format(
+				"Connection with server %s was closed. (%s)",
+				this.nick,
+				str
+			));
+			if (this.socket.callback_id !== undefined) {
+				this.socket.clearOn("read", this.socket.callback_id);
+				delete this.socket.callback_id;
+			}
+			this.socket.close();
+			delete this.socket;
+		}
+
+		js.clearInterval(this.pinginterval);
+	}
+
+	delete Local_Servers[this.nick.toLowerCase()];
 	delete Servers[this.nick.toLowerCase()];
 	delete this;
-	rebuild_socksel_array = true;
 }
 
 function IRCClient_synchronize() {
+	var i;
+
+	log(LOG_NOTICE,format(
+		"Connection established with server %s",
+		this.nick
+	));
+
 	this.rawout("BURST"); // warn of impending synchronization
-	for (my_server in Servers) {
-		if (Servers[my_server].id != this.id)
-			this.server_info(Servers[my_server]);
+	for (i in Servers) {
+		if (Servers[i].id != this.id)
+			this.server_info(Servers[i]);
 	}
-	for (my_client in Users) {
-		this.server_nick_info(Users[my_client]);
+	for (i in Users) {
+		this.server_nick_info(Users[i]);
 	}
-	for (my_channel in Channels) {
-		if (my_channel[0] == "#")
-			this.server_chan_info(Channels[my_channel]);
+	for (i in Channels) {
+		if (i[0] == "#")
+			this.server_chan_info(Channels[i]);
 	}
-	gnotice(this.nick + " has processed user/channel burst, "+
-		"sending topic burst.");
-	for (my_channel in Channels) {
-		if ((my_channel[0] == "#") && Channels[my_channel].topic) {
-			var chan = Channels[my_channel];
-			this.rawout("TOPIC " + chan.nam + " " + chan.topicchangedby + " " + chan.topictime
-				+ " :" + chan.topic);
+
+	gnotice(format(
+		"%s has processed user/channel burst, sending topic burst.",
+		this.nick
+	));
+
+	for (i in Channels) {
+		if ((i[0] == "#") && Channels[i].topic) {
+			this.rawout(format(
+				"TOPIC %s %s %s :%s",
+				Channels[i].nam,
+				Channels[i].topicchangedby,
+				Channels[i].topictime,
+				Channels[i].topic
+			));
 		}
 	}
-	this.rawout("BURST 0"); // burst completed.
-	gnotice(this.nick + " has processed topic burst " +
-		"(synched to network data).");
+	this.rawout("BURST 0"); /* burst completed. */
+
+	gnotice(format(
+		"%s has processed topic burst (synched to network data).",
+		this.nick
+	));
 }
 
 function IRCClient_server_info(sni_server) {
-	var realhops = parseInt(sni_server.hops)+1;
-	this.rawout(":" + sni_server.linkparent + " SERVER " + sni_server.nick + " " + realhops
-		+ " :" + sni_server.info);
+	this.rawout(format(
+		":%s SERVER %s %s :%s",
+		sni_server.linkparent,
+		sni_server.nick,
+		parseInt(sni_server.hops)+1,
+		sni_server.info
+	));
 }
 
 function IRCClient_server_nick_info(sni_client) {
@@ -1259,6 +1390,11 @@ function IRCClient_server_nick_info(sni_client) {
 }
 
 function IRCClient_reintroduce_nick(nick) {
+	if (Enforcement) {
+		log(LOG_DEBUG, "Trying to reintroduce nick while Enforcement mode is off.");
+		return 0;
+	}
+
 	this.server_nick_info(nick);
 
 	for (uchan in nick.channels) {
@@ -1291,6 +1427,8 @@ function IRCClient_reintroduce_nick(nick) {
 }
 
 function IRCClient_server_chan_info(sni_chan) {
+	var i;
+
 	this.rawout(format("SJOIN %s %s %s :%s",
 			sni_chan.created,
 			sni_chan.nam,
@@ -1300,13 +1438,13 @@ function IRCClient_server_chan_info(sni_chan) {
 	var modecounter=0;
 	var modestr="+";
 	var modeargs="";
-	for (aBan in sni_chan.modelist[CHANMODE_BAN]) {
+	for (i in sni_chan.modelist[CHANMODE_BAN]) {
 		modecounter++;
 		modestr += "b";
 		if (modeargs)
 			modeargs += " ";
-		modeargs += sni_chan.modelist[CHANMODE_BAN][aBan];
-		if (modecounter >= max_modes) {
+		modeargs += sni_chan.modelist[CHANMODE_BAN][i];
+		if (modecounter >= MAX_MODES) {
 			this.ircout(format("MODE %s %s %s",
 				sni_chan.nam,
 				modestr,
@@ -1327,6 +1465,6 @@ function IRCClient_server_chan_info(sni_chan) {
 }
 
 function gnotice(str) {
-	umode_notice(USERMODE_ROUTING,"Routing","from " + servername + ": " + str);
+	umode_notice(USERMODE_ROUTING,"Routing","from " + ServerName + ": " + str);
 	server_bcast_to_servers("GNOTICE :" + str);
 }
