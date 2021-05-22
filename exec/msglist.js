@@ -1412,8 +1412,6 @@ function load_msgs(msgbase, which, mode, usernumber)
 		var total_msgs = idxlist.length;
 		for(var i = 0; i < total_msgs; i++) {
 			var idx = idxlist[i];
-			if((idx.attr&MSG_DELETE) && !(mode&LM_INCDEL))
-				continue;
 			if((idx.attr&MSG_SPAM)) {
 				if(mode&LM_NOSPAM)
 					continue;
@@ -1449,6 +1447,8 @@ function load_msgs(msgbase, which, mode, usernumber)
 		msg.attributes = msg_attributes(msg, msgbase);
 		msg.num = msgs.length + 1;
 		msg.score = 0;
+		if((msg.attr&MSG_DELETE) && !(mode&LM_INCDEL))
+			continue;
 		if(msg.upvotes)
 			msg.score += msg.upvotes;
 		if(msg.downvotes)
