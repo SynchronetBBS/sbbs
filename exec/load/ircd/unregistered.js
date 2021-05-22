@@ -23,53 +23,55 @@
 function Unregistered_Client(id,socket) {
 	////////// VARIABLES
 	// Bools/Flags that change depending on connection state.
-	this.pinged = false;		// Sent PING?
+	this.pinged = false;
 	this.local = true;			// FIXME: this is redundant.
-	this.criteria_met = false;	// Have we met registration criteria?
 	// Variables containing user/server information as we receive it.
 	this.id = id;
 	this.nick = "*";
 	this.realname = "";
 	this.uprefix = "";
-	this.hostname = "";
 	this.password = "";
 	this.ircclass = 0;
-	this.idletime = time();
+	this.idletime = system.timer;
 	this.ip = socket.remote_ip_address;
+	/* Render IPv4 in IPv6 addresses as IPv4 */
+	if (this.ip.toUpperCase().slice(0,7) == "::FFFF:") {
+		this.ip = this.ip.slice(7);
+	}
+	this.hostname = this.ip;
 	this.pending_resolve = false;
-	this.pending_resolve_time = time();
-	this.sendps = true; // Send the PASS/SERVER pair by default.
-	this.outgoing = false; /* We're an incoming connection by default */
+	this.dns_pending = time();
 	// Variables (consts, really) that point to various state information
 	this.socket = socket;
+	this.socket.irc = this;
 	////////// FUNCTIONS
-	// Functions we use to control clients (specific)
 	this.work = Unregistered_Commands;
-	this.IRC_Unregistered_Commands = IRC_Unregistered_Commands;
 	this.quit = Unregistered_Quit;
 	this.check_timeout = IRCClient_check_timeout;
-	this.check_queues = IRCClient_check_queues;
-	this.resolve_check = Unregistered_Resolve_Check;
 	this.welcome = Unregistered_Welcome;
-	// Output helper functions (shared)
+	this.QWK_Master_Authentication = QWK_Master_Authentication;
 	this.rawout = rawout;
 	this.originatorout = originatorout;
 	this.ircout = ircout;
-	this.sendq = new IRC_Queue();
-	this.recvq = new IRC_Queue();
+	this.sendq = new IRC_Queue(this);
+	this.recvq = new IRC_Queue(this);
 	this.server_notice = IRCClient_server_notice;
 	this.check_nickname = IRCClient_check_nickname;
-	// Numerics (shared)
+	this.Unregistered_Check_User_Registration = Unregistered_Check_User_Registration;
 	this.numeric = IRCClient_numeric;
 	this.numeric451 = IRCClient_numeric451;
 	this.numeric461 = IRCClient_numeric461;
 	this.numeric462 = IRCClient_numeric462;
-	////////// EXECUTION
-	// We're a local socket that must be polled.
-	Local_Sockets[id] = socket.descriptor;
-	Local_Sockets_Map[id] = this;
-	rebuild_socksel_array = true;
-	log(format("%04u Accepted new connection: %s port %s",
+	this.pinginterval = js.setInterval(
+		IRCClient_check_timeout,
+		YLines[0].pingfreq * 1000,
+		this
+	);
+	if (this.socket.outbound) {
+		this.dns_pending = false;
+		return 0;
+	}
+	log(LOG_NOTICE, format("%04u Accepted new connection: %s port %s",
 		socket.descriptor,
 		this.ip,
 		socket.remote_port
@@ -79,219 +81,184 @@ function Unregistered_Client(id,socket) {
 		|| (this.ip.slice(0,8) == "192.168.")
 		|| (this.ip.slice(0,7) == "100.64.")
 		|| (this.ip.slice(0,7) == "172.16." )
+		|| (this.ip.slice(0,2) == "::")
+		|| (this.ip.slice(0,6).toUpperCase() == "FE80::")
 	) {
-		this.hostname = servername;
-		this.pending_resolve_time = false;
+		this.hostname = ServerName;
+		this.dns_pending = false;
 	} else {
-		this.pending_resolve = load(true,"dnshelper.js",this.ip);
+		this.reverse_resolver = function(resp) {
+			if (!this.dns_pending) {
+				log(LOG_DEBUG,format("[UNREG] WARNING: Received extraneous RDNS reply."));
+				return false;
+			}
+			log(LOG_DEBUG,format("[UNREG] Received RDNS reply: %s", resp[0]));
+			if (resp[0] === undefined) {
+				/* Fall through */
+			} else if (resp[0].search(/[.]/) == -1 || resp[0].search(/[.]local$/i) > -1) {
+				this.hostname = ServerName;
+			} else {
+				this.hostname = resp[0];
+				log(LOG_DEBUG,format("[UNREG] Resolving hostname: %s", resp[0]));
+				DNS_Resolver.resolve(resp[0], this.forward_resolver, this);
+				return true;
+			}
+			this.dns_pending = false;
+			this.Unregistered_Check_User_Registration();
+			return false;
+		}
+		this.forward_resolver = function(resp) {
+			if (!this.dns_pending) {
+				log(LOG_DEBUG,format("[UNREG] WARNING: Received extraneous DNS reply."));
+				return false;
+			}
+			log(LOG_DEBUG,format("[UNREG] Received DNS reply: %s", resp[0]));
+			if ((resp[0] === undefined) || (resp[0] != this.ip)) {
+				this.hostname = this.ip;
+			}
+			this.dns_pending = false;
+			this.Unregistered_Check_User_Registration();
+			return true;
+		}
+		log(LOG_DEBUG,format("[UNREG] Resolving IP: %s", this.ip));
+		DNS_Resolver.reverse(this.ip, this.reverse_resolver, this);
 	}
-	this.server_notice("*** " + VERSION + " (" + serverdesc + ") Ready. " + id);
+	this.server_notice(format("*** %s (%s) Ready.",
+		VERSION,
+		ServerDesc
+	));
 }
-
-////////// Command Parsers //////////
 
 function Unregistered_Commands(cmdline) {
-	// Only accept up to 512 bytes from unregistered clients.
-	cmdline = cmdline.slice(0,512);
+	cmdline = cmdline.slice(0,512); /* 512 bytes per RFC1459 */
 
-	// Kludge for broken clients.
-	if ((cmdline[0] == "\r") || (cmdline[0] == "\n"))
-		cmdline = cmdline.slice(1);
+	log(LOG_DEBUG,"[UNREG]: " + cmdline);
 
-	if (debug)
-		log("[UNREG]: " + cmdline);
-
-	this.IRC_Unregistered_Commands(cmdline);
-}
-
-function IRC_Unregistered_Commands(cmdline) {
 	var clockticks = system.timer;
-	var cmd;
-	var command;
+	var i, cmd, p;
 
-	cmd = cmdline.split(" ");
-	if (cmdline[0] == ":") {
-		// Silently ignore NULL originator commands.
-		if (!cmd[1])
-			return 0;
-		// We allow non-matching :<origin> commands through FOR NOW,
-		// since some *broken* IRC clients use this in the unreg stage.
-		command = cmd[1].toUpperCase();
-		cmdline = cmdline.slice(cmdline.indexOf(" ")+1);
-		cmd = cmdline.split(" ");
-	} else {
-		command = cmd[0].toUpperCase();
-	}
+	cmd = IRC_parse(cmdline);
 
-	// we ignore all numerics from unregistered clients.
-	if (command.match(/^[0-9]+/))
+	if (!cmd.verb)
 		return 0;
 
-	var legal_command = true; /* For tracking STATS M */
+	if (cmd.verb.match(/^[0-9]+/))
+		return 0;
 
-	switch(command) {
+	p = cmd.params;
+
+	switch(cmd.verb) {
 		case "PING":
-			if (!cmd[1]) {
+			if (!p[0]) {
 				this.numeric(409,":No origin specified.");
 				break;
 			}
-			this.rawout("PONG " + servername + " :" + IRC_string(cmdline,1));
+			this.rawout("PONG " + ServerName + " :" + p[0]);
 			break;
 		case "CAP":
 		case "CAPAB":
-			break; // Silently ignore, for now.
+			break; /* Silently ignore, for now. */
 		case "NICK":
-			if (!cmd[1]) {
+			if (!p[0]) {
 				this.numeric(431, ":No nickname given.");
 				break;
 			}
-			var the_nick = IRC_string(cmd[1],0).slice(0,max_nicklen);
-			if (this.check_nickname(the_nick))
-				this.nick = the_nick;
+			p[0] = p[0].slice(0,MAX_NICKLEN);
+			if (this.check_nickname(p[0]))
+				this.nick = p[0];
+			this.Unregistered_Check_User_Registration();
 			break;
 		case "PASS":
-			if (!cmd[1] || this.password)
+			if (!p[0] || this.password)
 				break;
-			this.password = IRC_string(cmd[1],0);
+			this.password = p[0];
 			break;
 		case "PONG":
 			this.pinged = false;
 			break;
 		case "SERVER":
-			if ((this.nick != "*") || this.criteria_met) {
+			if (this.nick != "*") {
 				this.numeric462();
 				break;
 			}
-			if (!cmd[3]) {
+			if (!p[2]) {
 				this.numeric461("SERVER");
 				break;
 			}
-			if (Servers[cmd[1].toLowerCase()]) {
-				if (parseInt(cmd[2]) < 2)
+			if (Servers[p[0].toLowerCase()]) {
+				if (parseInt(p[1]) < 2)
 					this.quit("Server already exists.");
 				return 0;
 			}
-			var this_nline = 0;
-			var qwk_slave = false;
-			var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
-			if (parseInt(cmd[2]) < 2) {
-				for (nl in NLines) {
-					if (   (NLines[nl].flags&NLINE_CHECK_QWKPASSWD)
-						&& wildmatch(cmd[1],NLines[nl].servername)
+			if (parseInt(p[1]) < 2) {
+				for (i in NLines) {
+					if (   (NLines[i].flags&NLINE_CHECK_QWKPASSWD)
+						&& wildmatch(p[0],NLines[i].servername)
+						&& Check_QWK_Password(
+							p[0].slice(0,p[0].indexOf(".")).toUpperCase(),
+							this.password
+						   )
 					) {
-						if (check_qwk_passwd(qwkid,this.password)) {
-							this_nline = NLines[nl];
-							break;
-						}
-					} else if (   (NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER)
-								&& wildmatch(cmd[1],NLines[nl].servername)
+						Register_Unregistered_Local_Server(this, p, NLines[i]);
+						return true;
+					}
+					if (   (NLines[i].flags&NLINE_CHECK_WITH_QWKMASTER)
+						&& wildmatch(p[0],NLines[i].servername)
+						&& this.QWK_Master_Authentication(
+							p[0].slice(0,p[0].indexOf(".")).toUpperCase()
+						)
 					) {
-							for (qwkm_nl in NLines) {
-								if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
-									var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
-									if (!qwk_master) {
-										this.quit("No QWK master available for authorization.");
-										return 0;
-									} else {
-										qwk_master.rawout(format(
-											":%s PASS %s :%s QWK",
-											servername,
-											this.password,
-											qwkid
-										));
-										qwk_slave = true;
-									}
-								}
-							}
-					} else if (   (NLines[nl].password == this.password)
-								&& (wildmatch(cmd[1],NLines[nl].servername))
+						this.quit("QWK relaying not yet implemented.");
+						return true;
+					}
+					if (   (NLines[i].password == this.password)
+						&& (wildmatch(p[0],NLines[i].servername))
 					) {
-						this_nline = NLines[nl];
-						break;
+						Register_Unregistered_Local_Server(this, p, NLines[i]);
+						return true;
 					}
 				}
 			}
-			if (   !qwk_slave
-				&& (   !this_nline
-					|| (   (this_nline.password == "*")
-						&& !this.outgoing
-						&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD)
-					)
-				)
-			) {
-				if (parseInt(cmd[2]) < 2)
-					this.quit("UR Server not configured.");
-				return 0;
-			}
-			// Take care of registration right now.
-			Servers[cmd[1].toLowerCase()] = new IRC_Server();
-			var new_server = Servers[cmd[1].toLowerCase()];
-			Local_Servers[this.id] = new_server;
-			Local_Sockets_Map[this.id] = new_server;
-			delete Unregistered[this.id];
-			rebuild_socksel_array = true;
-			new_server.socket = this.socket;
-			new_server.hops = cmd[2];
-			new_server.info = IRC_string(cmdline,3);
-			new_server.parent = cmd[1];
-			new_server.linkparent = servername;
-			new_server.id = this.id;
-			new_server.flags = this_nline.flags;
-			new_server.nick = cmd[1];
-			new_server.hostname = this.hostname;
-			new_server.recvq = this.recvq;
-			new_server.sendq = this.sendq;
-			new_server.ircclass = this.ircclass;
-			new_server.outgoing = this.outgoing;
-			if (!qwk_slave) { // qwk slaves should never be hubs.
-				for (hl in HLines) {
-					if (HLines[hl].servername.toLowerCase()
-					    == cmd[1].toLowerCase()) {
-						new_server.hub = true;
-						break;
-					}
-				}
-				// nor should they be ulined.
-				for (u in ULines) {
-					if (ULines[u] == cmd[1]) {
-						new_server.uline = true;
-						break;
-					}
-				}
-			}
-			new_server.finalize_server_connect("TS",this.sendps);
-			this.replaced_with = new_server;
+			this.quit("No matching server configuration found.");
 			break;
 		case "USER":
 			if (this.uprefix)
 				break;
-			if (!cmd[4]) {
+			if (!p[3]) {
 				this.numeric461("USER");
 				break;
 			}
-			this.realname = IRC_string(cmdline,4).slice(0,50);
-			this.uprefix = parse_username(cmd[1]);
+			this.realname = p[3].slice(0,MAX_REALNAME);
+			this.uprefix = parse_username(p[0]);
+			this.Unregistered_Check_User_Registration();
 			break;
 		case "QUIT":
 			this.quit();
 			return 0;
 		case "NOTICE":
-			break; // drop silently
+			break; /* Drop silently */
 		default:
 			this.numeric451();
 			return 0;
 	}
 
 	/* This part only executed if the command was legal. */
+	if (!Profile[cmd.verb])
+		Profile[cmd.verb] = new StatsM;
+	Profile[cmd.verb].executions++;
+	Profile[cmd.verb].ticks += system.timer - clockticks;
+}
 
-	if (!this.criteria_met && this.uprefix && (this.nick != "*") ) {
-		var usernum;
-		if (this.password) {
+function Unregistered_Check_User_Registration() {
+	var usernum, bbsuser;
+
+	if (!this.dns_pending && !this.socket.outbound && this.uprefix && this.nick != "*") {
+		if (this.password && (system.matchuser !== undefined)) {
 			usernum = system.matchuser(this.uprefix);
 			if (!usernum)
 				usernum = system.matchuser(this.nick);
 			if (usernum) {
-				var bbsuser = new User(usernum);
+				bbsuser = new User(usernum);
 				if (this.password.toUpperCase() == bbsuser.security.password) {
 					this.uprefix = parse_username(bbsuser.handle);
 					bbsuser.connection = "IRC";
@@ -301,76 +268,59 @@ function IRC_Unregistered_Commands(cmdline) {
 		}
 		if (!usernum)
 			this.uprefix = "~" + this.uprefix;
-		this.criteria_met = true;
-		if (this.hostname && !this.pending_resolve_time)
+		if (this.hostname)
 			this.welcome();
 	}
-
-	if (!Profile[command])
-		Profile[command] = new StatsM;
-	Profile[command].executions++;
-	Profile[command].ticks += system.timer - clockticks;
-
 }
 
-////////// Functions //////////
-
 function Unregistered_Quit(msg) {
-	if (msg)
-		this.rawout("ERROR :" + msg);
-	if (server.client_remove!=undefined)
+	this.recvq.purge();
+	this.sendq.purge();
+	if (msg && this.socket.is_connected)
+		this.socket.send(format("ERROR :%s\r\n", msg));
+	if (server.client_remove !== undefined)
 		server.client_remove(this.socket);
 	if(server.clients != undefined)
 		log(LOG_DEBUG,format("%d clients", server.clients));
 	else
-		log(LOG_INFO, "Unregistered_Quit(\""+msg+"\")");
-	this.socket.close();
-	if (this.outgoing) {
+		log(LOG_INFO, format('[UNREG] QUIT ("%s")', msg));
+	if (this.socket.outbound) {
 		if (YLines[this.ircclass].active > 0) {
 			YLines[this.ircclass].active--;
-			log(LOG_DEBUG, "Class "+this.ircclass+" down to "+YLines[this.ircclass].active+" active out of "+YLines[this.ircclass].maxlinks);
+			log(LOG_DEBUG, format("Class %d down to %d active out of %d",
+				this.ircclass,
+				YLines[this.ircclass].active,
+				YLines[this.ircclass].maxlinks
+			));
+		} else {
+			log(LOG_ERR, format("Class %d YLine going negative", this.ircclass));
 		}
-		else
-			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
 	}
-	delete Local_Sockets[this.id];
-	delete Local_Sockets_Map[this.id];
+	this.socket.clearOn("read", this.socket.callback_id);
+	this.socket.close();
+	log(LOG_NOTICE,format(
+		"%04u Connection closed.",
+		this.socket.descriptor
+	));
+	js.clearInterval(this.pinginterval);
+	delete Assigned_IDs[this.id];
 	delete Unregistered[this.id];
-	delete this;
-	rebuild_socksel_array = true;
-}
-
-function Unregistered_Resolve_Check() {
-	var my_resolved = this.pending_resolve.read();
-	if (my_resolved) {
-		if (my_resolved.search(/[.]/))
-			this.hostname = my_resolved;
-		else
-			this.hostname = servername;
-		this.pending_resolve_time = false;
-	} else if ( (time() - this.pending_resolve_time) > 5) {
-		this.hostname = this.ip;
-		this.pending_resolve_time = false;
-	}
-	if (this.criteria_met && !this.pending_resolve_time)
-		this.welcome();
-	return 0;
 }
 
 function Unregistered_Welcome() {
+	var i, my_iline;
+
 	if (isklined(this.uprefix + "@" + this.hostname)) {
 		this.numeric(465, ":You've been K:Lined from this server.");
 		this.quit("You've been K:Lined from this server.");
 		return 0;
 	}
-	// Check for a valid I:Line.
-	var my_iline;
-	// FIXME: We don't compare connecting port.
-	for(thisILine in ILines) {
-		if (   (wildmatch(this.uprefix + "@" + this.ip, ILines[thisILine].ipmask))
-			&& (wildmatch(this.uprefix + "@" + this.hostname, ILines[thisILine].hostmask))
+	/* FIXME: We don't compare connecting port. */
+	for (i in ILines) {
+		if (   (wildmatch(this.uprefix + "@" + this.ip, ILines[i].ipmask))
+			&& (wildmatch(this.uprefix + "@" + this.hostname, ILines[i].hostmask))
 		) {
-			my_iline = ILines[thisILine];
+			my_iline = ILines[i];
 			break;
 		}
 	}
@@ -384,18 +334,11 @@ function Unregistered_Welcome() {
 		this.quit("Denied.");
 		return 0;
 	}
-	// This user is good to go, add his connection to the total.
-	if ( (true_array_len(Local_Users) + true_array_len(Local_Servers)) > hcc_total)
-		hcc_total = true_array_len(Local_Users) + true_array_len(Local_Servers);
-	if (true_array_len(Local_Users) > hcc_users)
-		hcc_users = true_array_len(Local_Users);
-	// Amazing.  We meet the registration criteria.
 	Users[this.nick.toUpperCase()] = new IRC_User(this.id);
 	var new_user = Users[this.nick.toUpperCase()];
-	Local_Sockets_Map[this.id] = new_user;
 	Local_Users[this.id] = new_user;
-	rebuild_socksel_array = true;
 	new_user.socket = this.socket;
+	new_user.socket.irc = new_user;
 	new_user.nick = this.nick;
 	new_user.uprefix = this.uprefix;
 	new_user.hostname = this.hostname;
@@ -405,45 +348,143 @@ function Unregistered_Welcome() {
 	new_user.ircclass = my_iline.ircclass;
 	new_user.sendq = this.sendq;
 	new_user.recvq = this.recvq;
-	// Shouldn't be a thing...
-	new_user.outgoing = this.outgoing;
-	hcc_counter++;
+	new_user.sendq.irc = new_user;
+	new_user.recvq.irc = new_user;
+	/* Remove the unregistered ping interval and install a new on based on Y:Line */
+	js.clearInterval(this.pinginterval);
+	new_user.pinginterval = js.setInterval(
+		IRCClient_check_timeout,
+		YLines[my_iline.ircclass].pingfreq * 1000,
+		new_user
+	);
+	HCC_Counter++;
+	if ( (true_array_len(Local_Users) + true_array_len(Local_Servers)) > HCC_Total)
+		HCC_Total = true_array_len(Local_Users) + true_array_len(Local_Servers);
+	if (true_array_len(Local_Users) > HCC_Users)
+		HCC_Users = true_array_len(Local_Users);
 	this.numeric("001", ":Welcome to the Synchronet IRC Service, " + new_user.nuh);
-	this.numeric("002", ":Your host is " + servername + ", running version " + VERSION);
-	this.numeric("003", ":This server was created " + strftime("%a %b %d %Y at %H:%M:%S %Z",server_uptime));
-	this.numeric("004", servername + " " + VERSION + " oiwbgscrkfydnhF biklmnopstv");
-	this.numeric("005", "NETWORK=Synchronet MAXBANS=" + max_bans + " "
-		+ "MAXCHANNELS=" + max_user_chans + " CHANNELLEN=" + max_chanlen + " "
-		+ "KICKLEN=" + max_kicklen + " NICKLEN=" + max_nicklen + " "
-		+ "TOPICLEN=" + max_topiclen + " MODES=" + max_modes + " "
-		+ "CHANTYPES=#& CHANLIMIT=#:" + max_user_chans + " PREFIX=(ov)@+ "
-		+ "STATUSMSG=@+ :are available on this server.");
-	this.numeric("005", "CASEMAPPING=ascii SILENCE=" + max_silence + " "
-		+ "ELIST=cmnt CHANMODES=b,k,l,imnpst "
-		+ "MAXLIST=b:" + max_bans + " "
-		+ "TARGMAX=JOIN:,KICK:,KILL:,NOTICE:,PART:,PRIVMSG:,WHOIS:,WHOWAS: "
-		+ ":are available on this server.");
+	this.numeric("002", ":Your host is " + ServerName + ", running version " + VERSION);
+	this.numeric("003", format(":This server was created %s", SERVER_UPTIME_STRF));
+	this.numeric("004", ServerName + " " + VERSION + " oiwbgscrkfydnhF biklmnopstv");
+	/* This needs to be rewritten so the server capabilities are rendered dynamically */
+	this.numeric("005","NETWORK=Synchronet"
+		+ " MAXBANS=" + MAX_BANS
+		+ " MAXCHANNELS=" + MAX_USER_CHANS
+		+ " CHANNELLEN=" + MAX_CHANLEN
+		+ " KICKLEN=" + MAX_KICKLEN
+		+ " NICKLEN=" + MAX_NICKLEN
+		+ " TOPICLEN=" + MAX_TOPICLEN
+		+ " MODES=" + MAX_MODES
+		+ " CHANTYPES=#&"
+		+ " CHANLIMIT=#&:" + MAX_USER_CHANS
+		+ " PREFIX=(ov)@+"
+		+ " STATUSMSG=@+"
+		+ " :are available on this server.");
+	this.numeric("005","CASEMAPPING=ascii"
+		+ " SILENCE=" + MAX_SILENCE
+		+ " ELIST=cmnt"
+		+ " CHANMODES=b,k,l,imnpst"
+		+ " MAXLIST=b:" + MAX_BANS
+		+ " TARGMAX=JOIN:,KICK:,KILL:,NOTICE:,PART:,PRIVMSG:,WHOIS:,WHOWAS: " /* FIXME */
+		+ " :are available on this server.");
+	this.numeric("005","AWAYLEN=" + MAX_AWAYLEN
+		+ " :are available on this server.");
 	new_user.lusers();
 	new_user.motd();
-	umode_notice(USERMODE_CLIENT,"Client","Client connecting: " +
-		this.nick + " (" + this.uprefix + "@" + this.hostname +
-		") [" + this.ip + "] {" + hcc_counter + "}");
+	umode_notice(USERMODE_CLIENT,"Client",format(
+		"Client connecting: %s (%s@%s) [%s] {%d}",
+		this.nick,
+		this.uprefix,
+		this.hostname,
+		this.ip,
+		HCC_Counter
+	));
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
-	var nickstr = "NICK " + this.nick + " 1 " + new_user.created + " ";
-	server_bcast_to_servers(
-		format("NICK %s 1 %s + %s %s %s 0 %s :%s",
+	server_bcast_to_servers(format("NICK %s 1 %s + %s %s %s 0 %s :%s",
 			this.nick,
 			new_user.created,
 			this.uprefix,
 			this.hostname,
-			servername,
+			ServerName,
 			ip_to_int(new_user.ip),
 			this.realname
-		)
-	);
+	));
+	log(LOG_NOTICE, format(
+		"New IRC user: %s (%s@%s)",
+		this.nick,
+		this.uprefix,
+		this.hostname
+	));
 	/* we're no longer unregistered. */
-	this.replaced_with = new_user;
 	delete Unregistered[this.id];
-	delete this;
+}
+
+function QWK_Master_Authentication(qwkid) {
+    var i, s;
+
+    for (i in NLines) {
+        if (NLines[i].flags&NLINE_IS_QWKMASTER) {
+            s = searchbyserver(NLines[i].servername);
+            if (!s) {
+				this.quit("No QWK master available for authentication.");
+				return false;
+			}
+			s.rawout(format(
+				":%s PASS %s :%s QWK",
+				ServerName,
+				NLines[i].password,
+				qwkid
+			));
+			return true;
+		}
+	}
+	return false;
+}
+
+function Register_Unregistered_Local_Server(unreg, p, nline) {
+	var i, s;
+
+	Servers[p[0].toLowerCase()] = new IRC_Server();
+	s = Servers[p[0].toLowerCase()];
+	Local_Servers[p[0].toLowerCase()] = s;
+	s.socket = unreg.socket;
+	s.socket.irc = s;
+	s.hops = p[1];
+	s.info = p[2];
+	s.parent = p[0];
+	s.linkparent = ServerName;
+	s.id = p[0].toLowerCase();
+	s.flags = nline.flags;
+	s.nick = p[0];
+	s.hostname = unreg.hostname;
+	s.recvq = unreg.recvq;
+	s.sendq = unreg.sendq;
+	s.recvq.irc = s;
+	s.sendq.irc = s;
+	s.ircclass = unreg.ircclass;
+
+	for (i in HLines) {
+		if (HLines[i].servername.toLowerCase() == p[0].toLowerCase()) {
+			s.hub = true;
+			break;
+		}
+	}
+	for (i in ULines) {
+		if (ULines[i] == p[0]) {
+			s.uline = true;
+			break;
+		}
+	}
+
+	/* Remove the unregistered ping interval and install a new on based on Y:Line */
+	js.clearInterval(unreg.pinginterval);
+	s.pinginterval = js.setInterval(
+		IRCClient_check_timeout,
+		YLines[unreg.ircclass].pingfreq * 1000,
+		s
+	);
+	s.finalize_server_connect("TS");
+	delete Unregistered[unreg.id];
+	delete Assigned_IDs[unreg.id];
 }

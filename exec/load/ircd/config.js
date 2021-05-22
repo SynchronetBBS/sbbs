@@ -20,9 +20,11 @@
 */
 
 function parse_nline_flags(flags) {
+	var i;
 	var nline_flags = 0;
-	for(thisflag in flags) {
-		switch(flags[thisflag]) {
+
+	for (i in flags) {
+		switch(flags[i]) {
 			case "q":
 				nline_flags |= NLINE_CHECK_QWKPASSWD;
 				break;
@@ -33,8 +35,10 @@ function parse_nline_flags(flags) {
 				nline_flags |= NLINE_CHECK_WITH_QWKMASTER;
 				break;
 			default:
-				log(LOG_WARNING,"!WARNING Unknown N:Line flag '"
-					+ flags[thisflag] + "' in config.");
+				log(LOG_WARNING,format(
+					"!WARNING Unknown N:Line flag '%s' in config.",
+					flags[i]
+				));
 				break;
 		}
 	}
@@ -42,9 +46,11 @@ function parse_nline_flags(flags) {
 }
 
 function parse_oline_flags(flags) {
+	var i;
 	var oline_flags = 0;
-	for(thisflag in flags) {
-		switch(flags[thisflag]) {
+
+	for (i in flags) {
+		switch(flags[i]) {
 			case "r":
 				oline_flags |= OLINE_CAN_REHASH;
 				break;
@@ -105,7 +111,7 @@ function parse_oline_flags(flags) {
 				break;
 			case "x":
 			case "X":
-				oline_flags |= OLINE_CAN_DEBUG;
+				oline_flags |= OLINE_CAN_EVAL;
 				break;
 			case "O":
 				oline_flags |= OLINE_IS_GOPER;
@@ -126,39 +132,50 @@ function parse_oline_flags(flags) {
 				oline_flags |= OLINE_CAN_UMODEC;
 				break;
 			default:
-				log(LOG_WARNING,"!WARNING Unknown O:Line flag '"
-					+ flags[thisflag] + "' in config.");
+				log(LOG_WARNING,format(
+					"!WARNING Unknown O:Line flag '%s' in config.",
+					flags[i]
+				));
 				break;
 		}
 	}
 	return oline_flags;
 }
 
-function read_config_file() {
+function Read_Config_File() {
+	var i;
+
 	/* All of these variables are global. */
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
-	CLines = new Array;
-	HLines = new Array;
-	ILines = new Array;
-	KLines = new Array;
-	NLines = new Array;
-	OLines = new Array;
-	PLines = new Array;
-	QLines = new Array;
-	ULines = new Array;
-	diepass = "";
-	restartpass = "";
-	YLines = new Array;
-	ZLines = new Array;
+	if (typeof CLines !== 'undefined') {
+		for (i in CLines) {
+			if (CLines[i].next_connect)
+				js.clearTimeout(CLines[i].next_connect);
+		}
+	}
+	CLines = [];
+	HLines = [];
+	ILines = [];
+	KLines = [];
+	NLines = [];
+	OLines = [];
+	PLines = [];
+	QLines = [];
+	ULines = [];
+	YLines = [];
+	ZLines = [];
+	Die_Password = "";
+	Restart_Password = "";
 	/* End of global variables */
+
 	var fname="";
-	if (config_filename && config_filename.length) {
-		if(config_filename.indexOf('/')>=0 || config_filename.indexOf('\\')>=0)
-			fname=config_filename;
+	if (Config_Filename && Config_Filename.length) {
+		if(Config_Filename.indexOf('/')>=0 || Config_Filename.indexOf('\\')>=0)
+			fname=Config_Filename;
 		else
-			fname=system.ctrl_dir + config_filename;
+			fname=system.ctrl_dir + Config_Filename;
 	} else {
 		fname=system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
 		if(!file_exists(fname))
@@ -175,13 +192,13 @@ function read_config_file() {
 			read_conf_config(file_handle);
 		file_handle.close();
 	} else {
-		log("Couldn't open configuration file! Proceeding with defaults.");
+		log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults.");
 	}
 
-	time_config_read = time();
-	scan_for_klined_clients();
+	Time_Config_Read = time();
+	Scan_For_Banned_Clients();
 
-	YLines[0] = new YLine(120,600,1,5050000); // default irc class
+	YLines[0] = new YLine(120,600,1,5050000); /* Default IRC class */
 }
 
 function ini_sections() {
@@ -197,9 +214,8 @@ function ini_sections() {
 }
 
 function ini_IRCdInfo(arg, ini) {
-	log("ircdinfo " + ini.Hostname);
-	servername=ini.Hostname;
-	serverdesc=ini.Info;
+	ServerName=ini.Hostname;
+	ServerDesc=ini.Info;
 	Admin1=ini.Admin1;
 	Admin2=ini.Admin2;
 	Admin3=ini.Admin3;
@@ -207,7 +223,7 @@ function ini_IRCdInfo(arg, ini) {
 
 /* Former M:Line */
 function ini_Port(arg, ini) {
-	mline_port = arg;
+	Default_Port = arg;
 }
 
 /* Former Y:Line */
@@ -256,21 +272,19 @@ function ini_Hub(arg, ini) {
 
 function read_ini_config(conf) {
 	var ini = conf.iniGetAllObjects();
-	var split;
-	var section_name;
-	var section_arg;
 	var Sections = new ini_sections();
+	var i, s;
 
-	for each(var i in ini) {
-		split = i.name.split(":");
-		section_name = split[0];
-		section_arg = split[1];
-		if (typeof Sections[section_name] === 'function')
-			Sections[section_name](section_arg, i);
+	for (var i in ini) {
+		s = i.name.split(":");
+		if (typeof Sections[s[0]] === 'function')
+			Sections[s[0]](s[1], i);
 	}
 }
 
 function read_conf_config(conf) {
+	var conf_line, arg, i;
+
 	function fancy_split(line) {
 		var ret = [];
 		var i;
@@ -309,21 +323,15 @@ function read_conf_config(conf) {
 	}
 
 	while (!conf.eof) {
-		var conf_line = conf.readln();
+		conf_line = conf.readln();
 		if ((conf_line != null) && conf_line.match("[:]")) {
-			var arg = fancy_split(conf_line);
-			for(argument in arg) {
-				arg[argument]=arg[argument].replace(
-					/SYSTEM_HOST_NAME/g,system.host_name);
-				arg[argument]=arg[argument].replace(
-					/SYSTEM_NAME/g,system.name);
-				if (typeof system.qwk_id !== "undefined") {
-					arg[argument]=arg[argument].replace(
-						/SYSTEM_QWKID/g,system.qwk_id.toLowerCase()
-					);
-				}
-				arg[argument]=arg[argument].replace(
-					/VERSION_NOTICE/g,system.version_notice);
+			arg = fancy_split(conf_line);
+			for (i in arg) {
+				arg[i]=arg[i].replace(/SYSTEM_HOST_NAME/g,system.host_name);
+				arg[i]=arg[i].replace(/SYSTEM_NAME/g,system.name);
+				arg[i]=arg[i].replace(/VERSION_NOTICE/g,system.version_notice);
+				if (typeof system.qwk_id !== 'undefined')
+					arg[i]=arg[i].replace(/SYSTEM_QWKID/g,system.qwk_id.toLowerCase());
 			}
 		switch (conf_line[0].toUpperCase()) {
 				case "A":
@@ -336,8 +344,7 @@ function read_conf_config(conf) {
 				case "C":
 					if (!arg[5])
 						break;
-					CLines.push(new CLine(arg[1],arg[2],arg[3],arg[4],
-						parseInt(arg[5]) ));
+					CLines.push(new CLine(arg[1],arg[2],arg[3],arg[4],parseInt(arg[5])));
 					break;
 				case "H":
 					if (!arg[3])
@@ -355,8 +362,7 @@ function read_conf_config(conf) {
 						break;
 					var kline_mask = create_ban_mask(arg[1],true);
 					if (!kline_mask) {
-						log(LOG_WARNING,"!WARNING Invalid K:Line ("
-							+ arg[1] + ")");
+						log(LOG_WARNING,"!WARNING Invalid K:Line (" + arg[1] + ")");
 						break;
 					}
 					KLines.push(new KLine(kline_mask,arg[2],"K"));
@@ -364,9 +370,9 @@ function read_conf_config(conf) {
 				case "M":
 					if (!arg[3])
 						break;
-					servername = arg[1];
-					serverdesc = arg[3];
-					mline_port = parseInt(arg[4]);
+					ServerName = arg[1];
+					ServerDesc = arg[3];
+					Default_Port = parseInt(arg[4]);
 					break;
 				case "N":
 					if (!arg[5])
@@ -394,8 +400,8 @@ function read_conf_config(conf) {
 					ULines.push(arg[1]);
 					break;
 				case "X":
-					diepass = arg[1];
-					restartpass = arg[2];
+					Die_Password = arg[1];
+					Restart_Password = arg[2];
 					break;
 				case "Y":
 					if (!arg[5])
