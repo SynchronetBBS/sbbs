@@ -23,6 +23,11 @@
     strive to keep it sane and compatible, which may be impossible.
 12) A Unicode cell will potentially have multiple codepoints "in" it.
 
+Some sort of state checkpoint thing... you "save" the checkpoint, and send that
+ID back and you get the same state returned.
+
+Stack and state save thing
+
 For CONIOng:
 Layers:
 0  - Solid fixed background (doesn't scoll)
