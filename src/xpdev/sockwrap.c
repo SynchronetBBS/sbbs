@@ -617,8 +617,10 @@ union xp_sockaddr* inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t 
     if(getaddrinfo(addr_str, NULL, &hints, &res))
         return NULL;
     
-    for(cur = res; cur; cur++) {
+    for(cur = res; cur; cur = cur->ai_next) {
         if(cur->ai_addr->sa_family == AF_INET6)
+            break;
+        if(cur->ai_addr->sa_family == AF_INET)
             break;
     }
     if(!cur) {
