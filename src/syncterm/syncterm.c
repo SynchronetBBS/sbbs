@@ -1926,6 +1926,8 @@ int screen_to_ciolib(int screen)
 			return(ti.currmode);
 		case SCREEN_MODE_80X25:
 			return(C80);
+		case SCREEN_MODE_LCD80X25:
+			return(LCD80X25);
 		case SCREEN_MODE_80X28:
 			return(C80X28);
 		case SCREEN_MODE_80X30:
@@ -1980,6 +1982,8 @@ int ciolib_to_screen(int ciolib)
 	switch(ciolib) {
 		case C80 :
 			return(SCREEN_MODE_80X25);
+		case LCD80X25:
+			return(SCREEN_MODE_LCD80X25);
 		case C80X28 :
 			return(SCREEN_MODE_80X28);
 		case C80X30:
