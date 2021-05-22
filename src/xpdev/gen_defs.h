@@ -37,6 +37,7 @@
 #ifndef _GEN_DEFS_H
 #define _GEN_DEFS_H
 
+#include "cp437defs.h"
 #include <errno.h>
 
 /* Resolve multi-named errno constants */
@@ -451,7 +452,7 @@ typedef struct {
 
 /* ASCIIZ char* parsing helper macros */
 /* These (unsigned char) typecasts defeat MSVC debug assertion when passed a negative value */
-#define IS_WHITESPACE(c)				isspace((unsigned char)(c))
+#define IS_WHITESPACE(c)				(isspace((unsigned char)(c)) || c == CP437_NO_BREAK_SPACE)
 #define IS_CONTROL(c)					iscntrl((unsigned char)(c))
 #define IS_ALPHA(c)						isalpha((unsigned char)(c))
 #define IS_ALPHANUMERIC(c)				isalnum((unsigned char)(c))
