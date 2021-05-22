@@ -885,7 +885,7 @@ static void
 js_connect_event_thread(void *args)
 {
 	struct js_connect_event_args *a = args;
-	struct addrinfo	hints,*res,*cur;
+	struct addrinfo	hints,*res = NULL,*cur;
 	int result;
 	ulong val;
 	char sresult;
