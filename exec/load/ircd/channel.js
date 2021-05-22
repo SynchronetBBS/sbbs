@@ -453,16 +453,16 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	}
 
 	for (i in cmode.tmplist[CHANMODE_BAN][false]) { // -b
-		for (ban in chan.modelist[CHANMODE_BAN]) {
+		for (j in chan.modelist[CHANMODE_BAN]) {
 			if (   cmode.tmplist[CHANMODE_BAN][false][i].toUpperCase()
-			    == chan.modelist[CHANMODE_BAN][ban].toUpperCase()
+			    == chan.modelist[CHANMODE_BAN][j].toUpperCase()
 			) {
 				cmode.delmodes += "b";
 				cmode.delmodeargs += " " +
 					cmode.tmplist[CHANMODE_BAN][false][i];
-				delete chan.modelist[CHANMODE_BAN][ban];
-				delete chan.bantime[ban];
-				delete chan.bancreator[ban];
+				delete chan.modelist[CHANMODE_BAN][j];
+				delete chan.bantime[j];
+				delete chan.bancreator[j];
 			}
 		}
 	}
