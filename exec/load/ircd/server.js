@@ -277,7 +277,7 @@ function Server_Work(cmdline) {
 			this.hostname,
 			p[0]
 		));
-		ThisOrigin.quit(p[0]);
+		origin.quit(p[0]);
 		break;
 	case "INFO":
 		if (!p[0] || origin.server)
@@ -1118,7 +1118,7 @@ function Server_Work(cmdline) {
 		if (!tmp)
 			break;
 		if (tmp == -1) {
-			ThisOrigin.numeric351();
+			origin.numeric351();
 			break;
 		}
 		tmp.rawout(format(
