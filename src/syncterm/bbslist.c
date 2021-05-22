@@ -1950,7 +1950,7 @@ void change_settings(int connected)
                                     l = 2;
                                     break;
                             }
-                            switch (uifc.list(WIN_SAV, 0, 0, 0, &l, NULL, "Font Size", &subopts[4])) {
+                            switch (uifc.list(WIN_SAV, 0, 0, 0, &l, NULL, "Font Size", &subopts[6])) {
                                 case -1:
                                     check_exit(FALSE);
                                     break;
@@ -1970,6 +1970,7 @@ void change_settings(int connected)
                                     custom_mode_adjusted(&cur, opt);
                                     break;
                             }
+				break;
                         case 3:
                             uifc.helpbuf=   "`Aspect Ratio Width`\n\n"
                                             "Width part of the aspect ratio.  Historically, this has been 4";
