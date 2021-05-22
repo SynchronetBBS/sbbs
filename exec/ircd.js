@@ -26,6 +26,7 @@ load("sbbsdefs.js");
 load("sockdefs.js");
 load("nodedefs.js");
 load("irclib.js");
+load("dns.js");
 
 /* Libraries specific to the IRCd */
 load("ircd/core.js");
@@ -35,293 +36,122 @@ load("ircd/channel.js");
 load("ircd/server.js");
 load("ircd/config.js");
 
-/* Global Constants */
-
-const VERSION = "SynchronetIRCd-1.9a";
+/*** Global Constants - Always in ALL_UPPERCASE ***/
+const VERSION = "SynchronetIRCd-1.9b";
 const VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
 	system.platform, system.beta_version
 );
+/* This will be replaced with a dynamic CAPAB system */
+const SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP TSMODE";
+/* This will be in the configuration for 2.0 */
+const SUMMON = true;
 
-/* This will be replaced with a dynamic CAPAB system later. */
-const Server_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP TSMODE";
+/* Need to detect when a server doesn't line up with these on the network. */
+const MAX_CHANLEN = 100;      /* Maximum channel name length. */
+const MAX_NICKLEN = 30;       /* Maximum nickname length. */
+const MAX_MODES = 6;          /* Maximum modes on single MODE command */
+const MAX_USER_CHANS = 100;   /* Maximum channels users can join */
+const MAX_BANS = 25;          /* Maximum bans (+b) per channel */
+const MAX_TOPICLEN = 307;     /* Maximum length of topic per channel */
+const MAX_KICKLEN = 307;      /* Maximum length of kick reasons */
+const MAX_WHO = 100;          /* Maximum replies to WHO for non-oper users */
+const MAX_SILENCE = 10;       /* Maximum entries on a user's SILENCE list */
+const MAX_WHOWAS = 1000;      /* Size of the WHOWAS buffer */
+const MAX_NICKHISTORY = 1000; /* Size of the nick change history buffer */
+const MAX_CLIENT_RECVQ = 2560;/* Maximum size of unregistered & user recvq */
+const MAX_AWAYLEN = 80;       /* Maximum away message length */
+const MAX_USERHOST = 6;       /* Maximum arguments to USERHOST command */
+const MAX_REALNAME = 50;      /* Maximum length of users real name field */
 
-// The number of seconds to block before giving up on outbound CONNECT
-// attempts (when connecting to another IRC server -- i.e. a hub)  This value
-// is important because connecing is a BLOCKING operation, so your IRC *will*
-// freeze for the amount of time it takes to connect.
-const ob_sock_timeout = 3;
+const SERVER_UPTIME = system.timer;
+const SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",time());
 
-// Should we enable the USERS and SUMMON commands?  These allow IRC users to
-// view users on the local BBS and summon them to IRC via a Synchronet telegram
-// message respectively.  Some people might be running the ircd standalone, or
-// otherwise don't want anonymous IRC users to have access to these commands.
-// We enable this by default because there's typically nothing wrong with
-// seeing who's on an arbitrary BBS or summoning them to IRC.
-const enable_users_summon = true;
+/*** Global Objects, Arrays and Variables - Always in Mixed_Case ***/
 
-// EVERY server on the network MUST have the same values in ALL of these
-// categories.  If you change these, you WILL NOT be able to link to the
-// Synchronet IRC network.  Linking servers with different values here WILL
-// cause your network to desynchronize (and possibly crash the IRCD)
-// Remember, this is Synchronet, not Desynchronet ;)
-const max_chanlen = 100;	// Maximum channel name length.
-const max_nicklen = 30;		// Maximum nickname length.
-const max_modes = 6;		// Maximum modes on single MODE command
-const max_user_chans = 100;	// Maximum channels users can join
-const max_bans = 25;		// Maximum bans (+b) per channel
-const max_topiclen = 307;	// Maximum length of topic per channel
-const max_kicklen = 307;	// Maximum length of kick reasons
-const max_who = 100;		// Maximum replies to WHO for non-oper users
-const max_silence = 10;		// Maximum entries on a user's SILENCE list
+/* Global Objects */
+var DNS_Resolver = new DNS();
 
-const server_uptime = time();
+/* Every object (unregistered, server, user) is tagged with a unique ID */
+var Assigned_IDs = {};      /* Key: Numeric ID */
+
+var Unregistered = {};      /* Key: Numeric ID */
+var Users = {};             /* Key: .toUpperCase() nick */
+var Servers = {};           /* Key: .toLowerCase() nick */
+var Channels = {};          /* Key: .toUpperCase() channel name, including prefix */
+
+var Local_Users = {};
+var Local_Servers = {};
+
+var WhoWas = {};			/* Stores uppercase nicks */
+var WhoWasMap = [];			/* An array pointing to WhoWas object entries */
+
+var NickHistory = [];		/* Nick change tracking */
+
+var Profile = {};			/* CPU profiling */
 
 /* Global Variables */
+var Default_Port = 6667;
 
-// This will dump all I/O to and from the server to your Synchronet console.
-// It also enables some more verbose WALLOPS, especially as they pertain to
-// blocking functions.
-// The special "DEBUG" oper command also switches this value.
-var debug = false;
-var default_port = 6667;
+var Time_Config_Read;		/* Stores time() of when the config was last read */
 
-/* This was previously on its own in the functions
-   Maybe there was a reason why? */
-var time_config_read;
+/* Will this server try to enforce good network behaviour? */
+/* Setting to "true" results in bouncing bad modes, KILLing bogus NICKs, etc. */
+var Enforcement = true;
 
-/* Primary arrays */
-var Unregistered = new Object;
-var Users = new Object;
-var Servers = new Object;
-var Channels = new Object;
+/* Highest Connection Count ("HCC") tracking */
+var HCC_Total = 0;
+var HCC_Users = 0;
+var HCC_Counter = 0;
 
-var Local_Sockets = new Object;
-var Local_Sockets_Map = new Object;
+var ServerName;
+var ServerDesc = "";
 
-var Selectable_Sockets = new Object;
-var Selectable_Sockets_Map = new Object;
+/* Runtime configuration */
+var Config_Filename = "";
 
-/* Highest Connection Count tracking */
-var hcc_total = 0;
-var hcc_users = 0;
-var hcc_counter = 0;
+var Restart_Password;
+var Die_Password;
 
-var WhoWas = new Object;	/* Stores uppercase nicks */
-var WhoWasMap = new Array;	/* A true push/pop array pointing to WhoWas entries */
-var WhoWas_Buffer = 1000;	/* Maximum number of WhoWas entries to keep track of */
+var Admin1;
+var Admin2;
+var Admin3;
 
-var NickHistory = new Array;	/* A true array using push and pop */
-var NickHistorySize = 1000;
+var CLines = [];	/* Server [C]onnect lines */
+var NLines = [];	/* Server inbound connect lines */
+var HLines = [];	/* Hubs */
+var ILines = [];	/* IRC Classes */
+var KLines = [];	/* user@hostname based bans */
+var OLines = [];	/* IRC Operators */
+var PLines = [];	/* Ports for the IRCd to listen to */
+var QLines = [];	/* [Q]uarantined (reserved) nicknames */
+var ULines = [];	/* Servers allowed to send unchecked MODE amongst other things */
+var YLines = [];	/* Defines what user & server objects get what settings */
+var ZLines = [];	/* IP based bans */
 
-/* Keep track of commands and how long they take to execute. */
-var Profile = new Object;
+/** Begin executing code **/
 
-/* This is where our unique ID for each client comes from for unreg'd clients. */
-var next_client_id = 0;
+log(LOG_NOTICE, VERSION + " started.");
 
-// An array containing all the objects containing local sockets that we need
-// to poll.
-var Local_Users = new Object;
-var Local_Servers = new Object;
-
-var rebuild_socksel_array = true;
-
-var network_debug = false;
-
-var last_recvq_check = 0;
-
-var servername = "server.invalid";
-var serverdesc = "No description provided.";
-
-log(VERSION + " started.");
-
-// Parse command-line arguments.
-var config_filename="";
-var cmdline_port;
-var cmdarg;
-for (cmdarg=0;cmdarg<argc;cmdarg++) {
-	switch(argv[cmdarg].toLowerCase()) {
-		case "-f":
-			config_filename = argv[++cmdarg];
-			break;
-		case "-p":
-			cmdline_port = parseInt(argv[++cmdarg]);
-			break;
-		case "-d":
-			debug=true;
-			break;
-		case "-a":
-			cmdline_addr = argv[++cmdarg].split(',');
-			break;
-	}
+/* If we're running from JSexec we don't have a global server object, so fake one. */
+if (server === undefined) {
+	/* Define the global here so Startup() can manipulate it. */
+	var server = "JSexec";
 }
 
-/* Temporary hack to make JSexec testing code not complain */
-var mline_port;
+Startup();
 
-read_config_file();
+js.do_callbacks = true;
 
-/* This tests if we're running from JSexec or not */
-if(this.server==undefined) {
-	if (!jsexec_revision_detail)
-		var jsexec_revision_detail = "JSexec";
-
-	if (cmdline_port)
-		default_port = cmdline_port;
-	else if (typeof mline_port !== undefined)
-		default_port = mline_port;
-
-	var server = {
-		socket: false,
-		terminated: false,
-		version_detail: jsexec_revision_detail,
-		interface_ip_addr_list: ["0.0.0.0","::"]
-	};
-
-	server.socket = create_new_socket(default_port)
-
-	if (!server.socket)
-		exit();
-}
-
-server.socket.nonblocking = true;	// REQUIRED!
-server.socket.debug = false;		// Will spam your log if true :)
-
-// Now open additional listening sockets as defined on the P:Line in ircd.conf
-var open_plines = new Array(); /* True Array */
-// Make our 'server' object the first open P:Line
-open_plines[0] = server.socket;
-for (pl in PLines) {
-	var new_pl_sock = create_new_socket(PLines[pl]);
-	if (new_pl_sock) {
-		new_pl_sock.nonblocking = true;
-		new_pl_sock.debug = false;
-		open_plines.push(new_pl_sock);
+function config_rehash_semaphore_check() {
+	if(file_date(system.ctrl_dir + "ircd.rehash") > Time_Config_Read) {
+		Read_Config_File();
 	}
 }
+js.setInterval(config_rehash_semaphore_check, 1000 /* milliseconds */);
 
-js.branch_limit=0; // we're not an infinite loop.
-js.auto_terminate=false; // we handle our own termination requests
+Open_PLines();
 
-/*** Main Loop ***/
-while (!js.terminated) {
-
-	if(file_date(system.ctrl_dir + "ircd.rehash") > time_config_read)
-		read_config_file();
-
-	/* Setup a new socket if a connection is accepted. */
-	for (pl in open_plines) {
-		if (open_plines[pl].poll()) {
-			var client_sock=open_plines[pl].accept();
-			log(LOG_DEBUG,"Accepting new connection on port "
-				+ client_sock.local_port);
-			if(client_sock) {
-				client_sock.nonblocking = true;
-				switch(client_sock.local_port) {
-					case 994:
-					case 6697:
-						client_sock.ssl_server=1;
-				}
-				if (!client_sock.remote_ip_address) {
-					log(LOG_DEBUG,"Socket has no IP address.  Closing.");
-					client_sock.close();
-				} else if (iszlined(client_sock.remote_ip_address)) {
-					client_sock.send(format(
-						":%s 465 * :You've been Z:Lined from this server.\r\n",
-						servername
-					));
-					client_sock.close();
-				} else {
-					var new_id = "id" + next_client_id;
-					next_client_id++;
-					if(server.client_add != undefined)
-						server.client_add(client_sock);
-					if(server.clients != undefined)
-						log(LOG_DEBUG,format("%d clients", server.clients));
-					Unregistered[new_id] = new Unregistered_Client(new_id,
-						client_sock);
-				}
-			} else
-				log(LOG_DEBUG,"!ERROR " + open_plines[pl].error
-					+ " accepting connection");
-		}
-	}
-
-	// Check for pending DNS hostname resolutions.
-	for(this_unreg in Unregistered) {
-		if (Unregistered[this_unreg] &&
-			Unregistered[this_unreg].pending_resolve_time)
-			Unregistered[this_unreg].resolve_check();
-	}
-
-	// Only rebuild our selectable sockets if required.
-	if (rebuild_socksel_array) {
-		Selectable_Sockets = new Array;
-		Selectable_Sockets_Map = new Array;
-		for (i in Local_Sockets) {
-			Selectable_Sockets.push(Local_Sockets[i]);
-			Selectable_Sockets_Map.push(Local_Sockets_Map[i]);
-		}
-		rebuild_socksel_array = false;
-	}
-
-	/* Check for ping timeouts and process queues. */
-	/* FIXME/TODO: These need to be changed to a mapping system ASAP. */
-	for(this_sock in Selectable_Sockets) {
-		if (Selectable_Sockets_Map[this_sock]) {
-			Selectable_Sockets_Map[this_sock].check_timeout();
-			Selectable_Sockets_Map[this_sock].check_queues();
-		}
-	}
-
-	// do some work.
-	if (Selectable_Sockets.length) {
-		var readme = socket_select(Selectable_Sockets, 1 /*secs*/);
-		try {
-			for(thisPolled in readme) {
-				if (Selectable_Sockets_Map[readme[thisPolled]]) {
-					var conn = Selectable_Sockets_Map[readme[thisPolled]];
-					if (!conn.socket.is_connected) {
-						conn.quit("Connection reset by peer.");
-						continue;
-					}
-					conn.recvq.recv(conn.socket);
-				}
-			}
-		} catch(e) {
-			gnotice("FATAL ERROR: " + e);
-			log(LOG_ERR,"JavaScript exception: " + e);
-			terminate_everything("A fatal error occured!", /* ERROR? */true);
-		}
-	} else {
-		/* Nothing's connected to us, so hang out for a bit */
-		mswait(100);
-	}
-
-	// Scan C:Lines for servers to connect to automatically.
-	var my_cline;
-	for(thisCL in CLines) {
-		my_cline = CLines[thisCL];
-		if (   my_cline.port
-			&& YLines[my_cline.ircclass].connfreq
-			&& (YLines[my_cline.ircclass].maxlinks > YLines[my_cline.ircclass].active)
-			&& (search_server_only(my_cline.servername) < 1)
-			&& ((time() - my_cline.lastconnect) > YLines[my_cline.ircclass].connfreq)
-		) {
-			umode_notice(
-				USERMODE_ROUTING,
-				"Routing",
-				format("Auto-connecting to %s (%s)",
-					CLines[thisCL].servername,
-					CLines[thisCL].host
-				)
-			);
-			connect_to_server(CLines[thisCL]);
-		}
-	}
-}
-
-/* We've exited the main loop, so terminate everything. */
-terminate_everything("Terminated.");
+/* We exit here and pass everything to the callback engine. */
+/* Deuce says I can't use exit(). So just pretend it's here instead. */

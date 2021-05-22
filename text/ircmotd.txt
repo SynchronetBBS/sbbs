@@ -1,6 +1,8 @@
-
-Welcome to the Synchronet IRC daemon!
-This is an example MOTD (Message of the Day) that is displayed
-when users first connect, and should be changed to something 
-more original. :)
-
+ .|'''.|                        '||                                      .
+ ||..  ' .... ..... ...    ....  || ..  ... ..   ...   .. ...    ....  .||.
+  ''|||.  '|.  |  ||  || .|   '' ||' ||  ||' ''.|  '|.  ||  || .|...||  ||
+.     '||  '|.|   ||  || ||      ||  ||  ||    ||   ||  ||  || ||       ||
+|'....|'    '|   .||. ||. '|...'.||. ||..||.    '|..|' .||. ||. '|...'  '|.'
+         .. |
+          ''
+  Welcome to the Synchronet IRC network!  Type '/JOIN #synchronet' to chat.
