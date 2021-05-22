@@ -346,9 +346,11 @@ bool sbbs_t::editfileinfo(file_t* f)
 		char uploader[LEN_ALIAS + 1];
 		SAFECOPY(uploader, f->from);
 		bputs(text[EditUploader]);
-		if(!getstr(uploader, sizeof(uploader), K_EDIT|K_AUTODEL))
+		getstr(uploader, sizeof(uploader), K_EDIT|K_AUTODEL);
+		if(msgabort(true))
 			return false;
-		smb_new_hfield_str(f, SMB_FILEUPLOADER, uploader);
+		if(*uploader != '\0' || *f->from != '\0')
+			smb_new_hfield_str(f, SMB_FILEUPLOADER, uploader);
 		ultoa(f->cost,str,10);
 		bputs(text[EditCreditValue]);
 		getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL);
