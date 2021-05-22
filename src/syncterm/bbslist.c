@@ -1438,7 +1438,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
             case 17:
                 item->rip = get_rip_version(item->rip, &changed);
                 if (item->rip == RIP_VERSION_1) {
-                    item->screen_mode = 4;
+                    item->screen_mode = SCREEN_MODE_80X43;
                     iniSetEnum(&inifile,itemname,"ScreenMode",screen_modes_enum,item->screen_mode,&ini_style);
                 }
                 iniSetEnum(&inifile,itemname,"RIP",rip_versions,item->rip,&ini_style);
