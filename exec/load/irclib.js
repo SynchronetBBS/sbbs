@@ -1,29 +1,147 @@
-// $Id: irclib.js,v 1.23 2019/08/06 13:38:11 deuce Exp $
-//
-// irclib.js
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// A library of useful IRC functions and objects that can be used to assist
-// in the creation of IRC clients, bots, servers, or custom shells.
-//
-// If you use this to create something neat, let me know about it! :)
-// Either email, or find me on #synchronet, irc.synchro.net, nick 'Cyan'
-//
-// Copyright 2003-2006 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
+/*
+   irclib.js
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+  
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details:
+   https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+  
+   A library of useful IRC functions and objects that can be used to assist
+   in the creation of IRC clients, bots, servers, or custom shells.
+  
+   If you use this to create something neat, let me know about it! :)
+   Either email, or find me on #synchronet, irc.synchro.net, nick 'Cyan'
+  
+   Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+*/
 
-const IRCLIB_REVISION = "$Revision: 1.23 $".split(' ')[1];
+const IRCLIB_REVISION = "1.24";
 const IRCLIB_VERSION = "irclib.js-" + IRCLIB_REVISION;
+
+/*
+	This is the "grand parser" that you should be using to handle all
+	incoming messages, whether from a client or server.
+	Returns an object "ret" as defined below.
+	Note it is possible for nothing to be defined in 'source', in
+	which case you should assign the source to the socket name.  i.e.:
+	if (!source.name)
+		source.name = this.socket.name;
+*/
+function IRC_parse(str) {
+	var w, e;
+
+	var ret = {
+		tags: {},
+		source: {
+			name: "",
+			user: "",
+			host: "",
+			is_server: false
+		},
+		verb: "",
+		params: []
+	};
+
+	for (w = 0; str.length; w++) {
+		e = str.indexOf(" ");
+		if (e == -1)
+			e = str.length;
+		if (!ret.verb && w < 2) {
+			switch(str[0]) {
+				case "@":
+					ret.tags = IRC_parse_tags(str.substr(0, e));
+					str = str.slice(e+1);
+					continue;
+				case ":":
+					ret.source = IRC_parse_source(str.substr(0, e));
+					str = str.slice(e+1);
+					continue;
+			}
+		}
+		if (!ret.verb) {
+			ret.verb = str.substr(0, e).toUpperCase();
+			str = str.slice(e+1);
+			continue;
+		}
+		if (str[0] == ":") {
+			ret.params.push(str.slice(1));
+			break;
+		}
+		ret.params.push(str.substr(0, e));
+		str = str.slice(e+1);
+	}
+
+	return ret;
+}
+
+/*
+	IRCv3 style tag parsing
+	Returns an array of tags, with tag name in the key
+*/
+function IRC_parse_tags(str) {
+	var ret = {};
+	var e, q;
+	
+	if (!str || str[0] != "@")
+		return ret;
+
+	str = str.slice(1);
+
+	while (str.length) {
+		e = str.indexOf(";");
+		if (!e || e == -1)
+			e = str.length;
+		q = str.indexOf("=");
+		if (!q || q > e) {
+			ret[str.substr(0, e)] = true;
+			str = str.slice(e+1);
+			continue;
+		}
+		ret[str.substr(0, q)] = str.substr(q+1, e);
+		str = str.slice(e+1);
+	}
+
+	return ret;
+}
+
+/*
+	Returns an object "ret" based on where it's from.
+	It's possible this can be empty.
+*/
+function IRC_parse_source(str) {
+	var nuh;
+	var ret = {
+		name: "",
+		user: "",
+		host: "",
+		is_server: false
+	};
+
+	if (!str || str[0] != ":")
+		return ret;
+
+	str = str.slice(1);
+
+	if (str.match(/!/)) {
+		nuh = IRC_split_nuh(str);
+		ret.name = nuh[0];
+		ret.user = nuh[1];
+		ret.host = nuh[2];
+	} else if (str.match(/[.]/)) {
+		ret.name = str;
+		ret.is_server = true;
+	} else {
+		ret.name = str;
+	}
+
+	return ret;
+}
 
 // Connect to a server as a client.
 //	hostname	Hostname to connect to
@@ -254,14 +372,14 @@ function IRC_split_nuh(str) {
 
 /* Convert a dotted-quad IP address to an integer, i.e. for use in CTCP */
 function ip_to_int(ip) {
+	var quads;
+
 	if (!ip)
 		return 0;
-	var quads = ip.split(".");
-	var addr = (quads[0]&0xff)<<24;
-	addr|=(quads[1]&0xff)<<16;
-	addr|=(quads[2]&0xff)<<8;
-	addr|=(quads[3]&0xff);
-	return addr;
+
+	quads = ip.split(".");
+
+	return quads[0] * 0x1000000 + quads[1] * 0x10000 + quads[2] * 0x100 + quads[3];
 }
 
 /* Convert an integer to an IP address, i.e. for receiving CTCP's */
@@ -271,7 +389,7 @@ function int_to_ip(ip) {
 		,(ip>>16)&0xff
 		,(ip>>8)&0xff
 		,ip&0xff
-		));
+	));
 }
 
 /* A handy object for keeping track of nicks and their properties */
@@ -295,3 +413,11 @@ function IRC_Server(name) {
 	this.info = "Unknown Server";
 }
 
+/* Object prototype for defining channel mode behaviour */
+function IRC_Channel_Mode(modechar,args,state,list,isnick) {
+	this.modechar = modechar;	/* The mode's character */
+	this.args = args;			/* Does this mode take only a single arg? */
+	this.state = state;			/* Stateful? (changes channel behaviour) */
+	this.list = list;			/* Does this mode accept a list? */
+	this.isnick = isnick;		/* Is nick (true) or a n!u@h mask (false) */
+}
