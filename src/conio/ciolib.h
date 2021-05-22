@@ -187,6 +187,9 @@ enum text_modes
 	/* New modes we've added 'cause they're stupid */
 	VGA80X25,
 
+	/* New modes we've added because DigitalMan bitched for DAYS! */
+	LCD80X25,
+
 	/* Cruft... */
 
 	C4350    = C80X50,	/* this is actually "64" in the "real" conio */
