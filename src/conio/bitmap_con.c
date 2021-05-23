@@ -1726,7 +1726,8 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 	cio_api.options |= CONIO_OPT_LOADABLE_FONTS | CONIO_OPT_BLINK_ALT_FONT
 			| CONIO_OPT_BOLD_ALT_FONT | CONIO_OPT_BRIGHT_BACKGROUND
 			| CONIO_OPT_SET_PIXEL | CONIO_OPT_CUSTOM_CURSOR
-			| CONIO_OPT_FONT_SELECT | CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING;
+			| CONIO_OPT_FONT_SELECT | CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING
+			| CONIO_OPT_BLOCKY_SCALING;
 	pthread_mutex_init(&blinker_lock, NULL);
 	pthread_mutex_init(&callbacks.lock, NULL);
 	pthread_mutex_init(&vstatlock, NULL);
