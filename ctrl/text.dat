@@ -808,7 +808,7 @@
 "\1l\1_\1g\1hFile Libraries:\r\n\r\n"                       658 CfgLibLstHdr
 "\1n\1g(\1h%d\1n\1g) %s\1h\r\n"                               659 CfgLibLstFmt
 "\1_\1c\1hListing \1n\1c(\1h%u\1n\1c) %s "\                     660 BatchFlagPrompt
-	"(\1h%u\1n\1c) %s (\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c Files\1n\1c): \1n\1~"
+	"(\1h%u\1n\1c) %s (\1h\1`?\1n\1c=Menu) (%5u\b\b\b\b\b\1h%u\1n\1c Files\1n\1c): \1n\1~"
 "\1n\1>\1q\1l\x014 \1h\1y[\1w\1~D\1y]ownload  \1h\1y[\1w\1~B\1y]atch  "\ 661 FileListBatchCommands
 	"[\1w\1~V\1y]iew Content  [\1w\1~E\1y]xtended Info  "\
 	"[\1w\1~P\1y]revious Page  [\1w\1~Q\1y]uit\1>\1n\r\n"
