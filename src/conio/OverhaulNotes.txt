@@ -22,6 +22,7 @@
     opens a whole can of worms regarding how further updates work etc.  I'll
     strive to keep it sane and compatible, which may be impossible.
 12) A Unicode cell will potentially have multiple codepoints "in" it.
+13) We need a way to specify the initial mode.
 
 Some sort of state checkpoint thing... you "save" the checkpoint, and send that
 ID back and you get the same state returned.

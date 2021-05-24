@@ -616,7 +616,7 @@ LoadFile(char *Name)
 		/* Check for "known" extensions */
 		ext=getfext(Name);
 		if(ext) {
-			if(stricmp(ext,".asc")==0) {
+			if(stricmp(ext,".asc")==0 || stricmp(ext, ".msg")==0) {
 				PCB=FALSE;
 				ANSI=FALSE;
 				AVATAR=FALSE;
