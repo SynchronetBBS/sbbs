@@ -1248,8 +1248,8 @@ void load_settings(struct syncterm_settings *set)
 	inifile=fopen(inipath,"r");
 	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
 	set->prompt_save=iniReadBool(inifile,"SyncTERM","PromptSave",TRUE);
-	set->startup_mode=iniReadEnum(inifile,"SyncTERM","VideoMode",screen_modes,SCREEN_MODE_CURRENT);
-	set->startup_mode=iniReadEnum(inifile,"SyncTERM","ScreenMode",screen_modes,set->startup_mode);
+	set->startup_mode=iniReadEnum(inifile,"SyncTERM","VideoMode",screen_modes_enum,SCREEN_MODE_CURRENT);
+	set->startup_mode=iniReadEnum(inifile,"SyncTERM","ScreenMode",screen_modes_enum,set->startup_mode);
 	set->output_mode=iniReadEnum(inifile,"SyncTERM","OutputMode",output_enum,CIOLIB_MODE_AUTO);
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
 	set->xfer_success_keypress_timeout=iniReadInteger(inifile,"SyncTERM", "TransferSuccessKeypressTimeout", /* seconds: */0);
@@ -1624,11 +1624,11 @@ int main(int argc, char **argv)
 		cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
 	ciolib_reaper=FALSE;
 	seticon(syncterm_icon.pixel_data,syncterm_icon.width);
+	textmode(text_mode);
 	if (settings.scaling_factor)
 		setscaling(settings.scaling_factor);
 	if (settings.window_width && settings.window_height)
 		setwinsize(settings.window_width, settings.window_height);
-	textmode(text_mode);
 
 	gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {

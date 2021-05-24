@@ -893,7 +893,7 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 
 		const void *buff;
 		size_t size;
-		la_int64_t offset;
+		int64_t offset;
 
 		for(;;) {
 			result = archive_read_data_block(ar, &buff, &size, &offset);

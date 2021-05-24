@@ -386,7 +386,7 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 
 			const void *buff;
 			size_t size;
-			la_int64_t offset;
+			int64_t offset;
 
 			for(;;) {
 				result = archive_read_data_block(ar, &buff, &size, &offset);
@@ -500,7 +500,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		size_t total = 0;
 		const void *buff;
 		size_t size;
-		la_int64_t offset;
+		int64_t offset;
 
 		for(;;) {
 			result = archive_read_data_block(ar, &buff, &size, &offset);
