@@ -209,9 +209,14 @@ void xfer_opts()
 					uifc.helpbuf=
 						"`Viewable File Types:`\n"
 						"\n"
-						"This is a list of file types that have content information that can be\n"
-						"viewed on the Terminal Server through the execution of an external\n"
-						"program."
+						"This is a list of file types (extensions) that have content information\n"
+						"that can be viewed on the Terminal Server through the execution of an\n"
+						"external program or script.\n"
+						"\n"
+						"The file types/extensions are case insensitive and may contain wildcard\n"
+						"characters (i.e. `?` or `*`).\n"
+						"\n"
+						"Specify the filename argument on the command-line with `%s` or `%f`."
 					;
 					i=uifc.list(i,0,0,50,&fview_dflt,&fview_bar,"Viewable File Types",opt);
 					if(i==-1)
@@ -245,8 +250,8 @@ void xfer_opts()
 								continue; 
 							}
 							memset(cfg.fview[0],0,sizeof(fview_t));
-							strcpy(cfg.fview[0]->ext,"ZIP");
-							strcpy(cfg.fview[0]->cmd,"%@unzip -vq %s"); 
+							strcpy(cfg.fview[0]->ext,"*");
+							strcpy(cfg.fview[0]->cmd,"?archive list %f"); 
 						}
 						else {
 							for(j=cfg.total_fviews;j>i;j--)
@@ -464,6 +469,7 @@ void xfer_opts()
 						"\n"
 						"This is a list of file types that will have a command line executed to\n"
 						"perform an event upon their download (e.g. trigger a download event).\n"
+						"\n"
 						"The file types are specified by `extension` and if one file extension\n"
 						"is listed more than once, each command line will be executed. The\n"
 						"command lines must return a error level of 0 (no error) in order\n"
@@ -597,10 +603,11 @@ void xfer_opts()
 					uifc.helpbuf=
 						"`Extractable File Types:`\n"
 						"\n"
-						"This is a list of archive file types that can be extracted to the temp\n"
-						"directory by an external program. The file types are specified by their\n"
-						"extension. For each file type you must specify the command line used to\n"
-						"extract the file(s).\n"
+						"List of external extraction methods available by file type/extension.\n"
+						"\n"
+						"Support for extracting archives of common formats (i.e. `zip`, etc.)\n"
+						"is built-into Synchronet (requires no external program), however may be\n"
+						"extended via external archive/extraction programs configured here."
 					;
 					i=uifc.list(i,0,0,50,&fextr_dflt,&fextr_bar,"Extractable File Types",opt);
 					if(i==-1)
@@ -717,9 +724,11 @@ void xfer_opts()
 					uifc.helpbuf=
 						"`Compressible File Types:`\n"
 						"\n"
-						"This is a list of compression methods available for different file types.\n"
-						"These will be used for items such as creating QWK packets, temporary\n"
-						"files from the transfer section, and more.\n"
+						"List of external compression methods available by file type/extension.\n"
+						"\n"
+						"Support for creating archives of common formats (i.e. `zip`, `7z`, `tgz`, `tbz`)\n"
+						"is built-into Synchronet (requires no external program), however may be\n"
+						"extended via external compression/archive programs configured here."
 					;
 					i=uifc.list(i,0,0,50,&fcomp_dflt,&fcomp_bar,"Compressible File Types",opt);
 					if(i==-1)
