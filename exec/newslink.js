@@ -338,8 +338,13 @@ var exported=0;
 var imported=0;
 var subimported=0;
 var subpending=0;
-var twitlist_fname = system.ctrl_dir + "twitlist.cfg";
-var use_twitlist = file_exists(twitlist_fname);
+var twitlist = [];
+
+var f = new File(system.ctrl_dir + "twitlist.cfg");
+if(f.open("r")) {
+	twitlist = f.readAll();
+	f.close();
+}
 
 function article_listed(list, article)
 {
@@ -894,11 +899,13 @@ for(sub in area) {
 
 		// Duplicate/looped message detection here
 		if(hdr.id.indexOf('@' + system.inetaddr)!=-1) {
+			log(LOG_DEBUG, "Duplicate/looped message-ID: " + hdr.id);
 			subpending--;
 			continue;
 		}
 		if(hdr.path
 			&& hdr.path.indexOf(system.inetaddr)!=-1) {
+			log(LOG_DEBUG, "Duplicate/looped message path: " + hdr.path);
 			subpending--;
 			continue;
 		}
@@ -907,6 +914,7 @@ for(sub in area) {
 
 		if(hdr.gateway
 			&& hdr.gateway.indexOf(system.inetaddr)!=-1) {
+			log(LOG_DEBUG, "Duplicate/looped message gateway: " + hdr.gateway);
 			subpending--;
 			continue;
 		}
@@ -918,10 +926,11 @@ for(sub in area) {
 			subpending--;
 			continue;
 		}
-		if(use_twitlist 
-			&& (system.findstr(twitlist_fname,hdr.from) 
-				|| system.findstr(twitlist_fname,hdr.to))) {
-			printf("Filtering message from %s to %s\r\n", hdr.from, hdr.to);
+		if(twitlist.length
+			&& (system.findstr(twitlist,hdr.from)
+				|| system.findstr(twitlist,hdr.from_net_addr)
+				|| system.findstr(twitlist,hdr.to))) {
+			printf("Filtering message from %s (%s) to %s\r\n", hdr.from, hdr.from_net_addr, hdr.to);
 			subpending--;
 			continue;
 		}
