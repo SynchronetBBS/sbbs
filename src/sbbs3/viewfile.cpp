@@ -85,67 +85,47 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 }
 
 /*****************************************************************************/
-/* View viewable file types from dir 'dirnum'                                */
-/* 'fspec' must be padded                                                    */
 /*****************************************************************************/
-void sbbs_t::viewfiles(uint dirnum, char *fspec)
+bool sbbs_t::viewfile(const char* path)
 {
-	char	tmp[512];
     char	viewcmd[256];
     int		i;
 
-	curdirnum=dirnum;	/* for ARS */
-	SAFEPRINTF2(viewcmd,"%s%s",cfg.dir[dirnum]->path,fspec);
-	if(!fexist(viewcmd)) {
+	if(!fexist(path)) {
 		bputs(text[FileNotFound]);
-		return; 
+		return false; 
 	}
-	char* file_ext = getfext(fspec);
+	char* file_ext = getfext(path);
 	if(file_ext == NULL) {
-		bprintf(text[NonviewableFile], fspec);
-		return; 
+		bprintf(text[NonviewableFile], getfname(path));
+		return false;
 	}
 	for(i=0;i<cfg.total_fviews;i++)
-		if(!stricmp(file_ext + 1, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
+		if(wildmatchi(file_ext + 1, cfg.fview[i]->ext, /* path: */false) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
 			SAFECOPY(viewcmd,cfg.fview[i]->cmd);
-			break; 
+			break;
 		}
-	if(i==cfg.total_fviews) {
+	if(i >= cfg.total_fviews) {
 		bprintf(text[NonviewableFile], file_ext);
-		return; 
+		return false;
 	}
-	SAFEPRINTF2(tmp, "%s%s", cfg.dir[dirnum]->path, fspec);
-	if((i=external(cmdstr(viewcmd,tmp,tmp,NULL),EX_STDIO|EX_SH))!=0)
+	if((i=external(cmdstr(viewcmd, path, path, NULL), EX_STDIO|EX_SH))!=0) {
 		errormsg(WHERE,ERR_EXEC,viewcmd,i);    /* must have EX_SH to ^C */
+		return false;
+	}
+	return true;
 }
 
 /****************************************************************************/
 /****************************************************************************/
-void sbbs_t::viewfilecontents(file_t* f)
+bool sbbs_t::viewfilecontents(file_t* f)
 {
-	char	cmd[128];
-	char	path[MAX_PATH+1];
-	char* 	ext;
-	int		i;
+	char	path[MAX_PATH + 1];
 
 	getfilepath(&cfg, f, path);
-	if(getfilesize(&cfg, f) < 1) {
-		bprintf(text[FileDoesNotExist], path);
-		return; 
-	}
-	if((ext=getfext(path))!=NULL) {
-		ext++;
-		for(i=0;i<cfg.total_fviews;i++) {
-			if(!stricmp(ext,cfg.fview[i]->ext)
-				&& chk_ar(cfg.fview[i]->ar,&useron,&client)) {
-				SAFECOPY(cmd,cfg.fview[i]->cmd);
-				break; 
-			} 
-		}
-	}
-	if(ext==NULL || i==cfg.total_fviews)
-		bprintf(text[NonviewableFile],ext);
-	else
-		if((i=external(cmdstr(cmd,path,path,NULL),EX_STDIO))!=0)
-			errormsg(WHERE,ERR_EXEC,cmdstr(cmd,path,path,NULL),i);
+	uint savedir = curdirnum;
+	curdirnum = f->dir;	/* for ARS */
+	bool result = viewfile(path);
+	curdirnum = savedir;
+	return result;
 }

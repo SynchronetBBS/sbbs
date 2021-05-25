@@ -1076,8 +1076,8 @@ public:
 
 	/* viewfile.cpp */
 	int		viewfile(file_t* f, bool extdesc);
-	void	viewfiles(uint dirnum, char *fspec);
-	void	viewfilecontents(file_t* f);
+	bool	viewfile(const char* path);
+	bool	viewfilecontents(file_t* f);
 
 	/* xtrn.cpp */
 	int		external(const char* cmdline, long mode, const char* startup_dir=NULL);
