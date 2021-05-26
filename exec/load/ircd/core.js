@@ -2684,12 +2684,12 @@ function accept_new_socket() {
 
 	sock = this.accept();
 
-	sock.array_buffer = false; /* JS78, we want strings */
-
 	if (!sock) {
 		log(LOG_DEBUG,"!ERROR " + sock.error + " accepting connection");
 		return 1;
 	}
+
+	sock.array_buffer = false; /* JS78, we want strings */
 
 	log(LOG_DEBUG,"Accepting new connection on port " + sock.local_port);
 
