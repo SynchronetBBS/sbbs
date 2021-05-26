@@ -535,8 +535,10 @@ function Xtrnsec(sec)
 		this.ypos=console.screen_rows-j-1;
 	this.xpos=40-xtrnsecprogwidth-2;
 	this.add("\xda"+bars80.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
-	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++)
-		this.add("|"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
+	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++) {
+		if (xtrn_area.sec_list[sec].prog_list[j].can_access)
+			this.add("|"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
+	}
 	this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
 }
 Xtrnsec.prototype=ShellLB.prototype;
