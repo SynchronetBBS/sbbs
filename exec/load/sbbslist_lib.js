@@ -13,7 +13,7 @@ var sort_property = 'name';
 
 // These max lengths are derived from the bbs_t structure definition in xtrn/sbl/sbldefs.h:
 const max_len = {
-	name:				40,		/* Synchronet allows 40, I think this restricted by 25-char QWK msg subjs in sbldefs.h */
+	name:				30,		/* Synchronet allows 40, I think this restricted by 25-char QWK msg subjs in sbldefs.h */
 	phone_number:		25,		/* only the first 12 chars are backwards compatible with SBL v3 */
 	location:			30,
 	sysop_name:			25,
