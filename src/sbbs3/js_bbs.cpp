@@ -2146,6 +2146,34 @@ js_batchaddlist(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_viewfile(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+	char*		cstr;
+
+	if((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+ 	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], cstr, NULL);
+	if(cstr == NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->viewfile(cstr)));
+	free(cstr);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4318,6 +4346,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("list_filename")
 	,JSDOCSTR("add file list to batch download queue")
 	,310
+	},
+	{"view_file",		js_viewfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("list contents of specified filename (complete path)")
+	,319
 	},
 	{"send_file",		js_sendfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename [,protocol] [,description] [,autohang=true]")
 	,JSDOCSTR("send specified filename (complete path) to user via user-prompted "
