@@ -814,7 +814,7 @@ const list_formats = [
 	[ "since", "software", "web_site" ],
 	[ "description" ],
 	[ "networks"],
-	[ "nodes", "users", "subs", "dirs", "doors", "msgs", "files", "storage"],
+	[ "nodes", "users", "subs", "dirs", "doors", "msgs", "files"],
 	[ "protocols"],
 	[ "created_by", "created_on" ],
 	[ "updated_by", "updated_on" ],
