@@ -46,7 +46,7 @@ function on_or_off(on)
 
 // Set continue point for main menu commands
 menu:
-while(1) {
+while(bbs.online && !console.aborted) {
 	var str="";
 
 	// Display TEXT\MENU\CHAT.* if not in expert mode
