@@ -107,8 +107,14 @@ else while((msg=readln())!=undefined) {	/* read from stdin */
 while(my_server.poll(0) && (response=my_server.recvline()))
 	mylog(response);
 
-if(my_server.sendline("PING :"+ nick)) {
-	mylog(my_server.recvline());
+var token = format("%x", random(0x7fffffff));
+if(my_server.sendline("PING :"+ token)) {
+	while(my_server.poll(5)) {
+		var response = my_server.recvline();
+		mylog(response);
+		if(response == (":" + server + " PONG " + server + " :" + token))
+			break;
+	}
 }
 
 IRC_quit(my_server);
