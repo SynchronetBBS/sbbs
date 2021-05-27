@@ -65,7 +65,7 @@ if(!my_server) {
 }
 
 var done=0;
-while(!done) {
+while(!done && !js.terminated) {
 	while(!done && (response=my_server.recvline())) {
 		var resp=response.split(/\s+/);
 		if(resp[1]=='433') {
@@ -106,6 +106,10 @@ else while((msg=readln())!=undefined) {	/* read from stdin */
 
 while(my_server.poll(0) && (response=my_server.recvline()))
 	mylog(response);
+
+if(my_server.sendline("PING :"+ nick)) {
+	mylog(my_server.recvline());
+}
 
 IRC_quit(my_server);
 mylog("Exiting");
