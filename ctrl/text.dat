@@ -239,7 +239,7 @@
 "\1n\1c(\1h%u\1n\1c) %s"                                     196 ShortHdrDir
 "\1r\1hFilenames, specs, or flags [None]: \1m\1h\1~"        197 BatchDlFlags
 "\r\n\7\1r\1h\1iBatch download queue is full.\1n\r\n"       198 BatchDlQueueIsFull
-"\1_\r\n\1y\1hFilespec [\1wAll Files\1y]: \1n"              199 FileSpecStarDotStar
+"\1_\1?\1y\1hFilespec [\1wAll Files\1y]: \1n"               199 FileSpecStarDotStar
 "\r\n\r\n\1r\1h\1iNot enough free disk space.\1n\r\n"\      200 LowDiskSpace
 	"\r\n\1hThe sysop has been notified.\1n\r\n"
 "\r\n%s kilobytes free\r\n\r\n"                         201 DiskNBytesFree
@@ -353,7 +353,7 @@
 "\r\nUnextractable file type.\r\n"                      289 UnextractableFile
 "\r\nFile not found.\r\n"                               290 FileNotFound
 "\r\n~Extract file(s), ~View archive, or ~Quit: "       291 ExtractFilesPrompt
-"\1_\r\n\1y\1hTemp Directory: \1n"                          292 TempDirPrompt
+"\1_\1?\1y\1hTemp Directory: \1n"                        292 TempDirPrompt
 "\1n\r\n%s not created yet.\r\n"\                        293 TempFileNotCreatedYet
 	"\r\nUse the \1hA\1n command to create it.\r\n"
 "\r\nUploader: %s\r\nFilename: %s\r\n"                  294 TempFileInfo
