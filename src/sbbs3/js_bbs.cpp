@@ -3459,6 +3459,38 @@ js_getfilespec(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_export_filelist(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	uint32		mode=0;
+	char*		fname=NULL;
+    JSString*	js_str;
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return JS_FALSE;
+
+	uintN argn = 0;
+	js_str = JS_ValueToString(cx, argv[argn]);
+	JSSTRING_TO_MSTRING(cx, js_str, fname, NULL);
+	HANDLE_PENDING(cx, fname);
+	argn++;
+	if(JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToECMAUint32(cx, argv[argn], &mode)) {
+			free(fname);
+			return JS_FALSE;
+		}
+		argn++;
+	}
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->create_filelist(fname, mode)));
+	free(fname);
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
+static JSBool
 js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4448,6 +4480,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("add files (already in local storage path) to file directory "
 		"specified by number or internal code")
 	,310
+	},
+	{"export_filelist",	js_export_filelist,	2,	JSTYPE_NUMBER,	JSDOCSTR("filename [,mode=<tt>FL_NONE</tt>]")
+	,JSDOCSTR("export list of files to a text file, optionally specifying a file list mode (e.g. <tt>FL_ULTIME</tt>), returning the number of files listed")
+	,319
 	},
 	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt> or search_string] [,mode=<tt>FL_NONE</tt>]")
 	,JSDOCSTR("list files in the specified file directory, "
