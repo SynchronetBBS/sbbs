@@ -1496,8 +1496,7 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 
 	var ww_serverdesc = ServerDesc;
 
-	var tmp = "QUIT :" + str;
-	this.bcast_to_uchans_unique(tmp);
+	this.bcast_to_uchans_unique(format("QUIT :%s", str));
 	for (i in this.channels) {
 		this.rmchan(this.channels[i]);
 	}
@@ -1510,8 +1509,14 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 		WhoWas[nick_uc] = new Array;
 	var ww = WhoWas[nick_uc];
 
-	var ptr = ww.unshift(new WhoWasObj(this.nick, this.uprefix, this.hostname,
-		this.realname, this.servername, ww_serverdesc)) - 1;
+	var ptr = ww.unshift(new WhoWasObj(
+		this.nick,
+		this.uprefix,
+		this.hostname,
+		this.realname,
+		this.servername,
+		ww_serverdesc
+	)) - 1;
 	WhoWasMap.unshift(ww[ptr]);
 
 	if (WhoWasMap.length > MAX_WHOWAS) {
@@ -1523,12 +1528,9 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 	}
 
 	if (!suppress_bcast)
-		this.bcast_to_servers(tmp);
+		this.bcast_to_servers(format("QUIT :%s", str));
 
 	if (this.local) {
-		/* We purge the queue and send immediately */
-		this.recvq.purge();
-		this.sendq.purge();
 		if (this.socket.is_connected) {
 			this.socket.send(format("ERROR :Closing Link: [%s@%s] (%s)\r\n",
 				this.uprefix,

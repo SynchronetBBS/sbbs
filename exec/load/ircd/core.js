@@ -487,6 +487,9 @@ function ircout(str) {
 /* this = socket object passed from sock.on() */
 function Socket_Recv() {
 	if (!this.is_connected) {
+		/* We purge the queue and send immediately */
+		this.irc.recvq.purge();
+		this.irc.sendq.purge();
 		this.irc.quit("Connection reset by peer.");
 		return 1;
 	}
