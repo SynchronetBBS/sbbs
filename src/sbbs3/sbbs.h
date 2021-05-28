@@ -581,9 +581,6 @@ public:
 	uint 	main_cmds;		/* Number of Main Commands this call */
 	uint 	xfer_cmds;		/* Number of Xfer Commands this call */
 	ulong	posts_read; 	/* Number of Posts read this call */
-	char 	temp_uler[31];  /* User who uploaded the files to temp dir */
-	char 	temp_file[41];	/* Origin of extracted temp files */
-	long 	temp_cdt;		/* Credit value of file that was extracted */
 	bool 	autohang;		/* Used for auto-hangup after transfer */
 	size_t 	logcol; 		/* Current column of log file */
 	uint 	criterrs; 		/* Critical error counter */
@@ -1070,7 +1067,6 @@ public:
 
 	/* tmp_xfer.cpp */
 	void	temp_xfer(void);
-	void	extract(uint dirnum);
 	const char*	temp_cmd(void);					/* Returns temp file command line */
 	ulong	create_filelist(const char *name, long mode);
 
