@@ -1656,6 +1656,7 @@ void sys_cfg(void)
 					break;
 			case 12: /* Loadable Modules */
 				done=0;
+				bar=0;
 				k=0;
 				while(!done) {
 					i=0;
@@ -1669,8 +1670,8 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Auto Message",cfg.automsg_mod);
 					sprintf(opt[i++],"%-16.16s%s","Text Section",cfg.textsec_mod);
 					sprintf(opt[i++],"%-16.16s%s","Xtrn Section",cfg.xtrnsec_mod);
-					sprintf(opt[i++],"%-16.16s%s","Pre Xtrn Prog",cfg.prextrn_mod);
-					sprintf(opt[i++],"%-16.16s%s","Post Xtrn Prog",cfg.postxtrn_mod);
+					sprintf(opt[i++],"%-16.16s%s","Pre Xtrn",cfg.prextrn_mod);
+					sprintf(opt[i++],"%-16.16s%s","Post Xtrn",cfg.postxtrn_mod);
 					sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
@@ -1679,6 +1680,7 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","List Nodes",cfg.nodelist_mod);
 					sprintf(opt[i++],"%-16.16s%s","Who's Online",cfg.whosonline_mod);
 					sprintf(opt[i++],"%-16.16s%s","Private Msg",cfg.privatemsg_mod);
+					sprintf(opt[i++],"%-16.16s%s","Temp Transfer",cfg.tempxfer_mod);
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`Loadable Modules:`\n"
@@ -1688,34 +1690,35 @@ void sys_cfg(void)
 						"operations. The name (root filename) of the module can be specified for\n"
 						"each of the available operations listed below:\n"
 						"\n"
-						"`Login`        Required module for interactive terminal logins (answer)\n"
-						"`Logon`        Executed during terminal logon procedure\n"
-						"`Sync`         Executed when terminal nodes are periodically synchronized\n"
-						"`Logoff`       Executed during terminal logoff procedure (interactive)\n"
-						"`Logout`       Executed during terminal logout procedure (offline)\n"
-						"`New User`     Executed at end of new terminal user creation process\n"
-						"`Expired User` Executed during daily event when user expires (offline)\n"
-						"`Auto Message` Executed when a user chooses to edit the auto-message\n"
-						"`Text Section` Executed to handle general text file (viewing) section\n"
-						"`Xtrn Section` Executed to handle external programs (doors) section\n"
-						"`Xtrn Prog Pre` Executed before external programs (doors) run\n"
-						"`Xtrn Prog Post` Executed after external programs (doors) run\n"
+						"`Login`         Required module for interactive terminal logins (answer)\n"
+						"`Logon`         Executed during terminal logon procedure\n"
+						"`Sync`          Executed when terminal nodes are periodically synchronized\n"
+						"`Logoff`        Executed during terminal logoff procedure (interactive)\n"
+						"`Logout`        Executed during terminal logout procedure (offline)\n"
+						"`New User`      Executed at end of new terminal user creation process\n"
+						"`Expired User`  Executed during daily event when user expires (offline)\n"
+						"`Auto Message`  Executed when a user chooses to edit the auto-message\n"
+						"`Text Section`  Executed to handle general text file (viewing) section\n"
+						"`Xtrn Section`  Executed to handle external programs (doors) section\n"
+						"`Pre Xtrn`      Executed before external programs (doors) run\n"
+						"`Post Xtrn`     Executed after external programs (doors) run\n"
+						"`Temp Transfer` Temporary/archive file transfer menu\n"
 						"\n"
 						"Full module command-lines may be used for the operations listed below:\n"
 						"\n"
-						"`Read Mail`    Executed when a user reads email/netmail\n"
-						"`Scan Msgs`    Executed when a user reads or scans a message sub-board\n"
-						"`Scan Subs`    Executed when a user scans one or more sub-boards for msgs\n"
-						"`List Msgs`    Executed when a user lists msgs from the msg read prompt\n"
-						"`List Logons`  Executed when a user lists logons ('-y' for yesterday)\n"
-						"`List Nodes`   Executed when a user lists all nodes\n"
-						"`Who's Online` Executed when a user lists the nodes in-use (e.g. `^U`)\n"
-						"`Private Msg`  Executed when a user sends a private node msg (e.g. `^P`)\n"
+						"`Read Mail`     Executed when a user reads email/netmail\n"
+						"`Scan Msgs`     Executed when a user reads or scans a message sub-board\n"
+						"`Scan Subs`     Executed when a user scans one or more sub-boards for msgs\n"
+						"`List Msgs`     Executed when a user lists msgs from the msg read prompt\n"
+						"`List Logons`   Executed when a user lists logons ('-y' for yesterday)\n"
+						"`List Nodes`    Executed when a user lists all nodes\n"
+						"`Who's Online`  Executed when a user lists the nodes in-use (e.g. `^U`)\n"
+						"`Private Msg`   Executed when a user sends a private node msg (e.g. `^P`)\n"
 						"\n"
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 						"      in your `exec` or `mods` directories.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_T2B|WIN_RHT,0,0,40,&k,0
+					switch(uifc.list(WIN_ACT|WIN_T2B|WIN_RHT,0,0,40,&k,&bar
 						,"Loadable Modules",opt)) {
 
 						case -1:
@@ -1801,6 +1804,10 @@ void sys_cfg(void)
 						case 19:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Private Message Command"
 								,cfg.privatemsg_mod,sizeof(cfg.privatemsg_mod)-1,K_EDIT);
+							break;
+						case 20:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Temporary File Transfer Module"
+								,cfg.tempxfer_mod, sizeof(cfg.tempxfer_mod)-1, K_EDIT);
 							break;
 					} 
 				}
