@@ -338,10 +338,6 @@ function Server_Work(cmdline) {
 			break;
 		if (!j.channels[tmp.nam.toUpperCase()])
 			break;
-/*		if (p[2])
-			kick_reason = IRC_string(cmdline,3).slice(0,MAX_KICKLEN);
-		else
-			kick_reason = ThisOrigin.nick; */
 		origin.bcast_to_channel(tmp, format(
 			"KICK %s %s :%s",
 			tmp.nam,
@@ -362,7 +358,6 @@ function Server_Work(cmdline) {
 			break;
 		if (p[0].match(/[.]/))
 			break;
-		/* var reason = p[1] */
 		k = p[0].split(",");
 		for (i in k) {
 			tmp = Users[k[i].toUpperCase()];
@@ -405,18 +400,18 @@ function Server_Work(cmdline) {
 	case "LINKS":
 		if (!p[1] || origin.server)
 			break;
-		if (match_irc_mask(ServerName, p[0])) {
-			origin.do_links(p[1]);
-			break;
-		}
-		tmp = searchbyserver(p[0]);
+		tmp = searchbyserver(p[1]);
 		if (!tmp)
 			break;
+		if (tmp == -1) {
+			origin.do_links(p[0]);
+			break;
+		}
 		tmp.rawout(format(
 			":%s LINKS %s %s",
 			origin.nick,
-			tmp.nick,
-			p[1]
+			p[0],
+			tmp.nick
 		));
 		break;
 	case "MODE":
