@@ -252,13 +252,18 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->logonlist_mod, "logonlist");
 
 	get_str(cfg->prextrn_mod,instream);
-	if(cfg->prextrn_mod[0] == '\xff') 
+	if(cfg->prextrn_mod[0] == '\xff')
 	    SAFECOPY(cfg->prextrn_mod, "prextrn");
 	get_str(cfg->postxtrn_mod,instream);
-	if(cfg->postxtrn_mod[0] == '\xff') 
-	    SAFECOPY(cfg->postxtrn_mod, "postxtrn");		
-		
-	for(i=0;i<117;i++)					/* unused - initialized to 0xff */
+	if(cfg->postxtrn_mod[0] == '\xff')
+	    SAFECOPY(cfg->postxtrn_mod, "postxtrn");
+
+	get_str(cfg->tempxfer_mod, instream);
+	if(cfg->tempxfer_mod[0] == '\xff') 
+	    SAFECOPY(cfg->tempxfer_mod, "tempxfer");
+
+	get_int(c, instream);
+	for(i=0;i<112;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
 
 	get_int(cfg->user_backup_level,instream);

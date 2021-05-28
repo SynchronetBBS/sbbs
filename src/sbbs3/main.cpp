@@ -3464,7 +3464,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
     main_cmds = 0;
     xfer_cmds = 0;
     posts_read = 0;
-    temp_cdt = 0;
     autohang = 0;
     curgrp = 0;
     curlib = 0;
