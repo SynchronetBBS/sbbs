@@ -56,11 +56,12 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 	if(mode&FL_ULTIME) {
 		fprintf(fp, "New files since: %s\r\n", timestr(ns_time));
 	}
+	unsigned total_dirs = 0;
+	for(i=0; i < usrlibs ;i++)
+		total_dirs += usrdirs[i];
 	for(i=j=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,d++) {
-			outchar('.');
-			if(d && !(d%5))
-				bputs("\b\b\b\b\b     \b\b\b\b\b");
+			progress(text[Scanning], d, total_dirs, 10);
 			if(mode&FL_ULTIME /* New-scan */
 				&& (cfg.lib[usrlib[i]]->offline_dir==usrdir[i][j]
 				|| cfg.dir[usrdir[i][j]]->misc&DIR_NOSCAN))
@@ -73,6 +74,7 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 		if(j<usrdirs[i])
 			break;
 	}
+	progress(text[Done], d, total_dirs);
 	if(k>1) {
 		fprintf(fp,"\r\n%ld Files Listed.\r\n",k);
 	}
