@@ -1568,6 +1568,10 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		SKIP_WHITESPACE(p);
 		SAFECOPY(echotag,p);         /* Areatag Field */
 		truncstr(echotag," \t\r\n");
+		if(echotag[0] == '*') {
+			fprintf(afileout, "%s\n", fields);	/* Don't allow down-links to our "Unknown area" */
+			continue;
+		}
 		FIND_WHITESPACE(p);
 		SKIP_WHITESPACE(p);
 		if((tp=strchr(p,';'))!=NULL) {
