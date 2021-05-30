@@ -1073,8 +1073,15 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 void sbbs_t::listfiletofile(file_t* f, FILE* fp)
 {
 	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
-	fprintf(fp, "%-*s %10lu %s\r\n", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE)
-		,(ulong)getfilesize(&cfg, f), f->desc);
+	char bytes[32];
+	unsigned units = 1;
+	off_t size = getfilesize(&cfg, f);
+	do {
+		byte_estimate_to_str(size, bytes, sizeof(bytes), units, /* precision: */1);
+		units *= 1024;
+	} while(strlen(bytes) > 6 && units < 1024 * 1024 * 1024);
+	fprintf(fp, "%-*s %7s %s\r\n", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE)
+		,bytes, (f->desc == NULL || *f->desc == '\0') ? f->name : f->desc);
 }
 
 int extdesclines(char *str)
