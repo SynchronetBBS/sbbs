@@ -39,17 +39,21 @@ if(hdr.attr & MSG_MODERATED) {
 }
 if(Number(hdr.from_ext) > 0) {
 	template.u_num = hdr.from_ext;
-	usr = new User(template.u_num);
-	template.author_firston = strftime("%m/%d/%y",usr.stats.firston_date);
-	template.author_posts = usr.stats.total_posts;
+	usr = null;
+	try {
+		usr = new User(template.u_num);
+		template.author_firston = strftime("%m/%d/%y",usr.stats.firston_date);
+		template.author_posts = usr.stats.total_posts;
+	} catch(e) {
+	}
 	if(sub!='mail') {
 	if((user.compare_ars(msg_area.sub[sub].operator_ars) && msg_area.sub[sub].operator_ars != '' || user.number==1) && show_ip==true) {
 		template.author_ip='IP: ' + usr.note + '<br /><br />';
 	}
 	template.author_ismod = '<br />Member<br /><br />';
-	if(usr.compare_ars(msg_area.sub[sub].operator_ars) && msg_area.sub[sub].operator_ars != '' || usr.number==1)
+	if(usr && (usr.compare_ars(msg_area.sub[sub].operator_ars) && msg_area.sub[sub].operator_ars != '' || usr.number==1))
 		template.author_ismod = '<br />Moderator<br /><br />';
-	if(file_exists(prefs_dir + format("%04d.html_prefs",usr.number))); {
+	if(usr && file_exists(prefs_dir + format("%04d.html_prefs",usr.number))) {
 		prefsfile=new File(prefs_dir + format("%04d.html_prefs",usr.number));
 		if(prefsfile.open("r",false)) {
 			if(prefsfile.iniGetValue('Profile', 'Avatar', '')!='') {
