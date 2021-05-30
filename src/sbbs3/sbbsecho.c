@@ -1542,8 +1542,6 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		fclose(nmfile);
 		return;
 	}
-	if(stat(cfg.areafile, &st) == 0)
-		fchmod(file, st.st_mode);
 	if((afileout=fdopen(file, "w+"))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) line %d fdopening %s",errno,strerror(errno),__LINE__,outpath);
 		fclose(nmfile);
@@ -1786,6 +1784,8 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		lprintf(LOG_DEBUG, "AreaFix (for %s) Removed links to %lu areas in %s"
 			,smb_faddrtoa(&addr,NULL), (ulong)deleted, cfg.areafile);
 	if(added || deleted) {
+		if(stat(cfg.areafile, &st) == 0)
+			chmod(outpath, st.st_mode);
 		if(cfg.areafile_backups == 0 || !backup(cfg.areafile, cfg.areafile_backups, /* ren: */TRUE))
 			delfile(cfg.areafile, __LINE__);					/* Delete AREAS.BBS */
 		if(rename(outpath,cfg.areafile))		   /* Rename new AREAS.BBS file */
