@@ -1525,6 +1525,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	unsigned u;
 	size_t add_count, added = 0;
 	size_t del_count, deleted = 0;
+	struct stat st = {0};
 
 	add_count = strListCount(add_area);
 	del_count = strListCount(del_area);
@@ -1541,6 +1542,8 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		fclose(nmfile);
 		return;
 	}
+	if(stat(cfg.areafile, &st) == 0)
+		fchmod(file, st.st_mode);
 	if((afileout=fdopen(file, "w+"))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) line %d fdopening %s",errno,strerror(errno),__LINE__,outpath);
 		fclose(nmfile);
