@@ -64,6 +64,11 @@ and viewable file types/extensions remain limited to 3 characters in SCFG.
 Similarly, a maximum length of 3 character archive "types" are stored per BBS
 user record (for each user's QWK packet format and temp archive preference).
 
+Since support for the viewing and extraction of several common archive formats
+is now built into Synchronet, files uploaded with unrecognized or unsupported
+file extensions (e.g. ".tar.gz" instead of ".tgz") may still be successfully
+extracted or viewed.
+
 _Large Files_
 
 Files greater in size than 2GB or 4GB (depending) were previously a problem.
@@ -90,10 +95,8 @@ characters in length for practical purposes. Though longer file summaries
 
 Extended (multi-line) descriptions may now span more than the previous limit
 of 10 lines or 512 total characters. There is no technical limit to the length
-of extended file descriptions, though a limit of 1024 characters imported from
-description files embedded in archives (e.g. FILE_ID.DIZ) is being imposed. If
-you have a need for longer (than 1024 character) extended descriptions
-imported from embedded description files, please provide me with details.
+of extended file descriptions, though a limit of 4000 characters imported from
+description files embedded in archives (e.g. FILE_ID.DIZ) is being imposed.
 
 _Batches_
 
@@ -140,7 +143,7 @@ _JavaScript_
 
 The new "FileBase" class is used (similar to the existing MsgBase class) to
 open and access filebases from JavaScript modules. Using this class, the
-defaults methods of listing and transferring files can be replaced with
+default methods of listing and transferring files can be replaced with
 custom modules.
 
 _TickIT_
@@ -153,18 +156,19 @@ _Utilities_
 
 The native utilities ADDFILES, FILELIST, DELFILES, and DUPEFIND have been
 replaced with similarly named and purposed JavaScript utility scripts to be
-invoked with JSexec:
+invoked with JSexec or via timed event:
 - addfiles.js for importing lists of files into filebases
 - postfile.js for importing a single file into a filebase
 - filelist.js for generating file listings from filebases
 - delfiles.js for removing files from filebases
-- dupefind.js for discovering and reporting duplicate files in the filebases
+- dupefind.js for detecting/listing/removing duplicate files in the filebases
 
 _Performance_
 
 Due to the nature and use of the new filebase API, file listings are much
 faster (e.g. large file listings from the Synchronet FTP server) as well as
-filename/pattern, description text, and duplicate-file searching.
+improved performance when filename/pattern, description text, and duplicate
+file searching.
 
 _FTP Server_
 
@@ -191,7 +195,7 @@ Formats fully supported:
 - bzipped-tar
 
 Formats supported for viewing and extraction only:
-- rar
+- rar (original and RAR v5 format)
 - lha/lzh
 - iso
 - xar
@@ -204,12 +208,16 @@ command-line need be configured.
 
 For listing the contents of archives, the new archive.js utility script may be
 installed as a "Viewable File Type" handler for the commonly supported file
-extensions by running 'jsexec archive.js install'.
+extensions by running 'jsexec archive.js install'. This installs archive.js as
+a final "fall-through" viewer for "*" files (all file types).
 
 _DIZ_
 
 Description files embedded in archives (e.g. FILE_ID.DIZ) are now supported
-more uniformly and seamlessly.
+more uniformly and seamlessly. Supported ANSI sequences (e.g. attribute/color
+changes) are now converted to Ctrl-A equivalents upon import. Metadata
+(e.g. declaring the file's author or group) is now imported from SAUCE records
+of DIZ files, when it exists.
 
 _File Echoes_
 
@@ -218,11 +226,6 @@ Each file transfer directory configured in SCFG->File Areas may now have an
 an Area Tag is not explicitly set, then the directory's short name is used
 (with spaces replaced with underscores) automatically. tickit.js now uses
 this new "area_tag" file_area.dir[] JS property for its "AutoAreas" feature.
-
-_User to User Files_
-
-The user to user file transfer feature has been removed. Send file attachments
-with email/netmail if you want to send files to users.
 
 _Opened Files_
 
