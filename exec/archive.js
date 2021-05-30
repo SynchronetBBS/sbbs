@@ -108,33 +108,16 @@ function list(filename, verbose)
 
 function install()
 {
-	var viewable_exts = [
-		'7z',
-		'exe',
-		'bz',
-		'gz',
-		'iso',
-		'lha',
-		'lzh',
-		'tbz',
-		'tgz',
-		'rar',
-		'xar',
-		'zip'
-	];
-
 	var cnflib = load({}, "cnflib.js");
 	var file_cnf = cnflib.read("file.cnf");
 	if(!file_cnf) {
 		alert("Failed to read file.cnf");
 		exit(-1);
 	}
-	for(var e in viewable_exts) {
-		file_cnf.fview.push({
-			extension: viewable_exts[e],
-			cmd: '?archive list %f'
-			});
-	}
+	file_cnf.fview.push({
+		extension: "*",
+		cmd: '?archive list %f'
+		});
 	if(!cnflib.write("file.cnf", undefined, file_cnf)) {
 		alert("Failed to write file.cnf");
 		exit(-1);
