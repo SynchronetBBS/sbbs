@@ -60,7 +60,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 	file_t* file_list = loadfiles(&smb
 		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
 		, (mode&FL_ULTIME) ? ns_time : 0
-		, file_detail_extdesc
+		, tofile == NULL ? file_detail_extdesc : file_detail_normal
 		, (enum file_sort)cfg.dir[dirnum]->sort
 		, &file_count);
 	if(file_list == NULL || file_count < 1) {
@@ -1074,14 +1074,16 @@ void sbbs_t::listfiletofile(file_t* f, FILE* fp)
 {
 	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
 	char bytes[32];
+	char desc[LEN_FDESC + 1];
 	unsigned units = 1;
-	off_t size = getfilesize(&cfg, f);
+	off_t size = f->cost;
 	do {
 		byte_estimate_to_str(size, bytes, sizeof(bytes), units, /* precision: */1);
 		units *= 1024;
 	} while(strlen(bytes) > 6 && units < 1024 * 1024 * 1024);
+	SAFECOPY(desc, (f->desc == NULL || *f->desc == '\0') ? f->name : f->desc);
 	fprintf(fp, "%-*s %7s %s\r\n", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE)
-		,bytes, (f->desc == NULL || *f->desc == '\0') ? f->name : f->desc);
+		,bytes, ascii_str((uchar*)desc));
 }
 
 int extdesclines(char *str)
