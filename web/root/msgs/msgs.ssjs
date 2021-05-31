@@ -3,6 +3,8 @@
 load("../web/lib/msgslib.ssjs");
 load("../web/lib/mime_decode.ssjs");
 
+if(!msgbase)
+    error("msgbase not defined");
 if(msgbase.open!=undefined && msgbase.open()==false) {
     error(msgbase.last_error);
 }
