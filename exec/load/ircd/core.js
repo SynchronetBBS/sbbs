@@ -1871,8 +1871,8 @@ function IRCClient_do_complex_who(cmd) {
 	var sf_voice = false;
 	var sf_done = false;
 	var tmp_wc = who.Channel;
-	for (cc in tmp_wc) {
-		switch(tmp_wc[cc]) {
+	for (i in tmp_wc) {
+		switch(tmp_wc[i]) {
 			case "@":
 				sf_op = true;
 				who.Channel = who.Channel.slice(1);
