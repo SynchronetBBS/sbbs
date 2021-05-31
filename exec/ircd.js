@@ -143,6 +143,7 @@ if (server === undefined) {
 Startup();
 
 js.do_callbacks = true;
+js.branch_limit = 0; /* Disable infinite loop detection */
 
 function config_rehash_semaphore_check() {
 	if(file_date(system.ctrl_dir + "ircd.rehash") > Time_Config_Read) {
