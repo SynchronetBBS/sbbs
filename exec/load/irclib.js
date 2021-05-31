@@ -379,7 +379,10 @@ function ip_to_int(ip) {
 
 	quads = ip.split(".");
 
-	return quads[0] * 0x1000000 + quads[1] * 0x10000 + quads[2] * 0x100 + quads[3];
+	return parseInt(quads[0]) * 0x1000000
+		+ parseInt(quads[1]) * 0x10000
+		+ parseInt(quads[2]) * 0x100
+		+ parseInt(quads[3]);
 }
 
 /* Convert an integer to an IP address, i.e. for receiving CTCP's */
