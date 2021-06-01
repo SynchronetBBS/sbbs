@@ -744,6 +744,7 @@ int output_map[]={
 #ifdef __unix__
 	,CIOLIB_MODE_CURSES
 	,CIOLIB_MODE_CURSES_IBM
+	,CIOLIB_MODE_CURSES_ASCII
 #endif
 	,CIOLIB_MODE_ANSI
 #if defined(__unix__) && !defined(NO_X)
