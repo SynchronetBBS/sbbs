@@ -71,6 +71,7 @@ static Display *dpy=NULL;
 static Window win;
 static Cursor curs = None;
 static Visual visual;
+static bool VisualIsRGB8 = false;
 static XImage *xim;
 static XIM im;
 static XIC ic;
@@ -284,6 +285,13 @@ static int init_window()
 	}
 	if (best != -1) {
 		visual = *vi[best].visual;
+		/*
+		 * TODO: Set VisualIsRGB8 if appropriate...
+		 * "appropriate" in this context means it's a sequence of
+		 * unpadded uint32_t values in XXRRGGBB format where XX is
+		 * ignored, and RR, GG, and BB are Red, Green, Blue values
+		 * respectively.
+		 */
 		base_pixel = ULONG_MAX;
 		base_pixel &= ~visual.red_mask;
 		base_pixel &= ~visual.green_mask;
@@ -477,7 +485,6 @@ local_draw_rect(struct rectlist *rect)
 	int idx;
 	uint32_t last_pixel = 0x55555555;
 	struct graphics_buffer *source;
-	bool isRGB8 = false;
 
 	if (bitmap_width != rect->rect.width || bitmap_height != rect->rect.height) {
 		bitmap_drv_free_rect(rect);
@@ -513,8 +520,6 @@ local_draw_rect(struct rectlist *rect)
 
 	/* TODO: Translate into local colour depth */
 	idx = 0;
-	if (visual.red_mask == 0xff0000 && visual.green_mask == 0x00ff00 && visual.blue_mask == 0x0000ff)
-		isRGB8 = true;
 
 	for (y = 0; y < source->h; y++) {
 		for (x = 0; x < source->w; x++) {
@@ -534,7 +539,7 @@ local_draw_rect(struct rectlist *rect)
 					continue;
 				}
 			}
-			if (isRGB8) {
+			if (VisualIsRGB8) {
 				pixel = source->data[idx];
 				((uint32_t*)xim->data)[idx] = pixel;
 			}
