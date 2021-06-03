@@ -1772,6 +1772,7 @@ int main(int argc, char **argv)
 				FREE_AND_NULL(conio_fontdata[i].desc);
 			}
 			load_font_files();
+			setfont(find_font_id(bbs->font),TRUE,1);
 			if(doterm(bbs))
 				quitting=TRUE;
 			fake_mode = -1;
