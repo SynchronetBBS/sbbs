@@ -3007,7 +3007,6 @@ static char *get_request(http_session_t * session, char *req_line)
 		/* Remove port specification from vhost (if present) */
 		remove_port_part(session->req.vhost);
 
-		/* Sets p to point to the first character after the first slash */
 		p=strchr(session->req.physical_path, '/');
 
 		/*
