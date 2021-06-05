@@ -138,7 +138,7 @@ $(MAILSRVR): $(MAIL_OBJS)
 # Web Server Link Rule
 $(WEBSRVR): $(WEB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) -o $@
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) -o $@ $(ENCODE_LIBS)
 
 # Services Link Rule
 $(SERVICES): $(SERVICE_OBJS)
