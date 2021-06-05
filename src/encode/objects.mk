@@ -11,6 +11,7 @@ OBJS	=	 \
 		$(OBJODIR)$(DIRSEP)uucode$(OFILE) \
 		$(OBJODIR)$(DIRSEP)yenc$(OFILE) \
 		$(OBJODIR)$(DIRSEP)lzh$(OFILE) \
+		$(OBJODIR)$(DIRSEP)hex$(OFILE) \
 		$(OBJODIR)$(DIRSEP)base64$(OFILE)
 
 
