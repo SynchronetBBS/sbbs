@@ -3148,6 +3148,15 @@ static BOOL is_legal_host(const char *host, BOOL strip_port)
 	return TRUE;
 }
 
+static BOOL is_legal_path(const char* path)
+{
+#ifdef _WIN32	// Fix for Issue 269 (NTFS Alternate Data Stream vulnerability) and other potential unexpected pathname issues on Windows
+	if (strchr(path, ':') != NULL)
+		return FALSE;
+#endif
+	return TRUE;
+}
+
 static BOOL get_req(http_session_t * session, char *request_line)
 {
 	char	req_line[MAX_REQUEST_LINE+1];
@@ -3195,6 +3204,10 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				return FALSE;
 			}
 			if (!is_legal_host(session->req.vhost, FALSE)) {
+				send_error(session,__LINE__,"400 Bad Request");
+				return FALSE;
+			}
+			if (!is_legal_path(session->req.physical_path)) {
 				send_error(session,__LINE__,"400 Bad Request");
 				return FALSE;
 			}
