@@ -58,6 +58,7 @@
 #include "websrvr.h"
 #include "base64.h"
 #include "md5.h"
+#include "hex.h"
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "js_socket.h"
@@ -2977,7 +2978,7 @@ static char *get_request(http_session_t * session, char *req_line)
 
 	/* Must initialize physical_path before calling is_dynamic_req() */
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
-	unescape(session->req.physical_path);
+	hex_decode('%', session->req.physical_path);
 
 	if (strnicmp(session->req.physical_path,http_scheme,http_scheme_len) == 0) {
 		scheme = http_scheme;
