@@ -97,7 +97,9 @@ char *usage=
 "       s    = display msg base status\n"
 "       c    = change msg base status\n"
 "       R    = re-initialize/repair SMB/status headers\n"
-"       d    = delete all msgs\n"
+"       D    = delete and remove all msgs (not reversable)\n"
+"       d    = flag all msgs for deletion\n"
+"       u    = undelete all msgs (remove delete flag)\n"
 "       m    = maintain msg base - delete old msgs and msgs over max\n"
 "       p[k] = pack msg base (k specifies minimum packable Kbytes)\n"
 "       L    = lock a msg base for exclusive-access/backup\n"
@@ -1321,7 +1323,56 @@ void packmsgs(ulong packable)
 	printf("\nDone.\n\n");
 }
 
-void delmsgs(void)
+int delmsgs(BOOL del)
+{
+	int count = 0;
+	int result;
+	smbmsg_t msg;
+
+	for(int i = 0; i < smb.status.total_msgs; i++) {
+		ZERO_VAR(msg);
+		msg.idx_offset = i;
+		result = smb_getmsgidx(&smb, &msg);
+		if(result != SMB_SUCCESS) {
+			fprintf(errfp, "\n%s!smb_getmsgidex returned %d: %s\n"
+				,beep, result, smb.last_error);
+			continue;
+		}
+		if(del) {
+			if(msg.idx.attr & MSG_DELETE)
+				continue;
+			msg.idx.attr |= MSG_DELETE;
+		} else {
+			if(!(msg.idx.attr & MSG_DELETE))
+				continue;
+			msg.idx.attr &= ~MSG_DELETE;
+		}
+		result = smb_lockmsghdr(&smb, &msg);
+		if(result != SMB_SUCCESS) {
+			fprintf(errfp, "\n%s!smb_lockmsghdr returned %d: %s\n"
+				,beep, result, smb.last_error);
+			continue;
+		}
+		result = smb_getmsghdr(&smb, &msg);
+		if(result != SMB_SUCCESS) {
+			fprintf(errfp, "\n%s!smb_getmsghdr returned %d: %s\n"
+				,beep, result, smb.last_error);
+			continue;
+		}
+		msg.hdr.attr = msg.idx.attr;
+		result = smb_putmsg(&smb, &msg);
+		if(result != SMB_SUCCESS) {
+			fprintf(errfp, "\n%s!smb_putmsg returned %d: %s\n"
+				,beep, result, smb.last_error);
+			continue;
+		}
+		smb_unlockmsghdr(&smb, &msg);
+		count++;
+	}
+	return count;
+}
+
+void removemsgs(void)
 {
 	int i;
 
@@ -1837,7 +1888,7 @@ int main(int argc, char **argv)
 							y=strlen(cmd)-1;
 							break;
 						case 'p':
-						case 'd':
+						case 'D':
 						case 'L':
 							if((i=smb_lock(&smb))!=0) {
 								fprintf(errfp,"\n%s!smb_lock returned %d: %s\n"
@@ -1852,7 +1903,7 @@ int main(int argc, char **argv)
 									packmsgs(atol(cmd+y+1));
 									break;
 								case 'D':
-									delmsgs();
+									removemsgs();
 									break;
 							}
 							y=strlen(cmd)-1;
@@ -1862,6 +1913,12 @@ int main(int argc, char **argv)
 								printf("%s unlocked successfully\n", smb.file);
 							else
 								fprintf(errfp, "\nError %d (%s) unlocking %s\n", i, smb.last_error, smb.file);
+							break;
+						case 'u':
+						case 'd':
+							printf("%d msgs %sdeleted.\n"
+								,delmsgs(cmd[y] == 'd')
+								,cmd[y] == 'u' ? "un" : "");
 							break;
 						case 'r':
 							readmsgs(getmsgnum(cmd+1), count);
