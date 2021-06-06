@@ -204,7 +204,7 @@
 "\1/\1w\1hSearching current library @ELLIPSIS@\r\n\1q"   166 SearchingAllDirs
 "\1w\1hSearching all libraries @ELLIPSIS@\r\n\1q"         167 SearchingAllLibs
 "\r\n\1w\1h%u Files Listed.\r\n"                          168 NFilesListed
-"\r\n\1w\1hEmpty directory.\r\n"                          169 EmptyDir
+"\1?\1w\1hEmpty directory.\r\n"                           169 EmptyDir
 "\1?\1cSearching for files "\                             170 NScanHdr
 	"uploaded after\1\\ \1h%s\1n\r\n"
 "\1?You can't remove files.\r\n"                           171 R_RemoveFiles
@@ -244,7 +244,7 @@
 	"\r\n\1hThe sysop has been notified.\1n\r\n"
 "\r\n%s kilobytes free\r\n\r\n"                         201 DiskNBytesFree
 "\1_\1y\1hFilename: \1n"                                    202 Filename
-"\r\n\1r\1hBad filename.\r\n"                             203 BadFilename
+"\1/\1r\1hBad filename: '%s'\r\n"                           203 BadFilename
 "Upload '%s' to Sysop directory"                        204 UploadToSysopDirQ
 "Upload '%s' to User directory"                         205 UploadToUserDirQ
 "Upload '%s' to %s\1\\ %s"                                  206 UploadToCurDirQ
