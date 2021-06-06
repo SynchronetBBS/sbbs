@@ -336,7 +336,7 @@ function remove_file(fname)
 {
 	if (file_remove(fname))
 		log(LOG_INFO, "Deleted file: " + fname);
-	else
+	else if(file_exists(fname))
 		log(LOG_ERROR, "Error " + errno + " (" + errno_str + ") deleting file: " + fname);
 }
 
