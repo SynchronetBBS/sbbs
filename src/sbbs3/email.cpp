@@ -130,7 +130,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 
 	if(mode&WM_FILE) {
 		if(!checkfname(title)) {
-			bputs(text[BadFilename]);
+			bprintf(text[BadFilename], title);
 			(void)remove(msgpath);
 			return(false);
 		}
