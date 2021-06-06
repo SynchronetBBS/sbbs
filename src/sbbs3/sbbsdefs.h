@@ -261,6 +261,10 @@
 #define DIR_NOHASH		(1<<22)		/* Don't auto calculate/store file content hashes */
 #define DIR_FILETAGS	(1<<23)		/* Allow files to have user-specified tags */
 
+#define FM_SAFEST		(1<<1)		/* Allow safest filenames to be uploaded only */
+#define FM_SPACES		(1<<2)		/* Allow spaces in uploaded filenames */
+#define FM_EXASCII		(1<<3)		/* Allow extended-ASCII (or UTF-8) in uploaded filenames */
+
 									/* Bit values for cfg.msg_misc (upper 16-bits default to on) */
 #define MM_REALNAME	(1<<16)			/* Allow receipt of e-mail using real names	*/
 #define MM_EMAILSIG	(1<<17)			/* Include user signatures in e-mail msgs */

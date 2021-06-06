@@ -4573,7 +4573,7 @@ static void ctrl_thread(void* arg)
 					ftp_hacklog("FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
 					continue;
 				}
-				if(!allowed_filename(p)) {
+				if(!allowed_filename(&scfg, p)) {
 					lprintf(LOG_WARNING,"%04d <%s> !UNALLOWED FILENAME ATTEMPT by %s [%s]: %s"
 						,sock, user.alias, host_name, host_ip, p);
 					sockprintf(sock,sess,"553 Unallowed filename attempt");

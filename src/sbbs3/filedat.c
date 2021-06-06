@@ -1250,31 +1250,49 @@ bool illegal_filename(const char *fname)
 {
 	size_t len = strlen(fname);
 
-	if(*fname == '-')
+	if(len < 1)
 		return true;
 	if(strcspn(fname, ILLEGAL_FILENAME_CHARS) != len)
 		return true;
 	if(strstr(fname, "..") != NULL)
 		return true;
+	if(*fname == '-') // leading dash is a problem for argument parsing
+		return true;
+	if(*fname == '.') // leading dot hides files on *nix
+		return true;
+	if(*fname == ' ') // leading space is a problem for argument parsing (shells)
+		return true;
+	if(fname[len - 1] == '.') // a trailing dot is a problem for Windows
+		return true;
+	if(fname[len - 1] == ' ') // a trailing space is a problem for argument parsing (shells)
+		return true;
+	for(size_t i = 0; i < len; i++) {
+		if(IS_CONTROL(fname[i])) // control characters in filenames are evil
+			return true;
+	}
+
 	return false;
 }
 
-/*****************************************************************************/
-/* Checks the filename 'fname' for invalid symbol or character sequences     */
-/*****************************************************************************/
-bool allowed_filename(const char *fname)
+/****************************************************************************/
+/* Checks if the filename chars meet the system requirements for upload		*/
+/* Assumes the filename has already been checked with illegal_filename()	*/
+/****************************************************************************/
+bool allowed_filename(scfg_t* cfg, const char *fname)
 {
 	size_t len = strlen(fname);
-
 	if(len < 1)
 		return false;
 
+	if(cfg->file_misc & FM_SAFEST)
+		return safest_filename(fname);
+
+	uchar min = (cfg->file_misc & FM_SPACES) ? ' ' : '!';
+	uchar max = (cfg->file_misc & FM_EXASCII) ? 0xff : 0x7f;
+
 	for(size_t i = 0; i < len; i++) {
-		if(fname[i] <= ' ')
+		if((uchar)fname[i] < min || (uchar)fname[i] > max)
 			return false;
 	}
-	if(*fname == '.' // leading dot hides files on *nix
-		|| fname[len - 1] == '.') // a trailing dot is a problem for Win32
-		return false;
 	return true;
 }
