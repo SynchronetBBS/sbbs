@@ -48,6 +48,7 @@ while(!file.from && !js.terminated) {
 	file.from = prompt("Uploader");
 }
 
+file.cost = file_size(dir.path + file.name);
 print("Adding " + file.name + " to " + filebase.file);
 if(filebase.add(file))
 	print(format("File (%s) added successfully to: ", file.name) + code);
