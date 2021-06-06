@@ -1235,3 +1235,46 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
     return(cmd);
 }
 
+/****************************************************************************/
+/* Is this filename made up of only the "safest" characters?				*/
+/****************************************************************************/
+bool safest_filename(const char* fname)
+{
+	return strspn(fname, SAFEST_FILENAME_CHARS) == strlen(fname);
+}
+
+/****************************************************************************/
+/* Is this filename highly-suspicious?										*/
+/****************************************************************************/
+bool illegal_filename(const char *fname)
+{
+	size_t len = strlen(fname);
+
+	if(*fname == '-')
+		return true;
+	if(strcspn(fname, ILLEGAL_FILENAME_CHARS) != len)
+		return true;
+	if(strstr(fname, "..") != NULL)
+		return true;
+	return false;
+}
+
+/*****************************************************************************/
+/* Checks the filename 'fname' for invalid symbol or character sequences     */
+/*****************************************************************************/
+bool allowed_filename(const char *fname)
+{
+	size_t len = strlen(fname);
+
+	if(len < 1)
+		return false;
+
+	for(size_t i = 0; i < len; i++) {
+		if(fname[i] <= ' ')
+			return false;
+	}
+	if(*fname == '.' // leading dot hides files on *nix
+		|| fname[len - 1] == '.') // a trailing dot is a problem for Win32
+		return false;
+	return true;
+}
