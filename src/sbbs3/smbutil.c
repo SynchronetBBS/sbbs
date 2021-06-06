@@ -1329,7 +1329,7 @@ int delmsgs(BOOL del)
 	int result;
 	smbmsg_t msg;
 
-	for(int i = 0; i < smb.status.total_msgs; i++) {
+	for(uint i = 0; i < smb.status.total_msgs; i++) {
 		ZERO_VAR(msg);
 		msg.idx_offset = i;
 		result = smb_getmsgidx(&smb, &msg);
