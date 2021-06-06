@@ -1040,7 +1040,7 @@ public:
 	bool	removefile(smb_t*, file_t*);
 	bool	movefile(smb_t*, file_t*, int newdir);
 	char *	getfilespec(char *str);
-	bool	checkfname(char *fname);
+	bool	checkfname(const char *fname);
 	bool	addtobatdl(file_t*);
 	bool	clearbatdl(void);
 	bool	clearbatul(void);
@@ -1099,7 +1099,7 @@ public:
 	bool	errormsg_inside;
 	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
 				,long access=0, const char *extinfo=NULL);
-	BOOL	hacklog(char* prot, char* text);
+	BOOL	hacklog(const char* prot, const char* text);
 
 	/* qwk.cpp */
 	ulong	qwkmail_last;

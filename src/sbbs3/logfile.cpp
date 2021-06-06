@@ -57,7 +57,7 @@ extern "C" BOOL hacklog(scfg_t* cfg, const char* prot, const char* user, const c
 	return true;
 }
 
-BOOL sbbs_t::hacklog(char* prot, char* text)
+BOOL sbbs_t::hacklog(const char* prot, const char* text)
 {
 	return ::hacklog(&cfg, prot, useron.alias, text, client_name, &client_addr);
 }
