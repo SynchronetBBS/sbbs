@@ -757,7 +757,7 @@ long delfiles(const char *inpath, const char *spec, size_t keep)
 	else
 		strcpy(path,inpath);
 	strcat(path,spec);
-	glob(path,0,NULL,&g);
+	glob(path, GLOB_PERIOD, NULL, &g);
 	free(path);
 	if(keep >= g.gl_pathc)
 		return 0;
