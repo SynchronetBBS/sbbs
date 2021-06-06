@@ -69,6 +69,13 @@ void xfer_opts()
 		else
 			strcpy(str,"Disabled");
 		sprintf(opt[i++],"%-33.33s%s","Leech Protocol Detection",str);
+		if(cfg.file_misc & FM_SAFEST)
+			SAFECOPY(str, "Safest Subset");
+		else
+			SAFEPRINTF2(str, "Most %s, %scluding Spaces"
+				,cfg.file_misc & FM_EXASCII ? "CP437" : "ASCII"
+				,cfg.file_misc & FM_SPACES ? "In" : "Ex");
+		sprintf(opt[i++], "%-33.33s%s", "Allow Filename Characters", str);
 		strcpy(opt[i++],"Viewable Files...");
 		strcpy(opt[i++],"Testable Files...");
 		strcpy(opt[i++],"Download Events...");
@@ -186,13 +193,89 @@ void xfer_opts()
 					"\n"
 					"This option allows you to adjust the sensitivity of the leech protocol\n"
 					"detection feature. This value is the minimum length of transfer time\n"
-					"(in seconds) that must elapse before an aborted tranfser will be\n"
+					"(in seconds) that must elapse before an aborted transfer will be\n"
 					"considered a possible leech attempt.\n"
 				;
 				uifc.input(WIN_MID,0,0
 					,"Leech Protocol Minimum Time (in Seconds)"
 					,ultoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
 				cfg.leech_sec=atoi(tmp);
+				break;
+			case __COUNTER__:	/* Uploaded Filename characters allowed */
+				i = 0;
+				strcpy(opt[i++], "Safest Subset Only (A-Z, a-z, 0-9, -, _, and .)");
+				strcpy(opt[i++], "Most ASCII Characters, Excluding Spaces");
+				strcpy(opt[i++], "Most ASCII Characters, Including Spaces");
+				strcpy(opt[i++], "Most CP437 Characters, Excluding Spaces");
+				strcpy(opt[i++], "Most CP437 Characters, Including Spaces");
+				opt[i][0] = '\0';
+				if(cfg.file_misc & FM_SAFEST)
+					j = 0;
+				else {
+					j = 1;
+					if(cfg.file_misc & FM_EXASCII)
+						j = 3;
+					if(cfg.file_misc & FM_SPACES)
+						j++;
+				}
+				uifc.helpbuf=
+					"`Allowed Characters in Uploaded Filenames:`\n"
+					"\n"
+					"Here you can control which characters will be allowed in the names of\n"
+					"files uploaded by users (assuming you allow file uploads at all).\n"
+					"\n"
+					"The `Safest` (most compatible) filename characters to allow are:\n"
+					"`" SAFEST_FILENAME_CHARS "`\n"
+					"\n"
+					"`Spaces` may be allowed in filenames, but may cause issues with some file\n"
+					"transfer protocol drivers or clients (older/MS-DOS software).\n"
+					"\n"
+					"Filenames that are most often troublesome (including those in your\n"
+					"`text/file.can` file) are `always disallowed`:\n"
+					"    Filenames beginning with dash (`-`)\n"
+					"    Filenames beginning or ending in space\n"
+					"    Filenames beginning or ending in period (`.`)\n"
+					"    Filenames containing consecutive periods (`..`)\n"
+					"    Filenames containing illegal characters (`" ILLEGAL_FILENAME_CHARS "`)\n"
+					"    Filenames containing control characters (ASCII 0-31 and 127)\n"
+				;
+				i = uifc.list(0, 0, 0, 0, &j, NULL, "Allowed Characters in Uploaded Filenames", opt);
+				switch(i) {
+					case 0:
+						if(cfg.file_misc != FM_SAFEST) {
+							cfg.file_misc |= FM_SAFEST;
+							cfg.file_misc &= ~(FM_EXASCII | FM_SPACES);
+							uifc.changes = TRUE;
+						}
+						break;
+					case 1:
+						if(cfg.file_misc) {
+							cfg.file_misc &= ~(FM_SAFEST | FM_SPACES | FM_EXASCII);
+							uifc.changes = TRUE;
+						}
+						break;
+					case 2:
+						if(cfg.file_misc != FM_SPACES) {
+							cfg.file_misc &= ~(FM_SAFEST | FM_EXASCII);
+							cfg.file_misc |= FM_SPACES;
+							uifc.changes = TRUE;
+						}
+						break;
+					case 3:
+						if(cfg.file_misc != FM_EXASCII) {
+							cfg.file_misc &= ~(FM_SAFEST | FM_SPACES);
+							cfg.file_misc |= FM_EXASCII;
+							uifc.changes = TRUE;
+						}
+						break;
+					case 4:
+						if(cfg.file_misc != (FM_EXASCII | FM_SPACES)) {
+							cfg.file_misc &= ~(FM_SAFEST);
+							cfg.file_misc |= FM_EXASCII | FM_SPACES;
+							uifc.changes = TRUE;
+						}
+						break;
+				}
 				break;
 			case __COUNTER__: 	/* Viewable file types */
 				while(1) {
