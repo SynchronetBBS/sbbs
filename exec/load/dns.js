@@ -402,7 +402,7 @@ DNS.prototype.handle_response = function(sock) {
 	ret.recusrion_desired = !!(ascii(resp[2]) & (1));
 	ret.recusrion_available = !!(ascii(resp[2]) & (1<<7));
 	ret.reserved = (ascii(resp[3]) & 0x70) >> 4;
-	ret.rcode = ascii(resp[3] & 0x0f);
+	ret.rcode = ascii(resp[3]) & 0x0f;
 
 	queries = string_to_int16(resp.substr(4, 2));
 	answers = string_to_int16(resp.substr(6, 2));
