@@ -276,7 +276,7 @@ bool sbbs_t::upload(uint dirnum)
 
 	f.dir=curdirnum=dirnum;
 	bputs(text[Filename]);
-	if(getstr(fname, sizeof(fname) - 1, 0) < 1 || !checkfname(fname)) {
+	if(getstr(fname, sizeof(fname) - 1, K_TRIM) < 1 || !checkfname(fname)) {
 		if(fname[0])
 			bprintf(text[BadFilename], fname);
 		return(false); 
@@ -335,6 +335,10 @@ bool sbbs_t::upload(uint dirnum)
 				bprintf(text[FileAlreadyOnline],fname);
 				if(!dir_op(dirnum))
 					return(false); 	 /* File is in database for another dir */
+			}
+			if(msgabort(true)) {
+				bputs(text[SearchedForDupes]);
+				return false;
 			}
 		}
 	}
