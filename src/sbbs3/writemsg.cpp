@@ -486,7 +486,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		}
 		if((mode&WM_FILE) && !checkfname(subj)) {
 			free(buf);
-			bputs(text[BadFilename]);
+			bprintf(text[BadFilename], subj);
 			return(false);
 		}
 		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && cfg.sub[subnum]->misc&SUB_QNET
