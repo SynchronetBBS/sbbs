@@ -50,7 +50,7 @@
 #define FNOPEN_BUF_SIZE		(2*1024)
 
 #define MAX_FILENAME_LEN		64
-#define ILLEGAL_FILENAME_CHARS	"\\/|<>:\";,%"
+#define ILLEGAL_FILENAME_CHARS	"\\/|<>:\";,%?*"
 #define SAFEST_FILENAME_CHARS	"-._0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 #define BIND_FAILURE_HELP	"!Another application or service may be using this port"
