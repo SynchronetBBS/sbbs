@@ -512,6 +512,10 @@ void sbbs_t::batch_upload()
 		SAFEPRINTF2(src, "%s%s", cfg.temp_dir,dirent->d_name);
 		if(isdir(src))
 			continue;
+		if(!checkfname(dirent->d_name)) {
+			bprintf(text[BadFilename], dirent->d_name);
+			continue;
+		}
 		SAFEPRINTF2(dest, "%s%s", cfg.dir[cfg.upload_dir]->path, dirent->d_name);
 		if(fexistcase(dest)) {
 			bprintf(text[FileAlreadyOnline], dirent->d_name);
@@ -520,9 +524,9 @@ void sbbs_t::batch_upload()
 		if(mv(src, dest, /* copy: */false))
 			continue;
 
-		bputs(text[SearchingForDupes]);
 		uint x,y;
 		for(x=0;x<usrlibs;x++) {
+			progress(text[SearchingForDupes], x, usrlibs, 1);
 			for(y=0;y<usrdirs[x];y++)
 				if(cfg.dir[usrdir[x][y]]->misc&DIR_DUPES
 					&& findfile(&cfg,usrdir[x][y], dirent->d_name, NULL))
