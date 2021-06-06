@@ -276,7 +276,7 @@ bool sbbs_t::upload(uint dirnum)
 
 	f.dir=curdirnum=dirnum;
 	bputs(text[Filename]);
-	if(getstr(fname, sizeof(fname) - 1, 0) < 1 || strchr(fname,'?') || strchr(fname,'*') || !checkfname(fname)) {
+	if(getstr(fname, sizeof(fname) - 1, 0) < 1 || !checkfname(fname)) {
 		if(fname[0])
 			bprintf(text[BadFilename], fname);
 		return(false); 
