@@ -4565,13 +4565,18 @@ static void ctrl_thread(void* arg)
 						continue;
 					}
 				}
-				if(*p=='-'
-					|| strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)
+				if(illegal_filename(p)
 					|| trashcan(&scfg,p,"file")) {
 					lprintf(LOG_WARNING,"%04d <%s> !ILLEGAL FILENAME ATTEMPT by %s [%s]: %s"
 						,sock, user.alias, host_name, host_ip, p);
 					sockprintf(sock,sess,"553 Illegal filename attempt");
 					ftp_hacklog("FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
+					continue;
+				}
+				if(!allowed_filename(p)) {
+					lprintf(LOG_WARNING,"%04d <%s> !UNALLOWED FILENAME ATTEMPT by %s [%s]: %s"
+						,sock, user.alias, host_name, host_ip, p);
+					sockprintf(sock,sess,"553 Unallowed filename attempt");
 					continue;
 				}
 				SAFEPRINTF2(fname,"%s%s",scfg.dir[dir]->path,p);

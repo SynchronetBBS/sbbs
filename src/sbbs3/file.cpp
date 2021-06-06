@@ -138,24 +138,14 @@ extern "C" BOOL filematch(const char *filename, const char *filespec)
 /*****************************************************************************/
 /* Checks the filename 'fname' for invalid symbol or character sequences     */
 /*****************************************************************************/
-bool sbbs_t::checkfname(char *fname)
+bool sbbs_t::checkfname(const char *fname)
 {
-    int		c=0,d;
-
-	if(fname[0]=='-'
-		|| strcspn(fname,ILLEGAL_FILENAME_CHARS)!=strlen(fname)
-		|| strstr(fname, "..") != NULL) {
-		lprintf(LOG_WARNING,"Suspicious filename attempt: '%s'",fname);
-		hacklog((char *)"Filename", fname);
-		return(false); 
+	if(illegal_filename(fname) || trashcan(fname, "file")) {
+		lprintf(LOG_WARNING, "Suspicious filename attempt: '%s'", fname);
+		hacklog("Filename", fname);
+		return false;
 	}
-	d=strlen(fname);
-	while(c<d) {
-		if(fname[c]<=' ' || fname[c]&0x80)
-			return(false);
-		c++; 
-	}
-	return(true);
+	return allowed_filename(fname);
 }
 
 long sbbs_t::delfiles(const char *inpath, const char *spec, size_t keep)
