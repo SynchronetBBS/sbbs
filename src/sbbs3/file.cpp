@@ -145,7 +145,7 @@ bool sbbs_t::checkfname(const char *fname)
 		hacklog("Filename", fname);
 		return false;
 	}
-	return allowed_filename(fname);
+	return allowed_filename(&cfg, fname);
 }
 
 long sbbs_t::delfiles(const char *inpath, const char *spec, size_t keep)
