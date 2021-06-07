@@ -120,7 +120,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 char* sbbs_t::getfilespec(char *str)
 {
 	bputs(text[FileSpecStarDotStar]);
-	if(!getstr(str, MAX_FILENAME_LEN, K_NONE))
+	if(!getstr(str, MAX_FILENAME_LEN, K_TRIM))
 		strcpy(str, ALLFILES);
 	if(msgabort(true))
 		return NULL;
@@ -271,7 +271,7 @@ bool sbbs_t::editfilename(file_t* f)
 
 	bputs(text[EditFilename]);
 	SAFECOPY(str, f->name);
-	if(!getstr(str, sizeof(str) - 1, K_EDIT|K_AUTODEL))
+	if(!getstr(str, sizeof(str) - 1, K_EDIT|K_AUTODEL|K_TRIM))
 		return false;
 	if(msgabort(true))
 		return false;
@@ -336,7 +336,7 @@ bool sbbs_t::editfileinfo(file_t* f)
 		char uploader[LEN_ALIAS + 1];
 		SAFECOPY(uploader, f->from);
 		bputs(text[EditUploader]);
-		getstr(uploader, sizeof(uploader), K_EDIT|K_AUTODEL);
+		getstr(uploader, sizeof(uploader), K_EDIT|K_AUTODEL|K_TRIM);
 		if(msgabort(true))
 			return false;
 		if(*uploader != '\0' || *f->from != '\0')
