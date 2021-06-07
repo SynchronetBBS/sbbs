@@ -31,26 +31,26 @@
 /* Returns the number of the matched user or 0 if unsuccessful				*/
 /* Called from functions main_sec, useredit and readmailw					*/
 /****************************************************************************/
-uint sbbs_t::finduser(const char* instr, bool silent_failure)
+uint sbbs_t::finduser(const char* name, bool silent_failure)
 {
 	int file,i;
-	char str[128],str2[256],str3[256],ynq[25],c,pass=1;
+	char buf[256],ynq[25],c,pass=1;
+	char path[MAX_PATH + 1];
 	long l,length;
 	FILE *stream;
 
-	i=atoi(instr);
+	SKIP_WHITESPACE(name);
+	i=atoi(name);
 	if(i>0) {
-		username(&cfg, i,str2);
-		if(str2[0] && strcmp(str2,"DELETED USER"))
+		username(&cfg, i, buf);
+		if(buf[0] && strcmp(buf,"DELETED USER"))
 			return(i); 
 	}
-	SAFECOPY(str,instr);
-	strupr(str);
-	SAFEPRINTF(str3,"%suser/name.dat",cfg.data_dir);
-	if(flength(str3)<1L)
+	SAFEPRINTF(path,"%suser/name.dat",cfg.data_dir);
+	if(flength(path)<1L)
 		return(0);
-	if((stream=fnopen(&file,str3,O_RDONLY))==NULL) {
-		errormsg(WHERE,ERR_OPEN,str3,O_RDONLY);
+	if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
+		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 		return(0); 
 	}
 	SAFEPRINTF(ynq,"%.3s",text[YNQP]);
@@ -59,20 +59,18 @@ uint sbbs_t::finduser(const char* instr, bool silent_failure)
 		fseek(stream,0L,SEEK_SET);	/* seek to beginning for each pass */
 		for(l=0;l<length;l+=LEN_ALIAS+2) {
 			if(!online) break;
-			fread(str2,LEN_ALIAS+2,1,stream);
+			fread(buf,LEN_ALIAS+2,1,stream);
 			for(c=0;c<LEN_ALIAS;c++)
-				if(str2[c]==ETX) break;
-			str2[c]=0;
+				if(buf[c]==ETX) break;
+			buf[c]=0;
 			if(!c)		/* deleted user */
 				continue;
-			SAFECOPY(str3,str2);
-			strupr(str2);
-			if(pass==1 && !strcmp(str,str2)) {
+			if(pass==1 && matchusername(&cfg, name, buf)) {
 				fclose(stream);
 				return((l/(LEN_ALIAS+2))+1); 
 			}
-			if(pass==2 && strstr(str2,str)) {
-				bprintf(text[DoYouMeanThisUserQ],str3
+			if(pass==2 && strcasestr(buf, name)) {
+				bprintf(text[DoYouMeanThisUserQ], buf
 					,(uint)(l/(LEN_ALIAS+2))+1);
 				c=(char)getkeys(ynq,0);
 				if(sys_status&SS_ABORT) {
@@ -85,6 +83,7 @@ uint sbbs_t::finduser(const char* instr, bool silent_failure)
 				}
 				if(c==text[YNQP][2]) {
 					fclose(stream);
+					sys_status |= SS_ABORT;
 					return(0); 
 				} 
 			} 
