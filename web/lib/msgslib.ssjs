@@ -30,7 +30,7 @@ var sub=http_request.query.msg_sub;
 if(grp=='E-Mail')
 	sub='mail';
 var s=-1;
-if(sub != undefined)
+if(sub != undefined && msg_area.sub[sub] != undefined)
 	var msgbase = new MsgBase(sub);
 var message=http_request.query.message;
 var m=parseInt(http_request.query.message);
