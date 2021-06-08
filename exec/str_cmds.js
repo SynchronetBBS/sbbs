@@ -656,7 +656,7 @@ function str_cmds(str)
 			str=str.replace(/^\s+/,"");
 			if(str=="") {
 				write("\r\nPath and filename: ");
-				str=console.getstr("",60);
+				str=console.getstr("", 60, K_TRIM);
 				if(str=="")
 					return;
 			}
@@ -680,7 +680,7 @@ function str_cmds(str)
 			str=str.replace(/^\s+/,"");
 			if(str=="") {
 				write("\r\nPath and filename: ");
-				str=console.getstr("",60);
+				str=console.getstr("", 60, K_TRIM);
 				if(str=="")
 					return;
 			}
@@ -858,7 +858,7 @@ function get_arg(str, parm, history)
 	str=str.replace(/^\s+/,"");
 	if(str=="") {
 		write(format("%s: ", parm));
-		str=console.getstr(128, K_MSG, history);
+		str=console.getstr(128, K_MSG | K_TRIM, history);
 	}
 	if(str) {
 		var i = history.indexOf(str);
