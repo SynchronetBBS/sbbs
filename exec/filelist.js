@@ -75,6 +75,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -new=<days>     include new files uploaded in past <days>");
 			writeln("  -p=<list>       specify comma-separated list of property names to print");
 			writeln("  -cdt            include credit value instead of file size");
+			writeln("  -desc           include file summary / description");
 			writeln("  -ext            include extended file descriptions");
 			writeln("  -ext=<prefix>   specify extended file description prefix");
 			writeln("  -fmt=<fmt>      specify output format string (printf syntax)");
@@ -142,6 +143,10 @@ for(var i = 0; i < argc; i++) {
 			detail = FileBase.DETAIL.EXTENDED;
 			continue;
 		}
+		if(opt == "desc") {
+			detail = FileBase.DETAIL.NORM;
+			continue;
+		}
 		if(opt.indexOf("p=") == 0) {
 			props = props.concat(opt.slice(2).split(','));
 			continue;
@@ -185,7 +190,7 @@ for(var i = 0; i < argc; i++) {
 if(fmt != "json") {
 
 	if(options.hdr || props.length)
-		detail = FileBase.DETAIL.EXTENDED; //Math.max(0, detail);
+		detail = Math.max(FileBase.DETAIL.MIN, detail);
 
 	if(!props.length) {
 		var f = "%-" + name_len + "s";
@@ -247,7 +252,7 @@ for(var i = 0; i < dir_list.length; i++) {
 		for(var j = 0; j < list.length; j++) {
 			list[j].dir = dir_code;
 			if(list[j].extdesc)
-				list[j].extdesc = "\n" + list[j].extdesc;
+				list[j].extdesc = "\n" + truncsp(list[j].extdesc);
 			if(options.adate)
 				list[j].time = archive_date(base.get_path(list[j]));
 			if(options.cdt)
