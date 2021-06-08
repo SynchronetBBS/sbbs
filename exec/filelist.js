@@ -156,10 +156,6 @@ for(var i = 0; i < argc; i++) {
 			json_space = parseInt(opt.slice(5), 10);
 			continue;
 		}
-		if(opt == "arc") {
-			fmt = "arc";
-			continue;
-		}
 		if(opt.indexOf("fmt=") == 0) {
 			fmt = opt.slice(4);
 			continue;
