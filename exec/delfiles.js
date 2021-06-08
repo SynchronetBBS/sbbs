@@ -66,7 +66,7 @@ for(var i in dir_list) {
 				if(options.test)
 					removed++;
 				else {
-					if(!base.remove(file, /* delete: */true))
+					if(!base.remove(file, /* delete: */false))
 						alert(base.error);
 					else
 						removed++;
