@@ -2581,7 +2581,7 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,sess,"534 Already in TLS mode");
 					continue;
 				}
-				if (start_tls(&sock, &sess, TRUE)) {
+				if (start_tls(&sock, &sess, TRUE) || sess == -1) {
 					lprintf(LOG_WARNING, "%04d <%s> failed to initialize TLS successfully", sock, host_ip);
 					break;
 				}
