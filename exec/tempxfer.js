@@ -4,6 +4,8 @@ require("sbbsdefs.js", 'UFLAG_D');
 require("text.js", 'TempDirPrompt');
 require("file_size.js", 'file_size_str');
 
+var options = {};
+
 if(user.security.restrictions & UFLAG_D) {
 	console.putmsg(bbs.text(R_Download));
 	exit();
@@ -43,6 +45,16 @@ function checkspace()
 	return true;
 }
 
+function checktemp()
+{
+	if(!directory(system.temp_dir + "*").length) {
+		writeln("\r\nNo files in temp directory.");
+		writeln("Use 'E' to extract from file or Create File List with 'N' or 'F' commands.");
+		return false;
+	}
+	return true;
+}
+
 var temp_fname = system.temp_dir + system.qwk_id + "." + (user.temp_file_ext || "zip");
 var file_fmt = "\x01c\x01h%-*s \x01n\x01c%10lu  \x01h\x01w%s";
 var file = {};
@@ -59,10 +71,12 @@ while(bbs.online && !console.aborted) {
 		bbs.menu("tempxfer");
 	}
 	
-	console.putmsg(bbs.text(TempDirPrompt));
+	console.print(bbs.text(TempDirPrompt));
 	var keys = "ADEFNILQRVX?";
 	switch(console.getkeys(keys, K_UPPER)) {
 		case 'A': // Add to temp archive
+			if(!checktemp())
+				break;
 			if(!checkspace())
 				continue;
 			var spec = bbs.get_filespec();
@@ -75,20 +89,40 @@ while(bbs.online && !console.aborted) {
 			}
 			break;
 		case 'D': // Download temp archive
-			if(!file_exists(temp_fname)) {
-				console.putmsg(format(bbs.text(TempFileNotCreatedYet), file_getname(temp_fname)));
+			if(!checktemp())
 				break;
+			var fpath = temp_fname;
+			if(options.download_archive_only) {
+				if(!file_exists(fpath)) {
+					console.putmsg(format(bbs.text(TempFileNotCreatedYet), file_getname(fpath)));
+					break;
+				}
+			} else {
+				console.putmsg(bbs.text(Filename));
+				var fname = console.getstr(file_getname(temp_fname), 64, K_EDIT|K_AUTODEL);
+				if(!checkfname(fname))
+					break;
+				fpath = system.temp_dir + fname;
+				if(!file_exists(fpath)) {
+					console.putmsg(format(bbs.text(FileDoesNotExist), fname));
+					break;
+				}
 			}
-			if(bbs.send_file(temp_fname, user.download_protocol) && dir_code)
-				user.downloaded_file(dir_code, file.name, file_size(temp_fname));
+			if(bbs.send_file(fpath, user.download_protocol) && dir_code)
+				user.downloaded_file(dir_code, file.name, file_size(fpath));
 			break;
 		case 'I': // Information on extracted file
+			if(!checktemp())
+				break;
 			console.putmsg(format(bbs.text(TempFileInfo), file.from, file.name));
 			break;
 		case 'L': // List files in temp dir
+			if(!checktemp())
+				break;
 			var spec = bbs.get_filespec();
 			if(!checkfname(spec))
 				break;
+			console.crlf();
 			var bytes = 0;
 			var files = 0;
 			var list = directory(system.temp_dir + spec);
@@ -113,12 +147,16 @@ while(bbs.online && !console.aborted) {
 			console.aborted = false;
 			break;
 		case 'R': // Remove files from temp dir
+			if(!checktemp())
+				break;
 			var spec = bbs.get_filespec();
 			if(!checkfname(spec))
 				break;
 			console.putmsg(format(bbs.text(NFilesRemoved), delfiles(system.temp_dir, spec)));
 			break;
 		case 'V': // View files in temp dir
+			if(!checktemp())
+				break;
 			var spec = bbs.get_filespec();
 			if(!checkfname(spec))
 				break;
@@ -171,6 +209,8 @@ while(bbs.online && !console.aborted) {
 				console.putmsg(bbs.text(FileNotFound));
 			break;
 		case 'X': // Extract from file in temp dir
+			if(!checktemp())
+				break;
 			if(!checkspace())
 				continue;
 			console.putmsg(bbs.text(ExtractFrom));
