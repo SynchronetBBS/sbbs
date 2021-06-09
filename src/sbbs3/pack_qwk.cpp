@@ -727,6 +727,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*******************/
 	/* Compress Packet */
 	/*******************/
+	remove(packet);
 	SAFEPRINTF2(path,"%s%s",cfg.temp_dir,ALLFILES);
 	if(strListFind((str_list_t)supported_archive_formats, useron.tmpext, /* case_sensitive */FALSE) >= 0) {
 		str_list_t file_list = directory(path);
@@ -736,13 +737,15 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			lprintf(LOG_ERR, "libarchive error (%s) creating %s", error, packet);
 		else
 			lprintf(LOG_INFO, "libarchive created %s from %ld files", packet, file_count);
-	} else {
+	}
+	if(flength(packet) < 1) {
+		remove(packet);
 		if((i = external(cmdstr(temp_cmd(),packet,path,NULL), ex|EX_WILDCARD)) != 0)
 			errormsg(WHERE,ERR_EXEC,cmdstr(temp_cmd(),packet,path,NULL),i);
-	}
-	if(!fexist(packet)) {
-		bputs(text[QWKCompressionFailed]);
-		return(false); 
+		if(flength(packet) < 1) {
+			bputs(text[QWKCompressionFailed]);
+			return(false); 
+		}
 	}
 
 	if(!prepack && useron.rest&FLAG('Q')) {
