@@ -3948,9 +3948,11 @@ int sbbs_t::mv(char *src, char *dest, char copy)
             ,dest);
         return(-1);
 	}
+    if(!copy
 #ifndef __unix__	/* need to determine if on same mount device */
-    if(!copy && ((src[1]!=':' && dest[1]!=':')
-        || (src[1]==':' && dest[1]==':' && toupper(src[0])==toupper(dest[0])))) {
+		&& ((src[1]!=':' && dest[1]!=':') || (src[1]==':' && dest[1]==':' && toupper(src[0])==toupper(dest[0])))
+#endif
+		) {
         if(rename(src,dest)) {						/* same drive, so move */
             bprintf("\r\nMV ERROR: Error renaming '%s'"
                     "\r\n                      to '%s'\r\n\7",src,dest);
@@ -3958,7 +3960,6 @@ int sbbs_t::mv(char *src, char *dest, char copy)
 		}
         return(0);
 	}
-#endif
 	if(!CopyFile(src, dest, /* fail if exists: */true)) {
 		errormsg(WHERE, "CopyFile", src, 0, dest);
 		return -1;
