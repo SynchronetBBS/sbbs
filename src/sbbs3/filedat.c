@@ -722,7 +722,7 @@ str_list_t directory(const char* path)
 	return list;
 }
 
-const char* supported_archive_formats[] = { "zip", "7z", "tgz", "tbz", NULL };
+const char* supported_archive_formats[] = { "zip", "7z", "tgz", NULL };
 // Returns negative on error
 long create_archive(const char* archive, const char* format
 	,bool with_path, str_list_t file_list, char* error, size_t maxerrlen)
