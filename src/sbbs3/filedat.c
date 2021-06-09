@@ -786,7 +786,7 @@ long create_archive(const char* archive, const char* format
 		archive_entry_set_filetype(entry, AE_IFREG);
 		archive_entry_set_perm(entry, 0644);
 		if((result = archive_write_header(ar, entry)) != ARCHIVE_OK)
-			safe_snprintf(error, maxerrlen, "archive_write_header returned %d", result);
+			safe_snprintf(error, maxerrlen, "archive_write_header returned %d: %s", result, archive_error_string(ar));
 		else while(!feof(fp)) {
 			char buf[256 * 1024];
 			size_t len = fread(buf, 1, sizeof(buf), fp);
