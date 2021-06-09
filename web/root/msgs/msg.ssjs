@@ -17,6 +17,8 @@ if(do_extra) {
 	do_rightnav=false;
 }
 
+if(!msgbase)
+    error("msgbase not defined");
 if(msgbase.open!=undefined && msgbase.open()==false) {
     error(msgbase.last_error);
 }
