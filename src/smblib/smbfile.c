@@ -296,8 +296,8 @@ int smb_getfile(smb_t* smb, smbfile_t* file, enum file_detail detail)
 			return result;
 		if(detail >= file_detail_extdesc)
 			file->extdesc = smb_getmsgtxt(smb, file, GETMSGTXT_BODY_ONLY);
-		if(detail >= file_detail_content)
-			file->content = smb_getmsgtxt(smb, file, GETMSGTXT_TAIL_ONLY);
+		if(detail >= file_detail_metadata)
+			file->metadata = smb_getmsgtxt(smb, file, GETMSGTXT_TAIL_ONLY);
 	}
 	file->dir = smb->dirnum;
 
@@ -327,7 +327,7 @@ void smb_freefilemem(smbfile_t* file)
 
 /****************************************************************************/
 /****************************************************************************/
-int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, const char* content, const char* path)
+int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, const char* metadata, const char* path)
 {
 	if(file->name == NULL || *file->name == '\0') {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s missing name", __FUNCTION__);
@@ -346,26 +346,26 @@ int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, c
 	file->hdr.attr |= MSG_FILE;
 	file->hdr.type = SMB_MSG_TYPE_FILE;
 	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE
-		,/* body: */(const uchar*)extdesc, /* tail: */(const uchar*)content);
+		,/* body: */(const uchar*)extdesc, /* tail: */(const uchar*)metadata);
 }
 
 /****************************************************************************/
-/* Like smb_addfile(), except 'content' is a str_list_t: 'list'				*/
+/* Like smb_addfile(), except 'metadata' is a str_list_t: 'list'			*/
 /****************************************************************************/
 int smb_addfile_withlist(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, str_list_t list, const char* path)
 {
-	char* content = NULL;
+	char* metadata = NULL;
 	int result;
 
 	if(list != NULL && *list != NULL) {
 		size_t size = strListCount(list) * 1024;
-		content = calloc(1, size);
-		if(content == NULL)
+		metadata = calloc(1, size);
+		if(metadata == NULL)
 			return SMB_ERR_MEM;
-		strListCombine(list, content, size - 1, "\r\n");
+		strListCombine(list, metadata, size - 1, "\r\n");
 	}
-	result = smb_addfile(smb, file, storage, extdesc, content, path);
-	free(content);
+	result = smb_addfile(smb, file, storage, extdesc, metadata, path);
+	free(metadata);
 	return result;
 }
 
@@ -376,7 +376,7 @@ int smb_renewfile(smb_t* smb, smbfile_t* file, int storage, const char* path)
 	int result;
 	if((result = smb_removefile(smb, file)) != SMB_SUCCESS)
 		return result;
-	return smb_addfile(smb, file, storage, file->extdesc, file->content, path);
+	return smb_addfile(smb, file, storage, file->extdesc, file->metadata, path);
 }
 
 /****************************************************************************/
