@@ -1006,7 +1006,7 @@ public:
 	ulong	logonstats(void);
 	void	logoffstats(void);
 	int		nopen(char *str, int access);
-	int		mv(char *src, char *dest, char copy); /* fast file move/copy function */
+	int		mv(const char *src, const char *dest, bool copy); /* fast file move/copy function */
 	bool	chksyspass(const char* sys_pw = NULL);
 	bool	chk_ar(const uchar * str, user_t* user, client_t* client); /* checks access requirements */
 	bool	ar_exp(const uchar ** ptrptr, user_t*, client_t*);

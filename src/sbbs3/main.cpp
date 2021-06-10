@@ -3934,33 +3934,27 @@ void sbbs_t::spymsg(const char* msg)
 /* both 'src' and 'dest' must contain full path and filename                */
 /* returns 0 if successful, -1 if error                                     */
 /****************************************************************************/
-int sbbs_t::mv(char *src, char *dest, char copy)
+int sbbs_t::mv(const char* path, const char* dest, bool copy)
 {
+	char src[MAX_PATH + 1];
+
     if(!stricmp(src,dest))	 /* source and destination are the same! */
         return(0);
+
+	SAFECOPY(src, path);
     if(!fexistcase(src)) {
         bprintf("\r\n\7MV ERROR: Source doesn't exist\r\n'%s'\r\n"
             ,src);
         return(-1);
 	}
-    if(!copy && fexistcase(dest)) {
+    if(!copy && fexist(dest)) {
         bprintf("\r\n\7MV ERROR: Destination already exists\r\n'%s'\r\n"
             ,dest);
         return(-1);
 	}
-    if(!copy
-#ifndef __unix__	/* need to determine if on same mount device */
-		&& ((src[1]!=':' && dest[1]!=':') || (src[1]==':' && dest[1]==':' && toupper(src[0])==toupper(dest[0])))
-#endif
-		) {
-        if(rename(src,dest)) {						/* same drive, so move */
-            bprintf("\r\nMV ERROR: Error renaming '%s'"
-                    "\r\n                      to '%s'\r\n\7",src,dest);
-            return(-1);
-		}
-        return(0);
-	}
-	if(!CopyFile(src, dest, /* fail if exists: */true)) {
+    if(!copy && rename(src, dest) == 0)
+        return 0;
+	if(!CopyFile(src, dest, /* fail if exists: */!copy)) {
 		errormsg(WHERE, "CopyFile", src, 0, dest);
 		return -1;
 	}
