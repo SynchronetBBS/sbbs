@@ -133,7 +133,7 @@ void sbbs_t::batchmenu()
 						);
 						totalsize += f.size;
 						totalcdt += f.cost;
-						smb_freemsgmem(&f);
+						smb_freefilemem(&f);
 					}
 					bprintf(text[DownloadQueueTotals]
 						,ultoac((ulong)totalcdt,tmp),ultoac((ulong)totalsize,str),cur_cps
@@ -458,7 +458,7 @@ bool sbbs_t::create_batchup_lst()
 		if(!batch_file_get(&cfg, ini, filename, &f))
 			continue;
 		fprintf(fp, "%s%s\r\n", cfg.dir[f.dir]->path, filename);
-		smb_freemsgmem(&f);
+		smb_freefilemem(&f);
 	}
 	fclose(fp);
 	iniFreeStringList(ini);
@@ -498,7 +498,7 @@ void sbbs_t::batch_upload()
 			continue;
 		if(uploadfile(&f))
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
-		smb_freemsgmem(&f);
+		smb_freefilemem(&f);
 	}
 	iniFreeStringList(filenames);
 	iniFreeStringList(ini);
