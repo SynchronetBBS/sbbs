@@ -884,7 +884,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 							sprintf(str,text[AddToOfflineDirQ]
 								,f->name,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
 							if(yesno(str)) {
-								addfile(&cfg, i, f, f->extdesc, /* client: */NULL);
+								addfile(&cfg, i, f, f->extdesc, f->metadata, /* client: */NULL);
 							} 
 						} 
 					}

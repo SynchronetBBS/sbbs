@@ -634,7 +634,7 @@ int file_sauce_hfields(file_t* f, struct sauce_charinfo* info)
 	return SMB_SUCCESS;
 }
 
-bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, client_t* client)
+bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, const char* metadata, client_t* client)
 {
 	char fpath[MAX_PATH + 1];
 	smb_t smb;
@@ -645,7 +645,7 @@ bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, client_t*
 	getfilepath(cfg, f, fpath);
 	if(f->from_ip == NULL)
 		file_client_hfields(f, client);
-	int result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, /* contents: */NULL, fpath);
+	int result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, metadata, fpath);
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
 }

@@ -634,7 +634,7 @@ typedef struct {				/* Message or File */
 	};
 	union {
 		uchar*	tail;			/* Message body tail (optional) */
-		char*	content;		/* Archive content list */
+		char*	metadata;		/* File metadata */
 	};
 	char*		tags;			/* Message tags (space-delimited) */
 	char*		editor;			/* Message editor (if known) */

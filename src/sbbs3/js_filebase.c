@@ -181,67 +181,67 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 		return false;
 
-	if(((f->from != NULL && *f->from != '\0') || detail > file_detail_content)
+	if(((f->from != NULL && *f->from != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->from_ip != NULL && *f->from_ip != '\0') || detail > file_detail_content)
+	if(((f->from_ip != NULL && *f->from_ip != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_ip)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_ip_addr", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->from_host != NULL && *f->from_host != '\0') || detail > file_detail_content)
+	if(((f->from_host != NULL && *f->from_host != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_host)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_host_name", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->from_prot != NULL && *f->from_prot != '\0') || detail > file_detail_content)
+	if(((f->from_prot != NULL && *f->from_prot != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_prot)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_protocol", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->from_port != NULL && *f->from_port != '\0') || detail > file_detail_content)
+	if(((f->from_port != NULL && *f->from_port != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from_port)) == NULL
 			|| !JS_DefineProperty(cx, obj, "from_port", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->author != NULL && *f->author != '\0') || detail > file_detail_content)
+	if(((f->author != NULL && *f->author != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->author)) == NULL
 			|| !JS_DefineProperty(cx, obj, "author", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->author_org != NULL && *f->author_org != '\0') || detail > file_detail_content)
+	if(((f->author_org != NULL && *f->author_org != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->author_org)) == NULL
 			|| !JS_DefineProperty(cx, obj, "author_org", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->to_list != NULL && *f->to_list != '\0') || detail > file_detail_content)
+	if(((f->to_list != NULL && *f->to_list != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->to_list)) == NULL
 			|| !JS_DefineProperty(cx, obj, "to_list", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
 	val = BOOLEAN_TO_JSVAL(f->idx.attr & FILE_ANONYMOUS);
-	if((val == JSVAL_TRUE || detail > file_detail_content)
+	if((val == JSVAL_TRUE || detail > file_detail_metadata)
 		&& !JS_DefineProperty(cx, obj, "anon", val, NULL, NULL, flags))
 		return false;
 
-	if(((f->tags != NULL && *f->tags != '\0') || detail > file_detail_content)
+	if(((f->tags != NULL && *f->tags != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->tags)) == NULL
 			|| !JS_DefineProperty(cx, obj, "tags", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->desc != NULL && *f->desc != '\0') || detail > file_detail_content)
+	if(((f->desc != NULL && *f->desc != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->desc)) == NULL
 			|| !JS_DefineProperty(cx, obj, "desc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(((f->extdesc != NULL && *f->extdesc != '\0') || detail > file_detail_content)
+	if(((f->extdesc != NULL && *f->extdesc != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->extdesc)) == NULL
 			|| !JS_DefineProperty(cx, obj, "extdesc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
-	if(f->cost > 0 || detail > file_detail_content) {
+	if(f->cost > 0 || detail > file_detail_metadata) {
 		val = UINT_TO_JSVAL(f->cost);
 		if(!JS_DefineProperty(cx, obj, "cost", val, NULL, NULL, flags))
 			return false;
@@ -253,17 +253,17 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 	val = UINT_TO_JSVAL(f->hdr.when_written.time);
 	if(!JS_DefineProperty(cx, obj, "time", val, NULL, NULL, flags))
 		return false;
-	if(f->hdr.when_imported.time > 0 || detail > file_detail_content) {
+	if(f->hdr.when_imported.time > 0 || detail > file_detail_metadata) {
 		val = UINT_TO_JSVAL(f->hdr.when_imported.time);
 		if(!JS_DefineProperty(cx, obj, "added", val, NULL, NULL, flags))
 			return false;
 	}
-	if(f->hdr.last_downloaded > 0 || detail > file_detail_content) {
+	if(f->hdr.last_downloaded > 0 || detail > file_detail_metadata) {
 		val = UINT_TO_JSVAL(f->hdr.last_downloaded);
 		if(!JS_DefineProperty(cx, obj, "last_downloaded", val, NULL, NULL, flags))
 			return false;
 	}
-	if(f->hdr.times_downloaded > 0 || detail > file_detail_content) {
+	if(f->hdr.times_downloaded > 0 || detail > file_detail_metadata) {
 		val = UINT_TO_JSVAL(f->hdr.times_downloaded);
 		if(!JS_DefineProperty(cx, obj, "times_downloaded", val, NULL, NULL, flags))
 			return false;
@@ -291,8 +291,8 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 			return false;
 	}
 
-	if(((f->content != NULL && *f->content != '\0') || detail > file_detail_content)
-		&& ((js_str = JS_NewStringCopyZ(cx, f->content)) == NULL
+	if(((f->metadata != NULL && *f->metadata != '\0') || detail > file_detail_metadata)
+		&& ((js_str = JS_NewStringCopyZ(cx, f->metadata)) == NULL
 			|| !JS_DefineProperty(cx, obj, "metadata", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
 		return false;
 
@@ -1844,9 +1844,9 @@ JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "EXTENDED", INT_TO_JSVAL(file_detail_extdesc), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, detail, "METADATA", INT_TO_JSVAL(file_detail_content), NULL, NULL
+			JS_DefineProperty(cx, detail, "METADATA", INT_TO_JSVAL(file_detail_metadata), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_content + 1), NULL, NULL
+			JS_DefineProperty(cx, detail, "MAX", INT_TO_JSVAL(file_detail_metadata + 1), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx, detail, "Detail level numeric constants (in increasing verbosity)", 0);

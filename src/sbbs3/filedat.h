@@ -54,7 +54,7 @@ DLLEXPORT time_t		getfiletime(scfg_t*, file_t*);
 DLLEXPORT ulong			gettimetodl(scfg_t*, file_t*, uint rate_cps);
 DLLEXPORT ulong			getuserxfers(scfg_t*, const char* from, uint to);
 DLLEXPORT bool			hashfile(scfg_t*, file_t*);
-DLLEXPORT bool			addfile(scfg_t*, uint dirnum, file_t*, const char* extdesc, client_t*);
+DLLEXPORT bool			addfile(scfg_t*, uint dirnum, file_t*, const char* extdesc, const char* metadata, client_t*);
 DLLEXPORT bool			removefile(scfg_t*, uint dirnum, const char* filename);
 DLLEXPORT char*			format_filename(const char* fname, char* buf, size_t, bool pad);
 DLLEXPORT bool			safest_filename(const char* fname);
