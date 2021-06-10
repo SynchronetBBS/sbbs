@@ -1097,7 +1097,7 @@ static void receive_thread(void* arg)
 						,xfer.ctrl_sock, xfer.user->alias, f.name);
 				/* need to update the index here */
 			} else {
-				if(!addfile(&scfg, xfer.dir, &f, extdesc, xfer.client))
+				if(!addfile(&scfg, xfer.dir, &f, extdesc, /* metatdata: */NULL, xfer.client))
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR adding file (%s) to database"
 						,xfer.ctrl_sock, xfer.user->alias, f.name);
 			}
