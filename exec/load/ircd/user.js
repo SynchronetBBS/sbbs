@@ -702,7 +702,7 @@ function User_Work(cmdline) {
 			this.numeric481();
 			break;
 		}
-		if (!p[1]) {
+		if (!p[0]) {
 			this.numeric461("KILL");
 			break;
 		}
@@ -719,9 +719,10 @@ function User_Work(cmdline) {
 			k = Users[tmp[i].toUpperCase()];
 			if (!k)
 				k = search_nickbuf(tmp[i]);
-			if (!k)
+			if (!k) {
 				this.numeric401(tmp[i]);
 				continue;
+			}
 			if (k.local) {
 				k.quit(format(
 					"Local kill by %s (%s)",
