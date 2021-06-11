@@ -3938,7 +3938,7 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
 {
 	char src[MAX_PATH + 1];
 
-    if(!stricmp(src,dest))	 /* source and destination are the same! */
+    if(!stricmp(path, dest))	 /* source and destination are the same! */
         return(0);
 
 	SAFECOPY(src, path);
