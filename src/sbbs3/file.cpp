@@ -240,7 +240,9 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 	}
 
 	newfile.dfield = NULL; // addfile() ends up realloc'ing dfield (in smb_addmsg)
-	if(!addfile(&cfg, newdir, &newfile, newfile.extdesc, newfile.metadata, /* client: */NULL))
+	bool result = addfile(&cfg, newdir, &newfile, newfile.extdesc, newfile.metadata, /* client: */NULL);
+	free(newfile.dfield);
+	if(!result)
 		return false;
 	if(!removefile(smb, f))	// Use ::removefile() here instead?
 		return false;
