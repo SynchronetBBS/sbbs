@@ -757,7 +757,7 @@ function IRCClient_numeric382(str) {
 
 function IRCClient_numeric391() {
 	this.numeric(391, ServerName + " :"
-		+ strftime("%A %B %d %Y -- %H:%M %z",new Date()));
+		+ strftime("%A %B %d %Y -- %H:%M %z",Epoch()));
 }
 
 function IRCClient_numeric401(str) {

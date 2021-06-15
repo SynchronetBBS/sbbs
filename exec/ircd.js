@@ -66,7 +66,7 @@ const MAX_USERHOST = 6;       /* Maximum arguments to USERHOST command */
 const MAX_REALNAME = 50;      /* Maximum length of users real name field */
 
 const SERVER_UPTIME = system.timer;
-const SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",new Date());
+const SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",Epoch());
 
 /*** Global Objects, Arrays and Variables - Always in Mixed_Case ***/
 
