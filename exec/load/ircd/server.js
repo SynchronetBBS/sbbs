@@ -922,7 +922,7 @@ function Server_Work(cmdline) {
 					), false /*bcast*/);
 				}
 
-				if (tmp.created >= parseInt(p[0])) { /* We have TS superiority */
+				if (tmp.created >= parseInt(p[0])) { /* They have TS superiority */
 					if (k.isop)
 						tmp.modelist[CHANMODE_OP][n.id] = n.id;
 					if (k.isvoice)
@@ -936,7 +936,30 @@ function Server_Work(cmdline) {
 							n.nick
 						), false /*bcast*/);
 					}
+				} else { /* We have TS superiority */
+					if (k.isop) {
+						k.isop = false;
+						this.rawout(format(":%s MODE %s -o %s",
+							ServerName,
+							tmp.nam,
+							k.nick
+						));
+					}
+					if (k.isvoice) {
+						k.isvoice = false;
+						this.rawout(format(":%s MODE %s -v %s",
+							ServerName,
+							tmp.nam,
+							k.nick
+						));
+					}
 				}
+
+				j[i] = format("%s%s%s",
+					k.isop ? "@" : "",
+					k.isvoice ? "+" : "",
+					k.nick
+				);
 			}
 
 			if (tmp.created > parseInt(p[0]))
@@ -948,7 +971,7 @@ function Server_Work(cmdline) {
 					tmp.created,
 					tmp.nam,
 					tmp.chanmode(true /* pass args */),
-					p[p.length-1]
+					j.join(" ")
 				)
 			);
 		} else { /* User single SJOIN */
