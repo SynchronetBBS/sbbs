@@ -271,8 +271,8 @@ function IRC_quit(server,reason) {
 	server.send("QUIT :" + reason + "\r\n");
 
 	/* wait up to 5 seconds for server to disconnect */
-	var start=time();
-	while(server.is_connected && time()-start<5) {
+	var start = new Date().getTime();
+	while(server.is_connected && new Date().getTime() - start < 5000) {
 		if (server.poll(0.5))
 			server.recvline();
 	}

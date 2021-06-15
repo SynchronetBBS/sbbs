@@ -195,7 +195,7 @@ function Read_Config_File() {
 		log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults.");
 	}
 
-	Time_Config_Read = time();
+	Time_Config_Read = Epoch();
 	Scan_For_Banned_Clients();
 
 	YLines[0] = new YLine(120,600,1,5050000); /* Default IRC class */

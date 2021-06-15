@@ -529,7 +529,7 @@ function Server_Work(cmdline) {
 				}
 				/* Don't trust what a leaf tells us */
 				p[1] = 1;
-				p[2] = time();
+				p[2] = Epoch();
 				p[6] = this.nick;
 			} else { /* Hub (trusted) */
 				tmp = searchbyserver(p[6]);
@@ -661,7 +661,7 @@ function Server_Work(cmdline) {
 			if (this.hub)
 				origin.created = parseInt(p[1]);
 			else
-				origin.created = time();
+				origin.created = Epoch();
 			origin.bcast_to_uchans_unique(format(
 				"NICK %s",
 				p[0]
@@ -1107,7 +1107,7 @@ function Server_Work(cmdline) {
 			break;
 		if (p[3] == tmp.topic)
 			break;
-		tmp.topictime = this.hub ? p[2] : time();
+		tmp.topictime = this.hub ? p[2] : Epoch();
 		tmp.topic = p[3];
 		tmp.topicchangedby = p[1];
 		origin.bcast_to_channel(tmp, format(
