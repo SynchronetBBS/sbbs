@@ -757,7 +757,7 @@ function IRCClient_numeric382(str) {
 
 function IRCClient_numeric391() {
 	this.numeric(391, ServerName + " :"
-		+ strftime("%A %B %d %Y -- %H:%M %z",time()));
+		+ strftime("%A %B %d %Y -- %H:%M %z",new Date()));
 }
 
 function IRCClient_numeric401(str) {
@@ -1118,7 +1118,7 @@ function IRCClient_do_whois(wi) {
 		this.numeric(317, format(
 			"%s %s %s :seconds idle, signon time",
 			wi.nick,
-			time() - wi.talkidle,
+			Epoch() - wi.talkidle,
 			wi.connecttime
 		));
 	}
@@ -2021,9 +2021,9 @@ function IRCClient_do_complex_who(cmd) {
 			continue;
 		else if ((who.del_flags&WHO_MEMBER_CHANNEL) && flag_M)
 			continue;
-		if ((who.add_flags&WHO_TIME) && ((time() - wc.connecttime) < who.Time))
+		if ((who.add_flags&WHO_TIME) && ((Epoch() - wc.connecttime) < who.Time))
 			continue;
-		else if ((who.del_flags&WHO_TIME) && ((time() - wc.connecttime) > who.Time))
+		else if ((who.del_flags&WHO_TIME) && ((Epoch() - wc.connecttime) > who.Time))
 			continue;
 		if ((who.add_flags&WHO_CLASS) && (wc.ircclass != who.Class))
 			continue;
@@ -2291,10 +2291,10 @@ function IRCClient_do_complex_list(cmd) {
 			    wildmatch(i,list.Mask.toUpperCase()))
 				continue;
 			if ((list.add_flags&LIST_CREATED) &&
-			   (Channels[i].created < (time() - list.Created)))
+			   (Channels[i].created < (Epoch() - list.Created)))
 				continue;
 			else if ((list.del_flags&LIST_CREATED) &&
-			   (Channels[i].created > (time() - list.Created)))
+			   (Channels[i].created > (Epoch() - list.Created)))
 				continue;
 			if ((list.add_flags&LIST_TOPIC) &&
 			   (!wildmatch(Channels[i].topic,list.Topic)))
@@ -2309,10 +2309,10 @@ function IRCClient_do_complex_list(cmd) {
 			    (true_array_len(Channels[i].users) >= list.People) )
 				continue;
 			if ((list.add_flags&LIST_TOPICAGE) && list.TopicTime &&
-			  (Channels[i].topictime > (time()-list.TopicTime)))
+			  (Channels[i].topictime > (Epoch()-list.TopicTime)))
 				continue;
 			else if((list.del_flags&LIST_TOPICAGE)&&list.TopicTime&&
-			  (Channels[i].topictime < (time()-list.TopicTime)))
+			  (Channels[i].topictime < (Epoch()-list.TopicTime)))
 				continue;
 			if (list.add_flags&LIST_MODES) { /* there's no -m */
 				var sic = false;
@@ -2470,21 +2470,21 @@ function Channel_match_list_mask(mask) {
 			return 0;
 	} else if (mask[0].toUpperCase() == "C") { /* created X mins ago? */
 		if (   (mask[1] == ">")
-			&& (this.created < (time() - (parseInt(mask.slice(2)) * 60)))
+			&& (this.created < (Epoch() - (parseInt(mask.slice(2)) * 60)))
 		) {
 			return 0;
 		} else if (   (mask[1] == "<")
-					&& (this.created > (time() - (parseInt(mask.slice(2)) * 60)))
+					&& (this.created > (Epoch() - (parseInt(mask.slice(2)) * 60)))
 		) {
 			return 0;
 		}
 	} else if (mask[0].toUpperCase() == "T") { /* topics older than X mins? */
 		if (   (mask[1] == ">")
-			&& (this.topictime < (time() - (parseInt(mask.slice(2)) * 60)) )
+			&& (this.topictime < (Epoch() - (parseInt(mask.slice(2)) * 60)) )
 		) {
 			return 0;
 		} else if (   (mask[1] == "<")
-					&& (this.topictime > (time() - (parseInt(mask.slice(2)) * 60)))
+					&& (this.topictime > (Epoch() - (parseInt(mask.slice(2)) * 60)))
 		) {
 			return 0;
 		}
@@ -2819,6 +2819,10 @@ function Uptime_String() {
 		"Server Up %u days, %u:%02u:%02u",
 		days, hours, mins, secs
 	);
+}
+
+function Epoch() {
+	return parseInt(new Date().getTime()/1000);
 }
 
 /** Global object prototypes **/

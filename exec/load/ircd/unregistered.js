@@ -40,7 +40,7 @@ function Unregistered_Client(id,socket) {
 	}
 	this.hostname = this.ip;
 	this.pending_resolve = false;
-	this.dns_pending = time();
+	this.dns_pending = Epoch();
 	// Variables (consts, really) that point to various state information
 	this.socket = socket;
 	this.socket.irc = this;
@@ -262,7 +262,7 @@ function Unregistered_Check_User_Registration() {
 				if (this.password.toUpperCase() == bbsuser.security.password) {
 					this.uprefix = parse_username(bbsuser.handle);
 					bbsuser.connection = "IRC";
-					bbsuser.logontime = time();
+					bbsuser.logontime = Epoch();
 				}
 			}
 		}
@@ -343,7 +343,7 @@ function Unregistered_Welcome() {
 	new_user.uprefix = this.uprefix;
 	new_user.hostname = this.hostname;
 	new_user.realname = this.realname;
-	new_user.created = time();
+	new_user.created = Epoch();
 	new_user.ip = this.ip;
 	new_user.ircclass = my_iline.ircclass;
 	new_user.sendq = this.sendq;

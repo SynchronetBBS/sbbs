@@ -64,7 +64,7 @@ function Channel(nam) {
 	this.modelist[CHANMODE_BAN] = [];
 	this.bantime = {};
 	this.bancreator = {};
-	this.created = time();
+	this.created = Epoch();
 	/* Functions */
 	this.chanmode = Channel_chanmode;
 	this.isbanned = Channel_isbanned;
@@ -447,7 +447,7 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 			cmode.addmodes += "b";
 			cmode.addmodeargs += " " + set_ban;
 			var banid = chan.modelist[CHANMODE_BAN].push(set_ban) - 1;
-			chan.bantime[banid] = time();
+			chan.bantime[banid] = Epoch();
 			chan.bancreator[banid] = this.nuh;
 		}
 	}
