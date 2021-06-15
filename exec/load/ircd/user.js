@@ -124,7 +124,7 @@ function IRC_User(id) {
 	this.uline = false;	/* Are we services? */
 	this.away = "";
 	this.channels = {};
-	this.connecttime = time();
+	this.connecttime = Epoch();
 	this.created = 0;
 	this.flags = 0;
 	this.hops = 0;
@@ -138,7 +138,7 @@ function IRC_User(id) {
 	this.realname = "";
 	this.servername = ServerName;
 	this.silence = [];
-	this.talkidle = time();
+	this.talkidle = Epoch();
 	this.uprefix = "";
 	this.id = id;
 	this.socket = "";
@@ -304,7 +304,7 @@ function User_Work(cmdline) {
 		for (i in tmp) {
 			this.do_msg(tmp[i],"PRIVMSG",p[1]);
 		}
-		this.talkidle = time();
+		this.talkidle = Epoch();
 		break;
 	case "MODE":
 		if (!p[0])
@@ -458,7 +458,7 @@ function User_Work(cmdline) {
 				if (j == tmp.topic)
 					break;
 				tmp.topic = j;
-				tmp.topictime = time();
+				tmp.topictime = Epoch();
 				tmp.topicchangedby = this.nick;
 				this.bcast_to_channel(
 					tmp,
@@ -994,7 +994,7 @@ function User_Work(cmdline) {
 			this.bcast_to_uchans_unique("NICK " + p[0]);
 			this.originatorout("NICK " + p[0],this);
 			if (p[0].toUpperCase() != this.nick.toUpperCase()) {
-				this.created = time();
+				this.created = Epoch();
 				push_nickbuf(this.nick,p[0]);
 				Users[p[0].toUpperCase()] = this;
 				delete Users[this.nick.toUpperCase()];

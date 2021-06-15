@@ -66,7 +66,7 @@ const MAX_USERHOST = 6;       /* Maximum arguments to USERHOST command */
 const MAX_REALNAME = 50;      /* Maximum length of users real name field */
 
 const SERVER_UPTIME = system.timer;
-const SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",time());
+const SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",new Date());
 
 /*** Global Objects, Arrays and Variables - Always in Mixed_Case ***/
 
@@ -94,7 +94,7 @@ var Profile = {};			/* CPU profiling */
 /* Global Variables */
 var Default_Port = 6667;
 
-var Time_Config_Read;		/* Stores time() of when the config was last read */
+var Time_Config_Read;		/* Stores unix epoch of when the config was last read */
 
 /* Will this server try to enforce good network behaviour? */
 /* Setting to "true" results in bouncing bad modes, KILLing bogus NICKs, etc. */
