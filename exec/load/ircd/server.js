@@ -942,7 +942,7 @@ function Server_Work(cmdline) {
 						this.rawout(format(":%s MODE %s -o %s",
 							ServerName,
 							tmp.nam,
-							k.nick
+							n.nick
 						));
 					}
 					if (k.isvoice) {
@@ -950,7 +950,7 @@ function Server_Work(cmdline) {
 						this.rawout(format(":%s MODE %s -v %s",
 							ServerName,
 							tmp.nam,
-							k.nick
+							n.nick
 						));
 					}
 				}
