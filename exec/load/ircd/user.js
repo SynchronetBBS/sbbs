@@ -1023,7 +1023,7 @@ function User_Work(cmdline) {
 		break;
 	case "OPER":
 		if (!p[1]) {
-			this.numeric461(command);
+			this.numeric461("OPER");
 			break;
 		}
 		if (this.mode&USERMODE_OPER) {
