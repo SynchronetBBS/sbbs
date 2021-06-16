@@ -1449,7 +1449,7 @@ function IRCClient_do_stats(statschar) {
 			for (i in Profile) {
 				this.numeric(212, format(
 					"%s %s %s",
-					Profile[i],
+					i,
 					Profile[i].ticks,
 					Profile[i].executions
 				));
