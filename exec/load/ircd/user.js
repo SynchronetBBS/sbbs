@@ -746,7 +746,7 @@ function User_Work(cmdline) {
 					k.nick,
 					p[1]
 				));
-				target.quit(format(
+				k.quit(format(
 					"Killed (%s (%s))",
 					this.nick,
 					p[1]
