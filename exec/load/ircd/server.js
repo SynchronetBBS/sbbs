@@ -196,9 +196,14 @@ function Server_Work(cmdline) {
 		}
 
 		this.bcast_to_servers_raw(format(
-			":%s %s",
+			":%s AKILL %s %s %d %s %lu :%s",
 			origin.nick,
-			p.join(" ")
+			p[0],
+			p[1],
+			parseInt(p[2]),
+			p[3],
+			parseInt(p[4]),
+			p[5]
 		));
 
 		k = p[1] + "@" + p[0];
