@@ -895,6 +895,9 @@ function Server_Work(cmdline) {
 		if (!p[1] || p[1][0] != "#")
 			break;
 
+		if (!this.hub)
+			p[0] = Epoch();
+
 		tmp = Channels[p[1].toUpperCase()];
 		if (!tmp) {
 			Channels[p[1].toUpperCase()] = new Channel(p[1].toUpperCase());
@@ -907,7 +910,7 @@ function Server_Work(cmdline) {
 			this.set_chanmode(
 				tmp, /* Channel object */
 				p.splice(2,p.length-4).join(" "), /* Channel mode */
-				(tmp.created == parseInt(p[0])) ? false : true /* TS */
+				(tmp.created <= parseInt(p[0])) ? false : true /* TS */
 			);
 
 			j = p[p.length-1].split(" "); /* Channel members */
