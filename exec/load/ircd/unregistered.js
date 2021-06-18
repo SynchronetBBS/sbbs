@@ -244,7 +244,7 @@ function Unregistered_Commands(cmdline) {
 
 	/* This part only executed if the command was legal. */
 	if (!Profile[cmd.verb])
-		Profile[cmd.verb] = new StatsM;
+		Profile[cmd.verb] = new StatsM();
 	Profile[cmd.verb].executions++;
 	Profile[cmd.verb].ticks += system.timer - clockticks;
 }

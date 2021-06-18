@@ -592,7 +592,6 @@ function User_Work(cmdline) {
 			this.server_notice("No expression provided to evaluate.");
 			break;
 		}
-		p.shift();
 		tmp = p.join(" ");
 		umode_notice(USERMODE_DEBUG,"Debug",format(
 			"Oper %s is using EVAL: %s",
@@ -1484,7 +1483,7 @@ function User_Work(cmdline) {
 	/* This part only executed if the command was legal. */
 
 	if (!Profile[cmd.verb])
-		Profile[cmd.verb] = new StatsM;
+		Profile[cmd.verb] = new StatsM();
 	Profile[cmd.verb].executions++;
 	Profile[cmd.verb].ticks += system.timer - clockticks;
 
