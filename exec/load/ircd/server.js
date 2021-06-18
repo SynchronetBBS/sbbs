@@ -1237,9 +1237,9 @@ function Server_Work(cmdline) {
 	/* This part only executed if the command was legal. */
 
 	if (!Profile[cmd.verb])
-		Profile[cmd.verb] = new StatsM;
+		Profile[cmd.verb] = new StatsM();
 	Profile[cmd.verb].executions++;
-	Profile.ticks += system.timer - clockticks;
+	Profile[cmd.verb].ticks += system.timer - clockticks;
 }
 
 ////////// Functions //////////
