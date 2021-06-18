@@ -320,7 +320,7 @@ function User_Work(cmdline) {
 					tmp.nam,
 					tmp.chanmode(this.channels[p[0].toUpperCase()] ? true : false)
 				));
-				this.numeric(329, format("%s %s",
+				this.numeric(329, format("%s %lu",
 					tmp.nam,
 					tmp.created
 				));
@@ -1000,7 +1000,7 @@ function User_Work(cmdline) {
 				delete Users[this.nick.toUpperCase()];
 			}
 			this.bcast_to_servers(format(
-				"NICK %s :%s",
+				"NICK %s :%lu",
 				p[0],
 				this.created
 			));

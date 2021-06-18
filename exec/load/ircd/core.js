@@ -1116,7 +1116,7 @@ function IRCClient_do_whois(wi) {
 			));
 		}
 		this.numeric(317, format(
-			"%s %s %s :seconds idle, signon time",
+			"%s %lu %lu :seconds idle, signon time",
 			wi.nick,
 			Epoch() - wi.talkidle,
 			wi.connecttime
