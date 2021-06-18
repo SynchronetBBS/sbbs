@@ -401,7 +401,7 @@ function Unregistered_Welcome() {
 	));
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
-	server_bcast_to_servers(format("NICK %s 1 %s + %s %s %s 0 %s :%s",
+	server_bcast_to_servers(format("NICK %s 1 %lu + %s %s %s 0 %lu :%s",
 			this.nick,
 			new_user.created,
 			this.uprefix,
