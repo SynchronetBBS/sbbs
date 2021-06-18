@@ -602,6 +602,15 @@ function Server_Work(cmdline) {
 			));
 			break;
 		} else { /* A user changing their nick */
+			if (origin.server) {
+				gnotice(format(
+					"Server %s (origin %s) sent malformed NICK message: %s",
+					this.nick,
+					origin.nick,
+					p.join(" ")
+				));
+				break;
+			}
 			tmp = Users[p[0].toUpperCase()];
 			if (tmp && tmp.nick.toUpperCase() != origin.nick.toUpperCase()) {
 				gnotice(format(
