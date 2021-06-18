@@ -116,6 +116,7 @@ const LIST_TOPIC				=(1<<3);	/* o */
 const LIST_PEOPLE				=(1<<4);	/* p */
 const LIST_TOPICAGE				=(1<<5);	/* t */
 const LIST_DISPLAY_CHAN_MODES	=(1<<6);	/* M */
+const LIST_DISPLAY_CHAN_TS  	=(1<<7);	/* T */
 
 function IRC_User(id) {
 	this.local = true;	/* are we a local socket? */
@@ -830,15 +831,15 @@ function User_Work(cmdline) {
 		this.do_links(p[0]);
 		break;
 	case "LIST":
-		if (!p[0]) {
+		if (!p[0] || p[0][0].toUpperCase() == "A") {
 			this.do_basic_list("*");
 			break;
 		}
-		if (p[0] == "?" || p[0].toUpperCase() == "HELP") {
+		if (p[0][0] == "?" || p[0][0].toUpperCase() == "H") {
 			this.do_list_usage();
 			break;
 		}
-		if (!p[1] && (p[0][0]!="+") && (p[0][0]!="-")) {
+		if (p[0][0] != "+" && p[0][0] != "-") {
 			this.do_basic_list(p[0]);
 			break;
 		}
