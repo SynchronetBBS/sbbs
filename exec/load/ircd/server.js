@@ -583,7 +583,7 @@ function Server_Work(cmdline) {
 				}
 			}
 			this.bcast_to_servers_raw(
-				format("NICK %s %s %s %s %s %s %s 0 %s :%s",
+				format("NICK %s %d %lu %s %s %s %s 0 %lu :%s",
 					j.nick,
 					j.hops + 1,
 					j.created,
@@ -681,7 +681,7 @@ function Server_Work(cmdline) {
 				p[0]
 			));
 			this.bcast_to_servers_raw(format(
-				":%s NICK %s :%s",
+				":%s NICK %s :%lu",
 				origin.nick,
 				p[0],
 				origin.created
@@ -983,7 +983,7 @@ function Server_Work(cmdline) {
 				tmp.created = parseInt(p[0]);
 
 			this.bcast_to_servers_raw(
-				format(":%s SJOIN %s %s %s :%s",
+				format(":%s SJOIN %lu %s %s :%s",
 					origin.nick,
 					tmp.created,
 					tmp.nam,
@@ -1008,7 +1008,7 @@ function Server_Work(cmdline) {
 				tmp.nam
 			), false /*bcast*/);
 			this.bcast_to_servers_raw(
-				format(":%s SJOIN %s %s",
+				format(":%s SJOIN %lu %s",
 					origin.nick,
 					tmp.created,
 					tmp.nam
@@ -1440,7 +1440,7 @@ function IRCClient_reintroduce_nick(nick) {
 		if (chan.modelist[CHANMODE_VOICE][nick.id])
 			cmodes += "+";
 		this.rawout(
-			format("SJOIN %s %s %s :%s%s",
+			format("SJOIN %lu %s %s :%s%s",
 				chan.created,
 				chan.nam,
 				chan.chanmode(true),
@@ -1464,7 +1464,7 @@ function IRCClient_reintroduce_nick(nick) {
 function IRCClient_server_chan_info(sni_chan) {
 	var i;
 
-	this.rawout(format("SJOIN %s %s %s :%s",
+	this.rawout(format("SJOIN %lu %s %s :%s",
 			sni_chan.created,
 			sni_chan.nam,
 			sni_chan.chanmode(true),
