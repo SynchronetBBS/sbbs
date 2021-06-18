@@ -1395,7 +1395,7 @@ function IRCClient_server_info(sni_server) {
 
 function IRCClient_server_nick_info(sni_client) {
 	this.rawout(
-		format("NICK %s %s %s %s %s %s %s 0 %s :%s",
+		format("NICK %s %d %lu %s %s %s %s 0 %lu :%s",
 			sni_client.nick,
 			parseInt(sni_client.hops) + 1,
 			sni_client.created,
