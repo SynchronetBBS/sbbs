@@ -657,29 +657,31 @@ function IRCClient_numeric321() {
 	this.numeric("321", "Channel :Users  Name");
 }
 
-function IRCClient_numeric322(chan,show_modes) {
-	var channel_name;
+function IRCClient_numeric322(chan,modes) {
+	var channel_name, tmp;
 	var disp_topic = "";
 	var is_onchan = this.channels[chan.nam.toUpperCase()];
 
-	if (show_modes) {
-		var chanm = chan.chanmode()
-		disp_topic += "[" + chanm.slice(0,chanm.length-1) + "]"
+	if (modes&LIST_DISPLAY_CHAN_MODES) {
+		tmp = chan.chanmode();
+		disp_topic += format("[%s] ", tmp.slice(0,tmp.length-1));
+	} else if (modes&LIST_DISPLAY_CHAN_TS) {
+		disp_topic += format("[%lu] ", chan.created);
 	}
 
-	if ((chan.mode&CHANMODE_PRIVATE) && !(this.mode&USERMODE_OPER) &&
-	    !is_onchan ) {
+	if ((chan.mode&CHANMODE_PRIVATE) && !(this.mode&USERMODE_OPER) && !is_onchan ) {
 		channel_name = "*";
 	} else {
 		channel_name = chan.nam;
-		if (disp_topic)
-			disp_topic += " ";
 		disp_topic += chan.topic;
 	}
-	if (!(chan.mode&CHANMODE_SECRET) || (this.mode&USERMODE_OPER) ||
-	    is_onchan )
-		this.numeric(322, channel_name + " " + true_array_len(chan.users)
-			+ " :" + disp_topic);
+	if (!(chan.mode&CHANMODE_SECRET) || (this.mode&USERMODE_OPER) || is_onchan ) {
+		this.numeric(322, format("%s %d :%s",
+			channel_name,
+			true_array_len(chan.users),
+			disp_topic
+		));
+	}
 }
 
 function IRCClient_numeric331(chan) {
@@ -2192,9 +2194,8 @@ function IRCClient_do_basic_list(mask) {
 	return;
 }
 
-/* So, the user wants to go the hard way... */
 function IRCClient_do_complex_list(cmd) {
-	var i, l;
+	var i, l, tmp;
 	var add = true;
 	var arg = 0;
 	var list = new List();
@@ -2232,13 +2233,13 @@ function IRCClient_do_complex_list(cmd) {
 				if (cmd[arg]) {
 					list.tweak_mode(LIST_MODES,true);
 					if (!add) {
-						var tmp_mode = "";
+						tmp = "";
 						if((cmd[arg][0] != "+") ||
 						   (cmd[arg][0] != "-") )
-							tmp_mode += "+";
-						tmp_mode += cmd[arg].replace(/[-]/g," ");
-						tmp_mode = tmp_mode.replace(/[+]/g,"-");
-						list.Modes = tmp_mode.replace(/[ ]/g,"+");
+							tmp += "+";
+						tmp += cmd[arg].replace(/[-]/g," ");
+						tmp = tmp.replace(/[+]/g,"-");
+						list.Modes = tmp.replace(/[ ]/g,"+");
 					} else {
 						list.Modes = cmd[arg];
 					}
@@ -2267,6 +2268,9 @@ function IRCClient_do_complex_list(cmd) {
 				break;
 			case "M":
 				list.tweak_mode(LIST_DISPLAY_CHAN_MODES,add);
+				break;
+			case "T":
+				list.tweak_mode(LIST_DISPLAY_CHAN_TS,add);
 				break;
 			default:
 				break;
@@ -2409,10 +2413,7 @@ function IRCClient_do_complex_list(cmd) {
 					continue;
 			}
 
-			if (list.add_flags&LIST_DISPLAY_CHAN_MODES)
-				this.numeric322(Channels[i],true);
-			else
-				this.numeric322(Channels[i]);
+			this.numeric322(Channels[i],list.add_flags);
 		}
 	}
 
@@ -2455,7 +2456,8 @@ function IRCClient_do_list_usage() {
 	this.numeric(334,":o <topc>: Match against channel's <topic>, wildcards allowed.");
 	this.numeric(334,":p <num> : Chans with more or equal to (+) members, or (-) less than.");
 	this.numeric(334,":t <time>: Only channels whose topics were created <time> mins ago.");
-	this.numeric(334,":M       : Show channel's mode in front of the list topic.");
+	this.numeric(334,":M       : Prefix topic with the current channel mode.");
+	this.numeric(334,":T       : Prefix topic with channel's creation date in Unix epoch.");
 	/* No "end of" numeric for this. */
 }
 
