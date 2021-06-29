@@ -133,7 +133,7 @@ void sbbs_t::scansubs(long mode)
 /****************************************************************************/
 void sbbs_t::scanallsubs(long mode)
 {
-	char	str[256];
+	char	str[256] = "";
 	char 	tmp[512];
 	uint	i,j,found=0;
 	ulong	subs_scanned=0;
