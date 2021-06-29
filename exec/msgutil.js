@@ -3,7 +3,6 @@
 "use strict";
 
 load('sbbsdefs.js');
-load('822header.js');
 
 function show_index(msgbase, first_msg, last_msg, include_votes)
 {
@@ -61,6 +60,7 @@ function export_msgs(msgbase, option)
 	var errors = 0;
 	var hdrs = msgbase.get_all_msg_headers(option.votes);
 	var i;
+	load('822header.js');
 	for(i in hdrs) {
 		var msg = hdrs[i];
 		var fname = system.temp_dir + basecode + "_" + msg.number + ".txt";
