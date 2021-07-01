@@ -6200,7 +6200,8 @@ int read_post_data(http_session_t * session)
 				lprintf(LOG_DEBUG,"%04d !ERROR Browser said they sent %lu bytes, but I got %lu",session->socket, (ulong)s, (ulong)session->req.post_len);
 		if(session->req.post_len > s)
 			session->req.post_len = s;
-		session->req.post_data[session->req.post_len]=0;
+		if(session->req.post_data != NULL)
+			session->req.post_data[session->req.post_len]=0;
 	}
 	return(TRUE);
 }
