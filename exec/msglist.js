@@ -1449,6 +1449,8 @@ function load_msgs(msgbase, which, mode, usernumber)
 		msg.score = 0;
 		if((msg.attr&MSG_DELETE) && !(mode&LM_INCDEL))
 			continue;
+		if(msg.can_read === false)
+			continue;
 		if(msg.upvotes)
 			msg.score += msg.upvotes;
 		if(msg.downvotes)
