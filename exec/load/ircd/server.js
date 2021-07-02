@@ -1375,7 +1375,7 @@ function IRCClient_synchronize() {
 	for (i in Channels) {
 		if ((i[0] == "#") && Channels[i].topic) {
 			this.rawout(format(
-				"TOPIC %s %s %s :%s",
+				"TOPIC %s %s %lu :%s",
 				Channels[i].nam,
 				Channels[i].topicchangedby,
 				Channels[i].topictime,
