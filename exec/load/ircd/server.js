@@ -1294,7 +1294,7 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		this.netsplit();
 	}
 
-	if (this.socket.outbound) {
+	if (this.local) {
 		if (YLines[this.ircclass].active > 0) {
 			YLines[this.ircclass].active--;
 			log(LOG_DEBUG, format("Class %s down to %d active out of %d",
@@ -1305,9 +1305,7 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		} else {
 			log(LOG_ERR, format("Class %d YLine going negative", this.ircclass));
 		}
-	}
 
-	if (this.local) {
 		this.recvq.purge();
 		this.sendq.purge();
 

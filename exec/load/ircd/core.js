@@ -237,6 +237,17 @@ function connect_to_server(port) {
 	else if (!port)
 		port = Default_Port;
 
+	if (   Servers[this.host.toLowerCase()]
+		|| YLines[this.ircclass].active >= YLines[this.ircclass].maxlinks
+	) {
+		this.next_connect = js.setTimeout(
+			connect_to_server,
+			YLines[this.ircclass].connfreq * 1000,
+			this
+		);
+		return false;
+	}
+
 	umode_notice(USERMODE_ROUTING,"Routing",format(
 		"Auto-connecting to %s (%s) on port %d",
 		this.servername,
@@ -263,12 +274,6 @@ function handle_outbound_server_connect() {
 		Unregistered[id] = new Unregistered_Client(id,this);
 		Unregistered[id].server = true; /* Avoid recvq limitation */
 		Unregistered[id].ircclass = this.cline.ircclass;
-		YLines[this.cline.ircclass].active++;
-		log(LOG_DEBUG,format("Class %s up to %d active out of %d",
-			this.cline.ircclass,
-			YLines[this.cline.ircclass].active,
-			YLines[this.cline.ircclass].maxlinks
-		));
 		this.callback_id = this.on("read", Socket_Recv);
 	} else {
 		umode_notice(USERMODE_ROUTING,"Routing",format(
@@ -2836,13 +2841,8 @@ function CLine(host,password,servername,port,ircclass) {
 	this.port = port;
 	this.ircclass = ircclass;
 	this.lastconnect = 0;
-	if (   YLines[ircclass] !== undefined
-	    && Servers[servername.toLowerCase()] === undefined
-	    && YLines[ircclass].connfreq > 0
-		&& YLines[ircclass].maxlinks > YLines[ircclass].active
-	) {
+	if (YLines[ircclass].connfreq > 0)
 		js.setImmediate(connect_to_server, this);
-	}
 }
 
 function HLine(allowedmask,servername) {
