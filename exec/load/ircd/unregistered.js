@@ -186,8 +186,7 @@ function Unregistered_Commands(cmdline) {
 				break;
 			}
 			if (Servers[p[0].toLowerCase()]) {
-				if (parseInt(p[1]) < 2)
-					this.quit("Server already exists.");
+				this.quit("Server already exists.");
 				return 0;
 			}
 			if (parseInt(p[1]) < 2) {
@@ -199,6 +198,13 @@ function Unregistered_Commands(cmdline) {
 							this.password
 						   )
 					) {
+						if (   YLines[NLines[i].ircclass].maxlinks
+							&& YLines[NLines[i].ircclass].active
+							   >= YLines[NLines[i].ircclass].maxlinks
+						) {
+							this.quit("Too many links on this IRC class.");
+							return 0;
+						}
 						Register_Unregistered_Local_Server(this, p, NLines[i]);
 						return true;
 					}
@@ -214,6 +220,13 @@ function Unregistered_Commands(cmdline) {
 					if (   (NLines[i].password == this.password)
 						&& (wildmatch(p[0],NLines[i].servername))
 					) {
+						if (   YLines[NLines[i].ircclass].maxlinks
+							&& YLines[NLines[i].ircclass].active
+							   >= YLines[NLines[i].ircclass].maxlinks
+						) {
+							this.quit("Too many links on this IRC class.");
+							return 0;
+						}
 						Register_Unregistered_Local_Server(this, p, NLines[i]);
 						return true;
 					}
@@ -284,18 +297,6 @@ function Unregistered_Quit(msg) {
 		log(LOG_DEBUG,format("%d clients", server.clients));
 	else
 		log(LOG_INFO, format('[UNREG] QUIT ("%s")', msg));
-	if (this.socket.outbound) {
-		if (YLines[this.ircclass].active > 0) {
-			YLines[this.ircclass].active--;
-			log(LOG_DEBUG, format("Class %d down to %d active out of %d",
-				this.ircclass,
-				YLines[this.ircclass].active,
-				YLines[this.ircclass].maxlinks
-			));
-		} else {
-			log(LOG_ERR, format("Class %d YLine going negative", this.ircclass));
-		}
-	}
 	this.socket.clearOn("read", this.socket.callback_id);
 	this.socket.close();
 	log(LOG_NOTICE,format(
@@ -462,7 +463,7 @@ function Register_Unregistered_Local_Server(unreg, p, nline) {
 	s.sendq = unreg.sendq;
 	s.recvq.irc = s;
 	s.sendq.irc = s;
-	s.ircclass = unreg.ircclass;
+	s.ircclass = nline.ircclass;
 
 	for (i in HLines) {
 		if (HLines[i].servername.toLowerCase() == p[0].toLowerCase()) {
@@ -481,9 +482,15 @@ function Register_Unregistered_Local_Server(unreg, p, nline) {
 	js.clearInterval(unreg.pinginterval);
 	s.pinginterval = js.setInterval(
 		IRCClient_check_timeout,
-		YLines[unreg.ircclass].pingfreq * 1000,
+		YLines[s.ircclass].pingfreq * 1000,
 		s
 	);
+	YLines[s.ircclass].active++;
+	log(LOG_DEBUG,format("Class %s up to %d active out of %d",
+		s.ircclass,
+		YLines[s.ircclass].active,
+		YLines[s.ircclass].maxlinks
+	));
 	s.finalize_server_connect("TS");
 	delete Unregistered[unreg.id];
 	delete Assigned_IDs[unreg.id];
