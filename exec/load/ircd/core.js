@@ -237,7 +237,7 @@ function connect_to_server(port) {
 	else if (!port)
 		port = Default_Port;
 
-	if (   Servers[this.host.toLowerCase()]
+	if (   Servers[this.servername.toLowerCase()]
 		|| YLines[this.ircclass].active >= YLines[this.ircclass].maxlinks
 	) {
 		this.next_connect = js.setTimeout(
