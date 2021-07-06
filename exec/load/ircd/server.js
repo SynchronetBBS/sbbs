@@ -1272,29 +1272,55 @@ function IRCClient_bcast_to_servers_raw(str) {
 }
 
 function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
+	var cline;
+
 	if (!str)
 		str = this.nick;
 
 	if (is_netsplit) {
 		this.netsplit(str);
 	} else if (this.local) {
-		this.netsplit(ServerName + " " + this.nick);
-		if (!suppress_bcast)
-			this.bcast_to_servers_raw("SQUIT " + this.nick + " :" + str);
+		this.netsplit(format("%s %s", ServerName, this.nick));
+		if (!suppress_bcast) {
+			this.bcast_to_servers_raw(format("SQUIT %s :%s",
+				this.nick,
+				str
+			));
+		}
 	} else if (origin) {
-		this.netsplit(origin.nick + " " + this.nick);
-		if (!suppress_bcast)
-			this.bcast_to_servers_raw(":" + origin.nick + " SQUIT " + this.nick + " :" + str);
+		this.netsplit(format("%s %s", origin.nick, this.nick));
+		if (!suppress_bcast) {
+			this.bcast_to_servers_raw(format(":%s SQUIT %s :%s",
+				origin.nick,
+				this.nick,
+				str
+			));
+		}
 	} else {
-		umode_notice(USERMODE_OPER,"Notice",
-			"Netspliting a server which isn't local and doesn't " +
-			"have an origin?!");
-		if (!suppress_bcast)
-			this.bcast_to_servers_raw("SQUIT " + this.nick + " :" + str);
+		umode_notice(USERMODE_OPER,"Notice","Bogus netsplit???");
+		if (!suppress_bcast) {
+			this.bcast_to_servers_raw(format("SQUIT %s :%s",
+				this.nick,
+				str
+			));
+		}
 		this.netsplit();
 	}
 
 	if (this.local) {
+		if (YLines[this.ircclass].connfreq) {
+			cline = Find_CLine_by_Server(this.nick);
+			if (cline) {
+				if (cline.next_connect)
+					js.clearTimeout(cline.next_connect);
+				cline.next_connect = js.setTimeout(
+					connect_to_server,
+					YLines[this.ircclass].connfreq * 1000,
+					cline
+				);
+			}
+		}
+
 		if (YLines[this.ircclass].active > 0) {
 			YLines[this.ircclass].active--;
 			log(LOG_DEBUG, format("Class %s down to %d active out of %d",
