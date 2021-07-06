@@ -1614,17 +1614,23 @@ function IRCClient_trace_all_opers() {
 	}
 }
 
+function Find_CLine_by_Server(str) {
+	var i;
+	for (i in CLines) {
+		if (wildmatch(CLines[i].servername,str) || wildmatch(CLines[i].host,str))
+			return CLines[i];
+	}
+	return false;
+}
+
 function IRCClient_do_connect(con_server,con_port) {
 	var i;
-	var con_cline = "";
+	var con_cline;
+	var msg;
+	var con_type;
 
-	for (i in CLines) {
-		if (wildmatch(CLines[i].servername,con_server) ||
-		    wildmatch(CLines[i].host,con_server) ) {
-			con_cline = CLines[i];
-			break;
-		}
-	}
+	con_cline = Find_CLine_by_Server(con_server);
+
 	if (!con_cline) {
 		this.numeric402(con_server);
 		return 0;
@@ -1637,19 +1643,28 @@ function IRCClient_do_connect(con_server,con_port) {
 		this.server_notice("Invalid port: " + con_port);
 		return 0;
 	}
-	var msg = " CONNECT " + con_cline.servername + " " + con_port +
-		" from " + this.nick + "[" + this.uprefix + "@" +
-		this.hostname + "]";
-	var con_type = "Local";
+	msg = format(" CONNECT %s %u from %s [%s@%s]",
+		con_cline.servername,
+		con_port,
+		this.nick,
+		this.uprefix,
+		this.hostname
+	);
+	con_type = "Local";
 	if (this.parent) {
 		con_type = "Remote";
 		server_bcast_to_servers("GNOTICE :Remote" + msg);
 	}
-	umode_notice(USERMODE_ROUTING,"Routing","from "+ServerName+": " + 
-		con_type + msg);
+	umode_notice(USERMODE_ROUTING,"Routing",format("from %s: %s%s",
+		ServerName,
+		con_type,
+		msg
+	));
+	if (con_cline.next_connect)
+		js.clearTimeout(con_cline.next_connect);
 	con_cline.next_connect = js.setTimeout(
 		connect_to_server,
-		YLines[con_cline.ircclass].connfreq * 1000,
+		1, /* connect as soon as possible */
 		con_cline
 	);
 	return 1;
