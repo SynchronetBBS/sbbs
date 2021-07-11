@@ -1623,7 +1623,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 				&& (!is_user_subop(scfg, p->p->smb.subnum, user, client)))
 				break;
 
-			if(p->msg.idx.attr&MSG_PRIVATE) {
+			if(((p->p->smb.status.attr & SMB_EMAIL) == 0) && (p->msg.idx.attr&MSG_PRIVATE)) {
 				if(user==NULL)
 					break;
 				if(!is_user_subop(scfg, p->p->smb.subnum, user, client) && !(user->rest&FLAG('Q'))) {
