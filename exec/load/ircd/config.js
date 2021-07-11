@@ -151,8 +151,10 @@ function Read_Config_File() {
 	Admin3 = "";
 	if (typeof CLines !== 'undefined') {
 		for (i in CLines) {
-			if (CLines[i].next_connect)
+			if (CLines[i].next_connect) {
 				js.clearTimeout(CLines[i].next_connect);
+				delete CLines[i].next_connect;
+			}
 		}
 	}
 	CLines = [];

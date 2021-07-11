@@ -225,23 +225,18 @@ function remove_kline(kl_hm) {
 }
 
 /* this = cline */
-function connect_to_server(port) {
+function Automatic_Server_Connect() {
 	var sock = new Socket();
 
 	sock.array_buffer = false; /* JS78, we want strings */
 	sock.cline = this;
 	sock.outbound = true;
 
-	if (!port && this.port)
-		port = this.port;
-	else if (!port)
-		port = Default_Port;
-
 	if (   Servers[this.servername.toLowerCase()]
 		|| YLines[this.ircclass].active >= YLines[this.ircclass].maxlinks
 	) {
 		this.next_connect = js.setTimeout(
-			connect_to_server,
+			Automatic_Server_Connect,
 			YLines[this.ircclass].connfreq * 1000,
 			this
 		);
@@ -249,13 +244,13 @@ function connect_to_server(port) {
 	}
 
 	umode_notice(USERMODE_ROUTING,"Routing",format(
-		"Auto-connecting to %s (%s) on port %d",
+		"Auto-connecting to %s (%s) on port %u",
 		this.servername,
 		this.host,
-		port
+		this.port
 	));
 
-	sock.connect(this.host, port, handle_outbound_server_connect);
+	sock.connect(this.host, this.port, handle_outbound_server_connect);
 
 	if (this.next_connect)
 		delete this.next_connect;
@@ -283,11 +278,7 @@ function handle_outbound_server_connect() {
 			YLines[this.cline.ircclass].connfreq
 		));
 		this.close();
-		this.cline.next_connect = js.setTimeout(
-			connect_to_server, 
-			YLines[this.cline.ircclass].connfreq * 1000,
-			this.cline
-		);
+		Reset_Autoconnect(this.cline, YLines[this.cline.ircclass].connfreq * 1000);
 	}
 	this.cline.lastconnect = system.timer;
 }
@@ -1628,6 +1619,7 @@ function IRCClient_do_connect(con_server,con_port) {
 	var con_cline;
 	var msg;
 	var con_type;
+	var sock;
 
 	con_cline = Find_CLine_by_Server(con_server);
 
@@ -1641,7 +1633,7 @@ function IRCClient_do_connect(con_server,con_port) {
 		con_port = String(Default_Port);
 	if (!con_port.match(/^[0-9]+$/)) {
 		this.server_notice("Invalid port: " + con_port);
-		return 0;
+		return false;
 	}
 	msg = format(" CONNECT %s %u from %s [%s@%s]",
 		con_cline.servername,
@@ -1660,14 +1652,19 @@ function IRCClient_do_connect(con_server,con_port) {
 		con_type,
 		msg
 	));
+
 	if (con_cline.next_connect)
 		js.clearTimeout(con_cline.next_connect);
-	con_cline.next_connect = js.setTimeout(
-		connect_to_server,
-		1, /* connect as soon as possible */
-		con_cline
-	);
-	return 1;
+
+	sock = new Socket();
+	
+	sock.array_buffer = false; /* JS78, we want strings */
+	sock.cline = con_cline;
+	sock.outbound = true;
+
+	sock.connect(con_cline.host, con_port, handle_outbound_server_connect);
+
+	return true;
 }
 
 function IRCClient_do_basic_who(whomask) {
@@ -2847,6 +2844,36 @@ function Epoch() {
 	return parseInt(new Date().getTime()/1000);
 }
 
+function YLine_Decrement(yline) {
+	if (typeof yline !== 'object')
+		throw "YLine_Decrement() called without yline object.";
+
+	if (yline.active < 1) {
+		log(LOG_DEBUG, "Y:Line trying to decrement below zero");
+		yline.active = 0;
+		return false;
+	}
+
+	yline.active--;
+	log(LOG_DEBUG, format("Class down to %u active out of %u",
+		yline.active,
+		yline.maxlinks
+	));
+	return true;
+}
+
+function YLine_Increment(yline) {
+	if (typeof yline !== 'object')
+		throw "YLine_Increment() called without yline object.";
+
+	yline.active++;
+	log(LOG_DEBUG, format("Class up to %u active out of %u",
+		yline.active,
+		yline.maxlinks
+	));
+	return true;
+}
+
 /** Global object prototypes **/
 
 function CLine(host,password,servername,port,ircclass) {
@@ -2857,7 +2884,7 @@ function CLine(host,password,servername,port,ircclass) {
 	this.ircclass = ircclass;
 	this.lastconnect = 0;
 	if (YLines[ircclass].connfreq > 0)
-		js.setImmediate(connect_to_server, this);
+		Reset_Autoconnect(this, 1 /* connect immediately */);
 }
 
 function HLine(allowedmask,servername) {
