@@ -485,12 +485,7 @@ function Register_Unregistered_Local_Server(unreg, p, nline) {
 		YLines[s.ircclass].pingfreq * 1000,
 		s
 	);
-	YLines[s.ircclass].active++;
-	log(LOG_DEBUG,format("Class %s up to %d active out of %d",
-		s.ircclass,
-		YLines[s.ircclass].active,
-		YLines[s.ircclass].maxlinks
-	));
+	YLine_Increment(YLines[s.ircclass]);
 	s.finalize_server_connect("TS");
 	delete Unregistered[unreg.id];
 	delete Assigned_IDs[unreg.id];
