@@ -161,6 +161,7 @@ var interface_ip_address=0;
 var port_set=false;
 var tls=false;
 var no_path=false;
+var approved;
 var area = {};
 
 if(this.server!=undefined)
@@ -255,6 +256,9 @@ while(!cfg_file.eof) {
 			break;
 		case "max_newsgroups_per_article":
 			max_newsgroups_per_article=parseInt(str[1]);
+			break;
+		case "approved":
+			approved = str[1];
 			break;
 		default:
 			print("!UNRECOGNIZED configuration keyword: " + str[0]);
@@ -554,6 +558,9 @@ for(sub in area) {
 			+ " NewsLink " + REVISION
 			+ "]"
 			);
+
+		if(approved)
+			writeln("Approved: " + approved);
 
 		writeln("");
 		if(hdr.to.toLowerCase()!="all") {
