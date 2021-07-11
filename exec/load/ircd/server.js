@@ -1271,6 +1271,25 @@ function IRCClient_bcast_to_servers_raw(str) {
 	}
 }
 
+function Reset_Autoconnect(cline, freq) {
+	if (typeof cline !== 'object')
+		throw "Reset_Autoconnect() called without cline object.";
+
+	if (cline.next_connect)
+		js.clearTimeout(cline.next_connect);
+
+	if (!cline.port)
+		return false;
+
+	cline.next_connect = js.setTimeout(
+		Automatic_Server_Connect,
+		freq,
+		cline
+	);
+
+	return true;
+}
+
 function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 	var cline;
 
@@ -1310,27 +1329,12 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 	if (this.local) {
 		if (YLines[this.ircclass].connfreq) {
 			cline = Find_CLine_by_Server(this.nick);
-			if (cline) {
-				if (cline.next_connect)
-					js.clearTimeout(cline.next_connect);
-				cline.next_connect = js.setTimeout(
-					connect_to_server,
-					YLines[this.ircclass].connfreq * 1000,
-					cline
-				);
-			}
+			if (cline)
+				Reset_Autoconnect(cline, YLines[this.ircclass].connfreq * 1000);
 		}
 
-		if (YLines[this.ircclass].active > 0) {
-			YLines[this.ircclass].active--;
-			log(LOG_DEBUG, format("Class %s down to %d active out of %d",
-				this.ircclass,
-				YLines[this.ircclass].active,
-				YLines[this.ircclass].maxlinks
-			));
-		} else {
-			log(LOG_ERR, format("Class %d YLine going negative", this.ircclass));
-		}
+		if (YLines[this.ircclass].active > 0)
+			YLine_Decrement(YLines[this.ircclass]);
 
 		this.recvq.purge();
 		this.sendq.purge();
