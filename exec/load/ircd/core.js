@@ -270,17 +270,28 @@ function handle_outbound_server_connect() {
 		Unregistered[id].server = true; /* Avoid recvq limitation */
 		Unregistered[id].ircclass = this.cline.ircclass;
 		this.callback_id = this.on("read", Socket_Recv);
-	} else {
+		return true;
+	}
+
+	if (YLines[this.cline.ircclass].connfreq > 0 && parseInt(this.cline.port) > 0) {
 		umode_notice(USERMODE_ROUTING,"Routing",format(
 			"Failed to connect to %s (%s). Trying again in %d seconds.",
 			this.cline.servername,
 			this.cline.host,
 			YLines[this.cline.ircclass].connfreq
 		));
-		this.close();
 		Reset_Autoconnect(this.cline, YLines[this.cline.ircclass].connfreq * 1000);
+	} else {
+		umode_notice(USERMODE_ROUTING,"Routing",format(
+			"Failed to connect to %s (%s).",
+			this.cline.servername,
+			this.cline.host
+		));
 	}
-	this.cline.lastconnect = system.timer;
+
+	this.close();
+
+	return false;
 }
 
 function Write_All_Opers(str) {
@@ -2882,8 +2893,7 @@ function CLine(host,password,servername,port,ircclass) {
 	this.servername = servername;
 	this.port = port;
 	this.ircclass = ircclass;
-	this.lastconnect = 0;
-	if (YLines[ircclass].connfreq > 0)
+	if (YLines[ircclass].connfreq > 0 && parseInt(port) > 0)
 		Reset_Autoconnect(this, 1 /* connect immediately */);
 }
 
