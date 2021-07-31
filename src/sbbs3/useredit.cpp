@@ -616,7 +616,6 @@ void sbbs_t::useredit(int usernumber)
 						user.number=i;
 						getuserdat(&cfg,&user);
 						if(chk_ar(ar,&user,/* client: */NULL)) {
-							outchar(BEL);
 							break; 
 						} 
 					}
@@ -636,7 +635,6 @@ void sbbs_t::useredit(int usernumber)
 						user.number=i;
 						getuserdat(&cfg,&user);
 						if(chk_ar(ar,&user,/* client: */NULL)) {
-							outchar(BEL);
 							break; 
 						} 
 					}
@@ -716,7 +714,6 @@ int sbbs_t::searchup(char *search,int usernum)
 		userdat[U_LEN]=0;
 		strupr(userdat);
 		if(strstr(userdat,search)) {
-			outchar(BEL);
 			close(file);
 			return(i); 
 		}
@@ -770,7 +767,6 @@ int sbbs_t::searchdn(char *search,int usernum)
 		userdat[U_LEN]=0;
 		strupr(userdat);
 		if(strstr(userdat,search)) {
-			outchar(BEL);
 			close(file);
 			return(i); 
 		}
