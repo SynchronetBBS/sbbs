@@ -3716,8 +3716,17 @@ static void smtp_thread(void* arg)
 
 				if(subnum!=INVALID_SUB) {	/* Message Base */
 					uint reason;
-					if(relay_user.number==0)
+					if(relay_user.number==0) {
 						memset(&relay_user,0,sizeof(relay_user));
+						if(dnsbl_recvhdr || dnsbl_result.s_addr) {
+							lprintf(LOG_WARNING,"%04d %s %s !refusing to post message (on %s) from DNS-Blacklisted client: %s"
+								,socket, client.protocol, client_id, scfg.sub[subnum]->sname, sender_addr);
+							sockprintf(socket,client.protocol,session,"550 Insufficient access");
+							subnum = INVALID_SUB;
+							stats.msgs_refused++;
+							continue;
+						}
+					}
 
 					if(!can_user_post(&scfg,subnum,&relay_user,&client,&reason)) {
 						lprintf(LOG_WARNING,"%04d %s %s !%s (user #%u) cannot post on %s (reason: %u)"
