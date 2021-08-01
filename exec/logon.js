@@ -63,7 +63,7 @@ if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.termi
 //bbs.node_settings|=NM_NOPAUSESPIN	
 
 if(user.security.restrictions&UFLAG_G) {
-	while(bbs.online) {
+	while(options.guest_name !== false && bbs.online) {
 		printf("\x01y\x01hFor our records, please enter your full name: \x01w");
 		const name = console.getstr(LEN_NAME,K_UPRLWR);
 		if(!name || !name.length)
@@ -73,7 +73,7 @@ if(user.security.restrictions&UFLAG_G) {
 		break;
 	}
 
-	while(bbs.online) {
+	while(options.guest_email !== false && bbs.online) {
 		printf("\x01y\x01hPlease enter your e-mail address: \x01w");
 		const email = console.getstr(LEN_NETMAIL);
 		if(!email || !email.length)
@@ -88,7 +88,7 @@ if(user.security.restrictions&UFLAG_G) {
 		break;
 	}
 
-	while(bbs.online) {
+	while(options.guest_location !== false && bbs.online) {
 		printf("\x01y\x01hPlease enter your location (City, State): \x01w");
 		const location=console.getstr(LEN_LOCATION,K_UPRLWR);
 		if(!location || !location.length)
@@ -102,15 +102,17 @@ if(user.security.restrictions&UFLAG_G) {
 		break;
 	}
 
-	if(bbs.online)
-		bbs.log_str("\r\n");
-	while(bbs.online) {
-		printf("\x01y\x01hWhere did you hear about this BBS?\r\n: \x01w");
-		const ref=console.getstr(70);
-		if(!ref || !ref.length)
-			continue;
-		bbs.log_str(ref + "\r\n");
-		break;
+	if(options.guest_referral !== false) {
+		if(bbs.online)
+			bbs.log_str("\r\n");
+		while(bbs.online) {
+			printf("\x01y\x01hWhere did you hear about this BBS?\r\n: \x01w");
+			const ref=console.getstr(70);
+			if(!ref || !ref.length)
+				continue;
+			bbs.log_str(ref + "\r\n");
+			break;
+		}
 	}
 }
 
