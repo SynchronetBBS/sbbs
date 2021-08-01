@@ -24,6 +24,14 @@ if(options.draw_avatar_right === undefined)
 	options.draw_avatar_right = true;
 if(options.show_logon_list === undefined)
 	options.show_logon_list = true;
+if(options.guest_name === undefined || options.guest_name === true)
+	options.guest_name = "\x01y\x01hFor our records, please enter your full name: \x01w";
+if(options.guest_email === undefined || options.guest_email === true)
+	options.guest_email = "\x01y\x01hPlease enter your e-mail address: \x01w";
+if(options.guest_location === undefined || options.guest_location == true)
+	options.guest_location = "\x01y\x01hPlease enter your location (City, State): \x01w";
+if(options.guest_referral === undefined || options.guest_referral === true)
+	options.guest_referral = "\x01y\x01hWhere did you hear about this BBS?\r\n: \x01w";
 if(options.sysop_available) {
 	require("text.js", 'LiSysopAvailable');
 	var list = options.sysop_available.split(',');
@@ -63,8 +71,8 @@ if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.termi
 //bbs.node_settings|=NM_NOPAUSESPIN	
 
 if(user.security.restrictions&UFLAG_G) {
-	while(options.guest_name !== false && bbs.online) {
-		printf("\x01y\x01hFor our records, please enter your full name: \x01w");
+	while(options.guest_name && bbs.online) {
+		write(options.guest_name);
 		const name = console.getstr(LEN_NAME,K_UPRLWR);
 		if(!name || !name.length)
 			continue;
@@ -73,8 +81,8 @@ if(user.security.restrictions&UFLAG_G) {
 		break;
 	}
 
-	while(options.guest_email !== false && bbs.online) {
-		printf("\x01y\x01hPlease enter your e-mail address: \x01w");
+	while(options.guest_email&& bbs.online) {
+		write(options.guest_email);
 		const email = console.getstr(LEN_NETMAIL);
 		if(!email || !email.length)
 			continue;
@@ -88,8 +96,8 @@ if(user.security.restrictions&UFLAG_G) {
 		break;
 	}
 
-	while(options.guest_location !== false && bbs.online) {
-		printf("\x01y\x01hPlease enter your location (City, State): \x01w");
+	while(options.guest_location && bbs.online) {
+		write(options.guest_location);
 		const location=console.getstr(LEN_LOCATION,K_UPRLWR);
 		if(!location || !location.length)
 			continue;
@@ -102,11 +110,11 @@ if(user.security.restrictions&UFLAG_G) {
 		break;
 	}
 
-	if(options.guest_referral !== false) {
+	if(options.guest_referral) {
 		if(bbs.online)
 			bbs.log_str("\r\n");
 		while(bbs.online) {
-			printf("\x01y\x01hWhere did you hear about this BBS?\r\n: \x01w");
+			write(options.guest_referral);
 			const ref=console.getstr(70);
 			if(!ref || !ref.length)
 				continue;
