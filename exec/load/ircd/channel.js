@@ -421,13 +421,13 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	// This is a special case, if +b was passed to us without arguments,
 	// we simply display a list of bans on the channel.
 	if (cmode.addbits&CHANMODE_BAN) {
-		for (the_ban in chan.modelist[CHANMODE_BAN]) {
+		for (i in chan.modelist[CHANMODE_BAN]) {
 			this.numeric(367, format(
 				"%s %s %s %s",
 				chan.nam,
-				chan.modelist[CHANMODE_BAN][the_ban],
-				chan.bancreator[the_ban],
-				chan.bantime[the_ban]
+				chan.modelist[CHANMODE_BAN][i],
+				chan.bancreator[i],
+				chan.bantime[i]
 			));
 		}
 		this.numeric(368, chan.nam + " :End of Channel Ban List.");
