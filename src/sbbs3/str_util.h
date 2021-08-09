@@ -46,7 +46,7 @@ DLLEXPORT char *    replace_named_values(const char* src ,char* buf, size_t bufl
 DLLEXPORT char *	condense_whitespace(char* str);
 DLLEXPORT char		exascii_to_ascii_char(uchar ch);
 DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
-DLLEXPORT BOOL		findstr_in_string(const char* insearchof, char* string);
+DLLEXPORT BOOL		findstr_in_string(const char* insearchof, const char* pattern);
 DLLEXPORT BOOL		findstr_in_list(const char* insearchof, str_list_t list);
 DLLEXPORT str_list_t findstr_list(const char* fname);
 DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
