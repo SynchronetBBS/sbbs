@@ -1296,7 +1296,7 @@ int main(int argc, char **argv, char** env)
 							err_level=parseLogLevel(p);
 							break;
 						case 'e':
-							if (errfp != stderr)
+							if (errfp != NULL && errfp != stderr)
 								fclose(errfp);
 							if((errfp=fopen(p,omode))==NULL) {
 								perror(p);
@@ -1340,7 +1340,7 @@ int main(int argc, char **argv, char** env)
 					omode="a";
 					break;
 				case 'A':
-					if (errfp != stderr)
+					if (errfp != NULL && errfp != stderr)
 						fclose(errfp);
 					if(*p == '\0') {
 						errfp = stdout;
