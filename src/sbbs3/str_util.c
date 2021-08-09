@@ -244,64 +244,68 @@ char* strip_char(const char* str, char* dest, char ch)
 }
 
 /****************************************************************************/
-/* Pattern matching string search of 'insearchof' in 'string'.				*/
+/* Pattern matching string search of 'insearchof' in 'pattern'.				*/
+/* pattern matching is case-insensitive										*/
+/* patterns beginning with ';' are comments (never match)					*/
+/* patterns beginning with '!' are reverse-matched (returns FALSE if match)	*/
+/* patterns ending in '~' will match string anywhere (sub-string search)	*/
+/* patterns ending in '^' will match left string fragment only				*/
+/* patterns including '*' must match both left and right string fragments	*/
+/* all other patterns are exact-match checking								*/
 /****************************************************************************/
-BOOL findstr_in_string(const char* insearchof, char* string)
+BOOL findstr_in_string(const char* search, const char* pattern)
 {
+	char	buf[256];
 	char*	p;
-	char	str[256];
-	char	search[81];
-	int		c;
-	int		i;
-	BOOL	found=FALSE;
+	char*	last;
+	const char*	splat;
+	size_t	len;
+	BOOL	found = FALSE;
 
-	if(string==NULL || insearchof==NULL)
-		return(FALSE);
+	if(pattern == NULL || search == NULL)
+		return FALSE;
 
-	SAFECOPY(search,insearchof);
-	strupr(search);
-	SAFECOPY(str,string);
+	SAFECOPY(buf, pattern);
+	p = buf;
 
-	p=str;	
-//	SKIP_WHITESPACE(p);
+	if(*p == ';')		/* comment */
+		return FALSE;
 
-	if(*p==';')		/* comment */
-		return(FALSE);
-
-	if(*p=='!')	{	/* !match */
-		found=TRUE;
+	if(*p == '!')	{	/* reverse-match */
+		found = TRUE;
 		p++;
 	}
 
 	truncsp(p);
-	c=strlen(p);
-	if(c) {
-		c--;
-		strupr(p);
-		if(p[c]=='~') {
-			p[c]=0;
-			if(strstr(search,p))
-				found=!found; 
+	len = strlen(p);
+	if(len > 0) {
+		last = p + len - 1;
+		if(*last == '~') {
+			*last = '\0';
+			if(strcasestr(search, p) != NULL)
+				found = !found; 
 		}
 
-		else if(p[c]=='^' || p[c]=='*') {
-			p[c]=0;
-			if(!strncmp(p,search,c))
-				found=!found; 
+		else if(*last == '^') {
+			if(strnicmp(p, search, len - 1) == 0)
+				found = !found; 
 		}
 
-		else if(p[0]=='*') {
-			i=strlen(search);
-			if(i<c)
-				return(found);
-			if(!strncmp(p+1,search+(i-c),c))
-				found=!found; 
+		else if((splat = strchr(p, '*')) != NULL) {
+			int left = splat - p;
+			int right = len - (left + 1);
+			int slen = strlen(search);
+			if(slen < left + right)
+				return found;
+			if(strnicmp(search, p, left) == 0
+				&& strnicmp(p + left + 1, search + (slen - right), right) == 0)
+				found = !found;
 		}
 
-		else if(!strcmp(p,search))
-			found=!found; 
+		else if(stricmp(p, search) == 0)
+			found = !found; 
 	} 
-	return(found);
+	return found;
 }
 
 static uint32_t encode_ipv4_address(unsigned int byte[])
