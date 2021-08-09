@@ -2035,8 +2035,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("search <tt>text/<i>basename</i>.can</tt> for pseudo-regexp")
 	,310
 	},		
-	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename or array, find_string")
-	,JSDOCSTR("search any file or array of strings for pseudo-regexp string (in <tt>*.can</tt> format)")
+	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename or array of strings, find_string")
+	,JSDOCSTR("search any trashcan/filter file or array of pattern strings (in <tt>*.can</tt> format) for <i>find_string</i>")
 	,310
 	},		
 	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone=<i>local</i>]")
