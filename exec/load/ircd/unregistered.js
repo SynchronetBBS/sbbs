@@ -303,6 +303,13 @@ function Unregistered_Quit(msg) {
 		"%04u Connection closed.",
 		this.socket.descriptor
 	));
+	if (   typeof this.cline === 'object'
+		&& YLines[this.ircclass].connfreq > 0
+		&& this.cline.port > 0
+		&& !Servers[this.cline.servername.toLowerCase()]
+	) {
+		Reset_Autoconnect(this.cline, YLines[this.ircclass].connfreq * 1000);
+	}
 	js.clearInterval(this.pinginterval);
 	delete Assigned_IDs[this.id];
 	delete Unregistered[this.id];
