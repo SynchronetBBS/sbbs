@@ -1278,7 +1278,7 @@ function Reset_Autoconnect(cline, freq) {
 	if (cline.next_connect)
 		js.clearTimeout(cline.next_connect);
 
-	if (!cline.port)
+	if (!cline.port || Servers[cline.servername.toLowerCase()])
 		return false;
 
 	cline.next_connect = js.setTimeout(
@@ -1327,11 +1327,8 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 	}
 
 	if (this.local) {
-		if (YLines[this.ircclass].connfreq) {
+		if (YLines[this.ircclass].connfreq)
 			cline = Find_CLine_by_Server(this.nick);
-			if (cline)
-				Reset_Autoconnect(cline, YLines[this.ircclass].connfreq * 1000);
-		}
 
 		if (YLines[this.ircclass].active > 0)
 			YLine_Decrement(YLines[this.ircclass]);
@@ -1371,7 +1368,9 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 
 	delete Local_Servers[this.nick.toLowerCase()];
 	delete Servers[this.nick.toLowerCase()];
-	delete this;
+
+	if (cline)
+		Reset_Autoconnect(cline, YLines[this.ircclass].connfreq * 1000);
 }
 
 function IRCClient_synchronize() {
