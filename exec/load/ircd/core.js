@@ -269,6 +269,7 @@ function handle_outbound_server_connect() {
 		Unregistered[id] = new Unregistered_Client(id,this);
 		Unregistered[id].server = true; /* Avoid recvq limitation */
 		Unregistered[id].ircclass = this.cline.ircclass;
+		Unregistered[id].cline = this.cline;
 		this.callback_id = this.on("read", Socket_Recv);
 		return true;
 	}
@@ -2893,8 +2894,12 @@ function CLine(host,password,servername,port,ircclass) {
 	this.servername = servername;
 	this.port = port;
 	this.ircclass = ircclass;
-	if (YLines[ircclass].connfreq > 0 && parseInt(port) > 0)
+	if (   YLines[ircclass].connfreq > 0
+		&& parseInt(port) > 0
+		&& !Servers[servername.toLowerCase()]
+	) {
 		Reset_Autoconnect(this, 1 /* connect immediately */);
+	}
 }
 
 function HLine(allowedmask,servername) {
