@@ -2725,6 +2725,12 @@ function accept_new_socket() {
 
 	sock.array_buffer = false; /* JS78, we want strings */
 
+	if (!sock.local_port) {
+		log(LOG_DEBUG,"!ERROR Socket has no local port.  Closing.");
+		sock.close();
+		return 1;
+	}
+
 	log(LOG_DEBUG,"Accepting new connection on port " + sock.local_port);
 
 	switch (sock.local_port) {
