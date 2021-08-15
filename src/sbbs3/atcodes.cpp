@@ -1184,7 +1184,23 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		float f = 0;
 		if(useron.posts)
 			f = (float)useron.logons / useron.posts;
-		safe_snprintf(str, maxlen, "%u", f ? (uint)(100 / f) : useron.posts > useron.logons ? 100 : 0);
+		safe_snprintf(str, maxlen, "%u", f ? (uint)(100 / f) : 0);
+		return str;
+	}
+
+	if(strcmp(sp, "UDR") == 0) {
+		float f = 0;
+		if(useron.ulb)
+			f = (float)useron.dlb / useron.ulb;
+		safe_snprintf(str, maxlen, "%u", f ? (uint)(100 / f) : 0);
+		return str;
+	}
+
+	if(strcmp(sp, "UDFR") == 0) {
+		float f = 0;
+		if(useron.uls)
+			f = (float)useron.dls / useron.uls;
+		safe_snprintf(str, maxlen, "%u", f ? (uint)(100 / f) : 0);
 		return str;
 	}
 
