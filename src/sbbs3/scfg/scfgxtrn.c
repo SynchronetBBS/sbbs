@@ -2006,6 +2006,8 @@ void xedit_cfg()
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Editor Information Files"
 						,opt);
+					if(k == -1)
+						break;
 					if(!k && !(cfg.xedit[i]->misc&QUICKBBS)) {
 						cfg.xedit[i]->misc|=QUICKBBS;
 						uifc.changes=TRUE; 
