@@ -88,6 +88,10 @@ function Unregistered_Client(id,socket) {
 		this.dns_pending = false;
 	} else {
 		this.reverse_resolver = function(resp) {
+			if (!this.socket.is_connected) {
+				log(LOG_DEBUG,format("[UNREG] RDNS reply discarded because socket closed."));
+				return false;
+			}
 			if (!this.dns_pending) {
 				log(LOG_DEBUG,format("[UNREG] WARNING: Received extraneous RDNS reply."));
 				return false;
@@ -108,6 +112,10 @@ function Unregistered_Client(id,socket) {
 			return false;
 		}
 		this.forward_resolver = function(resp) {
+			if (!this.socket.is_connected) {
+				log(LOG_DEBUG,format("[UNREG] DNS reply discarded because socket closed."));
+				return false;
+			}
 			if (!this.dns_pending) {
 				log(LOG_DEBUG,format("[UNREG] WARNING: Received extraneous DNS reply."));
 				return false;
