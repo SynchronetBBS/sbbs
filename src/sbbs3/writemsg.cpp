@@ -85,6 +85,9 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 		return false; 
 	}
 
+	if(useron_xedit > 0 && cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV)
+		fputs("#\r\n\r\n", fp);	// WWIV adds 2 lines of metadata, BRedit checks for the # symbol
+
 	bool result = false;
 	ulong mode = GETMSGTXT_PLAIN;
 	if(tails) mode |= GETMSGTXT_TAILS;
@@ -329,6 +332,10 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 				free(buf);
 				return(false); 
 			}
+			if(cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV) { // 2 lines of metadata
+				fgets(str, sizeof(str), stream);
+				fgets(str, sizeof(str), stream);
+			}
 			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
 				free(buf);
@@ -359,6 +366,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				free(buf);
 				return(false); 
+			}
+
+			if(useron_xedit > 0 && cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV) { // 2 lines of metadata
+				fgets(str, sizeof(str), stream);
+				fgets(str, sizeof(str), stream);
 			}
 
 			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
