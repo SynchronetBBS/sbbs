@@ -2719,8 +2719,8 @@ function accept_new_socket() {
 	sock = this.accept();
 
 	if (!sock) {
-		log(LOG_DEBUG,"!ERROR " + sock.error + " accepting connection");
-		return 1;
+		log(LOG_DEBUG,format("!ERROR %s accepting connection", this.error));
+		return false;
 	}
 
 	sock.array_buffer = false; /* JS78, we want strings */
@@ -2728,7 +2728,7 @@ function accept_new_socket() {
 	if (!sock.local_port) {
 		log(LOG_DEBUG,"!ERROR Socket has no local port.  Closing.");
 		sock.close();
-		return 1;
+		return false;
 	}
 
 	log(LOG_DEBUG,"Accepting new connection on port " + sock.local_port);
@@ -2748,7 +2748,7 @@ function accept_new_socket() {
 	if (!sock.remote_ip_address) {
 		log(LOG_DEBUG,"!ERROR Socket has no IP address.  Closing.");
 		sock.close();
-		return 1;
+		return false;
 	}
 
 	if (IP_Banned(sock.remote_ip_address)) {
@@ -2757,7 +2757,7 @@ function accept_new_socket() {
 			ServerName
 		));
 		sock.close();
-		return 1;
+		return false;
 	}
 
 	if (server.client_add !== undefined) {
@@ -2775,7 +2775,7 @@ function accept_new_socket() {
 
 	Unregistered[id] = unreg_obj;
 
-	return 0;
+	return true;
 }
 
 function Startup() {
