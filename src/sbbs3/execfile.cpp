@@ -446,10 +446,10 @@ int sbbs_t::exec_file(csi_t *csi)
 			}
 			return(0);
 		case CS_FILE_FIND_TEXT: 	/* Find text in descriptions */
-			scandirs(FL_FINDDESC);
+			scandirs(FL_FIND);
 			return(0);
 		case CS_FILE_FIND_TEXT_ALL: 	/* Find text in descriptions */
-			scanalldirs(FL_FINDDESC);
+			scanalldirs(FL_FIND);
 			return(0);
 		case CS_FILE_FIND_NAME: 	/* Find text in descriptions */
 			scandirs(FL_NO_HDR);

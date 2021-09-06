@@ -35,7 +35,7 @@ int extdesclines(char *str);
 /*****************************************************************************/
 int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode)
 {
-	char	hdr[256],letter='A',*p;
+	char	hdr[256],letter='A';
 	uchar	flagprompt=0;
 	int		c, d;
 	uint	i,j;
@@ -58,8 +58,8 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 
 	size_t file_count = 0;
 	file_t* file_list = loadfiles(&smb
-		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
-		, (mode&FL_ULTIME) ? ns_time : 0
+		, (mode & FL_FIND) ? NULL : filespec
+		, (mode & FL_ULTIME) ? ns_time : 0
 		, tofile == NULL ? file_detail_extdesc : file_detail_normal
 		, (enum file_sort)cfg.dir[dirnum]->sort
 		, &file_count);
@@ -93,7 +93,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 			found=0;
 		if(m>=file_count || flagprompt) {		  /* End of list */
 			if(useron.misc&BATCHFLAG && !tofile && found && found!=lastbat
-				&& !(mode&(FL_EXFIND|FL_VIEW))) {
+				&& !(mode&(FL_EXT|FL_VIEW))) {
 				flagprompt=0;
 				lncntr=0;
 				if((i=batchflagprompt(&smb, bf, file_row, letter-'A', file_count))==2) {
@@ -136,47 +136,25 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 			found = -1;
 			break;
 		}
-#if 0 /* unnecessary? */
-		if(!(mode&(FL_FINDDESC|FL_EXFIND)) && filespec[0]
-			&& !filematch(str,filespec)) {
-			m+=11;
-			continue; 
-		}
-#endif
-		if(mode&(FL_FINDDESC|FL_EXFIND)) {
-			p = (f->desc == NULL) ? NULL : strcasestr(f->desc, filespec);
+		if(mode & FL_FIND) {
+			char* p = (f->desc == NULL) ? NULL : strcasestr(f->desc, filespec);
 			if(p == NULL)
 				p = strcasestr(f->name, filespec);
-			if(!(mode&FL_EXFIND) && p==NULL) {
-				m++;
-				continue; 
-			}
-			if(mode&FL_EXFIND && f->extdesc != NULL) { /* search extended description */
-				if(!strcasestr((char*)f->extdesc, filespec) && p == NULL) {	/* not in description or */
-					m++;											 /* extended description */
+			if(p == NULL) {
+				if(f->extdesc != NULL)
+					p = strcasestr((char*)f->extdesc, filespec);
+				if(p == NULL) {
+					m++;
 					continue; 
 				}
 			}
-			else if(p == NULL) {			 /* no extended description and not in desc */
-				m++;
-				continue; 
-			} 
 		}
-/** necessary?
-		if(mode&FL_ULTIME) {
-			if(ns_time>(ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)|((long)ixbbuf[m+5]<<16)
-				|((long)ixbbuf[m+6]<<24))) {
-				m+=11;
-				continue; 
-			}
-		}
-**/
 		if(useron.misc&BATCHFLAG && letter=='A' && found && !tofile
-			&& !(mode&(FL_EXFIND|FL_VIEW))
+			&& !(mode&(FL_EXT | FL_VIEW))
 			&& (!mode || !(useron.misc&EXPERT)))
 			bputs(text[FileListBatchCommands]);
 		m++;
-		if(!found && !(mode&(FL_EXFIND|FL_VIEW))) {
+		if(!found && !(mode&(FL_EXT | FL_VIEW))) {
 			for(i=0;i<usrlibs;i++)
 				if(usrlib[i]==cfg.dir[dirnum]->lib)
 					break;
@@ -259,10 +237,10 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 		long currow = row;
 		next=m;
 		disp=1;
-		if(mode&(FL_EXFIND|FL_VIEW)) {
+		if(mode&(FL_EXT | FL_VIEW)) {
 			if(!found)
 				bputs("\r\1>");
-			if(!viewfile(f, INT_TO_BOOL(mode&FL_EXFIND))) {
+			if(!viewfile(f, INT_TO_BOOL(mode & FL_EXT))) {
 				found = -1;
 				break;
 			}
@@ -270,7 +248,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 		}
 		else if(tofile)
 			listfiletofile(f, tofile);
-		else if(mode&FL_FINDDESC)
+		else if(mode & FL_FIND)
 			disp=listfile(f, dirnum, filespec, letter, longest);
 		else
 			disp=listfile(f, dirnum, nulstr, letter, longest);
@@ -286,7 +264,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 			found = -1;
 			break;
 		}
-		if(mode&(FL_EXFIND|FL_VIEW))
+		if(mode&(FL_EXT | FL_VIEW))
 			continue;
 		if(useron.misc&BATCHFLAG && !tofile) {
 			if(disp) {
@@ -296,7 +274,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 			m++;
 			if(flagprompt || letter=='Z' || !disp ||
 				(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?')
-				&& !(mode&FL_FINDDESC))
+				&& !(mode & FL_FIND))
 				|| (useron.misc&BATCHFLAG && !tofile && lncntr>=rows-2)
 				) {
 				flagprompt=0;
@@ -334,7 +312,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 			flagprompt=1; 
 		}
 		m=next;
-		if(mode&FL_FINDDESC) continue;
+		if(mode & FL_FIND) continue;
 		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?') && m)
 			break; 
 	}
@@ -433,7 +411,8 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
 				bprintf("%.*s",i,fdesc+j);
 				attr(cfg.color[clr_filedesc]);
 				bprintf("%.*s",(int)strlen(fdesc)-(j+i),fdesc+j+i);
-			}
+			} else
+				bputs(P_TRUNCATE, fdesc);
 		}
 		else {
 			bputs(P_TRUNCATE, fdesc);
