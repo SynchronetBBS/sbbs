@@ -749,10 +749,10 @@ typedef enum {						/* Values for xtrn_t.event				*/
 
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */
-#define FL_DLTIME   (1<<1)		/* List files by download time              */
+#define FL_DLTIME   (1<<1)		/* List files by download time - UNUSED     */
 #define FL_NO_HDR   (1<<2)		/* Don't list directory header              */
-#define FL_FINDDESC (1<<3)		/* Find text in description                 */
-#define FL_EXFIND   (1<<4)		/* Find text in description - extended info */
+#define FL_FIND     (1<<3)		/* Find text in description or filename		*/
+#define FL_EXT      (1<<4)		/* Displayed extended file information		*/
 #define FL_VIEW     (1<<5)		/* View ZIP/ARC/GIF etc. info               */
 
 								/* Bits in the mode of writemsg and email() */

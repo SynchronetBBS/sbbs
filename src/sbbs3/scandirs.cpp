@@ -45,9 +45,9 @@ void sbbs_t::scandirs(long mode)
 			if(!getfilespec(str))
 				return;
 		}
-		else if(mode==FL_FINDDESC) {	/* Find text in description */
-			if(text[SearchExtendedQ][0] && !noyes(text[SearchExtendedQ]))
-				mode=FL_EXFIND;
+		else if(mode==FL_FIND) {	/* Find text in description */
+			if(text[DisplayExtendedFileInfoQ][0] && !noyes(text[DisplayExtendedFileInfoQ]))
+				mode |= FL_EXT;
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
 				return; 
@@ -111,9 +111,9 @@ void sbbs_t::scanalldirs(long mode)
 		if(!getfilespec(str))
 			return;
 	}
-	else if(mode==FL_FINDDESC) {	/* Find text in description */
-		if(text[SearchExtendedQ][0] && !noyes(text[SearchExtendedQ]))
-			mode=FL_EXFIND;
+	else if(mode==FL_FIND) {	/* Find text in description */
+		if(text[DisplayExtendedFileInfoQ][0] && !noyes(text[DisplayExtendedFileInfoQ]))
+			mode |= FL_EXT;
 		if(sys_status&SS_ABORT) {
 			lncntr=0;
 			return; 
