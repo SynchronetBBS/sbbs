@@ -770,7 +770,7 @@
 "\r\n~Sub-board: @SUB@, ~Group: @GRP@, or ~All: "       621 SubGroupOrAll
 "\r\n~Directory: @DIR@, ~Library: @LIB@, or ~All: "     622 DirLibOrAll
 "\r\n\1_\1y\1hEnter path: "                                623 EnterPath
-"\r\nSearch and display extended information"           624 SearchExtendedQ
+"\1?Display extended file information"                 624 DisplayExtendedFileInfoQ
 "\r\nDisplay Subjects Only"                             625 DisplaySubjectsOnlyQ
 "\r\nEcho is now %s \r\n"                               626 EchoIsNow
 "\r\n\1n\1y\1hPrivate Chat - \1bCtrl-C to Quit\1n\r\n\r\n"   627 WelcomeToPrivateChat
