@@ -634,7 +634,7 @@ enum {
 	,SubGroupOrAll
 	,DirLibOrAll
 	,EnterPath
-	,SearchExtendedQ
+	,DisplayExtendedFileInfoQ
 	,DisplaySubjectsOnlyQ
 	,EchoIsNow
 	,WelcomeToPrivateChat
