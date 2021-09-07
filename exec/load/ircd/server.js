@@ -444,7 +444,7 @@ function Server_Work(cmdline) {
 		if (parseInt(p[1]) < tmp.created && origin.server)
 			j = true;
 		p.shift();
-		origin.set_chanmode(tmp,p.join(" "),j);
+		origin.set_chanmode(tmp,p,j);
 		break;
 	case "MOTD":
 		if (!p[0] || origin.server)
@@ -908,9 +908,9 @@ function Server_Work(cmdline) {
 
 		if (p[2]) {
 			this.set_chanmode(
-				tmp, /* Channel object */
-				p.splice(2,p.length-3).join(" "), /* Channel mode */
-				(tmp.created <= parseInt(p[0])) ? false : true /* TS */
+				tmp, /* channel */
+				p.splice(2,p.length-3), /* modeline and arguments */
+				(tmp.created >= parseInt(p[0])) ? false : true /* ts superiority */
 			);
 
 			j = p[p.length-1].split(" "); /* Channel members */
