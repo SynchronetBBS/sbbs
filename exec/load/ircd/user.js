@@ -343,7 +343,7 @@ function User_Work(cmdline) {
 					break;
 				}
 				p.shift();
-				this.set_chanmode(tmp, p.join(" "), false /* bounce? */);
+				this.set_chanmode(tmp, p, false /* bounce? */);
 			} else if (p[0].toUpperCase() == this.nick.toUpperCase()) {
 				this.setusermode(p[1]);
 			} else {
