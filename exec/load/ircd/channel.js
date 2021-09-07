@@ -244,21 +244,21 @@ function ChanMode(chan,user) {
 	this.affect_mode_list = ChanMode_affect_mode_list;
 }
 
-function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
-	var i, j;
+function IRCClient_set_chanmode(chan,cm_args,bounce_modes) {
+	var c, i, j;
+	var add;
 
-	if (!chan || !modeline)
+	if (!chan || !cm_args) {
+		throw "set_chanmode() called without chan or cm_args";
 		return;
+	}
 
-	var cmode = new ChanMode(chan,this);
+	c = new ChanMode(chan,this);
 
-	var cm_args = modeline.split(' ');
+	var mode_counter = 0;
+	var mode_args_counter = 1; // start counting at args, not the modestring
 
-	var add=true;
-
-	var mode_counter=0;
-	var mode_args_counter=1; // start counting at args, not the modestring
-
+	add = true; /* if a mode is passed without + or -, assume + */
 	for (i in cm_args[0]) {
 		mode_counter++;
 		switch (cm_args[0][i]) {
@@ -274,20 +274,19 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 				break;
 			case "b":
 				if(add && (cm_args.length<=mode_args_counter)) {
-					cmode.addbits|=CHANMODE_BAN;//list bans
+					c.addbits|=CHANMODE_BAN;//list bans
 					break;
 				}
-				cmode.tweaktmpmodelist(CHANMODE_BAN,add,
-					cm_args[mode_args_counter]);
+				c.tweaktmpmodelist(CHANMODE_BAN,add,cm_args[mode_args_counter]);
 				mode_args_counter++;
 				break;
 			case "i":
-				cmode.tweaktmpmode(CHANMODE_INVITE,add);
+				c.tweaktmpmode(CHANMODE_INVITE,add);
 				break;
 			case "k":
 				if(cm_args.length > mode_args_counter) {
-					cmode.tweaktmpmode(CHANMODE_KEY,add);
-					cmode.state_arg[CHANMODE_KEY]=cm_args[mode_args_counter];
+					c.tweaktmpmode(CHANMODE_KEY,add);
+					c.state_arg[CHANMODE_KEY]=cm_args[mode_args_counter];
 					mode_args_counter++;
 				}
 				break;
@@ -295,50 +294,47 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 				if (add && (cm_args.length > mode_args_counter)) {
 					var regexp = "^[0-9]{1,5}$";
 					mode_args_counter++;
-					if(cm_args[mode_args_counter-1].match(regexp))
-						cmode.state_arg[CHANMODE_LIMIT]=cm_args[mode_args_counter-1];
-					else
+					if(!cm_args[mode_args_counter-1].match(regexp))
 						break;
-					cmode.tweaktmpmode(CHANMODE_LIMIT,true);
+					c.state_arg[CHANMODE_LIMIT] = cm_args[mode_args_counter-1];
+					c.tweaktmpmode(CHANMODE_LIMIT,true);
 				} else if (!add) {
-					cmode.tweaktmpmode(CHANMODE_LIMIT,false);
+					c.tweaktmpmode(CHANMODE_LIMIT,false);
 					if (cm_args.length > mode_args_counter)
 						mode_args_counter++;
 				}
 				break;
 			case "m":
-				cmode.tweaktmpmode(CHANMODE_MODERATED,add);
+				c.tweaktmpmode(CHANMODE_MODERATED,add);
 				break;
 			case "n":
-				cmode.tweaktmpmode(CHANMODE_NOOUTSIDE,add);
+				c.tweaktmpmode(CHANMODE_NOOUTSIDE,add);
 				break;
 			case "o":
 				if (cm_args.length <= mode_args_counter)
 					break;
-				cmode.tweaktmpmodelist(CHANMODE_OP,add,
-					cm_args[mode_args_counter]);
+				c.tweaktmpmodelist(CHANMODE_OP,add,cm_args[mode_args_counter]);
 				mode_args_counter++;
 				break;
 			case "p":
 				if( (add && !(chan.mode&CHANMODE_SECRET) ||
-				     (cmode.delbits&CHANMODE_SECRET) ) ||
+				     (c.delbits&CHANMODE_SECRET) ) ||
 				    (!add) )
-					cmode.tweaktmpmode(CHANMODE_PRIVATE,add);
+					c.tweaktmpmode(CHANMODE_PRIVATE,add);
 				break;
 			case "s":
 				if( (add && !(chan.mode&CHANMODE_PRIVATE) ||
-				     (cmode.delbits&CHANMODE_PRIVATE) ) ||
+				     (c.delbits&CHANMODE_PRIVATE) ) ||
 				    (!add) )
-					cmode.tweaktmpmode(CHANMODE_SECRET,add);
+					c.tweaktmpmode(CHANMODE_SECRET,add);
 				break;
 			case "t":
-				cmode.tweaktmpmode(CHANMODE_TOPIC,add);
+				c.tweaktmpmode(CHANMODE_TOPIC,add);
 				break;
 			case "v":
 				if (cm_args.length <= mode_args_counter)
 					break;
-				cmode.tweaktmpmodelist(CHANMODE_VOICE,add,
-					cm_args[mode_args_counter]);
+				c.tweaktmpmodelist(CHANMODE_VOICE,add,cm_args[mode_args_counter]);
 				mode_args_counter++;
 				break;
 			default:
@@ -357,18 +353,20 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	// side of the network sync.
 	if (bounce_modes) {
 		for (i in MODE) {
-			if (MODE[i].state && (chan.mode&i) && !(cmode.addbits&i)) {
-				cmode.delbits |= i;
+			if (MODE[i].state && (chan.mode&i) && !(c.addbits&i)) {
+				c.delbits |= i;
+			} else if (MODE[i].state && !(chan.mode&i) && (c.addbits&i)) {
+				c.addbits&=~i;
 			} else if (MODE[i].list && MODE[i].isnick) {
 				for (j in chan.modelist[i]) {
-					cmode.delmodes += MODE[i].modechar;
-					cmode.delmodeargs += " " + chan.modelist[i][j].nick;
+					c.delmodes += MODE[i].modechar;
+					c.delmodeargs += " " + chan.modelist[i][j].nick;
 					delete chan.modelist[i][j];
 				}
 			} else if (MODE[i].list && !MODE[i].isnick) {
 				for (j in chan.modelist[i]) {
-					cmode.delmodes += MODE[i].modechar;
-					cmode.delmodeargs += " " + chan.modelist[i][j];
+					c.delmodes += MODE[i].modechar;
+					c.delmodeargs += " " + chan.modelist[i][j];
 					delete chan.modelist[i][j];
 					delete chan.bantime[j];
 					delete chan.bancreator[j];
@@ -382,36 +380,36 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	for (i in MODE) {
 		if (MODE[i].state) {
 			if (   (i&CHANMODE_KEY)
-				&& (cmode.addbits&CHANMODE_KEY)
-				&& cmode.state_arg[i]
+				&& (c.addbits&CHANMODE_KEY)
+				&& c.state_arg[i]
 				&& chan.arg[i]
 				&& !this.server
 				&& !this.parent
 				&& !bounce_modes
 			) {
 				this.numeric(467, format("%s :Channel key already set.", chan.nam));
-			} else if (   (cmode.addbits&i)
+			} else if (   (c.addbits&i)
 						&& (
 							   !(chan.mode&i)
 							|| (
 								  (i==CHANMODE_LIMIT)
-								&&(chan.arg[CHANMODE_LIMIT]!=cmode.state_arg[CHANMODE_LIMIT])
+								&&(chan.arg[CHANMODE_LIMIT]!=c.state_arg[CHANMODE_LIMIT])
 							   )
 						   )
 			) {
-				cmode.addmodes += MODE[i].modechar;
+				c.addmodes += MODE[i].modechar;
 				chan.mode |= i;
 				if (MODE[i].args && MODE[i].state) {
-					cmode.addmodeargs += " " +
-						cmode.state_arg[i];
-					chan.arg[i] = cmode.state_arg[i];
+					c.addmodeargs += " " +
+						c.state_arg[i];
+					chan.arg[i] = c.state_arg[i];
 				}
-			} else if ((cmode.delbits&i) && (chan.mode&i)) {
-				cmode.delmodes += MODE[i].modechar;
+			} else if ((c.delbits&i) && (chan.mode&i)) {
+				c.delmodes += MODE[i].modechar;
 				chan.mode &= ~i;
 				if (MODE[i].args && MODE[i].state) {
-					cmode.delmodeargs += " " +
-						cmode.state_arg[i];
+					c.delmodeargs += " " +
+						c.state_arg[i];
 					chan.arg[i] = "";
 				}
 			}
@@ -420,7 +418,7 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 
 	// This is a special case, if +b was passed to us without arguments,
 	// we simply display a list of bans on the channel.
-	if (cmode.addbits&CHANMODE_BAN) {
+	if (c.addbits&CHANMODE_BAN) {
 		for (i in chan.modelist[CHANMODE_BAN]) {
 			this.numeric(367, format(
 				"%s %s %s %s",
@@ -433,33 +431,35 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 		this.numeric(368, chan.nam + " :End of Channel Ban List.");
 	}
 
-	// Bans are a specialized case, sigh.
-	for (i in cmode.tmplist[CHANMODE_BAN][true]) { // +b
+	/* Bans are a specialized case */
+	for (i in c.tmplist[CHANMODE_BAN][true]) { // +b
 		var set_ban = create_ban_mask(
-			cmode.tmplist[CHANMODE_BAN][add][i]);
+			c.tmplist[CHANMODE_BAN][add][i]);
 		if (   (chan.count_modelist(CHANMODE_BAN) >= MAX_BANS)
 			&& !this.server
 			&& !this.parent
 		) {
-			this.numeric(478, chan.nam + " " + set_ban + " :" +
-				"Cannot add ban, channel's ban list is full.");
+			this.numeric(478, format("%s %s :Can't add ban, channel ban list is full.",
+				chan.nam,
+				set_ban
+			));
 		} else if (set_ban && !chan.isbanned(set_ban)) {
-			cmode.addmodes += "b";
-			cmode.addmodeargs += " " + set_ban;
+			c.addmodes += "b";
+			c.addmodeargs += " " + set_ban;
 			var banid = chan.modelist[CHANMODE_BAN].push(set_ban) - 1;
 			chan.bantime[banid] = Epoch();
 			chan.bancreator[banid] = this.nuh;
 		}
 	}
 
-	for (i in cmode.tmplist[CHANMODE_BAN][false]) { // -b
+	for (i in c.tmplist[CHANMODE_BAN][false]) { // -b
 		for (j in chan.modelist[CHANMODE_BAN]) {
-			if (   cmode.tmplist[CHANMODE_BAN][false][i].toUpperCase()
+			if (   c.tmplist[CHANMODE_BAN][false][i].toUpperCase()
 			    == chan.modelist[CHANMODE_BAN][j].toUpperCase()
 			) {
-				cmode.delmodes += "b";
-				cmode.delmodeargs += " " +
-					cmode.tmplist[CHANMODE_BAN][false][i];
+				c.delmodes += "b";
+				c.delmodeargs += " " +
+					c.tmplist[CHANMODE_BAN][false][i];
 				delete chan.modelist[CHANMODE_BAN][j];
 				delete chan.bantime[j];
 				delete chan.bancreator[j];
@@ -467,23 +467,23 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 		}
 	}
 
-	// Modes where we just deal with lists of nicks.
-	cmode.affect_mode_list(CHANMODE_OP);
-	cmode.affect_mode_list(CHANMODE_VOICE);
+	/* Modes where we just deal with lists of nicks. */
+	c.affect_mode_list(CHANMODE_OP);
+	c.affect_mode_list(CHANMODE_VOICE);
 
-	if (!cmode.addmodes && !cmode.delmodes)
+	if (!c.addmodes && !c.delmodes)
 		return 0;
 
 	var final_modestr = "";
 
-	if (cmode.addmodes)
-		final_modestr += "+" + cmode.addmodes;
-	if (cmode.delmodes)
-		final_modestr += "-" + cmode.delmodes;
-	if (cmode.addmodeargs)
-		final_modestr += cmode.addmodeargs;
-	if (cmode.delmodeargs)
-		final_modestr += cmode.delmodeargs;
+	if (c.addmodes)
+		final_modestr += "+" + c.addmodes;
+	if (c.delmodes)
+		final_modestr += "-" + c.delmodes;
+	if (c.addmodeargs)
+		final_modestr += c.addmodeargs;
+	if (c.delmodeargs)
+		final_modestr += c.delmodeargs;
 
 	var final_args = final_modestr.split(' ');
 	var arg_counter = 0;
