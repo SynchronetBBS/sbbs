@@ -909,7 +909,7 @@ function Server_Work(cmdline) {
 		if (p[2]) {
 			this.set_chanmode(
 				tmp, /* Channel object */
-				p.splice(2,p.length-4).join(" "), /* Channel mode */
+				p.splice(2,p.length-3).join(" "), /* Channel mode */
 				(tmp.created <= parseInt(p[0])) ? false : true /* TS */
 			);
 
