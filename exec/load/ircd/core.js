@@ -2196,7 +2196,7 @@ function IRCClient_do_who_usage() {
 }
 
 function IRCClient_do_basic_list(mask) {
-	var i;
+	var i, my_split;
 
 	this.numeric321();
 	/* Only allow commas if we're not doing wildcards, otherwise strip
@@ -2206,10 +2206,10 @@ function IRCClient_do_basic_list(mask) {
 		if (mask.match(/[*?]/)) {
 			mask = mask.slice(0,mask.indexOf(","))
 		} else { /* parse it out, but junk anything that's not a chan */
-			var my_split = mask.split(",");
-			for (myChan in my_split) {
-				if (Channels[my_split[myChan].toUpperCase()])
-					this.numeric322(Channels[my_split[myChan].toUpperCase()]);
+			my_split = mask.split(",");
+			for (i in my_split) {
+				if (Channels[my_split[i].toUpperCase()])
+					this.numeric322(Channels[my_split[i].toUpperCase()]);
 			}
 			this.numeric(323, ":End of /LIST. (Basic: Comma-list)");
 			return;
