@@ -1599,7 +1599,7 @@ static int parsepath(char** pp, user_t* user, client_t* client, int* curlib, int
 				tmp = strchr(filename, '/');
 				if (tmp != NULL)
 					*tmp = 0;
-				if (ftpalias(filename, filename, user, client, &dir) == TRUE) {
+				if (ftpalias(filename, filename, user, client, &dir) == TRUE && dir >= 0) {
 					lib = scfg.dir[dir]->lib;
 					if (strchr(p, '/') != NULL) {
 						p = strchr(p, '/');
