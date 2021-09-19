@@ -391,7 +391,7 @@ int getdir(char* p, user_t* user, client_t* client)
 
 	if(*p=='/') 
 		p++;
-	else if(!strncmp(p,"./",2))
+	if(!strncmp(p,"./",2))
 		p+=2;
 
 	tp=strchr(p,'/');
@@ -4118,7 +4118,7 @@ static void ctrl_thread(void* arg)
 				lib=-1;
 				p++;
 			}
-			else if(!strncmp(p,"./",2))
+			if(!strncmp(p,"./",2))
 				p+=2;
 
 			if(lib<0 && ftpalias(p, fname, &user, &client, &dir)==TRUE) {
@@ -4497,7 +4497,7 @@ static void ctrl_thread(void* arg)
 				lib=-1;
 				p++;
 			}
-			else if(!strncmp(p,"./",2))
+			if(!strncmp(p,"./",2))
 				p+=2;
 			/* Need to add support for uploading to aliased directories */
 			if(lib<0 && (tp=strchr(p,'/'))!=NULL) {
