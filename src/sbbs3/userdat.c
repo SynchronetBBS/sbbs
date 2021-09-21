@@ -106,6 +106,10 @@ BOOL matchusername(scfg_t* cfg, const char* name, const char* comp)
 			break;
 		np++, cp++;
 	}
+	while(*np != '\0' && !IS_ALPHANUMERIC(*np))
+		np++;
+	while(*cp != '\0' && !IS_ALPHANUMERIC(*cp) && *cp != '@' )
+		cp++;
 	return *np == '\0' && (*cp == '\0' || *cp == '@');
 }
 
