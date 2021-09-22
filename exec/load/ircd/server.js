@@ -420,7 +420,7 @@ function Server_Work(cmdline) {
 		));
 		break;
 	case "MODE":
-		if (!p[1])
+		if (typeof p[1] === undefined)
 			break;
 		if (p[0][0] != "#") { /* Setting a user mode */
 			tmp = origin.setusermode(p[1]);
