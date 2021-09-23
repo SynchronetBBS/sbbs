@@ -509,9 +509,9 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		get_int(cfg->sub[i]->pmode,instream);
 		get_int(cfg->sub[i]->n_pmode,instream);
 		get_str(cfg->sub[i]->area_tag, instream);
-		for(j=0;j<4;j++)
-			get_int(n,instream);
-		}
+		get_int(c,instream);
+		get_int(n,instream);
+	}
 	cfg->total_subs=i;
 
 	/***********/

@@ -54,7 +54,7 @@
 #define FIDO_PASS_LEN			8	/* May NOT include '\0' terminator		*/
 #define FIDO_DOMAIN_LEN			8	/* May NOT include '\0' terminator		*/
 #define FIDO_PRODDATA_LEN		4	/* Product-specific Data */
-#define FIDO_AREATAG_LEN		35	/* Echo "areatag" (NOT including '\0')	*/
+#define FIDO_AREATAG_LEN		50	// Echo "area tag" (NOT including '\0') (see FMail.txt)
 #define FIDO_ECHO_TITLE_LEN		55	// Brief echo description, per echobase.hlp
 #define FIDO_ORIGIN_PREFIX_LEN	12	/* Includes new-line character			*/
 
