@@ -318,7 +318,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1],c;
 	char	dir[LEN_DIR+1]="";
-	int 	i,j,k,file;
+	int 	i,j,file;
 	uint16_t	n;
 	int32_t	l;
 	FILE	*stream;
@@ -431,8 +431,8 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			put_int(cfg->sub[i]->n_pmode,stream);
 			put_str(cfg->sub[i]->area_tag, stream);
 			n=0;
-			for(k=0;k<4;k++)
-				put_int(n,stream);
+			put_int(c,stream);
+			put_int(n,stream);
 
 			if(all_msghdr || (cfg->sub[i]->misc&SUB_HDRMOD && !no_msghdr)) {
 				if(!cfg->sub[i]->data_dir[0])
@@ -841,10 +841,8 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 				put_int(cfg->dir[i]->up_pct, stream);
 				put_int(cfg->dir[i]->dn_pct, stream);
 				put_str(cfg->dir[i]->area_tag, stream);
-				c = 0;
-				put_int(c, stream);
 				n = 0xffff;
-				for (k = 0; k < 6; k++)
+				for (k = 0; k < 4; k++)
 					put_int(n, stream);
 			}
 		}
