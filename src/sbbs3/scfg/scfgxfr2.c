@@ -1241,7 +1241,7 @@ void dir_cfg(uint libnum)
 						;
 					SAFECOPY(str, cfg.dir[i]->area_tag);
 					if(uifc.input(WIN_L2R|WIN_SAV,0,17,"FidoNet File Echo Area Tag"
-						,str, FIDO_AREATAG_LEN, K_EDIT | K_UPPER) > 0)
+						,str, sizeof(cfg.dir[i]->area_tag) - 1, K_EDIT | K_UPPER) > 0)
 						SAFECOPY(cfg.dir[i]->area_tag, str);
 					break;
 				case 4:
