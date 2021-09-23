@@ -149,7 +149,10 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 				continue;
 			SAFECOPY(tmp_code, areatag);			// Copy tag to internal code suffix
 			SAFECOPY(tmpsub.sname, utos(areatag));	// ... to short name, converting underscores to spaces
-			SAFECOPY(tmpsub.area_tag, areatag);
+			if(strlen(areatag) > sizeof(tmpsub.area_tag) - 1)
+				SAFECOPY(tmpsub.newsgroup, areatag);
+			else
+				SAFECOPY(tmpsub.area_tag, areatag);
 			SAFECOPY(tmpsub.lname, iniGetString(ini, areatag, "Title", "", value));
 		} else {
 			if(feof(stream))
@@ -278,7 +281,10 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 					SAFECOPY(tmp_code,p);		/* Copy tag to internal code */
 					SAFECOPY(tmpsub.lname,utos(p));
 					SAFECOPY(tmpsub.sname,tmpsub.lname);
-					SAFECOPY(tmpsub.area_tag, p);
+					if(strlen(p) > sizeof(tmpsub.area_tag) - 1)
+						SAFECOPY(tmpsub.newsgroup, p);
+					else
+						SAFECOPY(tmpsub.area_tag, p);
 				}
 				else if(type == IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS) { /* AREAS.BBS SBBSecho */
 					p=str;
@@ -292,7 +298,10 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 					truncstr(p," \t");			/* Truncate tag */
 					SAFECOPY(tmpsub.lname,utos(p));
 					SAFECOPY(tmpsub.sname,tmpsub.lname);
-					SAFECOPY(tmpsub.area_tag, p);
+					if(strlen(p) > sizeof(tmpsub.area_tag) - 1)
+						SAFECOPY(tmpsub.newsgroup, p);
+					else
+						SAFECOPY(tmpsub.area_tag, p);
 				}
 				else if(type == IMPORT_LIST_TYPE_BACKBONE_NA) { /* BACKBONE.NA */
 					p=str;
@@ -302,7 +311,10 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 					*tp=0;						/* Truncate echo tag */
 					SAFECOPY(tmp_code,p);		/* Copy tag to internal code suffix */
 					SAFECOPY(tmpsub.sname,utos(p));	/* ... to short name, converting underscores to spaces */
-					SAFECOPY(tmpsub.area_tag, p);
+					if(strlen(p) > sizeof(tmpsub.area_tag) - 1)
+						SAFECOPY(tmpsub.newsgroup, p);
+					else
+						SAFECOPY(tmpsub.area_tag, p);
 					p=tp+1;
 					SKIP_WHITESPACE(p);			/* Find description */
 					SAFECOPY(tmpsub.lname,p);	/* Copy description to long name */
