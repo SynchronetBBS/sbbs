@@ -128,6 +128,8 @@ BOOL semfile_signal(const char* fname, const char* text)
 {
 	int file;
 	struct utimbuf ut;
+	size_t textlen = 0;
+	ssize_t wrlen = 0;
 #if !defined(NO_SOCKET_SUPPORT)
 	char hostname[128];
 
@@ -137,10 +139,10 @@ BOOL semfile_signal(const char* fname, const char* text)
 	if((file=open(fname,O_CREAT|O_WRONLY, DEFFILEMODE))<0)	/* use sopen instead? */
 		return(FALSE);
 	if(text!=NULL)
-		write(file,text,strlen(text));
+		wrlen = write(file,text,textlen = strlen(text));
 	close(file);
 
 	/* update the time stamp */
 	ut.actime = ut.modtime = time(NULL);
-	return utime(fname, &ut)==0;
+	return utime(fname, &ut)==0 && wrlen == textlen;
 }

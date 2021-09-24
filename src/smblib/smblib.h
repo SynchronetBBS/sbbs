@@ -68,6 +68,7 @@
 #define SMB_ERR_DELETE		-207		/* File deletion error */
 #define SMB_ERR_UNLOCK		-208		/* File unlock error */
 #define SMB_ERR_RENAME		-209		/* File rename error */
+#define SMB_ERR_TRUNCATE	-210		/* File truncation error */
 #define SMB_ERR_MEM			-300		/* Memory allocation error */
 
 #define SMB_DUPE_MSG		1			/* Duplicate message detected by smb_addcrc() */
