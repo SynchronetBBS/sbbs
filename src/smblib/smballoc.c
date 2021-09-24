@@ -180,7 +180,7 @@ int smb_freemsgdat(smb_t* smb, off_t offset, ulong length, uint16_t refs)
 				continue;
 			}
 		}
-		
+
 		if(fseek(smb->sda_fp,-(int)sizeof(i),SEEK_CUR)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' seeking backwards 2 bytes in allocation file", __FUNCTION__
@@ -192,13 +192,14 @@ int smb_freemsgdat(smb_t* smb, off_t offset, ulong length, uint16_t refs)
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s writing allocation bytes at offset %ld", __FUNCTION__
 				,sda_offset);
-			retval=SMB_ERR_WRITE; 
+			retval=SMB_ERR_WRITE;
 			break;
 		}
 	}
 	fflush(smb->sda_fp);
 	if(filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN > (long)(filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)))
-		chsize(fileno(smb->sdt_fp), (long)(filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)) * SDT_BLOCK_LEN);
+		if(chsize(fileno(smb->sdt_fp), (long)(filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)) * SDT_BLOCK_LEN) != 0)
+			retval = SMB_ERR_TRUNCATE;
 	if(da_opened)
 		smb_close_da(smb);
 	smb_unlocksmbhdr(smb);
@@ -307,7 +308,8 @@ int smb_freemsghdr(smb_t* smb, off_t offset, ulong length)
 	sha_offset = offset/SHD_BLOCK_LEN;
 	if(filelength(fileno(smb->sha_fp)) <= (sha_offset + blocks)) {
 		if(chsize(fileno(smb->sha_fp), (long)sha_offset) == 0) {
-			chsize(fileno(smb->shd_fp), (long)(smb->status.header_offset + offset));
+			if(chsize(fileno(smb->shd_fp), (long)(smb->status.header_offset + offset)) != 0)
+				return SMB_ERR_TRUNCATE;
 			return SMB_SUCCESS;
 		}
 	}

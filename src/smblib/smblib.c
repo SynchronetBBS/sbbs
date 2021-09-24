@@ -1476,6 +1476,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 	char	str[MAX_PATH+1];
 	int 	file;
 	int		wr;
+	int		result = SMB_SUCCESS;
 	off_t	length;
 	long	newlen;
 	ulong	l;
@@ -1546,9 +1547,13 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 
 		if(length>=(long)(smb->status.max_crcs*sizeof(int32_t))) {
 			newlen=(smb->status.max_crcs-1)*sizeof(int32_t);
-			chsize(file,0);	/* truncate it */
-			lseek(file,0L,SEEK_SET);
-			write(file,buf+(length-newlen),newlen); 
+			if(chsize(file,0) != 0) {	/* truncate it */
+				result = SMB_ERR_TRUNCATE;
+			} else {
+				lseek(file,0L,SEEK_SET);
+				if(write(file,buf+(length-newlen),newlen) != newlen)
+					result = SMB_ERR_WRITE;
+			}
 		}
 		free(buf);
 	}
@@ -1562,7 +1567,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 		return(SMB_ERR_WRITE);
 	}
 
-	return(SMB_SUCCESS);
+	return result;
 }
 
 /****************************************************************************/
@@ -1992,13 +1997,16 @@ int smb_create(smb_t* smb)
 		return retval;
 
 	rewind(smb->shd_fp);
-	chsize(fileno(smb->shd_fp),sizeof(smbhdr_t)+sizeof(smbstatus_t));
+	if(chsize(fileno(smb->shd_fp),sizeof(smbhdr_t)+sizeof(smbstatus_t)) != 0)
+		return SMB_ERR_TRUNCATE;
 	fflush(smb->shd_fp);
 
 	rewind(smb->sdt_fp);
-	chsize(fileno(smb->sdt_fp),0L);
+	if(chsize(fileno(smb->sdt_fp),0L) != 0)
+		return SMB_ERR_TRUNCATE;
 	rewind(smb->sid_fp);
-	chsize(fileno(smb->sid_fp),0L);
+	if(chsize(fileno(smb->sid_fp),0L) != 0)
+		return SMB_ERR_TRUNCATE;
 
 	SAFEPRINTF(str,"%s.ini",smb->file);
 	if((fp = fopen(str, "w")) != NULL) {
