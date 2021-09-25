@@ -262,9 +262,12 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	if(cfg->tempxfer_mod[0] == '\xff') 
 	    SAFECOPY(cfg->tempxfer_mod, "tempxfer");
 
-	get_int(c, instream);
-	for(i=0;i<112;i++)					/* unused - initialized to 0xff */
+	for(i=0;i<92;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
+
+	get_str(cfg->new_genders, instream);
+	if(cfg->new_genders[0] == '\xff')
+		SAFECOPY(cfg->new_genders, "MFX");
 
 	get_int(cfg->user_backup_level,instream);
 	if(cfg->user_backup_level==0xffff)

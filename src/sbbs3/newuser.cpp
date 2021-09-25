@@ -296,9 +296,13 @@ BOOL sbbs_t::newuser()
 			} 
 		}
 		if(!online) return(FALSE);
-		if((cfg.uq&UQ_SEX) && text[EnterYourSex][0]) {
-			bputs(text[EnterYourSex]);
-			useron.sex=(char)getkeys("MF",0); 
+		while((cfg.uq&UQ_SEX) && text[EnterYourGender][0] && cfg.new_genders[0] != '\0' && online) {
+			bputs(text[EnterYourGender]);
+			long gender = getkeys(cfg.new_genders, 0);
+			if(gender > 0) {
+				useron.sex = (char)gender;
+				break;
+			}
 		}
 		while((cfg.uq&UQ_BIRTH) && online && text[EnterYourBirthday][0]) {
 			bprintf(text[EnterYourBirthday], birthdate_format(&cfg));
