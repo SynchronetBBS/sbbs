@@ -303,6 +303,8 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	smb_dfield(&msg,TEXT_BODY,length);
 
 	i=smb_addmsghdr(&smb,&msg,smb_storage_mode(&cfg, &smb)); // calls smb_unlocksmbhdr() 
+	if(i == SMB_SUCCESS && remsg != NULL)
+		smb_updatethread(&smb, remsg, msg.hdr.number);
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 
