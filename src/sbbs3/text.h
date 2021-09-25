@@ -352,7 +352,7 @@ enum {
 	,EnterYourRealName
 	,EnterYourCompany
 	,EnterYourHandle
-	,EnterYourSex
+	,EnterYourGender
 	,EnterYourAddress
 	,EnterYourPhoneNumber
 	,EnterYourBirthday

@@ -897,6 +897,7 @@ void sys_cfg(void)
 						strcpy(str,"None");
 					sprintf(opt[i++],"%-27.27s%s","Download Protocol",str);
 					sprintf(opt[i++],"%-27.27s%hu","Days of New Messages", cfg.new_msgscan_init);
+					sprintf(opt[i++],"%-27.27s%s", "Gender Options", cfg.new_genders);
 					strcpy(opt[i++],"Default Toggles...");
 					strcpy(opt[i++],"Question Toggles...");
 					opt[i][0]=0;
@@ -1100,6 +1101,18 @@ void sys_cfg(void)
 							break;
 						case 14:
 							uifc.helpbuf=
+								"`New User Gender Options:`\n"
+								"\n"
+								"This is a list of single-character gender options for new users to\n"
+								"choose from.\n"
+								"\n"
+								"Default: `MFX`\n"
+							;
+							uifc.input(WIN_SAV|WIN_MID,0,0,"Gender Options"
+								,cfg.new_genders, sizeof(cfg.new_genders) -1 , K_EDIT|K_UPPER);
+							break;
+						case 15:
+							uifc.helpbuf=
 								"`New User Default Toggle Options:`\n"
 								"\n"
 								"This menu contains the default state of new user toggle options. All new\n"
@@ -1197,9 +1210,9 @@ void sys_cfg(void)
 								} 
 							}
 							break;
-						case 15:
+						case 16:
 							uifc.helpbuf=
-								"`New User Question Toggle Options:`\n"
+								"`New User Question Toggles:`\n"
 								"\n"
 								"This menu allows you to decide which questions will be asked of a new\n"
 								"user.\n"

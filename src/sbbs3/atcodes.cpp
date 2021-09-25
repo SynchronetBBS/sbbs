@@ -592,6 +592,9 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return birthdate_format(&cfg);
 	}
 
+	if(strcmp(sp, "GENDERS") == 0)
+		return cfg.new_genders;
+
 	if(!strcmp(sp,"TMSG")) {
 		l=0;
 		for(i=0;i<cfg.total_subs;i++)

@@ -492,6 +492,7 @@ typedef struct
 	char			new_magic[21];		/* New User Magic Word */
 	char			new_sif[LEN_SIFNAME+1]; 		/* New User SIF Questionaire */
 	char			new_sof[LEN_SIFNAME+1]; 		/* New User SIF Questionaire output SIF */
+	char			new_genders[41];	/* New User Gender options (default: "MF") */
 	char			new_level;			/* New User Main Level */
 	uint32_t		new_flags1; 		/* New User Main Flags from set #1*/
 	uint32_t		new_flags2; 		/* New User Main Flags from set #2*/
