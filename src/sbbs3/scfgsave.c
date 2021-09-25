@@ -256,12 +256,11 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
     put_str(cfg->postxtrn_mod,stream);
 
 	put_str(cfg->tempxfer_mod, stream);
-	c=0xff;
-	put_int(c, stream);
 	n=0xffff;
-	for(i=0;i<112;i++)
+	for(i=0;i<92;i++)
 		put_int(n,stream);
 
+	put_str(cfg->new_genders, stream);
 	put_int(cfg->user_backup_level,stream);
 	put_int(cfg->mail_backup_level,stream);
 

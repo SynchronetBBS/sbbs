@@ -445,7 +445,7 @@ void sbbs_t::useredit(int usernumber)
 				putuserrec(&cfg,user.number,U_NAME,LEN_NAME,user.name);
 				break;
 			case 'S':
-				bputs(text[EnterYourSex]);
+				bputs(text[EnterYourGender]);
 				if(getstr(str,1,K_UPPER|K_LINE))
 					putuserrec(&cfg,user.number,U_SEX,1,str);
 				break;
