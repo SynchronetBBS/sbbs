@@ -662,7 +662,7 @@ function mail_reply(msg, reply_all)
 		console.putmsg(bbs.text(EnterNetMailAddress));
 		addr = console.getstr(addr, 128, K_EDIT|K_AUTODEL|K_LINE);
 		if(!addr || console.aborted)
-			return;
+			return false;
 		success = bbs.netmail(addr.split(','), msg);
 	} else if(msg.from_ext)
 		success = bbs.email(parseInt(msg.from_ext, 10), msg);
@@ -670,6 +670,7 @@ function mail_reply(msg, reply_all)
 		alert("Failed to send");
 		console.pause();
 	}
+	return success;
 }
 
 function download_msg(msg, plain_text)
@@ -1047,7 +1048,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						case 'A':
 						case 'R':
 							if(mail) {
-								mail_reply(list[current], key == 'A');
+								if(mail_reply(list[current], key == 'A'))
+									update_msg_attr(msgbase, list[current], list[current].attr | MSG_REPLIED);
 								pause();
 							} else {
 								console.clear();
@@ -1074,7 +1076,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							}
 							break;
 						case 'M':
-							mail_reply(list[current]);
+							if(mail_reply(list[current]) && mail)
+								update_msg_attr(msgbase, list[current], list[current].attr | MSG_REPLIED);
 							pause();
 							break;
 						case 'D':
@@ -1247,7 +1250,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			case 'A':
 			case 'R':
 				if(mail) {
-					mail_reply(list[current], key.toUpperCase() == 'A');
+					if(mail_reply(list[current], key.toUpperCase() == 'A'))
+						update_msg_attr(msgbase, list[current], list[current].attr | MSG_REPLIED);
 					pause();
 				} else {
 					console.clear();
@@ -1257,7 +1261,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				}
 				break;
 			case 'M':
-				mail_reply(list[current]);
+				if(mail_reply(list[current]) && mail)
+					update_msg_attr(msgbase, list[current], list[current].attr | MSG_REPLIED);
 				pause();
 				break;
 			case 'S':
