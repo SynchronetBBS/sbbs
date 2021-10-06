@@ -120,6 +120,13 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		return len;
 	}
 
+	// @!x@ for Ctrl-A x equivalent(s) */
+	if(*sp == '!') {
+		for(p = sp + 1; *p != '\0' && *p != '@'; p++)
+			ctrl_a(*p);
+		return len;
+	}
+
 	disp_len=len;
 	if((p = strchr(sp, '|')) != NULL) {
 		if(strchr(p, 'T') != NULL)
