@@ -32,6 +32,7 @@ const char* fmsgattr_str(uint16_t attr)
 {
 	char str[64] = "";
 
+	str[0] = '\0';
 #define FIDO_ATTR_CHECK(a, f) if(a&FIDO_##f)	sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
 	FIDO_ATTR_CHECK(attr, PRIVATE);
 	FIDO_ATTR_CHECK(attr, CRASH);
