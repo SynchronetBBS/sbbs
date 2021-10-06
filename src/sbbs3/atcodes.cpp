@@ -540,6 +540,14 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(strcmp(sp, "TMP") == 0)
 		return useron.tmpext;
 
+	if(strcmp(sp, "SEX") == 0) {
+		safe_snprintf(str, maxlen, "%c", useron.sex);
+		return str;
+	}
+	if(strcmp(sp, "GENDERS") == 0) {
+		return cfg.new_genders;
+	}
+
 	if(!strcmp(sp,"QWKID"))
 		return(cfg.sys_id);
 
