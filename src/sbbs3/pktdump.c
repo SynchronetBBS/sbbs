@@ -366,16 +366,20 @@ int main(int argc, char** argv)
 			fclose(good);
 			good = NULL;
 			if(length <= sizeof(fpkthdr_t) + sizeof(uint16_t) // no messages
-				|| length == ftell(fp))
+				|| length == ftell(fp)) {
+				puts("All good.");
 				remove(good_fname);
+			}
 		}
 		if(bad != NULL) {
 			long length = ftell(bad);
 			fclose(bad);
 			bad = NULL;
 			if(length <= sizeof(fpkthdr_t) + sizeof(uint16_t) // no messages
-				|| length == ftell(fp))
+				|| length == ftell(fp)) {
+				puts("All bad.");
 				remove(bad_fname);
+			}
 		}
 		fclose(fp);
 	}
