@@ -5377,8 +5377,10 @@ void pack_netmail(void)
 			lprintf(LOG_ERR,"ERROR line %d reading fido msghdr from %s",__LINE__,path);
 			continue;
 		}
-		hdr.destzone=hdr.origzone=sys_faddr.zone;
-		hdr.destpoint=hdr.origpoint=0;
+		if(hdr.destzone == 0)
+			hdr.destzone = sys_faddr.zone;
+		if(hdr.origzone == 0)
+			hdr.origzone = sys_faddr.zone;
 		getzpt(fidomsg,&hdr);				/* use kludge if found */
 		addr.zone		= hdr.destzone;
 		addr.net		= hdr.destnet;
