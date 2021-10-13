@@ -243,6 +243,17 @@ function Automatic_Server_Connect() {
 		return false;
 	}
 
+	if (Outbound_Connect_in_Progress) {
+		this.next_connect = js.setTimeout(
+			Automatic_Server_Connect,
+			1000,
+			this
+		);
+		return false;
+	}
+
+	Outbound_Connect_in_Progress = true;
+
 	umode_notice(USERMODE_ROUTING,"Routing",format(
 		"Auto-connecting to %s (%s) on port %u",
 		this.servername,
@@ -260,6 +271,11 @@ function Automatic_Server_Connect() {
 function handle_outbound_server_connect() {
 	var id;
 
+	if (!Outbound_Connect_in_Progress)
+		log(LOG_DEBUG,"WARNING: Outbound connection while !Outbound_Connect_in_Progress");
+
+	Outbound_Connect_in_Progress = false;
+
 	if (this.is_connected) {
 		umode_notice(USERMODE_ROUTING,"Routing","Connected!  Sending info...");
 		this.send(format("PASS %s :TS\r\n", this.cline.password));
@@ -276,7 +292,7 @@ function handle_outbound_server_connect() {
 
 	if (YLines[this.cline.ircclass].connfreq > 0 && parseInt(this.cline.port) > 0) {
 		umode_notice(USERMODE_ROUTING,"Routing",format(
-			"Failed to connect to %s (%s). Trying again in %d seconds.",
+			"Failed to connect to %s (%s). Trying again in %u seconds.",
 			this.cline.servername,
 			this.cline.host,
 			YLines[this.cline.ircclass].connfreq
@@ -1637,8 +1653,9 @@ function IRCClient_do_connect(con_server,con_port) {
 
 	if (!con_cline) {
 		this.numeric402(con_server);
-		return 0;
+		return false;
 	}
+
 	if (!con_port && con_cline.port)
 		con_port = con_cline.port;
 	if (!con_port && !con_cline.port)
@@ -1647,6 +1664,12 @@ function IRCClient_do_connect(con_server,con_port) {
 		this.server_notice("Invalid port: " + con_port);
 		return false;
 	}
+
+	if (Outbound_Connect_in_Progress) {
+		this.server_notice("Already busy with an outbound connection. CONNECT ignored.");
+		return false;
+	}
+
 	msg = format(" CONNECT %s %u from %s [%s@%s]",
 		con_cline.servername,
 		con_port,
