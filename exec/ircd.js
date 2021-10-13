@@ -96,6 +96,8 @@ var Default_Port = 6667;
 
 var Time_Config_Read;		/* Stores unix epoch of when the config was last read */
 
+var Outbound_Connect_in_Progress = false;
+
 /* Will this server try to enforce good network behaviour? */
 /* Setting to "true" results in bouncing bad modes, KILLing bogus NICKs, etc. */
 var Enforcement = true;
