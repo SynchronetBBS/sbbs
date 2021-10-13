@@ -246,7 +246,7 @@ function Automatic_Server_Connect() {
 	if (Outbound_Connect_in_Progress) {
 		this.next_connect = js.setTimeout(
 			Automatic_Server_Connect,
-			1000,
+			10000,
 			this
 		);
 		return false;
