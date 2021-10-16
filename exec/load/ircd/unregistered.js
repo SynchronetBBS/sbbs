@@ -299,8 +299,6 @@ function Unregistered_Quit(msg) {
 	this.sendq.purge();
 	if (msg && this.socket.is_connected)
 		this.socket.send(format("ERROR :%s\r\n", msg));
-	if (server.client_remove !== undefined)
-		server.client_remove(this.socket);
 	if(server.clients != undefined)
 		log(LOG_DEBUG,format("%d clients", server.clients));
 	else
