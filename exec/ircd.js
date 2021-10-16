@@ -37,7 +37,7 @@ load("ircd/server.js");
 load("ircd/config.js");
 
 /*** Global Constants - Always in ALL_UPPERCASE ***/
-const VERSION = "SynchronetIRCd-1.9b";
+const VERSION = "SynchronetIRCd-1.9";
 const VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
