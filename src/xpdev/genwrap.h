@@ -304,8 +304,6 @@ DLLEXPORT int get_errno(void);
 	#if defined(XPDEV_THREAD_SAFE)
 		#if defined(__FreeBSD__)
 			#define MAYBE_YIELD()			pthread_yield()
-		#elif defined(_PTH_PTHREAD_H_)
-			#define MAYBE_YIELD()			pth_yield(NULL)
 		#elif defined(_POSIX_PRIORITY_SCHEDULING)
 			#define MAYBE_YIELD()			sched_yield()
 		#else
