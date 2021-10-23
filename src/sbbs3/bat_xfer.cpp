@@ -194,7 +194,7 @@ void sbbs_t::batchmenu()
 						start=time(NULL);
 						protocol(cfg.prot[xfrprot],XFER_BATCH_UPLOAD,str,nulstr,true);
 						end=time(NULL);
-						if(!(cfg.dir[xfrdir]->misc&DIR_ULTIME))
+						if(xfrdir != INVALID_DIR && !(cfg.dir[xfrdir]->misc&DIR_ULTIME))
 							starttime+=end-start; 
 					}
 					batch_upload();
