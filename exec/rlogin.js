@@ -1,18 +1,19 @@
 // rlogin.js
 
-// Telnet Gateway using RLogin protocol - Requires v3.00c
+// Telnet Gateway using RLogin protocol
 
-// $Id: rlogin.js,v 1.4 2017/10/25 08:59:15 rswindell Exp $
-
-// @format.tab-size 4, @format.use-tabs true
+// usage: ?rlogin address[:port] [telnet_gateway_mode] [client-name] [server-name] [terminal-type]
 
 load("sbbsdefs.js");
 
 write("\r\n\001h\1hPress \001yCtrl-]\001w for a control menu anytime.\r\n\r\n");
 console.pause();
 writeln("\001h\001yConnecting to: \001w" + argv[0] + "\001n");
-var flags = 0;
-if (argc > 1)
-    flags = eval(argv[1]);
-bbs.rlogin_gate(argv[0], flags);
+bbs.rlogin_gate(
+	 argv[0] // address[:port]
+	,argv[2] // client-name
+	,argv[3] // server-name
+	,argv[4] // terminal-type
+	,eval(argv[1]) // mode flags
+	);
 console.clear();
