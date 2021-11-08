@@ -620,6 +620,7 @@ typedef struct
 
 	// Run-time state information (not configuration)
 	int				tls_certificate;
+	time_t                  tls_cert_file_date;
 
 } scfg_t;
 
