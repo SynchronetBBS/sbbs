@@ -290,12 +290,18 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 	if(!do_cryptInit())
 		return -1;
 	pthread_mutex_lock(&ssl_cert_mutex);
-	if (cfg->tls_certificate != -1 || !cfg->prepped) {
-		pthread_mutex_unlock(&ssl_cert_mutex);
-		return cfg->tls_certificate;
-	}
-	/* Get the certificate... first try loading it from a file... */
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,"ssl.cert");
+	time_t fd = fdate(str);
+	if (cfg->tls_certificate != -1 || !cfg->prepped) {
+		if (fd == cfg->tls_cert_file_date) {
+			pthread_mutex_unlock(&ssl_cert_mutex);
+			return cfg->tls_certificate;
+		}
+		cfg->tls_cert_file_date = fd;
+		cryptDestroyContext(cfg->tls_certificate);
+	}
+	cfg->tls_cert_file_date = fd;
+	/* Get the certificate... first try loading it from a file... */
 	if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_READONLY))) {
 		if(!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
 			pthread_mutex_unlock(&ssl_cert_mutex);
