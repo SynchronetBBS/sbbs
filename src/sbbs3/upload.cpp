@@ -61,10 +61,6 @@ bool sbbs_t::uploadfile(file_t* f)
 			attr(LIGHTGRAY);
 			bputs(cfg.ftest[i]->workstr);
 
-			safe_snprintf(sbbsfilename,sizeof(sbbsfilename),"SBBSFILENAME=%s",f->name);
-			putenv(sbbsfilename);
-			safe_snprintf(sbbsfiledesc,sizeof(sbbsfiledesc),"SBBSFILEDESC=%s",f->desc);
-			putenv(sbbsfiledesc);
 			SAFEPRINTF(str,"%ssbbsfile.nam",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
 				fprintf(stream, "%s", f->desc);
