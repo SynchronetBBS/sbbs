@@ -6242,6 +6242,14 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	for(uint u = 0; u < cfg.nodecfgs; u++) {
+		if(sysfaddr_is_valid(find_sysfaddr(cfg.nodecfg[u].addr, true))) {
+			lprintf(LOG_ERR, "Configuration ERROR: Linked node #%u is your own address: %s"
+				,u + 1, faddrtoa(&cfg.nodecfg[u].addr));
+			bail(1);
+		}
+	}
+
 	char* tmpdir = FULLPATH(NULL, cfg.temp_dir, sizeof(cfg.temp_dir)-1);
 	if(tmpdir != NULL) {
 		SAFECOPY(cfg.temp_dir, tmpdir);
