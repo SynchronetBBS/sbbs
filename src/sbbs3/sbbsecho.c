@@ -1117,6 +1117,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 			}
 			fprintf(fp,"\r");
 		}
+		fprintf(fp, "\1MSGID: %s %08lx\r", smb_faddrtoa(&faddr, NULL), time32(NULL));
 	} else {
 		if(msg->ftn_msgid != NULL)
 			fprintf(fp, "\1MSGID: %.256s\r", msg->ftn_msgid);
