@@ -63,12 +63,12 @@ bool sbbs_t::uploadfile(file_t* f)
 
 			SAFEPRINTF(str,"%ssbbsfile.nam",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
-				fprintf(stream, "%s", f->desc);
+				fprintf(stream, "%s", f->name);
 				fclose(stream); 
 			}
 			SAFEPRINTF(str,"%ssbbsfile.des",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
-				fwrite(f->desc,1,strlen(f->desc),stream);
+				fprintf(stream, "%s", f->desc);
 				fclose(stream); 
 			}
 			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE)) {
