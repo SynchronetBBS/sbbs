@@ -26,7 +26,7 @@
 static bool qwk_parse_header_list(sbbs_t* sbbs, ulong confnum, smbmsg_t* msg, str_list_t* headers, bool parse_sender_hfields, bool parse_recipient_hfields)
 {
 	char*		p;
-	char		zone[32];
+	char		zone[32] = "";
 	char		value[INI_MAX_VALUE_LEN+1];
 	int			i;
 	uint16_t	net_type;
