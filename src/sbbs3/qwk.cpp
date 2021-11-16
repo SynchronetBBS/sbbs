@@ -1204,5 +1204,17 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_
 			,msg->to);
 		return true;
 	}
+
+	if(msg->from_net.type != NET_NONE) {
+		char fidoaddr[64];
+		char str[128];
+		SAFEPRINTF2(str, "%s@%s", msg->from, smb_netaddrstr(&msg->from_net, fidoaddr));
+		if(findstr_in_list(str, twit_list)) {
+			lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
+				,str
+				,msg->to);
+			return true;
+		}
+	}
 	return false;
 }
