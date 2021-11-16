@@ -2097,6 +2097,9 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 				case '^':	/* Architecture */
 					strncat(cmd, ARCHITECTURE_DESC, avail);
 					break;
+				case '+':	/* Real name */
+					strncat(cmd, quoted_string(useron.name, str, sizeof(str)), avail);
+					break;
                 default:    /* unknown specification */
                     if(IS_DIGIT(instr[i])) {
                         sprintf(str,"%0*d",instr[i]&0xf,useron.number);
