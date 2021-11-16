@@ -3514,6 +3514,14 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 		return IMPORT_FILTERED_EMPTY;
 	}
 
+	SAFEPRINTF2(str, "%s@%s", hdr->from, smb_faddrtoa(&origaddr, NULL));
+	if(findstr_in_list(str, twit_list)) {
+		lprintf(LOG_INFO,"Filtering message from %s to %s", str, hdr->to);
+		smb_freemsgmem(&msg);
+		free(sbody);
+		return IMPORT_FILTERED_TWIT;
+	}
+
 	if(!origaddr.zone && subnum==INVALID_SUB)
 		net=NET_NONE;						/* Message from SBBSecho */
 	else
