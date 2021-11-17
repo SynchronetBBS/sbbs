@@ -3221,9 +3221,9 @@ static void smtp_thread(void* arg)
 				/* Twit-listing (sender's name and e-mail addresses) here */
 				SAFEPRINTF(path,"%stwitlist.cfg",scfg.ctrl_dir);
 				if(fexist(path) && (findstr(sender,path) || findstr(sender_addr,path))) {
-					lprintf(LOG_NOTICE,"%04d %s %s !FILTERING TWIT-LISTED SENDER: %s <%s> (%lu total)"
+					lprintf(LOG_NOTICE,"%04d %s %s !FILTERING TWIT-LISTED SENDER: '%s' <%s> (%lu total)"
 						,socket, client.protocol, client_id, sender, sender_addr, ++stats.msgs_refused);
-					SAFEPRINTF2(tmp,"Twit-listed sender: %s <%s>", sender, sender_addr);
+					SAFEPRINTF2(tmp,"Twit-listed sender: '%s' <%s>", sender, sender_addr);
 					spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket,client.protocol,session, "554 Sender not allowed.");
 					continue;
@@ -3294,10 +3294,10 @@ static void smtp_thread(void* arg)
 						SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),rcpt_to,value));
 
 						if((i=putsmsg(&scfg,usernum,telegram_buf))==0)
-							lprintf(LOG_INFO,"%04d %s %s Created telegram (%ld/%lu bytes) from %s to %s <%s>"
+							lprintf(LOG_INFO,"%04d %s %s Created telegram (%ld/%lu bytes) from '%s' to '%s' <%s>"
 								,socket, client.protocol, client_id, length, (ulong)strlen(telegram_buf), sender_addr, rcpt_to, rcpt_addr);
 						else
-							lprintf(LOG_ERR,"%04d %s %s !ERROR %d creating telegram from %s to %s <%s>"
+							lprintf(LOG_ERR,"%04d %s %s !ERROR %d creating telegram from '%s' to '%s' <%s>"
 								,socket, client.protocol, client_id, i, sender_addr, rcpt_to, rcpt_addr);
 					}
 					iniFreeStringList(sec_list);
@@ -4765,7 +4765,7 @@ static void smtp_thread(void* arg)
 				}
 				if(i<scfg.total_qhubs) {	/* found matching QWKnet Hub */
 
-					lprintf(LOG_INFO,"%04d %s %s Routing mail for %s <%s> to QWKnet Hub: %s"
+					lprintf(LOG_INFO,"%04d %s %s Routing mail for '%s' <%s> to QWKnet Hub: %s"
 						,socket, client.protocol, client_id, rcpt_addr, p, scfg.qhub[i]->id);
 
 					fprintf(rcptlst,"[%u]\n",rcpt_count++);
