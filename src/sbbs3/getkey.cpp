@@ -276,10 +276,10 @@ bool sbbs_t::yesno(const char *str, long mode)
 	bprintf(mode, text[YesNoQuestion], str);
 	while(online) {
 		if(sys_status&SS_ABORT)
-			ch=text[YNQP][1];
+			ch=no_key();
 		else
 			ch=getkey(K_UPPER|K_COLD);
-		if(ch==text[YNQP][0] || ch==CR) {
+		if(ch==yes_key() || ch==CR) {
 			if(bputs(text[Yes], mode) && !(mode&P_NOCRLF))
 				CRLF;
 			if(!(mode&P_SAVEATR))
@@ -287,7 +287,7 @@ bool sbbs_t::yesno(const char *str, long mode)
 			lncntr=0;
 			return(true); 
 		}
-		if(ch==text[YNQP][1]) {
+		if(ch==no_key()) {
 			if(bputs(text[No], mode) && !(mode&P_NOCRLF))
 				CRLF;
 			if(!(mode&P_SAVEATR))
@@ -314,10 +314,10 @@ bool sbbs_t::noyes(const char *str, long mode)
 	bprintf(mode, text[NoYesQuestion], str);
 	while(online) {
 		if(sys_status&SS_ABORT)
-			ch=text[YNQP][1];
+			ch=no_key();
 		else
 			ch=getkey(K_UPPER|K_COLD);
-		if(ch==text[YNQP][1] || ch==CR) {
+		if(ch==no_key() || ch==CR) {
 			if(bputs(text[No], mode) && !(mode&P_NOCRLF))
 				CRLF;
 			if(!(mode&P_SAVEATR))
@@ -325,7 +325,7 @@ bool sbbs_t::noyes(const char *str, long mode)
 			lncntr=0;
 			return(true); 
 		}
-		if(ch==text[YNQP][0]) {
+		if(ch==yes_key()) {
 			if(bputs(text[Yes], mode) && !(mode&P_NOCRLF))
 				CRLF;
 			if(!(mode&P_SAVEATR))
@@ -458,7 +458,7 @@ void sbbs_t::pause()
 		clear_hotspots();
 		pause_hotspot = NULL;
 	}
-	if(ch==text[YNQP][1] || ch==text[YNQP][2])
+	if(ch==no_key() || ch==quit_key())
 		sys_status|=SS_ABORT;
 	else if(ch==LF)	// down arrow == display one more line
 		lncntr=rows-2;

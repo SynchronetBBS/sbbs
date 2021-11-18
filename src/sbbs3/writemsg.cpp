@@ -383,7 +383,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 			l=(long)ftell(stream);			/* l now points to start of message */
 
 			while(online) {
-				SAFEPRINTF(str,text[QuoteLinesPrompt],linesquoted ? "Done":"All");
+				SAFEPRINTF(str,text[QuoteLinesPrompt],linesquoted ? text[Done] : text[All]);
 				mnemonics(str);
 				i=getstr(quote,10,K_UPPER);
 				if(sys_status&SS_ABORT) {
@@ -394,7 +394,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 				}
 				if(!i && linesquoted)
 					break;
-				if(!i || quote[0]=='A') {                   /* Quote all */
+				if(!i || quote[0]==all_key()) {                   /* Quote all */
 					fseek(stream,l,SEEK_SET);
 					while(!feof(stream) && !ferror(stream)) {
 						if(!fgets(str,sizeof(str),stream))
@@ -406,7 +406,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 					}
 					break; 
 				}
-				if(quote[0]=='L') {
+				if(quote[0]==list_key()) {
 					fseek(stream,l,SEEK_SET);
 					i=1;
 					CRLF;

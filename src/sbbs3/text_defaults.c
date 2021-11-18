@@ -1401,4 +1401,6 @@ const char * const text_defaults[TOTAL_TEXT]={
 	,"\x44\x4c" // 851 DirLibKeys
 	,"\x53\x47" // 852 SubGroupKeys
 	,"\x41" // 853 AllKey
+	,"\x41\x6c\x6c" // 854 All
+	,"\x4c" // 855 ListKey
 };

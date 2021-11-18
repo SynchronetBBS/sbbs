@@ -864,6 +864,8 @@ enum {
 	,DirLibKeys
 	,SubGroupKeys
 	,AllKey
+	,All
+	,ListKey
 
 	,TOTAL_TEXT
 };

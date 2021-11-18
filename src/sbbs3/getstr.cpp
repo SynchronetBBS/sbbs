@@ -645,8 +645,8 @@ long sbbs_t::getnum(ulong max, ulong dflt)
 		ch=getkey(K_UPPER);
 		if(ch>0x7f)
 			continue;
-		if(ch==text[YNQP][2]) {
-			outchar(text[YNQP][2]);
+		if(ch==quit_key()) {
+			outchar(quit_key());
 			if(useron.misc&COLDKEYS)
 				ch=getkey(K_UPPER);
 			if(ch==BS || ch==DEL) {
