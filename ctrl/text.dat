@@ -1036,3 +1036,6 @@
 "DL"                                                       851 DirLibKeys
 "SG"                                                       852 SubGroupKeys
 "A"                                                        853 AllKey
+"All"                                                      854 All
+"L"                                                        855 ListKey
+
