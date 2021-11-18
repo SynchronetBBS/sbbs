@@ -1028,3 +1028,11 @@
 "\1[\1n\1mInternet mail sent to \1h%s\1n\r\n"              844 InternetMailSent
 "\1[\1n\1mFido NetMail sent to \1h%s @%s\1n\r\n"           845 FidoNetMailSent
 "\1[\1n\1mQWK NetMail sent to \1h%s (%s)\1n\r\n"           846 QWKNetMailSent
+"Messages to you only"                                     847 MsgsToYouOnlyQ
+"To You Only"                                              848 ToYouOnly
+"\r\nEnter number of messages from end, ~Date, ~Quit, or"\ 849 SetMsgPtrPrompt
+					" [Last Message]: "
+"DL"                                                       850 DateLastKeys
+"DL"                                                       851 DirLibKeys
+"SG"                                                       852 SubGroupKeys
+"A"                                                        853 AllKey
