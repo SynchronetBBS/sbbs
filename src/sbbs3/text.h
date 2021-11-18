@@ -857,6 +857,13 @@ enum {
 	,InternetMailSent
 	,FidoNetMailSent
 	,QWKNetMailSent
+	,MsgsToYouOnlyQ
+	,ToYouOnly
+	,SetMsgPtrPrompt
+	,DateLastKeys
+	,DirLibKeys
+	,SubGroupKeys
+	,AllKey
 
 	,TOTAL_TEXT
 };

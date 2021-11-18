@@ -26,18 +26,20 @@
 /****************************************************************************/
 void sbbs_t::scandirs(long mode)
 {
+	char	keys[32];
 	char	ch,str[256]="";
 	int		s;
 	uint	i,k;
 
 	if(!usrlibs) return;
 	mnemonics(text[DirLibOrAll]);
-	ch=(char)getkeys("DLA\r",0);
+	SAFEPRINTF2(keys, "%s%c\r", text[DirLibKeys], all_key());
+	ch=(char)getkeys(keys, 0);
 	if(sys_status&SS_ABORT || ch==CR) {
 		lncntr=0;
 		return; 
 	}
-	if(ch!='A') {
+	if(ch!=all_key()) {
 		if(mode&FL_ULTIME) {			/* New file scan */
 			bprintf(text[NScanHdr],timestr(ns_time));
 		}
@@ -59,7 +61,7 @@ void sbbs_t::scandirs(long mode)
 			} 
 		}
 	}
-	if(ch=='D') {
+	if(ch==text[DirLibKeys][0]) {
 		if((s=listfiles(usrdir[curlib][curdir[curlib]],str,0,mode))==-1)
 			return;
 		bputs(text[Scanned]);
@@ -69,7 +71,7 @@ void sbbs_t::scandirs(long mode)
 			bputs(text[FileNotFound]);
 		return; 
 	}
-	if(ch=='L') {
+	if(ch==text[DirLibKeys][1]) {
 		k=0;
 		for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
 			progress(text[Scanning], i, usrdirs[curlib], (mode & FL_ULTIME) ? 10 : 1);
