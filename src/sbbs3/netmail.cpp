@@ -224,14 +224,14 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 		{ /* Remote */
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			sprintf(str,"%c",text[YNQP][2]);
+			sprintf(str,"%c",quit_key());
 			for(x=0;x<cfg.total_prots;x++)
 				if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[x]->mnemonic);
 					strcat(str,tmp); 
 				}
 			ch=(char)getkeys(str,0);
-			if(ch==text[YNQP][2] || sys_status&SS_ABORT) {
+			if(ch==quit_key() || sys_status&SS_ABORT) {
 				bputs(text[Aborted]);
 				return(false); 
 			}
@@ -1053,14 +1053,14 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		{ /* Remote */
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			SAFEPRINTF(str,"%c",text[YNQP][2]);
+			SAFEPRINTF(str,"%c",quit_key());
 			for(x=0;x<cfg.total_prots;x++)
 				if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron,&client)) {
 					SAFEPRINTF(tmp,"%c",cfg.prot[x]->mnemonic);
 					SAFECAT(str,tmp); 
 				}
 			ch=(char)getkeys(str,0);
-			if(ch==text[YNQP][2] || sys_status&SS_ABORT) {
+			if(ch==quit_key() || sys_status&SS_ABORT) {
 				bputs(text[Aborted]);
 				strListFree(&rcpt_list);
 				remove(msgpath);

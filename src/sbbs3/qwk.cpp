@@ -400,11 +400,11 @@ void sbbs_t::qwk_sec()
 		action=NODE_TQWK;
 		ASYNC;
 		bputs(text[QWKPrompt]);
-		sprintf(str,"?UDCSP\r%c",text[YNQP][2]);
+		sprintf(str,"?UDCSP\r%c",quit_key());
 		ch=(char)getkeys(str,0);
 		if(ch>' ')
 			logch(ch,0);
-		if(sys_status&SS_ABORT || ch==text[YNQP][2] || ch==CR || !online)
+		if(sys_status&SS_ABORT || ch==quit_key() || ch==CR || !online)
 			break;
 		if(ch=='?') {
 			if((useron.misc&(WIP|RIP|HTML) || !(useron.misc&EXPERT))
@@ -602,7 +602,7 @@ void sbbs_t::qwk_sec()
 			/***************/
 			xfer_prot_menu(XFER_DOWNLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			sprintf(tmp2,"%c",text[YNQP][2]);
+			sprintf(tmp2,"%c",quit_key());
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
@@ -610,7 +610,7 @@ void sbbs_t::qwk_sec()
 				}
 			ungetkey(useron.prot);
 			ch=(char)getkeys(tmp2,0);
-			if(ch==text[YNQP][2] || sys_status&SS_ABORT || !online) {
+			if(ch==quit_key() || sys_status&SS_ABORT || !online) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
 				last_ns_time=ns_time;
@@ -658,14 +658,14 @@ void sbbs_t::qwk_sec()
 			/******************/
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			sprintf(tmp2,"%c",text[YNQP][2]);
+			sprintf(tmp2,"%c",quit_key());
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp);
 				}
 			ch=(char)getkeys(tmp2,0);
-			if(ch==text[YNQP][2] || sys_status&SS_ABORT || !online)
+			if(ch==quit_key() || sys_status&SS_ABORT || !online)
 				continue;
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch

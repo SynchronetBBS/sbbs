@@ -448,7 +448,7 @@ bool sbbs_t::upload(uint dirnum)
 	} else {
 		xfer_prot_menu(XFER_UPLOAD);
 		SYNC;
-		SAFEPRINTF(keys,"%c",text[YNQP][2]);
+		SAFEPRINTF(keys,"%c",quit_key());
 		if(dirnum==cfg.user_dir || !cfg.max_batup)  /* no batch user to user xfers */
 			mnemonics(text[ProtocolOrQuit]);
 		else {
@@ -461,7 +461,7 @@ bool sbbs_t::upload(uint dirnum)
 				strcat(keys,tmp); 
 			}
 		ch=(char)getkeys(keys,0);
-		if(ch==text[YNQP][2] || (sys_status&SS_ABORT))
+		if(ch==quit_key() || (sys_status&SS_ABORT))
 			result = false;
 		else if(ch=='B') {
 			if(batup_total() >= cfg.max_batup)
@@ -574,14 +574,14 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 	else {
 		xfer_prot_menu(XFER_UPLOAD);
 		mnemonics(text[ProtocolOrQuit]);
-		SAFEPRINTF(keys,"%c",text[YNQP][2]);
+		SAFEPRINTF(keys,"%c",quit_key());
 		for(i=0;i<cfg.total_prots;i++)
 			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
 				sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);
 
 		ch=(char)getkeys(keys,0);
 
-		if(ch==text[YNQP][2] || sys_status&SS_ABORT)
+		if(ch==quit_key() || sys_status&SS_ABORT)
 			return(false); 
 	}
 	for(i=0;i<cfg.total_prots;i++)

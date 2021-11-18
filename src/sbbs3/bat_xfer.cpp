@@ -56,11 +56,11 @@ void sbbs_t::batchmenu()
 		}
 		ASYNC;
 		bputs(text[BatchMenuPrompt]);
-		SAFEPRINTF(keys,"CDLRU?\r%c", text[YNQP][2]);
+		SAFEPRINTF(keys,"CDLRU?\r%c", quit_key());
 		ch=(char)getkeys(keys,0);
 		if(ch>' ')
 			logch(ch,0);
-		if(ch==text[YNQP][2] || ch=='\r') {	/* Quit */
+		if(ch==quit_key() || ch=='\r') {	/* Quit */
 			lncntr=0;
 			done=1;
 			break;
@@ -170,14 +170,14 @@ void sbbs_t::batchmenu()
 					break;
 				ASYNC;
 				mnemonics(text[ProtocolOrQuit]);
-				SAFEPRINTF(str,"%c",text[YNQP][2]);
+				SAFEPRINTF(str,"%c",quit_key());
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 						SAFECAT(str,tmp); 
 					}
 				ch=(char)getkeys(str,0);
-				if(ch==text[YNQP][2])
+				if(ch==quit_key())
 					break;
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->batulcmd[0] && cfg.prot[i]->mnemonic==ch
@@ -289,7 +289,7 @@ BOOL sbbs_t::start_batch_download()
 	xfer_prot_menu(XFER_BATCH_DOWNLOAD);
 	ASYNC;
 	mnemonics(text[ProtocolOrQuit]);
-	SAFEPRINTF(str,"%c",text[YNQP][2]);
+	SAFEPRINTF(str,"%c",quit_key());
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
@@ -297,7 +297,7 @@ BOOL sbbs_t::start_batch_download()
 		}
 	ungetkey(useron.prot);
 	ch=(char)getkeys(str,0);
-	if(ch==text[YNQP][2] || sys_status&SS_ABORT)
+	if(ch==quit_key() || sys_status&SS_ABORT)
 		return(FALSE);
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch

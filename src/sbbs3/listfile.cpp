@@ -466,7 +466,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 				pause();
 			return(2); 
 		}
-		if(ch==text[YNQP][2] || sys_status&SS_ABORT)
+		if(ch==quit_key() || sys_status&SS_ABORT)
 			return(-1);
 		if(ch=='S')
 			return(0);
@@ -961,7 +961,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 			xfer_prot_menu(XFER_DOWNLOAD);
 			SYNC;
 			mnemonics(text[ProtocolBatchQuitOrNext]);
-			SAFEPRINTF(str,"B%cN\r",text[YNQP][2]);
+			SAFEPRINTF(str,"B%cN\r",quit_key());
 			if(m > 1)
 				SAFECAT(str, "\b-");
 			for(i=0;i<cfg.total_prots;i++)
@@ -971,7 +971,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 				}
 	//		  ungetkey(useron.prot);
 			ch=(char)getkeys(str,0);
-			if(ch==text[YNQP][2]) {
+			if(ch==quit_key()) {
 				found=-1;
 				done=1; 
 			}
