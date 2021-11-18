@@ -523,10 +523,11 @@ public:
 	/*********************************/
 	char 	*text[TOTAL_TEXT];			/* Text from ctrl\text.dat */
 	char 	*text_sav[TOTAL_TEXT];		/* Text from ctrl\text.dat */
-	char	yes_key(void) { return text[YNQP][0]; }
-	char	no_key(void) { return text[YNQP][1]; }
-	char	quit_key(void) { return text[YNQP][2]; }
-	char	all_key(void) { return text[AllKey][0]; }
+	char	yes_key(void) { return toupper(text[YNQP][0]); }
+	char	no_key(void) { return toupper(text[YNQP][1]); }
+	char	quit_key(void) { return toupper(text[YNQP][2]); }
+	char	all_key(void) { return toupper(text[AllKey][0]); }
+	char	list_key(void) { return toupper(text[ListKey][0]); }
 
 	char 	dszlog[127];	/* DSZLOG environment variable */
     int     keybuftop,keybufbot;    /* Keyboard input buffer pointers (for ungetkey) */

@@ -368,14 +368,14 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 	else {
 		xfer_prot_menu(XFER_DOWNLOAD);
 		mnemonics(text[ProtocolOrQuit]);
-		sprintf(keys,"%c",text[YNQP][2]);
+		sprintf(keys,"%c",quit_key());
 		for(i=0;i<cfg.total_prots;i++)
 			if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
 				sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);
 
 		ch=(char)getkeys(keys,0);
 
-		if(ch==text[YNQP][2] || sys_status&SS_ABORT)
+		if(ch==quit_key() || sys_status&SS_ABORT)
 			return false; 
 	}
 	for(i=0;i<cfg.total_prots;i++)

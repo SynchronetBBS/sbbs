@@ -1161,14 +1161,14 @@ void sbbs_t::maindflts(user_t* user)
 				xfer_prot_menu(XFER_DOWNLOAD);
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
-				sprintf(str,"%c",text[YNQP][2]);
+				sprintf(str,"%c",quit_key());
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						SAFEPRINTF(tmp,"%c",cfg.prot[i]->mnemonic);
 						strcat(str,tmp); 
 					}
 				ch=(char)getkeys(str,0);
-				if(ch==text[YNQP][2] || sys_status&SS_ABORT) {
+				if(ch==quit_key() || sys_status&SS_ABORT) {
 					ch=' ';
 					putuserrec(&cfg,user->number,U_PROT,1,&ch); 
 				}

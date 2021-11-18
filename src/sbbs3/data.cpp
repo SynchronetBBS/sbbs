@@ -53,7 +53,7 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 		return(0); 
 	}
-	SAFEPRINTF(ynq,"%.3s",text[YNQP]);
+	SAFEPRINTF3(ynq, "%c%c%c", yes_key(), no_key(), quit_key());
 	length=(long)filelength(file);
 	while(pass<3) {
 		fseek(stream,0L,SEEK_SET);	/* seek to beginning for each pass */
@@ -77,11 +77,11 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 					fclose(stream);
 					return(0); 
 				}
-				if(c==text[YNQP][0]) {
+				if(c==yes_key()) {
 					fclose(stream);
 					return((l/(LEN_ALIAS+2))+1); 
 				}
-				if(c==text[YNQP][2]) {
+				if(c==quit_key()) {
 					fclose(stream);
 					sys_status |= SS_ABORT;
 					return(0); 

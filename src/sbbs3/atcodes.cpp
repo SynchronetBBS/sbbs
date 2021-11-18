@@ -724,7 +724,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(strcmp(sp, "CONTINUE") == 0) {
 		char ch = getkey(K_UPPER);
-		if(ch == text[YNQP][1] || ch == text[YNQP][2])
+		if(ch == no_key() || ch == quit_key())
 			sys_status|=SS_ABORT;
 		return(nulstr);
 	}
@@ -779,17 +779,17 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	}
 
 	if(strcmp(sp, "YESCHAR") == 0) {	// PCBoard
-		safe_snprintf(str, maxlen, "%c", text[YNQP][0]);
+		safe_snprintf(str, maxlen, "%c", yes_key());
 		return str;
 	}
 
 	if(strcmp(sp, "NOCHAR") == 0) {		// PCBoard
-		safe_snprintf(str, maxlen, "%c", text[YNQP][1]);
+		safe_snprintf(str, maxlen, "%c", no_key());
 		return str;
 	}
 
 	if(strcmp(sp, "QUITCHAR") == 0) {
-		safe_snprintf(str, maxlen, "%c", text[YNQP][2]);
+		safe_snprintf(str, maxlen, "%c", quit_key());
 		return str;
 	}
 
