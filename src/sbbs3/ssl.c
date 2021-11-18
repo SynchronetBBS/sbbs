@@ -291,7 +291,7 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 		return -1;
 	pthread_mutex_lock(&ssl_cert_mutex);
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,"ssl.cert");
-	time_t fd = fdate(str);
+	time32_t fd = (time32_t)fdate(str);
 	if (cfg->tls_certificate != -1 || !cfg->prepped) {
 		if (fd == cfg->tls_cert_file_date) {
 			pthread_mutex_unlock(&ssl_cert_mutex);
