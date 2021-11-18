@@ -26,6 +26,7 @@
 /****************************************************************************/
 void sbbs_t::scansubs(long mode)
 {
+	char	keys[32];
 	char	ch,str[256] = "";
 	char 	tmp[512];
 	uint	i=0,found=0;
@@ -43,11 +44,12 @@ void sbbs_t::scansubs(long mode)
 	}
 
 	mnemonics(text[SubGroupOrAll]);
-	ch=(char)getkeys("SGA\r",0);
+	SAFEPRINTF2(keys, "%s%c\r", text[SubGroupKeys], all_key());
+	ch=(char)getkeys(keys, 0);
 	if(sys_status&SS_ABORT || ch==CR)
 		return;
 
-	if(ch!='A' && mode&(SCAN_FIND|SCAN_TOYOU)) {
+	if(ch!=all_key() && mode&(SCAN_FIND|SCAN_TOYOU)) {
 		if(text[DisplaySubjectsOnlyQ][0])
 			subj_only = yesno(text[DisplaySubjectsOnlyQ]);
 		if((mode&SCAN_TOYOU) && !(mode&SCAN_UNREAD)
@@ -58,10 +60,10 @@ void sbbs_t::scansubs(long mode)
 			if(!getstr(str,40,K_LINE|K_UPPER))
 				return;
 			if(subj_only) {
-				if(ch=='S') {
+				if(ch==text[SubGroupKeys][0] /* 'S' */) {
 					found=listsub(usrsub[curgrp][cursub[curgrp]],SCAN_FIND,0,str);
 					subs_scanned++;
-				} else if(ch=='G')
+				} else if(ch==text[SubGroupKeys][1] /* 'G' */)
 					for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
 						found=listsub(usrsub[curgrp][i],SCAN_FIND,0,str);
 						subs_scanned++;
@@ -74,9 +76,9 @@ void sbbs_t::scansubs(long mode)
 			}
 		}
 		else if(mode&SCAN_TOYOU && subj_only) {
-			if(ch=='S')
+			if(ch==text[SubGroupKeys][0] /* 'S' */)
 				found=listsub(usrsub[curgrp][cursub[curgrp]],mode,0,NULL);
-			else if(ch=='G')
+			else if(ch==text[SubGroupKeys][1] /* 'G' */)
 				for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
 					if(subscan[usrsub[curgrp][i]].cfg&SUB_CFG_SSCAN)
 						found=listsub(usrsub[curgrp][i],mode,0,NULL);
@@ -87,7 +89,7 @@ void sbbs_t::scansubs(long mode)
 		}
 	}
 
-	if(ch=='S') {
+	if(ch==text[SubGroupKeys][0] /* 'S' */) {
 		if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
 			menu("msgscan");
 		}
@@ -98,7 +100,7 @@ void sbbs_t::scansubs(long mode)
 		else bprintf(text[MessageScanComplete],subs_scanned);
 		return;
 	}
-	if(ch=='G') {
+	if(ch==text[SubGroupKeys][1] /* 'G' */) {
 		if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
 			menu("msgscan");
 		}
@@ -238,6 +240,7 @@ void sbbs_t::scanallsubs(long mode)
 
 void sbbs_t::new_scan_ptr_cfg()
 {
+	char	keys[32];
 	uint	i,j;
 	long	s;
 	uint32_t	l;
@@ -255,16 +258,17 @@ void sbbs_t::new_scan_ptr_cfg()
 		}
 		SYNC;
 		mnemonics(text[WhichOrAll]);
-		s=getkeys("AQ",usrgrps);
-		if(!s || s==-1 || s=='Q')
+		sprintf(keys, "%c%c", all_key(), quit_key());
+		s=getkeys(keys,usrgrps);
+		if(!s || s==-1 || s==quit_key())
 			break;
-		if(s=='A') {
-			mnemonics("\r\nEnter number of messages from end, ~Date, ~Quit, or"
-				" [Last Message]: ");
-			s=getkeys("DLQ",9999);
-			if(s==-1 || s=='Q')
+		if(s==all_key()) {
+			mnemonics(text[SetMsgPtrPrompt]);
+			SAFEPRINTF2(keys, "%s%c", text[DateLastKeys], quit_key());
+			s=getkeys(keys, 9999);
+			if(s==-1 || s==quit_key())
 				continue;
-			if(s=='D') {
+			if(s==text[DateLastKeys][0]) {
 				t=time(NULL);
 				for(i=0, total_subs=0; i<usrgrps; i++)
 					total_subs += usrsubs[i];
@@ -280,7 +284,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				}
 				continue;
 			}
-			if(s=='L')
+			if(s==text[DateLastKeys][1])
 				s=0;
 			if(s)
 				s&=~0x80000000L;
@@ -319,20 +323,21 @@ void sbbs_t::new_scan_ptr_cfg()
 			}
 			SYNC;
 			mnemonics(text[WhichOrAll]);
-			s=getkeys("AQ",usrsubs[i]);
+			sprintf(keys, "%c%c", all_key(), quit_key());
+			s=getkeys(keys,usrsubs[i]);
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
 				return;
 			}
-			if(s==-1 || !s || s=='Q')
+			if(s==-1 || !s || s==quit_key())
 				break;
-			if(s=='A') {    /* The entire group */
-				mnemonics("\r\nEnter number of messages from end, ~Date, ~Quit, or"
-					" [Last Message]: ");
-				s=getkeys("DLQ",9999);
-				if(s==-1 || s=='Q')
+			if(s==*text[AllKey]) {    /* The entire group */
+				mnemonics(text[SetMsgPtrPrompt]);
+				SAFEPRINTF2(keys, "%s%c", text[DateLastKeys], quit_key());
+				s=getkeys(keys, 9999);
+				if(s==-1 || s==quit_key())
 					continue;
-				if(s=='D') {
+				if(s==text[DateLastKeys][0]) {
 					t=l;
 					if(inputnstime(&t) && !(sys_status&SS_ABORT)) {
 						for(j=0;j<usrsubs[i] && online;j++) {
@@ -344,7 +349,7 @@ void sbbs_t::new_scan_ptr_cfg()
 					}
 					continue;
 				}
-				if(s=='L')
+				if(s==text[DateLastKeys][1])
 					s=0;
 				if(s)
 					s&=~0x80000000L;
@@ -366,12 +371,12 @@ void sbbs_t::new_scan_ptr_cfg()
 			}
 			else {
 				j=(s&~0x80000000L)-1;
-				mnemonics("\r\nEnter number of messages from end, ~Date, ~Quit, or"
-					" [Last Message]: ");
-				s=getkeys("DLQ",9999);
-				if(s==-1 || s=='Q')
+				mnemonics(text[SetMsgPtrPrompt]);
+				SAFEPRINTF2(keys, "%s%c", text[DateLastKeys], quit_key());
+				s=getkeys(keys, 9999);
+				if(s==-1 || s==quit_key())
 					continue;
-				if(s=='D') {
+				if(s==text[DateLastKeys][0]) {
 					t=getmsgtime(usrsub[i][j],subscan[usrsub[i][j]].ptr);
 					if(inputnstime(&t) && !(sys_status&SS_ABORT)) {
 						bputs(text[LoadingMsgPtrs]);
@@ -379,7 +384,7 @@ void sbbs_t::new_scan_ptr_cfg()
 					}
 					continue;
 				}
-				if(s=='L') {
+				if(s==text[DateLastKeys][1]) {
 					subscan[usrsub[i][j]].ptr = ~0;
 					continue;
 				}
@@ -397,6 +402,7 @@ void sbbs_t::new_scan_ptr_cfg()
 
 void sbbs_t::new_scan_cfg(ulong misc)
 {
+	char	keys[32];
 	long	s;
 	ulong	i,j;
 	ulong	t;
@@ -430,24 +436,25 @@ void sbbs_t::new_scan_cfg(ulong misc)
 					,cfg.sub[usrsub[i][j]]->lname
 					,subscan[usrsub[i][j]].cfg&misc ?
 						(misc&SUB_CFG_NSCAN && subscan[usrsub[i][j]].cfg&SUB_CFG_YSCAN) ?
-						"To You Only" : text[On] : text[Off]);
+						text[ToYouOnly] : text[On] : text[Off]);
 					}
 			SYNC;
 			if(misc&SUB_CFG_NSCAN)
 				mnemonics(text[NScanCfgWhichSub]);
 			else
 				mnemonics(text[SScanCfgWhichSub]);
-			s=getkeys("AQ",usrsubs[i]);
+			sprintf(keys, "%c%c", all_key(), quit_key());
+			s=getkeys(keys,usrsubs[i]);
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
 				return;
 			}
-			if(!s || s==-1 || s=='Q')
+			if(!s || s==-1 || s==quit_key())
 				break;
-			if(s=='A') {
+			if(s==all_key()) {
 				t=subscan[usrsub[i][0]].cfg&misc;
 				if(misc&SUB_CFG_NSCAN && !t && !(useron.misc&FLAG('Q')))
-					if(!noyes("Messages to you only"))
+					if(!noyes(text[MsgsToYouOnlyQ]))
 						misc|=SUB_CFG_YSCAN;
 				for(j=0;j<usrsubs[i] && online;j++) {
 					checkline();
@@ -462,7 +469,7 @@ void sbbs_t::new_scan_cfg(ulong misc)
 			}
 			j=(s&~0x80000000L)-1;
 			if(misc&SUB_CFG_NSCAN && !(subscan[usrsub[i][j]].cfg&misc)) {
-				if(!(useron.rest&FLAG('Q')) && !noyes("Messages to you only"))
+				if(!(useron.rest&FLAG('Q')) && !noyes(text[MsgsToYouOnlyQ]))
 					subscan[usrsub[i][j]].cfg|=SUB_CFG_YSCAN;
 				else
 					subscan[usrsub[i][j]].cfg&=~SUB_CFG_YSCAN;
