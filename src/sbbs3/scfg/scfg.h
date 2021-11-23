@@ -153,6 +153,8 @@ void sort_subs(int grpnum);
 void sort_dirs(int libnum);
 unsigned subs_in_group(unsigned grpnum);
 char random_code_char(void);
+const char* io_method(uint32_t mode);
+void choose_io_method(uint32_t* misc);
 BOOL load_main_cfg(scfg_t*, char*, size_t);
 BOOL load_node_cfg(scfg_t*, char*, size_t);
 BOOL load_msgs_cfg(scfg_t*, char*, size_t);

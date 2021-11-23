@@ -47,6 +47,7 @@
 #define SBBSEXEC_MODE_FOSSIL		(0)
 #define SBBSEXEC_MODE_DOS_IN		(1<<0)
 #define SBBSEXEC_MODE_DOS_OUT		(1<<1)
+#define SBBSEXEC_MODE_UART			(1<<2)
 
 enum {
 	 SBBSEXEC_ERROR_INUSE=1
