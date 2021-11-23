@@ -199,7 +199,7 @@ typedef ulong   uint32_t;
 
 #endif
 
-#if !defined(__MSDOS__)
+#if !defined(_MSDOS)
 #if defined(_MSC_VER) || defined(__WATCOMC__) || defined(__BORLANDC__)
 typedef SSIZE_T ssize_t;
 typedef signed __int64 int64_t;
