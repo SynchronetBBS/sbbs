@@ -478,11 +478,15 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
         SAFEPRINTF2(fullcmdline, "%sDOSXTRN.EXE %s", cfg.exec_dir, path);
 
 		if(!(mode&EX_OFFLINE)) {
-			i=SBBSEXEC_MODE_FOSSIL;
-			if(mode&EX_STDIN)
-           		i|=SBBSEXEC_MODE_DOS_IN;
-			if(mode&EX_STDOUT)
-        		i|=SBBSEXEC_MODE_DOS_OUT;
+			if(mode & EX_UART)
+				i=SBBSEXEC_MODE_UART;
+			else {
+				i=SBBSEXEC_MODE_FOSSIL;
+				if(mode&EX_STDIN)
+           			i|=SBBSEXEC_MODE_DOS_IN;
+				if(mode&EX_STDOUT)
+        			i|=SBBSEXEC_MODE_DOS_OUT;
+			}
 			sprintf(str," NT %u %u"
 				,cfg.node_num,i);
 			strcat(fullcmdline,str);

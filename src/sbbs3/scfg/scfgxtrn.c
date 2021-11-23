@@ -875,6 +875,145 @@ void tevents_cfg()
 	}
 }
 
+const char* io_method(uint32_t mode)
+{
+	static char str[128];
+
+	sprintf(str,"%s%s%s"
+		,mode & XTRN_UART ? "UART"
+			: (mode & XTRN_STDIO ? "Standard"
+				: mode & XTRN_CONIO ? "Console": (mode & XTRN_NATIVE ? "Socket" : "FOSSIL or UART"))
+		,(mode & (XTRN_STDIO|WWIVCOLOR)) == (XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : ""
+		,(mode & (XTRN_STDIO|XTRN_NOECHO)) == (XTRN_STDIO|XTRN_NOECHO) ? ", No Echo" : "");
+	return str;
+}
+
+void choose_io_method(uint32_t* misc)
+{
+	int k;
+
+	switch((*misc) & (XTRN_STDIO|XTRN_UART)) {
+		case XTRN_STDIO:
+			k=0;
+			break;
+		case XTRN_UART:
+			k=2;
+			break;
+		default:
+			k=1;
+			break;
+	}
+	strcpy(opt[0], "Standard");
+	if((*misc) & XTRN_NATIVE) {
+		uifc.helpbuf=
+			"`I/O Method:`\n"
+			"\n"
+			"Select the type of input and output to/from this program that you would\n"
+			"like to have intercepted and directed to the remote user's terminal.\n"
+			"\n"
+			"`Standard`\n"
+			"   So-called 'Standard I/O' of console mode (typically UNIX) programs.\n"
+			"\n"
+			"`Socket`\n"
+			"   Stream (TCP) socket interface to a native (e.g. Win32 or *nix)\n"
+			"   program. The socket descriptor/handle (number) is passed to the\n"
+			"   program either via drop file (e.g. DOOR32.SYS) or command-line\n"
+			"   option.\n"
+			"\n"
+			"~ Note ~\n"
+			"   This setting is not applied when invoking Baja or JavaScript modules.\n"
+		;
+		strcpy(opt[1], "Socket");
+		opt[2][0] = '\0';
+	} else {
+		uifc.helpbuf=
+			"`I/O Method:`\n"
+			"\n"
+			"Select the type of input and output to/from this program that you would\n"
+			"like to have intercepted and directed to the remote user's terminal.\n"
+			"\n"
+			"`Standard`\n"
+			"   So-called 'Standard I/O' of console mode (typically UNIX) programs.\n"
+			"   Int29h is intercepted for output and int16h for keyboard input.\n"
+			"   Will not intercept direct screen writes or PC-BIOS int10h calls.\n"
+			"\n"
+			"`FOSSIL`\n"
+			"   Int14h (PC-BIOS) serial communication interface to 16-bit\n"
+			"   MS-DOS programs. Most traditional BBS door games will support FOSSIL.\n"
+			"   The port number (contained in the DX register of int14h calls) is\n"
+			"   ignored by the Synchronet FOSSIL driver.\n"
+			"\n"
+			"`UART`\n"
+			"   Communication port I/O of 16-bit MS-DOS programs via emulation of an\n"
+			"   NS8250 Universal Asynchronous Receiver/Transmitter (UART), by\n"
+			"   default as an IBM-PC `COM1` port (I/O port 3F8h, IRQ 4).\n"
+			"\n"
+			"~ Note ~\n"
+			"   This setting is not applied when invoking Baja or JavaScript modules.\n"
+		;
+		strcpy(opt[1], "FOSSIL or UART");
+		strcpy(opt[2], "UART");
+		opt[3][0] = '\0';
+	}
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"I/O Method"
+		,opt)) {
+		case 0: /* Standard I/O */
+			if(((*misc) & (XTRN_STDIO|XTRN_UART)) != XTRN_STDIO) {
+				(*misc) |=XTRN_STDIO;
+				(*misc) &=~XTRN_UART;
+				uifc.changes = TRUE;
+			}
+			k=((*misc) & WWIVCOLOR) ? 0:1;
+			uifc.helpbuf=
+				"`Program Uses WWIV Color Codes:`\n"
+				"\n"
+				"If this program was written for use exclusively under ~WWIV~ BBS\n"
+				"software, set this option to ~Yes~.\n"
+			;
+			k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+				,"Program Uses WWIV Color Codes"
+				,uifcYesNoOpts);
+			if(!k && !((*misc) & WWIVCOLOR)) {
+				(*misc) |= WWIVCOLOR;
+				uifc.changes=TRUE; 
+			}
+			else if(k==1 && ((*misc)&WWIVCOLOR)) {
+				(*misc) &= ~WWIVCOLOR;
+				uifc.changes=TRUE; 
+			}
+			k=((*misc) & XTRN_NOECHO) ? 1:0;
+			uifc.helpbuf=
+				"`Echo Input:`\n"
+				"\n"
+				"If you want the BBS to copy (\"echo\") all keyboard input to the screen\n"
+				"output, set this option to ~Yes~ (for native Win32 programs only).\n"
+			;
+			k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+				,"Echo Keyboard Input"
+				,uifcYesNoOpts);
+			if(!k && ((*misc) & XTRN_NOECHO)) {
+				(*misc) &=~XTRN_NOECHO;
+				uifc.changes=TRUE; 
+			} else if(k==1 && !((*misc) & XTRN_NOECHO)) {
+				(*misc) |= XTRN_NOECHO;
+				uifc.changes=TRUE; 
+			}
+			break;
+		case 1:	/* FOSSIL or Socket */
+			if(((*misc) & (XTRN_STDIO|XTRN_UART)) != 0) {
+				(*misc) &= ~(XTRN_UART|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
+				uifc.changes=TRUE; 
+			}
+			break;
+		case 2: /* UART */
+			if(((*misc) & (XTRN_STDIO|XTRN_UART)) != XTRN_UART) {
+				(*misc) |= XTRN_UART;
+				(*misc) &= ~(XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
+				uifc.changes=TRUE; 
+			}
+			break;
+	}
+}
 
 void xtrn_cfg(uint section)
 {
@@ -997,13 +1136,7 @@ void xtrn_cfg(uint section)
 				,cfg.xtrn[i]->run_arstr);
 			sprintf(opt[k++],"%-27.27s%s","Multiple Concurrent Users"
 				,cfg.xtrn[i]->misc&MULTIUSER ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s%s%s","Intercept I/O"
-				,cfg.xtrn[i]->misc&XTRN_STDIO ? "Standard"
-					: cfg.xtrn[i]->misc&XTRN_CONIO ? "Console":"No"
-				,(cfg.xtrn[i]->misc&(XTRN_STDIO|WWIVCOLOR))
-					==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr
-				,(cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_NOECHO))
-					==(XTRN_STDIO|XTRN_NOECHO) ? ", No Echo" : nulstr);
+			sprintf(opt[k++],"%-27.27s%s","I/O Method", io_method(cfg.xtrn[i]->misc));
 			sprintf(opt[k++],"%-27.27s%s","Native Executable/Script"
 				,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-27.27s%s",use_shell_opt
@@ -1171,84 +1304,7 @@ void xtrn_cfg(uint section)
 					}
 					break;
 				case 9:
-					switch(cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_CONIO)) {
-						case XTRN_STDIO:
-							k=0;
-							break;
-						case XTRN_CONIO:
-							k=1;
-							break;
-						default:
-							k=2;
-					}
-					strcpy(opt[0],"Standard");
-					strcpy(opt[1],"Console");
-					strcpy(opt[2],"No");
-					opt[3][0]=0;
-					uifc.helpbuf=
-						"`Intercept I/O:`\n"
-						"\n"
-						"If this online program uses a FOSSIL driver or SOCKET communications,\n"
-						"set this option to `No`.\n"
-					;
-					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O"
-						,opt)) {
-						case 0: /* Standard I/O */
-							if((cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != XTRN_STDIO) {
-								cfg.xtrn[i]->misc|=XTRN_STDIO;
-								cfg.xtrn[i]->misc&=~XTRN_CONIO;
-								uifc.changes=1;
-							}
-							k=(cfg.xtrn[i]->misc&WWIVCOLOR) ? 0:1;
-							uifc.helpbuf=
-								"`Program Uses WWIV Color Codes:`\n"
-								"\n"
-								"If this program was written for use exclusively under ~WWIV~ BBS\n"
-								"software, set this option to ~Yes~.\n"
-							;
-							k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-								,"Program Uses WWIV Color Codes"
-								,uifcYesNoOpts);
-							if(!k && !(cfg.xtrn[i]->misc&WWIVCOLOR)) {
-								cfg.xtrn[i]->misc|=WWIVCOLOR;
-								uifc.changes=TRUE; 
-							}
-							else if(k==1 && (cfg.xtrn[i]->misc&WWIVCOLOR)) {
-								cfg.xtrn[i]->misc&=~WWIVCOLOR;
-								uifc.changes=TRUE; 
-							}
-							k=(cfg.xtrn[i]->misc&XTRN_NOECHO) ? 1:0;
-							uifc.helpbuf=
-								"`Echo Input:`\n"
-								"\n"
-								"If you want the BBS to copy (\"echo\") all keyboard input to the screen\n"
-								"output, set this option to ~Yes~ (for native Win32 programs only).\n"
-							;
-							k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-								,"Echo Keyboard Input"
-								,uifcYesNoOpts);
-							if(!k && (cfg.xtrn[i]->misc&XTRN_NOECHO)) {
-								cfg.xtrn[i]->misc&=~XTRN_NOECHO;
-								uifc.changes=TRUE; 
-							} else if(k==1 && !(cfg.xtrn[i]->misc&XTRN_NOECHO)) {
-								cfg.xtrn[i]->misc|=XTRN_NOECHO;
-								uifc.changes=TRUE; 
-							}
-							break;
-						case 1: /* Console I/O */
-							if((cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != XTRN_CONIO) {
-								cfg.xtrn[i]->misc|=XTRN_CONIO;
-								cfg.xtrn[i]->misc&=~(XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
-								uifc.changes=TRUE; 
-							}
-							break;
-						case 2:	/* No */
-							if((cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != 0) {
-								cfg.xtrn[i]->misc&=~(XTRN_CONIO|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
-								uifc.changes=TRUE; 
-							}
-							break;
-					}
+					choose_io_method(&cfg.xtrn[i]->misc);
 					break;
 				case 10:
 					k=(cfg.xtrn[i]->misc&XTRN_NATIVE) ? 0:1;
@@ -1673,11 +1729,7 @@ void xedit_cfg()
 			sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.xedit[i]->code);
 			sprintf(opt[k++],"%-32.32s%s","Command Line",cfg.xedit[i]->rcmd);
 			sprintf(opt[k++],"%-32.32s%s","Access Requirements",cfg.xedit[i]->arstr);
-			sprintf(opt[k++],"%-32.32s%s%s","Intercept I/O"
-				,cfg.xedit[i]->misc&XTRN_STDIO ? "Standard"
-					:cfg.xedit[i]->misc&XTRN_CONIO ? "Console":"No"
-				,(cfg.xedit[i]->misc&(XTRN_STDIO|WWIVCOLOR))
-					==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr);
+			sprintf(opt[k++],"%-32.32s%s","I/O Method", io_method(cfg.xedit[i]->misc));
 			sprintf(opt[k++],"%-32.32s%s","Native Executable/Script"
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
@@ -1788,66 +1840,7 @@ void xedit_cfg()
 					getar(str,cfg.xedit[i]->arstr);
 					break;
 				case 4:
-					switch(cfg.xedit[i]->misc&(XTRN_STDIO|XTRN_CONIO)) {
-						case XTRN_STDIO:
-							k=0;
-							break;
-						case XTRN_CONIO:
-							k=1;
-							break;
-						default:
-							k=2;
-							break;
-					}
-					strcpy(opt[0],"Standard");
-					strcpy(opt[1],"Console");
-					strcpy(opt[2],"No");
-					opt[3][0]=0;
-					uifc.helpbuf=
-						"`Intercept I/O:`\n"
-						"\n"
-						"If this program uses FOSSIL, Socket, or UART communications,\n"
-						"set this option to `No`.\n"
-					;
-					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O"	,opt)) {
-						case 0: /* Standard */
-							if((cfg.xedit[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != XTRN_STDIO) {
-								cfg.xedit[i]->misc|=XTRN_STDIO;
-								cfg.xedit[i]->misc&=~XTRN_CONIO;
-								uifc.changes=TRUE; 
-							}
-							k=(cfg.xedit[i]->misc&WWIVCOLOR) ? 0:1;
-							uifc.helpbuf=
-								".Editor Uses WWIV Color Codes:.\n"
-								"\n"
-								"If this editor was written for use exclusively under WWIV, set this\n"
-								"option to .Yes..\n"
-							;
-							k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-								,"Editor Uses WWIV Color Codes",uifcYesNoOpts);
-							if(!k && !(cfg.xedit[i]->misc&WWIVCOLOR)) {
-								cfg.xedit[i]->misc|=WWIVCOLOR;
-								uifc.changes=TRUE; 
-							}
-							else if(k==1 && (cfg.xedit[i]->misc&WWIVCOLOR)) {
-								cfg.xedit[i]->misc&=~WWIVCOLOR;
-								uifc.changes=TRUE; 
-							}
-							break;
-						case 1: /* Console */
-							if((cfg.xedit[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != XTRN_CONIO) {
-								cfg.xedit[i]->misc|=XTRN_CONIO;
-								cfg.xedit[i]->misc&=~(XTRN_STDIO|WWIVCOLOR);
-								uifc.changes=TRUE; 
-							}
-							break;
-						case 2: /* No */
-							if((cfg.xedit[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != 0) {
-								cfg.xedit[i]->misc&=~(XTRN_CONIO|XTRN_STDIO|WWIVCOLOR);
-								uifc.changes=TRUE; 
-							}
-							break;
-					}
+					choose_io_method(&cfg.xedit[i]->misc);
 					break;
 				case 5:
 					k=(cfg.xedit[i]->misc&XTRN_NATIVE) ? 0:1;

@@ -114,9 +114,7 @@ void page_cfg()
 			k=0;
 			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.page[i]->cmd);
 			sprintf(opt[k++],"%-27.27s%s","Access Requirements",cfg.page[i]->arstr);
-			sprintf(opt[k++],"%-27.27s%s","Intercept I/O"
-				,(cfg.page[i]->misc&XTRN_STDIO) ? "Standard"
-					:cfg.page[i]->misc&XTRN_CONIO ? "Console":"No");
+			sprintf(opt[k++],"%-27.27s%s","I/O Method", io_method(cfg.page[i]->misc));
 			sprintf(opt[k++],"%-27.27s%s","Native Executable"
 				,cfg.page[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-27.27s%s","Use Shell to Execute"
@@ -144,49 +142,7 @@ void page_cfg()
 					getar(str,cfg.page[i]->arstr);
 					break;
 				case 2:
-					switch(cfg.page[i]->misc&(XTRN_STDIO|XTRN_CONIO)) {
-						case XTRN_STDIO:
-							k=0;
-							break;
-						case XTRN_CONIO:
-							k=1;
-							break;
-						default:
-							k=2;
-					}
-					strcpy(opt[0],"Standard");
-					strcpy(opt[1],"Console");
-					strcpy(opt[2],"No");
-					opt[3][0]=0;
-					uifc.helpbuf=
-						"`Intercept I/O:`\n"
-						"\n"
-						"If you wish the screen output and keyboard input to be intercepted\n"
-						"when running this chat pager, set this option to either `Standard` or ~Console~.\n"
-					;
-					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O"
-						,opt)) {
-					case 0:
-						if((cfg.page[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != XTRN_STDIO) {
-							cfg.page[i]->misc|=XTRN_STDIO;
-							cfg.page[i]->misc&=~XTRN_CONIO;
-							uifc.changes=1; 
-						}
-						break;
-					case 1:
-						if((cfg.page[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != XTRN_CONIO) {
-							cfg.page[i]->misc|=XTRN_CONIO;
-							cfg.page[i]->misc&=~XTRN_STDIO;
-							uifc.changes=1; 
-						}
-						break;
-					case 2:
-						if((cfg.page[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != 0) {
-							cfg.page[i]->misc&=~(XTRN_STDIO|XTRN_CONIO);
-							uifc.changes=1; 
-						}
-						break;
-					}
+					choose_io_method(&cfg.page[i]->misc);
 					break;
 				case 3:
 					k=(cfg.page[i]->misc&XTRN_NATIVE) ? 0:1;
