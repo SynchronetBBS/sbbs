@@ -45,7 +45,10 @@
 #include "execvxd.h"
 #include "isvbop.h"			/* ddk\inc */
 #include "fossdefs.h"
+#include "../git_branch.h"
+#include "../git_hash.h"
 
+#define DOSXTRN_REVISION	26
 #define VDD_FILENAME	"sbbsexec.dll"
 
 /****************************************************************************/
@@ -63,7 +66,6 @@ static void truncsp(char *str)
 short	vdd=0;
 BYTE	node_num=0;
 int		mode=0;
-int		revision;
 char	id_string[128];
 #ifdef DEBUG_INT_CALLS
 ulong	int14calls=0;
@@ -215,6 +217,32 @@ WORD PortStatus()
 
 #ifdef DEBUG_FOSSIL_CALLS
 	DWORD fossil_calls[0x100];
+
+const char* fossil_func(int func)
+{
+	switch(func) {
+		case FOSSIL_FUNC_SET_RATE:		return "set rate";
+		case FOSSIL_FUNC_PUT_CHAR:		return "put char";
+		case FOSSIL_FUNC_GET_CHAR:		return "get char";
+		case FOSSIL_FUNC_GET_STATUS:	return "get status";
+		case FOSSIL_FUNC_INIT:			return "init";
+		case FOSSIL_FUNC_UNINIT:		return "uninit";
+		case FOSSIL_FUNC_DTR:			return "dtr";
+		case FOSSIL_FUNC_GET_TIMER:		return "get timer";
+		case FOSSIL_FUNC_FLUSH_OUT:		return "flush out";
+		case FOSSIL_FUNC_PURGE_OUT:		return "purge out";
+		case FOSSIL_FUNC_PURGE_IN:		return "purge in";
+		case FOSSIL_FUNC_WRITE_CHAR:	return "write char";
+		case FOSSIL_FUNC_PEEK:			return "peek";
+		case FOSSIL_FUNC_GET_KB:		return "get kb";
+		case FOSSIL_FUNC_GET_KB_WAIT:	return "get kb wait";
+		case FOSSIL_FUNC_FLOW_CTRL:		return "flow_ctrl";
+		case FOSSIL_FUNC_CTRL_C:		return "ctrl_c";
+		case FOSSIL_FUNC_BREAK:			return "break";
+		case FOSSIL_FUNC_GET_INFO:		return "get info";
+		default: return "unknown";
+	}
+}
 #endif
 
 void interrupt winNTint14(
@@ -233,7 +261,7 @@ void interrupt winNTint14(
     fossil_info_t info = { 
 		 sizeof(info)
 		,FOSSIL_REVISION
-		,revision	/* driver revision */
+		,DOSXTRN_REVISION	/* driver revision */
 		,0			/* ID string pointer */	
 		,0,0		/* receive buffer size/free (overwritten later) */
 		,0,0		/* transmit buffer size/free (overwritten later) */
@@ -345,6 +373,9 @@ void interrupt winNTint14(
             _fmemcpy(p, &info, wr);
         	_ax=wr;
             break;
+		case FOSSIL_FUNC_GET_KB:
+			_ax=0xffff;
+			break;
 	}
 }
 
@@ -482,9 +513,7 @@ int main(int argc, char **argv)
 	WORD	buf_seg;
 	WORD	w;
 
-	sscanf("$Revision: 1.25 $", "%*s 1.%u", &revision);
-
-	sprintf(id_string,"Synchronet FOSSIL Driver (DOSXTRN) revision %u", revision);
+	sprintf(id_string,"Synchronet FOSSIL Driver (DOSXTRN) revision %u %s/%s", DOSXTRN_REVISION, GIT_BRANCH, GIT_HASH);
 	if(argc<2) {
 		fprintf(stderr
 			,"%s - Copyright %s Rob Swindell\n"
@@ -590,7 +619,7 @@ int main(int argc, char **argv)
 
 		vdd_str(VDD_LOAD_INI_SECTION, getfname(arg[0]));
 
-		sprintf(str,"%s, rev %u, %s %s", __FILE__, revision, __DATE__, __TIME__);
+		sprintf(str,"%s, rev %u, %s %s mode=%u", __FILE__, DOSXTRN_REVISION, __DATE__, __TIME__, mode);
 		vdd_str(VDD_DEBUG_OUTPUT, str);
 
 		i=vdd_op(VDD_OPEN);
@@ -642,10 +671,10 @@ int main(int argc, char **argv)
 		vdd_str(VDD_DEBUG_OUTPUT, str);
 
 #ifdef DEBUG_INT_CALLS
-		sprintf(str,"int14h calls: %u", int14calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
-		sprintf(str,"int16h calls: %u", int16calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
-		sprintf(str,"int21h calls: %u", int21calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
-		sprintf(str,"int29h calls: %u", int29calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+		sprintf(str,"int14h calls: %lu", int14calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+		sprintf(str,"int16h calls: %lu", int16calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+		sprintf(str,"int21h calls: %lu", int21calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+		sprintf(str,"int29h calls: %lu", int29calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
 #endif
 #ifdef DEBUG_DOS_CALLS
 		for(i=0;i<0x100;i++) {
@@ -659,9 +688,10 @@ int main(int argc, char **argv)
 #ifdef DEBUG_FOSSIL_CALLS
 		for(i=0;i<0x100;i++) {
 			if(fossil_calls[i]>0) {
-				sprintf(str,"int14h function %02X calls: %u"
-					,i, fossil_calls[i]);
-				vdd_str(VDD_DEBUG_OUTPUT, str);			}
+				sprintf(str,"int14h function %02X (%-10s) calls: %lu"
+					,i, fossil_func(i), fossil_calls[i]);
+				vdd_str(VDD_DEBUG_OUTPUT, str);
+			}
 		}
 #endif
 
