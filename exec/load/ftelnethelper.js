@@ -136,6 +136,11 @@ function UsingSecondRLoginName() {
 	return (FBBSOptions.indexOf("USE_2ND_RLOGIN") !== -1);
 }
 
+function UsingHAProxy() {
+	GetSBBSIniValues();
+	return (FBBSOptions.indexOf("HAPROXY_PROTO") !== -1);
+}
+
 function GetInterface(i) {
 	if (['', '0.0.0.0', '::'].indexOf(i) > -1) return 'localhost';
 	return i;
