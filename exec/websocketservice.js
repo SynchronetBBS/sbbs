@@ -104,7 +104,7 @@ try {
 					FServerSocket.sendBin(36, 2);
 				}
 				FServerSocket.sendBin(inet_pton(client.ip_address), 4);
-				FServerSocket.sendBin(inet_pton(TARGET_IP_ADDRESS_GOES_HERE), 4);
+				FServerSocket.sendBin(inet_pton(FServerSocket.remote_ip_address), 4);
 				FServerSocket.sendBin(client.port, 2);
 				FServerSocket.sendBin(TargetPort, 2);
 			}
