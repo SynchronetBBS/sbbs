@@ -87,6 +87,14 @@ try {
             var ClientData = [];
             var ServerData = [];
 
+			if (UsingHAProxy()) {
+				if (FWebSocketHeader['X-Forwarded-For'] !== undefined) {
+					// Do HAProxy stuff here
+				} else {
+					throw new Error('BBS is using HAProxy, but no X-Forwarded-For header present.');
+				}
+			}
+
             // Loop while we're still connected on both ends
             while ((client.socket.is_connected) && (FServerSocket.is_connected)) {
                 // Should we yield or not (default true, but disable if we had line activity)
