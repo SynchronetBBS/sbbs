@@ -95,9 +95,9 @@ try {
 			if (UsingHAProxy()) {
 				var hapstr = '\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A\x21';
 				if (client.socket.family === PF_INET) {
-					hapstr += '\x11\x0C';
+					hapstr += '\x11\x00\x0C';
 				} else if (client.socket.family === PF_INET6) {
-					hapstr += '\x21\x24';
+					hapstr += '\x21\x00\x24';
 				}
 				hapstr += inet_pton(FWebSocketHeader['X-Forwarded-For']);
 				hapstr += inet_pton(FServerSocket.remote_ip_address);
