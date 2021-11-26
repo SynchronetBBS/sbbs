@@ -99,7 +99,7 @@ try {
 				} else if (client.socket.family === PF_INET6) {
 					hapstr += '\x21\x24';
 				}
-				hapstr += inet_pton(client.ip_address);
+				hapstr += inet_pton(FWebSocketHeader['X-Forwarded-For']);
 				hapstr += inet_pton(FServerSocket.remote_ip_address);
 				hapstr += client.port.toString(16);
 				hapstr += TargetPort.toString(16);
