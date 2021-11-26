@@ -449,51 +449,53 @@ function ShakeHands() {
 						break;
 			    }
 				break;
-            } else if (InLine.indexOf("Connection:") === 0) {
+            } else if (InLine.search(/^Connection:/i) === 0) {
                 // Example: "Connection: Upgrade"
                 FWebSocketHeader['Connection'] = InLine.replace(/Connection:\s?/i, "");
-            } else if (InLine.indexOf("GET") === 0) {
+            } else if (InLine.search(/^GET/i) === 0) {
                 // Example: "GET /demo HTTP/1.1"
                 var GET = InLine.split(" ");
                 FWebSocketHeader['Path'] = GET[1];
-            } else if (InLine.indexOf("Host:") === 0) {
+            } else if (InLine.search(/^Host:/i) === 0) {
                 // Example: "Host: example.com"
                 FWebSocketHeader['Host'] = InLine.replace(/Host:\s?/i, "");
-            } else if (InLine.indexOf("Origin:") === 0) {
+            } else if (InLine.search(/^Origin:/i) === 0) {
                 // Example: "Origin: http://example.com"
                 FWebSocketHeader['Origin'] = InLine.replace(/Origin:\s?/i, "");
-            } else if (InLine.indexOf("Sec-WebSocket-Key:") === 0) {
+            } else if (InLine.search(/^Sec-WebSocket-Key:/i) === 0) {
                 // Example: "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ=="
                 FWebSocketHeader['Key'] = InLine.replace(/Sec-WebSocket-Key:\s?/i, "");
-            } else if (InLine.indexOf("Sec-WebSocket-Key1:") === 0) {
+            } else if (InLine.search(/^Sec-WebSocket-Key1:/i) === 0) {
                 // Example: "Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5"
                 FWebSocketHeader['Key1'] = CalculateWebSocketKey(InLine.replace(/Sec-WebSocket-Key1:\s?/i, ""));
-            } else if (InLine.indexOf("Sec-WebSocket-Key2:") === 0) {
+            } else if (InLine.search(/^Sec-WebSocket-Key2:/i) === 0) {
                 // Example: "Sec-WebSocket-Key2: 12998 5 Y3 1  .P00"
                 FWebSocketHeader['Key2'] = CalculateWebSocketKey(InLine.replace(/Sec-WebSocket-Key2:\s?/i, ""));
-            } else if (InLine.indexOf("Sec-WebSocket-Origin:") === 0) {
+            } else if (InLine.search(/^Sec-WebSocket-Origin:/i) === 0) {
                 // Example: "Sec-WebSocket-Origin: http://example.com"
                 FWebSocketHeader['Origin'] = InLine.replace(/Sec-WebSocket-Origin:\s?/i, "");
-            } else if (InLine.indexOf("Sec-WebSocket-Protocol:") === 0) {
+            } else if (InLine.search(/^Sec-WebSocket-Protocol:/i) === 0) {
                 // Example: "Sec-WebSocket-Protocol: sample"
                 FWebSocketHeader['SubProtocol'] = InLine.replace(/Sec-WebSocket-Protocol:\s?/i, "");
-            } else if (InLine.indexOf("Sec-WebSocket-Draft") === 0) {
+            } else if (InLine.search(/^Sec-WebSocket-Draft/i) === 0) {
 				// Example: "Sec-WebSocket-Draft: 2"
                 try {
                     FWebSocketHeader['Version'] = parseInt(InLine.replace(/Sec-WebSocket-Draft:\s?/i, ""));
                 } catch (err) {
                     FWebSocketHeader['Version'] = 0;
                 }
-            } else if (InLine.indexOf("Sec-WebSocket-Version") === 0) {
+            } else if (InLine.search(/^Sec-WebSocket-Version/i) === 0) {
 				// Example: "Sec-WebSocket-Version: 8"
                 try {
                     FWebSocketHeader['Version'] = parseInt(InLine.replace(/Sec-WebSocket-Version:\s?/i, ""));
                 } catch (err) {
                     FWebSocketHeader['Version'] = 0;
                 }
-            } else if (InLine.indexOf("Upgrade:") === 0) {
+            } else if (InLine.search(/^Upgrade:/i) === 0) {
 				// Example: "Upgrade: websocket"
 				FWebSocketHeader['Upgrade'] = InLine.replace(/Upgrade:\s?/i, "");
+			} else if (InLine.search(/^X-Forwarded-For/i) === 0) {
+				FWebSocketHeader['X-Forwarded-For'] = InLine.replace(/X-Forwarded-For:\s?/i, "");
 			}
         }
     } catch (err) {
