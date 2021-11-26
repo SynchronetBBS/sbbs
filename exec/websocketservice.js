@@ -93,20 +93,17 @@ try {
             var ServerData = [];
 
 			if (UsingHAProxy()) {
-				[0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A, 0x21].forEach(function (e) {
-					FServerSocket.sendBin(e, 1);
-				});
+				var hapstr = '\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A\x21';
 				if (client.socket.family === PF_INET) {
-					FServerSocket.sendBin(0x11, 1);
-					FServerSocket.sendBin(12, 2);
+					hapstr += '\x11\x0C';
 				} else if (client.socket.family === PF_INET6) {
-					FServerSocket.sendBin(0x21, 1);
-					FServerSocket.sendBin(36, 2);
+					hapstr += '\x21\x24';
 				}
-				FServerSocket.sendBin(inet_pton(client.ip_address), 4);
-				FServerSocket.sendBin(inet_pton(FServerSocket.remote_ip_address), 4);
-				FServerSocket.sendBin(client.port, 2);
-				FServerSocket.sendBin(TargetPort, 2);
+				hapstr += inet_pton(client.ip_address);
+				hapstr += inet_pton(FServerSocket.remote_ip_address);
+				hapstr += client.port.toString(16);
+				hapstr += TargetPort.toString(16);
+				FServerSocket.send(hapstr);
 			}
 
             // Loop while we're still connected on both ends
