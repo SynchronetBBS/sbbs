@@ -47,6 +47,11 @@ var FWebSocketState = WEBSOCKET_NEED_PACKET_START;
 try {
     // Parse and respond to the WebSocket handshake request
     if (ShakeHands()) {
+
+		if (UsingHAProxy() && FWebSocketHeader['X-Forwarded-For'] === undefined) {
+			throw new Error('BBS is using HAProxy, but no X-Forwarded-For header present.');
+		}
+
         SendToWebSocketClient(StringToBytes("Redirecting to server...\r\n"));
 
         // Default to localhost on the telnet port
@@ -88,11 +93,7 @@ try {
             var ServerData = [];
 
 			if (UsingHAProxy()) {
-				if (FWebSocketHeader['X-Forwarded-For'] !== undefined) {
-					// Do HAProxy stuff here
-				} else {
-					throw new Error('BBS is using HAProxy, but no X-Forwarded-For header present.');
-				}
+				// Do HAProxy stuff here
 			}
 
             // Loop while we're still connected on both ends
