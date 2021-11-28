@@ -40,7 +40,7 @@ var FFrameOpCode = 0;
 var FFramePayloadLength = 0;
 var FFramePayloadReceived = 0;
 var FServerSocket = null;
-var FWebSocketHeader = [];
+var FWebSocketHeader = {};
 var FWebSocketState = WEBSOCKET_NEED_PACKET_START;
 
 // Main line
