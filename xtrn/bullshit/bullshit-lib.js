@@ -7,7 +7,7 @@ function loadSettings(path) {
 	if (!f.open('r')) throw 'Failed to open bullshit.ini.';
 	var settings = f.iniGetObject();
 	settings.colors = f.iniGetObject('colors');
-	settings.files = f.iniGetObject('files');
+	settings.files = f.iniGetObject('files') || {};
 	f.close();
 
 	Object.keys(settings.colors).forEach(function (k) {
