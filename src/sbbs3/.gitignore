@@ -3,3 +3,5 @@ git_hash.h
 cov-int
 enc_temp_folder
 *.zip
+sbbsexec.dll
+sbbsexec.exp
