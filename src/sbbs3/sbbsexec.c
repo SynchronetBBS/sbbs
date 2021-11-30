@@ -255,7 +255,7 @@ void _cdecl input_thread(void* arg)
 
 unsigned vdd_read(BYTE* p, unsigned count)
 {
-	sem_wait(rdbuf.sem);
+	sem_wait(&rdbuf.sem);
 	count=RingBufRead(&rdbuf,p,count);
 	if(count==0)
 		lprintf(LOG_ERR,"!VDD_READ: RingBufRead read 0");
