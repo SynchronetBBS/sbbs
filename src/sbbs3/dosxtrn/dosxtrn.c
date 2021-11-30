@@ -509,6 +509,7 @@ int main(int argc, char **argv)
 	int		i,c,d,envnum=0;
 	FILE*	fp;
 	BOOL	NT=FALSE;
+	BOOL	x64=FALSE;
 	BOOL	success=FALSE;
 	WORD	buf_seg;
 	WORD	w;
@@ -519,7 +520,7 @@ int main(int argc, char **argv)
 			,"%s - Copyright %s Rob Swindell\n"
 			,id_string, __DATE__+7);
 		fprintf(stderr
-			,"usage: dosxtrn <path/dosxtrn.env> [NT|95] [node_num] [mode]\n");
+			,"usage: dosxtrn <path/dosxtrn.env> [NT|95|x64] [node_num] [mode]\n");
 		return(1);
 	}
 
@@ -529,8 +530,12 @@ int main(int argc, char **argv)
 	sprintf(dll,"%s%s",exec_dir,VDD_FILENAME);
 	DllName=dll;
 
-	if(argc>2 && !strcmp(argv[2],"NT")) 
-		NT=TRUE;
+	if(argc>2) {
+		if(strcmp(argv[2],"NT") == 0)
+			NT=TRUE;
+		else if(strcmp(argv[2],"x64") == 0)
+			NT=TRUE, x64=TRUE;
+	}
 	if(argc>3)
 		node_num=atoi(argv[3]);
 	if(argc>4)
@@ -588,12 +593,13 @@ int main(int argc, char **argv)
 				mov     si, DllName		; ds:si = dll name
 				mov     di, InitFunc    ; es:di = init routine
 				mov     bx, DispFunc    ; ds:bx = dispatch routine
-#if 1	/* Vista work-around, apparently doesn't support an InitFunc (RegisterModule fails with AX=1) */
-				xor		di,di
-				mov		es,di
-#endif
-
 			};
+			if(!x64) {	// NTVDMx64 (based on an older Windows NTVDM) requires an init routine
+				_asm {	/* Vista work-around, apparently doesn't support an InitFunc (RegisterModule fails with AX=1) */
+					xor		di,di
+					mov		es,di
+				};
+			}
 			RegisterModule();
 			_asm {
 				mov		vdd, ax
