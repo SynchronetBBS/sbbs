@@ -80,7 +80,7 @@ endif
 MKFLAGS	+=	os=$(os)
 
 ifndef NOCAP
-ifeq (($os),linux)
+ifeq ($(os),linux)
 	SETCAP 	:=	setcap
 endif
 endif
