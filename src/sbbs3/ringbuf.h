@@ -1,8 +1,4 @@
-/* ringbuf.h */
-
 /* Synchronet ring buffer routines */
-
-/* $Id: ringbuf.h,v 1.14 2018/07/24 01:11:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -61,12 +57,6 @@
 
 #define RINGBUF_USE_STD_RTL
 
-#if defined(_WIN32) && !defined(__GNUC__)
-#define RINGBUFCALL	_cdecl
-#else
-#define RINGBUFCALL
-#endif
-
 /************/
 /* Typedefs */
 /************/
@@ -100,23 +90,23 @@ extern "C" {
 /* Function Prototypes */
 /***********************/
 
-int 	RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
+int 	RingBufInit( RingBuf* rb, DWORD size
 #ifndef RINGBUF_USE_STD_RTL
 			,void *(os_malloc)(size_t)
 			,void (os_free)(void *)
 			,void *(os_memcpy)(void *, const void *, size_t)
 #endif
 			);
-void	RINGBUFCALL RingBufDispose( RingBuf* rb );
-DWORD	RINGBUFCALL RingBufFull( RingBuf* rb );
-DWORD	RINGBUFCALL RingBufFree( RingBuf* rb );
-DWORD	RINGBUFCALL RingBufWrite( RingBuf* rb, const BYTE *src,	DWORD cnt );
-DWORD	RINGBUFCALL RingBufRead( RingBuf* rb, BYTE *dst,  DWORD cnt );
-DWORD	RINGBUFCALL RingBufPeek( RingBuf* rb, BYTE *dst,  DWORD cnt );
-void	RINGBUFCALL RingBufReInit( RingBuf* rb );
+void	RingBufDispose( RingBuf* rb );
+DWORD	RingBufFull( RingBuf* rb );
+DWORD	RingBufFree( RingBuf* rb );
+DWORD	RingBufWrite( RingBuf* rb, const BYTE *src,	DWORD cnt );
+DWORD	RingBufRead( RingBuf* rb, BYTE *dst,  DWORD cnt );
+DWORD	RingBufPeek( RingBuf* rb, BYTE *dst,  DWORD cnt );
+void	RingBufReInit( RingBuf* rb );
 
 #ifdef	__cplusplus
 }
 #endif
 
-#endif	/* Don't add anything afterthis endif */
+#endif	/* Don't add anything after this line */
