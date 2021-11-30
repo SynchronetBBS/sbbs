@@ -674,10 +674,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				status->outbuf_full=0;
 				status->outbuf_size=DEFAULT_MAX_MSG_SIZE;
 			} else
-				lprintf(LOG_DEBUG,"VDD_STATUS: MailSlot maxmsgsize=%u, nextmsgsize=%u, msgs=%u"
+				lprintf(LOG_DEBUG,"VDD_STATUS: MailSlot output: maxmsgsize=%u, nextmsgsize=%d, msgs=%u, input: %u"
 					,status->outbuf_size
 					,status->outbuf_full
-					,msgs);
+					,msgs
+					,status->inbuf_full);
 			if(status->outbuf_full==MAILSLOT_NO_MESSAGE)
 				status->outbuf_full=0;
 			status->outbuf_full*=msgs;
@@ -802,4 +803,10 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 	}
 	setAX((WORD)retval);
+}
+
+__declspec(dllexport) BOOL __cdecl VDDInitialize(IN PVOID hVDD, IN ULONG Reason,	 
+IN PCONTEXT Context OPTIONAL)	 
+{	 
+	return TRUE;	 
 }

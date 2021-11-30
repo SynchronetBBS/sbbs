@@ -487,8 +487,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				if(mode&EX_STDOUT)
         			i|=SBBSEXEC_MODE_DOS_OUT;
 			}
-			sprintf(str," NT %u %u"
-				,cfg.node_num,i);
+			BOOL x64 = FALSE;
+			IsWow64Process(GetCurrentProcess(), &x64);
+			sprintf(str," %s %u %u"
+				,x64 ? "x64" : "NT", cfg.node_num,i);
 			strcat(fullcmdline,str);
 
 			sprintf(str,"sbbsexec_hungup%d",cfg.node_num);
