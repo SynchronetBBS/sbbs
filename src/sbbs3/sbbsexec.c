@@ -1,8 +1,4 @@
-/* sbbsexec.c */
-
 /* Synchronet Windows NT/2000 VDD for FOSSIL and DOS I/O Interrupts */
-
-/* $Id: sbbsexec.c,v 1.41 2018/07/24 01:11:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -45,11 +41,14 @@
 #include "dirwrap.h"
 #include "threadwrap.h"
 #include "ini_file.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 #define INI_FILENAME			"sbbsexec.ini"
 #define RINGBUF_SIZE_IN			10000
 #define DEFAULT_MAX_MSG_SIZE	4000
 #define LINEAR_RX_BUFLEN		10000
+#define READ_TIMEOUT			(30 * 1000)	// X00REF.DOC "the timeout value is set to 30 seconds"
 
 /* UART Parameters and virtual registers */
 WORD uart_io_base				= UART_COM1_IO_BASE;	/* COM1 */
@@ -80,7 +79,6 @@ HANDLE		wrslot=INVALID_HANDLE_VALUE;
 RingBuf		rdbuf;
 str_list_t	ini;
 char		ini_fname[MAX_PATH+1];
-char		revision[16];
 
 void lputs(int level, char* msg)
 {	
@@ -255,10 +253,14 @@ void _cdecl input_thread(void* arg)
 
 unsigned vdd_read(BYTE* p, unsigned count)
 {
-	sem_wait(&rdbuf.sem);
 	count=RingBufRead(&rdbuf,p,count);
-	if(count==0)
-		lprintf(LOG_ERR,"!VDD_READ: RingBufRead read 0");
+	if(count==0) {
+		lprintf(LOG_ERR,"!VDD_READ: RingBufRead read 0, waiting");
+		if(sem_trywait_block(&rdbuf.sem, READ_TIMEOUT) != 0)
+			lprintf(LOG_ERR,"!VDD_READ: rdbuf sem timeout");
+		count = RingBufRead(&rdbuf,p,count);
+		lprintf(LOG_ERR,"!VDD_READ: RingBufRead read 0 (after wait)");
+	}
 
 	return(count);
 }
@@ -481,10 +483,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_OPEN:
 
-			sscanf("$Revision: 1.41 $", "%*s %s", revision);
-
-			lprintf(LOG_INFO,"Synchronet Virtual Device Driver, rev %s %s %s"
-				,revision, __DATE__, __TIME__);
+			lprintf(LOG_INFO,"Synchronet Virtual Device Driver, %s/%s %s %s"
+				,GIT_BRANCH, GIT_HASH, __DATE__, __TIME__);
 #if 0
 			sprintf(str,"sbbsexec%d.log",node_num);
 			fp=fopen(str,"wb");
@@ -668,7 +668,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				&msgs,					/* address of number of messages  */
  				NULL					/* address of read time-out  */
 				)) {
-				lprintf(LOG_ERR,"!VDD_STATUS: GetMailSlotInfo(%p) failed, error %u (msgs=%u, inbuf_full=%u, inbuf_size=%u)"
+				// Known to fail with error 87 (The Parameter is Incorrect) on Windows 7 <shrug>
+				lprintf(LOG_DEBUG,"!VDD_STATUS: GetMailSlotInfo(%p) failed, error %u (msgs=%u, inbuf_full=%u, inbuf_size=%u)"
 					,wrslot
 					,GetLastError(), msgs, status->inbuf_full, status->inbuf_size);
 				status->outbuf_full=0;
