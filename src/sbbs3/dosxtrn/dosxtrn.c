@@ -1,8 +1,4 @@
-/* dosxtrn.c */
-
 /* Synchronet External DOS Program Launcher (16-bit MSVC 1.52c project) */
-
-/* $Id: dosxtrn.c,v 1.25 2020/04/15 08:22:33 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -42,7 +38,6 @@
 #include <dos.h>			/* _dos_set/getvect() */
 #include <windows.h>		/* BOOL, etc. */
 #include "vdd_func.h"
-#include "execvxd.h"
 #include "isvbop.h"			/* ddk\inc */
 #include "fossdefs.h"
 #include "../git_branch.h"
@@ -65,7 +60,6 @@ static void truncsp(char *str)
 }
 short	vdd=0;
 BYTE	node_num=0;
-int		mode=0;
 char	id_string[128];
 #ifdef DEBUG_INT_CALLS
 ulong	int14calls=0;
@@ -137,48 +131,6 @@ static int vdd_op(BYTE op)
 	return(retval);
 }
 
-union REGS inregs;
-struct SREGS sregs;
-BOOL inside_int14=FALSE;
-
-/* This function is only necessary for naughty programs that call the vector
-   directly instead of issuing an interrupt 
-*/
-void interrupt win95int14(
-	unsigned _es, unsigned _ds,
-	unsigned _di, unsigned _si,
-	unsigned _bp, unsigned _sp,
-	unsigned _bx, unsigned _dx,
-	unsigned _cx, unsigned _ax,
-    unsigned flags )
-{
-	union REGS outregs;
-
-	/* prevent recursion, just incase the VXD isn't handling int14h */
-	if(inside_int14)	
-		return;
-
-	inside_int14=TRUE;
-
-	inregs.x.ax=_ax;
-	inregs.x.bx=_bx;
-	inregs.x.cx=_cx;
-	inregs.x.dx=_dx;
-	inregs.x.si=_si;
-	inregs.x.di=_di;
-	inregs.x.cflag=flags;
-
-	sregs.es=_es;
-	sregs.ds=_ds;
-
-	int86x(0x14,&inregs,&outregs,&sregs);
-
-	/* FOSSIL driver only touches these AX and BX */
-	_ax= outregs.x.ax;
-	_bx= outregs.x.bx;
-
-	inside_int14=FALSE;
-}
 
 void vdd_getstatus(vdd_status_t* status)
 {
@@ -500,8 +452,8 @@ int main(int argc, char **argv)
 	char*	envvar[MAX_ENVVARS];
 	char*	arg[MAX_ARGS];
 	int		i,c,d,envnum=0;
+	int		mode = SBBSEXEC_MODE_UNSPECIFIED;
 	FILE*	fp;
-	BOOL	NT=FALSE;
 	BOOL	x64=FALSE;
 	BOOL	success=FALSE;
 	WORD	buf_seg;
@@ -513,7 +465,7 @@ int main(int argc, char **argv)
 			,"%s - Copyright %s Rob Swindell\n"
 			,id_string, __DATE__+7);
 		fprintf(stderr
-			,"usage: dosxtrn <path/dosxtrn.env> [NT|95|x64] [node_num] [mode]\n");
+			,"usage: dosxtrn <path/dosxtrn.env> [NT|x64] [node_num] [mode]\n");
 		return(1);
 	}
 
@@ -524,15 +476,16 @@ int main(int argc, char **argv)
 	DllName=dll;
 
 	if(argc>2) {
-		if(strcmp(argv[2],"NT") == 0)
-			NT=TRUE;
-		else if(strcmp(argv[2],"x64") == 0)
-			NT=TRUE, x64=TRUE;
+		if(strcmp(argv[2],"x64") == 0)
+			x64=TRUE;
 	}
 	if(argc>3)
 		node_num=atoi(argv[3]);
 	if(argc>4)
 		mode=atoi(argv[4]);
+
+	if(mode == SBBSEXEC_MODE_UNSPECIFIED)
+		mode = SBBSEXEC_MODE_DEFAULT;
 
 	if((fp=fopen(argv[1],"r"))==NULL) {
 		fprintf(stderr,"!Error opening %s\n",argv[1]);
@@ -574,76 +527,71 @@ int main(int argc, char **argv)
 	((BYTE*)int14stub)[7] = FOSSIL_SIGNATURE>>8;	/* FOSSIL sig (MSB) */
 	((BYTE*)int14stub)[8] = FOSSIL_FUNC_HIGHEST;	/* FOSSIL highest func supported */
 
-	if(NT) {	/* Windows NT/2000 */
+	for(i=0;i<2;i++) {
 
-		for(i=0;i<2;i++) {
-
-			/* Register VDD */
-       		_asm {
-				push	es
-				push	ds
-				pop		es
-				mov     si, DllName		; ds:si = dll name
-				mov     di, InitFunc    ; es:di = init routine
-				mov     bx, DispFunc    ; ds:bx = dispatch routine
+		/* Register VDD */
+       	_asm {
+			push	es
+			push	ds
+			pop		es
+			mov     si, DllName		; ds:si = dll name
+			mov     di, InitFunc    ; es:di = init routine
+			mov     bx, DispFunc    ; ds:bx = dispatch routine
+		};
+		if(!x64) {	// NTVDMx64 (based on an older Windows NTVDM) requires an init routine
+			_asm {	/* Vista work-around, apparently doesn't support an InitFunc (RegisterModule fails with AX=1) */
+				xor		di,di
+				mov		es,di
 			};
-			if(!x64) {	// NTVDMx64 (based on an older Windows NTVDM) requires an init routine
-				_asm {	/* Vista work-around, apparently doesn't support an InitFunc (RegisterModule fails with AX=1) */
-					xor		di,di
-					mov		es,di
-				};
-			}
-			RegisterModule();
-			_asm {
-				mov		vdd, ax
-				jc		err
-				mov		success, TRUE
-				err:
-				pop		es
-			}
-			if(success)
-				break;
-			DllName=VDD_FILENAME;	/* try again with no path (for Windows Vista) */
 		}
-		if(!success) {
-			fprintf(stderr,"Error %d loading %s\n",vdd,DllName);
-			return(-1);
+		RegisterModule();
+		_asm {
+			mov		vdd, ax
+			jc		err
+			mov		success, TRUE
+			err:
+			pop		es
 		}
+		if(success)
+			break;
+		DllName=VDD_FILENAME;	/* try again with no path (for Windows Vista) */
+	}
+	if(!success) {
+		fprintf(stderr,"Error %d loading %s\n",vdd,DllName);
+		return(-1);
+	}
 
 #if 0
-		fprintf(stderr,"vdd handle=%d\n",vdd);
-		fprintf(stderr,"mode=%d\n",mode);
+	fprintf(stderr,"vdd handle=%d\n",vdd);
+	fprintf(stderr,"mode=%d\n",mode);
 #endif
-		vdd_str(VDD_LOAD_INI_FILE, exec_dir);
+	vdd_str(VDD_LOAD_INI_FILE, exec_dir);
 
-		vdd_str(VDD_LOAD_INI_SECTION, getfname(arg[0]));
+	vdd_str(VDD_LOAD_INI_SECTION, getfname(arg[0]));
 
-		sprintf(str,"%s, rev %u %s/%s, %s %s mode=%u", __FILE__, DOSXTRN_REVISION, GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, mode);
-		vdd_str(VDD_DEBUG_OUTPUT, str);
+	sprintf(str,"%s, rev %u %s/%s, %s %s mode=%u", __FILE__, DOSXTRN_REVISION, GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, mode);
+	vdd_str(VDD_DEBUG_OUTPUT, str);
 
-		i=vdd_op(VDD_OPEN);
-		if(i) {
-			fprintf(stderr,"!VDD_OPEN ERROR: %d\n",i);
-			UnRegisterModule();
-			return(-1);
-		}
-		oldint16=_dos_getvect(0x16);
-		oldint21=_dos_getvect(0x21);
-		oldint29=_dos_getvect(0x29);
-		if(mode==SBBSEXEC_MODE_FOSSIL) {
-			*(WORD*)((BYTE*)int14stub+1) = (WORD)winNTint14 - (WORD)&int14stub - 3;	/* jmp offset */
-			_dos_setvect(0x14,(void(interrupt *)())int14stub); 
-		}
-		_dos_setvect(0x21,winNTint21); 
-		if(mode&SBBSEXEC_MODE_DOS_IN)
-			_dos_setvect(0x16,winNTint16); 
-		if(mode&SBBSEXEC_MODE_DOS_OUT) 
-			_dos_setvect(0x29,winNTint29); 
+	if(mode & SBBSEXEC_MODE_UART)
+		vdd_op(VDD_VIRTUALIZE_UART);
+	i=vdd_op(VDD_OPEN);
+	if(i) {
+		fprintf(stderr,"!VDD_OPEN ERROR: %d\n",i);
+		UnRegisterModule();
+		return(-1);
 	}
-	else if(mode==SBBSEXEC_MODE_FOSSIL)	{ /* Windows 95/98/Millennium */
-		*(WORD*)((BYTE*)int14stub+1) = (WORD)win95int14 - (WORD)&int14stub - 3;		/* jmp offset */
+	oldint16=_dos_getvect(0x16);
+	oldint21=_dos_getvect(0x21);
+	oldint29=_dos_getvect(0x29);
+	if(mode & SBBSEXEC_MODE_FOSSIL) {
+		*(WORD*)((BYTE*)int14stub+1) = (WORD)winNTint14 - (WORD)&int14stub - 3;	/* jmp offset */
 		_dos_setvect(0x14,(void(interrupt *)())int14stub); 
 	}
+	_dos_setvect(0x21,winNTint21); 
+	if(mode&SBBSEXEC_MODE_DOS_IN)
+		_dos_setvect(0x16,winNTint16); 
+	if(mode&SBBSEXEC_MODE_DOS_OUT) 
+		_dos_setvect(0x29,winNTint29); 
 
 	_heapmin();
 	i=_spawnvp(_P_WAIT, arg[0], arg);
@@ -659,46 +607,43 @@ int main(int argc, char **argv)
 	/* Restore original ISRs */
 	_dos_setvect(0x14,oldint14);
 
-	if(NT) {
-		vdd_op(VDD_CLOSE);
+	vdd_op(VDD_CLOSE);
 
-		_dos_setvect(0x16,oldint16);
-		_dos_setvect(0x21,oldint21);
-		_dos_setvect(0x29,oldint29);
+	_dos_setvect(0x16,oldint16);
+	_dos_setvect(0x21,oldint21);
+	_dos_setvect(0x29,oldint29);
 
-		sprintf(str,"%s returned %d", arg[0], i);
-		vdd_str(VDD_DEBUG_OUTPUT, str);
+	sprintf(str,"%s returned %d", arg[0], i);
+	vdd_str(VDD_DEBUG_OUTPUT, str);
 
 #ifdef DEBUG_INT_CALLS
-		sprintf(str,"int14h calls: %lu", int14calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
-		sprintf(str,"int16h calls: %lu", int16calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
-		sprintf(str,"int21h calls: %lu", int21calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
-		sprintf(str,"int29h calls: %lu", int29calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+	sprintf(str,"int14h calls: %lu", int14calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+	sprintf(str,"int16h calls: %lu", int16calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+	sprintf(str,"int21h calls: %lu", int21calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+	sprintf(str,"int29h calls: %lu", int29calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
 #endif
 #ifdef DEBUG_DOS_CALLS
-		for(i=0;i<0x100;i++) {
-			if(dos_calls[i]>100) {
-				sprintf(str,"int21h function %02X calls: %u"
-					,i, dos_calls[i]);
-				vdd_str(VDD_DEBUG_OUTPUT, str);
-			}
+	for(i=0;i<0x100;i++) {
+		if(dos_calls[i]>100) {
+			sprintf(str,"int21h function %02X calls: %u"
+				,i, dos_calls[i]);
+			vdd_str(VDD_DEBUG_OUTPUT, str);
 		}
+	}
 #endif
 #ifdef DEBUG_FOSSIL_CALLS
-		for(i=0;i<0x100;i++) {
-			if(fossil_calls[i]>0) {
-				sprintf(str,"int14h function %02X (%-10s) calls: %lu"
-					,i, fossil_func(i), fossil_calls[i]);
-				vdd_str(VDD_DEBUG_OUTPUT, str);
-			}
+	for(i=0;i<0x100;i++) {
+		if(fossil_calls[i]>0) {
+			sprintf(str,"int14h function %02X (%-10s) calls: %lu"
+				,i, fossil_func(i), fossil_calls[i]);
+			vdd_str(VDD_DEBUG_OUTPUT, str);
 		}
+	}
 #endif
 
-		/* Unregister VDD */
-		_asm mov ax, vdd;
-		UnRegisterModule();
-
-	}
+	/* Unregister VDD */
+	_asm mov ax, vdd;
+	UnRegisterModule();
 
 	return(i);
 }

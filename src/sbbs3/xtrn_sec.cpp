@@ -1587,6 +1587,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		mode|=EX_CONIO;
 	else if(cfg.xtrn[xtrnnum]->misc&XTRN_UART)
 		mode|=EX_UART;
+	else if(cfg.xtrn[xtrnnum]->misc&XTRN_FOSSIL)
+		mode|=EX_FOSSIL;
 	mode|=(cfg.xtrn[xtrnnum]->misc&(XTRN_CHKTIME|XTRN_NATIVE|XTRN_NOECHO|WWIVCOLOR));
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) {		/* Delete MODUSER.DAT */
 		SAFEPRINTF(str,"%sMODUSER.DAT",dropdir);	/* if for some weird  */

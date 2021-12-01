@@ -261,7 +261,7 @@ static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
 
 #ifdef _WIN32
 
-#include "execvxd.h"	/* DOSXTRN.EXE API */
+#include "vdd_func.h"	/* DOSXTRN.EXE API */
 
 extern SOCKET node_socket[];
 
@@ -292,7 +292,6 @@ static void add_env_var(str_list_t* list, const char* var, const char* val)
 /* Clean-up resources while preserving current LastError value */
 #define XTRN_CLEANUP												\
 	last_error=GetLastError();										\
-    if(vxd!=INVALID_HANDLE_VALUE)		CloseHandle(vxd);			\
 	if(rdslot!=INVALID_HANDLE_VALUE)	CloseHandle(rdslot);		\
 	if(wrslot!=INVALID_HANDLE_VALUE)	CloseHandle(wrslot);		\
 	if(start_event!=NULL)				CloseHandle(start_event);	\
@@ -327,7 +326,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	BOOL	processTerminated=false;
 	uint	i;
     time_t	hungup=0;
-	HANDLE	vxd=INVALID_HANDLE_VALUE;
 	HANDLE	rdslot=INVALID_HANDLE_VALUE;
 	HANDLE	wrslot=INVALID_HANDLE_VALUE;
 	HANDLE  start_event=NULL;
@@ -478,15 +476,15 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
         SAFEPRINTF2(fullcmdline, "%sDOSXTRN.EXE %s", cfg.exec_dir, path);
 
 		if(!(mode&EX_OFFLINE)) {
+			i = SBBSEXEC_MODE_UNSPECIFIED;
 			if(mode & EX_UART)
-				i=SBBSEXEC_MODE_UART;
-			else {
-				i=SBBSEXEC_MODE_FOSSIL;
-				if(mode&EX_STDIN)
-           			i|=SBBSEXEC_MODE_DOS_IN;
-				if(mode&EX_STDOUT)
-        			i|=SBBSEXEC_MODE_DOS_OUT;
-			}
+				i |= SBBSEXEC_MODE_UART;
+			if(mode & EX_FOSSIL)
+				i |= SBBSEXEC_MODE_FOSSIL;
+			if(mode & EX_STDIN)
+           		i |= SBBSEXEC_MODE_DOS_IN;
+			if(mode & EX_STDOUT)
+        		i |= SBBSEXEC_MODE_DOS_OUT;
 			BOOL x64 = FALSE;
 			IsWow64Process(GetCurrentProcess(), &x64);
 			sprintf(str," %s %u %u"
@@ -646,7 +644,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     while(!(mode&EX_BG)) {
 		if(mode&EX_CHKTIME)
 			gettimeleft();
-        if(!online && !(mode&EX_OFFLINE)) { // Tell VXD/VDD and external that user hung-up
+        if(!online && !(mode&EX_OFFLINE)) { // Tell VDD and external that user hung-up
         	if(was_online) {
 				logline(LOG_NOTICE,"X!","hung-up in external program");
             	hungup=time(NULL);
