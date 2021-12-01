@@ -68,7 +68,7 @@ BYTE uart_divisor_latch_msb		= 0x00;
 	int log_level = LOG_WARNING;
 #endif
 
-BOOL		virtualize_uart=TRUE;
+BOOL		virtualize_uart=FALSE;
 double		yield_interval=1.0;
 BOOL		hangup_supported=TRUE;
 HANDLE		hangup_event=NULL;
@@ -797,6 +797,10 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_HANGUP:
 			hangup();
+			break;
+
+		case VDD_VIRTUALIZE_UART:
+			virtualize_uart = TRUE;
 			break;
 
 		default:

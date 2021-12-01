@@ -880,9 +880,9 @@ const char* io_method(uint32_t mode)
 	static char str[128];
 
 	sprintf(str,"%s%s%s"
-		,mode & XTRN_UART ? "UART"
-			: (mode & XTRN_STDIO ? "Standard"
-				: mode & XTRN_CONIO ? "Console": (mode & XTRN_NATIVE ? "Socket" : "FOSSIL or UART"))
+		,mode & XTRN_UART ? "UART" : (mode & XTRN_FOSSIL) ? "FOSSIL"
+				: (mode & XTRN_STDIO ? "Standard"
+					: mode & XTRN_CONIO ? "Console": (mode & XTRN_NATIVE ? "Socket" : "FOSSIL or UART"))
 		,(mode & (XTRN_STDIO|WWIVCOLOR)) == (XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : ""
 		,(mode & (XTRN_STDIO|XTRN_NOECHO)) == (XTRN_STDIO|XTRN_NOECHO) ? ", No Echo" : "");
 	return str;
@@ -892,12 +892,15 @@ void choose_io_method(uint32_t* misc)
 {
 	int k;
 
-	switch((*misc) & (XTRN_STDIO|XTRN_UART)) {
+	switch((*misc) & (XTRN_STDIO|XTRN_UART|XTRN_FOSSIL)) {
 		case XTRN_STDIO:
 			k=0;
 			break;
 		case XTRN_UART:
 			k=2;
+			break;
+		case XTRN_FOSSIL:
+			k=3;
 			break;
 		default:
 			k=1;
@@ -952,15 +955,16 @@ void choose_io_method(uint32_t* misc)
 			"   This setting is not applied when invoking Baja or JavaScript modules.\n"
 		;
 		strcpy(opt[1], "FOSSIL or UART");
-		strcpy(opt[2], "UART");
-		opt[3][0] = '\0';
+		strcpy(opt[2], "UART Only");
+		strcpy(opt[3], "FOSSIL Only");
+		opt[4][0] = '\0';
 	}
 	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"I/O Method"
 		,opt)) {
 		case 0: /* Standard I/O */
-			if(((*misc) & (XTRN_STDIO|XTRN_UART)) != XTRN_STDIO) {
+			if(((*misc) & (XTRN_STDIO|XTRN_UART|XTRN_FOSSIL)) != XTRN_STDIO) {
 				(*misc) |=XTRN_STDIO;
-				(*misc) &=~XTRN_UART;
+				(*misc) &=~XTRN_UART|XTRN_FOSSIL;
 				uifc.changes = TRUE;
 			}
 			k=((*misc) & WWIVCOLOR) ? 0:1;
@@ -999,16 +1003,23 @@ void choose_io_method(uint32_t* misc)
 				uifc.changes=TRUE; 
 			}
 			break;
-		case 1:	/* FOSSIL or Socket */
-			if(((*misc) & (XTRN_STDIO|XTRN_UART)) != 0) {
-				(*misc) &= ~(XTRN_UART|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
+		case 1:	/* FOSSIL or UART or Socket */
+			if(((*misc) & (XTRN_STDIO|XTRN_UART|XTRN_FOSSIL)) != 0) {
+				(*misc) &= ~(XTRN_UART|XTRN_FOSSIL|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
 				uifc.changes=TRUE; 
 			}
 			break;
 		case 2: /* UART */
-			if(((*misc) & (XTRN_STDIO|XTRN_UART)) != XTRN_UART) {
+			if(((*misc) & (XTRN_STDIO|XTRN_UART|XTRN_FOSSIL)) != XTRN_UART) {
 				(*misc) |= XTRN_UART;
-				(*misc) &= ~(XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
+				(*misc) &= ~(XTRN_FOSSIL|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
+				uifc.changes=TRUE; 
+			}
+			break;
+		case 3: /* FOSSIL */
+			if(((*misc) & (XTRN_STDIO|XTRN_UART|XTRN_FOSSIL)) != XTRN_FOSSIL) {
+				(*misc) |= XTRN_FOSSIL;
+				(*misc) &= ~(XTRN_UART|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
 				uifc.changes=TRUE; 
 			}
 			break;
