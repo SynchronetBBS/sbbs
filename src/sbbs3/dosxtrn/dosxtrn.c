@@ -191,26 +191,26 @@ void vdd_getstatus(vdd_status_t* status)
 
 WORD PortStatus()
 {
-	WORD			status=0x0008;			/* AL bit 3 (change in DCD) always set */
+	WORD			status=FOSSIL_MDM_STATUS_DCD_CHNG; /* AL bit 3 (change in DCD) always set */
 	vdd_status_t	vdd_status;
 
 	vdd_getstatus(&vdd_status);
 
 	if(vdd_status.online)			/* carrier detect */
-		status|=0x0080;				/* DCD */
+		status|=FOSSIL_MDM_STATUS_DCD;
 
 	if(vdd_status.inbuf_full)		/* receive data ready  */
-		status|=0x0100;				/* RDA */
+		status|=FOSSIL_LINE_STATUS_RDA;
 
 /*	if(vm->overrun)					/* overrun error detected */
 /*		status|=0x0200;				/* OVRN */
 
 	if(vdd_status.outbuf_full
 		<vdd_status.outbuf_size/2)	/* room available in output buffer */
-		status|=0x2000;				/* THRE */
+		status|=FOSSIL_LINE_STATUS_THRE;
 
 	if(!vdd_status.outbuf_full)		/* output buffer is empty */
-		status|=0x4000;				/* TSRE */
+		status|=FOSSIL_LINE_STATUS_TSRE;
 
 	return(status);
 }
@@ -256,6 +256,7 @@ void interrupt winNTint14(
 	BYTE			ch;
 	BYTE far*		p;
 	WORD			buf_seg;
+	int				rd;
 	int				wr;
 	vdd_status_t	vdd_status;
     fossil_info_t info = { 
@@ -288,22 +289,23 @@ void interrupt winNTint14(
 		case FOSSIL_FUNC_PUT_CHAR: /* write char to com port, with wait */
 			ch=_ax&0xff;
 			_asm mov buf_seg, ss;
-			vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
+			wr = vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
 			_ax = PortStatus();
+			if(wr != 1)
+				_ax |= FOSSIL_LINE_STATUS_TIMEOUT;
 			break;
 		case FOSSIL_FUNC_GET_CHAR: /* read char from com port, with wait */
 			_asm mov buf_seg, ss;
-			_ax = vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
-			if(!_ax) {
-				_ax = 0x8000;	/* timed-out */
+			rd = vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
+			_ax = ch;
+			if(rd != 1) {
 				vdd_op(VDD_YIELD);
-			} else {
-				_ax = ch;
+				_ax = FOSSIL_LINE_STATUS_TIMEOUT;
 			}
 			break;
 		case FOSSIL_FUNC_GET_STATUS:	/* request status */
 			_ax=PortStatus();
-			if(_ax==0x6088)
+			if(_ax == FOSSIL_MDM_STATUS_DCD_CHNG | FOSSIL_MDM_STATUS_DCD | FOSSIL_LINE_STATUS_THRE | FOSSIL_LINE_STATUS_TSRE)
 				vdd_op(VDD_MAYBE_YIELD);
 			break;
 		case FOSSIL_FUNC_INIT:	/* initialize */
@@ -323,32 +325,23 @@ void interrupt winNTint14(
 			vdd_op(VDD_INBUF_PURGE);
 			break;
 		case FOSSIL_FUNC_WRITE_CHAR:	/* write char to com port, no wait */
-        	if(0 /*RingBufFree(&vm->out)<2 */) {
-            	_ax=0; /* char was not accepted */
-                break;
-            }
 			ch=_ax&0xff;
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
+			if(_ax != 1)
+				vdd_op(VDD_YIELD);
 			break;
         case FOSSIL_FUNC_PEEK:	/* non-destructive read-ahead */
-			vdd_getstatus(&vdd_status);
-			if(!vdd_status.inbuf_full) {
-				_ax=0xffff;	/* no char available */
-				vdd_op(VDD_YIELD);
-				break;
-			}
 			_asm mov buf_seg, ss;
-			_ax = vdd_buf(VDD_PEEK, 1, buf_seg, (WORD)&ch);
-			if(_ax == 0)
+			rd = vdd_buf(VDD_PEEK, 1, buf_seg, (WORD)&ch);
+			_ax = ch;
+			if(rd == 0) {
 				vdd_op(VDD_YIELD);
+				_ax = FOSSIL_CHAR_NOT_AVAILABLE;
+			}
 			break;
         case FOSSIL_FUNC_READ_BLOCK:	/* read block, no wait */
-			vdd_getstatus(&vdd_status);
-			if(!vdd_status.inbuf_full)
-				_ax = 0; /* no data available */
-			else
-				_ax = vdd_buf(VDD_READ, _cx, _es, _di);
+			_ax = vdd_buf(VDD_READ, _cx, _es, _di);
 			if(_ax == 0)
 				vdd_op(VDD_YIELD);
 			break;
@@ -374,7 +367,7 @@ void interrupt winNTint14(
         	_ax=wr;
             break;
 		case FOSSIL_FUNC_GET_KB:
-			_ax=0xffff;
+			_ax = FOSSIL_CHAR_NOT_AVAILABLE;
 			break;
 	}
 }
@@ -625,7 +618,7 @@ int main(int argc, char **argv)
 
 		vdd_str(VDD_LOAD_INI_SECTION, getfname(arg[0]));
 
-		sprintf(str,"%s, rev %u, %s %s mode=%u", __FILE__, DOSXTRN_REVISION, __DATE__, __TIME__, mode);
+		sprintf(str,"%s, rev %u %s/%s, %s %s mode=%u", __FILE__, DOSXTRN_REVISION, GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, mode);
 		vdd_str(VDD_DEBUG_OUTPUT, str);
 
 		i=vdd_op(VDD_OPEN);
@@ -685,7 +678,7 @@ int main(int argc, char **argv)
 #ifdef DEBUG_DOS_CALLS
 		for(i=0;i<0x100;i++) {
 			if(dos_calls[i]>100) {
-				sprintf(str,"int21h function %02X calls: %u\n"
+				sprintf(str,"int21h function %02X calls: %u"
 					,i, dos_calls[i]);
 				vdd_str(VDD_DEBUG_OUTPUT, str);
 			}

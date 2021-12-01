@@ -1,8 +1,4 @@
-/* fossdefs.h */
-
 /* FOSSIL (FSC-15) structure and constant definitions */
-
-/* $Id: fossdefs.h,v 1.3 2018/07/24 01:11:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -121,6 +117,23 @@ unsigned fossil_stop_bits[] = { 1, 2 };
 #define FOSSIL_DATA_BITS_8		0x03	/* xxxxxx11 */
 
 unsigned fossil_data_bits[] = { 5, 6, 7, 8 };
+
+#define FOSSIL_MDM_STATUS_CTS_CHNG	(1<<0)	// Delta clear to send (not reliable)
+#define FOSSIL_MDM_STATUS_DSR_CHNG	(1<<1)	// Delta data set ready (not reliable)
+#define FOSSIL_MDM_STATUS_RI_CHNG	(1<<2)	// trailing edge of ring indicator (documented wrong in X00REF.DOC)
+#define FOSSIL_MDM_STATUS_DCD_CHNG	(1<<3)	// Delta data carrier detect 
+#define FOSSIL_MDM_STATUS_CTS		(1<<4)	// Clear to send
+#define FOSSIL_MDM_STATUS_DSR		(1<<5)	// Data set ready
+#define FOSSIL_MDM_STATUS_RI		(1<<6)	// Ring indicator
+#define FOSSIL_MDM_STATUS_DCD		(1<<7)	// Data carrier detect
+
+#define FOSSIL_LINE_STATUS_RDA		(1<<8)	// input data is available in buffer
+#define FOSSIL_LINE_STATUS_OVRN		(1<<9)	// the input buffer has been overrun
+#define FOSSIL_LINE_STATUS_THRE		(1<<13)	// room is available in output buffer
+#define FOSSIL_LINE_STATUS_TSRE		(1<<14)	// output buffer is empty
+#define FOSSIL_LINE_STATUS_TIMEOUT	(1<<15)	// Timeout (set by functions 1 and 2 only)
+
+#define FOSSIL_CHAR_NOT_AVAILABLE	0xffff
 
 #if defined(__GNUC__)
 	#define PACKED_STRUCT __attribute__((packed))
