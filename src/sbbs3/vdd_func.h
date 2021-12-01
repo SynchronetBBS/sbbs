@@ -1,8 +1,4 @@
-/* VDD_FUNC.H */
-
 /* Synchronet WinNT VDD FOSSIL constant/type definitions */
-
-/* $Id: vdd_func.h,v 1.10 2018/07/24 01:11:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -56,6 +52,7 @@ enum {
 	,VDD_LOAD_INI_SECTION	=16
 	,VDD_DEBUG_OUTPUT		=17
 	,VDD_HANGUP				=18
+	,VDD_VIRTUALIZE_UART	=19
 };
 
 typedef struct {
@@ -65,3 +62,10 @@ typedef struct {
 	DWORD outbuf_size;
 	DWORD outbuf_full;
 } vdd_status_t;
+
+#define SBBSEXEC_MODE_UNSPECIFIED	0
+#define SBBSEXEC_MODE_DOS_IN		(1<<0)
+#define SBBSEXEC_MODE_DOS_OUT		(1<<1)
+#define SBBSEXEC_MODE_UART			(1<<2)
+#define SBBSEXEC_MODE_FOSSIL		(1<<3)
+#define SBBSEXEC_MODE_DEFAULT		(SBBSEXEC_MODE_UART | SBBSEXEC_MODE_FOSSIL)

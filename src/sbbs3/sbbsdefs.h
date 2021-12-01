@@ -395,11 +395,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SAVECOLUMNS		(1<<22)		/* Save/share current terminal width	*/
 #define XTRN_UTF8		(1<<23)		/* External program supports UTF-8		*/
 #define XTRN_TEMP_DIR	(1<<24)		/* Place drop files in temp dir			*/
-#define XTRN_UART		(1<<25)		/* Disable the int14h/FOSSIL driver		*/
+#define XTRN_UART		(1<<25)		/* Enable the virtual UART driver		*/
+#define XTRN_FOSSIL		(1<<26)		/* Enable the int14h/FOSSIL driver		*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
-
-									/* Bits in cfg.xtrn_misc				*/
-#define XTRN_NO_MUTEX	(1<<0)		/* Do not use exec_mutex for FOSSIL VXD	*/
 
 									/* Bits in user.qwk 					*/
 #define QWK_FILES	(1L<<0) 		/* Include new files list				*/
@@ -812,6 +810,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_NOECHO	XTRN_NOECHO		/* Don't echo stdin to stdout 			*/
 #define EX_STDIO	(EX_STDIN|EX_STDOUT)
 #define EX_UART		XTRN_UART
+#define EX_FOSSIL	XTRN_FOSSIL
 #define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
 #define EX_UNSPECIFIED	-1
