@@ -1023,6 +1023,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 
 				if(ch==CR || (localchar>68 && ch==' ') || ++localchar>78) {
 
+					lprintf(LOG_DEBUG, "chat line wrapped, localchar=%d, ch=%x", localchar, ch);
 					localbuf[localline][localchar]=0;
 					localchar=0;
 
