@@ -1,8 +1,5 @@
 /* General cross-platform development wrappers */
 
-/* $Id: genwrap.c,v 1.118 2020/08/10 04:11:44 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -35,7 +32,7 @@
  ****************************************************************************/
 
 #include <string.h>     /* strlen() */
-#include <stdarg.h>	/* vsnprintf() */
+#include <stdarg.h>		/* vsnprintf() */
 #include <stdlib.h>		/* RAND_MAX */
 #include <fcntl.h>		/* O_NOCTTY */
 #include <time.h>		/* clock() */
@@ -622,6 +619,7 @@ char* os_version(char *str)
 	OSVERSIONINFO	winver;
 
 	winver.dwOSVersionInfoSize=sizeof(winver);
+	#pragma warning(suppress : 4996)
 	GetVersionEx(&winver);
 
 	switch(winver.dwPlatformId) {
