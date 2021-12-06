@@ -1,5 +1,4 @@
 /* Synchronet X/YMODEM Functions */
-/* Synchronet X/YMODEM Functions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -122,6 +121,8 @@ int xmodem_put_nak(xmodem_t* xm, unsigned block_num)
 		lprintf(xm,LOG_DEBUG,"Block %u: Dumping byte: %02Xh"
 			,block_num, (BYTE)i);
 		SLEEP(1);
+		if(is_cancelled(xm))
+			break;
 	}
 	if(dump_count)
 		lprintf(xm,LOG_INFO,"Block %u: Dumped %u bytes"
@@ -436,7 +437,7 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 	unsigned errors;
 	unsigned cans=0;
 
-	for(errors=0;errors<=xm->max_errors && is_connected(xm);errors++) {
+	for(errors=0;errors<=xm->max_errors && is_connected(xm) && !is_cancelled(xm);errors++) {
 
 		lprintf(xm,LOG_INFO,"Sending End-of-Text (EOT) indicator (%d)",errors+1);
 
