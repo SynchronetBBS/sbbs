@@ -1094,7 +1094,7 @@ static int receive_files(char** fname_list, int fnames)
 	outbuf.highwater_mark=0;	/* don't delay ACK/NAK transmits */
 
 	/* Purge input buffer */
-	while(is_connected(NULL) && (i=recv_byte(NULL,0))!=NOINP)
+	while(is_connected(NULL) && (i=recv_byte(NULL,0))!=NOINP && !zm.local_abort)
 		lprintf(LOG_WARNING,"Throwing out received: %s",chr((uchar)i));
 
 	while(is_connected(NULL)) {
