@@ -1,6 +1,5 @@
-diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
---- ../cl-old/io/tcp_rw.c	2021-03-21 07:25:22.336553000 -0400
-+++ ./io/tcp_rw.c	2021-03-21 08:02:40.609845000 -0400
+--- io/tcp_rw.c.orig	2019-02-05 18:16:32.000000000 -0500
++++ io/tcp_rw.c	2021-12-07 15:16:54.161874000 -0500
 @@ -20,6 +20,10 @@
  
  #ifdef USE_TCP
@@ -31,7 +30,34 @@ diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
  	int selectIterations, status, LOOP_ITERATOR;
  
  	assert( isWritePtr( netStream, sizeof( NET_STREAM_INFO ) ) );
-@@ -152,6 +161,20 @@
+@@ -90,26 +99,6 @@
+ 	REQUIRES( previousDataRead == TRUE || previousDataRead == FALSE );
+ 	REQUIRES( isEnumRange( type, IOWAIT ) );
+ 
+-	/* Check for overflows in FD_SET().  This is an ugly implementation 
+-	   issue in which, for sufficiently badly-implemented FD_SET() macros
+-	   (and there are plenty of these around), the macro will just take the 
+-	   provided socket descriptor and use it to index the fd_set bitmask.
+-	   This occurs for the most common implementations under Unix (BSD) and 
+-	   BSD-derived embedded OSes, Windows gets it right and uses a bounds-
+-	   checked array.  
+-	   
+-	   The maximum socket descriptor is normally given by FD_SETSIZE, 
+-	   typically 64 under Windows (but we don't have to worry this since it 
+-	   does FD_SET() right) and 256 or sometimes 1024 under Unix, however 
+-	   this can be increased explicitly using setrlimit() or, from the 
+-	   shell, 'ulimit -n 512' to make it 512, which will cause an overflow.  
+-	   To deal with this, we reject any socket values less than zero (if 
+-	   it's a signed variable) or greater than FD_SETSIZE */
+-#ifndef __WINDOWS__ 
+-	REQUIRES( netStream->netSocket >= 0 && \
+-			  netStream->netSocket <= FD_SETSIZE );
+-#endif /* !Windows */
+-
+ 	/* Set up the information needed to handle timeouts and wait on the
+ 	   socket.  If there's no timeout then we wait 5ms on the theory that it 
+ 	   isn't noticeable to the caller but ensures that we at least get a 
+@@ -152,6 +141,20 @@
  	status = setMonoTimer( &timerInfo, timeout );
  	if( cryptStatusError( status ) )
  		return( status );
@@ -52,7 +78,7 @@ diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
  	LOOP_MED( ( selectIterations = 0, status = SOCKET_ERROR ), \
  			  isSocketError( status ) && \
  				( selectIterations <= 0 || \
-@@ -159,6 +182,7 @@
+@@ -159,6 +162,7 @@
  				selectIterations < 20, 
  			  selectIterations++ )
  		{
@@ -60,7 +86,7 @@ diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
  		if( readFDPtr != NULL )
  			{
  			FD_ZERO( readFDPtr );
-@@ -186,6 +210,10 @@
+@@ -186,6 +190,10 @@
  		clearErrorState();
  		status = select( ( int ) netStream->netSocket + 1, readFDPtr, 
  						 writeFDPtr, &exceptfds, &tv );
@@ -71,7 +97,7 @@ diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
  
  		/* If there's a problem and it's not something transient like an
  		   interrupted system call, exit.  For a transient problem, we just
-@@ -269,7 +297,11 @@
+@@ -269,7 +277,11 @@
  	   false and an indicator to receive SIGURG's not set, the OOB data byte 
  	   just languishes in a side-buffer), however we shouldn't be receiving 
  	   OOB data so we treat that as an error too */
@@ -83,7 +109,7 @@ diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
  		{
  		int socketErrorCode;
  
-@@ -323,6 +355,7 @@
+@@ -323,6 +335,7 @@
  
  	/* The socket is read for reading or writing */
  	ENSURES( status > 0 );
@@ -91,7 +117,7 @@ diff -ur ../cl-old/io/tcp_rw.c ./io/tcp_rw.c
  	ENSURES( ( type == IOWAIT_READ && \
  			   FD_ISSET( netStream->netSocket, &readfds ) ) || \
  			 ( type == IOWAIT_WRITE && \
-@@ -331,6 +364,13 @@
+@@ -331,6 +344,13 @@
  			   ( FD_ISSET( netStream->netSocket, &readfds ) || \
  				 FD_ISSET( netStream->netSocket, &writefds ) ) ) || \
  			 ( type == IOWAIT_ACCEPT ) );
