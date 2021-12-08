@@ -100,13 +100,13 @@ a menu item or AddItemHotkey() to add an additional hotkey for an item in
 addition to any existing hotkeys it might already have.
 
 You can call AddAdditionalSelectItemKeys() to add additional keys that can be
-used to select any item (in addition to Enter).  That function takes an array,
-and the keys are case-sensitive.  For example, to add the key E to select
-any item:
-lbMenu.AddAdditionalSelectItemKeys(["E"]);
+used to select any item (in addition to Enter).  That function takes a string
+of characters, and the keys are case-sensitive.  For example, to add the key E
+to select an item:
+lbMenu.AddAdditionalSelectItemKeys("E");
 To make a case-insensitive verison, both the uppercase and lowercase letter
 would need to be added, as in the following example for E:
-lbMenu.AddAdditionalSelectItemKeys(["E", "e"]);
+lbMenu.AddAdditionalSelectItemKeys("Ee");
 
 Also, after showing the menu & getting a value from the user (using the GetVal()
 function), the lastUserInput property will have the user's last keypress.
@@ -899,7 +899,13 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 			if (itemTextLen < this.size.width)
 			{
 				var numSpaces = itemLen - itemTextLen - 2;
-				itemText += format("%" + numSpaces + "s %s", "", this.multiSelectItemChar);
+				// Kludge? If numSpaces is positive, append a space and then the selected
+				// character,  Otherwise, we'll need to replace the last character in
+				// itemText with the selected character.
+				if (numSpaces > 0)
+					itemText += format("%" + numSpaces + "s %s", "", this.multiSelectItemChar);
+				else
+					itemText = itemText.substr(0, itemText.length-1) + this.multiSelectItemChar;
 			}
 			else
 			{
