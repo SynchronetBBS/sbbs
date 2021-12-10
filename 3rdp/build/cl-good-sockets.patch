@@ -1,0 +1,19 @@
+--- io/tcp.h.orig	2021-12-09 19:31:03.572654000 -0500
++++ io/tcp.h	2021-12-09 19:31:34.740365000 -0500
+@@ -962,15 +962,7 @@
+ #ifndef INVALID_SOCKET
+   #define INVALID_SOCKET			( -1 )
+ #endif /* INVALID_SOCKET */
+-#if defined( __WINDOWS__ )
+-  #define isBadSocket( socket )		( ( socket ) == INVALID_SOCKET )
+-#elif defined( STDERR_FILENO )
+-  #define isBadSocket( socket )		( ( socket ) <= STDERR_FILENO || \
+-									  ( socket ) >= FD_SETSIZE )
+-#else
+-  #define isBadSocket( socket )		( ( socket ) <= 0 || \
+-									  ( socket ) >= FD_SETSIZE )
+-#endif /* STDERR_FILENO */
++#define isBadSocket( socket )		( ( socket ) == INVALID_SOCKET )
+ 
+ #ifndef SOCKET_ERROR
+   #define SOCKET_ERROR				( -1 )
