@@ -1,4 +1,4 @@
-// $Id: SlyEdit_DCTStuff.js,v 1.26 2019/08/15 04:43:33 nightfox Exp $
+// $Id: SlyEdit_DCTStuff.js,v 1.21 2019/06/06 03:50:47 nightfox Exp $
 
 /* This file contains DCTEdit-specific functions for SlyEdit.
  *
@@ -13,6 +13,7 @@
  *                              Initial public release
  * ... Removed comments ...
  * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
+ * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
  */
 
 if (typeof(require) === "function")
@@ -452,10 +453,15 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
                          + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
                          + "[^Q/ESC] End" + gConfigSettings.DCTColors.QuoteWinBorderColor
                          + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                         + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn] Scroll"
+                         + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn/Home/End] Scroll"
+                         + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
+                         + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+						 /*
+						 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn] Scroll"
                          + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
                          + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
                          + "[F/L] First/last page";
+						 */
       var helpTextLen = strip_ctrl(quoteHelpText).length;
 
       // Figure out the starting horizontal position on the screen so that
