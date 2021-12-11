@@ -1,4 +1,4 @@
-// $Id: SlyEdit_IceStuff.js,v 1.33 2019/08/15 04:43:33 nightfox Exp $
+// $Id: SlyEdit_IceStuff.js,v 1.29 2019/06/06 03:50:47 nightfox Exp $
 
 /* This contains IceEdit-specific functions for SlyEdit.
  *
@@ -13,6 +13,7 @@
  *                              Initial public release
  * ... Removed comments ...
  * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
+ * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
  */
 
 if (typeof(require) === "function")
@@ -460,15 +461,19 @@ function DrawQuoteWindowBottomBorder_IceStyle(pEditLeft, pEditRight)
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
                 + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+				+ gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn/Home/End=Scroll"
+                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
+				/*
                 + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn=Scroll"
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
                 + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
                 + gConfigSettings.iceColors.QuoteWinBorderTextColor + "F/L=First/Last pg"
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
+				*/
       // The border from here to the end of the line: Random high/low blue
       var screenText = "";
-      for (var posX = pEditLeft + 73; posX <= pEditRight; ++posX)
+      for (var posX = pEditLeft + 62/*73*/; posX <= pEditRight; ++posX)
          screenText += HORIZONTAL_DOUBLE;
       screenText += LOWER_RIGHT_VSINGLE_HDOUBLE;
       DrawQuoteWindowBottomBorder_IceStyle.border += randomTwoColorString(screenText,

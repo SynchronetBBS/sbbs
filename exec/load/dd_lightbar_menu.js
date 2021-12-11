@@ -229,6 +229,55 @@ lbMenu.GetItem = function(pItemIndex) {
 	menuItemObj.retval = itemRetval;
 	return menuItemObj; // The DDLightbarMenu object will use this when displaying the menu
 };
+
+If you want to set the currently selected item before calling GetVal() to allow user input,
+you should call the SetSelectedItemIdx() function and pass the index to that.
+lbMenu.SetSelectedItemIdx(5);
+
+For selecting an item, it may be desirable to validate whether a user should be allowed
+to select the item.  DDLightbarMenu has a member function it calls, ValidateSelectItem(),
+to do just that.  It takes the selected item's return value and returns a boolean to signify
+whether the user can select it.   By default, it just returns true (allowing the user to
+select any item).  When the user can't choose a value, your code should output why.
+To change its behavior, you can overwrite it as follows (assuming lbMenu
+is a DDLightbarMenu object):
+
+lbMenu.ValidateSelectItem = function(pItemRetval) {
+	// Should the user be able to select the item with the return val indicated
+	// by pItemRetval?
+	if (yourValidationCode(pItemRetval))
+		return true;
+	else
+	{
+		console.print("* Can't choose " + pItemRetval + " because blah blah blah!\r\n\1p");
+		return false;
+	}
+}
+
+OnItemSelect is a function that is called when an item is selected, or toggled 
+if multi-select is enabled.
+
+Parameters:
+ pItemRetval: The return value of the item selected
+ pSelected: Boolean - Whether the item was selected or de-selected.  De-selection
+            is possible when multi-select is enabled.
+lbMenu.OnItemSelect = function(pItemRetval, pSelected)
+{
+	// Do something with pItemRetval.  pSelected tells whether the item was selected,
+	// or de-selected if multi-select is enabled.
+}
+
+The property exitOnItemSelect specifies whether or not to exit the input loop when an item is
+selected/submitted (i.e. with ENTER; not for toggling with multi-select).  This is true by
+default.  It can be desirable to set this to false in some situations, such as when you want a
+menu with a custom OnItemSelect() function specified and you want the menu to continue to
+be displayed allowing the user to select an item.
+lbMenu.exitOnItemSelect = false;
+
+The 'key down' behavior can be called explicitly, if needed, by calling the DoKeyDown() function.
+It takes 2 parameters: An object of selected item indexes (as passed to GetVal()) and, optionally,
+the pre-calculated number of items.
+lbMenu.DoKeyDown(pNumItems, pSelectedItemIndexes);
 */
 
 if (typeof(require) === "function")
@@ -244,12 +293,12 @@ else
 
 
 // Keyboard keys
-var KEY_ESC = ascii(27);
 var KEY_ENTER = "\x0d";
 // PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
 // use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  key_defs.js
 // defines them as KEY_PAGEUP and KEY_PAGEDN (key_defs.js is loaded by
 // sbbsdefs.js).
+//var KEY_ESC = ascii(27);
 
 // Box-drawing/border characters: Single-line
 var UPPER_LEFT_SINGLE = "\xDA";
@@ -374,6 +423,10 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// /^\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i
 	this.syncAttrRegex = /\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]/i;
 
+	// Whether or not to exit the input loop when an item is selected/submitted
+	// (i.e. with ENTER; not for toggling with multi-select)
+	this.exitOnItemSelect = true;
+
 	// Things for mouse support
 	this.mouseTimeout = 0; // Timeout in ms.  Currently using 0 for no timeout.
 	this.mouseEnabled = false; // To pass to mouse_getkey
@@ -401,6 +454,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.RemoveAllItemHotkeys = DDLightbarMenu_RemoveAllItemHotkeys;
 	this.GetMouseClickRegion = DDLightbarMenu_GetMouseClickRegion;
 	this.GetVal = DDLightbarMenu_GetVal;
+	this.DoKeyDown = DDLightbarMenu_DoKeyDown;
 	this.SetBorderChars = DDLightbarMenu_SetBorderChars;
 	this.SetColors = DDLightbarMenu_SetColors;
 	this.GetNumItemsPerPage = DDLightbarMenu_GetNumItemsPerPage;
@@ -423,6 +477,21 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.ItemUsesAltColors = DDLightbarMenu_ItemUsesAltColors;
 	this.GetColorForItem = DDLightbarMenu_GetColorForItem;
 	this.GetSelectedColorForItem = DDLightbarMenu_GetSelectedColorForItem;
+	this.SetSelectedItemIdx = DDLightbarMenu_SetSelectedItemIdx;
+
+	// ValidateSelectItem is a function for validating that the user can select an item.
+	// It takes the selected item's return value and returns a boolean to signify whether
+	// the user can select it.
+	this.ValidateSelectItem = function(pItemRetval) { return true; }
+
+	// OnItemSelect is a function that is called when an item is selected, or toggled 
+	// if multi-select is enabled.
+	//
+	// Parameters:
+	//  pItemRetval: The return value of the item selected
+	//  pSelected: Boolean - Whether the item was selected or de-selected.  De-selection
+	//             is possible when multi-select is enabled.
+	this.OnItemSelect = function(pItemRetval, pSelected) { }
 
 	// Set some things based on the parameters passed in
 	if ((typeof(pX) == "number") && (typeof(pY) == "number"))
@@ -869,6 +938,11 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 		itemText = strip_ctrl(menuItem.text);
 		if (itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems) > itemLen)
 			itemText = itemText.substr(0, itemLen);
+		// If the item text is empty, then fill it with spaces for the item length
+		// so that the line's colors/attributes will be applied for the whole line
+		// when written
+		if (strip_ctrl(itemText).length == 0)
+			itemText = format("%" + itemLen + "s", "");
 		// Add the item color to the item text
 		itemText = addAttrsToString(itemText, itemColor);
 		// If ampersandHotkeysInItems is true, see if there's an ampersand in
@@ -1228,48 +1302,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		}
 		else if ((this.lastUserInput == KEY_DOWN) || (this.lastUserInput == KEY_RIGHT))
 		{
-			if (this.selectedItemIdx < numItems-1)
-			{
-				// Draw the current item in regular colors
-				this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				++this.selectedItemIdx;
-				// Draw the new current item in selected colors
-				// If the selected item is below the bottom of the menu, then we'll need to
-				// scroll the items up.
-				var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-				if (this.selectedItemIdx > this.topItemIdx+numItemsPerPage-1)
-				{
-					++this.topItemIdx;
-					this.Draw(selectedItemIndexes);
-				}
-				else
-				{
-					// The selected item is not below the bottom of the menu, so we can
-					// just draw the selected item highlighted.
-					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				}
-			}
-			else
-			{
-				// selectedItemIdx is the last item index.  If wrap navigation is enabled,
-				// then go to the first item.
-				if (this.wrapNavigation)
-				{
-					// Draw the current item in regular colors
-					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					// Go to the first item and scroll to the top if necessary
-					this.selectedItemIdx = 0;
-					var oldTopItemIdx = this.topItemIdx;
-					this.topItemIdx = 0;
-					if (this.topItemIdx != oldTopItemIdx)
-						this.Draw(selectedItemIndexes);
-					else
-					{
-						// Draw the new current item in selected colors
-						this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					}
-				}
-			}
+			this.DoKeyDown(selectedItemIndexes, numItems);
 		}
 		else if (this.lastUserInput == KEY_PAGEUP)
 		{
@@ -1447,65 +1480,94 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		// Enter key or additional select-item key: Select the item & quit out of the input loop
 		else if ((this.lastUserInput == KEY_ENTER) || (this.SelectItemKeysIncludes(this.lastUserInput)))
 		{
-			// If multi-select is enabled and if the user hasn't made any choices,
-			// then add the current item to the user choices.  Otherwise, choose
-			// the current item.  Then exit.
-			if (this.multiSelect)
+			// Let the user select the item if ValidateSelectItem() returns true
+			var allowSelectItem = true;
+			if (typeof(this.ValidateSelectItem) === "function")
+				allowSelectItem = this.ValidateSelectItem(this.GetItem(this.selectedItemIdx).retval);
+			if (allowSelectItem)
 			{
-				if (Object.keys(selectedItemIndexes).length == 0)
-					selectedItemIndexes[this.selectedItemIdx] = true;
-			}
-			else
-				retVal = this.GetItem(this.selectedItemIdx).retval;
-			continueOn = false;
-		}
-		else if (this.lastUserInput == " ")
-		{
-			// Select the current item
-			if (this.multiSelect)
-			{
-				var added = false; // Will be true if added or false if deleted
-				if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
-					delete selectedItemIndexes[this.selectedItemIdx];
-				else
+				// If multi-select is enabled and if the user hasn't made any choices,
+				// then add the current item to the user choices.  Otherwise, choose
+				// the current item.  Then exit.
+				if (this.multiSelect)
 				{
-					var addIt = true;
-					if (this.maxNumSelections > 0)
-						addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
-					if (addIt)
-					{
+					if (Object.keys(selectedItemIndexes).length == 0)
 						selectedItemIndexes[this.selectedItemIdx] = true;
-						added = true;
-					}
-				}
-				// Draw a character next to the item if it's selected, or nothing if it's not selected
-				var XPos = this.pos.x + this.size.width - 2;
-				var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
-				if (this.borderEnabled)
-				{
-					--XPos;
-					++YPos;
-				}
-				if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
-					--XPos;
-				console.gotoxy(XPos, YPos);
-				if (added)
-				{
-					// If the item color is an array, then default to a color string here
-					var itemColor = this.GetColorForItem(this.selectedItemIdx, true);
-					if (Array.isArray(itemColor))
-					{
-						var bkgColor = getBackgroundAttrAtIdx(itemColor, this.size.width-1);
-						itemColor = "\1n\1h\1g" + bkgColor;
-					}
-					console.print(itemColor + " " + this.multiSelectItemChar + "\1n");
 				}
 				else
+					retVal = this.GetItem(this.selectedItemIdx).retval;
+
+				// Run the OnItemSelect event function
+				if (typeof(this.OnItemSelect) === "function")
+					this.OnItemSelect(retVal, true);
+
+				// Exit the input loop if this.exitOnItemSelect is set to true
+				if (this.exitOnItemSelect)
+					continueOn = false;
+			}
+		}
+		else if (this.lastUserInput == " ") // Add the current item to multi-select
+		{
+			// Add the current item to multi-select if multi-select is enabled
+			if (this.multiSelect)
+			{
+				// Only let the user select the item if ValidateSelectItem() returns true
+				var allowSelectItem = true;
+				if (typeof(this.ValidateSelectItem) === "function")
+					allowSelectItem = this.ValidateSelectItem(this.GetItem(this.selectedItemIdx).retval);
+				if (allowSelectItem)
 				{
-					// Display the last 2 characters of the regular item text
-					var itemText = this.GetItemText(this.selectedItemIdx, null, true, false);
-					var textToPrint = substrWithAttrCodes(itemText, console.strlen(itemText)-2, 2);
-					console.print(textToPrint + "\1n");
+					var added = false; // Will be true if added or false if deleted
+					if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
+						delete selectedItemIndexes[this.selectedItemIdx];
+					else
+					{
+						var addIt = true;
+						if (this.maxNumSelections > 0)
+							addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
+						if (addIt)
+						{
+							selectedItemIndexes[this.selectedItemIdx] = true;
+							added = true;
+						}
+					}
+
+					// Run the OnItemSelect event function
+					if (typeof(this.OnItemSelect) === "function")
+					{
+						//this.OnItemSelect = function(pItemRetval, pSelected) { }
+						this.OnItemSelect(this.GetItem(this.selectedItemIdx).retval, added);
+					}
+
+					// Draw a character next to the item if it's selected, or nothing if it's not selected
+					var XPos = this.pos.x + this.size.width - 2;
+					var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
+					if (this.borderEnabled)
+					{
+						--XPos;
+						++YPos;
+					}
+					if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+						--XPos;
+					console.gotoxy(XPos, YPos);
+					if (added)
+					{
+						// If the item color is an array, then default to a color string here
+						var itemColor = this.GetColorForItem(this.selectedItemIdx, true);
+						if (Array.isArray(itemColor))
+						{
+							var bkgColor = getBackgroundAttrAtIdx(itemColor, this.size.width-1);
+							itemColor = "\1n\1h\1g" + bkgColor;
+						}
+						console.print(itemColor + " " + this.multiSelectItemChar + "\1n");
+					}
+					else
+					{
+						// Display the last 2 characters of the regular item text
+						var itemText = this.GetItemText(this.selectedItemIdx, null, true, false);
+						var textToPrint = substrWithAttrCodes(itemText, console.strlen(itemText)-2, 2);
+						console.print(textToPrint + "\1n");
+					}
 				}
 			}
 		}
@@ -1616,6 +1678,61 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	}
 
 	return (this.multiSelect ? userChoices : retVal);
+}
+// Performs the key-down behavior for showing the menu items
+//
+// Parameters:
+//  pSelectedItemIndexes: An object containing indexes of selected items.  This is
+//                        normally a temporary object created/used in GetVal().
+//  pNumItems: The pre-calculated number of menu items.  If this not given, this
+//             will be retrieved by calling NumItems().
+function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
+{
+	var selectedItemIndexes = (typeof(pSelectedItemIndexes) === "object" ? pSelectedItemIndexes : {});
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+
+	if (this.selectedItemIdx < numItems-1)
+	{
+		// Draw the current item in regular colors
+		this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+		++this.selectedItemIdx;
+		// Draw the new current item in selected colors
+		// If the selected item is below the bottom of the menu, then we'll need to
+		// scroll the items up.
+		var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
+		if (this.selectedItemIdx > this.topItemIdx+numItemsPerPage-1)
+		{
+			++this.topItemIdx;
+			this.Draw(selectedItemIndexes);
+		}
+		else
+		{
+			// The selected item is not below the bottom of the menu, so we can
+			// just draw the selected item highlighted.
+			this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+		}
+	}
+	else
+	{
+		// selectedItemIdx is the last item index.  If wrap navigation is enabled,
+		// then go to the first item.
+		if (this.wrapNavigation)
+		{
+			// Draw the current item in regular colors
+			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			// Go to the first item and scroll to the top if necessary
+			this.selectedItemIdx = 0;
+			var oldTopItemIdx = this.topItemIdx;
+			this.topItemIdx = 0;
+			if (this.topItemIdx != oldTopItemIdx)
+				this.Draw(selectedItemIndexes);
+			else
+			{
+				// Draw the new current item in selected colors
+				this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			}
+		}
+	}
 }
 
 // Sets the characters to use for drawing the border.  Takes an object specifying
@@ -2047,10 +2164,33 @@ function DDLightbarMenu_GetColorForItem(pItemIndex, pSelected)
 // Return value: Either colors.selectedItemColor or colors.altSelectedItemColor
 function DDLightbarMenu_GetSelectedColorForItem(pItemIndex)
 {
+	if (typeof(pItemIndex) !== "number")
+		return;
 	if ((pItemIndex < 0) || (pItemIndex >= this.NumItems()))
 		return "";
 
 	return (this.GetItem(pItemIndex).useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
+}
+
+// Sets the selected item index for the menu, and sets anything else as appropriate
+// (such as the index of the topmost menu item).
+//
+// Parameters:
+//  pSelectedItemIdx: The index of the selected item
+function DDLightbarMenu_SetSelectedItemIdx(pSelectedItemIdx)
+{
+	if (typeof(pSelectedItemIdx) !== "number")
+		return;
+	if ((pSelectedItemIdx < 0) || (pSelectedItemIdx >= this.NumItems()))
+		return;
+
+	this.selectedItemIdx = pSelectedItemIdx;
+	if (this.selectedItemIdx == 0)
+		this.topItemIdx = 0;
+	else if (this.selectedItemIdx >= this.topItemIdx+this.GetNumItemsPerPage())
+		this.topItemIdx = this.selectedItemIdx - this.GetNumItemsPerPage() + 1;
+	else if (this.selectedItemIdx < this.topItemIdx)
+		this.topItemIdx = this.selectedItemIdx;
 }
 
 // Calculates the number of solid scrollbar blocks & non-solid scrollbar blocks

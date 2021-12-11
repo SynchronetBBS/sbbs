@@ -128,6 +128,14 @@
  *                              SlyEdit no longer thinks a 0x0 (sent with CTRL-Space on a Mac) is
  *                              a timeout.  K_NUL was added on Jan. 21, 2021 by Rob Swindell:
  *                              https://gitlab.synchro.net/main/sbbs/-/commit/8b8ed2159c31057764d260c0860335c85e33d6d8
+ * 2021-01-23 Eric Oulashin     Version 1.75 Beta
+ *                              Started working on refactorin the cross-post
+ *                              area chooser to use DDLightbarMenu rather
+ *                              than the internal lightbar code.
+ * 2021-12-11 Eric Oulashin     Version 1.75
+ *                              Finished refactoring to use DDLightbarMenu
+ *                              for the cross-posting menus. Also used DDLightbarMenu
+ *                              for the quote selection window.
  */
 
 /* Command-line arguments:
@@ -224,8 +232,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.74";
-const EDITOR_VER_DATE = "2021-01-23";
+const EDITOR_VERSION = "1.75";
+const EDITOR_VER_DATE = "2021-12-11";
 
 
 // Program variables
@@ -2789,7 +2797,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 		// quote lines
 		if (typeof(doQuoteSelection.backupQuoteLines) == "undefined")
 		{
-			doQuoteSelection.backupQuoteLines = new Array();
+			doQuoteSelection.backupQuoteLines = []; // Array
 			for (var i = 0; i < gQuoteLines.length; ++i)
 				doQuoteSelection.backupQuoteLines.push(gQuoteLines[i]);
 		}
@@ -2849,259 +2857,88 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	}
 
 	// Set up some variables
-	var curpos = new Object();
-	curpos.x = pCurpos.x;
-	curpos.y = pCurpos.y;
+	var curpos = {
+		x: pCurpos.x,
+		y: pCurpos.y
+	};
+
 	// Make the quote window's height about 42% of the edit area.
 	const quoteWinHeight = Math.floor(gEditHeight * 0.42) + 1;
-	// The first and last lines on the screen where quote lines are written
+	// The first line on the screen where quote lines are written
 	const quoteTopScreenRow = console.screen_rows - quoteWinHeight + 2;
-	const quoteBottomScreenRow = console.screen_rows - 2;
-	// Quote window parameters
-	const quoteWinTopScreenRow = quoteTopScreenRow-1;
-	const quoteWinWidth = gEditRight - gEditLeft + 1;
-
-	// For pageUp/pageDown functionality - Calculate the top quote line index
-	// for the last page.
-	var quoteWinInnerHeight = quoteBottomScreenRow - quoteTopScreenRow + 1; // # of quote lines in the quote window
-	var numPages = Math.ceil(gQuoteLines.length / quoteWinInnerHeight);
-	var topIndexForLastPage = (quoteWinInnerHeight * numPages) - quoteWinInnerHeight;
 
 	// Display the top border of the quote window.
 	fpDrawQuoteWindowTopBorder(quoteWinHeight, gEditLeft, gEditRight);
+	console.gotoxy(gEditLeft, gEditBottom+1);
+	fpDrawQuoteWindowBottomBorder(gEditLeft, gEditRight);
 
-	// Display the remainder of the quote window, with the quote lines in it.
-	displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true, gQuoteLinesIndex);
-
-	// Position the cursor at the currently-selected quote line.
-	var screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-	console.gotoxy(gEditLeft, screenLine);
-
-	// User input loop
-	var quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-	retObj.timedOut = false;
-	var userInput = null;
-	var continueOn = true;
-	while (continueOn)
+	var quoteLineMenu = createQuoteLineMenu(quoteTopScreenRow);
+	// Customize the menu's OnItemSelect function to add the selected quote
+	// line to the message.  Note that the menu's exitOnItemSelect is set
+	// to false in createQuoteLineMenu() so that its input loop won't
+	// exit when the user selects a quote line.
+	quoteLineMenu.OnItemSelect = function(pQuoteLineIdx, pSelected)
 	{
-		// Get a keypress from the user
-		userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN|K_NOECHO, gConfigSettings);
-		if (userInput == "")
+		if (!pSelected) return; // pSelected should always be true for this, but just in case..
+
+		// Keep gQuoteLinesIndex up to date
+		gQuoteLinesIndex = pQuoteLineIdx;
+
+		// numTimesToMoveDown specifies how many times to move the cursor
+		// down after inserting the quote line into the message.
+		var numTimesToMoveDown = 1;
+
+		// Insert the quote line into gEditLines after the current gEditLines index.
+		var quoteLine = getQuoteTextLine(pQuoteLineIdx, quoteLineMenu.size.width);
+		var insertedBelow = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
+		if (insertedBelow)
 		{
-			// The input timeout was reached.  Abort.
-			retObj.timedOut = true;
-			continueOn = false;
-			break;
+			// The cursor will need to be moved down 1 more line.
+			// So, increment numTimesToMoveDown, and set curpos.x
+			// and gTextLineIndex to the beginning of the line.
+			++numTimesToMoveDown;
+			curpos.x = gEditLeft;
+			gTextLineIndex = 0;
+			retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 		}
+		else
+			retObj.currentWordLength = 0;
 
-		// If we got here, that means the user input didn't time out.
-		switch (userInput)
+		// Refresh the part of the message that needs to be refreshed on the
+		// screen (above the quote window).
+		if (curpos.y < quoteTopScreenRow-1)
+			displayEditLines(curpos.y, gEditLinesIndex, quoteTopScreenRow-2, false, true);
+
+		gEditLinesIndex += numTimesToMoveDown;
+
+		// Go down one line in the quote window
+		quoteLineMenu.DoKeyDown();
+
+		// Move the cursor down as specified by numTimesToMoveDown.  If
+		// the cursor is at the bottom of the edit area, then refresh
+		// the message on the screen, scrolled down by one line.
+		for (var i = 0; i < numTimesToMoveDown; ++i)
 		{
-			case KEY_UP:
-				// Go up 1 quote line
-				if (gQuoteLinesIndex > 0)
-				{
-					// If the cursor is at the topmost position, then
-					// we need to scroll up 1 line in gQuoteLines.
-					if (screenLine == quoteTopScreenRow)
-					{
-						--gQuoteLinesIndex;
-						--gQuoteLinesTopIndex;
-						quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-						// Redraw the quote lines in the quote window.
-						displayQuoteWindowLines(gQuoteLinesIndex, quoteWinHeight, quoteWinWidth,
-						                        true, gQuoteLinesIndex);
-						// Put the cursor back where it should be.
-						console.gotoxy(gEditLeft, screenLine);
-					}
-					// If the cursor is below the topmost position, then
-					// we can just go up 1 line.
-					else if (screenLine > quoteTopScreenRow)
-					{
-						// Write the current quote line using the normal color
-						// Note: This gets the quote line again using getQuoteTextLine()
-						// so that the color codes in the line will be correct.
-						quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-						console.gotoxy(gEditLeft, screenLine);
-						printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
-
-						// Go up one line and display that quote line in the
-						// highlighted color.
-						--screenLine;
-						--gQuoteLinesIndex;
-						quoteLine = strip_ctrl(getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth));
-						console.gotoxy(gEditLeft, screenLine);
-						printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
-
-						// Make sure the cursor is where it should be.
-						console.gotoxy(gEditLeft, screenLine);
-					}
-				}
-				break;
-			case KEY_DOWN:
-				// Go down 1 line in the quote window.
-				var downRetObj = moveDownOneQuoteLine(gQuoteLinesIndex, screenLine,
-				quoteWinHeight, quoteWinWidth,
-				quoteBottomScreenRow);
-				gQuoteLinesIndex = downRetObj.quoteLinesIndex;
-				screenLine = downRetObj.screenLine;
-				quoteLine = downRetObj.quoteLine;
-				break;
-			case KEY_HOME: // Select the first quote line on the current page
-				if (gQuoteLinesIndex != gQuoteLinesTopIndex)
-				{
-					gQuoteLinesIndex = gQuoteLinesTopIndex;
-					// Write the current quote line with unhighlighted colors
-					console.gotoxy(gEditLeft, screenLine);
-					printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
-					// Calculate the new screen line and draw the new quote line with
-					// highlighted colors
-					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-					console.gotoxy(gEditLeft, screenLine);
-					printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
-					console.gotoxy(gEditLeft, screenLine);
-				}
-				break;
-			case KEY_END: // Select the last quote line on the current page
-				var lastIndexForCurrentPage = gQuoteLinesTopIndex + quoteWinInnerHeight - 1;
-				if (gQuoteLinesIndex != lastIndexForCurrentPage)
-				{
-					gQuoteLinesIndex = lastIndexForCurrentPage;
-					// Write the current quote line with unhighlighted colors
-					console.gotoxy(gEditLeft, screenLine);
-					printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
-					// Calculate the new screen line and draw the new quote line with
-					// highlighted colors
-					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-					console.gotoxy(gEditLeft, screenLine);
-					printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
-					console.gotoxy(gEditLeft, screenLine);
-				}
-				break;
-			case KEY_PAGE_UP: // Go up 1 page in the quote lines
-				// If the current top quote line index is greater than 0, then go to
-				// the previous page of quote lines and select the top index on that
-				// page as the current selected quote line.
-				if (gQuoteLinesTopIndex > 0)
-				{
-					gQuoteLinesTopIndex -= quoteWinInnerHeight;
-					if (gQuoteLinesTopIndex < 0)
-						gQuoteLinesTopIndex = 0;
-					gQuoteLinesIndex = gQuoteLinesTopIndex;
-					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-					displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
-					                        gQuoteLinesIndex);
-				}
-				break;
-			case KEY_PAGE_DOWN: // Go down 1 page in the quote lines
-				// If the current top quote line index is below the top index for the
-				// last page, then go to the next page of quote lines and select the
-				// top index on that page as the current selected quote line.
-				if (gQuoteLinesTopIndex < topIndexForLastPage)
-				{
-					gQuoteLinesTopIndex += quoteWinInnerHeight;
-					if (gQuoteLinesTopIndex > topIndexForLastPage)
-						gQuoteLinesTopIndex = topIndexForLastPage;
-					gQuoteLinesIndex = gQuoteLinesTopIndex;
-					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-					displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
-					                        gQuoteLinesIndex);
-				}
-				break;
-			case "F": // Go to the first page
-				if (gQuoteLinesTopIndex > 0)
-				{
-					gQuoteLinesTopIndex = 0;
-					gQuoteLinesIndex = gQuoteLinesTopIndex;
-					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-					displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
-					                        gQuoteLinesIndex);
-				}
-				break;
-			case "L": // Go to the last page
-				if (gQuoteLinesTopIndex < topIndexForLastPage)
-				{
-					gQuoteLinesTopIndex = topIndexForLastPage;
-					gQuoteLinesIndex = gQuoteLinesTopIndex;
-					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-					displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
-					                        gQuoteLinesIndex);
-				}
-				break;
-			case KEY_ENTER:
-				// numTimesToMoveDown specifies how many times to move the cursor
-				// down after inserting the quote line into the message.
-				var numTimesToMoveDown = 1;
-
-				// Insert the quote line into gEditLines after the current gEditLines index.
-				var insertedBelow = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
-				if (insertedBelow)
-				{
-					// The cursor will need to be moved down 1 more line.
-					// So, increment numTimesToMoveDown, and set curpos.x
-					// and gTextLineIndex to the beginning of the line.
-					++numTimesToMoveDown;
-					curpos.x = gEditLeft;
-					gTextLineIndex = 0;
-					retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-				}
-				else
-				retObj.currentWordLength = 0;
-
-				// Refresh the part of the message that needs to be refreshed on the
-				// screen (above the quote window).
-				if (curpos.y < quoteTopScreenRow-1)
-					displayEditLines(curpos.y, gEditLinesIndex, quoteTopScreenRow-2, false, true);
-
-				gEditLinesIndex += numTimesToMoveDown;
-
-				// Go down one line in the quote window.
-				var tempReturnObj = moveDownOneQuoteLine(gQuoteLinesIndex, screenLine,
-				                                         quoteWinHeight, quoteWinWidth,
-				                                         quoteBottomScreenRow);
-				gQuoteLinesIndex = tempReturnObj.quoteLinesIndex;
-				screenLine = tempReturnObj.screenLine;
-				quoteLine = tempReturnObj.quoteLine;
-
-				// Move the cursor down as specified by numTimesToMoveDown.  If
-				// the cursor is at the bottom of the edit area, then refresh
-				// the message on the screen, scrolled down by one line.
-				for (var i = 0; i < numTimesToMoveDown; ++i)
-				{
-					if (curpos.y == gEditBottom)
-					{
-						// Refresh the message on the screen, scrolled down by
-						// one line, but only if this is the last time we're
-						// doing this (for efficiency).
-						if (i == numTimesToMoveDown-1)
-						{
-							displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
-							quoteTopScreenRow-2, false, true);
-						}
-					}
-					else
-						++curpos.y;
-				}
-				break;
-				// ESC or CTRL-Q: Stop quoting
-			case KEY_ESC:
-			case CTRL_Q:
-				// Quit out of the input loop (get out of quote mode).
-				continueOn = false;
-				break;
+			if (curpos.y == gEditBottom)
+			{
+				// Refresh the message on the screen, scrolled down by
+				// one line, but only if this is the last time we're
+				// doing this (for efficiency).
+				if (i == numTimesToMoveDown-1)
+					displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop), quoteTopScreenRow-2, false, true);
+			}
+			else
+				++curpos.y;
 		}
 	}
+	// Now, display the quote line menu & run its input loop
+	quoteLineMenu.GetVal();
 
 	// We've exited quote mode.  Refresh the message text on the screen.  Note:
 	// This will refresh only the quote window portion of the screen if the
 	// cursor row is at or below the top of the quote window, and it will also
 	// refresh the screen if the cursor row is above the quote window.
+	const quoteWinTopScreenRow = quoteTopScreenRow-1;
 	displayEditLines(quoteWinTopScreenRow, gEditLinesIndex-(curpos.y-quoteWinTopScreenRow),
 	                 gEditBottom, true, true);
 
@@ -3123,141 +2960,54 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	retObj.y = curpos.y;
 	return retObj;
 }
-
-// Helper for doQuoteSelection(): This function moves the quote selection
-// down one line and updates the quote window.
+// Creates the DDLightbarMenu for selecting a quote line
 //
 // Parameters:
-//  pQuoteLinesIndex: The index of the current line in gQuoteLines
-//  pScreenLine: The vertical position of the cursor on the screen
-//  pQuoteWinHeight: The height of the quote window
-//  pQuoteWinWidth: The width of the quote window
-//  pQuoteBottomScreenLine: The bottommost screen line where quote lines are displayed
-function moveDownOneQuoteLine(pQuoteLinesIndex, pScreenLine, pQuoteWinHeight,
-                               pQuoteWinWidth, pQuoteBottomScreenLine)
+//  pQuoteTopScreenRow: The first line on the screen where quote lines are written
+function createQuoteLineMenu(pQuoteTopScreenRow)
 {
-   // Create the return object
-   var returnObj = new Object();
-   returnObj.quoteLinesIndex = pQuoteLinesIndex;
-   returnObj.screenLine = pScreenLine;
-   returnObj.quoteLine = "";
+	// Quote window parameters
+	const quoteBottomScreenRow = console.screen_rows - 2;
+	const quoteWinTopScreenRow = pQuoteTopScreenRow-1;
+	const quoteWinWidth = gEditRight - gEditLeft + 1;
+	var quoteWinInnerHeight = quoteBottomScreenRow - pQuoteTopScreenRow + 1; // # of quote lines in the quote window
 
-   // If the current quote line is above the last one, then we can
-   // move down one quote line.
-   if (pQuoteLinesIndex < gQuoteLines.length-1)
-   {
-      // If the cursor is at the bottommost position, then
-      // we need to scroll up 1 line in gQuoteLines.
-      if (pScreenLine == pQuoteBottomScreenLine)
-      {
-         ++pQuoteLinesIndex;
-         ++gQuoteLinesTopIndex;
-         returnObj.quoteLine = getQuoteTextLine(pQuoteLinesIndex, pQuoteWinWidth);
-         // Redraw the quote lines in the quote window.
-         var topQuoteIndex = pQuoteLinesIndex - pQuoteWinHeight + 4;
-         displayQuoteWindowLines(topQuoteIndex, pQuoteWinHeight, pQuoteWinWidth, true,
-                                 pQuoteLinesIndex);
-         // Put the cursor back where it should be.
-         console.gotoxy(gEditLeft, pScreenLine);
-      }
-      // If the cursor is above the bottommost position, then
-      // we can just go down 1 line.
-      else if (pScreenLine < pQuoteBottomScreenLine)
-      {
-         // Write the current quote line using the normal color.
-         // Note: This gets the quote line again using getQuoteTextLine()
-         // so that the color codes in the line will be correct.
-         console.gotoxy(gEditLeft, pScreenLine);
-         returnObj.quoteLine = getQuoteTextLine(pQuoteLinesIndex, pQuoteWinWidth);
-         printf(gFormatStrWithAttr, gQuoteWinTextColor, returnObj.quoteLine);
+	// Create the quote line window
+	var quoteLineMenu = new DDLightbarMenu(1, pQuoteTopScreenRow, console.screen_columns, quoteWinInnerHeight);
+	quoteLineMenu.scrollbarEnabled = false;
+	quoteLineMenu.borderEnabled = false;
+	quoteLineMenu.multiSelect = false;
+	quoteLineMenu.ampersandHotkeysInItems = false;
+	quoteLineMenu.wrapNavigation = false;
+	// Have the menu persist on screen when items are selected (with the Enter key)
+	quoteLineMenu.exitOnItemSelect = false;
+	quoteLineMenu.colors.itemColor = gQuoteWinTextColor;
+	quoteLineMenu.colors.selectedItemColor = gQuoteLineHighlightColor;
 
-         // Go down one line and display that quote line in the
-         // highlighted color.
-         ++pScreenLine;
-         ++pQuoteLinesIndex;
-         returnObj.quoteLine = getQuoteTextLine(pQuoteLinesIndex, pQuoteWinWidth);
-         console.gotoxy(gEditLeft, pScreenLine);
-         printf(gFormatStrWithAttr, gQuoteLineHighlightColor, returnObj.quoteLine);
+	// Add additional keypresses for quitting the menu's input loop
+	quoteLineMenu.AddAdditionalQuitKeys(CTRL_Q);
 
-         // Put the cursor back where it should be.
-         console.gotoxy(gEditLeft, pScreenLine);
-      }
-   }
-   else // This else case is for when we're already on the last quote line.
-      returnObj.quoteLine = getQuoteTextLine(pQuoteLinesIndex, pQuoteWinWidth);
+	// Change the menu's NumItems() and GetItem() function to reference
+	// the message list in this object rather than add the menu items
+	// to the menu
+	quoteLineMenu.NumItems = function() {
+		return gQuoteLines.length;
+	};
+	quoteLineMenu.GetItem = function(pQuoteLineIdx) {
+		var menuItemObj = this.MakeItemWithRetval(-1);
+		if (pQuoteLineIdx >= 0 && pQuoteLineIdx < gQuoteLines.length)
+		{
+			// Note: this refers to the quote line menu object (DDLightbarMenu)
+			menuItemObj.text = getQuoteTextLine(pQuoteLineIdx, this.size.width);
+			menuItemObj.retval = pQuoteLineIdx;
+		}
+		return menuItemObj;
+	};
 
-   // Make sure the properties of returnObj have the correct
-   // values (except quoteLine, which is already set), and
-   // return the returnObj.
-   returnObj.quoteLinesIndex = pQuoteLinesIndex;
-   returnObj.screenLine = pScreenLine;
-   return returnObj;
-}
+	// Set the quote menu's currently selected index to the next one available
+	quoteLineMenu.SetSelectedItemIdx(gQuoteLinesIndex == 0 ? 0 : gQuoteLinesIndex+1);
 
-// Helper for doQuoteSelection(): This displays the quote window, except for its
-// top border.
-//
-// Parameters:
-//  pQuoteLinesIndex: The index into gQuoteLines to start at.  The quote line
-//                    at this index will be displayed at the top of the quote
-//                    window.
-//  pQuoteWinHeight: The height of the quote window
-//  pQuoteWinWidth: The width of the quote window
-//  pDrawBottomBorder: Whether or not to draw the bottom border of the quote
-//                     window.
-//  pHighlightIndex: Optional - An index of a quote line to highlight.
-function displayQuoteWindowLines(pQuoteLinesIndex, pQuoteWinHeight, pQuoteWinWidth, pDrawBottomBorder, pHighlightIndex)
-{
-   var quoteLinesIndex = pQuoteLinesIndex;
-   var quoteLine = ""; // A line of text from gQuoteLines
-   var screenLine = console.screen_rows - pQuoteWinHeight + 2;
-   if (gQuoteLines.length > 0)
-   {
-      var color = "";     // The color to use when writing the text
-      var lineLength = 0; // Length of a quote line
-      while ((quoteLinesIndex < gQuoteLines.length) && (screenLine < console.screen_rows-1))
-      {
-         quoteLine = getQuoteTextLine(quoteLinesIndex, pQuoteWinWidth);
-         // Go to the line on screen and display the quote line text.
-         console.gotoxy(gEditLeft, screenLine);
-         // If pHighlightIndex is valid, and if quoteLinesIndex matches
-         // pHighlightIndex, then use the highlight color for this quote line.
-         if ((pHighlightIndex != null) && (pHighlightIndex >= 0) && (pHighlightIndex < gQuoteLines.length))
-         {
-            if (quoteLinesIndex == pHighlightIndex)
-            {
-               color = gQuoteLineHighlightColor;
-               quoteLine = quoteLine;
-            }
-            else
-               color = gQuoteWinTextColor;
-         }
-         else
-         {
-            color = gQuoteWinTextColor;
-            quoteLine = quoteLine;
-         }
-         // Write the quote line, and fill the rest of the line with spaces.
-         printf(gFormatStrWithAttr, color, quoteLine);
-
-         ++quoteLinesIndex;
-         ++screenLine;
-      }
-   }
-   // Fill the remainder of the quote window area
-   for (; screenLine < console.screen_rows-1; ++screenLine)
-   {
-      console.gotoxy(gEditLeft, screenLine);
-      printf(gFormatStrWithAttr, gQuoteWinTextColor, "");
-   }
-
-   // If pDrawBottomBorder is true, then display the bottom border of the
-   // quote window.
-   if (pDrawBottomBorder)
-   {
-      console.gotoxy(gEditLeft, screenLine);
-      fpDrawQuoteWindowBottomBorder(gEditLeft, gEditRight);
-   }
+	return quoteLineMenu;
 }
 
 // This function returns a line of text from gQuoteLines, with "> "
@@ -3271,21 +3021,21 @@ function displayQuoteWindowLines(pQuoteLinesIndex, pQuoteWinHeight, pQuoteWinWid
 // Return value: The line of text from gQuoteLines
 function getQuoteTextLine(pIndex, pMaxWidth)
 {
-   var textLine = "";
-   if ((pIndex >= 0) && (pIndex < gQuoteLines.length))
-   {
-      if (gUserSettings.useQuoteLineInitials)
-      {
-         if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
-          textLine = gQuoteLines[pIndex].substr(0, pMaxWidth-1);
-      }
-      else
-      {
-         if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
-            textLine = quote_msg(gQuoteLines[pIndex], pMaxWidth-1, gQuotePrefix);
-      }
-   }
-   return textLine;
+	var textLine = "";
+	if ((pIndex >= 0) && (pIndex < gQuoteLines.length))
+	{
+		if (gUserSettings.useQuoteLineInitials)
+		{
+			if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
+				textLine = gQuoteLines[pIndex].substr(0, pMaxWidth-1);
+		}
+		else
+		{
+			if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
+				textLine = quote_msg(gQuoteLines[pIndex], pMaxWidth-1, gQuotePrefix);
+		}
+	}
+	return textLine;
 }
 
 // This function deletes the current edit line.  This function is called
@@ -3300,49 +3050,50 @@ function getQuoteTextLine(pIndex, pMaxWidth)
 //               currentWordLength: The length of the current word
 function doDeleteLine(pCurpos)
 {
-   // Construct the object that we'll be returning
-   var retObj = new Object();
-   retObj.x = pCurpos.x;
-   retObj.y = pCurpos.y;
-   retObj.currentWordLength = 0;
+	// Construct the object that we'll be returning
+	var retObj = {
+		x: pCurpos.x,
+		y: pCurpos.y,
+		currentWordLength: 0
+	};
 
-   // Remove the current line from gEditLines.  If we're on the last line,
-   // then we'll need to add a blank line to gEditLines.  We'll also need
-   // to refresh the edit lines on the screen.
-   if (gEditLinesIndex == gEditLines.length-1)
-   {
-      // We're on the last line.  Remove it & replace it with a new line.
-      gEditLines.splice(gEditLinesIndex, 1, new TextLine());
-      // Refresh (clear) the line on the screen
-      displayEditLines(pCurpos.y, gEditLinesIndex, pCurpos.y, true, true);
-      console.gotoxy(gEditLeft, pCurpos.y);
-      printf(gFormatStr, "");
-   }
-   else
-   {
-      // We weren't on the last line.  Remove the current line and get the
-      // word length, and then refresh the message on the screen.
-      gEditLines.splice(gEditLinesIndex, 1);
-      displayEditLines(pCurpos.y, gEditLinesIndex, gEditBottom, true, true);
-      // Update the current word length
-      retObj.currentWordLength = getWordLength(gEditLinesIndex, 0);
+	// Remove the current line from gEditLines.  If we're on the last line,
+	// then we'll need to add a blank line to gEditLines.  We'll also need
+	// to refresh the edit lines on the screen.
+	if (gEditLinesIndex == gEditLines.length-1)
+	{
+		// We're on the last line.  Remove it & replace it with a new line.
+		gEditLines.splice(gEditLinesIndex, 1, new TextLine());
+		// Refresh (clear) the line on the screen
+		displayEditLines(pCurpos.y, gEditLinesIndex, pCurpos.y, true, true);
+		console.gotoxy(gEditLeft, pCurpos.y);
+		printf(gFormatStr, "");
+	}
+	else
+	{
+		// We weren't on the last line.  Remove the current line and get the
+		// word length, and then refresh the message on the screen.
+		gEditLines.splice(gEditLinesIndex, 1);
+		displayEditLines(pCurpos.y, gEditLinesIndex, gEditBottom, true, true);
+		// Update the current word length
+		retObj.currentWordLength = getWordLength(gEditLinesIndex, 0);
 
-      // If there is a line above the current line, then set its hardNewlineEnd
-      // to true.  This is for a scenario where the user deletes a line in the
-      // middle of their message - If the user goes back up to the previous line
-      // and starts typing in the middle and SlyEdit has to wrap it to the next
-      // line, SlyEdit would basically remove a line without this change.
-      if (gEditLinesIndex > 0)
-         gEditLines[gEditLinesIndex-1].hardNewlineEnd = true;
-   }
+		// If there is a line above the current line, then set its hardNewlineEnd
+		// to true.  This is for a scenario where the user deletes a line in the
+		// middle of their message - If the user goes back up to the previous line
+		// and starts typing in the middle and SlyEdit has to wrap it to the next
+		// line, SlyEdit would basically remove a line without this change.
+		if (gEditLinesIndex > 0)
+			gEditLines[gEditLinesIndex-1].hardNewlineEnd = true;
+	}
 
-   // Adjust global message parameters, make sure the cursor position is
-   // correct in retObj, and place the cursor where it's supposed to be.
-   gTextLineIndex = 0;
-   retObj.x = gEditLeft;
-   console.gotoxy(retObj.x, retObj.y);
+	// Adjust global message parameters, make sure the cursor position is
+	// correct in retObj, and place the cursor where it's supposed to be.
+	gTextLineIndex = 0;
+	retObj.x = gEditLeft;
+	console.gotoxy(retObj.x, retObj.y);
 
-   return retObj;
+	return retObj;
 }
 
 // Toggles insert mode between insert and overwrite mode and updates it
@@ -3354,11 +3105,11 @@ function doDeleteLine(pCurpos)
 //           The cursor will be returned here when finished.
 function toggleInsertMode(pCurpos)
 {
-   // Change gInsertMode, and then refresh it on the screen.
-   gInsertMode = inInsertMode() ? "OVR" : "INS";
-   fpUpdateInsertModeOnScreen(gEditRight, gEditBottom, gInsertMode);
-   if ((pCurpos != null) && (typeof(pCurpos) != "undefined"))
-      console.gotoxy(pCurpos);
+	// Change gInsertMode, and then refresh it on the screen.
+	gInsertMode = inInsertMode() ? "OVR" : "INS";
+	fpUpdateInsertModeOnScreen(gEditRight, gEditBottom, gInsertMode);
+	if ((pCurpos != null) && (typeof(pCurpos) != "undefined"))
+		console.gotoxy(pCurpos);
 }
 
 // Displays the contents of the gEditLines array, starting at a given
@@ -3382,81 +3133,80 @@ function toggleInsertMode(pCurpos)
 function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRemainingScreenRows,
                           pIgnoreEditAreaBuffer)
 {
-   // Make sure the array has lines in it, the given array index is valid, and
-   // that the given line # is valid.  If not, then just return.
-   if ((gEditLines.length == 0) || (pArrayIndex < 0) || (pStartScreenRow < 1) || (pStartScreenRow > gEditBottom))
-      return;
+	// Make sure the array has lines in it, the given array index is valid, and
+	// that the given line # is valid.  If not, then just return.
+	if ((gEditLines.length == 0) || (pArrayIndex < 0) || (pStartScreenRow < 1) || (pStartScreenRow > gEditBottom))
+		return;
 
-   // Choose which ending screen row to use for displaying text,
-   // pEndScreenRow or gEditBottom.
-   var endScreenRow = (pEndScreenRow != null ? pEndScreenRow : gEditBottom);
+	// Choose which ending screen row to use for displaying text,
+	// pEndScreenRow or gEditBottom.
+	var endScreenRow = (pEndScreenRow != null ? pEndScreenRow : gEditBottom);
 
-   // Display the message lines
-   console.print("n" + gTextAttrs);
-   var screenLine = pStartScreenRow;
-   var arrayIndex = pArrayIndex;
-   while ((screenLine <= endScreenRow) && (arrayIndex < gEditLines.length))
-   {
-      // Print the text from the current line in gEditLines.  Note: Lines starting
-      // with " >" are assumed to be quote lines - Display those lines with cyan
-      // color and the normal lines with gTextAttrs.
-      var color = gTextAttrs;
-      // Note: gEditAreaBuffer is also used in clearMsgAreaToBottom().
-      if ((gEditAreaBuffer[screenLine] != gEditLines[arrayIndex].text) || pIgnoreEditAreaBuffer)
-      {
-         // Choose the quote line color or the normal color for the line, then
-         // display the line on the screen.
-         color = (isQuoteLine(gEditLines, arrayIndex) ? gQuoteLineColor : gTextAttrs);
-         console.gotoxy(gEditLeft, screenLine);
-         printf(gFormatStrWithAttr, color, gEditLines[arrayIndex].text);
-         gEditAreaBuffer[screenLine] = gEditLines[arrayIndex].text;
-      }
+	// Display the message lines
+	console.print("\1n" + gTextAttrs);
+	var screenLine = pStartScreenRow;
+	var arrayIndex = pArrayIndex;
+	while ((screenLine <= endScreenRow) && (arrayIndex < gEditLines.length))
+	{
+		// Print the text from the current line in gEditLines.  Note: Lines starting
+		// with " >" are assumed to be quote lines - Display those lines with cyan
+		// color and the normal lines with gTextAttrs.
+		var color = gTextAttrs;
+		// Note: gEditAreaBuffer is also used in clearMsgAreaToBottom().
+		if ((gEditAreaBuffer[screenLine] != gEditLines[arrayIndex].text) || pIgnoreEditAreaBuffer)
+		{
+			// Choose the quote line color or the normal color for the line, then
+			// display the line on the screen.
+			color = (isQuoteLine(gEditLines, arrayIndex) ? gQuoteLineColor : gTextAttrs);
+			console.gotoxy(gEditLeft, screenLine);
+			printf(gFormatStrWithAttr, color, gEditLines[arrayIndex].text);
+			gEditAreaBuffer[screenLine] = gEditLines[arrayIndex].text;
+		}
 
-      ++screenLine;
-      ++arrayIndex;
-   }
-   if (arrayIndex > 0)
-      --arrayIndex;
-   // incrementLineBeforeClearRemaining stores whether or not we
-   // should increment screenLine before clearing the remaining
-   // lines in the edit area.
-   var incrementLineBeforeClearRemaining = true;
-   // If the array index is valid, and if the current line is shorter
-   // than the edit area width, then place the cursor after the last
-   // character in the line.
-   if ((arrayIndex >= 0) && (arrayIndex < gEditLines.length) &&
-       (gEditLines[arrayIndex] != undefined) && (gEditLines[arrayIndex].text != undefined))
-   {
-      var lineLength = gEditLines[arrayIndex].length();
-      if (lineLength < gEditWidth)
-      {
-         --screenLine;
-         console.gotoxy(gEditLeft + gEditLines[arrayIndex].length(), screenLine);
-      }
-      else if ((lineLength == gEditWidth) || (lineLength == 0))
-         incrementLineBeforeClearRemaining = false;
-   }
-   else
-      incrementLineBeforeClearRemaining = false;
+		++screenLine;
+		++arrayIndex;
+	}
+	if (arrayIndex > 0)
+		--arrayIndex;
+	// incrementLineBeforeClearRemaining stores whether or not we
+	// should increment screenLine before clearing the remaining
+	// lines in the edit area.
+	var incrementLineBeforeClearRemaining = true;
+	// If the array index is valid, and if the current line is shorter
+	// than the edit area width, then place the cursor after the last
+	// character in the line.
+	if ((arrayIndex >= 0) && (arrayIndex < gEditLines.length) &&
+	    (gEditLines[arrayIndex] != undefined) && (gEditLines[arrayIndex].text != undefined))
+	{
+		var lineLength = gEditLines[arrayIndex].length();
+		if (lineLength < gEditWidth)
+		{
+			--screenLine;
+			console.gotoxy(gEditLeft + gEditLines[arrayIndex].length(), screenLine);
+		}
+		else if ((lineLength == gEditWidth) || (lineLength == 0))
+			incrementLineBeforeClearRemaining = false;
+	}
+	else
+		incrementLineBeforeClearRemaining = false;
 
-   // Edge case: If the current screen line is below the last line, then
-   // clear the lines up until that point.
-   var clearRemainingScreenLines = (pClearRemainingScreenRows != null ? pClearRemainingScreenRows : true);
-   if (clearRemainingScreenLines && (screenLine <= endScreenRow))
-   {
-      console.print("n" + gTextAttrs);
-      var screenLineBackup = screenLine; // So we can move the cursor back
-      clearMsgAreaToBottom(incrementLineBeforeClearRemaining ? screenLine+1 : screenLine,
-                           pIgnoreEditAreaBuffer);
-      // Move the cursor back to the end of the current text line.
-      if (typeof(gEditLines[arrayIndex]) != "undefined")
-         console.gotoxy(gEditLeft + gEditLines[arrayIndex].length(), screenLineBackup);
-      else
-         console.gotoxy(gEditLeft, screenLineBackup);
-   }
+	// Edge case: If the current screen line is below the last line, then
+	// clear the lines up until that point.
+	var clearRemainingScreenLines = (pClearRemainingScreenRows != null ? pClearRemainingScreenRows : true);
+	if (clearRemainingScreenLines && (screenLine <= endScreenRow))
+	{
+		console.print("\1n" + gTextAttrs);
+		var screenLineBackup = screenLine; // So we can move the cursor back
+		clearMsgAreaToBottom(incrementLineBeforeClearRemaining ? screenLine+1 : screenLine, pIgnoreEditAreaBuffer);
+		// Move the cursor back to the end of the current text line.
+		if (typeof(gEditLines[arrayIndex]) != "undefined")
+			console.gotoxy(gEditLeft + gEditLines[arrayIndex].length(), screenLineBackup);
+		else
+			console.gotoxy(gEditLeft, screenLineBackup);
+	}
 
-   // Make sure the correct color is set for the current line.
-   console.print(chooseEditColor());
+	// Make sure the correct color is set for the current line.
+	console.print(chooseEditColor());
 }
 
 // Clears the lines in the message area from a given line to the bottom.
@@ -3468,34 +3218,34 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 //                         By default, gEditAreaBuffer is always checked.
 function clearMsgAreaToBottom(pStartLine, pIgnoreEditAreaBuffer)
 {
-   for (var screenLine = pStartLine; screenLine <= gEditBottom; ++screenLine)
-   {
-      // Note: gEditAreaBuffer is also used in displayEditLines().
-      if ((gEditAreaBuffer[screenLine].length > 0) || pIgnoreEditAreaBuffer)
-      {
-         console.gotoxy(gEditLeft, screenLine);
-         printf(gFormatStr, "");
-         gEditAreaBuffer[screenLine] = "";
-      }
-   }
+	for (var screenLine = pStartLine; screenLine <= gEditBottom; ++screenLine)
+	{
+		// Note: gEditAreaBuffer is also used in displayEditLines().
+		if ((gEditAreaBuffer[screenLine].length > 0) || pIgnoreEditAreaBuffer)
+		{
+			console.gotoxy(gEditLeft, screenLine);
+			printf(gFormatStr, "");
+			gEditAreaBuffer[screenLine] = "";
+		}
+	}
 }
 
 // Returns whether or not the message is empty (gEditLines may have lines in
 // it, and this tests to see if they are all empty).
 function messageIsEmpty()
 {
-   var msgEmpty = true;
-   
-   for (var i = 0; i < gEditLines.length; ++i)
-   {
-      if (gEditLines[i].length() > 0)
-      {
-         msgEmpty = false;
-         break;
-      }
-   }
+	var msgEmpty = true;
 
-   return msgEmpty;
+	for (var i = 0; i < gEditLines.length; ++i)
+	{
+		if (gEditLines[i].length() > 0)
+		{
+			msgEmpty = false;
+			break;
+		}
+	}
+
+	return msgEmpty;
 }
 
 // Displays a part of the message text in a rectangle on the screen.  This
@@ -4785,15 +4535,15 @@ function drawInitialCrossPostSelBoxTopBorder(pTopLeft, pWidth, pBorderColor, pTe
 function drawInitialCrossPostSelBoxBottomBorder(pBottomLeft, pWidth, pBorderColor,
                                                  pMsgSubs)
 {
-  console.gotoxy(pBottomLeft);
-  console.print(pBorderColor + LOWER_LEFT_SINGLE + RIGHT_T_SINGLE +
-                "nhcb, cb, cPgUpb, cPgDnb, cFy)birst, cLy)bast, cEntery=b"
-                + (pMsgSubs ? "Toggle" : "Select") + ", cCtrl-Cnc/hQy=bEnd, c?y=bHelpn"
-                + pBorderColor + LEFT_T_SINGLE);
-  len = pWidth - 71;
-  for (var i = 0; i < len; ++i)
-    console.print(HORIZONTAL_SINGLE);
-  console.print(LOWER_RIGHT_SINGLE);
+	console.gotoxy(pBottomLeft);
+	console.print(pBorderColor + LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + RIGHT_T_SINGLE +
+	              "\1n\1h\1c\1b, \1c\1b, \1cPgUp\1b, \1cPgDn\1b, \1cHome\1b, \1cEnd\1b, \1cEnter\1y=\1b"
+	              + (pMsgSubs ? "Toggle" : "Select") + ", \1cCtrl-C\1n\1c/\1hQ\1y=\1bEnd, \1c?\1y=\1bHelp\1n"
+	              + pBorderColor + LEFT_T_SINGLE);
+	len = pWidth - 71;
+	for (var i = 0; i < len; ++i)
+		console.print(HORIZONTAL_SINGLE);
+	console.print(LOWER_RIGHT_SINGLE);
 }
 // Displays help text for cross-posting, for use in cross-post selection mode.
 //
@@ -4809,20 +4559,20 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
    if (typeof(displayCrossPostHelp.helpLines) == "undefined")
    {
       displayCrossPostHelp.helpLines = new Array();
-      displayCrossPostHelp.helpLines.push("ncCross-posing allows you to post a message in more than one message");
+      displayCrossPostHelp.helpLines.push("\1n\1cCross-posing allows you to post a message in more than one message");
       displayCrossPostHelp.helpLines.push("area.  To select areas for cross-posting, do the following:");
-      displayCrossPostHelp.helpLines.push(" h1. ncChoose a message group from the list with the Enter key.");
+      displayCrossPostHelp.helpLines.push(" \1h1. \1n\1cChoose a message group from the list with the Enter key.");
       displayCrossPostHelp.helpLines.push("    Alternately, you may type the number of the message group.");
-      displayCrossPostHelp.helpLines.push(" h2. ncIn the list of message sub-boards that appears, toggle individual");
+      displayCrossPostHelp.helpLines.push(" \1h2. \1n\1cIn the list of message sub-boards that appears, toggle individual");
       displayCrossPostHelp.helpLines.push("    sub-boards with the Enter key.  Alternately, you may type the");
       displayCrossPostHelp.helpLines.push("    number of the message sub-board.");
       displayCrossPostHelp.helpLines.push("Message sub-boards that are toggled for cross-posting will include a");
-      displayCrossPostHelp.helpLines.push("check mark (" + gConfigSettings.genColors.crossPostChk + CHECK_CHAR + "nc) in the sub-board list.  Initially, your current message");
+      displayCrossPostHelp.helpLines.push("check mark (" + gConfigSettings.genColors.crossPostChk + CHECK_CHAR + "\1n\1c) in the sub-board list.  Initially, your current message");
       displayCrossPostHelp.helpLines.push("sub-board is enabled by default.  Also, your current message group is");
-      displayCrossPostHelp.helpLines.push("marked with an asterisk (" + gConfigSettings.genColors.crossPostMsgGrpMark + "*nc).");
-      displayCrossPostHelp.helpLines.push("To navigate the list, you may use the up & down arrow keys, N to go to");
-      displayCrossPostHelp.helpLines.push("the next page, P to go to the previous page, F to go to the first page,");
-      displayCrossPostHelp.helpLines.push("and L to go to the last page.  Ctrl-C, Q, and ESC end the selection.");
+      displayCrossPostHelp.helpLines.push("marked with an asterisk (" + gConfigSettings.genColors.crossPostMsgGrpMark + "*\1n\1c).");
+      displayCrossPostHelp.helpLines.push("To navigate the list, you may use the up & down arrow keys, PageUp and");
+      displayCrossPostHelp.helpLines.push("PageDown to go to the previous & next page, Home to go to the first");
+      displayCrossPostHelp.helpLines.push("page, and End to go to the last page. To end: Ctrl-C, Q, or ESC.");
    }
 
    // Display the help text
@@ -4850,7 +4600,7 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
    if (screenRow < selBoxLowerRight.y)
    {
       var printfStr = "%-" + selBoxInnerWidth + "s";
-      console.print("n");
+      console.print("\1n");
       for (; screenRow < selBoxLowerRight.y; ++screenRow)
       {
          console.gotoxy(selBoxUpperLeft.x+1, screenRow);
@@ -4905,11 +4655,11 @@ function doCrossPosting(pOriginalCurpos)
 		// Position the cursor after the "Cross-posting: " text in the border and
 		// write the "Choose group" text
 		console.gotoxy(pSelBoxUpperLeft.x+17, pSelBoxUpperLeft.y);
-		console.print("n" + gConfigSettings.genColors.listBoxBorderText + "Choose group");
+		console.print("\1n" + gConfigSettings.genColors.listBoxBorderText + "Choose group");
 		// Re-write the border characters to overwrite the message group name
 		grpDesc = msg_area.grp_list[pGrpIndex].description.substr(0, pSelBoxInnerWidth-25);
 		// Write the updated border character(s)
-		console.print("n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
+		console.print("\1n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
 		if (grpDesc.length > 3)
 		{
 			var numChars = grpDesc.length - 3;
@@ -4990,308 +4740,10 @@ function doCrossPosting(pOriginalCurpos)
 	                                       selBoxWidth, gConfigSettings.genColors.listBoxBorder,
 	                                       false);
 
-	// Write the message groups
-	var pageNum = 1;
-	ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-	                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-	                       msgGrpFieldLen, true);
-	// Move the cursor to the inner upper-left corner of the selection box
-	var curpos = new Object(); // Current cursor position
-	curpos.x = selBoxUpperLeft.x+1;
-	curpos.y = selBoxUpperLeft.y+1;
-	console.gotoxy(curpos);
-
-	// User input loop
-	var userInput = null;
-	var continueChoosingMsgArea = true;
-	while (continueChoosingMsgArea)
-	{
-		pageNum = calcPageNum(topMsgGrpIndex, selBoxInnerHeight);
-
-		// Get a key from the user (upper-case) and take action based upon it.
-		userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
-		switch (userInput)
-		{
-			case KEY_UP: // Move up one message group in the list
-				if (selectedGrpIndex > 0)
-				{
-					// If the previous group index is on the previous page, then
-					// display the previous page.
-					var previousGrpIndex = selectedGrpIndex - 1;
-					if (previousGrpIndex < topMsgGrpIndex)
-					{
-						// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-						// refresh the list on the screen.
-						topMsgGrpIndex -= numItemsPerPage;
-						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-						ListScreenfulOfMsgGrps(topMsgGrpIndex, previousGrpIndex, selBoxUpperLeft.y+1,
-						                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-						                       msgGrpFieldLen, true);
-						// We'll want to move the cursor to the leftmost character
-						// of the selected line.
-						curpos.x = selBoxUpperLeft.x+1;
-						curpos.y = selBoxUpperLeft.y+selBoxInnerHeight;
-					}
-					else
-					{
-						// Display the current line un-highlighted
-						console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
-						writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
-						// Display the previous line highlighted
-						curpos.x = selBoxUpperLeft.x+1;
-						--curpos.y;
-						console.gotoxy(curpos);
-						writeMsgGroupLine(previousGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
-					}
-					selectedGrpIndex = previousGrpIndex;
-					console.gotoxy(curpos); // Move the cursor into place where it should be
-				}
-				break;
-			case KEY_DOWN: // Move down one message group in the list
-				if (selectedGrpIndex < msg_area.grp_list.length - 1)
-				{
-					// If the next group index is on the next page, then display
-					// the next page.
-					var nextGrpIndex = selectedGrpIndex + 1;
-					if (nextGrpIndex > bottomMsgGrpIndex)
-					{
-						// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-						// refresh the list on the screen.
-						topMsgGrpIndex += numItemsPerPage;
-						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-						ListScreenfulOfMsgGrps(topMsgGrpIndex, nextGrpIndex, selBoxUpperLeft.y+1,
-						                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-						                       msgGrpFieldLen, true);
-						// We'll want to move the cursor to the leftmost character
-						// of the selected line.
-						curpos.x = selBoxUpperLeft.x+1;
-						curpos.y = selBoxUpperLeft.y+1;
-					}
-					else
-					{
-						// Display the current line un-highlighted
-						console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
-						writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
-						// Display the next line highlighted
-						curpos.x = selBoxUpperLeft.x+1;
-						++curpos.y;
-						console.gotoxy(curpos);
-						writeMsgGroupLine(nextGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
-					}
-					selectedGrpIndex = nextGrpIndex;
-					console.gotoxy(curpos); // Move the cursor into place where it should be
-				}
-				break;
-			case KEY_HOME: // Go to the top message group on the screen
-				if (selectedGrpIndex > topMsgGrpIndex)
-				{
-					// Display the current line un-highlighted, adjust
-					// selectedGrpIndex, then display the new line
-					// highlighted.
-					console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
-					writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
-					selectedGrpIndex = topMsgGrpIndex;
-					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-					writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
-					console.gotoxy(curpos);
-				}
-				break;
-			case KEY_END: // Go to the bottom message group on the screen
-				if (selectedGrpIndex < bottomMsgGrpIndex)
-				{
-					// Display the current line un-highlighted, adjust
-					// selectedGrpIndex, then display the new line
-					// highlighted.
-					console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
-					writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
-					selectedGrpIndex = bottomMsgGrpIndex;
-					curpos.x = selBoxUpperLeft.x + 1;
-					curpos.y = selBoxUpperLeft.y + (bottomMsgGrpIndex-topMsgGrpIndex+1);
-					console.gotoxy(curpos);
-					writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
-					console.gotoxy(curpos);
-				}
-				break;
-			case KEY_PAGE_DOWN: // Go to the next page
-				var nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
-				if (nextPageTopIndex < msg_area.grp_list.length)
-				{
-					// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-					// refresh the list on the screen.
-					topMsgGrpIndex = nextPageTopIndex;
-					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-					selectedGrpIndex = topMsgGrpIndex;
-					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-					                       msgGrpFieldLen, true);
-					// Put the cursor at the beginning of the topmost row of message groups
-					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-				}
-				break;
-			case KEY_PAGE_UP: // Go to the previous page
-				var prevPageTopIndex = topMsgGrpIndex - numItemsPerPage;
-				if (prevPageTopIndex >= 0)
-				{
-					// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-					// refresh the list on the screen.
-					topMsgGrpIndex = prevPageTopIndex;
-					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-					selectedGrpIndex = topMsgGrpIndex;
-					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-					                       msgGrpFieldLen, true);
-					// Put the cursor at the beginning of the topmost row of message groups
-					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-				}
-				break;
-			case 'F': // Go to the first page
-				if (topMsgGrpIndex > 0)
-				{
-					topMsgGrpIndex = 0;
-					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-					selectedGrpIndex = 0;
-					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-					                       msgGrpFieldLen, true);
-					// Put the cursor at the beginning of the topmost row of message groups
-					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-				}
-				break;
-			case 'L': // Go to the last page
-				if (topMsgGrpIndex < topIndexForLastPage)
-				{
-					topMsgGrpIndex = topIndexForLastPage;
-					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-					selectedGrpIndex = topIndexForLastPage;
-					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-					                       msgGrpFieldLen, true);
-					// Put the cursor at the beginning of the topmost row of message groups
-					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-				}
-				break;
-			case CTRL_C:  // Quit (Ctrl-C is the cross-post hotkey)
-			case KEY_ESC: // Quit
-			case "Q":     // Quit
-				continueChoosingMsgArea = false;
-				break;
-			case KEY_ENTER: // Select the currently-highlighted message group
-				// Store the current cursor position for later, then show the
-				// sub-boards in the chosen message group and let the user
-				// toggle ones for cross-posting.
-				var selectCurrentGrp_originalCurpos = curpos;
-				var selectMsgAreaRetObj = crossPosting_selectSubBoardInGrp(selectedGrpIndex,
-				selBoxUpperLeft, selBoxLowerRight, selBoxWidth,
-				selBoxHeight, selBoxInnerWidth, selBoxInnerHeight);
-				// If the user toggled some sub-boards...
-				if (selectMsgAreaRetObj.subBoardsToggled)
-				{
-					// TODO: Does anything need to be done here?
-				}
-
-				// Update the Enter action text in the bottom border to say "Select"
-				// (instead of "Toggle").
-				console.gotoxy(selBoxUpperLeft.x+41, selBoxLowerRight.y);
-				console.print("\1n\1h\1bSelect");
-				// Refresh the top border of the selection box, refresh the list of
-				// message groups in the box, and move the cursor back to its original
-				// position.
-				reWriteInitialTopBorderText(selBoxUpperLeft, selBoxInnerWidth, selectedGrpIndex);
-				ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-				                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
-				                       selBoxLowerRight.x-1, msgGrpFieldLen, true);
-				console.gotoxy(selectCurrentGrp_originalCurpos);
-				break;
-			case '?': // Display cross-post help
-				displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight);
-				console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y-1);
-				console.pause();
-				ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-				                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
-				                       selBoxLowerRight.x-1, msgGrpFieldLen, true);
-				console.gotoxy(curpos);
-				break;
-			default:
-				// If the user entered a numeric digit, then treat it as
-				// the start of the message group number.
-				if (userInput.match(/[0-9]/))
-				{
-					var originalCurpos = curpos;
-					// Put the user's input back in the input buffer to
-					// be used for getting the rest of the message number.
-					console.ungetstr(userInput);
-					// We want to write the prompt text only if the first digit entered
-					// by the user is an ambiguous message group number (i.e., if
-					// the first digit is 2 and there's a message group # 2 and 20).
-					var writePromptText = (msg_area.grp_list.length >= +userInput * 10);
-					if (writePromptText)
-					{
-						console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
-						printf("\1n\1cChoose group #:%" + +(selBoxInnerWidth-15) + "s", "");
-						console.gotoxy(selBoxUpperLeft.x+17, selBoxLowerRight.y);
-						console.print("\1h");
-					}
-					else
-					console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
-					userInput = console.getnum(msg_area.grp_list.length);
-
-					// Re-draw the bottom border of the selection box
-					if (writePromptText)
-					{
-						drawInitialCrossPostSelBoxBottomBorder({ x: selBoxUpperLeft.x, y: selBoxLowerRight.y },
-						                                       selBoxWidth, gConfigSettings.genColors.listBoxBorder,
-						                                       false);
-					}
-					else
-					{
-						console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
-						console.print(gConfigSettings.genColors.listBoxBorder + RIGHT_T_SINGLE);
-					}
-
-					// If the user made a selection, then let them choose a
-					// sub-board from the group.
-					if (userInput > 0)
-					{
-						// Show the sub-boards in the chosen message group and
-						// let the user toggle ones for cross-posting.
-						// userInput-1 is the group index
-						var chosenGrpIndex = userInput - 1;
-						var selectMsgAreaRetObj = crossPosting_selectSubBoardInGrp(chosenGrpIndex,
-						                                                           selBoxUpperLeft, selBoxLowerRight, selBoxWidth,
-						                                                           selBoxHeight, selBoxInnerWidth, selBoxInnerHeight);
-						// If the user chose a sub-board, then set bbs.curgrp and
-						// bbs.cursub, and don't continue the input loop anymore.
-						if (selectMsgAreaRetObj.subBoardsToggled)
-						{
-							// TODO: Does anything need to be done here?
-						}
-						// Update the Enter action text in the bottom border to say "Select"
-						// (instead of "Toggle").
-						console.gotoxy(selBoxUpperLeft.x+41, selBoxLowerRight.y);
-						console.print("\1n\1h\1bSelect");
-						// Refresh the top border of the selection box
-						reWriteInitialTopBorderText(selBoxUpperLeft, selBoxInnerWidth, chosenGrpIndex);
-					}
-
-					// Refresh the list of message groups in the box and move the
-					// cursor back to its original position.
-					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
-					                       selBoxLowerRight.x-1, msgGrpFieldLen, true);
-					console.gotoxy(originalCurpos);
-				}
-				break;
-		}
-	}
+	// Input loop - Prompting for sub-boards
+	// Note: promptUserForCrossPostSubBoardCodes() will add the user's
+	// selected sub-board codes to gCrossPostMsgSubs.
+	var promptRetObj = promptUserForCrossPostSubBoardCodes(selBoxUpperLeft, selBoxLowerRight);
 
 	// We're done selecting message areas for cross-posting.
 	// Erase the message area selection rectangle by re-drawing the message text.
@@ -5301,741 +4753,353 @@ function doCrossPosting(pOriginalCurpos)
 	                        selBoxHeight, editLineIndexAtSelBoxTopRow, true);
 	console.gotoxy(origStartingCurpos);
 }
-// Displays a screenful of message groups, for the cross-posting
-// interface.
+// Performs the input loop using DDLightbarMenu objects to get sub-board codes
+// for cross-posting from the user.
 //
 // Parameters:
-//  pStartIndex: The message group index to start at (0-based)
-//  pSelectedIndex: The index of the currently-selected message group
-//  pStartScreenRow: The row on the screen to start at (1-based)
-//  pStartScreenCol: The column on the screen to start at (1-based)
-//  pEndScreenRow: The row on the screen to end at (1-based)
-//  pEndScreenCol: The column on the screen to end at (1-based)
-//  pMsgGrpFieldLen: The length to use for the group number field
-//  pBlankToEndRow: Boolean - Whether or not to write blank lines to the end
-//                  screen row if there aren't enough message groups to fill
-//                  the screen.
-function ListScreenfulOfMsgGrps(pStartIndex, pSelectedIndex, pStartScreenRow,
-                                 pStartScreenCol, pEndScreenRow, pEndScreenCol,
-                                 pMsgGrpFieldLen, pBlankToEndRow)
-{
-	// If the parameters are invalid, then just return.
-	if ((typeof(pStartIndex) != "number") || (typeof(pSelectedIndex) != "number") ||
-	    (typeof(pStartScreenRow) != "number") || (typeof(pStartScreenCol) != "number") ||
-	    (typeof(pEndScreenRow) != "number") || (typeof(pEndScreenCol) != "number"))
-	{
-		return;
-	}
-	if ((pStartIndex < 0) || (pStartIndex >= msg_area.grp_list.length))
-		return;
-	if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
-		return;
-	if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
-		return;
-	if ((pStartScreenCol < 1) || (pStartScreenCol > console.screen_columns))
-		return;
-	if ((pEndScreenCol < 1) || (pEndScreenCol > console.screen_columns))
-		return;
-
-	// If pStartScreenRow is greater than pEndScreenRow, then swap them.
-	// Do the same with pStartScreenCol and pEndScreenCol.
-	if (pStartScreenRow > pEndScreenRow)
-	{
-		var temp = pStartScreenRow;
-		pStartScreenRow = pEndScreenRow;
-		pEndScreenRow = temp;
-	}
-	if (pStartScreenCol > pEndScreenCol)
-	{
-		var temp = pStartScreenCol;
-		pStartScreenCol = pEndScreenCol;
-		pEndScreenCol = temp;
-	}
-
-	// Calculate the ending index to use for the message groups array.
-	var endIndex = pStartIndex + (pEndScreenRow-pStartScreenRow);
-	if (endIndex >= msg_area.grp_list.length)
-		endIndex = msg_area.grp_list.length - 1;
-	var onePastEndIndex = endIndex + 1;
-
-	// Go to the specified screen row, and display the message group information.
-	var textWidth = pEndScreenCol - pStartScreenCol + 1;
-	var row = pStartScreenRow;
-	var grpIndex = pStartIndex;
-	for (; grpIndex < onePastEndIndex; ++grpIndex)
-	{
-		console.gotoxy(pStartScreenCol, row++);
-		// The 4th parameter to writeMsgGroupLine() is whether or not to
-		// write the message group with highlight colors.
-		writeMsgGroupLine(grpIndex, textWidth, pMsgGrpFieldLen, (grpIndex == pSelectedIndex));
-	}
-
-	// If pBlankToEndRow is true and we're not at the end row yet, then
-	// write blank lines to the end row.
-	if (pBlankToEndRow)
-	{
-		var screenRow = pStartScreenRow + (endIndex - pStartIndex) + 1;
-		if (screenRow <= pEndScreenRow)
-		{
-			console.print("\1n");
-			var areaWidth = pEndScreenCol - pStartScreenCol + 1;
-			var formatStr = "%-" + areaWidth + "s";
-			for (; screenRow <= pEndScreenRow; ++screenRow)
-			{
-				console.gotoxy(pStartScreenCol, screenRow)
-				printf(formatStr, "");
-			}
-		}
-	}
-}
-// Writes a message group information line (for choosing a message group
-// for cross-posing).
+//  pSelBoxUpperLeft: An object containing x & y coordinates for the upper-left of the selection box with borders
+//  pSelBoxLowerRight: An object containing x & y coordinates for the lower-right of the selection box with borders
 //
-// Parameters:
-//  pGrpIndex: The index of the message group to write (assumed to be valid)
-//  pTextWidth: The maximum text width
-//  pMsgGrpFieldLen: The length to use for the group number field
-//  pHighlight: Boolean - Whether or not to write the line highlighted.
-function writeMsgGroupLine(pGrpIndex, pTextWidth, pMsgGrpFieldLen, pHighlight)
+// Return value: An object containing the following properties:
+//               lastUserInput: The last input from the user
+function promptUserForCrossPostSubBoardCodes(pSelBoxUpperLeft, pSelBoxLowerRight)
 {
-	if ((typeof(pGrpIndex) != "number") || (typeof(pTextWidth) != "number"))
-		return;
-
-	// Build a printf format string
-	var grpDescLen = pTextWidth - pMsgGrpFieldLen - 2;
-	var printfStr = "\1n";
-	if (pHighlight)
-	{
-		printfStr += gConfigSettings.genColors.crossPostMsgGrpMarkHighlight + "%1s"
-		          + gConfigSettings.genColors.crossPostMsgAreaNumHighlight + "%" + pMsgGrpFieldLen
-		          + "d " + gConfigSettings.genColors.crossPostMsgAreaDescHighlight + "%-"
-		          + grpDescLen + "s";
-	}
-	else
-	{
-		printfStr += gConfigSettings.genColors.crossPostMsgGrpMark + "%1s"
-		          + gConfigSettings.genColors.crossPostMsgAreaNum + "%" + pMsgGrpFieldLen + "d "
-		          + gConfigSettings.genColors.crossPostMsgAreaDesc + "%-" + grpDescLen + "s";
-	}
-
-	// Write the message group information line
-	var markChar = (pGrpIndex == gMsgAreaInfo.grpIndex ? "*" : " ");
-	printf(printfStr, markChar, +(pGrpIndex+1), msg_area.grp_list[pGrpIndex].description.substr(0, grpDescLen));
-}
-// For cross-posting: Lets the user choose a sub-board within a message group
-//
-// Parameters:
-//  pGrpIndex: The index of the message group to choose from.
-//  pSelBoxUpperLeft: An object containing the following values:
-//                    x: The horizontal coordinate (column) of the selection box's
-//                       upper-left corner
-//                    y: The vertical coordinate (row) of the selection box's
-//                       upper-left corner
-//  pSelBoxLowerRight: An object containing the following values:
-//                     x: The horizontal coordinate (column) of the selection box's
-//                        lower-right corner
-//                     y: The vertical coordinate (row) of the selection box's
-//                        lower-right corner
-//  pSelBoxWidth: The width of the selection box
-//  pSelBoxHeight: The height of the selection box
-//  pSelBoxInnerWidth: The inner width of the selection box (inside the borders)
-//  pSelBoxInnerHeight: The inner height of the selection box (inside the borders)
-//
-// Return value: An object containing the following values:
-//               subBoardsToggled: Boolean - Whether or not any sub-boards were toggled
-function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLowerRight,
-                                          pSelBoxWidth, pSelBoxHeight, pSelBoxInnerWidth,
-                                          pSelBoxInnerHeight)
-{
-	// Create the return object with default values
 	var retObj = {
-		subBoardsToggled: false
+		lastUserInput: ""
 	};
 
-	// Check the parameters and return if any are invalid
-	if ((typeof(pGrpIndex) != "number") || (typeof(pSelBoxWidth) != "number") ||
-	    (typeof(pSelBoxHeight) != "number") || (typeof(pSelBoxInnerWidth) != "number") ||
-	    (typeof(pSelBoxInnerHeight) != "number") || (typeof(pSelBoxUpperLeft) != "object") ||
-	    (typeof(pSelBoxLowerRight) != "object") || (typeof(pSelBoxUpperLeft.x) != "number") ||
-	    (typeof(pSelBoxUpperLeft.y) != "number") || (typeof(pSelBoxLowerRight.x) != "number") ||
-	    (typeof(pSelBoxLowerRight.y) != "number"))
+	// Set up an object containing the colors to use for the items in the group/sub-board lists
+	var menuListColors = {
+		areaMark: "\1g\1h",
+		areaNum: "\1n\1w\1h",
+		desc: "\1n\1c",
+		areaNumHighlight: "\1w\1h",
+		descHighlight: "\1c",
+		bkgHighlight: "\1" + "4"
+	};
+	
+	// Calculate the selection box width & height, with borders
+	var selBoxWidth = pSelBoxLowerRight.x - pSelBoxUpperLeft.x + 1;
+	var selBoxHeight = pSelBoxLowerRight.y - pSelBoxUpperLeft.y + 1;
+	// Don't let the box's height be more than 17 characters.
+	if (selBoxHeight > 17)
 	{
-		return retObj;
+	  selBoxLowerRight.y = selBoxUpperLeft.y + 16; // For a height of 17 characters
+	  selBoxHeight = selBoxLowerRight.y - selBoxUpperLeft.y + 1;
 	}
+	// Inner size of the box (for the text menu items)
+	var selBoxInnerWidth = selBoxWidth - 2;
+	var selBoxInnerHeight = selBoxHeight - 2;
 
-	// Clear the text inside the selection box
-	console.print("\1n");
-	var printfStr = "%" + pSelBoxInnerWidth + "s";
-	for (var rowOffset = 1; rowOffset <= pSelBoxInnerHeight; ++rowOffset)
-	{
-		console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxUpperLeft.y+rowOffset);
-		printf(printfStr, "");
-	}
+	// The starting column & row for the text items in the menu
+	var listStartCol = pSelBoxUpperLeft.x+1;
+	var listStartRow = pSelBoxUpperLeft.y+1;
 
-	// If there are no sub-boards in the given message group, then show
-	// an error and return.
-	if (msg_area.grp_list[pGrpIndex].sub_list.length == 0)
-	{
-		console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxUpperLeft.y+1);
-		console.print("\1y\1hThere are no message areas in the chosen group.");
-		console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxUpperLeft.y+2);
-		console.pause();
-		return retObj;
-	}
-
-	// This function returns the index of the bottommost message sub-board that
-	// can be displayed on the screen.
-	//
-	// Parameters:
-	//  pTopSubIndex: The index of the topmost message sub-board displayed on screen
-	//  pNumItemsPerPage: The number of items per page
-	function getBottommostSubBoardIndex(pTopSubIndex, pNumItemsPerPage)
-	{
-		var bottomSubIndex = pTopSubIndex + pNumItemsPerPage - 1;
-		// If bottomSubIndex is beyond the last index, then adjust it.
-		if (bottomSubIndex >= msg_area.grp_list[pGrpIndex].sub_list.length)
-			bottomSubIndex = msg_area.grp_list[pGrpIndex].sub_list.length - 1;
-		return bottomSubIndex;
-	}
-
-	// This function writes the error message that the user can't post in a
-	// message sub-board, pauses, then refreshes the bottom border of the
-	// selection box.
-	//
-	// Parameters:
-	//  pX: The column of the lower-right corner of the selection box
-	//  pY: The row of the lower-right corner of the selection box
-	//  pSubBoardNum: The number of the sub-board (1-based)
-	//  pSelBoxWidth: The width of the selection box
-	//  pSelBoxInnerWidth: The width of the selection box inside the left & right borders
-	//  pPauseMS: The number of millisecons to pause after displaying the error message
-	//  pCurpos: The position of the cursor before calling this function
-	function writeCantPostErrMsg(pX, pY, pSubBoardNum, pSelBoxWidth, pSelBoxInnerWidth, pPauseMS, pCurpos)
-	{
-		var cantPostErrMsg = "You're not allowed to post in area " + pSubBoardNum + ".";
-		console.gotoxy(pX+1, pY);
-		printf("\1n\1h\1y%-" + pSelBoxInnerWidth + "s", cantPostErrMsg);
-		console.gotoxy(pX+cantPostErrMsg.length+1, pY);
-		mswait(pPauseMS);
-		// Refresh the bottom border of the selection box
-		drawInitialCrossPostSelBoxBottomBorder({ x: pX, y: pY }, pSelBoxWidth,
-		gConfigSettings.genColors.listBoxBorder, true);
-		console.gotoxy(pCurpos);
-	}
-
-	// Update the text in the top border of the selection box to include
-	// the message area description
-	//¦Cross-posting: Choose group
-	//¦Cross-posting: Areas in 
-	console.gotoxy(pSelBoxUpperLeft.x+17, pSelBoxUpperLeft.y);
-	var grpDesc = msg_area.grp_list[pGrpIndex].description.substr(0, pSelBoxInnerWidth-25);
-	console.print("\1n" + gConfigSettings.genColors.listBoxBorderText + "Areas in " + grpDesc);
-	// Write the updated border character(s)
-	console.print("\1n" + gConfigSettings.genColors.listBoxBorder);
-	// If the length of the group description is shorter than the remaining text
-	// the selection box border, then draw horizontal lines to fill in the gap.
-	if (grpDesc.length < 3)
-	{
-		
-		var numChars = 3 - grpDesc.length;
-		for (var i = 0; i < numChars; ++i)
-			console.print(HORIZONTAL_SINGLE);
-	}
-	console.print(LEFT_T_SINGLE);
-
-	// Update the Enter action text in the bottom border to say "Toggle"
-	// (instead of "Select").
-	console.gotoxy(pSelBoxUpperLeft.x+41, pSelBoxLowerRight.y);
-	console.print("\1n\1h\1bToggle");
-
-	// Variables for keeping track of the message group/area list
-	var topMsgSubIndex = 0;    // The index of the message sub-board at the top of the list
-	// Figure out the index of the last message group to appear on the screen.
-	var bottomMsgSubIndex = getBottommostSubBoardIndex(topMsgSubIndex, pSelBoxInnerHeight);
-	var numPages = Math.ceil(msg_area.grp_list[pGrpIndex].sub_list.length / pSelBoxInnerHeight);
-	var numItemsPerPage = pSelBoxInnerHeight;
-	var topIndexForLastPage = (pSelBoxInnerHeight * numPages) - pSelBoxInnerHeight;
-	var selectedMsgSubIndex = 0; // The currently-selected message sub-board index
-	// subNumFieldLen will store the length to use for the sub-board numbers in the list.
-	// It should be able to accommodate the highest message sub-board number in the
-	// group.
-	var subNumFieldLen = msg_area.grp_list[pGrpIndex].sub_list.length.toString().length;
 	// The number of milliseconds to pause after displaying the error message
 	// that the user isn't allowed to post in a sub-board (due to ARS).
 	var cantPostErrPauseMS = 2000;
 
-	// Write the sub-boards
-	var pageNum = 1;
-	ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, selectedMsgSubIndex, pSelBoxUpperLeft.y+1,
-	pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1, pSelBoxLowerRight.x-1,
-	subNumFieldLen, true);
-	// Move the cursor to the inner upper-left corner of the selection box
-	var curpos = { // Current cursor position
-		x: pSelBoxUpperLeft.x+1,
-		y: pSelBoxUpperLeft.y+1
-	};
-	console.gotoxy(curpos);
-
-	// User input loop
-	var userInput = null;
-	var continueChoosingMsgSubBoard = true;
-	while (continueChoosingMsgSubBoard)
+	// Create & display the message group menu for the user to choose from
+	var msgGrpMenu = createCrossPostMsgGrpMenu(listStartCol, listStartRow, selBoxInnerWidth, selBoxInnerHeight, menuListColors);
+	var continueOn = true;
+	while (continueOn)
 	{
-		pageNum = calcPageNum(topMsgSubIndex, pSelBoxInnerHeight);
-
-		// Get a key from the user (upper-case) and take action based upon it.
-		userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
-		switch (userInput)
+		// Show the message group menu and get the chosen item from the user
+		var grpIdx = msgGrpMenu.GetVal();
+		retObj.lastUserInput = msgGrpMenu.lastUserInput;
+		if (msgGrpMenu.lastUserInput == "?")
 		{
-			case KEY_UP: // Move up one message sub-board in the list
-				if (selectedMsgSubIndex > 0)
-				{
-					// If the previous group index is on the previous page, then
-					// display the previous page.
-					var previousMsgSubIndex = selectedMsgSubIndex - 1;
-					if (previousMsgSubIndex < topMsgSubIndex)
-					{
-						// Adjust topMsgSubIndex and bottomMsgGrpIndex, and
-						// refresh the list on the screen.
-						topMsgSubIndex -= numItemsPerPage;
-						bottomMsgSubIndex = getBottommostSubBoardIndex(topMsgSubIndex, numItemsPerPage);
-						ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, previousMsgSubIndex,
-						pSelBoxUpperLeft.y+1, pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1,
-						pSelBoxLowerRight.x-1, subNumFieldLen, true);
-						// We'll want to move the cursor to the leftmost character
-						// of the selected line.
-						curpos.x = pSelBoxUpperLeft.x+1;
-						curpos.y = pSelBoxUpperLeft.y+pSelBoxInnerHeight;
-					}
-					else
-					{
-						// Display the current line un-highlighted
-						console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
-						writeMsgSubLine(pGrpIndex, selectedMsgSubIndex, pSelBoxInnerWidth,
-						subNumFieldLen, false);
-						// Display the previous line highlighted
-						curpos.x = pSelBoxUpperLeft.x+1;
-						--curpos.y;
-						console.gotoxy(curpos);
-						writeMsgSubLine(pGrpIndex, previousMsgSubIndex, pSelBoxInnerWidth,
-						subNumFieldLen, true);
-					}
-					selectedMsgSubIndex = previousMsgSubIndex;
-					console.gotoxy(curpos); // Move the cursor into place where it should be
-				}
-				break;
-			case KEY_DOWN: // Move down one message sub-board in the list
-				if (selectedMsgSubIndex < msg_area.grp_list[pGrpIndex].sub_list.length - 1)
-				{
-					// If the next sub-board index is on the next page, then display
-					// the next page.
-					var nextMsgSubIndex = selectedMsgSubIndex + 1;
-					if (nextMsgSubIndex > bottomMsgSubIndex)
-					{
-						// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-						// refresh the list on the screen.
-						topMsgSubIndex += numItemsPerPage;
-						bottomMsgSubIndex = getBottommostSubBoardIndex(topMsgSubIndex, numItemsPerPage);
-						ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, nextMsgSubIndex,
-						pSelBoxUpperLeft.y+1, pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1,
-						pSelBoxLowerRight.x-1, subNumFieldLen, true);
-						// We'll want to move the cursor to the leftmost character
-						// of the selected line.
-						curpos.x = pSelBoxUpperLeft.x+1;
-						curpos.y = pSelBoxUpperLeft.y+1;
-					}
-					else
-					{
-						// Display the current line un-highlighted
-						console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
-						writeMsgSubLine(pGrpIndex, selectedMsgSubIndex, pSelBoxInnerWidth,
-						subNumFieldLen, false);
-						// Display the next line highlighted
-						curpos.x = pSelBoxUpperLeft.x+1;
-						++curpos.y;
-						console.gotoxy(curpos);
-						writeMsgSubLine(pGrpIndex, nextMsgSubIndex, pSelBoxInnerWidth,
-						subNumFieldLen, true);
-					}
-					selectedMsgSubIndex = nextMsgSubIndex;
-					console.gotoxy(curpos); // Move the cursor into place where it should be
-				}
-				break;
-			case KEY_HOME: // Go to the top message sub-board on the screen
-				if (selectedMsgSubIndex > topMsgSubIndex)
-				{
-					// Display the current line un-highlighted, adjust
-					// selectedMsgSubIndex, then display the new line
-					// highlighted.
-					console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
-					writeMsgSubLine(pGrpIndex, selectedMsgSubIndex, pSelBoxInnerWidth,
-					subNumFieldLen, false);
-					selectedMsgSubIndex = topMsgSubIndex;
-					curpos = { x: pSelBoxUpperLeft.x+1, y: pSelBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-					writeMsgSubLine(pGrpIndex, selectedMsgSubIndex, pSelBoxInnerWidth,
-					subNumFieldLen, true);
-					console.gotoxy(curpos);
-				}
-				break;
-			case KEY_END: // Go to the bottom message sub-board on the screen
-				if (selectedMsgSubIndex < bottomMsgSubIndex)
-				{
-					// Display the current line un-highlighted, adjust
-					// selectedGrpIndex, then display the new line
-					// highlighted.
-					console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
-					writeMsgSubLine(pGrpIndex, selectedMsgSubIndex, pSelBoxInnerWidth,
-					subNumFieldLen, false);
-					selectedMsgSubIndex = bottomMsgSubIndex;
-					curpos.x = pSelBoxUpperLeft.x + 1;
-					curpos.y = pSelBoxUpperLeft.y + (bottomMsgSubIndex-topMsgSubIndex+1);
-					console.gotoxy(curpos);
-					writeMsgSubLine(pGrpIndex, selectedMsgSubIndex, pSelBoxInnerWidth,
-					subNumFieldLen, true);
-					console.gotoxy(curpos);
-				}
-				break;
-			case KEY_PAGE_DOWN: // Go to the next page
-				var nextPageTopIndex = topMsgSubIndex + numItemsPerPage;
-				if (nextPageTopIndex < msg_area.grp_list[pGrpIndex].sub_list.length)
-				{
-					// Adjust the top and bottom indexes, and refresh the list on the
-					// screen.
-					topMsgSubIndex = nextPageTopIndex;
-					pageNum = calcPageNum(topMsgSubIndex, numItemsPerPage);
-					bottomMsgSubIndex = getBottommostSubBoardIndex(topMsgSubIndex, numItemsPerPage);
-					selectedMsgSubIndex = topMsgSubIndex;
-					ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, selectedMsgSubIndex,
-					pSelBoxUpperLeft.y+1, pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1,
-					pSelBoxLowerRight.x-1, subNumFieldLen, true);
-					// Put the cursor at the beginning of the topmost row of message groups
-					curpos = { x: pSelBoxUpperLeft.x+1, y: pSelBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-				}
-				break;
-			case KEY_PAGE_UP: // Go to the previous page
-				var prevPageTopIndex = topMsgSubIndex - numItemsPerPage;
-				if (prevPageTopIndex >= 0)
-				{
-					// Adjust the top and bottom indexes, and refresh the list on the
-					// screen.
-					topMsgSubIndex = prevPageTopIndex;
-					pageNum = calcPageNum(topMsgSubIndex, numItemsPerPage);
-					bottomMsgSubIndex = getBottommostSubBoardIndex(topMsgSubIndex, numItemsPerPage);
-					selectedMsgSubIndex = topMsgSubIndex;
-					ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, selectedMsgSubIndex,
-					pSelBoxUpperLeft.y+1, pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1,
-					pSelBoxLowerRight.x-1, subNumFieldLen, true);
-					// Put the cursor at the beginning of the topmost row of message groups
-					curpos = { x: pSelBoxUpperLeft.x+1, y: pSelBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-				}
-				break;
-			case 'F': // Go to the first page
-				if (topMsgSubIndex > 0)
-				{
-					topMsgSubIndex = 0;
-					pageNum = calcPageNum(topMsgSubIndex, numItemsPerPage);
-					bottomMsgSubIndex = getBottommostSubBoardIndex(topMsgSubIndex, numItemsPerPage);
-					selectedMsgSubIndex = 0;
-					ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, selectedMsgSubIndex,
-					pSelBoxUpperLeft.y+1, pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1,
-					pSelBoxLowerRight.x-1, subNumFieldLen, true);
-					// Put the cursor at the beginning of the topmost row of message groups
-					curpos = { x: pSelBoxUpperLeft.x+1, y: pSelBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-				}
-				break;
-			case 'L': // Go to the last page
-				if (topMsgSubIndex < topIndexForLastPage)
-				{
-					topMsgSubIndex = topIndexForLastPage;
-					pageNum = calcPageNum(topMsgSubIndex, numItemsPerPage);
-					bottomMsgSubIndex = getBottommostSubBoardIndex(topMsgSubIndex, numItemsPerPage);
-					selectedMsgSubIndex = topIndexForLastPage;
-					ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, selectedMsgSubIndex,
-					pSelBoxUpperLeft.y+1, pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1,
-					pSelBoxLowerRight.x-1, subNumFieldLen, true);
-					// Put the cursor at the beginning of the topmost row of message groups
-					curpos = { x: pSelBoxUpperLeft.x+1, y: pSelBoxUpperLeft.y+1 };
-					console.gotoxy(curpos);
-				}
-				break;
-			case CTRL_C:  // Quit (Ctrl-C is the cross-post hotkey)
-			case "Q":     // Quit
-			case KEY_ESC: // Quit
-				continueChoosingMsgSubBoard = false;
-				break;
-			case KEY_ENTER: // Select the currently-highlighted message sub-board
-				// If the sub-board code is toggled on, then toggle it off, and vice-versa.
-				var msgSubCode = msg_area.grp_list[pGrpIndex].sub_list[selectedMsgSubIndex].code;
-				if (gCrossPostMsgSubs.subCodeExists(msgSubCode))
-				{
-					// Remove it from gCrossPostMsgSubs and refresh the line on the screen
-					gCrossPostMsgSubs.remove(msgSubCode);
-					console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
-					// Write a blank space using highlight colors
-					console.print(gConfigSettings.genColors.crossPostChkHighlight + " ");
-					console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
-				}
-				else
-				{
-					// If the user is allowed to post in the selected sub, then add it
-					// to gCrossPostMsgSubs and refresh the line on the screen;
-					// otherwise, show an error message.
-					if (msg_area.sub[msgSubCode].can_post)
-					{
-						gCrossPostMsgSubs.add(msgSubCode);
-						console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
-						// Write a checkmark using highlight colors
-						console.print(gConfigSettings.genColors.crossPostChkHighlight + CHECK_CHAR);
-						console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
-					}
-					else
-					{
-						// Go to the bottom row of the selection box and display an error that
-						// the user can't post in the selected sub-board and pause for a moment.
-						writeCantPostErrMsg(pSelBoxUpperLeft.x, pSelBoxLowerRight.y, selectedMsgSubIndex+1,
-						pSelBoxWidth, pSelBoxInnerWidth, cantPostErrPauseMS, curpos);
-					}
-				}
-				break;
-			case '?': // Display cross-post help
-				displayCrossPostHelp(pSelBoxUpperLeft, pSelBoxLowerRight);
-				console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1);
-				console.pause();
-				ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, selectedMsgSubIndex,
-				pSelBoxUpperLeft.y+1, pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1,
-				pSelBoxLowerRight.x-1, subNumFieldLen, true);
-				console.gotoxy(curpos);
-				break;
-			default:
-				// If the user entered a numeric digit, then treat it as
-				// the start of the message sub-board number.
-				if (userInput.match(/[0-9]/))
-				{
-					var originalCurpos = curpos;
-					// Put the user's input back in the input buffer to
-					// be used for getting the rest of the message number.
-					console.ungetstr(userInput);
-					// We want to write the prompt text only if the first digit entered
-					// by the user is an ambiguous message sub-board number (i.e., if
-					// the first digit is 2 and there's a message group # 2 and 20).
-					var writePromptText = (msg_area.grp_list[pGrpIndex].sub_list.length >= +userInput * 10);
-					if (writePromptText)
-					{
-						// Move the cursor to the bottom border of the selection box and
-						// prompt the user for the message number.
-						console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y);
-						printf("ncToggle sub-board #:%" + +(pSelBoxInnerWidth-19) + "s", "");
-						console.gotoxy(pSelBoxUpperLeft.x+21, pSelBoxLowerRight.y);
-						console.print("h");
-					}
-					else
-					console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y);
-					userInput = console.getnum(msg_area.grp_list[pGrpIndex].sub_list.length);
-					var chosenMsgSubIndex = userInput - 1;
-
-					// Re-draw the bottom border of the selection box
-					if (writePromptText)
-					{
-						drawInitialCrossPostSelBoxBottomBorder({ x: pSelBoxUpperLeft.x, y: pSelBoxLowerRight.y },
-						pSelBoxWidth, gConfigSettings.genColors.listBoxBorder,
-						true);
-					}
-					else
-					{
-						console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y);
-						console.print(gConfigSettings.genColors.listBoxBorder + RIGHT_T_SINGLE);
-					}
-
-					// If the user made a selection, then toggle it on/off.
-					if (userInput > 0)
-					{
-						var msgSubCode = msg_area.grp_list[pGrpIndex].sub_list[chosenMsgSubIndex].code;
-						if (gCrossPostMsgSubs.subCodeExists(msgSubCode))
-						{
-							// Remove it from gCrossPostMsgSubs and refresh the line on the screen
-							gCrossPostMsgSubs.remove(msgSubCode);
-							if ((chosenMsgSubIndex >= topMsgSubIndex) && (chosenMsgSubIndex <= bottomMsgSubIndex))
-							{
-								var screenRow = pSelBoxUpperLeft.y + (chosenMsgSubIndex - topMsgSubIndex + 1);
-								console.gotoxy(pSelBoxUpperLeft.x+1, screenRow);
-								// Write a blank space
-								var color = (chosenMsgSubIndex == selectedMsgSubIndex ?
-								gConfigSettings.genColors.crossPostChkHighlight :
-								gConfigSettings.genColors.crossPostChk);
-								console.print(color + " ");
-							}
-						}
-						else
-						{
-							// If the user is allowed to post in the selected sub, then add it
-							// to gCrossPostMsgSubs and refresh the line on the screen;
-							// otherwise, show an error message.
-							if (msg_area.sub[msgSubCode].can_post)
-							{
-								gCrossPostMsgSubs.add(msgSubCode);
-								if ((chosenMsgSubIndex >= topMsgSubIndex) && (chosenMsgSubIndex <= bottomMsgSubIndex))
-								{
-									var screenRow = pSelBoxUpperLeft.y + (chosenMsgSubIndex - topMsgSubIndex + 1);
-									console.gotoxy(pSelBoxUpperLeft.x+1, screenRow);
-									// Write a checkmark
-									var color = (chosenMsgSubIndex == selectedMsgSubIndex ?
-									gConfigSettings.genColors.crossPostChkHighlight :
-									gConfigSettings.genColors.crossPostChk);
-									console.print(color + CHECK_CHAR);
-								}
-							}
-							else
-							{
-								// Go to the bottom row of the selection box and display an error that
-								// the user can't post in the selected sub-board and pause for a moment.
-								writeCantPostErrMsg(pSelBoxUpperLeft.x, pSelBoxLowerRight.y, chosenMsgSubIndex+1,
-								pSelBoxWidth, pSelBoxInnerWidth, cantPostErrPauseMS, curpos);
-							}
-						}
-					}
-
-					console.gotoxy(originalCurpos);
-				}
-				break;
+			displayCrossPostHelp(pSelBoxUpperLeft, pSelBoxLowerRight);
+			console.gotoxy(listStartCol, listStartRow);
+			consolePauseWithoutText();
 		}
+		else if (msgGrpMenu.lastUserInput == "Q" || msgGrpMenu.lastUserInput == CTRL_C)
+		{
+			continueOn = false;
+		}
+		else if (typeof(grpIdx) == "number")
+		{
+			// Get an object of selected sub-board indexes that we can pass to
+			// the sub-board menu.
+			var selectedItemIndexes = {};
+			for (var subIdxStr in msg_area.grp_list[grpIdx].sub_list)
+			{
+				var subIdx = +subIdxStr;
+				if (gCrossPostMsgSubs.subCodeExists(msg_area.grp_list[grpIdx].sub_list[subIdx].code))
+					selectedItemIndexes[subIdx] = true;
+			}
+
+			// Create the sub-board menu and let the user make a selection.
+			var subBoardMenu = createCrossPostSubBoardMenu(grpIdx, listStartCol, listStartRow, selBoxInnerWidth, selBoxInnerHeight, menuListColors);
+			// Get the selection of sub-boards from the user
+			var selectedSubBoards = subBoardMenu.GetVal(true, selectedItemIndexes);
+			retObj.lastUserInput = subBoardMenu.lastUserInput;
+			if (subBoardMenu.lastUserInput == "?")
+			{
+				displayCrossPostHelp(pSelBoxUpperLeft, pSelBoxLowerRight);
+				console.gotoxy(listStartCol, listStartRow);
+				consolePauseWithoutText();
+			}
+			else if (subBoardMenu.lastUserInput == "Q" || subBoardMenu.lastUserInput == CTRL_C)
+			{
+				// Do nothing
+			}
+			// If the user selected some sub-boards, then add them to gCrossPostMsgSubs
+			if (selectedSubBoards != null && selectedSubBoards.length > 0)
+			{
+				// We want to ensure we only use the sub-boards the user selected.  In case the
+				// user has gone into the same menu multiple times and selected and un-selected
+				// some, this loop goes through all sub-boards in the current message group and
+				// removes them from the selection, then adds the ones the user just selected.
+				for (var subIdx in msg_area.grp_list[grpIdx].sub_list)
+					gCrossPostMsgSubs.remove(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
+				for (var idx in selectedSubBoards)
+					gCrossPostMsgSubs.add(selectedSubBoards[idx]);
+			}
+		}
+		else
+			continueOn = false;
 	}
 
 	return retObj;
 }
-// Displays a screenful of message groups, for the cross-posting
-// interface.
+// Creates the DDLightbarMenu for use with choosing a message group for
+// cross-posting.  Does not use borders, so that the border display can be
+// customized by the caller.
 //
 // Parameters:
-//  pGrpIndex: The message group index
-//  pStartIndex: The message group index to start at (0-based)
-//  pSelectedIndex: The index of the currently-selected message sub
-//  pStartScreenRow: The row on the screen to start at (1-based)
-//  pStartScreenCol: The column on the screen to start at (1-based)
-//  pEndScreenRow: The row on the screen to end at (1-based)
-//  pEndScreenCol: The column on the screen to end at (1-based)
-//  pSubNumFieldLen: The length to use for the sub-board number field
-//  pBlankToEndRow: Boolean - Whether or not to write blank lines to the end
-//                  screen row if there aren't enough message groups to fill
-//                  the screen.
-function ListScreenfulOfMsgSubs(pGrpIndex, pStartIndex, pSelectedIndex, pStartScreenRow,
-                                 pStartScreenCol, pEndScreenRow, pEndScreenCol,
-                                 pSubNumFieldLen, pBlankToEndRow)
+//  pListStartCol: The column on the screen where the list thould start
+//  pListStartRow: The row on the screen where the list should start
+//       pListStartRow should be this.areaChangeHdrLines.length + 2
+//  pListWidth: The width of the list on the screen (without borders; effectively the item text width)
+//  pListHeight: The width of the list on the screen (without borders)
+//  pColorObj: Optional - An object containing color/attribute codes for the various parts of
+//             the message group items in the menu.  Needs the following properties:
+//             areaMark: For the selected group
+//             areaNum: For the group number
+//             desc: For the group description
+//             areaNumHighlight: For the group number for the selected item
+//             descHighlight: For the group descripton for the selected item
+//             bkgHighlight: The background color/attribute for the selected item
+//
+// Return value: A DDLightbarMenu object for choosing a message group
+function createCrossPostMsgGrpMenu(pListStartCol, pListStartRow, pListWidth, pListHeight, pColorObj)
 {
-   // If the parameters are invalid, then just return.
-   if ((typeof(pGrpIndex) != "number") || (typeof(pStartIndex) != "number") ||
-       (typeof(pSelectedIndex) != "number") || (typeof(pStartScreenRow) != "number") ||
-       (typeof(pStartScreenCol) != "number") || (typeof(pEndScreenRow) != "number") ||
-       (typeof(pEndScreenCol) != "number"))
-   {
-      return;
-   }
-   if ((pGrpIndex < 0) || (pGrpIndex >= msg_area.grp_list.length))
-      return;
-   if ((pStartIndex < 0) || (pStartIndex >= msg_area.grp_list[pGrpIndex].sub_list.length))
-      return;
-   if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
-      return;
-   if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
-      return;
-   if ((pStartScreenCol < 1) || (pStartScreenCol > console.screen_columns))
-      return;
-   if ((pEndScreenCol < 1) || (pEndScreenCol > console.screen_columns))
-      return;
+	var numGrpsLength = msg_area.grp_list.length.toString().length;
 
-   // If pStartScreenRow is greater than pEndScreenRow, then swap them.
-   // Do the same with pStartScreenCol and pEndScreenCol.
-   if (pStartScreenRow > pEndScreenRow)
-   {
-      var temp = pStartScreenRow;
-      pStartScreenRow = pEndScreenRow;
-      pEndScreenRow = temp;
-   }
-   if (pStartScreenCol > pEndScreenCol)
-   {
-      var temp = pStartScreenCol;
-      pStartScreenCol = pEndScreenCol;
-      pEndScreenCol = temp;
-   }
+	var msgGrpMenu = new DDLightbarMenu(pListStartCol, pListStartRow, pListWidth, pListHeight);
+	msgGrpMenu.scrollbarEnabled = true;
+	msgGrpMenu.borderEnabled = false;
+	msgGrpMenu.multiSelect = false;
+	msgGrpMenu.ampersandHotkeysInItems = false;
+	msgGrpMenu.wrapNavigation = false;
+	// Add additional keypresses for quitting the menu's input loop so we can
+	// respond to these keys
+	// ? = Help
+	// Q: Exit
+	// Ctrl-C: Exit
+	msgGrpMenu.AddAdditionalQuitKeys("?Qq" + CTRL_C);
 
-   // Calculate the ending index to use for the message groups array.
-   var endIndex = pStartIndex + (pEndScreenRow-pStartScreenRow);
-   if (endIndex >= msg_area.grp_list[pGrpIndex].sub_list.length)
-      endIndex = msg_area.grp_list[pGrpIndex].sub_list.length - 1;
-   var onePastEndIndex = endIndex + 1;
+	// Description length (for the color indexes & printf string)
+	var descLen = pListWidth - numGrpsLength - 2; // -2 for the possible * and the space
+	// If we actually need a scrollbar, then decrease descLen by 1 more
+	if (msg_area.grp_list.length > pListHeight)
+		--descLen;
+	// Colors
+	if (pColorObj != null)
+	{
+		// Start & end indexes for the various items in each mssage group list row
+		// Selected mark, group#, description, # sub-boards
+		var msgGrpListIdxes = {
+			markCharStart: 0,
+			markCharEnd: 1,
+			grpNumStart: 1,
+			grpNumEnd: 2 + (+numGrpsLength)
+		};
+		msgGrpListIdxes.descStart = msgGrpListIdxes.grpNumEnd;
+		msgGrpListIdxes.descEnd = msgGrpListIdxes.descStart + descLen;
 
-   // Go to the specified screen row, and display the message group information.
-   var textWidth = pEndScreenCol - pStartScreenCol + 1;
-   var row = pStartScreenRow;
-   var msgSubIndex = pStartIndex;
-   for (; msgSubIndex < onePastEndIndex; ++msgSubIndex)
-   {
-      console.gotoxy(pStartScreenCol, row++);
-      // The 5th parameter to writeMsgSubLine() is whether or not to
-      // write the message sub information with highlight colors.
-      writeMsgSubLine(pGrpIndex, msgSubIndex, textWidth, pSubNumFieldLen,
-                      (msgSubIndex == pSelectedIndex));
-   }
+		msgGrpMenu.SetColors({
+			itemColor: [{start: msgGrpListIdxes.markCharStart, end: msgGrpListIdxes.markCharEnd, attrs: pColorObj.areaMark},
+						{start: msgGrpListIdxes.grpNumStart, end: msgGrpListIdxes.grpNumEnd, attrs: pColorObj.areaNum},
+						{start: msgGrpListIdxes.descStart, end: msgGrpListIdxes.descEnd, attrs: pColorObj.desc}],
+			selectedItemColor: [{start: msgGrpListIdxes.markCharStart, end: msgGrpListIdxes.markCharEnd, attrs: pColorObj.areaMark + pColorObj.bkgHighlight},
+								{start: msgGrpListIdxes.grpNumStart, end: msgGrpListIdxes.grpNumEnd, attrs: pColorObj.areaNumHighlight + pColorObj.bkgHighlight},
+								{start: msgGrpListIdxes.descStart, end: msgGrpListIdxes.descEnd, attrs: pColorObj.descHighlight + pColorObj.bkgHighlight}]
+		});
+	}
 
-   // If pBlankToEndRow is true and we're not at the end row yet, then
-   // write blank lines to the end row.
-   if (pBlankToEndRow)
-   {
-      var screenRow = pStartScreenRow + (endIndex - pStartIndex) + 1;
-      if (screenRow <= pEndScreenRow)
-      {
-         console.print("n");
-         var areaWidth = pEndScreenCol - pStartScreenCol + 1;
-         var formatStr = "%-" + areaWidth + "s";
-         for (; screenRow <= pEndScreenRow; ++screenRow)
-         {
-            console.gotoxy(pStartScreenCol, screenRow)
-            printf(formatStr, "");
-         }
-      }
-   }
+	// Generate a printf string for the message group items
+	// *[# ] Description
+	var printfStr = "%s%" + +numGrpsLength + "d %-" + +descLen + "s";
+
+	// Change the menu's NumItems() and GetItem() function to reference
+	// the message list in this object rather than add the menu items
+	// to the menu
+	msgGrpMenu.NumItems = function() {
+		return msg_area.grp_list.length;
+	};
+	msgGrpMenu.GetItem = function(pGrpIndex) {
+		var menuItemObj = this.MakeItemWithRetval(-1);
+		if ((pGrpIndex >= 0) && (pGrpIndex < msg_area.grp_list.length))
+		{
+			var markColText = (((typeof(bbs.curgrp) == "number") && (pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index)) ? "*" : " ");
+			var grpDesc = msg_area.grp_list[pGrpIndex].description.substr(0, descLen);
+			menuItemObj.text = format(printfStr, markColText, +(pGrpIndex+1), grpDesc);
+			menuItemObj.text = strip_ctrl(menuItemObj.text);
+			menuItemObj.retval = pGrpIndex;
+		}
+
+		return menuItemObj;
+	};
+
+	// Set the currently selected item to the current group
+	msgGrpMenu.SetSelectedItemIdx(msg_area.sub[bbs.cursub_code].grp_index);
+
+	return msgGrpMenu;
 }
-// Writes a message sub-board information line (for choosing a message sub-board
-// for cross-posing).
+// Creates the DDLightbarMenu for use with choosing a sub-board for
+// cross-posting
 //
 // Parameters:
-//  pGrpIndex: The index of the message group (assumed to be valid)
-//  pSubIndex: The index of the message sub-board within the group (assumed to be valid)
-//  pSubCode: The sub-board code (assumed to be valid)
-//  pTextWidth: The maximum text width
-//  pSubNumFieldLen: The length to use for the sub-board number field
-//  pHighlight: Boolean - Whether or not to write the line highlighted.
-function writeMsgSubLine(pGrpIndex, pSubIndex, pTextWidth, pSubNumFieldLen, pHighlight)
+//  pGrpIdx: The index of the message group
+//  pListStartCol: The column on the screen where the list thould start
+//  pListStartRow: The row on the screen where the list should start
+//     pListStartRow should be this.areaChangeHdrLines.length + 2
+//  pListWidth: The width of the list on the screen (without borders; effectively the item text width)
+//  pListHeight: The width of the list on the screen (without borders)
+//  pColorObj: Optional - An object containing color/attribute codes for the various parts of
+//             the message sub-board items in the menu.  Needs the following properties:
+//             areaMark: For the selected sub-board
+//             areaNum: For the sub-board number
+//             desc: For the sub-board description
+//             areaNumHighlight: For the sub-board number for the selected item
+//             descHighlight: For the sub-board descripton for the selected item
+//             bkgHighlight: The background color/attribute for the selected item
+//
+// Return value: A DDLightbarMenu object for choosing a sub-board within
+// the given message group
+function createCrossPostSubBoardMenu(pGrpIdx, pListStartCol, pListStartRow, pListWidth, pListHeight, pColorObj)
 {
-   if ((typeof(pGrpIndex) != "number") || (typeof(pSubIndex) != "number") ||
-       (typeof(pTextWidth) != "number"))
-   {
-      return;
-   }
+	var numSubsLength = msg_area.grp_list[pGrpIdx].sub_list.length.toString().length;
 
-   // Put together the printf format string
-   var msgSubDescLen = pTextWidth - pSubNumFieldLen - 2;
-   var printfStr = "n";
-   if (pHighlight)
-   {
-     printfStr += gConfigSettings.genColors.crossPostChkHighlight + "%1s"
-               + gConfigSettings.genColors.crossPostMsgAreaNumHighlight + "%" + pSubNumFieldLen + "d "
-               + gConfigSettings.genColors.crossPostMsgAreaDescHighlight + "%-" + msgSubDescLen + "s";
-   }
-   else
-   {
-     printfStr += gConfigSettings.genColors.crossPostChk + "%1s"
-               + gConfigSettings.genColors.crossPostMsgAreaNum + "%" + pSubNumFieldLen + "d "
-               + gConfigSettings.genColors.crossPostMsgAreaDesc + "%-" + msgSubDescLen + "s";
-   }
+	var subBoardMenu = new DDLightbarMenu(pListStartCol, pListStartRow, pListWidth, pListHeight);
+	subBoardMenu.scrollbarEnabled = true;
+	subBoardMenu.borderEnabled = false;
+	subBoardMenu.multiSelect = true;
+	subBoardMenu.ampersandHotkeysInItems = false;
+	subBoardMenu.wrapNavigation = false;
+	// Add additional keypresses for quitting the menu's input loop so we can
+	// respond to these keys
+	// ? = Help
+	subBoardMenu.AddAdditionalQuitKeys("?");
+	// Add q, Q, and Ctrl-C as keys to quit out and select the sub-board(s) (instead of quit & abort)
+	subBoardMenu.AddAdditionalSelectItemKeys("qQ" + CTRL_C);
 
-   // Write the message group information line
-   var subCode = msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code;
-   printf(printfStr, (gCrossPostMsgSubs.subCodeExists(subCode) ? CHECK_CHAR : " "), +(pSubIndex+1),
-          msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, msgSubDescLen));
+	// Description length (for the color indexes & printf string)
+	var descLen = pListWidth - numSubsLength - 2; // -2 for the possible * and the space
+	// If we actually need a scrollbar, then decrease descLen by 1 more
+	if (msg_area.grp_list.length > pListHeight)
+		--descLen;
+	// Colors
+	if (pColorObj != null)
+	{
+		// Start & end indexes for the various items in each mssage group list row
+		// Selected mark, group#, description, # sub-boards
+		var subBoardListIdxes = {
+			markCharStart: 0,
+			markCharEnd: 1,
+			subNumStart: 1,
+			subNumEnd: 2 + numSubsLength
+		};
+		subBoardListIdxes.descStart = subBoardListIdxes.subNumEnd;
+		subBoardListIdxes.descEnd = subBoardListIdxes.descStart + descLen;
+
+		subBoardMenu.SetColors({
+			itemColor: [{start: subBoardListIdxes.markCharStart, end: subBoardListIdxes.markCharEnd, attrs: pColorObj.areaMark},
+						{start: subBoardListIdxes.subNumStart, end: subBoardListIdxes.subNumEnd, attrs: pColorObj.areaNum},
+						{start: subBoardListIdxes.descStart, end: subBoardListIdxes.descEnd, attrs: pColorObj.desc}],
+			selectedItemColor: [{start: subBoardListIdxes.markCharStart, end: subBoardListIdxes.markCharEnd, attrs: pColorObj.areaMark + pColorObj.bkgHighlight},
+								{start: subBoardListIdxes.subNumStart, end: subBoardListIdxes.subNumEnd, attrs: pColorObj.areaNumHighlight + pColorObj.bkgHighlight},
+								{start: subBoardListIdxes.descStart, end: subBoardListIdxes.descEnd, attrs: pColorObj.descHighlight + pColorObj.bkgHighlight}]
+		});
+	}
+
+	// Generate a printf string for the sub-boards
+	// *[# ] Description
+	var printfStr = "%s%" + +numSubsLength + "d %-" + +descLen + "s";
+
+	// Change the menu's NumItems() and GetItem() function to reference
+	// the message list in this object rather than add the menu items
+	// to the menu
+	subBoardMenu.grpIdx = pGrpIdx;
+	subBoardMenu.NumItems = function() {
+		return msg_area.grp_list[this.grpIdx].sub_list.length;
+	};
+	subBoardMenu.GetItem = function(pSubIdx) {
+		var menuItemObj = this.MakeItemWithRetval(-1);
+		if ((pSubIdx >= 0) && (pSubIdx < msg_area.grp_list[this.grpIdx].sub_list.length))
+		{
+			var showSubBoardMark = false;
+			if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
+				showSubBoardMark = ((this.grpIdx == msg_area.sub[bbs.cursub_code].grp_index) && (pSubIdx == msg_area.sub[bbs.cursub_code].index));
+			var markColText = showSubBoardMark ? "*" : " ";
+			var subDesc = msg_area.grp_list[this.grpIdx].sub_list[pSubIdx].description.substr(0, descLen);
+			menuItemObj.text = format(printfStr, markColText, +(pSubIdx+1), subDesc);
+			//menuItemObj.retval = pSubIdx;
+			// Have the selected item be the sub-board code
+			menuItemObj.retval = msg_area.grp_list[this.grpIdx].sub_list[pSubIdx].code;
+		}
+
+		return menuItemObj;
+	};
+
+	// Set the currently selected item.  If the current sub-board is in this list,
+	// then set the selected item to that; otherwise, the selected item should be
+	// the first sub-board.
+	if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
+		subBoardMenu.SetSelectedItemIdx(msg_area.sub[bbs.cursub_code].index);
+	else
+		subBoardMenu.SetSelectedItemIdx(0); // This should also set its topItemIdx to 0
+
+	// Sub-board selection validation function
+	subBoardMenu.ValidateSelectItem = function(pSubCode) {
+		if (msg_area.sub[pSubCode].can_post)
+			return true;
+		else
+		{
+			// Go to the bottom row of the selection box and display an error that
+			// the user can't post in the selected sub-board and pause for a moment.
+			writeCantPostErrMsg(pListStartCol-1, pListStartRow+pListHeight, subBoardMenu.selectedItemIdx+1,
+								pListWidth+2, pListWidth, 2000/*cantPostErrPauseMS*/, console.getxy());
+		}
+	};
+
+	return subBoardMenu;
+}
+// This function writes the error message that the user can't post in a
+// message sub-board, pauses, then refreshes the bottom border of the
+// selection box.
+//
+// Parameters:
+//  pX: The column of the lower-right corner of the selection box
+//  pY: The row of the lower-right corner of the selection box
+//  pSubBoardNum: The number of the sub-board (1-based)
+//  pSelBoxWidth: The width of the selection box
+//  pSelBoxInnerWidth: The width of the selection box inside the left & right borders
+//  pPauseMS: The number of millisecons to pause after displaying the error message
+//  pCurpos: The position of the cursor before calling this function
+function writeCantPostErrMsg(pX, pY, pSubBoardNum, pSelBoxWidth, pSelBoxInnerWidth, pPauseMS, pCurpos)
+{
+	var cantPostErrMsg = "You're not allowed to post in area " + pSubBoardNum + ".";
+	console.gotoxy(pX+1, pY);
+	printf("\1n\1h\1y%-" + pSelBoxInnerWidth + "s", cantPostErrMsg);
+	console.gotoxy(pX+cantPostErrMsg.length+1, pY);
+	mswait(pPauseMS);
+	// Refresh the bottom border of the selection box
+	drawInitialCrossPostSelBoxBottomBorder({ x: pX, y: pY }, pSelBoxWidth,
+	gConfigSettings.genColors.listBoxBorder, true);
+	console.gotoxy(pCurpos);
 }
 
 // Writes a line in the edit lines array
@@ -6656,10 +5720,7 @@ function doTaglineSelection()
 		}
 		// First page
 		else if (lastUserInputUpper == "F")
-		{
-			taglineMenu.selectedItemIdx = 0;
-			taglineMenu.topItemIdx = 0;
-		}
+			tagLineMenu.SetSelectedItemIdx(0); // This should also set its topItemIdx to 0
 		// Last page
 		else if (lastUserInputUpper == "L")
 		{
