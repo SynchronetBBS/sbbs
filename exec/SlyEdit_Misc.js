@@ -1,4 +1,4 @@
-// $Id: SlyEdit_Misc.js,v 1.59 2020/03/04 20:59:50 nightfox Exp $
+// $Id: SlyEdit_Misc.js,v 1.51 2019/06/06 03:50:47 nightfox Exp $
 
 /* This file declares some general helper functions and variables
  * that are used by SlyEdit.
@@ -42,6 +42,7 @@
  *                              the user can post in a sub-board by checking the can_post
  *                              property of the sub-board rather than checking the
  *                              ARS.  The can_post property covers more cases.
+ * 2021-12-09 Eric Oulashin     Added consolePauseWithoutText()
  */
  
 if (typeof(require) === "function")
@@ -4399,6 +4400,15 @@ function consolePauseWithESCChars(pCfgObj)
 		pausePromptText = "\1n\1c[ Press a key ] ";
 	console.print("\1n" + pausePromptText);
 	getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO, pCfgObj);
+}
+
+// Sets the "pause" text to an empty string, does a console.pause(), then restores the pause text.
+function consolePauseWithoutText()
+{
+	var originalPausePromptText = bbs.text(Pause); // 563: The "Press a key" text in text.dat
+	bbs.replace_text(Pause, "");
+	console.pause();
+	bbs.revert_text(Pause);
 }
 
 // Inputs a keypress from the user and handles some ESC-based
