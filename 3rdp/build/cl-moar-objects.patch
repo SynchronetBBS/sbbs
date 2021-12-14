@@ -1,0 +1,10 @@
+--- misc/config.h.latest	2021-12-14 17:00:07.622835000 -0500
++++ misc/config.h	2021-12-14 17:00:21.476740000 -0500
+@@ -14,6 +14,7 @@
+ #define USE_CERTLEVEL_STANDARD
+ #define PREFER_ECC
+ #define USE_SSH_CTR
++#define CONFIG_NUM_OBJECTS 16384
+ /****************************************************************************
+ *																			*
+ *						Custom Configuration Profiles						*
