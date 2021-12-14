@@ -578,7 +578,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(struct mouse_hotspot* spot)
 		spot->minx = column;
 	if(spot->maxx < 0)
 		spot->maxx = cols - 1;
-#ifdef _DEBUG
+#if 0 //def _DEBUG
 	char dbg[128];
 	lprintf(LOG_DEBUG, "Adding mouse hot spot %ld-%ld x %ld = '%s'"
 		,spot->minx, spot->maxx, spot->y, c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */true));
@@ -594,7 +594,7 @@ void sbbs_t::clear_hotspots(void)
 {
 	long spots = listCountNodes(&mouse_hotspots);
 	if(spots) {
-#ifdef _DEBUG
+#if 0 //def _DEBUG
 		lprintf(LOG_DEBUG, "Clearing %ld mouse hot spots", spots);
 #endif
 		listFreeNodes(&mouse_hotspots);
