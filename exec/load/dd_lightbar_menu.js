@@ -234,7 +234,7 @@ If you want to set the currently selected item before calling GetVal() to allow 
 you should call the SetSelectedItemIdx() function and pass the index to that.
 lbMenu.SetSelectedItemIdx(5);
 
-The property inputTimeoutMS sets the input timeout in milliseconds (0 for no timeout).
+The property inputTimeoutMS sets the input timeout in milliseconds (defaults to 300000).
 lbMenu.inputTimeoutMS = 300000; // 300,000 milliseconds (5 minutes)
 
 The property mouseEnabled can be used to enable mouse support.  By default it is false.
@@ -434,7 +434,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// (i.e. with ENTER; not for toggling with multi-select)
 	this.exitOnItemSelect = true;
 
-	this.inputTimeoutMS = 0; // Input timeout in ms.  Currently using 0 for no timeout.
+	this.inputTimeoutMS = 300000; // Input timeout in ms
 	this.mouseEnabled = false;
 
 	// Member functions
@@ -2626,6 +2626,8 @@ function getKeyWithESCChars(pGetKeyMode, pInputTimeoutMS)
 {
 	var getKeyMode = (typeof(pGetKeyMode) === "number" ? pGetKeyMode : K_NONE);
 	var inputTimeoutMS = (typeof(pInputTimeoutMS) === "number" ? pInputTimeoutMS : 300000);
+	if (inputTimeoutMS == 0)
+		inputTimeoutMS = 300000;
 	// Input a key from the user and take action based on the user's input.  If
 	// the user is a sysop, don't use an input timeout.
 	var userInput = "";
