@@ -1135,7 +1135,7 @@ function IRCClient_do_whois(wi) {
 		));
 	}
 	if (wi.local) {
-		if (wi.socket.ssl_server) {
+		if (wi.socket.ssl_session) {
 			this.numeric(671, format(
 				"%s :is using a secure connection.",
 				wi.nick
