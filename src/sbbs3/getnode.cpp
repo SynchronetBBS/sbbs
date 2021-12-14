@@ -665,8 +665,10 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			outchar('A');
 		if(node->misc&NODE_LOCK)
 			outchar('L');
-		if(node->misc&(i&(NODE_MSGW|NODE_NMSG)))
+		if(node->misc&(i&(NODE_MSGW)))
 			outchar('M');
+		if(node->misc&(i&(NODE_NMSG)))
+			outchar('N');
 		if(node->misc&(i&NODE_POFF))
 			outchar('P');
 		outchar(')'); 
@@ -683,8 +685,6 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			outchar('R');
 		if(node->misc&NODE_UDAT)
 			outchar('U');
-		if(node->status==NODE_QUIET)
-			outchar('Q');
 		if(node->misc&NODE_EVENT)
 			outchar('E');
 		if(node->misc&NODE_DOWN)
@@ -693,6 +693,8 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			outchar('C');
 		if(node->misc&NODE_FCHAT)
 			outchar('F');
+		if(node->status==NODE_QUIET)
+			outchar('Q');
 		outchar(']'); 
 	}
 	if(node->errors && SYSOP) {
