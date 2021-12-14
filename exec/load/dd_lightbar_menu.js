@@ -234,6 +234,13 @@ If you want to set the currently selected item before calling GetVal() to allow 
 you should call the SetSelectedItemIdx() function and pass the index to that.
 lbMenu.SetSelectedItemIdx(5);
 
+The property inputTimeoutMS sets the input timeout in milliseconds (defaults to 300000).
+lbMenu.inputTimeoutMS = 300000; // 300,000 milliseconds (5 minutes)
+
+The property mouseEnabled can be used to enable mouse support.  By default it is false.
+When mouse support is enabled, there can be problems inputting the ESC key from the user.
+lbMenu.mouseEnabled = true;
+
 For selecting an item, it may be desirable to validate whether a user should be allowed
 to select the item.  DDLightbarMenu has a member function it calls, ValidateSelectItem(),
 to do just that.  It takes the selected item's return value and returns a boolean to signify
@@ -427,9 +434,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// (i.e. with ENTER; not for toggling with multi-select)
 	this.exitOnItemSelect = true;
 
-	// Things for mouse support
-	this.mouseTimeout = 0; // Timeout in ms.  Currently using 0 for no timeout.
-	this.mouseEnabled = false; // To pass to mouse_getkey
+	this.inputTimeoutMS = 300000; // Input timeout in ms
+	this.mouseEnabled = false;
 
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -1133,58 +1139,44 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 
 		// TODO: With mouse_getkey(), it seems you need to press ESC twice
 		// to get the ESC key and exit the menu
-		var mk = mouse_getkey(K_NOECHO|K_NOSPIN|K_NOCRLF, this.mouseTimeout > 1 ? this.mouseTimeout : undefined, this.mouseEnabled);
+		var inputMode = K_NOECHO|K_NOSPIN|K_NOCRLF;
+		var mk = null; // Will be used for mouse support
 		var mouseNoAction = false;
-		if (mk.mouse !== null)
+		if (this.mouseEnabled)
 		{
-			// See if the user clicked anywhere in the region where items are
-			// listed or the scrollbar
-			var clickRegion = this.GetMouseClickRegion();
-			// Button 0 is the left/main mouse button
-			if (mk.mouse.press && (mk.mouse.button == 0) && (mk.mouse.motion == 0) &&
-			    (mk.mouse.x >= clickRegion.left) && (mk.mouse.x <= clickRegion.right) &&
-			    (mk.mouse.y >= clickRegion.top) && (mk.mouse.y <= clickRegion.bottom))
+			mk = mouse_getkey(inputMode, this.inputTimeoutMS > 1 ? this.inputTimeoutMS : undefined, this.mouseEnabled);
+			if (mk.mouse !== null)
 			{
-				var isDoubleClick = ((this.lastMouseClickTime > -1) && (system.timer - this.lastMouseClickTime <= 0.4));
+				// See if the user clicked anywhere in the region where items are
+				// listed or the scrollbar
+				var clickRegion = this.GetMouseClickRegion();
+				// Button 0 is the left/main mouse button
+				if (mk.mouse.press && (mk.mouse.button == 0) && (mk.mouse.motion == 0) &&
+					(mk.mouse.x >= clickRegion.left) && (mk.mouse.x <= clickRegion.right) &&
+					(mk.mouse.y >= clickRegion.top) && (mk.mouse.y <= clickRegion.bottom))
+				{
+					var isDoubleClick = ((this.lastMouseClickTime > -1) && (system.timer - this.lastMouseClickTime <= 0.4));
 
-				// If the scrollbar is enabled, then see if the mouse click was
-				// in the scrollbar region.  If below the scrollbar bright blocks,
-				// then we'll want to do a PageDown.  If above the scrollbar bright
-				// blocks, then we'll want to do a PageUp.
-				var scrollbarX = this.pos.x + this.size.width - 1;
-				if (this.borderEnabled)
-					--scrollbarX;
-				if ((mk.mouse.x == scrollbarX) && this.scrollbarEnabled)
-				{
-					var scrollbarSolidBlockEndRow = this.scrollbarInfo.solidBlockLastStartRow + this.scrollbarInfo.numSolidScrollBlocks - 1;
-					if (mk.mouse.y < this.scrollbarInfo.solidBlockLastStartRow)
-						this.lastUserInput = KEY_PAGEUP;
-					else if (mk.mouse.y > scrollbarSolidBlockEndRow)
-						this.lastUserInput = KEY_PAGEDN;
-					else
+					// If the scrollbar is enabled, then see if the mouse click was
+					// in the scrollbar region.  If below the scrollbar bright blocks,
+					// then we'll want to do a PageDown.  If above the scrollbar bright
+					// blocks, then we'll want to do a PageUp.
+					var scrollbarX = this.pos.x + this.size.width - 1;
+					if (this.borderEnabled)
+						--scrollbarX;
+					if ((mk.mouse.x == scrollbarX) && this.scrollbarEnabled)
 					{
-						// Mouse click no-action
-						// TODO: Can we detect if they're holding the mouse down
-						// and scroll while the user holds the mouse & scrolls on
-						// the scrollbar?
-						this.lastUserInput = "";
-						mouseNoAction = true;
-						mouseInputOnly_continue = true;
-					}
-				}
-				else
-				{
-					// The user didn't click on the scrollbar or the scrollbar
-					// isn't enabled.
-					// For a double-click, if multi-select is enabled, set the
-					// last user input to a space to select/de-select the item.
-					if (isDoubleClick)
-					{
-						if (this.multiSelect)
-							this.lastUserInput = " ";
+						var scrollbarSolidBlockEndRow = this.scrollbarInfo.solidBlockLastStartRow + this.scrollbarInfo.numSolidScrollBlocks - 1;
+						if (mk.mouse.y < this.scrollbarInfo.solidBlockLastStartRow)
+							this.lastUserInput = KEY_PAGEUP;
+						else if (mk.mouse.y > scrollbarSolidBlockEndRow)
+							this.lastUserInput = KEY_PAGEDN;
 						else
 						{
-							// No mouse action
+							// Mouse click no-action
+							// TODO: Can we detect if they're holding the mouse down
+							// and scroll while the user holds the mouse & scrolls on
+							// the scrollbar?
 							this.lastUserInput = "";
 							mouseNoAction = true;
 							mouseInputOnly_continue = true;
@@ -1192,41 +1184,64 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					}
 					else
 					{
-						// Make the clicked-on item the currently highlighted
-						// item.  Only select the item if the index is valid.
-						var topItemY = (this.borderEnabled ? this.pos.y + 1 : this.pos.y);
-						var distFromTopY = mk.mouse.y - topItemY;
-						var itemIdx = this.topItemIdx + distFromTopY;
-						if ((itemIdx >= 0) && (itemIdx < this.NumItems()))
+						// The user didn't click on the scrollbar or the scrollbar
+						// isn't enabled.
+						// For a double-click, if multi-select is enabled, set the
+						// last user input to a space to select/de-select the item.
+						if (isDoubleClick)
 						{
-							this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-							this.selectedItemIdx = itemIdx;
-							this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+							if (this.multiSelect)
+								this.lastUserInput = " ";
+							else
+							{
+								// No mouse action
+								this.lastUserInput = "";
+								mouseNoAction = true;
+								mouseInputOnly_continue = true;
+							}
 						}
-						// Don't have the later code do anything
-						this.lastUserInput = "";
-						mouseNoAction = true;
-						mouseInputOnly_continue = true;
+						else
+						{
+							// Make the clicked-on item the currently highlighted
+							// item.  Only select the item if the index is valid.
+							var topItemY = (this.borderEnabled ? this.pos.y + 1 : this.pos.y);
+							var distFromTopY = mk.mouse.y - topItemY;
+							var itemIdx = this.topItemIdx + distFromTopY;
+							if ((itemIdx >= 0) && (itemIdx < this.NumItems()))
+							{
+								this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+								this.selectedItemIdx = itemIdx;
+								this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+							}
+							// Don't have the later code do anything
+							this.lastUserInput = "";
+							mouseNoAction = true;
+							mouseInputOnly_continue = true;
+						}
 					}
-				}
 
-				this.lastMouseClickTime = system.timer;
+					this.lastMouseClickTime = system.timer;
+				}
+				else
+				{
+					// The mouse click is outside the click region.  Set the appropriate
+					// variables for mouse no-action.
+					// TODO: Perhaps this may also need to be done in some places above
+					// where no action needs to be taken
+					this.lastUserInput = "";
+					mouseNoAction = true;
+					mouseInputOnly_continue = true;
+				}
 			}
 			else
 			{
-				// The mouse click is outside the click region.  Set the appropriate
-				// variables for mouse no-action.
-				// TODO: Perhaps this may also need to be done in some places above
-				// where no action needs to be taken
-				this.lastUserInput = "";
-				mouseNoAction = true;
-				mouseInputOnly_continue = true;
+				// mouse is null, so a keybaord key must have been pressed
+				this.lastUserInput = mk.key;
 			}
 		}
-		else
+		else // this.mouseEnabled is false
 		{
-			// mouse is null, so a keybaord key must have been pressed
-			this.lastUserInput = mk.key;
+			this.lastUserInput = getKeyWithESCChars(inputMode, this.inputTimeoutMS);
 		}
 
 		// If no further input processing needs to be done due to a mouse click
@@ -1240,8 +1255,14 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			// Only exit if there was not a no-action mouse click
 			// TODO: Is this logic good and clean?
 			var goAheadAndExit = true;
-			if (mk.mouse !== null)
+			if (mk !== null && mk.mouse !== null)
+			{
 				goAheadAndExit = !mouseNoAction; // Only really needed with an input timer?
+				// Temporary
+				console.print("\1n\r\nHere! - mouseNoAction: " + goAheadAndExit + ", goAheadAndExit: " + goAheadAndExit + "\r\n");
+				console.pause();
+				// End Temporary
+			}
 			if (goAheadAndExit)
 			{
 				continueOn = false;
@@ -2583,4 +2604,75 @@ function printedToRealIdxInStr(pStr, pIdx)
 		}
 	}
 	return realIdx;
+}
+
+// Inputs a keypress from the user and handles some ESC-based
+// characters such as PageUp, PageDown, and ESC.  If PageUp
+// or PageDown are pressed, this function will return the
+// string defined by KEY_PAGE_UP or EY_PAGE_DOWN,
+// respectively.  Also, F1-F5 will be returned as "\1F1"
+// through "\1F5", respectively.
+// Thanks goes to Psi-Jack for the original impementation
+// of this function.
+//
+// Parameters:
+//  pGetKeyMode: Optional - The mode bits for console.getkey().
+//               If not specified, K_NONE will be used.
+//  pInputTimeoutMS: The input timeout in milliseconds (defaults to 300000).
+//                   If the user is a sysop, this will use a timeout of 0 for no timeout.
+//
+// Return value: The user's keypress
+function getKeyWithESCChars(pGetKeyMode, pInputTimeoutMS)
+{
+	var getKeyMode = (typeof(pGetKeyMode) === "number" ? pGetKeyMode : K_NONE);
+	var inputTimeoutMS = (typeof(pInputTimeoutMS) === "number" ? pInputTimeoutMS : 300000);
+	if (inputTimeoutMS == 0)
+		inputTimeoutMS = 300000;
+	// Input a key from the user and take action based on the user's input.  If
+	// the user is a sysop, don't use an input timeout.
+	var userInput = "";
+	if (user.compare_ars("SYSOP"))
+		userInput = console.getkey(getKeyMode);
+	else
+		userInput = console.inkey(getKeyMode, inputTimeoutMS);
+	if (userInput == KEY_ESC)
+	{
+		switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+		{
+			case '[':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+				{
+					case 'V':
+						userInput = KEY_PAGE_UP;
+						break;
+					case 'U':
+						userInput = KEY_PAGE_DOWN;
+						break;
+				}
+				break;
+			case 'O':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+				{
+					case 'P':
+						userInput = KEY_F1;
+						break;
+					case 'Q':
+						userInput = KEY_F2;
+						break;
+					case 'R':
+						userInput = KEY_F3;
+						break;
+					case 'S':
+						userInput = KEY_F4;
+						break;
+					case 't':
+						userInput = KEY_F5;
+						break;
+				}
+			default:
+				break;
+		}
+	}
+
+	return userInput;
 }
