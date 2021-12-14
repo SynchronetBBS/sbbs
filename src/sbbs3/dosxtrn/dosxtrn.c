@@ -46,6 +46,12 @@
 #define DOSXTRN_REVISION	26
 #define VDD_FILENAME	"sbbsexec.dll"
 
+#if 0
+#define DEBUG_INT_CALLS
+#define DEBUG_DOS_CALLS
+#define DEBUG_FOSSIL_CALLS
+#endif
+
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str' and terminates at first tab */
 /****************************************************************************/
