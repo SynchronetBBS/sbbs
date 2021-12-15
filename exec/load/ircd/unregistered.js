@@ -104,7 +104,11 @@ function Unregistered_Client(id,socket) {
 			} else {
 				this.hostname = resp[0];
 				log(LOG_DEBUG,format("[UNREG] Resolving hostname: %s", resp[0]));
-				DNS_Resolver.resolve(resp[0], this.forward_resolver, this);
+				if (this.socket.family == PF_INET6) {
+					DNS_Resolver.resolveIPv6(resp[0], this.forward_resolver, this);
+				} else {
+					DNS_Resolver.resolveIPv4(resp[0], this.forward_resolver, this);
+				}
 				return true;
 			}
 			this.dns_pending = false;
