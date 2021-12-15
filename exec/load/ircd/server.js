@@ -1223,6 +1223,7 @@ function Server_Work(cmdline) {
 		break;
 	case "CAPAB":
 	case "BURST":
+	case "SVSMODE":
 		return 0; /* Silently ignore these commands */
 	default:
 		umode_notice(USERMODE_OPER,"Notice",format(
