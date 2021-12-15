@@ -587,12 +587,26 @@ DNS.prototype.synchronous_query = function(queries, callback, thisObj, recursive
 		return ret;
 };
 
-DNS.prototype.resolve = function(host, callback, thisObj)
+DNS.prototype.resolveIPv4 = function(host, callback, thisObj) {
+	this.resolveProcess(host, callback, [{query:host, type:'A'}], thisObj);
+}
+
+DNS.prototype.resolveIPv6 = function(host, callback, thisObj) {
+	this.resolveProcess(host, callback, [{query:host, type:'AAAA'}], thisObj);
+}
+
+DNS.prototype.resolve = function(host, callback, thisObj) {
+	this.resolveProcess(host, callback, [{query:host, type:'AAAA'},{query:host, type:'A'}], thisObj);
+}
+
+DNS.prototype.resolveProcess = function(host, callback, dnstype, thisObj)
 {
 	var ctx = {A:{}, AAAA:{}, unique_id:'DNS.prototype.resolve'};
 	var final;
 	var respA;
 	var respAAAA;
+	var queries;
+	var queries_done;
 
 	this.sockets.forEach(function(sock) {
 		ctx.unique_id += '.'+sock.local_port;
@@ -612,12 +626,16 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 
 	ctx.final_callback = function() {
 		this.ret = [];
-		this.AAAA.addrs.forEach(function(addr) {
-			this.ret.push(addr);
-		}, this);
-		this.A.addrs.forEach(function(addr) {
-			this.ret.push(addr);
-		}, this);
+		if (this.AAAA.addrs !== undefined) {
+			this.AAAA.addrs.forEach(function(addr) {
+				this.ret.push(addr);
+			}, this);
+		}
+		if (this.A.addrs !== undefined) {
+			this.A.addrs.forEach(function(addr) {
+				this.ret.push(addr);
+			}, this);
+		}
 		if (this.callback !== undefined) {
 			js.removeEventListener(this.final);
 			js.removeEventListener(this.respA);
@@ -629,8 +647,8 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 		ctx.final = js.addEventListener(ctx.unique_id+'.final', ctx.final_callback);
 
 	ctx.respA_callback = function() {
-		this.A.done = true;
-		if (this.AAAA.done) {
+		this.queries_done++;
+		if (this.queries_done >= this.queries) {
 			if (this.final !== undefined)
 				js.dispatchEvent(this.unique_id + '.final', this);
 			else
@@ -641,8 +659,8 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 		ctx.respA = js.addEventListener(ctx.unique_id+'.respA', ctx.respA_callback);
 
 	ctx.respAAAA_callback = function() {
-		this.AAAA.done = true;
-		if (this.A.done) {
+		this.queries_done++;
+		if (this.queries_done >= this.queries) {
 			if (this.final !== undefined)
 				js.dispatchEvent(this.unique_id + '.final', this);
 			else
@@ -684,7 +702,10 @@ DNS.prototype.resolve = function(host, callback, thisObj)
 			this['resp'+rectype+'_callback']();
 	}
 
-	this.query([{query:host, type:'AAAA'},{query:host, type:'A'}], handle_response, ctx);
+	ctx.queries = dnstype.length;
+	ctx.queries_done = 0;
+
+	this.query(dnstype, handle_response, ctx);
 	return ctx.ret;
 };
 
