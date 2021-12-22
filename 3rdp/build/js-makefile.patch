@@ -1,0 +1,11 @@
+--- js-1.8.5/js/src/Makefile.in
++++ js-1.8.5/js/src/Makefile.in
+@@ -382,7 +382,7 @@
+ # END enclude sources for V8 dtoa
+ #############################################
+ 
+-ifeq (,$(filter-out powerpc sparc,$(TARGET_CPU)))
++ifeq (,$(filter arm %86 x86_64,$(TARGET_CPU)))
+ 
+ VPATH +=	$(srcdir)/assembler \
+ 		$(srcdir)/assembler/wtf \
