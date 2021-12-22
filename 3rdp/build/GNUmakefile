@@ -71,6 +71,8 @@ $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativ
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-volatile-outside-functions.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-Wno-misleading-indentation.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-allow-python3.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-config.guess.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-makefile.patch
 	-$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && autoconf-2.13
 	$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && env $(JS_CONFIGURE_ENV) ./configure $(JS_CONFIGURE_ARGS)
 	$(QUIET)$(MAKE) -C $(JS_SRC)/js-1.8.5/js/src
