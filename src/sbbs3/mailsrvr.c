@@ -5281,11 +5281,11 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 				server=mx2;	/* Give second mx record a try */
 			}
 
-			lprintf(LOG_DEBUG,"%04d SEND resolving SMTP hostname: %s", sock, server);
+			lprintf(LOG_DEBUG,"%04d SEND resolving SMTP hostname: '%s'", sock, server);
 			ip_addr=resolve_ip(server);
 			if(ip_addr==INADDR_NONE) {
-				SAFEPRINTF(err, "Error resolving hostname %s", server);
-				lprintf(LOG_WARNING,"%04d SEND !Failure resolving hostname: %s", sock, server);
+				SAFEPRINTF(err, "Error resolving hostname '%s'", server);
+				lprintf(LOG_WARNING,"%04d SEND !Failure resolving hostname: '%s'", sock, server);
 				continue;
 			}
 
@@ -6112,6 +6112,11 @@ void mail_server(void* arg)
 
 		if(chdir(startup->ctrl_dir)!=0)
 			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
+
+		if((startup->options & MAIL_OPT_RELAY_TX) && startup->relay_server[0] == '\0') {
+			lprintf(LOG_ERR, "SMTP-Transmit-Relay enabled, but no relay server (hostname or IP address) configured. Disabling.");
+			startup->options &= ~MAIL_OPT_RELAY_TX;
+		}
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
