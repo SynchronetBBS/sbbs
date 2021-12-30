@@ -22,7 +22,7 @@
 #include "sbbs.h"
 #include "telnet.h" 
 
-void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* client_user_name, char* server_user_name, char* term_type)
+void sbbs_t::telnet_gate(char* destaddr, ulong mode, unsigned timeout, char* client_user_name, char* server_user_name, char* term_type)
 {
 	char*	p;
 	uchar	buf[512];
@@ -76,15 +76,6 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* client_user_name, cha
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(port);
 
-	if((i=connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
-		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) connecting to server: %s"
-			,i,ERROR_VALUE, destaddr);
-		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
-			,i,ERROR_VALUE, destaddr);
-		close_socket(remote_socket);
-		return;
-	}
-
 	l=1;
 
 	if((i = ioctlsocket(remote_socket, FIONBIO, &l))!=0) {
@@ -98,6 +89,15 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* client_user_name, cha
 		,cfg.node_num
 		,mode&TG_RLOGIN ? "RLogin" : "Telnet"
 		,destaddr,port,remote_socket);
+
+	if((i=nonblocking_connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr), timeout))!=0) {
+		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) connecting to server: %s"
+			,i,ERROR_VALUE, destaddr);
+		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
+			,i,ERROR_VALUE, destaddr);
+		close_socket(remote_socket);
+		return;
+	}
 
 	if(!(mode&TG_CTRLKEYS))
 		console|=CON_RAW_IN;

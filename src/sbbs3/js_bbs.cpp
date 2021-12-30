@@ -2903,6 +2903,7 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		addr;
 	uint32		mode=0;
+	uint32		timeout=10;
 	JSString*	js_addr;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -2928,15 +2929,22 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 	}
+	if(argc>2 && JSVAL_IS_NUMBER(argv[2])) {
+		if(!JS_ValueToECMAUint32(cx,argv[2],&timeout)) {
+			free(addr);
+			return JS_FALSE;
+		}
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->telnet_gate(addr,mode);
+	sbbs->telnet_gate(addr,mode,timeout);
 	free(addr);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
 }
 
+#define TG_MODE_UNSPECIFIED	~0
 static JSBool
 js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -2947,7 +2955,8 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 	char*		server_user_name=NULL;
 	char*		term_type=NULL;
 	bool		fail = false;
-	uint32		mode = 0;
+	uint32		mode = TG_MODE_UNSPECIFIED;
+	uint32		timeout = 10;
 	JSString*	js_str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -2982,15 +2991,24 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 				JSSTRING_TO_MSTRING(cx, js_str, term_type, NULL);
 			}
 		} else if(JSVAL_IS_NUMBER(argv[argn])) {
-			if(!JS_ValueToECMAUint32(cx,argv[argn],&mode)) {
-				fail = true;
-				break;
+			if(mode == TG_MODE_UNSPECIFIED) {
+				if(!JS_ValueToECMAUint32(cx,argv[argn],&mode)) {
+					fail = true;
+					break;
+				}
+			} else {
+				if(!JS_ValueToECMAUint32(cx,argv[argn],&timeout)) {
+					fail = true;
+					break;
+				}
 			}
 		}
 	}
 	if(!fail) {
+		if(mode == TG_MODE_UNSPECIFIED)
+			mode = 0;
 		rc=JS_SUSPENDREQUEST(cx);
-		sbbs->telnet_gate(addr,mode|TG_RLOGIN,client_user_name,server_user_name,term_type);
+		sbbs->telnet_gate(addr,mode|TG_RLOGIN,timeout,client_user_name,server_user_name,term_type);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	FREE_AND_NULL(addr);
@@ -4605,12 +4623,12 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	"(see <tt>EVENT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)")
 	,310
 	},
-	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,mode=<tt>TG_NONE</tt>]")
-	,JSDOCSTR("external Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags.)")
+	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,mode=<tt>TG_NONE</tt>] [,timeout=<tt>10</tt>]")
+	,JSDOCSTR("external Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,310
 	},
-	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,client-user-name=<tt>user.alias</tt>, server-user-name=<tt>user.name</tt>, terminal=<tt>console.terminal</tt>] [,mode=<tt>TG_NONE</tt>]")
-	,JSDOCSTR("external RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags.)")
+	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,client-user-name=<tt>user.alias</tt>, server-user-name=<tt>user.name</tt>, terminal=<tt>console.terminal</tt>] [,mode=<tt>TG_NONE</tt>]  [,timeout=<tt>10</tt>]")
+	,JSDOCSTR("external RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,316
 	},
 	/* security */
