@@ -2784,7 +2784,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<br><b>Note:</b> To open an existing or create a new file for both reading and writing "
 		"(e.g. updating an <tt>.ini</tt> file) "
 		"use the <i>exists</i> property like so:<br>"
-		"<tt>file.open(file.exists ? 'r+':'w+');</tt>"
+		"<tt>file.open(file.exists ? 'r+':'w+');</tt><br>"
 		"<br><b>Note:</b> When <i>shareable</i> is false, uses nopen() which will lock the file "
 		"and perform automatic retries.  The lock mode is as follows:<br>"
 		"<tt>r&nbsp</tt> DENYWRITE - Allows other scripts to open the file for reading, but not for writing.<br>"
@@ -2852,7 +2852,8 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,310
 	},
 	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
-	,JSDOCSTR("read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters")
+	,JSDOCSTR("read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters. "
+		"Returns <i>null</i> upon end of file.")
 	,310
 	},
 	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt> [,count=<tt>1</tt>]")
@@ -2885,7 +2886,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,310
 	},
 	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value(s) [,bytes=<tt>4</tt>]")
-	,JSDOCSTR("write one or more binary integers to the file, default number of <i>bytes</i> is 4 (32-bits)."
+	,JSDOCSTR("write one or more binary integers to the file, default number of <i>bytes</i> is 4 (32-bits). "
 			  "If value is an array, writes the entire array to the file.")
 	,310
 	},
