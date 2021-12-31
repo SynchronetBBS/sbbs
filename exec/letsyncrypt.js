@@ -177,7 +177,7 @@ var sysop_email = "sysop@" + system.inet_addr;
 /*
  * Now read the settings and state.
  */
-webroots[sbbsini.web.host_name] = sbbsini.web.root_dir;
+webroots[sbbsini.web.host_name] = backslash(sbbsini.web.root_dir);
 if (settings.open("r")) {
 	domain_list = settings.iniGetObject("Domains");
 	for (i in domain_list) {
