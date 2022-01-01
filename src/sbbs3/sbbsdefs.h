@@ -41,7 +41,7 @@
 
 #define VERSION_NOTICE		"Synchronet BBS for " PLATFORM_DESC\
 								"  Version " VERSION
-#define COPYRIGHT_NOTICE	"Copyright 2021 Rob Swindell"
+#define COPYRIGHT_NOTICE	"Copyright 2022 Rob Swindell"
 
 #define SBBSCTRL_DEFAULT	"/sbbs/ctrl"
 
