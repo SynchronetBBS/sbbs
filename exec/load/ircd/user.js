@@ -15,7 +15,7 @@
 
  Handling of regular user-to-server communication in the IRCd.
 
- Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+ Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
 
 */
 

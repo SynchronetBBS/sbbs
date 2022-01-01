@@ -15,7 +15,7 @@
 
  Everything related to channels in the IRCd and their operation.
 
- Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+ Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
 
 */
 
