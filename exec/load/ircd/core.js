@@ -15,7 +15,7 @@
 
  Core IRCd functions.
 
- Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+ Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
 
 */
 
@@ -1371,7 +1371,7 @@ function IRCClient_do_info() {
 		this.servername
 	));
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-=-*[ The Synchronet IRCd 1.9 ]*-=-=-=-=-=-=-=-=-=-=--");
-	this.numeric(371, ":   IRCd Copyright 2003-2021 by Randy Sommerfeld <cyan@synchro.net>");
+	this.numeric(371, ":   IRCd Copyright 2003-2022 by Randy Sommerfeld <cyan@synchro.net>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":DigitalMan (Rob Swindell): Resident coder god, various hacking all");

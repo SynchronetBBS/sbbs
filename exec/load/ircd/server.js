@@ -15,7 +15,7 @@
 
  IRCd inter-server communication.
 
- Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+ Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
 
 */
 

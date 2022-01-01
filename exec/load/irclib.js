@@ -18,7 +18,7 @@
    If you use this to create something neat, let me know about it! :)
    Either email, or find me on #synchronet, irc.synchro.net, nick 'Cyan'
   
-   Copyright 2003-2021 Randy Sommerfeld <cyan@synchro.net>
+   Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
 */
 
 const IRCLIB_REVISION = "1.24";
