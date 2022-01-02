@@ -15,7 +15,7 @@ const ini_section = "netmail sent";
 
 const NetmailAddressHistoryLength = 10;
 
-while(bbs.online && !console.aborted) {
+while(bbs.online) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu("e-mail");
 	bbs.nodesync();
@@ -42,7 +42,7 @@ while(bbs.online && !console.aborted) {
 			wm_mode = WM_FILE;
 		case 'S':	// Send Mail
 			console.putmsg(bbs.text(text.Email));
-			var name = console.getstr(40);
+			var name = console.getstr(40, K_TRIM);
 			if(!name)
 				break;
 			if(name.indexOf('@') > 0) {
@@ -50,6 +50,8 @@ while(bbs.online && !console.aborted) {
 				break;
 			}
 			var number = bbs.finduser(name);
+			if(console.aborted)
+				break;
 			if(!number)
 				number = system.matchuser(name);
 			if(!number && (msg_area.settings&MM_REALNAME))
@@ -68,7 +70,7 @@ while(bbs.online && !console.aborted) {
 				break;
 			console.putmsg(bbs.text(text.EnterNetMailAddress));
 			var addr_list = userprops.get(ini_section, "address", []) || [];
-			var addr = console.getstr(256, K_LINE, addr_list);
+			var addr = console.getstr(256, K_LINE | K_TRIM, addr_list);
 			if(!addr || console.aborted)
 				break;
 			if(bbs.netmail(addr.split(','), wm_mode)) {
@@ -82,8 +84,7 @@ while(bbs.online && !console.aborted) {
 				userprops.set(ini_section, "localtime", new Date().toString());
 			}
 			break;
-		case 'Q':	// Quit
-		case '\r':
+		default:
 			exit(0);
 		case '?':	// Display menu
 			if(user.settings & USER_EXPERT)
