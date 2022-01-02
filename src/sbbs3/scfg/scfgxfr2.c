@@ -20,7 +20,7 @@
 #include "scfg.h"
 #include <stdbool.h>
 
-#define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_MULT|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
+#define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
 #define CUT_LIBNUM	USHRT_MAX
 
 char* file_sort_desc[] = {
