@@ -2756,6 +2756,8 @@ static const char* file_prop_desc[] = {
 	,"calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
 	,"calculated 128-bit MD5 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
 	,"calculated 128-bit MD5 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
+	,"calculated 160-bit SHA1 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
+	,"calculated 160-bit SHA1 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
 	,"ini style: minimum key length (for left-justified white-space padded keys)"
 	,"ini style: key prefix (e.g. '\t', null = default prefix)"
 	,"ini style: section separator (e.g. '\n', null = default separator)"
