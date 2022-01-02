@@ -197,6 +197,8 @@ while(bbs.online && !console.aborted) {
 					count = new Archive(path).extract(system.temp_dir);
 				} catch(e) {
 					log(LOG_INFO, e);
+					alert(e);
+					break;
 				}
 				base.close();
 				if(count) {
