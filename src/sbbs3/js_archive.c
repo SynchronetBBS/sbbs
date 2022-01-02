@@ -527,24 +527,28 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 static jsSyncMethodSpec js_archive_functions[] = {
 	{ "create",		js_create,		1,	JSTYPE_NUMBER
 		,JSDOCSTR("[string format] [,boolean with_path = false] [,array file_list]")
-		,JSDOCSTR("create an archive of the specified format, returns the number of files archived, will throw exception upon error")
+		,JSDOCSTR("Create an archive of the specified format (e.g. 'zip', '7z', 'tgz').<br>"
+			"Returns the number of files archived.<br>"
+			"Will throw exception upon error.")
 		,31900
 	},
 	{ "read",		js_read,		1,	JSTYPE_STRING
 		,JSDOCSTR("string path/filename")
-		,JSDOCSTR("read and return the contents of the specified archived text file")
+		,JSDOCSTR("Read and return the contents of the specified archived text file.")
 		,31900
 	},
 	{ "extract",	js_extract,		1,	JSTYPE_NUMBER
 		,JSDOCSTR("output_directory [,boolean with_path = false] [,number max_files = 0] [,string file/pattern [...]]")
-		,JSDOCSTR("extract files from an archive to specified output directory, returns the number of files extracted, will throw exception upon error")
+		,JSDOCSTR("Extract files from an archive to specified output directory.<br>"
+			"Returns the number of files extracted.<br>"
+			"Will throw exception upon error.")
 		,31900
 	},
 	{ "list",		js_list,		1,	JSTYPE_ARRAY
 		,JSDOCSTR("[,boolean hash = false] [,string file/pattern]")
-		,JSDOCSTR("get list of archive contents as an array of objects<br>"
-			"archived object properties:<br>"
-			"<ul>"
+		,JSDOCSTR("Get list of archive contents as an array of objects.<br>"
+			"Archived object properties:<br>"
+			"<ol>"
 			"<li>string <tt>type</tt> - item type: 'file', 'link', or 'directory'"
 			"<li>string <tt>name</tt> - item path/name"
 			"<li>string <tt>path</tt> - source path"
@@ -562,8 +566,8 @@ static jsSyncMethodSpec js_archive_functions[] = {
 			"<li>number <tt>crc32</tt> - 32-bit CRC, when hash is true and type is file"
 			"<li>string <tt>md5</tt> - hexadecimal MD-5 sum, when hash is true and type is file"
 			"<li>string <tt>sha1</tt> - hexadecimal SHA-1 sum, when hash is true and type is file"
-			"</ul>"
-			"when <tt>hash</tt> is <tt>true</tt>, calculates and returns hash/digest values of files in stored archive")
+			"</ol>"
+			"When <tt>hash</tt> is <tt>true</tt>, calculates and returns hash/digest values of files in stored archive.")
 		,31900
 	},
 	{0}
