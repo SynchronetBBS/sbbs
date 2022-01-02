@@ -20,48 +20,46 @@ o Support for manual terminal width setting and terminals with > 99 rows
 o String command (';find') to find message and file areas by search word
 o Access Requirement Strings (ARS)
 - SYSOP ARS keyword now applies to target user, not necessarily the user online
-o New @-codes:
+o New @-codes (see http://wiki.synchro.net/custom:atcodes for more details):
 - !x to perform Ctrl-A style terminal/attribute control
-- TEXT:<num> to display text.dat string #num
-- NETMAIL: user's personal netmail or email address
-- FWD: "On" if the user has opted for forwarding their mail to netmail or "Off"
-- TMP: user's chosen temporary file type (e.g. "ZIP")
-- NOTE: user's note (same as MEMO1)
-- UDR (upload/download byte-ratio)
-- UDFR (file ratio)
-- LASTIP user's most recent IP address at time of logoff
-- BDATEFMT
-- BIRTH: for full-format (MM/DD/YYYY or DD/MM/YYYY) user birthdate
-- SYSAVAILYN - same as SYSAVAIL but expands to "Yes" or "No" instead
-- SHOW:<ars> to only show the following text to users meeting ARS
-- MSG_THREAD_ID
-- MSG_THREAD_BACK
-- MSG_THREAD_NEXT
-- MSG_THREAD_FIRST
-- FREESPACEM - Mebibytes
-- FREESPACEG - Gibibytes
-- FREESPACET - Tebibytes
-- MAILR (read mail waiting)
-- MAILU (unread mail waiting)
-- GIT_HASH
-- GIT_BRANCH
+  (performs equivalent to Ctrl-Ax)
+- TEXT:<num> (display text.dat string #num)
+- NETMAIL (user's personal netmail or email address)
+- FWD ("On" if the user has opted for forwarding their mail to netmail or "Off")
+- TMP (user's chosen temporary file type, e.g. "ZIP")
+- NOTE (user's note, same as MEMO1)
+- UDR (user's upload/download byte-ratio)
+- UDFR (user's upload/download file ratio)
+- LASTIP (user's most recent IP address at time of logoff)
+- BIRTH (user's birthdate in for full-format, i.e. MM/DD/YYYY or DD/MM/YYYY)
+- BDATEFMT (user birthdate input format, alias: BIRTHFMT)
+- SYSAVAILYN (same as SYSAVAIL but expands to "Yes" or "No" instead)
+- SHOW:<ars> (only show the following text to users meeting ARS)
+  SHOW (restore console output for all users)
+- MSG_THREAD_ID, MSG_THREAD_BACK, MSG_THREAD_NEXT, MSG_THREAD_FIRST
+- FREESPACEM (free disk space in Mebibytes)
+- FREESPACEG (free disk space in Gibibytes)
+- FREESPACET (free disk space in Tebibytes)
+- FILE_TAGS (tags for currently displayed file)
+- MAILR and MAILR:# (number of read mail messages waiting)
+- MAILU and MAILU:# (number of unread mail messages waiting)
+- GIT_HASH (Git commit hash of current build)
+- GIT_BRANCH (Gir branch name of current build)
 - SEX (user's gender) and GENDERS (gender options)
-- New aliases (for consistency):
-  BIRTHFMT -> BDATEFMT and BIRTH:<fmt> -> BDATE:<fmt>
 - Support C escape sequences in FILL @-code argument
   e.g. FILL:\x20 to fill with space
-- Support strftime format arguments to DATE/TIME @-codes
+- Support strftime format arguments (w/C escape sequencs) to DATE/TIME @-codes
   DATE: (alias: TIME:)
-  BDATE:
+  BDATE: (alias: BIRTH:)
   PWDATE:
   SINCE:
   LASTON:
   FIRSTON:
   LASTNEW:
   EXPDATE:  
-- GETKEY
-- WAIT:<milliseconds>
-- CONTINUE
+- WAIT:<tenths_of_second> (wait a duration or for any key press)
+- CONTINUE (wait for key press, aborting display upon 'N' or Ctrl-C)
+- GETKEY (wait for any key press)
 o New option to create door drop files in node's temp directory
 o HAPROXY support option
 o Support markup tags (optionally) when displaying posts
@@ -73,16 +71,31 @@ o Store client terminal information in node#/terminal.ini
 o Create node#/client.ini for each node client connection
 o Support 3rd party installer files for 150+ external programs (doors)
   See xtrn/3rdp-intall/README.md for details
-o new text.dat strings:
-- InternetMailSent
-- FidoNetMailSent
-- QWKNetMailSent
-- FileInfoEditPrompt 
-- EditExtDescriptionQ
-- FiAuthor
-- FiGroup
-Changed EnterYourSex -> EnterYourGender
-Changed SearchExtendedQ to DisplayExtendedFileInfoQ
+o New text.dat strings (see docs/text319b.dif for full list of changes):
+  HowManyColumns
+  InternetMailSent
+  FidoNetMailSent
+  QWKNetMailSent
+  MsgsToYouOnlyQ
+  ToYouOnly
+  SetMsgPtrPrompt
+  DateLastKeys
+  DirLibKeys
+  SubGroupKeys
+  AllKey
+  All
+  ListKey
+  FileInfoEditPrompt 
+  EditExtDescriptionQ
+  FiTags
+  FiUploadedTo
+  FiChecksum
+  FiAuthor
+  FiGroup
+  TagFileQ
+  TagFilePrompt
+  EnterYourGender
+  DisplayExtendedFileInfoQ
 
 General
 ~~~~~~~
@@ -90,17 +103,19 @@ o New file base format (based on SMB), see docs/newfilebase.txt
   - supports long filenames
   - better support for files > 2GB and 4GB
   - extended file descriptions up to 4000 chars are now supported
+  - supports file tags (specified by uploader, optionally, per directory)
+  - stores and reports MD5 and SHA1 hash of files
 DIZ enhancements: Read/use SAUCE data, support ANSI, increase max 1->4K
 Inspired by Blocktronics (and other ANSI art group) packs' FILE_ID.DIZ/ANS
 files:
-* Support (and prioritize) FILE_ID.ANS
-* Convert ANSI color/attribute sequences in DIZ files to Ctrl-A equivalent
- (uses SAUCE width and ICE color, if specified)
-* Don't treat DIZ as a series of lines, they're not always nowadays.
-* New putmsg() mode: P_INDENT to print files indented by current column
-* Display full (up to 64-char) filenames in lists when using 132+ column
-  terminal.
-* Use the Author, Group, and Title fields from the SAUCE if present/non-blank
+  - Support (and prioritize) FILE_ID.ANS
+  - Convert ANSI color/attribute sequences in DIZ files to Ctrl-A equivalent
+    (uses SAUCE width and ICE color, if specified)
+  - Don't treat DIZ as a series of lines, they're not always nowadays.
+  - New putmsg() mode: P_INDENT to print files indented by current column
+  - Display full (up to 64-char) filenames in lists when using 132+ column
+    terminal.
+  - Use the Author, Group, and Title fields from the SAUCE if present/non-blank
 o libarchive integration (into SBBS and SBBSecho)
   built-in support for creating/extracting zip, 7zip, and tgz files
   additional read-only formats: rar, lha/lzh, iso, xar, and cab
@@ -112,7 +127,7 @@ o Use a more-liberal username matching algorithm
 o Support for single-part MIME-attachment decode/download
 o .ini file !include now supports wildcard patterns
    e.g .!include modopts.d/*.ini
-Add support for "name@address" syntax in twitlist.cfg
+o Support for "name@address" syntax in twitlist.cfg
   
 JavaScript
 ~~~~~~~~~~
