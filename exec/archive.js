@@ -56,7 +56,8 @@ function list(filename, verbose)
 	try {
 		 list = Archive(filename).list(Boolean(verbose));
 	} catch(e) {
-		alert(file_getname(filename) + ": Unsupported archive format");
+		log(LOG_NOTICE, filename + " " + e);
+		alert(file_getname(filename) + ": Unsupported archive");
 		return;
 	}
 
