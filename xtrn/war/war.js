@@ -2430,7 +2430,7 @@ function main(argc, argv)
 
 	if(argc)
 		set_game(argv[0]);
-	load("loadfont.js", '-H', getpath('terrain.fnt'));
+	load("loadfont.js", '-H', js.startup_dir + 'terrain.fnt');
 	if(bbs.mods.CTerm_Version != null) {
 		console.write("\x1b[?31h\x1b[1;255 D");
 		js.on_exit('console.write("\x1b[?31l")');
