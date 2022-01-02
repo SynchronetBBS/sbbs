@@ -126,7 +126,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 88
         Width = 130
         Height = 20
-        Hint = 'Attempt to execute DOS progarms (requires 32-bit OS)'
+        Hint = 'Attempt to execute 16-bit DOS progarms (requires NTVDM)'
         Caption = 'DOS Program Support'
         ParentShowHint = False
         ShowHint = True
