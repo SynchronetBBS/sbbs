@@ -22,6 +22,7 @@
 #include "sbbs.h"
 #include "petdefs.h"
 #include "cmdshell.h"
+#include "filedat.h"
 
 /****************************************************************************/
 /* This function is invoked when a user enters "NEW" at the NN: prompt		*/
@@ -118,7 +119,7 @@ BOOL sbbs_t::newuser()
 	if(cfg.total_fcomps)
 		SAFECOPY(useron.tmpext,cfg.fcomp[0]->ext);
 	else
-		SAFECOPY(useron.tmpext,"ZIP");
+		SAFECOPY(useron.tmpext,supported_archive_formats[0]);
 
 	useron.shell=cfg.new_shell;
 
