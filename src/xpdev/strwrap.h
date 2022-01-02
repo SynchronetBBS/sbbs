@@ -24,7 +24,9 @@ extern "C" {
 #endif
 
 char *strndup(const char *str, size_t maxlen);
+#if defined(_WIN32) && !defined(_MSC_VER)
 size_t strnlen(const char *s, size_t maxlen);
+#endif
 
 #if defined(__cplusplus)
 }
