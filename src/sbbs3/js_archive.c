@@ -605,7 +605,7 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"Class used for opening, creating, reading, or writing archive files on the local file system<p>"
+	js_DescribeSyncObject(cx,obj,"Class used for opening, creating, reading, or writing archive files on the local file system"
 		,31900
 		);
 	js_DescribeSyncConstructor(cx,obj,"To create a new Archive object: <tt>var a = new Archive(<i>filename</i>)</tt>");
