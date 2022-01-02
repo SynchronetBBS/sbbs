@@ -133,11 +133,12 @@ for(var i in dir_list) {
 				}
 			} catch(e) { }
 			if(contents) {
-				var key = JSON.stringify(contents);
+				var key = sha1_calc(JSON.stringify(contents));
 				if(!arc[key])
 					arc[key] = [];
 				arc[key].push(file);
 			}
+			contents = undefined;
 		}
 		total_bytes += file.size;
 	}
