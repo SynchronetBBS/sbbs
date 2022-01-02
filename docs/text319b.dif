@@ -1,0 +1,394 @@
+diff --git a/ctrl/text.dat b/ctrl/text.dat
+index ae962dbe3..b0af19534 100644
+--- a/ctrl/text.dat
++++ b/ctrl/text.dat
+@@ -50,9 +50,9 @@
+ "\1[\1n\1mPosted on \1h%s\1n\1m %s.\r\n"                      037 Posted
+ "\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you E-mail.\r\n"       038 EmailNodeMsg
+ "\1n\r\nYou can't forward mail.\r\n"                     039 R_Forward
+-"\1n\1m\r\nForwarded by \1h%s\1n\1m on "\                    040 ForwardedFrom
++"\1n\1mForwarded by \1h%s\1n\1m on "\                    040 ForwardedFrom
+ 	"\1h%s\1n\r\n"
+-"\1n\1m\r\nMail forwarded to \1h%s \1n\1m#%d.\1n\r\n"         041 Forwarded
++"\1n\1m\r\nMail forwarded to \1h%s\1n\r\n"                    041 Forwarded
+ "\1b\1hAuto message by: \1c%s\1b on %s\1n\r\n\r\n"            042 AutoMsgBy
+ "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
+ "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
+@@ -60,7 +60,7 @@
+ "\1_\r\n\1q\1g\1hMail Waiting (%s first):\r\n\r\n"     046 MailWaitingLstHdr
+ "\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %s\r\n"              047 MailWaitingLstFmt
+ "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
+-"\r\n\1n\1cþ \1b\1hReading E-mail \1n\1cþ \1b\1h(\1w\1`?\1b=Menu)"\  049 ReadingMail
++"\r\n\1n\1c\xfe \1b\1hReading E-mail \1n\1c\xfe \1b\1h(\1w\1`?\1b=Menu)"\  049 ReadingMail
+ 	" (\1w%u\1b of \1w%u\1b): \1n\1~"
+ "\1n\r\nYou can't reply to this message.\r\n"    	050 CantReplyToMsg
+ "  \1h\1bRe\1n\1b: \1h\1c%s\1n\r\n\r\n"                        051 Regarding
+@@ -77,12 +77,12 @@
+ "\1n\r\nYou have no sent messages pending.\r\n"          059 NoMailSent
+ "\r\n\1q\1g\1hMail that you've sent still pending (%s first):"\ 060 MailSentLstHdr
+ 	"\r\n\r\n\1n"
+-"\1n\r\n\1cþ \1h\1bReading Sent E-mail \1n\1cþ \1h\1b"\		061 ReadingSentMail
++"\1n\r\n\1c\xfe \1h\1bReading Sent E-mail \1n\1c\xfe \1h\1b"\		061 ReadingSentMail
+ 	"(\1w\1`?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n\1~"
+ "\1h\1?\1mInternet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
+ 	"            From: \1w%s\r\n"
+ "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
+-"\1n\r\n\1cþ \1h\1bReading All E-mail \1n\1cþ \1h\1b"\		064 ReadingAllMail
++"\1n\r\n\1c\xfe \1h\1bReading All E-mail \1n\1c\xfe \1h\1b"\		064 ReadingAllMail
+ 	"(\1w%u \1bof \1w%u\1b): \1n" 
+ "\1_\r\n\1g\1h      From                   "\              065 MailOnSystemLstHdr
+ 	"To                     A Subject\r\n\1n"
+@@ -92,23 +92,23 @@
+ "\1-\r\n\1c%-20s \1y\1h%-50s \1w%6u"             068 SearchSubFmt
+ "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
+ "\r\n\1n\1cPost : [\1h%u\1n\1c][\1h%u\1n\1c] \1h%u\1n\1c/\1h%u"   070 ZScanPostHdr
+-"\1n\r\n\1cþ \1h\1bReading \1n\1cþ %4u\b\b\b\b%s\1\\"\           071 ReadingSub
++"\1n\r\n\1c\xfe \1h\1bReading \1n\1c\xfe %4u\b\b\b\b%s\1\\"\           071 ReadingSub
+ 	" %4u\b\b\b\b\1h%s \1n\1c(\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n\1~"
+ "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
+ "\1?Delete message #%u '%s'"                          073 DeletePostQ
+-"\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
++"\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address     "\     074 UserDefaultsAutoLogon
+ 	"\1n\1b: \1c%s\r\n"	 
+ "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
+ "\1_\r\n\1y\1hText to search for: "                      076 SearchStringPrompt
+-"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4´ "\                    077 PrivateChatSeparator
++"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4\xb4 "\                    077 PrivateChatSeparator
+ 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
+ 	"Time Left: \1g%-8s\1w"\
+-	" Ã\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
++	" \xc3\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
+ "\1g\1h%5u\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"    078 SubMsgLstFmt
+-"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4´ "\                    079 SysopChatSeparator
++"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4\xb4 "\                    079 SysopChatSeparator
+ 	"\1rSplit-Screen \1cSysop\1r Chat          \1y"\
+ 	"Time Left: \1g%-8s\1w"\
+-	" Ã\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
++	" \xc3\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
+ "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
+ "\1l\1_\1c\1hGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
+ "\1n\1c<\1h%d\1n\1c> %s\r\n"                                082 TextSectionLstFmt
+@@ -153,7 +153,7 @@
+ "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
+ "\1n\1?\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
+ "\r\n\1r\1hNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
+-"\r\n\r\nYou can't use the external programs.\r\n"      123 R_ExternalPrograms
++"\1?You can't use the external programs.\r\n"             123 R_ExternalPrograms
+ "\r\n\1-\1gUsage Statistics for \1h%s #%d\1n\r\n\r\n"       124 UserStats
+ "\1-\1gSub-boards of \1h%-40s       \1n\1gPosts"\             125 SubLstHdr
+ 	"\r\n\r\n\1h"
+@@ -200,21 +200,21 @@
+ 	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h"  
+ "Delete Guru file"                                      163 DeleteGuruLogQ
+ "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
+-"\r\n\r\nYou can't download.\r\n"                       165 R_Download
+-"\r\n\1w\1hSearching all directories @ELLIPSIS@\r\n"      166 SearchingAllDirs
+-"\1w\1hSearching all libraries @ELLIPSIS@\r\n"            167 SearchingAllLibs
++"\1?You can't download.\r\n"                              165 R_Download
++"\1/\1w\1hSearching current library @ELLIPSIS@\r\n\1q"   166 SearchingAllDirs
++"\1w\1hSearching all libraries @ELLIPSIS@\r\n\1q"         167 SearchingAllLibs
+ "\r\n\1w\1h%u Files Listed.\r\n"                          168 NFilesListed
+-"\r\n\1w\1hEmpty directory.\r\n"                          169 EmptyDir
+-"\r\n\1n\1cSearching for files "\                         170 NScanHdr
++"\1?\1w\1hEmpty directory.\r\n"                           169 EmptyDir
++"\1?\1cSearching for files "\                             170 NScanHdr
+ 	"uploaded after\1\\ \1h%s\1n\r\n"
+-"\r\n\r\nYou can't remove files.\r\n"                   171 R_RemoveFiles
+-"\r\n\r\nThis directory is full.\r\n"                   172 DirFull
+-"\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
+-"\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
+-"\1_\r\n\r\n\1y\1hFilespec: \1n\1~"                     175 FileSpec
+-"SY: "                                                  176 SystemPassword
+-"\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
+-"\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
++"\1?You can't remove files.\r\n"                           171 R_RemoveFiles
++"\1?This directory is full.\r\n"                           172 DirFull
++"\1?You can't upload.\r\n"                                 173 R_Upload
++"\1?You can't upload here.\r\n"                            174 CantUploadHere
++"\1_\1?\1y\1hFilespec: \1n\1~"                             175 FileSpec
++"SY: "                                                     176 SystemPassword
++"\1?No sysop directory is configured.\r\n"                 177 NoSysopDir
++"\1?You can't upload to the sysop.\r\n"                    178 CantUploadToSysop
+ "\1-\1gDirectories of \1h%-40.40s     "\                   179 DirLstHdr
+ 	"\1n\1gFiles\r\n\r\n\1h"
+ "\1n\1g(\1h%u\1n\1g) %-40.40s %12.12s \1h%4u\r\n"             180 DirLstFmt
+@@ -228,10 +228,10 @@
+ 	"credit value\r\n"
+ "All downloads are rewarded with %d%% of the "\         187 TpDownload
+ 	"credit value\r\n"
+-"\r\n\r\nNo user directory specified.\r\n"              188 NoUserDir
++"\1?No user directory is configured.\r\n"               188 NoUserDir
+ "\r\nThere are no files for you.\r\n"                   189 NoFilesForYou
+-"\r\n\r\nUser transfer directory is full.\r\n"          190 UserDirFull
+-"\r\n\r\nYou can't send files to users.\r\n"            191 CantUploadToUser
++"\1?User transfer directory is full.\r\n"               190 UserDirFull
++"\1?You can't send files to users.\r\n"                 191 CantUploadToUser
+ "\1n\1cLibrary   : (%u) %s\1y\1h"                           192 BoxHdrLib
+ "\1n\1cDirectory : (%u) %s\1y\1h"                           193 BoxHdrDir
+ "\1n\1cFiles     : %u\1y\1h"                               194 BoxHdrFiles
+@@ -239,12 +239,12 @@
+ "\1n\1c(\1h%u\1n\1c) %s"                                     196 ShortHdrDir
+ "\1r\1hFilenames, specs, or flags [None]: \1m\1h\1~"        197 BatchDlFlags
+ "\r\n\7\1r\1h\1iBatch download queue is full.\1n\r\n"       198 BatchDlQueueIsFull
+-"\1_\r\n\1y\1hFilespec [\1wAll Files\1y]: \1n"              199 FileSpecStarDotStar
++"\1_\1?\1y\1hFilespec [\1wAll Files\1y]: \1n"               199 FileSpecStarDotStar
+ "\r\n\r\n\1r\1h\1iNot enough free disk space.\1n\r\n"\      200 LowDiskSpace
+ 	"\r\n\1hThe sysop has been notified.\1n\r\n"
+ "\r\n%s kilobytes free\r\n\r\n"                         201 DiskNBytesFree
+ "\1_\1y\1hFilename: \1n"                                    202 Filename
+-"\r\n\1r\1hBad filename.\r\n"                             203 BadFilename
++"\1/\1r\1hBad filename: '%s'\r\n"                           203 BadFilename
+ "Upload '%s' to Sysop directory"                        204 UploadToSysopDirQ
+ "Upload '%s' to User directory"                         205 UploadToUserDirQ
+ "Upload '%s' to %s\1\\ %s"                                  206 UploadToCurDirQ
+@@ -261,8 +261,8 @@
+ "\7\r\n\1r\1h\1i%s wouldn't be able to "\                  215 UserWontBeAbleToDl
+ 	"download it!\1n\r\n\r\n"
+ "\7\r\n\1r\1h\1iYou can't send yourself files.\1n\r\n\r\n"  216 CantSendYourselfFiles
+-"\r\n\1-\1gAdded to destination user list: "\             217 UserAddedToDestList
+-	"\1w\1h%s\r\n\r\n\1n"
++"\r\n\1-\1gAdded to destination user list: "\               217 UserAddedToDestList
++	"\1w\1h%s #%s\r\n\r\n\1n"
+ "\r\n\1-\1gHow do you rate the content of this file "\    218 RateThisFile
+ 	"(\1h\1wG\1n\1g, \1h\1wR\1n\1g, or \1h\1wX\1n\1g): \1n"
+ "[%c] "                                                 219 Rated
+@@ -278,22 +278,25 @@
+ "\r\n\7\1r\1h\1iBatch upload queue is full.\1n\r\n"         229 BatchUlQueueIsFull
+ "\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\         230 FileAddedToUlQueue
+ 	"\1c - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
+-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you a file.\r\n"       231 UserToUserXferNodeMsg
++"\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              231 FileInfoEditPrompt
++	"\1w~E\1ydit info/\1w~D\1yesc, "\
++	"\1w~V\1yiew file, "\
++	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
+ "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
+ 	"\1w~E\1yxtended info, "\
+ 	"\1w~V\1yiew file, "\
+-	"\1w~Q\1yuit or [~Next]: \1w"
++	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
+ "\r\n~Quit or [~Next]: "                                233 QuitOrNext
+-"~Remove, ~Move, ~Edit, ~View, ~Quit, or [~Next]: "      234 RExemptRemoveFilePrompt
++"~Remove, ~Move, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: " 234 RExemptRemoveFilePrompt
+ "\1n(%d) %s\r\n"                                         235 MoveToLibLstFmt
+ "\1_\r\n\1y\1hLibrary [%d]: \1n"                            236 MoveToLibPrompt
+ "\1n(%d) %s\r\n"                                         237 MoveToDirLstFmt
+ "\1_\r\n\1y\1hDirectory [%d]: \1n"                          238 MoveToDirPrompt
+ "%s moved to %s %s.\r\n"                                239 MovedFile
+ "\r\nClose file record"                                 240 CloseFileRecordQ
+-"~Remove, ~Credits only, ~File only, ~Move, ~Edit, "\   241 SysopRemoveFilePrompt
+-	"~View, ~Quit, or [~Next]: "
+-"~Remove, ~Edit, ~View, ~Quit, or [~Next]: "            242 UserRemoveFilePrompt
++"~Remove, ~Credits, ~File only, ~Move, ~Edit, "\        241 SysopRemoveFilePrompt
++	"~Desc, ~View, ~Quit, ~Prev or [~Next]: "
++"~Remove, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: "   242 UserRemoveFilePrompt
+ "\r\n\1n\1r\1hFile does not exist: \1c%s\1n\r\n"        243 FileDoesNotExist
+ "\7\r\n\1r\1h\1iCouldn't remove '%s'.\1n\r\n"               244 CouldntRemoveFile
+ "Delete file"                                           245 DeleteFileQ
+@@ -303,23 +306,23 @@
+ "\1_\1y\1hCredits to remove: \1n"                           249 CreditsToRemove
+ "\1_\1w\1h%s was removed.\r\n"\                            250 FileRemovedUserMsg
+ 	"\1n\1gYou lost %s credits.\r\n"
+-"\1_\r\n\1y\1hFilename         : \1n"                       251 EditFilename
++"\1_\1?\1y\1hFilename         : \1n"                        251 EditFilename
+ "\r\n\1r\1h\1iError renaming %s to %s\1n\r\n"               252 CouldntRenameFile
+ "%s renamed to %s\r\n"                                  253 FileRenamed
+ "\1_\1y\1hDescription      : \1n"                           254 EditDescription
+-"Delete extended description"                           255 DeleteExtDescriptionQ
++"UNUSED255"                                                 255 Unused255
+ "\1_\1y\1hUploader         : \1n"                           256 EditUploader
+ "\1_\1y\1hCredit value     : \1n"                           257 EditCreditValue
+ "\1_\1y\1hTimes downloaded : \1n"                           258 EditTimesDownloaded
+-"\1_\1y\1hOpen count       : \1n"                           259 EditOpenCount
+-"\1_\1y\1hAlternate Path   : \1n"                           260 EditAltPath
++"Edit extended description"                                 259 EditExtDescriptionQ
++"UNUSED260"                                                 260 Unused260
+ "\r\n\1w\1hYou only have %s credits.\r\n"                 261 YouOnlyHaveNCredits
+ "\r\nYou don't have enough credits.\r\n"                262 NotEnoughCredits
+ "\r\n\1w\1hNot enough time left to transfer.\r\n"         263 NotEnoughTimeToDl
+ "\r\nProtocol, ~Batch, ~Quit, or [~Next]: "             264 ProtocolBatchQuitOrNext
+ "\r\nBulk Upload %s %s Directory\r\n"\                  265 BulkUpload
+ 	"(Enter '-' for description to skip file):\r\n"
+-"\1_\1y\1h%s\1w%7uk\1b:"                                     266 BulkUploadDescPrompt
++"\1_\1y\1h%-12s\1w%7uk\1b:"                             266 BulkUploadDescPrompt
+ "\r\n\1r\1h\1iNo files in batch queue.\1n"\                 267 NoFilesInBatchQueue
+ 	"\r\n\r\n\1mUse \1hD\1n\1m or \1hU\1n\1m to add files to the queue.\r\n"
+ "\1_\r\n\1y\1hBatch: \1n"                                   268 BatchMenuPrompt
+@@ -350,22 +353,20 @@
+ "\r\nUnextractable file type.\r\n"                      289 UnextractableFile
+ "\r\nFile not found.\r\n"                               290 FileNotFound
+ "\r\n~Extract file(s), ~View archive, or ~Quit: "       291 ExtractFilesPrompt
+-"\1_\r\n\1y\1hTemp Directory: \1n"                          292 TempDirPrompt
++"\1_\1?\1y\1hTemp Directory: \1n"                        292 TempDirPrompt
+ "\1n\r\n%s not created yet.\r\n"\                        293 TempFileNotCreatedYet
+ 	"\r\nUse the \1hA\1n command to create it.\r\n"
+ "\r\nUploader: %s\r\nFilename: %s\r\n"                  294 TempFileInfo
+ "\r\n%s bytes in %u files\r\n"                          295 TempDirTotal
+ "\r\n%u files removed.\r\n"                             296 NFilesRemoved
+-"\1r\1h\1iAll other nodes should NOT be in use "\          297 ResortWarning
+-	"during resort/compression.\1n\r\n"
+-"\1-\1c%-15.15s \1y\1h%-25.25s "                            298 ResortLineFmt
+-"\1bEmpty\1n\r\n"                                         299 ResortEmptyDir
+-"\1wSorting @ELLIPSIS@"                                   300 Sorting
+-"\b\b\b\b\b\b\b\b\b\b\1bSorted    \1n\r\n"                301 Sorted
+-"\b\b\b\b\b\b\b\b\b\b\1bCompressed %u slots "\           302 Compressed
+-	"(%s bytes)\1n\r\n"
+-"\1w\1h\r\n%s is already in the queue.\r\n"               303 FileAlreadyInQueue
+-"\1w\1h\1/File is not online.\r\n"                       304 FileIsNotOnline
++"Tag this file"                                         297 TagFileQ
++"\1h\1yEnter (space-separated) Tags: "                  298 TagFilePrompt
++"UNUSED299"                                             299 Unused299
++"UNUSED300"                                             300 Unused300
++"\r\n\1n\1gAuthor           :\1h %s"                    301 FiAuthor
++"\r\n\1n\1gGroup            :\1h %s"                    302 FiGroup
++"\1w\1h\r\n%s is already in the queue.\r\n"             303 FileAlreadyInQueue
++"\1w\1h\1/File is not online.\r\n"                      304 FileIsNotOnline
+ "\1n\r\n\1m\1h%s \1n\1madded to batch download queue -\r\n"\ 305 FileAddedToBatDlQueue
+ 	"\1cFiles: \1h%u\1n\1c (\1h%u\1n\1c Max)  Credits: \1h%s\1n\1c"\
+ 	"  Bytes: \1h%s\1n\1c  Time: \1h%s\r\n"
+@@ -379,7 +380,7 @@
+ "\1_\1h\1w%s was %sdownloaded by %s\r\n"\                  312 DownloadUserMsg
+ 	"\1n\1gYou were awarded %s credits.\r\n"
+ "partially "                                            313 Partially
+-"\r\n\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
++"\1l\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
+ "\r\n\1n\1gDirectory        :\1h (%u) %s"                  315 FiDir
+ "\r\n\1n\1gFilename         :\1h %s"                       316 FiFilename
+ "\r\n\1n\1gFile size        :\1h %s (%s) bytes"            317 FiFileSize
+@@ -391,9 +392,9 @@
+ "\r\n\1n\1gLast downloaded  :\1h %s"                       323 FiDateDled
+ "\r\n\1n\1gTimes downloaded :\1h %u"                       324 FiTimesDled
+ "\r\n\1n\1gTime to download :\1h %s"                       325 FiTransferTime
+-"\r\n\1n\1gAlternate Path   :\1h %s"                       326 FiAlternatePath
+-"\r\n\1r\1h\1iInvalid Alternate Path Number: %u\1n"         327 InvalidAlternatePathN
+-"\1_\1/\1w\1hFile is currently open by %d user%s.\r\n"    328 FileIsOpen
++"\r\n\1n\1gTags             :\1h %s"                       326 FiTags
++"\r\n\1n\1gUploaded to      :\1h %s"                       327 FiUploadedTo
++"\r\n\1n\1gFile %-6.6s      :\1h %s"                       328 FiChecksum
+ "\7\7\r\n\1h\1rH\1ba\1gp\1yp\1cy \1mB\1wi\1rr\1gt\1bh\1cd\1ma\1yy "\  329 HappyBirthday
+ 	"\1wt\1ro \1gy\1bo\1cu\r\n\7\7\1mH\1ya\1wp\1rp\1gy "\
+ 	"\1bB\1ci\1mr\1yt\1wh\1rd\1ga\1by \1ct\1mo \1yy\1wo\1ru\1g.\1b.\1c.\r\n\r\n"
+@@ -410,10 +411,10 @@
+ "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your full real name\1\\: \1w"         339 EnterYourRealName
+ "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your company name\1\\: \1w"           340 EnterYourCompany
+ "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your handle or call-sign\1\\: \1w"    341 EnterYourHandle
+-"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your sex (M/F)\1\\: \1w"              342 EnterYourSex
++"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your gender (@GENDERS@)\1\\: \1w"     342 EnterYourGender
+ "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your street address\1\\: \1w"         343 EnterYourAddress
+ "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your voice phone number\1\\: \1w"     344 EnterYourPhoneNumber
+-"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your birthday (@DATEFMT@)\1\\: \1w"   345 EnterYourBirthday
++"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your birthday (@BDATEFMT@)\1\\: \1w"  345 EnterYourBirthday
+ "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your location\1\\ (e.g. city, state)\1\\: \1w" 346 EnterYourCityState
+ "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
+ "\1_\1y\1hClient (Name or Address)\1\\: \1w"                348 EnterYourComputer
+@@ -422,7 +423,7 @@
+ "\1bUser #\1c%-4d      \1b: \1c%s\r\n"                      351 LiUserNumberName
+ "\1bLogons Today    : \1c%-5u \1b(Max \1c%u\1b)\r\n"         352 LiLogonsToday
+ "\1bTime on Today   : \1c%-5u \1b(Max \1c%u\1b)\r\n"        353 LiTimeonToday
+-"\1bMail Waiting    : \1c%u\r\n"                          354 LiMailWaiting
++"\1bMail Waiting    : \1c%-5u \1b(Unread \1c%u\1b)\r\n"      354 LiMailWaiting
+ "\1b\1hSysop is        : \1c%s\r\n"                     355 LiSysopIs
+ "Available"                                             356 LiSysopAvailable
+ "Not Available"                                         357 LiSysopNotAvailable
+@@ -430,10 +431,10 @@
+ 	"same time.\1n\r\n"
+ "\7\1r\1h\1i%d critical errors have occurred. "\           359 CriticalErrors
+ 	"Type ;ERR at main menu.\1n\r\n"
+-"\1_\1w\1hYou have %d User to User Transfer%s "\           360 UserXferForYou
++"\1_\1w\1hYou have %d User to User File Transfer%s "\      360 UserXferForYou
+ 	"waiting for you\r\n"
+ "\1_\1w\1hYou have sent %d unreceived User to "\           361 UnreceivedUserXfer
+-	"User Transfer%s\r\n"
++	"User File Transfer%s\r\n"
+ "Read your mail now"                                    362 ReadYourMailNowQ
+ "Sorry, the system is closed to new users.\r\n"         363 NoNewUsers
+ "New User Password: "                                   364 NewUserPasswordPrompt
+@@ -462,7 +463,7 @@
+ "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
+ "\1n\1c\1h%s \1n\1cExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
+ "\1n\1cNum \1h\xb3\1n\1c Name                             "       381 XtrnProgLstTitles
+-"\1h\xc4\xc4\xc4\xc4Å\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\ 382 XtrnProgLstUnderline
++"\1h\xc4\xc4\xc4\xc4\xc5\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\ 382 XtrnProgLstUnderline
+ 	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+ 	"\xc4\xc4\xc4\xc4\xc4\xc4 "
+ "\1h\1c%3u \xb3 \1n\1c%-32.32s\1h "                        383 XtrnProgLstFmt
+@@ -505,8 +506,8 @@
+ "Amiga"                                                 416 ComputerTypeD
+ "Other"                                                 417 ComputerTypeE
+ "\7\r\nNo user data defined.\r\n"                       418 NoUserData
+-"\1r\1h®®® \1iDELETED\1n\1r\1h ¯¯¯\r\n"                       419 Deleted
+-"\1b\1h®®® \1iINACTIVE\1n\1b\1h ¯¯¯\r\n"                      420 Inactive
++"\1r\1h\xAE\xAE\xAE \1iDELETED\1n\1r\1h \xAF\xAF\xAF\r\n"    419 Deleted
++"\1b\1h\xAE\xAE\xAE \1iINACTIVE\1n\1b\1h \xAF\xAF\xAF\r\n"   420 Inactive
+ "\1n\1cAlias     : \1h%-30.30s  \1n\1cPassword     : "\      421 UeditAliasPassword
+ 	"\1h%-8.8s  %s\r\n"
+ "\1n\1cReal Name : \1h%-30.30s  \1n\1cPhone number : "\      422 UeditRealNamePhone
+@@ -583,7 +584,7 @@
+ "\1h\1bUser Settings for \1w%s #%d\1b:\r\n\r\n"                474 UserDefaultsHdr
+ "\1n\1b[\1h\1wT\1n\1b] \1hTerminal Mode                \1n\1b\1\\: \1c%s\r\n"   475 UserDefaultsTerminal
+ "\1n\1b[\1h\1wE\1n\1b] \1hExternal Editor              \1n\1b\1\\: \1c%s\r\n"   476 UserDefaultsXeditor
+-"\1n\1b[\1h\1wL\1n\1b] \1hScreen Length                \1n\1b\1\\: \1c%s %s\r\n" 477 UserDefaultsRows
++"\1n\1b[\1h\1wL\1n\1b] \1hTerminal Dimensions          \1n\1b\1\\: \1c%s %s\r\n" 477 UserDefaultsRows
+ "\1n\1b[\1h\1wX\1n\1b] \1hExpert Menu Mode             \1n\1b: \1c%s\r\n"   478 UserDefaultsMenuMode
+ "\1n\1b[\1h\1wP\1n\1b] \1hScreen Pause                 \1n\1b: \1c%s\r\n"   479 UserDefaultsPause
+ "\1n\1b[\1h\1wH\1n\1b] \1hHot Keys                     \1n\1b: \1c%s\r\n"   480 UserDefaultsHotKey
+@@ -604,8 +605,8 @@
+ "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   494 UserDefaultsWhich
+ "On"                                                    495 On
+ "Off"                                                   496 Off
+-"\r\n\1_\1b\1h[\1c@CHECKMARK@\1b] \1yHow many rows on your monitor "\   497 HowManyRows
+-	"[\1wAuto Detect\1y]: "
++"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal rows "\       497 HowManyRows
++	"[\1wAuto\1y]: \1n"
+ "\r\n\1_\1y\1hCurrent Password: \1w"                        498 CurrentPassword
+ "Forward personal e-mail to network mail address"       499 ForwardMailQ
+ "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yNetwork mail address\1\\ "\      500 EnterNetMailAddress
+@@ -737,7 +738,7 @@
+ "\r\n%u credits have been added to your account.\r\n"  592 CreditedAccount
+ "\r\nANSI Capture is now %s\r\n"                        593 ANSICaptureIsNow
+ "\1n\1m\r\nRetrieving \1h%s\1n\1m..."                        594 RetrievingFile
+-"\1n\r\nAlternate upload path now: %s\r\n"               595 AltULPathIsNow
++"UNUSED595"                                             595 Unused595
+ "\r\nPrivate"                                           596 PrivatePostQ
+ "\r\n\1_\1y\1hPost to: "                                   597 PostTo
+ "\r\nPrivate posts require a destination user "\        598 NoToUser
+@@ -769,7 +770,7 @@
+ "\r\n~Sub-board: @SUB@, ~Group: @GRP@, or ~All: "       621 SubGroupOrAll
+ "\r\n~Directory: @DIR@, ~Library: @LIB@, or ~All: "     622 DirLibOrAll
+ "\r\n\1_\1y\1hEnter path: "                                623 EnterPath
+-"\r\nSearch and display extended information"           624 SearchExtendedQ
++"\1?Display extended file information"                 624 DisplayExtendedFileInfoQ
+ "\r\nDisplay Subjects Only"                             625 DisplaySubjectsOnlyQ
+ "\r\nEcho is now %s \r\n"                               626 EchoIsNow
+ "\r\n\1n\1y\1hPrivate Chat - \1bCtrl-C to Quit\1n\r\n\r\n"   627 WelcomeToPrivateChat
+@@ -807,7 +808,7 @@
+ "\1l\1_\1g\1hFile Libraries:\r\n\r\n"                       658 CfgLibLstHdr
+ "\1n\1g(\1h%d\1n\1g) %s\1h\r\n"                               659 CfgLibLstFmt
+ "\1_\1c\1hListing \1n\1c(\1h%u\1n\1c) %s "\                     660 BatchFlagPrompt
+-	"(\1h%u\1n\1c) %s (\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c Files\1n\1c): \1n\1~"
++	"(\1h%u\1n\1c) %s (\1h\1`?\1n\1c=Menu) (%5u\b\b\b\b\b\1h%u\1n\1c Files\1n\1c): \1n\1~"
+ "\1n\1>\1q\1l\x014 \1h\1y[\1w\1~D\1y]ownload  \1h\1y[\1w\1~B\1y]atch  "\ 661 FileListBatchCommands
+ 	"[\1w\1~V\1y]iew Content  [\1w\1~E\1y]xtended Info  "\
+ 	"[\1w\1~P\1y]revious Page  [\1w\1~Q\1y]uit\1>\1n\r\n"
+@@ -1021,4 +1022,20 @@
+ "\xda\xbf\xd9\xc0"                                        839 SpinningCursor6
+ "\xdc\xde\xdf\xdd"                                        840 SpinningCursor7
+ "\xdc\xdd\xdf\xde"                                        841 SpinningCursor8
+-"\xfa\xf9\xfe\xf9"                                        842 SpinningCursor9
+\ No newline at end of file
++"\xfa\xf9\xfe\xf9"                                        842 SpinningCursor9
++"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal columns "\      843 HowManyColumns
++	"[\1wAuto\1y]: \1n"
++"\1[\1n\1mInternet mail sent to \1h%s\1n\r\n"              844 InternetMailSent
++"\1[\1n\1mFido NetMail sent to \1h%s @%s\1n\r\n"           845 FidoNetMailSent
++"\1[\1n\1mQWK NetMail sent to \1h%s (%s)\1n\r\n"           846 QWKNetMailSent
++"Messages to you only"                                     847 MsgsToYouOnlyQ
++"To You Only"                                              848 ToYouOnly
++"\r\nEnter number of messages from end, ~Date, ~Quit, or"\ 849 SetMsgPtrPrompt
++					" [Last Message]: "
++"DL"                                                       850 DateLastKeys
++"DL"                                                       851 DirLibKeys
++"SG"                                                       852 SubGroupKeys
++"A"                                                        853 AllKey
++"All"                                                      854 All
++"L"                                                        855 ListKey
++
