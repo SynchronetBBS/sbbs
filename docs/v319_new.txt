@@ -5,29 +5,35 @@
 
 Terminal Server
 ~~~~~~~~~~~~~~~
+o Add support for NTVDMx64 (16-bit DOS doors on x64 editions of Windows)
+  http://www.columbia.edu/~em36/ntvdmx64.html for more details
 o Allow FOSSIL mode of the Win32 virtual UART/FOSSIL driver to be disabled
 o Allow "FOSSIL Only" as a configuration option for external programs in SCFG
-o Add support for NTVDMx64 (16-bit DOS doors on x64 editions of Windows)
-o Don't force password-changes for users with blank passwords (e.g. Guest
-o Allow node directory to be configured in adv. node options
-o Support for manual terminal width setting and terminals w/ > 99 rows
-o String command (e.g. ';find') to find message and file areas by word
+o Load/keep/refresh each node's configuration in memory
+  Configuration changes are more readily visible (just log-off and back on)
+o Changed user birthdate storage format to YYYYMMDD, input to MM/DD/YYYY
+o Up to 40 characters can be configured by the sysop for gender options
+  The default choice/configuration is now: "M/F/X" (not just "M/F")
+o Don't force password-changes for users with blank passwords (e.g. Guest)
+o Allow node directory to be configured in Advanced node options
+o Support for manual terminal width setting and terminals with > 99 rows
+o String command (';find') to find message and file areas by search word
 o Access Requirement Strings (ARS)
 - SYSOP ARS keyword now applies to target user, not necessarily the user online
 o New @-codes:
 - !x to perform Ctrl-A style terminal/attribute control
 - TEXT:<num> to display text.dat string #num
-- NETMAIL: user's personal netmail or email address - for WitNik
+- NETMAIL: user's personal netmail or email address
 - FWD: "On" if the user has opted for forwarding their mail to netmail or "Off"
-- TMP: user's chosen temporay file type (e.g. "ZIP")
+- TMP: user's chosen temporary file type (e.g. "ZIP")
 - NOTE: user's note (same as MEMO1)
 - UDR (upload/download byte-ratio)
 - UDFR (file ratio)
-- LASTIP: user's most recent IP address at time of logoff
+- LASTIP user's most recent IP address at time of logoff
 - BDATEFMT
 - BIRTH: for full-format (MM/DD/YYYY or DD/MM/YYYY) user birthdate
-- SYSAVAILYN - same as SYSAVAIL but expands to Yes or No instead
-- SHOW:<ars> to only show text to users meeting ARS
+- SYSAVAILYN - same as SYSAVAIL but expands to "Yes" or "No" instead
+- SHOW:<ars> to only show the following text to users meeting ARS
 - MSG_THREAD_ID
 - MSG_THREAD_BACK
 - MSG_THREAD_NEXT
@@ -39,32 +45,32 @@ o New @-codes:
 - MAILU (unread mail waiting)
 - GIT_HASH
 - GIT_BRANCH
-- SEX and GENDERS
-o New aliases (for consistency): BIRTHFMT -> BDATEFMT and BIRTH:<fmt> ->
-  BDATE:<fmt>
-o Support C escape sequences in FILL @-code argument
+- SEX (user's gender) and GENDERS (gender options)
+- New aliases (for consistency):
+  BIRTHFMT -> BDATEFMT and BIRTH:<fmt> -> BDATE:<fmt>
+- Support C escape sequences in FILL @-code argument
   e.g. FILL:\x20 to fill with space
-o Support strftime format arguments to DATE/TIME @-codes
-- DATE: (alias: TIME:)
-- BDATE:
-- PWDATE:
-- SINCE:
-- LASTON:
-- FIRSTON:
-- LASTNEW:
-- EXPDATE:  
+- Support strftime format arguments to DATE/TIME @-codes
+  DATE: (alias: TIME:)
+  BDATE:
+  PWDATE:
+  SINCE:
+  LASTON:
+  FIRSTON:
+  LASTNEW:
+  EXPDATE:  
 - GETKEY
 - WAIT:<milliseconds>
 - CONTINUE
 o New option to create door drop files in node's temp directory
-o Changed user birthdate format to YYYYMMDD, input to YYYY/MM/DD
-o Support markup tags (optionally) when displaying post
+o HAPROXY support option
+o Support markup tags (optionally) when displaying posts
 o Support PETSCII terminals connected to non-PETSCII ports
 o Support forwarding of local email msg to networked mail (w/comments)
   and change of message subject
 o Store client terminal information in node#/terminal.ini
+  for future use (e.g. for improved node spying)
 o Create node#/client.ini for each node client connection
-o Load/keep/refresh each node's configuration in memory
 o Support 3rd party installer files for 150+ external programs (doors)
   See xtrn/3rdp-intall/README.md for details
 o new text.dat strings:
@@ -73,10 +79,10 @@ o new text.dat strings:
 - QWKNetMailSent
 - FileInfoEditPrompt 
 - EditExtDescriptionQ
-Change SearchExtendedQ to DisplayExtendedFileInfoQ
 - FiAuthor
-- FiGroup 
-
+- FiGroup
+Changed EnterYourSex -> EnterYourGender
+Changed SearchExtendedQ to DisplayExtendedFileInfoQ
 
 General
 ~~~~~~~
@@ -85,68 +91,51 @@ o New file base format (based on SMB), see docs/newfilebase.txt
   - better support for files > 2GB and 4GB
   - extended file descriptions up to 4000 chars are now supported
 DIZ enhancements: Read/use SAUCE data, support ANSI, increase max 1->4K
-
 Inspired by Blocktronics (and other ANSI art group) packs' FILE_ID.DIZ/ANS
 files:
 * Support (and prioritize) FILE_ID.ANS
 * Convert ANSI color/attribute sequences in DIZ files to Ctrl-A equivalent
-(uses SAUCE width and ICE color, if specified)
+ (uses SAUCE width and ICE color, if specified)
 * Don't treat DIZ as a series of lines, they're not always nowadays.
 * New putmsg() mode: P_INDENT to print files indented by current column
 * Display full (up to 64-char) filenames in lists when using 132+ column
-terminal.
+  terminal.
 * Use the Author, Group, and Title fields from the SAUCE if present/non-blank
 o libarchive integration (into SBBS and SBBSecho)
   built-in support for creating/extracting zip, 7zip, and tgz files
   additional read-only formats: rar, lha/lzh, iso, xar, and cab
+o Give sysop more control over characters allowed in uploaded filenames
 o Recognize the "standard" USENET signature delimiter: "\n-- \n"
 o Use Linux OFD locks on 64-bit Linux builds
 o Use a more-liberal username matching algorithm
   e.g. Ignore all non-trailing non-alphanumeric characters
-o HAPROXY support option
 o Support for single-part MIME-attachment decode/download
-o .ini file !include now supports wildcard patterns, e.g .!include modopts.d/*.ini
-Allow sysop to configure new user gender options (not just M/F)
-
-Up to 40 characters can be configured by the sysop for gender options.
-The default choice/configuration is now: "M/F/X" (not just "M/F")
-New @-code: GENDERS
-text.dat EnterYourSex -> EnterYourGender
-
+o .ini file !include now supports wildcard patterns
+   e.g .!include modopts.d/*.ini
 Add support for "name@address" syntax in twitlist.cfg
-
-Security
-~~~~~~~~
-o Give sysop more control over characters allowed in uploaded filenames
   
 JavaScript
 ~~~~~~~~~~
 o Added 'user' properties: birthyear, birthmonth, and birthday
-o Added 'system.text()' method: like bbs.text()
-o More control over console output streams (-A and -S options)
-New JS User.stats properties:
+o Added 'system.text()' method: similar to bbs.text()
+o New JS User.stats properties:
 - read_mail_waiting
 - unread_mail_waiting
 - spam_waiting
-New FileBase class
-New Archive class
-New JS system properties: git_hash and git_branch
-Add edit_msg() and forward_msg() methods to JS 'bbs' object
-Expose the next-run-date/time for an event as a new `next_run` property
-for `xtrn_area.event[]` (in `time_t` format) for easier debugging of these
-kinds of issues.
-Also expose the error log level as a new property: `error_level` while we're
-here.
-File.iniGetValue(), iniGetKeys(), iniGetObjects() no supported nested
-(!include'd) .ini files
-'jsexec -r<expression>' to evaluate a JS expression from command-line
-New bbs.view_file(filename) method
-Add bbs.export_filelist() method
-Add BBS property: msg_from_bbsid
-
-Exposes the FTN BBSID value from the message header (if there is one).
-
-Fix: can_* and is_* properties were not dynamic. Added "files" property.
+o New FileBase class
+o New Archive class
+o New JS system properties: git_hash and git_branch
+o Add edit_msg() and forward_msg() methods to JS 'bbs' object
+o Expose the next-run-date/time for an event as a new `next_run` property
+  for `xtrn_area.event[]` (in `time_t` format) for easier debugging of these
+  kinds of issues
+o File.iniGetValue(), iniGetKeys(), iniGetObjects() now supported nested
+  (!include'd) .ini files
+o 'jsexec -r<expression>' to evaluate a JS expression from command-line
+o More control over jsexec console output streams (-A and -S options)
+o New bbs.view_file(filename) method
+o Add bbs.export_filelist() method
+o Add bbs.msg_from_bbsid property
 
 The following properties would only reflect the status at the time the
 file_area object was initialized:
@@ -164,8 +153,6 @@ The lib[] and lib_list[] 'can_access' properties still have this flaw.
 Also: Add a new "files" property to the dir[] and dir_list[] objects to report
 the current number of files in each directory database.
 
-Fix: can_* and is_* properties were not dynamic. Added "posts" property.
-
 The following properties would only reflect the status at the time the
 msg_area object was initialized:
 - can_access
@@ -176,8 +163,6 @@ msg_area object was initialized:
 
 ... so if changes were made the user while online, for example, these
 property values would *not* also change to reflect the current state.
-
-The grp[] and grp_list[] 'can_access' properties still have this flaw.
 
 Also: Add a new "posts" property to the sub[] and sub_list[] objects to
 report the current number of posted messages (quicker than opening a MsgBase
@@ -195,22 +180,17 @@ o Generate a MSGID kludge for netmail messages created by SBBSecho
 o Built-in sbbsecho.log rotation
   New configuration params: MaxLogSize (default: 10M) and MaxLogsKept (10)
 
-
 Control Panel
 ~~~~~~~~~~~~~
-New sem-file: ctrl/sound.mute
-Update sound (WAV) file play-on-event support in Windows build
-
-A "hack attempt" sound file is now supported in the Terminal Server, Mail
-Server,  and Services.
-
-"login" and "logoff" sound files are now supported in the Terminal Server, FTP
-Server, Web Server, Mail Server, and Services.
-This enhancement fixes Issue #157
-
-The following sound files may now be configured in the [Global] section of the
-ctrl/sbbs.ini file, if desired to set the default sound files for all
-servers/services in on place:
+o New sem-file: ctrl/sound.mute
+o Update sound (WAV) file play-on-event support in Windows build
+o A "hack attempt" sound file is now supported in the Terminal Server, Mail
+  Server,  and Services
+o "login" and "logoff" sound files are now supported in the Terminal Server,
+  FTP Server, Web Server, Mail Server, and Services.
+o The following sound files may now be configured in the [Global] section of
+  the ctrl/sbbs.ini file, if desired to set the default sound files for all
+  servers/services in on place:
 - AnswerSound
 - LoginSound
 - LogoutSound
