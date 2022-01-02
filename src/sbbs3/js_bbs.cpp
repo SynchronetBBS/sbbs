@@ -2944,7 +2944,7 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-#define TG_MODE_UNSPECIFIED	~0
+#define TG_MODE_UNSPECIFIED	~0U
 static JSBool
 js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 {
