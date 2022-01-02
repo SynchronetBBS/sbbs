@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Synchronet BBS Software"
-#define MyAppVersion "3.18b"
+#define MyAppVersion "3.19b"
 #define MyAppPublisher "Rob Swindell"
 #define MyAppURL "http://www.synchro.net/"
 #define MyAppSupportURL "http://wiki.synchro.net/howto:support"
@@ -24,8 +24,8 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppSupportURL}
 AppUpdatesURL={#MyAppDownloadURL}
-AppCopyright=Copyright 2020 {#MyAppPublisher}
-VersionInfoVersion=3.18.1
+AppCopyright=Copyright 2022 {#MyAppPublisher}
+VersionInfoVersion=3.19.1
 AppMutex=sbbs_running,sbbsctrl_running
 DefaultDirName={sd}\sbbs
 DefaultGroupName={#MyAppName}
@@ -44,11 +44,11 @@ UninstallDisplayIcon="{app}\exec\sbbsctrl.exe"
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
-#define servers_group "TCP/IP Servers"
-#define services_group "TCP and UDP Services"
-#define ntsvcs_group "NT Services (for use by advanced system operators)"
-#define webui_group "Web Interface"
+#define servers_group "TCP/IP Servers:"
+#define services_group "TCP and UDP Services:"
+#define ntsvcs_group "NT Services (for use by advanced system operators):"
 [Tasks]
+Name: "ntvdmx64"; Description: "Enable (NTVDMx64 has already been installed?)"; GroupDescription: "16-bit DOS Program Support:"; Flags: unchecked; Check: IsWin64
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "startupicon"; Description: "Create a shortcut in the Startup folder"; GroupDescription: "{cm:AdditionalIcons}";
 Name: "enable_bbs"; Description: "Enable Terminal Server (Telnet, RLogin, and SSH protocols)"; GroupDescription: {#servers_group}
@@ -58,24 +58,24 @@ Name: "enable_web"; Description: "Enable Web Server (HTTP protocol)"; GroupDescr
 Name: "enable_svcs"; Description: "Enable Synchronet Services (Finger, Gopher, NNTP, IRC, IMAP, etc.)"; GroupDescription: {#services_group}
 Name: "enable_ntsvcs"; Description: "Enable Synchronet NT services"; GroupDescription: {#ntsvcs_group}; Flags: unchecked
 Name: "enable_sexpots"; Description: "Enable POTS (dial-up modem) support service"; GroupDescription: {#ntsvcs_group}; Flags: unchecked
-name: "web_echicken"; Description: "Enable echicken's Web Interface (v4)"; GroupDescription: {#webui_group}; Flags: exclusive
-name: "web_runemaster"; Description: "Enable Legacy/Runemaster Web Interface"; GroupDescription: {#webui_group}; Flags: unchecked exclusive
 
 [Files]
 Source: "src\sbbs3\ctrl\sbbsctrl.exe";                        DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "src\sbbs3\chat\chat.exe";                            DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "src\sbbs3\useredit\useredit.exe";                    DestDir: "{app}\exec";  Flags: ignoreversion
-Source: "src\sbbs3\msvc.win32.exe.{#release}\*.exe";          DestDir: "{app}\exec";  Flags: ignoreversion; Excludes: "textgen.exe, v4upgrade.exe"
+Source: "src\sbbs3\msvc.win32.exe.{#release}\*.exe";          DestDir: "{app}\exec";  Flags: ignoreversion; Excludes: "textgen.exe"
 Source: "src\sbbs3\msvc.win32.dll.{#release}\*.dll";          DestDir: "{app}\exec";  Flags: ignoreversion
-Source: "s:\sbbs\exec\sbbsexec.dll";                          DestDir: "{sys}";
+Source: "src\sbbs3\msvc.win32.dll.{#release}\sbbsexec.dll";   DestDir: "{sys}";
 Source: "src\sbbs3\scfg\msvc.win32.exe.{#release}\scfg.exe";  DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "3rdp\win32.release\nspr\bin\nspr4.dll";       	      DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "3rdp\win32.release\mozjs\bin\mozjs185-1.0.dll";      DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "3rdp\win32.release\cryptlib\bin\cl32.dll";           DestDir: "{app}\exec";  Flags: ignoreversion
+Source: "3rdp\win32.release\libarchive\bin\archive.dll";      DestDir: "{app}\exec";  Flags: ignoreversion
+Source: "3rdp\win32.release\zlib\bin\zlib1.dll";              DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "src\sexpots\{#release}\sexpots.exe";                 DestDir: "{app}\exec";  Flags: ignoreversion
-Source: "s:\sbbs\exec\user.com";                              DestDir: "{app}\exec";  Flags: ignoreversion; Check: not IsWin64
-Source: "s:\sbbs\exec\mlabels.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion; Check: not IsWin64
-Source: "s:\sbbs\exec\svdmansi.com";                          DestDir: "{app}\exec";  Flags: ignoreversion; Check: not IsWin64
+Source: "s:\sbbs\exec\user.com";                              DestDir: "{app}\exec";  Flags: ignoreversion
+Source: "s:\sbbs\exec\mlabels.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion
+Source: "s:\sbbs\exec\svdmansi.com";                          DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "s:\sbbs\exec\dosxtrn.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "node1\node.cnf";                                     DestDir: "{app}\node1"; Flags: ignoreversion
 Source: "node1\node.cnf";                                     DestDir: "{app}\node2"; Flags: ignoreversion
@@ -86,11 +86,7 @@ Source: "ctrl\*";   DestDir: "{app}\ctrl";  Flags: ignoreversion recursesubdirs 
 Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.0??.*,.gitignore"
 Source: "xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.obj,*.tds,smm,.gitignore"
 Source: "docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "web\*";    DestDir: "{app}\web";   Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "webv4\*";                                            DestDir: "{app}\webv4";            Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "webv4\pages\.examples\*";                            DestDir: "{app}\webv4\pages";      Flags: ignoreversion recursesubdirs
-Source: "webv4\components\.examples\*";                       DestDir: "{app}\webv4\components"; Flags: ignoreversion recursesubdirs
-Source: "webv4\sidebar\.examples\*";                          DestDir: "{app}\webv4\sidebar";    Flags: ignoreversion recursesubdirs
 Source: "c:\bin\zip.exe";                                     DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "c:\bin\unzip.exe";                                   DestDir: "{app}\exec";  Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
@@ -133,9 +129,7 @@ Filename: "{app}\ctrl\sbbs.ini"; Section: "Mail";     Key: "AutoStart"; String: 
 Filename: "{app}\ctrl\sbbs.ini"; Section: "FTP";      Key: "AutoStart"; String: "false"; Tasks: not enable_ftp
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "AutoStart"; String: "false"; Tasks: not enable_web
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Services"; Key: "AutoStart"; String: "false"; Tasks: not enable_svcs
-Filename: "{app}\ctrl\sbbs.ini"; Section: "BBS";      Key: "Options"; String: "XTRN_MINIMIZED | ALLOW_RLOGIN | ALLOW_SSH | NO_DOS"; Check: IsWin64
-Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; String: "../web/root"; Tasks: web_runemaster
-Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; String: "../webv4/root"; Tasks: web_echicken
+Filename: "{app}\ctrl\sbbs.ini"; Section: "BBS";      Key: "Options"; String: "XTRN_MINIMIZED | ALLOW_RLOGIN | ALLOW_SSH | NO_DOS"; Check: IsWin64; Tasks: not ntvdmx64
 
 [Dirs]
 Name: "{app}\data"
