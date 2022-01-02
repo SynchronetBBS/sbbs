@@ -11,7 +11,7 @@
 <body>
 <font face=arial,helvetica>
 <h1>Synchronet JavaScript Object Model Reference</h1>
-Generated for <b>Synchronet v3.19b</b>, compiled Jan  1 2022 22:31
+Generated for <b>Synchronet v3.19b</b>, compiled Jan  1 2022 23:46
 <br><font size=-1>
 Property and Method version numbers (when available) indicate the Synchronet version when the item was added or modified.
 </font>
@@ -2804,18 +2804,6 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>keyboard_buffer_space</b><td>number
 <td>3.18
 <td>number of characters spaces available in the keyboard input buffer - <small>READ ONLY</small>
-<tr valign=top><td><b>cterm_fonts_loaded</b><td>object
-<td>N/A
-<td>undefined
-<tr valign=top><td><b>cterm_font_state</b><td>object
-<td>N/A
-<td>undefined
-<tr valign=top><td><b>cterm_fonts_active</b><td>object
-<td>N/A
-<td>undefined
-<tr valign=top><td><b>cterm_charheight</b><td>string
-<td>N/A
-<td>undefined
 </table>
 <h2><a name=msg_area_object>msg_area object</a>
 <br><font size=-1>Message Areas</font>
@@ -3885,17 +3873,16 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <td>calculated 128-bit MD5 digest of file contents as base64-encoded string - <small>READ ONLY</small>
 <tr valign=top><td><b>sha1_hex</b><td>undefined
 <td>3.19
-<td>ini style: minimum key length (for left-justified white-space padded keys)
+<td>calculated 160-bit SHA1 digest of file contents as hexadecimal string - <small>READ ONLY</small>
 <tr valign=top><td><b>sha1_base64</b><td>undefined
 <td>3.19
-<td>ini style: key prefix (e.g. '	', null = default prefix)
+<td>calculated 160-bit SHA1 digest of file contents as base64-encoded string - <small>READ ONLY</small>
 <tr valign=top><td><b>ini_key_len</b><td>number
 <td>3.17
-<td>ini style: section separator (e.g. '
-', null = default separator)
+<td>ini style: minimum key length (for left-justified white-space padded keys)
 </table>
 <h2><a name=Archive_class>Archive class</a>
-<br><font size=-1>Class used for opening, creating, reading, or writing archive files on the local file system<p></font>
+<br><font size=-1>Class used for opening, creating, reading, or writing archive files on the local file system</font>
 <font size=-1> - introduced in v3.19</font>
 </h2>
 <p>To create a new Archive object: <tt>var a = new Archive(<i>filename</i>)</tt></p>
@@ -3916,16 +3903,16 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Description</font>
 <tr valign=top><td><b>create</b><td>number<td><tt>Archive.create([string format] [,boolean with_path = false] [,array file_list])
 <td>3.19
-<td>create an archive of the specified format, returns the number of files archived, will throw exception upon error
+<td>Create an archive of the specified format (e.g. 'zip', '7z', 'tgz').<br>Returns the number of files archived.<br>Will throw exception upon error.
 <tr valign=top><td><b>read</b><td>string<td><tt>Archive.read(string path/filename)
 <td>3.19
-<td>read and return the contents of the specified archived text file
+<td>Read and return the contents of the specified archived text file.
 <tr valign=top><td><b>extract</b><td>number<td><tt>Archive.extract(output_directory [,boolean with_path = false] [,number max_files = 0] [,string file/pattern [...]])
 <td>3.19
-<td>extract files from an archive to specified output directory, returns the number of files extracted, will throw exception upon error
+<td>Extract files from an archive to specified output directory.<br>Returns the number of files extracted.<br>Will throw exception upon error.
 <tr valign=top><td><b>list</b><td>array<td><tt>Archive.list([,boolean hash = false] [,string file/pattern])
 <td>3.19
-<td>get list of archive contents as an array of objects<br>archived object properties:<br><ul><li>string <tt>type</tt> - item type: 'file', 'link', or 'directory'<li>string <tt>name</tt> - item path/name<li>string <tt>path</tt> - source path<li>string <tt>symlink</tt><li>string <tt>hardlink</tt><li>number <tt>size</tt> - item size in bytes<li>number <tt>time</tt> - modification date/time in time_t format<li>number <tt>mode</tt> - permissions/mode flags<li>string <tt>user</tt> - owner name<li>string <tt>group</tt> - owner group<li>string <tt>format</tt> - archive format<li>string <tt>compression</tt> - compression method<li>string <tt>fflags</tt><li>number <tt>crc16</tt> - 16-bit CRC, when hash is true and type is file<li>number <tt>crc32</tt> - 32-bit CRC, when hash is true and type is file<li>string <tt>md5</tt> - hexadecimal MD-5 sum, when hash is true and type is file<li>string <tt>sha1</tt> - hexadecimal SHA-1 sum, when hash is true and type is file</ul>when <tt>hash</tt> is <tt>true</tt>, calculates and returns hash/digest values of files in stored archive
+<td>Get list of archive contents as an array of objects.<br>Archived object properties:<br><ol><li>string <tt>type</tt> - item type: 'file', 'link', or 'directory'<li>string <tt>name</tt> - item path/name<li>string <tt>path</tt> - source path<li>string <tt>symlink</tt><li>string <tt>hardlink</tt><li>number <tt>size</tt> - item size in bytes<li>number <tt>time</tt> - modification date/time in time_t format<li>number <tt>mode</tt> - permissions/mode flags<li>string <tt>user</tt> - owner name<li>string <tt>group</tt> - owner group<li>string <tt>format</tt> - archive format<li>string <tt>compression</tt> - compression method<li>string <tt>fflags</tt><li>number <tt>crc16</tt> - 16-bit CRC, when hash is true and type is file<li>number <tt>crc32</tt> - 32-bit CRC, when hash is true and type is file<li>string <tt>md5</tt> - hexadecimal MD-5 sum, when hash is true and type is file<li>string <tt>sha1</tt> - hexadecimal SHA-1 sum, when hash is true and type is file</ol>When <tt>hash</tt> is <tt>true</tt>, calculates and returns hash/digest values of files in stored archive.
 </table>
 <br>
 <table border=1 width=100%>
@@ -5992,4 +5979,4 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>CMS_SPCOPUSINFO_URL</b><td>number
 </table>
 <p><small>
-Totals: 1378 properties, 462 methods
+Totals: 1374 properties, 462 methods
