@@ -99,7 +99,7 @@ function Unregistered_Client(id,socket) {
 			if ((resp === undefined) || (resp === null) || (resp[0] === undefined)) {
 				/* Fall through */
 			} else if (resp[0].search(/[.]/) == -1 || resp[0].search(/[.]local$/i) > -1) {
-				log(LOG_DEBUG,format("[UNREG] Local network detected, using servername.");
+				log(LOG_DEBUG,format("[UNREG] Local network detected, using servername."));
 				this.hostname = ServerName;
 			} else {
 				this.hostname = resp[0];
