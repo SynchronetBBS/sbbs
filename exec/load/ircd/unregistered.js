@@ -96,14 +96,14 @@ function Unregistered_Client(id,socket) {
 				log(LOG_DEBUG,format("[UNREG] WARNING: Received extraneous RDNS reply."));
 				return false;
 			}
-			log(LOG_DEBUG,format("[UNREG] Received RDNS reply: %s", resp[0]));
-			if (resp[0] === undefined) {
+			if ((resp === undefined) || (resp === null) || (resp[0] === undefined)) {
 				/* Fall through */
 			} else if (resp[0].search(/[.]/) == -1 || resp[0].search(/[.]local$/i) > -1) {
+				log(LOG_DEBUG,format("[UNREG] Local network detected, using servername.");
 				this.hostname = ServerName;
 			} else {
 				this.hostname = resp[0];
-				log(LOG_DEBUG,format("[UNREG] Resolving hostname: %s", resp[0]));
+				log(LOG_DEBUG,format("[UNREG] Resolving RDNS reply: %s", resp[0]));
 				if (this.socket.family == PF_INET6) {
 					DNS_Resolver.resolveIPv6(resp[0], this.forward_resolver, this);
 				} else {
@@ -124,9 +124,14 @@ function Unregistered_Client(id,socket) {
 				log(LOG_DEBUG,format("[UNREG] WARNING: Received extraneous DNS reply."));
 				return false;
 			}
-			log(LOG_DEBUG,format("[UNREG] Received DNS reply: %s", resp[0]));
-			if ((resp[0] === undefined) || (resp[0] != this.ip)) {
+			if ((resp === undefined) || (resp === null)) {
+				log(LOG_DEBUG,format("[UNREG] DNS reply timed out.");
 				this.hostname = this.ip;
+			} else {
+				log(LOG_DEBUG,format("[UNREG] Received DNS reply: %s", resp[0]));
+				if ((resp[0] === undefined) || (resp[0] != this.ip)) {
+					this.hostname = this.ip;
+				}
 			}
 			this.dns_pending = false;
 			this.Unregistered_Check_User_Registration();
