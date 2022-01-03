@@ -683,8 +683,10 @@ DNS.prototype.resolveProcess = function(host, callback, dnstype, thisObj)
 					break;
 			};
 		}
-		if (rectype === undefined)
+		if (rectype === undefined) {
+			this.callback.call(this.thisObj, null);
 			return;
+		}
 
 		if (this[rectype].addrs === undefined)
 			this[rectype].addrs = [];
