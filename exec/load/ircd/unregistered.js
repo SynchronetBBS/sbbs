@@ -125,7 +125,7 @@ function Unregistered_Client(id,socket) {
 				return false;
 			}
 			if ((resp === undefined) || (resp === null)) {
-				log(LOG_DEBUG,format("[UNREG] DNS reply timed out.");
+				log(LOG_DEBUG,format("[UNREG] DNS reply timed out."));
 				this.hostname = this.ip;
 			} else {
 				log(LOG_DEBUG,format("[UNREG] Received DNS reply: %s", resp[0]));
