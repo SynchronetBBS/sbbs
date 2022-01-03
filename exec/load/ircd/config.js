@@ -354,10 +354,9 @@ function read_conf_config(conf) {
 					HLines.push(new HLine(arg[1],arg[3]));
 					break;
 				case "I":
-					if (!arg[5])
+					if (!arg[5] || !parseInt(arg[5]))
 						break;
-					ILines.push(new ILine(arg[1],arg[2],arg[3],arg[4],
-						arg[5]));
+					ILines.push(new ILine(arg[1],arg[2],arg[3],arg[4],parseInt(arg[5])));
 					break;
 				case "K":
 					if (!arg[2])
