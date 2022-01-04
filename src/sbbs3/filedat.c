@@ -946,7 +946,7 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 	if(extract_files_from_archive(archive
 		,/* outdir: */cfg->temp_dir
 		,/* allowed_filename_chars: */NULL /* any */
-		,/* with_path: */false
+		,/* with_path: */true
 		,/* overwrite: */false
 		,/* max_files: */strListCount(diz_fnames)
 		,/* file_list: */diz_fnames
