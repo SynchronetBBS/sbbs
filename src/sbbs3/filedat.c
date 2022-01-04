@@ -809,7 +809,7 @@ long create_archive(const char* archive, const char* format
 }
 
 long extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
-	,bool with_path, long max_files, str_list_t file_list, char* error, size_t maxerrlen)
+	,bool with_path, bool overwrite, long max_files, str_list_t file_list, char* error, size_t maxerrlen)
 {
 	int result;
 	struct archive *ar;
@@ -884,6 +884,8 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 		SAFECOPY(fpath, outdir);
 		backslash(fpath);
 		SAFECAT(fpath, pathname);
+		if(!overwrite && fexist(fpath))
+			continue;
 		FILE* fp = fopen(fpath, "wb");
 		if(fp == NULL) {
 			char err[256];
@@ -945,6 +947,7 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 		,/* outdir: */cfg->temp_dir
 		,/* allowed_filename_chars: */NULL /* any */
 		,/* with_path: */false
+		,/* overwrite: */false
 		,/* max_files: */strListCount(diz_fnames)
 		,/* file_list: */diz_fnames
 		,/* error: */NULL, 0) >= 0) {

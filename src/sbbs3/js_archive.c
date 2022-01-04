@@ -109,6 +109,7 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	char*		allowed_filename_chars = SAFEST_FILENAME_CHARS;
 	str_list_t	file_list = NULL;
 	bool		with_path = false;
+	bool		overwrite = true;
 	int32		max_files = 0;
 	char		error[256] = "";
 	jsrefcount	rc;
@@ -136,6 +137,10 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 			allowed_filename_chars = NULL;	// We trust this archive
 		argn++;
 	}
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		overwrite = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
 		if(!JS_ValueToInt32(cx, argv[argn], &max_files)) {
 			free(outdir);
@@ -154,7 +159,7 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc = JS_SUSPENDREQUEST(cx);
 	long extracted = extract_files_from_archive(filename, outdir, allowed_filename_chars
-		,with_path, (ulong)max_files, file_list, error, sizeof(error));
+		,with_path, overwrite, (ulong)max_files, file_list, error, sizeof(error));
 	strListFree(&file_list);
 	free(outdir);
 	JS_RESUMEREQUEST(cx, rc);
@@ -538,7 +543,7 @@ static jsSyncMethodSpec js_archive_functions[] = {
 		,31900
 	},
 	{ "extract",	js_extract,		1,	JSTYPE_NUMBER
-		,JSDOCSTR("output_directory [,boolean with_path = false] [,number max_files = 0] [,string file/pattern [...]]")
+		,JSDOCSTR("output_directory [,boolean with_path = false] [,boolean overwrite = true] [,number max_files = 0] [,string file/pattern [...]]")
 		,JSDOCSTR("Extract files from an archive to specified output directory.<br>"
 			"Returns the number of files extracted.<br>"
 			"Will throw exception upon error.")

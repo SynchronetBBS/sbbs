@@ -76,6 +76,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		,/* outdir: */cfg.temp_dir
 		,/* allowed_filename_chars: */SAFEST_FILENAME_CHARS
 		,/* with_path: */false
+		,/* overwrite: */true
 		,/* max_files */1000
 		,/* file_list: */NULL /* all files */
 		,error, sizeof(error));
