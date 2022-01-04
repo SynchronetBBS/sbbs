@@ -67,6 +67,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			,/* outdir: */cfg.temp_dir
 			,/* allowed_filename_chars: */NULL /* any */
 			,/* with_path: */false
+			,/* overwrite: */true
 			,/* max_files: */0 /* unlimited */
 			,/* file_list: */NULL /* all files */
 			,error, sizeof(error));
