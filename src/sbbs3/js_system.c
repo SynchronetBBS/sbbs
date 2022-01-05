@@ -1737,9 +1737,9 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 
 	/* settings */
 	if(cfg->total_fcomps)
-		strcpy(user.tmpext,cfg->fcomp[0]->ext);
+		SAFECOPY(user.tmpext,cfg->fcomp[0]->ext);
 	else
-		strcpy(user.tmpext,supported_archive_formats[0]);
+		SAFECOPY(user.tmpext,supported_archive_formats[0]);
 
 	user.shell=cfg->new_shell;
 	user.misc=cfg->new_misc|(AUTOTERM|COLOR);
