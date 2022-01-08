@@ -757,6 +757,8 @@ function syncterm_list(list, dir)
 					,list[i].service[j].description.indexOf("80") >= 0 ? "C128-80col" : "C64"));
 				f.writeln("\tNoStatus=true");
 			}
+			if(j == 0 && list[i].description)
+				f.writeln("\tComment=" + list[i].description.join(' '));
             f.writeln();
         }
     }
