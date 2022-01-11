@@ -462,6 +462,7 @@ typedef struct
 	int32_t			msg_misc;			/* Global Message-Related Settings (upper 16-bits default to on) */
 	int32_t 		file_misc;			/* File Misc Settings */
 	int32_t			xtrn_misc;			/* External Programs Misc Settings */
+	uint16_t		filename_maxlen;	/* Maximum filename length */
 
 	char			node_comspec[LEN_CMD+1];	/* DOS COMMAND.COM to use */
 	char			node_editor[LEN_CMD+1]; /* Local text editor command line to use */

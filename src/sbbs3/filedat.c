@@ -1304,7 +1304,7 @@ bool illegal_filename(const char *fname)
 bool allowed_filename(scfg_t* cfg, const char *fname)
 {
 	size_t len = strlen(fname);
-	if(len < 1)
+	if(len < 1 || len > cfg->filename_maxlen)
 		return false;
 
 	if(cfg->file_misc & FM_SAFEST)
