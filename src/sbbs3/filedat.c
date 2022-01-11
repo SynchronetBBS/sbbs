@@ -189,6 +189,22 @@ str_list_t loadfilenames(smb_t* smb, const char* filespec, time_t t, enum file_s
 // Load and optionally-sort files from an open filebase into a dynamically-allocated list of "objects"
 file_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail detail, enum file_sort order, size_t* count)
 {
+	// Liberal filespec matching when filespec does not contain wildcards and is at least 12 chars in length
+	char newfilespec[SMB_FILEIDX_NAMELEN + 1] = "";
+	if(filespec != NULL) {
+		size_t len = strlen(filespec);
+		if(len >= 12 && strcspn(filespec, "*?") == len) {
+			SAFECOPY(newfilespec, filespec);
+			char* ext = getfext(newfilespec);
+			if(ext != NULL) {
+				*ext = 0;
+				SAFECAT(newfilespec, "*");
+				SAFECAT(newfilespec, getfext(filespec));
+			} else
+				SAFECAT(newfilespec, "*");
+			filespec = newfilespec;
+		}
+	}
 	*count = 0;
 
 	long start = 0;	
