@@ -4396,7 +4396,7 @@ static void ctrl_thread(void* arg)
 
 				if(strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)) {
 					success=FALSE;
-					lprintf(LOG_WARNING,"%04d <%s> !ILLEGAL FILENAME ATTEMPT by %s [%s]: %s"
+					lprintf(LOG_WARNING,"%04d <%s> !ILLEGAL FILENAME ATTEMPT by %s [%s]: '%s'"
 						,sock, user.alias, host_name, host_ip, p);
 					ftp_hacklog("FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
 				} else {
@@ -4568,14 +4568,14 @@ static void ctrl_thread(void* arg)
 				}
 				if(illegal_filename(p)
 					|| trashcan(&scfg,p,"file")) {
-					lprintf(LOG_WARNING,"%04d <%s> !ILLEGAL FILENAME ATTEMPT by %s [%s]: %s"
+					lprintf(LOG_WARNING,"%04d <%s> !ILLEGAL FILENAME ATTEMPT by %s [%s]: '%s'"
 						,sock, user.alias, host_name, host_ip, p);
 					sockprintf(sock,sess,"553 Illegal filename attempt");
 					ftp_hacklog("FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
 					continue;
 				}
 				if(!allowed_filename(&scfg, p)) {
-					lprintf(LOG_WARNING,"%04d <%s> !UNALLOWED FILENAME ATTEMPT by %s [%s]: %s"
+					lprintf(LOG_WARNING,"%04d <%s> !UNALLOWED FILENAME ATTEMPT by %s [%s]: '%s'"
 						,sock, user.alias, host_name, host_ip, p);
 					sockprintf(sock,sess,"553 Unallowed filename attempt");
 					continue;
