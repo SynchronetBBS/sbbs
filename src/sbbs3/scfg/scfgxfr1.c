@@ -75,7 +75,8 @@ void xfer_opts()
 			SAFEPRINTF2(str, "Most %s, %scluding Spaces"
 				,cfg.file_misc & FM_EXASCII ? "CP437" : "ASCII"
 				,cfg.file_misc & FM_SPACES ? "In" : "Ex");
-		sprintf(opt[i++], "%-33.33s%s", "Allow Filename Characters", str);
+		sprintf(opt[i++], "%-33.33s%u characters", "Allowed Filename Length", cfg.filename_maxlen);
+		sprintf(opt[i++], "%-33.33s%s", "Allowed Filename Characters", str);
 		strcpy(opt[i++],"Viewable Files...");
 		strcpy(opt[i++],"Testable Files...");
 		strcpy(opt[i++],"Download Events...");
@@ -200,6 +201,24 @@ void xfer_opts()
 					,"Leech Protocol Minimum Time (in Seconds)"
 					,ultoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
 				cfg.leech_sec=atoi(tmp);
+				break;
+			case __COUNTER__:
+				uifc.helpbuf=
+					"`Maximum Uploaded Filename Length Allowed:`\n"
+					"\n"
+					"This value is the maximum length of filenames allowed to be uploaded.\n"
+					"\n"
+					"Only 64 characters of filenames are indexed (searchable) and sometimes\n"
+					"(depending on the terminal) only 64 or fewer characters of a filename\n"
+					"may be displayed to a user. For these reasons, `64` characters is a\n"
+					"reasonable maximum filename length to enforce (and thus, the default).\n"
+					"\n"
+					"The absolute maximum filename length supported is `65535` characters."
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,0
+					,"Maximum Uploaded Filename Length Allowed (in characters)"
+					,ultoa(cfg.filename_maxlen,tmp,10), 5, K_EDIT|K_NUMBER);
+				cfg.filename_maxlen=atoi(tmp);
 				break;
 			case __COUNTER__:	/* Uploaded Filename characters allowed */
 				i = 0;

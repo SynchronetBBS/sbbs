@@ -57,8 +57,11 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	get_int(cfg->leech_pct,instream);
 	get_int(cfg->leech_sec,instream);
 	get_int(cfg->file_misc,instream);
+	get_int(cfg->filename_maxlen, instream);
+	if(cfg->filename_maxlen == 0)
+		cfg->filename_maxlen = SMB_FILEIDX_NAMELEN;
 
-	for(i=0;i<30;i++)
+	for(i=0;i<29;i++)
 		get_int(n,instream);
 
 	/**************************/
