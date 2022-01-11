@@ -242,3 +242,9 @@ o New commands to flag/unflag all messages for deletion
 o Replace ESC chars with '.' when viewing messages, support '-<count>' with 'r'
 o Also, allow continuous reading of 1 or more consecutive messages using the
   -<digit> option (no prompting)
+
+Stats
+~~~~~
+o About 15 months of development (Oct-2020 through Dec-2021)
+o 2276 files changed, 326374 insertions(+), 187917 deletions(-)
+o v3.19a first appeared in Git (w/new FileBase) on April 4, 2021
