@@ -57,7 +57,7 @@ function str_cmds(str)
 
 	bbs.log_str(str);
 	if(str=="HELP")
-		write("\r\nAvailable STR commands (prefix with a semi-colon)\r\n\r\n");
+		write("\r\nAvailable commands\r\n\r\n");
 
 	var node_action = bbs.node_action;
 	if(bbs.compare_ars("SYSOP")) {
