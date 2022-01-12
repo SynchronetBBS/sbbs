@@ -300,6 +300,7 @@ cmdstr LOGOFF
 	end_cmd
 
 #fall through
+exec_bin "str_cmds %s"
 end_cmd
 
 :logoffbbs
