@@ -37,8 +37,6 @@
 
 scfg_t scfg;
 
-int cur_altpath=0;
-
 long files=0,removed=0,mode=0;
 
 char lib[LEN_GSNAME+1];
@@ -167,13 +165,13 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 	}
 	str_list_t fname_list = loadfilenames(&smb, ALLFILES, /* time: */0, FILE_SORT_NATURAL, /* count: */NULL);
 	if(mode&SEARCH_DIR) {
-		SAFECOPY(str,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[dirnum]->path);
+		SAFECOPY(str, scfg.dir[dirnum]->path);
 		printf("Searching %s\n\n",str);
 		dir=opendir(str);
 
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 			sprintf(filepath, "%s%s"
-				,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[dirnum]->path
+				,scfg.dir[dirnum]->path
 				,dirent->d_name);
 			if(isdir(filepath))
 				continue;
@@ -266,8 +264,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 	if((stream=fopen(listpath,"r"))==NULL) {
 		fprintf(stderr,"Error %d (%s) opening %s\n"
 			,errno,strerror(errno),listpath);
-		sprintf(listpath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
-				: scfg.dir[dirnum]->path,inpath);
+		sprintf(listpath,"%s%s", scfg.dir[dirnum]->path,inpath);
 		fexistcase(listpath);
 		if((stream=fopen(listpath,"r"))==NULL) {
 			printf("Can't open: %s\n"
@@ -304,8 +301,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			continue;
 		}
 
-		sprintf(filepath, "%s%s", cur_altpath ? scfg.altpath[cur_altpath-1]
-			: scfg.dir[dirnum]->path,fname);
+		sprintf(filepath, "%s%s", scfg.dir[dirnum]->path,fname);
 
 		if(strcspn(fname,"\\/|<>+[]:=\";,")!=strlen(fname)) {
 			fprintf(stderr, "!Illegal filename: %s\n", fname);
@@ -448,8 +444,7 @@ void synclist(char *inpath, int dirnum)
 
 	SAFECOPY(listpath,inpath);
 	if((stream=fopen(listpath,"r"))==NULL) {
-		sprintf(listpath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
-				: scfg.dir[dirnum]->path,inpath);
+		sprintf(listpath,"%s%s", scfg.dir[dirnum]->path,inpath);
 		if((stream=fopen(listpath,"r"))==NULL) {
 			printf("Can't open: %s\n"
 				   "        or: %s\n",inpath,listpath);
@@ -504,9 +499,9 @@ void synclist(char *inpath, int dirnum)
 	fclose(stream);
 }
 
-char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "
+char *usage="\nusage: addfiles code [-opts] +list "
 			 "[desc_off] [size_off]"
-	"\n   or: addfiles code [.alt_path] [-opts] file "
+	"\n   or: addfiles code [-opts] file "
 		"[\"description\"]\n"
 	"\navailable opts:"
 	"\n      -a         import ASCII only (no extended ASCII)"
@@ -724,13 +719,6 @@ int main(int argc, char **argv)
 			if(mode&SYNC_LIST)
 				synclist(argv[j]+1, dirnum); 
 		}
-		else if(argv[j][0]=='.') {      /* alternate file path */
-			cur_altpath=atoi(argv[j]+1);
-			if(cur_altpath>scfg.altpaths) {
-				printf("Invalid alternate path.\n");
-				exit(1);
-			}
-		}
 		else {
 			namegiven=1;
 			const char* fname = argv[j];
@@ -741,8 +729,7 @@ int main(int argc, char **argv)
 				SAFECOPY(fdesc, "no description given");
 			}
 
-			sprintf(str,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
-				: scfg.dir[dirnum]->path, fname);
+			sprintf(str,"%s%s", scfg.dir[dirnum]->path, fname);
 			if(mode&FILE_DATE)
 				sprintf(fdesc, "%s  ", unixtodstr(&scfg,(time32_t)fdate(str),tmp));
 			if(mode&TODAYS_DATE)
