@@ -301,7 +301,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			continue;
 		}
 
-		sprintf(filepath, "%s%s", scfg.dir[dirnum]->path,fname);
+		SAFEPRINTF2(filepath, "%s%s", scfg.dir[dirnum]->path, fname);
 
 		if(strcspn(fname,"\\/|<>+[]:=\";,")!=strlen(fname)) {
 			fprintf(stderr, "!Illegal filename: %s\n", fname);
