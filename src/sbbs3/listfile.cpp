@@ -140,13 +140,17 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode
 			char* p = (f->desc == NULL) ? NULL : strcasestr(f->desc, filespec);
 			if(p == NULL)
 				p = strcasestr(f->name, filespec);
+			if(p == NULL && f->extdesc != NULL)
+				p = strcasestr((char*)f->extdesc, filespec);
+			if(p == NULL && f->tags != NULL)
+				p = strcasestr(f->tags, filespec);
+			if(p == NULL && f->author != NULL)
+				p = strcasestr(f->author, filespec);
+			if(p == NULL && f->author_org != NULL)
+				p = strcasestr(f->author_org, filespec);
 			if(p == NULL) {
-				if(f->extdesc != NULL)
-					p = strcasestr((char*)f->extdesc, filespec);
-				if(p == NULL) {
-					m++;
-					continue; 
-				}
+				m++;
+				continue; 
 			}
 		}
 		if(useron.misc&BATCHFLAG && letter=='A' && found && !tofile
