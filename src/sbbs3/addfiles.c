@@ -85,7 +85,7 @@ void updatestats(ulong size)
     int		file;
 	uint32_t	l;
 
-	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
+	SAFEPRINTF(str,"%sdsts.dab",scfg.ctrl_dir);
 	if((file=nopen(str,O_RDWR|O_BINARY))==-1) {
 		printf("ERR_OPEN %s\n",str);
 		return;
@@ -170,7 +170,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		dir=opendir(str);
 
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-			sprintf(filepath, "%s%s"
+			SAFEPRINTF2(filepath, "%s%s"
 				,scfg.dir[dirnum]->path
 				,dirent->d_name);
 			if(isdir(filepath))
@@ -264,7 +264,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 	if((stream=fopen(listpath,"r"))==NULL) {
 		fprintf(stderr,"Error %d (%s) opening %s\n"
 			,errno,strerror(errno),listpath);
-		sprintf(listpath,"%s%s", scfg.dir[dirnum]->path,inpath);
+		SAFEPRINTF2(listpath, "%s%s", scfg.dir[dirnum]->path, inpath);
 		fexistcase(listpath);
 		if((stream=fopen(listpath,"r"))==NULL) {
 			printf("Can't open: %s\n"
