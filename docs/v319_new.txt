@@ -70,7 +70,7 @@ o Store client terminal information in node#/terminal.ini
   for future use (e.g. for improved node spying)
 o Create node#/client.ini for each node client connection
 o Support 3rd party installer files for 150+ external programs (doors)
-  See xtrn/3rdp-intall/README.md for details
+  See xtrn/3rdp-install/README.md for details
 o New text.dat strings (see docs/text319b.dif for full list of changes):
   HowManyColumns
   InternetMailSent
