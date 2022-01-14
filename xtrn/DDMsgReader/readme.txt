@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.41
-                           Release date: 2021-02-12
+                                 Version 1.42
+                           Release date: 2022-01-13
 
                                      by
 
@@ -99,7 +99,9 @@ The following is a list of features:
 - Allows the user to delete and edit existing messages that they've written, if the
   sub-board supports those operations.
 - Allows the user to download file attachments, whether uploaded to their
-  mailbox on Synchronet or attached to internet emails
+  mailbox on Synchronet or attached to internet emails.  When a message has
+  attachments, it will appear in the message list with an "A" between the
+  message number and sender name.
 - Allows the user to forward a message to an email address or another user
   (using the O key).  This can be useful, for instance, if the user wants to
   send a message in a public sub-board to their personal email for future
@@ -446,11 +448,11 @@ the help screen
 - Text # 662 (i.e., "Download attached file: xyz.txt (500 bytes)"): Used to
 confirm downloading an attached file
 
-the user chooses to downloaded attached files, the reader will prompt to
-confirm downloading of each file.  For the prompt text, the reader will use
-text number 662 from text.dat (in the sbbs/ctrl directory).  If you want to
-customize the text for that confirmation prompt, you would need to open
-text.dat and modify text number 662.
+When the user chooses to downloaded attached files, the reader will prompt to
+confirm downloading.  With Synchronet versions prior to 3.17, for the prompt
+text, the reader will use text number 662 from text.dat (in the sbbs/ctrl
+directory).  If you want to customize the text for that confirmation prompt,
+you would need to open text.dat and modify text number 662.
 
 4. Header ANSI/asc file
 =======================
@@ -666,6 +668,14 @@ displayAvatars                        Whether or not to display user avatars in
 rightJustifyAvatars                   Whether or not to right-justify avatars.
                                       Valid values are true and false.  Flase
                                       means to left-justify avatars.
+
+msgListSort                           How to sort the message list.  This can
+                                      be either Received (to sort by date/time
+                                      received) or Written (to sort by
+                                      date/time written).  Received is the
+                                      fastest, as it does not sort the list;
+                                      Written adds time since sorting is
+                                      required.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
