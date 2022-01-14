@@ -87,6 +87,15 @@
  *                              message area chooser.  In that scenario, the current
  *                              highlighted sub-board in the other group will be
  *                              the first one.
+ * 2021-03-15 Eric Oulashin     Version 1.42 Beta
+ *                              Started working on converting HTML entities in
+ *                              HTML-formatted messages.
+ * 2021-08-02                   Added the ability to sort the message list by date
+ *                              & time written rather than the import date/time.
+ *                              This is specified in the configuration file via the
+ *                              msgListSort option.
+ * 2022-01-13 Eric Oulashin     Version 1.42
+ *                              Fixed attachment downloading.
  */
 
 
@@ -171,6 +180,7 @@ if (requireFnExists)
 	require("userdefs.js", "USER_UTF8");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
 	require("mouse_getkey.js", "mouse_getkey");
+	require("html2asc.js", 'html2asc');
 }
 else
 {
@@ -180,7 +190,9 @@ else
 	load("userdefs.js");
 	load("dd_lightbar_menu.js");
 	load("mouse_getkey.js");
+	load("html2asc.js");
 }
+
 
 // This script requires Synchronet version 3.15 or higher.
 // Exit if the Synchronet version is below the minimum.
@@ -198,8 +210,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.41";
-var READER_DATE = "2021-02-12";
+var READER_VERSION = "1.42";
+var READER_DATE = "2022-01-13";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -356,6 +368,10 @@ const ACTION_QUIT = 29;
 
 // Definitions for help line refresh parameters for error functions
 const REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE = 0;
+
+// Message list sort types
+const MSG_LIST_SORT_DATETIME_RECEIVED = 0;
+const MSG_LIST_SORT_DATETIME_WRITTEN = 1;
 
 // Misc. defines
 var ERROR_WAIT_MS = 1500;
@@ -1053,6 +1069,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.displayAvatars = true;
 	this.rightJustifyAvatar = true;
 
+	// Message list sort option
+	this.msgListSort = MSG_LIST_SORT_DATETIME_RECEIVED;
+
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
 	// before reading the configuration file.
@@ -1507,15 +1526,31 @@ function DigDistMsgReader_FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pCle
 		this.hdrsForCurrentSubBoard = [];
 		this.hdrsForCurrentSubBoardByMsgNum = {};
 	}
+
 	for (var prop in pMsgHdrs)
 	{
-		// Only add the message header if the message is readable to the user
+		// Only add the message header if the message is readable to the user.
+		// this.hdrsForCurrentSubBoardByMsgNum also has to be populated, but
+		// that's done later in this function, in case this.hdrsForCurrentSubBoard
+		// needs to be sorted.
 		if (isReadableMsgHdr(pMsgHdrs[prop], this.subBoardCode))
 		{
 			this.hdrsForCurrentSubBoard.push(pMsgHdrs[prop]);
-			this.hdrsForCurrentSubBoardByMsgNum[pMsgHdrs[prop].number] = this.hdrsForCurrentSubBoard.length - 1;
+			// This isn't done right here anymore due to the possibility of
+			// this.hdrsForCurrentSubBoard being sorted
+			//this.hdrsForCurrentSubBoardByMsgNum[pMsgHdrs[prop].number] = this.hdrsForCurrentSubBoard.length - 1;
 		}
 	}
+
+	// If the sort type is date/time written, then sort the message header
+	// array as such
+	if (this.msgListSort == MSG_LIST_SORT_DATETIME_WRITTEN)
+		this.hdrsForCurrentSubBoard.sort(sortMessageHdrsByDateTime);
+
+	// Populate this.hdrsForCurrentSubBoardByMsgNum (this needs to be done here
+	// based on the order of this.hdrsForCurrentSubBoard)
+	for (var idx = 0; idx < this.hdrsForCurrentSubBoard.length; ++idx)
+		this.hdrsForCurrentSubBoardByMsgNum[this.hdrsForCurrentSubBoard[idx].number] = idx;
 }
 
 // For the DigDistMsgReader class: Gets the message offset (index) for a message, given
@@ -3681,6 +3716,22 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				DisplayHelpLine(this.msgListLightbarModeHelpLine);
 			}
 		}
+		// S: Sorting options
+		else if (lastUserInputUpper == "S")
+		{
+			if (gIsSysop) // Temporary
+			{
+				console.gotoxy(1, console.screen_rows);
+				console.cleartoeol("\1n");
+				console.gotoxy(1, console.screen_rows);
+				console.print("\1gSort\1n");
+				mswait(ERROR_PAUSE_WAIT_MS);
+			}
+			
+
+			// Refresh the help line
+			DisplayHelpLine(this.msgListLightbarModeHelpLine);
+		}
 	}
 	this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
 	this.lightbarListTopMsgIdx = msgListMenu.topItemIdx;
@@ -3749,7 +3800,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
-	var additionalQuitKeys = "EeqQgGcC ?0123456789" + CTRL_A + CTRL_D;
+	var additionalQuitKeys = "EeqQgGcCsS ?0123456789" + CTRL_A + CTRL_D;
 	if (this.CanDelete() || this.CanDeleteLastMsg())
 		additionalQuitKeys += KEY_DEL;
 	if (this.CanEdit())
@@ -4081,6 +4132,8 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 			msgIndicatorChar = "\1n\1r\1h\1i" + this.colors.msgListHighlightBkgColor + "*\1n";
 		else if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
 			msgIndicatorChar = "\1n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + CHECK_CHAR + "\1n";
+		else if (msgHdrHasAttachmentFlag(pMsgHeader))
+			msgIndicatorChar = "\1n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + "A\1n";
 		var fromName = pMsgHeader.from;
 		// If the message was posted anonymously and the logged-in user is
 		// not the sysop, then show "Anonymous" for the 'from' name.
@@ -4109,6 +4162,8 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 			msgIndicatorChar = "\1n\1r\1h\1i*\1n";
 		else if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
 			msgIndicatorChar = "\1n" +  this.colors.selectedMsgMarkColor + CHECK_CHAR + "\1n";
+		else if (msgHdrHasAttachmentFlag(pMsgHeader))
+			msgIndicatorChar = "\1n" +  this.colors.selectedMsgMarkColor + "A\1n";
 
 		// Determine whether to use the normal, "to-user", or "from-user" format string.
 		// The differences are the colors.  Then, output the message information line.
@@ -4673,7 +4728,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					writeMessage = false; // Don't write the current message again
 				break;
 			case this.enhReaderKeys.showHelp: // Show the help screen
-				this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgInfo.attachments.length > 0);
+				this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgInfo.hasAttachments);
 				// If the enhanced message header width is less than the console
 				// width, then clear the screen to remove anything left on the
 				// screen from the help screen.
@@ -5109,14 +5164,21 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					writeMessage = false; // No need to refresh the message
 				break;
 			case this.enhReaderKeys.downloadAttachments: // Download attachments
-				if (msgInfo.attachments.length > 0)
+				if (msgInfo.hasAttachments)
 				{
 					console.print("\1n");
 					console.gotoxy(1, console.screen_rows);
 					console.crlf();
-					console.print("\1c- Download Attached Files -\1n");
-					// Note: sendAttachedFiles() will output a CRLF at the beginning.
-					sendAttachedFiles(msgInfo.attachments);
+					// If bbs.download_msg_attachments() exists (Synchronet 3.17+), use
+					// the new method.  Otherwise, use the older method.
+					if (typeof(bbs.download_msg_attachments) === "function")
+						allowUserToDownloadMessage_NewInterface(msgHeader, this.subBoardCode);
+					else
+					{
+						console.print("\1c- Download Attached Files -\1n");
+						// Note: sendAttachedFiles() will output a CRLF at the beginning.
+						sendAttachedFiles(msgInfo.attachments);
+					}
 
 					// Refresh things on the screen
 					console.clear("\1n");
@@ -5680,7 +5742,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					console.crlf();
 					console.crlf();
 				}
-				this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgAndAttachmentInfo.attachments.length > 0);
+				this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgAndAttachmentInfo.hasAttachments);
 				if (!console.term_supports(USER_ANSI))
 				{
 					console.crlf();
@@ -6049,13 +6111,20 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				}
 				break;
 			case this.enhReaderKeys.downloadAttachments: // Download attachments
-				if (msgAndAttachmentInfo.attachments.length > 0)
+				if (msgAndAttachmentInfo.hasAttachments)
 				{
 					console.print("\1n");
 					console.crlf();
 					console.print("\1c- Download Attached Files -\1n");
-					// Note: sendAttachedFiles() will output a CRLF at the beginning.
-					sendAttachedFiles(msgAndAttachmentInfo.attachments);
+					// If bbs.download_msg_attachments() exists (Synchronet 3.17+), use
+					// the new method.  Otherwise, use the older method.
+					if (typeof(bbs.download_msg_attachments) === "function")
+						allowUserToDownloadMessage_NewInterface(msgHeader, this.subBoardCode);
+					else
+					{
+						// Note: sendAttachedFiles() will output a CRLF at the beginning.
+						sendAttachedFiles(msgAndAttachmentInfo.attachments);
+					}
 
 					// Ensure the message is refreshed on the screen
 					writeMessage = true;
@@ -7589,6 +7658,11 @@ function DigDistMsgReader_ReadConfigFile()
 					this.displayAvatars = (valueUpper == "TRUE");
 				else if (settingUpper == "RIGHTJUSTIFYAVATARS")
 					this.rightJustifyAvatar = (valueUpper == "TRUE");
+				else if (settingUpper == "MSGLISTSORT")
+				{
+					if (valueUpper == "WRITTEN")
+						this.msgListSort = MSG_LIST_SORT_DATETIME_WRITTEN;
+				}
 			}
 		}
 
@@ -7817,14 +7891,14 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 	}
 
 	// Dump the message body to a temporary file in the node dir
-	//var originalMsgBody = msgbase.get_msg_body(true, pMsgIndex);
+	//var originalMsgBody = msgbase.get_msg_body(true, pMsgIndex, false, false, true, true);
 	var originalMsgBody;
 	var tmpMsgHdr = this.GetMsgHdrByIdx(pMsgIndex, false, msgbase);
 	var msgHdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
 	if (msgHdrIsBogus)
-		originalMsgBody = msgbase.get_msg_body(true, pMsgIndex);
+		originalMsgBody = msgbase.get_msg_body(true, pMsgIndex, false, false, true, true);
 	else
-		originalMsgBody = msgbase.get_msg_body(false, tmpMsgHdr.number);
+		originalMsgBody = msgbase.get_msg_body(false, tmpMsgHdr.number, false, false, true, true);
 	var tempFilename = system.node_dir + "DDMsgLister_message.txt";
 	var tmpFile = new File(tempFilename);
 	if (tmpFile.open("w"))
@@ -8256,7 +8330,9 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields, pMsgbase)
 		}
 	}
 	else
+	{
 		msgHdr = getHdrFromMsgbase(pMsgbase, this.subBoardCode, true, pMsgIdx, pExpandFields);
+	}
 	if (msgHdr == null)
 		msgHdr = getBogusMsgHdr();
 	return msgHdr;
@@ -9123,7 +9199,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 				}
 				else
 				{
-					var msgText = msgbase.get_msg_body(false, msgHeader.number);
+					var msgText = msgbase.get_msg_body(false, msgHeader.number, false, false, true, true);
 					//quoteFile.write(word_wrap(msgText, 80/*79*/));
 					quoteFile.write(msgText);
 				}
@@ -11842,6 +11918,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 //               numSolidScrollBlocks: The number of solid scrollbar blocks
 //               numNonSolidScrollBlocks: The number of non-solid scrollbar blocks
 //               solidBlockStartRow: The starting row on the screen for the scrollbar blocks
+//               hasAttachments: Boolean - Whether or not the message has attachments
 //               attachments: An array of the attached filenames (as strings)
 //               displayFrame: A Frame object for displaying the message with
 //                             a scrollable interface.  Used when the message
@@ -11864,6 +11941,7 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		numSolidScrollBlocks: 0,
 		numNonSolidScrollBlocks: 0,
 		solidBlockStartRow: 0,
+		hasAttachments: false,
 		attachments: [],
 		displayFrame: null,
 		displayFrameScrollbar: null,
@@ -11880,7 +11958,7 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
 		{
-			msgBody = msgbase.get_msg_body(false, pMsgHdr.number);
+			msgBody = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
 			msgbase.close();
 		}
 		else
@@ -12080,6 +12158,10 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	}
 	retObj.numNonSolidScrollBlocks = this.msgAreaHeight - retObj.numSolidScrollBlocks;
 	retObj.solidBlockStartRow = this.msgAreaTop;
+
+	// Set the hasAttachments attribute of retObj.  For Synchronet 3.17 and newer,
+	// the header might have an attachment attribute set, so we can use that.
+	retObj.hasAttachments = (msgHdrHasAttachmentFlag(pMsgHdr) || retObj.attachments.length > 0);
 
 	return retObj;
 }
@@ -13335,7 +13417,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 				var msgbase = new MsgBase(this.subBoardCode);
 				if (msgbase.open())
 				{
-					pMsgBody = msgbase.get_msg_body(false, pMsgHdr.number);
+					pMsgBody = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
 					msgbase.close();
 				}
 				else
@@ -14004,7 +14086,7 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 					// number, then append the 'user voted' string to the message body.
 					if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 					{
-						var tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number);
+						var tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number, false, false, true, true);
 						if ((tmpHdrs[tmpProp].field_list.length == 0) && (tmpMessageBody.length == 0))
 						{
 							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
@@ -14172,7 +14254,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 	{
 		// If the message is UTF8 and the terminal is not UTF8-capable, then convert
 		// the text to cp437.
-		msgBody = msgbase.get_msg_body(false, pMsgHdr.number);
+		msgBody = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
 		if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
 		{
 			var userConsoleSupportsUTF8 = false;
@@ -14183,6 +14265,14 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 		}
 		// Remove any initial coloring from the message body, which can color the whole message
 		msgBody = removeInitialColorFromMsgBody(msgBody);
+		// For HTML-formatted messages, convert HTML entities
+		//console.print("\1n\r\nSubtype: " + pMsgHdr.text_subtype + "\r\n\1p"); // Temporary
+		if (pMsgHdr.hasOwnProperty("text_subtype") && pMsgHdr.text_subtype.toLowerCase() == "html")
+		{
+			msgBody = html2asc(msgBody);
+			// Remove excessive blank lines after HTML-translation
+			msgBody = msgBody.replace(/\r\n\r\n\r\n/g, '\r\n\r\n');
+		}
 	}
 	msgbase.close();
 
@@ -15835,7 +15925,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				if (readingPersonalEmailFromUser)
 				{
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
-						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
+						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
 						return gAllPersonalEmailOptSpecified || msgIsFromUser(pMsgHdr);
 						
 					}
@@ -15844,7 +15934,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				{
 					// We're reading mail to the user
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
-						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
+						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
 						var msgMatchesCriteria = (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr));
 						// If only new/unread personal email is to be displayed, then check
 						// that the message has not been read.
@@ -15858,7 +15948,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 		case SEARCH_KEYWORD:
 			useGetAllMsgHdrs = true;
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
-				var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
+				var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
 				var keywordFound = ((pMsgHdr.subject.toUpperCase().indexOf(pSearchStr) > -1) || (msgText.toUpperCase().indexOf(pSearchStr) > -1));
 				if (pSubBoardCode == "mail")
 					return keywordFound && msgIsToUserByNum(pMsgHdr);
@@ -17706,6 +17796,10 @@ function getSubBoardCodeFromNum(pSubBoardNum)
 }
 
 // Separates message text and any attachment data.
+// This is for message headers generated in version 3.16 and earlier of Synchronet.
+// In version 3.17 and later, Synchronet added auxiliary attributes (auxattr)
+// MSG_FILEATTACH and MSG_MIMEATTACH as well as the function bbs.download_msg_attachments(msgHdr)
+// which will allow a user to download attachments in a message.
 //
 // Parameters:
 //  pMsgHdr: The message header object
@@ -17760,7 +17854,7 @@ function determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
 	{
 		// If there are any attachments, prepend the message text with a message
 		// saying that the message contains attachments.
-		if (retObj.attachments.length > 0)
+		if (msgHdrHasAttachmentFlag(pMsgHdr) || retObj.attachments.length > 0)
 			retObj.msgText = msgHasAttachmentsTxt + retObj.msgText;
 		return retObj;
 	}
@@ -17777,7 +17871,7 @@ function determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
 		//retObj.msgText = pMsgText;
 		// If there are any attachments, prepend the message text with a message
 		// saying that the message contains attachments.
-		if (retObj.attachments.length > 0)
+		if (msgHdrHasAttachmentFlag(pMsgHdr) || retObj.attachments.length > 0)
 			retObj.msgText = msgHasAttachmentsTxt + pMsgText;
 		else
 			retObj.msgText = pMsgText;
@@ -17975,14 +18069,14 @@ function determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
 
 	// If there are any attachments, prepend the message text with a message
 	// saying that the message contains attachments.
-	if (retObj.attachments.length > 0)
+	if (msgHdrHasAttachmentFlag(pMsgHdr) || retObj.attachments.length > 0)
 		retObj.msgText = msgHasAttachmentsTxt + retObj.msgText;
 
 	// If there are attachments and the message text is more than will fit on the
 	// screen (75% of the console height to account for the ), then append text at
 	// the end to say there are attachments.
 	var maxNumCharsOnScreen = 79 * Math.floor(console.screen_rows * 0.75);
-	if ((retObj.attachments.length > 0) && (retObj.msgText.length > maxNumCharsOnScreen))
+	if ((msgHdrHasAttachmentFlag(pMsgHdr) || (retObj.attachments.length > 0)) && (retObj.msgText.length > maxNumCharsOnScreen))
 	{
 		retObj.msgText += "\1n\r\n\1g\1h--------------------------------------------------------------------------\1n\r\n";
 		retObj.msgText += "\1g\1h- This message contains one or more attachments. Press CTRL-A to download.\1n";
@@ -19777,6 +19871,152 @@ function GetScanPtrOrLastMsgNum(pSubCode)
 
 	return msgNumToReturn;
 }
+
+// Returns whether a message header has one of the attachment flags
+// enabled (for Synchtonet 3.17 or newer).
+//
+// Parameters:
+//  pMsgHdr: A message header (returned from MsgBase.get_msg_header())
+//
+// Return value: Boolean - Whether or not the message has one of the attachment flags
+function msgHdrHasAttachmentFlag(pMsgHdr)
+{
+	if (typeof(pMsgHdr) !== "object" || typeof(pMsgHdr.auxattr) === "undefined")
+		return false;
+
+	var attachmentFlag = false;
+	if (typeof(MSG_FILEATTACH) !== "undefined" && typeof(MSG_MIMEATTACH) !== "undefined")
+		attachmentFlag = (pMsgHdr.auxattr & (MSG_FILEATTACH|MSG_MIMEATTACH)) > 0;
+	return attachmentFlag;
+}
+
+// Allows the user to download a message and its attachments, using the newer
+// Synchronet interface (the function bbs.download_msg_attachments() must exist).
+//
+// Parameters:
+//  pMsgHdr: The message header
+//  pSubCode: The sub-board code that the message is in
+function allowUserToDownloadMessage_NewInterface(pMsgHdr, pSubCode)
+{
+	if (typeof(bbs.download_msg_attachments) !== "function")
+		return;
+	if (typeof(pSubCode) !== "string")
+		return;
+	if (typeof(pMsgHdr) !== "object" || typeof(pMsgHdr.number) == "undefined")
+		return;
+
+	var msgBase = new MsgBase(pSubCode);
+	if (msgBase.open())
+	{
+		// bbs.download_msg_attachments() requires a message header returned
+		// by MsgBase.get_msg_header()
+		var msgHdrForDownloading = msgBase.get_msg_header(false, pMsgHdr.number, false);
+		// Allow the user to download the message
+		if (!console.noyes("Download message", P_NOCRLF))
+		{
+			if (!download_msg(msgHdrForDownloading, msgBase, console.yesno("Plain-text only")))
+				console.print("\1n\r\nFailed\r\n");
+		}
+		// Allow the user to download the attachments
+		console.creturn();
+		bbs.download_msg_attachments(msgHdrForDownloading);
+		msgBase.close();
+		delete msgBase; // Free some memory?
+	}
+}
+
+// From msglist.js - Prompts the user if they want to download the message text
+function download_msg(msg, msgbase, plain_text)
+{
+	var fname = system.temp_dir + "msg_" + msg.number + ".txt";
+	var f = new File(fname);
+	if(!f.open("wb"))
+		return false;
+	var text = msgbase.get_msg_body(msg
+				,/* strip ctrl-a */false
+				,/* dot-stuffing */false
+				,/* tails */true
+				,plain_text);
+	f.write(msg.get_rfc822_header(/* force_update: */false, /* unfold: */false
+		,/* default_content_type */!plain_text));
+	f.writeln(text);
+	f.close();
+	return bbs.send_file(fname);
+}
+
+
+////////// Message list sort functions
+
+// For sorting message headers by date & time
+//
+// Parameters:
+//  msgHdrA: The first message header
+//  msgHdrB: The second message header
+//
+// Return value: -1, 0, or 1, depending on whether header A comes before,
+//               is equal to, or comes after header B
+function sortMessageHdrsByDateTime(msgHdrA, msgHdrB)
+{
+	// Return -1, 0, or 1, depending on whether msgHdrA's date & time comes
+	// before, is equal to, or comes after msgHdrB's date & time
+	// Convert when_written_time to local time before comparing the times
+	var localWrittenTimeA = msgWrittenTimeToLocalBBSTime(msgHdrA);
+	var localWrittenTimeB = msgWrittenTimeToLocalBBSTime(msgHdrB);
+	var yearA = +strftime("%Y", localWrittenTimeA);
+	var monthA = +strftime("%m", localWrittenTimeA);
+	var dayA = +strftime("%d", localWrittenTimeA);
+	var hourA = +strftime("%H", localWrittenTimeA);
+	var minuteA = +strftime("%M", localWrittenTimeA);
+	var secondA = +strftime("%S", localWrittenTimeA);
+	var yearB = +strftime("%Y", localWrittenTimeB);
+	var monthB = +strftime("%m", localWrittenTimeB);
+	var dayB = +strftime("%d", localWrittenTimeB);
+	var hourB = +strftime("%H", localWrittenTimeB);
+	var minuteB = +strftime("%M", localWrittenTimeB);
+	var secondB = +strftime("%S", localWrittenTimeB);
+	if (yearA < yearB)
+		return -1;
+	else if (yearA > yearB)
+		return 1;
+	else
+	{
+		if (monthA < monthB)
+			return -1;
+		else if (monthA > monthB)
+			return 1;
+		else
+		{
+			if (dayA < dayB)
+				return -1;
+			else if (dayA > dayB)
+				return 1;
+			else
+			{
+				if (hourA < hourB)
+					return -1;
+				else if (hourA > hourB)
+					return 1;
+				else
+				{
+					if (minuteA < minuteB)
+						return -1;
+					else if (minuteA > minuteB)
+						return 1;
+					else
+					{
+						if (secondA < secondB)
+							return -1;
+						else if (secondA > secondB)
+							return 1;
+						else
+							return 0;
+					}
+				}
+			}
+		}
+	}
+}
+
 
 // For debugging: Writes some text on the screen at a given location with a given pause.
 //
