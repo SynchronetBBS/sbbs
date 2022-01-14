@@ -72,9 +72,10 @@ while(bbs.online && !console.aborted) {
 	}
 	
 	console.print(bbs.text(TempDirPrompt));
-	var keys = "ADEFNILQRVX?";
+	var keys = "ACDEFNILQRVX?";
 	switch(console.getkeys(keys, K_UPPER)) {
-		case 'A': // Add to temp archive
+		case 'A': // Add (legacy)
+		case 'C': // Create temp archive
 			if(!checktemp())
 				break;
 			if(!checkspace())
