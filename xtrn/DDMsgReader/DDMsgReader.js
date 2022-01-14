@@ -192,6 +192,7 @@ else
 	load("mouse_getkey.js");
 	load("html2asc.js");
 }
+load('822header.js');
 
 
 // This script requires Synchronet version 3.15 or higher.
