@@ -2328,12 +2328,14 @@ int pack(const char *srcfile, const char *destfile, fidoaddr_t dest)
 
 	lprintf(LOG_DEBUG,"Packing packet (%s) into bundle (%s) for %s using %s"
 		,srcfile, destfile, smb_faddrtoa(&dest, NULL), archive->name);
+#if 0 // libarchive apparently cannot be used for in-place modification of (e.g. adding files to) existing archives
 	if(strListFind((str_list_t)supported_archive_formats, archive->name, /* case_sensitive */FALSE) >= 0) {
 		const char* file_list[] = { srcfile, NULL };
 		if(create_archive(destfile, archive->name, /* with_path: */false, (str_list_t)file_list, tmp, sizeof(tmp)) == 1)
 			return 0;
 		lprintf(LOG_ERR, "libarchive error (%s) creating %s", tmp, destfile);
 	}
+#endif
 	return execute(cmdstr(&scfg, /* user: */NULL, archive->pack, destfile, srcfile, tmp, sizeof(tmp)));
 }
 
