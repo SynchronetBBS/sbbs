@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.42     2022-01-13   Fixed attachment downloading.
+                      Also, the first attempt at converting HTML entities in
+                      HTML-formatted messages.
+                      Also, added the ability to sort the message list by date
+                      & time written rather than the import date/time. This is
+                      specified in the configuration file via the msgListSort
+                      option.
 1.41     2021-02-12   Bug fix: When changing to another area with the lightbar
                       interface, if the user's current sub-board is a
                       high-numbered sub-board and they select a message group
