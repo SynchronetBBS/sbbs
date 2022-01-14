@@ -3165,7 +3165,7 @@ function mail_to(pl, quotes)
 					if (t !== -1) {
 						wrap = l.slice(t+1);
 						l = l.slice(0, t);
-						sw(bs.substr(0, wrap.length));
+//						sw(bs.substr(0, wrap.length));
 						sw(ws.substr(0, wrap.length));
 					}
 					ch = '\r';
