@@ -195,11 +195,12 @@ file_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail d
 		size_t len = strlen(filespec);
 		if(len >= 12 && strcspn(filespec, "*?") == len) {
 			SAFECOPY(newfilespec, filespec);
-			char* ext = getfext(newfilespec);
-			if(ext != NULL) {
-				*ext = 0;
+			char* ext = getfext(filespec);
+			char* newext = getfext(newfilespec);
+			if(ext != NULL && newext != NULL) {
+				*newext = 0;
 				SAFECAT(newfilespec, "*");
-				SAFECAT(newfilespec, getfext(filespec));
+				SAFECAT(newfilespec, ext);
 			} else
 				SAFECAT(newfilespec, "*");
 			filespec = newfilespec;
