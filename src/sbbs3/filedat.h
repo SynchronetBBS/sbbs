@@ -49,6 +49,7 @@ DLLEXPORT str_list_t	loadfilenames(smb_t*, const char* filespec, time_t t, enum 
 DLLEXPORT void			sortfilenames(str_list_t, size_t count, enum file_sort);
 DLLEXPORT bool			updatefile(scfg_t*, file_t*);
 DLLEXPORT char*			getfilepath(scfg_t*, file_t*, char* path);
+DLLEXPORT char*			getfilevpath(scfg_t*, file_t*, char* path);
 DLLEXPORT off_t			getfilesize(scfg_t*, file_t*);
 DLLEXPORT time_t		getfiletime(scfg_t*, file_t*);
 DLLEXPORT ulong			gettimetodl(scfg_t*, file_t*, uint rate_cps);
