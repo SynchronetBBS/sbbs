@@ -568,7 +568,7 @@ char* getfilevpath(scfg_t* cfg, file_t* f, char* path)
 	const char* name = f->name == NULL ? f->file_idx.name : f->name;
 	if(f->dir >= cfg->total_dirs)
 		return "";
-	safe_snprintf(path, MAX_PATH, "%s/%s"
+	safe_snprintf(path, MAX_PATH, "%s/%s/%s"
 		,cfg->lib[cfg->dir[f->dir]->lib]->sname, cfg->dir[f->dir]->code_suffix, name);
 	return path;
 }
