@@ -50,6 +50,7 @@
 #undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "sbbsdefs.h"
+#include "filedat.h"
 #include "sockwrap.h"		/* sendfilesocket() */
 #include "multisock.h"
 #include "threadwrap.h"
@@ -252,6 +253,8 @@ typedef struct  {
 	char			host_name[128];	/* Resolved remote host */
 	int				http_ver;       /* Request HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
+	BOOL			filebase_access;
+	file_t			file;
 	user_t			user;
 	int				last_user_num;
 	time_t			logon_time;
@@ -1123,6 +1126,7 @@ static void close_request(http_session_t * session)
 		}
 	}
 
+	smb_freefilemem(&session->file);
 	memset(&session->req,0,sizeof(session->req));
 }
 
@@ -1617,6 +1621,7 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 	if(!logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time))
 		lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat", socket);
 	memset(&session->user,0,sizeof(session->user));
+	SAFECOPY(session->user.alias, unknown);
 	session->last_user_num=session->user.number;
 
 #ifdef _WIN32
@@ -1888,7 +1893,9 @@ static BOOL check_ars(http_session_t * session)
 		}
 		if(!http_checkuser(session))
 			return(FALSE);
-		if(session->req.ars[0]) {
+		if((session->filebase_access
+			&& !can_user_download(&scfg, session->file.dir, &session->user, &session->client, NULL))
+			|| session->req.ars[0]) {
 			/* There *IS* an ARS string  ie: Auth is required */
 			if(startup->options&WEB_OPT_DEBUG_RX)
 				lprintf(LOG_NOTICE,"%04d !No authentication information",session->socket);
@@ -1983,11 +1990,18 @@ static BOOL check_ars(http_session_t * session)
 		session->req.ld->user=strdup(session->req.auth.username);
 	}
 
-	ar = arstr(NULL,session->req.ars,&scfg,NULL);
-	authorized=chk_ar(&scfg,ar,&session->user,&session->client);
-	if(ar!=NULL)
-		FREE_AND_NULL(ar);
-
+	if(session->filebase_access) {
+		if(is_download_free(&scfg, session->file.dir, &session->user, &session->client)
+			|| session->user.cdt >= session->file.cost)
+			authorized = can_user_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
+		else
+			authorized = FALSE;
+	} else {
+		ar = arstr(NULL,session->req.ars,&scfg,NULL);
+		authorized=chk_ar(&scfg,ar,&session->user,&session->client);
+		if(ar!=NULL)
+			FREE_AND_NULL(ar);
+	}
 	if(authorized)  {
 		switch(session->req.auth.type) {
 			case AUTHENTICATION_TLS_PSK:
@@ -2872,6 +2886,9 @@ static int is_dynamic_req(http_session_t* session)
 	char	fname[MAX_PATH+1];
 	char	ext[MAX_PATH+1];
 
+	if(session->filebase_access)
+		return IS_STATIC;
+
 	check_extra_path(session);
 	_splitpath(session->req.physical_path, drive, dir, fname, ext);
 
@@ -3112,6 +3129,10 @@ static BOOL get_fullpath(http_session_t * session)
 {
 	char	str[MAX_PATH+1];
 
+	if(scfg.web_file_prefix[0] && strncmp(session->req.physical_path, scfg.web_file_prefix, strlen(scfg.web_file_prefix)) == 0) {
+		session->filebase_access = TRUE;
+		return TRUE;
+	}
 	if(session->req.vhost[0] && startup->options&WEB_OPT_VIRTUAL_HOSTS) {
 		safe_snprintf(str,sizeof(str),"%s/%s",root_dir,session->req.vhost);
 		if(isdir(str))
@@ -3493,6 +3514,20 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 	iniFreeNamedStringList(values);
 }
 
+static bool resolve_filebase_path(http_session_t* session, char* path)
+{
+	uint dir = getdir_from_vpath(&scfg, path + strlen(scfg.web_file_prefix), &session->user, &session->client, false);
+	if(dir >= scfg.total_dirs)
+		return false;
+	char filename[MAX_PATH + 1];
+	SAFECOPY(filename, getfname(path));
+	session->file.dir = dir;
+	safe_snprintf(path, MAX_PATH, "%s%s", scfg.dir[dir]->path, filename);
+	if(!fexistcase(path))
+		return false;
+	return loadfile(&scfg, dir, filename, &session->file, file_detail_index);
+}
+
 static BOOL check_request(http_session_t * session)
 {
 	char	path[MAX_PATH+1];
@@ -3521,6 +3556,13 @@ static BOOL check_request(http_session_t * session)
 	SAFECOPY(path,session->req.physical_path);
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG,"%04d Path is: %s",session->socket,path);
+
+	if(session->filebase_access) {
+		if(!resolve_filebase_path(session, path)) {
+			send_error(session,__LINE__,error_404);
+			return FALSE;
+		}
+	}
 
 	if(isdir(path)) {
 		last_ch=*lastchar(path);
@@ -3569,118 +3611,121 @@ static BOOL check_request(http_session_t * session)
 		SAFECOPY(filename,last_slash);
 	}
 
-	if(strnicmp(path,root_dir,strlen(root_dir))) {
-		session->req.keep_alive=FALSE;
-		send_error(session,__LINE__,"400 Bad Request");
-		lprintf(LOG_NOTICE,"%04d !ERROR Request for %s is outside of web root %s"
-			,session->socket,path,root_dir);
-		return(FALSE);
-	}
-
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
-	/* Walk up from root_dir checking for access.ars and webctrl.ini */
-	SAFECOPY(curdir,path);
-	last_slash=curdir+strlen(root_dir)-1;
-	/* Loop while there's more /s in path*/
-	p=last_slash;
 
-	while((last_slash=find_first_slash(p+1))!=NULL) {
-		old_path_info_index = session->req.path_info_index;
-		p=last_slash;
-		/* Terminate the path after the slash */
-		*(last_slash+1)=0;
-		SAFEPRINTF(str,"%saccess.ars",curdir);
-		/* NEVER serve up an access.ars file */
-		if(!strcmp(path,str)) {
-			if(!stat(str,&sb)) {
-				lprintf(LOG_WARNING,"%04d !WARNING! access.ars support is deprecated and will be REMOVED very soon.",session->socket);
-				lprintf(LOG_WARNING,"%04d !WARNING! access.ars found at %s.",session->socket,str);
-			}
-			send_error(session,__LINE__,"403 Forbidden");
+	if(!session->filebase_access) {
+
+		if(strnicmp(path,root_dir,strlen(root_dir))) {
+			session->req.keep_alive=FALSE;
+			send_error(session,__LINE__,"400 Bad Request");
+			lprintf(LOG_NOTICE,"%04d !ERROR Request for %s is outside of web root %s"
+				,session->socket,path,root_dir);
 			return(FALSE);
 		}
-		if(!stat(str,&sb)) {
-			/* Read access.ars file */
-			if((file=fopen(str,"r"))!=NULL) {
-				fgets(session->req.ars,sizeof(session->req.ars),file);
-				fclose(file);
-			}
-			else  {
-				/* If cannot open access.ars, only allow sysop access */
-				SAFECOPY(session->req.ars,"LEVEL 90");
-				break;
-			}
-			/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
-			truncsp(session->req.ars);
-		}
-		SAFEPRINTF(str,"%swebctrl.ini",curdir);
-		/* NEVER serve up a webctrl.ini file */
-		if(!strcmp(path,str)) {
-			send_error(session,__LINE__,"403 Forbidden");
-			return(FALSE);
-		}
-		if(!stat(str,&sb)) {
-			/* Read webctrl.ini file */
-			if((file=fopen(str,"r"))!=NULL) {
-				/* FREE()d in this block */
-				specs=iniReadSectionList(file,NULL);
-				/* Read in globals */
-				read_webctrl_section(file, NULL, session, curdir, &recheck_dynamic);
-				/* Now, PathInfoIndex may have been set, so we need to re-expand the index so it will match here. */
-				if (old_path_info_index != session->req.path_info_index) {
-					// Now that we may have gotten a new filename, we need to use that to compare with.
-					strcpy(filename, getfname(session->req.physical_path));
-				}
-				/* Read in per-filespec */
-				while((spec=strListPop(&specs))!=NULL) {
-					len=strlen(spec);
-					if(spec[0] && IS_PATH_DELIM(spec[len-1])) {
-						/* Search for matching path elements... */
-						spath=strdup(path+(p-curdir+1));
-						pspec=strdup(spec);
-						pspec[len-1]=0;
-						for(sp=spath, nsp=find_first_slash(sp+1); nsp; nsp=find_first_slash(sp+1)) {
-							*nsp=0;
-							nsp++;
-							if(wildmatch(sp, pspec, TRUE, /* case_sensitive: */TRUE)) {
-								read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
-							}
-							sp=nsp;
-						}
-						free(spath);
-						free(pspec);
-					}
-					else if(wildmatch(filename,spec,TRUE, /* case_sensitive: */TRUE)) {
-						read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
-					}
-					free(spec);
-				}
-				iniFreeStringList(specs);
-				fclose(file);
-				if(session->req.path_info_index)
-					recheck_dynamic=TRUE;
-			}
-			else  {
-				/* If cannot open webctrl.ini, only allow sysop access */
-				SAFECOPY(session->req.ars,"LEVEL 90");
-				break;
-			}
-			/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
-			truncsp(session->req.ars);
-		}
+
+		/* Walk up from root_dir checking for access.ars and webctrl.ini */
 		SAFECOPY(curdir,path);
+		last_slash=curdir+strlen(root_dir)-1;
+		/* Loop while there's more /s in path*/
+		p=last_slash;
+
+		while((last_slash=find_first_slash(p+1))!=NULL) {
+			old_path_info_index = session->req.path_info_index;
+			p=last_slash;
+			/* Terminate the path after the slash */
+			*(last_slash+1)=0;
+			SAFEPRINTF(str,"%saccess.ars",curdir);
+			/* NEVER serve up an access.ars file */
+			if(!strcmp(path,str)) {
+				if(!stat(str,&sb)) {
+					lprintf(LOG_WARNING,"%04d !WARNING! access.ars support is deprecated and will be REMOVED very soon.",session->socket);
+					lprintf(LOG_WARNING,"%04d !WARNING! access.ars found at %s.",session->socket,str);
+				}
+				send_error(session,__LINE__,"403 Forbidden");
+				return(FALSE);
+			}
+			if(!stat(str,&sb)) {
+				/* Read access.ars file */
+				if((file=fopen(str,"r"))!=NULL) {
+					fgets(session->req.ars,sizeof(session->req.ars),file);
+					fclose(file);
+				}
+				else  {
+					/* If cannot open access.ars, only allow sysop access */
+					SAFECOPY(session->req.ars,"LEVEL 90");
+					break;
+				}
+				/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
+				truncsp(session->req.ars);
+			}
+			SAFEPRINTF(str,"%swebctrl.ini",curdir);
+			/* NEVER serve up a webctrl.ini file */
+			if(!strcmp(path,str)) {
+				send_error(session,__LINE__,"403 Forbidden");
+				return(FALSE);
+			}
+			if(!stat(str,&sb)) {
+				/* Read webctrl.ini file */
+				if((file=fopen(str,"r"))!=NULL) {
+					/* FREE()d in this block */
+					specs=iniReadSectionList(file,NULL);
+					/* Read in globals */
+					read_webctrl_section(file, NULL, session, curdir, &recheck_dynamic);
+					/* Now, PathInfoIndex may have been set, so we need to re-expand the index so it will match here. */
+					if (old_path_info_index != session->req.path_info_index) {
+						// Now that we may have gotten a new filename, we need to use that to compare with.
+						strcpy(filename, getfname(session->req.physical_path));
+					}
+					/* Read in per-filespec */
+					while((spec=strListPop(&specs))!=NULL) {
+						len=strlen(spec);
+						if(spec[0] && IS_PATH_DELIM(spec[len-1])) {
+							/* Search for matching path elements... */
+							spath=strdup(path+(p-curdir+1));
+							pspec=strdup(spec);
+							pspec[len-1]=0;
+							for(sp=spath, nsp=find_first_slash(sp+1); nsp; nsp=find_first_slash(sp+1)) {
+								*nsp=0;
+								nsp++;
+								if(wildmatch(sp, pspec, TRUE, /* case_sensitive: */TRUE)) {
+									read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
+								}
+								sp=nsp;
+							}
+							free(spath);
+							free(pspec);
+						}
+						else if(wildmatch(filename,spec,TRUE, /* case_sensitive: */TRUE)) {
+							read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
+						}
+						free(spec);
+					}
+					iniFreeStringList(specs);
+					fclose(file);
+					if(session->req.path_info_index)
+						recheck_dynamic=TRUE;
+				}
+				else  {
+					/* If cannot open webctrl.ini, only allow sysop access */
+					SAFECOPY(session->req.ars,"LEVEL 90");
+					break;
+				}
+				/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
+				truncsp(session->req.ars);
+			}
+			SAFECOPY(curdir,path);
+		}
+
+		if(recheck_dynamic) {
+			session->req.dynamic=is_dynamic_req(session);
+			if(session->req.dynamic)	/* Need to re-copy path here in case of re-checked PathInfoIndex change */
+				SAFECOPY(path,session->req.physical_path);
+		}
+
+		if(!session->req.dynamic && session->req.extra_path_info[0])
+			send404=TRUE;
 	}
-
-	if(recheck_dynamic) {
-		session->req.dynamic=is_dynamic_req(session);
-		if(session->req.dynamic)	/* Need to re-copy path here in case of re-checked PathInfoIndex change */
-			SAFECOPY(path,session->req.physical_path);
-	}
-
-	if(!session->req.dynamic && session->req.extra_path_info[0])
-		send404=TRUE;
-
 	if(!check_ars(session)) {
 		unsigned *auth_list;
 		unsigned auth_list_len;
@@ -6028,6 +6073,8 @@ static void respond(http_session_t * session)
 				e = 1;
 			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIuOFF" bytes, %ld cps)"
 				,session->socket, session->req.physical_path, snt, (long)(snt / e));
+			if(session->filebase_access)
+				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
 		}
 	}
 	session->req.finished=TRUE;
@@ -7123,6 +7170,7 @@ void web_server(void* arg)
 					continue;
 				}
 				memset(session, 0, sizeof(http_session_t));
+				SAFECOPY(session->user.alias, unknown);
    				session->socket=INVALID_SOCKET;
 				/* Destroyed in http_session_thread */
 				pthread_mutex_init(&session->struct_filled,NULL);
