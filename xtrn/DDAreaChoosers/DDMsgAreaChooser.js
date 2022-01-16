@@ -1,3 +1,5 @@
+// $Id: $
+
 /* This is a script that lets the user choose a message area,
  * with either a lightbar or traditional user interface.
  *
@@ -13,8 +15,17 @@
  * 2020-04-19 Eric Oulashin   Version 1.20
  *                            For lightbar mode, it now uses DDLightbarMenu
  *                            instead of using internal lightbar code.
+ * 2020-11-01 Eric Oulashin   Version 1.21 Beta
+ *                            Working on sub-board collapsing
+ * 2022-01-15 Eric Oulashin   Version 1.21
+ *                            Finished sub-board collapsing (finally) and releasing
+ *                            this version.
  *                                  
 */
+
+// TODO: Passing "false" as the first command-line argument no longer works.
+// That should allow choosing a sub-board within the user's current message
+// group.
 
 /* Command-line arguments:
    1 (argv[0]): Boolean - Whether or not to choose a message group first (default).  If
@@ -24,8 +35,7 @@
                 then this file will just provide the DDMsgAreaChooser class).
 */
 
-var requireFnExists = (typeof(require) === "function");
-if (requireFnExists)
+if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
@@ -52,8 +62,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.20";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2020-04-19";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.21";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-01-15";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -98,11 +108,11 @@ var gIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 // 1st command-line argument: Whether or not to choose a message group first (if
 // false, then only choose a sub-board within the user's current group).  This
 // can be true or false.
-var chooseMsgGrp = true;
+var gChooseMsgGrpOnStartup = true;
 if (typeof(argv[0]) == "boolean")
-	chooseMsgGrp = argv[0];
+	gChooseMsgGrpOnStartup = argv[0];
 else if (typeof(argv[0]) == "string")
-	chooseMsgGrp = (argv[0].toLowerCase() == "true");
+	gChooseMsgGrpOnStartup = (argv[0].toLowerCase() == "true");
 
 // 2nd command-line argument: Determine whether or not to execute the message listing
 // code (true/false)
@@ -117,7 +127,16 @@ else if (typeof(argv[1]) == "string")
 if (executeThisScript)
 {
 	var msgAreaChooser = new DDMsgAreaChooser();
-	msgAreaChooser.SelectMsgArea(chooseMsgGrp);
+	// If we are to let the user choose a sub-board within
+	// their current group (and not choose a message group
+	// first), then we need to capture the chosen sub-board
+	// here just in case, and change the user's message area
+	// here.  Otherwise, if choosing the message group first,
+	// SelectMsgArea() will change the user's sub-board.
+	var msgGroupIdx = (gChooseMsgGrpOnStartup ? 0/*null*/ : bbs.curgrp);
+	var chosenIdx = msgAreaChooser.SelectMsgArea(gChooseMsgGrpOnStartup, msgGroupIdx);
+	if (!gChooseMsgGrpOnStartup && (typeof(chosenIdx) === "number"))
+		bbs.cursub_code = msg_area.grp_list[bbs.curgrp].sub_list[chosenIdx].code;
 }
 
 // End of script execution
@@ -171,30 +190,54 @@ function DDMsgAreaChooser()
 	// sub-board list
 	this.showDatesInSubBoardList = true;
 
+	// Whether or not to enable sub-board collapsing.  For
+	// example, for sub-board in a group starting with
+	// common text and a separator (specified below), the
+	// common text will be the only one displayed, and when
+	// the user selects it, a 3rd tier with the sub-board
+	// after the separator will be shown
+	this.useSubCollapsing = true;
+	// The separator character to use for sub-board collapsing
+	this.subCollapseSeparator = ":";
+	// If userSubCollapsing is true, then group_list will be populated
+	// with some information from Synchronet's msg_area.grp_list,
+	// including a dir_list for each group.  The dir_list arrays
+	// could have one that was collapsed from multiple sub-board
+	// set up in the BBS - The dir_list within that one would then
+	// contain multiple sub-board split based on the dir collapse
+	// separator.
+	this.group_list = [];
+
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDMsgAreaChooser_ReadConfigFile;
 	this.WriteKeyHelpLine = DDMsgAreaChooser_writeKeyHelpLine;
 	this.WriteGrpListHdrLine = DDMsgAreaChooser_writeGrpListTopHdrLine;
 	this.WriteSubBrdListHdr1Line = DMsgAreaChooser_writeSubBrdListHdr1Line;
-	this.SelectMsgArea = DDMsgAreaChooser_selectMsgArea;
-	this.SelectMsgArea_Lightbar = DDMsgAreaChooser_selectMsgArea_Lightbar;
+	this.SelectMsgArea = DDMsgAreaChooser_SelectMsgArea;
+	this.SelectMsgArea_Lightbar = DDMsgAreaChooser_SelectMsgArea_Lightbar;
 	this.CreateLightbarMsgGrpMenu = DDMsgAreaChooser_CreateLightbarMsgGrpMenu;
 	this.CreateLightbarSubBoardMenu = DDMsgAreaChooser_CreateLightbarSubBoardMenu;
-	this.SelectMsgArea_Traditional = DDMsgAreaChooser_selectMsgArea_Traditional;
-	this.SelectSubBoard_Traditional = DDMsgAreaChooser_selectSubBoard_Traditional;
-	this.ListMsgGrps = DDMsgAreaChooser_listMsgGrps_Traditional;
-	this.ListSubBoardsInMsgGroup = DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional;
+	this.SelectMsgArea_Traditional = DDMsgAreaChooser_SelectMsgArea_Traditional;
+	this.SelectSubBoard_Traditional = DDMsgAreaChooser_SelectSubBoard_Traditional;
+	this.SelectSubSubWithinSub_Traditional = DDMsgAreaChooser_SelectSubSubWithinSub_Traditional;
+	this.ListMsgGrps = DDMsgAreaChooser_ListMsgGrps_Traditional;
+	this.ListSubBoardsInMsgGroup = DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional;
+	this.CurrentSubBoardIsInSubSubsForSub = DDMsgAreaChooser_CurrentSubBoardIsInSubSubsForSub;
+	this.GetSubBoardInfo = DDMsgAreaChooser_GetSubBoardInfo;
 	// Lightbar-specific functions
 	this.WriteMsgGroupLine = DDMsgAreaChooser_writeMsgGroupLine;
-	this.updatePageNumInHeader = DDMsgAreaChooser_updatePageNumInHeader;
 	this.GetMsgSubBrdLine = DDMsgAreaChooser_GetMsgSubBrdLine;
 	// Help screen
 	this.ShowHelpScreen = DDMsgAreaChooser_showHelpScreen;
 	// Function to build the sub-board printf information for a message
 	// group
-	this.BuildSubBoardPrintfInfoForGrp = DDMsgAreaChooser_buildSubBoardPrintfInfoForGrp;
+	this.BuildSubBoardPrintfInfoForGrp = DDMsgAreaChooser_BuildSubBoardPrintfInfoForGrp;
 	this.DisplayAreaChgHdr = DDMsgAreaChooser_DisplayAreaChgHdr;
+	this.DisplayListHdrLines = DDMsgAreaChooser_DisplayListHdrLines;
 	this.WriteLightbarKeyHelpErrorMsg = DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg;
+	this.SetUpGrpListWithCollapsedSubBoards = DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards;
+	this.FindMsgGrpIdxFromText = DDMsgAreaChooser_FindMsgGrpIdxFromText;
+	this.FindSubBoardIdxFromText = DDMsgAreaChooser_FindSubBoardIdxFromText;
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
@@ -311,7 +354,7 @@ function DDMsgAreaChooser()
 	// message group index.  The sub-board printf information is created
 	// on the fly the first time the user lists sub-boards for a message
 	// group.
-	this.subBoardListPrintfInfo = new Array();
+	this.subBoardListPrintfInfo = [];
 
 	// areaChangeHdrLines is an array of text lines to use as a header to display
 	// above the message area changer lists.
@@ -337,11 +380,11 @@ function DDMsgAreaChooser_writeKeyHelpLine()
 function DDMsgAreaChooser_writeGrpListTopHdrLine(pNumPages, pPageNum)
 {
 	var descStr = "Description";
-	if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
+	if ((typeof(pPageNum) === "number") && (typeof(pNumPages) === "number"))
 		descStr += "    (Page " + pPageNum + " of " + pNumPages + ")";
-	else if ((typeof(pPageNum) == "number") && (typeof(pNumPages) != "number"))
+	else if ((typeof(pPageNum) === "number") && (typeof(pNumPages) !== "number"))
 		descStr += "    (Page " + pPageNum + ")";
-	else if ((typeof(pPageNum) != "number") && (typeof(pNumPages) == "number"))
+	else if ((typeof(pPageNum) !== "number") && (typeof(pNumPages) === "number"))
 		descStr += "    (" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
 	printf(this.msgGrpListHdrPrintfStr, "Group#", descStr, "# Sub-Boards");
 	console.cleartoeol("\1n");
@@ -352,21 +395,39 @@ function DDMsgAreaChooser_writeGrpListTopHdrLine(pNumPages, pPageNum)
 //
 // Parameters:
 //  pGrpIndex: The index of the message group (assumed to be valid)
+//  pSubIndex: Optional - The index of a sub-board within the message group (if using sub-board
+//             collapsing, we might want to append the sub-board name to the description)
 //  pNumPages: The number of pages.  This is optional; if this is
 //             not passed, then it won't be used.
 //  pPageNum: The page number.  This is optional; if this is not passed,
 //            then it won't be used.
-function DMsgAreaChooser_writeSubBrdListHdr1Line(pGrpIndex, pNumPages, pPageNum)
+function DMsgAreaChooser_writeSubBrdListHdr1Line(pGrpIndex, pSubIndex, pNumPages, pPageNum)
 {
-	var descFormatStr = "\1n" + this.colors.subBoardHeader + "Sub-boards of \1h%-25s     \1n"
+	var descLen = 25;
+	var descFormatStr = "\1n" + this.colors.subBoardHeader + "Sub-boards of \1h%-" + descLen + "s     \1n"
 	                  + this.colors.subBoardHeader;
-	if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
+	if ((typeof(pPageNum) === "number") && (typeof(pNumPages) === "number"))
 		descFormatStr += "(Page " + pPageNum + " of " + pNumPages + ")";
-	else if ((typeof(pPageNum) == "number") && (typeof(pNumPages) != "number"))
+	else if ((typeof(pPageNum) === "number") && (typeof(pNumPages) !== "number"))
 		descFormatStr += "(Page " + pPageNum + ")";
-	else if ((typeof(pPageNum) != "number") && (typeof(pNumPages) == "number"))
+	else if ((typeof(pPageNum) !== "number") && (typeof(pNumPages) === "number"))
 		descFormatStr += "(" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
-	printf(descFormatStr, msg_area.grp_list[pGrpIndex].description.substr(0, 25));
+	// If using sub-board collapsing, then build the description as needed.  Otherwise,
+	// just use the sub-board description.
+	var desc = "";
+	if (this.useSubCollapsing)
+	{
+		// Ensure this.group_list is set up
+		this.SetUpGrpListWithCollapsedSubBoards();
+		// The description should be the library's description.  Also, if pSubIdx
+		// is a number, then append the directory description to the description.
+		desc = this.group_list[pGrpIndex].description;
+		if ((typeof(pSubIndex) === "number") && (this.group_list[pGrpIndex].sub_list[pSubIndex].sub_subboard_list.length > 0))
+			desc += this.subCollapseSeparator + " " + this.group_list[pGrpIndex].sub_list[pSubIndex].description;
+	}
+	else
+		desc = msg_area.grp_list[pGrpIndex].description;
+	printf(descFormatStr, desc.substr(0, descLen));
 	console.cleartoeol("\1n");
 }
 
@@ -378,23 +439,76 @@ function DMsgAreaChooser_writeSubBrdListHdr1Line(pGrpIndex, pNumPages, pPageNum)
 //  pChooseGroup: Boolean - Whether or not to choose the message group.  If false,
 //                then this will allow choosing a sub-board within the user's
 //                current message group.  This is optional; defaults to true.
-function DDMsgAreaChooser_selectMsgArea(pChooseGroup)
+//  pGrpIdx: The group index (can be null) - This is for the lightbar
+//           interface logic; the traditional interface doesn't use this
+//           for SelectMsgArea().
+function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 {
+	// If sub-board collapsing is enabled, then set up
+	// this.group_list.
+	if (this.useSubCollapsing)
+		this.SetUpGrpListWithCollapsedSubBoards();
+
 	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
-		this.SelectMsgArea_Lightbar(pChooseGroup);
+		return this.SelectMsgArea_Lightbar(pChooseGroup ? 1 : 2, pGrpIdx);
 	else
-		this.SelectMsgArea_Traditional(pChooseGroup);
+		return this.SelectMsgArea_Traditional(pChooseGroup ? 1 : 2, pGrpIdx);
+}
+
+// For the DDMsgAreaChooser class: Displays the header & header lines above the list.
+//
+// Parameters:
+//  pScreenRow: The row on the screen to write the lines at.  If no cursor movements are desired, this can be null.
+//  pChooseGroup: Boolean - Whether or not the user is choosing a message group
+//  pGrpIdx: The index of the message group being used
+//  pNumPages: Optional - The number of pages of items
+//  pPageNum: Optional - The current page number for the items
+function DDMsgAreaChooser_DisplayListHdrLines(pScreenRow, pChooseGroup, pGrpIdx, pNumPages, pPageNum)
+{
+	this.DisplayAreaChgHdr(1);
+	if (typeof(pScreenRow) === "number")
+		console.gotoxy(1, pScreenRow);
+	if (pChooseGroup)
+		this.WriteGrpListHdrLine(pNumPages, pPageNum);
+	else
+	{
+		// For the number of items in the sub-board list, use the text "Posts" or "Items", depending
+		// on whether sub-board collapsing is enabled and there are sub-subboard for the given group
+		// & sub-board index
+		var numItemsText = "Posts";
+		if (this.useSubCollapsing)
+		{
+			for (var subIdx in this.group_list[pGrpIdx].sub_list)
+			{
+				if (typeof(this.group_list[pGrpIdx].sub_list[subIdx].sub_subboard_list) !== "undefined" && this.group_list[pGrpIdx].sub_list[subIdx].sub_subboard_list.length > 0)
+				{
+					numItemsText = "Items";
+					break;
+				}
+			}
+		}
+		// Write the list header lines
+		this.WriteSubBrdListHdr1Line(pGrpIdx);
+		if (typeof(pScreenRow) === "number")
+			console.gotoxy(1, pScreenRow+2);
+		if (this.showDatesInSubBoardList)
+			printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + numItemsText, "Latest date & time");
+		else
+			printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + numItemsText);
+	}
 }
 
 // For the DDMsgAreaChooser class: Lets the user choose a message group and
 // sub-board via numeric input, using a lightbar user interface.
 //
 // Parameters:
-//  pChooseGroup: Boolean - Whether or not to choose the message group.  If false,
-//                then this will allow choosing a sub-board within the user's
-//                current message group.  This is optional; defaults to true.
+//  pLevel: The file heirarchy level:
+//          1: Message groups
+//          2: Sub-boards within message groups
+//          3: "Sub-subboards" within sub-boards (if sub-board name collapsing is enabled)
+//          This is optional and defaults to 1.
 //  pGrpIdx: Optional - The group index, if choosing a sub-board
-function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
+function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 {
 	// If there are no message groups or sub-boards, then don't let the user
 	// choose one.
@@ -404,10 +518,12 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 		console.print("\1y\1hThere are no message groups.\r\n\1p");
 		return;
 	}
-	var chooseGroup = (typeof(pChooseGroup) == "boolean" ? pChooseGroup : true);
-	if (!chooseGroup)
+	var level = (typeof(pLevel) === "number" ? pLevel : 1);
+	if ((level < 1) || (level > 3))
+		return;
+	else if (level == 1)
 	{
-		if (typeof(pGrpIdx) != "number")
+		if (typeof(pGrpIdx) !== "number")
 			return;
 		if (msg_area.grp_list[pGrpIdx].sub_list.length == 0)
 		{
@@ -416,32 +532,29 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 			return;
 		}
 	}
-
-	// Displays the header & header lines above the list
-	function displayListHdrLines(pScreenRow, pChooseMsgGrp, pAreaChooser, pGrpIdx, pNumPages, pPageNum)
+	// 2: Choose a sub-board within a message group
+	// 3: Choose a sub-subboard within a sub-board, for sub-board name collapsing
+	else if ((level == 2) || (level == 3))
 	{
-		pAreaChooser.DisplayAreaChgHdr(1);
-		console.gotoxy(1, pScreenRow);
-		if (pChooseMsgGrp)
-			pAreaChooser.WriteGrpListHdrLine(pNumPages, pPageNum);
-		else
+		if (typeof(pGrpIdx) !== "number")
+			return;
+		if (msg_area.grp_list[pGrpIdx].sub_list.length == 0)
 		{
-			pAreaChooser.WriteSubBrdListHdr1Line(pGrpIdx);
-			console.gotoxy(1, pScreenRow+2);
-			if (pAreaChooser.showDatesInSubBoardList)
-				printf(pAreaChooser.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
-			else
-				printf(pAreaChooser.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts");
+			console.clear("\1n");
+			console.print("\1y\1hThere are no sub-boards in " + file_area.lib_list[pLibIdx].description + ".\r\n\1p");
+			return;
 		}
 	}
 
+	var chooseGroup = (pLevel == 1);
+
 	// Clear the screen, write the header, help line, and list header(s)
 	console.clear("\1n");
-	displayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, this, pGrpIdx);
+	this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
 	this.WriteKeyHelpLine();
 
 	// Create the menu and do the user input loop
-	var msgAreaMenu = (chooseGroup ? this.CreateLightbarMsgGrpMenu() : this.CreateLightbarSubBoardMenu(pGrpIdx));
+	var msgAreaMenu = (chooseGroup ? this.CreateLightbarMsgGrpMenu() : this.CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx));
 	var drawMenu = true;
 	var lastSearchText = "";
 	var lastSearchFoundIdx = -1;
@@ -453,8 +566,8 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 		chosenIdx = -1;
 		var returnedMenuIdx = msgAreaMenu.GetVal(drawMenu);
 		drawMenu = true;
-		var lastUserInputUpper = (typeof(msgAreaMenu.lastUserInput) == "string" ? msgAreaMenu.lastUserInput.toUpperCase() : msgAreaMenu.lastUserInput);
-		if (typeof(returnedMenuIdx) == "number")
+		var lastUserInputUpper = (typeof(msgAreaMenu.lastUserInput) === "string" ? msgAreaMenu.lastUserInput.toUpperCase() : "");
+		if (typeof(returnedMenuIdx) === "number")
 			chosenIdx = returnedMenuIdx;
 		// If userChoice is not a number, then it should be null in this case,
 		// and the user would have pressed one of the additional quit keys set
@@ -480,9 +593,9 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 				var oldSelectedItemIdx = msgAreaMenu.selectedItemIdx;
 				var idx = -1;
 				if (chooseGroup)
-					idx = findMsgGrpIdxFromText(searchText, msgAreaMenu.selectedItemIdx);
+					idx = this.FindMsgGrpIdxFromText(searchText, msgAreaMenu.selectedItemIdx);
 				else
-					idx = findSubBoardIdxFromText(pGrpIdx, searchText, msgAreaMenu.selectedItemIdx+1);
+					idx = this.FindSubBoardIdxFromText(pGrpIdx, (pLevel == 3 ? pSubIdx : null), searchText, msgAreaMenu.selectedItemIdx+1);
 				lastSearchFoundIdx = idx;
 				if (idx > -1)
 				{
@@ -503,9 +616,9 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 				else
 				{
 					if (chooseGroup)
-						idx = findMsgGrpIdxFromText(searchText, 0);
+						idx = this.FindMsgGrpIdxFromText(searchText, 0);
 					else
-						idx = findSubBoardIdxFromText(pGrpIdx, searchText, 0);
+						idx = this.FindSubBoardIdxFromText(pGrpIdx, (pLevel == 3 ? pSubIdx : null), searchText, 0);
 					lastSearchFoundIdx = idx;
 					if (idx > -1)
 					{
@@ -548,9 +661,9 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 				// indicated by the search.
 				var idx = 0;
 				if (chooseGroup)
-					idx = findMsgGrpIdxFromText(searchText, lastSearchFoundIdx+1);
+					idx = this.FindMsgGrpIdxFromText(searchText, lastSearchFoundIdx+1);
 				else
-					idx = findSubBoardIdxFromText(pGrpIdx, searchText, lastSearchFoundIdx+1);
+					idx = this.FindSubBoardIdxFromText(pGrpIdx, (pLevel == 3 ? pSubIdx : null), searchText, lastSearchFoundIdx+1);
 				if (idx > -1)
 				{
 					lastSearchFoundIdx = idx;
@@ -575,9 +688,9 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 				else
 				{
 					if (chooseGroup)
-						idx = findMsgGrpIdxFromText(searchText, 0);
+						idx = this.FindMsgGrpIdxFromText(searchText, 0);
 					else
-						idx = findSubBoardIdxFromText(pGrpIdx, searchText, 0);
+						idx = this.FindSubBoardIdxFromText(pGrpIdx, (pLevel == 3 ? pSubIdx : null), searchText, 0);
 					lastSearchFoundIdx = idx;
 					if (idx > -1)
 					{
@@ -621,7 +734,7 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 			// Refresh the screen
 			console.clear("\1n");
 			this.DisplayAreaChgHdr(1);
-			displayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, this, pGrpIdx);
+			this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
 			this.WriteKeyHelpLine();
 		}
 		// If the user entered a numeric digit, then treat it as
@@ -643,12 +756,12 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 			{
 				// The user didn't make a selection.  So, we need to refresh
 				// the screen due to everything being moved up one line.
-				displayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, this, pGrpIdx);
+				this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
 				this.WriteKeyHelpLine();
 			}
 		}
 
-		// If a group/sub-board was chosen, then deal with it.
+		// If a group/sub-board/sub-subboard was chosen, then deal with it.
 		if (chosenIdx > -1)
 		{
 			// If choosing a message group, then let the user choose a
@@ -664,22 +777,75 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup, pGrpIdx)
 				// Ensure that the sub-board printf information is created for
 				// the chosen message group.
 				this.BuildSubBoardPrintfInfoForGrp(chosenIdx);
-				var chosenSubBoardIdx = this.SelectMsgArea_Lightbar(false, chosenIdx);
-				if (chosenSubBoardIdx > -1)
+				var defaultSubIdx = chosenIdx == bbs.curgrp ? bbs.cursub : 0;
+				var subCodeBackup = bbs.cursub_code;
+				var chosenSubBoardIdx = this.SelectMsgArea_Lightbar(2, chosenIdx, defaultSubIdx);
+				if (typeof(chosenSubBoardIdx) === "number" && chosenSubBoardIdx > -1)
 				{
 					// Set the current sub-board
-					bbs.cursub_code = msg_area.grp_list[chosenIdx].sub_list[chosenSubBoardIdx].code;
+					if (this.useSubCollapsing)
+						bbs.cursub_code = this.group_list[chosenIdx].sub_list[chosenSubBoardIdx].code;
+					else
+						bbs.cursub_code = msg_area.grp_list[chosenIdx].sub_list[chosenSubBoardIdx].code;
 					continueOn = false;
 				}
 				else
 				{
+					// If using sub-board name collapsing or the sub-board changed (probably
+					// at level 3 because sub-board collapsing is enabled), then exit here.
+					if (this.useSubCollapsing || bbs.cursub_code != subCodeBackup)
+						continueOn = false;
+					else
+					{
+						// A message sub-board was not chosen, so we'll have to re-draw
+						// the header and key help line
+						this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
+						this.WriteKeyHelpLine();
+					}
+					// TODO?
+					/*
 					// A sub-board was not chosen, so we'll have to re-draw
 					// the header and list of message groups.
-					displayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, this, pGrpIdx);
+					this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
+					*/
 				}
 			}
-			else
-				return chosenIdx; // Return the chosen sub-board index
+			else if (level == 2) // Choosing a sub-board
+			{
+				if (this.useSubCollapsing)
+				{
+					// Ensure this.group_list is set up
+					this.SetUpGrpListWithCollapsedSubBoards();
+
+					// If the current file directory has subdirectories,
+					// let the user choose one
+					// pGrpIdx is the group index, and chosenIdx is the sub-board index
+					if ((typeof(this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list) !== "undefined") && (this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list.length > 0))
+					{
+						var chosenSubSubBoardIdx = this.SelectMsgArea_Lightbar(3, pGrpIdx, chosenIdx);
+						if (chosenSubSubBoardIdx > -1)
+						{
+							// Set the current message sub-board
+							bbs.cursub_code = this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list[chosenSubSubBoardIdx].code;
+							continueOn = false;
+						}
+						else
+						{
+							// A file directory was not chosen, so we'll have to re-draw
+							// the header and list of message groups.
+							// TODO:
+							//this.DisplayListHdrLines(level, pLibIdx);
+							//this.WriteKeyHelpLine();
+						}
+					}
+					else // No subdirectories - Return the chosen index
+						return chosenIdx;
+				}
+				else
+					return chosenIdx; // Return the chosen file directory index
+			}
+			else if (level == 3)
+				return chosenIdx; // Return the chosen subdirectory index
 		}
 	}
 }
@@ -738,7 +904,17 @@ function DDMsgAreaChooser_CreateLightbarMsgGrpMenu()
 		var menuItemObj = this.MakeItemWithRetval(-1);
 		if ((pGrpIndex >= 0) && (pGrpIndex < msg_area.grp_list.length))
 		{
-			menuItemObj.text = (((typeof(bbs.curgrp) == "number") && (pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index)) ? "*" : " ");
+			var showAreaMark = false;
+			if (this.areaChooser.useSubCollapsing)
+			{
+				//this.group_list[pGrpIndex].sub_list[pSubIndex]
+				showAreaMark = ((typeof(bbs.curgrp) === "number") && (pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index));
+			}
+			else
+			{
+				showAreaMark = ((typeof(bbs.curgrp) === "number") && (pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index));
+			}
+			menuItemObj.text = (showAreaMark ? "*" : " ");
 			menuItemObj.text += format(this.areaChooser.msgGrpListPrintfStr, +(pGrpIndex+1),
 			                           msg_area.grp_list[pGrpIndex].description.substr(0, this.areaChooser.msgGrpDescLen),
 			                           msg_area.grp_list[pGrpIndex].sub_list.length);
@@ -761,11 +937,13 @@ function DDMsgAreaChooser_CreateLightbarMsgGrpMenu()
 // choosing a sub-board in lightbar mode.
 //
 // Parameters:
+//  pLevel: The level of menu (1=Group, 2=Sub-board, 3=Sub board within sub-board if sub-board name collapsing is enabled)
 //  pGrpIdx: The index of the message group
+//  pSubIdx: The sub-board index (for sub-board name collapsing)
 //
 // Return value: A DDLightbarMenu object for choosing a sub-board within
 // the given message group
-function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pGrpIdx)
+function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 {
 	// Start & end indexes for the various items in each mssage group list row
 	// Selected mark, group#, description, # sub-boards
@@ -817,36 +995,146 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pGrpIdx)
 	// to the menu
 	subBoardMenu.areaChooser = this; // Add this object to the menu object
 	subBoardMenu.grpIdx = pGrpIdx;
-	subBoardMenu.NumItems = function() {
-		return msg_area.grp_list[this.grpIdx].sub_list.length;
-	};
-	subBoardMenu.GetItem = function(pSubIdx) {
-		var menuItemObj = this.MakeItemWithRetval(-1);
-		if ((pSubIdx >= 0) && (pSubIdx < msg_area.grp_list[this.grpIdx].sub_list.length))
-		{
-			var showSubBoardMark = false;
-			if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-				showSubBoardMark = ((this.grpIdx == msg_area.sub[bbs.cursub_code].grp_index) && (pSubIdx == msg_area.sub[bbs.cursub_code].index));
-			menuItemObj.text = strip_ctrl(this.areaChooser.GetMsgSubBrdLine(this.grpIdx, pSubIdx, false));
-			menuItemObj.retval = pSubIdx;
-		}
-
-		return menuItemObj;
-	};
-
-	// Set the currently selected item.  If the current sub-board is in this list,
-	// then set the selected item to that; otherwise, the selected item should be
-	// the first sub-board.
-	if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
+	if (this.useSubCollapsing)
 	{
-		subBoardMenu.selectedItemIdx = msg_area.sub[bbs.cursub_code].index;
-		if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
-			subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+		if (pLevel == 2)
+		{
+			subBoardMenu.NumItems = function() {
+				return this.areaChooser.group_list[this.grpIdx].sub_list.length;
+			};
+			subBoardMenu.GetItem = function(pSubIdx) {
+				var menuItemObj = this.MakeItemWithRetval(-1);
+				var subIdxValid = true;
+				/*
+				if (this.areaChooser.useSubCollapsing)
+							showSubBoardMark = this.areaChooser.CurrentSubBoardIsInSubSubsForSub(this.grpIdx, +pSubIdx);
+				*/
+				if ((pSubIdx >= 0) && (pSubIdx < this.areaChooser.group_list[this.grpIdx].sub_list.length))
+				{
+					var showSubBoardMark = false;
+					if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
+					{
+						showSubBoardMark = this.areaChooser.CurrentSubBoardIsInSubSubsForSub(this.grpIdx, +pSubIdx);
+						/*
+						if (this.areaChooser.useSubCollapsing)
+							showSubBoardMark = this.areaChooser.CurrentSubBoardIsInSubSubsForSub(this.grpIdx, +pSubIdx);
+						else
+							showSubBoardMark = ((this.grpIdx == msg_area.sub[bbs.cursub_code].grp_index) && (pSubIdx == msg_area.sub[bbs.cursub_code].index));
+						*/
+					}
+					// Set the sub-board description.  And if it has sub-subboards,
+					// then append some text indicating so.
+					var subDesc = this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].description;
+					var numItems = 0;
+					var lastMsgPostTimestamp = 0;
+					var subSubBoardListExists = false;
+					if (Array.isArray(this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].sub_subboard_list) && this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0)
+					{
+						subSubBoardListExists = true;
+						subDesc += "  <subsubs>";
+						numItems = this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].sub_subboard_list.length;
+					}
+					// Get information from the messagebase
+					var msgBase = new MsgBase(this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
+					if (msgBase.open())
+					{
+						if (this.areaChooser.showDatesInSubBoardList)
+						{
+							var latestMsgHdr = getLatestMsgHdrWithMsgbase(msgBase, 100); // One of the last 100 messages should be readable
+							if (latestMsgHdr != null)
+								lastMsgPostTimestamp = latestMsgHdr.when_written_time; // when_imported_time
+						}
+						if (!subSubBoardListExists)
+						{
+							// There is no sub-subboard list, so this is just a regular sub-board.
+							// Get the number of readable messages in the sub-board.
+							// TODO: This can take a long time
+							//numItems = numReadableMsgs(msgBase, this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
+							// Fast but could be inaccurate due to counting deleted messages,
+							// vote responses, etc..
+							numItems = msgBase.total_msgs;
+						}
+						msgBase.close();
+					}
+
+					menuItemObj.text = (showSubBoardMark ? "*" : " ");
+					if (this.areaChooser.showDatesInSubBoardList)
+					{
+						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[this.grpIdx].printfStr, +(pSubIdx+1),
+						                           subDesc.substr(0, this.areaChooser.descFieldLen), numItems,
+						                           strftime("%Y-%m-%d", lastMsgPostTimestamp),
+						                           strftime("%H:%M:%S", lastMsgPostTimestamp));
+					}
+					else
+					{
+						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[this.grpIdx].printfStr, +(pSubIdx+1),
+						                           subDesc.substr(0, this.areaChooser.descFieldLen), numItems);
+					}
+					menuItemObj.text = strip_ctrl(menuItemObj.text);
+					menuItemObj.retval = pSubIdx;
+				}
+
+				return menuItemObj;
+			};
+		}
+		else if (pLevel == 3)
+		{
+			subBoardMenu.subIdx = pSubIdx;
+			subBoardMenu.NumItems = function() {
+				return this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list.length;
+			};
+			subBoardMenu.GetItem = function(pSubSubIdx) {
+				var menuItemObj = this.MakeItemWithRetval(-1);
+				if ((pSubSubIdx >= 0) && (pSubSubIdx < this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list.length))
+				{
+					var showSubBoardMark = false;
+					if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
+						showSubBoardMark = this.areaChooser.CurrentSubBoardIsInSubSubsForSub(this.grpIdx, +(this.subIdx));
+					menuItemObj.text = (showSubBoardMark ? "*" : " ");
+					var subdirDesc = this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list[pSubSubIdx].description;
+					var subdirDirIdx = this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list[pSubSubIdx].index;
+					var subCode = this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list[pSubSubIdx].code;
+					menuItemObj.text = strip_ctrl(this.areaChooser.GetMsgSubBrdLine(this.grpIdx, msg_area.sub[subCode].index, false));
+					menuItemObj.retval = pSubSubIdx;
+				}
+
+				return menuItemObj;
+			}
+		}
 	}
 	else
 	{
-		subBoardMenu.selectedItemIdx = 0;
-		subBoardMenu.topItemIdx = 0;
+		subBoardMenu.NumItems = function() {
+			return msg_area.grp_list[this.grpIdx].sub_list.length;
+		};
+		subBoardMenu.GetItem = function(pSubIdx) {
+			var menuItemObj = this.MakeItemWithRetval(-1);
+			if ((pSubIdx >= 0) && (pSubIdx < msg_area.grp_list[this.grpIdx].sub_list.length))
+			{
+				var showSubBoardMark = false;
+				if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
+					showSubBoardMark = ((this.grpIdx == msg_area.sub[bbs.cursub_code].grp_index) && (pSubIdx == msg_area.sub[bbs.cursub_code].index));
+				menuItemObj.text = strip_ctrl(this.areaChooser.GetMsgSubBrdLine(this.grpIdx, pSubIdx, false));
+				menuItemObj.retval = pSubIdx;
+			}
+
+			return menuItemObj;
+		};
+
+		// Set the currently selected item.  If the current sub-board is in this list,
+		// then set the selected item to that; otherwise, the selected item should be
+		// the first sub-board.
+		if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
+		{
+			subBoardMenu.selectedItemIdx = msg_area.sub[bbs.cursub_code].index;
+			if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
+				subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+		}
+		else
+		{
+			subBoardMenu.selectedItemIdx = 0;
+			subBoardMenu.topItemIdx = 0;
+		}
 	}
 
 	return subBoardMenu;
@@ -859,7 +1147,7 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pGrpIdx)
 //  pChooseGroup: Boolean - Whether or not to choose the message group.  If false,
 //                then this will allow choosing a sub-board within the user's
 //                current message group.  This is optional; defaults to true.
-function DDMsgAreaChooser_selectMsgArea_Traditional(pChooseGroup)
+function DDMsgAreaChooser_SelectMsgArea_Traditional(pChooseGroup)
 {
 	// If there are no message groups, then don't let the user
 	// choose one.
@@ -963,7 +1251,7 @@ function DDMsgAreaChooser_selectMsgArea_Traditional(pChooseGroup)
 //               subBoardIndex: Numeric - The sub-board that was chosen (if any).
 //                              Will be -1 if none chosen.
 //               subBoardCode: The internal code of the chosen sub-board (or "" if none chosen)
-function DDMsgAreaChooser_selectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardIdx)
+function DDMsgAreaChooser_SelectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardIdx)
 {
 	var retObj = {
 		subBoardChosen: false,
@@ -979,7 +1267,7 @@ function DDMsgAreaChooser_selectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 		this.DisplayAreaChgHdr(1);
 		if (this.areaChangeHdrLines.length > 0)
 			console.crlf();
-		this.ListSubBoardsInMsgGroup(pGrpIdx, defaultSubBoardIdx, searchText);
+		this.ListSubBoardsInMsgGroup(pGrpIdx, null, defaultSubBoardIdx, searchText);
 		console.crlf();
 		if (defaultSubBoardIdx >= 0)
 			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + +(defaultSubBoardIdx+1) + "\1n\1c]: \1h");
@@ -1020,10 +1308,144 @@ function DDMsgAreaChooser_selectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 		// If a sub-board was chosen, then select it.
 		if (selectedSubBoard > 0)
 		{
-			retObj.subBoardChosen = true;
-			retObj.subBoardIndex = selectedSubBoard - 1;
-			retObj.subBoardCode = msg_area.grp_list[pGrpIdx].sub_list[retObj.subBoardIndex].code;
+			var selectedSubIdx = selectedSubBoard - 1;
+			// If using sub-board name collapsing and the selected sub-board has sub-subboards, then
+			// let the user choose a sub-subboard within the sub-board.  Otherwise, just select the
+			// current sub-board.
+			if (this.useSubCollapsing && this.group_list[pGrpIdx].sub_list[selectedSubIdx].sub_subboard_list.length > 0)
+			{
+				var subSubRetObj = this.SelectSubSubWithinSub_Traditional(pGrpIdx, selectedSubIdx);
+				if (subSubRetObj.areaSelected)
+				{
+					retObj.subBoardChosen = true;
+					retObj.subBoardIndex = subSubRetObj.subIndex;
+					retObj.subBoardCode = subSubRetObj.subCode;
+					continueOn = false;
+				}
+				else // An area wasn't chosen
+				{
+					continueOn = true;
+					console.clear("\1n");
+				}
+			}
+			else
+			{
+				retObj.subBoardChosen = true;
+				retObj.subBoardIndex = selectedSubIdx;
+				retObj.subBoardCode = msg_area.grp_list[pGrpIdx].sub_list[selectedSubIdx].code;
+				continueOn = false;
+			}
+		}
+	} while (continueOn);
+
+	return retObj;
+}
+
+// For the DDMsgAreaChooser class: Lets the user select a sub-subbboard within a
+// message sub-board - Traditional user interface.  This is meant for sub-board
+// name collapsing, at the 3rd level.
+//
+// Parameters:
+//  pGrpIdx: The message group index
+//  pSubIdx: The index of the sub-board within the message group
+//
+// Return value: An object containing the following properties:
+//               areaSelected: Boolean - Whether or not the user chose a sub-subboard.
+//               subIndex: The index of the sub-board in Synchronet's sub_list array in the group
+//               subCode: The internal code of the sub-board chosen, if chose.  If not chosen,
+//                        this will be an empty string.
+function DDMsgAreaChooser_SelectSubSubWithinSub_Traditional(pGrpIdx, pSubIdx)
+{
+	var retObj = {
+		areaSelected: false,
+		subIndex: -1,
+		subCode: ""
+	};
+
+	if (!this.useSubCollapsing || this.group_list.length == 0)
+		return retObj;
+	if ((pGrpIdx < 0) || (pGrpIdx >= this.group_list.length))
+		return retObj;
+	if ((pSubIdx < 0) || (pSubIdx >= this.group_list[pGrpIdx].sub_list.length))
+	{
+		console.clear("\1n");
+		console.print("\1y\1hThere are no sub-boards in this message group.\r\n\1p");
+		return retObj;
+	}
+	if (this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length == 0)
+	{
+		console.clear("\1n");
+		console.print("\1y\1hThere are no sub-subboards in this sub-board.\r\n\1p");
+		return retObj;
+	}
+
+	// Gets the default sub-subdirectory number (1-based)
+	function getDefaultSubSubNum(pGrpList, pGrpIdx, pSubIdx)
+	{
+		var subSubNum = 0; // Will be 1-based
+		for (var subSubIdx = 0; subSubIdx < pGrpList[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length; ++subSubIdx)
+		{
+			if (bbs.curdir_code == pGrpList[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[subSubIdx].code)
+			{
+				subSubNum = subSubIdx + 1;
+				break;
+			}
+		}
+		return subSubNum;
+	}
+
+	// defaultSubSubNum is the default sub-subboard # (will be 1-based)
+	var defaultSubSubNum = getDefaultSubSubNum(this.group_list, pGrpIdx, pSubIdx);
+	var searchText = "";
+	var continueOn = false;
+	do
+	{
+		console.clear("\1n");
+		this.DisplayAreaChgHdr(1);
+		if (this.areaChangeHdrLines.length > 0)
+			console.crlf();
+		// Note: This will list sub-subboards within the sub-board with a valid sub-board index
+		// as the 2nd parameter.
+		// TODO: When quitting out of the sub-suboard list, it's going back to the
+		// message group list
+		this.ListSubBoardsInMsgGroup(pGrpIdx, pSubIdx, defaultSubSubNum, searchText);
+		if (defaultSubSubNum >= 1)
+			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + defaultSubSubNum + "\1n\1c]: \1h");
+		else
+			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c: \1h");
+		// Accept Q (quit), / or CTRL_F to search, or a file sub-board number
+		var selectedSubSubNum = console.getkeys("Q/" + CTRL_F, this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length);
+
+		// If the user just pressed enter (selectedSubSubNum would be blank),
+		// default the selected sub-board.
+		if (selectedSubSubNum.toString() == "Q")
 			continueOn = false;
+		else if (selectedSubSubNum.toString() == "")
+			selectedSubSubNum = defaultSubSubNum;
+		else if ((selectedSubSubNum == "/") || (selectedSubSubNum == CTRL_F))
+		{
+			// Search
+			console.crlf();
+			var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+			console.print(searchPromptText);
+			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+			console.print("\1n");
+			console.crlf();
+			if (searchText.length > 0)
+				defaultSubSubNum = -1;
+			else
+				defaultSubSubNum = getDefaultSubSubNum(this.group_list, pGrpIdx, pSubIdx);
+			continueOn = true;
+			console.line_counter = 0; // To avoid pausing before the clear screen
+		}
+
+		// If the user chose a sub-board, then set the user's message sub-board.
+		if (selectedSubSubNum > 0)
+		{
+			continueOn = false;
+			retObj.areaSelected = true;
+			retObj.subCode = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[selectedSubSubNum-1].code;
+			retObj.subIndex = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[selectedSubSubNum-1].index;
 		}
 	} while (continueOn);
 
@@ -1035,7 +1457,7 @@ function DDMsgAreaChooser_selectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 //
 // Parameters:
 //  pSearchText: Optional - Search text for the message groups
-function DDMsgAreaChooser_listMsgGrps_Traditional(pSearchText)
+function DDMsgAreaChooser_ListMsgGrps_Traditional(pSearchText)
 {
 	// Print the header
 	this.WriteGrpListHdrLine();
@@ -1060,11 +1482,15 @@ function DDMsgAreaChooser_listMsgGrps_Traditional(pSearchText)
 	}
 }
 
-// For the DDMsgAreaChooser class: Lists the sub-boards in a message group,
-// for the traditional user interface.
+// For the DDMsgAreaChooser class: Lists the sub-boards in a message group
+// (or sub-subboards in a sub-board, for sub-board name collapsing), for the
+// traditional user interface.
 //
 // Parameters:
 //  pGrpIndex: The index of the message group (0-based)
+//  pSubIdx: Optional - For sub-board name collapsing, this is the (0-based)
+//           index of the sub-board to show sub-subboards for.  To ignore this
+//           and only show sub-boards of the given group, this can be null or -1.
 //  pMarkIndex: An index of a message group to highlight.  This
 //                   is optional; if left off, this will default to
 //                   the current sub-board.
@@ -1074,19 +1500,19 @@ function DDMsgAreaChooser_listMsgGrps_Traditional(pSearchText)
 //             "dateAsc": Sort by date, ascending
 //             "dateDesc": Sort by date, descending
 //             "description": Sort by description
-function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIndex, pSearchText, pSortType)
+function DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pSubIdx, pMarkIndex, pSearchText, pSortType)
 {
 	// Default to the current message group & sub-board if pGrpIndex
 	// and pMarkIndex aren't specified.
 	var grpIndex = 0;
 	if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
 		grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
-	if ((pGrpIndex != null) && (typeof(pGrpIndex) == "number"))
+	if ((pGrpIndex != null) && (typeof(pGrpIndex) === "number"))
 		grpIndex = pGrpIndex;
 	var highlightIndex = 0;
 	if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
 		highlightIndex = (pGrpIndex == msg_area.sub[bbs.cursub_code].index);
-	if ((pMarkIndex != null) && (typeof(pMarkIndex) == "number"))
+	if ((pMarkIndex != null) && (typeof(pMarkIndex) === "number"))
 		highlightIndex = pMarkIndex;
 
 	// Make sure grpIndex and highlightIndex are valid (they might not be for
@@ -1096,6 +1522,9 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 	if ((highlightIndex == null) || (typeof(highlightIndex) == "undefined"))
 		highlightIndex = 0;
 
+	// Check whether pSubIdx is valid
+	var subIdxValid = typeof(pSubIdx) === "number" && (pSubIdx > -1);
+
 	// Ensure that the sub-board printf information is created for
 	// this message group.
 	this.BuildSubBoardPrintfInfoForGrp(grpIndex);
@@ -1103,21 +1532,24 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 	// Print the headers
 	this.WriteSubBrdListHdr1Line(grpIndex);
 	console.crlf();
+	var itemsHdrStr = "Posts";
+	if (this.useSubCollapsing)
+		itemsHdrStr = subIdxValid ? "Posts" : "Items";
 	if (this.showDatesInSubBoardList)
-		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + itemsHdrStr, "Latest date & time");
 	else
-		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts");
+		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + itemsHdrStr);
 	console.print("\1n");
 
 	// Make the search text uppercase for case-insensitive matching
 	var searchTextUpper = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
 
 	// List each sub-board in the message group.
-	var subBoardArray = null;       // For sorting, if desired
-	var newestDate = {}; // For storing the date of the newest post in a sub-board
-	var msgBase = null;    // For opening the sub-boards with a MsgBase object
-	var msgHeader = null;  // For getting the date & time of the newest post in a sub-board
-	var subBoardNum = 0;   // 0-based sub-board number (because the array index is the number as a str)
+	var subBoardArray = null; // For sorting, if desired
+	var newestDate = {};      // For storing the date of the newest post in a sub-board
+	var msgBase = null;       // For opening the sub-boards with a MsgBase object
+	var msgHeader = null;     // For getting the date & time of the newest post in a sub-board
+	var subBoardNum = 0;      // 0-based sub-board number (because the array index is the number as a str)
 	// If a sort type is specified, then add the sub-board information to
 	// subBoardArray so that it can be sorted.
 	if ((typeof(pSortType) == "string") && (pSortType != "") && (pSortType != "none"))
@@ -1125,37 +1557,67 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 		var addSubBoard = true;
 		subBoardArray = [];
 		var subBoardInfo = null;
-		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
+		var subList = msg_area.grp_list[grpIndex].sub_list;
+		if (this.useSubCollapsing)
+		{
+			if (subIdxValid)
+				subList = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list;
+			else
+				subList = this.group_list[grpIndex].sub_list;
+		}
+		for (var subIdx in subList)
 		{
 			// Open the current sub-board with the msgBase object.
 			// If the search text is set, then use it to filter the sub-boards.
 			addSubBoard = true;
 			if (searchTextUpper.length > 0)
 			{
-				addSubBoard = ((msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].name.indexOf(searchTextUpper) >= 0) ||
-				               (msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.indexOf(searchTextUpper) >= 0));
+				if (this.useSubCollapsing && subIdxValid)
+				{
+					// For sub-board name collapsing, sub-subboards only have descriptions, no names
+					addSubBoard = (this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].description.indexOf(searchTextUpper) >= 0);
+				}
+				else
+				{
+					addSubBoard = ((msg_area.grp_list[grpIndex].sub_list[subIdx].name.indexOf(searchTextUpper) >= 0) ||
+					               (msg_area.grp_list[grpIndex].sub_list[subIdx].description.indexOf(searchTextUpper) >= 0));
+				}
 			}
 			if (addSubBoard)
 			{
-				msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+				var subCode = "";
+				if (this.useSubCollapsing && subIdxValid)
+					subCode = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].code;
+				else
+					subCode = msg_area.grp_list[grpIndex].sub_list[subIdx].code;
+				msgBase = new MsgBase(subCode);
 				if (msgBase.open())
 				{
 					subBoardInfo = new MsgSubBoardInfo();
-					subBoardInfo.subBoardNum = +(arrSubBoardNum);
-					subBoardInfo.subBoardIdx = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].index;
-					subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
-					//subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+					subBoardInfo.subBoardNum = +(subIdx);
+					if (this.useSubCollapsing && subIdxValid)
+					{
+						subBoardInfo.subBoardIdx = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].index;
+						subBoardInfo.description = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].description;
+					}
+					else
+					{
+						subBoardInfo.subBoardIdx = msg_area.grp_list[grpIndex].sub_list[subIdx].index;
+						subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[subIdx].description;
+					}
+
+					//subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[subIdx].code);
 					subBoardInfo.numPosts = msgBase.total_msgs;
 
 					// Get the date & time when the last message was imported.
 					if (this.showDatesInSubBoardList && (subBoardInfo.numPosts > 0))
 					{
 						//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-						var msgHeader = getLatestMsgHdr(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+						var msgHeader = getLatestMsgHdr(msg_area.grp_list[grpIndex].sub_list[subIdx].code);
 						if (msgHeader === null)
 							msgHeader = getBogusMsgHdr();
 						if (this.showImportDates)
-							subBoardInfo.newestPostDate = msgHeader.when_imported_time
+							subBoardInfo.newestPostDate = msgHeader.when_imported_time;
 						else
 						{
 							var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
@@ -1253,79 +1715,216 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 	else
 	{
 		var includeSubBoard = true;
-		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
+		//var subList = this.useSubCollapsing ? this.group_list[grpIndex].sub_list : msg_area.grp_list[grpIndex].sub_list;
+		var subList = msg_area.grp_list[grpIndex].sub_list;
+		if (this.useSubCollapsing)
+		{
+			if (subIdxValid)
+				subList = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list;
+			else
+				subList = this.group_list[grpIndex].sub_list;
+		}
+		for (var subIdx in subList)
 		{
 			// If the search text is set, then use it to filter the sub-board list.
 			includeSubBoard = true;
 			if (searchTextUpper.length > 0)
 			{
-				includeSubBoard = ((msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].name.toUpperCase().indexOf(searchTextUpper) >= 0) ||
-				                   (msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.toUpperCase().indexOf(searchTextUpper) >= 0));
+				if (this.useSubCollapsing && subIdxValid)
+				{
+					// For sub-board name collapsing, sub-subboards only have descriptions, no names
+					includeSubBoard = (this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].description.indexOf(searchTextUpper) >= 0);
+				}
+				else
+				{
+					includeSubBoard = ((msg_area.grp_list[grpIndex].sub_list[subIdx].name.toUpperCase().indexOf(searchTextUpper) >= 0) ||
+					                   (msg_area.grp_list[grpIndex].sub_list[subIdx].description.toUpperCase().indexOf(searchTextUpper) >= 0));
+				}
 			}
 			if (includeSubBoard)
 			{
-				// Open the current sub-board with the msgBase object.
-				msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-				if (msgBase.open())
+				// Call GetSubBoardInfo() to get the information about the sub-board or sub-subboard.
+				// Make sure we pass the correct indexes.
+				var subInfo = null;
+				if (this.useSubCollapsing)
 				{
-					// Get the date & time when the last message was imported.
-					//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-					var numMsgs = msgBase.total_msgs;
-					if (numMsgs > 0)
-					{
-						//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-						var msgHeader = getLatestMsgHdr(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-						if (msgHeader === null)
-							msgHeader = getBogusMsgHdr();
-						// Construct the date & time strings of the latest post
-						if (this.showImportDates)
-						{
-							newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-							newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-						}
-						else
-						{
-							var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-							if (msgWrittenLocalBBSTime != -1)
-							{
-								newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalBBSTime);
-								newestDate.time = strftime("%H:%M:%S", msgWrittenLocalBBSTime);
-							}
-							else
-							{
-								newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-								newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-							}
-						}
-					}
+					// For some reason subIdx is a string, so ensure it's a number when calling GetSubBoardInfo()
+					if (subIdxValid) // If pSubIdx is valid
+						subInfo = this.GetSubBoardInfo(grpIndex, pSubIdx, +subIdx);
 					else
-						newestDate.date = newestDate.time = "";
-
-					// Print the sub-board information
-					subBoardNum = +(arrSubBoardNum);
-					console.crlf();
-					console.print((subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
-					if (this.showDatesInSubBoardList)
-					{
-						printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-							   msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-							   numMsgs, newestDate.date, newestDate.time);
-					}
-					else
-					{
-						printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-							   msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-							   numMsgs);
-					}
-
-					msgBase.close();
+						subInfo = this.GetSubBoardInfo(grpIndex, +subIdx);
 				}
-
-				// Free some memory?
-				delete msgBase;
+				else
+					subInfo = this.GetSubBoardInfo(grpIndex, subIdx);
+				newestDate.date = strftime("%Y-%m-%d", subInfo.newestTime);
+				newestDate.time = strftime("%H:%M:%S", subInfo.newestTime);
+				// Print the sub-board information
+				subBoardNum = +(subIdx);
+				console.crlf();
+				var showSubBoardMark = false;
+				if (this.useSubCollapsing)
+				{
+					if (subIdxValid) // If using sub-subboards
+						showSubBoardMark = (bbs.cursub_code == subList[subIdx].code);
+					else
+						showSubBoardMark = this.CurrentSubBoardIsInSubSubsForSub(grpIndex, +subIdx);
+				}
+				else
+					showSubBoardMark = (subBoardNum == highlightIndex);
+				console.print(showSubBoardMark ? "\1n" + this.colors.areaMark + "*" : " ");
+				if (this.showDatesInSubBoardList)
+				{
+					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
+					       subInfo.desc.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+					       subInfo.numItems, newestDate.date, newestDate.time);
+				}
+				else
+				{
+					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
+					       subInfo.desc.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+					       subInfo.numItems);
+				}
 			}
 		}
 	}
+}
+
+// For the DDMsgAreaChooser class: Returns whether the user's current selected sub-board is
+// one of the sub-subboards for a sub-board (if sub-board name collapsing is enabled), or
+// is the given sub-board in the message group.
+//
+// Parameters:
+//  pGrpIdx: The index of the message group (0-based)
+//  pSubIdx: The index of the sub-board within the message group (0-based)
+//
+// Return value: True/false, whether or not the user's current selected sub-board is one of
+//               the sub-subboards for a sub-board (if sub-board name collapsing is enabled)
+//               or is the given sub-board in the message group.
+function DDMsgAreaChooser_CurrentSubBoardIsInSubSubsForSub(pGrpIdx, pSubIdx)
+{
+	// Sanity checking
+	if (typeof(bbs.cursub_code) !== "string") // Rare case, for brand new user accounts
+		return false;
+	if (typeof(pGrpIdx) !== "number")
+		return false;
+	if (typeof(pSubIdx) !== "number")
+		return false;
+
+	var chosenSubMatch = false;
+	if (this.useSubCollapsing)
+	{
+		if (pGrpIdx >= 0 && pGrpIdx < this.group_list.length && pSubIdx >= 0 && pSubIdx < this.group_list[pGrpIdx].sub_list.length)
+		{
+			// If this sub-board has a list of sub-subboards, then go through the sub-subboards and see if the
+			// user's current sub-board is one of the sub-subboards.
+			if (typeof(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list) !== "undefined" && this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0)
+			{
+				for (var subSubIdx = 0; subSubIdx < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length && !chosenSubMatch; ++subSubIdx)
+					chosenSubMatch = (bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[subSubIdx].code);
+			}
+			else // There is no sub-subboard list for this sub-board
+				chosenSubMatch = (bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].code);
+		}
+	}
+	else
+	{
+		if (pGrpIdx >= 0 && pGrpIdx < msg_area.grp_list.length && pSubIdx >= 0 && pSubIdx < msg_area.grp_list[pGrpIdx].sub_list.length)
+			chosenSubMatch = (bbs.cursub_code == msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
+	}
+	return chosenSubMatch;
+}
+
+// For the DDMsgAreaChooser class: With a group & sub-board index, this function gets the date
+// & time of the latest posted message from a sub-board (or group of sub-boards, if using
+// sub-board name collapsing).  This function also gets the description of the sub-board (or
+// group of sub-boards if using sub-board name collapsing).
+//
+// Parameters:
+//  pGrpIdx: The index of the message group
+//  pSubIdx: The index of the sub-board in the message group (if using
+//           sub-board name collapsing, this could be the index of a set
+//           of sub-subboards).
+//  pSubSubIdx: Optional - When sub-board name collapsing is being used,
+//              this specifies the index of the sub-subboard within the subboard.
+//
+// Return value: An object containing the following properties:
+//               desc: The description of the sub-board (or group of sub-subboards if using name collapsing)
+//               numItems: The number of messages in the sub-board or number of sub-subboards in the group,
+//                         if using sub-board name collapsing
+//               subCode: The internal code of the sub-board (this will be an empty string if it's a group of sub-subboards)
+//               newestTime: A value containing the date & time of the newest post in the sub-board or group of sub-boards
+function DDMsgAreaChooser_GetSubBoardInfo(pGrpIdx, pSubIdx, pSubSubIdx)
+{
+	var retObj = {
+		desc: "",
+		numItems: 0,
+		subCode: "",
+		newestTime: 0
+	};
+
+	// If using sub-board name collapsing and the given group & sub-board indexes has a
+	// group of sub-subboards, then look through those sub-boards for information.
+	if (this.useSubCollapsing)
+	{
+		if (typeof(pSubSubIdx) === "number" && pSubSubIdx >= 0 && pSubSubIdx < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length)
+		{
+			retObj.desc = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[pSubSubIdx].description;
+			retObj.subCode = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[pSubSubIdx].code;
+			retObj.numItems = getNumMsgsInSubBoard(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[pSubSubIdx].code);
+			retObj.newestTime = getLatestMsgTime(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[pSubSubIdx].code);
+		}
+		else // pSubSubIdx wasn't specified or is invalid
+		{
+			retObj.numItems = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length;
+			retObj.desc = this.group_list[pGrpIdx].sub_list[pSubIdx].description;
+			if (this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0)
+			{
+				for (var subSubIdx = 0; subSubIdx < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list; ++subSubIdx)
+				{
+					var latestPostTime = getLatestMsgTime(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[subSubIdx].code);
+					if (latestPostTime > retObj.newestTime)
+						retObj.newestTime = latestPostTime;
+				}
+			}
+			else
+			{
+				// No sub-subboards in this sub-board
+				retObj.subCode = this.group_list[pGrpIdx].sub_list[pSubIdx].code;
+				retObj.numItems = getNumMsgsInSubBoard(this.group_list[pGrpIdx].sub_list[pSubIdx].code);
+				retObj.newestTime = getLatestMsgTime(this.group_list[pGrpIdx].sub_list[pSubIdx].code);
+			}
+		}
+	}
+	else // No sub-board name collapsing, or there are no sub-subboards in this sub-board
+	{
+		retObj.desc = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].description;
+		retObj.subCode = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code;
+
+		// Get the number of messages in the sub-board
+		//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
+		var numMsgs = getNumMsgsInSubBoard(msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
+		if (numMsgs > 0)
+		{
+			retObj.numItems = numMsgs;
+			//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+			var msgHeader = getLatestMsgHdr(retObj.subCode);
+			if (msgHeader === null)
+				msgHeader = getBogusMsgHdr();
+			// Set the newest post time
+			if (this.showImportDates)
+				retObj.newestTime = msgHeader.when_imported_time;
+			else
+			{
+				var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+				if (msgWrittenLocalBBSTime != -1)
+					retObj.newestTime = msgWrittenLocalBBSTime;
+				else
+					retObj.newestTime = msgHeader.when_written_time;
+			}
+		}
+	}
+
+	return retObj;
 }
 
 //////////////////////////////////////////////
@@ -1360,45 +1959,14 @@ function DDMsgAreaChooser_writeMsgGroupLine(pGrpIndex, pHighlight)
 // Message sub-board list stuff (lightbar mode) //
 //////////////////////////////////////////////////
 
-// Updates the page number text in the group list header line on the screen.
-//
-// Parameters:
-//  pPageNum: The page number
-//  pNumPages: The total number of pages
-//  pGroup: Boolean - Whether or not this is for the group header.  If so,
-//          then this will go to the right location for the group page text
-//          and use this.colors.header for the text.  Otherwise, this will
-//          go to the right place for the sub-board page text and use the
-//          sub-board header color.
-//  pRestoreCurPos: Optional - Boolean - If true, then move the cursor back
-//                  to the position where it was before this function was called
-function DDMsgAreaChooser_updatePageNumInHeader(pPageNum, pNumPages, pGroup, pRestoreCurPos)
-{
-	var originalCurPos = null;
-	if (pRestoreCurPos)
-		originalCurPos = console.getxy();
-
-	if (pGroup)
-	{
-		console.gotoxy(29, 1+this.areaChangeHdrLines.length);
-		console.print("\1n" + this.colors.header + pPageNum + " of " + pNumPages + ")   ");
-	}
-	else
-	{
-		console.gotoxy(51, 1+this.areaChangeHdrLines.length);
-		console.print("\1n" + this.colors.subBoardHeader + pPageNum + " of " + pNumPages + ")   ");
-	}
-
-	if (pRestoreCurPos)
-		console.gotoxy(originalCurPos);
-}
-
-// For the DDMsgAreaChooser class: Writes a message sub-board information line.
+// For the DDMsgAreaChooser class: Gets a message sub-board information line.
 //
 // Parameters:
 //  pGrpIndex: The index of the message group (assumed to be valid)
 //  pSubIndex: The index of the sub-board within the message group to write (assumed to be valid)
 //  pHighlight: Boolean - Whether or not to write the line highlighted.
+
+
 function DDMsgAreaChooser_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 {
 	var subBoardLine = "\1n";
@@ -1560,6 +2128,13 @@ function DDMsgAreaChooser_ReadConfigFile()
 					}
 					else if (settingUpper == "SHOWDATESINSUBBOARDLIST")
 						this.showDatesInSubBoardList = (value.toUpperCase() == "TRUE");
+					else if (settingUpper == "USESUBCOLLAPSING")
+						this.useSubCollapsing = (value.toUpperCase() == "TRUE");
+					else if (settingUpper == "SUBCOLLAPSESEPARATOR")
+					{
+						if (value.length > 0)
+							this.subCollapseSeparator = value;
+					}
 				}
 				else if (settingsMode == "colors")
 					this.colors[setting] = value;
@@ -1639,7 +2214,7 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 //
 // Parameters:
 //  pGrpIndex: The index of the message group
-function DDMsgAreaChooser_buildSubBoardPrintfInfoForGrp(pGrpIndex)
+function DDMsgAreaChooser_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
 {
 	// If the array of sub-board printf strings doesn't contain the printf
 	// strings for this message group, then figure out the largest number
@@ -1708,7 +2283,7 @@ function DDMsgAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 
 	// If the user's terminal supports ANSI and pStartScreenRow is a number, then
 	// we can move the cursor and display the header where specified.
-	if (console.term_supports(USER_ANSI) && (typeof(pStartScreenRow) == "number"))
+	if (console.term_supports(USER_ANSI) && (typeof(pStartScreenRow) === "number"))
 	{
 		// If specified to clear the rows first, then do so.
 		var screenX = 1;
@@ -1763,6 +2338,147 @@ function DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pRefreshHelpLi
 	mswait(ERROR_WAIT_MS);
 	if (pRefreshHelpLine)
 		this.WriteKeyHelpLine();
+}
+
+// For the DDMsgAreaChooser class: Sets up the group_list array according to
+// the sub-board collapse separator
+function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
+{
+	// Returns a default object for a message group
+	function defaultMsgGrpObj()
+	{
+		return {
+			index: 0,
+			number: 0,
+			name: "",
+			description: "",
+			ars: 0,
+			sub_list: []
+		};
+	}
+
+	// Returns a default object for a message sub-board.  It can potentially
+	// contain its own list of sub-boards within the original subboard.
+	function defaultSubBoardObj()
+	{
+		return {
+			index: 0,
+			number: 0,
+			grp_index: 0,
+			grp_number: 0,
+			grp_name: 0,
+			code: "",
+			name: "",
+			grp_name: "",
+			description: "",
+			ars: 0,
+			settings: 0,
+			sub_subboard_list: []
+		};
+	}
+
+	function subBoardObjFromOfficialSubBoard(pGrpIdx, pSubIdx)
+	{
+		var subObj = defaultSubBoardObj();
+		for (var prop in subObj)
+		{
+			if (prop != "sub_subboard_list") // Doesn't exist in the official dir objects
+				subObj[prop] = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx][prop];
+		}
+		return subObj;
+	}
+
+	if (this.group_list.length == 0)
+	{
+		// Copy some of the information from msg_area.grp_list
+		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
+		{
+			// Go through sub_list in the curent message group, and for
+			// any that have the collapse separator, add only one copy
+			// of the name to the sub_list property for this group.
+			// First, we'll have to see if multiple sub-boards with
+			// the collapse separator have the same prefix.
+			// dirDescs is an object indexed by sub-board description,
+			// and the value will be how many times it was seen.
+			var subBoardDescs = {};
+			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
+			{
+				var subBoardDesc = msg_area.grp_list[grpIdx].sub_list[subIdx].description;
+				var sepIdx = subBoardDesc.indexOf(this.subCollapseSeparator);
+				if (sepIdx > -1)
+					subBoardDesc = truncsp(subBoardDesc.substr(0, sepIdx));  // Remove trailing whitespace
+				if (subBoardDescs.hasOwnProperty(subBoardDesc))
+					subBoardDescs[subBoardDesc] += 1;
+				else
+					subBoardDescs[subBoardDesc] = 1;
+			}
+
+			// Create an initial file group object for this file group (except
+			// for sub_list, which we will build ourselves for this group)
+			var msgGrpObj = defaultMsgGrpObj();
+			for (var prop in msgGrpObj)
+			{
+				if (prop != "sub_list")
+					msgGrpObj[prop] = msg_area.grp_list[grpIdx][prop];
+			}
+
+			// Go through the dirs in this group again.  For each sub-board:
+			// If its whole description exists in subBoardDescs, then just add it to
+			// the sub_list array.  Otherwise:
+			// If a collapse seprator exists, then split on that and see if the
+			// prefix was seen more than once.  If so, then add the separate
+			// subdirs as their own items in the sub_list array.  Otherwise,
+			// add the single sub-board to the sub_list array with the whole
+			// description.
+			var addedPrefixDescriptionDirs = {};
+			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
+			{
+				var subBoardDesc = msg_area.grp_list[grpIdx].sub_list[subIdx].description;
+				if (subBoardDescs.hasOwnProperty(subBoardDesc))
+					msgGrpObj.sub_list.push(subBoardObjFromOfficialSubBoard(grpIdx, subIdx));
+				else
+				{
+					var subSubDirDesc = "";
+					var sepIdx = subBoardDesc.indexOf(this.subCollapseSeparator);
+					if (sepIdx > -1)
+					{
+						subBoardDesc = truncsp(subBoardDesc.substr(0, sepIdx));  // Remove trailing whitespace
+						// If it has been seen more than once, then the description should
+						// be the prefix description
+						if (subBoardDescs[subBoardDesc] > 1)
+						{
+							var addedSubIdx = msgGrpObj.sub_list.length - 1;
+							if (!addedPrefixDescriptionDirs.hasOwnProperty(subBoardDesc))
+							{
+								// Add it to sub_list
+								msgGrpObj.sub_list.push(subBoardObjFromOfficialSubBoard(grpIdx, subIdx));
+								addedSubIdx = msgGrpObj.sub_list.length - 1;
+								msgGrpObj.sub_list[addedSubIdx].description = subBoardDesc;
+								addedPrefixDescriptionDirs[subBoardDesc] = true;
+							}
+							// Add the sub-subboard to the sub-board's sub-subboard list
+							// Using skipsp() to strip leading whitespace
+							subSubDirDesc = skipsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description.substr(sepIdx+1));
+							msgGrpObj.sub_list[addedSubIdx].sub_subboard_list.push({
+								description: subSubDirDesc,
+								code: msg_area.grp_list[grpIdx].sub_list[subIdx].code,
+								index: msg_area.grp_list[grpIdx].sub_list[subIdx].index,
+								grp_index: msg_area.grp_list[grpIdx].sub_list[subIdx].grp_index
+							});
+						}
+						else // Add it with the full description
+							msgGrpObj.sub_list.push(subBoardObjFromOfficialSubBoard(grpIdx, subIdx));
+					}
+					if (subBoardDescs.hasOwnProperty(subBoardDesc))
+						subBoardDescs[subBoardDescs] += 1;
+					else
+						subBoardDescs[subBoardDescs] = 1;
+				}
+			}
+
+			this.group_list.push(msgGrpObj);
+		}
+	}
 }
 
 // Removes multiple, leading, and/or trailing spaces.
@@ -1823,7 +2539,7 @@ function calcPageNum(pTopIndex, pNumPerPage)
 function getGreatestNumMsgs(pGrpIndex)
 {
 	// Sanity checking
-	if (typeof(pGrpIndex) != "number")
+	if (typeof(pGrpIndex) !== "number")
 		return 0;
 	if (typeof(msg_area.grp_list[pGrpIndex]) == "undefined")
 		return 0;
@@ -1844,6 +2560,28 @@ function getGreatestNumMsgs(pGrpIndex)
 	return greatestNumMsgs;
 }
 
+// Returns the number of messages in a sub-board
+//
+// Parameters:
+//  pSubCode: The internal code of the sub-board
+//
+// Return value: The number of messages in the sub-board, or 0 if can't be opened
+function getNumMsgsInSubBoard(pSubCode)
+{
+	if (typeof(pSubCode) !== "string")
+		return 0;
+
+	var numMsgs = 0;
+	var msgBase = new MsgBase(pSubCode);
+	if (msgBase != null && msgBase.open())
+	{
+		numMsgs = msgBase.total_msgs;
+		msgBase.close();
+	}
+	delete msgBase; // Free some memory?
+	return numMsgs;
+}
+
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
@@ -1861,7 +2599,7 @@ function getGreatestNumMsgs(pGrpIndex)
 function getKeyWithESCChars(pGetKeyMode)
 {
 	var getKeyMode = K_NONE;
-	if (typeof(pGetKeyMode) == "number")
+	if (typeof(pGetKeyMode) === "number")
 		getKeyMode = pGetKeyMode;
 
 	var userInput = console.getkey(getKeyMode);
@@ -1921,7 +2659,7 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 	if (typeof(pFilenameBase) != "string")
 		return new Array();
 
-	var maxNumLines = (typeof(pMaxNumLines) == "number" ? pMaxNumLines : -1);
+	var maxNumLines = (typeof(pMaxNumLines) === "number" ? pMaxNumLines : -1);
 
 	var txtFileLines = new Array();
 	// See if there is a header file that is made for the user's terminal
@@ -2242,13 +2980,13 @@ function getStrWithTimeout(pMode, pMaxLength, pTimeout)
 	var inputStr = "";
 
 	var mode = K_NONE;
-	if (typeof(pMode) == "number")
+	if (typeof(pMode) === "number")
 		mode = pMode;
 	var maxWidth = 0;
-	if (typeof(pMaxLength) == "number")
+	if (typeof(pMaxLength) === "number")
 			maxWidth = pMaxLength;
 	var timeout = 0;
-	if (typeof(pTimeout) == "number")
+	if (typeof(pTimeout) === "number")
 		timeout = pTimeout;
 
 	var setNormalAttrAtEnd = false;
@@ -2336,14 +3074,14 @@ function getPageNumFromSearch(pText, pNumItemsPerPage, pSubBoard, pStartItemIdx,
 	};
 
 	// Sanity checking
-	if ((typeof(pText) != "string") || (typeof(pNumItemsPerPage) != "number") || (typeof(pSubBoard) != "boolean"))
+	if ((typeof(pText) != "string") || (typeof(pNumItemsPerPage) !== "number") || (typeof(pSubBoard) != "boolean"))
 		return retObj;
 
 	// Convert the text to uppercase for case-insensitive searching
 	var srchText = pText.toUpperCase();
 	if (pSubBoard)
 	{
-		if ((typeof(pGrpIdx) == "number") && (pGrpIdx >= 0) && (pGrpIdx < msg_area.grp_list.length))
+		if ((typeof(pGrpIdx) === "number") && (pGrpIdx >= 0) && (pGrpIdx < msg_area.grp_list.length))
 		{
 			// Go through the sub-board list of the given group and
 			// search for text in the descriptions
@@ -2443,30 +3181,96 @@ function calcPageNumAndTopPageIdx(pItemIdx, pNumItemsPerPage)
 function getLatestMsgHdr(pSubCode, pNumMsgsToCheck)
 {
 	var msgHdr = null;
-	var numMsgsToCheck = (typeof(pNumMsgsToCheck) == "number" ? pNumMsgsToCheck : 0);
 	var msgBase = new MsgBase(pSubCode);
 	if (msgBase.open())
 	{
-		// Look through the last pNumMsgsToCheck headers to find the latest
-		// readable message header
-		var numMsgs = msgBase.total_msgs;
-		var firstMsgIdx = 0;
-		if (numMsgsToCheck >= 1)
-			firstMsgIdx = numMsgs - numMsgsToCheck;
-		else
-			firstMsgIdx = 0;
-		if (firstMsgIdx < 0)
-			firstMsgIdx = 0;
-		for (var i = numMsgs - 1; (i >= firstMsgIdx) && (msgHdr == null); --i)
-		{
-			var msgHeader = msgBase.get_msg_header(true, i, true);
-			if (isReadableMsgHdr(msgHeader, pSubCode))
-				msgHdr = msgHeader;
-		}
-
+		msgHdr = getLatestMsgHdrWithMsgbase(msgBase, pNumMsgsToCheck);
 		msgBase.close();
 	}
+	delete msgBase; // Free some memory?
 	return msgHdr;
+}
+// Gets the header of the latest readable message in a sub-board,
+// given a number of messages to look at.
+//
+// Paramters:
+//  pMsgbase: A MsgBase object for the sub-board, already opened
+//  pNumMsgsToCheck: The number of messages to check at the end of the sub-board.
+//                   This is optional and if omitted, all messages will be
+//                   checked (from the last message) for the latest readable
+//                   message header.
+//
+// Return value: The message header of the latest readable message.  If
+//               none is found, this will be null.
+function getLatestMsgHdrWithMsgbase(pMsgbase, pNumMsgsToCheck)
+{
+	if (typeof(pMsgbase) !== "object")
+		return null;
+	if (!pMsgbase.is_open)
+		return null;
+
+	var msgHdr = null;
+	var numMsgsToCheck = (typeof(pNumMsgsToCheck) === "number" ? pNumMsgsToCheck : 0);
+
+	// Look through the last numMsgsToCheck headers to find the latest
+	// readable message header
+	var numMsgs = pMsgbase.total_msgs;
+	var firstMsgIdx = 0;
+	if (numMsgsToCheck >= 1)
+		firstMsgIdx = numMsgs - numMsgsToCheck;
+	else
+		firstMsgIdx = 0;
+	if (firstMsgIdx < 0)
+		firstMsgIdx = 0;
+	for (var i = numMsgs - 1; (i >= firstMsgIdx) && (msgHdr == null); --i)
+	{
+		var msgHeader = pMsgbase.get_msg_header(true, i, true);
+		if (isReadableMsgHdr(msgHeader, pMsgbase.cfg.code))
+			msgHdr = msgHeader;
+	}
+
+	return msgHdr;
+}
+
+// Gets the time of the latest post in a sub-board.
+//
+// Parameters:
+//  pSubCode: The internal code of the sub-board
+//
+// Return value: The time of the latest post in the sub-board.  If pSubCode is invalid, this will be 0.
+function getLatestMsgTime(pSubCode)
+{
+	if (typeof(pSubCode) !== "string")
+		return 0;
+
+	var latestPostTime = 0;
+
+	var numMsgs = 0;
+	var msgBase = new MsgBase(pSubCode);
+	if (msgBase.open())
+	{
+		//var numMsgs = numReadableMsgs(msgBase, pSubCode);
+		numMsgs = msgBase.total_msgs;
+		msgBase.close();
+	}
+	delete msgBase; // Free some memory?
+	if (numMsgs > 0)
+	{
+		// Get the latest post time from this sub-board & compare it to retObj.newestTime and
+		// set if necessary
+		var msgHeader = getLatestMsgHdr(pSubCode);
+		if (msgHeader === null)
+			msgHeader = getBogusMsgHdr();
+		if (this.showImportDates)
+			latestPostTime = msgHeader.when_imported_time;
+		else
+		{
+			var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+			latestPostTime = msgWrittenLocalBBSTime != -1 ? msgWrittenLocalBBSTime : msgHeader.when_written_time;
+		}
+	}
+
+	return latestPostTime;
 }
 
 // Finds a message group index with search text, matching either the name or
@@ -2477,26 +3281,49 @@ function getLatestMsgHdr(pSubCode, pNumMsgsToCheck)
 //  pStartItemIdx: The item index to start at.  Defaults to 0
 //
 // Return value: The index of the message group, or -1 if not found
-function findMsgGrpIdxFromText(pSearchText, pStartItemIdx)
+function DDMsgAreaChooser_FindMsgGrpIdxFromText(pSearchText, pStartItemIdx)
 {
 	if (typeof(pSearchText) != "string")
 		return -1;
 
 	var grpIdx = -1;
 
-	var startIdx = (typeof(pStartItemIdx) == "number" ? pStartItemIdx : 0);
-	if ((startIdx < 0) || (startIdx > msg_area.grp_list.length))
-		startIdx = 0;
+	var startIdx = (typeof(pStartItemIdx) === "number" ? pStartItemIdx : 0);
+	if (this.useSubCollapsing)
+	{
+		if ((startIdx < 0) || (startIdx > this.group_list.length))
+			startIdx = 0;
+	}
+	else
+	{
+		if ((startIdx < 0) || (startIdx > msg_area.grp_list.length))
+			startIdx = 0;
+	}
 
 	// Go through the message group list and look for a match
 	var searchTextUpper = pSearchText.toUpperCase();
-	for (var i = startIdx; i < msg_area.grp_list.length; ++i)
+	if (this.useSubCollapsing)
 	{
-		if ((msg_area.grp_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-		    (msg_area.grp_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+		for (var i = startIdx; i < this.group_list.length; ++i)
 		{
-			grpIdx = i;
-			break;
+			if ((this.group_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
+				(this.group_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+			{
+				grpIdx = i;
+				break;
+			}
+		}
+	}
+	else
+	{
+		for (var i = startIdx; i < msg_area.grp_list.length; ++i)
+		{
+			if ((msg_area.grp_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
+				(msg_area.grp_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+			{
+				grpIdx = i;
+				break;
+			}
 		}
 	}
 
@@ -2508,34 +3335,138 @@ function findMsgGrpIdxFromText(pSearchText, pStartItemIdx)
 //
 // Parameters:
 //  pGrpIdx: The index of the message group
+//  pSubIdx: Optional - The index of the sub-board, for sub-board name collapsing.
+//           If this is null, then sub-board collapsing won't be used.
 //  pSearchText: The name/description text to look for
 //  pStartItemIdx: The item index to start at.  Defaults to 0
 //
 // Return value: The index of the sub-board, or -1 if not found
-function findSubBoardIdxFromText(pGrpIdx, pSearchText, pStartItemIdx)
+function DDMsgAreaChooser_FindSubBoardIdxFromText(pGrpIdx, pSubIdx, pSearchText, pStartItemIdx)
 {
-	if (typeof(pGrpIdx) != "number")
+	if (typeof(pGrpIdx) !== "number")
 		return -1;
 	if (typeof(pSearchText) != "string")
 		return -1;
 
 	var subBoardIdx = -1;
 
-	var startIdx = (typeof(pStartItemIdx) == "number" ? pStartItemIdx : 0);
-	if ((startIdx < 0) || (startIdx > msg_area.grp_list[pGrpIdx].sub_list.length))
-		startIdx = 0;
-
-	// Go through the message group list and look for a match
-	var searchTextUpper = pSearchText.toUpperCase();
-	for (var i = startIdx; i < msg_area.grp_list[pGrpIdx].sub_list.length; ++i)
+	var startIdx = (typeof(pStartItemIdx) === "number" ? pStartItemIdx : 0);
+	if (this.useSubCollapsing)
 	{
-		if ((msg_area.grp_list[pGrpIdx].sub_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-		    (msg_area.grp_list[pGrpIdx].sub_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+		if (typeof(pSubIdx) === "number")
 		{
-			subBoardIdx = i;
-			break;
+			if ((startIdx < 0) || (startIdx > this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length))
+				startIdx = 0;
+		}
+		else
+		{
+			if ((startIdx < 0) || (startIdx > this.group_list[pGrpIdx].sub_list.length))
+				startIdx = 0;
+		}
+	}
+	else
+	{
+		if ((startIdx < 0) || (startIdx > msg_area.grp_list[pGrpIdx].sub_list.length))
+			startIdx = 0;
+	}
+
+	// Go through the message sub-board list in the group (or sub-subboard list in the sub-board)
+	// and look for a match
+	var searchTextUpper = pSearchText.toUpperCase();
+	if (this.useSubCollapsing)
+	{
+		if (typeof(pSubIdx) === "number")
+		{
+			// Look through the sub-subboards of the sub-board
+			for (var i = startIdx; i < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length; ++i)
+			{
+				// For the sub-subboards, there is only a description, no name
+				if (this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1)
+				{
+					subBoardIdx = i;
+					break;
+				}
+			}
+		}
+		else
+		{
+			// Look  through the sub-boards in the group
+			for (var i = startIdx; i < this.group_list[pGrpIdx].sub_list.length; ++i)
+			{
+				if ((this.group_list[pGrpIdx].sub_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
+				    (this.group_list[pGrpIdx].sub_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+				{
+					subBoardIdx = i;
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (var i = startIdx; i < msg_area.grp_list[pGrpIdx].sub_list.length; ++i)
+		{
+			if ((msg_area.grp_list[pGrpIdx].sub_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
+				(msg_area.grp_list[pGrpIdx].sub_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+			{
+				subBoardIdx = i;
+				break;
+			}
 		}
 	}
 
 	return subBoardIdx;
+}
+
+
+
+// Temporary - For debugging
+function logStackTrace(levels) {
+    var callstack = [];
+    var isCallstackPopulated = false;
+    try {
+        i.dont.exist += 0; //doesn't exist- that's the point
+    } catch (e) {
+        if (e.stack) { //Firefox / chrome
+            var lines = e.stack.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                    callstack.push(lines[i]);
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+        else if (window.opera && e.message) { //Opera
+            var lines = e.message.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
+                    var entry = lines[i];
+                    //Append next line also since it has the file info
+                    if (lines[i + 1]) {
+                        entry += " at " + lines[i + 1];
+                        i++;
+                    }
+                    callstack.push(entry);
+                }
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+    }
+    if (!isCallstackPopulated) { //IE and Safari
+        var currentFunction = arguments.callee.caller;
+        while (currentFunction) {
+            var fn = currentFunction.toString();
+            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
+            callstack.push(fname);
+            currentFunction = currentFunction.caller;
+        }
+    }
+    if (levels) {
+        console.print(callstack.slice(0, levels).join("\r\n"));
+    }
+    else {
+        console.print(callstack.join("\r\n"));
+    }
 }
