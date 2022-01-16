@@ -126,6 +126,7 @@ static str_list_t cgi_env;
 static named_string_t** mime_types;
 static named_string_t** cgi_handlers;
 static named_string_t** xjs_handlers;
+static named_string_t** alias_list; // request path aliases
 
 /* Logging stuff */
 link_list_t	log_list;
@@ -2038,7 +2039,7 @@ static BOOL check_ars(http_session_t * session)
 }
 
 static named_string_t** read_ini_list(char* path, char* section, char* desc
-									  ,named_string_t** list)
+									  ,named_string_t** list, bool warn)
 {
 	size_t	i;
 	FILE*	fp;
@@ -2053,7 +2054,7 @@ static named_string_t** read_ini_list(char* path, char* section, char* desc
 			lprintf(LOG_DEBUG,"Read %lu %s from %s section of %s"
 				,(ulong)i,desc,section==NULL ? "root":section,path);
 	} else
-		lprintf(LOG_WARNING, "Error %d opening %s", errno, path);
+		lprintf(warn ? LOG_WARNING : LOG_DEBUG, "Error %d opening %s", errno, path);
 	return(list);
 }
 
@@ -3128,6 +3129,19 @@ static BOOL get_request_headers(http_session_t * session)
 static BOOL get_fullpath(http_session_t * session)
 {
 	char	str[MAX_PATH+1];
+
+	if(alias_list != NULL) {
+		for(size_t i = 0; alias_list[i] != NULL; i++) {
+			named_string_t* alias = alias_list[i];
+			size_t len = strlen(alias->name);
+			if(strncmp(session->req.physical_path, alias->name, len) == 0) {
+				char extra[MAX_PATH + 1];
+				SAFECOPY(extra, session->req.physical_path + len);
+				SAFEPRINTF2(session->req.physical_path, "%s%s", alias->value, extra);
+				break;
+			}
+		}
+	}
 
 	if(scfg.web_file_prefix[0] && strncmp(session->req.physical_path, scfg.web_file_prefix, strlen(scfg.web_file_prefix)) == 0) {
 		session->filebase_access = TRUE;
@@ -6730,6 +6744,7 @@ static void cleanup(int code)
 
 	cgi_handlers=iniFreeNamedStringList(cgi_handlers);
 	xjs_handlers=iniFreeNamedStringList(xjs_handlers);
+	alias_list = iniFreeNamedStringList(alias_list);
 
 	cgi_env=iniFreeStringList(cgi_env);
 
@@ -6898,6 +6913,7 @@ void web_server(void* arg)
 	char			logstr[256];
 	char			mime_types_ini[MAX_PATH+1];
 	char			web_handler_ini[MAX_PATH+1];
+	char			web_alias_ini[MAX_PATH+1];
 	union xp_sockaddr	client_addr;
 	socklen_t		client_addr_len;
 	SOCKET			client_socket;
@@ -7052,14 +7068,16 @@ void web_server(void* arg)
 
 		iniFileName(mime_types_ini,sizeof(mime_types_ini),scfg.ctrl_dir,"mime_types.ini");
 		mime_types=read_ini_list(mime_types_ini,NULL /* root section */,"MIME types"
-			,mime_types);
+			,mime_types, true);
 		iniFileName(web_handler_ini,sizeof(web_handler_ini),scfg.ctrl_dir,"web_handler.ini");
 		if((cgi_handlers=read_ini_list(web_handler_ini,"CGI."PLATFORM_DESC,"CGI content handlers"
-			,cgi_handlers))==NULL)
+			,cgi_handlers, true))==NULL)
 			cgi_handlers=read_ini_list(web_handler_ini,"CGI","CGI content handlers"
-				,cgi_handlers);
+				,cgi_handlers, true);
 		xjs_handlers=read_ini_list(web_handler_ini,"JavaScript","JavaScript content handlers"
-			,xjs_handlers);
+			,xjs_handlers, true);
+		iniFileName(web_alias_ini, sizeof(web_alias_ini), scfg.ctrl_dir, "web_alias.ini");
+		alias_list = read_ini_list(web_alias_ini, ROOT_SECTION, "Request path aliases", alias_list, false);
 
 		/* Don't do this for *each* CGI request, just once here during [re]init */
 		iniFileName(cgi_env_ini,sizeof(cgi_env_ini),scfg.ctrl_dir,"cgi_env.ini");
@@ -7112,6 +7130,7 @@ void web_server(void* arg)
 		semfile_list_add(&recycle_semfiles,mime_types_ini);
 		semfile_list_add(&recycle_semfiles,web_handler_ini);
 		semfile_list_add(&recycle_semfiles,cgi_env_ini);
+		semfile_list_add(&recycle_semfiles,web_alias_ini);
 		if(!initialized) {
 			initialized=time(NULL);
 			semfile_list_check(&initialized,recycle_semfiles);
