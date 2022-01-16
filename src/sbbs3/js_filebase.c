@@ -1642,17 +1642,17 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"get_path",		js_get_file_path,	1, JSTYPE_STRING
-		,JSDOCSTR("filename")
+		,JSDOCSTR("filename or file-meta-object")
 		,JSDOCSTR("get the full path to the local file")
 		,31900
 	},
 	{"get_size",		js_get_file_size,	1, JSTYPE_NUMBER
-		,JSDOCSTR("filename")
+		,JSDOCSTR("filename or file-meta-object")
 		,JSDOCSTR("get the size of the local file, in bytes, or -1 if it does not exist")
 		,31900
 	},
 	{"get_time",		js_get_file_time,	1, JSTYPE_NUMBER
-		,JSDOCSTR("filename")
+		,JSDOCSTR("filename or file-meta-object")
 		,JSDOCSTR("get the modification date/time stamp of the local file")
 		,31900
 	},
