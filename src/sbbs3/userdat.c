@@ -2495,14 +2495,15 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 			char tmp[128];
 			char prefix[128]="";
 			ultoac(mod,tmp);
+			const char* alias = user->alias[0] ? user->alias : cfg->text[UNKNOWN_USER];
 			char username[64];
 			if(client != NULL && uploader.level >= SYSOP_LEVEL) {
 				if(client->host[0] != '\0' && strcmp(client->host, STR_NO_HOSTNAME) != 0)
-					SAFEPRINTF2(username,"%s [%s]", user->alias, client->host);
+					SAFEPRINTF2(username,"%s [%s]", alias, client->host);
 				else
-					SAFEPRINTF2(username,"%s [%s]", user->alias, client->addr);
+					SAFEPRINTF2(username,"%s [%s]", alias, client->addr);
 			} else
-				SAFECOPY(username, user->alias);
+				SAFECOPY(username, alias);
 			if(strcmp(cfg->dir[dirnum]->code, "TEMP") == 0 || bytes < (ulong)f.size)
 				SAFECOPY(prefix, cfg->text[Partially]);
 			if(client != NULL) {
@@ -3805,4 +3806,51 @@ int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 			return ((user_t*)node->data)->number;
 	}
 	return 0;
+}
+
+/* Returns the directory index of a virtual lib/dir path (e.g. main/games/filename) */
+int getdir_from_vpath(scfg_t* cfg, const char* p, user_t* user, client_t* client, BOOL include_upload_only)
+{
+	char*	tp;
+	char	path[MAX_PATH+1];
+	uint	dir;
+	uint	lib;
+
+	SAFECOPY(path,p);
+	p=path;
+
+	if(*p=='/') 
+		p++;
+	if(!strncmp(p,"./",2))
+		p+=2;
+
+	tp=strchr(p,'/');
+	if(tp) *tp=0;
+	for(lib=0;lib<cfg->total_libs;lib++) {
+		if(!chk_ar(cfg,cfg->lib[lib]->ar,user,client))
+			continue;
+		if(!stricmp(cfg->lib[lib]->sname,p))
+			break;
+	}
+	if(lib>=cfg->total_libs) 
+		return(-1);
+
+	if(tp!=NULL)
+		p=tp+1;
+
+	tp=strchr(p,'/');
+	if(tp) *tp=0;
+	for(dir=0;dir<cfg->total_dirs;dir++) {
+		if(cfg->dir[dir]->lib!=lib)
+			continue;
+		if((!include_upload_only || (dir!=cfg->sysop_dir && dir!=cfg->upload_dir))
+			&& !chk_ar(cfg,cfg->dir[dir]->ar,user,client))
+			continue;
+		if(!stricmp(cfg->dir[dir]->code_suffix,p))
+			break;
+	}
+	if(dir>=cfg->total_dirs) 
+		return(-1);
+
+	return(dir);
 }

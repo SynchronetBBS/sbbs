@@ -100,6 +100,7 @@ DLLEXPORT BOOL	is_download_free(scfg_t*, uint dirnum, user_t*, client_t* client)
 DLLEXPORT BOOL	is_host_exempt(scfg_t*, const char* ip_addr, const char* host_name);
 DLLEXPORT BOOL	filter_ip(scfg_t*, const char* prot, const char* reason, const char* host
 								  ,const char* ip_addr, const char* username, const char* fname);
+DLLEXPORT int	getdir_from_vpath(scfg_t*, const char* p, user_t*, client_t*, BOOL include_upload_only);
 
 /* user .ini file access */
 DLLEXPORT BOOL	user_get_property(scfg_t*, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen);

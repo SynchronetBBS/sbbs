@@ -661,8 +661,12 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->leech_sec,stream);
 	put_int(cfg->file_misc,stream);
 	put_int(cfg->filename_maxlen, stream);
+	put_str(cfg->web_file_prefix, stream);
+	// Padding (NULs)
+	c=0;
+	put_int(c, stream);
 	n=0;
-	for(i=0;i<29;i++)
+	for(i=0;i<12;i++)
 		put_int(n,stream);
 
 	/* Extractable File Types */
