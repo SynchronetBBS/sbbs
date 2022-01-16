@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.21     2022-01-15   Now supports message sub-board & file directory name
+                      collapsing, allowing simplified file directory and message
+                      sub-board lists for ones with common groups, adding a 3rd
+                      tier of options.
 1.20     2020-04-19   Now uses the DDLightbarMenu class for lightbar mode, and
                       the internal lightbar code has been removed.  Requires
                       the latest dd_lightbar_menu.js in sbbs/exec/load.
