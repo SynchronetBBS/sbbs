@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.20
-                        Release date: 2020-04-19
+                              Version 1.21
+                        Release date: 2022-01-15
 
                                   by
 
@@ -18,9 +18,10 @@ Contents
 1. Disclaimer
 2. Introduction
 3. Installation & Setup
-4. Configuration file
-5. DDMsgAreaChooser class: Properties & methods
-6. DDFileAreaChooser class: Properties & methods
+4. Configuration files
+5. Sub-board & directory name collapsing
+6. DDMsgAreaChooser class: Properties & methods
+7. DDFileAreaChooser class: Properties & methods
 
 
 1. Disclaimer
@@ -186,8 +187,8 @@ To run that from a Baja script, include this line:
 exec_xtrn MSGARCHO
 
 
-4. Configuration file
-=====================
+4. Configuration files
+======================
 If you want to change the default beavior and colors for one of these scripts,
 you can edit its configuration file, which is a plain text file.  The
 configuration files have two sections: A behavior section (denoted by
@@ -235,6 +236,19 @@ showDatesInSubBoardList               Specifies whether or not to show the date
                                       & time of the latest message in the
                                       sub-boards.  Valid values are true and
                                       false.
+
+useSubCollapsing                      Whether or not to enable sub-board name
+                                      collapsing.  For example, for sub-boards
+                                      in a group starting with common text and
+                                      a separator (specified by
+                                      subCollapseSeparator), the common text
+                                      will be the only one displayed, and when
+                                      the user selects it, a 3rd tier with the
+                                      sub-boards after the separator will be
+                                      shown.
+
+subCollapseSeparator                  The separator to use for sub-board name
+                                      collapsing
 
 Colors section: Message area chooser
 ------------------------------------
@@ -320,6 +334,20 @@ areaChooserHdrFilenameBase            The filename to use (without the
 areaChooserHdrMaxLines                The maximum number of lines to use from
                                       the message area chooser header file
 
+
+useDirCollapsing                      Whether or not to enable directory name
+                                      collapsing.  For example, for directories
+                                      in a library starting with common text and
+                                      a separator (specified by
+                                      dirCollapseSeparator), the common text
+                                      will be the only one displayed, and when
+                                      the user selects it, a 3rd tier with the
+                                      directories after the separator will be
+                                      shown.
+
+dirCollapseSeparator                  The separator to use for directory name
+                                      collapsing
+
 Colors section: File area chooser
 ------------------------------------
 Color setting                        Description
@@ -370,8 +398,51 @@ lightbarHelpLineParen                The color to use for the ) characters in
                                      the help text line displayed at the bottom
                                      of the screen in lightbar mode
 
+5. Sub-board & directory name collapsing
+========================================
+Sub-board name collapsing (for message areas) and directory name collapsing (for
+file areas) is a way to simplify long lists of sub-boards and file directories
+that share a common theme.  A 3rd tier of options will be created for those with
+a common theme.  For example, within a file library, if you have multiple
+directories relating to Windows, the file area chooser can just include one
+directory entry for Windows, and when the user chooses Windows, another list
+of options will be shown for the Windows directories.  Similarly, for message
+sub-boards, if you have multiple sub-boards in a message group that share a
+common theme, the message area chooser can show just one sub-board entry for
+that, and when the user selects it, the chooser will show a 3rd tier of options
+for the sub-boards in that group.
 
-5. DDMsgAreaChooser class: Properties & methods
+For example, if you have the following file directory structure:
+BBS files
+  DOS: BBS software
+  DOS: BBS doors
+  DOS: BBS utilities
+  Windows: BBS software
+  Windows: BBS doors
+  Windows: BBS utilities
+
+With directory name collapsing, the selection will be come 3 tiers, as follows:
+BBS files
+  DOS
+    BBS software
+    BBS doors
+    BBS utilities
+  Windows
+    BBS software
+    BBS doors
+    BBS utilities
+
+The message area chooser has similar functionality for sub-boards.  You can
+configure what text to split the names on (i.e, by default, it splits on a
+colon, :).  This only happens at the file directory/message sub-board level, not
+at the file library/message group level.
+
+Name collapsing for message areas can be configured with the useSubCollapsing
+and subCollapseSeparator options in DDMsgAreaChooser.cfg, and for files, with
+the useDirCollapsing and dirCollapseSeparator options in DDFileAreaChooser.cfg.
+
+
+6. DDMsgAreaChooser class: Properties & methods
 ===============================================
 The following are the properties and methods of the DDMsgAreaChooser class, which
 is the class used for letting the user choose a message area:
@@ -417,7 +488,7 @@ ListSubBoardsInMsgGroup(pGrpIndex,    Lists the sub-boards in the user's
                                       "dateDesc" for date descending, or
                                       "description" for description.
 
-6. DDFileAreaChooser class: Properties & methods
+7. DDFileAreaChooser class: Properties & methods
 ===============================================
 The following are the properties and methods of the DDMsgAreaChooser class, which
 is the class used for letting the user choose a message area:
