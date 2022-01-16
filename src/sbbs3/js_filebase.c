@@ -167,6 +167,7 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 static bool
 set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail detail)
 {
+	char		path[MAX_PATH + 1];
 	jsval		val;
 	JSString*	js_str;
 	const uintN flags = JSPROP_ENUMERATE;
@@ -180,6 +181,10 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		|| (js_str = JS_NewStringCopyZ(cx, f->name)) == NULL
 		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 		return false;
+
+	if((js_str = JS_NewStringCopyZ(cx, getfilevpath(scfg, f, path))) == NULL
+		|| !JS_DefineProperty(cx, obj, "vpath", STRING_TO_JSVAL(js_str), NULL, NULL, flags | JSPROP_READONLY))
+	return false;
 
 	if(((f->from != NULL && *f->from != '\0') || detail > file_detail_metadata)
 		&& ((js_str = JS_NewStringCopyZ(cx, f->from)) == NULL
@@ -1596,6 +1601,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 			"The file-meta-object may contain the following properties (depending on <i>detail</i> value):<br>"
 			"<table>"
 			"<tr><td align=top><tt>name</tt><td>Filename <i>(required)</i>"
+			"<tr><td align=top><tt>vpath</tt><td>Virtual path to file <i>READ ONLY</i>"
 			"<tr><td align=top><tt>desc</tt><td>Description (summary, 58 chars or less)"
 			"<tr><td align=top><tt>extdesc</tt><td>Extended description (multi-line description, e.g. DIZ)"
 			"<tr><td align=top><tt>author</tt><td>File author name (e.g. from SAUCE record)"

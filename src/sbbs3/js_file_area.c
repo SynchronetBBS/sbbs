@@ -27,6 +27,7 @@
 static char* file_area_prop_desc[] = {
 	 "minimum amount of available disk space (in kilobytes) required for user uploads to be allowed"
 	,"file area settings (bitfield) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	,"web file virtual path prefix <i>(introduced in v3.19c)</i>"
 	,NULL
 };
 
@@ -226,6 +227,17 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			free(name);
 		val=UINT_TO_JSVAL(p->cfg->file_misc);
 		JS_DefineProperty(cx, areaobj, "settings", val, NULL, NULL, JSPROP_ENUMERATE);
+		if(name)
+			return(JS_TRUE);
+	}
+
+	if(name==NULL || strcmp(name, "web_vpath_prefix")==0) {
+		if(name)
+			free(name);
+		if((js_str=JS_NewStringCopyZ(cx, p->cfg->web_file_prefix))==NULL)
+			return JS_FALSE;
+		val=STRING_TO_JSVAL(js_str);
+		JS_DefineProperty(cx, areaobj, "web_vpath_prefix", val, NULL, NULL, JSPROP_ENUMERATE);
 		if(name)
 			return(JS_TRUE);
 	}
