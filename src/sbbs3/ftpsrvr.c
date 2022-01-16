@@ -377,54 +377,6 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 	return(len);
 }
 
-
-/* Returns the directory index of a virtual lib/dir path (e.g. main/games/filename) */
-int getdir(char* p, user_t* user, client_t* client)
-{
-	char*	tp;
-	char	path[MAX_PATH+1];
-	uint	dir;
-	uint	lib;
-
-	SAFECOPY(path,p);
-	p=path;
-
-	if(*p=='/') 
-		p++;
-	if(!strncmp(p,"./",2))
-		p+=2;
-
-	tp=strchr(p,'/');
-	if(tp) *tp=0;
-	for(lib=0;lib<scfg.total_libs;lib++) {
-		if(!chk_ar(&scfg,scfg.lib[lib]->ar,user,client))
-			continue;
-		if(!stricmp(scfg.lib[lib]->sname,p))
-			break;
-	}
-	if(lib>=scfg.total_libs) 
-		return(-1);
-
-	if(tp!=NULL)
-		p=tp+1;
-
-	tp=strchr(p,'/');
-	if(tp) *tp=0;
-	for(dir=0;dir<scfg.total_dirs;dir++) {
-		if(scfg.dir[dir]->lib!=lib)
-			continue;
-		if(dir!=scfg.sysop_dir && dir!=scfg.upload_dir 
-			&& !chk_ar(&scfg,scfg.dir[dir]->ar,user,client))
-			continue;
-		if(!stricmp(scfg.dir[dir]->code_suffix,p))
-			break;
-	}
-	if(dir>=scfg.total_dirs) 
-		return(-1);
-
-	return(dir);
-}
-
 void recverror(SOCKET socket, int rd, int line)
 {
 	if(rd==0) 
@@ -1509,7 +1461,7 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 		}
 
 		if(!strnicmp(p,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
-			if((dir=getdir(p+strlen(BBS_VIRTUAL_PATH),user,client))<0)	{
+			if((dir=getdir_from_vpath(&scfg, p+strlen(BBS_VIRTUAL_PATH), user, client, true))<0)	{
 				lprintf(LOG_WARNING,"0000 <%s> !Invalid virtual path: %s",user->alias, p);
 				/* invalid or no access */
 				continue;
@@ -3637,7 +3589,7 @@ static void ctrl_thread(void* arg)
 							/* Virtual Path? */
 							aliaspath[0]=0;
 							if(!strnicmp(np,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
-								if((dir=getdir(np+strlen(BBS_VIRTUAL_PATH),&user,&client))<0) {
+								if((dir=getdir_from_vpath(&scfg, np+strlen(BBS_VIRTUAL_PATH), &user, &client, true))<0) {
 									lprintf(LOG_WARNING,"%04d <%s> !Invalid virtual path:%s",sock,user.alias,np);
 									continue; /* No access or invalid virtual path */
 								}
@@ -3923,7 +3875,7 @@ static void ctrl_thread(void* arg)
 
 						/* Virtual Path? */
 						if(!strnicmp(np,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
-							if((dir=getdir(np+strlen(BBS_VIRTUAL_PATH),&user,&client))<0) {
+							if((dir=getdir_from_vpath(&scfg, np+strlen(BBS_VIRTUAL_PATH), &user, &client, true))<0) {
 								lprintf(LOG_WARNING,"%04d <%s> !Invalid virtual path: %s", sock, user.alias, np);
 								continue; /* No access or invalid virtual path */
 							}

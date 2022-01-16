@@ -67,7 +67,7 @@ void xfer_opts()
 			sprintf(str,"%u%% after %u seconds"
 				,cfg.leech_pct,cfg.leech_sec);
 		else
-			strcpy(str,"Disabled");
+			strcpy(str,"<disabled>");
 		sprintf(opt[i++],"%-33.33s%s","Leech Protocol Detection",str);
 		if(cfg.file_misc & FM_SAFEST)
 			SAFECOPY(str, "Safest Subset");
@@ -77,6 +77,8 @@ void xfer_opts()
 				,cfg.file_misc & FM_SPACES ? "In" : "Ex");
 		sprintf(opt[i++], "%-33.33s%u characters", "Allowed Filename Length", cfg.filename_maxlen);
 		sprintf(opt[i++], "%-33.33s%s", "Allowed Filename Characters", str);
+		sprintf(opt[i++], "%-33.33s%s", "Web File Virtual Path Prefix"
+			, cfg.web_file_prefix[0] ? cfg.web_file_prefix : "<disabled>");
 		strcpy(opt[i++],"Viewable Files...");
 		strcpy(opt[i++],"Testable Files...");
 		strcpy(opt[i++],"Download Events...");
@@ -295,6 +297,24 @@ void xfer_opts()
 						}
 						break;
 				}
+				break;
+			case __COUNTER__:
+				uifc.helpbuf=
+					"`Web File Virtual Path Prefix:`\n"
+					"\n"
+					"The virtual path prefix to your file transfer areas (filebases)\n"
+					"accessible via HTTP or HTTPS using the Synchronet Web Server.\n"
+					"\n"
+					"A prefix beginning and ending in a slash (e.g. `/files/`) is recommended.\n"
+					"\n"
+					"A prefix of just '`/`' would interpret `all` web requests as filebase access\n"
+					"requests.\n"
+					"\n"
+					"Setting this to an empty string disables access to your filebases from\n"
+					"the Synchronet Web Server.\n"
+				;
+				uifc.input(WIN_MID,0,0,"Web File Virtual Path Prefix"
+					,cfg.web_file_prefix, sizeof(cfg.web_file_prefix)-1, K_EDIT);
 				break;
 			case __COUNTER__: 	/* Viewable file types */
 				while(1) {
