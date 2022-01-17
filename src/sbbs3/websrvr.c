@@ -3633,8 +3633,13 @@ static BOOL check_request(http_session_t * session)
 		if(strnicmp(path,root_dir,strlen(root_dir))) {
 			session->req.keep_alive=FALSE;
 			send_error(session,__LINE__,"400 Bad Request");
-			lprintf(LOG_NOTICE,"%04d !ERROR Request for %s is outside of web root %s"
-				,session->socket,path,root_dir);
+			SAFEPRINTF2(str, "Request for '%s' is outside of web root: %s", path, root_dir);
+			lprintf(LOG_NOTICE,"%04d !ERROR %s", session->socket, str);
+			hacklog(&scfg, session->client.protocol, session->username, str, session->client.host, &session->addr);
+#ifdef _WIN32
+			if(startup->sound.hack[0] && !sound_muted(&scfg))
+				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 			return(FALSE);
 		}
 
