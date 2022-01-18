@@ -216,7 +216,7 @@ BOOL sbbs_set_sound_settings(
 		return FALSE;
 	if(!iniSetStringWithGlobalDefault(lp, section, strLogoutSound, sound->logout, defaults->logout, style))
 		return FALSE;
-	if(!iniSetStringWithGlobalDefault(lp, section, strHangupSound, sound->hangup, defaults->logout, style))
+	if(!iniSetStringWithGlobalDefault(lp, section, strHangupSound, sound->hangup, defaults->hangup, style))
 		return FALSE;
 	if(!iniSetStringWithGlobalDefault(lp, section, strHackAttemptSound, sound->hack, defaults->hack, style))
 		return FALSE;
