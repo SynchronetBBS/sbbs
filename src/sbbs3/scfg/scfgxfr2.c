@@ -388,7 +388,7 @@ void xfer_cfg()
 			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
 				,cfg.lib[i]->arstr);
 			sprintf(opt[j++],"%-27.27s%s","Access to Sub-directories"
-				,cfg.lib[i]->misc&LIB_DIRS ? "Yes":"No");
+				,cfg.lib[i]->parent_path[0] ? (cfg.lib[i]->misc&LIB_DIRS ? "Yes":"No") : "N/A");
 			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[i]->sort]);
 			strcpy(opt[j++],"Clone Options");
 			strcpy(opt[j++],"Export Areas...");
@@ -465,7 +465,19 @@ void xfer_cfg()
 					uifc.helpbuf=
 						"`Access to Sub-directories:`\n"
 						"\n"
+						"When a Library's parent directory has been defined, sub-directories of\n"
+						"that parent directory may be automatically added as directories of the\n"
+						"library when this option is set to `Yes`.\n"
+						"\n"
+						"The directory's names and code suffix are derived from the name of the\n"
+						"sub-directory.\n"
+						"\n"
+						"~ This is an experimental feature. ~"
 					;
+					if(cfg.lib[i]->parent_path[0] == '\0') {
+						uifc.msg("A parent directory must be specified to use this feature");
+						break;
+					}
 					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 						,"Allow Access to Sub-directories of Parent Directory"
 						,uifcYesNoOpts);
