@@ -340,10 +340,18 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
     off_t	cdt;
 	int		size_attr=clr_filecdt;
 
-	if(f->extdesc != NULL && *f->extdesc && (useron.misc&EXTDESC)) {
-		ext = f->extdesc;
-		if((useron.misc&BATCHFLAG) && lncntr+extdesclines(ext)>=rows-2 && letter!='A')
-			return false;
+	if(useron.misc & EXTDESC) {
+		if(f->extdesc != NULL && (ext = strdup(f->extdesc)) != NULL) {
+			strip_ctrl(ext, ext);
+			truncsp(ext);
+			char ch = *ext;
+			FREE_AND_NULL(ext);
+			if(ch != '\0') {
+				ext = f->extdesc;
+				if((useron.misc&BATCHFLAG) && lncntr+extdesclines(ext)>=rows-2 && letter!='A')
+					return false;
+			}
+		}
 	}
 
 	cond_newline();
