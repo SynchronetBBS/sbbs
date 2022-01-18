@@ -33,6 +33,14 @@ var loading=true;
 var real_names=true;
 js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 console.ctrlkey_passthru=~(134217728);
+var pmode = 0;
+var options = load('modopts.js', 'irc');
+var utf8_support = console.term_supports(USER_UTF8);
+if(options && options.utf8_support === false)
+	utf8_support = false;
+if(utf8_support)
+	pmode |= P_UTF8;
+log("utf8_support: " + utf8_support);
 
 // Commands to send...
 var client_cmds = {
@@ -223,6 +231,8 @@ function send_cmd(command, params)
 		screen.print_line("\x01H\x01R!! \x01N\x01R"+command+" requires at least "+cmd.minparam+" parameters\x01N\x01W");
 		return;
 	}
+	if(!utf8_support)
+		snd = utf8_encode(snd);
 	sock.send(snd+"\r\n");
 }
 
@@ -566,6 +576,8 @@ function get_command()
 		line=sock.recvline();
 		if(!line)
 			return;
+		if(!utf8_support)
+			line = utf8_decode(line);
 
 		if (line[0] == '@') {
 			tag = line.slice(1, line.indexOf(" "));
@@ -1063,9 +1075,9 @@ function Screen_update_statline()  {
 		cname=channels.current.display;
 		topic=channels.current.topic;
 	}
-	console.print(this.topicline);
+	console.print(this.topicline, pmode);
 	console.crlf();
-	console.print(this.statusline);
+	console.print(this.statusline, pmode);
 	console.crlf();
 	this.update_input_line();
 }
@@ -1216,7 +1228,7 @@ function Screen_print_line(line)  {
 						if(lastspace==linestart-1)  {
 							lastspace=j;
 						}
-						console.print(prev_colour+line.substring(linestart,lastspace+1));
+						console.print(prev_colour+line.substring(linestart,lastspace+1), pmode);
 						prev_colour=last_colour;
 						console.cleartoeol();
 						console.crlf();
@@ -1231,7 +1243,7 @@ function Screen_print_line(line)  {
 		}
 	}
 	if(i<=78)  {
-		console.print(prev_colour+line.substr(linestart));
+		console.print(prev_colour+line.substr(linestart), pmode);
 		console.cleartoeol();
 		this.line.shift();
 		this.line.push(prev_colour+line.substr(linestart));
@@ -1253,9 +1265,9 @@ function Screen_print_line(line)  {
 		cname=channels.current.display;
 		topic=channels.current.topic;
 	}
-	console.print(this.topicline);
+	console.print(this.topicline, pmode);
 	console.crlf();
-	console.print(this.statusline);
+	console.print(this.statusline, pmode);
 	console.crlf();
 	this.update_input_line();
 }
@@ -1290,7 +1302,7 @@ function Screen_update_input_line()  {
 	console.line_counter=0;	// defeat pause
 	console.ansi_gotoxy(1,console.screen_rows);
 	console.clearline();
-	printf("%s",line_str);
+	console.print(line_str, pmode);
 	console.ansi_gotoxy(line_pos+1,console.screen_rows);
 }
 
@@ -1422,9 +1434,9 @@ function Screen_handle_key(key)  {
 					console.ansi_gotoxy(1,console.screen_rows-2);
 					console.clearline();
 					console.handle_ctrlkey(key,0); // for now
-					console.print(this.topicline);
+					console.print(this.topicline, pmode);
 					console.crlf();
-					console.print(this.statusline);
+					console.print(this.statusline, pmode);
 					console.crlf();
 					this.update_input_line();
 				}
