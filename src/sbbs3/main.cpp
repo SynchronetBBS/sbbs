@@ -4902,6 +4902,14 @@ void bbs_thread(void* arg)
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "sizeof: int=%d, long=%d, off_t=%d, time_t=%d"
 		,(int)sizeof(int), (int)sizeof(long), (int)sizeof(off_t), (int)sizeof(time_t));
+
+	memset(str, 0xff, sizeof(str));
+	snprintf(str, 2, "\x01\x02");
+	if(str[1] != '\0') {
+		lprintf(LOG_CRIT, "Non-terminating (unsafe) snprintf function detected (0x%02X instead of 0x00)", (uchar)str[1]);
+		cleanup(1);
+		return;
+	}
 #endif
 
     if(startup->first_node<1 || startup->first_node>startup->last_node) {
