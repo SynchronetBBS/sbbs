@@ -1695,7 +1695,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"format_name",		js_format_file_name,1, JSTYPE_STRING
-		,JSDOCSTR("path/filename [,number size=13] [,boolean pad=false]")
+		,JSDOCSTR("path/filename [,number size=12] [,boolean pad=false]")
 		,JSDOCSTR("returns formatted (e.g. shortened) version of filename without path (file base does not have to be open) for display")
 		,31900
 	},
