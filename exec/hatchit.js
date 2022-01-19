@@ -249,11 +249,16 @@ function hatch_file(file, area, origin, replaces)
 		tf.write('Origin '+origin+'\r\n');
 		tf.write('From '+origin+'\r\n');
 		tf.write('To '+link+'\r\n');
-		tf.write('File '+file.name+'\r\n');
-		if (file_getcase(file.path).length > file.path.length) {
-			lfile = file_getcase(file.path);
-			lfile.replace(/^.*\\\/([^\\\/]+)$/,'$1');
-			tf.write('Lfile '+lfile+'\r\n');
+		// FTS-5006: "The name must be in 8x3 DOS format"
+		var dosfname = file.name.replace(/\ /g, "");
+		var ext = file_getext(dosfname);
+		if(ext === undefined || ext === '.')
+			ext = "";
+		var basename = format("%.*s", dosfname.length - ext.length, dosfname);
+		dosfname = format("%.8s%.4s", basename.replace(/\./g, ""), ext);
+		tf.write('File '+dosfname+'\r\n');
+		if (dosfname != file.name) {
+			tf.write('Lfile '+file.name+'\r\n');
 		}
 		if (replaces)
 			tf.write('Replaces ' + replaces + '\r\n');
