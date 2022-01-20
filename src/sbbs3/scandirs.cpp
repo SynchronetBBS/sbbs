@@ -74,7 +74,7 @@ void sbbs_t::scandirs(long mode)
 	if(ch==text[DirLibKeys][1]) {
 		k=0;
 		for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
-			progress(text[Scanning], i, usrdirs[curlib], (mode & FL_ULTIME) ? 10 : 1);
+			progress(text[Scanning], i, usrdirs[curlib]);
 			if(mode&FL_ULTIME	/* New-scan */
 				&& (cfg.lib[usrlib[curlib]]->offline_dir==usrdir[curlib][i]
 				|| cfg.dir[usrdir[curlib][i]]->misc&DIR_NOSCAN))
@@ -131,7 +131,7 @@ void sbbs_t::scanalldirs(long mode)
 		total_dirs += usrdirs[i];
 	for(i=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i] && !msgabort();j++,d++) {
-			progress(text[Scanning], d, total_dirs, (mode & FL_ULTIME) ? 10 : 1);
+			progress(text[Scanning], d, total_dirs);
 			if(mode&FL_ULTIME /* New-scan */
 				&& (cfg.lib[usrlib[i]]->offline_dir==usrdir[i][j]
 				|| cfg.dir[usrdir[i][j]]->misc&DIR_NOSCAN))

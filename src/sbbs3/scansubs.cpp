@@ -112,7 +112,7 @@ void sbbs_t::scansubs(long mode)
 			if((mode&SCAN_POLLS) && cfg.sub[usrsub[curgrp][i]]->misc&SUB_NOVOTING)
 				continue;
 			if(mode&SCAN_POLLS)
-				progress(text[Scanning], i, usrsubs[curgrp], 10);
+				progress(text[Scanning], i, usrsubs[curgrp]);
 			if(scanposts(usrsub[curgrp][i],mode,str))
 				break;
 			subs_scanned++;
@@ -215,7 +215,7 @@ void sbbs_t::scanallsubs(long mode)
 		}
 	for(i=0; i<total_subs && !msgabort(); i++) {
 		if(mode&SCAN_POLLS)
-			progress(text[Scanning], i, total_subs, 10);
+			progress(text[Scanning], i, total_subs);
 		if(scanposts(sub[i],mode,str))
 			break;
 	}
@@ -275,7 +275,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(inputnstime(&t) && !(sys_status&SS_ABORT)) {
 					for(i=0, subs=0; i<usrgrps && online; i++) {
 						for(j=0;j<usrsubs[i] && online;j++) {
-							progress(text[LoadingMsgPtrs], subs++, total_subs, 10);
+							progress(text[LoadingMsgPtrs], subs++, total_subs);
 							checkline();
 							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t);
 						}
@@ -292,7 +292,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				total_subs += usrsubs[i];
 			for(i=0, subs=0; i<usrgrps; i++)
 				for(j=0;j<usrsubs[i] && online;j++) {
-					progress(text[LoadingMsgPtrs], subs++, total_subs, 10);
+					progress(text[LoadingMsgPtrs], subs++, total_subs);
 					checkline();
 					if(s == 0) {
 						subscan[usrsub[i][j]].ptr = ~0;
@@ -341,7 +341,7 @@ void sbbs_t::new_scan_ptr_cfg()
 					t=l;
 					if(inputnstime(&t) && !(sys_status&SS_ABORT)) {
 						for(j=0;j<usrsubs[i] && online;j++) {
-							progress(text[LoadingMsgPtrs], j, usrsubs[i], 10);
+							progress(text[LoadingMsgPtrs], j, usrsubs[i]);
 							checkline();
 							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t);
 						}
@@ -354,7 +354,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(s)
 					s&=~0x80000000L;
 				for(j=0;j<usrsubs[i] && online;j++) {
-					progress(text[LoadingMsgPtrs], j, usrsubs[i], 10);
+					progress(text[LoadingMsgPtrs], j, usrsubs[i]);
 					checkline();
 					if(s == 0) {
 						subscan[usrsub[i][j]].ptr = ~0;
