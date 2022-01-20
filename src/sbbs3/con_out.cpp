@@ -1400,11 +1400,15 @@ void sbbs_t::progress(const char* text, int count, int total, int interval)
 		return;	// Don't output this for events
 	if((count%interval) != 0)
 		return;
+	clock_t now = msclock();
+	if(now - last_progress < 500)
+		return;
 	if(text == NULL) text = "";
 	float pct = total ? ((float)count/total)*100.0F : 100.0F;
 	SAFEPRINTF2(str, "[ %-8s  %4.1f%% ]", text, pct);
 	cond_newline();
 	cursor_left(backfill(str, pct, cfg.color[clr_progress_full], cfg.color[clr_progress_empty]));
+	last_progress = now;
 }
 
 struct savedline {
