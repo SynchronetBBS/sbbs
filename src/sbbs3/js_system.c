@@ -1924,6 +1924,117 @@ js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 
 	return(JS_TRUE);
 }
+
+static JSBool
+js_chkfname(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *argv = JS_ARGV(cx, arglist);
+	char*		fname = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc < 1 || !JSVAL_IS_STRING(argv[0]))
+		return JS_TRUE;
+
+	js_system_private_t* sys;
+	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
+	if(fname == NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(!illegal_filename(fname)
+		&& allowed_filename(sys->cfg, fname)
+		&& !trashcan(sys->cfg, fname, "file")));
+	JS_RESUMEREQUEST(cx, rc);
+	free(fname);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_safest_fname(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *argv = JS_ARGV(cx, arglist);
+	char*		fname = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc < 1 || !JSVAL_IS_STRING(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
+	if(fname == NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(safest_filename(fname)));
+	JS_RESUMEREQUEST(cx, rc);
+	free(fname);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_illegal_fname(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *argv = JS_ARGV(cx, arglist);
+	char*		fname = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc < 1 || !JSVAL_IS_STRING(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
+	if(fname == NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(illegal_filename(fname)));
+	JS_RESUMEREQUEST(cx, rc);
+	free(fname);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_allowed_fname(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *argv = JS_ARGV(cx, arglist);
+	char*		fname = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc < 1 || !JSVAL_IS_STRING(argv[0]))
+		return JS_TRUE;
+
+	js_system_private_t* sys;
+	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
+	if(fname == NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(allowed_filename(sys->cfg, fname)));
+	JS_RESUMEREQUEST(cx, rc);
+	free(fname);
+
+	return JS_TRUE;
+}
+
 #endif
 
 static JSBool 
@@ -2127,6 +2238,25 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("checks that the provided name/alias string is suitable for a new user account, "
 		"returns <i>true</i> if it is valid")
 	,315
+	},
+	{"check_filename",	js_chkfname,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("verify that the specified <i>filename</i> string is legal and allowed for upload by users "
+		"(based on system configuration), returns <i>true</i> if the filename is allowed")
+	,31902
+	},
+	{"allowed_filename", js_allowed_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("verify that the specified <i>filename</i> string is allowed for upload by users "
+		"(based on system configuration), returns <i>true</i> if the filename is allowed")
+	,31902
+	},
+	{"safest_filename",	js_safest_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("verify that the specified <i>filename</i> string contains only the safest subset of characters")
+	,31902
+	},
+	{"illegal_filename", js_illegal_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("check if the specified <i>filename</i> string contains illegal characters or sequences, "
+		"returns <i>true</i> if it is an illegal filename")
+	,31902
 	},
 #endif
 	{"check_pid",		js_chkpid,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("process-ID")
