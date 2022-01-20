@@ -1388,6 +1388,34 @@ js_user_event(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_checkfname(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv = JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	char*		fname = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc < 1 || !JSVAL_IS_STRING(argv[0]))
+		return JS_TRUE;
+
+	if((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
+	if(fname == NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->checkfname(fname)));
+	JS_RESUMEREQUEST(cx, rc);
+	free(fname);
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_chksyspass(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv = JS_ARGV(cx, arglist);
@@ -4632,6 +4660,12 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,316
 	},
 	/* security */
+	{"check_filename",	js_checkfname,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("verify that the specified <i>filename</i> string is legal and allowed for upload "
+		"(based on system configuration), returns <i>true</i> if the filename is allowed.<br>"
+		"Note: Will display <tt>text/badfile.msg</tt> for matching filenames, if it exists.")
+	,31902
+	},
 	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[sys_pw]")
 	,JSDOCSTR("verify system password, prompting for the password if not passed as an argument")
 	,310
