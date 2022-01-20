@@ -526,7 +526,7 @@ void sbbs_t::batch_upload()
 
 		uint x,y;
 		for(x=0;x<usrlibs;x++) {
-			progress(text[SearchingForDupes], x, usrlibs, 1);
+			progress(text[SearchingForDupes], x, usrlibs);
 			for(y=0;y<usrdirs[x];y++)
 				if(cfg.dir[usrdir[x][y]]->misc&DIR_DUPES
 					&& findfile(&cfg,usrdir[x][y], dirent->d_name, NULL))

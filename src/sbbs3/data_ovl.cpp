@@ -38,7 +38,7 @@
 static void ProgressLoadingMsgPtrs(void* cbdata, int count, int total)
 {
 	sbbs_t* sbbs = ((sbbs_t*)cbdata);
-	sbbs->progress(sbbs->text[LoadingMsgPtrs], count, total, 10);
+	sbbs->progress(sbbs->text[LoadingMsgPtrs], count, total);
 }
 
 /****************************************************************************/
@@ -64,7 +64,7 @@ void sbbs_t::putmsgptrs()
 static void ProgressSearchingUsers(void* cbdata, int count, int total)
 {
 	sbbs_t* sbbs = ((sbbs_t*)cbdata);
-	sbbs->progress(sbbs->text[SearchingForDupes], count, total, U_LEN*10);
+	sbbs->progress(sbbs->text[SearchingForDupes], count, total);
 }
 
 /****************************************************************************/

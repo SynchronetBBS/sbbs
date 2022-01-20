@@ -847,7 +847,7 @@ public:
 	const char* term_charset(long term_supports = -1);
 	bool	update_nodeterm(void);
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
-	void	progress(const char* str, int count, int total, int interval=1);
+	void	progress(const char* str, int count, int total, int interval = 500);
 	clock_t	last_progress = 0;
 	bool	saveline(void);
 	bool	restoreline(void);

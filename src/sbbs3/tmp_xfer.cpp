@@ -61,7 +61,7 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 		total_dirs += usrdirs[i];
 	for(i=j=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,d++) {
-			progress(text[Scanning], d, total_dirs, 1);
+			progress(text[Scanning], d, total_dirs);
 			if(mode&FL_ULTIME /* New-scan */
 				&& (cfg.lib[usrlib[i]]->offline_dir==usrdir[i][j]
 				|| cfg.dir[usrdir[i][j]]->misc&DIR_NOSCAN))
