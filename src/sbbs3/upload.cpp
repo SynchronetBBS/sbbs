@@ -126,7 +126,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	if(hashfile(&cfg, f)) {
 		bputs(text[SearchedForDupes]);
 		for(uint i=0, k=0; i < usrlibs; i++) {
-			progress(text[Scanning], i, usrlibs, 1);
+			progress(text[Scanning], i, usrlibs);
 			for(uint j=0; j < usrdirs[i]; j++,k++) {
 				if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
 					&& findfile(&cfg, usrdir[i][j], /* filename: */NULL, f)) {
@@ -321,7 +321,7 @@ bool sbbs_t::upload(uint dirnum)
 		return(false); 	 /* File is already in database */
 	}
 	for(i=k=0;i<usrlibs;i++) {
-		progress(text[SearchingForDupes], i, usrlibs, 1);
+		progress(text[SearchingForDupes], i, usrlibs);
 		for(j=0;j<usrdirs[i];j++,k++) {
 			if(usrdir[i][j]==dirnum)
 				continue;	/* we already checked this dir */
