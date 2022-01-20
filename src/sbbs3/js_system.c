@@ -1959,7 +1959,6 @@ js_chkfname(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_safest_fname(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *argv = JS_ARGV(cx, arglist);
 	char*		fname = NULL;
 	jsrefcount	rc;
@@ -1984,7 +1983,6 @@ js_safest_fname(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_illegal_fname(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *argv = JS_ARGV(cx, arglist);
 	char*		fname = NULL;
 	jsrefcount	rc;
