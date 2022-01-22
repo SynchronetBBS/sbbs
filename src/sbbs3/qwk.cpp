@@ -643,13 +643,6 @@ void sbbs_t::qwk_sec()
 		}
 
 		else if(ch=='U') { /* Upload REP Packet */
-	/*
-			if(useron.rest&FLAG('Q') && useron.rest&FLAG('P')) {
-				bputs(text[R_Post]);
-				continue;
-				}
-	*/
-
 			delfiles(cfg.temp_dir,ALLFILES);
 			bprintf(text[UploadingREP],cfg.sys_id);
 
