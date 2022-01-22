@@ -1134,7 +1134,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 							,telnet_opt_desc(option));
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
-						char buf[32];
+						char buf[sizeof(termtype) + 32];
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
@@ -1145,7 +1145,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 						sendsocket(sock,buf,len);
 /*						request_telnet_opt(TELNET_WILL, TELNET_TERM_SPEED); */
 					} else if(option==TELNET_TERM_SPEED && telnet_cmd[3]==TELNET_TERM_SEND) {
-						char buf[32];
+						char buf[sizeof(termspeed) + 32];
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_SPEED,TELNET_TERM_IS
@@ -1505,7 +1505,7 @@ service_loop(int argc, char** argv)
 		}
 		else if(stricmp(arg,"help")==0 || *arg=='?')
 			exit(usage(argv[0]));
-		else {
+		else if(stricmp(arg,"syslog") != 0) {
 			fprintf(stderr,"Invalid option: %s\n", arg);
 			exit(usage(argv[0]));
 		}
@@ -1642,7 +1642,7 @@ int main(int argc, char** argv)
 
 	for(argn=1; argn<argc; argn++) {
 		arg=argv[argn];
-		while(*arg=='-') 
+		while(*arg=='-')
 			arg++;
 		if(stricmp(arg,"help")==0 || *arg=='?')
 			return usage(argv[0]);
