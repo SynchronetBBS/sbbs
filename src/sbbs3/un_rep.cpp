@@ -409,28 +409,11 @@ bool sbbs_t::unpack_rep(char* repfile)
 				continue; 
 			}
 
-			if(useron.rest&FLAG('P')) {
-				bputs(text[R_Post]);
-				logline(LOG_NOTICE,"P!","QWK Post attempted");
-				continue; 
-			}
-
-			if(useron.ptoday>=cfg.level_postsperday[useron.level]
-				&& !(useron.rest&FLAG('Q'))) {
-				bputs(text[TooManyPostsToday]);
-				continue; 
-			}
-
-			if(useron.rest&FLAG('N')
-				&& cfg.sub[n]->misc&(SUB_FIDO|SUB_PNET|SUB_QNET|SUB_INET)) {
-				bputs(text[CantPostOnSub]);
-				logline(LOG_NOTICE,"P!","QWK Networked post attempted");
-				continue; 
-			}
-
-			if(!chk_ar(cfg.sub[n]->post_ar,&useron,&client)) {
-				bputs(text[CantPostOnSub]);
-				logline(LOG_NOTICE,"P!","QWK Post attempted");
+			uint reason = CantPostOnSub;
+			if(!can_user_post(&cfg, n, &useron, &client, &reason)) {
+				bputs(text[reason]);
+				SAFEPRINTF2(str, "QWK Post not allowed, reason = %u (%s)", reason, text[reason]);
+				logline(LOG_NOTICE, "P!", str);
 				continue; 
 			}
 

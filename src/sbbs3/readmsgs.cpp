@@ -1596,8 +1596,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		free(post);
 	if(!quit
 		&& !(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND|SCAN_POLLS)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
-		&& reads && chk_ar(cfg.sub[subnum]->post_ar,&useron,&client) && text[Post][0]
-		&& !(useron.rest&FLAG('P'))) {
+		&& reads && can_user_post(&cfg, subnum, &useron, &client, /* reason: */NULL) && text[Post][0]) {
 		SAFEPRINTF2(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname
 			,cfg.sub[subnum]->lname);
 		if(!noyes(str))
