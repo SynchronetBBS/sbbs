@@ -150,6 +150,8 @@ int usage(const char* fname)
 		"\n-remove               remove NT service"
 		"\n-enable               enable NT service (auto-start during boot)"
 		"\n-disable              disable NT service"
+#else
+		"\n-syslog               log to syslog rather than stdout/err"
 #endif
 		"\n"
 		,getfname(fname)
@@ -218,7 +220,7 @@ static int syslog(int level, char *fmt, ...)
 
 /****************************************************************************/
 /****************************************************************************/
-int lputs(int level, const char* str)
+void lputs(int level, const char* str)
 {
 	time_t		t;
 	struct tm	tm;
@@ -236,35 +238,26 @@ int lputs(int level, const char* str)
 #endif
 
 	if(level>log_level)
-		return 0;
+		return;
 
 	if(daemonize) {
-#if defined(_WIN32)
-		return syslog(level,"%s", str);
-#else
-		/* syslog() is
-		 * void syslog(int priority, const char *message, ...);
-		 */
+		syslog(level, "%s", str);
+	} else {
+		t=time(NULL);
+		if(localtime_r(&t,&tm)==NULL)
+			tstr[0]=0;
+		else
+			sprintf(tstr,"%d/%d %02d:%02d:%02d "
+				,tm.tm_mon+1,tm.tm_mday
+				,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-		syslog(level,"%s", str);
-		return strlen(str);
-#endif
+		fprintf(level>=LOG_NOTICE ? stdout:stderr, "%s %s\n", tstr, str);
 	}
-
-	t=time(NULL);
-	if(localtime_r(&t,&tm)==NULL)
-		tstr[0]=0;
-	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm.tm_mon+1,tm.tm_mday
-			,tm.tm_hour,tm.tm_min,tm.tm_sec);
-
-	return fprintf(level>=LOG_NOTICE ? stdout:stderr, "%s %s\n", tstr, str);
 }
 
 /****************************************************************************/
 /****************************************************************************/
-int lprintf(int level, char *fmt, ...)
+void lprintf(int level, char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -273,7 +266,7 @@ int lprintf(int level, char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(lputs(level,sbuf));
+    lputs(level,sbuf);
 }
 
 
@@ -1664,6 +1657,9 @@ int main(int argc, char** argv)
 			return enable(FALSE);
 		else if(stricmp(arg,"enable")==0)
 			return enable(TRUE);
+#else
+		else if(stricmp(arg,"syslog")==0)
+			daemonize=TRUE;
 #endif
 	}
 
