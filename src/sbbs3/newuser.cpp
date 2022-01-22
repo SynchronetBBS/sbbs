@@ -200,6 +200,7 @@ BOOL sbbs_t::newuser()
 			getstr(useron.alias,LEN_ALIAS,kmode);
 			truncsp(useron.alias);
 			if (!check_name(&cfg,useron.alias)
+				|| userdatdupe(useron.number, U_NAME, LEN_NAME, useron.alias)
 				|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,' '))) {
 				bputs(text[YouCantUseThatName]);
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
@@ -222,7 +223,7 @@ BOOL sbbs_t::newuser()
 					break; 
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
 					return(FALSE);
-			} 
+			}
 		}
 		else if(cfg.uq&UQ_COMPANY && text[EnterYourCompany][0]) {
 				bputs(text[EnterYourCompany]);
@@ -234,6 +235,8 @@ BOOL sbbs_t::newuser()
 		}
 		if(!useron.name[0])
 			SAFECOPY(useron.name,useron.alias);
+		else if(!(cfg.uq&UQ_DUPREAL) && userdatdupe(useron.number,U_NAME,LEN_NAME,useron.name) > 0)
+			useron.rest |= FLAG('O'); // Can't post using real name (it's a duplicate)
 		if(!online) return(FALSE);
 		if(!useron.handle[0])
 			SAFECOPY(useron.handle,useron.alias);
