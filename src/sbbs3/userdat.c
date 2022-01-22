@@ -2974,6 +2974,9 @@ BOOL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* client, uin
 	if(cfg->sub[subnum]->misc&(SUB_QNET|SUB_FIDO|SUB_PNET|SUB_INET)
 		&& user->rest&FLAG('N'))		/* network restriction? */
 		return FALSE;
+	if((cfg->sub[subnum]->misc & SUB_NAME)
+		&& (user->rest & (FLAG('Q') | FLAG('O'))) == FLAG('O'))
+		return FALSE;
 	if(reason!=NULL)
 		*reason=R_Post;
 	if(user->rest&FLAG('P'))			/* post restriction? */
