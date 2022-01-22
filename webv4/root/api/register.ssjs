@@ -90,10 +90,10 @@ if (system.newuser_password !== '' && (!request.hasParam('newuser-password') || 
 	reply.errors.push(locale.strings.api_register.error_bad_syspass);
 }
 
-if (!valid_param('alias', MIN_ALIAS, LEN_ALIAS) || !system.check_name(clean_param('alias'))) {
-	reply.errors.push(locale.strings.api_register.error_invalid_alias);
-} else if (system.matchuser(clean_param('alias')) > 0) {
+ if (system.matchuser(clean_param('alias')) > 0) {
 	reply.errors.push(locale.strings.api_register.error_alias_taken);
+} else  if (!valid_param('alias', MIN_ALIAS, LEN_ALIAS) || !system.check_name(clean_param('alias'))) {
+	reply.errors.push(locale.strings.api_register.error_invalid_alias);
 } else {
 	prepUser.alias = clean_param('alias');
 	prepUser.handle = clean_param('alias');
