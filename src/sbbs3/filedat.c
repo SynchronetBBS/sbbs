@@ -750,6 +750,7 @@ str_list_t directory(const char* path)
 }
 
 const char* supported_archive_formats[] = { "zip", "7z", "tgz", NULL };
+// Returns total number of successfully archived files
 // Returns negative on error
 long create_archive(const char* archive, const char* format
 	,bool with_path, str_list_t file_list, char* error, size_t maxerrlen)
@@ -785,10 +786,13 @@ long create_archive(const char* archive, const char* format
 		return result;
 	}
 	ulong file_count = 0;
+	ulong archived = 0;
 	for(;file_list[file_count] != NULL; file_count++) {
 		struct archive_entry* entry;
 		struct stat st;
 		const char* filename = file_list[file_count];
+		if(isdir(filename))
+			continue;
 		FILE* fp = fopen(filename, "rb");
 		if(fp == NULL) {
 			safe_snprintf(error, maxerrlen, "%d opening %s", errno, filename);
@@ -827,12 +831,13 @@ long create_archive(const char* archive, const char* format
 		archive_entry_free(entry);
 		if(result != ARCHIVE_OK)
 			break;
+		archived++;
 	}
 	archive_write_close(ar);
 	archive_write_free(ar);
 	if(file_list[file_count] != NULL)
 		return result < 0 ? result : -1;
-	return file_count;
+	return archived;
 }
 
 long extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
