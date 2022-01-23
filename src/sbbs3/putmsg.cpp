@@ -479,6 +479,7 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 					switch(str[l]) {
 						case '\r':	// PETSCII "Return" / new-line
 							column = 0;
+							/* fall-through */
 						case PETSCII_DOWN:
 							lncntr++;
 							break;
