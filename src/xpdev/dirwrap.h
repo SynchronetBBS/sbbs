@@ -84,7 +84,7 @@ extern "C" {
 
 	/* Bits set in the FLAGS argument to `glob'.  */
 	#define GLOB_ERR        (1 << 0)	/* Return on read errors.  */
-	#define GLOB_MARK       (1 << 1)	/* Append a slash to each name.  */
+	#define GLOB_MARK       (1 << 1)	/* Append a slash to each path which corresponds to a directory. */
 	#define GLOB_NOSORT     (1 << 2)	/* Don't sort the names.  */
 	#define GLOB_DOOFFS     (1 << 3)	/* Insert PGLOB->gl_offs NULLs.  */
 	#define GLOB_NOCHECK    (1 << 4)	/* If nothing matches, return the pattern.  */
