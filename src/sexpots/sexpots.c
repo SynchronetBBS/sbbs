@@ -46,7 +46,7 @@
 BOOL	daemonize=FALSE;
 BOOL	cls=FALSE;
 char	prompt[INI_MAX_VALUE_LEN+1];
-int		prompt_timeout = 0;
+int		prompt_timeout = 60; // seconds
 char	termtype[INI_MAX_VALUE_LEN+1]	= NAME;
 char	termspeed[INI_MAX_VALUE_LEN+1]	= "28800,28800";	/* "tx,rx", max length not defined */
 
@@ -1590,13 +1590,16 @@ service_loop(int argc, char** argv)
 			comWriteString(com_handle, prompt);
 			char ch;
 			if(comReadBuf(com_handle, &ch, sizeof(ch), NULL, prompt_timeout * 1000)) {
-				lprintf(LOG_INFO, "Received character '%c' (%d) in response to prompt", ch, ch);
-				if(!IS_CONTROL(ch)) {
+				if(IS_CONTROL(ch))
+					lprintf(LOG_WARNING, "Received a control character (%d) in response to prompt", ch);
+				else {
+					lprintf(LOG_DEBUG, "Received character '%c' (%d) in response to prompt", ch, ch);
 					SAFEPRINTF(str, "TCP:%c", ch);
 					iniGetExistingWord(ini, str, "Host", NULL, host);
 					port = iniGetShortInt(ini, str, "Port", port);
 				}
-			}
+			} else
+				lprintf(LOG_NOTICE, "Timeout (%d seconds) waiting for response to prompt", prompt_timeout);
 		}
 		if((sock=connect_socket(host, port)) == INVALID_SOCKET) {
 			comWriteString(com_handle,"\7\r\n!ERROR connecting to TCP port\r\n");
