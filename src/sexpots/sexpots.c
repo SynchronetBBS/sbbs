@@ -44,6 +44,7 @@
 
 /* global vars */
 BOOL	daemonize=FALSE;
+BOOL	cls=FALSE;
 char	prompt[INI_MAX_VALUE_LEN+1];
 int		prompt_timeout = 0;
 char	termtype[INI_MAX_VALUE_LEN+1]	= NAME;
@@ -1388,6 +1389,7 @@ void parse_ini_file(const char* ini_fname)
 	/* Root section */
 	pause_on_exit			= iniGetBool(ini,ROOT_SECTION,"PauseOnExit",FALSE);
 	log_level				= iniGetLogLevel(ini,ROOT_SECTION,"LogLevel",log_level);
+	cls = iniGetBool(ini, ROOT_SECTION, "CLS", cls);
 	iniGetString(ini, ROOT_SECTION, "Prompt", NULL, prompt);
 	prompt_timeout = iniGetInteger(ini, ROOT_SECTION, "PromptTimeout", prompt_timeout);
 
@@ -1579,7 +1581,9 @@ service_loop(int argc, char** argv)
 	while(!terminated && wait_for_call(com_handle)) {
 		if(!carrier_detect(com_handle))	/* re-initialization timer time-out? */
 			continue;
-		comWriteByte(com_handle,'\r');
+		if(cls)
+			comWriteByte(com_handle, FF);
+		comWriteByte(com_handle, '\r');
 		comWriteString(com_handle, banner);
 		comWriteString(com_handle, "\r\n");
 		if(prompt[0] != '\0') {
