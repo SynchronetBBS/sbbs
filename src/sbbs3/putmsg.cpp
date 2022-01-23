@@ -476,7 +476,7 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 			if(mode&P_PETSCII) {
 				if(term&PETSCII) {
 					outcom(str[l]);
-					switch(str[l]) {
+					switch((uchar)str[l]) {
 						case '\r':	// PETSCII "Return" / new-line
 							column = 0;
 							/* fall-through */
