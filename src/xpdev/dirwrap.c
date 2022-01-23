@@ -732,16 +732,20 @@ int removecase(const char *path)
 
 /****************************************************************************/
 /* Deletes all files in dir 'path' that match file spec 'spec'              */
+/* If spec matches a sub-directory, it is traversed and removed recursively */			
 /* Optionally, keep the last so many files (sorted by name)                 */
 /* Returns number of files deleted or negative on error						*/
 /****************************************************************************/
 long delfiles(const char *inpath, const char *spec, size_t keep)
 {
-	char	*path;
+	char*	path;
+	char*	fpath;
+	char*	fname;
 	char	lastch;
 	size_t	i;
     ulong	files = 0;
 	long	errors = 0;
+	long	recursed;
 	glob_t	g;
 	size_t	inpath_len=strlen(inpath);
 	int		flags =
@@ -769,10 +773,22 @@ long delfiles(const char *inpath, const char *spec, size_t keep)
 	if(keep >= g.gl_pathc)
 		return 0;
 	for(i = 0; i < g.gl_pathc && files < g.gl_pathc - keep; i++) {
-		if(isdir(g.gl_pathv[i]))
+		fpath = g.gl_pathv[i];
+		if(isdir(fpath)) {
+			fname = getfname(fpath);
+			if(strcmp(fname, ".") == 0 || strcmp(fname, "..") == 0)
+				continue;
+			recursed = delfiles(fpath, spec, keep);
+			if(recursed >= 0)
+				files += recursed;
+			else
+				errors += recursed;
+			if(rmdir(fpath) != 0)
+				errors++;
 			continue;
-		(void)CHMOD(g.gl_pathv[i],S_IWRITE);	/* In case it's been marked RDONLY */
-		if(remove(g.gl_pathv[i])==0)
+		}
+		(void)CHMOD(fpath, S_IWRITE);	/* In case it's been marked RDONLY */
+		if(remove(fpath)==0)
 			files++;
 		else
 			errors++;
