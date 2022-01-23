@@ -383,7 +383,7 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 			l+=2;
 		}
 		else {
-			if(str[l]=='\n') {
+			if(!(mode&P_PETSCII) && str[l]=='\n') {
 				if(exatr) 	/* clear at newline for extra attr codes */
 					attr(LIGHTGRAY);
 				if(l==0 || str[l-1]!='\r')	/* expand sole LF to CR/LF */
@@ -474,9 +474,49 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 			}
 			size_t skip = sizeof(char);
 			if(mode&P_PETSCII) {
-				if(term&PETSCII)
+				if(term&PETSCII) {
 					outcom(str[l]);
-				else
+					switch(str[l]) {
+						case '\r':	// PETSCII "Return" / new-line
+							column = 0;
+						case PETSCII_DOWN:
+							lncntr++;
+							break;
+						case PETSCII_CLEAR:
+						case PETSCII_HOME:
+							row=0;
+							column=0;
+							lncntr=0;
+							break;
+						case PETSCII_BLACK:
+						case PETSCII_WHITE:
+						case PETSCII_RED:
+						case PETSCII_GREEN:
+						case PETSCII_BLUE:
+						case PETSCII_ORANGE:
+						case PETSCII_BROWN:
+						case PETSCII_YELLOW:
+						case PETSCII_CYAN:
+						case PETSCII_LIGHTRED:
+						case PETSCII_DARKGRAY:
+						case PETSCII_MEDIUMGRAY:
+						case PETSCII_LIGHTGREEN:
+						case PETSCII_LIGHTBLUE:
+						case PETSCII_LIGHTGRAY:
+						case PETSCII_PURPLE:
+						case PETSCII_UPPERLOWER:
+						case PETSCII_UPPERGRFX:
+						case PETSCII_FLASH_ON:
+						case PETSCII_FLASH_OFF:
+						case PETSCII_REVERSE_ON:
+						case PETSCII_REVERSE_OFF:
+							// No cursor movement
+							break;
+						default:
+							inc_column(1);
+							break;
+					}
+				} else
 					petscii_to_ansibbs(str[l]);
 			} else if((str[l]&0x80) && (mode&P_UTF8)) {
 				if(term&UTF8)
