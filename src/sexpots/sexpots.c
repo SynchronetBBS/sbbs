@@ -1,8 +1,4 @@
-/* sexpots.c */
-
 /* Synchronet External Plain Old Telephone System (POTS) support */
-
-/* $Id: sexpots.c,v 1.33 2020/09/11 22:48:33 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -61,9 +45,9 @@
 /* global vars */
 BOOL	daemonize=FALSE;
 char	prompt[INI_MAX_VALUE_LEN+1];
+int		prompt_timeout = 0;
 char	termtype[INI_MAX_VALUE_LEN+1]	= NAME;
 char	termspeed[INI_MAX_VALUE_LEN+1]	= "28800,28800";	/* "tx,rx", max length not defined */
-char	revision[16];
 
 char	mdm_init[INI_MAX_VALUE_LEN]		= "AT&F";
 char	mdm_autoans[INI_MAX_VALUE_LEN]	= "ATS0=1";
@@ -1405,6 +1389,7 @@ void parse_ini_file(const char* ini_fname)
 	pause_on_exit			= iniGetBool(ini,ROOT_SECTION,"PauseOnExit",FALSE);
 	log_level				= iniGetLogLevel(ini,ROOT_SECTION,"LogLevel",log_level);
 	iniGetString(ini, ROOT_SECTION, "Prompt", NULL, prompt);
+	prompt_timeout = iniGetInteger(ini, ROOT_SECTION, "PromptTimeout", prompt_timeout);
 
 	if(iniGetBool(ini,ROOT_SECTION,"Debug",FALSE))
 		log_level=LOG_DEBUG;
@@ -1600,7 +1585,8 @@ service_loop(int argc, char** argv)
 		if(prompt[0] != '\0') {
 			comWriteString(com_handle, prompt);
 			char ch;
-			if(comReadBuf(com_handle, &ch, sizeof(ch), NULL, 10000)) {
+			if(comReadBuf(com_handle, &ch, sizeof(ch), NULL, prompt_timeout * 1000)) {
+				lprintf(LOG_INFO, "Received character '%c' (%d) in response to prompt", ch, ch);
 				if(!IS_CONTROL(ch)) {
 					SAFEPRINTF(str, "TCP:%c", ch);
 					iniGetExistingWord(ini, str, "Host", NULL, host);
@@ -1639,12 +1625,10 @@ int main(int argc, char** argv)
 	/*******************************/
 	/* Generate and display banner */
 	/*******************************/
-	sscanf("$Revision: 1.32 $", "%*s %s", revision);
 
-	sprintf(banner,"\n%s v%s-%s"
+	sprintf(banner,"\n%s v2.0-%s"
 		" Copyright %s Rob Swindell"
 		,TITLE
-		,revision
 		,PLATFORM_DESC
 		,__DATE__+7
 		);
