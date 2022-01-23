@@ -60,6 +60,7 @@
 
 /* global vars */
 BOOL	daemonize=FALSE;
+char	prompt[INI_MAX_VALUE_LEN+1];
 char	termtype[INI_MAX_VALUE_LEN+1]	= NAME;
 char	termspeed[INI_MAX_VALUE_LEN+1]	= "28800,28800";	/* "tx,rx", max length not defined */
 char	revision[16];
@@ -1386,69 +1387,72 @@ char* iniGetExistingWord(str_list_t list, const char* section, const char* key
 	return p;
 }
 
+str_list_t	ini = NULL;
+
 void parse_ini_file(const char* ini_fname)
 {
 	FILE* fp;
 	char* section;
-	str_list_t	list=NULL;
 
+	strListFree(&ini);
 	if((fp=fopen(ini_fname,"r"))!=NULL) {
 		lprintf(LOG_INFO,"Reading %s",ini_fname);
-		list=iniReadFile(fp);
+		ini = iniReadFile(fp);
 		fclose(fp);
 	}
 
 	/* Root section */
-	pause_on_exit			= iniGetBool(list,ROOT_SECTION,"PauseOnExit",FALSE);
-	log_level				= iniGetLogLevel(list,ROOT_SECTION,"LogLevel",log_level);
+	pause_on_exit			= iniGetBool(ini,ROOT_SECTION,"PauseOnExit",FALSE);
+	log_level				= iniGetLogLevel(ini,ROOT_SECTION,"LogLevel",log_level);
+	iniGetString(ini, ROOT_SECTION, "Prompt", NULL, prompt);
 
-	if(iniGetBool(list,ROOT_SECTION,"Debug",FALSE))
+	if(iniGetBool(ini,ROOT_SECTION,"Debug",FALSE))
 		log_level=LOG_DEBUG;
 	
 	/* [COM] Section */
 	section="COM";
-	iniGetExistingWord(list, section, "Device", NULL, com_dev);
-	com_baudrate    = iniGetLongInt(list, section, "BaudRate", com_baudrate);
-	com_hangup	    = iniGetBool(list, section, "Hangup", com_hangup);
-	hangup_attempts = iniGetInteger(list, section, "HangupAttempts", hangup_attempts);
-	dcd_timeout     = iniGetInteger(list, section, "DCDTimeout", dcd_timeout);
-	dcd_ignore      = iniGetBool(list, section, "IgnoreDCD", dcd_ignore);
-	dtr_delay		= iniGetLongInt(list, section, "DTRDelay", dtr_delay);
-	mdm_null	    = iniGetBool(list, section, "NullModem", mdm_null);
+	iniGetExistingWord(ini, section, "Device", NULL, com_dev);
+	com_baudrate    = iniGetLongInt(ini, section, "BaudRate", com_baudrate);
+	com_hangup	    = iniGetBool(ini, section, "Hangup", com_hangup);
+	hangup_attempts = iniGetInteger(ini, section, "HangupAttempts", hangup_attempts);
+	dcd_timeout     = iniGetInteger(ini, section, "DCDTimeout", dcd_timeout);
+	dcd_ignore      = iniGetBool(ini, section, "IgnoreDCD", dcd_ignore);
+	dtr_delay		= iniGetLongInt(ini, section, "DTRDelay", dtr_delay);
+	mdm_null	    = iniGetBool(ini, section, "NullModem", mdm_null);
 
 	/* [Modem] Section */
 	section="Modem";
-	iniGetExistingWord(list, section, "Init", "", mdm_init);
-	iniGetExistingWord(list, section, "AutoAnswer", "", mdm_autoans);
-	iniGetExistingWord(list, section, "Cleanup", "", mdm_cleanup);
-	iniGetExistingWord(list, section, "EnableCallerID", "", mdm_cid);
-	iniGetExistingWord(list, section, "Answer", "", mdm_answer);
-	iniGetExistingWord(list, section, "Ring", "", mdm_ring);
-	mdm_timeout     = iniGetInteger(list, section, "Timeout", mdm_timeout);
-	mdm_reinit		= iniGetInteger(list, section, "ReInit", mdm_reinit);
-	mdm_cmdretry	= iniGetInteger(list, section, "CmdRetry", mdm_cmdretry);
-	mdm_manswer		= iniGetBool(list,section,"ManualAnswer", mdm_manswer);
+	iniGetExistingWord(ini, section, "Init", "", mdm_init);
+	iniGetExistingWord(ini, section, "AutoAnswer", "", mdm_autoans);
+	iniGetExistingWord(ini, section, "Cleanup", "", mdm_cleanup);
+	iniGetExistingWord(ini, section, "EnableCallerID", "", mdm_cid);
+	iniGetExistingWord(ini, section, "Answer", "", mdm_answer);
+	iniGetExistingWord(ini, section, "Ring", "", mdm_ring);
+	mdm_timeout     = iniGetInteger(ini, section, "Timeout", mdm_timeout);
+	mdm_reinit		= iniGetInteger(ini, section, "ReInit", mdm_reinit);
+	mdm_cmdretry	= iniGetInteger(ini, section, "CmdRetry", mdm_cmdretry);
+	mdm_manswer		= iniGetBool(ini,section,"ManualAnswer", mdm_manswer);
 
 	/* [TCP] Section */
 	section="TCP";
-	iniGetExistingWord(list, section, "Host", NULL, host);
-	port					= iniGetShortInt(list, section, "Port", port);
-	tcp_nodelay				= iniGetBool(list,section,"NODELAY", tcp_nodelay);
+	iniGetExistingWord(ini, section, "Host", NULL, host);
+	port					= iniGetShortInt(ini, section, "Port", port);
+	tcp_nodelay				= iniGetBool(ini,section,"NODELAY", tcp_nodelay);
 
 	/* [Telnet] Section */
 	section="Telnet";
-	telnet					= iniGetBool(list,section,"Enabled", telnet);
-	debug_telnet			= iniGetBool(list,section,"Debug", debug_telnet);
-	telnet_advertise_cid	= iniGetBool(list,section,"AdvertiseLocation", telnet_advertise_cid);
-	iniGetExistingWord(list, section, "TermType", NULL, termtype);
-	iniGetExistingWord(list, section, "TermSpeed", NULL, termspeed);
+	telnet					= iniGetBool(ini,section,"Enabled", telnet);
+	debug_telnet			= iniGetBool(ini,section,"Debug", debug_telnet);
+	telnet_advertise_cid	= iniGetBool(ini,section,"AdvertiseLocation", telnet_advertise_cid);
+	iniGetExistingWord(ini, section, "TermType", NULL, termtype);
+	iniGetExistingWord(ini, section, "TermSpeed", NULL, termspeed);
 
 	/* [Ident] Section */
 	section="Ident";
-	ident					= iniGetBool(list,section,"Enabled", ident);
-	ident_port				= iniGetShortInt(list, section, "Port", ident_port);
-	ident_interface			= iniGetIpAddress(list, section, "Interface", ident_interface);
-	iniGetExistingWord(list, section, "Response", NULL, ident_response);
+	ident					= iniGetBool(ini,section,"Enabled", ident);
+	ident_port				= iniGetShortInt(ini, section, "Port", ident_port);
+	ident_interface			= iniGetIpAddress(ini, section, "Interface", ident_interface);
+	iniGetExistingWord(ini, section, "Response", NULL, ident_response);
 
 }
 
@@ -1593,6 +1597,17 @@ service_loop(int argc, char** argv)
 		comWriteByte(com_handle,'\r');
 		comWriteString(com_handle, banner);
 		comWriteString(com_handle, "\r\n");
+		if(prompt[0] != '\0') {
+			comWriteString(com_handle, prompt);
+			char ch;
+			if(comReadBuf(com_handle, &ch, sizeof(ch), NULL, 10000)) {
+				if(!IS_CONTROL(ch)) {
+					SAFEPRINTF(str, "TCP:%c", ch);
+					iniGetExistingWord(ini, str, "Host", NULL, host);
+					port = iniGetShortInt(ini, str, "Port", port);
+				}
+			}
+		}
 		if((sock=connect_socket(host, port)) == INVALID_SOCKET) {
 			comWriteString(com_handle,"\7\r\n!ERROR connecting to TCP port\r\n");
 		} else {
