@@ -1374,6 +1374,14 @@ char* iniGetExistingWord(str_list_t list, const char* section, const char* key
 
 str_list_t	ini = NULL;
 
+void parse_tcp_section(const char* section)
+{
+	iniGetExistingWord(ini, section, "Host", NULL, host);
+	port					= iniGetShortInt(ini, section, "Port", port);
+	tcp_nodelay				= iniGetBool(ini,section,"NODELAY", tcp_nodelay);
+	telnet					= iniGetBool(ini,section,"Telnet", telnet);
+}
+
 void parse_ini_file(const char* ini_fname)
 {
 	FILE* fp;
@@ -1421,10 +1429,7 @@ void parse_ini_file(const char* ini_fname)
 	mdm_manswer		= iniGetBool(ini,section,"ManualAnswer", mdm_manswer);
 
 	/* [TCP] Section */
-	section="TCP";
-	iniGetExistingWord(ini, section, "Host", NULL, host);
-	port					= iniGetShortInt(ini, section, "Port", port);
-	tcp_nodelay				= iniGetBool(ini,section,"NODELAY", tcp_nodelay);
+	parse_tcp_section("TCP");
 
 	/* [Telnet] Section */
 	section="Telnet";
@@ -1587,6 +1592,7 @@ service_loop(int argc, char** argv)
 		comWriteString(com_handle, banner);
 		comWriteString(com_handle, "\r\n");
 		if(prompt[0] != '\0') {
+			parse_tcp_section("TCP");
 			comWriteString(com_handle, prompt);
 			char ch;
 			if(comReadBuf(com_handle, &ch, sizeof(ch), NULL, prompt_timeout * 1000)) {
@@ -1595,8 +1601,7 @@ service_loop(int argc, char** argv)
 				else {
 					lprintf(LOG_DEBUG, "Received character '%c' (%d) in response to prompt", ch, ch);
 					SAFEPRINTF(str, "TCP:%c", ch);
-					iniGetExistingWord(ini, str, "Host", NULL, host);
-					port = iniGetShortInt(ini, str, "Port", port);
+					parse_tcp_section(str);
 				}
 			} else
 				lprintf(LOG_NOTICE, "Timeout (%d seconds) waiting for response to prompt", prompt_timeout);
