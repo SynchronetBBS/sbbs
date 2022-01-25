@@ -1596,7 +1596,7 @@ service_loop(int argc, char** argv)
 			if (prompt_timeout == 0)
 				ptimeout = COM_INFINITE_TIMEOUT;
 			else {
-				if (prompt_timeout < INT_MAX / 1000)
+				if (prompt_timeout <= INT_MAX / 1000)
 					ptimeout = prompt_timeout * 1000;
 				else
 					ptimeout = INT_MAX;
