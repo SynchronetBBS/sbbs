@@ -30,7 +30,7 @@ size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, const char* termi
 
 	while(len < buflen) {
 		if(!comReadByte(handle, &ch)) {
-			if(timeout > 0 && msclock()-start >= timeout)
+			if(timeout != COM_INFINITE_TIMEOUT && msclock()-start >= timeout)
 				break;
 			YIELD();
 			continue;
