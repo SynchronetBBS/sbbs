@@ -1592,9 +1592,15 @@ service_loop(int argc, char** argv)
 		comWriteString(com_handle, banner);
 		comWriteString(com_handle, "\r\n");
 		if(prompt[0] != '\0') {
-			int ptimeout = prompt_timeout * 1000;
-			if (ptimeout == 0)
+			int ptimeout;
+			if (prompt_timeout == 0)
 				ptimeout = COM_INFINITE_TIMEOUT;
+			else {
+				if (prompt_timeout < INT_MAX / 1000)
+					ptimeout = prompt_timeout * 1000;
+				else
+					ptimeout = INT_MAX;
+			}
 			parse_tcp_section("TCP");
 			comWriteString(com_handle, prompt);
 			char ch;
@@ -1645,7 +1651,7 @@ int main(int argc, char** argv)
 		" Copyright %s Rob Swindell"
 		,TITLE
 		,PLATFORM_DESC
-		,__DATE__+7
+		,&__DATE__[7]
 		);
 
 	fprintf(stdout,"%s\n\n", banner);
