@@ -1592,10 +1592,13 @@ service_loop(int argc, char** argv)
 		comWriteString(com_handle, banner);
 		comWriteString(com_handle, "\r\n");
 		if(prompt[0] != '\0') {
+			int ptimeout = prompt_timeout * 1000;
+			if (ptimeout == 0)
+				ptimeout = COM_INFINITE_TIMEOUT;
 			parse_tcp_section("TCP");
 			comWriteString(com_handle, prompt);
 			char ch;
-			if(comReadBuf(com_handle, &ch, sizeof(ch), NULL, prompt_timeout * 1000)) {
+			if(comReadBuf(com_handle, &ch, sizeof(ch), NULL, ptimeout)) {
 				if(IS_CONTROL(ch))
 					lprintf(LOG_WARNING, "Received a control character (%d) in response to prompt", ch);
 				else {
