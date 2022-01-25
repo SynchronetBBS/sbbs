@@ -38,9 +38,11 @@
 #ifndef _COMIO_H
 #define _COMIO_H
 
+#include <limits.h>	/* INT_MAX */
 #include <gen_defs.h>	/* BOOL */
 
 #define COM_ERROR						-1
+#define COM_INFINITE_TIMEOUT	INT_MIN
 
 #ifdef _WIN32
 	#if defined(COMIO_IMPORTS) || defined(COMIO_EXPORTS)
