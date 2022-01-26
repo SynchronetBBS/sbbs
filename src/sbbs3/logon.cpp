@@ -163,10 +163,7 @@ bool sbbs_t::logon()
 	}
 
 
-	if(useron.misc&AUTOTERM) {
-		useron.misc&=~(ANSI|RIP|PETSCII);
-		useron.misc|=autoterm;
-	} else if((useron.misc&PETSCII) && (autoterm&ANSI)) {
+	if(((useron.misc & (AUTOTERM | PETSCII)) == PETSCII) && (autoterm&ANSI)) {
 		// User manually-enabled PETSCII, but they're logging in with an ANSI (auto-detected) terminal
 		useron.misc &= ~PETSCII;
 		useron.misc |= (AUTOTERM | autoterm);
