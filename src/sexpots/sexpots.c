@@ -216,11 +216,6 @@ void lputs(int level, const char* str)
 	_snprintf(dbgmsg,sizeof(dbgmsg),"%s %s", NAME, str);
 	if(log_level==LOG_DEBUG)
 		OutputDebugString(dbgmsg);
-#else
-	char dbgmsg[1024];
-	snprintf(dbgmsg,sizeof(dbgmsg),"%s %s", NAME, str);
-	if(log_level==LOG_DEBUG)
-		fputs(dbgmsg, stderr);
 #endif
 
 	if(level>log_level)
