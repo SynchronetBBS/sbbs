@@ -87,6 +87,7 @@ DLLEXPORT bool			batch_list_clear(scfg_t*, uint usernumber, enum XFER_TYPE);
 DLLEXPORT bool			batch_file_add(scfg_t*, uint usernumber, enum XFER_TYPE, file_t*);
 DLLEXPORT bool			batch_file_exists(scfg_t*, uint usernumber, enum XFER_TYPE, const char* filename);
 DLLEXPORT bool			batch_file_remove(scfg_t*, uint usernumber, enum XFER_TYPE, const char* filename);
+DLLEXPORT bool			batch_file_remove_n(scfg_t*, uint usernumber, enum XFER_TYPE, uint n);
 DLLEXPORT size_t		batch_file_count(scfg_t*, uint usernumber, enum XFER_TYPE);
 DLLEXPORT bool			batch_file_get(scfg_t*, str_list_t, const char* filename, file_t*);
 DLLEXPORT int			batch_file_dir(scfg_t*, str_list_t, const char* filename);

@@ -411,6 +411,25 @@ bool batch_file_remove(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const 
 	return result;
 }
 
+// 'n' is zero-based index of file to remove
+bool batch_file_remove_n(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, uint n)
+{
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */false);
+	if(fp == NULL)
+		return false;
+	str_list_t ini = iniReadFile(fp);
+	str_list_t files = iniGetSectionList(ini, NULL);
+	bool result = false;
+	if(n < strListCount(files))
+		result = iniRemoveSection(&ini, files[n]);
+	iniWriteFile(fp, ini);
+	iniCloseFile(fp);
+	iniFreeStringList(ini);
+	iniFreeStringList(files);
+	return result;
+}
+
+
 bool batch_file_exists(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
 {
 	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */false);
