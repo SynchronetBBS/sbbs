@@ -694,11 +694,13 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				if(wrslot==INVALID_HANDLE_VALUE)
 					lprintf(LOG_WARNING,"VDD Open failed (not loaded yet?)");
 				else if(!WriteFile(wrslot,bp,wr,&len,NULL)) {
-					lprintf(LOG_ERR,"!VDD WriteFile(0x%x, %u) FAILURE (Error=%u)", wrslot, wr, GetLastError());
-					if(GetMailslotInfo(wrslot,&wr,NULL,NULL,NULL))
-						lprintf(LOG_DEBUG,"!VDD MailSlot max_msg_size=%u", wr);
-					else
-						lprintf(LOG_DEBUG,"!GetMailslotInfo(0x%x)=%u", wrslot, GetLastError());
+					if(WaitForSingleObject(process_info.hProcess, 0) != WAIT_OBJECT_0) { // Process still running?
+						lprintf(LOG_ERR,"!VDD WriteFile(0x%x, %u) FAILURE (Error=%u)", wrslot, wr, GetLastError());
+						if(GetMailslotInfo(wrslot,&wr,NULL,NULL,NULL))
+							lprintf(LOG_DEBUG,"!VDD MailSlot max_msg_size=%u", wr);
+						else
+							lprintf(LOG_DEBUG,"!GetMailslotInfo(0x%x)=%u", wrslot, GetLastError());
+					}
 				} else {
 					if(len!=wr)
 						lprintf(LOG_WARNING,"VDD short write (%u instead of %u)", len,wr);
