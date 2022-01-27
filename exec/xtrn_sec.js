@@ -275,10 +275,11 @@ function external_section_menu()
 		}
 
 		bbs.node_sync();
-		xsec=console.getnum(sec_list.length);
-		if(xsec<=0)
+		var num = console.getnum(sec_list.length);
+		if(num < 0)
 			break;
-		xsec--;
+		if(num > 0)
+			xsec = num - 1;
 		
 		external_program_menu(sec_list[xsec].index);
     }
