@@ -1,16 +1,12 @@
-// $Id: sbbslist.js,v 1.66 2020/04/19 19:57:15 rswindell Exp $
-
 // Synchronet BBS List
 
-// This one script replaces (or *will* replace) the functionality of:
+// This one script replaces the functionality of:
 // sbl[.exe]        - External online program (door)
 // smb2sbl[.exe]    - Imports BBS entries from Synchronet Message Base (e.g. from SYNCDATA echo)
 // sbl2smb[.exe]    - Exports BBS entries to Synchronet Message Base (e.g. to SYNCDATA echo)
 // sbbslist[.exe]   - Exports BBS entries to HTML and various plain-text formats (e.g. sbbs.lst, sbbsimsg.lst, syncterm.lst)
 
-// TODO: Daily maintenance, warning local creators and purging old unverified entries
-
-var REVISION = "$Revision: 1.67 $".split(' ')[1];
+var REVISION = "1.68";
 var version_notice = "Synchronet BBS List v4(" + REVISION + ")";
 
 load("sbbsdefs.js");
@@ -44,6 +40,8 @@ if(options && options.format > 0)
 	list_format = options.format;
 if(options && options.export_freq > 0)
 	export_freq = options.export_freq;
+if(options.backup_level === undefined)
+	options.backup_level = 10;
 
 var lib = load({}, "sbbslist_lib.js");
 var capture = load({}, "termcapture_lib.js");
