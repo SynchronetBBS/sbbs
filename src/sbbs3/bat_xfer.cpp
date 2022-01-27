@@ -148,12 +148,14 @@ void sbbs_t::batchmenu()
 				if((n = batup_total()) > 0) {
 					bprintf(text[RemoveWhichFromUlQueue], n);
 					if(getstr(str, MAX_FILENAME_LEN, K_NONE) > 0)
-						batch_file_remove(&cfg, useron.number, XFER_BATCH_UPLOAD, str);
+						if(!batch_file_remove(&cfg, useron.number, XFER_BATCH_UPLOAD, str) && (n = atoi(str)) > 0)
+							batch_file_remove_n(&cfg, useron.number, XFER_BATCH_UPLOAD, n - 1);
 				}
 				if((n = batdn_total()) > 0) {
 					bprintf(text[RemoveWhichFromDlQueue], n);
 					if(getstr(str, MAX_FILENAME_LEN, K_NONE) > 0)
-						batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, str);
+						if(!batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, str) && (n = atoi(str)) > 0)
+							batch_file_remove_n(&cfg, useron.number, XFER_BATCH_DOWNLOAD, n - 1);
 				}
 				break;
 		   case 'U':
