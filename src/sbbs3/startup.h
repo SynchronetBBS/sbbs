@@ -126,6 +126,7 @@ typedef struct {
     char    dosemuconf_path[INI_MAX_VALUE_LEN];
     char	temp_dir[INI_MAX_VALUE_LEN];
 	char	ini_fname[INI_MAX_VALUE_LEN];
+	char	web_file_vpath_prefix[INI_MAX_VALUE_LEN];
 
 	/* Miscellaneous */
 	BOOL    usedosemu;

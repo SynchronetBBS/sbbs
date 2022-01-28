@@ -465,7 +465,6 @@ typedef struct
 	int32_t 		file_misc;			/* File Misc Settings */
 	int32_t			xtrn_misc;			/* External Programs Misc Settings */
 	uint16_t		filename_maxlen;	/* Maximum filename length */
-	char			web_file_prefix[33];
 
 	char			node_comspec[LEN_CMD+1];	/* DOS COMMAND.COM to use */
 	char			node_editor[LEN_CMD+1]; /* Local text editor command line to use */

@@ -63,6 +63,7 @@ static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
 static const char*	strJavaScriptOptions		="JavaScriptOptions";
 static const char*	strSemFileCheckFrequency	="SemFileCheckFrequency";
 static const char*	strIniFileName				="iniFileName";
+static const char*  strFileVpathPrefix			="FileVPathPrefix";
 
 #define DEFAULT_LOG_LEVEL				LOG_DEBUG
 #define DEFAULT_BIND_RETRY_COUNT		2
@@ -455,6 +456,8 @@ void sbbs_read_ini(
 
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
 		bbs->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
+
+		SAFECOPY(bbs->web_file_vpath_prefix, iniGetString(list, "web", strFileVpathPrefix, nulstr, value));
 	}
 
 	/***********************************************************************/
@@ -711,6 +714,8 @@ void sbbs_read_ini(
 			,iniGetString(list,section,"Authentication",WEB_DEFAULT_AUTH_LIST,value));
 		SAFECOPY(web->logfile_base
 			,iniGetString(list,section,"HttpLogFile",nulstr,value));
+		SAFECOPY(web->file_vpath_prefix
+			,iniGetString(list, section, strFileVpathPrefix, nulstr, value));
 
 		SAFECOPY(web->default_cgi_content
 			,iniGetString(list,section,"DefaultCGIContent",WEB_DEFAULT_CGI_CONTENT,value));
@@ -1262,6 +1267,8 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"Authentication",web->default_auth_list,&style))
 			break;
 		if(!iniSetString(lp,section,"HttpLogFile",web->logfile_base,&style))
+			break;
+		if(!iniSetString(lp,section,strFileVpathPrefix, web->file_vpath_prefix, &style))
 			break;
 
 		if(!iniSetString(lp,section,"DefaultCGIContent",web->default_cgi_content,&style))
