@@ -73,6 +73,7 @@ typedef struct {							/* Message group info */
 typedef struct {							/* Transfer Directory Info */
 	char		code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
 	char		code_suffix[LEN_CODE+1];	/* Eight character code suffix */
+	char*		vdir;						/* Virtual Directory name */
 	char		area_tag[41];
 	char		lname[LEN_SLNAME+1],		/* Long name - used for listing */
 				sname[LEN_SSNAME+1],		/* Short name - used for prompts */
@@ -105,6 +106,7 @@ typedef struct {							/* Transfer Directory Info */
 typedef struct {							/* Transfer Library Information */
 	char		lname[LEN_GLNAME+1],		/* Long Name - used for listings */
 				sname[LEN_GSNAME+1],		/* Short Name - used for prompts */
+				vdir[LEN_GSNAME+1],			/* Virtual Directory name */
 				arstr[LEN_ARSTR+1],			/* Access Requirements */
 				code_prefix[LEN_CODE+1],	/* Prefix for internal code */
 				parent_path[48];			/* Parent for dir paths */

@@ -29,6 +29,7 @@
 BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	char	str[MAX_PATH+1],c,cmd[LEN_CMD+1];
+	char*	p;
 	short	i,j;
 	int16_t	n;
 	long	offset=0;
@@ -293,6 +294,12 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		get_str(cfg->lib[i]->lname,instream);
 		get_str(cfg->lib[i]->sname,instream);
+		SAFECOPY(cfg->lib[i]->vdir, cfg->lib[i]->sname);
+		if(strchr(cfg->lib[i]->vdir, '.') == NULL) {
+			REPLACE_CHARS(cfg->lib[i]->vdir, ' ', '.', p);
+		} else {
+			REPLACE_CHARS(cfg->lib[i]->vdir, ' ', '_', p);
+		}
 
 		get_str(cfg->lib[i]->arstr,instream);
 		arstr(NULL, cfg->lib[i]->arstr, cfg, cfg->lib[i]->ar);
@@ -349,6 +356,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
 		get_str(cfg->dir[i]->code_suffix,instream);
+		cfg->dir[i]->vdir = cfg->dir[i]->code_suffix;
 
 		get_str(cfg->dir[i]->data_dir,instream);
 

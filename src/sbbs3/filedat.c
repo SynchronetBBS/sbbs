@@ -588,7 +588,7 @@ char* getfilevpath(scfg_t* cfg, file_t* f, char* path)
 	if(f->dir >= cfg->total_dirs)
 		return "";
 	safe_snprintf(path, MAX_PATH, "%s/%s/%s"
-		,cfg->lib[cfg->dir[f->dir]->lib]->sname, cfg->dir[f->dir]->code_suffix, name);
+		,cfg->lib[cfg->dir[f->dir]->lib]->vdir, cfg->dir[f->dir]->vdir, name);
 	return path;
 }
 
