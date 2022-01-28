@@ -322,7 +322,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			if(!JS_SetProperty(cx, libobj, "ars", &val))
 				return JS_FALSE;
 
-			sprintf(vpath,"/%s/%s",p->cfg->lib[l]->sname,p->html_index_file);
+			sprintf(vpath,"/%s/%s",p->cfg->lib[l]->vdir,p->html_index_file);
 			if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
 				return JS_FALSE;
 			val=STRING_TO_JSVAL(js_str);
