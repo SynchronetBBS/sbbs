@@ -1535,12 +1535,12 @@ static int parsepath(char** pp, user_t* user, client_t* client, int* curlib, int
 			for(lib=0;lib<scfg.total_libs;lib++) {
 				if(!chk_ar(&scfg,scfg.lib[lib]->ar,user,client))
 					continue;
-				len = strlen(scfg.lib[lib]->sname);
+				len = strlen(scfg.lib[lib]->vdir);
 				if (strlen(p) < len)
 					continue;
 				if (p[len] != 0 && p[len] != '/')
 					continue;
-				if(!strnicmp(scfg.lib[lib]->sname,p,len)) {
+				if(!strnicmp(scfg.lib[lib]->vdir,p,len)) {
 					p += len;
 					if (*p)
 						p++;
@@ -1579,12 +1579,12 @@ static int parsepath(char** pp, user_t* user, client_t* client, int* curlib, int
 					continue;
 				if (!can_list(scfg.lib[lib], scfg.dir[dir], user, client))
 					continue;
-				len = strlen(scfg.dir[dir]->code_suffix);
+				len = strlen(scfg.dir[dir]->vdir);
 				if (strlen(p) < len)
 					continue;
 				if (p[len] != 0 && p[len] != '/')
 					continue;
-				if(!strnicmp(scfg.dir[dir]->code_suffix,p,len)) {
+				if(!strnicmp(scfg.dir[dir]->vdir,p,len)) {
 					p += len;
 					if (*p)
 						p++;
@@ -1645,11 +1645,11 @@ char* genvpath(int lib, int dir, char* str)
 	strcpy(str,"/");
 	if(lib<0)
 		return(str);
-	strcat(str,scfg.lib[lib]->sname);
+	strcat(str,scfg.lib[lib]->vdir);
 	strcat(str,"/");
 	if(dir<0)
 		return(str);
-	strcat(str,scfg.dir[dir]->code_suffix);
+	strcat(str,scfg.dir[dir]->vdir);
 	strcat(str,"/");
 	return(str);
 }
@@ -3600,11 +3600,11 @@ static void ctrl_thread(void* arg)
 								if(*tp) {
 									SAFEPRINTF2(aliasfile,"%s%s",scfg.dir[dir]->path,tp);
 									np=aliasfile;
-									SAFEPRINTF3(aliaspath,"/%s/%s/%s", scfg.lib[scfg.dir[dir]->lib]->sname, scfg.dir[dir]->code_suffix, tp);
+									SAFEPRINTF3(aliaspath,"/%s/%s/%s", scfg.lib[scfg.dir[dir]->lib]->vdir, scfg.dir[dir]->vdir, tp);
 								}
 								else {
 									alias_dir=TRUE;
-									SAFEPRINTF2(aliaspath,"/%s/%s", scfg.lib[scfg.dir[dir]->lib]->sname, scfg.dir[dir]->code_suffix);
+									SAFEPRINTF2(aliaspath,"/%s/%s", scfg.lib[scfg.dir[dir]->lib]->vdir, scfg.dir[dir]->vdir);
 								}
 							}
 
@@ -3621,56 +3621,56 @@ static void ctrl_thread(void* arg)
 					for(i=0;i<scfg.total_libs;i++) {
 						if(!chk_ar(&scfg,scfg.lib[i]->ar,&user,&client))
 							continue;
-						if (cmd[3] != 'D' && strcmp(scfg.lib[i]->sname, mls_fname) != 0)
+						if (cmd[3] != 'D' && strcmp(scfg.lib[i]->vdir, mls_fname) != 0)
 							continue;
 						if (cmd[3] == 'T')
-							sockprintf(sock,sess, "250- Listing %s", scfg.lib[i]->sname);
+							sockprintf(sock,sess, "250- Listing %s", scfg.lib[i]->vdir);
 						get_libperm(scfg.lib[i], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, NULL, 0, cmd[3] == 'T' ? mls_path : scfg.lib[i]->sname);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, NULL, 0, cmd[3] == 'T' ? mls_path : scfg.lib[i]->vdir);
 						l++;
 					}
 				} else if(dir<0) {
 					if (cmd[3] == 'T' && !*mls_fname) {
-						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->sname);
+						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->vdir);
 						get_owner_name(NULL, str);
-						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->sname);
+						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->vdir);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, str, NULL, 0, aliaspath);
 						l++;
 					}
 					if (cmd[3] == 'D') {
 						get_owner_name(NULL, str);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, "/");
-						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->sname);
+						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->vdir);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, aliaspath);
 					}
 					lprintf(LOG_INFO,"%04d <%s> %s listing: %s library in %s mode"
-						,sock, user.alias, cmd, scfg.lib[lib]->sname, mode);
+						,sock, user.alias, cmd, scfg.lib[lib]->vdir, mode);
 					for(i=0;i<scfg.total_dirs;i++) {
 						if(scfg.dir[i]->lib!=lib)
 							continue;
 						if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir 
 							&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 							continue;
-						if (cmd[3] != 'D' && strcmp(scfg.dir[i]->code_suffix, mls_fname) != 0)
+						if (cmd[3] != 'D' && strcmp(scfg.dir[i]->vdir, mls_fname) != 0)
 							continue;
 						if (cmd[3] == 'T')
-							sockprintf(sock,sess, "250- Listing %s", scfg.dir[i]->code_suffix);
+							sockprintf(sock,sess, "250- Listing %s", scfg.dir[i]->vdir);
 						get_dirperm(scfg.lib[lib], scfg.dir[i], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->sname, scfg.dir[i]->code_suffix);
+						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->vdir, scfg.dir[i]->vdir);
 						get_unique(aliaspath, uniq);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, uniq, 0, cmd[3] == 'T' ? mls_path : scfg.dir[i]->code_suffix);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, uniq, 0, cmd[3] == 'T' ? mls_path : scfg.dir[i]->vdir);
 						l++;
 					}
 				} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)) {
 					lprintf(LOG_INFO,"%04d <%s> %s listing: /%s/%s directory in %s mode"
-						,sock, user.alias, cmd, scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix,mode);
+						,sock, user.alias, cmd, scfg.lib[lib]->vdir, scfg.dir[dir]->vdir,mode);
 
 					if (cmd[3] == 'T' && !*mls_fname) {
-						sockprintf(sock,sess, "250- Listing %s/%s",scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix);
+						sockprintf(sock,sess, "250- Listing %s/%s",scfg.lib[lib]->vdir,scfg.dir[dir]->vdir);
 						get_owner_name(NULL, str);
-						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix);
+						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->vdir, scfg.dir[dir]->vdir);
 						get_unique(aliaspath, uniq);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, uniq, 0, aliaspath);
 						l++;
@@ -3678,9 +3678,9 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'D') {
 						get_libperm(scfg.lib[lib], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->sname);
+						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->vdir);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, 0, str, NULL, 0, aliaspath);
-						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix);
+						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->vdir, scfg.dir[dir]->vdir);
 						get_unique(aliaspath, uniq);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", permstr, UINT64_MAX, 0, str, NULL, 0, aliaspath);
 					}
@@ -3701,7 +3701,7 @@ static void ctrl_thread(void* arg)
 							sockprintf(sock,sess, "250- Listing %s", p);
 						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, f, permstr);
 						get_owner_name(f, str);
-						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, f->name);
+						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->vdir, scfg.dir[dir]->vdir, f->name);
 						get_unique(aliaspath, uniq);
 						f->size = f->cost;
 						f->time = f->hdr.when_imported.time;
@@ -3718,14 +3718,14 @@ static void ctrl_thread(void* arg)
 					}
 					if (cmd[3] == 'D') {
 						lprintf(LOG_INFO, "%04d <%s> %s listing (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
-						    ,sock, user.alias, cmd, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
+						    ,sock, user.alias, cmd, ftell(fp), scfg.lib[lib]->vdir, scfg.dir[dir]->vdir
 						    ,(ulong)file_count, (long)time(NULL) - start);
 					}
 					freefiles(file_list, file_count);
 					smb_close(&smb);
 				} else 
 					lprintf(LOG_INFO,"%04d <%s> %s listing: /%s/%s directory in %s mode (empty - no access)"
-						,sock, user.alias, cmd, scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, mode);
+						,sock, user.alias, cmd, scfg.lib[lib]->vdir, scfg.dir[dir]->vdir, mode);
 
 				if (cmd[3] == 'D') {
 					fclose(fp);
@@ -3799,7 +3799,7 @@ static void ctrl_thread(void* arg)
 						,NAME_LEN
 						,scfg.sys_id
 						,lib<0 ? scfg.sys_id : dir<0 
-							? scfg.lib[lib]->sname : scfg.dir[dir]->code_suffix
+							? scfg.lib[lib]->vdir : scfg.dir[dir]->vdir
 						,512L
 						,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 						,startup->index_file_name);
@@ -3902,7 +3902,7 @@ static void ctrl_thread(void* arg)
 								fprintf(fp,"drwxrwxrwx   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 									,NAME_LEN
 									,scfg.sys_id
-									,scfg.lib[scfg.dir[dir]->lib]->sname
+									,scfg.lib[scfg.dir[dir]->lib]->vdir
 									,512L
 									,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 									,p);
@@ -3931,7 +3931,7 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<scfg.total_libs;i++) {
 					if(!chk_ar(&scfg,scfg.lib[i]->ar,&user,&client))
 						continue;
-					if(!wildmatchi(scfg.lib[i]->sname, filespec, FALSE))
+					if(!wildmatchi(scfg.lib[i]->vdir, filespec, FALSE))
 						continue;
 					if(detail)
 						fprintf(fp,"dr-xr-xr-x   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
@@ -3940,36 +3940,36 @@ static void ctrl_thread(void* arg)
 							,scfg.sys_id
 							,512L
 							,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
-							,scfg.lib[i]->sname);
+							,scfg.lib[i]->vdir);
 					else
-						fprintf(fp,"%s\r\n",scfg.lib[i]->sname);
+						fprintf(fp,"%s\r\n",scfg.lib[i]->vdir);
 				}
 			} else if(dir<0) {
 				lprintf(LOG_INFO,"%04d <%s> %slisting: %s library in %s mode"
-					,sock, user.alias, detail ? "detailed ":"", scfg.lib[lib]->sname, mode);
+					,sock, user.alias, detail ? "detailed ":"", scfg.lib[lib]->vdir, mode);
 				for(i=0;i<scfg.total_dirs;i++) {
 					if(scfg.dir[i]->lib!=lib)
 						continue;
 					if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir 
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 						continue;
-					if(!wildmatchi(scfg.dir[i]->code_suffix, filespec, FALSE))
+					if(!wildmatchi(scfg.dir[i]->vdir, filespec, FALSE))
 						continue;
 					if(detail)
 						fprintf(fp,"drwxrwxrwx   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 							,NAME_LEN
 							,scfg.sys_id
-							,scfg.lib[lib]->sname
+							,scfg.lib[lib]->vdir
 							,512L
 							,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
-							,scfg.dir[i]->code_suffix);
+							,scfg.dir[i]->vdir);
 					else
-						fprintf(fp,"%s\r\n",scfg.dir[i]->code_suffix);
+						fprintf(fp,"%s\r\n",scfg.dir[i]->vdir);
 				}
 			} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)) {
 				lprintf(LOG_INFO,"%04d <%s> %slisting: /%s/%s directory in %s mode"
 					,sock, user.alias, detail ? "detailed ":""
-					,scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, mode);
+					,scfg.lib[lib]->vdir, scfg.dir[dir]->vdir, mode);
 
 				smb_t smb;
 				if((result = smb_open_dir(&scfg, &smb, dir)) != SMB_SUCCESS) {
@@ -4001,7 +4001,7 @@ static void ctrl_thread(void* arg)
 						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9"PRId64" %s %2d "
 							,NAME_LEN
 							,str
-							,scfg.dir[dir]->code_suffix
+							,scfg.dir[dir]->vdir
 							,(int64_t)f->size
 							,ftp_mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
@@ -4016,13 +4016,13 @@ static void ctrl_thread(void* arg)
 						fprintf(fp,"%s\r\n", f->name);
 				}
 				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
-					,sock, user.alias, detail ? "detailed ":"", ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
+					,sock, user.alias, detail ? "detailed ":"", ftell(fp), scfg.lib[lib]->vdir, scfg.dir[dir]->vdir
 					,(ulong)file_count, (long)time(NULL) - start);
 				freefiles(file_list, file_count);
 				smb_close(&smb);
 			} else
 				lprintf(LOG_INFO,"%04d <%s> %slisting: /%s/%s directory in %s mode (empty - no access)"
-					,sock, user.alias, detail ? "detailed ":"", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, mode);
+					,sock, user.alias, detail ? "detailed ":"", scfg.lib[lib]->vdir, scfg.dir[dir]->vdir, mode);
 
 			fclose(fp);
 			filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
@@ -4091,7 +4091,7 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<scfg.total_libs;i++) {
 					if(!chk_ar(&scfg,scfg.lib[i]->ar,&user,&client))
 						continue;
-					if(!stricmp(scfg.lib[i]->sname,p))
+					if(!stricmp(scfg.lib[i]->vdir,p))
 						break;
 				}
 				if(i<scfg.total_libs) 
@@ -4105,7 +4105,7 @@ static void ctrl_thread(void* arg)
 						continue;
 					if(!chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 						continue;
-					if(!stricmp(scfg.dir[i]->code_suffix,p))
+					if(!stricmp(scfg.dir[i]->vdir,p))
 						break;
 				}
 				if(i<scfg.total_dirs) 
@@ -4247,7 +4247,7 @@ static void ctrl_thread(void* arg)
 							if(!chk_ar(&scfg,scfg.lib[i]->ar,&user,&client))
 								continue;
 							fprintf(fp,"%-*s %s\r\n"
-								,INDEX_FNAME_LEN,scfg.lib[i]->sname,scfg.lib[i]->lname);
+								,INDEX_FNAME_LEN,scfg.lib[i]->vdir,scfg.lib[i]->lname);
 						}
 					} else if(dir<0) {
 						for(i=0;i<scfg.total_dirs;i++) {
@@ -4257,7 +4257,7 @@ static void ctrl_thread(void* arg)
 								&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 								continue;
 							fprintf(fp,"%-*s %s\r\n"
-								,INDEX_FNAME_LEN,scfg.dir[i]->code_suffix,scfg.dir[i]->lname);
+								,INDEX_FNAME_LEN,scfg.dir[i]->vdir,scfg.dir[i]->lname);
 						}
 					} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)){
 						smb_t smb;
@@ -4275,7 +4275,7 @@ static void ctrl_thread(void* arg)
 								,f->name, f->desc);
 						}
 						lprintf(LOG_INFO, "%04d <%s> index (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
-							,sock, user.alias, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
+							,sock, user.alias, ftell(fp), scfg.lib[lib]->vdir, scfg.dir[dir]->vdir
 							,(ulong)file_count, (long)time(NULL) - start);
 						freefiles(file_list, file_count);
 						smb_close(&smb);
@@ -4287,8 +4287,8 @@ static void ctrl_thread(void* arg)
 				if(!chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)) {
 					lprintf(LOG_WARNING,"%04d <%s> has insufficient access to /%s/%s"
 						,sock,user.alias
-						,scfg.lib[scfg.dir[dir]->lib]->sname
-						,scfg.dir[dir]->code_suffix);
+						,scfg.lib[scfg.dir[dir]->lib]->vdir
+						,scfg.dir[dir]->vdir);
 					sockprintf(sock,sess,"550 Insufficient access.");
 					filepos=0;
 					continue;
@@ -4298,8 +4298,8 @@ static void ctrl_thread(void* arg)
 					&& !chk_ar(&scfg,scfg.dir[dir]->dl_ar,&user,&client)) {
 					lprintf(LOG_WARNING,"%04d <%s> has insufficient access to download from /%s/%s"
 						,sock,user.alias
-						,scfg.lib[scfg.dir[dir]->lib]->sname
-						,scfg.dir[dir]->code_suffix);
+						,scfg.lib[scfg.dir[dir]->lib]->vdir
+						,scfg.dir[dir]->vdir);
 					sockprintf(sock,sess,"550 Insufficient access.");
 					filepos=0;
 					continue;
@@ -4308,8 +4308,8 @@ static void ctrl_thread(void* arg)
 				if(delecmd && !dir_op(&scfg,&user,&client,dir) && !(user.exempt&FLAG('R'))) {
 					lprintf(LOG_WARNING,"%04d <%s> has insufficient access to delete files in /%s/%s"
 						,sock,user.alias
-						,scfg.lib[scfg.dir[dir]->lib]->sname
-						,scfg.dir[dir]->code_suffix);
+						,scfg.lib[scfg.dir[dir]->lib]->vdir
+						,scfg.dir[dir]->vdir);
 					sockprintf(sock,sess,"550 Insufficient access.");
 					filepos=0;
 					continue;
@@ -4334,8 +4334,8 @@ static void ctrl_thread(void* arg)
 						f.cost=(uint32_t)flength(fname);
 					if(f.cost>(user.cdt+user.freecdt)) {
 						lprintf(LOG_WARNING,"%04d <%s> has insufficient credit to download /%s/%s/%s (%lu credits)"
-							,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname
-							,scfg.dir[dir]->code_suffix
+							,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->vdir
+							,scfg.dir[dir]->vdir
 							,p
 							,(ulong)f.cost);
 						sockprintf(sock,sess,"550 Insufficient credit (%lu required).", (ulong)f.cost);
@@ -4459,7 +4459,7 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<scfg.total_libs;i++) {
 					if(!chk_ar(&scfg,scfg.lib[i]->ar,&user,&client))
 						continue;
-					if(!stricmp(scfg.lib[i]->sname,p))
+					if(!stricmp(scfg.lib[i]->vdir,p))
 						break;
 				}
 				if(i<scfg.total_libs) 
@@ -4474,7 +4474,7 @@ static void ctrl_thread(void* arg)
 					if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir 
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 						continue;
-					if(!stricmp(scfg.dir[i]->code_suffix,p))
+					if(!stricmp(scfg.dir[i]->vdir,p))
 						break;
 				}
 				if(i<scfg.total_dirs) 
@@ -4502,8 +4502,8 @@ static void ctrl_thread(void* arg)
 					if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user,&client)) {
 						lprintf(LOG_WARNING,"%04d <%s> cannot upload to /%s/%s (insufficient access)"
 							,sock,user.alias
-							,scfg.lib[scfg.dir[dir]->lib]->sname
-							,scfg.dir[dir]->code_suffix);
+							,scfg.lib[scfg.dir[dir]->lib]->vdir
+							,scfg.dir[dir]->vdir);
 						sockprintf(sock,sess,"553 Insufficient access.");
 						continue;
 					}
@@ -4511,8 +4511,8 @@ static void ctrl_thread(void* arg)
 					if(!append && scfg.dir[dir]->maxfiles && getfiles(&scfg,dir)>=scfg.dir[dir]->maxfiles) {
 						lprintf(LOG_WARNING,"%04d <%s> cannot upload to /%s/%s (directory full: %ld files)"
 							,sock,user.alias
-							,scfg.lib[scfg.dir[dir]->lib]->sname
-							,scfg.dir[dir]->code_suffix
+							,scfg.lib[scfg.dir[dir]->lib]->vdir
+							,scfg.dir[dir]->vdir
 							,getfiles(&scfg,dir));
 						sockprintf(sock,sess,"553 Directory full.");
 						continue;
@@ -4661,7 +4661,7 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<scfg.total_libs;i++) {
 					if(!chk_ar(&scfg,scfg.lib[i]->ar,&user,&client))
 						continue;
-					if(!stricmp(scfg.lib[i]->sname,p))
+					if(!stricmp(scfg.lib[i]->vdir,p))
 						break;
 				}
 				if(i<scfg.total_libs) {
@@ -4680,7 +4680,7 @@ static void ctrl_thread(void* arg)
 					if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 						continue;
-					if(!stricmp(scfg.dir[i]->code_suffix,p))
+					if(!stricmp(scfg.dir[i]->vdir,p))
 						break;
 				}
 				if(i<scfg.total_dirs) {
@@ -4705,11 +4705,11 @@ static void ctrl_thread(void* arg)
 				sockprintf(sock,sess,"257 \"/\" is current directory.");
 			else if(curdir<0)
 				sockprintf(sock,sess,"257 \"/%s\" is current directory."
-					,scfg.lib[curlib]->sname);
+					,scfg.lib[curlib]->vdir);
 			else
 				sockprintf(sock,sess,"257 \"/%s/%s\" is current directory."
-					,scfg.lib[curlib]->sname
-					,scfg.dir[curdir]->code_suffix);
+					,scfg.lib[curlib]->vdir
+					,scfg.dir[curdir]->vdir);
 			continue;
 		}
 
@@ -5030,10 +5030,6 @@ void ftp_server(void* arg)
 
 		strlwr(scfg.sys_id); /* Use lower-case unix-looking System ID for group name */
 
-		for(i=0;i<scfg.total_libs;i++) {
-			strlwr(scfg.lib[i]->sname);
-			dotname(scfg.lib[i]->sname,scfg.lib[i]->sname);
-		}
 		/* open a socket and wait for a client */
 		ftp_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 		

@@ -530,8 +530,8 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 					return JS_FALSE;
 
 				sprintf(vpath,"/%s/%s/%s"
-					,p->cfg->lib[l]->sname
-					,p->cfg->dir[d]->code_suffix
+					,p->cfg->lib[l]->vdir
+					,p->cfg->dir[d]->vdir
 					,p->html_index_file);
 				if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
 					return JS_FALSE;
