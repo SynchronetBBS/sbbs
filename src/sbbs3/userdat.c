@@ -3832,7 +3832,7 @@ int getdir_from_vpath(scfg_t* cfg, const char* p, user_t* user, client_t* client
 	for(lib=0;lib<cfg->total_libs;lib++) {
 		if(!chk_ar(cfg,cfg->lib[lib]->ar,user,client))
 			continue;
-		if(!stricmp(cfg->lib[lib]->sname,p))
+		if(!stricmp(cfg->lib[lib]->vdir,p))
 			break;
 	}
 	if(lib>=cfg->total_libs) 
@@ -3849,7 +3849,7 @@ int getdir_from_vpath(scfg_t* cfg, const char* p, user_t* user, client_t* client
 		if((!include_upload_only || (dir!=cfg->sysop_dir && dir!=cfg->upload_dir))
 			&& !chk_ar(cfg,cfg->dir[dir]->ar,user,client))
 			continue;
-		if(!stricmp(cfg->dir[dir]->code_suffix,p))
+		if(!stricmp(cfg->dir[dir]->vdir,p))
 			break;
 	}
 	if(dir>=cfg->total_dirs) 
