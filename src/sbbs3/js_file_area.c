@@ -37,7 +37,7 @@ static char* lib_prop_desc[] = {
 	,"library name"
 	,"library description"
 	,"library access requirements"
-	,"library link (for HTML index)"
+	,"library virtual path (for FTP or HTTP access)"
 	,"user has sufficient access to this library's directories <i>(introduced in v3.18)</i>"
 	,"internal code prefix (for directories) <i>(introduced in v3.18c)</i>"
 	,NULL
@@ -70,7 +70,7 @@ static char* dir_prop_desc[] = {
 	,"configured maximum age (in days) of files before expiration"
 	,"percent of file size awarded uploader in credits upon file upload"
 	,"percent of file size awarded uploader in credits upon subsequent downloads"
-	,"directory link (for HTML index)"
+	,"virtual path (for FTP or HTTP access)"
 	,"number of files currently in this directory <i>(introduced in v3.18c)</i>"
 	,"timestamp of file base index of this directory <i>(introduced in v3.19)</i>"
 	,"user has sufficient access to view this directory (e.g. list files) <i>(introduced in v3.18)</i>"
@@ -89,7 +89,7 @@ struct js_file_area_priv {
 	scfg_t		*cfg;
 	user_t		*user;
 	client_t	*client;
-	char		*html_index_file;
+	const char	*web_file_prefix;
 	uint		dirnum;
 };
 
@@ -101,7 +101,6 @@ js_file_area_finalize(JSContext *cx, JSObject *obj)
 	if((p=(struct js_file_area_priv*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
-	free(p->html_index_file);
 	free(p);
 	JS_SetPrivate(cx,obj,NULL);
 }
@@ -234,9 +233,13 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	if(name==NULL || strcmp(name, "web_vpath_prefix")==0) {
 		if(name)
 			free(name);
-		if((js_str=JS_NewStringCopyZ(cx, p->cfg->web_file_prefix))==NULL)
-			return JS_FALSE;
-		val=STRING_TO_JSVAL(js_str);
+		if(p->web_file_prefix == NULL)
+			val = JSVAL_VOID;
+		else {
+			if((js_str=JS_NewStringCopyZ(cx, p->web_file_prefix))==NULL)
+				return JS_FALSE;
+			val=STRING_TO_JSVAL(js_str);
+		}
 		JS_DefineProperty(cx, areaobj, "web_vpath_prefix", val, NULL, NULL, JSPROP_ENUMERATE);
 		if(name)
 			return(JS_TRUE);
@@ -322,7 +325,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			if(!JS_SetProperty(cx, libobj, "ars", &val))
 				return JS_FALSE;
 
-			sprintf(vpath,"/%s/%s",p->cfg->lib[l]->vdir,p->html_index_file);
+			sprintf(vpath,"/%s/",p->cfg->lib[l]->vdir);
 			if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
 				return JS_FALSE;
 			val=STRING_TO_JSVAL(js_str);
@@ -362,7 +365,6 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 					continue;
 				*np = *p;
 				np->dirnum = d;
-				np->html_index_file = NULL;
 				JS_SetPrivate(cx, dirobj, np);
 
 				val=OBJECT_TO_JSVAL(dirobj);
@@ -529,10 +531,10 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if(!JS_SetProperty(cx, dirobj, "download_credit_pct", &val))
 					return JS_FALSE;
 
-				sprintf(vpath,"/%s/%s/%s"
+				sprintf(vpath,"/%s/%s/"
 					,p->cfg->lib[l]->vdir
 					,p->cfg->dir[d]->vdir
-					,p->html_index_file);
+					);
 				if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
 					return JS_FALSE;
 				val=STRING_TO_JSVAL(js_str);
@@ -634,7 +636,7 @@ static JSClass js_file_area_class = {
 };
 
 DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-					,user_t* user, client_t* client, char* html_index_file) {
+					,user_t* user, client_t* client, const char* web_file_prefix) {
 	JSObject* obj;
 	struct js_file_area_priv *p;
 
@@ -652,12 +654,9 @@ DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scf
 	p->cfg = cfg;
 	p->user = user;
 	p->client = client;
-	if (html_index_file == NULL)
-		html_index_file = "";
-	p->html_index_file = strdup(html_index_file);
+	p->web_file_prefix = web_file_prefix;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
-		free(p->html_index_file);
 		free(p);
 		return(NULL);
 	}
