@@ -1376,11 +1376,11 @@ extern "C" {
 	DLLEXPORT JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,char* name, user_t* user, client_t* client, BOOL global_user);
 	DLLEXPORT JSBool	js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,user_t* user, client_t* client, char* html_index_file
+													,user_t* user, client_t* client, const char* web_file_vpath_prefix
 													,subscan_t* subscan);
 	/* js_file_area.c */
 	DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,user_t* user, client_t* client, char* html_index_file);
+													,user_t* user, client_t* client, const char* web_file_vpath_prefix);
 
 	/* js_msg_area.c */
 	DLLEXPORT JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg

@@ -1660,11 +1660,11 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char
 /****************************************************************************/
 JSBool
 js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg, user_t* user, client_t* client
-					 ,char* html_index_file, subscan_t* subscan)
+					 ,const char* web_file_vpath_prefix, subscan_t* subscan)
 {
 	if(js_CreateUserObject(cx,parent,cfg,"user",user,client,/* global_user */TRUE)==NULL)
 		return(JS_FALSE);
-	if(js_CreateFileAreaObject(cx,parent,cfg,user,client,html_index_file)==NULL) 
+	if(js_CreateFileAreaObject(cx,parent,cfg,user,client,web_file_vpath_prefix)==NULL) 
 		return(JS_FALSE);
 	if(js_CreateMsgAreaObject(cx,parent,cfg,user,client,subscan)==NULL) 
 		return(JS_FALSE);

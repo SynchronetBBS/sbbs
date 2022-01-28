@@ -1640,7 +1640,7 @@ BOOL http_checkuser(http_session_t * session)
 		JS_BEGINREQUEST(session->js_cx);
 		if(session->user.number>0) {
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
-				,NULL /* ftp index file */, session->subscan /* subscan */)) {
+				,startup->file_vpath_prefix, session->subscan /* subscan */)) {
 				JS_ENDREQUEST(session->js_cx);
 				lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
 				send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
@@ -1649,7 +1649,7 @@ BOOL http_checkuser(http_session_t * session)
 		}
 		else {
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, /* user: */NULL, &session->client
-				,NULL /* ftp index file */, session->subscan /* subscan */)) {
+				,startup->file_vpath_prefix, session->subscan /* subscan */)) {
 				JS_ENDREQUEST(session->js_cx);
 				lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript User Objects",session->socket);
 				send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
@@ -3143,7 +3143,7 @@ static BOOL get_fullpath(http_session_t * session)
 		}
 	}
 
-	if(scfg.web_file_prefix[0] && strncmp(session->req.physical_path, scfg.web_file_prefix, strlen(scfg.web_file_prefix)) == 0) {
+	if(startup->file_vpath_prefix[0] && strncmp(session->req.physical_path, startup->file_vpath_prefix, strlen(startup->file_vpath_prefix)) == 0) {
 		session->filebase_access = TRUE;
 		return TRUE;
 	}
@@ -3530,7 +3530,7 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 
 static bool resolve_filebase_path(http_session_t* session, char* path)
 {
-	uint dir = getdir_from_vpath(&scfg, path + strlen(scfg.web_file_prefix), &session->user, &session->client, false);
+	uint dir = getdir_from_vpath(&scfg, path + strlen(startup->file_vpath_prefix), &session->user, &session->client, false);
 	if(dir >= scfg.total_dirs)
 		return false;
 	char filename[MAX_PATH + 1];
@@ -5515,7 +5515,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	/* user-specific objects */
 	if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
-		,NULL /* ftp index file */, session->subscan /* subscan */)) {
+		,startup->file_vpath_prefix, session->subscan /* subscan */)) {
 		lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
 		send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
 		return(FALSE);
