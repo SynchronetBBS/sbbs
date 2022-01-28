@@ -976,8 +976,13 @@ void dir_cfg(uint libnum)
 		"it internally. This code should be descriptive of the directory's\n"
 		"contents, usually an abbreviation of the directory's name.\n"
 		"\n"
-		"`Note:` The internal code is constructed from the file library's code prefix\n"
-		"(if present) and the directory's code suffix.\n"
+		"`Note:` The Internal Code (displayed) is the complete internal code\n"
+		"constructed from the file library's `Code Prefix` (if present) and the\n"
+		"directory's `Code Suffix`.\n"
+		"\n"
+		"Changing a directory's internal code (suffix or prefix) changes the\n"
+		"underlying database filenames used for that file area, so change these\n"
+		"values with caution."
 		;
 	char* dir_transfer_path_help =
 		"`Transfer File Path:`\n"
