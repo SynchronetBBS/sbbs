@@ -691,9 +691,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					bp=buf;
 
 				len=0;
-				if(wrslot==INVALID_HANDLE_VALUE)
-					lprintf(LOG_WARNING,"VDD Open failed (not loaded yet?)");
-				else if(!WriteFile(wrslot,bp,wr,&len,NULL)) {
+				if(wrslot==INVALID_HANDLE_VALUE) {
+					if(WaitForSingleObject(process_info.hProcess, 0) != WAIT_OBJECT_0)  // Process still running?
+						lprintf(LOG_WARNING,"VDD Open failed (not loaded yet?)");
+				} else if(!WriteFile(wrslot,bp,wr,&len,NULL)) {
 					if(WaitForSingleObject(process_info.hProcess, 0) != WAIT_OBJECT_0) { // Process still running?
 						lprintf(LOG_ERR,"!VDD WriteFile(0x%x, %u) FAILURE (Error=%u)", wrslot, wr, GetLastError());
 						if(GetMailslotInfo(wrslot,&wr,NULL,NULL,NULL))
