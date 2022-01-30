@@ -1383,11 +1383,11 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 				}
 				else  {
 					if((session->req.range_start || session->req.range_end) && stat_code == 206) {
-						safe_snprintf(header,sizeof(header),"%s: %ld",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
+						safe_snprintf(header,sizeof(header),"%s: %"PRIdOFF, get_header(HEAD_LENGTH), session->req.range_end-session->req.range_start+1);
 						safecat(headers,header,MAX_HEADERS_SIZE);
 					}
 					else {
-						safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
+						safe_snprintf(header,sizeof(header),"%s: %"PRIdOFF, get_header(HEAD_LENGTH), stats.st_size);
 						safecat(headers,header,MAX_HEADERS_SIZE);
 					}
 				}
@@ -1407,7 +1407,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			if(session->req.range_start || session->req.range_end) {
 				switch(stat_code) {
 					case 206:	/* Partial reply */
-						safe_snprintf(header,sizeof(header),"%s: bytes %ld-%ld/%ld",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,(long)stats.st_size);
+						safe_snprintf(header,sizeof(header),"%s: bytes %"PRIdOFF"-%"PRIdOFF"/%"PRIdOFF,get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
 						safecat(headers,header,MAX_HEADERS_SIZE);
 						break;
 					default:
@@ -6078,7 +6078,7 @@ static void respond(http_session_t * session)
 	if(session->req.send_content)  {
 		off_t snt=0;
 		time_t start = time(NULL);
-		lprintf(LOG_INFO,"%04d Sending file: %s (%"PRIuOFF" bytes)"
+		lprintf(LOG_INFO,"%04d Sending file: %s (%"PRIdOFF" bytes)"
 			,session->socket, session->req.physical_path, flength(session->req.physical_path));
 		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
 		if(session->req.ld!=NULL) {
@@ -6090,7 +6090,7 @@ static void respond(http_session_t * session)
 			time_t e = time(NULL) - start;
 			if(e < 1)
 				e = 1;
-			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIuOFF" bytes, %ld cps)"
+			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
 				,session->socket, session->req.physical_path, snt, (long)(snt / e));
 			if(session->filebase_access)
 				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
@@ -6865,7 +6865,7 @@ void http_logging_thread(void* arg)
 		}
 		if(logfile!=NULL) {
 			if(ld->status) {
-				sprintf(sizestr,"%"PRIuOFF,ld->size);
+				sprintf(sizestr,"%"PRIdOFF,ld->size);
 				strftime(timestr,sizeof(timestr),"%d/%b/%Y:%H:%M:%S %z",&ld->completed);
 				/*
 				 * In case of a termination, do no block for a lock... just discard
