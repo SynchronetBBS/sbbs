@@ -56,6 +56,8 @@ char	mdm_cid[INI_MAX_VALUE_LEN]		= "AT+VCID=1";
 char	mdm_cleanup[INI_MAX_VALUE_LEN]	= "ATS0=0";
 char	mdm_answer[INI_MAX_VALUE_LEN]	= "ATA";
 char	mdm_ring[INI_MAX_VALUE_LEN]		= "RING";
+int		mdm_ringcount = 1;
+int		mdm_ringinterval = 6000;
 BOOL	mdm_null=FALSE;
 BOOL	mdm_manswer=FALSE;		/* Manual Answer */
 
@@ -767,6 +769,9 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 	char		str[128];
 	char*		p;
 	time_t		start=time(NULL);
+	msclock_t	now;
+	msclock_t	lastring=0;
+	int			ring_count=0;
 
 	ZERO_VAR(cid_name);
 	ZERO_VAR(cid_number);
@@ -833,9 +838,15 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 					ZERO_VAR(cid_number);
 				}
 				else if(mdm_ring[0] && strcmp(p,mdm_ring)==0 && mdm_manswer && mdm_answer[0]) {
-					if(!modem_send(com_handle, mdm_answer)) {
-						lprintf(LOG_ERR,"ERROR %u sending modem command (%s) on %s"
-							,COM_ERROR_VALUE, mdm_answer, com_dev);
+					now = msclock();
+					if(now < lastring || now - lastring > mdm_ringinterval)
+						ring_count = 0;
+					lastring = now;
+					if(++ring_count >= mdm_ringcount) {
+						if(!modem_send(com_handle, mdm_answer)) {
+							lprintf(LOG_ERR,"ERROR %u sending modem command (%s) on %s"
+								,COM_ERROR_VALUE, mdm_answer, com_dev);
+						}
 					}
 				}
 			}
@@ -1421,6 +1432,8 @@ void parse_ini_file(const char* ini_fname)
 	mdm_timeout     = iniGetInteger(ini, section, "Timeout", mdm_timeout);
 	mdm_reinit		= iniGetInteger(ini, section, "ReInit", mdm_reinit);
 	mdm_cmdretry	= iniGetInteger(ini, section, "CmdRetry", mdm_cmdretry);
+	mdm_ringcount	= iniGetInteger(ini, section, "RingCount", mdm_ringcount);
+	mdm_ringinterval= iniGetInteger(ini, section, "RingInterval", mdm_ringinterval);
 	mdm_manswer		= iniGetBool(ini,section,"ManualAnswer", mdm_manswer);
 
 	/* [TCP] Section */
