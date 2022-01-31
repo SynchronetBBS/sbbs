@@ -4485,7 +4485,7 @@ static void ctrl_thread(void* arg)
 				sprintf(str,"%s.rep",scfg.sys_id);
 				if(!(startup->options&FTP_OPT_ALLOW_QWK)
 					|| stricmp(p,str)) {
-					lprintf(LOG_WARNING,"%04d <%s> !attempted to upload to invalid directory: '%s'"
+					lprintf(LOG_WARNING,"%04d <%s> !attempted to upload invalid path/filename: '%s'"
 						,sock, user.alias, p);
 					sockprintf(sock,sess,"553 Invalid directory.");
 					continue;
