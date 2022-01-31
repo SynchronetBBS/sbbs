@@ -3064,7 +3064,7 @@ static void ctrl_thread(void* arg)
 			else {
 				if(!direxist(p)) {
 					sockprintf(sock,sess,"550 Directory does not exist.");
-					lprintf(LOG_WARNING,"%04d <%s> !attempted to mount invalid directory: %s"
+					lprintf(LOG_WARNING,"%04d <%s> !attempted to mount invalid directory: '%s'"
 						,sock, user.alias, p);
 					continue;
 				}
@@ -3277,7 +3277,7 @@ static void ctrl_thread(void* arg)
 
 				if(!direxist(path)) {
 					sockprintf(sock,sess,"550 Directory does not exist (%s).",path);
-					lprintf(LOG_WARNING,"%04d <%s> !attempted to change to an invalid directory: %s"
+					lprintf(LOG_WARNING,"%04d <%s> !attempted to change to an invalid directory: '%s'"
 						,sock, user.alias, path);
 				} else {
 					SAFECOPY(local_dir,path);
@@ -4485,8 +4485,8 @@ static void ctrl_thread(void* arg)
 				sprintf(str,"%s.rep",scfg.sys_id);
 				if(!(startup->options&FTP_OPT_ALLOW_QWK)
 					|| stricmp(p,str)) {
-					lprintf(LOG_WARNING,"%04d <%s> !attempted to upload to invalid directory"
-						,sock,user.alias);
+					lprintf(LOG_WARNING,"%04d <%s> !attempted to upload to invalid directory: '%s'"
+						,sock, user.alias, p);
 					sockprintf(sock,sess,"553 Invalid directory.");
 					continue;
 				}
@@ -4537,7 +4537,7 @@ static void ctrl_thread(void* arg)
 					|| (startup->options&FTP_OPT_INDEX_FILE 
 						&& !stricmp(p,startup->index_file_name))
 					) {
-					lprintf(LOG_WARNING,"%04d <%s> attempted to overwrite existing file: %s"
+					lprintf(LOG_WARNING,"%04d <%s> attempted to overwrite existing file: '%s'"
 						,sock,user.alias,fname);
 					sockprintf(sock,sess,"553 File already exists.");
 					continue;
@@ -4614,7 +4614,7 @@ static void ctrl_thread(void* arg)
 				p+=strlen(LOCAL_FSYS_DIR);
 				if(!direxist(p)) {
 					sockprintf(sock,sess,"550 Directory does not exist.");
-					lprintf(LOG_WARNING,"%04d <%s> attempted to mount invalid directory: %s"
+					lprintf(LOG_WARNING,"%04d <%s> attempted to mount invalid directory: '%s'"
 						,sock, user.alias, p);
 					continue;
 				}
