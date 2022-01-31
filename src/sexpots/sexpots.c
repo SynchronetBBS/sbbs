@@ -139,7 +139,7 @@ int usage(const char* fname)
 		"\n-enable               enable NT service (auto-start during boot)"
 		"\n-disable              disable NT service"
 #else
-		"\n-syslog               log to syslog rather than stdout/err"
+		"\n-syslog[=ident]       log to syslog rather than stdout/err"
 #endif
 		"\n"
 		,getfname(fname)
@@ -1509,7 +1509,7 @@ service_loop(int argc, char** argv)
 		}
 		else if(stricmp(arg,"help")==0 || *arg=='?')
 			exit(usage(argv[0]));
-		else if(stricmp(arg,"syslog") != 0) {
+		else if(stricmp(arg,"syslog") != 0 && strnicmp(arg,"syslog=",7) != 0) {
 			fprintf(stderr,"Invalid option: %s\n", arg);
 			exit(usage(argv[0]));
 		}
@@ -1688,6 +1688,10 @@ int main(int argc, char** argv)
 #else
 		else if(stricmp(arg,"syslog")==0)
 			daemonize=TRUE;
+		else if(strnicmp(arg,"syslog=", 7)==0) {
+			daemonize=TRUE;
+			openlog(arg+7, LOG_CONS, LOG_USER);
+		}
 #endif
 	}
 
