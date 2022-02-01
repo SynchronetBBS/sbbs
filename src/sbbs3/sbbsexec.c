@@ -192,8 +192,17 @@ void set_interrupt_pending(BYTE intr, BOOL assert)
 
 void _cdecl interrupt_thread(void *arg)
 {
+	HANDLE handles[] = {interrupt_event, hungup_event};
 	while(1) {
-		if(WaitForSingleObject(interrupt_event,INFINITE)!=WAIT_OBJECT_0)
+		DWORD handle_count = (uart_msr_reg & UART_MSR_DCD) ? 2 : 1;
+		DWORD result = WaitForMultipleObjects(handle_count, handles, /* waitAll */FALSE, INFINITE);
+		if(result == WAIT_OBJECT_0 + 1) {
+			lprintf(LOG_DEBUG, "Hangup detected in " __FUNCTION__);
+			uart_msr_reg &=~ UART_MSR_DCD;
+			assert_interrupt(UART_IER_MODEM_STATUS);
+			continue;
+		}
+		if(result != WAIT_OBJECT_0)
 			break;
 		if((uart_ier_reg&pending_interrupts) != 0) {
 			lprintf(LOG_DEBUG,"VDDSimulateInterrupt (pending: %02X) - IER: %02X"
