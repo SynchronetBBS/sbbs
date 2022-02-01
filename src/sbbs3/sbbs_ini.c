@@ -63,7 +63,8 @@ static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
 static const char*	strJavaScriptOptions		="JavaScriptOptions";
 static const char*	strSemFileCheckFrequency	="SemFileCheckFrequency";
 static const char*	strIniFileName				="iniFileName";
-static const char*  strFileVpathPrefix			="FileVPathPrefix";
+static const char*  strFileVPathPrefix			="FileVPathPrefix";
+static const char*  strFileVPathForVHosts		="FileVPathForVHosts";
 
 #define DEFAULT_LOG_LEVEL				LOG_DEBUG
 #define DEFAULT_BIND_RETRY_COUNT		2
@@ -457,7 +458,7 @@ void sbbs_read_ini(
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
 		bbs->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
 
-		SAFECOPY(bbs->web_file_vpath_prefix, iniGetString(list, "web", strFileVpathPrefix, nulstr, value));
+		SAFECOPY(bbs->web_file_vpath_prefix, iniGetString(list, "web", strFileVPathPrefix, nulstr, value));
 	}
 
 	/***********************************************************************/
@@ -715,7 +716,8 @@ void sbbs_read_ini(
 		SAFECOPY(web->logfile_base
 			,iniGetString(list,section,"HttpLogFile",nulstr,value));
 		SAFECOPY(web->file_vpath_prefix
-			,iniGetString(list, section, strFileVpathPrefix, nulstr, value));
+			,iniGetString(list, section, strFileVPathPrefix, nulstr, value));
+		web->file_vpath_for_vhosts = iniGetBool(list, section, strFileVPathForVHosts, FALSE);
 
 		SAFECOPY(web->default_cgi_content
 			,iniGetString(list,section,"DefaultCGIContent",WEB_DEFAULT_CGI_CONTENT,value));
@@ -1268,7 +1270,9 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetString(lp,section,"HttpLogFile",web->logfile_base,&style))
 			break;
-		if(!iniSetString(lp,section,strFileVpathPrefix, web->file_vpath_prefix, &style))
+		if(!iniSetString(lp,section,strFileVPathPrefix, web->file_vpath_prefix, &style))
+			break;
+		if(!iniSetBool(lp,section,strFileVPathForVHosts, web->file_vpath_for_vhosts, &style))
 			break;
 
 		if(!iniSetString(lp,section,"DefaultCGIContent",web->default_cgi_content,&style))
