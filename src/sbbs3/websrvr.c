@@ -3129,6 +3129,7 @@ static BOOL get_request_headers(http_session_t * session)
 static BOOL get_fullpath(http_session_t * session)
 {
 	char	str[MAX_PATH+1];
+	bool	vhost = false;
 
 	if(alias_list != NULL) {
 		for(size_t i = 0; alias_list[i] != NULL; i++) {
@@ -3143,18 +3144,21 @@ static BOOL get_fullpath(http_session_t * session)
 		}
 	}
 
-	if(startup->file_vpath_prefix[0] && strncmp(session->req.physical_path, startup->file_vpath_prefix, strlen(startup->file_vpath_prefix)) == 0) {
-		session->filebase_access = TRUE;
-		return TRUE;
-	}
 	if(session->req.vhost[0] && startup->options&WEB_OPT_VIRTUAL_HOSTS) {
 		safe_snprintf(str,sizeof(str),"%s/%s",root_dir,session->req.vhost);
-		if(isdir(str))
+		if(isdir(str)) {
+			vhost = true;
 			safe_snprintf(str,sizeof(str),"%s/%s%s",root_dir,session->req.vhost,session->req.physical_path);
-		else
+		} else
 			safe_snprintf(str,sizeof(str),"%s%s",root_dir,session->req.physical_path);
 	} else
 		safe_snprintf(str,sizeof(str),"%s%s",root_dir,session->req.physical_path);
+
+	if(startup->file_vpath_prefix[0] && (vhost == false || startup->file_vpath_for_vhosts == true)
+		&& strncmp(session->req.physical_path, startup->file_vpath_prefix, strlen(startup->file_vpath_prefix)) == 0) {
+		session->filebase_access = TRUE;
+		return TRUE;
+	}
 
 	if(FULLPATH(session->req.physical_path,str,sizeof(session->req.physical_path))==NULL)
 		return(FALSE);

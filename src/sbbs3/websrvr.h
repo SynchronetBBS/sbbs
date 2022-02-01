@@ -69,6 +69,7 @@ typedef struct {
 	char	logfile_base[INI_MAX_VALUE_LEN];		/* Logfile base name (date is appended) */
 	char	ini_fname[INI_MAX_VALUE_LEN];
 	char	file_vpath_prefix[INI_MAX_VALUE_LEN];
+	BOOL	file_vpath_for_vhosts;
 
 	/* Misc */
     char	host_name[128];
