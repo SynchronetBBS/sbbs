@@ -71,7 +71,8 @@ bool sbbs_t::uploadfile(file_t* f)
 				fprintf(stream, "%s", f->desc);
 				fclose(stream); 
 			}
-			int result = external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE);
+			// Note: str (%s) is path/to/sbbsfile.des (used to be the description itself)
+			int result = external(cmdstr(cfg.ftest[i]->cmd, path, str, NULL), EX_OFFLINE);
 			clearline();
 			if(result != 0) {
 				safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (%s error code %d)"
@@ -82,30 +83,24 @@ bool sbbs_t::uploadfile(file_t* f)
 				bprintf(text[FileHadErrors],f->name,cfg.ftest[i]->ext);
 				if(!SYSOP || yesno(text[DeleteFileQ]))
 					remove(path);
-				return(0); 
-			} else {
-#if 0 // NFB-TODO - uploader tester changes filename or description
-				sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
-				if((stream=fopen(str,"r"))!=NULL) {
-					if(fgets(str,128,stream)) {
-						truncsp(str);
-						padfname(str,f->name);
-						strcpy(tmp,f->name);
-						truncsp(tmp);
-						sprintf(path,"%s%s", cfg.dir[f->dir]->path
-							,unpadfname(f->name,fname)); 
-					}
-					fclose(stream);
-					}
-				sprintf(str,"%ssbbsfile.des",cfg.node_dir);
-				if((stream=fopen(str,"r"))!=NULL) {
-					if(fgets(str,128,stream)) {
-						truncsp(str);
-						sprintf(f->desc,"%.*s",LEN_FDESC,str); 
-					}
-					fclose(stream); 
+				return false;
+			}
+			SAFEPRINTF(str,"%ssbbsfile.nam",cfg.node_dir);
+			if((stream=fopen(str,"r"))!=NULL) {
+				if(fgets(str, sizeof(str), stream)) {
+					truncsp(str);
+					smb_new_hfield_str(f, SMB_FILENAME, str);
+					getfilepath(&cfg, f, path);
 				}
-#endif
+				fclose(stream);
+			}
+			SAFEPRINTF(str,"%ssbbsfile.des",cfg.node_dir);
+			if((stream=fopen(str,"r"))!=NULL) {
+				if(fgets(str, sizeof(str), stream)) {
+					truncsp(str);
+					smb_new_hfield_str(f, SMB_FILEDESC, str);
+				}
+				fclose(stream); 
 			}
 		}
 
