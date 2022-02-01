@@ -361,7 +361,7 @@ BOOL sbbs_t::start_batch_download()
 				continue;
 			bputs(cfg.dlevent[j]->workstr);
 			external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL),EX_OUTL);
-			CRLF; 
+			clearline(); 
 		}
 	}
 #endif
