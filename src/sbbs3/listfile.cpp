@@ -1026,7 +1026,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 								bputs(cfg.dlevent[j]->workstr);
 								external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL)
 									,EX_OUTL);
-								CRLF; 
+								clearline(); 
 							}
 						}
 					}

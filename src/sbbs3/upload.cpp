@@ -71,15 +71,14 @@ bool sbbs_t::uploadfile(file_t* f)
 				fprintf(stream, "%s", f->desc);
 				fclose(stream); 
 			}
-			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE)) {
-				safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (%s Errors)"
+			int result = external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE);
+			clearline();
+			if(result != 0) {
+				safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (%s error code %d)"
 					,f->name
-					,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname,cfg.ftest[i]->ext);
+					,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname,cfg.ftest[i]->ext
+					,result);
 				logline(LOG_NOTICE,"U!",str);
-#if 0
-				sprintf(str,"Failed test: %s", cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL));
-				logline("  ",str);
-#endif
 				bprintf(text[FileHadErrors],f->name,cfg.ftest[i]->ext);
 				if(!SYSOP || yesno(text[DeleteFileQ]))
 					remove(path);
@@ -106,7 +105,6 @@ bool sbbs_t::uploadfile(file_t* f)
 					}
 					fclose(stream); 
 				}
-				CRLF;
 #endif
 			}
 		}
