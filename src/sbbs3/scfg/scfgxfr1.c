@@ -19,6 +19,35 @@
 
 #include "scfg.h"
 
+char* testable_files_help =
+	"`Testable File Types:`\n"
+	"\n"
+	"These file types each have a command line that will be executed to test\n"
+	"the integrity of a file upon upload. These file types are specified by\n"
+	"file `extension` (suffix) and if one file extension is listed more than\n"
+	"once, each command line will be executed. A file extension of '`*`'\n"
+	"matches `all` files.\n"
+	"\n"
+	"The configured command lines must return an error code of 0 (no error)\n"
+	"to indicate that the file has passed each test. This method of file\n"
+	"testing upon upload is also known as an upload processing event.\n"
+	"\n"
+	"In the command line, `%f` represents the path to the file to be tested\n"
+	"while `%s` represents the path to the `sbbsfile.des` file that contains the\n"
+	"file's description (which may be modified by the testing command line).\n"
+	"\n"
+	"This test can do more than just test the file; it can perform any\n"
+	"function that the sysop wishes, such as adding comments to an archived\n"
+	"file, or extracting an archive and performing a virus scan. It's even\n"
+	"possible for a file tester to rename a file or change its description\n"
+	"by modifying the contents of the `sbbsfile.nam` or `sbbsfile.des` files in\n"
+	"the node directory.\n"
+	"\n"
+	"While the command line is executing, an optional text string may be\n"
+	"displayed to the user. This `working string` can be set uniquely\n"
+	"for each testable file type.\n"
+;
+
 void xfer_opts()
 {
 	char	str[128],done;
@@ -431,22 +460,7 @@ void xfer_opts()
 						i|=WIN_DEL|WIN_COPY|WIN_CUT;
 					if(savftest.cmd[0])
 						i|=WIN_PASTE;
-					uifc.helpbuf=
-						"`Testable File Types:`\n"
-						"\n"
-						"This is a list of file types that will have a command line executed to\n"
-						"test the file integrity upon their upload. The file types are specified\n"
-						"by `extension` and if one file extension is listed more than once, each\n"
-						"command line will be executed. The command lines must return a error\n"
-						"code of 0 (no error) in order for the file to pass the test. This method\n"
-						"of file testing upon upload is also known as an upload event. This test\n"
-						"or event, can do more than just test the file, it can perform any\n"
-						"function that the sysop wishes. Such as adding comments to an archived\n"
-						"file, or extracting an archive and performing a virus scan. While the\n"
-						"external program is executing, a text string is displayed to the user.\n"
-						"This `working string` can be set for each file type and command line\n"
-						"listed.\n"
-					;
+					uifc.helpbuf = testable_files_help;
 					i=uifc.list(i,0,0,50,&ftest_dflt,&ftest_bar,"Testable File Types",opt);
 					if(i==-1)
 						break;
@@ -525,6 +539,7 @@ void xfer_opts()
 						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 							,cfg.ftest[i]->arstr);
 						opt[j][0]=0;
+						uifc.helpbuf = testable_files_help;
 						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&ftest_opt,0
 							,"Testable File Type",opt)) {
 							case -1:
