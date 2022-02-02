@@ -572,7 +572,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 		uint32_t cost = 0;
 		if(!JS_ValueToECMAUint32(cx, val, &cost)) {
 			free(cp);
-			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
+			JS_ReportError(cx, "Error converting '%s' property to Uint32", prop_name);
 			return SMB_FAILURE;
 		}
 		if((file->cost != 0 || cost != 0) && (result = smb_new_hfield(file, SMB_COST, sizeof(cost), &cost)) != SMB_SUCCESS) {
@@ -580,6 +580,36 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
 		}
+	}
+	prop_name = "added";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		uint32_t t = 0;
+		if(!JS_ValueToECMAUint32(cx, val, &t)) {
+			free(cp);
+			JS_ReportError(cx, "Error converting '%s' property to Uint32", prop_name);
+			return SMB_FAILURE;
+		}
+		file->hdr.when_imported.time = t;
+	}
+	prop_name = "last_downloaded";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		uint32_t t = 0;
+		if(!JS_ValueToECMAUint32(cx, val, &t)) {
+			free(cp);
+			JS_ReportError(cx, "Error converting '%s' property to Uint32", prop_name);
+			return SMB_FAILURE;
+		}
+		file->hdr.last_downloaded = t;
+	}
+	prop_name = "times_downloaded";
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		uint32_t t = 0;
+		if(!JS_ValueToECMAUint32(cx, val, &t)) {
+			free(cp);
+			JS_ReportError(cx, "Error converting '%s' property to Uint32", prop_name);
+			return SMB_FAILURE;
+		}
+		file->hdr.times_downloaded = t;
 	}
 
 	if(JS_GetProperty(cx, obj, "anon", &val) && val == JSVAL_TRUE)
