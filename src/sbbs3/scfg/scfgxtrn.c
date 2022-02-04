@@ -556,7 +556,7 @@ void tevents_cfg()
 						SAFECOPY(cfg.event[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;
@@ -1093,7 +1093,7 @@ void xtrn_cfg(uint section)
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue; 
 			}
@@ -1234,7 +1234,7 @@ void xtrn_cfg(uint section)
 						SAFECOPY(cfg.xtrn[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;
@@ -1699,7 +1699,7 @@ void xedit_cfg()
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue; 
 			}
@@ -1831,7 +1831,7 @@ void xedit_cfg()
 						SAFECOPY(cfg.xedit[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;
@@ -2309,7 +2309,7 @@ void xtrnsec_cfg()
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue; 
 			}
@@ -2414,7 +2414,7 @@ void xtrnsec_cfg()
 						SAFECOPY(cfg.xtrnsec[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;

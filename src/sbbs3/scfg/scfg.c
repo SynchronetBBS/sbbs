@@ -876,7 +876,7 @@ void txt_cfg()
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue; 
 			}
@@ -964,7 +964,7 @@ void txt_cfg()
 						SAFECOPY(cfg.txtsec[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break; 
@@ -1050,7 +1050,7 @@ void shell_cfg()
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue; 
 			}
@@ -1156,7 +1156,7 @@ void shell_cfg()
 						SAFECOPY(cfg.shell[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;
