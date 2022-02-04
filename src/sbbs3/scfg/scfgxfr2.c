@@ -1077,9 +1077,14 @@ void dir_cfg(uint libnum)
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory Internal Code Suffix",code,LEN_CODE
 				,K_EDIT|K_UPPER)<1)
 				continue;
+			SAFEPRINTF2(tmp, "%s%s", cfg.lib[libnum]->code_prefix, code);
+			if(getdirnum(&cfg, tmp) >= 0) {
+				uifc.msg(strDuplicateCode);
+				continue;
+			}
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue;
 			}
@@ -1238,11 +1243,16 @@ void dir_cfg(uint libnum)
 					SAFECOPY(str,cfg.dir[i]->code_suffix);
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Internal Code Suffix (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
-					if(code_ok(str))
+					if(strcmp(str,cfg.dir[i]->code_suffix) == 0)
+						break;
+					SAFEPRINTF2(tmp, "%s%s", cfg.lib[cfg.dir[i]->lib]->code_prefix, str);
+					if(getdirnum(&cfg, tmp) >= 0)
+						uifc.msg(strDuplicateCode);
+					else if(code_ok(str))
 						SAFECOPY(cfg.dir[i]->code_suffix,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;

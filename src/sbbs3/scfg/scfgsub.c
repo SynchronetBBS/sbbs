@@ -253,9 +253,14 @@ void sub_cfg(uint grpnum)
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code Suffix",code,LEN_CODE
 				,K_EDIT|K_UPPER)<1)
 				continue;
+			SAFEPRINTF2(tmp, "%s%s", cfg.grp[grpnum]->code_prefix, code);
+			if(getsubnum(&cfg, tmp) >= 0) {
+				uifc.msg(strDuplicateCode);
+				continue;
+			}
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue; 
 			}
@@ -406,11 +411,16 @@ void sub_cfg(uint grpnum)
 					SAFECOPY(str,cfg.sub[i]->code_suffix);
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Suffix (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
-					if(code_ok(str))
+					if(strcmp(str,cfg.sub[i]->code_suffix) == 0)
+						break;
+					SAFEPRINTF2(tmp, "%s%s", cfg.grp[cfg.sub[i]->grp]->code_prefix, str);
+					if(getsubnum(&cfg, tmp) >= 0)
+						uifc.msg(strDuplicateCode);
+					else if(code_ok(str))
 						SAFECOPY(cfg.sub[i]->code_suffix,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;
