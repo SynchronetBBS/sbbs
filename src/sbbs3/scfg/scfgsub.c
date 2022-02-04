@@ -507,13 +507,16 @@ void sub_cfg(uint grpnum)
 					uifc.helpbuf=
 						"`Maximum Number of CRCs:`\n"
 						"\n"
-						"This value is the maximum number of CRCs that will be kept in the\n"
-						"sub-board for duplicate message checking. Once this maximum number of\n"
-						"CRCs is reached, the oldest CRCs will be automatically purged.\n"
+						"This value is the maximum number of 32-bit CRCs that will be retained in\n"
+						"the message base for purposes of duplicate message `body text` checking.\n"
+						"Once this maximum number of CRCs is reached, the oldest CRCs are\n"
+						"automatically purged.\n"
 						"\n"
 						"A value of `0` means no CRCs (or other hashes) of message body text\n"
-						"or meta-data will be saved (i.e. for purposes of duplicate message\n"
-						"detection and rejection)."
+						"will be saved (i.e. for purposes of duplicate message detection and\n"
+						"rejection).\n"
+						"\n"
+						"Note: Hashing and duplicate-checking of `Message-IDs` cannot be disabled."
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of CRCs"
 						,str,9,K_EDIT|K_NUMBER);
