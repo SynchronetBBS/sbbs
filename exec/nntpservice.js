@@ -890,6 +890,7 @@ while(client.socket.is_connected && !quit) {
 
 			body=decode_news_body(hdr, body);
 
+			log(LOG_DEBUG, "hdr.newsgroups: " + hdr.newsgroups);
 			var newsgroups=hdr.newsgroups.split(',');
 
 			if(hdr.to==undefined && hdr.reply_id!=undefined)
@@ -916,6 +917,7 @@ while(client.socket.is_connected && !quit) {
 				break;
 			}
 
+			log(LOG_DEBUG, "newsgroups: " + newsgroups);
             for(n in newsgroups)
     			for(g in msg_area.grp_list)
 				    for(s in msg_area.grp_list[g].sub_list)
