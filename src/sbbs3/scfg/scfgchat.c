@@ -248,7 +248,7 @@ void chan_cfg()
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue; 
 			}
@@ -349,7 +349,7 @@ void chan_cfg()
 						SAFECOPY(cfg.chan[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;
@@ -640,7 +640,7 @@ void guru_cfg()
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code");
+				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
 				continue; 
 			}
@@ -730,7 +730,7 @@ void guru_cfg()
 						SAFECOPY(cfg.guru[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
-						uifc.msg("Invalid Code");
+						uifc.msg(strInvalidCode);
 						uifc.helpbuf=0; 
 					}
 					break;

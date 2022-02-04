@@ -68,6 +68,9 @@
 								"For a complete list of the supported command-line specifiers, see:\n"				\
 								"`http://wiki.synchro.net/config:cmdline`\n"
 
+#define strInvalidCode		"Invalid Internal Code Rejected!"
+#define strDuplicateCode	"Duplicate Internal Code Rejected!"
+
 /*************/
 /* Constants */
 /*************/
