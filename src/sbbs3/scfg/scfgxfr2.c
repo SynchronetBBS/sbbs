@@ -74,6 +74,16 @@ static bool new_dir(unsigned new_dirnum, unsigned libnum)
 	return true;
 }
 
+static bool code_prefix_exists(const char* prefix)
+{
+	size_t i;
+
+	for(i=0; i < cfg.total_libs; i++)
+		if(cfg.lib[i]->code_prefix[0] && stricmp(cfg.lib[i]->code_prefix, prefix) == 0)
+			return true;
+	return false;
+}
+
 static bool new_lib(unsigned new_libnum)
 {
 	lib_t* new_library = malloc(sizeof(lib_t));
@@ -284,9 +294,13 @@ void xfer_cfg()
 			uifc.helpbuf=lib_code_prefix_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER) < 0)
 				continue;
+			if (code_prefix_exists(code_prefix)) {
+				uifc.msg(strDuplicateCodePrefix);
+				continue;
+			}
 			if (code_prefix[0] != 0 && !code_ok(code_prefix)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code Prefix");
+				uifc.msg(strInvalidCodePrefix);
 				continue;
 			}
 
@@ -429,11 +443,15 @@ void xfer_cfg()
 					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
 						,code_prefix,LEN_CODE,K_EDIT|K_UPPER) < 0)
 						continue;
-					if(code_prefix[0] == 0 || code_ok(code_prefix)) {
+					if(stricmp(code_prefix, cfg.lib[i]->code_prefix) == 0)
+						break;
+					if(code_prefix_exists(code_prefix))
+						uifc.msg(strDuplicateCodePrefix);
+					else if(code_prefix[0] == 0 || code_ok(code_prefix)) {
 						SAFECOPY(cfg.lib[i]->code_prefix, code_prefix);
 					} else {
 						uifc.helpbuf = invalid_code;
-						uifc.msg("Invalid Code Prefix");
+						uifc.msg(strInvalidCodePrefix);
 					}
 					break;
 				}

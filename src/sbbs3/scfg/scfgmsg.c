@@ -40,6 +40,16 @@ char *utos(char *str)
 	return(out);
 }
 
+static bool code_prefix_exists(const char* prefix)
+{
+	size_t i;
+
+	for(i=0; i < cfg.total_grps; i++)
+		if(cfg.grp[i]->code_prefix[0] && stricmp(cfg.grp[i]->code_prefix, prefix) == 0)
+			return true;
+	return false;
+}
+
 static bool new_grp(unsigned new_grpnum)
 {
 	grp_t* new_group = malloc(sizeof(grp_t));
@@ -546,9 +556,13 @@ void msgs_cfg()
 			uifc.helpbuf=grp_code_prefix_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER) < 0)
 				continue;
+			if (code_prefix_exists(code_prefix)) {
+				uifc.msg(strDuplicateCodePrefix);
+				continue;
+			}
 			if (code_prefix[0] != 0 && !code_ok(code_prefix)) {
 				uifc.helpbuf=invalid_code;
-				uifc.msg("Invalid Code Prefix");
+				uifc.msg(strInvalidCodePrefix);
 				continue;
 			}
 			if (!new_grp(grpnum))
@@ -682,11 +696,15 @@ void msgs_cfg()
 					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
 						,code_prefix,LEN_CODE,K_EDIT|K_UPPER) < 0)
 						continue;
-					if(code_prefix[0] == 0 || code_ok(code_prefix)) {
+					if(stricmp(code_prefix, cfg.grp[grpnum]->code_prefix) == 0)
+						break;
+					if(code_prefix_exists(code_prefix))
+						uifc.msg(strDuplicateCodePrefix);
+					else if(code_prefix[0] == 0 || code_ok(code_prefix)) {
 						SAFECOPY(cfg.grp[grpnum]->code_prefix, code_prefix);
 					} else {
 						uifc.helpbuf = invalid_code;
-						uifc.msg("Invalid Code Prefix");
+						uifc.msg(strInvalidCodePrefix);
 					}
 					break;
 				}
