@@ -506,6 +506,9 @@ void net_cfg()
 							"contain their alias as the `From User`, set this option to `Yes`. If you\n"
 							"want all NetMail to be sent using users' real names, set this option to\n"
 							"`No`.\n"
+							"\n"
+							"Users with the '`O`' restriction flag will always send netmail using\n"
+							"their alias (their real name is a duplicate of another user account)."
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Use Aliases in NetMail",uifcYesNoOpts);
@@ -752,6 +755,9 @@ void net_cfg()
 							"Internet E-mail contain their alias as the `From User`, set this option to\n"
 							"`Yes`. If you want all E-mail to be sent using users' real names, set this\n"
 							"option to `No`.\n"
+							"\n"
+							"Users with the '`O`' restriction flag will always send netmail using\n"
+							"their alias (their real name is a duplicate of another user account)."
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Use Aliases in Internet E-mail",uifcYesNoOpts);
