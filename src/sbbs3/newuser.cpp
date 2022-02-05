@@ -236,7 +236,7 @@ BOOL sbbs_t::newuser()
 		if(!useron.name[0])
 			SAFECOPY(useron.name,useron.alias);
 		else if(!(cfg.uq&UQ_DUPREAL) && userdatdupe(useron.number,U_NAME,LEN_NAME,useron.name) > 0)
-			useron.rest |= FLAG('O'); // Can't post using real name (it's a duplicate)
+			useron.rest |= FLAG('O'); // Can't post or send netmail using real name (it's a duplicate)
 		if(!online) return(FALSE);
 		if(!useron.handle[0])
 			SAFECOPY(useron.handle,useron.alias);
