@@ -154,7 +154,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 
 	truncsp(to);				/* Truncate off space */
 
-	SAFECOPY(from, cfg.netmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
+	SAFECOPY(from, (cfg.netmail_misc&NMAIL_ALIAS) || (useron.rest&FLAG('O')) ? useron.alias : useron.name);
 
 	/* Look-up in nodelist? */
 
@@ -620,7 +620,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		smb_hfield(&msg,RECIPIENTNETADDR,strlen(to),to);
 
 		bprintf(text[NetMailing],name,to
-			,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name
+			,(cfg.inetmail_misc&NMAIL_ALIAS) || (useron.rest&FLAG('O')) ? useron.alias : useron.name
 			,cfg.sys_inetaddr); 
 	}
 
@@ -770,7 +770,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		strcat(str,tmp); 
 	}
 	else
-		SAFECOPY(str,cfg.netmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
+		SAFECOPY(str,(cfg.netmail_misc&NMAIL_ALIAS) || (useron.rest&FLAG('O')) ? useron.alias : useron.name);
 	SAFECOPY(hdr.from,str);
 
 	SAFECOPY(hdr.to,to);
@@ -992,7 +992,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	/* Get this user's Internet mailing address */
 	usermailaddr(&cfg,your_addr
-		,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
+		,(cfg.inetmail_misc&NMAIL_ALIAS) || (useron.rest&FLAG('O')) ? useron.alias : useron.name);
 
 	if(rcpt_count > 1) { /* remove "self" from reply-all list */
 		int found = strListFind(rcpt_list, your_addr, /* case_sensitive */FALSE);
@@ -1141,7 +1141,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	if(rcpt_count > 1)
 		smb_hfield_str(&msg, RECIPIENTLIST, to_list);
 
-	smb_hfield_str(&msg,SENDER,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
+	smb_hfield_str(&msg,SENDER,(cfg.inetmail_misc&NMAIL_ALIAS) || (useron.rest&FLAG('O')) ? useron.alias : useron.name);
 
 	SAFEPRINTF(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
