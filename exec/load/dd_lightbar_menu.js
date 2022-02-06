@@ -285,6 +285,29 @@ The 'key down' behavior can be called explicitly, if needed, by calling the DoKe
 It takes 2 parameters: An object of selected item indexes (as passed to GetVal()) and, optionally,
 the pre-calculated number of items.
 lbMenu.DoKeyDown(pNumItems, pSelectedItemIndexes);
+
+
+For screen refreshing, DDLightbarMenu includes the function DrawPartial(), which can be used to
+redraw only a portion of the menu, specified by starting X & Y coordinates, width, and height.
+The starting X & Y coordinates are relative to the upper-left corner of the menu (not absolute
+screen coordinates) and start at (1, 1).  The function signature looks like this:
+ DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelectedItemIndexes)
+The parameters:
+ pStartX: The column of the character in the menu to start at
+ pStartY: The row of the character in the menu to start at
+ pWidth: The width of the content to draw
+ pHeight: The height of the content to draw
+ pSelectedItemIndexes: Optional - An object containing indexes of selected items
+
+Another function, DrawPartialAbs(), provies the same functionality but with absolute screen coordinates
+(also starting at (1, 1) in the upper-left corner):
+ DrawPartialAbs(pStartX, pStartY, pWidth, pHeight, pSelectedItemIndexes)
+The parameters:
+ pStartX: The column of the character in the menu to start at
+  pStartY: The row of the character in the menu to start at
+ pWidth: The width of the content to draw
+ pHeight: The height of the content to draw
+ pSelectedItemIndexes: Optional - An object containing indexes of selected items
 */
 
 if (typeof(require) === "function")
@@ -451,6 +474,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.DrawBorder = DDLightbarMenu_DrawBorder;
 	this.WriteItem = DDLightbarMenu_WriteItem;
 	this.WriteItemAtItsLocation = DDLightbarMenu_WriteItemAtItsLocation;
+	this.DrawPartial = DDLightbarMenu_DrawPartial;
+	this.DrawPartialAbs = DDLightbarMenu_DrawPartialAbs;
 	this.GetItemText = DDLightbarMenu_GetItemText;
 	this.Erase = DDLightbarMenu_Erase;
 	this.SetItemHotkey = DDLightbarMenu_SetItemHotkey;
@@ -730,6 +755,8 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 	// the rest of the height of the menu.
 	if (numItemsWritten < numPossibleItems)
 	{
+		var numberFormatStr = "%" + this.itemNumLen + "s ";
+		var itemFormatStr = "%-" + itemLen + "s";
 		for (; numItemsWritten < numPossibleItems; ++numItemsWritten)
 		{
 			writeTheItem = ((this.nextDrawOnlyItems.length == 0) || (this.nextDrawOnlyItems.indexOf(numItemsWritten) > -1));
@@ -738,8 +765,8 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 				console.gotoxy(curPos.x, curPos.y++);
 				console.print("\1n");
 				if (this.numberedMode)
-					printf("\1n%" + this.itemNumLen + "s ", "");
-				var itemText = addAttrsToString(format("%-" + itemLen + "s", ""), this.colors.itemColor);
+					printf(numberFormatStr, "");
+				var itemText = addAttrsToString(format(itemFormatStr, ""), this.colors.itemColor);
 				console.print(itemText);
 			}
 		}
@@ -875,6 +902,209 @@ function DDLightbarMenu_WriteItemAtItsLocation(pIdx, pHighlight, pSelected)
 		console.gotoxy(this.pos.x, this.pos.y+pIdx-this.topItemIdx);
 	this.WriteItem(pIdx, null, pHighlight, pSelected);
 }
+
+// Draws part of the menu, starting at a certain location within the menu and
+// with a given width & height (for screen refreshing).  The start X and Y location
+// are relative to the menu (not the screen), and they start at (1, 1) in the upper-left
+//
+// Parameters:
+//  pStartX: The column of the character in the menu to start at
+//  pStartY: The row of the character in the menu to start at
+//  pWidth: The width of the content to draw
+//  pHeight: The height of the content to draw
+//  pSelectedItemIndexes: Optional - An object containing indexes of selected items
+function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelectedItemIndexes)
+{
+	// Sanity check the parameters
+	if (typeof(pStartX) !== "number" || typeof(pStartY) !== "number" || typeof(pWidth) !== "number" || typeof(pHeight) !== "number")
+		return;
+	if (pStartX < 1 || pStartX > this.size.width)
+		return;
+	if (pStartY < 1 || pStartY > this.size.height)
+		return;
+
+	// Fix the width & height if needed
+	var width = pWidth;
+	if (width > (this.size.width - pStartX + 1))
+		width = (this.size.width - pStartX + 1);
+	var height = pHeight;
+	if (height > (this.size.height - pStartY + 1))
+		height = (this.size.height - pStartY + 1);
+
+	var selectedItemIndexes = { }; // For multi-select mode
+	if (typeof(pSelectedItemIndexes) == "object")
+		selectedItemIndexes = pSelectedItemIndexes;
+
+	// If borders are enabled, draw any border characters in the region first
+	// The X & Y locations are 1-based
+	var lastLineNum = (pStartY  + this.pos.y + height) - 1; // Last line # on the screen
+	if (lastLineNum > this.pos.y + this.size.height - 1)
+		lastLineNum = this.pos.y + this.size.height - 1;
+	if (this.borderEnabled)
+	{
+		var lastX = pStartX + width - 1;
+		for (var lineNum = pStartY + this.pos.y - 1; lineNum <= lastLineNum; ++lineNum)
+		{
+			// Top line
+			if (lineNum == this.pos.y)
+			{
+				console.print("\1n" + this.colors.borderColor);
+				for (var posX = pStartX; posX <= lastX; ++posX)
+				{
+					console.gotoxy(posX, lineNum);
+					if (posX == this.pos.x)
+						console.print(this.borderChars.upperLeft);
+					else if (posX == this.pos.x + this.size.width - 1)
+						console.print(this.borderChars.upperRight);
+					else
+						console.print(this.borderChars.top);
+				}
+			}
+			// Bottom line
+			else if (lineNum == this.pos.y + this.size.height - 1)
+			{
+				console.print("\1n" + this.colors.borderColor);
+				for (var posX = pStartX; posX <= lastX; ++posX)
+				{
+					console.gotoxy(posX, lineNum);
+					if (posX == this.pos.x)
+						console.print(this.borderChars.lowerLeft);
+					else if (posX == this.pos.x + this.size.width - 1)
+						console.print(this.borderChars.lowerRight);
+					else
+						console.print(this.borderChars.bottom);
+				}
+			}
+			// Somewhere between the top & bottom line
+			else
+			{
+				var printedBorderColor = false;
+				for (var posX = pStartX; posX <= lastX; ++posX)
+				{
+					console.gotoxy(posX, lineNum);
+					if (posX == this.pos.x)
+					{
+						if (!printedBorderColor)
+						{
+							console.print("\1n" + this.colors.borderColor);
+							printedBorderColor = true;
+						}
+						console.print(this.borderChars.left);
+					}
+					else if (posX == this.pos.x + this.size.width - 1)
+					{
+						if (!printedBorderColor)
+						{
+							console.print("\1n" + this.colors.borderColor);
+							printedBorderColor = true;
+						}
+						console.print(this.borderChars.right);
+					}
+				}
+			}
+		}
+	}
+	// Calculate the width and starting index of the menu items
+	// Note that pStartX is relative to the menu, not the screen
+	var itemLen = width;
+	var writeMenuItems = true; // Might not if the draw area only includes the scrollbar or border
+	var itemTxtStartIdx = pStartX - 1;
+	if (this.borderEnabled)
+	{
+		if (itemTxtStartIdx > 0)
+			--itemTxtStartIdx; // pStartX - 2
+		if (pStartX == 1)
+			--itemLen;
+		// Starts on 2 & width is 5: 2, 3, 4, 5, 6
+		var lastCol = this.pos.x + pStartX + width - 1;
+		if (this.pos.x + pStartX + width - 1 >= lastCol) // The last column drawn will contain the right border char
+			--itemLen;
+		if ((pStartX == 1 && width == 1) || pStartX == this.size.width)
+			writeMenuItems  = false;
+		else if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow() && pStartX == this.size.width-1)
+			writeMenuItems = false;
+	}
+	if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+	{
+		var scrollbarCol = this.borderEnabled ? this.pos.x + this.size.width - 2 : this.pos.x + this.size.width - 1;
+		if (this.pos.x + pStartX + width - 1 >= scrollbarCol) // The last column drawn includes the scrollbar
+			--itemLen;
+		if (!this.borderEnabled && pStartX == this.size.width)
+			writeMenuItems = false;
+		// Just draw the whole srollbar to ensure it's updated
+		this.DisplayInitialScrollbar(this.scrollbarInfo.solidBlockLastStartRow, this.scrollbarInfo.numSolidScrollBlocks);
+	}
+	if (itemTxtStartIdx < 0)
+		itemTxtStartIdx = 0;
+	// Write the menu items
+	if (writeMenuItems)
+	{
+		var blankItemTextFormatStr = "\1n%" + itemLen + "s";
+		for (var lineNum = pStartY + this.pos.y - 1; lineNum <= lastLineNum; ++lineNum)
+		{
+			var startX = pStartX;
+			// If borders are enabled, skip the top & bottom lines since borders were already drawn
+			if (this.borderEnabled)
+			{
+				if (lineNum == this.pos.y || lineNum == lastLineNum)
+					continue;
+				else
+				{
+					if (pStartX + this.pos.x - 1 == this.pos.x)
+						++startX;
+				}
+			}
+			// Write the menu item text
+			var itemIdx = this.topItemIdx + (lineNum - this.pos.y);
+			if (this.borderEnabled) --itemIdx;
+			var highlightItem = itemIdx == this.selectedItemIdx;
+			var itemText = this.GetItemText(itemIdx, null, highlightItem, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			var shortenedText = substrWithAttrCodes(itemText, itemTxtStartIdx, itemLen);
+			// If shortenedText is empty (perhaps there's no menu item for this line),
+			// then make shortenedText consist of all spaces at the proper length
+			if (shortenedText.length == 0)
+				shortenedText = format(blankItemTextFormatStr, "");
+			console.gotoxy(startX, lineNum);
+			console.print(shortenedText + "\1n");
+		}
+	}
+}
+// Draws part of the menu, starting at a certain location within the menu and
+// with a given width & height (for screen refreshing).  For this version, the start X
+// and Y location are absolute on the screen.  They start at (1, 1) in the upper-left.
+//
+// Parameters:
+//  pStartX: The column of the character in the menu to start at
+//  pStartY: The row of the character in the menu to start at
+//  pWidth: The width of the content to draw
+//  pHeight: The height of the content to draw
+//  pSelectedItemIndexes: Optional - An object containing indexes of selected items
+function DDLightbarMenu_DrawPartialAbs(pStartX, pStartY, pWidth, pHeight, pSelectedItemIndexes)
+{
+	if (typeof(pStartX) !== "number" || typeof(pStartY) !== "number" || typeof(pWidth) !== "number" || typeof(pHeight) !== "number")
+		return;
+
+	// Calculate the start X & Y coordinates relative to the menu (1-based), and adjust height &
+	// width if necessary.  Then draw partial.
+	var height = pHeight;
+	var width = pWidth;
+	var startX = pStartX - this.pos.x + 1;
+	var startY = pStartY - this.pos.y + 1;
+	if (startX < 1)
+	{
+		var XDiff = 1 - startX;
+		startX += XDiff;
+		width -= XDiff;
+	}
+	if (startY < 1)
+	{
+		var YDiff = 1 - startY;
+		startY += YDiff;
+		height -= YDiff;
+	}
+	this.DrawPartial(startX, startY, width, height, pSelectedItemIndexes);
+}
+
 
 // Gets the text of a menu item with colors applied
 //
@@ -1258,10 +1488,6 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			if (mk !== null && mk.mouse !== null)
 			{
 				goAheadAndExit = !mouseNoAction; // Only really needed with an input timer?
-				// Temporary
-				console.print("\1n\r\nHere! - mouseNoAction: " + goAheadAndExit + ", goAheadAndExit: " + goAheadAndExit + "\r\n");
-				console.pause();
-				// End Temporary
 			}
 			if (goAheadAndExit)
 			{
@@ -1513,7 +1739,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				if (this.multiSelect)
 				{
 					if (Object.keys(selectedItemIndexes).length == 0)
-						selectedItemIndexes[this.selectedItemIdx] = true;
+						selectedItemIndexes[+(this.selectedItemIdx)] = true;
 				}
 				else
 					retVal = this.GetItem(this.selectedItemIdx).retval;
@@ -1539,8 +1765,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				if (allowSelectItem)
 				{
 					var added = false; // Will be true if added or false if deleted
-					if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
-						delete selectedItemIndexes[this.selectedItemIdx];
+					if (selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)))
+						delete selectedItemIndexes[+(this.selectedItemIdx)];
 					else
 					{
 						var addIt = true;
@@ -1548,7 +1774,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 							addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
 						if (addIt)
 						{
-							selectedItemIndexes[this.selectedItemIdx] = true;
+							selectedItemIndexes[+(this.selectedItemIdx)] = true;
 							added = true;
 						}
 					}
@@ -1620,15 +1846,15 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				this.selectedItemIdx = userEnteredItemNum-1;
 				if (this.multiSelect)
 				{
-					if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
-						delete selectedItemIndexes[this.selectedItemIdx];
+					if (selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)))
+						delete selectedItemIndexes[+(this.selectedItemIdx)];
 					else
 					{
 						var addIt = true;
 						if (this.maxNumSelections > 0)
 							addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
 						if (addIt)
-							selectedItemIndexes[this.selectedItemIdx] = true;
+							selectedItemIndexes[+(this.selectedItemIdx)] = true;
 					}
 					// TODO: Put a check-mark next to the selected item
 					// TODO: Screen refresh?
@@ -1715,7 +1941,7 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 	if (this.selectedItemIdx < numItems-1)
 	{
 		// Draw the current item in regular colors
-		this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+		this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
 		++this.selectedItemIdx;
 		// Draw the new current item in selected colors
 		// If the selected item is below the bottom of the menu, then we'll need to
@@ -1730,7 +1956,7 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 		{
 			// The selected item is not below the bottom of the menu, so we can
 			// just draw the selected item highlighted.
-			this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
 		}
 	}
 	else
@@ -1740,7 +1966,7 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 		if (this.wrapNavigation)
 		{
 			// Draw the current item in regular colors
-			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
 			// Go to the first item and scroll to the top if necessary
 			this.selectedItemIdx = 0;
 			var oldTopItemIdx = this.topItemIdx;
@@ -1750,7 +1976,7 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 			else
 			{
 				// Draw the new current item in selected colors
-				this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
 			}
 		}
 	}
