@@ -1,0 +1,8 @@
+This file lists all of the changes made for each release of the Digital
+Distortion File Lister.
+
+Revision History (change log)
+=============================
+Version  Date         Description
+-------  ----         -----------
+2.00     2022-02-06   Initial version.
