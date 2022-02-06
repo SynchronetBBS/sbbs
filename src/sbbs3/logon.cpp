@@ -162,10 +162,11 @@ bool sbbs_t::logon()
 		} 
 	}
 
-	if(((useron.misc & (AUTOTERM | PETSCII)) == PETSCII) && (autoterm & ANSI)) {
+	if((useron.misc & AUTOTERM)
 		// User manually-enabled PETSCII, but they're logging in with an ANSI (auto-detected) terminal
-		useron.misc &= ~PETSCII;
-		useron.misc |= AUTOTERM;
+		|| ((useron.misc & PETSCII) && (autoterm & ANSI))) {
+		useron.misc &= ~(ANSI|RIP|CHARSET_FLAGS);
+		useron.misc |= (AUTOTERM | autoterm);
 	}
 
 	if(!chk_ar(cfg.shell[useron.shell]->ar,&useron,&client)) {
