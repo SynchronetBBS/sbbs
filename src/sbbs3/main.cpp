@@ -3968,6 +3968,7 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
 void sbbs_t::hangup(void)
 {
 	if(online) {
+		clear_hotspots();
 		lprintf(LOG_DEBUG,"disconnecting client");
 		online=FALSE;	// moved from the bottom of this function on Jan-25-2009
 	}
