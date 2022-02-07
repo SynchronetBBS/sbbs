@@ -1192,19 +1192,21 @@ function DDFileMenuBar_getDDFileMenuBarItemText(pText, pSelected, pWithTrailingB
 // menu bar on the screen
 function DDFileMenuBar_incrementMenuItemAndRefresh()
 {
-	++this.currentCommandIdx;
-	if (this.currentCommandIdx >= this.cmdArray.length)
-		this.currentCommandIdx = 0;
-	this.refreshWithNewAction(this.currentCommandIdx);
+	var newCmdIdx = this.currentCommandIdx + 1;
+	if (newCmdIdx >= this.cmdArray.length)
+		newCmdIdx = 0;
+	// Will set this.currentCommandIdx
+	this.refreshWithNewAction(newCmdIdx);
 }
 // For the DDFileMenuBar class: Decrements to the previous menu item and refreshes the
 // menu bar on the screen
 function DDFileMenuBar_decrementMenuItemAndRefresh()
 {
-	--this.currentCommandIdx;
-	if (this.currentCommandIdx < 0)
-		this.currentCommandIdx = this.cmdArray.length - 1;
-	this.refreshWithNewAction(this.currentCommandIdx);
+	var newCmdIdx = this.currentCommandIdx - 1;
+	if (newCmdIdx < 0)
+		newCmdIdx = this.cmdArray.length - 1;
+	// Will set this.currentCommandIdx
+	this.refreshWithNewAction(newCmdIdx);
 }
 // For the DDFileMenuBar class: Gets the return code for the currently selected action
 function DDFileMenuBar_getCurrentSelectedAction()
