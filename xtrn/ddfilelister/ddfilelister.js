@@ -13,6 +13,10 @@
  *                              I'm calling this version 2.00 because I had already
  *                              released a file lister mod years ago (modding the stock
  *                              Synchronet file list interface).
+ * 2022-02-07 Eric Oulashin     Version 2.01
+ *                              Fixed file description being undefined when viewing
+ *                              file info.  Fixed command bar refreshing when pressing
+ *                              the hotkeys.
 */
 
 if (typeof(require) === "function")
@@ -70,8 +74,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.00";
-var LISTER_DATE = "2022-02-06";
+var LISTER_VERSION = "2.01";
+var LISTER_DATE = "2022-02-07";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,7 +248,7 @@ while (continueDoingFileList)
 	else
 	{
 		var currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
-		fileMenuBar.setCurrentActionCode(currentActionVal);
+		fileMenuBar.setCurrentActionCode(currentActionVal, true);
 		actionRetObj = doAction(currentActionVal, bbs.curdir_code, gFilebase, gFileList, gFileListMenu);
 	}
 	// If an action was done (actionRetObj is not null), then look at actionRetObj and
@@ -261,11 +265,8 @@ while (continueDoingFileList)
 				console.gotoxy(1, 1);
 				displayFileLibAndDirHeader(bbs.curdir_code);
 			}
-			if (actionRetObj.reDrawCmdBar)
-			{
-				//fileMenuBar.constructPromptText();
+			if (actionRetObj.reDrawCmdBar) // Could call fileMenuBar.constructPromptText(); if needed
 				fileMenuBar.writePromptLine();
-			}
 			var redrewPartOfFileListMenu = false;
 			if (actionRetObj.fileListPartialRedrawInfo != null)
 			{
@@ -449,6 +450,10 @@ function showFileInfo(pFilebase, pFileList, pFileListMenu)
 		fileDesc = extdFileInfo.extdesc;
 	else
 		fileDesc = extdFileInfo.desc;
+	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
+	// so make sure it's a string
+	if (typeof(fileDesc) !== "string")
+		fileDesc = "";
 	if (fileDesc.length > 0)
 		fileInfoStr += "Description:\r\n" + fileDesc;
 	else
@@ -1132,13 +1137,13 @@ function DDFileMenuBar_refreshWithNewAction(pCmdIdx)
 {
 	if (typeof(pCmdIdx) !== "number")
 		return;
-	if (pCmdIdx == this.lastCommandIdx)
+	if (pCmdIdx == this.currentCommandIdx)
 		return;
 
 	// Refresh the prompt area for the previous index with regular colors
 	// Re-draw the last item text with regular colors
-	var itemText = this.getItemTextFromIdx(this.lastCommandIdx);
-	console.gotoxy(this.cmdArray[this.lastCommandIdx].pos, this.pos.y);
+	var itemText = this.getItemTextFromIdx(this.currentCommandIdx);
+	console.gotoxy(this.cmdArray[this.currentCommandIdx].pos, this.pos.y);
 	console.print("\1n" + this.getDDFileMenuBarItemText(itemText, false, false));
 	// Draw the new item text with selected colors
 	itemText = this.getItemTextFromIdx(pCmdIdx);
@@ -1148,6 +1153,9 @@ function DDFileMenuBar_refreshWithNewAction(pCmdIdx)
 
 	this.lastCommandIdx = this.currentCommandIdx;
 	this.currentCommandIdx = pCmdIdx;
+
+	// Re-construct the bar text to make sure it's up to date with the selected action
+	this.constructPromptText();
 }
 // For the DDFileMenuBar class: Returns a string containing a piece of text for the
 // menu bar text with its color attributes.
@@ -1243,17 +1251,26 @@ function DDFileMenuBar_getActionFromChar(pChar, pCaseSensitive)
 //
 // Parameters:
 //  pActionCode: The code of the action
-function DDFileMenuBar_setCurrentActionCode(pActionCode)
+//  pRefreshOnScreen: Optional boolean - Whether or not to refresh the command bar on the screen.
+//                    Defaults to false.
+function DDFileMenuBar_setCurrentActionCode(pActionCode, pRefreshOnScreen)
 {
 	if (typeof(pActionCode) !== "number")
 		return;
+
+	var refreshOnScreen = (typeof(pRefreshOnScreen) === "boolean" ? pRefreshOnScreen : false);
 
 	for (var i = 0; i < this.cmdArray.length; ++i)
 	{
 		if (this.cmdArray[i].retCode == pActionCode)
 		{
-			this.currentCommandIdx = i;
-			this.lastCommandIdx = i;
+			if (refreshOnScreen)
+				this.refreshWithNewAction(i);
+			else
+			{
+				this.currentCommandIdx = i;
+				this.lastCommandIdx = i;
+			}
 			break;
 		}
 	}
@@ -2225,7 +2242,7 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 		console.gotoxy(1, console.screen_rows-1);
 		console.cleartoeol("\1n");
 		console.gotoxy(1, console.screen_rows-1);
-		var shortFilename = shortenFilename(filename, console.screen_columns-28, false);
+		var shortFilename = shortenFilename(filename, Math.floor(console.screen_columns/2), false);
 		if (pDefaultYes)
 			actionConfirmed = console.yesno(pActionName + " " + shortFilename);
 		else

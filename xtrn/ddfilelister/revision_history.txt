@@ -5,4 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.01     2022-02-07   Fixed file description being undefined when viewing file
+                      info.  Fixed command bar refreshing when pressing the
+                      hotkeys.
 2.00     2022-02-06   Initial version.
