@@ -7,5 +7,6 @@ Version  Date         Description
 -------  ----         -----------
 2.01     2022-02-07   Fixed file description being undefined when viewing file
                       info.  Fixed command bar refreshing when pressing the
-                      hotkeys.
+                      hotkeys.  Added an option to pause after viewing a file
+                      (defaults to true).
 2.00     2022-02-06   Initial version.
