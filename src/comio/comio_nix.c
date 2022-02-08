@@ -365,7 +365,7 @@ BOOL comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
     struct termios t;
 
     if(tcgetattr(handle, &t)==-1)
-        return FALSE;
+		return FALSE;
 
 	t.c_cflag &= ~CSIZE;
 	switch(byteSize) {
