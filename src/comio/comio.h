@@ -1,8 +1,4 @@
-/* comio.h */
-
 /* Synchronet Serial Communications (COM) I/O Library */
-
-/* $Id: comio.h,v 1.15 2020/06/26 19:56:48 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -136,6 +132,7 @@ COMIOEXPORT size_t		comReadLine(COM_HANDLE, char* buf, size_t buflen
 COMIOEXPORT BOOL		comPurgeInput(COM_HANDLE);
 COMIOEXPORT BOOL		comPurgeOutput(COM_HANDLE);
 COMIOEXPORT BOOL		comSetParity(COM_HANDLE, BOOL enable, BOOL odd);
+COMIOEXPORT BOOL		comSetBits(COM_HANDLE, size_t byteSize, size_t stopBits);
 
 #if defined(__cplusplus)
 }

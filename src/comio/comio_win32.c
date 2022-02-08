@@ -170,6 +170,19 @@ BOOL comSetParity(COM_HANDLE handle, BOOL enable, BOOL odd)
 	return SetCommState(handle, &dcb);
 }
 
+BOOL comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
+{
+	DCB dcb;
+
+	if(GetCommState(handle, &dcb) != TRUE)
+		return FALSE;
+
+	dcb.ByteSize = (BYTE)byteSize;
+	dcb.StopBits = stopBits == 2 ? TWOSTOPBITS : ONESTOPBIT;
+
+	return SetCommState(handle, &dcb);
+}
+
 int comGetModemStatus(COM_HANDLE handle)
 {
 	DWORD status=0;

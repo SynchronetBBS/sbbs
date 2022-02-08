@@ -77,6 +77,8 @@ BOOL	com_hangup=TRUE;
 ulong	com_baudrate=0;
 BOOL	com_parity=FALSE;
 BOOL	com_parity_odd=FALSE;
+size_t	com_byte_size=8;
+size_t	com_stop_bits=1;
 BOOL	dcd_ignore=FALSE;
 int		dcd_timeout=10;	/* seconds */
 ulong	dtr_delay=100;	/* milliseconds */
@@ -1396,6 +1398,8 @@ void parse_com_section(const char* section)
 	com_baudrate    = iniGetLongInt(ini, section, "BaudRate", com_baudrate);
 	com_parity		= iniGetBool(ini, section, "Parity", com_parity);
 	com_parity_odd	= iniGetBool(ini, section, "ParityOdd", com_parity_odd);
+	com_byte_size	= iniGetInteger(ini, section, "ByteSize", com_byte_size);
+	com_stop_bits	= iniGetInteger(ini, section, "StopBits", com_stop_bits);
 	com_hangup	    = iniGetBool(ini, section, "Hangup", com_hangup);
 	hangup_attempts = iniGetInteger(ini, section, "HangupAttempts", hangup_attempts);
 	dcd_timeout     = iniGetInteger(ini, section, "DCDTimeout", dcd_timeout);
@@ -1462,6 +1466,21 @@ void parse_ini_file(const char* ini_fname)
 	ident_interface			= iniGetIpAddress(ini, section, "Interface", ident_interface);
 	iniGetExistingWord(ini, section, "Response", NULL, ident_response);
 
+}
+
+void com_setup(void)
+{
+	if(com_baudrate!=0) {
+		if(!comSetBaudRate(com_handle,com_baudrate))
+			lprintf(LOG_ERR,"ERROR %u setting DTE rate to %lu bps"
+				,COM_ERROR_VALUE, com_baudrate);
+	}
+	if(!comSetParity(com_handle, com_parity, com_parity_odd))
+		lprintf(LOG_ERR,"ERROR %u setting parity type"
+			,COM_ERROR_VALUE);
+	if(!comSetBits(com_handle, com_byte_size, com_stop_bits))
+		lprintf(LOG_ERR,"ERROR %u setting bits: %u / %u"
+			,COM_ERROR_VALUE, com_byte_size, com_stop_bits);
 }
 
 char	banner[128];
@@ -1575,14 +1594,7 @@ service_loop(int argc, char** argv)
 	}
 	lprintf(LOG_INFO,"COM Port device handle: %u", com_handle);
 
-	if(com_baudrate!=0) {
-		if(!comSetBaudRate(com_handle,com_baudrate))
-			lprintf(LOG_ERR,"ERROR %u setting DTE rate to %lu bps"
-				,COM_ERROR_VALUE, com_baudrate);
-		if(!comSetParity(com_handle, com_parity, com_parity_odd))
-			lprintf(LOG_ERR,"ERROR %u setting parity type"
-				,COM_ERROR_VALUE);
-	}
+	com_setup();
 
 	lprintf(LOG_INFO,"COM Port DTE rate: %ld bps", comGetBaudRate(com_handle));
 
@@ -1635,7 +1647,7 @@ service_loop(int argc, char** argv)
 				}
 			} else
 				lprintf(LOG_NOTICE, "Timeout (%d seconds) waiting for response to prompt", prompt_timeout);
-			comSetParity(com_handle, com_parity, com_parity_odd);
+			com_setup();
 		}
 		if((sock=connect_socket(host, port)) == INVALID_SOCKET) {
 			comWriteString(com_handle,"\7\r\n!ERROR connecting to TCP port\r\n");
