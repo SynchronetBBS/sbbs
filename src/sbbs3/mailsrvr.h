@@ -95,6 +95,7 @@ typedef struct {
 	BOOL	recycle_now;
 	BOOL	shutdown_now;
 	int		log_level;
+	int		tls_error_level;		/* Cap the severity of TLS error log messages */
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 
