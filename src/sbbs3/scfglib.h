@@ -66,6 +66,8 @@ int		getlibnum(scfg_t*, const char* code);
 int		getsubnum(scfg_t*, const char* code);
 int		getgrpnum(scfg_t*, const char* code);
 
+faddr_t* nearest_sysfaddr(scfg_t*, faddr_t*);
+
 #ifdef __cplusplus
 }
 #endif

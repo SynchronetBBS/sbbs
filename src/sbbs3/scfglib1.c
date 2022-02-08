@@ -532,6 +532,10 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	for(i=0;i<cfg->total_faddrs;i++)
 		get_int(cfg->faddr[i],instream);
 
+	// Sanity-check each sub's FidoNet-style address
+	for(i = 0; i < cfg->total_subs; i++)
+		cfg->sub[i]->faddr = *nearest_sysfaddr(cfg, &cfg->sub[i]->faddr);
+
 	get_str(cfg->origline,instream);
 	get_str(cfg->netmail_sem,instream);
 	get_str(cfg->echomail_sem,instream);
@@ -820,4 +824,29 @@ int getgrpnum(scfg_t* cfg, const char* code)
 	if(i >= 0)
 			return cfg->sub[i]->grp;
 	return i;
+}
+
+faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
+{
+	uint i;
+
+	if(cfg->total_faddrs <= 0)
+		return addr;
+
+	for(i=0; i < cfg->total_faddrs; i++)
+		if(memcmp(addr, &cfg->faddr[i], sizeof(*addr)) == 0)
+			return &cfg->faddr[i];
+	for(i=0; i < cfg->total_faddrs; i++)
+		if(addr->zone == cfg->faddr[i].zone
+			&& addr->net == cfg->faddr[i].net
+			&& addr->node == cfg->faddr[i].node)
+			return &cfg->faddr[i];
+	for(i=0; i < cfg->total_faddrs; i++)
+		if(addr->zone == cfg->faddr[i].zone
+			&& addr->net == cfg->faddr[i].net)
+			return &cfg->faddr[i];
+	for(i=0; i < cfg->total_faddrs; i++)
+		if(addr->zone == cfg->faddr[i].zone)
+			return &cfg->faddr[i];
+	return &cfg->faddr[0];
 }
