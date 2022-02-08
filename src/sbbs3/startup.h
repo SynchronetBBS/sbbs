@@ -70,6 +70,7 @@ typedef struct {
 	struct in6_addr	outgoing6;
 	str_list_t		interfaces;
 	int		log_level;
+	int		tls_error_level;		/* Cap the severity of TLS error log messages */
 	js_startup_t js;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
