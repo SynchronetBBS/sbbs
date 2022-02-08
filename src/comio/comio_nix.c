@@ -360,6 +360,39 @@ BOOL comSetParity(COM_HANDLE handle, BOOL enable, BOOL odd)
     return TRUE;
 }
 
+BOOL comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
+{
+    struct termios t;
+
+    if(tcgetattr(handle, &t)==-1)
+        return FALSE;
+
+	t.c_cflag &= ~CSIZE;
+	switch(byteSize) {
+		case 5:
+			t.c_cflag |= CS5;
+			break;
+		case 6:
+			t.c_cflag |= CS6;
+			break;
+		case 7:
+			t.c_cflag |= CS7;
+			break;
+		default:
+			t.c_cflag |= CS8;
+			break;
+	}
+	if(stopBits == 2)
+		t.c_cflag |= CSTOPB;
+	else
+		t.c_cflag &= ~CSTOPB;
+
+    if(tcsetattr(handle, TCSANOW, &t)==-1)
+        return FALSE;
+
+    return TRUE;
+}
+
 int comGetModemStatus(COM_HANDLE handle)
 {
     int status;
