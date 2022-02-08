@@ -759,7 +759,7 @@ int modem_status(COM_HANDLE com_handle)
 /* Returns TRUE if DCD (Data Carrier Detect) is high */
 BOOL carrier_detect(COM_HANDLE com_handle)
 {
-	return (modem_status(com_handle)&COM_DCD) ? TRUE:FALSE;
+	return (dcd_ignore || (modem_status(com_handle)&COM_DCD)) ? TRUE:FALSE;
 }
 
 /****************************************************************************/
@@ -779,7 +779,7 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 	if(!comRaiseDTR(com_handle))
 		lprintf(LOG_ERR,"ERROR %u raising DTR", COM_ERROR_VALUE);
 
-	if(com_alreadyconnected)
+	if(com_alreadyconnected || dcd_ignore)
 		return TRUE;
 
 	if(!mdm_null) {
@@ -1250,7 +1250,7 @@ BOOL handle_call(void)
 
 	while(!terminated) {
 
-		if(!dcd_ignore && !carrier_detect(com_handle)) {
+		if(!carrier_detect(com_handle)) {
 			lprintf(LOG_WARNING,"Loss of Carrier Detect (DCD) detected");
 			break;
 		}
@@ -1322,7 +1322,7 @@ BOOL hangup_call(COM_HANDLE com_handle)
 	int		attempt;
 	int		mdm_status;
 
-	if(!carrier_detect(com_handle))/* DCD already low */
+	if(dcd_ignore || !carrier_detect(com_handle))/* DCD already low */
 		return TRUE;
 
 	lprintf(LOG_DEBUG,"Waiting for transmit buffer to empty");
