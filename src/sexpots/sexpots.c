@@ -1390,6 +1390,20 @@ void parse_tcp_section(const char* section)
 	telnet					= iniGetBool(ini,section,"Telnet", telnet);
 }
 
+void parse_com_section(const char* section)
+{
+	iniGetExistingWord(ini, section, "Device", NULL, com_dev);
+	com_baudrate    = iniGetLongInt(ini, section, "BaudRate", com_baudrate);
+	com_parity		= iniGetBool(ini, section, "Parity", com_parity);
+	com_parity_odd	= iniGetBool(ini, section, "ParityOdd", com_parity_odd);
+	com_hangup	    = iniGetBool(ini, section, "Hangup", com_hangup);
+	hangup_attempts = iniGetInteger(ini, section, "HangupAttempts", hangup_attempts);
+	dcd_timeout     = iniGetInteger(ini, section, "DCDTimeout", dcd_timeout);
+	dcd_ignore      = iniGetBool(ini, section, "IgnoreDCD", dcd_ignore);
+	dtr_delay		= iniGetLongInt(ini, section, "DTRDelay", dtr_delay);
+	mdm_null	    = iniGetBool(ini, section, "NullModem", mdm_null);
+}
+
 void parse_ini_file(const char* ini_fname)
 {
 	FILE* fp;
@@ -1413,17 +1427,7 @@ void parse_ini_file(const char* ini_fname)
 		log_level=LOG_DEBUG;
 	
 	/* [COM] Section */
-	section="COM";
-	iniGetExistingWord(ini, section, "Device", NULL, com_dev);
-	com_baudrate    = iniGetLongInt(ini, section, "BaudRate", com_baudrate);
-	com_parity		= iniGetBool(ini, section, "Parity", com_parity);
-	com_parity_odd	= iniGetBool(ini, section, "ParityOdd", com_parity_odd);
-	com_hangup	    = iniGetBool(ini, section, "Hangup", com_hangup);
-	hangup_attempts = iniGetInteger(ini, section, "HangupAttempts", hangup_attempts);
-	dcd_timeout     = iniGetInteger(ini, section, "DCDTimeout", dcd_timeout);
-	dcd_ignore      = iniGetBool(ini, section, "IgnoreDCD", dcd_ignore);
-	dtr_delay		= iniGetLongInt(ini, section, "DTRDelay", dtr_delay);
-	mdm_null	    = iniGetBool(ini, section, "NullModem", mdm_null);
+	parse_com_section("COM");
 
 	/* [Modem] Section */
 	section="Modem";
@@ -1626,6 +1630,8 @@ service_loop(int argc, char** argv)
 					lprintf(LOG_DEBUG, "Received character '%c' (%d) in response to prompt", ch, ch);
 					SAFEPRINTF(str, "TCP:%c", ch);
 					parse_tcp_section(str);
+					SAFEPRINTF(str, "COM:%c", ch);
+					parse_com_section(str);
 				}
 			} else
 				lprintf(LOG_NOTICE, "Timeout (%d seconds) waiting for response to prompt", prompt_timeout);
