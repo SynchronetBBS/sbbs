@@ -338,6 +338,28 @@ BOOL comSetFlowControl(COM_HANDLE handle, int modes)
     return TRUE;
 }
 
+BOOL comSetParity(COM_HANDLE handle, BOOL enable, BOOL odd)
+{
+    struct termios t;
+
+    if(tcgetattr(handle, &t)==-1)
+        return FALSE;
+
+    if (enable) {
+        t.c_cflag |= PARENB;
+		if (odd)
+			t.c_cflag |= PARODD;
+		else
+			t.c_cflag &= ~PARODD;
+	} else
+        t.c_cflag &= ~(PARENB | PARODD);
+
+    if(tcsetattr(handle, TCSANOW, &t)==-1)
+        return FALSE;
+
+    return TRUE;
+}
+
 int comGetModemStatus(COM_HANDLE handle)
 {
     int status;
