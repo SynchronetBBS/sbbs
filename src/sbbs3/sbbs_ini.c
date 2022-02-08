@@ -42,6 +42,7 @@ static const char*	strMaxInactivity="MaxInactivity";
 static const char*	strMaxConConn="MaxConcurrentConnections";
 static const char*	strHostName="HostName";
 static const char*	strLogLevel="LogLevel";
+static const char*	strTLSErrorLevel="TLSErrorLevel";
 static const char*	strBindRetryCount="BindRetryCount";
 static const char*	strBindRetryDelay="BindRetryDelay";
 static const char*	strAnswerSound="AnswerSound";
@@ -277,6 +278,7 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	global->outgoing4.s_addr=iniGetIpAddress(list,section,strOutgoing4,0);
 	global->outgoing6=iniGetIp6Address(list,section,strOutgoing6,wildcard6);
 	global->log_level=iniGetLogLevel(list,section,strLogLevel,DEFAULT_LOG_LEVEL);
+	global->tls_error_level=iniGetLogLevel(list,section, strTLSErrorLevel, 0);
 	global->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,DEFAULT_BIND_RETRY_COUNT);
 	global->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,DEFAULT_BIND_RETRY_DELAY);
 	global->login_attempt = get_login_attempt_settings(list, section, NULL);
@@ -617,6 +619,8 @@ void sbbs_read_ini(
 
 		mail->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
+		mail->tls_error_level
+			=iniGetLogLevel(list,section, strTLSErrorLevel, global->tls_error_level);
 		mail->options
 			=iniGetBitField(list,section,strOptions,mail_options
 				,MAIL_OPT_ALLOW_POP3);
@@ -739,7 +743,7 @@ void sbbs_read_ini(
 		web->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
 		web->tls_error_level
-			=iniGetLogLevel(list,section, "TLSErrorLevel", web->tls_error_level);
+			=iniGetLogLevel(list,section, strTLSErrorLevel, global->tls_error_level);
 		web->options
 			=iniGetBitField(list,section,strOptions,web_options
 				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING);
@@ -809,6 +813,7 @@ BOOL sbbs_write_ini(
 		iniSetIp6Address(lp,section,strOutgoing6,global->outgoing6,&style);
 		iniSetStringList(lp, section, strInterfaces, ",", global->interfaces, &style);
 		iniSetLogLevel(lp,section,strLogLevel,global->log_level,&style);
+		iniSetLogLevel(lp,section,strTLSErrorLevel,global->tls_error_level,&style);
 		iniSetInteger(lp,section,strBindRetryCount,global->bind_retry_count,&style);
 		iniSetInteger(lp,section,strBindRetryDelay,global->bind_retry_delay,&style);
 		set_login_attempt_settings(lp, section, global->login_attempt, style);
@@ -1045,7 +1050,10 @@ BOOL sbbs_write_ini(
 			iniRemoveValue(lp,section,strLogLevel);
 		else if(!iniSetLogLevel(lp,section,strLogLevel,mail->log_level,&style))
 			break;
-
+		if(mail->tls_error_level==global->tls_error_level)
+			iniRemoveValue(lp,section,strTLSErrorLevel);
+		else if(!iniSetLogLevel(lp,section,strTLSErrorLevel,mail->tls_error_level,&style))
+			break;
 		if(!iniSetShortInt(lp,section,"SMTPPort",mail->smtp_port,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"SubmissionPort",mail->submission_port,&style))
@@ -1243,6 +1251,10 @@ BOOL sbbs_write_ini(
 		if(web->log_level==global->log_level)
 			iniRemoveValue(lp,section,strLogLevel);
 		else if(!iniSetLogLevel(lp,section,strLogLevel,web->log_level,&style))
+			break;
+		if(web->tls_error_level==global->tls_error_level)
+			iniRemoveValue(lp,section,strTLSErrorLevel);
+		else if(!iniSetLogLevel(lp,section,strTLSErrorLevel,web->tls_error_level,&style))
 			break;
 
 		/* JavaScript Operating Parameters */

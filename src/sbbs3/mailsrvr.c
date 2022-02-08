@@ -147,6 +147,8 @@ typedef struct {
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);  \
 	if (GCES_estr) {                                                                  \
+		if(GCES_level < startup->tls_error_level)                                     \
+			GCES_level = startup->tls_error_level;                                     \
 		lprintf(GCES_level, "%04d %s %s", sock, server, GCES_estr);                     \
 		free_crypt_attrstr(GCES_estr);                                                  \
 	}                                                                                    \
@@ -157,6 +159,8 @@ typedef struct {
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);  \
 	if (GCES_estr) {                                                                  \
+		if(GCES_level < startup->tls_error_level)                                     \
+			GCES_level = startup->tls_error_level;                                    \
 		lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);         \
 		free_crypt_attrstr(GCES_estr);                                                  \
 	}                                                                                    \
@@ -167,6 +171,8 @@ typedef struct {
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);  \
 	if (GCES_estr) {                                                                  \
+		if(log_level < startup->tls_error_level)                                      \
+			log_level = startup->tls_error_level;                                     \
 		lprintf(log_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);         \
 		free_crypt_attrstr(GCES_estr);                                                  \
 	}                                                                                    \
