@@ -191,6 +191,7 @@ if (!gFilebase.open())
 // If there are no files in the filebase, then say so and exit now.
 if (gFilebase.files == 0)
 {
+	gFilebase.close();
 	var libIdx = file_area.dir[bbs.curdir_code].lib_index;
 	console.crlf();
 	console.print("\1n\1cThere are no files in \1h" + file_area.lib_list[libIdx].description + "\1n\1c - \1h" +
