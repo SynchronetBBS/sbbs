@@ -165,6 +165,10 @@ sortOrder                             String: The file sort order to use.
                                       DATE_A: Import date/time ascending sort order
                                       DATE_D: Import date/time descending sort order
 
+
+pauseAfterViewingFile                 Whether or not to pause after viewing a
+                                      file
+
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
 
