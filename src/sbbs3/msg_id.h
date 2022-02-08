@@ -35,7 +35,6 @@ DLLEXPORT uint32_t	get_new_msg_number(smb_t*);
 DLLEXPORT BOOL		add_msg_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
 DLLEXPORT BOOL		add_reply_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
 DLLEXPORT char*		msg_program_id(char* pid, size_t);
-DLLEXPORT uint		nearest_sysfaddr(scfg_t*, faddr_t* dest_addr);
 
 #ifdef __cplusplus
 }
