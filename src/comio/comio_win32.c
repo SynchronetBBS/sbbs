@@ -79,6 +79,7 @@ COM_HANDLE comOpen(const char* device)
 		dcb.ByteSize	= 8;
 		dcb.Parity		= NOPARITY;
 		dcb.StopBits	= ONESTOPBIT;
+		dcb.fParity		= FALSE;
 		SetCommState(handle, &dcb);
 	}
 
@@ -154,6 +155,18 @@ BOOL comSetFlowControl(COM_HANDLE handle, int type)
 		dcb.fInX = 1;
 		dcb.fOutX = 1;
 	}
+	return SetCommState(handle, &dcb);
+}
+
+BOOL comSetParity(COM_HANDLE handle, BOOL enable, BOOL odd)
+{
+	DCB dcb;
+
+	if(GetCommState(handle, &dcb) != TRUE)
+		return FALSE;
+
+	dcb.fParity = enable;
+	dcb.Parity = enable ? (odd ? ODDPARITY : EVENPARITY) : NOPARITY;
 	return SetCommState(handle, &dcb);
 }
 

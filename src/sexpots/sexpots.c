@@ -75,6 +75,8 @@ BOOL	com_handle_passed=FALSE;
 BOOL	com_alreadyconnected=FALSE;
 BOOL	com_hangup=TRUE;
 ulong	com_baudrate=0;
+BOOL	com_parity=FALSE;
+BOOL	com_parity_odd=FALSE;
 BOOL	dcd_ignore=FALSE;
 int		dcd_timeout=10;	/* seconds */
 ulong	dtr_delay=100;	/* milliseconds */
@@ -1414,6 +1416,8 @@ void parse_ini_file(const char* ini_fname)
 	section="COM";
 	iniGetExistingWord(ini, section, "Device", NULL, com_dev);
 	com_baudrate    = iniGetLongInt(ini, section, "BaudRate", com_baudrate);
+	com_parity		= iniGetBool(ini, section, "Parity", com_parity);
+	com_parity_odd	= iniGetBool(ini, section, "ParityOdd", com_parity_odd);
 	com_hangup	    = iniGetBool(ini, section, "Hangup", com_hangup);
 	hangup_attempts = iniGetInteger(ini, section, "HangupAttempts", hangup_attempts);
 	dcd_timeout     = iniGetInteger(ini, section, "DCDTimeout", dcd_timeout);
@@ -1571,6 +1575,9 @@ service_loop(int argc, char** argv)
 		if(!comSetBaudRate(com_handle,com_baudrate))
 			lprintf(LOG_ERR,"ERROR %u setting DTE rate to %lu bps"
 				,COM_ERROR_VALUE, com_baudrate);
+		if(!comSetParity(com_handle, com_parity, com_parity_odd))
+			lprintf(LOG_ERR,"ERROR %u setting parity type"
+				,COM_ERROR_VALUE);
 	}
 
 	lprintf(LOG_INFO,"COM Port DTE rate: %ld bps", comGetBaudRate(com_handle));
@@ -1622,6 +1629,7 @@ service_loop(int argc, char** argv)
 				}
 			} else
 				lprintf(LOG_NOTICE, "Timeout (%d seconds) waiting for response to prompt", prompt_timeout);
+			comSetParity(com_handle, com_parity, com_parity_odd);
 		}
 		if((sock=connect_socket(host, port)) == INVALID_SOCKET) {
 			comWriteString(com_handle,"\7\r\n!ERROR connecting to TCP port\r\n");
