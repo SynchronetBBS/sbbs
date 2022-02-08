@@ -21,6 +21,7 @@
 
 #include "msg_id.h"
 #include "smblib.h"
+#include "scfglib.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -169,7 +170,7 @@ BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 		if(smb->subnum == INVALID_SUB && msg->to_net.type == NET_FIDO) {
 			safe_snprintf(msg_id, sizeof(msg_id)
 				,"%s %08lx"
-				,smb_faddrtoa(&cfg->faddr[nearest_sysfaddr(cfg, msg->to_net.addr)], NULL)
+				,smb_faddrtoa(nearest_sysfaddr(cfg, msg->to_net.addr), NULL)
 				,msgid_serialno(msg)
 				);
 			if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
@@ -248,17 +249,4 @@ char* msg_program_id(char* pid, size_t maxlen)
 		,GIT_BRANCH, GIT_HASH
 		,__DATE__,compiler);
 	return pid;
-}
-
-uint nearest_sysfaddr(scfg_t* cfg, faddr_t* dest_addr)
-{
-	uint i;
-
-	for(i=0; i<cfg->total_faddrs; i++)
-		if(dest_addr->zone == cfg->faddr[i].zone && dest_addr->net == cfg->faddr[i].net)
-			return i;
-	for(i=0; i<cfg->total_faddrs; i++)
-		if(dest_addr->zone == cfg->faddr[i].zone)
-			return i;
-	return 0;
 }
