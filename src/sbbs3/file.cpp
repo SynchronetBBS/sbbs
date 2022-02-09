@@ -101,7 +101,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 		char* p = f->extdesc;
 		SKIP_CRLF(p);
 		truncsp(p);
-		putmsg(p, P_NOATCODES | P_CPM_EOF);
+		putmsg(p, P_NOATCODES | P_CPM_EOF | P_AUTO_UTF8);
 		newline();
 	}
 	if(f->size == -1) {
