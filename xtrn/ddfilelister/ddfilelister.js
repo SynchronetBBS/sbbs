@@ -16,7 +16,8 @@
  * 2022-02-07 Eric Oulashin     Version 2.01
  *                              Fixed file description being undefined when viewing
  *                              file info.  Fixed command bar refreshing when pressing
- *                              the hotkeys.
+ *                              the hotkeys.  Added an option to pause after viewing a
+ *                              file (defaults to true).
 */
 
 if (typeof(require) === "function")
@@ -170,6 +171,8 @@ var gErrorMsgBoxULY = 4;
 var gErrorMsgBoxWidth = console.screen_columns - 2;
 var gErrorMsgBoxHeight = 3;
 
+// Whether or not to pause after viewing a file
+var gPauseAfterViewingFile = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
@@ -188,6 +191,7 @@ if (!gFilebase.open())
 // If there are no files in the filebase, then say so and exit now.
 if (gFilebase.files == 0)
 {
+	gFilebase.close();
 	var libIdx = file_area.dir[bbs.curdir_code].lib_index;
 	console.crlf();
 	console.print("\1n\1cThere are no files in \1h" + file_area.lib_list[libIdx].description + "\1n\1c - \1h" +
@@ -502,7 +506,8 @@ function viewFile(pFilebase, pFileList, pFileListMenu)
 	console.print("\1n");
 	console.crlf();
 	var successfullyViewed = bbs.view_file(fullyPathedFilename);
-	if (!successfullyViewed)
+	console.print("\1n");
+	if (gPauseAfterViewingFile || !successfullyViewed)
 		console.pause();
 
 	retObj.reDrawListerHeader = true;
@@ -2311,7 +2316,6 @@ function readConfigFile()
 		var setting = null;      // A setting name (string)
 		var settingUpper = null; // Upper-case setting name
 		var value = null;        // To store a value for a setting (string)
-		var valueUpper = null;   // Upper-cased value for a setting (string)
 		while (!cfgFile.eof)
 		{
 			// Read the next line from the config file.
@@ -2343,7 +2347,7 @@ function readConfigFile()
 				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
 				settingUpper = setting.toUpperCase();
 				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-				valueUpper = value.toUpperCase();
+				var valueUpper = value.toUpperCase();
 
 				// Set the appropriate valueUpper in the settings object.
 				if (settingUpper == "SORTORDER")
@@ -2374,6 +2378,8 @@ function readConfigFile()
 					else // Default
 						gFileSortOrder = FileBase.SORT.NATURAL;
 				}
+				else if (settingUpper == "PAUSEAFTERVIEWINGFILE")
+					gPauseAfterViewingFile = (value.toUpperCase() == "TRUE");
 				else if (settingUpper == "THEMEFILENAME")
 				{
 					// First look for the theme config file in the sbbs/mods
