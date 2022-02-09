@@ -437,7 +437,7 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
 			|| strnicmp(ext, "\0010", 2) == 0
 			|| strnicmp(ext, "\001W", 2) == 0)
 			ext += 2;
-		putmsg(ext, P_INDENT | P_NOATCODES | P_CPM_EOF | P_TRUNCATE);
+		putmsg(ext, P_INDENT | P_NOATCODES | P_CPM_EOF | P_TRUNCATE | P_AUTO_UTF8);
 	}
 	return true;
 }
