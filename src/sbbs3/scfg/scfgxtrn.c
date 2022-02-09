@@ -2169,6 +2169,14 @@ int natvpgm_cfg()
 	char str[81];
 	int j;
 	uint i,u;
+#define NATIVE_PROGRAM_NAME_NOTE	"\n`Note:` If a file extension (e.g. `.exe`) is included in the filename,\n" \
+									"      all command-lines must also include the file extension."
+	char* native_program_name_help =
+		"`Native Program Name:`\n"
+		"\n"
+		"This is the executable filename of the Native external program.\n"
+		NATIVE_PROGRAM_NAME_NOTE
+		;
 
 	while(1) {
 		for(i=0;i<MAX_OPTS && i<cfg.total_natvpgms;i++)
@@ -2183,13 +2191,14 @@ int natvpgm_cfg()
 			"`Native Program List:`\n"
 			"\n"
 			"This is a list of all native (non-DOS) external program names that\n"
-			"you may execute in the Terminal Server. Any programs `not` listed\n"
+			"may be executed in the Terminal Server. Any programs `not` listed\n"
 			"here will be assumed to be DOS programs (unless otherwise flagged as\n"
 			"'`Native`') and executed accordingly, or not, depending on the system.\n"
 			"\n"
 			"Use ~ INS ~ and ~ DELETE ~ to add and remove native program names.\n"
 			"\n"
 			"To change the filename of a program, hit ~ ENTER ~.\n"
+			NATIVE_PROGRAM_NAME_NOTE
 		;
 		i=uifc.list(j,0,0,30,&dflt,&bar,"Native Program List",opt);
 		if((signed)i==-1)
@@ -2197,11 +2206,7 @@ int natvpgm_cfg()
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
 		if(msk == MSK_INS) {
-			uifc.helpbuf=
-				"`Native Program Name:`\n"
-				"\n"
-				"This is the executable filename of the native external program.\n"
-			;
+			uifc.helpbuf=native_program_name_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Native Program Name",str,12
 				,0)<1)
 				continue;
@@ -2235,11 +2240,7 @@ int natvpgm_cfg()
 		}
 		if (msk != 0)
 			continue;
-		uifc.helpbuf=
-			"`Native Program Name:`\n"
-			"\n"
-			"This is the executable filename of the Native external program.\n"
-		;
+		uifc.helpbuf=native_program_name_help;
 		SAFECOPY(str,cfg.natvpgm[i]->name);
 		if(uifc.input(WIN_MID|WIN_SAV,0,5,"Native Program Name",str,12
 			,K_EDIT)>0)
