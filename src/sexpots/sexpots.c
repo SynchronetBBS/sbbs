@@ -1392,8 +1392,10 @@ void parse_tcp_section(const char* section)
 	telnet					= iniGetBool(ini,section,"Telnet", telnet);
 }
 
-void parse_com_section(const char* section)
+BOOL parse_com_section(const char* section)
 {
+	if(!iniSectionExists(ini, section))
+		return FALSE;
 	iniGetExistingWord(ini, section, "Device", NULL, com_dev);
 	com_baudrate    = iniGetLongInt(ini, section, "BaudRate", com_baudrate);
 	com_parity		= iniGetBool(ini, section, "Parity", com_parity);
@@ -1406,6 +1408,7 @@ void parse_com_section(const char* section)
 	dcd_ignore      = iniGetBool(ini, section, "IgnoreDCD", dcd_ignore);
 	dtr_delay		= iniGetLongInt(ini, section, "DTRDelay", dtr_delay);
 	mdm_null	    = iniGetBool(ini, section, "NullModem", mdm_null);
+	return TRUE;
 }
 
 void parse_ini_file(const char* ini_fname)
@@ -1643,11 +1646,11 @@ service_loop(int argc, char** argv)
 					SAFEPRINTF(str, "TCP:%c", ch);
 					parse_tcp_section(str);
 					SAFEPRINTF(str, "COM:%c", ch);
-					parse_com_section(str);
+					if(parse_com_section(str))
+						com_setup();
 				}
 			} else
 				lprintf(LOG_NOTICE, "Timeout (%d seconds) waiting for response to prompt", prompt_timeout);
-			com_setup();
 		}
 		if((sock=connect_socket(host, port)) == INVALID_SOCKET) {
 			comWriteString(com_handle,"\7\r\n!ERROR connecting to TCP port\r\n");
