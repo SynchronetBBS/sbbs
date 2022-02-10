@@ -96,6 +96,12 @@
  *                              msgListSort option.
  * 2022-01-13 Eric Oulashin     Version 1.42
  *                              Fixed attachment downloading.
+ * 2022-02-10 Eric Oulashin     Version 1.43
+ *                              Fixed the memory error when viewing message header info
+ *                              (I had used the same loop control variable name for a loop
+ *                              inside a loop..oops).  Also, added a check to the header
+ *                              properties so that it won't display JS functions when viewing
+ *                              the message header information.
  */
 
 
@@ -211,8 +217,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.42";
-var READER_DATE = "2022-01-13";
+var READER_VERSION = "1.43";
+var READER_DATE = "2022-02-10";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -972,6 +978,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		newMsgScanText: "\1c\1hN\1n\1cew \1hM\1n\1cessage \1hS\1n\1ccan",
 		newToYouMsgScanText: "\1c\1hN\1n\1cew \1hT\1n\1co \1hY\1n\1cou \1hM\1n\1cessage \1hS\1n\1ccan",
 		allToYouMsgScanText: "\1c\1hA\1n\1cll \1hM\1n\1cessages \1hT\1n\1co \1hY\1n\1cou \1hS\1n\1ccan",
+		// TODO: Take the next line from text.dat (621, SubGroupOrAll in text.js):
 		scanScopePromptText: "\1n\1h\1wS\1n\1gub-board, \1h\1wG\1n\1group, or \1h\1wA\1n\1gll \1h(\1wENTER\1n\1g to cancel\1h)\1n\1g: \1h\1c",
 		goToMsgNumPromptText: "\1n\1cGo to message # (or \1hENTER\1n\1c to cancel)\1g\1h: \1c",
 		msgScanAbortedText: "\1n\1h\1cM\1n\1cessage scan \1h\1y\1iaborted\1n",
@@ -11817,7 +11824,9 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 				if (infoLineWrappedArray[lineIdx].length > 0)
 				{
 					// Set itemValue to the value that should be displayed
-					if (prop == "when_written_time") //itemValue = system.timestr(msgHdr.when_written_time);
+					if (typeof(msgHdr[prop]) === "function") // Such as get_rfc822_header
+						continue;
+					else if (prop == "when_written_time") //itemValue = system.timestr(msgHdr.when_written_time);
 						itemValue = system.timestr(msgHdr.when_written_time) + " " + system.zonestr(msgHdr.when_written_zone);
 					else if (prop == "when_imported_time") //itemValue = system.timestr(msgHdr.when_imported_time);
 						itemValue = system.timestr(msgHdr.when_imported_time) + " " + system.zonestr(msgHdr.when_imported_zone);
@@ -11848,10 +11857,10 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 						// message reading area, split it and add all the split lines.
 						var itemValueWrapped = word_wrap(itemValue, this.msgAreaWidth);
 						var itemValueWrappedArray = lfexpand(itemValueWrapped).split("\r\n");
-						for (var lineIdx = 0; lineIdx < itemValueWrappedArray.length; ++lineIdx)
+						for (var lineIdx2 = 0; lineIdx2 < itemValueWrappedArray.length; ++lineIdx2)
 						{
-							if (itemValueWrappedArray[lineIdx].length > 0)
-								msgHdrInfoLines.push(itemValueWrappedArray[lineIdx]);
+							if (itemValueWrappedArray[lineIdx2].length > 0)
+								msgHdrInfoLines.push(itemValueWrappedArray[lineIdx2]);
 						}
 
 						// If this isn't the first header property, then add an empty
@@ -11977,6 +11986,7 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	else
 	{
 		retObj.msgText = msgBody;
+		retObj.msgText = word_wrap(msgBody, console.screen_columns - 1, true);
 		retObj.attachments = [];
 	}
 
