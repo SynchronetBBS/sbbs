@@ -54,16 +54,16 @@ static void help(void);
 
 /* API routines */
 static void uifcbail(void);
-static int uscrn(char *str);
+static int uscrn(const char *str);
 static int ulist(int mode, int left, int top, int width, int *dflt, int *bar
-	,char *title, char **option);
-static int uinput(int imode, int left, int top, char *prompt, char *str
+	,const char *title, char **option);
+static int uinput(int imode, int left, int top, const char *prompt, char *str
 	,int len ,int kmode);
-static int umsg(char *str);
+static int umsg(const char *str);
 static int umsgf(char *str, ...);
 static BOOL confirm(char *str, ...);
 static BOOL deny(char *str, ...);
-static void upop(char *str);
+static void upop(const char *str);
 static void sethelp(int line, char* file);
 
 /****************************************************************************/
@@ -134,7 +134,7 @@ void uifcbail(void)
 /* Clear screen, fill with background attribute, display application title.	*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
-int uscrn(char *str)
+int uscrn(const char *str)
 {
     return(0);
 }
@@ -193,7 +193,7 @@ static int which(char* prompt, int max)
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
 int ulist(int mode, int left, int top, int width, int *cur, int *bar
-	, char *title, char **option)
+	, const char *title, char **option)
 {
     char str[128];
 	int i,opts;
@@ -336,7 +336,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 /*************************************************************************/
 /* This function is a windowed input string input routine.               */
 /*************************************************************************/
-int uinput(int mode, int left, int top, char *prompt, char *outstr,
+int uinput(int mode, int left, int top, const char *prompt, char *outstr,
 	int max, int kmode)
 {
     char str[256];
@@ -361,7 +361,7 @@ int uinput(int mode, int left, int top, char *prompt, char *outstr,
 /****************************************************************************/
 /* Displays the message 'str' and waits for the user to hit ENTER           */
 /****************************************************************************/
-int umsg(char *str)
+int umsg(const char *str)
 {
 	int ch;
 	printf("%s\nHit enter to continue:",str);
@@ -415,7 +415,7 @@ BOOL deny(char* fmt, ...)
 /****************************************************************************/
 /* Status popup/down function, see uifc.h for details.						*/
 /****************************************************************************/
-void upop(char *str)
+void upop(const char *str)
 {
 	static int len;
 
