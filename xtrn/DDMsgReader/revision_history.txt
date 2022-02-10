@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.43     2022-02-10   Fixed the memory error when viewing message header info.
+                      Also, when viewing message header information, it will no
+                      longer show JS functions.
 1.42     2022-01-13   Fixed attachment downloading.
                       Also, the first attempt at converting HTML entities in
                       HTML-formatted messages.
