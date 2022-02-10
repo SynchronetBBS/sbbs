@@ -1,13 +1,15 @@
 project (XPDev C)
 
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.11)
 
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckFunctionExists)
-INCLUDE (FindThreads)
-INCLUDE (FindSDL)
-INCLUDE (FindX11)
-INCLUDE (FindPkgConfig)
+find_package(Threads)
+find_package(X11)
+if(NOT WIN32)
+	find_package(PkgConfig)
+	pkg_check_modules(SDL2 sdl2)
+endif()
 
 set(SOURCE
     conwrap.c
@@ -20,18 +22,57 @@ set(SOURCE
     link_list.c
     msg_queue.c
     multisock.c
-    semwrap.c
     netwrap.c
-    sockwrap.c
     semfile.c
+    semwrap.c
+    sockwrap.c
     str_list.c
     strwrap.c
     threadwrap.c
+    unicode.c
     xp_dl.c
     xpbeep.c
     xpdatetime.c
     xpmap.c
     xpprintf.c
+    xptime.c
+)
+
+set(HEADER
+	conwrap.h
+	cp437defs.h
+	dat_file.h
+	datewrap.h
+	dirwrap.h
+	eventwrap.h
+	filewrap.h
+	gen_defs.h
+	genwrap.h
+	haproxy.h
+	ini_file.h
+	link_list.h
+	msg_queue.h
+	multisock.h
+	netwrap.h
+	petdefs.h
+	semfile.h
+	semwrap.h
+	sockwrap.h
+	str_list.h
+	strwrap.h
+	threadwrap.h
+	unicode_defs.h
+	unicode.h
+	wrapdll.h
+	xp_dl.h
+	xp_syslog.h
+	xpbeep.h
+	xpdatetime.h
+	xpendian.h
+	xpevent.h
+	xpmap.h
+	xpprintf.h
+	xpsem.h
 )
 
 if(NOT WIN32)
@@ -39,7 +80,7 @@ if(NOT WIN32)
     list(APPEND SOURCE xpsem.c)
 endif()
 
-if(SDL_FOUND)
+if(SDL2_INCLUDE_DIRS)
 	list(APPEND SOURCE sdlfuncs.c)
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 		list(APPEND SOURCE SDLMain.m)
@@ -49,19 +90,14 @@ if(SDL_FOUND)
 	endif()
 endif()
 
-add_library(xpdev SHARED ${SOURCE})
-
+add_library(xpdev OBJECT ${SOURCE})
+target_include_directories(xpdev PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(xpdev PUBLIC ${XPDevPlus_BINARY_DIR})
 target_link_libraries(xpdev ${CMAKE_DL_LIBS})
 
 CHECK_INCLUDE_FILES(inttypes.h HAS_INTTYPES_H)
-if(HAS_INTTYPES_H)
-    target_compile_definitions(xpdev PUBLIC HAS_INTTYPES_H)
-endif()
 CHECK_INCLUDE_FILES(stdint.h HAS_STDINT_H)
-if(HAS_STDINT_H)
-    target_compile_definitions(xpdev PUBLIC HAS_STDINT_H)
-endif()
-target_compile_definitions(xpdev PUBLIC LINK_LIST_THREADSAFE)
+set(LINK_LIST_THREADSAFE TRUE PARENT_SCOPE)
 
 CHECK_INCLUDE_FILES(sys/soundcard.h HAS_SYS_SOUNDCARD_H) 
 CHECK_INCLUDE_FILES(soundcard.h HAS_SOUNDCARD_H) 
@@ -87,10 +123,9 @@ if(HAS_DEV_MACHINE_SPKR_H)
 	target_compile_definitions(xpdev PRIVATE HAS_DEV_MACHINE_SPKR_H)
 endif()
 
-target_compile_definitions(xpdev PRIVATE WRAPPER_EXPORTS)
-target_compile_definitions(xpdev INTERFACE WRAPPER_IMPORTS)
 if(WIN32)
-	target_link_libraries(xpdev Iphlpapi Ws2_32 Winmm Netapi32)
+	target_compile_definitions(xpdev PUBLIC _WIN32 _WIN32_WINNT=0x0501 WINVER=0x0501 MSVCRT_VERSION=0x0501 _WIN32_IE=0x0500)
+	target_link_libraries(xpdev iphlpapi ws2_32 winmm netapi32)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 	target_link_libraries(xpdev network m)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
@@ -121,24 +156,26 @@ if(HAS_SRANDOMDEV_FUNC)
 	target_compile_definitions(xpdev PRIVATE HAS_SRANDOMDEV_FUNC)
 endif()
 
-if(SDL_FOUND)
-	target_include_directories(xpdev PUBLIC ${SDL_INCLUDE_DIR})
-	target_compile_definitions(xpdev PUBLIC WITH_SDL_AUDIO)
+if(SDL2_INCLUDE_DIRS)
+	target_include_directories(xpdev PUBLIC ${SDL2_INCLUDE_DIRS})
+	set(WITH_SDL_AUDIO TRUE PARENT_SCOPE)
 endif()
 
 if(X11_FOUND)
-	target_include_directories(xpdev PRIVATE X11_INCLUDE_DIR)
+	target_include_directories(xpdev PRIVATE ${X11_INCLUDE_DIR})
 endif()
 
-pkg_check_modules(PORTAUDIO2 portaudio-2.0)
-if(PORTAUDIO2_FOUND)
-	set(PORTAUDIO_FOUND TRUE)
-	set(PORTAUDIO_LIBS PORTAUDIO2_LIBS)
-	set(PORTAUDIO_CFLAGS PORTAUDIO2_CFLAGS)
-else()
-	find_path(PORTAUDIO_INCLUDEDIR portaudio.h)
-	if(PORTAUDIO_INCLUDEDIR)
+if (PKG_CONFIG_FOUND)
+	pkg_check_modules(PORTAUDIO2 portaudio-2.0)
+	if(PORTAUDIO2_FOUND)
 		set(PORTAUDIO_FOUND TRUE)
+		set(PORTAUDIO_LIBS PORTAUDIO2_LIBS)
+		set(PORTAUDIO_CFLAGS PORTAUDIO2_CFLAGS)
+	else()
+		find_path(PORTAUDIO_INCLUDEDIR portaudio.h)
+		if(PORTAUDIO_INCLUDEDIR)
+			set(PORTAUDIO_FOUND TRUE)
+		endif()
 	endif()
 endif()
 
@@ -150,45 +187,3 @@ CHECK_INCLUDE_FILES(alsa/asoundlib.h USE_ALSA_SOUND)
 if(USE_ALSA_SOUND)
     target_compile_definitions(xpdev PRIVATE USE_ALSA_SOUND)
 endif()
-
-set(INSTALL_HEADERS
-	conwrap.h
-	dat_file.h
-	datewrap.h
-	dirwrap.h
-	eventwrap.h
-	filewrap.h
-	gen_defs.h
-	genwrap.h
-	ini_file.h
-	link_list.h
-	msg_queue.h
-	multisock.h
-	netwrap.h
-	semfile.h
-	semwrap.h
-	sockwrap.h
-	str_list.h
-	strwrap.h
-	threadwrap.h
-	wrapdll.h
-	xp_dl.h
-	xp_syslog.h
-	xpbeep.h
-	xpdatetime.h
-	xpendian.h
-	xpmap.h
-	xpprintf.h
-)
-if(NOT WIN32)
-	list(APPEND INSTALL_HEADERS xpevent.h)
-	list(APPEND INSTALL_HEADERS xpsem.h)
-endif()
-target_include_directories(xpdev INTERFACE $<INSTALL_INTERFACE:include/xpdev>)
-
-export(PACKAGE XPDev)
-
-install(TARGETS xpdev DESTINATION lib EXPORT XPDevConfig)
-install(FILES ${INSTALL_HEADERS} DESTINATION include/xpdev)
-install(EXPORT XPDevConfig DESTINATION lib/cmake/XPDev)
-
