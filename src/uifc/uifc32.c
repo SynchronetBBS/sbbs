@@ -76,16 +76,16 @@ static void  timedisplay(BOOL force);
 
 /* API routines */
 static void uifcbail(void);
-static int  uscrn(char *str);
+static int  uscrn(const char *str);
 static int  ulist(int mode, int left, int top, int width, int *dflt, int *bar
-	,char *title, char **option);
-static int  uinput(int imode, int left, int top, char *prompt, char *str
+	,const char *title, char **option);
+static int  uinput(int imode, int left, int top, const char *prompt, char *str
 	,int len ,int kmode);
-static int  umsg(char *str);
+static int  umsg(const char *str);
 static int  umsgf(char *fmt, ...);
 static BOOL confirm(char *fmt, ...);
 static BOOL deny(char *fmt, ...);
-static void upop(char *str);
+static void upop(const char *str);
 static void sethelp(int line, char* file);
 static void showbuf(int mode, int left, int top, int width, int height, char *title
 	, char *hbuf, int *curp, int *barp);
@@ -535,7 +535,7 @@ void uifcbail(void)
 /* Clear screen, fill with background attribute, display application title.	*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
-int uscrn(char *str)
+int uscrn(const char *str)
 {
     textattr(api->bclr|(api->cclr<<4));
     gotoxy(1,1);
@@ -620,7 +620,7 @@ inactive_win(struct vmem_cell *buf, int left, int top, int right, int bottom, in
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
 int ulist(int mode, int left, int top, int width, int *cur, int *bar
-	, char *initial_title, char **option)
+	, const char *initial_title, char **option)
 {
 	struct vmem_cell *ptr, *win, shade[MAX_LINES*2], line[MAX_COLS];
 	static char search[MAX_OPLN] = "";
@@ -1836,7 +1836,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 /*************************************************************************/
 /* This function is a windowed input string input routine.               */
 /*************************************************************************/
-int uinput(int mode, int left, int top, char *inprompt, char *str,
+int uinput(int mode, int left, int top, const char *inprompt, char *str,
 	int max, int kmode)
 {
 	struct vmem_cell shade[MAX_COLS], save_buf[MAX_COLS*4], in_win[MAX_COLS*3];
@@ -2000,7 +2000,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 /****************************************************************************/
 /* Displays the message 'str' and waits for the user to select "OK"         */
 /****************************************************************************/
-int  umsg(char *str)
+int  umsg(const char *str)
 {
 	int i=0;
 	char *ok[2]={"OK",""};
@@ -2638,7 +2638,7 @@ char *utimestr(time_t *intime)
 /****************************************************************************/
 /* Status popup/down function, see uifc.h for details.						*/
 /****************************************************************************/
-void upop(char *str)
+void upop(const char *str)
 {
 	static struct vmem_cell sav[80*3], buf[80*3];
 	int i,j,k;
