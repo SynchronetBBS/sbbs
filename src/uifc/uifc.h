@@ -424,11 +424,11 @@ typedef struct {
 /* str is the title for the application banner.								*/
 /* Returns 0 on success, non-zero on failure.								*/
 /****************************************************************************/
-    int     (*scrn) (char* str);
+    int     (*scrn) (const char* str);
 /****************************************************************************/
 /* Popup a message, maybe wait for the user to hit a key or click button.	*/
 /****************************************************************************/
-	int		(*msg)  (char* str);
+	int		(*msg)  (const char* str);
 	int		(*msgf) (char* fmt, ...);
 	BOOL	(*deny) (char* fmt, ...);
 	BOOL	(*confirm) (char* fmt, ...);
@@ -437,7 +437,7 @@ typedef struct {
 /* str is the message to display on popup.									*/
 /* if str==NULL, then the the status is to be cleared (popdown).			*/
 /****************************************************************************/
-    void    (*pop)  (char* str);
+    void    (*pop)  (const char* str);
 /****************************************************************************/
 /* General menu function.													*/
 /* mode contains WIN_* flags to control display and functionality.			*/
@@ -453,7 +453,7 @@ typedef struct {
 /* option number OR'd with MSK_INS, MSK_DEL, MSK_GET, MSK_PUT, or MSK_EDIT.	*/
 /****************************************************************************/
     int     (*list) (int mode, int left, int top, int width, int* dflt
-                        ,int* bar, char *title, char** option);
+                        ,int* bar, const char *title, char** option);
 /****************************************************************************/
 /* Windowed string input routine.											*/
 /* mode contains WIN_* flags to control display and functionality.			*/
@@ -465,7 +465,7 @@ typedef struct {
 /* This function sets uifcapi_t.changes to TRUE if the string is modified.	*/
 /* Returns the length of the string or -1 on escape/abort.					*/
 /****************************************************************************/
-    int     (*input)(int mode, int left, int top, char* prompt, char* str
+    int     (*input)(int mode, int left, int top, const char* prompt, char* str
             	        ,int len, int kmode);
 /****************************************************************************/
 /* Sets the current help index by source code file and line number.			*/
