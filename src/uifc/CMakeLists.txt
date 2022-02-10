@@ -1,22 +1,21 @@
 project (UIfC C)
 
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.11)
 
-INCLUDE (../build/SynchronetMacros.cmake)
 INCLUDE (FindThreads)
 
 set(SOURCE
+	filepick.c
 	uifc32.c
 	uifcx.c
 )
-add_library(uifc SHARED ${SOURCE})
-require_libs(uifc xpdev ciolib)
 
-target_compile_definitions(uifc PRIVATE UIFC_EXPORTS)
-target_compile_definitions(uifc INTERFACE UIFC_IMPORTS)
+set(HEADER
+	filepick.h
+	uifc.h
+)
 
-export(PACKAGE UIFC)
+add_library(uifc OBJECT ${SOURCE})
+target_include_directories(uifc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-install(TARGETS uifc DESTINATION lib EXPORT UIFCConfig)
-install(FILES uifc.h DESTINATION include)
-install(EXPORT UIFCConfig DESTINATION lib/cmake/UIFC)
+target_link_libraries(uifc ciolib xpdev)
