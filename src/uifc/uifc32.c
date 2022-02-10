@@ -87,7 +87,7 @@ static BOOL confirm(char *fmt, ...);
 static BOOL deny(char *fmt, ...);
 static void upop(const char *str);
 static void sethelp(int line, char* file);
-static void showbuf(int mode, int left, int top, int width, int height, char *title
+static void showbuf(int mode, int left, int top, int width, int height, const char *title
 	, char *hbuf, int *curp, int *barp);
 
 /* Dynamic menu support */
