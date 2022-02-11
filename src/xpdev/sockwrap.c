@@ -608,7 +608,7 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 }
 
 
-union xp_sockaddr* inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size)
+union xp_sockaddr* inet_ptoaddr(const char *addr_str, union xp_sockaddr *addr, size_t size)
 {
     struct addrinfo hints = {0};
     struct addrinfo *res, *cur;
