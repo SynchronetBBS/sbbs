@@ -88,7 +88,7 @@ static BOOL deny(char *fmt, ...);
 static void upop(const char *str);
 static void sethelp(int line, char* file);
 static void showbuf(int mode, int left, int top, int width, int height, const char *title
-	, char *hbuf, int *curp, int *barp);
+	, const char *hbuf, int *curp, int *barp);
 
 /* Dynamic menu support */
 static int *last_menu_cur=NULL;
@@ -2690,12 +2690,12 @@ void sethelp(int line, char* file)
 /****************************************************************************/
 /* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-void showbuf(int mode, int left, int top, int width, int height, const char *title, char *hbuf, int *curp, int *barp)
+void showbuf(int mode, int left, int top, int width, int height, const char *title, const char *hbuf, int *curp, int *barp)
 {
 	char inverse=0,high=0;
 	struct vmem_cell *textbuf;
 	struct vmem_cell *p;
-	char *pc;
+	const char *cpc;
 	struct vmem_cell *oldp=NULL;
 	int i,j,k,len;
 	int	 lines;
@@ -2768,8 +2768,8 @@ void showbuf(int mode, int left, int top, int width, int height, const char *tit
 		}
 		tmp_buffer2[i].ch = api->chars->help_titlebreak_left;
 		i+=2;
-		for(pc=title;*pc && pc < &title[j];pc++) {
-			tmp_buffer2[i].ch=*pc;
+		for(cpc=title;*cpc && cpc < &title[j];cpc++) {
+			tmp_buffer2[i].ch=*cpc;
 			i++;
 		}
 		i++;
