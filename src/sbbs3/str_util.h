@@ -67,7 +67,7 @@ DLLEXPORT char *	rot13(char* str);
 DLLEXPORT uint32_t	str_to_bits(uint32_t currval, const char *str);
 DLLEXPORT BOOL		str_has_ctrl(const char*);
 DLLEXPORT BOOL		str_is_ascii(const char*);
-DLLEXPORT char *	utf8_to_cp437_str(char* str);
+DLLEXPORT char *	utf8_to_cp437_inplace(char* str);
 DLLEXPORT char *	sub_newsgroup_name(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *	sub_area_tag(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *	dir_area_tag(scfg_t*, dir_t*, char*, size_t);

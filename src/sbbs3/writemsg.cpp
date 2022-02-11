@@ -101,7 +101,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 					&& (!useron_xedit || (cfg.xedit[useron_xedit-1]->misc&XTRN_UTF8)))
 					is_utf8 = TRUE;
 				else {
-					utf8_to_cp437_str(buf);
+					utf8_to_cp437_inplace(buf);
 				}
 			} else { // CP437
 				char* orgtxt;
@@ -559,7 +559,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		if(!str_is_ascii(subj)) {
 			if(utf8_str_is_valid(subj)) {
 				if(!term_supports(UTF8) || !(cfg.xedit[useron_xedit-1]->misc & XTRN_UTF8)) {
-					utf8_to_cp437_str(subj);
+					utf8_to_cp437_inplace(subj);
 				}
 			} else { // CP437
 				if(term_supports(UTF8) && (cfg.xedit[useron_xedit-1]->misc & XTRN_UTF8)) {

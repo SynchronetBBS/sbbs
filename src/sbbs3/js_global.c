@@ -4568,7 +4568,7 @@ js_utf8_decode(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	utf8_to_cp437_str(buf);
+	utf8_to_cp437_inplace(buf);
 	JS_RESUMEREQUEST(cx, rc);
 
 	js_str = JS_NewStringCopyZ(cx, buf);

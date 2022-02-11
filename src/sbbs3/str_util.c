@@ -870,7 +870,7 @@ uint32_t str_to_bits(uint32_t val, const char *str)
 }
 
 /* Convert a UTF-8 encoded string to a CP437-encoded string */
-char* utf8_to_cp437_str(char* str)
+char* utf8_to_cp437_inplace(char* str)
 {
 	utf8_normalize_str(str);
 	return utf8_replace_chars(str, unicode_to_cp437
