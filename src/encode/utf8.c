@@ -251,6 +251,139 @@ int cp437_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char 
 	return retval;
 }
 
+int utf8_to_cp437_str(const char *src, char *dest, size_t maxlen, unsigned char minval, size_t *outlen)
+{
+	int retval = 0;
+	size_t lcl_outlen;
+	unsigned char ch;
+	if (outlen == NULL)
+		outlen = &lcl_outlen;
+	*outlen = 0;
+	for(const char* p = src; *p != 0; p += retval) {
+		if(*outlen >= maxlen) {
+			retval = -1;
+			break;
+		}
+		enum unicode_codepoint codepoint;
+		retval = utf8_getc(p, maxlen - *outlen, &codepoint);
+		if (retval < 1)
+			break;
+		ch = unicode_to_cp437(codepoint);
+		if (ch) {
+			*(dest + *outlen) = ch;
+			(*outlen)++;
+		}
+	}
+	*(dest + *outlen) = 0;
+	return retval;
+}
+
+int latin1_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char minval, size_t *outlen)
+{
+	int retval = 0;
+	size_t lcl_outlen;
+	if (outlen == NULL)
+		outlen = &lcl_outlen;
+	*outlen = 0;
+	for(const unsigned char* p = (const unsigned char *)str; *p != 0; p++) {
+		if(*outlen >= maxlen) {
+			retval = -1;
+			break;
+		}
+		enum unicode_codepoint codepoint = 0;
+		if(*p >= minval)
+			codepoint = *p;
+		if(codepoint) {
+			retval = utf8_putc(dest + *outlen, maxlen - *outlen, codepoint);
+			if(retval < 1)
+				break;
+			*outlen += retval;
+		} else {
+			*(dest + *outlen) = *p;
+			(*outlen)++;
+		}
+	}
+	*(dest + *outlen) = 0;
+	return retval;
+}
+
+int utf8_to_latin1_str(const char *src, char *dest, size_t maxlen, unsigned char minval, size_t *outlen)
+{
+	int retval = 0;
+	size_t lcl_outlen;
+	unsigned char ch;
+	if (outlen == NULL)
+		outlen = &lcl_outlen;
+	*outlen = 0;
+	for(const char* p = src; *p != 0; p += retval) {
+		if(*outlen >= maxlen) {
+			retval = -1;
+			break;
+		}
+		enum unicode_codepoint codepoint;
+		retval = utf8_getc(p, maxlen - *outlen, &codepoint);
+		if (retval < 1)
+			break;
+		ch = unicode_to_latin1(codepoint);
+		if (ch) {
+			*(dest + *outlen) = ch;
+			(*outlen)++;
+		}
+	}
+	*(dest + *outlen) = 0;
+	return retval;
+}
+
+// From openssl/crypto/asn1/a_utf8.c:
+/*
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
+ */
+
+/* UTF8 utilities */
+
+/*-
+ * This parses a UTF8 string one codepoint at a time. It is passed a pointer
+ * to the string and the size of the string (in bytes). It sets 'value' to
+ * the value of the current codepoint. It returns the number of bytes read
+ * or a negative error code:
+ * -1 = string too short
+ * -2 = illegal character
+ * -3 = subsequent characters not of the form 10xxxxxx
+ * -4 = character encoded incorrectly (not minimal length).
+ */
+
+int utf8_getc(const char *str, size_t len, enum unicode_codepoint* val)
+{
+    const unsigned char *p;
+    unsigned long value;
+    int ret;
+    if (len <= 0)
+        return 0;
+    p = (const unsigned char*)str;
+
+    /* Check syntax and work out the encoded value (if correct) */
+    if ((*p & 0x80) == 0) {
+        value = *p++ & 0x7f;
+        ret = 1;
+    } else if ((*p & 0xe0) == 0xc0) {
+        if (len < 2)
+            return -1;
+        if ((p[1] & 0xc0) != 0x80)
+            return -3;
+        value = (*p++ & 0x1f) << 6;
+        value |= *p++ & 0x3f;
+        if (value < 0x80)
+            return -4;
+        ret = 2;
+    } else if ((*p & 0xf0) == 0xe0) {
+        if (len < 3)
+            return -1;
+
 #define is_unicode_surrogate(value) \
     (value >= UNICODE_BLOCK_SURROGATE_BEGIN && value <= UNICODE_BLOCK_SURROGATE_END)
 
