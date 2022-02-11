@@ -155,7 +155,7 @@ const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf
 		buf = msgghdr_field_cp437_str;
 
 	strncpy(buf, str, sizeof(msgghdr_field_cp437_str) - 1);
-	utf8_to_cp437_str(buf);
+	utf8_to_cp437_inplace(buf);
 
 	return buf;
 }
