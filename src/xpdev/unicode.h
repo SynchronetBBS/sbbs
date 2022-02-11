@@ -46,6 +46,7 @@ extern "C" {
 extern enum unicode_codepoint cp437_unicode_tbl[];
 size_t unicode_width(enum unicode_codepoint);
 char unicode_to_cp437(enum unicode_codepoint);
+char unicode_to_latin1(enum unicode_codepoint);
 
 #if defined(__cplusplus)
 }
