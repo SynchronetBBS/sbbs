@@ -2690,7 +2690,7 @@ void sethelp(int line, char* file)
 /****************************************************************************/
 /* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf, int *curp, int *barp)
+void showbuf(int mode, int left, int top, int width, int height, const char *title, char *hbuf, int *curp, int *barp)
 {
 	char inverse=0,high=0;
 	struct vmem_cell *textbuf;
