@@ -4012,7 +4012,7 @@ static void smtp_thread(void* arg)
 								,timestr(&scfg,newmsg.hdr.when_imported.time,tmp)
 								,sender, p);
 							if(newmsg.hdr.auxattr&MSG_HFIELDS_UTF8)
-								utf8_to_cp437_str(str);
+								utf8_to_cp437_inplace(str);
 							if(!newmsg.idx.to) 	/* Forwarding */
 								sprintf(str+strlen(str), startup->forward_notice, rcpt_addr);
 							putsmsg(&scfg, usernum, str);
