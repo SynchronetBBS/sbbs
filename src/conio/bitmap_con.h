@@ -30,7 +30,7 @@ void bitmap_gotoxy(int x, int y);
 void bitmap_setcursortype(int type);
 int bitmap_setfont(int font, int force, int font_no);
 int bitmap_getfont(int fnum);
-int bitmap_loadfont(char *filename);
+int bitmap_loadfont(const char *filename);
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy);
 void bitmap_clreol(void);
 void bitmap_clrscr(void);

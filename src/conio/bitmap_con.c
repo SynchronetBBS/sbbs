@@ -104,7 +104,7 @@ pthread_mutex_t blinker_lock;
 
 /* Forward declarations */
 
-static int bitmap_loadfont_locked(char *filename);
+static int bitmap_loadfont_locked(const char *filename);
 static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell, uint32_t fg, uint32_t bg);
 static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp);
 static void	cb_drawrect(struct rectlist *data);
@@ -125,7 +125,7 @@ void bitmap_drv_free_rect(struct rectlist *rect);
 /* These functions get called from the driver and ciolib only */
 /**************************************************************/
 
-static int bitmap_loadfont_locked(char *filename)
+static int bitmap_loadfont_locked(const char *filename)
 {
 	static char current_filename[MAX_PATH];
 	unsigned int fontsize;
@@ -1108,7 +1108,7 @@ int bitmap_getfont(int font_num)
 	return ret;
 }
 
-int bitmap_loadfont(char *filename)
+int bitmap_loadfont(const char *filename)
 {
 	int ret;
 
