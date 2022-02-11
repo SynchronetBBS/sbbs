@@ -363,7 +363,7 @@ typedef struct {
 	void	(*resume)		(void);
 	int		(*setfont)		(int font, int force, int font_num);
 	int		(*getfont)		(int font_num);
-	int		(*loadfont)		(char *filename);
+	int		(*loadfont)		(const char *filename);
 	int		(*get_window_info)		(int* width, int* height, int* xpos, int* ypos);
 	void	(*getcustomcursor)	(int *startline, int *endline, int *range, int *blink, int *visible);
 	void	(*setcustomcursor)	(int startline, int endline, int range, int blink, int visible);
@@ -448,7 +448,7 @@ CIOLIBEXPORT void ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * ciolib_getcliptext(void);
 CIOLIBEXPORT int ciolib_setfont(int font, int force, int font_num);
 CIOLIBEXPORT int ciolib_getfont(int font_num);
-CIOLIBEXPORT int ciolib_loadfont(char *filename);
+CIOLIBEXPORT int ciolib_loadfont(const char *filename);
 CIOLIBEXPORT int ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos);
 CIOLIBEXPORT void ciolib_beep(void);
 CIOLIBEXPORT void ciolib_getcustomcursor(int *startline, int *endline, int *range, int *blink, int *visible);

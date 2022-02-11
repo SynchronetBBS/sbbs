@@ -1489,7 +1489,7 @@ CIOLIBEXPORT int ciolib_getfont(int font_num)
 
 /* Optional */
 /* Return Non-zero on success */
-CIOLIBEXPORT int ciolib_loadfont(char *filename)
+CIOLIBEXPORT int ciolib_loadfont(const char *filename)
 {
 	CIOLIB_INIT();
 
