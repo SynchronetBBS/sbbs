@@ -68,6 +68,13 @@ char* utf8_replace_chars(char* str, char (*lookup)(enum unicode_codepoint), char
 // Convert a CP437 char string (src) to UTF-8 string (dest) up to 'maxlen' chars long (sans NUL-terminator)
 // 'minval' can be used to limit the range of converted chars
 int cp437_to_utf8_str(const char* src, char* dest, size_t maxlen, unsigned char minval);
+int utf8_to_cp437_str(const char *src, char *dest, size_t maxlen, unsigned char minval, size_t *outlen);
+
+// Convert a Latin1 char string (src) to UTF-8 string (dest) up to 'maxlen' bytes long (sans NUL-terminator)
+// 'minval' can be used to limit the range of converted chars.  On return, *outlen is set to the number
+// of bytes written to dest unless it is NULL
+int latin1_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char minval, size_t *outlen);
+int utf8_to_latin1_str(const char *src, char *dest, size_t maxlen, unsigned char minval, size_t *outlen);
 
 // Decode a UTF-8 sequence to a UNICODE code point
 int utf8_getc(const char* str, size_t len, enum unicode_codepoint* codepoint);
