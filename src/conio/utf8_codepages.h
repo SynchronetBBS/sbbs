@@ -42,6 +42,9 @@ struct codepage_def {
 	const uint32_t *cp_ext_unicode_table;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT];
 
 uint8_t *cp_to_utf8(enum ciolib_codepage cp, const char *cpstr, size_t buflen, size_t *outlen);
@@ -49,5 +52,8 @@ char *utf8_to_cp(enum ciolib_codepage cp, const uint8_t *utf8str, char unmapped,
 uint8_t cpchar_from_unicode_cpoint(enum ciolib_codepage cp, uint32_t cpoint, char unmapped);
 uint32_t cpoint_from_cpchar(enum ciolib_codepage cp, uint8_t ch);
 uint32_t cpoint_from_cpchar_ext(enum ciolib_codepage cp, uint8_t ch);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
