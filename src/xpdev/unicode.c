@@ -348,6 +348,13 @@ size_t unicode_width(enum unicode_codepoint u)
 	}
 }
 
+char unicode_to_latin1(enum unicode_codepoint codepoint)
+{
+	if (codepoint < 0 || codepoint > 255)
+		return UNICODE_UNDEFINED;
+	return codepoint;
+}
+
 char unicode_to_cp437(enum unicode_codepoint codepoint)
 {
 	switch(codepoint) {
