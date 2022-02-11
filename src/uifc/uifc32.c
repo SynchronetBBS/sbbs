@@ -2755,7 +2755,6 @@ void showbuf(int mode, int left, int top, int width, int height, const char *tit
 		tmp_buffer2[0].ch=api->chars->help_top_left;
 		j=title_len;
 		if(j>width-6) {
-			*(title+width-6)=0;
 			j=width-6;
 		}
 		for(i=1;i<(width-j)/2;i++)
@@ -2769,7 +2768,7 @@ void showbuf(int mode, int left, int top, int width, int height, const char *tit
 		}
 		tmp_buffer2[i].ch = api->chars->help_titlebreak_left;
 		i+=2;
-		for(pc=title;*pc;pc++) {
+		for(pc=title;*pc && pc < &title[j];pc++) {
 			tmp_buffer2[i].ch=*pc;
 			i++;
 		}
