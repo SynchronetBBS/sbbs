@@ -55,7 +55,13 @@ struct xpmapping {
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 DLLEXPORT struct xpmapping* xpmap(const char *filename, enum xpmap_type type);
 DLLEXPORT void xpunmap(struct xpmapping *map);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
