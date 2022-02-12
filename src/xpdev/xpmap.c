@@ -43,7 +43,7 @@ struct xpmapping* xpmap(const char *filename, enum xpmap_type type)
 	switch(type) {
 		case XPMAP_READ:
 			oflags=O_RDONLY;
-			mflags=0;
+			mflags=MAP_PRIVATE;
 			mprot=PROT_READ;
 			break;
 		case XPMAP_WRITE:
