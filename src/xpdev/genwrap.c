@@ -842,11 +842,16 @@ uint64_t xp_timer64(void)
 	else
 		ret = -1;
 #elif defined(_WIN32)
+	static BOOL intable = FALSE;
+	static BOOL intable_tested = FALSE;
 	LARGE_INTEGER	freq;
 	LARGE_INTEGER	tick;
 
 	if(QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&tick)) {
-        	static BOOL intable = (freq.QuadPart % 1000) == 0;
+		if (!intable_tested) {
+        		intable = (freq.QuadPart % 1000) == 0;
+			intable_tested = TRUE;
+		}
 		if (intable)
 			ret = tick.QuadPart / (freq.QuadPart / 1000);
 		else
