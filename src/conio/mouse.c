@@ -31,6 +31,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,7 +42,7 @@
 
 #include "ciolib.h"
 
-#define MSEC_CLOCK()	(msclock()*MSCLOCKS_PER_SEC/1000)
+#define MSEC_CLOCK()	llroundl(xp_timer()*1000)
 
 enum {
 	 MOUSE_NOSTATE
@@ -62,7 +63,7 @@ struct in_mouse_event {
 	int	y;
 	int	x_res;
 	int	y_res;
-	clock_t	ts;
+	long long ts;
 	void	*nextevent;
 };
 
@@ -91,7 +92,7 @@ struct mouse_state {
 	int	button_y[5];
 	int	button_x_res[5];			/* Start X/Y position of the current state */
 	int	button_y_res[5];
-	clock_t	timeout[5];	/* Button event timeouts (timespecs ie: time of expiry) */
+	long long timeout[5];	/* Button event timeouts (timespecs ie: time of expiry) */
 	int	curx;					/* Current X position */
 	int	cury;					/* Current Y position */
 	int	curx_res;					/* Current X position */
@@ -265,7 +266,7 @@ void ciolib_mouse_thread(void *data)
 	int timeout_button=0;
 	int but;
 	int delay;
-	clock_t	ttime=0;
+	long long ttime=0;
 
 	SetThreadName("Mouse");
 	init_mouse();
