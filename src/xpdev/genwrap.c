@@ -690,10 +690,9 @@ char* os_cmdshell(void)
 	return(shell);
 }
 
-/****************************************************************/
-/* Microsoft (DOS/Win32) real-time system clock implementation.	*/
-/****************************************************************/
-#ifdef __unix__
+/********************************************************/
+/* Stupid real-time system clock implementation.	*/
+/********************************************************/
 clock_t msclock(void)
 {
         long double t = roundl(xp_timer() * 1000);
@@ -705,7 +704,6 @@ clock_t msclock(void)
 
 	return (clock_t)t;
 }
-#endif
 
 /****************************************************************************/
 /* Skips all white-space chars at beginning of 'str'						*/
