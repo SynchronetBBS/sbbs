@@ -1398,8 +1398,8 @@ void sbbs_t::progress(const char* text, int count, int total, int interval)
 
 	if(cfg.node_num == 0)
 		return;	// Don't output this for events
-	clock_t now = msclock();
-	if(now - last_progress < interval)
+	double now = xp_timer();
+	if((now - last_progress) * 1000 < interval)
 		return;
 	if(text == NULL) text = "";
 	float pct = total ? ((float)count/total)*100.0F : 100.0F;
