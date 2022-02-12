@@ -94,7 +94,7 @@ enum {
 	,SYS_PROP_MODS_DIR
 	,SYS_PROP_LOGS_DIR
 
-	/* msclock() access */
+	/* clock/timer access */
 	,SYS_PROP_CLOCK
 	,SYS_PROP_CLOCK_PER_SEC
 	,SYS_PROP_TIMER
@@ -312,10 +312,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 
 		case SYS_PROP_CLOCK:
-			*vp=DOUBLE_TO_JSVAL((double)msclock());
+			*vp=DOUBLE_TO_JSVAL((double)xp_timer64());
 			break;
 		case SYS_PROP_CLOCK_PER_SEC:
-			*vp=UINT_TO_JSVAL(MSCLOCKS_PER_SEC);
+			*vp=UINT_TO_JSVAL(1000);
 			break;
 		case SYS_PROP_TIMER:
 			*vp=DOUBLE_TO_JSVAL(xp_timer());

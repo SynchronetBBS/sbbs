@@ -790,7 +790,7 @@ js_mswait(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32 val=1;
-	clock_t start=msclock();
+	double start=xp_timer();
 	jsrefcount	rc;
 
 	if(argc) {
@@ -801,7 +801,7 @@ js_mswait(JSContext *cx, uintN argc, jsval *arglist)
 	mswait(val);
 	JS_RESUMEREQUEST(cx, rc);
 
-	JS_SET_RVAL(cx, arglist,UINT_TO_JSVAL(msclock()-start));
+	JS_SET_RVAL(cx, arglist,DOUBLE_TO_JSVAL((xp_timer()-start) * 1000));
 
 	return(JS_TRUE);
 }
