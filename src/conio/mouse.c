@@ -42,7 +42,7 @@
 
 #include "ciolib.h"
 
-#define MSEC_CLOCK()	llroundl(xp_timer()*1000)
+#define MSEC_CLOCK()	xp_timer64()
 
 enum {
 	 MOUSE_NOSTATE
