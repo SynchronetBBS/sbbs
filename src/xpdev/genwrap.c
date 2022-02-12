@@ -825,6 +825,42 @@ long double	xp_timer(void)
 	return(ret);
 }
 
+/****************************************************************************/
+/* Returns the current value of the systems best timer (in MILLISECONDS)	*/
+/* Any value < 0 indicates an error											*/
+/****************************************************************************/
+uint64_t xp_timer64(void)
+{
+	uint64_t ret;
+#if defined(__unix__)
+	struct timespec ts;
+
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+		ret = ts.tv_sec * 1000;
+		ret += ts.tv_nsec / 1000000;
+	}
+	else
+		ret = -1;
+#elif defined(_WIN32)
+	LARGE_INTEGER	freq;
+	LARGE_INTEGER	tick;
+	if (
+	if(QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&tick)) {
+        static BOOL intable = (freq % 1000) == 0;
+		if (intable)
+			ret = tick.QuadPart / (freq.QuadPart / 1000);
+		else
+			ret = ((double)tick.QuadPart)/(((double)freq.QuadPart) / 1000);
+	}
+	else {
+		ret=GetTickCount();
+	}
+#else
+#error no high-resolution time for this platform
+#endif
+	return(ret);
+}
+
 /* Returns TRUE if specified process is running */
 BOOL check_pid(pid_t pid)
 {
