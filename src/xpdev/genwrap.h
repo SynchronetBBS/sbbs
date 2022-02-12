@@ -378,8 +378,9 @@ DLLEXPORT char*		byte_count_to_str(int64_t bytes, char* str, size_t size);
 DLLEXPORT char*		byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong unit, int precision);
 
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
+typedef		clock_t				msclock_t;
 #define		MSCLOCKS_PER_SEC	1000
-clock_t		msclock(void);
+msclock_t	msclock(void);
 
 DLLEXPORT BOOL		check_pid(pid_t);
 DLLEXPORT BOOL		terminate_pid(pid_t);
