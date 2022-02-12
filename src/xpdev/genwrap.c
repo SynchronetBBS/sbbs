@@ -850,6 +850,7 @@ uint64_t xp_timer64(void)
 	LARGE_INTEGER	tick;
 
 	if (!initialized) {
+		LARGE_INTEGER	freq;
 		if (!QueryPerformanceFrequency(&freq))
 			can_use_QPF = FALSE;
 		else
@@ -870,7 +871,7 @@ uint64_t xp_timer64(void)
 		if (intable)
 			ret = tick.QuadPart / msfreq;
 		else
-			ret = ((double)tick.QuadPart) / msdfreq;
+			ret = (uint32_t)(((double)tick.QuadPart) / msdfreq);
 	}
 	else {
 		ret=GetTickCount();
