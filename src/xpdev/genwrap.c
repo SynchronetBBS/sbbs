@@ -695,14 +695,9 @@ char* os_cmdshell(void)
 /********************************************************/
 clock_t msclock(void)
 {
-        long double t = roundl(xp_timer() * 1000);
+	uint64_t = (uint64_t)(xp_timer() * 1000);
 
-        if (sizeof(clock_t) < 8) {
-                while (t > INT32_MAX)
-                        t -= UINT32_MAX;
-        }
-
-	return (clock_t)t;
+	return (clock_t)(t&0xffffffff);
 }
 
 /****************************************************************************/
