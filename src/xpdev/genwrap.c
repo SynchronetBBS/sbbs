@@ -842,20 +842,35 @@ uint64_t xp_timer64(void)
 	else
 		ret = -1;
 #elif defined(_WIN32)
+	static BOOL can_use_QPF = TRUE;
 	static BOOL intable = FALSE;
-	static BOOL intable_tested = FALSE;
-	LARGE_INTEGER	freq;
+	static BOOL initialized = FALSE;
+	static uint32_t msfreq;
+	static double msdfreq;
 	LARGE_INTEGER	tick;
 
-	if(QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&tick)) {
-		if (!intable_tested) {
+	if (!initialized) {
+		if (!QueryPerformanceFrequency(&freq))
+			can_use_QPF = FALSE;
+		else
         		intable = (freq.QuadPart % 1000) == 0;
-			intable_tested = TRUE;
+
+		if (intable)
+			msfreq = freq.QuadPart / 1000;
+		else
+			msdfreq = ((double)freq.QuadPart) / 1000;
+
+		initialized = TRUE;
+	}
+	if (can_use_QPF) {
+		if (!QueryPerformanceCounter(&tick)) {
+			can_use_QPF = FALSE;
+			return GetTickCount();
 		}
 		if (intable)
-			ret = tick.QuadPart / (freq.QuadPart / 1000);
+			ret = tick.QuadPart / msfreq;
 		else
-			ret = (uint64_t)(((double)tick.QuadPart)/(((double)freq.QuadPart) / 1000));
+			ret = ((double)tick.QuadPart) / msdfreq;
 	}
 	else {
 		ret=GetTickCount();
