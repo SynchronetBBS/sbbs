@@ -695,7 +695,7 @@ char* os_cmdshell(void)
 /********************************************************/
 clock_t msclock(void)
 {
-	uint64_t = (uint64_t)(xp_timer() * 1000);
+	uint64_t t = (uint64_t)(xp_timer() * 1000);
 
 	return (clock_t)(t&0xffffffff);
 }
