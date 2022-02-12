@@ -855,7 +855,7 @@ uint64_t xp_timer64(void)
 		if (intable)
 			ret = tick.QuadPart / (freq.QuadPart / 1000);
 		else
-			ret = ((double)tick.QuadPart)/(((double)freq.QuadPart) / 1000);
+			ret = (uint64_t)(((double)tick.QuadPart)/(((double)freq.QuadPart) / 1000));
 	}
 	else {
 		ret=GetTickCount();
