@@ -76,7 +76,7 @@ function pickfont()
 	var slot=0;
 	if(argc>0) {
 		slot=parseInt(argv[0]);
-		if (isNaN(slot)
+		if (isNaN(slot))
 			slot = 0;
 	}
 
