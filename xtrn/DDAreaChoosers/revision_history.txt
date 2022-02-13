@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.22     2022-01-12   In the file area chooser, fixed a lightbar file directory
+                      choosing issue when using name collapsing (was using the
+                      wrong data structure)
 1.21     2022-01-15   Now supports message sub-board & file directory name
                       collapsing, allowing simplified file directory and message
                       sub-board lists for ones with common groups, adding a 3rd

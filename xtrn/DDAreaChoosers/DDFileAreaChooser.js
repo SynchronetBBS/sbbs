@@ -15,6 +15,10 @@
  *                            instead of using internal lightbar code.
  * 2022-01-15 Eric Oulashin   Version 1.21
  *                            Added directory name collapsing
+ * 2022-02-12 Eric Oulashin   Version 1.22
+ *                            Fixed lightbar file directory choosing issue when
+ *                            using name collapsing (was using the wrong data
+ *                            structure)
  */
 
 /* Command-line arguments:
@@ -52,8 +56,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.21";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-01-15";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.22";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-02-12";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1289,7 +1293,10 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 				if (chosenFileDirIdx > -1)
 				{
 					// Set the current file directory
-					bbs.curdir_code = file_area.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
+					if (this.useDirCollapsing)
+						bbs.curdir_code = this.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
+					else
+						bbs.curdir_code = file_area.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
 					continueOn = false;
 				}
 				else
@@ -1498,7 +1505,15 @@ function DDFileAreaChooser_CreateLightbarFileDirMenu(pLibIdx, pDirIdx, pLevel)
 				{
 					var showDirMark = false;
 					if ((typeof(bbs.curdir_code) == "string") && (bbs.curdir_code != ""))
-						showDirMark = ((this.libIdx == file_area.dir[bbs.curdir_code].lib_index) && (pDirIdx == file_area.dir[bbs.curdir_code].index));
+					{
+						if (this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].hasOwnProperty("subdir_list") && this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].subdir_list.length > 0)
+						{
+							for (var subDirIdx = 0; subDirIdx < this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].subdir_list.length && !showDirMark; ++subDirIdx)
+								showDirMark = (bbs.curdir_code == this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].subdir_list[subDirIdx].code);
+						}
+						else if (this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].hasOwnProperty("code"))
+							showDirMark = (bbs.curdir_code == this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].code);
+					}
 					// Set the directory description.  And if it has subdirectories,
 					// then append some text indicating so.
 					var dirDesc = this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].description;
@@ -1756,16 +1771,22 @@ function numFilesInDir(pLibIdx, pDirIdx)
 {
 	var numFiles = 0;
 
-	// Count the files in the directory.  If it's not a directory, then
-	// increment numFiles.
-	var files = directory(file_area.lib_list[pLibIdx].dir_list[pDirIdx].path + "*.*");
-	numFiles = files.length;
-	// Make sure directories aren't counted: Go through the files array, and
-	// for each directory, decrement numFiles.
-	for (var i in files)
+	// file_area.lib_list[pLibIdx].dir_list[pDirIdx].files was added in Synchronet 3.18c
+	if (file_area.lib_list[pLibIdx].dir_list[pDirIdx].hasOwnProperty("files"))
+		numFiles = +(file_area.lib_list[pLibIdx].dir_list[pDirIdx].files);
+	else
 	{
-		if (file_isdir(files[i]))
-			--numFiles;
+		// Count the files in the directory.  If it's not a directory, then
+		// increment numFiles.
+		var files = directory(file_area.lib_list[pLibIdx].dir_list[pDirIdx].path + "*.*");
+		numFiles = files.length;
+		// Make sure directories aren't counted: Go through the files array, and
+		// for each directory, decrement numFiles.
+		for (var i in files)
+		{
+			if (file_isdir(files[i]))
+				--numFiles;
+		}
 	}
 
 	return numFiles;
