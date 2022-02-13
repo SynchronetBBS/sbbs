@@ -20,6 +20,8 @@
  * 2022-01-15 Eric Oulashin   Version 1.21
  *                            Finished sub-board collapsing (finally) and releasing
  *                            this version.
+ * 2022-02-12 Eric Oulashin   Version 1.22
+ *                            Updated the version to match the file area chooser
  *                                  
 */
 
@@ -62,8 +64,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.21";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-01-15";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.22";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-02-12";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
