@@ -196,6 +196,19 @@ js_archive_type(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	return JS_TRUE;
 }
 
+static JSBool
+js_archive_name(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+{
+	const char* filename;
+
+	if((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+		return JS_FALSE;
+
+	JSString* js_str = JS_NewStringCopyZ(cx, filename);
+	*vp = STRING_TO_JSVAL(js_str);
+	return JS_TRUE;
+}
+
 // TODO: consider making 'path' and 'case-sensitive' arguments to wildmatch() configurable via method arguments
 static JSBool
 js_list(JSContext *cx, uintN argc, jsval *arglist)
@@ -582,6 +595,7 @@ static jsSyncMethodSpec js_archive_functions[] = {
 static char* archive_prop_desc[] = {
 
 	 "format/compression type of archive file - <small>READ ONLY</small>"
+	,"filename specified in constructor - <small>READ ONLY</small>"
 	,NULL
 };
 #endif
@@ -609,6 +623,10 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(!JS_DefineProperty(cx, obj, "type", JSVAL_VOID, js_archive_type, NULL, JSPROP_ENUMERATE|JSPROP_READONLY)) {
+		JS_ReportError(cx, "JS_DefineProperty failed");
+		return JS_FALSE;
+	}
+	if(!JS_DefineProperty(cx, obj, "name", JSVAL_VOID, js_archive_name, NULL, JSPROP_ENUMERATE|JSPROP_READONLY)) {
 		JS_ReportError(cx, "JS_DefineProperty failed");
 		return JS_FALSE;
 	}
