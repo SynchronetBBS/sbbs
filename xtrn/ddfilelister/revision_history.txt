@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.02     2022-02-13   Added the ability to do a file search (via filespec,
+                      description, or new files since last scan).  A command-
+                      line parameter, -MODE, specifies which search to perform
+                      (search_filename, search_description, or new_file_search
+                      for searching; list_curdir lists files in the user's
+                      current directory, which is the default).
 2.01     2022-02-07   Fixed file description being undefined when viewing file
                       info.  Fixed command bar refreshing when pressing the
                       hotkeys.  Added an option to pause after viewing a file

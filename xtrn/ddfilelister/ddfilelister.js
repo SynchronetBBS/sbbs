@@ -18,6 +18,10 @@
  *                              file info.  Fixed command bar refreshing when pressing
  *                              the hotkeys.  Added an option to pause after viewing a
  *                              file (defaults to true).
+ * 2022-02-13 Eric Oulashin     Version 2.02
+ *                              Things overall look good. Releasing this version.  Added
+ *                              the ability to do searching via filespec, description, and
+ *                              new file search (started working on this 2022-02-08).
 */
 
 if (typeof(require) === "function")
@@ -42,7 +46,6 @@ else
 
 // If the user's terminal doesn't support ANSI, then just call the standard Synchronet
 // file list function and exit now
-// TODO: Create a traditional user interface?
 if (!console.term_supports(USER_ANSI))
 {
 	bbs.list_files();
@@ -50,16 +53,13 @@ if (!console.term_supports(USER_ANSI))
 }
 
 
-// Store whether the user is a sysop
-var gUserIsSysop = user.compare_ars("SYSOP");
-
 
 // This script requires Synchronet version 3.19 or higher.
 // If the Synchronet version is below the minimum, then just call the standard
 // Synchronet file list and exit.
 if (system.version_num < 31900)
 {
-	if (gUserIsSysop)
+	if (user.is_sysop)
 	{
 		var message = "\1n\1h\1y\1i* Warning:\1n\1h\1w Digital Distortion File Lister "
 		            + "requires version \1g3.19\1w or\r\n"
@@ -75,8 +75,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.01";
-var LISTER_DATE = "2022-02-07";
+var LISTER_VERSION = "2.02";
+var LISTER_DATE = "2022-02-13";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -157,6 +157,15 @@ var QUIT = 5;
 var FILE_MOVE = 6;   // Sysop action
 var FILE_DELETE = 7; // Sysop action
 
+// Search/list modes
+var MODE_LIST_CURDIR = 1;
+var MODE_SEARCH_FILENAME = 2;
+var MODE_SEARCH_DESCRIPTION = 3;
+var MODE_NEW_FILE_SEARCH = 4;
+
+// The searc/list mode for the current run
+var gScriptMode = MODE_LIST_CURDIR; // Default
+
 
 
 // This will store the number of header lines that were displayed.  This will control
@@ -177,52 +186,49 @@ var gPauseAfterViewingFile = true;
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
 
-var gFilebase = new FileBase(bbs.curdir_code);
-if (!gFilebase.open())
-{
-	console.crlf();
-	console.print("\1n\1h\1yUnable to open \1w" + file_area.dir[bbs.curdir_code].description + "\1n");
-	console.crlf();
-	console.pause();
-	exit(1);
-}
-
-// If we got here, the gFilebase successfully opened.
-// If there are no files in the filebase, then say so and exit now.
-if (gFilebase.files == 0)
-{
-	gFilebase.close();
-	var libIdx = file_area.dir[bbs.curdir_code].lib_index;
-	console.crlf();
-	console.print("\1n\1cThere are no files in \1h" + file_area.lib_list[libIdx].description + "\1n\1c - \1h" +
-	              file_area.dir[bbs.curdir_code].description + "\1n");
-	console.crlf();
-	console.pause();
-	exit();
-}
-
 // The sort order to use for the file list
 var gFileSortOrder = FileBase.SORT.NATURAL; // Natural sort order, same as DATE_A (import date ascending)
+
+var gSearchVerbose = false;
 
 // Read the configuration file and set the settings
 readConfigFile();
 
-// To check a user's file basic/extended detail information setting:
-// if ((user.settings & USER_EXTDESC) == USER_EXTDESC)
+// Parse command-line arguments (which sets program options)
+parseArgs(argv);
 
-// Get a list of file data with normal detail (without extended info).  When the user
-// selects a file to view extended info, we'll get metadata about the file with extended detail.
-//var gFileList = gFilebase.get_list("*", FileBase.DETAIL.NORM); // FileBase.DETAIL.EXTENDED
-var gFileList = gFilebase.get_list("*", FileBase.DETAIL.NORM, 0, true, gFileSortOrder); // FileBase.DETAIL.EXTENDED
+// This array will contain file metadata objects
+var gFileList = [];
+
+// Populate the file list based on the script mode (list/search)
+var listPopRetObj = populateFileList(gScriptMode);
+if (listPopRetObj.exitNow)
+	exit(listPopRetObj.exitCode);
+
+// If there are no files, then say so and exit.
+if (gFileList.length == 0)
+{
+	console.crlf();
+	console.print("\1n\1c");
+	if (gScriptMode == MODE_LIST_CURDIR)
+		console.print("There are no files in the current directory.");
+	else
+		console.print("No files were found.");
+	console.print("\1n");
+	console.crlf();
+	console.pause();
+	exit(0);
+}
+
 
 // Clear the screen and display the header lines
 console.clear("\1n");
-displayFileLibAndDirHeader(bbs.curdir_code);
+displayFileLibAndDirHeader();
 // Construct and display the menu/command bar at the bottom of the screen
 var fileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
 fileMenuBar.writePromptLine();
 // Create the file list menu
-var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT);
+var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL);
 // In a loop, show the file list menu, allowing the user to scroll the file list,
 // and respond to user input until the user decides to quit.
 gFileListMenu.Draw({});
@@ -247,13 +253,22 @@ while (continueDoingFileList)
 	{
 		var currentActionVal = fileMenuBar.getCurrentSelectedAction();
 		fileMenuBar.setCurrentActionCode(currentActionVal);
-		actionRetObj = doAction(currentActionVal, bbs.curdir_code, gFilebase, gFileList, gFileListMenu);
+		actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+	}
+	// Allow the delete key as a special key for sysops to delete the selected file(s)
+	else if (lastUserInputUpper == KEY_DEL)
+	{
+		if (user.is_sysop)
+		{
+			fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+			actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
+		}
 	}
 	else
 	{
 		var currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
 		fileMenuBar.setCurrentActionCode(currentActionVal, true);
-		actionRetObj = doAction(currentActionVal, bbs.curdir_code, gFilebase, gFileList, gFileListMenu);
+		actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 	}
 	// If an action was done (actionRetObj is not null), then look at actionRetObj and
 	// do what's needed.  Note that quit (for the Q key) is already handled.
@@ -263,11 +278,16 @@ while (continueDoingFileList)
 			continueDoingFileList = false;
 		else
 		{
-			if (actionRetObj.reDrawListerHeader)
+			if (actionRetObj.reDrawHeaderTextOnly)
+			{
+				console.print("\1n");
+				displayFileLibAndDirHeader(true); // Will move the cursor where it needs to be
+			}
+			else if (actionRetObj.reDrawListerHeader)
 			{
 				console.print("\1n");
 				console.gotoxy(1, 1);
-				displayFileLibAndDirHeader(bbs.curdir_code);
+				displayFileLibAndDirHeader();
 			}
 			if (actionRetObj.reDrawCmdBar) // Could call fileMenuBar.constructPromptText(); if needed
 				fileMenuBar.writePromptLine();
@@ -324,7 +344,6 @@ while (continueDoingFileList)
 	}
 }
 
-gFilebase.close();
 
 
 
@@ -336,47 +355,42 @@ gFilebase.close();
 // Parameters:
 //  pActionCode: A code specifying an action to do.  Must be one of the global
 //               action codes.
-//  pDirCode: The internal code of the file directory
-//  pFilebase: A Filebase object representing the downloadable file directory.  This
-//             is assumed to be open.
 //  pFileList: The list of file metadata objects, as retrieved from the filebase
 //  pFileListMenu: The file list menu
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function doAction(pActionCode, pDirCode, pFilebase, pFileList, pFileListMenu)
+function doAction(pActionCode, pFileList, pFileListMenu)
 {
 	if (typeof(pActionCode) !== "number")
-		return getDefaultActionRetObj();
-	if (pFilebase == null || typeof(pFilebase) !== "object")
 		return getDefaultActionRetObj();
 
 	var retObj = null;
 	switch (pActionCode)
 	{
 		case FILE_VIEW_INFO:
-			retObj = showFileInfo(pFilebase, pFileList, pFileListMenu);
+			retObj = showFileInfo(pFileList, pFileListMenu);
 			break;
 		case FILE_VIEW:
-			retObj = viewFile(pFilebase, pFileList, pFileListMenu);
+			retObj = viewFile(pFileList, pFileListMenu);
 			break;
 		case FILE_ADD_TO_BATCH_DL:
-			retObj = addSelectedFilesToBatchDLQueue(pDirCode, pFilebase, pFileList, pFileListMenu);
+			retObj = addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu);
 			break;
 		case HELP:
-			retObj = displayHelpScreen(pDirCode, pFilebase);
+			retObj = displayHelpScreen();
 			break;
 		case QUIT:
 			retObj = getDefaultActionRetObj();
 			retObj.continueFileLister = false;
 			break;
 		case FILE_MOVE: // Sysop action
-			if (gUserIsSysop)
-				retObj = chooseFilebaseAndMoveFileToOtherFilebase_Lightbar(pDirCode, pFilebase, pFileList, pFileListMenu);
+			if (user.is_sysop)
+				retObj = chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu);
 			break;
 		case FILE_DELETE: // Sysop action
-			if (gUserIsSysop)
-				retObj = removeFileFromFilebase(pDirCode, pFilebase, pFileList, pFileListMenu);
+			if (user.is_sysop)
+				retObj = confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu);
 			break;
 	}
 
@@ -390,6 +404,8 @@ function doAction(pActionCode, pDirCode, pFilebase, pFileList, pFileListMenu)
 //               continueFileLister: Boolean - Whether or not the file lister should continue, or exit
 //               reDrawFileListMenu: Boolean - Whether or not to re-draw the whole file list
 //               reDrawListerHeader: Boolean - Whether or not to re-draw the header at the top of the screen
+//               reDrawHeaderTextOnly: Boolean - Whether or not to re-draw the header text only.  This should
+//                                     take precedence over reDrawListerHeader.
 //               reDrawCmdBar: Boolean - Whether or not to re-draw the command bar at the bottom of the screen
 //               fileListPartialRedrawInfo: If part of the file list menu needs to be re-drawn,
 //                                          this will be an object that includes the following properties:
@@ -405,6 +421,7 @@ function getDefaultActionRetObj()
 		continueFileLister: true,
 		reDrawFileListMenu: false,
 		reDrawListerHeader: false,
+		reDrawHeaderTextOnly: false,
 		reDrawCmdBar: false,
 		fileListPartialRedrawInfo: null,
 		exitNow: false
@@ -414,40 +431,59 @@ function getDefaultActionRetObj()
 // Shows extended information about a file to the user.
 //
 // Parameters:
-//  pFilebase: A Filebase object representing the downloadable file directory.  This
-//             is assumed to be open.
 //  pFileList: The list of file metadata objects, as retrieved from the filebase
 //  pFileListMenu: The file list menu
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function showFileInfo(pFilebase, pFileList, pFileListMenu)
+function showFileInfo(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 
 	// The width of the frame to display the file info (including borders).  This
 	// is declared early so that it can be used for string length adjustment.
 	var frameWidth = pFileListMenu.size.width - 4;
+	var frameInnerWidth = frameWidth - 2; // Without borders
 
 	// pFileList[pFileListMenu.selectedItemIdx] has a file metadata object without
 	// extended information.  Get a metadata object with extended information so we
 	// can display the extended description.
-	var extdFileInfo = pFilebase.get(pFileList[pFileListMenu.selectedItemIdx], FileBase.DETAIL.EXTENDED);
+	// The metadata object in pFileList should have a dirCode added by this script.
+	// If not, assume the user's current directory.
+	var dirCode = bbs.curdir_code;
+	if (pFileList[pFileListMenu.selectedItemIdx].hasOwnProperty("dirCode"))
+		dirCode = pFileList[pFileListMenu.selectedItemIdx].dirCode;
+	var fileInfoObj = getFileInfoFromFilebase(dirCode, pFileList[pFileListMenu.selectedItemIdx].name, FileBase.DETAIL.EXTENDED);
+	var extdFileInfo = fileInfoObj.fileMetadataObj;
+	if (typeof(extdFileInfo) !== "object")
+	{
+		displayMsg("Unable to get file info!", true, true);
+		return;
+	}
+	var fileTime = fileInfoObj.fileTime;
 	// Build a string with the file information
-	var fileTime = pFilebase.get_time(extdFileInfo.name);
 	// Make sure the displayed filename isn't too crazy long
-	var adjustedFilename = shortenFilename(extdFileInfo.name, frameWidth-2, false);
+	var adjustedFilename = shortenFilename(extdFileInfo.name, frameInnerWidth, false);
 	var fileInfoStr = "\1n\1wFilename";
 	if (adjustedFilename.length < extdFileInfo.name.length)
 		fileInfoStr += " (shortened)";
 	fileInfoStr += ":\r\n";
 	fileInfoStr += gColors.filename + adjustedFilename +  "\1n\1w\r\n";
-	// Note: File size can also be retrieved by calling pFilebase.get_size(extdFileInfo.name)
+	// Note: File size can also be retrieved by calling a FileBase's get_size(extdFileInfo.name)
 	// TODO: Shouldn't need the max length here
 	fileInfoStr += "Size: " + gColors.fileSize + getFileSizeStr(extdFileInfo.size, 99999) + "\1n\1w\r\n";
 	fileInfoStr += "Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileTime) + "\1n\1w\r\n"
 	fileInfoStr += "\r\n";
-	fileInfoStr += gColors.desc;
+
+	// File library/directory information
+	var libIdx = file_area.dir[dirCode].lib_index;
+	var dirIdx = file_area.dir[dirCode].index;
+	var libDesc = file_area.lib_list[libIdx].description;
+	var dirDesc =  file_area.dir[dirCode].description;
+	fileInfoStr += "\1c\1hLib\1g: \1n\1c" + libDesc.substr(0, frameInnerWidth-5) + "\1n\1w\r\n";
+	fileInfoStr += "\1c\1hDir\1g: \1n\1c" + dirDesc.substr(0, frameInnerWidth-5) + "\1n\1w\r\n";
+	fileInfoStr += "\r\n";
+
 	// extdFileInfo should have extdDesc, but check just in case
 	var fileDesc = "";
 	if (extdFileInfo.hasOwnProperty("extdesc") && extdFileInfo.extdesc.length > 0)
@@ -458,10 +494,31 @@ function showFileInfo(pFilebase, pFileList, pFileListMenu)
 	// so make sure it's a string
 	if (typeof(fileDesc) !== "string")
 		fileDesc = "";
+	fileInfoStr += gColors.desc;
 	if (fileDesc.length > 0)
 		fileInfoStr += "Description:\r\n" + fileDesc;
 	else
 		fileInfoStr += "No description available";
+	if (user.is_sysop)
+	{
+		var sysopFields = [ "from", "cost", "added"];
+		for (var sI = 0; sI < sysopFields.length; ++sI)
+		{
+			var prop = sysopFields[sI];
+			if (extdFileInfo.hasOwnProperty(prop))
+			{
+				if (typeof(extdFileInfo[prop]) === "string" && extdFileInfo[prop].length == 0)
+					continue;
+				var propName = prop.charAt(0).toUpperCase() + prop.substr(1);
+				fileInfoStr += "\r\n\1n\1c\1h" + propName + "\1g:\1n\1c ";
+				if (prop == "added")
+					fileInfoStr += strftime("%Y-%m-%d %H:%M:%S", extdFileInfo.added);
+				else
+					fileInfoStr += extdFileInfo[prop].toString().substr(0, frameInnerWidth);
+				fileInfoStr += "\1n\1w";
+			}
+		}
+	}
 	fileInfoStr += "\1n\1w";
 
 	// Construct & draw a frame with the file information & do the input loop
@@ -490,18 +547,30 @@ function showFileInfo(pFilebase, pFileList, pFileListMenu)
 // Lets the user view a file.
 //
 // Parameters:
-//  pFilebase: A Filebase object representing the downloadable file directory.  This
-//             is assumed to be open.
 //  pFileList: The list of file metadata objects, as retrieved from the filebase
 //  pFileListMenu: The file list menu
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function viewFile(pFilebase, pFileList, pFileListMenu)
+function viewFile(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 
-	var fullyPathedFilename = pFilebase.get_path(pFileList[pFileListMenu.selectedItemIdx]);
+	// Open the filebase & get the fully pathed filename
+	var fullyPathedFilename = "";
+	var filebase = new FileBase(pFileList[pFileListMenu.selectedItemIdx].dirCode);
+	if (filebase.open())
+	{
+		fullyPathedFilename = filebase.get_path(pFileList[pFileListMenu.selectedItemIdx]);
+		filebase.close();
+	}
+	else
+	{
+		displayMsg("Failed to open the filebase!", true, true);
+		return retObj;
+	}
+
+	// View the file
 	console.gotoxy(1, console.screen_rows);
 	console.print("\1n");
 	console.crlf();
@@ -519,14 +588,12 @@ function viewFile(pFilebase, pFileList, pFileListMenu)
 // Allows the user to add their selected file to their batch downloaded queue
 //
 // Parameters:
-//  pDirCode: The internal code of the file directory
-//  pFilebase: The FileBase object representing the file directory (assumed open)
 //  pFileList: The list of file metadata objects from the file directory
 //  pFileListMenu: The menu object for the file diretory
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function addSelectedFilesToBatchDLQueue(pDirCode, pFilebase, pFileList, pFileListMenu)
+function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 
@@ -572,8 +639,9 @@ function addSelectedFilesToBatchDLQueue(pDirCode, pFilebase, pFileList, pFileLis
 					batchDLFile.writeln("");
 
 					// Add the required "dir" and "desc" properties to the user's batch download
-					// queue file.  The section is the filename.
-					addToQueueSuccessful = batchDLFile.iniSetValue(metadataObjects[i].name, "dir", pDirCode);
+					// queue file.  The section is the filename.  Also, this script should add a
+					// dirCode property to each metadata object in the list.
+					addToQueueSuccessful = batchDLFile.iniSetValue(metadataObjects[i].name, "dir", metadataObjects[i].dirCode);
 					if (addToQueueSuccessful)
 					{
 						addToQueueSuccessful = batchDLFile.iniSetValue(metadataObjects[i].name, "desc", metadataObjects[i].desc);
@@ -642,7 +710,6 @@ function addSelectedFilesToBatchDLQueue(pDirCode, pFilebase, pFileList, pFileLis
 				// download their batch DL queue
 				var frameTitle = "Download your batch queue (Y/N)?";
 				// \1cFiles: \1h1 \1n\1c(\1h100 \1n\1cMax)  Credits: 0  Bytes: \1h2,228,254 \1n\1c Time: 00:09:40
-				//var fileSize = gFilebase.get_size(gFileList[pIdx].name);
 				// Note: The maximum number of allowed files in the batch download queue doesn't seem to
 				// be available to JavaScript.
 				var totalQueueSize = batchDLQueueStats.totalSize + pFileList[pFileListMenu.selectedItemIdx].size;
@@ -786,12 +853,7 @@ function getUserDLQueueStats()
 }
 
 // Displays the help screen.
-//
-// Parameters:
-//  pDirCode: The internal code of the file directory being used
-//  pFilebase: A Filebase object representing the downloadable file directory.  This
-//             is assumed to be open.
-function displayHelpScreen(pDirCode, pFilebase)
+function displayHelpScreen()
 {
 	var retObj = getDefaultActionRetObj();
 
@@ -801,14 +863,23 @@ function displayHelpScreen(pDirCode, pFilebase)
 	console.center("\1n\1cVersion \1g" + LISTER_VERSION + " \1w\1h(\1b" + LISTER_DATE + "\1w)");
 	console.crlf();
 
-	// Display information about the current file directory
-	var libIdx = file_area.dir[pDirCode].lib_index;
-	var dirIdx = file_area.dir[pDirCode].index;
-	console.print("\1n\1cCurrent file library: \1g" + file_area.lib_list[libIdx].description);
-	console.crlf();
-	console.print("\1cCurrent file directory: \1g" + file_area.dir[pDirCode].description);
-	console.crlf();
-	console.print("\1cThere are \1g" + pFilebase.files + " \1cfiles in this directory.");
+	// If listing files in a directory, display information about the current file directory.
+	if (gScriptMode == MODE_LIST_CURDIR)
+	{
+		var libIdx = file_area.dir[bbs.curdir_code].lib_index;
+		var dirIdx = file_area.dir[bbs.curdir_code].index;
+		console.print("\1n\1cCurrent file library: \1g" + file_area.lib_list[libIdx].description);
+		console.crlf();
+		console.print("\1cCurrent file directory: \1g" + file_area.dir[bbs.curdir_code].description);
+		console.crlf();
+		console.print("\1cThere are \1g" + file_area.dir[bbs.curdir_code].files + " \1cfiles in this directory.");
+	}
+	else if (gScriptMode == MODE_SEARCH_FILENAME)
+		console.print("\1n\1cCurrently performing a filename search");
+	else if (gScriptMode == MODE_SEARCH_DESCRIPTION)
+		console.print("\1n\1cCurrently performing a description search");
+	else if (gScriptMode == MODE_NEW_FILE_SEARCH)
+		console.print("\1n\1cCurrently performing a new file search");
 	console.crlf();
 	console.crlf();
 
@@ -817,7 +888,7 @@ function displayHelpScreen(pDirCode, pFilebase)
 	helpStr += "The file list can be navigated using the up & down arrow keys, PageUp, PageDown, Home, and End keys.  "
 	helpStr += "The currently highlighted file in the menu is used by default for the various actions.  For batch download "
 	helpStr += "selection, ";
-	if (gUserIsSysop)
+	if (user.is_sysop)
 		helpStr += "moving, and deleting, ";
 	helpStr += "you can select multiple files by using the spacebar.  ";
 	helpStr += "There is also a command bar accross the bottom of the screen - You can select an action on the ";
@@ -834,7 +905,7 @@ function displayHelpScreen(pDirCode, pFilebase)
 	printf(printfStr, "I", "Display extended file information");
 	printf(printfStr, "V", "View the file");
 	printf(printfStr, "B", "Flag the file(s) for batch download");
-	if (gUserIsSysop)
+	if (user.is_sysop)
 	{
 		printf(printfStr, "M", "Move the file(s) to another directory");
 		printf(printfStr, "D", "Delete the file(s)");
@@ -854,23 +925,21 @@ function displayHelpScreen(pDirCode, pFilebase)
 // Allows the user to move the selected file to another filebase.  Only for sysops!
 //
 // Parameters:
-//  pDirCode: The internal code of the original file directory
-//  pFilebase: The FileBase object representing the file directory (assumed open)
 //  pFileList: The list of file metadata objects from the file directory
 //  pFileListMenu: The menu object for the file diretory
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function chooseFilebaseAndMoveFileToOtherFilebase_Lightbar(pDirCode, pFilebase, pFileList, pFileListMenu)
+function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 
 	// Confirm with the user to move the file(s).  If they don't want to,
 	// then just return now.
 	var filenames = [];
-	if (gFileListMenu.numSelectedItemIndexes() > 0)
+	if (pFileListMenu.numSelectedItemIndexes() > 0)
 	{
-		for (var idx in gFileListMenu.selectedItemIndexes)
+		for (var idx in pFileListMenu.selectedItemIndexes)
 			filenames.push(pFileList[+idx].name);
 	}
 	else
@@ -882,23 +951,34 @@ function chooseFilebaseAndMoveFileToOtherFilebase_Lightbar(pDirCode, pFilebase, 
 		return retObj;
 
 
-	retObj.reDrawFileListMenu = true;
-	// Prompt the user which directory to move the file to
-	var chosenDirCode = null;
+	// Create a file library menu for the user to choose a file library (and then directory)
 	var fileLibMenu = createFileLibMenu();
+	// For screen refresh purposes, construct the file list redraw info.  Note that the X and Y are relative
+	// to the file list menu, not absolute screen coordinates.
+	var topYForRefresh = fileLibMenu.pos.y - 1; // - 1 because of the label above the menu
+	var fileListPartialRedrawInfo = {
+		startX: fileLibMenu.pos.x - pFileListMenu.pos.x + 1,
+		startY: topYForRefresh - pFileListMenu.pos.y + 1,
+		width: fileLibMenu.size.width + 1,
+		height: fileLibMenu.size.height + 1 // + 1 because of the label above the menu
+	};
 	console.gotoxy(fileLibMenu.pos.x, fileLibMenu.pos.y-1);
 	printf("\1n\1c\1h|\1n\1c%-" + +(fileLibMenu.size.width-1) + "s\1n", "Choose a destination area");
+	// Prompt the user which directory to move the file to
+	var chosenDirCode = null;
 	var continueOn = true;
 	while (continueOn)
 	{
 		var chosenLibIdx = fileLibMenu.GetVal();
 		if (typeof(chosenLibIdx) === "number")
 		{
+			// The file dir menu will be created at the same position & with the same size
+			// as the file library menu
 			var fileDirMenu = createFileDirMenu(chosenLibIdx);
 			chosenDirCode = fileDirMenu.GetVal();
 			if (typeof(chosenDirCode) === "string")
 			{
-				if (chosenDirCode != pDirCode)
+				if (chosenDirCode != pFileList[pFileListMenu.selectedItemIdx].dirCode)
 					continueOn = false;
 				else
 				{
@@ -913,68 +993,178 @@ function chooseFilebaseAndMoveFileToOtherFilebase_Lightbar(pDirCode, pFilebase, 
 	// If the user chose a directory, then move the file there.
 	if (typeof(chosenDirCode) === "string" && chosenDirCode.length > 0)
 	{
+		// For logging
+		var libIdx = file_area.dir[chosenDirCode].lib_index;
+		var dirIdx = file_area.dir[chosenDirCode].index;
+		var libDesc = file_area.lib_list[libIdx].description;
+		var dirDesc =  file_area.dir[chosenDirCode].description;
+		var destLibAndDirDesc = libDesc + " - " + dirDesc;
+
 		// Build an array of file indexes and sort the array
 		var fileIndexes = [];
-		if (gFileListMenu.numSelectedItemIndexes() > 0)
+		if (pFileListMenu.numSelectedItemIndexes() > 0)
 		{
-			for (var idx in gFileListMenu.selectedItemIndexes)
+			for (var idx in pFileListMenu.selectedItemIndexes)
 				fileIndexes.push(+idx);
 		}
 		else
 			fileIndexes.push(+(pFileListMenu.selectedItemIdx));
-		fileIndexes.sort();
+		// Ensure the file indexes are sorted in numerical order
+		fileIndexes.sort(function(a, b) { return a - b});
 
 		// Go through the list of files and move each of them
 		var moveAllSucceeded = true;
 		for (var i = 0; i < fileIndexes.length; ++i)
 		{
 			var fileIdx = fileIndexes[i];
-			var moveRetObj = moveFileToOtherFilebase(pFilebase, pFileList[fileIdx], chosenDirCode);
+			// For logging
+			libIdx = file_area.dir[pFileList[fileIdx].dirCode].lib_index;
+			dirIdx = file_area.dir[pFileList[fileIdx].dirCode].index;
+			libDesc = file_area.lib_list[libIdx].description;
+			dirDesc =  file_area.dir[pFileList[fileIdx].dirCode].description;
+			var srcLibAndDirDesc = libDesc + " - " + dirDesc;
+
+			var moveRetObj = moveFileToOtherFilebase(pFileList[fileIdx], chosenDirCode);
+			var logMsg = "";
+			var logLevel = LOG_INFO;
 			if (moveRetObj.moveSucceeded)
 			{
-				// Remove the file info object from the file list array
-				pFileList.splice(fileIdx, 1);
-				// Subtract 1 from the remaining indexes in the fileIndexes array
-				for (var j = i+1; j < fileIndexes.length; ++j)
-					fileIndexes[j] = fileIndexes[j] - 1;
+				logMsg = "Digital Distotion File Lister: Successfully moved " + pFileList[fileIdx].name
+				       + " from " + srcLibAndDirDesc + " to " + destLibAndDirDesc;
+
+				// If we're listing files in the user's current directory, then remove
+				// the file info object from the file list array.  Otherwise, update
+				// the metadata object in the list.
+				if (gScriptMode == MODE_LIST_CURDIR)
+				{
+					pFileList.splice(fileIdx, 1);
+					// Subtract 1 from the remaining indexes in the fileIndexes array
+					for (var j = i+1; j < fileIndexes.length; ++j)
+						fileIndexes[j] = fileIndexes[j] - 1;
+					// Have the file list menu set up its description width, colors, and format
+					// string again in case it no longer needs to use its scrollbar
+					pFileListMenu.SetItemWidthsColorsAndFormatStr();
+					retObj.reDrawFileListMenu = true;
+				}
+				else
+				{
+					// Note: getFileInfoFromFilebase() will add dirCode to the metadata object
+					var fileDataObj = getFileInfoFromFilebase(chosenDirCode, pFileList[fileIdx].name, FileBase.DETAIL.NORM);
+					pFileList[fileIdx] = fileDataObj.fileMetadataObj;
+					/*
+					// If all files were in the same directory, then we'll need to update the header
+					// lines at the top of the file list.  If there's only one file in the list,
+					// the header lines will need to display the correct directory.  Otherwise,
+					// set allSameDir to false so the header lines will now say "various".
+					// However, if not all files were in the same directory, check to see if they
+					// are now, and if so, we'll need to re-draw the header lines.
+					if (typeof(pFileList.allSameDir) == "boolean")
+					{
+						if (pFileList.allSameDir)
+						{
+							if (pFileList.length > 1)
+								pFileList.allSameDir = false;
+							//retObj.reDrawListerHeader = true;
+							retObj.reDrawHeaderTextOnly = true;
+						}
+						else
+						{
+							pFileList.allSameDir = true; // Until we find it's not true
+							for (var fileListIdx = 1; fileListIdx < pFileList.length && pFileList.allSameDir; ++fileListIdx)
+								pFileList.allSameDir = (pFileList[fileListIdx].dirCode == pFileList[0].dirCode);
+							//retObj.reDrawListerHeader =  pFileList.allSameDir;
+							retObj.reDrawHeaderTextOnly =  pFileList.allSameDir;
+						}
+					}
+					*/
+				}
 			}
 			else
 			{
 				moveAllSucceeded = false;
-				displayMsg(pFileList[fileIdx].name, true);
-				displayMsg(moveRetObj.failReason, true);
+				logLevel = LOG_ERR;
+				logMsg = "Digital Distotion File Lister: Failed to move " + pFileList[fileIdx].name
+				       + " from " + srcLibAndDirDesc + " to " + destLibAndDirDesc;
+			}
+			log(logLevel, logMsg);
+			bbs.log_str(logMsg);
+		}
+		// Adjust the selected item index in the file list menu if necesary
+		if (pFileListMenu.NumItems() == 0)
+			pFileListMenu.selectedItemIdx = 0;
+		else if (pFileListMenu.selectedItemIdx >= pFileListMenu.NumItems() - 1)
+			pFileListMenu.selectedItemIdx = pFileListMenu.NumItems() - 1;
+		// If doing a search (not listing files in the user's current directory), then
+		// if all files were in the same directory, then we'll need to update the header
+		// lines at the top of the file list.  If there's only one file in the list,
+		// the header lines will need to display the correct directory.  Otherwise,
+		// set allSameDir to false so the header lines will now say "various".
+		// However, if not all files were in the same directory, check to see if they
+		// are now, and if so, we'll need to re-draw the header lines.
+		if (gScriptMode != MODE_LIST_CURDIR && typeof(pFileList.allSameDir) == "boolean")
+		{
+			if (pFileList.allSameDir)
+			{
+				if (pFileList.length > 1)
+					pFileList.allSameDir = false;
+				//retObj.reDrawListerHeader = true;
+				retObj.reDrawHeaderTextOnly = true;
+			}
+			else
+			{
+				pFileList.allSameDir = true; // Until we find it's not true
+				for (var fileListIdx = 1; fileListIdx < pFileList.length && pFileList.allSameDir; ++fileListIdx)
+					pFileList.allSameDir = (pFileList[fileListIdx].dirCode == pFileList[0].dirCode);
+				//retObj.reDrawListerHeader =  pFileList.allSameDir;
+				retObj.reDrawHeaderTextOnly =  pFileList.allSameDir;
 			}
 		}
+		// Display a success/fail message
 		if (moveAllSucceeded)
 		{
-			var libIdx = file_area.dir[chosenDirCode].lib_index;
-			var msg = "Successfully moved the file(s) to "
-			        + file_area.lib_list[libIdx].description + " - "
-			        + file_area.dir[chosenDirCode].description
-			displayMsg(msg, false);
+			var msg = "Successfully moved the file(s) to " + destLibAndDirDesc;
+			displayMsg(msg, false, true);
 		}
-		// After moving the files, if the file directory is empty, say so
-		if (pFilebase.files == 0)
+		else
 		{
-			displayMsg("The directory now has no files.", false);
+			displayMsg("Failed to move the file(s)!", true, true);
+		}
+		// After moving the files, if there are no more files (in the directory or otherwise),
+		// say so and exit now.
+		if (gScriptMode == MODE_LIST_CURDIR && file_area.dir[bbs.curdir_code].files == 0)
+		{
+			displayMsg("There are no more files in the directory.", false);
 			retObj.exitNow = true;
 		}
+		else if (pFileList.length == 0)
+		{
+			displayMsg("There are no more files.", false);
+			retObj.exitNow = true;
+		}
+		// If not exiting now, we'll want to re-draw part of the file list to erase the
+		// area chooser menu.
+		if (!retObj.exitNow)
+			retObj.fileListPartialRedrawInfo = fileListPartialRedrawInfo;
+	}
+	else
+	{
+		// The user has canceled out of the area selection.
+		// We'll want to re-draw part of the file list to erase the area chooser menu.
+		retObj.fileListPartialRedrawInfo = fileListPartialRedrawInfo;
 	}
 
 	return retObj;
 }
 
-// Allows the user to remove the selected file from the filebase.  Only for sysops!
+// Allows the user to remove the selected file(s) from the filebase.  Only for sysops!
 //
 // Parameters:
-//  pDirCode: The internal code of the original file directory
-//  pFilebase: The FileBase object representing the file directory (assumed open)
 //  pFileList: The list of file metadata objects from the file directory
 //  pFileListMenu: The menu object for the file diretory
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function removeFileFromFilebase(pDirCode, pFilebase, pFileList, pFileListMenu)
+function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 
@@ -982,9 +1172,9 @@ function removeFileFromFilebase(pDirCode, pFilebase, pFileList, pFileListMenu)
 	// If there are multiple selected files, then prompt to remove each of them.
 	// Otherwise, prompt for the one selected file.
 	var filenames = [];
-	if (gFileListMenu.numSelectedItemIndexes() > 0)
+	if (pFileListMenu.numSelectedItemIndexes() > 0)
 	{
-		for (var idx in gFileListMenu.selectedItemIndexes)
+		for (var idx in pFileListMenu.selectedItemIndexes)
 			filenames.push(pFileList[+idx].name);
 	}
 	else
@@ -994,33 +1184,126 @@ function removeFileFromFilebase(pDirCode, pFilebase, pFileList, pFileListMenu)
 	var removeFilesConfirmed = confirmFileActionWithUser(filenames, "Remove", false);
 	if (removeFilesConfirmed)
 	{
-		// FileBase.remove(filename [,delete=false])
-		var succeeded = pFilebase.remove(pFileList[pFileListMenu.selectedItemIdx].name, true);
-		if (succeeded)
+		var fileIndexes = [];
+		if (pFileListMenu.numSelectedItemIndexes() > 0)
 		{
-			var messages = [ "Successfully removed the file(s)." ];
-			// Remove the file info object from the file list array
-			pFileList.splice(pFileListMenu.selectedItemIdx, 1);
-			// Adjust the file list menu's current selected index
-			--pFileListMenu.selectedItemIdx;
-			if (pFileListMenu.selectedItemIdx < 0)
-				pFileListMenu.selectedItemIdx = 0;
-			if (pFileListMenu.topItemIdx > pFileListMenu.selectedItemIdx)
-				pFileListMenu.topItemIdx = pFileListMenu.selectedItemIdx;
-			// If the file directory still has files in it, have the menu redraw
-			// itself to refresh with the missing entry.  Otherwise (no files left),
-			// say so and have the lister exit now.
-			if (pFilebase.files > 0)
-				retObj.reDrawFileListMenu = true;
-			else
-			{
-				messages.push("The directory now has no files.");
-				retObj.exitNow = true;
-			}
-			displayMsgs(messages, false);
+			for (var idx in pFileListMenu.selectedItemIndexes)
+				fileIndexes.push(+idx);
 		}
 		else
-			displayMsg("Failed to remove the file!", true); // console.print("\1y\1hFailed to remove the file!\1n");
+			fileIndexes.push(+(pFileListMenu.selectedItemIdx));
+		// Ensure the file indexes are sorted in numerical order
+		fileIndexes.sort(function(a, b) { return a - b});
+
+		// Go through all the selected files and remove them.
+		// Note: Going through the list of indexes in reverse order so that
+		// removing each one from pFileList (gFileList) is simpler.
+		var removeAllSucceeded = true;
+		//for (var i = 0; i < fileIndexes.length; ++i)
+		for (var i = fileIndexes.length-1; i >= 0; --i)
+		{
+			var fileIdx = fileIndexes[i];
+			if (typeof(pFileList[fileIdx]) === "undefined")
+			{
+				removeAllSucceeded = false;
+				continue;
+			}
+			// For logging
+			var libIdx = file_area.dir[pFileList[fileIdx].dirCode].lib_index;
+			var dirIdx = file_area.dir[pFileList[fileIdx].dirCode].index;
+			var libDesc = file_area.lib_list[libIdx].description;
+			var dirDesc =  file_area.dir[pFileList[fileIdx].dirCode].description;
+			var libAndDirDesc = libDesc + " - " + dirDesc;
+
+			// Open the filebase and remove the file
+			var removeFileSucceeded = false;
+			var numFilesRemaining = 0;
+			var filebase = new FileBase(pFileList[fileIdx].dirCode);
+			if (filebase.open())
+			{
+				// FileBase.remove(filename [,delete=false])
+				removeFileSucceeded = filebase.remove(pFileList[fileIdx].name, true);
+				if (gScriptMode == MODE_LIST_CURDIR)
+					numFilesRemaining = filebase.files;
+				filebase.close();
+			}
+			else
+				removeAllSucceeded = false;
+
+			// Log a success/error message
+			var logMsg = "";
+			var logLevel = LOG_INFO;
+			if (removeFileSucceeded)
+			{
+				logMsg = "Digital Distortion File Lister: Successfully removed " + pFileList[fileIdx].name
+				       + " from " + libAndDirDesc + " (by " + user.alias + ")";
+				// Remove the file info object from the file list array
+				pFileList.splice(fileIdx, 1);
+				// If we were going through the list in forward order, we'd have to
+				// subtract 1 from the remaining indexes:
+				/*
+				// Subtract 1 from the remaining indexes in the fileIndexes array
+				for (var j = i+1; j < fileIndexes.length; ++j)
+					fileIndexes[j] = fileIndexes[j] - 1;
+				*/
+			}
+			else
+			{
+				removeAllSucceeded = false;
+				logMsg = "Digital Distortion File Lister: Failed to remove " + pFileList[fileIdx].name
+				       + " from " + libAndDirDesc + " (by " + user.alias + ")";
+				logLevel = LOG_ERR;
+			}
+			log(logLevel, logMsg);
+			bbs.log_str(logMsg);
+		}
+		// Display a success/failure message
+		if (removeAllSucceeded)
+			displayMsg("Successfully removed the file(s)", false, true);
+		else
+			displayMsg("Failed to remove 1 or more files", true, true);
+		// Adjust the selected item index in the file list menu if necesary
+		if (pFileListMenu.NumItems() == 0)
+			pFileListMenu.selectedItemIdx = 0;
+		else if (pFileListMenu.selectedItemIdx >= pFileListMenu.NumItems() - 1)
+			pFileListMenu.selectedItemIdx = pFileListMenu.NumItems() - 1;
+		// If the file list still has files in it, have the menu redraw
+		// itself to refresh with the missing entry.  Otherwise (no files left),
+		// say so and have the lister exit now.
+		numFilesRemaining = pFileList.length;
+		if (numFilesRemaining > 0)
+		{
+			// Have the file list menu set up its description width, colors, and format
+			// string again in case it no longer needs to use its scrollbar
+			pFileListMenu.SetItemWidthsColorsAndFormatStr();
+			retObj.reDrawFileListMenu = true;
+			// If all files were not in the same directory, then check to see if all
+			// remaining files are now.  If so, we'll need to update the header lines
+			// at the top of the file list.
+			if (typeof(pFileList.allSameDir) == "boolean")
+			{
+				if (!pFileList.allSameDir)
+				{
+					pFileList.allSameDir = true; // Until we find it's not true
+					for (var i = 1; i < pFileList.length && pFileList.allSameDir; ++i)
+						pFileList.allSameDir = (pFileList[i].dirCode == pFileList[0].dirCode);
+					//retObj.reDrawListerHeader =  pFileList.allSameDir;
+					retObj.reDrawHeaderTextOnly =  pFileList.allSameDir;
+				}
+			}
+			// Also, if the file list menu can now show all its items on one
+			// page (not needing the scrollbar), set its top item index to 0.
+			if (pFileListMenu.CanShowAllItemsInWindow())
+				pFileListMenu.topItemIdx = 0;
+		}
+		else
+		{
+			if (gScriptMode == MODE_LIST_CURDIR)
+				displayMsg("The directory now has no files.", false, true);
+			else
+				displayMsg("There are no more files to show.", false, true);
+			retObj.exitNow = true;
+		}
 	}
 
 	return retObj;
@@ -1065,7 +1348,7 @@ function DDFileMenuBar(pPos)
 	this.cmdArray.push(new DDFileMenuBarItem("Info", 0, FILE_VIEW_INFO));
 	this.cmdArray.push(new DDFileMenuBarItem("View", 0, FILE_VIEW));
 	this.cmdArray.push(new DDFileMenuBarItem("Batch", 0, FILE_ADD_TO_BATCH_DL));
-	if (gUserIsSysop)
+	if (user.is_sysop)
 	{
 		this.cmdArray.push(new DDFileMenuBarItem("Move", 0, FILE_MOVE));
 		this.cmdArray.push(new DDFileMenuBarItem("Del", 0, FILE_DELETE));
@@ -1322,17 +1605,53 @@ function DDFileMenuBarItem(pItemText, pPos, pRetCode)
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
+// Gets file metadata & its file time from a filebase.
+//
+// Parameters:
+//  pDirCode: The internal code of the directory the file is in
+//  pFilename: The name of the file (without the full path)
+//  pDetail: The detail level of the metadata object to get - See FileBase.DETAIL in JS docs
+//
+// Return value: An object containing the following properties:
+//               fileMetadataObj: An object with extended file metadata from the filebase.
+//                                This will have a dirCode property added.
+//               fileTime: The timestamp of the file
+function getFileInfoFromFilebase(pDirCode, pFilename, pDetail)
+{
+	var retObj = {
+		fileMetadataObj: null,
+		fileTime: 0
+	};
+
+	if (typeof(pDirCode) !== "string" || pDirCode.length == 0 || typeof(pFilename) !== "string" || pFilename.length == 0)
+		return retObj;
+
+	var filebase = new FileBase(pDirCode);
+	if (filebase.open())
+	{
+		// Just in case the file has the full path, get just the filename from it.
+		var filename = file_getname(pFilename);
+		var fileDetail = (typeof(pDetail) === "number" ? pDetail : FileBase.DETAIL.NORM);
+		retObj.fileMetadataObj = filebase.get(filename, fileDetail);
+		retObj.fileMetadataObj.dirCode = pDirCode;
+		//retObj.fileMetadataObj.size = filebase.get_size(filename);
+		retObj.fileTime = filebase.get_time(filename);
+		filebase.close();
+	}
+
+	return retObj;
+}
+
 // Moves a file from one filebase to another
 //
 // Parameters:
-//  pSrcFilebase: A FileBase object representing the source filebase.  This is assumed to be open.
 //  pSrcFileMetadata: Metadata for the source file.  This is assumed to contain 'normal' detail (not extended)
 //  pDestDirCode: The internal code of the destination filebase to move to the file to
 //
 // Return value: An object containing the following properties:
 //               moveSucceeded: Boolean - Whether or not the move succeeded
 //               failReason: If the move failed, this is a string that specifies why it failed
-function moveFileToOtherFilebase(pSrcFilebase, pSrcFileMetadata, pDestDirCode)
+function moveFileToOtherFilebase(pSrcFileMetadata, pDestDirCode)
 {
 	var retObj = {
 		moveSucceeded: false,
@@ -1342,37 +1661,51 @@ function moveFileToOtherFilebase(pSrcFilebase, pSrcFileMetadata, pDestDirCode)
 	// pSrcFileMetadata is assumed to be a basic file metadata object, without extended
 	// information.  Get a metadata object with maximum information so we have all
 	// metadata available.
-	var extdFileInfo = pSrcFilebase.get(pSrcFileMetadata, FileBase.DETAIL.MAX);
-	// Move the file over, remove it from the original filebase, and add it to the new filebase
-	var srcFilenameFull = pSrcFilebase.get_path(pSrcFileMetadata);
-	var destFilenameFull = file_area.dir[pDestDirCode].path + pSrcFileMetadata.name;
-	if (file_rename(srcFilenameFull, destFilenameFull))
+	var srcFilebase = new FileBase(pSrcFileMetadata.dirCode);
+	if (srcFilebase.open())
 	{
-		if (pSrcFilebase.remove(pSrcFileMetadata.name, false))
+		var extdFileInfo = srcFilebase.get(pSrcFileMetadata, FileBase.DETAIL.MAX);
+		// Move the file over, remove it from the original filebase, and add it to the new filebase
+		var srcFilenameFull = srcFilebase.get_path(pSrcFileMetadata);
+		var destFilenameFull = file_area.dir[pDestDirCode].path + pSrcFileMetadata.name;
+		if (file_rename(srcFilenameFull, destFilenameFull))
 		{
-			// Add the file to the other directory
-			var destFilebase = new FileBase(pDestDirCode);
-			if (destFilebase.open())
+			if (srcFilebase.remove(pSrcFileMetadata.name, false))
 			{
-				retObj.moveSucceeded = destFilebase.add(extdFileInfo);
-				destFilebase.close();
+				// Add the file to the other directory
+				var destFilebase = new FileBase(pDestDirCode);
+				if (destFilebase.open())
+				{
+					retObj.moveSucceeded = destFilebase.add(extdFileInfo);
+					destFilebase.close();
+				}
+				else
+				{
+					retObj.failReason = "Failed to open the destination filebase";
+					// Try to add the file back to the source filebase
+					var moveBackSucceeded = false;
+					if (file_rename(destFilenameFull, srcFilenameFull))
+						moveBackSucceeded = srcFilebase.add(extdFileInfo);
+					if (!moveBackSucceeded)
+						retObj.failReason += " & moving the file back failed";
+				}
 			}
 			else
-			{
-				retObj.failReason = "Failed to open the destination filebase";
-				// Try to add the file back to the source filebase
-				var moveBackSucceeded = false;
-				if (file_rename(destFilenameFull, srcFilenameFull))
-					moveBackSucceeded = pSrcFilebase.add(extdFileInfo);
-				if (!moveBackSucceeded)
-					retObj.failReason += " & moving the file back failed";
-			}
+				retObj.failReason = "Failed to remove the file from the source directory";
 		}
 		else
-			retObj.failReason = "Failed to remove the file from the source directory";
+			retObj.failReason = "Failed to move the file to the new filebase directory";
+
+		srcFilebase.close();
 	}
 	else
-		retObj.failReason = "Failed to move the file to the new filebase directory";
+	{
+		var libIdx = file_area.dir[pSrcFileMetadata.dirCode].lib_index;
+		var dirIdx = file_area.dir[pSrcFileMetadata.dirCode].index;
+		var libDesc = file_area.lib_list[libIdx].description;
+		var dirDesc =  file_area.dir[pSrcFileMetadata.dirCode].description;
+		retObj.failreason = "Failed to open filebase: " + libDesc + " - " + dirDesc;
+	}
 
 	return retObj;
 }
@@ -1523,44 +1856,87 @@ function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitK
 // Displays the header lines for showing above the file list
 //
 // Parameters:
-//  pDirCode: The internal code of the file directory to use
-function displayFileLibAndDirHeader(pDirCode)
+//  pTextOnly: Only draw the library & directory text (no decoration or other text).
+//             This is optional & defaults to false.
+function displayFileLibAndDirHeader(pTextOnly)
 {
-	if (typeof(pDirCode) !== "string")
-		return;
-	if (typeof(file_area.dir[pDirCode]) === "undefined")
-		return;
+	var textOnly = (typeof(pTextOnly) === "boolean" ? pTextOnly : false);
 
-	var libIdx = file_area.dir[pDirCode].lib_index;
-	var dirIdx = file_area.dir[pDirCode].index;
-	var libDesc = file_area.lib_list[libIdx].description;
-	var dirDesc =  file_area.dir[pDirCode].description;
+	// Determine if this is the first time this function has been called.  If so,
+	// we'll want to update gNumHeaderLinesDisplayed at the end.
+	var dispHdrFirstRun = false;
+	if (typeof(displayFileLibAndDirHeader.firstRun) == "undefined")
+	{
+		dispHdrFirstRun = true;
+		displayFileLibAndDirHeader.firstRun = true;
+	}
+
+	// For the library & directory text to display, if we're just listing the user's
+	// current directory, use that.  Otherwise, if all search results are in the same
+	// directory, then use a directory code from the file list.
+	var libIdx = 0;
+	var dirIdx = 0;
+	var libDesc = "";
+	var dirDesc =  "";
+	var dirCode = "";
+	if (gScriptMode == MODE_LIST_CURDIR)
+		dirCode = bbs.curdir_code;
+	else if (typeof(gFileList.allSameDir) == "boolean" && gFileList.allSameDir && gFileList.length > 0)
+		dirCode = gFileList[0].dirCode;
+	if (dirCode.length > 0)
+	{
+		libIdx = file_area.dir[dirCode].lib_index;
+		dirIdx = file_area.dir[dirCode].index;
+		libDesc = file_area.lib_list[libIdx].description;
+		dirDesc =  file_area.dir[dirCode].description;
+	}
+	else
+	{
+		libIdx = -1;
+		dirIdx = -1;
+		libDesc = "Various";
+		dirDesc = "Various";
+	}
 
 	var hdrTextWidth = console.screen_columns - 21;
 	var descWidth = hdrTextWidth - 11;
+	var libText = format("\1cLib \1w\1h#\1b%4d\1c: \1n\1c%-" + descWidth + "s\1n", +(libIdx+1), libDesc.substr(0, descWidth));
+	var dirText = format("\1cDir \1w\1h#\1b%4d\1c: \1n\1c%-" + descWidth + "s\1n", +(dirIdx+1), dirDesc.substr(0, descWidth));
 
 	// Library line
-	console.print("\1n\1w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
-	printf("\1cLib \1w\1h#\1b%4d\1c: \1n\1c%-" + descWidth + "s\1n", +(libIdx+1), libDesc.substr(0, descWidth));
-	console.print("\1w" + THIN_RECTANGLE_RIGHT + "\1k\1h" + BLOCK4 + "\1n\1w" + THIN_RECTANGLE_LEFT +
-	              "\1g\1hDD File\1n\1w");
-	console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
-	console.crlf();
-	// Directory line
-	console.print("\1n\1w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
-	printf("\1cDir \1w\1h#\1b%4d\1c: \1n\1c%-" + descWidth + "s\1n", +(dirIdx+1), dirDesc.substr(0, descWidth));
-	console.print("\1w" + THIN_RECTANGLE_RIGHT + "\1k\1h" + BLOCK4 + "\1n\1w" + THIN_RECTANGLE_LEFT +
-	              "\1g\1hLister \1n\1w");
-	console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
-	console.print("\1n");
-	gNumHeaderLinesDisplayed = 2;
+	if (textOnly)
+	{
+		console.gotoxy(6, 1);
+		console.print("\1n" + libText);
+		console.gotoxy(6, 2);
+		console.print("\1n" + dirText);
+	}
+	else
+	{
+		console.print("\1n\1w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
+		console.print(libText);
+		console.print("\1w" + THIN_RECTANGLE_RIGHT + "\1k\1h" + BLOCK4 + "\1n\1w" + THIN_RECTANGLE_LEFT +
+					  "\1g\1hDD File\1n\1w");
+		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
+		console.crlf();
+		// Directory line
+		console.print("\1n\1w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
+		console.print(dirText);
+		console.print("\1w" + THIN_RECTANGLE_RIGHT + "\1k\1h" + BLOCK4 + "\1n\1w" + THIN_RECTANGLE_LEFT +
+					  "\1g\1hLister \1n\1w");
+		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
+		console.print("\1n");
 
-	// List header
-	console.crlf();
-	displayListHdrLine(false);
-	++gNumHeaderLinesDisplayed;
+		// List header
+		console.crlf();
+		displayListHdrLine(false);
 
-	gErrorMsgBoxULY = gNumHeaderLinesDisplayed; // Note: console.screen_rows is 1-based
+		if (dispHdrFirstRun)
+		{
+			gNumHeaderLinesDisplayed = 3;
+			gErrorMsgBoxULY = gNumHeaderLinesDisplayed; // Note: console.screen_rows is 1-based
+		}
+	}
 }
 // Displays the header line with the column headers for the file list
 //
@@ -1572,7 +1948,10 @@ function displayListHdrLine(pMoveToLocationFirst)
 		console.gotoxy(1, 3);
 	var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
 	var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
-	var shortDescLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
+	//var shortDescLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
+	// shortDescLen here should always be the same (for the last blocks to always be in the same
+	// position), whereas descriptionEnd might change based on whether the menu is using its scrollbar
+	var shortDescLen = 60;
 	var formatStr = "\1n\1w\1h%-" + filenameLen + "s %" + fileSizeLen + "s %-"
 	              + +(shortDescLen-7) + "s\1n\1w%5s\1n";
 	var listHdrEndText = THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1;
@@ -1603,36 +1982,60 @@ function createFileListMenu(pQuitKeys)
 	if (typeof(pQuitKeys) === "string")
 		fileListMenu.AddAdditionalQuitKeys(pQuitKeys);
 
-	fileListMenu.SetColors({
-		itemColor: [{start: gListIdxes.filenameStart, end: gListIdxes.filenameEnd, attrs: gColors.filename},
-		            {start: gListIdxes.fileSizeStart, end: gListIdxes.fileSizeEnd, attrs: gColors.fileSize},
-		            {start: gListIdxes.descriptionStart, end: gListIdxes.descriptionEnd, attrs: gColors.desc}],
-		selectedItemColor: [{start: gListIdxes.filenameStart, end: gListIdxes.filenameEnd, attrs: gColors.bkgHighlight + gColors.filenameHighlight},
-		                    {start: gListIdxes.fileSizeStart, end: gListIdxes.fileSizeEnd, attrs: gColors.bkgHighlight + gColors.fileSizeHighlight},
-		                    {start: gListIdxes.descriptionStart, end: gListIdxes.descriptionEnd, attrs: gColors.bkgHighlight + gColors.descHighlight}]
-	});
-
-	fileListMenu.filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
-	fileListMenu.fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
-	fileListMenu.shortDescLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
-	fileListMenu.fileFormatStr = "%-" + fileListMenu.filenameLen
-	                           + "s %" + fileListMenu.fileSizeLen
-	                           + "s %-" + fileListMenu.shortDescLen + "s";
-
-	// Define the menu functions for getting the number of items and getting an item
+	// Define the menu's function to get the number of items.  This must be done here
+	// in order for the menu's CanShowAllItemsInWindow() to work propertly.
 	fileListMenu.NumItems = function() {
-		// could also return gFilebase.files
 		return gFileList.length;
 	};
+
+	// Define a function for setting the description width, colors, and format string
+	// based on whether the menu's scrollbar will be used.
+	//
+	// Return value: Boolean: Whether or not the width changed
+	fileListMenu.SetItemWidthsColorsAndFormatStr = function() {
+		var widthChanged = false;
+		var oldDescriptionEnd = gListIdxes.descriptionEnd;
+		gListIdxes.descriptionEnd = console.screen_columns - 1; // Leave 1 character remaining on the screen
+		// If the file list menu will use its scrollbar, then reduce the description width by 1
+		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			gListIdxes.descriptionEnd -= 1;
+		widthChanged = (gListIdxes.descriptionEnd != oldDescriptionEnd);
+		this.SetColors({
+			itemColor: [{start: gListIdxes.filenameStart, end: gListIdxes.filenameEnd, attrs: gColors.filename},
+			            {start: gListIdxes.fileSizeStart, end: gListIdxes.fileSizeEnd, attrs: gColors.fileSize},
+			            {start: gListIdxes.descriptionStart, end: gListIdxes.descriptionEnd, attrs: gColors.desc}],
+			selectedItemColor: [{start: gListIdxes.filenameStart, end: gListIdxes.filenameEnd, attrs: gColors.bkgHighlight + gColors.filenameHighlight},
+			                    {start: gListIdxes.fileSizeStart, end: gListIdxes.fileSizeEnd, attrs: gColors.bkgHighlight + gColors.fileSizeHighlight},
+			                    {start: gListIdxes.descriptionStart, end: gListIdxes.descriptionEnd, attrs: gColors.bkgHighlight + gColors.descHighlight}]
+		});
+
+		this.filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
+		this.fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
+		this.shortDescLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
+		this.fileFormatStr = "%-" + this.filenameLen + "s %" + this.fileSizeLen
+		                   + "s %-" + this.shortDescLen + "s";
+		return widthChanged;
+	};
+	// Set up the menu's description width, colors, and format string
+	fileListMenu.SetItemWidthsColorsAndFormatStr();
+
+	// Define the menu function for getting an item
 	fileListMenu.GetItem = function(pIdx) {
 		var menuItemObj = this.MakeItemWithRetval(pIdx);
 		var filename = shortenFilename(gFileList[pIdx].name, this.filenameLen, true);
-		// Note: The file size is in bytes
-		var fileSize = gFilebase.get_size(gFileList[pIdx].name);
+		// FileBase.format_name() could also be called to format the filename for display:
+		/*
+		var filebase = new FileBase(gFileList[pIdx].dirCode);
+		if (filebase.open())
+		{
+			filename = filebase.format_name(gFileList[pIdx].name, this.filenameLen, true);
+			filebase.close();
+		}
+		*/
 		var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
 		menuItemObj.text = format(this.fileFormatStr,
-		                          filename,//gFileList[pIdx].name.substr(0, this.filenameLen),
-								  getFileSizeStr(fileSize, this.fileSizeLen),
+		                          filename,
+								  getFileSizeStr(gFileList[pIdx].size, this.fileSizeLen),
 		                          desc.substr(0, this.shortDescLen));
 		return menuItemObj;
 	}
@@ -1675,11 +2078,20 @@ function createFileLibMenu()
 	var additionalQuitKeys = "qQ";
 	fileLibMenu.AddAdditionalQuitKeys(additionalQuitKeys);
 
+	// Re-define the menu's function for getting the number of items.  This is necessary
+	// here in order for the menu's CanShowAllItemsInWindow() to work properly.
+	fileLibMenu.NumItems = function() {
+		return file_area.lib_list.length;
+	};
+
 	// Construct a format string for the file libraries
 	var largestNumDirs = getLargestNumDirsWithinFileLibs();
 	fileLibMenu.libNumLen = file_area.lib_list.length.toString().length;
 	fileLibMenu.numDirsLen = largestNumDirs.toString().length;
 	var menuInnerWidth = fileLibMenu.size.width - 2; // Menu width excluding borders
+	// If the scrollbar will be showing, reduce the inner width by 1
+	if (fileLibMenu.scrollbarEnabled && !fileLibMenu.CanShowAllItemsInWindow())
+		--menuInnerWidth;
 	// Allow 2 for spaces
 	fileLibMenu.libDescLen = menuInnerWidth - fileLibMenu.libNumLen - fileLibMenu.numDirsLen - 2;
 	fileLibMenu.libFormatStr = "%" + fileLibMenu.libNumLen + "d %-" + fileLibMenu.libDescLen + "s %" + fileLibMenu.numDirsLen + "d";
@@ -1702,10 +2114,7 @@ function createFileLibMenu()
 	});
 
 	fileLibMenu.topBorderText = "\1y\1hFile Libraries";
-	// Define the menu functions for getting the number of items and getting an item
-	fileLibMenu.NumItems = function() {
-		return file_area.lib_list.length;
-	};
+	// Define the menu function for getting an item
 	fileLibMenu.GetItem = function(pIdx) {
 		var menuItemObj = this.MakeItemWithRetval(pIdx);
 		menuItemObj.text = format(this.libFormatStr,
@@ -1747,11 +2156,7 @@ function createFileDirMenu(pLibIdx)
 	// Make sure there are directories in this library
 	if (file_area.lib_list[pLibIdx].dir_list.length == 0)
 	{
-		// TODO: Better error display
-		console.gotoxy(5, startRow);
-		console.print("\1n\1y\1hThere are no directories in this file library  \1n");
-		console.crlf();
-		console.pause();
+		displayMsg("There are no directories in this file library", true, true);
 		return null;
 	}
 
@@ -1769,12 +2174,21 @@ function createFileDirMenu(pLibIdx)
 	var additionalQuitKeys = "qQ";
 	fileDirMenu.AddAdditionalQuitKeys(additionalQuitKeys);
 
+	// Re-define the menu's function for getting the number of items.  This is necessary
+	// here in order for the menu's CanShowAllItemsInWindow() to work properly.
+	fileDirMenu.NumItems = function() {
+		return file_area.lib_list[this.libIdx].dir_list.length;
+	};
+
 	fileDirMenu.libIdx = pLibIdx;
 	// Construct a format string for the file libraries
 	var largestNumFiles = getLargestNumFilesInLibDirs(pLibIdx);
 	fileDirMenu.dirNumLen = file_area.lib_list[pLibIdx].dir_list.length.toString().length;
 	fileDirMenu.numFilesLen = largestNumFiles.toString().length;
 	var menuInnerWidth = fileDirMenu.size.width - 2; // Menu width excluding borders
+	// If the scrollbar will be showing, reduce the inner width by 1
+	if (fileDirMenu.scrollbarEnabled && !fileDirMenu.CanShowAllItemsInWindow())
+		--menuInnerWidth;
 	// Allow 2 for spaces
 	fileDirMenu.dirDescLen = menuInnerWidth - fileDirMenu.dirNumLen - fileDirMenu.numFilesLen - 2;
 	fileDirMenu.dirFormatStr = "%" + fileDirMenu.dirNumLen + "d %-" + fileDirMenu.dirDescLen + "s %" + fileDirMenu.numFilesLen + "d";
@@ -1797,47 +2211,20 @@ function createFileDirMenu(pLibIdx)
 	});
 
 	fileDirMenu.topBorderText = "\1y\1h" + ("File directories of " + file_area.lib_list[pLibIdx].description).substr(0, fileDirMenu.size.width-2);
-	// Define the menu functions for getting the number of items and getting an item
-	fileDirMenu.NumItems = function() {
-		return file_area.lib_list[this.libIdx].dir_list.length;
-	};
+	// Define the menu function for ggetting an item
 	fileDirMenu.GetItem = function(pIdx) {
 		// Return the internal code for the directory for the item
 		var menuItemObj = this.MakeItemWithRetval(file_area.lib_list[this.libIdx].dir_list[pIdx].code);
 		menuItemObj.text = format(this.dirFormatStr,
 		                          pIdx + 1,//file_area.lib_list[this.libIdx].dir_list[pIdx].number + 1,
 								  file_area.lib_list[this.libIdx].dir_list[pIdx].description.substr(0, this.dirDescLen),
-								  getNumFilesInDir(this.libIdx, pIdx));
+								  file_area.lib_list[this.libIdx].dir_list[pIdx].files);
 		return menuItemObj;
 	}
 
 	return fileDirMenu;
 }
-// Returns the number of files in a file directory
-//
-// Parameters:
-//  pLibIdx: The library index
-//  pDirIdx: The directory index within the file library
-//
-// Return value: The number of files in the file directory
-function getNumFilesInDir(pLibIdx, pDirIdx)
-{
-	if (typeof(pLibIdx) !== "number" || typeof(pDirIdx) !== "number")
-		return 0;
-	if (pLibIdx < 0 || pLibIdx >= file_area.lib_list.length)
-		return 0;
-	if (pDirIdx < 0 || pDirIdx >= file_area.lib_list[pLibIdx].dir_list.length)
-		return 0;
 
-	var numFiles = 0;
-	var filebase = new FileBase(file_area.lib_list[pLibIdx].dir_list[pDirIdx].code);
-	if (filebase.open())
-	{
-		numFiles = filebase.files;
-		filebase.close();
-	}
-	return numFiles;
-}
 // Returns the largest number of files in all directories in a file library
 //
 // Parameters:
@@ -1849,7 +2236,7 @@ function getLargestNumFilesInLibDirs(pLibIdx)
 	var largestNumFiles = 0;
 	for (var dirIdx = 0; dirIdx < file_area.lib_list[pLibIdx].dir_list.length; ++dirIdx)
 	{
-		var numFilesInDir = getNumFilesInDir(pLibIdx, dirIdx);
+		var numFilesInDir = file_area.lib_list[pLibIdx].dir_list[dirIdx].files;
 		if (numFilesInDir > largestNumFiles)
 			largestNumFiles = numFilesInDir;
 	}
@@ -2547,4 +2934,508 @@ function shortenFilename(pFilename, pMaxLen, pFillWidth)
 		adjustedFilename = filenameWithoutExt + filenameExt;
 
 	return adjustedFilename;
+}
+
+
+// Parses command-line arguments, where each argument in the given array is in
+// the format -arg=val.  If the value is the string "true" or "false", then the
+// value will be a boolean.  Otherwise, the value will be a string.
+//
+// Parameters:
+//  pArgArr: An array of strings containing values in the format -arg=val
+function parseArgs(pArgArr)
+{
+	// Default program options
+	gScriptMode = MODE_LIST_CURDIR;
+
+	// Sanity checking for pArgArr - Make sure it's an array
+	if ((typeof(pArgArr) != "object") || (typeof(pArgArr.length) != "number"))
+		return;
+
+	// Go through pArgArr looking for strings in the format -arg=val and parse them
+	// into objects in the argVals array.
+	var equalsIdx = 0;
+	var argName = "";
+	var argVal = "";
+	var argValUpper = ""; // For case-insensitive matching
+	for (var i = 0; i < pArgArr.length; ++i)
+	{
+		// We're looking for strings that start with "-", except strings that are
+		// only "-".
+		if ((typeof(pArgArr[i]) != "string") || (pArgArr[i].length == 0) ||
+		    (pArgArr[i].charAt(0) != "-") || (pArgArr[i] == "-"))
+		{
+			continue;
+		}
+
+		// Look for an = and if found, split the string on the =
+		equalsIdx = pArgArr[i].indexOf("=");
+		// If a = is found, then split on it and add the argument name & value
+		// to the array.  Otherwise (if the = is not found), then treat the
+		// argument as a boolean and set it to true (to enable an option).
+		if (equalsIdx > -1)
+		{
+			argName = pArgArr[i].substring(1, equalsIdx).toUpperCase();
+			argVal = pArgArr[i].substr(equalsIdx+1);
+			argValUpper = argVal.toUpperCase();
+			if (argName === "MODE")
+			{
+				if (argValUpper === "SEARCH_FILENAME")
+					gScriptMode = MODE_SEARCH_FILENAME;
+				else if (argValUpper === "SEARCH_DESCRIPTION")
+					gScriptMode = MODE_SEARCH_DESCRIPTION;
+				else if (argValUpper === "NEW_FILE_SEARCH")
+					gScriptMode = MODE_NEW_FILE_SEARCH;
+				else if (argValUpper === "LIST_CURDIR")
+					gScriptMode = MODE_LIST_CURDIR;
+			}
+		}
+		else // An equals sign (=) was not found.  Add as a boolean set to true to enable the option.
+		{
+			// Nothing to be done here for this script
+		}
+	}
+}
+
+// Populates the file list (gFileList).
+//
+// Parameters:
+//  pSearchMode: The search mode
+//
+// Return value: An obmect with the following properties:
+//               exitNow: Boolean: Whether or not this script should exit after calling this function
+//               exitCode: The exit code to use if needing to exit after calling this function
+function populateFileList(pSearchMode)
+{
+	var retObj = {
+		exitNow: false,
+		exitCode: 0
+	};
+	
+	var dirErrors = [];
+	var allSameDir = true;
+
+	// Do the things for list or search, depending on the specified mode
+	if (pSearchMode == MODE_LIST_CURDIR) // This is the default
+	{
+		var filebase = new FileBase(bbs.curdir_code);
+		if (filebase.open())
+		{
+			// If there are no files in the filebase, then say so and exit now.
+			if (filebase.files == 0)
+			{
+				filebase.close();
+				var libIdx = file_area.dir[bbs.curdir_code].lib_index;
+				console.crlf();
+				console.print("\1n\1cThere are no files in \1h" + file_area.lib_list[libIdx].description + "\1n\1c - \1h" +
+							  file_area.dir[bbs.curdir_code].description + "\1n");
+				console.crlf();
+				console.pause();
+				retObj.exitNow = true;
+				retObj.exitCode = 0;
+				return retObj;
+			}
+
+			// To check a user's file basic/extended detail information setting:
+			// if ((user.settings & USER_EXTDESC) == USER_EXTDESC)
+
+			// Get a list of file data with normal detail (without extended info).  When the user
+			// selects a file to view extended info, we'll get metadata about the file with extended detail.
+			gFileList = filebase.get_list("*", FileBase.DETAIL.NORM, 0, true, gFileSortOrder); // FileBase.DETAIL.EXTENDED
+			filebase.close();
+			// Add a dirCode property to the file metadata objects (for consistency,
+			// as file search results may contain files from multiple directories).
+			for (var i = 0; i < gFileList.length; ++i)
+				gFileList[i].dirCode = bbs.curdir_code;
+		}
+		else
+		{
+			console.crlf();
+			console.print("\1n\1h\1yUnable to open \1w" + file_area.dir[bbs.curdir_code].description + "\1n");
+			console.crlf();
+			console.pause();
+			retObj.exitNow = true;
+			retObj.exitCode = 1;
+			return retObj;
+		}
+	}
+	else if (pSearchMode == MODE_SEARCH_FILENAME)
+	{
+		var lastDirCode = "";
+
+		// Prompt the user for directory, library, or all
+		console.print("\1n");
+		console.crlf();
+		console.mnemonics(bbs.text(DirLibOrAll));
+		var validInputOptions = "DLA";
+		var userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+		var userFilespec = "";
+		if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
+		{
+			// Prompt the user for a filespec to search for
+			console.mnemonics(bbs.text(FileSpecStarDotStar));
+			userFilespec = console.getstr();
+			if (userFilespec.length == 0)
+				userFilespec = "*"; // Should this be *.*?
+			console.print("Searching....");
+		}
+		var searchRetObj = searchDirGroupOrAll(userInputDLA, function(pDirCode) {
+			return searchDirWithFilespec(pDirCode, userFilespec);
+		});
+		allSameDir = searchRetObj.allSameDir;
+		for (var i = 0; i < searchRetObj.errors.length; ++i)
+			dirErrors.push(searchRetObj.errors[i]);
+	}
+	else if (pSearchMode == MODE_SEARCH_DESCRIPTION)
+	{
+		var lastDirCode = "";
+
+		// Prompt the user for directory, library, or all
+		console.print("\1n");
+		console.crlf();
+		//console.print("\r\n\1c\1hFind Text in File Descriptions (no wildcards)\1n\r\n");
+		console.mnemonics(bbs.text(DirLibOrAll));
+		console.print("\1n");
+		var validInputOptions = "DLA";
+		var userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+		var searchDescription = "";
+		if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
+		{
+			// Prompt the user for a description to search for
+			console.mnemonics(bbs.text(SearchStringPrompt));
+			searchDescription = console.getstr(40, K_LINE|K_UPPER);
+			if (searchDescription.length > 0)
+				console.print("Searching....");
+			else
+			{
+				retObj.exitNow = true;
+				retObj.exitCode = 0;
+				return retObj;
+			}
+		}
+		var searchRetObj = searchDirGroupOrAll(userInputDLA, function(pDirCode) {
+			return searchDirWithDescUpper(pDirCode, searchDescription);
+		});
+		allSameDir = searchRetObj.allSameDir;
+		for (var i = 0; i < searchRetObj.errors.length; ++i)
+			dirErrors.push(searchRetObj.errors[i]);
+	}
+	else if (pSearchMode == MODE_NEW_FILE_SEARCH)
+	{
+		// New file search
+		var lastDirCode = "";
+
+		// 2022-02-011 - Digital Man said:
+		/*
+		Upon logon to the terminal server, bbs.new_file_time and bbs.last_new_file_time
+		are set to the current user.new_file_time value.
+
+		A new file scan displays files uploaded (added/imported) since the current
+		bbs.new_file_time value. The bbs.new_file_time value can be manipulated by the
+		user, e.g. they want to review files that have been uploaded over the past
+		month or whatever.
+
+		When the user executes a new file scan, bbs.last_new_file_time is updated to
+		the current time (this happens automatically when using the built-in file
+		listing logic). The bbs.last_new_file_time isn't actually used for anything
+		until the user logs-off and its value is then copied to the user.new_file_time
+		to be used for the next logon (this copy/sync of the last_new_file_time ->
+		user.new_file_time is built-in to the BBS's logout logci and nothing a script
+		would need to do).
+
+		This scheme insures that a user will never "miss" the display of new files on
+		the BBS and that they would not normally see the same/repeat "new" files
+		between successive sessions.
+		*/
+
+		// Prompt the user for directory, library, or all
+		console.print("\1n");
+		console.crlf();
+		console.mnemonics(bbs.text(DirLibOrAll));
+		var validInputOptions = "DLA";
+		var userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+		console.print("\1n");
+		console.crlf();
+		if (userInputDLA == "D" || userInputDLA == "L" || userInputDLA == "A")
+		{
+			console.print("\1n\1cSearching for files uploaded after \1h" + system.timestr(bbs.new_file_time) + "\1n");
+			console.crlf();
+		}
+		var searchRetObj = searchDirGroupOrAll(userInputDLA, function(pDirCode) {
+			return searchDirNewFiles(pDirCode, bbs.new_file_time);
+		});
+		// Now bbs.last_new_file_time needs to be updated with the current time
+		bbs.last_new_file_time = time();
+		// user.new_file_time should be updated with the value of bbs.last_new_file_time
+		// when the user logs off.
+		allSameDir = searchRetObj.allSameDir;
+		for (var i = 0; i < searchRetObj.errors.length; ++i)
+			dirErrors.push(searchRetObj.errors[i]);
+	}
+	else
+	{
+		retObj.exitNow = true;
+		retObj.exitCode = 1;
+		return retObj;
+	}
+
+	if (pSearchMode != MODE_LIST_CURDIR)
+		gFileList.allSameDir = allSameDir;
+
+	if (dirErrors.length > 0)
+	{
+		console.print("\1n\1y\1h");
+		for (var i = 0; i < dirErrors.length; ++i)
+		{
+			console.print(dirErrors[i]);
+			console.crlf();
+		}
+		console.print("\1n");
+		console.pause();
+		retObj.exitNow = true;
+		retObj.exitCode = 1;
+		return retObj;
+	}
+
+	return retObj;
+}
+
+// Searches files in a directory by filespec.
+//
+// Parameters:
+//  pDirCode: The internal code of a directory to search
+//  pFilespec: A filespec describing files to search for
+//
+// Return value: An object with the following properties:
+//               foundFiles: Boolean - Whether or not any files were found
+//               dirErrors: An array of strings that will be populated with any errors that occur
+function searchDirWithFilespec(pDirCode, pFilespec)
+{
+	var retObj = {
+		foundFiles: false,
+		dirErrors: []
+	};
+	if (typeof(pDirCode) !== "string" || pDirCode.length == 0 || typeof(pFilespec) !== "string")
+		return retObj;
+
+	var filebase = new FileBase(pDirCode);
+	if (filebase.open())
+	{
+		var fileList = filebase.get_list(pFilespec, FileBase.DETAIL.NORM, 0, true, gFileSortOrder); // Or EXTENDED
+		retObj.foundFiles = (fileList.length > 0);
+		filebase.close();
+		for (var i = 0; i < fileList.length; ++i)
+		{
+			fileList[i].dirCode = pDirCode;
+			gFileList.push(fileList[i]);
+		}
+	}
+	else
+	{
+		var libAndDirDesc = file_area.lib_list[libIdx].description + " - "
+						  + file_area.lib_list[libIdx].dir_list[dirIdx].description + " ("
+						  + file_area.lib_list[libIdx].dir_list[dirIdx].code + ")";
+		retObj.dirErrors.push("Failed to open " + libAndDirDesc);
+	}
+	return retObj;
+}
+
+// Searches files in a directory by description.
+//
+// Parameters:
+//  pDirCode: The internal code of a directory to search
+//  pDescUpper: The description to search for.  This is assumed to be uppercase.
+//
+// Return value: An object with the following properties:
+//               foundFiles: Boolean - Whether or not any files were found
+//               dirErrors: An array of strings that will be populated with any errors that occur
+function searchDirWithDescUpper(pDirCode, pDescUpper)
+{
+	var retObj = {
+		foundFiles: false,
+		dirErrors: []
+	};
+	if (typeof(pDirCode) !== "string" || pDirCode.length == 0 || typeof(pDescUpper) !== "string" || pDescUpper.length == 0)
+		return retObj;
+
+	var filebase = new FileBase(pDirCode);
+	if (filebase.open())
+	{
+		var fileList = filebase.get_list("*", FileBase.DETAIL.EXTENDED, 0, true, gFileSortOrder);
+		filebase.close();
+		for (var i = 0; i < fileList.length; ++i)
+		{
+			// Search both 'desc' and 'extdesc', if available in the file metadata object
+			var fileIsMatch = false;
+			if (fileList[i].hasOwnProperty("desc"))
+			{
+				var fileDesc = strip_ctrl(fileList[i].desc).toUpperCase();
+				fileIsMatch = (fileDesc.indexOf(pDescUpper) > -1);
+			}
+			if (!fileIsMatch && fileList[i].hasOwnProperty("extdesc"))
+			{
+				var descLines = fileList[i].extdesc.split("\r\n");
+				var fileDesc = strip_ctrl(descLines.join(" ")).toUpperCase();
+				fileIsMatch = (fileDesc.indexOf(pDescUpper) > -1);
+			}
+			if (fileIsMatch)
+			{
+				retObj.foundFiles = true;
+				fileList[i].dirCode = pDirCode;
+				gFileList.push(fileList[i]);
+			}
+		}
+	}
+	else
+	{
+		var libAndDirDesc = file_area.lib_list[libIdx].description + " - "
+						  + file_area.lib_list[libIdx].dir_list[dirIdx].description + " ("
+						  + file_area.lib_list[libIdx].dir_list[dirIdx].code + ")";
+		retObj.dirErrors.push("Failed to open " + libAndDirDesc);
+	}
+	return retObj;
+}
+
+// Searches files in a directory that were added later than a given time.
+//
+// Parameters:
+//  pDirCode: The internal code of a directory to search
+//  pSinceTime: The time after which to look for newer files
+//
+// Return value: An object with the following properties:
+//               foundFiles: Boolean - Whether or not any files were found
+//               dirErrors: An array of strings that will be populated with any errors that occur
+function searchDirNewFiles(pDirCode, pSinceTime)
+{
+	var retObj = {
+		foundFiles: false,
+		dirErrors: []
+	};
+	if (typeof(pDirCode) !== "string" || pDirCode.length == 0 || typeof(pSinceTime) !== "number")
+		return retObj;
+
+	var filebase = new FileBase(pDirCode);
+	if (filebase.open())
+	{
+		var fileList = filebase.get_list("*", FileBase.DETAIL.NORM, 0, true, gFileSortOrder);
+		filebase.close();
+		for (var i = 0; i < fileList.length; ++i)
+		{
+			if (fileList[i].added >= pSinceTime)
+			{
+				retObj.foundFiles = true;
+				fileList[i].dirCode = pDirCode;
+				gFileList.push(fileList[i]);
+			}
+		}
+	}
+	else
+	{
+		var libAndDirDesc = file_area.lib_list[libIdx].description + " - "
+						  + file_area.lib_list[libIdx].dir_list[dirIdx].description + " ("
+						  + file_area.lib_list[libIdx].dir_list[dirIdx].code + ")";
+		retObj.dirErrors.push("Failed to open " + libAndDirDesc);
+	}
+	return retObj;
+}
+
+// Searches either the user's current directory, library, or all dirs in all
+// libraries, using a search function that populages gFileList.
+//
+// Parameters:
+//  pSearchOption: A string that specifies "D" for directory, "L" for library, or "A" for all
+//  pDirSearchFn: A search function that searches a file directory for criteria and populates gFileList.
+//                This function must return an object with the following properties:
+//                foundFiles: Boolean - Whether any files were found
+//                dirErrors: An array containing strings for any errors found
+//
+// Return value: An object with the following properties:
+//               allSameDir: Boolean - Whethre or not all files found are in the same directory
+//               errors: An array containing strings for any errors found
+function searchDirGroupOrAll(pSearchOption, pDirSearchFn)
+{
+	var retObj = {
+		allSameDir: true,
+		errors: []
+	};
+
+	if (typeof(pSearchOption) !== "string")
+	{
+		retObj.errors.push("Invalid search option");
+		return retObj;
+	}
+	if (typeof(pDirSearchFn) !== "function")
+	{
+		retObj.errors.push("No search function");
+		return retObj;
+	}
+
+	var searchOptionUpper = pSearchOption.toUpperCase();
+	if (searchOptionUpper == "D")
+	{
+		// Current directory
+		var searchRetObj = pDirSearchFn(bbs.curdir_code);
+		retObj.allSameDir = true;
+		for (var i = 0; i < searchRetObj.dirErrors.length; ++i)
+			retObj.errors.push(searchRetObj.dirErrors[i]);
+	}
+	else if (searchOptionUpper == "L")
+	{
+		// Current file library
+		var libIdx = file_area.dir[bbs.curdir_code].lib_index;
+		for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
+		{
+			if (file_area.lib_list[libIdx].dir_list[dirIdx].can_access) // And can_download?
+			{
+				if (gSearchVerbose)
+				{
+					console.print(" " + file_area.lib_list[libIdx].dir_list[dirIdx].description + "..");
+					console.crlf();
+				}
+				lastDirCode = (gFileList.length > 0 ? gFileList[gFileList.length-1].dirCode : "");
+				var dirCode = file_area.lib_list[libIdx].dir_list[dirIdx].code;
+				var searchRetObj = pDirSearchFn(dirCode);
+				if (retObj.allSameDir && searchRetObj.foundFiles && lastDirCode.length > 0)
+					retObj.allSameDir = (dirCode == lastDirCode);
+				for (var i = 0; i < searchRetObj.dirErrors.length; ++i)
+					retObj.errors.push(searchRetObj.dirErrors[i]);
+			}
+		}
+	}
+	else if (searchOptionUpper == "A")
+	{
+		// All file libraries & directories
+		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
+		{
+			if (gSearchVerbose)
+			{
+				console.print("Searching " + file_area.lib_list[libIdx].description + "..");
+				console.crlf();
+			}
+			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
+			{
+				if (file_area.lib_list[libIdx].dir_list[dirIdx].can_access) // And can_download?
+				{
+					if (gSearchVerbose)
+					{
+						console.print(" " + file_area.lib_list[libIdx].dir_list[dirIdx].description + "..");
+						console.crlf();
+					}
+					lastDirCode = (gFileList.length > 0 ? gFileList[gFileList.length-1].dirCode : "");
+					var dirCode = file_area.lib_list[libIdx].dir_list[dirIdx].code;
+					var searchRetObj = pDirSearchFn(dirCode);
+					if (retObj.allSameDir && searchRetObj.foundFiles && lastDirCode.length > 0)
+						retObj.allSameDir = (dirCode == lastDirCode);
+					for (var i = 0; i < searchRetObj.dirErrors.length; ++i)
+						retObj.errors.push(searchRetObj.dirErrors[i]);
+				}
+			}
+		}
+	}
+	else
+	{
+		retObj.errors.push("Invalid search option" + (pSearchOption.length > 0 ? ": " + pSearchOption : ""));
+	}
+
+	return retObj;
 }

@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.01
-                           Release date: 2022-02-07
+                                 Version 2.02
+                           Release date: 2022-02-13
 
                                      by
 
@@ -22,6 +22,7 @@ Contents
    - Command shell setup
    - Background: Running JavaScript scripts in Synchronet
 4. Configuration file & color/text theme configuration file
+5. Strings used from text.dat
 
 
 1. Disclaimer
@@ -65,6 +66,13 @@ The file lister also provides the ability to view files (according to
 Synchronet's viewable files configuration), and adding files to the user's
 batch download queue.  Additionally, sysops can delete files and move files to
 another file directory.
+
+In addition to listing files in the user's current directory, this lister can
+perform a file search (via filespec, description, or new file search since last
+search).  The default is to list files in the current directory, but a search
+mode can be specified with the command-line option -MODE.  search_filename,
+search_description, or new_file_search will perform the searching; list_curdir
+lists files in the user's current directory, which is the default.
 
 
 3. Installation & Setup
@@ -114,6 +122,18 @@ exec "?../xtrn/ddfilelister/ddfilelister.js"
 In a JavaScript script, you can use the bbs.exec() function to run a JavaScript
 script, as in the following example:
 bbs.exec("?../xtrn/ddfilelister/ddfilelister.js");
+
+To perform searching, you can add the -MODE option on the command line.
+To do a filename search:
+?../xtrn/DigDist/ddfilelister/ddfilelister.js -MODE=search_filename
+To do a description search:
+?../xtrn/DigDist/ddfilelister/ddfilelister.js -MODE=search_description
+To search for new files since the last search:
+?../xtrn/DigDist/ddfilelister/ddfilelister.js -MODE=new_file_search
+You can also specify a mode to list the user's current directory, which is
+already the default action:
+?../xtrn/DigDist/ddfilelister/ddfilelister.js -MODE=list_curdir
+
 
 To install the file lister as an external program (in SCFG in External
 Programs > Online Programs (Doors)), see the following document for more
@@ -249,3 +269,13 @@ fileAreaDescHighlight                 The file library/directory description for
 
 fileAreaNumItemsHighlight            The number of directories/files for
                                      'highlight' colors (for moving a file)
+
+
+5. Strings used from text.dat
+=============================
+Digital Distortion File Lister uses the following strings from text.dat (in
+Synchronet's ctrl directory):
+
+- DirLibOrAll (622)
+- FileSpecStarDotStar (199)
+- SearchStringPrompt (76)
