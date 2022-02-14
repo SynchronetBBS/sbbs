@@ -123,6 +123,10 @@ if(HAS_DEV_MACHINE_SPKR_H)
 	target_compile_definitions(xpdev PRIVATE HAS_DEV_MACHINE_SPKR_H)
 endif()
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	target_compile_definitions(xpdevplus PUBLIC POSIX_C_SOURCE=200809L _DEFAULT_SOURCE _BSD_SOURCE SPEED_MACROS_ONLY _GNU_SOURCE _FILE_OFFSET_BITS=64)
+endif()
+
 if(WIN32)
 	target_compile_definitions(xpdev PUBLIC _WIN32 _WIN32_WINNT=0x0501 WINVER=0x0501 MSVCRT_VERSION=0x0501 _WIN32_IE=0x0500)
 	target_link_libraries(xpdev iphlpapi ws2_32 winmm netapi32)
