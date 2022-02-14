@@ -5832,8 +5832,10 @@ function hello()
 					tmp = parseInt(tmp, 10);
 					if (tmp !== player.Record) {
 						op = player_get(tmp);
-						op.on_now = false;
-						op.put(false);
+						if (op !== null) {
+							op.on_now = false;
+							op.put(false);
+						}
 					}
 				}
 				no.close();
