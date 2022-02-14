@@ -724,7 +724,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 		if (!this.drawnAlready)
 			this.DisplayInitialScrollbar(this.pos.y);
 		else
-			this.UpdateScrollbarWithHighlightedItem();
+			this.UpdateScrollbarWithHighlightedItem(true);
 	}
 	// For numbered mode, we'll need to know the length of the longest item number
 	// so that we can use that space to display the item numbers.
@@ -1347,7 +1347,11 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 
 	var draw = (typeof(pDraw) == "boolean" ? pDraw : true);
 	if (draw)
+	{
 		this.Draw(pSelectedItemIndexes);
+		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			this.DisplayInitialScrollbar(this.scrollbarInfo.solidBlockLastStartRow);
+	}
 
 	// User input loop
 	var userChoices = null; // For multi-select mode
@@ -2326,10 +2330,15 @@ function DDLightbarMenu_CalcScrollbarSolidBlockStartRow()
 
 // Updates the scrollbar position based on the currently-selected
 // item index, this.selectedItemIdx.
-function DDLightbarMenu_UpdateScrollbarWithHighlightedItem()
+//
+// Parameters:
+//  pForceUpdate: Boolean - Whether or not to force the redraw regardless of block location.
+//                Defaults to false.
+function DDLightbarMenu_UpdateScrollbarWithHighlightedItem(pForceUpdate)
 {
+	var forceUpdate = (typeof(pForceUpdate) === "boolean" ? pForceUpdate : false);
 	var solidBlockStartRow = this.CalcScrollbarSolidBlockStartRow();
-	if (solidBlockStartRow != this.scrollbarInfo.solidBlockLastStartRow)
+	if (forceUpdate || (solidBlockStartRow != this.scrollbarInfo.solidBlockLastStartRow))
 		this.UpdateScrollbar(solidBlockStartRow, this.scrollbarInfo.solidBlockLastStartRow, this.scrollbarInfo.numSolidScrollBlocks);
 	this.scrollbarInfo.solidBlockLastStartRow = solidBlockStartRow;
 }
