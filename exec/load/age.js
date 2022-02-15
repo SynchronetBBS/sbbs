@@ -11,7 +11,7 @@ function seconds(t, adjust_for_zone)
 	
 	var diff = now - Number(t);
 	if(diff < 0) {
-		past = bbs.text(InTheFuture);
+		past = system.text(InTheFuture);
 		diff = -diff;
 	}
 	return diff;
@@ -44,30 +44,30 @@ function years(t, adjust_for_zone)
 
 function string(t, adjust_for_zone)
 {
-	var	past = bbs.text(InThePast);
-	var	units = bbs.text(Years);
+	var	past = system.text(InThePast);
+	var	units = system.text(Years);
 	var value;
 	var diff = seconds(t, adjust_for_zone);
 	
 	if(diff < 60) {
 		value = format("%.0f", diff);
-		units = bbs.text(Seconds);
+		units = system.text(Seconds);
 	} else if(diff < 60*60) {
 		value = format("%.0f", diff / 60.0);
-		units = bbs.text(Minutes);
+		units = system.text(Minutes);
 	} else if(diff < 60*60*24) {
 		value = format("%.1f", diff / (60.0 * 60.0));
-		units = bbs.text(Hours);
+		units = system.text(Hours);
 	} else if(diff < 60*60*24*30) {
 		value = format("%.1f", diff / (60.0 * 60.0 * 24.0));
-		units = bbs.text(Days);
+		units = system.text(Days);
 	} else if(diff < 60*60*24*365) {
 		value = format("%.1f", diff / (60.0 * 60.0 * 24.0 * 30.0));
-		units = bbs.text(Months);
+		units = system.text(Months);
 	} else
 		value = format("%.1f", diff / (60.0 * 60.0 * 24.0 * 365.25));
 	
-	return(format(bbs.text(AgeOfPostedItem), value, units, past));
+	return(format(system.text(AgeOfPostedItem), value, units, past));
 }
 
 this;
