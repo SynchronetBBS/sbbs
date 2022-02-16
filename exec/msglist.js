@@ -62,6 +62,9 @@ if(argv.indexOf('-?') >= 0 || argv.indexOf('-help') >= 0)
 	writeln("  -p=<list>       specify comma-separated list of property names to print");
 	writeln("  -fmt=<fmt>      specify format string");
 	writeln("  -hdr            include list header");
+	writeln("  -count          show count of messages only");
+	writeln("  -all_subs	   action for all sub areas")
+	writeln("  -hide_zero      do not show a line if zero messages are returned")
 	exit(0);
 }
 require('sbbsdefs.js', 'LEN_ALIAS');
@@ -1553,6 +1556,9 @@ var lm_mode;
 var preview;
 var msgbase_code;
 var since;
+var count_only;
+var all_subs;
+var hide_zero;
 
 for(var i in argv) {
 	var arg = argv[i].toLowerCase();
@@ -1612,6 +1618,15 @@ for(var i in argv) {
 		case '-hdr':
 			list_hdr = true;
 			break;
+		case '-count':
+			count_only = true;
+			break;
+		case '-all_subs':
+			all_subs = true;
+			break;
+		case '-hide_zero':
+			hide_zero = true;
+			break;
 		default:
 			if(msgbase_code === undefined)
 				msgbase_code = arg;
@@ -1625,16 +1640,18 @@ for(var i in argv) {
 	}
 }
 
-if(!msgbase_code) {
-	if(js.global.bbs === undefined) {
-		alert("No msgbase code specified");
-		exit();
+if (!all_subs) {
+	if(!msgbase_code) {
+		if(js.global.bbs === undefined) {
+			alert("No msgbase code specified");
+			exit();
+		}
+		msgbase_code = bbs.cursub_code;
 	}
-	msgbase_code = bbs.cursub_code;
 }
 
 var msgbase = new MsgBase(msgbase_code);
-if(!msgbase.open()) {
+if(!msgbase.open() && !all_subs) {
 	alert(msgbase.error);
 	exit();
 }
@@ -1656,7 +1673,7 @@ if(options.date_fmt === undefined)
 	options.date_fmt = "%Y-%m-%d";
 // options.date_time_fmt = "%a %b %d %Y %H:%M:%S";
 
-if(!msgbase.total_msgs) {
+if(!msgbase.total_msgs && !all_subs) {
 	alert("No messages");
 	exit();
 }
@@ -1744,12 +1761,36 @@ if(js.global.bbs && bbs.online) {
 	js.on_exit("bbs.sys_status &= ~SS_MOFF");
 	bbs.sys_status |= SS_MOFF; // Disable automatic messages
 } else {
-	var list = load_msgs(msgbase, which, lm_mode, /* usernumber; */0, since);
-	if(!list || !list.length) {
-		alert("No messages");
-		exit(0);
+	var sub_list = [];
+	if (all_subs) {
+		for (var sub in msg_area.sub) {
+			sub_list.push(sub);
+		}
+	} else {
+		sub_list.push(msgbase_code)
 	}
-	list_msgs_offline(msgbase, list);
+
+	for(var i = 0; i < sub_list.length; i++)
+	{
+		var local_msgbase_code = sub_list[i];
+		var msgbase = new MsgBase(local_msgbase_code);
+
+		if(!msgbase.open()) {
+			alert(msgbase.error);
+			exit();
+		}
+
+		var list = load_msgs(msgbase, which, lm_mode, /* usernumber; */0, since);
+
+		if (count_only) {
+			if ( list.length || !hide_zero )
+				printf("%10s  %-40s %5s\n", msgbase.cfg.grp_name, msgbase.cfg.description, list.length)
+		} else {
+			list_msgs_offline(msgbase, list);
+		}
+
+	}
+	
 	exit(0);
 }
 
