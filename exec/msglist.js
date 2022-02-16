@@ -52,6 +52,18 @@ if(argv.indexOf('-install') >= 0)
 	exit(result === true ? 0 : 1);
 }
 
+if(argv.indexOf('-?') >= 0 || argv.indexOf('-help') >= 0)
+{
+	writeln("usage: [-options] [sub-code]");
+	writeln("options:");
+	writeln("  -sort=prop      sort message list by property");
+	writeln("  -reverse        reverse the sort order");
+	writeln("  -new=<days>     include new messages added in past <days>");
+	writeln("  -p=<list>       specify comma-separated list of property names to print");
+	writeln("  -fmt=<fmt>      specify format string");
+	writeln("  -hdr            include list header");
+	exit(0);
+}
 require('sbbsdefs.js', 'LEN_ALIAS');
 require("utf8_cp437.js", 'utf8_cp437');
 require("file_size.js", 'file_size_str');
@@ -97,6 +109,8 @@ function columnHeading(name)
 /* Supported list formats */
 var list_format = 0;
 var list_formats = [];
+var list_format_str;
+var list_hdr = false;
 
 const sub_list_formats = [
 	[ "to", "subject" ],
@@ -271,7 +285,7 @@ function property_sort_value(msg, prop)
 	return property_value(msg, prop);
 }
 
-var sort_property = 'num';
+var sort_property;
 var sort_reversed = false;
 function sort_compare(a, b)
 {
@@ -1354,6 +1368,70 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 	}
 }
 
+function list_msgs_offline(msgbase, list)
+{
+	if(sort_property) {
+		list.sort(sort_compare);
+		if(lm_mode & LM_REVERSE)
+			list.reverse();
+	}
+	/* Column headings */
+	var exclude_heading = [];
+	var digits = format("%u", list.length).length;
+	if(list_hdr) {
+		if(list_format_str) {
+			var args = [list_format_str];
+			for(var j = 0; j < list_formats[list_format].length; j++) {
+				if(exclude_heading.indexOf(prop) >= 0)
+					continue;
+				args.push(columnHeading(list_formats[list_format][j]));
+			}
+			print(format.apply(null, args));
+		} else {
+			printf("%-*s ", digits, "#");
+			printf("%-*s ", LEN_ALIAS, "From");
+			for(var i = 0; i < list_formats[list_format].length; i++) {
+				var prop = list_formats[list_format][i];
+				if(exclude_heading.indexOf(prop) >= 0)
+					continue;
+				var fmt = "%-*.*s";
+				var heading = columnHeading(prop);
+
+				var last_column = (i == (list_formats[list_format].length - 1));
+				if(last_column) {
+					if(i > 0)
+						fmt = "%*.*s";
+				} else {
+					if(i > 0 && max_len(prop) >= heading.length)
+						printf(" ");
+				}
+
+				printf(fmt
+					,max_len(prop)
+					,max_len(prop)
+					,heading);
+			}
+			print();
+		}
+	}
+	for(var i = 0; i < list.length; i++) {
+		var msg = list[i];
+		if(list_format_str) {
+			var args = [list_format_str];
+			for(var j = 0; j < list_formats[list_format].length; j++) {
+				var prop = list_formats[list_format][j];
+				if(exclude_heading.indexOf(prop) >= 0)
+					continue;
+				args.push(property_value(msg, prop, /* is_operator */true));
+			}
+			print(format.apply(null, args));
+		} else {
+			list_msg(msg, digits, false, sort_property, /* msg_ctrl */false, exclude_heading, /* is_operator */true);
+			print();
+		}
+	}
+}
+
 function msg_attributes(msg, msgbase, short)
 {
 	var result = [];
@@ -1407,7 +1485,7 @@ function update_msg_attr(msgbase, msg, attr)
 }
 
 // Return an array of msgs
-function load_msgs(msgbase, which, mode, usernumber)
+function load_msgs(msgbase, which, mode, usernumber, since)
 {
 	var mail = (msgbase.attributes & SMB_EMAIL);
 	var list = [];
@@ -1449,6 +1527,8 @@ function load_msgs(msgbase, which, mode, usernumber)
 	var msgs = [];
 	for(var i in list) {
 		var msg = list[i];
+		if(since !== undefined && msg.when_imported_time < since)
+			continue;
 		msg.attributes = msg_attributes(msg, msgbase);
 		msg.num = msgs.length + 1;
 		msg.score = 0;
@@ -1472,9 +1552,29 @@ var usernumber;
 var lm_mode;
 var preview;
 var msgbase_code;
+var since;
 
 for(var i in argv) {
 	var arg = argv[i].toLowerCase();
+	if(arg.indexOf("-sort=") == 0) {
+		sort_property = arg.slice(6);
+		continue;
+	}
+	if(arg.indexOf("-new=") == 0) {
+		var days = parseInt(arg.slice(5), 10);
+		since = time() - (days * (24 * 60 * 60));
+		continue;
+	}
+	if(arg.indexOf("-fmt=") == 0) {
+		list_format_str = arg.slice(5);
+		continue;
+	}
+	if(arg.indexOf("-p=") == 0) {
+		list_formats = [arg.slice(3).split(',')];
+		list_format = 0;
+		continue;
+	}
+
 	switch(arg) {
 		case '-p':
 		case '-preview':
@@ -1506,6 +1606,12 @@ for(var i in argv) {
 		case '-sent':
 			which = MAIL_SENT;
 			break;
+		case '-sort':
+			sort_property = argv[++i];
+			break;
+		case '-hdr':
+			list_hdr = true;
+			break;
 		default:
 			if(msgbase_code === undefined)
 				msgbase_code = arg;
@@ -1519,8 +1625,13 @@ for(var i in argv) {
 	}
 }
 
-if(!msgbase_code)
+if(!msgbase_code) {
+	if(js.global.bbs === undefined) {
+		alert("No msgbase code specified");
+		exit();
+	}
 	msgbase_code = bbs.cursub_code;
+}
 
 var msgbase = new MsgBase(msgbase_code);
 if(!msgbase.open()) {
@@ -1563,19 +1674,21 @@ function remove_list_format_property(name)
 }
 
 if(msgbase.cfg) {
-	list_formats = sub_list_formats;
-	if(msgbase.cfg.settings & (SUB_FIDO | SUB_QNET | SUB_INET)) {
-		list_formats = list_formats.concat(net_sub_list_formats);
-		if(msgbase.cfg.settings & SUB_FIDO)
-			list_formats = list_formats.concat(fido_sub_list_formats);
-	} else
-		list_formats = list_formats.concat(local_sub_list_formats);
-	if(!(msgbase.cfg.settings & SUB_MSGTAGS))
-		remove_list_format_property("tags");
-	if(msgbase.cfg.settings & SUB_NOVOTING)
-		remove_list_format_property("score");
-	if(!(msgbase.cfg.settings & SUB_TOUSER))
-		remove_list_format_property("to");
+	if(list_formats.length < 1) {
+		list_formats = sub_list_formats;
+		if(msgbase.cfg.settings & (SUB_FIDO | SUB_QNET | SUB_INET)) {
+			list_formats = list_formats.concat(net_sub_list_formats);
+			if(msgbase.cfg.settings & SUB_FIDO)
+				list_formats = list_formats.concat(fido_sub_list_formats);
+		} else
+			list_formats = list_formats.concat(local_sub_list_formats);
+		if(!(msgbase.cfg.settings & SUB_MSGTAGS))
+			remove_list_format_property("tags");
+		if(msgbase.cfg.settings & SUB_NOVOTING)
+			remove_list_format_property("score");
+		if(!(msgbase.cfg.settings & SUB_TOUSER))
+			remove_list_format_property("to");
+	}
 } else {
 	if(which === undefined)
 		which = MAIL_YOUR;
@@ -1591,43 +1704,54 @@ if(lm_mode === undefined)
 if((system.settings&SYS_SYSVDELM) && (user.is_sysop || (system.settings&SYS_USRVDELM)))
 	lm_mode |= LM_INCDEL;
 
-if(msgbase.attributes & SMB_EMAIL) {
-	if(isNaN(which))
-		which = MAIL_YOUR;
-	if(options.reverse_mail)
-		lm_mode |= LM_REVERSE;
-	if(lm_mode&(LM_NOSPAM | LM_SPAMONLY))
-		remove_list_format_property("spam");
+if(js.global.bbs && bbs.online) {
+
+	if(msgbase.attributes & SMB_EMAIL) {
+		if(isNaN(which))
+			which = MAIL_YOUR;
+		if(options.reverse_mail)
+			lm_mode |= LM_REVERSE;
+		if(lm_mode&(LM_NOSPAM | LM_SPAMONLY))
+			remove_list_format_property("spam");
+	} else {
+		if(options.reverse_msgs)
+			lm_mode |= LM_REVERSE;
+	}
+
+	if(!usernumber)
+		usernumber = user.number;
+
+	var userprops_lib = bbs.mods.userprops;
+	if(!userprops_lib)
+		userprops_lib = load(bbs.mods.userprops = {}, "userprops.js");
+	var userprops_section = "msglist:" + msgbase_code;
+	if(!msgbase.cfg)
+		userprops_section += (":" + ["your","sent","any","all"][which]);
+
+	var userprops = userprops_lib.get(userprops_section);
+	if(!userprops)
+		userprops = {};
+	if(!options.track_last_read_mail)
+		userprops.last_read_mail = undefined;
+
+	js.on_exit("console.status = " + console.status);
+	//console.status |= CON_CR_CLREOL;
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+	console.ctrlkey_passthru |= (1<<16);      // Disable Ctrl-P handling in sbbs
+	console.ctrlkey_passthru |= (1<<20);      // Disable Ctrl-T handling in sbbs
+	console.ctrlkey_passthru |= (1<<21);      // Disable Ctrl-U handling in sbbs
+	console.ctrlkey_passthru |= (1<<26);      // Disable Ctrl-Z handling in sbbs
+	js.on_exit("bbs.sys_status &= ~SS_MOFF");
+	bbs.sys_status |= SS_MOFF; // Disable automatic messages
 } else {
-	if(options.reverse_msgs)
-		lm_mode |= LM_REVERSE;
+	var list = load_msgs(msgbase, which, lm_mode, /* usernumber; */0, since);
+	if(!list || !list.length) {
+		alert("No messages");
+		exit(0);
+	}
+	list_msgs_offline(msgbase, list);
+	exit(0);
 }
-
-if(!usernumber)
-	usernumber = user.number;
-
-var userprops_lib = bbs.mods.userprops;
-if(!userprops_lib)
-	userprops_lib = load(bbs.mods.userprops = {}, "userprops.js");
-var userprops_section = "msglist:" + msgbase_code;
-if(!msgbase.cfg)
-	userprops_section += (":" + ["your","sent","any","all"][which]);
-
-var userprops = userprops_lib.get(userprops_section);
-if(!userprops)
-	userprops = {};
-if(!options.track_last_read_mail)
-	userprops.last_read_mail = undefined;
-
-js.on_exit("console.status = " + console.status);
-//console.status |= CON_CR_CLREOL;
-js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
-console.ctrlkey_passthru |= (1<<16);      // Disable Ctrl-P handling in sbbs
-console.ctrlkey_passthru |= (1<<20);      // Disable Ctrl-T handling in sbbs
-console.ctrlkey_passthru |= (1<<21);      // Disable Ctrl-U handling in sbbs
-console.ctrlkey_passthru |= (1<<26);      // Disable Ctrl-Z handling in sbbs
-js.on_exit("bbs.sys_status &= ~SS_MOFF");
-bbs.sys_status |= SS_MOFF; // Disable automatic messages
 
 var grp_name;
 var sub_name = "???";
@@ -1655,6 +1779,8 @@ if(msgbase.cfg) {
 	}
 }
 
+if(sort_property === undefined)
+	sort_property = 'num';
 do {
 	console.print("\x01[\x01>Loading messages \x01i...\x01n ");
 	var list = load_msgs(msgbase, which, lm_mode, usernumber);
