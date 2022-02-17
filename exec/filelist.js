@@ -393,6 +393,7 @@ function list_file(file, fmt, props)
 				if(name == 'name')
 					a.push(FileBase().format_name(p, name_len, options.pad));
 				else if(name == 'extdesc') {
+					p = p.replace(/\r/g, '');
 					if(both_desc)
 						a.push(p.replace(/([^\n]+)/g, (extdesc_prefix + "$&")).trimRight());
 					else
