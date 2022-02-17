@@ -33,6 +33,7 @@ var detail = -1;
 var dir_list = [];
 var filespec = "";
 var extdesc_prefix;
+var both_desc = false;
 var since = 0;
 var props = [];
 var fmt;
@@ -140,11 +141,16 @@ for(var i = 0; i < argc; i++) {
 			continue;
 		}
 		if(opt == "ext") {
+			if(detail == FileBase.DETAIL.NORM)
+				both_desc = true;
 			detail = FileBase.DETAIL.EXTENDED;
 			continue;
 		}
 		if(opt == "desc") {
-			detail = FileBase.DETAIL.NORM;
+			if(detail >= FileBase.DETAIL.EXTENDED)
+				both_desc = true;
+			else
+				detail = FileBase.DETAIL.NORM;
 			continue;
 		}
 		if(opt.indexOf("p=") == 0) {
@@ -218,7 +224,8 @@ if(fmt != "json") {
 			props.push("extdesc");
 			if(extdesc_prefix === undefined)
 				extdesc_prefix = format("%*s| ", offset - 1, "");
-			f += "%s";
+			if(both_desc)
+				f += "%s";
 		}
 		if(!fmt)
 			fmt = f;
@@ -385,9 +392,13 @@ function list_file(file, fmt, props)
 			case "string":
 				if(name == 'name')
 					a.push(FileBase().format_name(p, name_len, options.pad));
-				else if(name == 'extdesc')
-					a.push(p.replace(/([^\n]+)/g, (extdesc_prefix + "$&")).trimRight());
-				else
+				else if(name == 'extdesc') {
+					if(both_desc)
+						a.push(p.replace(/([^\n]+)/g, (extdesc_prefix + "$&")).trimRight());
+					else
+						a.push(p.trim().replace(/\n/g, '\n' + extdesc_prefix).trimRight());
+				}
+				else if(both_desc || name !== 'desc' || !file.extdesc)
 					a.push(p);
 				break;
 			case "number":
