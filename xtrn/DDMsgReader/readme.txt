@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.43
-                           Release date: 2022-02-10
+                                 Version 1.44
+                           Release date: 2022-02-19
 
                                      by
 
@@ -942,10 +942,6 @@ allToYouMsgScanText                  The first text displayed when doing a
                                      the sub-board/group/all prompt is
                                      displayed
 
-scanScopePromptText                  The text used for prompting to scan in the
-                                     sub-board, group, or all (or ENTER to
-                                     cancel)
-
 msgScanCompleteText                  Text to display when the message scan is
                                      complete
 
@@ -1093,6 +1089,7 @@ This message reader uses the following lines from Synchronet's text.dat file
 501 (SelectItemHdr)
 503 (SelectItemWhich)
 563 (Pause)
+621 (SubGroupOrAll)
 662 (DownloadAttachedFileQ)
 759 (CantReadSub)
 779 (VotingNotAllowed)

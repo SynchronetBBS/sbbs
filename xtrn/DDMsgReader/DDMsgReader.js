@@ -102,6 +102,16 @@
  *                              inside a loop..oops).  Also, added a check to the header
  *                              properties so that it won't display JS functions when viewing
  *                              the message header information.
+ * 2022-02-15 Eric Oulashin     Version 1.44 Beta
+ *                              Removed the scanScopePromptText text line and used
+ *                              the SubGroupOrAll line (621) from text.dat instead.
+ *                              Updated to support @-codes in configured text strings.
+ *                              Also, started working on making text search support
+ *                              sub-board, group, or all like the other text searching.
+ *                              When reading the theme file, color settings are now checked
+ *                              to ensure they only have Synchronet attribute codes.
+ * 2022-02-19 Eric Oulashin     Version 1.44
+ *                              Releasing this version.
  */
 
 
@@ -168,6 +178,11 @@
 */
 
 // TODOs:
+// - Search in text: Support current sub-board, group, or all searching
+// - Make use of these lines from text.dat?
+// "\1n\1c(\1h%u \1n\1csub-boards)\1h\1w complete.\r\n"           117 MessageScanComplete
+// "\1r\1iaborted.\1n\r\n"                                    118 MessageScanAborted
+
 // - For pageUp & pageDown, enable alternate keys:
 //  - When reading a message - scrollTextLines()
 //  - When listing messages
@@ -217,8 +232,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.43";
-var READER_DATE = "2022-02-10";
+var READER_VERSION = "1.44";
+var READER_DATE = "2022-02-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -330,8 +345,6 @@ var BLOCK4 = "\xDB"; // Brightest block
 
 const ERROR_PAUSE_WAIT_MS = 1500;
 
-// gIsSysop stores whether or not the user is a sysop.
-var gIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 // Store whether or not the Synchronet compile date is at least May 12, 2013
 // so that we don't have to call compileDateAtLeast2013_05_12() multiple times.
 var gSyncCompileDateAtLeast2013_05_12 = compileDateAtLeast2013_05_12();
@@ -622,7 +635,7 @@ if (gDoDDMR)
 			msgReader.ReadOrListSubBoard();
 			break;
 		case SEARCH_KEYWORD:
-			msgReader.SearchMessages("keyword_search");
+			msgReader.SearchMsgScan("keyword_search");
 			break;
 		case SEARCH_FROM_NAME:
 			msgReader.SearchMessages("from_name_search");
@@ -637,7 +650,7 @@ if (gDoDDMR)
 			if (!gCmdLineArgVals.suppresssearchtypetext)
 			{
 				console.crlf();
-				console.print(msgReader.text.newMsgScanText);
+				console.print(replaceAtCodesInStr(msgReader.text.newMsgScanText));
 				console.crlf();
 			}
 			msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW);
@@ -655,7 +668,7 @@ if (gDoDDMR)
 			if (!gCmdLineArgVals.suppresssearchtypetext)
 			{
 				console.crlf();
-				console.print(msgReader.text.newToYouMsgScanText);
+				console.print(replaceAtCodesInStr(msgReader.text.newToYouMsgScanText));
 				console.crlf();
 			}
 			msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD);
@@ -673,7 +686,7 @@ if (gDoDDMR)
 			if (!gCmdLineArgVals.suppresssearchtypetext)
 			{
 				console.crlf();
-				console.print(msgReader.text.allToYouMsgScanText);
+				console.print(replaceAtCodesInStr(msgReader.text.allToYouMsgScanText));
 				console.crlf();
 			}
 			msgReader.MessageAreaScan(SCAN_CFG_TOYOU, SCAN_TOYOU);
@@ -751,6 +764,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.GetMsgIdx = DigDistMsgReader_GetMsgIdx;
 	this.RefreshSearchResultMsgHdr = DigDistMsgReader_RefreshSearchResultMsgHdr;   // Refreshes a message header in the search results
 	this.SearchMessages = DigDistMsgReader_SearchMessages; // Prompts the user for search text, then lists/reads messages, performing the search
+	this.SearchMsgScan = DigDistMsgReader_SearchMsgScan;
 	this.RefreshHdrInSubBoardHdrs = DigDistMsgReader_RefreshHdrInSubBoardHdrs;
 	this.RefreshHdrInSavedArrays = DigDistMsgReader_RefreshHdrInSavedArrays;
 	this.ReadMessages = DigDistMsgReader_ReadMessages;
@@ -978,8 +992,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		newMsgScanText: "\1c\1hN\1n\1cew \1hM\1n\1cessage \1hS\1n\1ccan",
 		newToYouMsgScanText: "\1c\1hN\1n\1cew \1hT\1n\1co \1hY\1n\1cou \1hM\1n\1cessage \1hS\1n\1ccan",
 		allToYouMsgScanText: "\1c\1hA\1n\1cll \1hM\1n\1cessages \1hT\1n\1co \1hY\1n\1cou \1hS\1n\1ccan",
-		// TODO: Take the next line from text.dat (621, SubGroupOrAll in text.js):
-		scanScopePromptText: "\1n\1h\1wS\1n\1gub-board, \1h\1wG\1n\1group, or \1h\1wA\1n\1gll \1h(\1wENTER\1n\1g to cancel\1h)\1n\1g: \1h\1c",
 		goToMsgNumPromptText: "\1n\1cGo to message # (or \1hENTER\1n\1c to cancel)\1g\1h: \1c",
 		msgScanAbortedText: "\1n\1h\1cM\1n\1cessage scan \1h\1y\1iaborted\1n",
 		deleteMsgNumPromptText: "\1n\1cNumber of the message to be deleted (or \1hENTER\1n\1c to cancel)\1g\1h: \1c",
@@ -1070,7 +1082,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		bypassSubBoardInNewScan: "B",
 		threadView: "*" // TODO: Implement this
 	};
-	if (gIsSysop)
+	if (user.is_sysop)
 		this.enhReaderKeys.validateMsg = "A";
 
 	// Whether or not to display avatars
@@ -1716,15 +1728,19 @@ function DigDistMsgReader_RefreshHdrInSavedArrays(pMsgIndex, pAttrib, pSubBoardC
 // messages, which will perform the search.
 //
 // Paramters:
-//  pSearchModeStr A string to specify the lister mode to use - This can
-//                 be one of the search modes to specify how to search:
-//                 "keyword_search": Search the message subjects & bodies by keyword
-//                 "from_name_search": Search messages by from name
-//                 "to_name_search": Search messages by to name
-//                 "to_user_search": Search messages by to name, to the logged-in user
+//  pSearchModeStr: A string to specify the lister mode to use - This can
+//                  be one of the search modes to specify how to search:
+//                  "keyword_search": Search the message subjects & bodies by keyword
+//                  "from_name_search": Search messages by from name
+//                  "to_name_search": Search messages by to name
+//                  "to_user_search": Search messages by to name, to the logged-in user
 //  pSubBoardCode: Optional - The Synchronet sub-board code, or "mail"
-//                 for personal email.
-function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode)
+//                 for personal email.  Or, this can be the a boolean false for scan
+//                 search mode to scan through sub-boards while searching each of them.
+//  pScanScopeChar: Optional string with a character specifying "A" to scan all sub-boards,
+//                  "G" for the current message group, or "S" for the user's current sub-board.
+//                  If this is not specified, the current sub-board will be used.
+function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanScopeChar)
 {
 	// Convert the search mode string to an integer representing the search
 	// mode.  If we get back -1, that means the search mode string was invalid.
@@ -1741,23 +1757,30 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode)
 		// The search mode string was valid, so go ahead and search.
 		console.print("\1n");
 		console.crlf();
-		var subCode = (typeof(pSubBoardCode) == "string" ? pSubBoardCode : this.subBoardCode);
-		if (subCode == "mail")
-			console.print("\1n" + this.text.searchingPersonalMailText);
-		else
-			console.print("\1n" + this.text.searchingSubBoardAbovePromptText.replace("%s", subBoardGrpAndName(bbs.cursub_code)) + "\1n");
-		console.crlf();
+		var subCode = "";
+		if (typeof(pScanScopeChar) !== "string")
+		{
+			subCode = (typeof(pSubBoardCode) === "string" ? pSubBoardCode : this.subBoardCode);
+			if (subCode == "mail")
+				console.print("\1n" + replaceAtCodesInStr(this.text.searchingPersonalMailText));
+			else
+			{
+				var formattedText = format(this.text.searchingSubBoardAbovePromptText, subBoardGrpAndName(bbs.cursub_code));
+				console.print("\1n" + replaceAtCodesInStr(formattedText) + "\1n");
+			}
+			console.crlf();
+		}
 		// Output the prompt text to the user (for modes where a prompt is needed)
 		switch (this.searchType)
 		{
 			case SEARCH_KEYWORD:
-				console.print("\1n" + this.text.searchTextPromptText);
+				console.print("\1n" + replaceAtCodesInStr(this.text.searchTextPromptText));
 				break;
 			case SEARCH_FROM_NAME:
-				console.print("\1n" + this.text.fromNamePromptText);
+				console.print("\1n" + replaceAtCodesInStr(this.text.fromNamePromptText));
 				break;
 			case SEARCH_TO_NAME_CUR_MSG_AREA:
-				console.print("\1n" + this.text.toNamePromptText);
+				console.print("\1n" +replaceAtCodesInStr(this.text.toNamePromptText));
 				break;
 			case SEARCH_TO_USER_CUR_MSG_AREA:
 				// Note: No prompt needed for this - Will search for the user's name/handle
@@ -1777,19 +1800,92 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode)
 		if (promptUserForText && (this.searchString.length == 0))
 		{
 			this.ClearSearchData();
-			console.print("\1n" + this.text.abortedText);
+			console.print("\1n" + replaceAtCodesInStr(this.text.abortedText));
 			console.crlf();
 			console.pause();
 			return;
 		}
 		else
 		{
-			//this.ReadOrListSubBoard(pSubBoardCode);
-			this.ReadOrListSubBoard(subCode);
+			// If pScanScopeChar is a string, then do scan search mode.  Otherwise,
+			// scan/search the current sub-board.
+			if (typeof(pScanScopeChar) === "string" && (pScanScopeChar === "S" || pScanScopeChar === "G" || pScanScopeChar === "A"))
+			{
+				var subBoardCodeBackup = this.subBoardCode;
+				var subBoardsToScan = getSubBoardsToScanArray(pScanScopeChar);
+				this.doingMsgScan = true;
+				var continueScan = true;
+				var userAborted = false;
+				this.doingMultiSubBoardScan = (subBoardsToScan.length > 1);
+				for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueScan; ++subCodeIdx)
+				{
+					subCode = subBoardsToScan[subCodeIdx];
+					if (msg_area.sub[subCode].can_read && ((msg_area.sub[subCode].scan_cfg & SCAN_CFG_NEW) == SCAN_CFG_NEW))
+					{
+						// Force garbage collection to ensure enough memory is available to continue
+						js.gc(true);
+						// Set the console line counter to 0 to prevent screen pausing
+						// when the "Searching ..." and "No messages were found" text is
+						// displayed repeatedly
+						console.line_counter = 0;
+						// If the sub-board's access requirements allows the user to read it
+						// and it's enabled in the user's message scan configuration, then go
+						// ahead with this sub-board.
+						// Note: Used to use this to determine whether the user could access the
+						// sub-board:
+						//user.compare_ars(msg_area.grp_list[grpIndex].sub_list[subIndex].ars)
+						// Now using the can_read property.
+						// TODO: It seems ReadOrListSubBoard() does its own loop through
+						// the sub-boards if the user chooses to go to the next one
+						var readOrListRetObj = this.ReadOrListSubBoard(subCode, null, true, false, false, false);
+						console.print("\1n");
+						console.crlf();
+						//if (this.SearchTypePopulatesSearchResults())
+						//	console.print("\1n\r\nSearching...");
+						console.line_counter = 0;
+						if (readOrListRetObj.stoppedReading)
+							break;
+					}
+				}
+				this.subBoardCode = subBoardCodeBackup;
+			}
+			else
+				this.ReadOrListSubBoard(subCode);
 			// Clear the search data so that subsequent listing or reading sessions
 			// don't repeat the same search
 			this.ClearSearchData();
 		}
+	}
+}
+
+// For the DigDistMsgReader class: Performs a message search scan through sub-boards.
+// Prompts the user for Sub-board/Group/All, then inputs search text from the user, then
+// reads/lists messages through the sub-boards, performing the search in each sub-board.
+//
+// Paramters:
+//  pSearchModeStr: A string to specify the lister mode to use - This can
+//                  be one of the search modes to specify how to search:
+//                  "keyword_search": Search the message subjects & bodies by keyword
+//                  "from_name_search": Search messages by from name
+//                  "to_name_search": Search messages by to name
+//                  "to_user_search": Search messages by to name, to the logged-in user
+function DigDistMsgReader_SearchMsgScan(pSearchModeStr)
+{
+	if (typeof(pSearchModeStr) !== "string" || pSearchModeStr.length == 0)
+		return;
+
+	// Prompt the user for sub-board, group, or all, then call SearchMessages
+	// to do the search
+	console.mnemonics(bbs.text(SubGroupOrAll));
+	var scanScopeChar = console.getkeys("SGAC").toString();
+	if (scanScopeChar.length > 0)
+		this.SearchMessages(pSearchModeStr, null, scanScopeChar);
+	else
+	{
+		console.crlf();
+		console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
+		console.crlf();
+		console.pause();
 	}
 }
 
@@ -1828,13 +1924,17 @@ function DigDistMsgReader_ClearSearchData()
 //  pPauseOnNoMsgSrchResults: Optional boolean - Whether or not to pause when
 //                            a message search doesn't find any search results
 //                            in the current sub-board.  Defaults to true.
+//  pPromptToGoNextIfNoResults: Optional boolean - Whether or not to prompt the user
+//                         to go onto the next/previous sub-board if there are no
+//                         search results in the current sub-board.  Defaults to true.
 //
 // Return value: An object with the following properties:
 //               stoppedReading: Boolean - Whether or not the user stopped reading.
 //                               This can also be true if there is an error.
 function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
                                              pAllowChgArea, pReturnOnNextAreaNav,
-                                             pPauseOnNoMsgSrchResults)
+                                             pPauseOnNoMsgSrchResults,
+                                             pPromptToGoNextIfNoResults)
 {
 	var retObj = {
 		stoppedReading: false
@@ -1940,7 +2040,8 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				// and pass the selected index of the message to read.  If that
 				// index is -1, the ReadMessages method will use the user's
 				// last-read message index.
-				otherRetObj = this.ReadMessages(null, selectedMessageOffset, true, allowChgMsgArea, pReturnOnNextAreaNav);
+				otherRetObj = this.ReadMessages(null, selectedMessageOffset, true, allowChgMsgArea,
+				                                pReturnOnNextAreaNav, pPromptToGoNextIfNoResults);
 				// If the user wants to quit or if there was an error, then stop
 				// the input loop.
 				if (otherRetObj.stoppedReading)
@@ -1960,7 +2061,6 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				}
 				else if (otherRetObj.messageListReturn)
 					readerMode = READER_MODE_LIST;
-				break;
 			case READER_MODE_LIST:
 				// Note: Doing the message list is also handled in this.ReadMessages().
 				// This code is here in case the reader is configured to start up
@@ -2023,10 +2123,12 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 			if (outputMessages)
 			{
 				console.crlf();
+				var formattedText = "";
 				if (this.readingPersonalEmail)
-					console.print("\1n" + this.text.loadingPersonalMailText.replace("%s", subBoardGrpAndName(this.subBoardCode)));
+					formattedText = format(this.text.loadingPersonalMailText, subBoardGrpAndName(this.subBoardCode));
 				else
-					console.print(this.text.searchingSubBoardText.replace("%s", subBoardGrpAndName(this.subBoardCode)));
+					formattedText = format(this.text.searchingSubBoardText, subBoardGrpAndName(this.subBoardCode));
+				console.print("\1n" + replaceAtCodesInStr(formattedText) + "\1n");
 			}
 			this.msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.searchType, this.searchString, this.readingPersonalEmailFromUser);
 		}
@@ -2052,13 +2154,15 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 			console.print("\1n");
 			console.crlf();
 			if (this.readingPersonalEmail)
-				console.print(this.text.noPersonalEmailText);
+				console.print(replaceAtCodesInStr(this.text.noPersonalEmailText));
 			else
 			{
+				var formattedText = "";
 				if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode))
-					console.print(this.text.noSearchResultsInSubBoardText.replace("%s", subBoardGrpAndName(this.subBoardCode)));
+					formattedText = format(this.text.noSearchResultsInSubBoardText, subBoardGrpAndName(this.subBoardCode));
 				else
-					console.print(this.text.noMessagesInSubBoardText.replace("%s", subBoardGrpAndName(this.subBoardCode)));
+					formattedText = format(this.text.noMessagesInSubBoardText, subBoardGrpAndName(this.subBoardCode));
+				console.print(replaceAtCodesInStr(formattedText));
 			}
 			console.crlf();
 			var pauseOnNoMsgsError = (typeof(pPauseOnNoMsgError) == "boolean" ? pPauseOnNoMsgError : true);
@@ -2128,7 +2232,7 @@ function searchTypeRequiresSearchText(pSearchType)
 // Parameters:
 //  pScanCfgOpt: The scan configuration option to check for in the sub-boards
 //               (from sbbsdefs.js). Supported values are SCAN_CFG_NEW (new
-//               message scan) and SCAN_CFG_TOYOU (messages to the user).
+//               message scan), and SCAN_CFG_TOYOU (messages to the user)
 //  pScanMode: The scan mode (from sbbsdefs.js).  Supported values are SCAN_NEW
 //             (new message scan), SCAN_TOYOU (scan for all messages to the
 //             user), and SCAN_UNREAD (scan for new messages to the user).
@@ -2145,13 +2249,14 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	{
 		// Prompt the user to scan in the current sub-board, the current message group,
 		// or all.  Default to all.
-		console.print(this.text.scanScopePromptText);
+		console.print("\1n");
+		console.mnemonics(bbs.text(SubGroupOrAll));
 		scanScopeChar = console.getkeys("SGAC").toString();
 		// If the user just pressed Enter without choosing anything, then abort and return.
 		if (scanScopeChar.length == 0)
 		{
 			console.crlf();
-			console.print(this.text.msgScanAbortedText);
+			console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
 			console.crlf();
 			console.pause();
 			return;
@@ -2205,23 +2310,8 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	this.ClearSearchData();
 
 	// Create an array of internal codes of sub-boards to scan
-	var subBoardsToScan = [];
-	if (scanScopeChar == "A") // All sub-board scan
-	{
-		for (var grpIndex = 0; grpIndex < msg_area.grp_list.length; ++grpIndex)
-		{
-			for (var subIndex = 0; subIndex < msg_area.grp_list[grpIndex].sub_list.length; ++subIndex)
-				subBoardsToScan.push(msg_area.grp_list[grpIndex].sub_list[subIndex].code);
-		}
-	}
-	else if (scanScopeChar == "G") // Group scan
-	{
-		for (var subIndex = 0; subIndex < msg_area.grp_list[bbs.curgrp].sub_list.length; ++subIndex)
-			subBoardsToScan.push(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code);
-	}
-	else if (scanScopeChar == "S") // Current sub-board scan
-		subBoardsToScan.push(bbs.cursub_code);
-	// Do a scan through the sub-boards
+	var subBoardsToScan = getSubBoardsToScanArray(scanScopeChar);
+	// Scan through the sub-boards
 	this.doingMsgScan = true;
 	var continueNewScan = true;
 	var userAborted = false;
@@ -2244,6 +2334,8 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		this.setSubBoardCode(subBoardsToScan[subCodeIdx]); // Needs to be set before getting the last read/scan pointer index
 		if (msg_area.sub[this.subBoardCode].can_read && ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
 		{
+			var grpIndex = msg_area.sub[this.subBoardCode].grp_index;
+			var subIndex = msg_area.sub[this.subBoardCode].index;
 			// Sub-board description: msg_area.grp_list[grpIndex].sub_list[subIndex].description
 			// Open the sub-board and check for unread messages.  If there are any, then let
 			// the user read the messages in the sub-board.
@@ -2387,9 +2479,9 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	{
 		console.crlf();
 		if (userAborted)
-			console.print("\1n" + this.text.msgScanAbortedText + "\1n");
+			console.print("\1n" + replaceAtCodesInStr(this.text.msgScanAbortedText) + "\1n");
 		else
-			console.print("\1n" + this.text.msgScanCompleteText + "\1n");
+			console.print("\1n" + replaceAtCodesInStr(this.text.msgScanCompleteText) + "\1n");
 		console.crlf();
 		console.pause();
 	}
@@ -2412,6 +2504,9 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 //                        navigation from the user (i.e., with the right arrow
 //                        key or with < (go to previous message area) or > (go
 //                        to next message area))
+//  pPromptToGoToNextAreaIfNoSearchResults: Optional boolean - Whether or not to
+//                          prompt the user to go to the next/previous sub-board
+//                          when there are no search results
 //
 // Return value: An object that has the following properties:
 //               lastUserInput: The user's last keypress/input
@@ -2425,7 +2520,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 //                                  parameter is true and the user wants to list
 //                                  messages.
 function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pReturnOnMessageList,
-                                       pAllowChgArea, pReturnOnNextAreaNav)
+                                       pAllowChgArea, pReturnOnNextAreaNav, pPromptToGoToNextAreaIfNoSearchResults)
 {
 	var retObj = {
 		lastUserInput: "",
@@ -2641,7 +2736,9 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 				// The user is at the beginning of the current sub-board.
 				if (allowChgMsgArea)
 				{
-					var goToPrevRetval = this.GoToPrevSubBoardForEnhReader(allowChgMsgArea);
+					if (this.SearchTypePopulatesSearchResults())
+						console.print("\1n\r\nLoading messages...");
+					var goToPrevRetval = this.GoToPrevSubBoardForEnhReader(allowChgMsgArea, pPromptToGoToNextAreaIfNoSearchResults);
 					retObj.stoppedReading = goToPrevRetval.shouldStopReading;
 					// If we're going to stop reading, then 
 					if (retObj.stoppedReading)
@@ -2670,7 +2767,9 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 				// The user is at the end of the current sub-board.
 				if (allowChgMsgArea && !pReturnOnNextAreaNav)
 				{
-					var goToNextRetval = this.GoToNextSubBoardForEnhReader(allowChgMsgArea);
+					if (this.SearchTypePopulatesSearchResults())
+						console.print("\1n\r\nLoading messages...");
+					var goToNextRetval = this.GoToNextSubBoardForEnhReader(allowChgMsgArea, pPromptToGoToNextAreaIfNoSearchResults);
 					retObj.stoppedReading = goToNextRetval.shouldStopReading;
 					// If we're going to stop reading, then 
 					if (retObj.stoppedReading)
@@ -2768,7 +2867,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 			// The user is at the beginning of the current sub-board.
 			if (allowChgMsgArea)
 			{
-				var goToPrevRetval = this.GoToPrevSubBoardForEnhReader(allowChgMsgArea);
+				var goToPrevRetval = this.GoToPrevSubBoardForEnhReader(allowChgMsgArea, pPromptToGoToNextAreaIfNoSearchResults);
 				retObj.stoppedReading = goToPrevRetval.shouldStopReading;
 				if (retObj.stoppedReading)
 					msgIndex = 0;
@@ -2784,7 +2883,8 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		{
 			if (allowChgMsgArea && !pReturnOnNextAreaNav)
 			{
-				var goToNextRetval = this.GoToNextSubBoardForEnhReader(allowChgMsgArea);
+				console.print("\1nHere!!!!   \1p"); // Temporary
+				var goToNextRetval = this.GoToNextSubBoardForEnhReader(allowChgMsgArea, pPromptToGoToNextAreaIfNoSearchResults);
 				retObj.stoppedReading = goToNextRetval.shouldStopReading;
 				if (retObj.stoppedReading)
 					msgIndex = 0;
@@ -3105,7 +3205,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			{
 				if (this.CanDelete() || this.CanDeleteLastMsg())
 				{
-					var msgNum = this.PromptForMsgNum({ x: curpos.x, y: curpos.y+1 }, this.text.deleteMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
+					var msgNum = this.PromptForMsgNum({ x: curpos.x, y: curpos.y+1 }, replaceAtCodesInStr(this.text.deleteMsgNumPromptText), false, ERROR_PAUSE_WAIT_MS, false);
 					// If the user enters a valid message number, then call the
 					// DeleteMessage() method, which will prompt the user for
 					// confirmation and delete the message if confirmed.
@@ -3123,7 +3223,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			{
 				if (this.CanEdit())
 				{
-					var msgNum = this.PromptForMsgNum({ x: curpos.x, y: curpos.y+1 }, this.text.editMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
+					var msgNum = this.PromptForMsgNum({ x: curpos.x, y: curpos.y+1 }, replaceAtCodesInStr(this.text.editMsgNumPromptText), false, ERROR_PAUSE_WAIT_MS, false);
 					// If the user entered a valid message number, then let the
 					// user edit the message.
 					if (msgNum > 0)
@@ -3153,7 +3253,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			// G: Go to a specific message by # (place that message on the top)
 			else if (retvalObj.userInput == "G")
 			{
-				var msgNum = this.PromptForMsgNum(curpos, "\1n" + this.text.goToMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
+				var msgNum = this.PromptForMsgNum(curpos, "\1n" + replaceAtCodesInStr(this.text.goToMsgNumPromptText), false, ERROR_PAUSE_WAIT_MS, false);
 				if (msgNum > 0)
 					this.tradListTopMsgIdx = msgNum - 1;
 
@@ -3453,7 +3553,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			// Move the cursor to the bottom of the screen and
 			// prompt the user for the message number.
 			console.gotoxy(1, console.screen_rows);
-			var userInput = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, this.text.readMsgNumPromptText, true, ERROR_PAUSE_WAIT_MS, false);
+			var userInput = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, replaceAtCodesInStr(this.text.readMsgNumPromptText), true, ERROR_PAUSE_WAIT_MS, false);
 			if (userInput > 0)
 			{
 				// See if the current message header has our "isBogus" property and it's true.
@@ -3566,7 +3666,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			// Move the cursor to the bottom of the screen and
 			// prompt the user for a message number.
 			console.gotoxy(1, console.screen_rows);
-			var userMsgNum = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, "\n" + this.text.goToMsgNumPromptText, true, ERROR_PAUSE_WAIT_MS, false);
+			var userMsgNum = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, "\n" + replaceAtCodesInStr(this.text.goToMsgNumPromptText), true, ERROR_PAUSE_WAIT_MS, false);
 			if (userMsgNum > 0)
 			{
 				// Make sure the message number is for a valid message (i.e., it
@@ -3595,7 +3695,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				else
 				{
 					// The user entered an invalid message number
-					console.print("\1n" + this.text.invalidMsgNumText.replace("%d", userMsgNum) + "\1n");
+					console.print("\1n" + replaceAtCodesInStr(format(this.text.invalidMsgNumText, userMsgNum)) + "\1n");
 					console.inkey(K_NONE, ERROR_PAUSE_WAIT_MS);
 				}
 			}
@@ -3727,7 +3827,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// S: Sorting options
 		else if (lastUserInputUpper == "S")
 		{
-			if (gIsSysop) // Temporary
+			if (user.is_sysop) // Temporary
 			{
 				console.gotoxy(1, console.screen_rows);
 				console.cleartoeol("\1n");
@@ -4145,7 +4245,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		var fromName = pMsgHeader.from;
 		// If the message was posted anonymously and the logged-in user is
 		// not the sysop, then show "Anonymous" for the 'from' name.
-		if (!gIsSysop && ((pMsgHeader.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		if (!user.is_sysop && ((pMsgHeader.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
 			fromName = "Anonymous";
 		if (this.showScoresInMsgList)
 		{
@@ -4187,7 +4287,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		var fromName = pMsgHeader.from;
 		// If the message was posted anonymously and the logged-in user is
 		// not the sysop, then show "Anonymous" for the 'from' name.
-		if (!gIsSysop && ((pMsgHeader.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		if (!user.is_sysop && ((pMsgHeader.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
 			fromName = "Anonymous";
 		if (this.showScoresInMsgList)
 		{
@@ -4413,7 +4513,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	var msgHeader = this.GetMsgHdrByIdx(pOffset, true);
 	if (msgHeader == null)
 	{
-		console.print("\1n" + this.text.invalidMsgNumText.replace("%d", +(pOffset+1)) + "\1n");
+		console.print("\1n" + replaceAtCodesInStr(format(this.text.invalidMsgNumText, +(pOffset+1))) + "\1n");
 		console.crlf();
 		console.inkey(K_NONE, ERROR_PAUSE_WAIT_MS);
 		retObj.offsetValid = false;
@@ -4622,7 +4722,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					retObj.nextAction = msgSearchObj.nextAction;
 					if (msgSearchObj.promptGoToNextArea)
 					{
-						if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
+						if (this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
 						{
 							// Let this method exit and let the caller go to the next sub-board
 							continueOn = false;
@@ -4780,7 +4880,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 							retObj.nextAction = msgSearchObj.nextAction;
 							if (msgSearchObj.promptGoToNextArea)
 							{
-								if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
+								if (this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
 								{
 									// Let this method exit and let the caller go to the next sub-board
 									continueOn = false;
@@ -4860,7 +4960,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// row on the screen to prompt for the message number.
 				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
 				// Prompt for the message number
-				var msgNumInput = this.PromptForMsgNum(promptPos, this.text.readMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
+				var msgNumInput = this.PromptForMsgNum(promptPos, replaceAtCodesInStr(this.text.readMsgNumPromptText), false, ERROR_PAUSE_WAIT_MS, false);
 				// Only allow reading the message if the message number is valid
 				// and it's not the same message number that was passed in.
 				if ((msgNumInput > 0) && (msgNumInput-1 != pOffset))
@@ -4869,7 +4969,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					if (this.MessageIsDeleted(msgNumInput-1))
 					{
 						writeWithPause(this.msgAreaLeft, console.screen_rows-1,
-									   "\1n" + this.text.msgHasBeenDeletedText.replace("%d", msgNumInput) + "\1n",
+									   "\1n" + replaceAtCodesInStr(format(this.text.msgHasBeenDeletedText, msgNumInput)) + "\1n",
 									   ERROR_PAUSE_WAIT_MS, "\1n", true);
 					}
 					else
@@ -4978,7 +5078,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				{
 					if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
 					{
-						goToPrevMessage = this.EnhReaderPromptYesNo(this.text.goToPrevMsgAreaPromptText,
+						goToPrevMessage = this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToPrevMsgAreaPromptText),
 																	msgInfo.messageLines, topMsgLineIdx,
 																	msgLineFormatStr, solidBlockStartRow,
 																	numSolidScrollBlocks);
@@ -5031,7 +5131,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 							// Ask the user if they want to post on the sub-board.
 							// If they say yes, then do so before exiting.
 							var grpNameAndDesc = this.GetGroupNameAndDesc();
-							if (!console.noyes(format(this.text.postOnSubBoard, grpNameAndDesc.grpName, grpNameAndDesc.grpDesc)))
+							if (!console.noyes(replaceAtCodesInStr(format(this.text.postOnSubBoard, grpNameAndDesc.grpName, grpNameAndDesc.grpDesc))))
 								bbs.post_msg(this.subBoardCode);
 							continueOn = false;
 							retObj.nextAction = ACTION_QUIT;
@@ -5039,7 +5139,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						else
 						{
 							// Prompt the user whether they want to go to the next message area
-							if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
+							if (this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
 							{
 								// Let this method exit and let the caller go to the next sub-board
 								continueOn = false;
@@ -5102,7 +5202,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// (for the sysop)
 			case this.enhReaderKeys.showHdrInfo:
 			case this.enhReaderKeys.showKludgeLines:
-				if (gIsSysop)
+				if (user.is_sysop)
 				{
 					// Save the original cursor position
 					var originalCurPos = console.getxy();
@@ -5144,7 +5244,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					else
 					{
 						// There are no kludge lines for this message
-						this.DisplayEnhReaderError(this.text.noKludgeLinesForThisMsgText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+						this.DisplayEnhReaderError(replaceAtCodesInStr(this.text.noKludgeLinesForThisMsgText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
 						console.gotoxy(originalCurPos);
 						writeMessage = false;
 					}
@@ -5204,7 +5304,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 			case this.enhReaderKeys.saveToBBSMachine:
 				// Save the message to the BBS machine - Only allow this
 				// if the user is a sysop.
-				if (gIsSysop)
+				if (user.is_sysop)
 				{
 					// Prompt the user for a filename to save the message to the
 					// BBS machine
@@ -5241,7 +5341,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					writeMessage = false;
 				break;
 			case this.enhReaderKeys.userEdit: // Edit the user who wrote the message
-				if (gIsSysop)
+				if (user.is_sysop)
 				{
 					console.print("\1n");
 					console.crlf();
@@ -5472,7 +5572,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				writeMessage = false;
 				break;
 			case this.enhReaderKeys.validateMsg: // Validate the message
-				if (gIsSysop && (this.subBoardCode != "mail") && msg_area.sub[this.subBoardCode].is_moderated)
+				if (user.is_sysop && (this.subBoardCode != "mail") && msg_area.sub[this.subBoardCode].is_moderated)
 				{
 					var message = "";
 					if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
@@ -5683,7 +5783,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					retObj.nextAction = msgSearchObj.nextAction;
 					if (msgSearchObj.promptGoToNextArea)
 					{
-						if (console.yesno(this.text.goToNextMsgAreaPromptText))
+						if (console.yesno(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText)))
 						{
 							// Let this method exit and let the caller go to the next sub-board
 							continueOn = false;
@@ -5792,7 +5892,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 							retObj.nextAction = msgSearchObj.nextAction;
 							if (msgSearchObj.promptGoToNextArea)
 							{
-								if (console.yesno(this.text.goToNextMsgAreaPromptText))
+								if (console.yesno(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText)))
 								{
 									// Let this method exit and let the caller go to the next sub-board
 									continueOn = false;
@@ -5853,7 +5953,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				// be used for getting the rest of the message number.
 				console.ungetstr(retObj.lastKeypress);
 				// Prompt for the message number
-				var msgNumInput = this.PromptForMsgNum(null, this.text.readMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
+				var msgNumInput = this.PromptForMsgNum(null, replaceAtCodesInStr(this.text.readMsgNumPromptText), false, ERROR_PAUSE_WAIT_MS, false);
 				// Only allow reading the message if the message number is valid
 				// and it's not the same message number that was passed in.
 				if ((msgNumInput > 0) && (msgNumInput-1 != pOffset))
@@ -5862,7 +5962,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					if (this.MessageIsDeleted(msgNumInput-1))
 					{
 						console.crlf();
-						console.print("\1n" + this.text.msgHasBeenDeletedText.replace("%d", msgNumInput) + "\1n");
+						console.print("\1n" + replaceAtCodesInStr(format(this.text.msgHasBeenDeletedText, msgNumInput)) + "\1n");
 						console.crlf();
 						console.pause();
 					}
@@ -5948,7 +6048,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
 					{
 						console.crlf();
-						goToPrevMessage = console.yesno(this.text.goToPrevMsgAreaPromptText);
+						goToPrevMessage = console.yesno(replaceAtCodesInStr(this.text.goToPrevMsgAreaPromptText));
 					}
 					else
 					{
@@ -5989,14 +6089,14 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 						// Ask the user if they want to post on the sub-board.
 						// If they say yes, then do so before exiting.
 						var grpNameAndDesc = this.GetGroupNameAndDesc();
-						if (!console.noyes(format(this.text.postOnSubBoard, grpNameAndDesc.grpName, grpNameAndDesc.grpDesc)))
+						if (!console.noyes(replaceAtCodesInStr(format(this.text.postOnSubBoard, grpNameAndDesc.grpName, grpNameAndDesc.grpDesc))))
 							bbs.post_msg(this.subBoardCode);
 						continueOn = false;
 						retObj.nextAction = ACTION_QUIT;
 					}
 					else
 					{
-						if (console.yesno(this.text.goToNextMsgAreaPromptText))
+						if (console.yesno(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText)))
 						{
 							// Let this method exit and let the caller go to the next sub-board
 							continueOn = false;
@@ -6066,7 +6166,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 			// (for the sysop)
 			case this.enhReaderKeys.showHdrInfo:
 			case this.enhReaderKeys.showKludgeLines:
-				if (gIsSysop)
+				if (user.is_sysop)
 				{
 					console.crlf();
 					// Get an array of the extended header info/kludge lines and then
@@ -6085,7 +6185,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					else
 					{
 						// There are no kludge lines for this message
-						console.print(this.text.noKludgeLinesForThisMsgText);
+						console.print(replaceAtCodesInStr(this.text.noKludgeLinesForThisMsgText));
 						console.crlf();
 						console.pause();
 					}
@@ -6147,7 +6247,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 			case this.enhReaderKeys.saveToBBSMachine:
 				// Save the message to the BBS machine - Only allow this
 				// if the user is a sysop.
-				if (gIsSysop)
+				if (user.is_sysop)
 				{
 					console.crlf();
 					console.print("\1n\1cFilename:\1h");
@@ -6175,7 +6275,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writeMessage = false;
 				break;
 			case this.enhReaderKeys.userEdit: // Edit the user who wrote the message
-				if (gIsSysop)
+				if (user.is_sysop)
 				{
 					console.print("\1n");
 					console.crlf();
@@ -6322,7 +6422,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				writeMessage = true;
 				break;
 			case this.enhReaderKeys.validateMsg: // Validate the message
-				if (gIsSysop && (this.subBoardCode != "mail") && msg_area.sub[this.subBoardCode].is_moderated)
+				if (user.is_sysop && (this.subBoardCode != "mail") && msg_area.sub[this.subBoardCode].is_moderated)
 				{
 					var message = "";
 					if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
@@ -6532,6 +6632,9 @@ function DigDistMsgReader_DisplayEnhancedMsgReadHelpLine(pScreenRow, pDisplayChg
 // Parameters:
 //  pAllowChgMsgArea: Boolean - Whether or not the user is allowed to change
 //                    to another message area
+//  pPromptPrevIfNoResults: Optional boolean - Whether or not to prompt the user to
+//                          go to the previous area if there are no search results.
+//
 // Return value: An object with the following properties:
 //               changedMsgArea: Boolean - Whether or not this method successfully
 //                               changed to a prior message area
@@ -6540,7 +6643,7 @@ function DigDistMsgReader_DisplayEnhancedMsgReadHelpLine(pScreenRow, pDisplayChg
 //                         scenario.
 //               shouldStopReading: Whether or not the script should stop letting
 //                                  the user read messages
-function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
+function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea, pPromptPrevIfNoResults)
 {
 	var retObj = {
 		changedMsgArea: false,
@@ -6619,7 +6722,9 @@ function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
 					}
 					else // No search results in this sub-board
 					{
-						continueGoingToPrevSubBoard = !console.noyes("Continue searching");
+						var promptPrevIfNoResults = (typeof(pPromptPrevIfNoResults) === "boolean" ? pPromptPrevIfNoResults : true);
+						if (promptPrevIfNoResults)
+							continueGoingToPrevSubBoard = !console.noyes("Continue searching");
 						if (!continueGoingToPrevSubBoard)
 						{
 							retObj.shouldStopReading = true;
@@ -6663,6 +6768,10 @@ function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
 // Parameters:
 //  pAllowChgMsgArea: Boolean - Whether or not the user is allowed to change
 //                    to another message area
+//  pPromptNextIfNoResults: Optional boolean - Whether or not to prompt the user to
+//                          go to the next area if there are no search results.
+//                          Defaults to true.
+//
 // Return value: An object with the following properties:
 //               changedMsgArea: Boolean - Whether or not this method successfully
 //                               changed to a prior message area
@@ -6671,7 +6780,7 @@ function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
 //                         scenario.
 //               shouldStopReading: Whether or not the script should stop letting
 //                                  the user read messages
-function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
+function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea, pPromptNextIfNoResults)
 {
 	var retObj = {
 		changedMsgArea: false,
@@ -6754,7 +6863,9 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 					}
 					else // No search results in this sub-board
 					{
-						continueGoingToNextSubBoard = !console.noyes("Continue searching");
+						var promptNextIfNoresults = (typeof(pPromptNextIfNoResults) === "boolean" ? pPromptNextIfNoResults : true);
+						if (promptNextIfNoresults)
+							continueGoingToNextSubBoard = !console.noyes("Continue searching");
 						if (!continueGoingToNextSubBoard)
 						{
 							retObj.shouldStopReading = true;
@@ -7700,6 +7811,7 @@ function DigDistMsgReader_ReadConfigFile()
 			var commentPos = 0;      // Position of the start of a comment
 			var setting = null;      // A setting name (string)
 			var value = null;        // To store a value for a setting (string)
+			var onlySyncAttrsRegexWholeWord = /^([krgybmcw01234567hinpq,;\.dtl<>\[\]asz])+$/i;
 			while (!themeFile.eof)
 			{
 				// Read the next line from the config file.
@@ -7778,7 +7890,8 @@ function DigDistMsgReader_ReadConfigFile()
 						// Trim leading & trailing spaces from the value when
 						// setting a color.  Also, replace any instances of "\1"
 						// with the Synchronet attribute control character.
-						this.colors[setting] = trimSpaces(value, true, false, true).replace(/\\1/g, "\1");
+						if (onlySyncAttrsRegexWholeWord.test(value))
+							this.colors[setting] = trimSpaces(value, true, false, true).replace(/\\1/g, "\1");
 					}
 					// Text values
 					else if ((setting == "scrollbarBGChar") ||
@@ -7788,7 +7901,6 @@ function DigDistMsgReader_ReadConfigFile()
 					         (setting == "newMsgScanText") ||
 					         (setting == "newToYouMsgScanText") ||
 					         (setting == "allToYouMsgScanText") ||
-					         (setting == "scanScopePromptText") ||
 					         (setting == "goToMsgNumPromptText") ||
 					         (setting == "msgScanCompleteText") ||
 					         (setting == "msgScanAbortedText") ||
@@ -7880,7 +7992,7 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 	// Only let the user edit the message if they're a sysop or
 	// if they wrote the message.
 	var msgHeader = this.GetMsgHdrByIdx(pMsgIndex, false, msgbase);
-	if (!gIsSysop && (msgHeader.from != user.name) && (msgHeader.from != user.alias) && (msgHeader.from != user.handle))
+	if (!user.is_sysop && (msgHeader.from != user.name) && (msgHeader.from != user.alias) && (msgHeader.from != user.handle))
 	{
 		console.print("\1n\1h\1wCannot edit message #\1y" + +(pMsgIndex+1) +
 		              " \1wbecause it's not yours or you're not a sysop.");
@@ -7891,7 +8003,7 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 	}
 
 	// Confirm the action with the user (default to no).
-	returnObj.userConfirmed = !console.noyes(this.text.msgEditConfirmText.replace("%d", +(pMsgIndex+1)));
+	returnObj.userConfirmed = !console.noyes(replaceAtCodesInStr(format(this.text.msgEditConfirmText, +(pMsgIndex+1))));
 	if (!returnObj.userConfirmed)
 	{
 		msgbase.close();
@@ -8000,7 +8112,7 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 // their last message).
 function DigDistMsgReader_CanDelete()
 {
-	var canDelete = gIsSysop || this.readingPersonalEmail;
+	var canDelete = user.is_sysop || this.readingPersonalEmail;
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
@@ -8014,7 +8126,7 @@ function DigDistMsgReader_CanDelete()
 // the last message they posted in the sub-board.
 function DigDistMsgReader_CanDeleteLastMsg()
 {
-	var canDelete = gIsSysop;
+	var canDelete = user.is_sysop;
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
@@ -8028,7 +8140,7 @@ function DigDistMsgReader_CanDeleteLastMsg()
 // messages.
 function DigDistMsgReader_CanEdit()
 {
-	var canEdit = gIsSysop;
+	var canEdit = user.is_sysop;
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
@@ -8042,7 +8154,7 @@ function DigDistMsgReader_CanEdit()
 // is enabled.
 function DigDistMsgReader_CanQuote()
 {
-	var canQuote = this.readingPersonalEmail || gIsSysop;
+	var canQuote = this.readingPersonalEmail || user.is_sysop;
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
@@ -8585,7 +8697,7 @@ function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfter
 					// message number to read - I don't want this to clear the whole line
 					// because that would erase the scrollbar character on the right.
 					writeWithPause(pCurPos.x, pCurPos.y,
-					               "\1n" + this.text.invalidMsgNumText.replace("%d", msgNum) + "\1n",
+					               "\1n" + replaceAtCodesInStr(format(this.text.invalidMsgNumText, msgNum)) + "\1n",
 					               pErrorPauseTimeMS, "\1n", true);
 					console.gotoxy(pCurPos);
 				}
@@ -8739,6 +8851,7 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	}
 	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
 	var msgVoteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
+	// This list has some custom @-codes:
 	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
 	                         .replace(/@MSG_TO@/gi, pMsgHdr["to"])
 	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
@@ -8760,8 +8873,6 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	                         .replace(/@SUB@/gi, subName)
 	                         .replace(/@SUBL@/gi, subDesc)
 							 .replace(/@CONF@/gi, msgConf)
-							 .replace(/@BBS@/gi, system.name)
-							 .replace(/@BOARDNAME@/gi, system.name)
 							 .replace(/@SYSOP@/gi, system.operator)
 							 .replace(/@DATE@/gi, system.datestr())
 							 .replace(/@LOCATION@/gi, system.location)
@@ -8776,7 +8887,7 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	// If the user is not the sysop and the message was posted anonymously,
 	// then replace the from name @-codes with "Anonymous".  Otherwise,
 	// replace the from name @-codes with the actual from name.
-	if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+	if (!user.is_sysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
 	{
 		newTxtLine = newTxtLine.replace(/@MSG_FROM@/gi, "Anonymous")
 		                       .replace(/@MSG_FROM_AND_FROM_NET@/gi, "Anonymous")
@@ -8790,6 +8901,7 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	}
 	if (!pAllowCLS)
 		newTxtLine = newTxtLine.replace(/@CLS@/gi, "");
+	newTxtLine = replaceAtCodesInStr(newTxtLine);
 	return newTxtLine;
 }
 // For the DigDistMsgReader class: Helper for ParseMsgAtCodes(): Replaces a
@@ -8828,7 +8940,7 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 		// If the user is not the sysop and the message was posted anonymously,
 		// then replace the from name @-codes with "Anonymous".  Otherwise,
 		// replace the from name @-codes with the actual from name.
-		if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		if (!user.is_sysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
 			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
 		else
 		{
@@ -8841,7 +8953,7 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 		// If the user is not the sysop and the message was posted anonymously,
 		// then replace the from name @-codes with "Anonymous".  Otherwise,
 		// replace the from name @-codes with the actual from name.
-		if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		if (!user.is_sysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
 			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
 		else
 			replacementTxt = pMsgHdr["from"].substr(0, pSpecifiedLen);
@@ -8851,7 +8963,7 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 		// If the user is not the sysop and the message was posted anonymously,
 		// then replace the from name @-codes with "Anonymous".  Otherwise,
 		// replace the from name @-codes with the actual from name.
-		if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		if (!user.is_sysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
 			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
 		else
 			replacementTxt = (typeof pMsgHdr["from_ext"] === "undefined" ? "" : pMsgHdr["from_ext"].substr(0, pSpecifiedLen));
@@ -9542,7 +9654,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	                    "\1h\1cPageUp\1g/\1cPageDown  \1g: \1n\1cScroll up\1g/\1cdown a page in the message",
 	                    "\1h\1cHOME             \1g: \1n\1cGo to the top of the message",
 	                    "\1h\1cEND              \1g: \1n\1cGo to the bottom of the message"];
-	if (gIsSysop)
+	if (user.is_sysop)
 	{
 		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current message");
 		keyHelpLines.push("\1h\1cCtrl-S           \1g: \1n\1cSave the message (to the BBS machine)");
@@ -9580,13 +9692,13 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	}
 	else if (this.doingMultiSubBoardScan)
 		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.nextSubBoard + "                \1g: \1n\1cGo to the next message sub-board");
-	if (gIsSysop)
+	if (user.is_sysop)
 	{
 		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.editMsg + "                \1g: \1n\1cEdit the current message");
 		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.userEdit + "                \1g: \1n\1cEdit the user who wrote the message");
 	}
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.showMsgList + "                \1g: \1n\1cList messages in the current sub-board");
-	if (gIsSysop)
+	if (user.is_sysop)
 		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.showHdrInfo + " \1n\1cor \1h" + this.enhReaderKeys.showKludgeLines + "           \1g: \1n\1cDisplay extended header info\1g/\1ckludge lines for the message");
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.reply + "                \1g: \1n\1cReply to the current message");
 	if (!this.readingPersonalEmail)
@@ -10274,20 +10386,20 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 	var msgHeader = this.GetMsgHdrByIdx(pOffset, false, msgbase);
 	// Only let the user delete one of their own messages or the user
 	// is a sysop.
-	var cannotDeleteError = this.text.cannotDeleteMsgText_notYoursNotASysop.replace("%d", msgNum);
+	var cannotDeleteError = replaceAtCodesInStr(format(this.text.cannotDeleteMsgText_notYoursNotASysop, msgNum));
 	var canDeleteMessage = false;
 	if (this.CanDelete())
 	{
 		if (msgHeader != null)
-			canDeleteMessage = gIsSysop || userHandleAliasNameMatch(msgHeader.from) || this.readingPersonalEmail;
+			canDeleteMessage = user.is_sysop || userHandleAliasNameMatch(msgHeader.from) || this.readingPersonalEmail;
 		else
 			canDeleteMessage = false;
 	}
 	else if (this.CanDeleteLastMsg())
 	{
-		canDeleteMessage = gIsSysop || this.MessageIsLastFromUser(pOffset);
+		canDeleteMessage = user.is_sysop || this.MessageIsLastFromUser(pOffset);
 		if (!canDeleteMessage)
-			cannotDeleteError = this.text.cannotDeleteMsgText_notLastPostedMsg.replace("%d", msgNum);
+			cannotDeleteError = replaceAtCodesInStr(format(this.text.cannotDeleteMsgText_notLastPostedMsg, msgNum));
 	}
 	if (canDeleteMessage)
 	{
@@ -10299,7 +10411,7 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 		var confirmDeleteMsg = (typeof(pConfirmDelete) == "boolean" ? pConfirmDelete : true);
 		if (confirmDeleteMsg)
 		{
-			var delConfirmText = "\1n" + this.text.msgDelConfirmText.replace("%d", msgNum);
+			var delConfirmText = "\1n" + replaceAtCodesInStr(format(this.text.msgDelConfirmText, msgNum));
 			if (promptLocValid)
 			{
 				// If the caller wants to clear the remainder of the row where the prompt
@@ -10360,7 +10472,7 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 				// Output a message saying the message has been marked for deletion
 				if (promptLocValid)
 					console.gotoxy(pPromptLoc);
-				console.print("\1n" + this.text.msgDeletedText.replace("%d", msgNum));
+				console.print("\1n" + replaceAtCodesInStr(format(this.text.msgDeletedText, msgNum)));
 				if (promptLocValid)
 					console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, ERROR_PAUSE_WAIT_MS);
 				else
@@ -10430,7 +10542,8 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 				{
 					// Adding 5 to the prompt text to account for the ? and "[X] " that
 					// will be added when console.noyes() is called
-					var promptTxtLen = console.strlen(this.text.delSelectedMsgsConfirmText) + 5;
+					var delMsgsPromptText = replaceAtCodesInStr(this.text.delSelectedMsgsConfirmText);
+					var promptTxtLen = console.strlen(delMsgsPromptText) + 5;
 					var numCharsRemaining = 0;
 					if (typeof(pPromptRowWidth) == "number")
 						numCharsRemaining = pPromptRowWidth - promptTxtLen;
@@ -10444,7 +10557,7 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 				// Move the cursor to the prompt location
 				console.gotoxy(pPromptLoc);
 			}
-			deleteMsgs = !console.noyes(this.text.delSelectedMsgsConfirmText);
+			deleteMsgs = !console.noyes(delMsgsPromptText);
 		}
 		// If we are to delete the messages, then delete it.
 		if (deleteMsgs)
@@ -10481,7 +10594,7 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 		// The user is not allowed to delete all selected messages
 		if (promptLocValid)
 			console.gotoxy(pPromptLoc);
-		console.print(this.text.cannotDeleteAllSelectedMsgsText);
+		console.print(replaceAtCodesInStr(this.text.cannotDeleteAllSelectedMsgsText));
 		if (promptLocValid)
 			console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, ERROR_PAUSE_WAIT_MS);
 		else
@@ -13231,7 +13344,7 @@ function DigDistMsgReader_MessageIsSelected(pSubCode, pMsgIdx)
 function DigDistMsgReader_AllSelectedMessagesCanBeDeleted()
 {
 	// If the user has sysop access, then they should be able to delete messages.
-	if (gIsSysop)
+	if (user.is_sysop)
 		return true;
 
 	var userCanDeleteAllSelectedMessages = true;
@@ -13285,7 +13398,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 		{
 			// Allow the user to delete the messages if they're the sysop, they're
 			// reading their personal mail, or the sub-board allows deleting messages.
-			if (gIsSysop || (subBoardCode == "mail") || ((msgBase.cfg.settings & SUB_DEL) == SUB_DEL))
+			if (user.is_sysop || (subBoardCode == "mail") || ((msgBase.cfg.settings & SUB_DEL) == SUB_DEL))
 			{
 				for (var msgIdx in this.selectedMessages[subBoardCode])
 				{
@@ -14077,7 +14190,7 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 
 	// If the user is the sysop, then also add the names of people who
 	// voted on the message.
-	if (gIsSysop)
+	if (user.is_sysop)
 	{
 		// Check all the messages in the messagebase after the current one
 		// to find response messages
@@ -14295,7 +14408,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 	// sysop now know to validate it.
 	if (this.subBoardCode != "mail")
 	{
-		if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
+		if (user.is_sysop && msg_area.sub[this.subBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
 		{
 			var validateNotice = "\1n\1h\1yThis is an unvalidated message in a moderated area.  Press "
 							   + this.enhReaderKeys.validateMsg + " to validate it.\r\n\1g";
@@ -18771,7 +18884,7 @@ function editUser(pUsername)
 	}
 
 	// If the logged-in user is not a sysop, then just return.
-	if (!gIsSysop)
+	if (!user.is_sysop)
 	{
 		retObj.errorMsg = "Only a sysop can edit a user";
 		return retObj;
@@ -18826,7 +18939,7 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	if (pMsgHdr === null)
 		return false;
 	// Let the sysop see unvalidated messages and private messages but not other users.
-	if (!gIsSysop)
+	if (!user.is_sysop)
 	{
 		if (pSubBoardCode != "mail")
 		{
@@ -18843,7 +18956,7 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	{
 		// If the user is a sysop, check whether sysops can view deleted messages.
 		// Otherwise, check whether users can view deleted messages.
-		if (gIsSysop)
+		if (user.is_sysop)
 		{
 			if ((system.settings & SYS_SYSVDELM) == 0)
 				return false;
@@ -19225,7 +19338,7 @@ function applyAttrsInMsgHdrInMessagbase(pMsgbaseOrSubCode, pMsgNum, pMsgAttrs)
 				writeToSysAndNodeLog("Error: " + msgbase.error, LOG_ERR);
 				/*
 				// For sysops, output a debug message
-				if (gIsSysop)
+				if (user.is_sysop)
 				{
 					console.print("\1n");
 					console.crlf();
@@ -20026,6 +20139,34 @@ function sortMessageHdrsByDateTime(msgHdrA, msgHdrB)
 			}
 		}
 	}
+}
+
+// Returns an array of internal sub-board codes to scan for a given scan scope.
+//
+// Parameters:
+//  pScanScopeChar: A string specifying "A" for all sub-boards, "G" for current
+//                  message group sub-boards, or "S" for the current sub-board
+//
+// Return value: An array of internal sub-board codes for sub-boards to scan
+function getSubBoardsToScanArray(pScanScopeChar)
+{
+	var subBoardsToScan = [];
+	if (pScanScopeChar == "A") // All sub-board scan
+	{
+		for (var grpIndex = 0; grpIndex < msg_area.grp_list.length; ++grpIndex)
+		{
+			for (var subIndex = 0; subIndex < msg_area.grp_list[grpIndex].sub_list.length; ++subIndex)
+				subBoardsToScan.push(msg_area.grp_list[grpIndex].sub_list[subIndex].code);
+		}
+	}
+	else if (pScanScopeChar == "G") // Group scan
+	{
+		for (var subIndex = 0; subIndex < msg_area.grp_list[bbs.curgrp].sub_list.length; ++subIndex)
+			subBoardsToScan.push(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code);
+	}
+	else if (pScanScopeChar == "S") // Current sub-board scan
+		subBoardsToScan.push(bbs.cursub_code);
+	return subBoardsToScan;
 }
 
 
