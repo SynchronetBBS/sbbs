@@ -5,6 +5,15 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.44     2022-02-19   Removed the scanScopePromptText text line and used the
+                      SubGroupOrAll line (621) from text.dat instead.  Also, the
+                      reader now supports @-code expansion in configured text
+                      strings.
+                      Text search now can search sub-board, group, or all like
+                      the other text searching.
+                      When reading the theme file, color settings are now
+                      checked to ensure they only have Synchronet attribute
+                      codes.
 1.43     2022-02-10   Fixed the memory error when viewing message header info.
                       Also, when viewing message header information, it will no
                       longer show JS functions.
