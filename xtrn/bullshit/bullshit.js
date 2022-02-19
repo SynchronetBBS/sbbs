@@ -226,7 +226,7 @@ function initDisplay(settings, list) {
 	footerFrame.drawBorder(settings.colors.border);
 
 	titleFrame.gotoxy(3, 2);
-	titleFrame.putmsg('Bulletins');
+	titleFrame.putmsg(settings.title || 'Bulletins');
 	// titleFrame.gotoxy(frame.width - 25, 2);
 	// titleFrame.putmsg('bullshit v3 by echicken', settings.colors.heading);
 
