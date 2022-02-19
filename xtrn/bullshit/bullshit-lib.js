@@ -22,6 +22,8 @@ function loadSettings(path) {
 		}
 	});
 
+    if (settings.colors.titleBackground === undefined) settings.colors.titleBackground = BG_BLACK;
+
 	return settings;
 
 }

@@ -216,7 +216,7 @@ function initDisplay(settings, list) {
 
 	const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, WHITE);
 
-	const titleFrame = new Frame(frame.x, frame.y, frame.width, 3, WHITE, frame);
+	const titleFrame = new Frame(frame.x, frame.y, frame.width, 3, settings.colors.title|settings.colors.titleBackground, frame);
 	const footerFrame = new Frame(frame.x, frame.y + frame.height - 3, frame.width, 3, WHITE, frame);
 	const treeFrame = new Frame(frame.x, titleFrame.y + titleFrame.height, frame.width, frame.height - titleFrame.height - footerFrame.height, WHITE, frame);
 	const treeSubFrame = new Frame(treeFrame.x + 1, treeFrame.y + 2, treeFrame.width - 2, treeFrame.height - 3, WHITE, treeFrame);
@@ -226,9 +226,9 @@ function initDisplay(settings, list) {
 	footerFrame.drawBorder(settings.colors.border);
 
 	titleFrame.gotoxy(3, 2);
-	titleFrame.putmsg('Bulletins', settings.colors.title);
-	titleFrame.gotoxy(frame.width - 25, 2);
-	titleFrame.putmsg('bullshit v3 by echicken', settings.colors.heading);
+	titleFrame.putmsg('Bulletins');
+	// titleFrame.gotoxy(frame.width - 25, 2);
+	// titleFrame.putmsg('bullshit v3 by echicken', settings.colors.heading);
 
 	treeFrame.gotoxy(3, 2);
 	treeFrame.putmsg('Title', settings.colors.heading);
