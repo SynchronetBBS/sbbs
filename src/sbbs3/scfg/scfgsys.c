@@ -2012,11 +2012,10 @@ void sys_cfg(void)
 						"`Expired Account Values:`\n"
 						"\n"
 						"If a user's account expires, the security levels for that account will\n"
-						"be modified according to the settings of this menu. The `Main Level` and\n"
-						"`Transfer Level` will be set to the values listed on this menu. The `Main\n"
-						"Flags`, `Transfer Flags`, and `Exemptions` listed on this menu will be\n"
-						"removed from the account if they are set. The `Restrictions` listed will\n"
-						"be added to the account.\n"
+						"be modified according to the settings of this menu. The account's\n"
+						"security level will be set to the value listed on this menu. The `Flags`\n"
+						"and `Exemptions` listed on this menu will be removed from the account\n"
+						"if they are set. The `Restrictions` listed will be added to the account.\n"
 					;
 					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&dflt,0
 						,"Expired Account Values",opt)) {
