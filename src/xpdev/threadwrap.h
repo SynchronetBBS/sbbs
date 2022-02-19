@@ -64,7 +64,7 @@ extern "C" {
 	#include <errno.h>		/* EAGAIN and EBUSY */
 
 	/* POSIX threads */
-	typedef DWORD pthread_t;
+	typedef uintptr_t pthread_t;
 	#define pthread_self()				GetCurrentThreadId()
 	#define pthread_equal(t1,t2)		((t1)==(t2))
 
@@ -75,7 +75,7 @@ extern "C" {
 
 	#else	/* Implemented as Win32 Critical Sections */
 
-		typedef CRITICAL_SECTION pthread_mutex_t;
+		typedef intptr_t pthread_mutex_t;
 
 	#endif
 
