@@ -28,7 +28,8 @@
 /* OS-specific */
 /***************/
 #if defined(_WIN32)	/* Use WinSock */
-typedef char* socket_buffer_t;
+typedef const char* socket_send_buffer_t;
+typedef char* socket_recv_buffer_t;
 
 #ifndef _WINSOCKAPI_
 	#include <winsock2.h>	/* socket/bind/etc. */
@@ -51,7 +52,8 @@ typedef char* socket_buffer_t;
 #endif
 
 #elif defined __unix__		/* Unix-variant */
-typedef void* socket_buffer_t;
+typedef const void* socket_send_buffer_t;
+typedef void* socket_recv_buffer_t;
 
 #include <netdb.h>			/* gethostbyname */
 #include <sys/types.h>		/* For u_int32_t on FreeBSD */
