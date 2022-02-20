@@ -30,7 +30,6 @@
 #if defined(_WIN32)	/* Use WinSock */
 typedef const char* socket_send_buffer_t;
 typedef char* socket_recv_buffer_t;
-typedef u_long* socket_ioctl_ptr_t;
 
 #ifndef _WINSOCKAPI_
 	#include <winsock2.h>	/* socket/bind/etc. */
@@ -51,11 +50,12 @@ typedef u_long* socket_ioctl_ptr_t;
 #ifndef MSG_WAITALL
 #define MSG_WAITALL 0x08
 #endif
+typedef u_long* socket_ioctl_ptr_t;
 
 #elif defined __unix__		/* Unix-variant */
 typedef const void* socket_send_buffer_t;
 typedef void* socket_recv_buffer_t;
-typedef int socket_ioctl_ptr_t;
+typedef int* socket_ioctl_ptr_t;
 
 #include <netdb.h>			/* gethostbyname */
 #include <sys/types.h>		/* For u_int32_t on FreeBSD */
