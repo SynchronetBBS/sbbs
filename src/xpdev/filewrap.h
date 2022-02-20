@@ -71,7 +71,9 @@
 		#define ftello			ftell
 	#endif
 
+#ifndef DISABLE_MKSTEMP_DEFINE
 	#define mkstemp(t)	_open(_mktemp(t), O_RDWR | O_CREAT | O_EXCL)
+#endif
 
 #elif defined(__unix__)
 
