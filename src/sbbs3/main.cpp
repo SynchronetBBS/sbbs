@@ -2503,6 +2503,70 @@ void output_thread(void* arg)
 	lprintf(LOG_DEBUG,"%s output thread terminated %s", node, stats);
 }
 
+static bool is_day_to_run(const struct tm* now, uint8_t days, uint16_t months = 0, uint32_t mdays = 0)
+{
+	if(!(days & (1 << now->tm_wday)))
+		return false;
+
+	if((mdays > 1) && !(mdays & (1 << now->tm_mday)))
+		return false;
+
+	if((months != 0) && !(months & (1 << now->tm_mon)))
+		return false;
+
+	return true;
+}
+
+static bool is_time_to_run(time_t now, const struct tm* now_tm, time_t last, uint16_t freq, uint16_t time)
+{
+	if(freq != 0) {
+		if((now - last) / 60 < freq)
+			return false;
+	} else {
+		struct tm last_tm = {};
+		localtime_r(&last, &last_tm);
+		if(now_tm->tm_mday == last_tm.tm_mday && now_tm->tm_mon == last_tm.tm_mon) // Already ran today
+			return false;
+		if(((now_tm->tm_hour * 60) + now_tm->tm_min) < time)
+			return false;
+	}
+	return true;
+}
+
+static bool is_time_to_run(time_t now, const event_t* event)
+{
+	if(event->last == -1)	// Always Run after init/re-init or signaled via semaphore
+		return true;
+
+	struct tm now_tm = {};
+	localtime_r(&now, &now_tm);
+
+	if(!is_day_to_run(&now_tm, event->days, event->months, event->mdays))
+		return false;
+
+	if(!is_time_to_run(now, &now_tm, event->last, event->freq, event->time))
+		return false;
+
+	return true;
+}
+
+static bool is_time_to_run(time_t now, const qhub_t* hub)
+{
+	if(hub->last == -1)	// Always Run when signaled via semaphore
+		return true;
+
+	struct tm now_tm = {};
+	localtime_r(&now, &now_tm);
+
+	if(!is_day_to_run(&now_tm, hub->days))
+		return false;
+
+	if(!is_time_to_run(now, &now_tm, hub->last, hub->freq, hub->time))
+		return false;
+
+	return true;
+}
+
 void event_thread(void* arg)
 {
 	char		str[MAX_PATH+1];
@@ -2521,12 +2585,9 @@ void event_thread(void* arg)
 	time_t		lastsemchk=0;
 	time_t		lastnodechk=0;
 	time32_t	lastprepack=0;
-	time_t		tmptime;
 	node_t		node;
 	glob_t		g;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
-	struct tm	now_tm;
-	struct tm	tm;
 	char		event_code[LEN_CODE+1];
 
 	sbbs->lprintf(LOG_INFO,"BBS Events thread started");
@@ -2586,21 +2647,6 @@ void event_thread(void* arg)
 		close(file);
 	}
 
-	// Read PNET.DAB
-	SAFEPRINTF(str,"%spnet.dab",sbbs->cfg.ctrl_dir);
-	if((file=sbbs->nopen(str,O_RDWR|O_CREAT))==-1)
-		sbbs->errormsg(WHERE,ERR_OPEN,str,0);
-	else {
-		for(i=0;i<sbbs->cfg.total_phubs;i++) {
-			sbbs->cfg.phub[i]->last=0;
-			if(filelength(file)<(long)(sizeof(time32_t)*(i+1)))
-				write(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last));
-			else
-				read(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last));
-		}
-		close(file);
-	}
-
 	while(!sbbs->terminated && !terminate_server) {
 
 		if(startup->options&BBS_OPT_NO_EVENTS) {
@@ -2609,7 +2655,6 @@ void event_thread(void* arg)
 		}
 
 		now=time(NULL);
-		localtime_r(&now,&now_tm);
 
 		if(now-lastsemchk>=sbbs->cfg.node_sem_check) {
 			check_semaphores=true;
@@ -2900,15 +2945,7 @@ void event_thread(void* arg)
 			}
 
 			/* Qnet call out based on time */
-			tmptime=sbbs->cfg.qhub[i]->last;
-			if(localtime_r(&tmptime,&tm)==NULL)
-				memset(&tm,0,sizeof(tm));
-			if(sbbs->cfg.qhub[i]->last==-1L					/* or frequency */
-				|| (((sbbs->cfg.qhub[i]->freq && (now-sbbs->cfg.qhub[i]->last)/60>=sbbs->cfg.qhub[i]->freq)
-					|| (sbbs->cfg.qhub[i]->time
-						&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.qhub[i]->time
-						&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
-							&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
+			if(is_time_to_run(now, sbbs->cfg.qhub[i])) {
 				SAFEPRINTF2(str,"%sqnet/%s.now"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				if(fexistcase(str)) {
@@ -2982,58 +3019,9 @@ void event_thread(void* arg)
 			}
 		}
 
-		/* PostLink Networking Call-out Events */
-		sbbs->event_code = "PostLink";
-		for(i=0;i<sbbs->cfg.total_phubs && !sbbs->terminated;i++) {
-			if(sbbs->cfg.phub[i]->node != NODE_ANY
-				&& (sbbs->cfg.phub[i]->node<first_node || sbbs->cfg.phub[i]->node>last_node))
-				continue;
-			/* PostLink call out based on time */
-			tmptime=sbbs->cfg.phub[i]->last;
-			if(localtime_r(&tmptime,&tm)==NULL)
-				memset(&tm,0,sizeof(tm));
-			if(sbbs->cfg.phub[i]->last==-1
-				|| (((sbbs->cfg.phub[i]->freq								/* or frequency */
-					&& (now-sbbs->cfg.phub[i]->last)/60>=sbbs->cfg.phub[i]->freq)
-				|| (sbbs->cfg.phub[i]->time
-					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.phub[i]->time
-				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
-				&& sbbs->cfg.phub[i]->days&(1<<now_tm.tm_wday))) {
-
-				sbbs->cfg.phub[i]->last=time32(NULL);
-				SAFEPRINTF(str,"%spnet.dab",sbbs->cfg.ctrl_dir);
-				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
-					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
-					break;
-				}
-				lseek(file,sizeof(time32_t)*i,SEEK_SET);
-				write(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last));
-				close(file);
-
-				if(sbbs->cfg.phub[i]->call[0]) {
-					if(sbbs->cfg.phub[i]->node == NODE_ANY)
-						sbbs->cfg.node_num = startup->first_node;
-					else
-						sbbs->cfg.node_num=sbbs->cfg.phub[i]->node;
-					if(sbbs->cfg.node_num<1)
-						sbbs->cfg.node_num=1;
-					SAFECOPY(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-					sbbs->lprintf(LOG_INFO,"PostLink Network call-out: %s",sbbs->cfg.phub[i]->name);
-					sbbs->online=ON_LOCAL;
-					sbbs->console|=CON_L_ECHO;
-					sbbs->external(
-						 sbbs->cmdstr(sbbs->cfg.phub[i]->call,nulstr,nulstr,NULL)
-						,EX_OFFLINE|EX_SH);	/* sh for Unix perl scripts */
-					sbbs->online=FALSE;
-					sbbs->console&=~CON_L_ECHO;
-				}
-			}
-		}
-
 		/* Timed Events */
 		for(i=0;i<sbbs->cfg.total_events && !sbbs->terminated;i++) {
-			if(sbbs->cfg.event[i]->node != NODE_ANY
-				&& (!sbbs->cfg.event[i]->node || sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes))
+			if(sbbs->cfg.event[i]->node > sbbs->cfg.sys_nodes)
 				continue;	// ignore events for invalid nodes
 
 			if(sbbs->cfg.event[i]->misc&EVENT_DISABLED)
@@ -3048,20 +3036,7 @@ void event_thread(void* arg)
 			strupr(event_code);
 			sbbs->event_code = event_code;
 
-			tmptime=sbbs->cfg.event[i]->last;
-			if(localtime_r(&tmptime,&tm)==NULL)
-				memset(&tm,0,sizeof(tm));
-			if(sbbs->cfg.event[i]->last==-1 ||
-				(((sbbs->cfg.event[i]->freq
-					&& (now-sbbs->cfg.event[i]->last)/60>=sbbs->cfg.event[i]->freq)
-				|| 	(!sbbs->cfg.event[i]->freq
-					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
-				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
-				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday)
-				&& (sbbs->cfg.event[i]->mdays < 2
-					|| sbbs->cfg.event[i]->mdays&(1<<now_tm.tm_mday))
-				&& (sbbs->cfg.event[i]->months==0
-					|| sbbs->cfg.event[i]->months&(1<<now_tm.tm_mon))))
+			if(is_time_to_run(now, sbbs->cfg.event[i]))
 			{
 				if(sbbs->cfg.event[i]->node != NODE_ANY && (sbbs->cfg.event[i]->misc&EVENT_EXCL)) { /* exclusive event */
 
