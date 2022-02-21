@@ -75,7 +75,7 @@ extern "C" {
 
 	#else	/* Implemented as Win32 Critical Sections */
 
-		typedef intptr_t pthread_mutex_t;
+		typedef CRITICAL_SECTION pthread_mutex_t;
 
 	#endif
 
