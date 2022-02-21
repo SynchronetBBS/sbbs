@@ -57,10 +57,6 @@ bool sbbs_t::logon()
 
 	if(useron.rest&FLAG('Q'))
 		sys_status ^= SS_QWKLOGON;
-	if(SYSOP && !(cfg.sys_misc&SM_R_SYSOP)) {
-		hangup();
-		return(false);
-	}
 
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
