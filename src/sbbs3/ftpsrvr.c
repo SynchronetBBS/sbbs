@@ -2470,8 +2470,11 @@ static void ctrl_thread(void* arg)
 				putuserrec(&scfg,user.number,U_NETMAIL,LEN_NETMAIL,password);
 			}
 			else if(user.level>=SYSOP_LEVEL && !stricmp(password,sys_pass)) {
-				lprintf(LOG_INFO,"%04d <%s> Sysop access granted", sock, user.alias);
-				sysop=TRUE;
+				if(scfg.sys_misc&SM_R_SYSOP) {
+					lprintf(LOG_INFO,"%04d <%s> Sysop access granted", sock, user.alias);
+					sysop=TRUE;
+				} else
+					lprintf(LOG_NOTICE, "%04d <%s> Remote sysop access disabled", sock, user.alias);
 			}
 			else if(stricmp(password,user.pass)) {
 				if(scfg.sys_misc&SM_ECHO_PW)

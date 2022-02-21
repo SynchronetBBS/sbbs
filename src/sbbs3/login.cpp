@@ -138,7 +138,7 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 			useron.misc=useron_misc;
 			return(LOGIC_FALSE); 
 		}
-		if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN) && !chksyspass(sys_pw)) {
+		if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN) && (cfg.sys_misc&SM_R_SYSOP) && !chksyspass(sys_pw)) {
 			bputs(text[InvalidLogon]);
 			useron.number=0;
 			useron.misc=useron_misc;
