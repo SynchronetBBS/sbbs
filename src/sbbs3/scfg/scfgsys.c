@@ -410,6 +410,14 @@ void sys_cfg(void)
 					"sysop functions. This password should be something not easily guessed\n"
 					"and should be kept absolutely confidential. This password must be\n"
 					"entered at the Terminal Server `SY:` prompt.\n"
+					"\n"
+					"This system password can also be used to enable sysop access to the\n"
+					"FTP Server by authenticating with a password that combines a sysop's\n"
+					"password with the system password, separated by a colon\n"
+					"(i.e. '`user-pass:system-pass`').\n"
+					"\n"
+					"`Note:` When the `Allow Sysop Access` Toggle Option is set to `No`,\n"
+					"      The system password is effectively disabled."
 				;
 				uifc.input(WIN_MID,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
 				break;
@@ -526,7 +534,7 @@ void sys_cfg(void)
 						,cfg.sys_misc&SM_TIMEBANK ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Allow Credit Conversions"
 						,cfg.sys_misc&SM_NOCDTCVT ? "No" : "Yes");
-					sprintf(opt[i++],"%-33.33s%s","Allow Sysop Logins"
+					sprintf(opt[i++],"%-33.33s%s","Allow Sysop Access"
 						,cfg.sys_misc&SM_R_SYSOP ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Display/Log Passwords Locally"
 						,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
@@ -628,13 +636,13 @@ void sys_cfg(void)
 						case 3:
 							i=cfg.sys_misc&SM_R_SYSOP ? 0:1;
 							uifc.helpbuf=
-								"`Allow Sysop Logins:`\n"
+								"`Allow Sysop Access:`\n"
 								"\n"
-								"If you want to be able to login with system operator access, set this\n"
-								"option to `Yes`.\n"
+								"Setting this option to `No` will prevent users with sysop security level\n"
+								"from invoking functions that require system-password authentication.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Allow Sysop Logins",uifcYesNoOpts);
+								,"Allow Sysop Access",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_R_SYSOP)) {
 								cfg.sys_misc|=SM_R_SYSOP;
 								uifc.changes=1; 
