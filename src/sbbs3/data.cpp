@@ -129,7 +129,7 @@ extern "C" time_t getnexteventtime(event_t* event)
 		if(localtime_r(&t, &tm) == NULL)
 			return 0;
 		if((event->days & (1 << tm.tm_wday))
-			&& (event->mdays == 0 || (event->mdays & (1 << tm.tm_mday)))
+			&& (event->mdays <= 1 || (event->mdays & (1 << tm.tm_mday)))
 			&& (event->months == 0 || (event->months & (1 << tm.tm_mon))))
 			break;
 		t += 24 * 60 * 60;
