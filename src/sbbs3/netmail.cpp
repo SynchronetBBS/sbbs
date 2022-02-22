@@ -105,11 +105,13 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 		}
 	}
 
+	if(*to == '\0' && cc_list != NULL && (*cc_list) != NULL) {
+		SAFECOPY(to, cc_list[0]);
+		cc_list++;
+	}
 	lookup_netuser(to);
 
 	net_addr = to;
-	if(*net_addr == '\0' && cc_list != NULL)
-		net_addr = cc_list[0];
 	net_type = smb_netaddr_type(net_addr);
 
 	lprintf(LOG_DEBUG, "parsed net type of '%s' is %s", net_addr, smb_nettype((enum smb_net_type)net_type));
