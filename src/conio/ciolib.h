@@ -241,10 +241,6 @@ struct text_info {
 	unsigned char cury;           /* y-coordinate in current window */
 };
 
-CIOLIBEXPORTVAR struct text_info cio_textinfo;
-CIOLIBEXPORTVAR uint32_t ciolib_fg;
-CIOLIBEXPORTVAR uint32_t ciolib_bg;
-
 struct mouse_event {
 	int event;
 	int bstate;
@@ -266,8 +262,6 @@ struct conio_font_data_struct {
         char 	*desc;
         enum ciolib_codepage cp;
 };
-
-CIOLIBEXPORTVAR struct conio_font_data_struct conio_fontdata[257];
 
 struct ciolib_pixels {
 	uint32_t	*pixels;
@@ -386,6 +380,15 @@ typedef struct {
 	void	(*setwinposition)	(int x, int y);
 } cioapi_t;
 
+#define _conio_kbhit()		kbhit()
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+CIOLIBEXPORTVAR struct text_info cio_textinfo;
+CIOLIBEXPORTVAR struct conio_font_data_struct conio_fontdata[257];
+CIOLIBEXPORTVAR uint32_t ciolib_fg;
+CIOLIBEXPORTVAR uint32_t ciolib_bg;
 CIOLIBEXPORTVAR cioapi_t cio_api;
 CIOLIBEXPORTVAR int _wscroll;
 CIOLIBEXPORTVAR int directvideo;
@@ -396,11 +399,6 @@ CIOLIBEXPORTVAR char *ciolib_appname;
 CIOLIBEXPORTVAR int ciolib_initial_window_height;
 CIOLIBEXPORTVAR int ciolib_initial_window_width;
 
-#define _conio_kbhit()		kbhit()
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 CIOLIBEXPORT int initciolib(int mode);
 CIOLIBEXPORT void suspendciolib(void);
 
