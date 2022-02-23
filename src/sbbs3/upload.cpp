@@ -68,7 +68,8 @@ bool sbbs_t::uploadfile(file_t* f)
 			}
 			SAFEPRINTF(str,"%ssbbsfile.des",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
-				fprintf(stream, "%s", f->desc);
+				if(f->desc != NULL)
+					fprintf(stream, "%s", f->desc);
 				fclose(stream); 
 			}
 			// Note: str (%s) is path/to/sbbsfile.des (used to be the description itself)
@@ -98,7 +99,8 @@ bool sbbs_t::uploadfile(file_t* f)
 			if((stream=fopen(str,"r"))!=NULL) {
 				if(fgets(str, sizeof(str), stream)) {
 					truncsp(str);
-					smb_new_hfield_str(f, SMB_FILEDESC, str);
+					if(*str)
+						smb_new_hfield_str(f, SMB_FILEDESC, str);
 				}
 				fclose(stream); 
 			}
@@ -152,16 +154,10 @@ bool sbbs_t::uploadfile(file_t* f)
 			file_sauce_hfields(f, &sauce);
 
 			if(f->desc == NULL || f->desc[0] == 0) {
-				char	desc[LEN_FDESC + 1];
+				char desc[LEN_EXTDESC + 1];
 				SAFECOPY(desc, (char*)ext);
-				strip_exascii(desc, desc);
 				prep_file_desc(desc, desc);
-				for(i=0;desc[i];i++)
-					if(IS_ALPHANUMERIC(desc[i]))
-						break;
-				if(desc[i] == '\0')
-					i = 0;
-				smb_new_hfield_str(f, SMB_FILEDESC, desc + i);
+				smb_new_hfield_str(f, SMB_FILEDESC, desc);
 			}
 			remove(str);
 		} else
