@@ -40,7 +40,6 @@ function parse_user_msg(text)
 
 	// Parse JSON block
     for(i=0; i<text.length; i++) {
-		print(i + ": " + text[i]);
         if(text[i].trimRight().toLowerCase()=="json-begin")
             json_begin=i+1;
         else if(text[i].trimRight().toLowerCase()=="json-end")
