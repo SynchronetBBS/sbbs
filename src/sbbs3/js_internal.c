@@ -1474,38 +1474,38 @@ static jsSyncMethodSpec js_functions[] = {
 	"NOTE: Use <tt>js.exec.apply()</tt> if you need to pass a variable number of arguments to the executed script.")
 	,31702
 	},
-	{"setTimeout",	js_setTimeout,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, time[, thisObj]")
-	,JSDOCSTR("install a timeout.  callback() will be called time ms after the function is called. "
-	 "returns an id which can be passed to clearTimeout()")
+	{"setTimeout",	js_setTimeout,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, time [, thisObj]")
+	,JSDOCSTR("install a timeout timer.  <tt>callback()<.tt> will be called <tt>time</tt> (milliseconds) after this function is called. "
+	 "Returns an id which can be passed to <tt>clearTimeout()</tt>")
 	,31900
 	},
-	{"setInterval",	js_setInterval,			2,	JSTYPE_OBJECT,	JSDOCSTR("callback, period[, thisObj]")
-	,JSDOCSTR("install a timeout.  callback() will be called every period ms after setInterval() is called."
-	 "returns and id which can be passed to clearIntervat()")
+	{"setInterval",	js_setInterval,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, period [, thisObj]")
+	,JSDOCSTR("install an interval timer.  <tt>callback()</tt> will be called every <tt>period</tt> (milliseconds) after <tt>setInterval()</tt> is called. "
+	 "Returns an id which can be passed to <tt>clearInterval()</tt>")
 	,31900
 	},
 	{"clearTimeout",	js_clearTimeout,	1,	JSTYPE_VOID,	JSDOCSTR("id")
-	,JSDOCSTR("remove a timeout")
+	,JSDOCSTR("remove a timeout timer")
 	,31900
 	},
 	{"clearInterval",	js_clearInterval,	1,	JSTYPE_VOID,	JSDOCSTR("id")
-	,JSDOCSTR("remove an interval")
+	,JSDOCSTR("remove an interval timer")
 	,31900
 	},
 	{"addEventListener",	js_addEventListener,	2,	JSTYPE_NUMBER,	JSDOCSTR("eventName, callback")
-	,JSDOCSTR("Add a listener that is ran after js.dispatchEvent(eventName) is called.  Returns an id to be passed to js.removeEventListener")
+	,JSDOCSTR("Add a listener that is ran after <tt>js.dispatchEvent(eventName)</tt> is called.  Returns an id to be passed to <tt>js.removeEventListener()</tt>")
 	,31900
 	},
 	{"removeEventListener",	js_removeEventListener,	1,	JSTYPE_VOID,	JSDOCSTR("id")
-	,JSDOCSTR("Remove listeners added with js.addEventListener().  id can be a string or an id returned by addEventListener.  This does not remove already triggered callbacks from the runqueue.")
+	,JSDOCSTR("Remove listeners added with <tt>js.addEventListener()</tt>.  <tt>id</tt> can be a string or an id returned by <tt>addEventListener()</tt>.  This does not remove already triggered callbacks from the run queue.")
 	,31900
 	},
 	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [, thisObj]")
-	,JSDOCSTR("Add all listeners of eventName to the end of the runqueue.  If obj is passed, specifies this in the callback (the js object is used otherwise).")
+	,JSDOCSTR("Add all listeners of eventName to the end of the run queue.  If <tt>thisObj</tt> is passed, specifies <tt>this</tt> in the callback (the <tt>js</tt> object is used otherwise).")
 	,31900
 	},
 	{"setImmediate",	js_setImmediate,	1,	JSTYPE_VOID,	JSDOCSTR("callback[, thisObj]")
-	,JSDOCSTR("adds the callback to the end of the run queue, where it will be called after all pending events are processed")
+	,JSDOCSTR("Adds <tt>callback</tt> to the end of the run queue, where it will be called after all pending events are processed")
 	,31900
 	},
 	{0}
