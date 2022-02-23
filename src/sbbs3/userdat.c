@@ -1416,10 +1416,8 @@ int putsmsg(scfg_t* cfg, int usernumber, char *strin)
 /****************************************************************************/
 char* getsmsg(scfg_t* cfg, int usernumber)
 {
-	char	str[MAX_PATH+1], *buf;
 	int		i;
     int		file = -1;
-    long	length;
 	node_t	node;
 
 	if(!VALID_CFG(cfg) || usernumber<1)
@@ -1437,6 +1435,21 @@ char* getsmsg(scfg_t* cfg, int usernumber)
 		}
 	}
 	CLOSE_OPEN_FILE(file);
+
+	return readsmsg(cfg, usernumber);
+}
+
+/****************************************************************************/
+/* Returns any short messages waiting for user number, buffer must be freed */
+/****************************************************************************/
+char* readsmsg(scfg_t* cfg, int usernumber)
+{
+	char	str[MAX_PATH+1], *buf;
+    int		file;
+    long	length;
+
+	if(!VALID_CFG(cfg) || usernumber<1)
+		return(NULL);
 
 	SAFEPRINTF2(str,"%smsgs/%4.4u.msg",cfg->data_dir,usernumber);
 	if(flength(str)<1L)
@@ -1457,6 +1470,13 @@ char* getsmsg(scfg_t* cfg, int usernumber)
 	close(file);
 	buf[length]=0;
 	strip_invalid_attr(buf);
+
+	SAFEPRINTF2(str, "%smsgs/%4.4u.last.msg", cfg->data_dir, usernumber);
+	backup(str, 19, /* rename: */true);
+	if((file = nopen(str, O_WRONLY|O_CREAT|O_APPEND)) != -1) {
+		(void)write(file, buf, length);
+		close(file);
+	}
 
 	return(buf);	/* caller must free */
 }
@@ -2803,13 +2823,13 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	delfiles(str,tmp, /* keep: */0);
 	SAFEPRINTF(str,"%suser",cfg->data_dir);
 	delfiles(str,tmp, /* keep: */0);
+	SAFEPRINTF(str,"%smsgs",cfg->data_dir);
+	delfiles(str,tmp, /* keep: */0);
 	SAFEPRINTF2(str,"%suser/%04u",cfg->data_dir,user->number);
 	delfiles(str,ALLFILES, /* keep: */0);
 	rmdir(str);
 
 	SAFEPRINTF2(str,"%suser/ptrs/%04u.ixb",cfg->data_dir,user->number); /* msg ptrs */
-	remove(str);
-	SAFEPRINTF2(str,"%smsgs/%04u.msg",cfg->data_dir,user->number); /* delete short msg */
 	remove(str);
 
 	/* Update daily statistics database (for system and node) */
