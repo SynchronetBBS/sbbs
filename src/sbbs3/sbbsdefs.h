@@ -506,7 +506,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_ZIPCODE 	10	/* Zip/Postal code								*/
 #define LEN_MODEM		 8	/* User modem type description					*/
 #define LEN_FDESC		58	/* File description (summary) 					*/
-#define LEN_EXTDESC		4000	/* Extended file description				*/
+#define LEN_EXTDESC		5000	/* Extended file description				*/
 #define LEN_TITLE		70	/* Message title								*/
 #define LEN_MAIN_CMD	28	/* Unused Storage in user.dat					*/
 #define LEN_COLS		3
