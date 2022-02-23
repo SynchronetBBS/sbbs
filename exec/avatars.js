@@ -31,18 +31,19 @@ function parse_user_msg(text)
     var json_end;
 
 	// Terminate at tear-line
-    text=text.split("\r\n");
+    text=text.split("\n");
     for(i=0; i<text.length; i++) {
-        if(text[i]=="---" || text[i].substring(0,4)=="--- ")
+        if(text[i].trimRight()=="---" || text[i].substring(0,4)=="--- ")
             break;
     }
     text.length=i;
 
 	// Parse JSON block
     for(i=0; i<text.length; i++) {
-        if(text[i].toLowerCase()=="json-begin")
+		print(i + ": " + text[i]);
+        if(text[i].trimRight().toLowerCase()=="json-begin")
             json_begin=i+1;
-        else if(text[i].toLowerCase()=="json-end")
+        else if(text[i].trimRight().toLowerCase()=="json-end")
             json_end=i;
     }
     if(json_begin && json_end > json_begin) {
@@ -55,6 +56,8 @@ function parse_user_msg(text)
         }
         return false;
     }
+	alert("invalid or missing JSON block, length: " + text.length
+		+ ", begin: " + json_begin + ", end: " + json_end);
 	return false;
 }
 
@@ -65,24 +68,26 @@ function parse_file_msg(text)
     var bin_end;
 
 	// Terminate at tear-line
-    text=text.split("\r\n");
+    text=text.split("\n");
     for(i=0; i<text.length; i++) {
-        if(text[i]=="---" || text[i].substring(0,4)=="--- ")
+        if(text[i].trimRight()=="---" || text[i].substring(0,4)=="--- ")
             break;
     }
     text.length=i;
 
 	// Parse JSON block
     for(i=0; i<text.length; i++) {
-        if(text[i].toLowerCase()=="bin-lz-begin")
+        if(text[i].trimRight().toLowerCase()=="bin-lz-begin")
             bin_begin=i+1;
-        else if(text[i].toLowerCase()=="bin-lz-end")
+        else if(text[i].trimRight().toLowerCase()=="bin-lz-end")
             bin_end=i;
     }
     if(bin_begin && bin_end > bin_begin) {
         text = text.splice(bin_begin, bin_end-bin_begin);
 		return LZString.decompressFromBase64(text.join('').replace(/\s+/g, ''));
     }
+	alert("invalid or missing bin-lz block, length: " + text.length
+		+ ", begin: " + bin_begin + ", end: " + bin_end);
 	return false;
 }
 
@@ -278,9 +283,8 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
 		if(hdr.to.toLowerCase() == user_avatars.toLowerCase()) {
 			var l;
 			var avatars = parse_user_msg(body);
-			if(!avatars)
-				continue;
-			success = import_netuser_list(hdr, decompress_list(avatars));
+			if(avatars)
+				success = import_netuser_list(hdr, decompress_list(avatars));
 		} else {
 			// Shared avatars
 			success = import_shared_file(hdr, body);
