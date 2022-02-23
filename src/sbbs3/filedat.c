@@ -30,6 +30,7 @@
 #include "scfglib.h"
 #include "sauce.h"
 #include "crc32.h"
+#include "utf8.h"
 
 /* libarchive: */
 #include <archive.h>
@@ -1082,10 +1083,13 @@ char* prep_file_desc(const char* ext, char* dest)
 	char* src;
 	char* buf = strdup(ext);
 	if(buf == NULL)
-		src = (char*)ext;
-	else {
-		src = buf;
-		strip_ctrl(src, src);
+		return NULL;
+	src = buf;
+	strip_ctrl(src, src);
+	if(!str_is_ascii(src)) {
+		if(utf8_str_is_valid(src))
+			utf8_to_cp437_inplace(src);
+		strip_cp437_graphics(src, src);
 	}
 
 	FIND_ALPHANUMERIC(src);
