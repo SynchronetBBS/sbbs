@@ -342,9 +342,7 @@ int sbbs_t::getnodeext(uint number, char *ext)
 /****************************************************************************/
 int sbbs_t::getsmsg(int usernumber, bool clearline)
 {
-	char	str[MAX_PATH+1], *buf;
-    int		file;
-    long	length;
+	char	*buf;
 	node_t	node;
 	int		i;
 
@@ -360,35 +358,14 @@ int sbbs_t::getsmsg(int usernumber, bool clearline)
 		} 
 	}
 
-	SAFEPRINTF2(str,"%smsgs/%4.4u.msg",cfg.data_dir,usernumber);
-	if(flength(str)<1L)
-		return(0);
-	if((file=nopen(str,O_RDWR))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return(errno); 
-	}
-	length=(long)filelength(file);
-	if((buf=(char *)malloc(length+1))==NULL) {
-		close(file);
-		errormsg(WHERE,ERR_ALLOC,str,length+1);
-		return(-1); 
-	}
-	if(lread(file,buf,length)!=length) {
-		close(file);
-		free(buf);
-		errormsg(WHERE,ERR_READ,str,length);
-		return(errno); 
-	}
-	chsize(file,0L);
-	close(file);
-	buf[length]=0;
+	if((buf = readsmsg(&cfg, usernumber)) == NULL)
+		return -1;
 	getnodedat(cfg.node_num,&thisnode,0);
 	if(clearline)
 		this->clearline();
 	else
 		if(column)
 			CRLF;
-	strip_invalid_attr(buf);
 	putmsg(buf,P_NOATCODES);
 	free(buf);
 
