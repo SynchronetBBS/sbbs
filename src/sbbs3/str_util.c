@@ -68,7 +68,7 @@ char* strip_ctrl(const char *str, char* dest)
 			if(str[i]=='<' && j)	
 				j--;
 		}
-		else if((uchar)str[i]>=' ')
+		else if((uchar)str[i]>=' ' && str[i] != DEL)
 			dest[j++]=str[i];
 	}
 	dest[j]=0;
@@ -210,6 +210,20 @@ char* strip_exascii(const char *str, char* dest)
 		return NULL;
 	for(i=j=0;str[i];i++)
 		if(!(str[i]&0x80))
+			dest[j++]=str[i];
+	dest[j]=0;
+	return dest;
+}
+
+char* strip_cp437_graphics(const char *str, char* dest)
+{
+	int	i,j;
+
+	if(dest==NULL && (dest=strdup(str))==NULL)
+		return NULL;
+	for(i=j=0;str[i];i++)
+		if((uchar)str[i] <= (uchar)CP437_INVERTED_EXCLAMATION_MARK
+			|| (uchar)str[i] >= (uchar)CP437_GREEK_SMALL_LETTER_ALPHA)
 			dest[j++]=str[i];
 	dest[j]=0;
 	return dest;
