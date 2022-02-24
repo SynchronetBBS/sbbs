@@ -1964,6 +1964,7 @@ int main(int argc, char** argv)  {
 						case 0:
 							printf("NOTICE: The -i option is deprecated, use -if instead\n");
 							SLEEP(2000);
+							// fall-through
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
 							break;

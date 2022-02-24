@@ -621,6 +621,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				break;
 			case TERM_KEY_RIGHT:
 				newline();
+				// fall-through
 			case 0:
 			case '+':
 				if(smb.curmsg<smb.msgs-1) smb.curmsg++;
@@ -628,6 +629,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				break;
 			case TERM_KEY_LEFT:
 				newline();
+				// fall-through
 			case '-':
 				if(smb.curmsg>0) smb.curmsg--;
 				break;
