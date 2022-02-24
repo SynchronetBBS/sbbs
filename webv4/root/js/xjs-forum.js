@@ -693,7 +693,10 @@ function onSubList(data) {
             append = true; // Should see about slotting this into the document in the correct order instead, in the rare case that a new sub pops up while viewing the page I guess
         }
         elem.querySelector('strong[data-sub-name]').innerHTML = e.name;
-        elem.querySelector('span[data-sub-description]').innerHTML = e.description;
+        if (e.description !== e.name) {
+            elem.querySelector('span[data-sub-description]').innerHTML = e.description;
+            elem.querySelector('p[data-sub-description-container]').removeAttribute('hidden');
+        }
         if (e.newest) showNewestMessage(elem, e.newest);
         if (append) document.getElementById('forum-list-container').appendChild(elem);
     });

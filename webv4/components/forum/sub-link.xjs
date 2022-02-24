@@ -8,10 +8,11 @@
         </h4>
         <span title="<? locale.write('badge_unread_messages'); ?>" class="badge ignored" data-unread-unscanned></span>
         <span title="<? locale.write('badge_unread_messages'); ?>" class="badge scanned" data-unread-scanned></span>
-        <small>
-            <span data-sub-description></span>
-        </small>
-        <br />
+        <p data-sub-description-container hidden>
+            <small>
+                <span data-sub-description></span>
+            </small>
+        </p>
         <small>
             <span data-newest-message-container hidden>
                 <? locale.write('label_sub_newest_message'); ?>:
