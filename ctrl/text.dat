@@ -362,7 +362,7 @@
 "Tag this file"                                         297 TagFileQ
 "\1h\1yEnter (space-separated) Tags: "                  298 TagFilePrompt
 "UNUSED299"                                             299 Unused299
-"UNUSED300"                                             300 Unused300
+"\1_\1h\1w%s\1c was %sdownloaded by \1w%s\r\n"          300 FreeDownloadUserMsg
 "\r\n\1n\1gAuthor           :\1h %s"                    301 FiAuthor
 "\r\n\1n\1gGroup            :\1h %s"                    302 FiGroup
 "\1w\1h\r\n%s is already in the queue.\r\n"             303 FileAlreadyInQueue
@@ -377,8 +377,8 @@
 "\1r\1h\1i%s IS ZERO LENGTH - NOT UPLOADED!\1n\r\n"         309 FileZeroLength
 "\1_\1w\1h%s (%s bytes) received.\r\n"                     310 FileNBytesReceived
 "\1_\1w\1h%s (%s bytes) sent.\r\n"                         311 FileNBytesSent
-"\1_\1h\1w%s was %sdownloaded by %s\r\n"\                  312 DownloadUserMsg
-	"\1n\1gYou were awarded %s credits.\r\n"
+"\1_\1h\1w%s\1c was %sdownloaded by \1w%s\r\n"\            312 DownloadUserMsg
+	"\1n\1gYou were awarded \1h%s\1n\1g credits.\r\n"
 "partially "                                            313 Partially
 "\1l\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
 "\r\n\1n\1gDirectory        :\1h (%u) %s"                  315 FiDir
