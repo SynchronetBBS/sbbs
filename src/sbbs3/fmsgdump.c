@@ -175,6 +175,7 @@ int main(int argc, char** argv)
 			switch(tolower(argv[i][1])) {
 				case 'b':
 					bodyfp=stdout;
+					// fall-through
 				case 'c':
 					ctrlfp=stdout;
 					break;

@@ -1409,6 +1409,7 @@ int main(int argc, char **argv, char** env)
 					break;
 				default:
 					fprintf(stderr,"\n!Unsupported option: %s\n",argv[argn]);
+					// fall-through
 				case '?':
 					usage();
 					return(do_bail(1));

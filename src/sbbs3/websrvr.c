@@ -5931,6 +5931,7 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 					 * the gun at the script writers foot for them */
 					chunked = false;
 					session->req.manual_length = TRUE;
+					// fall-through
 				default:
 					safe_snprintf(str,sizeof(str),"%s: %s",p,p2);
 					strListPush(&session->req.dynamic_heads,str);
