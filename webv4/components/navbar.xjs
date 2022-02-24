@@ -24,12 +24,12 @@
 ?>
                 <li>
                     <? if (e.type == 'link') { ?>
-                        <a class="dropdown-item" href="./?page=<? write(e.page); ?>" target="_blank">
+                        <a class="dropdown-item" href="./?page=<? write((path || '') + e.page); ?>" target="_blank">
                     <? } else { ?>
                         <a class="dropdown-item" href="./?page=<? write((path || '') + e.page); ?>">
                     <? } ?>
-                        <? write(e.title); ?>
-                    </a>
+                            <? write(e.title); ?>
+                        </a>
                 </li>
 <?xjs
             }
@@ -103,7 +103,7 @@
                             <li>
                                 <a href="./?page=000-mail.xjs">
                                     <? locale.write('menu_item_mail'); ?>
-                                    <span class="badge scanned" title="<?xjs locale.write('label_unread_mail'); ?>" id="badge-unread-mail-inner"></span>
+                                    <span class="badge scanned" title="<? locale.write('label_unread_mail'); ?>" id="badge-unread-mail-inner"></span>
                                 </a>
                             </li>
                             <li>
