@@ -843,8 +843,7 @@ function str_cmds(str)
 		}
 	}
 	if(str=="HELP") {
-		writeln("MSGS");
-		writeln("\tRedisplay instant messages (notifications and telegrams).");
+		writeln("MSGS\tRedisplay instant messages (notifications and telegrams).");
 	}
 	if(word == "MSGS") {
 		var num = -1;
