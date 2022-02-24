@@ -918,8 +918,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,&i,2);		/* Size of conference record (if any) */
 		l=0;
 		write(file,&l,4);		/* Offset of AppRec into USERS.INF (if any) */
-		i=0;
-		write(file,&i,1);		/* 1, if USERS.SYS file has been updated */
+		c=0;
+		write(file,&c,1);		/* 1, if USERS.SYS file has been updated */
 
 		/* Write fixed record portion */
 
