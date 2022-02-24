@@ -177,7 +177,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=COM_ERROR_VALUE;
-		dbprintf(TRUE, p, "send of %u bytes failed",len);
+		dbprintf(TRUE, p, "send of %lu bytes failed",len);
 	}
 	if(cp)
 		free(cp);
