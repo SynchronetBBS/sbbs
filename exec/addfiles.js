@@ -37,6 +37,7 @@ var listfile;
 var date_fmt;
 var options = {};
 var exclude = [];
+var include = "*";
 var dir_list = [];
 var verbosity = 0;
 for(var i = 0; i < argc; i++) {
@@ -51,6 +52,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -all            add files in all libraries/directories (implies -auto)");
 			writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
 			writeln("  -from=<name>    specify uploader's user name (may require quotes)");
+			writeln("  -file=<name>    specify files to add (wildcards supported, default: *)");
 			writeln("  -ex=<filename>  add to excluded filename list");
 			writeln("                  (default: " + default_excludes.join(',') + ")");
 			writeln("  -diz            always extract/use description in archive");
@@ -77,6 +79,10 @@ for(var i = 0; i < argc; i++) {
 			for(var j = 0; j < file_area.lib[lib].dir_list.length; j++)
 				dir_list.push(file_area.lib[lib].dir_list[j].code);
 			options.auto = true;
+			continue;
+		}
+		if(opt.indexOf("file=") == 0) {
+			include = opt.slice(5);
 			continue;
 		}
 		if(opt.indexOf("from=") == 0) {
@@ -187,6 +193,8 @@ for(var d = 0; d < dir_list.length; d++) {
 				file_list.push({ name: file_getname(list[i]) });
 		}
 	}
+	file_list = file_list.filter(function(obj) { return wildmatch(obj.name, include); });
+
 	
 	for(var i = 0; i < file_list.length; i++) {
 		var file = file_list[i];
