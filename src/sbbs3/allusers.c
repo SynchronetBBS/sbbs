@@ -262,6 +262,7 @@ int main(int argc, char **argv)
 					break;
 			   case 'E':    /* Exemptions */
 					flagoff=U_EXEMPT;
+					// fall-through
 			   case 'R':    /* Restrictions */
 					if(!flagoff)
 						flagoff=U_REST;
