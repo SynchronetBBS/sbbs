@@ -483,7 +483,7 @@ public:
 	JSRuntime*		js_hotkey_runtime;
 	JSContext*		js_hotkey_cx;
 	JSObject*		js_hotkey_glob;
-	js_callback_t	js_callback;
+	js_callback_t	js_callback{};
 	long			js_execfile(const char *fname, const char* startup_dir, JSObject* scope = NULL, JSContext* cx = NULL, JSObject* glob = NULL);
 	long			js_execxtrn(const char *fname, const char* startup_dir);
 	JSContext*		js_init(JSRuntime**, JSObject**, const char* desc);
@@ -505,8 +505,6 @@ public:
 	char	rlogin_name[LEN_ALIAS+1];
 	char	rlogin_pass[LEN_PASS+1];
 	char	rlogin_term[TELNET_TERM_MAXLEN+1];	/* RLogin passed terminal type/speed (e.g. "xterm/57600") */
-
-	uint	temp_dirnum;
 
 	FILE	*nodefile_fp,
 			*node_ext_fp,
@@ -537,37 +535,37 @@ public:
 
 	ushort	node_connection;
 	char	connection[LEN_MODEM+1];	/* Connection Description */
-	ulong	cur_rate;		/* Current Connection (DCE) Rate */
-	ulong	cur_cps;		/* Current Average Transfer CPS */
-	ulong	dte_rate;		/* Current COM Port (DTE) Rate */
-	time_t 	timeout;		/* User inactivity timeout reference */
-	ulong 	timeleft_warn;	/* low timeleft warning flag */
+	ulong	cur_rate=0;		/* Current Connection (DCE) Rate */
+	ulong	cur_cps=0;		/* Current Average Transfer CPS */
+	ulong	dte_rate=0;		/* Current COM Port (DTE) Rate */
+	time_t 	timeout=0;		/* User inactivity timeout reference */
+	ulong 	timeleft_warn=0;/* low timeleft warning flag */
 	uint	curatr; 		/* Current Text Attributes Always */
 	uint	attr_stack[64];	/* Saved attributes (stack) */
 	int 	attr_sp;		/* Attribute stack pointer */
 	long 	lncntr; 		/* Line Counter - for PAUSE */
 	bool	msghdr_tos;		/* Message header was displayed at Top of Screen */
-	long	row;			/* Current row */
-	long 	rows;			/* Current number of Rows for User */
-	long	cols;			/* Current number of Columns for User */
+	long	row=0;			/* Current row */
+	long 	rows=0;			/* Current number of Rows for User */
+	long	cols=0;			/* Current number of Columns for User */
 	long	column;			/* Current column counter (for line counter) */
 	long	tabstop;		/* Current symmetric-tabstop (size) */
 	long	lastlinelen;	/* The previously displayed line length */
-	long 	autoterm;		/* Auto-detected terminal type */
+	long 	autoterm=0;		/* Auto-detected terminal type */
 	char	terminal[TELNET_TERM_MAXLEN+1];	// <- answer() writes to this
-	long	cterm_version;	/* (MajorVer*1000) + MinorVer */
+	long	cterm_version=0;/* (MajorVer*1000) + MinorVer */
 	link_list_t savedlines;
 	char 	lbuf[LINE_BUFSIZE+1];/* Temp storage for each line output */
 	int		lbuflen;		/* Number of characters in line buffer */
-	uint	latr;			/* Starting attribute of line buffer */
+	uint	latr=0;			/* Starting attribute of line buffer */
 	ulong	console;		/* Defines current Console settings */
 	char 	wordwrap[81];	/* Word wrap buffer */
-	time_t	now,			/* Used to store current time in Unix format */
+	time_t	now=0,			/* Used to store current time in Unix format */
 			last_sysop_auth,/* Time sysop was last authenticated */
-			answertime, 	/* Time call was answered */
-			logontime,		/* Time user logged on */
-			starttime,		/* Time stamp to use for time left calcs */
-			ns_time,		/* File new-scan time */
+			answertime=0, 	/* Time call was answered */
+			logontime=0,	/* Time user logged on */
+			starttime=0,	/* Time stamp to use for time left calcs */
+			ns_time=0,		/* File new-scan time */
 			last_ns_time;	/* Most recent new-file-scan this call */
 	uchar 	action;			/* Current action of user */
 	long 	online; 		/* Remote/Local or not online */
