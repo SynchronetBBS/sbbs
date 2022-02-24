@@ -310,7 +310,7 @@ enum {
 	,TagFileQ
 	,TagFilePrompt
 	,Unused299
-	,Unused300
+	,FreeDownloadUserMsg
 	,FiAuthor
 	,FiGroup
 	,FileAlreadyInQueue

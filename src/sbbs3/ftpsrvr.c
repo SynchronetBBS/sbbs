@@ -783,6 +783,7 @@ static void send_thread(void* arg)
 						ultoac(mod,tmp);
 					}
 					if(!(scfg.dir[f.dir]->misc&DIR_QUIET)) {
+						const char* prefix = xfer.filepos ? "partially FTP-" : "FTP-";
 						addr_len = sizeof(addr);
 						if(uploader.level>=SYSOP_LEVEL
 							&& getpeername(xfer.ctrl_sock,&addr.addr,&addr_len)==0
@@ -791,10 +792,16 @@ static void send_thread(void* arg)
 						else
 							SAFECOPY(username,xfer.user->alias);
 						/* Inform uploader of downloaded file */
-						safe_snprintf(str,sizeof(str),text[DownloadUserMsg]
-							,getfname(xfer.filename)
-							,xfer.filepos ? "partially FTP-" : "FTP-"
-							,username,tmp); 
+						if(mod == 0)
+							safe_snprintf(str,sizeof(str),text[FreeDownloadUserMsg]
+								,getfname(xfer.filename)
+								,prefix
+								,username); 
+						else
+							safe_snprintf(str,sizeof(str),text[DownloadUserMsg]
+								,getfname(xfer.filename)
+								,prefix
+								,username,tmp); 
 						putsmsg(&scfg,uploader.number,str); 
 					}
 				}
