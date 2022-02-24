@@ -19,7 +19,7 @@
 ?>
                 <li>
                     <?xjs if (e.type == 'link') { ?>
-                        <a class="dropdown-item" href="./?page=<?xjs write(e.page); ?>" target="_blank">
+                        <a class="dropdown-item" href="./?page=<?xjs write((path || '') + e.page); ?>" target="_blank">
                     <?xjs } else { ?>
                         <a class="dropdown-item" href="./?page=<?xjs write((path || '') + e.page); ?>">
                     <?xjs } ?>
