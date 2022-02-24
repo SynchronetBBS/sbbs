@@ -575,6 +575,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				case AR_DAY:
 					if(n>6)     /* not past saturday */
 						n=6;
+					// Fall-through
 				case AR_AGE:    /* byte operands */
 				case AR_PCR:
 				case AR_UDR:
@@ -590,6 +591,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				case AR_BPS:    /* int operands */
 					if(n<300)
 						n*=100;
+					// fall-through
 				case AR_MAIN_CMDS:
 				case AR_FILE_CMDS:
 				case AR_EXPIRE:
@@ -628,6 +630,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 			case AR_DIRCODE:
 			case AR_SHELL:
 				maxlen=LEN_EXTCODE;
+				// fall-through
 			case AR_PROT:
 			case AR_HOST:
 			case AR_IP:
