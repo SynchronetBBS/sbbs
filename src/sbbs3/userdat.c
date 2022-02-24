@@ -1457,7 +1457,7 @@ char* readsmsg(scfg_t* cfg, int usernumber)
 	if((file=nopen(str,O_RDWR))==-1)
 		return(NULL);
 	length=(long)filelength(file);
-	if((buf=(char *)malloc(length+1))==NULL) {
+	if(length < 0 || (buf=(char *)malloc(length+1))==NULL) {
 		close(file);
 		return(NULL);
 	}
