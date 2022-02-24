@@ -5251,21 +5251,6 @@ NO_SSH:
 		// Count the socket:
 		call_socket_open_callback(TRUE);
 
-		if(client_socket == INVALID_SOCKET)	{
-#if 0	/* is this necessary still? */
-			if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) {
-            	lputs(LOG_NOTICE,"BBS socket closed");
-				break;
-			}
-#endif
-			lprintf(LOG_ERR,"!ERROR %d accepting connection", ERROR_VALUE);
-#ifdef _WIN32
-			if(WSAGetLastError()==WSAENOBUFS) {	/* recycle (re-init WinSock) on this error */
-				break;
-			}
-#endif
-			continue;
-		}
 		char host_ip[INET6_ADDRSTRLEN];
 
 		inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
