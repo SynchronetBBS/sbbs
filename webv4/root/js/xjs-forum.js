@@ -667,7 +667,7 @@ async function listThreads(sub) {
 function showNewestMessage(elem, msg) {
     elem.querySelector('strong[data-newest-message-subject]').innerHTML = msg.subject;
     elem.querySelector('span[data-newest-message-from]').innerHTML = msg.from;
-    elem.querySelector('span[data-newest-message-date]').innerHTML = formatMessageDate(msg.date);
+    elem.querySelector('span[data-newest-message-date]').innerHTML = formatMessageDate(msg.when_written_time);
     elem.querySelector('span[data-newest-message-container]').removeAttribute('hidden');
 }
 
