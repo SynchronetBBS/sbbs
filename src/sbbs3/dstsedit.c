@@ -188,6 +188,7 @@ main(int argc, char **argv)
 			write(file, &t, 4L);
 			write(file, &stats, sizeof(stats_t));
 			close(file);
+			// fall-through
 		case 'X':
 			exit(0);
 		default:
