@@ -624,14 +624,14 @@ void status_thread(void *arg)
 					if (p-auth >= len) {
 						closesocket(*csock);
 						free(csock);
-						lprintf(LOG_WARNING, "No syspass specified", p);
+						lprintf(LOG_WARNING, "No syspass specified: '%s'", p);
 						pthread_mutex_lock(&status_thread_mutex);
 						continue;
 					}
 					if (stricmp(p, scfg.sys_pass)) {
 						closesocket(*csock);
 						free(csock);
-						lprintf(LOG_WARNING, "Invalid syspass %s", p);
+						lprintf(LOG_WARNING, "Invalid syspass: '%s'", p);
 						pthread_mutex_lock(&status_thread_mutex);
 						continue;
 					}
