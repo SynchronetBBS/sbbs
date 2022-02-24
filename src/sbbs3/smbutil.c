@@ -1805,6 +1805,7 @@ int main(int argc, char **argv)
 						break;
 					default:
 						fprintf(stderr, "\nUnknown opt '%c'\n", argv[x][j]);
+						// fall-through
 					case '?':
 						printf("%s",usage);
 						bail(1);
