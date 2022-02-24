@@ -137,7 +137,7 @@
 <? } else { ?>
 
 	<? components.load('forum/group-link.xjs', request.getParam('page')); ?>
-	<? components.load('forum/breadcrumb.xjs'); ?>
+	<? components.load('forum/breadcrumb.xjs', request.getParam('page')); ?>
 	<? components.load('forum/container.xjs'); ?>
 
 	<script type="text/javascript">
