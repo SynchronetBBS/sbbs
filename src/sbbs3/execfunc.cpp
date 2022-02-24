@@ -314,7 +314,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			}
 			if(!chksyspass())
 				return(0);
-
+			// fall-through
 		case CS_FILE_SEND:
 
 			csi->logic=sendfile(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
@@ -324,7 +324,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			csi->logic=LOGIC_FALSE;
 			if(!chksyspass())
 				return(0);
-
+			// fall-through
 		case CS_FILE_RECEIVE:
 			csi->logic=recvfile(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
