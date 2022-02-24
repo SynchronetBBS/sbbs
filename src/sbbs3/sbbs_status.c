@@ -558,7 +558,7 @@ void status_thread(void *arg)
 						closesocket(*csock);
 						free(csock);
 						pthread_mutex_lock(&status_thread_mutex);
-						lprintf(LOG_CRIT, "Error recv returned %d (%d)!", len, errno);
+						lprintf(LOG_CRIT, "Error recv returned %ld (%d)!", len, errno);
 						continue;
 					}
 					// TODO: Check auth... "User\0Pass\0SysPass"
