@@ -703,7 +703,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 					bprintf(text[FileAddedToBatDlQueue]
 						,f->name, strListCount(filenames) + 1, cfg.max_batdn, ultoac((ulong)totalcost,tmp)
 						,ultoac((ulong)totalsize,tmp2)
-						,sectostr((ulong)totalsize/max((ulong)cur_cps, 1),str));
+						,sectostr((ulong)totalsize/MAX((ulong)cur_cps, 1),str));
 					result = true;
 				}
 			}
