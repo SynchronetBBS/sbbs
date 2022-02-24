@@ -64,7 +64,7 @@ static BOOL js_socket_peek_byte(JSContext *cx, js_socket_private_t *p);
 static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp);
 static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf, size_t len, int flags, int timeout);
 static JSBool js_socket_resolve(JSContext *cx, JSObject *obj, jsid id);
-static int js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *offset, off_t count);
+static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *offset, off_t count);
 static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, size_t len, int flush);
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp);
 static JSBool js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once);
@@ -369,13 +369,13 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 	return total;
 }
 
-static int js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *offset, off_t count)
+static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *offset, off_t count)
 {
 	char		buf[1024*16];
 	off_t		len;
 	int			rd;
 	int			wr=0;
-	int			total=0;
+	off_t		total=0;
 	int			i;
 
 	if(p->session==-1)
@@ -1275,7 +1275,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		fname = NULL;
-	long		len;
+	off_t		len;
 	int			file;
 	js_socket_private_t*	p;
 	jsrefcount	rc;
@@ -1305,7 +1305,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	len = js_socket_sendfilesocket(p, file, NULL, 0);
 	close(file);
 	if(len > 0) {
-		dbprintf(FALSE, p, "sent %u bytes",len);
+		dbprintf(FALSE, p, "sent %"PRIdOFF" bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=ERROR_VALUE;
