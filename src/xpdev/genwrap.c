@@ -852,7 +852,7 @@ uint64_t xp_timer64(void)
         		intable = (freq.QuadPart % 1000) == 0;
 
 		if (intable)
-			msfreq = freq.QuadPart / 1000;
+			msfreq = (uint32_t)(freq.QuadPart / 1000);
 		else
 			msdfreq = ((double)freq.QuadPart) / 1000;
 
