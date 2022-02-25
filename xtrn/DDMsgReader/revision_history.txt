@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.45b    2022-02-25   Fixed message list time colors for wide terminals (above
+                      80 columns)
 1.45     2022-02-24   Fixed message scanning & searching issue introduced in the
                       previous version.
 1.44     2022-02-19   Removed the scanScopePromptText text line and used the
