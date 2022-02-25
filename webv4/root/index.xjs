@@ -68,11 +68,7 @@
 				<? if (!settings.layout_sidebar_left || settings.layout_sidebar_right) components.load('sidebar.xjs'); ?>
 			</div>
 		  	<hr>
-			<footer>
-				<? if (!components.load('footer.xjs')) { ?>
-					<p>&copy; <? write(system.name + ", " + strftime("%Y")); ?></p>
-				<? } ?>
-			</footer>
+			<? components.load('footer.xjs'); ?>
 		</div>
 		<script src="./js/offcanvas.js"></script>
     	<script>
