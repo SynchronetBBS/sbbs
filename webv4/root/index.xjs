@@ -6,7 +6,6 @@
 	var components = webRequire('components.js', 'components');
 
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
-	if (page.search(/^http(s)*:\/\//) > -1) exit(); // Should send 404 or something more appropriate
 	if (page.search(/^001-forum.ssjs/) === 0) {
 		http_reply.status = '302 Found';
 		http_reply.header['Location'] = './?page=001-forum.xjs' + http_request.query_string.replace(/^\page=001-forum.ssjs/, '');
