@@ -75,6 +75,11 @@
 #include "base64.h"
 #include <crc16.h>
 
+// Hack for Visual Studio 2022
+#ifndef UINT64_MAX
+#define UINT64_MAX UINT64_C(-1)
+#endif
+
 #define	BUFSIZE	2048
 
 const int cterm_tabs[]={1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145};
