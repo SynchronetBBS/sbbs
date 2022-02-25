@@ -1,0 +1,11 @@
+--- tools/ccopts.sh.sbbs	2022-02-25 13:17:06.665485787 +1100
++++ tools/ccopts.sh	2022-02-25 13:03:43.969689324 +1100
+@@ -591,7 +591,7 @@
+ 
+ if [ "$ARCH" = "i586" ] || [ "$ARCH" = "i686" ] || [ "$ARCH" = "x86_64" ] ; then
+ 	if [ "$GCC_VER" -ge 45 ] ; then
+-		CCARGS="$CCARGS -march=native -mtune=generic" ;
++		CCARGS="$CCARGS -mtune=generic" ;
+ 		if [ "$ARCH" = "x86_64" ] ; then
+ 			CCARGS="$CCARGS -fPIC" ;
+ 		fi ;
