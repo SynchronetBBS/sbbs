@@ -12,7 +12,7 @@
 		exit();
 	}
 	if (page.search(/\.link$/) > -1) {
-		var loc = getExternalLink(page);
+		var loc = pages.getExternalLink(page);
         http_reply.status = '301 Moved Permanently';
         http_reply.header['Location'] = loc;
         exit();
