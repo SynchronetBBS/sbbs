@@ -56,6 +56,7 @@ load('array.js');
 		forum_auto_ansi_subject: { default: [ '^\\[ansi\\]' ] },
 		forum_auto_detect_ansi: { default: true },
 		forum_auto_ansi_mode: { default: 'html' },
+		favicon: { default: './images/favicon.ico' },
 	};
 
 	if (settings.darkmode_off) settings.darkmode_allow = false;
