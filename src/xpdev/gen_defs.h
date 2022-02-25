@@ -268,6 +268,10 @@ typedef intmax_t	intptr_t;
 #define SCNXMAX	PRIX64
 #define SCNoMAX	PRIo64
 
+#else
+#if (!defined(_MSDOS)) && (defined(_MSC_VER) || defined(__WATCOMC__) || defined(__BORLANDC__))
+typedef SSIZE_T ssize_t;
+#endif
 #endif
 
 /* Legacy 32-bit time_t */
