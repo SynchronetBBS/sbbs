@@ -115,6 +115,8 @@
  * 2022-02-24 Eric Oulashin     Version 1.45
  *                              Fixed message scanning & searching issue introduced in the
  *                              previous version.
+ * 2022-02-25 Eric Oulashin     Version 1.45b
+ *                              Fixed message list time colors for wide terminals (above 80 columns)
  */
 
 
@@ -235,8 +237,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.45";
-var READER_DATE = "2022-02-24";
+var READER_VERSION = "1.45b";
+var READER_DATE = "2022-02-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -3867,7 +3869,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 	msgListIdxes.dateStart = msgListIdxes.subjEnd;
 	msgListIdxes.dateEnd = msgListIdxes.dateStart + +this.DATE_LEN + 1;
 	msgListIdxes.timeStart = msgListIdxes.dateEnd;
-	msgListIdxes.timeEnd = msgListIdxes.timeStart + +this.TIME_LEN + 1;
+	msgListIdxes.timeEnd = console.screen_columns - 1; // msgListIdxes.timeStart + +this.TIME_LEN + 1;
 	var msgListMenuHeight = console.screen_rows - this.lightbarMsgListStartScreenRow;
 	var msgListMenu = new DDLightbarMenu(1, this.lightbarMsgListStartScreenRow, console.screen_columns, msgListMenuHeight);
 	msgListMenu.scrollbarEnabled = true;
@@ -4568,7 +4570,14 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// Use the scrollable reader interface if the setting is enabled & the user's
 	// terminal supports ANSI.  Otherwise, use a more traditional user interface.
 	if (useScrollingInterface)
+	{
+		// If the message has ANSI codes, remove any ANSI clear screen codes from the message text
+		if (msgHasANSICodes)
+		{
+			messageText = messageText.replace(/\u001b\[[012]J/gi, "");
+		}
 		retObj = this.ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, messageText, msgHasANSICodes, pOffset);
+	}
 	else
 		retObj = this.ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, messageText, msgHasANSICodes, pOffset);
 
@@ -12192,6 +12201,9 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	{
 		if (gFrameJSAvailable && console.term_supports(USER_ANSI))
 		{
+			// Using putmsg() to put the message into the frame doesn't
+			// seem to work well for ANSI:
+			//retObj.displayFrame.putmsg(msgTextAltered, "\1n");
 			// Write the message to a file in a temporary directory,
 			// have the frame object read it, then delete the temporary
 			// directory.
