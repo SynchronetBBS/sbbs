@@ -4008,13 +4008,13 @@ static void smtp_thread(void* arg)
 									p++;
 							}
 							safe_snprintf(str,sizeof(str)
-								,startup->newmail_notice
+								,text[InternetMailReceived]
 								,timestr(&scfg,newmsg.hdr.when_imported.time,tmp)
 								,sender, p);
 							if(newmsg.hdr.auxattr&MSG_HFIELDS_UTF8)
 								utf8_to_cp437_inplace(str);
 							if(!newmsg.idx.to) 	/* Forwarding */
-								sprintf(str+strlen(str), startup->forward_notice, rcpt_addr);
+								sprintf(str+strlen(str), text[InternetMailForwarded], rcpt_addr);
 							putsmsg(&scfg, usernum, str);
 						}
 					}

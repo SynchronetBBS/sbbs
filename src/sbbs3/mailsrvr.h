@@ -87,8 +87,6 @@ typedef struct {
 	char	inbound_sound[INI_MAX_VALUE_LEN];
 	char	outbound_sound[INI_MAX_VALUE_LEN];
     char	pop3_sound[INI_MAX_VALUE_LEN];
-	char	newmail_notice[INI_MAX_VALUE_LEN];
-	char	forward_notice[INI_MAX_VALUE_LEN];
 
 	/* Misc */
     char	host_name[128];
