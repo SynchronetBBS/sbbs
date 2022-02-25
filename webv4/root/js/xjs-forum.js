@@ -693,7 +693,7 @@ function onSubList(data) {
             append = true; // Should see about slotting this into the document in the correct order instead, in the rare case that a new sub pops up while viewing the page I guess
         }
         elem.querySelector('strong[data-sub-name]').innerHTML = e.name;
-        if (e.description !== e.name) {
+        if (e.description.toLowerCase() !== e.name.toLowerCase()) {
             elem.querySelector('span[data-sub-description]').innerHTML = e.description;
             elem.querySelector('p[data-sub-description-container]').removeAttribute('hidden');
         }
@@ -731,7 +731,10 @@ function listGroup(e) {
     elem.querySelector('strong[data-group-name]').innerHTML = e.name;
     elem.querySelector('span[data-unread-unscanned]').innerHTML = '';
     elem.querySelector('span[data-unread-scanned]').innerHTML = '';
-    elem.querySelector('span[data-group-description]').innerHTML = e.description;
+    if (e.description.toLowerCase() !== e.name.toLowerCase()) {
+        elem.querySelector('span[data-group-description]').innerHTML = e.description;
+        elem.querySelector('span[data-group-description-container]').removeAttribute('hidden');
+    }
     elem.querySelector('span[data-group-sub-count]').innerHTML = e.sub_count;
     if (append) document.getElementById('forum-list-container').appendChild(elem);
 }
