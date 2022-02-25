@@ -112,6 +112,9 @@
  *                              to ensure they only have Synchronet attribute codes.
  * 2022-02-19 Eric Oulashin     Version 1.44
  *                              Releasing this version.
+ * 2022-02-24 Eric Oulashin     Version 1.45
+ *                              Fixed message scanning & searching issue introduced in the
+ *                              previous version.
  */
 
 
@@ -232,8 +235,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.44";
-var READER_DATE = "2022-02-19";
+var READER_VERSION = "1.45";
+var READER_DATE = "2022-02-24";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1817,6 +1820,13 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 				var continueScan = true;
 				var userAborted = false;
 				this.doingMultiSubBoardScan = (subBoardsToScan.length > 1);
+				// If the sub-board's access requirements allows the user to read it
+				// and it's enabled in the user's message scan configuration, then go
+				// ahead with this sub-board.
+				// Note: Used to use this to determine whether the user could access the
+				// sub-board:
+				//user.compare_ars(msg_area.grp_list[grpIndex].sub_list[subIndex].ars)
+				// Now using the can_read property.
 				for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueScan; ++subCodeIdx)
 				{
 					subCode = subBoardsToScan[subCodeIdx];
@@ -1828,16 +1838,9 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 						// when the "Searching ..." and "No messages were found" text is
 						// displayed repeatedly
 						console.line_counter = 0;
-						// If the sub-board's access requirements allows the user to read it
-						// and it's enabled in the user's message scan configuration, then go
-						// ahead with this sub-board.
-						// Note: Used to use this to determine whether the user could access the
-						// sub-board:
-						//user.compare_ars(msg_area.grp_list[grpIndex].sub_list[subIndex].ars)
-						// Now using the can_read property.
-						// TODO: It seems ReadOrListSubBoard() does its own loop through
-						// the sub-boards if the user chooses to go to the next one
-						var readOrListRetObj = this.ReadOrListSubBoard(subCode, null, true, false, false, false);
+						// let the user read the sub-board (and toggle betweeen reading and
+						// listing)
+						var readOrListRetObj = this.ReadOrListSubBoard(subCode, null, true, true, false, true, READER_MODE_READ);
 						console.print("\1n");
 						console.crlf();
 						//if (this.SearchTypePopulatesSearchResults())
@@ -1848,6 +1851,7 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 					}
 				}
 				this.subBoardCode = subBoardCodeBackup;
+				console.pause();
 			}
 			else
 				this.ReadOrListSubBoard(subCode);
@@ -1927,6 +1931,9 @@ function DigDistMsgReader_ClearSearchData()
 //  pPromptToGoNextIfNoResults: Optional boolean - Whether or not to prompt the user
 //                         to go onto the next/previous sub-board if there are no
 //                         search results in the current sub-board.  Defaults to true.
+//  pInitialModeOverride: Optional (numeric) to override the initial mode in this
+//                        function (READER_MODE_READ or READER_MODE_LIST).  If not
+//                        specified, defaults to this.startMode.
 //
 // Return value: An object with the following properties:
 //               stoppedReading: Boolean - Whether or not the user stopped reading.
@@ -1934,7 +1941,8 @@ function DigDistMsgReader_ClearSearchData()
 function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
                                              pAllowChgArea, pReturnOnNextAreaNav,
                                              pPauseOnNoMsgSrchResults,
-                                             pPromptToGoNextIfNoResults)
+                                             pPromptToGoNextIfNoResults,
+                                             pInitialModeOverride)
 {
 	var retObj = {
 		stoppedReading: false
@@ -2002,6 +2010,9 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 	// Determine whether to start in list or reader mode, depending
 	// on the value of this.startMode.
 	var readerMode = this.startMode;
+	// If an initial mode override was specified and is valid, then use it.
+	if (typeof(pInitialModeOverride) === "number" && (pInitialModeOverride == READER_MODE_READ || pInitialModeOverride == READER_MODE_LIST))
+		readerMode = pInitialModeOverride;
 	// User input loop
 	var selectedMessageOffset = 0;
 	if (typeof(pStartingMsgOffset) == "number")
@@ -2061,6 +2072,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				}
 				else if (otherRetObj.messageListReturn)
 					readerMode = READER_MODE_LIST;
+				break;
 			case READER_MODE_LIST:
 				// Note: Doing the message list is also handled in this.ReadMessages().
 				// This code is here in case the reader is configured to start up
@@ -2883,7 +2895,6 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		{
 			if (allowChgMsgArea && !pReturnOnNextAreaNav)
 			{
-				console.print("\1nHere!!!!   \1p"); // Temporary
 				var goToNextRetval = this.GoToNextSubBoardForEnhReader(allowChgMsgArea, pPromptToGoToNextAreaIfNoSearchResults);
 				retObj.stoppedReading = goToNextRetval.shouldStopReading;
 				if (retObj.stoppedReading)
@@ -3827,16 +3838,6 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// S: Sorting options
 		else if (lastUserInputUpper == "S")
 		{
-			if (user.is_sysop) // Temporary
-			{
-				console.gotoxy(1, console.screen_rows);
-				console.cleartoeol("\1n");
-				console.gotoxy(1, console.screen_rows);
-				console.print("\1gSort\1n");
-				mswait(ERROR_PAUSE_WAIT_MS);
-			}
-			
-
 			// Refresh the help line
 			DisplayHelpLine(this.msgListLightbarModeHelpLine);
 		}
@@ -6984,9 +6985,9 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 		// Figure out the message group name & sub-board name
 		// For the message group name, we can also use msgbase.cfg.grp_name in
 		// Synchronet 3.12 and higher.
+		var msgbase = new MsgBase(this.subBoardCode);
 		var msgGroupName = msg_area.grp_list[msgbase.cfg.grp_number].description;
 		var subBoardName = "Unspecified";
-		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
 		{
 			if (msgbase.cfg != null)
@@ -10536,13 +10537,13 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 		{
 			if (promptLocValid)
 			{
+				var delMsgsPromptText = replaceAtCodesInStr(this.text.delSelectedMsgsConfirmText);
 				// If the caller wants to clear the remainder of the row where the prompt
 				// text will be, then do it.
 				if (pClearPromptRowAtFirstUse)
 				{
 					// Adding 5 to the prompt text to account for the ? and "[X] " that
 					// will be added when console.noyes() is called
-					var delMsgsPromptText = replaceAtCodesInStr(this.text.delSelectedMsgsConfirmText);
 					var promptTxtLen = console.strlen(delMsgsPromptText) + 5;
 					var numCharsRemaining = 0;
 					if (typeof(pPromptRowWidth) == "number")
@@ -10556,8 +10557,8 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 				}
 				// Move the cursor to the prompt location
 				console.gotoxy(pPromptLoc);
+				deleteMsgs = !console.noyes(delMsgsPromptText);
 			}
-			deleteMsgs = !console.noyes(delMsgsPromptText);
 		}
 		// If we are to delete the messages, then delete it.
 		if (deleteMsgs)
