@@ -1038,4 +1038,9 @@
 "A"                                                        853 AllKey
 "All"                                                      854 All
 "L"                                                        855 ListKey
-
+"%.0s\1n\1mNew e-mail from \1h%s \1n<\1h%s\1n>\r\n"        856 InternetMailReceived
+"\1n\1mand it was automatically forwarded to: \1h%s\1n\r\n" 857 InternetMailForwarded
+"%.0s\1n\1h\1m%s \1n\1msent you NetMail%s from \1h%s\1n\r\n" 858 FidoNetMailReceived
+" with attachment"                                         859 WithAttachment
+"%.0s\1n\1h\1m%s \1n\1msent you EchoMail on "\             860 FidoEchoMailReceived
+    "\1h%s \1n\1m%s\1n\r\n"
