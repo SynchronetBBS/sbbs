@@ -60,14 +60,10 @@
 			<div class="row row-offcanvas row-offcanvas-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?>">
 				<? if (settings.layout_sidebar_left) components.load('sidebar.xjs'); ?>
 				<div class="col-xs-12 col-sm-<? write(settings.layout_sidebar_off || page_ctrl.options.no_sidebar ? 12 : 9); ?>">
-					<div style="clear:both;">
-						<p class="pull-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?> visible-xs">
-							<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">
-								<span class="glyphicon glyphicon-tasks"></span><? locale.write('label_sidebar'); ?>
-							</button>
-						</p>
-					</div>
-					<? pages.write(page); ?>
+					<?xjs
+						components.load('sidebar-toggle.xjs');
+						pages.write(page);
+					?>
 				</div>
 				<? if (!settings.layout_sidebar_left || settings.layout_sidebar_right) components.load('sidebar.xjs'); ?>
 			</div>

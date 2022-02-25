@@ -1,0 +1,7 @@
+<div style="clear:both;">
+    <p class="pull-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?> visible-xs">
+        <button title="<? locale.write('label_sidebar'); ?>" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">
+            <span class="glyphicon glyphicon-tasks"></span><? locale.write('label_sidebar'); ?>
+        </button>
+    </p>
+</div>
