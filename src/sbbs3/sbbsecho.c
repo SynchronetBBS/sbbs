@@ -54,6 +54,7 @@
 #include "msg_id.h"
 #include "scfgsave.h"
 #include "getmail.h"
+#include "text.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -95,6 +96,7 @@ fidoaddr_t		sys_faddr = {1,1,1,0};		/* Default system address: 1:1/1.0 */
 sbbsecho_cfg_t	cfg;
 scfg_t			scfg;
 char			compiler[32];
+char*			text[TOTAL_TEXT];
 
 bool pause_on_exit=false;
 bool pause_on_abend=false;
@@ -4538,10 +4540,10 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		addr.net=hdr.orignet;
 		addr.node=hdr.orignode;
 		addr.point=hdr.origpoint;
-		safe_snprintf(str, sizeof(str), "\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you NetMail%s from \1h%s\1n\r\n"
-			,FIDO_NAME_LEN-1
+		safe_snprintf(str, sizeof(str), text[FidoNetMailReceived]
+			,timestr(&scfg, time32(NULL), tmp)
 			,hdr.from
-			,hdr.attr&FIDO_FILE ? " with attachment" : ""
+			,hdr.attr&FIDO_FILE ? text[WithAttachment] : ""
 			,smb_faddrtoa(&addr,NULL));
 		putsmsg(&scfg,usernumber,str);
 	}
@@ -5989,9 +5991,10 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				if(i!=cfg.badecho && cfg.echomail_notify && (user.number=lookup_user(&scfg, &user_list, hdr.to))!=0
 					&& getuserdat(&scfg, &user)==0
 					&& can_user_read_sub(&scfg, cfg.area[i].sub, &user, NULL)) {
-					sprintf(str
-						,"\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you EchoMail on \1h%s \1n\1m%s\1n\r\n"
-						,FIDO_NAME_LEN-1
+					char tmp[128];
+					safe_snprintf(str, sizeof(str)
+						,text[FidoEchoMailReceived]
+						,timestr(&scfg, time32(NULL), tmp)
 						,hdr.from
 						,scfg.grp[scfg.sub[cfg.area[i].sub]->grp]->sname
 						,scfg.sub[cfg.area[i].sub]->sname);
@@ -6217,7 +6220,7 @@ int main(int argc, char **argv)
     printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
 	SAFECOPY(str,UNKNOWN_LOAD_ERROR);
-	if(!load_cfg(&scfg, /* text: */NULL, /* prep: */true, /* node: */false, str, sizeof(str))) {
+	if(!load_cfg(&scfg, text, /* prep: */true, /* node: */false, str, sizeof(str))) {
 		fprintf(stderr,"!ERROR %s\n",str);
 		fprintf(stderr,"!Failed to load configuration files\n");
 		bail(1);

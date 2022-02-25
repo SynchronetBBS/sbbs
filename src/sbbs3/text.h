@@ -866,6 +866,11 @@ enum {
 	,AllKey
 	,All
 	,ListKey
+	,InternetMailReceived
+	,InternetMailForwarded
+	,FidoNetMailReceived
+	,WithAttachment
+	,FidoEchoMailReceived
 
 	,TOTAL_TEXT
 };
