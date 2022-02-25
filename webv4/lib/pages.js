@@ -266,7 +266,23 @@ function writePage(page) {
 	}
 }
 
+function doRedirect(page) {
+	if (page.search(/^001-forum.ssjs/) === 0) {
+		http_reply.status = '302 Found';
+		http_reply.header['Location'] = './?page=001-forum.xjs' + http_request.query_string.replace(/^page=001-forum.ssjs/, '');
+		return true;
+	}
+	if (page.search(/\.link$/) > -1) {
+		var loc = pages.getExternalLink(page);
+        http_reply.status = '301 Moved Permanently';
+        http_reply.header['Location'] = loc;
+        return true;
+    }
+	return false;
+}
+
 var pages = {
+	doRedirect: doRedirect,
 	getCtrlLine: getCtrlLine,
 	getExternalLink: getExternalLink,
 	getPath: getPagePath,

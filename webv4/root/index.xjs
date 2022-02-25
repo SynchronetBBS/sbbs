@@ -6,17 +6,8 @@
 	var components = webRequire('components.js', 'components');
 
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
-	if (page.search(/^001-forum.ssjs/) === 0) {
-		http_reply.status = '302 Found';
-		http_reply.header['Location'] = './?page=001-forum.xjs' + http_request.query_string.replace(/^\page=001-forum.ssjs/, '');
-		exit();
-	}
-	if (page.search(/\.link$/) > -1) {
-		var loc = pages.getExternalLink(page);
-        http_reply.status = '301 Moved Permanently';
-        http_reply.header['Location'] = loc;
-        exit();
-    }
+	if (pages.doRedirect(page)) exit();
+
 	var pagePath = pages.getPath(page);
 	if (pagePath == null) {
 		page = '000-home.xjs';
