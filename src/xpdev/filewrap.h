@@ -74,7 +74,9 @@
 #ifndef DISABLE_MKSTEMP_DEFINE
 	#define mkstemp(t)	_open(_mktemp(t), O_RDWR | O_CREAT | O_EXCL)
 #endif
+#if !defined(__BORLANDC__)
 	typedef short unsigned int mode_t;
+#endif
 
 #elif defined(__unix__)
 
