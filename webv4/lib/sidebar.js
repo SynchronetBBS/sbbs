@@ -75,15 +75,11 @@ function getSidebarModule(module) {
 var sidebar = {
 	write: function () {
 		const modules = getSidebarModules();
-		write('<ul class="list-group">');
 		modules.forEach(function (module) {
 			if (module.search(/\.xjs\.ssjs$/i) >= 0) return;
-			write('<li class="list-group-item sidebar">');
 			const str = getSidebarModule(module);
-			if (str.length) write(str);
-			write('</li>');
+			if (str.length) components.load('sidebar-module.xjs', str);			
 		});
-		write('</ul>');
 	}
 };
 

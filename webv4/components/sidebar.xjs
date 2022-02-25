@@ -1,0 +1,7 @@
+<? var sidebar = webRequire('sidebar.js', 'sidebar'); ?>
+
+<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
+    <ul class="list-group">
+        <? sidebar.write(); ?>
+    </ul>
+</div>
