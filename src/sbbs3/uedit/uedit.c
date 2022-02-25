@@ -2097,6 +2097,8 @@ int main(int argc, char** argv)  {
 			finduser(&cfg,&user);
 		}
 		if(j==2) {
+			int curuser = 0;
+			int curbar = 0;
 			/* List All Users */
 			done=0;
 			while(!done) {
@@ -2108,12 +2110,12 @@ int main(int argc, char** argv)  {
 				}
 				opt[i-1][0]=0;
 				i=0;
-				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,"D³I³ Real Name                 ³ Alias                    ",opt)) {
+				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&curuser,&curbar,"³D³I³ Real Name                 ³ Alias                    ",opt)) {
 					case -1:
 						done=1;
 						break;
 					default:
-						edit_user(&cfg, i+1);
+						edit_user(&cfg, curuser+1);
 						break;
 				}
 			}
