@@ -1,3 +1,3 @@
 <footer>
-    <p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
+    <p>&copy; <? write(system.name + ", " + strftime("%Y")); ?></p>
 </footer>
