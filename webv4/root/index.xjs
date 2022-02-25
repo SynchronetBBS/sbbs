@@ -11,7 +11,7 @@
 ?>
 
 <!DOCTYPE html>
-<html lang="en" style="display:none">
+<html lang="<? write(settings.language || 'en'); ?>" style="display:none">
 	<head>
 		<script src="./js/jquery.min.js"></script>
 		<meta charset="utf-8">
