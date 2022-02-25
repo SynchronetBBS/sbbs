@@ -7,13 +7,7 @@
 
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
 	if (pages.doRedirect(page)) exit();
-
-	var pagePath = pages.getPath(page);
-	if (pagePath == null) {
-		page = '000-home.xjs';
-		pagePath = pages.getPath('000-home.xjs');
-	}
-	var page_ctrl = pages.getCtrlLine(pagePath);
+	var pageData = pages.getMetadata(page);
 ?>
 
 <!DOCTYPE html>
@@ -25,7 +19,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="icon" href="./images/favicon.ico">
 		<title>
-			<? write(page_ctrl.title + ': ' + system.name); ?>
+			<? write(pageData.title + ': ' + system.name); ?>
 		</title>
 		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<link href="./css/offcanvas.css" rel="stylesheet">
@@ -49,7 +43,7 @@
 		<div class="container<? if (settings.layout_full_width) write('-fluid'); ?>">
 			<div class="row row-offcanvas row-offcanvas-<? write(settings.layout_sidebar_left ? 'left' : 'right'); ?>">
 				<? if (settings.layout_sidebar_left) components.load('sidebar.xjs'); ?>
-				<div class="col-xs-12 col-sm-<? write(settings.layout_sidebar_off || page_ctrl.options.no_sidebar ? 12 : 9); ?>">
+				<div class="col-xs-12 col-sm-<? write(settings.layout_sidebar_off || pageData.options.no_sidebar ? 12 : 9); ?>">
 					<?xjs
 						components.load('sidebar-toggle.xjs');
 						pages.write(page);

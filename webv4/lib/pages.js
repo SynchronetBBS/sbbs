@@ -281,10 +281,25 @@ function doRedirect(page) {
 	return false;
 }
 
+function getMetadata(page) {
+	var pagePath = getPagePath(page);
+	if (pagePath === null) {
+		page = '000-home.xjs';
+		pagePath = getPagePath(page);
+	}
+	const ctrl = getCtrlLine(pagePath);
+	return {
+		path: pagePath,
+		title: ctrl.title,
+		options: ctrl.options,
+	};
+}
+
 var pages = {
 	doRedirect: doRedirect,
 	getCtrlLine: getCtrlLine,
 	getExternalLink: getExternalLink,
+	getMetadata: getMetadata,
 	getPath: getPagePath,
 	getList: getPageList,
 	write: writePage,
