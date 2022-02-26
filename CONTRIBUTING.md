@@ -22,7 +22,7 @@ When modifying JavaScript (`.js`) files:
 
 When adding files:
 * Prefer all lowercase characters in filenames
-* Don't include spaces or other special characters (e.g. that require URL-escaping) in filenames
+* Don't include spaces or other special characters (e.g. that require URL-encoding) in filenames
 * Don't use misleading file extensions/suffixes (e.g. `*.doc` for plain text files)
 
 ### Branches
