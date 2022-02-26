@@ -117,6 +117,9 @@
  *                              previous version.
  * 2022-02-25 Eric Oulashin     Version 1.45b
  *                              Fixed message list time colors for wide terminals (above 80 columns)
+ *                              Version 1.45c
+ *                              Actually fixed wide terminal colors this time (and fixed vote
+ *                              score display in the message list)
  */
 
 
@@ -237,7 +240,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.45b";
+var READER_VERSION = "1.45c";
 var READER_DATE = "2022-02-25";
 
 // Keyboard key codes for displaying on the screen
@@ -813,6 +816,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.CanEdit = DigDistMsgReader_CanEdit;
 	this.CanQuote = DigDistMsgReader_CanQuote;
 	this.ReadConfigFile = DigDistMsgReader_ReadConfigFile;
+	// TODO: Is this.DisplaySyncMsgHeader even needed anymore?  Looks like it's not being called.
 	this.DisplaySyncMsgHeader = DigDistMsgReader_DisplaySyncMsgHeader;
 	this.GetMsgHdrFilenameFull = DigDistMsgReader_GetMsgHdrFilenameFull;
 	this.GetMsgHdrByIdx = DigDistMsgReader_GetMsgHdrByIdx;
@@ -943,14 +947,19 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Variable field widths: From, to, and subject
 	this.FROM_LEN = (console.screen_columns * (15/console.screen_columns)).toFixed(0);
 	this.TO_LEN = (console.screen_columns * (15/console.screen_columns)).toFixed(0);
-	var colsLeftForSubject = console.screen_columns-this.MSGNUM_LEN-this.DATE_LEN-this.TIME_LEN-this.FROM_LEN-this.TO_LEN-6; // 6 to account for the spaces
-	this.SUBJ_LEN = (console.screen_columns * (colsLeftForSubject/console.screen_columns)).toFixed(0);
+	//var colsLeftForSubject = console.screen_columns-this.MSGNUM_LEN-this.DATE_LEN-this.TIME_LEN-this.FROM_LEN-this.TO_LEN-6; // 6 to account for the spaces
+	//this.SUBJ_LEN = (console.screen_columns * (colsLeftForSubject/console.screen_columns)).toFixed(0);
+	this.SUBJ_LEN = console.screen_columns-this.MSGNUM_LEN-this.DATE_LEN-this.TIME_LEN-this.FROM_LEN-this.TO_LEN-6; // 6 to account for the spaces
 	// For showing message scores in the message list
 	this.SCORE_LEN = 4;
 	// Whether or not to show message scores in the message list: Only if the terminal
 	// is at least 86 characters wide and if vote functions exist in the running build
 	// of Synchronet
 	this.showScoresInMsgList = ((console.screen_columns >= 86) && (typeof((new MsgBase("mail")).vote_msg) === "function"));
+	if (this.showScoresInMsgList)
+	{
+		this.SUBJ_LEN -= (this.SCORE_LEN + 1); // + 1 to account for a space
+	}
 
 	// Whether or not the user chose to read a message
 	this.readAMessage = false;
@@ -1512,9 +1521,9 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
 		// iterate through all message offsets and get the headers.
 		if (typeof(msgbase.get_all_msg_headers) === "function")
 		{
-			// Pass false to get_all_msg_headers() to tell it not to return vote messages
-			// (the parameter was introduced in Synchronet 3.17+)
-			tmpHdrs = msgbase.get_all_msg_headers(false);
+			// The first parameter is whether to include votes (the parameter was introduced in Synchronet 3.17+).
+			// We used to pass false here.
+			tmpHdrs = msgbase.get_all_msg_headers(true);
 		}
 		else
 		{
@@ -3866,7 +3875,14 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 	msgListIdxes.toNameEnd = msgListIdxes.toNameStart + +this.TO_LEN + 1;
 	msgListIdxes.subjStart = msgListIdxes.toNameEnd;
 	msgListIdxes.subjEnd = msgListIdxes.subjStart + +this.SUBJ_LEN + 1;
-	msgListIdxes.dateStart = msgListIdxes.subjEnd;
+	if (this.showScoresInMsgList)
+	{
+		msgListIdxes.scoreStart = msgListIdxes.subjEnd;
+		msgListIdxes.scoreEnd = msgListIdxes.scoreStart + +this.SCORE_LEN + 1;
+		msgListIdxes.dateStart = msgListIdxes.scoreEnd;
+	}
+	else
+		msgListIdxes.dateStart = msgListIdxes.subjEnd;
 	msgListIdxes.dateEnd = msgListIdxes.dateStart + +this.DATE_LEN + 1;
 	msgListIdxes.timeStart = msgListIdxes.dateEnd;
 	msgListIdxes.timeEnd = console.screen_columns - 1; // msgListIdxes.timeStart + +this.TIME_LEN + 1;
@@ -3904,6 +3920,16 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 		                       {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.colors.msgListDateHighlightColor},
 		                       {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.colors.msgListTimeHighlightColor}]
 	});
+	// If we are to show message vote scores in the list (i.e., if the
+	// user's terminal is wide enough), then splice in color specifiers
+	// for the score column.
+	if (this.showScoresInMsgList)
+	{
+		msgListMenu.colors.itemColor.splice(5, 0, {start: msgListIdxes.scoreStart, end: msgListIdxes.scoreEnd, attrs: this.colors.msgListScoreColor});
+		msgListMenu.colors.altItemColor.splice(5, 0, {start: msgListIdxes.scoreStart, end: msgListIdxes.scoreEnd, attrs: this.colors.msgListToUserScoreColor});
+		msgListMenu.colors.selectedItemColor.splice(5, 0, {start: msgListIdxes.scoreStart, end: msgListIdxes.scoreEnd, attrs: this.colors.msgListScoreHighlightColor + this.colors.msgListHighlightBkgColor});
+		msgListMenu.colors.altSelectedItemColor.splice(5, 0, {start: msgListIdxes.scoreStart, end: msgListIdxes.scoreEnd, attrs: this.colors.msgListScoreHighlightColor + this.colors.msgListHighlightBkgColor});
+	}
 
 	msgListMenu.multiSelect = false;
 	msgListMenu.ampersandHotkeysInItems = false;
@@ -3928,7 +3954,9 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 	msgListMenu.GetItem = function(pItemIndex) {
 		var menuItemObj = this.MakeItemWithRetval(-1);
 		var itemIdx = (this.msgReader.reverseListOrder ? this.msgReader.NumMessages() - pItemIndex - 1 : pItemIndex);
-		var msgHdr = this.msgReader.GetMsgHdrByIdx(itemIdx);
+		// In order to get vote score information (displayed if the user's terminal is wide
+		// enough), the 2nd parameter to GetMsgHdrByIdx() should be true.
+		var msgHdr = this.msgReader.GetMsgHdrByIdx(itemIdx, this.msgReader.showScoresInMsgList);
 		if (msgHdr != null)
 		{
 			// When setting the item text, call PrintMessageInfo with true as
@@ -8460,9 +8488,7 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields, pMsgbase)
 		}
 	}
 	else
-	{
 		msgHdr = getHdrFromMsgbase(pMsgbase, this.subBoardCode, true, pMsgIdx, pExpandFields);
-	}
 	if (msgHdr == null)
 		msgHdr = getBogusMsgHdr();
 	return msgHdr;
@@ -9452,7 +9478,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 				{
 					// Pass false to get_all_msg_headers() to tell it not to return vote messages
 					// (the parameter was introduced in Synchronet 3.17+)
-					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(msgbase.get_all_msg_headers(false), true);
+					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(msgbase.get_all_msg_headers(true), true);
 				}
 				else
 				{
@@ -14107,7 +14133,7 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 				var originalMsgIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgHdr.number];
 				if (typeof(msgbase.get_all_msg_headers) === "function")
 				{
-					var tmpHdrs = msgbase.get_all_msg_headers();
+					var tmpHdrs = msgbase.get_all_msg_headers(true);
 					if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
 					{
 						this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
@@ -14463,7 +14489,7 @@ function DigDistMsgReader_RefreshMsgHdrInArrays(pMsgNum)
 	{
 		if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(pMsgNum))
 		{
-			var msgHdrs = msgbase.get_all_msg_headers();
+			var msgHdrs = msgbase.get_all_msg_headers(true);
 			if (msgHdrs.hasOwnProperty(pMsgNum))
 			{
 				var msgIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgNum];
@@ -14500,8 +14526,9 @@ function DigDistMsgReader_RecalcMsgListWidthsAndFormatStrs(pMsgNumLen)
 	// Variable field widths: From, to, and subject
 	this.FROM_LEN = (console.screen_columns * (15/console.screen_columns)).toFixed(0);
 	this.TO_LEN = (console.screen_columns * (15/console.screen_columns)).toFixed(0);
-	var colsLeftForSubject = console.screen_columns-this.MSGNUM_LEN-this.DATE_LEN-this.TIME_LEN-this.FROM_LEN-this.TO_LEN-6; // 6 to account for the spaces
-	this.SUBJ_LEN = (console.screen_columns * (colsLeftForSubject/console.screen_columns)).toFixed(0);
+	//var colsLeftForSubject = console.screen_columns-this.MSGNUM_LEN-this.DATE_LEN-this.TIME_LEN-this.FROM_LEN-this.TO_LEN-6; // 6 to account for the spaces
+	//this.SUBJ_LEN = (console.screen_columns * (colsLeftForSubject/console.screen_columns)).toFixed(0);
+	this.SUBJ_LEN = console.screen_columns-this.MSGNUM_LEN-this.DATE_LEN-this.TIME_LEN-this.FROM_LEN-this.TO_LEN-6; // 6 to account for the spaces
 
 	if (this.showScoresInMsgList)
 	{
@@ -19202,7 +19229,7 @@ function getHdrFromMsgbase(pMsgbase, pSubBoardCode, pByIdx, pMsgIdxOrNum, pExpan
 		if (pByIdx)
 			getMsgHdr = ((pMsgIdxOrNum >= 0) && (pMsgIdxOrNum < msgbase.total_msgs))
 		if (getMsgHdr)
-			msgHdr = msgbase.get_msg_header(pByIdx, pMsgIdxOrNum, pExpandFields);
+			msgHdr = msgbase.get_msg_header(pByIdx, pMsgIdxOrNum, pExpandFields, true); // Last true: Include votes
 		if (pMsgbase == null)
 			msgbase.close();
 	}
@@ -19576,7 +19603,7 @@ function getAttrsBeforeStrIdx(pStr, pIdx)
 //               upvotes: The number of upvotes
 //               downvotes: The number of downvotes
 //               voteScore: The overall vote score
-function getMsgUpDownvotesAndScore(pMsgHdr)
+function getMsgUpDownvotesAndScore(pMsgHdr, pVerbose)
 {
 	var retObj = {
 		foundVoteInfo: false,
@@ -19594,6 +19621,20 @@ function getMsgUpDownvotesAndScore(pMsgHdr)
 		else
 			retObj.downvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
 		retObj.voteScore = pMsgHdr.upvotes - retObj.downvotes;
+		if (pVerbose && user.is_sysop)
+		{
+			console.print("\1n\r\n");
+			console.print("Vote information from header:\r\n");
+			console.print("Upvotes: " + pMsgHdr.upvotes + "\r\n");
+			console.print("Downvotes: " + retObj.downvotes + "\r\n");
+			console.print("Score: " + retObj.voteScore + "\r\n");
+			console.pause();
+		}
+	}
+	else
+	{
+		if (pVerbose && user.is_sysop)
+			console.print("\1n\r\nMsg header does NOT have needed vote info\r\n\1p");
 	}
 
 	return retObj;
@@ -19608,6 +19649,9 @@ function getMsgUpDownvotesAndScore(pMsgHdr)
 // Return value: The message body, with any initial color removed
 function removeInitialColorFromMsgBody(pMsgBody)
 {
+	if (pMsgBody == null)
+		return "";
+
 	var msgBody = pMsgBody;
 
 	msgBodyLines = pMsgBody.split("\r\n", 3);
