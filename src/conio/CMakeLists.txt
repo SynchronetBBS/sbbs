@@ -101,7 +101,7 @@ endif()
 
 if(SDL2_INCLUDE_DIRS)
 	target_include_directories(ciolib PUBLIC ${SDL2_INCLUDE_DIRS})
-	set(WITH_SDL TRUE)
+	set(WITH_SDL TRUE PARENT_SCOPE)
 	target_compile_definitions(ciolib PUBLIC WITH_SDL)
 endif()
 
