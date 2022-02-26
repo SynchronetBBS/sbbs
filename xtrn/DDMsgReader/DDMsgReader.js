@@ -19649,6 +19649,9 @@ function getMsgUpDownvotesAndScore(pMsgHdr, pVerbose)
 // Return value: The message body, with any initial color removed
 function removeInitialColorFromMsgBody(pMsgBody)
 {
+	if (pMsgBody == null)
+		return "";
+
 	var msgBody = pMsgBody;
 
 	msgBodyLines = pMsgBody.split("\r\n", 3);
