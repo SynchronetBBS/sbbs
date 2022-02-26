@@ -20,6 +20,11 @@ When modifying JavaScript (`.js`) files:
 * Specify `"use strict"` when adding new files and write conforming code
 * Don't introduce/use 3rd party libraries unnecessarily
 
+When adding files:
+* Prefer all lowercase characters in filenames
+* Don't include spaces or other special characters (e.g. that require URL-escaping) in filenames
+* Don't use misleading file extensions/suffixes (e.g. `*.doc` for plain text files)
+
 ### Branches
 Only approved and authenticaed "developers" can create new branches in the `main/sbbs`repo. If, as a developer, you are creating a new branch in the `main/sbbs` repository, use the branch naming scheme: `<your-name>/<topic>`, where *your-name* is your abbreviated name, user-name, or alias and *topic* helps to identify the intended purpose of the branch. Branches created in user repositories (e.g. forks of main/sbbs) need not contain the `<your-name>/` prefix.
 
