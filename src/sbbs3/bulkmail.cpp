@@ -1,8 +1,4 @@
-/* bulkmail.cpp */
-
 /* Synchronet bulk e-mail functions */
-
-/* $Id: bulkmail.cpp,v 1.45 2020/05/14 07:49:59 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,24 +13,11 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
  *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
- *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
-
 
 #include "sbbs.h"
 
@@ -105,7 +88,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 
 	smb_hfield_str(&msg,SENDER,useron.alias);
 
-	sprintf(str,"%u",useron.number);
+	SAFEPRINTF(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
 
 	smb_hfield_str(&msg,SUBJECT,title);
@@ -203,7 +186,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 		smb_hfield_netaddr(&newmsg,RECIPIENTNETADDR,user.netmail,&nettype);
 		smb_hfield_bin(&newmsg,RECIPIENTNETTYPE,nettype);
 	} else {
-		sprintf(str,"%u",usernum);
+		SAFEPRINTF(str,"%u",usernum);
 		smb_hfield_str(&newmsg,RECIPIENTEXT,str);
 	}
 
@@ -214,7 +197,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 
 	lncntr=0;
 	bprintf(text[Emailing],user.alias,usernum);
-	sprintf(str,"bulk-mailed %s #%d"
+	SAFEPRINTF2(str,"bulk-mailed %s #%d"
 		,user.alias,usernum);
 	logline("E+",str);
 	useron.emails++;
@@ -224,13 +207,13 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 		getnodedat(i,&node,0);
 		if(node.useron==usernum && !(node.misc&NODE_POFF)
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
-			sprintf(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
+			SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
 			putnmsg(&cfg,i,str);
 			break; 
 		} 
 	}
 	if(i>cfg.sys_nodes) {   /* User wasn't online, so leave short msg */
-		sprintf(str,text[UserSentYouMail],useron.alias);
+		SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
 		putsmsg(&cfg,usernum,str); 
 	}
 	return(0);
