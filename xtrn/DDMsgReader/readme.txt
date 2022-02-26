@@ -205,7 +205,7 @@ the "Command shell setup" subsection.
 
 To set up the reader with the Loadable Module scripts, do the following:
 1. Copy DDReadPersonalMail.js, DDScanMsgs.js, and DDScanSubs.js from the
-   "Loadable module scripts" directory to your sbbs/mods directory
+   loadable_module_scripts directory to your sbbs/mods directory
 2. If you will be running the script from a directory other than
    xtrn/DDMsgReader, edit the above scripts and search for the text "SYSOPS:"
    (without the double-quotes).  One or two lines below that, there is a
