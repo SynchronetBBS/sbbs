@@ -410,6 +410,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(strcmp(sp, "GIT_BRANCH") == 0)
 		return git_branch;
 
+	if(strcmp(sp, "BUILD_DATE") == 0)
+		return __DATE__;
+
+	if(strcmp(sp, "BUILD_TIME") == 0)
+		return __TIME__;
+
 	if(!strcmp(sp,"UPTIME")) {
 		extern volatile time_t uptime;
 		time_t up=0;
