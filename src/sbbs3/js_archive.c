@@ -522,17 +522,28 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 		for(;;) {
 			result = archive_read_data_block(ar, &buff, &size, &offset);
-			if(result != ARCHIVE_OK)
+			if(result == ARCHIVE_EOF)
 				break;
+			else if(result != ARCHIVE_OK) {
+				JS_ReportError(cx, "archive_read_next_header() returned %d: %s"
+					,result, archive_error_string(ar));
+				retval = JS_FALSE;
+				break;
+			}
 			char* np = realloc(p, total + size);
-			if(np == NULL)
+			if(np == NULL) {
+				JS_ReportError(cx, "realloc failure of %"PRIi64" bytes", total + size);
+				retval = JS_FALSE;
 				break;
+			}
 			p = np;
 			memcpy(p + total, buff, size);
 			total += size;
 		}
-		JSString* js_str = JS_NewStringCopyN(cx, p, total);
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+		if(retval == JS_TRUE) {
+			JSString* js_str = JS_NewStringCopyN(cx, p, total);
+			JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+		}
 		free(p);
 		break;
 	}
