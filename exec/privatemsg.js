@@ -24,12 +24,12 @@ while(bbs.online && !(console.aborted)) {
 	}
 	bbs.nodesync();
 	console.print("\1n\r\n\xfe \1b\1h\Private \1n\xfe ");
-	console.mnemonics("~Telegram, ~Message, ~Chat, ~InterBBS, or ~Quit: ");
+	console.mnemonics("~Telegram, ~Message, ~Chat, ~InterBBS, ~View, or ~Quit: ");
 	bbs.sys_status&=~SS_ABORT;
 	var ch;
 	while(bbs.online && !console.aborted) {  /* Watch for incoming messages */
 		ch=console.inkey(/* mode: */K_UPPER, /* timeout: */1000);
-		if(ch && "TMCIQ\r".indexOf(ch)>=0)
+		if(ch && "TMCIQV\r".indexOf(ch)>=0)
 			break;
 		
 		console.line_counter = 0;
@@ -166,6 +166,9 @@ while(bbs.online && !(console.aborted)) {
 			writeln("InterBBS");
 			writeln();
 			load({}, 'sbbsimsg.js');
+			break;
+		case 'V':
+			load({}, 'viewimsgs.js');
 			break;
 		default:
 			console.print("Quit\r\n");
