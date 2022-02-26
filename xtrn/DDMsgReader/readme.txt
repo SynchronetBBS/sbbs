@@ -1,5 +1,5 @@
                       Digital Distortion Message Reader
-                                 Version 1.45b
+                                 Version 1.45c
                            Release date: 2022-02-25
 
                                      by
