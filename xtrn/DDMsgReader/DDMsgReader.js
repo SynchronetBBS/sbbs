@@ -120,6 +120,9 @@
  *                              Version 1.45c
  *                              Actually fixed wide terminal colors this time (and fixed vote
  *                              score display in the message list)
+ * 2022-02-26 Eric Oulashin     Version 1.45d
+ *                              Fix for no group information available when displaying the
+ *                              sub-board header above the message list when listing personal email
  */
 
 
@@ -240,8 +243,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.45c";
-var READER_DATE = "2022-02-25";
+var READER_VERSION = "1.45d";
+var READER_DATE = "2022-02-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -7023,7 +7026,11 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 		// For the message group name, we can also use msgbase.cfg.grp_name in
 		// Synchronet 3.12 and higher.
 		var msgbase = new MsgBase(this.subBoardCode);
-		var msgGroupName = msg_area.grp_list[msgbase.cfg.grp_number].description;
+		var msgGroupName = "";
+		if (this.subBoardCode == "mail")
+			msgGroupName = "Mail";
+		else
+			msgGroupName = msg_area.grp_list[msgbase.cfg.grp_number].description;
 		var subBoardName = "Unspecified";
 		if (msgbase.open())
 		{
