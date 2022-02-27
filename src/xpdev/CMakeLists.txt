@@ -35,7 +35,6 @@ set(SOURCE
     xpdatetime.c
     xpmap.c
     xpprintf.c
-    xptime.c
 )
 
 set(HEADER
