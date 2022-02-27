@@ -57,7 +57,10 @@ function scan(options)
 
 	for(var i in exe_list) {
 		directory(options.xtrn_dir + '*').forEach(function (e) {
-			const f = new File(e + i);
+			const fname = file_getcase(e + i);
+			if(!fname)
+				return;
+			const f = new File(fname);
 			if (!f.open('rb')) {
 				return;
 			}
