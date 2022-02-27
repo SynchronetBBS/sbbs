@@ -106,8 +106,8 @@ SCFG > External Programs > Online Programs (Doors) in one of your program
 groups, and then you could have your command shell run the lister via the
 internal program code you configured in SCFG.
 
-Installing into a command shell is described in the subsection "Installing
-into a command shell".
+Installing into a command shell is described in section 3, "Installation &
+Setup".
 
 Background: Running JavaScript scripts in Synchronet
 ----------------------------------------------------
