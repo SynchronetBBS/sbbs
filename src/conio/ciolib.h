@@ -395,7 +395,7 @@ CIOLIBEXPORTVAR int directvideo;
 CIOLIBEXPORTVAR int hold_update;
 CIOLIBEXPORTVAR int puttext_can_move;
 CIOLIBEXPORTVAR int ciolib_reaper;
-CIOLIBEXPORTVAR char *ciolib_appname;
+CIOLIBEXPORTVAR const char *ciolib_appname;
 CIOLIBEXPORTVAR int ciolib_initial_window_height;
 CIOLIBEXPORTVAR int ciolib_initial_window_width;
 
