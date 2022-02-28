@@ -3,6 +3,8 @@ OBJS	:=	\
 			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)date_str$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)readtext$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)text_defaults$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE) \
