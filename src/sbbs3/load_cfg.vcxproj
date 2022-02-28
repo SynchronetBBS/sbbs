@@ -103,9 +103,11 @@
     <ClCompile Include="ars.c" />
     <ClCompile Include="load_cfg.c" />
     <ClCompile Include="nopen.c" />
+    <ClCompile Include="readtext.c" />
     <ClCompile Include="scfglib1.c" />
     <ClCompile Include="scfglib2.c" />
     <ClCompile Include="str_util.c" />
+    <ClCompile Include="text_defaults.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
