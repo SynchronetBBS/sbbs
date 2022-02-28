@@ -254,7 +254,7 @@ SEXYZ_OBJS = \
 			$(MTOBJODIR)/nopen$(OFILE) \
 			$(MTOBJODIR)/telnet$(OFILE)
 
-QWKNODES_OBJS = \
+QWKNODES_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/qwknodes$(OFILE) \
 			$(OBJODIR)/date_str$(OFILE)
 
