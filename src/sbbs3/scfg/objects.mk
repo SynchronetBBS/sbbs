@@ -21,6 +21,8 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)scfg$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE)\
+            $(MTOBJODIR)$(DIRSEP)readtext$(OFILE)\
+            $(MTOBJODIR)$(DIRSEP)text_defaults$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)ars$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)nopen$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE)\
