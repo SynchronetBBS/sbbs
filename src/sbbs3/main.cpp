@@ -5395,7 +5395,7 @@ NO_SSH:
 				}
 			}
 			if(ssh_failed) {
-				lprintf(LOG_NOTICE, "%04d SSH session establishment failed", client_socket);
+				lprintf(LOG_INFO, "%04d SSH session establishment failed", client_socket);
 				SSH_END(client_socket);
 				close_socket(client_socket);
 				continue;
