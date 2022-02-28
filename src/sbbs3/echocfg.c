@@ -87,6 +87,8 @@ void global_settings(void)
 			,cfg.auto_utf8 ? "Yes":"No");
 		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Use Outboxes for Mail Files "
 			,cfg.use_outboxes ? "Yes":"No");
+		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Sort Linked Node List  "
+			,cfg.sort_nodelist ? "Yes":"No");
 
 		sprintf(opt[i++], "%-30s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
 		if(cfg.flo_mailer) {
@@ -155,6 +157,9 @@ void global_settings(void)
 			"    normal outbound directory hierarchy.  The BinkIT mailer will\n"
 			"    send files from configured outboxes in addition to the normal\n"
 			"    outbound directories, even when this option is set to `No`.\n"
+			"\n"
+			"`Sort Linked Node List` instructs SBBSecho to sort the list of linked\n"
+			"    nodes (in sbbsecho.ini) both when readnig and writing the file.\n"
 			"\n"
 			"`BSY Mutex File Timeout` determines the maximum age of an existing\n"
 			"    mutex file (`*.bsy`) before SBBSecho will act as though the mutex\n"
@@ -289,34 +294,44 @@ void global_settings(void)
 				break;
 			}
 			case 11:
+			{
+				int k = !cfg.sort_nodelist;
+				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Sort List of Linked Nodes",uifcYesNoOpts)) {
+					case 0:	cfg.sort_nodelist = true;	break;
+					case 1:	cfg.sort_nodelist = false;	break;
+				}
+				break;
+			}
+			case 12:
 				duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "BSY Mutex File Timeout", duration, 10, K_EDIT) > 0)
 					cfg.bsy_timeout = (ulong)parse_duration(duration);
 				break;
 
-			case 12:
+			case 13:
 				duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Delay Between BSO Lock Attempts", duration, 10, K_EDIT) > 0)
 					cfg.bso_lock_delay = (ulong)parse_duration(duration);
 				break;
 
-			case 13:
+			case 14:
 				sprintf(str, "%lu", cfg.bso_lock_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum BSO Lock Attempts", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.bso_lock_attempts = atoi(str);
 				break;
 
-			case 14:
+			case 15:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Capabilities (BinkIT)", cfg.binkp_caps, sizeof(cfg.binkp_caps)-1, K_EDIT);
 				break;
 
-			case 15:
+			case 16:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Sysop Name (BinkIT)", cfg.binkp_sysop, sizeof(cfg.binkp_sysop)-1, K_EDIT);
 				break;
 
-			case 16:
+			case 17:
 			{
 				int k = !cfg.binkp_plainAuthOnly;
 				strcpy(opt[0], "Plain-Password Only");
@@ -334,7 +349,7 @@ void global_settings(void)
 				break;
 			}
 
-			case 17:
+			case 18:
 			{
 				if(cfg.binkp_plainAuthOnly) {
 					uifc.msg("CRAM-MD5 authentication/encryption has been disabled globally");
