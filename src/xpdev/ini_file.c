@@ -442,15 +442,16 @@ BOOL iniRemoveSections(str_list_t* list, const char* prefix)
 }
 
 // This sorts comments too, so should not be used on human created/edited files
-BOOL iniSortSections(str_list_t* list, BOOL sort_keys)
+BOOL iniSortSections(str_list_t* list, const char* prefix, BOOL sort_keys)
 {
 	size_t i;
-	str_list_t root_keys;
+	str_list_t root_keys = NULL;
 	str_list_t new_list;
 	str_list_t keys;
-	str_list_t section_list = iniGetSectionList(*list, /* prefix */NULL);
+	str_list_t section_list = iniGetSectionList(*list, prefix);
 
-	root_keys = iniGetSection(*list, ROOT_SECTION);
+	if(prefix == NULL)
+		root_keys = iniGetSection(*list, ROOT_SECTION);
 	if(section_list == NULL && root_keys == NULL)
 		return TRUE;
 
@@ -459,7 +460,12 @@ BOOL iniSortSections(str_list_t* list, BOOL sort_keys)
 
 	if(section_list != NULL)
 		strListSortAlphaCase(section_list);
-	new_list = strListInit();
+	if(prefix == NULL)
+		new_list = strListInit();
+	else {
+		new_list = strListDup(*list);
+		iniRemoveSections(&new_list, prefix);
+	}
 	if(new_list == NULL) {
 		strListFree(&section_list);
 		strListFree(&root_keys);
@@ -2465,7 +2471,7 @@ void main(int argc, char** argv)
 			continue;
 		}
 		if((list=iniReadFile(fp)) != NULL) {
-			iniSortSections(&list, TRUE);
+			iniSortSections(&list, NULL, TRUE);
 			for(size_t j = 0; list[j] != NULL; j++)
 				printf("%s\n", list[j]);
 			strListFree(&list);
