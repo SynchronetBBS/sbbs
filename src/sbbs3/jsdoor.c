@@ -251,6 +251,9 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 	/* Global Object */
 	if(!js_CreateGlobalObject(js_cx, &scfg, methods, js_startup, glob))
 		return(FALSE);
+#ifdef JS_HAS_CTYPES
+	JS_InitCTypesClass(js_cx, *glob);
+#endif
 
 	do {
 		/* System Object */
