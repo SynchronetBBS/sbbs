@@ -43,11 +43,9 @@ char *	readtext(long *line, FILE *stream, long dflt);
 BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, size_t maxerrlen)
 {
 	int		i;
-#ifdef SBBS
 	long	line=0L;
 	FILE 	*instream;
 	char	str[256];
-#endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
 		safe_snprintf(error, maxerrlen,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
@@ -86,7 +84,6 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, 
 	if(read_attr_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
 
-#ifdef SBBS
 	if(text!=NULL) {
 
 		/* Free existing text if allocated */
@@ -112,7 +109,6 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, 
 		}
 		cfg->text = text;
 	}
-#endif
 
     /* Override com-port settings */
     cfg->com_base=0xf;	/* All nodes use FOSSIL */
