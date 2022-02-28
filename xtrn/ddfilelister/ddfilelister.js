@@ -22,6 +22,11 @@
  *                              Things overall look good. Releasing this version.  Added
  *                              the ability to do searching via filespec, description, and
  *                              new file search (started working on this 2022-02-08).
+ * 2022-02027 Eric Oulashin     Version 2.03
+ *                              For terminals over 25 rows tall, the file info window will
+ *                              now be up to 45 rows tall.  Also, fixed the display of the
+ *                              trailing blocks for the list header for wide terminals (over
+ *                              80 columns).
 */
 
 if (typeof(require) === "function")
@@ -75,8 +80,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.02";
-var LISTER_DATE = "2022-02-13";
+var LISTER_VERSION = "2.03";
+var LISTER_DATE = "2022-02-27";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -527,6 +532,15 @@ function showFileInfo(pFileList, pFileListMenu)
 	var frameUpperLeftY = pFileListMenu.pos.y + 2;
 	// Note: frameWidth is declared earlier
 	var frameHeight = 10;
+	// If the user's console is more than 25 rows high, then make the info window
+	// taller so that its bottom row is 10 from the bottom, but only up to 45 rows tall.
+	if (console.screen_rows > 25)
+	{
+		var frameBottomRow = console.screen_rows - 10;
+		frameHeight = frameBottomRow - frameUpperLeftY + 1;
+		if (frameHeight > 45)
+			frameHeight = 45;
+	}
 	var frameTitle = "File Info";
 	displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth, frameHeight,
 	                                   gColors.fileInfoWindowBorder, frameTitle,
@@ -1952,6 +1966,8 @@ function displayListHdrLine(pMoveToLocationFirst)
 	// shortDescLen here should always be the same (for the last blocks to always be in the same
 	// position), whereas descriptionEnd might change based on whether the menu is using its scrollbar
 	var shortDescLen = 60;
+	if (console.screen_columns > 80)
+		shortDescLen = console.screen_columns - 30;
 	var formatStr = "\1n\1w\1h%-" + filenameLen + "s %" + fileSizeLen + "s %-"
 	              + +(shortDescLen-7) + "s\1n\1w%5s\1n";
 	var listHdrEndText = THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1;
