@@ -1,4 +1,4 @@
-GTKCHAT	=	$(EXEODIR)$(DIRSEP)gtkchat$(EXEFILE)
+GTKCHAT	=	$(EXEODIR)/gtkchat$(EXEFILE)
 
 all: xpdev-mt smblib $(MTOBJODIR) $(EXEODIR) $(GTKCHAT)
 
