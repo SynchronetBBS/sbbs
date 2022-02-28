@@ -1,319 +1,315 @@
 # objects.mk
 
-# Make 'include file' listing object files for SBBS.DLL
-
-# $Id: objects.mk,v 1.76 2020/04/03 19:54:31 rswindell Exp $(DIRSEP)09$(DIRSEP)08 07:23:54 deuce Exp $
-
-# OBJODIR, SLASH, and OFILE must be pre-defined
+# [MT]OBJODIR and OFILE must be pre-defined
 
 OBJS	=		$(LOAD_CFG_OBJS) \
-			$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)answer$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)atcodes$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)bat_xfer$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)bulkmail$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)chat$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)chk_ar$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)comio$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)con_hi$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)con_out$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)data$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)data_ovl$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)date_str$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)download$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)email$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)exec$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)execfile$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)execfunc$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)execmisc$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)execmsg$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)execnet$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)fido$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)file$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)filedat$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)getkey$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)getmail$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)getmsg$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)getnode$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)getstats$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)getstr$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)inkey$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)ident$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)jsdebug$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_archive$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_bbs$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_console$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_cryptcert$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_cryptcon$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_cryptkeyset$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_file$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_file_area$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_global$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_internal$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_msg_area$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_msgbase$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_filebase$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_queue$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_request$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_rtpool$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_server$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_socket$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_sprintf$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_system$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_user$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_xtrn_area$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)listfile$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)logfile$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)login$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)logon$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)logout$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)mail$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)main$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)msg_id$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)msgtoqwk$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)netmail$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)newuser$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)pack_qwk$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)pack_rep$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)postmsg$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)prntfile$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)putmsg$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)putnode$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)qwk$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)qwktomsg$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)readmail$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)readmsgs$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)sauce$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scandirs$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scansubs$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scfgsave$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)sockopts$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)str$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)telgate$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)text_sec$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)tmp_xfer$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)un_qwk$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)un_rep$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)upload$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)useredit$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)viewfile$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)writemsg$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)xtrn$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)xtrn_sec$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)ver$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)ssl$(OFILE)
+			$(MTOBJODIR)/ansiterm$(OFILE) \
+			$(MTOBJODIR)/answer$(OFILE)\
+			$(MTOBJODIR)/atcodes$(OFILE)\
+			$(MTOBJODIR)/bat_xfer$(OFILE)\
+			$(MTOBJODIR)/bulkmail$(OFILE)\
+			$(MTOBJODIR)/chat$(OFILE)\
+			$(MTOBJODIR)/chk_ar$(OFILE)\
+			$(MTOBJODIR)/comio$(OFILE)\
+			$(MTOBJODIR)/con_hi$(OFILE)\
+			$(MTOBJODIR)/con_out$(OFILE)\
+			$(MTOBJODIR)/dat_rec$(OFILE)\
+			$(MTOBJODIR)/data$(OFILE)\
+			$(MTOBJODIR)/data_ovl$(OFILE)\
+			$(MTOBJODIR)/date_str$(OFILE)\
+			$(MTOBJODIR)/download$(OFILE)\
+			$(MTOBJODIR)/email$(OFILE)\
+			$(MTOBJODIR)/exec$(OFILE)\
+			$(MTOBJODIR)/execfile$(OFILE)\
+			$(MTOBJODIR)/execfunc$(OFILE)\
+			$(MTOBJODIR)/execmisc$(OFILE)\
+			$(MTOBJODIR)/execmsg$(OFILE)\
+			$(MTOBJODIR)/execnet$(OFILE)\
+			$(MTOBJODIR)/fido$(OFILE)\
+			$(MTOBJODIR)/file$(OFILE)\
+			$(MTOBJODIR)/filedat$(OFILE)\
+			$(MTOBJODIR)/getkey$(OFILE)\
+			$(MTOBJODIR)/getmail$(OFILE)\
+			$(MTOBJODIR)/getmsg$(OFILE)\
+			$(MTOBJODIR)/getnode$(OFILE)\
+			$(MTOBJODIR)/getstats$(OFILE)\
+			$(MTOBJODIR)/getstr$(OFILE)\
+			$(MTOBJODIR)/inkey$(OFILE)\
+			$(MTOBJODIR)/ident$(OFILE)\
+			$(MTOBJODIR)/jsdebug$(OFILE)\
+			$(MTOBJODIR)/js_archive$(OFILE)\
+			$(MTOBJODIR)/js_bbs$(OFILE)\
+			$(MTOBJODIR)/js_client$(OFILE)\
+			$(MTOBJODIR)/js_com$(OFILE)\
+			$(MTOBJODIR)/js_console$(OFILE)\
+			$(MTOBJODIR)/js_cryptcert$(OFILE)\
+			$(MTOBJODIR)/js_cryptcon$(OFILE)\
+			$(MTOBJODIR)/js_cryptkeyset$(OFILE)\
+			$(MTOBJODIR)/js_file$(OFILE)\
+			$(MTOBJODIR)/js_file_area$(OFILE)\
+			$(MTOBJODIR)/js_global$(OFILE)\
+			$(MTOBJODIR)/js_internal$(OFILE)\
+			$(MTOBJODIR)/js_msg_area$(OFILE)\
+			$(MTOBJODIR)/js_msgbase$(OFILE)\
+			$(MTOBJODIR)/js_filebase$(OFILE)\
+			$(MTOBJODIR)/js_queue$(OFILE)\
+			$(MTOBJODIR)/js_request$(OFILE)\
+			$(MTOBJODIR)/js_rtpool$(OFILE)\
+			$(MTOBJODIR)/js_server$(OFILE)\
+			$(MTOBJODIR)/js_socket$(OFILE)\
+			$(MTOBJODIR)/js_sprintf$(OFILE)\
+			$(MTOBJODIR)/js_system$(OFILE)\
+			$(MTOBJODIR)/js_user$(OFILE)\
+			$(MTOBJODIR)/js_xtrn_area$(OFILE)\
+			$(MTOBJODIR)/listfile$(OFILE)\
+			$(MTOBJODIR)/logfile$(OFILE)\
+			$(MTOBJODIR)/login$(OFILE)\
+			$(MTOBJODIR)/logon$(OFILE)\
+			$(MTOBJODIR)/logout$(OFILE)\
+			$(MTOBJODIR)/mail$(OFILE)\
+			$(MTOBJODIR)/main$(OFILE)\
+			$(MTOBJODIR)/msg_id$(OFILE)\
+			$(MTOBJODIR)/msgdate$(OFILE)\
+			$(MTOBJODIR)/msgtoqwk$(OFILE)\
+			$(MTOBJODIR)/netmail$(OFILE)\
+			$(MTOBJODIR)/newuser$(OFILE)\
+			$(MTOBJODIR)/pack_qwk$(OFILE)\
+			$(MTOBJODIR)/pack_rep$(OFILE)\
+			$(MTOBJODIR)/postmsg$(OFILE)\
+			$(MTOBJODIR)/prntfile$(OFILE)\
+			$(MTOBJODIR)/putmsg$(OFILE)\
+			$(MTOBJODIR)/putnode$(OFILE)\
+			$(MTOBJODIR)/qwk$(OFILE)\
+			$(MTOBJODIR)/qwktomsg$(OFILE)\
+			$(MTOBJODIR)/readmail$(OFILE)\
+			$(MTOBJODIR)/readmsgs$(OFILE)\
+			$(MTOBJODIR)/ringbuf$(OFILE)\
+			$(MTOBJODIR)/sauce$(OFILE)\
+			$(MTOBJODIR)/scandirs$(OFILE)\
+			$(MTOBJODIR)/scansubs$(OFILE)\
+			$(MTOBJODIR)/scfgsave$(OFILE)\
+			$(MTOBJODIR)/sockopts$(OFILE)\
+			$(MTOBJODIR)/str$(OFILE)\
+			$(MTOBJODIR)/telgate$(OFILE)\
+			$(MTOBJODIR)/telnet$(OFILE)\
+			$(MTOBJODIR)/text_sec$(OFILE)\
+			$(MTOBJODIR)/tmp_xfer$(OFILE)\
+			$(MTOBJODIR)/un_qwk$(OFILE)\
+			$(MTOBJODIR)/un_rep$(OFILE)\
+			$(MTOBJODIR)/upload$(OFILE)\
+			$(MTOBJODIR)/userdat$(OFILE)\
+			$(MTOBJODIR)/useredit$(OFILE)\
+			$(MTOBJODIR)/viewfile$(OFILE)\
+			$(MTOBJODIR)/wordwrap$(OFILE)\
+			$(MTOBJODIR)/writemsg$(OFILE)\
+			$(MTOBJODIR)/xtrn$(OFILE)\
+			$(MTOBJODIR)/xtrn_sec$(OFILE)\
+			$(MTOBJODIR)/ver$(OFILE)\
+			$(MTOBJODIR)/ssl$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
-CON_OBJS	= $(MTOBJODIR)$(DIRSEP)sbbscon$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)sbbs_status$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE)
+CON_OBJS	= $(MTOBJODIR)/sbbscon$(OFILE) \
+			$(MTOBJODIR)/sbbs_status$(OFILE) \
+			$(MTOBJODIR)/sbbs_ini$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
-FTP_OBJS	= $(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE)
+FTP_OBJS	= $(MTOBJODIR)/ftpsrvr$(OFILE) \
+			$(MTOBJODIR)/nopen$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
-MAIL_OBJS	= $(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)mxlookup$(OFILE) \
- 		  	$(MTOBJODIR)$(DIRSEP)mime$(OFILE) \
- 		  	$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
- 		  	$(MTOBJODIR)$(DIRSEP)ars$(OFILE)
+MAIL_OBJS	= $(MTOBJODIR)/mailsrvr$(OFILE) \
+			$(MTOBJODIR)/mxlookup$(OFILE) \
+ 		  	$(MTOBJODIR)/mime$(OFILE) \
+ 		  	$(MTOBJODIR)/nopen$(OFILE) \
+ 		  	$(MTOBJODIR)/ars$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
-WEB_OBJS	= $(MTOBJODIR)$(DIRSEP)websrvr$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)ars$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE)
+WEB_OBJS	= $(MTOBJODIR)/websrvr$(OFILE) \
+			$(MTOBJODIR)/ars$(OFILE) \
+			$(MTOBJODIR)/ringbuf$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
-SERVICE_OBJS	= $(MTOBJODIR)$(DIRSEP)services$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE)
+SERVICE_OBJS	= $(MTOBJODIR)/services$(OFILE) \
+			$(MTOBJODIR)/sbbs_ini$(OFILE)
 
 MONO_OBJS	= \
-			$(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE) \
- 		  	$(MTOBJODIR)$(DIRSEP)mime$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)mxlookup$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)sbbscon$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)services$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)websrvr$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)ssl$(OFILE)
+			$(MTOBJODIR)/ftpsrvr$(OFILE) \
+			$(MTOBJODIR)/mailsrvr$(OFILE) \
+ 		  	$(MTOBJODIR)/mime$(OFILE) \
+			$(MTOBJODIR)/mxlookup$(OFILE) \
+			$(MTOBJODIR)/sbbs_ini$(OFILE) \
+			$(MTOBJODIR)/sbbscon$(OFILE) \
+			$(MTOBJODIR)/services$(OFILE) \
+			$(MTOBJODIR)/websrvr$(OFILE) \
+			$(MTOBJODIR)/ssl$(OFILE)
 
 BAJA_OBJS = \
-			$(OBJODIR)$(DIRSEP)baja$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE)
+			$(OBJODIR)/baja$(OFILE) \
+			$(OBJODIR)/ars$(OFILE)
 
 UNBAJA_OBJS = \
-			$(OBJODIR)$(DIRSEP)unbaja$(OFILE)
+			$(OBJODIR)/unbaja$(OFILE)
 
-NODE_OBJS = $(OBJODIR)$(DIRSEP)node$(OFILE)
+NODE_OBJS = $(OBJODIR)/node$(OFILE)
 
 FIXSMB_OBJS = \
-			$(OBJODIR)$(DIRSEP)fixsmb$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE)
+			$(OBJODIR)/fixsmb$(OFILE) \
+			$(OBJODIR)/str_util$(OFILE)
 
 CHKSMB_OBJS = \
-			$(OBJODIR)$(DIRSEP)chksmb$(OFILE)
+			$(OBJODIR)/chksmb$(OFILE)
 
 SMBUTIL_OBJS = \
-			$(OBJODIR)$(DIRSEP)smbutil$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE)
+			$(OBJODIR)/smbutil$(OFILE) \
+			$(OBJODIR)/str_util$(OFILE)
 
 SBBSECHO_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)$(DIRSEP)sbbsecho$(OFILE) \
-			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfgsave$(OFILE) \
-			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
-			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)rechocfg$(OFILE) \
-			$(OBJODIR)$(DIRSEP)msg_id$(OFILE) \
-			$(OBJODIR)$(DIRSEP)msgdate$(OFILE) \
-			$(OBJODIR)$(DIRSEP)getmail$(OFILE) \
-			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
+			$(OBJODIR)/sbbsecho$(OFILE) \
+			$(OBJODIR)/date_str$(OFILE) \
+			$(OBJODIR)/scfgsave$(OFILE) \
+			$(OBJODIR)/dat_rec$(OFILE) \
+			$(OBJODIR)/filedat$(OFILE) \
+			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/rechocfg$(OFILE) \
+			$(OBJODIR)/msg_id$(OFILE) \
+			$(OBJODIR)/msgdate$(OFILE) \
+			$(OBJODIR)/getmail$(OFILE) \
+			$(OBJODIR)/sauce$(OFILE) \
 			$(SMB_OBJS)
 
 ECHOCFG_OBJS = \
-			$(MTOBJODIR)$(DIRSEP)echocfg$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)rechocfg$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(MTOBJODIR)/echocfg$(OFILE) \
+			$(MTOBJODIR)/rechocfg$(OFILE) \
+			$(MTOBJODIR)/str_util$(OFILE) \
 			$(UIFC_OBJS) \
-			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE)
+			$(MTOBJODIR)/nopen$(OFILE)
 
 ADDFILES_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)$(DIRSEP)addfiles$(OFILE) \
-			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
-			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)msgdate$(OFILE) \
-			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)sauce$(OFILE)
+			$(OBJODIR)/addfiles$(OFILE) \
+			$(OBJODIR)/date_str$(OFILE) \
+			$(OBJODIR)/dat_rec$(OFILE) \
+			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/msgdate$(OFILE) \
+			$(OBJODIR)/filedat$(OFILE) \
+			$(OBJODIR)/sauce$(OFILE)
 
 FILELIST_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)$(DIRSEP)filelist$(OFILE) \
-			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
-			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
-			$(OBJODIR)$(DIRSEP)userdat$(OFILE)
+			$(OBJODIR)/filelist$(OFILE) \
+			$(OBJODIR)/date_str$(OFILE) \
+			$(OBJODIR)/dat_rec$(OFILE) \
+			$(OBJODIR)/filedat$(OFILE) \
+			$(OBJODIR)/sauce$(OFILE) \
+			$(OBJODIR)/userdat$(OFILE)
 
 MAKEUSER_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)$(DIRSEP)makeuser$(OFILE) \
-			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
-			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)msgdate$(OFILE)
+			$(OBJODIR)/makeuser$(OFILE) \
+			$(OBJODIR)/date_str$(OFILE) \
+			$(OBJODIR)/dat_rec$(OFILE) \
+			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/msgdate$(OFILE)
 
 JSEXEC_OBJS = \
-			$(MTOBJODIR)$(DIRSEP)jsexec$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_conio$(OFILE)
+			$(MTOBJODIR)/jsexec$(OFILE) \
+			$(MTOBJODIR)/js_uifc$(OFILE) \
+			$(MTOBJODIR)/js_conio$(OFILE)
 
 JSDOOR_OBJS = 		$(LOAD_CFG_OBJS) \
-			$(MTOBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)jsdoor$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)jsdebug$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_archive$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_conio$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_request$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_socket$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)comio$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_cryptcon$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_cryptcert$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_cryptkeyset$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_global$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_rtpool$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_sprintf$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_file$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_internal$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_queue$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_server$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)sockopts$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)ssl$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scfgsave$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)filedat$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)sauce$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)getstats$(OFILE)\
+			$(MTOBJODIR)/date_str$(OFILE) \
+			$(MTOBJODIR)/dat_rec$(OFILE) \
+			$(MTOBJODIR)/jsdoor$(OFILE) \
+			$(MTOBJODIR)/jsdebug$(OFILE) \
+			$(MTOBJODIR)/js_archive$(OFILE) \
+			$(MTOBJODIR)/js_uifc$(OFILE) \
+			$(MTOBJODIR)/js_conio$(OFILE) \
+			$(MTOBJODIR)/js_request$(OFILE) \
+			$(MTOBJODIR)/js_socket$(OFILE) \
+			$(MTOBJODIR)/comio$(OFILE)\
+			$(MTOBJODIR)/js_client$(OFILE) \
+			$(MTOBJODIR)/js_com$(OFILE) \
+			$(MTOBJODIR)/js_cryptcon$(OFILE) \
+			$(MTOBJODIR)/js_cryptcert$(OFILE) \
+			$(MTOBJODIR)/js_cryptkeyset$(OFILE) \
+			$(MTOBJODIR)/js_global$(OFILE) \
+			$(MTOBJODIR)/js_rtpool$(OFILE) \
+			$(MTOBJODIR)/js_sprintf$(OFILE) \
+			$(MTOBJODIR)/js_file$(OFILE) \
+			$(MTOBJODIR)/js_internal$(OFILE) \
+			$(MTOBJODIR)/js_queue$(OFILE) \
+			$(MTOBJODIR)/js_server$(OFILE) \
+			$(MTOBJODIR)/sockopts$(OFILE)\
+			$(MTOBJODIR)/ssl$(OFILE)\
+			$(MTOBJODIR)/scfgsave$(OFILE)\
+			$(MTOBJODIR)/wordwrap$(OFILE)\
+			$(MTOBJODIR)/userdat$(OFILE)\
+			$(MTOBJODIR)/msgdate$(OFILE)\
+			$(MTOBJODIR)/filedat$(OFILE)\
+			$(MTOBJODIR)/sauce$(OFILE)\
+			$(MTOBJODIR)/getstats$(OFILE)\
 
 SEXYZ_OBJS = \
-			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)zmodem$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)
+			$(MTOBJODIR)/sexyz$(OFILE) \
+			$(MTOBJODIR)/xmodem$(OFILE) \
+			$(MTOBJODIR)/zmodem$(OFILE) \
+			$(MTOBJODIR)/ringbuf$(OFILE) \
+			$(MTOBJODIR)/nopen$(OFILE) \
+			$(MTOBJODIR)/telnet$(OFILE)
 
 QWKNODES_OBJS = \
-			$(OBJODIR)$(DIRSEP)qwknodes$(OFILE) \
-			$(OBJODIR)$(DIRSEP)date_str$(OFILE)
+			$(OBJODIR)/qwknodes$(OFILE) \
+			$(OBJODIR)/date_str$(OFILE)
 
 SLOG_OBJS = \
-			$(OBJODIR)$(DIRSEP)slog$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+			$(OBJODIR)/slog$(OFILE) \
+			$(OBJODIR)/nopen$(OFILE)
 
 ALLUSERS_OBJS = \
-			$(OBJODIR)$(DIRSEP)allusers$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE)
+			$(OBJODIR)/allusers$(OFILE) \
+			$(OBJODIR)/str_util$(OFILE) \
+			$(OBJODIR)/ars$(OFILE)
 
 DELFILES_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)$(DIRSEP)delfiles$(OFILE) \
-			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
-			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE)
+			$(OBJODIR)/delfiles$(OFILE) \
+			$(OBJODIR)/filedat$(OFILE) \
+			$(OBJODIR)/sauce$(OFILE) \
+			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/dat_rec$(OFILE)
 
 DUPEFIND_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)$(DIRSEP)dupefind$(OFILE)
+			$(OBJODIR)/dupefind$(OFILE)
 
 SMBACTIV_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)$(DIRSEP)smbactiv$(OFILE)
+			$(OBJODIR)/smbactiv$(OFILE)
 
 DSTSEDIT_OBJS = \
-			$(OBJODIR)$(DIRSEP)dstsedit$(OFILE)\
-			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+			$(OBJODIR)/dstsedit$(OFILE)\
+			$(OBJODIR)/date_str$(OFILE) \
+			$(OBJODIR)/str_util$(OFILE) \
+			$(OBJODIR)/nopen$(OFILE)
 
 READSAUCE_OBJS = \
-			$(OBJODIR)$(DIRSEP)readsauce$(OFILE)
+			$(OBJODIR)/readsauce$(OFILE)
 
 SHOWSTAT_OBJS = \
-			$(OBJODIR)$(DIRSEP)showstat$(OFILE)
+			$(OBJODIR)/showstat$(OFILE)
 
-PKTDUMP_OBJS =		$(OBJODIR)$(DIRSEP)pktdump$(OFILE)
+PKTDUMP_OBJS =		$(OBJODIR)/pktdump$(OFILE)
 
-FMSGDUMP_OBJS = 	$(OBJODIR)$(DIRSEP)fmsgdump$(OFILE)
+FMSGDUMP_OBJS = 	$(OBJODIR)/fmsgdump$(OFILE)
 
 UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
-                        $(OBJODIR)$(DIRSEP)filedat$(OFILE) \
-                        $(OBJODIR)$(DIRSEP)sauce$(OFILE) \
-                        $(OBJODIR)$(DIRSEP)userdat$(OFILE) \
-                        $(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
+                        $(OBJODIR)/filedat$(OFILE) \
+                        $(OBJODIR)/sauce$(OFILE) \
+                        $(OBJODIR)/userdat$(OFILE) \
+                        $(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/upgrade_to_v319$(OFILE)
 
 LOAD_CFG_OBJS = \
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
-			$(OBJODIR)$(DIRSEP)readtext$(OFILE) \
-			$(OBJODIR)$(DIRSEP)text_defaults$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+			$(OBJODIR)/load_cfg$(OFILE) \
+			$(OBJODIR)/readtext$(OFILE) \
+			$(OBJODIR)/text_defaults$(OFILE) \
+			$(OBJODIR)/scfglib1$(OFILE) \
+			$(OBJODIR)/scfglib2$(OFILE) \
+			$(OBJODIR)/str_util$(OFILE) \
+			$(OBJODIR)/ars$(OFILE) \
+			$(OBJODIR)/nopen$(OFILE)
 

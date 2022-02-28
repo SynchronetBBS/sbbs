@@ -1,3 +1,3 @@
 # Available Options:
 
-SBBS		=	$(SBBS_SRC)$(DIRSEP)$(LIBODIR)$(DIRSEP)$(LIBPREFIX)sbbs$(SOFILE)
+SBBS		=	$(SBBS_SRC)/$(LIBODIR)/$(LIBPREFIX)sbbs$(SOFILE)
