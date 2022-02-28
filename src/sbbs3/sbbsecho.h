@@ -29,7 +29,7 @@
 #include "ini_file.h"
 
 #define SBBSECHO_VERSION_MAJOR		3
-#define SBBSECHO_VERSION_MINOR		14
+#define SBBSECHO_VERSION_MINOR		15
 
 #define SBBSECHO_PRODUCT_CODE		0x12FF	/* from http://ftsc.org/docs/ftscprod.013 */
 
@@ -228,6 +228,7 @@ typedef struct {
 	bool		binkp_plainAuthOnly;
 	bool		binkp_plainTextOnly;
 	bool		used_include;
+	bool		sort_nodelist;
 } sbbsecho_cfg_t;
 
 extern ini_style_t sbbsecho_ini_style;

@@ -275,6 +275,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->strip_soft_cr			= iniGetBool(ini, ROOT_SECTION, "StripSoftCRs", cfg->strip_soft_cr);
 	cfg->use_outboxes			= iniGetBool(ini, ROOT_SECTION, "UseOutboxes", cfg->use_outboxes);
 	cfg->auto_utf8				= iniGetBool(ini, ROOT_SECTION, "AutoUTF8", cfg->auto_utf8);
+	cfg->sort_nodelist			= iniGetBool(ini, ROOT_SECTION, "SortNodeList", cfg->sort_nodelist);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -339,6 +340,8 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/* Links/Nodes: */
 	/****************/
 	str_list_t nodelist = iniGetSectionList(ini, "node:");
+	if(cfg->sort_nodelist)
+		strListSortAlphaCase(nodelist);
 	cfg->nodecfgs = strListCount(nodelist);
 	if((cfg->nodecfg = realloc(cfg->nodecfg, sizeof(nodecfg_t)*cfg->nodecfgs)) == NULL) {
 		strListFree(&nodelist);
@@ -545,6 +548,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,		ROOT_SECTION, "StripSoftCRs"			,cfg->strip_soft_cr				,style);
 	iniSetBool(&ini,		ROOT_SECTION, "UseOutboxes"				,cfg->use_outboxes				,style);
 	iniSetBool(&ini,		ROOT_SECTION, "AutoUTF8"				,cfg->auto_utf8					,style);
+	iniSetBool(&ini,		ROOT_SECTION, "SortNodeList"			,cfg->sort_nodelist				,style);
 	iniSetBool(&ini,		ROOT_SECTION, "ConvertTearLines"		,cfg->convert_tear				,style);
 	iniSetBool(&ini,		ROOT_SECTION, "FuzzyNetmailZones"		,cfg->fuzzy_zone				,style);
 	iniSetBool(&ini,		ROOT_SECTION, "BinkleyStyleOutbound"	,cfg->flo_mailer				,style);
@@ -637,6 +641,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		iniSetBool(&ini		,section,	"BinkpTLS",node->binkp_tls, style);
 		iniSetString(&ini	,section,	"BinkpSourceAddress",node->binkp_src, style);
 	}
+	if(cfg->sort_nodelist)
+		iniSortSections(&ini, "node:", /* sort keys: */false);
 
 	/**************/
 	/* EchoLists: */
