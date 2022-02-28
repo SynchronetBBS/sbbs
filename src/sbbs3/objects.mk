@@ -6,9 +6,9 @@
 
 # OBJODIR, SLASH, and OFILE must be pre-defined
 
-OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
+OBJS	=		$(LOAD_CFG_OBJS) \
+			$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)answer$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)ars$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)atcodes$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)bat_xfer$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)bulkmail$(OFILE)\
@@ -66,7 +66,6 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_user$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_xtrn_area$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)listfile$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)logfile$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)login$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)logon$(OFILE)\
@@ -78,7 +77,6 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)msgtoqwk$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)netmail$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)newuser$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)pack_qwk$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)pack_rep$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)postmsg$(OFILE)\
@@ -89,20 +87,15 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)qwktomsg$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)readmail$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)readmsgs$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)readtext$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)sauce$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scandirs$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scansubs$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scfgsave$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)sockopts$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)str$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)telgate$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)text_defaults$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)text_sec$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)tmp_xfer$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)un_qwk$(OFILE)\
@@ -174,16 +167,10 @@ SMBUTIL_OBJS = \
 			$(OBJODIR)$(DIRSEP)smbutil$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE)
 
-SBBSECHO_OBJS = \
+SBBSECHO_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)$(DIRSEP)sbbsecho$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
 			$(OBJODIR)$(DIRSEP)scfgsave$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
@@ -201,44 +188,26 @@ ECHOCFG_OBJS = \
 			$(UIFC_OBJS) \
 			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE)
 
-ADDFILES_OBJS = \
+ADDFILES_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)$(DIRSEP)addfiles$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)msgdate$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)sauce$(OFILE)
 
-FILELIST_OBJS = \
+FILELIST_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)$(DIRSEP)filelist$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE)
 
-MAKEUSER_OBJS = \
+MAKEUSER_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)$(DIRSEP)makeuser$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)msgdate$(OFILE)
@@ -248,8 +217,7 @@ JSEXEC_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_conio$(OFILE)
 
-JSDOOR_OBJS = \
-			$(MTOBJODIR)$(DIRSEP)ars$(OFILE) \
+JSDOOR_OBJS = 		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)$(DIRSEP)date_str$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)jsdoor$(OFILE) \
@@ -272,16 +240,9 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)js_internal$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_queue$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_server$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)sockopts$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ssl$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)readtext$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)text_defaults$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scfgsave$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE)\
@@ -298,14 +259,8 @@ SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)
 
 QWKNODES_OBJS = \
-			$(OBJODIR)$(DIRSEP)qwknodes$(OFILE)\
-			$(OBJODIR)$(DIRSEP)date_str$(OFILE)\
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE)\
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE)
+			$(OBJODIR)$(DIRSEP)qwknodes$(OFILE) \
+			$(OBJODIR)$(DIRSEP)date_str$(OFILE)
 
 SLOG_OBJS = \
 			$(OBJODIR)$(DIRSEP)slog$(OFILE) \
@@ -316,36 +271,18 @@ ALLUSERS_OBJS = \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE)
 
-DELFILES_OBJS = \
+DELFILES_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)$(DIRSEP)delfiles$(OFILE) \
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE)\
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE)
 
-DUPEFIND_OBJS = \
-			$(OBJODIR)$(DIRSEP)dupefind$(OFILE) \
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE)\
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+DUPEFIND_OBJS = 	$(LOAD_CFG_OBJS) \
+			$(OBJODIR)$(DIRSEP)dupefind$(OFILE)
 
-SMBACTIV_OBJS = \
-			$(OBJODIR)$(DIRSEP)smbactiv$(OFILE)\
-			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE)\
-			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
-			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
-			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
-			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+SMBACTIV_OBJS = 	$(LOAD_CFG_OBJS) \
+			$(OBJODIR)$(DIRSEP)smbactiv$(OFILE)
 
 DSTSEDIT_OBJS = \
 			$(OBJODIR)$(DIRSEP)dstsedit$(OFILE)\
@@ -363,12 +300,17 @@ PKTDUMP_OBJS =		$(OBJODIR)$(DIRSEP)pktdump$(OFILE)
 
 FMSGDUMP_OBJS = 	$(OBJODIR)$(DIRSEP)fmsgdump$(OFILE)
 
-UPGRADE_TO_V319_OBJS =	$(OBJODIR)$(DIRSEP)upgrade_to_v319$(OFILE) \
-			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)sauce$(OFILE) \
-			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
+UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
+                        $(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+                        $(OBJODIR)$(DIRSEP)sauce$(OFILE) \
+                        $(OBJODIR)$(DIRSEP)userdat$(OFILE) \
+                        $(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
+			$(OBJODIR)/upgrade_to_v319$(OFILE)
+
+LOAD_CFG_OBJS = \
 			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
+			$(OBJODIR)$(DIRSEP)readtext$(OFILE) \
+			$(OBJODIR)$(DIRSEP)text_defaults$(OFILE) \
 			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
 			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
