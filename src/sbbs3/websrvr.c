@@ -662,9 +662,9 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 					HANDLE_CRYPT_CALL_EXCEPT(status = cryptFlushData(session->tls_sess), session, "flushing data", CRYPT_ERROR_COMPLETE);
 					if (cryptStatusError(status))
 						*failed=TRUE;
-					return tls_sent;
 				}
-				*failed=TRUE;
+				else
+					*failed=TRUE;
 				result = tls_sent;
 			}
 			else {
