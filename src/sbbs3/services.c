@@ -496,7 +496,7 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 
 	val = BOOLEAN_TO_JSVAL(JS_FALSE);
-	JS_SetProperty(cx, obj, "logged_in", &val);
+	(void)JS_SetProperty(cx, obj, "logged_in", &val);
 
 	JS_SET_RVAL(cx, arglist,BOOLEAN_TO_JSVAL(JS_TRUE));
 
