@@ -209,6 +209,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 				&& idx.to!=aliascrc && idx.from!=aliascrc
 				&& (useron.number!=1 || idx.to!=sysop))
 				continue;
+			msg.idx=idx;
 			if(!smb_lockmsghdr(&smb,&msg)) {
 				if(!smb_getmsghdr(&smb,&msg)) {
 					if(stricmp(msg.to,useron.alias)
