@@ -1378,6 +1378,15 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 		offset=smb_allocdat(&smb,length,1);
 	smb_close_da(&smb);
 
+	if(offset < 0) {
+		smb_freemsgdat(&smb,offset,length,1);
+		smb_unlocksmbhdr(&smb);
+		smb_close(&smb);
+		smb_stack(&smb,SMB_STACK_POP);
+		errormsg(WHERE,ERR_ALLOC,msgpath,length);
+		return(false); 
+	}
+
 	if((instream=fnopen(&file,msgpath,O_RDONLY|O_BINARY))==NULL) {
 		smb_freemsgdat(&smb,offset,length,1);
 		smb_unlocksmbhdr(&smb);
