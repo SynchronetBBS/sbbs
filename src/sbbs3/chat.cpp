@@ -564,13 +564,20 @@ bool sbbs_t::guru_page(void)
 		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 		return(false);
 	}
-	if((gurubuf=(char *)malloc((size_t)filelength(file)+1))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,path,(size_t)filelength(file)+1);
+	long length = (long)filelength(file);
+	if(length < 0) {
+		errormsg(WHERE ,ERR_CHK, path, length);
+		close(file);
+		return false;
+	}
+	if((gurubuf=(char *)malloc(length + 1))==NULL) {
+		errormsg(WHERE, ERR_ALLOC, path, length + 1);
 		close(file);
 		return(false);
 	}
-	(void)read(file,gurubuf,(size_t)filelength(file));
-	gurubuf[filelength(file)]=0;
+	if(read(file,gurubuf,length) != length)
+		errormsg(WHERE, ERR_READ, path, length);
+	gurubuf[length]=0;
 	close(file);
 	localguru(gurubuf,i);
 	free(gurubuf);
