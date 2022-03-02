@@ -1354,7 +1354,7 @@ void gen_notify_list(nodecfg_t* nodecfg)
 				fprintf(tmpf,"%s",str);
 		}
 
-		if(ftell(tmpf))
+		if(ftell(tmpf) >= 0)
 			file_to_netmail(tmpf,"SBBSecho Notify List",cfg.nodecfg[k].addr, /* To: */cfg.nodecfg[k].name);
 		fclose(tmpf);
 	}
@@ -1772,7 +1772,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 			}
 	}
 	if (to != NULL) {
-		if (!ftell(nmfile))
+		if (ftell(nmfile) == 0)
 			create_netmail(to,/* msg: */NULL, "Area Management Request", "No changes made."
 				,/* dest: */addr, /* src: */NULL);
 		else
@@ -3590,11 +3590,11 @@ bool getzpt(FILE* stream, fmsghdr_t* hdr)
 {
 	char buf[0x1000];
 	int i,len,cr=0;
-	long pos;
+	off_t pos;
 	fidoaddr_t faddr;
 	bool intl_found = false;
 
-	pos=ftell(stream);
+	pos=ftello(stream);
 	len=fread(buf,1,0x1000,stream);
 	for(i=0;i<len;i++) {
 		if(buf[i]=='\n')	/* ignore line-feeds */
@@ -3626,7 +3626,7 @@ bool getzpt(FILE* stream, fmsghdr_t* hdr)
 		else
 			cr=0;
 	}
-	(void)fseek(stream,pos,SEEK_SET);
+	(void)fseeko(stream,pos,SEEK_SET);
 	return intl_found;
 }
 
@@ -3847,16 +3847,16 @@ size_t terminate_packet(FILE* stream)
 	return fwrite(&terminator, sizeof(terminator), 1, stream);
 }
 
-long find_packet_terminator(FILE* stream)
+off_t find_packet_terminator(FILE* stream)
 {
 	uint16_t	terminator = ~FIDO_PACKET_TERMINATOR;
-	long		offset;
+	off_t		offset;
 
-	if(fseek(stream, 0, SEEK_END) != 0)
+	if(fseeko(stream, 0, SEEK_END) != 0)
 		return 0;
-	offset = ftell(stream);
+	offset = ftello(stream);
 	if(offset >= sizeof(fpkthdr_t)+sizeof(terminator)) {
-		(void)fseek(stream, offset-sizeof(terminator), SEEK_SET);
+		(void)fseeko(stream, offset-sizeof(terminator), SEEK_SET);
 		if(fread(&terminator, 1, sizeof(terminator), stream) == sizeof(terminator)
 			&& terminator==FIDO_PACKET_TERMINATOR)
 			offset -= sizeof(terminator);
@@ -5536,7 +5536,7 @@ void pack_netmail(void)
 			new_pkthdr(&pkthdr, getsysfaddr(addr), addr, nodecfg);
 			(void)fwrite(&pkthdr,sizeof(pkthdr),1,stream);
 		} else
-			(void)fseek(stream,find_packet_terminator(stream),SEEK_SET);
+			(void)fseeko(stream,find_packet_terminator(stream),SEEK_SET);
 
 		lprintf(LOG_DEBUG, "Adding NetMail (%s) to %spacket for %s: %s"
 			,getfname(path)
@@ -5774,7 +5774,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			FREE_AND_NULL(fmsgbuf);
 
-			off_t msg_offset = ftell(fidomsg);
+			off_t msg_offset = ftello(fidomsg);
 			/* Read fixed-length header fields */
 			if(fread(&pkdmsg,sizeof(BYTE),sizeof(pkdmsg),fidomsg) != sizeof(pkdmsg))
 				continue;
@@ -5800,9 +5800,16 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				bad_packet = true;
 				break;
 			}
-			msg_offset = ftell(fidomsg);	// Save offset to msg body
+			msg_offset = ftello(fidomsg);	// Save offset to msg body
 			fmsgbuf = getfmsg(fidomsg, NULL);
-			off_t next_msg = ftell(fidomsg);
+			off_t next_msg = ftello(fidomsg);
+			if(msg_offset < 0 || next_msg < 0) {
+				lprintf(LOG_NOTICE, "Invalid message body offset (%ld, next hdr: %ld) from %s in packet: %s"
+					,(long)msg_offset, (long)next_msg, smb_faddrtoa(&pkt_orig, NULL), packet);
+				printf("Invalid message!\n");
+				bad_packet = true;
+				break;
+			}
 
 			hdr.attr&=~FIDO_LOCAL;	/* Strip local bit, obviously not created locally */
 
