@@ -1061,6 +1061,7 @@ void packmsgs(ulong packable)
 		m=n=0;
 		for(l=smb.status.header_offset;l<length;l+=size) {
 			printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
+			ZERO_VAR(msg);
 			msg.idx.offset=l;
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 				printf("\n(%06lX) smb_lockmsghdr returned %d\n",l,i);
