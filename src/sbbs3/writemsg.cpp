@@ -1681,6 +1681,12 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 		smb_close_da(smb);
 	}
 
+	if(offset < 0) {
+		smb_unlocksmbhdr(smb);
+		errormsg(WHERE,ERR_ALLOC,msgtmp,length);
+		return false;
+	}
+
 	msg->hdr.offset=(uint32_t)offset;
 	if((file=open(msgtmp,O_RDONLY|O_BINARY))==-1
 		|| (instream=fdopen(file,"rb"))==NULL) {
