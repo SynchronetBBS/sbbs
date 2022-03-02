@@ -129,6 +129,9 @@ int smb_freemsgdat(smb_t* smb, off_t offset, ulong length, uint16_t refs)
 	off_t	sda_offset;
 	off_t	flen;
 
+	if(offset < 0)
+		return SMB_ERR_DAT_OFFSET;
+
 	if(smb->status.attr&SMB_HYPERALLOC)	/* do nothing */
 		return(SMB_SUCCESS);
 
