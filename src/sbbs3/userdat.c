@@ -54,7 +54,7 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 	int		file,c;
 	char	dat[LEN_ALIAS+2];
 	char	str[256];
-	ulong	l,length;
+	off_t	l,length;
 	FILE*	stream;
 
 	if(!VALID_CFG(cfg) || name==NULL)
@@ -67,9 +67,13 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 	SAFEPRINTF(str,"%suser/name.dat",cfg->data_dir);
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL)
 		return(0);
-	length=(long)filelength(file);
-	for(l=0;l<length;l+=LEN_ALIAS+2) {
-		fread(dat,sizeof(dat),1,stream);
+	length = filelength(file);
+	if(length < sizeof(dat)) {
+		fclose(stream);
+		return 0;
+	}
+	for(l = 0; l < length; l += sizeof(dat)) {
+		(void)fread(dat,sizeof(dat),1,stream);
 		for(c=0;c<LEN_ALIAS;c++)
 			if(dat[c]==ETX) break;
 		dat[c]=0;
@@ -78,7 +82,7 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 	}
 	fclose(stream);
 	if(l<length)
-		return((l/(LEN_ALIAS+2))+1);
+		return (uint)((l/(LEN_ALIAS+2))+1);
 	return(0);
 }
 
@@ -127,14 +131,16 @@ uint total_users(scfg_t* cfg)
 	if((file=openuserdat(cfg, /* for_modify: */FALSE)) < 0)
 		return(0);
 	length=(long)filelength(file);
-	for(l=0;l<length;l+=U_LEN) {
-		lseek(file,l+U_MISC,SEEK_SET);
-		if(read(file,str,8)!=8)
-			continue;
-		getrec(str,0,8,str);
-		if(ahtoul(str)&(DELETED|INACTIVE))
-			continue;
-		total_users++;
+	if(length >= U_LEN) {
+		for(l=0;l<length;l+=U_LEN) {
+			(void)lseek(file,l+U_MISC,SEEK_SET);
+			if(read(file,str,8)!=8)
+				continue;
+			getrec(str,0,8,str);
+			if(ahtoul(str)&(DELETED|INACTIVE))
+				continue;
+			total_users++;
+		}
 	}
 	close(file);
 	return(total_users);
@@ -227,7 +233,7 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
 		return(-1);	/* no such user record */
 	}
 
-	lseek(file,(long)((long)(user_number-1)*U_LEN),SEEK_SET);
+	(void)lseek(file,(long)((long)(user_number-1)*U_LEN),SEEK_SET);
 	i=0;
 	while(i<LOOP_NODEDAB
 		&& lock(file,(long)((long)(user_number-1)*U_LEN),U_LEN)==-1) {
@@ -615,7 +621,7 @@ int putuserdat(scfg_t* cfg, user_t* user)
 		return(-4);
 	}
 
-	lseek(file,(long)((long)((long)user->number-1)*U_LEN),SEEK_SET);
+	(void)lseek(file,(long)((long)((long)user->number-1)*U_LEN),SEEK_SET);
 
 	i=0;
 	while(i<LOOP_NODEDAB
@@ -673,8 +679,8 @@ char* username(scfg_t* cfg, int usernumber, char *name)
 		name[0]=0;
 		return(name);
 	}
-	lseek(file,(long)((long)(usernumber-1)*(LEN_ALIAS+2)),SEEK_SET);
-	read(file,name,LEN_ALIAS);
+	(void)lseek(file,(long)((long)(usernumber-1)*(LEN_ALIAS+2)),SEEK_SET);
+	(void)read(file,name,LEN_ALIAS);
 	close(file);
 	for(c=0;c<LEN_ALIAS;c++)
 		if(name[c]==ETX) break;
@@ -692,8 +698,8 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	char str[256];
 	int file;
 	int wr;
-	long length;
-	uint total_users;
+	off_t length;
+	off_t total_users;
 
 	if(!VALID_CFG(cfg) || name==NULL || number<1)
 		return(-1);
@@ -701,12 +707,12 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	SAFEPRINTF(str,"%suser/name.dat", cfg->data_dir);
 	if((file=nopen(str,O_RDWR|O_CREAT))==-1)
 		return(errno);
-	length=(long)filelength(file);
+	length = filelength(file);
 
 	/* Truncate corrupted name.dat */
 	total_users=lastuser(cfg);
-	if((uint)(length/(LEN_ALIAS+2))>total_users)
-		chsize(file,total_users*(LEN_ALIAS+2));
+	if(length/(LEN_ALIAS+2) > total_users)
+		chsize(file,(long)(total_users*(LEN_ALIAS+2)));
 
 	if(length && length%(LEN_ALIAS+2)) {
 		close(file);
@@ -715,11 +721,11 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	if(length<(((long)number-1)*(LEN_ALIAS+2))) {
 		SAFEPRINTF2(str,"%*s\r\n",LEN_ALIAS,nulstr);
 		memset(str,ETX,LEN_ALIAS);
-		lseek(file,0L,SEEK_END);
-		while(filelength(file)<((long)number*(LEN_ALIAS+2)))
-			write(file,str,(LEN_ALIAS+2));
+		(void)lseek(file,0L,SEEK_END);
+		while((length = filelength(file)) >= 0 && length < ((long)number*(LEN_ALIAS+2)))	// Shouldn't this be (number-1)?
+			(void)write(file,str,(LEN_ALIAS+2));
 	}
-	lseek(file,(long)(((long)number-1)*(LEN_ALIAS+2)),SEEK_SET);
+	(void)lseek(file,(long)(((long)number-1)*(LEN_ALIAS+2)),SEEK_SET);
 	putrec(str,0,LEN_ALIAS,name);
 	putrec(str,LEN_ALIAS,2,crlf);
 	wr=write(file,str,LEN_ALIAS+2);
@@ -919,7 +925,7 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, BOOL lockit, int* fdp)
 		for(count=0;count<LOOP_NODEDAB;count++) {
 			if(count)
 				mswait(100);
-			lseek(file,(long)number*sizeof(node_t),SEEK_SET);
+			(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 			if(lockit
 				&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))!=0)
 				continue;
@@ -962,7 +968,7 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, BOOL closeit, int file)
 
 	number--;	/* make zero based */
 	for(attempts=0;attempts<10;attempts++) {
-		lseek(file,(long)number*sizeof(node_t),SEEK_SET);
+		(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 		if((wr=write(file,node,sizeof(node_t)))==sizeof(node_t))
 			break;
 		wrerr=errno;	/* save write error */
@@ -1065,8 +1071,8 @@ char* getnodeext(scfg_t* cfg, int num, char* buf)
 		return "";
 	if((f = opennodeext(cfg)) < 1)
 		return "";
-	lseek(f, (num-1) * 128, SEEK_SET);
-	read(f, buf, 128);
+	(void)lseek(f, (num-1) * 128, SEEK_SET);
+	(void)read(f, buf, 128);
 	close(f);
 	buf[127] = 0;
 	return buf;
@@ -1330,7 +1336,7 @@ uint userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen
 			progress(cbdata, l, length);
 		if(usernumber && l/U_LEN==(long)usernumber-1)
 			continue;
-		lseek(file,l+offset,SEEK_SET);
+		(void)lseek(file,l+offset,SEEK_SET);
 		i=0;
 		while(i<LOOP_NODEDAB && lock(file,l,U_LEN)==-1) {
 			if(i)
@@ -1343,15 +1349,15 @@ uint userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen
 			return(0);
 		}
 
-		read(file,str,datlen);
+		(void)read(file,str,datlen);
 		for(i=0;i<datlen;i++)
 			if(str[i]==ETX) break;
 		str[i]=0;
 		truncsp(str);
 		if(!stricmp(str,dat)) {
 			if(!del) {      /* Don't include deleted users in search */
-				lseek(file,l+U_MISC,SEEK_SET);
-				read(file,str,8);
+				(void)lseek(file,l+U_MISC,SEEK_SET);
+				(void)read(file,str,8);
 				getrec(str,0,8,str);
 				if(ahtoul(str)&(DELETED|INACTIVE)) {
 					unlock(file,l,U_LEN);
@@ -1503,7 +1509,7 @@ char* getnmsg(scfg_t* cfg, int node_num)
 	if((file=nopen(str,O_RDWR))==-1)
 		return(NULL);
 	length=(long)filelength(file);
-	if(!length) {
+	if(length < 1) {
 		close(file);
 		return(NULL);
 	}
@@ -1541,7 +1547,7 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
 	SAFEPRINTF2(str,"%smsgs/n%3.3u.msg",cfg->data_dir,num);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
 		return(errno);
-	lseek(file,0L,SEEK_END);	/* Instead of opening with O_APPEND */
+	(void)lseek(file,0L,SEEK_END);	/* Instead of opening with O_APPEND */
 	i=strlen(strin);
 	if(write(file,strin,i)!=i) {
 		close(file);
@@ -2198,7 +2204,7 @@ int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 		close(file);
 		return(-2);
 	}
-	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
+	(void)lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 
 	if(length < 1) { /* auto-length */
 		length=user_rec_len(start);
@@ -2332,7 +2338,7 @@ ulong adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj
 		return(0);
 	}
 
-	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
+	(void)lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 
 	if(length < 1) { /* auto-length */
 		length=user_rec_len(start);
@@ -2381,7 +2387,7 @@ ulong adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj
 			sval += (ushort)adj;
 		val = sval;
 	}
-	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
+	(void)lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 	putrec(str,0,length,ultoa(val,tmp,10));
 	if(write(file,str,length)!=length) {
 		unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
@@ -2845,11 +2851,11 @@ int newuserdat(scfg_t* cfg, user_t* user)
 		if((file=nopen(str,O_RDWR))==-1)
 			continue;
 		memset(&stats,0,sizeof(stats));
-		lseek(file,4L,SEEK_SET);   /* Skip timestamp */
-		read(file,&stats,sizeof(stats));
+		(void)lseek(file,4L,SEEK_SET);   /* Skip timestamp */
+		(void)read(file,&stats,sizeof(stats));
 		stats.nusers++;
-		lseek(file,4L,SEEK_SET);
-		write(file,&stats,sizeof(stats));
+		(void)lseek(file,4L,SEEK_SET);
+		(void)write(file,&stats,sizeof(stats));
 		close(file);
 	}
 
