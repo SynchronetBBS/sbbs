@@ -2196,6 +2196,7 @@ int main(int argc, char** argv)
                      break;
 				case 'w':	/* who's online */
 					printf("\nNodes in use:\n");
+					// fall-through
 				case 'n':	/* nodelist */
 					printf("\n");
 					count=0;
