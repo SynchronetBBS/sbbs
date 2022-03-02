@@ -1882,7 +1882,7 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
-	buffer=malloc(size*count);
+	buffer=calloc(size, count);
 	if(buffer==NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		dbprintf(TRUE, p, "malloc failure of %u bytes", size*count);
