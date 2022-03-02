@@ -85,7 +85,7 @@ int msgdump(FILE* fp, const char* fname)
 	if(hdr.subj[sizeof(hdr.subj)-1] != 0)
 		fprintf(stderr,"%s Unterminated 'subj' field\n", fname);
 	if(hdr.time[sizeof(hdr.time)-1] != 0)
-		fprintf(stderr,"%s Untermianted 'time' field\n", fname);
+		fprintf(stderr,"%s Unterminated 'time' field\n", fname);
 
 
 	printf("Subj: %.*s\n", (int)sizeof(hdr.subj)-1, hdr.subj);
@@ -103,16 +103,17 @@ int msgdump(FILE* fp, const char* fname)
 		return(__COUNTER__);
 	}
 
-	char* body = calloc((end - sizeof(hdr)) + 1, 1);
+	long len = end - sizeof(hdr);
+	char* body = calloc(len + 1, 1);
 	if(body == NULL) {
 		fprintf(stderr, "!MALLOC failure\n");
 		return __COUNTER__;
 	}
 	fseek(fp, sizeof(hdr), SEEK_SET);
-	fread(body, end - sizeof(hdr), 1, fp);
+	fread(body, len, 1, fp);
 	fprintf(bodyfp, "\n-start of message text-\n");
 	char* p = body;
-	while(*p) {
+	while(*p && p < body + len) {
 		if((p == body || *(p - 1) == '\r') && *p == 1) {
 			fputc('@', ctrlfp);
 			p++;
@@ -132,7 +133,10 @@ int msgdump(FILE* fp, const char* fname)
 			fputc('\n', bodyfp);
 		}
 	}
-	fprintf(bodyfp, "-end of message text-\n");
+	if(p == (body + len) - 1)
+		fprintf(bodyfp, "-end of message text-\n");
+	else
+		fprintf(bodyfp, "-PREMATURE end of message text-\n");
 
 	free(body);
 	printf("\n");
