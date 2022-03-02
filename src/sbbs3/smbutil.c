@@ -1209,7 +1209,7 @@ void packmsgs(ulong packable)
 			}
 			else {
 				fseek(tmp_sdt,0L,SEEK_END);
-				offset=ftell(tmp_sdt); 
+				offset = ftello(tmp_sdt); 
 				if(offset < 0) {
 					fprintf(errfp,"\n%s!ftell() ERROR %d\n", beep, errno);
 					continue;
@@ -1235,28 +1235,34 @@ void packmsgs(ulong packable)
 
 		/* Write the new index entry */
 		length=smb_getmsghdrlen(&msg);
+		off_t offset;
 		if(smb.status.attr&SMB_HYPERALLOC)
-			msg.idx.offset=ftell(tmp_shd);
+			offset = ftello(tmp_shd);
 		else
-			msg.idx.offset=(uint32_t)smb_fallochdr(&smb,(ulong)length)+smb.status.header_offset;
-		smb_init_idx(&smb, &msg);
-		fseek(tmp_sid, l * idxreclen, SEEK_SET);
-		fwrite(&msg.idx, 1, sizeof(msg.idx), tmp_sid);
+			offset = smb_fallochdr(&smb,(ulong)length)+smb.status.header_offset;
+		if(offset < 0) {
+			fprintf(errfp,"\n%s!header allocation ERROR %ld\n", beep, (long)offset);
+		} else {
+			msg.idx.offset = (uint32_t)offset;
+			smb_init_idx(&smb, &msg);
+			fseek(tmp_sid, l * idxreclen, SEEK_SET);
+			fwrite(&msg.idx, 1, sizeof(msg.idx), tmp_sid);
 
-		/* Write the new header entry */
-		fseek(tmp_shd,msg.idx.offset,SEEK_SET);
-		fwrite(&msg.hdr,1,sizeof(msghdr_t),tmp_shd);
-		for(n=0;n<msg.hdr.total_dfields;n++)
-			fwrite(&msg.dfield[n],1,sizeof(dfield_t),tmp_shd);
-		for(n=0;n<msg.total_hfields;n++) {
-			fwrite(&msg.hfield[n],1,sizeof(hfield_t),tmp_shd);
-			fwrite(msg.hfield_dat[n],1,msg.hfield[n].length,tmp_shd); 
+			/* Write the new header entry */
+			fseek(tmp_shd,msg.idx.offset,SEEK_SET);
+			fwrite(&msg.hdr,1,sizeof(msghdr_t),tmp_shd);
+			for(n=0;n<msg.hdr.total_dfields;n++)
+				fwrite(&msg.dfield[n],1,sizeof(dfield_t),tmp_shd);
+			for(n=0;n<msg.total_hfields;n++) {
+				fwrite(&msg.hfield[n],1,sizeof(hfield_t),tmp_shd);
+				fwrite(msg.hfield_dat[n],1,msg.hfield[n].length,tmp_shd); 
+			}
+			while(length%SHD_BLOCK_LEN) {	/* pad with NULLs */
+				fputc(0,tmp_shd);
+				length++; 
+			}
+			total++;
 		}
-		while(length%SHD_BLOCK_LEN) {	/* pad with NULLs */
-			fputc(0,tmp_shd);
-			length++; 
-		}
-		total++;
 		smb_freemsgmem(&msg); 
 	}
 
