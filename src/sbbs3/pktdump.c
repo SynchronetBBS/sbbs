@@ -374,7 +374,8 @@ int main(int argc, char** argv)
 			if(length <= sizeof(fpkthdr_t) + sizeof(uint16_t) // no messages
 				|| length == ftell(fp)) {
 				puts("All good.");
-				remove(good_fname);
+				if(remove(good_fname) != 0)
+					fprintf(stderr, "!ERROR %d removing %s\n", errno, good_fname);
 			}
 		}
 		if(bad != NULL) {
@@ -384,7 +385,8 @@ int main(int argc, char** argv)
 			if(length <= sizeof(fpkthdr_t) + sizeof(uint16_t) // no messages
 				|| length == ftell(fp)) {
 				puts("All bad.");
-				remove(bad_fname);
+				if(remove(bad_fname) != 0)
+					fprintf(stderr, "!ERROR %d removing %s\n", errno, bad_fname);
 			}
 		}
 		fclose(fp);
