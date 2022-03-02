@@ -3595,6 +3595,8 @@ bool getzpt(FILE* stream, fmsghdr_t* hdr)
 	bool intl_found = false;
 
 	pos=ftello(stream);
+	if(pos < 0)
+		return false;
 	len=fread(buf,1,0x1000,stream);
 	for(i=0;i<len;i++) {
 		if(buf[i]=='\n')	/* ignore line-feeds */
