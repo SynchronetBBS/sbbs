@@ -406,11 +406,11 @@ public:
 	char	client_ipaddr[INET6_ADDRSTRLEN];
 	char	local_addr[INET6_ADDRSTRLEN];
 #ifdef USE_CRYPTLIB
-	CRYPT_SESSION	ssh_session;
+	CRYPT_SESSION	ssh_session=-1;
 #endif
-	int		session_channel;
+	int		session_channel=-1;
 	bool	ssh_mode;
-	SOCKET	passthru_socket;
+	SOCKET	passthru_socket=INVALID_SOCKET;
 	bool	passthru_socket_active;
 	void	passthru_socket_activate(bool);
     bool	passthru_thread_running;
@@ -433,7 +433,7 @@ public:
     RingBuf	inbuf;
     RingBuf	outbuf;
 	bool	WaitForOutbufEmpty(int timeout) { return WaitForEvent(outbuf.empty_event, timeout) == WAIT_OBJECT_0; }
-	HANDLE	input_thread;
+	HANDLE	input_thread=nullptr;
 	pthread_mutex_t	input_thread_mutex;
 	bool	input_thread_mutex_created;
 	pthread_mutex_t	ssh_mutex;
@@ -475,14 +475,14 @@ public:
 	bool	event_thread_running;
     bool	output_thread_running;
     bool	input_thread_running;
-	bool	terminate_output_thread;
+	bool	terminate_output_thread=false;
 
 	JSRuntime*		js_runtime;
 	JSContext*		js_cx;
-	JSObject*		js_glob;
+	JSObject*		js_glob=nullptr;
 	JSRuntime*		js_hotkey_runtime;
 	JSContext*		js_hotkey_cx;
-	JSObject*		js_hotkey_glob;
+	JSObject*		js_hotkey_glob=nullptr;
 	js_callback_t	js_callback{};
 	long			js_execfile(const char *fname, const char* startup_dir, JSObject* scope = NULL, JSContext* cx = NULL, JSObject* glob = NULL);
 	long			js_execxtrn(const char *fname, const char* startup_dir);
