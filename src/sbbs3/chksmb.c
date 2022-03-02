@@ -236,6 +236,7 @@ int main(int argc, char **argv)
 			continue;
 		}
 
+	ZERO_VAR(smb);
 	SAFECOPY(smb.file,argv[x]);
 	p=strrchr(smb.file,'.');
 	s=strrchr(smb.file,'\\');
