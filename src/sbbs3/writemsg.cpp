@@ -852,7 +852,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 {
 	char*	buf;
     size_t  slen;
-    int     i,file;
+    int		i,file;
 	long	l=0,flen;
     FILE    *stream;
 
@@ -861,6 +861,11 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 		return; 
 	}
 	flen=(long)filelength(file);
+	if(flen < 0) {
+		close(file);
+		errormsg(WHERE, ERR_CHK, str, flen);
+		return;
+	}
 	slen=strlen(str2);
 	if((buf=(char *)malloc(flen))==NULL) {
 		close(file);
