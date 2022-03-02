@@ -1861,11 +1861,12 @@ void decompile(FILE *bin, FILE *srcfile)
 				break;
 			case CS_COMPARE_ARS:
 				fread(&uch,1,1,bin);
-				p=(char *)malloc(uch);
-				fread(p,uch,1,bin);
-				WRITE_NAME("COMPARE_ARS");
-				sprintf(strchr(src,0),"%s\n",decompile_ars((uchar*)p,uch));
-				free(p);
+				if((p=(char *)malloc(uch)) != NULL) {
+					fread(p,uch,1,bin);
+					WRITE_NAME("COMPARE_ARS");
+					sprintf(strchr(src,0),"%s\n",decompile_ars((uchar*)p,uch));
+					free(p);
+				}
 				break;
 			case CS_TOGGLE_USER_MISC:
 				MLNG("TOGGLE_USER_MISC");
