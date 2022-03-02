@@ -1379,7 +1379,6 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	smb_close_da(&smb);
 
 	if(offset < 0) {
-		smb_freemsgdat(&smb,offset,length,1);
 		smb_unlocksmbhdr(&smb);
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
