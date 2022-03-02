@@ -241,11 +241,11 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	close(file);
 
 	if(comWriteBuf(p->com,(uint8_t *)buf,(size_t)len)==len) {
-		dbprintf(FALSE, p, "sent %u bytes",len);
+		dbprintf(FALSE, p, "sent %ld bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=COM_ERROR_VALUE;
-		dbprintf(TRUE, p, "send of %u bytes failed",len);
+		dbprintf(TRUE, p, "send of %ld bytes failed",len);
 	}
 	free(buf);
 
