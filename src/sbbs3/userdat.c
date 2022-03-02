@@ -3276,6 +3276,9 @@ BOOL check_name(scfg_t* cfg, const char* name)
 	char	tmp[512];
 	size_t	len;
 
+	if(name == NULL)
+		return FALSE;
+
 	len=strlen(name);
 	if(len<1)
 		return FALSE;
