@@ -24,6 +24,7 @@
 #include "telnet.h"
 #include "netwrap.h"
 #include "petdefs.h"
+#include "filedat.h"
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "ssl.h"
@@ -2570,7 +2571,6 @@ static bool is_time_to_run(time_t now, const qhub_t* hub)
 void event_thread(void* arg)
 {
 	char		str[MAX_PATH+1];
-	char		bat_list[MAX_PATH+1];
 	char		semfile[MAX_PATH+1];
 	int			i,j,k;
 	int			file;
@@ -2752,7 +2752,7 @@ void event_thread(void* arg)
 						sbbs->lprintf(LOG_INFO, "Packing completed: %s", str);
 						sbbs->qwk_success(l,0,1);
 						sbbs->putmsgptrs();
-						remove(bat_list);
+						batch_list_clear(&sbbs->cfg, sbbs->useron.number, XFER_BATCH_DOWNLOAD);
 					} else
 						sbbs->lputs(LOG_INFO, "No packet created (no new messages)");
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
@@ -2804,6 +2804,7 @@ void event_thread(void* arg)
 						if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
 							sbbs->qwk_success(l,0,1);
 							sbbs->putmsgptrs();
+							batch_list_clear(&sbbs->cfg, sbbs->useron.number, XFER_BATCH_DOWNLOAD);
 						}
 						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
