@@ -620,6 +620,7 @@ void viewmsgs(ulong start, ulong count, BOOL verbose)
 	if(!count)
 		count=~0;
 	while(l<count) {
+		ZERO_VAR(msg);
 		fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);
 		if(!fread(&msg.idx,sizeof(msg.idx),1,smb.sid_fp))
 			break;
