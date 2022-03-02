@@ -113,7 +113,7 @@ while(l>-1L) {
 	if(pause && lncntr>=20) {
 		printf("More (Y/n) ? ");
 		fflush(stdout);
-		char ch = getchar();
+		int ch = getchar();
 		if(ch == CTRL_C || toupper(ch) == 'N')
 			break;
 		printf("\r");
