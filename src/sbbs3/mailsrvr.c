@@ -3156,9 +3156,10 @@ static void smtp_thread(void* arg)
 
 	if(trashcan(&scfg,host_name,"smtpspy") 
 		|| trashcan(&scfg,host_ip,"smtpspy")) {
-		SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, client.protocol);
+		SAFECOPY(str, client.protocol);
 		strlwr(str);
-		spy=fopen(str,"a");
+		SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, str);
+		spy=fopen(path,"a");
 	}
 
 	/* Initialize client display */
@@ -4573,8 +4574,9 @@ static void smtp_thread(void* arg)
 			if(spy==NULL 
 				&& (trashcan(&scfg,reverse_path,"smtpspy")
 					|| trashcan(&scfg,rcpt_addr,"smtpspy"))) {
-				SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, client.protocol);
-				strlwr(path);
+				SAFECOPY(str, client.protocol);
+				strlwr(str);
+				SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, str);
 				spy=fopen(path,"a");
 			}
 
