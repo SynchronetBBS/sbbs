@@ -1196,16 +1196,26 @@ void packmsgs(ulong packable)
 				continue; 
 			}
 
+			off_t offset;
 			if(!(smb.status.attr&SMB_HYPERALLOC)) {
-				msg.hdr.offset = (uint32_t)smb_fallocdat(&smb,(uint32_t)m,1);
-				datoffset[datoffsets].new = msg.hdr.offset;
+				offset = smb_fallocdat(&smb,(uint32_t)m,1);
+				if(offset < 0) {
+					fprintf(errfp,"\n%s!Data allocation failure: %ld\n", beep, (long)offset);
+					continue;
+				}
+				datoffset[datoffsets].new = (uint32_t)offset;
 				datoffsets++;
-				fseek(tmp_sdt,msg.hdr.offset,SEEK_SET); 
+				fseeko(tmp_sdt, offset, SEEK_SET); 
 			}
 			else {
 				fseek(tmp_sdt,0L,SEEK_END);
-				msg.hdr.offset=ftell(tmp_sdt); 
+				offset=ftell(tmp_sdt); 
+				if(offset < 0) {
+					fprintf(errfp,"\n%s!ftell() ERROR %d\n", beep, errno);
+					continue;
+				}
 			}
+			msg.hdr.offset = (uint32_t)offset;
 
 			/* Actually copy the data */
 
