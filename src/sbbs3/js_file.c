@@ -406,15 +406,18 @@ js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 	 * required by POSIX.
 	 */
 	fflush(p->fp);
-	pos = ftell(p->fp);
-	fd = fileno(p->fp);
-	lseek(fd, pos, SEEK_SET);
-	len = read(fileno(p->fp),buf,len);
-	fseeko(p->fp, pos + (len >= 0 ? len : 0), SEEK_SET);
-	dbprintf(FALSE, p, "read %u raw bytes",len);
-	if(len<0)
-		len=0;
-
+	pos = ftello(p->fp);
+	if(pos < 0)
+		len = 0;
+	else {
+		fd = fileno(p->fp);
+		lseek(fd, pos, SEEK_SET);
+		len = read(fileno(p->fp),buf,len);
+		fseeko(p->fp, pos + (len >= 0 ? len : 0), SEEK_SET);
+		dbprintf(FALSE, p, "read %d raw bytes",len);
+		if(len<0)
+			len=0;
+	}
 	JS_RESUMEREQUEST(cx, rc);
 
 	str = JS_NewStringCopyN(cx, buf, len);
