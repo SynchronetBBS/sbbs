@@ -1302,7 +1302,7 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
 /****************************************************************************/
 bool safest_filename(const char* fname)
 {
-	return strspn(fname, SAFEST_FILENAME_CHARS) == strlen(fname);
+	return (fname != NULL) && (strspn(fname, SAFEST_FILENAME_CHARS) == strlen(fname));
 }
 
 /****************************************************************************/
@@ -1310,6 +1310,9 @@ bool safest_filename(const char* fname)
 /****************************************************************************/
 bool illegal_filename(const char *fname)
 {
+	if(fname == NULL)
+		return false;
+
 	size_t len = strlen(fname);
 
 	if(len < 1)
@@ -1342,6 +1345,9 @@ bool illegal_filename(const char *fname)
 /****************************************************************************/
 bool allowed_filename(scfg_t* cfg, const char *fname)
 {
+	if(fname == NULL)
+		return false;
+
 	size_t len = strlen(fname);
 	if(len < 1 || len > cfg->filename_maxlen)
 		return false;
