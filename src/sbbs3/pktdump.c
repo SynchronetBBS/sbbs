@@ -156,6 +156,12 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 	while(!feof(fp)) {
 
 		offset=ftell(fp);
+		if(offset < 0) {
+			printf("%s ERROR %d getting offset!\n"
+				,fname
+				,errno);
+			break;
+		}
 
 		if(fread(&pkdmsg.type, 1, sizeof(pkdmsg.type), fp) != sizeof(pkdmsg.type))
 			break;
