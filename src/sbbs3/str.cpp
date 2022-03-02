@@ -132,24 +132,26 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 	int		file;
 	long	length,l=0,m,top,a=0;
 
+	*answers = 0;
 	sprintf(str,"%s%s.sif",cfg.text_dir,fname);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		answers[0]=0;
 		return; 
 	}
 	length=(long)filelength(file);
+	if(length < 0) {
+		errormsg(WHERE, ERR_CHK, str, length);
+		return;
+	}
 	if((buf=(char *)calloc(length + 1, 1))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
-		answers[0]=0;
 		return; 
 	}
 	if(lread(file,buf,length)!=length) {
 		close(file);
 		free(buf);
 		errormsg(WHERE,ERR_READ,str,length);
-		answers[0]=0;
 		return; 
 	}
 	close(file);
