@@ -173,7 +173,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(cp && comWriteBuf(p->com,(uint8_t *)cp,len)==len) {
-		dbprintf(FALSE, p, "sent %u bytes",len);
+		dbprintf(FALSE, p, "sent %lu bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=COM_ERROR_VALUE;
