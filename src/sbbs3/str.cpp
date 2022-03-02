@@ -457,7 +457,7 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 		return; 
 	}
 	length=(long)filelength(file);
-	if(!length) {
+	if(length <= 0) {
 		close(file);
 		return; 
 	}
