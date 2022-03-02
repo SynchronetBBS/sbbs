@@ -922,10 +922,8 @@ void qhub_edit(int num)
 					"This is the QWK System ID of this hub. It is used for incoming and\n"
 					"outgoing network packets and must be accurate.\n"
 				;
-				strcpy(str,cfg.qhub[num]->id);	/* save */
-				if(!uifc.input(WIN_MID|WIN_SAV,0,0,"QWK Network Hub System ID"
-					,cfg.qhub[num]->id,LEN_QWKID,K_UPPER|K_EDIT))
-					strcpy(cfg.qhub[num]->id,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"QWK Network Hub System ID"
+					,cfg.qhub[num]->id,LEN_QWKID,K_UPPER|K_EDIT);
 				break;
 			case __COUNTER__:
 				uifc.helpbuf=
