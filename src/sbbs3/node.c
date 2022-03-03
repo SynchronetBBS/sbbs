@@ -398,12 +398,12 @@ void printnodedat(int number, node_t node)
 						hour=12;
 					else
 						hour=(node.aux/60)-12;
-					strcpy(mer,"pm"); }
+					SAFECOPY(mer,"pm"); }
 				else {
 					if((node.aux/60)==0)    /* 12 midnite */
 						hour=12;
 					else hour=node.aux/60;
-					strcpy(mer,"am"); }
+					SAFECOPY(mer,"am"); }
 				printf(" ETA %02d:%02d %s"
 					,hour,node.aux-((node.aux/60)*60),mer); }
 			break; }
@@ -504,17 +504,17 @@ int main(int argc, char **argv)
 		printf("This environment variable must be set to your CTRL directory.");
 		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
 		exit(1); }
-	sprintf(ctrl_dir,"%.40s",p);
+	SAFECOPY(ctrl_dir, p);
 	if(ctrl_dir[strlen(ctrl_dir)-1]!='\\'
 		&& ctrl_dir[strlen(ctrl_dir)-1]!='/')
 		strcat(ctrl_dir,"/");
 
-	sprintf(str,"%snode.dab",ctrl_dir);
+	SAFEPRINTF(str,"%snode.dab",ctrl_dir);
 	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 		printf("\7\nError %d opening %s.\n",errno,str);
 		exit(1); }
 
-	sprintf(str,"%snode.exb",ctrl_dir);
+	SAFEPRINTF(str,"%snode.exb",ctrl_dir);
 	nodeexb=sopen(str,O_RDWR|O_BINARY,SH_DENYNO);
 
 	sys_nodes=(int)(filelength(nodefile)/sizeof(node_t));
