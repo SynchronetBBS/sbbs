@@ -311,7 +311,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 	length=(long)filelength(file);
 	if(length < 0) {
 		close(file);
-		errormsg(WHERE, ERR_CHK, str, length);
+		errormsg(WHERE, ERR_LEN, str, length);
 		return; 
 	}
 	if((buf=(char *)calloc(length + 1, 1))==0) {
