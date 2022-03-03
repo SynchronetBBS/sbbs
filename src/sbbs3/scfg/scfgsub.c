@@ -327,13 +327,23 @@ void sub_cfg(uint grpnum)
 		done=0;
 		while(!done) {
 			n=0;
+			char area_tag[sizeof(cfg.sub[i]->area_tag) + 2];
+			if(cfg.sub[i]->area_tag[0])
+				SAFECOPY(area_tag, cfg.sub[i]->area_tag);
+			else
+				SAFEPRINTF(area_tag, "[%s]", sub_area_tag(&cfg, cfg.sub[i], tmp, sizeof(tmp)));
+			char newsgroup_name[sizeof(cfg.sub[i]->newsgroup) + 2];
+			if(cfg.sub[i]->newsgroup[0])
+				SAFECOPY(newsgroup_name, cfg.sub[i]->newsgroup);
+			else
+				SAFEPRINTF(newsgroup_name, "[%s]", sub_newsgroup_name(&cfg, cfg.sub[i], tmp, sizeof(tmp)));
 			sprintf(opt[n++],"%-27.27s%s","Long Name",cfg.sub[i]->lname);
 			sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.sub[i]->sname);
 			sprintf(opt[n++],"%-27.27s%s","QWK Name",cfg.sub[i]->qwkname);
 			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
 				,cfg.grp[cfg.sub[i]->grp]->code_prefix, cfg.sub[i]->code_suffix);
-			sprintf(opt[n++],"%-27.27s%s","FidoNet Area Tag", cfg.sub[i]->area_tag);
-			sprintf(opt[n++],"%-27.27s%s","Newsgroup Name",cfg.sub[i]->newsgroup);
+			sprintf(opt[n++],"%-27.27s%s","Newsgroup Name", newsgroup_name);
+			sprintf(opt[n++],"%-27.27s%s","FidoNet Area Tag", area_tag);
 			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
 				,cfg.sub[i]->arstr);
 			sprintf(opt[n++],"%-27.27s%s","Reading Requirements"
@@ -426,19 +436,6 @@ void sub_cfg(uint grpnum)
 					break;
 				case 4:
 					uifc.helpbuf=
-						"`FidoNet Area Tag:`\n"
-						"\n"
-						"This field may be used to specify the FidoNet-style `Echo/Area Tag` for\n"
-						"this message area. If no tag name is configured here, a tag name will be\n"
-						"automatically generated from the Sub-board's `Short Name`.\n"
-						"\n"
-						"This tag should ~ not ~ contain spaces."
-					;
-					uifc.input(WIN_MID|WIN_SAV, 0, 17, "FidoNet Area Tag"
-						,cfg.sub[i]->area_tag, sizeof(cfg.sub[i]->area_tag)-1, K_EDIT|K_UPPER);
-					break;
-				case 5:
-					uifc.helpbuf=
 						"`Newsgroup Name:`\n"
 						"\n"
 						"This is the name of the sub-board used for newsgroup readers. If no name\n"
@@ -449,6 +446,20 @@ void sub_cfg(uint grpnum)
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,""
 						,cfg.sub[i]->newsgroup,sizeof(cfg.sub[i]->newsgroup)-1,K_EDIT);
+					break;
+				case 5:
+					uifc.helpbuf=
+						"`FidoNet Area Tag:`\n"
+						"\n"
+						"This field may be used to specify the FidoNet-style `Echo/Area Tag` for\n"
+						"this message area. If no tag name is configured here, a tag name will be\n"
+						"automatically generated from the Sub-board's `Newsgroup Name` (if exists)\n"
+						"or the Sub-board's `Short Name`.\n"
+						"\n"
+						"This tag should ~ not ~ contain spaces."
+					;
+					uifc.input(WIN_MID|WIN_SAV, 0, 17, "FidoNet Area Tag"
+						,cfg.sub[i]->area_tag, sizeof(cfg.sub[i]->area_tag)-1, K_EDIT|K_UPPER);
 					break;
 				case 6:
 					sprintf(str,"%s Access",cfg.sub[i]->sname);

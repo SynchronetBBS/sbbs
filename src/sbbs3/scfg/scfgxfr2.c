@@ -1177,11 +1177,16 @@ void dir_cfg(uint libnum)
 		done=0;
 		while(!done) {
 			n=0;
+			char area_tag[sizeof(cfg.dir[i]->area_tag) + 2];
+			if(cfg.dir[i]->area_tag[0])
+				SAFECOPY(area_tag, cfg.dir[i]->area_tag);
+			else
+				SAFEPRINTF(area_tag, "[%s]", dir_area_tag(&cfg, cfg.dir[i], tmp, sizeof(tmp)));
 			sprintf(opt[n++],"%-27.27s%s","Long Name",cfg.dir[i]->lname);
 			sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.dir[i]->sname);
 			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
 				,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
-			sprintf(opt[n++],"%-27.27s%s","FidoNet Area Tag",cfg.dir[i]->area_tag);
+			sprintf(opt[n++],"%-27.27s%s","FidoNet Area Tag",area_tag);
 			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
 				,cfg.dir[i]->arstr);
 			sprintf(opt[n++],"%-27.27s%s","Upload Requirements"
