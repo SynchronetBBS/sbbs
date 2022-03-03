@@ -376,7 +376,7 @@ int main(int argc, char **argv)
 					exit(1); 
 		}
 		else {
-			strcpy(dir,argv[i]);
+			SAFECOPY(dir,argv[i]);
 			backslash(dir); 
 		} 
 	}
