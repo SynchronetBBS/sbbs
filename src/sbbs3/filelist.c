@@ -1,4 +1,6 @@
 /* Utility to create list of files from Synchronet file directories */
+/* DEPRECATED: use filelist.js instead */
+
 /* Default list format is FILES.BBS, but file size, uploader, upload date */
 /* and other information can be included. */
 
@@ -55,31 +57,18 @@ int lprintf(int level, const char *fmat, ...)
 	return(chcount);
 }
 
-void stripctrlz(char *str)
-{
-	char tmp[1024];
-	int i,j,k;
-
-	k=strlen(str);
-	for(i=j=0;i<k;i++)
-		if(str[i]!=0x1a)
-			tmp[j++]=str[i];
-	tmp[j]=0;
-	strcpy(str,tmp);
-}
-
 char* byteStr(unsigned long value)
 {
 	static char tmp[128];
 
 	if(value>=(1024*1024*1024))
-		sprintf(tmp, "%5.1fG", value/(1024.0*1024.0*1024.0));
+		SAFEPRINTF(tmp, "%5.1fG", value/(1024.0*1024.0*1024.0));
 	else if(value>=(1024*1024))
-		sprintf(tmp, "%5.1fM", value/(1024.0*1024.0));
+		SAFEPRINTF(tmp, "%5.1fM", value/(1024.0*1024.0));
 	else if(value>=1024)
-		sprintf(tmp, "%5.1fK", value/1024.0); 
+		SAFEPRINTF(tmp, "%5.1fK", value/1024.0); 
 	else
-		sprintf(tmp, "%5luB", value);
+		SAFEPRINTF(tmp, "%5luB", value);
 	return tmp;
 }
 
@@ -234,7 +223,8 @@ int main(int argc, char **argv)
 				printf("\nDirectory internal code must follow -not parameter.\n");
 				exit(1); 
 			}
-			sprintf(not[nots++],"%.8s",argv[i]); 
+			SAFECOPY(not[nots], argv[i]);
+			nots++;
 		}
 		else if(!stricmp(argv[i],"-all")) {
 			if(dirnum!=-1) {
@@ -343,14 +333,14 @@ int main(int argc, char **argv)
 			,/* filespec: */pattern, /* time: */t, file_detail_extdesc, scfg.dir[i]->sort, &file_count);
 
 		if(misc&AUTO) {
-			sprintf(str,"%sFILES.BBS",scfg.dir[i]->path);
+			SAFEPRINTF(str,"%sFILES.BBS",scfg.dir[i]->path);
 			if((out=fopen(str, omode)) == NULL) {
 				perror(str);
 				exit(1); 
 			}
 		}
 		if(misc&HDR) {
-			sprintf(fname,"%-*s      %-*s       Files: %4lu"
+			safe_snprintf(fname, sizeof(fname), "%-*s      %-*s       Files: %4lu"
 				,LEN_GSNAME,scfg.lib[scfg.dir[i]->lib]->sname
 				,LEN_SLNAME,scfg.dir[i]->lname, (ulong)smb.status.total_files);
 			fprintf(out,"%s\n",fname);
@@ -400,7 +390,7 @@ int main(int argc, char **argv)
 			}
 
 			if(misc&MINUS) {
-				sprintf(str,"%s%s",scfg.dir[i]->path,file.name);
+				SAFEPRINTF2(str,"%s%s",scfg.dir[i]->path,file.name);
 				if(!fexistcase(str))
 					fputc('-',out);
 				else
@@ -411,8 +401,7 @@ int main(int argc, char **argv)
 			desc_off++;
 
 			if(misc&DFD) {
-				// TODO: Fix to support alt-file-paths:
-				sprintf(str,"%s%s",scfg.dir[i]->path,file.name);
+				SAFEPRINTF2(str,"%s%s",scfg.dir[i]->path,file.name);
 				desc_off += fprintf(out,"%s ",unixtodstr(&scfg,(time32_t)fdate(str),str));
 			}
 
