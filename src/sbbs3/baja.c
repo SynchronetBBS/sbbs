@@ -3458,7 +3458,7 @@ int main(int argc, char **argv)
 					puts(usage);
 					bail(1); }
 		else
-			sprintf(src,"%.*s",(int)(sizeof(src)-5),argv[i]);	/* leave room for '.src' to be appended */
+			SAFECOPY(src, argv[i]);
 
 	if(show_banner)
 		printf(banner,PLATFORM_DESC,revision);
@@ -3474,12 +3474,12 @@ int main(int argc, char **argv)
 			*p=0;						/* Truncate off the src filename */
 	}
 	if(getfext(src)==NULL)
-		strcat(src,".src");
+		SAFECAT(src,".src");
 
 	SAFECOPY(bin_file,src);
 	if((p=getfext(bin_file))!=NULL)
 		*p=0;
-	strcat(bin_file,".bin");
+	SAFECAT(bin_file,".bin");
 
 	if(output_dir[0]) {
 		p=getfname(bin_file);
