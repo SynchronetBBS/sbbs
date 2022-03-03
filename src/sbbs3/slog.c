@@ -46,11 +46,11 @@ for(i=1;i<argc;i++)
 	if(!stricmp(argv[i],"/P"))
 		pause=1;
 	else
-		strcpy(dir,argv[1]);
+		SAFECOPY(dir,argv[1]);
 if(!dir[0]) {
 	p=getenv("SBBSCTRL");
 	if(p!=NULL)
-		strcpy(dir,p); }
+		SAFECOPY(dir,p); }
 
 backslash(dir);
 
