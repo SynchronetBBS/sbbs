@@ -4329,6 +4329,13 @@ void node_thread(void* arg)
 				sbbs->clearvars(&sbbs->main_csi);
 
 				sbbs->main_csi.length=(long)filelength(file);
+				if(sbbs->main_csi.length < 1) {
+					close(file);
+					sbbs->errormsg(WHERE,ERR_LEN, str, sbbs->main_csi.length);
+					sbbs->hangup();
+					break;
+				}
+
 				if((sbbs->main_csi.cs=(uchar *)malloc(sbbs->main_csi.length))==NULL) {
 					close(file);
 					sbbs->errormsg(WHERE,ERR_ALLOC,str,sbbs->main_csi.length);
