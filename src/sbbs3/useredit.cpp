@@ -686,6 +686,10 @@ int sbbs_t::searchup(char *search,int usernum)
 		return(usernum);
 
 	flen=(long)filelength(file);
+	if(flen < 0) {
+		close(file);
+		return usernum;
+	}
 	lseek(file,(long)((long)usernum*U_LEN),0);
 
 	while((i*U_LEN)<=(ulong)flen) {
