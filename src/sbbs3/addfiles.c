@@ -729,13 +729,13 @@ int main(int argc, char **argv)
 				SAFECOPY(fdesc, "no description given");
 			}
 
-			sprintf(str,"%s%s", scfg.dir[dirnum]->path, fname);
+			SAFEPRINTF2(str,"%s%s", scfg.dir[dirnum]->path, fname);
 			if(mode&FILE_DATE)
-				sprintf(fdesc, "%s  ", unixtodstr(&scfg,(time32_t)fdate(str),tmp));
-			if(mode&TODAYS_DATE)
-				sprintf(fdesc, "%s  ", unixtodstr(&scfg,time32(NULL),tmp));
-			sprintf(tmp, "%.*s", (int)(LEN_FDESC-strlen(fdesc)), argv[++j]);
-			SAFECOPY(fdesc, tmp);
+				SAFEPRINTF(fdesc, "%s  ", unixtodstr(&scfg,(time32_t)fdate(str),tmp));
+			else if(mode&TODAYS_DATE)
+				SAFEPRINTF(fdesc, "%s  ", unixtodstr(&scfg,time32(NULL),tmp));
+			j++;
+			SAFECAT(fdesc, argv[j]);
 			l=(long)flength(str);
 			if(l==-1) {
 				printf("%s not found.\n",str);
