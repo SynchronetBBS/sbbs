@@ -3948,7 +3948,7 @@ js_change_msg_attr(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	int32 attr = sbbs->chmsgattr(*msg);
+	int32 attr = sbbs->chmsgattr(msg);
 	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(attr));

@@ -614,7 +614,7 @@ public:
 
 	csi_t	main_csi;		/* Main Command Shell Image */
 
-	smbmsg_t*	current_msg;	/* For message header @-codes */
+	const smbmsg_t*	current_msg;	/* For message header @-codes */
 	const char*	current_msg_subj;
 	const char*	current_msg_from;
 	const char*	current_msg_to;
@@ -745,7 +745,7 @@ public:
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
-	ushort	chmsgattr(smbmsg_t);
+	ushort	chmsgattr(const smbmsg_t*);
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
 	bool	editmsg(smb_t*, smbmsg_t*);
 	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
@@ -767,8 +767,8 @@ public:
 
 	/* getmsg.cpp */
 	int		loadmsg(smbmsg_t *msg, ulong number);
-	void	show_msgattr(smbmsg_t*);
-	void	show_msghdr(smb_t*, smbmsg_t*, const char *subj = NULL, const char* from = NULL, const char* to = NULL);
+	void	show_msgattr(const smbmsg_t*);
+	void	show_msghdr(smb_t*, const smbmsg_t*, const char *subj = NULL, const char* from = NULL, const char* to = NULL);
 	bool	show_msg(smb_t*, smbmsg_t*, long p_mode = 0, post_t* post = NULL);
 	bool	msgtotxt(smb_t*, smbmsg_t*, const char *fname, bool header = true, ulong gettxt_mode = GETMSGTXT_ALL);
 	const char* msghdr_text(const smbmsg_t*, uint index);

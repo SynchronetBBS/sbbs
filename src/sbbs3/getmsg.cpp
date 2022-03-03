@@ -75,7 +75,7 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 }
 
 /* Synchronized with atcode()! */
-void sbbs_t::show_msgattr(smbmsg_t* msg)
+void sbbs_t::show_msgattr(const smbmsg_t* msg)
 {
 	uint16_t attr = msg->hdr.attr;
 	uint16_t poll = attr&MSG_POLL_VOTE_MASK;
@@ -163,7 +163,7 @@ const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf
 /****************************************************************************/
 /* Displays a message header to the screen                                  */
 /****************************************************************************/
-void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const char* from, const char* to)
+void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, const char* from, const char* to)
 {
 	char	str[MAX_PATH+1];
 	char	age[64];
