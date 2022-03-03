@@ -309,7 +309,7 @@ fidoaddr_t smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 /* Returns ASCIIZ representation of network address (net_t)					*/
 /* NOT THREAD-SAFE!															*/
 /****************************************************************************/
-char* smb_netaddr(net_t* net)
+char* smb_netaddr(const net_t* net)
 {
 	return(smb_netaddrstr(net, NULL));
 }
@@ -317,7 +317,7 @@ char* smb_netaddr(net_t* net)
 /****************************************************************************/
 /* Copies ASCIIZ representation of network address (net_t) into buf			*/
 /****************************************************************************/
-char* smb_netaddrstr(net_t* net, char* fidoaddr_buf)
+char* smb_netaddrstr(const net_t* net, char* fidoaddr_buf)
 {
 	if(net->type==NET_FIDO)
 		return(smb_faddrtoa((fidoaddr_t*)net->addr,fidoaddr_buf));

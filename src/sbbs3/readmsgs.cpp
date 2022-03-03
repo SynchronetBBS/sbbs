@@ -1214,7 +1214,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 								: matchuser(&cfg,msg.from,FALSE));
 							break;
 						case 'C':   /* Change message attributes */
-							i=chmsgattr(msg);
+							i=chmsgattr(&msg);
 							if(msg.hdr.attr==i)
 								break;
 							if(msg.total_hfields)
