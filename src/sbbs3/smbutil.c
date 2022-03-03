@@ -1002,6 +1002,13 @@ void packmsgs(ulong packable)
 		printf("Analyzing data blocks...\n");
 
 		length=filelength(fileno(smb.sda_fp));
+		if(length < 0) {
+			printf("\r!ERROR %d getting %s SDA file length.\n\n", errno, smb.file);
+			smb_close_ha(&smb);
+			smb_close_da(&smb);
+			smb_unlocksmbhdr(&smb);
+			return; 
+		}
 
 		fseek(smb.sda_fp,0L,SEEK_SET);
 		for(l=m=0;l<length;l+=2) {
@@ -1016,6 +1023,13 @@ void packmsgs(ulong packable)
 		printf("\rAnalyzing header blocks...\n");
 
 		length=filelength(fileno(smb.sha_fp));
+		if(length < 0) {
+			printf("\r!ERROR %d getting %s SHA file length.\n\n", errno, smb.file);
+			smb_close_ha(&smb);
+			smb_close_da(&smb);
+			smb_unlocksmbhdr(&smb);
+			return; 
+		}
 
 		fseek(smb.sha_fp,0L,SEEK_SET);
 		for(l=n=0;l<length;l++) {
@@ -1059,6 +1073,13 @@ void packmsgs(ulong packable)
 		printf("Analyzing %s\n",smb.file);
 
 		length=filelength(fileno(smb.shd_fp));
+		if(length < 0) {
+			printf("\r!ERROR %d getting %s SHD file length.\n\n", errno, smb.file);
+			smb_close_ha(&smb);
+			smb_close_da(&smb);
+			smb_unlocksmbhdr(&smb);
+			return; 
+		}
 		m=n=0;
 		for(l=smb.status.header_offset;l<length;l+=size) {
 			printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
@@ -1852,7 +1873,7 @@ int main(int argc, char **argv)
 							,beep,i,smb.last_error,smb.file);
 						continue; 
 					}
-					if(!filelength(fileno(smb.shd_fp))) {
+					if(filelength(fileno(smb.shd_fp)) < 1) {
 						if(!create) {
 							printf("Empty\n");
 							smb_close(&smb);
