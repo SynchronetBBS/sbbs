@@ -661,14 +661,13 @@ int main(int argc, char **argv)
 							printf("extaux=%"PRIu32"\n",node.extaux); 
 						}  /* debug */
 
-						if(pause) {
-							printf("Hit enter...");
-							getchar();
-							printf("\n");
-						}
-
 					} /* if(!node_num) */
 
+				if(pause) {
+					printf("Hit enter...");
+					getchar();
+					printf("\n");
+				}
 				if(!loop)
 					break;
 				SLEEP(1000);
