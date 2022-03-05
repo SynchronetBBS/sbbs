@@ -940,17 +940,17 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		SAFEPRINTF2(str,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		write(file,str,6);				/* Last time on */
 		if(useron.misc&EXPERT)
-			i=1;
+			c=1;
 		else
-			i=0;
-		write(file,&i,1);				/* Expert mode */
-		i='Z';
-		write(file,&i,1);				/* Protocol (A-Z) */
+			c=0;
+		write(file,&c,1);				/* Expert mode */
+		c='Z';
+		write(file,&c,1);				/* Protocol (A-Z) */
 		if(useron.misc&CLRSCRN)
-			i=2;
+			c=2;
 		else
-			i=0;
-		write(file,&i,1);				/* bit packed flags */
+			c=0;
+		write(file,&c,1);				/* bit packed flags */
 		i=0;
 		write(file,&i,2);				/* DOS date for last DIR Scan */
 		i=useron.level;
@@ -975,10 +975,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,&useron.dlb,4);		/* Bytes downloaded */
 		write(file,&useron.ulb,4);		/* Bytes uploaded */
 		if(useron.misc&DELETED)
-			i=1;
+			c=1;
 		else
-			i=0;
-		write(file,&i,1);				/* Deleted? */
+			c=0;
+		write(file,&c,1);				/* Deleted? */
 		l=useron.number;
 		write(file,&l,4);				/* Record number in USERS.INF file */
 		l=0;
