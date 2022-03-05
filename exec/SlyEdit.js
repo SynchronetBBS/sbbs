@@ -136,6 +136,12 @@
  *                              Finished refactoring to use DDLightbarMenu
  *                              for the cross-posting menus. Also used DDLightbarMenu
  *                              for the quote selection window.
+ * 2022-03-05                   Version 1.76
+ *                              When selecting quote lines in a reply message, SlyEdit now
+ *                              remembers the position in the quote selection menu so that
+ *                              the quote menu isn't always at the top whenever it's opened
+ *                              again.  This issue may have been introduced when SlyEdit
+ *                              was refactored to use DDLightbarMenu for its lightbar stuff.
  */
 
 /* Command-line arguments:
@@ -232,8 +238,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.75";
-const EDITOR_VER_DATE = "2021-12-11";
+const EDITOR_VERSION = "1.76";
+const EDITOR_VER_DATE = "2022-03-05";
 
 
 // Program variables
@@ -2795,7 +2801,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	{
 		// The first time this function runs, create a backup array of the original
 		// quote lines
-		if (typeof(doQuoteSelection.backupQuoteLines) == "undefined")
+		if (typeof(doQuoteSelection.backupQuoteLines) === "undefined")
 		{
 			doQuoteSelection.backupQuoteLines = []; // Array
 			for (var i = 0; i < gQuoteLines.length; ++i)
@@ -2931,8 +2937,17 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 				++curpos.y;
 		}
 	}
-	// Now, display the quote line menu & run its input loop
+	// Set the current & top item indexes back into the menu, if we know them already
+	if (typeof(doQuoteSelection.selectedQuoteLineIdx) !== "undefined" && typeof(doQuoteSelection.topQuoteLineIdx) !== "undefined")
+	{
+		quoteLineMenu.selectedItemIdx = doQuoteSelection.selectedQuoteLineIdx;
+		quoteLineMenu.topItemIdx = doQuoteSelection.topQuoteLineIdx;
+	}
+	// Now, display the quote line menu & run its input loop.  Also, save the quote line menu's
+	// selected & top item indexes for next time the user opens the quote window.
 	quoteLineMenu.GetVal();
+	doQuoteSelection.selectedQuoteLineIdx = quoteLineMenu.selectedItemIdx;
+	doQuoteSelection.topQuoteLineIdx = quoteLineMenu.topItemIdx;
 
 	// We've exited quote mode.  Refresh the message text on the screen.  Note:
 	// This will refresh only the quote window portion of the screen if the
@@ -2948,7 +2963,6 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	                              gInsertMode, gConfigSettings.allowColorSelection);
 
 	// Make sure the color is correct for editing.
-	//console.print("n" + gTextAttrs);
 	console.print(chooseEditColor());
 	// Put the cursor where it should be.
 	console.gotoxy(curpos);
