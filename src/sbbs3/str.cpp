@@ -1196,7 +1196,7 @@ void sbbs_t::time_bank(void)
 		if(s>0) {
 			logline("  ","Credit to Minute Conversion");
 			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,-(s*102400L));
-			useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,s*cfg.cdt_min_value);
+			useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,s*(int)cfg.cdt_min_value);
 			sprintf(str,"Credit Adjustment: %ld",-(s*102400L));
 			logline("$-",str);
 			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
