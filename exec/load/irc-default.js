@@ -1,3 +1,4 @@
+var DEFAULT_COLOR=      "\x01N\x01W";
 var FROM_NICK_CURCHAN=	"\x01N\x01B<\x01N\x01W%s\x01N\x01B>\x01N\x01W";
 var FROM_NICK_OUTSIDE=	"\x01N\x01B<\x01N\x01W%s\x01N\x01B>\x01N\x01W";
 var JOIN_FORMAT=	"\x01N\x01C%s (%s) has joined %s";
