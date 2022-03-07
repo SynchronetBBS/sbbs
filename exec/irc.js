@@ -1109,7 +1109,7 @@ function Screen_print_line(line)  {
 			codes.shift();
 			p2=codes[0];
 			codes.shift();
-			ending=","+codes.join(",");
+			ending=codes.join(",");
 			if(p2==undefined)  {
 				p2="-1";
 			}
@@ -1213,6 +1213,8 @@ function Screen_print_line(line)  {
 			return ret+ending;
 		}
 	);
+	// Empty color code means remove all color formatting
+	line=line.replace(/\x03/g,DEFAULT_COLOR);
 	if(line.length > 78)  {
 		// Word Wrap...
 		for(var j=0;j<=line.length;j++)  {
