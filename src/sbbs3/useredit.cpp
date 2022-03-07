@@ -246,9 +246,6 @@ void sbbs_t::useredit(int usernumber)
 						menu("exempt");
 						continue; 
 					}
-					if(user.level>useron.level 
-						&& !(useron.exempt&FLAG(c)) && console&CON_R_INPUT)
-						continue;
 					user.exempt^=FLAG(c);
 					putuserrec(&cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,tmp,16)); 
 				}
@@ -283,25 +280,6 @@ void sbbs_t::useredit(int usernumber)
 					if(IS_DIGIT(c)) {
 						i=c&0xf;
 						continue; 
-					}
-					if(user.level>useron.level && console&CON_R_INPUT)
-						switch(i) {
-							case 1:
-								if(!(useron.flags1&FLAG(c)))
-									continue;
-								break;
-							case 2:
-								if(!(useron.flags2&FLAG(c)))
-									continue;
-								break;
-							case 3:
-								if(!(useron.flags3&FLAG(c)))
-									continue;
-								break;
-							case 4:
-								if(!(useron.flags4&FLAG(c)))
-									continue;
-								break; 
 					}
 					switch(i) {
 						case 1:
@@ -407,8 +385,7 @@ void sbbs_t::useredit(int usernumber)
 				bputs(text[UeditML]);
 				ultoa(user.level,str,10);
 				if(getstr(str,2,K_NUMBER|K_LINE))
-					if(!(atoi(str)>useron.level && console&CON_R_INPUT))
-						putuserrec(&cfg,user.number,U_LEVEL,2,str);
+					putuserrec(&cfg,user.number,U_LEVEL,2,str);
 				break;
 			case 'N':
 				bputs(text[UeditNote]);
