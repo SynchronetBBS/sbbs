@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.46     2022-03-07   Fix: When changing to an empty sub-board from within the
+                      reader (either from read mode or list mode), it now
+                      properly says there are no messages and exits, rather than
+                      showing a list of bogus messages.  Unsure when this bug
+                      was introduced.
 1.45d    2022-02-26   Fix for no group information available when displaying the
                       sub-board header above the message list when listing
                       personal email
