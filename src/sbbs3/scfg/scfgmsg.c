@@ -22,6 +22,7 @@
 #include "scfg.h"
 #include "strwrap.h"	/* itoa() */
 #include "str_util.h"
+#include "ciolib.h"	// CIO_KEY_*
 #include <stdbool.h>
 
 #define CUT_GROUPNUM	USHRT_MAX
@@ -669,10 +670,21 @@ void msgs_cfg()
 				"This menu allows you to configure the security requirements for access\n"
 				"to this message group. You can also add, delete, and configure the\n"
 				"sub-boards of this group by selecting the `Messages Sub-boards...` option.\n"
+				"\n"
+				"The left and right arrow keys may be used to cycle through message\n"
+				"groups.\n"
 			;
-			switch(uifc.list(WIN_ACT|WIN_T2B,6,0,60,&dflt,0,str,opt)) {
+			switch(uifc.list(WIN_ACT|WIN_T2B|WIN_EXTKEYS,6,0,60,&dflt,0,str,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(grpnum > 0)
+						grpnum--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(grpnum + 1 < cfg.total_grps)
+						grpnum++;
 					break;
 				case __COUNTER__:
 					uifc.helpbuf=grp_long_name_help;
@@ -755,13 +767,13 @@ void msgs_cfg()
 					if(j==0) {
 						sub_t* template = NULL;
 						for(j=0;j<cfg.total_subs;j++) {
-							if(cfg.sub[j]->grp == i && cfg.sub[j]->misc&SUB_TEMPLATE) {
+							if(cfg.sub[j]->grp == grpnum && cfg.sub[j]->misc&SUB_TEMPLATE) {
 								template = cfg.sub[j];
 								break;
 							}
 						}
 						for(j=0;j<cfg.total_subs;j++)
-							if(cfg.sub[j]->grp==i) {
+							if(cfg.sub[j]->grp == grpnum) {
 								if(template == NULL)
 									template = cfg.sub[j];
 								else if(cfg.sub[j] != template) {
@@ -877,7 +889,7 @@ void msgs_cfg()
 					}
 					uifc.pop("Exporting Areas...");
 					for(j=0;j<cfg.total_subs;j++) {
-						if(cfg.sub[j]->grp!=i)
+						if(cfg.sub[j]->grp != grpnum)
 							continue;
 						ported++;
 						if(k==1) {		/* AREAS.BBS SBBSecho */
@@ -1069,7 +1081,7 @@ void msgs_cfg()
 					break;
 
 				case __COUNTER__:
-					sub_cfg(i);
+					sub_cfg(grpnum);
 					break; 
 			} 
 		} 

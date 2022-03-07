@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "ciolib.h"	// CIO_KEY_*
 
 static sub_t** cut_qhub_sub;
 
@@ -107,6 +108,24 @@ void remove_sub(scfg_t* cfg, unsigned subnum, bool cut)
 	--cfg->total_subs;
 	for (unsigned i = subnum; i < cfg->total_subs; i++)
 		cfg->sub[i] = cfg->sub[i + 1];
+}
+
+static int next_subnum(sub_t* sub)
+{
+	for(int i = sub->subnum + 1; i < cfg.total_subs; i++) {
+		if(cfg.sub[i]->grp == sub->grp)
+			return i;
+	}
+	return sub->subnum;
+}
+
+static int prev_subnum(sub_t* sub)
+{
+	for(int i = sub->subnum - 1; i >= 0; i--) {
+		if(cfg.sub[i]->grp == sub->grp)
+			return i;
+	}
+	return sub->subnum;
 }
 
 void sub_cfg(uint grpnum)
@@ -380,11 +399,19 @@ void sub_cfg(uint grpnum)
 				"\n"
 				"This menu allows you to configure the individual selected sub-board.\n"
 				"Options with a trailing `...` provide a sub-menu of more options.\n"
+				"\n"
+				"The left and right arrow keys may be used to cycle through sub-boards.\n"
 			;
-			switch(uifc.list(WIN_ACT|WIN_SAV|WIN_BOT|WIN_L2R
-				,0,0,60,&opt_dflt,0,str,opt)) {
+			switch(uifc.list(WIN_ACT|WIN_SAV|WIN_BOT|WIN_L2R|WIN_EXTKEYS
+				,0,0,72,&opt_dflt,0,str,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					i = prev_subnum(cfg.sub[i]);
+					break;
+				case -CIO_KEY_RIGHT-2:
+					i = next_subnum(cfg.sub[i]);
 					break;
 				case 0:
 					uifc.helpbuf=sub_long_name_help;

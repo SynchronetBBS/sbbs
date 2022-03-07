@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "ciolib.h"	// CIO_KEY_*
 #include <stdbool.h>
 
 #define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
@@ -72,6 +73,24 @@ static bool new_dir(unsigned new_dirnum, unsigned libnum)
 	cfg.dir[new_dirnum] = new_directory;
 	cfg.total_dirs++;
 	return true;
+}
+
+static int next_dirnum(dir_t* dir)
+{
+	for(int i = dir->dirnum + 1; i < cfg.total_dirs; i++) {
+		if(cfg.dir[i]->lib == dir->lib)
+			return i;
+	}
+	return dir->dirnum;
+}
+
+static int prev_dirnum(dir_t* dir)
+{
+	for(int i = dir->dirnum - 1; i >= 0; i--) {
+		if(cfg.dir[i]->lib == dir->lib)
+			return i;
+	}
+	return dir->dirnum;
 }
 
 static bool code_prefix_exists(const char* prefix)
@@ -394,61 +413,72 @@ void xfer_cfg()
 		done=0;
 		while(!done) {
 			j=0;
-			sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.lib[i]->lname);
-			sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.lib[i]->sname);
-			sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.lib[i]->code_prefix);
+			sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.lib[libnum]->lname);
+			sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.lib[libnum]->sname);
+			sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.lib[libnum]->code_prefix);
 			sprintf(opt[j++],"%-27.27s%s","Parent Directory"
-				,cfg.lib[i]->parent_path);
+				,cfg.lib[libnum]->parent_path);
 			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
-				,cfg.lib[i]->arstr);
+				,cfg.lib[libnum]->arstr);
 			sprintf(opt[j++],"%-27.27s%s","Access to Sub-directories"
-				,cfg.lib[i]->parent_path[0] ? (cfg.lib[i]->misc&LIB_DIRS ? "Yes":"No") : "N/A");
-			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[i]->sort]);
+				,cfg.lib[libnum]->parent_path[0] ? (cfg.lib[libnum]->misc&LIB_DIRS ? "Yes":"No") : "N/A");
+			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[libnum]->sort]);
 			strcpy(opt[j++],"Clone Options");
 			strcpy(opt[j++],"Export Areas...");
 			strcpy(opt[j++],"Import Areas...");
 			strcpy(opt[j++],"File Directories...");
 			opt[j][0]=0;
-			sprintf(str,"%s Library",cfg.lib[i]->sname);
+			sprintf(str,"%s Library",cfg.lib[libnum]->sname);
 			uifc.helpbuf=
 				"`File Library Configuration:`\n"
 				"\n"
 				"This menu allows you to configure the security requirements for access\n"
 				"to this file library. You can also add, delete, and configure the\n"
 				"directories of this library by selecting the `File Directories...` option.\n"
+				"\n"
+				"The left and right arrow keys may be used to cycle through file\n"
+				"libraries.\n"
 			;
-			switch(uifc.list(WIN_ACT,6,4,60,&dflt,0,str,opt)) {
+			switch(uifc.list(WIN_ACT|WIN_EXTKEYS,6,4,60,&dflt,0,str,opt)) {
 				case -1:
 					done=1;
 					break;
+				case -CIO_KEY_LEFT-2:
+					if(libnum > 0)
+						libnum--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(libnum + 1 < cfg.total_libs)
+						libnum++;
+					break;
 				case __COUNTER__:
 					uifc.helpbuf=lib_long_name_help;
-					SAFECOPY(str, cfg.lib[i]->lname);
+					SAFECOPY(str, cfg.lib[libnum]->lname);
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Name to use for Listings"
 						,str,LEN_GLNAME,K_EDIT) > 0)
-						SAFECOPY(cfg.lib[i]->lname,str);
+						SAFECOPY(cfg.lib[libnum]->lname,str);
 					break;
 				case __COUNTER__:
 					uifc.helpbuf=lib_short_name_help;
-					SAFECOPY(str, cfg.lib[i]->sname);
+					SAFECOPY(str, cfg.lib[libnum]->sname);
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Name to use for Prompts"
 						,str,LEN_GSNAME,K_EDIT) > 0)
-						SAFECOPY(cfg.lib[i]->sname,str);
+						SAFECOPY(cfg.lib[libnum]->sname,str);
 					break;
 				case __COUNTER__:
 				{
 					char code_prefix[LEN_CODE+1];
-					SAFECOPY(code_prefix, cfg.lib[i]->code_prefix);
+					SAFECOPY(code_prefix, cfg.lib[libnum]->code_prefix);
 					uifc.helpbuf=lib_code_prefix_help;
 					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
 						,code_prefix,LEN_CODE,K_EDIT|K_UPPER) < 0)
 						continue;
-					if(stricmp(code_prefix, cfg.lib[i]->code_prefix) == 0)
+					if(stricmp(code_prefix, cfg.lib[libnum]->code_prefix) == 0)
 						break;
 					if(code_prefix_exists(code_prefix))
 						uifc.msg(strDuplicateCodePrefix);
 					else if(code_prefix[0] == 0 || code_ok(code_prefix)) {
-						SAFECOPY(cfg.lib[i]->code_prefix, code_prefix);
+						SAFECOPY(cfg.lib[libnum]->code_prefix, code_prefix);
 					} else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCodePrefix);
@@ -473,11 +503,11 @@ void xfer_cfg()
 						"`Transfer File Path` configured."
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory"
-						,cfg.lib[i]->parent_path,sizeof(cfg.lib[i]->parent_path)-1,K_EDIT);
+						,cfg.lib[libnum]->parent_path,sizeof(cfg.lib[libnum]->parent_path)-1,K_EDIT);
 					break;
 				case __COUNTER__:
-					sprintf(str,"%s Library",cfg.lib[i]->sname);
-					getar(str,cfg.lib[i]->arstr);
+					sprintf(str,"%s Library",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->arstr);
 					break;
 				case __COUNTER__:
 					uifc.helpbuf=
@@ -492,18 +522,18 @@ void xfer_cfg()
 						"\n"
 						"~ This is an experimental feature. ~"
 					;
-					if(cfg.lib[i]->parent_path[0] == '\0') {
+					if(cfg.lib[libnum]->parent_path[0] == '\0') {
 						uifc.msg("A parent directory must be specified to use this feature");
 						break;
 					}
 					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 						,"Allow Access to Sub-directories of Parent Directory"
 						,uifcYesNoOpts);
-					if(j==0 && (cfg.lib[i]->misc&LIB_DIRS) == 0) {
-						cfg.lib[i]->misc|=LIB_DIRS;
+					if(j==0 && (cfg.lib[libnum]->misc&LIB_DIRS) == 0) {
+						cfg.lib[libnum]->misc|=LIB_DIRS;
 						uifc.changes = true;
-					} else if(j==1 && (cfg.lib[i]->misc&LIB_DIRS) != 0) {
-						cfg.lib[i]->misc &= ~LIB_DIRS;
+					} else if(j==1 && (cfg.lib[libnum]->misc&LIB_DIRS) != 0) {
+						cfg.lib[libnum]->misc &= ~LIB_DIRS;
 						uifc.changes = true;
 					}
 					break;
@@ -519,11 +549,11 @@ void xfer_cfg()
 						"The library will be automatically re-sorted when new directories\n"
 						"are added via `SCFG` or when existing directories are modified.\n"
 						;
-					j = cfg.lib[i]->sort;
+					j = cfg.lib[libnum]->sort;
 					j = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &j, 0, "Sort Library By Directory", area_sort_desc);
 					if(j >= 0) {
-						cfg.lib[i]->sort = j;
-						sort_dirs(i);
+						cfg.lib[libnum]->sort = j;
+						sort_dirs(libnum);
 						uifc.changes = TRUE;
 					}
 					break;
@@ -551,13 +581,13 @@ void xfer_cfg()
 					if(j==0) {
 						dir_t* template = NULL;
 						for(j=0;j<cfg.total_dirs;j++) {
-							if(cfg.dir[j]->lib == i && cfg.dir[j]->misc&DIR_TEMPLATE) {
+							if(cfg.dir[j]->lib == libnum && cfg.dir[j]->misc&DIR_TEMPLATE) {
 								template = cfg.dir[j];
 								break;
 							}
 						}
 						for(j=0;j<cfg.total_dirs;j++) {
-							if(cfg.dir[j]->lib != i)
+							if(cfg.dir[j]->lib != libnum)
 								continue;
 							if(template == NULL)
 								template = cfg.dir[j];
@@ -638,7 +668,7 @@ void xfer_cfg()
 					}
 					uifc.pop("Exporting Areas...");
 					for(j=0;j<cfg.total_dirs;j++) {
-						if(cfg.dir[j]->lib!=i)
+						if(cfg.dir[j]->lib != libnum)
 							continue;
 						ported++;
 						if(k==1) {
@@ -719,7 +749,7 @@ void xfer_cfg()
 					else if(k==1)
 						sprintf(str,"FILEGATE.ZXX");
 					else {
-						strcpy(str,cfg.lib[i]->parent_path);
+						strcpy(str,cfg.lib[libnum]->parent_path);
 						backslash(str);
 						strcat(str,"dirs.raw");
 					}
@@ -875,7 +905,7 @@ void xfer_cfg()
 						if(tmpdir.sname[0] == 0)
 							SAFECOPY(tmpdir.sname, tmp_code);
 
-						SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code,cfg.lib[i]->code_prefix));
+						SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code,cfg.lib[libnum]->code_prefix));
 
 						int dupes = 0;
 						int attempts = 0;	// attempts to generate a unique internal code
@@ -884,14 +914,14 @@ void xfer_cfg()
 						else
 							duplicate_codes = 0;
 						for(j=0; j < cfg.total_dirs && attempts < (36*36*36); j++) {
-							if(cfg.dir[j]->lib == i) {	/* same lib */
+							if(cfg.dir[j]->lib == libnum) {	/* same lib */
 								if(tmpdir.path[0]
 									&& strcmp(cfg.dir[j]->path, tmpdir.path) == 0)	/* same path? overwrite the dir entry */
 									break;
 								if(stricmp(cfg.dir[j]->sname, tmpdir.sname) == 0)
 									break;
 							} else {
-								if((cfg.lib[i]->code_prefix[0] || cfg.lib[cfg.dir[j]->lib]->code_prefix[0]))
+								if((cfg.lib[libnum]->code_prefix[0] || cfg.lib[cfg.dir[j]->lib]->code_prefix[0]))
 									continue;
 							}
 							if(stricmp(cfg.dir[j]->code_suffix,tmpdir.code_suffix) == 0) {
@@ -943,7 +973,7 @@ void xfer_cfg()
 							}
 						} else
 							memcpy(cfg.dir[j],&tmpdir,sizeof(dir_t));
-						cfg.dir[j]->lib=i;
+						cfg.dir[j]->lib = libnum;
 						if(j==cfg.total_dirs) {
 							cfg.dir[j]->misc=tmpdir.misc;
 							cfg.total_dirs++; 
@@ -951,8 +981,8 @@ void xfer_cfg()
 						uifc.changes=1; 
 					}
 					fclose(stream);
-					if(ported && cfg.lib[i]->sort)
-						sort_dirs(i);
+					if(ported && cfg.lib[libnum]->sort)
+						sort_dirs(libnum);
 					uifc.pop(NULL);
 					sprintf(str,"%lu File Areas Imported Successfully (%lu added)",ported, added);
 					uifc.msg(str);
@@ -1079,7 +1109,7 @@ void dir_cfg(uint libnum)
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
 		if(msk == MSK_INS) {
-			strcpy(str,"My Brand-New File Directory");
+			strcpy(str,"My Brand-New Files");
 			uifc.helpbuf=dir_long_name_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory Long Name",str,LEN_SLNAME
 				,K_EDIT)<1)
@@ -1241,11 +1271,20 @@ void dir_cfg(uint libnum)
 				"\n"
 				"This menu allows you to configure the individual selected directory.\n"
 				"Options with a trailing `...` provide a sub-menu of more options.\n"
+				"\n"
+				"The left and right arrow keys may be used to cycle through file\n"
+				"directories.\n"
 			;
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_RHT|WIN_BOT
-				,0,0,0,&opt_dflt,0,str,opt)) {
+			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT|WIN_EXTKEYS
+				,0,0,72,&opt_dflt,0,str,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					i = prev_dirnum(cfg.dir[i]);
+					break;
+				case -CIO_KEY_RIGHT-2:
+					i = next_dirnum(cfg.dir[i]);
 					break;
 				case 0:
 					uifc.helpbuf=dir_long_name_help;
