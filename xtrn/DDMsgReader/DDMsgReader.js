@@ -123,6 +123,11 @@
  * 2022-02-26 Eric Oulashin     Version 1.45d
  *                              Fix for no group information available when displaying the
  *                              sub-board header above the message list when listing personal email
+ * 2022-03-07 Eric Oulashin     Version 1.46
+ *                              Fix: When changing to an empty sub-board from within the
+ *                              reader (either from read mode or list mode), it now properly
+ *                              says there are no messages and exits, rather than showing
+ *                              a list of bogus messages.
  */
 
 
@@ -243,8 +248,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.45d";
-var READER_DATE = "2022-02-26";
+var READER_VERSION = "1.46";
+var READER_DATE = "2022-03-07";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1543,8 +1548,7 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
 	}
 
 	// Filter the headers into this.hdrsForCurrentSubBoard
-	if (tmpHdrs != null)
-		this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpHdrs, true);
+	this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpHdrs, true);
 }
 
 // For the DigDistMsgReader class: Takes an array of message headers in the current
@@ -1563,6 +1567,8 @@ function DigDistMsgReader_FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pCle
 		this.hdrsForCurrentSubBoard = [];
 		this.hdrsForCurrentSubBoardByMsgNum = {};
 	}
+	if (pMsgHdrs == null)
+		return;
 
 	for (var prop in pMsgHdrs)
 	{
@@ -3495,6 +3501,13 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		var userChoice = msgListMenu.GetVal(drawMenu);
 		drawMenu = true;
 		var lastUserInputUpper = (typeof(msgListMenu.lastUserInput) == "string" ? msgListMenu.lastUserInput.toUpperCase() : msgListMenu.lastUserInput);
+		// If the user's last input is null, then something bad/weird must have
+		// happened, so don't continue the input loop.
+		if (lastUserInputUpper == null)
+		{
+			continueOn = false;
+			break;
+		}
 		this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
 		// If userChoice is a number, then it will be a message number for a message to read
 		if (typeof(userChoice) == "number")
