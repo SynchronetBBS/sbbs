@@ -1,5 +1,3 @@
-// $Id: xbimage.js,v 1.6 2020/04/19 19:52:31 rswindell Exp $
-
 // Utility module for creating and displaying XBin image files.
 
 load('sbbsdefs.js');
@@ -31,6 +29,11 @@ function convert_from_bmp(filename, charheight, fg_color, bg_color, palette, inv
 
 	if(bmp.infoheader.biWidth%8 != 0) {
 		alert(format("Bitmap width (%u) is not evenly-divisible by 8", bmp.infoheader.biWidth));
+		return false;
+	}
+
+	if(bmp.infoheader.biBitCount != 1) {
+		alert(format("Bit-count (%d) must be 1 (monochrome)", bmp.infoheader.biBitCount));
 		return false;
 	}
 
