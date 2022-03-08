@@ -4571,12 +4571,12 @@ static void smtp_thread(void* arg)
 				break;
 			}
 
-			if(spy==NULL 
+			if(spy==NULL
 				&& (trashcan(&scfg,reverse_path,"smtpspy")
 					|| trashcan(&scfg,rcpt_addr,"smtpspy"))) {
-				SAFECOPY(str, client.protocol);
-				strlwr(str);
-				SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, str);
+				SAFECOPY(tmp, client.protocol);
+				strlwr(tmp);
+				SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, tmp);
 				spy=fopen(path,"a");
 			}
 
