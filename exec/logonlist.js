@@ -84,9 +84,13 @@ function print(hdr, num, days_ago)
 	return true;
 }
 
-if(argv.indexOf('-l') >= 0) { // Last few callers?
+var argi = argv.indexOf('-l');
+if(argi >= 0) { // Last few callers?
+	var count = -options.last_few_callers;
+	if(argi < argc)
+		count = -parseInt(argv[argi + 1], 10);
 	if(!this.print(options.last_few_callers_msg || "\x01n\x01g\x01hLast few callers:\x01n\r\n"
-		,-options.last_few_callers))
+		,count, options.last_few_days))
 		console.print(options.first_caller_msg || "\x01n\x01g\x01hYou are the first caller of the day!");
 	console.crlf();
 } else {
