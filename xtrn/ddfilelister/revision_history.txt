@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.04     2022-03-09   Bug fix: Now successfully formats filenames without
+                      extensions when listing files.
 2.03     2022-02-27   For terminals over 80 rows tall, the file info window will
                       now be up to 45 rows tall.  Also, fixed the display of the
                       trailing blocks for the list header for wide terminals
