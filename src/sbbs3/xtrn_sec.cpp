@@ -545,18 +545,19 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
 		}
+		char blank[256]{};
 		w=(WORD)dte_rate;
 		write(file,&w,sizeof(w));			/* BaudRate */
 		/* SysInfo */
 		getstats(&cfg,0,&stats);
 		write(file,&stats.logons,sizeof(stats.logons)); /* CallCount */
-		write(file,nulstr,36);					/* LastCallerName */
-		write(file,nulstr,36);					/* LastCallerAlias */
-		write(file,nulstr,92);					/* ExtraSpace */
+		write(file,blank,36);					/* LastCallerName */
+		write(file,blank,36);					/* LastCallerAlias */
+		write(file,blank,92);					/* ExtraSpace */
 		/* TimeLogInfo */
-		write(file,nulstr,9);					/* StartDate */
-		write(file,nulstr,24*sizeof(int16_t));	/* BusyPerHour */
-		write(file,nulstr,7*sizeof(int16_t));		/* BusyPerDay */
+		write(file,blank,9);					/* StartDate */
+		write(file,blank,24*sizeof(int16_t));	/* BusyPerHour */
+		write(file,blank,7*sizeof(int16_t));		/* BusyPerDay */
 		/* UserInfo */
 		str2pas(name,str);				/* Name */
 		write(file,str,36);
@@ -636,7 +637,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		str2pas(tmp,str);
 		write(file,str,9);						/* LoginDate */
 		write(file,&cfg.level_timepercall[useron.level],sizeof(int16_t));  /* TmLimit */
-		write(file,&logontime,sizeof(logontime));	/* LoginSec */
+		write(file,&logontime,sizeof(time32_t));	/* LoginSec */
 		write(file,&useron.cdt,sizeof(useron.cdt));	/* Credit */
 		write(file,&useron.number,sizeof(useron.number)); /* UserRecNum */
 		i=0;
@@ -649,7 +650,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,&c,1);						/* GosubLevel */
 
 		memset(str,0,255);
-		for(i=1;i<20;i++)
+		for(i=0;i<20;i++)
 			write(file,str,9);					/* GosubData */
 		write(file,str,9);						/* Menu */
 		c=useron.misc&CLRSCRN ? 1:0;
