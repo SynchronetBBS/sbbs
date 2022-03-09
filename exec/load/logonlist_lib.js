@@ -51,7 +51,24 @@ function get(num, days_ago)
 	if(!this.json_lines)
 		this.json_lines = load({}, "json_lines.js");
 	
-	return json_lines.get(filename(days_ago), num);
+	var result = json_lines.get(filename(days_ago), num);
+	if(days_ago !== undefined || typeof result !== 'object')
+		return result;
+	if(num < 0)
+		num += result.length;
+	else
+		num -= result.length;
+	for(days_ago = 1; num != 0; days_ago++) {
+		var more = json_lines.get(filename(days_ago), num);
+		if(typeof more !== 'object')
+			break;
+		result.push.apply(result, more);
+		if(num < 0)
+			num += more.length;
+		else
+			num -= more.length;
+	}
+	return result;
 }
 
 function maint(backup_level)
