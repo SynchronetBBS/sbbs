@@ -22,11 +22,14 @@
  *                              Things overall look good. Releasing this version.  Added
  *                              the ability to do searching via filespec, description, and
  *                              new file search (started working on this 2022-02-08).
- * 2022-02027 Eric Oulashin     Version 2.03
+ * 2022-02-27 Eric Oulashin     Version 2.03
  *                              For terminals over 25 rows tall, the file info window will
  *                              now be up to 45 rows tall.  Also, fixed the display of the
  *                              trailing blocks for the list header for wide terminals (over
  *                              80 columns).
+ * 2022-03-09 Eric Oulashin     Version 2.04
+ *                              Bug fix: Now successfully formats filenames without extensions
+ *                              when listing files.
 */
 
 if (typeof(require) === "function")
@@ -80,8 +83,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.03";
-var LISTER_DATE = "2022-02-27";
+var LISTER_VERSION = "2.04";
+var LISTER_DATE = "2022-03-09";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2932,24 +2935,30 @@ function shortenFilename(pFilename, pMaxLen, pFillWidth)
 	if (typeof(pMaxLen) !== "number" || pMaxLen < 1)
 		return "";
 
+	var shortenedFilename = ""; // Will contain the shortened filename
+	// Get the filename extension.  And the way we shorten the filename
+	// will depend on whether the filename actually has an extension or not.
 	var filenameExt = file_getext(pFilename);
-	var filenameWithoutExt = file_getname(pFilename);
-	var extIdx = filenameWithoutExt.indexOf(filenameExt);
-	if (extIdx >= 0)
-		filenameWithoutExt = filenameWithoutExt.substr(0, extIdx);
+	if (typeof(filenameExt) === "string")
+	{
+		var filenameWithoutExt = file_getname(pFilename);
+		var extIdx = filenameWithoutExt.indexOf(filenameExt);
+		if (extIdx >= 0)
+			filenameWithoutExt = filenameWithoutExt.substr(0, extIdx);
 
-	var maxWithoutExtLen = pMaxLen - filenameExt.length;
-	if (filenameWithoutExt.length > maxWithoutExtLen)
-		filenameWithoutExt = filenameWithoutExt.substr(0, maxWithoutExtLen);
+		var maxWithoutExtLen = pMaxLen - filenameExt.length;
+		if (filenameWithoutExt.length > maxWithoutExtLen)
+			filenameWithoutExt = filenameWithoutExt.substr(0, maxWithoutExtLen);
 
-	var fillWidth = (typeof(pFillWidth) === "boolean" ? pFillWidth : false);
-	var adjustedFilename = "";
-	if (fillWidth)
-		adjustedFilename = format("%-" + maxWithoutExtLen + "s%s", filenameWithoutExt, filenameExt);
+		var fillWidth = (typeof(pFillWidth) === "boolean" ? pFillWidth : false);
+		if (fillWidth)
+			shortenedFilename = format("%-" + maxWithoutExtLen + "s%s", filenameWithoutExt, filenameExt);
+		else
+			shortenedFilename = filenameWithoutExt + filenameExt;
+	}
 	else
-		adjustedFilename = filenameWithoutExt + filenameExt;
-
-	return adjustedFilename;
+		shortenedFilename = pFilename.substr(0, pMaxLen);
+	return shortenedFilename;
 }
 
 
