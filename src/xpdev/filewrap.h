@@ -121,7 +121,9 @@
 
 	#define chsize(fd,size)		ftruncate(fd,size)
 	#define tell(fd)			lseek(fd,0,SEEK_CUR)
-	#define eof(fd)				(tell(fd)==filelength(fd))
+	#ifndef __cplusplus	// Conflict with FreeBSD /usr/include/c++/v1/iterator
+		#define eof(fd)			(tell(fd)==filelength(fd))
+	#endif
 
 #elif defined(__OS2__)
 
