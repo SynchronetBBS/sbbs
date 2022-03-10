@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "qbbsdefs.hpp"
 
 /****************************************************************************/
 /* This is the external programs (doors) section of the bbs                 */
@@ -545,131 +546,52 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
 		}
-		char blank[256]{};
-		w=(WORD)dte_rate;
-		write(file,&w,sizeof(w));			/* BaudRate */
-		/* SysInfo */
 		getstats(&cfg,0,&stats);
-		write(file,&stats.logons,sizeof(stats.logons)); /* CallCount */
-		write(file,blank,36);					/* LastCallerName */
-		write(file,blank,36);					/* LastCallerAlias */
-		write(file,blank,92);					/* ExtraSpace */
-		/* TimeLogInfo */
-		write(file,blank,9);					/* StartDate */
-		write(file,blank,24*sizeof(int16_t));	/* BusyPerHour */
-		write(file,blank,7*sizeof(int16_t));		/* BusyPerDay */
-		/* UserInfo */
-		str2pas(name,str);				/* Name */
-		write(file,str,36);
-		str2pas(useron.location,str);
-		write(file,str,26); 					/* City */
-		str2pas(useron.pass,str);
-		write(file,str,16); 					/* Pwd */
-		str2pas(useron.phone,str);
-		write(file,str,13); 					/* DataPhone */
-		write(file,str,13); 					/* HomePhone */
+		QBBS::exitinfo exitinfo{};
+		exitinfo.BaudRate = (uint16_t)dte_rate;
+		exitinfo.SysInfo.CallCount = stats.logons;
+		exitinfo.UserInfo.Name = name;
+		exitinfo.UserInfo.Location = useron.location;
+		exitinfo.UserInfo.DataPhone = useron.phone;
+		exitinfo.UserInfo.HomePhone = useron.phone;
 		localtime32(&useron.laston,&tm);
 		SAFEPRINTF2(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
-		str2pas(tmp,str);
-		write(file,str,6);						/* LastTime */
+		exitinfo.UserInfo.LastTime = tmp;
 		unixtodstr(&cfg,useron.laston,tmp);
-		str2pas(tmp,str);
-		write(file,str,9);						/* LastDate */
-		c=0;
-		if(useron.misc&DELETED) c|=(1<<0);
-		if(useron.misc&CLRSCRN) c|=(1<<1);
-		if(useron.misc&UPAUSE)	 c|=(1<<2);
-		if(term & ANSI)			c|=(1<<3);
-		if(useron.sex=='F')     c|=(1<<7);
-		write(file,&c,1);						/* Attrib */
-		write(file,&useron.flags1,4);			/* Flags */
-		w=0;
-		write(file,&w,sizeof(w)); 			/* Credit */
-		write(file,&w,sizeof(w)); 			/* Pending */
-		write(file,&useron.posts,sizeof(useron.posts));/* TimesPosted */
-		write(file,&w,sizeof(w)); 			/* HighMsgRead */
-		w=useron.level;
-		write(file,&w,sizeof(w)); 			/* SecLvl */
-		w=0;
-		write(file,&w,sizeof(w)); 			/* Times */
-		write(file,&useron.uls,sizeof(useron.uls));	/* Ups */
-		write(file,&useron.dls,sizeof(useron.dls));	/* Downs */
-		w=(ushort)(useron.ulb/1024UL);
-		write(file,&w,sizeof(w)); 			/* UpK */
-		w=(ushort)(useron.dlb/1024UL);
-		write(file,&w,sizeof(w)); 			/* DownK */
-		w=(ushort)(logon_dlb/1024UL);
-		write(file,&w,sizeof(w)); 			/* TodayK */
-		w=0;
-		write(file,&w,sizeof(w)); 			/* Elapsed */
-		write(file,&w,sizeof(w)); 			/* Len */
-		write(file,&w,sizeof(w)); 			/* CombinedPtr */
-		write(file,&w,sizeof(w)); 			/* AliasPtr */
-		l = strtol(useron.birth, NULL, 10);
-		write(file,&l,sizeof(l));			/* Birthday (as a long?) */
-		/* EventInfo */
-		c=0;
-		write(file,&c,sizeof(char));			/* Status */
-		write(file,&l /* sys_eventtime */,sizeof(l));	/* RunTime */
-		write(file,&c,sizeof(char));			/* ErrorLevel */
-		c='\xff';
-		write(file,&c,sizeof(char));			/* Days */
-		// c=sys_eventnode==node_num || sys_misc&SM_TIMED_EX ? 1 : 0;
-		c=0;
-		write(file,&c,sizeof(char));			/* Forced */
-		if(!cfg.total_events)
-			l=0;
-		else
-			l=cfg.event[0]->last;
-		write(file,&l,sizeof(l));			/* LastTimeRun */
-		memset(str,0,40);
-		write(file,str,7);						/* Spare */
-
-		c=0;
-		write(file,&c,1);						/* NetMailEntered */
-		write(file,&c,1);						/* EchoMailEntered */
-
+		exitinfo.UserInfo.LastDate = tmp;
+		if(useron.misc&DELETED) exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_DELETED;
+		if(useron.misc&CLRSCRN) exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_CLRSCRN;
+		if(useron.misc&UPAUSE)	exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_MORE;
+		if(term & ANSI)			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_ANSI;
+		if(useron.sex=='F')     exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_FEMALE;
+		exitinfo.UserInfo.Flags = useron.flags1;
+		exitinfo.UserInfo.TimesPosted = useron.posts;
+		exitinfo.UserInfo.SecLvl = useron.level;
+		exitinfo.UserInfo.Ups = useron.uls;
+		exitinfo.UserInfo.Downs = useron.dls;
+		exitinfo.UserInfo.UpK = (uint16_t)(useron.ulb/1024UL);
+		exitinfo.UserInfo.DownK = (uint16_t)(useron.dlb/1024UL);
+		exitinfo.UserInfo.TodayK = (uint16_t)(logon_dlb/1024UL);
+		exitinfo.UserInfo.ScreenLength = (int16_t)rows;
 		localtime_r(&logontime,&tm);
 		SAFEPRINTF2(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
-		str2pas(tmp,str);
-		write(file,str,6);						/* LoginTime */
+		exitinfo.LoginTime = tmp;
 		unixtodstr(&cfg,(time32_t)logontime,tmp);
-		str2pas(tmp,str);
-		write(file,str,9);						/* LoginDate */
-		write(file,&cfg.level_timepercall[useron.level],sizeof(int16_t));  /* TmLimit */
-		write(file,&logontime,sizeof(time32_t));	/* LoginSec */
-		write(file,&useron.cdt,sizeof(useron.cdt));	/* Credit */
-		write(file,&useron.number,sizeof(useron.number)); /* UserRecNum */
-		i=0;
-		write(file,&i,2);						/* ReadThru */
-		write(file,&i,2);						/* PageTimes */
-		write(file,&i,2);						/* DownLimit */
-		c=sys_status&SS_SYSPAGE ? 1:0;
-		write(file,&c,1);						/* WantChat */
-		c=0;
-		write(file,&c,1);						/* GosubLevel */
+		exitinfo.LoginDate = tmp;
+		exitinfo.TimeLimit = cfg.level_timepercall[useron.level];
+		exitinfo.Credit = useron.cdt;
+		exitinfo.UserRecNum = useron.number;
+		exitinfo.WantChat = (sys_status & SS_SYSPAGE);
+		exitinfo.ScreenClear = (useron.misc & CLRSCRN);
+		exitinfo.MorePrompts = (useron.misc & UPAUSE);
+		exitinfo.GraphicsMode = !(term & NO_EXASCII);
+		exitinfo.ExternEdit = (useron.xedit);
+		exitinfo.ScreenLength = (int16_t)rows;
+		exitinfo.MNP_Connect = true;
+		exitinfo.ANSI_Capable = (term & ANSI);
+		exitinfo.RIP_Active = (term & RIP);
 
-		memset(str,0,255);
-		for(i=0;i<20;i++)
-			write(file,str,9);					/* GosubData */
-		write(file,str,9);						/* Menu */
-		c=useron.misc&CLRSCRN ? 1:0;
-		write(file,&c,1);						/* ScreenClear */
-		c=useron.misc&UPAUSE ? 1:0;
-		write(file,&c,1);						/* MorePrompts */
-		c=(term & NO_EXASCII) ? 0:1;
-		write(file,&c,1);						/* GraphicsMode */
-		c=useron.xedit ? 1:0;
-		write(file,&c,1);						/* ExternEdit */
-		i=(int16_t)rows;
-		write(file,&i,2);						/* ScreenLength */
-		c=1;
-		write(file,&c,1);						/* MNP_Connect */
-		write(file,str,49); 					/* ChatReason */
-		c=0;
-		write(file,&c,1);						/* ExternLogoff */
-		c=(char)INT_TO_BOOL(term & ANSI);
-		write(file,&c,1);						/* ANSI_Capable */
+		write(file, &exitinfo, sizeof(exitinfo));
 		close(file);
 	}
 
