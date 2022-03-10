@@ -147,7 +147,6 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	/* TODO: 16-bit i */
 	int16_t	i;
 	int		file;
-	uint16_t	w;
 	int32_t	l;
 	struct tm tm;
 	struct tm tl;
