@@ -2367,7 +2367,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 	char str[MAX_PATH+1],*path,*p;
 	char bundle_list_filename[MAX_PATH+1];
 	int fmsg,file,error=0L;
-	long fncrc,*mfncrc=0L,num_mfncrc=0L,crcidx;
+	uint32_t fncrc,*mfncrc=0L,num_mfncrc=0L,crcidx;
     attach_t attach;
 	fmsghdr_t hdr;
 	size_t		f;
@@ -2432,9 +2432,9 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 				continue;
 			num_mfncrc++;
 			p=getfname(hdr.subj);
-			if((mfncrc=(long *)realloc(mfncrc,num_mfncrc*sizeof(long)))==NULL) {
+			if((mfncrc=(uint32_t *)realloc(mfncrc,num_mfncrc*sizeof(uint32_t)))==NULL) {
 				lprintf(LOG_ERR,"ERROR line %d allocating %lu for bundle name crc"
-					,__LINE__,num_mfncrc*sizeof(long));
+					,__LINE__,num_mfncrc*sizeof(uint32_t));
 				continue;
 			}
 			mfncrc[num_mfncrc-1]=crc32(strupr(p),0);

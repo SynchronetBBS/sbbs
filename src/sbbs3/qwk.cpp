@@ -381,11 +381,11 @@ void sbbs_t::qwk_sec()
 	int 	s;
 	uint	i;
 	ulong	msgcnt;
-	ulong	*sav_ptr;
+	uint32_t* sav_ptr;
 
 	getusrdirs();
-	if((sav_ptr=(ulong *)malloc(sizeof(ulong)*cfg.total_subs))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ulong)*cfg.total_subs);
+	if((sav_ptr=(uint32_t *)malloc(sizeof(uint32_t)*cfg.total_subs))==NULL) {
+		errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(uint32_t)*cfg.total_subs);
 		return;
 	}
 	for(i=0;i<cfg.total_subs;i++)
