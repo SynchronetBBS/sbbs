@@ -87,7 +87,7 @@ function print(hdr, num, days_ago)
 var argi = argv.indexOf('-l');
 if(argi >= 0) { // Last few callers?
 	var count = -options.last_few_callers;
-	if(argi < argc)
+	if(argi + 1 < argc)
 		count = -parseInt(argv[argi + 1], 10);
 	if(!this.print(options.last_few_callers_msg || "\x01n\x01g\x01hLast few callers:\x01n\r\n"
 		,count, options.last_few_days))
