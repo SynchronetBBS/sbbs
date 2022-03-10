@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 	char		str[256],tmp[128],tag[256],addr[256],*p;
 	int 		i,j,mode=0,cmd=0,o_mode,max_age=0;
 	ushort		smm,sbl;
-	ulong		*crc=NULL,curcrc,total_crcs=0,l;
+	uint32_t	*crc=NULL,curcrc,total_crcs=0,l;
 	FILE		*route,*users,*nodes;
 	time_t		now;
 	smbmsg_t	msg;
@@ -315,10 +315,10 @@ int main(int argc, char **argv)
 						break;
 				if(l==total_crcs) {
 					total_crcs++;
-					if((crc=(ulong *)realloc(crc
-						,sizeof(ulong)*total_crcs))==NULL) {
+					if((crc=(uint32_t *)realloc(crc
+						,sizeof(uint32_t)*total_crcs))==NULL) {
 						printf("Error allocating %lu bytes\n"
-							,sizeof(ulong)*total_crcs);
+							,sizeof(uint32_t)*total_crcs);
 						break; 
 					}
 					crc[l]=curcrc;
