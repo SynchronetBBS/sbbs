@@ -22,6 +22,7 @@
 #include <climits>
 #include <cstdint>
 #include <algorithm>    // std::min
+#include <type_traits>
 #include "gen_defs.h"
 #include "xpendian.h"
 
