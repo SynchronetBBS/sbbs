@@ -26,7 +26,7 @@
 #include "xpendian.h"
 
 namespace Pascal {
- 
+
 template <size_t size>
 class String {
 	static_assert(size <=  UCHAR_MAX, "PascalString size cannot be > 255");
@@ -36,8 +36,9 @@ public:
 		return buf[0]; 
 	}
 	void operator = (const char* s) {
+		using std::min;
 		memset(buf, 0, size);
-		buf[0] = (uint8_t)std::min(size, strlen(s));
+		buf[0] = (uint8_t)min(size, strlen(s));
 		memcpy(buf + 1, s, len());
 	}
 };
