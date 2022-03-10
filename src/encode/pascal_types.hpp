@@ -21,6 +21,7 @@
  
 #include <climits>
 #include <cstdint>
+#include <algorithm>    // std::min
 #include "gen_defs.h"
 #include "xpendian.h"
 
@@ -36,7 +37,7 @@ public:
 	}
 	void operator = (const char* s) {
 		memset(buf, 0, size);
-		buf[0] = (uint8_t)min(size, strlen(s));
+		buf[0] = (uint8_t)std::min(size, strlen(s));
 		memcpy(buf + 1, s, len());
 	}
 };
