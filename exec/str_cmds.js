@@ -77,8 +77,8 @@ function str_cmds(str)
 		}
 
 		if(str=="HELP") {
-			writeln("ERR\tDisplay currrent error log and opptionally delete it as well as");
-			writeln("\toptionally clearing all nodes error counters.");
+			writeln("ERR\tDisplay current error log and optionally delete it, as well as");
+			writeln("\toptionally clearing all nodes' error counters.");
 		}
 		if(str=="ERR") {
 			var errlog=system.logs_dir+"error.log";
@@ -152,7 +152,7 @@ function str_cmds(str)
 		
 		if(str=="HELP") {
 			writeln("EVAL [string]");
-			writeln("\tEvaluate a JavaScirpt expression and display result.");
+			writeln("\tEvaluate a JavaScript expression and display result.");
 		}
 		if(word=="EVAL") {
 			if(bbs.check_syspass()) {
@@ -307,7 +307,7 @@ function str_cmds(str)
 			writeln("\texecutes the node utility with the passed parameters.");
 		}
 		if(word=="NODE") {
-			bbs.exec(bbs.cmdstr("%!node%.") + str.substr(4).toLowerCase(), EX_STDIO|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!node%. -pause ") + str.substr(4), EX_STDIO|EX_NATIVE);
 			return;
 		}
 
