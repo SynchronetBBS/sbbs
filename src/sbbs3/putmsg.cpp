@@ -94,7 +94,7 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 	long	col = column;
 	ulong	l=0;
 	uint	lines_printed = 0;
-	struct mouse_hotspot hot_spot = {0};
+	struct mouse_hotspot hot_spot = {};
 
 	hot_attr = 0;
 	hungry_hotspots = true;
