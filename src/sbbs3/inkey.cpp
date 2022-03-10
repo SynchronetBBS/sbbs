@@ -624,7 +624,7 @@ void sbbs_t::scroll_hotspots(long count)
 
 struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, long minx, long maxx, long y)
 {
-	struct mouse_hotspot spot = {0};
+	struct mouse_hotspot spot = {};
 	spot.cmd[0] = cmd;
 	spot.minx = minx < 0 ? column : minx;
 	spot.maxx = maxx < 0 ? column : maxx;
@@ -635,7 +635,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, long minx, long
 
 struct mouse_hotspot* sbbs_t::add_hotspot(ulong num, bool hungry, long minx, long maxx, long y)
 {
-	struct mouse_hotspot spot = {0};
+	struct mouse_hotspot spot = {};
 	SAFEPRINTF(spot.cmd, "%lu\r", num);
 	spot.minx = minx;
 	spot.maxx = maxx;
@@ -646,7 +646,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(ulong num, bool hungry, long minx, lon
 
 struct mouse_hotspot* sbbs_t::add_hotspot(const char* cmd, bool hungry, long minx, long maxx, long y)
 {
-	struct mouse_hotspot spot = {0};
+	struct mouse_hotspot spot = {};
 	SAFECOPY(spot.cmd, cmd);
 	spot.minx = minx;
 	spot.maxx = maxx;

@@ -648,14 +648,14 @@ extern "C" int postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
 extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const char* text)
 {
 	int			i;
-	smb_t		smb = {0};
+	smb_t		smb = {};
 	uint16_t	xlat;
 	int			storage;
 	long		dupechk_hashes;
 	uint16_t	agent = AGENT_PROCESS;
 	uint16_t	nettype = NET_UNKNOWN;
-	smbmsg_t	msg = {0};
-	user_t		user = {0};
+	smbmsg_t	msg = {};
+	user_t		user = {};
 	char		str[128];
 
 	user.number = usernumber;
