@@ -1995,8 +1995,8 @@ void input_thread(void *arg)
 				continue;
 		}
 
-	    if(rd > (int)sizeof(inbuf))
-        	rd=sizeof(inbuf);
+		if(rd > (int)sizeof(inbuf))
+			rd=sizeof(inbuf);
 
 		if(pthread_mutex_lock(&sbbs->input_thread_mutex)!=0)
 			sbbs->errormsg(WHERE,ERR_LOCK,"input_thread_mutex",0);
@@ -3928,8 +3928,8 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
             ,dest);
         return(-1);
 	}
-    if(!copy && rename(src, dest) == 0)
-        return 0;
+	if(!copy && rename(src, dest) == 0)
+		return 0;
 	if(!CopyFile(src, dest, /* fail if exists: */!copy)) {
 		errormsg(WHERE, "CopyFile", src, 0, dest);
 		return -1;
