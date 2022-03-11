@@ -55,9 +55,9 @@ static void help(void);
 /* API routines */
 static void uifcbail(void);
 static int uscrn(const char *str);
-static int ulist(int mode, int left, int top, int width, int *dflt, int *bar
+static int ulist(uifc_winmode_t, int left, int top, int width, int *dflt, int *bar
 	,const char *title, char **option);
-static int uinput(int imode, int left, int top, const char *prompt, char *str
+static int uinput(uifc_winmode_t, int left, int top, const char *prompt, char *str
 	,int len ,int kmode);
 static int umsg(const char *str);
 static int umsgf(char *str, ...);
@@ -192,7 +192,7 @@ static int which(char* prompt, int max)
 /****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
-int ulist(int mode, int left, int top, int width, int *cur, int *bar
+int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	, const char *title, char **option)
 {
     char str[128];
@@ -336,7 +336,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 /*************************************************************************/
 /* This function is a windowed input string input routine.               */
 /*************************************************************************/
-int uinput(int mode, int left, int top, const char *prompt, char *outstr,
+int uinput(uifc_winmode_t mode, int left, int top, const char *prompt, char *outstr,
 	int max, int kmode)
 {
     char str[256];

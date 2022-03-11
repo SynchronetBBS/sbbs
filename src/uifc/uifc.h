@@ -132,47 +132,51 @@
 							/*******************************/
                             /* Bits in uifcapi_t.list mode */
 							/*******************************/
-#define WIN_ORG 	(1<<0)	/* Original menu - destroy valid screen area */
-#define WIN_SAV 	(1<<1)	/* Save existing text and replace when finished */
-#define WIN_ACT 	(1<<2)	/* Menu remains active after a selection */
-#define WIN_L2R 	(1<<3)	/* Center the window based on 'width'   */
-#define WIN_T2B 	(1<<4)	/* Center the window based on 'height'  */
-#define WIN_INS 	(1<<5)	/* Allows user to use insert key */
-#define WIN_INSACT	(1<<6)	/* Remains active after insert key */
-#define WIN_DEL 	(1<<7)	/* Allows user to use delete key */
-#define WIN_DELACT	(1<<8)	/* Remains active after delete key */
-#define WIN_ESC 	(1<<9)	/* Screen is active when escape is hit			 */
-#define WIN_RHT 	(1<<10) /* Place window against right side of screen */
-#define WIN_BOT 	(1<<11) /* Place window against bottom of screen */
-#define WIN_COPY 	(1<<12) /* Allows F5 to Get (copy) a menu item */
-#define WIN_PASTE 	(1<<13) /* Allows F6 to Put (paste) a menu item */
-#define WIN_CHE 	(1<<14) /* Stay active after escape if changes */
-#define WIN_XTR 	(1<<15) /* Add extra line at end for inserting at end */
-#define WIN_DYN 	(1<<16) /* Dynamic window - return at least every second */
-#define WIN_CUT		(1<<17)	/* Allow ^X (cut) a menu item */
-#define WIN_HLP 	(1<<17) /* Parse 'Help codes' - showbuf() */
-#define WIN_PACK 	(1<<18) /* Pack text in window (No padding) - showbuf() */
-#define WIN_IMM 	(1<<19) /* Draw window and return immediately */
-#define WIN_FAT		(1<<20)	/* Do not pad outside borders */
-#define WIN_REDRAW	(1<<21) /* Force redraw on dynamic window */
-#define WIN_NODRAW	(1<<22) /* Force not to redraw on dynamic window */
-#define WIN_EXTKEYS	(1<<23) /* Return on any keypress... if it's not handled internally
+#define WIN_ORG 	(1LL<<0)	/* Original menu - destroy valid screen area */
+#define WIN_SAV 	(1LL<<1)	/* Save existing text and replace when finished */
+#define WIN_ACT 	(1LL<<2)	/* Menu remains active after a selection */
+#define WIN_L2R 	(1LL<<3)	/* Center the window based on 'width'   */
+#define WIN_T2B 	(1LL<<4)	/* Center the window based on 'height'  */
+#define WIN_INS 	(1LL<<5)	/* Allows user to use insert key */
+#define WIN_INSACT	(1LL<<6)	/* Remains active after insert key */
+#define WIN_DEL 	(1LL<<7)	/* Allows user to use delete key */
+#define WIN_DELACT	(1LL<<8)	/* Remains active after delete key */
+#define WIN_ESC 	(1LL<<9)	/* Screen is active when escape is hit			 */
+#define WIN_RHT 	(1LL<<10) /* Place window against right side of screen */
+#define WIN_BOT 	(1LL<<11) /* Place window against bottom of screen */
+#define WIN_COPY 	(1LL<<12) /* Allows F5 to Get (copy) a menu item */
+#define WIN_PASTE 	(1LL<<13) /* Allows F6 to Put (paste) a menu item */
+#define WIN_CHE 	(1LL<<14) /* Stay active after escape if changes */
+#define WIN_XTR 	(1LL<<15) /* Add extra line at end for inserting at end */
+#define WIN_DYN 	(1LL<<16) /* Dynamic window - return at least every second */
+#define WIN_CUT		(1LL<<17)	/* Allow ^X (cut) a menu item */
+#define WIN_HLP 	(1LL<<17) /* Parse 'Help codes' - showbuf() */
+#define WIN_PACK 	(1LL<<18) /* Pack text in window (No padding) - showbuf() */
+#define WIN_IMM 	(1LL<<19) /* Draw window and return immediately */
+#define WIN_FAT		(1LL<<20)	/* Do not pad outside borders */
+#define WIN_REDRAW	(1LL<<21) /* Force redraw on dynamic window */
+#define WIN_NODRAW	(1LL<<22) /* Force not to redraw on dynamic window */
+#define WIN_EXTKEYS	(1LL<<23) /* Return on any keypress... if it's not handled internally
 							 * Return value is -2 - keyvalue */
-#define WIN_NOBRDR	(1<<24)	/* Do not draw a border around the window */
-#define WIN_FIXEDHEIGHT	(1<<25)	/* Use list_height from uifc struct */
-#define WIN_UNGETMOUSE  (1<<26) /* If the mouse is clicked outside the window, */
+#define WIN_NOBRDR	(1LL<<24)	/* Do not draw a border around the window */
+#define WIN_FIXEDHEIGHT	(1LL<<25)	/* Use list_height from uifc struct */
+#define WIN_UNGETMOUSE  (1LL<<26) /* If the mouse is clicked outside the window, */
 								/* Put the mouse event back into the event queue */
-#define WIN_EDIT		(1<<27)	/* Allow F2 to edit a menu item */
-#define WIN_PASTEXTR	(1<<28)	/* Allow paste into extra (blank) item */
-#define WIN_INACT		(1<<29)	/* Draw window inactive... intended for use with WIN_IMM */
-#define WIN_POP			(1<<30)	/* Exit the list. Act as though ESC was pressed. */
+#define WIN_EDIT		(1LL<<27)	/* Allow F2 to edit a menu item */
+#define WIN_PASTEXTR	(1LL<<28)	/* Allow paste into extra (blank) item */
+#define WIN_INACT		(1LL<<29)	/* Draw window inactive... intended for use with WIN_IMM */
+#define WIN_POP			(1LL<<30)	/* Exit the list. Act as though ESC was pressed. */
 								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
-#define WIN_SEL			(1<<31)	/* Exit the list. Act as though ENTER was pressed. */
+#define WIN_SEL			(1LL<<31)	/* Exit the list. Act as though ENTER was pressed. */
 								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
+#define WIN_LEFTKEY		(1LL<<32)	/* Display left-arrow-key support indicator */
+#define WIN_RIGHTKEY	(1LL<<33)	/* Display right-arrow-key support indicator */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 #define WIN_GET	WIN_COPY
 #define WIN_PUT WIN_PASTE
+
+typedef int64_t uifc_winmode_t; 
 
 #define SCRN_TOP	3
 #define SCRN_LEFT	5
@@ -282,6 +286,8 @@ typedef struct {
 	char	close_char;
 	char	up_arrow;
 	char	down_arrow;
+	char	left_arrow;
+	char	right_arrow;
 	char	button_left;
 	char	button_right;
 
@@ -452,7 +458,7 @@ typedef struct {
 /* Returns the 0-based selected option number, -1 for ESC, or the selected	*/
 /* option number OR'd with MSK_INS, MSK_DEL, MSK_GET, MSK_PUT, or MSK_EDIT.	*/
 /****************************************************************************/
-    int     (*list) (int mode, int left, int top, int width, int* dflt
+    int     (*list) (uifc_winmode_t, int left, int top, int width, int* dflt
                         ,int* bar, const char *title, char** option);
 /****************************************************************************/
 /* Windowed string input routine.											*/
@@ -465,7 +471,7 @@ typedef struct {
 /* This function sets uifcapi_t.changes to TRUE if the string is modified.	*/
 /* Returns the length of the string or -1 on escape/abort.					*/
 /****************************************************************************/
-    int     (*input)(int mode, int left, int top, const char* prompt, char* str
+    int     (*input)(uifc_winmode_t, int left, int top, const char* prompt, char* str
             	        ,int len, int kmode);
 /****************************************************************************/
 /* Sets the current help index by source code file and line number.			*/
@@ -480,7 +486,7 @@ typedef struct {
 /****************************************************************************/
 /* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-	void	(*showbuf)(int mode, int left, int top, int width, int height
+	void	(*showbuf)(uifc_winmode_t, int left, int top, int width, int height
 							,const char *title, const char *hbuf, int *curp, int *barp);
 
 /****************************************************************************/
@@ -492,7 +498,7 @@ typedef struct {
 /****************************************************************************/
 /* Displays the bottom line using the WIN_* mode flags						*/
 /****************************************************************************/
-    void	(*bottomline)(int mode);
+    void	(*bottomline)(uifc_winmode_t);
 
 /****************************************************************************/
 /* String input/exit box at a specified position							*/
