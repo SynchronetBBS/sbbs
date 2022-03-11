@@ -68,7 +68,7 @@ static uifcapi_t* api;
 
 /* Prototypes */
 static int   uprintf(int x, int y, unsigned attr, char *fmt,...);
-static void  bottomline(int line);
+static void  bottomline(uifc_winmode_t);
 static char  *utimestr(time_t *intime);
 static void  help(void);
 static int   ugetstr(int left, int top, int width, char *outstr, int max, long mode, int *lastkey);
@@ -77,9 +77,9 @@ static void  timedisplay(BOOL force);
 /* API routines */
 static void uifcbail(void);
 static int  uscrn(const char *str);
-static int  ulist(int mode, int left, int top, int width, int *dflt, int *bar
+static int  ulist(uifc_winmode_t, int left, int top, int width, int *dflt, int *bar
 	,const char *title, char **option);
-static int  uinput(int imode, int left, int top, const char *prompt, char *str
+static int  uinput(uifc_winmode_t, int left, int top, const char *prompt, char *str
 	,int len ,int kmode);
 static int  umsg(const char *str);
 static int  umsgf(char *fmt, ...);
@@ -87,7 +87,7 @@ static BOOL confirm(char *fmt, ...);
 static BOOL deny(char *fmt, ...);
 static void upop(const char *str);
 static void sethelp(int line, char* file);
-static void showbuf(int mode, int left, int top, int width, int height, const char *title
+static void showbuf(uifc_winmode_t, int left, int top, int width, int height, const char *title
 	, const char *hbuf, int *curp, int *barp);
 
 /* Dynamic menu support */
@@ -113,6 +113,8 @@ static uifc_graphics_t cp437_chars = {
 	.close_char=0xfe,
 	.up_arrow=30,
 	.down_arrow=31,
+	.left_arrow=17,
+	.right_arrow=16,
 	.button_left='[',
 	.button_right=']',
 
@@ -619,7 +621,7 @@ inactive_win(struct vmem_cell *buf, int left, int top, int right, int bottom, in
 /****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
-int ulist(int mode, int left, int top, int width, int *cur, int *bar
+int ulist(int64_t mode, int left, int top, int width, int *cur, int *bar
 	, const char *initial_title, char **option)
 {
 	struct vmem_cell *ptr, *win, shade[MAX_LINES*2], line[MAX_COLS];
@@ -697,7 +699,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	api->help_available = (api->helpbuf!=NULL || api->helpixbfile[0]!=0);
 
 	/* Create the status bar/bottom-line */
-	int bline = mode;
+	int64_t bline = mode;
 	if (api->bottomline != NULL) {
 		if ((mode&(WIN_XTR | WIN_PASTEXTR)) == WIN_XTR && (*cur) == opts - 1)
 			api->bottomline(bline & ~WIN_PASTE);
@@ -886,8 +888,24 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			else
 				i=0;
 
-			for(;i<width-2;i++)
-				set_vmem(ptr++, api->chars->list_top, hclr|(bclr<<4), 0);
+			if(mode & (WIN_LEFTKEY|WIN_RIGHTKEY)) {
+				for(;i<width-7;i++)
+					set_vmem(ptr++, api->chars->list_top, hclr|(bclr<<4), 0);
+				set_vmem(ptr++, api->chars->button_left, hclr|(bclr<<4), 0);
+				if(mode & WIN_LEFTKEY)
+					set_vmem(ptr++, api->chars->left_arrow, lclr|(bclr<<4), 0);
+				else
+					set_vmem(ptr++, ' ', lclr|(bclr<<4), 0);
+				set_vmem(ptr++, ' ', lclr|(bclr<<4), 0);
+				if(mode & WIN_RIGHTKEY)
+					set_vmem(ptr++, api->chars->right_arrow, lclr|(bclr<<4), 0);
+				else
+					set_vmem(ptr++, ' ', lclr|(bclr<<4), 0);
+				set_vmem(ptr++, api->chars->button_right, hclr|(bclr<<4), 0);
+			} else {
+				for(;i<width-2;i++)
+					set_vmem(ptr++, api->chars->list_top, hclr|(bclr<<4), 0);
+			}
 			set_vmem(ptr++, api->chars->list_top_right, hclr|(bclr<<4), 0);
 			set_vmem(ptr++, api->chars->list_left, hclr|(bclr<<4), 0);
 			a=title_len;
@@ -1154,6 +1172,20 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							&& mevnt.starty==(s_top+top+height)-bbrdrwidth-1
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
 						gotkey=CIO_KEY_NPAGE;
+					}
+					/* Clicked Left Arrow */
+					else if((mode & WIN_LEFTKEY)
+						&& mevnt.startx==s_left+left+(width-5)
+							&& mevnt.starty==(s_top+top)-(bbrdrwidth-1)
+							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
+						gotkey = CIO_KEY_LEFT;
+					}
+					/* Clicked Right Arrow */
+					else if((mode & WIN_RIGHTKEY)
+						&& mevnt.startx==s_left+left+(width-3)
+							&& mevnt.starty==(s_top+top)-(bbrdrwidth-1)
+							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
+						gotkey = CIO_KEY_RIGHT;
 					}
 					/* Clicked Outside of Window */
 					else if((mevnt.startx<s_left+left
@@ -1836,7 +1868,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 /*************************************************************************/
 /* This function is a windowed input string input routine.               */
 /*************************************************************************/
-int uinput(int mode, int left, int top, const char *inprompt, char *str,
+int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *str,
 	int max, int kmode)
 {
 	struct vmem_cell shade[MAX_COLS], save_buf[MAX_COLS*4], in_win[MAX_COLS*3];
@@ -2483,7 +2515,7 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 /****************************************************************************/
 /* Display bottom line of screen in inverse                                 */
 /****************************************************************************/
-void bottomline(int mode)
+void bottomline(uifc_winmode_t mode)
 {
 	int i=1;
 
@@ -2690,7 +2722,7 @@ void sethelp(int line, char* file)
 /****************************************************************************/
 /* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-void showbuf(int mode, int left, int top, int width, int height, const char *title, const char *hbuf, int *curp, int *barp)
+void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, const char *title, const char *hbuf, int *curp, int *barp)
 {
 	char inverse=0,high=0;
 	struct vmem_cell *textbuf;
