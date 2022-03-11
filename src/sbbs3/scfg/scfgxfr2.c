@@ -439,7 +439,12 @@ void xfer_cfg()
 				"The left and right arrow keys may be used to cycle through file\n"
 				"libraries.\n"
 			;
-			switch(uifc.list(WIN_ACT|WIN_EXTKEYS,6,4,60,&dflt,0,str,opt)) {
+			uifc_winmode_t wmode = WIN_ACT|WIN_EXTKEYS;
+			if(libnum > 0)
+				wmode |= WIN_LEFTKEY;
+			if(libnum + 1 < cfg.total_libs)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,6,4,60,&dflt,0,str,opt)) {
 				case -1:
 					done=1;
 					break;
@@ -1275,16 +1280,22 @@ void dir_cfg(uint libnum)
 				"The left and right arrow keys may be used to cycle through file\n"
 				"directories.\n"
 			;
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT|WIN_EXTKEYS
-				,0,0,72,&opt_dflt,0,str,opt)) {
+			uifc_winmode_t wmode = WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT|WIN_EXTKEYS;
+			int prev = prev_dirnum(cfg.dir[i]);
+			int next = next_dirnum(cfg.dir[i]);
+			if(prev != i)
+				wmode |= WIN_LEFTKEY;
+			if(next != i)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,72,&opt_dflt,0,str,opt)) {
 				case -1:
 					done=1;
 					break;
 				case -CIO_KEY_LEFT-2:
-					i = prev_dirnum(cfg.dir[i]);
+					i = prev;
 					break;
 				case -CIO_KEY_RIGHT-2:
-					i = next_dirnum(cfg.dir[i]);
+					i = next;
 					break;
 				case 0:
 					uifc.helpbuf=dir_long_name_help;
