@@ -89,6 +89,7 @@ ulong bundles_unpacked=0;
 
 int cur_smb=0;
 FILE *fidologfile=NULL;
+str_list_t subject_can;
 str_list_t twit_list;
 str_list_t bad_areas;
 
@@ -3175,6 +3176,7 @@ enum {
 	,IMPORT_FILTERED_TWIT	= 2
 	,IMPORT_FILTERED_EMPTY	= 3
 	,IMPORT_FILTERED_AGE	= 4
+	,IMPORT_FILTERED_SUBJ	= 5
 };
 
 /****************************************************************************/
@@ -3202,6 +3204,11 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	if(findstr_in_list(hdr->from, twit_list) || findstr_in_list(hdr->to, twit_list)) {
 		lprintf(LOG_INFO,"Filtering message from %s to %s",hdr->from,hdr->to);
 		return IMPORT_FILTERED_TWIT;
+	}
+
+	if(findstr_in_list(hdr->subj, subject_can)) {
+		lprintf(LOG_INFO,"Filtering message from %s with subject: %s", hdr->from, hdr->subj);
+		return IMPORT_FILTERED_SUBJ;
 	}
 
 	memset(&msg,0,sizeof(smbmsg_t));
@@ -4527,6 +4534,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 			break;
 		case IMPORT_FILTERED_AGE:		/* too-old */
 			lprintf(LOG_WARNING,"%s Filtered - Too Old", info);
+			break;
+		case IMPORT_FILTERED_SUBJ:
+			lprintf(LOG_WARNING,"%s Filtered - Subject", info);
 			break;
 		default:
 			lprintf(LOG_ERR,"ERROR (%d) Importing %s",i,info);
@@ -6238,6 +6248,8 @@ int main(int argc, char **argv)
 
 	SAFEPRINTF(str,"%stwitlist.cfg",scfg.ctrl_dir);
 	twit_list=findstr_list(str);
+
+	subject_can = trashcan_list(&scfg,"subject");
 
 	if(scfg.total_faddrs)
 		sys_faddr=scfg.faddr[0];
