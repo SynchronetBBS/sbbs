@@ -28,19 +28,25 @@
 
 namespace Pascal {
 
+// Statically-allocated String
 template <size_t size>
 class String {
-	static_assert(size <=  UCHAR_MAX, "PascalString size cannot be > 255");
+	static_assert(size <=  UCHAR_MAX, "Pascal::String size cannot be > 255");
 	uint8_t buf[size + 1]{};
 public:
-	size_t len() { 
+	// Current string length (ala std::string::length)
+	size_t length() { 
 		return buf[0]; 
+	}
+	// Maximum string length (ala std::string::max_size)
+	size_t max_size() const {
+		return size;
 	}
 	void operator = (const char* s) {
 		using std::min;
 		memset(buf, 0, size);
 		buf[0] = (uint8_t)min(size, strlen(s));
-		memcpy(buf + 1, s, len());
+		memcpy(buf + 1, s, length());
 	}
 };
 
