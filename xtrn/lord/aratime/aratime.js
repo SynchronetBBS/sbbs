@@ -191,6 +191,7 @@ function chkmaint()
 		more_nomail();
 		exit(0);
 	}
+	return 0;
 }
 
 // TODO CONFIG
