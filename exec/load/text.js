@@ -306,7 +306,7 @@ var NFilesRemoved=296;
 var TagFileQ=297;
 var TagFilePrompt=298;
 var Unused299=299;
-var Unused300=300;
+var FreeDownloadUserMsg=300;
 var FiAuthor=301;
 var FiGroup=302;
 var FileAlreadyInQueue=303;
@@ -862,7 +862,12 @@ var SubGroupKeys=852;
 var AllKey=853;
 var All=854;
 var ListKey=855;
+var InternetMailReceived=856;
+var InternetMailForwarded=857;
+var FidoNetMailReceived=858;
+var WithAttachment=859;
+var FidoEchoMailReceived=860;
 
-var TOTAL_TEXT=856;
+var TOTAL_TEXT=861;
 
 this;
