@@ -1224,16 +1224,23 @@ void xtrn_cfg(uint section)
 				"\n"
 				"The left and right arrow keys may be used to cycle through programs.\n"
 			;
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID|WIN_EXTKEYS,0,0,60,&opt_dflt,&sub_bar,cfg.xtrn[i]->name
+			uifc_winmode_t wmode = WIN_SAV|WIN_ACT|WIN_MID|WIN_EXTKEYS;
+			int prev = prev_program(i);
+			int next = next_program(i);
+			if(prev != i)
+				wmode |= WIN_LEFTKEY;
+			if(next != i)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&opt_dflt,&sub_bar,cfg.xtrn[i]->name
 				,opt)) {
 				case -1:
 					done=1;
 					break;
 				case -CIO_KEY_LEFT-2:
-					i = prev_program(i);
+					i = prev;
 					break;
 				case -CIO_KEY_RIGHT-2:
-					i = next_program(i);
+					i = next;
 					break;
 				case 0:
 					uifc.helpbuf=
@@ -2421,7 +2428,12 @@ void xtrnsec_cfg()
 				"The left and right arrow keys may be used to cycle through program\n"
 				"sections.\n"
 			;
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID|WIN_EXTKEYS,0,0,60,&xtrnsec_opt,0,str
+			uifc_winmode_t wmode = WIN_SAV|WIN_ACT|WIN_MID|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_xtrnsecs)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&xtrnsec_opt,0,str
 				,opt)) {
 				case -1:
 					done=1;

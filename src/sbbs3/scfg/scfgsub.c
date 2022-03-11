@@ -402,16 +402,22 @@ void sub_cfg(uint grpnum)
 				"\n"
 				"The left and right arrow keys may be used to cycle through sub-boards.\n"
 			;
-			switch(uifc.list(WIN_ACT|WIN_SAV|WIN_BOT|WIN_L2R|WIN_EXTKEYS
-				,0,0,72,&opt_dflt,0,str,opt)) {
+			uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_BOT|WIN_L2R|WIN_EXTKEYS;
+			int prev = prev_subnum(cfg.sub[i]);
+			int next = next_subnum(cfg.sub[i]);
+			if(prev != i)
+				wmode |= WIN_LEFTKEY;
+			if(next != i)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,72,&opt_dflt,0,str,opt)) {
 				case -1:
 					done=1;
 					break;
 				case -CIO_KEY_LEFT-2:
-					i = prev_subnum(cfg.sub[i]);
+					i = prev;
 					break;
 				case -CIO_KEY_RIGHT-2:
-					i = next_subnum(cfg.sub[i]);
+					i = next;
 					break;
 				case 0:
 					uifc.helpbuf=sub_long_name_help;

@@ -674,7 +674,12 @@ void msgs_cfg()
 				"The left and right arrow keys may be used to cycle through message\n"
 				"groups.\n"
 			;
-			switch(uifc.list(WIN_ACT|WIN_T2B|WIN_EXTKEYS,6,0,60,&dflt,0,str,opt)) {
+			uifc_winmode_t wmode = WIN_ACT|WIN_T2B|WIN_EXTKEYS;
+			if(grpnum > 0)
+				wmode |= WIN_LEFTKEY;
+			if(grpnum + 1 < cfg.total_grps)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,6,0,60,&dflt,0,str,opt)) {
 				case -1:
 					done=1;
 					break;
