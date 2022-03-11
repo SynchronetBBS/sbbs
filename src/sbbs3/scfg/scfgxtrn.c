@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "ciolib.h"	// CIO_KEY_*
 
 char *daystr(char days);
 static void hotkey_cfg(void);
@@ -125,6 +126,24 @@ static bool new_external_program(unsigned new_xtrn_num, unsigned section)
 	cfg.xtrn[new_xtrn_num] = new_xtrn;
 	cfg.total_xtrns++;
 	return true;
+}
+
+static int next_program(const int num)
+{
+	for(int i = num + 1; i < cfg.total_xtrns; i++) {
+		if(cfg.xtrn[i]->sec == cfg.xtrn[num]->sec)
+			return i;
+	}
+	return num;
+}
+
+static int prev_program(const int num)
+{
+	for(int i = num - 1; i >= 0; i--) {
+		if(cfg.xtrn[i]->sec == cfg.xtrn[num]->sec)
+			return i;
+	}
+	return num;
 }
 
 static bool new_external_editor(unsigned new_xedit_num)
@@ -1064,7 +1083,7 @@ void xtrn_cfg(uint section)
 			"\n"
 			"To configure a program, select it with the arrow keys and hit ~ ENTER ~.\n"
 		;
-		sprintf(str,"%s Online Programs",cfg.xtrnsec[section]->name);
+		sprintf(str,"%s Programs",cfg.xtrnsec[section]->name);
 		i=uifc.list(i,0,0,45,&ext_dflt,&ext_bar,str,opt);
 		if((signed)i==-1)
 			return;
@@ -1072,17 +1091,17 @@ void xtrn_cfg(uint section)
 		i &= MSK_OFF;
 		if(msk == MSK_INS) {
 			uifc.helpbuf=
-				"`Online Program Name:`\n"
+				"`Program Name:`\n"
 				"\n"
 				"This is the name or description of the online program (door).\n"
 			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Name",str,40
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Program Name",str,40
 				,0)<1)
 				continue;
 			SAFECOPY(code,str);
 			prep_code(code,/* prefix: */NULL);
 			uifc.helpbuf=
-				"`Online Program Internal Code:`\n"
+				"`Program Internal Code:`\n"
 				"\n"
 				"Every online program must have its own unique code for Synchronet to\n"
 				"refer to it internally. This code is usually an abbreviation of the\n"
@@ -1201,12 +1220,20 @@ void xtrn_cfg(uint section)
 				"This menu is for configuring the selected online program.\n"
 				"\n"
 				"For detailed instructions for configuring BBS doors, see\n"
-				"`http://wiki.synchro.net/howto:door:index`"
+				"`http://wiki.synchro.net/howto:door:index`\n"
+				"\n"
+				"The left and right arrow keys may be used to cycle through programs.\n"
 			;
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID,0,0,60,&opt_dflt,&sub_bar,cfg.xtrn[i]->name
+			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID|WIN_EXTKEYS,0,0,60,&opt_dflt,&sub_bar,cfg.xtrn[i]->name
 				,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					i = prev_program(i);
+					break;
+				case -CIO_KEY_RIGHT-2:
+					i = next_program(i);
 					break;
 				case 0:
 					uifc.helpbuf=
@@ -2380,13 +2407,32 @@ void xtrnsec_cfg()
 			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.xtrnsec[i]->code);
 			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
 				,cfg.xtrnsec[i]->arstr);
-			sprintf(opt[k++],"%s","Available Online Programs...");
+			sprintf(opt[k++],"%s","Online Programs...");
 			opt[k][0]=0;
 			sprintf(str,"%s Program Section",cfg.xtrnsec[i]->name);
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID,0,0,60,&xtrnsec_opt,0,str
+			uifc.helpbuf=
+				"`Program Section Configuration:`\n"
+				"\n"
+				"This menu allows you to configure the security requirements for access\n"
+				"to this external program section. You can also add, delete, and\n"
+				"configure the programs (e.g. door games) of this section by selecting\n"
+				"the `Online Programs...` option.\n"
+				"\n"
+				"The left and right arrow keys may be used to cycle through program\n"
+				"sections.\n"
+			;
+			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID|WIN_EXTKEYS,0,0,60,&xtrnsec_opt,0,str
 				,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_xtrnsecs)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=
