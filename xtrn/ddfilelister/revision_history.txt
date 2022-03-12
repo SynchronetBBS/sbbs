@@ -5,6 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.05     2022-03-12   Now makes use of the user's extended file description
+                      setting: If the user's extended file description setting
+                      is enabled, the lister will now show extended file
+                      descriptions on the main screen in a split format, with
+                      the lightbar file list on the left and the extended file
+                      description for the highlighted file on the right.  Also,
+                      made the file info window taller for terminals within 25
+                      lines high.
 2.04     2022-03-09   Bug fix: Now successfully formats filenames without
                       extensions when listing files.
 2.03     2022-02-27   For terminals over 80 rows tall, the file info window will
