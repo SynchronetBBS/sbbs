@@ -41,18 +41,6 @@ int sbbs_t::xtrn_sec(const char* section)
 const char *hungupstr="\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
 
 /****************************************************************************/
-/* Convert C string to pascal string										*/
-/****************************************************************************/
-void str2pas(const char *instr, char *outstr)
-{
-	int i;
-
-	outstr[0]=(char)strlen(instr);
-	for(i=0;i<outstr[0];i++)
-		outstr[i+1]=instr[i];
-}
-
-/****************************************************************************/
 /* Convert from unix time (seconds since 1/70) to julian (days since 1900)	*/
 /****************************************************************************/
 int unixtojulian(time_t unix_time)
