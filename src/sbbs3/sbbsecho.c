@@ -298,10 +298,10 @@ echostat_msg_t parse_echostat_msg(str_list_t ini, const char* section, const cha
 	return msg;
 }
 
-echostat_msg_t fidomsg_to_echostat_msg(fmsghdr_t* hdr, fidoaddr_t* pkt_orig, const char* fmsgbuf)
+echostat_msg_t* fidomsg_to_echostat_msg(fmsghdr_t* hdr, fidoaddr_t* pkt_orig, const char* fmsgbuf)
 {
 	char* p;
-	echostat_msg_t msg = {{0}};
+	static echostat_msg_t msg = {{0}};
 
 	SAFECOPY(msg.to		, hdr->to);
 	SAFECOPY(msg.from	, hdr->from);
@@ -338,13 +338,13 @@ echostat_msg_t fidomsg_to_echostat_msg(fmsghdr_t* hdr, fidoaddr_t* pkt_orig, con
 	if(fmsgbuf != NULL)
 		msg.length = strlen(fmsgbuf);
 
-	return msg;
+	return &msg;
 }
 
-echostat_msg_t smsg_to_echostat_msg(const smbmsg_t* smsg, size_t msglen, fidoaddr_t addr)
+echostat_msg_t* smsg_to_echostat_msg(const smbmsg_t* smsg, size_t msglen, fidoaddr_t addr)
 {
 	char* p;
-	echostat_msg_t emsg = {{0}};
+	static echostat_msg_t emsg = {{0}};
 
 	SAFECOPY(emsg.to	, smsg->to);
 	SAFECOPY(emsg.from	, smsg->from);
@@ -367,14 +367,14 @@ echostat_msg_t smsg_to_echostat_msg(const smbmsg_t* smsg, size_t msglen, fidoadd
 	emsg.length = msglen;
 	emsg.pkt_orig = addr;
 
-	return emsg;
+	return &emsg;
 }
 
-void new_echostat_msg(echostat_t* stat, enum echostat_msg_type type, echostat_msg_t msg)
+void new_echostat_msg(echostat_t* stat, enum echostat_msg_type type, echostat_msg_t* msg)
 {
-	stat->last[type] = msg;
+	stat->last[type] = *msg;
 	if(stat->first[type].localtime == 0)
-		stat->first[type] = msg;
+		stat->first[type] = *msg;
 	stat->total[type]++;
 }
 
