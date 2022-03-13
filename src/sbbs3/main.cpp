@@ -2780,7 +2780,8 @@ void event_thread(void* arg)
 					SAFEPRINTF2(str,"%5u of %-5u",i,j);
 					//status(str);
 					sbbs->useron.number=i;
-					fgetuserdat(&sbbs->cfg,&sbbs->useron, userfile);
+					if(fgetuserdat(&sbbs->cfg,&sbbs->useron, userfile) != 0)
+						continue;
 
 					if(sbbs->useron.number
 						&& !(sbbs->useron.misc&(DELETED|INACTIVE))	 /* Pre-QWK */
