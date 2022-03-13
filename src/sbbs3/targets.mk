@@ -133,7 +133,7 @@ endif
 ifeq ($(os),linux)
 .PHONY: setcap
 setcap: all
-	sudo setcap 'cap_net_bind_service=+ep' $(EXEODIR)/sbbs
+	sudo $(whereis -b setcap | cut -d" " -f2) 'cap_net_bind_service=+ep' $(EXEODIR)/sbbs
 endif
 
 .PHONY: sexyz
