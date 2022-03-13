@@ -19,8 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef QBBSDEFS_H_
-#define QBBSDEFS_H_
+#ifndef QBBSDEFS_HPP_
+#define QBBSDEFS_HPP_
 
 #include "pascal_types.hpp"
 
