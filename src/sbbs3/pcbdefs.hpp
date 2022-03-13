@@ -22,6 +22,7 @@
 #ifndef PCBDEFS_HPP_
 #define PCBDEFS_HPP_
 
+#include <algorithm>    // std::min
 #include "endian.hpp"
 
 namespace PCBoard {
@@ -47,6 +48,7 @@ class string {
 	char value[size]{};
 public:
 	void operator = (const char* s) {
+		using std::min;
 		memset(value, ' ', size);
 		memcpy(value, s, min(size, strlen(s)));
 	}
