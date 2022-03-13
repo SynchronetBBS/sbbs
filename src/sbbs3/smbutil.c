@@ -1499,6 +1499,7 @@ int setmsgattr(smb_t* smb, ulong number, uint16_t attr)
 void readmsgs(ulong start, ulong count)
 {
 	char	*inbuf;
+	char	tmp[256];
 	int 	i,done=0,domsg=1;
 	ulong	rd = 0;
 	smbmsg_t msg;
@@ -1529,7 +1530,11 @@ void readmsgs(ulong start, ulong count)
 
 			printf("\n#%"PRIu32" (%d)\n",msg.hdr.number,msg.idx_offset+1);
 			printf("Subj : %s\n",msg.subj);
-			printf("Attr : %04hX", msg.hdr.attr);
+			printf("Attr : %04hX (%s)", msg.hdr.attr, smb_msgattrstr(msg.hdr.attr, tmp, sizeof(tmp)));
+			if(msg.hdr.auxattr != 0)
+				printf("\nAux  : %08lX (%s)", msg.hdr.auxattr, smb_auxattrstr(msg.hdr.auxattr, tmp, sizeof(tmp)));
+			if(msg.hdr.netattr != 0)
+				printf("\nNet  : %08lX (%s)", msg.hdr.netattr, smb_netattrstr(msg.hdr.netattr, tmp, sizeof(tmp)));
 			if(*msg.to) {
 				printf("\nTo   : %s",msg.to);
 				if(msg.to_net.type)
