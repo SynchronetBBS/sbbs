@@ -281,6 +281,11 @@ menu with a custom OnItemSelect() function specified and you want the menu to co
 be displayed allowing the user to select an item.
 lbMenu.exitOnItemSelect = false;
 
+OnItemNav is a function that is called when the user navigates to a new item (i.e., via
+the up or down arrow, PageUp, PageDown, Home, End, etc.).  Its parameters are the old
+item index and the new item index.
+this.OnItemNav = function(pOldItemIdx, pNewItemIdx) { }
+
 The 'key down' behavior can be called explicitly, if needed, by calling the DoKeyDown() function.
 It takes 2 parameters: An object of selected item indexes (as passed to GetVal()) and, optionally,
 the pre-calculated number of items.
@@ -509,6 +514,10 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.GetColorForItem = DDLightbarMenu_GetColorForItem;
 	this.GetSelectedColorForItem = DDLightbarMenu_GetSelectedColorForItem;
 	this.SetSelectedItemIdx = DDLightbarMenu_SetSelectedItemIdx;
+	this.GetBottomItemIdx = DDLightbarMenu_GetBottomItemIdx;
+	this.GetTopDisplayedItemPos = DDLightbarMenu_GetTopDisplayedItemPos;
+	this.GetBottomDisplayedItemPos = DDLightbarMenu_GetBottomDisplayedItemPos;
+	this.ScreenRowForItem = DDLightbarMenu_ScreenRowForItem;
 
 	// ValidateSelectItem is a function for validating that the user can select an item.
 	// It takes the selected item's return value and returns a boolean to signify whether
@@ -523,6 +532,10 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	//  pSelected: Boolean - Whether the item was selected or de-selected.  De-selection
 	//             is possible when multi-select is enabled.
 	this.OnItemSelect = function(pItemRetval, pSelected) { }
+
+	// OnItemNav is a function that is called when the user navigates to
+	// new item (i.e., up/down arrow, pageUp, pageDown, home, end)
+	this.OnItemNav = function(pOldItemIdx, pNewItemIdx) { }
 
 	// Set some things based on the parameters passed in
 	if ((typeof(pX) == "number") && (typeof(pY) == "number"))
@@ -1027,8 +1040,15 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 	if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 	{
 		var scrollbarCol = this.borderEnabled ? this.pos.x + this.size.width - 2 : this.pos.x + this.size.width - 1;
-		if (this.pos.x + pStartX + width - 1 >= scrollbarCol) // The last column drawn includes the scrollbar
-			--itemLen;
+		// If the rightmost column is at or past the scrollbar column,
+		// then subtract from the item length so that we don't overwrite
+		// the scrollbar.
+		var rightmostCol = this.pos.x + pStartX + width - 2;
+		if (rightmostCol >= scrollbarCol)
+		{
+			var lenDiff = scrollbarCol - rightmostCol + 1; // The amount to subtract from the length
+			itemLen -= lenDiff;
+		}
 		if (!this.borderEnabled && pStartX == this.size.width)
 			writeMenuItems = false;
 		// Just draw the whole srollbar to ensure it's updated
@@ -1509,7 +1529,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			{
 				// Draw the current item in regular colors
 				this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				--this.selectedItemIdx;
+				var oldSelectedItemIdx = this.selectedItemIdx--;
 				// Draw the new current item in selected colors
 				// If the selected item is above the top of the menu, then we'll need to
 				// scroll the items down.
@@ -1524,6 +1544,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					// just draw the selected item highlighted.
 					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				}
+				if (typeof(this.OnItemNav) === "function")
+					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 			}
 			else
 			{
@@ -1535,6 +1557,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					//this.WriteItemAtItsLocation(pIdx, pHighlight, pSelected)
 					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					// Go to the last item and scroll to the bottom if necessary
+					var oldSelectedItemIdx = this.selectedItemIdx;
 					this.selectedItemIdx = numItems - 1;
 					var oldTopItemIdx = this.topItemIdx;
 					var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
@@ -1548,6 +1571,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						// Draw the new current item in selected colors
 						this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					}
+					if (typeof(this.OnItemNav) === "function")
+						this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 				}
 			}
 		}
@@ -1560,6 +1585,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			// Only do this if we're not already at the top of the list
 			if (this.topItemIdx > 0)
 			{
+				var oldSelectedItemIdx = this.selectedItemIdx;
 				var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 				var newTopItemIdx = this.topItemIdx - numItemsPerPage;
 				if (newTopItemIdx < 0)
@@ -1589,6 +1615,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						this.Draw(selectedItemIndexes);
 					}
 				}
+				if (typeof(this.OnItemNav) === "function")
+					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 			}
 			else
 			{
@@ -1597,9 +1625,12 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				// item, then make it so.
 				if (this.selectedItemIdx > 0)
 				{
+					var oldSelectedItemIdx = this.selectedItemIdx;
 					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					this.selectedItemIdx = 0;
 					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					if (typeof(this.OnItemNav) === "function")
+						this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 				}
 			}
 		}
@@ -1610,6 +1641,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			var lastItemIdx = this.NumItems() - 1;
 			if (lastItemIdx > this.topItemIdx+numItemsPerPage-1)
 			{
+				var oldSelectedItemIdx = this.selectedItemIdx;
 				// Figure out the top index for the last page.
 				var topIndexForLastPage = numItems - numItemsPerPage;
 				if (topIndexForLastPage < 0)
@@ -1638,6 +1670,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					}
 					this.Draw(selectedItemIndexes);
 				}
+				if (typeof(this.OnItemNav) === "function")
+					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 			}
 			else
 			{
@@ -1646,9 +1680,12 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				// item, then make it so.
 				if (this.selectedItemIdx < lastItemIdx)
 				{
+					var oldSelectedItemIdx = this.selectedItemIdx;
 					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					this.selectedItemIdx = lastItemIdx;
 					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					if (typeof(this.OnItemNav) === "function")
+						this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 				}
 			}
 		}
@@ -1657,6 +1694,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			// Go to the first item in the list
 			if (this.selectedItemIdx > 0)
 			{
+				var oldSelectedItemIdx = this.selectedItemIdx;
 				// If the current item index is not on first current page, then scroll.
 				// Otherwise, draw more efficiently by drawing the current item in
 				// regular colors and the first item in highlighted colors.
@@ -1685,6 +1723,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
 					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				}
+				if (typeof(this.OnItemNav) === "function")
+					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 			}
 		}
 		else if (this.lastUserInput == KEY_END)
@@ -1693,6 +1733,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			var numItemsPerPage = this.GetNumItemsPerPage();
 			if (this.selectedItemIdx < numItems-1)
 			{
+				var oldSelectedItemIdx = this.selectedItemIdx;
 				var lastPossibleTop = numItems - numItemsPerPage;
 				if (lastPossibleTop < 0)
 					lastPossibleTop = 0;
@@ -1726,6 +1767,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
 					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				}
+				if (typeof(this.OnItemNav) === "function")
+					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 			}
 		}
 		// Enter key or additional select-item key: Select the item & quit out of the input loop
@@ -1847,6 +1890,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			// and stop the input loop.
 			if (userEnteredItemNum > 0)
 			{
+				var oldSelectedItemIdx = this.selectedItemIdx;
 				this.selectedItemIdx = userEnteredItemNum-1;
 				if (this.multiSelect)
 				{
@@ -1868,6 +1912,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					retVal = this.GetItem(this.selectedItemIdx).retval;
 					continueOn = false;
 				}
+				if (typeof(this.OnItemNav) === "function")
+					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 			}
 			else
 				console.gotoxy(originalCurpos); // Move the cursor back where it was
@@ -1905,8 +1951,11 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						else
 						{
 							retVal = theItem.retval;
+							var oldSelectedItemIdx = this.selectedItemIdx;
 							this.selectedItemIdx = i;
 							continueOn = false;
+							if (typeof(this.OnItemNav) === "function")
+								this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 						}
 						break;
 					}
@@ -1946,7 +1995,7 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 	{
 		// Draw the current item in regular colors
 		this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
-		++this.selectedItemIdx;
+		var oldSelectedItemIdx = this.selectedItemIdx++;
 		// Draw the new current item in selected colors
 		// If the selected item is below the bottom of the menu, then we'll need to
 		// scroll the items up.
@@ -1962,6 +2011,8 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 			// just draw the selected item highlighted.
 			this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
 		}
+		if (typeof(this.OnItemNav) === "function")
+			this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 	}
 	else
 	{
@@ -1972,6 +2023,7 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 			// Draw the current item in regular colors
 			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
 			// Go to the first item and scroll to the top if necessary
+			var oldSelectedItemIdx = this.selectedItemIdx;
 			this.selectedItemIdx = 0;
 			var oldTopItemIdx = this.topItemIdx;
 			this.topItemIdx = 0;
@@ -1982,6 +2034,8 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 				// Draw the new current item in selected colors
 				this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
 			}
+			if (typeof(this.OnItemNav) === "function")
+				this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 		}
 	}
 }
@@ -2447,6 +2501,79 @@ function DDLightbarMenu_SetSelectedItemIdx(pSelectedItemIdx)
 		this.topItemIdx = this.selectedItemIdx - this.GetNumItemsPerPage() + 1;
 	else if (this.selectedItemIdx < this.topItemIdx)
 		this.topItemIdx = this.selectedItemIdx;
+}
+
+// Gets the index of the bottommost item on the menu
+function DDLightbarMenu_GetBottomItemIdx()
+{
+	var bottomItemIdx = this.topItemIdx + this.size.height - 1;
+	if (this.borderEnabled)
+		bottomItemIdx -= 2;
+	return bottomItemIdx;
+}
+
+// Returns the absolute screen position (x, y) of the topmost displayed item on the menu
+//
+// Return value: An object with the following properties:
+//               x: The horizontal screen location of the top item (1-based)
+//               y: The vertical screen location of the top item (1-based)
+function DDLightbarMenu_GetTopDisplayedItemPos()
+{
+	var itemPos = {
+		x: this.pos.x,
+		y: this.pos.y
+	};
+	if (this.borderEnabled)
+	{
+		++itemPos.x;
+		++itemPos.y;
+	}
+	return itemPos;
+}
+
+// Returns the absolute screen position (x, y) of the bottommost displayed item on the menu
+//
+// Return value: An object with the following properties:
+//               x: The horizontal screen location of the top item (1-based)
+//               y: The vertical screen location of the top item (1-based)
+function DDLightbarMenu_GetBottomDisplayedItemPos()
+{
+	var itemPos = {
+		x: this.pos.x,
+		y: this.pos.y + this.size.height - 1
+	};
+	if (this.borderEnabled)
+	{
+		++itemPos.x;
+		--itemPos.y;
+	}
+	return itemPos;
+}
+
+// Returns the absolute screen row number for an item index, if it is visible
+// on the menu.  If the item is not visible on the menu, this will return -1.
+//
+// Parameters:
+//  pItemIdx: The index of the menu item to check
+//
+// Return value: The absolute row number on the screen where the item is, if it is
+//               visible on the menu, or -1 if the item is not visible on the menu.
+function DDLightbarMenu_ScreenRowForItem(pItemIdx)
+{
+	if (typeof(pItemIdx) !== "number")
+		return -1;
+	if (pItemIdx < 0 || pItemIdx >= this.NumItems())
+		return -1;
+
+	var screenRow = -1;
+	if (pItemIdx >= this.topItemIdx && pItemIdx <= this.GetBottomItemIdx())
+	{
+		if (this.borderEnabled)
+			screenRow = this.pos.y + pItemIdx - this.topItemIdx + 1;
+		else
+			screenRow = this.pos.y + pItemIdx - this.topItemIdx;
+	}
+	return screenRow;
 }
 
 // Calculates the number of solid scrollbar blocks & non-solid scrollbar blocks

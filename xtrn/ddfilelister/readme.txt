@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.04
-                           Release date: 2022-03-09
+                                 Version 2.05
+                           Release date: 2022-03-12
 
                                      by
 
@@ -49,6 +49,14 @@ action.  The file lister also uses message boxes to display information.
 
 If the user's terminal does not support ANSI, the file lister will run the
 stock Synchronet file lister interface instead.
+
+Digital Distortion File Lister makes use of the user's extended description
+setting.  If the user's extended description setting is enabled, the lister
+will use a split interface, with the lightbar file list on the left side and
+the extended file description for the highlighted file displayed on the right
+side.  If the user's extended file description setting is disabled, the
+lightbar file menu will use the entire width of the screen, with the short
+file descriptions being displayed in a single row with each file.
 
 When adding files to the user's batch download queue or (for the sysop)
 selecting files to move or delete, multi-select mode can be used, allowing
