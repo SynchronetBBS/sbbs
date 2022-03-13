@@ -24,7 +24,7 @@
 #include <algorithm>    // std::min
 #include <type_traits>
 #include "gen_defs.h"
-#include "xpendian.h"
+#include "endian.hpp"
 
 namespace Pascal {
 
@@ -66,23 +66,11 @@ public:
 // All multi-byte integer data types are all implicitly little-endian (x86),
 // so provide automatic byte-swap (on big-endian systems) during assignment operations.
 
-template <typename T>
-class LittleEndianInteger {
-	T value{};
-public:
-	void operator = (T nval) {
-		value = LE_INT(nval);
-	}
-	T operator = (const LittleEndianInteger&) {
-		return LE_INT(value);
-	}
-};
-
-using Integer   = LittleEndianInteger<int16_t>;  // Integer is a 16-bit signed integer
-using Word      = LittleEndianInteger<uint16_t>; // Word is a 16-bit unsigned integer
-using LongInt   = LittleEndianInteger<int32_t>;  // LongInt is a 32-bit signed integer
-using LongWord  = LittleEndianInteger<uint32_t>; // LongWord is a 32-bit unsigned integer
-using Byte      = uint8_t;                       // Byte is an 8-bit unsigned integer
-using Char      = char;                          // Char is an 8-bit char
+using Integer   = LittleEndInt<int16_t>;  // Integer is a 16-bit signed integer
+using Word      = LittleEndInt<uint16_t>; // Word is a 16-bit unsigned integer
+using LongInt   = LittleEndInt<int32_t>;  // LongInt is a 32-bit signed integer
+using LongWord  = LittleEndInt<uint32_t>; // LongWord is a 32-bit unsigned integer
+using Byte      = uint8_t;                // Byte is an 8-bit unsigned integer
+using Char      = char;                   // Char is an 8-bit char
 
 } // namespace Pascal
