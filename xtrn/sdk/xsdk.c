@@ -580,8 +580,8 @@ int keyhit()
 /****************************************************************************/
 char inkey(long mode)
 {
-	static in_ctrl_p;
-	static ansi_len;
+	static int in_ctrl_p;
+	static int ansi_len;
 	uchar ch=0,hour,min,sec;
 	long tleft;
 	int i=0;
