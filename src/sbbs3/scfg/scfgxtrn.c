@@ -1495,6 +1495,21 @@ void xtrn_cfg(uint section)
 						"\n"
 						"If this online program requires a specific BBS data (drop) file\n"
 						"format, select the file format from the list.\n"
+						"\n"
+						"Supported drop file formats:\n"
+						"\n"
+						" ~ Software        Write File(s)                 Read File(s) ~\n"
+                        "  Mystic          DOOR32.SYS\n"
+						"  GAP             DOOR.SYS                      DOOR.SYS\n"
+						"  WWIV            CHAIN.TXT\n"
+						"  PCBoard 15.3    PCBOARD.SYS & USERS.SYS       USERS.SYS\n"
+						"  RBBS/QuickBBS   DORINFO#.DEF & EXITINFO.BBS   EXITINFO.BBS\n"
+						"  Wildcat! 2.x    CALLINFO.BBS\n"
+						"  SpitFire        SFDOORS.DAT\n"
+						"  TriBBS          TRIBBS.SYS\n"
+						"  MegaMail        UTIDOOR.TXT\n"
+						"  Solar Realms    DOORFILE.SR\n"
+						"  Synchronet      XTRN.DAT                      MODUSER.DAT\n"
 					;
 					k=uifc.list(WIN_MID|WIN_ACT,0,0,0,&k,0
 						,"BBS Drop File Type",opt);
@@ -1509,6 +1524,8 @@ void xtrn_cfg(uint section)
 					if(cfg.xtrn[i]->type && cfg.uq&UQ_ALIASES) {
 						k=(cfg.xtrn[i]->misc&REALNAME) ? 0:1;
 						k=uifc.list(WIN_MID,0,0,0,&k,0,"Use Real Names",uifcYesNoOpts);
+						if(k == -1)
+							break;
 						if(k==0 && !(cfg.xtrn[i]->misc&REALNAME)) {
 							cfg.xtrn[i]->misc|=REALNAME;
 							uifc.changes=TRUE; 
@@ -1516,7 +1533,7 @@ void xtrn_cfg(uint section)
 						else if(k==1 && (cfg.xtrn[i]->misc&REALNAME)) {
 							cfg.xtrn[i]->misc&=~REALNAME;
 							uifc.changes=TRUE; 
-						} 
+						}
 					}
 					if(cfg.xtrn[i]->type) {
 						k=(cfg.xtrn[i]->misc&XTRN_LWRCASE) ? 0:1;
