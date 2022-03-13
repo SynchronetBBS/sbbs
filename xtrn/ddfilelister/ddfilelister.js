@@ -30,6 +30,15 @@
  * 2022-03-09 Eric Oulashin     Version 2.04
  *                              Bug fix: Now successfully formats filenames without extensions
  *                              when listing files.
+ * 2022-03-12 Eric Oulashin     Version 2.05
+ *                              Now makes use of the user's extended file description setting:
+ *                              If the user's extended file description setting is enabled,
+ *                              the lister will now show extended file descriptions on the
+ *                              main screen in a split format, with the lightbar file list
+ *                              on the left and the extended file description for the
+ *                              highlighted file on the right.  Also, made the file info
+ *                              window taller for terminals within 25 lines high.
+ *                              I had started work on this on March 9, 2022.
 */
 
 if (typeof(require) === "function")
@@ -40,6 +49,7 @@ if (typeof(require) === "function")
 	require("frame.js", "Frame");
 	require("scrollbar.js", "ScrollBar");
 	require("mouse_getkey.js", "mouse_getkey");
+	require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 }
 else
 {
@@ -49,6 +59,7 @@ else
 	load("frame.js");
 	load("scrollbar.js");
 	load("mouse_getkey.js");
+	load("attr_conv.js");
 }
 
 
@@ -83,8 +94,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.04";
-var LISTER_DATE = "2022-03-09";
+var LISTER_VERSION = "2.05";
+var LISTER_DATE = "2022-03-12";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,10 +125,6 @@ var gListIdxes = {
 // The end index of each column includes the trailing space so that
 // highlight colors will highlight the whole field
 gListIdxes.filenameEnd = gListIdxes.filenameStart + 13;
-// For terminals that are at least 100 characters wide, allow 10 more characters
-// for the filename.  This will also give more space for the description.
-if (console.screen_columns >= 100)
-	gListIdxes.filenameEnd += 10;
 gListIdxes.fileSizeStart = gListIdxes.filenameEnd;
 gListIdxes.fileSizeEnd = gListIdxes.fileSizeStart + 7;
 gListIdxes.descriptionStart = gListIdxes.fileSizeEnd;
@@ -208,7 +215,10 @@ parseArgs(argv);
 // This array will contain file metadata objects
 var gFileList = [];
 
-// Populate the file list based on the script mode (list/search)
+// Populate the file list based on the script mode (list/search).
+// It's important that this is called before createFileListMenu(),
+// since this adjusts gListIdxes.filenameEnd based on the longest
+// filename length and terminal width.
 var listPopRetObj = populateFileList(gScriptMode);
 if (listPopRetObj.exitNow)
 	exit(listPopRetObj.exitCode);
@@ -240,6 +250,9 @@ var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, tru
 // In a loop, show the file list menu, allowing the user to scroll the file list,
 // and respond to user input until the user decides to quit.
 gFileListMenu.Draw({});
+// If using extended descriptions, write the first file's description on the screen
+if (extendedDescEnabled())
+	displayFileExtDescOnMainScreen(0);
 var continueDoingFileList = true;
 var drawFileListMenu = false; // For screen refresh optimization
 while (continueDoingFileList)
@@ -248,6 +261,7 @@ while (continueDoingFileList)
 	for (var prop in gFileListMenu.selectedItemIndexes)
 		delete gFileListMenu.selectedItemIndexes[prop];
 	var actionRetObj = null;
+	var currentActionVal = null;
 	var userChoice = gFileListMenu.GetVal(drawFileListMenu, gFileListMenu.selectedItemIndexes);
 	drawFileListMenu = false; // For screen refresh optimization
 	var lastUserInputUpper = gFileListMenu.lastUserInput != null ? gFileListMenu.lastUserInput.toUpperCase() : null;
@@ -259,7 +273,7 @@ while (continueDoingFileList)
 		fileMenuBar.incrementMenuItemAndRefresh();
 	else if (lastUserInputUpper == KEY_ENTER)
 	{
-		var currentActionVal = fileMenuBar.getCurrentSelectedAction();
+		currentActionVal = fileMenuBar.getCurrentSelectedAction();
 		fileMenuBar.setCurrentActionCode(currentActionVal);
 		actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 	}
@@ -270,11 +284,12 @@ while (continueDoingFileList)
 		{
 			fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
 			actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
+			currentActionVal = FILE_DELETE;
 		}
 	}
 	else
 	{
-		var currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
+		currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
 		fileMenuBar.setCurrentActionCode(currentActionVal, true);
 		actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 	}
@@ -300,47 +315,87 @@ while (continueDoingFileList)
 			if (actionRetObj.reDrawCmdBar) // Could call fileMenuBar.constructPromptText(); if needed
 				fileMenuBar.writePromptLine();
 			var redrewPartOfFileListMenu = false;
-			if (actionRetObj.fileListPartialRedrawInfo != null)
+			// If we are to re-draw the main screen content, then
+			// enable the flag to draw the file list menu on the next
+			// GetVal(); also, if extended descriptions are being shown,
+			// write the current file's extended description too.
+			if (actionRetObj.reDrawMainScreenContent)
 			{
-				drawFileListMenu = false;
-				var startX = actionRetObj.fileListPartialRedrawInfo.startX;
-				var startY = actionRetObj.fileListPartialRedrawInfo.startY;
-				var width = actionRetObj.fileListPartialRedrawInfo.width;
-				var height = actionRetObj.fileListPartialRedrawInfo.height;
-				gFileListMenu.DrawPartial(startX, startY, width, height, {});
-				redrewPartOfFileListMenu = true;
+				drawFileListMenu = true;
+				if (extendedDescEnabled())
+					displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
 			}
 			else
 			{
-				continueDoingFileList = actionRetObj.continueFileLister;
-				drawFileListMenu = actionRetObj.reDrawFileListMenu;
-			}
-			// If we're not redrawing the whole file list menu, then remove
-			// checkmarks from any selected files
-			if (!drawFileListMenu && gFileListMenu.numSelectedItemIndexes() > 0)
-			{
-				var lastItemIdxOnScreen = gFileListMenu.topItemIdx + gFileListMenu.size.height - 1;
-				var listItemStartRow = gFileListMenu.pos.y;
-				var redrawStartX = gFileListMenu.pos.x + gFileListMenu.size.width - 1;
-				var redrawWidth = 1;
-				if (gFileListMenu.borderEnabled) // Shouldn't have this enabled
+				// If there is partial redraw information available, then use it
+				// to re-draw that part of the main screen
+				if (actionRetObj.fileListPartialRedrawInfo != null)
 				{
-					--lastItemIdxOnScreen;
-					++listItemStartRow;
-					--redrawStartX;
+					drawFileListMenu = false;
+					var startX = actionRetObj.fileListPartialRedrawInfo.absStartX;
+					var startY = actionRetObj.fileListPartialRedrawInfo.absStartY;
+					var width = actionRetObj.fileListPartialRedrawInfo.width;
+					var height = actionRetObj.fileListPartialRedrawInfo.height;
+					refreshScreenMainContent(startX, startY, width, height, true);
+					actionRetObj.refreshedSelectedFilesAlready = true;
+					redrewPartOfFileListMenu = true;
 				}
-				if (gFileListMenu.scrollbarEnabled && !gFileListMenu.CanShowAllItemsInWindow())
+				else
 				{
-					--redrawStartX;
-					++redrawWidth;
+					// Partial screen re-draw information was not returned.
+					continueDoingFileList = actionRetObj.continueFileLister;
+					drawFileListMenu = actionRetObj.reDrawMainScreenContent;
+					// If displaying extended descriptions and the user deleted some files, then
+					// refresh the file description area to erase the delete confirmation text
+					if (extendedDescEnabled()/* && currentActionVal == FILE_DELETE*/)
+					{
+						if (actionRetObj.hasOwnProperty("filesDeleted") && actionRetObj.filesDeleted)
+						{
+							var numFiles = gFileListMenu.NumItems();
+							if (numFiles > 0 && gFileListMenu.selectedItemIdx >= 0 && gFileListMenu.selectedItemIdx < numFiles)
+								displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
+						}
+						else
+						{
+							var firstLine = startY + gFileListMenu.pos.y;
+							var lastLine = console.screen_rows - 1;
+							var width = console.screen_columns - gFileListMenu.size.width - 1;
+							displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx, firstLine, lastLine, width);
+						}
+					}
+				}
+			}
+			// Remove checkmarks from any selected files in the file menu.
+			// For efficiency, we'd probably only do this if not re-drawing the wohle
+			// menu, but that's not working for now.
+			if (!actionRetObj.refreshedSelectedFilesAlready && /*!drawFileListMenu &&*/ gFileListMenu.numSelectedItemIndexes() > 0)
+			{
+				var bottomItemIdx = gFileListMenu.GetBottomItemIdx();
+				var redrawTopY = -1;
+				var redrawBottomY = -1;
+				if (actionRetObj.fileListPartialRedrawInfo != null)
+				{
+					redrawTopY = actionRetObj.fileListPartialRedrawInfo.absStartY;
+					redrawBottomY = actionRetObj.fileListPartialRedrawInfo.height + height - 1;
 				}
 				for (var idx in gFileListMenu.selectedItemIndexes)
 				{
 					var idxNum = +idx;
-					if (idxNum >= gFileListMenu.topItemIdx && idxNum <= lastItemIdxOnScreen)
+					if (idxNum >= gFileListMenu.topItemIdx && idxNum <= bottomItemIdx)
 					{
-						gFileListMenu.DrawPartialAbs(redrawStartX, listItemStartRow+idxNum, redrawWidth, 1, {});
-						redrewPartOfFileListMenu = true;
+						var drawItem = true;
+						if (redrawTopY > -1 && redrawBottomY > redrawTopY)
+						{
+							var screenRowForItem = gFileListMenu.ScreenRowForItem(idxNum);
+							drawItem = (screenRowForItem < redrawTopY || screenRowForItem > redrawBottomY)
+						}
+						if (drawItem)
+						{
+							var isSelected = (idxNum == gFileListMenu.selectedItemIdx);
+							gFileListMenu.WriteItemAtItsLocation(idxNum, isSelected, false);
+						}
+						else
+							console.print("\1n\r\nNot drawing idx " + idxNum + "\r\n\1p");
 					}
 				}
 			}
@@ -410,7 +465,8 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 //
 // Return value: An object with the following properties:
 //               continueFileLister: Boolean - Whether or not the file lister should continue, or exit
-//               reDrawFileListMenu: Boolean - Whether or not to re-draw the whole file list
+//               reDrawMainScreenContent: Boolean - Whether or not to re-draw the main screen content
+//                                        (file list, and extended description area if applicable)
 //               reDrawListerHeader: Boolean - Whether or not to re-draw the header at the top of the screen
 //               reDrawHeaderTextOnly: Boolean - Whether or not to re-draw the header text only.  This should
 //                                     take precedence over reDrawListerHeader.
@@ -421,17 +477,20 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 //                                          startY: The starting Y coordinate for where to re-draw
 //                                          width: The width to re-draw
 //                                          height: The height to re-draw
+//               refreshedSelectedFilesAlready: Whether or not selected file checkmark items
+//                                              have already been refreshed (boolean)
 //               exitNow: Exit the file lister now (boolean)
 //               If no part of the file list menu needs to be re-drawn, this will be null.
 function getDefaultActionRetObj()
 {
 	return {
 		continueFileLister: true,
-		reDrawFileListMenu: false,
+		reDrawMainScreenContent: false,
 		reDrawListerHeader: false,
 		reDrawHeaderTextOnly: false,
 		reDrawCmdBar: false,
 		fileListPartialRedrawInfo: null,
+		refreshedSelectedFilesAlready: false,
 		exitNow: false
 	};
 }
@@ -450,8 +509,8 @@ function showFileInfo(pFileList, pFileListMenu)
 
 	// The width of the frame to display the file info (including borders).  This
 	// is declared early so that it can be used for string length adjustment.
-	var frameWidth = pFileListMenu.size.width - 4;
-	var frameInnerWidth = frameWidth - 2; // Without borders
+	//var frameWidth = pFileListMenu.size.width - 4; // TODO: Remove?
+	var frameWidth = console.screen_columns - 4;
 
 	// pFileList[pFileListMenu.selectedItemIdx] has a file metadata object without
 	// extended information.  Get a metadata object with extended information so we
@@ -461,26 +520,24 @@ function showFileInfo(pFileList, pFileListMenu)
 	var dirCode = bbs.curdir_code;
 	if (pFileList[pFileListMenu.selectedItemIdx].hasOwnProperty("dirCode"))
 		dirCode = pFileList[pFileListMenu.selectedItemIdx].dirCode;
-	var fileInfoObj = getFileInfoFromFilebase(dirCode, pFileList[pFileListMenu.selectedItemIdx].name, FileBase.DETAIL.EXTENDED);
-	var extdFileInfo = fileInfoObj.fileMetadataObj;
-	if (typeof(extdFileInfo) !== "object")
-	{
-		displayMsg("Unable to get file info!", true, true);
-		return;
-	}
-	var fileTime = fileInfoObj.fileTime;
+	var fileMetadata = null;
+	if (extendedDescEnabled())
+		fileMetadata = pFileList[pFileListMenu.selectedItemIdx];
+	else
+		fileMetadata = getFileInfoFromFilebase(dirCode, pFileList[pFileListMenu.selectedItemIdx].name, FileBase.DETAIL.EXTENDED);
 	// Build a string with the file information
 	// Make sure the displayed filename isn't too crazy long
-	var adjustedFilename = shortenFilename(extdFileInfo.name, frameInnerWidth, false);
+	var frameInnerWidth = frameWidth - 2; // Without borders
+	var adjustedFilename = shortenFilename(fileMetadata.name, frameInnerWidth, false);
 	var fileInfoStr = "\1n\1wFilename";
-	if (adjustedFilename.length < extdFileInfo.name.length)
+	if (adjustedFilename.length < fileMetadata.name.length)
 		fileInfoStr += " (shortened)";
 	fileInfoStr += ":\r\n";
 	fileInfoStr += gColors.filename + adjustedFilename +  "\1n\1w\r\n";
-	// Note: File size can also be retrieved by calling a FileBase's get_size(extdFileInfo.name)
+	// Note: File size can also be retrieved by calling a FileBase's get_size(fileMetadata.name)
 	// TODO: Shouldn't need the max length here
-	fileInfoStr += "Size: " + gColors.fileSize + getFileSizeStr(extdFileInfo.size, 99999) + "\1n\1w\r\n";
-	fileInfoStr += "Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileTime) + "\1n\1w\r\n"
+	fileInfoStr += "Size: " + gColors.fileSize + getFileSizeStr(fileMetadata.size, 99999) + "\1n\1w\r\n";
+	fileInfoStr += "Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileMetadata.time) + "\1n\1w\r\n"
 	fileInfoStr += "\r\n";
 
 	// File library/directory information
@@ -492,37 +549,50 @@ function showFileInfo(pFileList, pFileListMenu)
 	fileInfoStr += "\1c\1hDir\1g: \1n\1c" + dirDesc.substr(0, frameInnerWidth-5) + "\1n\1w\r\n";
 	fileInfoStr += "\r\n";
 
-	// extdFileInfo should have extdDesc, but check just in case
+	// fileMetadata should have extdDesc, but check just in case
 	var fileDesc = "";
-	if (extdFileInfo.hasOwnProperty("extdesc") && extdFileInfo.extdesc.length > 0)
-		fileDesc = extdFileInfo.extdesc;
+	if (fileMetadata.hasOwnProperty("extdesc") && fileMetadata.extdesc.length > 0)
+		fileDesc = fileMetadata.extdesc;
 	else
-		fileDesc = extdFileInfo.desc;
+		fileDesc = fileMetadata.desc;
 	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
 	// so make sure it's a string
 	if (typeof(fileDesc) !== "string")
 		fileDesc = "";
+	// This might be overkill, but just in case, convert any non-Synchronet
+	// attribute codes to Synchronet attribute codes in the description.
+	if (!fileMetadata.hasOwnProperty("attrsConverted"))
+	{
+		fileDesc = convertAttrsToSyncPerSysCfg(fileDesc);
+		fileMetadata.attrsConverted = true;
+		if (fileMetadata.hasOwnProperty("extdesc"))
+			fileMetadata.extdesc = fileDesc;
+		else
+			fileMetadata.desc = fileDesc;
+	}
+
 	fileInfoStr += gColors.desc;
 	if (fileDesc.length > 0)
 		fileInfoStr += "Description:\r\n" + fileDesc;
 	else
 		fileInfoStr += "No description available";
+	fileInfoStr += "\r\n";
 	if (user.is_sysop)
 	{
 		var sysopFields = [ "from", "cost", "added"];
 		for (var sI = 0; sI < sysopFields.length; ++sI)
 		{
 			var prop = sysopFields[sI];
-			if (extdFileInfo.hasOwnProperty(prop))
+			if (fileMetadata.hasOwnProperty(prop))
 			{
-				if (typeof(extdFileInfo[prop]) === "string" && extdFileInfo[prop].length == 0)
+				if (typeof(fileMetadata[prop]) === "string" && fileMetadata[prop].length == 0)
 					continue;
 				var propName = prop.charAt(0).toUpperCase() + prop.substr(1);
 				fileInfoStr += "\r\n\1n\1c\1h" + propName + "\1g:\1n\1c ";
 				if (prop == "added")
-					fileInfoStr += strftime("%Y-%m-%d %H:%M:%S", extdFileInfo.added);
+					fileInfoStr += strftime("%Y-%m-%d %H:%M:%S", fileMetadata.added);
 				else
-					fileInfoStr += extdFileInfo[prop].toString().substr(0, frameInnerWidth);
+					fileInfoStr += fileMetadata[prop].toString().substr(0, frameInnerWidth);
 				fileInfoStr += "\1n\1w";
 			}
 		}
@@ -531,15 +601,15 @@ function showFileInfo(pFileList, pFileListMenu)
 
 	// Construct & draw a frame with the file information & do the input loop
 	// for the frame until the user closes the frame.
-	var frameUpperLeftX = pFileListMenu.pos.x + 2;
-	var frameUpperLeftY = pFileListMenu.pos.y + 2;
+	var frameUpperLeftX = 3;
+	var frameUpperLeftY = gNumHeaderLinesDisplayed + 3;
 	// Note: frameWidth is declared earlier
-	var frameHeight = 10;
+	var frameHeight = console.screen_rows - 4 - frameUpperLeftY;
 	// If the user's console is more than 25 rows high, then make the info window
 	// taller so that its bottom row is 10 from the bottom, but only up to 45 rows tall.
 	if (console.screen_rows > 25)
 	{
-		var frameBottomRow = console.screen_rows - 10;
+		var frameBottomRow = console.screen_rows - 4;
 		frameHeight = frameBottomRow - frameUpperLeftY + 1;
 		if (frameHeight > 45)
 			frameHeight = 45;
@@ -552,9 +622,11 @@ function showFileInfo(pFileList, pFileListMenu)
 	// Construct the file list redraw info.  Note that the X and Y are relative
 	// to the file list menu, not absolute screen coordinates.
 	retObj.fileListPartialRedrawInfo = {
-		startX: 2,
-		startY: 2,
-		width: frameWidth+1,
+		startX: frameUpperLeftX - gFileListMenu.pos.x + 1, // Relative to the file menu
+		startY: frameUpperLeftY - gFileListMenu.pos.y + 1, // Relative to the file menu
+		absStartX: frameUpperLeftX,
+		absStartY: frameUpperLeftY,
+		width: frameWidth,
 		height: frameHeight
 	};
 
@@ -597,7 +669,7 @@ function viewFile(pFileList, pFileListMenu)
 		console.pause();
 
 	retObj.reDrawListerHeader = true;
-	retObj.reDrawFileListMenu = true;
+	retObj.reDrawMainScreenContent = true;
 	retObj.reDrawCmdBar = true;
 	return retObj;
 }
@@ -635,6 +707,7 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 	// Note that confirmFileActionWithUser() will re-draw the parts of the file
 	// list menu that are necessary.
 	var addFilesConfirmed = confirmFileActionWithUser(filenames, "Batch DL add", false);
+	retObj.refreshedSelectedFilesAlready = true;
 	if (addFilesConfirmed)
 	{
 		var batchDLQueueStats = getUserDLQueueStats();
@@ -680,19 +753,9 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 		// Frame location & size for batch DL queue stats or filenames that failed
 		var frameUpperLeftX = gFileListMenu.pos.x + 2;
 		var frameUpperLeftY = gFileListMenu.pos.y + 2;
-		var frameWidth = gFileListMenu.size.width - 4;
+		var frameWidth = console.screen_columns - 4; // Used to be gFileListMenu.size.width - 4;
 		var frameInnerWidth = frameWidth - 2; // Without borders
 		var frameHeight = 8;
-		// To make the list refresh info to return to the main script loop
-		function makeBatchRefreshInfoObj(pFrameWidth, pFrameHeight)
-		{
-			return {
-				startX: 3,
-				startY: 3,
-				width: pFrameWidth+1,
-				height: pFrameHeight
-			};
-		}
 
 		// If there were no failures, then show a success message & prompt the user if they
 		// want to download their batch queue.  Otherwise, show the filenames that failed to
@@ -745,22 +808,23 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 				                                                       frameHeight, gColors.batchDLInfoWindowBorder,
 				                                                       frameTitle, gColors.batchDLInfoWindowTitle,
 				                                                       queueStats, additionalQuitKeys);
+				// The main screen content (file list & extended description if applicable)
+				// will need to be redrawn after this.
+				retObj.reDrawMainScreenContent = true;
+				// If the user chose to download their file queue, then send it to the user.
+				// And the lister headers will need to be re-drawn as well.
 				if (lastUserInput.toUpperCase() == "Y")
 				{
-					retObj.reDrawFileListMenu = true;
 					retObj.reDrawListerHeader = true;
 					retObj.reDrawCmdBar = true;
 					console.print("\1n");
 					console.gotoxy(1, console.screen_rows);
 					console.crlf();
 					bbs.batch_download();
-				}
-				else
-				{
-					retObj.reDrawFileListMenu = true;
-					// Construct the file list redraw info.  Note that the X and Y are relative
-					// to the file list menu, not absolute screen coordinates.
-					//retObj.fileListPartialRedrawInfo = makeBatchRefreshInfoObj(frameWidth, frameHeight);
+					// If the user is still online (chose not to hang up after transfer),
+					// then pause so that the user can see the batch download status
+					if (bbs.online > 0)
+						console.pause();
 				}
 			}
 		}
@@ -777,9 +841,17 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 																   frameHeight, gColors.batchDLInfoWindowBorder,
 																   frameTitle, gColors.batchDLInfoWindowTitle,
 																   fileListStr, "");
-			// Construct the file list redraw info.  Note that the X and Y are relative
+			// Add the file list redraw info.  Note that the X and Y are relative
 			// to the file list menu, not absolute screen coordinates.
-			retObj.fileListPartialRedrawInfo = makeBatchRefreshInfoObj(frameWidth, frameHeight);
+			// To make the list refresh info to return to the main script loop
+			retObj.fileListPartialRedrawInfo = {
+				startX: 3,
+				startY: 3,
+				absStartX: gFileListMenu.pos.x + 3 - 1, // 1-based
+				absStartY: gFileListMenu.pos.y + 3 - 1, // 1-based
+				width: frameWidth + 1,
+				height: frameHeight
+			};
 		}
 	}
 
@@ -836,33 +908,6 @@ function getUserDLQueueStats()
 				}
 			}
 		}
-
-		/*
-		var sections = batchDLFile.iniGetSections();
-		retObj.numFilesInQueue = sections.length;
-		for (var i = 0; i < sections.length; ++i)
-		{
-			//var desc = 
-			//retObj.filenames.push({ filename: sections[i], desc:  });
-			// Get the dir code from the section, then get the size and cost for
-			// the file from the filebase and add them to the totals in retObj
-			var dirCode = batchDLFile.iniGetValue(sections[i], "dir", "");
-			if (dirCode.length > 0)
-			{
-				var filebase = new FileBase(dirCode);
-				if (filebase.open())
-				{
-					var fileInfo = filebase.get(sections[i]);
-					if (typeof(fileInfo) === "object")
-					{
-						retObj.totalSize += +(fileInfo.size);
-						retObj.totalCost += +(fileInfo.cost);
-					}
-					filebase.close();
-				}
-			}
-		}
-		*/
 		batchDLFile.close();
 	}
 
@@ -934,7 +979,7 @@ function displayHelpScreen()
 	//console.pause();
 
 	retObj.reDrawListerHeader = true;
-	retObj.reDrawFileListMenu = true;
+	retObj.reDrawMainScreenContent = true;
 	retObj.reDrawCmdBar = true;
 	return retObj;
 }
@@ -964,6 +1009,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 	// Note that confirmFileActionWithUser() will re-draw the parts of the file
 	// list menu that are necessary.
 	var moveFilesConfirmed = confirmFileActionWithUser(filenames, "Move", false);
+	retObj.refreshedSelectedFilesAlready = true;
 	if (!moveFilesConfirmed)
 		return retObj;
 
@@ -976,6 +1022,8 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 	var fileListPartialRedrawInfo = {
 		startX: fileLibMenu.pos.x - pFileListMenu.pos.x + 1,
 		startY: topYForRefresh - pFileListMenu.pos.y + 1,
+		absStartX: fileLibMenu.pos.x,
+		absStartY: topYForRefresh,
 		width: fileLibMenu.size.width + 1,
 		height: fileLibMenu.size.height + 1 // + 1 because of the label above the menu
 	};
@@ -1061,39 +1109,13 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 					// Have the file list menu set up its description width, colors, and format
 					// string again in case it no longer needs to use its scrollbar
 					pFileListMenu.SetItemWidthsColorsAndFormatStr();
-					retObj.reDrawFileListMenu = true;
+					retObj.reDrawMainScreenContent = true;
 				}
 				else
 				{
 					// Note: getFileInfoFromFilebase() will add dirCode to the metadata object
-					var fileDataObj = getFileInfoFromFilebase(chosenDirCode, pFileList[fileIdx].name, FileBase.DETAIL.NORM);
-					pFileList[fileIdx] = fileDataObj.fileMetadataObj;
-					/*
-					// If all files were in the same directory, then we'll need to update the header
-					// lines at the top of the file list.  If there's only one file in the list,
-					// the header lines will need to display the correct directory.  Otherwise,
-					// set allSameDir to false so the header lines will now say "various".
-					// However, if not all files were in the same directory, check to see if they
-					// are now, and if so, we'll need to re-draw the header lines.
-					if (typeof(pFileList.allSameDir) == "boolean")
-					{
-						if (pFileList.allSameDir)
-						{
-							if (pFileList.length > 1)
-								pFileList.allSameDir = false;
-							//retObj.reDrawListerHeader = true;
-							retObj.reDrawHeaderTextOnly = true;
-						}
-						else
-						{
-							pFileList.allSameDir = true; // Until we find it's not true
-							for (var fileListIdx = 1; fileListIdx < pFileList.length && pFileList.allSameDir; ++fileListIdx)
-								pFileList.allSameDir = (pFileList[fileListIdx].dirCode == pFileList[0].dirCode);
-							//retObj.reDrawListerHeader =  pFileList.allSameDir;
-							retObj.reDrawHeaderTextOnly =  pFileList.allSameDir;
-						}
-					}
-					*/
+					var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
+					pFileList[fileIdx] = getFileInfoFromFilebase(chosenDirCode, pFileList[fileIdx].name, fileDetail);
 				}
 			}
 			else
@@ -1124,7 +1146,6 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 			{
 				if (pFileList.length > 1)
 					pFileList.allSameDir = false;
-				//retObj.reDrawListerHeader = true;
 				retObj.reDrawHeaderTextOnly = true;
 			}
 			else
@@ -1132,7 +1153,6 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 				pFileList.allSameDir = true; // Until we find it's not true
 				for (var fileListIdx = 1; fileListIdx < pFileList.length && pFileList.allSameDir; ++fileListIdx)
 					pFileList.allSameDir = (pFileList[fileListIdx].dirCode == pFileList[0].dirCode);
-				//retObj.reDrawListerHeader =  pFileList.allSameDir;
 				retObj.reDrawHeaderTextOnly =  pFileList.allSameDir;
 			}
 		}
@@ -1158,17 +1178,12 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 			displayMsg("There are no more files.", false);
 			retObj.exitNow = true;
 		}
-		// If not exiting now, we'll want to re-draw part of the file list to erase the
-		// area chooser menu.
-		if (!retObj.exitNow)
-			retObj.fileListPartialRedrawInfo = fileListPartialRedrawInfo;
 	}
-	else
-	{
-		// The user has canceled out of the area selection.
-		// We'll want to re-draw part of the file list to erase the area chooser menu.
+
+	// If not exiting now, we'll want to re-draw part of the file list to erase the
+	// area chooser menu.
+	if (!retObj.exitNow)
 		retObj.fileListPartialRedrawInfo = fileListPartialRedrawInfo;
-	}
 
 	return retObj;
 }
@@ -1180,10 +1195,14 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 //  pFileListMenu: The menu object for the file diretory
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
-//               getDefaultActionRetObj() for details.
+//               getDefaultActionRetObj() for details.  For this function, the object
+//               returned will have the following additional properties:
+//               filesDeleted: Boolean - Whether or not files were actually deleted (after
+//                             confirmation)
 function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
+	retObj.filesDeleted = false;
 
 	// Confirm the action with the user.  If the user confirms, then remove the file(s).
 	// If there are multiple selected files, then prompt to remove each of them.
@@ -1199,8 +1218,11 @@ function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 	// Note that confirmFileActionWithUser() will re-draw the parts of the file list menu
 	// that are necessary.
 	var removeFilesConfirmed = confirmFileActionWithUser(filenames, "Remove", false);
+	retObj.refreshedSelectedFilesAlready = true;
 	if (removeFilesConfirmed)
 	{
+		retObj.filesDeleted = true; // Assume true even if some deletions may fail
+
 		var fileIndexes = [];
 		if (pFileListMenu.numSelectedItemIndexes() > 0)
 		{
@@ -1238,10 +1260,36 @@ function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 			var filebase = new FileBase(pFileList[fileIdx].dirCode);
 			if (filebase.open())
 			{
-				// FileBase.remove(filename [,delete=false])
-				removeFileSucceeded = filebase.remove(pFileList[fileIdx].name, true);
-				if (gScriptMode == MODE_LIST_CURDIR)
-					numFilesRemaining = filebase.files;
+				var filenameFullPath = filebase.get_path(pFileList[fileIdx].name); // For logging
+				try
+				{
+					removeFileSucceeded = filebase.remove(pFileList[fileIdx].name, true);
+				}
+				catch (error)
+				{
+					removeFileSucceeded = false;
+					// Make an entry in the BBS log that deleting the file failed
+					var logMsg = "ddfilelister: " + error;
+					log(LOG_ERR, logMsg);
+					bbs.log_str(logMsg);
+				}
+				// If the remove failed with deleting the file, then try without deleting the file
+				if (!removeFileSucceeded)
+				{
+					removeFileSucceeded = filebase.remove(pFileList[fileIdx].name, false);
+					if (removeFileSucceeded)
+					{
+						var logMsg = "ddfilelister: Removed " + filenameFullPath + " from the "
+						           + "filebase but couldn't actually delete the file";
+						log(LOG_INFO, logMsg);
+						bbs.log_str(logMsg);
+					}
+				}
+				if (removeFileSucceeded)
+				{
+					if (gScriptMode == MODE_LIST_CURDIR)
+						numFilesRemaining = filebase.files;
+				}
 				filebase.close();
 			}
 			else
@@ -1293,7 +1341,7 @@ function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 			// Have the file list menu set up its description width, colors, and format
 			// string again in case it no longer needs to use its scrollbar
 			pFileListMenu.SetItemWidthsColorsAndFormatStr();
-			retObj.reDrawFileListMenu = true;
+			retObj.reDrawMainScreenContent = true;
 			// If all files were not in the same directory, then check to see if all
 			// remaining files are now.  If so, we'll need to update the header lines
 			// at the top of the file list.
@@ -1635,28 +1683,29 @@ function DDFileMenuBarItem(pItemText, pPos, pRetCode)
 //               fileTime: The timestamp of the file
 function getFileInfoFromFilebase(pDirCode, pFilename, pDetail)
 {
-	var retObj = {
-		fileMetadataObj: null,
-		fileTime: 0
-	};
-
 	if (typeof(pDirCode) !== "string" || pDirCode.length == 0 || typeof(pFilename) !== "string" || pFilename.length == 0)
-		return retObj;
+		return null;
 
+	var fileMetadataObj = null;
 	var filebase = new FileBase(pDirCode);
 	if (filebase.open())
 	{
 		// Just in case the file has the full path, get just the filename from it.
 		var filename = file_getname(pFilename);
 		var fileDetail = (typeof(pDetail) === "number" ? pDetail : FileBase.DETAIL.NORM);
-		retObj.fileMetadataObj = filebase.get(filename, fileDetail);
-		retObj.fileMetadataObj.dirCode = pDirCode;
-		//retObj.fileMetadataObj.size = filebase.get_size(filename);
-		retObj.fileTime = filebase.get_time(filename);
+		if (typeof(pDetail) === "number")
+			fileDetail = pDetail;
+		else
+			fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
+		fileMetadataObj = filebase.get(filename, fileDetail);
+		fileMetadataObj.dirCode = pDirCode;
+		//fileMetadataObj.size = filebase.get_size(filename);
+		if (!fileMetadataObj.hasOwnProperty("time"))
+			fileMetadataObj.time = filebase.get_time(filename);
 		filebase.close();
 	}
 
-	return retObj;
+	return fileMetadataObj;
 }
 
 // Moves a file from one filebase to another
@@ -1965,14 +2014,9 @@ function displayListHdrLine(pMoveToLocationFirst)
 		console.gotoxy(1, 3);
 	var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
 	var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
-	//var shortDescLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
-	// shortDescLen here should always be the same (for the last blocks to always be in the same
-	// position), whereas descriptionEnd might change based on whether the menu is using its scrollbar
-	var shortDescLen = 60;
-	if (console.screen_columns > 80)
-		shortDescLen = console.screen_columns - 30;
+	var descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
 	var formatStr = "\1n\1w\1h%-" + filenameLen + "s %" + fileSizeLen + "s %-"
-	              + +(shortDescLen-7) + "s\1n\1w%5s\1n";
+	              + +(descLen-7) + "s\1n\1w%5s\1n";
 	var listHdrEndText = THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1;
 	printf(formatStr, "Filename", "Size", "Description", listHdrEndText);
 }
@@ -1989,12 +2033,22 @@ function createFileListMenu(pQuitKeys)
 	// Create the menu object.  Place it below the header lines (which should have been written
 	// before this), and also leave 1 row at the bottom for the prompt line
 	var startRow = gNumHeaderLinesDisplayed > 0 ? gNumHeaderLinesDisplayed + 1 : 1;
-	var fileListMenu = new DDLightbarMenu(1, startRow, console.screen_columns - 1, console.screen_rows - (startRow-1) - 1);
+	// If we'll be displaying short (one-line) file descriptions, then use the whole width
+	// of the terminal (minus 1) for the menu width.  But if the user has extended (multi-line)
+	// file descriptions enabled, then set the menu width only up through the file size, since
+	// the extended file description will be displayed to the right of the menu.
+	var menuWidth = console.screen_columns - 1;
+	if (extendedDescEnabled())
+		menuWidth = gListIdxes.fileSizeEnd + 1;
+	var menuHeight = console.screen_rows - (startRow-1) - 1;
+	var fileListMenu = new DDLightbarMenu(1, startRow, menuWidth, menuHeight);
 	fileListMenu.scrollbarEnabled = true;
 	fileListMenu.borderEnabled = false;
 	fileListMenu.multiSelect = true;
 	fileListMenu.ampersandHotkeysInItems = false;
 	fileListMenu.wrapNavigation = false;
+
+	fileListMenu.extdDescEnabled = extendedDescEnabled();
 
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys.
@@ -2031,8 +2085,14 @@ function createFileListMenu(pQuitKeys)
 		this.filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
 		this.fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
 		this.shortDescLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
-		this.fileFormatStr = "%-" + this.filenameLen + "s %" + this.fileSizeLen
-		                   + "s %-" + this.shortDescLen + "s";
+		// If extended descriptions are enabled, then we won't be writing a description here
+		if (this.extdDescEnabled)
+			this.fileFormatStr = "%-" + this.filenameLen + "s %" + this.fileSizeLen + "s";
+		else
+		{
+			this.fileFormatStr = "%-" + this.filenameLen + "s %" + this.fileSizeLen
+			                   + "s %-" + this.shortDescLen + "s";
+		}
 		return widthChanged;
 	};
 	// Set up the menu's description width, colors, and format string
@@ -2063,6 +2123,12 @@ function createFileListMenu(pQuitKeys)
 	fileListMenu.numSelectedItemIndexes = function() {
 		return Object.keys(this.selectedItemIndexes).length;
 	};
+
+	// OnItemNav function for when the user navigates to a new item
+	fileListMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) {
+		displayFileExtDescOnMainScreen(pNewItemIdx);
+	}
+
 	return fileListMenu;
 }
 
@@ -2493,7 +2559,8 @@ function eraseMsgBoxScreenArea()
 	// Refresh the list header line and have the file list menu refresh itself over
 	// the error message window
 	displayListHdrLine(true);
-	gFileListMenu.DrawPartialAbs(gErrorMsgBoxULX, gErrorMsgBoxULY+1, gErrorMsgBoxWidth, gErrorMsgBoxHeight-2);
+	// This used to call gFileListMenu.DrawPartialAbs
+	refreshScreenMainContent(gErrorMsgBoxULX, gErrorMsgBoxULY+1, gErrorMsgBoxWidth, gErrorMsgBoxHeight-2);
 }
 
 // Draws a border
@@ -2660,7 +2727,8 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 			actionConfirmed = console.yesno(pActionName + " " + shortFilename);
 		else
 			actionConfirmed = !console.noyes(pActionName + " " + shortFilename);
-		gFileListMenu.DrawPartialAbs(1, console.screen_rows-2, console.screen_columns, 2, {});
+		// Refresh the main screen content, to erase the confirmation prompt
+		refreshScreenMainContent(1, console.screen_rows-2, console.screen_columns, 2, true);
 	}
 	else
 	{
@@ -2668,7 +2736,8 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 		// user to delete the files
 		var frameUpperLeftX = gFileListMenu.pos.x + 2;
 		var frameUpperLeftY = gFileListMenu.pos.y + 2;
-		var frameWidth = gFileListMenu.size.width - 4;
+		//var frameWidth = gFileListMenu.size.width - 4;
+		var frameWidth = console.screen_columns - 4;
 		var frameHeight = 10;
 		var frameTitle = pActionName + " files? (Y/N)";
 		var additionalQuitKeys = "yYnN";
@@ -2681,7 +2750,8 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 		                                                       frameTitle, gColors.confirmFileActionWindowWindowTitle,
 		                                                       fileListStr, additionalQuitKeys);
 		actionConfirmed = (lastUserInput.toUpperCase() == "Y");
-		gFileListMenu.DrawPartialAbs(frameUpperLeftX, frameUpperLeftY, frameWidth, frameHeight, {});
+		// Refresh the main screen content, to erase the confirmation window
+		refreshScreenMainContent(frameUpperLeftX, frameUpperLeftY, frameWidth, frameHeight, true);
 	}
 
 	return actionConfirmed;
@@ -3061,17 +3131,20 @@ function populateFileList(pSearchMode)
 				return retObj;
 			}
 
-			// To check a user's file basic/extended detail information setting:
-			// if ((user.settings & USER_EXTDESC) == USER_EXTDESC)
-
-			// Get a list of file data with normal detail (without extended info).  When the user
-			// selects a file to view extended info, we'll get metadata about the file with extended detail.
-			gFileList = filebase.get_list("*", FileBase.DETAIL.NORM, 0, true, gFileSortOrder); // FileBase.DETAIL.EXTENDED
+			// Get a list of file data
+			var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
+			gFileList = filebase.get_list("*", fileDetail, 0, true, gFileSortOrder);
 			filebase.close();
 			// Add a dirCode property to the file metadata objects (for consistency,
 			// as file search results may contain files from multiple directories).
+			// Also, if the metadata objects have an extdesc, remove any trailing CRLF
+			// from the end.
 			for (var i = 0; i < gFileList.length; ++i)
+			{
 				gFileList[i].dirCode = bbs.curdir_code;
+				if (gFileList[i].hasOwnProperty("extdesc") && /\r\n$/.test(gFileList[i].extdesc))
+					gFileList[i].extdesc = gFileList[i].extdesc.substr(0, gFileList[i].extdesc.length-2);
+			}
 		}
 		else
 		{
@@ -3220,6 +3293,36 @@ function populateFileList(pSearchMode)
 		retObj.exitNow = true;
 		retObj.exitCode = 1;
 		return retObj;
+	}
+
+	// Figure out the longest filename in the list.
+	var longestFilenameLen = 0;
+	for (var i = 0; i < gFileList.length; ++i)
+	{
+		if (gFileList[i].name.length > longestFilenameLen)
+			longestFilenameLen = gFileList[i].name.length;
+	}
+	var displayFilenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart + 1;
+	// If the user has extended descriptions enabled, then allow 47 characters for the
+	// description and adjust the filename length accordingly
+	gListIdxes.descriptionEnd = console.screen_columns - 1; // Leave 1 character remaining on the screen
+	if (extendedDescEnabled())
+	{
+		gListIdxes.descriptionStart = gListIdxes.descriptionEnd - 47 + 1;
+		gListIdxes.fileSizeEnd = gListIdxes.descriptionStart;
+		gListIdxes.fileSizeStart = gListIdxes.fileSizeEnd - 7;
+		gListIdxes.filenameEnd = gListIdxes.fileSizeStart;
+	}
+	// If not displaying extended descriptions, then if the longest filename
+	// is longer than the current display filename length and the user's
+	// terminal is at least 100 columns wide, then increase the filename length
+	// for the list by 20;
+	else if (longestFilenameLen > displayFilenameLen && console.screen_columns >= 100)
+	{
+		gListIdxes.filenameEnd += 20;
+		gListIdxes.fileSizeStart = gListIdxes.filenameEnd;
+		gListIdxes.fileSizeEnd = gListIdxes.fileSizeStart + 7;
+		gListIdxes.descriptionStart = gListIdxes.fileSizeEnd;
 	}
 
 	return retObj;
@@ -3463,4 +3566,171 @@ function searchDirGroupOrAll(pSearchOption, pDirSearchFn)
 	}
 
 	return retObj;
+}
+
+// Returns whether the user has their extended file description setting enabled
+// and if it can be supported in the user's terminal mode.  Extended descriptions
+// will be displayed in the main screen if the user has that option enabled and
+// the user's terminal is at least 80 columns wide.
+function extendedDescEnabled()
+{
+	var userExtDescEnabled = ((user.settings & USER_EXTDESC) == USER_EXTDESC);
+	return userExtDescEnabled && console.screen_columns >= 80;
+}
+
+// Displays a file's extended description on the main screen, next to the
+// file list menu.  This is to be used when the user's extended file description
+// option is enabled (where the menu would take up about the left half of
+// the screen).
+//
+// Parameters:
+//  pFileIdx: The index of the file metadata object in gFileList to use
+//  pStartScreenRow: Optional - The screen row number to start printing, for partial
+//                   screen refreshing (can be in the middle of the extended description)
+//  pEndScreenRow: Optional - The screen row number to stop printing, for partial
+//                   screen refreshing (can be in the middle of the extended description)
+//  pMaxWidth: Optional - The maximum width to use for printing the description lines
+function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow, pMaxWidth)
+{
+	if (typeof(pFileIdx) !== "number")
+		return;
+	if (pFileIdx < 0 || pFileIdx >= gFileList.length)
+		return;
+
+	// Get the file description from its metadata object
+	var fileMetadata = gFileList[pFileIdx];
+	var fileDesc = "";
+	if (fileMetadata.hasOwnProperty("extdesc") && fileMetadata.extdesc.length > 0)
+		fileDesc = fileMetadata.extdesc;
+	else
+		fileDesc = fileMetadata.desc;
+
+	// This might be overkill, but just in case, convert any non-Synchronet
+	// attribute codes to Synchronet attribute codes in the description.
+	// This will help simplify getting substrings for formatting.  Then for
+	// efficiency, put the converted description back into the metadata
+	// object in the array so that it doesn't have to be converted again.
+	if (!fileMetadata.hasOwnProperty("attrsConverted"))
+	{
+		fileDesc = convertAttrsToSyncPerSysCfg(fileDesc);
+		fileMetadata.attrsConverted = true;
+		if (fileMetadata.hasOwnProperty("extdesc"))
+			fileMetadata.extdesc = fileDesc;
+		else
+			fileMetadata.desc = fileDesc;
+	}
+
+	// Calculate where to write the description on the screen
+	var startX = gFileListMenu.size.width + 1; // Assuming the file menu starts at the leftmost column
+	var maxDescLen = console.screen_columns - startX;
+	if (typeof(pMaxWidth) === "number" && pMaxWidth >= 0 && pMaxWidth < maxDescLen)
+		maxDescLen = pMaxWidth;
+	// Go to the location on the screen and write the file description
+	var formatStr = "%-" + maxDescLen + "s";
+	// firstScreenRow is the first row on the screen where the extended description
+	// should start at.  lastScreenRow is the last row (inclusive) to use for
+	// printing the extended description
+	var firstScreenRow = gNumHeaderLinesDisplayed + 1;
+	var lastScreenRow = console.screen_rows - 1; // This is inclusive
+	// screenRowForPrinting will be used for the actual screen row we're at while
+	// printing the extended description lines
+	var screenRowForPrinting = firstScreenRow;
+	// If pStartScreenRow or pEndScreenRow are specified, then use
+	// them to specify the start & end screen rows to actually print
+	if (typeof(pStartScreenRow) === "number" && pStartScreenRow >= firstScreenRow && pStartScreenRow <= lastScreenRow)
+		screenRowForPrinting = pStartScreenRow;
+	if (typeof(pEndScreenRow) === "number" && pEndScreenRow > firstScreenRow && pStartScreenRow <= lastScreenRow)
+		lastScreenRow = pEndScreenRow;
+	var fileDescArray = fileDesc.split("\r\n");
+	console.print("\1n");
+	// screenRowNum is to keep track of the row on the screen where the
+	// description line would be placed, in case the start row is after that
+	var screenRowNum = firstScreenRow;
+	for (var i = 0; i < fileDescArray.length; ++i)
+	{
+		if (screenRowForPrinting > screenRowNum++)
+			continue;
+		console.gotoxy(startX, screenRowForPrinting++);
+		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+		// Normally it would be handy to use printf() to print the text line:
+		//printf(formatStr, substrWithAttrCodes(fileDescArray[i], 0, maxDescLen));
+		// However, printf() doesn't account for attribute codes and thus may not
+		// fill the rest of the width.  So, we do that manually.
+		var descLine = substrWithAttrCodes(fileDescArray[i], 0, maxDescLen);
+		console.print(descLine);
+		var remainingLen = maxDescLen - console.strlen(descLine);
+		if (remainingLen > 0)
+			printf("%" + remainingLen + "s", "");
+		// Stop printing the description lines when we reach the last line on
+		// the screen where we want to print.
+		if (screenRowForPrinting > lastScreenRow)
+			break;
+	}
+	// Clear the rest of the lines to the bottom of the list area
+	console.print("\1n");
+	while (screenRowForPrinting <= lastScreenRow)
+	{
+		console.gotoxy(startX, screenRowForPrinting++);
+			printf(formatStr, "");
+	}
+}
+
+// Refreshes (re-draws) the main content of the screen (file list menu,
+// and extended description area if enabled).  The coordinates are absolute
+// screen coordinates.
+//
+// Parameters:
+//  pUpperLeftX: The X coordinate of the upper-left corner of the area to re-draw
+//  pUpperLeftY: The Y coordinate of the upper-left corner of the area to re-draw
+//  pWidth: The width of the area to re-draw
+//  pHeight: The height of the area to re-draw
+//  pSelectedItemIdxes: Optional: An object with selected item indexes for the file menu.
+//                                If not passed, an empty object will be used.
+//                      This can also be a boolean, and if true, will refresh the
+//                      selected items on the file menu (with checkmarks) outside the
+//                      given top & bottom screen rows.
+function refreshScreenMainContent(pUpperLeftX, pUpperLeftY, pWidth, pHeight, pSelectedItemIdxes)
+{
+	var selectedItemIdxesIsValid = (typeof(pSelectedItemIdxes) === "object");
+	var selectedItemIdxes = (selectedItemIdxesIsValid ? pSelectedItemIdxes : {});
+	gFileListMenu.DrawPartialAbs(pUpperLeftX, pUpperLeftY, pWidth, pHeight, selectedItemIdxes);
+	// If pSelectedItemIdxes is a bool instead of an object and is true,
+	// refresh the selected items (with checkmarks) outside the top & bottom
+	// lines on the file menu
+	if (!selectedItemIdxesIsValid && typeof(pSelectedItemIdxes) === "boolean" && pSelectedItemIdxes && gFileListMenu.numSelectedItemIndexes() > 0)
+	{
+		var bottomScreenRow = pUpperLeftY + pHeight - 1;
+		for (var idx in gFileListMenu.selectedItemIndexes)
+		{
+			var idxNum = +idx;
+			var itemScreenRow = gFileListMenu.ScreenRowForItem(idxNum);
+			if (itemScreenRow == -1)
+				continue;
+			if (itemScreenRow < pUpperLeftY || itemScreenRow > bottomScreenRow)
+			{
+				var isSelected = (idxNum == gFileListMenu.selectedItemIdx);
+				gFileListMenu.WriteItemAtItsLocation(idxNum, isSelected, false);
+			}
+		}
+	}
+	// If the user has extended descriptions enabled, then the file menu
+	// is only taking up about half the screen on the left, and we'll also
+	// have to refresh the description area.
+	if (extendedDescEnabled())
+	{
+		var fileMenuRightX = gFileListMenu.pos.x + gFileListMenu.size.width - 1;
+		var width = pWidth - (fileMenuRightX - pUpperLeftX + 1);
+		if (width > 0)
+		{
+			var firstRow = pUpperLeftY;
+			// The last row is inclusive.  It seems like there might be an off-by-1
+			// problem here?  I thought 1 would need to be subtracted from lastRow
+			var lastRow = pUpperLeftY + pHeight;
+			// We don't want to overwrite the last row on the screen, since that's
+			// used for the command bar
+			if (lastRow == console.screen_rows)
+				--lastRow;
+			displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx, firstRow, lastRow, width);
+		}
+	}
 }
