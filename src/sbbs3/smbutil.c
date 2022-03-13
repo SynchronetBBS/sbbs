@@ -1532,9 +1532,9 @@ void readmsgs(ulong start, ulong count)
 			printf("Subj : %s\n",msg.subj);
 			printf("Attr : %04hX (%s)", msg.hdr.attr, smb_msgattrstr(msg.hdr.attr, tmp, sizeof(tmp)));
 			if(msg.hdr.auxattr != 0)
-				printf("\nAux  : %08lX (%s)", msg.hdr.auxattr, smb_auxattrstr(msg.hdr.auxattr, tmp, sizeof(tmp)));
+				printf("\nAux  : %08X (%s)", msg.hdr.auxattr, smb_auxattrstr(msg.hdr.auxattr, tmp, sizeof(tmp)));
 			if(msg.hdr.netattr != 0)
-				printf("\nNet  : %08lX (%s)", msg.hdr.netattr, smb_netattrstr(msg.hdr.netattr, tmp, sizeof(tmp)));
+				printf("\nNet  : %08X (%s)", msg.hdr.netattr, smb_netattrstr(msg.hdr.netattr, tmp, sizeof(tmp)));
 			if(*msg.to) {
 				printf("\nTo   : %s",msg.to);
 				if(msg.to_net.type)
