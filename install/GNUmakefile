@@ -12,6 +12,7 @@
 # SYMLINK = Don't copy binaries, rather create symlinks in $(SBBSDIR)/exec
 # SBBSDIR = Directory to do install to
 # REPODIR = Directory where source files are cloned
+# SETCAP = First portion of set file capabilities (setcap) command-line (e.g. /sbin/setcap)
 # NOCAP = Set to defeat sbbs3 bind-capabilities (setcap) build target on Linux
 # bcc = Set to use Borland compiler
 # os = Set to the OS name (Not required)
@@ -81,7 +82,7 @@ MKFLAGS	+=	os=$(os)
 
 ifndef NOCAP
 ifeq ($(os),linux)
-	SETCAP 	:=	setcap
+	SETCAP 	:=	/sbin/setcap
 endif
 endif
 
