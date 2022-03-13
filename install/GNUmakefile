@@ -82,7 +82,7 @@ MKFLAGS	+=	os=$(os)
 
 ifndef NOCAP
 ifeq ($(os),linux)
-	SETCAP 	:=	/sbin/setcap
+	SETCAP 	:=	$(shell whereis -b setcap | cut -d" " -f2)
 endif
 endif
 
