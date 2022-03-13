@@ -1166,6 +1166,7 @@ void packmsgs(ulong packable)
 	}
 	total=0;
 	for(l=0;l<smb.status.total_msgs;l++) {
+		ZERO_VAR(msg);
 		fseek(smb.sid_fp, l * idxreclen,SEEK_SET);
 		printf("%lu of %"PRIu32"\r",l+1,smb.status.total_msgs);
 		if(!fread(&msg.idx, sizeof(msg.idx), 1, smb.sid_fp))
