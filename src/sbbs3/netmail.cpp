@@ -1049,7 +1049,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		if(fexistcase(str2)) {
 			strListFree(&rcpt_list);
 			bputs(text[FileAlreadyThere]);
-			remove(msgpath);
+			(void)remove(msgpath);
 			return(false); 
 		}
 		{ /* Remote */
@@ -1065,7 +1065,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 			if(ch==quit_key() || sys_status&SS_ABORT) {
 				bputs(text[Aborted]);
 				strListFree(&rcpt_list);
-				remove(msgpath);
+				(void)remove(msgpath);
 				return(false); 
 			}
 			for(x=0;x<cfg.total_prots;x++)
@@ -1084,7 +1084,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		else {
 			bprintf(text[FileNotReceived],title);
 			strListFree(&rcpt_list);
-			remove(msgpath);
+			(void)remove(msgpath);
 			return(false); 
 		} 
 	}
