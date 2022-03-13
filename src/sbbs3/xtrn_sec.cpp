@@ -712,7 +712,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		sys.ErrorCorrected = true;
 		sys.GraphicsMode = (term & NO_EXASCII) ? 'N' : 'Y';
 		sys.UserNetStatus = (thisnode.misc & NODE_POFF) ? 'U' : 'A'; /* Node chat status ([A]vailable or [U]navailable) */
-		SAFEPRINTF(tmp, "%u", dte_rate);
+		SAFEPRINTF(tmp, "%lu", dte_rate);
 		sys.ModemSpeed = tmp;
 		sys.CarrierSpeed = connection;
 		sys.UserRecNo = useron.number;
