@@ -39,6 +39,10 @@
  *                              highlighted file on the right.  Also, made the file info
  *                              window taller for terminals within 25 lines high.
  *                              I had started work on this on March 9, 2022.
+ * 2022-03-13 Eric Oulashin     Version 2.05a
+ *                              Fix for "fileDesc is not defined" error when displaying
+ *                              the file description on the main screen.  Also made a
+ *                              small refactor to the main screen refresh function.
 */
 
 if (typeof(require) === "function")
@@ -94,8 +98,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.05";
-var LISTER_DATE = "2022-03-12";
+var LISTER_VERSION = "2.05a";
+var LISTER_DATE = "2022-03-13";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3604,6 +3608,8 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		fileDesc = fileMetadata.extdesc;
 	else
 		fileDesc = fileMetadata.desc;
+	if (typeof(fileDesc) != "string")
+		fileDesc = "";
 
 	// This might be overkill, but just in case, convert any non-Synchronet
 	// attribute codes to Synchronet attribute codes in the description.
@@ -3691,9 +3697,15 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 //                      given top & bottom screen rows.
 function refreshScreenMainContent(pUpperLeftX, pUpperLeftY, pWidth, pHeight, pSelectedItemIdxes)
 {
-	var selectedItemIdxesIsValid = (typeof(pSelectedItemIdxes) === "object");
-	var selectedItemIdxes = (selectedItemIdxesIsValid ? pSelectedItemIdxes : {});
-	gFileListMenu.DrawPartialAbs(pUpperLeftX, pUpperLeftY, pWidth, pHeight, selectedItemIdxes);
+	// Have the file list menu partially re-draw itself if necessary
+	var startXWithinFileList = (pUpperLeftX >= gFileListMenu.pos.x && pUpperLeftX < gFileListMenu.pos.x + gFileListMenu.size.width);
+	var startYWithinFileList = (pUpperLeftY >= gFileListMenu.pos.y && pUpperLeftY < gFileListMenu.pos.y + gFileListMenu.size.height);
+	if (startXWithinFileList && startYWithinFileList)
+	{
+		var selectedItemIdxesIsValid = (typeof(pSelectedItemIdxes) === "object");
+		var selectedItemIdxes = (selectedItemIdxesIsValid ? pSelectedItemIdxes : {});
+		gFileListMenu.DrawPartialAbs(pUpperLeftX, pUpperLeftY, pWidth, pHeight, selectedItemIdxes);
+	}
 	// If pSelectedItemIdxes is a bool instead of an object and is true,
 	// refresh the selected items (with checkmarks) outside the top & bottom
 	// lines on the file menu
