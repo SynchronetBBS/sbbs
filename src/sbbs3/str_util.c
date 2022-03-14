@@ -495,6 +495,23 @@ char* ultoac(ulong l, char *string)
 	return(string);
 }
 
+char* i64toac(int64_t l, char *string)
+{
+	char str[256];
+	int i,j,k;
+
+	_i64toa(l,str,10);
+	i=strlen(str)-1;
+	j=i/3+1+i;
+	string[j--]=0;
+	for(k=1;i>-1;k++) {
+		string[j--]=str[i--];
+		if(j>0 && !(k%3))
+			string[j--]=','; 
+	}
+	return string;
+}
+
 /****************************************************************************/
 /* Truncate string at first occurrence of char in specified character set	*/
 /* Returns a pointer to the terminating NUL if the string was truncated,	*/
