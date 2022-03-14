@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.46
-                           Release date: 2022-03-07
+                                 Version 1.47
+                           Release date: 2022-03-14
 
                                      by
 
@@ -189,34 +189,39 @@ sbbs/xtrn/DDMsgReader directory.
 
 Loadable Modules setup
 ----------------------
-In Synchronet 3.16 builds starting on April 27, 2015, there are a few new
-options in the Loadable Lodules configuration in SCFG: "Read Mail", "Scan
-Msgs", and "Scan Subs".  Functionality for these was updated on May 5, 2015.
-These loadable modules options can enable the use of a message reader script
-for the various message reading, searching, and scanning options provided by
-Synchronet.  That is probably the easiest way to install the reader, since it
-only requires specifying a script in the Loadable Modules options and does not
-require modification of your command shell.  Setting it up that way also has
-the advantage that the reader will be used for reading personal email and
-performing a message newscan during the login process.  If you have a recent
-build of Synchronet 3.16 (or newer), then your version of Synchronet will
-support this.  If you are using an older version of Synchronet, skip ahead to
-the "Command shell setup" subsection.
+The easiest way to get Digital Distortion Message Reader set up is via the
+Loadable Module options in SCFG > System > LOadable Modules.
 
-To set up the reader with the Loadable Module scripts, do the following:
-1. Copy DDReadPersonalMail.js, DDScanMsgs.js, and DDScanSubs.js from the
-   loadable_module_scripts directory to your sbbs/mods directory
-2. If you will be running the script from a directory other than
-   xtrn/DDMsgReader, edit the above scripts and search for the text "SYSOPS:"
-   (without the double-quotes).  One or two lines below that, there is a
-   variable called msgReaderPath - Change that so that it contains the path
-   where you copied DDMsgReader.js.
-3. Run Synchronet's configuration program (scfg from the command prompt, or
-   from the GUI, select BBS > Configure).  In there, select System, then
-   Loadable Modules
-4. For the 'Read Mail' option, put in DDReadPersonalMail
-5. For the 'Scan Msgs' option, put in DDScanMsgs
-6. For the 'Scan Subs' option, put in DDScanSubs
+The Loadable Modules options let you specify scripts to run for various events
+in Synchronet.  As of Synchronet 3.19, the following Loadable Modules options
+are available in SCFG for message reading/scanning events:
+- Read Mail (added in Synchronet 3.16)
+- Scan Msgs (added in Synchronet 3.16)
+- Scan Subs (added in Synchronet 3.16)
+- List Msgs (added in Synchronet 3.18)
+
+The Loadable Modules options take the filename of the script without the
+extension.  The Loadable Modules options don't allow a leading path in front of
+the name, so if you have DDMsgReader.js in a path other than sbbs/exec or
+sbbs/mods, one solution is to copy the included ddmr_lm.js to either your
+sbbs/exec or sbbs/mods directory (ideally sbbs/mods so it wouldn't get
+accidentally deleted) and specify ddmr_lm in your Loadable Modules as follows:
+
+ Read Mail       ddmr_lm
+ Scan Msgs       ddmr_lm
+ Scan Subs       ddmr_lm
+ List Msgs       ddmr_lm
+
+Also, if you will be running the script from a directory other than
+xtrn/DDMsgReader, edit ddmr_lm.js and look for the text "SYSOPS:" (without the
+double-quotes).  One or two lines below that, there is a variable called
+msgReaderPath - Change that so that it contains the path where you copied
+DDMsgReader.js.
+
+Alternately, you can copy DDMsgReader.js to your sbbs/exec or sbbs/mods
+directory and specify DDMsgReader in your Loadable Modules for the above
+modules in SCFG.  For that to work, you would also need to copy DDMsgReader.cfg
+to your sbbs/ctrl directory or to sbbs/mods along with DDMsgReader.js.
 
 There are a few search modes that Synchronet provides that Digital Distortion
 Message Reader doesn't support yet (such as continuous newscan and browse new
