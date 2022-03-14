@@ -22,6 +22,7 @@
 #include "sbbs.h"
 #include "sauce.h"
 #include "filedat.h"
+#include <algorithm>
 
 /****************************************************************************/
 /****************************************************************************/
@@ -170,7 +171,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	}
 	if(cfg.dir[f->dir]->misc&DIR_AONLY)  /* Forced anonymous */
 		f->hdr.attr |= MSG_ANONYMOUS;
-	uint32_t cdt = (uint32_t)min(length, UINT32_MAX);
+	uint32_t cdt = (uint32_t)std::min(length, (off_t)UINT32_MAX);
 	smb_hfield_bin(f, SMB_COST, cdt);
 	smb_hfield_str(f, SENDER, useron.alias);
 	bprintf(text[FileNBytesReceived],f->name, i64toac(length,tmp));
