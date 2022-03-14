@@ -64,6 +64,7 @@ DLLEXPORT BOOL		valid_ctrl_a_attr(char a);
 DLLEXPORT BOOL		valid_ctrl_a_code(char a);
 DLLEXPORT size_t	strip_invalid_attr(char *str);
 DLLEXPORT char *	ultoac(ulong l,char *str);
+DLLEXPORT char *	i64toac(int64_t, char *str);
 DLLEXPORT char *	rot13(char* str);
 DLLEXPORT uint32_t	str_to_bits(uint32_t currval, const char *str);
 DLLEXPORT BOOL		str_has_ctrl(const char*);
