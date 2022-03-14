@@ -1066,16 +1066,22 @@ function ANSIMultiConvertToSyncCodes(pText)
 //
 // Parameters:
 //  pText: The text to be converted
+//  pConvertANSI: Optional boolean - Whether or not to convert ANSI.  Defaults to true.
 //
 // Return value: The text with various other system attribute codes converted
 //               to Synchronet attribute codes, or not, depending on the toggle
 //               options in Extra Attribute Codes in SCFG
-function convertAttrsToSyncPerSysCfg(pText)
+function convertAttrsToSyncPerSysCfg(pText, pConvertANSI)
 {
-	// Convert any ANSI codes to Synchronet attribute codes.
-	// Then convert other BBS attribute codes to Synchronet attribute
-	// codes according to the current system configuration.
-	var convertedText = ANSIAttrsToSyncAttrs(pText);
+	var convertedText = pText;
+	var convertANSI = (typeof(pConvertANSI) === "boolean" ? pConvertANSI : true);
+	if (convertANSI)
+	{
+		// Convert any ANSI codes to Synchronet attribute codes.
+		// Then convert other BBS attribute codes to Synchronet attribute
+		// codes according to the current system configuration.
+		convertedText = ANSIAttrsToSyncAttrs(convertedText);
+	}
 	if ((system.settings & SYS_RENEGADE) == SYS_RENEGADE)
 		convertedText = renegadeAttrsToSyncAttrs(convertedText);
 	if ((system.settings & SYS_WWIV) == SYS_WWIV)
