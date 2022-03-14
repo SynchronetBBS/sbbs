@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.05a    2022-03-13   Fix for "fileDesc is not defined" error when displaying
+                      the file description on the main screen.
 2.05     2022-03-12   Now makes use of the user's extended file description
                       setting: If the user's extended file description setting
                       is enabled, the lister will now show extended file
