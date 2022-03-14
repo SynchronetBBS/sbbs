@@ -871,6 +871,8 @@ enum {
 	,FidoNetMailReceived
 	,WithAttachment
 	,FidoEchoMailReceived
+	,HashingFile
+	,HashedFile
 
 	,TOTAL_TEXT
 };
