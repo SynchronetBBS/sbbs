@@ -228,6 +228,7 @@ extern "C" {
 
 #if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
 	DLLEXPORT char* ultoa(ulong, char*, int radix);
+	DLLEXPORT char* _i64toa(int64_t, char*, int radix);
 #endif
 
 #if defined(__unix__)
