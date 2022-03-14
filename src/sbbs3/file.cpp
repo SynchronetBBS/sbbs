@@ -39,7 +39,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 	bprintf(P_TRUNCATE, text[FiFilename],f->name);
 
 	if(getfilesize(&cfg, f) >= 0)
-		bprintf(P_TRUNCATE, text[FiFileSize], ultoac((ulong)f->size,tmp)
+		bprintf(P_TRUNCATE, text[FiFileSize], i64toac(f->size,tmp)
 			, byte_estimate_to_str(f->size, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
 
 	bprintf(P_TRUNCATE, text[FiCredits]
