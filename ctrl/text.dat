@@ -1044,3 +1044,5 @@
 " with attachment"                                         859 WithAttachment
 "%.0s\1n\1h\1m%s \1n\1msent you EchoMail on "\             860 FidoEchoMailReceived
     "\1h%s \1n\1m%s\1n\r\n"
+"\1_\1w\1hCalculating file's hash values @ELLIPSIS@\1n"    861 HashingFile
+"\1[\1>"                                                   862 HashedFile
