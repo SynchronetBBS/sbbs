@@ -1030,12 +1030,14 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 							}
 						}
 					}
-					getnodedat(cfg.node_num,&thisnode,1);
-					action=NODE_DLNG;
-					t=now + gettimetodl(&cfg, f, cur_cps);
-					localtime_r(&t,&tm);
-					thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
-					putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
+					action = NODE_DLNG;
+					if(getnodedat(cfg.node_num,&thisnode,true) == 0) {
+						thisnode.action = action;
+						t=now + gettimetodl(&cfg, f, cur_cps);
+						localtime_r(&t,&tm);
+						thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
+						putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
+					}
 					start=time(NULL);
 					error=protocol(cfg.prot[i],XFER_DOWNLOAD,path,nulstr,false);
 					end=time(NULL);
