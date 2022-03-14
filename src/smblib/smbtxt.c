@@ -247,8 +247,6 @@ char* qp_decode(char* buf)
 			}
 		}
 	}
-	*dest++='\r';
-	*dest++='\n';
 	*dest=0;
 	return buf;
 }
