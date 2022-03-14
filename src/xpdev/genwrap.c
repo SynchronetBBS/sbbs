@@ -601,6 +601,25 @@ char* ultoa(ulong val, char* str, int radix)
 	}
 	return(str);
 }
+
+char* _i64toa(int64_t val, char* str, int radix)
+{
+	switch(radix) {
+		case 8:
+			sprintf(str,"%"PRIo64,val);
+			break;
+		case 10:
+			sprintf(str,"%"PRId64,val);
+			break;
+		case 16:
+			sprintf(str,"%"PRIx64,val);
+			break;
+		default:
+			sprintf(str,"bad radix: %d",radix);
+			break;
+	}
+	return str;
+}
 #endif
 
 /****************************************************************************/
