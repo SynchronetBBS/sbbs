@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.47     2022-03-14   DDMsgReader can now be called directly as a loadable
+                      module by Synchronet (though requires the included
+                      ddmr_lm.js if DDMsgReader.js is not in sbbs/exec or
+                      sbbs/mods)
 1.46     2022-03-07   Fix: When changing to an empty sub-board from within the
                       reader (either from read mode or list mode), it now
                       properly says there are no messages and exits, rather than
