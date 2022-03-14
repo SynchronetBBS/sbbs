@@ -32,7 +32,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	char	ext[LEN_EXTDESC + 1] = "";
 	char	tmp[MAX_PATH+1];
     uint	i;
-    long	length;
+    off_t	length;
 	FILE*	stream;
 
 	curdirnum=f->dir;
@@ -106,7 +106,7 @@ bool sbbs_t::uploadfile(file_t* f)
 			}
 		}
 
-	if((length=(long)flength(path))==0L) {
+	if((length = flength(path))==0L) {
 		bprintf(text[FileZeroLength],f->name);
 		remove(path);
 		safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (Zero length)"
@@ -116,10 +116,11 @@ bool sbbs_t::uploadfile(file_t* f)
 		return false; 
 	}
 
-	bputs(text[SearchingForDupes]);
+	bputs(text[HashingFile]);
 	/* Note: Hashes file *after* running upload-testers (which could modify file) */
-	if(hashfile(&cfg, f)) {
-		bputs(text[SearchedForDupes]);
+	bool hashed = hashfile(&cfg, f);
+	bputs(text[HashedFile]);
+	if(hashed) {
 		for(uint i=0, k=0; i < usrlibs; i++) {
 			progress(text[Scanning], i, usrlibs);
 			for(uint j=0; j < usrdirs[i]; j++,k++) {
@@ -138,8 +139,7 @@ bool sbbs_t::uploadfile(file_t* f)
 			}
 		}
 		progress(text[Done], usrlibs, usrlibs);
-	} else
-		bputs(text[SearchedForDupes]);
+	}
 
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
 		lprintf(LOG_DEBUG, "Extracting DIZ from: %s", path);
@@ -170,10 +170,10 @@ bool sbbs_t::uploadfile(file_t* f)
 	}
 	if(cfg.dir[f->dir]->misc&DIR_AONLY)  /* Forced anonymous */
 		f->hdr.attr |= MSG_ANONYMOUS;
-	uint32_t cdt = (uint32_t)length;
+	uint32_t cdt = (uint32_t)min(length, UINT32_MAX);
 	smb_hfield_bin(f, SMB_COST, cdt);
 	smb_hfield_str(f, SENDER, useron.alias);
-	bprintf(text[FileNBytesReceived],f->name,ultoac(length,tmp));
+	bprintf(text[FileNBytesReceived],f->name, i64toac(length,tmp));
 	if(!addfile(&cfg, f->dir, f, ext, /* metadata: */NULL, &client))
 		return false;
 
@@ -527,8 +527,8 @@ bool sbbs_t::bulkupload(uint dirnum)
 		if(strListFind(list, fname, /* case-sensitive: */FALSE) < 0) {
 			smb_freemsgmem(&f);
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
-			uint32_t cdt = (uint32_t)flength(str);
-			bprintf(text[BulkUploadDescPrompt], format_filename(f.name, fname, 12, /* pad: */FALSE), cdt/1024);
+			off_t flen = flength(str);
+			bprintf(text[BulkUploadDescPrompt], format_filename(f.name, fname, 12, /* pad: */FALSE), flen/1024);
 			if(strcmp(f.name, fname) != 0)
 				SAFECOPY(desc, f.name);
 			else
