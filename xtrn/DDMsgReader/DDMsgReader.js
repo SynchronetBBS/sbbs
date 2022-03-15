@@ -135,6 +135,7 @@
  *                              attribute conversion functions from this script.
  */
 
+// TODO: In the message list, add the ability to search with / similar to my area chooser
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
    option):
@@ -19260,6 +19261,130 @@ function isValidUserNum(pUserNum)
 	if (theUser != null && (theUser.settings & USER_DELETED) == 0 && (theUser.settings & USER_INACTIVE) == 0)
 		userIsValid = true;
 	return userIsValid;
+}
+
+// Returns the index of the last ANSI code in a string.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pANSIRegexes: An array of regular expressions to use for searching for ANSI codes
+//
+// Return value: The index of the last ANSI code in the string, or -1 if not found
+function idxOfLastANSICode(pStr, pANSIRegexes)
+{
+	var lastANSIIdx = -1;
+	for (var i = 0; i < pANSIRegexes.length; ++i)
+	{
+		var lastANSIIdxTmp = regexLastIndexOf(pStr, pANSIRegexes[i]);
+		if (lastANSIIdxTmp > lastANSIIdx)
+			lastANSIIdx = lastANSIIdxTmp;
+	}
+	return lastANSIIdx;
+}
+
+// Returns the index of the first ANSI code in a string.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pANSIRegexes: An array of regular expressions to use for searching for ANSI codes
+//
+// Return value: The index of the first ANSI code in the string, or -1 if not found
+function idxOfFirstANSICode(pStr, pANSIRegexes)
+{
+	var firstANSIIdx = -1;
+	for (var i = 0; i < pANSIRegexes.length; ++i)
+	{
+		var firstANSIIdxTmp = regexFirstIndexOf(pStr, pANSIRegexes[i]);
+		if (firstANSIIdxTmp > firstANSIIdx)
+			firstANSIIdx = firstANSIIdxTmp;
+	}
+	return firstANSIIdx;
+}
+
+// Returns the number of times an ANSI code is matched in a string.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pANSIRegexes: An array of regular expressions to use for searching for ANSI codes
+//
+// Return value: The number of ANSI code matches in the string
+function countANSICodes(pStr, pANSIRegexes)
+{
+	var ANSICount = 0;
+	for (var i = 0; i < pANSIRegexes.length; ++i)
+	{
+		var matches = pStr.match(pANSIRegexes[i]);
+		if (matches != null)
+			ANSICount += matches.length;
+	}
+	return ANSICount;
+}
+
+// Removes ANSI codes from a string.
+//
+// Parameters:
+//  pStr: The string to remove ANSI codes from
+//  pANSIRegexes: An array of regular expressions to use for searching for ANSI codes
+//
+// Return value: A version of the string without ANSI codes
+function removeANSIFromStr(pStr, pANSIRegexes)
+{
+	if (typeof(pStr) != "string")
+		return "";
+
+	var theStr = pStr;
+	for (var i = 0; i < pANSIRegexes.length; ++i)
+		theStr = theStr.replace(pANSIRegexes[i], "");
+	return theStr;
+}
+
+// Returns the last index in a string where a regex is found.
+// From this page:
+// http://stackoverflow.com/questions/273789/is-there-a-version-of-javascripts-string-indexof-that-allows-for-regular-expr
+//
+// Parameters:
+//  pStr: The string to search
+//  pRegex: The regular expression to match in the string
+//  pStartPos: Optional - The starting position in the string.  If this is not
+//             passed, then the end of the string will be used.
+//
+// Return value: The last index in the string where the regex is found, or -1 if not found.
+function regexLastIndexOf(pStr, pRegex, pStartPos)
+{
+	pRegex = (pRegex.global) ? pRegex : new RegExp(pRegex.source, "g" + (pRegex.ignoreCase ? "i" : "") + (pRegex.multiLine ? "m" : ""));
+	if (typeof(pStartPos) == "undefined")
+		pStartPos = pStr.length;
+	else if (pStartPos < 0)
+		pStartPos = 0;
+	var stringToWorkWith = pStr.substring(0, pStartPos + 1);
+	var lastIndexOf = -1;
+	var nextStop = 0;
+	while ((result = pRegex.exec(stringToWorkWith)) != null)
+	{
+		lastIndexOf = result.index;
+		pRegex.lastIndex = ++nextStop;
+	}
+    return lastIndexOf;
+}
+
+// Returns the first index in a string where a regex is found.
+//
+// Parameters:
+//  pStr: The string to search
+//  pRegex: The regular expression to match in the string
+//
+// Return value: The first index in the string where the regex is found, or -1 if not found.
+function regexFirstIndexOf(pStr, pRegex)
+{
+	pRegex = (pRegex.global) ? pRegex : new RegExp(pRegex.source, "g" + (pRegex.ignoreCase ? "i" : "") + (pRegex.multiLine ? "m" : ""));
+	var indexOfRegex = -1;
+	var nextStop = 0;
+	while ((result = pRegex.exec(pStr)) != null)
+	{
+		indexOfRegex = result.index;
+		pRegex.lastIndex = ++nextStop;
+	}
+    return indexOfRegex;
 }
 
 // For debugging: Writes some text on the screen at a given location with a given pause.
