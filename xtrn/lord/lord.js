@@ -5317,7 +5317,7 @@ function wake_up()
 	get_state(false);
 	player.hp = player.hp_max;
 	player.seen_master = false;
-	player.tranferred_gold = 0;
+	player.transferred_gold = 0;
 	player.flirted = false;
 	player.forest_fights = 15;
 	player.seen_bard = false;
