@@ -1738,23 +1738,6 @@ function all_players()
 	return ret;
 }
 
-function try_fmutex(fname, str)
-{
-	fname += '.lock';
-	if (str === undefined) {
-		if(!file_mutex(fname)) {
-			return false;
-		}
-	}
-	else {
-		if(!file_mutex(fname, str)) {
-			return false;
-		}
-	}
-	cleanup_files.push(fname);
-	return true;
-}
-
 function fmutex(fname, str)
 {
 	var end = time() + 15;
@@ -1763,14 +1746,14 @@ function fmutex(fname, str)
 		while(!file_mutex(fname)) {
 			if (time() > end)
 				throw new Error("Unable to create "+fname+" please notify Sysop");
-			mswait(1);
+			mswait(100);
 		}
 	}
 	else {
 		while(!file_mutex(fname, str)) {
 			if (time() > end)
 				throw new Error("Unable to create "+fname+" please notify Sysop");
-			mswait(1);
+			mswait(100);
 		}
 	}
 	cleanup_files.push(fname);
@@ -3406,16 +3389,19 @@ function ob_cleanup() {
 function ob_read_msg(fname) {
 	var f = new File(fname);
 	var msg;
+	var end = time() + 15;
 
 	if (psock !== undefined) {
 		return undefined;
 	}
 	do {
-		while (!f.open('r')) {
-			mswait(1);
+		while (!f.open('r') && time() <= end) {
+			mswait(100);
 		}
 		msg = f.read();
 		f.close();
+		if (time() > end) 
+			break;
 	} while (msg === undefined || msg.length < 1 || msg[msg.length-1] !== '\n');
 	msg = msg.replace(/[\r\n]/g,'');
 
@@ -3592,17 +3578,18 @@ function on_battle(op, first, action) {
 			sln('  You run as fast as your legs will carry you!');
 			sln('');
 			more_nomail();
-			return;
+			return 'ABORT';
 		}
 		if (waction === 'R') {
-			lln('  `0The sniveling '+op.name+' `0has run away.  Unfortunatly, this battle');
+			lln('  `0The sniveling '+op.name+' `0has run away.  Unfortunately, this battle');
 			sln('  is OVER.');
 			log_line('  `0'+player.name+' `2& `0'+op.name+' `2had an uneventful online duel.');
 			sln('');
 			more_nomail();
-			return;
+			return 'ABORT';
 		}
 		on_struck(op, waction);
+		return;
 	}
 
 	if (first) {
@@ -3613,7 +3600,8 @@ function on_battle(op, first, action) {
 	else {
 		lln('  `%** YOUR ENEMY STRIKES YOU FIRST **');
 		if (action === undefined) {
-			wait_for_hit(op);
+			if (wait_for_hit(op) === 'ABORT');
+				return;
 		}
 		else {
 			on_struck(op, action);
@@ -3649,7 +3637,8 @@ outer:
 						lln('  `2You miss `0'+op.name+'`2 Completely!');
 						sln('');
 						ob_send_resp(op, '0');
-						wait_for_hit(op);
+						if (wait_for_hit(op) === 'ABORT')
+							break outer;
 						break;
 					}
 					lln('  `2You HIT `0'+op.name+'`2 for `4'+pretty_int(tmp)+'`2 points of damage!');
@@ -3688,7 +3677,8 @@ outer:
 						tournament_check();
 						break outer;
 					}
-					wait_for_hit(op);
+					if (wait_for_hit(op) === 'ABORT')
+						break outer;
 					break;
 				case 'Y':
 					if (cantaunt) {
@@ -3698,7 +3688,7 @@ outer:
 						lw(' `0>`2');
 						tmp = '  '+dk.console.getstr();
 						if (psock === undefined) {
-							file_mutex(gamedir('mess'+op.Record+'.bin', tmp+'\n'));
+							file_mutex(gamedir('mess'+op.Record+'.bin'), tmp+'\n');
 						}
 						else {
 							psock.writeln('SendBattleResponse Yell: '+tmp);
@@ -6140,7 +6130,7 @@ function load_player(create)
 			foreground(10);
 			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 			foreground(2);
-			sln('  You have never visted the realm before.  Do you want to join this place');
+			sln('  You have never visited the realm before.  Do you want to join this place');
 			sln('  of Dragons, Knights, Magic, Friends & Foes and Good & Evil?');
 			sln('');
 			lln('  `2(`0Y`2)es.');
@@ -11535,7 +11525,7 @@ function fight_dragon(cant_run) {
 			lln('`c                   `%EPILOGUE `2- `0The Warrior\'s Ending');
 			lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-');
 			lln('  `2After your bloody duel with the huge Dragon, your first inpulse is to rip');
-			lln('  its head off and bring it town.  Carefull thought reveals it is much to');
+			lln('  its head off and bring it town.  Careful thought reveals it is much to');
 			lln('  big for your horse, so that plan is moot.  Your second notion is bring back');
 			lln('  the childrens bones.  Bags and bags of them for proper burial, but you');
 			lln('  realize this would only cause the town\'s inhabitants `0MORE`2 pain.  You');
@@ -12574,7 +12564,7 @@ function forest()
 			more();
 			return;
 		}
-		lln('  `0You\'re quite a hero.  Unfortunatly, the '+lad+' seems to have');
+		lln('  `0You\'re quite a hero.  Unfortunately, the '+lad+' seems to have');
 		sln('  forgotten the return address.  You\'ll have to guess.');
 		sln('');
 		lln('  `2(`0C`2)astle Coldrake');
