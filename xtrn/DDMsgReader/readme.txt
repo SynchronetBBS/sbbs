@@ -168,21 +168,14 @@ Digital Distortion Message Reader is comprised of the following files:
 3. DefaultTheme.cfg       The default theme file containing colors & some
                           configurable text strings used in the reader
 
-4. DDReadPersonalMail.js  A script to be used for "Read mail" script in
-                          Synchronet's Loadable Module configuration
-
-5. DDScanMsgs.js          A script to be used for "Scan Msgs" script in
-                          Synchronet's Loadable Module configuration
-
-6. DDScanSubs.js          A script to be used for "Scan Subs" script in
-                          Synchronet's Loadable Module configuration
+4. ddmr_lm.js             Loadable module script for setup in SCFG
 
 The configuration files are plain text files, so they can be edited using any
 editor.
 
-The first 3 files (DDMsgReader.js, DDMsgReader.cfg, and DefaultTheme) can be
-placed together in any directory; the next 3 (DDReadPersonalMail.js,
-DDScanMsgs.js, and DDScanSubs.js) should be copied to your sbbs/mods directory.
+The first 3 files (DDMsgReader.js, DDMsgReader.cfg, and DefaultTheme.cfg) can be
+placed together in any directory. ddmr_lm.js should be copied to your sbbs/mods
+directory.
 
 The examples in this document will assume the first 3 files are in the
 sbbs/xtrn/DDMsgReader directory.
@@ -228,13 +221,6 @@ Message Reader doesn't support yet (such as continuous newscan and browse new
 scan), and for those situations, the Loadable Modules scripts will fall back to
 the stock Synchronet behavior.
 
-A note about DDReadPersonalMail.js:
-For reading personal email, DDReadPersonalMail.js contains a line that you
-can change to configure the reader to start up in list mode or reader mode.
-To change that, open DDReadPersonalMail.js using a text editor and search for
-the text "var readerStartmode" (without the quotes).  You can set the value
-to "read" to have the reader start in reader mode or "list" to start in list
-mode.
 
 Command shell setup
 -------------------
