@@ -109,19 +109,26 @@ while(bbs.online && !console.aborted) {
 				if(console.aborted || server.length < 4)
 					break;
 			}
-			if(server.indexOf(' ') < 0)
-				server += " 6667";
-			if(irc_channels.length > 1) {
-				for(var i = 0; i < irc_channels.length; i++)
-					console.uselect(i, "IRC Channel", irc_channels[i]);
+			// Optional list of channels per server (e.g. irc.synchro.net = #synchronet, #bbs)
+			var channel_list = irc_channels;
+			if(options[server] !== undefined)
+				channel_list = options[server].split(',');
+			var channel;
+			if(channel_list.length > 1) {
+				for(var i = 0; i < channel_list.length; i++) {
+					channel_list[i] = channel_list[i].trim();
+					console.uselect(i, "IRC Channel", channel_list[i]);
+				}
 				var i = console.uselect();
 				if(i < 0)
 					break;
-				channel = irc_channels[i];
+				channel = channel_list[i];
 			} else {
 				write("\r\n\x01n\x01y\x01hIRC Channel: ");
-				var channel = console.getstr(options.irc_channel, 40, K_EDIT|K_LINE|K_AUTODEL);
+				channel = console.getstr(channel_list[0], 40, K_EDIT|K_LINE|K_AUTODEL);
 			}
+			if(server.indexOf(' ') < 0)
+				server += " 6667";
 			if(!console.aborted && channel.length) {
 				log("IRC to " + server + " " + channel);
 				bbs.exec("?irc -a " + server + " " + channel); // can't be load()ed because it calls exit()
