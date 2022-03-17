@@ -2598,7 +2598,7 @@ function main()
 				}
 				alert("This command will remove '" + optval[cmd] +
 					"' from the local " + (remote ? "and remote ":"") + "database");
-				if(deny("Are you sure"))
+				if(!quiet && deny("Are you sure"))
 					break;
 				var index = lib.system_index(list, optval[cmd]);
 				if(index < 0) {
