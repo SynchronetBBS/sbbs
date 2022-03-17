@@ -86,9 +86,10 @@ int msgdump(FILE* fp, const char* fname)
 	if(hdr.time[sizeof(hdr.time)-1] != 0)
 		fprintf(stderr,"%s Unterminated 'time' field\n", fname);
 
-
+	TERMINATE(hdr.subj);
 	printf("Subj: %.*s\n", (int)sizeof(hdr.subj)-1, hdr.subj);
 	printf("Attr: 0x%04hX %s\n", hdr.attr, fmsgattr_str(hdr.attr));
+	TERMINATE(hdr.to);
 	printf("To  : %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.to)-1, hdr.to
 		,hdr.destzone, hdr.destnet, hdr.destnode, hdr.destpoint);
 	TERMINATE(hdr.from);
