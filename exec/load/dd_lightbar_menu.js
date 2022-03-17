@@ -125,6 +125,13 @@ user presses the enter key after the item number, a carriage return/line feed
 will be outputted, so in numbered mode, the menu's height should not go further
 than 2 lines below the console height.  Otherwise, the display of the menu will
 not be correct if the user decides not to enter a number.
+When numbered mode is enabled, you can specify the color used to display the
+item numbers.  For a non-selected item, set .colors.itemNumColor.  For selected items,
+set .colors.highlightedItemNumColor.  This is separate from the item color setting
+(.colors.itemColor).  For example:
+lbMenu.colors.itemNumColor = "\1c"; // Use cyan for the item numbers for non-selected items.
+// For the selected item, use high cyan with a blue background for the item number
+lbMenu.colors.highlightedItemNumColor = "\1" + "4\1c\1h";
 
 This menu also supports multiple options selected (by default, that is not enabled).
 To enable that, set the multiSelect property to true.  When enabled, the GetVal()
@@ -406,7 +413,9 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 		itemTextCharHighlightColor: "\1y\1h",
 		borderColor: "\1n\1b",
 		scrollbarScrollBlockColor: "\1h\1w",
-		scrollbarBGColor: "\1h\1k"
+		scrollbarBGColor: "\1h\1k",
+		itemNumColor: "\1n",
+		highlightedItemNumColor: "\1n"
 	};
 	// Characters to use to draw the border
 	this.borderChars = {
@@ -1181,7 +1190,7 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 		else
 			selectedItemColor = (menuItem.useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
 		var itemColor = "";
-		if (typeof(pHighlight) == "boolean")
+		if (typeof(pHighlight) === "boolean")
 			itemColor = (pHighlight ? selectedItemColor : normalItemColor);
 		else
 			itemColor = (pIdx == this.selectedItemIdx ? selectedItemColor : normalItemColor);
@@ -1250,9 +1259,16 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 		var currentTextLen = itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems);
 		if (currentTextLen < itemLen)
 			itemText += format("%" + +(itemLen-currentTextLen) + "s", ""); // Append spaces to the end of itemText
-		// If in numbered mode, add the item number to the front of the item text.
+		// If in numbered mode, prepend the item number to the front of the item text.
 		if (this.numberedMode)
-			itemText = format("\1n%" + this.itemNumLen + "d ", pIdx+1) + itemText;
+		{
+			var numColor = "\1n" + this.colors.itemNumColor;
+			if (typeof(pHighlight) === "boolean")
+				numColor = (pHighlight ? this.colors.highlightedItemNumColor : this.colors.itemNumColor);
+			else
+				numColor = (pIdx == this.selectedItemIdx ? this.colors.highlightedItemNumColor : this.colors.itemNumColor);
+			itemText = format("\1n" + numColor + "%" + this.itemNumLen + "d \1n", pIdx+1) + itemText;
+		}
 	}
 	return itemText;
 }
@@ -1904,14 +1920,29 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						if (addIt)
 							selectedItemIndexes[+(this.selectedItemIdx)] = true;
 					}
-					// TODO: Put a check-mark next to the selected item
-					// TODO: Screen refresh?
 				}
 				else
 				{
 					retVal = this.GetItem(this.selectedItemIdx).retval;
 					continueOn = false;
 				}
+				// If the item typed by the user is different than the current selected item
+				// index, then refresh the selected item on the menu (if they're visible).
+				// If multi-select mode is enabled, also toggle the checkmark in the item text.
+				if (this.selectedItemIdx != oldSelectedItemIdx)
+				{
+					if (this.ScreenRowForItem(oldSelectedItemIdx) > -1)
+					{
+						var oldIsSelected = selectedItemIndexes.hasOwnProperty(oldSelectedItemIdx);
+						this.WriteItemAtItsLocation(oldSelectedItemIdx, false, oldIsSelected);
+					}
+					if (this.ScreenRowForItem(this.selectedItemIdx) > -1)
+					{
+						var newIsSelected = selectedItemIndexes.hasOwnProperty(this.selectedItemIdx);
+						this.WriteItemAtItsLocation(this.selectedItemIdx, true, newIsSelected);
+					}
+				}
+
 				if (typeof(this.OnItemNav) === "function")
 					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 			}
