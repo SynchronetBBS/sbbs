@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.22
-                        Release date: 2022-02-12
+                              Version 1.23
+                        Release date: 2022-03-18
 
                                   by
 
@@ -440,6 +440,10 @@ at the file library/message group level.
 Name collapsing for message areas can be configured with the useSubCollapsing
 and subCollapseSeparator options in DDMsgAreaChooser.cfg, and for files, with
 the useDirCollapsing and dirCollapseSeparator options in DDFileAreaChooser.cfg.
+
+If all of the sub-boards in a message group or all directories in a file library
+have the same separator, then those will not be collapsed, since that would
+result in only a single 2nd-tier selection, which would not be useful.
 
 
 6. DDMsgAreaChooser class: Properties & methods

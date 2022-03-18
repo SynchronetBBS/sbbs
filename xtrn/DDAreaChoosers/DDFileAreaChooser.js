@@ -1,5 +1,3 @@
-// $Id: $
-
 /* This is a script that lets the user choose a file area,
  * with either a lightbar or traditional user interface.
  *
@@ -19,6 +17,9 @@
  *                            Fixed lightbar file directory choosing issue when
  *                            using name collapsing (was using the wrong data
  *                            structure)
+ * 2022-03-18 Eric Oulashin   Version 1.23
+ *                            For directory collapsing, if there's only one subdirectory,
+ *                            then it won't be collapsed.
  */
 
 /* Command-line arguments:
@@ -56,8 +57,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.22";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-02-12";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.23";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-03-18";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -2006,12 +2007,27 @@ function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
 			// dirDescs is an object indexed by directory description,
 			// and the value will be how many times it was seen.
 			var dirDescs = {};
+			// First, count the number of directories that have the separator.
+			// If all of the group's directories have the separator, then we
+			// won't collapse the directories.
+			var numDirsWithSeparator = 0;
 			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
 			{
 				var dirDesc = file_area.lib_list[libIdx].dir_list[dirIdx].description;
-				var sepIdx = dirDesc.indexOf(this.dirCollapseSeparator);
-				if (sepIdx > -1)
-					dirDesc = truncsp(dirDesc.substr(0, sepIdx));  // Remove trailing whitespace
+				if (dirDesc.indexOf(this.dirCollapseSeparator) > -1)
+					++numDirsWithSeparator;
+			}
+			// Whether or not to use sub-board collapsing for this file library
+			var collapseThisLib = (numDirsWithSeparator > 0 && numDirsWithSeparator < file_area.lib_list[libIdx].dir_list.length);
+			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
+			{
+				var dirDesc = file_area.lib_list[libIdx].dir_list[dirIdx].description;
+				if (collapseThisLib)
+				{
+					var sepIdx = dirDesc.indexOf(this.dirCollapseSeparator);
+					if (sepIdx > -1)
+						dirDesc = truncsp(dirDesc.substr(0, sepIdx));  // Remove trailing whitespace
+				}
 				if (dirDescs.hasOwnProperty(dirDesc))
 					dirDescs[dirDesc] += 1;
 				else

@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.23     2022-03-18   For message sub-board/file directory collapsing, if there
+                      is only one sub-group/sub-library, then it won't be
+                      collapsed, as that wouldn't be very useful.
 1.22     2022-01-12   In the file area chooser, fixed a lightbar file directory
                       choosing issue when using name collapsing (was using the
                       wrong data structure)
