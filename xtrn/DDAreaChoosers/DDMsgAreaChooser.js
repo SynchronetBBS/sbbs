@@ -1,5 +1,3 @@
-// $Id: $
-
 /* This is a script that lets the user choose a message area,
  * with either a lightbar or traditional user interface.
  *
@@ -22,6 +20,12 @@
  *                            this version.
  * 2022-02-12 Eric Oulashin   Version 1.22
  *                            Updated the version to match the file area chooser
+ * 2022-03-18 Eric Oulashin   Version 1.23
+ *                            For sub-board collapsing, if there's only one sub-group,
+ *                            then it won't be collapsed.
+ *                            Also fixed an issue: Using Q to quit out of the 2nd level
+ *                            (sub-board/sub-group) for lightbar mode no longer quits
+ *                            out of the chooser altogether.
  *                                  
 */
 
@@ -64,8 +68,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.22";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-02-12";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.23";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-03-18";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -793,23 +797,10 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 				}
 				else
 				{
-					// If using sub-board name collapsing or the sub-board changed (probably
-					// at level 3 because sub-board collapsing is enabled), then exit here.
-					if (this.useSubCollapsing || bbs.cursub_code != subCodeBackup)
-						continueOn = false;
-					else
-					{
-						// A message sub-board was not chosen, so we'll have to re-draw
-						// the header and key help line
-						this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
-						this.WriteKeyHelpLine();
-					}
-					// TODO?
-					/*
-					// A sub-board was not chosen, so we'll have to re-draw
-					// the header and list of message groups.
+					// A message sub-board was not chosen, so we'll have to re-draw
+					// the header and key help line
 					this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
-					*/
+					this.WriteKeyHelpLine();
 				}
 			}
 			else if (level == 2) // Choosing a sub-board
@@ -2403,12 +2394,28 @@ function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 			// dirDescs is an object indexed by sub-board description,
 			// and the value will be how many times it was seen.
 			var subBoardDescs = {};
+			// First, count the number of sub-boards that have the separator.
+			// If all of the group's sub-boards have the separator, then we
+			// won't collapse the sub-boards.
+			var numSubBoardsWithSeparator = 0;
 			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 			{
 				var subBoardDesc = msg_area.grp_list[grpIdx].sub_list[subIdx].description;
-				var sepIdx = subBoardDesc.indexOf(this.subCollapseSeparator);
-				if (sepIdx > -1)
-					subBoardDesc = truncsp(subBoardDesc.substr(0, sepIdx));  // Remove trailing whitespace
+				if (subBoardDesc.indexOf(this.subCollapseSeparator) > -1)
+					++numSubBoardsWithSeparator;
+			}
+			// Whether or not to use sub-board collapsing for this group
+			var collapseThisGroup = (numSubBoardsWithSeparator > 0 && numSubBoardsWithSeparator < msg_area.grp_list[grpIdx].sub_list.length);
+			// Go through and build  the group list
+			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
+			{
+				var subBoardDesc = msg_area.grp_list[grpIdx].sub_list[subIdx].description;
+				if (collapseThisGroup)
+				{
+					var sepIdx = subBoardDesc.indexOf(this.subCollapseSeparator);
+					if (sepIdx > -1)
+						subBoardDesc = truncsp(subBoardDesc.substr(0, sepIdx));  // Remove trailing whitespace
+				}
 				if (subBoardDescs.hasOwnProperty(subBoardDesc))
 					subBoardDescs[subBoardDesc] += 1;
 				else
