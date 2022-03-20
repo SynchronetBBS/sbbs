@@ -66,6 +66,7 @@ static const char*	strSemFileCheckFrequency	="SemFileCheckFrequency";
 static const char*	strIniFileName				="iniFileName";
 static const char*  strFileVPathPrefix			="FileVPathPrefix";
 static const char*  strFileVPathForVHosts		="FileVPathForVHosts";
+static const char*	strFileIndexScript			="FileIndexScript";
 
 #define DEFAULT_LOG_LEVEL				LOG_DEBUG
 #define DEFAULT_BIND_RETRY_COUNT		2
@@ -714,6 +715,8 @@ void sbbs_read_ini(
 			,iniGetString(list,section,"Authentication",WEB_DEFAULT_AUTH_LIST,value));
 		SAFECOPY(web->logfile_base
 			,iniGetString(list,section,"HttpLogFile",nulstr,value));
+		SAFECOPY(web->file_index_script
+			,iniGetString(list, section, strFileIndexScript, nulstr, value));
 		SAFECOPY(web->file_vpath_prefix
 			,iniGetString(list, section, strFileVPathPrefix, nulstr, value));
 		web->file_vpath_for_vhosts = iniGetBool(list, section, strFileVPathForVHosts, FALSE);
@@ -1270,6 +1273,8 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"Authentication",web->default_auth_list,&style))
 			break;
 		if(!iniSetString(lp,section,"HttpLogFile",web->logfile_base,&style))
+			break;
+		if(!iniSetString(lp,section,strFileIndexScript, web->file_index_script, &style))
 			break;
 		if(!iniSetString(lp,section,strFileVPathPrefix, web->file_vpath_prefix, &style))
 			break;

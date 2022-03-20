@@ -88,6 +88,9 @@ DLLEXPORT BOOL	logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
 DLLEXPORT void	resetdailyuserdat(scfg_t*, user_t*, BOOL write);
 DLLEXPORT void	subtract_cdt(scfg_t*, user_t*, long amt);
 DLLEXPORT int	user_rec_len(int offset);
+DLLEXPORT BOOL	can_user_access_all_libs(scfg_t*, user_t*, client_t*);
+DLLEXPORT BOOL	can_user_access_all_dirs(scfg_t*, uint libnum, user_t*, client_t*);
+DLLEXPORT BOOL	can_user_access_lib(scfg_t*, uint libnum, user_t*, client_t*);
 DLLEXPORT BOOL	can_user_access_dir(scfg_t*, uint dirnum, user_t*, client_t* client);
 DLLEXPORT BOOL	can_user_access_sub(scfg_t*, uint subnum, user_t*, client_t* client);
 DLLEXPORT BOOL	can_user_read_sub(scfg_t*, uint subnum, user_t*, client_t* client);
@@ -101,7 +104,15 @@ DLLEXPORT BOOL	is_download_free(scfg_t*, uint dirnum, user_t*, client_t* client)
 DLLEXPORT BOOL	is_host_exempt(scfg_t*, const char* ip_addr, const char* host_name);
 DLLEXPORT BOOL	filter_ip(scfg_t*, const char* prot, const char* reason, const char* host
 								  ,const char* ip_addr, const char* username, const char* fname);
-DLLEXPORT int	getdir_from_vpath(scfg_t*, const char* p, user_t*, client_t*, BOOL include_upload_only);
+enum parsed_vpath {
+	PARSED_VPATH_NONE,
+	PARSED_VPATH_ROOT,
+	PARSED_VPATH_LIB,
+	PARSED_VPATH_DIR,
+	PARSED_VPATH_FULL
+};
+DLLEXPORT enum parsed_vpath parse_vpath(scfg_t*, const char* vpath, user_t*, client_t*, BOOL include_upload_only
+											,int* libnum, int* dirnum, char** filename);
 
 /* user .ini file access */
 DLLEXPORT BOOL	user_get_property(scfg_t*, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen);

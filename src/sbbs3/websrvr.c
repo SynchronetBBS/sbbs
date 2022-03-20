@@ -254,7 +254,8 @@ typedef struct  {
 	char			host_name[128];	/* Resolved remote host */
 	int				http_ver;       /* Request HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
-	BOOL			filebase_access;
+	enum parsed_vpath parsed_vpath; /* file area/base access */
+	int				libnum;
 	file_t			file;
 	user_t			user;
 	int				last_user_num;
@@ -1894,13 +1895,23 @@ static BOOL check_ars(http_session_t * session)
 		}
 		if(!http_checkuser(session))
 			return(FALSE);
-		if((session->filebase_access
-			&& !can_user_download(&scfg, session->file.dir, &session->user, &session->client, NULL))
-			|| session->req.ars[0]) {
+		if(session->req.ars[0]) {
 			/* There *IS* an ARS string  ie: Auth is required */
 			if(startup->options&WEB_OPT_DEBUG_RX)
 				lprintf(LOG_NOTICE,"%04d !No authentication information",session->socket);
 			return(FALSE);
+		}
+		if(session->user.number == 0) {
+			switch(session->parsed_vpath) {
+				case PARSED_VPATH_FULL:
+					return can_user_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
+				case PARSED_VPATH_ROOT:
+					return can_user_access_all_libs(&scfg, &session->user, &session->client);
+				case PARSED_VPATH_LIB:
+					return can_user_access_all_dirs(&scfg, session->libnum, &session->user, &session->client);
+				case PARSED_VPATH_DIR:
+					return can_user_access_dir(&scfg, session->file.dir, &session->user, &session->client);
+			}
 		}
 		/* No auth required, allow */
 		return(TRUE);
@@ -1991,7 +2002,7 @@ static BOOL check_ars(http_session_t * session)
 		session->req.ld->user=strdup(session->req.auth.username);
 	}
 
-	if(session->filebase_access) {
+	if(session->parsed_vpath == PARSED_VPATH_FULL) {
 		if(is_download_free(&scfg, session->file.dir, &session->user, &session->client)
 			|| session->user.cdt >= session->file.cost)
 			authorized = can_user_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
@@ -2343,21 +2354,26 @@ static void js_add_request_property(http_session_t * session, char *key, char *v
 
 	if(session->js_cx==NULL || session->js_request==NULL)
 		return;
-	if(key==NULL || value==NULL)
+	if(key==NULL)
 		return;
-	if(len)
-		js_str=JS_NewStringCopyN(session->js_cx, value, len);
-	else
-		js_str=JS_NewStringCopyZ(session->js_cx, value);
+	if(value == NULL) {
+		// Remove property
+		JS_DeleteProperty(session->js_cx, session->js_request, key);
+	} else {
+		if(len)
+			js_str=JS_NewStringCopyN(session->js_cx, value, len);
+		else
+			js_str=JS_NewStringCopyZ(session->js_cx, value);
 	
-	if(js_str == NULL)
-		return;
+		if(js_str == NULL)
+			return;
 
-	uintN attrs = JSPROP_ENUMERATE;
-	if(!writeable)
-		attrs |= JSPROP_READONLY;
-	JS_DefineProperty(session->js_cx, session->js_request, key, STRING_TO_JSVAL(js_str)
-		,NULL,NULL,attrs);
+		uintN attrs = JSPROP_ENUMERATE;
+		if(!writeable)
+			attrs |= JSPROP_READONLY;
+		JS_DefineProperty(session->js_cx, session->js_request, key, STRING_TO_JSVAL(js_str)
+			,NULL,NULL,attrs);
+	}
 }
 
 static void js_add_request_prop_writeable(http_session_t * session, char *key, char *value)
@@ -2887,7 +2903,7 @@ static int is_dynamic_req(http_session_t* session)
 	char	fname[MAX_PATH+1];
 	char	ext[MAX_PATH+1];
 
-	if(session->filebase_access)
+	if(session->parsed_vpath == PARSED_VPATH_FULL)
 		return IS_STATIC;
 
 	check_extra_path(session);
@@ -3126,7 +3142,29 @@ static BOOL get_request_headers(http_session_t * session)
 	return TRUE;
 }
 
-static BOOL get_fullpath(http_session_t * session)
+static enum parsed_vpath resolve_vpath(http_session_t* session, char* vpath)
+{
+	char* filename = NULL;
+	enum parsed_vpath result = parse_vpath(&scfg, vpath + strlen(startup->file_vpath_prefix), &session->user, &session->client
+		,/* include_upload_only: */false, &session->libnum, &session->file.dir, &filename);
+	if(result != PARSED_VPATH_FULL)
+		return result;
+	char path[MAX_PATH + 1];
+	safe_snprintf(path, sizeof(path), "%s%s", scfg.dir[session->file.dir]->path, filename);
+	if(!fexistcase(path))
+		return PARSED_VPATH_NONE;
+	if(!loadfile(&scfg, session->file.dir, filename, &session->file, file_detail_index))
+		return PARSED_VPATH_NONE;
+	strlcpy(vpath, path, MAX_PATH);
+	return PARSED_VPATH_FULL;
+}
+
+enum get_fullpath {
+	FULLPATH_INVALID,
+	FULLPATH_VALID,
+	FULLPATH_NOEXIST
+};
+static enum get_fullpath get_fullpath(http_session_t * session)
 {
 	char	str[MAX_PATH+1];
 	bool	vhost = false;
@@ -3156,14 +3194,25 @@ static BOOL get_fullpath(http_session_t * session)
 
 	if(startup->file_vpath_prefix[0] && (vhost == false || startup->file_vpath_for_vhosts == true)
 		&& strncmp(session->req.physical_path, startup->file_vpath_prefix, strlen(startup->file_vpath_prefix)) == 0) {
-		session->filebase_access = TRUE;
-		return TRUE;
+		session->parsed_vpath = resolve_vpath(session, session->req.physical_path);
+		switch(session->parsed_vpath) {
+			case PARSED_VPATH_NONE:
+				return FULLPATH_NOEXIST;
+			case PARSED_VPATH_FULL:
+				return FULLPATH_VALID;
+			default:
+				if(getfname(startup->file_index_script) == startup->file_index_script)	// no path specified
+					SAFEPRINTF2(str, "%s%s", scfg.exec_dir, startup->file_index_script);
+				else
+					SAFECOPY(str, startup->file_index_script);
+				break;
+		}
 	}
 
 	if(FULLPATH(session->req.physical_path,str,sizeof(session->req.physical_path))==NULL)
-		return(FALSE);
+		return FULLPATH_INVALID;
 
-	return(isabspath(session->req.physical_path));
+	return(isabspath(session->req.physical_path) ? FULLPATH_VALID : FULLPATH_INVALID);
 }
 
 static BOOL is_legal_host(const char *host, BOOL strip_port)
@@ -3250,8 +3299,9 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				send_error(session,__LINE__,"400 Bad Request");
 				return FALSE;
 			}
-			if(!get_fullpath(session)) {
-				send_error(session,__LINE__,error_500);
+			enum get_fullpath fullpath_valid = get_fullpath(session);
+			if(fullpath_valid != FULLPATH_VALID) {
+				send_error(session,__LINE__, fullpath_valid == FULLPATH_NOEXIST ? error_404 : error_500);
 				return(FALSE);
 			}
 			if(session->req.ld!=NULL && session->req.ld->vhost==NULL)
@@ -3532,20 +3582,6 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 	iniFreeNamedStringList(values);
 }
 
-static bool resolve_filebase_path(http_session_t* session, char* path)
-{
-	uint dir = getdir_from_vpath(&scfg, path + strlen(startup->file_vpath_prefix), &session->user, &session->client, false);
-	if(dir >= scfg.total_dirs)
-		return false;
-	char filename[MAX_PATH + 1];
-	SAFECOPY(filename, getfname(path));
-	session->file.dir = dir;
-	safe_snprintf(path, MAX_PATH, "%s%s", scfg.dir[dir]->path, filename);
-	if(!fexistcase(path))
-		return false;
-	return loadfile(&scfg, dir, filename, &session->file, file_detail_index);
-}
-
 static BOOL check_request(http_session_t * session)
 {
 	char	path[MAX_PATH+1];
@@ -3574,14 +3610,6 @@ static BOOL check_request(http_session_t * session)
 	SAFECOPY(path,session->req.physical_path);
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG,"%04d Path is: %s",session->socket,path);
-
-	if(session->filebase_access) {
-		if(!resolve_filebase_path(session, path)) {
-			send_error(session,__LINE__,error_404);
-			return FALSE;
-		}
-	}
-
 	if(isdir(path)) {
 		last_ch=*lastchar(path);
 		if(!IS_PATH_DELIM(last_ch))  {
@@ -3632,7 +3660,7 @@ static BOOL check_request(http_session_t * session)
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
 
-	if(!session->filebase_access) {
+	if(session->parsed_vpath == PARSED_VPATH_NONE) {
 
 		if(strnicmp(path,root_dir,strlen(root_dir))) {
 			session->req.keep_alive=FALSE;
@@ -5987,6 +6015,8 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
 	js_add_request_prop(session,"remote_ip",session->host_ip);
 	js_add_request_prop(session,"remote_host",session->host_name);
+	js_add_request_prop(session, "lib", session->libnum >= 0 ? scfg.lib[session->libnum]->sname : NULL);
+	js_add_request_prop(session, "dir", session->file.dir >= 0 ? scfg.dir[session->file.dir]->code : NULL);
 	if(session->req.query_str[0])  {
 		js_add_request_prop(session,"query_string",session->req.query_str);
 		js_parse_query(session,session->req.query_str);
@@ -6097,7 +6127,7 @@ static void respond(http_session_t * session)
 				e = 1;
 			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
 				,session->socket, session->req.physical_path, snt, (long)(snt / e));
-			if(session->filebase_access)
+			if(session->parsed_vpath == PARSED_VPATH_FULL)
 				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
 		}
 	}
