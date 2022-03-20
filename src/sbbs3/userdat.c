@@ -3022,6 +3022,52 @@ BOOL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* client, uin
 }
 
 /****************************************************************************/
+// Determine if the specified user can access one or more directories of lib
+/****************************************************************************/
+BOOL can_user_access_lib(scfg_t* cfg, uint libnum, user_t* user, client_t* client)
+{
+	uint count = 0;
+
+	for(uint dirnum = 0; dirnum < cfg->total_dirs; dirnum++) {
+		if(cfg->dir[dirnum]->lib != libnum)
+			continue;
+		if(can_user_access_dir(cfg, dirnum, user, client)) // checks lib's AR already
+			count++;
+	}
+	return count >= 1; // User has access to one or more directories of library
+}
+
+/****************************************************************************/
+// Determine if the specified user can access ALL file libraries
+/****************************************************************************/
+BOOL can_user_access_all_libs(scfg_t* cfg, user_t* user, client_t* client)
+{
+	for(uint libnum = 0; libnum < cfg->total_libs; libnum++) {
+		if(!can_user_access_lib(cfg, libnum, user, client))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+/****************************************************************************/
+// Determine if the specified user can all dirs of a lib
+/****************************************************************************/
+BOOL can_user_access_all_dirs(scfg_t* cfg, uint libnum, user_t* user, client_t* client)
+{
+	uint count = 0;
+
+	for(uint dirnum = 0; dirnum < cfg->total_dirs; dirnum++) {
+		if(cfg->dir[dirnum]->lib != libnum)
+			continue;
+		if(can_user_access_dir(cfg, dirnum, user, client)) // checks lib's AR already
+			count++;
+		else
+			return FALSE;
+	}
+	return count >= 1; // User has access to one or more directories of library
+}
+
+/****************************************************************************/
 /* Determine if the specified user can or cannot access the specified dir	*/
 /****************************************************************************/
 BOOL can_user_access_dir(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
@@ -3846,15 +3892,18 @@ int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 	return 0;
 }
 
-/* Returns the directory index of a virtual lib/dir path (e.g. main/games/filename) */
-int getdir_from_vpath(scfg_t* cfg, const char* p, user_t* user, client_t* client, BOOL include_upload_only)
+/* Parse a virtual filebase path of the form "[/]lib[/dir][/filename]" (e.g. main/games/filename.ext) */
+enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, user_t* user, client_t* client, BOOL include_upload_only
+	,int* lib, int* dir, char** filename)
 {
+	char*	p;
 	char*	tp;
 	char	path[MAX_PATH+1];
-	uint	dir;
-	uint	lib;
 
-	SAFECOPY(path,p);
+	*lib = -1;
+	*dir = -1;
+
+	SAFECOPY(path, vpath);
 	p=path;
 
 	if(*p=='/') 
@@ -3862,33 +3911,40 @@ int getdir_from_vpath(scfg_t* cfg, const char* p, user_t* user, client_t* client
 	if(!strncmp(p,"./",2))
 		p+=2;
 
-	tp=strchr(p,'/');
-	if(tp) *tp=0;
-	for(lib=0;lib<cfg->total_libs;lib++) {
-		if(!chk_ar(cfg,cfg->lib[lib]->ar,user,client))
-			continue;
-		if(!stricmp(cfg->lib[lib]->vdir,p))
-			break;
-	}
-	if(lib>=cfg->total_libs) 
-		return(-1);
-
-	if(tp!=NULL)
-		p=tp+1;
+	if(*p == '\0')
+		return PARSED_VPATH_ROOT;
 
 	tp=strchr(p,'/');
 	if(tp) *tp=0;
-	for(dir=0;dir<cfg->total_dirs;dir++) {
-		if(cfg->dir[dir]->lib!=lib)
+	for(*lib = 0; *lib < cfg->total_libs; (*lib)++) {
+		if(!chk_ar(cfg,cfg->lib[*lib]->ar,user,client))
 			continue;
-		if((!include_upload_only || (dir!=cfg->sysop_dir && dir!=cfg->upload_dir))
-			&& !chk_ar(cfg,cfg->dir[dir]->ar,user,client))
-			continue;
-		if(!stricmp(cfg->dir[dir]->vdir,p))
+		if(!stricmp(cfg->lib[*lib]->vdir,p))
 			break;
 	}
-	if(dir>=cfg->total_dirs) 
-		return(-1);
+	if(*lib >= cfg->total_libs)
+		return PARSED_VPATH_NONE;
+	if(tp == NULL || *(tp + 1) == '\0') 
+		return PARSED_VPATH_LIB;
 
-	return(dir);
+	p=tp+1;
+	tp=strchr(p,'/');
+	if(tp) {
+		*tp=0;
+		if(*(tp + 1) != '\0')
+			*filename = getfname(vpath);
+	}
+	for(*dir = 0; *dir < cfg->total_dirs; (*dir)++) {
+		if(cfg->dir[*dir]->lib != *lib)
+			continue;
+		if((!include_upload_only || (*dir != cfg->sysop_dir && *dir != cfg->upload_dir))
+			&& !chk_ar(cfg,cfg->dir[*dir]->ar,user,client))
+			continue;
+		if(!stricmp(cfg->dir[*dir]->vdir,p))
+			break;
+	}
+	if(*dir >= cfg->total_dirs) 
+		return PARSED_VPATH_NONE;
+
+	return *filename == NULL ? PARSED_VPATH_DIR : PARSED_VPATH_FULL;
 }

@@ -1411,6 +1411,19 @@ static BOOL can_list(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
 	return FALSE;
 }
 
+static int getdir_from_vpath(scfg_t* cfg, const char* vpath, user_t* user, client_t* client, BOOL include_upload_only)
+{
+	int dir = -1;
+	int lib = -1;
+	char* filename = NULL;
+
+	enum parsed_vpath result = parse_vpath(cfg, vpath, user, client, include_upload_only, &lib, &dir, &filename);
+
+	if(result == PARSED_VPATH_DIR || result == PARSED_VPATH_FULL)
+		return dir;
+	return -1;
+}
+
 static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* client, int* curdir)
 {
 	char*	p;

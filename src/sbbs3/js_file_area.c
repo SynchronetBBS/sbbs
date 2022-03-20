@@ -34,10 +34,10 @@ static char* file_area_prop_desc[] = {
 static char* lib_prop_desc[] = {
 	 "index into lib_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
 	,"unique number for this library"
-	,"library name"
-	,"library description"
-	,"library access requirements"
-	,"library virtual path (for FTP or HTTP access)"
+	,"name"
+	,"description"
+	,"access requirements"
+	,"virtual directory name (for FTP or HTTP access)"
 	,"user has sufficient access to this library's directories <i>(introduced in v3.18)</i>"
 	,"internal code prefix (for directories) <i>(introduced in v3.18c)</i>"
 	,NULL
@@ -70,6 +70,7 @@ static char* dir_prop_desc[] = {
 	,"configured maximum age (in days) of files before expiration"
 	,"percent of file size awarded uploader in credits upon file upload"
 	,"percent of file size awarded uploader in credits upon subsequent downloads"
+	,"virtual directory name (for FTP or HTTP access)"
 	,"virtual path (for FTP or HTTP access)"
 	,"number of files currently in this directory <i>(introduced in v3.18c)</i>"
 	,"timestamp of file base index of this directory <i>(introduced in v3.19)</i>"
@@ -285,7 +286,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 			val=OBJECT_TO_JSVAL(libobj);
 			lib_index=-1;
-			if(p->user==NULL || chk_ar(p->cfg,p->cfg->lib[l]->ar,p->user,p->client)) {
+			if(p->user==NULL || can_user_access_lib(p->cfg, l, p->user, p->client)) {
 
 				if(!JS_GetArrayLength(cx, lib_list, (jsuint*)&lib_index))
 					return JS_FALSE;
@@ -325,11 +326,10 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			if(!JS_SetProperty(cx, libobj, "ars", &val))
 				return JS_FALSE;
 
-			sprintf(vpath,"/%s/",p->cfg->lib[l]->vdir);
-			if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->lib[l]->vdir))==NULL)
 				return JS_FALSE;
 			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(cx, libobj, "link", &val))
+			if(!JS_SetProperty(cx, libobj, "vdir", &val))
 				return JS_FALSE;
 
 			val = BOOLEAN_TO_JSVAL(lib_index >= 0);
@@ -531,53 +531,21 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if(!JS_SetProperty(cx, dirobj, "download_credit_pct", &val))
 					return JS_FALSE;
 
-				sprintf(vpath,"/%s/%s/"
+				if((js_str=JS_NewStringCopyZ(cx, p->cfg->dir[d]->vdir))==NULL)
+					return JS_FALSE;
+				val=STRING_TO_JSVAL(js_str);
+				if(!JS_SetProperty(cx, dirobj, "vdir", &val))
+					return JS_FALSE;
+
+				SAFEPRINTF2(vpath,"%s/%s/"
 					,p->cfg->lib[l]->vdir
 					,p->cfg->dir[d]->vdir
 					);
 				if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
 					return JS_FALSE;
 				val=STRING_TO_JSVAL(js_str);
-				if(!JS_SetProperty(cx, dirobj, "link", &val))
+				if(!JS_SetProperty(cx, dirobj, "vpath", &val))
 					return JS_FALSE;
-#if 0
-				if(p->user == NULL || is_user_dirop(p->cfg, d, p->user, p->client))
-					is_op=TRUE;
-				else
-					is_op=FALSE;
-
-				val = BOOLEAN_TO_JSVAL(dir_index >= 0 && lib_index >= 0);
-				if(!JS_SetProperty(cx, dirobj, "can_access", &val))
-					return JS_FALSE;
-
-				if(p->user == NULL || can_user_upload(p->cfg, d, p->user, p->client, /* reason: */NULL))
-					val=JSVAL_TRUE;
-				else
-					val=JSVAL_FALSE;
-				if(!JS_SetProperty(cx, dirobj, "can_upload", &val))
-					return JS_FALSE;
-
-				if(p->user == NULL || can_user_download(p->cfg, d, p->user, p->client, /* reason: */NULL))
-					val=JSVAL_TRUE;
-				else
-					val=JSVAL_FALSE;
-				if(!JS_SetProperty(cx, dirobj, "can_download", &val))
-					return JS_FALSE;
-
-				if(is_download_free(p->cfg,d,p->user,p->client))
-					val=JSVAL_TRUE;
-				else
-					val=JSVAL_FALSE;
-				if(!JS_SetProperty(cx, dirobj, "is_exempt", &val))
-					return JS_FALSE;
-
-				if(is_op)
-					val=JSVAL_TRUE;
-				else
-					val=JSVAL_FALSE;
-				if(!JS_SetProperty(cx, dirobj, "is_operator", &val))
-					return JS_FALSE;
-#endif
 				if(!JS_DefineProperties(cx, dirobj, js_dir_properties))
 					return JS_FALSE;
 
