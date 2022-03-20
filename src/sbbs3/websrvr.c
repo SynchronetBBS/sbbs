@@ -1911,6 +1911,8 @@ static BOOL check_ars(http_session_t * session)
 					return can_user_access_all_dirs(&scfg, session->libnum, &session->user, &session->client);
 				case PARSED_VPATH_DIR:
 					return can_user_access_dir(&scfg, session->file.dir, &session->user, &session->client);
+				default:
+					return TRUE;
 			}
 		}
 		/* No auth required, allow */
