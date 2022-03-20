@@ -370,7 +370,7 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 #ifndef JSDOOR
 	switch(tiny) {
 		case SYS_PROP_MISC:
-			JS_ValueToECMAUint32(cx, *vp, &sys->cfg->sys_misc);
+			JS_ValueToECMAUint32(cx, *vp, (uint32_t*)&sys->cfg->sys_misc);
 			break;
 		case SYS_PROP_OP_AVAIL:
 			if(!set_sysop_availability(sys->cfg, JSVAL_TO_BOOLEAN(*vp))) {
@@ -1168,7 +1168,7 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 			JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((double)dstrtounix(sys->cfg, p)));
 			return(JS_TRUE);
 		}
-		JS_ValueToECMAUint32(cx,argv[0],&t);
+		JS_ValueToECMAUint32(cx,argv[0],(uint32_t*)&t);
 	}
 	unixtodstr(sys->cfg,t,str);
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
