@@ -331,6 +331,9 @@ ifeq ($(os),darwin)
  CFLAGS +=  -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
  LDFLAGS += -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
 endif
+ifeq ($(os),linux)    # Linux
+ CFLAGS += -DNEEDS_STRLCPY
+endif
 
 # PThread-specific flags
 ifeq ($(os),linux)    # Linux
