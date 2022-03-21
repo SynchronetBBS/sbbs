@@ -393,7 +393,7 @@ typedef struct {	/* Index record */
 		};
 		struct {			/* when msg.type == FILE */
 			uint32_t	size;
-			uint16_t	unused;	/* possibly store additional 16-bits of file size here */
+			uint16_t	size_ext; /* store additional 16-bits of file size here */
 		};
 	};
 	smb_msg_attr_t	attr;		/* attributes (read, permanent, etc.) */

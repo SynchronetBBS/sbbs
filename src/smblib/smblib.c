@@ -1730,7 +1730,7 @@ int smb_init_idx(smb_t* smb, smbmsg_t* msg)
 		if(msg->name != NULL)
 			smb_fileidxname(msg->name, msg->file_idx.name, sizeof(msg->file_idx.name));
 		if(msg->size > 0)
-			msg->idx.size = (uint32_t)msg->size;
+			smb_setfilesize(&msg->idx, msg->size);
 	} else {
 		msg->idx.subj = smb_subject_crc(msg->subj);
 		if(smb->status.attr & SMB_EMAIL) {
