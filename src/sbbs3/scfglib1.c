@@ -822,8 +822,28 @@ int getgrpnum(scfg_t* cfg, const char* code)
 	int i = getdirnum(cfg, code);
 
 	if(i >= 0)
-			return cfg->sub[i]->grp;
+		return cfg->sub[i]->grp;
 	return i;
+}
+
+BOOL is_valid_dirnum(scfg_t* cfg, int dirnum)
+{
+	return (dirnum >= 0) && (cfg != NULL) && (dirnum < cfg->total_dirs);
+}
+
+BOOL is_valid_libnum(scfg_t* cfg, int libnum)
+{
+	return (libnum >= 0) && (cfg != NULL) && (libnum < cfg->total_libs);
+}
+
+BOOL is_valid_subnum(scfg_t* cfg, int subnum)
+{
+	return (subnum >= 0) && (cfg != NULL) && (subnum < cfg->total_subs);
+}
+
+BOOL is_valid_grpnum(scfg_t* cfg, int grpnum)
+{
+	return (grpnum >= 0) && (cfg != NULL) && (grpnum < cfg->total_grps);
 }
 
 faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
