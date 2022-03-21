@@ -344,7 +344,7 @@ bool sbbs_t::editfileinfo(file_t* f)
 			return false;
 		if(*uploader != '\0' || *f->from != '\0')
 			smb_new_hfield_str(f, SMB_FILEUPLOADER, uploader);
-		SAFEPRINTF(str, "%"PRIu64, f->cost);
+		SAFEPRINTF(str, "%" PRIu64, f->cost);
 		bputs(text[EditCreditValue]);
 		getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL);
 		if(msgabort(true))
