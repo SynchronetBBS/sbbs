@@ -740,7 +740,7 @@ ulong smb_getmsgtxtlen(smbmsg_t* msg)
 	return(length);
 }
 
-static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfield_dat)
+static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, size_t len, void* hfield_dat)
 {
 	switch(hfield_type) {	/* convenience variables */
 		case SENDER:
@@ -840,7 +840,10 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 			msg->expiration=*(uint32_t*)hfield_dat;
 			break;
 		case SMB_COST:
-			msg->cost=*(uint32_t*)hfield_dat;
+			if(len == sizeof(uint32_t))
+				msg->cost=*(uint32_t*)hfield_dat;
+			else if(len == sizeof(uint64_t))
+				msg->cost=*(uint64_t*)hfield_dat;
 			break;
 		case RFC822MSGID:
 			msg->id=(char*)hfield_dat;
@@ -1079,7 +1082,7 @@ int smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 				,"%s reading header field data", __FUNCTION__);
 			return(SMB_ERR_READ); 
 		}
-		set_convenience_ptr(msg,msg->hfield[i].type,msg->hfield_dat[i]);
+		set_convenience_ptr(msg,msg->hfield[i].type,msg->hfield[i].length,msg->hfield_dat[i]);
 
 		l+=msg->hfield[i].length; 
 	}
@@ -1199,7 +1202,7 @@ int smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 			}
 			memset(msg->hfield_dat[i],0,msg->hfield[i].length+1);
 			memcpy(msg->hfield_dat[i],srcmsg->hfield_dat[i],msg->hfield[i].length);
-			set_convenience_ptr(msg, msg->hfield[i].type, msg->hfield_dat[i]);
+			set_convenience_ptr(msg, msg->hfield[i].type, msg->hfield[i].length, msg->hfield_dat[i]);
 		}
 	}
 
@@ -1254,7 +1257,7 @@ int smb_hfield_add(smbmsg_t* msg, uint16_t type, size_t length, void* data, BOOL
 		return(SMB_ERR_MEM);	/* Allocate 1 extra for ASCIIZ terminator */
 	memset(msg->hfield_dat[i],0,length+1);
 	memcpy(msg->hfield_dat[i],data,length); 
-	set_convenience_ptr(msg,type,msg->hfield_dat[i]);
+	set_convenience_ptr(msg,type,length,msg->hfield_dat[i]);
 
 	return(SMB_SUCCESS);
 }
@@ -1373,7 +1376,7 @@ int smb_hfield_append(smbmsg_t* msg, uint16_t type, size_t length, void* data)
 	memset(p,0,length+1);
 	memcpy(p,data,length);		/* append */
 	msg->hfield[i].length+=(uint16_t)length;
-	set_convenience_ptr(msg,type,msg->hfield_dat[i]);
+	set_convenience_ptr(msg,type,length,msg->hfield_dat[i]);
 
 	return(SMB_SUCCESS);
 }
@@ -1411,7 +1414,7 @@ int smb_hfield_replace(smbmsg_t* msg, uint16_t type, size_t length, void* data)
 	memset(p,0,length+1);
 	memcpy(p,data,length);
 	msg->hfield[i].length=(uint16_t)length;
-	set_convenience_ptr(msg,type,msg->hfield_dat[i]);
+	set_convenience_ptr(msg,type,length,msg->hfield_dat[i]);
 
 	return SMB_SUCCESS;
 }

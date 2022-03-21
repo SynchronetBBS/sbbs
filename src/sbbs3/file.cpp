@@ -43,7 +43,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 			, byte_estimate_to_str(f->size, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
 
 	bprintf(P_TRUNCATE, text[FiCredits]
-		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : ultoac((ulong)f->cost,tmp));
+		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : i64toac(f->cost,tmp));
 	if(getfilesize(&cfg, f) > 0 &&  f->size == smb_getfilesize(&f->idx)) {
 #if 0 // I don't think anyone cares about the CRC-16 checksum value of a file
 		if(f->file_idx.hash.flags & SMB_HASH_CRC16) {
@@ -344,7 +344,7 @@ bool sbbs_t::editfileinfo(file_t* f)
 			return false;
 		if(*uploader != '\0' || *f->from != '\0')
 			smb_new_hfield_str(f, SMB_FILEUPLOADER, uploader);
-		ultoa(f->cost,str,10);
+		SAFEPRINTF(str, "%"PRIu64, f->cost);
 		bputs(text[EditCreditValue]);
 		getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL);
 		if(msgabort(true))

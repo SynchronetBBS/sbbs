@@ -109,7 +109,8 @@ int main(int argc, char **argv)
 	int 	i,j,dirnum,libnum,desc_off,lines,nots=0;
 	char*	omode="w";
 	char*	pattern=NULL;
-	ulong	m,cdt,misc=0,total_cdt=0,total_files=0,dir_files;
+	ulong	m,misc=0,total_cdt=0,total_files=0,dir_files;
+	uint64_t cdt;
 	long	max_age=0;
 	FILE*	out=NULL;
 

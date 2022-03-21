@@ -733,7 +733,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->cost;
+				val=(uint32_t)sbbs->current_file->cost; // TODO (cost is now 64-bit)
 			break;
 		case BBS_PROP_FILE_DIR:
 			if(sbbs->current_file==NULL)

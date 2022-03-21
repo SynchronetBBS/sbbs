@@ -2056,7 +2056,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			return str;
 		}
 		if(strcmp(sp, "FILE_CREDITS") == 0) {
-			safe_snprintf(str, maxlen, "%lu", (ulong)current_file->cost);
+			safe_snprintf(str, maxlen, "%" PRIu64, current_file->cost);
 			return str;
 		}
 		if(strcmp(sp, "FILE_TIME") == 0)

@@ -124,8 +124,8 @@ void sbbs_t::batchmenu()
 						getfiletime(&cfg, &f);
 						bprintf(text[DownloadQueueLstFmt],i+1
 							,filename
-							,ultoac(f.cost, tmp)
-							,ultoac((ulong)f.size, str)
+							,i64toac(f.cost, tmp)
+							,i64toac(f.size, str)
 							,cur_cps
 								? sectostr((uint)(f.size/(ulong)cur_cps),tmp2)
 								: "??:??:??"
@@ -701,9 +701,9 @@ bool sbbs_t::addtobatdl(file_t* f)
 			} else {
 				if(batch_file_add(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f)) {
 					bprintf(text[FileAddedToBatDlQueue]
-						,f->name, strListCount(filenames) + 1, cfg.max_batdn, ultoac((ulong)totalcost,tmp)
-						,ultoac((ulong)totalsize,tmp2)
-						,sectostr((ulong)totalsize/MAX((ulong)cur_cps, 1),str));
+						,f->name, strListCount(filenames) + 1, cfg.max_batdn, i64toac(totalcost,tmp)
+						,i64toac(totalsize,tmp2)
+						,sectostr((ulong)(totalsize/MAX((ulong)cur_cps, 1)),str));
 					result = true;
 				}
 			}

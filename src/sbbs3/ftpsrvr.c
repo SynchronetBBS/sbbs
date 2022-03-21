@@ -560,7 +560,7 @@ static void send_thread(void* arg)
 	int			rd;
 	int			wr;
 	long		mod;
-	ulong		l;
+	uint64_t	l;
 	off_t		total=0;
 	off_t		last_total=0;
 	ulong		dur;
