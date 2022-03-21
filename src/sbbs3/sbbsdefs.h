@@ -296,6 +296,8 @@ enum file_sort {                    /* Values for dir[x].sort */
 	,FILE_SORT_NAME_DC  = 5         /* Sort by filename, descending (case-sensitive) */
     ,FILE_SORT_DATE_A   = 2         /* Sort by upload date, ascending */
     ,FILE_SORT_DATE_D   = 3         /* Sort by upload date, descending */
+	,FILE_SORT_SIZE_A	= 6			/* Sort by file size, ascending */
+	,FILE_SORT_SIZE_D	= 7			/* Sort by file size, descending */
 	,FILE_SORT_NATURAL  = FILE_SORT_DATE_A
 };
 
