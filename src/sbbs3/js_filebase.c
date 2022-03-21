@@ -254,7 +254,7 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 	if(is_valid_dirnum(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
 		val = DOUBLE_TO_JSVAL((double)getfilesize(scfg, f));
 	else
-		val = UINT_TO_JSVAL(f->idx.size);
+		val = DOUBLE_TO_JSVAL((double)smb_getfilesize(&f->idx));
 	if(!JS_DefineProperty(cx, obj, "size", val, NULL, NULL, flags))
 		return false;
 
@@ -328,11 +328,7 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 		SAFECOPY(idx->name, cp);
 	}
 	if(JS_GetProperty(cx, obj, prop_name = "size", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToECMAUint32(cx, val, &idx->idx.size)) {
-			free(cp);
-			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
-			return FALSE;
-		}
+		smb_setfilesize(&idx->idx, (uint64_t)JSVAL_TO_DOUBLE(val));
 	}
 	if(JS_GetProperty(cx, obj, prop_name = "crc16", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		idx->hash.data.crc16 = JSVAL_TO_INT(val);
@@ -675,7 +671,7 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(size == -1)
 		JS_ReportError(cx, "File does not exist: %s", path);
 	else {
-		file.idx.size = (uint32_t)size;
+		smb_setfilesize(&file.idx, size);
 		if((p->smb_result = smb_hashfile(path, size, &file.file_idx.hash.data)) > 0) {
 			file.file_idx.hash.flags = p->smb_result;
 			file.hdr.when_written.time = (uint32_t)fdate(path);

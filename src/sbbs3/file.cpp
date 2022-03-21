@@ -44,7 +44,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 
 	bprintf(P_TRUNCATE, text[FiCredits]
 		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : ultoac((ulong)f->cost,tmp));
-	if(getfilesize(&cfg, f) > 0 &&  f->size == f->file_idx.idx.size) {
+	if(getfilesize(&cfg, f) > 0 &&  f->size == smb_getfilesize(&f->idx)) {
 #if 0 // I don't think anyone cares about the CRC-16 checksum value of a file
 		if(f->file_idx.hash.flags & SMB_HASH_CRC16) {
 			SAFEPRINTF(tmp, "%04x", f->file_idx.hash.data.crc16);

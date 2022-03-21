@@ -310,7 +310,12 @@ static int file_compare_size_a(const void* v1, const void* v2)
 	file_t* f1 = (file_t*)v1;
 	file_t* f2 = (file_t*)v2;
 
-	return f1->idx.size - f2->idx.size;
+	int64_t diff = smb_getfilesize(&f1->idx) - smb_getfilesize(&f2->idx);
+	if(diff < 0)
+		return -1;
+	if(diff > 0)
+		return 1;
+	return 0;
 }
 
 static int file_compare_size_d(const void* v1, const void* v2)
@@ -318,7 +323,12 @@ static int file_compare_size_d(const void* v1, const void* v2)
 	file_t* f1 = (file_t*)v1;
 	file_t* f2 = (file_t*)v2;
 
-	return f2->idx.size - f1->idx.size;
+	int64_t diff = smb_getfilesize(&f2->idx) - smb_getfilesize(&f1->idx);
+	if(diff < 0)
+		return -1;
+	if(diff > 0)
+		return 1;
+	return 0;
 }
 
 void sortfiles(file_t* filelist, size_t count, enum file_sort order)

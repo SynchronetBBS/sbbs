@@ -581,7 +581,7 @@ void dumpindex(ulong start, ulong count)
 		printf("%10"PRIu32"  ", idx.number);
 		switch(smb_msg_type(idx.attr)) {
 			case SMB_MSG_TYPE_FILE:
-				printf("F %10lu  ", (ulong)idx.size);
+				printf("F %10"PRIu64"  ", smb_getfilesize(&idx));
 				break;
 			case SMB_MSG_TYPE_BALLOT:
 				printf("V  %04hX  %-10"PRIu32, idx.votes,idx.remsg);

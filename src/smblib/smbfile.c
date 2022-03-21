@@ -221,6 +221,7 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 	smbfile_t file_ = {0};
 	if(f == NULL)
 		f = &file_;
+	uint64_t fsize;
 	char fname[SMB_FILEIDX_NAMELEN + 1] = "";
 	if(filename != NULL)
 		smb_fileidxname(filename, fname, sizeof(fname));
@@ -249,8 +250,9 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 		if(file == NULL)
 			continue;
 
-		if((f->file_idx.hash.flags & SMB_HASH_MASK) != 0 || f->file_idx.idx.size > 0) {
-			if(f->file_idx.idx.size > 0 && f->file_idx.idx.size != fidx.idx.size)
+		fsize = smb_getfilesize(&f->idx);
+		if((f->file_idx.hash.flags & SMB_HASH_MASK) != 0 || fsize > 0) {
+			if(fsize > 0 && fsize != smb_getfilesize(&fidx.idx))
 				continue;
 			if((f->file_idx.hash.flags & SMB_HASH_CRC16) && f->file_idx.hash.data.crc16 != fidx.hash.data.crc16)
 				continue;
@@ -459,4 +461,20 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 
 	smb_unlocksmbhdr(smb);
 	return result;
+}
+
+uint64_t smb_getfilesize(idxrec_t* idx)
+{
+	return ((uint64_t)idx->size) | (((uint64_t)idx->size_ext) << 32);
+}
+
+int smb_setfilesize(idxrec_t* idx, uint64_t size)
+{
+	if(size > 0xffffffffffffULL)
+		return SMB_ERR_FILE_LEN;
+
+	idx->size = (uint32_t)size;
+	idx->size_ext = (uint16_t)(size >> 32);
+
+	return SMB_SUCCESS;
 }

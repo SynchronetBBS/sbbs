@@ -295,6 +295,8 @@ SMBEXPORT int		smb_loadfile(smb_t*, const char* filename, smbfile_t*, enum file_
 SMBEXPORT void		smb_freefilemem(smbfile_t*);
 SMBEXPORT int		smb_removefile(smb_t*, smbfile_t*);
 SMBEXPORT char*		smb_fileidxname(const char* filename, char* buf, size_t);
+SMBEXPORT uint64_t	smb_getfilesize(idxrec_t*);
+SMBEXPORT int		smb_setfilesize(idxrec_t*, uint64_t);
 
 #ifdef __cplusplus
 }
