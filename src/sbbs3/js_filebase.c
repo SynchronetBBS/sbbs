@@ -251,11 +251,17 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		if(!JS_DefineProperty(cx, obj, "cost", val, NULL, NULL, flags))
 			return false;
 	}
-	val = UINT_TO_JSVAL(f->idx.size);
+	if(is_valid_dirnum(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
+		val = DOUBLE_TO_JSVAL((double)getfilesize(scfg, f));
+	else
+		val = UINT_TO_JSVAL(f->idx.size);
 	if(!JS_DefineProperty(cx, obj, "size", val, NULL, NULL, flags))
 		return false;
 
-	val = UINT_TO_JSVAL(f->hdr.when_written.time);
+	if(is_valid_dirnum(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
+		val = DOUBLE_TO_JSVAL((double)getfiletime(scfg, f));
+	else
+		val = UINT_TO_JSVAL(f->hdr.when_written.time);
 	if(!JS_DefineProperty(cx, obj, "time", val, NULL, NULL, flags))
 		return false;
 	if(f->hdr.when_imported.time > 0 || detail > file_detail_metadata) {
