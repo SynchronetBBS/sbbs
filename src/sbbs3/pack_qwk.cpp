@@ -646,7 +646,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			CRLF; 
 	}
 	{
-		int64_t totalcdt = 0;
+		uint64_t totalcdt = 0;
 		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
 		str_list_t filenames = iniGetSectionList(ini, NULL);
 		for(size_t i = 0; filenames[i] != NULL; i++) {
@@ -655,7 +655,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			if(!batch_file_load(&cfg, ini, filename, &f))
 				continue;
 			if(!is_download_free(&cfg, f.dir, &useron, &client)) {
-				if(totalcdt + f.cost > (int64_t)(useron.cdt+useron.freecdt)) {
+				if(totalcdt + f.cost > (uint64_t)(useron.cdt+useron.freecdt)) {
 					bprintf(text[YouOnlyHaveNCredits]
 						,ultoac(useron.cdt+useron.freecdt,tmp));
 					batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);

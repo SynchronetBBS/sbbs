@@ -247,7 +247,7 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		return false;
 
 	if(f->cost > 0 || detail > file_detail_metadata) {
-		val = UINT_TO_JSVAL(f->cost);
+		val = DOUBLE_TO_JSVAL((double)f->cost);
 		if(!JS_DefineProperty(cx, obj, "cost", val, NULL, NULL, flags))
 			return false;
 	}
@@ -571,12 +571,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	}
 	prop_name = "cost";
 	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
-		uint32_t cost = 0;
-		if(!JS_ValueToECMAUint32(cx, val, &cost)) {
-			free(cp);
-			JS_ReportError(cx, "Error converting '%s' property to Uint32", prop_name);
-			return SMB_FAILURE;
-		}
+		uint64_t cost = (uint64_t)JSVAL_TO_DOUBLE(val);
 		if((file->cost != 0 || cost != 0) && (result = smb_new_hfield(file, SMB_COST, sizeof(cost), &cost)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);

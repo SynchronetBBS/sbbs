@@ -198,10 +198,11 @@
 #define SMB_GROUP			0x64
 #define SMB_EXPIRATION		0x65
 #define SMB_PRIORITY		0x66	/* DEPRECATED */
-#define SMB_COST			0x67
+#define SMB_COST			0x67	/* 32-bit or 64-bit cost value */
 #define	SMB_EDITOR			0x68	/* Associated with FTN ^aNOTE: control line */
 #define SMB_TAGS			0x69	/* List of tags (ala hash-tags) related to this message */
 #define SMB_TAG_DELIMITER	" "
+#define SMB_COLUMNS			0x6a	/* original text editor width in fixed-width columns */
 
 #define SMB_FILEIDX_NAMELEN	64
 #define SMB_FILENAME		SUBJECT
@@ -232,7 +233,6 @@
 #define PRESENTTRIGGER		0x94
 #define VIDEOTRIGGER		0x95
 #define APPDATATRIGGER		0x96
-#define SMB_COLUMNS			0x6a	/* original text editor width in fixed-width columns */
 
 #define FIDOCTRL			0xa0
 #define FIDOAREA			0xa1
@@ -656,7 +656,7 @@ typedef struct {				/* Message or File */
 	int32_t		idx_offset;		/* Offset (number of records) into index */
 	BOOL		forwarded;		/* Forwarded from agent to another */
 	uint32_t	expiration; 	/* Message will expire on this day (if >0) */
-	uint32_t	cost;			/* Cost to download/read */
+	uint64_t	cost;			/* Cost to download/read */
 	uint32_t	flags;			/* Various smblib run-time flags (see MSG_FLAG_*) */
 	uint16_t	user_voted;		/* How the current user viewing this message, voted on it */
 	uint32_t	upvotes;		/* Vote tally for this message */

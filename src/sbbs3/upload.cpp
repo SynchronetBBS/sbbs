@@ -170,8 +170,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	}
 	if(cfg.dir[f->dir]->misc&DIR_AONLY)  /* Forced anonymous */
 		f->hdr.attr |= MSG_ANONYMOUS;
-	uint32_t cdt = (uint32_t)MIN(length, UINT32_MAX);
-	smb_hfield_bin(f, SMB_COST, cdt);
+	smb_hfield_bin(f, SMB_COST, length);
 	smb_hfield_str(f, SENDER, useron.alias);
 	bprintf(text[FileNBytesReceived],f->name, i64toac(length,tmp));
 	if(!addfile(&cfg, f->dir, f, ext, /* metadata: */NULL, &client))
