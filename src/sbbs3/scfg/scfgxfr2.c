@@ -31,6 +31,8 @@ char* file_sort_desc[] = {
 	"Date Descending",
 	"Name Ascending (case-sensitive)",
 	"Name Descending (case-sensitive)",
+	"Size Ascending",
+	"Size Descending",
 	NULL
 };
 

@@ -305,6 +305,22 @@ static int file_compare_date_d(const void* v1, const void* v2)
 	return f2->hdr.when_imported.time - f1->hdr.when_imported.time;
 }
 
+static int file_compare_size_a(const void* v1, const void* v2)
+{
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
+
+	return f1->idx.size - f2->idx.size;
+}
+
+static int file_compare_size_d(const void* v1, const void* v2)
+{
+	file_t* f1 = (file_t*)v1;
+	file_t* f2 = (file_t*)v2;
+
+	return f2->idx.size - f1->idx.size;
+}
+
 void sortfiles(file_t* filelist, size_t count, enum file_sort order)
 {
 	switch(order) {
@@ -325,6 +341,12 @@ void sortfiles(file_t* filelist, size_t count, enum file_sort order)
 			break;
 		case FILE_SORT_DATE_D:
 			qsort(filelist, count, sizeof(*filelist), file_compare_date_d);
+			break; 
+		case FILE_SORT_SIZE_A:
+			qsort(filelist, count, sizeof(*filelist), file_compare_size_a);
+			break;
+		case FILE_SORT_SIZE_D:
+			qsort(filelist, count, sizeof(*filelist), file_compare_size_d);
 			break; 
 	}
 }

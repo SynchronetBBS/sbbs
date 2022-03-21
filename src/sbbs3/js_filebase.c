@@ -1911,6 +1911,10 @@ JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, sort, "DATE_D", INT_TO_JSVAL(FILE_SORT_DATE_D), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, sort, "SIZE_A", INT_TO_JSVAL(FILE_SORT_SIZE_A), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, sort, "SIZE_D", INT_TO_JSVAL(FILE_SORT_SIZE_D), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx, sort, "Sort order numeric constants", 0);
 			js_CreateArrayOfStrings(cx, sort, "_property_desc_list", filebase_sort_prop_desc, JSPROP_READONLY);
