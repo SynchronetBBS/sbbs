@@ -1,7 +1,5 @@
 /* pktdump.c */
 
-/* $Id: pktdump.c,v 1.17 2020/04/28 05:41:30 rswindell Exp $ */
-
 #include "fidodefs.h"
 #include "xpendian.h"	/* swap */
 #include "dirwrap.h"	/* _PATH_DEVNULL */
@@ -289,13 +287,8 @@ int main(int argc, char** argv)
 	bool	split = false;
 	bool	recover = false;
 	int		i;
-	char	revision[16];
 
-	sscanf("$Revision: 1.17 $", "%*s %s", revision);
-
-	fprintf(stderr,"pktdump rev %s - Dump FidoNet Packets\n\n"
-		,revision
-		);
+	fprintf(stderr,"pktdump rev 1.18 - Dump FidoNet Packets\n\n");
 
 	if(argc<2) {
 		fprintf(stderr,"%s",usage);
