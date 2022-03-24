@@ -532,15 +532,15 @@
 "\1n\1cE-mails   : \1h%-5u     \1n\1cTo sysop  : "\          431 UserEmails
 	"\1h%-5u     \1n\1cWaiting   : "\
 	"\1h%-5u     \1n\1cToday : \1h%u\r\n"
-"\1n\1cNetMail   : \1h%s\r\n"                              432 UserNetMail
-"\1n\1cUploads   : \1h%13.13s \1n\1cbytes in "\              433 UserUploads
+"\1n\1cNetMail   : \1h%s\r\n"                               432 UserNetMail
+"\1n\1cUploads   : \1h%9.9s \1n\1cbytes in "\               433 UserUploads
 	"\1h%u \1n\1cfiles\r\n"
-"\1n\1cDownloads : \1h%13.13s \1n\1cbytes in "\              434 UserDownloads
+"\1n\1cDownloads : \1h%9.9s \1n\1cbytes in "\               434 UserDownloads
 	"\1h%u \1n\1cfiles %s\r\n"
 "- Leech: \1r\1h\1i%u\1n"                                   435 UserLeech
-"\1n\1cCredits   : \1h%13.13s \1n\1cfree: \1h%s "\            436 UserCredits
+"\1n\1cCredits   : \1h%9.9s \1n\1cfree: \1h%s "\            436 UserCredits
 	"\1n\1c(\1h%s \1n\1cper day)\r\n"
-"\1n\1cMinutes   : \1h%13.13s\r\n"                         437 UserMinutes
+"\1n\1cMinutes   : \1h%9.9s\r\n"                           437 UserMinutes
 "\r\n\1n\1cSec Level : \1h%d\r\n"                          438 UeditSecLevel
 "\1n\1cFlags #1  : \1h%-26s   \1n\1cFlags #3  : \1h%s\r\n"\   439 UeditFlags
 	"\1n\1cFlags #2  : \1h%-26s   \1n\1cFlags #4  : \1h%s\r\n"
