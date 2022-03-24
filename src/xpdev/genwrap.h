@@ -229,6 +229,7 @@ extern "C" {
 #if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
 	DLLEXPORT char* ultoa(ulong, char*, int radix);
 	DLLEXPORT char* _i64toa(int64_t, char*, int radix);
+	DLLEXPORT char* _ui64toa(uint64_t, char*, int radix);
 #endif
 
 #if defined(__unix__)
@@ -376,8 +377,8 @@ DLLEXPORT int64_t	parse_byte_count(const char*, ulong unit);
 DLLEXPORT double	parse_duration(const char*);
 DLLEXPORT char*		duration_to_str(double value, char* str, size_t size);
 DLLEXPORT char*		duration_to_vstr(double value, char* str, size_t size);
-DLLEXPORT char*		byte_count_to_str(int64_t bytes, char* str, size_t size);
-DLLEXPORT char*		byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong unit, int precision);
+DLLEXPORT char*		byte_count_to_str(uint64_t bytes, char* str, size_t size);
+DLLEXPORT char*		byte_estimate_to_str(uint64_t bytes, char* str, size_t size, ulong unit, int precision);
 
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
 typedef		clock_t				msclock_t;
