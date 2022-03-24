@@ -440,7 +440,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		fwrite(str,strlen(str),1,fp);
 
 		localtime_r(&ns_time,&tm);
-		safe_snprintf(str, sizeof(str), "%c\n%c\n%u\n%lu\n%02d/%02d/%02d\n"
+		safe_snprintf(str, sizeof(str), "%c\n%c\n%u\n%" PRIu32 "\n%02d/%02d/%02d\n"
 			,(term & (NO_EXASCII|ANSI|COLOR)) == ANSI
 				? 'Y':'N'                       /* 39: ANSI supported but NG mode */
 			,'Y'                                /* 40: Use record locking */

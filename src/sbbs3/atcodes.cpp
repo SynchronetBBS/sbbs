@@ -1132,7 +1132,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return sectostr(useron.textra, str) + 3;
 
 	if(strcmp(sp, "MBANKED") == 0) {
-		safe_snprintf(str, maxlen, "%lu", useron.min);
+		safe_snprintf(str, maxlen, "%" PRIu32, useron.min);
 		return str;
 	}
 
@@ -1262,7 +1262,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	}
 
 	if(!strcmp(sp,"KBLEFT")) {
-		safe_snprintf(str,maxlen,"%" PRIu64,(useron.cdt+useron.freecdt)/1024ULL);
+		safe_snprintf(str,maxlen,"%" PRIu64,(useron.cdt+useron.freecdt)/1024UL);
 		return(str);
 	}
 
@@ -1716,11 +1716,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		else if(!strcmp(sp,"ULS"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.uls);
 		else if(!strcmp(sp,"ULB"))
-			safe_snprintf(str,maxlen,"%" PRIu64, stats.ulb);
+			safe_snprintf(str,maxlen,"%" PRIu32, stats.ulb);
 		else if(!strcmp(sp,"DLS"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.dls);
 		else if(!strcmp(sp,"DLB"))
-			safe_snprintf(str,maxlen,"%" PRIu64, stats.dlb);
+			safe_snprintf(str,maxlen,"%" PRIu32, stats.dlb);
 		else if(!strcmp(sp,"PTODAY"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ptoday);
 		else if(!strcmp(sp,"ETODAY"))
