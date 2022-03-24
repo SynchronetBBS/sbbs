@@ -81,12 +81,13 @@ DLLEXPORT uint	userdatdupe(scfg_t*, uint usernumber, uint offset, uint datlen, c
 
 DLLEXPORT BOOL	chk_ar(scfg_t*, uchar* str, user_t*, client_t*); /* checks access requirements */
 
+DLLEXPORT char* userbytestr(uint64_t bytes, char* str);
 DLLEXPORT int	getuserrec(scfg_t*, int usernumber, int start, int length, char *str);
 DLLEXPORT int	putuserrec(scfg_t*, int usernumber, int start, int length, const char *str);
-DLLEXPORT ulong	adjustuserrec(scfg_t*, int usernumber, int start, int length, long adj);
+DLLEXPORT uint64_t adjustuserrec(scfg_t*, int usernumber, int start, int64_t adj);
 DLLEXPORT BOOL	logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
 DLLEXPORT void	resetdailyuserdat(scfg_t*, user_t*, BOOL write);
-DLLEXPORT void	subtract_cdt(scfg_t*, user_t*, long amt);
+DLLEXPORT void	subtract_cdt(scfg_t*, user_t*, uint64_t amt);
 DLLEXPORT int	user_rec_len(int offset);
 DLLEXPORT BOOL	can_user_access_all_libs(scfg_t*, user_t*, client_t*);
 DLLEXPORT BOOL	can_user_access_all_dirs(scfg_t*, uint libnum, user_t*, client_t*);
@@ -133,7 +134,7 @@ DLLEXPORT BOOL	user_downloaded(scfg_t*, user_t*, int files, off_t bytes);
 DLLEXPORT BOOL	user_downloaded_file(scfg_t*, user_t*, client_t*, uint dirnum, const char* filename, off_t bytes);
 
 DLLEXPORT BOOL	user_uploaded(scfg_t*, user_t*, int files, off_t bytes);
-DLLEXPORT BOOL	user_adjust_credits(scfg_t*, user_t*, long amount);
+DLLEXPORT BOOL	user_adjust_credits(scfg_t*, user_t*, int64_t amount);
 DLLEXPORT BOOL	user_adjust_minutes(scfg_t*, user_t*, long amount);
 
 DLLEXPORT time_t gettimeleft(scfg_t*, user_t*, time_t starttime);

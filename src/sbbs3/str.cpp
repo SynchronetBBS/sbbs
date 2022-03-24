@@ -922,12 +922,12 @@ void sbbs_t::user_info()
 		,getmail(&cfg,useron.number,/* Sent: */FALSE, /* SPAM: */FALSE),useron.etoday);
 	CRLF;
 	bprintf(text[UserUploads]
-		,ultoac(useron.ulb,tmp),useron.uls);
+		,byte_estimate_to_str(useron.ulb, tmp, sizeof(tmp), 1, 1),useron.uls);
 	bprintf(text[UserDownloads]
-		,ultoac(useron.dlb,tmp),useron.dls,nulstr);
-	bprintf(text[UserCredits],ultoac(useron.cdt,tmp)
-		,ultoac(useron.freecdt,tmp2)
-		,ultoac(cfg.level_freecdtperday[useron.level],str));
+		,byte_estimate_to_str(useron.dlb, tmp, sizeof(tmp), 1, 1),useron.dls,nulstr);
+	bprintf(text[UserCredits],byte_estimate_to_str(useron.cdt, tmp, sizeof(tmp), 1, 1)
+		,byte_estimate_to_str(useron.freecdt,tmp2, sizeof(tmp2), 1, 1)
+		,byte_estimate_to_str(cfg.level_freecdtperday[useron.level], str, sizeof(str), 1, 1));
 	bprintf(text[UserMinutes],ultoac(useron.min,tmp));
 }
 
@@ -1166,8 +1166,8 @@ void sbbs_t::time_bank(void)
 		s=getnum(s);
 		if(s>0) {
 			logline("  ","Minute Bank Deposit");
-			useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,s);
-			useron.ttoday=(ushort)adjustuserrec(&cfg,useron.number,U_TTODAY,10,s);
+			useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,s);
+			useron.ttoday=(ushort)adjustuserrec(&cfg,useron.number,U_TTODAY,s);
 			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
 			logline("*+",str); 
 		} 
@@ -1176,27 +1176,27 @@ void sbbs_t::time_bank(void)
 	if(!(cfg.sys_misc&SM_NOCDTCVT)) {
 		bprintf(text[ConversionRate],cfg.cdt_min_value);
 		bprintf(text[UserCredits]
-			,ultoac(useron.cdt,tmp)
-			,ultoac(useron.freecdt,tmp2)
-			,ultoac(cfg.level_freecdtperday[useron.level],str));
+			,u64toac(useron.cdt,tmp)
+			,u64toac(useron.freecdt,tmp2)
+			,u64toac(cfg.level_freecdtperday[useron.level],str));
 		bprintf(text[UserMinutes],ultoac(useron.min,tmp));
 		if(useron.cdt/102400L<1L) {
-			bprintf(text[YouOnlyHaveNCredits],ultoac(useron.cdt,tmp));
+			bprintf(text[YouOnlyHaveNCredits],u64toac(useron.cdt,tmp));
 			return; 
 		}
 		if(cfg.max_minutes && useron.min>=cfg.max_minutes) {
 			bputs(text[YouHaveTooManyMinutes]);
 			return; 
 		}
-		s=useron.cdt/102400L;
+		s=(uint32_t)(useron.cdt/102400L);
 		if(cfg.max_minutes)
 			while(s>0 && (s*cfg.cdt_min_value)+useron.min>cfg.max_minutes) s--;
 		bprintf(text[CreditsToMin],s);
 		s=getnum(s);
 		if(s>0) {
 			logline("  ","Credit to Minute Conversion");
-			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,-(s*102400L));
-			useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,s*(int)cfg.cdt_min_value);
+			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,-(s*102400L));
+			useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,s*(int)cfg.cdt_min_value);
 			sprintf(str,"Credit Adjustment: %ld",-(s*102400L));
 			logline("$-",str);
 			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
@@ -1283,4 +1283,14 @@ char* sbbs_t::age_of_posted_item(char* buf, size_t max, time_t t)
 char* sbbs_t::server_host_name(void)
 {
 	return startup->host_name[0] ? startup->host_name : cfg.sys_inetaddr;
+}
+
+char* sbbs_t::ultoac(uint32_t val, char* str, char sep)
+{
+	return ::u32toac(val, str, sep);
+}
+
+char* sbbs_t::u64toac(uint64_t val, char* str, char sep)
+{
+	return ::u64toac(val, str, sep);
 }

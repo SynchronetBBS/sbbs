@@ -1002,9 +1002,9 @@ int edit_stats(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Time On Last Call  %hu",user->tlast);
 		sprintf(opt[i++],"Extra Time Today   %hu",user->textra);
 		sprintf(opt[i++],"Total Downloads    %hu",user->dls);
-		sprintf(opt[i++],"Downloaded Bytes   %lu",user->dlb);
+		sprintf(opt[i++],"Downloaded Bytes   %" PRIu64,user->dlb);
 		sprintf(opt[i++],"Total Uploads      %hu",user->uls);
-		sprintf(opt[i++],"Uploaded Bytes     %lu",user->ulb);
+		sprintf(opt[i++],"Uploaded Bytes     %" PRIu64,user->ulb);
 		sprintf(opt[i++],"Leech Downloads    %u",user->leech);
 		sprintf(opt[i++],"Password Modified  %s",user->pwmod?timestr(cfg, user->pwmod, str):"Never");
 		opt[i][0]=0;
@@ -1183,11 +1183,11 @@ int edit_stats(scfg_t *cfg, user_t *user)
 			case 15:
 				/* Downloaded Bytes */
 				GETUSERDAT(cfg,user);
-				sprintf(str,"%lu",user->dlb);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Downloaded Bytes",str,10,K_EDIT|K_NUMBER);
+				sprintf(str,"%" PRIu64,user->dlb);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Downloaded Bytes",str,20,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
-					user->dlb=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_DLB,10,ultoa(user->dlb,str,10));
+					user->dlb=strtoull(str,NULL,10);
+					putuserrec(cfg,user->number,U_DLB,10,userbytestr(user->dlb,str));
 				}
 				break;
 			case 16:
@@ -1203,11 +1203,11 @@ int edit_stats(scfg_t *cfg, user_t *user)
 			case 17:
 				/* Uploaded Bytes */
 				GETUSERDAT(cfg,user);
-				sprintf(str,"%lu",user->ulb);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Uploaded Bytes",str,10,K_EDIT|K_NUMBER);
+				sprintf(str,"%" PRIu64,user->ulb);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Uploaded Bytes",str,20,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->ulb=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_ULB,10,ultoa(user->ulb,str,10));
+					putuserrec(cfg,user->number,U_ULB,10,userbytestr(user->ulb,str));
 				}
 				break;
 			case 18:
@@ -1278,8 +1278,8 @@ int edit_security(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Flag Set 4    %s",ltoaf(user->flags4,str));
 		sprintf(opt[i++],"Exemptions    %s",ltoaf(user->exempt,str));
 		sprintf(opt[i++],"Restrictions  %s",ltoaf(user->rest,str));
-		sprintf(opt[i++],"Credits       %lu",user->cdt);
-		sprintf(opt[i++],"Free Credits  %lu",user->freecdt);
+		sprintf(opt[i++],"Credits       %" PRIu64,user->cdt);
+		sprintf(opt[i++],"Free Credits  %" PRIu64,user->freecdt);
 		sprintf(opt[i++],"Minutes       %lu",user->min);
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Security Settings",opt)) {
@@ -1369,21 +1369,21 @@ int edit_security(scfg_t *cfg, user_t *user)
 			case 8:
 				/* Credits */
 				GETUSERDAT(cfg,user);
-				sprintf(str,"%lu",user->cdt);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Credits",str,10,K_EDIT|K_NUMBER);
+				sprintf(str,"%" PRIu64,user->cdt);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Credits",str,LEN_CDT,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
-					user->cdt=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_CDT,10,ultoa(user->cdt,str,10));
+					user->cdt=strtoull(str,NULL,10);
+					putuserrec(cfg,user->number,U_CDT,0,_ui64toa(user->cdt,str,10));
 				}
 				break;
 			case 9:
 				/* Free Credits */
 				GETUSERDAT(cfg,user);
-				sprintf(str,"%lu",user->freecdt);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Free Credits",str,10,K_EDIT|K_NUMBER);
+				sprintf(str,"%" PRIu64,user->freecdt);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Free Credits",str,LEN_CDT,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
-					user->freecdt=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_FREECDT,10,ultoa(user->freecdt,str,10));
+					user->freecdt=strtoull(str,NULL,10);
+					putuserrec(cfg,user->number,U_FREECDT,0,_ui64toa(user->freecdt,str,10));
 				}
 				break;
 			case 10:

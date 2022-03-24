@@ -280,18 +280,20 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 
 	c=0;
 	for(i=0;i<100 && !feof(stream);i++) {
+		uint32_t l = 0;
 		put_int(cfg->level_timeperday[i],stream);
 		put_int(cfg->level_timepercall[i],stream);
 		put_int(cfg->level_callsperday[i],stream);
-		put_int(cfg->level_freecdtperday[i],stream);
+		put_int(l,stream);	// Used to be freecdtperday (32-bit)
 		put_int(cfg->level_linespermsg[i],stream);
 		put_int(cfg->level_postsperday[i],stream);
 		put_int(cfg->level_emailperday[i],stream);
 		put_int(cfg->level_misc[i],stream);
 		put_int(cfg->level_expireto[i],stream);
+		put_int(cfg->level_freecdtperday[i],stream);
 		put_int(c,stream);
-		for(j=0;j<5;j++)
-			put_int(n,stream); }
+		put_int(n,stream);
+	}
 
 	/* Command Shells */
 

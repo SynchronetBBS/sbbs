@@ -57,7 +57,7 @@ int lprintf(int level, const char *fmat, ...)
 	return(chcount);
 }
 
-char* byteStr(unsigned long value)
+char* byteStr(uint64_t value)
 {
 	static char tmp[128];
 
@@ -109,8 +109,9 @@ int main(int argc, char **argv)
 	int 	i,j,dirnum,libnum,desc_off,lines,nots=0;
 	char*	omode="w";
 	char*	pattern=NULL;
-	ulong	m,misc=0,total_cdt=0,total_files=0,dir_files;
+	ulong	m,misc=0,total_files=0,dir_files;
 	uint64_t cdt;
+	uint64_t total_cdt=0;
 	long	max_age=0;
 	FILE*	out=NULL;
 
@@ -450,7 +451,7 @@ int main(int argc, char **argv)
 	}
 
 	if(misc&TOT && !(misc&AUTO))
-		fprintf(out,"TOTALS\n------\n%lu credits/bytes in %lu files.\n"
+		fprintf(out,"TOTALS\n------\n%" PRIu64 " credits/bytes in %lu files.\n"
 			,total_cdt,total_files);
 	printf("\nDone.\n");
 	return(0);

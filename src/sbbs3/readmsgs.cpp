@@ -903,7 +903,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							if(!stricmp(cfg.sub[subnum]->misc&SUB_NAME
 								? useron.name : useron.alias, msg.from))
 								useron.posts=(ushort)adjustuserrec(&cfg,useron.number
-									,U_POSTS,5,-1); 
+									,U_POSTS,-1); 
 						} 
 					}
 					smb_unlocksmbhdr(&smb);

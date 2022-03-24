@@ -1666,7 +1666,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							break;
 						case 'D':
                     		if(sys_status&SS_USERON) {
-								SAFECAT(theanswer,ultoac(useron.dlb,tmp));
+								SAFECAT(theanswer,u64toac(useron.dlb,tmp));
 							} else {
 								SAFECAT(theanswer,"0");
 							}
@@ -1730,7 +1730,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							break;
 						case 'U':
                     		if(sys_status&SS_USERON) {
-								SAFECAT(theanswer,ultoac(useron.ulb,tmp));
+								SAFECAT(theanswer,u64toac(useron.ulb,tmp));
 							} else {
 								SAFECAT(theanswer,"0");
 							}
@@ -1751,7 +1751,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							break;
 						case '$':   /* Credits */
                     		if(sys_status&SS_USERON) {
-								SAFECAT(theanswer,ultoac(useron.cdt,tmp));
+								SAFECAT(theanswer,u64toac(useron.cdt,tmp));
 							} else {
 								SAFECAT(theanswer,"0");
 							}

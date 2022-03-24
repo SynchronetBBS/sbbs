@@ -172,7 +172,7 @@ bool sbbs_t::uploadfile(file_t* f)
 		f->hdr.attr |= MSG_ANONYMOUS;
 	smb_hfield_bin(f, SMB_COST, length);
 	smb_hfield_str(f, SENDER, useron.alias);
-	bprintf(text[FileNBytesReceived],f->name, i64toac(length,tmp));
+	bprintf(text[FileNBytesReceived],f->name, u64toac(length,tmp));
 	if(!addfile(&cfg, f->dir, f, ext, /* metadata: */NULL, &client))
 		return false;
 
@@ -188,11 +188,11 @@ bool sbbs_t::uploadfile(file_t* f)
 	user_uploaded(&cfg, &useron, 1, length);
 	if(cfg.dir[f->dir]->up_pct && cfg.dir[f->dir]->misc&DIR_CDTUL) { /* credit for upload */
 		if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps)    /* Give min instead of cdt */
-			useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10
+			useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN
 				,((ulong)(length*(cfg.dir[f->dir]->up_pct/100.0))/cur_cps)/60);
 		else
-			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10
-				,(ulong)(f->cost * (cfg.dir[f->dir]->up_pct/100.0))); 
+			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT
+				,(int64_t)(f->cost * (cfg.dir[f->dir]->up_pct/100.0))); 
 	}
 
 	user_event(EVENT_UPLOAD);

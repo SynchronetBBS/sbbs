@@ -39,11 +39,11 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 	bprintf(P_TRUNCATE, text[FiFilename],f->name);
 
 	if(getfilesize(&cfg, f) >= 0)
-		bprintf(P_TRUNCATE, text[FiFileSize], i64toac(f->size,tmp)
+		bprintf(P_TRUNCATE, text[FiFileSize], u64toac(f->size,tmp)
 			, byte_estimate_to_str(f->size, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
 
 	bprintf(P_TRUNCATE, text[FiCredits]
-		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : i64toac(f->cost,tmp));
+		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : u64toac(f->cost,tmp));
 	if(getfilesize(&cfg, f) > 0 &&  (uint64_t)f->size == smb_getfilesize(&f->idx)) {
 #if 0 // I don't think anyone cares about the CRC-16 checksum value of a file
 		if(f->file_idx.hash.flags & SMB_HASH_CRC16) {
@@ -178,7 +178,7 @@ bool sbbs_t::removefcdt(file_t* f)
 			&& f->hdr.times_downloaded)  /* all downloads */
 			cdt+=((ulong)((long)f->hdr.times_downloaded
 				*f->cost*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
-		adjustuserrec(&cfg,u,U_MIN,10,-cdt);
+		adjustuserrec(&cfg,u,U_MIN,-cdt);
 		sprintf(str,"%lu minute",cdt);
 		sprintf(tmp,text[FileRemovedUserMsg]
 			,f->name,cdt ? str : text[No]);
@@ -199,14 +199,14 @@ bool sbbs_t::removefcdt(file_t* f)
 				return false;
 			cdt = atol(str); 
 		}
-		adjustuserrec(&cfg,u,U_CDT,10,-cdt);
+		adjustuserrec(&cfg,u,U_CDT,-cdt);
 		sprintf(tmp,text[FileRemovedUserMsg]
 			,f->name,cdt ? ultoac(cdt,str) : text[No]);
 		putsmsg(&cfg,u,tmp);
 	}
 
-	adjustuserrec(&cfg,u,U_ULB,10,(long)-f->size);
-	adjustuserrec(&cfg,u,U_ULS,5,-1);
+	adjustuserrec(&cfg,u,U_ULB,-f->size);
+	adjustuserrec(&cfg,u,U_ULS,-1);
 	return(true);
 }
 

@@ -1175,12 +1175,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	}
 
 	if(!strcmp(sp,"UPBYTES")) {
-		safe_snprintf(str,maxlen,"%lu",useron.ulb);
+		safe_snprintf(str,maxlen,"%" PRIu64,useron.ulb);
 		return(str);
 	}
 
 	if(!strcmp(sp,"UPK")) {
-		safe_snprintf(str,maxlen,"%lu",useron.ulb/1024L);
+		safe_snprintf(str,maxlen,"%" PRIu64,useron.ulb/1024L);
 		return(str);
 	}
 
@@ -1190,12 +1190,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	}
 
 	if(!strcmp(sp,"DLBYTES")) {
-		safe_snprintf(str,maxlen,"%lu",useron.dlb);
+		safe_snprintf(str,maxlen,"%" PRIu64,useron.dlb);
 		return(str);
 	}
 
 	if(!strcmp(sp,"DOWNK")) {
-		safe_snprintf(str,maxlen,"%lu",useron.dlb/1024L);
+		safe_snprintf(str,maxlen,"%" PRIu64,useron.dlb/1024L);
 		return(str);
 	}
 
@@ -1247,37 +1247,37 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	/* MAXDL */
 
 	if(!strcmp(sp,"MAXDK") || !strcmp(sp,"DLKLIMIT") || !strcmp(sp,"KBLIMIT")) {
-		safe_snprintf(str,maxlen,"%lu",cfg.level_freecdtperday[useron.level]/1024L);
+		safe_snprintf(str,maxlen,"%" PRIu64,cfg.level_freecdtperday[useron.level]/1024L);
 		return(str);
 	}
 
 	if(!strcmp(sp,"DAYBYTES")) {    /* amt of free cdts used today */
-		safe_snprintf(str,maxlen,"%lu",cfg.level_freecdtperday[useron.level]-useron.freecdt);
+		safe_snprintf(str,maxlen,"%" PRIu64,cfg.level_freecdtperday[useron.level]-useron.freecdt);
 		return(str);
 	}
 
 	if(!strcmp(sp,"BYTELIMIT")) {
-		safe_snprintf(str,maxlen,"%ld", (long)cfg.level_freecdtperday[useron.level]);
+		safe_snprintf(str,maxlen,"%" PRIu64, cfg.level_freecdtperday[useron.level]);
 		return(str);
 	}
 
 	if(!strcmp(sp,"KBLEFT")) {
-		safe_snprintf(str,maxlen,"%lu",(useron.cdt+useron.freecdt)/1024L);
+		safe_snprintf(str,maxlen,"%" PRIu64,(useron.cdt+useron.freecdt)/1024ULL);
 		return(str);
 	}
 
 	if(!strcmp(sp,"BYTESLEFT")) {
-		safe_snprintf(str,maxlen,"%lu",useron.cdt+useron.freecdt);
+		safe_snprintf(str,maxlen,"%" PRIu64,useron.cdt+useron.freecdt);
 		return(str);
 	}
 
 	if(strcmp(sp, "CREDITS") == 0) {
-		safe_snprintf(str, maxlen, "%lu", useron.cdt);
+		safe_snprintf(str, maxlen, "%" PRIu64, useron.cdt);
 		return str;
 	}
 
 	if(strcmp(sp, "FREECDT") == 0) {
-		safe_snprintf(str, maxlen, "%lu", useron.freecdt);
+		safe_snprintf(str, maxlen, "%" PRIu64, useron.freecdt);
 		return str;
 	}
 
@@ -1716,11 +1716,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		else if(!strcmp(sp,"ULS"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.uls);
 		else if(!strcmp(sp,"ULB"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ulb);
+			safe_snprintf(str,maxlen,"%" PRIu64, stats.ulb);
 		else if(!strcmp(sp,"DLS"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.dls);
 		else if(!strcmp(sp,"DLB"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.dlb);
+			safe_snprintf(str,maxlen,"%" PRIu64, stats.dlb);
 		else if(!strcmp(sp,"PTODAY"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ptoday);
 		else if(!strcmp(sp,"ETODAY"))

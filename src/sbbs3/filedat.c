@@ -1286,7 +1286,7 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
                     break;
                 case '$':   /* Credits */
 					if(user!=NULL)
-						strncat(cmd,ultoa(user->cdt+user->freecdt,str,10), avail);
+						strncat(cmd,_ui64toa(user->cdt+user->freecdt,str,10), avail);
                     break;
                 case '%':   /* %% for percent sign */
                     strncat(cmd,"%", avail);

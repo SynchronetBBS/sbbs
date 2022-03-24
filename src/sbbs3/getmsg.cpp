@@ -409,17 +409,17 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 				if(!fexistcase(fpath) && msg->idx.from)
 					SAFEPRINTF3(fpath,"%sfile/%04u.out/%s"  /* path is path/fname */
 						,cfg.data_dir, msg->idx.from,tp);
-				long length=(long)flength(fpath);
+				off_t length=flength(fpath);
 				if(length<1)
 					bprintf(text[FileDoesNotExist], tp);
 				else if(!(useron.exempt&FLAG('T')) && cur_cps && !SYSOP
-					&& length/(long)cur_cps>(time_t)timeleft)
+					&& length/cur_cps>(time_t)timeleft)
 					bputs(text[NotEnoughTimeToDl]);
 				else {
 					char 	tmp[512];
 					int		i;
 					SAFEPRINTF2(str, text[DownloadAttachedFileQ]
-						,getfname(fpath),ultoac(length,tmp));
+						,getfname(fpath),u64toac(length,tmp));
 					if(length>0L && text[DownloadAttachedFileQ][0] && yesno(str)) {
 						{	/* Remote User */
 							xfer_prot_menu(XFER_DOWNLOAD);
@@ -444,11 +444,11 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 									logon_dlb+=length;	/* Update stats */
 									logon_dls++;
 									useron.dls=(ushort)adjustuserrec(&cfg,useron.number
-										,U_DLS,5,1);
+										,U_DLS,1);
 									useron.dlb=adjustuserrec(&cfg,useron.number
-										,U_DLB,10,length);
+										,U_DLB,length);
 									bprintf(text[FileNBytesSent]
-										,getfname(fpath),ultoac(length,tmp));
+										,getfname(fpath),u64toac(length,tmp));
 									SAFEPRINTF(str
 										,"downloaded attached file: %s"
 										,getfname(fpath));

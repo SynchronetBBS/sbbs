@@ -476,9 +476,9 @@ str_list_t trashcan_list(scfg_t* cfg, const char* name)
 
 /****************************************************************************/
 /* Returns in 'string' a character representation of the number in l with   */
-/* commas.																	*/
+/* thousands separators (e.g. commas).										*/
 /****************************************************************************/
-char* ultoac(ulong l, char *string)
+char* u32toac(uint32_t l, char *string, char sep)
 {
 	char str[256];
 	int i,j,k;
@@ -490,24 +490,24 @@ char* ultoac(ulong l, char *string)
 	for(k=1;i>-1;k++) {
 		string[j--]=str[i--];
 		if(j>0 && !(k%3))
-			string[j--]=','; 
+			string[j--]=sep; 
 	}
 	return(string);
 }
 
-char* i64toac(int64_t l, char *string)
+char* u64toac(uint64_t l, char *string, char sep)
 {
 	char str[256];
 	int i,j,k;
 
-	_i64toa(l,str,10);
+	_ui64toa(l,str,10);
 	i=strlen(str)-1;
 	j=i/3+1+i;
 	string[j--]=0;
 	for(k=1;i>-1;k++) {
 		string[j--]=str[i--];
 		if(j>0 && !(k%3))
-			string[j--]=','; 
+			string[j--]=sep; 
 	}
 	return string;
 }

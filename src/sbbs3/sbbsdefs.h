@@ -510,13 +510,14 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_FDESC		58	/* File description (summary) 					*/
 #define LEN_EXTDESC		5000	/* Extended file description				*/
 #define LEN_TITLE		70	/* Message title								*/
-#define LEN_MAIN_CMD	28	/* Unused Storage in user.dat					*/
+#define LEN_CDT			20	/* Maximum credit length: 18446744073709551616	*/
+#define LEN_MAIN_CMD	8	/* Unused Storage in user.dat					*/
 #define LEN_COLS		3
 #define LEN_ROWS		3
 #define LEN_PASS		40
 #define MIN_PASS_LEN	 4
 #define RAND_PASS_LEN	 8
-#define LEN_SCAN_CMD	35
+#define LEN_SCAN_CMD	15
 #define LEN_IPADDR		45
 #define LEN_CID 		45	/* Caller ID (phone number) 					*/
 #define LEN_ARSTR		40	/* Max length of Access Requirement string		*/
@@ -565,8 +566,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_ULS       U_ULB+10
 #define U_DLB       U_ULS+5
 #define U_DLS       U_DLB+10
-#define U_CDT		U_DLS+5
-#define U_MIN		U_CDT+10
+#define U_OLDCDT	U_DLS+5
+#define U_MIN		U_OLDCDT+10
 
 #define U_LEVEL 	U_MIN+10+2 	/* Offset to Security Level    */
 #define U_FLAGS1	U_LEVEL+2  	/* Offset to Flags */
@@ -583,12 +584,14 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_CURXTRN	U_CURSUB+16 /* Current xtrn (internal code) */
 #define U_ROWS		U_CURXTRN+8+2
 #define U_COLS		U_ROWS+LEN_ROWS
-#define U_MAIN_CMD	U_COLS+LEN_COLS	/* unused */
+#define U_CDT		U_COLS+LEN_COLS	/* unused */
+#define U_MAIN_CMD	U_CDT+LEN_CDT
 #define U_PASS		U_MAIN_CMD+LEN_MAIN_CMD
-#define U_SCAN_CMD	U_PASS+LEN_PASS+2  				/* unused */
-#define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD 		/* unused */
-#define U_FREECDT	U_IPADDR+LEN_IPADDR+2
-#define U_FLAGS3	U_FREECDT+10 	/* Flag set #3 */
+#define U_FREECDT	U_PASS+LEN_PASS+2
+#define U_SCAN_CMD	U_FREECDT+LEN_CDT  				/* unused */
+#define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD
+#define U_OLDFREECDT U_IPADDR+LEN_IPADDR+2			/* unused */
+#define U_FLAGS3	U_OLDFREECDT+10 	/* Flag set #3 */
 #define U_FLAGS4	U_FLAGS3+8 	/* Flag set #4 */
 #define U_XEDIT 	U_FLAGS4+8 	/* External editor (code  */
 #define U_SHELL 	U_XEDIT+8  	/* Command shell (code  */
@@ -1007,7 +1010,7 @@ typedef struct {						/* Users information */
 	int		rows,               		/* Rows on terminal (0 = auto-detect) */
 			cols;						/* Columns on terminal (0 = auto-detect) */
 
-	ulong	misc,						/* Misc. bits - ANSI, Deleted etc. */
+	uint32_t misc,						/* Misc. bits - ANSI, Deleted etc. */
 			qwk,						/* QWK settings */
 			chat,						/* Chat defaults */
 			flags1, 					/* Flag set #1 */
@@ -1016,11 +1019,11 @@ typedef struct {						/* Users information */
 			flags4, 					/* Flag set #4 */
 			exempt,						/* Exemption Flags */
 			rest,						/* Restriction Flags */
-			ulb,						/* Total bytes uploaded */
-			dlb,						/* Total bytes downloaded */
-			cdt,						/* Credits */
-			min,						/* Minutes */
-			freecdt;					/* Free credits (renewed daily) */
+			min;						/* Minutes */
+	uint64_t cdt;						/* Credits */
+	uint64_t freecdt;					/* Free credits (renewed daily) */
+	uint64_t ulb;						/* Total bytes uploaded */
+	uint64_t dlb;						/* Total bytes downloaded */
 	time32_t firston,					/* Date/Time first called */
 			laston, 					/* Last logoff date/time */
 			expire, 					/* Expiration date */
