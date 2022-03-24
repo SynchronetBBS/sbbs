@@ -90,7 +90,7 @@ BOOL inc_sys_upload_stats(scfg_t* cfg, ulong files, ulong bytes)
 {
 	char	str[MAX_PATH+1];
 	int		file;
-	uint32_t	val;
+	uint32_t	val; // TODO: support > 4GB uploads in a day
 
 	SAFEPRINTF(str,"%sdsts.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
@@ -113,7 +113,7 @@ BOOL inc_sys_download_stats(scfg_t* cfg, ulong files, ulong bytes)
 {
 	char	str[MAX_PATH+1];
 	int		file;
-	uint32_t	val;
+	uint32_t	val; // TODO: support > 4GB downloads in a day
 
 	SAFEPRINTF(str,"%sdsts.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
