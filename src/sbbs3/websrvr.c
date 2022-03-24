@@ -6017,8 +6017,8 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
 	js_add_request_prop(session,"remote_ip",session->host_ip);
 	js_add_request_prop(session,"remote_host",session->host_name);
-	js_add_request_prop(session, "lib", session->libnum >= 0 ? scfg.lib[session->libnum]->sname : NULL);
-	js_add_request_prop(session, "dir", session->file.dir >= 0 ? scfg.dir[session->file.dir]->code : NULL);
+	js_add_request_prop(session, "lib", is_valid_libnum(&scfg, session->libnum) ? scfg.lib[session->libnum]->sname : NULL);
+	js_add_request_prop(session, "dir", is_valid_dirnum(&scfg, session->file.dir) ? scfg.dir[session->file.dir]->code : NULL);
 	if(session->req.query_str[0])  {
 		js_add_request_prop(session,"query_string",session->req.query_str);
 		js_parse_query(session,session->req.query_str);
