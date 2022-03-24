@@ -23,6 +23,7 @@
 #define _SCFGLIB_H
 
 #include "scfgdefs.h"	/* scfg_t */
+#include "dllexport.h"
 
 #define get_int(var,stream) { if(!fread(&var,1,sizeof(var),stream)) \
 								memset(&var,0,sizeof(var)); \
@@ -66,10 +67,10 @@ int		getlibnum(scfg_t*, const char* code);
 int		getsubnum(scfg_t*, const char* code);
 int		getgrpnum(scfg_t*, const char* code);
 
-BOOL	is_valid_dirnum(scfg_t*, int);
-BOOL	is_valid_libnum(scfg_t*, int);
-BOOL	is_valid_subnum(scfg_t*, int);
-BOOL	is_valid_grpnum(scfg_t*, int);
+DLLEXPORT BOOL	is_valid_dirnum(scfg_t*, int);
+DLLEXPORT BOOL	is_valid_libnum(scfg_t*, int);
+DLLEXPORT BOOL	is_valid_subnum(scfg_t*, int);
+DLLEXPORT BOOL	is_valid_grpnum(scfg_t*, int);
 
 faddr_t* nearest_sysfaddr(scfg_t*, faddr_t*);
 
