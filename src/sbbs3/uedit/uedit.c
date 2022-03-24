@@ -1280,7 +1280,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Restrictions  %s",ltoaf(user->rest,str));
 		sprintf(opt[i++],"Credits       %" PRIu64,user->cdt);
 		sprintf(opt[i++],"Free Credits  %" PRIu64,user->freecdt);
-		sprintf(opt[i++],"Minutes       %lu",user->min);
+		sprintf(opt[i++],"Minutes       %" PRIu32,user->min);
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Security Settings",opt)) {
 			case -1:
@@ -1389,7 +1389,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 			case 10:
 				/* Minutes */
 				GETUSERDAT(cfg,user);
-				sprintf(str,"%lu",user->min);
+				sprintf(str,"%" PRIu32,user->min);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Minutes",str,10,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->min=strtoul(str,NULL,10);

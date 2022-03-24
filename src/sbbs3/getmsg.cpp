@@ -413,7 +413,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 				if(length<1)
 					bprintf(text[FileDoesNotExist], tp);
 				else if(!(useron.exempt&FLAG('T')) && cur_cps && !SYSOP
-					&& length/cur_cps>(time_t)timeleft)
+					&& (ulong)(length/cur_cps)>timeleft)
 					bputs(text[NotEnoughTimeToDl]);
 				else {
 					char 	tmp[512];
