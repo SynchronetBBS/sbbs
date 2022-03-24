@@ -775,12 +775,12 @@ static void send_thread(void* arg)
 						l=0;
 					if(scfg.dir[f.dir]->misc&DIR_CDTMIN && cps) { /* Give min instead of cdt */
 						mod=((ulong)(l*(scfg.dir[f.dir]->dn_pct/100.0))/cps)/60;
-						adjustuserrec(&scfg,uploader.number,U_MIN,10,mod);
+						adjustuserrec(&scfg,uploader.number,U_MIN,mod);
 						sprintf(tmp,"%lu minute",mod);
 					} else {
 						mod=(ulong)(l*(scfg.dir[f.dir]->dn_pct/100.0));
-						adjustuserrec(&scfg,uploader.number,U_CDT,10,mod);
-						ultoac(mod,tmp);
+						adjustuserrec(&scfg,uploader.number,U_CDT,mod);
+						u32toac(mod,tmp,',');
 					}
 					if(!(scfg.dir[f.dir]->misc&DIR_QUIET)) {
 						const char* prefix = xfer.filepos ? "partially FTP-" : "FTP-";
@@ -1071,11 +1071,11 @@ static void receive_thread(void* arg)
 			user_uploaded(&scfg, xfer.user, (!xfer.append && xfer.filepos==0) ? 1:0, total);
 			if(scfg.dir[f.dir]->up_pct && scfg.dir[f.dir]->misc&DIR_CDTUL) { /* credit for upload */
 				if(scfg.dir[f.dir]->misc&DIR_CDTMIN && cps)    /* Give min instead of cdt */
-					xfer.user->min=adjustuserrec(&scfg,xfer.user->number,U_MIN,10
+					xfer.user->min=(uint32_t)adjustuserrec(&scfg,xfer.user->number,U_MIN
 						,((ulong)(total*(scfg.dir[f.dir]->up_pct/100.0))/cps)/60);
 				else
-					xfer.user->cdt=adjustuserrec(&scfg,xfer.user->number,U_CDT,10
-						,(ulong)(cdt*(scfg.dir[f.dir]->up_pct/100.0))); 
+					xfer.user->cdt=adjustuserrec(&scfg,xfer.user->number,U_CDT
+						,cdt*(uint64_t)(scfg.dir[f.dir]->up_pct/100.0)); 
 			}
 			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
 				inc_sys_upload_stats(&scfg, 1, (ulong)total);

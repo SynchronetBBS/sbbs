@@ -528,7 +528,7 @@ typedef struct
 					level_linespermsg[100],
 					level_postsperday[100],
 					level_emailperday[100];
-	int32_t			level_freecdtperday[100];
+	uint64_t		level_freecdtperday[100];
 	int32_t			level_misc[100];
 	char 			expired_level;	/* Expired user's ML */
 	uint32_t		expired_flags1; /* Flags from set #1 to remove when expired */

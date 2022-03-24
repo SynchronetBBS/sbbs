@@ -338,9 +338,9 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 		return false;
 	}
 
-	useron.emails = (ushort)adjustuserrec(&cfg, useron.number, U_EMAILS, 0, 1);
+	useron.emails = (ushort)adjustuserrec(&cfg, useron.number, U_EMAILS, 1);
 	logon_emails++;
-	useron.etoday = (ushort)adjustuserrec(&cfg, useron.number, U_ETODAY, 0, 1);
+	useron.etoday = (ushort)adjustuserrec(&cfg, useron.number, U_ETODAY, 1);
 	if(!(useron.exempt&FLAG('S')))
 		subtract_cdt(&cfg,&useron,cfg.netmail_cost);
 

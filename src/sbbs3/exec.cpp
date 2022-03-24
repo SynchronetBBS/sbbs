@@ -1433,12 +1433,12 @@ int sbbs_t::exec(csi_t *csi)
 				if(l<0)
 					subtract_cdt(&cfg,&useron,-l);
 				else
-					useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,l);
+					useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,l);
 				csi->ip+=2;
 				return(0);
 			case CS_ADJUST_USER_MINUTES:
 				i=*(short *)csi->ip;
-				useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,i);
+				useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,i);
 				csi->ip+=2;
 				return(0);
 			case CS_GETNUM:

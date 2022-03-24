@@ -241,9 +241,9 @@ bool sbbs_t::logon()
 				getfilesize(&cfg, &f);
 				bprintf(text[FileAddedToBatDlQueue]
 					,f.name, i + 1, cfg.max_batdn
-					,ultoac((ulong)f.cost,tmp)
-					,ultoac((ulong)f.size,tmp2)
-					,sectostr((ulong)f.size / (ulong)cur_cps,str));
+					,byte_estimate_to_str(f.cost, tmp, sizeof(tmp), 1, 1)
+					,byte_estimate_to_str(f.size, tmp2, sizeof(tmp2), 1, 1)
+					,sectostr((uint)(f.size / (uint64_t)cur_cps),str));
 				smb_freefilemem(&f);
 			} else
 				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);

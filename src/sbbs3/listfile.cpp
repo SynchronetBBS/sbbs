@@ -940,7 +940,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 				&& f->cost>(useron.cdt+useron.freecdt)) {
 				SYNC;
 				bprintf(text[YouOnlyHaveNCredits]
-					,ultoac(useron.cdt+useron.freecdt,tmp));
+					,u64toac(useron.cdt+useron.freecdt,tmp));
 				mnemonics(text[QuitOrNext]);
 				if(getkeys("\rQ",0)=='Q') {
 					found=-1;

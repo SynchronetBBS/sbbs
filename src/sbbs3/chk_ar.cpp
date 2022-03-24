@@ -25,7 +25,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 {
 	bool	result,_not,_or,equal;
 	uint	i,n,artype,age;
-	ulong	l;
+	uint64_t l;
 	struct tm tm;
 	const char*	p;
 
@@ -294,7 +294,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_CREDIT:
-				l=(ulong)i*1024UL;
+				l = i * 1024UL;
 				if((equal && user->cdt+user->freecdt!=l)
 					|| (!equal && user->cdt+user->freecdt<l))
 					result=_not;
@@ -303,7 +303,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessCredit];
-					noaccess_val=l; 
+					noaccess_val=(long)l; 
 				}
 				break;
 			case AR_NODE:

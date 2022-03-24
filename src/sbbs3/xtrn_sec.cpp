@@ -567,7 +567,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		unixtodstr(&cfg,(time32_t)logontime,tmp);
 		exitinfo.LoginDate = tmp;
 		exitinfo.TimeLimit = cfg.level_timepercall[useron.level];
-		exitinfo.Credit = useron.cdt;
+		exitinfo.Credit = (uint32_t)MIN(useron.cdt, UINT32_MAX);
 		exitinfo.UserRecNum = useron.number;
 		exitinfo.WantChat = (sys_status & SS_SYSPAGE);
 		exitinfo.ScreenClear = (useron.misc & CLRSCRN);
@@ -771,8 +771,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		user.fixed.RegExpDate = unixtojulian(useron.expire);
 		user.fixed.ExpSecurityLevel = cfg.expired_level;
 		user.fixed.LastConference = cursubnum;
-		user.fixed.ulTotDnldBytes = useron.dlb;
-		user.fixed.ulTotUpldBytes = useron.ulb;
+		user.fixed.ulTotDnldBytes = (uint32_t)MIN(useron.dlb, UINT32_MAX);
+		user.fixed.ulTotUpldBytes = (uint32_t)MIN(useron.ulb, UINT32_MAX);
 		user.fixed.DeleteFlag = INT_TO_BOOL(useron.misc & DELETED);
 		user.fixed.RecNum = useron.number;
 		user.fixed.MsgsLeft = useron.posts + useron.emails + useron.fbacks;
@@ -1066,7 +1066,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				truncsp(str);
 				mod=atol(str)*1024L;
 				if(mod) {
-					useron.dlb=adjustuserrec(&cfg,useron.number,U_DLB,10,mod);
+					useron.dlb=adjustuserrec(&cfg,useron.number,U_DLB,mod);
 					subtract_cdt(&cfg,&useron,mod); 
 				} 
 			}
@@ -1125,7 +1125,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			}
 			logline(tmp,str);
 			if(mod>0L)			/* always add to real cdt */
-				useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,mod);
+				useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,mod);
 			else
 				subtract_cdt(&cfg,&useron,-mod); /* subtract from free cdt first */
 		}
@@ -1176,7 +1176,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			if(mod) {
 				SAFEPRINTF(str,"Minute Adjustment: %s",ultoac(mod,tmp));
 				logline("*+",str);
-				useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,mod); 
+				useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,mod); 
 			} 
 		}
 		if(fgets(str,81,stream)) {		/* flags #3 */

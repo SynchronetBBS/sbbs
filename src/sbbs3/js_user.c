@@ -262,20 +262,25 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=p->user->ptoday;
 			break;
 		case USER_PROP_ULB:
-			val=p->user->ulb;
+			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->ulb);
+			JS_RESUMEREQUEST(cx, rc);
+			return JS_TRUE;	/* intentional early return */
 			break;
 		case USER_PROP_ULS:
 			val=p->user->uls;
 			break;
 		case USER_PROP_DLB:
-			val=p->user->dlb;
+			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->dlb);
+			JS_RESUMEREQUEST(cx, rc);
+			return JS_TRUE;	/* intentional early return */
 			break;
 		case USER_PROP_DLS:
 			val=p->user->dls;
 			break;
 		case USER_PROP_CDT:
-			val=p->user->cdt;
-			break;
+			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->cdt);
+			JS_RESUMEREQUEST(cx, rc);
+			return JS_TRUE;	/* intentional early return */
 		case USER_PROP_MIN:
 			val=p->user->min;
 			break;
@@ -327,8 +332,9 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 
 		case USER_PROP_FREECDT:
-			val=p->user->freecdt;
-			break;
+			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->freecdt);
+			JS_RESUMEREQUEST(cx, rc);
+			return JS_TRUE;	/* intentional early return */
 		case USER_PROP_XEDIT:
 			if(p->user->xedit>0 && p->user->xedit<=scfg->total_xedits)
 				s=scfg->xedit[p->user->xedit-1]->code;
@@ -722,11 +728,11 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_CDT:	
-			p->user->cdt=strtoul(str,NULL,0);
+			p->user->cdt=strtoull(str,NULL,0);
 			putuserrec(scfg,p->user->number,U_CDT,0,str);
 			break;
 		case USER_PROP_FREECDT:
-			p->user->freecdt=strtoul(str,NULL,0);
+			p->user->freecdt=strtoull(str,NULL,0);
 			putuserrec(scfg,p->user->number,U_FREECDT,0,str);
 			break;
 		case USER_PROP_MIN:	

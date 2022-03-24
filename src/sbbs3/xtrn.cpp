@@ -2082,7 +2082,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,str, avail);
                     break;
                 case '$':   /* Credits */
-                    strncat(cmd,ultoa(useron.cdt+useron.freecdt,str,10), avail);
+                    strncat(cmd,_ui64toa(useron.cdt+useron.freecdt,str,10), avail);
                     break;
                 case '%':   /* %% for percent sign */
                     strncat(cmd,"%", avail);

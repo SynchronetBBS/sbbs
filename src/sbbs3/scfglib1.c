@@ -299,18 +299,21 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***************************/
 
 	for(i=0;i<100 && !feof(instream);i++) {
+		uint32_t freecdt32;
 		get_int(cfg->level_timeperday[i],instream);
 		get_int(cfg->level_timepercall[i],instream);
 		get_int(cfg->level_callsperday[i],instream);
-		get_int(cfg->level_freecdtperday[i],instream);
+		get_int(freecdt32,instream);
 		get_int(cfg->level_linespermsg[i],instream);
 		get_int(cfg->level_postsperday[i],instream);
 		get_int(cfg->level_emailperday[i],instream);
 		get_int(cfg->level_misc[i],instream);
 		get_int(cfg->level_expireto[i],instream);
+		get_int(cfg->level_freecdtperday[i],instream);
+		if(freecdt32)
+			cfg->level_freecdtperday[i] = freecdt32;
 		get_int(c,instream);
-		for(j=0;j<5;j++)
-			get_int(n,instream); 
+		get_int(n,instream); 
 	}
 	if(i!=100) {
 		safe_snprintf(error, maxerrlen,"Insufficient User Level Information: "

@@ -891,9 +891,9 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-27.27s%s","Expiration Days"
 						,ultoa(cfg.new_expire,str,10));
 
-					ultoac(cfg.new_cdt,str);
+					u32toac(cfg.new_cdt,str,',');
 					sprintf(opt[i++],"%-27.27s%s","Credits",str);
-					ultoac(cfg.new_min,str);
+					u32toac(cfg.new_min,str,',');
 					sprintf(opt[i++],"%-27.27s%s","Minutes",str);
 					sprintf(opt[i++],"%-27.27s%s","Editor"
 						,cfg.new_xedit);
@@ -1367,7 +1367,7 @@ void sys_cfg(void)
 						,cfg.new_sif);
 					sprintf(opt[i++],"%-27.27s%s","Output SIF Questionnaire"
 						,cfg.new_sof);
-					ultoac(cfg.cdt_per_dollar,str);
+					u32toac(cfg.cdt_per_dollar,str,',');
 					sprintf(opt[i++],"%-27.27s%s","Credits Per Dollar",str);
 					sprintf(opt[i++],"%-27.27s%u","Minutes Per 100k Credits"
 						,cfg.cdt_min_value);
@@ -1951,9 +1951,9 @@ void sys_cfg(void)
 								byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
 								if(uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Free Credits Awarded Per Day"
-									,tmp,10
+									,tmp,19
 									,K_EDIT|K_UPPER) > 0)
-									cfg.level_freecdtperday[i] = (int32_t)parse_byte_count(tmp, 1);
+									cfg.level_freecdtperday[i] = parse_byte_count(tmp, 1);
 								break;
 							case 7:
 								j=0;

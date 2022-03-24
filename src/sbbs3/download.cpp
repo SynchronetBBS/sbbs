@@ -68,7 +68,7 @@ void sbbs_t::notdownloaded(off_t size, time_t start, time_t end)
 		&& end-start>=(double)(size/cur_cps)*(double)cfg.leech_pct/100.0) {
 		lprintf(LOG_ERR, "Node %d Possible use of leech protocol (leech=%u  downloads=%u)"
 			,cfg.node_num, useron.leech+1,useron.dls);
-		useron.leech=(uchar)adjustuserrec(&cfg,useron.number,U_LEECH,2,1);
+		useron.leech=(uchar)adjustuserrec(&cfg,useron.number,U_LEECH,1);
 	}
 }
 
@@ -393,8 +393,8 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		off_t length = flength(fname);
 		logon_dlb += length;	/* Update stats */
 		logon_dls++;
-		useron.dls = (ushort)adjustuserrec(&cfg, useron.number, U_DLS, 5, 1);
-		useron.dlb = adjustuserrec(&cfg,useron.number, U_DLB, 10, (long)length);
+		useron.dls = (ushort)adjustuserrec(&cfg, useron.number, U_DLS, 1);
+		useron.dlb = (uint32_t)adjustuserrec(&cfg,useron.number, U_DLB, length);
 		char bytes[32];
 		ultoac((ulong)length, bytes);
 		bprintf(text[FileNBytesSent], getfname(fname), bytes);

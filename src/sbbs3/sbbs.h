@@ -722,6 +722,8 @@ public:
 	bool	chkpass(char *pass, user_t* user, bool unique);
 	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, long mode = EX_UNSPECIFIED);
 	char	cmdstr_output[512];
+	char*	ultoac(uint32_t, char*, char sep=',');
+	char*	u64toac(uint64_t, char*, char sep=',');
 
 	void	subinfo(uint subnum);
 	void	dirinfo(uint dirnum);

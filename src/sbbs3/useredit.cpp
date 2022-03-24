@@ -45,6 +45,7 @@ void sbbs_t::useredit(int usernumber)
 	float	f;
 	long	l;
 	long	kmode = K_LINE|K_EDIT|K_AUTODEL|K_TRIM;
+	int64_t adj;
 	user_t	user;
 	struct	tm tm;
 
@@ -125,14 +126,15 @@ void sbbs_t::useredit(int usernumber)
 		bprintf(text[UserEmails]
 			,user.emails,user.fbacks,getmail(&cfg,user.number,/* Sent: */FALSE, /* SPAM: */FALSE),user.etoday);
 
-		bprintf(text[UserUploads],ultoac(user.ulb,tmp),user.uls);
+		bprintf(text[UserUploads], byte_estimate_to_str(user.ulb, tmp, sizeof(tmp), 1, 1), user.uls);
 		if(user.leech)
 			SAFEPRINTF(str,text[UserLeech],user.leech);
 		else
 			str[0]=0;
-		bprintf(text[UserDownloads],ultoac(user.dlb,tmp),user.dls,str);
-		bprintf(text[UserCredits],ultoac(user.cdt,tmp)
-			,ultoac(user.freecdt,tmp2),ultoac(cfg.level_freecdtperday[user.level],str));
+		bprintf(text[UserDownloads],byte_estimate_to_str(user.dlb, tmp, sizeof(tmp), 1, 1) ,user.dls,str);
+		bprintf(text[UserCredits],byte_estimate_to_str(user.cdt, tmp, sizeof(tmp), 1, 1)
+			,byte_estimate_to_str(user.freecdt, tmp2, sizeof(tmp2), 1, 1)
+			,byte_estimate_to_str(cfg.level_freecdtperday[user.level], str, sizeof(str), 1, 1));
 		bprintf(text[UserMinutes],ultoac(user.min,tmp));
 		bprintf(text[UeditSecLevel],user.level);
 		bprintf(text[UeditFlags],ltoaf(user.flags1,tmp),ltoaf(user.flags3,tmp2)
@@ -433,9 +435,11 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'U':
 				bputs(text[UeditUlBytes]);
-				ultoa(user.ulb,str,10);
-				if(getstr(str,10,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL))
-					putuserrec(&cfg,user.number,U_ULB,10,str);
+				_ui64toa(user.ulb,str,10);
+				if(getstr(str,19,K_UPPER|K_LINE|K_EDIT|K_AUTODEL)) {
+					user.ulb = parse_byte_count(str, 1);
+					putuserrec(&cfg,user.number,U_ULB,10,userbytestr(user.ulb, str));
+				}
 				if(sys_status&SS_ABORT)
 					break;
 				bputs(text[UeditUploads]);
@@ -445,9 +449,11 @@ void sbbs_t::useredit(int usernumber)
 				if(sys_status&SS_ABORT)
 					break;
 				bputs(text[UeditDlBytes]);
-				ultoa(user.dlb,str,10);
-				if(getstr(str,10,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL))
-					putuserrec(&cfg,user.number,U_DLB,10,str);
+				_ui64toa(user.dlb,str,10);
+				if(getstr(str,19,K_UPPER|K_LINE|K_EDIT|K_AUTODEL)) {
+					user.dlb = parse_byte_count(str, 1);
+					putuserrec(&cfg,user.number,U_DLB,10,userbytestr(user.dlb, str));
+				}
 				if(sys_status&SS_ABORT)
 					break;
 				bputs(text[UeditDownloads]);
@@ -540,15 +546,13 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case '+':
 				bputs(text[ModifyCredits]);
-				getstr(str,10,K_UPPER|K_LINE);
-				l=atol(str);
-				if(strstr(str,"M"))
-					l*=0x100000L;
-				else if(strstr(str,"K"))
-					l*=1024;
-				else if(strstr(str,"$"))
-					l*=cfg.cdt_per_dollar;
-				adjustuserrec(&cfg, user.number, U_CDT, 10, l);
+				if(getstr(str,10,K_UPPER|K_LINE)) {
+					if(strstr(str,"$"))
+						adj = strtoll(str, NULL, 10) * cfg.cdt_per_dollar;
+					else
+						adj = parse_byte_count(str, 1);
+					adjustuserrec(&cfg, user.number, U_CDT, adj);
+				}
 				break;
 			case '*':
 				bputs(text[ModifyMinutes]);
@@ -572,9 +576,11 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case '$':
 				bputs(text[UeditCredits]);
-				ultoa(user.cdt,str,10);
-				if(getstr(str,10,K_NUMBER|K_LINE))
-					putuserrec(&cfg,user.number,U_CDT,10,str);
+				_ui64toa(user.cdt,str,10);
+				if(getstr(str,19,K_UPPER|K_LINE|K_EDIT|K_AUTODEL)) {
+					user.cdt = parse_byte_count(str, 1);
+					putuserrec(&cfg,user.number,U_CDT,0,userbytestr(user.cdt, str));
+				}
 				break;
 			case '/':
 				bputs(text[SearchStringPrompt]);

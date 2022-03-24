@@ -225,8 +225,8 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 				SAFEPRINTF(tmp,text[Convert100ktoNminQ],cfg.cdt_min_value);
 				if(yesno(tmp)) {
 					logline("  ","Credit to Minute Conversion");
-					useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,cfg.cdt_min_value);
-					useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,-(102400L));
+					useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,cfg.cdt_min_value);
+					useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,-(102400LL));
 					SAFEPRINTF(str,"Credit Adjustment: %ld",-(102400L));
 					logline("$-",str);
 					SAFEPRINTF(str,"Minute Adjustment: %u",cfg.cdt_min_value);

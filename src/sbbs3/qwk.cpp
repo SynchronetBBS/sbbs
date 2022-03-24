@@ -584,7 +584,7 @@ void sbbs_t::qwk_sec()
 
 			off_t l=flength(str);
 			bprintf(text[FiFilename], getfname(str));
-			bprintf(text[FiFileSize], ultoac((ulong)l,tmp)
+			bprintf(text[FiFileSize], u64toac(l,tmp)
 				, byte_estimate_to_str(l, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
 
 			if(l>0L && cur_cps)

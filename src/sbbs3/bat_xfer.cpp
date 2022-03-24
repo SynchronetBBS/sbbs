@@ -124,10 +124,10 @@ void sbbs_t::batchmenu()
 						getfiletime(&cfg, &f);
 						bprintf(text[DownloadQueueLstFmt],i+1
 							,filename
-							,i64toac(f.cost, tmp)
-							,i64toac(f.size, str)
+							,byte_estimate_to_str(f.cost, tmp, sizeof(tmp), 1, 1)
+							,byte_estimate_to_str(f.size, str, sizeof(str), 1, 1)
 							,cur_cps
-								? sectostr((uint)(f.size/(ulong)cur_cps),tmp2)
+								? sectostr((uint)(f.size/(uint64_t)cur_cps), tmp2)
 								: "??:??:??"
 							,datestr(f.time)
 						);
@@ -136,9 +136,9 @@ void sbbs_t::batchmenu()
 						smb_freefilemem(&f);
 					}
 					bprintf(text[DownloadQueueTotals]
-						,ultoac((ulong)totalcdt,tmp),ultoac((ulong)totalsize,str),cur_cps
-						? sectostr((ulong)totalsize/(ulong)cur_cps,tmp2)
-						: "??:??:??"); 
+						,byte_estimate_to_str(totalcdt, tmp, sizeof(tmp), 1, 1)
+						,byte_estimate_to_str(totalsize, str, sizeof(tmp), 1, 1)
+						,cur_cps ? sectostr((uint)(totalsize/(uint64_t)cur_cps), tmp2) : "??:??:??"); 
 				} else
 					bputs(text[DownloadQueueIsEmpty]);
 				iniFreeStringList(filenames);
@@ -253,7 +253,7 @@ BOOL sbbs_t::start_batch_download()
 		return result;
 	}
 
-	int64_t totalcdt = 0;
+	uint64_t totalcdt = 0;
 	for(size_t i=0; filenames[i] != NULL; ++i) {
 		file_t f = {{}};
 		if(batch_file_load(&cfg, ini, filenames[i], &f)) {
@@ -261,9 +261,9 @@ BOOL sbbs_t::start_batch_download()
 			smb_freefilemem(&f);
 		}
 	}
-	if(totalcdt > (int64_t)(useron.cdt+useron.freecdt)) {
+	if(totalcdt > useron.cdt+useron.freecdt) {
 		bprintf(text[YouOnlyHaveNCredits]
-			,ultoac(useron.cdt+useron.freecdt,tmp));
+			,u64toac(useron.cdt+useron.freecdt,tmp));
 		iniFreeStringList(ini);
 		iniFreeStringList(filenames);
 		return(FALSE); 
@@ -690,7 +690,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 			totalcost += f->cost;
 		if(totalcost > useron.cdt+useron.freecdt) {
 			bprintf(text[CantAddToQueue],f->name);
-			bprintf(text[YouOnlyHaveNCredits],ultoac(useron.cdt+useron.freecdt,tmp));
+			bprintf(text[YouOnlyHaveNCredits],u64toac(useron.cdt+useron.freecdt,tmp));
 		} else {
 			totalsize += f->size;
 			if(!(cfg.dir[f->dir]->misc&DIR_TFREE) && cur_cps)
@@ -701,9 +701,10 @@ bool sbbs_t::addtobatdl(file_t* f)
 			} else {
 				if(batch_file_add(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f)) {
 					bprintf(text[FileAddedToBatDlQueue]
-						,f->name, strListCount(filenames) + 1, cfg.max_batdn, i64toac(totalcost,tmp)
-						,i64toac(totalsize,tmp2)
-						,sectostr((ulong)(totalsize/MAX((ulong)cur_cps, 1)),str));
+						,f->name, strListCount(filenames) + 1, cfg.max_batdn
+						,byte_estimate_to_str(totalcost, tmp, sizeof(tmp), 1, 1)
+						,byte_estimate_to_str(totalsize, tmp2, sizeof(tmp2), 1, 1)
+						,sectostr((uint)(totalsize/MAX((uint64_t)cur_cps, 1)),str));
 					result = true;
 				}
 			}
