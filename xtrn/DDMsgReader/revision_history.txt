@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.47a    2022-03-23   Internal change: Now calls bbs.edit_msg() for editing an
+                      existing message (for Synchronet 3.18 and up).
+                      Functionally no change.
 1.47     2022-03-14   DDMsgReader can now be called directly as a loadable
                       module by Synchronet (though requires the included
                       ddmr_lm.js if DDMsgReader.js is not in sbbs/exec or
