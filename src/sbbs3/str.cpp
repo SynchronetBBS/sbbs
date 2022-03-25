@@ -789,9 +789,9 @@ void sbbs_t::subinfo(uint subnum)
 		bprintf(text[SubInfoFidoNet]
 			,cfg.sub[subnum]->origline
 			,smb_faddrtoa(&cfg.sub[subnum]->faddr,str));
-	SAFEPRINTF2(str,"%s%s.msg",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
-	if(fexist(str) && yesno(text[SubInfoViewFileQ]))
-		printfile(str,0);
+	SAFEPRINTF2(str,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
+	if(menu_exists(str) && yesno(text[SubInfoViewFileQ]))
+		menu(str);
 }
 
 /****************************************************************************/
@@ -808,9 +808,9 @@ void sbbs_t::dirinfo(uint dirnum)
 		bprintf(text[DirInfoAllowedExts],cfg.dir[dirnum]->exts);
 	if(cfg.dir[dirnum]->maxfiles)
 		bprintf(text[DirInfoMaxFiles],cfg.dir[dirnum]->maxfiles);
-	SAFEPRINTF2(str,"%s%s.msg",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	if(fexist(str) && yesno(text[DirInfoViewFileQ]))
-		printfile(str,0);
+	SAFEPRINTF2(str,"%s%s",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	if(menu_exists(str) && yesno(text[DirInfoViewFileQ]))
+		menu(str);
 }
 
 /****************************************************************************/
