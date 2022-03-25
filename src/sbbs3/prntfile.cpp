@@ -304,9 +304,28 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		FULLPATH(path, prefix, MAX_PATH);
 		SAFECOPY(prefix, path);
 	}
-	safe_snprintf(path, MAX_PATH, "%s.%lucol.%s", prefix, cols, ext);
-	if(fexistcase(path))
-		return true;
+	glob_t g = {0};
+	safe_snprintf(path, MAX_PATH, "%s.*col.%s", prefix, ext);
+	if(globi(path, GLOB_NOESCAPE|GLOB_MARK, NULL, &g) == 0) {
+		char* p;
+		char term[MAX_PATH + 1];
+		safe_snprintf(term, sizeof(term), "col.%s", ext);
+		size_t skip = safe_snprintf(path, MAX_PATH, "%s.", prefix);
+		long max = 0;
+		for(size_t i = 0; i < g.gl_pathc; i++) {
+			long c = strtol(g.gl_pathv[i] + skip, &p, 10);
+			if(stricmp(p, term) != 0) // Some other weird pattern ending in col.<ext>
+				continue;
+			if(c <= cols && c > max) {
+				max = c;
+				safe_snprintf(path, MAX_PATH, "%s", g.gl_pathv[i]);
+			}
+		}
+		globfree(&g);
+		if(max > 0)
+			return true;
+	}
+
 	safe_snprintf(path, MAX_PATH, "%s.%s", prefix, ext);
 	return fexistcase(path) ? true : false;
 }
