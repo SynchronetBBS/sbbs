@@ -290,10 +290,11 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		return fexistcase(path) ? true : false;
 	}
 
-	/* Either <menu>.asc or <menu>.msg is required */
+	/* Either <menu>.asc or <menu>.msg or <menu>.ans is required */
 	if(ext == NULL)
 		return menu_exists(code, "asc", path)
-			|| menu_exists(code, "msg", path);
+			|| menu_exists(code, "msg", path)
+			|| menu_exists(code, "ans", path);
 
 	char prefix[MAX_PATH];
 	if(isfullpath(code))
