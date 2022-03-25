@@ -321,6 +321,7 @@ int globi(const char *p, int flags,
 				len += sprintf(pattern + len, "[%c%c]", toupper(*p), tolower(*p));
 			else
 				pattern[len++] = *p;
+			p++;
 		}
 	}
 	pattern[len] = '\0';
