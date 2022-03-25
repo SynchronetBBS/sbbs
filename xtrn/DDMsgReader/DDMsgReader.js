@@ -133,6 +133,9 @@
  *                              loadable module by Synchronet (work started on March 8).
  *                              Also, refactored to use attr_conv.js and removed the
  *                              attribute conversion functions from this script.
+ * 2022-03-23 Eric Oulashin     Version 1.47a
+ *                              Now calls bbs.edit_msg() to edit an existing message (if
+ *                              that function exists - It was added in Synchronet 3.18).
  */
 
 // TODO: In the message list, add the ability to search with / similar to my area chooser
@@ -250,8 +253,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.47";
-var READER_DATE = "2022-03-14";
+var READER_VERSION = "1.47a";
+var READER_DATE = "2022-03-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -832,6 +835,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.SetMsgListPauseTextAndLightbarHelpLine = DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine;
 	this.SetEnhancedReaderHelpLine = DigDistMsgReader_SetEnhancedReaderHelpLine;
 	this.EditExistingMsg = DigDistMsgReader_EditExistingMsg;
+	this.EditExistingMessageOldWay = DigDistMsgReader_EditExistingMessageOldWay;
 	this.CanDelete = DigDistMsgReader_CanDelete;
 	this.CanDeleteLastMsg = DigDistMsgReader_CanDeleteLastMsg;
 	this.CanEdit = DigDistMsgReader_CanEdit;
@@ -8114,15 +8118,46 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 		return returnObj;
 	}
 
+	// Make use of bbs.edit_msg() if the function exists (it was added in
+	// Synchronet 3.18c).  Otherwise, edit the old way.
+	if (typeof(bbs.edit_msg) === "function")
+	{
+		if (!bbs.edit_msg(msgHeader))
+		{
+			var grpIdx = msg_area.sub[this.subBoardCode].grp_index;
+			var areaDesc = msg_area.grp_list[grpIdx].description + " - " + msg_area.sub[this.subBoardCode].description;
+			var logMsg = user.alias + " was unable to edit message number " + msgHeader.number + " in " + areaDesc;
+			log(LOG_ERROR, logMsg);
+			bbs.log_str(logMsg);
+		}
+	}
+	else
+		this.EditExistingMessageOldWay(msgbase, msgHeader, pMsgIndex);
+
+	msgbase.close();
+
+	return returnObj;
+}
+// Helper for DigDistMsgReader_EditExistingMsg(): Edits an existing message by writing it
+// to a temporary file, having the user edit that, and saving it as a new message.
+// This was done before the bbs.edit_msg() function existed (it was added in Synchronet
+// 3.18c).
+//
+// Parameters:
+//  pMsgbase: The MessageBase object.  Assumed to be open.
+//  pOrigMsgHdr: The header of the original message
+//  pMsgIndex: The index of the message to edit
+function DigDistMsgReader_EditExistingMessageOldWay(pMsgbase, pOrigMsgHdr, pMsgIndex)
+{
 	// Dump the message body to a temporary file in the node dir
-	//var originalMsgBody = msgbase.get_msg_body(true, pMsgIndex, false, false, true, true);
+	//var originalMsgBody = pMsgbase.get_msg_body(true, pMsgIndex, false, false, true, true);
 	var originalMsgBody;
-	var tmpMsgHdr = this.GetMsgHdrByIdx(pMsgIndex, false, msgbase);
+	var tmpMsgHdr = this.GetMsgHdrByIdx(pMsgIndex, false, pMsgbase);
 	var msgHdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
 	if (msgHdrIsBogus)
-		originalMsgBody = msgbase.get_msg_body(true, pMsgIndex, false, false, true, true);
+		originalMsgBody = pMsgbase.get_msg_body(true, pMsgIndex, false, false, true, true);
 	else
-		originalMsgBody = msgbase.get_msg_body(false, tmpMsgHdr.number, false, false, true, true);
+		originalMsgBody = pMsgbase.get_msg_body(false, tmpMsgHdr.number, false, false, true, true);
 	var tempFilename = system.node_dir + "DDMsgLister_message.txt";
 	var tmpFile = new File(tempFilename);
 	if (tmpFile.open("w"))
@@ -8141,15 +8176,15 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 			// bbs.msg_number is a unique message identifier that won't
 			// change, so it's probably best for scripts to use bbs.msg_number
 			// instead of offsets.
-			bbs.msg_to = msgHeader.to;
-			bbs.msg_to_ext = msgHeader.to_ext;
-			bbs.msg_subject = msgHeader.subject;
-			bbs.msg_offset = msgHeader.offset;
-			bbs.msg_number = msgHeader.number;
+			bbs.msg_to = pOrigMsgHdr.to;
+			bbs.msg_to_ext = pOrigMsgHdr.to_ext;
+			bbs.msg_subject = pOrigMsgHdr.subject;
+			bbs.msg_offset = pOrigMsgHdr.offset;
+			bbs.msg_number = pOrigMsgHdr.number;
 
 			// Let the user edit the temporary file
 			console.editfile(tempFilename);
-			// Load the temp file back into msgBodyColor and have msgbase
+			// Load the temp file back into msgBodyColor and have pMsgbase
 			// save the message.
 			if (tmpFile.open("r"))
 			{
@@ -8162,18 +8197,18 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 				// aborted out of the message editor.)
 				if (newMsgBody != originalMsgBody)
 				{
-					var newHdr = { to: msgHeader.to, to_ext: msgHeader.to_ext, from: msgHeader.from,
-					               from_ext: msgHeader.from_ext, attr: msgHeader.attr,
-					               subject: msgHeader.subject };
-					var savedNewMsg = msgbase.save_msg(newHdr, newMsgBody);
+					var newHdr = { to: pOrigMsgHdr.to, to_ext: pOrigMsgHdr.to_ext, from: pOrigMsgHdr.from,
+					               from_ext: pOrigMsgHdr.from_ext, attr: pOrigMsgHdr.attr,
+					               subject: pOrigMsgHdr.subject };
+					var savedNewMsg = pMsgbase.save_msg(newHdr, newMsgBody);
 					// If the message was successfully saved, then mark the original
 					// message for deletion and output a message to the user.
 					if (savedNewMsg)
 					{
 						returnObj.msgEdited = true;
-						returnObj.newMsgIdx = msgbase.total_msgs - 1;
+						returnObj.newMsgIdx = pMsgbase.total_msgs - 1;
 						var message = "\1n\1cThe edited message has been saved as a new message.";
-						if (msgbase.remove_msg(true, pMsgIndex))
+						if (pMsgbase.remove_msg(true, pMsgIndex))
 							message += "  The original has been\r\nmarked for deletion.";
 						else
 							message += "  \1h\1yHowever, the original\r\ncould not be marked for deletion.";
@@ -8206,11 +8241,8 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 	}
 	// Delete the temporary file from disk.
 	tmpFile.remove();
-
-	msgbase.close();
-
-	return returnObj;
 }
+
 // For the DigDistMsgReader Class: Returns whether or not the user can delete
 // their messages in the sub-board (distinct from being able to delete only
 // their last message).
