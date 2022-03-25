@@ -305,7 +305,29 @@ void globfree(glob_t* glob)
 	glob->gl_pathc=0;
 }
 
-#endif /* !defined(__unix__) */
+#else /* __unix__ */
+
+// Case-insensitive version of glob()
+int globi(const char *p, int flags,
+	int (*errfunc) (const char *epath, int eerrno),
+	glob_t *g)
+{
+	char pattern[MAX_PATH * 2] = "";
+	int len = 0;
+
+	if(p != NULL) {
+		while(*p != '\0' && len < MAX_PATH) {
+			if(IS_ALPHA(*p))
+				len += sprintf(pattern + len, "[%c%c]", toupper(*p), tolower(*p));
+			else
+				pattern[len++] = *p;
+		}
+	}
+	pattern[len] = '\0';
+	return glob(pattern, flags, errfunc, g);
+}
+
+#endif
 
 /****************************************************************************/
 /* Returns number of files and/or sub-directories in directory (path)		*/
