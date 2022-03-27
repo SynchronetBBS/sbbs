@@ -71,6 +71,8 @@ require('sbbsdefs.js', 'LEN_ALIAS');
 require("utf8_cp437.js", 'utf8_cp437');
 require("file_size.js", 'file_size_str');
 require("html2asc.js", 'html2asc');
+require("graphic.js", 'Graphic');
+var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 load('822header.js');
 var hexdump = load('hexdump_lib.js');
 var mimehdr = load('mimehdr.js');
@@ -572,6 +574,7 @@ function get_msg_lines(msgbase, msg, hdr, source, hex, wrap, chop)
 	msg.source = (source===true && !hex);
 	msg.wrapped = false;
 	msg.html = false;
+	msg.ansi = false;
 	var text;
 	if(!hdr) {
 		console.print(format(preparing_fmt, options.reading_message_text || "\x01[Reading message text ..."));
@@ -611,12 +614,21 @@ function get_msg_lines(msgbase, msg, hdr, source, hex, wrap, chop)
 			}
 		}
 		text = text.replace(/\xff/g, ' ');	// Use a regular old space for nbsp
-		if(msg.wrapped) {
-			console.print(format(preparing_fmt, options.wrapping_lines || "\x01[Wrapping lines ..."));
-			text = word_wrap(text, console.screen_columns - 1, (msg.columns || 80) - 1).split('\n');
+		msg.ansi = text.indexOf("\x1b[") >= 0;
+		if(msg.ansi) {
+			var graphic = new Graphic(console.screen_columns, 10);
+			graphic.auto_extend = true;
+			graphic.ANSI = ansiterm.expand_ctrl_a(text);
+			graphic.width = console.screen_columns - 1;
+			text = graphic.MSG.split('\n');
 		} else {
-			console.print(format(preparing_fmt, options.splitting_lines || "\x01[Splitting lines ..."));
-			text = line_split(text, chop);
+			if(msg.wrapped) {
+				console.print(format(preparing_fmt, options.wrapping_lines || "\x01[Wrapping lines ..."));
+				text = word_wrap(text, console.screen_columns - 1, (msg.columns || 80) - 1).split('\n');
+			} else {
+				console.print(format(preparing_fmt, options.splitting_lines || "\x01[Splitting lines ..."));
+				text = line_split(text, chop);
+			}
 		}
 		while(text.length && !text[0].trim().length)
 			text.shift(); // Remove initial blank lines
@@ -715,6 +727,8 @@ function content_description(msg)
 		desc.push('header');
 	else if(msg.hex)
 		desc.push('hex-dumpped');
+	else if(msg.ansi)
+			desc.push('ANSI');
 	else {
 		if(msg.wrapped)
 			desc.push('wrapped');
