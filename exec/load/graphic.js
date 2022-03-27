@@ -61,6 +61,12 @@ function Graphic(w,h,attr,ch, dw)
 	}
 }
 
+Graphic.prototype.extend = function() {
+	for(var x = 0; x < this.width; x++)
+		this.data[x][this.height] = new this.Cell(this.ch,this.attribute);
+	this.height++;
+}
+
 /*
  * Default to not DoorWay mode, allow it to be overridden per object, or
  * globally.
@@ -392,8 +398,12 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 				y++;
 			}
 			while(y >= this.height) {
-				this.scroll();
-				y--;
+				if(this.auto_extend === true)
+					this.extend();
+				else {
+					this.scroll();
+					y--;
+				}
 			}
 		}
 	}
