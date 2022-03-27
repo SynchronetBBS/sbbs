@@ -39,7 +39,7 @@ function Graphic(w,h,attr,ch, dw)
 	else
 		this.width=w;
 
-	if (dw === undefined)
+	if (dw !== undefined)
 		this.doorway_mode = dw;
 
 	this.atcodes=true;
