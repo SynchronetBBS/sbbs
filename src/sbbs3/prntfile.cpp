@@ -350,7 +350,7 @@ bool sbbs_t::random_menu(const char *name, long mode, JSObject* obj)
 		return false;
 	}
 	for(size_t i = 0; i < g.gl_pathc; i++) {
-		char* ext = strchr(g.gl_pathv[i], '.'); // intentionally not using getfext() - issue #380
+		char* ext = strchr(getfname(g.gl_pathv[i]), '.'); // intentionally not using getfext() - issue #380
 		if(ext == NULL)
 			continue;
 		*ext = 0;
