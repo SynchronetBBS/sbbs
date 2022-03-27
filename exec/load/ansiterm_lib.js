@@ -63,6 +63,31 @@ const defs = {
 		to_start:				1,
 		entire:					2,
 	},
+	attr: {
+		normal: 				0,
+		high: 					1,
+		blink:					5,
+		fg: { // aligned with cga_defs.colors[]
+			BLACK:				30,
+			RED:				31,
+			GREEN:				32,
+			BROWN:				33,
+			BLUE:				34,
+			MAGENTA:			35,
+			CYAN:				36,
+			LIGHTGREY:			37,
+		},
+		bg: { // aligned with cga_defs.colors[]
+			BLACK:				40,
+			RED:				41,
+			GREEN:				42,
+			BROWN:				43,
+			BLUE:				44,
+			MAGENTA:			45,
+			CYAN:				46,
+			LIGHTGREY:			47,
+		},
+	},
 };
 
 function attr(atr, curatr, color)
@@ -86,75 +111,27 @@ function attr(atr, curatr, color)
 	}
 
 	str = "\x1b[";
+	if(atr == ANSI_NORMAL)
+		return str + defs.attr.normal + "m";
+
 	if((!(atr&HIGH) && curatr&HIGH) || (!(atr&BLINK) && curatr&BLINK)
 		|| atr==LIGHTGRAY) {
-		str += "0;";
+		str += defs.attr.normal + ";";
 		curatr=LIGHTGRAY;
 	}
 	if(atr&BLINK) {                     /* special attributes */
 		if(!(curatr&BLINK))
-			str += "5;";
+			str += defs.attr.blink + ";";
 	}
 	if(atr&HIGH) {
 		if(!(curatr&HIGH))
-			str += "1;";
+			str += defs.attr.high + ";";
 	}
 	if((atr&0x07) != (curatr&0x07)) {
-		switch(atr&0x07) {
-			case BLACK:
-				str += "30;";
-				break;
-			case RED:
-				str += "31;";
-				break;
-			case GREEN:
-				str += "32;";
-				break;
-			case BROWN:
-				str += "33;";
-				break;
-			case BLUE:
-				str += "34;";
-				break;
-			case MAGENTA:
-				str += "35;";
-				break;
-			case CYAN:
-				str += "36;";
-				break;
-			case LIGHTGRAY:
-				str += "37;";
-				break;
-		}
+		str += defs.attr.fg[colors[atr&0x07]] + ";";
 	}
 	if((atr&0x70) != (curatr&0x70)) {
-		switch(atr&0x70) {
-			/* The BG_BLACK macro is 0x200, so isn't in the mask */
-			case 0 /* BG_BLACK */:
-				str += "40;";
-				break;
-			case BG_RED:
-				str += "41;";
-				break;
-			case BG_GREEN:
-				str += "42;";
-				break;
-			case BG_BROWN:
-				str += "43;";
-				break;
-			case BG_BLUE:
-				str += "44;";
-				break;
-			case BG_MAGENTA:
-				str += "45;";
-				break;
-			case BG_CYAN:
-				str += "46;";
-				break;
-			case BG_LIGHTGRAY:
-				str += "47;";
-				break;
-		}
+		str += defs.attr.bg[colors[(atr&0x70) >> 4]] + ";";
 	}
 	if(str.length <= 2)	/* Convert <ESC>[ to blank */
 		return "";
@@ -221,6 +198,16 @@ function send(a,b,c,d)
 {
 	log(LOG_DEBUG, "ansiterm.sending: " + this[a][b](c,d));
 	console.write(this[a][b](c,d));
+}
+
+function expand_ctrl_a(str)
+{
+	return str.replace(/\x01./g, function(seq) {
+		var cga_val = from_attr_code[seq[1].toUpperCase()];
+		if(cga_val === undefined)
+			return "";
+		return attr(cga_val);
+	});
 }
 
 /* Leave as last line for convenient load() usage: */
