@@ -56,5 +56,30 @@ var   BG_MAGENTA	=(MAGENTA<<4);
 var   BG_BROWN		=(BROWN<<4);
 var   BG_LIGHTGRAY	=(LIGHTGRAY<<4);
 
+// Map Synchronet Ctrl-A attribute code to CGA color value
+var from_attr_code = {
+	'K': BLACK,
+	'R': RED,
+	'G': GREEN,
+	'Y': YELLOW,
+	'B': BLUE,
+	'M': MAGENTA,
+	'C': CYAN,
+	'W': LIGHTGRAY,
+	'0': BG_BLACK,
+	'1': BG_RED,
+	'2': BG_GREEN,
+	'3': BG_BROWN,
+	'4': BG_BLUE,
+	'5': BG_MAGENTA,
+	'6': BG_CYAN,
+	'7': BG_LIGHTGRAY,
+	'H': HIGH,
+	'I': BLINK,
+	'-': ANSI_NORMAL,
+	'_': ANSI_NORMAL,
+	'N': ANSI_NORMAL,
+};
+
 // Leave as last line:
 this;
