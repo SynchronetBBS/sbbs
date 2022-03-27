@@ -307,7 +307,7 @@ void globfree(glob_t* glob)
 
 #else /* __unix__ */
 
-// Case-insensitive version of glob()
+// Filename-case-insensitive version of glob()
 int globi(const char *p, int flags,
 	int (*errfunc) (const char *epath, int eerrno),
 	glob_t *g)
@@ -316,6 +316,7 @@ int globi(const char *p, int flags,
 	int len = 0;
 
 	if(p != NULL) {
+		p = getfname(p);
 		while(*p != '\0' && len < MAX_PATH) {
 			if(IS_ALPHA(*p))
 				len += sprintf(pattern + len, "[%c%c]", toupper(*p), tolower(*p));
