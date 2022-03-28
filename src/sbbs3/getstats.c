@@ -1,4 +1,4 @@
-/* Synchronet C-exported statistics retrieval functions */
+/* Synchronet C-exported statistics retrieval and update functions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -22,25 +22,275 @@
 #include "getstats.h"
 #include "nopen.h"
 #include "smblib.h"
+#include "ini_file.h"
+#include "xpendian.h"
+#include "xpdatetime.h"
+
+// dsts.ini (Daily Statistics) keys:
+#define strStatsDate			"Date"
+#define strStatsTotal			"Total"
+#define strStatsToday			"Today"
+#define strStatsLogons			"Logons"
+#define strStatsTimeon			"Timeon"
+#define strStatsUploads			"Uploads"
+#define strStatsUploadBytes		"UploadB"
+#define strStatsDownloads		"Dnloads"
+#define strStatsDownloadBytes	"DnloadB"
+#define strStatsPosts			"Posts"
+#define strStatsEmail			"Email"
+#define strStatsFeedback		"Feedback"
+#define strStatsNewUsers		"NewUsers"
 
 /****************************************************************************/
-/* Reads data from dsts.dab into stats structure                            */
-/* If node is zero, reads from ctrl\dsts.dab, otherwise from each node		*/
+/* Daily statistics (reset daily)											*/
 /****************************************************************************/
-BOOL getstats(scfg_t* cfg, char node, stats_t* stats)
+char* dstats_fname(scfg_t* cfg, uint node, char* path, size_t size)
 {
-    char str[MAX_PATH+1];
-    int file;
+	safe_snprintf(path, size, "%sdsts.ini", node > 0 && node <= cfg->sys_nodes ? cfg->node_path[node-1] : cfg->ctrl_dir);
+	return path;
+}
 
-    sprintf(str,"%sdsts.dab",node ? cfg->node_path[node-1] : cfg->ctrl_dir);
-    if((file=nopen(str,O_RDONLY))==-1) {
-        return(FALSE); 
+/****************************************************************************/
+/* Cumulative statistics (log)												*/
+/****************************************************************************/
+char* cstats_fname(scfg_t* cfg, uint node, char* path, size_t size)
+{
+	safe_snprintf(path, size, "%scsts.tab", node > 0 && node <= cfg->sys_nodes ? cfg->node_path[node-1] : cfg->ctrl_dir);
+	return path;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+FILE* fopen_dstats(scfg_t* cfg, uint node, BOOL for_write)
+{
+    char path[MAX_PATH+1];
+
+	dstats_fname(cfg, node, path, sizeof(path));
+	return iniOpenFile(path, for_write);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+FILE* fopen_cstats(scfg_t* cfg, uint node, BOOL for_write)
+{
+    char path[MAX_PATH+1];
+
+	cstats_fname(cfg, node, path, sizeof(path));
+	return fnopen(NULL, path, for_write ? O_CREAT|O_WRONLY|O_APPEND : O_RDONLY);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL fclose_dstats(FILE* fp)
+{
+	return iniCloseFile(fp);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL fclose_cstats(FILE* fp)
+{
+	return fclose(fp) == 0;
+}
+
+static void gettotals(str_list_t ini, const char* section, totals_t* stats)
+{
+	stats->logons  = iniGetLongInt(ini, section, strStatsLogons, 0);
+	stats->timeon  = iniGetLongInt(ini, section, strStatsTimeon, 0);
+	stats->uls     = iniGetLongInt(ini, section, strStatsUploads, 0);
+	stats->ulb     = iniGetBytes(ini,   section, strStatsUploadBytes, /* unit: */1, 0);
+	stats->dls     = iniGetLongInt(ini, section, strStatsDownloads, 0);
+	stats->dlb     = iniGetBytes(ini,   section, strStatsDownloadBytes, /* unit: */1, 0);
+	stats->posts   = iniGetLongInt(ini, section, strStatsPosts, 0);
+	stats->email   = iniGetLongInt(ini, section, strStatsEmail, 0);
+	stats->fbacks  = iniGetLongInt(ini, section, strStatsFeedback, 0);
+	stats->nusers  = iniGetLongInt(ini, section, strStatsNewUsers, 0);
+}
+
+/****************************************************************************/
+/* Reads data from dsts.ini into stats structure                            */
+/* If node is zero, reads from ctrl/dsts.ini, otherwise from each node		*/
+/****************************************************************************/
+BOOL fread_dstats(FILE* fp, stats_t* stats)
+{
+	str_list_t ini;
+
+	if(fp == NULL)
+		return FALSE;
+
+	memset(stats, 0, sizeof(*stats));
+	ini = iniReadFile(fp);
+	stats->date    = iniGetDateTime(ini, NULL, strStatsDate, 0);
+	gettotals(ini, strStatsToday, &stats->today);
+	gettotals(ini, strStatsTotal, &stats->total);
+	iniFreeStringList(ini);
+
+	return TRUE;
+}
+
+/****************************************************************************/
+/* Reads data from dsts.ini into stats structure                            */
+/* If node is zero, reads from ctrl/dsts.ini, otherwise from each node		*/
+/****************************************************************************/
+BOOL getstats(scfg_t* cfg, uint node, stats_t* stats)
+{
+    char path[MAX_PATH+1];
+	BOOL result;
+
+	memset(stats, 0, sizeof(*stats));
+	dstats_fname(cfg, node, path, sizeof(path));
+	FILE* fp = fnopen(NULL, path, O_RDONLY);
+	if(fp == NULL) {
+		int file;
+		if(fexist(path))
+			return FALSE;
+		// Upgrading from v3.19?
+		struct {									/* System/Node Statistics */
+			uint32_t	date,						/* When last rolled-over */
+						logons,						/* Total Logons on System */
+						ltoday,						/* Total Logons Today */
+						timeon,						/* Total Time on System */
+						ttoday,						/* Total Time Today */
+						uls,						/* Total Uploads Today */
+						ulb,						/* Total Upload Bytes Today */
+						dls,						/* Total Downloads Today */
+						dlb,						/* Total Download Bytes Today */
+						ptoday,						/* Total Posts Today */
+						etoday,						/* Total Emails Today */
+						ftoday; 					/* Total Feedbacks Today */
+			uint16_t	nusers; 					/* Total New Users Today */
+		} legacy_stats;
+
+		SAFEPRINTF(path,"%sdsts.dab",node ? cfg->node_path[node-1] : cfg->ctrl_dir);
+		if((file=nopen(path,O_RDONLY))==-1) {
+			return(FALSE); 
+		}
+		read(file, &legacy_stats, sizeof(legacy_stats));
+		close(file);
+
+		stats->date     = LE_INT(legacy_stats.date);
+		stats->logons   = LE_INT(legacy_stats.logons);
+		stats->ltoday   = LE_INT(legacy_stats.ltoday);
+		stats->timeon	= LE_INT(legacy_stats.timeon);
+		stats->ttoday   = LE_INT(legacy_stats.ttoday);
+		stats->uls      = LE_INT(legacy_stats.uls);
+		stats->ulb      = LE_INT(legacy_stats.ulb);
+		stats->dls      = LE_INT(legacy_stats.dls);
+		stats->dlb      = LE_INT(legacy_stats.dlb);
+		stats->ptoday   = LE_INT(legacy_stats.ptoday);
+		stats->etoday   = LE_INT(legacy_stats.etoday);
+		stats->ftoday   = LE_INT(legacy_stats.ftoday);
+		stats->nusers   = LE_INT(legacy_stats.nusers);
+		return TRUE;
 	}
-    lseek(file,4L,SEEK_SET);    /* Skip update time/date */
-	/* TODO: Direct read of unpacked struct */
-    read(file,stats,sizeof(stats_t));
-    close(file);
-	return(TRUE);
+	result = fread_dstats(fp, stats);
+	fclose(fp);
+	return result;
+}
+
+static void settotals(str_list_t* ini, const char* section, const totals_t* stats)
+{
+	iniSetLongInt(ini, section, strStatsLogons, stats->logons, /* style: */NULL);
+	iniSetLongInt(ini, section, strStatsTimeon, stats->timeon, /* style: */NULL);
+	iniSetLongInt(ini, section, strStatsUploads, stats->uls, /* style: */NULL);
+	iniSetBytes(ini,   section, strStatsUploadBytes, /* unit: */1, stats->ulb, /* style: */NULL);
+	iniSetLongInt(ini, section, strStatsDownloads, stats->dls, /* style: */NULL);
+	iniSetBytes(ini,   section, strStatsDownloadBytes, /* unit: */1, stats->dlb, /* style: */NULL);
+	iniSetLongInt(ini, section, strStatsPosts, stats->posts, /* style: */NULL);
+	iniSetLongInt(ini, section, strStatsEmail, stats->email, /* style: */NULL);
+	iniSetLongInt(ini, section, strStatsFeedback, stats->fbacks, /* style: */NULL);
+	iniSetLongInt(ini, section, strStatsNewUsers, stats->nusers, /* style: */NULL);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL fwrite_dstats(FILE* fp, const stats_t* stats)
+{
+	BOOL result;
+	str_list_t ini;
+
+	if(fp == NULL)
+		return FALSE;
+
+	ini = iniReadFile(fp);
+	iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */FALSE, stats->date, /* style: */NULL);
+	settotals(&ini, strStatsToday, &stats->today);
+	settotals(&ini, strStatsTotal, &stats->total);
+	result = iniWriteFile(fp, ini);
+	iniFreeStringList(ini);
+
+	return result;
+}
+
+/****************************************************************************/
+/* If node is zero, reads from ctrl/dsts.ini, otherwise from each node		*/
+/****************************************************************************/
+BOOL putstats(scfg_t* cfg, uint node, const stats_t* stats)
+{
+	BOOL result;
+
+	FILE* fp = fopen_dstats(cfg, node, /* for_write: */TRUE);
+	if(fp == NULL)
+		return FALSE;
+	result = fwrite_dstats(fp, stats);
+	iniCloseFile(fp);
+	return result;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+void rolloverstats(stats_t* stats)
+{
+	stats->date = time(NULL);
+	memset(&stats->today, 0, sizeof(stats->today));
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL fwrite_cstats(FILE* fp, const stats_t* stats)
+{
+	int len;
+	char pad[LEN_CSTATS_RECORD];
+	memset(pad, '\t', sizeof(pad) - 1);
+	TERMINATE(pad);
+	fseek(fp, 0, SEEK_END);
+	if(ftell(fp) == 0) {
+		len = fprintf(fp
+			,"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t"
+			,strStatsDate
+			,strStatsLogons
+			,strStatsTimeon
+			,strStatsUploads
+			,strStatsUploadBytes
+			,strStatsDownloads
+			,strStatsDownloadBytes
+			,strStatsPosts
+			,strStatsEmail
+			,strStatsFeedback
+			,strStatsNewUsers
+		);
+		if(len >= sizeof(pad))
+			return FALSE;
+		if(fprintf(fp, "%.*s\n", sizeof(pad) - (len + 1), pad) <= 0)
+			return FALSE;
+	}
+	len = fprintf(fp
+		,"%" PRIu32 "\t%lu\t%lu\t%lu\t%" PRIu64 "\t%lu\t%" PRIu64 "\t%lu\t%lu\t%lu\t%lu\t"
+		,time_to_isoDate(stats->date)
+		,stats->ltoday
+		,stats->ttoday
+		,stats->uls
+		,stats->ulb
+		,stats->dls
+		,stats->dlb
+		,stats->ptoday
+		,stats->etoday
+		,stats->ftoday
+		,stats->nusers
+	);
+	if(len >= sizeof(pad))
+		return FALSE;
+	return fprintf(fp, "%.*s\n", sizeof(pad) - (len + 1), pad) > 0;
 }
 
 /****************************************************************************/
@@ -86,48 +336,100 @@ ulong getposts(scfg_t* cfg, uint subnum)
 	return result;
 }
 
-BOOL inc_sys_upload_stats(scfg_t* cfg, ulong files, ulong bytes)
+static void inc_xfer_stat_keys(str_list_t* ini, const char* section, ulong files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
-	char	str[MAX_PATH+1];
-	int		file;
-	uint32_t	val; // TODO: support > 4GB uploads in a day
-
-	SAFEPRINTF(str,"%sdsts.dab",cfg->ctrl_dir);
-	if((file=nopen(str,O_RDWR))==-1) 
-		return(FALSE);
-
-	(void)lseek(file,20L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-	(void)read(file,&val,4);        /* Uploads today         */
-	val+=files;
-	(void)lseek(file,-4L,SEEK_CUR);
-	(void)write(file,&val,4);
-	(void)read(file,&val,4);        /* Upload bytes today    */
-	val+=bytes;
-	(void)lseek(file,-4L,SEEK_CUR);
-	(void)write(file,&val,4);
-	close(file);
-	return(TRUE);
+	iniSetLongInt(ini, section, files_key, iniGetLongInt(*ini, section, files_key, 0) + files, /* style: */NULL);
+	iniSetBytes(ini, section, bytes_key, /* unit: */1, iniGetBytes(*ini, section, bytes_key, /* unit: */1, 0) + bytes, /* style: */NULL);
 }
 
-BOOL inc_sys_download_stats(scfg_t* cfg, ulong files, ulong bytes)
+static BOOL inc_xfer_stats(scfg_t* cfg, uint node, ulong files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
-	char	str[MAX_PATH+1];
-	int		file;
-	uint32_t	val; // TODO: support > 4GB downloads in a day
+	FILE* fp;
+	str_list_t ini;
+	BOOL result = FALSE;
 
-	SAFEPRINTF(str,"%sdsts.dab",cfg->ctrl_dir);
-	if((file=nopen(str,O_RDWR))==-1) 
-		return(FALSE);
+	fp = fopen_dstats(cfg, node, /* for_write: */TRUE);
+	if(fp == NULL)
+		return FALSE;
+	ini = iniReadFile(fp);
+	inc_xfer_stat_keys(&ini, strStatsTotal, files, bytes, files_key, bytes_key);
+	inc_xfer_stat_keys(&ini, strStatsToday, files, bytes, files_key, bytes_key);
+	result = iniWriteFile(fp, ini) > 0;
+	fclose_dstats(fp);
+	iniFreeStringList(ini);
 
-	(void)lseek(file,28L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-	(void)read(file,&val,4);        /* Downloads today         */
-	val+=files;
-	(void)lseek(file,-4L,SEEK_CUR);
-	(void)write(file,&val,4);
-	(void)read(file,&val,4);        /* Download bytes today    */
-	val+=bytes;
-	(void)lseek(file,-4L,SEEK_CUR);
-	(void)write(file,&val,4);
-	close(file);
-	return(TRUE);
+	return result;
+}
+
+static BOOL inc_all_xfer_stats(scfg_t* cfg, ulong files, uint64_t bytes, const char* files_key, const char* bytes_key)
+{
+	BOOL success = TRUE;
+	if(cfg->node_num)
+		success = inc_xfer_stats(cfg, cfg->node_num, files, bytes, files_key, bytes_key);
+	return inc_xfer_stats(cfg, /* system = node_num 0 */0, files, bytes, files_key, bytes_key) && success;
+}
+
+BOOL inc_upload_stats(scfg_t* cfg, ulong files, uint64_t bytes)
+{
+	return inc_all_xfer_stats(cfg, files, bytes, strStatsUploads, strStatsUploadBytes);
+}
+
+BOOL inc_download_stats(scfg_t* cfg, ulong files, uint64_t bytes)
+{
+	return inc_all_xfer_stats(cfg, files, bytes, strStatsDownloads, strStatsDownloadBytes);
+}
+
+static BOOL inc_post_stat(scfg_t* cfg, uint node, uint count)
+{
+	FILE* fp;
+	str_list_t ini;
+	BOOL result = FALSE;
+
+	fp = fopen_dstats(cfg, node, /* for_write: */TRUE);
+	if(fp == NULL)
+		return FALSE;
+	ini = iniReadFile(fp);
+	iniSetLongInt(&ini, strStatsToday, strStatsPosts, iniGetLongInt(ini, strStatsToday, strStatsPosts, 0) + count, /* style: */NULL);
+	iniSetLongInt(&ini, strStatsTotal, strStatsPosts, iniGetLongInt(ini, strStatsTotal, strStatsPosts, 0) + count, /* style: */NULL);
+	result = iniWriteFile(fp, ini) > 0;
+	fclose_dstats(fp);
+	iniFreeStringList(ini);
+
+	return result;
+}
+
+BOOL inc_post_stats(scfg_t* cfg, uint count)
+{
+	BOOL success = TRUE;
+	if(cfg->node_num)
+		success = inc_post_stat(cfg, cfg->node_num, count);
+	return inc_post_stat(cfg, /* system = node_num 0 */0, count) && success;
+}
+
+static BOOL inc_email_stat(scfg_t* cfg, uint node, uint count, BOOL feedback)
+{
+	FILE* fp;
+	str_list_t ini;
+	BOOL result = FALSE;
+	const char* key = feedback ? strStatsFeedback : strStatsEmail;
+
+	fp = fopen_dstats(cfg, node, /* for_write: */TRUE);
+	if(fp == NULL)
+		return FALSE;
+	ini = iniReadFile(fp);
+	iniSetLongInt(&ini, strStatsToday, key, iniGetLongInt(ini, strStatsToday, key, 0) + count, /* style: */NULL);
+	iniSetLongInt(&ini, strStatsTotal, key, iniGetLongInt(ini, strStatsTotal, key, 0) + count, /* style: */NULL);
+	result = iniWriteFile(fp, ini) > 0;
+	fclose_dstats(fp);
+	iniFreeStringList(ini);
+
+	return result;
+}
+
+BOOL inc_email_stats(scfg_t* cfg, uint count, BOOL feedback)
+{
+	BOOL success = TRUE;
+	if(cfg->node_num)
+		success = inc_email_stat(cfg, cfg->node_num, count, feedback);
+	return inc_email_stat(cfg, /* system = node_num 0 */0, count, feedback) && success;
 }

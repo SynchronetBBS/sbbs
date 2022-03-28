@@ -164,6 +164,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="..\getstats.c" />
     <ClCompile Include="..\msgdate.c" />
     <ClCompile Include="..\userdat.c" />
     <ClCompile Include="scfg.c">

@@ -807,7 +807,7 @@ static void send_thread(void* arg)
 				}
 			}
 			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
-				inc_sys_download_stats(&scfg, 1, (ulong)total);
+				inc_download_stats(&scfg, 1, (ulong)total);
 		}	
 
 		if(xfer.credits) {
@@ -1078,7 +1078,7 @@ static void receive_thread(void* arg)
 						,cdt*(uint64_t)(scfg.dir[f.dir]->up_pct/100.0)); 
 			}
 			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
-				inc_sys_upload_stats(&scfg, 1, (ulong)total);
+				inc_upload_stats(&scfg, 1, (ulong)total);
 		}
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock,sess,"226 Upload complete (%lu cps).",cps);

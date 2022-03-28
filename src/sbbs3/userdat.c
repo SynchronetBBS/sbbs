@@ -2465,7 +2465,7 @@ BOOL user_posted_msg(scfg_t* cfg, user_t* user, int count)
 	user->posts	=(ushort)adjustuserrec(cfg, user->number, U_POSTS, count);
 	user->ptoday=(ushort)adjustuserrec(cfg, user->number, U_PTODAY, count);
 
-	return(TRUE);
+	return inc_post_stats(cfg, count);
 }
 
 BOOL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback)
@@ -2479,7 +2479,7 @@ BOOL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback)
 		user->emails=(ushort)adjustuserrec(cfg, user->number, U_EMAILS, count);
 	user->etoday=(ushort)adjustuserrec(cfg, user->number, U_ETODAY, count);
 
-	return(TRUE);
+	return inc_email_stats(cfg, count, feedback);
 }
 
 BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
@@ -2588,7 +2588,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		subtract_cdt(cfg, user, f.cost);
 
 	if(!(cfg->dir[dirnum]->misc&DIR_NOSTAT))
-		inc_sys_download_stats(cfg, /* files: */1, (ulong)bytes); // TODO: remove ulong typecast
+		inc_download_stats(cfg, /* files: */1, bytes);
 
 	smb_freefilemem(&f);
 	return TRUE;
@@ -2871,22 +2871,21 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	delfiles(str,ALLFILES, /* keep: */0);
 	rmdir(str);
 
-	SAFEPRINTF2(str,"%suser/ptrs/%04u.ixb",cfg->data_dir,user->number); /* msg ptrs */
+	SAFEPRINTF2(str,"%suser/ptrs/%04u.ixb",cfg->data_dir,user->number); /* legacy msg ptrs */
 	remove(str);
 
 	/* Update daily statistics database (for system and node) */
 
 	for(i=0;i<2;i++) {
-		SAFEPRINTF(str,"%sdsts.dab",i ? cfg->ctrl_dir : cfg->node_dir);
-		if((file=nopen(str,O_RDWR))==-1)
+		FILE* fp = fopen_dstats(cfg, i ? cfg->node_num : 0, /* for_write: */TRUE);
+		if(fp == NULL)
 			continue;
-		memset(&stats,0,sizeof(stats));
-		(void)lseek(file,4L,SEEK_SET);   /* Skip timestamp */
-		(void)read(file,&stats,sizeof(stats));
-		stats.nusers++;
-		(void)lseek(file,4L,SEEK_SET);
-		(void)write(file,&stats,sizeof(stats));
-		close(file);
+		if(fread_dstats(fp, &stats)) {
+			stats.today.nusers++;
+			stats.total.nusers++;
+			fwrite_dstats(fp, &stats);
+		}
+		fclose_dstats(fp);
 	}
 
 	return(0);

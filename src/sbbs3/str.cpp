@@ -993,9 +993,9 @@ void sbbs_t::node_stats(uint node_num)
 	bprintf(text[StatsLogonsToday],ultoac(stats.ltoday,tmp));
 	bprintf(text[StatsTotalTime],ultoac(stats.timeon,tmp));
 	bprintf(text[StatsTimeToday],ultoac(stats.ttoday,tmp));
-	bprintf(text[StatsUploadsToday],ultoac(stats.ulb,tmp)
+	bprintf(text[StatsUploadsToday],u64toac(stats.ulb,tmp)
 		,stats.uls);
-	bprintf(text[StatsDownloadsToday],ultoac(stats.dlb,tmp)
+	bprintf(text[StatsDownloadsToday],u64toac(stats.dlb,tmp)
 		,stats.dls);
 	bprintf(text[StatsPostsToday],ultoac(stats.ptoday,tmp));
 	bprintf(text[StatsEmailsToday],ultoac(stats.etoday,tmp));
@@ -1013,9 +1013,9 @@ void sbbs_t::sys_stats(void)
 	bprintf(text[StatsLogonsToday],ultoac(stats.ltoday,tmp));
 	bprintf(text[StatsTotalTime],ultoac(stats.timeon,tmp));
 	bprintf(text[StatsTimeToday],ultoac(stats.ttoday,tmp));
-	bprintf(text[StatsUploadsToday],ultoac(stats.ulb,tmp)
+	bprintf(text[StatsUploadsToday],u64toac(stats.ulb,tmp)
 		,stats.uls);
-	bprintf(text[StatsDownloadsToday],ultoac(stats.dlb,tmp)
+	bprintf(text[StatsDownloadsToday],u64toac(stats.dlb,tmp)
 		,stats.dls);
 	bprintf(text[StatsPostsToday],ultoac(stats.ptoday,tmp));
 	bprintf(text[StatsEmailsToday],ultoac(stats.etoday,tmp));

@@ -26,6 +26,7 @@
 #include "userdat.h"
 #include "filedat.h"
 #include "load_cfg.h"
+#include "getstats.h"
 #include "smblib.h"
 #include "git_branch.h"
 #include "git_hash.h"
@@ -77,29 +78,11 @@ int lprintf(int level, const char *fmat, ...)
 }
 
 /****************************************************************************/
-/* Updates dstst.dab file													*/
+/* Updates dsts.ini file													*/
 /****************************************************************************/
-void updatestats(ulong size)
+void updatestats(off_t size)
 {
-    char	str[MAX_PATH+1];
-    int		file;
-	uint32_t	l;
-
-	SAFEPRINTF(str,"%sdsts.dab",scfg.ctrl_dir);
-	if((file=nopen(str,O_RDWR|O_BINARY))==-1) {
-		printf("ERR_OPEN %s\n",str);
-		return;
-	}
-	lseek(file,20L,SEEK_SET);	/* Skip timestamp, logons and logons today */
-	read(file,&l,4);			/* Uploads today		 */
-	l++;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&l,4);
-	read(file,&l,4);			/* Upload bytes today	 */
-	l+=size;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&l,4);
-	close(file);
+	inc_upload_stats(&scfg, 1, size);
 }
 
 bool reupload(smb_t* smb, file_t* f)
@@ -184,9 +167,9 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			memset(ext, 0, sizeof(ext));
 			memset(&f, 0, sizeof(f));
 			char fdesc[LEN_FDESC + 1] = {0};
-			uint32_t cdt = (uint32_t)flength(filepath);
+			off_t cdt = flength(filepath);
 			time_t file_timestamp = fdate(filepath);
-			printf("%10"PRIu32"  %s\n"
+			printf("%10"PRIuOFF"  %s\n"
 				,cdt, unixtodstr(&scfg,(time32_t)file_timestamp,str));
 			exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 			if(exist) {
@@ -418,7 +401,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 				, result, smb.last_error, smb.file);
 
 		if(mode&UL_STATS)
-			updatestats((ulong)l);
+			updatestats(l);
 		files++;
 	} while(!feof(stream) && !ferror(stream));
 	fclose(stream);
