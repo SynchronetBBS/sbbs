@@ -1728,7 +1728,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		else if(!strcmp(sp,"FTODAY"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ftoday);
 		else if(!strcmp(sp,"NUSERS"))
-			safe_snprintf(str,maxlen,"%u",stats.nusers);
+			safe_snprintf(str,maxlen,"%lu",stats.nusers);
 		return(str);
 	}
 
