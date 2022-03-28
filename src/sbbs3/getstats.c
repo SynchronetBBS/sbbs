@@ -271,7 +271,7 @@ BOOL fwrite_cstats(FILE* fp, const stats_t* stats)
 		);
 		if(len >= sizeof(pad))
 			return FALSE;
-		if(fprintf(fp, "%.*s\n", sizeof(pad) - (len + 1), pad) <= 0)
+		if(fprintf(fp, "%.*s\n", (int)(sizeof(pad) - (len + 1)), pad) <= 0)
 			return FALSE;
 	}
 	len = fprintf(fp
@@ -290,7 +290,7 @@ BOOL fwrite_cstats(FILE* fp, const stats_t* stats)
 	);
 	if(len >= sizeof(pad))
 		return FALSE;
-	return fprintf(fp, "%.*s\n", sizeof(pad) - (len + 1), pad) > 0;
+	return fprintf(fp, "%.*s\n", (int)(sizeof(pad) - (len + 1)), pad) > 0;
 }
 
 /****************************************************************************/

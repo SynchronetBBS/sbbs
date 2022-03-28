@@ -1716,11 +1716,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		else if(!strcmp(sp,"ULS"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.uls);
 		else if(!strcmp(sp,"ULB"))
-			safe_snprintf(str,maxlen,"%" PRIu32, stats.ulb);
+			safe_snprintf(str,maxlen,"%" PRIu64, stats.ulb);
 		else if(!strcmp(sp,"DLS"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.dls);
 		else if(!strcmp(sp,"DLB"))
-			safe_snprintf(str,maxlen,"%" PRIu32, stats.dlb);
+			safe_snprintf(str,maxlen,"%" PRIu64, stats.dlb);
 		else if(!strcmp(sp,"PTODAY"))
 			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ptoday);
 		else if(!strcmp(sp,"ETODAY"))
