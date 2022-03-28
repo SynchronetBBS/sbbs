@@ -2555,10 +2555,6 @@ void __fastcall TMainForm::HelpAboutMenuItemClick(TObject *Sender)
     delete AboutBoxForm;
 }
 //---------------------------------------------------------------------------
-BOOL MuteService(SC_HANDLE svc, SERVICE_STATUS* status, BOOL mute)
-{
-}
-//---------------------------------------------------------------------------
 void __fastcall TMainForm::SoundToggleExecute(TObject *Sender)
 {
     SoundToggle->Checked=!SoundToggle->Checked;
