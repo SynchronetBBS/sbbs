@@ -285,12 +285,6 @@ DUPEFIND_OBJS = 	$(LOAD_CFG_OBJS) \
 SMBACTIV_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/smbactiv$(OFILE)
 
-DSTSEDIT_OBJS = \
-			$(OBJODIR)/dstsedit$(OFILE)\
-			$(OBJODIR)/date_str$(OFILE) \
-			$(OBJODIR)/str_util$(OFILE) \
-			$(OBJODIR)/nopen$(OFILE)
-
 READSAUCE_OBJS = \
 			$(OBJODIR)/readsauce$(OFILE)
 
