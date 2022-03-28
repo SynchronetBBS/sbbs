@@ -314,11 +314,11 @@ int globi(const char *p, int flags,
 {
 	char pattern[MAX_PATH * 2] = "";
 	int len = 0;
+	char* fname = getfname(p);
 
 	if(p != NULL) {
-		p = getfname(p);
 		while(*p != '\0' && len < MAX_PATH) {
-			if(IS_ALPHA(*p))
+			if(p >= fname && IS_ALPHA(*p))
 				len += sprintf(pattern + len, "[%c%c]", toupper(*p), tolower(*p));
 			else
 				pattern[len++] = *p;
