@@ -9,6 +9,7 @@ OBJS	:=	\
 			$(MTOBJODIR)/scfglib1$(OFILE) \
 			$(MTOBJODIR)/scfglib2$(OFILE) \
 			$(MTOBJODIR)/userdat$(OFILE) \
+			$(MTOBJODIR)/getstats$(OFILE) \
 			$(MTOBJODIR)/msgdate$(OFILE) \
 			$(MTOBJODIR)/str_util$(OFILE) \
 			$(MTOBJODIR)/chatfuncs$(OFILE) \
