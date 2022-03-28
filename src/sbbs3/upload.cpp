@@ -167,6 +167,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
 		logon_ulb+=length;  /* Update 'this call' stats */
 		logon_uls++;
+		inc_upload_stats(&cfg, 1, length);
 	}
 	if(cfg.dir[f->dir]->misc&DIR_AONLY)  /* Forced anonymous */
 		f->hdr.attr |= MSG_ANONYMOUS;

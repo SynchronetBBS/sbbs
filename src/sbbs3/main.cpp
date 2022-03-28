@@ -4228,42 +4228,34 @@ void sbbs_t::catsyslog(int crash)
 
 void sbbs_t::logoffstats()
 {
-    char str[MAX_PATH+1];
-    int i,file;
+    int i;
     stats_t stats;
 
 	if(REALSYSOP && !(cfg.sys_misc&SM_SYSSTAT))
 		return;
 
+	if(useron.rest&FLAG('Q')) 	/* Don't count QWKnet nodes */
+		return;
+
+	now = time(NULL);
+	if(now <= logontime) {
+		lprintf(LOG_ERR, "Logoff time (%lu) <= logon time (%lu)", (ulong)now, (ulong)logontime);
+		return;
+	}
+	ulong minutes_used = (ulong)(now-logontime)/60;
+	if(minutes_used < 1)
+		return;
+
 	for(i=0;i<2;i++) {
-		SAFEPRINTF(str,"%sdsts.dab",i ? cfg.ctrl_dir : cfg.node_dir);
-		if((file=nopen(str,O_RDWR))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-			return;
+		FILE* fp = fopen_dstats(&cfg, i ? 0 : cfg.node_num, /* for_write: */TRUE);
+		if(fp == NULL)
+			continue;
+		if(fread_dstats(fp, &stats)) {
+			stats.total.timeon += minutes_used;
+			stats.today.timeon += minutes_used;
+			fwrite_dstats(fp, &stats);
 		}
-		memset(&stats,0,sizeof(stats));
-		lseek(file,4L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-		read(file,&stats,sizeof(stats));
-
-		if(!(useron.rest&FLAG('Q'))) {	/* Don't count QWKnet nodes */
-			stats.timeon+=(uint32_t)(now-logontime)/60;
-			stats.ttoday+=(uint32_t)(now-logontime)/60;
-			stats.ptoday+=logon_posts;
-		}
-		stats.uls+=(uint32_t)logon_uls;
-		stats.ulb+=(uint32_t)logon_ulb;
-		// logon_dls and logons_dlb are now handled in user_downloaded_file()
-		stats.etoday+=logon_emails;
-		stats.ftoday+=logon_fbacks;
-
-#if 0 // This is now handled in newuserdat()
-		if(sys_status&SS_NEWUSER)
-			stats.nusers++;
-#endif
-
-		lseek(file,4L,SEEK_SET);
-		write(file,&stats,sizeof(stats));
-		close(file);
+		fclose_dstats(fp);
 	}
 }
 
@@ -4375,7 +4367,7 @@ void node_thread(void* arg)
     node_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 
 	sbbs->logout();
-	sbbs->logoffstats();	/* Updates both system and node dsts.dab files */
+	sbbs->logoffstats();	/* Updates both system and node dsts.ini (daily statistics) files */
 
 	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
 	FILE* fp = fopen(str, "at");
@@ -4787,7 +4779,6 @@ void bbs_thread(void* arg)
 	socklen_t		client_addr_len;
 	SOCKET			client_socket=INVALID_SOCKET;
 	int				i;
-    int				file;
 	int				result;
 	time_t			t;
 	time_t			start;
@@ -4961,7 +4952,7 @@ void bbs_thread(void* arg)
 	lprintf(LOG_INFO,"Verifying/creating data directories");
 	make_data_dirs(&scfg);
 
-	/* Create missing node directories and dsts.dab files */
+	/* Create missing node directories */
 	lprintf(LOG_INFO,"Verifying/creating node directories");
 	for(i=0;i<=scfg.sys_nodes;i++) {
 		if(i) {
@@ -4972,17 +4963,69 @@ void bbs_thread(void* arg)
 				return;
 			}
 		}
-		SAFEPRINTF(str,"%sdsts.dab",i ? scfg.node_path[i-1] : scfg.ctrl_dir);
-		if(flength(str)<DSTSDABLEN) {
-			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO, DEFFILEMODE))==-1) {
-				lprintf(LOG_CRIT,"!ERROR %d (%s) creating %s",errno, strerror(errno), str);
-				cleanup(1);
-				return;
+		// Convert old dsts.dab -> dsts.ini
+		if(!fexist(dstats_fname(&scfg, i, str, sizeof(str)))) {
+			lprintf(LOG_NOTICE, "Auto-upgrading daily statistics data file: %s", str);
+			stats_t stats;
+			getstats(&scfg, i, &stats);
+			putstats(&scfg, i, &stats);
+		}
+		if(!fexist(cstats_fname(&scfg, i, str, sizeof(str)))) {
+			ulong record = 0;
+			lprintf(LOG_NOTICE, "Auto-upgrading cumulative statistics log file: %s", str);
+			stats_t stats;
+			FILE* out = fopen_cstats(&scfg, i, /* write: */TRUE);
+			if(out == NULL) {
+				lprintf(LOG_ERR, "!ERROR %d (%s) creating: %s", errno, strerror(errno), str);
+				continue;
 			}
-			while(filelength(file)<DSTSDABLEN)
-				if(write(file,"\0",1)!=1)
-					break;				/* Create NULL system dsts.dab */
-			close(file);
+			SAFEPRINTF(str, "%scsts.dab", i ? scfg.node_path[i-1] : scfg.ctrl_dir);
+			FILE* in = fopen(str, "rb");
+			if(in == NULL)
+				lprintf(LOG_ERR, "!ERROR %d (%s) creating: %s", errno, strerror(errno), str);
+			else {
+				ZERO_VAR(stats);
+				while(!feof(in)) {
+					struct {									/* System/Node Statistics */
+						uint32_t	date,						/* When last rolled-over */
+									logons,						/* Total Logons on System */
+									timeon,						/* Total Time on System */
+									uls,						/* Total Uploads Today */
+									ulb,						/* Total Upload Bytes Today */
+									dls,						/* Total Downloads Today */
+									dlb,						/* Total Download Bytes Today */
+									ptoday,						/* Total Posts Today */
+									etoday,						/* Total Emails Today */
+									ftoday; 					/* Total Feedbacks Today */
+					} legacy_stats;
+					if(fread(&legacy_stats, sizeof(legacy_stats), 1, in) != 1)
+						break;
+					record++;
+					if(legacy_stats.logons > 1000
+						|| legacy_stats.timeon > 10000) {
+						lprintf(LOG_WARNING, "Skipped corrupted record #%lu in %s", record, str);
+						continue;
+					}
+					ZERO_VAR(stats);
+					stats.date         = legacy_stats.date;
+					stats.today.logons = legacy_stats.logons;
+					stats.today.timeon = legacy_stats.timeon;
+					stats.today.uls    = legacy_stats.uls;
+					stats.today.ulb    = legacy_stats.ulb;
+					stats.today.dls    = legacy_stats.dls;
+					stats.today.dlb    = legacy_stats.dlb;
+					stats.today.posts  = legacy_stats.ptoday;
+					stats.today.email  = legacy_stats.etoday;
+					stats.today.fbacks = legacy_stats.ftoday;
+					if(!fwrite_cstats(out, &stats)) {
+						lprintf(LOG_ERR, "!WRITE ERROR, %s line %d", __FILE__, __LINE__);
+						break;
+					}
+				}
+				fclose(in);
+			}
+			fclose_cstats(out);
+			lprintf(LOG_INFO, "Done (%lu daily-statistics records converted)", record);
 		}
 	}
 

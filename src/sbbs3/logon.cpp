@@ -564,109 +564,68 @@ bool sbbs_t::logon()
 }
 
 /****************************************************************************/
-/* Checks the system dsts.dab to see if it is a new day, if it is, all the  */
-/* nodes' and the system's csts.dab are added to, and the dsts.dab's daily  */
-/* stats are cleared. Also increments the logon values in dsts.dab if       */
+/* Checks the system dsts.ini to see if it is a new day, if it is, all the  */
+/* nodes' and the system's csts.tab are added to, and the dsts.ini's daily  */
+/* stats are cleared. Also increments the logon values in dsts.ini if       */
 /* applicable.                                                              */
 /****************************************************************************/
 ulong sbbs_t::logonstats()
 {
-    char str[MAX_PATH+1];
-    int dsts,csts;
+	char msg[256];
+    char path[MAX_PATH+1];
+    FILE* csts;
+	FILE* dsts;
     uint i;
-    time32_t update32_t=0;
-    time_t update_t=0;
-	time32_t now32;
     stats_t stats;
 	node_t	node;
 	struct tm tm, update_tm;
 
 	sys_status&=~SS_DAILY;
-	memset(&stats,0,sizeof(stats));
-	safe_snprintf(str, sizeof(str), "%sdsts.dab",cfg.ctrl_dir);
-	if((dsts=nopen(str,O_RDWR))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return(0L); 
-	}
-	read(dsts,&update32_t,4);			/* Last updated         */
-	update_t=update32_t;
-	read(dsts,&stats.logons,4);		/* Total number of logons on system */
-	close(dsts);
+	getstats(&cfg, 0, &stats);
+
 	now=time(NULL);
-	now32=(time32_t)now;
-	if(update_t>now+(24L*60L*60L)) /* More than a day in the future? */
-		errormsg(WHERE,ERR_CHK,"Daily stats time stamp",(ulong)update_t);
-	if(localtime_r(&update_t,&update_tm)==NULL)
+	if(stats.date > now+(24L*60L*60L)) /* More than a day in the future? */
+		errormsg(WHERE,ERR_CHK,"Daily stats date/time stamp", (ulong)stats.date);
+	if(localtime_r(&stats.date, &update_tm)==NULL)
 		return(0);
 	if(localtime_r(&now,&tm)==NULL)
 		return(0);
 	if((tm.tm_mday>update_tm.tm_mday && tm.tm_mon==update_tm.tm_mon)
 		|| tm.tm_mon>update_tm.tm_mon || tm.tm_year>update_tm.tm_year) {
 
-		safe_snprintf(str, sizeof(str), "New Day - Prev: %s ",timestr(update_t));
-		logentry("!=",str);
+		safe_snprintf(msg, sizeof(msg), "New Day - Prev: %s ",timestr(stats.date));
+		logline(LOG_NOTICE, "!=", msg);
 
 		sys_status|=SS_DAILY;       /* New Day !!! */
-		safe_snprintf(str, sizeof(str), "%slogon.lst",cfg.data_dir);    /* Truncate logon list */
-		if((dsts=nopen(str,O_TRUNC|O_CREAT|O_WRONLY))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_TRUNC|O_CREAT|O_WRONLY);
+		safe_snprintf(path, sizeof(path), "%slogon.lst",cfg.data_dir);    /* Truncate logon list (LEGACY) */
+		int file;
+		if((file=nopen(path,O_TRUNC|O_CREAT|O_WRONLY))==-1) {
+			errormsg(WHERE,ERR_OPEN,path,O_TRUNC|O_CREAT|O_WRONLY);
 			return(0L); 
 		}
-		close(dsts);
+		close(file);
 		for(i=0;i<=cfg.sys_nodes;i++) {
 			if(i) {     /* updating a node */
 				getnodedat(i,&node,1);
 				node.misc|=NODE_EVENT;
 				putnodedat(i,&node); 
 			}
-			safe_snprintf(str, sizeof(str), "%sdsts.dab",i ? cfg.node_path[i-1] : cfg.ctrl_dir);
-			if((dsts=nopen(str,O_RDWR))==-1) /* node doesn't have stats yet */
+			if((dsts = fopen_dstats(&cfg, i, /* for_write: */TRUE)) == NULL) /* doesn't have stats yet */
 				continue;
-			safe_snprintf(str, sizeof(str), "%scsts.dab",i ? cfg.node_path[i-1] : cfg.ctrl_dir);
-			if((csts=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
-				close(dsts);
-				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
-				continue; 
+
+			if((csts = fopen_cstats(&cfg, i, /* for_write: */TRUE)) == NULL) {
+				fclose_dstats(dsts);
+				errormsg(WHERE, ERR_OPEN, "csts.tab", i);
+				continue;
 			}
-			lseek(dsts,8L,SEEK_SET);        /* Skip time and logons */
-			write(csts,&now32,4);
-			read(dsts,&stats.ltoday,4);
-			write(csts,&stats.ltoday,4);
-			lseek(dsts,4L,SEEK_CUR);        /* Skip total time on */
-			read(dsts,&stats.ttoday,4);
-			write(csts,&stats.ttoday,4);
-			read(dsts,&stats.uls,4);
-			write(csts,&stats.uls,4);
-			read(dsts,&stats.ulb,4);
-			write(csts,&stats.ulb,4);
-			read(dsts,&stats.dls,4);
-			write(csts,&stats.dls,4);
-			read(dsts,&stats.dlb,4);
-			write(csts,&stats.dlb,4);
-			read(dsts,&stats.ptoday,4);
-			write(csts,&stats.ptoday,4);
-			read(dsts,&stats.etoday,4);
-			write(csts,&stats.etoday,4);
-			read(dsts,&stats.ftoday,4);
-			write(csts,&stats.ftoday,4);
-			close(csts);
-			lseek(dsts,0L,SEEK_SET);        /* Go back to beginning */
-			write(dsts,&now32,4);             /* Update time stamp  */
-			lseek(dsts,4L,SEEK_CUR);        /* Skip total logons */
-			stats.ltoday=0;
-			write(dsts,&stats.ltoday,4);  /* Logons today to 0 */
-			lseek(dsts,4L,SEEK_CUR);     /* Skip total time on */
-			stats.ttoday=0;              /* Set all other today variables to 0 */
-			write(dsts,&stats.ttoday,4);        /* Time on today to 0 */
-			write(dsts,&stats.ttoday,4);        /* Uploads today to 0 */
-			write(dsts,&stats.ttoday,4);        /* U/L Bytes today    */
-			write(dsts,&stats.ttoday,4);        /* Download today     */
-			write(dsts,&stats.ttoday,4);        /* Download bytes     */
-			write(dsts,&stats.ttoday,4);        /* Posts today        */
-			write(dsts,&stats.ttoday,4);        /* Emails today       */
-			write(dsts,&stats.ttoday,4);        /* Feedback today     */
-			write(dsts,&stats.ttoday,2);        /* New users Today    */
-			close(dsts); 
+
+			fread_dstats(dsts, &stats);
+			stats.date = time(NULL);
+			fwrite_cstats(csts, &stats);
+			fclose_cstats(csts);
+			rolloverstats(&stats);
+			fwrite_dstats(dsts, &stats);
+			fclose_dstats(dsts);
 		} 
 	}
 
@@ -680,22 +639,17 @@ ulong sbbs_t::logonstats()
 		return(0);
 
 	for(i=0;i<2;i++) {
-		safe_snprintf(str, sizeof(str), "%sdsts.dab",i ? cfg.ctrl_dir : cfg.node_dir);
-		if((dsts=nopen(str,O_RDWR))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_RDWR);
+		FILE* fp = fopen_dstats(&cfg, i ? 0 : cfg.node_num, /* for_write: */TRUE);
+		if(fp == NULL) {
+			errormsg(WHERE, ERR_OPEN, "dsts.ini", i);
 			return(0L); 
 		}
-		lseek(dsts,4L,SEEK_SET);        /* Skip time stamp */
-		read(dsts,&stats.logons,4);
-		read(dsts,&stats.ltoday,4);
-		stats.logons++;
-		stats.ltoday++;
-		lseek(dsts,4L,SEEK_SET);        /* Rewind back and overwrite */
-		write(dsts,&stats.logons,4);
-		write(dsts,&stats.ltoday,4);
-		close(dsts); 
+		fread_dstats(fp, &stats);
+		stats.today.logons++;
+		stats.total.logons++;
+		fwrite_dstats(fp, &stats);
+		fclose_dstats(fp);
 	}
+
 	return(stats.logons);
 }
-
-

@@ -450,8 +450,6 @@ typedef enum {						/* Values for xtrn_t.event				*/
 
 #define EDIT_TABSIZE 4		/* Tab size for internal message/line editor	*/
 
-#define DSTSDABLEN	50		/* Length of dsts.dab file						*/
-
 								/* Console I/O Bits	(console)				*/
 #define CON_R_ECHO		(1<<0)	/* Echo remotely							*/
 #define CON_R_ECHOX		(1<<1)	/* Echo X's to remote user					*/
@@ -1050,20 +1048,45 @@ typedef fidoaddr_t faddr_t;				/* defined in smbdefs.h */
 typedef smbfile_t file_t;				/* defined in smbdefs.h */
 
 typedef struct {						/* System/Node Statistics */
-	uint32_t	logons,						/* Total Logons on System */
-				ltoday,						/* Total Logons Today */
-				timeon,						/* Total Time on System */
-				ttoday,						/* Total Time Today */
-				uls,						/* Total Uploads Today */
-				ulb,						/* Total Upload Bytes Today */
-				dls,						/* Total Downloads Today */
-				dlb,						/* Total Download Bytes Today */
-				ptoday,						/* Total Posts Today */
-				etoday,						/* Total Emails Today */
-				ftoday; 					/* Total Feedbacks Today */
-	uint16_t	nusers; 					/* Total New Users Today */
+	ulong		logons;
+	ulong		timeon;
+	ulong		uls;
+	uint64_t	ulb;
+	ulong		dls;
+	uint64_t	dlb;
+	ulong		posts;
+	ulong		email;
+	ulong		fbacks;
+	ulong		nusers;
+} totals_t;
 
+typedef struct {						/* System/Node Statistics */
+	time_t				date;			/* When stats were last rolled-over */
+	union {
+		totals_t		total;
+		struct { // legacy names
+			ulong		logons;
+			ulong		timeon;
+		};
+	};
+	union {
+		totals_t		today;
+		struct { // legacy names
+			ulong		ltoday;
+			ulong		ttoday;
+			ulong		uls;
+			uint64_t	ulb;
+			ulong		dls;
+			uint64_t	dlb;
+			ulong		ptoday;
+			ulong		etoday;
+			ulong		ftoday;
+			ulong		nusers;
+		};
+	};
 } stats_t;
+
+#define LEN_CSTATS_RECORD 128
 
 typedef struct {						/* Sub-board scan information */
 	uint16_t	cfg;						/* User's configuration */

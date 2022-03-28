@@ -641,13 +641,13 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp=UINT_TO_JSVAL(stats.uls);
 			break;
 		case SYSSTAT_PROP_ULB:
-			*vp=UINT_TO_JSVAL(stats.ulb);
+			*vp=DOUBLE_TO_JSVAL((double)stats.ulb); 
 			break;
 		case SYSSTAT_PROP_DLS:
 			*vp=UINT_TO_JSVAL(stats.dls);
 			break;
 		case SYSSTAT_PROP_DLB:
-			*vp=UINT_TO_JSVAL(stats.dlb);
+			*vp=DOUBLE_TO_JSVAL((double)stats.dlb);
 			break;
 		case SYSSTAT_PROP_PTODAY:
 			*vp=UINT_TO_JSVAL(stats.ptoday);

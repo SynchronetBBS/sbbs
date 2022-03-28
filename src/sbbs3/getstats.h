@@ -20,6 +20,7 @@
 #ifndef _GETSTATS_H_
 #define _GETSTATS_H_
 
+#include <stdio.h>		// FILE
 #include "scfgdefs.h"	// scfg_t
 #include "dllexport.h"
 
@@ -27,11 +28,24 @@
 extern "C" {
 #endif
 
-DLLEXPORT BOOL		getstats(scfg_t* cfg, char node, stats_t* stats);
-DLLEXPORT ulong		getposts(scfg_t* cfg, uint subnum);
-DLLEXPORT long		getfiles(scfg_t* cfg, uint dirnum);
-DLLEXPORT BOOL		inc_sys_upload_stats(scfg_t*, ulong files, ulong bytes);
-DLLEXPORT BOOL		inc_sys_download_stats(scfg_t*, ulong files, ulong bytes);
+DLLEXPORT char*		dstats_fname(scfg_t*, uint node, char* path, size_t);
+DLLEXPORT char*		cstats_fname(scfg_t*, uint node, char* path, size_t);
+DLLEXPORT FILE*		fopen_dstats(scfg_t*, uint node, BOOL for_write);
+DLLEXPORT FILE*		fopen_cstats(scfg_t*, uint node, BOOL for_write);
+DLLEXPORT BOOL		fclose_cstats(FILE*);
+DLLEXPORT BOOL		fclose_dstats(FILE*);
+DLLEXPORT BOOL		fread_dstats(FILE*, stats_t*);
+DLLEXPORT BOOL		fwrite_dstats(FILE*, const stats_t*);
+DLLEXPORT BOOL		fwrite_cstats(FILE*, const stats_t*);
+DLLEXPORT BOOL		getstats(scfg_t*, uint node, stats_t*);
+DLLEXPORT BOOL		putstats(scfg_t*, uint node, const stats_t*);
+DLLEXPORT ulong		getposts(scfg_t*, uint subnum);
+DLLEXPORT long		getfiles(scfg_t*, uint dirnum);
+DLLEXPORT void		rolloverstats(stats_t*);
+DLLEXPORT BOOL		inc_post_stats(scfg_t*, uint count);
+DLLEXPORT BOOL		inc_email_stats(scfg_t*, uint count, BOOL feedback);
+DLLEXPORT BOOL		inc_upload_stats(scfg_t*, ulong files, uint64_t bytes);
+DLLEXPORT BOOL		inc_download_stats(scfg_t*, ulong files, uint64_t bytes);
 
 #ifdef __cplusplus
 }
