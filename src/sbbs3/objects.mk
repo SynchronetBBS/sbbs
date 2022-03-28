@@ -174,6 +174,7 @@ SBBSECHO_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/msg_id$(OFILE) \
 			$(OBJODIR)/msgdate$(OFILE) \
 			$(OBJODIR)/getmail$(OFILE) \
+			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/sauce$(OFILE) \
 			$(SMB_OBJS)
 
@@ -191,6 +192,7 @@ ADDFILES_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/userdat$(OFILE) \
 			$(OBJODIR)/msgdate$(OFILE) \
 			$(OBJODIR)/filedat$(OFILE) \
+			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/sauce$(OFILE)
 
 FILELIST_OBJS = 	$(LOAD_CFG_OBJS) \
@@ -199,6 +201,7 @@ FILELIST_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/filedat$(OFILE) \
 			$(OBJODIR)/sauce$(OFILE) \
+			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/userdat$(OFILE)
 
 MAKEUSER_OBJS = 	$(LOAD_CFG_OBJS) \
@@ -206,6 +209,7 @@ MAKEUSER_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/date_str$(OFILE) \
 			$(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/msgdate$(OFILE)
 
 JSEXEC_OBJS = \
@@ -272,6 +276,7 @@ DELFILES_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/filedat$(OFILE) \
 			$(OBJODIR)/sauce$(OFILE) \
 			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/dat_rec$(OFILE)
 
 DUPEFIND_OBJS = 	$(LOAD_CFG_OBJS) \
@@ -301,6 +306,7 @@ UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
                         $(OBJODIR)/sauce$(OFILE) \
                         $(OBJODIR)/userdat$(OFILE) \
                         $(OBJODIR)/dat_rec$(OFILE) \
+			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/upgrade_to_v319$(OFILE)
 
 LOAD_CFG_OBJS = \
