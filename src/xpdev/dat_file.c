@@ -1,8 +1,4 @@
-/* dat_file.c */
-
 /* Functions to deal with comma (CSV) and tab-delimited files and lists */
-
-/* $Id: dat_file.c,v 1.8 2018/07/24 01:13:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -15,22 +11,10 @@
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
- * http://www.fsf.org/copyleft/lesser.html									*
- *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ * https://www.gnu.org/licenses/old-licenses/lgpl-2.0.html					*
  *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -287,4 +271,27 @@ str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t linePar
 	strListFree(&lines);
 
 	return(records);
+}
+
+BOOL dataListFree(str_list_t* list)
+{
+	size_t		i;
+
+	if(list == NULL)
+		return FALSE;
+	for(i=0; list[i]!=NULL; i++)
+		strListFree(&list[i]);
+
+	strListFree(list);
+	return TRUE;
+}
+
+FILE* dataOpenFile(const char* path, const char* mode)
+{
+	return fopen(path, mode);
+}
+
+int dataCloseFile(FILE* fp)
+{
+	return fclose(fp);
 }

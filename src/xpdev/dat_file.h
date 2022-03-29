@@ -58,6 +58,9 @@ str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t);
 str_list_t	dataCreateList(const str_list_t records[], const str_list_t columns, dataLineCreator_t);
 BOOL		dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns
 						  ,const char* separator, dataLineCreator_t);
+FILE*		dataOpenFile(const char* path, const char* mode);
+int			dataCloseFile(FILE*);
+BOOL		dataListFree(str_list_t*);
 
 /* CSV (comma separated value) API */
 char*		csvLineCreator(const str_list_t);
@@ -66,6 +69,9 @@ str_list_t	csvLineParser(const char* line);
 #define		csvCreateList(rec,col)			dataCreateList(rec,col,csvLineCreator)
 #define		csvReadFile(fp,col)				dataReadFile(fp,col,csvLineParser)
 #define		csvWriteFile(fp,rec,sep,col)	dataWriteFile(fp,rec,col,sep,csvLineCreator)
+#define		cvsOpenFile(path, mode)			dataOpenFile(path, mode)
+#define		csvCloseFile(fp)				dataCloseFile(fp)
+#define		cvsListFree(list)				dataListFree(list)
 
 /* Tab-delimited API */
 char*		tabLineCreator(const str_list_t);
@@ -74,6 +80,9 @@ str_list_t	tabLineParser(const char* line);
 #define		tabCreateList(rec,col)			dataCreateList(rec,col,tabLineCreator)
 #define		tabReadFile(fp,col)				dataReadFile(fp,col,tabLineParser)
 #define		tabWriteFile(fp,rec,sep,col)	dataWriteFile(fp,rec,col,sep,tabLineCreator)
+#define		tabOpenFile(path, mode)			dataOpenFile(path, mode)
+#define		tabCloseFile(fp)				dataCloseFile(fp)
+#define		tabListFree(list)				dataListFree(list)
 
 #if defined(__cplusplus)
 }
