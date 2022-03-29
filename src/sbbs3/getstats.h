@@ -37,6 +37,7 @@ DLLEXPORT BOOL		fclose_dstats(FILE*);
 DLLEXPORT BOOL		fread_dstats(FILE*, stats_t*);
 DLLEXPORT BOOL		fwrite_dstats(FILE*, const stats_t*);
 DLLEXPORT BOOL		fwrite_cstats(FILE*, const stats_t*);
+DLLEXPORT void		parse_cstats(str_list_t, stats_t*);
 DLLEXPORT BOOL		getstats(scfg_t*, uint node, stats_t*);
 DLLEXPORT BOOL		putstats(scfg_t*, uint node, const stats_t*);
 DLLEXPORT ulong		getposts(scfg_t*, uint subnum);

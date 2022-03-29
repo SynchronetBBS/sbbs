@@ -293,6 +293,20 @@ BOOL fwrite_cstats(FILE* fp, const stats_t* stats)
 	return fprintf(fp, "%.*s\n", (int)(sizeof(pad) - (len + 1)), pad) > 0;
 }
 
+void parse_cstats(str_list_t record, stats_t* stats)
+{
+	stats->ltoday = strtoul(record[CSTATS_LOGONS], NULL, 10);
+	stats->ttoday = strtoul(record[CSTATS_TIMEON], NULL, 10);
+	stats->nusers = strtoul(record[CSTATS_NUSERS], NULL, 10);
+	stats->ftoday = strtoul(record[CSTATS_FBACKS], NULL, 10);
+	stats->etoday = strtoul(record[CSTATS_EMAIL], NULL, 10);
+	stats->ptoday = strtoul(record[CSTATS_POSTS], NULL, 10);
+	stats->uls = strtoul(record[CSTATS_UPLOADS], NULL, 10);
+	stats->ulb = strtoull(record[CSTATS_UPLOADB], NULL, 10);
+	stats->dls = strtoul(record[CSTATS_DNLOADS], NULL, 10);
+	stats->dlb = strtoull(record[CSTATS_DNLOADB], NULL, 10);
+}
+
 /****************************************************************************/
 /* Returns the number of files in the directory 'dirnum'                    */
 /****************************************************************************/
