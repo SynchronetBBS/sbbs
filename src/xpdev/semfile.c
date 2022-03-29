@@ -144,5 +144,5 @@ BOOL semfile_signal(const char* fname, const char* text)
 
 	/* update the time stamp */
 	ut.actime = ut.modtime = time(NULL);
-	return utime(fname, &ut)==0 && wrlen == textlen;
+	return utime(fname, &ut)==0 && wrlen == (ssize_t)textlen;
 }
