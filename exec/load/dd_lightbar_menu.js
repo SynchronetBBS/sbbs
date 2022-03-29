@@ -291,7 +291,12 @@ lbMenu.exitOnItemSelect = false;
 OnItemNav is a function that is called when the user navigates to a new item (i.e., via
 the up or down arrow, PageUp, PageDown, Home, End, etc.).  Its parameters are the old
 item index and the new item index.
-this.OnItemNav = function(pOldItemIdx, pNewItemIdx) { }
+lbMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) { }
+
+To have the menu object call OnItemNav() when it is first displayed to get the user's
+choice, set the callOnItemNavOnStartup property to true:
+lbMenu.callOnItemNavOnStartup = true;
+By default, it is false.
 
 The 'key down' behavior can be called explicitly, if needed, by calling the DoKeyDown() function.
 It takes 2 parameters: An object of selected item indexes (as passed to GetVal()) and, optionally,
@@ -473,6 +478,10 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 
 	this.inputTimeoutMS = 300000; // Input timeout in ms
 	this.mouseEnabled = false;
+
+	// Whether or not to call OnItemNav() when the menu is first displayed
+	// to get the user's choice
+	this.callOnItemNavOnStartup = false;
 
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -1388,6 +1397,9 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 			this.DisplayInitialScrollbar(this.scrollbarInfo.solidBlockLastStartRow);
 	}
+
+	if (this.callOnItemNavOnStartup && typeof(this.OnItemNav) === "function")
+		this.OnItemNav(0, this.selectedItemIdx);
 
 	// User input loop
 	var userChoices = null; // For multi-select mode
