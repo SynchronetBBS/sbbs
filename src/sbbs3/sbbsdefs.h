@@ -1087,6 +1087,19 @@ typedef struct {						/* System/Node Statistics */
 } stats_t;
 
 #define LEN_CSTATS_RECORD 128
+enum CSTATS_FIELD {
+	 CSTATS_DATE
+	,CSTATS_LOGONS
+	,CSTATS_TIMEON
+	,CSTATS_UPLOADS
+	,CSTATS_UPLOADB
+	,CSTATS_DNLOADS
+	,CSTATS_DNLOADB
+	,CSTATS_POSTS
+	,CSTATS_EMAIL
+	,CSTATS_FBACKS
+	,CSTATS_NUSERS
+};
 
 typedef struct {						/* Sub-board scan information */
 	uint16_t	cfg;						/* User's configuration */
