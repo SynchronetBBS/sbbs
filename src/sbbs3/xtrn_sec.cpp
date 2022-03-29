@@ -196,7 +196,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%lu\n%s\n%lu\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%lu\n%s\n%lu\n%" PRIu64 "\n"
 			,ctrl_dir							/* Ctrl dir */
 			,data_dir							/* Data dir */
 			,cfg.sys_nodes						/* Total system nodes */
@@ -316,7 +316,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%lu\n%s\n%lu\n%ld\n%u\n%u\n%u\n%d\n%u\n"
+		safe_snprintf(str, sizeof(str), "%" PRIu64 "\n%s\n%lu\n%ld\n%u\n%u\n%u\n%d\n%u\n"
 			,useron.cdt+useron.freecdt			/* Gold */
 			,unixtodstr(&cfg,useron.laston,tmp)	/* User last on date */
 			,cols 								/* User screen width */
@@ -330,7 +330,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		fwrite(str,strlen(str),1,fp);
 
 		safe_snprintf(str, sizeof(str), "%lu\n%s\n%s\n%s\n%lu\n%d\n%s\n%s\n"
-			"%u\n%u\n%lu\n%u\n%lu\n%u\n%s\n"
+			"%u\n%u\n%" PRIu64 "\n%u\n%" PRIu64 "\n%u\n%s\n"
 			,tleft								/* Time left in seconds */
 			,node_dir							/* Gfiles dir (log dir) */
 			,data_dir							/* Data dir */
@@ -424,7 +424,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%u\n%lu\n%s\n%s\n%s\n%s"
+		safe_snprintf(str, sizeof(str), "%u\n%" PRIu64 "\n%s\n%s\n%s\n%s"
 			"\n%s\n%02d:%02d\n%c\n"
 			,0									/* 30: Kbytes downloaded today */
 			,(useron.cdt+useron.freecdt)/1024UL /* 31: Max Kbytes to download today */
@@ -454,8 +454,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		localtime_r(&logontime,&tm);
 		localtime32(&useron.laston,&tl);
-		safe_snprintf(str, sizeof(str), "%02d:%02d\n%02d:%02d\n%u\n%u\n%lu\n"
-			"%lu\n%s\n%u\n%u\n"
+		safe_snprintf(str, sizeof(str), "%02d:%02d\n%02d:%02d\n%u\n%u\n%" PRIu64 "\n"
+			"%"  PRIu64 "\n%s\n%u\n%u\n"
 			,tm.tm_hour							/* 44: Time of this call */
 			,tm.tm_min
 			,tl.tm_hour							/* 45: Time of last call */
@@ -826,7 +826,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%u\n%u\n%" PRId32 "\n%lu\n%s\n"
 			"%s\n%s\n%lu\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
-			"%lu\n%lu\n%s\n%s\n"
+			"%" PRIu64 "\n%" PRIu64 "\n%s\n%s\n"
 			,dropdir
 			,(term & ANSI) ? "TRUE":"FALSE"		/* ANSI ? True or False */
 			,useron.level						/* Security level */
