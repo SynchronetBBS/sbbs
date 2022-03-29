@@ -131,6 +131,16 @@ char* seconds_to_str(uint seconds, char* str)
 	return p;
 }
 
+/* Returns a duration in minutes into a string */
+char* minutes_to_str(uint min, char* str, size_t size)
+{
+	safe_snprintf(str, size, "%ud %uh %um"
+		,min / (24 *60)
+		,(min % (24 * 60)) / 60
+		,min % 60);
+	return str;
+}
+
 /****************************************************************************/
 /****************************************************************************/
 char* hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
