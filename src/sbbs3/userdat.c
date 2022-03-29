@@ -2465,6 +2465,9 @@ BOOL user_posted_msg(scfg_t* cfg, user_t* user, int count)
 	user->posts	=(ushort)adjustuserrec(cfg, user->number, U_POSTS, count);
 	user->ptoday=(ushort)adjustuserrec(cfg, user->number, U_PTODAY, count);
 
+	if(user->rest & FLAG('Q'))
+		return TRUE;
+
 	return inc_post_stats(cfg, count);
 }
 
