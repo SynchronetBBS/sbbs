@@ -66,7 +66,7 @@ FILE* fopen_dstats(scfg_t* cfg, uint node, BOOL for_write)
     char path[MAX_PATH+1];
 
 	dstats_fname(cfg, node, path, sizeof(path));
-	return iniOpenFile(path, for_write);
+	return fnopen(NULL, path, for_write ? O_CREAT|O_RDWR : O_RDONLY);
 }
 
 /****************************************************************************/
@@ -83,7 +83,7 @@ FILE* fopen_cstats(scfg_t* cfg, uint node, BOOL for_write)
 /****************************************************************************/
 BOOL fclose_dstats(FILE* fp)
 {
-	return iniCloseFile(fp);
+	return fclose(fp);
 }
 
 /****************************************************************************/
