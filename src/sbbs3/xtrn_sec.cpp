@@ -297,7 +297,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			strlwr(tmp);
 		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		(void)removecase(str);
-		if((fp=fnopen(NULL, str, O_WRONLY|O_CREAT|O_TRUNC)) == NULL) {
+		if((fp=fnopen(NULL, str, O_WRONLY|O_CREAT|O_TRUNC|O_TEXT)) == NULL) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
 		}
