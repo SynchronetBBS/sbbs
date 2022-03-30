@@ -1027,20 +1027,23 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 			return false;
 	}
 
-	if(extract_files_from_archive(archive
-		,/* outdir: */cfg->temp_dir
-		,/* allowed_filename_chars: */NULL /* any */
-		,/* with_path: */true
-		,/* overwrite: */false
-		,/* max_files: */strListCount(diz_fnames)
-		,/* file_list: */diz_fnames
-		,/* error: */NULL, 0) >= 0) {
-		for(i = 0; diz_fnames[i] != NULL; i++) {
-			safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]); // no slash
-			if(fexistcase(path))
-				return true;
+	for(int nested = 0; nested <= 1; nested++) {
+		if(extract_files_from_archive(archive
+			,/* outdir: */cfg->temp_dir
+			,/* allowed_filename_chars: */NULL /* any */
+			,/* with_path: */!nested
+			,/* overwrite: */false
+			,/* max_files: */strListCount(diz_fnames)
+			,/* file_list: */diz_fnames
+			,/* error: */NULL, 0) >= 0) {
+			for(i = 0; diz_fnames[i] != NULL; i++) {
+				safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]); // no slash
+				if(fexistcase(path))
+					return true;
+			}
+			if(nested)
+				return false;
 		}
-		return false;
 	}
 
 	char* fext = getfext(f->name);
