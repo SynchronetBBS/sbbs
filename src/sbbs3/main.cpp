@@ -4239,7 +4239,9 @@ void sbbs_t::logoffstats()
 
 	now = time(NULL);
 	if(now <= logontime) {
-		lprintf(LOG_ERR, "Logoff time (%lu) <= logon time (%lu)", (ulong)now, (ulong)logontime);
+		char tmp[128];
+		lprintf(LOG_WARNING, "Logoff time (%lu) <= logon time (%lu): %s"
+			,(ulong)now, (ulong)logontime, ctime_r(&logontime, tmp));
 		return;
 	}
 	ulong minutes_used = (ulong)(now-logontime)/60;
@@ -4367,7 +4369,8 @@ void node_thread(void* arg)
     node_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 
 	sbbs->logout();
-	sbbs->logoffstats();	/* Updates both system and node dsts.ini (daily statistics) files */
+	if(login_success)
+		sbbs->logoffstats();	/* Updates both system and node dsts.ini (daily statistics) files */
 
 	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
 	FILE* fp = fopen(str, "at");
