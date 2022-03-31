@@ -3,8 +3,8 @@ object StatsForm: TStatsForm
   Top = 389
   BorderStyle = bsSingle
   Caption = 'Statistics'
-  ClientHeight = 159
-  ClientWidth = 397
+  ClientHeight = 160
+  ClientWidth = 450
   Color = clBtnFace
   UseDockManager = True
   DefaultMonitor = dmPrimary
@@ -138,9 +138,9 @@ object StatsForm: TStatsForm
     end
   end
   object Total: TGroupBox
-    Left = 137
+    Left = 135
     Top = 7
-    Width = 124
+    Width = 168
     Height = 143
     Caption = 'Total'
     TabOrder = 1
@@ -187,7 +187,7 @@ object StatsForm: TStatsForm
     object TotalLogons: TStaticText
       Left = 73
       Top = 20
-      Width = 41
+      Width = 80
       Height = 16
       AutoSize = False
       BorderStyle = sbsSunken
@@ -196,7 +196,7 @@ object StatsForm: TStatsForm
     object TotalTimeOn: TStaticText
       Left = 73
       Top = 39
-      Width = 41
+      Width = 80
       Height = 16
       AutoSize = False
       BorderStyle = sbsSunken
@@ -205,7 +205,7 @@ object StatsForm: TStatsForm
     object TotalEMail: TStaticText
       Left = 73
       Top = 59
-      Width = 41
+      Width = 80
       Height = 16
       AutoSize = False
       BorderStyle = sbsSunken
@@ -214,7 +214,7 @@ object StatsForm: TStatsForm
     object TotalFeedback: TStaticText
       Left = 73
       Top = 78
-      Width = 41
+      Width = 80
       Height = 16
       AutoSize = False
       BorderStyle = sbsSunken
@@ -223,7 +223,7 @@ object StatsForm: TStatsForm
     object TotalUsers: TStaticText
       Left = 73
       Top = 98
-      Width = 41
+      Width = 80
       Height = 16
       AutoSize = False
       BorderStyle = sbsSunken
@@ -232,7 +232,7 @@ object StatsForm: TStatsForm
     object LogButton: TButton
       Left = 8
       Top = 119
-      Width = 106
+      Width = 145
       Height = 20
       Caption = ' View Log'
       TabOrder = 5
@@ -240,7 +240,7 @@ object StatsForm: TStatsForm
     end
   end
   object UploadsToday: TGroupBox
-    Left = 267
+    Left = 307
     Top = 7
     Width = 124
     Height = 65
@@ -282,7 +282,7 @@ object StatsForm: TStatsForm
     end
   end
   object DownloadsToday: TGroupBox
-    Left = 267
+    Left = 307
     Top = 85
     Width = 124
     Height = 65
