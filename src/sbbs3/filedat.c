@@ -294,7 +294,7 @@ static int file_compare_date_a(const void* v1, const void* v2)
 	file_t* f1 = (file_t*)v1;
 	file_t* f2 = (file_t*)v2;
 
-	return f1->hdr.when_imported.time - f2->hdr.when_imported.time;
+	return f1->idx.time - f2->idx.time;
 }
 
 static int file_compare_date_d(const void* v1, const void* v2)
@@ -302,7 +302,7 @@ static int file_compare_date_d(const void* v1, const void* v2)
 	file_t* f1 = (file_t*)v1;
 	file_t* f2 = (file_t*)v2;
 
-	return f2->hdr.when_imported.time - f1->hdr.when_imported.time;
+	return f2->idx.time - f1->idx.time;
 }
 
 static int file_compare_size_a(const void* v1, const void* v2)
