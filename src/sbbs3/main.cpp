@@ -4647,8 +4647,8 @@ void sbbs_t::daily_maint(void)
 			&& !(user.misc&(DELETED|INACTIVE))	 /* alive */
 			&& (cfg.sys_autodel && (now-user.laston)/(long)(24L*60L*60L)
 			> cfg.sys_autodel)) {			/* Inactive too long */
-			SAFEPRINTF3(str,"DAILY: Auto-Deleted %s #%u due to inactivity > %u days"
-				,user.alias, user.number, cfg.sys_autodel);
+			SAFEPRINTF4(str,"DAILY: Auto-Deleted %s (%s) #%u due to inactivity > %u days"
+				,user.alias, user.name, user.number, cfg.sys_autodel);
 			lputs(LOG_NOTICE, str);
 			delallmail(user.number, MAIL_ANY);
 			putusername(&cfg,user.number,nulstr);
