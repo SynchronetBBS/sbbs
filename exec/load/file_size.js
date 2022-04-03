@@ -78,5 +78,5 @@ function file_size_float(size, unit, precision)
 	else if(size >= one_kibibyte || unit == one_kibibyte)
 		return format("%1.*fK", precision, size/one_kibibyte);
 	else
-		return format("%luB", size);
+		return format("%lu", size);
 }
