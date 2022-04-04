@@ -4826,9 +4826,9 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			}
 			if((scfg.sub[subnum]->misc & SUB_ASCII) && smb_msg_is_utf8(&msg)) {
 				utf8_to_cp437_inplace(buf);
-				utf8_to_cp437_inplace(hdr.to), ascii_str(hdr.to);
-				utf8_to_cp437_inplace(hdr.from), ascii_str(hdr.from);
-				utf8_to_cp437_inplace(hdr.subj), ascii_str(hdr.subj);
+				utf8_to_cp437_inplace(hdr.to), ascii_str((uchar *)hdr.to);
+				utf8_to_cp437_inplace(hdr.from), ascii_str((uchar *)hdr.from);
+				utf8_to_cp437_inplace(hdr.subj), ascii_str((uchar *)hdr.subj);
 			}
 
 			lprintf(LOG_DEBUG,"Exporting %s message #%u from %s to %s in area: %s"
