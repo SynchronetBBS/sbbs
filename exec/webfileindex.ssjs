@@ -21,7 +21,7 @@ function root_link()
 	return "root".link(file_area.web_vpath_prefix);
 }
 
-const sorting_description = {
+var sorting_description = {
 	"NAME_AI": "Name ascending",
 	"NAME_DI": "Name descending",
 	"NATURAL": "Date ascending",
