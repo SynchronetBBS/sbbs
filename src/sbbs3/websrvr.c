@@ -1491,7 +1491,7 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 	if(session->socket==INVALID_SOCKET)
 		return;
 	session->req.if_modified_since=0;
-	lprintf(LOG_INFO,"%04d !ERROR: %s (line %u)",session->socket,message,line);
+	lprintf(LOG_INFO,"%04d [%s] !ERROR: %s (line %u)",session->socket,session->host_ip,message,line);
 	session->req.keep_alive=FALSE;
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
