@@ -75,7 +75,7 @@ const defs = {
 			BLUE:				34,
 			MAGENTA:			35,
 			CYAN:				36,
-			LIGHTGREY:			37,
+			LIGHTGRAY:			37,
 		},
 		bg: { // aligned with cga_defs.colors[]
 			BLACK:				40,
@@ -85,7 +85,7 @@ const defs = {
 			BLUE:				44,
 			MAGENTA:			45,
 			CYAN:				46,
-			LIGHTGREY:			47,
+			LIGHTGRAY:			47,
 		},
 	},
 };
