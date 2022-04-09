@@ -649,7 +649,7 @@ function handle_command(command, args, defs)
 function parse_command(line)
 {
 	function execute_line(args) {
-		if(args.length >= 2) {
+		if(args.length >= 2 && typeof(args[1]) == 'string') {
 			command=args[1].toUpperCase();
 			args.splice(1,1);
 			if(handle_command(command, args, any_state_command_handlers))
