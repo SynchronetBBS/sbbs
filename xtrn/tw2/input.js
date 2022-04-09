@@ -38,7 +38,7 @@ function CheckTime()
 
 function CheckTerminate()
 {
-	if(js.terminated)
+	if(js.terminated || !bbs.online)
 		exit(0);
 }
 
