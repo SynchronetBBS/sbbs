@@ -649,7 +649,7 @@ function handle_command(command, args, defs)
 function parse_command(line)
 {
 	function execute_line(args) {
-		if(args.length >= 2 && typeof(args[1]) == 'string') {
+		if(args.length >= 2) {
 			command=args[1].toUpperCase();
 			args.splice(1,1);
 			if(handle_command(command, args, any_state_command_handlers))
@@ -714,6 +714,10 @@ function parse_command(line)
 			var len = parseInt(line);
 			if(len) {
 				ret=client.socket.recv(len);
+				if (ret === null)
+					throw new Error('recv() of ' + len + ' bytes returned null');
+				if (ret.length !== len)
+					throw new Error('recv() of ' + len + ' bytes returned a string with ' + ret.length + ' instead.');
 				line=client.socket.recvline(10240, 1800);
 			}
 			else {
