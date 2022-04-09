@@ -9,9 +9,15 @@ require("sbbsdefs.js", 'USER_DELETED');
 
 "use strict";
 
-// Returns a string, hopefully the full name of the External Program referenced by 'code'
+// Returns a string, hopefully the full name of the External Program referenced by 'code' 
+// or referenced by 1-based number (as stored in node.dab 'aux' field)
 function xtrn_name(code)
 {
+	if(typeof code == 'number') {
+		for(var i in xtrn_area.prog)
+			if(xtrn_area.prog[i].number == code - 1)
+				return xtrn_area.prog[i].name;
+	}
 	if(xtrn_area.prog[code] != undefined && xtrn_area.prog[code].name != undefined)
 		return xtrn_area.prog[code].name;
 	return code;
@@ -187,9 +193,9 @@ function node_status(node, is_sysop, options, num)
 					break;
 				case NODE_XTRN:
 					if(node.aux)
-						output += "running " + xtrn_name(user.curxtrn);
+						output += "running " + xtrn_name(node.aux);
 					else
-						output += format(NodeAction[node.action], node.aux);
+						output += NodeAction[node.action];
 					break;
 				default:
 					output += format(NodeAction[node.action], node.aux);
