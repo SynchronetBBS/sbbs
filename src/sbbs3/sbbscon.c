@@ -1238,7 +1238,17 @@ void recycle(void* cbdata)
 void cleanup(void)
 {
 #ifdef __unix__
-	unlink(pid_fname);
+	FILE* pf;
+	if ((pf = fopen(pid_fname, "r")) != NULL) {
+		int fpid = -1;
+		if (fscanf(pf, "%d", &fpid) == 1) {
+			fclose(pf);
+			if (fpid == getpid())
+				unlink(pid_fname);
+		}
+		else
+			fclose(pf);
+	}
 #endif
 }
 
