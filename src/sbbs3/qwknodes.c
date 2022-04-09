@@ -60,7 +60,7 @@ int lputs(char* str)
 		else
 			tmp[k++]=str[i];
 	tmp[k]=0;
-	return(fputs(tmp,stderr));
+	return(fputs(tmp,stdout));
 }
 /****************************************************************************/
 /* Performs printf() through local assembly routines                        */
@@ -162,11 +162,9 @@ int main(int argc, char **argv)
 	FILE		*route,*users,*nodes;
 	time_t		now;
 	smbmsg_t	msg;
-	char		revision[16];
+	const char*	revision = "1.26";
 
-	sscanf("$Revision: 1.25 $", "%*s %s", revision);
-
-	fprintf(stderr,"\nSynchronet QWKnet Node/Route/User List Generator v%s-%s\n"
+	fprintf(stdout,"\nSynchronet QWKnet Node/Route/User List Generator v%s-%s\n"
 		,revision, PLATFORM_DESC);
 
 	for(i=1;i<argc;i++)
@@ -251,26 +249,26 @@ int main(int argc, char **argv)
 	now=time(NULL);
 	smm=crc16("smm",0);
 	sbl=crc16("sbl",0);
-	fprintf(stderr,"\n\n");
+	fprintf(stdout,"\n\n");
 	for(i=0;i<cfg.total_subs;i++) {
 		if(!(cfg.sub[i]->misc&SUB_QNET))
 			continue;
-		fprintf(stderr,"%-*s  %s\n"
+		fprintf(stdout,"%-*s  %s\n"
 			,LEN_GSNAME,cfg.grp[cfg.sub[i]->grp]->sname,cfg.sub[i]->lname);
 		sprintf(smb.file,"%s%s",cfg.sub[i]->data_dir,cfg.sub[i]->code);
 		smb.retry_time=30;
 		smb.subnum=i;
 		if((j=smb_open(&smb))!=0) {
-			printf("smb_open returned %d\n",j);
+			fprintf(stderr, "smb_open returned %d\n",j);
 			continue; 
 		}
 		if((j=smb_locksmbhdr(&smb))!=0) {
-			printf("smb_locksmbhdr returned %d\n",j);
+			fprintf(stderr, "smb_locksmbhdr returned %d\n",j);
 			smb_close(&smb);
 			continue; 
 		}
 		if((j=smb_getstatus(&smb))!=0) {
-			printf("smb_getstatus returned %d\n",j);
+			fprintf(stderr, "smb_getstatus returned %d\n",j);
 			smb_close(&smb);
 			continue; 
 		}
@@ -286,17 +284,17 @@ int main(int argc, char **argv)
 			fseek(smb.sid_fp,msg.idx_offset*sizeof(idxrec_t),SEEK_SET);
 			if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
 				break;
-			fprintf(stderr,"%-5u\r",msg.idx_offset+1);
+			fprintf(stdout,"%-5u\r",msg.idx_offset+1);
 			if(msg.idx.to==smm || msg.idx.to==sbl)
 				continue;
 			if(max_age && now-msg.idx.time>((time_t)max_age*24UL*60UL*60UL))
 				continue;
 			if((j=smb_lockmsghdr(&smb,&msg))!=0) {
-				printf("smb_lockmsghdr returned %d\n",j);
+				fprintf(stderr, "smb_lockmsghdr returned %d\n",j);
 				break; 
 			}
 			if((j=smb_getmsghdr(&smb,&msg))!=0) {
-				printf("smb_getmsghdr returned %d\n",j);
+				fprintf(stderr, "smb_getmsghdr returned %d\n",j);
 				break; 
 			}
 			smb_unlockmsghdr(&smb,&msg);
@@ -400,11 +398,11 @@ int main(int argc, char **argv)
 		smb_close(&smb);
 		if(kbhit()) {
 			getch();
-			fprintf(stderr,"Key pressed.\n");
+			fprintf(stdout,"Key pressed.\n");
 			break; 
 		} 
 	}
-	fprintf(stderr,"Done.\n");
+	fprintf(stdout,"Done.\n");
 
 	return(0);
 }
