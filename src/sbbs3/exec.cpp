@@ -679,13 +679,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 
 	if(scope==NULL) {
 		js_callback.counter=0;	// Reset loop counter
-
-#if JS_VERSION>180
-		JS_SetOperationCallback(js_cx, js_OperationCallback);
-#else
-		JS_SetBranchCallback(js_cx, js_BranchCallback);
-#endif
 	}
+	JS_SetOperationCallback(js_cx, js_OperationCallback);
 	js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
 	events = js_callback.events;
 	js_callback.events = NULL;
