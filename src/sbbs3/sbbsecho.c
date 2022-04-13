@@ -5814,7 +5814,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				SAFECOPY(hdr.time,pkdmsg.time);
 			} else {
 				lprintf(LOG_NOTICE, "Grunged message (type %d) from %s at offset %ld in packet: %s"
-					, pkdmsg.type, smb_faddrtoa(&pkt_orig, NULL), msg_offset, packet);
+					, pkdmsg.type, smb_faddrtoa(&pkt_orig, NULL), (long)msg_offset, packet);
 				printf("Grunged message!\n");
 				bad_packet = true;
 				break;
