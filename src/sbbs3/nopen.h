@@ -38,6 +38,7 @@
 
 #include <stdio.h>			/* FILE */
 #include "gen_defs.h"		/* BOOL (switch to stdbool when we stop using BCB6) */
+#include "scfgdefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +50,8 @@ BOOL	ftouch(const char* fname);
 BOOL	fmutex(const char* fname, const char* text, long max_age);
 BOOL	fcompare(const char* fn1, const char* fn2);
 BOOL	backup(const char* org, int backup_level, BOOL ren);
+FILE*	fopenlog(scfg_t*, const char* path);
+void	fcloselog(FILE*);
 
 #ifdef __cplusplus
 }

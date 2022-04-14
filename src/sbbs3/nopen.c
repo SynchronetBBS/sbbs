@@ -22,6 +22,7 @@
 #include "filewrap.h"
 #include "sockwrap.h"
 #include "sbbsdefs.h"
+#include "nopen.h"
 
 /****************************************************************************/
 /* Network open function. Opens all files DENYALL, DENYWRITE, or DENYNONE	*/
@@ -207,4 +208,35 @@ BOOL backup(const char *fname, int backup_level, BOOL ren)
 	}
 
 	return TRUE;
+}
+
+/****************************************************************************/
+/* Open a log file for append, supporting log rotation based on size		*/
+/****************************************************************************/
+FILE* fopenlog(scfg_t* cfg, const char* path)
+{
+	const int mode = O_WRONLY|O_CREAT|O_APPEND;
+	FILE* fp;
+
+	if((fp = fnopen(NULL, path, mode)) == NULL)
+		return NULL;
+
+	if(cfg->max_log_size && cfg->max_logs_kept && ftello(fp) >= (off_t)cfg->max_log_size) {
+#ifdef _WIN32 // Can't rename an open file on Windows
+		fclose(fp);
+#endif
+		backup(path, cfg->max_logs_kept, /* rename: */TRUE);
+#ifndef _WIN32
+		fclose(fp);
+#endif
+		if((fp = fnopen(NULL, path, mode)) == NULL)
+			return NULL;
+	}
+
+	return fp;
+}
+
+void fcloselog(FILE* fp)
+{
+	fclose(fp);
 }

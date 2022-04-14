@@ -215,8 +215,9 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->min_pwlen, stream);
 	put_int(c, stream);
 	n=0;
-	for(i=0;i<4;i++)
-		put_int(n,stream);
+	put_int(n,stream);
+	put_int(cfg->max_log_size, stream);
+	put_int(cfg->max_logs_kept, stream);
 
 	put_int(cfg->expired_level,stream);
 	put_int(cfg->expired_flags1,stream);

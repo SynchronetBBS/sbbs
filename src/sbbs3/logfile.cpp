@@ -35,7 +35,7 @@ extern "C" BOOL hacklog(scfg_t* cfg, const char* prot, const char* user, const c
 
 	SAFEPRINTF(fname, "%shack.log", cfg->logs_dir);
 
-	if((fp = fnopen(NULL, fname, O_WRONLY|O_CREAT|O_APPEND)) == NULL)
+	if((fp = fopenlog(cfg, fname)) == NULL)
 		return false;
 
 	inet_addrtop(addr, ip, sizeof(ip));
@@ -52,7 +52,7 @@ extern "C" BOOL hacklog(scfg_t* cfg, const char* prot, const char* user, const c
 	if(text != NULL)
 		fprintf(fp, "Details: %s%s", text, log_line_ending);
 	fputs(log_line_ending, fp);
-	fclose(fp);
+	fcloselog(fp);
 
 	return true;
 }
@@ -74,7 +74,7 @@ extern "C" BOOL spamlog(scfg_t* cfg, char* prot, char* action
 
 	SAFEPRINTF(fname, "%sspam.log", cfg->logs_dir);
 
-	if((fp = fnopen(NULL, fname, O_WRONLY|O_CREAT|O_APPEND)) == NULL)
+	if((fp = fopenlog(cfg, fname)) == NULL)
 		return false;
 
 	if(to==NULL)
@@ -100,7 +100,7 @@ extern "C" BOOL spamlog(scfg_t* cfg, char* prot, char* action
 	if(reason != NULL)
 		fprintf(fp, "Reason: %s%s", reason, log_line_ending);
 	fputs(log_line_ending, fp);
-	fclose(fp);
+	fcloselog(fp);
 
 	return true;
 }
@@ -113,7 +113,7 @@ extern "C" int errorlog(scfg_t* cfg, int level, const char* host, const char* te
 	time_t	now = time(NULL);
 
 	SAFEPRINTF(path, "%serror.log", cfg->logs_dir);
-	if((fp = fnopen(NULL,path,O_WRONLY|O_CREAT|O_APPEND))==NULL)
+	if((fp = fopenlog(cfg, path))==NULL)
 		return -1; 
 	fprintf(fp,"%.24s %s/%s %s%s%s%s%s"
 		,ctime_r(&now, buf)
@@ -125,7 +125,7 @@ extern "C" int errorlog(scfg_t* cfg, int level, const char* host, const char* te
 		,log_line_ending
 		,log_line_ending
 		);
-	fclose(fp);
+	fcloselog(fp);
 	if(cfg->node_erruser && level <= cfg->node_errlevel) {
 		char subject[128];
 		SAFEPRINTF2(subject, "%s %sERROR occurred", host == NULL ? "" : host, level <= LOG_CRIT ? "CRITICAL " : "");

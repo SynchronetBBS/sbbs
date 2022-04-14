@@ -1541,7 +1541,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	char	str[512],cstr[512],*ptr,*answer[100],theanswer[1024]
 			,mistakes=1,hu=0;
 	char 	tmp[512];
-	int		file;
+	FILE*	fp;
 	uint 	c,i,j,k,answers;
 	long 	len;
 	struct	tm tm;
@@ -1816,27 +1816,22 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 			}
 			CRLF;
 			sprintf(str,"%sguru.log",cfg.logs_dir);
-			if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1)
+			if((fp = fopenlog(&cfg, str)) == NULL)
 				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 			else {
 				xpDateTime_to_isoDateTimeStr(xpDateTime_now(), "-", " ", ":", 0, str, sizeof(str)-3);
-				SAFECAT(str,"\r\n");
-				write(file,str,strlen(str));
+				fprintf(fp, "%s\r\n", str);
 				if(action==NODE_MCHT) {
-					sprintf(str,"[Multi] ");
-					write(file,str,strlen(str)); 
+					fprintf(fp, "[Multi] ");
 				}
-				sprintf(str,"%s:\r\n",sys_status&SS_USERON
+				fprintf(fp,"%s:\r\n",sys_status&SS_USERON
 					? useron.alias : "UNKNOWN");
-				write(file,str,strlen(str));
-				write(file,line,strlen(line));
+				fprintf(fp,"%s",line);
 				if(action!=NODE_MCHT)
-					write(file,crlf,2);
-				sprintf(str,"%s:\r\n",cfg.guru[gurunum]->name);
-				write(file,str,strlen(str));
-				write(file,theanswer,strlen(theanswer));
-				write(file,crlf,2);
-				close(file); 
+					fprintf(fp,"\r\n");
+				fprintf(fp,"%s:\r\n",cfg.guru[gurunum]->name);
+				fprintf(fp,"%s\r\n",theanswer);
+				fcloselog(fp); 
 			}
 			if(hu)
 				hangup();
