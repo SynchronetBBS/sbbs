@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.06     2022-04-13   When extended file descriptions are enabled, the file date
+                      is now shown with the file description on the last line.
 2.05a    2022-03-13   Fix for "fileDesc is not defined" error when displaying
                       the file description on the main screen.
 2.05     2022-03-12   Now makes use of the user's extended file description

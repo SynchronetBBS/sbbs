@@ -43,6 +43,10 @@
  *                              Fix for "fileDesc is not defined" error when displaying
  *                              the file description on the main screen.  Also made a
  *                              small refactor to the main screen refresh function.
+ * 2022-04-13 Eric Oulashin     Version 2.06
+ *                              When extended file descriptions are enabled, the file
+ *                              date is now shown with the file description on the last
+ *                              line.
 */
 
 if (typeof(require) === "function")
@@ -98,8 +102,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.05a";
-var LISTER_DATE = "2022-03-13";
+var LISTER_VERSION = "2.06";
+var LISTER_DATE = "2022-04-13";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2128,9 +2132,14 @@ function createFileListMenu(pQuitKeys)
 		return Object.keys(this.selectedItemIndexes).length;
 	};
 
-	// OnItemNav function for when the user navigates to a new item
-	fileListMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) {
-		displayFileExtDescOnMainScreen(pNewItemIdx);
+	// If extended file descriptions are enabled, set the OnItemNav function for
+	// when the user navigates to a new item, to display the file description
+	// next to the file menu.
+	if (extendedDescEnabled())
+	{
+		fileListMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) {
+			displayFileExtDescOnMainScreen(pNewItemIdx);
+		};
 	}
 
 	return fileListMenu;
@@ -3656,21 +3665,33 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	{
 		if (screenRowForPrinting > screenRowNum++)
 			continue;
-		console.gotoxy(startX, screenRowForPrinting++);
 		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 		// Normally it would be handy to use printf() to print the text line:
 		//printf(formatStr, substrWithAttrCodes(fileDescArray[i], 0, maxDescLen));
 		// However, printf() doesn't account for attribute codes and thus may not
 		// fill the rest of the width.  So, we do that manually.
 		var descLine = substrWithAttrCodes(fileDescArray[i], 0, maxDescLen);
-		console.print(descLine);
-		var remainingLen = maxDescLen - console.strlen(descLine);
-		if (remainingLen > 0)
-			printf("%" + remainingLen + "s", "");
+		var lineTextLength = console.strlen(descLine);
+		if (lineTextLength > 0)
+		{
+			console.gotoxy(startX, screenRowForPrinting++);
+			console.print(descLine);
+			var remainingLen = maxDescLen - lineTextLength;
+			if (remainingLen > 0)
+				printf("%" + remainingLen + "s", "");
+		}
 		// Stop printing the description lines when we reach the last line on
 		// the screen where we want to print.
 		if (screenRowForPrinting > lastScreenRow)
 			break;
+	}
+	// If there is room, shoe the file date on the next line
+	if (screenRowForPrinting <= lastScreenRow && fileMetadata.hasOwnProperty("time"))
+	{
+		console.print("\1n");
+		console.gotoxy(startX, screenRowForPrinting++);
+		var dateStr = "Date: " + strftime("%Y-%m-%d", fileMetadata.time);
+		printf("%-" + maxDescLen + "s", dateStr.substr(0, maxDescLen));
 	}
 	// Clear the rest of the lines to the bottom of the list area
 	console.print("\1n");
