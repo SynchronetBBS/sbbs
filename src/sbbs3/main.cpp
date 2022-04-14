@@ -4159,6 +4159,7 @@ void sbbs_t::catsyslog(int crash)
 {
 	char str[MAX_PATH+1] = "node.log";
 	char *buf;
+	FILE* fp;
 	int  i,file;
 	long length;
 	struct tm tm;
@@ -4201,18 +4202,18 @@ void sbbs_t::catsyslog(int crash)
 		if(crash) {
 			for(i=0;i<2;i++) {
 				SAFEPRINTF(str,"%scrash.log",i ? cfg.logs_dir : cfg.node_dir);
-				if((file=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
+				if((fp = fopenlog(&cfg, str)) == NULL) {
 					errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
 					free((char *)buf);
 					return;
 				}
-				if(lwrite(file,buf,length)!=length) {
-					close(file);
+				if(fwrite(buf, sizeof(uint8_t), length, fp) !=length) {
+					fcloselog(fp);
 					errormsg(WHERE,ERR_WRITE,str,length);
 					free((char *)buf);
 					return;
 				}
-				close(file);
+				fcloselog(fp);
 			}
 		}
 		free((char *)buf);

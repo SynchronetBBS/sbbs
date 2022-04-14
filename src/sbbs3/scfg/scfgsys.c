@@ -62,6 +62,7 @@ static void configure_dst(void)
 void sys_cfg(void)
 {
 	static int sys_dflt,adv_dflt,tog_dflt,new_dflt;
+	static int adv_bar;
 	char str[81],done=0;
 	int i,j,k,dflt,bar;
 	char sys_pass[sizeof(cfg.sys_pass)];
@@ -1369,7 +1370,7 @@ void sys_cfg(void)
 						,cfg.new_sof);
 					u32toac(cfg.cdt_per_dollar,str,',');
 					sprintf(opt[i++],"%-27.27s%s","Credits Per Dollar",str);
-					sprintf(opt[i++],"%-27.27s%u","Minutes Per 100k Credits"
+					sprintf(opt[i++],"%-27.27s%u","Minutes Per 100K Credits"
 						,cfg.cdt_min_value);
 					sprintf(opt[i++],"%-27.27s%s","Maximum Number of Minutes"
 						,cfg.max_minutes ? ultoa(cfg.max_minutes,tmp,10) : "Unlimited");
@@ -1391,6 +1392,14 @@ void sys_cfg(void)
 					else
 						strcpy(str,"None");
 					sprintf(opt[i++],"%-27.27s%s","Mail Database Backups",str);
+					if(cfg.max_log_size && cfg.max_logs_kept) {
+						SAFEPRINTF2(str, "%s bytes, keep %lu"
+							,byte_count_to_str(cfg.max_log_size, tmp, sizeof(tmp))
+							,cfg.max_logs_kept);
+					} else {
+						SAFECOPY(str, "Unlimited");
+					}
+					sprintf(opt[i++],"%-27.27s%s","Maximum Log File Size", str);
 					sprintf(opt[i++],"%-27.27s%"PRIX32,"Control Key Pass-through"
 						,cfg.ctrlkey_passthru);
 					opt[i][0]=0;
@@ -1399,7 +1408,7 @@ void sys_cfg(void)
 						"\n"
 						"Care should be taken when modifying any of the options listed here.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&adv_dflt,0
+					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&adv_dflt,&adv_bar
 						,"Advanced Options",opt)) {
 						case -1:
 							done=1;
@@ -1648,6 +1657,38 @@ void sys_cfg(void)
 							cfg.mail_backup_level=atoi(str);
 							break;
 						case 16:
+							uifc.helpbuf=
+								"`Maximum Log File Size:`\n"
+								"\n"
+								"This option allows you to limit the size of the following log files\n"
+								"created and appended-to by Synchronet, in the `Logs Directory`:\n"
+								"\n"
+								"  `hungup.log`\n"
+								"  `error.log`\n"
+								"  `crash.log`\n"
+								"  `hack.log`\n"
+								"  `spam.log`\n"
+								"  `guru.log`\n"
+								"\n"
+								"The largest supported log file size limit is 4294967295 (3.99G) bytes.\n"
+								"Log files that have reached or exceeded the configured size limit are\n"
+								"retained by renaming the `*.log` file to `*.#.log` beginning with `*.0.log`.\n"
+								"\n"
+								"You must also specify the number of older/max-size log files to retain.\n"
+								"The largest number of supported retained rotated log files is 9999.\n"
+								"Oldest rotated log files are automatically deleted to save disk space.\n"
+								;
+							byte_count_to_str(cfg.max_log_size, str, sizeof(str));
+							if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Log File Size (in bytes, 0=unlimited)", str, 10, K_EDIT|K_UPPER) > 0) {
+								cfg.max_log_size = (uint32_t)parse_byte_count(str, 1);
+								if(cfg.max_log_size) {
+									SAFEPRINTF(str, "%u", cfg.max_logs_kept);
+									if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Number of old Log Files to Keep", str, 4, K_EDIT|K_NUMBER) > 0)
+										cfg.max_logs_kept = atoi(str);
+								}
+							}
+							break;
+						case 17:
 							uifc.helpbuf=
 								"`Control Key Pass-through:`\n"
 								"\n"

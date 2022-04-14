@@ -198,8 +198,9 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	if(cfg->min_pwlen > LEN_PASS)
 		cfg->min_pwlen = LEN_PASS;
 	get_int(c, instream);
-	for(i=0;i<4;i++)
-		get_int(n,instream);
+	get_int(n,instream);
+	get_int(cfg->max_log_size, instream);
+	get_int(cfg->max_logs_kept, instream);
 
 	/*************************/
 	/* Expired User Settings */

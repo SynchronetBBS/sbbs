@@ -545,6 +545,8 @@ typedef struct
 	uint32_t		max_qwkmsgs;	/* Maximum messages per QWK packet */
 	uint16_t		max_qwkmsgage;	/* Maximum age (in days) of QWK messages to be imported */
 	uint16_t		max_spamage;	/* Maximum age (in days) of SPAM-tagged messages */
+	uint32_t		max_log_size;
+	uint16_t		max_logs_kept;
 	char			preqwk_arstr[LEN_ARSTR+1]; /* pre pack QWK */
 	uchar			preqwk_ar[LEN_ARSTR+1];
 	uint16_t		cdt_min_value;	/* Minutes per 100k credits */
