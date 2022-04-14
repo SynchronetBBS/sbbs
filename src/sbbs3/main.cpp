@@ -4207,7 +4207,7 @@ void sbbs_t::catsyslog(int crash)
 					free((char *)buf);
 					return;
 				}
-				if(fwrite(buf, sizeof(uint8_t), length, fp) !=length) {
+				if(fwrite(buf, sizeof(uint8_t), length, fp) != (size_t)length) {
 					fcloselog(fp);
 					errormsg(WHERE,ERR_WRITE,str,length);
 					free((char *)buf);
