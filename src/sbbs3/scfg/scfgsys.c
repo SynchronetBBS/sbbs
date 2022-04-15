@@ -1393,7 +1393,7 @@ void sys_cfg(void)
 						strcpy(str,"None");
 					sprintf(opt[i++],"%-27.27s%s","Mail Database Backups",str);
 					if(cfg.max_log_size && cfg.max_logs_kept) {
-						SAFEPRINTF2(str, "%s bytes, keep %lu"
+						SAFEPRINTF2(str, "%s bytes, keep %hu"
 							,byte_count_to_str(cfg.max_log_size, tmp, sizeof(tmp))
 							,cfg.max_logs_kept);
 					} else {
