@@ -216,12 +216,13 @@ BOOL backup(const char *fname, int backup_level, BOOL ren)
 FILE* fopenlog(scfg_t* cfg, const char* path)
 {
 	const int mode = O_WRONLY|O_CREAT|O_APPEND;
+	int file;
 	FILE* fp;
 
-	if((fp = fnopen(NULL, path, mode)) == NULL)
+	if((fp = fnopen(&file, path, mode)) == NULL)
 		return NULL;
 
-	if(cfg->max_log_size && cfg->max_logs_kept && ftello(fp) >= (off_t)cfg->max_log_size) {
+	if(cfg->max_log_size && cfg->max_logs_kept && filelength(file) >= (off_t)cfg->max_log_size) {
 #ifdef _WIN32 // Can't rename an open file on Windows
 		fclose(fp);
 #endif
