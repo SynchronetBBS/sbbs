@@ -55,6 +55,7 @@ function str_cmds(str)
 		}
 	);
 
+	log("Invoked string command: " + str);
 	bbs.log_str(str);
 	if(str=="HELP")
 		write("\r\nAvailable commands\r\n\r\n");
