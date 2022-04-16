@@ -471,7 +471,7 @@
 "\r\n%s is currently running %s on node %d.\r\n"\       385 UserRunningXtrn
 	"\r\nTry again later.\r\n\r\n"
 "Remove node lock"                                      386 RemoveNodeLockQ
-"UNUSED387"       						   387 MinimumModemSpeed
+"\1nYou can't use that mail address (duplicate or invalid).\r\n" 387 YouCantUseThatNetmail
 "You do not have sufficient access for this node."      388 NoNodeAccess
 "\1n\1r\1h\r\nSorry, this node is temporarily closed "\ 389 NodeLocked
 	"for maintenance.\1n\r\n"
