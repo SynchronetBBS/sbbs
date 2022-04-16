@@ -322,8 +322,11 @@ BOOL sbbs_t::newuser()
 		if(!online) return(FALSE);
 		while(!(cfg.uq&UQ_NONETMAIL) && online && text[EnterNetMailAddress][0]) {
 			bputs(text[EnterNetMailAddress]);
-			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM)
-				&& !trashcan(useron.netmail,"email"))
+			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM) < 1
+				|| trashcan(useron.netmail,"email")
+				|| ((cfg.uq & UQ_DUPNETMAIL) && userdatdupe(useron.number, U_NETMAIL, LEN_NETMAIL, useron.netmail)))
+				bputs(text[YouCantUseThatNetmail]);
+			else
 				break;
 		}
 		useron.misc&=~NETMAIL;

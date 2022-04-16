@@ -231,6 +231,7 @@ var   UQ_NOCOMMAS	=(1<<17);	/* Do not require commas in location		*/
 var   UQ_NONETMAIL	=(1<<18);	/* Don't ask for e-mail/netmail address		*/
 var   UQ_NOUPRLWR   =(1<<19);   /* Don't force upper/lower case strings		*/
 var   UQ_COLORTERM  =(1<<20);   /* Ask if new user has color terminal	    */
+var   UQ_DUPNETMAIL =(1<<21);	/* Don't allow duplicate netmail address    */
 					    		/********************************************/
 
 							    /********************************************/

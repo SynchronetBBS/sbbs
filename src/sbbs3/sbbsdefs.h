@@ -127,7 +127,7 @@
 #define UQ_NONETMAIL	(1L<<18)	/* Don't ask for e-mail/netmail address	*/
 #define UQ_NOUPRLWR		(1L<<19)	/* Don't force upper/lower case strings */
 #define UQ_COLORTERM	(1L<<20)	/* Ask if new user has color terminal	*/
-
+#define UQ_DUPNETMAIL	(1L<<21)	/* Don't allow duplicate e-mail address */
 
 									/* Different bits in sys_misc				*/
 #define SM_CLOSED		(1L<<0) 	/* System is clsoed to New Users			*/

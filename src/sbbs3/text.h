@@ -397,7 +397,7 @@ enum {
 	,WhichXtrnProg
 	,UserRunningXtrn
 	,RemoveNodeLockQ
-	,MinimumModemSpeed
+	,YouCantUseThatNetmail
 	,NoNodeAccess
 	,NodeLocked
 	,UnknownUser
