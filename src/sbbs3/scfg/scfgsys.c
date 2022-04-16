@@ -1252,6 +1252,9 @@ void sys_cfg(void)
 									,"E-mail/NetMail Address"
 									,cfg.uq&UQ_NONETMAIL ? "No":"Yes");
 								sprintf(opt[i++],"%-27.27s %-3.3s"
+									,"Force Unique E-mail/NetMail Address"
+									,cfg.uq&UQ_DUPNETMAIL ? "Yes":"No");
+								sprintf(opt[i++],"%-27.27s %-3.3s"
 									,"Sex (Gender)"
 									,cfg.uq&UQ_SEX ? "Yes":"No");
 								sprintf(opt[i++],"%-27.27s %-3.3s"
@@ -1313,42 +1316,45 @@ void sys_cfg(void)
 										cfg.uq^=UQ_NONETMAIL;
 										break;
 									case 7:
-										cfg.uq^=UQ_SEX;
+										cfg.uq^=UQ_DUPNETMAIL;
 										break;
 									case 8:
-										cfg.uq^=UQ_BIRTH;
+										cfg.uq^=UQ_SEX;
 										break;
 									case 9:
-										cfg.uq^=UQ_ADDRESS;
+										cfg.uq^=UQ_BIRTH;
 										break;
 									case 10:
-										cfg.uq^=UQ_LOCATION;
+										cfg.uq^=UQ_ADDRESS;
 										break;
 									case 11:
-										cfg.uq^=UQ_NOCOMMAS;
+										cfg.uq^=UQ_LOCATION;
 										break;
 									case 12:
-										cfg.uq^=UQ_PHONE;
+										cfg.uq^=UQ_NOCOMMAS;
 										break;
 									case 13:
-										cfg.uq^=UQ_NOEXASC;
+										cfg.uq^=UQ_PHONE;
 										break;
 									case 14:
-										cfg.uq^=UQ_XEDIT;
+										cfg.uq^=UQ_NOEXASC;
 										break;
 									case 15:
-										cfg.uq^=UQ_CMDSHELL;
+										cfg.uq^=UQ_XEDIT;
 										break;
 									case 16:
-										cfg.uq^=UQ_NODEF;
+										cfg.uq^=UQ_CMDSHELL;
 										break;
 									case 17:
+										cfg.uq^=UQ_NODEF;
+										break;
+									case 18:
 										cfg.uq^=UQ_COLORTERM;
 										break;
-								} 
+								}
 							}
 						break; 
-					} 
+					}
 				}
 				break;
 			case 11:	/* Advanced Options */
