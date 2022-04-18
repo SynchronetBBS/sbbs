@@ -1257,7 +1257,7 @@ js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 #define LAZY_BOOLEAN(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
 		if(name) free(name); \
-		v=INT_TO_BOOL((PropValue)); \
+		v=BOOLEAN_TO_JSVAL((PropValue)); \
 		JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
 		if(name) return JS_TRUE; \
 	}
