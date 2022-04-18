@@ -1053,9 +1053,6 @@ void xtrn_cfg(uint section)
 	uint i,xtrnnum[MAX_OPTS+1];
 	static xtrn_t savxtrn;
 
-	sub_bar=0;
-	opt_dflt=0;
-
 	while(1) {
 		for(i=0,j=0;i<cfg.total_xtrns && j<MAX_OPTS;i++)
 			if(cfg.xtrn[i]->sec==section) {
