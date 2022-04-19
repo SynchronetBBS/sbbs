@@ -15060,11 +15060,11 @@ function turgons()
 			sln('');
 			player.hp_max += trainer.hp_gained;
 			player.hp = player.hp_max;
-			player.str += trainer.str;
+			player.str += trainer.str_gained;
 			player.def += trainer.def;
 			player.level += 1;
 			lw('`2  You receive `0'+pretty_int(trainer.hp_gained)+'`2 hitpoints,');
-			lw(' `0'+pretty_int(trainer.str)+'`2 strength');
+			lw(' `0'+pretty_int(trainer.str_gained)+'`2 strength');
 			lln(' and `0'+pretty_int(trainer.def)+'`2 defense points!');
 			sln('');
 			lln('  `%YOU ARE NOW LEVEL '+pretty_int(player.level)+'.');
