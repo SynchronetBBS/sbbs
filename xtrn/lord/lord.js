@@ -20,7 +20,7 @@ delete dk.console.remote_screen;
 require("recordfile.js", "RecordFile");
 require('recorddefs.js', 'Player_Def');
 
-var ver = '5.00 JS';
+var ver = '5.01 JS';
 var pfile;
 var psock;
 var statefile;
