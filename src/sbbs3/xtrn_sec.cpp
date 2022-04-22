@@ -302,9 +302,6 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			return; 
 		}
 
-		if(tleft>0x7fff)	/* Reduce time-left for broken 16-bit doors		*/
-			tleft=0x7fff;	/* That interpret this value as a signed short	*/
-
 		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%s\n%u\n%c\n"
 			,useron.number						/* User number */
 			,name								/* User name */
@@ -331,7 +328,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		safe_snprintf(str, sizeof(str), "%lu\n%s\n%s\n%s\n%lu\n%d\n%s\n%s\n"
 			"%u\n%u\n%" PRIu64 "\n%u\n%" PRIu64 "\n%u\n%s\n"
-			,tleft								/* Time left in seconds */
+			,MIN(tleft, INT16_MAX)				/* Time left in seconds */
 			,node_dir							/* Gfiles dir (log dir) */
 			,data_dir							/* Data dir */
 			,"node.log"                         /* Name of log file */
@@ -362,9 +359,6 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
 		}
-
-		if(tleft>0x7fff)	/* Reduce time-left for broken 16-bit doors		*/
-			tleft=0x7fff;	/* That interpret this value as a signed short	*/
 
 		SAFEPRINTF(str,"COM%d:\n"
 			,online==ON_REMOTE ? cfg.com_port:0);	/* 01: COM port - 0 if Local */
@@ -402,10 +396,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		safe_snprintf(str, sizeof(str), "%u\n%u\n%s\n%lu\n%lu\n%s\n"
 			,useron.level						/* 15: User security level */
-			,useron.logons						/* 16: User total logons */
+			,MIN(useron.logons, INT16_MAX)		/* 16: User total logons */
 			,unixtodstr(&cfg,useron.laston,tmp)	/* 17: User last on date */
-			,tleft								/* 18: User time left in sec */
-			,tleft/60							/* 19: User time left in min */
+			,MIN(tleft, INT16_MAX)				/* 18: User time left in sec */
+			,MIN((tleft/60), INT16_MAX)			/* 19: User time left in min */
 			,(term & NO_EXASCII)				/* 20: GR if COLOR ANSI */
 				? "7E" : (term & (ANSI|COLOR)) == (ANSI|COLOR) ? "GR" : "NG");
 		lfexpand(str,misc);
@@ -445,7 +439,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 				? 'Y':'N'                       /* 39: ANSI supported but NG mode */
 			,'Y'                                /* 40: Use record locking */
 			,cfg.color[clr_external]			/* 41: BBS default color */
-			,useron.min 						/* 42: Time credits in minutes */
+			,MIN(useron.min, INT16_MAX)			/* 42: Time credits in minutes */
 			,tm.tm_mon+1						/* 43: File new-scan date */
 			,tm.tm_mday
 			,TM_YEAR(tm.tm_year));
@@ -466,7 +460,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,useron.dlb/1024UL					/* 49: Total Kbytes downloaded */
 			,useron.comment 					/* 50: User comment */
 			,0									/* 51: Total doors opened */
-			,useron.posts); 					/* 52: User message left */
+			,MIN(useron.posts, INT16_MAX));		/* 52: User message left */
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
@@ -518,7 +512,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,useron.location					/* User's city */
 			,INT_TO_BOOL(term & ANSI)			/* 1=ANSI 0=ASCII */
 			,useron.level						/* Security level */
-			,tleft/60); 						/* Time left in minutes */
+			,MIN((tleft/60), INT16_MAX)); 		/* Time left in minutes */
 		strupr(str);
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
@@ -624,7 +618,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,i									/* DTE rate */
 			,useron.location					/* User location */
 			,useron.level						/* Security level */
-			,tleft/60							/* Time left in min */
+			,MIN((tleft/60), INT16_MAX)			/* Time left in min */
 			,(term & ANSI) ? "COLOR":"MONO"		/* ANSI ??? */
 			,useron.pass						/* Password */
 			,useron.number);					/* User number */
@@ -633,7 +627,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		localtime_r(&now,&tm);
 		safe_snprintf(str, sizeof(str), "%lu\n%02d:%02d\n%02d:%02d %02d/%02d/%02d\n%s\n"
-			,tleft								/* Time left in seconds */
+			,MIN(tleft, INT16_MAX)			/* Time left in seconds */
 			,tm.tm_hour,tm.tm_min 			/* Current time HH:MM */
 			,tm.tm_hour,tm.tm_min 			/* Current time and date HH:MM */
 			,tm.tm_mon+1,tm.tm_mday			/* MM/DD/YY */
@@ -812,7 +806,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,tmp								/* User's first name */
 			,dte_rate							/* DTE Rate */
 			,cfg.com_port						/* COM Port */
-			,tleft/60							/* Time left in minutes */
+			,MIN((tleft/60), INT16_MAX)			/* Time left in minutes */
 			,l									/* Seconds since midnight (now) */
 			);
 		lfexpand(str,misc);
@@ -901,7 +895,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,rows								/* Page length */
 			,dte_rate							/* Baud rate */
 			,online==ON_LOCAL ? 0:cfg.com_port	/* COM port */
-			,tleft/60							/* Time left (in minutes) */
+			,MIN((tleft/60), INT16_MAX)			/* Time left (in minutes) */
 			);
 		lfexpand(str,misc);
 		fwrite(str, strlen(str), 1, fp);
@@ -926,7 +920,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,useron.level						/* User's level */
 			,useron.misc&EXPERT ? 'Y':'N'       /* Expert? */
 			,(term & ANSI) ? 'Y':'N'			/* ANSI? */
-			,tleft/60							/* Minutes left */
+			,MIN((tleft/60), INT16_MAX)			/* Minutes left */
 			,useron.phone						/* User's phone number */
 			,useron.location					/* User's city and state */
 			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp))	/* User's birth date (MM/DD/YY) */
