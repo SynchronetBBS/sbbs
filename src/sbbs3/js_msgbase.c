@@ -93,7 +93,11 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((p->smb_result = smb_open_sub(scfg, &(p->smb), p->smb.subnum)) != SMB_SUCCESS) {
+	if(p->smb.subnum == INVALID_SUB)
+		p->smb_result = smb_open(&(p->smb));
+	else
+		p->smb_result = smb_open_sub(scfg, &(p->smb), p->smb.subnum);
+	if(p->smb_result != SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
