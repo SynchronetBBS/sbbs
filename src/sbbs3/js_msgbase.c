@@ -85,7 +85,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if(p->smb.subnum==INVALID_SUB
+	if(p->smb.subnum >= scfg->total_subs
 		&& strchr(p->smb.file,'/')==NULL
 		&& strchr(p->smb.file,'\\')==NULL) {
 		JS_ReportError(cx,"Unrecognized msgbase code: %s",p->smb.file);
@@ -93,7 +93,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(p->smb.subnum == INVALID_SUB)
+	if(p->smb.subnum >= scfg->total_subs && p->smb.subnum != INVALID_SUB)
 		p->smb_result = smb_open(&(p->smb));
 	else
 		p->smb_result = smb_open_sub(scfg, &(p->smb), p->smb.subnum);
@@ -3422,7 +3422,6 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 				,scfg->sub[p->smb.subnum]->data_dir,scfg->sub[p->smb.subnum]->code);
 		} else { /* unknown code */
 			SAFECOPY(p->smb.file,base);
-			p->smb.subnum=INVALID_SUB;
 		}
 	}
 
