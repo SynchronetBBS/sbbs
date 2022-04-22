@@ -6467,7 +6467,8 @@ int main(int argc, char **argv)
 	}
 
 	if(cfg.badecho >= 0)
-		lprintf(LOG_DEBUG, "Bad-echo area: %s", scfg.sub[cfg.area[cfg.badecho].sub]->code);
+		lprintf(LOG_DEBUG, "Bad-echo area: %s"
+			,cfg.area[cfg.badecho].sub == INVALID_SUB ? "INVALID_SUB" : scfg.sub[cfg.area[cfg.badecho].sub]->code);
 
 	if(cfg.auto_add_subs) {
 		for(unsigned subnum = 0; subnum < scfg.total_subs; subnum++) {
