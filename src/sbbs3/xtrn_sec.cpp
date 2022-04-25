@@ -888,14 +888,20 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			return; 
 		}
 
-		safe_snprintf(str, sizeof(str), "%s\n%d\n%d\n%lu\n%lu\n%u\n%lu\n"
-			,name								/* Complete name of user */
-			,INT_TO_BOOL(term & ANSI)			/* ANSI ? */
-			,!INT_TO_BOOL(term & NO_EXASCII)	/* IBM characters ? */
-			,rows								/* Page length */
-			,dte_rate							/* Baud rate */
-			,online==ON_LOCAL ? 0:cfg.com_port	/* COM port */
-			,MIN((tleft/60), INT16_MAX)			/* Time left (in minutes) */
+		/* from SRE0994B's SRDOOR.DOC:
+		 * The main change from 3.1 was the addition of line 8,
+		 * the "Real Name" line.  This line will be used in the
+		 * future for BRE's "dupe-checking" feature.
+		 */
+		safe_snprintf(str, sizeof(str), "%s\n%d\n%d\n%lu\n%lu\n%u\n%lu\n%s\n"
+			,name								// Complete name or handle of user
+			,INT_TO_BOOL(term & ANSI)			// ANSI status:  1 = yes, 0 = no, -1 = don't know
+			,!INT_TO_BOOL(term & NO_EXASCII)	// IBM Graphic characters:  1 = yes, 0 = no, -1 = unknown
+			,rows								// Page length of screen, in lines.  Assume 25 if unknown
+			,dte_rate							// Baud Rate:  300, 1200, 2400, 9600, 19200, etc.
+			,online==ON_LOCAL ? 0:cfg.com_port	// Com Port:  1, 2, 3, or 4.
+			,MIN((tleft/60), INT16_MAX)			// Time Limit:  (in minutes); -1 if unknown.
+			,useron.name						// Real name (the same as line 1 if not known)
 			);
 		lfexpand(str,misc);
 		fwrite(str, strlen(str), 1, fp);
