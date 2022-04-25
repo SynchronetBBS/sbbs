@@ -3339,7 +3339,10 @@ time_t gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 		if(tleft>cfg->level_timepercall[user->level]*60)
 			tleft=cfg->level_timepercall[user->level]*60;
 		tleft+=user->min*60L;
-		tleft-=(long)(now-starttime);
+		long tused = (long)MAX(now - starttime, 0);
+		tleft -= tused;
+		if(tleft < 0)
+			tleft = 0;
 		if(tleft>0x7fffL)
 			timeleft=0x7fff;
 		else
