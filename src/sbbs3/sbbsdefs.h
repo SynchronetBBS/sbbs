@@ -911,6 +911,7 @@ enum {							/* Values of mode for userlist function     */
 						  nodesync(); }
 #define ASYNC			{ getnodedat(cfg.node_num,&thisnode,0); \
 						  nodesync(); }
+#define TM_MONTH(mm)	((mm) + 1)
 #define TM_YEAR(yy)		((yy)%100)
 #define sbbs_beep(f,d)	BEEP(f,d)
 #define mswait(x)		SLEEP(x)

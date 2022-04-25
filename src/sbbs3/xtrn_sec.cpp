@@ -53,7 +53,7 @@ int unixtojulian(time_t unix_time)
 	if(localtime_r(&unix_time,&tm)==NULL)
 		return(0);
 	j=36525L*(1900+tm.tm_year);
-	if(!(j%100) && (tm.tm_mon+1)<3)
+	if(!(j%100) && TM_MONTH(tm.tm_mon)<3)
 		j--;
 	j=(j-(1900*36525))/100;
 	j+=tm.tm_mday+days[tm.tm_mon];
@@ -313,9 +313,12 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%" PRIu64 "\n%s\n%lu\n%ld\n%u\n%u\n%u\n%d\n%u\n"
+		time_t t = useron.laston;
+		localtime_r(&t, &tm);
+		safe_snprintf(str, sizeof(str), "%" PRIu64 "\n%02u/%02u/%02u\n%lu\n%ld\n%u\n%u\n%u\n%d\n%u\n"
 			,useron.cdt+useron.freecdt			/* Gold */
-			,unixtodstr(&cfg,useron.laston,tmp)	/* User last on date */
+			,TM_MONTH(tm.tm_mon)				/* User last on date (MM/DD/YY) */
+			,tm.tm_mday, TM_YEAR(tm.tm_year)
 			,cols 								/* User screen width */
 			,rows								/* User screen length */
 			,useron.level						/* User SL */
@@ -394,10 +397,13 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%u\n%u\n%s\n%lu\n%lu\n%s\n"
+		time_t t = useron.laston;
+		localtime_r(&t, &tm);
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%02u/%02u/%02u\n%lu\n%lu\n%s\n"
 			,useron.level						/* 15: User security level */
 			,MIN(useron.logons, INT16_MAX)		/* 16: User total logons */
-			,unixtodstr(&cfg,useron.laston,tmp)	/* 17: User last on date */
+			,TM_MONTH(tm.tm_mon)				/* 17: User last on date */
+			,tm.tm_mday, TM_YEAR(tm.tm_year)	
 			,MIN(tleft, INT16_MAX)				/* 18: User time left in sec */
 			,MIN((tleft/60), INT16_MAX)			/* 19: User time left in min */
 			,(term & NO_EXASCII)				/* 20: GR if COLOR ANSI */
@@ -405,12 +411,15 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%lu\n%c\n%s\n%u\n%s\n%u\n%c\n%u\n%u\n"
+		t = useron.expire;
+		localtime_r(&t, &tm);
+		safe_snprintf(str, sizeof(str), "%lu\n%c\n%s\n%u\n%02u/%02u/%02u\n%u\n%c\n%u\n%u\n"
 			,rows								/* 21: User screen length */
 			,(useron.misc&EXPERT) ? 'Y':'N'     /* 22: Expert? (Y/N) */
 			,ltoaf(useron.flags1,tmp2)			/* 23: Registered conferences */
 			,0									/* 24: Conference came from */
-			,unixtodstr(&cfg,useron.expire,tmp)	/* 25: User expiration date */
+			,TM_MONTH(tm.tm_mon)				/* 25: User expiration date (MM/DD/YY) */
+			,tm.tm_mday, TM_YEAR(tm.tm_year)
 			,useron.number						/* 26: User number */
 			,useron.prot                        /* 27: Default protocol */
 			,useron.uls 						/* 28: User total uploads */
@@ -418,6 +427,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
+		t = getnextevent(&cfg, NULL);
+		localtime_r(&t, &tm);
 		safe_snprintf(str, sizeof(str), "%u\n%" PRIu64 "\n%s\n%s\n%s\n%s"
 			"\n%s\n%02d:%02d\n%c\n"
 			,0									/* 30: Kbytes downloaded today */
@@ -427,8 +438,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,data_dir							/* 34: Path to GEN directory */
 			,cfg.sys_op 						/* 35: Sysop name */
 			,useron.handle						/* 36: Alias name */
-			,0 // sys_eventtime/60				/* 37: Event time HH:MM */
-			,0 // sys_eventtime%60
+			,tm.tm_hour							/* 37: Event time HH:MM */
+			,tm.tm_min
 			,'Y');                              /* 38: Error correcting connection */
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
@@ -440,7 +451,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,'Y'                                /* 40: Use record locking */
 			,cfg.color[clr_external]			/* 41: BBS default color */
 			,MIN(useron.min, INT16_MAX)			/* 42: Time credits in minutes */
-			,tm.tm_mon+1						/* 43: File new-scan date */
+			,TM_MONTH(tm.tm_mon)				/* 43: File new-scan date */
 			,tm.tm_mday
 			,TM_YEAR(tm.tm_year));
 		lfexpand(str,misc);
@@ -539,7 +550,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		localtime32(&useron.laston,&tm);
 		SAFEPRINTF2(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		exitinfo.UserInfo.LastTime = tmp;
-		unixtodstr(&cfg,useron.laston,tmp);
+		SAFEPRINTF3(tmp, "%02u/%02u/%02u", TM_MONTH(tm.tm_mon), tm.tm_mday, TM_YEAR(tm.tm_year));
 		exitinfo.UserInfo.LastDate = tmp;
 		if(useron.misc&DELETED) exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_DELETED;
 		if(useron.misc&CLRSCRN) exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_CLRSCRN;
@@ -558,7 +569,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		localtime_r(&logontime,&tm);
 		SAFEPRINTF2(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		exitinfo.LoginTime = tmp;
-		unixtodstr(&cfg,(time32_t)logontime,tmp);
+		SAFEPRINTF3(tmp, "%02u/%02u/%02u", TM_MONTH(tm.tm_mon), tm.tm_mday, TM_YEAR(tm.tm_year));
 		exitinfo.LoginDate = tmp;
 		exitinfo.TimeLimit = cfg.level_timepercall[useron.level];
 		exitinfo.Credit = (uint32_t)MIN(useron.cdt, UINT32_MAX);
@@ -630,21 +641,22 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,MIN(tleft, INT16_MAX)			/* Time left in seconds */
 			,tm.tm_hour,tm.tm_min 			/* Current time HH:MM */
 			,tm.tm_hour,tm.tm_min 			/* Current time and date HH:MM */
-			,tm.tm_mon+1,tm.tm_mday			/* MM/DD/YY */
+			,TM_MONTH(tm.tm_mon),tm.tm_mday	/* MM/DD/YY */
 			,TM_YEAR(tm.tm_year)
 			,nulstr);							/* Conferences with access */
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
 		localtime32(&useron.laston,&tm);
-		safe_snprintf(str, sizeof(str), "%u\n%u\n%u\n%u\n%s\n%s %02u:%02u\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%u\n%u\n%s\n%02u/%02u/%02u %02u:%02u\n"
 			,0									/* Daily download total */
 			,0									/* Max download files */
 			,0									/* Daily download k total */
 			,0									/* Max download k total */
 			,useron.phone						/* User phone number */
-			,unixtodstr(&cfg,useron.laston,tmp)	/* Last on date and time */
-			,tm.tm_hour						/* MM/DD/YY  HH:MM */
+			,TM_MONTH(tm.tm_mon)				/* Last on date and time ("MM/DD/YY  HH:MM") */
+			,tm.tm_mday, TM_YEAR(tm.tm_year)
+			,tm.tm_hour
 			,tm.tm_min);
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
@@ -655,7 +667,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,useron.misc&EXPERT 				/* Expert or Novice mode */
 				? "EXPERT":"NOVICE"
 			,"All"                              /* Transfer Protocol */
-			,tm.tm_mon+1,tm.tm_mday			/* File new-scan date */
+			,TM_MONTH(tm.tm_mon),tm.tm_mday		/* File new-scan date */
 			,TM_YEAR(tm.tm_year)				/* in MM/DD/YY */
 			,useron.logons						/* Total logons */
 			,rows								/* Screen length */
@@ -678,9 +690,9 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		localtime_r(&now,&tm);
 		safe_snprintf(str, sizeof(str), "%02d/%02d/%02d %02d:%02d\n%u\n%u\n"
-			,tm.tm_mon+1,tm.tm_mday			/* Current date MM/DD/YY */
+			,TM_MONTH(tm.tm_mon),tm.tm_mday		/* Current date MM/DD/YY */
 			,TM_YEAR(tm.tm_year)
-			,tm.tm_hour,tm.tm_min 			/* Current time HH:MM */
+			,tm.tm_hour,tm.tm_min 				/* Current time HH:MM */
 			,cfg.node_num						/* Node number */
 			,0);								/* Door number */
 		lfexpand(str,misc);
