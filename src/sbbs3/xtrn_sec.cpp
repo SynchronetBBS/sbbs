@@ -426,7 +426,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,node_dir							/* 33: Path to MAIN directory */
 			,data_dir							/* 34: Path to GEN directory */
 			,cfg.sys_op 						/* 35: Sysop name */
-			,nulstr 							/* 36: Alias name */
+			,useron.handle						/* 36: Alias name */
 			,0 // sys_eventtime/60				/* 37: Event time HH:MM */
 			,0 // sys_eventtime%60
 			,'Y');                              /* 38: Error correcting connection */
