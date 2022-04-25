@@ -49,7 +49,7 @@ void sbbs_t::logout()
 		return; 
 	}
 	lprintf(LOG_INFO, "logout initiated");
-	SAFECOPY(lastuseron,useron.alias);
+	SAFECOPY(lastuseron,useron.alias); // TODO: race condition here
 	if(!online && getnodedat(cfg.node_num, &node, /* lock: */true) == 0) {
 		node.status = NODE_LOGOUT;
 		putnodedat(cfg.node_num, &node);
@@ -89,7 +89,7 @@ void sbbs_t::logout()
 		remove(path);
 
 	delfiles(cfg.temp_dir,ALLFILES);
-	if(sys_status&SS_USERON) {	// Insures the useron actually when through logon()/getmsgptrs() first
+	if(sys_status&SS_USERON) {	// Insures the useron actually went through logon()/getmsgptrs() first
 		putmsgptrs();
 	}
 	if(!REALSYSOP)
