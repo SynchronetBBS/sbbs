@@ -303,7 +303,7 @@ function Server_Work(cmdline) {
 	case "INVITE":
 		if (!p[1] || origin.server)
 			break;
-		tmp = Channels[cmd[2].toUpperCase()];
+		tmp = Channels[p[2].toUpperCase()];
 		if (!tmp)
 			break;
 		if (!tmp.modelist[CHANMODE_OP][origin.id])
@@ -527,7 +527,7 @@ function Server_Work(cmdline) {
 					} else {
 						this.quit(format(
 							"Server %s trying to introduce invalid nickname: %s",
-							this.nick, cmd[1]
+							this.nick, p[0]
 						))
 					}
 					break;
