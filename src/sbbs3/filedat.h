@@ -82,6 +82,7 @@ DLLEXPORT char*			batch_list_name(scfg_t* , uint usernumber, enum XFER_TYPE, cha
 DLLEXPORT FILE*			batch_list_open(scfg_t* , uint usernumber, enum XFER_TYPE, bool create);
 DLLEXPORT str_list_t	batch_list_read(scfg_t* , uint usernumber, enum XFER_TYPE);
 DLLEXPORT bool			batch_list_write(scfg_t*, uint usernumber, enum XFER_TYPE, str_list_t list);
+DLLEXPORT bool			batch_list_sort(scfg_t*, uint usernumber, enum XFER_TYPE);
 DLLEXPORT bool			batch_list_clear(scfg_t*, uint usernumber, enum XFER_TYPE);
 
 DLLEXPORT bool			batch_file_add(scfg_t*, uint usernumber, enum XFER_TYPE, file_t*);
