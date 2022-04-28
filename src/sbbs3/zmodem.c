@@ -848,7 +848,7 @@ int zmodem_recv_data32(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigne
 			break;
 
 		if(*len >= maxlen) {
-			lprintf(zm, LOG_ERR, "%lu Subpacket OVERFLOW (%u > %u)",(ulong)zm->ack_file_pos, *len, maxlen);
+			lprintf(zm, LOG_ERR, "%lu Subpacket OVERFLOW (%u >= %u)",(ulong)zm->ack_file_pos, *len, maxlen);
 			return SUBPKTOVERFLOW;
 		}
 		crc = ucrc32(c,crc);
