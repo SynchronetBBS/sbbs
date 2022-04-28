@@ -92,9 +92,13 @@ void sbbs_t::batchmenu()
 				start_batch_download();
 				break;
 			case 'L':
+			{
+				bool sort = !noyes(text[SortAlphaQ]);
 				ini = batch_list_read(&cfg, useron.number, XFER_BATCH_UPLOAD);
 				filenames = iniGetSectionList(ini, NULL);
 				if(strListCount(filenames)) {
+					if(sort)
+						strListSortAlphaCase(filenames);
 					bputs(text[UploadQueueLstHdr]);
 					for(size_t i = 0; filenames[i]; ++i) {
 						const char* filename = filenames[i];
@@ -114,6 +118,8 @@ void sbbs_t::batchmenu()
 				ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
 				filenames = iniGetSectionList(ini, NULL);
 				if(strListCount(filenames)) {
+					if(sort)
+						strListSortAlphaCase(filenames);
 					bputs(text[DownloadQueueLstHdr]);
 					for(size_t i = 0; filenames[i]; ++i) {
 						const char* filename = filenames[i];
@@ -144,6 +150,7 @@ void sbbs_t::batchmenu()
 				iniFreeStringList(filenames);
 				iniFreeStringList(ini);
 				break;
+			}
 			case 'R':
 				if((n = batup_total()) > 0) {
 					bprintf(text[RemoveWhichFromUlQueue], n);
