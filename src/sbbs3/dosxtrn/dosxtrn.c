@@ -147,6 +147,7 @@ void vdd_getstatus(vdd_status_t* status)
 		memset(status,0,sizeof(vdd_status_t));
 }
 
+#define HAPPY_PORT_STATUS FOSSIL_MDM_STATUS_DCD_CHNG | FOSSIL_MDM_STATUS_DCD | FOSSIL_MDM_STATUS_CTS | FOSSIL_LINE_STATUS_THRE | FOSSIL_LINE_STATUS_TSRE
 WORD PortStatus()
 {
 	WORD			status=FOSSIL_MDM_STATUS_DCD_CHNG; /* AL bit 3 (change in DCD) always set */
@@ -169,6 +170,9 @@ WORD PortStatus()
 
 	if(!vdd_status.outbuf_full)		/* output buffer is empty */
 		status|=FOSSIL_LINE_STATUS_TSRE;
+
+	if(vdd_status.outbuf_full < vdd_status.outbuf_size)
+		status|=FOSSIL_MDM_STATUS_CTS;
 
 	return(status);
 }
@@ -263,7 +267,7 @@ void interrupt winNTint14(
 			break;
 		case FOSSIL_FUNC_GET_STATUS:	/* request status */
 			_ax=PortStatus();
-			if(_ax == FOSSIL_MDM_STATUS_DCD_CHNG | FOSSIL_MDM_STATUS_DCD | FOSSIL_LINE_STATUS_THRE | FOSSIL_LINE_STATUS_TSRE)
+			if(_ax == HAPPY_PORT_STATUS)
 				vdd_op(VDD_MAYBE_YIELD);
 			break;
 		case FOSSIL_FUNC_INIT:	/* initialize */
