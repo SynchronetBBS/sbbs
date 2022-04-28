@@ -421,6 +421,18 @@ bool batch_list_clear(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 	return remove(batch_list_name(cfg, usernumber, type, path, sizeof(path))) == 0;
 }
 
+bool batch_list_sort(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
+{
+	str_list_t ini = batch_list_read(cfg, usernumber, type);
+	if(ini == NULL)
+		return true;
+	bool result = iniSortSections(&ini, /* prefix: */NULL, /* sort_keys: */FALSE);
+	if(result)
+		result = batch_list_write(cfg, usernumber, type, ini);
+	iniFreeStringList(ini);
+	return result;
+}
+
 size_t batch_file_count(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
 	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */false);
