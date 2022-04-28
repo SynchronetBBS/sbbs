@@ -30,6 +30,7 @@ void sbbs_t::batchmenu()
     char	str[129],tmp2[250],done=0,ch;
 	char 	tmp[512];
 	char	keys[32];
+	BOOL	sort = -1;
 	uint	i,n,xfrprot,xfrdir;
     int64_t	totalcdt,totalsize;
     time_t	start,end;
@@ -93,14 +94,14 @@ void sbbs_t::batchmenu()
 				break;
 			case 'L':
 			{
-				bool sort = !noyes(text[SortAlphaQ]);
 				ini = batch_list_read(&cfg, useron.number, XFER_BATCH_UPLOAD);
 				filenames = iniGetSectionList(ini, NULL);
 				if(strListCount(filenames)) {
+					sort = !noyes(text[SortAlphaQ]);
 					if(sort)
 						strListSortAlphaCase(filenames);
 					bputs(text[UploadQueueLstHdr]);
-					for(size_t i = 0; filenames[i]; ++i) {
+					for(size_t i = 0; filenames[i] != NULL && !msgabort(); ++i) {
 						const char* filename = filenames[i];
 						char value[INI_MAX_VALUE_LEN];
 						bprintf(text[UploadQueueLstFmt]
@@ -118,10 +119,12 @@ void sbbs_t::batchmenu()
 				ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
 				filenames = iniGetSectionList(ini, NULL);
 				if(strListCount(filenames)) {
+					if(sort == -1)
+						sort = !noyes(text[SortAlphaQ]);
 					if(sort)
 						strListSortAlphaCase(filenames);
 					bputs(text[DownloadQueueLstHdr]);
-					for(size_t i = 0; filenames[i]; ++i) {
+					for(size_t i = 0; filenames[i] && !msgabort(); ++i) {
 						const char* filename = filenames[i];
 						file_t f = {{}};
 						if(!batch_file_load(&cfg, ini, filename, &f))
@@ -141,14 +144,19 @@ void sbbs_t::batchmenu()
 						totalcdt += f.cost;
 						smb_freefilemem(&f);
 					}
-					bprintf(text[DownloadQueueTotals]
-						,byte_estimate_to_str(totalcdt, tmp, sizeof(tmp), 1, 1)
-						,byte_estimate_to_str(totalsize, str, sizeof(tmp), 1, 1)
-						,cur_cps ? sectostr((uint)(totalsize/(uint64_t)cur_cps), tmp2) : "??:??:??"); 
+					if(!msgabort())
+						bprintf(text[DownloadQueueTotals]
+							,byte_estimate_to_str(totalcdt, tmp, sizeof(tmp), 1, 1)
+							,byte_estimate_to_str(totalsize, str, sizeof(tmp), 1, 1)
+							,cur_cps ? sectostr((uint)(totalsize/(uint64_t)cur_cps), tmp2) : "??:??:??"); 
 				} else
 					bputs(text[DownloadQueueIsEmpty]);
 				iniFreeStringList(filenames);
 				iniFreeStringList(ini);
+				if(sort == TRUE) {
+					batch_list_sort(&cfg, useron.number, XFER_BATCH_UPLOAD);
+					batch_list_sort(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
+				}
 				break;
 			}
 			case 'R':
@@ -262,12 +270,14 @@ BOOL sbbs_t::start_batch_download()
 
 	uint64_t totalcdt = 0;
 	for(size_t i=0; filenames[i] != NULL; ++i) {
+		progress(text[Scanning], i, file_count);
 		file_t f = {{}};
 		if(batch_file_load(&cfg, ini, filenames[i], &f)) {
 			totalcdt += f.cost;
 			smb_freefilemem(&f);
 		}
 	}
+	bputs(text[Scanned]);
 	if(totalcdt > useron.cdt+useron.freecdt) {
 		bprintf(text[YouOnlyHaveNCredits]
 			,u64toac(useron.cdt+useron.freecdt,tmp));
@@ -410,6 +420,8 @@ bool sbbs_t::create_batchdn_lst(bool native)
 		errormsg(WHERE, ERR_OPEN, path);
 		return false;
 	}
+	const char* list_desc = "Batch Download File List";
+	bprintf(text[CreatingFileList], list_desc);
 	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
 	for(size_t i = 0; filenames[i] != NULL; ++i) {
@@ -441,6 +453,7 @@ bool sbbs_t::create_batchdn_lst(bool native)
 	fclose(fp);
 	iniFreeStringList(ini);
 	iniFreeStringList(filenames);
+	bprintf(text[CreatedFileList], list_desc);
 	return true;
 }
 
