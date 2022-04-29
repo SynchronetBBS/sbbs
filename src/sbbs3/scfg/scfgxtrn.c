@@ -553,12 +553,27 @@ void tevents_cfg()
 				"external program that performs some type of automated function on the\n"
 				"system. Use this menu to configure how and when this event will be\n"
 				"executed.\n"
+				"\n"
+				"The left and right arrow keys may be used to cycle through events.\n"
 			;
 			sprintf(str,"%s Timed Event",cfg.event[i]->code);
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,70,&dfltopt,0
+			uifc_winmode_t wmode = WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_events)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,70,&dfltopt,0
 				,str,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_events)
+						i++;
 					break;
 				case 0:
 					SAFECOPY(str,cfg.event[i]->code);
