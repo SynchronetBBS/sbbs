@@ -432,6 +432,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QHUB_NOHEADERS	(1<<16)		/* Don't include HEADERS.DAT */
 #define QHUB_NOVOTING	(1<<17)		/* Don't include VOTING.DAT */
 #define QHUB_UTF8		(1<<18)		/* Include UTF-8 characters */
+#define QHUB_NATIVE		(1<<19)		/* Native call-out script */
 
 							/* Bits in user.chat							*/
 #define CHAT_ECHO	(1<<0)	/* Multinode chat echo							*/

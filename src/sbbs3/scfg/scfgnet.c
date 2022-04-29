@@ -833,6 +833,7 @@ void qhub_edit(int num)
 		sprintf(opt[i++],"%-27.27s%s","Pack Command Line",cfg.qhub[num]->pack);
 		sprintf(opt[i++],"%-27.27s%s","Unpack Command Line",cfg.qhub[num]->unpack);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Command Line",cfg.qhub[num]->call);
+		sprintf(opt[i++],"%-27.27s%s","Native Call-out Command",cfg.qhub[num]->misc&QHUB_NATIVE ? "Yes":"No");
 		if(cfg.qhub[num]->node == NODE_ANY)
 			SAFECOPY(str, "Any");
 		else
@@ -875,6 +876,9 @@ void qhub_edit(int num)
 			"\n"
 			"The `Call-out Command Line` is executed when your system attempts a packet\n"
 			"exchange with the QWKnet hub (e.g. executes a script).\n"
+			"\n"
+			"Toggle `Native Call-out Command` to `Yes` if your Call-out Command-line\n"
+			"is invoking a native (not a 16-bit DOS) program or script.\n"
 			"\n"
 			"`Kludge Lines` (e.g. @TZ, @VIA, @MSGID, @REPLY) provide information not\n"
 			"available in standard QWK message headers, but are superfluous when the\n"
@@ -970,6 +974,10 @@ void qhub_edit(int num)
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
 					,cfg.qhub[num]->call,sizeof(cfg.qhub[num]->call)-1,K_EDIT);
+				break;
+			case __COUNTER__:
+				cfg.qhub[num]->misc^=QHUB_NATIVE;
+				uifc.changes=1;
 				break;
 			case __COUNTER__:
 				if(cfg.qhub[num]->node == NODE_ANY)
