@@ -365,6 +365,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		bprintf("Sorry, DOS programs are not supported on this node.\r\n");
 		return -1;
 	}
+	if(mode & EX_OFFLINE)
+		native = true;	// We don't need to invoke our virtual UART/FOSSIL driver
 
 	if(mode&EX_SH || strcspn(cmdline,"<>|")!=strlen(cmdline))
 		sprintf(comspec_str,"%s /C ", comspec);
