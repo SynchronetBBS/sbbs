@@ -3010,10 +3010,13 @@ void event_thread(void* arg)
 					sbbs->lprintf(LOG_INFO,"Call-out: %s",sbbs->cfg.qhub[i]->id);
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
+					int ex_mode = EX_OFFLINE|EX_SH; /* sh for Unix perl scripts */
+					if(sbbs->cfg.qhub[i]->misc & QHUB_NATIVE)
+						ex_mode |= EX_NATIVE;
 					int result = sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call
 							,sbbs->cfg.qhub[i]->id,sbbs->cfg.qhub[i]->id,NULL)
-						,EX_OFFLINE|EX_SH);	/* sh for Unix perl scripts */
+						,ex_mode);
 					sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Call-out to: %s returned %d", sbbs->cfg.qhub[i]->id, result);
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=FALSE;
@@ -3185,7 +3188,7 @@ void event_thread(void* arg)
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
 					sbbs->lprintf(LOG_INFO,"Running %s%stimed event: %s"
-						,(ex_mode&EX_NATIVE)	? "native ":""
+						,(ex_mode&EX_NATIVE)	? "native ":"16-bit DOS "
 						,(ex_mode&EX_BG)		? "background ":""
 						,event_code);
 					{
