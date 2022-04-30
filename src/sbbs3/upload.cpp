@@ -148,9 +148,8 @@ bool sbbs_t::uploadfile(file_t* f)
 			lprintf(LOG_DEBUG, "Parsing DIZ: %s", str);
 
 			char* lines = read_diz(str, &sauce);
-			if(lines != NULL)
-				format_diz(lines, ext, sizeof(ext), sauce.width, sauce.ice_color);
-			free(lines);
+			format_diz(lines, ext, sizeof(ext), sauce.width, sauce.ice_color);
+			free_diz(lines);
 			file_sauce_hfields(f, &sauce);
 
 			if(f->desc == NULL || f->desc[0] == 0) {
@@ -174,7 +173,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	smb_hfield_bin(f, SMB_COST, length);
 	smb_hfield_str(f, SENDER, useron.alias);
 	bprintf(text[FileNBytesReceived],f->name, u64toac(length,tmp));
-	if(!addfile(&cfg, f->dir, f, ext, /* metadata: */NULL, &client))
+	if(!addfile(&cfg, f, ext, /* metadata: */NULL, &client))
 		return false;
 
 	safe_snprintf(str,sizeof(str),"uploaded %s to %s %s"
