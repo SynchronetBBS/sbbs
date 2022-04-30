@@ -1014,6 +1014,7 @@ static void receive_thread(void* arg)
 
 		if(xfer.dir>=0) {
 			memset(&f,0,sizeof(f));
+			f.dir = xfer.dir;
 			smb_hfield_str(&f, SMB_FILENAME, getfname(xfer.filename));
 			smb_hfield_str(&f, SENDER, xfer.user->alias);
 
@@ -1039,7 +1040,7 @@ static void receive_thread(void* arg)
 					lprintf(LOG_DEBUG,"%04d <%s> DATA Parsing DIZ: %s",xfer.ctrl_sock, xfer.user->alias,tmp);
 					char* lines = read_diz(tmp, &sauce);
 					format_diz(lines, extdesc, sizeof(extdesc), sauce.width, sauce.ice_color);
-					free(lines);
+					free_diz(lines);
 					if(!fdesc[0]) {						/* use for normal description */
 						prep_file_desc(extdesc, fdesc);	/* strip control chars and dupe chars */
 					}
@@ -1052,12 +1053,18 @@ static void receive_thread(void* arg)
 			if(f.desc == NULL)
 				smb_new_hfield_str(&f, SMB_FILEDESC, fdesc);
 			if(filedat) {
-				if(!updatefile(&scfg, &f))
+				if(updatefile(&scfg, &f))
+					lprintf(LOG_INFO,"%04d <%s> DATA updated file: %s"
+						,xfer.ctrl_sock, xfer.user->alias, f.name);
+				else
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR updating file (%s) in database"
 						,xfer.ctrl_sock, xfer.user->alias, f.name);
 				/* need to update the index here */
 			} else {
-				if(!addfile(&scfg, xfer.dir, &f, extdesc, /* metatdata: */NULL, xfer.client))
+				if(addfile(&scfg, &f, extdesc, /* metatdata: */NULL, xfer.client))
+					lprintf(LOG_INFO,"%04d <%s> DATA uploaded file: %s"
+						,xfer.ctrl_sock, xfer.user->alias, f.name);
+				else
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR adding file (%s) to database"
 						,xfer.ctrl_sock, xfer.user->alias, f.name);
 			}

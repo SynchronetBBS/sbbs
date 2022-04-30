@@ -239,8 +239,9 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 		return false; 
 	}
 
+	f->dir = newdir;
 	newfile.dfield = NULL; // addfile() ends up realloc'ing dfield (in smb_addmsg)
-	bool result = addfile(&cfg, newdir, &newfile, newfile.extdesc, newfile.metadata, /* client: */NULL);
+	bool result = addfile(&cfg, &newfile, newfile.extdesc, newfile.metadata, /* client: */NULL);
 	free(newfile.dfield);
 	if(!result)
 		return false;

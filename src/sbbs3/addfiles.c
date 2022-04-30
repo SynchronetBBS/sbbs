@@ -108,7 +108,7 @@ bool get_file_diz(file_t* f, char* ext, size_t maxlen)
 	printf("Parsing DIZ: %s\n", diz_fpath);
 	char* lines = read_diz(diz_fpath, NULL);
 	format_diz(lines, ext, maxlen, 0, false);
-	free(lines);
+	free_diz(lines);
 	remove(diz_fpath);
 
 	if(mode&ASCII_ONLY)

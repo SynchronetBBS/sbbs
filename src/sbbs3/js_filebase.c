@@ -1143,7 +1143,7 @@ static void get_diz(scfg_t* scfg, file_t* file, char** extdesc)
 		char* lines = read_diz(diz_fpath, &sauce);
 		if(lines != NULL) {
 			format_diz(lines, extbuf, sizeof(extbuf), sauce.width, sauce.ice_color);
-			free(lines);
+			free_diz(lines);
 			free(*extdesc);
 			*extdesc = strdup(extbuf);
 			file_sauce_hfields(file, &sauce);

@@ -725,12 +725,12 @@ int file_sauce_hfields(file_t* f, struct sauce_charinfo* info)
 	return SMB_SUCCESS;
 }
 
-bool addfile(scfg_t* cfg, uint dirnum, file_t* f, const char* extdesc, const char* metadata, client_t* client)
+bool addfile(scfg_t* cfg, file_t* f, const char* extdesc, const char* metadata, client_t* client)
 {
 	char fpath[MAX_PATH + 1];
 	smb_t smb;
 
-	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+	if(smb_open_dir(cfg, &smb, f->dir) != SMB_SUCCESS)
 		return false;
 
 	getfilepath(cfg, f, fpath);
@@ -1110,6 +1110,11 @@ char* read_diz(const char* path, struct sauce_charinfo* sauce)
 	fclose(fp);
 
 	return buf;
+}
+
+void free_diz(char* buf)
+{
+	free(buf);
 }
 
 char* format_diz(const char* src, char* dest, size_t maxlen, int width, bool ice)
