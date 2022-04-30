@@ -666,8 +666,9 @@ void tevents_cfg()
 						,str,50,K_EDIT);
 					cfg.event[i]->months=0;
 					for(p=str;*p;p++) {
-						if(atoi(p)) {
-							cfg.event[i]->months|=(1<<(atoi(p)-1));
+						int num = atoi(p);
+						if(num > 0) {
+							cfg.event[i]->months|=(1<<(num-1));
 							while(*p && IS_DIGIT(*p))
 								p++;
 						} else {
