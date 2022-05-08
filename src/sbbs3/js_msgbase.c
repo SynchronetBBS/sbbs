@@ -31,6 +31,7 @@ typedef struct
 	smb_t	smb;
 	int		smb_result;
 	BOOL	debug;
+	uint32_t first_msg;
 
 } private_t;
 
@@ -2994,11 +2995,16 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->debug);
 			break;
 		case SMB_PROP_FIRST_MSG:
-			rc=JS_SUSPENDREQUEST(cx);
-			memset(&idx,0,sizeof(idx));
-			smb_getfirstidx(&(p->smb),&idx);
-			JS_RESUMEREQUEST(cx, rc);
-			*vp=UINT_TO_JSVAL(idx.number);
+			if(SMB_IS_OPEN(&(p->smb))) {
+				rc=JS_SUSPENDREQUEST(cx);
+				memset(&idx,0,sizeof(idx));
+				smb_getfirstidx(&(p->smb),&idx);
+				JS_RESUMEREQUEST(cx, rc);
+				p->first_msg = idx.number;
+				*vp=UINT_TO_JSVAL(idx.number);
+			} else {
+				*vp = UINT_TO_JSVAL(p->first_msg);
+			}
 			break;
 		case SMB_PROP_LAST_MSG:
 			rc=JS_SUSPENDREQUEST(cx);
