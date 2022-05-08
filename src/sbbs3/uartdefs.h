@@ -61,7 +61,10 @@ const char* uart_reg_desc[] = { "base", "IER", "IIR", "LCR", "MCR", "LSR", "MSR"
 #define UART_IIR_NONE			0x01	/* Bit 0=0, Interrupt Pending */
 #define UART_IIR_TX_EMPTY		0x02	/* THRE (Transmit Holding Register Empty) */
 #define UART_IIR_RX_DATA		0x04
-#define UART_IIR_LINE_STATUS	0x06
+#define UART_IIR_LINE_STATUS	0x06	/* "This is usually an error condition" */
+#define UART_IIR_FIFO_ENABLED	0xc0	/* Bits 7 and 6 */
+
+#define UART_FCR_ENABLE_FIFO	(1<<0)
 
 #define UART_LSR_FIFO_ERROR		(1<<7)
 #define UART_LSR_EMPTY_DATA		(1<<6)
