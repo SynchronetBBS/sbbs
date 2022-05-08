@@ -13,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -461,8 +449,10 @@ int main(int argc, char **argv)
 	char	exec_dir[128];
 	char*	envvar[MAX_ENVVARS];
 	char*	arg[MAX_ARGS];
+	char*	ini_fname = exec_dir;
 	int		i,c,d,envnum=0;
 	int		mode = SBBSEXEC_MODE_UNSPECIFIED;
+	int		argn;
 	FILE*	fp;
 	BOOL	x64=FALSE;
 	BOOL	success=FALSE;
@@ -475,7 +465,7 @@ int main(int argc, char **argv)
 			,"%s - Copyright %s Rob Swindell\n"
 			,id_string, __DATE__+7);
 		fprintf(stderr
-			,"usage: dosxtrn <path/dosxtrn.env> [NT|x64] [node_num] [mode]\n");
+			,"usage: dosxtrn <path/dosxtrn.env> [NT|x64] [node_num] [mode] [ini_file]\n");
 		return(1);
 	}
 
@@ -485,14 +475,24 @@ int main(int argc, char **argv)
 	sprintf(dll,"%s%s",exec_dir,VDD_FILENAME);
 	DllName=dll;
 
-	if(argc>2) {
-		if(strcmp(argv[2],"x64") == 0)
+	argn = 2;
+	if(argn < argc) {
+		if(strcmp(argv[argn],"x64") == 0)
 			x64=TRUE;
+		argn++;
 	}
-	if(argc>3)
-		node_num=atoi(argv[3]);
-	if(argc>4)
-		mode=atoi(argv[4]);
+	if(argn < argc && IS_DIGIT(argv[argn][0])) {
+		node_num=atoi(argv[argn]);
+		argn++;
+	}
+	if(argn < argc && IS_DIGIT(argv[argn][0])) {
+		mode = atoi(argv[argn]);
+		argn++;
+	}
+	if(argn < argc) {
+		ini_fname = argv[argn];
+		argn++;
+	}
 
 	if(mode == SBBSEXEC_MODE_UNSPECIFIED)
 		mode = SBBSEXEC_MODE_DEFAULT;
@@ -575,7 +575,7 @@ int main(int argc, char **argv)
 	fprintf(stderr,"vdd handle=%d\n",vdd);
 	fprintf(stderr,"mode=%d\n",mode);
 #endif
-	vdd_str(VDD_LOAD_INI_FILE, exec_dir);
+	vdd_str(VDD_LOAD_INI_FILE, ini_fname);
 
 	vdd_str(VDD_LOAD_INI_SECTION, getfname(arg[0]));
 
@@ -610,9 +610,20 @@ int main(int argc, char **argv)
 	strcpy(p,"RET");
 	if((fp=fopen(argv[1],"w+"))==NULL) {
 		fprintf(stderr,"!Error opening %s\n",argv[1]);
-		return(3);
+	} else {
+		fprintf(fp,"%d",i);
+		fclose(fp);
 	}
-	fprintf(fp,"%d",i);
+	strcpy(p,"ERR");
+	if(i == -1) {
+		if((fp=fopen(argv[1],"w+"))==NULL) {
+			fprintf(stderr,"!Error opening %s\n",argv[1]);
+		} else {
+			fprintf(fp,"%d\n%s\n", errno, strerror(errno));
+			fclose(fp);
+		}
+	} else
+		remove(argv[1]);
 
 	/* Restore original ISRs */
 	_dos_setvect(0x14,oldint14);
