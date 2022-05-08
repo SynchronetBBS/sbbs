@@ -69,18 +69,17 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 	if(f->author_org)
 		bprintf(P_TRUNCATE, text[FiGroup], f->author_org);
 	char* p = f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from;
-	if(p != NULL && *p != '\0')
+	if(p != NULL && *p != '\0') {
 		bprintf(P_TRUNCATE, text[FiUploadedBy], p);
+		if(f->from_prot != NULL)
+			bprintf(P_TRUNCATE, " via %s ", f->from_prot);
+	}
 	if(is_op) {
 		*tmp = '\0';
 		if(f->from_ip != NULL)
 			SAFEPRINTF(tmp, "[%s] ", f->from_ip);
 		if(f->from_host != NULL) {
 			SAFEPRINTF(tmp2, "%s ", f->from_host);
-			SAFECAT(tmp, tmp2);
-		}
-		if(f->from_prot != NULL) {
-			SAFEPRINTF(tmp2, "via %s ", f->from_prot);
 			SAFECAT(tmp, tmp2);
 		}
 		if(*tmp != '\0')
