@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32106.194
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdmodem", "vdmodem.vcxproj", "{20051597-6298-4098-8F26-E408C2880FE4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{20051597-6298-4098-8F26-E408C2880FE4}.Debug|x86.ActiveCfg = Debug|Win32
+		{20051597-6298-4098-8F26-E408C2880FE4}.Debug|x86.Build.0 = Debug|Win32
+		{20051597-6298-4098-8F26-E408C2880FE4}.Release|x86.ActiveCfg = Release|Win32
+		{20051597-6298-4098-8F26-E408C2880FE4}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9F30FE81-9971-48D0-AC51-EE3F15248CB0}
+	EndGlobalSection
+EndGlobal
