@@ -448,6 +448,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		SAFEPRINTF(path,"%sDOSXTRN.RET", cfg.node_dir);
 		(void)remove(path);
+		SAFEPRINTF(path,"%sDOSXTRN.ERR", cfg.node_dir);
+		(void)remove(path);
 
     	// Create temporary environment file
     	SAFEPRINTF(path,"%sDOSXTRN.ENV", node_dir);
@@ -595,13 +597,14 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			pthread_mutex_lock(&input_thread_mutex);
 	}
 
+	DWORD creation_flags = (mode & EX_NODISPLAY) ? CREATE_NO_WINDOW : CREATE_NEW_CONSOLE;
     success=CreateProcess(
 		NULL,			// pointer to name of executable module
 		fullcmdline,  	// pointer to command line string
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
 		native && !(mode&EX_OFFLINE),	 			// handle inheritance flag
-		CREATE_NEW_CONSOLE/*|CREATE_SEPARATE_WOW_VDM*/, // creation flags
+		creation_flags, // creation flags
         env_block, 		// pointer to new environment block
 		p_startup_dir,	// pointer to current directory name
 		&startup_info,  // pointer to STARTUPINFO
@@ -791,8 +794,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 					if(online && hangup_event!=NULL
 						&& WaitForSingleObject(hangup_event,0)==WAIT_OBJECT_0) {
-						lprintf(LOG_NOTICE,"Node %d External program requested hangup (dropped DTR)"
-							,cfg.node_num);
+						lputs(LOG_NOTICE, "External program requested hangup (dropped DTR)");
 						hangup();
 					}
 
@@ -831,20 +833,39 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
             errormsg(WHERE, ERR_CHK, "ExitCodeProcess",(DWORD)process_info.hProcess);
 
 		if(retval==STILL_ACTIVE) {
-			lprintf(LOG_INFO,"Node %d Terminating process from line %d",cfg.node_num,__LINE__);
+			lprintf(LOG_INFO,"Terminating process from line %d", __LINE__);
 			TerminateProcess(process_info.hProcess, GetLastError());
 		}
 
 	 	// Get return value
 		if(!native) {
-    		sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
-			FILE* fp=fopen(str,"r");
-			if(fp!=NULL) {
+    		SAFEPRINTF(path, "%sDOSXTRN.RET", cfg.node_dir);
+			FILE* fp=fopen(path,"r");
+			if(fp == NULL) {
+				lprintf(LOG_ERR, "Error %d opening %s", errno, path);
+			} else {
 				if(fscanf(fp,"%d",&retval) != 1) {
-					lprintf(LOG_ERR, "Node %d Error reading return value from %s", cfg.node_num, str);
-					retval = -1;
+					lprintf(LOG_ERR, "Error reading return value from %s", path);
+					retval = -2;
 				}
 				fclose(fp);
+			}
+			if(retval == -1) {
+				SAFEPRINTF(path, "%sDOSXTRN.ERR", cfg.node_dir);
+				fp = fopen(path, "r");
+				if(fp == NULL) {
+					lprintf(LOG_ERR, "Error %d opening %s after DOSXTRN.RET contained -1", errno, path);
+				} else {
+					char errstr[256] = "";
+					int errval = 0;
+					if(fscanf(fp, "%d\n", &errval) == 1) {
+						fgets(errstr, sizeof(errstr), fp);
+						truncsp(errstr);
+						lprintf(LOG_ERR, "DOSXTRN Error %d (%s) executing: %s", errval, errstr, cmdline);
+					} else
+						lprintf(LOG_ERR, "DOSXTRN.RET contained -1 and we failed to parse: %s", path);
+					fclose(fp);
+				}
 			}
 		}
 	}
