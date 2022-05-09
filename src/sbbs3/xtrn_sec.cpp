@@ -381,7 +381,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,8									/* 03: Data bits */
 			,cfg.node_num						/* 04: Node number */
 			,dte_rate							/* 05: DTE rate */
-			,'Y'								/* 06: Screen display */
+			,(misc & XTRN_NODISPLAY) ? 'N': 'Y'	/* 06: Screen display */
 			,'Y'                                /* 07: Printer toggle */
 			,'Y'                                /* 08: Page bell */
 			,'Y');                              /* 09: Caller alarm */
@@ -712,7 +712,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			return; 
 		}
 		PCBoard::sys sys{};
-		sys.Screen = true;
+		sys.Screen = !(misc & XTRN_NODISPLAY);
 		sys.PageBell = sys_status & SS_SYSPAGE;
 		sys.Alarm = startup->sound.answer[0] && !sound_muted(&cfg);
 		sys.ErrorCorrected = true;
@@ -1393,7 +1393,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		mode|=EX_UART;
 	else if(cfg.xtrn[xtrnnum]->misc&XTRN_FOSSIL)
 		mode|=EX_FOSSIL;
-	mode|=(cfg.xtrn[xtrnnum]->misc&(XTRN_CHKTIME|XTRN_NATIVE|XTRN_NOECHO|WWIVCOLOR));
+	mode|=(cfg.xtrn[xtrnnum]->misc&(XTRN_CHKTIME|XTRN_NATIVE|XTRN_NOECHO|XTRN_NODISPLAY|WWIVCOLOR));
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) {		/* Delete MODUSER.DAT */
 		SAFEPRINTF(str,"%sMODUSER.DAT",dropdir);	/* if for some weird  */
 		(void)removecase(str);						/* reason it's there  */

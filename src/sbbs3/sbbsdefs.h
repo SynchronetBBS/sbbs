@@ -399,6 +399,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define XTRN_TEMP_DIR	(1<<24)		/* Place drop files in temp dir			*/
 #define XTRN_UART		(1<<25)		/* Enable the virtual UART driver		*/
 #define XTRN_FOSSIL		(1<<26)		/* Enable the int14h/FOSSIL driver		*/
+#define XTRN_NODISPLAY	(1<<27)		/* Disable local screen/display			*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
 
 									/* Bits in user.qwk 					*/
@@ -815,6 +816,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_STDIO	(EX_STDIN|EX_STDOUT)
 #define EX_UART		XTRN_UART
 #define EX_FOSSIL	XTRN_FOSSIL
+#define EX_NODISPLAY XTRN_NODISPLAY
 #define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
 #define EX_UNSPECIFIED	-1

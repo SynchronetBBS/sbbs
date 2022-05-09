@@ -1220,6 +1220,8 @@ void xtrn_cfg(uint section)
 			sprintf(opt[k++],"%-27.27s%s","Execute on Event",str);
 			sprintf(opt[k++],"%-27.27s%s","Pause After Execution"
 				,cfg.xtrn[i]->misc&XTRN_PAUSE ? "Yes" : "No");
+			sprintf(opt[k++],"%-27.27s%s","Disable Local Display"
+				,cfg.xtrn[i]->misc&XTRN_NODISPLAY ? "Yes" : "No");
 			sprintf(opt[k++],"%-23.23s%-4s%s","BBS Drop File Type"
 				,cfg.xtrn[i]->misc&REALNAME ? "(R)":nulstr
 				,dropfile(cfg.xtrn[i]->type,cfg.xtrn[i]->misc));
@@ -1255,7 +1257,7 @@ void xtrn_cfg(uint section)
 				case -CIO_KEY_RIGHT-2:
 					i = next;
 					break;
-				case 0:
+				case __COUNTER__:
 					uifc.helpbuf=
 						"`Online Program Name:`\n"
 						"\n"
@@ -1266,7 +1268,7 @@ void xtrn_cfg(uint section)
 						,cfg.xtrn[i]->name,sizeof(cfg.xtrn[i]->name)-1,K_EDIT))
 						SAFECOPY(cfg.xtrn[i]->name,str);
 					break;
-				case 1:
+				case __COUNTER__:
 					uifc.helpbuf=
 						"`Online Program Internal Code:`\n"
 						"\n"
@@ -1285,7 +1287,7 @@ void xtrn_cfg(uint section)
 						uifc.helpbuf=0; 
 					}
 					break;
-				case 2:
+				case __COUNTER__:
 					uifc.helpbuf=
 						"`Online Program Start-up Directory:`\n"
 						"\n"
@@ -1298,7 +1300,7 @@ void xtrn_cfg(uint section)
 					uifc.input(WIN_MID|WIN_SAV,0,10,""
 						,cfg.xtrn[i]->path,sizeof(cfg.xtrn[i]->path)-1,K_EDIT);
 					break;
-				case 3:
+				case __COUNTER__:
 					uifc.helpbuf=
 						"`Online Program Command Line:`\n"
 						"\n"
@@ -1309,7 +1311,7 @@ void xtrn_cfg(uint section)
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
 						,cfg.xtrn[i]->cmd,sizeof(cfg.xtrn[i]->cmd)-1,K_EDIT);
 					break;
-				case 4:
+				case __COUNTER__:
 					uifc.helpbuf=
 						"`Online Program Clean-up Command:`\n"
 						"\n"
@@ -1321,7 +1323,7 @@ void xtrn_cfg(uint section)
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Clean-up"
 						,cfg.xtrn[i]->clean,sizeof(cfg.xtrn[i]->clean)-1,K_EDIT);
 					break;
-				case 5:
+				case __COUNTER__:
 					ultoa(cfg.xtrn[i]->cost,str,10);
 					uifc.helpbuf=
 						"`Online Program Cost to Run:`\n"
@@ -1334,15 +1336,15 @@ void xtrn_cfg(uint section)
 						,str,10,K_EDIT|K_NUMBER);
 					cfg.xtrn[i]->cost=atol(str);
 					break;
-				case 6:
+				case __COUNTER__:
 					sprintf(str,"%s Access",cfg.xtrn[i]->name);
 					getar(str,cfg.xtrn[i]->arstr);
 					break;
-				case 7:
+				case __COUNTER__:
 					sprintf(str,"%s Execution",cfg.xtrn[i]->name);
 					getar(str,cfg.xtrn[i]->run_arstr);
 					break;
-				case 8:
+				case __COUNTER__:
 					k=(cfg.xtrn[i]->misc&MULTIUSER) ? 0:1;
 					uifc.helpbuf=
 						"`Supports Multiple Users:`\n"
@@ -1361,10 +1363,10 @@ void xtrn_cfg(uint section)
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 9:
+				case __COUNTER__:
 					choose_io_method(&cfg.xtrn[i]->misc);
 					break;
-				case 10:
+				case __COUNTER__:
 					k=(cfg.xtrn[i]->misc&XTRN_NATIVE) ? 0:1;
 					uifc.helpbuf=native_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -1378,7 +1380,7 @@ void xtrn_cfg(uint section)
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 11:
+				case __COUNTER__:
 					k=(cfg.xtrn[i]->misc&XTRN_SH) ? 0:1;
 					uifc.helpbuf = use_shell_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -1392,7 +1394,7 @@ void xtrn_cfg(uint section)
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 12:
+				case __COUNTER__:
 					k=(cfg.xtrn[i]->misc&MODUSERDAT) ? 0:1;
 					uifc.helpbuf=
 						"`Program Can Modify User Data:`\n"
@@ -1412,7 +1414,7 @@ void xtrn_cfg(uint section)
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 13:
+				case __COUNTER__:
 					k=0;
 					strcpy(opt[k++],"No");
 					strcpy(opt[k++],"Logon");
@@ -1466,7 +1468,7 @@ void xtrn_cfg(uint section)
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 14:
+				case __COUNTER__:
 					k=(cfg.xtrn[i]->misc&XTRN_PAUSE) ? 0:1;
 					uifc.helpbuf=
 						"`Pause Screen After Execution:`\n"
@@ -1486,7 +1488,27 @@ void xtrn_cfg(uint section)
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 15:
+				case __COUNTER__:
+					k=(cfg.xtrn[i]->misc&XTRN_NODISPLAY) ? 0:1;
+					uifc.helpbuf=
+						"`Disable Local Screen Display:`\n"
+						"\n"
+						"Set this option to `Yes` if you wish to prevent this program from\n"
+						"displaying on the local screen.\n"
+						"\n"
+						"This will disable 'Screen' output in the `DOOR.SYS` and `PCBOARD.SYS` drop\n"
+						"files and on Windows, stop the creation a new console window when\n"
+						"executing this program."
+					;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+						,"Disable Local Screen Display", uifcYesNoOpts);
+					if((!k && !(cfg.xtrn[i]->misc & XTRN_NODISPLAY))
+						|| (k && (cfg.xtrn[i]->misc & XTRN_NODISPLAY))) {
+						cfg.xtrn[i]->misc ^= XTRN_NODISPLAY;
+						uifc.changes=TRUE; 
+					}
+					break;
+				case __COUNTER__:
 					k=0;
 					strcpy(opt[k++],"None");
 					sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
@@ -1561,7 +1583,7 @@ void xtrn_cfg(uint section)
 						} 
 					}
 					break;
-				case 16:
+				case __COUNTER__:
 					k = (cfg.xtrn[i]->misc & STARTUPDIR) ? 1 : (cfg.xtrn[i]->misc & XTRN_TEMP_DIR) ? 2 : 0;
 					strcpy(opt[0],"Node Directory");
 					strcpy(opt[1],"Start-up Directory");
@@ -1600,7 +1622,7 @@ void xtrn_cfg(uint section)
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 17:
+				case __COUNTER__:
 					while(1) {
 						k=0;
 						if(cfg.xtrn[i]->textra)
