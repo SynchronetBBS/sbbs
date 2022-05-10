@@ -2224,6 +2224,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                     "Commands:\n\n"
                                     "~ CTRL-E ~ to edit the selected entry\n"
                                     "~ CTRL-S ~ to modify the sort order\n"
+									"~ TAB ~ to modify the selected entry comment or SyncTERM Settings\n"
                                     "~ ENTER ~ to connect to the selected entry";
                 else {
                     uifc.helpbuf=   "`SyncTERM Directory`\n\n"
@@ -2232,6 +2233,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                     "~ CTRL-E ~ to edit the selected entry\n"
                                     "~ CTRL-S ~ to modify the sort order\n"
                                     "~ " ALT_KEY_NAMEP "-B ~ View scrollback of last session\n"
+									"~ TAB ~ to modify the selected entry comment or SyncTERM Settings\n"
                                     "~ ENTER ~ to connect to the selected entry\n\n"
                             "`Conio Keys` (may not work in some modes)\n\n"
                                     "~ " ALT_KEY_NAMEP "-Left ~ Snap window size to next smaller horizontal size\n"
