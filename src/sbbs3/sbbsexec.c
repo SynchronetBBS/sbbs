@@ -178,6 +178,23 @@ void set_interrupt_pending(BYTE intr, BOOL assert)
 #define assert_interrupt(i)		set_interrupt_pending(i, TRUE)
 #define deassert_interrupt(i)	set_interrupt_pending(i, FALSE)
 
+void data_waiting(BOOL waiting)
+{
+	if(waiting && (uart_mcr_reg & UART_MCR_RTS)) {
+		/* Set the "Data ready" bit in the LSR */
+		uart_lsr_reg |= UART_LSR_DATA_READY;
+
+		/* assert rx data interrupt */
+		assert_interrupt(UART_IER_RX_DATA); 
+	} else {
+		/* Clear the data ready bit in the LSR */
+		uart_lsr_reg &= ~UART_LSR_DATA_READY;
+
+		/* Clear data ready interrupt identification in IIR */
+		deassert_interrupt(UART_IER_RX_DATA);
+	}
+}
+
 void _cdecl interrupt_thread(void *arg)
 {
 	HANDLE handles[] = {interrupt_event, carrier_event};
@@ -241,10 +258,7 @@ void _cdecl input_thread(void* arg)
 		RingBufWrite(&rdbuf,buf,count);
 
 		if(virtualize_uart) {
-			/* Set the "Data ready" bit in the LSR */
-			uart_lsr_reg |= UART_LSR_DATA_READY;
-
-			assert_interrupt(UART_IER_RX_DATA); /* assert rx data interrupt */
+			data_waiting(TRUE);
 		}
 	}
 	lputs(LOG_DEBUG,"input_thread: terminated");
@@ -321,8 +335,9 @@ VOID uart_wrport(WORD port, BYTE data)
 			if(uart_lcr_reg&UART_LCR_DLAB) {
 				uart_divisor_latch_lsb = data;
 				lprintf(LOG_DEBUG,"set divisor latch low byte: %02X", data);
-			} else {
-				lprintf(LOG_DEBUG,"WRITE DATA: %s", chr(data));
+			} else { // Transmitter Holding Register
+				if(log_level >= LOG_DEBUG)
+					lprintf(LOG_DEBUG,"WRITE DATA: %s", chr(data));
 				if(!WriteFile(wrslot,&data,sizeof(BYTE),&retval,NULL)) {
 					lprintf(LOG_ERR,"!VDD_WRITE: WriteFile Error %d (size=%d)"
 						,GetLastError(),retval);
@@ -338,7 +353,7 @@ VOID uart_wrport(WORD port, BYTE data)
 				lprintf(LOG_DEBUG,"set divisor latch high byte: %02X", data);
 			} else {
 				uart_ier_reg = data;
-				lprintf(LOG_INFO, "Set IER to %02X", data);
+				lprintf(LOG_DEBUG, "Set IER to %02X", data);
 			}
 			assert_interrupt(UART_IER_TX_EMPTY);	/* should this be re-asserted for all writes? */
 			break;
@@ -354,12 +369,7 @@ VOID uart_wrport(WORD port, BYTE data)
 			uart_mcr_reg = data;
 			if((uart_mcr_reg&UART_MCR_DTR) == 0)	/* Dropping DTR (i.e. "hangup") */
 				hangup();
-			if((uart_mcr_reg & UART_MCR_RTS) && RingBufFull(&rdbuf) > 0) {
-				assert_interrupt(UART_IER_RX_DATA);
-			} else {
-				deassert_interrupt(UART_IER_RX_DATA);
-				uart_lsr_reg &= ~UART_LSR_DATA_READY;
-			}
+			data_waiting(RingBufFull(&rdbuf));
 			lprintf(LOG_INFO, "Set MCR to %02X", data);
 			break;
 		case UART_SCRATCH:
@@ -394,15 +404,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 				reset_yield();
 			} else
 				*data=0;
-			if(avail==0) {
-				lputs(LOG_DEBUG,"No more data");
-				/* Clear the data ready bit in the LSR */
-				uart_lsr_reg &= ~UART_LSR_DATA_READY;
-
-				/* Clear data ready interrupt identification in IIR */
-				deassert_interrupt(UART_IER_RX_DATA);
-			} else	/* re-assert RX data (increment the semaphore) */
-				assert_interrupt(UART_IER_RX_DATA);
+			data_waiting(avail);
 			break;
 		case UART_IER:
 			if(uart_lcr_reg&UART_LCR_DLAB) {
@@ -432,7 +434,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 				SetEvent(interrupt_event);
 			if(uart_fifo_enabled)
 				*data |= UART_IIR_FIFO_ENABLED;
-			lprintf(LOG_INFO, "IIR: %02X (pending: %02X)", *data, pending_interrupts);
+			lprintf(LOG_DEBUG, "IIR: %02X (pending: %02X)", *data, pending_interrupts);
 			break;
 		}
 		case UART_LCR:
@@ -447,7 +449,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 			*data = uart_lsr_reg;
 			/* Clear line status interrupt pending */
 			deassert_interrupt(UART_IER_LINE_STATUS);
-			lprintf(LOG_INFO, "LSR: %02X", *data);
+			lprintf(LOG_DEBUG, "LSR: %02X", *data);
 			break;
 		case UART_MSR:
 			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
