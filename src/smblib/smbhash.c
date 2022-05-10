@@ -387,6 +387,7 @@ uint16_t smb_subject_crc(const char* subj)
 		return(0xffff);
 
 	strlwr(str);
+	truncsp(str);
 	crc=crc16(str,0	/* auto-length */);
 	free(str);
 
