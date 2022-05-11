@@ -220,7 +220,6 @@ char* connect_result(struct modem* modem)
 
 char* connected(struct modem* modem)
 {
-	ZERO_VAR(telnet);
 	modem->online = true;
 	modem->ringing = false;
 	ResetEvent(hungup_event);
@@ -267,6 +266,164 @@ int address_family()
 		case ADDRESS_FAMILY_INET6:	return PF_INET6;
 	}
 	return PF_UNSPEC;
+}
+
+int putcom(char* buf, size_t len)
+{
+	return send(sock, buf, len, /* flags: */0);
+}
+
+static void send_telnet_cmd(uchar cmd, uchar opt)
+{
+	char buf[16];
+	
+	if(cmd<TELNET_WILL) {
+		dprintf("TELNET TX: %s"
+			,telnet_cmd_desc(cmd));
+		sprintf(buf,"%c%c",TELNET_IAC,cmd);
+		putcom(buf,2);
+	} else {
+		dprintf("TELNET TX: %s %s"
+			,telnet_cmd_desc(cmd), telnet_opt_desc(opt));
+		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
+		putcom(buf,3);
+	}
+}
+
+void request_telnet_opt(uchar cmd, uchar opt)
+{
+	if(cmd==TELNET_DO || cmd==TELNET_DONT) {	/* remote option */
+		if(telnet.remote_option[opt]==telnet_opt_ack(cmd))
+			return;	/* already set in this mode, do nothing */
+		telnet.remote_option[opt]=telnet_opt_ack(cmd);
+	} else {	/* local option */
+		if(telnet.local_option[opt]==telnet_opt_ack(cmd))
+			return;	/* already set in this mode, do nothing */
+		telnet.local_option[opt]=telnet_opt_ack(cmd);
+	}
+	send_telnet_cmd(cmd,opt);
+}
+
+BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
+{
+	BYTE	command;
+	BYTE	option;
+	BYTE*   first_cr=NULL;
+	BYTE*   first_int=NULL;
+	size_t 	i;
+
+	if(inlen<1) {
+		*outlen=0;
+		return(inbuf);	/* no length? No interpretation */
+	}
+
+    first_int=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
+	if(telnet.remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
+		first_cr=(BYTE*)memchr(inbuf, '\r', inlen);
+		if(first_cr) {
+			if(first_int==NULL || first_cr < first_int)
+				first_int=first_cr;
+		}
+	}
+
+    if(telnet.cmdlen==0 && first_int==NULL) {
+        *outlen=inlen;
+        return(inbuf);	/* no interpretation needed */
+    }
+
+    if(telnet.cmdlen==0 /* If we haven't returned and telnet.cmdlen==0 then first_int is not NULL */  ) {
+   		*outlen=first_int-inbuf;
+	    memcpy(outbuf, inbuf, *outlen);
+    } else
+    	*outlen=0;
+
+    for(i=*outlen;i<inlen;i++) {
+		if(telnet.remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
+			if(telnet.cmdlen==1 && telnet.cmd[0]=='\r') {
+            	outbuf[(*outlen)++]='\r';
+				if(inbuf[i]!=0 && inbuf[i]!=TELNET_IAC)
+	            	outbuf[(*outlen)++]=inbuf[i];
+				telnet.cmdlen=0;
+				if(inbuf[i]!=TELNET_IAC)
+					continue;
+			}
+			if(inbuf[i]=='\r' && telnet.cmdlen==0) {
+				telnet.cmd[telnet.cmdlen++]='\r';
+				continue;
+			}
+		}
+
+        if(inbuf[i]==TELNET_IAC && telnet.cmdlen==1) { /* escaped 255 */
+            telnet.cmdlen=0;
+            outbuf[(*outlen)++]=TELNET_IAC;
+            continue;
+        }
+        if(inbuf[i]==TELNET_IAC || telnet.cmdlen) {
+
+			if(telnet.cmdlen<sizeof(telnet.cmd))
+				telnet.cmd[telnet.cmdlen++]=inbuf[i];
+
+			command	= telnet.cmd[1];
+			option	= telnet.cmd[2];
+
+			if(telnet.cmdlen>=2 && command==TELNET_SB) {
+				if(inbuf[i]==TELNET_SE 
+					&& telnet.cmd[telnet.cmdlen-2]==TELNET_IAC) {
+					telnet.cmdlen=0;
+				}
+			}
+            else if(telnet.cmdlen==2 && inbuf[i]<TELNET_WILL) {
+                telnet.cmdlen=0;
+            }
+            else if(telnet.cmdlen>=3) {	/* telnet option negotiation */
+
+				dprintf("TELNET RX: %s %s"
+					,telnet_cmd_desc(command),telnet_opt_desc(option));
+
+				if(command==TELNET_DO || command==TELNET_DONT) {	/* local options */
+					if(telnet.local_option[option]!=command) {
+						switch(option) {
+							case TELNET_BINARY_TX:
+							case TELNET_ECHO:
+							case TELNET_TERM_TYPE:
+							case TELNET_SUP_GA:
+							case TELNET_NEGOTIATE_WINDOW_SIZE:
+								telnet.local_option[option]=command;
+								send_telnet_cmd(telnet_opt_ack(command),option);
+								break;
+							default: /* unsupported local options */
+								if(command==TELNET_DO) /* NAK */
+									send_telnet_cmd(telnet_opt_nak(command),option);
+								break;
+						}
+					}
+				} else { /* WILL/WONT (remote options) */ 
+					if(telnet.remote_option[option]!=command) {	
+
+						switch(option) {
+							case TELNET_BINARY_TX:
+							case TELNET_ECHO:
+							case TELNET_TERM_TYPE:
+							case TELNET_SUP_GA:
+							case TELNET_NEGOTIATE_WINDOW_SIZE:
+								telnet.remote_option[option]=command;
+								send_telnet_cmd(telnet_opt_ack(command),option);
+								break;
+							default: /* unsupported remote options */
+								if(command==TELNET_WILL) /* NAK */
+									send_telnet_cmd(telnet_opt_nak(command),option);
+								break;
+						}
+					}
+				}
+
+                telnet.cmdlen=0;
+
+            }
+        } else
+        	outbuf[(*outlen)++]=inbuf[i];
+    }
+    return(outbuf);
 }
 
 // Significant portions copies from syncterm/conn.c
@@ -386,6 +543,7 @@ connected:
 	dprintf("%s %d connected!", __FILE__, __LINE__);
 	int keepalives = TRUE;
 	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepalives, sizeof(keepalives));
+	ZERO_VAR(telnet);
 	return connected(modem);
 }
 
@@ -409,6 +567,14 @@ char* answer(struct modem* modem)
 	}
 	char tmp[256];
 	dprintf("Connection accepted from TCP port %hu at %s", inet_addrport(&addr), inet_addrtop(&addr, tmp, sizeof(tmp)));
+
+	if(mode == TELNET) {
+		ZERO_VAR(telnet);
+		/* Disable Telnet Terminal Echo */
+		request_telnet_opt(TELNET_WILL,TELNET_ECHO);
+		/* Will suppress Go Ahead */
+		request_telnet_opt(TELNET_WILL,TELNET_SUP_GA);
+	}
 	return connected(modem);
 }
 
@@ -648,164 +814,6 @@ void listen_thread(void* arg)
 				modem->ringing = true;
 		}
 	}
-}
-
-int putcom(char* buf, size_t len)
-{
-	return send(sock, buf, len, /* flags: */0);
-}
-
-static void send_telnet_cmd(uchar cmd, uchar opt)
-{
-	char buf[16];
-	
-	if(cmd<TELNET_WILL) {
-		dprintf("TELNET TX: %s"
-			,telnet_cmd_desc(cmd));
-		sprintf(buf,"%c%c",TELNET_IAC,cmd);
-		putcom(buf,2);
-	} else {
-		dprintf("TELNET TX: %s %s"
-			,telnet_cmd_desc(cmd), telnet_opt_desc(opt));
-		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
-		putcom(buf,3);
-	}
-}
-
-void request_telnet_opt(uchar cmd, uchar opt)
-{
-	if(cmd==TELNET_DO || cmd==TELNET_DONT) {	/* remote option */
-		if(telnet.remote_option[opt]==telnet_opt_ack(cmd))
-			return;	/* already set in this mode, do nothing */
-		telnet.remote_option[opt]=telnet_opt_ack(cmd);
-	} else {	/* local option */
-		if(telnet.local_option[opt]==telnet_opt_ack(cmd))
-			return;	/* already set in this mode, do nothing */
-		telnet.local_option[opt]=telnet_opt_ack(cmd);
-	}
-	send_telnet_cmd(cmd,opt);
-}
-
-BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
-{
-	BYTE	command;
-	BYTE	option;
-	BYTE*   first_cr=NULL;
-	BYTE*   first_int=NULL;
-	size_t 	i;
-
-	if(inlen<1) {
-		*outlen=0;
-		return(inbuf);	/* no length? No interpretation */
-	}
-
-    first_int=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
-	if(telnet.remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
-		first_cr=(BYTE*)memchr(inbuf, '\r', inlen);
-		if(first_cr) {
-			if(first_int==NULL || first_cr < first_int)
-				first_int=first_cr;
-		}
-	}
-
-    if(telnet.cmdlen==0 && first_int==NULL) {
-        *outlen=inlen;
-        return(inbuf);	/* no interpretation needed */
-    }
-
-    if(telnet.cmdlen==0 /* If we haven't returned and telnet.cmdlen==0 then first_int is not NULL */  ) {
-   		*outlen=first_int-inbuf;
-	    memcpy(outbuf, inbuf, *outlen);
-    } else
-    	*outlen=0;
-
-    for(i=*outlen;i<inlen;i++) {
-		if(telnet.remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
-			if(telnet.cmdlen==1 && telnet.cmd[0]=='\r') {
-            	outbuf[(*outlen)++]='\r';
-				if(inbuf[i]!=0 && inbuf[i]!=TELNET_IAC)
-	            	outbuf[(*outlen)++]=inbuf[i];
-				telnet.cmdlen=0;
-				if(inbuf[i]!=TELNET_IAC)
-					continue;
-			}
-			if(inbuf[i]=='\r' && telnet.cmdlen==0) {
-				telnet.cmd[telnet.cmdlen++]='\r';
-				continue;
-			}
-		}
-
-        if(inbuf[i]==TELNET_IAC && telnet.cmdlen==1) { /* escaped 255 */
-            telnet.cmdlen=0;
-            outbuf[(*outlen)++]=TELNET_IAC;
-            continue;
-        }
-        if(inbuf[i]==TELNET_IAC || telnet.cmdlen) {
-
-			if(telnet.cmdlen<sizeof(telnet.cmd))
-				telnet.cmd[telnet.cmdlen++]=inbuf[i];
-
-			command	= telnet.cmd[1];
-			option	= telnet.cmd[2];
-
-			if(telnet.cmdlen>=2 && command==TELNET_SB) {
-				if(inbuf[i]==TELNET_SE 
-					&& telnet.cmd[telnet.cmdlen-2]==TELNET_IAC) {
-					telnet.cmdlen=0;
-				}
-			}
-            else if(telnet.cmdlen==2 && inbuf[i]<TELNET_WILL) {
-                telnet.cmdlen=0;
-            }
-            else if(telnet.cmdlen>=3) {	/* telnet option negotiation */
-
-				dprintf("TELNET RX: %s %s"
-					,telnet_cmd_desc(command),telnet_opt_desc(option));
-
-				if(command==TELNET_DO || command==TELNET_DONT) {	/* local options */
-					if(telnet.local_option[option]!=command) {
-						switch(option) {
-							case TELNET_BINARY_TX:
-							case TELNET_ECHO:
-							case TELNET_TERM_TYPE:
-							case TELNET_SUP_GA:
-							case TELNET_NEGOTIATE_WINDOW_SIZE:
-								telnet.local_option[option]=command;
-								send_telnet_cmd(telnet_opt_ack(command),option);
-								break;
-							default: /* unsupported local options */
-								if(command==TELNET_DO) /* NAK */
-									send_telnet_cmd(telnet_opt_nak(command),option);
-								break;
-						}
-					}
-				} else { /* WILL/WONT (remote options) */ 
-					if(telnet.remote_option[option]!=command) {	
-
-						switch(option) {
-							case TELNET_BINARY_TX:
-							case TELNET_ECHO:
-							case TELNET_TERM_TYPE:
-							case TELNET_SUP_GA:
-							case TELNET_NEGOTIATE_WINDOW_SIZE:
-								telnet.remote_option[option]=command;
-								send_telnet_cmd(telnet_opt_ack(command),option);
-								break;
-							default: /* unsupported remote options */
-								if(command==TELNET_WILL) /* NAK */
-									send_telnet_cmd(telnet_opt_nak(command),option);
-								break;
-						}
-					}
-				}
-
-                telnet.cmdlen=0;
-
-            }
-        } else
-        	outbuf[(*outlen)++]=inbuf[i];
-    }
-    return(outbuf);
 }
 
 int main(int argc, char** argv)
