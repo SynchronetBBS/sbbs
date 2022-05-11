@@ -78,6 +78,7 @@ typedef struct {
 	uint32_t		options;
 	int				listen_backlog;
 	int				log_level;
+	int				lowest_log_level;	// highest severity from JS
 	uint32_t		stack_size;
 	js_startup_t	js;
 	js_server_props_t js_server_props;
@@ -306,8 +307,12 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if(service==NULL)
 		lprintf(level,"%04d %s",client->socket,str);
-	else if(level <= client->service->log_level)
-		lprintf(level,"%04d %s %s",client->socket,client->service->protocol,str);
+	else {
+		if(level < client->service->lowest_log_level)
+			level = client->service->lowest_log_level;
+		if(level <= client->service->log_level)
+			lprintf(level,"%04d %s %s",client->socket,client->service->protocol,str);
+	}
 	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str)));
@@ -1603,6 +1608,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		serv.stack_size=(uint32_t)iniGetBytes(list,sec_list[i],"StackSize",1,stack_size);
 		serv.options=iniGetBitField(list,sec_list[i],"Options",service_options,options);
 		serv.log_level=iniGetLogLevel(list,sec_list[i],"LogLevel",log_level);
+		serv.lowest_log_level=iniGetLogLevel(list,sec_list[i],"LowestLogLevel",0);
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
 
 		p=iniGetString(list,sec_list[i],"Port",serv.protocol,portstr);
