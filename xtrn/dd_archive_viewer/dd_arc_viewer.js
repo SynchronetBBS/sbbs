@@ -50,7 +50,7 @@
  *                              functions.
  * 2009-12-15 Eric Oulashin     Version Pre1.02
  *                              Updated to store the name of the file to view
- *                              in a variable called fileToView.  Also added
+ *                              in a variable called gFileToView.  Also added
  *                              some code to read the name of the file to view
  *                              from DDArcViewerFilename.txt in the node
  *                              directory if the filename is not specified on
@@ -68,18 +68,25 @@
  *                              This relies on the arguments being passed with
  *                              double-quotes around them, as in other
  *                              programming languages.
+ * 2009-12-25 Eric Oulashin     Verison 1.04 Beta
+ *                              Removed the extra declaration for fileToView from
+ *                              the else case (the script should use the global one).
+ *                              Renamed fileToView to gFileToView.
+ * 2022-04-12 Eric Oulashin     Started updating to use the new Archive class in
+ *                              Synchronet 3.19.
+ * 2022-05-13 Eric Oulashin     Version 1.04
+ *                              Made a couple fixes and improvements. Releasing this verison.
  */
 
 /* Command-line arguments:
  1 (argv[0]): The name of the file to view
 */
 
-load("sbbsdefs.js");
+if (typeof(require) === "function")
+	require("sbbsdefs.js", "K_UPPER");
+else
+	load("sbbsdefs.js");
 
-// Temporary (for testing) - Printing out command-line arguments
-//console.print("argv[0]:" + argv[0] + ":\r\n\1p");
-//console.print("argv: " + argv + "\r\n\1p");
-// End Temporary
 
 // Unit tests
 /*
@@ -100,12 +107,12 @@ gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 
 // We need the deltree() and withoutTrailingSlash() functions
 // from the cleanup script.
-load(gStartupPath + "DDArcViewerCleanup.js");
+load(gStartupPath + "dd_arc_viewer_cleanup.js");
 
 
 // Version information
-var gDDArcViewerVersion = "1.03";
-var gDDArcViewerVerDate = "2009-12-20";
+var gDDArcViewerVersion = "1.04";
+var gDDArcViewerVerDate = "2022-05-13";
 var gDDArcViewerProgName = "Digital Distortion Archive Viewer";
 
 
@@ -136,78 +143,78 @@ var gPathSlash = (/^WIN/.test(system.platform.toUpperCase())) ? "\\" : "/";
 //  
 // properties/indexes will be the filename extensions
 // (strings), and the values will be the OS command to view the file.
-var gViewableFileTypes = new Object();
+var gViewableFileTypes = {
+};
 
 // General configuration
-var gGenConfig = new Object();
-// Set the general configuration defaults
-gGenConfig.interfaceStyle = "Lightbar";
-gGenConfig.inputTimeoutMS = 300000;
-gGenConfig.maxArcFileSize = 1073741824; // 1.0GB
-gGenConfig.maxTextFileSize = 5242880;   // 5.0MB
-gGenConfig.colors = new Object();
-gGenConfig.colors.archiveFilenameHdrText = "nwh";
-gGenConfig.colors.archiveFilename = "ngh";
-gGenConfig.colors.headerLine = "nyh";
-gGenConfig.colors.headerSeparatorLine = "nkh";
-gGenConfig.colors.fileNums = "nmh";
-gGenConfig.colors.fileSize = "nw";
-gGenConfig.colors.fileDate = "ng";
-gGenConfig.colors.fileTime = "nr";
-gGenConfig.colors.filename = "nc";
-gGenConfig.colors.subdir = "ngh";
-gGenConfig.colors.highlightedFile = "n4wh";
+var gGenConfig = {
+	interfaceStyle: "Lightbar",
+	inputTimeoutMS: 300000,
+	maxArcFileSize: 1073741824, // 1.0GB
+	maxTextFileSize: 5242880,   // 5.0MB
+	colors: {
+		archiveFilenameHdrText: "\1n\1w\1h",
+		archiveFilename: "\1n\1g\1h",
+		headerLine: "\1n\1y\1h",
+		headerSeparatorLine: "\1n\1k\1h",
+		fileNums: "\1n\1m\1h",
+		fileSize: "\1n\1w",
+		fileDate: "\1n\1g",
+		fileTime: "\1n\1r",
+		filename: "\1n\1c",
+		subdir: "\1n\1g\1h",
+		highlightedFile: "\1n\1" + "4\1w\1h"
+	}
+};
 
 
 // If the filename was specified on the command line, then use that
 // for the filename.  Otherwise, read the name of the file to view
 // from DDArcViewerFilename.txt in the node directory.
-var fileToView = "";
+var gFileToView = "";
 if (argv.length > 0)
 {
-   if (typeof(argv[0]) == "string")
-   {
-      // Make sure the arguments are correct (in case they have spaces),
-      // then use the first one.
-      var fixedArgs = fixArgs(argv);
-      if ((typeof(fixedArgs[0]) == "string") && (fixedArgs[0].length > 0))
-         fileToView = fixedArgs[0];
-      else
-      {
-         console.print("nchError: ncBlank filename argument given.\r\np");
-         exit(-2);
-      }
-   }
-   else
-   {
-      console.print("nchError: ncUnknown command-line argument specified.\r\np");
-      exit(-1);
-   }
+	if (typeof(argv[0]) == "string")
+	{
+		// Make sure the arguments are correct (in case they have spaces),
+		// then use the first one.
+		var fixedArgs = fixArgs(argv);
+		if ((typeof(fixedArgs[0]) === "string") && (fixedArgs[0].length > 0))
+			gFileToView = fixedArgs[0];
+		else
+		{
+			console.print("\1n\1c\1hError: \1n\1cBlank filename argument given.\r\n\1p");
+			exit(-2);
+		}
+	}
+	else
+	{
+		console.print("\1n\1c\1hError: \1n\1cUnknown command-line argument specified.\r\n\1p");
+		exit(-1);
+	}
 }
 else
 {
-   // Read the filename from DDArcViewerFilename.txt in the node directory.
-   // This is a workaround for file/directory names with spaces in
-   // them, which would get separated into separate command-line
-   // arguments for JavaScript scripts.
-   var fileToView = "";
-   var filenameFileFilename = system.node_dir + "DDArcViewerFilename.txt";
-   var filenameFile = new File(filenameFileFilename);
-   if (filenameFile.open("r"))
-   {
-      if (!filenameFile.eof)
-         fileToView = filenameFile.readln(2048);
-      filenameFile.close();
-   }
+	// Read the filename from DDArcViewerFilename.txt in the node directory.
+	// This is a workaround for file/directory names with spaces in
+	// them, which would get separated into separate command-line
+	// arguments for JavaScript scripts.
+	var filenameFileFilename = system.node_dir + "DDArcViewerFilename.txt";
+	var filenameFile = new File(filenameFileFilename);
+	if (filenameFile.open("r"))
+	{
+		if (!filenameFile.eof)
+			gFileToView = filenameFile.readln(2048);
+		filenameFile.close();
+	}
 }
 
 // A filename must be specified as the first argument, so give an error and return
 // if not.
-//if ((argv[0] == undefined) || (argv[0] == null) || (typeof(argv[0]) != "string"))
-if (fileToView.length == 0)
+if (gFileToView.length == 0)
 {
-   console.print("nchError: ncNo filename specified to view.\r\np");
-   exit(1);
+	console.print("\1n\1c\1hError: \1n\1cNo filename specified to view.\r\n\1p");
+	exit(1);
 }
 
 // Read the configuration files.
@@ -215,8 +222,8 @@ var configFileRead = ReadConfig(gStartupPath);
 // If the configuration file wasn't read, then output an error and exit.
 if (!configFileRead)
 {
-   console.print("nchError: ncThis viewer was unable to read its configuration\r\n");
-   console.print("file.\r\np");
+   console.print("\1n\1c\1hError: \1n\1cThis viewer was unable to read its configuration\r\n");
+   console.print("file.\r\n\1p");
    exit(2);
 }
 
@@ -232,7 +239,7 @@ var gRootWorkDirExists = mkdir(gRootWorkDir);
 // If the work dir was not created, then output an error and exit.
 if (!gRootWorkDirExists)
 {
-   console.print("nchError: ncCould not create the temporary work directory.\r\np");
+   console.print("\1n\1c\1hError: \1n\1cCould not create the temporary work directory.\r\n\1p");
    exit(6);
 }
 
@@ -243,14 +250,14 @@ const gANSISupported = console.term_supports(USER_ANSI);
 var useLightbar = (gANSISupported && (gGenConfig.interfaceStyle == "Lightbar"));
 
 // Write a note in the log that the user is viewing the archive.
-var gTopLevelFilename = fixPathSlashes(fileToView);
+var gTopLevelFilename = fixPathSlashes(gFileToView);
 bbs.log_str(user.alias + " is viewing a file: " + gTopLevelFilename);
 // View the file
 var gListFilesFunction = useLightbar ? listFiles_Lightbar : listFiles_Traditional;
 var retObj = viewFile(gTopLevelFilename, gRootWorkDir, gListFilesFunction);
 
 // Clean up (remove the root work directory, etc.)
-console.print("ncViewer cleanupi...n\r\n");
+console.print("\1n\1cViewer cleanup\1i...\1n\r\n");
 console.line_counter = 0; // To prevent pausing
 deltree(gRootWorkDir);
 
@@ -277,22 +284,22 @@ exit(retObj.errorCode);
 //  pExtractCmd: The OS command to extract it
 function ViewableFile(pExtension, pViewCmd, pExtractCmd)
 { 
-   this.extension = "";      // The archive filename extension
-   this.viewCmd = "";        // The command to view the archive
-   this.extractCmd = "";     // The command to extract the archive
+	this.extension = "";      // The archive filename extension
+	this.viewCmd = "";        // The command to view the archive
+	this.extractCmd = "";     // The command to extract the archive
 
-   // If isText is true, then the file is a text file; otherwise,
-   // treat it as a compressed archive.
-   this.isText = false;
+	// If isText is true, then the file is a text file; otherwise,
+	// treat it as a compressed archive.
+	this.isText = false;
 
-   // If pExtension, pViewCmd, or pExtractCmd are valid, then use them to set
-   // the object parameters.
-   if ((pExtension != null) && (pExtension != undefined) && (typeof(pExtension) == "string"))
-      this.extension = pExtension;
-   if ((pViewCmd != null) && (pViewCmd != undefined) && (typeof(pViewCmd) == "string"))
-      this.viewCmd = pViewCmd;
-   if ((pExtractCmd != null) && (pExtractCmd != undefined) && (typeof(pExtractCmd) == "string"))
-      this.extractCmd = pExtractCmd;
+	// If pExtension, pViewCmd, or pExtractCmd are valid, then use them to set
+	// the object parameters.
+	if ((pExtension != null) && (typeof(pExtension) === "string"))
+		this.extension = pExtension;
+	if ((pViewCmd != null) && (typeof(pViewCmd) === "string"))
+		this.viewCmd = pViewCmd;
+	if ((pExtractCmd != null) && (typeof(pExtractCmd) === "string"))
+		this.extractCmd = pExtractCmd;
 }
 
 
@@ -310,191 +317,190 @@ function ViewableFile(pExtension, pViewCmd, pExtractCmd)
 // Return value: Boolean - Whether or not configuration settings were read.
 function ReadConfig(pCfgFilePath)
 {
-   // Read the file type settings
-   var fileTypeSettingsRead = false;
-   var fileTypeCfgFile = new File(pCfgFilePath + "DDArcViewerFileTypes.cfg");
-   if (fileTypeCfgFile.open("r"))
-   {
-      if (fileTypeCfgFile.length > 0)
-      {
-         fileTypeSettingsRead = true;
-         // Read each line from the config file and set the
-         // various options.
-         var pos = 0;               // Index of = in the file lines
-         var fileLine = "";
-         var filenameExt = "";      // Archive filename extension
-         var option = "";           // Configuration option
-         var optionValue = "";      // Configuration option value
-         var optionValueUpper;      // Upper-cased configuration option value
-         var viewableFile = null;   // Will be used to create & store viewable archive options
-         while (!fileTypeCfgFile.eof)
-         {
-            // Read the line from the config file, look for a =, and
-            // if found, read the option & value and set them
-            // in cfgObj.
-            fileLine = fileTypeCfgFile.readln(1024);
+	// Read the file type settings
+	var fileTypeSettingsRead = false;
+	var fileTypeCfgFile = new File(pCfgFilePath + "dd_arc_viewer_file_types.cfg");
+	if (fileTypeCfgFile.open("r"))
+	{
+		if (fileTypeCfgFile.length > 0)
+		{
+			fileTypeSettingsRead = true;
+			// Read each line from the config file and set the
+			// various options.
+			var pos = 0;               // Index of = in the file lines
+			var fileLine = "";
+			var filenameExt = "";      // Archive filename extension
+			var option = "";           // Configuration option
+			var optionValue = "";      // Configuration option value
+			var optionValueUpper;      // Upper-cased configuration option value
+			var viewableFile = null;   // Will be used to create & store viewable archive options
+			while (!fileTypeCfgFile.eof)
+			{
+				// Read the line from the config file, look for a =, and
+				// if found, read the option & value and set them
+				// in cfgObj.
+				fileLine = fileTypeCfgFile.readln(1024);
 
-            // fileLine should be a string, but I've seen some cases
-            // where it isn't, so check its type.
-            if (typeof(fileLine) != "string")
-               continue;
+				// fileLine should be a string, but I've seen some cases
+				// where it isn't, so check its type.
+				if (typeof(fileLine) != "string")
+					continue;
 
-            // If the line is blank or starts with with a semicolon
-            // (the comment character), then skip it.
-            if ((fileLine.length == 0) || (fileLine.substr(0, 1) == ";"))
-               continue;
+				// If the line is blank or starts with with a semicolon
+				// (the comment character), then skip it.
+				if ((fileLine.length == 0) || (fileLine.substr(0, 1) == ";"))
+					continue;
 
-            // Look for a file extension in square brackets ([ and ]).
-            // If found, then set filenameExt and continue onto the next line.
-            // Note: This regular expression allows whitespace around the [...].
-            if (/^\s*\[.*\]\s*$/.test(fileLine))
-            {
-               var startIndex = fileLine.indexOf("[") + 1;
-               var endIndex = fileLine.lastIndexOf("]");
-               var ext = fileLine.substr(startIndex, endIndex-startIndex).toUpperCase();
-               // If the filename extension is different than the last one
-               // we've seen, then:
-               // 1. If viewableFile is not null, then add it to gViewableFileTypes.
-               // 2. Create a new one (referenced as viewableFile).
-               if (ext != filenameExt)
-               {
-                  if ((viewableFile != null) && (viewableFile != undefined) &&
-                      (filenameExt.length > 0))
-                  {
-                     gViewableFileTypes[filenameExt] = viewableFile;
-                  }
-                  filenameExt = ext;
-                  viewableFile = new ViewableFile();
-                  viewableFile.extension = ext;
-               }
-               continue;
-            }
+				// Look for a file extension in square brackets ([ and ]).
+				// If found, then set filenameExt and continue onto the next line.
+				// Note: This regular expression allows whitespace around the [...].
+				if (/^\s*\[.*\]\s*$/.test(fileLine))
+				{
+					var startIndex = fileLine.indexOf("[") + 1;
+					var endIndex = fileLine.lastIndexOf("]");
+					var ext = fileLine.substr(startIndex, endIndex-startIndex).toUpperCase();
+					// If the filename extension is different than the last one
+					// we've seen, then:
+					// 1. If viewableFile is not null, then add it to gViewableFileTypes.
+					// 2. Create a new one (referenced as viewableFile).
+					if (ext != filenameExt)
+					{
+						if ((viewableFile != null) && (viewableFile != undefined) && (filenameExt.length > 0))
+						{
+							gViewableFileTypes[filenameExt] = viewableFile;
+						}
+						filenameExt = ext;
+						viewableFile = new ViewableFile();
+						viewableFile.extension = ext;
+					}
+					continue;
+				}
 
-            // If filenameExt is blank, then continue onto the next line.
-            if (filenameExt.length == 0)
-               continue;
+				// If filenameExt is blank, then continue onto the next line.
+				if (filenameExt.length == 0)
+					continue;
 
-            // If we're here, then filenameExt is set, and this is a valid
-            // line to process.
-            // Look for an = in the line, and if found, split into
-            // option & value.
-            pos = fileLine.indexOf("=");
-            if (pos > -1)
-            {
-               // Extract the option & value, trimming leading & trailing spaces.
-               option = trimSpaces(fileLine.substr(0, pos), true, false, true).toUpperCase();
-               optionValue = trimSpaces(fileLine.substr(pos+1), true, false, true);
+				// If we're here, then filenameExt is set, and this is a valid
+				// line to process.
+				// Look for an = in the line, and if found, split into
+				// option & value.
+				pos = fileLine.indexOf("=");
+				if (pos > -1)
+				{
+					// Extract the option & value, trimming leading & trailing spaces.
+					option = trimSpaces(fileLine.substr(0, pos), true, false, true).toUpperCase();
+					optionValue = trimSpaces(fileLine.substr(pos+1), true, false, true);
 
-               if (option == "VIEW")
-                  viewableFile.viewCmd = optionValue;
-               else if (option == "EXTRACT")
-                  viewableFile.extractCmd = optionValue;
-               else if (option == "ISTEXT")
-                  viewableFile.isText = (optionValue.toUpperCase() == "YES");
-            }
-         }
-      }
+					if (option == "VIEW")
+						viewableFile.viewCmd = optionValue;
+					else if (option == "EXTRACT")
+						viewableFile.extractCmd = optionValue;
+					else if (option == "ISTEXT")
+						viewableFile.isText = (optionValue.toUpperCase() == "YES");
+				}
+			}
+		}
 
-      fileTypeCfgFile.close();
-   }
+		fileTypeCfgFile.close();
+	}
 
-   // Read the general program configuration
-   var genSettingsRead = false;
-   var genCfgFile = new File(pCfgFilePath + "DDArcViewer.cfg");
-   if (genCfgFile.open("r"))
-   {
-      if (genCfgFile.length > 0)
-      {
-         genSettingsRead = true;
-         var settingsMode = "";
-         var fileLine = null;     // A line read from the file
-         var equalsPos = 0;       // Position of a = in the line
-         var commentPos = 0;      // Position of the start of a comment
-         var setting = null;      // A setting name (string)
-         var settingUpper = null; // Upper-case setting name
-         var value = null;        // A value for a setting (string)
-         while (!genCfgFile.eof)
-         {
-            // Read the next line from the config file.
-            fileLine = genCfgFile.readln(1024);
+	// Read the general program configuration
+	var genSettingsRead = false;
+	var genCfgFile = new File(pCfgFilePath + "dd_arc_viewer.cfg");
+	if (genCfgFile.open("r"))
+	{
+		if (genCfgFile.length > 0)
+		{
+			genSettingsRead = true;
+			var settingsMode = "";
+			var fileLine = null;     // A line read from the file
+			var equalsPos = 0;       // Position of a = in the line
+			var commentPos = 0;      // Position of the start of a comment
+			var setting = null;      // A setting name (string)
+			var settingUpper = null; // Upper-case setting name
+			var value = null;        // A value for a setting (string)
+			while (!genCfgFile.eof)
+			{
+				// Read the next line from the config file.
+				fileLine = genCfgFile.readln(1024);
 
-            // fileLine should be a string, but I've seen some cases
-            // where it isn't, so check its type.
-            if (typeof(fileLine) != "string")
-               continue;
+				// fileLine should be a string, but I've seen some cases
+				// where it isn't, so check its type.
+				if (typeof(fileLine) != "string")
+					continue;
 
-            // If the line starts with with a semicolon (the comment
-            // character) or is blank, then skip it.
-            if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-               continue;
+				// If the line starts with with a semicolon (the comment
+				// character) or is blank, then skip it.
+				if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+					continue;
 
-            // If in the "behavior" section, then set the behavior-related variables.
-            if (fileLine.toUpperCase() == "[BEHAVIOR]")
-            {
-               settingsMode = "behavior";
-               continue;
-            }
-            else if (fileLine.toUpperCase() == "[COLORS]")
-            {
-               settingsMode = "colors";
-               continue;
-            }
+				// If in the "behavior" section, then set the behavior-related variables.
+				if (fileLine.toUpperCase() == "[BEHAVIOR]")
+				{
+					settingsMode = "behavior";
+					continue;
+				}
+				else if (fileLine.toUpperCase() == "[COLORS]")
+				{
+					settingsMode = "colors";
+					continue;
+				}
 
-            // If settingsMode is blank, then skip this line.
-            if (settingsMode.length == 0)
-               continue;
+				// If settingsMode is blank, then skip this line.
+				if (settingsMode.length == 0)
+					continue;
 
-            // If the line has a semicolon anywhere in it, then remove
-            // everything from the semicolon onward.
-            commentPos = fileLine.indexOf(";");
-            if (commentPos > -1)
-               fileLine = fileLine.substr(0, commentPos);
+				// If the line has a semicolon anywhere in it, then remove
+				// everything from the semicolon onward.
+				commentPos = fileLine.indexOf(";");
+				if (commentPos > -1)
+					fileLine = fileLine.substr(0, commentPos);
 
-            // Look for an equals sign, and if found, separate the line
-            // into the setting name (before the =) and the value (after the
-            // equals sign).
-            equalsPos = fileLine.indexOf("=");
-            if (equalsPos > 0)
-            {
-               // Read the setting & value, and trim leading & trailing spaces.
-               setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-               settingUpper = setting.toUpperCase();
-               value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true).toUpperCase();
+				// Look for an equals sign, and if found, separate the line
+				// into the setting name (before the =) and the value (after the
+				// equals sign).
+				equalsPos = fileLine.indexOf("=");
+				if (equalsPos > 0)
+				{
+					// Read the setting & value, and trim leading & trailing spaces.
+					setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+					settingUpper = setting.toUpperCase();
+					value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true).toUpperCase();
 
-               if (settingsMode == "behavior")
-               {
-                  // Skip this one if the value is blank.
-                  if (value.length == 0)
-                     continue;
+					if (settingsMode == "behavior")
+					{
+						// Skip this one if the value is blank.
+						if (value.length == 0)
+							continue;
 
-                  // Set the appropriate value in the settings object.
-                  if (settingUpper == "INTERFACESTYLE")
-                  {
-                     // Ensure that the first character is uppercase and the
-                     // rest is lower-case.
-                     if ((value == "LIGHTBAR") || (value == "TRADITIONAL"))
-                     {
-                        gGenConfig.interfaceStyle = value.substr(0, 1).toUpperCase()
-                                                  + value.substr(1).toLowerCase();
-                     }
-                  }
-                  else if (settingUpper == "INPUTTIMEOUTMS")
-                     gGenConfig.inputTimeoutMS = +value;
-                  else if (settingUpper == "MAXARCFILESIZE")
-                     gGenConfig.maxArcFileSize = sizeStrToBytes(value);
-                  else if (settingUpper == "MAXTEXTFILESIZE")
-                     gGenConfig.maxTextFileSize = sizeStrToBytes(value);
-               }
-               else if (settingsMode == "colors")
-                  gGenConfig.colors[setting] = value;
-            }
-         }
+						// Set the appropriate value in the settings object.
+						if (settingUpper == "INTERFACESTYLE")
+						{
+							// Ensure that the first character is uppercase and the
+							// rest is lower-case.
+							if ((value == "LIGHTBAR") || (value == "TRADITIONAL"))
+							{
+								gGenConfig.interfaceStyle = value.substr(0, 1).toUpperCase()
+								                          + value.substr(1).toLowerCase();
+							}
+						}
+						else if (settingUpper == "INPUTTIMEOUTMS")
+							gGenConfig.inputTimeoutMS = +value;
+						else if (settingUpper == "MAXARCFILESIZE")
+							gGenConfig.maxArcFileSize = sizeStrToBytes(value);
+						else if (settingUpper == "MAXTEXTFILESIZE")
+							gGenConfig.maxTextFileSize = sizeStrToBytes(value);
+					}
+					else if (settingsMode == "colors")
+						gGenConfig.colors[setting] = value;
+				}
+			}
 
-         genCfgFile.close();
-      }
-   }
+			genCfgFile.close();
+		}
+	}
 
-   return (fileTypeSettingsRead && genSettingsRead);
+	return (fileTypeSettingsRead && genSettingsRead);
 }
 // Helper for ReadConfig(): Converts a size string from the config file (i.e.,
 // for max file size) to the number of bytes.
@@ -504,59 +510,144 @@ function ReadConfig(pCfgFilePath)
 //            or G at the end for Kilobytes, Megabytes, or Gigabytes.
 function sizeStrToBytes(pSizeStr)
 {
-   if ((pSizeStr == null) || (pSizeStr == undefined))
-      return 0;
-   if (typeof(pSizeStr) != "string")
-      return 0;
-   if (pSizeStr.length == 0)
-      return 0;
+	if ((pSizeStr == null) || (pSizeStr == undefined))
+		return 0;
+	if (typeof(pSizeStr) != "string")
+		return 0;
+	if (pSizeStr.length == 0)
+		return 0;
 
-   var numBytes = 0;
-   // Look for a K, M, or G at the end of the pSizeStr.  If found,
-   // that signifies kilobytes, megabytes, or gigabytes, respectively.
-   var lastChar = pSizeStr.charAt(pSizeStr.length-1).toUpperCase();
-   if (lastChar == "K") // Kilobytes
-      numBytes = +(pSizeStr.substr(0, pSizeStr.length-1)) * 1024;
-   else if (lastChar == "M") // Megabytes
-      numBytes = +(pSizeStr.substr(0, pSizeStr.length-1)) * 1048576;
-   else if (lastChar == "G") // Gigabytes
-      numBytes = +(pSizeStr.substr(0, pSizeStr.length-1)) * 1073741824;
-   else
-      numBytes = +pSizeStr;
-   if (isNaN(numBytes))
-      numBytes = 0;
-   numBytes = Math.floor(numBytes);
-   return numBytes;
+	var numBytes = 0;
+	// Look for a K, M, or G at the end of the pSizeStr.  If found,
+	// that signifies kilobytes, megabytes, or gigabytes, respectively.
+	var lastChar = pSizeStr.charAt(pSizeStr.length-1).toUpperCase();
+	if (lastChar == "K") // Kilobytes
+		numBytes = +(pSizeStr.substr(0, pSizeStr.length-1)) * 1024;
+	else if (lastChar == "M") // Megabytes
+		numBytes = +(pSizeStr.substr(0, pSizeStr.length-1)) * 1048576;
+	else if (lastChar == "G") // Gigabytes
+		numBytes = +(pSizeStr.substr(0, pSizeStr.length-1)) * 1073741824;
+	else
+		numBytes = +pSizeStr;
+	if (isNaN(numBytes))
+		numBytes = 0;
+	numBytes = Math.floor(numBytes);
+	return numBytes;
 }
 
 
-// Extracts an archive to a directory.  Returns an array containing the
-// output of the extraction command.
+// Extracts an archive to a directory.
 //
 // Parameters:
 //  pArchiveFilename: The name of the archive file to extract
-//  pExtractCmd: The command to extract the file (from the configuration)
 //  pDestDir: The directory to which to extract the file
 //
-// Return value: An array containing the output of the extraction command.
-function extractArchive(pArchiveFilename, pExtractCmd, pDestDir)
+// Return value: An object containing the following properties:
+//               success: Boolean - Whether or not extraction was successful
+//               usedArchiveClass: Boolean - Whether or not the Archive class was used
+//                                 (added in Synchronet 3.19)
+//               error: String - Will contain any applicable error message on failure
+//               output: An array containing the output of the extraction command, if
+//                       an external extract command was run.  If the Archive class
+//                       is available, this will likely be empty.
+function extractArchive(pArchiveFilename, pDestDir)
 {
-   // Make sure all the slashes in the filename and the destination directory
-   // are correct for the platform.
-   var filename = fixPathSlashes(pArchiveFilename);
-   var destDir = fixPathSlashes(pDestDir);
+	var retObj = {
+		success: false,
+		usedArchiveClass: false,
+		error: "",
+		output: ""
+	};
 
-   // Build the extract command, and then execute it.
-   // Note: This puts double-quotes around the filename and destination dir
-   // to deal with spaces.
-   var command = pExtractCmd.replace("%FILENAME%", "\"" + filename + "\"");
-   // I was originally going to replace %FILESPEC% with * (to extract all files), but
-   // that doesn't work on *nix because * expands to all files in the current dir.
-   // And if the filespec isn't specified, it extracts all files anyway.
-   //command = command.replace("%FILESPEC%", "*"); // Extract all files
-   command = command.replace("%FILESPEC%", ""); // Extract all files
-   command = command.replace("%TO_DIR%", "\"" + withoutTrailingSlash(destDir) + "\"");
-   return (execCmdWithOutput(command));
+	// Make sure all the slashes in the filename and the destination directory
+	// are correct for the platform.
+	var arcFilename = fixPathSlashes(pArchiveFilename);
+	var destDir = fixPathSlashes(pDestDir);
+
+	// If the Archive class is available (added in Synchronet 3.19), then
+	// use it to extract the archive.  Otherwise, use the configured external
+	// archiver command to extract it.
+	if (typeof(Archive) === "function")
+	{
+		retObj.usedArchiveClass = true;
+		var arcFile = new Archive(arcFilename);
+		try
+		{
+			if (arcFile.extract(destDir) > 0)
+				retObj.success = true;
+			else
+				retObj.error = "No files extracted";
+		}
+		catch (e)
+		{
+			// Synchronet's internal archiver was unable to extract it.  Try
+			// with an external archiver, if a command is configured.
+			log(LOG_ERR, "DDArcViewer: Synchronet internal archiver failed to extract " + arcFilename + ": " + e);
+			var externRet = extractArchiveWithExernalArc(pArchiveFilename, pDestDir);
+			retObj.output = externRet.output;
+			retObj.success = externRet.success;
+		}
+	}
+	else
+	{
+		var externRet = extractArchiveWithExernalArc(pArchiveFilename, pDestDir);
+		retObj.output = externRet.output;
+		retObj.success = externRet.success;
+	}
+	return retObj;
+}
+// Extracts an archive to a directory using an external archiver.
+//
+// Parameters:
+//  pArchiveFilename: The name of the archive file to extract
+//  pDestDir: The directory to which to extract the file
+//
+// Return value: An object containing the following properties:
+//               success: Boolean - Whether or not extraction was successful
+//               output: An array containing the output of the extraction command, if
+//                       an external extract command was run.  If the Archive class
+//                       is available, this will likely be empty.
+function extractArchiveWithExernalArc(pArchiveFilename, pDestDir)
+{
+	var retObj = {
+		success: false,
+		output: ""
+	};
+
+	// Make sure all the slashes in the filename and the destination directory
+	// are correct for the platform.
+	var arcFilename = fixPathSlashes(pArchiveFilename);
+
+	// Make sure there is an external archiver command for this file type
+	var filenameExt = getFilenameExtension(arcFilename).toUpperCase();
+	if (!gViewableFileTypes.hasOwnProperty(filenameExt) || gViewableFileTypes[filenameExt].extractCmd.length == 0)
+	{
+		retObj.success = false;
+		console.print("\1n");
+		console.crlf();
+		console.print("\1h\1gThere is no extractor configured for \1c" + filenameExt + "\1n");
+		console.crlf();
+		console.pause();
+		return retObj;
+	}
+
+	var destDir = fixPathSlashes(pDestDir);
+
+	// Build the extract command, and then execute it.
+	// Note: This puts double-quotes around the filename and destination dir
+	// to deal with spaces.
+	var extractCmd = gViewableFileTypes[filenameExt].extractCmd;
+	var command = extractCmd.replace("%FILENAME%", "\"" + arcFilename + "\"");
+	// I was originally going to replace %FILESPEC% with * (to extract all files), but
+	// that doesn't work on *nix because * expands to all files in the current dir.
+	// And if the filespec isn't specified, it extracts all files anyway.
+	//command = command.replace("%FILESPEC%", "*"); // Extract all files
+	command = command.replace("%FILESPEC%", ""); // Extract all files
+	command = command.replace("%TO_DIR%", "\"" + withoutTrailingSlash(destDir) + "\"");
+	retObj.output = execCmdWithOutput(command);
+	retObj.success = true;
+
+	return retObj;
 }
 
 // Views a file.
@@ -572,102 +663,115 @@ function extractArchive(pArchiveFilename, pExtractCmd, pDestDir)
 //   errorCode: An code representing an error.  0 = no error.
 function viewFile(pFilename, pWorkDir, pListFilesFunction)
 {
-   var retObj = new Object();
-   retObj.errorCode = 0;
+	var retObj = {
+		errorCode: 0
+	};
 
-   // Determine the filename's extension
-   var filenameExt = getFilenameExtension(pFilename);
-   if (filenameExt.length == 0)
-   {
-      console.print("nchError: ncThe filename has no extension.\r\np");
-      retObj.errorCode = 3;
-      return(retObj);
-   }
-   // If the filename extension is unknown, then output an error and exit.
-   if ((gViewableFileTypes[filenameExt] == undefined) || (gViewableFileTypes[filenameExt] == null))
-   {
-      console.print("nchError: ncThe filename extension (" + filenameExt + ") is unknown.\r\np");
-      retObj.errorCode = 4;
-      return(retObj);
-   }
+	// Determine the filename's extension
+	var filenameExt = getFilenameExtension(pFilename).toUpperCase();
+	if (filenameExt.length == 0)
+	{
+		console.print("\1n\1c\1hError: \1n\1cThe filename has no extension.\r\n\1p");
+		retObj.errorCode = 3;
+		return(retObj);
+	}
+	// If the filename extension is unknown, then output an error and exit.
+	if ((gViewableFileTypes[filenameExt] == undefined) || (gViewableFileTypes[filenameExt] == null))
+	{
+		console.print("\1n\1c\1hError: \1n\1cThe filename extension (" + filenameExt + ") is unknown.\r\n\1p");
+		retObj.errorCode = 4;
+		return(retObj);
+	}
 
-   // Get the filename without the full path in front.
-   var justFilename = getFilenameFromPath(pFilename);
+	// Get the filename without the full path in front.
+	var justFilename = getFilenameFromPath(pFilename);
 
-   // If the file is a text file, then view it using the VIEW command.
-   // Otherwise, treat it as an archive: Extract it and list the files.
-   if (gViewableFileTypes[filenameExt].isText)
-   {
-      // If file size limit is in effect and the file is too big, then refuse
-      // to view it.
-      if ((gGenConfig.maxTextFileSize > 0) && (file_size(pFilename) > gGenConfig.maxTextFileSize))
-      {
-         //console.print("Here 1\r\n"); // Temporary
-         console.print("nchError: ncThe file is too big to view.\r\np");
-         retObj.errorCode = 8;
-         return(retObj);
-      }
-      viewUsingVIEWCmd(pFilename, filenameExt);
-   }
-   else
-   {
-      // The file is an archive file.
-      // If file size limit is in effect and the file is too big, then refuse
-      // to view it.
-      if ((gGenConfig.maxArcFileSize > 0) && (file_size(pFilename) > gGenConfig.maxArcFileSize))
-      {
-         //console.print("Here 2\r\n"); // Temporary
-         //console.print("File size: " + file_size(pFilename) + ", limit: " + gGenConfig.maxarcFileSize + "\r\n"); // Temporary
-         console.print("nchError: ncThe file is too big to view.\r\np");
-         retObj.errorCode = 8;
-         return(retObj);
-      }
+	// If the file is a text file, then view it using the VIEW command.
+	// Otherwise, treat it as an archive: Extract it and list the files.
+	if (gViewableFileTypes[filenameExt].isText)
+	{
+		// If file size limit is in effect and the file is too big, then refuse
+		// to view it.
+		if ((gGenConfig.maxTextFileSize > 0) && (file_size(pFilename) > gGenConfig.maxTextFileSize))
+		{
+			console.print("\1n\1c\1hError: \1n\1cThe file is too big to view.\r\n\1p");
+			retObj.errorCode = 8;
+			return(retObj);
+		}
+		viewUsingVIEWCmd(pFilename, filenameExt);
+	}
+	else
+	{
+		// The file is an archive file.
+		// If file size limit is in effect and the file is too big, then refuse
+		// to view it.
+		if ((gGenConfig.maxArcFileSize > 0) && (file_size(pFilename) > gGenConfig.maxArcFileSize))
+		{
+			console.print("\1n\1c\1hError: \1n\1cThe file is too big to view.\r\n\1p");
+			retObj.errorCode = 8;
+			return(retObj);
+		}
 
-      // If there is no extract command specified for the archive type, then
-      // output an error and exit.
-      if (gViewableFileTypes[filenameExt].extractCmd.length == 0)
-      {
-         console.print("nchError: ncNo extract command is defined for " +
-                       filenameExt + " files.\r\np");
-         retObj.errorCode = 5;
-         return(retObj);
-      }
+		// If the Archive class isn't available (added in Synchronet 3.19) and there
+		// is no extract command specified for the archive type, then output an error
+		// and exit.
+		if (typeof(Archive) !== "function" && (!gViewableFileTypes.hasOwnProperty(filenameExt) || gViewableFileTypes[filenameExt].extractCmd.length == 0))
+		{
+			console.print("\1n\1c\1hError: \1n\1cNo extract command is defined for " +
+			              filenameExt + " files.\r\n\1p");
+			retObj.errorCode = 5;
+			return(retObj);
+		}
 
-      // Create a subdirectory within pWorkDir where the file will be extracted.
-      var workDir = pWorkDir + justFilename + "_Temp/";
-      deltree(workDir);
-      var workDirExists = mkdir(workDir);
-      // If the work directory was created, then extract the archive and list
-      // its files.  Otherwise, fall back to the view command to view it.
-      if (workDirExists)
-      {
-         // Extract the archive into the work directory.
-         console.print("ncExtracting " + justFilename + "i...n\r\n");
-         console.line_counter = 0; // To prevent pausing
-         extractArchive(pFilename, gViewableFileTypes[filenameExt].extractCmd, workDir);
-   
-         // List the files.
-         var screenRow = pListFilesFunction(workDir, justFilename);
-   
-         // Remove the work directory and all of its contents (and tell
-         // the user what we're doing).
-         console.print("n");
-         console.gotoxy(1, screenRow);
-         console.print("yhPerforming cleanup for " + justFilename + "i...n\r\n");
-         console.line_counter = 0; // To prevent pausing
-         deltree(workDir);
-      }
-      else
-      {
-         console.clear("n");
-         console.print("nchNote: ncCould not create the temporary work directory for\r\n" +
-                       justFilename + ", so only a basic view is provided.\r\np");
-         viewUsingVIEWCmd(pFilename, filenameExt);
-         retObj.errorCode = 7;
-      }
-   }
+		// Create a subdirectory within pWorkDir where the file will be extracted.
+		var workDir = pWorkDir + justFilename + "_Temp/";
+		deltree(workDir);
+		var workDirExists = mkdir(workDir);
+		// If the work directory was created, then extract the archive and list
+		// its files.  Otherwise, fall back to the view command to view it.
+		if (workDirExists)
+		{
+			// Extract the archive into the work directory.
+			console.print("\1n\1cExtracting " + justFilename + "\1i...\1n\r\n");
+			console.line_counter = 0; // To prevent pausing
+			var extractRet = extractArchive(pFilename, workDir);
+			if (extractRet.success)
+			{
+				// List the files.
+				var screenRow = pListFilesFunction(workDir, justFilename);
 
-   return(retObj);
+				// Remove the work directory and all of its contents (and tell
+				// the user what we're doing).
+				console.print("\1n");
+				console.gotoxy(1, screenRow);
+				console.print("\1y\1hPerforming cleanup for " + justFilename + "\1i...\1n\r\n");
+				console.line_counter = 0; // To prevent pausing
+			}
+			else
+			{
+				console.crlf();
+				console.print("\1n\1h\1y");
+				if (extractRet.error != "")
+					console.print(extractRet.error);
+				else
+					console.print("Failed to extract the archive");
+				console.print("\1n");
+				console.crlf();
+				console.pause();
+			}
+			deltree(workDir);
+		}
+		else
+		{
+			console.clear("\1n");
+			console.print("\1n\1c\1hNote: \1n\1cCould not create the temporary work directory for\r\n" +
+			              justFilename + ", so only a basic view is provided.\r\n\1p");
+			viewUsingVIEWCmd(pFilename, filenameExt);
+			retObj.errorCode = 7;
+		}
+	}
+
+	return(retObj);
 }
 
 // Views a text file using its VIEW command.
@@ -677,52 +781,52 @@ function viewFile(pFilename, pWorkDir, pListFilesFunction)
 //  pFilenameExt: The filename's extension
 function viewUsingVIEWCmd(pFilename, pFilenameExt)
 {
-   // Make sure all the slashes in the filename are correct for the platform.
-   //var filename = fixPathSlashes(pFilename);
+	// Make sure all the slashes in the filename are correct for the platform.
+	//var filename = fixPathSlashes(pFilename);
 
-   // Get the view command with %FILENAME% replaced by the actual filename.
-   var viewCmd = gViewableFileTypes[pFilenameExt].viewCmd.replace("%FILENAME%", pFilename);
-   // Execute the view command, get its output, and display the output.
-   var outputArray = execCmdWithOutput(viewCmd);
-   if (outputArray.length > 0)
-   {
-      console.print("n\r\n");
-      var numLinesOutput = 1;     // To test for outputting a pageful of lines
-      var pageSize = console.screen_rows - 1;
+	// Get the view command with %FILENAME% replaced by the actual filename.
+	var viewCmd = gViewableFileTypes[pFilenameExt].viewCmd.replace("%FILENAME%", pFilename);
+	// Execute the view command, get its output, and display the output.
+	var outputArray = execCmdWithOutput(viewCmd);
+	if (outputArray.length > 0)
+	{
+		console.print("\1n\r\n");
+		var numLinesOutput = 1;     // To test for outputting a pageful of lines
+		var pageSize = console.screen_rows - 1;
 
-      for (var i = 0; i < outputArray.length; ++i)
-      {
-         write_raw(outputArray[i]);
-         // Update numLinesOutput based on how many screen lines were written,
-         // based on the width of the line in the array.
-         if (outputArray[i].length <= console.screen_columns)
-            ++numLinesOutput;
-         else if (outputArray[i].length > console.screen_columns)
-            numLinesOutput += Math.ceil(outputArray[i].length / console.screen_columns);
-         if (outputArray[i].length != console.screen_columns)
-            console.crlf();
-         // Prevent automatic screen pausing.  And if we've written a
-         // screenful of lines, then prompt the user whether to continue or quit.
-         console.line_counter = 0;
-         if (numLinesOutput == pageSize)
-         {
-            numLinesOutput = 0;
-            // Prompt the user to continue.  If they say yes, then
-            // reset the color back to normal.  Otherwise, break from
-            // the input loop.
-            if (console.yesno("cContinue"))
-               console.print("n");
-            else
-               break;
-         }
-      }
-      // Edge case: If the text file is smaller than a screenful or if we've
-      // written less than a screenful, then pause.
-      if ((outputArray.length < pageSize) || (numLinesOutput < pageSize))
-         console.pause();
-   }
-   else
-      console.print("ncThe file is empty.");
+		for (var i = 0; i < outputArray.length; ++i)
+		{
+			write_raw(outputArray[i]);
+			// Update numLinesOutput based on how many screen lines were written,
+			// based on the width of the line in the array.
+			if (outputArray[i].length <= console.screen_columns)
+				++numLinesOutput;
+			else if (outputArray[i].length > console.screen_columns)
+				numLinesOutput += Math.ceil(outputArray[i].length / console.screen_columns);
+			if (outputArray[i].length != console.screen_columns)
+				console.crlf();
+			// Prevent automatic screen pausing.  And if we've written a
+			// screenful of lines, then prompt the user whether to continue or quit.
+			console.line_counter = 0;
+			if (numLinesOutput == pageSize)
+			{
+				numLinesOutput = 0;
+				// Prompt the user to continue.  If they say yes, then
+				// reset the color back to normal.  Otherwise, break from
+				// the input loop.
+				if (console.yesno("\1cContinue"))
+					console.print("\1n");
+				else
+					break;
+			}
+		}
+		// Edge case: If the text file is smaller than a screenful or if we've
+		// written less than a screenful, then pause.
+		if ((outputArray.length < pageSize) || (numLinesOutput < pageSize))
+			console.pause();
+	}
+	else
+		console.print("\1n\1cThe file is empty.\1n");
 }
 
 // Shows the user the list of files in a given directory (traditional
@@ -802,7 +906,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
       // Start listing the file information.
 
       // Output the file list headers.
-      console.clear("n");
+      console.clear("\1n");
       console.gotoxy(1, 1);
       writeFileListHeader(pArchiveFilename);
 
@@ -832,7 +936,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
          if (userInput.length == 0)
          {
             // Display a message and exit.
-            console.print("n\r\nyhInput timeout reached.");
+            console.print("\1n\r\n\1y\1hInput timeout reached.\1n");
             mswait(2500);
             continueOn = false;
          }
@@ -851,7 +955,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
             // Refresh the headers on the screen.
             if (gANSISupported)
             {
-               console.clear("n");
+               console.clear("\1n");
                console.gotoxy(1, 1);
                writeFileListHeader(pArchiveFilename);
             }
@@ -867,7 +971,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
             if (gANSISupported && (lastPageRow < listBottomRow))
             {
                console.gotoxy(1, console.screen_rows);
-               console.clearline("n");
+               console.clearline("\1n");
             }
             else
                console.crlf();
@@ -904,7 +1008,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
                if (gANSISupported && (lastPageRow < listBottomRow))
                {
                   console.gotoxy(1, console.screen_rows);
-                  console.clearline("n");
+                  console.clearline("\1n");
                }
             }
             else
@@ -916,7 +1020,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
             if (gANSISupported)
                console.crlf();
             // Prompt the user for a file number.
-            console.print("ncFile #: h");
+            console.print("\1n\1cFile #: \1h");
             userInput = console.getnum(files.length);
             if (userInput > 0)
             {
@@ -925,15 +1029,15 @@ function listFiles_Traditional(pDir, pArchiveFilename)
                // Otherwise, let the user download the file.
                if (file_isdir(files[index]))
                {
-                  console.print("nwhCan't download an entire directory.");
+                  console.print("\1n\1w\1hCan't download an entire directory.");
                   mswait(1500);
                }
                else
                {
                   // Confirm with the user whether to download the file
                   var filename = getFilenameFromPath(files[index]);
-                  var confirmText = "ncDownload h"
-                                  + filename.substr(0, console.screen_columns-12) + "n";
+                  var confirmText = "\1n\1cDownload \1h"
+                                  + filename.substr(0, console.screen_columns-12) + "\1n";
                   if (console.yesno(confirmText))
                   {
                      bbs.log_str(user.alias + " is downloading a file from an archive: " +
@@ -946,7 +1050,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
             // Refresh the screen by outputting the file list headers.
             if (gANSISupported)
             {
-               console.clear("n");
+               console.clear("\1n");
                console.gotoxy(1, 1);
                writeFileListHeader(pArchiveFilename);
             }
@@ -957,7 +1061,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
             if (gANSISupported)
                console.crlf();
             // Prompt the user for a file number.
-            console.print("ncFile #: h");
+            console.print("\1n\1cFile #: \1h");
             userInput = console.getnum(files.length);
             if (userInput > 0)
             {
@@ -971,8 +1075,8 @@ function listFiles_Traditional(pDir, pArchiveFilename)
 
                // Confirm with the user whether to view the file.
                var filename = getFilenameFromPath(files[index]);
-               var confirmText = "ncView h"
-                               + filename.substr(0, console.screen_columns-15) + "n";
+               var confirmText = "\1n\1cView \1h"
+                               + filename.substr(0, console.screen_columns-15) + "\1n";
                if (console.yesno(confirmText))
                {
                   // If the entry is a directory, then call this function again
@@ -990,7 +1094,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
             // Refresh the screen by outputting the file list headers.
             if (gANSISupported)
             {
-               console.clear("n");
+               console.clear("\1n");
                console.gotoxy(1, 1);
                writeFileListHeader(pArchiveFilename);
             }
@@ -1008,7 +1112,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
             // Refresh the screen by outputting the file list headers.
             if (gANSISupported)
             {
-               console.clear("n");
+               console.clear("\1n");
                console.gotoxy(1, 1);
                writeFileListHeader(pArchiveFilename);
             }
@@ -1016,7 +1120,7 @@ function listFiles_Traditional(pDir, pArchiveFilename)
       }
    }
    else
-      console.print("ncCould not extract/view the file, or it is empty.\r\np");
+      console.print("\1n\1cCould not extract/view the file, or it is empty.\r\n\1p");
 
    return onePastLastFileRow;
 }
@@ -1104,12 +1208,12 @@ function doFileNumInput(pFileArray, pDir, pListFilesFunction, pFileNum)
          userInput = "V";
       else
       {
-         console.print("nch" +
+         console.print("\1n\1c\1h" +
                        justFilename.substr(0, console.screen_columns-1));
          console.crlf();
-         console.print("y(cVy)nciewbh, " +
-                       "y(cDy)ncownloadbh, or " +
-                       "y(cCy)ncancel: h");
+         console.print("\1y(\1cV\1y)\1n\1ciew\1b\1h, " +
+                       "\1y(\1cD\1y)\1n\1cownload\1b\1h, or " +
+                       "\1y(\1cC\1y)\1n\1cancel: \1h");
          userInput = console.getkeys("VDC").toString();
       }
       if (userInput == "V")
@@ -1133,7 +1237,7 @@ function doFileNumInput(pFileArray, pDir, pListFilesFunction, pFileNum)
          // Otherwise, let the user download the file.
          if (file_isdir(pFileArray[retObj.arrayIndex]))
          {
-            console.print("nwhCan't download an entire directory.");
+            console.print("\1n\1w\1hCan't download an entire directory.\1n");
             mswait(1500);
          }
          else
@@ -1154,11 +1258,11 @@ function writeCmdPrompt_Traditional()
    // Construct the prompt text only once (for speed).
    if (writeCmdPrompt_Traditional.text == undefined)
    {
-      writeCmdPrompt_Traditional.text = "nyh(cNy)ncextbh, "
-            + "yh(cPy)ncrevbh, yh(cFy)ncirstbh, "
-            + "yh(cLy)ncastbh, yh(cVy)nciewbh, "
-            + "yh(cDy)ncLbh, yh(cQy)ncuitbh, "
-            + "c#b, or c?nc: h";
+      writeCmdPrompt_Traditional.text = "\1n\1y\1h(\1cN\1y)\1n\1cext\1b\1h, "
+            + "\1y\1h(\1cP\1y)\1n\1crev\1b\1h, \1y\1h(\1cF\1y)\1n\1cirst\1b\1h, "
+            + "\1y\1h(\1cL\1y)\1n\1cast\1b\1h, \1y\1h(\1cV\1y)\1n\1ciew\1b\1h, "
+            + "\1y\1h(\1cD\1y)\1n\1cL\1b\1h, \1y\1h(\1cQ\1y)\1n\1cuit\1b\1h, "
+            + "\1c#\1b, or \1c?\1n\1c: \1h";
    }
    console.print(writeCmdPrompt_Traditional.text);
 }
@@ -1256,8 +1360,8 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
          {
             // Display a message and exit.
             console.gotoxy(1, console.screen_rows);
-            console.clearline("n");
-            console.print("nyhInput timeout reached.");
+            console.clearline("\1n");
+            console.print("\1n\1y\1hInput timeout reached.");
             mswait(2500);
             continueOn = false;
          }
@@ -1372,7 +1476,7 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
          {
             // Place the cursor at the desired location and do file # input.
             console.gotoxy(1, console.screen_rows);
-            console.clearline("n");
+            console.clearline("\1n");
             var retObj = doFileNumInput(files, pDir, listFiles_Lightbar, selectedIndex+1);
             // doFileNumInput() fixes file path slashes for the chosen file,
             // so if the user chose a file, then update fileSlashesFixed
@@ -1400,13 +1504,13 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
             }
             // Go to the last line on the screen (for prompting/messages)
             console.gotoxy(1, console.screen_rows);
-            console.clearline("n");
+            console.clearline("\1n");
             // If the entry is a directory, then report an error.  Otherwise,
             // go to the bottom and confirm with the user if they really
             // want to download the file.
             if (file_isdir(files[selectedIndex]))
             {
-               console.print("nwhCan't download an entire directory.");
+               console.print("\1n\1w\1hCan't download an entire directory.");
                mswait(1500);
                // Re-draw the bottom help line
                console.gotoxy(1, console.screen_rows);
@@ -1416,9 +1520,9 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
             {
                var justFilename = getFilenameFromPath(files[selectedIndex]);
                var filenameWidth = console.screen_columns - 23;
-               if (console.yesno("ncAdd h" +
+               if (console.yesno("\1n\1cAdd \1h" +
                                  justFilename.substr(0, filenameWidth) +
-                                 "nc to batch DL queue"))
+                                 "\1n\1c to batch DL queue"))
                {
                   // Create the temporary batch download directory and copy
                   // the selected file to it.  If that succeeded, then add
@@ -1429,12 +1533,12 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
                   {
                      // Add the file to the DL queue.  If failed, show an error.
                      console.gotoxy(1, console.screen_rows);
-                     console.clearline("n");
+                     console.clearline("\1n");
                      if (addFileToBatchQueue(DLFilename))
-                        console.print("ncFile added to batch DL queue.");
+                        console.print("\1n\1cFile added to batch DL queue.");
                      else
                      {
-                        console.print("nyhUnable to add to batch DL queue!");
+                        console.print("\1n\1y\1hUnable to add to batch DL queue!");
                         file_remove(DLFilename);
                      }
                      mswait(1500);
@@ -1443,8 +1547,8 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
                   {
                      // Couldn't copy the file to the temporary DL queue directory.
                      console.gotoxy(1, console.screen_rows);
-                     console.clearline("n");
-                     console.print("nyhUnable to copy to queue directory!");
+                     console.clearline("\1n");
+                     console.print("\1n\1y\1hUnable to copy to queue directory!");
                      mswait(1500);
                   }
                }
@@ -1461,13 +1565,13 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
          {
             // Go to the last line on the screen (for prompting/messages)
             console.gotoxy(1, console.screen_rows);
-            console.clearline("n");
+            console.clearline("\1n");
             // If the entry is a directory, then report an error.  Otherwise,
             // go to the bottom and confirm with the user if they really
             // want to download the file.
             if (file_isdir(files[selectedIndex]))
             {
-               console.print("nwhCan't download an entire directory.");
+               console.print("\1n\1w\1hCan't download an entire directory.");
                mswait(1500);
                // Re-draw the bottom help line
                console.gotoxy(1, console.screen_rows);
@@ -1476,9 +1580,9 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
             else
             {
                var filenameWidth = console.screen_columns - 24;
-               if (console.yesno("ncDownload h" +
+               if (console.yesno("\1n\1cDownload \1h" +
                                  getFilenameFromPath(files[selectedIndex]).substr(0, filenameWidth) +
-                                 "nc: Are you sure"))
+                                 "\1n\1c: Are you sure"))
                {
                   bbs.log_str(user.alias + " is downloading a file from an archive: " +
                               files[selectedIndex]);
@@ -1526,9 +1630,9 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
             else
             {
                console.gotoxy(1, console.screen_rows);
-               console.clearline("n");
-               var confirmText = "ncView h"
-                                + filename.substr(0, console.screen_columns-15) + "n"
+               console.clearline("\1n");
+               var confirmText = "\1n\1cView \1h"
+                                + filename.substr(0, console.screen_columns-15) + "\1n"
                viewIt = console.yesno(confirmText);
             }
             if (viewIt)
@@ -1605,8 +1709,8 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
             // be used for getting the rest of the message number.
             console.ungetstr(userInput);
             console.gotoxy(1, console.screen_rows);
-            console.clearline("n");
-            console.print("cFile #: h");
+            console.clearline("\1n");
+            console.print("\1cFile #: \1h");
             var retObj = doFileNumInput(files, pDir, listFiles_Lightbar);
             // doFileNumInput() fixes file path slashes for the chosen file,
             // so if the user chose a file, then update fileSlashesFixed
@@ -1621,7 +1725,7 @@ function listFiles_Lightbar(pDir, pArchiveFilename)
       }
    }
    else
-      console.print("ncCould not extract/view the file, or it is empty.\r\np");
+      console.print("\1n\1cCould not extract/view the file, or it is empty.\r\n\1p");
 
    return onePastLastFileRow;
 }
@@ -1632,12 +1736,12 @@ function displayBottomHelpLine_Lightbar()
    // Construct the help text variable only once (for speed).
    if (displayBottomHelpLine_Lightbar.bottomHelp == undefined)
    {
-      displayBottomHelpLine_Lightbar.bottomHelp = "n7r"
-            + UP_ARROW_DISPLAY + "b, r" + DOWN_ARROW_DISPLAY
-            + "b, rHOMEb, rENDb, rENTERb, rNm)bext, "
-            + "rPm)brev, rFm)birst, rLm)bast, "
-            + "rVm)biew, rDm)bL, rQm)buit, "
-            + "r#b, r?   ";
+      displayBottomHelpLine_Lightbar.bottomHelp = "\1n\1" + "7\1r"
+            + UP_ARROW_DISPLAY + "\1b, \1r" + DOWN_ARROW_DISPLAY
+            + "\1b, \1rHOME\1b, \1rEND\1b, \1rENTER\1b, \1rN\1m)\1bext, "
+            + "\1rP\1m)\1brev, \1rF\1m)\1birst, \1rL\1m)\1bast, "
+            + "\1rV\1m)\1biew, \1rD\1m)\1bL, \1rQ\1m)\1buit, "
+            + "\1r#\1b, \1r?   ";
    }
 
    // Go to the last row on the screen and display the help line
@@ -1653,7 +1757,7 @@ function drawTopAndBottom_Lightbar(pFilename)
 {
    // Clear the screen, display the help line at the bottom of the screen,
    // and output the file list headers.
-   console.clear("n");
+   console.clear("\1n");
    displayBottomHelpLine_Lightbar();
    console.gotoxy(1, 1);
    writeFileListHeader(pFilename);
@@ -1719,7 +1823,7 @@ function listFiles_ShowScreenful(pArray, pStartIndex, pStartLine, pEndLine, pHig
    // end of the "screen".
    if (clearToEOS && (screenLine < pEndLine))
    {
-      console.print("n");
+      console.print("\1n");
       const onePastLastLine = console.screen_rows;
       const clearWidth = console.screen_columns - 1;
       const formatStr = "%" + clearWidth + "s";
@@ -1752,7 +1856,7 @@ function writeFileInfo(pFilename, pHighlight, pFileNum)
    }
    if (writeFileInfo.formatStr == undefined)
    {
-      writeFileInfo.formatStr = "n" + gGenConfig.colors.fileNums + "%4d "
+      writeFileInfo.formatStr = "\1n" + gGenConfig.colors.fileNums + "%4d "
                   + gGenConfig.colors.fileSize + "%" + sizeWidth + "s "
                   + gGenConfig.colors.fileDate + "%-" + dateWidth + "s "
                   + gGenConfig.colors.fileTime + "%-" + timeWidth
@@ -1761,7 +1865,7 @@ function writeFileInfo(pFilename, pHighlight, pFileNum)
    }
    if (writeFileInfo.hiFormatStr == undefined)
    {
-      writeFileInfo.hiFormatStr = "n" + gGenConfig.colors.highlightedFile + "%4d %"
+      writeFileInfo.hiFormatStr = "\1n" + gGenConfig.colors.highlightedFile + "%4d %"
                   + sizeWidth + "s %-" + dateWidth + "s %-" + timeWidth + "s %-"
                   + writeFileInfo.filenameWidth + "s";
    }
@@ -1891,7 +1995,7 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 	return pString;
 }
 
-// Returns a filename's extension.  Always returns a string.
+// Returns a filename's extension in uppercase.  Always returns a string.
 //
 // Parameters:
 //  pFilename: The name of a file
@@ -1899,20 +2003,20 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 // Return value: The filename's extension, or blank if there is none.
 function getFilenameExtension(pFilename)
 {
-   const filenameUpper = pFilename.toUpperCase();
-   var filenameExt = "";
-   // Special case for .tar.gz - Report tar.gz as an extension
-   // rather than just gz
-   if (/.TAR.GZ$/.test(filenameUpper))
-      filenameExt = "TAR.GZ";
-   else
-   {
-      // Look for the last period in filenameUpper
-      var dotIndex = filenameUpper.lastIndexOf(".");
-      if (dotIndex > -1)
-         filenameExt = filenameUpper.substr(dotIndex+1);
-   }
-   return filenameExt;
+	const filenameUpper = pFilename.toUpperCase();
+	var filenameExt = "";
+	// Special case for .tar.gz - Report tar.gz as an extension
+	// rather than just gz
+	if (/.TAR.GZ$/.test(filenameUpper))
+		filenameExt = "TAR.GZ";
+	else
+	{
+		// Look for the last period in filenameUpper
+		var dotIndex = filenameUpper.lastIndexOf(".");
+		if (dotIndex > -1)
+			filenameExt = filenameUpper.substr(dotIndex+1);
+	}
+	return filenameExt;
 }
 
 // Unit test function for getFilenameExtension()
@@ -1920,19 +2024,19 @@ function test_getFilenameExtension()
 {
    console.crlf();
    if (getFilenameExtension("file.zip") != "ZIP")
-      console.print("nyhtest_getFilenameExtension(): Test 1 failed\r\n");
+      console.print("\1n\1y\1htest_getFilenameExtension(): Test 1 failed\r\n");
 
    if (getFilenameExtension("file.7z") != "7Z")
-      console.print("nyhtest_getFilenameExtension(): Test 2 failed\r\n");
+      console.print("\1n\1y\1htest_getFilenameExtension(): Test 2 failed\r\n");
 
    if (getFilenameExtension("file.tar.gz") != "TAR.GZ")
-      console.print("nyhtest_getFilenameExtension(): Test 3 failed\r\n");
+      console.print("\1n\1y\1htest_getFilenameExtension(): Test 3 failed\r\n");
 
    if (getFilenameExtension("file") != "")
-      console.print("nyhtest_getFilenameExtension(): Test 4 failed\r\n");
+      console.print("\1n\1y\1htest_getFilenameExtension(): Test 4 failed\r\n");
 
    if (getFilenameExtension("file.") != "")
-      console.print("nyhtest_getFilenameExtension(): Test 5 failed\r\n");
+      console.print("\1n\1y\1htest_getFilenameExtension(): Test 5 failed\r\n");
 }
 
 // This function returns just the filename from the end of a full path, regardless
@@ -2051,28 +2155,28 @@ function test_fixPathSlashes()
    if (/^WIN/.test(system.platform.toUpperCase()))
    {
       if (fixPathSlashes("file.zip") != "file.zip")
-         console.print("nyhtest_fixPathSlashes(): Test 1 failed\r\n");
+         console.print("\1n\1y\1htest_fixPathSlashes(): Test 1 failed\r\n");
    
       if (fixPathSlashes("D:\\path\\file.zip") != "D:\\path\\file.zip")
-         console.print("nyhtest_fixPathSlashes(): Test 2 failed\r\n");
+         console.print("\1n\1y\1htest_fixPathSlashes(): Test 2 failed\r\n");
 
       if (fixPathSlashes("D:/path/file.zip") != "D:\\path\\file.zip")
-         console.print("nyhtest_fixPathSlashes(): Test 3 failed\r\n");
+         console.print("\1n\1y\1htest_fixPathSlashes(): Test 3 failed\r\n");
 
       if (fixPathSlashes("D:/path\\file.zip") != "D:\\path\\file.zip")
-         console.print("nyhtest_fixPathSlashes(): Test 4 failed\r\n");
+         console.print("\1n\1y\1htest_fixPathSlashes(): Test 4 failed\r\n");
 
       if (fixPathSlashes("\\path\\file.zip") != "\\path\\file.zip")
-         console.print("nyhtest_fixPathSlashes(): Test 5 failed\r\n");
+         console.print("\1n\1y\1htest_fixPathSlashes(): Test 5 failed\r\n");
 
       if (fixPathSlashes("/path/file.zip") != "\\path\\file.zip")
-         console.print("nyhtest_fixPathSlashes(): Test 6 failed\r\n");
+         console.print("\1n\1y\1htest_fixPathSlashes(): Test 6 failed\r\n");
 
       if (fixPathSlashes("/path\\file.zip") != "\\path\\file.zip")
-         console.print("nyhtest_fixPathSlashes(): Test 6 failed\r\n");
+         console.print("\1n\1y\1htest_fixPathSlashes(): Test 6 failed\r\n");
 
       if (fixPathSlashes("\\path/file.zip") != "\\path\\file.zip")
-         console.print("nyhtest_fixPathSlashes(): Test 5 failed\r\n");
+         console.print("\1n\1y\1htest_fixPathSlashes(): Test 5 failed\r\n");
    }
    // *nix tests
    else
@@ -2125,7 +2229,7 @@ function showHelpScreen(pLightbarMode)
       var width = gDDArcViewerProgName.length + 2;
       showHelpScreen.progInfoHeader = new Array();
       // Upper & lower border lines
-      showHelpScreen.progInfoHeader[0] = "ch" + UPPER_LEFT_SINGLE;
+      showHelpScreen.progInfoHeader[0] = "\1c\1h" + UPPER_LEFT_SINGLE;
       showHelpScreen.progInfoHeader[2] = LOWER_LEFT_SINGLE;
       for (var i = 0; i < width; ++i)
       {
@@ -2135,28 +2239,28 @@ function showHelpScreen(pLightbarMode)
       showHelpScreen.progInfoHeader[0] += UPPER_RIGHT_SINGLE;
       showHelpScreen.progInfoHeader[2] += LOWER_RIGHT_SINGLE;
       // Middle section with the program name
-      showHelpScreen.progInfoHeader[1] = VERTICAL_SINGLE + "4yh "
-                                       + gDDArcViewerProgName + " nch" + VERTICAL_SINGLE;
+      showHelpScreen.progInfoHeader[1] = VERTICAL_SINGLE + "\1" + "4\1y\1h "
+                                       + gDDArcViewerProgName + " \1n\1c\1h" + VERTICAL_SINGLE;
       // Version & author information
-      showHelpScreen.progInfoHeader[3] = "ncVersion g" + gDDArcViewerVersion
-                                       + " wh(b" + gDDArcViewerVerDate + "w)";
-      showHelpScreen.progInfoHeader[4] = "ncby Eric Oulashin h(ncsysop of Digital Distortion BBSh)";
+      showHelpScreen.progInfoHeader[3] = "\1n\1cVersion \1g" + gDDArcViewerVersion
+                                       + " \1w\1h(\1b" + gDDArcViewerVerDate + "\1w)";
+      showHelpScreen.progInfoHeader[4] = "\1n\1cby Eric Oulashin \1h(\1n\1csysop of Digital Distortion BBS\1h)";
    }
 
    // Display the header lines
-   console.clear("n");
+   console.clear("\1n");
    for (var i = 0; i < showHelpScreen.progInfoHeader.length; ++i)
       console.center(showHelpScreen.progInfoHeader[i]);
 
    // Display the program help
    console.crlf();
-   console.print("nc" + gDDArcViewerProgName + " lets you list the files inside an archive.\r\n");
+   console.print("\1n\1c" + gDDArcViewerProgName + " lets you list the files inside an archive.\r\n");
    console.print("You can also view or download the files from the archive.");
    console.crlf();
    console.crlf();
    console.print("The following is a list of the command keys:\r\n");
-   console.print("kh컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\r\n");
-   var formatStr = "nch%5sg: nc%s\r\n";
+   console.print("\1k\1h컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\r\n");
+   var formatStr = "\1n\1c\1h%5s\1g: \1n\1c%s\r\n";
    if (pLightbarMode)
    {
       printf(formatStr, "HOME", "Go to the first file on the page");
@@ -2181,7 +2285,7 @@ function showHelpScreen(pLightbarMode)
    }
    printf(formatStr, "Q/ESC", "Quit");
    console.crlf();
-   console.print("ncYou can also choose a file to view/download by typing its number.");
+   console.print("\1n\1cYou can also choose a file to view/download by typing its number.");
    console.crlf();
    if (!gANSISupported)
       console.crlf();
@@ -2196,12 +2300,16 @@ function showHelpScreen(pLightbarMode)
 // arguments with spaces in them are a single argument.  This function
 // was written by Tracker1 of The Roughnecks BBS - He posted the code
 // in the DOVE-Net Synchronet Discussion sub-board on December 20, 2009.
-function fixArgs(input)
+function fixArgs(argv)
 {
-   var patt1 = /\"[^\"]*\"|\S+/g;
-   var patt2 = /^\"?([^\"]*)\"?$/;
-   return input.join(' ').match(patt1).map(function(item)
-   {
-     return item.replace(patt2, "$1")
-   });
+	// If there is only one element, then just return that back to the caller.
+	if (argv.length == 1)
+		return [ argv[0] ];
+
+	var patt1 = /\"[^\"]*\"|\S+/g;
+	var patt2 = /^\"?([^\"]*)\"?$/;
+	return argv.join(' ').match(patt1).map(function(item)
+	{
+		return item.replace(patt2, "$1")
+	});
 }

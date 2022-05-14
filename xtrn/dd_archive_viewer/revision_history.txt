@@ -2,6 +2,10 @@ Revision History for Digital Distortion Archive Viewer
 ======================================================
 Version  Date         Description
 -------  ----         -----------
+1.04     2022-05-14   Now makes use of Synchronet's built-in archiver to
+                      extract archives, if possible. If that fails, it will
+                      then try to extract with a configured extraction command,
+                      if available.
 1.03     2009-12-20   Updated DDArcViewer.js to be able to handle command-line
                       parameters with spaces in them as single parameters,
                       thanks to a function posted by Tracker1 of The Roughnecks

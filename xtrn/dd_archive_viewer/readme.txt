@@ -1,6 +1,6 @@
                     Digital Distortion Archive Viewer
-                              Version 1.03
-                        Release date: 2009-12-20
+                              Version 1.04
+                        Release date: 2022-05-14
 
                                   by
 
@@ -66,6 +66,12 @@ Multiple archive file formats and text file formats can be specified and
 configured via a configuration file.  This way, sysops can add more file
 formats and configure them as needed for their system.
 
+As of Synchronet version 3.19, Synchronet has built-in capability to extract
+(and compress) certain archive formats.  Digital Distortion Archive Viewer
+will first try to use Synchronet's built-in archiver, if possible; if that
+fails, Digital Distortion Archive Viewer will then try to use a configured
+extraction command, if there is one.
+
 Additionally, a separate configuration file specifies behavior options
 and colors for the script, including the interface to use (lightbar or
 traditional), input timeout, and colors for the file list.
@@ -83,14 +89,31 @@ Digital Distortion Archive Viewer comes with configurations to handle
 ZIP, 7Z (7-Zip), RAR, ARJ, TAR, GZ, TGZ, and TAR.GZ archives, and many
 text file formats.
 
+As of Synchronet version 3.19, Synchronet has a built-in archiver which is
+capable of extracting archives in the format zip, 7zip, gzipped-tar,
+bzipped-tar, rar, lha/lzh, iso, xar, and cab.  For the most up-to-date
+information about this, see the following web link:
+http://wiki.synchro.net/history:newfilebase#libarchive
+In case Synchronet's internal archiver is unable to extract a file (i.e., due
+to disallowed filenames inside the archive, etc.), Digital Distortion Archive
+viewer will then try to see if there is an extraction command configured for
+that archive type.  So it can still be good to add extraction commands for
+some of Synchronet's supported archive formats.
+
+As of Synchronet version 3.19, Synchronet has built-in capability to extract
+(and compress) certain archive formats.  Digital Distortion Archive Viewer
+will first try to use Synchronet's built-in archiver, if possible; if that
+fails, Digital Distortion Archive Viewer will then try to use a configured
+extraction command, if there is one.
+
 The file format configuration file included with this script includes
 VIEW and EXTRACT command lines for various archivers for both Windows
 and Linux.  In order for this script to work properly, you will need
 to make sure you have the appropriate archiver software installed on
-your system, and you will need to edit the DDArcViewerFileTypes.cfg
+your system, and you will need to edit the dd_arc_viewer_file_types.cfg
 file (using a text editor) and make sure you have the VIEW and
 EXTRACT command lines set properly for your archiver software.
-The included DDArcViewerFileTypes.cfg file has command lines for
+The included dd_arc_viewer_file_types.cfg file has command lines for
 Windows and Linux, and the Linux command lines are commented out.
 For information on that configuration file, see section 6: Archive
 file type configuration file.
@@ -100,17 +123,17 @@ archive file formats:
 http://digdist.bbsindex.com/miscFilesForDL/Win32CmdLineCompressionTools.zip
 The archivers included in that archive handle the most popular file formats
 (ZIP, 7Z (7-Zip), RAR, ARJ, TAR, GZ, TGZ, and TAR.GZ), and they are set up in
-DDArcViewerFileTypes.cfg.  If your BBS is running in Windows, the included
+dd_arc_viewer_file_types.cfg.  If your BBS is running in Windows, the included
 configuration file should work for you - But note that you will need to edit
-the DDArcViewerFileTypes.cfg file and change the paths to the .exe files
+the dd_arc_viewer_file_types.cfg file and change the paths to the .exe files
 according to where you copied them to your system.  If you are running Linux,
 that .cfg file also has the Linux command lines as comments).
 
 If you copy the archivers to a directory that is not in your system path, you
-will need to edit the DDArcViewerFileTypes.cfg file to include the full paths
+will need to edit the dd_arc_viewer_file_types.cfg file to include the full paths
 with the archive executables.
 
-The configuration file DDArcViewerFileTypes.cfg includes a setup
+The configuration file dd_arc_viewer_file_types.cfg includes a setup
 for using 7-Zip to extract ISO (CD/DVD image) files; however, in
 testing, it seemed that 7-Zip can only extract or see one file in
 an ISO image.
@@ -163,10 +186,10 @@ Step 1: Copy the script files, configuration files, & archivers to your system
 Digital Distortion Archive Viewer consists of the following 4 files, which
 you will need to place in your sbbs/exec directory (or another directory of
 your choice):
- 1. DDArcViewer.js
- 2. DDArcViewerCleanup.js
- 3. DDArcViewer.cfg
- 4. DDArcViewerFileTypes.cfg
+ 1. dd_arc_viewer.js
+ 2. dd_arc_viewer_cleanup.js
+ 3. dd_arc_viewer.cfg
+ 4. dd_arc_viewer_file_types.cfg
 These files must be all together in the same directory.
 
 
@@ -183,13 +206,13 @@ the appropriate archivers as described in the previous section.
 
 Step 2: Edit the configuration files
 ------------------------------------
-At a minimum, you will need to edit DDArcViewerFileTypes.cfg to make sure
+At a minimum, you will need to edit dd_arc_viewer_file_types.cfg to make sure
 that the archive command lines are correct for your system and that the text
 view commands are correct.  If you're running your BBS in Linux, you will
 first need to comment the Windows command lines and uncomment the Linux
 command lines.  See section 6: Archive file type configuration file.
 
-If desired, you can also edit DDArcViewer.cfg to change script options
+If desired, you can also edit dd_arc_viewer.cfg to change script options
 such as the interface type (lightbar/traditional) and colors.  See section
 5: Main configuration file.
 
@@ -207,17 +230,17 @@ INS, the line below (or above) will be copied and inserted as a new line.
 When editing a viewable file type, you will need to enter the file extension
 and the command line used to view it.  The file extension is fairly
 self-explanatory.  For the command line, use the following (this assumes
-DDArcViewer.js was copied to your sbbs\exec diretory):
-?DDArcViewer.js %s
-If you copied DDArcViewer.js and its other files to another directory, you
-will need to provide the path to DDArcViewer.js (i.e.,
-?/sbbs/ArcViewer/DDArcViewer.js %s).  As an example, your Viewable File Type
+dd_arc_viewer.js was copied to your sbbs\exec diretory):
+?dd_arc_viewer.js %s
+If you copied dd_arc_viewer.js and its other files to another directory, you
+will need to provide the path to dd_arc_viewer.js (i.e.,
+?/sbbs/ArcViewer/dd_arc_viewer.js %s).  As an example, your Viewable File Type
 window should look similar to the following:
        +[¦][?]--------------------------------------+
        ¦             Viewable File Type             ¦
        ¦--------------------------------------------¦
        ¦ ¦File Extension        ZIP                 ¦
-       ¦ ¦Command Line          ?DDArcViewer.js %f  ¦
+       ¦ ¦Command Line          ?dd_arc_viewer.js %f  ¦
        ¦ ¦Access Requirements                       ¦
        +--------------------------------------------+
 
@@ -233,7 +256,7 @@ interfere with the next user's use of the archive viewer.
 If you are not already using a logout script, follow these steps:
 1. Create a file in your sbbs\exec directory called logout.js
 2. Add this line to it (assuming that the archive viewer scripts are in sbbs\exec):
-load("DDArcViewerCleanup.js");
+load("dd_arc_viewer_cleanup.js");
 3. Add your logout script to Synchronet's configuration:
    A. Run Synchronet's configuration program (SCFG)
    B. From the main menu, choose "System".
@@ -245,7 +268,7 @@ load("DDArcViewerCleanup.js");
 
 If you already have a logout script (using JavaScript), you just need to add the
 following line to it:
-load("DDArcViewerCleanup.js");
+load("dd_arc_viewer_cleanup.js");
 
 
 Step 5: If you use a JavaScript command shell, update it
@@ -264,7 +287,7 @@ from triggering actions in your command shell.
 5. Main configuration file
 ==========================
 If you want to change the default beavior and colors, you can edit the
-DDArcViewer.cfg file, which is a plain text file.  The configuration file
+dd_arc_viewer.cfg file, which is a plain text file.  The configuration file
 has two sections: A behavior section (denoted by [BEHAVIOR]) and a colors
 section (denoted by [COLORS]).  For each setting or color, the syntax is as
 folows:
@@ -347,7 +370,7 @@ highlightedFile                      Selected files in lightbar mode
 
 6. Archive file type configuration file
 =======================================
-The configuration file DDArcViewerFileTypes.cfg defines the files that
+The configuration file dd_arc_viewer_file_types.cfg defines the files that
 you want to be viewable by the archive viewer.  Viewable file types are
 specified by their extension in square brackets.  Each archive file type
 must have a view command and an extract command.  Text files must have only
