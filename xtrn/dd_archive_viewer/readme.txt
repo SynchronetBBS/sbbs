@@ -371,11 +371,20 @@ highlightedFile                      Selected files in lightbar mode
 6. Archive file type configuration file
 =======================================
 The configuration file dd_arc_viewer_file_types.cfg defines the files that
-you want to be viewable by the archive viewer.  Viewable file types are
-specified by their extension in square brackets.  Each archive file type
-must have a view command and an extract command.  Text files must have only
-a view command and an IsText=Yes setting.  The general format for each file
-type is as follows:
+you want to be viewable by the archive viewer.
+
+Digital Distortion Archive Viewer also reads the extract and view commands
+for the various file types from the Synchronet configuration (in SCFG under
+File Options > Extractable Files and Viewable Files).  However, the commands
+in dd_arc_viewer_file_types.cfg take precedence over the ones in SCFG.  If
+you have a command for the same file type in both SCFG and
+dd_arc_viewer_file_types.cfg, the one in dd_arc_viewer_file_types.cfg will be
+used.
+
+In dd_arc_viewer_file_types.cfg, viewable/extractable file types are specified
+by their extension in square brackets.  Each archive file type must have a view
+command and an extract command.  Text files must have only a view command and
+an IsText=Yes setting.  The general format for each file type is as follows:
 
 [EXTENSION]
 VIEW=command

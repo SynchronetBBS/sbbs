@@ -74,8 +74,13 @@
  *                              Renamed fileToView to gFileToView.
  * 2022-04-12 Eric Oulashin     Started updating to use the new Archive class in
  *                              Synchronet 3.19.
- * 2022-05-13 Eric Oulashin     Version 1.04
- *                              Made a couple fixes and improvements. Releasing this verison.
+ * 2022-05-14 Eric Oulashin     Version 1.04
+ *                              Made a couple fixes and improvements.
+ *                              Updated to read the file viewable and extractable
+ *                              commands from the Synchronet configuration and use
+ *                              any of those that aren't in dd_arc_viewer_file_types.cfg.
+ *                              dd_arc_viewer_file_types.cfg takes precedence.
+ *                              Releasing this verison.
  */
 
 /* Command-line arguments:
@@ -102,8 +107,11 @@ exit(0);
 // in.  I've shortened the code a little.
 // Note: gStartupPath will include the trailing slash.
 var gStartupPath = '.';
-try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
-gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
+var gThisScriptFilename = "";
+try { throw dig.dist(dist); } catch(e) {
+	gStartupPath = backslash(e.fileName.replace(/[\/\\][^\/\\]*$/,''));
+	gThisScriptFilename = file_getname(e.fileName);
+}
 
 // We need the deltree() and withoutTrailingSlash() functions
 // from the cleanup script.
@@ -112,7 +120,7 @@ load(gStartupPath + "dd_arc_viewer_cleanup.js");
 
 // Version information
 var gDDArcViewerVersion = "1.04";
-var gDDArcViewerVerDate = "2022-05-13";
+var gDDArcViewerVerDate = "2022-05-14";
 var gDDArcViewerProgName = "Digital Distortion Archive Viewer";
 
 
@@ -403,6 +411,27 @@ function ReadConfig(pCfgFilePath)
 
 		fileTypeCfgFile.close();
 	}
+	// Read the extractable and viewable file configuration from the Synchronet
+	// configuration and add any that we haven't seen in dd_arc_viewer_file_types.cfg
+	var SCFGFileCmds = getFileExtractAndViewCmdsFromSCFG();
+	for (var SCFGFilenameExt in SCFGFileCmds)
+	{
+		if (!gViewableFileTypes.hasOwnProperty(SCFGFilenameExt))
+		{
+			var viewableFile = new ViewableFile();
+			viewableFile.extension = SCFGFilenameExt;
+			if (SCFGFileCmds[SCFGFilenameExt].hasOwnProperty("extractCmd"))
+				viewableFile.extractCmd = SCFGFileCmds[SCFGFilenameExt].extractCmd;
+			if (SCFGFileCmds[SCFGFilenameExt].hasOwnProperty("viewCmd"))
+			{
+				// Only use the view command if it doesn't run this script
+				var viewCmdUpper = SCFGFileCmds[SCFGFilenameExt].viewCmd.toUpperCase();
+				if (viewCmdUpper.indexOf(gThisScriptFilename.toUpperCase()) < 0)
+					viewableFile.viewCmd = SCFGFileCmds[SCFGFilenameExt].viewCmd;
+			}
+			gViewableFileTypes[filenameExt] = viewableFile;
+		}
+	}
 
 	// Read the general program configuration
 	var genSettingsRead = false;
@@ -533,6 +562,49 @@ function sizeStrToBytes(pSizeStr)
 		numBytes = 0;
 	numBytes = Math.floor(numBytes);
 	return numBytes;
+}
+// Returns an object of filename extensions and their extract and commands
+// (if any) as configured in SCFG > File Options > Extractable Files.
+//
+// Return value: An object where the properties are filename extensions and
+//               the values are objects containing the following properties,
+//               if configured (either of these might not exist):
+//               extractCmd: The configured extract command for the file type
+//               viewCmd: The configured view command for the file type
+function getFileExtractAndViewCmdsFromSCFG()
+{
+	var fileCmds = {};
+
+	// See exportcfg.js for an example of using cnflib.js
+	var cnflib = load({}, "cnflib.js");
+	var file_cnf = cnflib.read("file.cnf");
+	if (typeof(file_cnf) === "object")
+	{
+		// File extract commands
+		for (var i = 0; i < file_cnf.fextr.length; ++i)
+		{
+			// If the current user has access to the command, then add it.
+			if (bbs.compare_ars(file_cnf.fextr[i].ars))
+			{
+				var filenameExt = file_cnf.fextr[i].extension.toUpperCase();
+				if (!fileCmds.hasOwnProperty(filenameExt)) fileCmds[filenameExt] = {};
+				fileCmds[filenameExt].extractCmd = file_cnf.fextr[i].cmd;
+			}
+		}
+		// File view commands
+		for (var i = 0; i < file_cnf.fview.length; ++i)
+		{
+			// If the current user has access to the command, then add it.
+			if (bbs.compare_ars(file_cnf.fview[i].ars))
+			{
+				var filenameExt = file_cnf.fview[i].extension.toUpperCase();
+				if (!fileCmds.hasOwnProperty(filenameExt)) fileCmds[filenameExt] = {};
+				fileCmds[filenameExt].viewCmd = file_cnf.fview[i].cmd;
+			}
+		}
+	}
+
+	return fileCmds;
 }
 
 
