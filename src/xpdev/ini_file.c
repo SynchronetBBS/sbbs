@@ -719,7 +719,13 @@ char* iniSetIpAddress(str_list_t* list, const char* section, const char* key, ui
 	char buf[128];
 	struct in_addr in_addr;
 	in_addr.s_addr=htonl(value);
-	return iniSetString(list, section, key, inet_ntop(AF_INET, &in_addr, buf, sizeof(buf)), style);
+	return iniSetString(list, section, key,
+#ifdef __BORLANDC__
+		inet_ntoa(in_addr), // deprecated function call
+#else
+		inet_ntop(AF_INET, &in_addr, buf, sizeof(buf)),
+#endif
+		style);
 }
 
 char* iniSetIp6Address(str_list_t* list, const char* section, const char* key, struct in6_addr value
@@ -1633,11 +1639,16 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 
 static uint32_t parseIpAddress(const char* value)
 {
+	uint32_t result = 0;
+
 	if(strchr(value,'.')==NULL)
 		return(strtol(value,NULL,0));
 
-	uint32_t result = 0;
+#ifdef __BORLANDC__
+	result = inet_addr(value); // deprecated function call
+#else
 	inet_pton(AF_INET, value, &result);
+#endif
 	return ntohl(result);
 }
 
