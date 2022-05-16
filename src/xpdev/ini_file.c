@@ -713,12 +713,13 @@ char* iniSetDuration(str_list_t* list, const char* section, const char* key
 
 
 #if !defined(NO_SOCKET_SUPPORT)
-char* iniSetIpAddress(str_list_t* list, const char* section, const char* key, ulong value
+char* iniSetIpAddress(str_list_t* list, const char* section, const char* key, uint32_t value
 					,ini_style_t* style)
 {
+	char buf[128];
 	struct in_addr in_addr;
 	in_addr.s_addr=htonl(value);
-	return iniSetString(list, section, key, inet_ntoa(in_addr), style);
+	return iniSetString(list, section, key, inet_ntop(AF_INET, &in_addr, buf, sizeof(buf)), style);
 }
 
 char* iniSetIp6Address(str_list_t* list, const char* section, const char* key, struct in6_addr value
@@ -1630,12 +1631,14 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 	return(0);
 }
 
-static ulong parseIpAddress(const char* value)
+static uint32_t parseIpAddress(const char* value)
 {
 	if(strchr(value,'.')==NULL)
 		return(strtol(value,NULL,0));
 
-	return(ntohl(inet_addr(value)));
+	uint32_t result = 0;
+	inet_pton(AF_INET, value, &result);
+	return ntohl(result);
 }
 
 static struct in6_addr parseIp6Address(const char* value)
@@ -1661,7 +1664,7 @@ static struct in6_addr parseIp6Address(const char* value)
 	return ret;
 }
 
-ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
+uint32_t iniReadIpAddress(FILE* fp, const char* section, const char* key, uint32_t deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
@@ -1689,7 +1692,7 @@ struct in6_addr iniReadIp6Address(FILE* fp, const char* section, const char* key
 	return(parseIp6Address(value));
 }
 
-ulong iniGetIpAddress(str_list_t list, const char* section, const char* key, ulong deflt)
+uint32_t iniGetIpAddress(str_list_t list, const char* section, const char* key, uint32_t deflt)
 {
 	char*	vp=NULL;
 
