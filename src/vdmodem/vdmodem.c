@@ -29,9 +29,11 @@
 #include <process.h>
 
 #include "genwrap.h"
+#include "dirwrap.h"
 #include "gen_defs.h"
 #include "sockwrap.h"
 #include "telnet.h"
+#include "ini_file.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
 #define VERSION "0.0"
@@ -43,11 +45,14 @@ HANDLE hungup_event = INVALID_HANDLE_VALUE;	// e.g. ATH0
 HANDLE carrier_event = INVALID_HANDLE_VALUE;
 HANDLE rdslot = INVALID_HANDLE_VALUE;
 HANDLE wrslot = INVALID_HANDLE_VALUE;
+str_list_t ini;
+char ini_fname[MAX_PATH + 1];
 union xp_sockaddr listening_interface;
 enum {
 	 RAW
 	,TELNET
 } mode;
+char* modeNames[] = {"raw", "telnet", NULL};
 struct {
 	uint8_t	local_option[0x100];
 	uint8_t	remote_option[0x100];
@@ -65,12 +70,14 @@ struct {
 	bool debug;
 	bool terminate_on_disconnect;
 	ulong data_rate;
+	bool server_echo;
 	enum {
 		 ADDRESS_FAMILY_UNSPEC
 		,ADDRESS_FAMILY_INET
 		,ADDRESS_FAMILY_INET6
 	} address_family;
 } cfg;
+char* addrFamilyNames[] = {"unspec", "ipv4", "ipv6", NULL};
 
 static void dprintf(const char *fmt, ...)
 {
@@ -93,6 +100,7 @@ void usage(void)
 
 const char* supported_cmds = "ADEHIMOQSVXZ&";
 const char* string_cmds = "D";
+#define MAX_SAVES 20
 struct modem {
 	enum {
 		 INIT
@@ -103,6 +111,8 @@ struct modem {
 	char lf;
 	char bs;
 	char esc;
+	char save[MAX_SAVES][INI_MAX_VALUE_LEN];
+	char last[INI_MAX_VALUE_LEN];
 	bool echo_off;
 	bool numeric_mode;
 	bool offhook;
@@ -123,18 +133,6 @@ void newcmd(struct modem* modem)
 {
 	modem->cmdstate = INIT;
 	modem->buflen = 0;
-}
-
-void init(struct modem* modem)
-{
-	memset(modem, 0, sizeof(*modem));
-	modem->cr = '\r';
-	modem->lf = '\n';
-	modem->bs = '\b';
-	modem->esc = '+';
-	modem->ext_results = 4;
-	modem->dial_wait = 60;
-	modem->guard_time = 50;
 }
 
 ulong guard_time(struct modem* modem)
@@ -249,6 +247,58 @@ bool kbhit()
 		))
 		return false;
 	return waiting != 0;
+}
+
+void init(struct modem* modem)
+{
+	const char* section = "modem";
+	memset(modem, 0, sizeof(*modem));
+	modem->auto_answer = iniGetBool(ini, section, "auto_answer", FALSE);
+	modem->echo_off = !iniGetBool(ini, section, "echo", TRUE);
+	modem->quiet = iniGetBool(ini, section, "quiet", FALSE);
+	modem->numeric_mode = iniGetBool(ini, section, "numeric", FALSE);
+	modem->cr = (char)iniGetInteger(ini, section, "cr", '\r');
+	modem->lf = (char)iniGetInteger(ini, section, "lf", '\n');
+	modem->bs = (char)iniGetInteger(ini, section, "bs", '\b');
+	modem->esc = (char)iniGetInteger(ini, section, "esc", '+');
+	modem->ext_results = iniGetInteger(ini, section, "ext_results", 4);
+	modem->dial_wait = iniGetInteger(ini, section, "dial_wait", 60);
+	modem->guard_time = iniGetInteger(ini, section, "guard_time", 50);
+}
+
+bool write_cfg(struct modem* modem)
+{
+	dprintf(__FUNCTION__);
+	const char* section = "modem";
+	iniSetBool(&ini, section, "auto_answer", modem->auto_answer, /* style: */NULL);
+	bool result = false;
+	FILE* fp = iniOpenFile(ini_fname, /* create: */TRUE);
+	if(fp != NULL) {
+		if(iniWriteFile(fp, ini)) {
+			dprintf("Wrote config to: %s", ini_fname);
+			result = true;
+		}
+		iniCloseFile(fp);
+	}
+	return result;
+}
+
+bool write_save(struct modem* modem, ulong savnum)
+{
+	char key[128];
+	str_list_t ini;
+
+	if(savnum >= MAX_SAVES)
+		return false;
+	SAFEPRINTF(key, "save%lu", savnum);
+	FILE* fp = iniOpenFile(ini_fname, /* create: */TRUE);
+	if(fp == NULL)
+		return false;
+	ini = iniReadFile(fp);
+	iniSetString(&ini, "modem", key, modem->save[savnum], /* style: */NULL);
+	bool result = iniWriteFile(fp, ini);
+	iniCloseFile(fp);
+	return result;
 }
 
 const char* protocol(enum mode mode)
@@ -431,16 +481,22 @@ char* dial(struct modem* modem, const char* number)
 {
 	struct addrinfo	hints;
 	struct addrinfo	*res=NULL;
-	static char last[256];
 	char host[128];
 	char portnum[16];
 	uint16_t port = cfg.port;
 
 	dprintf("dial(%s)", number);
 	if(stricmp(number, "L") == 0)
-		number = last;
-	else
-		SAFECOPY(last, number);
+		number = modem->last;
+	else {
+		if(toupper(*number) == 'S' && IS_DIGIT(number[1])) {
+			char* p;
+			ulong val = strtoul(number+1, &p, 10);
+			if(val < MAX_SAVES && *p == '\0')
+				number = modem->save[val];
+		}
+		SAFECOPY(modem->last, number);
+	}
 	if(strncmp(number, "raw:", 4) == 0) {
 		mode = RAW;
 		number += 4;
@@ -570,8 +626,10 @@ char* answer(struct modem* modem)
 
 	if(mode == TELNET) {
 		ZERO_VAR(telnet);
-		/* Disable Telnet Terminal Echo */
-		request_telnet_opt(TELNET_WILL,TELNET_ECHO);
+		if(cfg.server_echo) {
+			/* Disable Telnet Terminal Echo */
+			request_telnet_opt(TELNET_WILL,TELNET_ECHO);
+		}
 		/* Will suppress Go Ahead */
 		request_telnet_opt(TELNET_WILL,TELNET_SUP_GA);
 	}
@@ -590,9 +648,31 @@ char* atmodem_exec(struct modem* modem)
 			return error(modem);
 		if(strchr(string_cmds, ch) == NULL) {
 			if(ch == '&') {
-				p++;
-				ch = toupper(*p); // unused
-				ulong val = strtoul(p, &p, 10); // unused
+				ch = toupper(*p);
+				ulong val = strtoul(p + 1, &p, 10); // unused
+				switch(ch) {
+					case 'W':
+						resp = write_cfg(modem) ? ok(modem) : error(modem);
+						break;
+					case 'Z':
+						if(val >= MAX_SAVES)
+							return error(modem);
+						if(*p == '=') {
+							p++;
+							if(strcmp(p, "L") == 0)
+								p = modem->last;
+							SAFECOPY(modem->save[val], p);
+							return write_save(modem, val) ? ok(modem) : error(modem);
+						}
+						if(*p == '?' || strcmp(p, "L?") == 0) {
+							if(strcmp(p, "L?") == 0)
+								p = modem->last;
+							else
+								p = modem->save[val];
+							sprintf(respbuf, "%c%s%c%c%s", modem->lf, p, modem->cr, modem->lf, ok(modem));
+							return respbuf;
+						}
+				}
 				continue;
 			}
 			// Numeric argument commands
@@ -636,8 +716,10 @@ char* atmodem_exec(struct modem* modem)
 						dprintf("S%lu = %lu", sreg, val);
 						switch(sreg) {
 							case 0:
-								if(val && listening_sock == INVALID_SOCKET)
+								if(val && listening_sock == INVALID_SOCKET) {
+									dprintf("Can't enable auto-answer when not in listening mode");
 									return error(modem);
+								}
 								modem->auto_answer = val;
 								break;
 							case 1:
@@ -707,8 +789,10 @@ char* atmodem_exec(struct modem* modem)
 		} else { // string argument commands
 			switch(ch) {
 				case 'D':
-					if(sock != INVALID_SOCKET)
+					if(sock != INVALID_SOCKET) {
+						dprintf("Can't dial: Already connected");
 						return error(modem);
+					}
 					if(*p == 'T' /* tone */|| *p == 'P' /* pulse */)
 						p++;
 					return dial(modem, p);
@@ -837,7 +921,31 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	// Default configuration values
+	cfg.server_echo = TRUE;
 	cfg.port = IPPORT_TELNET;
+	cfg.address_family = ADDRESS_FAMILY_INET;
+
+	ini = strListInit();
+	SAFECOPY(ini_fname, argv[0]);
+	char* ext = getfext(ini_fname);
+	if(ext != NULL)
+		*ext = 0;
+	SAFECAT(ini_fname, ".ini");
+	fprintf(stderr, "ini_fname = '%s'\n", ini_fname);
+	FILE* fp = iniOpenFile(ini_fname, /* create: */false);
+	if(fp != NULL) {
+		ini = iniReadFile(fp);
+		iniCloseFile(fp);
+		mode = iniGetEnum(ini, ROOT_SECTION, "mode", modeNames, mode);
+		cfg.port = iniGetShortInt(ini, ROOT_SECTION, "port", cfg.port);
+		cfg.node_num = iniGetInteger(ini, ROOT_SECTION, "node", cfg.node_num);
+		cfg.listen = iniGetBool(ini, ROOT_SECTION, "listen", cfg.listen);
+		cfg.debug = iniGetBool(ini, ROOT_SECTION, "debug", cfg.debug);
+		cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "server_echo", cfg.server_echo);
+		cfg.data_rate = iniGetLongInt(ini, ROOT_SECTION, "rate", cfg.data_rate);
+		cfg.address_family = iniGetEnum(ini, ROOT_SECTION, "address_family", addrFamilyNames, cfg.address_family);
+	}
 
 	for(; argn < argc; argn++) {
 		char* arg = argv[argn];
@@ -931,7 +1039,7 @@ int main(int argc, char** argv)
 	}
 
 	const char* dropfile = "dosxtrn.env";
-	FILE* fp = fopen(dropfile, "w");
+	fp = fopen(dropfile, "w");
 	if(fp == NULL) {
 		perror(dropfile);
 		return EXIT_FAILURE;
