@@ -20,6 +20,9 @@
  * 2022-03-18 Eric Oulashin   Version 1.23
  *                            For directory collapsing, if there's only one subdirectory,
  *                            then it won't be collapsed.
+ * 2022-05-17 Eric Oulashin   Version 1.24
+ *                            Fixes for searching and search error reporting (probably
+ *                            due to mistaken copy & paste in an earlier commit)
  */
 
 /* Command-line arguments:
@@ -57,8 +60,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.23";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-03-18";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.24";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-05-17";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1233,7 +1236,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 			}
 			else
 			{
-				this.WriteLightbarKeyHelpErrorMsg("There is no previous search", REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE);
+				this.WriteLightbarKeyHelpErrorMsg("There is no previous search", true);
 				drawMenu = false;
 				this.WriteKeyHelpLine();
 			}
@@ -2664,8 +2667,8 @@ function findFileLibIdxFromText(pSearchText, pStartItemIdx)
 	var searchTextUpper = pSearchText.toUpperCase();
 	for (var i = startIdx; i < file_area.lib_list.length; ++i)
 	{
-		if ((file_area.lib_list.length[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-		    (file_area.lib_list.length[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+		if ((file_area.lib_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
+		    (file_area.lib_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
 		{
 			libIdx = i;
 			break;

@@ -26,6 +26,9 @@
  *                            Also fixed an issue: Using Q to quit out of the 2nd level
  *                            (sub-board/sub-group) for lightbar mode no longer quits
  *                            out of the chooser altogether.
+ * 2022-05-17 Eric Oulashin   Version 1.24
+ *                            Fix for search error reporting (probably due to
+ *                            mistaken copy & paste in an earlier commit)
  *                                  
 */
 
@@ -68,8 +71,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.23";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-03-18";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.24";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-05-17";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -728,7 +731,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			}
 			else
 			{
-				this.WriteLightbarKeyHelpErrorMsg("There is no previous search", REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE);
+				this.WriteLightbarKeyHelpErrorMsg("There is no previous search", true);
 				drawMenu = false;
 				this.WriteKeyHelpLine();
 			}
