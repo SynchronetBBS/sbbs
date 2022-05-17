@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.24     2022-05-17   Fix for searching & error reporting (probably due to a
+                      mistaken copy & paste in a past commit)
 1.23     2022-03-18   For message sub-board/file directory collapsing, if there
                       is only one sub-group/sub-library, then it won't be
                       collapsed, as that wouldn't be very useful.
