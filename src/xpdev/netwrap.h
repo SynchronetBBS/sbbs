@@ -26,6 +26,10 @@
 #include "str_list.h"	/* string list functions and types */
 #include "wrapdll.h"
 
+#if defined(_WIN32)
+	#include <ws2tcpip.h>	// struct in6_addr
+#endif
+
 #define IPv4_LOCALHOST	0x7f000001U	/* 127.0.0.1 */
 
 #if defined(__cplusplus)
