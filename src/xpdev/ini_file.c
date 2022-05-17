@@ -27,6 +27,7 @@
 #include "datewrap.h"	/* ctime_r */
 #include "dirwrap.h"	/* fexist */
 #include "filewrap.h"	/* chsize */
+#include "netwrap.h"
 
 /* Maximum length of entire line, includes '\0' */
 #define INI_MAX_LINE_LEN		(INI_MAX_VALUE_LEN*2)
@@ -713,12 +714,13 @@ char* iniSetDuration(str_list_t* list, const char* section, const char* key
 
 
 #if !defined(NO_SOCKET_SUPPORT)
-char* iniSetIpAddress(str_list_t* list, const char* section, const char* key, ulong value
+char* iniSetIpAddress(str_list_t* list, const char* section, const char* key, uint32_t value
 					,ini_style_t* style)
 {
-	struct in_addr in_addr;
-	in_addr.s_addr=htonl(value);
-	return iniSetString(list, section, key, inet_ntoa(in_addr), style);
+	char buf[128];
+	return iniSetString(list, section, key,
+		IPv4AddressToStr(value, buf, sizeof(buf)),
+		style);
 }
 
 char* iniSetIp6Address(str_list_t* list, const char* section, const char* key, struct in6_addr value
@@ -1630,38 +1632,7 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 	return(0);
 }
 
-static ulong parseIpAddress(const char* value)
-{
-	if(strchr(value,'.')==NULL)
-		return(strtol(value,NULL,0));
-
-	return(ntohl(inet_addr(value)));
-}
-
-static struct in6_addr parseIp6Address(const char* value)
-{
-	struct addrinfo hints = {0};
-	struct addrinfo *res, *cur;
-	struct in6_addr ret = {{{0}}};
-
-	hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
-	if(getaddrinfo(value, NULL, &hints, &res))
-		return ret;
-
-	for(cur = res; cur; cur++) {
-		if(cur->ai_addr->sa_family == AF_INET6)
-			break;
-	}
-	if(!cur) {
-		freeaddrinfo(res);
-		return ret;
-	}
-	memcpy(&ret, &((struct sockaddr_in6 *)(cur->ai_addr))->sin6_addr, sizeof(ret));
-	freeaddrinfo(res);
-	return ret;
-}
-
-ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
+uint32_t iniReadIpAddress(FILE* fp, const char* section, const char* key, uint32_t deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
@@ -1672,7 +1643,7 @@ ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong def
 	if(*value==0)		/* blank value */
 		return(deflt);
 
-	return(parseIpAddress(value));
+	return parseIPv4Address(value);
 }
 
 struct in6_addr iniReadIp6Address(FILE* fp, const char* section, const char* key, struct in6_addr deflt)
@@ -1686,10 +1657,10 @@ struct in6_addr iniReadIp6Address(FILE* fp, const char* section, const char* key
 	if(*value==0)		/* blank value */
 		return(deflt);
 
-	return(parseIp6Address(value));
+	return parseIPv6Address(value);
 }
 
-ulong iniGetIpAddress(str_list_t list, const char* section, const char* key, ulong deflt)
+uint32_t iniGetIpAddress(str_list_t list, const char* section, const char* key, uint32_t deflt)
 {
 	char*	vp=NULL;
 
@@ -1698,7 +1669,7 @@ ulong iniGetIpAddress(str_list_t list, const char* section, const char* key, ulo
 	if(vp==NULL || *vp==0)		/* blank value or missing key */
 		return(deflt);
 
-	return(parseIpAddress(vp));
+	return parseIPv4Address(vp);
 }
 
 struct in6_addr iniGetIp6Address(str_list_t list, const char* section, const char* key, struct in6_addr deflt)
@@ -1710,7 +1681,7 @@ struct in6_addr iniGetIp6Address(str_list_t list, const char* section, const cha
 	if(vp==NULL || *vp==0)		/* blank value or missing key */
 		return(deflt);
 
-	return(parseIp6Address(vp));
+	return parseIPv6Address(vp);
 }
 
 #endif	/* !NO_SOCKET_SUPPORT */

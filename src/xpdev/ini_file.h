@@ -193,11 +193,11 @@ DLLEXPORT str_list_t 	iniGetSection(str_list_t, const char *section);
 #define		iniGetLogLevel(l,s,k,d) iniGetEnum(l,s,k,iniLogLevelStringList(),d)
 
 #if !defined(NO_SOCKET_SUPPORT)
-DLLEXPORT ulong 		iniReadIpAddress(FILE*, const char* section, const char* key
-							,ulong deflt);
-DLLEXPORT ulong 		iniGetIpAddress(str_list_t, const char* section, const char* key
-							,ulong deflt);
-DLLEXPORT char* 		iniSetIpAddress(str_list_t*, const char* section, const char* key, ulong value
+DLLEXPORT uint32_t 		iniReadIpAddress(FILE*, const char* section, const char* key
+							,uint32_t deflt);
+DLLEXPORT uint32_t 		iniGetIpAddress(str_list_t, const char* section, const char* key
+							,uint32_t deflt);
+DLLEXPORT char* 		iniSetIpAddress(str_list_t*, const char* section, const char* key, uint32_t value
 							,ini_style_t*);
 DLLEXPORT struct in6_addr
 						iniReadIp6Address(FILE*, const char* section, const char* key
