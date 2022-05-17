@@ -1,8 +1,4 @@
-/* netwrap.c */
-
 /* Network related wrapper functions */
-
-/* $Id: netwrap.c,v 1.8 2019/07/24 04:21:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -107,7 +91,7 @@ const char* getHostNameByAddr(const char* str)
 #endif
 	if(str==NULL)
 		return NULL;
-	if((ip=inet_addr(str)) == INADDR_NONE)
+	if((ip=parseIPv4Address(str)) == INADDR_NONE)
 		return str;
 	if((h=gethostbyaddr((char *)&ip,sizeof(ip),AF_INET))==NULL)
 		return NULL;
@@ -123,6 +107,63 @@ const char* getHostNameByAddr(const char* str)
 void freeNameServerList(str_list_t list)
 {
 	strListFree(&list);
+}
+
+// If the input is invalid, INADDR_NONE (usually -1) is returned
+uint32_t parseIPv4Address(const char* value)
+{
+	uint32_t result = 0;
+
+	if(strchr(value,'.') == NULL)
+		return strtol(value, NULL, 10);
+
+#if defined(__BORLANDC__) || defined(__MINGW32__)
+	result = inet_addr(value); // deprecated function call
+#else
+	if(inet_pton(AF_INET, value, &result) != 1)
+		result = INADDR_NONE;
+#endif
+	return ntohl(result);
+}
+
+struct in6_addr parseIPv6Address(const char* value)
+{
+	struct addrinfo hints = {0};
+	struct addrinfo *res, *cur;
+	struct in6_addr ret = {{{0}}};
+
+	hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
+	if(getaddrinfo(value, NULL, &hints, &res))
+		return ret;
+
+	for(cur = res; cur; cur++) {
+		if(cur->ai_addr->sa_family == AF_INET6)
+			break;
+	}
+	if(!cur) {
+		freeaddrinfo(res);
+		return ret;
+	}
+	memcpy(&ret, &((struct sockaddr_in6 *)(cur->ai_addr))->sin6_addr, sizeof(ret));
+	freeaddrinfo(res);
+	return ret;
+}
+
+const char* IPv4AddressToStr(uint32_t addr, char* dest, size_t size)
+{
+	const char* result;
+	struct in_addr in_addr;
+	in_addr.s_addr = htonl(addr);
+#if defined(__BORLANDC__) || defined(__MINGW32__)
+	result = inet_ntoa(in_addr); // deprecated function call
+	if(result == NULL)
+		return NULL;
+	strncpy(dest, result, size);
+	result = dest;
+#else
+	result = inet_ntop(AF_INET, &in_addr, dest, size);
+#endif
+	return result;
 }
 
 #if NETWRAP_TEST
