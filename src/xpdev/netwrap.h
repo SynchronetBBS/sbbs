@@ -35,6 +35,9 @@ extern "C" {
 DLLEXPORT const char* 	getHostNameByAddr(const char*);
 DLLEXPORT str_list_t	getNameServerList(void);
 DLLEXPORT void			freeNameServerList(str_list_t);
+DLLEXPORT const char*	IPv4AddressToStr(uint32_t, char* dest, size_t size);
+DLLEXPORT uint32_t		parseIPv4Address(const char*);
+DLLEXPORT struct in6_addr parseIPv6Address(const char*);
 
 #if defined(__cplusplus)
 }
