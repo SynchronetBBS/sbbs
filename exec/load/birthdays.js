@@ -16,7 +16,7 @@ load("sbbsdefs.js");
 function birthdays(month, day)
 {
 	var u = new User;
-	var lastuser = system.stats.total_users;
+	var lastuser = system.lastuser;
 	var list = [];
 	month = parseInt(month, 10) + 1;
 	for(u.number = 1; u.number <= lastuser; u.number++) {
