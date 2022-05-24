@@ -249,28 +249,51 @@ bool kbhit()
 	return waiting != 0;
 }
 
+const char* iniKeyAutoAnswer = "AutoAnswer";
+const char* iniKeyEcho = "Echo";
+const char* iniKeyQuiet = "Quiet";
+const char* iniKeyNumeric = "Numeric";
+const char* iniKeyCR = "CR";
+const char* iniKeyLF = "LF";
+const char* iniKeyBS = "BS";
+const char* iniKeyESC = "ESC";
+const char* iniKeyExtResults = "ExtResults";
+const char* iniKeyDialWait = "DialWait";
+const char* iniKeyGuardTime = "GuardTime";
+
 void init(struct modem* modem)
 {
 	const char* section = "modem";
 	memset(modem, 0, sizeof(*modem));
-	modem->auto_answer = iniGetBool(ini, section, "auto_answer", FALSE);
-	modem->echo_off = !iniGetBool(ini, section, "echo", TRUE);
-	modem->quiet = iniGetBool(ini, section, "quiet", FALSE);
-	modem->numeric_mode = iniGetBool(ini, section, "numeric", FALSE);
-	modem->cr = (char)iniGetInteger(ini, section, "cr", '\r');
-	modem->lf = (char)iniGetInteger(ini, section, "lf", '\n');
-	modem->bs = (char)iniGetInteger(ini, section, "bs", '\b');
-	modem->esc = (char)iniGetInteger(ini, section, "esc", '+');
-	modem->ext_results = iniGetInteger(ini, section, "ext_results", 4);
-	modem->dial_wait = iniGetInteger(ini, section, "dial_wait", 60);
-	modem->guard_time = iniGetInteger(ini, section, "guard_time", 50);
+	modem->auto_answer = iniGetBool(ini, section, iniKeyAutoAnswer, FALSE);
+	modem->echo_off = !iniGetBool(ini, section, iniKeyEcho, TRUE);
+	modem->quiet = iniGetBool(ini, section, iniKeyQuiet, FALSE);
+	modem->numeric_mode = iniGetBool(ini, section, iniKeyNumeric, FALSE);
+	modem->cr = (char)iniGetInteger(ini, section,  iniKeyCR, '\r');
+	modem->lf = (char)iniGetInteger(ini, section, iniKeyLF, '\n');
+	modem->bs = (char)iniGetInteger(ini, section, iniKeyBS, '\b');
+	modem->esc = (char)iniGetInteger(ini, section, iniKeyESC, '+');
+	modem->ext_results = iniGetInteger(ini, section, iniKeyExtResults, 4);
+	modem->dial_wait = iniGetInteger(ini, section, iniKeyDialWait, 60);
+	modem->guard_time = iniGetInteger(ini, section, iniKeyGuardTime, 50);
 }
 
 bool write_cfg(struct modem* modem)
 {
 	dprintf(__FUNCTION__);
+	ini_style_t* style = NULL;
 	const char* section = "modem";
-	iniSetBool(&ini, section, "auto_answer", modem->auto_answer, /* style: */NULL);
+	iniSetBool(&ini, section, iniKeyAutoAnswer, modem->auto_answer, style);
+	iniSetBool(&ini, section, iniKeyEcho, !modem->echo_off, style);
+	iniSetBool(&ini, section, iniKeyQuiet, modem->quiet, style);
+	iniSetBool(&ini, section, iniKeyNumeric, modem->numeric_mode, style);
+	iniSetInteger(&ini, section, iniKeyCR, modem->cr, style);
+	iniSetInteger(&ini, section, iniKeyLF, modem->lf, style);
+	iniSetInteger(&ini, section, iniKeyBS, modem->bs, style);
+	iniSetInteger(&ini, section, iniKeyESC, modem->esc, style);
+	iniSetInteger(&ini, section, iniKeyExtResults, modem->ext_results, style);
+	iniSetInteger(&ini, section, iniKeyDialWait, modem->dial_wait, style);
+	iniSetInteger(&ini, section, iniKeyGuardTime, modem->guard_time, style);
 	bool result = false;
 	FILE* fp = iniOpenFile(ini_fname, /* create: */TRUE);
 	if(fp != NULL) {
@@ -290,7 +313,7 @@ bool write_save(struct modem* modem, ulong savnum)
 
 	if(savnum >= MAX_SAVES)
 		return false;
-	SAFEPRINTF(key, "save%lu", savnum);
+	SAFEPRINTF(key, "Save%lu", savnum);
 	FILE* fp = iniOpenFile(ini_fname, /* create: */TRUE);
 	if(fp == NULL)
 		return false;
@@ -476,6 +499,26 @@ BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
     return(outbuf);
 }
 
+void setsockopts(SOCKET sock)
+{
+	char error[256] = "";
+	dprintf("Setting socket options");
+	if(iniGetSocketOptions(ini, "sockopts", sock, error, sizeof(error)) != 0)
+		dprintf("!ERROR %s", error);
+	int value = 0;
+	socklen_t len = sizeof(value);
+	if(getsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&value, &len) == 0)
+		dprintf("Socket send buffer length: %d bytes", value);
+	value = 0;
+	len = sizeof(value);
+	if(getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&value, &len) == 0)
+		dprintf("Socket receive buffer length: %d bytes", value);
+	value = 0;
+	len = sizeof(value);
+	if(getsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&value, &len) == 0)
+		dprintf("Socket TCP_NODELAY: %d", value);
+}
+
 // Significant portions copies from syncterm/conn.c
 char* dial(struct modem* modem, const char* number)
 {
@@ -591,6 +634,7 @@ connected:
 	res=NULL;
 	nonblock=0;
 	ioctlsocket(sock, FIONBIO, &nonblock);
+	setsockopts(sock);
 	if(socket_recvdone(sock, 0)) {
 		dprintf("%s %d socket_recvdone", __FILE__, __LINE__);
 		return response(modem, NO_CARRIER);
@@ -621,6 +665,7 @@ char* answer(struct modem* modem)
 		dprintf("accept returned %d (errno=%ld)", sock, WSAGetLastError());
 		return response(modem, NO_CARRIER);
 	}
+	setsockopts(sock);
 	char tmp[256];
 	dprintf("Connection accepted from TCP port %hu at %s", inet_addrport(&addr), inet_addrtop(&addr, tmp, sizeof(tmp)));
 
@@ -913,7 +958,7 @@ int main(int argc, char** argv)
 	WSADATA WSAData;
 	int	result;
 
-	fprintf(stderr, TITLE " v" VERSION " Copyright %s Rob Swindell\n", &__DATE__[7]);
+	fprintf(stdout, TITLE " v" VERSION " Copyright %s Rob Swindell\n", &__DATE__[7]);
     if((result = WSAStartup(MAKEWORD(1,1), &WSAData)) == 0)
 		dprintf("%s %s",WSAData.szDescription, WSAData.szSystemStatus);
 	else {
@@ -937,14 +982,14 @@ int main(int argc, char** argv)
 	if(fp != NULL) {
 		ini = iniReadFile(fp);
 		iniCloseFile(fp);
-		mode = iniGetEnum(ini, ROOT_SECTION, "mode", modeNames, mode);
-		cfg.port = iniGetShortInt(ini, ROOT_SECTION, "port", cfg.port);
-		cfg.node_num = iniGetInteger(ini, ROOT_SECTION, "node", cfg.node_num);
-		cfg.listen = iniGetBool(ini, ROOT_SECTION, "listen", cfg.listen);
-		cfg.debug = iniGetBool(ini, ROOT_SECTION, "debug", cfg.debug);
-		cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "server_echo", cfg.server_echo);
-		cfg.data_rate = iniGetLongInt(ini, ROOT_SECTION, "rate", cfg.data_rate);
-		cfg.address_family = iniGetEnum(ini, ROOT_SECTION, "address_family", addrFamilyNames, cfg.address_family);
+		mode = iniGetEnum(ini, ROOT_SECTION, "Mode", modeNames, mode);
+		cfg.port = iniGetShortInt(ini, ROOT_SECTION, "Port", cfg.port);
+		cfg.node_num = iniGetInteger(ini, ROOT_SECTION, "Node", cfg.node_num);
+		cfg.listen = iniGetBool(ini, ROOT_SECTION, "Listen", cfg.listen);
+		cfg.debug = iniGetBool(ini, ROOT_SECTION, "Debug", cfg.debug);
+		cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "ServerEcho", cfg.server_echo);
+		cfg.data_rate = iniGetLongInt(ini, ROOT_SECTION, "Rate", cfg.data_rate);
+		cfg.address_family = iniGetEnum(ini, ROOT_SECTION, "AddressFamily", addrFamilyNames, cfg.address_family);
 	}
 
 	for(; argn < argc; argn++) {
@@ -1034,8 +1079,10 @@ int main(int argc, char** argv)
 
 		_beginthread(listen_thread, /* stack_size: */0, &modem);
 	} else {
-		if(sock != INVALID_SOCKET)
+		if(sock != INVALID_SOCKET) {
+			setsockopts(sock);
 			connected(&modem);
+		}
 	}
 
 	const char* dropfile = "dosxtrn.env";
