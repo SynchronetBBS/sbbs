@@ -92,9 +92,23 @@ static void dprintf(const char *fmt, ...)
     OutputDebugString(buf);
 }
 
-void usage(void)
+void usage(const char* progname)
 {
-	fprintf(stderr, "usage:\n");
+	fprintf(stderr, "usage: %s [-opts] <program> [options]\n"
+		"opts:\n"
+		"\t-telnet   Use Telnet protocol by default\n"
+		"\t-raw      Use Raw TCP by default\n"
+		"\t-4        Use IPv4 address family by default\n"
+		"\t-6        Use IPv6 address family by default\n"
+		"\t-l[addr]  Listen for incoming TCP connections\n"
+		"\t          [on optionally-specified network interface]\n"
+		"\t-p<port>  Specify default TCP port number (decimal)\n"
+		"\t-d        Enable debug output\n"
+		"\t-h<sock>  Specify socket descriptor/handle to use (decimal)\n"
+		"\t-r<cps>   Specify maximum receive data rate (chars/second)\n"
+		"\t-c<fname> Specify alternate configuration (.ini) filename\n"
+		,progname
+	);
 	exit(EXIT_SUCCESS);
 }
 
@@ -945,6 +959,26 @@ void listen_thread(void* arg)
 	}
 }
 
+bool read_ini(const char* ini_fname)
+{
+	printf("Reading '%s'\n", ini_fname);
+	FILE* fp = iniOpenFile(ini_fname, /* create: */false);
+	if(fp == NULL)
+		return false;
+
+	ini = iniReadFile(fp);
+	iniCloseFile(fp);
+	mode = iniGetEnum(ini, ROOT_SECTION, "Mode", modeNames, mode);
+	cfg.port = iniGetShortInt(ini, ROOT_SECTION, "Port", cfg.port);
+	cfg.node_num = iniGetInteger(ini, ROOT_SECTION, "Node", cfg.node_num);
+	cfg.listen = iniGetBool(ini, ROOT_SECTION, "Listen", cfg.listen);
+	cfg.debug = iniGetBool(ini, ROOT_SECTION, "Debug", cfg.debug);
+	cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "ServerEcho", cfg.server_echo);
+	cfg.data_rate = iniGetLongInt(ini, ROOT_SECTION, "Rate", cfg.data_rate);
+	cfg.address_family = iniGetEnum(ini, ROOT_SECTION, "AddressFamily", addrFamilyNames, cfg.address_family);
+	return true;
+}
+
 int main(int argc, char** argv)
 {
 	int argn = 1;
@@ -972,25 +1006,13 @@ int main(int argc, char** argv)
 	cfg.address_family = ADDRESS_FAMILY_INET;
 
 	ini = strListInit();
-	SAFECOPY(ini_fname, argv[0]);
+	GetModuleFileName(NULL, ini_fname, sizeof(ini_fname) - 1);
 	char* ext = getfext(ini_fname);
 	if(ext != NULL)
 		*ext = 0;
 	SAFECAT(ini_fname, ".ini");
-	fprintf(stderr, "ini_fname = '%s'\n", ini_fname);
-	FILE* fp = iniOpenFile(ini_fname, /* create: */false);
-	if(fp != NULL) {
-		ini = iniReadFile(fp);
-		iniCloseFile(fp);
-		mode = iniGetEnum(ini, ROOT_SECTION, "Mode", modeNames, mode);
-		cfg.port = iniGetShortInt(ini, ROOT_SECTION, "Port", cfg.port);
-		cfg.node_num = iniGetInteger(ini, ROOT_SECTION, "Node", cfg.node_num);
-		cfg.listen = iniGetBool(ini, ROOT_SECTION, "Listen", cfg.listen);
-		cfg.debug = iniGetBool(ini, ROOT_SECTION, "Debug", cfg.debug);
-		cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "ServerEcho", cfg.server_echo);
-		cfg.data_rate = iniGetLongInt(ini, ROOT_SECTION, "Rate", cfg.data_rate);
-		cfg.address_family = iniGetEnum(ini, ROOT_SECTION, "AddressFamily", addrFamilyNames, cfg.address_family);
-	}
+	if(fexist(ini_fname))
+		read_ini(ini_fname);
 
 	for(; argn < argc; argn++) {
 		char* arg = argv[argn];
@@ -1027,6 +1049,12 @@ int main(int argc, char** argv)
 			case 'p':
 				cfg.port = atoi(arg + 1);
 				break;
+			case 'c':
+				if(!read_ini(arg + 1)) {
+					fprintf(stderr, "!Error %d reading: %s\n", errno, arg + 1);
+					return EXIT_FAILURE;
+				}
+				break;
 			case 'd':
 				cfg.debug = true;
 				break;
@@ -1042,12 +1070,12 @@ int main(int argc, char** argv)
 				rx_delay = strtoul(arg + 1, NULL, 10);
 				break;
 			default:
-				usage();
+				usage(argv[0]);
 				break;
 		}
 	}
 	if(argn >= argc) {
-		usage();
+		usage(argv[0]);
 	}
 
 	struct modem modem = {0};
@@ -1086,7 +1114,7 @@ int main(int argc, char** argv)
 	}
 
 	const char* dropfile = "dosxtrn.env";
-	fp = fopen(dropfile, "w");
+	FILE* fp = fopen(dropfile, "w");
 	if(fp == NULL) {
 		perror(dropfile);
 		return EXIT_FAILURE;
@@ -1154,7 +1182,7 @@ int main(int argc, char** argv)
 
 	BOOL x64 = FALSE;
 	IsWow64Process(GetCurrentProcess(), &x64);
-	sprintf(fullmodemline, "dosxtrn.exe %s %s %u svdm.ini", dropfile, x64 ? "x64" : "NT", cfg.node_num);
+	sprintf(fullmodemline, "dosxtrn.exe %s %s %u %s", dropfile, x64 ? "x64" : "NT", cfg.node_num, ini_fname);
 
 	PROCESS_INFORMATION process_info;
     if(!CreateProcess(
@@ -1163,7 +1191,7 @@ int main(int argc, char** argv)
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
 		FALSE, 			// handle inheritance flag
-		0, //CREATE_NEW_CONSOLE/*|CREATE_SEPARATE_WOW_VDM*/, // creation flags
+		0,				// creation flags
         NULL,			// pointer to new environment block
 		NULL		,	// pointer to current directory name
 		&startup_info,  // pointer to STARTUPINFO
