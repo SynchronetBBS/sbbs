@@ -121,7 +121,7 @@
       <OutputFile>.\msvc.win32.dll.debug/sbbs.bsc</OutputFile>
     </Bscmake>
     <PreBuildEvent>
-      <Command>gitinfo.bat</Command>
+      <Command>..\build\gitinfo.bat</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -173,7 +173,7 @@
       <OutputFile>.\msvc.win32.dll.release/sbbs.bsc</OutputFile>
     </Bscmake>
     <PreBuildEvent>
-      <Command>gitinfo.bat</Command>
+      <Command>..\build\gitinfo.bat</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
