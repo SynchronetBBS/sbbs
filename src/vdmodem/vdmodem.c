@@ -38,6 +38,7 @@
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
 #define VERSION "0.0"
 
+bool external_socket;
 SOCKET sock = INVALID_SOCKET;
 SOCKET listening_sock = INVALID_SOCKET;
 HANDLE hangup_event = INVALID_HANDLE_VALUE;	// e.g. program drops DTR
@@ -71,6 +72,7 @@ struct {
 	bool terminate_on_disconnect;
 	ulong data_rate;
 	bool server_echo;
+	char busy_notice[INI_MAX_VALUE_LEN];
 	enum {
 		 ADDRESS_FAMILY_UNSPEC
 		,ADDRESS_FAMILY_INET
@@ -242,8 +244,10 @@ char* connected(struct modem* modem)
 void disconnect(struct modem* modem)
 {
 	modem->online = false;
-	shutdown(sock, SD_SEND);
-	closesocket(sock);
+	if(!external_socket) {
+		shutdown(sock, SD_SEND);
+		closesocket(sock);
+	}
 	sock = INVALID_SOCKET;
 	SetEvent(hungup_event);
 	SetEvent(carrier_event);
@@ -946,8 +950,7 @@ void listen_thread(void* arg)
 				socklen_t addrlen = sizeof(addr);
 				SOCKET newsock = accept(listening_sock, (SOCKADDR*)&addr, &addrlen);
 				if(newsock != INVALID_SOCKET) {
-					char* busy_notice = "\r\nSorry, not available right now\r\n";
-					send(newsock, busy_notice, strlen(busy_notice), /* flags: */0);
+					send(newsock, cfg.busy_notice, strlen(cfg.busy_notice), /* flags: */0);
 					shutdown(newsock, SD_SEND);
 					closesocket(newsock);
 				}
@@ -976,6 +979,10 @@ bool read_ini(const char* ini_fname)
 	cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "ServerEcho", cfg.server_echo);
 	cfg.data_rate = iniGetLongInt(ini, ROOT_SECTION, "Rate", cfg.data_rate);
 	cfg.address_family = iniGetEnum(ini, ROOT_SECTION, "AddressFamily", addrFamilyNames, cfg.address_family);
+	char value[INI_MAX_VALUE_LEN];
+	const char* p = iniGetString(ini, ROOT_SECTION, "BusyNotice", NULL, value);
+	if(p != NULL)
+		SAFECOPY(cfg.busy_notice, p);
 	return true;
 }
 
@@ -1004,6 +1011,7 @@ int main(int argc, char** argv)
 	cfg.server_echo = TRUE;
 	cfg.port = IPPORT_TELNET;
 	cfg.address_family = ADDRESS_FAMILY_INET;
+	SAFECOPY(cfg.busy_notice, "\r\nSorry, not available right now\r\n");
 
 	ini = strListInit();
 	GetModuleFileName(NULL, ini_fname, sizeof(ini_fname) - 1);
@@ -1060,6 +1068,7 @@ int main(int argc, char** argv)
 				break;
 			case 'h':
 				sock = strtoul(arg + 1, NULL, 10);
+				external_socket = true;
 				break;
 			case 'r':
 				cfg.data_rate = strtoul(arg + 1, NULL, 10);
@@ -1169,7 +1178,7 @@ int main(int argc, char** argv)
 	hungup_event = CreateEvent(
 		 NULL	// pointer to security attributes
 		,TRUE	// flag for manual-reset event
-		,TRUE   // flag for initial state (DCD = low)
+		,!modem.online   // flag for initial state
 		,path	// pointer to event-object name
 		);
 	if(hungup_event == NULL) {
