@@ -343,7 +343,7 @@ VOID uart_wrport(WORD port, BYTE data)
 						,GetLastError(),retval);
 				} else {
 					assert_interrupt(UART_IER_TX_EMPTY);
-					reset_yield();
+//					reset_yield();
 				}
 			}
 			break;
@@ -401,7 +401,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 				vdd_read(data,sizeof(BYTE));
 				lprintf(LOG_DEBUG,"READ DATA: %s", chr(*data));
 				avail--;
-				reset_yield();
+//				reset_yield();
 			} else
 				*data=0;
 			data_waiting(avail);
