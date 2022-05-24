@@ -76,6 +76,10 @@ void main(int argc, char** argv)
 		,fossil_data_bits[(info.baud_rate&FOSSIL_DATA_BITS_MASK)>>FOSSIL_DATA_BITS_SHIFT]
 		,fossil_stop_bits[(info.baud_rate&FOSSIL_STOP_BITS_MASK)>>FOSSIL_STOP_BITS_SHIFT]
 		);
+		
+	regs.h.ah = FOSSIL_FUNC_GET_STATUS;
+	int86x(FOSSIL_INTERRUPT, &regs, &regs, &sregs);
+	printf("STATUS=0x%04X (%u)\n",regs.x.ax,regs.x.ax);
 
 	if(argc>1 && stricmp(argv[1],"pause")==0) {
 		printf("\nHit enter to continue...");
