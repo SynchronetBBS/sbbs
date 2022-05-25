@@ -34,6 +34,8 @@
 #include "sockwrap.h"
 #include "telnet.h"
 #include "ini_file.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
 #define VERSION "0.0"
@@ -108,7 +110,8 @@ void usage(const char* progname)
 		"\t-d        Enable debug output\n"
 		"\t-h<sock>  Specify socket descriptor/handle to use (decimal)\n"
 		"\t-r<cps>   Specify maximum receive data rate (chars/second)\n"
-		"\t-c<fname> Specify alternate configuration (.ini) filename\n"
+		"\t-c<fname> Specify alternate configuration (.ini) path/filename\n"
+		"\t-V        Display detailed version information and exit\n"
 		,progname
 	);
 	exit(EXIT_SUCCESS);
@@ -756,7 +759,21 @@ char* atmodem_exec(struct modem* modem)
 					}
 					break;
 				case 'I':
-					sprintf(respbuf, "\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n", &__DATE__[7]);
+					switch(val) {
+						case 0:
+							safe_snprintf(respbuf, sizeof(respbuf)
+								,"\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n%s/%s\r\n"
+								,&__DATE__[7]
+								,GIT_BRANCH
+								,GIT_HASH
+								);
+							break;
+						case 1:
+							safe_snprintf(respbuf, sizeof(respbuf), "\r\n%s\r\n", ini_fname);
+							break;
+						default:
+							return error(modem);
+					}
 					return respbuf;
 				case 'O':
 					if(sock == INVALID_SOCKET)
@@ -1078,6 +1095,9 @@ int main(int argc, char** argv)
 			case 'R':
 				rx_delay = strtoul(arg + 1, NULL, 10);
 				break;
+			case 'V':
+				fprintf(stdout, "%s/%s\n", GIT_BRANCH, GIT_HASH);
+				return EXIT_SUCCESS;
 			default:
 				usage(argv[0]);
 				break;
