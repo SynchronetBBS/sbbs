@@ -38,7 +38,7 @@
 #include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
-#define VERSION "0.0"
+#define VERSION "0.1"
 
 bool external_socket;
 SOCKET sock = INVALID_SOCKET;
