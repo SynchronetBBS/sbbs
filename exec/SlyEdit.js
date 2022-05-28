@@ -4187,9 +4187,9 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 	// Ensure the word to test is all lowercase for case-insensitive matching
 	var currentWord = pWordArray[pWordIdx].toLowerCase();
 	// Ensure the word we're checking only has letters and/or an apostrophe.
-	var currentWord = currentWord.replace(/^[^a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']*([a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']+)[^a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']*$/, "$1");
+	var currentWord = currentWord.replace(/^[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*([a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+)[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*$/, "$1");
 	// Now, ensure the word only certain characters: Letters, apostrophe.  Skip it if not.
-	if (!/^[a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']+$/g.test(currentWord))
+	if (!/^[a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+$/g.test(currentWord))
 	{
 		retObj.skipped = true;
 		return retObj;
