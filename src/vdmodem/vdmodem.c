@@ -574,7 +574,7 @@ char* dial(struct modem* modem, const char* number)
 	char* p = strrchr(host, ':');
 	char* b = strrchr(host, ']'); 
 	if(p != NULL && p > b) {
-		port = (uint16_t)strtol(p, &p, 10);
+		port = (uint16_t)strtol(p + 1, NULL, 10);
 		*p = 0;
 	}
 	dprintf("Connecting to port %hu at host '%s' via %s", port, host, protocol(mode));
@@ -591,7 +591,7 @@ char* dial(struct modem* modem, const char* number)
 	SAFEPRINTF(portnum, "%hu", port);
 	int result = getaddrinfo(host, portnum, &hints, &res);
 	if(result != 0) {
-		dprintf("getaddrinfo(%s, %s) returned %d", host, portnum, result);
+		dprintf("getaddrinfo(%s, %s) [family=%d] returned %d", host, portnum, hints.ai_family, result);
 		return response(modem, NO_ANSWER);
 	}
 
@@ -725,13 +725,13 @@ char* atmodem_exec(struct modem* modem)
 							return error(modem);
 						if(*p == '=') {
 							p++;
-							if(strcmp(p, "L") == 0)
+							if(stricmp(p, "L") == 0)
 								p = modem->last;
 							SAFECOPY(modem->save[val], p);
 							return write_save(modem, val) ? ok(modem) : error(modem);
 						}
-						if(*p == '?' || strcmp(p, "L?") == 0) {
-							if(strcmp(p, "L?") == 0)
+						if(*p == '?' || stricmp(p, "L?") == 0) {
+							if(stricmp(p, "L?") == 0)
 								p = modem->last;
 							else
 								p = modem->save[val];
@@ -1025,9 +1025,10 @@ int main(int argc, char** argv)
 	}
 
 	// Default configuration values
+	mode = TELNET;
 	cfg.server_echo = TRUE;
 	cfg.port = IPPORT_TELNET;
-	cfg.address_family = ADDRESS_FAMILY_INET;
+	cfg.address_family = ADDRESS_FAMILY_UNSPEC;
 	SAFECOPY(cfg.busy_notice, "\r\nSorry, not available right now\r\n");
 
 	ini = strListInit();
@@ -1045,11 +1046,11 @@ int main(int argc, char** argv)
 			break;
 		while(*arg == '-')
 			arg++;
-		if(strcmp(arg, "telnet") == 0) {
+		if(stricmp(arg, "telnet") == 0) {
 			mode = TELNET;
 			continue;
 		}
-		if(strcmp(arg, "raw") == 0) {
+		if(stricmp(arg, "raw") == 0) {
 			mode = RAW;
 			continue;
 		}
