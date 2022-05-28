@@ -136,12 +136,16 @@
  *                              Finished refactoring to use DDLightbarMenu
  *                              for the cross-posting menus. Also used DDLightbarMenu
  *                              for the quote selection window.
- * 2022-03-05                   Version 1.76
+ * 2022-03-05 Eric Oulashin     Version 1.76
  *                              When selecting quote lines in a reply message, SlyEdit now
  *                              remembers the position in the quote selection menu so that
  *                              the quote menu isn't always at the top whenever it's opened
  *                              again.  This issue may have been introduced when SlyEdit
  *                              was refactored to use DDLightbarMenu for its lightbar stuff.
+ * 2022-05-27 Eric Oulashin     Version 1.77
+ *                              Fixed a few instances where SlyEdit was trying to access
+ *                              sub-board information with an empty sub-board code (in the rare
+ *                              case when no sub-boards are configured).
  */
 
 /* Command-line arguments:
@@ -238,8 +242,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.76";
-const EDITOR_VER_DATE = "2022-03-05";
+const EDITOR_VERSION = "1.77";
+const EDITOR_VER_DATE = "2022-05-27";
 
 
 // Program variables
@@ -304,6 +308,8 @@ gCrossPostMsgSubs.propIsFuncName = function(pPropName) {
 gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
 	if (typeof(pSubCode) != "string")
 		return false;
+	if (pSubCode === "")
+		return false;
 
 	var grpIndex = msg_area.sub[pSubCode].grp_index;
 	var foundIt = false;
@@ -317,6 +323,8 @@ gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
 //  pSubCode: The sub-code to add
 gCrossPostMsgSubs.add = function(pSubCode) {
 	if (typeof(pSubCode) != "string")
+		return;
+	if (pSubCode === "")
 		return;
 	if (this.subCodeExists(pSubCode))
 		return;
@@ -332,6 +340,8 @@ gCrossPostMsgSubs.add = function(pSubCode) {
 //  pSubCode: The sub-code to remove
 gCrossPostMsgSubs.remove = function(pSubCode) {
 	if (typeof(pSubCode) != "string")
+		return;
+	if (pSubCode === "")
 		return;
 
 	var grpIndex = msg_area.sub[pSubCode].grp_index;
@@ -4480,7 +4490,7 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	console.cleartoeol("\1n");
 	console.crlf();
 	console.clearline("\1n");
-	console.print("\1cSpecial: \1w\1hH:\1n\1hHigh Intensity \1wI:\1n\1iBlinking \1n\1w\1hN:\1nNormal \1h\1gþ \1n\1cChoose colors/attributes\1h\1g: \1c");
+	console.print("\1cSpecial: \1w\1hH:\1n\1hHigh Intensity \1wI:\1n\1iBlinking \1n\1w\1hN:\1nNormal \1h\1gï¿½ \1n\1cChoose colors/attributes\1h\1g: \1c");
 	// Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
 	// but that outputs a CR at the end, which is undesirable.  So instead, we call
 	// getUserInputWithSetOfInputStrs (defined in SlyEdit_Misc.js).
@@ -5890,15 +5900,18 @@ function writeMsgOntBtmHelpLineWithPause(pMsg, pPauseMS)
 function getSignName(pSubCode, pRealNameOnlyFirst, pRealNameForEmail)
 {
 	var useRealName = false;
-	if (pSubCode.toUpperCase() == "MAIL")
-		useRealName = pRealNameForEmail;
-	else
+	if (typeof(pSubCode) === "string" && pSubCode != "")
 	{
-		var msgbase = new MsgBase(pSubCode);
-		if (msgbase.open())
+		if (pSubCode.toUpperCase() == "MAIL")
+			useRealName = pRealNameForEmail;
+		else
 		{
-			useRealName = ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME);
-			msgbase.close();
+			var msgbase = new MsgBase(pSubCode);
+			if (msgbase.open())
+			{
+				useRealName = ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME);
+				msgbase.close();
+			}
 		}
 	}
 	var signName = "";
