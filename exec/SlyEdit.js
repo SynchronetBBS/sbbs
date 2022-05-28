@@ -4490,7 +4490,7 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	console.cleartoeol("\1n");
 	console.crlf();
 	console.clearline("\1n");
-	console.print("\1cSpecial: \1w\1hH:\1n\1hHigh Intensity \1wI:\1n\1iBlinking \1n\1w\1hN:\1nNormal \1h\1gï¿½ \1n\1cChoose colors/attributes\1h\1g: \1c");
+	console.print("\1cSpecial: \1w\1hH:\1n\1hHigh Intensity \1wI:\1n\1iBlinking \1n\1w\1hN:\1nNormal \1h\1gþ \1n\1cChoose colors/attributes\1h\1g: \1c");
 	// Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
 	// but that outputs a CR at the end, which is undesirable.  So instead, we call
 	// getUserInputWithSetOfInputStrs (defined in SlyEdit_Misc.js).
