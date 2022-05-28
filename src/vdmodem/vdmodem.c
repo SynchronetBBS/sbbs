@@ -75,6 +75,7 @@ struct {
 	ulong data_rate;
 	bool server_echo;
 	char busy_notice[INI_MAX_VALUE_LEN];
+	char answer_banner[INI_MAX_VALUE_LEN];
 	enum {
 		 ADDRESS_FAMILY_UNSPEC
 		,ADDRESS_FAMILY_INET
@@ -168,6 +169,8 @@ ulong count_esc(struct modem* modem, uint8_t* buf, size_t rd)
 	for(size_t i = 0; i < rd; i++) {
 		if(buf[i] == modem->esc)
 			count++;
+		else
+			return 0;
 	}
 	return count;
 }
@@ -699,6 +702,7 @@ char* answer(struct modem* modem)
 		/* Will suppress Go Ahead */
 		request_telnet_opt(TELNET_WILL,TELNET_SUP_GA);
 	}
+	putcom(cfg.answer_banner, strlen(cfg.answer_banner));
 	return connected(modem);
 }
 
@@ -1000,6 +1004,9 @@ bool read_ini(const char* ini_fname)
 	const char* p = iniGetString(ini, ROOT_SECTION, "BusyNotice", NULL, value);
 	if(p != NULL)
 		SAFECOPY(cfg.busy_notice, p);
+	p = iniGetString(ini, ROOT_SECTION, "AnswerBanner", NULL, value);
+	if(p != NULL)
+		SAFECOPY(cfg.answer_banner, p);
 	return true;
 }
 
@@ -1030,6 +1037,7 @@ int main(int argc, char** argv)
 	cfg.port = IPPORT_TELNET;
 	cfg.address_family = ADDRESS_FAMILY_UNSPEC;
 	SAFECOPY(cfg.busy_notice, "\r\nSorry, not available right now\r\n");
+	SAFEPRINTF(cfg.answer_banner, "\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n", &__DATE__[7]);
 
 	ini = strListInit();
 	GetModuleFileName(NULL, ini_fname, sizeof(ini_fname) - 1);
@@ -1323,6 +1331,7 @@ int main(int argc, char** argv)
 		if(rd) {
 			if(modem.online) {
 				if(modem.esc_count) {
+					dprintf("Esc count = %d", modem.esc_count);
 					if(modem.esc_count >= 3)
 						modem.esc_count = 0;
 					else  {
@@ -1333,8 +1342,10 @@ int main(int argc, char** argv)
 								modem.esc_count = 0;
 					}
 				} else {
-					if(now - lasttx > guard_time(&modem))
+					if(now - lasttx > guard_time(&modem)) {
 						modem.esc_count = count_esc(&modem, buf, rd);
+						dprintf("New esc count = %d", modem.esc_count);
+					}
 				}
 				size_t len = rd;
 				uint8_t* p = buf;
