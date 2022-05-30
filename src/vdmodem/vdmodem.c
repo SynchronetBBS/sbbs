@@ -356,13 +356,18 @@ const char* protocol(enum mode mode)
 	return "Raw";
 }
 
-int address_family()
+int address_family(BOOL for_listen)
 {
 	switch(cfg.address_family) {
 		case ADDRESS_FAMILY_INET:	return PF_INET;
 		case ADDRESS_FAMILY_INET6:	return PF_INET6;
 	}
-	return PF_UNSPEC;
+	return for_listen ? PF_INET : PF_UNSPEC;
+}
+
+int listen_address_family()
+{
+	return address_family(true);
 }
 
 int putcom(char* buf, size_t len)
@@ -582,14 +587,9 @@ char* dial(struct modem* modem, const char* number)
 	}
 	dprintf("Connecting to port %hu at host '%s' via %s", port, host, protocol(mode));
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_flags=PF_UNSPEC;
-	hints.ai_family=address_family();
+	hints.ai_family = address_family(/* for listen: */false);
 	hints.ai_socktype=SOCK_STREAM;
 	hints.ai_protocol=IPPROTO_TCP;
-	hints.ai_flags=AI_NUMERICSERV;
-#ifdef AI_ADDRCONFIG
-	hints.ai_flags|=AI_ADDRCONFIG;
-#endif
 	dprintf("%s %d calling getaddrinfo", __FILE__, __LINE__);
 	SAFEPRINTF(portnum, "%hu", port);
 	int result = getaddrinfo(host, portnum, &hints, &res);
@@ -1073,7 +1073,7 @@ int main(int argc, char** argv)
 				cfg.listen = true;
 				arg++;
 				if(*arg != '\0') {
-					listening_interface.addr.sa_family = address_family();
+					listening_interface.addr.sa_family = listen_address_family();
 					if(inet_ptoaddr(arg, &listening_interface, sizeof(listening_interface)) == NULL) {
 						fprintf(stderr, "!Error parsing network address: %s", arg);
 						return EXIT_FAILURE;
@@ -1123,13 +1123,13 @@ int main(int argc, char** argv)
 		if(sock != INVALID_SOCKET)
 			listening_sock = sock;
 		else {
-			listening_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_IP);
+			listening_sock = socket(listen_address_family(), SOCK_STREAM, IPPROTO_IP);
 			if(listening_sock == INVALID_SOCKET) {
 				fprintf(stderr, "Error %ld creating socket\n", WSAGetLastError());
 				return EXIT_FAILURE;
 			}
 		}
-		listening_interface.addr.sa_family = address_family();
+		listening_interface.addr.sa_family = listen_address_family();
 		inet_setaddrport(&listening_interface, cfg.port);
 		result = bind(listening_sock, &listening_interface.addr, xp_sockaddr_len(&listening_interface));
 		if(result != 0) {
