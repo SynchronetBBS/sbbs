@@ -34,6 +34,7 @@
 #include "sockwrap.h"
 #include "telnet.h"
 #include "ini_file.h"
+#include "vdd_func.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -62,7 +63,7 @@ struct {
 	uint cmdlen;
 	uchar cmd[64];
 } telnet;
-
+unsigned int sbbsexec_mode = SBBSEXEC_MODE_UNSPECIFIED;
 #define XTRN_IO_BUF_LEN 10000
 #define RING_DELAY 6000 /* US standard is 6 seconds */
 
@@ -108,6 +109,7 @@ void usage(const char* progname)
 		"\t-l[addr]  Listen for incoming TCP connections\n"
 		"\t          [on optionally-specified network interface]\n"
 		"\t-p<port>  Specify default TCP port number (decimal)\n"
+		"\t-n<node>  Specify node number\n"
 		"\t-d        Enable debug output\n"
 		"\t-h<sock>  Specify socket descriptor/handle to use (decimal)\n"
 		"\t-r<cps>   Specify maximum receive data rate (chars/second)\n"
@@ -217,9 +219,9 @@ char* response(struct modem* modem, enum modem_response code)
 	if(modem->quiet)
 		return "";
 	if(modem->numeric_mode)
-		sprintf(str, "%u%c", code, modem->cr);
+		safe_snprintf(str, sizeof(str), "%u%c", code, modem->cr);
 	else
-		sprintf(str, "%c%c%s%c%c", modem->cr, modem->lf, response_str[code], modem->cr, modem->lf);
+		safe_snprintf(str, sizeof(str), "%c%c%s%c%c", modem->cr, modem->lf, response_str[code], modem->cr, modem->lf);
 	return str;
 }
 
@@ -739,7 +741,8 @@ char* atmodem_exec(struct modem* modem)
 								p = modem->last;
 							else
 								p = modem->save[val];
-							sprintf(respbuf, "%c%s%c%c%s", modem->lf, p, modem->cr, modem->lf, ok(modem));
+							safe_snprintf(respbuf, sizeof(respbuf), "%c%s%c%c%s"
+								,modem->lf, p, modem->cr, modem->lf, ok(modem));
 							return respbuf;
 						}
 				}
@@ -858,7 +861,8 @@ char* atmodem_exec(struct modem* modem)
 								val = 0;
 								break;
 						}
-						sprintf(respbuf, "%c%03lu%c%c%s", modem->lf, val, modem->cr, modem->lf, ok(modem));
+						safe_snprintf(respbuf, sizeof(respbuf), "%c%03lu%c%c%s"
+							,modem->lf, val, modem->cr, modem->lf, ok(modem));
 						return respbuf;
 					} else
 						return error(modem);
@@ -932,7 +936,7 @@ BOOL vdd_write(HANDLE* slot, uint8_t* buf, size_t buflen)
 {
 	if(*slot == INVALID_HANDLE_VALUE) {
 		char path[MAX_PATH + 1];
-		sprintf(path, "\\\\.\\mailslot\\sbbsexec\\wr%d", cfg.node_num);
+		SAFEPRINTF(path, "\\\\.\\mailslot\\sbbsexec\\wr%d", cfg.node_num);
 		*slot = CreateFile(path
 			,GENERIC_WRITE
 			,FILE_SHARE_READ
@@ -1015,7 +1019,7 @@ int main(int argc, char** argv)
 	int argn = 1;
 	char tmp[256];
 	char path[MAX_PATH + 1];
-	char fullmodemline[MAX_PATH + 1];
+	char fullcmdline[MAX_PATH + 1];
 	uint8_t buf[XTRN_IO_BUF_LEN];
 	uint8_t telnet_buf[sizeof(buf) * 2];
 	size_t rx_buflen = sizeof(buf);
@@ -1080,6 +1084,9 @@ int main(int argc, char** argv)
 					}
 				}
 				break;
+			case 'n':
+				cfg.node_num = atoi(arg + 1);
+				break;
 			case 'p':
 				cfg.port = atoi(arg + 1);
 				break;
@@ -1101,8 +1108,18 @@ int main(int argc, char** argv)
 				break;
 			case 'B':
 				rx_buflen = min(strtoul(arg + 1, NULL, 10), sizeof(buf));
+				break;
 			case 'R':
 				rx_delay = strtoul(arg + 1, NULL, 10);
+				break;
+			case 'I':
+				sbbsexec_mode |= SBBSEXEC_MODE_DOS_IN;
+				break;
+			case 'O':
+				sbbsexec_mode |= SBBSEXEC_MODE_DOS_OUT;
+				break;
+			case 'M':
+				sbbsexec_mode = strtoul(arg + 1, NULL, 0);
 				break;
 			case 'V':
 				fprintf(stdout, "%s/%s\n", GIT_BRANCH, GIT_HASH);
@@ -1165,7 +1182,7 @@ int main(int argc, char** argv)
 	fclose(fp);
 
 	while(1) {
-		sprintf(path, "\\\\.\\mailslot\\sbbsexec\\rd%d", cfg.node_num);
+		SAFEPRINTF(path, "\\\\.\\mailslot\\sbbsexec\\rd%d", cfg.node_num);
 		rdslot = CreateMailslot(path
 			,sizeof(buf)/2			// Maximum message size (0=unlimited)
 			,0						// Read time-out
@@ -1179,7 +1196,7 @@ int main(int argc, char** argv)
 		++cfg.node_num;
 	}
 
-	sprintf(path, "sbbsexec_carrier%d", cfg.node_num);
+	SAFEPRINTF(path, "sbbsexec_carrier%d", cfg.node_num);
 	carrier_event = CreateEvent(
 		 NULL	// pointer to security attributes
 		,FALSE	// flag for manual-reset event
@@ -1191,7 +1208,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	sprintf(path, "sbbsexec_hangup%d", cfg.node_num);
+	SAFEPRINTF(path, "sbbsexec_hangup%d", cfg.node_num);
 	hangup_event = CreateEvent(
 		 NULL	// pointer to security attributes
 		,FALSE	// flag for manual-reset event
@@ -1203,7 +1220,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	sprintf(path, "sbbsexec_hungup%d", cfg.node_num);
+	SAFEPRINTF(path, "sbbsexec_hungup%d", cfg.node_num);
 	hungup_event = CreateEvent(
 		 NULL	// pointer to security attributes
 		,TRUE	// flag for manual-reset event
@@ -1220,12 +1237,13 @@ int main(int argc, char** argv)
 
 	BOOL x64 = FALSE;
 	IsWow64Process(GetCurrentProcess(), &x64);
-	sprintf(fullmodemline, "dosxtrn.exe %s %s %u %s", dropfile, x64 ? "x64" : "NT", cfg.node_num, ini_fname);
+	safe_snprintf(fullcmdline, sizeof(fullcmdline), "dosxtrn.exe %s %s %u %u %s"
+		,dropfile, x64 ? "x64" : "NT", cfg.node_num, sbbsexec_mode, ini_fname);
 
 	PROCESS_INFORMATION process_info;
     if(!CreateProcess(
 		NULL,			// pointer to name of executable module
-		fullmodemline,  	// pointer to command line string
+		fullcmdline,  	// pointer to command line string
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
 		FALSE, 			// handle inheritance flag
@@ -1235,10 +1253,10 @@ int main(int argc, char** argv)
 		&startup_info,  // pointer to STARTUPINFO
 		&process_info  	// pointer to PROCESS_INFORMATION
 		)) {
-        fprintf(stderr, "Error %ld executing '%s'", GetLastError(), fullmodemline);
+        fprintf(stderr, "Error %ld executing '%s'", GetLastError(), fullcmdline);
 		return EXIT_FAILURE;
 	}
-	printf("Executed '%s' successfully\n", fullmodemline);
+	printf("Executed '%s' successfully\n", fullcmdline);
 
 	CloseHandle(process_info.hThread);
 
