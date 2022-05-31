@@ -63,8 +63,8 @@ struct uart {
 	.scratch_reg			= 0,
 	.divisor_latch_lsb		= 0x03,	/* 38400 */
 	.divisor_latch_msb		= 0x00,
-	.fifo_enabled			= 0
-	.virtualize				= FALSE;
+	.fifo_enabled			= 0,
+	.virtualize				= FALSE
 }, uart;
 
 // Notice: re-initialize global variables in VDDInitialize for NTVDMx64 and pre-Vista versions of Windows
