@@ -75,6 +75,7 @@ struct {
 	bool terminate_on_disconnect;
 	ulong data_rate;
 	bool server_echo;
+	char client_file[MAX_PATH + 1];
 	char busy_notice[INI_MAX_VALUE_LEN];
 	char answer_banner[INI_MAX_VALUE_LEN];
 	enum {
@@ -688,13 +689,25 @@ char* answer(struct modem* modem)
 	socklen_t addrlen = sizeof(addr);
 	sock = accept(listening_sock, (SOCKADDR*)&addr, &addrlen);
 	if(sock == INVALID_SOCKET) {
-		dprintf("accept returned %d (errno=%ld)", sock, WSAGetLastError());
+		dprintf("!accept returned %d (errno=%ld)", sock, WSAGetLastError());
 		return response(modem, NO_CARRIER);
 	}
 	setsockopts(sock);
 	char tmp[256];
 	dprintf("Connection accepted from TCP port %hu at %s", inet_addrport(&addr), inet_addrtop(&addr, tmp, sizeof(tmp)));
 
+	if(cfg.client_file[0]) {
+		FILE* fp = fopen(cfg.client_file, "wt");
+		if(fp == NULL)
+			dprintf("!Error %d creating '%s'", errno, cfg.client_file);
+		else {
+			fprintf(fp, "sock=%d\n", sock);
+			fprintf(fp, "addr=%s\n", inet_addrtop(&addr, tmp, sizeof(tmp)));
+			fprintf(fp, "port=%u\n", inet_addrport(&addr));
+			fprintf(fp, "prot=%s\n", protocol(mode));
+			fclose(fp);
+		}
+	}
 	if(mode == TELNET) {
 		ZERO_VAR(telnet);
 		if(cfg.server_echo) {
@@ -1008,9 +1021,10 @@ bool read_ini(const char* ini_fname)
 	const char* p = iniGetString(ini, ROOT_SECTION, "BusyNotice", NULL, value);
 	if(p != NULL)
 		SAFECOPY(cfg.busy_notice, p);
-	p = iniGetString(ini, ROOT_SECTION, "AnswerBanner", NULL, value);
-	if(p != NULL)
+	if((p = iniGetString(ini, ROOT_SECTION, "AnswerBanner", NULL, value)) != NULL)
 		SAFECOPY(cfg.answer_banner, p);
+	if((p = iniGetString(ini, ROOT_SECTION, "ClientFile", NULL, value)) != NULL)
+		SAFECOPY(cfg.client_file, p);
 	return true;
 }
 
@@ -1040,6 +1054,7 @@ int main(int argc, char** argv)
 	cfg.server_echo = TRUE;
 	cfg.port = IPPORT_TELNET;
 	cfg.address_family = ADDRESS_FAMILY_UNSPEC;
+	SAFECOPY(cfg.client_file, "client.ini");
 	SAFECOPY(cfg.busy_notice, "\r\nSorry, not available right now\r\n");
 	SAFEPRINTF(cfg.answer_banner, "\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n", &__DATE__[7]);
 
