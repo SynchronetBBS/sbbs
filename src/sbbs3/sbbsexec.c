@@ -39,22 +39,37 @@
 #define READ_TIMEOUT			(30 * 1000)	// X00REF.DOC "the timeout value is set to 30 seconds"
 
 /* UART Parameters and virtual registers */
-WORD uart_io_base				= UART_COM1_IO_BASE;	/* COM1 */
-BYTE uart_irq					= UART_COM1_IRQ;
-BYTE uart_ier_reg				= 0;
-BYTE uart_lcr_reg				= UART_LCR_8_DATA_BITS;
-BYTE uart_mcr_reg				= UART_MCR_DTR;
-BYTE uart_lsr_reg				= UART_LSR_EMPTY_DATA | UART_LSR_EMPTY_XMIT;
-BYTE uart_msr_reg				= UART_MSR_CTS | UART_MSR_DSR;
-BYTE uart_scratch_reg			= 0;
-BYTE uart_divisor_latch_lsb		= 0x03;	/* 38400 */
-BYTE uart_divisor_latch_msb		= 0x00;
-BYTE uart_fifo_enabled			= 0;
+struct uart {
+	WORD io_base;
+	BYTE irq;
+	BYTE ier_reg;
+	BYTE lcr_reg;
+	BYTE mcr_reg;
+	BYTE lsr_reg;
+	BYTE msr_reg;
+	BYTE scratch_reg;
+	BYTE divisor_latch_lsb;
+	BYTE divisor_latch_msb;
+	BYTE fifo_enabled;
+	BOOL virtualize;
+} default_uart = {
+	.io_base				= UART_COM1_IO_BASE,	/* COM1 */
+	.irq					= UART_COM1_IRQ,
+	.ier_reg				= 0,
+	.lcr_reg				= UART_LCR_8_DATA_BITS,
+	.mcr_reg				= UART_MCR_DTR,
+	.lsr_reg				= UART_LSR_EMPTY_DATA | UART_LSR_EMPTY_XMIT,
+	.msr_reg				= UART_MSR_CTS | UART_MSR_DSR,
+	.scratch_reg			= 0,
+	.divisor_latch_lsb		= 0x03,	/* 38400 */
+	.divisor_latch_msb		= 0x00,
+	.fifo_enabled			= 0,
+	.virtualize				= FALSE
+}, uart;
 
 // Notice: re-initialize global variables in VDDInitialize for NTVDMx64 and pre-Vista versions of Windows
 int log_level = LOG_INFO;
 
-BOOL		virtualize_uart=FALSE;
 double		yield_interval=1.0;
 BOOL		dcd_changed = FALSE;
 BOOL		hangup_supported=TRUE;
@@ -125,27 +140,27 @@ void parse_ini(char* program)
 	else
 		SAFEPRINTF(section,"%s.UART",program);
 
-	virtualize_uart=iniGetBool(ini,section,"Virtualize",virtualize_uart);
+	uart.virtualize=iniGetBool(ini,section,"Virtualize",uart.virtualize);
 	switch(iniGetInteger(ini,section,"ComPort",0)) {
 		case 1:	/* COM1 */
-			uart_irq		=UART_COM1_IRQ;
-			uart_io_base	=UART_COM1_IO_BASE;
+			uart.irq		=UART_COM1_IRQ;
+			uart.io_base	=UART_COM1_IO_BASE;
 			break;
 		case 2:	/* COM2 */
-			uart_irq		=UART_COM2_IRQ;
-			uart_io_base	=UART_COM2_IO_BASE;
+			uart.irq		=UART_COM2_IRQ;
+			uart.io_base	=UART_COM2_IO_BASE;
 			break;
 		case 3:	/* COM3 */
-			uart_irq		=UART_COM3_IRQ;
-			uart_io_base	=UART_COM3_IO_BASE;
+			uart.irq		=UART_COM3_IRQ;
+			uart.io_base	=UART_COM3_IO_BASE;
 			break;
 		case 4:	/* COM4 */
-			uart_irq		=UART_COM4_IRQ;
-			uart_io_base	=UART_COM4_IO_BASE;
+			uart.irq		=UART_COM4_IRQ;
+			uart.io_base	=UART_COM4_IO_BASE;
 			break;
 	}
-	uart_irq=(BYTE)iniGetShortInt(ini,section,"IRQ",uart_irq);
-	uart_io_base=iniGetShortInt(ini,section,"Address",uart_io_base);
+	uart.irq=(BYTE)iniGetShortInt(ini,section,"IRQ",uart.irq);
+	uart.io_base=iniGetShortInt(ini,section,"Address",uart.io_base);
 
 	lprintf(LOG_INFO,"Parsed %s section of %s"
 		,section
@@ -163,9 +178,9 @@ void set_interrupt_pending(BYTE intr, BOOL assert)
 	lprintf(LOG_DEBUG,"%sasserting interrupt %02X (pending: %02X, IER: %02X)"
 		,assert ? "" : "de-", intr
 		,pending_interrupts
-		,uart_ier_reg);
+		,uart.ier_reg);
 	if(assert) {
-		if(uart_ier_reg&intr) {					/* is interrupt enabled? */
+		if(uart.ier_reg&intr) {					/* is interrupt enabled? */
 			pending_interrupts |= intr;			/* flag as pending */
 			SetEvent(interrupt_event);
 		}
@@ -180,15 +195,15 @@ void set_interrupt_pending(BYTE intr, BOOL assert)
 
 void data_waiting(BOOL waiting)
 {
-	if(waiting && (uart_mcr_reg & UART_MCR_RTS)) {
+	if(waiting && (uart.mcr_reg & UART_MCR_RTS)) {
 		/* Set the "Data ready" bit in the LSR */
-		uart_lsr_reg |= UART_LSR_DATA_READY;
+		uart.lsr_reg |= UART_LSR_DATA_READY;
 
 		/* assert rx data interrupt */
 		assert_interrupt(UART_IER_RX_DATA); 
 	} else {
 		/* Clear the data ready bit in the LSR */
-		uart_lsr_reg &= ~UART_LSR_DATA_READY;
+		uart.lsr_reg &= ~UART_LSR_DATA_READY;
 
 		/* Clear data ready interrupt identification in IIR */
 		deassert_interrupt(UART_IER_RX_DATA);
@@ -211,17 +226,17 @@ void _cdecl interrupt_thread(void *arg)
 			lprintf(LOG_NOTICE, "Waiting for interrupt returned %ld", result);
 			break;
 		}
-		if((uart_ier_reg&pending_interrupts) != 0) {
+		if((uart.ier_reg&pending_interrupts) != 0) {
 			lprintf(LOG_DEBUG,"VDDSimulateInterrupt (pending: %02X) - IER: %02X"
-				,pending_interrupts, uart_ier_reg);
-			VDDSimulateInterrupt(ICA_MASTER, uart_irq, /* count: */1);
+				,pending_interrupts, uart.ier_reg);
+			VDDSimulateInterrupt(ICA_MASTER, uart.irq, /* count: */1);
 		}
 #if 0
 		/* "Real 16550s should always reassert
 		 *  this interrupt whenever the transmitter is idle and
 		 *  the interrupt is enabled."
 		 */
-		if(pending_interrupts==0 && uart_ier_reg&UART_IER_TX_EMPTY)
+		if(pending_interrupts==0 && uart.ier_reg&UART_IER_TX_EMPTY)
 			assert_interrupt(UART_IER_TX_EMPTY);
 #endif
 	}
@@ -257,7 +272,7 @@ void _cdecl input_thread(void* arg)
 		}
 		RingBufWrite(&rdbuf,buf,count);
 
-		if(virtualize_uart) {
+		if(uart.virtualize) {
 			data_waiting(TRUE);
 		}
 	}
@@ -325,15 +340,15 @@ static char *chr(uchar ch)
 
 VOID uart_wrport(WORD port, BYTE data)
 {
-	int reg = port - uart_io_base;
+	int reg = port - uart.io_base;
 	int retval;
 
 	lprintf(LOG_DEBUG,"write of port: %x (%s) <- %02X", port, uart_reg_desc[reg], data);
 
 	switch(reg) {
 		case UART_BASE:
-			if(uart_lcr_reg&UART_LCR_DLAB) {
-				uart_divisor_latch_lsb = data;
+			if(uart.lcr_reg&UART_LCR_DLAB) {
+				uart.divisor_latch_lsb = data;
 				lprintf(LOG_DEBUG,"set divisor latch low byte: %02X", data);
 			} else { // Transmitter Holding Register
 				if(log_level >= LOG_DEBUG)
@@ -348,32 +363,32 @@ VOID uart_wrport(WORD port, BYTE data)
 			}
 			break;
 		case UART_IER:
-			if(uart_lcr_reg&UART_LCR_DLAB) {
-				uart_divisor_latch_msb = data;
+			if(uart.lcr_reg&UART_LCR_DLAB) {
+				uart.divisor_latch_msb = data;
 				lprintf(LOG_DEBUG,"set divisor latch high byte: %02X", data);
 			} else {
-				uart_ier_reg = data;
+				uart.ier_reg = data;
 				lprintf(LOG_DEBUG, "Set IER to %02X", data);
 			}
 			assert_interrupt(UART_IER_TX_EMPTY);	/* should this be re-asserted for all writes? */
 			break;
 		case UART_FCR:
-			uart_fifo_enabled = data & UART_FCR_ENABLE_FIFO;
+			uart.fifo_enabled = data & UART_FCR_ENABLE_FIFO;
 			lprintf(LOG_INFO, "Set FCR to %02X", data);
 			break;
 		case UART_LCR:
-			uart_lcr_reg = data;
+			uart.lcr_reg = data;
 			lprintf(LOG_INFO, "Set LCR to %02X", data);
 			break;
 		case UART_MCR:
-			uart_mcr_reg = data;
-			if((uart_mcr_reg&UART_MCR_DTR) == 0)	/* Dropping DTR (i.e. "hangup") */
+			uart.mcr_reg = data;
+			if((uart.mcr_reg&UART_MCR_DTR) == 0)	/* Dropping DTR (i.e. "hangup") */
 				hangup();
 			data_waiting(RingBufFull(&rdbuf));
 			lprintf(LOG_INFO, "Set MCR to %02X", data);
 			break;
 		case UART_SCRATCH:
-			uart_scratch_reg = data;
+			uart.scratch_reg = data;
 			lprintf(LOG_INFO, "Set scratch register to %02X", data);
 			break;
 		default:
@@ -385,16 +400,16 @@ VOID uart_wrport(WORD port, BYTE data)
 
 VOID uart_rdport(WORD port, PBYTE data)
 {
-	int reg = port - uart_io_base;
+	int reg = port - uart.io_base;
 	DWORD avail;
 
 	lprintf(LOG_DEBUG,"read of port: %x (%s)", port, uart_reg_desc[reg]);
 
 	switch(reg) {
 		case UART_BASE:
-			if(uart_lcr_reg&UART_LCR_DLAB) {
+			if(uart.lcr_reg&UART_LCR_DLAB) {
 				lputs(LOG_DEBUG,"reading divisor latch LSB");
-				*data = uart_divisor_latch_lsb;
+				*data = uart.divisor_latch_lsb;
 				break;
 			}
 			if((avail=RingBufFull(&rdbuf))!=0) {
@@ -407,11 +422,11 @@ VOID uart_rdport(WORD port, PBYTE data)
 			data_waiting(avail);
 			break;
 		case UART_IER:
-			if(uart_lcr_reg&UART_LCR_DLAB) {
+			if(uart.lcr_reg&UART_LCR_DLAB) {
 				lputs(LOG_DEBUG,"reading divisor latch MSB");
-				*data = uart_divisor_latch_msb;
+				*data = uart.divisor_latch_msb;
 			} else
-				*data = uart_ier_reg;
+				*data = uart.ier_reg;
 			break;
 		case UART_IIR:
 		{
@@ -432,42 +447,42 @@ VOID uart_rdport(WORD port, PBYTE data)
 				*data = UART_IIR_NONE;
 			if(pending_interrupts)
 				SetEvent(interrupt_event);
-			if(uart_fifo_enabled)
+			if(uart.fifo_enabled)
 				*data |= UART_IIR_FIFO_ENABLED;
 			lprintf(LOG_DEBUG, "IIR: %02X (pending: %02X)", *data, pending_interrupts);
 			break;
 		}
 		case UART_LCR:
-			*data = uart_lcr_reg;
-			lprintf(LOG_INFO, "LCR: %02X", uart_lcr_reg);
+			*data = uart.lcr_reg;
+			lprintf(LOG_INFO, "LCR: %02X", uart.lcr_reg);
 			break;
 		case UART_MCR:
-			*data = uart_mcr_reg;
-			lprintf(LOG_INFO, "MCR: %02X", uart_mcr_reg);
+			*data = uart.mcr_reg;
+			lprintf(LOG_INFO, "MCR: %02X", uart.mcr_reg);
 			break;
 		case UART_LSR:
-			*data = uart_lsr_reg;
+			*data = uart.lsr_reg;
 			/* Clear line status interrupt pending */
 			deassert_interrupt(UART_IER_LINE_STATUS);
 			lprintf(LOG_DEBUG, "LSR: %02X", *data);
 			break;
 		case UART_MSR:
 			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
-				uart_msr_reg &= ~UART_MSR_DCD;
+				uart.msr_reg &= ~UART_MSR_DCD;
 			else
-				uart_msr_reg |= UART_MSR_DCD;
+				uart.msr_reg |= UART_MSR_DCD;
 			if(dcd_changed)
-				uart_msr_reg |= UART_MSR_DCD_CHANGE;
+				uart.msr_reg |= UART_MSR_DCD_CHANGE;
 			else
-				uart_msr_reg &= ~UART_MSR_DCD_CHANGE;
+				uart.msr_reg &= ~UART_MSR_DCD_CHANGE;
 			dcd_changed = FALSE;
-			*data = uart_msr_reg;
+			*data = uart.msr_reg;
 			/* Clear modem status interrupt pending */
 			deassert_interrupt(UART_IER_MODEM_STATUS);
 			lprintf(LOG_DEBUG, "MSR: %02X", *data);
 			break;
 		case UART_SCRATCH:
-			*data = uart_scratch_reg;
+			*data = uart.scratch_reg;
 			break;
 		default:
 			lprintf(LOG_ERR,"UNSUPPORTED register: %u", reg);
@@ -589,14 +604,14 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 			lprintf(LOG_INFO,"Yield interval: %f milliseconds", yield_interval);
 
-			if(virtualize_uart) {
+			if(uart.virtualize) {
 				lprintf(LOG_INFO,"Virtualizing UART (0x%x, IRQ %u)"
-					,uart_io_base, uart_irq);
+					,uart.io_base, uart.irq);
 
 				IOHandlers.inb_handler = uart_rdport;
 				IOHandlers.outb_handler = uart_wrport;
-				PortRange.First=uart_io_base;
-				PortRange.Last=uart_io_base + UART_IO_RANGE;
+				PortRange.First=uart.io_base;
+				PortRange.Last=uart.io_base + UART_IO_RANGE;
 
 				VDDInstallIOHook((HANDLE)getAX(), 1, &PortRange, &IOHandlers);
 
@@ -626,7 +641,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			lprintf(LOG_INFO,"           read=%u bytes (in %u calls)",bytes_read,reads);
 			lprintf(LOG_INFO,"           wrote=%u bytes (in %u calls)",bytes_written,writes);
 
-			if(virtualize_uart) {
+			if(uart.virtualize) {
 				lputs(LOG_INFO,"Uninstalling Virtualizaed UART IO Hook");
 				VDDDeInstallIOHook((HANDLE)getAX(), 1, &PortRange);
 				DeleteCriticalSection(&interrupt_mutex);
@@ -857,7 +872,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 		case VDD_LOAD_INI_SECTION:	/* Parse (program-specific) sub-section of settings file */
 			count = getCX();
 			p = (BYTE*)GetVDMPointer((ULONG)((getES() << 16)|getDI())
-				,count,FALSE); 
+				,count,FALSE);
+			lprintf(LOG_INFO, "LOAD_INI_SECTION: %s", p);
 			parse_ini(p);
 			break;
 
@@ -873,7 +889,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_VIRTUALIZE_UART:
-			virtualize_uart = TRUE;
+			uart.virtualize = TRUE;
 			break;
 
 		default:
@@ -886,6 +902,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 __declspec(dllexport) BOOL __cdecl VDDInitialize(IN PVOID hVDD, IN ULONG Reason,	 
 IN PCONTEXT Context OPTIONAL)	 
 {
+	memcpy(&uart, &default_uart, sizeof(uart));
 	log_level = LOG_INFO;
 	lputs(LOG_INFO, __FUNCTION__);
 	return TRUE;	 

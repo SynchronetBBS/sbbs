@@ -34,6 +34,7 @@
 #include "sockwrap.h"
 #include "telnet.h"
 #include "ini_file.h"
+#include "vdd_func.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -62,7 +63,7 @@ struct {
 	uint cmdlen;
 	uchar cmd[64];
 } telnet;
-
+unsigned int sbbsexec_mode = SBBSEXEC_MODE_UNSPECIFIED;
 #define XTRN_IO_BUF_LEN 10000
 #define RING_DELAY 6000 /* US standard is 6 seconds */
 
@@ -75,6 +76,7 @@ struct {
 	ulong data_rate;
 	bool server_echo;
 	char busy_notice[INI_MAX_VALUE_LEN];
+	char answer_banner[INI_MAX_VALUE_LEN];
 	enum {
 		 ADDRESS_FAMILY_UNSPEC
 		,ADDRESS_FAMILY_INET
@@ -107,6 +109,7 @@ void usage(const char* progname)
 		"\t-l[addr]  Listen for incoming TCP connections\n"
 		"\t          [on optionally-specified network interface]\n"
 		"\t-p<port>  Specify default TCP port number (decimal)\n"
+		"\t-n<node>  Specify node number\n"
 		"\t-d        Enable debug output\n"
 		"\t-h<sock>  Specify socket descriptor/handle to use (decimal)\n"
 		"\t-r<cps>   Specify maximum receive data rate (chars/second)\n"
@@ -168,6 +171,8 @@ ulong count_esc(struct modem* modem, uint8_t* buf, size_t rd)
 	for(size_t i = 0; i < rd; i++) {
 		if(buf[i] == modem->esc)
 			count++;
+		else
+			return 0;
 	}
 	return count;
 }
@@ -214,9 +219,9 @@ char* response(struct modem* modem, enum modem_response code)
 	if(modem->quiet)
 		return "";
 	if(modem->numeric_mode)
-		sprintf(str, "%u%c", code, modem->cr);
+		safe_snprintf(str, sizeof(str), "%u%c", code, modem->cr);
 	else
-		sprintf(str, "%c%c%s%c%c", modem->cr, modem->lf, response_str[code], modem->cr, modem->lf);
+		safe_snprintf(str, sizeof(str), "%c%c%s%c%c", modem->cr, modem->lf, response_str[code], modem->cr, modem->lf);
 	return str;
 }
 
@@ -353,13 +358,18 @@ const char* protocol(enum mode mode)
 	return "Raw";
 }
 
-int address_family()
+int address_family(BOOL for_listen)
 {
 	switch(cfg.address_family) {
 		case ADDRESS_FAMILY_INET:	return PF_INET;
 		case ADDRESS_FAMILY_INET6:	return PF_INET6;
 	}
-	return PF_UNSPEC;
+	return for_listen ? PF_INET : PF_UNSPEC;
+}
+
+int listen_address_family()
+{
+	return address_family(true);
 }
 
 int putcom(char* buf, size_t len)
@@ -574,24 +584,19 @@ char* dial(struct modem* modem, const char* number)
 	char* p = strrchr(host, ':');
 	char* b = strrchr(host, ']'); 
 	if(p != NULL && p > b) {
-		port = (uint16_t)strtol(p, &p, 10);
+		port = (uint16_t)strtol(p + 1, NULL, 10);
 		*p = 0;
 	}
 	dprintf("Connecting to port %hu at host '%s' via %s", port, host, protocol(mode));
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_flags=PF_UNSPEC;
-	hints.ai_family=address_family();
+	hints.ai_family = address_family(/* for listen: */false);
 	hints.ai_socktype=SOCK_STREAM;
 	hints.ai_protocol=IPPROTO_TCP;
-	hints.ai_flags=AI_NUMERICSERV;
-#ifdef AI_ADDRCONFIG
-	hints.ai_flags|=AI_ADDRCONFIG;
-#endif
 	dprintf("%s %d calling getaddrinfo", __FILE__, __LINE__);
 	SAFEPRINTF(portnum, "%hu", port);
 	int result = getaddrinfo(host, portnum, &hints, &res);
 	if(result != 0) {
-		dprintf("getaddrinfo(%s, %s) returned %d", host, portnum, result);
+		dprintf("getaddrinfo(%s, %s) [family=%d] returned %d", host, portnum, hints.ai_family, result);
 		return response(modem, NO_ANSWER);
 	}
 
@@ -699,6 +704,7 @@ char* answer(struct modem* modem)
 		/* Will suppress Go Ahead */
 		request_telnet_opt(TELNET_WILL,TELNET_SUP_GA);
 	}
+	putcom(cfg.answer_banner, strlen(cfg.answer_banner));
 	return connected(modem);
 }
 
@@ -725,17 +731,18 @@ char* atmodem_exec(struct modem* modem)
 							return error(modem);
 						if(*p == '=') {
 							p++;
-							if(strcmp(p, "L") == 0)
+							if(stricmp(p, "L") == 0)
 								p = modem->last;
 							SAFECOPY(modem->save[val], p);
 							return write_save(modem, val) ? ok(modem) : error(modem);
 						}
-						if(*p == '?' || strcmp(p, "L?") == 0) {
-							if(strcmp(p, "L?") == 0)
+						if(*p == '?' || stricmp(p, "L?") == 0) {
+							if(stricmp(p, "L?") == 0)
 								p = modem->last;
 							else
 								p = modem->save[val];
-							sprintf(respbuf, "%c%s%c%c%s", modem->lf, p, modem->cr, modem->lf, ok(modem));
+							safe_snprintf(respbuf, sizeof(respbuf), "%c%s%c%c%s"
+								,modem->lf, p, modem->cr, modem->lf, ok(modem));
 							return respbuf;
 						}
 				}
@@ -854,7 +861,8 @@ char* atmodem_exec(struct modem* modem)
 								val = 0;
 								break;
 						}
-						sprintf(respbuf, "%c%03lu%c%c%s", modem->lf, val, modem->cr, modem->lf, ok(modem));
+						safe_snprintf(respbuf, sizeof(respbuf), "%c%03lu%c%c%s"
+							,modem->lf, val, modem->cr, modem->lf, ok(modem));
 						return respbuf;
 					} else
 						return error(modem);
@@ -928,7 +936,7 @@ BOOL vdd_write(HANDLE* slot, uint8_t* buf, size_t buflen)
 {
 	if(*slot == INVALID_HANDLE_VALUE) {
 		char path[MAX_PATH + 1];
-		sprintf(path, "\\\\.\\mailslot\\sbbsexec\\wr%d", cfg.node_num);
+		SAFEPRINTF(path, "\\\\.\\mailslot\\sbbsexec\\wr%d", cfg.node_num);
 		*slot = CreateFile(path
 			,GENERIC_WRITE
 			,FILE_SHARE_READ
@@ -1000,6 +1008,9 @@ bool read_ini(const char* ini_fname)
 	const char* p = iniGetString(ini, ROOT_SECTION, "BusyNotice", NULL, value);
 	if(p != NULL)
 		SAFECOPY(cfg.busy_notice, p);
+	p = iniGetString(ini, ROOT_SECTION, "AnswerBanner", NULL, value);
+	if(p != NULL)
+		SAFECOPY(cfg.answer_banner, p);
 	return true;
 }
 
@@ -1008,7 +1019,7 @@ int main(int argc, char** argv)
 	int argn = 1;
 	char tmp[256];
 	char path[MAX_PATH + 1];
-	char fullmodemline[MAX_PATH + 1];
+	char fullcmdline[MAX_PATH + 1];
 	uint8_t buf[XTRN_IO_BUF_LEN];
 	uint8_t telnet_buf[sizeof(buf) * 2];
 	size_t rx_buflen = sizeof(buf);
@@ -1025,10 +1036,12 @@ int main(int argc, char** argv)
 	}
 
 	// Default configuration values
+	mode = TELNET;
 	cfg.server_echo = TRUE;
 	cfg.port = IPPORT_TELNET;
-	cfg.address_family = ADDRESS_FAMILY_INET;
+	cfg.address_family = ADDRESS_FAMILY_UNSPEC;
 	SAFECOPY(cfg.busy_notice, "\r\nSorry, not available right now\r\n");
+	SAFEPRINTF(cfg.answer_banner, "\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n", &__DATE__[7]);
 
 	ini = strListInit();
 	GetModuleFileName(NULL, ini_fname, sizeof(ini_fname) - 1);
@@ -1045,11 +1058,11 @@ int main(int argc, char** argv)
 			break;
 		while(*arg == '-')
 			arg++;
-		if(strcmp(arg, "telnet") == 0) {
+		if(stricmp(arg, "telnet") == 0) {
 			mode = TELNET;
 			continue;
 		}
-		if(strcmp(arg, "raw") == 0) {
+		if(stricmp(arg, "raw") == 0) {
 			mode = RAW;
 			continue;
 		}
@@ -1064,12 +1077,15 @@ int main(int argc, char** argv)
 				cfg.listen = true;
 				arg++;
 				if(*arg != '\0') {
-					listening_interface.addr.sa_family = address_family();
+					listening_interface.addr.sa_family = listen_address_family();
 					if(inet_ptoaddr(arg, &listening_interface, sizeof(listening_interface)) == NULL) {
 						fprintf(stderr, "!Error parsing network address: %s", arg);
 						return EXIT_FAILURE;
 					}
 				}
+				break;
+			case 'n':
+				cfg.node_num = atoi(arg + 1);
 				break;
 			case 'p':
 				cfg.port = atoi(arg + 1);
@@ -1092,8 +1108,18 @@ int main(int argc, char** argv)
 				break;
 			case 'B':
 				rx_buflen = min(strtoul(arg + 1, NULL, 10), sizeof(buf));
+				break;
 			case 'R':
 				rx_delay = strtoul(arg + 1, NULL, 10);
+				break;
+			case 'I':
+				sbbsexec_mode |= SBBSEXEC_MODE_DOS_IN;
+				break;
+			case 'O':
+				sbbsexec_mode |= SBBSEXEC_MODE_DOS_OUT;
+				break;
+			case 'M':
+				sbbsexec_mode = strtoul(arg + 1, NULL, 0);
 				break;
 			case 'V':
 				fprintf(stdout, "%s/%s\n", GIT_BRANCH, GIT_HASH);
@@ -1114,13 +1140,13 @@ int main(int argc, char** argv)
 		if(sock != INVALID_SOCKET)
 			listening_sock = sock;
 		else {
-			listening_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_IP);
+			listening_sock = socket(listen_address_family(), SOCK_STREAM, IPPROTO_IP);
 			if(listening_sock == INVALID_SOCKET) {
 				fprintf(stderr, "Error %ld creating socket\n", WSAGetLastError());
 				return EXIT_FAILURE;
 			}
 		}
-		listening_interface.addr.sa_family = address_family();
+		listening_interface.addr.sa_family = listen_address_family();
 		inet_setaddrport(&listening_interface, cfg.port);
 		result = bind(listening_sock, &listening_interface.addr, xp_sockaddr_len(&listening_interface));
 		if(result != 0) {
@@ -1156,7 +1182,7 @@ int main(int argc, char** argv)
 	fclose(fp);
 
 	while(1) {
-		sprintf(path, "\\\\.\\mailslot\\sbbsexec\\rd%d", cfg.node_num);
+		SAFEPRINTF(path, "\\\\.\\mailslot\\sbbsexec\\rd%d", cfg.node_num);
 		rdslot = CreateMailslot(path
 			,sizeof(buf)/2			// Maximum message size (0=unlimited)
 			,0						// Read time-out
@@ -1170,7 +1196,7 @@ int main(int argc, char** argv)
 		++cfg.node_num;
 	}
 
-	sprintf(path, "sbbsexec_carrier%d", cfg.node_num);
+	SAFEPRINTF(path, "sbbsexec_carrier%d", cfg.node_num);
 	carrier_event = CreateEvent(
 		 NULL	// pointer to security attributes
 		,FALSE	// flag for manual-reset event
@@ -1182,7 +1208,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	sprintf(path, "sbbsexec_hangup%d", cfg.node_num);
+	SAFEPRINTF(path, "sbbsexec_hangup%d", cfg.node_num);
 	hangup_event = CreateEvent(
 		 NULL	// pointer to security attributes
 		,FALSE	// flag for manual-reset event
@@ -1194,7 +1220,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	sprintf(path, "sbbsexec_hungup%d", cfg.node_num);
+	SAFEPRINTF(path, "sbbsexec_hungup%d", cfg.node_num);
 	hungup_event = CreateEvent(
 		 NULL	// pointer to security attributes
 		,TRUE	// flag for manual-reset event
@@ -1211,12 +1237,13 @@ int main(int argc, char** argv)
 
 	BOOL x64 = FALSE;
 	IsWow64Process(GetCurrentProcess(), &x64);
-	sprintf(fullmodemline, "dosxtrn.exe %s %s %u %s", dropfile, x64 ? "x64" : "NT", cfg.node_num, ini_fname);
+	safe_snprintf(fullcmdline, sizeof(fullcmdline), "dosxtrn.exe %s %s %u %u %s"
+		,dropfile, x64 ? "x64" : "NT", cfg.node_num, sbbsexec_mode, ini_fname);
 
 	PROCESS_INFORMATION process_info;
     if(!CreateProcess(
 		NULL,			// pointer to name of executable module
-		fullmodemline,  	// pointer to command line string
+		fullcmdline,  	// pointer to command line string
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
 		FALSE, 			// handle inheritance flag
@@ -1226,10 +1253,10 @@ int main(int argc, char** argv)
 		&startup_info,  // pointer to STARTUPINFO
 		&process_info  	// pointer to PROCESS_INFORMATION
 		)) {
-        fprintf(stderr, "Error %ld executing '%s'", GetLastError(), fullmodemline);
+        fprintf(stderr, "Error %ld executing '%s'", GetLastError(), fullcmdline);
 		return EXIT_FAILURE;
 	}
-	printf("Executed '%s' successfully\n", fullmodemline);
+	printf("Executed '%s' successfully\n", fullcmdline);
 
 	CloseHandle(process_info.hThread);
 
@@ -1322,6 +1349,7 @@ int main(int argc, char** argv)
 		if(rd) {
 			if(modem.online) {
 				if(modem.esc_count) {
+					dprintf("Esc count = %d", modem.esc_count);
 					if(modem.esc_count >= 3)
 						modem.esc_count = 0;
 					else  {
@@ -1332,8 +1360,10 @@ int main(int argc, char** argv)
 								modem.esc_count = 0;
 					}
 				} else {
-					if(now - lasttx > guard_time(&modem))
+					if(now - lasttx > guard_time(&modem)) {
 						modem.esc_count = count_esc(&modem, buf, rd);
+						dprintf("New esc count = %d", modem.esc_count);
+					}
 				}
 				size_t len = rd;
 				uint8_t* p = buf;
