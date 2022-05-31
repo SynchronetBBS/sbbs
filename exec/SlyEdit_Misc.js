@@ -43,6 +43,9 @@
  *                              property of the sub-board rather than checking the
  *                              ARS.  The can_post property covers more cases.
  * 2021-12-09 Eric Oulashin     Added consolePauseWithoutText()
+ * 2022-05-27                   Fixed a few instances where SlyEdit was trying to access
+ *                              sub-board information with an empty sub-board code (in the rare
+ *                              case when no sub-boards are configured).
  */
  
 if (typeof(require) === "function")
@@ -59,43 +62,43 @@ var BKG_ATTR = 2;  // Background color attribute
 var SPECIAL_ATTR = 3; // Special attribute
 
 // Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "Ú";
-var HORIZONTAL_SINGLE = "Ä";
-var UPPER_RIGHT_SINGLE = "¿";
-var VERTICAL_SINGLE = "³";
-var LOWER_LEFT_SINGLE = "À";
-var LOWER_RIGHT_SINGLE = "Ù";
-var T_SINGLE = "Â";
-var LEFT_T_SINGLE = "Ã";
-var RIGHT_T_SINGLE = "´";
-var BOTTOM_T_SINGLE = "Á";
-var CROSS_SINGLE = "Å";
+var UPPER_LEFT_SINGLE = "Ãš";
+var HORIZONTAL_SINGLE = "Ã„";
+var UPPER_RIGHT_SINGLE = "Â¿";
+var VERTICAL_SINGLE = "Â³";
+var LOWER_LEFT_SINGLE = "Ã€";
+var LOWER_RIGHT_SINGLE = "Ã™";
+var T_SINGLE = "Ã‚";
+var LEFT_T_SINGLE = "Ãƒ";
+var RIGHT_T_SINGLE = "Â´";
+var BOTTOM_T_SINGLE = "Ã";
+var CROSS_SINGLE = "Ã…";
 // Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "É";
-var HORIZONTAL_DOUBLE = "Í";
-var UPPER_RIGHT_DOUBLE = "»";
-var VERTICAL_DOUBLE = "º";
-var LOWER_LEFT_DOUBLE = "È";
-var LOWER_RIGHT_DOUBLE = "¼";
-var T_DOUBLE = "Ë";
-var LEFT_T_DOUBLE = "Ì";
-var RIGHT_T_DOUBLE = "¹";
-var BOTTOM_T_DOUBLE = "Ê";
-var CROSS_DOUBLE = "Î";
+var UPPER_LEFT_DOUBLE = "Ã‰";
+var HORIZONTAL_DOUBLE = "Ã";
+var UPPER_RIGHT_DOUBLE = "Â»";
+var VERTICAL_DOUBLE = "Âº";
+var LOWER_LEFT_DOUBLE = "Ãˆ";
+var LOWER_RIGHT_DOUBLE = "Â¼";
+var T_DOUBLE = "Ã‹";
+var LEFT_T_DOUBLE = "ÃŒ";
+var RIGHT_T_DOUBLE = "Â¹";
+var BOTTOM_T_DOUBLE = "ÃŠ";
+var CROSS_DOUBLE = "Ã";
 // Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "Õ";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "¸";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "Ô";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "¾";
+var UPPER_LEFT_VSINGLE_HDOUBLE = "Ã•";
+var UPPER_RIGHT_VSINGLE_HDOUBLE = "Â¸";
+var LOWER_LEFT_VSINGLE_HDOUBLE = "Ã”";
+var LOWER_RIGHT_VSINGLE_HDOUBLE = "Â¾";
 // Other special characters
-var DOT_CHAR = "ú";
-var CHECK_CHAR = "û";
-var THIN_RECTANGLE_LEFT = "İ";
-var THIN_RECTANGLE_RIGHT = "Ş";
-var BLOCK1 = "°"; // Dimmest block
-var BLOCK2 = "±";
-var BLOCK3 = "²";
-var BLOCK4 = "Û"; // Brightest block
+var DOT_CHAR = "Ãº";
+var CHECK_CHAR = "Ã»";
+var THIN_RECTANGLE_LEFT = "Ã";
+var THIN_RECTANGLE_RIGHT = "Ã";
+var BLOCK1 = "Â°"; // Dimmest block
+var BLOCK2 = "Â±";
+var BLOCK3 = "Â²";
+var BLOCK4 = "Ã›"; // Brightest block
 
 // Navigational keys
 var UP_ARROW = "";
@@ -1376,7 +1379,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 
 	// Help keys and slash commands
 	printf("\1n\1g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
-	printf("\1k\1h%-44s  %-33s\r\n", "ÄÄÄÄÄÄÄÄÄ", "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+	printf("\1k\1h%-44s  %-33s\r\n", "Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„", "Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„");
 	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
 	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
@@ -1390,7 +1393,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	printf(" \1c\1h%-7s\1g  \1n\1c%s", "", "", "/?", "Show help");
 	console.crlf();
 	// Command/edit keys
-	console.print("\1n\1gCommand/edit keys\r\n\1k\1hÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\r\n");
+	console.print("\1n\1gCommand/edit keys\r\n\1k\1hÃ„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
 	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
@@ -1469,14 +1472,14 @@ function displayProgramExitInfo(pClearScreen)
 		console.clear("n");
 
 	/*console.print("ncYou have been using:\r\n");
-	console.print("hkÛ7ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß0Û\r\n");
-	console.print("Û7 nb7Üßßßß Û       Ûßßßß    Û Ü       hk0Û\r\n");
-	console.print("Û7 nb7ßÜÜÜ  Û Ü   Ü ÛÜÜÜ   ÜÜÛ Ü ÜÜÛÜÜ hk0Û\r\n");
-	console.print("Û7     nb7Û Û Û   Û Û     Û  Û Û   Û   hk0Û\r\n");
-	console.print("Û7 nb7ßßßß  ß  ßÜß  ßßßßß  ßßß ß   ßßß hk0Û\r\n");
-	console.print("Û7         nb7Üß                       hk0Û\r\n");
-	console.print("Û7        nb7ß                         hk0Û\r\n");
-	console.print("ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß\r\n");
+	console.print("hkÃ›7ÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸ0Ã›\r\n");
+	console.print("Ã›7 nb7ÃœÃŸÃŸÃŸÃŸ Ã›       Ã›ÃŸÃŸÃŸÃŸ    Ã› Ãœ       hk0Ã›\r\n");
+	console.print("Ã›7 nb7ÃŸÃœÃœÃœ  Ã› Ãœ   Ãœ Ã›ÃœÃœÃœ   ÃœÃœÃ› Ãœ ÃœÃœÃ›ÃœÃœ hk0Ã›\r\n");
+	console.print("Ã›7     nb7Ã› Ã› Ã›   Ã› Ã›     Ã›  Ã› Ã›   Ã›   hk0Ã›\r\n");
+	console.print("Ã›7 nb7ÃŸÃŸÃŸÃŸ  ÃŸ  ÃŸÃœÃŸ  ÃŸÃŸÃŸÃŸÃŸ  ÃŸÃŸÃŸ ÃŸ   ÃŸÃŸÃŸ hk0Ã›\r\n");
+	console.print("Ã›7         nb7ÃœÃŸ                       hk0Ã›\r\n");
+	console.print("Ã›7        nb7ÃŸ                         hk0Ã›\r\n");
+	console.print("ÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸÃŸ\r\n");
 	console.print("ngVersion hy" + EDITOR_VERSION + " nm(" +
 	              EDITOR_VER_DATE + ")");*/
 	console.print("ncYou have been using hSlyEdit ncversion g" + EDITOR_VERSION +
@@ -3342,7 +3345,7 @@ function getCurMsgInfo(pMsgAreaName)
 	// Note: As of the May 8, 2013 build of Synchronet (3.16), the bbs.smb_sub*
 	// properties reflect the current sub-board being posted to, always.
 	// Digital Man committed a change in CVS for this on May 7, 2013.
-	if ((typeof(pMsgAreaName) == "string") && (pMsgAreaName.length > 0))
+	if ((typeof(pMsgAreaName) === "string") && (pMsgAreaName.length > 0) && (retObj.subBoardCode != "") && msg_area.sub.hasOwnProperty(retObj.subBoardCode))
 	{
 		if (msg_area.sub[retObj.subBoardCode].name.indexOf(pMsgAreaName) == -1)
 		{
@@ -3825,7 +3828,7 @@ function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
 // Return value: Boolean - Whether or not the character is a letter
 function charIsLetter(pChar)
 {
-   return /^[ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈÌÒÙàèìòùÁÉÍÓÚİáéíóúıÂÊÎÔÛâêîôûÃÑÕãñõÄËÏÖÜäëïöüçÇßØøÅåÆæŞşĞğ]$/.test(pChar.toUpperCase());
+   return /^[ABCDEFGHIJKLMNOPQRSTUVWXYZÃ€ÃˆÃŒÃ’Ã™Ã Ã¨Ã¬Ã²Ã¹ÃÃ‰ÃÃ“ÃšÃÃ¡Ã©Ã­Ã³ÃºÃ½Ã‚ÃŠÃÃ”Ã›Ã¢ÃªÃ®Ã´Ã»ÃƒÃ‘Ã•Ã£Ã±ÃµÃ„Ã‹ÃÃ–ÃœÃ¤Ã«Ã¯Ã¶Ã¼Ã§Ã‡ÃŸÃ˜Ã¸Ã…Ã¥Ã†Ã¦ÃÃ¾ÃÃ°]$/.test(pChar.toUpperCase());
 }
 
 // For configuration files, this function returns a fully-pathed filename.
@@ -4746,7 +4749,7 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 	else if (languageNameLower == "pt-br")
 		languageName = "Portug" + ascii(130) + "s (BR)";
 	else if (languageNameLower == "es-es")
-		languageName = "Espa" + ascii(164) + "ol (España)";
+		languageName = "Espa" + ascii(164) + "ol (EspaÃ±a)";
 	else if (languageNameLower == "es-co")
 		languageName = "Espa" + ascii(164) + "ol (CO)";
 	else if (languageNameLower == "es-cl")

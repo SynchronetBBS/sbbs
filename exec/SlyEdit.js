@@ -136,12 +136,16 @@
  *                              Finished refactoring to use DDLightbarMenu
  *                              for the cross-posting menus. Also used DDLightbarMenu
  *                              for the quote selection window.
- * 2022-03-05                   Version 1.76
+ * 2022-03-05 Eric Oulashin     Version 1.76
  *                              When selecting quote lines in a reply message, SlyEdit now
  *                              remembers the position in the quote selection menu so that
  *                              the quote menu isn't always at the top whenever it's opened
  *                              again.  This issue may have been introduced when SlyEdit
  *                              was refactored to use DDLightbarMenu for its lightbar stuff.
+ * 2022-05-27 Eric Oulashin     Version 1.77
+ *                              Fixed a few instances where SlyEdit was trying to access
+ *                              sub-board information with an empty sub-board code (in the rare
+ *                              case when no sub-boards are configured).
  */
 
 /* Command-line arguments:
@@ -238,8 +242,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.76";
-const EDITOR_VER_DATE = "2022-03-05";
+const EDITOR_VERSION = "1.77";
+const EDITOR_VER_DATE = "2022-05-27";
 
 
 // Program variables
@@ -304,6 +308,8 @@ gCrossPostMsgSubs.propIsFuncName = function(pPropName) {
 gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
 	if (typeof(pSubCode) != "string")
 		return false;
+	if (pSubCode === "")
+		return false;
 
 	var grpIndex = msg_area.sub[pSubCode].grp_index;
 	var foundIt = false;
@@ -317,6 +323,8 @@ gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
 //  pSubCode: The sub-code to add
 gCrossPostMsgSubs.add = function(pSubCode) {
 	if (typeof(pSubCode) != "string")
+		return;
+	if (pSubCode === "")
 		return;
 	if (this.subCodeExists(pSubCode))
 		return;
@@ -332,6 +340,8 @@ gCrossPostMsgSubs.add = function(pSubCode) {
 //  pSubCode: The sub-code to remove
 gCrossPostMsgSubs.remove = function(pSubCode) {
 	if (typeof(pSubCode) != "string")
+		return;
+	if (pSubCode === "")
 		return;
 
 	var grpIndex = msg_area.sub[pSubCode].grp_index;
@@ -4177,9 +4187,9 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 	// Ensure the word to test is all lowercase for case-insensitive matching
 	var currentWord = pWordArray[pWordIdx].toLowerCase();
 	// Ensure the word we're checking only has letters and/or an apostrophe.
-	var currentWord = currentWord.replace(/^[^a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']*([a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']+)[^a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']*$/, "$1");
+	var currentWord = currentWord.replace(/^[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*([a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+)[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*$/, "$1");
 	// Now, ensure the word only certain characters: Letters, apostrophe.  Skip it if not.
-	if (!/^[a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']+$/g.test(currentWord))
+	if (!/^[a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+$/g.test(currentWord))
 	{
 		retObj.skipped = true;
 		return retObj;
@@ -5890,15 +5900,18 @@ function writeMsgOntBtmHelpLineWithPause(pMsg, pPauseMS)
 function getSignName(pSubCode, pRealNameOnlyFirst, pRealNameForEmail)
 {
 	var useRealName = false;
-	if (pSubCode.toUpperCase() == "MAIL")
-		useRealName = pRealNameForEmail;
-	else
+	if (typeof(pSubCode) === "string" && pSubCode != "")
 	{
-		var msgbase = new MsgBase(pSubCode);
-		if (msgbase.open())
+		if (pSubCode.toUpperCase() == "MAIL")
+			useRealName = pRealNameForEmail;
+		else
 		{
-			useRealName = ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME);
-			msgbase.close();
+			var msgbase = new MsgBase(pSubCode);
+			if (msgbase.open())
+			{
+				useRealName = ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME);
+				msgbase.close();
+			}
 		}
 	}
 	var signName = "";
