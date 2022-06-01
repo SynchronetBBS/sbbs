@@ -62,43 +62,43 @@ var BKG_ATTR = 2;  // Background color attribute
 var SPECIAL_ATTR = 3; // Special attribute
 
 // Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "√ö";
-var HORIZONTAL_SINGLE = "√Ñ";
-var UPPER_RIGHT_SINGLE = "¬ø";
-var VERTICAL_SINGLE = "¬≥";
-var LOWER_LEFT_SINGLE = "√Ä";
-var LOWER_RIGHT_SINGLE = "√ô";
-var T_SINGLE = "√Ç";
-var LEFT_T_SINGLE = "√É";
-var RIGHT_T_SINGLE = "¬¥";
-var BOTTOM_T_SINGLE = "√Å";
-var CROSS_SINGLE = "√Ö";
+var UPPER_LEFT_SINGLE = "⁄";
+var HORIZONTAL_SINGLE = "ƒ";
+var UPPER_RIGHT_SINGLE = "ø";
+var VERTICAL_SINGLE = "≥";
+var LOWER_LEFT_SINGLE = "¿";
+var LOWER_RIGHT_SINGLE = "Ÿ";
+var T_SINGLE = "¬";
+var LEFT_T_SINGLE = "√";
+var RIGHT_T_SINGLE = "¥";
+var BOTTOM_T_SINGLE = "¡";
+var CROSS_SINGLE = "≈";
 // Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "√â";
-var HORIZONTAL_DOUBLE = "√ç";
-var UPPER_RIGHT_DOUBLE = "¬ª";
-var VERTICAL_DOUBLE = "¬∫";
-var LOWER_LEFT_DOUBLE = "√à";
-var LOWER_RIGHT_DOUBLE = "¬º";
-var T_DOUBLE = "√ã";
-var LEFT_T_DOUBLE = "√å";
-var RIGHT_T_DOUBLE = "¬π";
-var BOTTOM_T_DOUBLE = "√ä";
-var CROSS_DOUBLE = "√é";
+var UPPER_LEFT_DOUBLE = "…";
+var HORIZONTAL_DOUBLE = "Õ";
+var UPPER_RIGHT_DOUBLE = "ª";
+var VERTICAL_DOUBLE = "∫";
+var LOWER_LEFT_DOUBLE = "»";
+var LOWER_RIGHT_DOUBLE = "º";
+var T_DOUBLE = "À";
+var LEFT_T_DOUBLE = "Ã";
+var RIGHT_T_DOUBLE = "π";
+var BOTTOM_T_DOUBLE = " ";
+var CROSS_DOUBLE = "Œ";
 // Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "√ï";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "¬∏";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "√î";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "¬æ";
+var UPPER_LEFT_VSINGLE_HDOUBLE = "’";
+var UPPER_RIGHT_VSINGLE_HDOUBLE = "∏";
+var LOWER_LEFT_VSINGLE_HDOUBLE = "‘";
+var LOWER_RIGHT_VSINGLE_HDOUBLE = "æ";
 // Other special characters
-var DOT_CHAR = "√∫";
-var CHECK_CHAR = "√ª";
-var THIN_RECTANGLE_LEFT = "√ù";
-var THIN_RECTANGLE_RIGHT = "√û";
-var BLOCK1 = "¬∞"; // Dimmest block
-var BLOCK2 = "¬±";
-var BLOCK3 = "¬≤";
-var BLOCK4 = "√õ"; // Brightest block
+var DOT_CHAR = "˙";
+var CHECK_CHAR = "˚";
+var THIN_RECTANGLE_LEFT = "›";
+var THIN_RECTANGLE_RIGHT = "ﬁ";
+var BLOCK1 = "∞"; // Dimmest block
+var BLOCK2 = "±";
+var BLOCK3 = "≤";
+var BLOCK4 = "€"; // Brightest block
 
 // Navigational keys
 var UP_ARROW = "";
@@ -1379,7 +1379,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 
 	// Help keys and slash commands
 	printf("\1n\1g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
-	printf("\1k\1h%-44s  %-33s\r\n", "√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ", "√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ");
+	printf("\1k\1h%-44s  %-33s\r\n", "ƒƒƒƒƒƒƒƒƒ", "ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ");
 	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
 	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
@@ -1393,7 +1393,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	printf(" \1c\1h%-7s\1g  \1n\1c%s", "", "", "/?", "Show help");
 	console.crlf();
 	// Command/edit keys
-	console.print("\1n\1gCommand/edit keys\r\n\1k\1h√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ√Ñ\r\n");
+	console.print("\1n\1gCommand/edit keys\r\n\1k\1hƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
 	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
@@ -1472,14 +1472,14 @@ function displayProgramExitInfo(pClearScreen)
 		console.clear("n");
 
 	/*console.print("ncYou have been using:\r\n");
-	console.print("hk√õ7√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü0√õ\r\n");
-	console.print("√õ7 nb7√ú√ü√ü√ü√ü √õ       √õ√ü√ü√ü√ü    √õ √ú       hk0√õ\r\n");
-	console.print("√õ7 nb7√ü√ú√ú√ú  √õ √ú   √ú √õ√ú√ú√ú   √ú√ú√õ √ú √ú√ú√õ√ú√ú hk0√õ\r\n");
-	console.print("√õ7     nb7√õ √õ √õ   √õ √õ     √õ  √õ √õ   √õ   hk0√õ\r\n");
-	console.print("√õ7 nb7√ü√ü√ü√ü  √ü  √ü√ú√ü  √ü√ü√ü√ü√ü  √ü√ü√ü √ü   √ü√ü√ü hk0√õ\r\n");
-	console.print("√õ7         nb7√ú√ü                       hk0√õ\r\n");
-	console.print("√õ7        nb7√ü                         hk0√õ\r\n");
-	console.print("√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü√ü\r\n");
+	console.print("hk€7ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ0€\r\n");
+	console.print("€7 nb7‹ﬂﬂﬂﬂ €       €ﬂﬂﬂﬂ    € ‹       hk0€\r\n");
+	console.print("€7 nb7ﬂ‹‹‹  € ‹   ‹ €‹‹‹   ‹‹€ ‹ ‹‹€‹‹ hk0€\r\n");
+	console.print("€7     nb7€ € €   € €     €  € €   €   hk0€\r\n");
+	console.print("€7 nb7ﬂﬂﬂﬂ  ﬂ  ﬂ‹ﬂ  ﬂﬂﬂﬂﬂ  ﬂﬂﬂ ﬂ   ﬂﬂﬂ hk0€\r\n");
+	console.print("€7         nb7‹ﬂ                       hk0€\r\n");
+	console.print("€7        nb7ﬂ                         hk0€\r\n");
+	console.print("ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ\r\n");
 	console.print("ngVersion hy" + EDITOR_VERSION + " nm(" +
 	              EDITOR_VER_DATE + ")");*/
 	console.print("ncYou have been using hSlyEdit ncversion g" + EDITOR_VERSION +
@@ -3828,7 +3828,7 @@ function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
 // Return value: Boolean - Whether or not the character is a letter
 function charIsLetter(pChar)
 {
-   return /^[ABCDEFGHIJKLMNOPQRSTUVWXYZ√Ä√à√å√í√ô√†√®√¨√≤√π√Å√â√ç√ì√ö√ù√°√©√≠√≥√∫√Ω√Ç√ä√é√î√õ√¢√™√Æ√¥√ª√É√ë√ï√£√±√µ√Ñ√ã√è√ñ√ú√§√´√Ø√∂√º√ß√á√ü√ò√∏√Ö√•√Ü√¶√û√æ√ê√∞]$/.test(pChar.toUpperCase());
+   return /^[ABCDEFGHIJKLMNOPQRSTUVWXYZ¿»Ã“Ÿ‡ËÏÚ˘¡…Õ”⁄›·ÈÌÛ˙˝¬ Œ‘€‚ÍÓÙ˚√—’„ÒıƒÀœ÷‹‰ÎÔˆ¸Á«ﬂÿ¯≈Â∆Êﬁ˛–]$/.test(pChar.toUpperCase());
 }
 
 // For configuration files, this function returns a fully-pathed filename.
@@ -4749,7 +4749,7 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 	else if (languageNameLower == "pt-br")
 		languageName = "Portug" + ascii(130) + "s (BR)";
 	else if (languageNameLower == "es-es")
-		languageName = "Espa" + ascii(164) + "ol (Espa√±a)";
+		languageName = "Espa" + ascii(164) + "ol (EspaÒa)";
 	else if (languageNameLower == "es-co")
 		languageName = "Espa" + ascii(164) + "ol (CO)";
 	else if (languageNameLower == "es-cl")
