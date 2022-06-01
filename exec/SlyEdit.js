@@ -136,7 +136,7 @@
  *                              Finished refactoring to use DDLightbarMenu
  *                              for the cross-posting menus. Also used DDLightbarMenu
  *                              for the quote selection window.
- * 2022-03-05 Eric Oulashin     Version 1.76
+ * 2022-03-05                   Version 1.76
  *                              When selecting quote lines in a reply message, SlyEdit now
  *                              remembers the position in the quote selection menu so that
  *                              the quote menu isn't always at the top whenever it's opened
@@ -340,8 +340,6 @@ gCrossPostMsgSubs.add = function(pSubCode) {
 //  pSubCode: The sub-code to remove
 gCrossPostMsgSubs.remove = function(pSubCode) {
 	if (typeof(pSubCode) != "string")
-		return;
-	if (pSubCode === "")
 		return;
 
 	var grpIndex = msg_area.sub[pSubCode].grp_index;
@@ -4187,9 +4185,9 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 	// Ensure the word to test is all lowercase for case-insensitive matching
 	var currentWord = pWordArray[pWordIdx].toLowerCase();
 	// Ensure the word we're checking only has letters and/or an apostrophe.
-	var currentWord = currentWord.replace(/^[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*([a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+)[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*$/, "$1");
+	var currentWord = currentWord.replace(/^[^a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']*([a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']+)[^a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']*$/, "$1");
 	// Now, ensure the word only certain characters: Letters, apostrophe.  Skip it if not.
-	if (!/^[a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+$/g.test(currentWord))
+	if (!/^[a-zA-ZÃ‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†Ã´Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÃ¡Ã­Ã³ÃºÃ±Ã‘ÃŸ']+$/g.test(currentWord))
 	{
 		retObj.skipped = true;
 		return retObj;
