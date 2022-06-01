@@ -122,7 +122,6 @@ void usage(const char* progname)
 	exit(EXIT_SUCCESS);
 }
 
-const char* supported_cmds = "ADEHIMOQSVXZ&";
 const char* string_cmds = "D";
 #define MAX_SAVES 20
 struct modem {
@@ -141,6 +140,7 @@ struct modem {
 	bool numeric_mode;
 	bool offhook;
 	bool online; // false means "command mode"
+	bool caller_id;
 	bool ringing;
 	ulong ringcount;
 	ulong auto_answer;
@@ -214,17 +214,27 @@ const char* response_str[] = {
 	"CONNECT 9600"
 };
 
-char* response(struct modem* modem, enum modem_response code)
+char* verbal_response(struct modem* modem, const char* response)
 {
 	static char str[128];
+	safe_snprintf(str, sizeof(str), "%c%c%s%c%c", modem->cr, modem->lf, response, modem->cr, modem->lf);
+	return str;
+}
 
+char* numeric_response(struct modem* modem, int code)
+{
+	static char str[128];
+	safe_snprintf(str, sizeof(str), "%u%c", code, modem->cr);
+	return str;
+}
+
+char* response(struct modem* modem, enum modem_response code)
+{
 	if(modem->quiet)
 		return "";
 	if(modem->numeric_mode)
-		safe_snprintf(str, sizeof(str), "%u%c", code, modem->cr);
-	else
-		safe_snprintf(str, sizeof(str), "%c%c%s%c%c", modem->cr, modem->lf, response_str[code], modem->cr, modem->lf);
-	return str;
+		return numeric_response(modem, code);
+	return verbal_response(modem, response_str[code]);
 }
 
 char* ok(struct modem* modem)
@@ -288,6 +298,7 @@ const char* iniKeyESC = "ESC";
 const char* iniKeyExtResults = "ExtResults";
 const char* iniKeyDialWait = "DialWait";
 const char* iniKeyGuardTime = "GuardTime";
+const char* iniKeyCallerID = "CallerID";
 
 void init(struct modem* modem)
 {
@@ -297,6 +308,7 @@ void init(struct modem* modem)
 	modem->echo_off = !iniGetBool(ini, section, iniKeyEcho, TRUE);
 	modem->quiet = iniGetBool(ini, section, iniKeyQuiet, FALSE);
 	modem->numeric_mode = iniGetBool(ini, section, iniKeyNumeric, FALSE);
+	modem->caller_id = iniGetBool(ini, section, iniKeyCallerID, FALSE);
 	modem->cr = (char)iniGetInteger(ini, section,  iniKeyCR, '\r');
 	modem->lf = (char)iniGetInteger(ini, section, iniKeyLF, '\n');
 	modem->bs = (char)iniGetInteger(ini, section, iniKeyBS, '\b');
@@ -315,6 +327,7 @@ bool write_cfg(struct modem* modem)
 	iniSetBool(&ini, section, iniKeyEcho, !modem->echo_off, style);
 	iniSetBool(&ini, section, iniKeyQuiet, modem->quiet, style);
 	iniSetBool(&ini, section, iniKeyNumeric, modem->numeric_mode, style);
+	iniSetBool(&ini, section, iniKeyCallerID, modem->caller_id, style);
 	iniSetInteger(&ini, section, iniKeyCR, modem->cr, style);
 	iniSetInteger(&ini, section, iniKeyLF, modem->lf, style);
 	iniSetInteger(&ini, section, iniKeyBS, modem->bs, style);
@@ -718,175 +731,192 @@ char* atmodem_exec(struct modem* modem)
 	for(char* p = modem->buf; *p != '\0';) {
 		char ch = toupper(*p);
 		p++;
-		if(strchr(supported_cmds, ch) == NULL)
-			return error(modem);
-		if(strchr(string_cmds, ch) == NULL) {
-			if(ch == '&') {
-				ch = toupper(*p);
-				ulong val = strtoul(p + 1, &p, 10); // unused
-				switch(ch) {
-					case 'W':
-						resp = write_cfg(modem) ? ok(modem) : error(modem);
-						break;
-					case 'Z':
-						if(val >= MAX_SAVES)
-							return error(modem);
-						if(*p == '=') {
-							p++;
-							if(stricmp(p, "L") == 0)
-								p = modem->last;
-							SAFECOPY(modem->save[val], p);
-							return write_save(modem, val) ? ok(modem) : error(modem);
-						}
-						if(*p == '?' || stricmp(p, "L?") == 0) {
-							if(stricmp(p, "L?") == 0)
-								p = modem->last;
-							else
-								p = modem->save[val];
-							safe_snprintf(respbuf, sizeof(respbuf), "%c%s%c%c%s"
-								,modem->lf, p, modem->cr, modem->lf, ok(modem));
-							return respbuf;
-						}
-				}
-				continue;
-			}
-			// Numeric argument commands
-			ulong val = strtoul(p, &p, 10);
+		if(ch == '&') {
+			ch = toupper(*p);
+			ulong val = strtoul(p + 1, &p, 10);
 			switch(ch) {
-				case 'A':
-					return answer(modem);
-				case 'E':
-					modem->echo_off = !val;
-					break;
-				case 'H':
-					modem->offhook = val;
-					modem->ringing = false;
-					if(!modem->offhook) {
-						if(sock != INVALID_SOCKET) {
-							disconnect(modem);
-						}
-					}
-					break;
-				case 'I':
-					switch(val) {
-						case 0:
-							safe_snprintf(respbuf, sizeof(respbuf)
-								,"\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n%s/%s\r\n"
-								,&__DATE__[7]
-								,GIT_BRANCH
-								,GIT_HASH
-								);
-							break;
-						case 1:
-							safe_snprintf(respbuf, sizeof(respbuf), "\r\n%s\r\n", ini_fname);
-							break;
-						default:
-							return error(modem);
-					}
-					return respbuf;
-				case 'O':
-					if(sock == INVALID_SOCKET)
-						return error(modem);
-					modem->online = true;
-					return connect_result(modem);
-					break;
-				case 'V':
-					modem->numeric_mode = !val;
-					resp = ok(modem); // Use the new verbal/numeric mode in response (ala USRobotics)
-					break;
-				case 'Q':
-					modem->quiet = val;
-					resp = ok(modem); // Use the new quiet/verbose mode in response (ala USRobotics)
-					break;
-				case 'S':
-					if(*p == '=') {
-						ulong sreg = val;
-						ulong val = strtoul(p + 1, &p, 10);
-						dprintf("S%lu = %lu", sreg, val);
-						switch(sreg) {
-							case 0:
-								if(val && listening_sock == INVALID_SOCKET) {
-									dprintf("Can't enable auto-answer when not in listening mode");
-									return error(modem);
-								}
-								modem->auto_answer = val;
-								break;
-							case 1:
-								modem->ringcount = val;
-								break;
-							case 2:
-								modem->esc = (char)val;
-								break;
-							case 3:
-								modem->cr = (char)val;
-								break;
-							case 4:
-								modem->lf = (char)val;
-								break;
-							case 5:
-								modem->bs = (char)val;
-								break;
-							case 7:
-								modem->dial_wait = val;
-								break;
-							case 12:
-								modem->guard_time = val;
-								break;
-						}
-					} else if(*p == '?') {
-						switch(val) {
-							case 0:
-								val = modem->auto_answer;
-								break;
-							case 1:
-								val = modem->ringcount;
-								break;
-							case 2:
-								val = modem->esc;
-								break;
-							case 3:
-								val = modem->cr;
-								break;
-							case 4:
-								val = modem->lf;
-								break;
-							case 5:
-								val = modem->bs;
-								break;
-							case 7:
-								val = modem->dial_wait;
-								break;
-							case 12:
-								val = modem->guard_time;
-								break;
-							default:
-								val = 0;
-								break;
-						}
-						safe_snprintf(respbuf, sizeof(respbuf), "%c%03lu%c%c%s"
-							,modem->lf, val, modem->cr, modem->lf, ok(modem));
-						return respbuf;
-					} else
-						return error(modem);
-					break;
-				case 'X':
-					modem->ext_results = val;
+				case 'W':
+					resp = write_cfg(modem) ? ok(modem) : error(modem);
 					break;
 				case 'Z':
-					init(modem);
-					break;
-			}
-		} else { // string argument commands
-			switch(ch) {
-				case 'D':
-					if(sock != INVALID_SOCKET) {
-						dprintf("Can't dial: Already connected");
+					if(val >= MAX_SAVES)
 						return error(modem);
-					}
-					if(*p == 'T' /* tone */|| *p == 'P' /* pulse */)
+					if(*p == '=') {
 						p++;
-					return dial(modem, p);
+						if(stricmp(p, "L") == 0)
+							p = modem->last;
+						SAFECOPY(modem->save[val], p);
+						return write_save(modem, val) ? ok(modem) : error(modem);
+					}
+					if(*p == '?' || stricmp(p, "L?") == 0) {
+						if(stricmp(p, "L?") == 0)
+							p = modem->last;
+						else
+							p = modem->save[val];
+						safe_snprintf(respbuf, sizeof(respbuf), "%c%s%c%c%s"
+							,modem->lf, p, modem->cr, modem->lf, ok(modem));
+						return respbuf;
+					}
 			}
+			continue;
+		}
+		// Caller ID control
+		if(ch == '#' || ch == '+') {
+			if(ch == '+' && toupper(*p) == 'V')
+				p++;
+			if(stricmp(p, "CID?") == 0) {
+				safe_snprintf(respbuf, sizeof(respbuf), "%c%u%c%c%s"
+					,modem->lf, modem->caller_id, modem->cr, modem->lf, ok(modem));
+				return respbuf;
+			}
+			if(stricmp(p, "CID=?") == 0) {
+				safe_snprintf(respbuf, sizeof(respbuf), "%c0,1%c%c%s"
+					,modem->lf, modem->cr, modem->lf, ok(modem));
+				return respbuf;
+			}
+			if(strnicmp(p, "CID=", 4) == 0) {
+				modem->caller_id = strtoul(p + 4, &p, 10);
+				continue;
+			}
+			return error(modem);
+		}
+		// Numeric argument commands
+		ulong val = 0;
+		if(strchr(string_cmds, ch) == NULL)
+			val = strtoul(p, &p, 10);
+		switch(ch) {
+			case 'A':
+				return answer(modem);
+			case 'D':
+				if(sock != INVALID_SOCKET) {
+					dprintf("Can't dial: Already connected");
+					return error(modem);
+				}
+				if(*p == 'T' /* tone */|| *p == 'P' /* pulse */)
+					p++;
+				return dial(modem, p);
+			case 'E':
+				modem->echo_off = !val;
+				break;
+			case 'H':
+				modem->offhook = val;
+				modem->ringing = false;
+				if(!modem->offhook) {
+					if(sock != INVALID_SOCKET) {
+						disconnect(modem);
+					}
+				}
+				break;
+			case 'I':
+				switch(val) {
+					case 0:
+						safe_snprintf(respbuf, sizeof(respbuf)
+							,"\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n%s/%s\r\n"
+							,&__DATE__[7]
+							,GIT_BRANCH
+							,GIT_HASH
+							);
+						break;
+					case 1:
+						safe_snprintf(respbuf, sizeof(respbuf), "\r\n%s\r\n", ini_fname);
+						break;
+					default:
+						return error(modem);
+				}
+				return respbuf;
+			case 'O':
+				if(sock == INVALID_SOCKET)
+					return error(modem);
+				modem->online = true;
+				return connect_result(modem);
+				break;
+			case 'V':
+				modem->numeric_mode = !val;
+				resp = ok(modem); // Use the new verbal/numeric mode in response (ala USRobotics)
+				break;
+			case 'Q':
+				modem->quiet = val;
+				resp = ok(modem); // Use the new quiet/verbose mode in response (ala USRobotics)
+				break;
+			case 'S':
+				if(*p == '=') {
+					ulong sreg = val;
+					ulong val = strtoul(p + 1, &p, 10);
+					dprintf("S%lu = %lu", sreg, val);
+					switch(sreg) {
+						case 0:
+							if(val && listening_sock == INVALID_SOCKET) {
+								dprintf("Can't enable auto-answer when not in listening mode");
+								return error(modem);
+							}
+							modem->auto_answer = val;
+							break;
+						case 1:
+							modem->ringcount = val;
+							break;
+						case 2:
+							modem->esc = (char)val;
+							break;
+						case 3:
+							modem->cr = (char)val;
+							break;
+						case 4:
+							modem->lf = (char)val;
+							break;
+						case 5:
+							modem->bs = (char)val;
+							break;
+						case 7:
+							modem->dial_wait = val;
+							break;
+						case 12:
+							modem->guard_time = val;
+							break;
+					}
+				} else if(*p == '?') {
+					switch(val) {
+						case 0:
+							val = modem->auto_answer;
+							break;
+						case 1:
+							val = modem->ringcount;
+							break;
+						case 2:
+							val = modem->esc;
+							break;
+						case 3:
+							val = modem->cr;
+							break;
+						case 4:
+							val = modem->lf;
+							break;
+						case 5:
+							val = modem->bs;
+							break;
+						case 7:
+							val = modem->dial_wait;
+							break;
+						case 12:
+							val = modem->guard_time;
+							break;
+						default:
+							val = 0;
+							break;
+					}
+					safe_snprintf(respbuf, sizeof(respbuf), "%c%03lu%c%c%s"
+						,modem->lf, val, modem->cr, modem->lf, ok(modem));
+					return respbuf;
+				} else
+					return error(modem);
+				break;
+			case 'X':
+				modem->ext_results = val;
+				break;
+			case 'Z':
+				init(modem);
+				break;
+			default:
+				return error(modem);
 		}
 	}
 	return resp;
@@ -988,8 +1018,10 @@ void listen_thread(void* arg)
 			}
 			sock = newsock;
 			addr = newaddr;
-			if(!modem->offhook && !modem->online)
+			if(!modem->offhook && !modem->online) {
 				modem->ringing = true;
+				modem->ringcount = 0;
+			}
 		}
 	}
 }
@@ -1324,6 +1356,11 @@ int main(int argc, char** argv)
 					vdd_writestr(&wrslot, response(&modem, RING));
 					lastring = now;
 					modem.ringcount++;
+					if(modem.ringcount == 1 && modem.caller_id) {
+						char str[256];
+						SAFEPRINTF(str, "NMBR = %s", inet_addrtop(&addr, tmp, sizeof(tmp)));
+						vdd_writestr(&wrslot, verbal_response(&modem, str));
+					}
 					if(modem.auto_answer > 0 && modem.ringcount >= modem.auto_answer) {
 						vdd_writestr(&wrslot, answer(&modem));
 					}
