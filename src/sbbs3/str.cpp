@@ -76,6 +76,7 @@ void sbbs_t::userlist(long mode)
 		}
 		if(sort) {
 			if((line[j]=(char *)malloc(128))==0) {
+				closeuserdat(userfile);
 				errormsg(WHERE,ERR_ALLOC,nulstr,83);
 				for(i=0;i<j;i++)
 					free(line[i]);
