@@ -42,6 +42,7 @@
 #define VERSION "0.1"
 
 bool external_socket;
+union xp_sockaddr addr;
 SOCKET sock = INVALID_SOCKET;
 SOCKET listening_sock = INVALID_SOCKET;
 HANDLE hangup_event = INVALID_HANDLE_VALUE;	// e.g. program drops DTR
@@ -679,28 +680,16 @@ char* answer(struct modem* modem)
 	if(listening_sock == INVALID_SOCKET)
 		return response(modem, NO_DIAL_TONE);
 
-	fd_set fds = {0};
-	FD_SET(listening_sock, &fds);
-	struct timeval tv = { 0, 0 };
-	if(select(/* ignored: */0, &fds, NULL, NULL, &tv) != 1)
+	if(sock == INVALID_SOCKET)
 		return response(modem, NO_CARRIER);
 
-	union xp_sockaddr addr;
-	socklen_t addrlen = sizeof(addr);
-	sock = accept(listening_sock, (SOCKADDR*)&addr, &addrlen);
-	if(sock == INVALID_SOCKET) {
-		dprintf("!accept returned %d (errno=%ld)", sock, WSAGetLastError());
-		return response(modem, NO_CARRIER);
-	}
 	setsockopts(sock);
-	char tmp[256];
-	dprintf("Connection accepted from TCP port %hu at %s", inet_addrport(&addr), inet_addrtop(&addr, tmp, sizeof(tmp)));
-
 	if(cfg.client_file[0]) {
 		FILE* fp = fopen(cfg.client_file, "wt");
 		if(fp == NULL)
 			dprintf("!Error %d creating '%s'", errno, cfg.client_file);
 		else {
+			char tmp[256];
 			fprintf(fp, "sock=%d\n", sock);
 			fprintf(fp, "addr=%s\n", inet_addrtop(&addr, tmp, sizeof(tmp)));
 			fprintf(fp, "port=%u\n", inet_addrport(&addr));
@@ -983,17 +972,22 @@ void listen_thread(void* arg)
 		FD_SET(listening_sock, &fds);
 		struct timeval tv = { 1, 0 };
 		if(select(/* ignored: */0, &fds, NULL, NULL, &tv) == 1) {
+			union xp_sockaddr newaddr;
+			socklen_t addrlen = sizeof(newaddr);
+			SOCKET newsock = accept(listening_sock, (SOCKADDR*)&newaddr, &addrlen);
+			if(newsock == INVALID_SOCKET)
+				continue;
+			char tmp[256];
+			dprintf("Connection accepted from TCP port %hu at %s"
+				,inet_addrport(&newaddr), inet_addrtop(&newaddr, tmp, sizeof(tmp)));
 			if(sock != INVALID_SOCKET) {	// In-use
-				SOCKADDR_IN addr;
-				socklen_t addrlen = sizeof(addr);
-				SOCKET newsock = accept(listening_sock, (SOCKADDR*)&addr, &addrlen);
-				if(newsock != INVALID_SOCKET) {
-					send(newsock, cfg.busy_notice, strlen(cfg.busy_notice), /* flags: */0);
-					shutdown(newsock, SD_SEND);
-					closesocket(newsock);
-				}
+				send(newsock, cfg.busy_notice, strlen(cfg.busy_notice), /* flags: */0);
+				shutdown(newsock, SD_SEND);
+				closesocket(newsock);
 				continue;
 			}
+			sock = newsock;
+			addr = newaddr;
 			if(!modem->offhook && !modem->online)
 				modem->ringing = true;
 		}
@@ -1297,8 +1291,8 @@ int main(int argc, char** argv)
 				dprintf("recv returned %d", rd);
 				if(rd <= 0) {
 					int error = WSAGetLastError();
-					if(rd == 0 || error == WSAECONNRESET) {
-						dprintf("Connection reset (error %d, %s) detected on socket %ld", error, strerror(error), sock);
+					if(rd == 0 || error == WSAECONNRESET || error == WSAECONNABORTED) {
+						dprintf("Connection reset (error %d) detected on socket %ld", error, sock);
 						disconnect(&modem);
 						vdd_writestr(&wrslot, response(&modem, NO_CARRIER));
 						continue;
