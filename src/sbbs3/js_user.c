@@ -1632,11 +1632,11 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char
 	if(userobj==NULL)
 		return(NULL);
 
-	if((p=JS_GetPrivate(cx, userobj)) == NULL)	/* Uses existing private pointer: Fix memory leak? */
+	if((p=JS_GetPrivate(cx, userobj)) == NULL) {	/* Uses existing private pointer: Fix memory leak? */
 		if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
 			return(NULL);
-
-	memset(p,0,sizeof(private_t));
+		memset(p,0,sizeof(private_t));
+	}
 
 	p->client = client;
 	p->cached = FALSE;
