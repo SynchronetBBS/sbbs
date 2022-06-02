@@ -85,7 +85,8 @@ char *display_filename(scfg_t *cfg, uint dirnum, uint32_t fil_off)
 
 int main(int argc,char **argv)
 {
-	char str[256], *p;
+	char str[256];
+	const char *p;
 	uint32_t **fcrc,*foundcrc;
 	ulong total_found=0L;
 	ulong g;

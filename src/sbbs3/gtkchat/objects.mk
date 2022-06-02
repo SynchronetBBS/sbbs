@@ -2,6 +2,7 @@ OBJS	:=	\
 			$(MTOBJODIR)/ars$(OFILE) \
 			$(MTOBJODIR)/dat_rec$(OFILE) \
 			$(MTOBJODIR)/date_str$(OFILE) \
+			$(MTOBJODIR)/getctrl$(OFILE) \
 			$(MTOBJODIR)/load_cfg$(OFILE) \
 			$(MTOBJODIR)/readtext$(OFILE) \
 			$(MTOBJODIR)/text_defaults$(OFILE) \
@@ -9,6 +10,7 @@ OBJS	:=	\
 			$(MTOBJODIR)/scfglib1$(OFILE) \
 			$(MTOBJODIR)/scfglib2$(OFILE) \
 			$(MTOBJODIR)/userdat$(OFILE) \
+			$(MTOBJODIR)/findstr$(OFILE) \
 			$(MTOBJODIR)/getstats$(OFILE) \
 			$(MTOBJODIR)/msgdate$(OFILE) \
 			$(MTOBJODIR)/str_util$(OFILE) \

@@ -35,6 +35,7 @@
 #include "sbbsecho.h"
 #include "sockwrap.h"
 #include "str_util.h"
+#include "getctrl.h"
 
 char **opt;
 

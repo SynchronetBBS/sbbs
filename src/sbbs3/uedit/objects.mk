@@ -4,6 +4,7 @@ OBJS	=	\
 			$(MTOBJODIR)$(DIRSEP)date_str$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)getmail$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)getstats$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)getctrl$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)readtext$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)text_defaults$(OFILE) \
@@ -13,5 +14,6 @@ OBJS	=	\
 			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)findstr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)uedit$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)

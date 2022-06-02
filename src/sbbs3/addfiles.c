@@ -519,7 +519,7 @@ int main(int argc, char **argv)
 	char error[512];
 	char str[MAX_PATH+1];
 	char tmp[MAX_PATH+1];
-	char *p;
+	const char *p;
 	char exist,listgiven=0,namegiven=0,ext[LEN_EXTDESC + 1]
 		,auto_name[MAX_PATH+1]="FILES.BBS";
 	int i,j;

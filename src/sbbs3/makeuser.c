@@ -70,7 +70,7 @@ char *usage="\nusage: makeuser [ctrl_dir] name [-param value] [...]\n"
 /*********************/
 int main(int argc, char **argv)
 {
-	char*	p;
+	const char*	p;
 	char	error[512];
 	char	revision[16];
 	int		i;
