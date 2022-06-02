@@ -1,4 +1,4 @@
-/* Synchronet get "control" directory function */
+/* Synchronet find string functions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -19,14 +19,22 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef GETCTRL_H_
-#define GETCTRL_H_
+#ifndef _FINDSTR_H_
+#define _FINDSTR_H_
 
-#include "gen_defs.h"
+#include "str_list.h"
+#include "dllexport.h"
 
-#if defined(__cplusplus)
-extern "C"
+#ifdef __cplusplus
+extern "C" {
 #endif
-const char* get_ctrl_dir(BOOL warn);
 
+DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
+DLLEXPORT BOOL		findstr_in_string(const char* insearchof, const char* pattern);
+DLLEXPORT BOOL		findstr_in_list(const char* insearchof, str_list_t list);
+DLLEXPORT str_list_t findstr_list(const char* fname);
+
+#ifdef __cplusplus
+}
 #endif
+#endif /* Don't add anything after this line */

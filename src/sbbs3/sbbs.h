@@ -289,6 +289,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "nopen.h"
 #include "text.h"
 #include "str_util.h"
+#include "findstr.h"
 #include "date_str.h"
 #include "load_cfg.h"
 #include "getstats.h"
