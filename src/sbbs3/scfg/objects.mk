@@ -17,6 +17,7 @@ OBJS =	$(MTOBJODIR)/scfg$(OFILE)\
 	$(MTOBJODIR)/scfgsave$(OFILE)\
 	$(MTOBJODIR)/scfglib1$(OFILE)\
 	$(MTOBJODIR)/scfglib2$(OFILE)\
+	$(MTOBJODIR)/getctrl$(OFILE)\
 	$(MTOBJODIR)/load_cfg$(OFILE)\
 	$(MTOBJODIR)/readtext$(OFILE)\
 	$(MTOBJODIR)/text_defaults$(OFILE)\
@@ -27,4 +28,5 @@ OBJS =	$(MTOBJODIR)/scfg$(OFILE)\
 	$(MTOBJODIR)/getstats$(OFILE)\
 	$(MTOBJODIR)/msgdate$(OFILE)\
 	$(MTOBJODIR)/date_str$(OFILE)\
+	$(MTOBJODIR)/findstr$(OFILE)\
 	$(MTOBJODIR)/str_util$(OFILE)

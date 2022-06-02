@@ -20,7 +20,7 @@ int
 main (int argc, char *argv[])
 {
   int		node;
-  char		*ctrl_dir;
+  const char	*ctrl_dir;
   GtkWidget *WaitWindow;
 
   setlocale(LC_ALL, "");
@@ -41,7 +41,7 @@ main (int argc, char *argv[])
   /*
    * Request a chat
    */
-  if(chat_open(node, ctrl_dir))
+  if(chat_open(node, (char*)ctrl_dir))
   	return(1);
 
   /*

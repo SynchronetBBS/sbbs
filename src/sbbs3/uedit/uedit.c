@@ -1898,9 +1898,7 @@ int main(int argc, char** argv)  {
 
 	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 
-	gethostname(str,sizeof(str)-1);
-
-	sbbs_get_ini_fname(ini_file, ctrl_dir, str);
+	sbbs_get_ini_fname(ini_file, ctrl_dir);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));

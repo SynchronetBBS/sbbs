@@ -82,7 +82,8 @@ void bail(int code)
 
 int main(int argc, char **argv)
 {
-	char str[256],*p;
+	char str[256];
+	const char *p;
 	int i,j,file;
 	off_t length;
 	ulong max_users=0xffffffff;

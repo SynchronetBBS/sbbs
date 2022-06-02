@@ -72,7 +72,7 @@ static const char*	strFileIndexScript			="FileIndexScript";
 #define DEFAULT_BIND_RETRY_COUNT		2
 #define DEFAULT_BIND_RETRY_DELAY		15
 
-void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
+void sbbs_get_ini_fname(char* ini_file, const char* ctrl_dir)
 {
 	/* pHostName is no longer used since iniFileName calls gethostname() itself */
 

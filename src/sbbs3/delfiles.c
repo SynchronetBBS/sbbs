@@ -91,7 +91,8 @@ bool delfile(const char *filename)
 
 int main(int argc, char **argv)
 {
-	char str[256],not[MAX_NOTS][LEN_EXTCODE + 1],nots=0,*p;
+	char str[256],not[MAX_NOTS][LEN_EXTCODE + 1],nots=0;
+	const char *p;
 	char fpath[MAX_PATH+1];
 	int i,j,dirnum,libnum;
 	size_t fi;

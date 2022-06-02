@@ -180,6 +180,7 @@ SBBSECHO_OBJS = 	$(LOAD_CFG_OBJS) \
 
 ECHOCFG_OBJS = \
 			$(MTOBJODIR)/echocfg$(OFILE) \
+			$(MTOBJODIR)/getctrl$(OFILE) \
 			$(MTOBJODIR)/rechocfg$(OFILE) \
 			$(MTOBJODIR)/str_util$(OFILE) \
 			$(UIFC_OBJS) \
@@ -304,12 +305,14 @@ UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/upgrade_to_v319$(OFILE)
 
 LOAD_CFG_OBJS = \
+			$(OBJODIR)/getctrl$(OFILE) \
 			$(OBJODIR)/load_cfg$(OFILE) \
 			$(OBJODIR)/readtext$(OFILE) \
 			$(OBJODIR)/text_defaults$(OFILE) \
 			$(OBJODIR)/scfglib1$(OFILE) \
 			$(OBJODIR)/scfglib2$(OFILE) \
 			$(OBJODIR)/str_util$(OFILE) \
+			$(OBJODIR)/findstr$(OFILE) \
 			$(OBJODIR)/ars$(OFILE) \
 			$(OBJODIR)/nopen$(OFILE)
 

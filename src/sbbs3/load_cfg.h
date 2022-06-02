@@ -24,6 +24,7 @@
 
 #include "scfgdefs.h"	// scfg_t
 #include "smblib.h"
+#include "getctrl.h"
 #include "dllexport.h"
 
 #ifdef __cplusplus

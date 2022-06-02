@@ -1377,7 +1377,7 @@ int main(int argc, char** argv)
 	char	ch;
 	char*	p;
 	char*	arg;
-	char*	ctrl_dir;
+	const char*	ctrl_dir;
 	char	str[MAX_PATH+1];
     char	error[256];
 	char	host_name[128]="";
@@ -1419,7 +1419,7 @@ int main(int argc, char** argv)
 	if(!winsock_cleanup())
 		return(-1);
 
-	sbbs_get_ini_fname(ini_file, ctrl_dir, host_name);
+	sbbs_get_ini_fname(ini_file, ctrl_dir);
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
