@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 {
 	FILE			*text_dat;
 	char			path[MAX_PATH+1];
-	char			*p;
+	const char		*p;
 	char			*cstr;
 	char			*comment;
 	char			*macro;

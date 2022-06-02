@@ -1146,7 +1146,7 @@ static int start(const char* svc_name, int argc, char** argv)
 /****************************************************************************/
 int main(int argc, char** argv)
 {
-	char*	ctrl_dir;
+	const char* ctrl_dir;
 	char*	arg;
 	char*	p;
 	char	str[MAX_PATH+1];
@@ -1171,7 +1171,7 @@ int main(int argc, char** argv)
 
 	ctrl_dir = get_ctrl_dir(/* warn: */TRUE);
 
-	sbbs_get_ini_fname(ini_file, ctrl_dir, NULL /* auto-host_name */);
+	sbbs_get_ini_fname(ini_file, ctrl_dir);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
