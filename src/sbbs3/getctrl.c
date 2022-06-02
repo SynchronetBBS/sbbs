@@ -1,37 +1,35 @@
-#include <gen_defs.h>
-#include <dirwrap.h>
+/* Synchronet get "control" directory function */
 
-char *get_ctrl_dir(char *path, size_t pathsz)
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
+
+#include <stdio.h>
+#include "getctrl.h"
+#include "sbbsdefs.h"
+
+const char* get_ctrl_dir(BOOL warn)
 {
-#ifdef PREFIX
-	char	ini_file[MAX_PATH];
-#endif
-	char *p;
-
-	p=getenv("SBBSCTRL");
-	if(p!=NULL) {
-		strncpy(path, p, pathsz);
-		if(pathsz > 0)
-			path[pathsz-1]=0;
-		return path;
+	char* p = getenv("SBBSCTRL");
+	if(p == NULL || *p == '\0') {
+		if(warn)
+			fprintf(stderr, "!SBBSCTRL environment variable not set, using default value: " SBBSCTRL_DEFAULT "\n\n");
+		p = SBBSCTRL_DEFAULT;
 	}
-
-#ifdef PREFIX
-	strncpy(path, PREFIX"/etc", pathsz);
-	if(pathsz > 0)
-		path[pathsz-1]=0;
-	iniFileName(ini_file, sizeof(ini_file)-1, PREFIX"/etc", "sbbs.ini");
-	if(fexistcase(ini_file)) {
-		FILE*	fini;
-		char*	str;
-
-		fini=iniOpenFile(ini_file, FALSE);
-		if(fini==NULL)
-			return NULL;
-		str = iniReadExistingString(fini, "Global", "CtrlDirectory", NULL, ini_file);
-		iniCloseFile(fini);
-		return str;
-	}
-#endif
-	return NULL;
+	return p;
 }

@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "str_util.h"
+#include "findstr.h"
 #include "cmdshell.h"
 #include "userdat.h"
 #include "filedat.h"

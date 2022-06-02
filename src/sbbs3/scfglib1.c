@@ -23,6 +23,7 @@
 #include "load_cfg.h"
 #include "nopen.h"
 #include "ars_defs.h"
+#include "findstr.h"
 
 BOOL allocerr(FILE* fp, char* error, size_t maxerrlen, long offset, const char *fname, size_t size)
 {
@@ -873,4 +874,97 @@ faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
 		if(addr->zone == cfg->faddr[i].zone)
 			return &cfg->faddr[i];
 	return &cfg->faddr[0];
+}
+
+/****************************************************************************/
+/* Searches the file <name>.can in the TEXT directory for matches			*/
+/* Returns TRUE if found in list, FALSE if not.								*/
+/****************************************************************************/
+BOOL trashcan(scfg_t* cfg, const char* insearchof, const char* name)
+{
+	char fname[MAX_PATH+1];
+
+	return(findstr(insearchof,trashcan_fname(cfg,name,fname,sizeof(fname))));
+}
+
+/****************************************************************************/
+char* trashcan_fname(scfg_t* cfg, const char* name, char* fname, size_t maxlen)
+{
+	safe_snprintf(fname,maxlen,"%s%s.can",cfg->text_dir,name);
+	return fname;
+}
+
+/****************************************************************************/
+str_list_t trashcan_list(scfg_t* cfg, const char* name)
+{
+	char	fname[MAX_PATH+1];
+
+	return findstr_list(trashcan_fname(cfg, name, fname, sizeof(fname)));
+}
+
+char* sub_newsgroup_name(scfg_t* cfg, sub_t* sub, char* str, size_t size)
+{
+	memset(str, 0, size);
+	if(sub->newsgroup[0])
+		strncpy(str, sub->newsgroup, size - 1);
+	else {
+		snprintf(str, size - 1, "%s.%s", cfg->grp[sub->grp]->sname, sub->sname);
+		/*
+		 * From RFC5536:
+		 * newsgroup-name  =  component *( "." component )
+		 * component       =  1*component-char
+		 * component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
+		 */
+		if (str[0] == '.')
+			str[0] = '_';
+		size_t c;
+		for(c = 0; str[c] != 0; c++) {
+			/* Legal characters */
+			if ((str[c] >= 'A' && str[c] <= 'Z')
+					|| (str[c] >= 'a' && str[c] <= 'z')
+					|| (str[c] >= '0' && str[c] <= '9')
+					|| str[c] == '+'
+					|| str[c] == '-'
+					|| str[c] == '_'
+					|| str[c] == '.')
+				continue;
+			str[c] = '_';
+		}
+		c--;
+		if (str[c] == '.')
+			str[c] = '_';
+	}
+	return str;
+}
+
+char* sub_area_tag(scfg_t* cfg, sub_t* sub, char* str, size_t size)
+{
+	char* p;
+
+	memset(str, 0, size);
+	if(sub->area_tag[0])
+		strncpy(str, sub->area_tag, size - 1);
+	else if(sub->newsgroup[0])
+		strncpy(str, sub->newsgroup, size - 1);
+	else {
+		strncpy(str, sub->sname, size - 1);
+		REPLACE_CHARS(str, ' ', '_', p);
+	}
+	strupr(str);
+	return str;
+}
+
+char* dir_area_tag(scfg_t* cfg, dir_t* dir, char* str, size_t size)
+{
+	char* p;
+
+	memset(str, 0, size);
+	if(dir->area_tag[0])
+		strncpy(str, dir->area_tag, size - 1);
+	else {
+		strncpy(str, dir->sname, size - 1);
+		REPLACE_CHARS(str, ' ', '_', p);
+	}
+	strupr(str);
+	return str;
 }

@@ -22,7 +22,7 @@
 #ifndef _STR_UTIL_H_
 #define _STR_UTIL_H_
 
-#include "scfgdefs.h"	// scfg_t
+#include "gen_defs.h"
 #include "dllexport.h"
 
 #ifdef __cplusplus
@@ -45,13 +45,6 @@ DLLEXPORT char *    replace_named_values(const char* src ,char* buf, size_t bufl
                        named_int_t* int_list, BOOL case_sensitive);
 DLLEXPORT char *	condense_whitespace(char* str);
 DLLEXPORT char		exascii_to_ascii_char(uchar ch);
-DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
-DLLEXPORT BOOL		findstr_in_string(const char* insearchof, const char* pattern);
-DLLEXPORT BOOL		findstr_in_list(const char* insearchof, str_list_t list);
-DLLEXPORT str_list_t findstr_list(const char* fname);
-DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
-DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
-DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
 DLLEXPORT char *	convert_ansi(const char* src, char* dest, size_t, int width, BOOL ice_color);
 DLLEXPORT char *	strip_ansi(char* str);
 DLLEXPORT char *	strip_exascii(const char *str, char* dest);
@@ -59,7 +52,6 @@ DLLEXPORT char *	strip_cp437_graphics(const char *str, char* dest);
 DLLEXPORT char *	strip_space(const char *str, char* dest);
 DLLEXPORT char *	strip_ctrl(const char *str, char* dest);
 DLLEXPORT char *	strip_char(const char* str, char* dest, char);
-DLLEXPORT char *	net_addr(net_t* net);
 DLLEXPORT BOOL		valid_ctrl_a_attr(char a);
 DLLEXPORT BOOL		valid_ctrl_a_code(char a);
 DLLEXPORT size_t	strip_invalid_attr(char *str);
@@ -70,10 +62,6 @@ DLLEXPORT uint32_t	str_to_bits(uint32_t currval, const char *str);
 DLLEXPORT BOOL		str_has_ctrl(const char*);
 DLLEXPORT BOOL		str_is_ascii(const char*);
 DLLEXPORT char *	utf8_to_cp437_inplace(char* str);
-DLLEXPORT char *	sub_newsgroup_name(scfg_t*, sub_t*, char*, size_t);
-DLLEXPORT char *	sub_area_tag(scfg_t*, sub_t*, char*, size_t);
-DLLEXPORT char *	dir_area_tag(scfg_t*, dir_t*, char*, size_t);
-DLLEXPORT char * 	get_ctrl_dir(BOOL warn);
 
 #ifdef __cplusplus
 }

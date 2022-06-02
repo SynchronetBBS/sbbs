@@ -72,6 +72,14 @@ DLLEXPORT BOOL	is_valid_libnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_subnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_grpnum(scfg_t*, int);
 
+DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
+DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
+DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
+
+DLLEXPORT char *	sub_newsgroup_name(scfg_t*, sub_t*, char*, size_t);
+DLLEXPORT char *	sub_area_tag(scfg_t*, sub_t*, char*, size_t);
+DLLEXPORT char *	dir_area_tag(scfg_t*, dir_t*, char*, size_t);
+
 faddr_t* nearest_sysfaddr(scfg_t*, faddr_t*);
 
 #ifdef __cplusplus

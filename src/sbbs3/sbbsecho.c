@@ -46,6 +46,7 @@
 #include "link_list.h"
 #include "str_list.h"
 #include "str_util.h"
+#include "findstr.h"
 #include "datewrap.h"
 #include "nopen.h"
 #include "crc32.h"

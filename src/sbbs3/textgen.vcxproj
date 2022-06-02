@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\encode\utf8.c" />
+    <ClCompile Include="getctrl.c" />
     <ClCompile Include="str_util.c" />
     <ClCompile Include="textgen.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

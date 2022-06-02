@@ -101,6 +101,8 @@
   <ItemGroup>
     <ClCompile Include="..\encode\utf8.c" />
     <ClCompile Include="ars.c" />
+    <ClCompile Include="findstr.c" />
+    <ClCompile Include="getctrl.c" />
     <ClCompile Include="load_cfg.c" />
     <ClCompile Include="nopen.c" />
     <ClCompile Include="readtext.c" />
