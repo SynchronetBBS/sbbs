@@ -447,13 +447,13 @@ int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 	length=filelength(fileno(smb->sid_fp));
 	if(length<(long)idxreclen) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s invalid index file length: %ld", __FUNCTION__,length);
+			,"%s invalid index file length: %" PRIdOFF, __FUNCTION__,length);
 		return(SMB_ERR_FILE_LEN);
 	}
 	total=(ulong)(length/idxreclen);
 	if(!total) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s invalid index file length: %ld", __FUNCTION__,length);
+			,"%s invalid index file length: %" PRIdOFF, __FUNCTION__,length);
 		return(SMB_ERR_FILE_LEN);
 	}
 
@@ -464,7 +464,7 @@ int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 			byte_offset=msg->idx_offset*idxreclen;
 		if(byte_offset>=length) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%s invalid index offset: %ld, byte offset: %ld, length: %ld", __FUNCTION__
+				,"%s invalid index offset: %ld, byte offset: %ld, length: %" PRIdOFF, __FUNCTION__
 				,(long)msg->idx_offset, byte_offset, length);
 			return(SMB_ERR_HDR_OFFSET);
 		}
@@ -601,7 +601,7 @@ int smb_getlastidx(smb_t* smb, idxrec_t *idx)
 	length=filelength(fileno(smb->sid_fp));
 	if(length<(long)idxreclen) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s invalid index file length: %ld", __FUNCTION__,length);
+			,"%s invalid index file length: %" PRIdOFF, __FUNCTION__,length);
 		return(SMB_ERR_FILE_LEN);
 	}
 	if(fseeko(smb->sid_fp,length-idxreclen,SEEK_SET)) {
@@ -1531,7 +1531,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 	if(length<0L || length%sizeof(uint32_t)) {
 		close(file);
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s invalid file length: %ld", __FUNCTION__, length);
+			,"%s invalid file length: %" PRIdOFF, __FUNCTION__, length);
 		return(SMB_ERR_FILE_LEN); 
 	}
 
@@ -1539,7 +1539,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 		if((buf=(uint32_t*)malloc((size_t)length))==NULL) {
 			close(file);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%s malloc failure of %ld bytes", __FUNCTION__
+				,"%s malloc failure of %" PRIdOFF " bytes", __FUNCTION__
 				,length);
 			return(SMB_ERR_MEM); 
 		}
@@ -1548,7 +1548,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 			close(file);
 			free(buf);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%s %d '%s' reading %ld bytes", __FUNCTION__
+				,"%s %d '%s' reading %" PRIdOFF " bytes", __FUNCTION__
 				,get_errno(),STRERROR(get_errno()),length);
 			return(SMB_ERR_READ);
 		}
@@ -1629,7 +1629,7 @@ int smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	idxlen = filelength(fileno(smb->sid_fp));
 	if(idxlen != (smb->status.total_msgs * idxreclen)) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
-			,"%s index file length (%ld), expected (%ld)", __FUNCTION__
+			,"%s index file length (%" PRIdOFF "), expected (%ld)", __FUNCTION__
 			,idxlen, smb->status.total_msgs * idxreclen);
 		smb_unlocksmbhdr(smb);
 		return SMB_ERR_FILE_LEN;
@@ -1851,7 +1851,7 @@ int smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 	length = filelength(fileno(smb->sid_fp));
 	if(length < (long)(msg->idx_offset*idxreclen)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s invalid index offset: %ld, byte offset: %lu, length: %lu", __FUNCTION__
+			,"%s invalid index offset: %ld, byte offset: %lu, length: %" PRIdOFF, __FUNCTION__
 			,(long)msg->idx_offset, msg->idx_offset*idxreclen, length);
 		return(SMB_ERR_HDR_OFFSET);
 	}
