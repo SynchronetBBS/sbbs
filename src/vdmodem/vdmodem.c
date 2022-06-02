@@ -29,6 +29,7 @@
 #include <process.h>
 
 #include "genwrap.h"
+#include "findstr.h"
 #include "dirwrap.h"
 #include "gen_defs.h"
 #include "sockwrap.h"
@@ -77,6 +78,7 @@ struct {
 	ulong data_rate;
 	bool server_echo;
 	char client_file[MAX_PATH + 1];
+	char ip_filter_file[MAX_PATH + 1];
 	char busy_notice[INI_MAX_VALUE_LEN];
 	char answer_banner[INI_MAX_VALUE_LEN];
 	enum {
@@ -1007,9 +1009,16 @@ void listen_thread(void* arg)
 			SOCKET newsock = accept(listening_sock, (SOCKADDR*)&newaddr, &addrlen);
 			if(newsock == INVALID_SOCKET)
 				continue;
-			char tmp[256];
+			char ipaddr[256];
+			inet_addrtop(&newaddr, ipaddr, sizeof(ipaddr));
 			dprintf("Connection accepted from TCP port %hu at %s"
-				,inet_addrport(&newaddr), inet_addrtop(&newaddr, tmp, sizeof(tmp)));
+				,inet_addrport(&newaddr), ipaddr);
+			if(findstr(ipaddr, cfg.ip_filter_file)) {
+				dprintf("IP address blocked: %s", ipaddr);
+				shutdown(newsock, SD_SEND);
+				closesocket(newsock);
+				continue;
+			}
 			if(sock != INVALID_SOCKET) {	// In-use
 				send(newsock, cfg.busy_notice, strlen(cfg.busy_notice), /* flags: */0);
 				shutdown(newsock, SD_SEND);
@@ -1051,6 +1060,8 @@ bool read_ini(const char* ini_fname)
 		SAFECOPY(cfg.answer_banner, p);
 	if((p = iniGetString(ini, ROOT_SECTION, "ClientFile", NULL, value)) != NULL)
 		SAFECOPY(cfg.client_file, p);
+	if((p = iniGetString(ini, ROOT_SECTION, "IpFilterFile", NULL, value)) != NULL)
+		SAFECOPY(cfg.ip_filter_file, p);
 	return true;
 }
 
