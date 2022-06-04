@@ -245,29 +245,32 @@ void _cdecl interrupt_thread(void *arg)
 void _cdecl input_thread(void* arg)
 {
 	char	buf[LINEAR_RX_BUFLEN];
+	int		space;
 	int		count;
 
 	lputs(LOG_DEBUG,"input_thread: started");
 	while(1) {
-		count=RingBufFree(&rdbuf);
-		if(count<1) {
+		space=RingBufFree(&rdbuf);
+		if(space<1) {
 			lputs(LOG_WARNING,"input_thread: input buffer full!");
 			YIELD();
 			continue;
 		}
-		if(count>sizeof(buf))
-			count=sizeof(buf);
-		if(!ReadFile(rdslot,buf,count,&count,NULL)) {
+		if(space>sizeof(buf))
+			space=sizeof(buf);
+		if(!ReadFile(rdslot,buf,space,&count,NULL)) {
 			if(GetLastError()==ERROR_HANDLE_EOF) {	/* closed by VDD_CLOSE */
 				lputs(LOG_INFO,"input_thread: ReadFile returned EOF");
 				break;
 			}
-			lprintf(LOG_ERR,"!input_thread: ReadFile Error %d (size=%d)"
-				,GetLastError(),count);
+			lprintf(LOG_ERR,"!input_thread: ReadFile Error %d (space=%d, count=%d)"
+				,GetLastError(), space, count);
+			YIELD();
 			continue;
 		}
 		if(count==0) {
 			lputs(LOG_ERR,"!input_thread: ReadFile read 0");
+			YIELD();
 			continue;
 		}
 		RingBufWrite(&rdbuf,buf,count);
