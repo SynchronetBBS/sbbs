@@ -971,7 +971,7 @@ function runXtrn(xtrn)
 
 	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
 		|| !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
-		bbs.log_str("DOORSCAN - "+xtrn+" starting @ "+now.toString()+"\r\n");
+		bbs.log_str("\r\nDOORSCAN - "+xtrn+" starting @ "+now.toString()+"\r\n");
 	}
 
 	bbs.exec_xtrn(xtrn);
