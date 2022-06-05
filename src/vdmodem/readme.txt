@@ -197,11 +197,11 @@ directory where the executed svdm.exe is located.
 Settings changed via modem AT command take precedence over command-line
 options which take precedence over .ini file settings.
 
-Settings in the //Root// section may also be specified in a program-specific
+Settings in the Root section may also be specified in a program-specific
 section (named after the program itself), to create program-specific settings.
 
 Settings in the UART section may also be over-ridden in a program-specific
-section but naming the section [//<program>//.UART].
+section but naming the section [<program>.UART].
 For example, by default SVDM emulates a UART for COM Port 1 
 (I/O address 0x3f8, IRQ 4), but you could change the emulated COM Port for one
 particular program by creating a program-specific UART section in the .ini
