@@ -1542,12 +1542,12 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 	}
 	if(!sent_ssjs) {
 		if(session->req.error_dir) {
-			sprintf(session->req.physical_path,"%s%s.html",session->req.error_dir,error_code);
+			SAFEPRINTF2(session->req.physical_path,"%s%s.html",session->req.error_dir,error_code);
 			if(stat(session->req.physical_path,&sb))
-				sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
+				SAFEPRINTF2(session->req.physical_path,"%s%s.html",error_dir,error_code);
 		}
 		else
-			sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
+			SAFEPRINTF2(session->req.physical_path,"%s%s.html",error_dir,error_code);
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_headers(session,message,FALSE);
 		if(!stat(session->req.physical_path,&sb)) {
