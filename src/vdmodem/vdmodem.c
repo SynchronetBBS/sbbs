@@ -258,6 +258,7 @@ char* connected(struct modem* modem)
 {
 	modem->online = true;
 	modem->ringing = false;
+	ResetEvent(hangup_event);
 	ResetEvent(hungup_event);
 	SetEvent(carrier_event);
 	return connect_result(modem);
