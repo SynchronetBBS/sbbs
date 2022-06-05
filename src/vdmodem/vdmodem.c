@@ -77,6 +77,7 @@ struct {
 	bool terminate_on_disconnect;
 	ulong data_rate;
 	bool server_echo;
+	bool server_binary;
 	char client_file[MAX_PATH + 1];
 	char ip_filter_file[MAX_PATH + 1];
 	char busy_notice[INI_MAX_VALUE_LEN];
@@ -719,6 +720,10 @@ char* answer(struct modem* modem)
 			/* Disable Telnet Terminal Echo */
 			request_telnet_opt(TELNET_WILL,TELNET_ECHO);
 		}
+		if(cfg.server_binary) {
+			/* Will send in binary mode (no CR->CRLF expansion on receiver side) */
+			request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
+		}
 		/* Will suppress Go Ahead */
 		request_telnet_opt(TELNET_WILL,TELNET_SUP_GA);
 	}
@@ -1051,6 +1056,7 @@ bool read_ini(const char* ini_fname)
 	cfg.listen = iniGetBool(ini, ROOT_SECTION, "Listen", cfg.listen);
 	cfg.debug = iniGetBool(ini, ROOT_SECTION, "Debug", cfg.debug);
 	cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "ServerEcho", cfg.server_echo);
+	cfg.server_binary = iniGetBool(ini, ROOT_SECTION, "ServerBinary", cfg.server_binary);
 	cfg.data_rate = iniGetLongInt(ini, ROOT_SECTION, "Rate", cfg.data_rate);
 	cfg.address_family = iniGetEnum(ini, ROOT_SECTION, "AddressFamily", addrFamilyNames, cfg.address_family);
 	char value[INI_MAX_VALUE_LEN];
@@ -1090,6 +1096,7 @@ int main(int argc, char** argv)
 	// Default configuration values
 	mode = TELNET;
 	cfg.server_echo = TRUE;
+	cfg.server_binary = TRUE;
 	cfg.port = IPPORT_TELNET;
 	cfg.address_family = ADDRESS_FAMILY_UNSPEC;
 	SAFECOPY(cfg.client_file, "client.ini");
@@ -1431,7 +1438,7 @@ int main(int argc, char** argv)
 				uint8_t* p = buf;
 				if(mode == TELNET) {
 					len = telnet_expand(buf, rd, telnet_buf, sizeof(telnet_buf)
-						,telnet.local_option[TELNET_BINARY_TX] != TELNET_WILL // expand_cr
+						,!telnet_opt_enabled(telnet.local_option[TELNET_BINARY_TX]) // expand_cr
 						,&p);
 					if(len != rd)
 						dprintf("Telnet expanded %d bytes to %d", rd, len);
