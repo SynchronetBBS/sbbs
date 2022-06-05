@@ -1174,8 +1174,12 @@ int main(int argc, char** argv)
 				sbbsexec_mode = strtoul(arg + 1, NULL, 0);
 				break;
 			case 'V':
-				fprintf(stdout, "%s/%s\n", GIT_BRANCH, GIT_HASH);
+			{
+				char compiler[128];
+				DESCRIBE_COMPILER(compiler);
+				fprintf(stdout, "%s/%s built %s %s using %s\n", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 				return EXIT_SUCCESS;
+			}
 			default:
 				usage(argv[0]);
 				break;
