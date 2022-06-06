@@ -133,7 +133,7 @@ uchar telnet_opt_nak(uchar cmd)
 	return 0;
 }
 
-bool telnet_opt_enabled(uchar val)
+BOOL telnet_opt_enabled(uchar val)
 {
 	return (val == TELNET_DO) || (val == TELNET_WILL);
 }
