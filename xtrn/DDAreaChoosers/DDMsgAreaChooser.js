@@ -29,8 +29,12 @@
  * 2022-05-17 Eric Oulashin   Version 1.24
  *                            Fix for search error reporting (probably due to
  *                            mistaken copy & paste in an earlier commit)
- *                                  
+ * 2022-06-06 Eric Oulashin   Version 1.25
+ *                            Fix for miscolored digit(s) in # messages column in
+ *                            the sub-board list when using the lightbar menu
 */
+
+// TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
 
 // TODO: Passing "false" as the first command-line argument no longer works.
 // That should allow choosing a sub-board within the user's current message
@@ -71,8 +75,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.24";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-05-17";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.25";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-06-06";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -122,6 +126,12 @@ if (typeof(argv[0]) == "boolean")
 	gChooseMsgGrpOnStartup = argv[0];
 else if (typeof(argv[0]) == "string")
 	gChooseMsgGrpOnStartup = (argv[0].toLowerCase() == "true");
+
+
+// When using the number of messages in a sub-board, whether or not to count the
+// number of readable messages (which can be slow).  If false, will just look at the number
+// of all messages in the sub-board.
+var gUseNumReadableMessagesForMsgCount = false;
 
 // 2nd command-line argument: Determine whether or not to execute the message listing
 // code (true/false)
@@ -943,6 +953,8 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 {
 	// Start & end indexes for the various items in each mssage group list row
 	// Selected mark, group#, description, # sub-boards
+	var subBoardNameLen = +(this.subBoardListPrintfInfo[pGrpIdx].nameLen);
+	var numMsgsLen = +(this.subBoardListPrintfInfo[pGrpIdx].numMsgsLen);
 	var subBoardListIdxes = {
 		markCharStart: 0,
 		markCharEnd: 1,
@@ -950,9 +962,9 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 		subNumEnd: 3 + (+this.areaNumLen)
 	};
 	subBoardListIdxes.descStart = subBoardListIdxes.subNumEnd;
-	subBoardListIdxes.descEnd = subBoardListIdxes.descStart + +this.subBoardNameLen + 1;
+	subBoardListIdxes.descEnd = subBoardListIdxes.descStart + subBoardNameLen + 1;
 	subBoardListIdxes.numItemsStart = subBoardListIdxes.descEnd;
-	subBoardListIdxes.numItemsEnd = subBoardListIdxes.numItemsStart + +this.numItemsLen + 1;
+	subBoardListIdxes.numItemsEnd = subBoardListIdxes.numItemsStart + numMsgsLen + 1;
 	subBoardListIdxes.dateStart = subBoardListIdxes.numItemsEnd;
 	subBoardListIdxes.dateEnd = subBoardListIdxes.dateStart + +this.dateLen + 1;
 	subBoardListIdxes.timeStart = subBoardListIdxes.dateEnd;
@@ -1045,10 +1057,16 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 							// There is no sub-subboard list, so this is just a regular sub-board.
 							// Get the number of readable messages in the sub-board.
 							// TODO: This can take a long time
-							//numItems = numReadableMsgs(msgBase, this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
+							if (gUseNumReadableMessagesForMsgCount)
+							{
+								numItems = numReadableMsgs(msgBase, this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
+							}
 							// Fast but could be inaccurate due to counting deleted messages,
 							// vote responses, etc..
-							numItems = msgBase.total_msgs;
+							else
+							{
+								numItems = msgBase.total_msgs;
+							}
 						}
 						msgBase.close();
 					}
@@ -1602,8 +1620,10 @@ function DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pSubIdx
 						subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[subIdx].description;
 					}
 
-					//subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[subIdx].code);
-					subBoardInfo.numPosts = msgBase.total_msgs;
+					if (gUseNumReadableMessagesForMsgCount)
+						subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[subIdx].code);
+					else
+						subBoardInfo.numPosts = msgBase.total_msgs;
 
 					// Get the date & time when the last message was imported.
 					if (this.showDatesInSubBoardList && (subBoardInfo.numPosts > 0))
@@ -1897,8 +1917,11 @@ function DDMsgAreaChooser_GetSubBoardInfo(pGrpIdx, pSubIdx, pSubSubIdx)
 		retObj.subCode = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code;
 
 		// Get the number of messages in the sub-board
-		//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
-		var numMsgs = getNumMsgsInSubBoard(msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
+		var numMsgs = 0;
+		if (gUseNumReadableMessagesForMsgCount)
+			numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
+		else
+			numMsgs = getNumMsgsInSubBoard(msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
 		if (numMsgs > 0)
 		{
 			retObj.numItems = numMsgs;
@@ -1981,8 +2004,11 @@ function DDMsgAreaChooser_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
 	if (msgBase.open())
 	{
-		//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-		var numMsgs = msgBase.total_msgs;
+		var numMsgs = 0;
+		if (gUseNumReadableMessagesForMsgCount)
+			numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
+		else
+			numMsgs = msgBase.total_msgs;
 		var newestDate = {}; // For storing the date of the newest post
 		// Get the date & time when the last message was imported.
 		var msgHeader = getLatestMsgHdr(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
@@ -2221,6 +2247,7 @@ function DDMsgAreaChooser_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
 
 		this.subBoardListPrintfInfo[pGrpIndex] = {};
 		this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen = greatestNumMsgs.toString().length;
+		var numMsgsLen = this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen;
 		// Sub-board name length: With a # items length of 4, this should be
 		// 47 for an 80-column display.
 		this.subBoardListPrintfInfo[pGrpIndex].nameLen = console.screen_columns - this.areaNumLen - this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen - 5;
@@ -2564,8 +2591,13 @@ function getGreatestNumMsgs(pGrpIndex)
 		if (msgBase == null) continue;
 		if (msgBase.open())
 		{
-			if (msgBase.total_msgs > greatestNumMsgs)
-				greatestNumMsgs = msgBase.total_msgs;
+			var numMsgs = 0;
+			if (gUseNumReadableMessagesForMsgCount)
+				numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[subIndex].code);
+			else
+				numMsgs = msgBase.total_msgs;
+			if (numMsgs > greatestNumMsgs)
+				greatestNumMsgs = numMsgs;
 			msgBase.close();
 		}
 	}
@@ -3261,8 +3293,10 @@ function getLatestMsgTime(pSubCode)
 	var msgBase = new MsgBase(pSubCode);
 	if (msgBase.open())
 	{
-		//var numMsgs = numReadableMsgs(msgBase, pSubCode);
-		numMsgs = msgBase.total_msgs;
+		if (gUseNumReadableMessagesForMsgCount)
+			numMsgs = numReadableMsgs(msgBase, pSubCode);
+		else
+			numMsgs = msgBase.total_msgs;
 		msgBase.close();
 	}
 	delete msgBase; // Free some memory?
@@ -3428,57 +3462,4 @@ function DDMsgAreaChooser_FindSubBoardIdxFromText(pGrpIdx, pSubIdx, pSearchText,
 	}
 
 	return subBoardIdx;
-}
-
-
-
-// Temporary - For debugging
-function logStackTrace(levels) {
-    var callstack = [];
-    var isCallstackPopulated = false;
-    try {
-        i.dont.exist += 0; //doesn't exist- that's the point
-    } catch (e) {
-        if (e.stack) { //Firefox / chrome
-            var lines = e.stack.split('\n');
-            for (var i = 0, len = lines.length; i < len; i++) {
-                    callstack.push(lines[i]);
-            }
-            //Remove call to logStackTrace()
-            callstack.shift();
-            isCallstackPopulated = true;
-        }
-        else if (window.opera && e.message) { //Opera
-            var lines = e.message.split('\n');
-            for (var i = 0, len = lines.length; i < len; i++) {
-                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
-                    var entry = lines[i];
-                    //Append next line also since it has the file info
-                    if (lines[i + 1]) {
-                        entry += " at " + lines[i + 1];
-                        i++;
-                    }
-                    callstack.push(entry);
-                }
-            }
-            //Remove call to logStackTrace()
-            callstack.shift();
-            isCallstackPopulated = true;
-        }
-    }
-    if (!isCallstackPopulated) { //IE and Safari
-        var currentFunction = arguments.callee.caller;
-        while (currentFunction) {
-            var fn = currentFunction.toString();
-            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
-            callstack.push(fname);
-            currentFunction = currentFunction.caller;
-        }
-    }
-    if (levels) {
-        console.print(callstack.slice(0, levels).join("\r\n"));
-    }
-    else {
-        console.print(callstack.join("\r\n"));
-    }
 }
