@@ -5868,8 +5868,10 @@ static BOOL js_setup_cx(http_session_t* session)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 		JS_ENDREQUEST(session->js_cx);
 	}
-	else
+	else {
 		JS_BEGINREQUEST(session->js_cx);
+		JS_MaybeGC(session->js_cx);
+	}
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing HttpRequest object",session->socket);
 	if(js_CreateHttpRequestObject(session->js_cx, session->js_glob, session)==NULL) {
