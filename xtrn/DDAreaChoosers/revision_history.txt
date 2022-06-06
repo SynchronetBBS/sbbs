@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.25     2022-06-06   Message area chooser only: Fix for miscolored digit(s) in
+                      # messages column in the sub-board list when using the
+                      lightbar menu
 1.24     2022-05-17   Fix for searching & error reporting (probably due to a
                       mistaken copy & paste in a past commit)
 1.23     2022-03-18   For message sub-board/file directory collapsing, if there
