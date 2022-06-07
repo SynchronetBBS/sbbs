@@ -27,6 +27,7 @@
 #define NOGDI
 #include <windows.h>
 #include <process.h>
+#include <mmsystem.h>	/* SND_ASYNC */
 
 #include "genwrap.h"
 #include "findstr.h"
@@ -40,7 +41,7 @@
 #include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
-#define VERSION "0.1"
+#define VERSION "0.2"
 
 bool external_socket;
 union xp_sockaddr addr;
@@ -80,6 +81,9 @@ struct {
 	bool server_binary;
 	char client_file[MAX_PATH + 1];
 	char ip_filter_file[MAX_PATH + 1];
+	char ring_sound[MAX_PATH + 1];
+	char connect_sound[MAX_PATH + 1];
+	char disconnect_sound[MAX_PATH + 1];
 	char busy_notice[INI_MAX_VALUE_LEN];
 	char answer_banner[INI_MAX_VALUE_LEN];
 	enum {
@@ -145,6 +149,7 @@ struct modem {
 	bool online; // false means "command mode"
 	bool caller_id;
 	bool ringing;
+	bool speaker;
 	ulong ringcount;
 	ulong auto_answer;
 	ulong dial_wait;
@@ -257,6 +262,8 @@ char* connect_result(struct modem* modem)
 
 char* connected(struct modem* modem)
 {
+	if(modem->speaker && cfg.connect_sound[0])
+		PlaySound(cfg.connect_sound, NULL, SND_ASYNC|SND_FILENAME);
 	modem->online = true;
 	modem->ringing = false;
 	ResetEvent(hangup_event);
@@ -267,6 +274,8 @@ char* connected(struct modem* modem)
 
 void disconnect(struct modem* modem)
 {
+	if(modem->speaker && cfg.disconnect_sound[0])
+		PlaySound(cfg.disconnect_sound, NULL, SND_ASYNC|SND_FILENAME);
 	modem->online = false;
 	if(!external_socket) {
 		shutdown(sock, SD_SEND);
@@ -295,6 +304,7 @@ const char* iniKeyAutoAnswer = "AutoAnswer";
 const char* iniKeyEcho = "Echo";
 const char* iniKeyQuiet = "Quiet";
 const char* iniKeyNumeric = "Numeric";
+const char* iniKeySpeaker = "Speaker";
 const char* iniKeyCR = "CR";
 const char* iniKeyLF = "LF";
 const char* iniKeyBS = "BS";
@@ -311,6 +321,7 @@ void init(struct modem* modem)
 	modem->auto_answer = iniGetBool(ini, section, iniKeyAutoAnswer, FALSE);
 	modem->echo_off = !iniGetBool(ini, section, iniKeyEcho, TRUE);
 	modem->quiet = iniGetBool(ini, section, iniKeyQuiet, FALSE);
+	modem->speaker = iniGetBool(ini, section, iniKeySpeaker, FALSE);
 	modem->numeric_mode = iniGetBool(ini, section, iniKeyNumeric, FALSE);
 	modem->caller_id = iniGetBool(ini, section, iniKeyCallerID, FALSE);
 	modem->cr = (char)iniGetInteger(ini, section,  iniKeyCR, '\r');
@@ -330,6 +341,7 @@ bool write_cfg(struct modem* modem)
 	iniSetBool(&ini, section, iniKeyAutoAnswer, modem->auto_answer, style);
 	iniSetBool(&ini, section, iniKeyEcho, !modem->echo_off, style);
 	iniSetBool(&ini, section, iniKeyQuiet, modem->quiet, style);
+	iniSetBool(&ini, section, iniKeySpeaker, modem->speaker, style);
 	iniSetBool(&ini, section, iniKeyNumeric, modem->numeric_mode, style);
 	iniSetBool(&ini, section, iniKeyCallerID, modem->caller_id, style);
 	iniSetInteger(&ini, section, iniKeyCR, modem->cr, style);
@@ -832,6 +844,11 @@ char* atmodem_exec(struct modem* modem)
 						return error(modem);
 				}
 				return respbuf;
+			case 'L': /* Speaker volume */
+				break;
+			case 'M':
+				modem->speaker = val;
+				break;
 			case 'O':
 				if(sock == INVALID_SOCKET)
 					return error(modem);
@@ -916,6 +933,10 @@ char* atmodem_exec(struct modem* modem)
 					return respbuf;
 				} else
 					return error(modem);
+				break;
+			case 'P': /* Pulse */
+				break;
+			case 'T': /* Tone */
 				break;
 			case 'X':
 				modem->ext_results = val;
@@ -1069,6 +1090,12 @@ bool read_ini(const char* ini_fname)
 		SAFECOPY(cfg.client_file, p);
 	if((p = iniGetString(ini, ROOT_SECTION, "IpFilterFile", NULL, value)) != NULL)
 		SAFECOPY(cfg.ip_filter_file, p);
+	if((p = iniGetString(ini, ROOT_SECTION, "RingSound", NULL, value)) != NULL)
+		SAFECOPY(cfg.ring_sound, p);
+	if((p = iniGetString(ini, ROOT_SECTION, "ConnectSound", NULL, value)) != NULL)
+		SAFECOPY(cfg.connect_sound, p);
+	if((p = iniGetString(ini, ROOT_SECTION, "DisconnectSound", NULL, value)) != NULL)
+		SAFECOPY(cfg.disconnect_sound, p);
 	return true;
 }
 
@@ -1376,6 +1403,8 @@ int main(int argc, char** argv)
 					dprintf("Incoming connection");
 				if(now - lastring > RING_DELAY) {
 					dprintf("RING");
+					if(modem.speaker && cfg.ring_sound[0])
+						PlaySound(cfg.ring_sound, NULL, SND_ASYNC|SND_FILENAME);
 					vdd_writestr(&wrslot, response(&modem, RING));
 					lastring = now;
 					modem.ringcount++;
