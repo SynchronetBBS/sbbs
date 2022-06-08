@@ -255,6 +255,15 @@ char* error(struct modem* modem)
 	return response(modem, ERROR);
 }
 
+char* text_response(struct modem* modem, const char* text)
+{
+	static char str[512];
+
+	SAFECOPY(str, verbal_response(modem, text));
+	SAFECAT(str, response(modem, OK));
+	return str;
+}
+
 char* connect_result(struct modem* modem)
 {
 	return response(modem, modem->ext_results ? CONNECT_9600 : CONNECT);
@@ -378,6 +387,7 @@ bool write_save(struct modem* modem, ulong savnum)
 	iniSetString(&ini, "modem", key, modem->save[savnum], /* style: */NULL);
 	bool result = iniWriteFile(fp, ini);
 	iniCloseFile(fp);
+	iniFreeStringList(ini);
 	return result;
 }
 
@@ -588,13 +598,17 @@ char* dial(struct modem* modem, const char* number)
 	struct addrinfo	*res=NULL;
 	char host[128];
 	char portnum[16];
+	char value[INI_MAX_VALUE_LEN];
 	uint16_t port = cfg.port;
 
 	dprintf("dial(%s)", number);
 	if(stricmp(number, "L") == 0)
 		number = modem->last;
 	else {
-		if(toupper(*number) == 'S' && IS_DIGIT(number[1])) {
+		const char* p = iniGetString(ini, "alias", number, NULL, value);
+		if(p != NULL)
+			number = p;
+		else if(toupper(*number) == 'S' && IS_DIGIT(number[1])) {
 			char* p;
 			ulong val = strtoul(number+1, &p, 10);
 			if(val < MAX_SAVES && *p == '\0')
@@ -743,6 +757,8 @@ char* answer(struct modem* modem)
 	return connected(modem);
 }
 
+bool read_ini(const char* ini_fname);
+
 char* atmodem_exec(struct modem* modem)
 {
 	static char respbuf[128];
@@ -831,15 +847,14 @@ char* atmodem_exec(struct modem* modem)
 				switch(val) {
 					case 0:
 						safe_snprintf(respbuf, sizeof(respbuf)
-							,"\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n%s/%s\r\n"
+							,TITLE " v" VERSION " Copyright %s Rob Swindell\r\n%s/%s"
 							,&__DATE__[7]
 							,GIT_BRANCH
 							,GIT_HASH
 							);
-						break;
+						return text_response(modem, respbuf);
 					case 1:
-						safe_snprintf(respbuf, sizeof(respbuf), "\r\n%s\r\n", ini_fname);
-						break;
+						return text_response(modem, ini_fname);
 					default:
 						return error(modem);
 				}
@@ -942,6 +957,10 @@ char* atmodem_exec(struct modem* modem)
 				modem->ext_results = val;
 				break;
 			case 'Z':
+				if(fexist(ini_fname)) {
+					if(!read_ini(ini_fname))
+						return error(modem);
+				}
 				init(modem);
 				break;
 			default:
@@ -1064,11 +1083,11 @@ void listen_thread(void* arg)
 
 bool read_ini(const char* ini_fname)
 {
-	printf("Reading '%s'\n", ini_fname);
 	FILE* fp = iniOpenFile(ini_fname, /* create: */false);
 	if(fp == NULL)
 		return false;
 
+	iniFreeStringList(ini);
 	ini = iniReadFile(fp);
 	iniCloseFile(fp);
 	mode = iniGetEnum(ini, ROOT_SECTION, "Mode", modeNames, mode);
@@ -1178,8 +1197,9 @@ int main(int argc, char** argv)
 				cfg.port = atoi(arg + 1);
 				break;
 			case 'c':
-				if(!read_ini(arg + 1)) {
-					fprintf(stderr, "!Error %d reading: %s\n", errno, arg + 1);
+				SAFECOPY(ini_fname, arg + 1);
+				if(!read_ini(ini_fname)) {
+					fprintf(stderr, "!Error %d reading: %s\n", errno, ini_fname);
 					return EXIT_FAILURE;
 				}
 				break;
