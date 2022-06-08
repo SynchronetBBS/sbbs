@@ -336,7 +336,7 @@ function processFile(pFilename)
 					}
 				}
 				// Remove the work directory.
-				//deltree(baseWorkDir + "/");
+				deltree(baseWorkDir + "/");
 			}
 			else
 			{
