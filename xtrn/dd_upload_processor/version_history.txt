@@ -2,4 +2,5 @@ Revision History for Digital Distortion Upload Processor
 ========================================================
 Version  Date         Description
 -------  ----         -----------
+1.01     2022-06-08   Updated so that the scanning works properly in Linux
 1.00     2009-12-29   First general public release
