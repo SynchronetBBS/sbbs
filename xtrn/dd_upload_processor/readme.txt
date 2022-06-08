@@ -1,13 +1,12 @@
                    Digital Distortion Upload Processor
-                              Version 1.00
-                        Release date: 2009-12-29
+                              Version 1.01
+                        Release date: 2022-06-08
 
                                   by
 
                              Eric Oulashin
                      Sysop of Digital Distortion BBS
-               BBS internet address: digitaldistortionbbs.com
-                                     digdist.bbsindex.com
+                 BBS internet address: digdist.bbsindex.com
                      Email: eric.oulashin@gmail.com
 
 
@@ -22,6 +21,7 @@ Contents
 4. Installation and Setup
 5. Main configuration file
 6. Archive file type configuration file
+7. Revision History
 
 
 1. Disclaimer
@@ -90,19 +90,17 @@ EXTRACT command lines set properly for your system.  For information on
 that configuration file, see section 6: Archive file type configuration
 file.
 
-The following archive contains Win32 command-line archivers for popular
-archive file formats:
-http://digdist.bbsindex.com/miscFilesForDL/Win32CmdLineCompressionTools.zip
-The archivers included in that archive handle the most popular file formats
-(ZIP, 7Z (7-Zip), RAR, ARJ, TAR, GZ, TGZ, and TAR.GZ), and they are set up in
-DDUPFileTypes.cfg to extract popular file formats (ZIP, 7Z (7-Zip), RAR, ARJ,
-MSI, TAR, GZ, TGZ, and TAR.GZ).  Note that you will need to edit that .cfg
-file and change the path to the .exe file according to where you copied them
-on your system.  If your BBS is running in Windows, the included configuration
-file should work for you (although it does also have the Linux command lines
-as comments).  If you copy the archivers to a directory that is not in your
-system path, you will need to edit the DDUPFileTypes.cfg file to include the
-full paths with the archive executables.
+Win32 command-line archivers have been included with this script for
+convenience.  Those archivers have been set up in DDUPFileTypes.cfg
+to extract popular file formats (ZIP, 7Z (7-Zip), RAR, ARJ, MSI, TAR,
+GZ, TGZ, and TAR.GZ).  The Win32 archivers are in the Win32Archivers
+directory.  So if your BBS is running in Windows, the included
+configuration file should work for you (although it does also have the
+Linux command lines as comments).  You will need to copy the files from
+the Win32Archivers directory to a directory in your path or another
+directory of your choice.  If you copy them to a directory that is not
+in your path, you will need to edit the DDUPFileTypes.cfg file to include
+the full paths with the archive executables.
 
 Extractor notes:
 DDUPFileTypes.cfg includes a setup for using 7-Zip to extract ISO (CD/DVD
@@ -341,3 +339,10 @@ uploads D:\Files\someArchive.zip and your Synchronet installation is located
 in D:\sbbs, the temp directory is D:\sbbs\node1\DDUploadProcessor_Temp, and
 the extract command will be translated to the following:
 unzip.exe -qq -o D:\Files\someArchive.zip -d D:\sbbs\node1\DDUploadProcessor_Temp
+
+
+7. Revision History
+===================
+Version  Date         Description
+-------  ----         -----------
+1.00     2009-12-29   First general public release

@@ -9,11 +9,13 @@
  * BBS: Digital Distortion
  * BBS address: digdist.bbsindex.com
  *
- * Date       User              Description
+ * Date           Author               Description
  * 2009-12-25-
  * 2009-12-28 Eric Oulashin     Initial development
  * 2009-12-29 Eric Oulashin     Version 1.00
- *                              Initial public release
+ *                                            Initial public release
+ * 2022-06-08 Eric Oulashin     Version 1.01
+ *                                            Made fixes to get the scanner functionality working properly in Linux
  */
 
 /* Command-line arguments:
@@ -21,6 +23,13 @@
 */
 
 load("sbbsdefs.js");
+
+// Require version 3.17 or newer of Synchronet (for file_chmod())
+if (system.version_num < 31700)
+{
+	console.print("\1nDigital Distortion Upload Processor requires Synchronet 3.17 or newer.\r\n");
+	exit(1);
+}
 
 // Determine the script's execution directory.
 // This code is a trick that was created by Deuce, suggested by Rob
@@ -31,11 +40,14 @@ var gStartupPath = '.';
 try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
 gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 
-load(gStartupPath + "DDUP_Cleanup.js");
+load(gStartupPath + "ddup_cleanup.js");
 
 // Version information
-var gDDUPVersion = "1.00";
-var gDDUPVerDate = "2009-12-29";
+var gDDUPVersion = "1.01";
+var gDDUPVerDate = "2022-06-08";
+
+// Store whether or not this is running in Windows
+var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
 
 
 // If the filename was specified on the command line, then use that
@@ -44,39 +56,39 @@ var gDDUPVerDate = "2009-12-29";
 var gFileToScan = "";
 if (argv.length > 0)
 {
-   if (typeof(argv[0]) == "string")
-   {
-      // Make sure the arguments are correct (in case they have spaces),
-      // then use the first one.
-      var fixedArgs = fixArgs(argv);
-      if ((typeof(fixedArgs[0]) == "string") && (fixedArgs[0].length > 0))
-         gFileToScan = fixedArgs[0];
-      else
-      {
-         console.print("nyhError: ncBlank filename argument given.\r\np");
-         exit(-2);
-      }
-   }
-   else
-   {
-      console.print("nyhError: ncUnknown command-line argument specified.\r\np");
-      exit(-1);
-   }
+	if (typeof(argv[0]) == "string")
+	{
+		// Make sure the arguments are correct (in case they have spaces),
+		// then use the first one.
+		var fixedArgs = fixArgs(argv);
+		if ((typeof(fixedArgs[0]) == "string") && (fixedArgs[0].length > 0))
+			gFileToScan = fixedArgs[0];
+		else
+		{
+			console.print("nyhError: ncBlank filename argument given.\r\np");
+			exit(-2);
+		}
+	}
+	else
+	{
+		console.print("nyhError: ncUnknown command-line argument specified.\r\np");
+		exit(-1);
+	}
 }
 else
 {
-   // Read the filename from DDArcViewerFilename.txt in the node directory.
-   // This is a workaround for file/directory names with spaces in
-   // them, which would get separated into separate command-line
-   // arguments for JavaScript scripts.
-   var filenameFileFilename = system.node_dir + "DDArcViewerFilename.txt";
-   var filenameFile = new File(filenameFileFilename);
-   if (filenameFile.open("r"))
-   {
-      if (!filenameFile.eof)
-         gFileToScan = filenameFile.readln(2048);
-      filenameFile.close();
-   }
+	// Read the filename from DDArcViewerFilename.txt in the node directory.
+	// This is a workaround for file/directory names with spaces in
+	// them, which would get separated into separate command-line
+	// arguments for JavaScript scripts.
+	var filenameFileFilename = system.node_dir + "DDArcViewerFilename.txt";
+	var filenameFile = new File(filenameFileFilename);
+	if (filenameFile.open("r"))
+	{
+		if (!filenameFile.eof)
+			gFileToScan = filenameFile.readln(2048);
+		filenameFile.close();
+	}
 }
 
 // Make sure the slashes in the filename are correct for the platform.
@@ -92,26 +104,27 @@ if (gFileToScan.length == 0)
 }
 
 // Create the global configuration objects.
-var gGenCfg = new Object();
-gGenCfg.scanCmd = "";
-gGenCfg.skipScanIfSysop = false;
-gGenCfg.pauseAtEnd = false;
-var gFileTypeCfg = new Object();
+var gGenCfg = {
+	scanCmd: "",
+	skipScanIfSysop: false,
+	pauseAtEnd: false
+};
+var gFileTypeCfg = {};
 
 // Read the configuration files to populate the global configuration object.
 var configFileRead = ReadConfigFile(gStartupPath);
 // If the configuration files weren't read, then output an error and exit.
 if (!configFileRead)
 {
-   console.print("nyhError: ncUpload processor is unable to read its\r\n");
-   console.print("configuration files.\r\np");
-   exit(2);
+	console.print("nyhError: ncUpload processor is unable to read its\r\n");
+	console.print("configuration files.\r\np");
+	exit(2);
 }
 // Exit if there is no scan command.
 if (gGenCfg.scanCmd.length == 0)
 {
-   console.print("nyhWarning: ncNo scan command configured for the upload processor.\r\n");
-   exit(0);
+	console.print("nyhWarning: ncNo scan command configured for the upload processor.\r\n");
+	exit(0);
 }
 
 // Global variables
@@ -224,150 +237,154 @@ function fixArgs(input)
 //               non-zero means failure.
 function processFile(pFilename)
 {
-   // Display the program header stuff - The name of the file being scanned
-   // and the status header line
-   var justFilename = getFilenameFromPath(pFilename);
-   console.print("nwhScanning b" + justFilename.substr(0, 70));
-   console.print("n\r\nb7                             File Scan Status                                  n\r\n");
+	// Display the program header stuff - The name of the file being scanned
+	// and the status header line
+	var justFilename = getFilenameFromPath(pFilename);
+	console.print("nwhScanning b" + justFilename.substr(0, 70));
+	console.print("n\r\nb7                             File Scan Status                                  n\r\n");
 
-   // If the skipScanIfSysop option is enabled and the user is a sysop,
-   // then assume the file is good.
-   if (gGenCfg.skipScanIfSysop && user.compare_ars("SYSOP"))
-   {
-      printf(gStatusPrintfStr, "gh", "Auto-approving the file (you're a sysop)");
-      console.print(gOKStrWithNewline);
-      return 0;
-   }
+	// If the skipScanIfSysop option is enabled and the user is a sysop,
+	// then assume the file is good.
+	if (gGenCfg.skipScanIfSysop && user.compare_ars("SYSOP"))
+	{
+		printf(gStatusPrintfStr, "gh", "Auto-approving the file (you're a sysop)");
+		console.print(gOKStrWithNewline);
+		return 0;
+	}
 
-   var retval = 0;
+	var retval = 0;
 
-   // Look for the file extension in gFileTypeCfg to get the file scan settings.
-   // If the file extension is not there, then go ahead and scan it (to be on the
-   // safe side).
-   var filenameExtension = getFilenameExtension(pFilename);
-   if (typeof(gFileTypeCfg[filenameExtension]) != "undefined")
-   {
-      if (gFileTypeCfg[filenameExtension].scanOption == "scan")
-      {
-         // - If the file has an extract command, then:
-         //   Extract the file to a temporary directory in the node dir
-         //   For each file in the directory:
-         //     If it's a subdir
-         //        Recurse into it
-         //     else
-         //        Scan it for viruses
-         //        If non-zero retval
-         //           Return with error code
-         var filespec = pFilename;
-         if (gFileTypeCfg[filenameExtension].extractCmd.length > 0)
-         {
-            // Create the base work directory for this script in the node dir.
-            // And just in case that dir already exists, remove it before
-            // creating it.
-            var baseWorkDir = system.node_dir + "DDUploadProcessor_Temp";
-            deltree(baseWorkDir + "/");
-            if (!mkdir(baseWorkDir))
-            {
-               console.print("nyhWarning: nwh Unable to create the work dir.n\r\n");
-               retval = -1;
-            }
-            
-            // If all is okay, then create the directory in the temporary work dir.
-            var workDir = baseWorkDir + "/" + justFilename + "_temp";
-            if (retval == 0)
-            {
-               deltree(workDir + "/");
-               if (!mkdir(workDir))
-               {
-                  console.print("nyhWarning: nwh Unable to create a dir in the temporary work dir.n\r\n");
-                  retval = -1;
-               }
-            }
+	// Look for the file extension in gFileTypeCfg to get the file scan settings.
+	// If the file extension is not there, then go ahead and scan it (to be on the
+	// safe side).
+	var filenameExtension = getFilenameExtension(pFilename);
+	if (typeof(gFileTypeCfg[filenameExtension]) != "undefined")
+	{
+		if (gFileTypeCfg[filenameExtension].scanOption == "scan")
+		{
+			// - If the file has an extract command, then:
+			//   Extract the file to a temporary directory in the node dir
+			//   For each file in the directory:
+			//     If it's a subdir
+			//        Recurse into it
+			//     else
+			//        Scan it for viruses
+			//        If non-zero retval
+			//           Return with error code
+			var filespec = pFilename;
+			if (gFileTypeCfg[filenameExtension].extractCmd.length > 0)
+			{
+				// Create the base work directory for this script in the node dir.
+				// And just in case that dir already exists, remove it before
+				// creating it.
+				var baseWorkDir = system.node_dir + "DDUploadProcessor_Temp";
+				deltree(baseWorkDir + "/");
+				if (!mkdir(baseWorkDir))
+				{
+					console.print("nyhWarning: nwh Unable to create the work dir.n\r\n");
+					retval = -1;
+				}
+				file_chmod(baseWorkDir, 0x1fd); // Octal 775, rwxrwxr-x
+				//chmodDirsRecursive(baseWorkDir, 0x1fd); // Octal 775, rwxrwxr-x
+				
+				// If all is okay, then create the directory in the temporary work dir.
+				var workDir = baseWorkDir + "/" + justFilename + "_temp";
+				if (retval == 0)
+				{
+					deltree(workDir + "/");
+					if (!mkdir(workDir))
+					{
+						console.print("nyhWarning: nwh Unable to create a dir in the temporary work dir.n\r\n");
+						retval = -1;
+					}
+				}
 
-            // If all is okay, we can now process the file.
-            if (retval == 0)
-            {
-               // Extract the file to the work directory
-               printf(gStatusPrintfStr, "mh", "Extracting the file...");
-               var errorStr = extractFileToDir(pFilename, workDir);
-               if (errorStr.length == 0)
-               {
-                  console.print(gOKStrWithNewline);
-                  // Scan the files in the work directory.
-                  printf(gStatusPrintfStr, "r", "Scanning files inside the archive for viruses...");
-                  var retObj = scanFilesInDir(workDir);
-                  retval = retObj.returnCode;
-                  if (retObj.returnCode == 0)
-                     console.print(gOKStrWithNewline);
-                  else
-                  {
-                     console.print(gFailStrWithNewline);
-                     console.print("nyhVirus scan failed.  Scan output:n\r\n");
-                     for (var index = 0; index < retObj.cmdOutput.length; ++index)
-                     {
-                        console.print(retObj.cmdOutput[index]);
-                        console.crlf();
-                     }
-                  }
-               }
-               else
-               {
-                  console.print(gFailStrWithNewline);
-                  // Scan the files in the work directory.
-                  console.print("nyhWarning: nwh Unable to extract to work dir.n\r\n");
-                  retval = -2;
-               }
-            }
-            // Remove the work directory.
-            deltree(baseWorkDir + "/");
-         }
-         else
-         {
-            // The file has no extract command, so just scan it.
-            printf(gStatusPrintfStr, "bh", "Scanning...");
-            var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
-            // Run the scan command and capture its output, in case the scan fails.
-            var retObj = runExternalCmdWithOutput(scanCmd);
-            retval = retObj.returnCode;
-            if (retObj.returnCode == 0)
-               console.print(gOKStrWithNewline);
-            else
-            {
-               console.print(gFailStrWithNewline);
-               console.print("nyhVirus scan failed.  Scan output:n\r\n");
-               for (var index = 0; index < retObj.cmdOutput.length; ++index)
-               {
-                  console.print(retObj.cmdOutput[index]);
-                  console.crlf();
-               }
-            }
-         }
-      }
-      else if (gFileTypeCfg[filenameExtension].scanOption == "always fail")
-         exitCode = 10;
-   }
-   else
-   {
-      // There's nothing configured for the file's extension, so just scan it.
-      printf(gStatusPrintfStr, "r", "Scanning...");
-      var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
-      var retObj = runExternalCmdWithOutput(scanCmd);
-      retval = retObj.returnCode;
-      if (retObj.returnCode == 0)
-         console.print(gOKStrWithNewline);
-      else
-      {
-         console.print(gFailStrWithNewline);
-         console.print("nyhVirus scan failed.  Scan output:n\r\n");
-         for (var index = 0; index < retObj.cmdOutput.length; ++index)
-         {
-            console.print(retObj.cmdOutput[index]);
-            console.crlf();
-         }
-      }
-   }
+				// If all is okay, we can now process the file.
+				if (retval == 0)
+				{
+					// Extract the file to the work directory
+					printf(gStatusPrintfStr, "mh", "Extracting the file...");
+					var errorStr = extractFileToDir(pFilename, workDir);
+					if (errorStr.length == 0)
+					{
+						// In case we're running in Linux, chmod all directories in the work dir recursively so the scanner can access their files
+						chmodDirsRecursive(workDir, 0x1fd); // Octal 775, rwxrwxr-x
+						console.print(gOKStrWithNewline);
+						// Scan the files in the work directory.
+						printf(gStatusPrintfStr, "r", "Scanning files inside the archive for viruses...");
+						var retObj = scanFilesInDir(workDir);
+						retval = retObj.returnCode;
+						if (retObj.returnCode == 0)
+							console.print(gOKStrWithNewline);
+						else
+						{
+							console.print(gFailStrWithNewline);
+							console.print("nyhVirus scan failed.(1)  Scan output:n\r\n");
+							for (var index = 0; index < retObj.cmdOutput.length; ++index)
+							{
+								console.print(retObj.cmdOutput[index]);
+								console.crlf();
+							}
+						}
+					}
+					else
+					{
+						console.print(gFailStrWithNewline);
+						// Scan the files in the work directory.
+						console.print("nyhWarning: nwh Unable to extract to work dir.n\r\n");
+						retval = -2;
+					}
+				}
+				// Remove the work directory.
+				//deltree(baseWorkDir + "/");
+			}
+			else
+			{
+				// The file has no extract command, so just scan it.
+				printf(gStatusPrintfStr, "bh", "Scanning...");
+				var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
+				// Run the scan command and capture its output, in case the scan fails.
+				var retObj = runExternalCmdWithOutput(scanCmd);
+				retval = retObj.returnCode;
+				if (retObj.returnCode == 0)
+					console.print(gOKStrWithNewline);
+				else
+				{
+					console.print(gFailStrWithNewline);
+					console.print("nyhVirus scan failed.(2)  Scan output:n\r\n");
+					for (var index = 0; index < retObj.cmdOutput.length; ++index)
+					{
+						console.print(retObj.cmdOutput[index]);
+						console.crlf();
+					}
+				}
+			}
+		}
+		else if (gFileTypeCfg[filenameExtension].scanOption == "always fail")
+			exitCode = 10;
+	}
+	else
+	{
+		// There's nothing configured for the file's extension, so just scan it.
+		printf(gStatusPrintfStr, "r", "Scanning...");
+		var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
+		var retObj = runExternalCmdWithOutput(scanCmd);
+		retval = retObj.returnCode;
+		if (retObj.returnCode == 0)
+			console.print(gOKStrWithNewline);
+		else
+		{
+			console.print(gFailStrWithNewline);
+			console.print("nyhVirus scan failed.(3)  Scan output:n\r\n");
+			for (var index = 0; index < retObj.cmdOutput.length; ++index)
+			{
+				console.print(retObj.cmdOutput[index]);
+				console.crlf();
+			}
+		}
+	}
 
-   return retval;
+	return retval;
 }
 
 // Recursively scans the files in a directory using the scan command in
@@ -481,7 +498,7 @@ function ReadConfigFile(pCfgFilePath)
 {
    // Read the file type settings.
    var fileTypeSettingsRead = false;
-   var fileTypeCfgFile = new File(pCfgFilePath + "DDUPFileTypes.cfg");
+   var fileTypeCfgFile = new File(pCfgFilePath + "ddup_file_types.cfg");
    if (fileTypeCfgFile.open("r"))
    {
       if (fileTypeCfgFile.length > 0)
@@ -566,7 +583,7 @@ function ReadConfigFile(pCfgFilePath)
 
    // Read the general program configuration
    var genSettingsRead = false;
-   var genCfgFile = new File(pCfgFilePath + "DDUP.cfg");
+   var genCfgFile = new File(pCfgFilePath + "ddup.cfg");
    if (genCfgFile.open("r"))
    {
       if (genCfgFile.length > 0)
@@ -728,11 +745,7 @@ function getPathFromFilename(pFilename)
    if (pFilename.length == 0)
       return "";
 
-   // Determine which slash character to use for paths, depending
-   // on the OS.
-   if (getPathFromFilename.inWin == undefined)
-      getPathFromFilename.inWin = /^WIN/.test(system.platform.toUpperCase());
-   var pathSlash = (getPathFromFilename.inWin ? "\\" : "/");
+   var pathSlash = (gRunningInWindows ? "\\" : "/");
 
    // Make sure the filename has the correct slashes for
    // the platform.
@@ -783,15 +796,10 @@ function fixPathSlashes(pPath)
    if (pPath.length == 0)
       return "";
 
-   // Create a variable to store whether or not we're in Windows,
-   // but only once (for speed).
-   if (fixPathSlashes.inWin == undefined)
-      fixPathSlashes.inWin = /^WIN/.test(system.platform.toUpperCase());
-
    // Fix the slashes and return the fixed version.
-   //return(fixPathSlashes.inWin ? pPath.replace("/", "\\") : pPath.replace("\\", "/"));
+   //return(gRunningInWindows ? pPath.replace("/", "\\") : pPath.replace("\\", "/"));
    var path = pPath;
-   if (fixPathSlashes.inWin) // Windows
+   if (gRunningInWindows) // Windows
    {
       while (path.indexOf("/") > -1)
          path = path.replace("/", "\\");
@@ -956,60 +964,76 @@ function execCmdWithOutput(pCommand)
 //               cmdOutput: An array of strings containing the program's output.
 function runExternalCmdWithOutput(pCommand)
 {
-   // Determine whether or not we're in Windows.
-   if (runExternalCmdWithOutput.inWin == undefined)
-      runExternalCmdWithOutput.inWin = /^WIN/.test(system.platform.toUpperCase());
+	var retObj = null; // The return object
+	var wroteScriptFile = false; // Whether or not we were able to write the script file
 
-   var retObj = null; // The return object
-   var wroteScriptFile = false; // Whether or not we were able to write the script file
+	// In the node directory, write a batch file (if in Windows) or a *nix shell
+	// script (if not in Windows) containing the command to run.
+	var scriptFilename = "";
+	if (gRunningInWindows)
+	{
+		// Write a Windows batch file to run the command
+		scriptFilename = fixPathSlashes(system.node_dir + "DDUP_ScanCmd.bat");
+		//console.print(":" + scriptFilename + ":\r\n\1p"); // Temporary (for debugging)
+		var scriptFile = new File(scriptFilename);
+		if (scriptFile.open("w"))
+		{
+			scriptFile.writeln("@echo off");
+			scriptFile.writeln(pCommand);
+			scriptFile.close();
+			wroteScriptFile = true;
+			retObj = execCmdWithOutput(scriptFilename);
+		}
+	}
+	else
+	{
+		// Write a *nix shell script to run the command
+		scriptFilename = system.node_dir + "DDUP_ScanCmd.sh";
+		var scriptFile = new File(scriptFilename);
+		if (scriptFile.open("w"))
+		{
+			scriptFile.writeln("#!/bin/bash"); // Hopefully /bin/bash is valid on the system!
+			scriptFile.writeln(pCommand);
+			scriptFile.close();
+			wroteScriptFile = true;
+			file_chmod(scriptFilename, 775); // rwxrwxr-x
+			retObj = execCmdWithOutput("bash " + scriptFilename);
+		}
+	}
 
-   // In the node directory, write a batch file (if in Windows) or a *nix shell
-   // script (if not in Windows) containing the command to run.
-   var scriptFilename = "";
-   if (runExternalCmdWithOutput.inWin)
-   {
-      // Write a Windows batch file to run the command
-      scriptFilename = fixPathSlashes(system.node_dir + "DDUP_ScanCmd.bat");
-      //console.print(":" + scriptFilename + ":\r\n\1p"); // Temporary (for debugging)
-      var scriptFile = new File(scriptFilename);
-      if (scriptFile.open("w"))
-      {
-         scriptFile.writeln("@echo off");
-         scriptFile.writeln(pCommand);
-         scriptFile.close();
-         wroteScriptFile = true;
-         retObj = execCmdWithOutput(scriptFilename);
-      }
-   }
-   else
-   {
-      // Write a *nix shell script to run the command
-      scriptFilename = system.node_dir + "DDUP_ScanCmd.sh";
-      var scriptFile = new File(scriptFilename);
-      if (scriptFile.open("w"))
-      {
-         scriptFile.writeln("#!/bin/bash"); // Hopefully /bin/bash is valid on the system!
-         scriptFile.writeln(pCommand);
-         scriptFile.close();
-         wroteScriptFile = true;
-         system.exec("chmod ugo+x " + scriptFilename);
-         retObj = execCmdWithOutput("bash " + scriptFilename);
-      }
-   }
+	// Remove the script file, if it exists
+	if (file_exists(scriptFilename))
+		file_remove(scriptFilename);
 
-   // Remove the script file, if it exists
-   if (file_exists(scriptFilename))
-      file_remove(scriptFilename);
+	// If we were unable to write the script file, then create retObj with
+	// a returnCode indicating failure.
+	if (!wroteScriptFile)
+	{
+		// Could not open the script file for writing
+		retObj = {
+			cmdOutput: [],
+			returnCode: -1
+		};
+	}
 
-   // If we were unable to write the script file, then create retObj with
-   // a returnCode indicating failure.
-   if (!wroteScriptFile)
-   {
-      // Could not open the script file for writing
-      retObj = new Object();
-      retObj.cmdOutput = new Array();
-      retObj.returnCode = -1;
-   }
+	return retObj;
+}
 
-   return retObj;
+// Changes the mode value of a directory and all of its subdirectories recursively
+//
+// Parameters:
+//  pBaseDir: The directory to chmod recursively (along with all of its subdirectories)
+//  pMode: The mode value (number) to apply
+function chmodDirsRecursive(pBaseDir, pMode)
+{
+	if (typeof(pBaseDir) !== "string" || !file_isdir(pBaseDir) || typeof(pMode) !== "number")
+		return;
+
+	file_chmod(pBaseDir, pMode);
+	var fileEntries = directory(backslash(pBaseDir) + "*");
+	for (var i = 0; i < fileEntries.length; ++i)
+	{
+		if (file_isdir(fileEntries[i]))
+			chmodDirsRecursive(fileEntries[i], pMode);
+	}
 }
