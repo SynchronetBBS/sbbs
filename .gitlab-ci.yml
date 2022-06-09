@@ -87,6 +87,18 @@ sexpots-windows:
     paths:
       - "src/sexpots/Release/*.exe"
 
+svdm-windows:
+  tags: [Windows]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/vdmodem
+    - .\release.bat
+  artifacts:
+    name: svdm-win32
+    paths:
+      - "src/vdmodem/Release/*.exe"
+
 .syncterm-msvc:
   tags: [Windows]
   stage: build
