@@ -77,36 +77,25 @@ uploaded file to be rejected.
 3. Archive File Software
 ========================
 Digital Distortion Upload Processor comes with configuration settings to
-handle extraction of ZIP, 7Z (7-Zip), RAR, ARJ, MSI, TAR, GZ, TGZ, and
-TAR.GZ archives.
+use various archivers to handle extraction of ZIP, 7Z (7-Zip), RAR, ARJ, MSI,
+TAR, GZ, TGZ, and TAR.GZ archives.  If you want to use other archiver programs,
+you will need to update the configuration to modify the commands used.
 
 The file format configuration file included with this script includes
 extraction command lines (specified by an EXTRACT setting) for various
 archivers for both Windows and Linux.  In order for this script to work
 properly, you will need to make sure you have the appropriate archiver
 software installed on your system, and you will need to edit the
-DDUPFileTypes.cfg file (using a text editor) and make sure you have
+ddup_file_types.cfg file (using a text editor) and make sure you have
 EXTRACT command lines set properly for your system.  For information on
 that configuration file, see section 6: Archive file type configuration
 file.
 
-Win32 command-line archivers have been included with this script for
-convenience.  Those archivers have been set up in DDUPFileTypes.cfg
-to extract popular file formats (ZIP, 7Z (7-Zip), RAR, ARJ, MSI, TAR,
-GZ, TGZ, and TAR.GZ).  The Win32 archivers are in the Win32Archivers
-directory.  So if your BBS is running in Windows, the included
-configuration file should work for you (although it does also have the
-Linux command lines as comments).  You will need to copy the files from
-the Win32Archivers directory to a directory in your path or another
-directory of your choice.  If you copy them to a directory that is not
-in your path, you will need to edit the DDUPFileTypes.cfg file to include
-the full paths with the archive executables.
-
 Extractor notes:
-DDUPFileTypes.cfg includes a setup for using 7-Zip to extract ISO (CD/DVD
+ddup_file_types.cfg includes a setup for using 7-Zip to extract ISO (CD/DVD
 image) files; however, in testing, it seemed that 7-Zip can only extract
 or see one file in an ISO image.
-DDUPFileTypes.cfg also includes a setup for extracting MSI (Microsoft
+ddup_file_types.cfg also includes a setup for extracting MSI (Microsoft
 Installer) files.
 
 For Linux, the following is a list of Linux archivers that this
@@ -159,36 +148,34 @@ The one that I set up this script for is AVG Free version 9 for Windows,
 which is available at the following web page:
 http://free.avg.com/us-en/download?prd=afg
 
-Step 2: Copy the script files, configuration files, & archivers to your system
+Step 2: Install archiver programs for any archive formats you want to support
+-----------------------------------------------------------------------------
+You will need to acquire the appropriate archiver programs for any archive
+formats you want to use.  These will need to be command-line archiver tools.
+Command-line archiver tools are available for many archive formats. For Windows,
+you can download them as needed, and for Linux, they may be available via your
+package manager or as source that you can download and build for your system.
+
+Step 3: Copy the script files, configuration files, & archivers to your system
 ------------------------------------------------------------------------------
 Digital Distortion Upload Processor consists of the following files, which
 you will need to place in your sbbs/exec directory (or another directory of
 your choice):
- 1. DDUP.js
- 2. DDUP.cfg
- 3. DDUP_Cleanup.js
- 4. DDUPFileTypes.cfg
+ 1. ddup.js
+ 2. ddup.cfg
+ 3. ddup_cleanup.js
+ 4. ddup_file_types.cfg
 
-For sysops running their BBS in Windows, the following archiver programs
-in the Win32Archivers directory will need to be placed in a directory
-(preferably a directory that's included in the system's path):
- 1. 7za.exe
- 2. ARJ32.EXE
- 3. Rar.exe
- 4. unzip.exe
 
-For sysops running the Linux version of Synchronet, you will need to acquire
-the appropriate archivers as described in the previous section.
-
-Step 3: Edit the configuration files
+Step 4: Edit the configuration files
 ------------------------------------
-You will need to edit DDUPFileTypes.cfg to make sure that the EXTRACT
+You will need to edit ddup_file_types.cfg to make sure that the EXTRACT
 command lines are correct for your system.  If you're running your BBS
 in Linux, you will first need to comment the Windows command lines and
 uncomment the Linux command lines.  See section 6: Archive file type
 configuration file.
 
-You will also need to edit DDUP.cfg and change the scanCmd option, which
+You will also need to edit ddup.cfg and change the scanCmd option, which
 specifies the command line to use to scan files for viruses.  In this
 command line, the text string %FILESPEC% will be replaced with the name
 of the file or directory to be scanned; thus, the virus scanner you use
@@ -198,7 +185,7 @@ taking command-line parameters).
 
 Special note about the scanner command line
 -------------------------------------------
-It should be noted that the scanner command line specified in DDUP.cfg
+It should be noted that the scanner command line specified in ddup.cfg
 will be written to a temporary batch file (on Win32 systems) or a shell
 script (on *nix systems), which is then run in order to scan the file(s).
 The reason for this is that if there are any spaces in the file or
@@ -207,7 +194,7 @@ to be passed to the operating system correctly by Synchronet's JavaScript
 object model.
 
 
-Step 4: Set up Digital Distortion Upload Processor for Testable Files
+Step 5: Set up Digital Distortion Upload Processor for Testable Files
 in Synchronet's configuration program (SCFG)
 ----------------------------------------------------------------------
 1. Run Synchronet's configuration program (SCFG)
@@ -223,26 +210,26 @@ select and edit it.
 The Command Line setting for the file type should look similar to
 this (assuming the upload processor files were copied to your
 sbbs\exec directory):
-?DDUP.js %f
+?ddup.js %f
 If you copied the upload processor files to another directory, you
-will need to provide the path to DDUP.js; for example:
-?/sbbs/UploadProcessor/DDUP.js %f
+will need to provide the path to ddup.js; for example:
+?/sbbs/dd_upload_processor/ddup.js %f
 As an example, your Testable File Type window should look similar
 to the following:
-+[¦][?]--------------------------------------------------------+
-¦                      Testable File Type                      ¦
-¦--------------------------------------------------------------¦
-¦ ¦File Extension        ZIP                                   ¦
-¦ ¦Command Line          ?DDUP.js %f                           ¦
-¦ ¦Working String        Scanning arrchive file for viruses... ¦
-¦ ¦Access Requirements                                         ¦
++[X][?]--------------------------------------------------------+
+|                      Testable File Type                      |
+|--------------------------------------------------------------|
+| |File Extension        ZIP                                   |
+| |Command Line          ?ddup.js %f                           |
+| |Working String        Scanning arrchive file for viruses... |
+| |Access Requirements                                         |
 +--------------------------------------------------------------+
 
 
-Step 5: Create/update your logout and scripts to handle temporary file cleanup
+Step 6: Create/update your logout and scripts to handle temporary file cleanup
 ------------------------------------------------------------------------------
 If you have not already done so, you will need to create logout and login
-scripts for your BBS; there, you will want to load DDUP_Cleanup.js - That will
+scripts for your BBS; there, you will want to load ddup_cleanup.js - That will
 help to ensure that temporary files created by the upload processor will be
 removed to prevent extra space on your hard drive being wasted.
 
@@ -251,7 +238,7 @@ If you are not already using a logout script, follow these steps:
 of your choosing)
 2. Add this line to it (assuming that the upload processor scripts are in
 sbbs\exec):
-load("DDUP_Cleanup.js");
+load("ddup_cleanup.js");
 3. Add your logout script to Synchronet's configuration:
    A. Run Synchronet's configuration program (SCFG)
    B. From the main menu, choose "System".
@@ -262,14 +249,14 @@ load("DDUP_Cleanup.js");
       so.  Then, exit out of SCFG.
 If you already have a logout script (using JavaScript), you just need to add the
 following line to it:
-load("DDUP_Cleanup.js");
+load("ddup_cleanup.js");
 
 It is recommended that you do the same thing with your logout script.
 
 
 5. Main configuration file
 ==========================
-The file DDUP.cfg contains general settings for the upload processor.  This
+The file ddup.cfg contains general settings for the upload processor.  This
 file can be edited with a text editor.  The syntax for each setting is as
 folows:
 setting=value
@@ -299,7 +286,7 @@ skipScanIfSysop                       Specifies whether or not to skip scanning
 
 6. Archive file type configuration file
 =======================================
-The configuration file DDUPFileTypes.cfg defines options for various file
+The configuration file ddup_file_types.cfg defines options for various file
 types, including the extract command (for archive files) and whether or not
 you want the upload processor to scan it.  File types are specified by their
 filename extension in square brackets.  Extractable files must have an
