@@ -62,47 +62,48 @@ var BKG_ATTR = 2;  // Background color attribute
 var SPECIAL_ATTR = 3; // Special attribute
 
 // Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "Ú";
-var HORIZONTAL_SINGLE = "Ä";
-var UPPER_RIGHT_SINGLE = "¿";
-var VERTICAL_SINGLE = "³";
-var LOWER_LEFT_SINGLE = "À";
-var LOWER_RIGHT_SINGLE = "Ù";
-var T_SINGLE = "Â";
-var LEFT_T_SINGLE = "Ã";
-var RIGHT_T_SINGLE = "´";
-var BOTTOM_T_SINGLE = "Á";
-var CROSS_SINGLE = "Å";
+var UPPER_LEFT_SINGLE = ascii(169);
+var HORIZONTAL_SINGLE = ascii(196);
+var UPPER_RIGHT_SINGLE = ascii(191); // or 170?
+var VERTICAL_SINGLE = ascii(179);
+var LOWER_LEFT_SINGLE = ascii(192);
+var LOWER_RIGHT_SINGLE = ascii(217);
+var T_SINGLE = ascii(194);
+var LEFT_T_SINGLE = ascii(195);
+var RIGHT_T_SINGLE = ascii(180);
+var BOTTOM_T_SINGLE = ascii(193);
+var CROSS_SINGLE = ascii(197);
 // Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "É";
-var HORIZONTAL_DOUBLE = "Í";
-var UPPER_RIGHT_DOUBLE = "»";
-var VERTICAL_DOUBLE = "º";
-var LOWER_LEFT_DOUBLE = "È";
-var LOWER_RIGHT_DOUBLE = "¼";
-var T_DOUBLE = "Ë";
-var LEFT_T_DOUBLE = "Ì";
-var RIGHT_T_DOUBLE = "¹";
-var BOTTOM_T_DOUBLE = "Ê";
-var CROSS_DOUBLE = "Î";
+var UPPER_LEFT_DOUBLE = ascii(201);
+var HORIZONTAL_DOUBLE = ascii(205);
+var UPPER_RIGHT_DOUBLE = ascii(187);
+var VERTICAL_DOUBLE = ascii(186);
+var LOWER_LEFT_DOUBLE = ascii(200);
+var LOWER_RIGHT_DOUBLE = ascii(188);
+var T_DOUBLE = ascii(203);
+var LEFT_T_DOUBLE = ascii(204);
+var RIGHT_T_DOUBLE = ascii(185);
+var BOTTOM_T_DOUBLE = ascii(202);
+var CROSS_DOUBLE = ascii(206);
 // Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "Õ";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "¸";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "Ô";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "¾";
+var UPPER_LEFT_VSINGLE_HDOUBLE = ascii(213);
+var UPPER_RIGHT_VSINGLE_HDOUBLE = ascii(184);
+var LOWER_LEFT_VSINGLE_HDOUBLE = ascii(212);
+var LOWER_RIGHT_VSINGLE_HDOUBLE = ascii(190);
 // Other special characters
-var DOT_CHAR = "ú";
-var CHECK_CHAR = "û";
-var THIN_RECTANGLE_LEFT = "Ý";
-var THIN_RECTANGLE_RIGHT = "Þ";
-var BLOCK1 = "°"; // Dimmest block
-var BLOCK2 = "±";
-var BLOCK3 = "²";
-var BLOCK4 = "Û"; // Brightest block
+var DOT_CHAR = ascii(249);
+var CHECK_CHAR = ascii(251);
+var THIN_RECTANGLE_LEFT = ascii(221);
+var THIN_RECTANGLE_RIGHT = ascii(222);
+var CENTERED_SQUARE = ascii(254);
+var BLOCK1 = ascii(176); // Dimmest block
+var BLOCK2 = ascii(177);
+var BLOCK3 = ascii(178);
+var BLOCK4 = ascii(219); // Brightest block
 
 // Navigational keys
-var UP_ARROW = "";
-var DOWN_ARROW = "";
+var UP_ARROW = ascii(24);
+var DOWN_ARROW = ascii(25);
 // CTRL keys
 var CTRL_A = "\x01";
 var CTRL_B = "\x02";
@@ -1379,7 +1380,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 
 	// Help keys and slash commands
 	printf("\1n\1g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
-	printf("\1k\1h%-44s  %-33s\r\n", "ÄÄÄÄÄÄÄÄÄ", "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+	printf("\1k\1h%-44s  %-33s\r\n", charStr(HORIZONTAL_SINGLE, 9), charStr(HORIZONTAL_SINGLE, 30));
 	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
 	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
@@ -1393,7 +1394,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	printf(" \1c\1h%-7s\1g  \1n\1c%s", "", "", "/?", "Show help");
 	console.crlf();
 	// Command/edit keys
-	console.print("\1n\1gCommand/edit keys\r\n\1k\1hÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\r\n");
+	console.print("\1n\1gCommand/edit keys\r\n\1k\1h" + charStr(HORIZONTAL_SINGLE, 17) + "\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
 	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
@@ -1413,6 +1414,23 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 
 	if (pPause)
 		console.pause();
+}
+// Returns a string with a character repeated a given number of times
+//
+// Parameters:
+//  pChar: The character to repeat in the string
+//  pNumTimes: The number of times to repeat the character
+//
+// Return value: A string with the given character repeated the given number of times
+function charStr(pChar, pNumTimes)
+{
+	if (typeof(pChar) !== "string" || pChar.length == 0 || typeof(pNumTimes) !== "number" || pNumTimes < 1)
+		return "";
+
+	var str = "";
+	for (var i = 0; i < pNumTimes; ++i)
+		str += pChar;
+	return str;
 }
 
 // Displays the general help screen.
@@ -1469,26 +1487,14 @@ function displayProgramInfo(pClear, pPause)
 function displayProgramExitInfo(pClearScreen)
 {
 	if (pClearScreen)
-		console.clear("n");
+		console.clear("\1n");
 
-	/*console.print("ncYou have been using:\r\n");
-	console.print("hkÛ7ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß0Û\r\n");
-	console.print("Û7 nb7Üßßßß Û       Ûßßßß    Û Ü       hk0Û\r\n");
-	console.print("Û7 nb7ßÜÜÜ  Û Ü   Ü ÛÜÜÜ   ÜÜÛ Ü ÜÜÛÜÜ hk0Û\r\n");
-	console.print("Û7     nb7Û Û Û   Û Û     Û  Û Û   Û   hk0Û\r\n");
-	console.print("Û7 nb7ßßßß  ß  ßÜß  ßßßßß  ßßß ß   ßßß hk0Û\r\n");
-	console.print("Û7         nb7Üß                       hk0Û\r\n");
-	console.print("Û7        nb7ß                         hk0Û\r\n");
-	console.print("ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß\r\n");
-	console.print("ngVersion hy" + EDITOR_VERSION + " nm(" +
-	              EDITOR_VER_DATE + ")");*/
-	console.print("ncYou have been using hSlyEdit ncversion g" + EDITOR_VERSION +
-	              " nm(" + EDITOR_VER_DATE + ")");
+	console.print("\1n\1cYou have been using \1hSlyEdit \1n\1cversion \1g" + EDITOR_VERSION + " \1n\1m(" + EDITOR_VER_DATE + ")");
 	console.crlf();
-	console.print("ncby Eric Oulashin of chDncigital hDncistortion hBncBS");
+	console.print("\1n\1cby Eric Oulashin of \1c\1hD\1n\1cigital \1hD\1n\1cistortion \1hB\1n\1cBS");
 	console.crlf();
 	console.crlf();
-	console.print("ncAcknowledgements for look & feel go to the following people:");
+	console.print("\1n\1cAcknowledgements for look & feel go to the following people:");
 	console.crlf();
 	console.print("Dan Traczynski: Creator of DCT Edit");
 	console.crlf();
@@ -1507,13 +1513,13 @@ function displayProgramExitInfo(pClearScreen)
 //                    If not specified, defaults to normal attribute.
 function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib)
 {
-   var clearLineAttrib = "n";
-   if ((pClearLineAttrib != null) && (typeof(pClearLineAttrib) == "string"))
-      clearLineAttrib = pClearLineAttrib;
-   console.gotoxy(pX, pY);
-   console.cleartoeol(clearLineAttrib);
-   console.print(pText);
-   mswait(pPauseMS);
+	var clearLineAttrib = "\1n";
+	if ((pClearLineAttrib != null) && (typeof(pClearLineAttrib) == "string"))
+		clearLineAttrib = pClearLineAttrib;
+	console.gotoxy(pX, pY);
+	console.cleartoeol(clearLineAttrib);
+	console.print(pText);
+	mswait(pPauseMS);
 }
 
 // Prompts the user for a yes/no question.
@@ -3828,7 +3834,17 @@ function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
 // Return value: Boolean - Whether or not the character is a letter
 function charIsLetter(pChar)
 {
-   return /^[ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈÌÒÙàèìòùÁÉÍÓÚÝáéíóúýÂÊÎÔÛâêîôûÃÑÕãñõÄËÏÖÜäëïöüçÇßØøÅåÆæÞþÐð]$/.test(pChar.toUpperCase());
+	if (typeof(charIsLetter.regex) === "undefined")
+	{
+		var regexStr = "^[A-Z";
+		var highASCIICodes = [192, 200, 204, 210, 217, 224, 232, 236, 242, 249, 193, 201, 205, 211, 218, 221, 225, 233, 237, 243, 250, 253, 194, 202, 206, 212, 219, 226, 234, 238, 244, 251, 195, 209, 213, 227, 241, 245, 196, 203, 207, 214, 220, 228, 235, 239, 246, 252, 231, 199, 223, 216, 248, 197, 229, 198, 230, 222, 254, 208, 240];
+		for (var i = 0; i < highASCIICodes.length; ++i)
+			regexStr += ascii(highASCIICodes[i]);
+		regexStr += "]$";
+		charIsLetter.regex = new RegExp(regexStr);
+	}
+
+	return charIsLetter.regex.test(pChar.toUpperCase());
 }
 
 // For configuration files, this function returns a fully-pathed filename.
@@ -4692,14 +4708,16 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 		isSupplemental = true;
 		languageNameLower = languageNameLower.substr(0, 5);
 	}
+	var lower_n_tilde = ascii(164);
+	var lower_e_forward_accent = ascii(130);
 	if (languageNameLower == "en")
 		languageName = "English (General)";
 	else if (languageNameLower == "fr")
 		languageName = "French (General)";
 	else if (languageNameLower == "es")
-		languageName = "Espa" + ascii(164) + "ol (General)";
+		languageName = "Espa" + lower_n_tilde + "ol (General)";
 	else if (languageNameLower == "pt")
-		languageName = "Portug" + ascii(130) + "s (General)";
+		languageName = "Portug" + lower_e_forward_accent + "s (General)";
 	else if (languageNameLower == "de")
 		languageName = "Deutsch (General)";
 	else if (languageNameLower == "nl")
@@ -4745,19 +4763,19 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 	else if (languageNameLower == "it-it")
 		languageName = "Italian (Italy)";
 	else if (languageNameLower == "pt-pt")
-		languageName = "Portug" + ascii(130) + "s (Portugal)";
+		languageName = "Portug" + lower_e_forward_accent + "s (Portugal)";
 	else if (languageNameLower == "pt-br")
-		languageName = "Portug" + ascii(130) + "s (BR)";
+		languageName = "Portug" + lower_e_forward_accent + "s (BR)";
 	else if (languageNameLower == "es-es")
-		languageName = "Espa" + ascii(164) + "ol (España)";
+		languageName = "Espa" + lower_n_tilde + "ol (Espa" + lower_n_tilde + "a)";
 	else if (languageNameLower == "es-co")
-		languageName = "Espa" + ascii(164) + "ol (CO)";
+		languageName = "Espa" + lower_n_tilde + "ol (CO)";
 	else if (languageNameLower == "es-cl")
-		languageName = "Espa" + ascii(164) + "ol (CL)";
+		languageName = "Espa" + lower_n_tilde + "ol (CL)";
 	else if (languageNameLower == "es-us")
-		languageName = "Espa" + ascii(164) + "ol (US)";
+		languageName = "Espa" + lower_n_tilde + "ol (US)";
 	else if (languageNameLower == "es-005")
-		languageName = "Espa" + ascii(164) + "ol (South America)";
+		languageName = "Espa" + lower_n_tilde + "ol (South America)";
 	else if (languageNameLower == "zh-cn")
 		languageName = "Chinese (China)";
 	else if (languageNameLower == "zh-tw")
