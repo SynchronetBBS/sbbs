@@ -146,6 +146,10 @@
  *                              Fixed a few instances where SlyEdit was trying to access
  *                              sub-board information with an empty sub-board code (in the rare
  *                              case when no sub-boards are configured).
+ * 2022-06-09 Eric Oulashin     Version 1.78
+ *                              Removed high-ascii characters from the SlyEdit JS files; used
+ *                              ascii() with their numeric ASCII values instead. This should avoid
+ *                              issues with text editors converting characters incorrectly.
  */
 
 /* Command-line arguments:
@@ -242,8 +246,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.77";
-const EDITOR_VER_DATE = "2022-05-27";
+const EDITOR_VERSION = "1.78";
+const EDITOR_VER_DATE = "2022-06-09";
 
 
 // Program variables
@@ -481,6 +485,8 @@ var gTextLineIndex = 0;       // Index into the current text line being edited
 // Format strings used for printf() to display text in the edit area
 const gFormatStr = "%-" + gEditWidth + "s";
 const gFormatStrWithAttr = "%s%-" + gEditWidth + "s";
+// Will contain valid word characters, for spell checking
+var gValidWordChars = "";
 
 // Whether or not a message file was uploaded (if so, then SlyEdit won't
 // do the line re-wrapping at the end before saving the message).
@@ -4150,6 +4156,7 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 
 	return retObj;
 }
+
 // Helper for doSpellCheck(): Checks a word from an array of words (split from an edit line)
 // and inputs a correction from the user if needed.
 //
@@ -4185,9 +4192,9 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 	// Ensure the word to test is all lowercase for case-insensitive matching
 	var currentWord = pWordArray[pWordIdx].toLowerCase();
 	// Ensure the word we're checking only has letters and/or an apostrophe.
-	var currentWord = currentWord.replace(/^[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*([a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+)[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*$/, "$1");
-	// Now, ensure the word only certain characters: Letters, apostrophe.  Skip it if not.
-	if (!/^[a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+$/g.test(currentWord))
+	var currentWord = removeNonWordCharsFromStr(currentWord);
+	// Now, ensure the word has only certain characters: Letters, apostrophe.  Skip it if not.
+	if (!strIsAllWordChars(currentWord))
 	{
 		retObj.skipped = true;
 		return retObj;
@@ -4272,6 +4279,73 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 	}
 
 	return retObj;
+}
+// Helper for spellCheckWordInLine(): Returns whether a string contains only word characters
+// (letters
+function strIsAllWordChars(pStr)
+{
+	if (typeof(pStr) !== "string" || pStr.length == 0)
+		return false;
+
+	if (gValidWordChars.length == 0)
+		gValidWordChars = getStrOfWordChars();
+
+	var onlyWordCharsFound = true;
+	for (var i = 0; i < pStr.length && onlyWordCharsFound; ++i)
+		onlyWordCharsFound = (gValidWordChars.indexOf(pStr.charAt(i)) > -1);
+	return onlyWordCharsFound;
+}
+// Helper for spellCheckWordInLine(): Removes non-word characters from a string
+function removeNonWordCharsFromStr(pStr)
+{
+	if (typeof(pStr) !== "string" || pStr.length == 0)
+		return "";
+
+	if (gValidWordChars.length == 0)
+		gValidWordChars = getStrOfWordChars();
+
+	var filteredStr = pStr;
+	var continueOn = true;
+	while (continueOn)
+	{
+		var startIdx = -1;
+		var endIdx = -1;
+		for (var i = 0; i < filteredStr.length; ++i)
+		{
+			if (gValidWordChars.indexOf(filteredStr.charAt(i)) == -1)
+			{
+				if (startIdx == -1)
+					startIdx = i;
+				else
+					endIdx = i;
+				break;
+			}
+		}
+		if (startIdx > -1 && endIdx >= startIdx)
+			filteredStr = filteredStr.substring(0, startIdx) + filteredStr.substring(endIdx+1);
+		else if (startIdx > -1 && endIdx == -1)
+			filteredStr = filteredStr.substring(0, startIdx) + filteredStr.substring(startIdx+1);
+		else if (startIdx == -1 && endIdx == -1)
+			continueOn = false;
+	}
+	return filteredStr;
+}
+// Builds & returns a string of valid word characters
+function getStrOfWordChars()
+{
+	// First valid character is an apostrophe
+	var validChars = "'";
+	// a-z
+	for (var i = 97; i <= 122; ++i)
+		validChars += ascii(i);
+	// A-Z
+	for (var i = 65; i <= 90; ++i)
+		validChars += ascii(i);
+	var validCharsRegexStr = "^[a-zA-Z";
+	var additionalASCIIVals = [129,154,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,147,148,149,150,151,152,153,160,161,162,163,164,165,225];
+	for (var i = 0; i < additionalASCIIVals.length; ++i)
+		validChars += ascii(additionalASCIIVals[i]);
+	return validChars;
 }
 // Helper for doSpellCheck(): Displays a text area on the screen with a misspelled
 // word in the title of the box and a text input to correct it
@@ -4488,7 +4562,7 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	console.cleartoeol("\1n");
 	console.crlf();
 	console.clearline("\1n");
-	console.print("\1cSpecial: \1w\1hH:\1n\1hHigh Intensity \1wI:\1n\1iBlinking \1n\1w\1hN:\1nNormal \1h\1g� \1n\1cChoose colors/attributes\1h\1g: \1c");
+	console.print("\1cSpecial: \1w\1hH:\1n\1hHigh Intensity \1wI:\1n\1iBlinking \1n\1w\1hN:\1nNormal \1h\1g" + CENTERED_SQUARE + " \1n\1cChoose colors/attributes\1h\1g: \1c");
 	// Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
 	// but that outputs a CR at the end, which is undesirable.  So instead, we call
 	// getUserInputWithSetOfInputStrs (defined in SlyEdit_Misc.js).
