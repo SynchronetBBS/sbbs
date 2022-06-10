@@ -53,6 +53,7 @@ while (client.socket.is_connected) {
             delete callbacks[e];
         }
     });
+    js.gc();
     mswait(1000);
     ping();
 }
