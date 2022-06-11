@@ -32,6 +32,9 @@
  * 2022-06-06 Eric Oulashin   Version 1.25
  *                            Fix for miscolored digit(s) in # messages column in
  *                            the sub-board list when using the lightbar menu
+ * 2022-06-11 Eric Oulashin   Version 1.26
+ *                            Updated to try to prevent the error "this.subBoardListPrintfInfo[pGrpIdx] is undefined"
+ *                            in CreateLightbarSubBoardMenu()
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -257,11 +260,12 @@ function DDMsgAreaChooser()
 	this.SetUpGrpListWithCollapsedSubBoards = DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards;
 	this.FindMsgGrpIdxFromText = DDMsgAreaChooser_FindMsgGrpIdxFromText;
 	this.FindSubBoardIdxFromText = DDMsgAreaChooser_FindSubBoardIdxFromText;
+	this.GetSubNameLenAndNumMsgsLen = DDMsgAreaChooser_GetSubNameLenAndNumMsgsLen;
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
 	
-	// These variables store the lengths of the various columns displayed in
+	// These variables store default lengths of the various columns displayed in
 	// the message group/sub-board lists.
 	// Sub-board info field lengths
 	this.areaNumLen = 4;
@@ -953,8 +957,7 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 {
 	// Start & end indexes for the various items in each mssage group list row
 	// Selected mark, group#, description, # sub-boards
-	var subBoardNameLen = +(this.subBoardListPrintfInfo[pGrpIdx].nameLen);
-	var numMsgsLen = +(this.subBoardListPrintfInfo[pGrpIdx].numMsgsLen);
+	var lengthsObj = this.GetSubNameLenAndNumMsgsLen(pGrpIdx);
 	var subBoardListIdxes = {
 		markCharStart: 0,
 		markCharEnd: 1,
@@ -962,9 +965,9 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 		subNumEnd: 3 + (+this.areaNumLen)
 	};
 	subBoardListIdxes.descStart = subBoardListIdxes.subNumEnd;
-	subBoardListIdxes.descEnd = subBoardListIdxes.descStart + subBoardNameLen + 1;
+	subBoardListIdxes.descEnd = subBoardListIdxes.descStart + lengthsObj.nameLen + 1;
 	subBoardListIdxes.numItemsStart = subBoardListIdxes.descEnd;
-	subBoardListIdxes.numItemsEnd = subBoardListIdxes.numItemsStart + numMsgsLen + 1;
+	subBoardListIdxes.numItemsEnd = subBoardListIdxes.numItemsStart + lengthsObj.numMsgsLen + 1;
 	subBoardListIdxes.dateStart = subBoardListIdxes.numItemsEnd;
 	subBoardListIdxes.dateEnd = subBoardListIdxes.dateStart + +this.dateLen + 1;
 	subBoardListIdxes.timeStart = subBoardListIdxes.dateEnd;
@@ -1788,17 +1791,17 @@ function DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pSubIdx
 				else
 					showSubBoardMark = (subBoardNum == highlightIndex);
 				console.print(showSubBoardMark ? "\1n" + this.colors.areaMark + "*" : " ");
+				var lengthsObj = this.GetSubNameLenAndNumMsgsLen(grpIndex);
 				if (this.showDatesInSubBoardList)
 				{
 					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-					       subInfo.desc.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-					       subInfo.numItems, newestDate.date, newestDate.time);
+					         subInfo.desc.substr(0, lengthsObj.nameLen), subInfo.numItems,
+					         newestDate.date, newestDate.time);
 				}
 				else
 				{
 					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-					       subInfo.desc.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-					       subInfo.numItems);
+					         subInfo.desc.substr(0, lengthsObj.nameLen, subInfo.numItems));
 				}
 			}
 		}
@@ -2039,19 +2042,18 @@ function DDMsgAreaChooser_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 			newestDate.date = newestDate.time = "";
 
 		// Print the sub-board information line.
+		var lengthsObj = this.GetSubNameLenAndNumMsgsLen(pGrpIndex);
 		subBoardLine += (currentSub ? this.colors.areaMark + "*" : " ");
 		if (this.showDatesInSubBoardList)
 		{
 			subBoardLine += format((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-			       +(pSubIndex+1),
-			       msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+			       +(pSubIndex+1), msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, lengthsObj.nameLen),
 			       numMsgs, newestDate.date, newestDate.time);
 		}
 		else
 		{
 			subBoardLine += format((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-			       +(pSubIndex+1),
-			       msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+			       +(pSubIndex+1), msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, lengthsObj.nameLen),
 			       numMsgs);
 		}
 		msgBase.close();
@@ -3376,7 +3378,7 @@ function DDMsgAreaChooser_FindMsgGrpIdxFromText(pSearchText, pStartItemIdx)
 	return grpIdx;
 }
 
-// Finds a message group index with search text, matching either the name or
+// For the DDMsgAreaChooser class: Finds a message group index with search text, matching either the name or
 // description, case-insensitive.
 //
 // Parameters:
@@ -3462,4 +3464,33 @@ function DDMsgAreaChooser_FindSubBoardIdxFromText(pGrpIdx, pSubIdx, pSearchText,
 	}
 
 	return subBoardIdx;
+}
+
+// For the DDMsgAreaChooser class: Gets the lengths for the sub-board column and # of messages
+// column for a sub-board.  Gets defaults if that information isn't available.
+//
+// Parameters:
+//  pGrpIdx: The message group index
+//
+// Return value: An object containing the following properties:
+//                      nameLen: The name field lengh
+//                      numMsgsLen: The # messages field length
+function DDMsgAreaChooser_GetSubNameLenAndNumMsgsLen(pGrpIdx)
+{
+	var retObj = {
+		nameLen: console.screen_columns - this.areaNumLen - this.numItemsLen - 5,
+		numMsgsLen: this.numItemsLen
+	};
+
+	if (typeof(pGrpIdx) === "number" && pGrpIdx >= 0 && pGrpIdx < msg_area.grp_list.length)
+	{
+		if (typeof(this.subBoardListPrintfInfo[pGrpIdx]) === "object")
+		{
+			if (this.subBoardListPrintfInfo[pGrpIdx].hasOwnProperty("nameLen"))
+				retObj.nameLen = +(this.subBoardListPrintfInfo[pGrpIdx].nameLen);
+			if (this.subBoardListPrintfInfo[pGrpIdx].hasOwnProperty("numMsgsLen"))
+				retObj.numMsgsLen = +(this.subBoardListPrintfInfo[pGrpIdx].numMsgsLen);
+		}
+	}
+	return retObj;
 }

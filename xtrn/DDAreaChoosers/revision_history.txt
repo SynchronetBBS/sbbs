@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.26     2022-06-11   Message area chooser only: Updated to try to prevent the
+                      error "this.subBoardListPrintfInfo[pGrpIdx] is undefined"
 1.25     2022-06-06   Message area chooser only: Fix for miscolored digit(s) in
                       # messages column in the sub-board list when using the
                       lightbar menu
