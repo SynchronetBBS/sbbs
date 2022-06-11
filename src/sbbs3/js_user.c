@@ -1307,6 +1307,26 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool
+js_user_close(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	private_t*	p;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	if(p->file > 0)
+		closeuserdat(p->file);
+	p->file = -1;
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
 
 static jsSyncMethodSpec js_user_functions[] = {
 	{"compare_ars",		js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
@@ -1345,6 +1365,10 @@ static jsSyncMethodSpec js_user_functions[] = {
 	"Note: this method does not account for pending forced timed events<br>"
 	"Note: for the pre-defined user object on the BBS, you almost certainly want bbs.get_time_left() instead.")
 	,31401
+	},
+	{"close",			js_user_close,		0,	JSTYPE_VOID,	JSDOCSTR("")
+	,JSDOCSTR("Close the <tt>user.dat</tt> file, if open. The file will be auto-reopened if necessary.")
+	,31902
 	},
 	{0}
 };
