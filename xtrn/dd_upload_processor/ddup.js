@@ -1035,7 +1035,7 @@ function runExternalCmdWithOutput(pCommand)
 //  pFileMode: The mode value (number) to apply to files (non-directories)
 function chmodDirsRecursive(pBaseDir, pDirMode, pFileMode)
 {
-	if (gRunningInWindows || typeof(pBaseDir) !== "string" || !file_isdir(pBaseDir) || typeof(pDirMode) !== "number")
+	if (gRunningInWindows || typeof(pBaseDir) !== "string" || !file_isdir(pBaseDir) || typeof(pDirMode) !== "number" || typeof(pFileMode) !== "number")
 		return;
 
 	file_chmod(pBaseDir, pDirMode);
