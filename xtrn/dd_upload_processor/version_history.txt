@@ -2,5 +2,8 @@ Revision History for Digital Distortion Upload Processor
 ========================================================
 Version  Date         Description
 -------  ----         -----------
+1.02     2022-06-11   For Linux, after extracting an archive, sets file
+                      permissions too (in addition to directories which were
+                      being set already) so that all the files are readable
 1.01     2022-06-08   Updated so that the scanning works properly in Linux
 1.00     2009-12-29   First general public release
