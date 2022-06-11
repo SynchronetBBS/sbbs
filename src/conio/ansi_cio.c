@@ -457,7 +457,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 				ansi_sendstr("\n\n\n\n\n",ti.screenheight-ansiy-2);
 			}
 			else {
-				char str[6];
+				char str[16];
 				sprintf(str,"\033[%dB",ti.screenheight-ansiy-2);
 				ansi_sendstr(str,-1);
 			}
