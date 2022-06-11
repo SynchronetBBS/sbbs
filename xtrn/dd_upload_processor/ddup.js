@@ -16,6 +16,11 @@
  *                                            Initial public release
  * 2022-06-08 Eric Oulashin     Version 1.01
  *                                            Made fixes to get the scanner functionality working properly in Linux
+ * 2022-06-11 Eric Oulashin     Version 1.02
+ *                                            Improved file/dir permissions more: Set file permissions too after extracting
+ *                                            an archive so that they're all readable.
+ * 2022-06-11 Eric Oulashin     Version 1.03
+ *                                            Removed the chmod stuff, as it is actually not needed.
  */
 
 /* Command-line arguments:
@@ -24,10 +29,10 @@
 
 load("sbbsdefs.js");
 
-// Require version 3.17 or newer of Synchronet (for file_chmod())
-if (system.version_num < 31700)
+// Require version 3.14 or newer of Synchronet (for file_chmod())
+if (system.version_num < 31400)
 {
-	console.print("\1nDigital Distortion Upload Processor requires Synchronet 3.17 or newer.\r\n");
+	console.print("\1nDigital Distortion Upload Processor requires Synchronet 3.14 or newer.\r\n");
 	exit(1);
 }
 
@@ -43,8 +48,8 @@ gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 load(gStartupPath + "ddup_cleanup.js");
 
 // Version information
-var gDDUPVersion = "1.01";
-var gDDUPVerDate = "2022-06-08";
+var gDDUPVersion = "1.03";
+var gDDUPVerDate = "2022-06-11";
 
 // Store whether or not this is running in Windows
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
@@ -65,13 +70,13 @@ if (argv.length > 0)
 			gFileToScan = fixedArgs[0];
 		else
 		{
-			console.print("nyhError: ncBlank filename argument given.\r\np");
+			console.print("\1n\1y\1hError: \1n\1cBlank filename argument given.\r\n\1p");
 			exit(-2);
 		}
 	}
 	else
 	{
-		console.print("nyhError: ncUnknown command-line argument specified.\r\np");
+		console.print("\1n\1y\1hError: \1n\1cUnknown command-line argument specified.\r\n\1p");
 		exit(-1);
 	}
 }
@@ -99,7 +104,7 @@ if (gFileToScan.length > 0)
 // if not.
 if (gFileToScan.length == 0)
 {
-   console.print("nyhError: ncNo filename specified to process.\r\np");
+   console.print("\1n\1y\1hError: \1n\1cNo filename specified to process.\r\n\1p");
    exit(1);
 }
 
@@ -116,26 +121,26 @@ var configFileRead = ReadConfigFile(gStartupPath);
 // If the configuration files weren't read, then output an error and exit.
 if (!configFileRead)
 {
-	console.print("nyhError: ncUpload processor is unable to read its\r\n");
-	console.print("configuration files.\r\np");
+	console.print("\1n\1y\1hError: \1n\1cUpload processor is unable to read its\r\n");
+	console.print("configuration files.\r\n\1p");
 	exit(2);
 }
 // Exit if there is no scan command.
 if (gGenCfg.scanCmd.length == 0)
 {
-	console.print("nyhWarning: ncNo scan command configured for the upload processor.\r\n");
+	console.print("\1n\1y\1hWarning: \1n\1cNo scan command configured for the upload processor.\r\n");
 	exit(0);
 }
 
 // Global variables
 // Strings for the OK and failure symbols
-var gOKStr = "nkh[ngûkh]n";
+var gOKStr = "\1n\1k\1h[\1n\1gû\1k\1h]\1n";
 var gOKStrWithNewline = gOKStr + "\r\n";
-var gFailStr = "nkh[rXk]n";
+var gFailStr = "\1n\1k\1h[\1rX\1k]\1n";
 var gFailStrWithNewline = gFailStr + "\r\n";
 // Stuff for the printf formatting string for the status messages
 var gStatusTextLen = 79 - console.strlen(gOKStr); // gOKStr and gFailStr should have the same length
-var gStatusPrintfStr = "n%s%-" + gStatusTextLen + "sn"; // For a color and the status text
+var gStatusPrintfStr = "\1n%s%-" + gStatusTextLen + "s\1n"; // For a color and the status text
 
 // Now, scan the file and return the appropriate return code.
 exit(main());
@@ -149,12 +154,12 @@ exit(main());
 function main()
 {
    // Output the program name & version information
-   console.print("n\r\nchDncigital hDncistortion hUncpload hPncrocessor whvng" +
+   console.print("\1n\r\n\1c\1hD\1n\1cigital \1hD\1n\1cistortion \1hU\1n\1cpload \1hP\1n\1crocessor \1w\1hv\1n\1g" +
                  gDDUPVersion);
    // Originally I had this script output the version date, but now I'm not sure
    // if I want to do that..
-   //console.print(" wh(b" + gDDUPVerDate + "w)");
-   console.print("n");
+   //console.print(" \1w\1h(\1b" + gDDUPVerDate + "\1w)");
+   console.print("\1n");
    console.crlf();
 
    // Process the file
@@ -162,15 +167,15 @@ function main()
    // Depending on the exit code, display a success or failure message.
    console.crlf();
    if (exitCode == 0)
-      console.print(gOKStr + " nbhScan successful - The file passed.\r\n");
+      console.print(gOKStr + " \1n\1b\1hScan successful - The file passed.\r\n");
    else
-      console.print(gFailStr + " nyhScan failed!\r\n");
+      console.print(gFailStr + " \1n\1y\1hScan failed!\r\n");
 
    // If the option to pause at the end is enabled, then prompt the user for
    // a keypress.
    if (gGenCfg.pauseAtEnd)
    {
-      console.print("nwhPress any key to continue:n");
+      console.print("\1n\1w\1hPress any key to continue:\1n");
       console.getkey(K_NOECHO);
    }
 
@@ -240,14 +245,14 @@ function processFile(pFilename)
 	// Display the program header stuff - The name of the file being scanned
 	// and the status header line
 	var justFilename = getFilenameFromPath(pFilename);
-	console.print("nwhScanning b" + justFilename.substr(0, 70));
-	console.print("n\r\nb7                             File Scan Status                                  n\r\n");
+	console.print("\1n\1w\1hScanning \1b" + justFilename.substr(0, 70));
+	console.print("\1n\r\n\1b\1" + "7                             File Scan Status                                  \1n\r\n");
 
 	// If the skipScanIfSysop option is enabled and the user is a sysop,
 	// then assume the file is good.
 	if (gGenCfg.skipScanIfSysop && user.compare_ars("SYSOP"))
 	{
-		printf(gStatusPrintfStr, "gh", "Auto-approving the file (you're a sysop)");
+		printf(gStatusPrintfStr, "\1g\1h", "Auto-approving the file (you're a sysop)");
 		console.print(gOKStrWithNewline);
 		return 0;
 	}
@@ -281,11 +286,9 @@ function processFile(pFilename)
 				deltree(baseWorkDir + "/");
 				if (!mkdir(baseWorkDir))
 				{
-					console.print("nyhWarning: nwh Unable to create the work dir.n\r\n");
+					console.print("\1n\1y\1hWarning: \1n\1w\1h Unable to create the work dir.\1n\r\n");
 					retval = -1;
 				}
-				file_chmod(baseWorkDir, 0x1fd); // Octal 775, rwxrwxr-x
-				//chmodDirsRecursive(baseWorkDir, 0x1fd); // Octal 775, rwxrwxr-x
 				
 				// If all is okay, then create the directory in the temporary work dir.
 				var workDir = baseWorkDir + "/" + justFilename + "_temp";
@@ -294,7 +297,7 @@ function processFile(pFilename)
 					deltree(workDir + "/");
 					if (!mkdir(workDir))
 					{
-						console.print("nyhWarning: nwh Unable to create a dir in the temporary work dir.n\r\n");
+						console.print("\1n\1y\1hWarning: \1n\1w\1h Unable to create a dir in the temporary work dir.\1n\r\n");
 						retval = -1;
 					}
 				}
@@ -303,15 +306,12 @@ function processFile(pFilename)
 				if (retval == 0)
 				{
 					// Extract the file to the work directory
-					printf(gStatusPrintfStr, "mh", "Extracting the file...");
+					printf(gStatusPrintfStr, "\1m\1h", "Extracting the file...");
 					var errorStr = extractFileToDir(pFilename, workDir);
 					if (errorStr.length == 0)
 					{
-						// In case we're running in Linux, chmod all directories in the work dir recursively so the scanner can access their files
-						chmodDirsRecursive(workDir, 0x1fd); // Octal 775, rwxrwxr-x
-						console.print(gOKStrWithNewline);
 						// Scan the files in the work directory.
-						printf(gStatusPrintfStr, "r", "Scanning files inside the archive for viruses...");
+						printf(gStatusPrintfStr, "\1r", "Scanning files inside the archive for viruses...");
 						var retObj = scanFilesInDir(workDir);
 						retval = retObj.returnCode;
 						if (retObj.returnCode == 0)
@@ -319,7 +319,7 @@ function processFile(pFilename)
 						else
 						{
 							console.print(gFailStrWithNewline);
-							console.print("nyhVirus scan failed.(1)  Scan output:n\r\n");
+							console.print("\1n\1y\1hVirus scan failed.(1)  Scan output:\1n\r\n");
 							for (var index = 0; index < retObj.cmdOutput.length; ++index)
 							{
 								console.print(retObj.cmdOutput[index]);
@@ -331,7 +331,7 @@ function processFile(pFilename)
 					{
 						console.print(gFailStrWithNewline);
 						// Scan the files in the work directory.
-						console.print("nyhWarning: nwh Unable to extract to work dir.n\r\n");
+						console.print("\1n\1y\1hWarning: \1n\1w\1h Unable to extract to work dir.\1n\r\n");
 						retval = -2;
 					}
 				}
@@ -341,7 +341,7 @@ function processFile(pFilename)
 			else
 			{
 				// The file has no extract command, so just scan it.
-				printf(gStatusPrintfStr, "bh", "Scanning...");
+				printf(gStatusPrintfStr, "\1b\1h", "Scanning...");
 				var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
 				// Run the scan command and capture its output, in case the scan fails.
 				var retObj = runExternalCmdWithOutput(scanCmd);
@@ -351,7 +351,7 @@ function processFile(pFilename)
 				else
 				{
 					console.print(gFailStrWithNewline);
-					console.print("nyhVirus scan failed.(2)  Scan output:n\r\n");
+					console.print("\1n\1y\1hVirus scan failed.(2)  Scan output:\1n\r\n");
 					for (var index = 0; index < retObj.cmdOutput.length; ++index)
 					{
 						console.print(retObj.cmdOutput[index]);
@@ -366,7 +366,7 @@ function processFile(pFilename)
 	else
 	{
 		// There's nothing configured for the file's extension, so just scan it.
-		printf(gStatusPrintfStr, "r", "Scanning...");
+		printf(gStatusPrintfStr, "\1r", "Scanning...");
 		var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
 		var retObj = runExternalCmdWithOutput(scanCmd);
 		retval = retObj.returnCode;
@@ -375,7 +375,7 @@ function processFile(pFilename)
 		else
 		{
 			console.print(gFailStrWithNewline);
-			console.print("nyhVirus scan failed.(3)  Scan output:n\r\n");
+			console.print("\1n\1y\1hVirus scan failed.(3)  Scan output:\1n\r\n");
 			for (var index = 0; index < retObj.cmdOutput.length; ++index)
 			{
 				console.print(retObj.cmdOutput[index]);
@@ -996,7 +996,6 @@ function runExternalCmdWithOutput(pCommand)
 			scriptFile.writeln(pCommand);
 			scriptFile.close();
 			wroteScriptFile = true;
-			file_chmod(scriptFilename, 775); // rwxrwxr-x
 			retObj = execCmdWithOutput("bash " + scriptFilename);
 		}
 	}
@@ -1017,23 +1016,4 @@ function runExternalCmdWithOutput(pCommand)
 	}
 
 	return retObj;
-}
-
-// Changes the mode value of a directory and all of its subdirectories recursively
-//
-// Parameters:
-//  pBaseDir: The directory to chmod recursively (along with all of its subdirectories)
-//  pMode: The mode value (number) to apply
-function chmodDirsRecursive(pBaseDir, pMode)
-{
-	if (typeof(pBaseDir) !== "string" || !file_isdir(pBaseDir) || typeof(pMode) !== "number")
-		return;
-
-	file_chmod(pBaseDir, pMode);
-	var fileEntries = directory(backslash(pBaseDir) + "*");
-	for (var i = 0; i < fileEntries.length; ++i)
-	{
-		if (file_isdir(fileEntries[i]))
-			chmodDirsRecursive(fileEntries[i], pMode);
-	}
 }
