@@ -34,7 +34,7 @@
  *                            the sub-board list when using the lightbar menu
  * 2022-06-11 Eric Oulashin   Version 1.26
  *                            Updated to try to prevent the error "this.subBoardListPrintfInfo[pGrpIdx] is undefined"
- *                            in CreateLightbarSubBoardMenu()
+ *                            when only choosing a sub-board within the user's current message group.
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -155,7 +155,9 @@ if (executeThisScript)
 	// here just in case, and change the user's message area
 	// here.  Otherwise, if choosing the message group first,
 	// SelectMsgArea() will change the user's sub-board.
-	var msgGroupIdx = (gChooseMsgGrpOnStartup ? 0/*null*/ : bbs.curgrp);
+	var msgGroupIdx = (gChooseMsgGrpOnStartup ? 0/*null*/ : +bbs.curgrp);
+	if (!gChooseMsgGrpOnStartup)
+		msgAreaChooser.BuildSubBoardPrintfInfoForGrp(msgGroupIdx);
 	var chosenIdx = msgAreaChooser.SelectMsgArea(gChooseMsgGrpOnStartup, msgGroupIdx);
 	if (!gChooseMsgGrpOnStartup && (typeof(chosenIdx) === "number"))
 		bbs.cursub_code = msg_area.grp_list[bbs.curgrp].sub_list[chosenIdx].code;
@@ -2057,9 +2059,6 @@ function DDMsgAreaChooser_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 			       numMsgs);
 		}
 		msgBase.close();
-
-		// Free some memory?
-		delete msgBase;
 	}
 
 	return subBoardLine;
