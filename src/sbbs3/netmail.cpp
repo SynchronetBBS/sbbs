@@ -821,7 +821,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	tm.tm_hour=((qwkbuf[16]&0xf)*10)+(qwkbuf[17]&0xf);
 	tm.tm_min=((qwkbuf[19]&0xf)*10)+(qwkbuf[20]&0xf);		/* From QWK time */
 	tm.tm_sec=0;
-	sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"          /* To FidoNet */
+	safe_snprintf(hdr.time, sizeof(hdr.time), "%02u %3.3s %02u  %02u:%02u:%02u"          /* To FidoNet */
 		,tm.tm_mday,mon[tm.tm_mon],TM_YEAR(tm.tm_year)
 		,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	hdr.attr=(FIDO_LOCAL|FIDO_PRIVATE);
