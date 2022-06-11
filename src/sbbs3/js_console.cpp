@@ -2258,6 +2258,54 @@ js_clearOn(JSContext *cx, uintN argc, jsval *arglist)
 	return js_clear_console_event(cx, argc, arglist, TRUE);
 }
 
+static JSBool
+js_progress(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return JS_FALSE;
+
+	if(argc < 3) {
+		JS_ReportError(cx, "Invalid number of arguments to function");
+		return JS_FALSE;
+	}
+
+	JSString*	js_str = JS_ValueToString(cx, argv[0]);
+	if(js_str == NULL)
+		return JS_FALSE;
+	bool hungry = true;
+	int32 count = 0;
+	int32 total = 1;
+	int32 interval = 500;
+	uintN argn = 1;
+	if(argc > argn) {
+		if(!JS_ValueToInt32(cx,argv[argn], &count))
+			return JS_FALSE;
+		argn++;
+	}
+	if(argc > argn) {
+		if(!JS_ValueToInt32(cx,argv[argn], &total))
+			return JS_FALSE;
+		argn++;
+	}
+	if(argc > argn) {
+		if(!JS_ValueToInt32(cx,argv[argn], &interval))
+			return JS_FALSE;
+		argn++;
+	}
+	char* p = NULL;
+	JSSTRING_TO_MSTRING(cx, js_str, p, NULL);
+	if(p == NULL)
+		return JS_FALSE;
+	sbbs->progress(p, count, total, interval);
+	free(p);
+    return JS_TRUE;
+}
+
 static jsSyncMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>]")
 	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait).<br>"
@@ -2365,6 +2413,10 @@ static jsSyncMethodSpec js_console_functions[] = {
 	{"wide",			js_wide,			1, JSTYPE_VOID,		JSDOCSTR("text")
 	,JSDOCSTR("display a string double-wide on the screen (sending \"fullwidth\" Unicode characters when possible)")
 	,31702
+	},
+	{"progress",		js_progress,		1, JSTYPE_VOID,		JSDOCSTR("text, count, total [,interval = 500]")
+	,JSDOCSTR("display a progress indication bar, updated every <i>interval</i> milliseconds")
+	,31902
 	},
 	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("text [,mode=<tt>P_NONE</tt>]")
 	,JSDOCSTR("returns the printed-length (number of columns) of the specified <i>text</i>, accounting for Ctrl-A codes")
