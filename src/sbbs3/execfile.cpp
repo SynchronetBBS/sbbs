@@ -308,24 +308,32 @@ int sbbs_t::exec_file(csi_t *csi)
 				&& strcmp(csi->str, ALLFILES) != 0) {
 				bputs(text[SearchingAllDirs]);
 				for(i=0;i<usrdirs[curlib];i++) {
-					if(msgabort())
+					if(msgabort()) {
+						bputs(text[Aborted]);
 						return 0;
+					}
+					progress(text[Scanning], i, usrdirs[curlib]);
 					if(i!=curdir[curlib] &&
 						(s=listfileinfo(usrdir[curlib][i],csi->str,FI_DOWNLOAD))!=0)
 						if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 							return(0);
 				}
+				bputs(text[Scanned]);
 				bputs(text[SearchingAllLibs]);
 				for(i=0;i<usrlibs;i++) {
+					progress(text[Scanning], i, usrlibs);
 					if(i==curlib) continue;
 					for(j=0;j<usrdirs[i];j++) {
-						if(msgabort())
+						if(msgabort()) {
+							bputs(text[Aborted]);
 							return 0;
+						}
 						if((s=listfileinfo(usrdir[i][j],csi->str,FI_DOWNLOAD))!=0)
 							if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 								return(0);
 					}
-				} 
+				}
+				bputs(text[Scanned]);
 			}
 			return(0);
 		case CS_FILE_DOWNLOAD_USER: /* Download from user dir */
@@ -385,24 +393,32 @@ int sbbs_t::exec_file(csi_t *csi)
 				return(0);
 			bputs(text[SearchingAllDirs]);
 			for(i=0;i<usrdirs[curlib];i++) {
-				if(msgabort())
+				if(msgabort()) {
+					bputs(text[Aborted]);
 					return 0;
+				}
+				progress(text[Scanning], i, usrdirs[curlib]);
 				if(i==curdir[curlib]) continue;
 				if(listfiles(usrdir[curlib][i],csi->str,0,FL_VIEW))
 					break; 
 			}
+			bputs(text[Scanned]);
 			if(i<usrdirs[curlib])
 				return(0);
 			bputs(text[SearchingAllLibs]);
 			for(i=0;i<usrlibs;i++) {
+				progress(text[Scanning], i, usrlibs);
 				if(i==curlib) continue;
 				for(j=0;j<usrdirs[i];j++) {
-					if(msgabort())
+					if(msgabort()) {
+						bputs(text[Aborted]);
 						return 0;
+					}
 					if(listfiles(usrdir[i][j],csi->str,0,FL_VIEW))
 						return(0);
 				}
 			}
+			bputs(text[Scanned]);
 			csi->logic=LOGIC_FALSE;
 			bputs(text[FileNotFound]);
 			return(0);
@@ -425,24 +441,32 @@ int sbbs_t::exec_file(csi_t *csi)
 				&& strcmp(csi->str, ALLFILES) != 0) {
 				bputs(text[SearchingAllDirs]);
 				for(i=0;i<usrdirs[curlib];i++) {
-					if(msgabort())
+					if(msgabort()) {
+						bputs(text[Aborted]);
 						return 0;
+					}
+					progress(text[Scanning], i, usrdirs[curlib]);
 					if(i!=curdir[curlib] && (s=listfileinfo(usrdir[curlib][i]
 						,csi->str,FI_INFO))!=0)
 						if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 							return(0);
 				}
+				bputs(text[Scanned]);
 				bputs(text[SearchingAllLibs]);
 				for(i=0;i<usrlibs;i++) {
+					progress(text[Scanning], i, usrlibs);
 					if(i==curlib) continue;
 					for(j=0;j<usrdirs[i];j++) {
-						if(msgabort())
+						if(msgabort()) {
+							bputs(text[Aborted]);
 							return 0;
+						}
 						if((s=listfileinfo(usrdir[i][j],csi->str,FI_INFO))!=0)
 							if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 								return(0);
 					}
-				} 
+				}
+				bputs(text[Scanned]);
 			}
 			return(0);
 		case CS_FILE_FIND_TEXT: 	/* Find text in descriptions */
@@ -487,24 +511,32 @@ int sbbs_t::exec_file(csi_t *csi)
 							return(0);
 				bputs(text[SearchingAllDirs]);
 				for(i=0;i<usrdirs[curlib];i++) {
-					if(msgabort())
+					if(msgabort()) {
+						bputs(text[Aborted]);
 						return 0;
+					}
+					progress(text[Scanning], i, usrdirs[curlib]);
 					if(i!=curdir[curlib] && i!=cfg.user_dir
 						&& (s=listfileinfo(usrdir[curlib][i],csi->str,FI_REMOVE))!=0)
 						if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 							return(0);
 				}
+				bputs(text[Scanned]);
 				bputs(text[SearchingAllLibs]);
 				for(i=0;i<usrlibs;i++) {
+					progress(text[Scanning], i, usrlibs);
 					if(i==curlib || i==cfg.user_dir) continue;
 					for(j=0;j<usrdirs[i]; j++) {
-						if(msgabort())
+						if(msgabort()) {
+							bputs(text[Aborted]);
 							return 0;
+						}
 						if((s=listfileinfo(usrdir[i][j],csi->str,FI_REMOVE))!=0)
 							if(s==-1 || (!strchr(csi->str,'?') && !strchr(csi->str,'*')))
 								return(0);
 					}
-				} 
+				}
+				bputs(text[Scanned]);
 			}
 			return(0);
 	 }
