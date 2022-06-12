@@ -19,115 +19,6 @@
  * Date       Author            Description
  * 2014-09-13 Eric Oulashin     Started (based on my message lister script)
  * ... Comments trimmed ...
- * 2020-04-03 Eric Oulashin     Version 1.29
- *                              When reading a message, if a message is written to the
- *                              current user, the 'To' username in the header above
- *                              the message is now written in a different color.
- * 2020-04-07 Eric Oulashin     Version 1.30
- *                              The message list features now uses DDLightbarMenu
- *                              rather than the internal lightbar chooser code.
- *                              Later I also plan to update the area chooser code
- *                              to use DDLightbarMenu as well and remove the
- *                              internal lightbar chooser code altogether.
- * 2020-04-13 Eric Oulashin     Version 1.31
- *                              The area change feature now uses DDLightbarMenu.
- *                              There is no more internal lightbar code in this
- *                              message reader.
- * 2020-04-19 Eric Oulashin     Version 1.32
- *                              Removed some code that's no longer used.  Also,
- *                              fixed an issue when changing to another sub-board
- *                              with the traditional-style (non-lightbar) list
- *                              where it was slow to list sub-boards.  For the number
- *                              of messages, it was checking all headers to ignore
- *                              ones marked as deleted, etc., but that can be
- *                              fairly slow..  Now it just uses total_msgs for the
- *                              MessageBase object, which is a lot faster and still
- *                              gives an idea of how many messages are there.
- * 2020-04-21 Eric Oulashin     Version 1.33
- *                              Fixed: A new user starting to read messages in
- *                              a sub-board no longer causes an error (it checks
- *                              for the scan_ptr being 0xffffffff).  This had
- *                              been fixed in a couple places previously, but
- *                              apparently not this particular case.
- * 2020-05-11 Eric Oulashin     Version 1.34
- *                              The message list mode now honors anonymous posts,
- *                              showing the 'from' name as "Anonymous" (for non-sysops).
- *                              The sysop can still see the real name of the poster.
- * 2020-05-13 Eric Oulashin     Version 1.35
- *                              Fixed some logic in determining how to address
- *                              a personal email when replying (either to a local
- *                              user or via their network address).
- * 2020-05-23 Eric Oulashin     Version 1.36
- *                              Added a command-line parameter, -onlyNewPersonalEmail,
- *                              which specifies to list/read only new/unread personal
- *                              email to the user.  And for integration with Synchronet
- *                              via the "Read Email" loadable module, this is to
- *                              be used together with the updated DDReadPersonalEmail.js.
- * 2020-07-11 Eric Oulashin     Version 1.37
- *                              Added mouse support to the scrollable reader interface.
- *                              The integrated area changer functionality doesn't have mouse
- *                              support yet.
- * 2020-11-26 Eric Oulashin     Verison 1.38
- *                              Bug fix: When forwarding a message, it now correctly
- *                              sets the to_net_type property in the message header to
- *                              FidoNet or internet for those types of message destinations
- * 2020-12-01 Eric Oulashin     Version 1.39
- *                              When forwarding a message, added the ability to
- *                              optionally edit the message before forwarding it.
- * 2021-01-31 Michael Long      Version 1.40
- *                              Fixed left/right colors not being customizable on message
- *                              list lightbar
- * 2021-02-12 Eric Oulashin     Version 1.41
- *                              Bug fix: When changing to another area with the lightbar
- *                              interface, if the user's current sub-board is a high-numbered
- *                              sub-board and they select a message group with fewer
- *                              sub-boards, the highlighted sub-board in that group would
- *                              be set to that high number and would be incorrect.
- *                              That has been fixed.  Copied a fix from my stand-alone
- *                              message area chooser.  In that scenario, the current
- *                              highlighted sub-board in the other group will be
- *                              the first one.
- * 2021-03-15 Eric Oulashin     Version 1.42 Beta
- *                              Started working on converting HTML entities in
- *                              HTML-formatted messages.
- * 2021-08-02                   Added the ability to sort the message list by date
- *                              & time written rather than the import date/time.
- *                              This is specified in the configuration file via the
- *                              msgListSort option.
- * 2022-01-13 Eric Oulashin     Version 1.42
- *                              Fixed attachment downloading.
- * 2022-02-10 Eric Oulashin     Version 1.43
- *                              Fixed the memory error when viewing message header info
- *                              (I had used the same loop control variable name for a loop
- *                              inside a loop..oops).  Also, added a check to the header
- *                              properties so that it won't display JS functions when viewing
- *                              the message header information.
- * 2022-02-15 Eric Oulashin     Version 1.44 Beta
- *                              Removed the scanScopePromptText text line and used
- *                              the SubGroupOrAll line (621) from text.dat instead.
- *                              Updated to support @-codes in configured text strings.
- *                              Also, started working on making text search support
- *                              sub-board, group, or all like the other text searching.
- *                              When reading the theme file, color settings are now checked
- *                              to ensure they only have Synchronet attribute codes.
- * 2022-02-19 Eric Oulashin     Version 1.44
- *                              Releasing this version.
- * 2022-02-24 Eric Oulashin     Version 1.45
- *                              Fixed message scanning & searching issue introduced in the
- *                              previous version.
- * 2022-02-25 Eric Oulashin     Version 1.45b
- *                              Fixed message list time colors for wide terminals (above 80 columns)
- *                              Version 1.45c
- *                              Actually fixed wide terminal colors this time (and fixed vote
- *                              score display in the message list)
- * 2022-02-26 Eric Oulashin     Version 1.45d
- *                              Fix for no group information available when displaying the
- *                              sub-board header above the message list when listing personal email
- * 2022-03-07 Eric Oulashin     Version 1.46
- *                              Fix: When changing to an empty sub-board from within the
- *                              reader (either from read mode or list mode), it now properly
- *                              says there are no messages and exits, rather than showing
- *                              a list of bogus messages.
  * 2022-03-14 Eric Oulashin     Version 1.47
  *                              Updated to make DDMsgReader can be called directly as a
  *                              loadable module by Synchronet (work started on March 8).
@@ -136,6 +27,8 @@
  * 2022-03-23 Eric Oulashin     Version 1.47a
  *                              Now calls bbs.edit_msg() to edit an existing message (if
  *                              that function exists - It was added in Synchronet 3.18).
+ * 2022-03-23 Eric Oulashin     Version 1.48
+ *                              Improved display of ANSI messages via the use of the Graphic object
  */
 
 // TODO: In the message list, add the ability to search with / similar to my area chooser
@@ -210,36 +103,9 @@
 //  - Enable searching in traditional interface
 //  - Update the keys in the lightbar help line and traditional interface
 
-const requireFnExists = (typeof(require) === "function");
-
-if (requireFnExists)
-{
-	require("sbbsdefs.js", "K_UPPER");
-	require("text.js", "Email"); // Text string definitions (referencing text.dat)
-	require("utf8_cp437.js", "utf8_cp437");
-	require("userdefs.js", "USER_UTF8");
-	require("dd_lightbar_menu.js", "DDLightbarMenu");
-	require("mouse_getkey.js", "mouse_getkey");
-	require("html2asc.js", 'html2asc');
-	require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
-}
-else
-{
-	load("sbbsdefs.js");
-	load("text.js"); // Text string definitions (referencing text.dat)
-	load("utf8_cp437.js");
-	load("userdefs.js");
-	load("dd_lightbar_menu.js");
-	load("mouse_getkey.js");
-	load("html2asc.js");
-	load("attr_conv.js");
-}
-load('822header.js');
-
-
-// This script requires Synchronet version 3.15 or higher.
+// This script requires Synchronet version 3.17 or higher (for the require() function).
 // Exit if the Synchronet version is below the minimum.
-if (system.version_num < 31500)
+if (system.version_num < 31700)
 {
 	var message = "\1n\1h\1y\1i* Warning:\1n\1h\1w Digital Distortion Message Reader "
 	             + "requires version \1g3.15\1w or\r\n"
@@ -252,9 +118,22 @@ if (system.version_num < 31500)
 	exit();
 }
 
+require("sbbsdefs.js", "K_UPPER");
+require("text.js", "Email"); // Text string definitions (referencing text.dat)
+require("utf8_cp437.js", "utf8_cp437");
+require("userdefs.js", "USER_UTF8");
+require("dd_lightbar_menu.js", "DDLightbarMenu");
+require("mouse_getkey.js", "mouse_getkey");
+require("html2asc.js", 'html2asc');
+require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
+require("graphic.js", 'Graphic');
+load('822header.js');
+var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
+
+
 // Reader version information
-var READER_VERSION = "1.47a";
-var READER_DATE = "2022-03-23";
+var READER_VERSION = "1.48";
+var READER_DATE = "2022-06-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -503,33 +382,11 @@ var gFileAttachDir = backslash(system.node_dir + "DDMsgReader_Attachments");
 if (file_exists(gFileAttachDir))
 	deltree(gFileAttachDir);
 
-// See if frame.js and scrollbar.js exist in sbbs/exec/load on the BBS machine.
-// If so, load them.  They will be used for displaying messages with ANSI content
-// with a scrollable user interface.
-var gFrameJSAvailable = file_exists(backslash(system.exec_dir) + "load/frame.js");
-if (gFrameJSAvailable)
-{
-	if (requireFnExists)
-		require("frame.js", "Frame");
-	else
-		load("frame.js");
-}
-var gScrollbarJSAvailable = file_exists(backslash(system.exec_dir) + "load/scrollbar.js");
-if (gScrollbarJSAvailable)
-{
-	if (requireFnExists)
-		require("scrollbar.js", "ScrollBar");
-	else
-		load("scrollbar.js");
-}
 // See if the avatar support files are available, and load them if so
 var gAvatar = null;
 if (file_exists(backslash(system.exec_dir) + "load/smbdefs.js") && file_exists(backslash(system.exec_dir) + "load/avatar_lib.js"))
 {
-	if (requireFnExists)
-		require("smbdefs.js", "SMB_POLL_ANSWER");
-	else
-		load("smbdefs.js");
+	require("smbdefs.js", "SMB_POLL_ANSWER");
 	gAvatar = load({}, "avatar_lib.js");
 }
 
@@ -4648,13 +4505,18 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// codes it might have.  If it has ANSI codes, then don't use the scrolling
 	// interface so that the ANSI gets displayed properly.
 	var messageText = this.GetMsgBody(msgHeader);
-	// If the message has ANSI content, then use the scrolling interface only
-	// if frame.js is available on the BBS machine and the option to use the
-	// scrolling interface for ANSI messages is enabled.
-	var msgHasANSICodes = textHasANSICodes(messageText);
+	// If the message has ANSI content, then use a Graphic object to help make
+	// the message look good.
+	var msgHasANSICodes = messageText.indexOf("\x1b[") >= 0;
+	if (msgHasANSICodes)
+	{
+		var graphic = new Graphic(this.msgAreaWidth, this.msgAreaHeight);
+		graphic.auto_extend = true;
+		graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
+		graphic.width = this.msgAreaWidth;
+		messageText = graphic.MSG;
+	}
 	var useScrollingInterface = this.scrollingReaderInterface && console.term_supports(USER_ANSI);
-	if (useScrollingInterface && msgHasANSICodes)
-		useScrollingInterface = gFrameJSAvailable && this.useScrollingInterfaceForANSIMessages;
 	// If we switch to the non-scrolling interface here, then the calling method should
 	// refresh the enhanced reader help line on the screen.
 	retObj.refreshEnhancedRdrHelpLine = (this.scrollingReaderInterface && !useScrollingInterface);
@@ -4728,13 +4590,11 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	if (topMsgLineIdxForLastPage != 0)
 		fractionToLastPage = topMsgLineIdx / topMsgLineIdxForLastPage;
 
-	// If not using a display frame (which has its own scrollbar), draw an
-	// initial scrollbar on the rightmost column of the message area showing
-	// the fraction of the message shown and what part of the message is
-	// currently being shown.  The scrollbar will be updated minimally in the
-	// input loop to minimize screen redraws.
-	if (msgInfo.displayFrame == null)
-		this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+	// Draw an initial scrollbar on the rightmost column of the message area showing
+	// the fraction of the message shown and what part of the message is currently
+	// being shown.  The scrollbar will be updated minimally in the input loop to
+	// minimize screen redraws.
+	this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 
 	// Input loop (for scrolling the message up & down)
 	var msgLineFormatStr = "%-" + this.msgAreaWidth + "s";
@@ -4761,36 +4621,24 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		// Display the message lines (depending on the value of writeMessage)
 		// and handle scroll keys via scrollTextLines().  Handle other keypresses
 		// here.
-		var scrollRetObj = null;
-		if (msgInfo.displayFrame != null)
+		var scrollbarInfoObj = {
+			solidBlockLastStartRow: 0,
+			numSolidScrollBlocks: 0
+		};
+		scrollbarInfoObj.solidBlockLastStartRow = solidBlockLastStartRow;
+		scrollbarInfoObj.numSolidScrollBlocks = numSolidScrollBlocks;
+		var scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
+									   this.colors.msgBodyColor, writeMessage,
+									   this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
+									   msgAreaHeight, 1, console.screen_rows,
+									   msgScrollbarUpdateFn, scrollbarInfoObj,
+									   this.enhReadHelpLineClickCoords);
+		if (scrollRetObj.mouse != null)
 		{
-			msgInfo.displayFrame.draw();
-			scrollRetObj = scrollFrame(msgInfo.displayFrame, msgInfo.displayFrameScrollbar,
-									   topMsgLineIdx, this.colors["msgBodyColor"],
-									   writeMessage, 1, console.screen_rows,
-									   msgScrollbarUpdateFn);
-		}
-		else
-		{
-			var scrollbarInfoObj = {
-				solidBlockLastStartRow: 0,
-				numSolidScrollBlocks: 0
-			};
-			scrollbarInfoObj.solidBlockLastStartRow = solidBlockLastStartRow;
-			scrollbarInfoObj.numSolidScrollBlocks = numSolidScrollBlocks;
-			scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
-										   this.colors.msgBodyColor, writeMessage,
-										   this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
-										   msgAreaHeight, 1, console.screen_rows,
-										   msgScrollbarUpdateFn, scrollbarInfoObj,
-										   this.enhReadHelpLineClickCoords);
-			if (scrollRetObj.mouse != null)
-			{
-				// See if there was a click in one of the reader help line click coordinates
-				var clickCoordRetObj = this.ScrollReaderDetermineClickCoordAction(scrollRetObj, this.enhReadHelpLineClickCoords);
-				if (clickCoordRetObj.actionStr.length > 0)
-					scrollRetObj.lastKeypress = clickCoordRetObj.actionStr; // A bit of a kludge
-			}
+			// See if there was a click in one of the reader help line click coordinates
+			var clickCoordRetObj = this.ScrollReaderDetermineClickCoordAction(scrollRetObj, this.enhReadHelpLineClickCoords);
+			if (clickCoordRetObj.actionStr.length > 0)
+				scrollRetObj.lastKeypress = clickCoordRetObj.actionStr; // A bit of a kludge
 		}
 		topMsgLineIdx = scrollRetObj.topLineIdx;
 		retObj.lastKeypress = scrollRetObj.lastKeypress;
@@ -7598,7 +7446,6 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 	var numChars = console.screen_columns - lbHelpLineLen - 1;
 	if (numChars > 0)
 	{
-		// Gradient block characters: °±²Û
 		// Add characters on the left and right of the line so that the
 		// text is centered.
 		var numLeft = Math.floor(numChars / 2);
@@ -9997,59 +9844,28 @@ function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 	// we can move the cursor and display the header where specified.
 	if (console.term_supports(USER_ANSI) && (typeof(pStartScreenRow) == "number"))
 	{
-		// Note: When using a Frame object, some ANSIs didn't look right.
-		if (false)
-		//if (gFrameJSAvailable)
+		// If specified to clear the rows first, then do so.
+		var screenX = 1;
+		var screenY = pStartScreenRow;
+		var clearRowsFirst = (typeof(pClearRowsFirst) == "boolean" ? pClearRowsFirst : true);
+		if (clearRowsFirst)
 		{
-			// TODO: Refactor this code?  Might be good to not have to re-create the
-			// frame object every time.
-			var txtFileFilename = gStartupPath + this.areaChooserHdrFilenameBase;
-			if (file_exists(txtFileFilename + "-" + console.screen_columns + ".ans"))
-				txtFileFilename = txtFileFilename + "-" + console.screen_columns + ".ans";
-			else if (file_exists(txtFileFilename + "-" + console.screen_columns + ".asc"))
-				txtFileFilename = txtFileFilename + "-" + console.screen_columns + ".asc";
-			else if (file_exists(txtFileFilename + ".ans"))
-				txtFileFilename = txtFileFilename + ".ans";
-			else if (file_exists(txtFileFilename + ".asc"))
-				txtFileFilename = txtFileFilename + ".asc";
-			var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
-			                             pStartScreenRow, // y: Vertical coordinate of top left
-			                             console.screen_columns, // Width
-			                             this.areaChooserHdrMaxLines, // Height
-			                             BG_BLACK);
-			displayFrame.v_scroll = false;
-			displayFrame.h_scroll = false;
-			displayFrame.scrollbars = false;
-			// Load the message file into the Frame object and draw the frame
-			displayFrame.attr&=~HIGH;
-			displayFrame.load(txtFileFilename);
-			displayFrame.draw();
-		}
-		else
-		{
-			// If specified to clear the rows first, then do so.
-			var screenX = 1;
-			var screenY = pStartScreenRow;
-			var clearRowsFirst = (typeof(pClearRowsFirst) == "boolean" ? pClearRowsFirst : true);
-			if (clearRowsFirst)
-			{
-				console.print("\1n");
-				for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
-				{
-					console.gotoxy(screenX, screenY++);
-					console.cleartoeol();
-				}
-			}
-			// Display the header starting on the first column and the given screen row.
-			screenX = 1;
-			screenY = pStartScreenRow;
+			console.print("\1n");
 			for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
 			{
 				console.gotoxy(screenX, screenY++);
-				console.print(this.areaChangeHdrLines[hdrFileIdx]);
-				//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
-				//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+				console.cleartoeol();
 			}
+		}
+		// Display the header starting on the first column and the given screen row.
+		screenX = 1;
+		screenY = pStartScreenRow;
+		for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+		{
+			console.gotoxy(screenX, screenY++);
+			console.print(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
 		}
 	}
 	else
@@ -10573,6 +10389,9 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 		// If we are to delete the message, then delete it.
 		if (deleteMsg)
 		{
+			// TODO: Also, allow toggling the delete flag rather than always just
+			// marking the message for deletion.
+			// hdr.attr = hdr.attr ^ MSG_DELETE; // Will toggle the delete flag
 			//msgWasDeleted = msgbase.remove_msg(true, msgHeader.offset);
 			msgWasDeleted = msgbase.remove_msg(false, msgHeader.number);
 			if (msgWasDeleted)
@@ -12177,15 +11996,6 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 //               solidBlockStartRow: The starting row on the screen for the scrollbar blocks
 //               hasAttachments: Boolean - Whether or not the message has attachments
 //               attachments: An array of the attached filenames (as strings)
-//               displayFrame: A Frame object for displaying the message with
-//                             a scrollable interface.  Used when the message
-//                             contains ANSI, for instance.  If this object is
-//                             null, then the reader should use its own scrolling
-//                             interface.  Also, this will only be available if
-//                             the BBS machine has frame.js in sbbs/exec/load.
-//               displayFrameScrollbar: A ScrollBar object to work with displayFrame.
-//                                  If scrollbar.js is not available on the BBS machine,
-//                                  this will be null.
 //               errorMsg: An error message, if something bad happened
 function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDetermineAttachments,
                                                       pGetB64Data, pMsgBody, pMsgHasANSICodes)
@@ -12200,8 +12010,6 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		solidBlockStartRow: 0,
 		hasAttachments: false,
 		attachments: [],
-		displayFrame: null,
-		displayFrameScrollbar: null,
 		errorMsg: ""
 	};
 
@@ -12248,40 +12056,6 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	// Convert other BBS color codes to Synchronet attribute codes if the settings
 	// to do so are enabled.
 	msgTextAltered = convertAttrsToSyncPerSysCfg(msgTextAltered, false);
-	// If the message contains ANSI codes, then if frame.js is available and
-	// the user's terminal support ANSI, set up a Frame object for reading the
-	// message with a scrollable interface.
-	var msgHasANSICodes = (typeof(pMsgHasANSICodes) == "boolean" ? pMsgHasANSICodes : textHasANSICodes(retObj.msgText));
-	// If the message has ANSI codes, then check to see if the amount of ANSI is very low.
-	// If so, then convert the ANSI color codes to Synchronet codes and eliminate unwanted
-	// ANSI (such as cursor movement codes).  It seems that some messages have ANSI inserted
-	// into them that shouldn't be there (i.e., the author didn't intend to post an ANSI
-	// message), which is the reason for this check.  If the message contains such rogue
-	// ANSI codes, they could mess up the display of the message.
-	if (msgHasANSICodes)
-	{
-		// ANSI content checking
-		var lastANSIIdx = idxOfLastANSICode(msgTextAltered, gANSIRegexes);
-		var numCharsAfterFirstANSI = msgTextAltered.length - idxOfFirstANSICode(msgTextAltered, gANSIRegexes) - 1;
-		// Count the number of ANSI codes in the message and find the percentage of
-		// ANSI in the message.
-		var ANSICodeCount = countANSICodes(msgTextAltered, gANSIRegexes);
-		var percentANSICodes = (ANSICodeCount / msgTextAltered.length) * 100;
-		// It seems that some messages contain a couple extra lines at the beginning with
-		// a "By: <name> to <name>" and a date, and some of those messages contain ANSI
-		// codes in those lines, which will mess up the display of the message using the
-		// scrolling interface.  Also, some messages might have ANSI codes in the signature.
-		// If the last index of ANSI codes is <= 160 or there are <= 100 characters after
-		// the first ANSI code (possibly in the signature) or if less than 7% of the message
-		// is ANSI codes, then consider those ANSI codes unwanted and convert them to
-		// Synchronet codes and remove unwanted ANSI.
-		if ((percentANSICodes < 10) || (lastANSIIdx <= 160) || (numCharsAfterFirstANSI <= 100))
-		{
-			msgTextAltered = cvtANSIToSyncAndRemoveUnwantedANSI(msgTextAltered);
-			//msgTextAltered = removeANSIFromStr(msgTextAltered, gANSIRegexes);
-			msgHasANSICodes = false;
-		}
-	}
 
 	// If this is a message with a "By: <name> to <name>" and a date, then
 	// sometimes such a message might have enter characters (ASCII 13), which
@@ -12309,67 +12083,6 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		//msgTextAltered = msgTextAltered.substr(strIdx);
 	}
 
-	// If the message (still) has ANSI codes, then it is probably an ANSI message.
-	// Set up a Frame object to display the message, since the Frame object handles
-	// ANSI well with scrolling.
-	if (msgHasANSICodes)
-	{
-		if (gFrameJSAvailable && console.term_supports(USER_ANSI))
-		{
-			// Using putmsg() to put the message into the frame doesn't
-			// seem to work well for ANSI:
-			//retObj.displayFrame.putmsg(msgTextAltered, "\1n");
-			// Write the message to a file in a temporary directory,
-			// have the frame object read it, then delete the temporary
-			// directory.
-			var readerTmpOutputDir = backslash(system.node_dir + "DDMsgReaderANSIMsgTemp");
-			var ANSITempDirExists = file_exists(readerTmpOutputDir);
-			if (!ANSITempDirExists)
-				ANSITempDirExists = mkdir(readerTmpOutputDir);
-			if (ANSITempDirExists)
-			{
-				var tmpANSIFileName = backslash(readerTmpOutputDir) + "tmpMsg.ans";
-				var tmpANSIFile = new File(tmpANSIFileName);
-				if (tmpANSIFile.open("w"))
-				{
-					var tmpANSIFileWritten = tmpANSIFile.write(msgTextAltered);
-					tmpANSIFile.close();
-					// If the file was successfully written, then create the
-					// Frame object and have it read the file.
-					if (tmpANSIFileWritten)
-					{
-						// Create the Frame object and scrollbar object, if the
-						// scrollbar JS is available on the system
-						retObj.displayFrame = new Frame(1, // x: Horizontal coordinate of top left
-						                                this.enhMsgHeaderLines.length+1, // y: Vertical coordinate of top left
-						                                80, // Width
-						                                // Height: Allow for the message header
-						                                // and enhanced reader help line
-						                                console.screen_rows-this.enhMsgHeaderLines.length-1,
-						                                BG_BLACK);
-						retObj.displayFrame.v_scroll = true;
-						retObj.displayFrame.h_scroll = false;
-						retObj.displayFrame.scrollbars = true;
-						// Load the message file into the Frame object
-						retObj.displayFrame.load(tmpANSIFileName);
-						// If scrollbar.js is available, then set up a vertical
-						// scrollbar for the Frame object
-						if (gScrollbarJSAvailable)
-							retObj.displayFrameScrollbar = new ScrollBar(retObj.displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
-					}
-				}
-				// Cleanup: Remove the temporary directory
-				deltree(readerTmpOutputDir);
-			}
-		}
-		else
-		{
-			// frame.js is not available.  Just convert the ANSI to
-			// Synchronet attributes.  It might not look the best, but
-			// at least we can convert some of the ANSI codes.
-			msgTextAltered = ANSIAttrsToSyncAttrs(msgTextAltered);
-		}
-	}
 	var wordWrapTheMsgText = true;
 	if (typeof(pWordWrap) == "boolean")
 		wordWrapTheMsgText = pWordWrap;
@@ -15792,149 +15505,6 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 				break;
 		}
 	}
-	return retObj;
-}
-
-// Displays a Frame on the screen and allows scrolling through it with the up &
-// down arrow keys, PageUp, PageDown, HOME, and END.
-//
-// Parameters:
-//  pFrame: A Frame object to display & scroll through
-//  pScrollbar: A ScrollBar object associated with the Frame object
-//  pTopLineIdx: The index of the text line to display at the top
-//  pTxtAttrib: The attribute(s) to apply to the text lines
-//  pWriteTxtLines: Boolean - Whether or not to write the text lines (in addition
-//                  to doing the message loop).  If false, this will only do the
-//                  the message loop.  This parameter is intended as a screen
-//                  refresh optimization.
-//  pPostWriteCurX: The X location for the cursor after writing the message
-//                  lines
-//  pPostWriteCurY: The Y location for the cursor after writing the message
-//                  lines
-//  pScrollUpdateFn: A function that the caller can provide for updating the
-//                   scroll position.  This function has one parameter:
-//                   - fractionToLastPage: The fraction of the top index divided
-//                     by the top index for the last page (basically, the progress
-//                     to the last page).
-//
-// Return value: An object with the following properties:
-//               lastKeypress: The last key pressed by the user (a string)
-//               topLineIdx: The new top line index of the text lines, in case of scrolling
-function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pPostWriteCurX,
-                     pPostWriteCurY, pScrollUpdateFn)
-{
-	// Variables for the top line index for the last page, scrolling, etc.
-	var topLineIdxForLastPage = pFrame.data_height - pFrame.height;
-	if (topLineIdxForLastPage < 0)
-		topLineIdxForLastPage = 0;
-
-	var retObj = {
-		lastKeypress: "",
-		topLineIdx: pTopLineIdx
-	};
-
-	if (pTopLineIdx > 0)
-		pFrame.scrollTo(0, pTopLineIdx);
-
-	var writeTxtLines = pWriteTxtLines;
-	if (writeTxtLines)
-	{
-		pFrame.invalidate(); // Force drawing on the next call to draw() or cycle()
-		pFrame.cycle();
-		//pFrame.draw();
-	}
-
-	var cycleFrame = true;
-	var continueOn = true;
-	while (continueOn)
-	{
-		// If we are to write the text lines, then draw the frame.
-		// TODO: Do we really need this?  Will this be different from
-		// scrollTextLines()?
-		//if (writeTxtLines)
-		//	pFrame.draw();
-
-		if (cycleFrame)
-		{
-			// Invalidate the frame to force it to redraw everything, as a
-			// workaround to clear the background before writing again
-			// TODO: I might want to remove this invalidate() later when
-			// Frame is fixed to redraw better on scrolling.
-			pFrame.invalidate();
-			// Cycle the scrollbar & frame to get them to scroll
-			if (pScrollbar != null)
-				pScrollbar.cycle();
-			pFrame.cycle();
-		}
-
-		writeTxtLines = false;
-		cycleFrame = false;
-
-		// Get a keypress from the user and take action based on it
-		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
-		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
-		switch (retObj.lastKeypress)
-		{
-			case KEY_UP:
-				if (retObj.topLineIdx > 0)
-				{
-					pFrame.scroll(0, -1);
-					--retObj.topLineIdx;
-					cycleFrame = true;
-					writeTxtLines = true;
-				}
-				break;
-			case KEY_DOWN:
-				if (retObj.topLineIdx < topLineIdxForLastPage)
-				{
-					pFrame.scroll(0, 1);
-					cycleFrame = true;
-					++retObj.topLineIdx;
-					writeTxtLines = true;
-				}
-				break;
-			case KEY_PAGE_DOWN: // Next page
-				if (retObj.topLineIdx < topLineIdxForLastPage)
-				{
-					//pFrame.scroll(0, pFrame.height);
-					retObj.topLineIdx += pFrame.height;
-					if (retObj.topLineIdx > topLineIdxForLastPage)
-						retObj.topLineIdx = topLineIdxForLastPage;
-					pFrame.scrollTo(0, retObj.topLineIdx);
-					cycleFrame = true;
-					writeTxtLines = true;
-				}
-				break;
-			case KEY_PAGE_UP: // Previous page
-				if (retObj.topLineIdx > 0)
-				{
-					//pFrame.scroll(0, -(pFrame.height));
-					retObj.topLineIdx -= pFrame.height;
-					if (retObj.topLineIdx < 0)
-						retObj.topLineIdx = 0;
-					pFrame.scrollTo(0, retObj.topLineIdx);
-					cycleFrame = true;
-					writeTxtLines = true;
-				}
-				break;
-			case KEY_HOME: // First page
-				//pFrame.home();
-				pFrame.scrollTo(0, 0);
-				cycleFrame = true;
-				retObj.topLineIdx = 0;
-				break;
-			case KEY_END: // Last page
-				//pFrame.end();
-				pFrame.scrollTo(0, topLineIdxForLastPage);
-				cycleFrame = true;
-				retObj.topLineIdx = topLineIdxForLastPage;
-				break;
-			default:
-				continueOn = false;
-				break;
-		}
-	}
-
 	return retObj;
 }
 
