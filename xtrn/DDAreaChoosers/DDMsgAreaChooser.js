@@ -78,8 +78,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.25";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-06-06";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.26";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-06-11";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";

@@ -23,7 +23,14 @@
  * 2022-05-17 Eric Oulashin   Version 1.24
  *                            Fixes for searching and search error reporting (probably
  *                            due to mistaken copy & paste in an earlier commit)
+ * 2022-06-12 Eric Oulashin   Version 1.26
+ *                            Running this scipt with the "false command-line parameter
+ *                            works again, allowing the user to choose the file directory
+ *                            within their file library.
  */
+
+// TODO: Failing silently when 1st argument is true
+// TODO: In the area list, the 10,000ths digit (for # items) is in a different color)
 
 /* Command-line arguments:
    1 (argv[0]): Boolean - Whether or not to choose a file library first (default).  If
@@ -189,6 +196,7 @@ function DDFileAreaChooser()
 	this.SelectFileArea_Traditional = DDFileAreaChooser_SelectFileArea_Traditional;
 	this.SelectDirWithinFileLib_Traditional = DDFileAreaChooser_SelectDirWithinFileLib_Traditional;
 	this.SelectSubdirWithinDir_Traditional = DDFileAreaChooser_SelectSubdirWithinDir_Traditional;
+	this.GetActualLibIdx = DDFileAreaChooser_GetActualLibIdx;
 	this.ListFileLibs_Traditional = DDFileAreaChooser_ListFileLibs_Traditional;
 	this.ListDirsInFileLib_Traditional = DDFileAreaChooser_ListDirsInFileLib_Traditional;
 	this.ListSubdirsInFileDir_Traditional = DDFileAreaChooser_ListSubdirsInFileDir_Traditional;
@@ -350,6 +358,9 @@ function DDFileAreaChooser_SelectFileArea_Traditional(pLevel, pLibIdx, pDirIdx)
 		console.print("\1y\1hThere are no file libraries.\r\n\1p");
 		return;
 	}
+
+	if (pLevel > 1 && typeof(pLibIdx) !== "number")
+		pLibIdx = this.GetActualLibIdx();
 
 	var curLibIdx = 0;
 	var curDirIdx = 0;
@@ -700,6 +711,26 @@ function DDFileAreaChooser_SelectSubdirWithinDir_Traditional(pLibIdx, pDirIdx)
 	return retObj;
 }
 
+// For the DDFileAreaChooser class: Maps bbs.curlib to the collapsed library array library index
+function DDFileAreaChooser_GetActualLibIdx()
+{
+	var libIdx = bbs.curlib;
+	if (this.useDirCollapsing)
+	{
+		var syncLibName = file_area.lib_list[bbs.curlib].name;
+		var syncLibDesc = file_area.lib_list[bbs.curlib].description;
+		for (var i = 0; i < this.lib_list.length; ++i)
+		{
+			if (this.lib_list[i].name == syncLibName && this.lib_list[i].description == syncLibDesc)
+			{
+				libIdx = i;
+				break;
+			}
+		}
+	}
+	return libIdx;
+}
+
 // For the DDFileAreaChooser class: Traditional user interface for listing
 // the file libraries
 //
@@ -970,6 +1001,8 @@ function DDFileAreaChooser_WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPa
 //           directory name collapsing
 function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 {
+	if (pLevel > 1 && typeof(pLibIdx) !== "number")
+		pLibIdx = this.GetActualLibIdx();
 	// If there are file libraries, then don't let the user
 	// choose one.
 	if (file_area.lib_list.length == 0)
