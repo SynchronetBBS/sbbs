@@ -5,6 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.48     2022-06-12   Improved display of ANSI messages
 1.47a    2022-03-23   Internal change: Now calls bbs.edit_msg() for editing an
                       existing message (for Synchronet 3.18 and up).
                       Functionally no change.
