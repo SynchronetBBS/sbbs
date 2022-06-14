@@ -1136,3 +1136,14 @@ function syncAttrCodesToANSI(pText)
 	else
 		return pText; // No Synchronet-style attribute codes found, so just return the text.
 }
+
+// Returns whether a string has any Synchronet attribute codes
+//
+// Parameters:
+//  pStr: the string to check
+//
+// Return value: Boolean - Whether or not the string has any Synchronet attribute codes
+function hasSyncAttrCodes(pStr)
+{
+	return (pStr.search(/\1[krgybmcwhifn\-_01234567]/i) > -1);
+}

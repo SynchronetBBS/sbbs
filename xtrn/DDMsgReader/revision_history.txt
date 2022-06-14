@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.49     2022-06-13   Refactor: Simplified saving a message to BBS machine for
+                      sysop (as-is, less processing); removed attachment stuff
+                      for pre-Synchronet 3.17; moved hasSyncAttrCodes() to
+                      attr_conv.js because that's where it needs to be.
 1.48     2022-06-12   Improved display of ANSI messages
 1.47a    2022-03-23   Internal change: Now calls bbs.edit_msg() for editing an
                       existing message (for Synchronet 3.18 and up).
