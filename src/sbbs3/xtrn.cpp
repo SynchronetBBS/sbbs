@@ -842,7 +842,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     		SAFEPRINTF(path, "%sDOSXTRN.RET", cfg.node_dir);
 			FILE* fp=fopen(path,"r");
 			if(fp == NULL) {
-				lprintf(LOG_ERR, "Error %d opening %s", errno, path);
+				lprintf(LOG_ERR, "Error %d opening %s after running %s", errno, path, cmdline);
 			} else {
 				if(fscanf(fp,"%d",&retval) != 1) {
 					lprintf(LOG_ERR, "Error reading return value from %s", path);
