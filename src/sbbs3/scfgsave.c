@@ -766,9 +766,10 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 		c = cfg->lib[i]->sort;
 		put_int(c,stream);
 		put_int(cfg->lib[i]->misc,stream);
-		n=0x0000;
-		for(j=0;j<1;j++)
-			put_int(n,stream); 
+		c = cfg->lib[i]->vdir_name;
+		put_int(c,stream);
+		c = 0x00;
+		put_int(c,stream);
 
 		n=0xffff;
 		for(j=0;j<16;j++)
