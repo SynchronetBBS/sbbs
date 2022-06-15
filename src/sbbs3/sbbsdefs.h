@@ -310,6 +310,13 @@ enum area_sort {
 	AREA_SORT_TYPES,
 };
 
+// Values for lib[x].vdir_name
+enum vdir_name {
+	VDIR_NAME_CODE,
+	VDIR_NAME_SHORT,
+	VDIR_NAME_LONG
+};
+
 enum {
 	 clr_mnehigh
 	,clr_mnelow
