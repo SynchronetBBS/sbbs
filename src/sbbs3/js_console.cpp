@@ -2277,7 +2277,6 @@ js_progress(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	js_str = JS_ValueToString(cx, argv[0]);
 	if(js_str == NULL)
 		return JS_FALSE;
-	bool hungry = true;
 	int32 count = 0;
 	int32 total = 1;
 	int32 interval = 500;
