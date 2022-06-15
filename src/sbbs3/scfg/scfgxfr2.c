@@ -36,6 +36,13 @@ char* file_sort_desc[] = {
 	NULL
 };
 
+char* vdir_name_desc[] = {
+	"Internal Code Suffix",
+	"Short Name",
+	"Long Name",
+	NULL
+};
+
 static bool new_dir(unsigned new_dirnum, unsigned libnum)
 {
 	dir_t* new_directory = malloc(sizeof(dir_t));
@@ -425,6 +432,7 @@ void xfer_cfg()
 			sprintf(opt[j++],"%-27.27s%s","Access to Sub-directories"
 				,cfg.lib[libnum]->parent_path[0] ? (cfg.lib[libnum]->misc&LIB_DIRS ? "Yes":"No") : "N/A");
 			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[libnum]->sort]);
+			sprintf(opt[j++],"%-27.27s%s","Virtual Sub-directories", vdir_name_desc[cfg.lib[libnum]->vdir_name]);
 			strcpy(opt[j++],"Clone Options");
 			strcpy(opt[j++],"Export Areas...");
 			strcpy(opt[j++],"Import Areas...");
@@ -561,6 +569,21 @@ void xfer_cfg()
 					if(j >= 0) {
 						cfg.lib[libnum]->sort = j;
 						sort_dirs(libnum);
+						uifc.changes = TRUE;
+					}
+					break;
+				case __COUNTER__:
+					uifc.helpbuf="`Source of Virtual Sub-directory Names:`\n"
+						"\n"
+						"File areas accessed via the FTP server or Web server are represented\n"
+						"by a virtual path. This setting determines the source of the\n"
+						"sub-directory portion of the virtual paths used to represent directories\n"
+						"within this file library.\n"
+						;
+					j = cfg.lib[libnum]->vdir_name;
+					j = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &j, 0, "Source of Virtual Sub-directory Names", vdir_name_desc);
+					if(j >= 0) {
+						cfg.lib[libnum]->vdir_name = j;
 						uifc.changes = TRUE;
 					}
 					break;

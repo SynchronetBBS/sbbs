@@ -23,13 +23,25 @@
 #include "nopen.h"
 #include "ars_defs.h"
 
+static void pathify(char* str)
+{
+	char* p;
+
+	if(strchr(str, '.') == NULL) {
+		REPLACE_CHARS(str, ' ', '.', p);
+	} else {
+		REPLACE_CHARS(str, ' ', '_', p);
+	}
+	REPLACE_CHARS(str, '\\', '-', p);
+	REPLACE_CHARS(str, '/', '-', p);
+}
+
 /****************************************************************************/
 /* Reads in FILE.CNF and initializes the associated variables				*/
 /****************************************************************************/
 BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	char	str[MAX_PATH+1],c,cmd[LEN_CMD+1];
-	char*	p;
 	short	i,j;
 	int16_t	n;
 	long	offset=0;
@@ -292,11 +304,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		get_str(cfg->lib[i]->lname,instream);
 		get_str(cfg->lib[i]->sname,instream);
 		SAFECOPY(cfg->lib[i]->vdir, cfg->lib[i]->sname);
-		if(strchr(cfg->lib[i]->vdir, '.') == NULL) {
-			REPLACE_CHARS(cfg->lib[i]->vdir, ' ', '.', p);
-		} else {
-			REPLACE_CHARS(cfg->lib[i]->vdir, ' ', '_', p);
-		}
+		pathify(cfg->lib[i]->vdir);
 
 		get_str(cfg->lib[i]->arstr,instream);
 		arstr(NULL, cfg->lib[i]->arstr, cfg, cfg->lib[i]->ar);
@@ -309,9 +317,11 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->lib[i]->sort = c;
 
 		get_int(cfg->lib[i]->misc, instream);
-		
-		for(j=0;j<1;j++)
-			get_int(n,instream);	/* 0x0000 */
+
+		get_int(c,instream);
+		cfg->lib[i]->vdir_name = c;
+
+		get_int(c,instream);	/* 0x00 */
 
 		for(j=0;j<16;j++)
 			get_int(n,instream);	/* 0xffff */
@@ -353,8 +363,19 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
 		get_str(cfg->dir[i]->code_suffix,instream);
-		cfg->dir[i]->vdir = cfg->dir[i]->code_suffix;
 
+		switch(cfg->lib[cfg->dir[i]->lib]->vdir_name) {
+			case VDIR_NAME_SHORT:
+				SAFECOPY(cfg->dir[i]->vdir, cfg->dir[i]->sname);
+				break;
+			case VDIR_NAME_LONG:
+				SAFECOPY(cfg->dir[i]->vdir, cfg->dir[i]->lname);
+				break;
+			default:
+				SAFECOPY(cfg->dir[i]->vdir, cfg->dir[i]->code_suffix);
+				break;
+		}
+		pathify(cfg->dir[i]->vdir);
 		get_str(cfg->dir[i]->data_dir,instream);
 
 		get_str(cfg->dir[i]->arstr,instream);
