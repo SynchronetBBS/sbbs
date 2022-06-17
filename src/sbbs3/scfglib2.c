@@ -23,19 +23,6 @@
 #include "nopen.h"
 #include "ars_defs.h"
 
-static void pathify(char* str)
-{
-	char* p;
-
-	if(strchr(str, '.') == NULL) {
-		REPLACE_CHARS(str, ' ', '.', p);
-	} else {
-		REPLACE_CHARS(str, ' ', '_', p);
-	}
-	REPLACE_CHARS(str, '\\', '-', p);
-	REPLACE_CHARS(str, '/', '-', p);
-}
-
 /****************************************************************************/
 /* Reads in FILE.CNF and initializes the associated variables				*/
 /****************************************************************************/
@@ -363,19 +350,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
 		get_str(cfg->dir[i]->code_suffix,instream);
-
-		switch(cfg->lib[cfg->dir[i]->lib]->vdir_name) {
-			case VDIR_NAME_SHORT:
-				SAFECOPY(cfg->dir[i]->vdir, cfg->dir[i]->sname);
-				break;
-			case VDIR_NAME_LONG:
-				SAFECOPY(cfg->dir[i]->vdir, cfg->dir[i]->lname);
-				break;
-			default:
-				SAFECOPY(cfg->dir[i]->vdir, cfg->dir[i]->code_suffix);
-				break;
-		}
-		pathify(cfg->dir[i]->vdir);
+		init_vdir(cfg, cfg->dir[i]);
 		get_str(cfg->dir[i]->data_dir,instream);
 
 		get_str(cfg->dir[i]->arstr,instream);

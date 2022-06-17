@@ -123,6 +123,35 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, 
 	return(TRUE);
 }
 
+void pathify(char* str)
+{
+	char* p;
+
+	if(strchr(str, '.') == NULL) {
+		REPLACE_CHARS(str, ' ', '.', p);
+	} else {
+		REPLACE_CHARS(str, ' ', '_', p);
+	}
+	REPLACE_CHARS(str, '\\', '-', p);
+	REPLACE_CHARS(str, '/', '-', p);
+}
+
+void init_vdir(scfg_t* cfg, dir_t* dir)
+{
+	switch(cfg->lib[dir->lib]->vdir_name) {
+		case VDIR_NAME_SHORT:
+			SAFECOPY(dir->vdir, dir->sname);
+			break;
+		case VDIR_NAME_LONG:
+			SAFECOPY(dir->vdir, dir->lname);
+			break;
+		default:
+			SAFECOPY(dir->vdir, dir->code_suffix);
+			break;
+	}
+	pathify(dir->vdir);
+}
+
 /****************************************************************************/
 /* Prepare configuration for run-time (resolve relative paths, etc)			*/
 /****************************************************************************/
@@ -192,9 +221,7 @@ void prep_cfg(scfg_t* cfg)
 			for(j = 0; j < cfg->total_dirs; j++) {
 				if(cfg->dir[j]->lib != i)
 					continue;
-				if(stricmp(cfg->dir[j]->code, dirname) == 0)
-					break;
-				if(stricmp(cfg->dir[j]->code_suffix, dirname) == 0)
+				if(stricmp(cfg->dir[j]->lname, dirname) == 0)
 					break;
 			}
 			if(j < cfg->total_dirs)	// duplicate
@@ -214,6 +241,7 @@ void prep_cfg(scfg_t* cfg)
 			SAFEPRINTF2(dir.code,"%s%s"
 				,cfg->lib[i]->code_prefix
 				,dir.code_suffix);
+			init_vdir(cfg, &dir);
 
 			dir_t** new_dirs;
 			if((new_dirs=(dir_t **)realloc(cfg->dir, sizeof(dir_t *)*(cfg->total_dirs+2)))==NULL)

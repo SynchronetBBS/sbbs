@@ -38,6 +38,8 @@ DLLEXPORT ushort	sys_timezone(scfg_t* cfg);
 DLLEXPORT char *	prep_dir(const char* base, char* dir, size_t buflen);
 DLLEXPORT char *	prep_code(char *str, const char* prefix);
 DLLEXPORT int 		md(const char *path);
+DLLEXPORT void		pathify(char*);
+DLLEXPORT void		init_vdir(scfg_t*, dir_t*);
 DLLEXPORT int		smb_storage_mode(scfg_t*, smb_t*);
 DLLEXPORT int		smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
 DLLEXPORT BOOL		smb_init_dir(scfg_t*, smb_t*, unsigned int dirnum);
