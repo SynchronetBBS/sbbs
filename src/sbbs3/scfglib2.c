@@ -22,6 +22,7 @@
 #include "scfglib.h"
 #include "nopen.h"
 #include "ars_defs.h"
+#include "load_cfg.h"
 
 /****************************************************************************/
 /* Reads in FILE.CNF and initializes the associated variables				*/
