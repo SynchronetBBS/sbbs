@@ -1082,6 +1082,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 		cb.events_supported = TRUE;
 		exec_result = JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		js_handle_events(js_cx, &cb, &terminated);
+		fflush(confp);
 
 		char	*p;
 		if(buf != NULL) {
