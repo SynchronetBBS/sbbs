@@ -19,7 +19,7 @@ static int uifc_initialized=0;
 #define WITH_SCRN	(1<<1)
 #define WITH_BOT	(1<<2)
 
-static void (*bottomfunc)(int);
+static void (*bottomfunc)(uifc_winmode_t);
 int orig_vidflags;
 int orig_x;
 int orig_y;
