@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.50     2022-06-20   When doing a text search, it now ignores the user scan
+                      configuration for sub-boards, to ensure it will show any
+                      results of the text search.
 1.49     2022-06-13   Refactor: Simplified saving a message to BBS machine for
                       sysop (as-is, less processing); removed attachment stuff
                       for pre-Synchronet 3.17; moved hasSyncAttrCodes() to
