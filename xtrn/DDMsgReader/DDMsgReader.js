@@ -34,6 +34,9 @@
  *                              (as-is, less processing); removed attachment stuff for pre-Synchronet
  *                              3.17; moved hasSyncAttrCodes() to attr_conv.js because that's where it
  *                              needs to be.
+ * 2022-06-13 Eric Oulashin     Version 1.50
+ *                              When doing a text search, it now ignores the user scan configuration for
+ *                              sub-boards, to ensure it will show any results of the text search.
  */
 
 // TODO: In the message list, add the ability to search with / similar to my area chooser
@@ -137,8 +140,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.49";
-var READER_DATE = "2022-06-13";
+var READER_VERSION = "1.50";
+var READER_DATE = "2022-06-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1643,9 +1646,12 @@ function DigDistMsgReader_RefreshHdrInSavedArrays(pMsgIndex, pAttrib, pSubBoardC
 //                  "G" for the current message group, or "S" for the user's current sub-board.
 //                  If this is not specified, the current sub-board will be used.
 //  pTxtToSearch: Optional - Text to search for (if specified, this won't prompt the user for search text)
-function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanScopeChar, pTxtToSearch)
+//  pSkipSubBoardScanCfgCheck: Optional boolean - Whether or not to skip the sub-board scan config check for
+//                                                  each sub-board.  Defaults to false.
+function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanScopeChar, pTxtToSearch, pSkipSubBoardScanCfgCheck)
 {
 	var searchTextProvided = (typeof(pTxtToSearch) === "string" && pTxtToSearch != "");
+	var skipSubBoardScanCfgCheck = (typeof(pSkipSubBoardScanCfgCheck) === "boolean" ? pSkipSubBoardScanCfgCheck : false);
 	// Convert the search mode string to an integer representing the search
 	// mode.  If we get back -1, that means the search mode string was invalid.
 	// If that's the case, simply list messages.  Otherwise, do the search.
@@ -1745,7 +1751,7 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 				for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueScan; ++subCodeIdx)
 				{
 					subCode = subBoardsToScan[subCodeIdx];
-					if (msg_area.sub[subCode].can_read && ((msg_area.sub[subCode].scan_cfg & SCAN_CFG_NEW) == SCAN_CFG_NEW))
+					if (skipSubBoardScanCfgCheck || (msg_area.sub[subCode].can_read && ((msg_area.sub[subCode].scan_cfg & SCAN_CFG_NEW) == SCAN_CFG_NEW)))
 					{
 						// Force garbage collection to ensure enough memory is available to continue
 						js.gc(true);
@@ -1812,7 +1818,7 @@ function DigDistMsgReader_SearchMsgScan(pSearchModeStr, pTxtToSearch, pSubCode)
 		scanScopeChar = console.getkeys("SGAC").toString();
 	}
 	if (scanScopeChar.length > 0)
-		this.SearchMessages(pSearchModeStr, null, scanScopeChar, pTxtToSearch);
+		this.SearchMessages(pSearchModeStr, null, scanScopeChar, pTxtToSearch, true); // Skip/ignore scan config checks
 	else
 	{
 		console.crlf();
