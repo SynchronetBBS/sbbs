@@ -1,5 +1,3 @@
-// $Id: SlyEdit_Misc.js,v 1.51 2019/06/06 03:50:47 nightfox Exp $
-
 /* This file declares some general helper functions and variables
  * that are used by SlyEdit.
  *
@@ -47,6 +45,8 @@
  *                              sub-board information with an empty sub-board code (in the rare
  *                              case when no sub-boards are configured).
  */
+
+"use strict";
  
 if (typeof(require) === "function")
 	require("text.js", "Pause");
@@ -62,48 +62,48 @@ var BKG_ATTR = 2;  // Background color attribute
 var SPECIAL_ATTR = 3; // Special attribute
 
 // Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = ascii(169);
-var HORIZONTAL_SINGLE = ascii(196);
-var UPPER_RIGHT_SINGLE = ascii(191); // or 170?
-var VERTICAL_SINGLE = ascii(179);
-var LOWER_LEFT_SINGLE = ascii(192);
-var LOWER_RIGHT_SINGLE = ascii(217);
-var T_SINGLE = ascii(194);
-var LEFT_T_SINGLE = ascii(195);
-var RIGHT_T_SINGLE = ascii(180);
-var BOTTOM_T_SINGLE = ascii(193);
-var CROSS_SINGLE = ascii(197);
+var UPPER_LEFT_SINGLE = "\xDA"; //ASCII 218
+var HORIZONTAL_SINGLE = "\xC4"; //ASCII 196
+var UPPER_RIGHT_SINGLE = "\xBF"; //ASCII 191 // or 170?
+var VERTICAL_SINGLE = "\xB3"; //ASCII 179
+var LOWER_LEFT_SINGLE = "\xC0"; //ASCII 192
+var LOWER_RIGHT_SINGLE = "\xD9"; //ASCII 217
+var T_SINGLE = "\xC2"; //ASCII 194
+var LEFT_T_SINGLE = "\xC3"; //ASCII 195
+var RIGHT_T_SINGLE = "\xB4"; //ASCII 180
+var BOTTOM_T_SINGLE = "\xC1"; //ASCII 193
+var CROSS_SINGLE = "\xC5"; //ASCII 197
 // Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = ascii(201);
-var HORIZONTAL_DOUBLE = ascii(205);
-var UPPER_RIGHT_DOUBLE = ascii(187);
-var VERTICAL_DOUBLE = ascii(186);
-var LOWER_LEFT_DOUBLE = ascii(200);
-var LOWER_RIGHT_DOUBLE = ascii(188);
-var T_DOUBLE = ascii(203);
-var LEFT_T_DOUBLE = ascii(204);
-var RIGHT_T_DOUBLE = ascii(185);
-var BOTTOM_T_DOUBLE = ascii(202);
-var CROSS_DOUBLE = ascii(206);
+var UPPER_LEFT_DOUBLE = "\xC9"; //ASCII 201
+var HORIZONTAL_DOUBLE = "\xCD"; //ASCII 205
+var UPPER_RIGHT_DOUBLE = "\xBB"; //ASCII 187
+var VERTICAL_DOUBLE = "\xBA"; //ASCII 186
+var LOWER_LEFT_DOUBLE = "\xCB"; //ASCII 200
+var LOWER_RIGHT_DOUBLE = "\xBC"; //ASCII 188
+var T_DOUBLE = "\xCB"; //ASCII 203
+var LEFT_T_DOUBLE = "\xCC"; //ASCII 204
+var RIGHT_T_DOUBLE = "\xB9"; //ASCII 185
+var BOTTOM_T_DOUBLE = "\xCA"; //ASCII 202
+var CROSS_DOUBLE = "\xCE"; //ASCII 206
 // Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = ascii(213);
-var UPPER_RIGHT_VSINGLE_HDOUBLE = ascii(184);
-var LOWER_LEFT_VSINGLE_HDOUBLE = ascii(212);
-var LOWER_RIGHT_VSINGLE_HDOUBLE = ascii(190);
+var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5"; //ASCII 213
+var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8"; //ASCII 184
+var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4"; //ASCII 212
+var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE"; //ASCII 190
 // Other special characters
-var DOT_CHAR = ascii(249);
-var CHECK_CHAR = ascii(251);
-var THIN_RECTANGLE_LEFT = ascii(221);
-var THIN_RECTANGLE_RIGHT = ascii(222);
-var CENTERED_SQUARE = ascii(254);
-var BLOCK1 = ascii(176); // Dimmest block
-var BLOCK2 = ascii(177);
-var BLOCK3 = ascii(178);
-var BLOCK4 = ascii(219); // Brightest block
+var DOT_CHAR = "\xF9"; //ASCII 249
+var CHECK_CHAR = "\xFB"; //ASCII 251
+var THIN_RECTANGLE_LEFT = "\xDD"; //ASCII 221
+var THIN_RECTANGLE_RIGHT = "\xDE"; //ASCII 222
+var CENTERED_SQUARE = "\xFE"; //ASCII 254
+var BLOCK1 = "\xB0"; //ASCII 176 // Dimmest block
+var BLOCK2 = "\xB1"; //ASCII 177
+var BLOCK3 = "\xB2"; //ASCII 178
+var BLOCK4 = "\xDB"; //ASCII 219 // Brightest block
 
 // Navigational keys
-var UP_ARROW = ascii(24);
-var DOWN_ARROW = ascii(25);
+var UP_ARROW = "\x18"; //ASCII 24
+var DOWN_ARROW = "\x19"; //ASCII 25
 // CTRL keys
 var CTRL_A = "\x01";
 var CTRL_B = "\x02";
@@ -145,11 +145,11 @@ var CTRL_X = "\x18";
 var CTRL_Y = "\x19";
 var CTRL_Z = "\x1a";
 var KEY_ESC = "\x1b";
-var KEY_F1 = "\1F1";
-var KEY_F2 = "\1F2";
-var KEY_F3 = "\1F3";
-var KEY_F4 = "\1F4";
-var KEY_F5 = "\1F5";
+var KEY_F1 = "\x01F1";
+var KEY_F2 = "\x01F2";
+var KEY_F3 = "\x01F3";
+var KEY_F4 = "\x01F4";
+var KEY_F5 = "\x01F5";
 // PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
 // use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
 // defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
@@ -183,7 +183,7 @@ var ESC_MENU_USER_SETTINGS = 12;
 var ESC_MENU_SPELL_CHECK = 13;
 
 
-var COPYRIGHT_YEAR = 2021;
+var COPYRIGHT_YEAR = 2022;
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
@@ -479,10 +479,10 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 			numSpaces = nonSpcIdx - firstSpcIdx;
 			if (numSpaces > 0)
 			{
-				pTopBorderText = firstStrPart + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder;
+				pTopBorderText = firstStrPart + "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder;
 				for (var i = 0; i < numSpaces; ++i)
 					pTopBorderText += HORIZONTAL_SINGLE;
-				pTopBorderText += "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText + lastStrPart;
+				pTopBorderText += "\x01n" + pSlyEdCfgObj.genColors.listBoxBorderText + lastStrPart;
 			}
 
 			// Look for the next space and non-space character after that.
@@ -527,11 +527,11 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 	var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
 	if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
 		pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
-	this.topBorder = "\1n" + pSlyEdCfgObj.genColors.listBoxBorder + UPPER_LEFT_SINGLE;
+	this.topBorder = "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder + UPPER_LEFT_SINGLE;
 	if (addTopTCharsAroundText)
 		this.topBorder += RIGHT_T_SINGLE;
-	this.topBorder += "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText
-	               + pTopBorderText + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder;
+	this.topBorder += "\x01n" + pSlyEdCfgObj.genColors.listBoxBorderText
+	               + pTopBorderText + "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder;
 	if (addTopTCharsAroundText)
 		this.topBorder += LEFT_T_SINGLE;
 	const topBorderTextLen = strip_ctrl(pTopBorderText).length;
@@ -540,16 +540,16 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 		numHorizBorderChars -= 2;
 	for (var i = 0; i <= numHorizBorderChars; ++i)
 		this.topBorder += HORIZONTAL_SINGLE;
-	this.topBorder += RIGHT_T_SINGLE + "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText
-	               + "Page    1 of    1" + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder + LEFT_T_SINGLE
+	this.topBorder += RIGHT_T_SINGLE + "\x01n" + pSlyEdCfgObj.genColors.listBoxBorderText
+	               + "Page    1 of    1" + "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder + LEFT_T_SINGLE
 	               + UPPER_RIGHT_SINGLE;
 
 	// Bottom border string
-	this.btmBorderNavText = "\1n\1h\1c\1b, \1c\1b, \1cN\1y)\1bext, \1cP\1y)\1brev, "
-	                      + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cHOME\1b, \1cEND\1b, \1cEnter\1y=\1bSelect, "
-	                      + "\1cESC\1n\1c/\1h\1cQ\1y=\1bEnd";
-	this.bottomBorder = "\1n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
-	                  + RIGHT_T_SINGLE + this.btmBorderNavText + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder
+	this.btmBorderNavText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+	                      + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cHOME\x01b, \x01cEND\x01b, \x01cEnter\x01y=\x01bSelect, "
+	                      + "\x01cESC\x01n\x01c/\x01h\x01cQ\x01y=\x01bEnd";
+	this.bottomBorder = "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
+	                  + RIGHT_T_SINGLE + this.btmBorderNavText + "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder
 	                  + LEFT_T_SINGLE;
 	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
 	for (var i = 0; i < numCharsRemaining; ++i)
@@ -557,9 +557,9 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 	this.bottomBorder += LOWER_RIGHT_SINGLE;
 
 	// Item format strings
-	this.listIemFormatStr = "\1n" + pSlyEdCfgObj.genColors.listBoxItemText + "%-"
+	this.listIemFormatStr = "\x01n" + pSlyEdCfgObj.genColors.listBoxItemText + "%-"
 	                      + +(this.dimensions.width-2) + "s";
-	this.listIemHighlightFormatStr = "\1n" + pSlyEdCfgObj.genColors.listBoxItemHighlight + "%-"
+	this.listIemHighlightFormatStr = "\x01n" + pSlyEdCfgObj.genColors.listBoxItemHighlight + "%-"
 	                               + +(this.dimensions.width-2) + "s";
 
 	// Key functionality override function pointers
@@ -785,12 +785,12 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 	}
 
 	// Re-build the bottom border string based on the new text
-	this.bottomBorder = "n" + this.SlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE;
+	this.bottomBorder = "\x01n" + this.SlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE;
 	if (pAddTChars)
 		this.bottomBorder += RIGHT_T_SINGLE;
-	if (pText.indexOf("n") != 0)
-		this.bottomBorder += "n";
-	this.bottomBorder += pText + "n" + this.SlyEdCfgObj.genColors.listBoxBorder;
+	if (pText.indexOf("\x01n") != 0)
+		this.bottomBorder += "\x01n";
+	this.bottomBorder += pText + "\x01n" + this.SlyEdCfgObj.genColors.listBoxBorder;
 	if (pAddTChars)
 		this.bottomBorder += LEFT_T_SINGLE;
 	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
@@ -848,7 +848,7 @@ function ChoiceScrollbox_DrawInnerMenu(pSelectedIndex)
 
 	// Update the page number in the top border of the box.
 	console.gotoxy(this.pageNumTxtStartX, this.dimensions.topLeftY);
-	printf("\1n" + this.SlyEdCfgObj.genColors.listBoxBorderText + "Page %4d of %4d", this.pageNum+1, this.numPages);
+	printf("\x01n" + this.SlyEdCfgObj.genColors.listBoxBorderText + "Page %4d of %4d", this.pageNum+1, this.numPages);
 	return selectedItemRow;
 }
 function ChoiceScrollbox_RefreshOnScreen(pSelectedIndex)
@@ -1147,7 +1147,7 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 		}
 	}
 
-	console.print("\1n"); // To prevent outputting highlight colors, etc..
+	console.print("\x01n"); // To prevent outputting highlight colors, etc..
 	return retObj;
 }
 
@@ -1170,11 +1170,11 @@ function randomDimBrightString(pString, pColor)
 		return "";
 
    // Set the color.  Default to green.
-	var color = "g";
+	var color = "\x01g";
 	if ((pColor != null) && (typeof(pColor) != "undefined"))
       color = pColor;
 
-   return(randomTwoColorString(pString, "n" + color, "nh" + color));
+   return(randomTwoColorString(pString, "\x01n" + color, "\x01n\x01h" + color));
 }
 
 // This function takes a string and returns a copy of the string
@@ -1193,10 +1193,10 @@ function randomTwoColorString(pString, pColor1, pColor2)
 		return "";
 
 	// Set the colors.  Default to green.
-	var color1 = "ng";
+	var color1 = "\x01n\x01g";
 	if ((pColor1 != null) && (typeof(pColor1) != "undefined"))
       color1 = pColor1;
-   var color2 = "ngh";
+   var color2 = "\x01n\x01g\x01h";
 	if ((pColor2 != null) && (typeof(pColor2) != "undefined"))
       color2 = pColor2;
 
@@ -1296,20 +1296,20 @@ function displayHelpHeader()
    {
       displayHelpHeader.headerLines = new Array();
 
-      var headerText = EDITOR_PROGRAM_NAME + " Help w(y"
+      var headerText = EDITOR_PROGRAM_NAME + " Help \x01w(\x01y"
                       + (EDITOR_STYLE == "DCT" ? "DCT" : "Ice")
-                      + " modew)";
+                      + " mode\x01w)";
       var headerTextLen = strip_ctrl(headerText).length;
 
       // Top border
-      var headerTextStr = "nhc" + UPPER_LEFT_SINGLE;
+      var headerTextStr = "\x01n\x01h\x01c" + UPPER_LEFT_SINGLE;
       for (var i = 0; i < headerTextLen + 2; ++i)
          headerTextStr += HORIZONTAL_SINGLE;
       headerTextStr += UPPER_RIGHT_SINGLE;
       displayHelpHeader.headerLines.push(headerTextStr);
 
       // Middle line: Header text string
-      headerTextStr = VERTICAL_SINGLE + "4y " + headerText + " nhc"
+      headerTextStr = VERTICAL_SINGLE + "\x01" + "4\x01y " + headerText + " \x01n\x01h\x01c"
                     + VERTICAL_SINGLE;
       displayHelpHeader.headerLines.push(headerTextStr);
 
@@ -1341,7 +1341,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
                              pTxtReplacments, pUserSettings, pSpellCheck)
 {
 	if (pClear)
-		console.clear("\1n");
+		console.clear("\x01n");
 	if (pDisplayHeader)
 	{
 		displayHelpHeader();
@@ -1359,7 +1359,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	//       if not specified, this function won't display a CR.
 	function displayCmdKeyFormatted(pKey, pDesc, pCR)
 	{
-		printf("\1c\1h%-13s\1g: \1n\1c%s", pKey, pDesc);
+		printf("\x01c\x01h%-13s\x01g: \x01n\x01c%s", pKey, pDesc);
 		if (pCR)
 			console.crlf();
 	}
@@ -1372,15 +1372,15 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 			sepChar1 = " ";
 		if ((pKey2.length == 0) && (pDesc2.length == 0))
 			sepChar2 = " ";
-		printf("\1c\1h%-13s\1g" + sepChar1 + " \1n\1c%-28s \1k\1h" + VERTICAL_SINGLE +
-		       " \1c\1h%-8s\1g" + sepChar2 + " \1n\1c%s", pKey, pDesc, pKey2, pDesc2);
+		printf("\x01c\x01h%-13s\x01g" + sepChar1 + " \x01n\x01c%-28s \x01k\x01h" + VERTICAL_SINGLE +
+		       " \x01c\x01h%-8s\x01g" + sepChar2 + " \x01n\x01c%s", pKey, pDesc, pKey2, pDesc2);
 		if (pCR)
 			console.crlf();
 	}
 
 	// Help keys and slash commands
-	printf("\1n\1g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
-	printf("\1k\1h%-44s  %-33s\r\n", charStr(HORIZONTAL_SINGLE, 9), charStr(HORIZONTAL_SINGLE, 30));
+	printf("\x01n\x01g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
+	printf("\x01k\x01h%-44s  %-33s\r\n", charStr(HORIZONTAL_SINGLE, 9), charStr(HORIZONTAL_SINGLE, 30));
 	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
 	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
@@ -1391,10 +1391,10 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	if (pCanCrossPost)
 		displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
 	displayCmdKeyFormattedDouble("", "", "/UPLOAD", "Upload a message", true);
-	printf(" \1c\1h%-7s\1g  \1n\1c%s", "", "", "/?", "Show help");
+	printf(" \x01c\x01h%-7s\x01g  \x01n\x01c%s", "", "", "/?", "Show help");
 	console.crlf();
 	// Command/edit keys
-	console.print("\1n\1gCommand/edit keys\r\n\1k\1h" + charStr(HORIZONTAL_SINGLE, 17) + "\r\n");
+	console.print("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 17) + "\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
 	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
@@ -1442,11 +1442,11 @@ function charStr(pChar, pNumTimes)
 function displayGeneralHelp(pDisplayHeader, pClear, pPause)
 {
    if (pClear)
-      console.clear("\1n");
+      console.clear("\x01n");
    if (pDisplayHeader)
       displayHelpHeader();
 
-   console.print("\1n\1cSlyEdit is a full-screen message editor that mimics the look & feel of\r\n");
+   console.print("\x01n\x01cSlyEdit is a full-screen message editor that mimics the look & feel of\r\n");
    console.print("IceEdit or DCT Edit, two popular editors.  The editor is currently in " +
                  (EDITOR_STYLE == "DCT" ? "DCT" : "Ice") + "\r\nmode.\r\n");
    console.print("At the top of the screen, information about the message being written (or\r\n");
@@ -1466,14 +1466,14 @@ function displayGeneralHelp(pDisplayHeader, pClear, pPause)
 function displayProgramInfo(pClear, pPause)
 {
 	if (pClear)
-		console.clear("\1n");
+		console.clear("\x01n");
 
 	// Print the program information
-	console.center("\1n\1h\1c" + EDITOR_PROGRAM_NAME + "\1n \1cVersion \1g" +
-	               EDITOR_VERSION + " \1w\1h(\1b" + EDITOR_VER_DATE + "\1w)");
-	console.center("\1n\1cby Eric Oulashin");
+	console.center("\x01n\x01h\x01c" + EDITOR_PROGRAM_NAME + "\x01n \x01cVersion \x01g" +
+	               EDITOR_VERSION + " \x01w\x01h(\x01b" + EDITOR_VER_DATE + "\x01w)");
+	console.center("\x01n\x01cby Eric Oulashin");
 	console.crlf();
-	console.print("\1n\1cSlyEdit is a full-screen message editor for Synchronet that mimics the look &\r\n");
+	console.print("\x01n\x01cSlyEdit is a full-screen message editor for Synchronet that mimics the look &\r\n");
 	console.print("feel of IceEdit or DCT Edit.");
 	console.crlf();
 	if (pPause)
@@ -1487,14 +1487,14 @@ function displayProgramInfo(pClear, pPause)
 function displayProgramExitInfo(pClearScreen)
 {
 	if (pClearScreen)
-		console.clear("\1n");
+		console.clear("\x01n");
 
-	console.print("\1n\1cYou have been using \1hSlyEdit \1n\1cversion \1g" + EDITOR_VERSION + " \1n\1m(" + EDITOR_VER_DATE + ")");
+	console.print("\x01n\x01cYou have been using \x01hSlyEdit \x01n\x01cversion \x01g" + EDITOR_VERSION + " \x01n\x01m(" + EDITOR_VER_DATE + ")");
 	console.crlf();
-	console.print("\1n\1cby Eric Oulashin of \1c\1hD\1n\1cigital \1hD\1n\1cistortion \1hB\1n\1cBS");
+	console.print("\x01n\x01cby Eric Oulashin of \x01c\x01hD\x01n\x01cigital \x01hD\x01n\x01cistortion \x01hB\x01n\x01cBS");
 	console.crlf();
 	console.crlf();
-	console.print("\1n\1cAcknowledgements for look & feel go to the following people:");
+	console.print("\x01n\x01cAcknowledgements for look & feel go to the following people:");
 	console.crlf();
 	console.print("Dan Traczynski: Creator of DCT Edit");
 	console.crlf();
@@ -1513,7 +1513,7 @@ function displayProgramExitInfo(pClearScreen)
 //                    If not specified, defaults to normal attribute.
 function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib)
 {
-	var clearLineAttrib = "\1n";
+	var clearLineAttrib = "\x01n";
 	if ((pClearLineAttrib != null) && (typeof(pClearLineAttrib) == "string"))
 		clearLineAttrib = pClearLineAttrib;
 	console.gotoxy(pX, pY);
@@ -1609,27 +1609,27 @@ function ReadSlyEditConfigFile()
 		// General SlyEdit color settings
 		genColors: {
 			// Cross-posting UI element colors
-			listBoxBorder: "\1n\1g",
-			listBoxBorderText: "\1n\1b\1h",
-			crossPostMsgAreaNum: "\1n\1h\1w",
-			crossPostMsgAreaNumHighlight: "\1n\1" + "4\1h\1w",
-			crossPostMsgAreaDesc: "\1n\1c",
-			crossPostMsgAreaDescHighlight: "\1n\1" + "4\1c",
-			crossPostChk: "\1n\1h\1y",
-			crossPostChkHighlight: "\1n\1" + "4\1h\1y",
-			crossPostMsgGrpMark: "\1n\1h\1g",
-			crossPostMsgGrpMarkHighlight: "\1n\1" + "4\1h\1g",
+			listBoxBorder: "\x01n\x01g",
+			listBoxBorderText: "\x01n\x01b\x01h",
+			crossPostMsgAreaNum: "\x01n\x01h\x01w",
+			crossPostMsgAreaNumHighlight: "\x01n\x01" + "4\x01h\x01w",
+			crossPostMsgAreaDesc: "\x01n\x01c",
+			crossPostMsgAreaDescHighlight: "\x01n\x01" + "4\x01c",
+			crossPostChk: "\x01n\x01h\x01y",
+			crossPostChkHighlight: "\x01n\x01" + "4\x01h\x01y",
+			crossPostMsgGrpMark: "\x01n\x01h\x01g",
+			crossPostMsgGrpMarkHighlight: "\x01n\x01" + "4\x01h\x01g",
 			// Colors for certain output strings
-			msgWillBePostedHdr: "\1n\1c",
-			msgPostedGrpHdr: "\1n\1h\1b",
-			msgPostedSubBoardName: "\1n\1g",
-			msgPostedOriginalAreaText: "\1n\1c",
-			msgHasBeenSavedText: "\1n\1h\1c",
-			msgAbortedText: "\1n\1m\1h",
-			emptyMsgNotSentText: "\1n\1m\1h",
-			genMsgErrorText: "\1n\1m\1h",
-			listBoxItemText: "\1n\1c",
-			listBoxItemHighlight: "\1n\1" + "4\1w\1h"
+			msgWillBePostedHdr: "\x01n\x01c",
+			msgPostedGrpHdr: "\x01n\x01h\x01b",
+			msgPostedSubBoardName: "\x01n\x01g",
+			msgPostedOriginalAreaText: "\x01n\x01c",
+			msgHasBeenSavedText: "\x01n\x01h\x01c",
+			msgAbortedText: "\x01n\x01m\x01h",
+			emptyMsgNotSentText: "\x01n\x01m\x01h",
+			genMsgErrorText: "\x01n\x01m\x01h",
+			listBoxItemText: "\x01n\x01c",
+			listBoxItemHighlight: "\x01n\x01" + "4\x01w\x01h"
 		},
 
 		// Default Ice-style colors
@@ -1638,31 +1638,31 @@ function ReadSlyEditConfigFile()
 			// Ice color theme file
 			ThemeFilename: genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", gStartupPath),
 			// Text edit color
-			TextEditColor: "\1n\1w",
+			TextEditColor: "\x01n\x01w",
 			// Quote line color
-			QuoteLineColor: "\1n\1c",
+			QuoteLineColor: "\x01n\x01c",
 			// Ice colors for the quote window
-			QuoteWinText: "\1n\1h\1w",            // White
-			QuoteLineHighlightColor: "\1" + "4\1h\1c", // High cyan on blue background
-			QuoteWinBorderTextColor: "\1n\1c\1h", // Bright cyan
-			BorderColor1: "\1n\1b",              // Blue
-			BorderColor2: "\1n\1b\1h",          // Bright blue
+			QuoteWinText: "\x01n\x01h\x01w",            // White
+			QuoteLineHighlightColor: "\x01" + "4\x01h\x01c", // High cyan on blue background
+			QuoteWinBorderTextColor: "\x01n\x01c\x01h", // Bright cyan
+			BorderColor1: "\x01n\x01b",              // Blue
+			BorderColor2: "\x01n\x01b\x01h",          // Bright blue
 			// Ice colors for multi-choice prompts
-			SelectedOptionBorderColor: "\1n\1b\1h\1" + "4",
-			SelectedOptionTextColor: "\1n\1c\1h\1" + "4",
-			UnselectedOptionBorderColor: "\1n\1b",
-			UnselectedOptionTextColor: "\1n\1w",
+			SelectedOptionBorderColor: "\x01n\x01b\x01h\x01" + "4",
+			SelectedOptionTextColor: "\x01n\x01c\x01h\x01" + "4",
+			UnselectedOptionBorderColor: "\x01n\x01b",
+			UnselectedOptionTextColor: "\x01n\x01w",
 			// Ice colors for the top info area
-			TopInfoBkgColor: "\1" + "4",
-			TopLabelColor: "\1c\1h",
-			TopLabelColonColor: "\1b\1h",
-			TopToColor: "\1w\1h",
-			TopFromColor: "\1w\1h",
-			TopSubjectColor: "\1w\1h",
-			TopTimeColor: "\1g\1h",
-			TopTimeLeftColor: "\1g\1h",
-			EditMode: "\1c\1h",
-			KeyInfoLabelColor: "\1c\1h"
+			TopInfoBkgColor: "\x01" + "4",
+			TopLabelColor: "\x01c\x01h",
+			TopLabelColonColor: "\x01b\x01h",
+			TopToColor: "\x01w\x01h",
+			TopFromColor: "\x01w\x01h",
+			TopSubjectColor: "\x01w\x01h",
+			TopTimeColor: "\x01g\x01h",
+			TopTimeLeftColor: "\x01g\x01h",
+			EditMode: "\x01c\x01h",
+			KeyInfoLabelColor: "\x01c\x01h"
 		},
 
 		// Default DCT-style colors
@@ -1670,63 +1670,58 @@ function ReadSlyEditConfigFile()
 			// DCT color theme file
 			ThemeFilename: genFullPathCfgFilename("SlyDCTColors_Default.cfg", gStartupPath),
 			// Text edit color
-			TextEditColor: "\1n\1w",
+			TextEditColor: "\x01n\x01w",
 			// Quote line color
-			QuoteLineColor: "\1n\1c",
+			QuoteLineColor: "\x01n\x01c",
 			// DCT colors for the border stuff
-			TopBorderColor1: "\1n\1r",
-			TopBorderColor2: "\1n\1r\1h",
-			EditAreaBorderColor1: "\1n\1g",
-			EditAreaBorderColor2: "\1n\1g\1h",
-			EditModeBrackets: "\1n\1k\1h",
-			EditMode: "\1n\1w",
+			TopBorderColor1: "\x01n\x01r",
+			TopBorderColor2: "\x01n\x01r\x01h",
+			EditAreaBorderColor1: "\x01n\x01g",
+			EditAreaBorderColor2: "\x01n\x01g\x01h",
+			EditModeBrackets: "\x01n\x01k\x01h",
+			EditMode: "\x01n\x01w",
 			// DCT colors for the top informational area
-			TopLabelColor: "\1n\1b\1h",
-			TopLabelColonColor: "\1n\1b",
-			TopFromColor: "\1n\1c\1h",
-			TopFromFillColor: "\1n\1c",
-			TopToColor: "\1n\1c\1h",
-			TopToFillColor: "\1n\1c",
-			TopSubjColor: "\1n\1w\1h",
-			TopSubjFillColor: "\1n\1w",
-			TopAreaColor: "\1n\1g\1h",
-			TopAreaFillColor: "\1n\1g",
-			TopTimeColor: "\1n\1y\1h",
-			TopTimeFillColor: "\1n\1r",
-			TopTimeLeftColor: "\1n\1y\1h",
-			TopTimeLeftFillColor: "\1n\1r",
-			TopInfoBracketColor: "\1n\1m",
+			TopLabelColor: "\x01n\x01b\x01h",
+			TopLabelColonColor: "\x01n\x01b",
+			TopFromColor: "\x01n\x01c\x01h",
+			TopFromFillColor: "\x01n\x01c",
+			TopToColor: "\x01n\x01c\x01h",
+			TopToFillColor: "\x01n\x01c",
+			TopSubjColor: "\x01n\x01w\x01h",
+			TopSubjFillColor: "\x01n\x01w",
+			TopAreaColor: "\x01n\x01g\x01h",
+			TopAreaFillColor: "\x01n\x01g",
+			TopTimeColor: "\x01n\x01y\x01h",
+			TopTimeFillColor: "\x01n\x01r",
+			TopTimeLeftColor: "\x01n\x01y\x01h",
+			TopTimeLeftFillColor: "\x01n\x01r",
+			TopInfoBracketColor: "\x01n\x01m",
 			// DCT colors for the quote window
-			QuoteWinText: "\1n\1" + "7\1k",
-			QuoteLineHighlightColor: "\1n\1w",
-			QuoteWinBorderTextColor: "\1n\1" + "7\1r",
-			QuoteWinBorderColor: "\1n\1k\1" + "7",
-			// DCT colors for the quote window
-			QuoteWinText: "\1n\1" + "7\1b",
-			QuoteLineHighlightColor: "\1n\1w",
-			QuoteWinBorderTextColor: "\1n\1" + "7\1r",
-			QuoteWinBorderColor: "\1n\1k\1" + "7",
+			QuoteWinText: "\x01n\x01" + "7\x01b", // or k
+			QuoteLineHighlightColor: "\x01n\x01w",
+			QuoteWinBorderTextColor: "\x01n\x01" + "7\x01r",
+			QuoteWinBorderColor: "\x01n\x01k\x01" + "7",
 			// DCT colors for the bottom row help text
-			BottomHelpBrackets: "\1n\1k\1h",
-			BottomHelpKeys: "\1n\1r\1h",
-			BottomHelpFill: "\1n\1r",
-			BottomHelpKeyDesc: "\1n\1c",
+			BottomHelpBrackets: "\x01n\x01k\x01h",
+			BottomHelpKeys: "\x01n\x01r\x01h",
+			BottomHelpFill: "\x01n\x01r",
+			BottomHelpKeyDesc: "\x01n\x01c",
 			// DCT colors for text boxes
-			TextBoxBorder: "\1n\1k\1" + "7",
-			TextBoxBorderText: "\1n\1r\1" + "7",
-			TextBoxInnerText: "\1n\1b\1" + "7",
-			YesNoBoxBrackets: "\1n\1k\1" + "7",
-			YesNoBoxYesNoText: "\1n\1w\1h\1" + "7",
+			TextBoxBorder: "\x01n\x01k\x01" + "7",
+			TextBoxBorderText: "\x01n\x01r\x01" + "7",
+			TextBoxInnerText: "\x01n\x01b\x01" + "7",
+			YesNoBoxBrackets: "\x01n\x01k\x01" + "7",
+			YesNoBoxYesNoText: "\x01n\x01w\x01h\x01" + "7",
 			// DCT colors for the menus
-			SelectedMenuLabelBorders: "\1n\1w",
-			SelectedMenuLabelText: "\1n\1k\1" + "7",
-			UnselectedMenuLabelText: "\1n\1w\1h",
-			MenuBorders: "\1n\1k\1" + "7",
-			MenuSelectedItems: "\1n\1w",
-			MenuUnselectedItems: "\1n\1k\1" + "7",
-			MenuHotkeys: "\1n\1w\1h\1" + "7"
+			SelectedMenuLabelBorders: "\x01n\x01w",
+			SelectedMenuLabelText: "\x01n\x01k\x01" + "7",
+			UnselectedMenuLabelText: "\x01n\x01w\x01h",
+			MenuBorders: "\x01n\x01k\x01" + "7",
+			MenuSelectedItems: "\x01n\x01w",
+			MenuUnselectedItems: "\x01n\x01k\x01" + "7",
+			MenuHotkeys: "\x01n\x01w\x01h\x01" + "7"
 		}
-	}
+	};
 
 	// Open the SlyEdit configuration file
 	var slyEdCfgFileName = genFullPathCfgFilename("SlyEdit.cfg", gStartupPath);
@@ -2351,54 +2346,55 @@ function toggleAttr(pAttrType, pAttrs, pNewAttr)
 	// If pAttrs starts with the normal attribute, then
 	// remove it (we'll put it back on later).
 	var normalAtStart = false;
-	if (pAttrs.search(/^N/) == 0)
+	if (pAttrs.search(/^\x01N/) == 0)
 	{
 		normalAtStart = true;
 		pAttrs = pAttrs.substr(2);
 	}
 
 	// Prepend the attribute control character to the new attribute
-	var newAttr = "" + pNewAttr;
+	var newAttr = "\x01" + pNewAttr;
 
-	// Set a regex for searching & replacing
-	var regex = "";
+	// Set a regexStr for searching & replacing
+	var regexStr = "";
 	switch (pAttrType)
 	{
 		case FORE_ATTR: // Foreground attribute
-			regex = /K|R|G|Y|B|M|C|W/g;
+			regexStr = "\x01K|\x01R|\x01G|\x01Y|\x01B|\x01M|\x01C|\x01W";
 			break;
 		case BKG_ATTR: // Background attribute
-			regex = /0|1|2|3|4|5|6|7/g;
+			regexStr = "x01" + "0|\x01" + "1|\x01" + "2|\x01" + "3|\x01" + "4|\x01" + "5|\x01" + "6|\x01" + "7";
 			break;
 		case SPECIAL_ATTR: // Special attribute
-			//regex = /H|I|N/g;
+			//regexStr = /\x01H|\x01I|\x01N/g;
 			index = pAttrs.search(newAttr);
 			if (index > -1)
-			pAttrs = pAttrs.replace(newAttr, "");
+                pAttrs = pAttrs.replace(newAttr, "");
 			else
-			pAttrs += newAttr;
+                pAttrs += newAttr;
 			break;
 		default:
 			break;
 	}
 
-	// If regex is not blank, then search & replace on it in
+	// If regexStr is not blank, then search & replace on it in
 	// pAttrs.
-	if (regex != "")
+	if (regexStr != "")
 	{
+        var regex = new RegExp(regexStr, 'g');
 		pAttrs = removeAttrIfExists(pAttrs, newAttr);
-		// If the regex is found, then replace it.  Otherwise,
+		// If the regexStr is found, then replace it.  Otherwise,
 		// add pNewAttr to the attribute string.
 		if (pAttrs.search(regex) > -1)
-			pAttrs = pAttrs.replace(regex, "" + pNewAttr);
+			pAttrs = pAttrs.replace(regex, "\x01" + pNewAttr);
 		else
-			pAttrs += "" + pNewAttr;
+			pAttrs += "\x01" + pNewAttr;
 	}
 
 	// If pAttrs started with the normal attribute, then
 	// put it back on.
 	if (normalAtStart)
-		pAttrs = "N" + pAttrs;
+		pAttrs = "\x01N" + pAttrs;
 
 	return pAttrs;
 }
@@ -2459,13 +2455,13 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
 			if (trimIndex == -1)
 				trimIndex = pLineArr[i].length - trimLen;
 			// Trim the text, and remove leading spaces from it too.
-			trimmedText = pLineArr[i].substr(trimIndex).replace(/^ +/, "");
+			var trimmedText = pLineArr[i].substr(trimIndex).replace(/^ +/, "");
 			pLineArr[i] = pLineArr[i].substr(0, trimIndex);
 			if (i < pLineArr.length - 1)
 			{
 				// Append a space to the end of the trimmed text if it doesn't have one.
 				if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
-					trimmedText += " "
+					trimmedText += " ";
 				// Prepend the trimmed text to the next line.  If the next line's index
 				// is within the paragraph we're wrapping, then go ahead and prepend the
 				// text to the next line.  Otherwise, add a new line to the array and
@@ -4416,8 +4412,8 @@ function consolePauseWithESCChars(pCfgObj)
 	// "@EXEC:" (to execute a script), default to a "press a key" message.
 	var pausePromptText = bbs.text(Pause); // 563: The "Press a key" text in text.dat
 	if (pausePromptText.toUpperCase().indexOf("@EXEC:") > -1)
-		pausePromptText = "\1n\1c[ Press a key ] ";
-	console.print("\1n" + pausePromptText);
+		pausePromptText = "\x01n\x01c[ Press a key ] ";
+	console.print("\x01n" + pausePromptText);
 	getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO, pCfgObj);
 }
 
@@ -4434,8 +4430,8 @@ function consolePauseWithoutText()
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
 // string defined by KEY_PAGE_UP or EY_PAGE_DOWN,
-// respectively.  Also, F1-F5 will be returned as "\1F1"
-// through "\1F5", respectively.
+// respectively.  Also, F1-F5 will be returned as "\x01F1"
+// through "\x01F5", respectively.
 // Thanks goes to Psi-Jack for the original impementation
 // of this function.
 //

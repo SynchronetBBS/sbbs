@@ -1,5 +1,3 @@
-// $Id: SlyEdit_IceStuff.js,v 1.29 2019/06/06 03:50:47 nightfox Exp $
-
 /* This contains IceEdit-specific functions for SlyEdit.
  *
  * Author: Eric Oulashin (AKA Nightfox)
@@ -15,6 +13,8 @@
  * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
  * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
  */
+
+"use strict";
 
 if (typeof(require) === "function")
 {
@@ -103,7 +103,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// on an 80-column screen width.
 	var fieldWidth = (console.screen_columns * (29/80)).toFixed(0);
 	var screenText = gToName.substr(0, fieldWidth);
-	console.print("\1n" + randomTwoColorString(VERTICAL_SINGLE,
+	console.print("\x01n" + randomTwoColorString(VERTICAL_SINGLE,
 	                                            gConfigSettings.iceColors.BorderColor1,
 	                                            gConfigSettings.iceColors.BorderColor2) +
 				  gConfigSettings.iceColors.TopInfoBkgColor + " " +
@@ -144,7 +144,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Subject
 	fieldWidth = (console.screen_columns * (54/80)).toFixed(0);
 	screenText = gMsgSubj.substr(0, fieldWidth);
-	console.print("\1n" + randomTwoColorString(VERTICAL_SINGLE,
+	console.print("\x01n" + randomTwoColorString(VERTICAL_SINGLE,
 	                                           gConfigSettings.iceColors.BorderColor1,
 	                                           gConfigSettings.iceColors.BorderColor2) +
 	                                           gConfigSettings.iceColors.TopInfoBkgColor + " " +
@@ -175,7 +175,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 		console.print(" ");
 
 	// Insert/overwrite mode
-	console.print(" " + gConfigSettings.iceColors.EditMode + pInsertMode + " n" +
+	console.print(" " + gConfigSettings.iceColors.EditMode + pInsertMode + " \x01n" +
 	              randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.iceColors.BorderColor1,
 	                                                    gConfigSettings.iceColors.BorderColor2));
 	
@@ -184,17 +184,17 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Generate this border line only once, for efficiency.
 	if (typeof(redrawScreen_IceStyle.msgAreaBorder) == "undefined")
 	{
-      redrawScreen_IceStyle.msgAreaBorder = "n"
+      redrawScreen_IceStyle.msgAreaBorder = "\x01n"
                          + randomTwoColorString(LEFT_T_SINGLE + HORIZONTAL_SINGLE,
                                                 gConfigSettings.iceColors.BorderColor1,
                                                 gConfigSettings.iceColors.BorderColor2)
       // User #, padded with high-black dim block characters, 5 characters for a screen
       // that's 80 characters wide.
-                       + "h" + THIN_RECTANGLE_LEFT + "#k";
+                       + "\x01h" + THIN_RECTANGLE_LEFT + "#\x01k";
       fieldWidth = (console.screen_columns * (5/80)).toFixed(0) - user.number.toString().length;
       for (var i = 0; i < fieldWidth; ++i)
          redrawScreen_IceStyle.msgAreaBorder += BLOCK1;
-      redrawScreen_IceStyle.msgAreaBorder += "c" + user.number
+      redrawScreen_IceStyle.msgAreaBorder += "\x01c" + user.number
                                            + gConfigSettings.iceColors.BorderColor1
                                            + THIN_RECTANGLE_RIGHT;
 
@@ -215,8 +215,8 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
                                                              gConfigSettings.iceColors.BorderColor2);
 
       // Write the message area name
-      redrawScreen_IceStyle.msgAreaBorder += "h" + gConfigSettings.iceColors.BorderColor1
-                  + THIN_RECTANGLE_LEFT + " " + iceText(msgAreaName, "w") + " h"
+      redrawScreen_IceStyle.msgAreaBorder += "\x01h" + gConfigSettings.iceColors.BorderColor1
+                  + THIN_RECTANGLE_LEFT + " " + iceText(msgAreaName, "\x01w") + " \x01h"
                   + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
 
       // Calculate the field width for the node number field.
@@ -235,12 +235,12 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
                                                             gConfigSettings.iceColors.BorderColor2);
 
       // Output the node # field
-      redrawScreen_IceStyle.msgAreaBorder += "h" + gConfigSettings.iceColors.BorderColor1
-                         + THIN_RECTANGLE_LEFT + iceText("Node", "w") + "nb:hk";
+      redrawScreen_IceStyle.msgAreaBorder += "\x01h" + gConfigSettings.iceColors.BorderColor1
+                         + THIN_RECTANGLE_LEFT + iceText("Node", "\x01w") + "\x01n\x01b:\x01h\x01k";
       fieldWidth -= bbs.node_num.toString().length;
       for (var i = 0; i < fieldWidth; ++i)
          redrawScreen_IceStyle.msgAreaBorder += BLOCK1;
-      redrawScreen_IceStyle.msgAreaBorder += "c" + bbs.node_num
+      redrawScreen_IceStyle.msgAreaBorder += "\x01c" + bbs.node_num
                          + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
 
       // Write the last 2 characters of top border
@@ -267,7 +267,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 
 function refreshSubjectOnScreen_IceStyle(pX, pY, pLength, pText)
 {
-	console.print("\1n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopSubjectColor);
+	console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopSubjectColor);
 	console.gotoxy(pX, pY);
 	printf("%-" + pLength + "s", pText.substr(0, pLength));
 }
@@ -293,15 +293,15 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
    if (typeof(DisplayTextAreaBottomBorder_IceStyle.border) == "undefined")
    {
       // Build the string of CTRL key combinations that will be displayed
-      var ctrlKeyHelp = "n" + gConfigSettings.iceColors.KeyInfoLabelColor
-                      + "CTRL nhb(nwAhb)n"
+      var ctrlKeyHelp = "\x01n" + gConfigSettings.iceColors.KeyInfoLabelColor
+                      + "CTRL \x01n\x01h\x01b(\x01n\x01wA\x01h\x01b)\x01n"
                       + gConfigSettings.iceColors.KeyInfoLabelColor + "Abort";
       if (pUseQuotes)
       {
-         ctrlKeyHelp += " nhb(nwQhb)n"
+         ctrlKeyHelp += " \x01n\x01h\x01b(\x01n\x01wQ\x01h\x01b)\x01n"
                       + gConfigSettings.iceColors.KeyInfoLabelColor + "Quote";
       }
-      ctrlKeyHelp += " nhb(nwZhb)n"
+      ctrlKeyHelp += " \x01n\x01h\x01b(\x01n\x01wZ\x01h\x01b)\x01n"
                    + gConfigSettings.iceColors.KeyInfoLabelColor + "Save";
 
       // Start the border text with the first 2 border characters
@@ -311,9 +311,9 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
                randomTwoColorString(LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE,
                                     gConfigSettings.iceColors.BorderColor1,
                                     gConfigSettings.iceColors.BorderColor2)
-             + "h" + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_LEFT
-             + iceText("Registered To: " + system.operator.substr(0, 20), "w")
-             + "h" + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
+             + "\x01h" + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_LEFT
+             + iceText("Registered To: " + system.operator.substr(0, 20), "\x01w")
+             + "\x01h" + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
       // Append border characters up until the point we'll have to write the CTRL key
       // help text.
       var screenText = "";
@@ -326,7 +326,7 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
                                                                 gConfigSettings.iceColors.BorderColor2);
 
       // CTRL key help and the remaining 2 characters in the border.
-      DisplayTextAreaBottomBorder_IceStyle.border += "h" + gConfigSettings.iceColors.BorderColor1
+      DisplayTextAreaBottomBorder_IceStyle.border += "\x01h" + gConfigSettings.iceColors.BorderColor1
                   + THIN_RECTANGLE_LEFT + ctrlKeyHelp + gConfigSettings.iceColors.BorderColor1
                   + THIN_RECTANGLE_RIGHT
                   + randomTwoColorString(HORIZONTAL_SINGLE + LOWER_RIGHT_SINGLE,
@@ -357,11 +357,11 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
 	if (typeof(DisplayBottomHelpLine_IceStyle.helpText) == "undefined")
 	{
 		// This line contains the copyright mesage & ESC key help
-		var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "\1w") + "\1c\1h"
+		var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "\x01w") + "\x01c\x01h"
 		               + EDITOR_VERSION.toString() + "   "
-		               + iceText("Copyright", "\1w") + " \1c\1h" + COPYRIGHT_YEAR + " "
-		               + iceText("Eric Oulashin", "\1w") + " \1n\1b" + DOT_CHAR + " "
-		               + iceText("Press ESCape For Help", "\1w");
+		               + iceText("Copyright", "\x01w") + " \x01c\x01h" + COPYRIGHT_YEAR + " "
+		               + iceText("Eric Oulashin", "\x01w") + " \x01n\x01b" + DOT_CHAR + " "
+		               + iceText("Press ESCape For Help", "\x01w");
 		// Calculate the starting position to center the help text, and front-pad
 		// DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
 		var xPos = (console.screen_columns / 2).toFixed(0)
@@ -380,7 +380,7 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
 	// Display the help text on the screen
 	console.gotoxy(1, lineNum);
 	console.print(DisplayBottomHelpLine_IceStyle.helpText);
-	console.print("\1n");
+	console.print("\x01n");
 	console.cleartoeol();
 }
 
@@ -499,7 +499,7 @@ function promptYesNo_IceStyle(pQuestion, pDefaultYes)
 
    // Print the question, and highlight "yes" or "no", depending on
    // the value of pDefaultYes.
-   console.print(iceText(pQuestion + "? ", "w"));
+   console.print(iceText(pQuestion + "? ", "\x01w"));
    displayIceYesNoText(pDefaultYes);
 
    // yesNoX contains the horizontal position for the "Yes" & "No" text.
@@ -553,16 +553,16 @@ function displayTime_IceStyle(pTimeStr)
 {
 	console.gotoxy(console.screen_columns-7, 2);
 	if (pTimeStr == null)
-		console.print("n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopTimeColor + getCurrentTimeStr());
+		console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopTimeColor + getCurrentTimeStr());
 	else
-		console.print("n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopTimeColor + pTimeStr);
+		console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopTimeColor + pTimeStr);
 }
 
 // Displays the number of minutes remaining on the screen.
 function displayTimeRemaining_IceStyle()
 {
    var fieldWidth = (console.screen_columns * (4/80)).toFixed(0);
-	var formatStr = "n" + gConfigSettings.iceColors.TopInfoBkgColor
+	var formatStr = "\x01n" + gConfigSettings.iceColors.TopInfoBkgColor
 	              + gConfigSettings.iceColors.TopTimeLeftColor + "%-"
 	              + fieldWidth + "s";
 	var startX = console.screen_columns - fieldWidth - 5;
@@ -589,20 +589,20 @@ function iceText(pString, pColor, pBkgColor)
 		return "";
 
 	// Set the color.  Default to blue.
-	var color = "b";
+	var color = "\x01b";
 	if ((typeof(pColor) != "undefined") && (pColor != null))
       color = pColor;
 
    // Set the background color.  Default to normal black.
-   var bkgColor = "nk";
+   var bkgColor = "\x01n\x01k";
    if ((typeof(pBkgColor) != "undefined") && (pBkgColor != null))
       bkgColor = pBkgColor;
 
 	// Create a copy of the string without any control characters,
 	// and then add our coloring to it.
 	pString = strip_ctrl(pString);
-	var returnString = "n" + bkgColor + color;
-	var lastColor = "n" + color;
+	var returnString = "\x01n" + bkgColor + color;
+	var lastColor = "\x01n" + color;
 	var character = "";
 	for (var i = 0; i < pString.length; ++i)
 	{
@@ -613,9 +613,9 @@ function iceText(pString, pColor, pBkgColor)
 		{
          // If the last color was not the normal color, then append
          // the normal color to returnString.
-         if (lastColor != "n" + color)
-            returnString += "n" + bkgColor + color;
-			lastColor = "n" + color;
+         if (lastColor != "\x01n" + color)
+            returnString += "\x01n" + bkgColor + color;
+			lastColor = "\x01n" + color;
 		}
 		// Lower-case letter: Make it bright with the passed-in color.
 		else if (character.match(/[a-z]/) != null)
@@ -623,27 +623,27 @@ function iceText(pString, pColor, pBkgColor)
 			// If this is the first character or if the last color was
 			// not the bright color, then append the bright color to
 			// returnString.
-			if ((i == 0) || (lastColor != ("h" + color)))
-            returnString += "h" + color;
-			lastColor = "h" + color;
+			if ((i == 0) || (lastColor != ("\x01h" + color)))
+            returnString += "\x01h" + color;
+			lastColor = "\x01h" + color;
 		}
 		// Number: Make it bright cyan
 		else if (character.match(/[0-9]/) != null)
 		{
          // If the last color was not bright cyan, then append
          // bright cyan to returnString.
-         if (lastColor != "hc")
-            returnString += "hc";
-			lastColor = "hc";
+         if (lastColor != "\x01h\x01c")
+            returnString += "\x01h\x01c";
+			lastColor = "\x01h\x01c";
 		}
 		// All else: Make it bright blue
 		else
 		{
          // If the last color was not bright cyan, then append
          // bright cyan to returnString.
-         if (lastColor != "hb")
-            returnString += "hb";
-			lastColor = "hb";
+         if (lastColor != "\x01h\x01b")
+            returnString += "\x01h\x01b";
+			lastColor = "\x01h\x01b";
 		}
 
 		// Append the character from pString.
@@ -678,8 +678,8 @@ function doIceESCMenu(pY, pCanCrossPost)
 	var promptText = "Select An Option:  ";
 
 	console.gotoxy(1, pY);
-	console.print(iceText(promptText, "\1w"));
-	console.cleartoeol("\1n");
+	console.print(iceText(promptText, "\x01w"));
+	console.cleartoeol("\x01n");
 	// Input loop
 	var lastMenuItem = (pCanCrossPost ? ICE_ESC_MENU_CROSS_POST : ICE_ESC_MENU_SPELL_CHECK);
 	var userChoice = ICE_ESC_MENU_SAVE;
@@ -693,73 +693,73 @@ function doIceESCMenu(pY, pCanCrossPost)
 		switch (userChoice)
 		{
 			case ICE_ESC_MENU_SAVE:
-				console.print(iceStyledPromptText("Save", true) + "\1n ");
-				console.print(iceStyledPromptText("Abort", false) + "\1n ");
-				console.print(iceStyledPromptText("Edit", false) + "\1n ");
-				console.print(iceStyledPromptText("Settings", false) + "\1n ");
-				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("Save", true) + "\x01n ");
+				console.print(iceStyledPromptText("Abort", false) + "\x01n ");
+				console.print(iceStyledPromptText("Edit", false) + "\x01n ");
+				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
+				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
 				if (pCanCrossPost)
-				console.print("\1n " + iceStyledPromptText("Cross-post", false));
+				console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_ABORT:
-				console.print(iceStyledPromptText("Save", false) + "\1n ");
-				console.print(iceStyledPromptText("Abort", true) + "\1n ");
-				console.print(iceStyledPromptText("Edit", false) + "\1n ");
-				console.print(iceStyledPromptText("Settings", false) + "\1n ");
-				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("Save", false) + "\x01n ");
+				console.print(iceStyledPromptText("Abort", true) + "\x01n ");
+				console.print(iceStyledPromptText("Edit", false) + "\x01n ");
+				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
+				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
 				if (pCanCrossPost)
-					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_EDIT:
-				console.print(iceStyledPromptText("Save", false) + "\1n ");
-				console.print(iceStyledPromptText("Abort", false) + "\1n ");
-				console.print(iceStyledPromptText("Edit", true) + "\1n ");
-				console.print(iceStyledPromptText("Settings", false) + "\1n ");
-				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("Save", false) + "\x01n ");
+				console.print(iceStyledPromptText("Abort", false) + "\x01n ");
+				console.print(iceStyledPromptText("Edit", true) + "\x01n ");
+				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
+				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
 				if (pCanCrossPost)
-					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_SETTINGS:
-				console.print(iceStyledPromptText("Save", false) + "\1n ");
-				console.print(iceStyledPromptText("Abort", false) + "\1n ");
-				console.print(iceStyledPromptText("Edit", false) + "\1n ");
-				console.print(iceStyledPromptText("Settings", true) + "\1n ");
-				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("Save", false) + "\x01n ");
+				console.print(iceStyledPromptText("Abort", false) + "\x01n ");
+				console.print(iceStyledPromptText("Edit", false) + "\x01n ");
+				console.print(iceStyledPromptText("Settings", true) + "\x01n ");
+				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
 				if (pCanCrossPost)
-					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_HELP:
-				console.print(iceStyledPromptText("Save", false) + "\1n ");
-				console.print(iceStyledPromptText("Abort", false) + "\1n ");
-				console.print(iceStyledPromptText("Edit", false) + "\1n ");
-				console.print(iceStyledPromptText("Settings", false) + "\1n ");
-				console.print(iceStyledPromptText("Help", true) + "\1n ");
+				console.print(iceStyledPromptText("Save", false) + "\x01n ");
+				console.print(iceStyledPromptText("Abort", false) + "\x01n ");
+				console.print(iceStyledPromptText("Edit", false) + "\x01n ");
+				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
+				console.print(iceStyledPromptText("Help", true) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
 				if (pCanCrossPost)
-					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_SPELL_CHECK:
-				console.print(iceStyledPromptText("Save", false) + "\1n ");
-				console.print(iceStyledPromptText("Abort", false) + "\1n ");
-				console.print(iceStyledPromptText("Edit", false) + "\1n ");
-				console.print(iceStyledPromptText("Settings", false) + "\1n ");
-				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("Save", false) + "\x01n ");
+				console.print(iceStyledPromptText("Abort", false) + "\x01n ");
+				console.print(iceStyledPromptText("Edit", false) + "\x01n ");
+				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
+				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", true));
 				if (pCanCrossPost)
-					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 				break;
 			case ICE_ESC_MENU_CROSS_POST:
-				console.print(iceStyledPromptText("Save", false) + "\1n ");
-				console.print(iceStyledPromptText("Abort", false) + "\1n ");
-				console.print(iceStyledPromptText("Edit", false) + "\1n ");
-				console.print(iceStyledPromptText("Settings", false) + "\1n ");
-				console.print(iceStyledPromptText("Help", false) + "\1n ");
-				console.print(iceStyledPromptText("sPlchk", false) + "\1n ");
+				console.print(iceStyledPromptText("Save", false) + "\x01n ");
+				console.print(iceStyledPromptText("Abort", false) + "\x01n ");
+				console.print(iceStyledPromptText("Edit", false) + "\x01n ");
+				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
+				console.print(iceStyledPromptText("Help", false) + "\x01n ");
+				console.print(iceStyledPromptText("sPlchk", false) + "\x01n ");
 				console.print(iceStyledPromptText("Cross-post", true));
 				break;
 		}
@@ -817,7 +817,7 @@ function doIceESCMenu(pY, pCanCrossPost)
 	}
 
 	// Make sure special text attributes are cleared.
-	console.print("\1n");
+	console.print("\x01n");
 
 	// Now that the user has made a choice, set userAction
 	switch (userChoice)
@@ -866,18 +866,18 @@ function iceStyledPromptText(pText, pHighlight)
                     + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT;
       else
          styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT
-                    + iceText(pText, "w") + gConfigSettings.iceColors.UnselectedOptionBorderColor
+                    + iceText(pText, "\x01w") + gConfigSettings.iceColors.UnselectedOptionBorderColor
                     + THIN_RECTANGLE_RIGHT;
    }
    else
    {
       if (pHighlight)
          styledText = gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT
-                    + "n4hy" + pText.substr(0, 1) + "c" + pText.substr(1) + "n"
+                    + "\x01n\x01" + "4\x01h\x01y" + pText.substr(0, 1) + "\x01c" + pText.substr(1) + "\x01n"
                     + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT;
       else
          styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT
-                    + iceText(pText, "c") + gConfigSettings.iceColors.UnselectedOptionBorderColor
+                    + iceText(pText, "\x01c") + gConfigSettings.iceColors.UnselectedOptionBorderColor
                     + THIN_RECTANGLE_RIGHT;
    }
    return styledText;
@@ -899,16 +899,16 @@ function displayIceYesNoText(pYesSelected)
                        THIN_RECTANGLE_RIGHT + gConfigSettings.iceColors.UnselectedOptionBorderColor +
                        "  " + THIN_RECTANGLE_LEFT + gConfigSettings.iceColors.UnselectedOptionTextColor +
                        "NO" + gConfigSettings.iceColors.UnselectedOptionBorderColor +
-                       THIN_RECTANGLE_RIGHT + "n");
+                       THIN_RECTANGLE_RIGHT + "\x01n");
       }
       else
       {
          console.print(gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
-                       "n4hyYcesn" + gConfigSettings.iceColors.SelectedOptionBorderColor +
+                       "\x01n\x01" + "4\x01h\x01yY\x01ces\x01n" + gConfigSettings.iceColors.SelectedOptionBorderColor +
                        THIN_RECTANGLE_RIGHT + gConfigSettings.iceColors.UnselectedOptionBorderColor +
-                       "  " + THIN_RECTANGLE_LEFT + "nhcNnco" +
+                       "  " + THIN_RECTANGLE_LEFT + "\x01n\x01h\x01cN\x01n\x01co" +
                        gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
-                       "n");
+                       "\x01n");
       }
    }
    else
@@ -921,16 +921,16 @@ function displayIceYesNoText(pYesSelected)
                        "  " + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
                        gConfigSettings.iceColors.SelectedOptionTextColor + "NO" +
                        gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
-                       "n");
+                       "\x01n");
       }
       else
       {
          console.print(gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT +
-                       "nhcYnces" + gConfigSettings.iceColors.UnselectedOptionBorderColor +
+                       "\x01n\x01h\x01cY\x01n\x01ces" + gConfigSettings.iceColors.UnselectedOptionBorderColor +
                        THIN_RECTANGLE_RIGHT + "  " + gConfigSettings.iceColors.SelectedOptionBorderColor +
-                       THIN_RECTANGLE_LEFT + "n4hyNcon" +
+                       THIN_RECTANGLE_LEFT + "\x01n\x01" + "4\x01h\x01yN\x01co\x01n" +
                        gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
-                       "n");
+                       "\x01n");
       }
    }
 }
