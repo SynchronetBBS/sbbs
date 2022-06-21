@@ -49,6 +49,8 @@
  *                              line.
 */
 
+"use strict";
+
 if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_UPPER");
@@ -88,10 +90,10 @@ if (system.version_num < 31900)
 {
 	if (user.is_sysop)
 	{
-		var message = "\1n\1h\1y\1i* Warning:\1n\1h\1w Digital Distortion File Lister "
-		            + "requires version \1g3.19\1w or\r\n"
-		            + "higher of Synchronet.  This BBS is using version \1g" + system.version
-		            + "\1w.\1n";
+		var message = "\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w Digital Distortion File Lister "
+		            + "requires version \x01g3.19\x01w or\r\n"
+		            + "higher of Synchronet.  This BBS is using version \x01g" + system.version
+		            + "\x01w.\x01n";
 		console.crlf();
 		console.print(message);
 		console.crlf();
@@ -139,35 +141,35 @@ gListIdxes.descriptionStart = gListIdxes.fileSizeEnd;
 gListIdxes.descriptionEnd = console.screen_columns - 1; // Leave 1 character remaining on the screen
 // Colors
 var gColors = {
-	filename: "\1n\1b\1h",
-	fileSize: "\1n\1m\1h",
-	desc: "\1n\1w",
-	bkgHighlight: "\1n\1" + "4",
-	filenameHighlight: "\1c\1h",
-	fileSizeHighlight: "\1c\1h",
-	descHighlight: "\1c\1h",
-	fileTimestamp: "\1g\1h",
-	fileInfoWindowBorder: "\1r",
-	fileInfoWindowTitle: "\1g",
-	errorBoxBorder: "\1g\1h",
-	errorMessage: "\1y\1h",
-	successMessage: "\1c",
+	filename: "\x01n\x01b\x01h",
+	fileSize: "\x01n\x01m\x01h",
+	desc: "\x01n\x01w",
+	bkgHighlight: "\x01n\x01" + "4",
+	filenameHighlight: "\x01c\x01h",
+	fileSizeHighlight: "\x01c\x01h",
+	descHighlight: "\x01c\x01h",
+	fileTimestamp: "\x01g\x01h",
+	fileInfoWindowBorder: "\x01r",
+	fileInfoWindowTitle: "\x01g",
+	errorBoxBorder: "\x01g\x01h",
+	errorMessage: "\x01y\x01h",
+	successMessage: "\x01c",
 
-	batchDLInfoWindowBorder: "\1r",
-	batchDLInfoWindowTitle: "\1g",
-	confirmFileActionWindowBorder: "\1r",
-	confirmFileActionWindowWindowTitle: "\1g",
+	batchDLInfoWindowBorder: "\x01r",
+	batchDLInfoWindowTitle: "\x01g",
+	confirmFileActionWindowBorder: "\x01r",
+	confirmFileActionWindowWindowTitle: "\x01g",
 
-	fileAreaMenuBorder: "\1b",
-	fileNormalBkg: "\1" + "4",
-	fileAreaNum: "\1w",
-	fileAreaDesc: "\1w",
-	fileAreaNumItems: "\1w",
+	fileAreaMenuBorder: "\x01b",
+	fileNormalBkg: "\x01" + "4",
+	fileAreaNum: "\x01w",
+	fileAreaDesc: "\x01w",
+	fileAreaNumItems: "\x01w",
 
-	fileAreaMenuHighlightBkg: "\1" + "7",
-	fileAreaNumHighlight: "\1b",
-	fileAreaDescHighlight: "\1b",
-	fileAreaNumItemsHighlight: "\1b"
+	fileAreaMenuHighlightBkg: "\x01" + "7",
+	fileAreaNumHighlight: "\x01b",
+	fileAreaDescHighlight: "\x01b",
+	fileAreaNumItemsHighlight: "\x01b"
 };
 
 
@@ -235,12 +237,12 @@ if (listPopRetObj.exitNow)
 if (gFileList.length == 0)
 {
 	console.crlf();
-	console.print("\1n\1c");
+	console.print("\x01n\x01c");
 	if (gScriptMode == MODE_LIST_CURDIR)
 		console.print("There are no files in the current directory.");
 	else
 		console.print("No files were found.");
-	console.print("\1n");
+	console.print("\x01n");
 	console.crlf();
 	console.pause();
 	exit(0);
@@ -248,7 +250,7 @@ if (gFileList.length == 0)
 
 
 // Clear the screen and display the header lines
-console.clear("\1n");
+console.clear("\x01n");
 displayFileLibAndDirHeader();
 // Construct and display the menu/command bar at the bottom of the screen
 var fileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
@@ -311,12 +313,12 @@ while (continueDoingFileList)
 		{
 			if (actionRetObj.reDrawHeaderTextOnly)
 			{
-				console.print("\1n");
+				console.print("\x01n");
 				displayFileLibAndDirHeader(true); // Will move the cursor where it needs to be
 			}
 			else if (actionRetObj.reDrawListerHeader)
 			{
-				console.print("\1n");
+				console.print("\x01n");
 				console.gotoxy(1, 1);
 				displayFileLibAndDirHeader();
 			}
@@ -403,7 +405,7 @@ while (continueDoingFileList)
 							gFileListMenu.WriteItemAtItsLocation(idxNum, isSelected, false);
 						}
 						else
-							console.print("\1n\r\nNot drawing idx " + idxNum + "\r\n\1p");
+							console.print("\x01n\r\nNot drawing idx " + idxNum + "\r\n\x01p");
 					}
 				}
 			}
@@ -537,15 +539,15 @@ function showFileInfo(pFileList, pFileListMenu)
 	// Make sure the displayed filename isn't too crazy long
 	var frameInnerWidth = frameWidth - 2; // Without borders
 	var adjustedFilename = shortenFilename(fileMetadata.name, frameInnerWidth, false);
-	var fileInfoStr = "\1n\1wFilename";
+	var fileInfoStr = "\x01n\x01wFilename";
 	if (adjustedFilename.length < fileMetadata.name.length)
 		fileInfoStr += " (shortened)";
 	fileInfoStr += ":\r\n";
-	fileInfoStr += gColors.filename + adjustedFilename +  "\1n\1w\r\n";
+	fileInfoStr += gColors.filename + adjustedFilename +  "\x01n\x01w\r\n";
 	// Note: File size can also be retrieved by calling a FileBase's get_size(fileMetadata.name)
 	// TODO: Shouldn't need the max length here
-	fileInfoStr += "Size: " + gColors.fileSize + getFileSizeStr(fileMetadata.size, 99999) + "\1n\1w\r\n";
-	fileInfoStr += "Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileMetadata.time) + "\1n\1w\r\n"
+	fileInfoStr += "Size: " + gColors.fileSize + getFileSizeStr(fileMetadata.size, 99999) + "\x01n\x01w\r\n";
+	fileInfoStr += "Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileMetadata.time) + "\x01n\x01w\r\n"
 	fileInfoStr += "\r\n";
 
 	// File library/directory information
@@ -553,8 +555,8 @@ function showFileInfo(pFileList, pFileListMenu)
 	var dirIdx = file_area.dir[dirCode].index;
 	var libDesc = file_area.lib_list[libIdx].description;
 	var dirDesc =  file_area.dir[dirCode].description;
-	fileInfoStr += "\1c\1hLib\1g: \1n\1c" + libDesc.substr(0, frameInnerWidth-5) + "\1n\1w\r\n";
-	fileInfoStr += "\1c\1hDir\1g: \1n\1c" + dirDesc.substr(0, frameInnerWidth-5) + "\1n\1w\r\n";
+	fileInfoStr += "\x01c\x01hLib\x01g: \x01n\x01c" + libDesc.substr(0, frameInnerWidth-5) + "\x01n\x01w\r\n";
+	fileInfoStr += "\x01c\x01hDir\x01g: \x01n\x01c" + dirDesc.substr(0, frameInnerWidth-5) + "\x01n\x01w\r\n";
 	fileInfoStr += "\r\n";
 
 	// fileMetadata should have extdDesc, but check just in case
@@ -596,16 +598,16 @@ function showFileInfo(pFileList, pFileListMenu)
 				if (typeof(fileMetadata[prop]) === "string" && fileMetadata[prop].length == 0)
 					continue;
 				var propName = prop.charAt(0).toUpperCase() + prop.substr(1);
-				fileInfoStr += "\r\n\1n\1c\1h" + propName + "\1g:\1n\1c ";
+				fileInfoStr += "\r\n\x01n\x01c\x01h" + propName + "\x01g:\x01n\x01c ";
 				if (prop == "added")
 					fileInfoStr += strftime("%Y-%m-%d %H:%M:%S", fileMetadata.added);
 				else
 					fileInfoStr += fileMetadata[prop].toString().substr(0, frameInnerWidth);
-				fileInfoStr += "\1n\1w";
+				fileInfoStr += "\x01n\x01w";
 			}
 		}
 	}
-	fileInfoStr += "\1n\1w";
+	fileInfoStr += "\x01n\x01w";
 
 	// Construct & draw a frame with the file information & do the input loop
 	// for the frame until the user closes the frame.
@@ -669,10 +671,10 @@ function viewFile(pFileList, pFileListMenu)
 
 	// View the file
 	console.gotoxy(1, console.screen_rows);
-	console.print("\1n");
+	console.print("\x01n");
 	console.crlf();
 	var successfullyViewed = bbs.view_file(fullyPathedFilename);
-	console.print("\1n");
+	console.print("\x01n");
 	if (gPauseAfterViewingFile || !successfullyViewed)
 		console.pause();
 
@@ -780,7 +782,7 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 				var rightFormatStr = "%" + +(frameUpperLeftX+frameWidth-1) + "s";
 				var lastFrameRow = frameUpperLeftY + frameHeight - 1;
 				var lastRow = console.screen_rows - 1;
-				console.print("\1n");
+				console.print("\x01n");
 				for (var screenRow = gNumHeaderLinesDisplayed+1; screenRow <= lastRow; ++screenRow)
 				{
 					console.gotoxy(1, screenRow);
@@ -797,13 +799,13 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 				// Build a frame with batch DL queue stats and prompt the user if they want to
 				// download their batch DL queue
 				var frameTitle = "Download your batch queue (Y/N)?";
-				// \1cFiles: \1h1 \1n\1c(\1h100 \1n\1cMax)  Credits: 0  Bytes: \1h2,228,254 \1n\1c Time: 00:09:40
+				// \x01cFiles: \x01h1 \x01n\x01c(\x01h100 \x01n\x01cMax)  Credits: 0  Bytes: \x01h2,228,254 \x01n\x01c Time: 00:09:40
 				// Note: The maximum number of allowed files in the batch download queue doesn't seem to
 				// be available to JavaScript.
 				var totalQueueSize = batchDLQueueStats.totalSize + pFileList[pFileListMenu.selectedItemIdx].size;
 				var totalQueueCost = batchDLQueueStats.totalCost + pFileList[pFileListMenu.selectedItemIdx].cost;
-				var queueStats = "\1n\1cFiles: \1h" + batchDLQueueStats.numFilesInQueue + "  \1n\1cCredits: \1h"
-				               + totalQueueCost + "\1n\1c  Bytes: \1h" + numWithCommas(totalQueueSize) + "\1n\1w\r\n";
+				var queueStats = "\x01n\x01cFiles: \x01h" + batchDLQueueStats.numFilesInQueue + "  \x01n\x01cCredits: \x01h"
+				               + totalQueueCost + "\x01n\x01c  Bytes: \x01h" + numWithCommas(totalQueueSize) + "\x01n\x01w\r\n";
 				for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
 				{
 					queueStats += shortenFilename(batchDLQueueStats.filenames[i].filename, frameInnerWidth, false) + "\r\n";
@@ -825,7 +827,7 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 				{
 					retObj.reDrawListerHeader = true;
 					retObj.reDrawCmdBar = true;
-					console.print("\1n");
+					console.print("\x01n");
 					console.gotoxy(1, console.screen_rows);
 					console.crlf();
 					bbs.batch_download();
@@ -842,7 +844,7 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 			// Build a frame object to show the names of the files that failed to be added to the
 			// user's batch DL queue
 			var frameTitle = "Failed to add these files to batch DL queue";
-			var fileListStr = "\1n\1w";
+			var fileListStr = "\x01n\x01w";
 			for (var i = 0; i < filenamesFailed.length; ++i)
 				fileListStr += shortenFilename(filenamesFailed[i], frameInnerWidth, false) + "\r\n";
 			var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
@@ -889,7 +891,7 @@ function getUserDLQueueStats()
 		// See if a section exists for the filename
 		//File.iniGetAllObjects([name_property] [,prefix=none] [,lowercase=false] [,blanks=false])
 		var allIniObjs = batchDLFile.iniGetAllObjects();
-		console.print("\1n\r\n");
+		console.print("\x01n\r\n");
 		for (var i = 0; i < allIniObjs.length; ++i)
 		{
 			if (typeof(allIniObjs[i]) === "object")
@@ -927,10 +929,10 @@ function displayHelpScreen()
 {
 	var retObj = getDefaultActionRetObj();
 
-	console.clear("\1n");
+	console.clear("\x01n");
 	// Display program information
-	displayTextWithLineBelow("Digital Distortion File Lister", true, "\1n\1c\1h", "\1k\1h")
-	console.center("\1n\1cVersion \1g" + LISTER_VERSION + " \1w\1h(\1b" + LISTER_DATE + "\1w)");
+	displayTextWithLineBelow("Digital Distortion File Lister", true, "\x01n\x01c\x01h", "\x01k\x01h")
+	console.center("\x01n\x01cVersion \x01g" + LISTER_VERSION + " \x01w\x01h(\x01b" + LISTER_DATE + "\x01w)");
 	console.crlf();
 
 	// If listing files in a directory, display information about the current file directory.
@@ -938,18 +940,18 @@ function displayHelpScreen()
 	{
 		var libIdx = file_area.dir[bbs.curdir_code].lib_index;
 		var dirIdx = file_area.dir[bbs.curdir_code].index;
-		console.print("\1n\1cCurrent file library: \1g" + file_area.lib_list[libIdx].description);
+		console.print("\x01n\x01cCurrent file library: \x01g" + file_area.lib_list[libIdx].description);
 		console.crlf();
-		console.print("\1cCurrent file directory: \1g" + file_area.dir[bbs.curdir_code].description);
+		console.print("\x01cCurrent file directory: \x01g" + file_area.dir[bbs.curdir_code].description);
 		console.crlf();
-		console.print("\1cThere are \1g" + file_area.dir[bbs.curdir_code].files + " \1cfiles in this directory.");
+		console.print("\x01cThere are \x01g" + file_area.dir[bbs.curdir_code].files + " \x01cfiles in this directory.");
 	}
 	else if (gScriptMode == MODE_SEARCH_FILENAME)
-		console.print("\1n\1cCurrently performing a filename search");
+		console.print("\x01n\x01cCurrently performing a filename search");
 	else if (gScriptMode == MODE_SEARCH_DESCRIPTION)
-		console.print("\1n\1cCurrently performing a description search");
+		console.print("\x01n\x01cCurrently performing a description search");
 	else if (gScriptMode == MODE_NEW_FILE_SEARCH)
-		console.print("\1n\1cCurrently performing a new file search");
+		console.print("\x01n\x01cCurrently performing a new file search");
 	console.crlf();
 	console.crlf();
 
@@ -971,7 +973,7 @@ function displayHelpScreen()
 	console.print(helpStr);
 	// Display the commands available
 	var commandStrWidth = 8;
-	var printfStr = "\1n\1c\1h%-" + commandStrWidth + "s\1g: \1n\1c%s\r\n";
+	var printfStr = "\x01n\x01c\x01h%-" + commandStrWidth + "s\x01g: \x01n\x01c%s\r\n";
 	printf(printfStr, "I", "Display extended file information");
 	printf(printfStr, "V", "View the file");
 	printf(printfStr, "B", "Flag the file(s) for batch download");
@@ -982,7 +984,7 @@ function displayHelpScreen()
 	}
 	printf(printfStr, "?", "Show this help screen");
 	printf(printfStr, "Q", "Quit back to the BBS");
-	console.print("\1n");
+	console.print("\x01n");
 	console.crlf();
 	//console.pause();
 
@@ -1036,7 +1038,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 		height: fileLibMenu.size.height + 1 // + 1 because of the label above the menu
 	};
 	console.gotoxy(fileLibMenu.pos.x, fileLibMenu.pos.y-1);
-	printf("\1n\1c\1h|\1n\1c%-" + +(fileLibMenu.size.width-1) + "s\1n", "Choose a destination area");
+	printf("\x01n\x01c\x01h|\x01n\x01c%-" + +(fileLibMenu.size.width-1) + "s\x01n", "Choose a destination area");
 	// Prompt the user which directory to move the file to
 	var chosenDirCode = null;
 	var continueOn = true;
@@ -1450,7 +1452,7 @@ function DDFileMenuBar_constructPromptText()
 	var numSolidBlocks = console.screen_columns - numInnerChars - 11;
 	var numSolidBlocksPerSide = Math.floor(numSolidBlocks / 2);
 	// Build the prompt text: Start with the left blocks
-	this.promptText = "\1n\1w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4;
+	this.promptText = "\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4;
 	for (var i = 0; i < numSolidBlocksPerSide; ++i)
 		this.promptText += BLOCK4;
 	this.promptText += THIN_RECTANGLE_LEFT;
@@ -1471,10 +1473,10 @@ function DDFileMenuBar_constructPromptText()
 		this.promptText += this.getDDFileMenuBarItemText(this.cmdArray[i].itemText, selected, withTrailingBlock);
 	}
 	// Add the right-side blocks
-	this.promptText += "\1w" + THIN_RECTANGLE_RIGHT;
+	this.promptText += "\x01w" + THIN_RECTANGLE_RIGHT;
 	for (var i = 0; i < numSolidBlocksPerSide; ++i)
 		this.promptText += BLOCK4;
-	this.promptText += BLOCK3 + BLOCK2 + BLOCK1 + "\1n";
+	this.promptText += BLOCK3 + BLOCK2 + BLOCK1 + "\x01n";
 }
 // For the DDFileMenuBar class: Gets the text for a prompt item based on its index
 function DDFileMenuBar_getItemTextFromIdx(pIdx)
@@ -1505,11 +1507,11 @@ function DDFileMenuBar_refreshWithNewAction(pCmdIdx)
 	// Re-draw the last item text with regular colors
 	var itemText = this.getItemTextFromIdx(this.currentCommandIdx);
 	console.gotoxy(this.cmdArray[this.currentCommandIdx].pos, this.pos.y);
-	console.print("\1n" + this.getDDFileMenuBarItemText(itemText, false, false));
+	console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, false, false));
 	// Draw the new item text with selected colors
 	itemText = this.getItemTextFromIdx(pCmdIdx);
 	console.gotoxy(this.cmdArray[pCmdIdx].pos, this.pos.y);
-	console.print("\1n" + this.getDDFileMenuBarItemText(itemText, true, false));
+	console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, true, false));
 	console.gotoxy(this.pos.x+strip_ctrl(this.promptText).length-1, this.pos.y);
 
 	this.lastCommandIdx = this.currentCommandIdx;
@@ -1539,14 +1541,14 @@ function DDFileMenuBar_getDDFileMenuBarItemText(pText, pSelected, pWithTrailingB
 	var firstChar = pText.length > 0 ? pText.charAt(0) : "";
 	var restOfText = pText.length > 1 ? pText.substr(1, pText.length - 1) : "";
 	// Build the item text and return it
-	var itemText = "\1n";
+	var itemText = "\x01n";
 	if (selected)
-		itemText += "\1" + "1\1r\1h" + firstChar + "\1n\1" + "1\1k" + restOfText;
+		itemText += "\x01" + "1\x01r\x01h" + firstChar + "\x01n\x01" + "1\x01k" + restOfText;
 	else
-		itemText += "\1" + "6\1c\1h" + firstChar + "\1n\1" + "6\1k" + restOfText;
-	itemText += "\1n";
+		itemText += "\x01" + "6\x01c\x01h" + firstChar + "\x01n\x01" + "6\x01k" + restOfText;
+	itemText += "\x01n";
 	if (withTrailingBlock)
-		itemText += "\1w" + THIN_RECTANGLE_RIGHT + THIN_RECTANGLE_LEFT + "\1n";
+		itemText += "\x01w" + THIN_RECTANGLE_RIGHT + THIN_RECTANGLE_LEFT + "\x01n";
 	return itemText;
 }
 // For the DDFileMenuBar class: Increments to the next menu item and refreshes the
@@ -1828,11 +1830,11 @@ function displayBorderedFrameAndDoInputLoop(pFrameX, pFrameY, pFrameWidth, pFram
 		return;
 
 	// Display the border for the frame
-	var keyHelpStr = "\1n\1c\1hQ\1b/\1cEnter\1b/\1cESC\1y: \1gClose\1b";
-	var scrollLoopNavHelp = "\1c\1hUp\1b/\1cDn\1b/\1cHome\1b/\1cEnd\1b/\1cPgup\1b/\1cPgDn\1y: \1gNav";
+	var keyHelpStr = "\x01n\x01c\x01hQ\x01b/\x01cEnter\x01b/\x01cESC\x01y: \x01gClose\x01b";
+	var scrollLoopNavHelp = "\x01c\x01hUp\x01b/\x01cDn\x01b/\x01cHome\x01b/\x01cEnd\x01b/\x01cPgup\x01b/\x01cPgDn\x01y: \x01gNav";
 	if (console.screen_columns >= 80)
 		keyHelpStr += ", " + scrollLoopNavHelp;
-	var borderColor = (typeof(pBorderColor) === "string" ? pBorderColor : "\1r");
+	var borderColor = (typeof(pBorderColor) === "string" ? pBorderColor : "\x01r");
 	drawBorder(pFrameX, pFrameY, pFrameWidth, pFrameHeight, borderColor, "double", pFrameTitle, pTitleColor, keyHelpStr);
 
 	// Construct the frame window for the file info
@@ -1849,7 +1851,7 @@ function displayBorderedFrameAndDoInputLoop(pFrameX, pFrameY, pFrameWidth, pFram
 	var scrollbarObj = new ScrollBar(frameObj, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
 	// Put the file info string in the frame window, then start the
 	// user input loop for the frame
-	frameObj.putmsg(pFrameContents, "\1n");
+	frameObj.putmsg(pFrameContents, "\x01n");
 	var lastUserInput = doFrameInputLoop(frameObj, scrollbarObj, pFrameContents, pAdditionalQuitKeys);
 	//infoFrame.bottom();
 
@@ -1974,32 +1976,32 @@ function displayFileLibAndDirHeader(pTextOnly)
 
 	var hdrTextWidth = console.screen_columns - 21;
 	var descWidth = hdrTextWidth - 11;
-	var libText = format("\1cLib \1w\1h#\1b%4d\1c: \1n\1c%-" + descWidth + "s\1n", +(libIdx+1), libDesc.substr(0, descWidth));
-	var dirText = format("\1cDir \1w\1h#\1b%4d\1c: \1n\1c%-" + descWidth + "s\1n", +(dirIdx+1), dirDesc.substr(0, descWidth));
+	var libText = format("\x01cLib \x01w\x01h#\x01b%4d\x01c: \x01n\x01c%-" + descWidth + "s\x01n", +(libIdx+1), libDesc.substr(0, descWidth));
+	var dirText = format("\x01cDir \x01w\x01h#\x01b%4d\x01c: \x01n\x01c%-" + descWidth + "s\x01n", +(dirIdx+1), dirDesc.substr(0, descWidth));
 
 	// Library line
 	if (textOnly)
 	{
 		console.gotoxy(6, 1);
-		console.print("\1n" + libText);
+		console.print("\x01n" + libText);
 		console.gotoxy(6, 2);
-		console.print("\1n" + dirText);
+		console.print("\x01n" + dirText);
 	}
 	else
 	{
-		console.print("\1n\1w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
+		console.print("\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
 		console.print(libText);
-		console.print("\1w" + THIN_RECTANGLE_RIGHT + "\1k\1h" + BLOCK4 + "\1n\1w" + THIN_RECTANGLE_LEFT +
-					  "\1g\1hDD File\1n\1w");
+		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT +
+					  "\x01g\x01hDD File\x01n\x01w");
 		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
 		console.crlf();
 		// Directory line
-		console.print("\1n\1w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
+		console.print("\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
 		console.print(dirText);
-		console.print("\1w" + THIN_RECTANGLE_RIGHT + "\1k\1h" + BLOCK4 + "\1n\1w" + THIN_RECTANGLE_LEFT +
-					  "\1g\1hLister \1n\1w");
+		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT +
+					  "\x01g\x01hLister \x01n\x01w");
 		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
-		console.print("\1n");
+		console.print("\x01n");
 
 		// List header
 		console.crlf();
@@ -2023,8 +2025,8 @@ function displayListHdrLine(pMoveToLocationFirst)
 	var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
 	var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
 	var descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
-	var formatStr = "\1n\1w\1h%-" + filenameLen + "s %" + fileSizeLen + "s %-"
-	              + +(descLen-7) + "s\1n\1w%5s\1n";
+	var formatStr = "\x01n\x01w\x01h%-" + filenameLen + "s %" + fileSizeLen + "s %-"
+	              + +(descLen-7) + "s\x01n\x01w%5s\x01n";
 	var listHdrEndText = THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1;
 	printf(formatStr, "Filename", "Size", "Description", listHdrEndText);
 }
@@ -2155,7 +2157,7 @@ function createFileLibMenu()
 	if (file_area.lib_list.length == 0)
 	{
 		console.crlf();
-		console.print("\1n\1y\1hThere are no file libraries available\1n");
+		console.print("\x01n\x01y\x01hThere are no file libraries available\x01n");
 		console.crlf();
 		console.pause();
 		return;
@@ -2203,15 +2205,15 @@ function createFileLibMenu()
 	var numDirsStart = descEnd;
 	//var numDirsEnd = numDirsStart + fileLibMenu.numDirsLen;
 	fileLibMenu.SetColors({
-		itemColor: [{start: libNumStart, end: libNumEnd, attrs: "\1n" + gColors.fileNormalBkg + gColors.fileAreaNum},
-		            {start: descStart, end:descEnd, attrs: "\1n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
-		            {start: numDirsStart, end: -1, attrs: "\1n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}],
-		selectedItemColor: [{start: libNumStart, end: libNumEnd, attrs: "\1n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumHighlight},
-		                    {start: descStart, end:descEnd, attrs: "\1n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaDescHighlight},
-		                    {start: numDirsStart, end: -1, attrs: "\1n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumItemsHighlight}]
+		itemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNum},
+		            {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
+		            {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}],
+		selectedItemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumHighlight},
+		                    {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaDescHighlight},
+		                    {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumItemsHighlight}]
 	});
 
-	fileLibMenu.topBorderText = "\1y\1hFile Libraries";
+	fileLibMenu.topBorderText = "\x01y\x01hFile Libraries";
 	// Define the menu function for getting an item
 	fileLibMenu.GetItem = function(pIdx) {
 		var menuItemObj = this.MakeItemWithRetval(pIdx);
@@ -2300,15 +2302,15 @@ function createFileDirMenu(pLibIdx)
 	var numDirsStart = descEnd;
 	//var numDirsEnd = numDirsStart + fileDirMenu.numDirsLen;
 	fileDirMenu.SetColors({
-		itemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\1n" + gColors.fileNormalBkg + gColors.fileAreaNum},
-		            {start: descStart, end:descEnd, attrs: "\1n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
-		            {start: numDirsStart, end: -1, attrs: "\1n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}],
-		selectedItemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\1n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumHighlight},
-		                    {start: descStart, end:descEnd, attrs: "\1n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaDescHighlight},
-		                    {start: numDirsStart, end: -1, attrs: "\1n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumItemsHighlight}]
+		itemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNum},
+		            {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
+		            {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}],
+		selectedItemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumHighlight},
+		                    {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaDescHighlight},
+		                    {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumItemsHighlight}]
 	});
 
-	fileDirMenu.topBorderText = "\1y\1h" + ("File directories of " + file_area.lib_list[pLibIdx].description).substr(0, fileDirMenu.size.width-2);
+	fileDirMenu.topBorderText = "\x01y\x01h" + ("File directories of " + file_area.lib_list[pLibIdx].description).substr(0, fileDirMenu.size.width-2);
 	// Define the menu function for ggetting an item
 	fileDirMenu.GetItem = function(pIdx) {
 		// Return the internal code for the directory for the item
@@ -2442,8 +2444,8 @@ function getFileSizeStr(pFileSize, pMaxLen)
 function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 {
 	var centerText = (typeof(pCenter) == "boolean" ? pCenter : false);
-	var textColor = (typeof(pTextColor) == "string" ? pTextColor : "\1n\1w");
-	var lineColor = (typeof(pLineColor) == "string" ? pLineColor : "\1n\1k\1h");
+	var textColor = (typeof(pTextColor) == "string" ? pTextColor : "\x01n\x01w");
+	var lineColor = (typeof(pLineColor) == "string" ? pLineColor : "\x01n\x01k\x01h");
 
 	// Output the text and a solid line on the next line.
 	if (centerText)
@@ -2544,9 +2546,9 @@ function displayMsgs(pMsgArray, pIsError, pWaitAndErase)
 	var titleColor = pIsError ? gColors.errorMessage : gColors.successMessage;
 	drawBorder(gErrorMsgBoxULX, gErrorMsgBoxULY, gErrorMsgBoxWidth, gErrorMsgBoxHeight,
 	           gColors.errorBoxBorder, "single", title, titleColor, "");
-	var msgColor = "\1n" + (pIsError ? gColors.errorMessage : gColors.successMessage);
+	var msgColor = "\x01n" + (pIsError ? gColors.errorMessage : gColors.successMessage);
 	var innerWidth = gErrorMsgBoxWidth - 2;
-	var msgFormatStr = msgColor + "%-" + innerWidth + "s\1n";
+	var msgFormatStr = msgColor + "%-" + innerWidth + "s\x01n";
 	for (var i = 0; i < pMsgArray.length; ++i)
 	{
 		console.gotoxy(gErrorMsgBoxULX+1, gErrorMsgBoxULY+1);
@@ -2619,7 +2621,7 @@ function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleC
 
 	// Top border
 	console.gotoxy(pX, pY);
-	console.print("\1n" + pColor);
+	console.print("\x01n" + pColor);
 	console.print(borderChars.UL);
 	var innerWidth = pWidth - 2;
 	// Include the title text in the top border, if there is any specified
@@ -2634,9 +2636,9 @@ function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleC
 		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 		var titleText = pTitle;
 		if (typeof(pTitleColor) === "string")
-			titleText = "\1n" + pTitleColor + titleTextWithoutAttrs;
-		console.print(borderChars.preText + "\1n" + substrWithAttrCodes(titleText, 0, titleLen) +
-		              "\1n" + pColor + borderChars.postText);
+			titleText = "\x01n" + pTitleColor + titleTextWithoutAttrs;
+		console.print(borderChars.preText + "\x01n" + substrWithAttrCodes(titleText, 0, titleLen) +
+		              "\x01n" + pColor + borderChars.postText);
 		if (innerWidth > 0)
 			console.print(pColor);
 	}
@@ -2666,8 +2668,8 @@ function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleC
 		innerWidth -= textLen;
 		innerWidth -= 2; // ?? Correctional
 		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
-		console.print(borderChars.preText + "\1n" + substrWithAttrCodes(pBottomBorderText, 0, textLen) +
-		              "\1n" + pColor + borderChars.postText);
+		console.print(borderChars.preText + "\x01n" + substrWithAttrCodes(pBottomBorderText, 0, textLen) +
+		              "\x01n" + pColor + borderChars.postText);
 		if (innerWidth > 0)
 			console.print(pColor);
 	}
@@ -2699,10 +2701,10 @@ function drawSeparatorLine(pX, pY, pWidth)
 		width = maxWidth;
 
 	console.gotoxy(pX, pY);
-	console.print("\1n\1g\1h");
+	console.print("\x01n\x01g\x01h");
 	for (var i = 0; i < width; ++i)
 		console.print(HORIZONTAL_SINGLE);
-	console.print("\1n");
+	console.print("\x01n");
 }
 
 // Confirms with the user to perform an action with a file or set of files
@@ -2733,7 +2735,7 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 		var filename = (typeof(pFilenames) === "string" ? pFilenames : pFilenames[0]);
 		drawSeparatorLine(1, console.screen_rows-2, console.screen_columns-1);
 		console.gotoxy(1, console.screen_rows-1);
-		console.cleartoeol("\1n");
+		console.cleartoeol("\x01n");
 		console.gotoxy(1, console.screen_rows-1);
 		var shortFilename = shortenFilename(filename, Math.floor(console.screen_columns/2), false);
 		if (pDefaultYes)
@@ -2755,7 +2757,7 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 		var frameTitle = pActionName + " files? (Y/N)";
 		var additionalQuitKeys = "yYnN";
 		var frameInnerWidth = frameWidth - 2; // Without borders; for filename lengths
-		var fileListStr = "\1n\1w";
+		var fileListStr = "\x01n\x01w";
 		for (var i = 0; i < pFilenames.length; ++i)
 			fileListStr += shortenFilename(pFilenames[i], frameInnerWidth, false) + "\r\n";
 		var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
@@ -2889,11 +2891,11 @@ function readConfigFile()
 	{
 		// Was unable to read the configuration file.  Output a warning to the user
 		// that defaults will be used and to notify the sysop.
-		console.print("\1n");
+		console.print("\x01n");
 		console.crlf();
-		console.print("\1w\1hUnable to open the configuration file: \1y" + cfgFilename);
+		console.print("\x01w\x01hUnable to open the configuration file: \x01y" + cfgFilename);
 		console.crlf();
-		console.print("\1wDefault settings will be used.  Please notify the sysop.");
+		console.print("\x01wDefault settings will be used.  Please notify the sysop.");
 		mswait(2000);
 	}
 	
@@ -2943,9 +2945,9 @@ function readConfigFile()
 					if (gColors.hasOwnProperty(setting))
 					{
 						// Trim leading & trailing spaces from the value when
-						// setting a color.  Also, replace any instances of "\1"
+						// setting a color.  Also, replace any instances of "\x01" or "\1"
 						// with the Synchronet attribute control character.
-						gColors[setting] = trimSpaces(value, true, false, true).replace(/\\1/g, "\1");
+						gColors[setting] = trimSpaces(value, true, false, true).replace(/\\[xX]01/g, "\x01").replace(/\\1/g, "\x01");
 					}
 				}
 			}
@@ -2957,11 +2959,11 @@ function readConfigFile()
 			// Was unable to read the theme file.  Output a warning to the user
 			// that defaults will be used and to notify the sysop.
 			this.cfgFileSuccessfullyRead = false;
-			console.print("\1n");
+			console.print("\x01n");
 			console.crlf();
-			console.print("\1w\1hUnable to open the theme file: \1y" + themeFilename);
+			console.print("\x01w\x01hUnable to open the theme file: \x01y" + themeFilename);
 			console.crlf();
-			console.print("\1wDefault colors will be used.  Please notify the sysop.");
+			console.print("\x01wDefault colors will be used.  Please notify the sysop.");
 			mswait(2000);
 		}
 	}
@@ -3135,8 +3137,8 @@ function populateFileList(pSearchMode)
 				filebase.close();
 				var libIdx = file_area.dir[bbs.curdir_code].lib_index;
 				console.crlf();
-				console.print("\1n\1cThere are no files in \1h" + file_area.lib_list[libIdx].description + "\1n\1c - \1h" +
-							  file_area.dir[bbs.curdir_code].description + "\1n");
+				console.print("\x01n\x01cThere are no files in \x01h" + file_area.lib_list[libIdx].description + "\x01n\x01c - \x01h" +
+							  file_area.dir[bbs.curdir_code].description + "\x01n");
 				console.crlf();
 				console.pause();
 				retObj.exitNow = true;
@@ -3162,7 +3164,7 @@ function populateFileList(pSearchMode)
 		else
 		{
 			console.crlf();
-			console.print("\1n\1h\1yUnable to open \1w" + file_area.dir[bbs.curdir_code].description + "\1n");
+			console.print("\x01n\x01h\x01yUnable to open \x01w" + file_area.dir[bbs.curdir_code].description + "\x01n");
 			console.crlf();
 			console.pause();
 			retObj.exitNow = true;
@@ -3175,7 +3177,7 @@ function populateFileList(pSearchMode)
 		var lastDirCode = "";
 
 		// Prompt the user for directory, library, or all
-		console.print("\1n");
+		console.print("\x01n");
 		console.crlf();
 		console.mnemonics(bbs.text(DirLibOrAll));
 		var validInputOptions = "DLA";
@@ -3202,11 +3204,11 @@ function populateFileList(pSearchMode)
 		var lastDirCode = "";
 
 		// Prompt the user for directory, library, or all
-		console.print("\1n");
+		console.print("\x01n");
 		console.crlf();
-		//console.print("\r\n\1c\1hFind Text in File Descriptions (no wildcards)\1n\r\n");
+		//console.print("\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\x01n\r\n");
 		console.mnemonics(bbs.text(DirLibOrAll));
-		console.print("\1n");
+		console.print("\x01n");
 		var validInputOptions = "DLA";
 		var userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
 		var searchDescription = "";
@@ -3260,16 +3262,16 @@ function populateFileList(pSearchMode)
 		*/
 
 		// Prompt the user for directory, library, or all
-		console.print("\1n");
+		console.print("\x01n");
 		console.crlf();
 		console.mnemonics(bbs.text(DirLibOrAll));
 		var validInputOptions = "DLA";
 		var userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
-		console.print("\1n");
+		console.print("\x01n");
 		console.crlf();
 		if (userInputDLA == "D" || userInputDLA == "L" || userInputDLA == "A")
 		{
-			console.print("\1n\1cSearching for files uploaded after \1h" + system.timestr(bbs.new_file_time) + "\1n");
+			console.print("\x01n\x01cSearching for files uploaded after \x01h" + system.timestr(bbs.new_file_time) + "\x01n");
 			console.crlf();
 		}
 		var searchRetObj = searchDirGroupOrAll(userInputDLA, function(pDirCode) {
@@ -3295,13 +3297,13 @@ function populateFileList(pSearchMode)
 
 	if (dirErrors.length > 0)
 	{
-		console.print("\1n\1y\1h");
+		console.print("\x01n\x01y\x01h");
 		for (var i = 0; i < dirErrors.length; ++i)
 		{
 			console.print(dirErrors[i]);
 			console.crlf();
 		}
-		console.print("\1n");
+		console.print("\x01n");
 		console.pause();
 		retObj.exitNow = true;
 		retObj.exitCode = 1;
@@ -3657,7 +3659,7 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	if (typeof(pEndScreenRow) === "number" && pEndScreenRow > firstScreenRow && pStartScreenRow <= lastScreenRow)
 		lastScreenRow = pEndScreenRow;
 	var fileDescArray = fileDesc.split("\r\n");
-	console.print("\1n");
+	console.print("\x01n");
 	// screenRowNum is to keep track of the row on the screen where the
 	// description line would be placed, in case the start row is after that
 	var screenRowNum = firstScreenRow;
@@ -3688,13 +3690,13 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	// If there is room, shoe the file date on the next line
 	if (screenRowForPrinting <= lastScreenRow && fileMetadata.hasOwnProperty("time"))
 	{
-		console.print("\1n");
+		console.print("\x01n");
 		console.gotoxy(startX, screenRowForPrinting++);
 		var dateStr = "Date: " + strftime("%Y-%m-%d", fileMetadata.time);
 		printf("%-" + maxDescLen + "s", dateStr.substr(0, maxDescLen));
 	}
 	// Clear the rest of the lines to the bottom of the list area
-	console.print("\1n");
+	console.print("\x01n");
 	while (screenRowForPrinting <= lastScreenRow)
 	{
 		console.gotoxy(startX, screenRowForPrinting++);
