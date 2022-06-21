@@ -45,7 +45,7 @@ selectedItemColor: The color to use for selected items (current default is blue
 		           below.
 itemTextCharHighlightColor: The color of a highlighted non-space character in an
                             item text (specified by having a & in the item text).
-							It's important not to specify a "\1n" in here in case
+							It's important not to specify a "\x01n" in here in case
 							the item text should have a background color.
 borderColor: The color for the borders (if borders are enabled)
 You can also call SetColors() and pass in a JS object with any or all of the
@@ -129,9 +129,9 @@ When numbered mode is enabled, you can specify the color used to display the
 item numbers.  For a non-selected item, set .colors.itemNumColor.  For selected items,
 set .colors.highlightedItemNumColor.  This is separate from the item color setting
 (.colors.itemColor).  For example:
-lbMenu.colors.itemNumColor = "\1c"; // Use cyan for the item numbers for non-selected items.
+lbMenu.colors.itemNumColor = "\x01c"; // Use cyan for the item numbers for non-selected items.
 // For the selected item, use high cyan with a blue background for the item number
-lbMenu.colors.highlightedItemNumColor = "\1" + "4\1c\1h";
+lbMenu.colors.highlightedItemNumColor = "\x01" + "4\x01c\x01h";
 
 This menu also supports multiple options selected (by default, that is not enabled).
 To enable that, set the multiSelect property to true.  When enabled, the GetVal()
@@ -155,13 +155,13 @@ lbMenu.SetItemHotkey(1, "s");
 // Show the menu and get the chosen item from the user
 var val = lbMenu.GetVal();
 // Output the chosen menu item
-console.print("\1n\r\n");
+console.print("\x01n\r\n");
 console.print("Value:" + val + ":, type: " + typeof(val) + "\r\n");
 console.pause();
 
 // Changing the normal item color to green & selected item color to bright green:
-lbMenu.colors.itemColor = "\1n\1g";
-lbMenu.colors.selectedItemColor = "\1n\1h\1g";
+lbMenu.colors.itemColor = "\x01n\x01g";
+lbMenu.colors.selectedItemColor = "\x01n\x01h\x01g";
 
 // Disabling the navigation wrap behavior:
 lbMenu.wrapNavigation = false;
@@ -263,7 +263,7 @@ lbMenu.ValidateSelectItem = function(pItemRetval) {
 		return true;
 	else
 	{
-		console.print("* Can't choose " + pItemRetval + " because blah blah blah!\r\n\1p");
+		console.print("* Can't choose " + pItemRetval + " because blah blah blah!\r\n\x01p");
 		return false;
 	}
 }
@@ -326,6 +326,8 @@ The parameters:
  pHeight: The height of the content to draw
  pSelectedItemIndexes: Optional - An object containing indexes of selected items
 */
+
+"use strict";
 
 if (typeof(require) === "function")
 {
@@ -411,16 +413,16 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.borderEnabled = false;
 	this.drawnAlready = false;
 	this.colors = {
-		itemColor: "\1n\1w\1" + "4", // Can be either a string or an array specifying colors within the item
-		selectedItemColor: "\1n\1b\1" + "7", // Can be either a string or an array specifying colors within the item
-		altItemColor: "\1n\1w\1" + "4", // Alternate item color.  Can be either a string or an array specifying colors within the item
-		altSelectedItemColor: "\1n\1b\1" + "7", // Alternate selected item color.  Can be either a string or an array specifying colors within the item
-		itemTextCharHighlightColor: "\1y\1h",
-		borderColor: "\1n\1b",
-		scrollbarScrollBlockColor: "\1h\1w",
-		scrollbarBGColor: "\1h\1k",
-		itemNumColor: "\1n",
-		highlightedItemNumColor: "\1n"
+		itemColor: "\x01n\x01w\x01" + "4", // Can be either a string or an array specifying colors within the item
+		selectedItemColor: "\x01n\x01b\x01" + "7", // Can be either a string or an array specifying colors within the item
+		altItemColor: "\x01n\x01w\x01" + "4", // Alternate item color.  Can be either a string or an array specifying colors within the item
+		altSelectedItemColor: "\x01n\x01b\x01" + "7", // Alternate selected item color.  Can be either a string or an array specifying colors within the item
+		itemTextCharHighlightColor: "\x01y\x01h",
+		borderColor: "\x01n\x01b",
+		scrollbarScrollBlockColor: "\x01h\x01w",
+		scrollbarBGColor: "\x01h\x01k",
+		itemNumColor: "\x01n",
+		highlightedItemNumColor: "\x01n"
 	};
 	// Characters to use to draw the border
 	this.borderChars = {
@@ -469,8 +471,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// codes in strings.
 	// For one that looks at the whole word having only Synchronet attribute
 	// codes, it would have ^ and $ around it, as in
-	// /^\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i
-	this.syncAttrRegex = /\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]/i;
+	// /^\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i
+	this.syncAttrRegex = /\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]/i;
 
 	// Whether or not to exit the input loop when an item is selected/submitted
 	// (i.e. with ENTER; not for toggling with multi-select)
@@ -794,7 +796,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 			if (writeTheItem)
 			{
 				console.gotoxy(curPos.x, curPos.y++);
-				console.print("\1n");
+				console.print("\x01n");
 				if (this.numberedMode)
 					printf(numberFormatStr, "");
 				var itemText = addAttrsToString(format(itemFormatStr, ""), this.colors.itemColor);
@@ -815,7 +817,7 @@ function DDLightbarMenu_DrawBorder()
 		return;
 
 	// Draw the border around the menu options
-	console.print("\1n" + this.colors.borderColor);
+	console.print("\x01n" + this.colors.borderColor);
 	// Upper border
 	console.gotoxy(this.pos.x, this.pos.y);
 	if (this.borderChars.hasOwnProperty("upperLeft") && (typeof(this.borderChars.upperLeft) == "string"))
@@ -828,7 +830,7 @@ function DDLightbarMenu_DrawBorder()
 		// Display the top border text (if any) in the top border.  Ensure the text
 		// length is no longer than the maximum possible length (lineLen).
 		var borderText = shortenStrWithAttrCodes(this.topBorderText, lineLen);
-		console.print("\1n" + borderText + "\1n" + this.colors.borderColor);
+		console.print("\x01n" + borderText + "\x01n" + this.colors.borderColor);
 		var remainingLineLen = lineLen - console.strlen(borderText);
 		for (var i = 0; i < remainingLineLen; ++i)
 			console.print(this.borderChars.top);
@@ -854,7 +856,7 @@ function DDLightbarMenu_DrawBorder()
 		// Display the bottom border text (if any) in the bottom border.  Ensure the text
 		// length is no longer than the maximum possible length (lineLen).
 		var borderText = shortenStrWithAttrCodes(this.bottomBorderText, lineLen);
-		console.print("\1n" + borderText + "\1n" + this.colors.borderColor);
+		console.print("\x01n" + borderText + "\x01n" + this.colors.borderColor);
 		var remainingLineLen = lineLen - console.strlen(borderText);
 		for (var i = 0; i < remainingLineLen; ++i)
 			console.print(this.borderChars.bottom);
@@ -903,6 +905,17 @@ function DDLightbarMenu_DrawBorder()
 function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY)
 {
 	var itemText = this.GetItemText(pIdx, pItemLen, pHighlight, pSelected);
+	// Temporary
+	if (user.is_sysop)
+	{
+		var outFile = new File("/home/erico/temp/debug.txt");
+		if (outFile.open("a"))
+		{
+			outFile.writeln(itemText);
+			outFile.close();
+		}
+	}
+	// End Temporary
 	// If this.nextDrawOnlyItemSubstr is an object with start & end properties,
 	// then create a string that is shortened from itemText from those start & end
 	// indexes, and add color to it.
@@ -912,10 +925,10 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		var len = this.nextDrawOnlyItemSubstr.end - this.nextDrawOnlyItemSubstr.start;
 		var shortenedText = substrWithAttrCodes(itemText, this.nextDrawOnlyItemSubstr.start, len);
 		console.gotoxy(pScreenX+this.nextDrawOnlyItemSubstr.start, pScreenY);
-		console.print(shortenedText + "\1n");
+		console.print(shortenedText + "\x01n");
 	}
 	else
-		console.print(itemText + "\1n");
+		console.print(itemText + "\x01n");
 }
 
 // Writes a menu item at its location on the menu.  This should only be called
@@ -979,7 +992,7 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 			// Top line
 			if (lineNum == this.pos.y)
 			{
-				console.print("\1n" + this.colors.borderColor);
+				console.print("\x01n" + this.colors.borderColor);
 				for (var posX = pStartX; posX <= lastX; ++posX)
 				{
 					console.gotoxy(posX, lineNum);
@@ -994,7 +1007,7 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 			// Bottom line
 			else if (lineNum == this.pos.y + this.size.height - 1)
 			{
-				console.print("\1n" + this.colors.borderColor);
+				console.print("\x01n" + this.colors.borderColor);
 				for (var posX = pStartX; posX <= lastX; ++posX)
 				{
 					console.gotoxy(posX, lineNum);
@@ -1017,7 +1030,7 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 					{
 						if (!printedBorderColor)
 						{
-							console.print("\1n" + this.colors.borderColor);
+							console.print("\x01n" + this.colors.borderColor);
 							printedBorderColor = true;
 						}
 						console.print(this.borderChars.left);
@@ -1026,7 +1039,7 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 					{
 						if (!printedBorderColor)
 						{
-							console.print("\1n" + this.colors.borderColor);
+							console.print("\x01n" + this.colors.borderColor);
 							printedBorderColor = true;
 						}
 						console.print(this.borderChars.right);
@@ -1077,7 +1090,7 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 	// Write the menu items
 	if (writeMenuItems)
 	{
-		var blankItemTextFormatStr = "\1n%" + itemLen + "s";
+		var blankItemTextFormatStr = "\x01n%" + itemLen + "s";
 		for (var lineNum = pStartY + this.pos.y - 1; lineNum <= lastLineNum; ++lineNum)
 		{
 			var startX = pStartX;
@@ -1103,7 +1116,7 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 			if (shortenedText.length == 0)
 				shortenedText = format(blankItemTextFormatStr, "");
 			console.gotoxy(startX, lineNum);
-			console.print(shortenedText + "\1n");
+			console.print(shortenedText + "\x01n");
 		}
 	}
 }
@@ -1235,7 +1248,7 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 					if (nextChar != " ")
 					{
 						itemText = itemText.substr(0, ampersandIndex) + this.colors.itemTextCharHighlightColor
-								 + nextChar + "\1n" + itemColor + itemText.substr(ampersandIndex+2);
+								 + nextChar + "\x01n" + itemColor + itemText.substr(ampersandIndex+2);
 					}
 				}
 			}
@@ -1271,12 +1284,12 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 		// If in numbered mode, prepend the item number to the front of the item text.
 		if (this.numberedMode)
 		{
-			var numColor = "\1n" + this.colors.itemNumColor;
+			var numColor = "\x01n" + this.colors.itemNumColor;
 			if (typeof(pHighlight) === "boolean")
 				numColor = (pHighlight ? this.colors.highlightedItemNumColor : this.colors.itemNumColor);
 			else
 				numColor = (pIdx == this.selectedItemIdx ? this.colors.highlightedItemNumColor : this.colors.itemNumColor);
-			itemText = format("\1n" + numColor + "%" + this.itemNumLen + "d \1n", pIdx+1) + itemText;
+			itemText = format("\x01n" + numColor + "%" + this.itemNumLen + "d \x01n", pIdx+1) + itemText;
 		}
 	}
 	return itemText;
@@ -1286,7 +1299,7 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 function DDLightbarMenu_Erase()
 {
 	var formatStr = "%" + this.size.width + "s"; // For use with printf()
-	console.print("\1n");
+	console.print("\x01n");
 	var curPos = { x: this.pos.x, y: this.pos.y };
 	for (var i = 0; i < this.size.height; ++i)
 	{
@@ -1879,16 +1892,16 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						if (Array.isArray(itemColor))
 						{
 							var bkgColor = getBackgroundAttrAtIdx(itemColor, this.size.width-1);
-							itemColor = "\1n\1h\1g" + bkgColor;
+							itemColor = "\x01n\x01h\x01g" + bkgColor;
 						}
-						console.print(itemColor + " " + this.multiSelectItemChar + "\1n");
+						console.print(itemColor + " " + this.multiSelectItemChar + "\x01n");
 					}
 					else
 					{
 						// Display the last 2 characters of the regular item text
 						var itemText = this.GetItemText(this.selectedItemIdx, null, true, false);
 						var textToPrint = substrWithAttrCodes(itemText, console.strlen(itemText)-2, 2);
-						console.print(textToPrint + "\1n");
+						console.print(textToPrint + "\x01n");
 					}
 				}
 			}
@@ -1907,13 +1920,13 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			var promptX = this.pos.x;
 			var promptY = this.pos.y+this.size.height;
 			console.gotoxy(promptX, promptY);
-			printf("\1n%" + this.size.width + "s", ""); // Blank out what might be on the screen already
+			printf("\x01n%" + this.size.width + "s", ""); // Blank out what might be on the screen already
 			console.gotoxy(promptX, promptY);
-			console.print("\1cItem #: \1h");
+			console.print("\x01cItem #: \x01h");
 			var userEnteredItemNum = console.getnum(numItems);
 			// Blank out the input prompt
 			console.gotoxy(promptX, promptY);
-			printf("\1n%" + this.size.width + "s", "");
+			printf("\x01n%" + this.size.width + "s", "");
 			// If the user entered a number, then get that item's return value
 			// and stop the input loop.
 			if (userEnteredItemNum > 0)
@@ -2009,7 +2022,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 
 	// Set the screen color back to normal so that text written to the screen
 	// after this looks good.
-	console.print("\1n");
+	console.print("\x01n");
 	
 	// If in multi-select mode, populate userChoices with the choices
 	// that the user selected.
@@ -2122,7 +2135,7 @@ function DDLightbarMenu_SetBorderChars(pBorderChars)
 //                                       non-space character in an item text
 //                                       (specified by having a & in the item
 //                                       text).
-//                                       It's important not to specify a "\1n"
+//                                       It's important not to specify a "\x01n"
 //                                       in here in case the item text should
 //                                       have a background color.
 //           borderColor: The color to use for the border
@@ -2263,7 +2276,7 @@ function DDLightbarMenu_DisplayInitialScrollbar(pSolidBlockStartRow, pNumSolidBl
 		{
 			if (!wroteBrightBlockColor)
 			{
-				console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+				console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
 				wroteBrightBlockColor = true;
 				wroteDimBlockColor = false;
 			}
@@ -2274,7 +2287,7 @@ function DDLightbarMenu_DisplayInitialScrollbar(pSolidBlockStartRow, pNumSolidBl
 		{
 			if (!wroteDimBlockColor)
 			{
-				console.print("\1n" + this.colors.scrollbarBGColor);
+				console.print("\x01n" + this.colors.scrollbarBGColor);
 				wroteDimBlockColor = true;
 			}
 			console.print(this.scrollbarInfo.BGChar);
@@ -2318,14 +2331,14 @@ function DDLightbarMenu_UpdateScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlo
 		{
 			// No overlap
 			// Write dim blocks over the old solid block section
-			console.print("\1n" + this.colors.scrollbarBGColor);
+			console.print("\x01n" + this.colors.scrollbarBGColor);
 			for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
 			{
 				console.gotoxy(scrollbarCol, screenY);
 				console.print(this.scrollbarInfo.BGChar);
 			}
 			// Write solid blocks in the new locations
-			console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
 			for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
 			{
 				console.gotoxy(scrollbarCol, screenY);
@@ -2336,14 +2349,14 @@ function DDLightbarMenu_UpdateScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlo
 		{
 			// There is some overlap
 			// Write dim blocks on top
-			console.print("\1n" + this.colors.scrollbarBGColor);
+			console.print("\x01n" + this.colors.scrollbarBGColor);
 			for (var screenY = pOldStartRow; screenY < pNewStartRow; ++screenY)
 			{
 				console.gotoxy(scrollbarCol, screenY);
 				console.print(this.scrollbarInfo.BGChar);
 			}
 			// Write bright blocks on the bottom
-			console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
 			for (var screenY = oldLastRow+1; screenY <= newLastRow; ++screenY)
 			{
 				console.gotoxy(scrollbarCol, screenY);
@@ -2358,14 +2371,14 @@ function DDLightbarMenu_UpdateScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlo
 		{
 			// No overlap
 			// Write dim blocks over the old solid block section
-			console.print("\1n" + this.colors.scrollbarBGColor);
+			console.print("\x01n" + this.colors.scrollbarBGColor);
 			for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
 			{
 				console.gotoxy(scrollbarCol, screenY);
 				console.print(this.scrollbarInfo.BGChar);
 			}
 			// Write solid blocks in the new locations
-			console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
 			for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
 			{
 				console.gotoxy(scrollbarCol, screenY);
@@ -2376,7 +2389,7 @@ function DDLightbarMenu_UpdateScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlo
 		{
 			// There is some overlap
 			// Write bright blocks on top
-			console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
 			var endRow = pOldStartRow;
 			for (var screenY = pNewStartRow; screenY < endRow; ++screenY)
 			{
@@ -2384,7 +2397,7 @@ function DDLightbarMenu_UpdateScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlo
 				console.print(this.scrollbarInfo.blockChar);
 			}
 			// Write dim blocks on the bottom
-			console.print("\1n" + this.colors.scrollbarBGColor);
+			console.print("\x01n" + this.colors.scrollbarBGColor);
 			endRow = pOldStartRow + numSolidBlocks;
 			for (var screenY = pNewStartRow+numSolidBlocks; screenY < endRow; ++screenY)
 			{
@@ -2798,17 +2811,17 @@ function addAttrsToString(pStr, pAttrs)
 				// the last's end, then append the gap in the string with the
 				// normal attribute
 				if ((i > 0) && (pAttrs[i].start > pAttrs[i-1].end))
-					str += "\1n" + pStr.substring(pAttrs[i-1].end, pAttrs[i].start);
+					str += "\x01n" + pStr.substring(pAttrs[i-1].end, pAttrs[i].start);
 				// If the properties for the current attrib object are all valid, append
 				// the current part of the string with the given attributes
 				if ((pAttrs[i].start >= lastEnd) && (pAttrs[i].start >= 0) && (pAttrs[i].start < pStr.length) && (pAttrs[i].end > pAttrs[i].start) && (pAttrs[i].end <= pStr.length))
-					str += "\1n" + pAttrs[i].attrs + pStr.substring(pAttrs[i].start, pAttrs[i].end);
+					str += "\x01n" + pAttrs[i].attrs + pStr.substring(pAttrs[i].start, pAttrs[i].end);
 				// For the last attribute object, allow the end index to be <= 0 or
 				// more than the length of the string to apply the attributes to the
 				// rest of the string.
 				//else if ((i == pAttrs.length-1) && (pAttrs[i].start >= lastEnd) && (pAttrs[i].start >= 0) && (pAttrs[i].start < pStr.length) && (pAttrs[i].end <= 0))
 				else if ((i == pAttrs.length-1) && (pAttrs[i].start >= lastEnd) && (pAttrs[i].start >= 0) && (pAttrs[i].start < pStr.length) && ((pAttrs[i].end <= 0) || (pAttrs[i].end > pStr.length)))
-					str += "\1n" + pAttrs[i].attrs + pStr.substring(pAttrs[i].start);
+					str += "\x01n" + pAttrs[i].attrs + pStr.substring(pAttrs[i].start);
 				lastEnd = pAttrs[i].end;
 			}
 
@@ -2816,13 +2829,13 @@ function addAttrsToString(pStr, pAttrs)
 			// with the normal attribute.
 			var theStrLen = console.strlen(str);
 			if (theStrLen < pStr.length)
-				str += "\1n" + pStr.substring(theStrLen);
+				str += "\x01n" + pStr.substring(theStrLen);
 		}
 		else
 			str = pStr;
 	}
 	else if (typeof(pAttrs) == "string")
-		str = "\1n" + pAttrs + pStr;
+		str = "\x01n" + pAttrs + pStr;
 	else
 		str = pStr;
 	return str;
@@ -2844,7 +2857,7 @@ function getBackgroundAttrAtIdx(pAttrs, pIdx)
 	// Magenta: 5
 	// Cyan: 6
 	// White/grey: 7
-	var syncBkgAttrRegex = /\1[01234567]/;
+	var syncBkgAttrRegex = /\x01[01234567]/;
 	var bkgAttr = "";
 	if (Array.isArray(pAttrs))
 	{
@@ -2935,7 +2948,7 @@ function substrWithAttrCodes(pStr, pStartIdx, pLen)
 	var len = pLen;
 	var printableCharCount = 0;
 	var syncAttrCount = 0;
-	var syncAttrRegexWholeWord = /^\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i;
+	var syncAttrRegexWholeWord = /^\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i;
 	var i = startIdx;
 	while ((printableCharCount < pLen) && (i < pStr.length))
 	{
@@ -2954,7 +2967,7 @@ function substrWithAttrCodes(pStr, pStartIdx, pLen)
 	var shortenedStr = pStr.substr(startIdx, len);
 	// Include any attribute codes that might appear before the start index
 	// in the string
-	var attrIdx = pStr.lastIndexOf("\1", startIdx);
+	var attrIdx = pStr.lastIndexOf("\x01", startIdx);
 	if (attrIdx >= 0)
 	{
 		var attrStartIdx = -1;
@@ -3015,8 +3028,8 @@ function printedToRealIdxInStr(pStr, pIdx)
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
 // string defined by KEY_PAGE_UP or EY_PAGE_DOWN,
-// respectively.  Also, F1-F5 will be returned as "\1F1"
-// through "\1F5", respectively.
+// respectively.  Also, F1-F5 will be returned as "\x01F1"
+// through "\x01F5", respectively.
 // Thanks goes to Psi-Jack for the original impementation
 // of this function.
 //
@@ -3080,4 +3093,56 @@ function getKeyWithESCChars(pGetKeyMode, pInputTimeoutMS)
 	}
 
 	return userInput;
+}
+
+
+
+function logStackTrace(levels) {
+    var callstack = [];
+    var isCallstackPopulated = false;
+    try {
+        i.dont.exist += 0; //doesn't exist- that's the point
+    } catch (e) {
+        if (e.stack) { //Firefox / chrome
+            var lines = e.stack.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                    callstack.push(lines[i]);
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+        else if (window.opera && e.message) { //Opera
+            var lines = e.message.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
+                    var entry = lines[i];
+                    //Append next line also since it has the file info
+                    if (lines[i + 1]) {
+                        entry += " at " + lines[i + 1];
+                        i++;
+                    }
+                    callstack.push(entry);
+                }
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+    }
+    if (!isCallstackPopulated) { //IE and Safari
+        var currentFunction = arguments.callee.caller;
+        while (currentFunction) {
+            var fn = currentFunction.toString();
+            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
+            callstack.push(fname);
+            currentFunction = currentFunction.caller;
+        }
+    }
+    if (levels) {
+        console.print(callstack.slice(0, levels).join("\r\n"));
+    }
+    else {
+        console.print(callstack.join("\r\n"));
+    }
 }

@@ -1,5 +1,3 @@
-// $Id: SlyEdit.js,v 1.74 2020/04/05 21:03:43 nightfox Exp $
-
 /* This is a text editor for Synchronet designed to mimic the look & feel of
  * DCTEdit and IceEdit, since neither of those editors have been developed
  * for quite a while and still exist only as 16-bit DOS applications.
@@ -150,7 +148,11 @@
  *                              Removed high-ascii characters from the SlyEdit JS files; used
  *                              ascii() with their numeric ASCII values instead. This should avoid
  *                              issues with text editors converting characters incorrectly.
+ * 2022-06-21 Eric Oulashin     Version 1.79
+ *                              JS strict mode enabled. Small JS issues fixed.
  */
+
+"use strict";
 
 /* Command-line arguments:
  1 (argv[0]): Filename to read/edit
@@ -198,9 +200,6 @@ else
 	load(gStartupPath + "SlyEdit_Misc.js");
 }
 
-// Determine whether the user settings file exists
-const userSettingsFileExistedOnStartup = file_exists(gUserSettingsFilename);
-
 // Load program settings from SlyEdit.cfg, and load the user configuratio nsettings
 var gConfigSettings = ReadSlyEditConfigFile();
 var gUserSettings = ReadUserSettingsFile(gConfigSettings);
@@ -220,13 +219,13 @@ const SPELL_CHECK_PAUSE_MS = 1000;
 // Exit if the Synchronet version is below the minimum.
 if (system.version_num < 31400)
 {
-	console.print("\1n");
+	console.print("\x01n");
 	console.crlf();
-	console.print("\1n\1h\1y\1i* Warning:\1n\1h\1w " + EDITOR_PROGRAM_NAME);
-	console.print(" " + "requires version \1g3.14\1w or");
+	console.print("\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w " + EDITOR_PROGRAM_NAME);
+	console.print(" " + "requires version \x01g3.14\x01w or");
 	console.crlf();
-	console.print("higher of Synchronet.  This BBS is using version \1g");
-	console.print(system.version + "\1w.  Please notify the sysop.");
+	console.print("higher of Synchronet.  This BBS is using version \x01g");
+	console.print(system.version + "\x01w.  Please notify the sysop.");
 	console.crlf();
 	console.pause();
 	exit(1); // 1: Aborted
@@ -235,19 +234,19 @@ if (system.version_num < 31400)
 // than 80 characters wide, then exit.
 if (!console.term_supports(USER_ANSI))
 {
-	console.print("\1n\r\n\1h\1yERROR: \1w" + EDITOR_PROGRAM_NAME +
-	              " requires an ANSI terminal.\1n\r\n\1p");
+	console.print("\x01n\r\n\x01h\x01yERROR: \x01w" + EDITOR_PROGRAM_NAME +
+	              " requires an ANSI terminal.\x01n\r\n\x01p");
 	exit(1); // 1: Aborted
 }
 if (console.screen_columns < 80)
 {
-	console.print("\1n\r\n\1h\1w" + EDITOR_PROGRAM_NAME + " requires a terminal width of at least 80 characters.\1n\r\n\1p");
+	console.print("\x01n\r\n\x01h\x01w" + EDITOR_PROGRAM_NAME + " requires a terminal width of at least 80 characters.\x01n\r\n\x01p");
 	exit(1); // 1: Aborted
 }
 
 // Constants
-const EDITOR_VERSION = "1.78";
-const EDITOR_VER_DATE = "2022-06-09";
+const EDITOR_VERSION = "1.79";
+const EDITOR_VER_DATE = "2022-06-21";
 
 
 // Program variables
@@ -274,10 +273,10 @@ if (console.screen_columns < 80)
 */
 
 // Colors
-var gQuoteWinTextColor = "\1n\1" + "7\1k";   // Normal text color for the quote window (DCT default)
-var gQuoteLineHighlightColor = "\1n\1w"; // Highlighted text color for the quote window (DCT default)
-var gTextAttrs = "\1n\1w";               // The text color for edit mode
-var gQuoteLineColor = "\1n\1c";          // The text color for quote lines
+var gQuoteWinTextColor = "\x01n\x01" + "7\x01k";   // Normal text color for the quote window (DCT default)
+var gQuoteLineHighlightColor = "\x01n\x01w"; // Highlighted text color for the quote window (DCT default)
+var gTextAttrs = "\x01n\x01w";               // The text color for edit mode
+var gQuoteLineColor = "\x01n\x01c";          // The text color for quote lines
 var gUseTextAttribs = false;              // Will be set to true if text colors start to be used
 
 // gQuotePrefix contains the text to prepend to quote lines.
@@ -378,7 +377,7 @@ gCrossPostMsgSubs.numSubBoards = function () {
 		}
 	}
 	return numMsgSubs;
-}
+};
 
 
 
@@ -393,7 +392,7 @@ var fpDisplayBottomHelpLine = null;
 var fpDisplayTime = null;
 var fpDisplayTimeRemaining = null;
 var fpCallESCMenu = null;
-var fpRefreshSubjectonScreen = null;
+var fpRefreshSubjectOnScreen = null;
 var fpGlobalScreenVarsSetup = null;
 // Subject screen position & length (for changing the subject).  Note: These
 // will be set in the IceStuff or DCTStuff scripts, depending on which theme
@@ -550,7 +549,7 @@ console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_";
 // status settings are restored upon script exit, even if there is a runtime error.
 js.on_exit("console.ctrlkey_passthru = gOldPassthru; bbs.sys_status = gOldStatus;");
 // Enable delete line in SyncTERM (Disabling ANSI Music in the process)
-console.write("\033[=1M");
+console.write("\x1B[=1M"); // 1B (27): ESC
 console.clear();
 
 var gMsgAreaInfo = null; // Will store the value returned by getCurMsgInfo().
@@ -570,7 +569,7 @@ if (dropFileName != undefined)
 		if (dropFile.exists && dropFile.open("r"))
 		{
 			dropFileTime = dropFile.date;
-			info = dropFile.readAll();
+			var info = dropFile.readAll();
 			dropFile.close();
 
 			gFromName = info[0];
@@ -657,7 +656,7 @@ var exitCode = doEditLoop();
 
 // Clear the screen and display the end-of-program information (if the setting
 // is enabled).
-console.clear("\1n");
+console.clear("\x01n");
 if (gConfigSettings.displayEndInfoScreen)
 {
    displayProgramExitInfo(false);
@@ -798,9 +797,9 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 			}
 		}
 
-		console.print("\1n");
+		console.print("\x01n");
 		console.crlf();
-		console.print("\1n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
+		console.print("\x01n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
 		console.crlf();
 		// If the user is posting in the originally-chosen sub-board and other sub-boards,
 		// then make a log in the BBS log that the user is posting a message (for
@@ -819,14 +818,14 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 			if (gCrossPostMsgSubs.propIsFuncName(grpIndex))
 				continue;
 
-			console.print("\1n" + gConfigSettings.genColors.msgPostedGrpHdr + msg_area.grp_list[grpIndex].description + ":");
+			console.print("\x01n" + gConfigSettings.genColors.msgPostedGrpHdr + msg_area.grp_list[grpIndex].description + ":");
 			console.crlf();
 			for (var subCode in gCrossPostMsgSubs[grpIndex])
 			{
 				if (subCode == gMsgAreaInfo.subBoardCode)
 				{
-					printf("\1n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-48s", msg_area.sub[subCode].description.substr(0, 48));
-					console.print("\1n " + gConfigSettings.genColors.msgPostedOriginalAreaText + "(original message area)");
+					printf("\x01n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-48s", msg_area.sub[subCode].description.substr(0, 48));
+					console.print("\x01n " + gConfigSettings.genColors.msgPostedOriginalAreaText + "(original message area)");
 				}
 				// If subCode is not the user's current sub, then if the user is allowed
 				// to post in that sub, then post the message there.
@@ -840,7 +839,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					            " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
 
 					// Write the cross-posting message area on the user's screen.
-					printf("\1n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
+					printf("\x01n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
 					if (msg_area.sub[subCode].can_post)
 					{
 						// If the user's auto-sign setting is enabled, then auto-sign
@@ -861,13 +860,13 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 						{
 							savedTheMessage = true;
 							crossPosted = true;
-							console.print("\1n\1h\1b[\1n\1g" + CHECK_CHAR + "\1n\1h\1b]\1n");
+							console.print("\x01n\x01h\x01b[\x01n\x01g" + CHECK_CHAR + "\x01n\x01h\x01b]\x01n");
 						}
 						else
 						{
-							console.print("\1n\1h\1b[\1rX\1b]\1n");
+							console.print("\x01n\x01h\x01b[\x01rX\x01b]\x01n");
 							console.crlf();
-							console.print("   \1n\1h\1r*\1n " + postMsgErrStr);
+							console.print("   \x01n\x01h\x01r*\x01n " + postMsgErrStr);
 							console.crlf();
 						}
 					}
@@ -875,16 +874,16 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					{
 						// The user isn't allowed to post in the sub.  Output a message
 						// saying so.
-						console.print("\1n\1h\1b[\1rX\1b]\1n");
+						console.print("\x01n\x01h\x01b[\x01rX\x01b]\x01n");
 						console.crlf();
-						console.print("   \1n\1h\1r*\1n You're not allowed to post in this area.");
+						console.print("   \x01n\x01h\x01r*\x01n You're not allowed to post in this area.");
 						console.crlf();
 					}
 				}
 				console.crlf();
 			}
 		}
-		console.print("\1n");
+		console.print("\x01n");
 		console.crlf();
 	}
 
@@ -903,13 +902,13 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 			// will say the message was aborted, and that's normal.
 			if (crossPosted)
 			{
-				console.print("\1n\1c* Note: Your message has been cross-posted in areas other than your currently-");
+				console.print("\x01n\x01c* Note: Your message has been cross-posted in areas other than your currently-");
 				console.crlf();
 				console.print("selected message area.  Because your message was not saved for your currently-");
 				console.crlf();
 				console.print("selected message area, the BBS will say the message was aborted, even");
 				console.crlf();
-				console.print("though it was posted in those other areas.  This is normal.n");
+				console.print("though it was posted in those other areas.  This is normal.\x01n");
 				console.crlf();
 				console.crlf();
 			}
@@ -943,7 +942,7 @@ function saveMessageToFile()
 		savedTheMessage = true;
 	}
 	else
-		console.print("\1n\1r\1h* Unable to save the message!\1n\r\n");
+		console.print("\x01n\x01r\x01h* Unable to save the message!\x01n\r\n");
 }
 
 
@@ -1102,7 +1101,7 @@ function doEditLoop()
 	var curpos = {
 		x: gEditLeft,
 		y: gEditTop
-	}
+	};
 	console.gotoxy(curpos);
 
 	// initialTimeLeft and updateTimeLeft will be used to keep track of the user's
@@ -1117,7 +1116,7 @@ function doEditLoop()
 	var continueOn = true;
 	while (continueOn)
 	{
-		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN|K_NUL, gConfigSettings)
+		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN|K_NUL, gConfigSettings);
 
 		// If the cursor is at the end of the last line and the user
 		// pressed the DEL key, then treat it as a backspace.  Some
@@ -1143,7 +1142,7 @@ function doEditLoop()
 			returnCode = 1; // Aborted
 			continueOn = false;
 			console.crlf();
-			console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+			console.print("\x01n\x01h\x01r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
 			continue;
 		}
 
@@ -1168,7 +1167,7 @@ function doEditLoop()
 				else
 				{
 					// Make sure the edit color attribute is set.
-					//console.print("\1n" + gTextAttrs);
+					//console.print("\x01n" + gTextAttrs);
 					console.print(chooseEditColor());
 				}
 				break;
@@ -1207,7 +1206,7 @@ function doEditLoop()
 						returnCode = 1; // Aborted
 						continueOn = false;
 						console.crlf();
-						console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+						console.print("\x01n\x01h\x01r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
 						continue;
 					}
 				}
@@ -1233,7 +1232,7 @@ function doEditLoop()
 						chgColorRetobj.returnCode = 1; // Aborted
 						continueOn = false;
 						console.crlf();
-						console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+						console.print("\x01n\x01h\x01r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
 						continue;
 					}
 				}*/
@@ -1477,7 +1476,7 @@ function doEditLoop()
 									returnCode = 1; // Aborted
 									continueOn = false;
 									console.crlf();
-									console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+									console.print("\x01n\x01h\x01r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
 									continue;
 								}
 							}
@@ -1509,7 +1508,7 @@ function doEditLoop()
 			case KEY_INSERT:
 			case TOGGLE_INSERT_KEY:
 				toggleInsertMode(null);
-				//console.print("\1n" + gTextAttrs);
+				//console.print("\x01n" + gTextAttrs);
 				console.print(chooseEditColor());
 				console.gotoxy(curpos);
 				break;
@@ -1691,7 +1690,7 @@ function doEditLoop()
 				doUserSettings(curpos, true);
 				break;
 			case CHANGE_SUBJECT_KEY:
-				console.print("\1n");
+				console.print("\x01n");
 				console.gotoxy(gSubjPos.x, gSubjPos.y);
 				var subj = console.getstr(gSubjScreenLen, K_LINE|K_NOCRLF|K_NOSPIN|K_TRIM);
 				if (subj.length > 0)
@@ -2387,7 +2386,7 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			else
 			{
 				// Make sure the edit color attribute is set back.
-				//console.print("\1n" + gTextAttrs);
+				//console.print("\x01n" + gTextAttrs);
 				console.print(chooseEditColor());
 
 				// Blank out the data in the text line, set the data in
@@ -2950,7 +2949,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			else
 				++curpos.y;
 		}
-	}
+	};
 	// Set the current & top item indexes back into the menu, if we know them already
 	if (typeof(doQuoteSelection.selectedQuoteLineIdx) !== "undefined" && typeof(doQuoteSelection.topQuoteLineIdx) !== "undefined")
 	{
@@ -3171,7 +3170,7 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 	var endScreenRow = (pEndScreenRow != null ? pEndScreenRow : gEditBottom);
 
 	// Display the message lines
-	console.print("\1n" + gTextAttrs);
+	console.print("\x01n" + gTextAttrs);
 	var screenLine = pStartScreenRow;
 	var arrayIndex = pArrayIndex;
 	while ((screenLine <= endScreenRow) && (arrayIndex < gEditLines.length))
@@ -3223,7 +3222,7 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 	var clearRemainingScreenLines = (pClearRemainingScreenRows != null ? pClearRemainingScreenRows : true);
 	if (clearRemainingScreenLines && (screenLine <= endScreenRow))
 	{
-		console.print("\1n" + gTextAttrs);
+		console.print("\x01n" + gTextAttrs);
 		var screenLineBackup = screenLine; // So we can move the cursor back
 		clearMsgAreaToBottom(incrementLineBeforeClearRemaining ? screenLine+1 : screenLine, pIgnoreEditAreaBuffer);
 		// Move the cursor back to the end of the current text line.
@@ -3315,7 +3314,7 @@ function displayMessageRectangle(pX, pY, pWidth, pHeight, pEditLinesIndex, pClea
 	for (var rectangleLine = 0; rectangleLine < pHeight; ++rectangleLine)
 	{
 		// Output the correct color for the line
-		console.print("\1n" + (isQuoteLine(gEditLines, editLinesIndex) ? gQuoteLineColor : gTextAttrs));
+		console.print("\x01n" + (isQuoteLine(gEditLines, editLinesIndex) ? gQuoteLineColor : gTextAttrs));
 		// Go to the position on the screen
 		screenY = pY + rectangleLine;
 		console.gotoxy(pX, screenY);
@@ -3480,10 +3479,10 @@ function displayProgramInfoBox()
 	var boxHeight = 12;
 	var boxTopLeftX = Math.floor(console.screen_columns / 2) - Math.floor(boxWidth/2);
 	var boxTopLeftY = gEditTop + Math.floor(gEditHeight / 2) - Math.floor(boxHeight/2);
-	var borderBGColor = "\1b\1h\1" + "4"; // High blue with blue background
+	var borderBGColor = "\x01b\x01h\x01" + "4"; // High blue with blue background
 	// Draw the box border
 	console.gotoxy(boxTopLeftX, boxTopLeftY);
-	console.print("\1n" + borderBGColor);
+	console.print("\x01n" + borderBGColor);
 	console.print(UPPER_LEFT_SINGLE);
 	var innerWidth = boxWidth - 2;
 	for (var i = 0; i < innerWidth; ++i)
@@ -3505,7 +3504,7 @@ function displayProgramInfoBox()
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+1);
 	var boxWidthFillFormatStr = "%" + innerWidth + "s";
 	printf(boxWidthFillFormatStr, "");
-	console.print("\1w");
+	console.print("\x01w");
 	var textLine = centeredText(innerWidth, EDITOR_PROGRAM_NAME + " " + EDITOR_VERSION + " (" + EDITOR_VER_DATE + ")");
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+2);
 	console.print(textLine);
@@ -3514,9 +3513,9 @@ function displayProgramInfoBox()
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+4);
 	printf(boxWidthFillFormatStr, "");
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+5);
-	console.print("\1y");
+	console.print("\x01y");
 	console.print(centeredText(innerWidth, "BBS tools web page:"));
-	console.print("\1m");
+	console.print("\x01m");
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+6);
 	console.print(centeredText(innerWidth, "http://digdist.synchro.net/DDBBSStuff.html"));
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+7);
@@ -3524,12 +3523,12 @@ function displayProgramInfoBox()
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+8);
 	printf(boxWidthFillFormatStr, "");
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+9);
-	console.print("\1c");
+	console.print("\x01c");
 	console.print(centeredText(innerWidth, "Thanks for using " + EDITOR_PROGRAM_NAME + "!"));
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+10);
 	printf(boxWidthFillFormatStr, "");
 
-	console.print("\1n");
+	console.print("\x01n");
 	// Wait for a keypress
 	getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
 	// Erase the info box
@@ -3685,10 +3684,10 @@ function importFile(pIsSysop, pCurpos)
 	while (continueOn)
 	{
 		// Go to the last row on the screen and prompt the user for a filename
-		var promptText = "\1n\1cFile:\1h";
+		var promptText = "\x01n\x01cFile:\x01h";
 		var promptTextLen = strip_ctrl(promptText).length;
 		console.gotoxy(1, console.screen_rows);
-		console.cleartoeol("\1n");
+		console.cleartoeol("\x01n");
 		console.print(promptText);
 		var filename = console.getstr(console.screen_columns-promptTextLen-1, K_NOCRLF);
 		continueOn = (filename != "");
@@ -3749,10 +3748,10 @@ function importFile(pIsSysop, pCurpos)
 					continueOn = false;
 				}
 				else // Unable to open the file
-					writeWithPause(1, console.screen_rows, "\1y\1hUnable to open the file!", ERRORMSG_PAUSE_MS);
+					writeWithPause(1, console.screen_rows, "\x01y\x01hUnable to open the file!", ERRORMSG_PAUSE_MS);
 			}
 			else // Could not find the correct case for the file (it doesn't exist?)
-				writeWithPause(1, console.screen_rows, "\1y\1hUnable to locate the file!", ERRORMSG_PAUSE_MS);
+				writeWithPause(1, console.screen_rows, "\x01y\x01hUnable to locate the file!", ERRORMSG_PAUSE_MS);
 		}
 	}
 
@@ -3818,10 +3817,10 @@ function exportToFile(pIsSysop)
       return;
 
    // Go to the last row on the screen and prompt the user for a filename
-   var promptText = "ncFile:h";
+   var promptText = "\x01n\x01cFile:\x01h";
    var promptTextLen = strip_ctrl(promptText).length;
    console.gotoxy(1, console.screen_rows);
-   console.cleartoeol("n");
+   console.cleartoeol("\x01n");
    console.print(promptText);
    var filename = console.getstr(console.screen_columns-promptTextLen-1, K_NOCRLF);
    if (filename != "")
@@ -3839,13 +3838,13 @@ function exportToFile(pIsSysop)
                outFile.write(gEditLines[i].text);
          }
          outFile.close();
-         writeWithPause(1, console.screen_rows, "mhMessage exported.", ERRORMSG_PAUSE_MS);
+         writeWithPause(1, console.screen_rows, "\x01m\x01hMessage exported.", ERRORMSG_PAUSE_MS);
       }
       else // Could not open the file for writing
-         writeWithPause(1, console.screen_rows, "yhUnable to open the file for writing!", ERRORMSG_PAUSE_MS);
+         writeWithPause(1, console.screen_rows, "\x01y\x01hUnable to open the file for writing!", ERRORMSG_PAUSE_MS);
    }
    else // No filename specified
-      writeWithPause(1, console.screen_rows, "\1m\1hMessage not exported.", ERRORMSG_PAUSE_MS);
+      writeWithPause(1, console.screen_rows, "\x01m\x01hMessage not exported.", ERRORMSG_PAUSE_MS);
 
    // Refresh the help line on the bottom of the screen
    fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
@@ -3877,10 +3876,10 @@ function findText(pCurpos)
 		findText.searchStartIndex = 0;
 
 	// Go to the last row on the screen and prompt the user for text to find
-	var promptText = "\1n\1cText:\1h";
+	var promptText = "\x01n\x01cText:\x01h";
 	var promptTextLen = strip_ctrl(promptText).length;
 	console.gotoxy(1, console.screen_rows);
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 	console.print(promptText);
 	var searchText = console.getstr(console.screen_columns-promptTextLen-1, K_NOCRLF);
 
@@ -3949,7 +3948,7 @@ function findText(pCurpos)
 				// different color.
 				var highlightText = gEditLines[i].text.substr(textIndex, searchText.length);
 				console.gotoxy(retObj.x, retObj.y);
-				console.print("\1n\1k\1" + "4" + highlightText);
+				console.print("\x01n\x01k\x01" + "4" + highlightText);
 				mswait(TEXT_SEARCH_PAUSE_MS);
 				console.gotoxy(retObj.x, retObj.y);
 				//console.print(gTextAttrs + highlightText);
@@ -3970,8 +3969,8 @@ function findText(pCurpos)
 		if (!textFound)
 		{
 			console.gotoxy(1, console.screen_rows);
-			console.cleartoeol("\1n");
-			console.print("\1y\1hThe text wasn't found!");
+			console.cleartoeol("\x01n");
+			console.print("\x01y\x01hThe text wasn't found!");
 			mswait(ERRORMSG_PAUSE_MS);
 
 			findText.searchStartIndex = 0;
@@ -4029,7 +4028,7 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 		dictFilenames = gConfigSettings.dictionaryFilenames;
 	if (dictFilenames.length == 0)
 	{
-		writeWithPause(1, console.screen_rows, "\1y\1hThere are no dictionaries configured!\1n", ERRORMSG_PAUSE_MS);
+		writeWithPause(1, console.screen_rows, "\x01y\x01hThere are no dictionaries configured!\x01n", ERRORMSG_PAUSE_MS);
 		// Refresh the help line on the bottom of the screen
 		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
 		console.gotoxy(pCurpos.x, pCurpos.y);
@@ -4038,7 +4037,7 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 
 	// Load the dictionary file(s)
 	console.gotoxy(1, console.screen_rows);
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 	if (dictFilenames.length > 1)
 		console.print("Reading dictionaries...");
 	else
@@ -4054,7 +4053,7 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 	// return.
 	if (dictionaries.length == 0)
 	{
-		writeWithPause(1, console.screen_rows, "\1y\1hUnable to load the dictionary file(s)!\1n", ERRORMSG_PAUSE_MS);
+		writeWithPause(1, console.screen_rows, "\x01y\x01hUnable to load the dictionary file(s)!\x01n", ERRORMSG_PAUSE_MS);
 		// Refresh the help line on the bottom of the screen
 		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
 		console.gotoxy(pCurpos.x, pCurpos.y);
@@ -4256,7 +4255,7 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 				var highlightText = gEditLines[pEditLineIdx].text.substr(wordIdxInLine, currentWord.length);
 				//console.gotoxy(retObj.x, retObj.y); // Updated line position
 				console.gotoxy(oldLineX, retObj.y);   // Old line position
-				console.print("\1n\1k\1" + "4" + highlightText);
+				console.print("\x01n\x01k\x01" + "4" + highlightText);
 				mswait(SPELL_CHECK_PAUSE_MS);
 				//console.gotoxy(retObj.x, retObj.y); // Updated line position
 				console.gotoxy(oldLineX, retObj.y);   // Old line position
@@ -4378,31 +4377,31 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	var maxInputLen = txtBoxWidth - 2;
 
 	// Draw the top border of the input box
-	var borderLine = "\1n\1g" + UPPER_LEFT_SINGLE + RIGHT_T_SINGLE;
-	borderLine += "\1b\1h" + pMisspelledWord.substr(0, txtBoxWidth-4);
-	borderLine += "\1n\1g" + LEFT_T_SINGLE;
+	var borderLine = "\x01n\x01g" + UPPER_LEFT_SINGLE + RIGHT_T_SINGLE;
+	borderLine += "\x01b\x01h" + pMisspelledWord.substr(0, txtBoxWidth-4);
+	borderLine += "\x01n\x01g" + LEFT_T_SINGLE;
 	var remainingWidth = txtBoxWidth - strip_ctrl(borderLine).length - 1;
 	for (var i = 0; i < remainingWidth; ++i)
 		borderLine += HORIZONTAL_SINGLE;
-	borderLine += UPPER_RIGHT_SINGLE + "\1n";
+	borderLine += UPPER_RIGHT_SINGLE + "\x01n";
 	console.gotoxy(txtBoxX, txtBoxY);
 	console.print(borderLine);
 	// Draw the bottom border of the input box
-	borderLine = "\1g" + LOWER_LEFT_SINGLE + RIGHT_T_SINGLE;
-	borderLine += "\1c\1hEnter\1y=\1bNo change\1n\1g" + LEFT_T_SINGLE + RIGHT_T_SINGLE + "\1H\1cCtrl-C\1n\1c/\1hESC\1y=\1bEnd\1n\1g" + LEFT_T_SINGLE;
+	borderLine = "\x01g" + LOWER_LEFT_SINGLE + RIGHT_T_SINGLE;
+	borderLine += "\x01c\x01hEnter\x01y=\x01bNo change\x01n\x01g" + LEFT_T_SINGLE + RIGHT_T_SINGLE + "\x01H\x01cCtrl-C\x01n\x01c/\x01hESC\x01y=\x01bEnd\x01n\x01g" + LEFT_T_SINGLE;
 	var remainingWidth = txtBoxWidth - strip_ctrl(borderLine).length - 1;
 	for (var i = 0; i < remainingWidth; ++i)
 		borderLine += HORIZONTAL_SINGLE;
-	borderLine += LOWER_RIGHT_SINGLE + "\1n";
+	borderLine += LOWER_RIGHT_SINGLE + "\x01n";
 	console.gotoxy(txtBoxX, txtBoxY+2);
 	console.print(borderLine);
 	// Draw the side borders
-	console.print("\1n\1g");
+	console.print("\x01n\x01g");
 	console.gotoxy(txtBoxX, txtBoxY+1);
 	console.print(VERTICAL_SINGLE);
 	console.gotoxy(txtBoxX+txtBoxWidth-1, txtBoxY+1);
 	console.print(VERTICAL_SINGLE);
-	console.print("\1n");
+	console.print("\x01n");
 
 	// Go to the middle row for user input
 	var inputX = txtBoxX + 1;
@@ -4465,7 +4464,7 @@ function inInsertMode()
 // is a normal line or a quote line.
 function chooseEditColor()
 {
-   return ("\1n" + (isQuoteLine(gEditLines, gEditLinesIndex) ? gQuoteLineColor : gTextAttrs));
+   return ("\x01n" + (isQuoteLine(gEditLines, gEditLinesIndex) ? gQuoteLineColor : gTextAttrs));
 }
 
 // This function calculates the row on the screen to stop updating the
@@ -4512,7 +4511,7 @@ function updateTime(pCurpos, pMoveCursorBack)
       // Display the current time on the screen
       fpDisplayTime(currentTime);
       // Make sure the edit color attribute is set.
-      console.print("\1n" + gTextAttrs);
+      console.print("\x01n" + gTextAttrs);
       // Move the cursor back to where it was
       if (pMoveCursorBack)
          console.gotoxy(curpos);
@@ -4553,16 +4552,16 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	var curpos = {
 		x: 1,
 		y: colorSelTopLine
-	}
+	};
 	console.gotoxy(curpos);
-	console.print("\1n\1cForeground: \1w\1hK:\1n\1kBlack \1w\1hR:\1n\1rRed \1w\1hG:\1n\1gGreen \1w\1hY:\1n\1yYellow \1w\1hB:\1n\1bBlue \1w\1hM:\1n\1mMagenta \1w\1hC:\1n\1cCyan \1w\1hW:\1n\1wWhite");
-	console.cleartoeol("\1n");
+	console.print("\x01n\x01cForeground: \x01w\x01hK:\x01n\x01kBlack \x01w\x01hR:\x01n\x01rRed \x01w\x01hG:\x01n\x01gGreen \x01w\x01hY:\x01n\x01yYellow \x01w\x01hB:\x01n\x01bBlue \x01w\x01hM:\x01n\x01mMagenta \x01w\x01hC:\x01n\x01cCyan \x01w\x01hW:\x01n\x01wWhite");
+	console.cleartoeol("\x01n");
 	console.crlf();
-	console.print("\1n\1cBackground: \1w\1h0:\1n\1" + "0Black\1n \1w\1h1:\1n\1" + "1Red\1n \1w\1h2:\1n\1" + "2\1kGreen\1n \1w\1h3:\1" + "3Yellow\1n \1w\1h4:\1n\1" + "4Blue\1n \1w\1h5:\1n\1" + "5Magenta\1n \1w\1h6:\1n\1" + "6\1kCyan\1n \1w\1h7:\1n\1" + "7\1kWhite");
-	console.cleartoeol("\1n");
+	console.print("\x01n\x01cBackground: \x01w\x01h0:\x01n\x01" + "0Black\x01n \x01w\x01h1:\x01n\x01" + "1Red\x01n \x01w\x01h2:\x01n\x01" + "2\x01kGreen\x01n \x01w\x01h3:\x01" + "3Yellow\x01n \x01w\x01h4:\x01n\x01" + "4Blue\x01n \x01w\x01h5:\x01n\x01" + "5Magenta\x01n \x01w\x01h6:\x01n\x01" + "6\x01kCyan\x01n \x01w\x01h7:\x01n\x01" + "7\x01kWhite");
+	console.cleartoeol("\x01n");
 	console.crlf();
-	console.clearline("\1n");
-	console.print("\1cSpecial: \1w\1hH:\1n\1hHigh Intensity \1wI:\1n\1iBlinking \1n\1w\1hN:\1nNormal \1h\1g" + CENTERED_SQUARE + " \1n\1cChoose colors/attributes\1h\1g: \1c");
+	console.clearline("\x01n");
+	console.print("\x01cSpecial: \x01w\x01hH:\x01n\x01hHigh Intensity \x01wI:\x01n\x01iBlinking \x01n\x01w\x01hN:\x01nNormal \x01h\x01g" + CENTERED_SQUARE + " \x01n\x01cChoose colors/attributes\x01h\x01g: \x01c");
 	// Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
 	// but that outputs a CR at the end, which is undesirable.  So instead, we call
 	// getUserInputWithSetOfInputStrs (defined in SlyEdit_Misc.js).
@@ -4574,9 +4573,9 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	// If the user entered some attributes, then set them in retObj.txtAttrs.
 	if (attrCodeKeys.length > 0)
 	{
-		retObj.txtAttrs = (attrCodeKeys.charAt(0) == "N" ? "" : "\1n");
+		retObj.txtAttrs = (attrCodeKeys.charAt(0) == "N" ? "" : "\x01n");
 		for (var i = 0; i < attrCodeKeys.length; ++i)
-			retObj.txtAttrs += "\1" + attrCodeKeys.charAt(i);
+			retObj.txtAttrs += "\x01" + attrCodeKeys.charAt(i);
 	}
 
 	// Display the parts of the screen text that we covered up with the
@@ -4628,15 +4627,14 @@ function drawInitialCrossPostSelBoxTopBorder(pTopLeft, pWidth, pBorderColor, pTe
 //  pMsgSubs: Boolean - Whether or not this is being used for the message sub-boards.
 //            If true, then this will output "Toggle" for the Enter action.  Otherwise
 //            (for message groups), this will output "Select" for the Enter action.
-function drawInitialCrossPostSelBoxBottomBorder(pBottomLeft, pWidth, pBorderColor,
-                                                 pMsgSubs)
+function drawInitialCrossPostSelBoxBottomBorder(pBottomLeft, pWidth, pBorderColor, pMsgSubs)
 {
 	console.gotoxy(pBottomLeft);
 	console.print(pBorderColor + LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + RIGHT_T_SINGLE +
-	              "\1n\1h\1c\1b, \1c\1b, \1cPgUp\1b, \1cPgDn\1b, \1cHome\1b, \1cEnd\1b, \1cEnter\1y=\1b"
-	              + (pMsgSubs ? "Toggle" : "Select") + ", \1cCtrl-C\1n\1c/\1hQ\1y=\1bEnd, \1c?\1y=\1bHelp\1n"
+	              "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cPgUp\x01b, \x01cPgDn\x01b, \x01cHome\x01b, \x01cEnd\x01b, "
+				  + (pMsgSubs ? "\x01cSpace\x01y=\x01bToggle" : "\x01cEnter\x01y=\x01bSelect") + ", \x01cCtrl-C\x01n\x01c/\x01hQ\x01y=\x01bEnd, \x01c?\x01y=\x01bHelp\x01n"
 	              + pBorderColor + LEFT_T_SINGLE);
-	len = pWidth - 71;
+	var len = pWidth - 71;
 	for (var i = 0; i < len; ++i)
 		console.print(HORIZONTAL_SINGLE);
 	console.print(LOWER_RIGHT_SINGLE);
@@ -4655,17 +4653,17 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
    if (typeof(displayCrossPostHelp.helpLines) == "undefined")
    {
       displayCrossPostHelp.helpLines = new Array();
-      displayCrossPostHelp.helpLines.push("\1n\1cCross-posing allows you to post a message in more than one message");
+      displayCrossPostHelp.helpLines.push("\x01n\x01cCross-posing allows you to post a message in more than one message");
       displayCrossPostHelp.helpLines.push("area.  To select areas for cross-posting, do the following:");
-      displayCrossPostHelp.helpLines.push(" \1h1. \1n\1cChoose a message group from the list with the Enter key.");
+      displayCrossPostHelp.helpLines.push(" \x01h1. \x01n\x01cChoose a message group from the list with the Enter key.");
       displayCrossPostHelp.helpLines.push("    Alternately, you may type the number of the message group.");
-      displayCrossPostHelp.helpLines.push(" \1h2. \1n\1cIn the list of message sub-boards that appears, toggle individual");
+      displayCrossPostHelp.helpLines.push(" \x01h2. \x01n\x01cIn the list of message sub-boards that appears, toggle individual");
       displayCrossPostHelp.helpLines.push("    sub-boards with the Enter key.  Alternately, you may type the");
       displayCrossPostHelp.helpLines.push("    number of the message sub-board.");
       displayCrossPostHelp.helpLines.push("Message sub-boards that are toggled for cross-posting will include a");
-      displayCrossPostHelp.helpLines.push("check mark (" + gConfigSettings.genColors.crossPostChk + CHECK_CHAR + "\1n\1c) in the sub-board list.  Initially, your current message");
+      displayCrossPostHelp.helpLines.push("check mark (" + gConfigSettings.genColors.crossPostChk + CHECK_CHAR + "\x01n\x01c) in the sub-board list.  Initially, your current message");
       displayCrossPostHelp.helpLines.push("sub-board is enabled by default.  Also, your current message group is");
-      displayCrossPostHelp.helpLines.push("marked with an asterisk (" + gConfigSettings.genColors.crossPostMsgGrpMark + "*\1n\1c).");
+      displayCrossPostHelp.helpLines.push("marked with an asterisk (" + gConfigSettings.genColors.crossPostMsgGrpMark + "*\x01n\x01c).");
       displayCrossPostHelp.helpLines.push("To navigate the list, you may use the up & down arrow keys, PageUp and");
       displayCrossPostHelp.helpLines.push("PageDown to go to the previous & next page, Home to go to the first");
       displayCrossPostHelp.helpLines.push("page, and End to go to the last page. To end: Ctrl-C, Q, or ESC.");
@@ -4676,7 +4674,7 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
    var selBoxInnerHeight = selBoxLowerRight.y - selBoxUpperLeft.y - 1;
    var lineLen = 0;
    var screenRow = selBoxUpperLeft.y+1;
-   console.print("\1n");
+   console.print("\x01n");
    for (var i = 0; (i < displayCrossPostHelp.helpLines.length) && (screenRow < selBoxLowerRight.y); ++i)
    {
       console.gotoxy(selBoxUpperLeft.x+1, screenRow++);
@@ -4696,7 +4694,7 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
    if (screenRow < selBoxLowerRight.y)
    {
       var printfStr = "%-" + selBoxInnerWidth + "s";
-      console.print("\1n");
+      console.print("\x01n");
       for (; screenRow < selBoxLowerRight.y; ++screenRow)
       {
          console.gotoxy(selBoxUpperLeft.x+1, screenRow);
@@ -4751,11 +4749,11 @@ function doCrossPosting(pOriginalCurpos)
 		// Position the cursor after the "Cross-posting: " text in the border and
 		// write the "Choose group" text
 		console.gotoxy(pSelBoxUpperLeft.x+17, pSelBoxUpperLeft.y);
-		console.print("\1n" + gConfigSettings.genColors.listBoxBorderText + "Choose group");
+		console.print("\x01n" + gConfigSettings.genColors.listBoxBorderText + "Choose group");
 		// Re-write the border characters to overwrite the message group name
 		grpDesc = msg_area.grp_list[pGrpIndex].description.substr(0, pSelBoxInnerWidth-25);
 		// Write the updated border character(s)
-		console.print("\1n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
+		console.print("\x01n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
 		if (grpDesc.length > 3)
 		{
 			var numChars = grpDesc.length - 3;
@@ -4866,12 +4864,12 @@ function promptUserForCrossPostSubBoardCodes(pSelBoxUpperLeft, pSelBoxLowerRight
 
 	// Set up an object containing the colors to use for the items in the group/sub-board lists
 	var menuListColors = {
-		areaMark: "\1g\1h",
-		areaNum: "\1n\1w\1h",
-		desc: "\1n\1c",
-		areaNumHighlight: "\1w\1h",
-		descHighlight: "\1c",
-		bkgHighlight: "\1" + "4"
+		areaMark: "\x01g\x01h",
+		areaNum: "\x01n\x01w\x01h",
+		desc: "\x01n\x01c",
+		areaNumHighlight: "\x01w\x01h",
+		descHighlight: "\x01c",
+		bkgHighlight: "\x01" + "4"
 	};
 	
 	// Calculate the selection box width & height, with borders
@@ -4880,8 +4878,8 @@ function promptUserForCrossPostSubBoardCodes(pSelBoxUpperLeft, pSelBoxLowerRight
 	// Don't let the box's height be more than 17 characters.
 	if (selBoxHeight > 17)
 	{
-	  selBoxLowerRight.y = selBoxUpperLeft.y + 16; // For a height of 17 characters
-	  selBoxHeight = selBoxLowerRight.y - selBoxUpperLeft.y + 1;
+	  pSelBoxLowerRight.y = pSelBoxUpperLeft.y + 16; // For a height of 17 characters
+	  selBoxHeight = pSelBoxLowerRight.y - pSelBoxUpperLeft.y + 1;
 	}
 	// Inner size of the box (for the text menu items)
 	var selBoxInnerWidth = selBoxWidth - 2;
@@ -4910,11 +4908,13 @@ function promptUserForCrossPostSubBoardCodes(pSelBoxUpperLeft, pSelBoxLowerRight
 			consolePauseWithoutText();
 		}
 		else if (msgGrpMenu.lastUserInput == "Q" || msgGrpMenu.lastUserInput == CTRL_C)
-		{
 			continueOn = false;
-		}
 		else if (typeof(grpIdx) == "number")
 		{
+			// Change the bottom box text to say Space=Toggle (instead of Enter=Select)
+			drawInitialCrossPostSelBoxBottomBorder({ x: pSelBoxUpperLeft.x, y: pSelBoxLowerRight.y },
+													selBoxWidth, gConfigSettings.genColors.listBoxBorder,
+													true);
 			// Get an object of selected sub-board indexes that we can pass to
 			// the sub-board menu.
 			var selectedItemIndexes = {};
@@ -4952,6 +4952,10 @@ function promptUserForCrossPostSubBoardCodes(pSelBoxUpperLeft, pSelBoxLowerRight
 				for (var idx in selectedSubBoards)
 					gCrossPostMsgSubs.add(selectedSubBoards[idx]);
 			}
+			// Change the bottom box text back to say Enter=Select (instead of Space=Toggle)
+			drawInitialCrossPostSelBoxBottomBorder({ x: pSelBoxUpperLeft.x, y: pSelBoxLowerRight.y },
+													selBoxWidth, gConfigSettings.genColors.listBoxBorder,
+													false);
 		}
 		else
 			continueOn = false;
@@ -5189,12 +5193,11 @@ function writeCantPostErrMsg(pX, pY, pSubBoardNum, pSelBoxWidth, pSelBoxInnerWid
 {
 	var cantPostErrMsg = "You're not allowed to post in area " + pSubBoardNum + ".";
 	console.gotoxy(pX+1, pY);
-	printf("\1n\1h\1y%-" + pSelBoxInnerWidth + "s", cantPostErrMsg);
+	printf("\x01n\x01h\x01y%-" + pSelBoxInnerWidth + "s", cantPostErrMsg);
 	console.gotoxy(pX+cantPostErrMsg.length+1, pY);
 	mswait(pPauseMS);
 	// Refresh the bottom border of the selection box
-	drawInitialCrossPostSelBoxBottomBorder({ x: pX, y: pY }, pSelBoxWidth,
-	gConfigSettings.genColors.listBoxBorder, true);
+	drawInitialCrossPostSelBoxBottomBorder({ x: pX, y: pY }, pSelBoxWidth, gConfigSettings.genColors.listBoxBorder, true);
 	console.gotoxy(pCurpos);
 }
 
@@ -5291,7 +5294,7 @@ function listTextReplacements()
 	if (gNumTxtReplacements == 0)
 	{
 		var originalCurpos = console.getxy();
-		writeMsgOntBtmHelpLineWithPause("\1n\1h\1yThere are no text replacements.", ERRORMSG_PAUSE_MS);
+		writeMsgOntBtmHelpLineWithPause("\x01n\x01h\x01yThere are no text replacements.", ERRORMSG_PAUSE_MS);
 		console.print(chooseEditColor()); // Make sure the edit color is correct
 		console.gotoxy(originalCurpos);
 		return;
@@ -5328,13 +5331,13 @@ function listTextReplacements()
 	// Construct the top & bottom border strings if they don't exist already.
 	if (typeof(listTextReplacements.topBorder) == "undefined")
 	{
-		listTextReplacements.topBorder = "\1n" + gConfigSettings.genColors.listBoxBorder
-		                               + UPPER_LEFT_SINGLE + "\1n" + gConfigSettings.genColors.listBoxBorderText + "Text"
-		                               + "\1n" + gConfigSettings.genColors.listBoxBorder;
+		listTextReplacements.topBorder = "\x01n" + gConfigSettings.genColors.listBoxBorder
+		                               + UPPER_LEFT_SINGLE + "\x01n" + gConfigSettings.genColors.listBoxBorderText + "Text"
+		                               + "\x01n" + gConfigSettings.genColors.listBoxBorder;
 		for (var i = 0; i < (txtWidth-3); ++i)
 			listTextReplacements.topBorder += HORIZONTAL_SINGLE;
-		listTextReplacements.topBorder += "\1n" + gConfigSettings.genColors.listBoxBorderText
-		                               + "Replacement" + "\1n" + gConfigSettings.genColors.listBoxBorder;
+		listTextReplacements.topBorder += "\x01n" + gConfigSettings.genColors.listBoxBorderText
+		                               + "Replacement" + "\x01n" + gConfigSettings.genColors.listBoxBorder;
 		for (var i = 0; i < (txtWidth-11); ++i)
 			listTextReplacements.topBorder += HORIZONTAL_SINGLE;
 		listTextReplacements.topBorder += UPPER_RIGHT_SINGLE;
@@ -5343,26 +5346,26 @@ function listTextReplacements()
 	if (typeof(listTextReplacements.bottomBorder) == "undefined")
 	{
 		var numReplacementsStr = "Total: " + listTextReplacements.txtReplacementArr.length;
-		listTextReplacements.bottomBorder = "\1n" + gConfigSettings.genColors.listBoxBorder
-		                                  + LOWER_LEFT_SINGLE + "\1n" + gConfigSettings.genColors.listBoxBorderText
-		                                  + UP_ARROW + ", " + DOWN_ARROW + ", ESC/Ctrl-T/C=Close" + "\1n"
+		listTextReplacements.bottomBorder = "\x01n" + gConfigSettings.genColors.listBoxBorder
+		                                  + LOWER_LEFT_SINGLE + "\x01n" + gConfigSettings.genColors.listBoxBorderText
+		                                  + UP_ARROW + ", " + DOWN_ARROW + ", ESC/Ctrl-T/C=Close" + "\x01n"
 		                                  + gConfigSettings.genColors.listBoxBorder;
 		var maxNumChars = boxInfo.width - numReplacementsStr.length - 28;
 		for (var i = 0; i < maxNumChars; ++i)
 			listTextReplacements.bottomBorder += HORIZONTAL_SINGLE;
-		listTextReplacements.bottomBorder += RIGHT_T_SINGLE + "\1n"
-		                                  + gConfigSettings.genColors.listBoxBorderText + numReplacementsStr + "\1n"
+		listTextReplacements.bottomBorder += RIGHT_T_SINGLE + "\x01n"
+		                                  + gConfigSettings.genColors.listBoxBorderText + numReplacementsStr + "\x01n"
 		                                  + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE;
 		listTextReplacements.bottomBorder += LOWER_RIGHT_SINGLE;
 	}
 	// printf format strings for the list
 	if (typeof(listTextReplacements.listFormatStr) == "undefined")
 	{
-		listTextReplacements.listFormatStr = "\1n" + gConfigSettings.genColors.listBoxItemText
+		listTextReplacements.listFormatStr = "\x01n" + gConfigSettings.genColors.listBoxItemText
 		                                   + "%-" + txtWidth + "s %-" + txtWidth + "s";
 	}
 	if (typeof(listTextReplacements.listFormatStrNormalAttr) == "undefined")
-		listTextReplacements.listFormatStrNormalAttr = "\1n%-" + txtWidth + "s %-" + txtWidth + "s";
+		listTextReplacements.listFormatStrNormalAttr = "\x01n%-" + txtWidth + "s %-" + txtWidth + "s";
 
 	// Limit the box height to up to 12 lines.
 	boxInfo.height = gNumTxtReplacements + 2;
@@ -5378,7 +5381,7 @@ function listTextReplacements()
 	console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+boxInfo.height-1);
 	console.print(listTextReplacements.bottomBorder);
 	// Draw the side borders
-	console.print("\1n" + gConfigSettings.genColors.listBoxBorder);
+	console.print("\x01n" + gConfigSettings.genColors.listBoxBorder);
 	for (var i = 0; i < boxInfo.height-2; ++i)
 	{
 		console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+i+1);
@@ -5433,9 +5436,9 @@ function listTextReplacements()
 
 			// Update the page number in the top border of the box.
 			console.gotoxy(pageNumTxtStartX, boxInfo.topLeftY);
-			console.print("\1n" + gConfigSettings.genColors.listBoxBorder + RIGHT_T_SINGLE);
-			printf("\1n" + gConfigSettings.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
-			console.print("\1n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
+			console.print("\x01n" + gConfigSettings.genColors.listBoxBorder + RIGHT_T_SINGLE);
+			printf("\x01n" + gConfigSettings.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
+			console.print("\x01n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
 
 			// Just for sane appearance: Move the cursor to the first character of
 			// the first row and make it the color for the text replacements.
@@ -5444,7 +5447,7 @@ function listTextReplacements()
 		}
 
 		// Get a key from the user (upper-case) and take action based upon it.
-		userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		var userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
 		switch (userInput)
 		{
 			case KEY_UP:
@@ -5526,13 +5529,13 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	                                    gConfigSettings, false, true);
 	optionBox.addInputLoopExitKey(CTRL_U);
 	// Update the bottom help text to be more specific to the user settings box
-	var bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cEnter\1y=\1bSelect\1n\1c/\1h\1btoggle, "
-	                      + "\1cESC\1n\1c/\1hQ\1n\1c/\1hCtrl-U\1y=\1bClose";
+	var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
+	                      + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
 	// This one contains the page navigation keys..  Don't really need to show those,
 	// since the settings box only has one page right now:
-	/*var bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cN\1y)\1bext, \1cP\1y)\1brev, "
-	                       + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cEnter\1y=\1bSelect, "
-	                       + "\1cESC\1n\1c/\1hQ\1n\1c/\1hCtrl-U\1y=\1bClose";*/
+	/*var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+	                       + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cEnter\x01y=\x01bSelect, "
+	                       + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";*/
 
 	optionBox.setBottomBorderText(bottomBorderText, true, false);
 
@@ -5645,7 +5648,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 							optionBox.refreshOnScreen(optionBox.chosenTextItemIndex);
 						}
 						else
-							writeWithPause(1, console.screen_rows, "\1y\1hThere are no dictionaries!\1n", ERRORMSG_PAUSE_MS);
+							writeWithPause(1, console.screen_rows, "\x01y\x01hThere are no dictionaries!\x01n", ERRORMSG_PAUSE_MS);
 						break;
 					default:
 						break;
@@ -5672,7 +5675,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	if (settingsChanged)
 	{
 		if (!WriteUserSettingsFile(gUserSettings))
-			writeMsgOntBtmHelpLineWithPause("\1n\1y\1hFailed to save settings!\1n", ERRORMSG_PAUSE_MS);
+			writeMsgOntBtmHelpLineWithPause("\x01n\x01y\x01hFailed to save settings!\x01n", ERRORMSG_PAUSE_MS);
 	}
 
 	// We're done, so erase the option box.
@@ -5730,9 +5733,9 @@ function doUserDictionaryLanguageSelection(pBoxTopLeftX, pBoxTopLeftY, pBoxWidth
 		right: VERTICAL_SINGLE
 	});
 	dictMenu.scrollbarEnabled = true;
-	dictMenu.colors.borderColor = "\1g";
-	dictMenu.topBorderText = "\1b\1hSelect dictionary languages (\1cEnter\1g: \1bChoose, \1cSpacebar\1g: \1bMulti-select\1b)\1n";
-	dictMenu.bottomBorderText = "\1c\1hESC\1y/\1cQ\1g: \1bQuit\1n";
+	dictMenu.colors.borderColor = "\x01g";
+	dictMenu.topBorderText = "\x01b\x01hSelect dictionary languages (\x01cEnter\x01g: \x01bChoose, \x01cSpacebar\x01g: \x01bMulti-select\x01b)\x01n";
+	dictMenu.bottomBorderText = "\x01c\x01hESC\x01y/\x01cQ\x01g: \x01bQuit\x01n";
 	var userChoice = dictMenu.GetVal(true, selectedItemIndexes);
 	if (userChoice != null)
 	{
@@ -5773,9 +5776,9 @@ function doTaglineSelection()
 
 	// Set up the menu
 	var taglineMenu = new DDLightbarMenu(gEditLeft, boxTopRow, gEditWidth, boxHeight);
-	taglineMenu.colors.borderColor = "\1g";
-	taglineMenu.colors.itemColor = "\1n\1c";
-	taglineMenu.colors.selectedItemColor = "\1n\1w\1h\1" + "4";
+	taglineMenu.colors.borderColor = "\x01g";
+	taglineMenu.colors.itemColor = "\x01n\x01c";
+	taglineMenu.colors.selectedItemColor = "\x01n\x01w\x01h\x01" + "4";
 	taglineMenu.borderEnabled = true;
 	taglineMenu.SetBorderChars({
 		upperLeft: UPPER_LEFT_SINGLE,
@@ -5787,10 +5790,10 @@ function doTaglineSelection()
 		left: VERTICAL_SINGLE,
 		right: VERTICAL_SINGLE
 	});
-	taglineMenu.topBorderText = "\1n\1g" + RIGHT_T_SINGLE + "\1b\1hTaglines\1n\1g" + LEFT_T_SINGLE;
-	taglineMenu.bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cPgUp\1b/\1cPgDn\1b, "
-	                     + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cHOME\1b, \1cEND\1b, \1cEnter\1y=\1bSelect, "
-	                     + "\1cR\1y)\1bandom, \1cESC\1n\1c/\1h\1cQ\1y=\1bEnd";
+	taglineMenu.topBorderText = "\x01n\x01g" + RIGHT_T_SINGLE + "\x01b\x01hTaglines\x01n\x01g" + LEFT_T_SINGLE;
+	taglineMenu.bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cPgUp\x01b/\x01cPgDn\x01b, "
+	                     + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cHOME\x01b, \x01cEND\x01b, \x01cEnter\x01y=\x01bSelect, "
+	                     + "\x01cR\x01y)\x01bandom, \x01cESC\x01n\x01c/\x01h\x01cQ\x01y=\x01bEnd";
 	taglineMenu.additionalQuitKeys = "RrQqFfLl";
 	taglineMenu.wrapNavigation = true;
 	taglineMenu.ampersandHotkeysInItems = false;
@@ -6022,7 +6025,7 @@ function letUserUploadMessageFile(pCurpos)
 	var uploadedMessage = false;
 	if (promptYesNo("Upload a mesage", true, "Upload message", true, true))
 	{
-		console.print("\1n");
+		console.print("\x01n");
 		console.gotoxy(1, console.screen_rows);
 		console.crlf();
 		var msgFilename = system.node_dir + "uploadedMsg.txt";
@@ -6064,13 +6067,13 @@ function letUserUploadMessageFile(pCurpos)
 			}
 			else
 			{
-				console.print("\1y\1hFailed to read the message file!\1n\r\n\1p");
+				console.print("\x01y\x01hFailed to read the message file!\x01n\r\n\x01p");
 				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
 			}
 		}
 		else
 		{
-			console.print("\1y\1hUpload failed!\1n\r\n\1p");
+			console.print("\x01y\x01hUpload failed!\x01n\r\n\x01p");
 			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
 		}
 	}
