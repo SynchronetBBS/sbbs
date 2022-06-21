@@ -1,5 +1,3 @@
-// $Id: SlyEdit_DCTStuff.js,v 1.21 2019/06/06 03:50:47 nightfox Exp $
-
 /* This file contains DCTEdit-specific functions for SlyEdit.
  *
  * Author: Eric Oulashin (AKA Nightfox)
@@ -15,6 +13,8 @@
  * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
  * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
  */
+
+"use strict";
 
 if (typeof(require) === "function")
 {
@@ -113,7 +113,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Calculate the width of the from name field: 28 characters, based
 	// on an 80-column screen width.
 	var fieldWidth = (console.screen_columns * (28/80)).toFixed(0);
-	screenText = gFromName.substr(0, fieldWidth);
+	var screenText = gFromName.substr(0, fieldWidth);
 	console.print(randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor2) +
 				  " " + gConfigSettings.DCTColors.TopLabelColor + "From " +
@@ -235,13 +235,13 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 
 function refreshSubjectOnScreen_DCTStyle(pX, pY, pLength, pText)
 {
-	console.print("\1n" + gConfigSettings.DCTColors.TopSubjColor);
+	console.print("\x01n" + gConfigSettings.DCTColors.TopSubjColor);
 	console.gotoxy(pX, pY);
 	//printf("%-" + pLength + "s", pText.substr(0, pLength));
 	// Ensure the text is no longer than the field width
 	var subj = pText.substr(0, pLength);
 	console.print(subj);
-	console.print("\1n" + gConfigSettings.DCTColors.TopSubjFillColor);
+	console.print("\x01n" + gConfigSettings.DCTColors.TopSubjFillColor);
 	var fieldWidth = pLength - subj.length;
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
@@ -344,30 +344,30 @@ function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes)
 		                                        + "[" + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
 		                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
 		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "Z"
-		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\1n "
-		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Save\1n      "
+		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
+		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Save\x01n      "
 		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
 		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
 		                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
 		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "A"
-		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\1n "
+		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
 		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Abort";
 		// If we can allow message quoting, then add a text to show Ctrl-Q for
 		// quoting.
 		if (pUsingQuotes)
 		{
-			DisplayBottomHelpLine_DCTStyle.helpText += "\1n      "
+			DisplayBottomHelpLine_DCTStyle.helpText += "\x01n      "
 			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
 			                                        + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
 			                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
 			                                        + gConfigSettings.DCTColors.BottomHelpKeys + "Q"
-			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\1n "
+			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
 			                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Quote";
 		}
-		DisplayBottomHelpLine_DCTStyle.helpText += "\1n      "
+		DisplayBottomHelpLine_DCTStyle.helpText += "\x01n      "
 		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
 		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "ESC"
-		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\1n "
+		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
 		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Menu";
 		// Center the text by padding it in the front with spaces.  This is done instead
 		// of using console.center() because console.center() will output a newline,
@@ -383,7 +383,7 @@ function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes)
 		lineNum = pLineNum;
 	console.gotoxy(1, lineNum);
 	console.print(DisplayBottomHelpLine_DCTStyle.helpText);
-	console.print("\1n");
+	console.print("\x01n");
 	console.cleartoeol();
 }
 
@@ -455,7 +455,7 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
                          + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
                          + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn/Home/End] Scroll"
                          + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
-                         + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+                         + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor;
 						 /*
 						 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn] Scroll"
                          + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
@@ -642,9 +642,9 @@ function displayTime_DCTStyle(pTimeStr)
    console.gotoxy(curposX, 3);
 
 	if (pTimeStr == null)
-		console.print("n" + gConfigSettings.DCTColors.TopTimeColor + getCurrentTimeStr());
+		console.print("\x01n" + gConfigSettings.DCTColors.TopTimeColor + getCurrentTimeStr());
 	else
-		console.print("n" + gConfigSettings.DCTColors.TopTimeColor + pTimeStr);
+		console.print("\x01n" + gConfigSettings.DCTColors.TopTimeColor + pTimeStr);
 }
 
 // Displays the number of minutes remaining on the screen.
@@ -703,7 +703,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
 		}
 		else
-			console.print("\1n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "File\1n ");
+			console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "File\x01n ");
 		// Edit
 		console.gotoxy(pItemPositions.editX, pItemPositions.mainMenuY);
 		if (pHighlightedItemNum == 1)
@@ -713,7 +713,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
 		}
 		else
-			console.print("\1n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Edit\1n ");
+			console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Edit\x01n ");
 		// SysOp
 		if (pIsSysop)
 		{
@@ -725,7 +725,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 				              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
 			}
 			else
-				console.print("\1n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "SysOp\1n ");
+				console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "SysOp\x01n ");
 		}
 		// Help
 		console.gotoxy(pItemPositions.helpX, pItemPositions.mainMenuY);
@@ -736,7 +736,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
 		}
 		else
-			console.print("\1n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Help\1n ");
+			console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Help\x01n ");
 
 		// Display the menu (and capture the return object so that we can
 		// also return it here).
@@ -756,14 +756,18 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 	// Only create this object once.
 	if (typeof(doDCTESCMenu.mainMenuItemPositions) == "undefined")
 	{
-		doDCTESCMenu.mainMenuItemPositions = new Object();
-		// Vertical position on the screen for the main menu items
-		doDCTESCMenu.mainMenuItemPositions.mainMenuY = pEditTop - 1;
-		// Horizontal position of the "File" text
-		doDCTESCMenu.mainMenuItemPositions.fileX = gEditLeft + 5;
-		// Horizontal position of the "Edit" text
+		doDCTESCMenu.mainMenuItemPositions = {
+			// Vertical position on the screen for the main menu items
+			mainMenuY: pEditTop - 1,
+			// Horizontal position of the "File" text
+			fileX: gEditLeft + 5,
+			// Horizontal position of the "Edit" text
+			editX: 0,
+			// Horizontal position of the "SysOp" text
+			sysopX: 0,
+			helpX: 0
+		};
 		doDCTESCMenu.mainMenuItemPositions.editX = doDCTESCMenu.mainMenuItemPositions.fileX + 11;
-		// Horizontal position of the "SysOp" text
 		doDCTESCMenu.mainMenuItemPositions.sysopX = doDCTESCMenu.mainMenuItemPositions.editX + 11;
 		// Horizontal position of of the "Help" text
 		if (pIsSysop)
@@ -781,7 +785,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 	// Set up the menu objects.  Only create these objects once.
 	if (typeof(doDCTESCMenu.allMenus) == "undefined")
 	{
-		doDCTESCMenu.allMenus = new Array();
+		doDCTESCMenu.allMenus = [];
 		// File menu
 		doDCTESCMenu.allMenus[fileMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.fileX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
 		doDCTESCMenu.allMenus[fileMenuNum].addItem("&Save    Ctrl-Z", DCTMENU_FILE_SAVE);
@@ -1080,14 +1084,15 @@ function DCTMenuItem()
 //  pTopLeftY: The upper-left screen row
 function DCTMenu(pTopLeftX, pTopLeftY)
 {
-   this.colors = new Object();
-   // Unselected item colors
-   this.colors.unselected = "n7k";
-   // Selected item colors
-   this.colors.selected = "nw";
-   // Other colors
-   this.colors.hotkey = "hw";
-   this.colors.border = "n7k";
+   this.colors = {
+		// Unselected item colors
+		unselected: "\x01n\x01" + "7\x01k",
+		// Selected item colors
+		selected: "\x01n\x01w",
+		// Other colors
+		hotkey: "\x01h\x01w",
+		border: "\x01n\x01" + "+\x01k"
+   };
 
    this.topLeftX = 1; // Upper-left screen column
    if ((pTopLeftX != null) && (pTopLeftX > 0) && (pTopLeftX <= console.screen_columns))
@@ -1100,16 +1105,16 @@ function DCTMenu(pTopLeftX, pTopLeftY)
    this.selectedItemIndex = 0;
 
    // this.menuItems will contain DCTMenuItem objects.
-   this.menuItems = new Array();
+   this.menuItems = [];
    // hotkeyRetvals is an array, indexed by hotkey, that contains
    // the return values for each hotkey.
-   this.hotkeyRetvals = new Array();
+   this.hotkeyRetvals = [];
 
    // exitLoopKeys will contain keys that will exit the input loop
    // when pressed by the user, so that calling code can catch them.
    // It's indexed by the key, and the value is the return code that
    // should be returned for that key.
-   this.exitLoopKeys = new Array();
+   this.exitLoopKeys = [];
 
    // Border style: "single" or "double"
    this.borderStyle = "single";
@@ -1119,7 +1124,7 @@ function DCTMenu(pTopLeftX, pTopLeftY)
    this.clearSpaceAroundMenu = false;
    // clearSpaceColor controls which color to use when drawing the
    // clear space around the menu.
-   this.clearSpaceColor = "n";
+   this.clearSpaceColor = "\x01n";
    // clearSpaceTopText specifies text to display above the top of the
    // menu when clearing space around it.
    this.clearSpaceTopText = "";
@@ -1272,237 +1277,240 @@ function DCTMenu_DisplayItem(pItemIndex, pPrintBorders)
 //  userInput: The last user input
 function DCTMenu_DoInputLoop()
 {
-   var returnObj = new Object();
-   returnObj.returnVal = -1;
-   returnObj.userInput = "";
+	var returnObj = {
+		returnVal: -1,
+		userInput: ""
+	};
 
-   // If clearSpaceAroundMenu is true, then draw a blank row
-   // above the menu.
-   if (this.clearSpaceAroundMenu && (this.topLeftY > 1))
-   {
-      // If there is room, output a space to the left, diagonal
-      // from the top-left corner of the menu.
-      if (this.topLeftX > 1)
-      {
-         console.gotoxy(this.topLeftX-1, this.topLeftY-1);
-         console.print(this.clearSpaceColor + " ");
-      }
-      else
-         console.gotoxy(this.topLeftX, this.topLeftY-1);
+	// If clearSpaceAroundMenu is true, then draw a blank row
+	// above the menu.
+	if (this.clearSpaceAroundMenu && (this.topLeftY > 1))
+	{
+		// If there is room, output a space to the left, diagonal
+		// from the top-left corner of the menu.
+		if (this.topLeftX > 1)
+		{
+			console.gotoxy(this.topLeftX-1, this.topLeftY-1);
+			console.print(this.clearSpaceColor + " ");
+		}
+		else
+			console.gotoxy(this.topLeftX, this.topLeftY-1);
 
-      // Output this.clearSpaceTopText
-      console.print(this.clearSpaceTopText);
-      // Output the rest of the blank space
-      var textLen = strip_ctrl(this.clearSpaceTopText).length;
-      if (textLen < this.width)
-      {
-         var numSpaces = this.width - textLen;
-         if (this.topLeftX + this.width < console.screen_columns)
-            ++numSpaces;
-         for (var i = 0; i < numSpaces; ++i)
-            console.print(this.clearSpaceColor + " ");
-      }
-   }
+		// Output this.clearSpaceTopText
+		console.print(this.clearSpaceTopText);
+		// Output the rest of the blank space
+		var textLen = strip_ctrl(this.clearSpaceTopText).length;
+		if (textLen < this.width)
+		{
+			var numSpaces = this.width - textLen;
+			if (this.topLeftX + this.width < console.screen_columns)
+				++numSpaces;
+			for (var i = 0; i < numSpaces; ++i)
+				console.print(this.clearSpaceColor + " ");
+		}
+	}
 
-   // Before drawing the top border, if clearSpaceAroundMenu is
-   // true, put space before the border.
-   if (this.clearSpaceAroundMenu && (this.topLeftY > 1))
-   {
-      console.gotoxy(this.topLeftX-1, this.topLeftY);
-      console.print(this.clearSpaceColor + " ");
-   }
-   else
-      console.gotoxy(this.topLeftX, this.topLeftY);
-   // Draw the top border
-   var innerWidth = this.width - 2;
-   if (this.borderStyle == "single")
-   {
-      console.print(this.colors.border + UPPER_LEFT_SINGLE);
-      for (var i = 0; i < innerWidth; ++i)
-         console.print(HORIZONTAL_SINGLE);
-      console.print(this.colors.border + UPPER_RIGHT_SINGLE);
-   }
-   else if (this.borderStyle == "double")
-   {
-      console.print(this.colors.border + UPPER_LEFT_DOUBLE);
-      for (var i = 0; i < innerWidth; ++i)
-         console.print(HORIZONTAL_DOUBLE);
-      console.print(this.colors.border + UPPER_RIGHT_DOUBLE);
-   }
-   // If clearSpaceAroundMenu is true, then put a space after the border.
-   if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
-      console.print(this.clearSpaceColor + " ");
+	// Before drawing the top border, if clearSpaceAroundMenu is
+	// true, put space before the border.
+	if (this.clearSpaceAroundMenu && (this.topLeftY > 1))
+	{
+		console.gotoxy(this.topLeftX-1, this.topLeftY);
+		console.print(this.clearSpaceColor + " ");
+	}
+	else
+		console.gotoxy(this.topLeftX, this.topLeftY);
+	// Draw the top border
+	var innerWidth = this.width - 2;
+	if (this.borderStyle == "single")
+	{
+		console.print(this.colors.border + UPPER_LEFT_SINGLE);
+		for (var i = 0; i < innerWidth; ++i)
+			console.print(HORIZONTAL_SINGLE);
+		console.print(this.colors.border + UPPER_RIGHT_SINGLE);
+	}
+	else if (this.borderStyle == "double")
+	{
+		console.print(this.colors.border + UPPER_LEFT_DOUBLE);
+		for (var i = 0; i < innerWidth; ++i)
+			console.print(HORIZONTAL_DOUBLE);
+		console.print(this.colors.border + UPPER_RIGHT_DOUBLE);
+	}
+	// If clearSpaceAroundMenu is true, then put a space after the border.
+	if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
+		console.print(this.clearSpaceColor + " ");
 
-   // Print the menu items (and side spaces outside the menu if
-   // clearSpaceAroundMenu is true).
-   var itemColor = "";
-   for (var i = 0; i < this.menuItems.length; ++i)
-   {
-      if (this.clearSpaceAroundMenu && (this.topLeftX > 1))
-      {
-         console.gotoxy(this.topLeftX-1, this.topLeftY + i + 1);
-         console.print(this.clearSpaceColor + " ");
-      }
+	// Print the menu items (and side spaces outside the menu if
+	// clearSpaceAroundMenu is true).
+	var itemColor = "";
+	for (var i = 0; i < this.menuItems.length; ++i)
+	{
+		if (this.clearSpaceAroundMenu && (this.topLeftX > 1))
+		{
+			console.gotoxy(this.topLeftX-1, this.topLeftY + i + 1);
+			console.print(this.clearSpaceColor + " ");
+		}
 
-      this.displayItem(i, true);
+		this.displayItem(i, true);
 
-      if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
-      {
-         console.gotoxy(this.topLeftX + this.width, this.topLeftY + i + 1);
-         console.print(this.clearSpaceColor + " ");
-      }
-   }
+		if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
+		{
+			console.gotoxy(this.topLeftX + this.width, this.topLeftY + i + 1);
+			console.print(this.clearSpaceColor + " ");
+		}
+	}
 
-   // Before drawing the bottom border, if clearSpaceAroundMenu is
-   // true, put space before the border.
-   if (this.clearSpaceAroundMenu && (this.topLeftY > 1))
-   {
-      console.gotoxy(this.topLeftX - 1, this.topLeftY + this.height - 1);
-      console.print(this.clearSpaceColor + " ");
-   }
-   else
-      console.gotoxy(this.topLeftX, this.topLeftY + this.height - 1);
-   // Draw the bottom border
-   if (this.borderStyle == "single")
-   {
-      console.print(this.colors.border + LOWER_LEFT_SINGLE);
-      for (var i = 0; i < innerWidth; ++i)
-         console.print(HORIZONTAL_SINGLE);
-      console.print(LOWER_RIGHT_SINGLE);
-   }
-   else if (this.borderStyle == "double")
-   {
-      console.print(this.colors.border + LOWER_LEFT_DOUBLE);
-      for (var i = 0; i < innerWidth; ++i)
-         console.print(HORIZONTAL_DOUBLE);
-      console.print(LOWER_RIGHT_DOUBLE);
-   }
-   // If clearSpaceAroundMenu is true, then put a space after the border.
-   if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
-      console.print(this.clearSpaceColor + " ");
+	// Before drawing the bottom border, if clearSpaceAroundMenu is
+	// true, put space before the border.
+	if (this.clearSpaceAroundMenu && (this.topLeftY > 1))
+	{
+		console.gotoxy(this.topLeftX - 1, this.topLeftY + this.height - 1);
+		console.print(this.clearSpaceColor + " ");
+	}
+	else
+		console.gotoxy(this.topLeftX, this.topLeftY + this.height - 1);
+	// Draw the bottom border
+	if (this.borderStyle == "single")
+	{
+		console.print(this.colors.border + LOWER_LEFT_SINGLE);
+		for (var i = 0; i < innerWidth; ++i)
+			console.print(HORIZONTAL_SINGLE);
+		console.print(LOWER_RIGHT_SINGLE);
+	}
+	else if (this.borderStyle == "double")
+	{
+		console.print(this.colors.border + LOWER_LEFT_DOUBLE);
+		for (var i = 0; i < innerWidth; ++i)
+			console.print(HORIZONTAL_DOUBLE);
+		console.print(LOWER_RIGHT_DOUBLE);
+	}
+	// If clearSpaceAroundMenu is true, then put a space after the border.
+	if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
+		console.print(this.clearSpaceColor + " ");
 
-   // If clearSpaceAroundMenu is true, then draw a blank row
-   // below the menu.
-   if (this.clearSpaceAroundMenu && (this.topLeftY + this.height < console.screen_rows))
-   {
-      var numSpaces = this.width + 2;
-      if (this.topLeftX > 1)
-         console.gotoxy(this.topLeftX-1, this.topLeftY + this.height);
-      else
-      {
-         console.gotoxy(this.topLeftX, this.topLeftY + this.height);
-         --numSpaces;
-      }
+	// If clearSpaceAroundMenu is true, then draw a blank row
+	// below the menu.
+	if (this.clearSpaceAroundMenu && (this.topLeftY + this.height < console.screen_rows))
+	{
+		var numSpaces = this.width + 2;
+		if (this.topLeftX > 1)
+			console.gotoxy(this.topLeftX-1, this.topLeftY + this.height);
+		else
+		{
+			console.gotoxy(this.topLeftX, this.topLeftY + this.height);
+			--numSpaces;
+		}
 
-      if (this.topLeftX + this.width >= console.screen_columns)
-         --numSpaces;
+		if (this.topLeftX + this.width >= console.screen_columns)
+			--numSpaces;
 
-      for (var i = 0; i < numSpaces; ++i)
-         console.print(this.clearSpaceColor + " ");
-   }
+		for (var i = 0; i < numSpaces; ++i)
+			console.print(this.clearSpaceColor + " ");
+	}
 
-   // Place the cursor on the line of the selected item
-   console.gotoxy(this.topLeftX + 1, this.topLeftY + this.selectedItemIndex + 1);
+	// Place the cursor on the line of the selected item
+	console.gotoxy(this.topLeftX + 1, this.topLeftY + this.selectedItemIndex + 1);
 
-   // Keep track of the current cursor position
-   var curpos = new Object();
-   curpos.x = this.topLeftX + 1;
-   curpos.y = this.topLeftY + this.selectedItemIndex + 1;
+	// Keep track of the current cursor position
+	var curpos = {
+		x: this.topLeftX + 1,
+		y: this.topLeftY + this.selectedItemIndex + 1
+	};
 
-   // Input loop
-   const topItemLineNumber = this.topLeftY + 1;
-   const bottomItemLineNumber = this.topLeftY + this.height - 1;
-   var continueOn = true;
-   while (continueOn)
-   {
-      // Get a key, (time out after the selected time), and take appropriate action.
+	// Input loop
+	const topItemLineNumber = this.topLeftY + 1;
+	const bottomItemLineNumber = this.topLeftY + this.height - 1;
+	var continueOn = true;
+	while (continueOn)
+	{
+		// Get a key, (time out after the selected time), and take appropriate action.
 		returnObj.userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
 		// If the user input is blank, then the input timed out, and we should quit.
 		if (returnObj.userInput == "")
 		{
-         continueOn = false;
-         break;
+			continueOn = false;
+			break;
 		}
 
-      // Take appropriate action, depending on the user's keypress.
-      switch (returnObj.userInput)
-      {
-         case KEY_ENTER:
-            // Set returnObj.returnVal to the currently-selected item's returnVal,
-            // and exit the input loop.
-            returnObj.returnVal = this.menuItems[this.selectedItemIndex].returnVal;
-            continueOn = false;
-            break;
-         case KEY_UP:
-            // Go up one item
-            if (this.menuItems.length > 1)
-            {
-               // If we're below the top menu item, then go up one item.  Otherwise,
-               // go to the last menu item.
-               var oldIndex = this.selectedItemIndex;
-               if ((curpos.y > topItemLineNumber) && (this.selectedItemIndex > 0))
-               {
-                  --curpos.y;
-                  --this.selectedItemIndex;
-               }
-               else
-               {
-                  curpos.y = bottomItemLineNumber - 1;
-                  this.selectedItemIndex = this.menuItems.length - 1;
-               }
-               // Refresh the items on the screen so that the item colors
-               // are updated.
-               this.displayItem(oldIndex, false);
-               this.displayItem(this.selectedItemIndex, false);
-            }
-            break;
-         case KEY_DOWN:
-            // Go down one item
-            if (this.menuItems.length > 1)
-            {
-               // If we're above the bottom menu item, then go down one item.  Otherwise,
-               // go to the first menu item.
-               var oldIndex = this.selectedItemIndex;
-               if ((curpos.y < bottomItemLineNumber) && (this.selectedItemIndex < this.menuItems.length - 1))
-               {
-                  ++curpos.y;
-                  ++this.selectedItemIndex;
-               }
-               else
-               {
-                  curpos.y = this.topLeftY + 1;
-                  this.selectedItemIndex = 0;
-               }
-               // Refresh the items on the screen so that the item colors
-               // are updated.
-               this.displayItem(oldIndex, false);
-               this.displayItem(this.selectedItemIndex, false);
-            }
-            break;
-         case KEY_ESC:
-            continueOn = false;
-            break;
-         default:
-            // If the user's input is one of the hotkeys, then stop the
-            // input loop and return with the return code for the hotkey.
-            if (typeof(this.hotkeyRetvals[returnObj.userInput]) != "undefined")
-            {
-               returnObj.returnVal = this.hotkeyRetvals[returnObj.userInput];
-               continueOn = false;
-            }
-            // If the user's input is one of the loop-exit keys, then stop
-            // the input loop.
-            else if (typeof(this.exitLoopKeys[returnObj.userInput]) != "undefined")
-            {
-               returnObj.returnVal = this.exitLoopKeys[returnObj.userInput];
-               continueOn = false;
-            }
-            break;
-      }
-   }
+		// Take appropriate action, depending on the user's keypress.
+		switch (returnObj.userInput)
+		{
+			case KEY_ENTER:
+				// Set returnObj.returnVal to the currently-selected item's returnVal,
+				// and exit the input loop.
+				returnObj.returnVal = this.menuItems[this.selectedItemIndex].returnVal;
+				continueOn = false;
+				break;
+			case KEY_UP:
+				// Go up one item
+				if (this.menuItems.length > 1)
+				{
+					// If we're below the top menu item, then go up one item.  Otherwise,
+					// go to the last menu item.
+					var oldIndex = this.selectedItemIndex;
+					if ((curpos.y > topItemLineNumber) && (this.selectedItemIndex > 0))
+					{
+						--curpos.y;
+						--this.selectedItemIndex;
+					}
+					else
+					{
+						curpos.y = bottomItemLineNumber - 1;
+						this.selectedItemIndex = this.menuItems.length - 1;
+					}
+					// Refresh the items on the screen so that the item colors
+					// are updated.
+					this.displayItem(oldIndex, false);
+					this.displayItem(this.selectedItemIndex, false);
+				}
+				break;
+			case KEY_DOWN:
+				// Go down one item
+				if (this.menuItems.length > 1)
+				{
+					// If we're above the bottom menu item, then go down one item.  Otherwise,
+					// go to the first menu item.
+					var oldIndex = this.selectedItemIndex;
+					if ((curpos.y < bottomItemLineNumber) && (this.selectedItemIndex < this.menuItems.length - 1))
+					{
+						++curpos.y;
+						++this.selectedItemIndex;
+					}
+					else
+					{
+						curpos.y = this.topLeftY + 1;
+						this.selectedItemIndex = 0;
+					}
+					// Refresh the items on the screen so that the item colors
+					// are updated.
+					this.displayItem(oldIndex, false);
+					this.displayItem(this.selectedItemIndex, false);
+				}
+				break;
+			case KEY_ESC:
+				continueOn = false;
+				break;
+			default:
+				// If the user's input is one of the hotkeys, then stop the
+				// input loop and return with the return code for the hotkey.
+				if (typeof(this.hotkeyRetvals[returnObj.userInput]) != "undefined")
+				{
+					returnObj.returnVal = this.hotkeyRetvals[returnObj.userInput];
+					continueOn = false;
+				}
+				// If the user's input is one of the loop-exit keys, then stop
+				// the input loop.
+				else if (typeof(this.exitLoopKeys[returnObj.userInput]) != "undefined")
+				{
+					returnObj.returnVal = this.exitLoopKeys[returnObj.userInput];
+					continueOn = false;
+				}
+				break;
+		}
+	}
 
-   return returnObj;
+	return returnObj;
 }
+
 // Returns the number of items in the menu.
 function DCTMenu_NumItems()
 {
@@ -1514,9 +1522,9 @@ function DCTMenu_RemoveAllItems()
    this.width = 0;
    this.height = 0;
    this.selectedItemIndex = 0;
-   this.menuItems = new Array();
-   this.hotkeyRetvals = new Array();
-   this.exitLoopKeys = new Array();
+   this.menuItems = [];
+   this.hotkeyRetvals = [];
+   this.exitLoopKeys = [];
 }
 
 // Returns the the script's execution directory.

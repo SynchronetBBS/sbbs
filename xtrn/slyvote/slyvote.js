@@ -1,5 +1,3 @@
-// $Id: slyvote.js,v 1.16 2020/05/23 03:37:09 nightfox Exp $
-
 /* This is a voting door for Synchronet.  It requires Synchronet 3.17 or higher, since
  * it makes use of the new voting features added to the message bases in Synchronet
  * 3.17.  Also, this requires an ANSI client.
@@ -178,10 +176,17 @@
  *                              was showing all available message groups but
  *                              some could be empty due to having no sub-boards
  *                              that allow polls.
+ * 2022-06-21 Eric Oulashin     Version 1.12
+ *                              Made an update to get vote stats to be displayed again.
+ *                              Also, no longer has hard-coded CP437 characters, and
+ *                              now uses "use strict" for better runtime checks of proper
+ *                              code.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
 // sub-boards, which can potentially take a long time
+
+"use strict";
 
 const requireFnExists = (typeof(require) === "function");
 
@@ -194,9 +199,9 @@ else
 // Exit if the Synchronet version is below the minimum.
 if (system.version_num < 31700)
 {
-	var message = "\1n\1h\1y\1i* Warning:\1n\1h\1w SlyVote requires version "
-	             + "\1g3.17\1w or\r\nhigher of Synchronet.  This BBS is using "
-	             + "version \1g" + system.version + "\1w.  Please notify the sysop.";
+	var message = "\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w SlyVote requires version "
+	             + "\x01g3.17\x01w or\r\nhigher of Synchronet.  This BBS is using "
+	             + "version \x01g" + system.version + "\x01w.  Please notify the sysop.";
 	console.crlf();
 	console.print(message);
 	console.crlf();
@@ -208,7 +213,7 @@ if (system.version_num < 31700)
 if (!console.term_supports(USER_ANSI))
 {
 	console.crlf();
-	console.print("\1n\1hSlyVote requires an ANSI client.");
+	console.print("\x01n\x01hSlyVote requires an ANSI client.");
 	console.crlf();
 	console.pause();
 	exit();
@@ -222,9 +227,9 @@ if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
 	console.crlf();
 	console.crlf();
 	// Use the line from text.dat that says the user is not allowed to vote
-	console.print("\1n" + RemoveCRLFCodes(bbs.text(R_Voting)) + "\1n");
+	console.print("\x01n" + RemoveCRLFCodes(processBBSTextDatText(bbs.text(R_Voting))) + "\x01n");
 	console.crlf();
-	console.print("\1cYou can still view poll results.\1n");
+	console.print("\x01cYou can still view poll results.\x01n");
 	console.crlf();
 	console.pause();
 }
@@ -247,8 +252,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.11";
-var SLYVOTE_DATE = "2021-04-02";
+var SLYVOTE_VERSION = "1.12";
+var SLYVOTE_DATE = "2022-06-21";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -297,6 +302,11 @@ var BLOCK1 = "\xB0"; // Dimmest block
 var BLOCK2 = "\xB1";
 var BLOCK3 = "\xB2";
 var BLOCK4 = "\xDB"; // Brightest block
+var MID_BLOCK = "\xDC";
+var TALL_UPPER_MID_BLOCK = "\xFE";
+var UPPER_CENTER_BLOCK = "\xDF";
+var LOWER_CENTER_BLOCK = "\xDC";
+var TINY_DOT = "\xFA";
 
 // Strings for the various message attributes (used by makeAllAttrStr(),
 // makeMainMsgAttrStr(), makeAuxMsgAttrStr(), and makeNetMsgAttrStr())
@@ -312,7 +322,7 @@ var gMainMsgAttrStrs = {
 	MSG_VALIDATED: "Valid",
 	MSG_REPLIED: "Repl",
 	MSG_NOREPLY: "NoRepl"
-}
+};
 var gAuxMsgAttrStrs = {
 	MSG_FILEREQUEST: "Freq",
 	MSG_FILEATTACH: "Attach",
@@ -321,7 +331,7 @@ var gAuxMsgAttrStrs = {
 	MSG_RECEIPTREQ: "RctReq",
 	MSG_CONFIRMREQ: "ConfReq",
 	MSG_NODISP: "NoDisp"
-}
+};
 var gNetMsgAttrStrs = {
 	MSG_LOCAL: "FromLocal",
 	MSG_INTRANSIT: "Transit",
@@ -338,7 +348,7 @@ var gNetMsgAttrStrs = {
 	MSG_TYPELOCAL: "ForLocal",
 	MSG_TYPEECHO: "ForEcho",
 	MSG_TYPENET: "ForNetmail"
-}
+};
 
 // An amount of milliseconds to wait after displaying an error message, etc.
 var ERROR_PAUSE_WAIT_MS = 1500;
@@ -374,7 +384,7 @@ var gReaderKeys = {
 	vote: "V",
 	close: "C",
 	quit: "Q"
-}
+};
 if (gUserIsSysop)
 	gReaderKeys.validateMsg = "A";
 
@@ -383,9 +393,9 @@ if (gSlyVoteCfg.cfgReadError.length > 0)
 {
 	log(LOG_ERR, "SlyVote: Error reading slyvote.cfg");
 	bbs.log_str("SlyVote: Error reading slyvote.cfg");
-	console.print("\1n");
+	console.print("\x01n");
 	console.crlf();
-	console.print("\1h\1y* Error reading slyvote.cfg\1n");
+	console.print("\x01h\x01y* Error reading slyvote.cfg\x01n");
 	console.crlf();
 	console.pause();
 	exit();
@@ -405,9 +415,9 @@ if (Object.keys(gSlyVoteCfg.msgGroups).length > 0)
 }
 if (!subBoardsConfigured)
 {
-	console.print("\1n");
+	console.print("\x01n");
 	console.crlf();
-	console.print("\1cThere are no sub-boards configured.\1n");
+	console.print("\x01cThere are no sub-boards configured.\x01n");
 	console.crlf();
 	console.pause();
 	exit();
@@ -456,10 +466,10 @@ else
 }
 // Output a "loading..." text, in case it takes a while to count the polls in
 // the current sub-board
-console.print("\1n");
+console.print("\x01n");
 console.crlf();
 var subBoardName = msg_area.sub[gSubBoardCode].grp_name + ": " + msg_area.sub[gSubBoardCode].description;
-console.print("\1gLoading SlyVote (counting polls in \1c" + subBoardName + "\1g)...\1n");
+console.print("\x01gLoading SlyVote (counting polls in \x01c" + subBoardName + "\x01g)...\x01n");
 console.line_counter = 0;
 var gSubBoardPollCountObj = CountPollsInSubBoard(gSubBoardCode);
 
@@ -499,7 +509,7 @@ while (gContinueSlyVote)
 // Before exiting, update the user settings file
 if (!WriteUserSettingsFile(gUserSettings, gUserSettingsFilename))
 {
-	console.print("\1n\1y\1hFailed to update your user settings file!\1n");
+	console.print("\x01n\x01y\x01hFailed to update your user settings file!\x01n");
 	mswait(ERROR_PAUSE_WAIT_MS);
 }
 
@@ -524,7 +534,7 @@ if (!WriteUserSettingsFile(gUserSettings, gUserSettingsFilename))
 function ChooseVotingSubBoard(pMsgGrps)
 {
 	// Clear the screen & display the SlyVote stylized text
-	console.clear("\1n");
+	console.clear("\x01n");
 	DisplaySlyVoteText();
 
 	// Draw columns to frame the voting menu
@@ -535,6 +545,7 @@ function ChooseVotingSubBoard(pMsgGrps)
 	if (typeof(ChooseVotingSubBoard.grpMenu) != "object")
 		ChooseVotingSubBoard.grpMenu = CreateMsgGrpMenu(listTopRow, drawColRetObj, pMsgGrps);
 
+	var chosenSubBoard = null;
 	// If there is only one message group, then just let the user choose sub-boards
 	// within that message group.  Otherwise, display the group menu and let the user
 	// choose a message group and then a sub-board.
@@ -548,7 +559,7 @@ function ChooseVotingSubBoard(pMsgGrps)
 		{
 			// Display the "choose a group" text
 			console.gotoxy(drawColRetObj.columnX1+10, listTopRow-1);
-			console.print("\1n\1b\1hChoose a group (\1cESC\1g/\1cQ\1g=\1n\1cExit\1h\1b)\1n");
+			console.print("\x01n\x01b\x01hChoose a group (\x01cESC\x01g/\x01cQ\x01g=\x01n\x01cExit\x01h\x01b)\x01n");
 			chosenGrpIdx = ChooseVotingSubBoard.grpMenu.GetVal();
 			// Note: If the user quits out of the menu without making a selection,
 			// chosenGrpIdx will be null.
@@ -556,7 +567,6 @@ function ChooseVotingSubBoard(pMsgGrps)
 		// Sub-board selection within a message group
 		if (typeof(ChooseVotingSubBoard.subBoardMenus) != "object")
 			ChooseVotingSubBoard.subBoardMenus = {};
-		var chosenSubBoard = null;
 		if ((chosenGrpIdx != null) && (chosenGrpIdx > -1))
 		{
 			// If the sub-board menu for the chosen group name doesn't exist, then create it
@@ -565,19 +575,19 @@ function ChooseVotingSubBoard(pMsgGrps)
 				// In case it takes a while to load the sub-board information, display
 				// some text saying we're loading the sub-boards
 				console.gotoxy(drawColRetObj.columnX1+2, listTopRow);
-				console.print("\1n\1cLoading sub-boards\1i...\1n"); // In case loading sub-boards takes a while
+				console.print("\x01n\x01cLoading sub-boards\x01i...\x01n"); // In case loading sub-boards takes a while
 				ChooseVotingSubBoard.subBoardMenus[chosenGrpIdx] = CreateSubBoardMenu(chosenGrpIdx, listTopRow, drawColRetObj, pMsgGrps);
 			}
 
 			// Display the message group
-			var msgGrpText = "\1n\1b\1hGroup: \1w" + msg_area.grp_list[chosenGrpIdx].name + "\1n";
+			var msgGrpText = "\x01n\x01b\x01hGroup: \x01w" + msg_area.grp_list[chosenGrpIdx].name + "\x01n";
 			var txtDisplayLen = strip_ctrl(msgGrpText).length;
 			var textX = (console.screen_columns/2) - (txtDisplayLen/2);
 			console.gotoxy(textX, listTopRow-2);
 			console.print(msgGrpText);
 			// Display the "choose a sub-board" text
 			console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
-			var chooseASubBoardText = "\1n\1b\1hChoose a sub-board (\1cESC\1g/\1cQ\1g=\1n\1cExit\1h\1b)  \1y\1h" + CHECK_CHAR + "\1n\1c=\1b\1hHas polls\1n";
+			var chooseASubBoardText = "\x01n\x01b\x01hChoose a sub-board (\x01cESC\x01g/\x01cQ\x01g=\x01n\x01cExit\x01h\x01b)  \x01y\x01h" + CHECK_CHAR + "\x01n\x01c=\x01b\x01hHas polls\x01n";
 			console.print(chooseASubBoardText);
 			// Let the user choose a sub-board
 			chosenSubBoard = ChooseVotingSubBoard.subBoardMenus[chosenGrpIdx].GetVal();
@@ -590,11 +600,11 @@ function ChooseVotingSubBoard(pMsgGrps)
 				// Erase the message group text
 				textX = (console.screen_columns/2) - (txtDisplayLen/2);
 				console.gotoxy(textX, listTopRow-2);
-				console.print(format("\1n%-" + txtDisplayLen + "s", ""));
+				console.print(format("\x01n%-" + txtDisplayLen + "s", ""));
 				txtDisplayLen = strip_ctrl(chooseASubBoardText).length;
 				// Erase the "choose a sub-board" text
 				console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
-				console.print(format("\1n%-" + txtDisplayLen + "s", ""));
+				console.print(format("\x01n%-" + txtDisplayLen + "s", ""));
 			}
 		}
 		else
@@ -603,7 +613,7 @@ function ChooseVotingSubBoard(pMsgGrps)
 
 	// Return an object with useful values
 	return {
-		subBoardChoice: chosenSubBoard,
+		subBoardChoice: (chosenSubBoard == null ? "" : chosenSubBoard),
 		menuPos: ChooseVotingSubBoard.grpMenu.pos,
 		menuSize: ChooseVotingSubBoard.grpMenu.size
 	};
@@ -619,7 +629,7 @@ function ChooseVotingSubBoard(pMsgGrps)
 // Return value: A DDLightbarMenu object for the message group menu
 function CreateMsgGrpMenu(pListTopRow, pDrawColRetObj, pMsgGrps)
 {
-	grpMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
+	var grpMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
 	grpMenu.ampersandHotkeysInItems = false;
 	grpMenu.scrollbarEnabled = true;
 	grpMenu.AddAdditionalQuitKeys("qQ");
@@ -656,7 +666,7 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 	var selectedItemIndex = 0;
 	// Populate the sub-board menu for the group with its list of sub-boards
 	var areaNameLen = pDrawColRetObj.textLen - 3;
-	subBoardMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
+	var subBoardMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
 	subBoardMenu.areaNameLen = areaNameLen;
 	subBoardMenu.ampersandHotkeysInItems = false;
 	subBoardMenu.scrollbarEnabled = true;
@@ -682,7 +692,7 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 				this.subBoardPollCounts[subCode] = pollCount;
 			}
 			var menuItemObj = this.MakeItemWithRetval(-1);
-			var hasPollsChar = (pollCount ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
+			var hasPollsChar = (pollCount ? "\x01y\x01h" + CHECK_CHAR + "\x01n" : " ");
 			menuItemObj.text = format("%-" + this.areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, this.areaNameLen), hasPollsChar);
 			menuItemObj.retval = subCode;
 			return menuItemObj;
@@ -690,13 +700,13 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 	}
 	else
 	{
-		var areaNameLen = pDrawColRetObj.textLen - 2;
+		areaNameLen = pDrawColRetObj.textLen - 2;
 		if (pMsgGrps[pGrpIdx].length > subBoardMenu.GetNumItemsPerPage())
 			--areaNameLen;
 		for (var i = 0; i < pMsgGrps[pGrpIdx].length; ++i)
 		{
 			var subCode = pMsgGrps[pGrpIdx][i];
-			var hasPollsChar = (subBoardHasPolls(subCode) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
+			var hasPollsChar = (subBoardHasPolls(subCode) ? "\x01y\x01h" + CHECK_CHAR + "\x01n" : " ");
 			var itemText = format("%-" + areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, areaNameLen), hasPollsChar);
 			subBoardMenu.Add(itemText, subCode);
 			if (subCode == gSubBoardCode)
@@ -743,7 +753,7 @@ function DoMainMenu()
 	var quitToBBSOpt = 6;
 
 	// Display the SlyVote screen and menu of choices
-	console.clear("\1n");
+	console.clear("\x01n");
 	var mainScrRetObj = DisplaySlyVoteMainVoteScreen(false);
 	if (gMainMenu == null)
 	{
@@ -764,8 +774,8 @@ function DoMainMenu()
 		}
 		else
 			gMainMenu.Add("&Quit To BBS", quitToBBSOpt, "6");
-		gMainMenu.colors.itemColor = "\1n\1w";
-		gMainMenu.colors.selectedItemColor = "\1n\1" + "4\1w\1h";
+		gMainMenu.colors.itemColor = "\x01n\x01w";
+		gMainMenu.colors.selectedItemColor = "\x01n\x01" + "4\x01w\x01h";
 	}
 	// Get the user's choice and take appropriate action
 	var userChoice = gMainMenu.GetVal(true);
@@ -774,14 +784,14 @@ function DoMainMenu()
 		if (msg_area.sub[gSubBoardCode].can_post)
 			nextProgramState = VOTING_ON_A_POLL;
 		else
-			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
+			DisplayErrorWithPause("\x01y\x01h" + RemoveCRLFCodes(processBBSTextDatText(bbs.text(CantPostOnSub))), gMessageRow, false);
 	}
 	else if (userChoice == answerAllPollsOpt)
 	{
 		if (msg_area.sub[gSubBoardCode].can_post)
 			nextProgramState = VOTE_ON_ALL_POLLS;
 		else
-			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
+			DisplayErrorWithPause("\x01y\x01h" + RemoveCRLFCodes(processBBSTextDatText(bbs.text(CantPostOnSub))), gMessageRow, false);
 	}
 	else if (userChoice == createPollOpt)
 	{
@@ -794,7 +804,7 @@ function DoMainMenu()
 			var curSubCodeBackup = bbs.cursub_code;
 			bbs.cursub_code = gSubBoardCode;
 			// Let the user post a poll
-			console.print("\1n");
+			console.print("\x01n");
 			console.gotoxy(1, console.screen_rows);
 			bbs.exec("?postpoll.js");
 			// Restore the user's sub-board
@@ -804,7 +814,7 @@ function DoMainMenu()
 			gSubBoardPollCountObj = CountPollsInSubBoard(gSubBoardCode);
 		}
 		else
-			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
+			DisplayErrorWithPause("\x01y\x01h" + RemoveCRLFCodes(processBBSTextDatText(bbs.text(CantPostOnSub))), gMessageRow, false);
 	}
 	else if (userChoice == viewResultsOpt)
 	{
@@ -812,10 +822,10 @@ function DoMainMenu()
 			nextProgramState = VIEWING_VOTE_RESULTS;
 		else
 		{
-			var errorMsg = format(RemoveCRLFCodes(bbs.text(CantReadSub)), msg_area.sub[gSubBoardCode].grp_name, msg_area.sub[gSubBoardCode].name);
-			if (errorMsg.substr(0, 2) == "\1n")
+			var errorMsg = format(RemoveCRLFCodes(processBBSTextDatText(bbs.text(CantReadSub))), msg_area.sub[gSubBoardCode].grp_name, msg_area.sub[gSubBoardCode].name);
+			if (errorMsg.substr(0, 2) == "\x01n")
 				errorMsg = errorMsg.substr(2);
-			DisplayErrorWithPause("\1y\1h" + errorMsg, gMessageRow, false);
+			DisplayErrorWithPause("\x01y\x01h" + errorMsg, gMessageRow, false);
 		}
 	}
 	else if (userChoice == viewStatsOpt)
@@ -851,7 +861,7 @@ function ChooseVotePoll(pLetUserChoose)
 	var nextProgramState = VOTING_ON_A_POLL;
 	// Clear the screen between the top & bottom borders
 	var formatStr = "%" + console.screen_columns + "s";
-	console.print("\1n");
+	console.print("\x01n");
 	for (var posY = gMessageRow; posY < gBottomBorderRow; ++posY)
 	{
 		console.gotoxy(1, posY);
@@ -863,7 +873,7 @@ function ChooseVotePoll(pLetUserChoose)
 	if (votePollInfo.errorMsg.length > 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1y\1h" + votePollInfo.errorMsg + "\1n");
+		console.print("\x01n\x01y\x01h" + votePollInfo.errorMsg + "\x01n");
 		console.crlf();
 		console.pause();
 		return MAIN_MENU;
@@ -871,12 +881,12 @@ function ChooseVotePoll(pLetUserChoose)
 	else if (votePollInfo.msgHdrs.length == 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1g");
+		console.print("\x01n\x01g");
 		if (votePollInfo.pollsExist)
 			console.print("You have already voted on all polls in this sub-board, or all polls are closed");
 		else
 			console.print("There are no polls to vote on in this sub-board");
-		console.print("\1n");
+		console.print("\x01n");
 		console.crlf();
 		console.pause();
 		return MAIN_MENU;
@@ -885,16 +895,16 @@ function ChooseVotePoll(pLetUserChoose)
 	if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n" + RemoveCRLFCodes(bbs.text(R_Voting)) + "\1n");
+		console.print("\x01n" + RemoveCRLFCodes(processBBSTextDatText(bbs.text(R_Voting))) + "\x01n");
 		console.crlf();
 		console.pause();
 		return MAIN_MENU;
 	}
 
 	// Draw the columns to frame the voting polls
-	console.print("\1n");
+	console.print("\x01n");
 	var pleaseSelectTextRow = 6;
-	listTopRow = pleaseSelectTextRow + 2;
+	var listTopRow = pleaseSelectTextRow + 2;
 	var drawColRetObj = DrawVoteColumns(listTopRow);
 
 	//var startCol = drawColRetObj.columnX1+2;
@@ -922,10 +932,10 @@ function ChooseVotePoll(pLetUserChoose)
 		var drawPollsMenu = true;
 		while (nextProgramState == VOTING_ON_A_POLL)
 		{
-			var pleaseSectPollText = "\1n\1c\1hP\1n\1clease select a poll to vote on (\1hESC\1n\1g=\1cReturn)\1n";
+			var pleaseSectPollText = "\x01n\x01c\x01hP\x01n\x01clease select a poll to vote on (\x01hESC\x01n\x01g=\x01cReturn)\x01n";
 			console.gotoxy(18, pleaseSelectTextRow);
 			console.print(pleaseSectPollText);
-			console.print("\1n");
+			console.print("\x01n");
 			var chosenMsgNum = pollsMenu.GetVal(drawPollsMenu);
 			if (chosenMsgNum != null)
 			{
@@ -948,11 +958,11 @@ function ChooseVotePoll(pLetUserChoose)
 		for (var i = 0; i < votePollInfo.msgHdrs.length; ++i)
 		{
 			// Display the poll number
-			//var pollNumText = format("\1n\1c%3d of %-3d", +(i+1), votePollInfo.msgHdrs.length);
-			var pollNumText = format("\1n\1c%3d/%-3d", +(i+1), votePollInfo.msgHdrs.length);
+			//var pollNumText = format("\x01n\x01c%3d of %-3d", +(i+1), votePollInfo.msgHdrs.length);
+			var pollNumText = format("\x01n\x01c%3d/%-3d", +(i+1), votePollInfo.msgHdrs.length);
 			console.gotoxy(1, console.screen_rows-4);
 			console.print(pollNumText);
-			pollNumTextLen = strip_ctrl(pollNumText).length;
+			pollNumTextLen = console.strlen(pollNumText); //strip_ctrl(pollNumText).length;
 			// Let the user vote on the poll
 			var voteRetObj = DisplayPollOptionsAndVote(gSubBoardCode, votePollInfo.msgHdrs[i].number, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
 			if (voteRetObj.userExited)
@@ -961,13 +971,13 @@ function ChooseVotePoll(pLetUserChoose)
 			{
 				DisplayErrorWithPause(voteRetObj.errorMsg, gMessageRow, voteRetObj.mnemonicsRequiredForErrorMsg);
 				console.gotoxy(1, console.screen_rows-4);
-				printf("\1n%" + strip_ctrl(pollNumText).length + "s", "");
+				printf("\x01n%" + pollNumTextLen + "s", "");
 				break;
 			}
 		}
 		// Erase the poll number text
 		console.gotoxy(1, console.screen_rows-4);
-		printf("\1n%" + strip_ctrl(pollNumText).length + "s", "");
+		printf("\x01n%" + pollNumTextLen + "s", "");
 	}
 
 	return nextProgramState;
@@ -1009,7 +1019,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 			//var ESCQuitY = console.screen_rows-17;
 			var ESCQuitY = console.screen_rows-10;
 			console.gotoxy(ESCQuitX, ESCQuitY);
-			console.print("\1n\1c\1hESC\1g=\1n\1cQuit\1n");
+			console.print("\x01n\x01c\x01hESC\x01g=\x01n\x01cQuit\x01n");
 
 			// Get the poll options and let the user choose one
 			var msgHdr = msgbase.get_msg_header(false, pMsgNum, true);
@@ -1021,21 +1031,21 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				var pollSubjectStartCol = (console.screen_columns / 2) - (pollSubject.length / 2);
 				var subjectRow = pStartRow-5;
 				console.gotoxy(pollSubjectStartCol, subjectRow);
-				console.print("\1n\1g\1h" + pollSubject + "\1n");
+				console.print("\x01n\x01g\x01h" + pollSubject + "\x01n");
 				// Write the maximum number of choices possible
 				var numChoicesRow = subjectRow+1;
 				var numChoicesPossibleText = "";
 				if (msgHdr.votes > 1)
-					numChoicesPossibleText = format("\1n\1gYou can submit up to \1h%d\1n\1g choices. Spacebar=Choose, Enter=Submit", msgHdr.votes);
+					numChoicesPossibleText = format("\x01n\x01gYou can submit up to \x01h%d\x01n\x01g choices. Spacebar=Choose, Enter=Submit", msgHdr.votes);
 				else
-					numChoicesPossibleText = format("\1n\1gYou can submit up to \1h%d\1n\1g choice. Enter=Submit", msgHdr.votes);
-				numChoicesPossibleText += ", ESC=Quit\1n";
+					numChoicesPossibleText = format("\x01n\x01gYou can submit up to \x01h%d\x01n\x01g choice. Enter=Submit", msgHdr.votes);
+				numChoicesPossibleText += ", ESC=Quit\x01n";
 				var numChoicesPossibleTextLen = strip_ctrl(numChoicesPossibleText).length;
 				var numChoicesCol = (console.screen_columns / 2) - (numChoicesPossibleTextLen / 2);
 				console.gotoxy(numChoicesCol, numChoicesRow);
 				console.print(numChoicesPossibleText);
 				// Output up to the first 3 poll comment lines
-				//console.print("\1n");
+				//console.print("\x01n");
 				var i = 0;
 				var commentStartRow = pStartRow - 3;
 				for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
@@ -1058,8 +1068,8 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 					optionsMenu.multiSelect = false;
 				for (i = 0; i < pollTextAndOpts.options.length; ++i)
 					optionsMenu.Add(pollTextAndOpts.options[i], i+1);
-				optionsMenu.colors.itemColor = "\1c";
-				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
+				optionsMenu.colors.itemColor = "\x01c";
+				optionsMenu.colors.selectedItemColor = "\x01b\x01" + "7";
 				// Get the user's choice(s) on the poll
 				var userChoice = optionsMenu.GetVal(true);
 				// Erase the poll subject text so it doesn't look weird when the
@@ -1084,17 +1094,17 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 					// If there was an error, then show it.  Otherwise, show a success message.
 					//var firstLineEraseLength = pollSubject.length;
 					console.gotoxy(1, subjectRow);
-					printf("\1n%" + pollSubject.length + "s", "");
+					printf("\x01n%" + pollSubject.length + "s", "");
 					console.gotoxy(1, subjectRow);
 					if (voteRetObj.errorMsg.length > 0)
 					{
 						var voteErrMsg = voteRetObj.errorMsg.substr(0, console.screen_columns - 2);
 						firstLineEraseLength = voteErrMsg.length;
-						console.print("\1y\1h* " + voteErrMsg);
+						console.print("\x01y\x01h* " + voteErrMsg);
 					}
 					else
 					{
-						console.print("\1gYour vote was successfully saved.");
+						console.print("\x01gYour vote was successfully saved.");
 						firstLineEraseLength = 33;
 						IncrementNumPollsVotedForUser();
 					}
@@ -1104,7 +1114,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 					retObj.userExited = true;
 
 				// Before returning, erase the comment lines from the screen
-				console.print("\1n");
+				console.print("\x01n");
 				console.gotoxy(1, subjectRow);
 				printf("%" + firstLineEraseLength + "s", "");
 				console.gotoxy(numChoicesCol, numChoicesRow);
@@ -1122,12 +1132,12 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 
 			// Erase the ESC=Quit text
 			console.gotoxy(ESCQuitX, ESCQuitY);
-			printf("\1n%8s", "");
+			printf("\x01n%8s", "");
 		}
 		else
 		{
 			// The user has already voted
-			retObj.errorMsg = bbs.text(VotedAlready);
+			retObj.errorMsg = processBBSTextDatText(bbs.text(VotedAlready));
 			retObj.errorMsg = RemoveCRLFCodes(retObj.errorMsg);
 			retObj.mnemonicsRequiredForErrorMsg = true;
 		}
@@ -1588,8 +1598,8 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 				voteOptDescLen = 27;
 
 			// Format strings for outputting the voting option lines
-			var unvotedOptionFormatStr = "\1n\1" + "0\1c\1h%2d\1n\1" + "0\1c: \1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n\1" + "0";
-			var votedOptionFormatStr = "\1n\1" + "0\1c\1h%2d\1n\1" + 0 + "\1c: \1" + "5\1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n\1" + "0";
+			var unvotedOptionFormatStr = "\x01n\x01" + "0\x01c\x01h%2d\x01n\x01" + "0\x01c: \x01w\x01h%-" + voteOptDescLen + "s [%-4d %6.2f%]\x01n\x01" + "0";
+			var votedOptionFormatStr = "\x01n\x01" + "0\x01c\x01h%2d\x01n\x01" + 0 + "\x01c: \x01" + "5\x01w\x01h%-" + voteOptDescLen + "s [%-4d %6.2f%]\x01n\x01" + "0";
 			// Add up the total number of votes so that we can
 			// calculate vote percentages.
 			var totalNumVotes = 0;
@@ -1638,14 +1648,14 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			// if  voting is allowed in this sub-board and the current logged-in
 			// user has not voted on this message, then append some text saying how to vote.
 			if ((pMsgHdr.auxattr & POLL_CLOSED) == POLL_CLOSED) // If the poll is closed
-				msgBody += "\1n\1y\1hThis poll is closed for voting.\1n\r\n";
+				msgBody += "\x01n\x01y\x01hThis poll is closed for voting.\x01n\r\n";
 			else
 			{
 				var votingAllowed = ((pSubBoardCode != "mail") &&
 				                     (((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == 0)) &&
 				                     ((user.security.restrictions & UFLAG_V) == 0)); // Would be UFLAG_V if the user isn't allowed to vote
 				if (votingAllowed && !HasUserVotedOnMsg(pMsgHdr.number, pSubBoardCode, pMsgbase, pUser))
-					msgBody += "\1n\1" + "0\r\n\1gTo vote in this poll, press \1w\1h" + gReaderKeys.vote + "\1n\1" + "0\1g now.\r\n";
+					msgBody += "\x01n\x01" + "0\r\n\x01gTo vote in this poll, press \x01w\x01h" + gReaderKeys.vote + "\x01n\x01" + "0\x01g now.\r\n";
 			}
 
 			// If the current logged-in user created this poll, then show the
@@ -1659,8 +1669,10 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 				{
 					// Get the line from text.dat for writing who voted & when.  It
 					// is a format string and should look something like this:
-					//"\r\n\1n\1" + "0\1hOn %s, in \1c%s \1n\1" + "0\1c%s\r\n\1h\1m%s voted in your poll: \1n\1" + "0\1h%s\r\n" 787 PollVoteNotice
-					var userVotedInYourPollText = "\1n\1w\1h" + bbs.text(PollVoteNotice);
+					//"\r\n\x01n\x01" + "0\x01hOn %s, in \x01c%s \x01n\x01" + "0\x01c%s\r\n\x01h\x01m%s voted in your poll: \x01n\x01" + "0\x01h%s\r\n" 787 PollVoteNotice
+					// For some reason, the bright white text in the PollVoteNotice text here will actually
+					// appear as bright black unless we replace \x01n\x01h with \x01n\x01w\x01h
+					var userVotedInYourPollText = processBBSTextDatText(bbs.text(PollVoteNotice));
 
 					// Pass true to get_all_msg_headers() to tell it to return vote messages
 					// (the parameter was introduced in Synchronet 3.17+)
@@ -1687,7 +1699,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 		msgBody = pMsgbase.get_msg_body(false, pMsgHdr.number);
 
 	// Remove any Synchronet pause codes that might exist in the message
-	msgBody = msgBody.replace("\1p", "").replace("\1P", "");
+	msgBody = msgBody.replace(/\\[xX]01[pP]/g, "");
 
 	// If the user is a sysop, this is a moderated message area, and the message
 	// hasn't been validated, then prepend the message with a message to let the
@@ -1696,11 +1708,11 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 	{
 		if (gUserIsSysop && msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
 		{
-			var validateNotice = "\1n\1h\1yThis is an unvalidated message in a moderated area.  Press "
-							   + gReaderKeys.validateMsg + " to validate it.\r\n\1g";
+			var validateNotice = "\x01n\x01h\x01yThis is an unvalidated message in a moderated area.  Press "
+							   + gReaderKeys.validateMsg + " to validate it.\r\n\x01g";
 			for (var i = 0; i < 79; ++i)
-				validateNotice += "Ä"; // Horizontal single line
-			validateNotice += "\1n\r\n";
+				validateNotice += HORIZONTAL_SINGLE;
+			validateNotice += "\x01n\r\n";
 			msgBody = validateNotice + msgBody;
 		}
 	}
@@ -1739,13 +1751,6 @@ function GetPollTextAndOpts(pMsgHdr)
 
 		if (pMsgHdr.hasOwnProperty("field_list"))
 		{
-			// Go through field_list and append the voting options and stats to
-			// msgBody
-			var pollComment = "";
-			var optionNum = 1;
-			var numVotes = 0;
-			var votePercentage = 0;
-			var tallyIdx = 0;
 			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 			{
 				if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
@@ -1784,13 +1789,14 @@ function GetPollTextAndOpts(pMsgHdr)
 //                           If something went wrong, this will be null.
 function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pRemoveNLsFromVoteText)
 {
-	var retObj = new Object();
-	retObj.BBSHasVoteFunction = (typeof(pMsgbase.vote_msg) === "function");
-	retObj.savedVote = false;
-	retObj.userQuit = false;
-	retObj.errorMsg = "";
-	retObj.mnemonicsRequiredForErrorMsg = false;
-	retObj.updatedHdr = null;
+	var retObj = {
+		BBSHasVoteFunction: (typeof(pMsgbase.vote_msg) === "function"),
+		savedVote: false,
+		userQuit: false,
+		errorMsg: "",
+		mnemonicsRequiredForErrorMsg: false,
+		updatedHdr: null
+	};
 
 	// Don't allow voting for personal email
 	if (pSubBoardCode == "mail")
@@ -1802,7 +1808,7 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 	if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
 	{
 		// Use the line from text.dat that says the user is not allowed to vote
-		retObj.errorMsg = "\1n" + RemoveCRLFCodes(bbs.text(R_Voting));
+		retObj.errorMsg = "\x01n" + RemoveCRLFCodes(processBBSTextDatText(bbs.text(R_Voting)));
 		return retObj;
 	}
 
@@ -1811,12 +1817,12 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 	if (!retObj.BBSHasVoteFunction)
 		return retObj;
 
-	var removeNLsFromVoteText = (typeof(pRemoveNLsFromVoteText) === "boolean" ? pRemoveNLsFromVoteText : false)
+	var removeNLsFromVoteText = (typeof(pRemoveNLsFromVoteText) === "boolean" ? pRemoveNLsFromVoteText : false);
 
 	// See if voting is allowed in the current sub-board
 	if ((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == SUB_NOVOTING)
 	{
-		retObj.errorMsg = bbs.text(VotingNotAllowed);
+		retObj.errorMsg = processBBSTextDatText(bbs.text(VotingNotAllowed));
 		if (removeNLsFromVoteText)
 			retObj.errorMsg = RemoveCRLFCodes(retObj.errorMsg);
 		retObj.mnemonicsRequiredForErrorMsg = true;
@@ -1865,7 +1871,7 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 		}
 		else if (userVotedMaxVotes)
 		{
-			retObj.errorMsg = bbs.text(VotedAlready);
+			retObj.errorMsg = processBBSTextDatText(bbs.text(VotedAlready));
 			if (removeNLsFromVoteText)
 				retObj.errorMsg = RemoveCRLFCodes(retObj.errorMsg);
 			retObj.mnemonicsRequiredForErrorMsg = true;
@@ -1876,7 +1882,7 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 	// If the user has voted on this message already, then set an error message and return.
 	if (HasUserVotedOnMsg(pMsgHdr.number, pSubBoardCode, pMsgbase, pUser))
 	{
-		retObj.errorMsg = bbs.text(VotedAlready);
+		retObj.errorMsg = processBBSTextDatText(bbs.text(VotedAlready));
 		if (removeNLsFromVoteText)
 			retObj.errorMsg = RemoveCRLFCodes(retObj.errorMsg);
 		retObj.mnemonicsRequiredForErrorMsg = true;
@@ -1893,10 +1899,11 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 
 	// Do some initial setup of the header for the vote message to be
 	// saved to the messagebase
-	var voteMsgHdr = new Object();
-	voteMsgHdr.thread_back = pMsgHdr.number;
-	voteMsgHdr.reply_id = pMsgHdr.id;
-	voteMsgHdr.from = (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias;
+	var voteMsgHdr = {
+		thread_back: pMsgHdr.number,
+		reply_id: pMsgHdr.id,
+		from: (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias
+	};
 	if (pMsgHdr.from.hasOwnProperty("from_net_type"))
 	{
 		voteMsgHdr.from_net_type = pMsgHdr.from_net_type;
@@ -1913,10 +1920,10 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 			var userInputNum = 0;
 			if (typeof(pUserVoteNumber) != "number")
 			{
-				console.clear("\1n");
-				var selectHdr = bbs.text(BallotHdr);
-				printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
-				var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
+				console.clear("\x01n");
+				var selectHdr = processBBSTextDatText(bbs.text(BallotHdr));
+				printf("\x01n" + selectHdr + "\x01n", pMsgHdr.subject);
+				var optionFormatStr = "\x01n\x01c\x01h%2d\x01n\x01c: \x01h%s\x01n";
 				var optionNum = 1;
 				for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 				{
@@ -1931,9 +1938,9 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 				if (pMsgHdr.votes > 1)
 				{
 					// Support multiple answers from the user
-					console.print("\1n\1gYour vote numbers, separated by commas, up to \1h" + pMsgHdr.votes + "\1n\1g (Blank/Q=Quit):");
+					console.print("\x01n\x01gYour vote numbers, separated by commas, up to \x01h" + pMsgHdr.votes + "\x01n\x01g (Blank/Q=Quit):");
 					console.crlf();
-					console.print("\1c\1h");
+					console.print("\x01c\x01h");
 					var userInput = consoleGetStrWithValidKeys("0123456789,Q", null, false);
 					if ((userInput.length > 0) && (userInput.toUpperCase() != "Q"))
 					{
@@ -1979,14 +1986,14 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 				{
 					// Get the selection prompt text from text.dat and replace the %u or %d with
 					// the number 1 (default option)
-					var selectPromptText = bbs.text(SelectItemWhich);
+					var selectPromptText = processBBSTextDatText(bbs.text(SelectItemWhich));
 					selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
 					console.mnemonics(selectPromptText);
 					var maxNum = optionNum - 1;
 					userInputNum = console.getnum(maxNum);
 					if (userInputNum == -1) // The user chose Q to quit
 						retObj.userQuit = true;
-					console.print("\1n");
+					console.print("\x01n");
 				}
 			}
 			else
@@ -2025,9 +2032,9 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 {
 	var clearScr = (typeof(pClearScr) == "boolean" ? pClearScr : true);
 	if (clearScr)
-		console.clear("\1n");
+		console.clear("\x01n");
 	else
-		console.print("\1n");
+		console.print("\x01n");
 
 	// Borders and stylized SlyVote text
 	DisplayTopScreenBorder();
@@ -2037,13 +2044,13 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	DisplayBottomScreenBorder();
 	// Write the current sub-board
 	var subBoardText = msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name;
-	subBoardText = "\1n\1b\1hCurrent sub-board: \1w" + subBoardText.substr(0, console.scren_columns);
+	subBoardText = "\x01n\x01b\x01hCurrent sub-board: \x01w" + subBoardText.substr(0, console.scren_columns);
 	var subBoardTextX = (console.screen_columns/2) - (strip_ctrl(subBoardText).length/2);
 	console.gotoxy(subBoardTextX, 9);
 	console.print(subBoardText);
 	// Write the number of polls in the sub-board
 	var numOpenPolls = gSubBoardPollCountObj.numPolls-gSubBoardPollCountObj.numClosedPolls;
-	var numPollsText = format("\1n\1b\1hThere are \1w%d \1bopen polls in this sub-board (\1w%d\1b total)",
+	var numPollsText = format("\x01n\x01b\x01hThere are \x01w%d \x01bopen polls in this sub-board (\x01w%d\x01b total)",
 	                          numOpenPolls,
 							  gSubBoardPollCountObj.numPolls);
 	var numPollsTextX = (console.screen_columns/2) - (strip_ctrl(numPollsText).length/2);
@@ -2058,21 +2065,21 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	}
 	else
 		numPollsVotedOn = gSubBoardPollCountObj.numPollsUserVotedOn;
-	numPollsText = format("\1n\1b\1hYou have voted on \1w%s \1bpolls in this sub-board (\1w%d\1b remaining)",
+	numPollsText = format("\x01n\x01b\x01hYou have voted on \x01w%s \x01bpolls in this sub-board (\x01w%d\x01b remaining)",
 	                      numPollsVotedOn, gSubBoardPollCountObj.numPollsRemainingForUser);
 	var numPollsTextX = (console.screen_columns/2) - (strip_ctrl(numPollsText).length/2);
 	console.gotoxy(numPollsTextX, 11);
 	console.print(numPollsText);
 	// Write the SlyVote version centered
-	console.print("\1n");
+	console.print("\x01n");
 	var fieldWidth = 28;
 	console.gotoxy(41, 14);
-	console.print(CenterText("\1n\1hSlyVote v\1c" + SLYVOTE_VERSION.replace(".", "\1b.\1c") + "\1n", fieldWidth));
+	console.print(CenterText("\x01n\x01hSlyVote v\x01c" + SLYVOTE_VERSION.replace(".", "\x01b.\x01c") + "\x01n", fieldWidth));
 	// Write the "Registered to" text centered
 	console.gotoxy(41, 17);
-	console.print(CenterText("\1n\1h" + system.operator + "\1n", fieldWidth));
+	console.print(CenterText("\x01n\x01h" + system.operator + "\x01n", fieldWidth));
 	console.gotoxy(41, 18);
-	console.print(CenterText("\1n\1h" + system.name + "\1n", fieldWidth));
+	console.print(CenterText("\x01n\x01h" + system.name + "\x01n", fieldWidth));
 	// Write the menu of options
 	var curPos = { x: 7, y: 13 };
 	var retObj = { optMenuX: curPos.x+4, optMenuY: curPos.y }; // For the option menu to be used later
@@ -2082,7 +2089,7 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	for (var optNum = 1; optNum <= numMenuOptions; ++optNum)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
-		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7" + optNum + "\1n\1" + "7\1k\1hÞ\1n");
+		console.print("\x01" + "7\x01h\x01w" + THIN_RECTANGLE_LEFT + "\x01n\x01k\x01" + "7" + optNum + "\x01n\x01" + "7\x01k\x01h" + THIN_RECTANGLE_RIGHT + "\x01n");
 	}
 
 	return retObj;
@@ -2090,50 +2097,88 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 
 function DisplayTopScreenBorder()
 {
-	console.print("0");
-	console.crlf();
-	console.print("nh nbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜhþcßbþnbÜ");
-	console.crlf();
+	if (typeof(DisplayTopScreenBorder.borderText) !== "string")
+	{
+		DisplayTopScreenBorder.borderText = strRepeat("\x01n\x01b" + MID_BLOCK + "\x01h" + TALL_UPPER_MID_BLOCK + "\x01c" + UPPER_CENTER_BLOCK + "\x01b" + TALL_UPPER_MID_BLOCK, 19);
+		DisplayTopScreenBorder.borderText += "\x01n\x01b" + MID_BLOCK;
+	}
+
+	console.print("\x01n");
+	//console.crlf();
+	console.print(DisplayTopScreenBorder.borderText);
+	console.print("\x01n");
+	//console.crlf();
 }
 
 function DisplaySlyVoteText()
 {
-	console.print("Ÿú");
-	console.crlf();
-	console.print("ŠhcÜÜÜÜÜÜÜ ncÜÜÜ  hbú  ncÜÜÜ ÜÜÜ hÜÜÜ ÜÜÜ ncÜÜÜÜÜÜÜ ÜÜÜÜÜÜÜ ÜÜÜÜÜÜÜ hú");
-	console.crlf();
-	console.print("ŠÛ ÜÜÜÜÛ ncÛ Û„ÛÜßÛßÜÛ hÛ Û Û Û ncÛ ÜÜÜ Û ÛÜÜ ÜÜÛ Û ÜÜÜÜÛ");
-	console.crlf();
-	console.print("  hú‡ÛÜÜÜÜ Û ncÛ ÛÜÜÜÜ  ßÛ Ûß  hÛÜßÛßÜÛ ncÛ ÛÜÛ Û   Û Û   Û ÜÜÜÛÜ");
-	console.crlf();
-	console.print("†hbú   cÛÜÜÜÜÜÛ ncÛÜÜÜÜÜÛ hú ncÛÜÛ    hßÛÜÛß nbúcÛÜÜÜÜÜÛ   ÛÜÛ hú ncÛÜÜÜÜÜÛ   hbú");
-	console.crlf();
-	console.print("©nbú");
-	console.crlf();
+	if (typeof(DisplaySlyVoteText.slyVoteTextLines) === "undefined")
+	{
+		var LOWER_CENTER_BLOCK_2 = strRepeat(LOWER_CENTER_BLOCK, 2);
+		var LOWER_CENTER_BLOCK_3 = strRepeat(LOWER_CENTER_BLOCK, 3);
+		var LOWER_CENTER_BLOCK_4 = strRepeat(LOWER_CENTER_BLOCK, 4);
+		var LOWER_CENTER_BLOCK_5 = strRepeat(LOWER_CENTER_BLOCK, 5);
+		var LOWER_CENTER_BLOCK_7 = strRepeat(LOWER_CENTER_BLOCK, 7);
+		var spaces11 = "           ";
+		DisplaySlyVoteText.slyVoteTextLines = [
+						"\x01" + spaces11 + TINY_DOT,
+						spaces11 + "\x01n\x01h\x01c" + LOWER_CENTER_BLOCK_7 + " \x01n\x01c" + LOWER_CENTER_BLOCK_3 + "  \x01h\x01b" + TINY_DOT + "  \x01n\x01c" + LOWER_CENTER_BLOCK_3 + " " + LOWER_CENTER_BLOCK_3 + " \x01h" + LOWER_CENTER_BLOCK_3 + " " + LOWER_CENTER_BLOCK_3 + " \x01n\x01c" + LOWER_CENTER_BLOCK_7 + " " + LOWER_CENTER_BLOCK_7 + " " + LOWER_CENTER_BLOCK_7 + " \x01h" + TINY_DOT,
+						spaces11 + "\x01n\x01h\x01c" + BLOCK4 + " " + LOWER_CENTER_BLOCK_4 + BLOCK4 + " \x01n\x01c" + BLOCK4 + " " + BLOCK4 + "\x01      " + BLOCK4 + LOWER_CENTER_BLOCK + UPPER_CENTER_BLOCK + BLOCK4 + UPPER_CENTER_BLOCK + LOWER_CENTER_BLOCK + BLOCK4 + " \x01h" + BLOCK4 + " " + BLOCK4 + " " + BLOCK4 + " " + BLOCK4 + " \x01n\x01c" + BLOCK4 + " " + LOWER_CENTER_BLOCK_3 + " " + BLOCK4 + " " + BLOCK4 + LOWER_CENTER_BLOCK_2 + " " + LOWER_CENTER_BLOCK_2 + BLOCK4 + " " + BLOCK4 + " " + LOWER_CENTER_BLOCK_4 + BLOCK4 + "",
+						" \x01h" + TINY_DOT + "         " + BLOCK4 + strRepeat(LOWER_CENTER_BLOCK, 4) + " " + BLOCK4 + " \x01n\x01c" + BLOCK4 + " " + BLOCK4 + LOWER_CENTER_BLOCK_4 + "  " + UPPER_CENTER_BLOCK + BLOCK4 + " " + BLOCK4 + UPPER_CENTER_BLOCK + "  \x01h" + BLOCK4 + LOWER_CENTER_BLOCK + UPPER_CENTER_BLOCK + BLOCK4 + UPPER_CENTER_BLOCK + LOWER_CENTER_BLOCK + BLOCK4 + " \x01n\x01c" + BLOCK4 + " " + BLOCK4 + LOWER_CENTER_BLOCK + BLOCK4 + " " + BLOCK4 + "   " + BLOCK4 + " " + BLOCK4 + "   " + BLOCK4 + " " + LOWER_CENTER_BLOCK_3 + BLOCK4 + LOWER_CENTER_BLOCK,
+						"\x01n       \x01h\x01b" + TINY_DOT + "   \x01c" + BLOCK4 + LOWER_CENTER_BLOCK_5 + BLOCK4 + " \x01n\x01c" + BLOCK4 + LOWER_CENTER_BLOCK_5 + BLOCK4 + " \x01h" + TINY_DOT + " \x01n\x01c" + BLOCK4 + LOWER_CENTER_BLOCK + BLOCK4 + "    \x01h" + UPPER_CENTER_BLOCK + BLOCK4 + LOWER_CENTER_BLOCK + BLOCK4 + UPPER_CENTER_BLOCK + " \x01n\x01b" + TINY_DOT + "\x01c" + BLOCK4 + LOWER_CENTER_BLOCK_5 + BLOCK4 + "   " + BLOCK4 + LOWER_CENTER_BLOCK + BLOCK4 + " \x01h" + TINY_DOT + " \x01n\x01c" + BLOCK4 + LOWER_CENTER_BLOCK_5 + BLOCK4 + "   \x01h\x01b" + TINY_DOT,
+						"\x01n                                          \x01b" + TINY_DOT
+					];
+	}
+
+	console.print("\x01n");
+	for (var i = 0; i < DisplaySlyVoteText.slyVoteTextLines.length; ++i)
+	{
+		console.print(DisplaySlyVoteText.slyVoteTextLines[i]);
+		console.crlf();
+	}
+	console.print("\x01n");
 }
 
 function DisplayVerAndRegBorders()
 {
+	if (typeof(DisplayVerAndRegBorders.borderLines) === "undefined")
+	{
+		var HORIZONTAL_SINGLE_2 = strRepeat(HORIZONTAL_SINGLE, 2);
+		var HORIZONTAL_SINGLE_3 = strRepeat(HORIZONTAL_SINGLE, 3);
+		DisplayVerAndRegBorders.borderLines = [
+								"\x01b\x01h" + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + "\x01k" + strRepeat(HORIZONTAL_SINGLE, 2) + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE_2 + "\x01h\x01k" + HORIZONTAL_SINGLE_3 + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + UPPER_RIGHT_SINGLE,
+								"\x01n\x01b" + VERTICAL_SINGLE + "\x01n                            \x01k\x01h" + VERTICAL_SINGLE,
+								"\x01b" + LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE_2 + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE_3 + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + LOWER_RIGHT_SINGLE,
+								UPPER_LEFT_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE_3 + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01b" + RIGHT_T_SINGLE + " \x01n\x01bR\x01he\x01n\x01bgistere\x01h\x01kd To: \x01b" + LEFT_T_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + UPPER_RIGHT_SINGLE,
+								"\x01n\x01b" + VERTICAL_SINGLE + "\x01n                            \x01b\x01h" + VERTICAL_SINGLE,
+								"\x01n\x01k\x01h" + VERTICAL_SINGLE + "\x01n                            \x01b" + VERTICAL_SINGLE,
+								"\x01h" + LOWER_LEFT_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_3 + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_3 + "\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01b" + LOWER_RIGHT_SINGLE
+					];
+	}
+
 	var curPos = { x: 40, y: 13 };
 	console.gotoxy(curPos.x, curPos.y++);
-	console.print("hÚÄkÄÄbÄnbÄÄhkÄÄÄbÄnbÄhÄÄnbÄhÄkÄbÄÄnbÄhkÄnbÄhÄkÄÄbÄnbÄhkÄnbÄh¿");
-	console.gotoxy(curPos.x, curPos.y++);
-	console.print("nb³†hw         c b c  ‡k³");
-	console.gotoxy(curPos.x, curPos.y++);
-	console.print("bÀÄÄkÄÄnbÄÄÄhkÄbÄkÄbÄnbÄhÄÄkÄnbÄhkÄnbÄhÄkÄbÄkÄÄbÄkÄbÄnbÄhÄnbÙ");
-	console.gotoxy(curPos.x, curPos.y++);
-	console.print("ÚhkÄnbÄÄÄhkÄb´ nbRhenbgisterehkd To: bÃkÄnbÄhÄkÄÄ¿");
-	console.gotoxy(curPos.x, curPos.y++);
-	console.print("nb³›h³");
-	console.gotoxy(curPos.x, curPos.y++);
-	console.print("k³›nb³");
-	console.gotoxy(curPos.x, curPos.y++);
-	console.print("hÀkÄnbÄhkÄnbÄhÄÄÄkÄÄbÄnbÄhÄÄÄkÄnbÄhÄnbÄhÄÄnbÄhÄnbÄhÄnbÄhÄnbÄhkÄbÙ");
+	console.print("\x01n");
+	for (var i = 0; i < DisplayVerAndRegBorders.borderLines.length; ++i)
+	{
+		console.print(DisplayVerAndRegBorders.borderLines[i]);
+		console.gotoxy(curPos.x, curPos.y++);
+	}
+	console.print("\x01n");
 }
 
 function DisplayBottomScreenBorder()
 {
-	console.print(" nbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßhþcÜbþnbßn");
+	if (typeof(DisplayBottomScreenBorder.borderText) !== "string")
+	{
+		DisplayBottomScreenBorder.borderText = " " + strRepeat("\x01n\x01b" + UPPER_CENTER_BLOCK + "\x01h" + TALL_UPPER_MID_BLOCK + "\x01c" + LOWER_CENTER_BLOCK + "\x01b" + TALL_UPPER_MID_BLOCK, 19);
+		DisplayBottomScreenBorder.borderText += "\x01n\x01b" + UPPER_CENTER_BLOCK;
+	}
+	console.print("\x01n");
+	//console.crlf();
+	console.print(DisplayBottomScreenBorder.borderText);
+	console.print("\x01n");
+	//console.crlf();
 }
 
 // Centers some text within a specified field length.
@@ -2198,75 +2243,30 @@ function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted, pOnlyOpenPolls)
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		if (typeof(msgbase.get_index) === "function")
+		var msgHdrs = msgbase.get_all_msg_headers(true);
+		for (var prop in msgHdrs)
 		{
-			var msgIndexes = msgbase.get_index();
-			if (msgIndexes != null)
+			// Skip deleted and unreadable messages
+			if ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE)
+				continue;
+			if (!IsReadableMsgHdr(msgHdrs[prop], pSubBoardCode))
+				continue;
+
+			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 			{
-				for (var i = 0; i < msgIndexes.length; ++i)
+				var includeThisPoll = true;
+				if (pOnlyOpenPolls)
+					includeThisPoll = ((msgHdrs[prop].auxattr & POLL_CLOSED) == 0);
+				if (includeThisPoll)
 				{
-					// Skip deleted and unreadable messages
-					if ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE)
-						continue;
-
-					if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+					retObj.pollsExist = true;
+					if (pCheckIfUserVoted)
 					{
-						var msgHdr = msgbase.get_msg_header(false, msgIndexes[i].number, true);
-						if (msgHdr != null)
-						{
-							// Note: IsReadableMsgHdr() checks the 'to' name for unvalidated messages
-							// for the sysop if the sub-board requires validation, but when using get_index(),
-							// the 'to' field seems to be numbers or undefined, so we use the full
-							// header for this check.
-							if (!IsReadableMsgHdr(msgHdr, pSubBoardCode))
-								continue;
-
-							var includeThisPoll = true;
-							if (pOnlyOpenPolls)
-								includeThisPoll = ((msgHdr.auxattr & POLL_CLOSED) == 0);
-							if (includeThisPoll)
-							{
-								retObj.pollsExist = true;
-								if (pCheckIfUserVoted)
-								{
-									if (!HasUserVotedOnMsg(msgHdr.number, pSubBoardCode, msgbase, user))
-										retObj.msgHdrs.push(msgHdr);
-								}
-								else
-									retObj.msgHdrs.push(msgHdr);
-							}
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			var msgHdrs = msgbase.get_all_msg_headers(true);
-			for (var prop in msgHdrs)
-			{
-				// Skip deleted and unreadable messages
-				if ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE)
-					continue;
-				if (!IsReadableMsgHdr(msgHdrs[prop], pSubBoardCode))
-					continue;
-
-				if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
-				{
-					var includeThisPoll = true;
-					if (pOnlyOpenPolls)
-						includeThisPoll = ((msgHdrs[prop].auxattr & POLL_CLOSED) == 0);
-					if (includeThisPoll)
-					{
-						retObj.pollsExist = true;
-						if (pCheckIfUserVoted)
-						{
-							if (!HasUserVotedOnMsg(msgHdrs[prop].number, pSubBoardCode, msgbase, user))
-								retObj.msgHdrs.push(msgHdrs[prop]);
-						}
-						else
+						if (!HasUserVotedOnMsg(msgHdrs[prop].number, pSubBoardCode, msgbase, user))
 							retObj.msgHdrs.push(msgHdrs[prop]);
 					}
+					else
+						retObj.msgHdrs.push(msgHdrs[prop]);
 				}
 			}
 		}
@@ -2279,6 +2279,10 @@ function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted, pOnlyOpenPolls)
 	return retObj;
 }
 
+// Lets the user view the voting results for a sub-board.
+//
+// Parameters:
+//  pSubBoardCode: The internal code of the sub-board to view voting results for
 function ViewVoteResults(pSubBoardCode)
 {
 	var nextProgramState = MAIN_MENU;
@@ -2319,22 +2323,21 @@ function ViewVoteResults(pSubBoardCode)
 				++pollMsgIdx;
 			}
 		}
-		delete msgHdrs; // Free some memory
 		
 		// If there are no polls, then just return
 		if (pollMsgHdrs.length == 0)
 		{
 			msgbase.close();
-			DisplayErrorWithPause("\1n\1y\1hThere are no polls to view.\1n", gMessageRow, false);
+			DisplayErrorWithPause("\x01n\x01y\x01hThere are no polls to view.\x01n", gMessageRow, false);
 			return nextProgramState;
 		}
 
 		// Create the key help line to be displayed at the bottom of the screen
-		var keyText = "\1rLeft\1b, \1rRight\1b, \1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rF\1m)\1birst, \1rL\1m)\1bast, \1r#\1b, ";
+		var keyText = "\x01rLeft\x01b, \x01rRight\x01b, \x01rUp\x01b, \x01rDn\x01b, \x01rPgUp\x01b/\x01rDn\x01b, \x01rF\x01m)\x01birst, \x01rL\x01m)\x01bast, \x01r#\x01b, ";
 		if (PollDeleteAllowed(msgbase, pSubBoardCode))
-			keyText += "\1rDEL\1b, ";
-		keyText += "\1rC\1m)\1blose, \1rQ\1m)\1buit, \1r?";
-		var keyHelpLine = "\1" + "7" + CenterText(keyText, console.screen_columns-1);
+			keyText += "\x01rDEL\x01b, ";
+		keyText += "\x01rC\x01m)\x01blose, \x01rQ\x01m)\x01buit, \x01r?";
+		var keyHelpLine = "\x01" + "7" + CenterText(keyText, console.screen_columns-1);
 
 		// Get the unmodified default header lines to be displayed
 		var displayMsgHdrUnmodified = GetDefaultMsgDisplayHdr();
@@ -2345,7 +2348,7 @@ function ViewVoteResults(pSubBoardCode)
 		                                                 console.screen_columns, frameHeight);
 
 		// Prepare the screen and display the key help line on the last row of the screen
-		console.clear("\1n");
+		console.clear("\x01n");
 		console.gotoxy(1, console.screen_rows);
 		console.print(keyHelpLine);
 
@@ -2365,11 +2368,11 @@ function ViewVoteResults(pSubBoardCode)
 			if (drawKeyHelpLine)
 			{
 				console.gotoxy(1, console.screen_rows);
-				console.print("\1n" + keyHelpLine);
+				console.print("\x01n" + keyHelpLine);
 			}
 
 			// Get the message header lines to be displayed
-			var dateTimeStr = pollMsgHdrs[currentMsgIdx]["date"].replace(/ [-+][0-9]+$/, "");
+			var dateTimeStr = pollMsgHdrs[currentMsgIdx].date.replace(/ [-+][0-9]+$/, "");
 			var displayMsgHdr = GetDisplayMsgHdrForMsg(pollMsgHdrs[currentMsgIdx], displayMsgHdrUnmodified, pSubBoardCode, pollMsgHdrs.length, currentMsgIdx+1, dateTimeStr, false, false);
 			// Display the message header on the screen
 			if (drawMsg)
@@ -2387,7 +2390,7 @@ function ViewVoteResults(pSubBoardCode)
 					gAvatar.draw(pollMsgHdrs[currentMsgIdx].from_ext, pollMsgHdrs[currentMsgIdx].from, pollMsgHdrs[currentMsgIdx].from_net_addr, /* above: */true, /* right-justified: */true);
 					console.attributes = 0;	// Clear the background attribute as the next line might scroll, filling with BG attribute
 				}
-				console.print("\1n");
+				console.print("\x01n");
 			}
 			var msgBodyText = GetMsgBody(msgbase, pollMsgHdrs[currentMsgIdx], pSubBoardCode, user);
 			if (msgBodyText == null)
@@ -2396,7 +2399,7 @@ function ViewVoteResults(pSubBoardCode)
 			// Load the poll text into the Frame object and draw the frame
 			frameAndScrollbar.frame.clear();
 			frameAndScrollbar.frame.attr&=~HIGH;
-			frameAndScrollbar.frame.putmsg(msgBodyText, "\1n");
+			frameAndScrollbar.frame.putmsg(msgBodyText, "\x01n");
 			frameAndScrollbar.frame.scrollTo(0, 0);
 			if (drawMsg)
 			{
@@ -2407,7 +2410,7 @@ function ViewVoteResults(pSubBoardCode)
 			}
 			// Let the user scroll the message, and take appropriate action based
 			// on the user input
-			var scrollRetObj = ScrollFrame(frameAndScrollbar.frame, frameAndScrollbar.scrollbar, 0, "\1n", false, 1, console.screen_rows);
+			var scrollRetObj = ScrollFrame(frameAndScrollbar.frame, frameAndScrollbar.scrollbar, 0, "\x01n", false, 1, console.screen_rows);
 			drawMsg = true;
 			drawKeyHelpLine = false;
 			if (scrollRetObj.lastKeypress == KEY_LEFT)
@@ -2456,14 +2459,13 @@ function ViewVoteResults(pSubBoardCode)
 				{
 					var msgHdrs = msgbase.get_all_msg_headers(true);
 					pollMsgHdrs[currentMsgIdx] = msgHdrs[pollMsgHdrs[currentMsgIdx].number];
-					delete msgHdrs;
 					IncrementNumPollsVotedForUser();
 				}
 				// If there is an error message, then display it at the bottom row.
 				if (voteRetObj.errorMsg.length > 0)
 				{
 					console.gotoxy(1, console.screen_rows-1);
-					printf("\1n%" + +(console.screen_columns-1) + "s", "");
+					printf("\x01n%" + +(console.screen_columns-1) + "s", "");
 					console.gotoxy(1, console.screen_rows-1);
 					if (voteRetObj.mnemonicsRequiredForErrorMsg)
 					{
@@ -2472,10 +2474,10 @@ function ViewVoteResults(pSubBoardCode)
 					}
 					else
 					{
-						console.print("\1n\1y\1h" + voteRetObj.errorMsg.substr(0, console.screen_columns-1));
+						console.print("\x01n\x01y\x01h" + voteRetObj.errorMsg.substr(0, console.screen_columns-1));
 						mswait(ERROR_PAUSE_WAIT_MS);
 						console.gotoxy(1, console.screen_rows-1);
-						printf("\1n%" + strip_ctrl(voteRetObj.errorMsg).length + "s", "");
+						printf("\x01n%" + strip_ctrl(voteRetObj.errorMsg).length + "s", "");
 					}
 					drawMsg = true;
 					drawKeyHelpLine = false;
@@ -2504,7 +2506,7 @@ function ViewVoteResults(pSubBoardCode)
 						{
 							// Prompt to confirm whether the user wants to close the poll
 							console.gotoxy(1, console.screen_rows-1);
-							printf("\1n%" + +(console.screen_columns-1) + "s", "");
+							printf("\x01n%" + +(console.screen_columns-1) + "s", "");
 							console.gotoxy(1, console.screen_rows-1);
 							if (!console.noyes("Close poll"))
 							{
@@ -2513,26 +2515,26 @@ function ViewVoteResults(pSubBoardCode)
 								{
 									pollMsgHdrs[currentMsgIdx].auxattr |= POLL_CLOSED;
 									++gSubBoardPollCountObj.numClosedPolls;
-									pollCloseMsg = "\1n\1cThis poll was successfully closed.";
+									pollCloseMsg = "\x01n\x01cThis poll was successfully closed.";
 								}
 								else
-									pollCloseMsg = "\1n\1r\1h* Failed to close this poll!";
+									pollCloseMsg = "\x01n\x01r\x01h* Failed to close this poll!";
 							}
 						}
 						else
-							pollCloseMsg = "\1n\1y\1hCan't close this poll because it's not yours";
+							pollCloseMsg = "\x01n\x01y\x01hCan't close this poll because it's not yours";
 					}
 					else
-						pollCloseMsg = "\1n\1y\1hThis poll is already closed";
+						pollCloseMsg = "\x01n\x01y\x01hThis poll is already closed";
 				}
 				else
-					pollCloseMsg = "\1n\1y\1hThis message is not a poll";
+					pollCloseMsg = "\x01n\x01y\x01hThis message is not a poll";
 
 				// Write the poll close success/failure/status message
 				if (pollCloseMsg.length > 0)
 				{
 					console.gotoxy(1, console.screen_rows-1);
-					printf("\1n%" + +(console.screen_columns-1) + "s", "");
+					printf("\x01n%" + +(console.screen_columns-1) + "s", "");
 					console.gotoxy(1, console.screen_rows-1);
 					console.print(pollCloseMsg + "\n");
 					mswait(ERROR_PAUSE_WAIT_MS);
@@ -2553,11 +2555,11 @@ function ViewVoteResults(pSubBoardCode)
 				// Move the cursor to the last row of the screen and prompt the
 				// user for the message number.
 				console.gotoxy(1, console.screen_rows);
-				printf("\1n%" + +(console.screen_columns-1) + "s", ""); // Clear the last row
+				printf("\x01n%" + +(console.screen_columns-1) + "s", ""); // Clear the last row
 				console.gotoxy(1, console.screen_rows);
 				// Prompt for the message number, and go to that message if it's
 				// different from the current message
-				var msgNumInput = PromptForMsgNum(pollMsgHdrs.length, {x: 1, y: console.screen_rows}, "\1n\1cPoll #\1g\1h: \1c", false, ERROR_PAUSE_WAIT_MS, false);
+				var msgNumInput = PromptForMsgNum(pollMsgHdrs.length, {x: 1, y: console.screen_rows}, "\x01n\x01cPoll #\x01g\x01h: \x01c", false);
 				if (msgNumInput-1 != currentMsgIdx)
 					currentMsgIdx = msgNumInput-1;
 				else
@@ -2570,9 +2572,9 @@ function ViewVoteResults(pSubBoardCode)
 				{
 					// Go to the last line and confirm whether to delete the message
 					console.gotoxy(1, console.screen_rows);
-					printf("\1n%" + +(console.screen_columns-1) + "s", "");
+					printf("\x01n%" + +(console.screen_columns-1) + "s", "");
 					console.gotoxy(1, console.screen_rows);
-					var deleteMsg = !console.noyes("\1n\1cDelete this poll\1n");
+					var deleteMsg = !console.noyes("\x01n\x01cDelete this poll\x01n");
 					if (deleteMsg)
 					{
 						var delMsgRetObj = DeleteMessage(msgbase, pollMsgHdrs[currentMsgIdx].number, pSubBoardCode);
@@ -2585,12 +2587,12 @@ function ViewVoteResults(pSubBoardCode)
 						if (errorMsg.length > 0)
 						{
 							console.gotoxy(1, console.screen_rows);
-							printf("\1n%" + +(console.screen_columns-1) + "s", "");
+							printf("\x01n%" + +(console.screen_columns-1) + "s", "");
 							console.gotoxy(1, console.screen_rows);
-							console.print("\1n\1y\1h* " + errorMsg);
+							console.print("\x01n\x01y\x01h* " + errorMsg);
 							mswait(ERROR_PAUSE_WAIT_MS);
 							console.gotoxy(1, console.screen_rows);
-							printf("\1n%" + strip_ctrl(errorMsg).length + "s", "");
+							printf("\x01n%" + strip_ctrl(errorMsg).length + "s", "");
 						}
 
 						// If the message was deleted, remove it from the array and
@@ -2611,9 +2613,9 @@ function ViewVoteResults(pSubBoardCode)
 							{
 								continueOn = false;
 								console.gotoxy(1, console.screen_rows);
-								console.print("\1n");
+								console.print("\x01n");
 								console.crlf();
-								console.print("\1nThere are no more polls.\1n");
+								console.print("\x01nThere are no more polls.\x01n");
 								console.crlf();
 								console.pause();
 							}
@@ -2640,21 +2642,21 @@ function ViewVoteResults(pSubBoardCode)
 				{
 					var validated = ValidateMsg(msgbase, pSubBoardCode, pollMsgHdrs[currentMsgIdx].number);
 					console.gotoxy(1, console.screen_rows-2);
-					console.print("\1n\1h\1g");
+					console.print("\x01n\x01h\x01g");
 					for (var i = 0; i < console.screen_columns-1; ++i)
-						console.print("Ä"); // Horizontal single line
+						console.print("?"); // Horizontal single line
 					console.gotoxy(1, console.screen_rows-1);
-					printf("\1n%" + +(console.screen_columns-1) + "s", "");
+					printf("\x01n%" + +(console.screen_columns-1) + "s", "");
 					console.gotoxy(1, console.screen_rows-1);
 					if (validated)
 					{
-						console.print("\1cMessage was validated successfully.\1n");
+						console.print("\x01cMessage was validated successfully.\x01n");
 						drawMsg = true;
 						pollMsgHdrs[currentMsgIdx].attr |= MSG_VALIDATED;
 					}
 					else
 					{
-						console.print("\1y\1hMessage validation failed!\1n");
+						console.print("\x01y\x01hMessage validation failed!\x01n");
 						drawMsg = false;
 					}
 					mswait(ERROR_PAUSE_WAIT_MS);
@@ -2686,8 +2688,8 @@ function GetDefaultMsgDisplayHdr()
 	// Sub-board name: 34% of console width
 	var msgGrpNameLen = Math.floor(console.screen_columns * 0.2);
 	var subBoardNameLen = Math.floor(console.screen_columns * 0.34);
-	var hdrLine1 = "\1n\1h\1c" + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + "\1n\1c"
-	             + HORIZONTAL_SINGLE + " \1h@GRP-L";
+	var hdrLine1 = "\x01n\x01h\x01c" + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + "\x01n\x01c"
+	             + HORIZONTAL_SINGLE + " \x01h@GRP-L";
 	var numChars = msgGrpNameLen - 7;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine1 += "#";
@@ -2695,52 +2697,52 @@ function GetDefaultMsgDisplayHdr()
 	numChars = subBoardNameLen - 7;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine1 += "#";
-	hdrLine1 += "@\1k";
+	hdrLine1 += "@\x01k";
 	numChars = console.screen_columns - console.strlen(hdrLine1) - 4;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine1 += HORIZONTAL_SINGLE;
-	hdrLine1 += "\1n\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
+	hdrLine1 += "\x01n\x01c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\x01h"
 	         + HORIZONTAL_SINGLE + UPPER_RIGHT_SINGLE;
 	hdrDisplayLines.push(hdrLine1);
-	var hdrLine2 = "\1n\1c" + VERTICAL_SINGLE + "\1h\1k" + BLOCK1 + BLOCK2
-	             + BLOCK3 + "\1gM\1n\1gsg#\1h\1c: \1b@MSG_NUM_AND_TOTAL-L";
+	var hdrLine2 = "\x01n\x01c" + VERTICAL_SINGLE + "\x01h\x01k" + BLOCK1 + BLOCK2
+	             + BLOCK3 + "\x01gM\x01n\x01gsg#\x01h\x01c: \x01b@MSG_NUM_AND_TOTAL-L";
 	numChars = console.screen_columns - 32;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine2 += "#";
-	hdrLine2 += "@\1n\1c" + VERTICAL_SINGLE;
+	hdrLine2 += "@\x01n\x01c" + VERTICAL_SINGLE;
 	hdrDisplayLines.push(hdrLine2);
-	var hdrLine3 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-				 + "\1gF\1n\1grom\1h\1c: \1b@MSG_FROM_AND_FROM_NET-L";
+	var hdrLine3 = "\x01n\x01h\x01k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
+				 + "\x01gF\x01n\x01grom\x01h\x01c: \x01b@MSG_FROM_AND_FROM_NET-L";
 	numChars = console.screen_columns - 36;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine3 += "#";
-	hdrLine3 += "@\1k" + VERTICAL_SINGLE;
+	hdrLine3 += "@\x01k" + VERTICAL_SINGLE;
 	hdrDisplayLines.push(hdrLine3);
-	var hdrLine4 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-	             + "\1gS\1n\1gubj\1h\1c: \1b@MSG_SUBJECT-L";
+	var hdrLine4 = "\x01n\x01h\x01k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
+	             + "\x01gS\x01n\x01gubj\x01h\x01c: \x01b@MSG_SUBJECT-L";
 	numChars = console.screen_columns - 26;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine4 += "#";
-	hdrLine4 += "@\1k" + VERTICAL_SINGLE;
+	hdrLine4 += "@\x01k" + VERTICAL_SINGLE;
 	hdrDisplayLines.push(hdrLine4);
-	var hdrLine5 = "\1n\1c" + VERTICAL_SINGLE + "\1h\1k" + BLOCK1 + BLOCK2 + BLOCK3
-	             + "\1gD\1n\1gate\1h\1c: \1b@MSG_DATE-L";
+	var hdrLine5 = "\x01n\x01c" + VERTICAL_SINGLE + "\x01h\x01k" + BLOCK1 + BLOCK2 + BLOCK3
+	             + "\x01gD\x01n\x01gate\x01h\x01c: \x01b@MSG_DATE-L";
 	//numChars = console.screen_columns - 23;
 	numChars = console.screen_columns - 67;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine5 += "#";
-	//hdrLine5 += "@\1n\1c" + VERTICAL_SINGLE;
-	hdrLine5 += "@ @MSG_TIMEZONE@\1n";
+	//hdrLine5 += "@\x01n\x01c" + VERTICAL_SINGLE;
+	hdrLine5 += "@ @MSG_TIMEZONE@\x01n";
 	for (var i = 0; i < 40; ++i)
 		hdrLine5 += " ";
-	hdrLine5 += "\1n\1c" + VERTICAL_SINGLE;
+	hdrLine5 += "\x01n\x01c" + VERTICAL_SINGLE;
 	hdrDisplayLines.push(hdrLine5);
-	var hdrLine6 = "\1n\1h\1c" + BOTTOM_T_SINGLE + HORIZONTAL_SINGLE + "\1n\1c"
-	             + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h\1k";
+	var hdrLine6 = "\x01n\x01h\x01c" + BOTTOM_T_SINGLE + HORIZONTAL_SINGLE + "\x01n\x01c"
+	             + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\x01h\x01k";
 	numChars = console.screen_columns - 8;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine6 += HORIZONTAL_SINGLE;
-	hdrLine6 += "\1n\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
+	hdrLine6 += "\x01n\x01c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\x01h"
 	         + HORIZONTAL_SINGLE + BOTTOM_T_SINGLE;
 	hdrDisplayLines.push(hdrLine6);
 
@@ -2794,19 +2796,19 @@ function ReplaceMsgAtCodeFormatStr(pMsgHdr, pSubBoardCode, pNumMsgs, pDisplayMsg
 	var replacementTxt = "";
 	if (pAtCodeStr.indexOf("@MSG_FROM_AND_FROM_NET") > -1)
 	{
-		var fromWithNet = pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : "");
+		var fromWithNet = pMsgHdr.from + (typeof(pMsgHdr.from_net_addr) == "string" ? " (" + pMsgHdr.from_net_addr + ")" : "");
 		replacementTxt = fromWithNet.substr(0, pSpecifiedLen);
 	}
 	else if (pAtCodeStr.indexOf("@MSG_FROM") > -1)
-		replacementTxt = pMsgHdr["from"].substr(0, pSpecifiedLen);
+		replacementTxt = pMsgHdr.from.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_FROM_EXT") > -1)
-		replacementTxt = (typeof pMsgHdr["from_ext"] === "undefined" ? "" : pMsgHdr["from_ext"].substr(0, pSpecifiedLen));
+		replacementTxt = (typeof pMsgHdr.from_ext === "undefined" ? "" : pMsgHdr.from_ext.substr(0, pSpecifiedLen));
 	else if ((pAtCodeStr.indexOf("@MSG_TO") > -1) || (pAtCodeStr.indexOf("@MSG_TO_NAME") > -1))
-		replacementTxt = pMsgHdr["to"].substr(0, pSpecifiedLen);
+		replacementTxt = pMsgHdr.to.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_TO_EXT") > -1)
-		replacementTxt = (typeof pMsgHdr["to_ext"] === "undefined" ? "" : pMsgHdr["to_ext"].substr(0, pSpecifiedLen));
+		replacementTxt = (typeof pMsgHdr.to_ext === "undefined" ? "" : pMsgHdr.to_ext.substr(0, pSpecifiedLen));
 	else if (pAtCodeStr.indexOf("@MSG_SUBJECT") > -1)
-		replacementTxt = pMsgHdr["subject"].substr(0, pSpecifiedLen);
+		replacementTxt = pMsgHdr.subject.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_DATE") > -1)
 		replacementTxt = pDateTimeStr.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_ATTR") > -1)
@@ -2819,24 +2821,24 @@ function ReplaceMsgAtCodeFormatStr(pMsgHdr, pSubBoardCode, pNumMsgs, pDisplayMsg
 		replacementTxt = pMsgAllAttrStr.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_NUM_AND_TOTAL") > -1)
 	{
-		var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
+		var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr.offset+1);
 		replacementTxt = (messageNum.toString() + "/" + pNumMsgs).substr(0, pSpecifiedLen); // "number" is also absolute number
 	}
 	else if (pAtCodeStr.indexOf("@MSG_NUM") > -1)
 	{
-		var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
+		var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr.offset+1);
 		replacementTxt = messageNum.toString().substr(0, pSpecifiedLen); // "number" is also absolute number
 	}
 	else if (pAtCodeStr.indexOf("@MSG_ID") > -1)
-		replacementTxt = (typeof pMsgHdr["id"] === "undefined" ? "" : pMsgHdr["id"].substr(0, pSpecifiedLen));
+		replacementTxt = (typeof pMsgHdr.id === "undefined" ? "" : pMsgHdr.id.substr(0, pSpecifiedLen));
 	else if (pAtCodeStr.indexOf("@MSG_REPLY_ID") > -1)
-		replacementTxt = (typeof pMsgHdr["reply_id"] === "undefined" ? "" : pMsgHdr["reply_id"].substr(0, pSpecifiedLen));
+		replacementTxt = (typeof pMsgHdr.reply_id === "undefined" ? "" : pMsgHdr.reply_id.substr(0, pSpecifiedLen));
 	else if (pAtCodeStr.indexOf("@MSG_TIMEZONE") > -1)
 	{
 		if (pUseBBSLocalTimeZone)
 			replacementTxt = system.zonestr(system.timezone).substr(0, pSpecifiedLen);
 		else
-			replacementTxt = system.zonestr(pMsgHdr["when_written_zone"]).substr(0, pSpecifiedLen);
+			replacementTxt = system.zonestr(pMsgHdr.when_written_zone).substr(0, pSpecifiedLen);
 	}
 	else if (pAtCodeStr.indexOf("@GRP") > -1)
 	{
@@ -3056,7 +3058,7 @@ function ParseMsgAtCodes(pTextLine, pMsgHdr, pSubBoardCode, pNumMsgs, pDisplayMs
 			fileDirLong = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].description;
 		}
 	}
-	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
+	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr.offset+1);
 	var msgUpvotes = 0;
 	var msgDownvotes = 0;
 	var msgVoteScore = 0;
@@ -3066,13 +3068,13 @@ function ParseMsgAtCodes(pTextLine, pMsgHdr, pSubBoardCode, pNumMsgs, pDisplayMs
 		msgDownvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
 		msgVoteScore = pMsgHdr.upvotes - msgDownvotes;
 	}
-	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
-	                         .replace(/@MSG_FROM@/gi, pMsgHdr["from"])
-	                         .replace(/@MSG_FROM_AND_FROM_NET@/gi, pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : ""))
-	                         .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""))
-	                         .replace(/@MSG_TO@/gi, pMsgHdr["to"])
-	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
-	                         .replace(/@MSG_TO_EXT@/gi, (typeof(pMsgHdr["to_ext"]) == "string" ? pMsgHdr["to_ext"] : ""))
+	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr.subject)
+	                         .replace(/@MSG_FROM@/gi, pMsgHdr.from)
+	                         .replace(/@MSG_FROM_AND_FROM_NET@/gi, pMsgHdr.from + (typeof(pMsgHdr.from_net_addr) == "string" ? " (" + pMsgHdr.from_net_addr + ")" : ""))
+	                         .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr.from_ext) == "string" ? pMsgHdr.from_ext : ""))
+	                         .replace(/@MSG_TO@/gi, pMsgHdr.to)
+	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr.to)
+	                         .replace(/@MSG_TO_EXT@/gi, (typeof(pMsgHdr.to_ext) == "string" ? pMsgHdr.to_ext : ""))
 	                         .replace(/@MSG_DATE@/gi, pDateTimeStr)
 	                         .replace(/@MSG_ATTR@/gi, mainMsgAttrStr)
 	                         .replace(/@MSG_AUXATTR@/gi, auxMsgAttrStr)
@@ -3080,11 +3082,11 @@ function ParseMsgAtCodes(pTextLine, pMsgHdr, pSubBoardCode, pNumMsgs, pDisplayMs
 	                         .replace(/@MSG_ALLATTR@/gi, allMsgAttrStr)
 	                         .replace(/@MSG_NUM_AND_TOTAL@/gi, messageNum.toString() + "/" + pNumMsgs)
 	                         .replace(/@MSG_NUM@/gi, messageNum.toString())
-	                         .replace(/@MSG_ID@/gi, (typeof(pMsgHdr["id"]) == "string" ? pMsgHdr["id"] : ""))
-	                         .replace(/@MSG_REPLY_ID@/gi, (typeof(pMsgHdr["reply_id"]) == "string" ? pMsgHdr["reply_id"] : ""))
-	                         .replace(/@MSG_FROM_NET@/gi, (typeof(pMsgHdr["from_net_addr"]) == "string" ? pMsgHdr["from_net_addr"] : ""))
-	                         .replace(/@MSG_TO_NET@/gi, (typeof(pMsgHdr["to_net_addr"]) == "string" ? pMsgHdr["to_net_addr"] : ""))
-	                         .replace(/@MSG_TIMEZONE@/gi, (useBBSLocalTimeZone ? system.zonestr(system.timezone) : system.zonestr(pMsgHdr["when_written_zone"])))
+	                         .replace(/@MSG_ID@/gi, (typeof(pMsgHdr.id) == "string" ? pMsgHdr.id : ""))
+	                         .replace(/@MSG_REPLY_ID@/gi, (typeof(pMsgHdr.reply_id) == "string" ? pMsgHdr.reply_id : ""))
+	                         .replace(/@MSG_FROM_NET@/gi, (typeof(pMsgHdr.from_net_addr) == "string" ? pMsgHdr.from_net_addr : ""))
+	                         .replace(/@MSG_TO_NET@/gi, (typeof(pMsgHdr.to_net_addr) == "string" ? pMsgHdr.to_net_addr : ""))
+	                         .replace(/@MSG_TIMEZONE@/gi, (useBBSLocalTimeZone ? system.zonestr(system.timezone) : system.zonestr(pMsgHdr.when_written_zone)))
 	                         .replace(/@GRP@/gi, groupName)
 	                         .replace(/@GRPL@/gi, groupDesc)
 	                         .replace(/@SUB@/gi, subName)
@@ -3250,9 +3252,9 @@ function MsgWrittenTimeToLocalBBSTime(pMsgHdr)
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
-// string "\1PgUp" (KEY_PAGE_UP) or "\1Pgdn" (KEY_PAGE_DOWN),
-// respectively.  Also, F1-F5 will be returned as "\1F1"
-// through "\1F5", respectively.
+// string "\x01PgUp" (KEY_PAGE_UP) or "\x01Pgdn" (KEY_PAGE_DOWN),
+// respectively.  Also, F1-F5 will be returned as "\x01F1"
+// through "\x01F5", respectively.
 // Thanks goes to Psi-Jack for the original impementation
 // of this function.
 //
@@ -3272,32 +3274,33 @@ function GetKeyWithESCChars(pGetKeyMode)
 		switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
 			case '[':
 				switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-				case 'V':
-					userInput = KEY_PAGE_UP;
-					break;
-				case 'U':
-					userInput = KEY_PAGE_DOWN;
-					break;
+					case 'V':
+						userInput = KEY_PAGE_UP;
+						break;
+					case 'U':
+						userInput = KEY_PAGE_DOWN;
+						break;
 				}
 				break;
 			case 'O':
 				switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-				case 'P':
-					userInput = "\1F1";
-					break;
-				case 'Q':
-					userInput = "\1F2";
-					break;
-				case 'R':
-					userInput = "\1F3";
-					break;
-				case 'S':
-					userInput = "\1F4";
-					break;
-				case 't':
-					userInput = "\1F5";
-					break;
+					case 'P':
+						userInput = "\x01F1";
+						break;
+					case 'Q':
+						userInput = "\x01F2";
+						break;
+					case 'R':
+						userInput = "\x01F3";
+						break;
+					case 'S':
+						userInput = "\x01F4";
+						break;
+					case 't':
+						userInput = "\x01F5";
+						break;
 				}
+				break;
 			default:
 				break;
 		}
@@ -3334,9 +3337,10 @@ function ScrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 	if (topLineIdxForLastPage < 0)
 		topLineIdxForLastPage = 0;
 
-	var retObj = new Object();
-	retObj.lastKeypress = "";
-	retObj.topLineIdx = pTopLineIdx;
+	var retObj = {
+		lastKeypress: "",
+		topLineIdx: pTopLineIdx
+	};
 
 	if (pTopLineIdx > 0)
 		pFrame.scrollTo(0, pTopLineIdx);
@@ -3451,15 +3455,10 @@ function ScrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 //  pPromptText: The text to use to prompt the user
 //  pClearToEOLAfterPrompt: Whether or not to clear to the end of the line after
 //                          writing the prompt text (boolean)
-//  pErrorPauseTimeMS: The time (in milliseconds) to pause after displaying the
-//                     error that the message number is invalid
-//  pRepeat: Boolean - Whether or not to ask repeatedly until the user enters a
-//           valid message number.  Optional; defaults to false.
 //
 // Return value: The message number entered by the user.  If the user didn't
 //               enter a message number, this will be 0.
-function PromptForMsgNum(pMaxNum, pCurPos, pPromptText, pClearToEOLAfterPrompt,
-                         pErrorPauseTimeMS, pRepeat)
+function PromptForMsgNum(pMaxNum, pCurPos, pPromptText, pClearToEOLAfterPrompt)
 {
 	var curPosValid = ((pCurPos != null) && (typeof(pCurPos) == "object") &&
 	                   pCurPos.hasOwnProperty("x") && (typeof(pCurPos.x) == "number") &&
@@ -3488,16 +3487,16 @@ function PromptForMsgNum(pMaxNum, pCurPos, pPromptText, pClearToEOLAfterPrompt,
 				var clearLen = console.screen_columns - curPos.x + 1;
 				if (curPos.y == console.screen_rows)
 					--clearLen;
-				printf("\1n%" + clearLen + "s", "");
+				printf("\x01n%" + clearLen + "s", "");
 			}
 			else
 			{
 				if (lastErrorLen > promptTextLen)
 				{
-					console.print("\1n");
+					console.print("\x01n");
 					console.gotoxy(pCurPos.x+promptTextLen, pCurPos.y);
 					var clearLen = lastErrorLen - promptTextLen;
-					printf("\1n%" + clearLen + "s", "");
+					printf("\x01n%" + clearLen + "s", "");
 				}
 			}
 			console.gotoxy(pCurPos.x+promptTextLen, pCurPos.y);
@@ -3720,13 +3719,12 @@ function DrawVoteColumns(pTopRow, pBottomRow, pColumnX1, pColumnX2)
 	// Draw the columns
 	var bottomRow = (typeof(pBottomRow) == "number" ? pBottomRow : gBottomBorderRow-1);
 	retObj.colHeight = bottomRow - pTopRow + 1;
-	//for (var posY = pTopRow; posY < gBottomBorderRow; ++posY)
 	for (var posY = pTopRow; posY <= bottomRow; ++posY)
 	{
 		console.gotoxy(retObj.columnX1, posY);
-		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7\1n\1" + "7\1k\1hÞ\1n");
+		console.print("\x01" + "7\x01h\x01w" + THIN_RECTANGLE_LEFT + "\x01n\x01k\x01" + "7\x01n\x01" + "7\x01k\x01h" + THIN_RECTANGLE_RIGHT + "\x01n");
 		console.gotoxy(retObj.columnX2, posY);
-		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7\1n\1" + "7\1k\1hÞ\1n");
+		console.print("\x01" + "7\x01h\x01w" + THIN_RECTANGLE_LEFT + "\x01n\x01k\x01" + "7\x01n\x01" + "7\x01k\x01h" + THIN_RECTANGLE_RIGHT + "\x01n");
 	}
 
 	return retObj;
@@ -3759,28 +3757,28 @@ function DisplayViewingResultsHelpScr(pMsgbase, pSubBoardCode)
 	console.crlf();
 	console.crlf();
 	var subBoardGrpAndName = msg_area.sub[pSubBoardCode].grp_name + " - " + msg_area.sub[pSubBoardCode].name;
-	console.print("\1cCurrently viewing results in area \1g" + subBoardGrpAndName);
+	console.print("\x01cCurrently viewing results in area \x01g" + subBoardGrpAndName);
 	console.crlf();
 	console.crlf();
 	console.print("Keys");
 	console.crlf();
-	console.print("\1k\1hÄÄÄÄ");
+	console.print("\x01k\x01h" + strRepeat(HORIZONTAL_SINGLE, 4));
 	console.crlf();
-	var keyHelpLines = ["\1h\1cDown\1g/\1cup arrow    \1g: \1n\1cScroll the text down\1g/\1cup",
-	                    "\1h\1cLeft\1g/\1cright arrow \1g: \1n\1cGo to the previous\1g/\1cnext poll",
-	                    "\1h\1cPageUp\1g/\1cPageDown  \1g: \1n\1cScroll the text up\1g/\1cdown a page",
-	                    "\1h\1cHOME             \1g: \1n\1cGo to the top of the text",
-	                    "\1h\1cEND              \1g: \1n\1cGo to the bottom of the text",
-						"\1h\1cF                \1g: \1n\1cGo to the first poll",
-						"\1h\1cL                \1g: \1n\1cGo to the last poll"];
+	var keyHelpLines = ["\x01h\x01cDown\x01g/\x01cup arrow    \x01g: \x01n\x01cScroll the text down\x01g/\x01cup",
+	                    "\x01h\x01cLeft\x01g/\x01cright arrow \x01g: \x01n\x01cGo to the previous\x01g/\x01cnext poll",
+	                    "\x01h\x01cPageUp\x01g/\x01cPageDown  \x01g: \x01n\x01cScroll the text up\x01g/\x01cdown a page",
+	                    "\x01h\x01cHOME             \x01g: \x01n\x01cGo to the top of the text",
+	                    "\x01h\x01cEND              \x01g: \x01n\x01cGo to the bottom of the text",
+						"\x01h\x01cF                \x01g: \x01n\x01cGo to the first poll",
+						"\x01h\x01cL                \x01g: \x01n\x01cGo to the last poll"];
 	if (gUserIsSysop)
-		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current poll");
+		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current poll");
 	else if (PollDeleteAllowed(pMsgbase, pSubBoardCode))
-		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current poll (if it's yours)");
-	keyHelpLines.push("\1h\1cQ                \1g: \1n\1cQuit out of viewing poll results");
+		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current poll (if it's yours)");
+	keyHelpLines.push("\x01h\x01cQ                \x01g: \x01n\x01cQuit out of viewing poll results");
 	for (var idx = 0; idx < keyHelpLines.length; ++idx)
 	{
-		console.print("\1n" + keyHelpLines[idx]);
+		console.print("\x01n" + keyHelpLines[idx]);
 		console.crlf();
 	}
 	console.pause();
@@ -3792,10 +3790,10 @@ function DisplayProgramNameAndVerForHelpScreens()
 	var progName = "SlyVote";
 	var posX = (console.screen_columns/2) - (progName.length/2);
 	console.gotoxy(posX, 1);
-	console.print("\1c\1h" + progName);
+	console.print("\x01c\x01h" + progName);
 	console.gotoxy(posX, 2);
-	console.print("\1kÄÄÄÄÄÄÄ");
-	var versionText = "\1n\1cVersion \1g" + SLYVOTE_VERSION + "\1w\1h (\1b" + SLYVOTE_DATE + "\1w)\1n";
+	console.print("\x01k" + strRepeat(HORIZONTAL_SINGLE, 7));
+	var versionText = "\x01n\x01cVersion \x01g" + SLYVOTE_VERSION + "\x01w\x01h (\x01b" + SLYVOTE_DATE + "\x01w)\x01n";
 	posX = (console.screen_columns/2) - (strip_ctrl(versionText).length/2);
 	console.gotoxy(posX, 3);
 	console.print(versionText);
@@ -3853,16 +3851,16 @@ function DisplayErrorWithPause(pErrorMsg, pMessageRow, pMnemonicsRequired)
 		console.mnemonics(errorMessage);
 		mswait(ERROR_PAUSE_WAIT_MS);
 		console.gotoxy(1, pMessageRow);
-		//printf("\1n%" + console.screen_columns + "s", "");
-		printf("\1n%" + errorMessage.length + "s", "");
+		//printf("\x01n%" + console.screen_columns + "s", "");
+		printf("\x01n%" + errorMessage.length + "s", "");
 	}
 	else
 	{
-		var errorMessage = "\1n" + pErrorMsg.substr(0, console.screen_columns);
-		console.print("\1n\1y\1h" + errorMessage);
+		var errorMessage = "\x01n" + pErrorMsg.substr(0, console.screen_columns);
+		console.print("\x01n\x01y\x01h" + errorMessage);
 		mswait(ERROR_PAUSE_WAIT_MS);
 		console.gotoxy(1, pMessageRow);
-		printf("\1n%" + errorMessage.length + "s", "");
+		printf("\x01n%" + errorMessage.length + "s", "");
 	}
 }
 
@@ -3876,14 +3874,14 @@ function ViewStats(pSubBoardCode)
 	if (pollRetObj.errorMsg.length > 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1h\1y" + pollRetObj.errorMsg + "\1n");
+		console.print("\x01n\x01h\x01y" + pollRetObj.errorMsg + "\x01n");
 		mswait(ERROR_PAUSE_WAIT_MS);
 		return;
 	}
 	if (pollRetObj.msgHdrs.length == 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1r\1yThere are no polls in this area.\1n");
+		console.print("\x01n\x01r\x01yThere are no polls in this area.\x01n");
 		mswait(ERROR_PAUSE_WAIT_MS);
 		return;
 	}
@@ -3900,17 +3898,17 @@ function ViewStats(pSubBoardCode)
 
 	// Create a text message with the poll stats to display in a scrollable
 	// frame
-	var statsText = "\1n\1h\1bPoll area: \1c" + msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name + "\1n\r\n";
-	statsText += "\1w\1hPolls ranked by number of votes (highest to lowest):\1n\r\n\r\n";
-	var labelColor = "\1w\1h";
+	var statsText = "\x01n\x01h\x01bSub-board: \x01c" + msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name + "\x01n\r\n";
+	statsText += "\x01w\x01hPolls ranked by number of votes (highest to lowest):\x01n\r\n\r\n";
+	var labelColor = "\x01w\x01h";
 	for (var i = 0; i < pollRetObj.msgHdrs.length; ++i)
 	{
-		statsText += "\1n" + labelColor + "Poll " + +(i+1) + "/" + pollRetObj.msgHdrs.length + ": \1n\1g" + pollRetObj.msgHdrs[i].subject + "\r\n";
-		statsText += "\1n" + labelColor + "By: \1n\1r\1h" + pollRetObj.msgHdrs[i].from + "\r\n";
-		statsText += "\1n" + labelColor + "Date: \1n\1b\1h" + pollRetObj.msgHdrs[i].date + "\r\n";
-		statsText += "\1n" + labelColor + "Number of votes: \1n\1m\1h" + pollRetObj.msgHdrs[i].total_votes + "\r\n";
+		statsText += "\x01n" + labelColor + "Poll " + +(i+1) + "/" + pollRetObj.msgHdrs.length + ": \x01n\x01g" + pollRetObj.msgHdrs[i].subject + "\r\n";
+		statsText += "\x01n" + labelColor + "By: \x01n\x01r\x01h" + pollRetObj.msgHdrs[i].from + "\r\n";
+		statsText += "\x01n" + labelColor + "Date: \x01n\x01b\x01h" + pollRetObj.msgHdrs[i].date + "\r\n";
+		statsText += "\x01n" + labelColor + "Number of votes: \x01n\x01m\x01h" + pollRetObj.msgHdrs[i].total_votes + "\r\n";
 		if ((pollRetObj.msgHdrs[i].auxattr & POLL_CLOSED) == POLL_CLOSED)
-			statsText += "\1n\1y\1hThis poll is closed for voting.\r\n";
+			statsText += "\x01n\x01y\x01hThis poll is closed for voting.\r\n";
 		// Find the option(s) with the highest number(s) of votes
 		var tallyIdx = 0;
 		var answersAndNumVotes = [];
@@ -3939,12 +3937,12 @@ function ViewStats(pSubBoardCode)
 			else if (pA.numVotes > pB.numVotes)
 				return -1;
 		});
-		statsText += "\1n" + labelColor + "Option(s) with highest number of votes:\1n\r\n";
+		statsText += "\x01n" + labelColor + "Option(s) with highest number of votes:\x01n\r\n";
 		for (var answerI = 0; answerI < answersAndNumVotes.length; ++answerI)
 		{
 			if (answersAndNumVotes[answerI].numVotes == 0)
 				continue;
-			statsText += "\1n\1b\1h" + answersAndNumVotes[answerI].answerText + "\1w: \1m" + answersAndNumVotes[answerI].numVotes + "\1n\r\n";
+			statsText += "\x01n\x01b\x01h" + answersAndNumVotes[answerI].answerText + "\x01w: \x01m" + answersAndNumVotes[answerI].numVotes + "\x01n\r\n";
 			if (answerI > 0)
 			{
 				if (answersAndNumVotes[answerI].numVotes != answersAndNumVotes[answerI-1].numVotes)
@@ -3957,15 +3955,15 @@ function ViewStats(pSubBoardCode)
 	// Create a scrollable frame to display the stats in
 	var frameAndScrollbar = createFrameWithScrollbar(1, 1, console.screen_columns, console.screen_rows - 1);
 	// Put the stats text in the frame
-	frameAndScrollbar.frame.putmsg(statsText, "\1n");
+	frameAndScrollbar.frame.putmsg(statsText, "\x01n");
 	frameAndScrollbar.frame.scrollTo(0, 0);
 
 	// Create the key help line to be displayed at the bottom of the screen
-	var keyText = "\1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rHome\1b, \1rEnd\1b, \1rQ\1m)\1buit";
-	var keyHelpLine = "\1" + "7" + CenterText(keyText, console.screen_columns-1);
+    var keyText = "\x01rUp\x01b, \x01rDn\x01b, \x01rPgUp\x01b/\x01rDn\x01b, \x01rHome\x01b, \x01rEnd\x01b, \x01rESC\x01b/\x01rQ\x01m)\x01buit";
+	var keyHelpLine = "\x01" + "7" + CenterText(keyText, console.screen_columns-1);
 
 	// Prepare the screen and display the key help line on the last row of the screen
-	console.clear("\1n");
+	console.clear("\x01n");
 	console.gotoxy(1, console.screen_rows);
 	console.print(keyHelpLine);
 
@@ -3984,8 +3982,8 @@ function ViewStats(pSubBoardCode)
 
 		// Let the user scroll the message, and take appropriate action based
 		// on the user input
-		var scrollRetObj = ScrollFrame(frameAndScrollbar.frame, frameAndScrollbar.scrollbar, 0, "\1n", false, 1, console.screen_rows);
-		if (scrollRetObj.lastKeypress == gReaderKeys.quit)
+		var scrollRetObj = ScrollFrame(frameAndScrollbar.frame, frameAndScrollbar.scrollbar, 0, "\x01n", false, 1, console.screen_rows);
+		if (scrollRetObj.lastKeypress == gReaderKeys.quit || scrollRetObj.lastKeypress == KEY_ESC)
 			continueOn = false;
 	}
 }
@@ -4123,7 +4121,7 @@ function subBoardHasPolls(pSubBoardCode)
 		{
 			for (var i = msgbase.total_msgs-1; !pollsExistInSubBoard && (i >= 0); --i)
 			{
-				var msgIndex = msgbase.get_msg_index(true, i)
+				var msgIndex = msgbase.get_msg_index(true, i);
 				if ((msgIndex == null) || ((msgIndex.attr & MSG_DELETE) == MSG_DELETE))
 					continue;
 				if ((msgIndex.attr & MSG_POLL) == MSG_POLL)
@@ -4317,4 +4315,35 @@ function createFrameWithScrollbar(pX, pY, pWidth, pHeight)
 	retObj.frame.scrollbars = true;
 	retObj.scrollbar = new ScrollBar(retObj.frame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
 	return retObj;
+}
+
+// Returns a string repeated a number of times
+//
+// Parameters:
+//  pStr: The string to be repeated (string)
+//  pNumTimes: The number of times to repeat the string (number)
+//
+// Return value: The string, repeated the number of times given
+function strRepeat(pStr, pNumTimes)
+{
+	if (typeof(pStr) !== "string" || typeof(pNumTimes) !== "number")
+		return "";
+	if (pStr.length == 0 || pNumTimes < 1)
+		return "";
+
+	var repeatedStr = "";
+	for (var i = 0; i < pNumTimes; ++i)
+		repeatedStr += pStr;
+	return repeatedStr;
+}
+
+// When using text strings from text.dat, for some reason, strings that use attribute
+// normal followed by high, which should be white, appear as high black.  This function
+// fixes that.
+function processBBSTextDatText(pText)
+{
+	if (typeof(pText) !== "string")
+		return "";
+
+	return pText.replace(/\x01n\x01h/g, "\x01n\x01w\x01h");
 }
