@@ -3535,7 +3535,7 @@ function searchDirGroupOrAll(pSearchOption, pDirSearchFn)
 					console.print(" " + file_area.lib_list[libIdx].dir_list[dirIdx].description + "..");
 					console.crlf();
 				}
-				lastDirCode = (gFileList.length > 0 ? gFileList[gFileList.length-1].dirCode : "");
+				var lastDirCode = (gFileList.length > 0 ? gFileList[gFileList.length-1].dirCode : "");
 				var dirCode = file_area.lib_list[libIdx].dir_list[dirIdx].code;
 				var searchRetObj = pDirSearchFn(dirCode);
 				if (retObj.allSameDir && searchRetObj.foundFiles && lastDirCode.length > 0)
@@ -3564,7 +3564,7 @@ function searchDirGroupOrAll(pSearchOption, pDirSearchFn)
 						console.print(" " + file_area.lib_list[libIdx].dir_list[dirIdx].description + "..");
 						console.crlf();
 					}
-					lastDirCode = (gFileList.length > 0 ? gFileList[gFileList.length-1].dirCode : "");
+					var lastDirCode = (gFileList.length > 0 ? gFileList[gFileList.length-1].dirCode : "");
 					var dirCode = file_area.lib_list[libIdx].dir_list[dirIdx].code;
 					var searchRetObj = pDirSearchFn(dirCode);
 					if (retObj.allSameDir && searchRetObj.foundFiles && lastDirCode.length > 0)
