@@ -652,7 +652,11 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 					JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL(*l));
 					break;
 				case sizeof(uint64_t):
-					JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL(*q));
+					if (p->network_byte_order)
+						*q = BE_INT64(*q);
+					else
+						*q = LE_INT64(*q);
+					JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((double)*q));
 					break;
 			}
 		}
@@ -681,7 +685,11 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 					v=UINT_TO_JSVAL(*(l++));
 					break;
 				case sizeof(uint64_t):
-					v = DOUBLE_TO_JSVAL(*(q++));
+					if (p->network_byte_order)
+						*q = BE_INT64(*q);
+					else
+						*q = LE_INT64(*q);
+					v = DOUBLE_TO_JSVAL((double)*(q++));
 					break;
 			}
         	if(!JS_SetElement(cx, array, i, &v)) {
@@ -1936,6 +1944,10 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 					*o.sq = (int64_t)val;
 				else
 					*o.q = (uint64_t)val;
+				if (p->network_byte_order)
+					*o.q = BE_INT64(*o.q);
+				else
+					*o.q = LE_INT64(*o.q);
 				break;
 		}
 	}
@@ -1980,6 +1992,10 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 						*o.sq = (int64_t)val;
 					else
 						*o.q = (uint64_t)val;
+					if (p->network_byte_order)
+						*o.q = BE_INT64(*o.q);
+					else
+						*o.q = LE_INT64(*o.q);
 					o.q++;
 					break;
 			}
