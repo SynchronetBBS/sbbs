@@ -165,9 +165,9 @@ struct.phub_t={
 	days:		{bytes:1,				type:"str"},
 	name:		{bytes:11,				type:"str"},
 	call:		{bytes:LEN_CMD+1,		type:"str"},
-	time:		{bytes:UINT16_T,		type:"str"},
-	node:		{bytes:UINT16_T,		type:"str"},
-	freq:		{bytes:UINT16_T,		type:"str"},
+	time:		{bytes:UINT16_T,		type:"int"},
+	node:		{bytes:UINT16_T,		type:"int"},
+	freq:		{bytes:UINT16_T,		type:"int"},
 // time32_t	last;						/* Last network attempt */
 	__PADDING__:{bytes:64}
 };
@@ -352,8 +352,8 @@ struct.msg={
 	__PADDING6__:	{bytes:64},
 	sys_inetaddr:	{bytes:128, 			type:"str"},
 	inetmail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
-	inetmail_misc:	{bytes:UINT32_T, 		type:"str"},
-	inetmail_cost:	{bytes:UINT32_T, 		type:"str"},
+	inetmail_misc:	{bytes:UINT32_T, 		type:"int"},
+	inetmail_cost:	{bytes:UINT32_T, 		type:"int"},
 	smtpmail_sem:	{bytes:LEN_DIR+1, 		type:"str"}	
 };
 
