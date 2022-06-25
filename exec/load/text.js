@@ -393,7 +393,7 @@ var XtrnProgLstFmt=383;
 var WhichXtrnProg=384;
 var UserRunningXtrn=385;
 var RemoveNodeLockQ=386;
-var MinimumModemSpeed=387;
+var YouCantUseThatNetmail=387;
 var NoNodeAccess=388;
 var NodeLocked=389;
 var UnknownUser=390;
@@ -867,7 +867,9 @@ var InternetMailForwarded=857;
 var FidoNetMailReceived=858;
 var WithAttachment=859;
 var FidoEchoMailReceived=860;
+var HashingFile=861;
+var HashedFile=862;
 
-var TOTAL_TEXT=861;
+var TOTAL_TEXT=863;
 
 this;
