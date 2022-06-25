@@ -577,7 +577,7 @@ function AvatarEditor(parent_frame, on_exit) {
 		editor.menu.addItem('Save & Exit', save_and_exit);
 
 		const user_avatar = avatar_lib.read_localuser(user.number);
-		if (user_avatar) {
+		if (user_avatar && user_avatar.data) {
 			const bin = base64_decode(user_avatar.data);
 			var o = 0; // offset into 'bin'
 			for (var yy = 0; yy < avatar_lib.defs.height; yy++) {
