@@ -583,6 +583,7 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 	BYTE		*b;
 	WORD		*w;
 	DWORD		*l;
+	uint64_t	*q;
 	int32		size=sizeof(DWORD);
 	private_t*	p;
 	int32		count=1;
@@ -612,7 +613,7 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(size != sizeof(BYTE) && size != sizeof(WORD) && size != sizeof(DWORD)) {
+	if(size != sizeof(BYTE) && size != sizeof(WORD) && size != sizeof(DWORD) && size != sizeof(uint64_t)) {
 		/* unknown size */
 		dbprintf(TRUE, p, "unsupported binary read size: %d",size);
 		JS_RESUMEREQUEST(cx, rc);
@@ -628,6 +629,7 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 	b=buffer;
 	w=buffer;
 	l=buffer;
+	q=buffer;
 	retlen=fread(buffer, size, count, p->fp);
 	if(count==1) {
 		if(retlen==1) {
@@ -648,6 +650,9 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 					else
 						*l = LE_LONG(*l);
 					JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL(*l));
+					break;
+				case sizeof(uint64_t):
+					JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL(*q));
 					break;
 			}
 		}
@@ -674,6 +679,9 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 					else
 						*l = LE_LONG(*l);
 					v=UINT_TO_JSVAL(*(l++));
+					break;
+				case sizeof(uint64_t):
+					v = DOUBLE_TO_JSVAL(*(q++));
 					break;
 			}
         	if(!JS_SetElement(cx, array, i, &v)) {
@@ -1839,9 +1847,11 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 		uint8_t		*b;
 		uint16_t	*w;
 		uint32_t	*l;
+		uint64_t	*q;
 		int8_t		*sb;
 		int16_t		*sw;
 		int32_t		*sl;
+		int64_t		*sq;
 	} o;
 	size_t		wr=0;
 	int32		size=sizeof(int32_t);
@@ -1879,7 +1889,7 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 		if(!JS_ValueToInt32(cx,argv[1],&size))
 			return(JS_FALSE);
 	}
-	if(size != sizeof(BYTE) && size != sizeof(WORD) && size != sizeof(DWORD)) {
+	if(size != sizeof(BYTE) && size != sizeof(WORD) && size != sizeof(DWORD) && size != sizeof(uint64_t)) {
 		rc=JS_SUSPENDREQUEST(cx);
 		dbprintf(TRUE, p, "unsupported binary write size: %d",size);
 		JS_RESUMEREQUEST(cx, rc);
@@ -1921,6 +1931,12 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 				else
 					*o.l = LE_LONG(*o.l);
 				break;
+			case sizeof(int64_t):
+				if(val < 0)
+					*o.sq = (int64_t)val;
+				else
+					*o.q = (uint64_t)val;
+				break;
 		}
 	}
 	else {
@@ -1958,6 +1974,13 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 					else
 						*o.l = LE_LONG(*o.l);
 					o.l++;
+					break;
+				case sizeof(int64_t):
+					if(val < 0)
+						*o.sq = (int64_t)val;
+					else
+						*o.q = (uint64_t)val;
+					o.q++;
 					break;
 			}
 		}
