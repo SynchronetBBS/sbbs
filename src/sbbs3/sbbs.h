@@ -1251,6 +1251,9 @@ extern "C" {
 	/* con_out.cpp */
 	unsigned char		cp437_to_petscii(unsigned char);
 
+	/* xtrn.cpp */
+	bool				native_executable(scfg_t*, const char* cmdline, long mode);
+
 #ifdef JAVASCRIPT
 
 	typedef struct {

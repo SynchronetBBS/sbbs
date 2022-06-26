@@ -3178,6 +3178,7 @@ void event_thread(void* arg)
 						node.status=NODE_EVENT_RUNNING;
 						sbbs->putnodedat(sbbs->cfg.event[i]->node,&node);
 					}
+					const char* cmd = sbbs->cfg.event[i]->cmd;
 					int ex_mode = EX_OFFLINE;
 					if(!(sbbs->cfg.event[i]->misc&EVENT_EXCL)
 						&& sbbs->cfg.event[i]->misc&EX_BG)
@@ -3188,13 +3189,13 @@ void event_thread(void* arg)
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
 					sbbs->lprintf(LOG_INFO,"Running %s%stimed event: %s"
-						,(ex_mode&EX_NATIVE)	? "native ":"16-bit DOS "
+						,native_executable(&sbbs->cfg, cmd, ex_mode) ? "native ":"16-bit DOS "
 						,(ex_mode&EX_BG)		? "background ":""
 						,event_code);
 					{
 						int result=
 							sbbs->external(
-								 sbbs->cmdstr(sbbs->cfg.event[i]->cmd,nulstr,sbbs->cfg.event[i]->dir,NULL)
+								 sbbs->cmdstr(cmd,nulstr,sbbs->cfg.event[i]->dir,NULL)
 								,ex_mode
 								,sbbs->cfg.event[i]->dir);
 						if(!(ex_mode&EX_BG))
