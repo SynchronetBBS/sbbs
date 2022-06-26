@@ -113,12 +113,13 @@ function root_index()
     }
 }	
 
+if(http_request.virtual_path[http_request.virtual_path.length - 1] != '/') {
+	http_reply.status = "301 Moved";
+	http_reply.header.Location = http_request.virtual_path + '/';
+	exit();
+}
+
 if(http_request.dir !== undefined) {
-	if(http_request.virtual_path[http_request.virtual_path.length - 1] != '/') {
-		http_reply.status = "301 Moved";
-		http_reply.header.Location = http_request.virtual_path + '/';
-		exit();
-	}
 	dir_index(http_request.dir);
 } else if (http_request.lib !== undefined) {
 	lib_index(http_request.lib);
