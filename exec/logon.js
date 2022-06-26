@@ -125,7 +125,7 @@ if(user.security.restrictions&UFLAG_G) {
 }
 
 // Force split-screen chat on ANSI users
-if(console.term_supports(USER_ANSI))
+if(!(user.chat_settings&CHAT_SPLITP) && console.term_supports(USER_ANSI))
 	user.chat_settings|=CHAT_SPLITP;
 
 // Inactivity exemption
