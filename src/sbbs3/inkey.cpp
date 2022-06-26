@@ -417,7 +417,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					}
 					--x;
 					--y;
-					lprintf(LOG_DEBUG, "SGR Mouse button-click (0x%02X) reported at: %u x %u", button, x, y);
+					lprintf(LOG_DEBUG, "SGR Mouse button (0x%02X) %s reported at: %u x %u"
+						,button, ch == 'M' ? "PRESS" : "RELEASE", x, y);
 					if(button == 0 && ch == 'M') { // Left-button press
 						list_node_t* node;
 						for(node = mouse_hotspots.first; node != NULL; node = node->next) {
