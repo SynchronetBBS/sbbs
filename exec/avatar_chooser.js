@@ -95,7 +95,8 @@ Frame.prototype.blit = function (bin, w, h, x, y, str, sc) {
 }
 
 function mouse_enable(enable) {
-	if (!console.term_supports(USER_ANSI)) return;
+	if (!console.term_supports(USER_ANSI | USER_MOUSE)) return;
+	console.mouse_mode = MOUSE_MODE_OFF; // While we're not using Synchronet internal mouse support in this script
 	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
 }
 
@@ -136,6 +137,7 @@ function upload_avatar() {
 	bbs.receive_file(fn);
 	const success = avatar_lib.import_file(user.number, fn, 0);
 	file_remove(fn);
+	mouse_enable(true);
 	return success;
 }
 
@@ -750,7 +752,7 @@ function MainMenu(parent_frame) {
 			if (upload_avatar()) {
 				console.putmsg('Your avatar has been updated.');
 			} else {
-				console.putmsg('An error was encountered.  Your avatar has nto been updated.');
+				console.putmsg('An error was encountered.  Your avatar has not been updated.');
 			}
 			console.clear(LIGHTGRAY);
 			frames.parent.invalidate();
