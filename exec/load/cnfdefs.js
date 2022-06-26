@@ -27,6 +27,7 @@ var LEN_SLNAME =	40;		/* Sub/Dir long name						*/
 						
 var UINT16_T = 		2;
 var UINT32_T = 		4;
+var UINT64_T = 		8;
 var UCHAR = 		1;
 
 
@@ -130,7 +131,11 @@ struct.sub_t={
 	moderated_ars:	{bytes:LEN_ARSTR+1,		type:"str"},	// was mod_arstr
 	// *mod_ar;
 	qwk_conf:		{bytes:UINT16_T,		type:"int"},	// was qwkconf
-	__PADDING__:{bytes:53}
+	__PADDING1__:	{bytes:1},
+	pmode:			{bytes:UINT32_T,		type:"int"},
+	n_pmode:		{bytes:UINT32_T,		type:"int"},
+	area_tag:		{bytes:41,				type:"str"},
+	__PADDING2__:{bytes:3}
 };
 struct.grp_t={
 	description:	{bytes:LEN_GLNAME+1,	type:"str"},	// was lname
@@ -155,11 +160,9 @@ struct.qhub_t={
 	pack:		{bytes:LEN_CMD+1,		type:"str"},
 	unpack:		{bytes:LEN_CMD+1,		type:"str"},
 	subs:		{bytes:struct.qhubsub_t,	type:"lst"},
-	// uint16_t	*mode,					/* Mode for Ctrl-A codes for ea. sub */
-	// 			*conf;					/* Conference number of ea. */
-	// ulong	*sub;					/* Number of local sub-board for ea. */
-	// time32_t	last;					/* Last network attempt */
-	__PADDING__:{bytes:64}
+	settings:	{bytes:UINT32_T,		type:"int"},
+	format:		{bytes:4,				type:"str"},
+	__PADDING__:{bytes:56}
 };
 struct.phub_t={
 	days:		{bytes:1,				type:"str"},
@@ -193,20 +196,21 @@ struct.sec_level_t={
 	timeperday:	{bytes:UINT16_T,			type:"int"},
 	timepercall:{bytes:UINT16_T,			type:"int"},
 	callsperday:{bytes:UINT16_T,			type:"int"},
-	freecdtperd:{bytes:UINT32_T,			type:"int"},
+	__PADDING1__:{bytes:4},									// was freecdtperd
 	linespermsg:{bytes:UINT16_T,			type:"int"},
 	postsperday:{bytes:UINT16_T,			type:"int"},
 	emailperday:{bytes:UINT16_T,			type:"int"},
-	misc:		{bytes:UINT32_T,			type:"int"},
+	settings:	{bytes:UINT32_T,			type:"int"},	// was misc
 	expireto:	{bytes:UCHAR,				type:"int"},
-	__PADDING__:{bytes:11}
+	freecdtperday:{bytes:UINT64_T,			type:"int"},
+	__PADDING2__:{bytes:3}
 };
 
 struct.cmd_shell_t={
 	name:		{bytes:40+1,				type:"str"},
 	code:		{bytes:LEN_CODE+1,			type:"str"},
 	ars:		{bytes:LEN_ARSTR+1,			type:"str"},
-	misc:		{bytes:UINT32_T,			type:"int"},
+	settings:	{bytes:UINT32_T,			type:"int"},	// unused
 	__PADDING__:{bytes:16}
 };
 
@@ -265,7 +269,9 @@ struct.main={
 	newuser_msgscan_init:		{bytes:UINT16_T,	type:"int"},	// new_msgcan_init
 	guest_msgscan_init:			{bytes:UINT16_T,	type:"int"},
 	min_pwlen:					{bytes:UCHAR,		type:"int"},
-	__PADDING1__:				{bytes:9},
+	__PADDING1__:				{bytes:3},
+	max_log_size:				{bytes:UINT32_T,	type:"int"},
+	max_logs_kept:				{bytes:UINT16_T,	type:"int"},
 	expired_level:				{bytes:UCHAR,		type:"int"},
 	expired_flags1:				{bytes:UINT32_T,	type:"int"},
 	expired_flags2:				{bytes:UINT32_T,	type:"int"},
@@ -297,8 +303,10 @@ struct.main={
 	logonlist_mod:		{bytes:LEN_CMD+1,			type:"str"},
 	prextrn_mod:        {bytes:LEN_MODNAME+1,       type:"str"},
 	postxtrn_mod:       {bytes:LEN_MODNAME+1,       type:"str"},
+	tempxfer_mod:       {bytes:LEN_MODNAME+1,       type:"str"},
 	
-	__PADDING3__:		{bytes:234},
+	__PADDING3__:		{bytes:184},
+	new_genders:		{bytes:41,					type:"str"},
 	user_backup_level:	{bytes:UINT16_T,			type:"int"},
 	mail_backup_level:	{bytes:UINT16_T,			type:"int"},
 	validation_set:		{bytes:struct.validation_set_t, type:"lst", length: 10},
@@ -326,7 +334,8 @@ struct.msg={
 	preqwk_ars:		{bytes:LEN_ARSTR+1, 	type:"str"},	// preqwk_ar
 	smb_retry_time:	{bytes:UCHAR, 			type:"int"},
 	max_qwkmsgage:	{bytes:UINT16_T, 		type:"int"},
-	__PADDING1__:	{bytes:466},
+	max_spamage:	{bytes:UINT16_T, 		type:"int"},
+	__PADDING1__:	{bytes:464},
 	settings:		{bytes:UINT32_T, 		type:"int"},	// was msg_misc
 	__PADDING2__:	{bytes:510},
 	grp:			{bytes:struct.grp_t, 	type:"lst"},
@@ -391,7 +400,8 @@ struct.lib_t={
 	code_prefix:	{bytes:LEN_CODE+1,		type:"str"},
 	sort:			{bytes:1,				type:"int"},
 	settings:		{bytes:UINT32_T,		type:"int"},
-	__PADDING__:	{bytes:34}
+	vdir_name:		{bytes:UCHAR,			type:"int"},
+	__PADDING__:	{bytes:33}
 };
 
 /* Extractable File Types */
@@ -476,7 +486,8 @@ struct.file={
 	leech_pct:		{bytes:UINT16_T,		type:"int"},
 	leech_sec:		{bytes:UINT16_T,		type:"int"},
 	settings:		{bytes:UINT32_T,		type:"int"},
-	__PADDING3__:	{bytes:60},
+	filename_maxlen: {bytes:UINT16_T,		type:"int"},
+	__PADDING3__:	{bytes:58},
 	fextr:			{bytes:struct.fextr_t,	type:"lst"},
 	fcomp:			{bytes:struct.fcomp_t,	type:"lst"},
 	fview:			{bytes:struct.fview_t,	type:"lst"},
