@@ -501,9 +501,14 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 
 	var minWidth = ChoiceScrollbox_MinWidth();
 
-	this.dimensions = new Object();
-	this.dimensions.topLeftX = pLeftX;
-	this.dimensions.topLeftY = pTopY;
+	this.dimensions = {
+		topLeftX: pLeftX,
+		topLeftY: pTopY,
+		width: 0,
+		height: pHeight,
+		bottomRightX: 0,
+		bottomRightY: 0
+	};
 	// Make sure the width is the minimum width
 	if ((pWidth < 0) || (pWidth < minWidth))
 		this.dimensions.width = minWidth;
@@ -515,7 +520,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 
 	// The text item array and member variables relating to it and the items
 	// displayed on the screen during the input loop
-	this.txtItemList = new Array();
+	this.txtItemList = [];
 	this.chosenTextItemIndex = -1;
 	this.topItemIndex = 0;
 	this.bottomItemIndex = 0;
@@ -1942,7 +1947,7 @@ function readValueSettingConfigFile(pFilename, pLineReadLen)
          {
             // If retObj hasn't been created yet, then create it.
             if (retObj == null)
-               retObj = new Object();
+               retObj = {};
 
             // Read the setting & value, and trim leading & trailing spaces.  Then
             // set the value in retObj.
@@ -2246,9 +2251,10 @@ function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth)
 //                                   Will be -1 if none are found.
 function quotedLineIndexes(pTextLineArray, pStartIndex, pQuotePrefix)
 {
-   var retObj = new Object();
-   retObj.noQuoteLineIndex = -1;
-   retObj.nextQuoteLineIndex = -1;
+   var retObj = {
+		noQuoteLineIndex: -1,
+		nextQuoteLineIndex: -1
+	};
 
    if (pTextLineArray.length == 0)
       return retObj;
@@ -2895,12 +2901,12 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 	var quotePrefixWithoutLeadingSpace = gQuotePrefix.replace(/^ /, "");
 
 	// 1. Get information for each line (quote level, beginning of line, etc.)
-	var lineInfos = new Array();
+	var lineInfos = [];
 	for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
 		lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], true, pIndentQuoteLines));
 
 	// 2. Based on the line info, find the different sections of the quote lines
-	var quoteSections = new Array();
+	var quoteSections = [];
 	var startArrIndex = 0;
 	var endArrIndex = -1;
 	var lastQuoteLevel = lineInfos[0].quoteLevel;
@@ -2916,10 +2922,11 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 		if (lineInfos[quoteLineIndex].quoteLevel != lastQuoteLevel)
 		{
 			endArrIndex = quoteLineIndex;
-			var sectionInfo = new Object();
-			sectionInfo.startArrIndex = startArrIndex;
-			sectionInfo.endArrIndex = endArrIndex;
-			sectionInfo.quoteLevel = lastQuoteLevel;
+			var sectionInfo = {
+				startArrIndex: startArrIndex,
+				endArrIndex: endArrIndex,
+				quoteLevel: lastQuoteLevel
+			};
 			// If the end array index is for a blank quote line, then
 			// adjust it to the first non-blank quote line before it.
 			while ((sectionInfo.endArrIndex-1 >= 0) &&
@@ -2942,10 +2949,11 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 		         (lineInfos[quoteLineIndex].startIndex > lineInfos[quoteLineIndex-1].startIndex))
 		{
 			endArrIndex = quoteLineIndex; // One past the last index of the current paragraph
-			var sectionInfo = new Object();
-			sectionInfo.startArrIndex = startArrIndex;
-			sectionInfo.endArrIndex = endArrIndex;
-			sectionInfo.quoteLevel = 0;
+			var sectionInfo = {
+				startArrIndex: startArrIndex,
+				endArrIndex: endArrIndex,
+				quoteLevel: 0
+			};
 			// If the end array index is for a blank quote line, then
 			// adjust it to the first non-blank quote line before it.
 			while ((sectionInfo.endArrIndex-1 >= 0) &&
@@ -2966,10 +2974,11 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 	// quoteSections.
 	if ((endArrIndex == -1) || (endArrIndex == gQuoteLines.length-1))
 	{
-		var sectionInfo = new Object();
-		sectionInfo.startArrIndex = startArrIndex;
-		sectionInfo.endArrIndex = gQuoteLines.length;
-		sectionInfo.quoteLevel = lastQuoteLevel;
+		var sectionInfo = {
+			startArrIndex: startArrIndex,
+			endArrIndex: gQuoteLines.length,
+			quoteLevel: lastQuoteLevel
+		};
 		// If the end array index is for a blank quote line, then
 		// adjust it to the first non-blank quote line before it.
 		while ((sectionInfo.endArrIndex > 0) && (gQuoteLines[sectionInfo.endArrIndex-1].length == 0))
@@ -3040,7 +3049,7 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 		var maxLineWidth = pMaxWidth - maxBegOfLineLen;
 		if (maxLineWidth < 0)
 			maxLineWidth = 0;
-		var idxesAddedNL = new Array();
+		var idxesAddedNL = [];
 		var numLinesAdded = 0;
 		if (maxLineWidth > 0)
 		{
@@ -3285,8 +3294,9 @@ function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines, pMaxWidth)
 //  pMsgAreaName: The name of the message area being posted to
 function getCurMsgInfo(pMsgAreaName)
 {
-	var retObj = new Object();
-	retObj.msgNumIsOffset = false;
+	var retObj = {
+		msgNumIsOffset: false
+	};
 	if (bbs.smb_sub_code.length > 0)
 	{
 		retObj.lastMsg = bbs.smb_last_msg;
@@ -3564,11 +3574,7 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 	// then return an error.
 	var fromUser = new User(pFromUserNum);
 	if (fromUser.settings & USER_DELETED)
-	{
-		//delete fromUser;
-		fromUser = undefined; // Destructs the object now, rather than with 'delete'
 		return "The 'from' user is marked as deleted";
-	}
 
 	// Check the posting access requirements for this sub-board.  If the
 	// user is not able to post in this sub-board, then don't let them.
@@ -3601,12 +3607,9 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 	var saveRetval = msgbase.save_msg(header, pMessage);
 	msgbase.close();
 
-	retStr = "";
+	var retStr = "";
 	if (!saveRetval)
 		retStr = "Error saving the message: " + msgbase.last_error;
-
-	//delete fromUser;
-	fromUser = undefined; // Destructs the object now, rather than with 'delete'
 
 	return retStr;
 }
@@ -3662,9 +3665,10 @@ function readUserSigFile()
 //               grpIndex: The group index of the sub-board
 function getFirstPostableSubInfo()
 {
-  var retObj = new Object();
-  retObj.subCode = "";
-  retObj.grpIndex = 0;
+  var retObj = {
+		subCode: "",
+		grpIndex: 0
+	};
 
   var continueOn = true;
   for (var groupIdx = 0; (groupIdx < msg_area.grp_list.length) && continueOn; ++groupIdx)
@@ -3691,7 +3695,7 @@ function getFirstPostableSubInfo()
 // and the value in lowercase.  This function will read up to 9999 replacements.
 //
 // Parameters:
-//  pArray: The array to populate.  Must be created as "new Array()".
+//  pReplacementsObj: The object/dictionary to populate.
 //  pRegex: Whether or not the text replace feature is configured to use regular
 //          expressions.  If so, then the search words in the array will not
 //          be converted to uppercase and the replacement text will not be
@@ -3772,7 +3776,7 @@ function populateTxtReplacements(pArray, pRegex)
 function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
 {
    // Set up an array of color setting names
-   var colorSettingStrings = new Array();
+   var colorSettingStrings = [];
    colorSettingStrings.push("crossPostBorder"); // Deprecated
    colorSettingStrings.push("crossPostBorderText"); // Deprecated
    colorSettingStrings.push("listBoxBorder");
@@ -4697,7 +4701,7 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 	else
 		languageName = justFilename.substr(11);
 	// Figure out the language name from common standard localization tags
-	languageNameLower = languageName.toLowerCase();
+	var languageNameLower = languageName.toLowerCase();
 	var isSupplemental = false;
 	if (/[a-z]{2}-[a-z]{2}-supplemental/.test(languageNameLower))
 	{
