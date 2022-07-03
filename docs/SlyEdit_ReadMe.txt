@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.75
-                        Release date: 2021-12-11
+                              Version 1.80
+                        Release date: 2022-07-03
 
                                   by
 
@@ -22,15 +22,15 @@ Contents
  2. Introduction
  3. Installation & Setup
  4. Features
- 5. Digital Distortion Message Lister note
- 6. Configuration file
- 7. Ice-style Color Theme Settings
- 8. DCT-style Color Theme Settings
- 9. Common colors (appearing in both Ice and DCT color theme files)
-10. Text replacements (AKA Macros)
-11. User settings
-12. Taglines
-13. Spell check and dictionaries
+ 5. Configuration file
+ 6. Ice-style Color Theme Settings
+ 7. DCT-style Color Theme Settings
+ 8. Common colors (appearing in both Ice and DCT color theme files)
+ 9. Text replacements (AKA Macros)
+10. User settings
+11. Taglines
+12. Spell check and dictionaries
+13. Version history
 
 
 1. Disclaimer
@@ -62,6 +62,12 @@ support up to 79 characters; however, an increased terminal size will provide
 more room for message information to be displayed.  Also, a terminal height
 greater than the standard 24 or 25 characters will provide a taller edit area,
 allowing more of the message to be seen on the screen at a time.
+
+SlyEdit allows the user to select/change the color of their text using the
+CTRL-K key, if the allowColorSelection is set to true in SlyEdit.cfg.  Also,
+you can have SlyEdit convert colors to ANSI when posting messages, for
+compatibility with other BBS software.  To do so, set the saveColorsAsANSI
+setting to true in SlyEdit.cfg.
 
 Also, SlyEdit has no moving parts that can wear out over time.
 
@@ -222,20 +228,13 @@ Ctrl-A       : Abort message                ¦ PageUp  : Page up
 Ctrl-Z       : Save message                 ¦ PageDown: Page down
 Ctrl-Q       : Quote message                ¦ Ctrl-W  : Word/text search
 Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D  : Delete line
-Ctrl-R       : Spell checker                ¦ ESC     : Command menu
-Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
+Ctrl-S       : Change subject               ¦ ESC     : Command menu
 Ctrl-U       : Your user settings           ¦ Ctrl-C  : Cross-post selection
-Ctrl-S       : Change subject
+Ctrl-K       : Change text color            ¦ Ctrl-R  : Spell checker
+Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
 
 
-5. Digital Distortion Message Lister note
------------------------------------------
-If you use Digital Distortion's Message Lister, you must update it to version
-1.36 or newer in order to properly work with this version of SlyEdit when
-replying to messages.  See the file "Message Lister notes.txt" for a more
-detailed explanation.
-
-6. Configuration file
+5. Configuration file
 =====================
 The configuration file, SlyEdit.cfg, is split up into 3 sections -
 Behavior, Ice colors, and DCT colors.  These sections are designated
@@ -276,6 +275,21 @@ reWrapQuoteLines                  Whether or not to re-wrap quote lines. Valid
                                   feature is disabled, quote lines will simply
                                   be trimmed to make room for the quote prefix
                                   character to be added to the front.
+
+allowColorSelection               Whether or not to let the user change the
+                                  color/attributes of the text they're typing.
+								  Defaults to true.  When this is enabled, the
+								  user can change their text color with the
+								  CTRL-K hotkey.
+
+saveColorsAsANSI                  Whether or not to save message color/attribute
+                                  codes as ANSI (if not, they will be saved as
+								  Synchronet attribute codes). Saving colors as
+								  ANSI in posted messages provides a
+								  compatibility with other BBS software and
+								  message readers that might not understand
+								  Synchronet attribute codes (but most do
+								  understand ANSI).
 
 allowCrossPosting                 Whether or not to allow cross-posting
                                   messages into different/multiple message
@@ -406,12 +420,10 @@ The color theme files are plain text files that can be edited with a
 text editor.
 
 
-7. Ice-style Color Theme Settings
+6. Ice-style Color Theme Settings
 =================================
 The following options are valid for Ice-style theme files:
 ----------------------------------------------------------
-TextEditColor                     The color for the message text
-
 QuoteLineColor                    The color for quoted lines in the message
 
 BorderColor1                      The first color to use for borders
@@ -470,12 +482,10 @@ UnselectedOptionBorderColor       The color to use for the borders around
 UnselectedOptionTextColor         The color to use for the text for unselected
                                   multi-choice options
 
-8. DCT-style Color Theme Settings
+7. DCT-style Color Theme Settings
 =================================
 The following options are valid for DCT-style theme files:
 ----------------------------------------------------------
-TextEditColor                     The color for the message text
-
 QuoteLineColor                    The color for quoted lines in the message
 
 TopBorderColor1                   The first color to use for the
@@ -603,7 +613,7 @@ MenuUnselectedItems               The color to use for unselected items on the
 MenuHotkeys                       The color to use for the hotkey characters in the
                                   menu items on the drop-down menus
 
-9. Common colors (appearing in both Ice and DCT color theme files)
+8. Common colors (appearing in both Ice and DCT color theme files)
 ==================================================================
 listBoxBorder                     The color to use for the border of list
                                   boxes, such as the cross-post area selection
@@ -690,7 +700,7 @@ listBoxItemHighlight              The color to use for the currently selected
                                   item in list boxes (such as the list of text
                                   replacements and the list of tag lines)
 
-10. Text replacements (AKA Macros)
+9. Text replacements (AKA Macros)
 ==================================
 SlyEdit version 1.29 added text replacements (AKA Macros), which lets you (the
 sysop) define words to be replaced with other text as the user types a message.
@@ -783,7 +793,7 @@ store it in buffer 1, and in JavaScript (and with SlyEdit's search and
 replace), you would use $1 to refer to the word "darn".  For example, for
 (darn), the replacement $1it would replace the word "darn" with "darnit".
 
-11. User settings
+10. User settings
 =================
 Since version 1.32, SlyEdit has the ability for each user to configure some
 settings for themselves.  The user settings include the following:
@@ -817,7 +827,7 @@ The user settings files will be stored in the sbbs/data/user directory with the
 filename <user number>.SlyEdit_Settings, and the user number will be 0-padded
 up to 4 digits.
 
-12. Taglines
+11. Taglines
 ============
 SlyEdit version 1.32 added the ability for users to optionally choose a tagline
 to be appended to their message upon saving the message.  Each user can
@@ -846,7 +856,8 @@ MSGINF file includes the 7th line, then the tagline will appear after the
 user's signature (if they have one).  If the MSGINF file does not include the
 7th line, then the tagline will appear before the user's signature.
 
-13. Spell check and dictionaries
+
+12. Spell check and dictionaries
 ================================
 Since version 1.64, SlyEdit has a spell check feature.  Spell check can be
 started by the user with the Ctrl-R hotkey, or by the Edit > Spell Checker
@@ -884,3 +895,108 @@ Dictionary files must be sorted in order for word matching to work properly
 to be sorted).  Also, all of the words in the dictionary files must be lower-
 case, since SlyEdit does case-insensitive matching by converting words in the
 message to lower-case and comparing them with the words in the dictionary.
+
+
+143 Version history
+===================
+Version  Date         Description
+-------  ----         -----------
+1.80     2022-07-03   Added the ability to change/set the text color (using the
+                      CTRL-K hotkey).  If desired, changing the text color can
+					  be disabled if desired, and the colors can be saved as
+					  ANSI (rather than Synchronet attribute codes) for
+					  compatibility with other BBS software & message readers.
+					  The allowColorSelection option in SlyEdit.cfg specifies
+					  whether or not to allow changing text colors, and the
+                      saveColorsAsANSI option specifies whether or not to save
+					  the message colors as ANSI.
+1.79     2022-06-21   JS strict mode enabled. Small JS issues fixed.
+1.78     2022-06-09   Removed high-ascii characters from the SlyEdit JS files;
+                      used ascii() with their numeric ASCII values instead. This
+					  should avoid issues with text editors converting
+					  characters incorrectly.
+1.77     2022-05-27   Fixed a few instances where SlyEdit was trying to access
+                      sub-board information with an empty sub-board code (in the
+					  rare case when no sub-boards are configured).
+1.76     2022-03-05   When selecting quote lines in a reply message, SlyEdit now
+                      remembers the position in the quote selection menu so that
+					  the quote menu isn't always at the top whenever it's
+					  opened again.  This issue may have been introduced when
+					  SlyEdit was refactored to use DDLightbarMenu for its
+					  lightbar stuff.
+1.75     2021-12-11   Refactored the cross-post menu and quote selection window
+                      to use DDLightbarMenu instead of SlyEdit's own lightbar
+					  code.
+1.74     2021-01-23   Making use of the new K_NUL and checking user input
+                      against null, SlyEdit no longer thinks a 0x0 (sent with
+					  CTRL-Space on a Mac) is a timeout.  K_NUL was added on
+					  Jan. 21, 2021 by Rob Swindell. (This update was from Deon
+					  George)
+1.73     2020-03-31   Now uses DDLightbarMenu instead of SlyEdit's own internal
+                      choice menu.
+1.72     2020-03-04   For cross-posting, to make sure the user can post in a
+                      sub-board, SlyEdit now checks the can_post property of the
+					  sub-board rather than checking the ARS.  The can_post
+					  property covers more cases.
+1.71     2020-03-03   Added a new configuration option, allowSpellCheck, which
+                      the sysop can use to configure whether or not spell check
+					  is allowed.  You might want to disable spell check if the
+					  spell check feature causes SlyEdit to abort with an error
+					  saying it's out of memory.
+1.70     2019-08-15   Fix for a bug introduced in the flowing-line update in
+                      1.68 where some quote blocks were sometimes not being
+					  included when saving a message.  Also, quote lines are now
+					  wrapped to the user's terminal width rather than 80
+					  columns.
+1.69     2019-08-14   Updated to only use console.inkey() for user input and not
+                      use console.getkey() anymore. The change was made in the
+					  getUserKey() function in SlyEdit_Misc.js. Also, SlyEdit
+					  will now write the editor style (ICE or DCT) to result.ed
+					  at the end when a message is saved.  Also, when editing a
+					  message, if the cursor is at the end of the last line and
+					  the user presses the DEL key, then treat it as a
+					  backspace. Some terminals send a delete for backspace,
+					  particularly with keyboards that have a delete key but no
+					  backspace key.
+1.68     2019-08-09   Updated to honor the SUB_ANON and SUB_AONLY flags for the
+                      sub-boards when cross-posting so that the "from" name is
+					  "Anonymous" if either of those flags enabled.
+                      Updated to allow message uploading. Started working on
+					  updates to save new text lines as one long line, to help
+					  with word wrapping in offline readers etc.
+1.67     2019-07-21   Now supports the RESULT.ED drop file, with the ability to
+                      change the subject. Synchronet 3.17c development builds
+					  from July 21, 2019 onward support result.ed even for
+					  editors configured for QuickBBS MSGINF/MSGTMP.
+1.66     2019-05-29   Added more parsing for dictionary filenames for 'general'
+                      dictionaries and 'supplimental' ones
+1.65     2019-05-24   Added support for parsing many standard language tags for
+                      the dictionary filenames
+1.64     2019-05-24   Started working on adding a spell check feature. Also,
+                      updated to use require() instead of load() for .js
+					  scripts when possible.
+1.63     2019-04-18   Started working on supporting word-wrapping for the entire
+                      width of any terminal size, beyond 79.
+1.62     2018-11-11   Updated to save the message if the user disconnects, to
+                      support Synchronet's message draft feature that was added
+					  recently.
+1.61     2018-08-03   Updated to delete instances of User objects that are
+                      created, due to an optimization in Synchronet 3.17 that
+					  leaves user.dat open
+1.54     2017-12-26   Improved quoting with author initials when a > character
+                      exists in the quote lines: Not mistaking the preceding
+					  text as a quote prefix if it has 3 or more non-space
+					  characters before the >.  Also fixed an issue where
+					  wrapped quote lines were sometimes missing the quote line
+					  prefix.
+1.53     2017-12-19   Updated the PageUp and PageDown keys to ensure they match
+                      what's in sbbsdefs.js, since Synchronet added key codes
+					  for those keys on December 17, 2018.  SlyEdit should still
+					  work with older and newer builds of Synchronet, with or
+					  without the updated sbbsdefs.js.
+1.52     2017-12-17   Added the ability for the sysop to toggle whether or not
+                      to allow users to edit quote lines, using the
+					  configuration option allowEditQuoteLines.
+.. Removed some history comments ..
+1.00     2009-08-22   Initial public release
+         2009-05-11   Started development
