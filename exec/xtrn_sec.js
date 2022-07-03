@@ -92,6 +92,13 @@ function sort_by_name(a, b)
 	return 0;
 }
 
+function digits(n)
+{
+    if (n/10 == 0)
+        return 1;
+    return 1 + digits(n / 10);
+}
+
 function external_program_menu(xsec)
 {
     var i,j;
@@ -172,7 +179,10 @@ function external_program_menu(xsec)
 
 			for(i=0;i<n && !console.aborted;i++) {
 				write(margin);
-				console.add_hotspot(i+1);
+				var hotspot = i+1;
+				if(digits(hotspot) < digits(prog_list.length))
+					hotspot += '\r';
+				console.add_hotspot(hotspot);
 				printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
 					,i+1
 					,prog_list[i].name
@@ -182,7 +192,10 @@ function external_program_menu(xsec)
 					j=Math.floor(prog_list.length/2)+i+(prog_list.length&1);
 					if(j<prog_list.length) {
 						write(options.multicolumn_separator);
-						console.add_hotspot(j+1);
+						hotspot = j+1;
+						if(digits(hotspot) < digits(prog_list.length))
+							hotspot += '\r';
+						console.add_hotspot(hotspot);
 						printf(options.multicolumn_fmt, j+1
 							,prog_list[j].name
 							,prog_list[j].cost);
