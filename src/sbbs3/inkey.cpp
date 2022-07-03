@@ -419,7 +419,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					--y;
 					lprintf(LOG_DEBUG, "SGR Mouse button (0x%02X) %s reported at: %u x %u"
 						,button, ch == 'M' ? "PRESS" : "RELEASE", x, y);
-					if(button == 0 && ch == 'M') { // Left-button press
+					if(button == 0 && ch == 'm') { // Left-button release
 						list_node_t* node;
 						for(node = mouse_hotspots.first; node != NULL; node = node->next) {
 							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
