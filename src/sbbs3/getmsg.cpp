@@ -248,12 +248,14 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 {
 	char*	txt;
+	BOOL	is_sub = is_valid_subnum(&cfg, smb->subnum);
 
-	if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && post != NULL && (post->upvotes || post->downvotes))
-		|| msg->hdr.type == SMB_MSG_TYPE_POLL)
-		msg->user_voted = smb_voted_already(smb, msg->hdr.number
-					,cfg.sub[smb->subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
-
+	if(is_sub) {
+		if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && post != NULL && (post->upvotes || post->downvotes))
+			|| msg->hdr.type == SMB_MSG_TYPE_POLL)
+			msg->user_voted = smb_voted_already(smb, msg->hdr.number
+						,cfg.sub[smb->subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
+	}
 	show_msghdr(smb, msg);
 
 	int comments=0;
@@ -265,7 +267,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 	if(comments)
 		CRLF;
 
-	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb->subnum < cfg.total_subs) {
+	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && is_sub) {
 		char* answer;
 		int longest_answer = 0;
 
@@ -337,7 +339,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 			utf8_normalize_str(txt);
 		p_mode |= P_UTF8;
 	}
-	if(smb->subnum < cfg.total_subs) {
+	if(is_sub) {
 		p_mode |= cfg.sub[smb->subnum]->pmode;
 		p_mode &= ~cfg.sub[smb->subnum]->n_pmode;
 	}
