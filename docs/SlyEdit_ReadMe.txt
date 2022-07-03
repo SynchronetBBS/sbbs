@@ -278,18 +278,18 @@ reWrapQuoteLines                  Whether or not to re-wrap quote lines. Valid
 
 allowColorSelection               Whether or not to let the user change the
                                   color/attributes of the text they're typing.
-								  Defaults to true.  When this is enabled, the
-								  user can change their text color with the
-								  CTRL-K hotkey.
+                                  Defaults to true.  When this is enabled, the
+                                  user can change their text color with the
+                                  CTRL-K hotkey.
 
 saveColorsAsANSI                  Whether or not to save message color/attribute
                                   codes as ANSI (if not, they will be saved as
-								  Synchronet attribute codes). Saving colors as
-								  ANSI in posted messages provides a
-								  compatibility with other BBS software and
-								  message readers that might not understand
-								  Synchronet attribute codes (but most do
-								  understand ANSI).
+                                  Synchronet attribute codes). Saving colors as
+                                  ANSI in posted messages provides a
+                                  compatibility with other BBS software and
+                                  message readers that might not understand
+                                  Synchronet attribute codes (but most do
+                                  understand ANSI).
 
 allowCrossPosting                 Whether or not to allow cross-posting
                                   messages into different/multiple message
@@ -903,13 +903,13 @@ Version  Date         Description
 -------  ----         -----------
 1.80     2022-07-03   Added the ability to change/set the text color (using the
                       CTRL-K hotkey).  If desired, changing the text color can
-					  be disabled if desired, and the colors can be saved as
-					  ANSI (rather than Synchronet attribute codes) for
-					  compatibility with other BBS software & message readers.
-					  The allowColorSelection option in SlyEdit.cfg specifies
-					  whether or not to allow changing text colors, and the
+                      be disabled if, and the colors can be saved as ANSI
+                      (rather than Synchronet attribute codes) for compatibility
+                      with other BBS software & message readers. The
+                      allowColorSelection option in SlyEdit.cfg specifies
+                      whether or not to allow changing text colors, and the
                       saveColorsAsANSI option specifies whether or not to save
-					  the message colors as ANSI.
+                      the message colors as ANSI.
 1.79     2022-06-21   JS strict mode enabled. Small JS issues fixed.
 1.78     2022-06-09   Removed high-ascii characters from the SlyEdit JS files;
                       used ascii() with their numeric ASCII values instead. This
