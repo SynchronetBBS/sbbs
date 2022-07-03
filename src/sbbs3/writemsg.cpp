@@ -516,7 +516,6 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	}
 
 	editor_details[0] = 0;
-	smb.subnum = subnum;	/* Allow JS msgeditors to use bbs.smb_sub* */
 
 	if(console&CON_RAW_IN) {
 
@@ -596,8 +595,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
+		auto savsubnum = smb.subnum;
+		smb.subnum = subnum;	/* Allow JS msgeditors to use bbs.smb_sub* */
 		const char* cmd = cmdstr(cfg.xedit[useron_xedit-1]->rcmd, msgtmp, nulstr, NULL, ex_mode);
 		int result = external(cmd, ex_mode, cfg.node_dir);
+		smb.subnum = savsubnum;
 		lprintf(LOG_DEBUG, "'%s' returned %d", cmd, result);
 		rioctl(IOSM|PAUSE|ABORT); 
 
