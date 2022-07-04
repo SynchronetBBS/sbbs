@@ -27,6 +27,12 @@
  *                            Running this scipt with the "false command-line parameter
  *                            works again, allowing the user to choose the file directory
  *                            within their file library.
+ * 2022-07-03 Eric Oulashin   Version 1.27
+ *                            When listing libraries without first listing directories
+ *                            within the user's current library, it wouldn't display
+ *                            the libraries the first time because the library information
+ *                            wasn't built when using directory collapsing.  This has been
+ *                            fixed.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -67,8 +73,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.24";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-05-17";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.27";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-07-03";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -741,6 +747,14 @@ function DDFileAreaChooser_GetActualLibIdx()
 // Return value: The number of directories listed
 function DDFileAreaChooser_ListFileLibs_Traditional(pSearchText)
 {
+	// Ensure that the file directory printf information is created for
+	// this file library.
+	for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
+	{
+		if (typeof(this.fileDirListPrintfInfo[libIdx]) == "undefined")
+			this.BuildFileDirPrintfInfoForLib(libIdx);
+	}
+
 	var searchText = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
 
 	// Print the list header

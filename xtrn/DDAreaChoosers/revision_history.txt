@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.27     2022-07-03   File area chooser fix: When listing libraries without
+                      first listing directories within the user's current
+                      library, it wouldn't display the libraries the first
+                      time because the library information wasn't built when
+                      using directory collapsing.  This has been fixed.
 1.26     2022-06-12   File area chooser fix: Running the scipt with the "false"
                       command-line parameter works again, allowing the user to
                       choose the file directory within their file library.
