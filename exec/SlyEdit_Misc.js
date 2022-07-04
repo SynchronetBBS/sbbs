@@ -49,9 +49,15 @@
 "use strict";
  
 if (typeof(require) === "function")
+{
 	require("text.js", "Pause");
+	require("key_defs.js", "CTRL_A");
+}
 else
+{
 	load("text.js");
+	load("key_defs.js");
+}
  
 // Note: These variables are declared with "var" instead of "const" to avoid
 // multiple declaration errors when this file is loaded more than once.
@@ -104,47 +110,15 @@ var BLOCK4 = "\xDB"; //ASCII 219 // Brightest block
 // Navigational keys
 var UP_ARROW = "\x18"; //ASCII 24
 var DOWN_ARROW = "\x19"; //ASCII 25
-// CTRL keys
-var CTRL_A = "\x01";
-var CTRL_B = "\x02";
-//var KEY_HOME = CTRL_B;
-var CTRL_C = "\x03";
-var CTRL_D = "\x04";
-var CTRL_E = "\x05";
-//var KEY_END = CTRL_E;
-var CTRL_F = "\x06";
-//var KEY_RIGHT = CTRL_F;
-var CTRL_G = "\x07";
-var BEEP = CTRL_G;
-var CTRL_H = "\x08";
+// Some functional keys
 var BACKSPACE = CTRL_H;
-var CTRL_I = "\x09";
 var TAB = CTRL_I;
-var CTRL_J = "\x0a";
-//var KEY_DOWN = CTRL_J;
-var CTRL_K = "\x0b";
-var CTRL_L = "\x0c";
 var INSERT_LINE = CTRL_L;
-var CTRL_M = "\x0d";
 var CR = CTRL_M;
 var KEY_ENTER = CTRL_M;
-var CTRL_N = "\x0e";
-var CTRL_O = "\x0f";
-var CTRL_P = "\x10";
-var CTRL_Q = "\x11";
 var XOFF = CTRL_Q;
-var CTRL_R = "\x12";
-var CTRL_S = "\x13";
 var XON = CTRL_S;
-var CTRL_T = "\x14";
-var CTRL_U = "\x15";
-var CTRL_V = "\x16";
 var KEY_INSERT = CTRL_V;
-var CTRL_W = "\x17";
-var CTRL_X = "\x18";
-var CTRL_Y = "\x19";
-var CTRL_Z = "\x1a";
-var KEY_ESC = "\x1b";
 var KEY_F1 = "\x01F1";
 var KEY_F2 = "\x01F2";
 var KEY_F3 = "\x01F3";
@@ -220,32 +194,359 @@ function TextLine(pText, pHardNewlineEnd, pIsQuoteLine)
 	if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) == "boolean"))
 		this.isQuoteLine = pIsQuoteLine;
 
-	// NEW & EXPERIMENTAL:
 	// For color support
-	this.attrs = new Array(); // An array of attributes for the line
+	this.attrs = {}; // An object where its properties are the line indexes, and values are attributes at that index in the line
+
 	// Functions
-	this.length = TextLine_Length;
-	this.print = TextLine_Print;
+	this.isAQuoteLine = TextLine_isAQuoteLine;
+	this.numAttrs = TextLine_numAttrs;
+	this.hasAttrs = TextLine_hasAttrs;
+	this.getSortedAttrKeysArray = TextLine_getSortedAttrKeysArray;
+	this.length = TextLine_length;
+	this.screenLength = TextLine_screenLength;
+	this.print = TextLine_print;
+	this.substr = TextLine_substr;
+	this.substring = TextLine_substring;
+	this.getText = TextLine_getText;
+	this.insertIntoText = TextLine_insertIntoText;
+	this.trimFront = TextLine_trimFront;
+	this.trimEnd = TextLine_trimEnd;
+	this.moveAttrIdxes = TextLine_moveAttrIdxes;
 	this.doMacroTxtReplacement = TextLine_doMacroTxtReplacement;
 	this.getWord = TextLine_getWord;
+	this.removeCharAt = TextLine_removeCharAt;
+	this.getAttrs = TextLine_getAttrs;
+	this.popAttrsFromFront = TextLine_popAttrsFromFront;
+	this.popAttrsFromEnd = TextLine_popAttrsFromEnd;
+}
+// For the TextLine class: Returns whether the line a quote line.  This is true if
+// the line's isQuoteLine property is true.  If the line's text is empty, then this
+// will return false and set the line's isQuoteLine property to false.
+function TextLine_isAQuoteLine()
+{
+	var lineIsQuoteLine = false;
+	//lineIsQuoteLine = (this.isQuoteLine || (/^ *>/.test(this.text)));
+	//lineIsQuoteLine = this.isQuoteLine;
+	if (this.isQuoteLine)
+	{
+		if (this.screenLength() > 0)
+			lineIsQuoteLine = true;
+		else
+			this.isQuoteLine = false;
+	}
+	return lineIsQuoteLine;
+}
+// For the TextLine class: Returns the number of attribute codes in the line
+function TextLine_numAttrs()
+{
+	return (Object.keys(this.attrs)).length;
+}
+// For the TextLine class: Returns whether or not the line has any attribute codes specified
+function TextLine_hasAttrs()
+{
+	return ((Object.keys(this.attrs)).length > 0);
+}
+// For the TextLine class: Returns a sorted array of the keys (numeric line indexes) from the attrs object
+function TextLine_getSortedAttrKeysArray()
+{
+	var attrKeys = Object.keys(this.attrs);
+	if (attrKeys.length > 0)
+	{
+		attrKeys.sort(textLineAttrSortCompareFunc);
+		// Ensure the values in the attrKeys array are numeric
+		for (var keysIdx = 0; keysIdx < attrKeys.length; ++keysIdx)
+			attrKeys[keysIdx] = +(attrKeys[keysIdx]);
+	}
+	return attrKeys;
+}
+// Compare function for sorting TextLine attribute objects
+function textLineAttrSortCompareFunc(a, b)
+{
+	var numA = +a;
+	var numB = +b;
+	if (numA < numB)
+		return -1;
+	else if (numA > numB)
+		return 1;
+	else
+		return 0;
 }
 // For the TextLine class: Returns the length of the text.
-function TextLine_Length()
+function TextLine_length()
 {
 	return this.text.length;
 }
-// For  the TextLine class: Prints the text line, using its text attributes.
+// For the TextLine class: Returns the printed length of the text (without any attribute codes, etc.)
+function TextLine_screenLength()
+{
+	return console.strlen(this.text);
+}
+// For the TextLine class: Prints the text line, using its text attributes.
 //
 // Parameters:
-//  pClearToEOL: Boolean - Whether or not to clear to the end of the line
-function TextLine_Print(pClearToEOL)
+//  pPrintNormalAttrFirst: Boolean - Whether or not to print a normal attribute first. Defaults to false.
+//  pMaxLength: The maximum length to print.  Optional.  If not specified or <= 0, the whole text will be printed.
+//  pClearToEOL: Boolean - Whether or not to clear to the end of the line.  Defaults to false.
+function TextLine_print(pPrintNormalAttrFirst, pMaxLength, pClearToEOL)
 {
-	console.print(this.text);
-
-	if (pClearToEOL)
-		console.cleartoeol();
+	var printNormalAttrFirst = (typeof(pPrintNormalAttrFirst) === "boolean" ? pPrintNormalAttrFirst : false);
+	if (printNormalAttrFirst)
+		console.print("\x01n");
+	if (this.screenLength() > 0)
+	{
+		var thisLineText = this.getText(true);
+		if (typeof(pMaxLength) === "number" && pMaxLength > 0 && pMaxLength < this.screenLength())
+			thisLineText = shortenStrWithAttrCodes(thisLineText, pMaxLength, true);
+		console.print(thisLineText);
+	}
+	var clearToEOL = (typeof(pClearToEOL) === "boolean" ? pClearToEOL : false);
+	if (clearToEOL)
+		console.cleartoeol("\x01n");
 }
-// Performs text replacement (AKA macro replacement) in the text line.
+// For the TextLine class: Returns a substring of the text string, with or without attribute codes.
+//
+// Parameters:
+//  pWithAttrs: Boolean - Whether or not to include the attribute codes in the substring
+//  pStart: The index of where to start in the string
+//  pLen: The printed screen length of the substring
+//
+// Return value: The substring from the text line. If pWithAttrs is true, the substring will contain
+//               the attribute codes set for the text line.
+function TextLine_substr(pWithAttrs, pStart, pLen)
+{
+	var startIdx = (typeof(pStart) === "number" && pStart >= 0 && pStart < this.text.length ? pStart : 0);
+	var length = (typeof(pLen) === "number" && pLen > 0 && pLen <= this.text.length ? pLen : this.text.length);
+	// Sanity check
+	var maxLength = this.text.length - startIdx;
+	if (length > maxLength)
+		length = maxLength;
+
+	// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+	var theSubstr = "";
+	if (pWithAttrs)
+		theSubstr = substrWithAttrCodes(this.getText(pWithAttrs), startIdx, length);
+	else
+		theSubstr = this.text.substr(startIdx, length);
+	return theSubstr;
+}
+// For the TextLine class: Returns a substring of the text string, with or without attribute codes.
+//
+// Parameters:
+//  pWithAttrs: Boolean - Whether or not to include the attribute codes in the substring
+//  pStart: The starting index of the string for the screen-printable text
+//  pEnd: One past the last index to be included in the substring for the screen-printable text
+//
+// Return value: The substring from the text line. If pWithAttrs is true, the substring will contain
+//               the attribute codes set for the text line.
+function TextLine_substring(pWithAttrs, pStart, pEnd)
+{
+	if (typeof(pStart) !== "number" || typeof(pEnd) !== "number")
+		return "";
+	if (pStart < 1 || pStart >= this.text.length || pEnd <= pStart)
+		return "";
+
+	var strLength = pEnd - pStart;
+	return this.substr(pWithAttrs, pStart, strLength);
+}
+// For the TextLine class: Gets the entire text string
+//
+// Parameters:
+//  pWithAttrs: Boolean - Whether or not to include the attribute codes in the substring. Defaults to true.
+//
+// Return value: The object's text string, possibly with its attribute codes as specified
+function TextLine_getText(pWithAttrs)
+{
+	var thisText = "";
+	var withAttrs = (typeof(pWithAttrs) === "boolean" ? pWithAttrs : true);
+	var attrKeys = this.getSortedAttrKeysArray(); // The attribute keys are indexes for this.text
+	if (withAttrs && attrKeys.length > 0)
+	{
+		var textIdx = +(attrKeys[0]);
+		if (textIdx > 0)
+			thisText += this.text.substring(0, textIdx);
+		var substringEndIdx = 0; // For substrings
+		var keysArrayEndIdx = attrKeys.length - 1;
+		for (var keysIdx = 0; keysIdx <= keysArrayEndIdx; ++keysIdx)
+		{
+			textIdx = +(attrKeys[keysIdx]);
+			thisText += this.attrs[textIdx];
+			if (keysIdx < keysArrayEndIdx)
+			{
+				substringEndIdx = +(attrKeys[keysIdx+1]);
+				thisText += this.text.substring(textIdx, substringEndIdx);
+			}
+			else
+				thisText += this.text.substring(textIdx);
+		}
+	}
+	else
+		thisText = this.text;
+	return thisText;
+}
+// For the TextLine class: Inserts a string inside the line's text string.
+//
+// Parameters:
+//  pIndex: The index of this TextLine's text at which to insert the other string
+//  pAdditionalText: The string to insert into this TextTine's text string
+//  pInsertMiddleShiftAttrsStartAtIndexPlusOne: Optional boolean - When inserting text in the middle of the
+//                                              line, whether to start shifting attribute codes to the right
+//                                              at pIndex+1.  Defaults to true (start at pIndex+1).
+function TextLine_insertIntoText(pIndex, pAdditionalText, pInsertMiddleShiftAttrsStartAtIndexPlusOne)
+{
+	// Error checking
+	if (typeof(pIndex) !== "number" || pIndex >= this.text.length)
+		return;
+	if (typeof(pAdditionalText) !== "string" || console.strlen(pAdditionalText) == 0)
+		return;
+
+	var txtIdx = (pIndex < 0 ? 0 : pIndex);
+
+	// Check for attribute codes in pAdditionalText so we can move them to this.attrs
+	var attrSepObj = sepStringAndAttrCodes(pAdditionalText);
+
+	// If txtIdx is beyond the last index of this.text, then just return the
+	// two strings concatenated.
+	if (txtIdx >= this.text.length)
+	{
+		this.text = this.text + attrSepObj.textWithoutAttrs;
+		// Copy any attributes into this.attrs
+		for (var txtIdx in attrSepObj.attrs)
+		{
+			var newTxtIdx = this.text.length + (+txtIdx);
+			this.attrs[newTxtIdx] = attrSepObj.attrs[txtIdx];
+		}
+	}
+	// If txtIdx is 0, then just return the additional text + this.text.
+	else if (txtIdx == 0)
+	{
+		this.text = attrSepObj.textWithoutAttrs + this.text;
+		// Move any attribute indexes in the line to the right after the additional text
+		this.moveAttrIdxes(0, attrSepObj.textWithoutAttrs.length);
+		// Copy any attributes into this.attrs
+		for (var txtIdx in attrSepObj.attrs)
+			this.attrs[+txtIdx] = attrSepObj.attrs[txtIdx];
+	}
+	else
+	{
+		this.text = this.text.substr(0, txtIdx) + attrSepObj.textWithoutAttrs + this.text.substr(txtIdx);
+		// Move any text attributes to the right according to the length of the text spliced in, starting
+		// at the given index
+		var shiftStartingAtIndexPlusOne = (typeof(pInsertMiddleShiftAttrsStartAtIndexPlusOne) === "boolean" ? pInsertMiddleShiftAttrsStartAtIndexPlusOne : true);
+		this.moveAttrIdxes(shiftStartingAtIndexPlusOne ? txtIdx+1 : txtIdx, attrSepObj.textWithoutAttrs.length);
+		// Copy any attributes into this.attrs
+		for (var attrTxtIdx in attrSepObj.attrs)
+		{
+			var newTxtIdx = txtIdx + (+attrTxtIdx);
+			this.attrs[newTxtIdx] = attrSepObj.attrs[txtIdx];
+		}
+	}
+}
+// For the TextLine class: Removes text from the front of the line, and adjusts any attribute codes accordingly
+//
+// Parameters:
+//  pNewStartIdx: The index before which to trim off (this is basically the new starting index for the text)
+//
+// Return value: An object indexed by text index with any color/attribute codes before pNewStartIndex
+function TextLine_trimFront(pNewStartIdx)
+{
+	if (typeof(pNewStartIdx) !== "number" || pNewStartIdx < 0)
+		return {};
+
+	var frontAttrs = {};
+	if (pNewStartIdx > 0)
+		frontAttrs = this.popAttrsFromFront(pNewStartIdx-1);
+
+	if (pNewStartIdx >= this.text.length)
+	{
+		this.text = "";
+		this.attrs = {};
+	}
+	else
+	{
+		this.text = this.text.substr(pNewStartIdx);
+		/*
+		// Adjust the indexes of any attribute codes this line might have: First delete any attributes
+		// before pNewStartIdx
+		var attrKeys = Object.keys(this.attrs);
+		for (var attrKeysIdx = 0; attrKeysIdx < attrKeys.length; ++attrKeysIdx)
+		{
+			var textIdx = +(attrKeys[attrKeysIdx]);
+			if (textIdx < pNewStartIdx)
+				delete this.attrs[textIdx];
+		}
+		*/
+		// Adjust the indexes of the remaining attribute codes to the left (the front ones were removed earlier, to be returned).
+		this.moveAttrIdxes(pNewStartIdx, -pNewStartIdx);
+	}
+
+	return frontAttrs;
+}
+// For the TextLine class: Removes text from the end of the line, and removes and returns any attribute codes from the
+// end starting at the given index.
+//
+// Parameters:
+//  pTxtIdx: The text index to start trimming the line at
+//
+// Return value: An object indexed by text index with any color/attribute codes from pTxtIdx and afterward
+function TextLine_trimEnd(pTxtIdx)
+{
+	if (typeof(pTxtIdx) !== "number" || pTxtIdx < 0 || pTxtIdx >= this.text.length)
+		return {};
+	var rearAttrs = this.popAttrsFromEnd(pTxtIdx);
+	this.text = this.text.substring(0, pTxtIdx);
+	return rearAttrs;
+}
+// For the TextLine class: Moves attribute indexes according to an offset.
+//
+// Parameters:
+//  pStartIdx: The text index at which to start moving the attribute indexes
+//  pOffset: The offset by which to move the attribute indexes
+function TextLine_moveAttrIdxes(pStartIdx, pOffset)
+{
+	if (typeof(pStartIdx) !== "number" || pStartIdx < 0 || pStartIdx >= this.text.length || typeof(pOffset) !== "number" || pOffset == 0)
+		return;
+
+	var startIdx = (pStartIdx < 0 ? 0 : pStartIdx);
+	if (pOffset > 0)
+	{
+		// pOffset is positive: Moving attributes to the right
+		// Go through the sorted attribute keys from right to left, and for any text indexes >= pStartIdx,
+		// adjust them rightward by pOffset
+		var sortedAttrKeys = this.getSortedAttrKeysArray();
+		for (var keysI = sortedAttrKeys.length - 1; keysI >= 0; --keysI)
+		{
+			var textIdx = +(sortedAttrKeys[keysI]);
+			if (textIdx >= pStartIdx)
+			{
+				this.attrs[textIdx + pOffset] = this.attrs[textIdx];
+				delete this.attrs[textIdx];
+			}
+			else
+				break;
+		}
+	}
+	else
+	{
+		// pOffset is negative: Moving attributes to the left
+		// Go through the sorted attribute keys from left to right, and for any text indexes >= startIdx,
+		// adjust them by pOffset
+		var sortedAttrKeys = this.getSortedAttrKeysArray();
+		for (var keysI = 0; keysI < sortedAttrKeys.length; ++keysI)
+		{
+			var textIdx = +(sortedAttrKeys[keysI]);
+			if (textIdx >= startIdx)
+			{
+				// Note: pOffset is negative, so adding pOffset will subtract from textIdx.
+				var newTextIdx = textIdx + pOffset;
+				if (newTextIdx < 0) newTextIdx = 0;
+				this.attrs[newTextIdx] = this.attrs[textIdx];
+				delete this.attrs[textIdx];
+			}
+		}
+	}
+}
+// For the TextLine class: Performs text replacement (AKA macro replacement) in the text line
+// for the current word, based on an index in the text line.
 //
 // Parameters:
 //  pTxtReplacements: An associative array of text to be replaced (i.e.,
@@ -253,6 +554,7 @@ function TextLine_Print(pClearToEOL)
 //  pCharIndex: The current character index in the text line
 //  pUseRegex: Whether or not to treat the text replacement search string as a
 //             regular expression.
+//  pPriorTxtLineAttrs: In case colors are enabled, this includes the attribute codes from prior lines.
 //
 // Return value: An object containing the following properties:
 //               textLineIndex: The updated text line index (integer)
@@ -269,7 +571,9 @@ function TextLine_Print(pClearToEOL)
 //                           replaced or 0 if no word was found.
 //               madeTxtReplacement: Whether or not a text replacement was made
 //                                   (boolean)
-function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
+//               priorTxtAttrs: Any prior text attribute codes before the replacement was made. If none, this
+//                              will be an empty string.
+function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex, pPriorTxtLineAttrs)
 {
 	var retObj = {
 		textLineIndex: pCharIndex,
@@ -277,85 +581,137 @@ function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 		wordStartIdx: 0,
 		newTextEndIdx: 0,
 		newTextLen: 0,
-		madeTxtReplacement: false
+		madeTxtReplacement: false,
+		priorTxtAttrs: ""
 	};
 
+	// Try to find the word at the given index in the text line
 	var wordObj = this.getWord(retObj.textLineIndex);
-	if (wordObj.foundWord)
-	{
-		retObj.wordStartIdx = wordObj.startIdx;
-		retObj.newTextLen = wordObj.word.length;
+	if (!wordObj.foundWord)
+		return retObj;
 
-		// See if the word starts with a capital letter; if so, we'll capitalize
-		// the replacement word.
-		var firstCharUpper = false;
-		var txtReplacement = "";
-		if (pUseRegex)
+	retObj.wordStartIdx = wordObj.startIdx;
+	retObj.newTextLen = wordObj.word.length;
+
+	// See if the word starts with a capital letter; if so, we'll capitalize
+	// the replacement word.
+	var firstCharUpper = false;
+	var txtReplacement = "";
+	if (pUseRegex)
+	{
+		// Since a regular expression might have more characters in addition
+		// to the actual word, we need to go through all the replacement strings
+		// in pTxtReplacements and use the first one that changes the text.
+		for (var prop in pTxtReplacements)
 		{
-			// Since a regular expression might have more characters in addition
-			// to the actual word, we need to go through all the replacement strings
-			// in pTxtReplacements and use the first one that changes the text.
-			for (var prop in pTxtReplacements)
+			if (pTxtReplacements.hasOwnProperty(prop))
 			{
-				if (pTxtReplacements.hasOwnProperty(prop))
+				var regex = new RegExp(prop);
+				txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
+				retObj.madeTxtReplacement = (txtReplacement != wordObj.word);
+				// If a text replacement was made, then check and see if the first
+				// letter in the original text was uppercase, and if so, make the
+				// first letter in the new text (txtReplacement) uppercase.
+				if (retObj.madeTxtReplacement)
 				{
-					var regex = new RegExp(prop);
-					txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
-					retObj.madeTxtReplacement = (txtReplacement != wordObj.word);
-					// If a text replacement was made, then check and see if the first
-					// letter in the original text was uppercase, and if so, make the
-					// first letter in the new text (txtReplacement) uppercase.
-					if (retObj.madeTxtReplacement)
+					if (firstLetterIsUppercase(wordObj.word))
 					{
-						if (firstLetterIsUppercase(wordObj.word))
+						var letterInfo = getFirstLetterFromStr(txtReplacement);
+						if (letterInfo.idx > -1)
 						{
-							var letterInfo = getFirstLetterFromStr(txtReplacement);
-							if (letterInfo.idx > -1)
-							{
-								txtReplacement = txtReplacement.substr(0, letterInfo.idx)
-								               + letterInfo.letter.toUpperCase()
-								               + txtReplacement.substr(letterInfo.idx+1);
-							}
+							txtReplacement = txtReplacement.substr(0, letterInfo.idx)
+										   + letterInfo.letter.toUpperCase()
+										   + txtReplacement.substr(letterInfo.idx+1);
 						}
-						// Now that we've made a text replacement, stop going through
-						// pTxtReplacements looking for a matching regex.
-						break;
 					}
+
+					// Now that we've made a text replacement, stop going through
+					// pTxtReplacements looking for a matching regex.
+					break;
 				}
 			}
 		}
-		else
+	}
+	else
+	{
+		// Not using a regular expression.
+		firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
+		// Convert the word to all uppercase to do the case-insensitive lookup
+		// in pTxtReplacements.
+		wordObj.word = wordObj.word.toUpperCase();
+		if (pTxtReplacements.hasOwnProperty(wordObj.word))
 		{
-			// Not using a regular expression.
-			firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
-			// Convert the word to all uppercase to do the case-insensitive lookup
-			// in pTxtReplacements.
-			wordObj.word = wordObj.word.toUpperCase();
-			if (pTxtReplacements.hasOwnProperty(wordObj.word))
+			txtReplacement = pTxtReplacements[wordObj.word];
+			retObj.madeTxtReplacement = true;
+		}
+	}
+	if (retObj.madeTxtReplacement)
+	{
+		// Look for any attribute codes in the replacement word and separate them out (to put into this.attrs)
+		var attrSepObj = sepStringAndAttrCodes(txtReplacement);
+		// Uppercase the first character if desired
+		if (firstCharUpper)
+			attrSepObj.textWithoutAttrs = attrSepObj.textWithoutAttrs.charAt(0).toUpperCase() + attrSepObj.textWithoutAttrs.substr(1);
+		var originalTextLen = this.text.length;
+		this.text = this.text.substr(0, wordObj.startIdx) + attrSepObj.textWithoutAttrs + this.text.substr(wordObj.endIndex+1);
+		// Based on the difference in word length, update the data that
+		// matters (retObj.textLineIndex, which keeps track of the index of the current line).
+		// Note: The horizontal cursor position variable should be replaced after calling this
+		// function.
+		retObj.wordLenDiff = attrSepObj.textWithoutAttrs.length - wordObj.word.length;
+		retObj.textLineIndex += retObj.wordLenDiff;
+		retObj.newTextEndIdx = wordObj.endIndex + retObj.wordLenDiff;
+		retObj.newTextLen = attrSepObj.textWithoutAttrs.length;
+
+		// Starting at the index of one past the end of the original word, adjust any text
+		// indexes in this.attrs based on the change in length of the word after replacement.
+		if (retObj.wordLenDiff > 0)
+		{
+			var endIdx = wordObj.endIndex + 1;
+			for (var txtIdx = originalTextLen - 1; txtIdx >= endIdx; --txtIdx)
 			{
-				txtReplacement = pTxtReplacements[wordObj.word];
-				retObj.madeTxtReplacement = true;
+				if (this.attrs.hasOwnProperty(txtIdx))
+				{
+					this.attrs[txtIdx+retObj.wordLenDiff] = this.attrs[txtIdx];
+					delete this.attrs[txtIdx];
+				}
 			}
 		}
-		if (retObj.madeTxtReplacement)
+		else if (retObj.wordLenDiff < 0)
 		{
-			if (firstCharUpper)
-				txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
-			this.text = this.text.substr(0, wordObj.startIdx) + txtReplacement + this.text.substr(wordObj.endIndex+1);
-			// Based on the difference in word length, update the data that
-			// matters (retObj.textLineIndex, which keeps track of the index of the current line).
-			// Note: The horizontal cursor position variable should be replaced after calling this
-			// function.
-			retObj.wordLenDiff = txtReplacement.length - wordObj.word.length;
-			retObj.textLineIndex += retObj.wordLenDiff;
-			retObj.newTextEndIdx = wordObj.endIndex + retObj.wordLenDiff;
-			retObj.newTextLen = txtReplacement.length;
+			for (var txtIdx = wordObj.endIndex + 1; txtIdx < originalTextLen; ++txtIdx)
+			{
+				if (this.attrs.hasOwnProperty(txtIdx))
+				{
+					this.attrs[txtIdx+retObj.wordLenDiff] = this.attrs[txtIdx];
+					delete this.attrs[txtIdx];
+				}
+			}
 		}
+		// Copy any attribute codes from the replacement word into this.attrs (adjusting indexes to be correct)
+		for (var idx in attrSepObj.attrs)
+		{
+			var newTextIdx = +idx + wordObj.startIdx;
+			this.attrs[newTextIdx] = attrSepObj.attrs[idx];
+		}
+		// Apply the prior text attributes to ensure the text color after the replacement is back to what it was previously
+		if (typeof(pPriorTxtLineAttrs) === "string")
+		{
+			var thisLinePriorAttrs = this.getAttrs(wordObj.startIdx, true);
+			var endIdx = wordObj.endIndex + retObj.wordLenDiff + 1;
+			if (this.attrs.hasOwnProperty(endIdx))
+				this.attrs[endIdx] += ("\x01n" + pPriorTxtLineAttrs + thisLinePriorAttrs);
+			else
+				this.attrs[endIdx] = ("\x01n" + pPriorTxtLineAttrs + thisLinePriorAttrs);
+			retObj.priorTxtAttrs = pPriorTxtLineAttrs + thisLinePriorAttrs;
+		}
+		else
+			retObj.priorTxtAttrs = this.getAttrs(wordObj.startIdx, true);
 	}
 
 	return retObj;
 }
-// Returns the word in a text line at a given index.  If the index
+// For the TextLine class: Returns the word in a text line at a given index.  If the index
 // is at a space, then this function will return the word before
 // (to the left of) the space.
 //
@@ -372,7 +728,6 @@ function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 //                          the same as word.
 //               startIdx: The index of the first character of the word (integer)
 //               endIndex: The index of the last character of the word (integer)
-//                         This includes any control/color codes, etc.
 function TextLine_getWord(pCharIndex)
 {
 	var retObj = {
@@ -410,7 +765,111 @@ function TextLine_getWord(pCharIndex)
 	retObj.plainWord = strip_ctrl(retObj.word);
 	return retObj;
 }
+// For the TextLine class: Removes a single character from the line.  Also adjust attribute code
+// indexes if necessary.
+function TextLine_removeCharAt(pCharIdx)
+{
+	if (typeof(pCharIdx) !== "number" || pCharIdx < 0 || pCharIdx >= this.text.length)
+		return;
 
+	this.text = this.text.substr(0, pCharIdx) + this.text.substr(pCharIdx+1);
+	// For attribute indexes to the right of pCharIdx, move them left by 1.
+	this.moveAttrIdxes(pCharIdx+1, -1);
+}
+// For the TextLine class: Returns a string containing all the attribute codes from the text line (if any).
+// If there are none, this will return an empty string.
+//
+// Parameters:
+//  pEndIdx: Optional (numeric) - One past the last index in the text string to get attributes for. If this is
+//           not specified (default), all of the line's attributes will be returned.
+//  pIncludeNormalAttr: Optional boolean: Whether or not to include the normal attribute, if it exists.  Defaults
+//                      to false.
+function TextLine_getAttrs(pEndIdx, pIncludeNormalAttr)
+{
+	var attrsStr = "";
+	var attrKeys = this.getSortedAttrKeysArray();
+	var onePastLastIdx = this.text.length;
+	if (typeof(pEndIdx) === "number" && pEndIdx >= 0 && pEndIdx < this.text.length)
+		onePastLastIdx = pEndIdx;
+	var includeNormalAttr = (typeof(pIncludeNormalAttr) === "boolean" ? pIncludeNormalAttr : false);
+
+	for (var keysIdx = 0; keysIdx < attrKeys.length; ++keysIdx)
+	{
+		var textIdx = +(attrKeys[keysIdx]);
+		// If pEndIdx is unspecified, we want to ensure we get all remaining attributes, including after
+		// the last index and after that
+		if (typeof(pEndIdx) !== "number" || textIdx < onePastLastIdx)
+			attrsStr += this.attrs[textIdx];
+		else
+			break;
+	}
+	// If there is a normal attribute code in the middle of the string, anything before it.
+	var normalAttrIdx = attrsStr.lastIndexOf("\x01n");
+	if (normalAttrIdx < 0)
+		normalAttrIdx = attrsStr.lastIndexOf("\x01N");
+	if (normalAttrIdx > -1)
+	{
+		if (includeNormalAttr)
+			attrsStr = attrsStr.substr(normalAttrIdx);
+		else
+			attrsStr = attrsStr.substr(normalAttrIdx);
+	}
+	return attrsStr;
+}
+// For the TextLine class: Removes all line attributes from the beginning up to (and not including) an end
+// index, and returns an object with those attributes, where the object properties are the text indexes
+// where those attributes were to be applied.
+//
+// Parameters:
+//  pEndIndex: The ending index (non-inclusive) to stop removing attribute codes
+//
+// Return value: An object with string indexes as properties, and attribute codes as values for those indexes
+function TextLine_popAttrsFromFront(pEndIdx)
+{
+	var attrObj = {};
+	if (typeof(pEndIdx) !== "number" || pEndIdx < 0)
+		return attrObj;
+	var endIdx = (pEndIdx <= this.text.length ? pEndIdx : this.text.length);
+	var sortedAttrKeys = this.getSortedAttrKeysArray();
+	for (var attrKeysIdx = 0; attrKeysIdx < sortedAttrKeys.length; ++attrKeysIdx)
+	{
+		var textIdx = +(sortedAttrKeys[attrKeysIdx]);
+		if (textIdx <= endIdx)
+		{
+			attrObj[textIdx] = this.attrs[textIdx];
+			delete this.attrs[textIdx];
+		}
+		else
+			break;
+	}
+	return attrObj;
+}
+// For the TextLine class: Removes all line attributes from the end starting from a string index, and
+// returns an object with those attributes, where the object properties are the text indexes where
+// those attributes were to be applied.
+//
+// Parameters:
+//  pStartIdx: The index of where to start removing attribute codes
+//
+// Return value: An object with string indexes as properties, and attribute codes as values for those indexes
+function TextLine_popAttrsFromEnd(pStartIdx)
+{
+	var attrObj = {};
+	if (typeof(pStartIdx) !== "number" || pStartIdx > this.text.length)
+		return attrObj;
+	var startIdx = (pStartIdx >= 0 ? pStartIdx : 0);
+	var sortedAttrKeys = this.getSortedAttrKeysArray();
+	for (var attrKeysIdx = 0; attrKeysIdx < sortedAttrKeys.length; ++attrKeysIdx)
+	{
+		var textIdx = sortedAttrKeys[attrKeysIdx];
+		if (textIdx >= startIdx)
+		{
+			attrObj[textIdx] = this.attrs[textIdx];
+			delete this.attrs[textIdx];
+		}
+	}
+	return attrObj;
+}
 
 // AbortConfirmFuncParams constructor: This object contains parameters used by
 // the abort confirmation function (actually, there are separate ones for
@@ -514,7 +973,6 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 		this.dimensions.width = minWidth;
 	else
 		this.dimensions.width = pWidth;
-	this.dimensions.height = pHeight;
 	this.dimensions.bottomRightX = this.dimensions.topLeftX + this.dimensions.width - 1;
 	this.dimensions.bottomRightY = this.dimensions.topLeftY + this.dimensions.height - 1;
 
@@ -1299,7 +1757,7 @@ function displayHelpHeader()
    // Construct the header text lines only once.
    if (typeof(displayHelpHeader.headerLines) == "undefined")
    {
-      displayHelpHeader.headerLines = new Array();
+      displayHelpHeader.headerLines = [];
 
       var headerText = EDITOR_PROGRAM_NAME + " Help \x01w(\x01y"
                       + (EDITOR_STYLE == "DCT" ? "DCT" : "Ice")
@@ -1342,8 +1800,9 @@ function displayHelpHeader()
 //  pTxtReplacments: Whether or not the text replacements feature is enabled
 //  pUserSettings: Whether or not the user settings feature is enabled
 //  pSpellCheck: Whether or not spell check is allowed
+//  pCanChangeColor: Whether or not changing text color is allowed
 function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop,
-                             pTxtReplacments, pUserSettings, pSpellCheck)
+                            pTxtReplacments, pUserSettings, pSpellCheck, pCanChangeColor)
 {
 	if (pClear)
 		console.clear("\x01n");
@@ -1405,20 +1864,55 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
 	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
 	                             "Ctrl-D", "Delete line", true);
-	if (isSysop)
-		displayCmdKeyFormattedDouble("Ctrl-O", "Import a file", "Ctrl-X", "Export to file", true);
-	if (pUserSettings && pCanCrossPost)
-		displayCmdKeyFormattedDouble("Ctrl-U", "Your user settings", "Ctrl-C", "Cross-post selection", true);
-	else if (!pUserSettings && pCanCrossPost)
-		displayCmdKeyFormatted("Ctrl-C", "Cross-post selection", true);
-	else if (pUserSettings && !pCanCrossPost)
-		displayCmdKeyFormatted("Ctrl-U", "Your user settings", true);
 	displayCmdKeyFormattedDouble("Ctrl-S", "Change subject", "ESC", "Command menu", true);
+	// For the remaining hotkeys, build an array of them based on whether they're allowed or not.
+	// Then with the array, output each pair of hotkeys on the same line, and if there's only one
+	// left, display it by itself.
+	var remainingHotkeysAndDescriptions = [];
+	if (pUserSettings)
+		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-U", "Your user settings"));
+	if (pCanCrossPost)
+		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-C", "Cross-post selection"));
+	if (pCanChangeColor)
+		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-K", "Change text color"));
 	if (pSpellCheck)
-		displayCmdKeyFormatted("Ctrl-R", "Spell checker", true);
+		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-R", "Spell checker"));
+	if (isSysop)
+	{
+		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-O", "Import a file"));
+		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-X", "Export to file"));
+	}
+	var i = 0;
+	while (i < remainingHotkeysAndDescriptions.length)
+	{
+		var numHotkeysRemaining = remainingHotkeysAndDescriptions.length - i;
+		if (numHotkeysRemaining >= 2)
+		{
+			var nextI = i + 1;
+			var hotkey1 = remainingHotkeysAndDescriptions[i].hotkey;
+			var desc1 = remainingHotkeysAndDescriptions[i].desc;
+			var hotkey2 = remainingHotkeysAndDescriptions[nextI].hotkey
+			var desc2 = remainingHotkeysAndDescriptions[nextI].desc;
+			displayCmdKeyFormattedDouble(hotkey1, desc1, hotkey2, desc2, true);
+			i += 2;
+		}
+		else
+		{
+			displayCmdKeyFormatted(remainingHotkeysAndDescriptions[i].hotkey, remainingHotkeysAndDescriptions[i].desc, true);
+			++i;
+		}
+	}
 
 	if (pPause)
 		console.pause();
+}
+// Helper for displayCommandList(): Returns an object with 'hotkey' and 'desc' propeties with the hotkey & its description
+function makeHotkeyAndDescObj(pHotkey, pDescription)
+{
+	return {
+		hotkey: pHotkey,
+		desc: pDescription
+	};
 }
 // Returns a string with a character repeated a given number of times
 //
@@ -1596,6 +2090,7 @@ function ReadSlyEditConfigFile()
 		inputTimeoutMS: 300000,
 		reWrapQuoteLines: true,
 		allowColorSelection: true,
+		saveColorsAsANSI: false,
 		useQuoteLineInitials: true,
 		indentQuoteLinesWithInitials: true,
 		allowCrossPosting: true,
@@ -1642,8 +2137,6 @@ function ReadSlyEditConfigFile()
 			menuOptClassicColors: true,
 			// Ice color theme file
 			ThemeFilename: genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", gStartupPath),
-			// Text edit color
-			TextEditColor: "\x01n\x01w",
 			// Quote line color
 			QuoteLineColor: "\x01n\x01c",
 			// Ice colors for the quote window
@@ -1674,8 +2167,6 @@ function ReadSlyEditConfigFile()
 		DCTColors: {
 			// DCT color theme file
 			ThemeFilename: genFullPathCfgFilename("SlyDCTColors_Default.cfg", gStartupPath),
-			// Text edit color
-			TextEditColor: "\x01n\x01w",
 			// Quote line color
 			QuoteLineColor: "\x01n\x01c",
 			// DCT colors for the border stuff
@@ -1806,6 +2297,8 @@ function ReadSlyEditConfigFile()
 						cfgObj.reWrapQuoteLines = (valueUpper == "TRUE");
 					else if (settingUpper == "ALLOWCOLORSELECTION")
 						cfgObj.allowColorSelection = (valueUpper == "TRUE");
+					else if (settingUpper == "SAVECOLORSASANSI")
+						cfgObj.saveColorsAsANSI = (valueUpper == "TRUE");
 					else if (settingUpper == "USEQUOTELINEINITIALS")
 						cfgObj.useQuoteLineInitials = (valueUpper == "TRUE");
 					else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
@@ -1973,7 +2466,7 @@ function readValueSettingConfigFile(pFilename, pLineReadLen)
 // Return value: An array of strings resulting from the string split
 function splitStrStable(pStr, pMaxLen)
 {
-   var strings = new Array();
+   var strings = [];
 
    // Error checking
    if (typeof(pStr) != "string")
@@ -2028,36 +2521,6 @@ function splitStrStable(pStr, pMaxLen)
    return strings;
 }
 
-// Inserts a string inside another string.
-//
-// Parameters:
-//  pStr: The string inside which to insert the other string
-//  pIndex: The index of pStr at which to insert the other string
-//  pStr2: The string to insert into the first string
-//
-// Return value: The spliced string
-function spliceIntoStr(pStr, pIndex, pStr2)
-{
-   // Error checking
-   var typeofPStr = typeof(pStr);
-   var typeofPStr2 = typeof(pStr2);
-   if ((typeofPStr != "string") && (typeofPStr2 != "string"))
-      return "";
-   else if ((typeofPStr == "string") && (typeofPStr2 != "string"))
-      return pStr;
-   else if ((typeofPStr != "string") && (typeofPStr2 == "string"))
-      return pStr2;
-   // If pIndex is beyond the last index of pStr, then just return the
-   // two strings concatenated.
-   if (pIndex >= pStr.length)
-      return (pStr + pStr2);
-   // If pIndex is below 0, then just return pStr2 + pStr.
-   else if (pIndex < 0)
-      return (pStr2 + pStr);
-
-   return (pStr.substr(0, pIndex) + pStr2 + pStr.substr(pIndex));
-}
-
 // Fixes the text lines in the gEditLines array so that they all
 // have a maximum width to fit within the edit area.
 //
@@ -2066,174 +2529,251 @@ function spliceIntoStr(pStr, pIndex, pStr2)
 //  pStartIndex: The index of the line in the array to start at.
 //  pEndIndex: One past the last index of the line in the array to end at.
 //  pEditWidth: The width of the edit area (AKA the maximum line length + 1)
+//  pUsingColors: Boolean - Whether or not text color/attribute codes are being used
 //
 // Return value: Boolean - Whether or not any text was changed.
-function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth)
+function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, pUsingColors)
 {
-   // Returns without doing anything if any of the parameters are not
-   // what they should be. (Note: Not checking pTextLineArray for now..)
-   if (typeof(pStartIndex) != "number")
-      return false;
-   if (typeof(pEndIndex) != "number")
-      return false;
-   if (typeof(pEditWidth) != "number")
-      return false;
-   // Range checking
-   if ((pStartIndex < 0) || (pStartIndex >= pTextLineArray.length))
-      return false;
-   if ((pEndIndex <= pStartIndex) || (pEndIndex < 0))
-      return false;
-   if (pEndIndex > pTextLineArray.length)
-      pEndIndex = pTextLineArray.length;
-   if (pEditWidth <= 5)
-      return false;
+	// Returns without doing anything if any of the parameters are not
+	// what they should be. (Note: Not checking pTextLineArray for now..)
+	if (typeof(pStartIndex) != "number")
+		return false;
+	if (typeof(pEndIndex) != "number")
+		return false;
+	if (typeof(pEditWidth) != "number")
+		return false;
+	// Range checking
+	if ((pStartIndex < 0) || (pStartIndex >= pTextLineArray.length))
+		return false;
+	if ((pEndIndex <= pStartIndex) || (pEndIndex < 0))
+		return false;
+	if (pEndIndex > pTextLineArray.length)
+		pEndIndex = pTextLineArray.length;
+	if (pEditWidth <= 5)
+		return false;
 
-   var textChanged = false; // We'll return this upon function exit.
+	var textChanged = false; // We'll return this upon function exit.
 
-   var nextLineIndex = 0;
-   var charsToRemove = 0;
-   var splitIndex = 0;
-   var spaceFound = false;      // Whether or not a space was found in a text line
-   var splitIndexOriginal = 0;
-   var tempText = null;
-   var appendedNewLine = false; // If we appended another line
-   for (var i = pStartIndex; i < pEndIndex; ++i)
-   {
-      // As an extra precaution, check to make sure this array element is defined.
-      if (pTextLineArray[i] == undefined)
-         continue;
+	var usingColors = (typeof(pUsingColors) === "boolean" ? pUsingColors : true);
 
-      nextLineIndex = i + 1;
-      // If the line's text is longer or equal to the edit width, then if
-      // possible, move the last word to the beginning of the next line.
-      if (pTextLineArray[i].text.length >= pEditWidth)
-      {
-         charsToRemove = pTextLineArray[i].text.length - pEditWidth + 1;
-         splitIndex = pTextLineArray[i].text.length - charsToRemove;
-         splitIndexOriginal = splitIndex;
-         // If the character in the text line at splitIndex is not a space,
-         // then look for a space before splitIndex.
-         spaceFound = (pTextLineArray[i].text.charAt(splitIndex) == " ");
-         if (!spaceFound)
-         {
-            splitIndex = pTextLineArray[i].text.lastIndexOf(" ", splitIndex-1);
-            spaceFound = (splitIndex > -1);
-            if (!spaceFound)
-               splitIndex = splitIndexOriginal;
-         }
-         tempText = pTextLineArray[i].text.substr(spaceFound ? splitIndex+1 : splitIndex);
-         pTextLineArray[i].text = pTextLineArray[i].text.substr(0, splitIndex);
-         textChanged = true;
-         // If we're on the last line, or if the current line has a hard
-         // newline or is a quote line, then append a new line below.
-         appendedNewLine = false;
-         if ((nextLineIndex == pTextLineArray.length) || pTextLineArray[i].hardNewlineEnd ||
-             isQuoteLine(pTextLineArray, i))
-         {
-            pTextLineArray.splice(nextLineIndex, 0, new TextLine());
-            pTextLineArray[nextLineIndex].hardNewlineEnd = pTextLineArray[i].hardNewlineEnd;
-            pTextLineArray[i].hardNewlineEnd = false;
-            pTextLineArray[nextLineIndex].isQuoteLine = pTextLineArray[i].isQuoteLine;
-            appendedNewLine = true;
-         }
+	var nextLineIndex = 0;
+	var numCharsToRemove = 0;
+	var splitIndex = 0;
+	var spaceFoundAtSplitIdx = false; // Whether or not a space was found in a text line at the split index
+	var splitIndexOriginal = 0;
+	var tempText = null;
+	var appendedNewLine = false; // If we appended another line
+	var onePastLastLineIdx = pEndIndex;
+	for (var i = pStartIndex; i < onePastLastLineIdx; ++i)
+	{
+		// As an extra precaution, check to make sure this array element is defined.
+		if (pTextLineArray[i] == undefined)
+			continue;
 
-         // Move the text around and adjust the line properties.
-         if (appendedNewLine)
-            pTextLineArray[nextLineIndex].text = tempText;
-         else
-         {
-            // If we're in insert mode, then insert the text at the beginning of
-            // the next line.  Otherwise, overwrite the text in the next line.
-            if (inInsertMode())
-               pTextLineArray[nextLineIndex].text = tempText + " " + pTextLineArray[nextLineIndex].text;
-            else
-            {
-               // We're in overwrite mode, so overwite the first part of the next
-               // line with tempText.
-               if (pTextLineArray[nextLineIndex].text.length < tempText.length)
-                  pTextLineArray[nextLineIndex].text = tempText;
-               else
-               {
-                  pTextLineArray[nextLineIndex].text = tempText
-                                           + pTextLineArray[nextLineIndex].text.substr(tempText.length);
-               }
-            }
-         }
-      }
-      else
-      {
-         // pTextLineArray[i].text.length is < pEditWidth, so try to bring up text
-         // from the next line.
+		nextLineIndex = i + 1;
+		// If the line's text is longer or equal to the edit width, then if
+		// possible, move the last word to the beginning of the next line.
+		if (pTextLineArray[i].text.length >= pEditWidth)
+		{
+			numCharsToRemove = pTextLineArray[i].text.length - pEditWidth + 1;
+			splitIndex = pTextLineArray[i].text.length - numCharsToRemove;
+			splitIndexOriginal = splitIndex;
+			// If the character in the text line at splitIndex is not a space,
+			// then look for a space before splitIndex.
+			spaceFoundAtSplitIdx = (pTextLineArray[i].text.charAt(splitIndex) == " ");
+			if (!spaceFoundAtSplitIdx)
+			{
+				splitIndex = pTextLineArray[i].text.lastIndexOf(" ", splitIndex-1);
+				spaceFoundAtSplitIdx = (splitIndex > -1);
+				if (!spaceFoundAtSplitIdx)
+					splitIndex = splitIndexOriginal;
+			}
+			var originalLineLen = pTextLineArray[i].text.length; // For adjusting attribute indexes
+			tempText = pTextLineArray[i].text.substr(spaceFoundAtSplitIdx ? splitIndex+1 : splitIndex);
+			// Remove the attributes from the end of the line that was cut short, to be moved to the beginning of
+			// the next line. Note: This must be done before shortening the text.
+			var lastAttrs = pTextLineArray[i].popAttrsFromEnd(splitIndex);
+			// Remove the text from the line up to splitIndex
+			pTextLineArray[i].text = pTextLineArray[i].text.substr(0, splitIndex);
+			textChanged = true;
+			// If we're on the last line, or if the current line has a hard
+			// newline or is a quote line, then append a new line below.
+			appendedNewLine = false;
+			if ((nextLineIndex == pTextLineArray.length) || pTextLineArray[i].hardNewlineEnd || isQuoteLine(pTextLineArray, i))
+			{
+				pTextLineArray.splice(nextLineIndex, 0, new TextLine());
+				pTextLineArray[nextLineIndex].hardNewlineEnd = pTextLineArray[i].hardNewlineEnd;
+				pTextLineArray[i].hardNewlineEnd = false;
+				pTextLineArray[nextLineIndex].isQuoteLine = pTextLineArray[i].isQuoteLine;
+				appendedNewLine = true;
+				//++onePastLastLineIdx; // End loop index // TODO: Is this needed?
+			}
 
-         // Only do it if the line doesn't have a hard newline and it's not a
-         // quote line and there is a next line.
-         if (!pTextLineArray[i].hardNewlineEnd && !isQuoteLine(pTextLineArray, i) &&
-             (i < pTextLineArray.length-1))
-         {
-            if (pTextLineArray[nextLineIndex].text.length > 0)
-            {
-               splitIndex = pEditWidth - pTextLineArray[i].text.length - 2;
-               // If splitIndex is negative, that means the entire next line
-               // can fit on the current line.
-               if ((splitIndex < 0) || (splitIndex > pTextLineArray[nextLineIndex].text.length))
-                  splitIndex = pTextLineArray[nextLineIndex].text.length;
-               else
-               {
-                  // If the character in the next line at splitIndex is not a
-                  // space, then look for a space before it.
-                  if (pTextLineArray[nextLineIndex].text.charAt(splitIndex) != " ")
-                     splitIndex = pTextLineArray[nextLineIndex].text.lastIndexOf(" ", splitIndex);
-                  // If no space was found, then skip to the next line (we don't
-                  // want to break up words from the next line).
-                  if (splitIndex == -1)
-                     continue;
-               }
+			// Move the text around and adjust the line properties.
+			if (appendedNewLine)
+			{
+				pTextLineArray[nextLineIndex].text = tempText;
+				// Add the attributes from the last of the line to the next line, adjusting the
+				// text indexes as needed.  If a space was at the split index, then the attribute
+				// indexes will need to be adjusted accordingly, since we got all attributes starting
+				// from the split index but we removed the space there.
+				if (spaceFoundAtSplitIdx)
+				{
+					var lastAttrKeys = Object.keys(lastAttrs);
+					if (lastAttrKeys.length > 0)
+					{
+						lastAttrKeys.sort(textLineAttrSortCompareFunc);
+						for (var lastAttrKeyI = 0; lastAttrKeyI < lastAttrKeys.length; ++lastAttrKeyI)
+						{
+							var originalTextIdx = +(lastAttrKeys[lastAttrKeyI]);
+							lastAttrs[originalTextIdx - 1] = lastAttrs[originalTextIdx];
+							delete lastAttrs[originalTextIdx];
+						}
+					}
+				}
+				for (var textIdx in lastAttrs)
+				{
+					var newTextIdx = (+textIdx) - splitIndex;
+					pTextLineArray[nextLineIndex].attrs[newTextIdx] = lastAttrs[textIdx];
+					// TODO: There might be an off-by-one issue here, related to whether a space was found (check spaceFoundAtSplitIdx?)
+					//spaceFoundAtSplitIdx
+				}
+			}
+			else
+			{
+				// Did not append a new line.
+				// If we're in insert mode, then insert the text at the beginning of
+				// the next line.  Otherwise, overwrite the text in the next line.
+				if (inInsertMode())
+				{
+					pTextLineArray[nextLineIndex].text = tempText + " " + pTextLineArray[nextLineIndex].text;
+					// Move the next line's current attributes to the right
+					pTextLineArray[nextLineIndex].moveAttrIdxes(0, tempText.length + 1);
+					// Add the attributes from the last of the line to the next line, adjusting the
+					// text indexes as needed
+					var actualSplitIndex = (spaceFoundAtSplitIdx ? splitIndex+1 : splitIndex);
+					for (var textIdx in lastAttrs)
+					{
+						var newTextIdx = (+textIdx) - actualSplitIndex;
+						if (newTextIdx < 0) newTextIdx = 0;
+						pTextLineArray[nextLineIndex].attrs[newTextIdx] = lastAttrs[textIdx];
+					}
+				}
+				else
+				{
+					// We're in overwrite mode, so overwite the first part of the next
+					// line with tempText.
+					if (pTextLineArray[nextLineIndex].text.length < tempText.length)
+					{
+						pTextLineArray[nextLineIndex].text = tempText;
+						pTextLineArray[nextLineIndex].attrs = lastAttrs;
+					}
+					else
+					{
+						pTextLineArray[nextLineIndex].text = tempText + pTextLineArray[nextLineIndex].text.substr(tempText.length);
+						// Adjust & insert attributes
+						for (var textIdx in pTextLineArray[nextLineIndex].attrs)
+						{
+							var newTextIdx = (+textIdx) + tempText.length;
+							pTextLineArray[nextLineIndex].attrs[newTextIdx] = pTextLineArray[nextLineIndex].attrs[textIdx];
+							delete pTextLineArray[nextLineIndex].attrs[textIdx];
+						}
+						//for (var textIdx in lastAttrs)
+						//	pTextLineArray[nextLineIndex].attrs[textIdx] = lastAttrs[textIdx];
+						for (var textIdx in lastAttrs)
+						{
+							var newTextIdx = (+textIdx) - originalLineLen;
+							pTextLineArray[nextLineIndex].attrs[newTextIdx] = lastAttrs[textIdx];
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			// pTextLineArray[i].text.length is < pEditWidth, so try to bring up text
+			// from the next line.
 
-               // Get the text to bring up to the current line.
-               // If the current line does not end with a space and the next line
-               // does not start with a space, then add a space between this line
-               // and the next line's text.  This is done to avoid joining words
-               // accidentally.
-               tempText = "";
-               if ((pTextLineArray[i].text.charAt(pTextLineArray[i].text.length-1) != " ") &&
-                   (pTextLineArray[nextLineIndex].text.substr(0, 1) != " "))
-               {
-                  tempText = " ";
-               }
-               tempText += pTextLineArray[nextLineIndex].text.substr(0, splitIndex);
-               // Move the text from the next line to the current line, if the current
-               // line has room for it.
-               if (pTextLineArray[i].text.length + tempText.length < pEditWidth)
-               {
-                  pTextLineArray[i].text += tempText;
-                  pTextLineArray[nextLineIndex].text = pTextLineArray[nextLineIndex].text.substr(splitIndex+1);
-                  textChanged = true;
+			// Only do it if the line doesn't have a hard newline and it's not a
+			// quote line and there is a next line.
+			if (!pTextLineArray[i].hardNewlineEnd && !isQuoteLine(pTextLineArray, i) && (i < pTextLineArray.length-1))
+			{
+				if (pTextLineArray[nextLineIndex].text.length > 0)
+				{
+					splitIndex = pEditWidth - pTextLineArray[i].text.length - 2;
+					// If splitIndex is negative, that means the entire next line
+					// can fit on the current line.
+					if ((splitIndex < 0) || (splitIndex > pTextLineArray[nextLineIndex].text.length))
+						splitIndex = pTextLineArray[nextLineIndex].text.length;
+					else
+					{
+						// If the character in the next line at splitIndex is not a
+						// space, then look for a space before it.
+						if (pTextLineArray[nextLineIndex].text.charAt(splitIndex) != " ")
+							splitIndex = pTextLineArray[nextLineIndex].text.lastIndexOf(" ", splitIndex);
+						// If no space was found, then skip to the next line (we don't
+						// want to break up words from the next line).
+						if (splitIndex == -1)
+							continue;
+					}
 
-                  // If the next line is now blank, then remove it.
-                  if (pTextLineArray[nextLineIndex].text.length == 0)
-                  {
-                     // The current line should take on the next line's
-                     // hardnewlineEnd property before removing the next line.
-                     pTextLineArray[i].hardNewlineEnd = pTextLineArray[nextLineIndex].hardNewlineEnd;
-                     pTextLineArray.splice(nextLineIndex, 1);
-                  }
-               }
-            }
-            else
-            {
-               // The next line's text string is blank.  If its hardNewlineEnd
-               // property is false, then remove the line.
-               if (!pTextLineArray[nextLineIndex].hardNewlineEnd)
-               {
-                  pTextLineArray.splice(nextLineIndex, 1);
-                  textChanged = true;
-               }
-            }
-         }
-      }
-   }
+					// Get the text to bring up to the current line.
+					// If the current line does not end with a space and the next line
+					// does not start with a space, then add a space between this line
+					// and the next line's text.  This is done to avoid joining words
+					// accidentally.
+					tempText = "";
+					var prependedTextWithSpace = false;
+					if ((pTextLineArray[i].text.charAt(pTextLineArray[i].text.length-1) != " ") && (pTextLineArray[nextLineIndex].text.substr(0, 1) != " "))
+					{
+						tempText = " ";
+						prependedTextWithSpace = true;
+					}
+					tempText += pTextLineArray[nextLineIndex].text.substr(0, splitIndex);
+					// Move the text from the next line to the current line, if the current
+					// line has room for it.
+					if (pTextLineArray[i].text.length + console.strlen(tempText.length) < pEditWidth)
+					{
+						var currentLineOriginalLen = pTextLineArray[i].text.length;
+						pTextLineArray[i].text += tempText;
+						// TODO: Color issue when deleting text and wrapping text up
+						// Set the next line's text: Trim off the front up to splitIndex+1.  Also, capture any attribute
+						// codes removed from the front of the next line (to be moved up).
+						var frontAttrs = pTextLineArray[nextLineIndex].trimFront(splitIndex+1);
+						textChanged = true;
+						if (prependedTextWithSpace)
+							++currentLineOriginalLen; // To fix off-by-1 issue with color/attribute codes
+						for (var textLineIdx in frontAttrs)
+						{
+							var newTextLineIdx = (+textLineIdx) + currentLineOriginalLen;
+							pTextLineArray[i].attrs[newTextLineIdx] = frontAttrs[textLineIdx];
+						}
 
-   return textChanged;
+						// If the next line is now blank, then remove it.
+						if (pTextLineArray[nextLineIndex].text.length == 0)
+						{
+							// The current line should take on the next line's
+							// hardnewlineEnd property before removing the next line.
+							pTextLineArray[i].hardNewlineEnd = pTextLineArray[nextLineIndex].hardNewlineEnd;
+							pTextLineArray.splice(nextLineIndex, 1);
+						}
+					}
+				}
+				else
+				{
+					// The next line's text string is blank.  If its hardNewlineEnd
+					// property is false, then remove the line.
+					if (!pTextLineArray[nextLineIndex].hardNewlineEnd)
+					{
+						pTextLineArray.splice(nextLineIndex, 1);
+						textChanged = true;
+					}
+				}
+			}
+		}
+	}
+
+	return textChanged;
 }
 
 // Returns indexes of the first unquoted text line and the next
@@ -2251,76 +2791,72 @@ function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth)
 //                                   Will be -1 if none are found.
 function quotedLineIndexes(pTextLineArray, pStartIndex, pQuotePrefix)
 {
-   var retObj = {
+	var retObj = {
 		noQuoteLineIndex: -1,
 		nextQuoteLineIndex: -1
 	};
 
-   if (pTextLineArray.length == 0)
-      return retObj;
-   if (typeof(pStartIndex) != "number")
-      return retObj;
-   if (pStartIndex >= pTextLineArray.length)
-      return retObj;
+	if (pTextLineArray.length == 0)
+		return retObj;
+	if (typeof(pStartIndex) != "number")
+		return retObj;
+	if (pStartIndex >= pTextLineArray.length)
+		return retObj;
 
-   var startIndex = (pStartIndex > -1 ? pStartIndex : 0);
+	var startIndex = (pStartIndex > -1 ? pStartIndex : 0);
 
-   // Look for the first non-quoted line in the array.
-   retObj.noQuoteLineIndex = startIndex;
-   for (; retObj.noQuoteLineIndex < pTextLineArray.length; ++retObj.noQuoteLineIndex)
-   {
-      if (pTextLineArray[retObj.noQuoteLineIndex].text.indexOf(pQuotePrefix) == -1)
-         break;
-   }
-   // If the index is pTextLineArray.length, then what we're looking for wasn't
-   // found, so set the index to -1.
-   if (retObj.noQuoteLineIndex == pTextLineArray.length)
-      retObj.noQuoteLineIndex = -1;
+	// Look for the first non-quoted line in the array.
+	retObj.noQuoteLineIndex = startIndex;
+	for (; retObj.noQuoteLineIndex < pTextLineArray.length; ++retObj.noQuoteLineIndex)
+	{
+		if (pTextLineArray[retObj.noQuoteLineIndex].text.indexOf(pQuotePrefix) == -1)
+			break;
+	}
+	// If the index is pTextLineArray.length, then what we're looking for wasn't
+	// found, so set the index to -1.
+	if (retObj.noQuoteLineIndex == pTextLineArray.length)
+		retObj.noQuoteLineIndex = -1;
 
-   // Look for the next quoted line in the array.
-   // If we found a non-quoted line, then use that index; otherwise,
-   // start at the first line.
-   if (retObj.noQuoteLineIndex > -1)
-      retObj.nextQuoteLineIndex = retObj.noQuoteLineIndex;
-   else
-      retObj.nextQuoteLineIndex = 0;
-   for (; retObj.nextQuoteLineIndex < pTextLineArray.length; ++retObj.nextQuoteLineIndex)
-   {
-      if (pTextLineArray[retObj.nextQuoteLineIndex].text.indexOf(pQuotePrefix) == 0)
-         break;
-   }
-   // If the index is pTextLineArray.length, then what we're looking for wasn't
-   // found, so set the index to -1.
-   if (retObj.nextQuoteLineIndex == pTextLineArray.length)
-      retObj.nextQuoteLineIndex = -1;
+	// Look for the next quoted line in the array.
+	// If we found a non-quoted line, then use that index; otherwise,
+	// start at the first line.
+	if (retObj.noQuoteLineIndex > -1)
+		retObj.nextQuoteLineIndex = retObj.noQuoteLineIndex;
+	else
+		retObj.nextQuoteLineIndex = 0;
+	for (; retObj.nextQuoteLineIndex < pTextLineArray.length; ++retObj.nextQuoteLineIndex)
+	{
+		if (pTextLineArray[retObj.nextQuoteLineIndex].text.indexOf(pQuotePrefix) == 0)
+			break;
+	}
+	// If the index is pTextLineArray.length, then what we're looking for wasn't
+	// found, so set the index to -1.
+	if (retObj.nextQuoteLineIndex == pTextLineArray.length)
+		retObj.nextQuoteLineIndex = -1;
 
-   return retObj;
+	return retObj;
 }
 
 // Returns whether a line in an array of TextLine objects is a quote line.
-// This is true if the line's isQuoteLine property is true or the line's text
-// starts with > (preceded by any # of spaces).
+// This checks whether the given TextLine object is a valid object before
+// checking if it's a quote line.
 //
 // Parameters:
 //  pLineArray: An array of TextLine objects
 //  pLineIndex: The index of the line in gEditLines
 function isQuoteLine(pLineArray, pLineIndex)
 {
-   if (typeof(pLineArray) == "undefined")
-      return false;
-   if (typeof(pLineIndex) != "number")
-      return false;
+	//if (typeof(pLineArray) == "undefined")
+	if (typeof(pLineArray) !== "object") // Should be an array
+		return false;
+	if (typeof(pLineIndex) !== "number")
+		return false;
+	if (pLineIndex < 0 || pLineIndex >= pLineArray.length)
+		return false;
+	if (typeof(pLineArray[pLineIndex]) !== "object")
+		return false;
 
-   var lineIsQuoteLine = false;
-   if (typeof(pLineArray[pLineIndex]) != "undefined")
-   {
-      /*
-      lineIsQuoteLine = ((pLineArray[pLineIndex].isQuoteLine) ||
-                     (/^ *>/.test(pLineArray[pLineIndex].text)));
-      */
-      lineIsQuoteLine = (pLineArray[pLineIndex].isQuoteLine);
-   }
-   return lineIsQuoteLine;
+	return pLineArray[pLineIndex].isAQuoteLine();
 }
 
 // Replaces an attribute in a text attribute string.
@@ -3154,7 +3690,7 @@ function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines, pMaxWidth)
 		return;
 
 	// Create an array for line information objects.
-	var lineInfos = new Array();
+	var lineInfos = [];
 	for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
 		lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], false, false));
 
@@ -3268,7 +3804,17 @@ function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines, pMaxWidth)
 		gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
 }
 
-// Returns an object containing the following properties:
+// Gets information about a message area, given a message name.
+// This function First tries to read the values from the file
+// DDML_SyncSMBInfo.txt in the node directory (written by the Digital
+// Distortion Message Lister v1.31 and higher).  If that file can't be read,
+// the values will default to the values of bbs.smb_last_msg,
+// bbs.smb_total_msgs, and bbs.msg_number/bbs.smb_curmsg.
+//
+// Parameters:
+//  pMsgAreaName: The name of the message area being posted to
+//
+// Return value: An object containing the following properties:
 //  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
 //  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
 //  curMsgNum: The number/index of the current message being read.  Starting
@@ -3283,15 +3829,6 @@ function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines, pMaxWidth)
 //                  bbs.msg_number).
 //  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
 //  grpIndex: The message group index for the sub-board
-//
-// This function First tries to read the values from the file
-// DDML_SyncSMBInfo.txt in the node directory (written by the Digital
-// Distortion Message Lister v1.31 and higher).  If that file can't be read,
-// the values will default to the values of bbs.smb_last_msg,
-// bbs.smb_total_msgs, and bbs.msg_number/bbs.smb_curmsg.
-//
-// Parameters:
-//  pMsgAreaName: The name of the message area being posted to
 function getCurMsgInfo(pMsgAreaName)
 {
 	var retObj = {
@@ -3540,6 +4077,8 @@ function numObjProperties(pObject)
 //
 // Paramters:
 //  pSubBoardCode: Synchronet's internal code for the sub-board to post in
+//  pFrom: The 'from' name of the person sending the message.  If the user chose to post anonymously
+//         in the original sub-board, this will be "ANONYMOUS" (as given by Synchronet).
 //  pTo: The name of the person to send the message to
 //  pSubj: The subject of the email
 //  pMessage: The email message
@@ -3548,7 +4087,7 @@ function numObjProperties(pObject)
 //                will be used.
 //
 // Return value: String - Blank on success, or message on failure.
-function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
+function postMsgToSubBoard(pSubBoardCode, pFrom, pTo, pSubj, pMessage, pFromUserNum)
 {
 	// Return if the parameters are invalid.
 	if (typeof(pSubBoardCode) != "string")
@@ -3595,8 +4134,16 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 	// For the 'From' name, if the SUB_ANON or SUB_AONLY flag is set, use
 	// "Anonymous".  Otherwise, use the user's real name if the sub-board
 	// is set up to post using real names; otherwise, use the user's alias.
-	if (((msgbase.cfg.settings & SUB_ANON) == SUB_ANON) || ((msgbase.cfg.settings & SUB_AONLY) == SUB_AONLY))
-		header.from = "Anonymous";
+	if ((msgbase.cfg.settings & SUB_AONLY) == SUB_AONLY) // The sub-board allows only anonymous posts
+		header.from = (typeof(pFrom) === "string" ? pFrom : "ANONYMOUS");
+	else if((msgbase.cfg.settings & SUB_ANON) == SUB_ANON)
+	{
+		// The sub-board allows anonymous posts but doesn't require it
+		if (typeof(pFrom) === "string")
+			header.from = pFrom;
+		else
+			header.from = ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? fromUser.name : fromUser.alias);
+	}
 	else if ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME)
 		header.from = fromUser.name;
 	else
@@ -3665,26 +4212,26 @@ function readUserSigFile()
 //               grpIndex: The group index of the sub-board
 function getFirstPostableSubInfo()
 {
-  var retObj = {
+	var retObj = {
 		subCode: "",
 		grpIndex: 0
 	};
 
-  var continueOn = true;
-  for (var groupIdx = 0; (groupIdx < msg_area.grp_list.length) && continueOn; ++groupIdx)
-  {
-     for (var subIdx = 0; (subIdx < msg_area.grp_list[groupIdx].sub_list.length) && continueOn; ++subIdx)
-     {
-        if (user.compare_ars(msg_area.grp_list[groupIdx].sub_list[subIdx].ars) &&
-            user.compare_ars(msg_area.grp_list[groupIdx].sub_list[subIdx].post_ars))
-        {
-           retObj.subCode = msg_area.grp_list[groupIdx].sub_list[subIdx].code;
-           retObj.grpIndex = groupIdx;
-           continueOn = false;
-           break;
-        }
-     }
-  }
+	var continueOn = true;
+	for (var groupIdx = 0; (groupIdx < msg_area.grp_list.length) && continueOn; ++groupIdx)
+	{
+		for (var subIdx = 0; (subIdx < msg_area.grp_list[groupIdx].sub_list.length) && continueOn; ++subIdx)
+		{
+			if (user.compare_ars(msg_area.grp_list[groupIdx].sub_list[subIdx].ars) &&
+			    user.compare_ars(msg_area.grp_list[groupIdx].sub_list[subIdx].post_ars))
+			{
+				retObj.subCode = msg_area.grp_list[groupIdx].sub_list[subIdx].code;
+				retObj.grpIndex = groupIdx;
+				continueOn = false;
+				break;
+			}
+		}
+	}
 
   return retObj;
 }
@@ -3700,77 +4247,93 @@ function getFirstPostableSubInfo()
 //          expressions.  If so, then the search words in the array will not
 //          be converted to uppercase and the replacement text will not be
 //          converted to lowercase.
+//  pAllowColors: Boolean: Whether or not to allow color/attribute codes
 //
 // Return value: The number of text replacements added to the array.
-function populateTxtReplacements(pArray, pRegex)
+function populateTxtReplacements(pReplacementsObj, pRegex, pAllowColors)
 {
-   var numTxtReplacements = 0;
+	var numTxtReplacements = 0;
 
-   // Note: Limited to words without spaces.
-   // Open the word replacements configuration file
-   var wordReplacementsFilename = genFullPathCfgFilename("SlyEdit_TextReplacements.cfg", gStartupPath);
-   var arrayPopulated = false;
-   var wordFile = new File(wordReplacementsFilename);
-   if (wordFile.open("r"))
-   {
-      var fileLine = null;      // A line read from the file
-      var equalsPos = 0;        // Position of a = in the line
-      var wordToSearch = null; // A word to be replaced
-      var wordToSearchUpper = null;
-      var substWord = null;    // The word to substitue
-      // This tests numTxtReplacements < 9999 so that the 9999th one is the last
-      // one read.
-      while (!wordFile.eof && (numTxtReplacements < 9999))
-      {
-         // Read the next line from the config file.
-         fileLine = wordFile.readln(2048);
+	// Note: Limited to words without spaces.
+	// Open the word replacements configuration file
+	var wordReplacementsFilename = genFullPathCfgFilename("SlyEdit_TextReplacements.cfg", gStartupPath);
+	var arrayPopulated = false;
+	var wordFile = new File(wordReplacementsFilename);
+	if (wordFile.open("r"))
+	{
+		var fileLine = null;      // A line read from the file
+		var equalsPos = 0;        // Position of a = in the line
+		var wordToSearch = null; // A word to be replaced
+		var wordToSearchUpper = null;
+		var substWord = null;    // The word to substitue
+		// This tests numTxtReplacements < 9999 so that the 9999th one is the last
+		// one read.
+		while (!wordFile.eof && (numTxtReplacements < 9999))
+		{
+			// Read the next line from the config file.
+			fileLine = wordFile.readln(2048);
 
-         // fileLine should be a string, but I've seen some cases
-         // where for some reason it isn't.  If it's not a string,
-         // then continue onto the next line.
-         if (typeof(fileLine) != "string")
-            continue;
-         // If the line starts with with a semicolon (the comment
-         // character) or is blank, then skip it.
-         if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-            continue;
+			// fileLine should be a string, but I've seen some cases
+			// where for some reason it isn't.  If it's not a string,
+			// then continue onto the next line.
+			if (typeof(fileLine) != "string")
+				continue;
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
 
-         // Look for an equals sign, and if found, separate the line
-         // into the setting name (before the =) and the value (after the
-         // equals sign).
-         equalsPos = fileLine.indexOf("=");
-         if (equalsPos <= 0)
-            continue; // = not found or is at the beginning, so go on to the next line
+			// Look for an equals sign, and if found, separate the line
+			// into the setting name (before the =) and the value (after the
+			// equals sign).
+			equalsPos = fileLine.indexOf("=");
+			if (equalsPos <= 0)
+				continue; // = not found or is at the beginning, so go on to the next line
 
-         // Extract the word to search and substitution word from the line.  If
-         // not using regular expressions, then convert the word to search to
-         // all uppercase for case-insensitive searching.
-         wordToSearch = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-         wordToSearchUpper = wordToSearch.toUpperCase();
-         substWord = strip_ctrl(trimSpaces(fileLine.substr(equalsPos+1), true, false, true));
-         // Make sure substWord only contains printable characters.  If not, then
-         // skip this one.
-         var substIsPrintable = true;
-         for (var i = 0; (i < substWord.length) && substIsPrintable; ++i)
-            substIsPrintable = isPrintableChar(substWord.charAt(i));
-         if (!substIsPrintable)
-            continue;
+			// Extract the word to search and substitution word from the line.  If
+			// not using regular expressions, then convert the word to search to
+			// all uppercase for case-insensitive searching.
+			wordToSearch = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+			wordToSearchUpper = wordToSearch.toUpperCase();
+			substWord = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+			// We'll want to make sure substWord only contains printable characters.  If not, then
+			// skip this one.
+			var substIsPrintable = true;
+			if (pAllowColors)
+			{
+				// Replace any instances of specifying the control character in substWord with the actual control character
+				substWord = substWord.replace(/\\[xX]01/g, "\x01").replace(/\\[xX]1/g, "\x01").replace(/\\1/g, "\x01");
+				// Check for only control characters and printable characters in substWord
+				for (var i = 0; (i < substWord.length) && substIsPrintable; ++i)
+				{
+					var currentChar = substWord.charAt(i);
+					substIsPrintable = (currentChar == "\x01" || isPrintableChar(currentChar));
+				}
+			}
+			else
+			{
+				substWord = strip_ctrl(substWord);
+				for (var i = 0; (i < substWord.length) && substIsPrintable; ++i)
+					substIsPrintable = isPrintableChar(substWord.charAt(i));
+			}
+			if (!substIsPrintable)
+				continue;
 
-         // And add the search word and replacement text to pArray.
-         if (wordToSearchUpper != substWord.toUpperCase())
-         {
-            if (pRegex)
-               pArray[wordToSearch] = substWord;
-            else
-               pArray[wordToSearchUpper] = substWord;
-            ++numTxtReplacements;
-         }
-      }
+			// And add the search word and replacement text to pReplacementsObj.
+			if (wordToSearchUpper != substWord.toUpperCase())
+			{
+				if (pRegex)
+					pReplacementsObj[wordToSearch] = substWord;
+				else
+					pReplacementsObj[wordToSearchUpper] = substWord;
+				++numTxtReplacements;
+			}
+		}
 
-      wordFile.close();
-   }
+		wordFile.close();
+	}
 
-   return numTxtReplacements;
+	return numTxtReplacements;
 }
 
 function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
@@ -3977,119 +4540,125 @@ function getUserKey(pMode, pCfgObj)
 //               function will return an empty string.
 function getUserInputWithSetOfInputStrs(pMode, pValidKeyStrs, pCfgObj, pCurPos)
 {
-   if (pValidKeyStrs == null)
-      return "";
-   if (pValidKeyStrs.length == 0)
-      return "";
+	if (pValidKeyStrs == null)
+		return "";
+	if (pValidKeyStrs.length == 0)
+		return "";
 
-   // Get the current cursor position, either from pCurPos or console.getxy().
-   var curPos = (pCurPos != null ? pCurPos : console.getxy());
+	// Get the current cursor position, either from pCurPos or console.getxy().
+	var curPos = (pCurPos != null ? pCurPos : console.getxy());
+	var originalCurposX = curPos.x;
 
-   // Build one string containing all the valid keys.
-   var allValidKeys = "";
-   for (var i = 0; i < pValidKeyStrs.length; ++i)
-      allValidKeys += pValidKeyStrs[i];
+	// Build one string containing all the valid keys.
+	var allValidKeys = "";
+	for (var i = 0; i < pValidKeyStrs.length; ++i)
+		allValidKeys += pValidKeyStrs[i];
+	allValidKeys += BACKSPACE + CTRL_K;
 
-   // User input loop
-   var displayChars = !((pMode & K_NOECHO) == K_NOECHO);
-   var userInput = "";
-   var inputKey = "";
-   var lastKey = "";
-   var validKey = false;
-   var idx = 0;
-   var continueOn = true;
-   while (continueOn)
-   {
-      inputKey = getUserKey(pMode|K_NOECHO, pCfgObj);
-      // If userInput is blank, then the timeout was probably reached, so don't
-      // continue inputting characters.
-      if (inputKey.length == 0)
-         break;
+	// User input loop
+	var displayChars = !((pMode & K_NOECHO) == K_NOECHO);
+	var userInput = "";
+	var inputKey = "";
+	var userInputIdx = 0; // For moving the cursor left & right.
+	var idx = 0;
+	var continueOn = true;
+	while (continueOn)
+	{
+		inputKey = getUserKey(pMode|K_NOECHO, pCfgObj);
+		// If userInput is blank, then the timeout was probably reached, so don't
+		// continue inputting characters.
+		if (inputKey.length == 0)
+			break;
 
-      switch (inputKey)
-      {
-         case BACKSPACE:
-            // See if lastKey is in any of the strings in pValidKeyStrs.  If so,
-            // then append that string back onto allValidKeys.
-            for (var i = 0; i < pValidKeyStrs.length; ++i)
-            {
-               if (pValidKeyStrs[i].indexOf(lastKey) > -1)
-               {
-                  allValidKeys += pValidKeyStrs[i];
-                  break;
-               }
-            }
-
-            // If userInput has some characters in it, then remove the last
-            // one and move the cursor back one space on the screen.
-            if (userInput.length > 0)
-            {
-               userInput = userInput.substr(0, userInput.length-1);
-               // If we are to display the input characters, then also blank out
-               // the character on the screen and make sure the cursor is placed
-               // properly on the screen.
-               if (displayChars)
-               {
-                  console.gotoxy(--curPos.x, curPos.y);
-                  console.print(" ");
-                  console.gotoxy(curPos);
-               }
-            }
-            break;
-         // ESC and Ctrl-K: Cancel out of color selection, whereas
-         // ENTER will save the user's input before returning.
-         case KEY_ESC:
-         case CTRL_K:
-            userInput = "";
-         case KEY_ENTER:
-            continueOn = false;
-            break;
-         default:
-            validKey = (allValidKeys.indexOf(inputKey) > -1);
-            if (validKey)
-            {
-               // Find the key in one of the strings in pValidKeyStrs.  When
-               // found, remove that string from allValidKeys.
-               for (var i = 0; i < pValidKeyStrs.length; ++i)
-               {
-                  validKey = (pValidKeyStrs[i].indexOf(inputKey) > -1);
-                  if (validKey)
-                  {
-                     // Remove the current string from allValidKeys
-                     idx = allValidKeys.indexOf(pValidKeyStrs[i]);
-                     if (idx > -1)
-                     {
-                        allValidKeys = allValidKeys.substr(0, idx)
-                                     + allValidKeys.substr(idx + pValidKeyStrs[i].length);
-                     }
-
-                     break;
-                  }
-               }
-            }
-
-            // If the user pressed a valid key (found in the input strings), then
-            // append it to userInput.
-            if (validKey)
-            {
-               // If K_NOECHO wasn't passed in pMode, then output the keypress
-               if (displayChars)
-               {
-                  console.print(inputKey);
-                  ++curPos.x;
-               }
-               userInput += inputKey;
-            }
-            break;
-      }
-
-      // Update lastKey.  Default to the last keypress, but if there is anything
-      // in userInput, then set lastKey to the last character in userInput.
-      lastKey = inputKey;
-      if (userInput.length > 0)
-         lastKey = userInput.substr(userInput.length-1);
-   }
-   return userInput;
+		switch (inputKey)
+		{
+			case BACKSPACE: // Delete one key backward
+				// If userInput has some characters in it, then remove the current key
+				// and move the cursor back one space on the screen.
+				if (userInput.length > 0 && userInputIdx > 0)
+				{
+					//userInput = userInput.substr(0, userInput.length-1);
+					userInput = userInput.substring(0, userInputIdx-1) + userInput.substr(userInputIdx+1);
+					--userInputIdx;
+					if (userInputIdx < 0) userInputIdx = 0; // Shouldn't happen
+					// If we are to display the input characters, then also blank out
+					// the character on the screen and make sure the cursor is placed
+					// properly on the screen.
+					if (displayChars && curPos.x > originalCurposX)
+					{
+						console.gotoxy(--curPos.x, curPos.y);
+						console.print(" ");
+						console.gotoxy(curPos);
+					}
+				}
+				break;
+			case KEY_DEL: // Delete one key forward
+				if (userInputIdx < userInput.length)
+				{
+					userInput = userInput.substr(0, userInputIdx) + userInput.substr(userInputIdx+1);
+					if (displayChars)
+					{
+						var txtToWrite = userInput.substr(userInputIdx);
+						console.print(txtToWrite.length > 0 ? txtToWrite : " ");
+						console.cleartoeol("\x01n");
+						console.gotoxy(curPos.x, curPos.y);
+					}
+				}
+				//else if (userInputIdx == 0 && userInput.length == 1)
+				//	userInput = "";
+				break;
+			case KEY_LEFT:
+				// Move the cursor one position to the left
+				if (displayChars && userInput.length > 0 && curPos.x > originalCurposX)
+				{
+					console.gotoxy(--curPos.x, curPos.y);
+					--userInputIdx;
+					if (userInputIdx < 0) userInputIdx = 0; // Shouldn't happen
+				}
+				break;
+			case KEY_RIGHT:
+				// Move the cursor one position to the right
+				if (displayChars && userInputIdx < userInput.length)
+				{
+					console.gotoxy(++curPos.x, curPos.y);
+					++userInputIdx;
+					if (userInputIdx > userInput.length) userInputIdx = userInput.length; // Shouldn't happen
+				}
+				break;
+			// ESC and Ctrl-K: Cancel out of color selection, whereas
+			// ENTER will save the user's input before returning.
+			case KEY_ESC:
+			case CTRL_K:
+				userInput = "";
+				userInputIdx = 0;
+			case KEY_ENTER:
+				continueOn = false;
+				break;
+			default:
+				// If the user pressed a valid key that hasn't been pressed yet, then
+				// append/insert it to userInput.
+				if (allValidKeys.indexOf(inputKey) > -1 && userInput.indexOf(inputKey) < 0)
+				{
+					if (userInputIdx == userInput.length)
+						userInput += inputKey;
+					else if (userInputIdx < userInput.length)
+						userInput = userInput.substr(0, userInputIdx) + inputKey + userInput.substr(userInputIdx);
+					// If K_NOECHO wasn't passed in pMode, then output the keypress
+					if (displayChars)
+					{
+						//console.print(inputKey);
+						var inputToDisplay = userInput.substr(userInputIdx);
+						console.print(inputToDisplay);
+						++curPos.x;
+						if (inputToDisplay.length > 1)
+							console.gotoxy(curPos.x, curPos.y);
+					}
+					++userInputIdx;
+				}
+				break;
+		}
+	}
+	return userInput;
 }
 
 // Reads a text file and returns an array of strings containing the lines from
@@ -4461,6 +5030,21 @@ function getKeyWithESCChars(pGetKeyMode, pCfgObj)
 						break;
 					case 'U':
 						userInput = KEY_PAGE_DOWN;
+						break;
+					case '1':
+						userInput = KEY_F1;
+						break;
+					case '2':
+						userInput = KEY_F2;
+						break;
+					case '3':
+						userInput = KEY_F3;
+						break;
+					case '4':
+						userInput = KEY_F4;
+						break;
+					case '5':
+						userInput = KEY_F5;
 						break;
 				}
 				break;
@@ -5148,6 +5732,64 @@ function commonEditLinesPrefix(pEditLines, pStartIdx, pEndIdx, pLastPrefixChar, 
 	return prefix;
 }
 
+// Separates a text string and any Synchronet attributes in the string.
+//
+// Parameters:
+//  pStr: A string, which might contain Synchronet attributes
+//
+// Return value: An object containing the following properties:
+//               textWithoutAttrs: The string without any attribute codes
+//               attrs: An object where the properties are indexes in pStr where Synchronet
+//                      attributes exist, and the values are the Synchronet attribute codes at the index
+function sepStringAndAttrCodes(pStr)
+{
+	var retObj = {
+		textWithoutAttrs: "",
+		attrs: {}
+	};
+
+	if (typeof(pStr) !== "string" || pStr.length == 0)
+		return retObj;
+
+	retObj.textWithoutAttrs = strip_ctrl(pStr);
+	var attrRegex = /(\x01[krgybmcwhifn\-_01234567])+/ig;
+	var match = attrRegex.exec(pStr);
+	while (match !== null)
+	{
+		var startTextIdx = +(match.index);
+		retObj.attrs[startTextIdx] = match[0];
+		match = attrRegex.exec(pStr);
+	}
+	return retObj;
+}
+
+// Finds the index of the first screen-printable character in a string, excluding Synchronet attribute codes.
+//
+// Parameters:
+//  pStr: The string to check
+//
+// Return value: The index of the first screen-printable character in the string, or -1 if none is found.
+function findFirstPrintableChar(pStr)
+{
+	var firstPrintableIdx = -1;
+	var attrRegex = /(\x01[krgybmcwhifn\-_01234567])+/ig;
+	var match = attrRegex.exec(pStr);
+	if (match !== null)
+	{
+		if (+(match.index) == 0)
+		{
+			firstPrintableIdx = attrRegex.lastIndex;
+			if (firstPrintableIdx >= pStr.length)
+				firstPrintableIdx = -1;
+		}
+		else
+			firstPrintableIdx = 0;
+	}
+	else
+		firstPrintableIdx = (pStr.length > 0 ? 0 : -1);
+	return firstPrintableIdx;
+}
+
 // This function displays debug text at a given location on the screen, then
 // moves the cursor back to a given location.
 //
@@ -5157,7 +5799,7 @@ function commonEditLinesPrefix(pEditLines, pStartIdx, pEndIdx, pLastPrefixChar, 
 //  pText: The text to write at the debug location
 //  pOriginalPos: An object with x and y properties containing the original cursor position
 //  pClearDebugLineFirst: Whether or not to clear the debug line before writing the text
-//  pPauseAfter: Whether or not to pause after displaying the text
+//  pPauseAfter: Can be a boolean (whether or not to pause after displaying the text) or a number (number of milliseconds to wait)
 function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
 {
 	console.gotoxy(pDebugX, pDebugY);
@@ -5165,8 +5807,10 @@ function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLine
 		console.clearline();
 	// Output the text
 	console.print(pText);
-	if (pPauseAfter)
+	if (typeof(pPauseAfter) === "boolean" && pPauseAfter)
 		console.pause();
+	else if (typeof(pPauseAfter) === "number" && pPauseAfter > 0)
+		mswait(pPauseAfter);
 	if ((typeof(pOriginalPos) != "undefined") && (pOriginalPos != null))
 		console.gotoxy(pOriginalPos);
 }
