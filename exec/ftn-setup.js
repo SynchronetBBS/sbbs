@@ -7,17 +7,10 @@ const fidoaddr = load({}, 'fidoaddr.js');
 require("mouse_getkey.js", "mouse_getkey");
 const ansiterm = load({}, 'ansiterm_lib.js');
 
-function mouse_enable(enable) {
-	if (!console.term_supports(USER_ANSI)) return;
-	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
-}
-
 js.on_exit('console.attributes = ' + console.attributes);
 js.on_exit('bbs.sys_status = ' + bbs.sys_status);
-js.on_exit('mouse_enable(false);');
 
 bbs.sys_status|=SS_MOFF;
-mouse_enable(true);
 
 const addrs = {};
 system.fido_addr_list.forEach(function (e) {
@@ -74,7 +67,7 @@ var key;
 var zone;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
-    key = mouse_getkey(K_NOSPIN, undefined, true);
+    key = mouse_getkey(K_NOSPIN, undefined, false);
     //key = console.getkey();
     if (key.key.toLowerCase() == 'q') break;
 	if (key.mouse && key.mouse.press && key.mouse.button == 0 && key.mouse.y == frame.y + frame.height - 1 && key.mouse.x >= 52 && key.mouse.x <= 65) break;

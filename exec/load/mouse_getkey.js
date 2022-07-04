@@ -10,6 +10,7 @@ function mouse_getkey(mode, timeout, enabled)
 	var motion;
 	var mods;
 	var press;
+	var release;
 	var ansiterm = bbs.mods.ansiterm_lib;
 	if(!ansiterm)
 		ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
@@ -23,10 +24,12 @@ function mouse_getkey(mode, timeout, enabled)
 	
 	function mouse_enable(enable)
 	{
-		if(console.term_supports(USER_ANSI)) {
-			ansiterm.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
-			ansiterm.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
-		}
+		const mouse_passthru = (CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);
+		if(enable)
+			console.status |= mouse_passthru;
+		else
+			console.status &= ~mouse_passthru;
+		console.mouse_mode = enable;
 	}
 
 	function restuff()
@@ -121,6 +124,7 @@ function mouse_getkey(mode, timeout, enabled)
 						x = parseInt(m[2], 10);
 						y = parseInt(m[3], 10);
 						press = (m[4] === 'M');
+						release = !press;
 						key = 'Mouse';
 					}
 				}
@@ -139,7 +143,7 @@ function mouse_getkey(mode, timeout, enabled)
 		}
 	} while(key === undefined);
 	if (key === 'Mouse') {
-		return {key:'', mouse:{button:button, press:press, x:x, y:y, mods:mods, motion:motion, ansi:ansi}};
+		return {key:'', mouse:{button:button, press:press, release:release, x:x, y:y, mods:mods, motion:motion, ansi:ansi}};
 	}
 	// TODO: Fake modes...
 	return {key:key, mouse:null};

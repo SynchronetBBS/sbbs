@@ -90,10 +90,11 @@ if(!ansiterm)
 
 function mouse_enable(enable)
 {
-	if(console.term_supports(USER_ANSI|USER_MOUSE)) {
-		ansiterm.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
-		ansiterm.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
-	}
+	const mouse_passthru = (CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);
+	if(enable)
+		console.status |= mouse_passthru;
+	else
+		console.status &= ~mouse_passthru;
 }
 
 function show_image(filename, fx, delay)
@@ -804,6 +805,7 @@ function get_difficulty(all)
 	draw_border();
 	console.attributes = WHITE;
 	console.clear_hotspots();
+	mouse_enable(false);
 	var lvls = "";
 	for(var i = 1; i <= max_difficulty; i++)
 		lvls += "\x01~" + i;
@@ -819,7 +821,9 @@ function get_difficulty(all)
 	}
 	console.right((console.screen_columns - 24) / 2);
 	console.print(format("Difficulty Level (%s): ", lvls));
-	return console.getnum(max_difficulty);
+	var result = console.getnum(max_difficulty);
+	mouse_enable(true);
+	return result;
 }
 
 function target_height(difficulty)
@@ -948,7 +952,7 @@ function play()
 		var mk = mouse_getkey(K_NONE, 1000, true);
 		var key = mk.key;
 		if (mk.mouse !== null) {
-			if ((!mk.mouse.press) || mk.mouse.motion || !screen_to_board(mk.mouse)) {
+			if ((!mk.mouse.release) || mk.mouse.motion || !screen_to_board(mk.mouse)) {
 				key = null;
 			}
 			else {
@@ -1224,7 +1228,6 @@ try {
 
 	js.on_exit("console.line_counter = 0");
 	js.on_exit("console.status = " + console.status);
-	console.status |= CON_MOUSE_CLK_PASSTHRU;
 	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	console.ctrlkey_passthru = "KOPTUZ";
 
