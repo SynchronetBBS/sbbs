@@ -9,7 +9,7 @@
  * Date       Author            Description
  * 2022-06-23 Eric Oulashin     Version 1.80 Beta
  *                              Started working (again) on text color support
- * 2022-07-03 Eric Oulashin     Version 1.80
+ * 2022-07-04 Eric Oulashin     Version 1.80
  *                              Added the ability to choose/change the color of text being typed,
  *                              using Ctrl-K if color changing is enabled.
  */
@@ -110,7 +110,7 @@ if (console.screen_columns < 80)
 
 // Version information
 var EDITOR_VERSION = "1.80";
-var EDITOR_VER_DATE = "2022-07-03";
+var EDITOR_VER_DATE = "2022-07-04";
 
 
 // Program variables
@@ -4363,7 +4363,7 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 				mswait(SPELL_CHECK_PAUSE_MS);
 				//console.gotoxy(retObj.x, retObj.y); // Updated line position
 				console.gotoxy(oldLineX, retObj.y);   // Old line position
-				console.print(chooseEditColor() + highlightText);
+				console.print(gEditLines[pEditLineIdx].substr(true, wordIdxInLine, currentWord.length));
 				retObj.x = wordIdxInLine + strip_ctrl(pWordArray[pWordIdx]).length + 1;
 				// Prompt the user for a corrected word.  If they enter
 				// a new word, then fix it in the text line.

@@ -1,6 +1,6 @@
                          SlyEdit message editor
                               Version 1.80
-                        Release date: 2022-07-03
+                        Release date: 2022-07-04
 
                                   by
 
@@ -901,7 +901,7 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
-1.80     2022-07-03   Added the ability to change/set the text color (using the
+1.80     2022-07-04   Added the ability to change/set the text color (using the
                       CTRL-K hotkey).  If desired, changing the text color can
                       be disabled if, and the colors can be saved as ANSI
                       (rather than Synchronet attribute codes) for compatibility
