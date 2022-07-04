@@ -903,6 +903,7 @@ public:
 #define MOUSE_MODE_BTN		(1<<2)	// Button-event tracking mode mouse reporting
 #define MOUSE_MODE_ANY		(1<<3)	// Any-event tracking mode mouse reporting
 #define MOUSE_MODE_EXT		(1<<4)	// SGR-encoded extended coordinate mouse reporting
+#define MOUSE_MODE_ON		(MOUSE_MODE_NORM | MOUSE_MODE_EXT) // Default mouse "enabled" mode flags
 
 	long	mouse_mode;			// Mouse reporting mode flags
 	uint	hot_attr;			// Auto-Mouse hot-spot attribute (when non-zero)
