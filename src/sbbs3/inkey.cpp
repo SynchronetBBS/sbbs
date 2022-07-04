@@ -567,7 +567,12 @@ void sbbs_t::set_mouse(long flags)
 		if(mode & MOUSE_MODE_ANY)	ansi_mouse(ANSI_MOUSE_ANY, true);
 		if(mode & MOUSE_MODE_EXT)	ansi_mouse(ANSI_MOUSE_EXT, true);
 
-		mouse_mode = flags;
+		if(mouse_mode != flags) {
+#if 0
+			lprintf(LOG_DEBUG, "New mouse mode: %X (was: %X)", flags, mouse_mode);
+#endif
+			mouse_mode = flags;
+		}
 	}
 }
 
@@ -589,7 +594,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(struct mouse_hotspot* spot)
 	list_node_t* node = listInsertNodeData(&mouse_hotspots, spot, sizeof(*spot));
 	if(node == NULL)
 		return NULL;
-	set_mouse(MOUSE_MODE_NORM | MOUSE_MODE_EXT);
+	set_mouse(MOUSE_MODE_ON);
 	return (struct mouse_hotspot*)node->data;
 }
 

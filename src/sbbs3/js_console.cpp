@@ -231,6 +231,8 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			sbbs->console=val;
 			break;
 		case CON_PROP_MOUSE_MODE:
+			if(*vp == JSVAL_TRUE)
+				val = MOUSE_MODE_ON;
 			sbbs->set_mouse(val);
 			break;
 		case CON_PROP_LNCNTR:
@@ -387,7 +389,8 @@ static jsSyncPropertySpec js_console_properties[] = {
 #ifdef BUILD_JSDOCS
 static const char* con_prop_desc[] = {
 	 "status bit-field (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"mouse mode bit-field (see <tt>MOUSE_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"mouse mode bit-field (see <tt>MOUSE_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions, "
+		"set to <tt>true</tt> for default enabled mode, <tt>false</tt> to disable)"
 	,"current 0-based line counter (used for automatic screen pause)"
 	,"current 0-based row counter"
 	,"current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
