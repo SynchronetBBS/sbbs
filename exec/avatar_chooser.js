@@ -95,9 +95,12 @@ Frame.prototype.blit = function (bin, w, h, x, y, str, sc) {
 }
 
 function mouse_enable(enable) {
-	if (!console.term_supports(USER_ANSI | USER_MOUSE)) return;
-	console.mouse_mode = MOUSE_MODE_OFF; // While we're not using Synchronet internal mouse support in this script
-	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
+	const mouse_passthru = (CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);
+	if(enable)
+		console.status |= mouse_passthru;
+	else
+		console.status &= ~mouse_passthru;
+	console.mouse_mode = enable;
 }
 
 function bury_cursor() {
@@ -124,8 +127,11 @@ function download_avatar() {
 			comment : ['']
 		};
 		sauce_lib.write(fn, sauce);
+		mouse_enable(false);
 		bbs.send_file(fn);
 		file_remove(fn);
+		console.clear_hotspots();
+		mouse_enable(true);
 		return true;
 	} else {
 		return false;
@@ -134,9 +140,11 @@ function download_avatar() {
 
 function upload_avatar() {
 	const fn = system.temp_dir + format('avatar-%04d.bin', user.number);
+	mouse_enable(false);
 	bbs.receive_file(fn);
 	const success = avatar_lib.import_file(user.number, fn, 0);
 	file_remove(fn);
+	console.clear_hotspots();
 	mouse_enable(true);
 	return success;
 }
@@ -248,7 +256,7 @@ function CollectionBrowser(filename, parent_frame) {
 
 	this.getcmd = function (cmd) {
 		var ret = null;
-		if (cmd.mouse !== null && cmd.mouse.press && cmd.mouse.x >= frames.container.x && cmd.mouse.x < frames.container.x + frames.container.width && cmd.mouse.y >= frames.container.y && cmd.mouse.y < frames.container.y + frames.container.height) {
+		if (cmd.mouse !== null && cmd.mouse.release && cmd.mouse.x >= frames.container.x && cmd.mouse.x < frames.container.x + frames.container.width && cmd.mouse.y >= frames.container.y && cmd.mouse.y < frames.container.y + frames.container.height) {
 			if (cmd.mouse.button == 0) {
 				var mx = cmd.mouse.x - frames.container.x;
 				var my = cmd.mouse.y - frames.container.y;
@@ -838,7 +846,7 @@ function MainMenu(parent_frame) {
 
 function clicked_quit(i, frame) {
 	if (i.mouse === null) return false;
-	if (!i.mouse.press) return false;
+	if (!i.mouse.release) return false;
 	if (i.mouse.button != 0) return false;
 	if (i.mouse.y != frame.y + frame.height - 1) return false;
 	var sx = frame.x + frame.width - 20;
@@ -857,6 +865,7 @@ function init() {
 	js.on_exit("ansiterm.send('ext_mode', 'set', 'cursor')");
 	js.on_exit("mouse_enable(false);");
 	js.on_exit("bbs.sys_status = " + bbs.sys_status + ";");
+	js.on_exit("console.status = " + console.status);
 	js.on_exit("console.attributes = " + console.attributes + ";");
 	js.on_exit("console.clear();");
 	console.ctrlkey_passthru|=(1<<11);      // Disable Ctrl-K handling in sbbs
@@ -880,8 +889,8 @@ function main() {
 	const menu = new MainMenu(frame);
 	menu.open();
 	while (true) {
-		var i = mouse_getkey(K_NONE, 5, true); //console.inkey(K_NONE);
-		if ((i.key != '' || (i.mouse && i.mouse.press)) && !menu.getcmd(i)) break;
+		var i = mouse_getkey(K_NONE, 5, /* Mouse already enabled: */true);
+		if ((i.key != '' || (i.mouse && i.mouse.release)) && !menu.getcmd(i)) break;
 		menu.cycle();
 		if (frame.cycle()) bury_cursor();
 	}

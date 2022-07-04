@@ -4,6 +4,7 @@
 // Locate/copy 3rd party door installer files
 {
 	var lib = load({}, 'install-3rdp-xtrn.js');
+	console.print("Scanning for installable 3rd-party programs...");
 	var out = lib.scan();
 	for(var i in out) {
 		alert(out[i]);
@@ -17,17 +18,10 @@ load('tree.js');
 require("mouse_getkey.js", "mouse_getkey");
 const ansiterm = load({}, 'ansiterm_lib.js');
 
-function mouse_enable(enable) {
-	if (!console.term_supports(USER_ANSI)) return;
-	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
-}
-
 js.on_exit('console.attributes = ' + console.attributes);
 js.on_exit('bbs.sys_status = ' + bbs.sys_status);
-js.on_exit('mouse_enable(false);');
 
 bbs.sys_status|=SS_MOFF;
-mouse_enable(true);
 
 const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLUE|WHITE);
 const main_frame = new Frame(1, 2, frame.width, frame.height - 2, BG_BLACK|LIGHTGRAY, frame);
@@ -107,7 +101,7 @@ var key;
 var xtrn;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
-    key = mouse_getkey(K_NOSPIN, undefined, true);//console.getkey();
+    key = mouse_getkey(K_NOSPIN, undefined, false);
     if (key.key.toLowerCase() == 'q') break;
     if (key.mouse && key.mouse.press && key.mouse.button == 0 && key.mouse.y == frame.y + frame.height - 1 && key.mouse.x >= 52 && key.mouse.x <= 65) break;
     t = tree.getcmd(key);
