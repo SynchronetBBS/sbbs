@@ -687,6 +687,7 @@ public:
 	uint	finduser(const char* str, bool silent_failure = false);
 
 	int 	sub_op(uint subnum);
+	bool	can_view_deleted_msgs(uint subnum);
 
 	int		dir_op(uint dirnum);
 
