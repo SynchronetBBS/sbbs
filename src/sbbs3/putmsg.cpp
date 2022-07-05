@@ -421,7 +421,7 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 						tmp2[i++] = str[l++];
 					tmp2[i] = 0;
 					truncsp(tmp2);
-					center(tmp2);
+					center(tmp2, /* msg: */true);
 					if(str[l] == '\r')
 						l++;
 					if(str[l] == '\n')

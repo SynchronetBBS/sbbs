@@ -775,7 +775,7 @@ void sbbs_t::inc_row(int count)
 	}
 }
 
-void sbbs_t::center(const char *instr, unsigned int columns)
+void sbbs_t::center(const char *instr, bool msg, unsigned int columns)
 {
 	char str[256];
 	size_t len;
@@ -789,7 +789,10 @@ void sbbs_t::center(const char *instr, unsigned int columns)
 	carriage_return();
 	if(len < columns)
 		cursor_right((columns - len) / 2);
-	bputs(str);
+	if(msg)
+		putmsg(str, P_NONE);
+	else
+		bputs(str);
 	newline();
 }
 

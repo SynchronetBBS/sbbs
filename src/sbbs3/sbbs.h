@@ -825,7 +825,7 @@ public:
 	int		outchar(enum unicode_codepoint, const char* cp437_fallback = NULL);
 	void	inc_row(int count);
 	void	inc_column(int count);
-	void	center(const char *str, unsigned int columns = 0);
+	void	center(const char *str, bool msg = false, unsigned int columns = 0);
 	void	wide(const char*);
 	void	clearscreen(long term);
 	void	clearline(void);
