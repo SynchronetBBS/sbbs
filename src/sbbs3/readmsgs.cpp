@@ -26,6 +26,13 @@ int sbbs_t::sub_op(uint subnum)
 	return(is_user_subop(&cfg, subnum, &useron, &client));
 }
 
+bool sbbs_t::can_view_deleted_msgs(uint subnum)
+{
+	if((cfg.sys_misc & SM_SYSVDELM) == 0) // No one can view deleted msgs
+		return false;
+	return (cfg.sys_misc & SM_USRVDELM) || sub_op(subnum);
+}
+
 uchar sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
 {
 	if(msg->hdr.attr&MSG_DELETE)						return '-';
@@ -149,10 +156,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 		if(idx.attr&MSG_DELETE) {		/* Pre-flagged */
 			if(mode&LP_REP) 			/* Don't include deleted msgs in REP pkt */
 				continue;
-			if(!(cfg.sys_misc&SM_SYSVDELM)) /* Noone can view deleted msgs */
-				continue;
-			if(!(cfg.sys_misc&SM_USRVDELM)	/* Users can't view deleted msgs */
-				&& !sub_op(subnum)) 	/* not sub-op */
+			if(!can_view_deleted_msgs(subnum))
 				continue;
 			if(!sub_op(subnum)			/* not sub-op */
 				&& idx.from!=namecrc && idx.from!=aliascrc) /* not for you */
@@ -731,7 +735,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						smb_unlocksmbhdr(&smb); 
 					}
 					if(msg_attr & MSG_DELETE) {
-						if(cfg.sys_misc&SM_SYSVDELM)
+						if(can_view_deleted_msgs(subnum))
 							domsg=0;	// If you can view deleted messages, don't redisplay.
 					}
 					else {
@@ -909,10 +913,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					smb_unlocksmbhdr(&smb);
 				}
 				domsg=1;
-				if((cfg.sys_misc&SM_SYSVDELM		// anyone can view delete msgs
-					|| (cfg.sys_misc&SM_USRVDELM	// sys/subops can view deleted msgs
-					&& sub_op(subnum)))
-					&& smb.curmsg<smb.msgs-1)
+				if(can_view_deleted_msgs(subnum))
 					smb.curmsg++;
 				if(smb.curmsg>=smb.msgs)
 					done=1;
