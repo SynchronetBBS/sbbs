@@ -7587,7 +7587,7 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 		{
 			// TODO: We don't really need to include the ) on the ones with the ).  That is
 			// just to ensure we find the right ones.
-			for (strI = 0; strI < toSearch[i].length; ++strI)
+			for (var strI = 0; strI < toSearch[i].length; ++strI)
 			{
 				var clickInfoObj = { x: helpLineIdx+strI+1,
 				                     y: console.screen_rows,
@@ -17744,7 +17744,7 @@ function removeInitialColorFromMsgBody(pMsgBody)
 
 	var msgBody = pMsgBody;
 
-	msgBodyLines = pMsgBody.split("\r\n", 3);
+	var msgBodyLines = pMsgBody.split("\r\n", 3);
 	if (msgBodyLines.length == 3)
 	{
 		var onlySyncAttrsRegexWholeWord = new RegExp("^(\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz])+$", 'i');
