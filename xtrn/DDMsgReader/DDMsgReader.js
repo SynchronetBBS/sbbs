@@ -3646,7 +3646,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// results if there are any (we'll need to have the correct array
 					// index for the search results).
 					var chosenMsgIndex = userMsgNum - 1;
-					if ((chosenMsgIndex <= bottomMsgIndex) && (chosenMsgIndex >= this.lightbarListTopMsgIdx))
+					msgListMenu.selectedItemIdx = chosenMsgIndex;
+					if ((chosenMsgIndex < msgListMenu.NumItems()) && (chosenMsgIndex >= this.lightbarListTopMsgIdx))
 					{
 						this.lightbarListSelectedMsgIdx = chosenMsgIndex;
 						msgListMenu.selectedItemIdx = this.lightbarListSelectedMsgIdx;
@@ -7587,7 +7588,7 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 		{
 			// TODO: We don't really need to include the ) on the ones with the ).  That is
 			// just to ensure we find the right ones.
-			for (strI = 0; strI < toSearch[i].length; ++strI)
+			for (var strI = 0; strI < toSearch[i].length; ++strI)
 			{
 				var clickInfoObj = { x: helpLineIdx+strI+1,
 				                     y: console.screen_rows,
@@ -17744,7 +17745,7 @@ function removeInitialColorFromMsgBody(pMsgBody)
 
 	var msgBody = pMsgBody;
 
-	msgBodyLines = pMsgBody.split("\r\n", 3);
+	var msgBodyLines = pMsgBody.split("\r\n", 3);
 	if (msgBodyLines.length == 3)
 	{
 		var onlySyncAttrsRegexWholeWord = new RegExp("^(\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz])+$", 'i');
