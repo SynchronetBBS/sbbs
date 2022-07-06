@@ -24,7 +24,9 @@ var LEN_GSNAME =	15;		/* Group/Lib short name						*/
 var LEN_GLNAME =	40;		/* Group/Lib long name						*/
 var LEN_SSNAME =	25;		/* Sub/Dir short name						*/
 var LEN_SLNAME =	40;		/* Sub/Dir long name						*/
-						
+var LEN_CHATACTCMD =9;		/* Chat action command                      */
+var LEN_CHATACTOUT =65;		/* Chat action output string                */
+
 var UINT16_T = 		2;
 var UINT32_T = 		4;
 var UINT64_T = 		8;
@@ -498,4 +500,49 @@ struct.file={
 	lib:			{bytes:struct.lib_t,	type:"lst"},
 	dir:			{bytes:struct.dir_t,	type:"lst"},
 	txtsec:			{bytes:struct.txtsec_t,	type:"lst"},
+};
+
+struct.guru_t={
+	name:			{bytes:26,				type:"str"},
+	code:			{bytes:LEN_CODE+1,		type:"str"},
+	ars:			{bytes:LEN_ARSTR+1,		type:"str"},
+	__PADDING__:	{bytes:16}
+};
+
+struct.actset_t={
+	name:			{bytes:26,				type:"str"},
+};
+
+struct.chatact_t={
+	actset:			{bytes:UINT16_T,		type:"int"},
+	cmd:			{bytes:LEN_CHATACTCMD+1,type:"str"},
+	out:			{bytes:LEN_CHATACTOUT+1,type:"str"},
+	__PADDING__:	{bytes:16}
+};
+
+struct.chan_t={
+	actset:			{bytes:UINT16_T,		type:"int"},
+	name:			{bytes:26,				type:"str"},
+	code:			{bytes:LEN_CODE+1,		type:"str"},
+	ars:			{bytes:LEN_ARSTR+1,		type:"str"},
+	cost:			{bytes:UINT32_T,		type:"int"},
+	guru:			{bytes:UINT16_T,		type:"int"},
+	settings:		{bytes:UINT32_T,		type:"int"},	// AKA misc
+	__PADDING__:	{bytes:16}
+};
+
+struct.page_t={
+	cmd:			{bytes:LEN_CMD+1,		type:"str"},
+	ars:			{bytes:LEN_ARSTR+1,		type:"str"},
+	settings:		{bytes:UINT32_T,		type:"int"},	// AKA misc
+	__PADDING__:	{bytes:16}
+};
+
+/* Chat configuration (chat.cnf) */
+struct.chat={
+	guru:			{bytes:struct.guru_t,	type:"lst"},
+	actset:			{bytes:struct.actset_t,	type:"lst"},
+	chatact:		{bytes:struct.chatact_t,type:"lst"},
+	chan:			{bytes:struct.chan_t,	type:"lst"},
+	page:			{bytes:struct.page_t,	type:"lst"},
 };
