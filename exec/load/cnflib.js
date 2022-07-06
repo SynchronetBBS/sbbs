@@ -199,6 +199,9 @@ var CNF = new (function() {
 				case "chat.cnf":
 					struct = js.global.struct.chat;
 					break;
+				case "node.cnf":
+					struct = js.global.struct.node;
+					break;
 				default:
 					return false;
 			}
@@ -228,6 +231,12 @@ var CNF = new (function() {
 					break;
 				case "file.cnf":
 					struct = js.global.struct.file;
+					break;
+				case "chat.cnf":
+					struct = js.global.struct.chat;
+					break;
+				case "node.cnf":
+					struct = js.global.struct.node;
 					break;
 				default:
 					return false;
