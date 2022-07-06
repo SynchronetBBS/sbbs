@@ -3646,7 +3646,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// results if there are any (we'll need to have the correct array
 					// index for the search results).
 					var chosenMsgIndex = userMsgNum - 1;
-					if ((chosenMsgIndex <= bottomMsgIndex) && (chosenMsgIndex >= this.lightbarListTopMsgIdx))
+					msgListMenu.selectedItemIdx = chosenMsgIndex;
+					if ((chosenMsgIndex < msgListMenu.NumItems()) && (chosenMsgIndex >= this.lightbarListTopMsgIdx))
 					{
 						this.lightbarListSelectedMsgIdx = chosenMsgIndex;
 						msgListMenu.selectedItemIdx = this.lightbarListSelectedMsgIdx;
