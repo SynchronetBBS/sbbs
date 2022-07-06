@@ -132,8 +132,8 @@ struct.sub_t={
 	// *mod_ar;
 	qwk_conf:		{bytes:UINT16_T,		type:"int"},	// was qwkconf
 	__PADDING1__:	{bytes:1},
-	pmode:			{bytes:UINT32_T,		type:"int"},
-	n_pmode:		{bytes:UINT32_T,		type:"int"},
+	print_mode:		{bytes:UINT32_T,		type:"int"},
+	print_mode_neg:	{bytes:UINT32_T,		type:"int"},
 	area_tag:		{bytes:41,				type:"str"},
 	__PADDING2__:{bytes:3}
 };
@@ -323,9 +323,9 @@ struct.xtrn={
 	event:			{bytes:struct.event_t,		type:"lst"},
 	natvpgm:		{bytes:struct.natvpgm_t,	type:"ntv"},
 	hotkey:			{bytes:struct.hotkey_t,		type:"lst"},
-	xtrn_misc:		{bytes:UINT32_T,			type:"int"}
+	settings:		{bytes:UINT32_T,			type:"int"}	// was xtrn_misc
 };
-	
+
 /* main message group/sub file structure (msgs.cnf) */
 struct.msg={
 	max_qwkmsgs:	{bytes:UINT32_T,		type:"int"},
