@@ -650,6 +650,10 @@ int main(int argc, char **argv)
 	memset(&cfg,0,sizeof(cfg));
 	str[0]=0;
 	for(i=1;i<argc;i++) {
+		if(strcmp(argv[i], "-insert") == 0) {
+			uifc.insert_mode = TRUE;
+			continue;
+		}
 		if(argv[i][0]=='-')
 			switch(toupper(argv[i][1])) {
                 case 'D':
