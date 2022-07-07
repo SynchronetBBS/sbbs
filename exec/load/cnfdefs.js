@@ -228,7 +228,7 @@ struct.main={
 	sys_phonefmt:		{bytes:12+1,				type:"str"},
 	sys_operator:		{bytes:40+1,				type:"str"},	// sys_op
 	sys_guru:			{bytes:40+1,				type:"str"},
-	sys_pass:			{bytes:40+1,				type:"str"},
+	sys_password:		{bytes:40+1,				type:"str"},	// sys_pass
 	node_dir:			{bytes:struct.node_dir_t,	type:"lst"},
 	data_dir:			{bytes:LEN_DIR+1,			type:"str"},
 	exec_dir:			{bytes:LEN_DIR+1,			type:"str"},
@@ -249,7 +249,7 @@ struct.main={
 	cdt_min_value:		{bytes:UINT16_T,			type:"int"},
 	max_minutes:		{bytes:UINT32_T,			type:"int"},
 	cdt_per_dollar:		{bytes:UINT32_T,			type:"int"},
-	newuser_pass:				{bytes:40+1,		type:"str"},	// new_pass
+	newuser_password:			{bytes:40+1,		type:"str"},	// new_pass
 	newuser_magic_word:			{bytes:20+1,		type:"str"},	// new_magic
 	newuser_sif:				{bytes:8+1,			type:"str"},
 	newuser_sof:				{bytes:8+1,			type:"str"},
@@ -266,11 +266,11 @@ struct.main={
 	newuser_expiration_days:	{bytes:UINT16_T,	type:"int"},	// new_expire
 	newuser_command_shell:		{bytes:UINT16_T,	type:"int"},	// new_shell
 	newuser_settings:			{bytes:UINT32_T,	type:"int"},	// new_misc
-	newuser_download_protocol:	{bytes:UCHAR,		type:"int"},	// new_prot
+	newuser_download_protocol:	{bytes:UCHAR,		type:"str"},	// new_prot
 	new_install:				{bytes:UCHAR,		type:"int"},
 	newuser_msgscan_init:		{bytes:UINT16_T,	type:"int"},	// new_msgcan_init
 	guest_msgscan_init:			{bytes:UINT16_T,	type:"int"},
-	min_pwlen:					{bytes:UCHAR,		type:"int"},
+	min_password_length:		{bytes:UCHAR,		type:"int"},
 	__PADDING1__:				{bytes:3},
 	max_log_size:				{bytes:UINT32_T,	type:"int"},
 	max_logs_kept:				{bytes:UINT16_T,	type:"int"},
@@ -308,7 +308,7 @@ struct.main={
 	tempxfer_mod:       {bytes:LEN_MODNAME+1,       type:"str"},
 	
 	__PADDING3__:		{bytes:184},
-	new_genders:		{bytes:41,					type:"str"},
+	newuser_gender_options:	{bytes:41,				type:"str"},
 	user_backup_level:	{bytes:UINT16_T,			type:"int"},
 	mail_backup_level:	{bytes:UINT16_T,			type:"int"},
 	validation_set:		{bytes:struct.validation_set_t, type:"lst", length: 10},
@@ -349,7 +349,7 @@ struct.msg={
 	fido_netmail_dir:	{bytes:LEN_DIR+1, 	type:"str"},
 	fido_echomail_dir:	{bytes:LEN_DIR+1, 	type:"str"},
 	fido_file_dir:		{bytes:LEN_DIR+1, 	type:"str"},
-	fido_netmail_misc:	{bytes:UINT16_T, 	type:"int"},
+	fido_netmail_settings:	{bytes:UINT16_T, 	type:"int"},
 	fido_netmail_cost:	{bytes:UINT32_T, 	type:"int"},
 	fido_default_addr:	{bytes:struct.faddr_t, 	type:"obj"},
 	__PADDING3__:	{bytes:56},
@@ -363,7 +363,7 @@ struct.msg={
 	__PADDING6__:	{bytes:64},
 	sys_inetaddr:	{bytes:128, 			type:"str"},
 	inetmail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
-	inetmail_misc:	{bytes:UINT32_T, 		type:"int"},
+	inetmail_settings:	{bytes:UINT32_T, 		type:"int"},
 	inetmail_cost:	{bytes:UINT32_T, 		type:"int"},
 	smtpmail_sem:	{bytes:LEN_DIR+1, 		type:"str"}	
 };
