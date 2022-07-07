@@ -1886,10 +1886,23 @@ void xedit_cfg()
 			;
 
 			SAFEPRINTF(str,"%s Editor",cfg.xedit[i]->name);
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,70,&dfltopt,0
+			uifc_winmode_t wmode = WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_xedits)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,70,&dfltopt,0
 				,str,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_xedits)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=
@@ -2646,10 +2659,23 @@ void hotkey_cfg(void)
 				"execute an external program or module anywhere in the BBS.\n"
 			;
 			sprintf(str,"Ctrl-%c Hot Key Event",cfg.hotkey[i]->key+'@');
-			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,60,&dfltopt,0
+			uifc_winmode_t wmode = WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_hotkeys)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&dfltopt,0
 				,str,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_hotkeys)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=

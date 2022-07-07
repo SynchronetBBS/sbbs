@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "ciolib.h"	// CIO_KEY_*
 
 void qhub_edit(int num);
 char *daystr(char days);
@@ -914,10 +915,22 @@ void qhub_edit(int num)
 			"`Networked Sub-boards...` allows you to manually add, remove, or modify\n"
 			"local sub-board associations with conferences on this QWK network hub.\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&qhub_dflt,0
-			,str,opt)) {
+		uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_SAV|WIN_EXTKEYS;
+		if(num > 0)
+			wmode |= WIN_LEFTKEY;
+		if(num + 1 < cfg.total_qhubs)
+			wmode |= WIN_RIGHTKEY;
+		switch(uifc.list(wmode,0,0,0,&qhub_dflt,0,str,opt)) {
 			case -1:
 				done=1;
+				break;
+			case -CIO_KEY_LEFT-2:
+				if(num > 0)
+					num--;
+				break;
+			case -CIO_KEY_RIGHT-2:
+				if(num + 1 < cfg.total_qhubs)
+					num++;
 				break;
 			case __COUNTER__:
 				uifc.helpbuf=
@@ -1248,11 +1261,26 @@ void qhub_sub_edit(uint num)
 				"You are configuring the options for this sub-board for this QWK network\n"
 				"hub.\n"
 			;
-			l=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,
+			uifc_winmode_t wmode = WIN_MID|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+			if(j > 0)
+				wmode |= WIN_LEFTKEY;
+			if(j + 1 < cfg.qhub[num]->subs)
+				wmode |= WIN_RIGHTKEY;
+			l=uifc.list(wmode,0,0,
 				22+LEN_GSNAME+LEN_SSNAME,&l,0
 				,"Networked Sub-board",opt);
 			if(l==-1)
 				break;
+			if(l == -CIO_KEY_LEFT-2) {
+				if(j > 0)
+					j--;
+				continue;
+			}
+			if(l == -CIO_KEY_RIGHT-2) {
+				if(j + 1 < cfg.qhub[num]->subs)
+					j++;
+				continue;
+			}
 			if(!l) {
 				m=getsub();
 				if(m!=-1) {

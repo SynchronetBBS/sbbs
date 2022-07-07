@@ -932,10 +932,23 @@ void txt_cfg()
 			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
 				,cfg.txtsec[i]->arstr);
 			opt[k][0]=0;
-			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.txtsec[i]->name
+			uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_txtsecs)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&j,0,cfg.txtsec[i]->name
 				,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_txtsecs)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=
@@ -1120,10 +1133,23 @@ void shell_cfg()
 				"Synchronet to interpret. See the example `.src` files in the `exec`\n"
 				"directory and the documentation for the Baja compiler for more details.\n"
 			;
-			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,&bar,cfg.shell[i]->name
+			uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_shells)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&j,&bar,cfg.shell[i]->name
 				,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_shells)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=

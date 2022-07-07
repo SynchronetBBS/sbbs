@@ -19,6 +19,7 @@
 
 #include "scfg.h"
 #include "ssl.h"
+#include "ciolib.h"	// CIO_KEY_*
 
 static void configure_dst(void)
 {
@@ -1943,11 +1944,24 @@ void sys_cfg(void)
 							,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
 								cfg.level_expireto[i] : cfg.expired_level);
 						opt[j][0]=0;
-						j=uifc.list(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0
+						uifc_winmode_t wmode = WIN_RHT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < 100)
+							wmode |= WIN_RIGHTKEY;
+						j=uifc.list(wmode,2,1,0,&k,0
 							,str,opt);
 						if(j==-1)
 							break;
 						switch(j) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < 100)
+									i++;
+								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Total Time Allowed Per Day (in minutes)"
@@ -2189,7 +2203,6 @@ void sys_cfg(void)
 						,"Quick-Validation Values",opt);
 					if(i==-1)
 						break;
-					sprintf(str,"Quick-Validation Set %d",i);
 					while(1) {
 						j=0;
 						sprintf(opt[j++],"%-22.22s%u","Level",cfg.val_level[i]);
@@ -2210,11 +2223,25 @@ void sys_cfg(void)
 						sprintf(opt[j++],"%-22.22s%u","Additional Credits"
 							,cfg.val_cdt[i]);
 						opt[j][0]=0;
-						j=uifc.list(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0
-							,str,opt);
+
+						uifc_winmode_t wmode = WIN_RHT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < 10)
+							wmode |= WIN_RIGHTKEY;
+						SAFEPRINTF(str,"Quick-Validation Set %d",i);
+						j=uifc.list(wmode,2,1,0,&k,0,str,opt);
 						if(j==-1)
 							break;
 						switch(j) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < 10)
+									i++;
+								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Level"

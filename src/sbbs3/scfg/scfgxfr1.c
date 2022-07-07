@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "ciolib.h"	// CIO_KEY_*
 
 char* testable_files_help =
 	"`Testable File Types:`\n"
@@ -423,10 +424,23 @@ void xfer_opts()
 						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 							,cfg.fview[i]->arstr);
 						opt[j][0]=0;
-						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&fview_opt,0
+						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.total_fviews)
+							wmode |= WIN_RIGHTKEY;
+						switch(uifc.list(wmode,0,0,0,&fview_opt,0
 							,"Viewable File Type",opt)) {
 							case -1:
 								done=1;
+								break;
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.total_fviews)
+									i++;
 								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -540,10 +554,23 @@ void xfer_opts()
 							,cfg.ftest[i]->arstr);
 						opt[j][0]=0;
 						uifc.helpbuf = testable_files_help;
-						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&ftest_opt,0
+						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.total_ftests)
+							wmode |= WIN_RIGHTKEY;
+						switch(uifc.list(wmode,0,0,0,&ftest_opt,0
 							,"Testable File Type",opt)) {
 							case -1:
 								done=1;
+								break;
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.total_ftests)
+									i++;
 								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -675,10 +702,23 @@ void xfer_opts()
 						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 							,cfg.dlevent[i]->arstr);
 						opt[j][0]=0;
-						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&dlevent_opt,0
+						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.total_dlevents)
+							wmode |= WIN_RIGHTKEY;
+						switch(uifc.list(wmode,0,0,0,&dlevent_opt,0
 							,"Download Event",opt)) {
 							case -1:
 								done=1;
+								break;
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.total_dlevents)
+									i++;
 								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -801,10 +841,23 @@ void xfer_opts()
 						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 							,cfg.fextr[i]->arstr);
 						opt[j][0]=0;
-						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&fextr_opt,0
+						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.total_fextrs)
+							wmode |= WIN_RIGHTKEY;
+						switch(uifc.list(wmode,0,0,0,&fextr_opt,0
 							,"Extractable File Type",opt)) {
 							case -1:
 								done=1;
+								break;
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.total_fextrs)
+									i++;
 								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -921,10 +974,23 @@ void xfer_opts()
 						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 							,cfg.fcomp[i]->arstr);
 						opt[j][0]=0;
-						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&fcomp_opt,0
+						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.total_fcomps)
+							wmode |= WIN_RIGHTKEY;
+						switch(uifc.list(wmode,0,0,0,&fcomp_opt,0
 							,"Compressible File Type",opt)) {
 							case -1:
 								done=1;
+								break;
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.total_fcomps)
+									i++;
 								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -952,13 +1018,13 @@ void xfer_opts()
 						sprintf(opt[i],"%c  %s"
 							,cfg.prot[i]->mnemonic,cfg.prot[i]->name);
 					opt[i][0]=0;
-					i=WIN_ACT|WIN_SAV;	/* save cause size can change */
+					uifc_winmode_t wmode = WIN_ACT|WIN_SAV;	/* WIN_SAV because size can change */
 					if(cfg.total_prots<MAX_OPTS)
-						i|=WIN_INS|WIN_XTR;
+						wmode |= WIN_INS|WIN_XTR;
 					if(cfg.total_prots)
-						i|=WIN_DEL|WIN_COPY|WIN_CUT;
+						wmode |= WIN_DEL|WIN_COPY|WIN_CUT;
 					if(savprot.mnemonic)
-						i|=WIN_PASTE;
+						wmode |= WIN_PASTE;
 					uifc.helpbuf=
 						"`File Transfer Protocols:`\n"
 						"\n"
@@ -973,7 +1039,7 @@ void xfer_opts()
 						"don't wish it to be available for a certain method of transfer, leave\n"
 						"the command line for that method blank.\n"
 					;
-					i=uifc.list(i,0,0,34,&prot_dflt,&prot_bar,"File Transfer Protocols",opt);
+					i=uifc.list(wmode,0,0,34,&prot_dflt,&prot_bar,"File Transfer Protocols",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -1059,10 +1125,23 @@ void xfer_opts()
 						sprintf(opt[j++],"%-30.30s%s",	 "Socket I/O"
 							,cfg.prot[i]->misc&PROT_SOCKET ? "Yes":"No");
 						opt[j][0]=0;
-						switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,70,&prot_opt,0
+						wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.total_prots)
+							wmode |= WIN_RIGHTKEY;
+						switch(uifc.list(wmode,0,0,70,&prot_opt,0
 							,"File Transfer Protocol",opt)) {
 							case -1:
 								done=1;
+								break;
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.total_prots)
+									i++;
 								break;
 							case 0:
 								str[0]=cfg.prot[i]->mnemonic;

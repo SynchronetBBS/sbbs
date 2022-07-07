@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "ciolib.h"	// CIO_KEY_*
 
 void page_cfg()
 {
@@ -121,9 +122,22 @@ void page_cfg()
 				,cfg.page[i]->misc&XTRN_SH ? "Yes" : "No");
 			opt[k][0]=0;
 			sprintf(str,"Sysop Chat Pager #%d",i+1);
-			switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&j,0,str,opt)) {
+			uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_SAV|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_pages)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&j,0,str,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_pages)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=
@@ -190,7 +204,7 @@ void page_cfg()
 
 void chan_cfg()
 {
-	static int chan_dflt,chan_bar,opt_dflt;
+	static int chan_dflt,chan_bar,opt_dflt,guru_dflt;
 	char str[128],code[128],done=0;
 	int j,k;
 	uint i,u;
@@ -318,9 +332,22 @@ void chan_cfg()
 				"This menu is for configuring the selected chat channel.\n"
 			;
 			sprintf(str,"%s Chat Channel",cfg.chan[i]->name);
-			switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str,opt)) {
+			uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_SAV|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_chans)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&opt_dflt,0,str,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_chans)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=
@@ -421,7 +448,7 @@ void chan_cfg()
 					for(j=0;j<cfg.total_gurus && j<MAX_OPTS;j++)
 						sprintf(opt[j],"%-25s",cfg.guru[j]->name);
 					opt[j][0]=0;
-					k=uifc.list(WIN_SAV|WIN_RHT,0,0,25,&j,0
+					k=uifc.list(WIN_SAV|WIN_RHT,0,0,25,&guru_dflt,0
 						,"Available Chat Gurus",opt);
 					if(k==-1)
 						break;
@@ -699,10 +726,23 @@ void guru_cfg()
 				"\n"
 				"This menu is for configuring the selected Guru.\n"
 			;
-			switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,cfg.guru[i]->name
+			uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_SAV|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_gurus)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&opt_dflt,0,cfg.guru[i]->name
 				,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_gurus)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=
@@ -843,10 +883,23 @@ void actsets_cfg()
 				"This menu is for configuring the selected chat action set.\n"
 			;
 			sprintf(str,"%s Chat Action Set",cfg.actset[i]->name);
-			switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str
+			uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_SAV|WIN_EXTKEYS;
+			if(i > 0)
+				wmode |= WIN_LEFTKEY;
+			if(i + 1 < cfg.total_actsets)
+				wmode |= WIN_RIGHTKEY;
+			switch(uifc.list(wmode,0,0,60,&opt_dflt,0,str
 				,opt)) {
 				case -1:
 					done=1;
+					break;
+				case -CIO_KEY_LEFT-2:
+					if(i > 0)
+						i--;
+					break;
+				case -CIO_KEY_RIGHT-2:
+					if(i + 1 < cfg.total_actsets)
+						i++;
 					break;
 				case 0:
 					uifc.helpbuf=
