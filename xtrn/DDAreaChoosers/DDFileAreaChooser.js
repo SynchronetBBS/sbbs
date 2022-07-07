@@ -33,6 +33,9 @@
  *                            the libraries the first time because the library information
  *                            wasn't built when using directory collapsing.  This has been
  *                            fixed.
+ * 2022-07-06 Eric Oulashin   Version 1.28
+ *                            Fix for not actually moving to the user's selected directory
+ *                            when directly choosing a directory in their library in lightbar mode.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -61,10 +64,10 @@ else
 // Exit if the Synchronet version is below the minimum.
 if (system.version_num < 31400)
 {
-	var message = "\1n\1h\1y\1i* Warning:\1n\1h\1w Digital Distortion Message Lister "
-	             + "requires version \1g3.14\1w or\r\n"
-	             + "higher of Synchronet.  This BBS is using version \1g" + system.version
-	             + "\1w.  Please notify the sysop.";
+	var message = "\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w Digital Distortion Message Lister "
+	             + "requires version \x01g3.14\x01w or\r\n"
+	             + "higher of Synchronet.  This BBS is using version \x01g" + system.version
+	             + "\x01w.  Please notify the sysop.";
 	console.crlf();
 	console.print(message);
 	console.crlf();
@@ -73,8 +76,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.27";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-07-03";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.28";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-07-06";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -147,22 +150,22 @@ function DDFileAreaChooser()
 {
 	// Colors
 	this.colors = {
-		areaNum: "\1n\1w\1h",
-		desc: "\1n\1c",
-		numItems: "\1b\1h",
-		header: "\1n\1y\1h",
-		fileAreaHdr: "\1n\1g",
-		areaMark: "\1g\1h",
+		areaNum: "\x01n\x01w\x01h",
+		desc: "\x01n\x01c",
+		numItems: "\x01b\x01h",
+		header: "\x01n\x01y\x01h",
+		fileAreaHdr: "\x01n\x01g",
+		areaMark: "\x01g\x01h",
 		// Highlighted colors (for lightbar mode)
-		bkgHighlight: "\1" + "4", // Blue background
-		areaNumHighlight: "\1w\1h",
-		descHighlight: "\1c",
-		numItemsHighlight: "\1w\1h",
+		bkgHighlight: "\x01" + "4", // Blue background
+		areaNumHighlight: "\x01w\x01h",
+		descHighlight: "\x01c",
+		numItemsHighlight: "\x01w\x01h",
 		// Lightbar help line colors
-		lightbarHelpLineBkg: "\1" + "7",
-		lightbarHelpLineGeneral: "\1b",
-		lightbarHelpLineHotkey: "\1r",
-		lightbarHelpLineParen: "\1m"
+		lightbarHelpLineBkg: "\x01" + "7",
+		lightbarHelpLineGeneral: "\x01b",
+		lightbarHelpLineHotkey: "\x01r",
+		lightbarHelpLineParen: "\x01m"
 	};
 
 	// useLightbarInterface specifies whether or not to use the lightbar
@@ -231,7 +234,7 @@ function DDFileAreaChooser()
 	this.fileLibPrintfStr = " " + this.colors.areaNum + "%" + this.areaNumLen + "d "
 	                      + this.colors.desc + "%-" + this.descFieldLen
 	                      + "s " + this.colors.numItems + "%" + this.numDirsLen + "d";
-	this.fileLibHighlightPrintfStr = "\1n" + this.colors.bkgHighlight + " "
+	this.fileLibHighlightPrintfStr = "\x01n" + this.colors.bkgHighlight + " "
 	                               + this.colors.areaNumHighlight + "%" + this.areaNumLen + "d "
 	                               + this.colors.descHighlight + "%-" + this.descFieldLen
 	                               + "s " + this.colors.numItemsHighlight + "%4d";
@@ -240,76 +243,76 @@ function DDFileAreaChooser()
 	this.fileDirHdrPrintfStr = this.colors.header + " %5s %-"
 	                         + +(this.descFieldLen-3) + "s %-7s";
 	// Lightbar mode key help line
-	this.lightbarKeyHelpText = "\1n" + this.colors.lightbarHelpLineHotkey
+	this.lightbarKeyHelpText = "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + UP_ARROW
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + DOWN_ARROW
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "HOME"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "END"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "#"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "PgUp"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + "/"
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "Dn"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "F"
-				  + "\1n" + this.colors.lightbarHelpLineParen
+				  + "\x01n" + this.colors.lightbarHelpLineParen
 				  + this.colors.lightbarHelpLineBkg + ")"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + "irst pg, "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "L"
-				  + "\1n" + this.colors.lightbarHelpLineParen
+				  + "\x01n" + this.colors.lightbarHelpLineParen
 				  + this.colors.lightbarHelpLineBkg + ")"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + "ast pg, "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "CTRL-F"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "/"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "N"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "Q"
-				  + "\1n" + this.colors.lightbarHelpLineParen
+				  + "\x01n" + this.colors.lightbarHelpLineParen
 				  + this.colors.lightbarHelpLineBkg + ")"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + "uit, "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "?";
 	// Pad the lightbar key help text on either side to center it on the screen
 	// (but leave off the last character to avoid screen drawing issues)
 	var helpTextLen = console.strlen(this.lightbarKeyHelpText);
 	var helpTextStartCol = (console.screen_columns/2) - (helpTextLen/2);
-	this.lightbarKeyHelpText = "\1n" + this.colors.lightbarHelpLineBkg
+	this.lightbarKeyHelpText = "\x01n" + this.colors.lightbarHelpLineBkg
 	                         + format("%" + +(helpTextStartCol) + "s", "")
-							 + this.lightbarKeyHelpText + "\1n"
+							 + this.lightbarKeyHelpText + "\x01n"
 							 + this.colors.lightbarHelpLineBkg;
 	var numTrailingChars = console.screen_columns - (helpTextStartCol+helpTextLen) - 1;
-	this.lightbarKeyHelpText += format("%" + +(numTrailingChars) + "s", "") + "\1n";
+	this.lightbarKeyHelpText += format("%" + +(numTrailingChars) + "s", "") + "\x01n";
 
 	// this.fileDirListPrintfInfo will be an array of printf strings
 	// for the file directories in the file libraries.  The index is the
@@ -337,9 +340,9 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 		this.SetUpLibListWithCollapsedDirs();
 
 	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
-		this.SelectFileArea_Lightbar(pChooseLib ? 1 : 2); // TODO: Fix for levels everywhere
+		this.SelectFileArea_Lightbar(pChooseLib ? 1 : 2); // TODO: Fix for levels everywhere?
 	else
-		this.SelectFileArea_Traditional(pChooseLib ? 1 : 2); // TODO: Fix for levels everywhere
+		this.SelectFileArea_Traditional(pChooseLib ? 1 : 2); // TODO: Fix for levels everywhere?
 }
 
 // For the DDFileAreaChooser class: Traditional user interface for
@@ -360,8 +363,8 @@ function DDFileAreaChooser_SelectFileArea_Traditional(pLevel, pLibIdx, pDirIdx)
 	// choose one.
 	if (file_area.lib_list.length == 0)
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no file libraries.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no file libraries.\r\n\x01p");
 		return;
 	}
 
@@ -389,12 +392,12 @@ function DDFileAreaChooser_SelectFileArea_Traditional(pLevel, pLibIdx, pDirIdx)
 			// commands in there that could cause weird things to happen.
 			bbs.command_str = "";
 
-			console.clear("\1n");
+			console.clear("\x01n");
 			this.DisplayAreaChgHdr(1);
 			if (this.areaChangeHdrLines.length > 0)
 				console.crlf();
 			this.ListFileLibs_Traditional(libSearchText);
-			console.print("\1n\1b\1hş \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + +(curLibIdx+1) + "\1n\1c]:\1h ");
+			console.print("\x01n\x01b\x01hş \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + +(curLibIdx+1) + "\x01n\x01c]:\x01h ");
 			// Accept Q (quit) or a file library number
 			selectedLibNum = console.getkeys("QN/" + CTRL_F, file_area.lib_list.length);
 
@@ -411,7 +414,7 @@ function DDFileAreaChooser_SelectFileArea_Traditional(pLevel, pLibIdx, pDirIdx)
 			else if ((selectedLibNum.toString() == "/") || (selectedLibNum.toString() == CTRL_F))
 			{
 				console.crlf();
-				var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+				var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
 				console.print(searchPromptText);
 				var searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
 				if (searchText.length > 0)
@@ -478,8 +481,8 @@ function DDFileAreaChooser_SelectDirWithinFileLib_Traditional(pLibIdx, pSelected
 	// an error and return.
 	if (file_area.lib_list[pLibIdx].dir_list.length == 0)
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no directories in this library.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no directories in this library.\r\n\x01p");
 		return retObj;
 	}
 
@@ -556,7 +559,7 @@ function DDFileAreaChooser_SelectDirWithinFileLib_Traditional(pLibIdx, pSelected
 	var continueOn = false;
 	do
 	{
-		console.clear("\1n");
+		console.clear("\x01n");
 		this.DisplayAreaChgHdr(1);
 		if (this.areaChangeHdrLines.length > 0)
 			console.crlf();
@@ -564,9 +567,9 @@ function DDFileAreaChooser_SelectDirWithinFileLib_Traditional(pLibIdx, pSelected
 		if ((numDirsListed > 0) && (typeof(pSelectedDirIdx) == "number") && (pSelectedDirIdx >= 0) && (pSelectedDirIdx < numDirsListed))
 			defaultDirNum = getDefaultDirNum(pSelectedDirIdx, this.useDirCollapsing, this.lib_list);
 		if (defaultDirNum >= 1)
-			console.print("\1n\1b\1hş \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + defaultDirNum + "\1n\1c]: \1h");
+			console.print("\x01n\x01b\x01hş \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + defaultDirNum + "\x01n\x01c]: \x01h");
 		else
-			console.print("\1n\1b\1hş \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c: \1h");
+			console.print("\x01n\x01b\x01hş \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h");
 		// Accept Q (quit), / or CTRL_F to search, or a file directory number
 		var selectedDirNum = console.getkeys("Q/" + CTRL_F, file_area.lib_list[pLibIdx].dir_list.length);
 
@@ -580,10 +583,10 @@ function DDFileAreaChooser_SelectDirWithinFileLib_Traditional(pLibIdx, pSelected
 		{
 			// Search
 			console.crlf();
-			var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
 			console.print(searchPromptText);
 			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.print("\1n");
+			console.print("\x01n");
 			console.crlf();
 			if (searchText.length > 0)
 				defaultDirNum = -1;
@@ -637,14 +640,14 @@ function DDFileAreaChooser_SelectSubdirWithinDir_Traditional(pLibIdx, pDirIdx)
 		return retObj;
 	if ((pDirIdx < 0) || (pDirIdx >= this.lib_list[pLibIdx].dir_list.length))
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no directories in this library.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no directories in this library.\r\n\x01p");
 		return retObj;
 	}
 	if (this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length == 0)
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no subdirectories in this directory.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no subdirectories in this directory.\r\n\x01p");
 		return retObj;
 	}
 
@@ -670,15 +673,15 @@ function DDFileAreaChooser_SelectSubdirWithinDir_Traditional(pLibIdx, pDirIdx)
 	var continueOn = false;
 	do
 	{
-		console.clear("\1n");
+		console.clear("\x01n");
 		this.DisplayAreaChgHdr(1);
 		if (this.areaChangeHdrLines.length > 0)
 			console.crlf();
 		numDirsListed = this.ListSubdirsInFileDir_Traditional(pLibIdx, pDirIdx, searchText);
 		if (defaultSubdirNum >= 1)
-			console.print("\1n\1b\1hş \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + defaultSubdirNum + "\1n\1c]: \1h");
+			console.print("\x01n\x01b\x01hş \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + defaultSubdirNum + "\x01n\x01c]: \x01h");
 		else
-			console.print("\1n\1b\1hş \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c: \1h");
+			console.print("\x01n\x01b\x01hş \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h");
 		// Accept Q (quit), / or CTRL_F to search, or a file directory number
 		var selectedSubdirNum = console.getkeys("Q/" + CTRL_F, this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length);
 
@@ -692,10 +695,10 @@ function DDFileAreaChooser_SelectSubdirWithinDir_Traditional(pLibIdx, pDirIdx)
 		{
 			// Search
 			console.crlf();
-			var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
 			console.print(searchPromptText);
 			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.print("\1n");
+			console.print("\x01n");
 			console.crlf();
 			if (searchText.length > 0)
 				defaultSubdirNum = -1;
@@ -760,7 +763,7 @@ function DDFileAreaChooser_ListFileLibs_Traditional(pSearchText)
 	// Print the list header
 	printf(this.fileLibListHdrPrintfStr, "Lib #", "Description", "# Dirs");
 	console.crlf();
-	console.print("\1n");
+	console.print("\x01n");
 	// Print the information for each file library
 	var numDirsListed = 0;
 	var printIt = true;
@@ -823,12 +826,12 @@ function DDFileAreaChooser_ListDirsInFileLib_Traditional(pLibIndex, pMarkIndex, 
 	this.BuildFileDirPrintfInfoForLib(libIndex);
 
 	// Print the header lines
-	console.print(this.colors.fileAreaHdr + "Directories of \1h" +
+	console.print(this.colors.fileAreaHdr + "Directories of \x01h" +
 	              file_area.lib_list[libIndex].description);
 	console.crlf();
 	printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Items");
 	console.crlf();
-	console.print("\1n");
+	console.print("\x01n");
 	var numDirsListed = 0;
 	var printIt = true;
 	var lib_list = (this.useDirCollapsing ? this.lib_list : file_area.lib_list);
@@ -903,12 +906,12 @@ function DDFileAreaChooser_ListSubdirsInFileDir_Traditional(pLibIndex, pDirIndex
 	this.BuildFileDirPrintfInfoForLib(libIndex);
 
 	// Print the header lines
-	console.print(this.colors.fileAreaHdr + "Directories of \1h" +
+	console.print(this.colors.fileAreaHdr + "Directories of \x01h" +
 	              file_area.lib_list[libIndex].description);
 	console.crlf();
 	printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Items");
 	console.crlf();
-	console.print("\1n");
+	console.print("\x01n");
 	var numDirsListed = 0;
 	var printIt = true;
 	for (var i = 0; i < this.lib_list[libIndex].dir_list[pDirIndex].subdir_list.length; ++i)
@@ -954,7 +957,7 @@ function DDFileAreaChooser_WriteLibListTopHdrLine(pNumPages, pPageNum)
 	else if ((typeof(pPageNum) != "number") && (typeof(pNumPages) == "number"))
 		descStr += "    (" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
 	printf(this.fileLibListHdrPrintfStr, "Lib #", descStr, "# Dirs");
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 }
 
 // For the DDFileAreaChooser class: Outputs the first header line to appear
@@ -972,7 +975,7 @@ function DDFileAreaChooser_WriteLibListTopHdrLine(pNumPages, pPageNum)
 function DDFileAreaChooser_WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPageNum)
 {
 	var descLen = 40;
-	var descFormatStr = this.colors.fileAreaHdr + "Directories of \1h%-" + descLen + "s     \1n"
+	var descFormatStr = this.colors.fileAreaHdr + "Directories of \x01h%-" + descLen + "s     \x01n"
 	                  + this.colors.fileAreaHdr;
 	if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
 		descFormatStr += "(Page " + pPageNum + " of " + pNumPages + ")";
@@ -996,7 +999,7 @@ function DDFileAreaChooser_WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPa
 	else
 		desc = file_area.lib_list[pLibIdx].description;
 	printf(descFormatStr, desc.substr(0, descLen));
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 }
 
 // Lightbar functions
@@ -1013,16 +1016,17 @@ function DDFileAreaChooser_WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPa
 //  pLibIdx: Optional - The file library index, if choosing a file directory
 //  pDirIdx: Optional - The file directory index (within a library), for use with
 //           directory name collapsing
-function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
+//  pCalledFromSelf: Optional boolean: Whether or not this function was called from itself. Defaults to false.
+function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCalledFromSelf)
 {
-	if (pLevel > 1 && typeof(pLibIdx) !== "number")
+	if (pLevel > 1 && (pLibIdx == null || typeof(pLibIdx) !== "number"))
 		pLibIdx = this.GetActualLibIdx();
 	// If there are file libraries, then don't let the user
 	// choose one.
 	if (file_area.lib_list.length == 0)
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no file libraries.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no file libraries.\r\n\x01p");
 		return;
 	}
 	var level = (typeof(pLevel) == "number" ? pLevel : 1);
@@ -1036,16 +1040,23 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 			return;
 		if (file_area.lib_list[pLibIdx].dir_list.length == 0)
 		{
-			console.clear("\1n");
-			console.print("\1y\1hThere are no directories in " + file_area.lib_list[pLibIdx].description + ".\r\n\1p");
+			console.clear("\x01n");
+			console.print("\x01y\x01hThere are no directories in " + file_area.lib_list[pLibIdx].description + ".\r\n\x01p");
 			return;
 		}
 	}
 
+	var calledFromSelf = (typeof(pCalledFromSelf) === "boolean" ? pCalledFromSelf : false);
+
+	// Ensure that the file directory printf information is created for
+	// this file library.
+	if (pLevel > 1)
+		this.BuildFileDirPrintfInfoForLib(pLibIdx);
+
 	// Displays the header & header lines above the list
 	function displayListHdrLines(pLevel, pAreaChooser, pLibIdx, pDirIdx, pNumPages, pPageNum)
 	{
-		console.clear("\1n");
+		console.clear("\x01n");
 		pAreaChooser.DisplayAreaChgHdr(1);
 		console.gotoxy(1, pAreaChooser.areaChangeHdrLines.length+1);
 		if (pLevel == 1)
@@ -1072,7 +1083,6 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 	this.WriteKeyHelpLine();
 
 	// Create the menu and do the uesr input loop
-	// TODO: The library menu isn't showing any items
 	var fileAreaMenu;
 	switch (level)
 	{
@@ -1107,7 +1117,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 		else if ((lastUserInputUpper == "/") || (lastUserInputUpper == CTRL_F)) // Start of find
 		{
 			console.gotoxy(1, console.screen_rows);
-			console.cleartoeol("\1n");
+			console.cleartoeol("\x01n");
 			console.gotoxy(1, console.screen_rows);
 			var promptText = "Search: ";
 			console.print(promptText);
@@ -1306,8 +1316,8 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 			// Move the cursor to the bottom of the screen and
 			// prompt the user for the message number.
 			console.gotoxy(1, console.screen_rows);
-			console.clearline("\1n");
-			console.print("\1cChoose group #: \1h");
+			console.clearline("\x01n");
+			console.print("\x01cChoose group #: \x01h");
 			var userInput = console.getnum(msg_area.grp_list.length);
 			if (userInput > 0)
 				chosenIdx = userInput - 1;
@@ -1331,7 +1341,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 				// Show a "Loading..." text in case there are many directories in
 				// the chosen file library
 				console.crlf();
-				console.print("\1nLoading...");
+				console.print("\x01nLoading...");
 				console.line_counter = 0; // To prevent a pause before the message list comes up
 				// Ensure that the file dir printf information is created for
 				// the chosen file library.
@@ -1340,7 +1350,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 				// changes at the 3rd level (if directory collapsing is
 				// enabled)
 				var dirCodeBackup = bbs.curdir_code;
-				var chosenFileDirIdx = this.SelectFileArea_Lightbar(level+1, chosenIdx);
+				var chosenFileDirIdx = this.SelectFileArea_Lightbar(level+1, chosenIdx, null, true);
 				if (chosenFileDirIdx > -1)
 				{
 					// Set the current file directory
@@ -1378,7 +1388,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 					if ((typeof(this.lib_list[pLibIdx].dir_list[chosenIdx]) !== "undefined") && (this.lib_list[pLibIdx].dir_list[chosenIdx].subdir_list.length > 0))
 					{
 						//SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
-						var chosenSubdirIdx = this.SelectFileArea_Lightbar(level+1, pLibIdx, chosenIdx);
+						var chosenSubdirIdx = this.SelectFileArea_Lightbar(level+1, pLibIdx, chosenIdx, true);
 						if (chosenSubdirIdx > -1)
 						{
 							// Set the current file directory
@@ -1396,10 +1406,23 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
 						}
 					}
 					else // No subdirectories - Return the chosen index
+					{
+						// If this function wasn't called from itself (i.e., letting the user choose a file directory
+						// directly within their chosen library), then set the user's directory here
+						if (!calledFromSelf)
+							bbs.curdir_code = this.lib_list[pLibIdx].dir_list[chosenIdx].code;
 						return chosenIdx;
+					}
 				}
 				else
+				{
+					// Not using directory name collapsing
+					// If this function wasn't called from itself (i.e., letting the user choose a file directory
+					// directly within their chosen library), then set the user's directory here
+					if (!calledFromSelf)
+						bbs.curdir_code = file_area.lib_list[pLibIdx].dir_list[chosenIdx].code;
 					return chosenIdx; // Return the chosen file directory index
+				}
 			}
 			else if (level == 3)
 				return chosenIdx; // Return the chosen subdirectory index
@@ -1756,15 +1779,15 @@ function DDFileAreaChooser_ReadConfigFile()
 function DDFileAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 {
 	if (pClearScreen)
-		console.clear("\1n");
+		console.clear("\x01n");
 	else
-		console.print("\1n");
-	console.center("\1c\1hDigital Distortion File Area Chooser");
-	console.center("\1kÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
-	console.center("\1n\1cVersion \1g" + DD_FILE_AREA_CHOOSER_VERSION +
-	               " \1w\1h(\1b" + DD_FILE_AREA_CHOOSER_VER_DATE + "\1w)");
+		console.print("\x01n");
+	console.center("\x01c\x01hDigital Distortion File Area Chooser");
+	console.center("\x01kÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+	console.center("\x01n\x01cVersion \x01g" + DD_FILE_AREA_CHOOSER_VERSION +
+	               " \x01w\x01h(\x01b" + DD_FILE_AREA_CHOOSER_VER_DATE + "\x01w)");
 	console.crlf();
-	console.print("\1n\1cFirst, a listing of file libraries is displayed.  One can be chosen by typing");
+	console.print("\x01n\x01cFirst, a listing of file libraries is displayed.  One can be chosen by typing");
 	console.crlf();
 	console.print("its number.  Then, a listing of directories within that library will be");
 	console.crlf();
@@ -1774,38 +1797,38 @@ function DDFileAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	if (pLightbar)
 	{
 		console.crlf();
-		console.print("\1n\1cThe lightbar interface also allows up & down navigation through the lists:");
+		console.print("\x01n\x01cThe lightbar interface also allows up & down navigation through the lists:");
 		console.crlf();
-		console.print("\1k\1hÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+		console.print("\x01k\x01hÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
 		console.crlf();
-		console.print("\1n\1c\1hUp arrow\1n\1c: Move the cursor up one line");
+		console.print("\x01n\x01c\x01hUp arrow\x01n\x01c: Move the cursor up one line");
 		console.crlf();
-		console.print("\1hDown arrow\1n\1c: Move the cursor down one line");
+		console.print("\x01hDown arrow\x01n\x01c: Move the cursor down one line");
 		console.crlf();
-		console.print("\1hENTER\1n\1c: Select the current library/dir");
+		console.print("\x01hENTER\x01n\x01c: Select the current library/dir");
 		console.crlf();
-		console.print("\1hHOME\1n\1c: Go to the first item on the screen");
+		console.print("\x01hHOME\x01n\x01c: Go to the first item on the screen");
 		console.crlf();
-		console.print("\1hEND\1n\1c: Go to the last item on the screen");
+		console.print("\x01hEND\x01n\x01c: Go to the last item on the screen");
 		console.crlf();
-		console.print("\1hPageUp\1n\1c/\1hPageDown\1n\1c: Go to the previous/next page");
+		console.print("\x01hPageUp\x01n\x01c/\x01hPageDown\x01n\x01c: Go to the previous/next page");
 		console.crlf();
-		console.print("\1hF\1n\1c/\1hL\1n\1c: Go to the first/last page");
+		console.print("\x01hF\x01n\x01c/\x01hL\x01n\x01c: Go to the first/last page");
 		console.crlf();
-		console.print("\1h/\1n\1c or \1hCTRL-F\1n\1c: Find by name/description");
+		console.print("\x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c: Find by name/description");
 		console.crlf();
-		console.print("\1hN\1n\1c: Next search result (after a find)");
+		console.print("\x01hN\x01n\x01c: Next search result (after a find)");
 		console.crlf();
 	}
 
 	console.crlf();
 	console.print("Additional keyboard commands:");
 	console.crlf();
-	console.print("\1k\1hÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+	console.print("\x01k\x01hÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
 	console.crlf();
-	console.print("\1n\1c\1h?\1n\1c: Show this help screen");
+	console.print("\x01n\x01c\x01h?\x01n\x01c: Show this help screen");
 	console.crlf();
-	console.print("\1hQ\1n\1c: Quit");
+	console.print("\x01hQ\x01n\x01c: Quit");
 	console.crlf();
 }
 
@@ -1912,12 +1935,12 @@ function DDFileAreaChooser_buildFileDirPrintfInfoForLib(pLibIndex)
 		                        + "s " + this.colors.numItems + "%"
 		                        + this.fileDirListPrintfInfo[pLibIndex].numFilesLen + "d";
 		                        this.fileDirListPrintfInfo[pLibIndex].highlightPrintfStr =
-		                        "\1n" + this.colors.bkgHighlight
+		                        "\x01n" + this.colors.bkgHighlight
 		                        + this.colors.areaNumHighlight + " %" + this.areaNumLen
 		                        + "d " + this.colors.descHighlight + "%-"
 		                        + this.fileDirListPrintfInfo[pLibIndex].descFieldLen
 		                        + "s " + this.colors.numItemsHighlight + "%"
-		                        + this.fileDirListPrintfInfo[pLibIndex].numFilesLen +"d\1n";
+		                        + this.fileDirListPrintfInfo[pLibIndex].numFilesLen +"d\x01n";
 	}
 }
 
@@ -1947,7 +1970,7 @@ function DDFileAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 		var clearRowsFirst = (typeof(pClearRowsFirst) == "boolean" ? pClearRowsFirst : true);
 		if (clearRowsFirst)
 		{
-			console.print("\1n");
+			console.print("\x01n");
 			for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
 			{
 				console.gotoxy(screenX, screenY++);
@@ -1962,7 +1985,7 @@ function DDFileAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 			console.gotoxy(screenX, screenY++);
 			console.print(this.areaChangeHdrLines[hdrFileIdx]);
 			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
-			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+			//console.cleartoeol("\x01n"); // Shouldn't do this, as it resets color attributes
 		}
 	}
 	else
@@ -1973,7 +1996,7 @@ function DDFileAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 		{
 			console.print(this.areaChangeHdrLines[hdrFileIdx]);
 			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
-			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+			//console.cleartoeol("\x01n"); // Shouldn't do this, as it resets color attributes
 			console.crlf();
 		}
 	}
@@ -1988,9 +2011,9 @@ function DDFileAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 function DDFileAreaChooser_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pRefreshHelpLine)
 {
 	console.gotoxy(1, console.screen_rows);
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 	console.gotoxy(1, console.screen_rows);
-	console.print("\1y\1h" + pErrorMsg + "\1n");
+	console.print("\x01y\x01h" + pErrorMsg + "\x01n");
 	mswait(ERROR_WAIT_MS);
 	if (pRefreshHelpLine)
 		this.WriteKeyHelpLine();
@@ -2150,35 +2173,7 @@ function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
 			this.lib_list.push(libObj);
 		}
 	}
-
-	//dumpLibListToFile(this.lib_list, "D:\\BBS\\Files\\fileAreaChooser_debug.txt"); // Temporary
 }
-// Temporary
-function dumpLibListToFile(pLibList, pFilename)
-{
-	var outFile = new File(pFilename);
-	if (outFile.open("a"))
-	{
-		outFile.writeln("File libraries:");
-		for (var libIdx = 0; libIdx < pLibList.length; ++libIdx)
-		{
-			outFile.writeln(libIdx + ":" + pLibList[libIdx].description + ": - # dirs: " + pLibList[libIdx].dir_list.length);
-			for (var dirIdx = 0; dirIdx < pLibList[libIdx].dir_list.length; ++dirIdx)
-			{
-				//outFile.writeln(" " + dirIdx + ": " + typeof(pLibList[libIdx].dir_list[dirIdx]));
-				outFile.writeln(" " + dirIdx + ":" + pLibList[libIdx].dir_list[dirIdx].description + ": - # subdirs: " + pLibList[libIdx].dir_list[dirIdx].subdir_list.length);
-				for (var subdirIdx = 0; subdirIdx < pLibList[libIdx].dir_list[dirIdx].subdir_list.length; ++subdirIdx)
-				{
-					outFile.writeln("  " + subdirIdx + ":" + pLibList[libIdx].dir_list[dirIdx].subdir_list[subdirIdx].description + ":, :" + pLibList[libIdx].dir_list[dirIdx].subdir_list[subdirIdx].code + ":");
-				}
-			}
-		}
-		outFile.writeln("");
-
-		outFile.close();
-	}
-}
-// End Temporary
 
 // Removes multiple, leading, and/or trailing spaces
 // The search & replace regular expressions used in this
@@ -2311,9 +2306,9 @@ function DDFileAreaChooser_GetGreatestNumFiles(pLibIndex)
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
-// string "\1PgUp" (KEY_PAGE_UP) or "\1Pgdn" (KEY_PAGE_DOWN),
-// respectively.  Also, F1-F5 will be returned as "\1F1"
-// through "\1F5", respectively.
+// string "\x01PgUp" (KEY_PAGE_UP) or "\x01Pgdn" (KEY_PAGE_DOWN),
+// respectively.  Also, F1-F5 will be returned as "\x01F1"
+// through "\x01F5", respectively.
 // Thanks goes to Psi-Jack for the original impementation
 // of this function.
 //
@@ -2344,19 +2339,19 @@ function getKeyWithESCChars(pGetKeyMode)
          case 'O':
            switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
               case 'P':
-                 userInput = "\1F1";
+                 userInput = "\x01F1";
                  break;
               case 'Q':
-                 userInput = "\1F2";
+                 userInput = "\x01F2";
                  break;
               case 'R':
-                 userInput = "\1F3";
+                 userInput = "\x01F3";
                  break;
               case 'S':
-                 userInput = "\1F4";
+                 userInput = "\x01F4";
                  break;
               case 't':
-                 userInput = "\1F5";
+                 userInput = "\x01F5";
                  break;
            }
          default:
@@ -2518,7 +2513,7 @@ function getStrWithTimeout(pMode, pMaxLength, pTimeout)
 	if (((mode & K_LINE) == K_LINE) && (maxWidth > 0) && console.term_supports(USER_ANSI))
 	{
 		var curPos = console.getxy();
-		printf("\1n\1w\1h\1" + "4%" + maxWidth + "s", "");
+		printf("\x01n\x01w\x01h\x01" + "4%" + maxWidth + "s", "");
 		console.gotoxy(curPos);
 		setNormalAttrAtEnd = true;
 	}
@@ -2556,7 +2551,7 @@ function getStrWithTimeout(pMode, pMaxLength, pTimeout)
 	} while(userKey.length > 0);
 
 	if (setNormalAttrAtEnd)
-		console.print("\1n");
+		console.print("\x01n");
 
 	return inputStr;
 }
