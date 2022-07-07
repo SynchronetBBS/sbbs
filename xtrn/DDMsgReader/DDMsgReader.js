@@ -37,13 +37,15 @@
  * 2022-06-13 Eric Oulashin     Version 1.50
  *                              When doing a text search, it now ignores the user scan configuration for
  *                              sub-boards, to ensure it will show any results of the text search.
- * 2020-07-05 Eric Oulashin     Version 1.51
+ * 2022-07-05 Eric Oulashin     Version 1.51
  *                              Graphic is now only used when using the scrollable interface. Also,
  *                              when creating the Graphic, now subtracting 1 from the reading area height
  *                              to avoid making the Graphic one line too tall to avoid unnecessary scrolling.
  *                              When saving messages with ANSI codes, Graphic is only used if the message has
  *                              any ASCII drawing characters. (not sure if this really matters much though).
  *                              Also, applied "use strict" and made some changes as necessary.
+ * 2022-07-06 Eric Oulashin     Version 1.52 Beta
+ *                              Started working on mouse click support (mouse  mods thanks to Nelgin)
  */
 
 "use strict";
@@ -149,8 +151,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.51";
-var READER_DATE = "2022-07-05";
+var READER_VERSION = "1.52 Beta";
+var READER_DATE = "2022-07-06";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -3400,7 +3402,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 	function DisplayHelpLine(pHelpLineText)
 	{
 		console.gotoxy(1, console.screen_rows);
-		console.print(pHelpLineText);
+		//console.print(pHelpLineText);
+		console.putmsg(pHelpLineText); // console.putmsg() can process @-codes, which we use for mouse click tracking
 		console.cleartoeol("\x01n");
 	}
 
@@ -4591,6 +4594,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		refreshEnhancedRdrHelpLine: false
 	};
 
+	// We could word-wrap the message to ensure words aren't split across lines, but
+	// doing so could make some messages look bad (i.e., messages with drawing characters),
+	// and word_wrap also might not handle ANSI or other color/attribute codes..
+	//if (!textHasDrawingChars(messageText))
+	//	messageText = word_wrap(messageText, this.msgAreaWidth);
+
 	// If the message has ANSI content, then use a Graphic object to help make
 	// the message look good.  Also, remove any ANSI clear screen codes from the
 	// message text.
@@ -4598,7 +4607,6 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	if (msgHasANSICodes)
 	{
 		messageText = messageText.replace(/\u001b\[[012]J/gi, "");
-		//textHasDrawingChars(messageText)
 		var graphic = new Graphic(this.msgAreaWidth, this.msgAreaHeight-1);
 		graphic.auto_extend = true;
 		graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
@@ -5661,6 +5669,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 		refreshEnhancedRdrHelpLine: false
 	};
 
+	// We could word-wrap the message to ensure words aren't split across lines, but
+	// doing so could make some messages look bad (i.e., messages with drawing characters),
+	// and word_wrap also might not handle ANSI or other color/attribute codes..
+	//if (!textHasDrawingChars(messageText))
+	//	messageText = word_wrap(messageText, this.msgAreaWidth);
+
 	var msgHasAttachments = msgHdrHasAttachmentFlag(msgHeader);
 
 	// Only interpret @-codes if the user is reading personal email.  There
@@ -6576,10 +6590,12 @@ function DigDistMsgReader_LookForNextOrPriorNonDeletedMsg(pOffset)
 //                      Defaults to true.
 function DigDistMsgReader_DisplayEnhancedMsgReadHelpLine(pScreenRow, pDisplayChgAreaOpt)
 {
-   var displayChgAreaOpt = (typeof(pDisplayChgAreaOpt) == "boolean" ? pDisplayChgAreaOpt : true);
-   // Move the cursor to the desired location on the screen and display the help line
-   console.gotoxy(1, typeof(pScreenRow) == "number" ? pScreenRow : console.screen_rows);
-   console.print(displayChgAreaOpt ? this.enhReadHelpLine : this.enhReadHelpLineWithoutChgArea);
+	var displayChgAreaOpt = (typeof(pDisplayChgAreaOpt) == "boolean" ? pDisplayChgAreaOpt : true);
+	// Move the cursor to the desired location on the screen and display the help line
+	console.gotoxy(1, typeof(pScreenRow) == "number" ? pScreenRow : console.screen_rows);
+	//console.print(displayChgAreaOpt ? this.enhReadHelpLine : this.enhReadHelpLineWithoutChgArea);
+	// console.putmsg() handles @-codes, which we use for mouse click tracking
+	console.putmsg(displayChgAreaOpt ? this.enhReadHelpLine : this.enhReadHelpLineWithoutChgArea);
 }
 
 // For the DigDistMsgReader class: Goes back to the prior readable sub-board
@@ -7405,49 +7421,53 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 	                                + "?" + this.colors["tradInterfaceContPromptMainColor"] + ": "
 	                                + this.colors["tradInterfaceContPromptUserInputColor"];
 
-	// Set the lightbar help text for message listing
-	this.msgListLightbarModeHelpLine = this.colors.lightbarMsgListHelpLineHotkeyColor + UP_ARROW
+	// Set the lightbar help text for message listing.  The @-codes are for mouse click tracking.
+	this.msgListLightbarModeHelpLine = this.colors.lightbarMsgListHelpLineHotkeyColor + '@CLEAR_HOT@@`' + UP_ARROW + '`\x1e@'
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + DOWN_ARROW
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`' + DOWN_ARROW + '`\x0a@'
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "PgUp"
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`PgUp`\x1b[V@'
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "/"
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "Dn"
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`Dn`\x0e@'
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "ENTER"
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`ENTER`\x0d@'
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "HOME"
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`HOME`\x02@'
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "END";
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`END`\x05@';
+	var lbHelpLineLen = 31;
 	// If the user can delete messages, then append DEL as a valid key.
 	if (this.CanDelete() || this.CanDeleteLastMsg())
 	{
 		this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-		                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "DEL";
+		                           + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`DEL`\x7f@';
+		lbHelpLineLen += 5;
 	}
 	this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineGeneralColor
 	                                 + ", " + this.colors.lightbarMsgListHelpLineHotkeyColor
 	                                 + "#" + this.colors.lightbarMsgListHelpLineGeneralColor + ", ";
+	lbHelpLineLen += 5;
 	// If the user can edit messages, then append E as a valid key.
 	if (this.CanEdit())
 	{
 		this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineHotkeyColor
-		                           + "E" + this.colors.lightbarMsgListHelpLineParenColor
+		                           + "@`E`E@" + this.colors.lightbarMsgListHelpLineParenColor
 								   + ")" + this.colors.lightbarMsgListHelpLineGeneralColor
 								   + "dit, ";
+		lbHelpLineLen += 7;
 	}
-	this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineHotkeyColor + "G"
+	this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineHotkeyColor + "@`G`G@"
 							   + this.colors.lightbarMsgListHelpLineParenColor + ")"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "o, "
-	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "Q"
+	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`Q`Q@"
 							   + this.colors.lightbarMsgListHelpLineParenColor + ")"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "uit, "
 	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "?  ";
-
+	lbHelpLineLen += 15;
 
 	// Add spaces to the end of sLightbarModeHelpLine up until one char
 	// less than the width of the screen.
-	var lbHelpLineLen = console.strlen(this.msgListLightbarModeHelpLine);
+	//var lbHelpLineLen = console.strlen(this.msgListLightbarModeHelpLine);
 	var numChars = console.screen_columns - lbHelpLineLen - 1;
 	if (numChars > 0)
 	{
@@ -12961,7 +12981,7 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename)
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
-		msgBody = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
+		var msgBody = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
 		msgbase.close();
 
 		var messageSaveFile = new File(pFilename);
