@@ -834,11 +834,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if(retval==STILL_ACTIVE) {
 			lprintf(LOG_INFO,"Terminating process from line %d", __LINE__);
-			TerminateProcess(process_info.hProcess, GetLastError());
+			processTerminated=TerminateProcess(process_info.hProcess, GetLastError());
 		}
 
 	 	// Get return value
-		if(!native) {
+		if(!native && !processTerminated) {
     		SAFEPRINTF(path, "%sDOSXTRN.RET", cfg.node_dir);
 			FILE* fp=fopen(path,"r");
 			if(fp == NULL) {
