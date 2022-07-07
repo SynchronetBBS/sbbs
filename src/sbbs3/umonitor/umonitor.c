@@ -895,6 +895,10 @@ int main(int argc, char** argv)  {
 	boxch.bl=(char)200;
 	boxch.br=(char)188;
 	for(i=1;i<argc;i++) {
+		if(strcmp(argv[i], "-insert") == 0) {
+			uifc.insert_mode = TRUE;
+			continue;
+		}
 		if(argv[i][0]=='-')
 			switch(toupper(argv[i][1])) {
 				case 'C':

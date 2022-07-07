@@ -1489,6 +1489,10 @@ int main(int argc, char **argv)
 		text_mode=_ORIGMODE;
 
 	for(i=1;i<argc;i++) {
+		if(strcmp(argv[i], "-insert") == 0) {
+			uifc.insert_mode = TRUE;
+			continue;
+		}
         if(argv[i][0]=='-'
 #ifndef __unix__
             || argv[i][0]=='/'
