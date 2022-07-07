@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.28     2022-07-06   File area chooser: Lightbar mode fix for not actually
+                      moving to the user's selected directory when directly
+                      choosing a directory in their library
 1.27     2022-07-03   File area chooser fix: When listing libraries without
                       first listing directories within the user's current
                       library, it wouldn't display the libraries the first
