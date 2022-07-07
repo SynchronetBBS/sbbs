@@ -245,7 +245,7 @@ char* c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only)
 		if((!ctrl_only || (uchar)*s < ' ') && (e=c_escape_char(*s))!=NULL) {
 			strncpy(d,e,maxlen-(d-dst));
 			d+=strlen(d);
-		} else if((uchar)*s < ' ') {
+		} else if((uchar)*s < ' ' || (uchar)*s >= '\x7f') {
 			d += safe_snprintf(d, maxlen-(d-dst), "\\x%02X", *s);
 		} else *d++=*s;
 	}
