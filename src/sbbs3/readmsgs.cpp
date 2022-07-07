@@ -968,7 +968,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				}
 				memcpy(ranked, post, sizeof(post_t)*smb.msgs);
 				qsort(ranked, smb.msgs, sizeof(post_t), rank_post);
-				listmsgs(subnum, 0, ranked, 0, 20);
+				listmsgs(subnum, 0, ranked, 0, 20, /* reading: */false);
 				free(ranked);
 				break;
 			}
