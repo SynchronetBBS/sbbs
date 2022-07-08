@@ -4483,16 +4483,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		refreshEnhancedRdrHelpLine: false
 	};
 	
-	// This is a scrollbar update function for use when viewing the header info/kludge lines.
-	function msgInfoScrollbarUpdateFn(pFractionToLastPage)
-	{
-		var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
-		if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
-			msgReaderObj.UpdateEnhancedReaderScollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
-		lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
-		console.gotoxy(1, console.screen_rows);
-	}
-
 	// Get the message header.  Don't expand fields since we may need to save
 	// the header later with the MSG_READ attribute.
 	//var msgHeader = this.GetMsgHdrByIdx(pOffset, false);
@@ -4594,6 +4584,28 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		refreshEnhancedRdrHelpLine: false
 	};
 
+	// This is a scrollbar update function for use when viewing the message.
+	function msgScrollbarUpdateFn(pFractionToLastPage)
+	{
+		// Update the scrollbar position for the message, depending on the
+		// value of pFractionToLastMessage.
+		fractionToLastPage = pFractionToLastPage;
+		solidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidScrollBlocks * pFractionToLastPage);
+		if (solidBlockStartRow != solidBlockLastStartRow)
+			msgReaderObj.UpdateEnhancedReaderScollbar(solidBlockStartRow, solidBlockLastStartRow, numSolidScrollBlocks);
+		solidBlockLastStartRow = solidBlockStartRow;
+		console.gotoxy(1, console.screen_rows);
+	}
+	// This is a scrollbar update function for use when viewing the header info/kludge lines.
+	function msgInfoScrollbarUpdateFn(pFractionToLastPage)
+	{
+		var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
+		if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
+			msgReaderObj.UpdateEnhancedReaderScollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
+		lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
+		console.gotoxy(1, console.screen_rows);
+	}
+
 	// We could word-wrap the message to ensure words aren't split across lines, but
 	// doing so could make some messages look bad (i.e., messages with drawing characters),
 	// and word_wrap also might not handle ANSI or other color/attribute codes..
@@ -4645,17 +4657,6 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	// with scrollTextLines().
 	var msgAreaHeight = this.msgAreaBottom - this.msgAreaTop + 1;
 	var msgReaderObj = this;
-	function msgScrollbarUpdateFn(pFractionToLastPage)
-	{
-		// Update the scrollbar position for the message, depending on the
-		// value of pFractionToLastMessage.
-		fractionToLastPage = pFractionToLastPage;
-		solidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidScrollBlocks * pFractionToLastPage);
-		if (solidBlockStartRow != solidBlockLastStartRow)
-			msgReaderObj.UpdateEnhancedReaderScollbar(solidBlockStartRow, solidBlockLastStartRow, numSolidScrollBlocks);
-		solidBlockLastStartRow = solidBlockStartRow;
-		console.gotoxy(1, console.screen_rows);
-	}
 
 	var msgHasAttachments = msgHdrHasAttachmentFlag(msgHeader);
 	// User input loop
@@ -13851,7 +13852,7 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	// message header
 	if (!retObj.userQuit && (retObj.errorMsg.length == 0))
 	{
-		console.print("\x01n  Submitting.."); // TODO: Does this look good?
+		console.print("\x01n  Submitting..");
 		retObj.savedVote = msgbase.vote_msg(voteMsgHdr);
 		// If the save was successful, then update
 		// this.hdrsForCurrentSubBoard with the updated
@@ -13867,7 +13868,13 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 					if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
 					{
 						this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
-						retObj.updatedHdr = pMsgHdr;
+						// Originally, this script assigned retObj.updatedHdr as follows:
+						//retObj.updatedHdr = pMsgHdr;
+						// However, after an update, there were a couple errors that total_votes and upvotes
+						// were read-only, so it wuldn't assign to them, so now we copy pMsgHdr this way:
+						retObj.updatedHdr = {};
+						for (var prop in pMsgHdr)
+							retObj.updatedHdr[prop] = pMsgHdr[prop];
 						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("total_votes"))
 							retObj.updatedHdr.total_votes = this.hdrsForCurrentSubBoard[originalMsgIdx].total_votes;
 						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("upvotes"))
@@ -17225,7 +17232,7 @@ function deleteVoteMsgs(pMsgbase, pMsgNum, pMsgID, pIsEmailSub)
 			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgID))
 			{
 				++retObj.numVoteMsgs;
-				msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
+				var msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
 				retObj.allVoteMsgsDeleted = (retObj.allVoteMsgsDeleted && msgWasDeleted);
 				if (msgWasDeleted)
 					++retObj.numVoteMsgsDeleted;
