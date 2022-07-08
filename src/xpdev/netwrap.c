@@ -151,19 +151,25 @@ struct in6_addr parseIPv6Address(const char* value)
 
 const char* IPv4AddressToStr(uint32_t addr, char* dest, size_t size)
 {
-	const char* result;
+#if defined _WIN32
+	int result;
+	WSADATA wsaData;
+	SOCKADDR_IN sockaddr = {0};
+	sockaddr.sin_family = AF_INET;
+	sockaddr.sin_addr.s_addr = htonl(addr);
+
+	if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+		return NULL;
+	result = getnameinfo((SOCKADDR*)&sockaddr, sizeof(sockaddr), dest, size, NULL, 0, NI_NUMERICHOST);
+	WSACleanup();
+	if(result != 0)
+		return NULL;
+	return dest;
+#else
 	struct in_addr in_addr;
 	in_addr.s_addr = htonl(addr);
-#if defined(__BORLANDC__) || defined(__MINGW32__)
-	result = inet_ntoa(in_addr); // deprecated function call
-	if(result == NULL)
-		return NULL;
-	strncpy(dest, result, size);
-	result = dest;
-#else
-	result = inet_ntop(AF_INET, &in_addr, dest, size);
+	return inet_ntop(AF_INET, &in_addr, dest, size);
 #endif
-	return result;
 }
 
 #if NETWRAP_TEST
@@ -180,6 +186,7 @@ int main(int argc, char** argv)
 
 	if(argc>1)
 		printf("%s\n", getHostNameByAddr(argv[1]));
+
 	return 0;
 }
 #endif
