@@ -1326,7 +1326,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// (but leave off the last character to avoid screen drawing issues)
 	var padLen = console.screen_columns - lbAreaChooserHelpLineLen - 1;
 	var leftPadLen = Math.floor(padLen/2);
-	var rightPadLen = padLen - leftPadLen - 2;
+	var rightPadLen = padLen - leftPadLen;
 	this.lightbarAreaChooserHelpLine = this.colors.lightbarAreaChooserHelpLineGeneralColor
 	                                 + format("%" + leftPadLen + "s", "")
 	                                 + this.lightbarAreaChooserHelpLine
