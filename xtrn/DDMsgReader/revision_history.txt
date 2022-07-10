@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.52     2022-07-09   Mouse click support for the bottom help lines in scrolling
+                      mode (thanks to help from Nelgin)
 1.51     2022-07-05   Graphic is now only used when using the scrollable
                       interface. Also, when creating the Graphic, now
                       subtracting 1 from the reading area height to avoid making
