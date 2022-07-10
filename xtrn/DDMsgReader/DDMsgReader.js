@@ -44,8 +44,9 @@
  *                              When saving messages with ANSI codes, Graphic is only used if the message has
  *                              any ASCII drawing characters. (not sure if this really matters much though).
  *                              Also, applied "use strict" and made some changes as necessary.
- * 2022-07-06 Eric Oulashin     Version 1.52 Beta
- *                              Started working on mouse click support (mouse  mods thanks to Nelgin)
+ * 2022-07-09 Eric Oulashin     Version 1.52
+ *                              Mouse click support for the bottom help lines in scrollable mode
+ *                              (thanks to help from Nelgin)
  */
 
 "use strict";
@@ -122,12 +123,12 @@
 //  - Enable searching in traditional interface
 //  - Update the keys in the lightbar help line and traditional interface
 
-// This script requires Synchronet version 3.17 or higher (for the require() function).
+// This script requires Synchronet version 3.18 or higher (for mouse hotspot support).
 // Exit if the Synchronet version is below the minimum.
-if (system.version_num < 31700)
+if (system.version_num < 31800)
 {
 	var message = "\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w Digital Distortion Message Reader "
-	             + "requires version \x01g3.15\x01w or\r\n"
+	             + "requires version \x01g3.18\x01w or\r\n"
 	             + "higher of Synchronet.  This BBS is using version \x01g" + system.version
 	             + "\x01w.  Please notify the sysop.";
 	console.crlf();
@@ -142,7 +143,6 @@ require("text.js", "Email"); // Text string definitions (referencing text.dat)
 require("utf8_cp437.js", "utf8_cp437");
 require("userdefs.js", "USER_UTF8");
 require("dd_lightbar_menu.js", "DDLightbarMenu");
-require("mouse_getkey.js", "mouse_getkey");
 require("html2asc.js", 'html2asc');
 require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 require("graphic.js", 'Graphic');
@@ -151,8 +151,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.52 Beta";
-var READER_DATE = "2022-07-06";
+var READER_VERSION = "1.52";
+var READER_DATE = "2022-07-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -260,6 +260,10 @@ var BLOCK1 = "\xB0"; // Dimmest block
 var BLOCK2 = "\xB1";
 var BLOCK3 = "\xB2";
 var BLOCK4 = "\xDB"; // Brightest block
+var MID_BLOCK = "\xDC";
+var TALL_UPPER_MID_BLOCK = "\xFE";
+var UPPER_CENTER_BLOCK = "\xDF";
+var LOWER_CENTER_BLOCK = "\xDC";
 
 
 const ERROR_PAUSE_WAIT_MS = 1500;
@@ -894,10 +898,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// extended read mode
 	this.numTabSpaces = 3;
 
-	// Things for mouse support
-	this.mouseTimeout = 0; // Timeout in ms.  Currently using 0 for no timeout.
-	this.mouseEnabled = false; // To pass to mouse_getkey
-
 	// this.text is an object containing text used for various prompts & functions.
 	this.text = {
 		scrollbarBGChar: BLOCK1,
@@ -1097,9 +1097,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Enhanced reader help line (will be set up in
 	// DigDistMsgReader_SetEnhancedReaderHelpLine())
 	this.enhReadHelpLine = "";
-	// This array will store object with x and y coordinates for mouse click locations
-	// for the enhanced reader help line, as well as a string describing the action.
-	this.enhReadHelpLineClickCoords = [];
 
 	// Read the enhanced message header file and populate this.enhMsgHeaderLines,
 	// the header text for enhanced reader mode.  The enhanced reader header file
@@ -1292,43 +1289,44 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.subBoardListHdrPrintfStr = this.colors.areaChooserMsgAreaHeaderColor + " %5s %-"
 	                              + +(this.subBoardNameLen-3) + "s %-7s %-19s";
 	// Lightbar area chooser help line text
+	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
 	this.lightbarAreaChooserHelpLine = "\x01n"
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + ""
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + ""
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "HOME"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "END"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`END`" + KEY_END + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
 	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "#"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "PgUp"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + "/"
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "Dn"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "F"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`F`F@"
 	                          + this.colors.lightbarAreaChooserHelpLineParenColor + ")"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + "irst pg, "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "L"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`L`L@"
 	                          + this.colors.lightbarAreaChooserHelpLineParenColor + ")"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + "ast pg, "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "CTRL-F"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`CTRL-F`" + CTRL_F + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "/"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`/`/@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "N"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`N`N@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "Q"
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`Q`Q@"
 	                          + this.colors.lightbarAreaChooserHelpLineParenColor + ")"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + "uit, "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "?";
+	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`?`?@";
+	var lbAreaChooserHelpLineLen = 72;
 	// Pad the lightbar key help text on either side to center it on the screen
 	// (but leave off the last character to avoid screen drawing issues)
-	var textLen = strip_ctrl(this.lightbarAreaChooserHelpLine).length;
-	var padLen = console.screen_columns - textLen - 1;
+	var padLen = console.screen_columns - lbAreaChooserHelpLineLen - 1;
 	var leftPadLen = Math.floor(padLen/2);
-	var rightPadLen = padLen - leftPadLen - 2;
+	var rightPadLen = padLen - leftPadLen;
 	this.lightbarAreaChooserHelpLine = this.colors.lightbarAreaChooserHelpLineGeneralColor
 	                                 + format("%" + leftPadLen + "s", "")
 	                                 + this.lightbarAreaChooserHelpLine
@@ -3402,6 +3400,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 	function DisplayHelpLine(pHelpLineText)
 	{
 		console.gotoxy(1, console.screen_rows);
+		// Mouse: console.print replaced with console.putmsg for mouse click hotspots
 		//console.print(pHelpLineText);
 		console.putmsg(pHelpLineText); // console.putmsg() can process @-codes, which we use for mouse click tracking
 		console.cleartoeol("\x01n");
@@ -4676,15 +4675,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 									   this.colors.msgBodyColor, writeMessage,
 									   this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
 									   msgAreaHeight, 1, console.screen_rows,
-									   msgScrollbarUpdateFn, scrollbarInfoObj,
-									   this.enhReadHelpLineClickCoords);
-		if (scrollRetObj.mouse != null)
-		{
-			// See if there was a click in one of the reader help line click coordinates
-			var clickCoordRetObj = this.ScrollReaderDetermineClickCoordAction(scrollRetObj, this.enhReadHelpLineClickCoords);
-			if (clickCoordRetObj.actionStr.length > 0)
-				scrollRetObj.lastKeypress = clickCoordRetObj.actionStr; // A bit of a kludge
-		}
+									   msgScrollbarUpdateFn, scrollbarInfoObj);
 		topMsgLineIdx = scrollRetObj.topLineIdx;
 		retObj.lastKeypress = scrollRetObj.lastKeypress;
 		switch (retObj.lastKeypress)
@@ -6594,6 +6585,7 @@ function DigDistMsgReader_DisplayEnhancedMsgReadHelpLine(pScreenRow, pDisplayChg
 	var displayChgAreaOpt = (typeof(pDisplayChgAreaOpt) == "boolean" ? pDisplayChgAreaOpt : true);
 	// Move the cursor to the desired location on the screen and display the help line
 	console.gotoxy(1, typeof(pScreenRow) == "number" ? pScreenRow : console.screen_rows);
+	// TODO: Mouse: console.print replaced with console.putmsg for mouse click hotspots
 	//console.print(displayChgAreaOpt ? this.enhReadHelpLine : this.enhReadHelpLineWithoutChgArea);
 	// console.putmsg() handles @-codes, which we use for mouse click tracking
 	console.putmsg(displayChgAreaOpt ? this.enhReadHelpLine : this.enhReadHelpLineWithoutChgArea);
@@ -7304,16 +7296,7 @@ function DigDistMsgReader_DisplayMessageListNotesHelp()
 // appropriate keys to the prompt & help text.
 function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 {
-	/*
-	var helpLineHotkeyColor = "\x01r";
-	var helpLineNormalColor = "\x01b";
-	var helpLineParenColor = "\x01m";
-	*/
-	/*
-	this.colors.lightbarMsgListHelpLineGeneralColor
-	this.colors.lightbarMsgListHelpLineHotkeyColor
-	this.colors.lightbarMsgListHelpLineParenColor
-	*/
+
 
 	// Set the traditional UI pause prompt text.
 	// If the user can delete messages, then append D as a valid key.
@@ -7423,25 +7406,26 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 	                                + this.colors["tradInterfaceContPromptUserInputColor"];
 
 	// Set the lightbar help text for message listing.  The @-codes are for mouse click tracking.
-	this.msgListLightbarModeHelpLine = this.colors.lightbarMsgListHelpLineHotkeyColor + '@CLEAR_HOT@@`' + UP_ARROW + '`\x1e@'
+	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
+	this.msgListLightbarModeHelpLine = this.colors.lightbarMsgListHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`' + DOWN_ARROW + '`\x0a@'
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`PgUp`\x1b[V@'
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "/"
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`Dn`\x0e@'
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`ENTER`\x0d@'
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`ENTER`" + KEY_ENTER + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`HOME`\x02@'
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`END`\x05@';
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`END`" + KEY_END + "@";
 	var lbHelpLineLen = 31;
 	// If the user can delete messages, then append DEL as a valid key.
 	if (this.CanDelete() || this.CanDeleteLastMsg())
 	{
 		this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-		                           + this.colors.lightbarMsgListHelpLineHotkeyColor + '@`DEL`\x7f@';
+		                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`DEL`" + KEY_DEL + "@";
 		lbHelpLineLen += 5;
 	}
 	this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineGeneralColor
@@ -7490,42 +7474,44 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 // reader mode
 function DigDistMsgReader_SetEnhancedReaderHelpLine()
 {
-	this.enhReadHelpLine = this.colors.enhReaderHelpLineHotkeyColor + UP_ARROW
+	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
+	this.enhReadHelpLine = this.colors.enhReaderHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + DOWN_ARROW
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + LEFT_ARROW
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + LEFT_ARROW + "`" + KEY_LEFT + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor +", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + RIGHT_ARROW
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + RIGHT_ARROW + "`" + KEY_RIGHT + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "PgUp"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + "/"
-						 + this.colors.enhReaderHelpLineHotkeyColor + "Dn"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "HOME"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "END"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`END`" + KEY_END + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
 						 + this.colors.enhReaderHelpLineHotkeyColor;
 	if (this.CanDelete() || this.CanDeleteLastMsg())
-		this.enhReadHelpLine += "DEL" + this.colors.enhReaderHelpLineGeneralColor + ", " + this.colors.enhReaderHelpLineHotkeyColor;
+		this.enhReadHelpLine += "@`DEL`" + KEY_DEL + "@" + this.colors.enhReaderHelpLineGeneralColor + ", " + this.colors.enhReaderHelpLineHotkeyColor;
 	if (this.CanEdit() && (console.screen_columns > 87))
-		this.enhReadHelpLine += "E" + this.colors.enhReaderHelpLineParenColor + ")" + this.colors.enhReaderHelpLineGeneralColor + "dit, " + this.colors.enhReaderHelpLineHotkeyColor;
-	this.enhReadHelpLine += "F" + this.colors.enhReaderHelpLineParenColor + ")"
+		this.enhReadHelpLine += "@`E`E@" + this.colors.enhReaderHelpLineParenColor + ")" + this.colors.enhReaderHelpLineGeneralColor + "dit, " + this.colors.enhReaderHelpLineHotkeyColor;
+	this.enhReadHelpLine += "@`F`F@" + this.colors.enhReaderHelpLineParenColor + ")"
 						 + this.colors.enhReaderHelpLineGeneralColor + "irst, "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "L"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`L`L@" 
 						 + this.colors.enhReaderHelpLineParenColor + ")"
 						 + this.colors.enhReaderHelpLineGeneralColor + "ast, "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "R"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`R`R@"
 						 + this.colors.enhReaderHelpLineParenColor + ")"
 						 + this.colors.enhReaderHelpLineGeneralColor + "eply, "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "C"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`C`C@"
 						 + this.colors.enhReaderHelpLineParenColor + ")"
 						 + this.colors.enhReaderHelpLineGeneralColor + "hg area, "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "Q"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`Q`Q@"
 						 + this.colors.enhReaderHelpLineParenColor + ")"
 						 + this.colors.enhReaderHelpLineGeneralColor + "uit, "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "?";
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`?`?@";
+
 	// Center the help text based on the console width
 	var numCharsRemaining = console.screen_columns - console.strlen(this.enhReadHelpLine) - 1;
 	var numCharsOnEachSide = Math.floor(numCharsRemaining/2);
@@ -7545,39 +7531,41 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 	}
 
 	// Create a version without the change area option
-	this.enhReadHelpLineWithoutChgArea = this.colors.enhReaderHelpLineHotkeyColor + UP_ARROW
+	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
+	this.enhReadHelpLineWithoutChgArea = this.colors.enhReaderHelpLineHotkeyColor + "@CLEAR_HOT@  @`" + UP_ARROW + "`" + KEY_UP + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + DOWN_ARROW
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + LEFT_ARROW
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + LEFT_ARROW + "`" + KEY_LEFT + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + RIGHT_ARROW
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + RIGHT_ARROW + "`" + KEY_RIGHT + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "PgUp"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + "/"
-									   + this.colors.enhReaderHelpLineHotkeyColor + "Dn"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "HOME"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "END"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`END`" + KEY_END + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
 									   + this.colors.enhReaderHelpLineHotkeyColor;
 	if (this.CanDelete() || this.CanDeleteLastMsg())
-		this.enhReadHelpLineWithoutChgArea += "DEL" + this.colors.enhReaderHelpLineGeneralColor + ", " + this.colors.enhReaderHelpLineHotkeyColor;
+		this.enhReadHelpLineWithoutChgArea += "@`DEL`" + KEY_DEL + "@" + this.colors.enhReaderHelpLineGeneralColor + ", " + this.colors.enhReaderHelpLineHotkeyColor;
 	if (this.CanEdit())
-		this.enhReadHelpLineWithoutChgArea += "E" + this.colors.enhReaderHelpLineParenColor + ")" + this.colors.enhReaderHelpLineGeneralColor + "dit, " + this.colors.enhReaderHelpLineHotkeyColor;
-	this.enhReadHelpLineWithoutChgArea += "F" + this.colors.enhReaderHelpLineParenColor + ")"
+		this.enhReadHelpLineWithoutChgArea += "@`E`E@" + this.colors.enhReaderHelpLineParenColor + ")" + this.colors.enhReaderHelpLineGeneralColor + "dit, " + this.colors.enhReaderHelpLineHotkeyColor;
+	this.enhReadHelpLineWithoutChgArea += "@`F`F@" + this.colors.enhReaderHelpLineParenColor + ")"
 									   + this.colors.enhReaderHelpLineGeneralColor + "irst, "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "L"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`L`L@"
 									   + this.colors.enhReaderHelpLineParenColor + ")"
 									   + this.colors.enhReaderHelpLineGeneralColor + "ast, "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "R"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`R`R@"
 									   + this.colors.enhReaderHelpLineParenColor + ")"
 									   + this.colors.enhReaderHelpLineGeneralColor + "eply, "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "Q"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`Q`Q@"
 									   + this.colors.enhReaderHelpLineParenColor + ")"
 									   + this.colors.enhReaderHelpLineGeneralColor + "uit, "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "?";
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`?`?@  ";
+
 	// Center the help text based on the console width
 	numCharsRemaining = console.screen_columns - console.strlen(this.enhReadHelpLineWithoutChgArea) - 2;
 	numCharsOnEachSide = Math.floor(numCharsRemaining/2);
@@ -7593,31 +7581,6 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 	{
 		for (var i = 0; i < numCharsRemaining; ++i)
 		this.enhReadHelpLineWithoutChgArea += " ";
-	}
-
-	// Set up this.enhReadHelpLineClickCoords as an array of objects containing X and Y
-	// coordinates for mouse click coordinates
-	this.enhReadHelpLineClickCoords = [];
-	var helpLineNoAttrs = stripCtrlFromEnhReadHelpLine_ReplaceArrowChars(this.enhReadHelpLine);
-	var clickX = 0;
-	var toSearch = [UP_ARROW, DOWN_ARROW, LEFT_ARROW, RIGHT_ARROW, "PgUp", "Dn,", "HOME", "END", "DEL",
-	                "E)", "F)", "L)", "R)", "C)", "Q)", "?"];
-	for (var i = 0; i < toSearch.length; ++i)
-	{
-		var helpLineIdx = helpLineNoAttrs.indexOf(toSearch[i]);
-		if (helpLineIdx > -1)
-		{
-			// TODO: We don't really need to include the ) on the ones with the ).  That is
-			// just to ensure we find the right ones.
-			for (var strI = 0; strI < toSearch[i].length; ++strI)
-			{
-				var clickInfoObj = { x: helpLineIdx+strI+1,
-				                     y: console.screen_rows,
-				                     actionStr: toSearch[i]
-								   };
-				this.enhReadHelpLineClickCoords.push(clickInfoObj);
-			}
-		}
 	}
 }
 function stripCtrlFromEnhReadHelpLine_ReplaceArrowChars(pHelpLine)
@@ -8238,17 +8201,18 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 		// Generate a string describing the message attributes, then output the default
 		// header.
 		var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
-		console.print("\x01n\x01w���������������������������������������������������������������������������۲��");
+		console.print("\x01n\x01w" + charStr(HORIZONTAL_DOUBLE, 78));
 		console.crlf();
-		console.print("\x01n\x01w�����\x01cFrom\x01w\x01h: \x01b" + pMsgHdr["from"].substr(0, console.screen_columns-12));
+		var horizSingleFive = charStr(HORIZONTAL_SINGLE, 5);
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cFrom\x01w\x01h: \x01b" + pMsgHdr["from"].substr(0, console.screen_columns-12));
 		console.crlf();
-		console.print("\x01n\x01w�����\x01cTo  \x01w\x01h: \x01b" + pMsgHdr["to"].substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cTo  \x01w\x01h: \x01b" + pMsgHdr["to"].substr(0, console.screen_columns-12));
 		console.crlf();
-		console.print("\x01n\x01w�����\x01cSubj\x01w\x01h: \x01b" + pMsgHdr["subject"].substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cSubj\x01w\x01h: \x01b" + pMsgHdr["subject"].substr(0, console.screen_columns-12));
 		console.crlf();
-		console.print("\x01n\x01w�����\x01cDate\x01w\x01h: \x01b" + dateTimeStr.substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cDate\x01w\x01h: \x01b" + dateTimeStr.substr(0, console.screen_columns-12));
 		console.crlf();
-		console.print("\x01n\x01w�����\x01cAttr\x01w\x01h: \x01b" + allMsgAttrStr.substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cAttr\x01w\x01h: \x01b" + allMsgAttrStr.substr(0, console.screen_columns-12));
 		console.crlf();
 	}
 }
@@ -10579,7 +10543,9 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 function DigDistMsgReader_WriteLightbarChgMsgAreaKeysHelpLine()
 {
    console.gotoxy(1, console.screen_rows);
-   console.print(this.lightbarAreaChooserHelpLine);
+   //console.print(this.lightbarAreaChooserHelpLine);
+   console.putmsg(this.lightbarAreaChooserHelpLine); // console.putmsg() can process @-codes, which we use for mouse click tracking
+   console.print("\x01n");
 }
 
 // For the DigDistMsgReader class: Outputs the header line to appear above
@@ -10981,7 +10947,7 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 		//console.crlf();
 		this.ListMsgGrps(grpSearchText);
 		console.crlf();
-		console.print("\x01n\x01b\x01h� \x01n\x01cWhich, \x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c, \x01hQ\x01n\x01cuit, or [\x01h" +
+		console.print("\x01n\x01b\x01h" + TALL_UPPER_MID_BLOCK + " \x01n\x01cWhich, \x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c, \x01hQ\x01n\x01cuit, or [\x01h" +
 		              +(msg_area.sub[this.subBoardCode].grp_index+1) + "\x01n\x01c]: \x01h");
 		// Accept Q (quit), / or CTRL_F (Search) or a file library number
 		selectedGrp = console.getkeys("Q/" + CTRL_F, msg_area.grp_list.length);
@@ -11036,7 +11002,7 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 					this.DisplayAreaChgHdr();
 					this.ListSubBoardsInMsgGroup(selectedGrp-1, defaultSubBoard-1, null, subSearchText);
 					console.crlf();
-					console.print("\x01n\x01b\x01h� \x01n\x01cWhich, \x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c, \x01hQ\x01n\x01cuit, or [\x01h" +
+					console.print("\x01n\x01b\x01h" + TALL_UPPER_MID_BLOCK + " \x01n\x01cWhich, \x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c, \x01hQ\x01n\x01cuit, or [\x01h" +
 					              defaultSubBoard + "\x01n\x01c]: \x01h");
 					// Accept Q (quit), / or CTRL_F (Search) or a sub-board number
 					selectedSubBoard = console.getkeys("Q/" + CTRL_F, msg_area.grp_list[selectedGrp - 1].sub_list.length);
@@ -11529,7 +11495,7 @@ function DigDistMsgReader_showChooseMsgAreaHelpScreen(pLightbar, pClearScreen)
 	console.crlf();
 	console.print("\x01n\x01c\x01hMessage area (sub-board) chooser");
 	console.crlf();
-	console.print("\x01k��������������������������������\x01n");
+	console.print("\x01k" + charStr(HORIZONTAL_SINGLE, 32) + "\x01n");
 	console.crlf();
 	console.print("\x01cFirst, a listing of message groups is displayed.  One can be chosen by typing");
 	console.crlf();
@@ -11541,7 +11507,7 @@ function DigDistMsgReader_showChooseMsgAreaHelpScreen(pLightbar, pClearScreen)
 	console.crlf();
 	console.print("Keyboard commands:");
 	console.crlf();
-	console.print("\x01k\x01h�����������������\x01n");
+	console.print("\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 18) + "\x01n");
 	console.crlf();
 	console.print("\x01n\x01c\x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c: Find group/sub-board");
 	console.crlf();
@@ -11555,7 +11521,7 @@ function DigDistMsgReader_showChooseMsgAreaHelpScreen(pLightbar, pClearScreen)
 		console.crlf();
 		console.print("\x01n\x01cThe lightbar interface also allows up & down navigation through the lists:");
 		console.crlf();
-		console.print("\x01k\x01h��������������������������������������������������������������������������");
+		console.print("\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 74));
 		console.crlf();
 		console.print("\x01n\x01c\x01hUp\x01n\x01c/\x01hdown arrow\x01n\x01c: Move the cursor up/down one line");
 		console.crlf();
@@ -15178,14 +15144,9 @@ function userHandleAliasNameMatch(pName)
 // Return value: An object with the following properties:
 //               lastKeypress: The last key pressed by the user (a string)
 //               topLineIdx: The new top line index of the text lines, in case of scrolling
-//               mouse: An object containing mouse event information, or null
-//                      if the user didn't use the mouse on the last user input
-// TODO: Use the parameter pOutsideMouseEventCoords for X & Y coordinates of mouse click
-// coordinates outside the scrollable region so that calling code can respond to those
-// mouse events
 function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTopLeftX, pTopLeftY,
                          pWidth, pHeight, pPostWriteCurX, pPostWriteCurY, pScrollUpdateFn,
-                         pScrollbarInfo, pOutsideMouseEventCoords)
+                         pScrollbarInfo)
 {
 	// Variables for the top line index for the last page, scrolling, etc.
 	var topLineIdxForLastPage = pTxtLines.length - pHeight;
@@ -15200,8 +15161,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 
 	var retObj = {
 		lastKeypress: "",
-		topLineIdx: pTopLineIdx,
-		mouse: null
+		topLineIdx: pTopLineIdx
 	};
 
 	// Create an array of color/attribute codes for each line of
@@ -15257,133 +15217,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 
 		// Get a keypress from the user and take action based on it
 		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
-		//retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
-		var mk = mouse_getkey(K_NOCRLF|K_NOECHO|K_NOSPIN, this.mouseTimeout > 1 ? this.mouseTimeout : undefined, this.mouseEnabled);
-		retObj.mouse = mk.mouse;
-		var mouseNoAction = false;
-		if (mk.mouse !== null)
-		{
-			// See if the user clicked anywhere in the scrollable window area
-			var clickRegion = {
-				left: pTopLeftX,
-				//right: pTopLeftX + pWidth - 1,
-				right: pTopLeftX + pWidth,
-				top: pTopLeftY,
-				bottom: pTopLeftY + pHeight - 1
-			};
-			// Button 0 is the left/main mouse button
-			if (mk.mouse.press && (mk.mouse.button == 0) && (mk.mouse.motion == 0) &&
-			    (mk.mouse.x >= clickRegion.left) && (mk.mouse.x <= clickRegion.right) &&
-			    (mk.mouse.y >= clickRegion.top) && (mk.mouse.y <= clickRegion.bottom))
-			{
-				// If the scrollbar is enabled, then see if the mouse click was
-				// in the scrollbar region.  If below the scrollbar bright blocks,
-				// then we'll want to do a PageDown.  If above the scrollbar bright
-				// blocks, then we'll want to do a PageUp.
-				var scrollbarX = console.screen_columns;
-				if (mk.mouse.x == scrollbarX)
-				{
-					// If scrollbar information is available, then we can check to see if
-					// the mouse was clicked in the empty regions of the scrollbar.
-					if ((typeof(pScrollbarInfo) == "object") && pScrollbarInfo.hasOwnProperty("solidBlockLastStartRow") && pScrollbarInfo.hasOwnProperty("numSolidScrollBlocks"))
-					{
-						var scrollbarSolidBlockEndRow = pScrollbarInfo.solidBlockLastStartRow + pScrollbarInfo.numSolidScrollBlocks - 1;
-						if (mk.mouse.y < pScrollbarInfo.solidBlockLastStartRow)
-							retObj.lastKeypress = KEY_PAGE_UP;
-						else if (mk.mouse.y > scrollbarSolidBlockEndRow)
-							retObj.lastKeypress = KEY_PAGE_DOWN;
-						else
-						{
-							// Mouse click no-action
-							// TODO: Can we detect if they're holding the mouse down
-							// and scroll while the user holds the mouse & scrolls on
-							// the scrollbar?
-							retObj.lastKeypress = "";
-							mouseNoAction = true;
-							mouseInputOnly_continue = true;
-						}
-					}
-					else
-					{
-						// No mouse action
-						retObj.lastKeypress = "";
-						mouseNoAction = true;
-						mouseInputOnly_continue = true;
-					}
-				}
-			}
-			// If pOutsideMouseEventCoords is an array, then look through it
-			// for any coordinates outside of clickRegion, and if found,
-			// we'll want to exit the input loop and return.
-			else if((typeof(pOutsideMouseEventCoords) == "object") && (pOutsideMouseEventCoords.length > 0))
-			{
-				var foundOutsideCoord = false;
-				var coordActionStr = "";
-				for (var coordsIdx = 0; (coordsIdx < pOutsideMouseEventCoords.length) && !foundOutsideCoord; ++coordsIdx)
-				{
-					// If the current element has x & y properties, then
-					// if either the x & y coordinate is outside the scrollable
-					// region and the mouse click x & y coordinates match the current
-					// element's coordinates, then we've found an ousdide coordinate.
-					if (pOutsideMouseEventCoords[coordsIdx].hasOwnProperty("x") && pOutsideMouseEventCoords[coordsIdx].hasOwnProperty("y"))
-					{
-						var xCoordOutsideClickRegion = ((pOutsideMouseEventCoords[coordsIdx].x < clickRegion.left) || (pOutsideMouseEventCoords[coordsIdx].x > clickRegion.right));
-						var yCoordOutsideClickRegion = ((pOutsideMouseEventCoords[coordsIdx].y < clickRegion.top) || (pOutsideMouseEventCoords[coordsIdx].y > clickRegion.bottom));
-						if (xCoordOutsideClickRegion || yCoordOutsideClickRegion)
-						{
-							foundOutsideCoord = ((mk.mouse.x == pOutsideMouseEventCoords[coordsIdx].x) && (mk.mouse.y == pOutsideMouseEventCoords[coordsIdx].y));
-							if (foundOutsideCoord)
-								coordActionStr = pOutsideMouseEventCoords[coordsIdx].actionStr;
-						}
-					}
-				}
-				// If we found an outside coordinate, check to see if it's for a
-				// scroll navigation action.  If not, then we went to exit the input loop.
-				if (foundOutsideCoord)
-				{
-					if (coordActionStr == UP_ARROW)
-						retObj.lastKeypress = KEY_UP;
-					else if (coordActionStr == DOWN_ARROW)
-						retObj.lastKeypress = KEY_DOWN;
-					else if (coordActionStr.indexOf("PgUp") == 0)
-						retObj.lastKeypress = KEY_PAGE_UP;
-					else if (coordActionStr.indexOf("Dn") == 0)
-						retObj.lastKeypress = KEY_PAGE_DOWN;
-					else if (coordActionStr.indexOf("HOME") == 0)
-						retObj.lastKeypress = KEY_HOME;
-					else if (coordActionStr.indexOf("END") == 0)
-						retObj.lastKeypress = KEY_END;
-					else
-					{
-						// The click coordinate is not for a scroll action, so
-						// we should exit the input loop to let the calling code
-						// handle it.
-						retObj.lastKeypress = "";
-						mouseNoAction = true;
-						mouseInputOnly_continue = false;
-						continueOn = false;
-						break;
-					}
-				}
-			}
-			else
-			{
-				// The mouse click is outside the click region.  Set the appropriate
-				// variables for mouse no-action.
-				// TODO: Perhaps this may also need to be done in some places above
-				// where no action needs to be taken
-				retObj.lastKeypress = "";
-				mouseNoAction = true;
-				mouseInputOnly_continue = true;
-			}
-		}
-		else
-		{
-			// mouse is null, so a keybaord key must have been pressed
-			retObj.lastKeypress = mk.key.toUpperCase();
-		}
-		if (mouseInputOnly_continue)
-			continue;
+		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
 		if (!continueOn)
 			break;
 
@@ -18517,6 +18351,24 @@ function textHasDrawingChars(pText)
 	for (var i = 0; i < textHasDrawingChars.chars.length && !drawingCharsFound; ++i)
 		drawingCharsFound = drawingCharsFound || (pText.indexOf(textHasDrawingChars.chars[i]) > -1);
 	return drawingCharsFound;
+}
+
+// Returns a string with a character repeated a given number of times
+//
+// Parameters:
+//  pChar: The character to repeat in the string
+//  pNumTimes: The number of times to repeat the character
+//
+// Return value: A string with the given character repeated the given number of times
+function charStr(pChar, pNumTimes)
+{
+	if (typeof(pChar) !== "string" || pChar.length == 0 || typeof(pNumTimes) !== "number" || pNumTimes < 1)
+		return "";
+
+	var str = "";
+	for (var i = 0; i < pNumTimes; ++i)
+		str += pChar;
+	return str;
 }
 
 // For debugging: Writes some text on the screen at a given location with a given pause.
