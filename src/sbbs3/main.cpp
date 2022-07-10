@@ -5666,7 +5666,6 @@ NO_SSH:
 			SOCKET	tmp_sock;
 			SOCKADDR_IN		tmp_addr={0};
 			socklen_t		tmp_addr_len;
-			char addr_str[INET6_ADDRSTRLEN] = "";
 
     		/* open a socket and connect to yourself */
 
