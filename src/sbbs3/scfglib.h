@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 char*	get_alloc(long *offset, char *outstr, int maxlen, FILE *instream);
-BOOL	allocerr(FILE*, char* error, size_t maxerrlen, long offset, const char *fname, size_t size);
+BOOL	allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size);
 char*	readline(long *offset, char *str, int maxlen, FILE *stream);
 
 BOOL	read_node_cfg(scfg_t* cfg, char* error, size_t);
