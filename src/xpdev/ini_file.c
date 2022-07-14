@@ -253,6 +253,16 @@ static char* key_name(char* p, char** vp, BOOL literals_supported)
 	return(p);
 }
 
+static char* clean_value(char* str)
+{
+	char* p;
+
+	if((p = strchr(str, '\xFF')) != NULL)
+		*p = '\0';
+
+	return str;
+}
+
 static char* read_value(FILE* fp, const char* section, const char* key, char* value, BOOL literals_supported)
 {
 	char*	p;
@@ -280,7 +290,7 @@ static char* read_value(FILE* fp, const char* section, const char* key, char* va
 			break;
 		/* key found */
 		sprintf(value,"%.*s",INI_MAX_VALUE_LEN-1,vp);
-		return(value);
+		return clean_value(value);
 	}
 
 	return(NULL);
@@ -310,8 +320,10 @@ static size_t get_value(str_list_t list, const char* section, const char* key, c
 			break;
 		if(stricmp(p,key)!=0)
 			continue;
-		if(value!=NULL)
+		if(value!=NULL) {
 			sprintf(value,"%.*s",INI_MAX_VALUE_LEN-1,vp);
+			clean_value(value);
+		}
 		if(vpp!=NULL)
 			*vpp=list[i] + (vp - str);
 		return(i);
