@@ -26,11 +26,10 @@
 #include "findstr.h"
 #include "ini_file.h"
 
-BOOL allocerr(FILE* fp, char* error, size_t maxerrlen, long offset, const char *fname, size_t size)
+BOOL allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
 {
-	safe_snprintf(error, maxerrlen, "offset %ld in %s, allocating %u bytes of memory"
-		,offset,fname, (uint)size);
-	fclose(fp);
+	safe_snprintf(error, maxerrlen, "%s: allocating %u bytes of memory for %s"
+		,fname, (uint)size, item);
 	return(FALSE);
 }
 
@@ -81,255 +80,218 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	str[MAX_PATH+1],c;
-	short	i,j;
-	int16_t	n;
-	long	offset=0;
-	FILE	*instream;
+	char	path[MAX_PATH+1];
+	char	errstr[256];
+	FILE*	fp;
+	str_list_t	ini;
+	char	value[INI_MAX_VALUE_LEN];
+	const char* section = ROOT_SECTION;
 
-	const char* fname = "main.cnf";
-	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		safe_snprintf(error, maxerrlen,"%d (%s) opening %s",errno,STRERROR(errno),str);
-		return(FALSE); 
+	const char* fname = "main.ini";
+	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+		return FALSE;
 	}
+	ini = iniReadFile(fp);
+	fclose(fp);
 
-	get_str(cfg->sys_name,instream);
-	get_str(cfg->sys_id,instream);
-	get_str(cfg->sys_location,instream);
-	get_str(cfg->sys_phonefmt,instream);
-	get_str(cfg->sys_op,instream);
-	get_str(cfg->sys_guru,instream);
-	get_str(cfg->sys_pass,instream);
-	get_int(cfg->sys_nodes,instream);
+	SAFECOPY(cfg->sys_name, iniGetString(ini, section, "name", "", value));
+	SAFECOPY(cfg->sys_op, iniGetString(ini, section, "operator", "", value));
+	SAFECOPY(cfg->sys_pass, iniGetString(ini, section, "password", "", value));
+	SAFECOPY(cfg->sys_id, iniGetString(ini, section, "qwk_id", "", value));
+	SAFECOPY(cfg->sys_guru, iniGetString(ini, section, "guru", "", value));
+	SAFECOPY(cfg->sys_location, iniGetString(ini, section, "location", "", value));
+	SAFECOPY(cfg->sys_phonefmt, iniGetString(ini, section, "phonefmt", "", value));
+	SAFECOPY(cfg->sys_chat_arstr, iniGetString(ini, section, "chat_ars", "", value));
+	arstr(NULL, cfg->sys_chat_arstr, cfg, cfg->sys_chat_ar);
 
-	for(i=0;i<cfg->sys_nodes;i++) {
-		get_str(cfg->node_path[i],instream);
-#if defined(__unix__)
-		strlwr(cfg->node_path[i]);
-#endif
-	}
-
-	get_str(cfg->data_dir,instream); 			  /* data directory */
-	get_str(cfg->exec_dir,instream); 			  /* exec directory */
-
-	get_str(cfg->sys_logon,instream);
-	get_str(cfg->sys_logout,instream);
-	get_str(cfg->sys_daily,instream);
-	get_int(cfg->sys_timezone,instream);
-	get_int(cfg->sys_misc,instream);
-	get_int(cfg->sys_lastnode,instream);
-	get_int(cfg->sys_autonode,instream);
-	get_int(cfg->uq,instream);
-	get_int(cfg->sys_pwdays,instream);
-	get_int(cfg->sys_deldays,instream);
-	get_int(cfg->sys_exp_warn,instream); 	/* Days left till expiration warning */
-	get_int(cfg->sys_autodel,instream);
-	get_int(cfg->sys_def_stat,instream); 	/* default status line */
-
-	get_str(cfg->sys_chat_arstr,instream);
-	arstr(NULL,cfg->sys_chat_arstr,cfg,cfg->sys_chat_ar);
-
-	get_int(cfg->cdt_min_value,instream);
-	get_int(cfg->max_minutes,instream);
-	get_int(cfg->cdt_per_dollar,instream);
-	get_str(cfg->new_pass,instream);
-	get_str(cfg->new_magic,instream);
-	get_str(cfg->new_sif,instream);
-	get_str(cfg->new_sof,instream);
-	if(!cfg->new_sof[0])		/* if output not specified, use input file */
-		SAFECOPY(cfg->new_sof,cfg->new_sif);
-
-	/*********************/
-	/* New User Settings */
-	/*********************/
-
-	get_int(cfg->new_level,instream);
-	get_int(cfg->new_flags1,instream);
-	get_int(cfg->new_flags2,instream);
-	get_int(cfg->new_flags3,instream);
-	get_int(cfg->new_flags4,instream);
-	get_int(cfg->new_exempt,instream);
-	get_int(cfg->new_rest,instream);
-	get_int(cfg->new_cdt,instream);
-	get_int(cfg->new_min,instream);
-	get_str(cfg->new_xedit,instream);
-	get_int(cfg->new_expire,instream);
-	get_int(cfg->new_shell,instream);
-	get_int(cfg->new_misc,instream);
-	get_int(cfg->new_prot,instream);
-	if(cfg->new_prot<' ')
-		cfg->new_prot=' ';
-	get_int(cfg->new_install,instream);
-	get_int(cfg->new_msgscan_init,instream);
-	get_int(cfg->guest_msgscan_init,instream);
-	get_int(cfg->min_pwlen, instream);
+	cfg->sys_timezone = iniGetShortInt(ini, section, "timezone", 0);
+	cfg->sys_misc = iniGetLongInt(ini, section, "settings", 0);
+	cfg->sys_pwdays = iniGetInteger(ini, section, "pwdays", 0);
+	cfg->sys_deldays = iniGetInteger(ini, section, "deldays", 0);
+	cfg->sys_exp_warn = iniGetInteger(ini, section, "exp_warn", 0);
+	cfg->sys_autodel = iniGetInteger(ini, section, "autodel", 0);
+	cfg->cdt_min_value =  iniGetBytes(ini, section, "cdt_min_value", 1, 0);
+	cfg->max_minutes = iniGetInteger(ini, section, "max_minutes", 0);
+	cfg->cdt_per_dollar = iniGetBytes(ini, section, "cdt_per_dollar", 1, 0);
+	cfg->guest_msgscan_init = iniGetInteger(ini, section, "guest_msgscan_init", 0);
+	cfg->min_pwlen = iniGetInteger(ini, section, "min_pwlen", 0);
 	if(cfg->min_pwlen < MIN_PASS_LEN)
 		cfg->min_pwlen = MIN_PASS_LEN;
 	if(cfg->min_pwlen > LEN_PASS)
 		cfg->min_pwlen = LEN_PASS;
-	get_int(c, instream);
-	get_int(n,instream);
-	get_int(cfg->max_log_size, instream);
-	get_int(cfg->max_logs_kept, instream);
+	cfg->max_log_size = iniGetLongInt(ini, section, "max_log_size", 0);
+	cfg->max_logs_kept = iniGetInteger(ini, section, "max_logs_kept", 0);
+	cfg->ctrlkey_passthru = iniGetInteger(ini, section, "ctrlkey_passthru", 0);
+
+	cfg->user_backup_level = iniGetInteger(ini, section, "user_backup_level", 5);
+	cfg->mail_backup_level = iniGetInteger(ini, section, "mail_backup_level", 5);
+	cfg->new_install = iniGetBool(ini, section, "new_install", FALSE);
+
+	// fixed events
+	SAFECOPY(cfg->sys_logon, iniGetString(ini, section, "logon", "", value));
+	SAFECOPY(cfg->sys_logout, iniGetString(ini, section, "logout", "", value));
+	SAFECOPY(cfg->sys_daily, iniGetString(ini, section, "daily", "", value));
+
+	str_list_t node_dirs = iniGetKeyList(ini, "node_dir");
+	cfg->sys_nodes = strListCount(node_dirs);
+	for(size_t i=0; i<cfg->sys_nodes; i++) {
+		SAFECOPY(cfg->node_path[i], node_dirs[i]);
+#if defined(__unix__)
+		strlwr(cfg->node_path[i]);
+#endif
+	}
+	strListFree(&node_dirs);
+
+	cfg->sys_lastnode = iniGetInteger(ini, section, "lastnode", cfg->sys_nodes);
+
+	section = "dir";
+	SAFECOPY(cfg->data_dir, iniGetString(ini, section, "data", "../data/", value));
+	SAFECOPY(cfg->exec_dir, iniGetString(ini, section, "exec", "../exec/", value));
+	SAFECOPY(cfg->mods_dir, iniGetString(ini, section, "mods", "../mods/", value));
+	SAFECOPY(cfg->logs_dir, iniGetString(ini, section, "logs", cfg->data_dir, value));
+
+	/*********************/
+	/* New User Settings */
+	/*********************/
+	section = "newuser";
+	cfg->uq = iniGetLongInt(ini, section, "questions", 0);
+
+	SAFECOPY(cfg->new_genders, iniGetString(ini, section, "gender_options", "MFX", value));
+	SAFECOPY(cfg->new_pass, iniGetString(ini, section, "password", "", value));
+	SAFECOPY(cfg->new_magic, iniGetString(ini, section, "magic", "", value));
+	SAFECOPY(cfg->new_sif, iniGetString(ini, section, "sif", "", value));
+	SAFECOPY(cfg->new_sof, iniGetString(ini, section, "sof", cfg->new_sif, value));
+	cfg->new_prot = *iniGetString(ini, section, "download_protocol", " ", value);
+	char new_shell[LEN_CODE + 1];
+	SAFECOPY(new_shell, iniGetString(ini, section, "shell", "default", value));
+	SAFECOPY(cfg->new_xedit, iniGetString(ini, section, "editor", "", value));
+
+	cfg->new_level = iniGetInteger(ini, section, "level", 0);
+	cfg->new_flags1 = iniGetLongInt(ini, section, "flags1", 0);
+	cfg->new_flags2 = iniGetLongInt(ini, section, "flags2", 0);
+	cfg->new_flags3 = iniGetLongInt(ini, section, "flags3", 0);
+	cfg->new_flags4 = iniGetLongInt(ini, section, "flags4", 0);
+	cfg->new_exempt = iniGetLongInt(ini, section, "exemptions", 0);
+	cfg->new_rest = iniGetLongInt(ini, section, "restrictions", 0);
+	cfg->new_cdt = iniGetBytes(ini, section, "credits", 1, 0);
+	cfg->new_min = iniGetLongInt(ini, section, "minutes", 0);
+	cfg->new_expire = iniGetInteger(ini, section, "expire", 0);
+	cfg->new_misc = iniGetLongInt(ini, section, "settings", 0);
+	cfg->new_msgscan_init = iniGetInteger(ini, section, "msgscan_init", 0);
 
 	/*************************/
 	/* Expired User Settings */
 	/*************************/
+	section = "expired";
+	cfg->expired_level = iniGetInteger(ini, section, "level", 0);
+	cfg->expired_flags1 = iniGetLongInt(ini, section, "flags1", 0);
+	cfg->expired_flags2 = iniGetLongInt(ini, section, "flags2", 0);
+	cfg->expired_flags3 = iniGetLongInt(ini, section, "flags3", 0);
+	cfg->expired_flags4 = iniGetLongInt(ini, section, "flags4", 0);
+	cfg->expired_exempt = iniGetLongInt(ini, section, "exemptions", 0);
+	cfg->expired_rest = iniGetLongInt(ini, section, "restrictions", 0);
 
-	get_int(cfg->expired_level,instream);
-	get_int(cfg->expired_flags1,instream);
-	get_int(cfg->expired_flags2,instream);
-	get_int(cfg->expired_flags3,instream);
-	get_int(cfg->expired_flags4,instream);
-	get_int(cfg->expired_exempt,instream);
-	get_int(cfg->expired_rest,instream);
-
-	get_str(cfg->logon_mod,instream);
-	get_str(cfg->logoff_mod,instream);
-	get_str(cfg->newuser_mod,instream);
-	get_str(cfg->login_mod,instream);
-	if(!cfg->login_mod[0]) SAFECOPY(cfg->login_mod,"login");
-	get_str(cfg->logout_mod,instream);
-	get_str(cfg->sync_mod,instream);
-	get_str(cfg->expire_mod,instream);
-	get_int(cfg->ctrlkey_passthru,instream);
-	get_str(cfg->mods_dir,instream);
-	get_str(cfg->logs_dir,instream);
-	if(!cfg->logs_dir[0]) SAFECOPY(cfg->logs_dir,cfg->data_dir);
-	get_str(cfg->readmail_mod, instream);
-	get_str(cfg->scanposts_mod, instream);
-	get_str(cfg->scansubs_mod, instream);
-	get_str(cfg->listmsgs_mod, instream);
-	get_str(cfg->textsec_mod,instream);
-	if(!cfg->textsec_mod[0]) SAFECOPY(cfg->textsec_mod,"text_sec");
-	get_str(cfg->automsg_mod,instream);
-	if(!cfg->automsg_mod[0]) SAFECOPY(cfg->automsg_mod,"automsg");
-	get_str(cfg->xtrnsec_mod,instream);
-	if(!cfg->xtrnsec_mod[0]) SAFECOPY(cfg->xtrnsec_mod,"xtrn_sec");
-
-	for(i=0;i<17;i++)					/* unused - initialized to NULL */
-		get_int(n,instream);
-	get_str(cfg->nodelist_mod,instream);
-	if(cfg->nodelist_mod[0] == '\xff')
-		SAFECOPY(cfg->nodelist_mod, "nodelist");
-	get_str(cfg->whosonline_mod,instream);
-	if(cfg->whosonline_mod[0] == '\xff')
-		SAFECOPY(cfg->whosonline_mod, "nodelist -active");
-	get_str(cfg->privatemsg_mod,instream);
-	if(cfg->privatemsg_mod[0] == '\xff')
-		SAFECOPY(cfg->privatemsg_mod, "privatemsg");
-	get_str(cfg->logonlist_mod,instream);
-	if(cfg->logonlist_mod[0] == '\xff')
-		SAFECOPY(cfg->logonlist_mod, "logonlist");
-
-	get_str(cfg->prextrn_mod,instream);
-	if(cfg->prextrn_mod[0] == '\xff')
-	    SAFECOPY(cfg->prextrn_mod, "prextrn");
-	get_str(cfg->postxtrn_mod,instream);
-	if(cfg->postxtrn_mod[0] == '\xff')
-	    SAFECOPY(cfg->postxtrn_mod, "postxtrn");
-
-	get_str(cfg->tempxfer_mod, instream);
-	if(cfg->tempxfer_mod[0] == '\xff') 
-	    SAFECOPY(cfg->tempxfer_mod, "tempxfer");
-
-	for(i=0;i<92;i++)					/* unused - initialized to 0xff */
-		get_int(n,instream);
-
-	get_str(cfg->new_genders, instream);
-	if(cfg->new_genders[0] == '\xff')
-		SAFECOPY(cfg->new_genders, "MFX");
-
-	get_int(cfg->user_backup_level,instream);
-	if(cfg->user_backup_level==0xffff)
-		cfg->user_backup_level=5;
-	get_int(cfg->mail_backup_level,instream);
-	if(cfg->mail_backup_level==0xffff)
-		cfg->mail_backup_level=5;
+	/***********/
+	/* Modules */
+	/***********/
+	section = "module";
+	SAFECOPY(cfg->logon_mod, iniGetString(ini, section, "logon", "logon", value));
+	SAFECOPY(cfg->logoff_mod, iniGetString(ini, section, "logoff", "", value));
+	SAFECOPY(cfg->newuser_mod, iniGetString(ini, section, "newuser", "newuser", value));
+	SAFECOPY(cfg->login_mod, iniGetString(ini, section, "login", "login", value));
+	SAFECOPY(cfg->logout_mod, iniGetString(ini, section, "logout", "", value));
+	SAFECOPY(cfg->sync_mod, iniGetString(ini, section, "sync", "", value));
+	SAFECOPY(cfg->expire_mod, iniGetString(ini, section, "expire", "", value));
+	SAFECOPY(cfg->readmail_mod, iniGetString(ini, section, "readmail", "", value));
+	SAFECOPY(cfg->scanposts_mod, iniGetString(ini, section, "scanposts", "", value));
+	SAFECOPY(cfg->scansubs_mod, iniGetString(ini, section, "scansubs", "", value));
+	SAFECOPY(cfg->listmsgs_mod, iniGetString(ini, section, "listmsgs", "", value));
+	SAFECOPY(cfg->textsec_mod, iniGetString(ini, section, "text_sec", "text_sec", value));
+	SAFECOPY(cfg->automsg_mod, iniGetString(ini, section, "automsg", "automsg", value));
+	SAFECOPY(cfg->xtrnsec_mod, iniGetString(ini, section, "xtrnsec", "xtrn_sec", value));
+	SAFECOPY(cfg->nodelist_mod, iniGetString(ini, section, "nodelist", "nodelist", value));
+	SAFECOPY(cfg->whosonline_mod, iniGetString(ini, section, "whosonline", "nodelist -active", value));
+	SAFECOPY(cfg->privatemsg_mod, iniGetString(ini, section, "privatemsg", "privatemsg", value));
+	SAFECOPY(cfg->logonlist_mod, iniGetString(ini, section, "logonlist", "logonlist", value));
+	SAFECOPY(cfg->prextrn_mod, iniGetString(ini, section, "prextrn", "prextrn", value));
+	SAFECOPY(cfg->postxtrn_mod, iniGetString(ini, section, "postxtrn", "postxtrn", value));
+	SAFECOPY(cfg->tempxfer_mod, iniGetString(ini, section, "tempxfer", "tempxfer", value));
 
 	/*******************/
 	/* Validation Sets */
 	/*******************/
 
-	for(i=0;i<10 && !feof(instream);i++) {
-		get_int(cfg->val_level[i],instream);
-		get_int(cfg->val_expire[i],instream);
-		get_int(cfg->val_flags1[i],instream);
-		get_int(cfg->val_flags2[i],instream);
-		get_int(cfg->val_flags3[i],instream);
-		get_int(cfg->val_flags4[i],instream);
-		get_int(cfg->val_cdt[i],instream);
-		get_int(cfg->val_exempt[i],instream);
-		get_int(cfg->val_rest[i],instream);
-		for(j=0;j<8;j++)
-			get_int(n,instream);
+	for(uint i=0; i<10; i++) {
+		char str[128];
+		SAFEPRINTF(str, "valset:%u", i);
+		section = str;
+		cfg->val_level[i] = iniGetInteger(ini, section, "level", 0);
+		cfg->val_expire[i] = iniGetInteger(ini, section, "expire", 0);
+		cfg->val_flags1[i] = iniGetLongInt(ini, section, "flags1", 0);
+		cfg->val_flags2[i] = iniGetLongInt(ini, section, "flags2", 0);
+		cfg->val_flags3[i] = iniGetLongInt(ini, section, "flags3", 0);
+		cfg->val_flags4[i] = iniGetLongInt(ini, section, "flags4", 0);
+		cfg->val_cdt[i] = iniGetBytes(ini, section, "credits", 1, 0);
+		cfg->val_exempt[i] = iniGetLongInt(ini, section, "exemptions", 0);
+		cfg->val_rest[i] = iniGetLongInt(ini, section, "restrictions", 0);
 	}
 
 	/***************************/
 	/* Security Level Settings */
 	/***************************/
 
-	for(i=0;i<100 && !feof(instream);i++) {
-		uint32_t freecdt32;
-		get_int(cfg->level_timeperday[i],instream);
-		get_int(cfg->level_timepercall[i],instream);
-		get_int(cfg->level_callsperday[i],instream);
-		get_int(freecdt32,instream);
-		get_int(cfg->level_linespermsg[i],instream);
-		get_int(cfg->level_postsperday[i],instream);
-		get_int(cfg->level_emailperday[i],instream);
-		get_int(cfg->level_misc[i],instream);
-		get_int(cfg->level_expireto[i],instream);
-		get_int(cfg->level_freecdtperday[i],instream);
-		if(freecdt32)
-			cfg->level_freecdtperday[i] = freecdt32;
-		get_int(c,instream);
-		get_int(n,instream); 
-	}
-	if(i!=100) {
-		safe_snprintf(error, maxerrlen,"Insufficient User Level Information: "
-			"%d user levels read, 100 needed.",i);
-		fclose(instream);
-		return(FALSE); 
+	for(uint i=0; i<100; i++) {
+		char str[128];
+		SAFEPRINTF(str, "level:%u", i);
+		section = str;
+		cfg->level_timeperday[i] = iniGetInteger(ini, section, "timeperday", 0);
+		cfg->level_timepercall[i] = iniGetInteger(ini, section, "timepercall", 0);
+		cfg->level_callsperday[i] = iniGetInteger(ini, section, "callsperday", 0);
+		cfg->level_linespermsg[i] = iniGetInteger(ini, section, "linespermsg", 0);
+		cfg->level_postsperday[i] = iniGetInteger(ini, section, "postsperday", 0);
+		cfg->level_emailperday[i] = iniGetInteger(ini, section, "emailperday", 0);
+		cfg->level_misc[i] = iniGetLongInt(ini, section, "settings", 0);
+		cfg->level_expireto[i] = iniGetInteger(ini, section, "expireto", 0);
+		cfg->level_freecdtperday[i] = iniGetBytes(ini, section, "freecdtperday", 1, 0);
 	}
 
-	get_int(cfg->total_shells,instream);
+	str_list_t shell_list = iniGetSectionList(ini, "shell:");
+	cfg->total_shells = strListCount(shell_list);
 	#ifdef SBBS
 	if(!cfg->total_shells) {
 		safe_snprintf(error, maxerrlen,"At least one command shell must be configured.");
-		fclose(instream);
-		return(FALSE); 
+		return(FALSE);
 	}
 	#endif
 
 	if(cfg->total_shells) {
 		if((cfg->shell=(shell_t **)malloc(sizeof(shell_t *)*cfg->total_shells))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(shell_t *)*cfg->total_shells);
+			return allocerr(error, maxerrlen, fname, "shells", sizeof(shell_t *)*cfg->total_shells);
 	} else
 		cfg->shell=NULL;
 
-	for(i=0;i<cfg->total_shells;i++) {
-		if(feof(instream)) break;
+	cfg->new_shell = 0;
+	for(uint i=0; i<cfg->total_shells; i++) {
 		if((cfg->shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(shell_t));
+			return allocerr(error, maxerrlen, fname, "shell", sizeof(shell_t));
 		memset(cfg->shell[i],0,sizeof(shell_t));
 
-		get_str(cfg->shell[i]->name,instream);
-		get_str(cfg->shell[i]->code,instream);
-		get_str(cfg->shell[i]->arstr,instream);
+		section = shell_list[i];
+		SAFECOPY(cfg->shell[i]->code, section + 5);
+		SAFECOPY(cfg->shell[i]->name, iniGetString(ini, section, "name", section + 5, value));
+		SAFECOPY(cfg->shell[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL,cfg->shell[i]->arstr,cfg,cfg->shell[i]->ar);
-		get_int(cfg->shell[i]->misc,instream);
-		for(j=0;j<8;j++)
-			get_int(n,instream);
+		cfg->shell[i]->misc = iniGetLongInt(ini, section, "settings", 0);
+		if(stricmp(cfg->shell[i]->code, new_shell) == 0)
+			cfg->new_shell = i;
 	}
-	cfg->total_shells=i;
 
-	if(cfg->new_shell>=cfg->total_shells)
-		cfg->new_shell=0;
+	iniFreeStringList(shell_list);
+	iniFreeStringList(ini);
 
-	fclose(instream);
-	return(TRUE);
+	return TRUE;
 }
 
 /****************************************************************************/
@@ -379,7 +341,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	if(cfg->total_grps) {
 		if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(grp_t *)*cfg->total_grps);
+			return allocerr(error, maxerrlen, fname, "groups", sizeof(grp_t *)*cfg->total_grps);
 	} else
 		cfg->grp=NULL;
 
@@ -387,7 +349,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		if(feof(instream)) break;
 		if((cfg->grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(grp_t));
+			return allocerr(error, maxerrlen, fname, "group", sizeof(grp_t));
 		memset(cfg->grp[i],0,sizeof(grp_t));
 
 		get_str(cfg->grp[i]->lname,instream);
@@ -413,14 +375,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	if(cfg->total_subs) {
 		if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(sub_t *)*cfg->total_subs);
+			return allocerr(error, maxerrlen, fname, "subs", sizeof(sub_t *)*cfg->total_subs);
 	} else
 		cfg->sub=NULL;
 
 	for(i=0;i<cfg->total_subs;i++) {
 		if(feof(instream)) break;
 		if((cfg->sub[i]=(sub_t *)malloc(sizeof(sub_t)))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(sub_t));
+			return allocerr(error, maxerrlen, fname, "sub", sizeof(sub_t));
 		memset(cfg->sub[i],0,sizeof(sub_t));
 
 		cfg->sub[i]->subnum = i;
@@ -500,7 +462,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	if(cfg->total_faddrs) {
 		if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(faddr_t)*cfg->total_faddrs);
+			return allocerr(error, maxerrlen, fname, "fido_addrs", sizeof(faddr_t)*cfg->total_faddrs);
 	} else
 		cfg->faddr=NULL;
 
@@ -533,14 +495,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	if(cfg->total_qhubs) {
 		if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(qhub_t*)*cfg->total_qhubs);
+			return allocerr(error, maxerrlen, fname, "qhubs", sizeof(qhub_t*)*cfg->total_qhubs);
 	} else
 		cfg->qhub=NULL;
 
 	for(i=0;i<cfg->total_qhubs;i++) {
 		if(feof(instream)) break;
 		if((cfg->qhub[i]=(qhub_t *)malloc(sizeof(qhub_t)))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(qhub_t));
+			return allocerr(error, maxerrlen, fname, "qhub", sizeof(qhub_t));
 		memset(cfg->qhub[i],0,sizeof(qhub_t));
 
 		get_str(cfg->qhub[i]->id,instream);
@@ -555,11 +517,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		if(k) {
 			if((cfg->qhub[i]->sub=(sub_t**)malloc(sizeof(sub_t*)*k))==NULL)
-				return allocerr(instream, error, maxerrlen, offset,fname,sizeof(sub_t)*k);
+				return allocerr(error, maxerrlen, fname, "qhub sub", sizeof(sub_t)*k);
 			if((cfg->qhub[i]->conf=(ushort *)malloc(sizeof(ushort)*k))==NULL)
-				return allocerr(instream, error, maxerrlen, offset,fname,sizeof(ushort)*k);
+				return allocerr(error, maxerrlen, fname, "qhub conf", sizeof(ushort)*k);
 			if((cfg->qhub[i]->mode=(char *)malloc(sizeof(char)*k))==NULL)
-				return allocerr(instream, error, maxerrlen, offset,fname,sizeof(uchar)*k);
+				return allocerr(error, maxerrlen, fname, "qhub mode", sizeof(uchar)*k);
 		}
 
 		for(j=0;j<k;j++) {
@@ -585,44 +547,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	}
 
 	cfg->total_qhubs=i;
-
-	for(j=0;j<32;j++)
-		get_int(n,instream);
-
-	/************/
-	/* PostLink */
-	/************/
-
-	fread(str,11,1,instream);		/* Unused - used to be Site Name */
-	offset+=11;
-	get_int(cfg->sys_psnum,instream);	/* Site Number */
-	get_int(cfg->total_phubs,instream);
-
-	if(cfg->total_phubs) {
-		if((cfg->phub=(phub_t **)malloc(sizeof(phub_t *)*cfg->total_phubs))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(phub_t*)*cfg->total_phubs);
-	} else
-		cfg->phub=NULL;
-
-	for(i=0;i<cfg->total_phubs;i++) {
-		if(feof(instream)) break;
-		if((cfg->phub[i]=(phub_t *)malloc(sizeof(phub_t)))==NULL)
-			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(phub_t));
-		memset(cfg->phub[i],0,sizeof(phub_t));
-
-		get_str(cfg->phub[i]->name,instream);
-		get_int(cfg->phub[i]->time,instream);
-		get_int(cfg->phub[i]->freq,instream);
-		get_int(cfg->phub[i]->days,instream);
-		get_int(cfg->phub[i]->node,instream);
-		get_str(cfg->phub[i]->call,instream);
-		for(j=0;j<32;j++)
-			get_int(n,instream);
-	}
-
-	cfg->total_phubs=i;
-
-	get_str(cfg->sys_psname,instream);	/* Site Name */
 
 	for(j=0;j<32;j++)
 		get_int(n,instream);
