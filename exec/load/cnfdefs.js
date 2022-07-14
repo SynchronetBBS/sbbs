@@ -198,14 +198,14 @@ struct.sec_level_t={
 	timeperday:	{bytes:UINT16_T,			type:"int"},
 	timepercall:{bytes:UINT16_T,			type:"int"},
 	callsperday:{bytes:UINT16_T,			type:"int"},
-	__PADDING1__:{bytes:4},									// was freecdtperd
+	freecdtperd:{bytes:UINT32_T,			type:"int"},
 	linespermsg:{bytes:UINT16_T,			type:"int"},
 	postsperday:{bytes:UINT16_T,			type:"int"},
 	emailperday:{bytes:UINT16_T,			type:"int"},
 	settings:	{bytes:UINT32_T,			type:"int"},	// was misc
 	expireto:	{bytes:UCHAR,				type:"int"},
 	freecdtperday:{bytes:UINT64_T,			type:"int"},
-	__PADDING2__:{bytes:3}
+	__PADDING__:{bytes:3}
 };
 
 struct.cmd_shell_t={
