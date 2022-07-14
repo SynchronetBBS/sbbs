@@ -1012,7 +1012,7 @@ int ulist(int64_t mode, int left, int top, int width, int *cur, int *bar
 			textattr(hclr|(bclr<<4));
 		}
 
-		if(bar && (*bar)!=(*cur)) {
+		if(bar && opts > 0 && (*bar)!=(*cur)) {
 			gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
 			textattr(lclr|(bclr<<4));
 			putch(api->chars->up_arrow);	   /* put the up arrow */
