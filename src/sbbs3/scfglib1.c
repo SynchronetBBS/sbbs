@@ -24,6 +24,7 @@
 #include "nopen.h"
 #include "ars_defs.h"
 #include "findstr.h"
+#include "ini_file.h"
 
 BOOL allocerr(FILE* fp, char* error, size_t maxerrlen, long offset, const char *fname, size_t size)
 {
@@ -38,72 +39,41 @@ BOOL allocerr(FILE* fp, char* error, size_t maxerrlen, long offset, const char *
 /****************************************************************************/
 BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	c,str[MAX_PATH+1];
-	int 	i;
-	long	offset=0;
-	FILE	*instream;
+	char	path[MAX_PATH+1];
+	char	errstr[256];
+	FILE*	fp;
+	str_list_t	ini;
+	char	value[INI_MAX_VALUE_LEN];
+	const char* section = ROOT_SECTION;
 
-	const char* fname = "node.cnf";
-	SAFEPRINTF2(str,"%s%s",cfg->node_dir,fname);
-	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,STRERROR(errno),str);
-		return(FALSE); 
+	const char* fname = "node.ini";
+	SAFEPRINTF2(path,"%s%s",cfg->node_dir,fname);
+	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+		return FALSE;
 	}
+	ini = iniReadFile(fp);
+	fclose(fp);
 
-	get_int(cfg->node_num,instream);
-	if(!cfg->node_num) {
-		safe_snprintf(error, maxerrlen,"offset %ld in %s, Node number must be non-zero"
-			,offset,fname);
-		fclose(instream);
-		return(FALSE); 
-	}
-	get_str(cfg->node_name,instream);
-	get_str(cfg->node_phone,instream);
-	get_str(cfg->node_comspec,instream);
-	get_int(cfg->node_misc,instream);
-	get_int(cfg->node_ivt,instream);
-	get_int(cfg->node_swap,instream);
-	get_str(cfg->node_swapdir,instream);
-	get_int(cfg->node_valuser,instream);
-	get_int(cfg->node_minbps,instream);
-	get_str(cfg->node_arstr,instream);
-	arstr(NULL,cfg->node_arstr, cfg, cfg->node_ar);
+	SAFECOPY(cfg->node_phone, iniGetString(ini, section, "phone", "", value));
+	SAFECOPY(cfg->node_daily, iniGetString(ini, section, "daily", "", value));
+	SAFECOPY(cfg->text_dir, iniGetString(ini, section, "text_dir", "../text/", value));
+	SAFECOPY(cfg->temp_dir, iniGetString(ini, section, "temp_dir", "temp", value));
+	SAFECOPY(cfg->node_arstr, iniGetString(ini, section, "ars", "", value));
+	arstr(NULL, cfg->node_arstr, cfg, cfg->node_ar);
 
-	get_int(cfg->node_dollars_per_call,instream);
-	get_str(cfg->node_editor,instream);
-	get_str(cfg->node_viewer,instream);
-	get_str(cfg->node_daily,instream);
-	get_int(c,instream);
-	if(c) cfg->node_scrnlen=c;
-	get_int(cfg->node_scrnblank,instream);
-	get_str(cfg->text_dir,instream); 				/* ctrl directory */
-	get_str(cfg->text_dir,instream); 				/* text directory */
-	if(!cfg->text_dir[0])
-		SAFECOPY(cfg->text_dir, "../text/");
-	get_str(cfg->temp_dir,instream); 				/* temp directory */
-	SAFECOPY(cfg->temp_dir,"temp");
+	cfg->node_misc = iniGetLongInt(ini, section, "settings", 0);
+	cfg->node_valuser = iniGetShortInt(ini, section, "valuser", 0);
+	cfg->node_sem_check = iniGetShortInt(ini, section, "sem_check", 60);
+	cfg->node_stat_check = iniGetShortInt(ini, section, "stat_check", 10);
+	cfg->sec_warn = iniGetShortInt(ini, section, "sec_warn", 180);
+	cfg->sec_hangup = iniGetShortInt(ini, section, "sec_hangup", 300);
+	cfg->node_erruser = iniGetShortInt(ini, section, "erruser", 300);
+	cfg->node_errlevel = (uchar)iniGetShortInt(ini, section, "errlevel", 0);
 
-	for(i=0;i<10;i++)  						/* WFC 0-9 DOS commands */
-		get_str(cfg->wfc_cmd[i],instream); 
-	for(i=0;i<12;i++)  						/* WFC F1-F12 shrinking DOS cmds */
-		get_str(cfg->wfc_scmd[i],instream); 
-	get_str(cfg->mdm_hang,instream);
-	get_int(cfg->node_sem_check,instream);
-	if(!cfg->node_sem_check) cfg->node_sem_check=60;
-	get_int(cfg->node_stat_check,instream);
-	if(!cfg->node_stat_check) cfg->node_stat_check=10;
-	get_str(cfg->scfg_cmd,instream);	// unused
-	get_int(cfg->sec_warn,instream);
-	if(!cfg->sec_warn)
-		cfg->sec_warn=180;
-	get_int(cfg->sec_hangup,instream);
-	if(!cfg->sec_hangup)
-		cfg->sec_hangup=300;
-	get_int(cfg->node_erruser, instream);
-	get_int(cfg->node_errlevel, instream);
+	iniFreeStringList(ini);
 
-	fclose(instream);
-	return(TRUE);
+	return TRUE;
 }
 
 /****************************************************************************/

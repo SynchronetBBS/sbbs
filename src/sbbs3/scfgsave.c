@@ -69,66 +69,47 @@ BOOL save_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[MAX_PATH+1];
-	int 	i,file;
-	FILE	*stream;
+	BOOL	result = FALSE;
+	char	path[MAX_PATH+1];
+	FILE*	fp;
+	str_list_t ini;
+	const char* section = ROOT_SECTION;
 
 	if(cfg->prepped)
-		return(FALSE);
+		return FALSE;
 
 	if(cfg->node_num<1 || cfg->node_num>MAX_NODES)
-		return(FALSE);
+		return FALSE;
 
-	SAFECOPY(str,cfg->node_path[cfg->node_num-1]);
-	prep_dir(cfg->ctrl_dir,str,sizeof(str));
-	md(str);
-	strcat(str,"node.cnf");
-	backup(str, backup_level, TRUE);
+	SAFECOPY(path, cfg->node_path[cfg->node_num-1]);
+	prep_dir(cfg->ctrl_dir, path, sizeof(path));
+	md(path);
+	SAFECAT(path, "node.ini");
+	backup(path, backup_level, TRUE);
 
-	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
-		|| (stream=fdopen(file,"wb"))==NULL) {
-		return(FALSE); 
+	ini = strListInit();
+	iniSetString(&ini, section, "phone", cfg->node_phone, NULL);
+	iniSetString(&ini, section, "daily", cfg->node_daily, NULL);
+	iniSetString(&ini, section, "text_dir", cfg->text_dir, NULL);
+	iniSetString(&ini, section, "temp_dir", cfg->temp_dir, NULL);
+	iniSetString(&ini, section, "ars", cfg->node_arstr, NULL);
+
+	iniSetLongInt(&ini, section, "settings", cfg->node_misc, NULL);
+	iniSetShortInt(&ini, section, "valuser", cfg->node_valuser, NULL);
+	iniSetShortInt(&ini, section, "sem_check", cfg->node_sem_check, NULL);
+	iniSetShortInt(&ini, section, "stat_check", cfg->node_stat_check, NULL);
+	iniSetShortInt(&ini, section, "sec_warn", cfg->sec_warn, NULL);
+	iniSetShortInt(&ini, section, "sec_hangup", cfg->sec_hangup, NULL);
+	iniSetShortInt(&ini, section, "erruser", cfg->node_erruser, NULL);
+	iniSetShortInt(&ini, section, "errlevel", cfg->node_errlevel, NULL);
+
+	if((fp = fopen(path, "w")) != NULL) {
+		result = iniWriteFile(fp, ini);
+		fclose(fp);
 	}
-	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
+	iniFreeStringList(ini);
 
-	put_int(cfg->node_num,stream);
-	put_str(cfg->node_name,stream);
-	put_str(cfg->node_phone,stream);
-	put_str(cfg->node_comspec,stream);				 /* Was node_logon */
-	put_int(cfg->node_misc,stream);
-	put_int(cfg->node_ivt,stream);
-	put_int(cfg->node_swap,stream);
-	put_str(cfg->node_swapdir,stream);
-	put_int(cfg->node_valuser,stream);
-	put_int(cfg->node_minbps,stream);
-	put_str(cfg->node_arstr,stream);
-	put_int(cfg->node_dollars_per_call,stream);
-	put_str(cfg->node_editor,stream);
-	put_str(cfg->node_viewer,stream);
-	put_str(cfg->node_daily,stream);
-	put_int(cfg->node_scrnlen,stream);
-	put_int(cfg->node_scrnblank,stream);
-	backslash(cfg->ctrl_dir);
-	put_str(cfg->ctrl_dir,stream);
-	backslash(cfg->text_dir);
-	put_str(cfg->text_dir,stream);
-	backslash(cfg->temp_dir);
-	put_str(cfg->temp_dir,stream);
-	for(i=0;i<10;i++)
-		put_str(cfg->wfc_cmd[i],stream);
-	for(i=0;i<12;i++)
-		put_str(cfg->wfc_scmd[i],stream);
-	put_str(cfg->mdm_hang,stream);
-	put_int(cfg->node_sem_check,stream);
-	put_int(cfg->node_stat_check,stream);
-	put_str(cfg->scfg_cmd,stream);
-	put_int(cfg->sec_warn,stream);
-	put_int(cfg->sec_hangup,stream);
-	put_int(cfg->node_erruser,stream);
-	put_int(cfg->node_errlevel,stream);
-	fclose(stream);
-
-	return(TRUE);
+	return result;
 }
 
 /****************************************************************************/
