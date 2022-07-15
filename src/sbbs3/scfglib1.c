@@ -299,45 +299,48 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	str[MAX_PATH+1],c;
-	short	i,j;
-	int16_t	n,k;
-	long	offset=0;
-	FILE	*instream;
+	char	path[MAX_PATH+1];
+	char	errstr[256];
+	FILE*	fp;
+	str_list_t	ini;
+	char	value[INI_MAX_VALUE_LEN];
+	const char* section = ROOT_SECTION;
 
-	const char* fname = "msgs.cnf";
-	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		safe_snprintf(error, maxerrlen,"%d (%s) opening %s",errno,STRERROR(errno),str);
-		return(FALSE);
+	const char* fname = "msgs.ini";
+	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+		return FALSE;
 	}
+	ini = iniReadFile(fp);
+	fclose(fp);
 
 	/*************************/
 	/* General Message Stuff */
 	/*************************/
+	cfg->smb_retry_time = iniGetInteger(ini, section, "smb_retry_time", 30);
 
-	get_int(cfg->max_qwkmsgs,instream);
-	get_int(cfg->mail_maxcrcs,instream);
-	get_int(cfg->mail_maxage,instream);
-	get_str(cfg->preqwk_arstr,instream);
+	/* QWK stuff */
+	section = "QWK";
+	cfg->msg_misc = iniGetLongInt(ini, section, "settings", 0xffff0000);
+	cfg->max_qwkmsgs = iniGetInteger(ini, section, "max_msgs", 0);
+	cfg->max_qwkmsgage = iniGetInteger(ini, section, "max_age", 0);
+	SAFECOPY(cfg->qnet_tagline, iniGetString(ini, section, "default_tagline", "", value));
+	SAFECOPY(cfg->preqwk_arstr, iniGetString(ini, section, "prepack_ars", "", value));
 	arstr(NULL, cfg->preqwk_arstr, cfg, cfg->preqwk_ar);
 
-	get_int(cfg->smb_retry_time,instream);	 /* odd byte */
-	if(!cfg->smb_retry_time)
-		cfg->smb_retry_time=30;
-	get_int(cfg->max_qwkmsgage, instream);
-	get_int(cfg->max_spamage, instream);
-	for(i=0;i<232;i++)	/* NULL */
-		get_int(n,instream);
-	get_int(cfg->msg_misc,instream);
-	for(i=0;i<255;i++)	/* 0xff */
-		get_int(n,instream);
+	/* E-Mail stuff */
+	section = "mail";
+	cfg->mail_maxcrcs = iniGetInteger(ini, section, "max_crcs", 0);
+	cfg->mail_maxage = iniGetInteger(ini, section, "max_age", 0);
+	cfg->max_spamage = iniGetInteger(ini, section, "max_spam_age", 0);
 
 	/******************/
 	/* Message Groups */
 	/******************/
 
-	get_int(cfg->total_grps,instream);
+	str_list_t grp_list = iniGetSectionList(ini, "grp:");
+	cfg->total_grps = strListCount(grp_list);
 
 	if(cfg->total_grps) {
 		if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
@@ -345,33 +348,27 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->grp=NULL;
 
-	for(i=0;i<cfg->total_grps;i++) {
+	for(uint i=0; i<cfg->total_grps; i++) {
 
-		if(feof(instream)) break;
+		section = grp_list[i];
 		if((cfg->grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "group", sizeof(grp_t));
 		memset(cfg->grp[i],0,sizeof(grp_t));
-
-		get_str(cfg->grp[i]->lname,instream);
-		get_str(cfg->grp[i]->sname,instream);
-
-		get_str(cfg->grp[i]->arstr,instream);
+		SAFECOPY(cfg->grp[i]->sname, section + 4);
+		SAFECOPY(cfg->grp[i]->lname, iniGetString(ini, section, "description", section + 4, value));
+		SAFECOPY(cfg->grp[i]->code_prefix, iniGetString(ini, section, "code_prefix", "", value));
+		SAFECOPY(cfg->grp[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->grp[i]->arstr, cfg, cfg->grp[i]->ar);
-
-		get_str(cfg->grp[i]->code_prefix,instream);
-
-		get_int(c,instream);
-		cfg->grp[i]->sort = c;
-		for(j=0;j<43;j++)
-			get_int(n,instream);
+		cfg->grp[i]->sort = iniGetInteger(ini, section, "sort", 0);
 	}
-	cfg->total_grps=i;
+	strListFree(&grp_list);
 
 	/**********************/
 	/* Message Sub-boards */
 	/**********************/
 
-	get_int(cfg->total_subs,instream);
+	str_list_t sub_list = iniGetSectionList(ini, "sub:");
+	cfg->total_subs = strListCount(sub_list);
 
 	if(cfg->total_subs) {
 		if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
@@ -379,86 +376,83 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->sub=NULL;
 
-	for(i=0;i<cfg->total_subs;i++) {
-		if(feof(instream)) break;
+	cfg->total_subs = 0;
+	for(uint i=0; sub_list[i] != NULL; i++) {
+
+		char group[INI_MAX_VALUE_LEN];
+		section = sub_list[i];
+		SAFECOPY(group, section + 4);
+		char* p = strchr(group, ':');
+		if(p == NULL)
+			continue;
+		*p = '\0';
+		char* code = p + 1;
+		int grpnum = getgrpnum_from_name(cfg, group);
+		if(!is_valid_grpnum(cfg, grpnum))
+			continue;
 		if((cfg->sub[i]=(sub_t *)malloc(sizeof(sub_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "sub", sizeof(sub_t));
 		memset(cfg->sub[i],0,sizeof(sub_t));
+		SAFECOPY(cfg->sub[i]->code_suffix, code);
 
 		cfg->sub[i]->subnum = i;
+		cfg->sub[i]->grp = grpnum;
+		SAFECOPY(cfg->sub[i]->lname, iniGetString(ini, section, "description", code, value));
+		SAFECOPY(cfg->sub[i]->sname, iniGetString(ini, section, "name", code, value));
+		SAFECOPY(cfg->sub[i]->qwkname, iniGetString(ini, section, "qwk_name", code, value));
+		SAFECOPY(cfg->sub[i]->data_dir, iniGetString(ini, section, "data_dir", "", value));
 
-		get_int(cfg->sub[i]->grp,instream);
-		get_str(cfg->sub[i]->lname,instream);
-		get_str(cfg->sub[i]->sname,instream);
-		get_str(cfg->sub[i]->qwkname,instream);
-		get_str(cfg->sub[i]->code_suffix,instream);
-		get_str(cfg->sub[i]->data_dir,instream);
-
-#ifdef SBBS
-		if(cfg->sub[i]->grp >= cfg->total_grps) {
-			safe_snprintf(error, maxerrlen,"offset %ld in %s: invalid group number (%u) for sub-board: %s"
-				,offset,fname
-				,cfg->sub[i]->grp
-				,cfg->sub[i]->code_suffix);
-			fclose(instream);
-			return(FALSE); 
-		}
-#endif
-
-		get_str(cfg->sub[i]->arstr,instream);
-		get_str(cfg->sub[i]->read_arstr,instream);
-		get_str(cfg->sub[i]->post_arstr,instream);
-		get_str(cfg->sub[i]->op_arstr,instream);
+		SAFECOPY(cfg->sub[i]->arstr, iniGetString(ini, section, "ars", "", value));
+		SAFECOPY(cfg->sub[i]->read_arstr, iniGetString(ini, section, "read_ars", "", value));
+		SAFECOPY(cfg->sub[i]->post_arstr, iniGetString(ini, section, "post_ars", "", value));
+		SAFECOPY(cfg->sub[i]->op_arstr, iniGetString(ini, section, "operator_ars", "", value));
+		SAFECOPY(cfg->sub[i]->mod_arstr, iniGetString(ini, section, "moderated_ars", "", value));
 
 		arstr(NULL, cfg->sub[i]->arstr, cfg, cfg->sub[i]->ar);
 		arstr(NULL, cfg->sub[i]->read_arstr, cfg, cfg->sub[i]->read_ar);
 		arstr(NULL, cfg->sub[i]->post_arstr, cfg, cfg->sub[i]->post_ar);
 		arstr(NULL, cfg->sub[i]->op_arstr, cfg, cfg->sub[i]->op_ar);
+		arstr(NULL, cfg->sub[i]->mod_arstr, cfg,cfg->sub[i]->mod_ar);
 
-		get_int(cfg->sub[i]->misc,instream);
+		cfg->sub[i]->misc = iniGetLongInt(ini, section, "settings", 0);
 		if((cfg->sub[i]->misc&(SUB_FIDO|SUB_INET)) && !(cfg->sub[i]->misc&SUB_QNET))
 			cfg->sub[i]->misc|=SUB_NOVOTING;
 
-		get_str(cfg->sub[i]->tagline,instream);
-		get_str(cfg->sub[i]->origline,instream);
-		get_str(cfg->sub[i]->post_sem,instream);
+		SAFECOPY(cfg->sub[i]->tagline, iniGetString(ini, section, "qwknet_tagline", "", value));
+		SAFECOPY(cfg->sub[i]->origline, iniGetString(ini, section, "fidonet_origin", "", value));
+		SAFECOPY(cfg->sub[i]->post_sem, iniGetString(ini, section, "post_sem", "", value));
+		SAFECOPY(cfg->sub[i]->newsgroup, iniGetString(ini, section, "newsgroup", "", value));
+		SAFECOPY(cfg->sub[i]->area_tag, iniGetString(ini, section, "area_tag", "", value));
 
-		get_str(cfg->sub[i]->newsgroup,instream);
-
-		get_int(cfg->sub[i]->faddr,instream);			/* FidoNet address */
-		get_int(cfg->sub[i]->maxmsgs,instream);
-		get_int(cfg->sub[i]->maxcrcs,instream);
-		get_int(cfg->sub[i]->maxage,instream);
-		get_int(cfg->sub[i]->ptridx,instream);
+		cfg->sub[i]->faddr = smb_atofaddr(NULL, iniGetString(ini, section, "fidonet_addr", "", value));
+		cfg->sub[i]->maxmsgs = iniGetInteger(ini, section, "max_msgs", 0);
+		cfg->sub[i]->maxcrcs = iniGetInteger(ini, section, "max_crcs", 0);
+		cfg->sub[i]->maxage = iniGetInteger(ini, section, "max_age", 0);
+		cfg->sub[i]->ptridx = iniGetInteger(ini, section, "ptridx", 0);
 #ifdef SBBS
 		for(j=0;j<i;j++)
 			if(cfg->sub[i]->ptridx==cfg->sub[j]->ptridx) {
-				safe_snprintf(error, maxerrlen,"offset %ld in %s: Duplicate pointer index for subs %s and %s"
-					,offset,fname
+				safe_snprintf(error, maxerrlen,"%s: Duplicate pointer index for subs %s and %s"
+					,fname
 					,cfg->sub[i]->code_suffix,cfg->sub[j]->code_suffix);
-				fclose(instream);
-				return(FALSE); 
+				return(FALSE);
 			}
 #endif
 
-		get_str(cfg->sub[i]->mod_arstr,instream);
-		arstr(NULL, cfg->sub[i]->mod_arstr, cfg,cfg->sub[i]->mod_ar);
 
-		get_int(cfg->sub[i]->qwkconf,instream);
-		get_int(c,instream); // unused
-		get_int(cfg->sub[i]->pmode,instream);
-		get_int(cfg->sub[i]->n_pmode,instream);
-		get_str(cfg->sub[i]->area_tag, instream);
-		get_int(c,instream);
-		get_int(n,instream);
+		cfg->sub[i]->qwkconf = iniGetShortInt(ini, section, "qwk_conf", 0);
+		cfg->sub[i]->pmode = iniGetLongInt(ini, section, "print_mode", 0);
+		cfg->sub[i]->n_pmode = iniGetLongInt(ini, section, "print_mode_neg", 0);
+		++cfg->total_subs;
 	}
-	cfg->total_subs=i;
+	strListFree(&sub_list);
 
 	/***********/
 	/* FidoNet */
 	/***********/
-
-	get_int(cfg->total_faddrs,instream);
+	section = "fidonet";
+	str_list_t faddr_list = iniGetStringList(ini, section, "addr_list", ",", "");
+	cfg->total_faddrs = strListCount(faddr_list);
 
 	if(cfg->total_faddrs) {
 		if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
@@ -466,32 +460,28 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->faddr=NULL;
 
-	for(i=0;i<cfg->total_faddrs;i++)
-		get_int(cfg->faddr[i],instream);
+	for(uint i=0;i<cfg->total_faddrs;i++)
+		cfg->faddr[i] = smb_atofaddr(NULL, faddr_list[i]);
+	strListFree(&faddr_list);
 
 	// Sanity-check each sub's FidoNet-style address
-	for(i = 0; i < cfg->total_subs; i++)
+	for(uint i = 0; i < cfg->total_subs; i++)
 		cfg->sub[i]->faddr = *nearest_sysfaddr(cfg, &cfg->sub[i]->faddr);
 
-	get_str(cfg->origline,instream);
-	get_str(cfg->netmail_sem,instream);
-	get_str(cfg->echomail_sem,instream);
-	get_str(cfg->netmail_dir,instream);
-	get_str(cfg->echomail_dir,instream);
-	get_str(cfg->fidofile_dir,instream);
-	get_int(cfg->netmail_misc,instream);
-	get_int(cfg->netmail_cost,instream);
-	get_int(cfg->dflt_faddr,instream);
-	for(i=0;i<28;i++)
-		get_int(n,instream);
+	SAFECOPY(cfg->origline, iniGetString(ini, section, "default_origin", "", value));
+	SAFECOPY(cfg->netmail_sem, iniGetString(ini, section, "netmail_sem", "", value));
+	SAFECOPY(cfg->echomail_sem, iniGetString(ini, section, "echomail_sem", "", value));
+	SAFECOPY(cfg->netmail_dir, iniGetString(ini, section, "netmail_dir", "", value));
+	SAFECOPY(cfg->echomail_dir, iniGetString(ini, section, "echomail_dir", "", value));
+	SAFECOPY(cfg->fidofile_dir, iniGetString(ini, section, "file_dir", "", value));
+	cfg->netmail_misc = iniGetLongInt(ini, section, "netmail_settings", 0);
+	cfg->netmail_cost = iniGetLongInt(ini, section, "netmail_cost", 0);
 
 	/**********/
 	/* QWKnet */
 	/**********/
-
-	get_str(cfg->qnet_tagline,instream);
-
-	get_int(cfg->total_qhubs,instream);
+	str_list_t qhub_list = iniGetSectionList(ini, "qhub:");
+	cfg->total_qhubs = strListCount(qhub_list);
 
 	if(cfg->total_qhubs) {
 		if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
@@ -499,22 +489,28 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->qhub=NULL;
 
-	for(i=0;i<cfg->total_qhubs;i++) {
-		if(feof(instream)) break;
+	cfg->total_qhubs = 0;
+	for(uint i=0; qhub_list[i] != NULL; i++) {
+		section = qhub_list[i];
 		if((cfg->qhub[i]=(qhub_t *)malloc(sizeof(qhub_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "qhub", sizeof(qhub_t));
 		memset(cfg->qhub[i],0,sizeof(qhub_t));
 
-		get_str(cfg->qhub[i]->id,instream);
-		get_int(cfg->qhub[i]->time,instream);
-		get_int(cfg->qhub[i]->freq,instream);
-		get_int(cfg->qhub[i]->days,instream);
-		get_int(cfg->qhub[i]->node,instream);
-		get_str(cfg->qhub[i]->call,instream);
-		get_str(cfg->qhub[i]->pack,instream);
-		get_str(cfg->qhub[i]->unpack,instream);
-		get_int(k,instream);
+		SAFECOPY(cfg->qhub[i]->id, section + 5);
+		cfg->qhub[i]->time = iniGetInteger(ini, section, "time", 0);
+		cfg->qhub[i]->freq = iniGetInteger(ini, section, "freq", 0);
+		cfg->qhub[i]->days = iniGetInteger(ini, section, "days", 0);
+		cfg->qhub[i]->node = iniGetInteger(ini, section, "node", 0);
+		SAFECOPY(cfg->qhub[i]->call, iniGetString(ini, section, "call", "", value));
+		SAFECOPY(cfg->qhub[i]->pack, iniGetString(ini, section, "pack", "", value));
+		SAFECOPY(cfg->qhub[i]->unpack, iniGetString(ini, section, "unpack", "", value));
+		SAFECOPY(cfg->qhub[i]->fmt, iniGetString(ini, section, "format", "zip", value));
+		cfg->qhub[i]->misc = iniGetLongInt(ini, section, "settings", 0);
 
+		char str[128];
+		SAFEPRINTF(str, "qhubsub:%s:", cfg->qhub[i]->id);
+		str_list_t qsub_list = iniGetSectionList(ini, str);
+		uint k = strListCount(qsub_list);
 		if(k) {
 			if((cfg->qhub[i]->sub=(sub_t**)malloc(sizeof(sub_t*)*k))==NULL)
 				return allocerr(error, maxerrlen, fname, "qhub sub", sizeof(sub_t)*k);
@@ -524,14 +520,15 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 				return allocerr(error, maxerrlen, fname, "qhub mode", sizeof(uchar)*k);
 		}
 
-		for(j=0;j<k;j++) {
+		for(uint j=0;j<k;j++) {
 			uint16_t	confnum;
 			uint16_t	subnum;
+			char		subcode[LEN_EXTCODE + 1];
 			uint8_t		mode;
-			if(feof(instream)) break;
-			get_int(confnum,instream);
-			get_int(subnum, instream);
-			get_int(mode, instream);
+			confnum = atoi(qsub_list[j] + strlen(str));
+			SAFECOPY(subcode, iniGetString(ini, qsub_list[j], "sub", "", value));
+			subnum = getsubnum(cfg, subcode);
+			mode = iniGetLongInt(ini, qsub_list[i], "mode", 0);
 			if(subnum < cfg->total_subs) {
 				cfg->sub[subnum]->misc |= SUB_QNET;
 				cfg->qhub[i]->sub[cfg->qhub[i]->subs]	= cfg->sub[subnum];
@@ -540,29 +537,24 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 				cfg->qhub[i]->subs++;
 			}
 		}
-		get_int(cfg->qhub[i]->misc, instream);
-		get_str(cfg->qhub[i]->fmt,instream);
-		for(j=0;j<28;j++)
-			get_int(n,instream);
+		strListFree(&qsub_list);
+		++cfg->total_qhubs;
 	}
-
-	cfg->total_qhubs=i;
-
-	for(j=0;j<32;j++)
-		get_int(n,instream);
+	strListFree(&qhub_list);
 
 	/************/
 	/* Internet */
 	/************/
+	section = "Internet";
+	SAFECOPY(cfg->sys_inetaddr, iniGetString(ini, section, "addr", "", value));
+	SAFECOPY(cfg->inetmail_sem, iniGetString(ini, section, "netmail_sem", "", value));
+	SAFECOPY(cfg->smtpmail_sem, iniGetString(ini, section, "smtp_sem", "", value));
+	cfg->inetmail_misc = iniGetLongInt(ini, section, "settings", 0);
+	cfg->inetmail_cost = iniGetLongInt(ini, section, "cost", 0);
 
-	get_str(cfg->sys_inetaddr,instream); /* Internet address */
-	get_str(cfg->inetmail_sem,instream);
-	get_int(cfg->inetmail_misc,instream);
-	get_int(cfg->inetmail_cost,instream);
-	get_str(cfg->smtpmail_sem,instream);
+	iniFreeStringList(ini);
 
-	fclose(instream);
-	return(TRUE);
+	return TRUE;
 }
 
 void free_node_cfg(scfg_t* cfg)
@@ -722,6 +714,28 @@ int getgrpnum(scfg_t* cfg, const char* code)
 
 	if(i >= 0)
 		return cfg->sub[i]->grp;
+	return i;
+}
+
+int getgrpnum_from_name(scfg_t* cfg, const char* name)
+{
+	int i;
+
+	for(i = 0; i < cfg->total_grps; i++) {
+		if(stricmp(cfg->grp[i]->sname, name) == 0)
+			break;
+	}
+	return i;
+}
+
+int getlibnum_from_name(scfg_t* cfg, const char* name)
+{
+	int i;
+
+	for(i = 0; i < cfg->total_libs; i++) {
+		if(stricmp(cfg->lib[i]->sname, name) == 0)
+			break;
+	}
 	return i;
 }
 

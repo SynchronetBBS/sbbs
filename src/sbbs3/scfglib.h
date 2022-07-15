@@ -64,8 +64,10 @@ uint	attrstr(char *str);		/* Convert ATTR string into attribute int */
 
 int		getdirnum(scfg_t*, const char* code);
 int		getlibnum(scfg_t*, const char* code);
+int		getlibnum_from_name(scfg_t*, const char* name);
 int		getsubnum(scfg_t*, const char* code);
 int		getgrpnum(scfg_t*, const char* code);
+int		getgrpnum_from_name(scfg_t*, const char* name);
 
 DLLEXPORT BOOL	is_valid_dirnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_libnum(scfg_t*, int);
