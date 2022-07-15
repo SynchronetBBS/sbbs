@@ -21,7 +21,7 @@ var CNF = new (function() {
 		}
 		else {
 			var s = file.read(bytes);
-			return s.replace(/\0/g,'');
+			return s.replace(/\0|\xff/g,'');
 		}
 	}
 
