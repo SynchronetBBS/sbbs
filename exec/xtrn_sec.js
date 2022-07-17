@@ -263,6 +263,7 @@ function external_section_menu()
 		if(bbs.menu_exists("xtrn_sec")) {
 			bbs.menu("xtrn_sec");
 			bbs.menu("xtrn_sec_tail", P_NOERROR);
+			xsec = undefined; // no default section
 		}
 		else {
 			if(options.sort)
@@ -290,6 +291,8 @@ function external_section_menu()
 		bbs.node_sync();
 		var num = console.getnum(sec_list.length);
 		if(num < 0)
+			break;
+		if(xsec === undefined && num == 0) // Enter = Quit, when there's no prompt
 			break;
 		if(num > 0)
 			xsec = num - 1;
