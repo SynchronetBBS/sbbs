@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.53     2022-07-18   Deleted messages can now be un-marked for deletion from
+                      the message list (if the user has delete permissions).
+                      Also, the reader now honors the system setting for whether
+                      users can view deleted messages.
 1.52     2022-07-09   Mouse click support for the bottom help lines in scrolling
                       mode (thanks to help from Nelgin)
 1.51     2022-07-05   Graphic is now only used when using the scrollable
