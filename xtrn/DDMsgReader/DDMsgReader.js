@@ -47,6 +47,10 @@
  * 2022-07-09 Eric Oulashin     Version 1.52
  *                              Mouse click support for the bottom help lines in scrollable mode
  *                              (thanks to help from Nelgin)
+ * 2022-07-18 Eric Oulashin     Version 1.53
+ *                              Deleted messages can now be un-marked for deletion from the message
+ *                              list with the U key (if the user has delete permissions). Also, the reader now
+ *                              honors the system setting for whether users can view deleted messages.
  */
 
 "use strict";
@@ -151,8 +155,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.52";
-var READER_DATE = "2022-07-09";
+var READER_VERSION = "1.53";
+var READER_DATE = "2022-07-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -749,8 +753,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.MessageIsLastFromUser = DigDistMsgReader_MessageIsLastFromUser;
 	this.DisplayEnhReaderError = DigDistMsgReader_DisplayEnhReaderError;
 	this.EnhReaderPromptYesNo = DigDistMsgReader_EnhReaderPromptYesNo;
-	this.PromptAndDeleteMessage = DigDistMsgReader_PromptAndDeleteMessage;
-	this.PromptAndDeleteSelectedMessages = DigDistMsgReader_PromptAndDeleteSelectedMessages;
+	this.PromptAndDeleteOrUndeleteMessage = DigDistMsgReader_PromptAndDeleteOrUndeleteMessage;
+	this.PromptAndDeleteOrUndeleteSelectedMessages = DigDistMsgReader_PromptAndDeleteOrUndeleteSelectedMessages;
 	this.GetExtdMsgHdrInfo = DigDistMsgReader_GetExtdMsgHdrInfo;
 	this.GetMsgInfoForEnhancedReader = DigDistMsgReader_GetMsgInfoForEnhancedReader;
 	this.GetLastReadMsgIdxAndNum = DigDistMsgReader_GetLastReadMsgIdxAndNum;
@@ -762,7 +766,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ToggleSelectedMessage = DigDistMsgReader_ToggleSelectedMessage;
 	this.MessageIsSelected = DigDistMsgReader_MessageIsSelected;
 	this.AllSelectedMessagesCanBeDeleted = DigDistMsgReader_AllSelectedMessagesCanBeDeleted;
-	this.DeleteSelectedMessages = DigDistMsgReader_DeleteSelectedMessages;
+	this.DeleteOrUndeleteSelectedMessages = DigDistMsgReader_DeleteOrUndeleteSelectedMessages;
 	this.NumSelectedMessages = DigDistMsgReader_NumSelectedMessages;
 	this.ForwardMessage = DigDistMsgReader_ForwardMessage;
 	this.VoteOnMessage = DigDistMsgReader_VoteOnMessage;
@@ -927,9 +931,13 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		abortedText: "\x01n\x01y\x01h\x01iAborted\x01n",
 		loadingPersonalMailText: "\x01n\x01cLoading %s...",
 		msgDelConfirmText: "\x01n\x01h\x01yDelete\x01n\x01c message #\x01h%d\x01n\x01c: Are you sure",
+		msgUndelConfirmText: "\x01n\x01h\x01yUndelete\x01n\x01c message #\x01h%d\x01n\x01c: Are you sure",
 		delSelectedMsgsConfirmText: "\x01n\x01h\x01yDelete selected messages: Are you sure",
+		undelSelectedMsgsConfirmText: "\x01n\x01h\x01yUndelete selected messages: Are you sure",
 		msgDeletedText: "\x01n\x01cMessage #\x01h%d\x01n\x01c has been marked for deletion.",
+		msgUndeletedText: "\x01n\x01cMessage #\x01h%d\x01n\x01c has been unmarked for deletion.",
 		selectedMsgsDeletedText: "\x01n\x01cSelected messages have been marked for deletion.",
+		selectedMsgsUndeletedText: "\x01n\x01cSelected messages have been unmarked for deletion.",
 		cannotDeleteMsgText_notYoursNotASysop: "\x01n\x01h\x01wCannot delete message #\x01y%d \x01wbecause it's not yours or you're not a sysop.",
 		cannotDeleteMsgText_notLastPostedMsg: "\x01n\x01h\x01g* \x01yCannot delete message #%d. You can only delete your last message in this area.\x01n",
 		cannotDeleteAllSelectedMsgsText: "\x01n\x01y\x01h* Cannot delete all selected messages",
@@ -999,6 +1007,17 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	};
 	if (user.is_sysop)
 		this.enhReaderKeys.validateMsg = "A";
+	// Some key bindings for the message list (not necessarily all of them)
+	this.msgListKeys = {
+		deleteMessage: KEY_DEL,
+		undeleteMessage: "U",
+		batchDelete: CTRL_D,
+		editMsg: "E",
+		goToMsg: "G",
+		chgMsgArea: "C",
+		quit: "Q",
+		showHelp: "?"
+	};
 
 	// Whether or not to display avatars
 	this.displayAvatars = true;
@@ -1570,13 +1589,15 @@ function msgNumToIdxFromMsgbase(pSubCode, pMsgNum)
 //  pMsgIndex: The index (0-based) of the message header
 //  pAttrib: Optional - An attribute to apply.  If this is is not specified,
 //           then the message header will be retrieved from the message base.
-// pSubBoardCode: Optional - An internal sub-board code.  If not specified, then
-//                this method will default to this.subBoardCode.
-function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoardCode)
+//  pApply: Optional boolean - Whether or not to apply the attribute or remove it. Defaults to true.
+//  pSubBoardCode: Optional - An internal sub-board code.  If not specified, then
+//                 this method will default to this.subBoardCode.
+function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pApply, pSubBoardCode)
 {
 	if (typeof(pMsgIndex) != "number")
 		return;
 
+	var applyAttr = (typeof(pApply) === "boolean" ? pApply : true);
 	var subCode = (typeof(pSubBoardCode) == "string" ? pSubBoardCode : this.subBoardCode);
 	var msgbase = new MsgBase(subCode);
 	if (msgbase.open())
@@ -1588,7 +1609,10 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoar
 			{
 				if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
 				{
-					this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
+					if (applyAttr)
+						this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
+					else
+						this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr ^ pAttrib;
 					var msgOffsetFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].offset;
 					msgbase.put_msg_header(true, msgOffsetFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex]);
 				}
@@ -1614,13 +1638,20 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoar
 //  pMsgIndex: The index (0-based) of the message header
 //  pAttrib: Optional - An attribute to apply.  If this is is not specified,
 //           then the message header will be retrieved from the message base.
-function DigDistMsgReader_RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib)
+//  pApply: Optional boolean - Whether or not to apply the attribute or remove it. Defaults to true.
+function DigDistMsgReader_RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib, pApply)
 {
 	if (typeof(pMsgIndex) != "number")
 		return;
 
 	if ((pMsgIndex >= 0) && (pMsgIndex < this.hdrsForCurrentSubBoard.length))
-		this.hdrsForCurrentSubBoard[pMsgIndex].attr = this.hdrsForCurrentSubBoard[pMsgIndex].attr | pAttrib;
+	{
+		var applyAttr = (typeof(pApply) === "boolean" ? pApply : true);
+		if (applyAttr)
+			this.hdrsForCurrentSubBoard[pMsgIndex].attr = this.hdrsForCurrentSubBoard[pMsgIndex].attr | pAttrib;
+		else
+			this.hdrsForCurrentSubBoard[pMsgIndex].attr = this.hdrsForCurrentSubBoard[pMsgIndex].attr ^ pAttrib;
+	}
 }
 
 // For the DigDistMsgReader class: Refreshes a message header in the saved message
@@ -1630,12 +1661,14 @@ function DigDistMsgReader_RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib)
 //  pMsgIndex: The index (0-based) of the message header
 //  pAttrib: Optional - An attribute to apply.  If this is is not specified,
 //           then the message header will be retrieved from the message base.
-// pSubBoardCode: Optional - An internal sub-board code.  If not specified, then
-//                this method will default to this.subBoardCode.
-function DigDistMsgReader_RefreshHdrInSavedArrays(pMsgIndex, pAttrib, pSubBoardCode)
+//  pApply: Optional boolean - Whether or not to apply the attribute or remove it. Defaults to true.
+//  pSubBoardCode: Optional - An internal sub-board code.  If not specified, then
+//                 this method will default to this.subBoardCode.
+function DigDistMsgReader_RefreshHdrInSavedArrays(pMsgIndex, pAttrib, pApply, pSubBoardCode)
 {
-	this.RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoardCode);
-	this.RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib);
+	var applyAttr = (typeof(pApply) === "boolean" ? pApply : true);
+	this.RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, applyAttr, pSubBoardCode);
+	this.RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib, applyAttr);
 }
 
 // For the DigDistMsgReader class: Inputs search text from the user, then reads/lists
@@ -3168,7 +3201,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 					// DeleteMessage() method, which will prompt the user for
 					// confirmation and delete the message if confirmed.
 					if (msgNum > 0)
-						this.PromptAndDeleteMessage(msgNum-1);
+						this.PromptAndDeleteOrUndeleteMessage(msgNum-1, null, true);
 
 					// Refresh the top header on the screen for continuing to list
 					// messages.
@@ -3289,14 +3322,14 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 				console.crlf();
 				if (this.NumSelectedMessages() > 0)
 				{
-					// The PromptAndDeleteSelectedMessages() method will prompt the user for confirmation
+					// The PromptAndDeleteOrUndeleteSelectedMessages() method will prompt the user for confirmation
 					// to delete the message and then delete it if confirmed.
-					this.PromptAndDeleteSelectedMessages();
+					this.PromptAndDeleteOrUndeleteSelectedMessages(null, true);
 
-					// In case all messages were deleted, if that's the case, show
-					// an appropriate message and don't continue listing messages.
+					// In case all messages were deleted, if the user can't view deleted messages,
+					// show an appropriate message and don't continue listing messages.
 					//if (this.NumMessages(true) == 0)
-					if (!this.NonDeletedMessagesExist())
+					if (!this.NonDeletedMessagesExist() && !canViewDeletedMsgs())
 					{
 						continueOn = false;
 						// Note: The following doesn't seem to be necessary, since
@@ -3506,7 +3539,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// and the user would have pressed one of the additional quit keys set
 		// up for the menu.  So look at the menu's lastUserInput and do the
 		// appropriate thing.
-		else if ((lastUserInputUpper == "Q") || (lastUserInputUpper == KEY_ESC)) // Quit
+		else if ((lastUserInputUpper == this.msgListKeys.quit) || (lastUserInputUpper == KEY_ESC)) // Quit
 		{
 			continueOn = false;
 			retObj.lastUserInput = "Q"; // So the reader will quit out
@@ -3573,7 +3606,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			}
 		}
 		// DEL key: Delete a message
-		else if (lastUserInputUpper == KEY_DEL)
+		else if (lastUserInputUpper == this.msgListKeys.deleteMessage)
 		{
 			if (this.CanDelete() || this.CanDeleteLastMsg())
 			{
@@ -3581,14 +3614,14 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				console.print("\x01n");
 				console.clearline();
 
-				// The PromptAndDeleteMessage() method will prompt the user for confirmation
+				// The PromptAndDeleteOrUndeleteMessage() method will prompt the user for confirmation
 				// to delete the message and then delete it if confirmed.
-				this.PromptAndDeleteMessage(this.lightbarListSelectedMsgIdx, { x: 1, y: console.screen_rows});
+				this.PromptAndDeleteOrUndeleteMessage(this.lightbarListSelectedMsgIdx, { x: 1, y: console.screen_rows}, true);
 
-				// In case all messages were deleted, if that's the case, show
-				// an appropriate message and don't continue listing messages.
+				// In case all messages were deleted, if the user can't view deleted messages,
+				// show an appropriate message and don't continue listing messages.
 				//if (this.NumMessages(true) == 0)
-				if (!this.NonDeletedMessagesExist())
+				if (!this.NonDeletedMessagesExist() && !canViewDeletedMsgs())
 					continueOn = false;
 				else
 				{
@@ -3600,7 +3633,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			}
 		}
 		// E: Edit a message
-		else if (lastUserInputUpper == "E")
+		else if (lastUserInputUpper == this.msgListKeys.editMsg)
 		{
 			if (this.CanEdit())
 			{
@@ -3628,7 +3661,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				drawMenu = false; // No need to re-draw the menu
 		}
 		// G: Go to a specific message by # (highlight or place that message on the top)
-		else if (lastUserInputUpper == "G")
+		else if (lastUserInputUpper == this.msgListKeys.goToMsg)
 		{
 			// Move the cursor to the bottom of the screen and
 			// prompt the user for a message number.
@@ -3673,7 +3706,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			DisplayHelpLine(this.msgListLightbarModeHelpLine);
 		}
 		// C: Change to another message area (sub-board)
-		else if (lastUserInputUpper == "C")
+		else if (lastUserInputUpper == this.msgListKeys.chgMsgArea)
 		{
 			if (allowChgSubBoard && (this.subBoardCode != "mail"))
 			{
@@ -3711,7 +3744,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			else
 				drawMenu = false; // No need to re-draw the menu
 		}
-		else if (lastUserInputUpper == "?") // Show help
+		else if (lastUserInputUpper == this.msgListKeys.showHelp) // Show help
 		{
 			console.clear("\x01n");
 			this.DisplayMsgListHelp(allowChgSubBoard, true);
@@ -3761,38 +3794,66 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// Ctrl-D: Batch delete (for selected messages)
 		else if (lastUserInputUpper == CTRL_D)
 		{
-			if (this.NumSelectedMessages() > 0)
+			if (this.CanDelete() || this.CanDeleteLastMsg())
+			{
+				if (this.NumSelectedMessages() > 0)
+				{
+					console.gotoxy(1, console.screen_rows);
+					console.print("\x01n");
+					console.clearline();
+
+					// The PromptAndDeleteOrUndeleteSelectedMessages() method will prompt the user for confirmation
+					// to delete the message and then delete it if confirmed.
+					this.PromptAndDeleteOrUndeleteSelectedMessages({ x: 1, y: console.screen_rows}, true);
+
+					// In case all messages were deleted, if the user can't view deleted messages,
+					// show an appropriate message and don't continue listing messages.
+					//if (this.NumMessages(true) == 0)
+					if (!this.NonDeletedMessagesExist() && !canViewDeletedMsgs())
+						continueOn = false;
+					else
+					{
+						// There are still messages to list, so refresh the header & help lines
+						this.WriteMsgListScreenTopHeader();
+						DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					}
+				}
+				else
+				{
+					// There are no selected messages
+					writeWithPause(1, console.screen_rows, "\x01n\x01h\x01yThere are no selected messages.",
+					ERROR_PAUSE_WAIT_MS, "\x01n", true);
+					// Refresh the help line
+					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+				}
+			}
+		}
+		// U: Undelete message(s)
+		else if (lastUserInputUpper == this.msgListKeys.undeleteMessage)
+		{
+			if (this.CanDelete() || this.CanDeleteLastMsg())
 			{
 				console.gotoxy(1, console.screen_rows);
 				console.print("\x01n");
 				console.clearline();
-
-				// The PromptAndDeleteSelectedMessages() method will prompt the user for confirmation
-				// to delete the message and then delete it if confirmed.
-				this.PromptAndDeleteSelectedMessages({ x: 1, y: console.screen_rows});
-
-				// In case all messages were deleted, if that's the case, show
-				// an appropriate message and don't continue listing messages.
-				//if (this.NumMessages(true) == 0)
-				if (!this.NonDeletedMessagesExist())
-					continueOn = false;
+				if (this.NumSelectedMessages() > 0)
+				{
+					// Multi-message undelete
+					this.PromptAndDeleteOrUndeleteSelectedMessages({ x: 1, y: console.screen_rows}, false);
+				}
 				else
 				{
-					// There are still messages to list, so refresh the header & help lines
-					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					// Single-message undelete
+					this.PromptAndDeleteOrUndeleteMessage(this.lightbarListSelectedMsgIdx, { x: 1, y: console.screen_rows}, false);
 				}
-			}
-			else
-			{
-				// There are no selected messages
-				writeWithPause(1, console.screen_rows, "\x01n\x01h\x01yThere are no selected messages.",
-				ERROR_PAUSE_WAIT_MS, "\x01n", true);
-				// Refresh the help line
+
+				// Refresh the header & help line.
+				this.WriteMsgListScreenTopHeader();
 				DisplayHelpLine(this.msgListLightbarModeHelpLine);
 			}
 		}
 		// S: Sorting options
+		// TODO
 		else if (lastUserInputUpper == "S")
 		{
 			// Refresh the help line
@@ -3885,7 +3946,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 	// respond to these keys
 	var additionalQuitKeys = "EeqQgGcCsS ?0123456789" + CTRL_A + CTRL_D;
 	if (this.CanDelete() || this.CanDeleteLastMsg())
-		additionalQuitKeys += KEY_DEL;
+		additionalQuitKeys += ("uU" + KEY_DEL); // U: Undelete message
 	if (this.CanEdit())
 		additionalQuitKeys += "E";
 	msgListMenu.AddAdditionalQuitKeys(additionalQuitKeys);
@@ -4213,10 +4274,11 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	// To access one of these, use brackets; i.e., msgHeader['to']
 	if (highlight)
 	{
-		if (msgDeleted)
-			msgIndicatorChar = "\x01n\x01r\x01h\x01i" + this.colors.msgListHighlightBkgColor + "*\x01n";
-		else if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
+		// For any indicator character next to the message, prioritize selected, then deleted, then attachments
+		if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + CHECK_CHAR + "\x01n";
+		else if (msgDeleted)
+			msgIndicatorChar = "\x01n\x01r\x01h\x01i" + this.colors.msgListHighlightBkgColor + "*\x01n";
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + "A\x01n";
 		var fromName = pMsgHeader.from;
@@ -4243,10 +4305,11 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	}
 	else
 	{
-		if (msgDeleted)
-			msgIndicatorChar = "\x01n\x01r\x01h\x01i*\x01n";
-		else if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
+		// For any indicator character next to the message, prioritize selected, then deleted, then attachments
+		if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
 			msgIndicatorChar = "\x01n" +  this.colors.selectedMsgMarkColor + CHECK_CHAR + "\x01n";
+		else if (msgDeleted)
+			msgIndicatorChar = "\x01n\x01r\x01h\x01i*\x01n";
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
 			msgIndicatorChar = "\x01n" +  this.colors.selectedMsgMarkColor + "A\x01n";
 
@@ -4556,7 +4619,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		// expanded fields and saves the attributes with that header.
 		var saveRetObj = applyAttrsInMsgHdrInMessagbase(this.subBoardCode, msgHeader.number, MSG_READ);
 		if (this.SearchTypePopulatesSearchResults() && saveRetObj.saveSucceeded)
-			this.RefreshHdrInSavedArrays(pOffset, MSG_READ);
+			this.RefreshHdrInSavedArrays(pOffset, MSG_READ, true);
 	}
 
 	// If not reading personal email and not doing a search, then update the
@@ -4693,15 +4756,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
 
 				// Prompt the user for confirmation to delete the message.
-				// Note: this.PromptAndDeleteMessage() will check to see if the user
+				// Note: this.PromptAndDeleteOrUndeleteMessage() will check to see if the user
 				// is a sysop or the message was posted by the user.
-				// If the message was deleted, then exit this read method
-				// and return KEY_RIGHT as the last keypress so that the
-				// calling method will go to the next message/sub-board.
+				// If the message was deleted and the user can't view deleted messages,
+				// then exit this read method and return KEY_RIGHT as the last keypress
+				// so that the calling method will go to the next message/sub-board.
 				// Otherwise (if the message was not deleted), refresh the
 				// last 2 lines of the message on the screen.
-				var msgWasDeleted = this.PromptAndDeleteMessage(pOffset, promptPos, true, this.msgAreaWidth, true);
-				if (msgWasDeleted)
+				var msgWasDeleted = this.PromptAndDeleteOrUndeleteMessage(pOffset, promptPos, true, true, this.msgAreaWidth, true);
+				if (msgWasDeleted && !canViewDeletedMsgs())
 				{
 					var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
 					continueOn = msgSearchObj.continueInputLoop;
@@ -4740,7 +4803,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// TODO: Write this?  Not sure yet if it makes much sense to
 				// have batch delete in the reader interface.
 				// Prompt the user for confirmation, and use
-				// this.DeleteSelectedMessages() to mark the selected messages
+				// this.DeleteOrUndeleteSelectedMessages() to mark the selected messages
 				// as deleted.
 				// Returns an object with the following properties:
 				//  deletedAll: Boolean - Whether or not all messages were successfully marked
@@ -4859,7 +4922,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						//retObj.msgNotReadable = replyRetObj.msgWasDeleted;
 						var msgWasDeleted = replyRetObj.msgWasDeleted;
 						//if (retObj.msgNotReadable)
-						if (msgWasDeleted)
+						if (msgWasDeleted && !canViewDeletedMsgs())
 						{
 							var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
 							continueOn = msgSearchObj.continueInputLoop;
@@ -5733,15 +5796,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 			case this.enhReaderKeys.deleteMessage: // Delete message
 				console.crlf();
 				// Prompt the user for confirmation to delete the message.
-				// Note: this.PromptAndDeleteMessage() will check to see if the user
+				// Note: this.PromptAndDeleteOrUndeleteMessage() will check to see if the user
 				// is a sysop or the message was posted by the user.
 				// If the message was deleted, then exit this read method
 				// and return KEY_RIGHT as the last keypress so that the
 				// calling method will go to the next message/sub-board.
 				// Otherwise (if the message was not deleted), refresh the
 				// last 2 lines of the message on the screen.
-				var msgWasDeleted = this.PromptAndDeleteMessage(pOffset);
-				if (msgWasDeleted)
+				var msgWasDeleted = this.PromptAndDeleteOrUndeleteMessage(pOffset, null, true);
+				if (msgWasDeleted && !canViewDeletedMsgs())
 				{
 					var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
 					continueOn = msgSearchObj.continueInputLoop;
@@ -5769,7 +5832,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				// TODO: Write this?  Not sure yet if it makes much sense to
 				// have batch delete in the reader interface.
 				// Prompt the user for confirmation, and use
-				// this.DeleteSelectedMessages() to mark the selected messages
+				// this.DeleteOrUndeleteSelectedMessages() to mark the selected messages
 				// as deleted.
 				// Returns an object with the following properties:
 				//  deletedAll: Boolean - Whether or not all messages were successfully marked
@@ -5850,7 +5913,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 						retObj.userReplied = replyRetObj.postSucceeded;
 						//retObj.msgNotReadable = replyRetObj.msgWasDeleted;
 						var msgWasDeleted = replyRetObj.msgWasDeleted;
-						if (msgWasDeleted)
+						if (msgWasDeleted && !canViewDeletedMsgs())
 						{
 							var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
 							continueOn = msgSearchObj.continueInputLoop;
@@ -7865,7 +7928,10 @@ function DigDistMsgReader_ReadConfigFile()
 							 (setting == "abortedText") ||
 							 (setting == "loadingPersonalMailText") ||
 							 (setting == "msgDelConfirmText") ||
+							 (setting == "msgUndelConfirmText") ||
+							 (setting == "selectedMsgsUndeletedText") ||
 							 (setting == "msgDeletedText") ||
+							 (setting == "msgUndeletedText") ||
 							 (setting == "cannotDeleteMsgText_notYoursNotASysop") ||
 							 (setting == "cannotDeleteMsgText_notLastPostedMsg") ||
 							 (setting == "msgEditConfirmText") ||
@@ -9549,7 +9615,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		// refresh the header in the search results, if there are any search
 		// results.
 		if (!console.noyes(bbs.text(DeleteMailQ).replace("%s", pMsgHdr.from)))
-			retObj.msgWasDeleted = this.PromptAndDeleteMessage(pMsgIdx, null, null, null, false);
+			retObj.msgWasDeleted = this.PromptAndDeleteOrUndeleteMessage(pMsgIdx, null, true, null, null, false);
 	}
 
 	return retObj;
@@ -9686,7 +9752,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 		keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.vote + "                \x01g: \x01n\x01cVote on the message");
 		keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.closePoll + "                \x01g: \x01n\x01cClose a poll");
 	}
-	keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.showVotes + "                \x01g: \x01n\x01cShow vote stats for the message");
+	keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.showVotes + "                \x01g: \x01n\x01cShow vote (tally) stats for the message");
 	keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.quit + "                \x01g: \x01n\x01cQuit back to the BBS");
 	for (var idx = 0; idx < keyHelpLines.length; ++idx)
 	{
@@ -10282,7 +10348,7 @@ function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLin
 	return yesNoResponse;
 }
 
-// For the DigDistMsgReader class: Allows the user to delete a message.  Checks
+// For the DigDistMsgReader class: Allows the user to delete or undelete a message.  Checks
 // whether the message was posted by the user and prompt for confirmation to
 // delete it.  Checks for delete or delete_last permission.  If the sub-board has
 // delete_last permission enabled, this checks whether the message is the user's
@@ -10292,16 +10358,16 @@ function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLin
 //  pOffset: The offset of the message to be deleted
 //  pPromptLoc: Optional - An object containing x and y properties for the location
 //              on the console of the prompt/error messages
+//  pDelete: Optional boolean: If true (default), deletes messages; if false, undeletes messages.
 //  pClearPromptRowAtFirstUse: Optional - A boolean to specify whether or not to
 //                             clear the remainder of the prompt row the first
 //                             time text is written in that row.
 //  pPromptRowWidth: Optional - The width of the prompt row (if pProptLoc is valid)
-//  pConfirmDelete: Optional boolean - Whether or not to confirm deleting the
-//                  message.  Defaults to true.
+//  pConfirm: Optional boolean - Whether or not to confirm deleting/undeleting the message. Defaults to true.
 //
 // Return value: Boolean - Whether or not the message was deleted
-function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearPromptRowAtFirstUse,
-                                                 pPromptRowWidth, pConfirmDelete)
+function DigDistMsgReader_PromptAndDeleteOrUndeleteMessage(pOffset, pPromptLoc, pDelete, pClearPromptRowAtFirstUse,
+                                                           pPromptRowWidth, pConfirm)
 {
 	// Sanity checking
 	if ((pOffset == null) || (typeof(pOffset) != "number"))
@@ -10319,37 +10385,63 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 	var promptLocValid = ((pPromptLoc != null) && (typeof(pPromptLoc) == "object") &&
 	                      (typeof(pPromptLoc.x) == "number") && (typeof(pPromptLoc.y) == "number"));
 
+	var deleteMsg = (typeof(pDelete) === "boolean" ? pDelete : true);
+
+	var opSucceeded = false;
+
 	var msgNum = pOffset + 1;
-	var msgWasDeleted = false;
 	var msgHeader = this.GetMsgHdrByIdx(pOffset, false, msgbase);
-	// Only let the user delete one of their own messages or the user
-	// is a sysop.
-	var cannotDeleteError = replaceAtCodesInStr(format(this.text.cannotDeleteMsgText_notYoursNotASysop, msgNum));
-	var canDeleteMessage = false;
-	if (this.CanDelete())
+
+	var errorMessage = "";
+	var continueOn = false;
+	if (deleteMsg)
 	{
-		if (msgHeader != null)
-			canDeleteMessage = user.is_sysop || userHandleAliasNameMatch(msgHeader.from) || this.readingPersonalEmail;
+		// If it's already marked for deletion, then nothing needs to be done
+		if ((msgHeader.attr & MSG_DELETE) == MSG_DELETE)
+			opSucceeded = true;
 		else
-			canDeleteMessage = false;
+		{
+			// The message is not marked for deletion.
+			if (this.CanDelete())
+			{
+				if (msgHeader != null)
+					continueOn = user.is_sysop || userHandleAliasNameMatch(msgHeader.from) || this.readingPersonalEmail;
+				else
+					continueOn = false;
+			}
+			else if (this.CanDeleteLastMsg())
+			{
+				continueOn = user.is_sysop || this.MessageIsLastFromUser(pOffset);
+				if (!continueOn)
+					errorMessage = replaceAtCodesInStr(format(this.text.cannotDeleteMsgText_notLastPostedMsg, msgNum));
+			}
+			else
+				errorMessage = replaceAtCodesInStr(format(this.text.cannotDeleteMsgText_notYoursNotASysop, msgNum));
+		}
 	}
-	else if (this.CanDeleteLastMsg())
+	else
 	{
-		canDeleteMessage = user.is_sysop || this.MessageIsLastFromUser(pOffset);
-		if (!canDeleteMessage)
-			cannotDeleteError = replaceAtCodesInStr(format(this.text.cannotDeleteMsgText_notLastPostedMsg, msgNum));
+		// Undeleting a message marked for deletion
+		if ((msgHeader.attr & MSG_DELETE) == MSG_DELETE)
+			continueOn = true;
+		else
+			opSucceeded = true; // No action needed
 	}
-	if (canDeleteMessage)
+	if (continueOn)
 	{
-		// Determine whether or not to delete the message.  First, if we are to
+		// Determine whether or not to delete/undelete the message.  First, if we are to
 		// have the user confirm whether to delete the message, then ask the
 		// user to confirm first.  If we're not to have the user confirm, then
 		// go ahead and delete the message.
-		var deleteMsg = true; // True in case of not confirming deletion
-		var confirmDeleteMsg = (typeof(pConfirmDelete) == "boolean" ? pConfirmDelete : true);
-		if (confirmDeleteMsg)
+		continueOn = true; // True in case of not confirming deletion
+		var confirmOp = (typeof(pConfirm) == "boolean" ? pConfirm : true);
+		if (confirmOp)
 		{
-			var delConfirmText = "\x01n" + replaceAtCodesInStr(format(this.text.msgDelConfirmText, msgNum));
+			var confirmText = "\x01n";
+			if (deleteMsg)
+				confirmText += replaceAtCodesInStr(format(this.text.msgDelConfirmText, msgNum));
+			else
+				confirmText += replaceAtCodesInStr(format(this.text.msgUndelConfirmText, msgNum));
 			if (promptLocValid)
 			{
 				// If the caller wants to clear the remainder of the row where the prompt
@@ -10358,7 +10450,7 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 				{
 					// Adding 5 to the prompt text to account for the ? and "[X] " that
 					// will be added when console.noyes() is called
-					var promptTxtLen = console.strlen(delConfirmText) + 5;
+					var promptTxtLen = console.strlen(confirmText) + 5;
 					var numCharsRemaining = 0;
 					if (typeof(pPromptRowWidth) == "number")
 						numCharsRemaining = pPromptRowWidth - promptTxtLen;
@@ -10372,36 +10464,51 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 				// Move the cursor to the prompt location
 				console.gotoxy(pPromptLoc);
 			}
-			deleteMsg = !console.noyes(delConfirmText);
+			continueOn = !console.noyes(confirmText);
 		}
-		// If we are to delete the message, then delete it.
-		if (deleteMsg)
+		// If we are to delete/undelete the message, then do it.
+		if (continueOn)
 		{
-			// TODO: Also, allow toggling the delete flag rather than always just
-			// marking the message for deletion.
-			// hdr.attr = hdr.attr ^ MSG_DELETE; // Will toggle the delete flag
-			//msgWasDeleted = msgbase.remove_msg(true, msgHeader.offset);
-			msgWasDeleted = msgbase.remove_msg(false, msgHeader.number);
-			if (msgWasDeleted)
+			if (deleteMsg)
 			{
-				// Delete any vote response messages for this message
-				var voteDelRetObj = deleteVoteMsgs(msgbase, msgHeader.number, msgHeader.id, (this.subBoardCode == "mail"));
-				if (!voteDelRetObj.allVoteMsgsDeleted)
+				//opSucceeded = msgbase.remove_msg(true, msgHeader.offset);
+				opSucceeded = msgbase.remove_msg(false, msgHeader.number);
+			}
+			else
+			{
+				var tmpMsgHdr = msgbase.get_msg_header(false, msgHeader.number, false);
+				if (tmpMsgHdr != null)
+				{
+					tmpMsgHdr.attr = tmpMsgHdr.attr ^ MSG_DELETE;
+					opSucceeded = msgbase.put_msg_header(false, msgHeader.number, tmpMsgHdr);
+				}
+				else
+					opSucceeded = false;
+			}
+			if (opSucceeded)
+			{
+				// Delete/undelete any vote response messages for this message
+				// Delete/undelete vote message headers
+				var voteDelRetObj = toggleVoteMsgsDeleted(msgbase, msgHeader.number, msgHeader.id, deleteMsg, (this.subBoardCode == "mail"));
+				// In case there are search results or saved message headers, refresh the header in
+				// those arrays to enable the deleted attribute.
+				this.RefreshHdrInSavedArrays(pOffset, MSG_DELETE, deleteMsg);
+				if (!voteDelRetObj.allVoteMsgsAffected)
 				{
 					console.print("\x01n");
 					console.crlf();
-					console.print("\x01y\x01h* Failed to delete all vote response messages for message " + msgNum + "\x01n");
+					console.print("\x01y\x01h* Failed to " + (deleteMsg ? "delete" : "undelete") + " all vote response messages for message " + msgNum + "\x01n");
 					console.crlf();
 					console.pause();
 				}
 
-				// In case there are search results or saved message headers, refresh the header in
-				// those arrays to enable the deleted attribute.
-				this.RefreshHdrInSavedArrays(pOffset, MSG_DELETE);
-				// Output a message saying the message has been marked for deletion
+				// Output a message saying the message has been marked for deletion/undeletion
 				if (promptLocValid)
 					console.gotoxy(pPromptLoc);
-				console.print("\x01n" + replaceAtCodesInStr(format(this.text.msgDeletedText, msgNum)));
+				if (deleteMsg)
+					console.print("\x01n" + replaceAtCodesInStr(format(this.text.msgDeletedText, msgNum)));
+				else
+					console.print("\x01n" + replaceAtCodesInStr(format(this.text.msgUndeletedText, msgNum)));
 				if (promptLocValid)
 					console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, ERROR_PAUSE_WAIT_MS);
 				else
@@ -10414,19 +10521,22 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 	}
 	else
 	{
-		if (promptLocValid)
-			console.gotoxy(pPromptLoc);
-		console.print(cannotDeleteError);
-		if (promptLocValid)
-			console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, ERROR_PAUSE_WAIT_MS);
-		else
+		if (errorMessage.length > 0)
 		{
-			console.crlf();
-			console.pause();
+			if (promptLocValid)
+				console.gotoxy(pPromptLoc);
+			console.print(errorMessage);
+			if (promptLocValid)
+				console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, ERROR_PAUSE_WAIT_MS);
+			else
+			{
+				console.crlf();
+				console.pause();
+			}
 		}
 	}
 	msgbase.close();
-	return msgWasDeleted;
+	return opSucceeded;
 }
 
 // For the DigDistMsgReader class: Allows the user to batch delete selected messages.
@@ -10435,44 +10545,58 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 // Parameters:
 //  pPromptLoc: Optional - An object containing x and y properties for the location
 //              on the console of the prompt/error messages
+//  pDelete: Optional boolean: If true (default), deletes messages; if false, undeletes messages.
 //  pClearPromptRowAtFirstUse: Optional - A boolean to specify whether or not to
 //                             clear the remainder of the prompt row the first
 //                             time text is written in that row.
 //  pPromptRowWidth: Optional - The width of the prompt row (if pProptLoc is valid)
-//  pConfirmDelete: Optional boolean - Whether or not to confirm deleting the
-//                  message.  Defaults to true.
+//  pConfirm: Optional boolean - Whether or not to confirm deleting/undeleting the messages. Defaults to true.
 //
 // Return value: Boolean - Whether or not all messages were deleted
-function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearPromptRowAtFirstUse,
-                                                          pPromptRowWidth, pConfirmDelete)
+function DigDistMsgReader_PromptAndDeleteOrUndeleteSelectedMessages(pPromptLoc, pDelete, pClearPromptRowAtFirstUse,
+                                                          pPromptRowWidth, pConfirm)
 {
-	var promptLocValid = ((pPromptLoc != null) && (typeof(pPromptLoc) == "object") &&
-	                      (typeof(pPromptLoc.x) == "number") && (typeof(pPromptLoc.y) == "number"));
+	var promptLocValid = ((pPromptLoc != null) && (typeof(pPromptLoc) === "object") &&
+	                      (typeof(pPromptLoc.x) === "number") && (typeof(pPromptLoc.y) === "number"));
 
-	var allMsgsWereDeleted = false;
+	var doDelete = (typeof(pDelete) === "boolean" ? pDelete : true);
+	var allMsgsOpSuccessful = false;
 
-	// If the user is allowed to delete all selected messages, then go ahead
-	// and let the user do it.
-	if (this.AllSelectedMessagesCanBeDeleted())
+	var errorMsg = ""; // In case anything goes wrong
+	var continueOn = true; // Whether or not to continue with deletion/undeletion, depending on user confirmation etc.
+	if (doDelete)
+	{
+		// If not all the messages can be deleted, then don't allow it.
+		continueOn = this.AllSelectedMessagesCanBeDeleted();
+		if (!this.AllSelectedMessagesCanBeDeleted())
+		{
+			continueOn = false;
+			errorMsg = replaceAtCodesInStr(this.text.cannotDeleteAllSelectedMsgsText);
+		}
+	}
+	if (continueOn)
 	{
 		// Determine whether or not to delete the message.  First, if we are to
 		// have the user confirm whether to delete the message, then ask the
 		// user to confirm first.  If we're not to have the user confirm, then
 		// go ahead and delete the message.
-		var deleteMsgs = true; // True in case of not confirming deletion
-		var confirmDeleteMsgs = (typeof(pConfirmDelete) == "boolean" ? pConfirmDelete : true);
-		if (confirmDeleteMsgs)
+		var confirmDoIt = (typeof(pConfirm) === "boolean" ? pConfirm : true);
+		if (confirmDoIt)
 		{
 			if (promptLocValid)
 			{
-				var delMsgsPromptText = replaceAtCodesInStr(this.text.delSelectedMsgsConfirmText);
+				var promptText = "";
+				if (doDelete)
+					promptText = replaceAtCodesInStr(this.text.delSelectedMsgsConfirmText);
+				else
+					promptText = replaceAtCodesInStr(this.text.undelSelectedMsgsConfirmText);
 				// If the caller wants to clear the remainder of the row where the prompt
 				// text will be, then do it.
 				if (pClearPromptRowAtFirstUse)
 				{
 					// Adding 5 to the prompt text to account for the ? and "[X] " that
 					// will be added when console.noyes() is called
-					var promptTxtLen = console.strlen(delMsgsPromptText) + 5;
+					var promptTxtLen = console.strlen(promptText) + 5;
 					var numCharsRemaining = 0;
 					if (typeof(pPromptRowWidth) == "number")
 						numCharsRemaining = pPromptRowWidth - promptTxtLen;
@@ -10485,21 +10609,22 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 				}
 				// Move the cursor to the prompt location
 				console.gotoxy(pPromptLoc);
-				deleteMsgs = !console.noyes(delMsgsPromptText);
+				continueOn = !console.noyes(promptText);
 			}
 		}
-		// If we are to delete the messages, then delete it.
-		if (deleteMsgs)
+		// If we are to delete/undelete the messages, then do so.
+		if (continueOn)
 		{
-			var deleteRetObj = this.DeleteSelectedMessages();
-			allMsgsWereDeleted = deleteRetObj.deletedAll;
+			// TODO: Return status & error message
+			var deleteRetObj = this.DeleteOrUndeleteSelectedMessages(doDelete);
+			allMsgsOpSuccessful = deleteRetObj.opSuccessful;
 			// If all selected messages were successfully deleted, then output
 			// a success message.  Otherwise, output an error.
 			var statusMsg = "";
-			if (deleteRetObj.deletedAll)
-				statusMsg = "\x01n\x01cAll selected messages were deleted.";
+			if (deleteRetObj.opSuccessful)
+				statusMsg = "\x01n\x01cAll selected messages were " + (doDelete ? "deleted." : "undeleted.");
 			else
-				statusMsg = "\x01n\x01h\x01y* Failure to delete all selected messages";
+				statusMsg = "\x01n\x01h\x01y* Failure to " + (doDelete ? "delete" : "undelete") + " all selected messages";
 			if (promptLocValid)
 			{
 				console.gotoxy(pPromptLoc);
@@ -10518,9 +10643,10 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 			}
 		}
 	}
-	else
+
+	// If there was an error, then display it
+	if (errorMsg.length > 0)
 	{
-		// The user is not allowed to delete all selected messages
 		if (promptLocValid)
 			console.gotoxy(pPromptLoc);
 		console.print(replaceAtCodesInStr(this.text.cannotDeleteAllSelectedMsgsText));
@@ -10532,7 +10658,8 @@ function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearProm
 			console.pause();
 		}
 	}
-	return allMsgsWereDeleted;
+
+	return allMsgsOpSuccessful;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -13108,33 +13235,43 @@ function DigDistMsgReader_AllSelectedMessagesCanBeDeleted()
 }
 
 // For the DigDistMsgReader class: Marks the 'selected messages' (in
-// this.selecteMessages) as deleted.  Returns an object with the following
+// this.selecteMessages) as deleted, or not deleted.
+//
+// Parameters:
+//  pDelete: Boolean - Whether or not the message should be marked deleted.  Defaults to true.
+//           If false, the message will be marked not deleted (if it is marked as deleted).
+//
+// Return value: An object with the following
 // properties:
-//  deletedAll: Boolean - Whether or not all messages were successfully marked
+//  opSuccessful: Boolean - Whether or not all messages were successfully marked
 //              for deletion
 //  failureList: An object containing indexes of messages that failed to get
 //               marked for deletion, indexed by internal sub-board code, then
 //               containing messages indexes as properties.  Reasons for failing
 //               to mark messages deleted can include the user not having permission
 //               to delete in a sub-board, failure to open the sub-board, etc.
-function DigDistMsgReader_DeleteSelectedMessages()
+function DigDistMsgReader_DeleteOrUndeleteSelectedMessages(pDelete)
 {
 	var retObj = {
-		deletedAll: true,
+		opSuccessful: false,
 		failureList: {}
 	};
 
+	var markAsDeleted = (typeof(pDelete) === "boolean" ? pDelete : true);
+
 	var msgBase = null;
 	var msgHdr = null;
-	var msgWasDeleted = false;
 	for (var subBoardCode in this.selectedMessages)
 	{
 		msgBase = new MsgBase(subBoardCode);
 		if (msgBase.open())
 		{
-			// Allow the user to delete the messages if they're the sysop, they're
+			// If deleting messages, then check whether the user is the sysop, they're
 			// reading their personal mail, or the sub-board allows deleting messages.
-			if (user.is_sysop || (subBoardCode == "mail") || ((msgBase.cfg.settings & SUB_DEL) == SUB_DEL))
+			var canContinue = true;
+			if (markAsDeleted)
+				canContinue = (user.is_sysop || (subBoardCode == "mail") || ((msgBase.cfg.settings & SUB_DEL) == SUB_DEL));
+			if (canContinue)
 			{
 				for (var msgIdx in this.selectedMessages[subBoardCode])
 				{
@@ -13165,54 +13302,80 @@ function DigDistMsgReader_DeleteSelectedMessages()
 					// the message index to the return object.
 					if (msgHdr != null)
 					{
-						//msgWasDeleted = msgBase.remove_msg(true, msgHdr.offset);
-						msgWasDeleted = msgBase.remove_msg(false, msgHdr.number);
+						if (markAsDeleted)
+						{
+							// remove_msg() just marks a message for deletion
+							//retObj.opSuccessful = msgBase.remove_msg(true, msgHdr.offset);
+							retObj.opSuccessful = msgBase.remove_msg(false, msgHdr.number);
+						}
+						else
+						{
+							// If the message is marked deleted, unmark it.
+							if ((msgHdr.attr & MSG_DELETE) == MSG_DELETE)
+							{
+								var tmpMsgHdr = msgBase.get_msg_header(false, msgHdr.number, false);
+								if (tmpMsgHdr != null)
+								{
+									tmpMsgHdr.attr = tmpMsgHdr.attr ^ MSG_DELETE;
+									retObj.opSuccessful = msgBase.put_msg_header(false, msgHdr.number, tmpMsgHdr);
+								}
+								else
+									retObj.opSuccessful = false;
+							}
+							else
+								retObj.opSuccessful = true; // No change necessary
+						}
 					}
 					else
-						msgWasDeleted = false;
-					if (msgWasDeleted)
+						retObj.opSuccessful = false;
+					if (retObj.opSuccessful)
 					{
-						// Refresh the message header in the header arrays (if it
-						// exists there) and remove the message index from the
-						// selectedMessages object
-						this.RefreshHdrInSavedArrays(msgIdxNumber, MSG_DELETE, subBoardCode);
-						delete this.selectedMessages[subBoardCode][msgIdx];
-
-						// Delete any vote response messages that may exist for this message
-						var voteDelRetObj = deleteVoteMsgs(msgBase, msgHdr.number, msgHdr.id, (subBoardCode == "mail"));
-						// TODO: If the main messages was deleted, does it matter if vote response messages
-						// are deleted?
-						if (!voteDelRetObj.allVoteMsgsDeleted)
+						// Refresh the message header in the header arrays (if it exists there) and
+						// remove the message index from the selectedMessages object.  Also, delete
+						// or undelete any vote response messages that may exist for this message.
+						this.RefreshHdrInSavedArrays(msgIdxNumber, MSG_DELETE, markAsDeleted, subBoardCode);
+						var voteDelRetObj = toggleVoteMsgsDeleted(msgBase, msgHdr.number, msgHdr.id, markAsDeleted, (subBoardCode == "mail"));
+						if (!voteDelRetObj.allVoteMsgsAffected)
 						{
-							retObj.deletedAll = false;
+							retObj.opSuccessful = false;
 							if (!retObj.failureList.hasOwnProperty(subBoardCode))
 								retObj.failureList[subBoardCode] = [];
 							retObj.failureList[subBoardCode].push(msgIdxNumber);
 						}
+						// If deleting and the user can't view deleted messages, then remove the message from this.selectedMessages
+						if (markAsDeleted && !canViewDeletedMsgs())
+							delete this.selectedMessages[subBoardCode][msgIdx];
 					}
 					else
 					{
-						retObj.deletedAll = false;
+						retObj.opSuccessful = false;
 						if (!retObj.failureList.hasOwnProperty(subBoardCode))
 							retObj.failureList[subBoardCode] = [];
 						retObj.failureList[subBoardCode].push(msgIdxNumber);
 					}
 				}
-				// If the sub-board index array no longer has any properties (i.e.,
-				// all messages in the sub-board were marked as deleted), then remove
-				// the sub-board property from this.selectedMessages
-				if (Object.keys(this.selectedMessages[subBoardCode]).length == 0)
-					delete this.selectedMessages[subBoardCode];
+				if (markAsDeleted)
+				{
+					// If the sub-board index array no longer has any properties (i.e.,
+					// all messages in the sub-board were marked as deleted) and the user
+					// can't view deleted messages, then remove the sub-board property from
+					// this.selectedMessages
+					if (Object.keys(this.selectedMessages[subBoardCode]).length == 0 && !canViewDeletedMsgs())
+						delete this.selectedMessages[subBoardCode];
+				}
 			}
 			else
 			{
-				// The user doesn't have permission to delete messages
-				// in this sub-board.
-				// Create an entry in retObj.failureList indexed by the
-				// sub-board code to indicate failure to delete all
-				// messages in the sub-board.
-				retObj.deletedAll = false;
-				retObj.failureList[subBoardCode] = [];
+				if (markAsDeleted && !canContinue)
+				{
+					// The user doesn't have permission to delete messages
+					// in this sub-board.
+					// Create an entry in retObj.failureList indexed by the
+					// sub-board code to indicate failure to delete all
+					// messages in the sub-board.
+					retObj.opSuccessful = false;
+					retObj.failureList[subBoardCode] = [];
+				}
 			}
 
 			msgBase.close();
@@ -13223,7 +13386,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 			// Create an entry in retObj.failureList indexed by the
 			// sub-board code to indicate failure to delete all messages
 			// in the sub-board.
-			retObj.deletedAll = false;
+			retObj.opSuccessful = false;
 			retObj.failureList[subBoardCode] = [];
 		}
 	}
@@ -17022,25 +17185,26 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 	return numMsgs;
 }
 
-// Deletes vote messages (messages that have voting response data for a message with
+// Marks or unmarks vote messages as deleted (messages that have voting response data for a message with
 // a given message number).
 //
 // Parameters:
 //  pMsgbase: A MessageBase object containing the messages to be deleted
 //  pMsgNum: The number of the message for which vote messages should be deleted
 //  pMsgID: The ID of the message for which vote messages should be deleted
+//  pDoDelete: Boolean: If true, then mark for deletion.  If false, then remove the deleted attribute.
 //  pIsMailSub: Boolean - Whether or not it's the personal email area
 //
 // Return value: An object containing the following properties:
 //               numVoteMsgs: The number of vote messages for the given message number
-//               numVoteMsgsDeleted: The number of vote messages that were deleted
-//               allVoteMsgsDeleted: Boolean - Whether or not all vote messages were deleted
-function deleteVoteMsgs(pMsgbase, pMsgNum, pMsgID, pIsEmailSub)
+//               toggleVoteMsgsAffected: The number of vote messages that were deleted/undeleted
+//               allVoteMsgsAffected: Boolean - Whether or not all vote messages were deleted/undeleted
+function toggleVoteMsgsDeleted(pMsgbase, pMsgNum, pMsgID, pDoDelete, pIsEmailSub)
 {
 	var retObj = {
 		numVoteMsgs: 0,
-		numVoteMsgsDeleted: 0,
-		allVoteMsgsDeleted: true
+		toggleVoteMsgsAffected: 0,
+		allVoteMsgsAffected: true
 	};
 
 	if ((pMsgbase === null) || !pMsgbase.is_open)
@@ -17066,10 +17230,26 @@ function deleteVoteMsgs(pMsgbase, pMsgNum, pMsgID, pIsEmailSub)
 			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgID))
 			{
 				++retObj.numVoteMsgs;
-				var msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
-				retObj.allVoteMsgsDeleted = (retObj.allVoteMsgsDeleted && msgWasDeleted);
-				if (msgWasDeleted)
-					++retObj.numVoteMsgsDeleted;
+				var msgWasAffected = false;
+				if (pDoDelete)
+					msgWasAffected = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
+				else
+				{
+					var tmpMsgHdr = pMsgbase.get_msg_header(false, msgHdrs[msgHdrsProp].number, false);
+					if (tmpMsgHdr != null)
+					{
+						if ((tmpMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+						{
+							tmpMsgHdr.attr = tmpMsgHdr.attr ^ MSG_DELETE;
+							msgWasAffected = pMsgbase.put_msg_header(false, msgHdrs[msgHdrsProp].number, tmpMsgHdr);
+						}
+						else
+							msgWasAffected = true; // No action needed
+					}
+				}
+				retObj.allVoteMsgsAffected = (retObj.allVoteMsgsAffected && msgWasAffected);
+				if (msgWasAffected)
+					++retObj.toggleVoteMsgsAffected;
 			}
 		}
 	}
@@ -18369,6 +18549,14 @@ function charStr(pChar, pNumTimes)
 	for (var i = 0; i < pNumTimes; ++i)
 		str += pChar;
 	return str;
+}
+
+// Returns whether the logged-in user can view deleted messages.
+function canViewDeletedMsgs()
+{
+	var usersVDM = ((system.settings & SYS_USRVDELM) == SYS_USRVDELM);
+	var sysopVDM = ((system.settings & SYS_SYSVDELM) == SYS_SYSVDELM);
+	return (usersVDM || (user.is_sysop && sysopVDM));
 }
 
 // For debugging: Writes some text on the screen at a given location with a given pause.
