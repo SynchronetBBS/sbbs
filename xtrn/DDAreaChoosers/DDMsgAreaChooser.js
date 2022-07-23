@@ -35,6 +35,8 @@
  * 2022-06-11 Eric Oulashin   Version 1.26
  *                            Updated to try to prevent the error "this.subBoardListPrintfInfo[pGrpIdx] is undefined"
  *                            when only choosing a sub-board within the user's current message group.
+ * 2022-07-23 Eric Oulashin   Version 1.29
+ *                            Re-arranged the help text for lightbar mode to be more consistent with my message reader.
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -78,8 +80,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.26";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-06-11";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.29";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-07-23";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -306,44 +308,44 @@ function DDMsgAreaChooser()
 	// Lightbar mode key help line
 	this.lightbarKeyHelpText = "\1n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + UP_ARROW
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + DOWN_ARROW
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "HOME"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "END"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "#"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "PgUp"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + "/"
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "Dn"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "F"
-				  + "\1n" + this.colors.lightbarHelpLineParen
-				  + this.colors.lightbarHelpLineBkg + ")"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + "irst pg, "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "L"
-				  + "\1n" + this.colors.lightbarHelpLineParen
-				  + this.colors.lightbarHelpLineBkg + ")"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + "ast pg, "
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + DOWN_ARROW
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "PgUp"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + "/"
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "Dn"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "HOME"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "END"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "F"
+	              + "\1n" + this.colors.lightbarHelpLineParen
+	              + this.colors.lightbarHelpLineBkg + ")"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + "irst pg, "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "L"
+	              + "\1n" + this.colors.lightbarHelpLineParen
+	              + this.colors.lightbarHelpLineBkg + ")"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + "ast pg, "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "#"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\1n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "CTRL-F"
 	              + "\1n" + this.colors.lightbarHelpLineGeneral
