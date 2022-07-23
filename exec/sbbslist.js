@@ -1298,7 +1298,7 @@ function browse(list)
 				var prompt = "";
 				if(!options.add_ars || user.compare_ars(options.add_ars))
 					prompt += "~Add, ";
-				if(list.length && can_edit(list[current]))
+				if(list.length && can_edit(list[current]) === true)
 					prompt += "~Edit, ~Remove, ";
 				console.mnemonics(prompt + "~Download, ~Sort, ~Format, ~Quit, ~Help ~?");
 				var key = console.getkey(K_UPPER);
@@ -1310,7 +1310,7 @@ function browse(list)
 						list = orglist.slice();
 						continue;
 					case 'E':
-						if(!list[current] || !can_edit(list[current])) {
+						if(!list[current] || can_edit(list[current]) !== true) {
 							console_beep();
 							continue;
 						}
@@ -1328,7 +1328,7 @@ function browse(list)
 						continue;
 					case KEY_DEL:
 					case 'R':
-						if(!list[current] || !can_edit(list[current])) {
+						if(!list[current] || can_edit(list[current]) !== true) {
 							console_beep();
 							continue;
 						}
@@ -1718,7 +1718,7 @@ function view(list, current)
 			}
 			prompt += ", ";
 		}
-		if(can_edit(bbs))
+		if(can_edit(bbs) === true)
 			prompt += "~Edit, ~Remove, ";
 		if(user.is_sysop)
 			prompt += "~JSON, ";
@@ -1808,7 +1808,7 @@ function view(list, current)
 				break;
 			case KEY_DEL:
 			case 'R':
-				if(!can_edit(list[current])) {
+				if(can_edit(list[current]) !== true) {
 					console_beep();
 					continue;
 				}
@@ -1889,6 +1889,8 @@ function can_edit(bbs)
 {
 	if(!bbs)
 		return "not an entry";
+	if(user.is_sysop)
+		return true;
 	if(bbs.imported) {
 		return "Cannot edit imported entries";
 	}
@@ -1994,7 +1996,7 @@ function edit_array(title, arr, props, max_lens, prop_descs, max_array_len)
 function edit(bbs)
 {
 	var allowed = can_edit(bbs);
-	if(allowed != true) {
+	if(allowed !== true) {
 		alert(allowed);
 		return false;
 	}
