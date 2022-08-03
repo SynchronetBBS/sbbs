@@ -23,54 +23,46 @@
 #include "nopen.h"
 #include "ars_defs.h"
 #include "load_cfg.h"
+#include "ini_file.h"
 
 /****************************************************************************/
-/* Reads in FILE.CNF and initializes the associated variables				*/
+/* Reads in file.ini and initializes the associated variables				*/
 /****************************************************************************/
 BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	str[MAX_PATH+1],c,cmd[LEN_CMD+1];
-	short	i,j;
-	int16_t	n;
-	long	offset=0;
-	int32_t	t;
-	FILE	*instream;
+	char	path[MAX_PATH+1];
+	char	errstr[256];
+	FILE*	fp;
+	str_list_t	ini;
+	char	value[INI_MAX_VALUE_LEN];
+	const char* section = ROOT_SECTION;
 
-	return TRUE;
-	const char* fname = "file.cnf";
-	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		safe_snprintf(error, maxerrlen,"%d (%s) opening %s",errno,STRERROR(errno),str);
-		return(FALSE); 
+	const char* fname = "file.ini";
+	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+		return FALSE;
 	}
+	ini = iniReadFile(fp);
+	fclose(fp);
 
-	get_int(cfg->min_dspace,instream);
-	get_int(cfg->max_batup,instream);
-
-	get_int(cfg->max_batdn,instream);
-
-	get_int(cfg->max_userxfer,instream);
-
-	get_int(t,instream);	/* unused - was cdt_byte_value */
-	get_int(cfg->cdt_up_pct,instream);
-	get_int(cfg->cdt_dn_pct,instream);
-	get_int(t,instream);	/* unused - was temp_ext */
-	get_str(cmd,instream);	/* unused - was temp_cmd */
-	get_int(cfg->leech_pct,instream);
-	get_int(cfg->leech_sec,instream);
-	get_int(cfg->file_misc,instream);
-	get_int(cfg->filename_maxlen, instream);
-	if(cfg->filename_maxlen == 0)
-		cfg->filename_maxlen = SMB_FILEIDX_NAMELEN;
-
-	for(i=0;i<29;i++)
-		get_int(n,instream);
+	cfg->min_dspace = iniGetShortInt(ini, section, "min_dspace", 0);
+	cfg->max_batup = iniGetShortInt(ini, section, "max_batup", 0);
+	cfg->max_batdn = iniGetShortInt(ini, section, "max_batdn", 0);
+	cfg->max_userxfer = iniGetShortInt(ini, section, "max_userxfer", 0);
+	cfg->cdt_up_pct = iniGetShortInt(ini, section, "cdt_up_pct", 0);
+	cfg->cdt_dn_pct = iniGetShortInt(ini, section, "cdt_dn_pct", 0);
+	cfg->leech_pct = iniGetShortInt(ini, section, "leech_pct", 0);
+	cfg->leech_sec = iniGetShortInt(ini, section, "leech_sec", 0);
+	cfg->file_misc = iniGetLongInt(ini, section, "settings", 0);
+	cfg->filename_maxlen = iniGetShortInt(ini, section, "filename_maxlen", SMB_FILEIDX_NAMELEN);
 
 	/**************************/
 	/* Extractable File Types */
 	/**************************/
 
-	get_int(cfg->total_fextrs,instream);
+	str_list_t fextr_list = iniGetSectionList(ini, "extractor:");
+	cfg->total_fextrs = strListCount(fextr_list);
 
 	if(cfg->total_fextrs) {
 		if((cfg->fextr=(fextr_t **)malloc(sizeof(fextr_t *)*cfg->total_fextrs))==NULL)
@@ -78,27 +70,24 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->fextr=NULL;
 
-	for(i=0; i<cfg->total_fextrs; i++) {
-		if(feof(instream))
-			break;
+	for(uint i=0; i<cfg->total_fextrs; i++) {
+		section = fextr_list[i];
 		if((cfg->fextr[i]=(fextr_t *)malloc(sizeof(fextr_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "fextr", sizeof(fextr_t));
 		memset(cfg->fextr[i],0,sizeof(fextr_t));
-		get_str(cfg->fextr[i]->ext,instream);
-		get_str(cfg->fextr[i]->cmd,instream);
-		get_str(cfg->fextr[i]->arstr,instream);
+		SAFECOPY(cfg->fextr[i]->ext, iniGetString(ini, section, "extension", "", value));
+		SAFECOPY(cfg->fextr[i]->cmd, iniGetString(ini, section, "cmd", "", value));
+		SAFECOPY(cfg->fextr[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->fextr[i]->arstr, cfg, cfg->fextr[i]->ar);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_fextrs=i;
+	strListFree(&fextr_list);
 
 	/***************************/
 	/* Compressable File Types */
 	/***************************/
 
-	get_int(cfg->total_fcomps,instream);
+	str_list_t fcomp_list = iniGetSectionList(ini, "compressor:");
+	cfg->total_fcomps = strListCount(fcomp_list);
 
 	if(cfg->total_fcomps) {
 		if((cfg->fcomp=(fcomp_t **)malloc(sizeof(fcomp_t *)*cfg->total_fcomps))==NULL)
@@ -106,27 +95,24 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->fcomp=NULL;
 
-	for(i=0; i<cfg->total_fcomps; i++) {
-		if(feof(instream))
-			break;
+	for(uint i=0; i<cfg->total_fcomps; i++) {
+		section = fcomp_list[i];
 		if((cfg->fcomp[i]=(fcomp_t *)malloc(sizeof(fcomp_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "fcomp", sizeof(fcomp_t));
 		memset(cfg->fcomp[i],0,sizeof(fcomp_t));
-		get_str(cfg->fcomp[i]->ext,instream);
-		get_str(cfg->fcomp[i]->cmd,instream);
-		get_str(cfg->fcomp[i]->arstr,instream);
+		SAFECOPY(cfg->fcomp[i]->ext, iniGetString(ini, section, "extension", "", value));
+		SAFECOPY(cfg->fcomp[i]->cmd, iniGetString(ini, section, "cmd", "", value));
+		SAFECOPY(cfg->fcomp[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->fcomp[i]->arstr, cfg, cfg->fcomp[i]->ar);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_fcomps=i;
+	strListFree(&fcomp_list);
 
 	/***********************/
 	/* Viewable File Types */
 	/***********************/
 
-	get_int(cfg->total_fviews,instream);
+	str_list_t fview_list = iniGetSectionList(ini, "viewer:");
+	cfg->total_fviews = strListCount(fview_list);
 
 	if(cfg->total_fviews) {
 		if((cfg->fview=(fview_t **)malloc(sizeof(fview_t *)*cfg->total_fviews))==NULL)
@@ -134,26 +120,24 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->fview=NULL;
 
-	for(i=0; i<cfg->total_fviews; i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_fviews; i++) {
+		section = fview_list[i];
 		if((cfg->fview[i]=(fview_t *)malloc(sizeof(fview_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "fname", sizeof(fview_t));
 		memset(cfg->fview[i],0,sizeof(fview_t));
-		get_str(cfg->fview[i]->ext,instream);
-		get_str(cfg->fview[i]->cmd,instream);
-		get_str(cfg->fview[i]->arstr,instream);
+		SAFECOPY(cfg->fview[i]->ext, iniGetString(ini, section, "extension", "", value));
+		SAFECOPY(cfg->fview[i]->cmd, iniGetString(ini, section, "cmd", "", value));
+		SAFECOPY(cfg->fview[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->fview[i]->arstr, cfg, cfg->fview[i]->ar);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_fviews=i;
+	strListFree(&fview_list);
 
 	/***********************/
 	/* Testable File Types */
 	/***********************/
 
-	get_int(cfg->total_ftests,instream);
+	str_list_t ftest_list = iniGetSectionList(ini, "tester:");
+	cfg->total_ftests = strListCount(ftest_list);
 
 	if(cfg->total_ftests) {
 		if((cfg->ftest=(ftest_t **)malloc(sizeof(ftest_t *)*cfg->total_ftests))==NULL)
@@ -161,27 +145,25 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->ftest=NULL;
 
-	for(i=0; i<cfg->total_ftests; i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_ftests; i++) {
+		section = ftest_list[i];
 		if((cfg->ftest[i]=(ftest_t *)malloc(sizeof(ftest_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "ftest", sizeof(ftest_t));
 		memset(cfg->ftest[i],0,sizeof(ftest_t));
-		get_str(cfg->ftest[i]->ext,instream);
-		get_str(cfg->ftest[i]->cmd,instream);
-		get_str(cfg->ftest[i]->workstr,instream);
-		get_str(cfg->ftest[i]->arstr,instream);
+		SAFECOPY(cfg->ftest[i]->ext, iniGetString(ini, section, "extension", "", value));
+		SAFECOPY(cfg->ftest[i]->cmd, iniGetString(ini, section, "cmd", "", value));
+		SAFECOPY(cfg->ftest[i]->workstr, iniGetString(ini, section, "working", "", value));
+		SAFECOPY(cfg->ftest[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->ftest[i]->arstr, cfg, cfg->ftest[i]->ar);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_ftests=i;
+	strListFree(&ftest_list);
 
 	/*******************/
 	/* Download events */
 	/*******************/
 
-	get_int(cfg->total_dlevents,instream);
+	str_list_t dlevent_list = iniGetSectionList(ini, "dlevent:");
+	cfg->total_dlevents = strListCount(dlevent_list);
 
 	if(cfg->total_dlevents) {
 		if((cfg->dlevent=(dlevent_t **)malloc(sizeof(dlevent_t *)*cfg->total_dlevents))
@@ -190,28 +172,25 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->dlevent=NULL;
 
-	for(i=0; i<cfg->total_dlevents; i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_dlevents; i++) {
+		section = dlevent_list[i];
 		if((cfg->dlevent[i]=(dlevent_t *)malloc(sizeof(dlevent_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "dlevent", sizeof(dlevent_t));
 		memset(cfg->dlevent[i],0,sizeof(dlevent_t));
-		get_str(cfg->dlevent[i]->ext,instream);
-		get_str(cfg->dlevent[i]->cmd,instream);
-		get_str(cfg->dlevent[i]->workstr,instream);
-		get_str(cfg->dlevent[i]->arstr,instream);
+		SAFECOPY(cfg->dlevent[i]->ext, iniGetString(ini, section, "extension", "", value));
+		SAFECOPY(cfg->dlevent[i]->cmd, iniGetString(ini, section, "cmd", "", value));
+		SAFECOPY(cfg->dlevent[i]->workstr, iniGetString(ini, section, "working", "", value));
+		SAFECOPY(cfg->dlevent[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->dlevent[i]->arstr, cfg, cfg->dlevent[i]->ar);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_dlevents=i;
-
+	strListFree(&dlevent_list);
 
 	/***************************/
 	/* File Transfer Protocols */
 	/***************************/
 
-	get_int(cfg->total_prots,instream);
+	str_list_t prot_list = iniGetSectionList(ini, "protocol:");
+	cfg->total_prots = strListCount(prot_list);
 
 	if(cfg->total_prots) {
 		if((cfg->prot=(prot_t **)malloc(sizeof(prot_t *)*cfg->total_prots))==NULL)
@@ -219,34 +198,31 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->prot=NULL;
 
-	for(i=0;i<cfg->total_prots;i++) {
-		if(feof(instream)) break;
+	for(uint i=0;i<cfg->total_prots;i++) {
+		section = prot_list[i];
 		if((cfg->prot[i]=(prot_t *)malloc(sizeof(prot_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "prot", sizeof(prot_t));
 		memset(cfg->prot[i],0,sizeof(prot_t));
 
-		get_int(cfg->prot[i]->mnemonic,instream);
-		get_str(cfg->prot[i]->name,instream);
-		get_str(cfg->prot[i]->ulcmd,instream);
-		get_str(cfg->prot[i]->dlcmd,instream);
-		get_str(cfg->prot[i]->batulcmd,instream);
-		get_str(cfg->prot[i]->batdlcmd,instream);
-		get_str(cfg->prot[i]->blindcmd,instream);
-		get_str(cfg->prot[i]->bicmd,instream);
-		get_int(cfg->prot[i]->misc,instream);
-		get_str(cfg->prot[i]->arstr,instream);
+		cfg->prot[i]->mnemonic = *iniGetString(ini, section, "key", "", value);
+		SAFECOPY(cfg->prot[i]->name, iniGetString(ini, section, "name", "", value));
+		SAFECOPY(cfg->prot[i]->ulcmd, iniGetString(ini, section, "ulcmd", "", value));
+		SAFECOPY(cfg->prot[i]->dlcmd, iniGetString(ini, section, "dlcmd", "", value));
+		SAFECOPY(cfg->prot[i]->batulcmd, iniGetString(ini, section, "batulcmd", "", value));
+		SAFECOPY(cfg->prot[i]->batdlcmd, iniGetString(ini, section, "batdlcmd", "", value));
+		cfg->prot[i]->misc = iniGetLongInt(ini, section, "settings", 0);
+		SAFECOPY(cfg->prot[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->prot[i]->arstr, cfg, cfg->prot[i]->ar);
 
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_prots=i;
+	strListFree(&prot_list);
 
 	/******************/
 	/* File Libraries */
 	/******************/
 
-	get_int(cfg->total_libs,instream);
+	str_list_t lib_list = iniGetSectionList(ini, "lib:");
+	cfg->total_libs = strListCount(lib_list);
 
 	if(cfg->total_libs) {
 		if((cfg->lib=(lib_t **)malloc(sizeof(lib_t *)*cfg->total_libs))==NULL)
@@ -254,46 +230,35 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->lib=NULL;
 
-	for(i=0;i<cfg->total_libs;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_libs; i++) {
+		section = lib_list[i];
 		if((cfg->lib[i]=(lib_t *)malloc(sizeof(lib_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "lib", sizeof(lib_t));
 		memset(cfg->lib[i],0,sizeof(lib_t));
 		cfg->lib[i]->offline_dir=INVALID_DIR;
-
-		get_str(cfg->lib[i]->lname,instream);
-		get_str(cfg->lib[i]->sname,instream);
+		SAFECOPY(cfg->lib[i]->sname, section + 4);
+		SAFECOPY(cfg->lib[i]->lname, iniGetString(ini, section, "description", section + 4, value));
+		SAFECOPY(cfg->lib[i]->code_prefix, iniGetString(ini, section, "code_prefix", "", value));
+		SAFECOPY(cfg->lib[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		SAFECOPY(cfg->lib[i]->vdir, cfg->lib[i]->sname);
 		pathify(cfg->lib[i]->vdir);
 
-		get_str(cfg->lib[i]->arstr,instream);
 		arstr(NULL, cfg->lib[i]->arstr, cfg, cfg->lib[i]->ar);
 
-		get_str(cfg->lib[i]->parent_path,instream);
-
-		get_str(cfg->lib[i]->code_prefix,instream);
-
-		get_int(c,instream);
-		cfg->lib[i]->sort = c;
-
-		get_int(cfg->lib[i]->misc, instream);
-
-		get_int(c,instream);
-		cfg->lib[i]->vdir_name = c;
-
-		get_int(c,instream);	/* 0x00 */
-
-		for(j=0;j<16;j++)
-			get_int(n,instream);	/* 0xffff */
+		SAFECOPY(cfg->lib[i]->parent_path, iniGetString(ini, section, "parent_path", "", value));
+		cfg->lib[i]->sort = iniGetInteger(ini, section, "sort", 0);
+		cfg->lib[i]->misc = iniGetLongInt(ini, section, "settings", 0);
+		cfg->lib[i]->vdir_name = iniGetShortInt(ini, section, "vdir_name", 0);
 	}
-	cfg->total_libs=i;
+	strListFree(&lib_list);
 
 	/********************/
 	/* File Directories */
 	/********************/
 
 	cfg->sysop_dir=cfg->user_dir=cfg->upload_dir=INVALID_DIR;
-	get_int(cfg->total_dirs,instream);
+	str_list_t dir_list = iniGetSectionList(ini, "dir:");
+	cfg->total_dirs = strListCount(dir_list);
 
 	if(cfg->total_dirs) {
 		if((cfg->dir=(dir_t **)malloc(sizeof(dir_t *)*(cfg->total_dirs+1)))==NULL)
@@ -301,17 +266,31 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->dir=NULL;
 
-	for(i=0;i<cfg->total_dirs;i++) {
-		if(feof(instream)) break;
+	cfg->total_dirs = 0;
+	for(uint i=0; cfg->dir[i] != NULL; i++) {
+		char lib[INI_MAX_VALUE_LEN];
+		section = dir_list[i];
+		SAFECOPY(lib, section + 4);
+		char* p = strchr(lib, ':');
+		if(p == NULL)
+			continue;
+		*p = '\0';
+		char* code = p + 1;
+		int libnum = getlibnum_from_name(cfg, lib);
+		if(!is_valid_libnum(cfg, libnum))
+			continue;
+
 		if((cfg->dir[i]=(dir_t *)malloc(sizeof(dir_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "dir", sizeof(dir_t));
 		memset(cfg->dir[i],0,sizeof(dir_t));
+		SAFECOPY(cfg->dir[i]->code_suffix, code);
 
 		cfg->dir[i]->dirnum = i;
+		cfg->dir[i]->lib = libnum;
 
-		get_int(cfg->dir[i]->lib,instream);
-		get_str(cfg->dir[i]->lname,instream);
-		get_str(cfg->dir[i]->sname,instream);
+		SAFECOPY(cfg->dir[i]->lname, iniGetString(ini, section, "description", code, value));
+		SAFECOPY(cfg->dir[i]->sname, iniGetString(ini, section, "name", code, value));
+		SAFECOPY(cfg->dir[i]->data_dir, iniGetString(ini, section, "data_dir", "", value));
 
 		if(!stricmp(cfg->dir[i]->sname,"SYSOP"))			/* Sysop upload directory */
 			cfg->sysop_dir=i;
@@ -322,48 +301,44 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		else if(!stricmp(cfg->dir[i]->sname,"OFFLINE"))	/* Offline files dir */
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
-		get_str(cfg->dir[i]->code_suffix,instream);
 		init_vdir(cfg, cfg->dir[i]);
-		get_str(cfg->dir[i]->data_dir,instream);
 
-		get_str(cfg->dir[i]->arstr,instream);
-		get_str(cfg->dir[i]->ul_arstr,instream);
-		get_str(cfg->dir[i]->dl_arstr,instream);
-		get_str(cfg->dir[i]->op_arstr,instream);
+		SAFECOPY(cfg->dir[i]->arstr, iniGetString(ini, section, "ars", "", value));
+		SAFECOPY(cfg->dir[i]->ul_arstr, iniGetString(ini, section, "upload_ars", "", value));
+		SAFECOPY(cfg->dir[i]->dl_arstr, iniGetString(ini, section, "download_ars", "", value));
+		SAFECOPY(cfg->dir[i]->op_arstr, iniGetString(ini, section, "operator_ars", "", value));
 
 		arstr(NULL, cfg->dir[i]->arstr ,cfg, cfg->dir[i]->ar);
 		arstr(NULL, cfg->dir[i]->ul_arstr, cfg, cfg->dir[i]->ul_ar);
 		arstr(NULL, cfg->dir[i]->dl_arstr, cfg, cfg->dir[i]->dl_ar);
 		arstr(NULL, cfg->dir[i]->op_arstr, cfg, cfg->dir[i]->op_ar);
 
-		get_str(cfg->dir[i]->path,instream);
+		SAFECOPY(cfg->dir[i]->path, iniGetString(ini, section, "path", "", value));
 
-		get_str(cfg->dir[i]->upload_sem,instream);
+		SAFECOPY(cfg->dir[i]->upload_sem, iniGetString(ini, section, "upload_sem", "", value));
 
-		get_int(cfg->dir[i]->maxfiles,instream);
-		get_str(cfg->dir[i]->exts,instream);
-		get_int(cfg->dir[i]->misc,instream);
-		get_int(cfg->dir[i]->seqdev,instream);
-		get_int(cfg->dir[i]->sort,instream);
-		get_str(cfg->dir[i]->ex_arstr,instream);
+		cfg->dir[i]->maxfiles = iniGetShortInt(ini, section, "maxfiles", 0);
+		SAFECOPY(cfg->dir[i]->exts, iniGetString(ini, section, "extensions", "", value));
+		cfg->dir[i]->misc = iniGetLongInt(ini, section, "settings", 0);
+		cfg->dir[i]->seqdev = iniGetShortInt(ini, section, "seqdev", 0);
+		cfg->dir[i]->sort = iniGetShortInt(ini, section, "sort", 0);
+		SAFECOPY(cfg->dir[i]->ex_arstr, iniGetString(ini, section, "exempt_ars", "", value));
 		arstr(NULL, cfg->dir[i]->ex_arstr, cfg, cfg->dir[i]->ex_ar);
 
-		get_int(cfg->dir[i]->maxage,instream);
-		get_int(cfg->dir[i]->up_pct,instream);
-		get_int(cfg->dir[i]->dn_pct,instream);
-		get_str(cfg->dir[i]->area_tag,instream);
-		for(j=0;j<4;j++)
-			get_int(n,instream); 
+		cfg->dir[i]->maxage = iniGetShortInt(ini, section, "maxage", 0);
+		cfg->dir[i]->up_pct = iniGetShortInt(ini, section, "up_pct", 0);
+		cfg->dir[i]->dn_pct = iniGetShortInt(ini, section, "dn_pct", 0);
+		SAFECOPY(cfg->dir[i]->area_tag, iniGetString(ini, section, "area_tag", "", value));
+		++cfg->total_dirs;
 	}
-
-	cfg->total_dirs=i;
+	strListFree(&dir_list);
 
 	/**********************/
 	/* Text File Sections */
 	/**********************/
 
-	get_int(cfg->total_txtsecs,instream);
-
+	str_list_t sec_list = iniGetSectionList(ini, "text:");
+	cfg->total_txtsecs = strListCount(sec_list);
 
 	if(cfg->total_txtsecs) {
 		if((cfg->txtsec=(txtsec_t **)malloc(sizeof(txtsec_t *)*cfg->total_txtsecs))==NULL)
@@ -371,24 +346,22 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->txtsec=NULL;
 
-	for(i=0;i<cfg->total_txtsecs;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i < cfg->total_txtsecs; i++) {
+		section = sec_list[i];
 		if((cfg->txtsec[i]=(txtsec_t *)malloc(sizeof(txtsec_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "txtsec", sizeof(txtsec_t));
 		memset(cfg->txtsec[i],0,sizeof(txtsec_t));
 
-		get_str(cfg->txtsec[i]->name,instream);
-		get_str(cfg->txtsec[i]->code,instream);
-		get_str(cfg->txtsec[i]->arstr,instream);
+		SAFECOPY(cfg->txtsec[i]->code, section + 5);
+		SAFECOPY(cfg->txtsec[i]->name, iniGetString(ini, section, "name", section + 5, value));
+		SAFECOPY(cfg->txtsec[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->txtsec[i]->arstr, cfg, cfg->txtsec[i]->ar);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_txtsecs=i;
+	strListFree(&sec_list);
 
-	fclose(instream);
-	return(TRUE);
+	iniFreeStringList(ini);
+
+	return TRUE;
 }
 
 /****************************************************************************/
