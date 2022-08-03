@@ -34,7 +34,7 @@ BOOL allocerr(char* error, size_t maxerrlen, const char* fname, const char *item
 }
 
 /****************************************************************************/
-/* Reads in NODE.CNF and initializes the associated variables				*/
+/* Reads in node .ini and initializes the associated variables				*/
 /****************************************************************************/
 BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
@@ -76,7 +76,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 }
 
 /****************************************************************************/
-/* Reads in MAIN.CNF and initializes the associated variables				*/
+/* Reads in main.ini and initializes the associated variables				*/
 /****************************************************************************/
 BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
@@ -295,7 +295,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 }
 
 /****************************************************************************/
-/* Reads in MSGS.CNF and initializes the associated variables				*/
+/* Reads in msgs.ini and initializes the associated variables				*/
 /****************************************************************************/
 BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
