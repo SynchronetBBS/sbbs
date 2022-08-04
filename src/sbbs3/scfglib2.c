@@ -267,7 +267,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->dir=NULL;
 
 	cfg->total_dirs = 0;
-	for(uint i=0; cfg->dir[i] != NULL; i++) {
+	for(uint i=0; dir_list[i] != NULL; i++) {
 		char lib[INI_MAX_VALUE_LEN];
 		section = dir_list[i];
 		SAFECOPY(lib, section + 4);
@@ -365,28 +365,32 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 }
 
 /****************************************************************************/
-/* Reads in XTRN.CNF and initializes the associated variables				*/
+/* Reads in xtrn.ini and initializes the associated variables				*/
 /****************************************************************************/
 BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	str[MAX_PATH+1],c;
-	short	i,j;
-	int16_t	n;
-	long	offset=0;
-	FILE	*instream;
+	char	path[MAX_PATH+1];
+	char	errstr[256];
+	FILE*	fp;
+	str_list_t	ini;
+	char	value[INI_MAX_VALUE_LEN];
+	const char* section = ROOT_SECTION;
 
-	const char* fname = "xtrn.cnf";
-	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		safe_snprintf(error, maxerrlen,"%d (%s) opening %s",errno,STRERROR(errno),str);
-		return(FALSE); 
+	const char* fname = "xtrn.ini";
+	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+		return FALSE;
 	}
+	ini = iniReadFile(fp);
+	fclose(fp);
 
 	/********************/
 	/* External Editors */
 	/********************/
 
-	get_int(cfg->total_xedits,instream);
+	str_list_t list = iniGetSectionList(ini, "editor:");
+	cfg->total_xedits = strListCount(list);
 
 	if(cfg->total_xedits) {
 		if((cfg->xedit=(xedit_t **)malloc(sizeof(xedit_t *)*cfg->total_xedits))==NULL)
@@ -394,38 +398,31 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->xedit=NULL;
 
-	for(i=0;i<cfg->total_xedits;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_xedits; i++) {
+		section = list[i];
 		if((cfg->xedit[i]=(xedit_t *)malloc(sizeof(xedit_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "xedit", sizeof(xedit_t));
 		memset(cfg->xedit[i],0,sizeof(xedit_t));
+		SAFECOPY(cfg->xedit[i]->code, section + 7);
+		SAFECOPY(cfg->xedit[i]->name, iniGetString(ini, section, "name", section + 7, value));
+		SAFECOPY(cfg->xedit[i]->rcmd, iniGetString(ini, section, "cmd", "", value));
 
-		get_str(cfg->xedit[i]->name,instream);
-		get_str(cfg->xedit[i]->code,instream);
-		get_str(cfg->xedit[i]->lcmd,instream);
-		get_str(cfg->xedit[i]->rcmd,instream);
-
-		get_int(cfg->xedit[i]->misc,instream);
-		get_str(cfg->xedit[i]->arstr,instream);
+		cfg->xedit[i]->misc = iniGetLongInt(ini, section, "settings", 0);
+		SAFECOPY(cfg->xedit[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->xedit[i]->arstr, cfg, cfg->xedit[i]->ar);
 
-		get_int(cfg->xedit[i]->type,instream);
-		get_int(c,instream);
-		if(c == XEDIT_SOFT_CR_UNDEFINED)
-			c = (cfg->xedit[i]->misc&QUICKBBS) ? XEDIT_SOFT_CR_EXPAND : XEDIT_SOFT_CR_RETAIN;
-		cfg->xedit[i]->soft_cr = c;
-		get_int(cfg->xedit[i]->quotewrap_cols, instream);
-		for(j=0;j<6;j++)
-			get_int(n,instream);
+		cfg->xedit[i]->type = iniGetShortInt(ini, section, "type", 0);
+		cfg->xedit[i]->soft_cr = iniGetShortInt(ini, section, "soft_cr", (cfg->xedit[i]->misc&QUICKBBS) ? XEDIT_SOFT_CR_EXPAND : XEDIT_SOFT_CR_RETAIN);
+		cfg->xedit[i]->quotewrap_cols = iniGetShortInt(ini, section, "quotewrap_cols", 0);
 	}
-	cfg->total_xedits=i;
-
+	strListFree(&list);
 
 	/*****************************/
 	/* External Program Sections */
 	/*****************************/
 
-	get_int(cfg->total_xtrnsecs,instream);
+	list = iniGetSectionList(ini, "sec:");
+	cfg->total_xtrnsecs = strListCount(list);
 
 	if(cfg->total_xtrnsecs) {
 		if((cfg->xtrnsec=(xtrnsec_t **)malloc(sizeof(xtrnsec_t *)*cfg->total_xtrnsecs))
@@ -434,28 +431,24 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->xtrnsec=NULL;
 
-	for(i=0;i<cfg->total_xtrnsecs;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_xtrnsecs; i++) {
+		section = list[i];
 		if((cfg->xtrnsec[i]=(xtrnsec_t *)malloc(sizeof(xtrnsec_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "xtrnsec", sizeof(xtrnsec_t));
 		memset(cfg->xtrnsec[i],0,sizeof(xtrnsec_t));
-
-		get_str(cfg->xtrnsec[i]->name,instream);
-		get_str(cfg->xtrnsec[i]->code,instream);
-		get_str(cfg->xtrnsec[i]->arstr,instream);
+		SAFECOPY(cfg->xtrnsec[i]->code, section + 4);
+		SAFECOPY(cfg->xtrnsec[i]->name, iniGetString(ini, section, "name", section + 4, value));
+		SAFECOPY(cfg->xtrnsec[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->xtrnsec[i]->arstr, cfg, cfg->xtrnsec[i]->ar);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_xtrnsecs=i;
-
+	strListFree(&list);
 
 	/*********************/
 	/* External Programs */
 	/*********************/
 
-	get_int(cfg->total_xtrns,instream);
+	list = iniGetSectionList(ini, "prog:");
+	cfg->total_xtrns = strListCount(list);
 
 	if(cfg->total_xtrns) {
 		if((cfg->xtrn=(xtrn_t **)malloc(sizeof(xtrn_t *)*cfg->total_xtrns))==NULL)
@@ -463,40 +456,51 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->xtrn=NULL;
 
-	for(i=0;i<cfg->total_xtrns;i++) {
-		if(feof(instream)) break;
+	cfg->total_xtrns = 0;
+	for(uint i=0; list[i] != NULL; i++) {
+		char sec[INI_MAX_VALUE_LEN];
+		section = list[i];
+		SAFECOPY(sec, section + 5);
+		char* p = strchr(sec, ':');
+		if(p == NULL)
+			continue;
+		*p = '\0';
+		char* code = p + 1;
+		int secnum = getxtrnsec(cfg, sec);
+		if(!is_valid_xtrnsec(cfg, secnum))
+			continue;
+
 		if((cfg->xtrn[i]=(xtrn_t *)malloc(sizeof(xtrn_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "xtrn", sizeof(xtrn_t));
 		memset(cfg->xtrn[i],0,sizeof(xtrn_t));
+		cfg->xtrn[i]->sec = secnum;
 
-		get_int(cfg->xtrn[i]->sec,instream);
-		get_str(cfg->xtrn[i]->name,instream);
-		get_str(cfg->xtrn[i]->code,instream);
-		get_str(cfg->xtrn[i]->arstr,instream);
-		get_str(cfg->xtrn[i]->run_arstr,instream);
+		SAFECOPY(cfg->xtrn[i]->name, iniGetString(ini, section, "name", code, value));
+		SAFECOPY(cfg->xtrn[i]->code, code);
+		SAFECOPY(cfg->xtrn[i]->arstr, iniGetString(ini, section, "ars", "", value));
+		SAFECOPY(cfg->xtrn[i]->run_arstr, iniGetString(ini, section, "run_ars", "", value));
 		arstr(NULL, cfg->xtrn[i]->arstr, cfg, cfg->xtrn[i]->ar);
 		arstr(NULL, cfg->xtrn[i]->run_arstr, cfg, cfg->xtrn[i]->run_ar);
 
-		get_int(cfg->xtrn[i]->type,instream);
-		get_int(cfg->xtrn[i]->misc,instream);
-		get_int(cfg->xtrn[i]->event,instream);
-		get_int(cfg->xtrn[i]->cost,instream);
-		get_str(cfg->xtrn[i]->cmd,instream);
-		get_str(cfg->xtrn[i]->clean,instream);
-		get_str(cfg->xtrn[i]->path,instream);
-		get_int(cfg->xtrn[i]->textra,instream);
-		get_int(cfg->xtrn[i]->maxtime,instream);
-		for(j=0;j<7;j++)
-			get_int(n,instream);
+		cfg->xtrn[i]->type = iniGetShortInt(ini, section, "type", 0);
+		cfg->xtrn[i]->misc = iniGetLongInt(ini, section, "settings", 0);
+		cfg->xtrn[i]->event = iniGetShortInt(ini, section, "event", 0);
+		cfg->xtrn[i]->cost = iniGetLongInt(ini, section, "cost", 0);
+		SAFECOPY(cfg->xtrn[i]->cmd, iniGetString(ini, section, "cmd", "", value));
+		SAFECOPY(cfg->xtrn[i]->clean, iniGetString(ini, section, "clean", "", value));
+		SAFECOPY(cfg->xtrn[i]->path, iniGetString(ini, section, "path", "", value));
+		cfg->xtrn[i]->textra = iniGetShortInt(ini, section, "textra", 0);
+		cfg->xtrn[i]->maxtime = iniGetShortInt(ini, section, "maxtime", 0);
+		++cfg->total_xtrns;
 	}
-	cfg->total_xtrns=i;
-
+	strListFree(&list);
 
 	/****************/
 	/* Timed Events */
 	/****************/
 
-	get_int(cfg->total_events,instream);
+	list = iniGetSectionList(ini, "event:");
+	cfg->total_events = strListCount(list);
 
 	if(cfg->total_events) {
 		if((cfg->event=(event_t **)malloc(sizeof(event_t *)*cfg->total_events))==NULL)
@@ -504,40 +508,36 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->event=NULL;
 
-	for(i=0;i<cfg->total_events;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_events; i++) {
+		section = list[i];
 		if((cfg->event[i]=(event_t *)malloc(sizeof(event_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "event", sizeof(event_t));
 		memset(cfg->event[i],0,sizeof(event_t));
 
-		get_str(cfg->event[i]->code,instream);
-		get_str(cfg->event[i]->cmd,instream);
-		get_int(cfg->event[i]->days,instream);
-		get_int(cfg->event[i]->time,instream);
-		get_int(cfg->event[i]->node,instream);
-		get_int(cfg->event[i]->misc,instream);
-		get_str(cfg->event[i]->dir,instream);
-		get_int(cfg->event[i]->freq,instream);
-		get_int(cfg->event[i]->mdays,instream);
-		get_int(cfg->event[i]->months,instream);
-		get_int(cfg->event[i]->errlevel,instream);
-		get_int(c,instream);
-		for(j=0;j<3;j++)
-			get_int(n,instream);
+		SAFECOPY(cfg->event[i]->code, section + 6);
+		SAFECOPY(cfg->event[i]->cmd, iniGetString(ini, section, "cmd", "", value));
+		cfg->event[i]->days = iniGetShortInt(ini, section, "days", 0);
+		cfg->event[i]->time = iniGetShortInt(ini, section, "time", 0);
+		cfg->event[i]->node = iniGetShortInt(ini, section, "node", 0);
+		cfg->event[i]->misc = iniGetLongInt(ini, section, "settings", 0);
+		SAFECOPY(cfg->event[i]->dir, iniGetString(ini, section, "dir", "", value));
+		cfg->event[i]->freq = iniGetShortInt(ini, section, "freq", 0);
+		cfg->event[i]->mdays = iniGetShortInt(ini, section, "mdays", 0);
+		cfg->event[i]->months = iniGetShortInt(ini, section, "months", 0);
+		cfg->event[i]->errlevel = iniGetShortInt(ini, section, "errlevel", LOG_ERR);
 
 		// You can't require exclusion *and* not specify which node/instance will execute the event
 		if(cfg->event[i]->node == NODE_ANY)
 			cfg->event[i]->misc &= ~EVENT_EXCL;
-		if(cfg->event[i]->errlevel == 0)
-			cfg->event[i]->errlevel = LOG_ERR;
 	}
-	cfg->total_events=i;
+	strListFree(&list);
 
 	/************************************/
 	/* Native (not MS-DOS) Program list */
 	/************************************/
 
-	get_int(cfg->total_natvpgms,instream);
+	list = iniGetSectionList(ini, "native:");
+	cfg->total_natvpgms = strListCount(list);
 
 	if(cfg->total_natvpgms) {
 		if((cfg->natvpgm=(natvpgm_t **)malloc(sizeof(natvpgm_t *)*cfg->total_natvpgms))==NULL)
@@ -545,24 +545,21 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->natvpgm=NULL;
 
-	for(i=0;i<cfg->total_natvpgms;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_natvpgms; i++) {
+		section = list[i];
 		if((cfg->natvpgm[i]=(natvpgm_t *)malloc(sizeof(natvpgm_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "natvpgm", sizeof(natvpgm_t));
-		get_str(cfg->natvpgm[i]->name,instream);
-		cfg->natvpgm[i]->misc=0; 
+		memset(cfg->natvpgm[i],0,sizeof(natvpgm_t));
+		SAFECOPY(cfg->natvpgm[i]->name, section + 7);
 	}
-	cfg->total_natvpgms=i;
-	for(i=0;i<cfg->total_natvpgms;i++) {
-		if(feof(instream)) break;
-		get_int(cfg->natvpgm[i]->misc,instream);
-	}
+	strListFree(&list);
 
 	/*******************/
 	/* Global Hot Keys */
 	/*******************/
 
-	get_int(cfg->total_hotkeys,instream);
+	list = iniGetSectionList(ini, "hotkey:");
+	cfg->total_hotkeys = strListCount(list);
 
 	if(cfg->total_hotkeys) {
 		if((cfg->hotkey=(hotkey_t **)malloc(sizeof(hotkey_t *)*cfg->total_hotkeys))==NULL)
@@ -570,52 +567,54 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->hotkey=NULL;
 
-	for(i=0;i<cfg->total_hotkeys;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_hotkeys; i++) {
+		section = list[i];
 		if((cfg->hotkey[i]=(hotkey_t *)malloc(sizeof(hotkey_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "hotkey", sizeof(hotkey_t));
 		memset(cfg->hotkey[i],0,sizeof(hotkey_t));
 
-		get_int(cfg->hotkey[i]->key,instream);
-		get_str(cfg->hotkey[i]->cmd,instream);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
+		cfg->hotkey[i]->key = list[i][7];
+		SAFECOPY(cfg->hotkey[i]->cmd, iniGetString(ini, section, "cmd", "", value));
 	}
-	cfg->total_hotkeys=i;
+	strListFree(&list);
 
 	/************************************/
 	/* External Program-related Toggles */
 	/************************************/
-	get_int(cfg->xtrn_misc,instream);
+	cfg->xtrn_misc = iniGetLongInt(ini, ROOT_SECTION, "settings", 0);
 
-	fclose(instream);
-	return(TRUE);
+	iniFreeStringList(ini);
+
+	return TRUE;
 }
 
 /****************************************************************************/
-/* Reads in CHAT.CNF and initializes the associated variables				*/
+/* Reads in chat.ini and initializes the associated variables				*/
 /****************************************************************************/
 BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	str[MAX_PATH+1];
-	short	i,j;
-	int16_t	n;
-	long	offset=0;
-	FILE	*instream;
+	char	path[MAX_PATH+1];
+	char	errstr[256];
+	FILE*	fp;
+	str_list_t	ini;
+	char	value[INI_MAX_VALUE_LEN];
+	const char* section = ROOT_SECTION;
 
-	const char* fname = "chat.cnf";
-	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		safe_snprintf(error, maxerrlen,"%d (%s) opening %s",errno,STRERROR(errno),str);
-		return(FALSE);
+	const char* fname = "chat.ini";
+	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+		return FALSE;
 	}
+	ini = iniReadFile(fp);
+	fclose(fp);
 
 	/*********/
 	/* Gurus */
 	/*********/
 
-	get_int(cfg->total_gurus,instream);
+	str_list_t list = iniGetSectionList(ini, "guru:");
+	cfg->total_gurus = strListCount(list);
 
 	if(cfg->total_gurus) {
 		if((cfg->guru=(guru_t **)malloc(sizeof(guru_t *)*cfg->total_gurus))==NULL)
@@ -623,29 +622,26 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->guru=NULL;
 
-	for(i=0;i<cfg->total_gurus;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_gurus; i++) {
+		section = list[i];
 		if((cfg->guru[i]=(guru_t *)malloc(sizeof(guru_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "guru", sizeof(guru_t));
 		memset(cfg->guru[i],0,sizeof(guru_t));
 
-		get_str(cfg->guru[i]->name,instream);
-		get_str(cfg->guru[i]->code,instream);
+		SAFECOPY(cfg->guru[i]->name, iniGetString(ini, section, "name", section + 5, value));
+		SAFECOPY(cfg->guru[i]->code, section + 5);
 
-		get_str(cfg->guru[i]->arstr,instream);
+		SAFECOPY(cfg->guru[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->guru[i]->arstr, cfg, cfg->guru[i]->ar);
-
-		for(j=0;j<8;j++)
-			get_int(n,instream);
 	}
-	cfg->total_chans=i;
-
+	strListFree(&list);
 
 	/********************/
 	/* Chat Action Sets */
 	/********************/
 
-	get_int(cfg->total_actsets,instream);
+	list = iniGetSectionList(ini, "actions:");
+	cfg->total_actsets = strListCount(list);
 
 	if(cfg->total_actsets) {
 		if((cfg->actset=(actset_t **)malloc(sizeof(actset_t *)*cfg->total_actsets))==NULL)
@@ -653,49 +649,37 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->actset=NULL;
 
-	for(i=0;i<cfg->total_actsets;i++) {
-		if(feof(instream)) break;
+	cfg->total_chatacts = 0;
+	for(uint i=0; i<cfg->total_actsets; i++) {
+		section = list[i];
 		if((cfg->actset[i]=(actset_t *)malloc(sizeof(actset_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "actset", sizeof(actset_t));
-		get_str(cfg->actset[i]->name,instream);
+		SAFECOPY(cfg->actset[i]->name, section + 8);
+		str_list_t act_list = iniGetKeyList(ini, section);
+		for(uint j = 0; act_list != NULL && act_list[j] != NULL; j++) {
+			chatact_t** np = realloc(cfg->chatact, sizeof(chatact_t *) * (cfg->total_chatacts + 1));
+			if(np == NULL)
+				return allocerr(error, maxerrlen, fname, "chatacts", sizeof(chatact_t *) * (cfg->total_chatacts + 1));
+			cfg->chatact = np;
+			cfg->chatact[cfg->total_chatacts] = malloc(sizeof(chatact_t));
+			chatact_t* act = cfg->chatact[cfg->total_chatacts];
+			if(act == NULL)
+				return allocerr(error, maxerrlen, fname, "chatact", sizeof(chatact_t));
+			cfg->total_chatacts++;
+			act->actset = i;
+			SAFECOPY(act->cmd, act_list[j]);
+			SAFECOPY(act->out, iniGetString(ini, section, act_list[j], "", value));
+		}
+		strListFree(&act_list);
 	}
-	cfg->total_actsets=i;
-
-
-	/****************/
-	/* Chat Actions */
-	/****************/
-
-	get_int(cfg->total_chatacts,instream);
-
-	if(cfg->total_chatacts) {
-		if((cfg->chatact=(chatact_t **)malloc(sizeof(chatact_t *)*cfg->total_chatacts))
-			==NULL)
-			return allocerr(error, maxerrlen, fname, "chatacts", sizeof(chatact_t *)*cfg->total_chatacts);
-	} else
-		cfg->chatact=NULL;
-
-	for(i=0;i<cfg->total_chatacts;i++) {
-		if(feof(instream)) break;
-		if((cfg->chatact[i]=(chatact_t *)malloc(sizeof(chatact_t)))==NULL)
-			return allocerr(error, maxerrlen, fname, "chatact", sizeof(chatact_t));
-		memset(cfg->chatact[i],0,sizeof(chatact_t));
-
-		get_int(cfg->chatact[i]->actset,instream);
-		get_str(cfg->chatact[i]->cmd,instream);
-		get_str(cfg->chatact[i]->out,instream);
-		for(j=0;j<8;j++)
-			get_int(n,instream);
-	}
-
-	cfg->total_chatacts=i;
-
+	strListFree(&list);
 
 	/***************************/
 	/* Multinode Chat Channels */
 	/***************************/
 
-	get_int(cfg->total_chans,instream);
+	list = iniGetSectionList(ini, "chan:");
+	cfg->total_chans = strListCount(list);
 
 	if(cfg->total_chans) {
 		if((cfg->chan=(chan_t **)malloc(sizeof(chan_t *)*cfg->total_chans))==NULL)
@@ -703,34 +687,32 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->chan=NULL;
 
-	for(i=0;i<cfg->total_chans;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_chans; i++) {
+		section = list[i];
 		if((cfg->chan[i]=(chan_t *)malloc(sizeof(chan_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "chan", sizeof(chan_t));
 		memset(cfg->chan[i],0,sizeof(chan_t));
 
-		get_int(cfg->chan[i]->actset,instream);
-		get_str(cfg->chan[i]->name,instream);
+		cfg->chan[i]->actset = getchatactset(cfg, iniGetString(ini, section, "actions", "", value));
+		SAFECOPY(cfg->chan[i]->name, iniGetString(ini, section, "name", "", value));
 
-		get_str(cfg->chan[i]->code,instream);
+		SAFECOPY(cfg->chan[i]->code, section + 5);
 
-		get_str(cfg->chan[i]->arstr,instream);
+		SAFECOPY(cfg->chan[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->chan[i]->arstr, cfg, cfg->chan[i]->ar);
 
-		get_int(cfg->chan[i]->cost,instream);
-		get_int(cfg->chan[i]->guru,instream);
-		get_int(cfg->chan[i]->misc,instream);
-		for(j=0;j<8;j++)
-			get_int(n,instream);
+		cfg->chan[i]->cost = iniGetLongInt(ini, section, "cost", 0);
+		cfg->chan[i]->guru = getgurunum(cfg, iniGetString(ini, section, "guru", "", value));
+		cfg->chan[i]->misc = iniGetLongInt(ini, section, "settings", 0);
 	}
-	cfg->total_chans=i;
+	strListFree(&list);
 
+	/***************/
+	/* Chat Pagers */
+	/***************/
 
-	/**************/
-	/* Chat Pages */
-	/**************/
-
-	get_int(cfg->total_pages,instream);
+	list = iniGetSectionList(ini, "pager:");
+	cfg->total_pages = strListCount(list);
 
 	if(cfg->total_pages) {
 		if((cfg->page=(page_t **)malloc(sizeof(page_t *)*cfg->total_pages))==NULL)
@@ -738,26 +720,24 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		cfg->page=NULL;
 
-	for(i=0;i<cfg->total_pages;i++) {
-		if(feof(instream)) break;
+	for(uint i=0; i<cfg->total_pages; i++) {
+		section = list[i];
 		if((cfg->page[i]=(page_t *)malloc(sizeof(page_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "page", sizeof(page_t));
 		memset(cfg->page[i],0,sizeof(page_t));
 
-		get_str(cfg->page[i]->cmd,instream);
+		SAFECOPY(cfg->page[i]->cmd, iniGetString(ini, section, "cmd", "", value));
 
-		get_str(cfg->page[i]->arstr,instream);
+		SAFECOPY(cfg->page[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL, cfg->page[i]->arstr, cfg, cfg->page[i]->ar);
 
-		get_int(cfg->page[i]->misc,instream);
-		for(j=0;j<8;j++)
-			get_int(n,instream);
+		cfg->page[i]->misc = iniGetLongInt(ini, section, "settings", 0);
 	}
-	cfg->total_pages=i;
+	strListFree(&list);
 
+	iniFreeStringList(ini);
 
-	fclose(instream);
-	return(TRUE);
+	return TRUE;
 }
 
 /****************************************************************************/

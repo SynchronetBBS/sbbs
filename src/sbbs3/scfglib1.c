@@ -739,6 +739,39 @@ int getlibnum_from_name(scfg_t* cfg, const char* name)
 	return i;
 }
 
+int getxtrnsec(scfg_t* cfg, const char* code)
+{
+	int i;
+
+	for(i = 0; i < cfg->total_xtrnsecs; i++) {
+		if(stricmp(cfg->xtrnsec[i]->code, code) == 0)
+			break;
+	}
+	return i;
+}
+
+int getgurunum(scfg_t* cfg, const char* code)
+{
+	int i;
+
+	for(i = 0; i < cfg->total_gurus; i++) {
+		if(stricmp(cfg->guru[i]->code, code) == 0)
+			break;
+	}
+	return i;
+}
+
+int getchatactset(scfg_t* cfg, const char* name)
+{
+	int i;
+
+	for(i = 0; i < cfg->total_actsets; i++) {
+		if(stricmp(cfg->actset[i]->name, name) == 0)
+			break;
+	}
+	return i;
+}
+
 BOOL is_valid_dirnum(scfg_t* cfg, int dirnum)
 {
 	return (dirnum >= 0) && (cfg != NULL) && (dirnum < cfg->total_dirs);
@@ -757,6 +790,11 @@ BOOL is_valid_subnum(scfg_t* cfg, int subnum)
 BOOL is_valid_grpnum(scfg_t* cfg, int grpnum)
 {
 	return (grpnum >= 0) && (cfg != NULL) && (grpnum < cfg->total_grps);
+}
+
+BOOL is_valid_xtrnsec(scfg_t* cfg, int secnum)
+{
+	return (secnum >= 0) && (cfg != NULL) && (secnum < cfg->total_xtrnsecs);
 }
 
 faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
