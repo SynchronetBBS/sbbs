@@ -4865,12 +4865,12 @@ static BOOL exec_cgi(http_session_t *session)
 			execle(cmdline,cmdline,NULL,env_list);
 		}
 
-		lprintf(LOG_ERR,"%04d !FAILED! execle() (%d)",session->socket,errno);
+		lprintf(LOG_ERR,"%04d !ERROR %d executing execle(%s)",session->socket, errno, cmdline);
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
 
 	if(child==-1)  {
-		lprintf(LOG_ERR,"%04d !FAILED! fork() errno=%d",session->socket,errno);
+		lprintf(LOG_ERR,"%04d !ERROR %d invoking fork()",session->socket,errno);
 		if (session->tls_sess)
 			close(in_pipe[1]);	/* close write-end of pipe */
 		close(out_pipe[0]);		/* close read-end of pipe */
