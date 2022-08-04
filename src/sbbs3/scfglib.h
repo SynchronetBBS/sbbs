@@ -25,19 +25,10 @@
 #include "scfgdefs.h"	/* scfg_t */
 #include "dllexport.h"
 
-#define get_int(var,stream) { if(!fread(&var,1,sizeof(var),stream)) \
-								memset(&var,0,sizeof(var)); \
-							  offset+=sizeof(var); }
-#define get_str(var,stream) { if(!fread(var,1,sizeof(var),stream)) \
-								memset(var,0,sizeof(var)); \
- 							  else var[sizeof(var)-1] = 0; \
-                              offset+=sizeof(var); }
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-char*	get_alloc(long *offset, char *outstr, int maxlen, FILE *instream);
 BOOL	allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size);
 char*	readline(long *offset, char *str, int maxlen, FILE *stream);
 
@@ -68,11 +59,15 @@ int		getlibnum_from_name(scfg_t*, const char* name);
 int		getsubnum(scfg_t*, const char* code);
 int		getgrpnum(scfg_t*, const char* code);
 int		getgrpnum_from_name(scfg_t*, const char* name);
+int		getxtrnsec(scfg_t*, const char* code);
+int		getgurunum(scfg_t*, const char* code);
+int		getchatactset(scfg_t*, const char* name);
 
 DLLEXPORT BOOL	is_valid_dirnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_libnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_subnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_grpnum(scfg_t*, int);
+DLLEXPORT BOOL	is_valid_xtrnsec(scfg_t*, int);
 
 DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
 DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
