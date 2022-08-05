@@ -72,7 +72,6 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
 	FILE*	fp;
-	str_list_t ini;
 	const char* section = ROOT_SECTION;
 
 	if(cfg->prepped)
@@ -87,7 +86,7 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 	SAFECAT(path, "node.ini");
 	backup(path, backup_level, TRUE);
 
-	ini = strListInit();
+	str_list_t ini = strListInit();
 	iniSetString(&ini, section, "phone", cfg->node_phone, NULL);
 	iniSetString(&ini, section, "daily", cfg->node_daily, NULL);
 	iniSetString(&ini, section, "text_dir", cfg->text_dir, NULL);
@@ -116,243 +115,207 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[MAX_PATH+1],c=0;
-	int 	file;
-	ushort	i,j;
-	uint16_t n;
-	FILE	*stream;
+	BOOL	result = FALSE;
+	char	path[MAX_PATH+1];
+	char	tmp[128];
+	FILE*	fp;
+	const char* section = ROOT_SECTION;
 
 	if(cfg->prepped)
-		return(FALSE);
+		return FALSE;
 
-	SAFEPRINTF(str,"%smain.cnf",cfg->ctrl_dir);
-	backup(str, backup_level, TRUE);
+	SAFEPRINTF(path, "%smain.ini", cfg->ctrl_dir);
+	backup(path, backup_level, TRUE);
 
-	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
-		|| (stream=fdopen(file,"wb"))==NULL) {
-		return(FALSE); 
-	}
-	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
-
-	put_str(cfg->sys_name,stream);
-	put_str(cfg->sys_id,stream);
-	put_str(cfg->sys_location,stream);
-	put_str(cfg->sys_phonefmt,stream);
-	put_str(cfg->sys_op,stream);
-	put_str(cfg->sys_guru,stream);
-	put_str(cfg->sys_pass,stream);
-	put_int(cfg->sys_nodes,stream);
-	for(i=0;i<cfg->sys_nodes;i++) {
+	str_list_t ini = strListInit();
+	iniSetString(&ini, section, "name", cfg->sys_name, NULL);
+	iniSetString(&ini, section, "qwk_id", cfg->sys_id, NULL);
+	iniSetString(&ini, section, "location", cfg->sys_location, NULL);
+	iniSetString(&ini, section, "phonefmt", cfg->sys_phonefmt, NULL);
+	iniSetString(&ini, section, "operator", cfg->sys_op, NULL);
+	iniSetString(&ini, section, "guru", cfg->sys_guru, NULL);
+	iniSetString(&ini, section, "password", cfg->sys_pass, NULL);
+	for(uint i=0;i<cfg->sys_nodes;i++) {
+		char key[128];
+		SAFEPRINTF(key, "%u", i + 1);
 		if(cfg->node_path[i][0] == 0)
 			SAFEPRINTF(cfg->node_path[i], "../node%u", i + 1);
-		put_str(cfg->node_path[i],stream);
+		iniSetString(&ini, "node_dir", key, cfg->node_path[i], NULL);
 	}
 	backslash(cfg->data_dir);
-	put_str(cfg->data_dir,stream);
-
+	iniSetString(&ini, "dir", "data", cfg->data_dir, NULL);
 	backslash(cfg->exec_dir);
-	put_str(cfg->exec_dir,stream);
-	put_str(cfg->sys_logon,stream);
-	put_str(cfg->sys_logout,stream);
-	put_str(cfg->sys_daily,stream);
-	put_int(cfg->sys_timezone,stream);
-	put_int(cfg->sys_misc,stream);
-	put_int(cfg->sys_lastnode,stream);
-	put_int(cfg->sys_autonode,stream);
-	put_int(cfg->uq,stream);
-	put_int(cfg->sys_pwdays,stream);
-	put_int(cfg->sys_deldays,stream);
-	put_int(cfg->sys_exp_warn,stream);
-	put_int(cfg->sys_autodel,stream);
-	put_int(cfg->sys_def_stat,stream);
-	put_str(cfg->sys_chat_arstr,stream);
-	put_int(cfg->cdt_min_value,stream);
-	put_int(cfg->max_minutes,stream);
-	put_int(cfg->cdt_per_dollar,stream);
-	put_str(cfg->new_pass,stream);
-	put_str(cfg->new_magic,stream);
-	put_str(cfg->new_sif,stream);
-	put_str(cfg->new_sof,stream);
+	iniSetString(&ini, "dir", "exec", cfg->exec_dir, NULL);
 
-	put_int(cfg->new_level,stream);
-	put_int(cfg->new_flags1,stream);
-	put_int(cfg->new_flags2,stream);
-	put_int(cfg->new_flags3,stream);
-	put_int(cfg->new_flags4,stream);
-	put_int(cfg->new_exempt,stream);
-	put_int(cfg->new_rest,stream);
-	put_int(cfg->new_cdt,stream);
-	put_int(cfg->new_min,stream);
-	put_str(cfg->new_xedit,stream);
-	put_int(cfg->new_expire,stream);
+	iniSetString(&ini, section, "logon", cfg->sys_logon, NULL);
+	iniSetString(&ini, section, "logout", cfg->sys_logout, NULL);
+	iniSetString(&ini, section, "daily", cfg->sys_daily, NULL);
+	iniSetShortInt(&ini, section, "timezone", cfg->sys_timezone, NULL);
+	iniSetLongInt(&ini, section, "settings", cfg->sys_misc, NULL);
+	iniSetShortInt(&ini, section, "lastnode", cfg->sys_lastnode, NULL);
+	iniSetLongInt(&ini, "newuser", "questions", cfg->uq, NULL);
+	iniSetShortInt(&ini, section, "pwdays", cfg->sys_pwdays, NULL);
+	iniSetShortInt(&ini, section, "deldays", cfg->sys_deldays, NULL);
+	iniSetShortInt(&ini, section, "exp_warn", cfg->sys_exp_warn, NULL);
+	iniSetShortInt(&ini, section, "autodel", cfg->sys_autodel, NULL);
+	iniSetString(&ini, section, "chat_ars", cfg->sys_chat_arstr, NULL);
+	iniSetShortInt(&ini, section, "cdt_min_value", cfg->cdt_min_value, NULL);
+	iniSetLongInt(&ini, section, "max_minutes", cfg->max_minutes, NULL);
+	iniSetLongInt(&ini, section, "cdt_per_dollar", cfg->cdt_per_dollar, NULL);
+	iniSetString(&ini, "newuser", "password", cfg->new_pass, NULL);
+	iniSetString(&ini, "newuser", "magic_word", cfg->new_magic, NULL);
+	iniSetString(&ini, "newuser", "sif", cfg->new_sif, NULL);
+	iniSetString(&ini, "newuser", "sof", cfg->new_sof, NULL);
+
+	iniSetShortInt(&ini, "newuser", "level", cfg->new_level, NULL);
+	iniSetLongInt(&ini, "nweuser", "flags1", cfg->new_flags1, NULL);
+	iniSetLongInt(&ini, "nweuser", "flags2", cfg->new_flags2, NULL);
+	iniSetLongInt(&ini, "nweuser", "flags3", cfg->new_flags3, NULL);
+	iniSetLongInt(&ini, "nweuser", "flags4", cfg->new_flags4, NULL);
+	iniSetLongInt(&ini, "newuser", "exemptions", cfg->new_exempt, NULL);
+	iniSetLongInt(&ini, "newuser", "restrictions", cfg->new_rest, NULL);
+	iniSetLongInt(&ini, "newuser", "credits", cfg->new_cdt, NULL);
+	iniSetLongInt(&ini, "newuser", "minutes", cfg->new_min, NULL);
+	iniSetString(&ini, "newuser", "editor", cfg->new_xedit, NULL);
+	iniSetShortInt(&ini, "newuser", "expiration_days", cfg->new_expire, NULL);
 	if(cfg->new_shell>=cfg->total_shells)
 		cfg->new_shell=0;
-	put_int(cfg->new_shell,stream);
-	put_int(cfg->new_misc,stream);
-	put_int(cfg->new_prot,stream);
-	put_int(cfg->new_install,stream);
-	put_int(cfg->new_msgscan_init, stream);
-	put_int(cfg->guest_msgscan_init, stream);
-	put_int(cfg->min_pwlen, stream);
-	put_int(c, stream);
-	n=0;
-	put_int(n,stream);
-	put_int(cfg->max_log_size, stream);
-	put_int(cfg->max_logs_kept, stream);
+	if(cfg->total_shells > 0)
+		iniSetString(&ini, "newuser", "command_shell", cfg->shell[cfg->new_shell]->code, NULL);
+	iniSetLongInt(&ini, "newuser", "settings", cfg->new_misc, NULL);
+	SAFEPRINTF(tmp, "%c", cfg->new_prot);
+	iniSetString(&ini, "newuser", "download_protocol", tmp, NULL);
+	iniSetBool(&ini, section, "new_install", cfg->new_install, NULL);
+	iniSetShortInt(&ini, "newuser", "msgscan_init", cfg->new_msgscan_init, NULL);
+	iniSetShortInt(&ini, section, "guest_msgscan_init", cfg->guest_msgscan_init, NULL);
+	iniSetShortInt(&ini, section, "min_password_length", cfg->min_pwlen, NULL);
+	iniSetLongInt(&ini, section, "max_log_size", cfg->max_log_size, NULL);
+	iniSetShortInt(&ini, section, "max_logs_kept", cfg->max_logs_kept, NULL);
 
-	put_int(cfg->expired_level,stream);
-	put_int(cfg->expired_flags1,stream);
-	put_int(cfg->expired_flags2,stream);
-	put_int(cfg->expired_flags3,stream);
-	put_int(cfg->expired_flags4,stream);
-	put_int(cfg->expired_exempt,stream);
-	put_int(cfg->expired_rest,stream);
+	section = "expired";
+	iniSetShortInt(&ini, section, "level", cfg->expired_level, NULL);
+	iniSetLongInt(&ini, section, "flags1", cfg->expired_flags1, NULL);
+	iniSetLongInt(&ini, section, "flags2", cfg->expired_flags2, NULL);
+	iniSetLongInt(&ini, section, "flags3", cfg->expired_flags3, NULL);
+	iniSetLongInt(&ini, section, "flags4", cfg->expired_flags4, NULL);
+	iniSetLongInt(&ini, section, "exemptions", cfg->expired_exempt, NULL);
+	iniSetLongInt(&ini, section, "restrictions", cfg->expired_rest, NULL);
 
-	put_str(cfg->logon_mod,stream);
-	put_str(cfg->logoff_mod,stream);
-	put_str(cfg->newuser_mod,stream);
-	put_str(cfg->login_mod,stream);
-	put_str(cfg->logout_mod,stream);
-	put_str(cfg->sync_mod,stream);
-	put_str(cfg->expire_mod,stream);
-	put_int(cfg->ctrlkey_passthru,stream);
-	put_str(cfg->mods_dir,stream);
-	put_str(cfg->logs_dir,stream);
-	put_str(cfg->readmail_mod, stream);
-	put_str(cfg->scanposts_mod, stream);
-	put_str(cfg->scansubs_mod, stream);
-	put_str(cfg->listmsgs_mod, stream);
-	put_str(cfg->textsec_mod,stream);
-	put_str(cfg->automsg_mod,stream);
-	put_str(cfg->xtrnsec_mod,stream);
+	section = "module";
+	iniSetString(&ini, section, "logon", cfg->logon_mod, NULL);
+	iniSetString(&ini, section, "logoff", cfg->logoff_mod, NULL);
+	iniSetString(&ini, section, "newuser", cfg->newuser_mod, NULL);
+	iniSetString(&ini, section, "login", cfg->login_mod, NULL);
+	iniSetString(&ini, section, "logout", cfg->logout_mod, NULL);
+	iniSetString(&ini, section, "sync", cfg->sync_mod, NULL);
+	iniSetString(&ini, section, "expire", cfg->expire_mod, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "ctrlkey_passthru", cfg->ctrlkey_passthru, NULL);
+	iniSetString(&ini, "dir", "mods", cfg->mods_dir, NULL);
+	iniSetString(&ini, "dir", "logs", cfg->logs_dir, NULL);
+	iniSetString(&ini, section, "readmail", cfg->readmail_mod, NULL);
+	iniSetString(&ini, section, "scanposts", cfg->scanposts_mod, NULL);
+	iniSetString(&ini, section, "scansubs", cfg->scansubs_mod, NULL);
+	iniSetString(&ini, section, "listmsgs", cfg->listmsgs_mod, NULL);
+	iniSetString(&ini, section, "textsec", cfg->textsec_mod, NULL);
+	iniSetString(&ini, section, "automsg", cfg->automsg_mod, NULL);
+	iniSetString(&ini, section, "xtrnsec", cfg->xtrnsec_mod, NULL);
 
-	n=0;
-	for(i=0;i<17;i++)
-		put_int(n,stream);
-	put_str(cfg->nodelist_mod, stream);
-	put_str(cfg->whosonline_mod, stream);
-	put_str(cfg->privatemsg_mod, stream);
-	put_str(cfg->logonlist_mod, stream);
+	iniSetString(&ini, section, "nodelist", cfg->nodelist_mod, NULL);
+	iniSetString(&ini, section, "whosonline", cfg->whosonline_mod, NULL);
+	iniSetString(&ini, section, "privatemsg", cfg->privatemsg_mod, NULL);
+	iniSetString(&ini, section, "logonlist", cfg->logonlist_mod, NULL);
 	
-    put_str(cfg->prextrn_mod,stream);
-    put_str(cfg->postxtrn_mod,stream);
+    iniSetString(&ini, section, "prextrn", cfg->prextrn_mod, NULL);
+    iniSetString(&ini, section, "postxtrn", cfg->postxtrn_mod, NULL);
 
-	put_str(cfg->tempxfer_mod, stream);
-	n=0xffff;
-	for(i=0;i<92;i++)
-		put_int(n,stream);
+	iniSetString(&ini, section, "tempxfer", cfg->tempxfer_mod, NULL);
 
-	put_str(cfg->new_genders, stream);
-	put_int(cfg->user_backup_level,stream);
-	put_int(cfg->mail_backup_level,stream);
+	iniSetString(&ini, "newuser", "gender_options", cfg->new_genders, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "user_backup_level", cfg->user_backup_level, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "mail_backup_level", cfg->mail_backup_level, NULL);
 
-	n=0;
-	for(i=0;i<10;i++) {
-		put_int(cfg->val_level[i],stream);
-		put_int(cfg->val_expire[i],stream);
-		put_int(cfg->val_flags1[i],stream);
-		put_int(cfg->val_flags2[i],stream);
-		put_int(cfg->val_flags3[i],stream);
-		put_int(cfg->val_flags4[i],stream);
-		put_int(cfg->val_cdt[i],stream);
-		put_int(cfg->val_exempt[i],stream);
-		put_int(cfg->val_rest[i],stream);
-		for(j=0;j<8;j++)
-			put_int(n,stream); }
+	for(uint i=0; i<10; i++) {
+		SAFEPRINTF(tmp, "valset:%u", i);
+		section = tmp;
+		iniSetShortInt(&ini, section, "level", cfg->val_level[i], NULL);
+		iniSetShortInt(&ini, section, "expire", cfg->val_expire[i], NULL);
+		iniSetLongInt(&ini, section, "flags1", cfg->val_flags1[i], NULL);
+		iniSetLongInt(&ini, section, "flags2", cfg->val_flags2[i], NULL);
+		iniSetLongInt(&ini, section, "flags3", cfg->val_flags3[i], NULL);
+		iniSetLongInt(&ini, section, "flags4", cfg->val_flags4[i], NULL);
+		iniSetLongInt(&ini, section, "credits", cfg->val_cdt[i], NULL);
+		iniSetLongInt(&ini, section, "exempt", cfg->val_exempt[i], NULL);
+		iniSetLongInt(&ini, section, "rest", cfg->val_rest[i], NULL);
+	}
 
-	c=0;
-	for(i=0;i<100 && !feof(stream);i++) {
-		uint32_t l = 0;
-		put_int(cfg->level_timeperday[i],stream);
-		put_int(cfg->level_timepercall[i],stream);
-		put_int(cfg->level_callsperday[i],stream);
-		put_int(l,stream);	// Used to be freecdtperday (32-bit)
-		put_int(cfg->level_linespermsg[i],stream);
-		put_int(cfg->level_postsperday[i],stream);
-		put_int(cfg->level_emailperday[i],stream);
-		put_int(cfg->level_misc[i],stream);
-		put_int(cfg->level_expireto[i],stream);
-		put_int(cfg->level_freecdtperday[i],stream);
-		put_int(c,stream);
-		put_int(n,stream);
+	for(uint i=0; i<100; i++) {
+		SAFEPRINTF(tmp, "level:%u", i);
+		section = tmp;
+		iniSetShortInt(&ini, section, "timeperday", cfg->level_timeperday[i], NULL);
+		iniSetShortInt(&ini, section, "timepercall", cfg->level_timepercall[i], NULL);
+		iniSetShortInt(&ini, section, "callsperday", cfg->level_callsperday[i], NULL);
+		iniSetShortInt(&ini, section, "linespermsg", cfg->level_linespermsg[i], NULL);
+		iniSetShortInt(&ini, section, "postsperday", cfg->level_postsperday[i], NULL);
+		iniSetShortInt(&ini, section, "emailperday", cfg->level_emailperday[i], NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->level_misc[i], NULL);
+		iniSetShortInt(&ini, section, "expireto", cfg->level_expireto[i], NULL);
+		iniSetLongInt(&ini, section, "freecdtperday", cfg->level_freecdtperday[i], NULL);
 	}
 
 	/* Command Shells */
-
-	put_int(cfg->total_shells,stream);
-	for(i=0;i<cfg->total_shells;i++) {
-		put_str(cfg->shell[i]->name,stream);
-		put_str(cfg->shell[i]->code,stream);
-		put_str(cfg->shell[i]->arstr,stream);
-		put_int(cfg->shell[i]->misc,stream);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n,stream); 
+	for(uint i=0; i<cfg->total_shells; i++) {
+		SAFEPRINTF(tmp, "shell:%s", cfg->shell[i]->code);
+		iniSetString(&ini, section, "name", cfg->shell[i]->name, NULL);
+		iniSetString(&ini, section, "ars", cfg->shell[i]->arstr, NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->shell[i]->misc, NULL);
 	}
 
-	fclose(stream);
+	if((fp = fopen(path, "w")) != NULL) {
+		result = iniWriteFile(fp, ini);
+		fclose(fp);
+	}
+	iniFreeStringList(ini);
 
-	return(TRUE);
+	return result;
 }
 
 /****************************************************************************/
 /****************************************************************************/
 BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[MAX_PATH+1],c;
-	char	dir[LEN_DIR+1]="";
-	int 	i,j,file;
-	uint16_t	n;
-	int32_t	l;
-	FILE	*stream;
+	BOOL	result = FALSE;
+	char	path[MAX_PATH+1];
+	char	tmp[128];
+	FILE*	fp;
+	const char* section = ROOT_SECTION;
 	smb_t	smb;
-	BOOL	result = TRUE;
 
 	if(cfg->prepped)
-		return(FALSE);
+		return FALSE;
 
 	ZERO_VAR(smb);
 
-	SAFEPRINTF(str,"%smsgs.cnf",cfg->ctrl_dir);
-	backup(str, backup_level, TRUE);
+	SAFEPRINTF(path, "%smsgs.ini", cfg->ctrl_dir);
+	backup(path, backup_level, TRUE);
 
-	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
-		|| (stream=fdopen(file,"wb"))==NULL) {
-		return(FALSE); 
-	}
-	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
-
-	put_int(cfg->max_qwkmsgs,stream);
-	put_int(cfg->mail_maxcrcs,stream);
-	put_int(cfg->mail_maxage,stream);
-	put_str(cfg->preqwk_arstr,stream);
-	put_int(cfg->smb_retry_time,stream);
-	put_int(cfg->max_qwkmsgage,stream);
-	put_int(cfg->max_spamage,stream);
-	n=0;
-	for(i=0;i<232;i++)
-		put_int(n,stream);
-	put_int(cfg->msg_misc,stream);
-	n=0xffff;
-	for(i=0;i<255;i++)
-		put_int(n,stream);
+	iniSetLongInt(&ini, "qwk", "max_msgs", cfg->max_qwkmsgs, NULL);
+	iniSetLongInt(&ini, "mail", "max_crcs", cfg->mail_maxcrcs, NULL);
+	iniSetLongInt(&ini, "mail", "max_age", cfg->mail_maxage, NULL);
+	iniSetString(&ini, "qwk", "prepack_ars", cfg->preqwk_arstr, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "smb_retry_time", cfg->smb_retry_time, NULL);
+	iniSetShortInt(&ini, "qwk", "max_age", cfg->max_qwkmsgage, NULL);
+	iniSetShortInt(&ini, "mail", "max_spam_age", cfg->max_spamage, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "settings", cfg->msg_misc, NULL);
 
 	/* Message Groups */
 
-	put_int(cfg->total_grps,stream);
-	for(i=0;i<cfg->total_grps;i++) {
-		put_str(cfg->grp[i]->lname,stream);
-		put_str(cfg->grp[i]->sname,stream);
-		put_str(cfg->grp[i]->arstr,stream);
-		put_str(cfg->grp[i]->code_prefix,stream);
-		c=cfg->grp[i]->sort;
-		put_int(c,stream);
-		n=0;
-		for(j=0;j<27;j++)
-			put_int(n,stream);
-		n=0xffff;
-		for(j=0;j<16;j++)
-			put_int(n,stream); 
+	for(uint i=0;i<cfg->total_grps;i++) {
+		SAFEPRINTF(tmp, "grp:%s", cfg->grp[i]->sname);
+		section = tmp;
+		iniSetString(&ini, section, "description", cfg->grp[i]->lname, NULL);
+		iniSetString(&ini, section, "ars", cfg->grp[i]->arstr, NULL);
+		iniSetString(&ini, section, "code_prefix", cfg->grp[i]->code_prefix, NULL);
+		iniSetShortInt(&ini, section, "sort", cfg->grp[i]->sort, NULL);
 	}
 
 	/* Message Sub-boards */
@@ -368,7 +331,9 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			&& cfg->sub[i]->sname[0]
 			&& cfg->sub[i]->code_suffix[0])
 			n++;
-	put_int(n,stream);
+	put_int(n, NULL);
+	
+	
 	unsigned int subnum = 0;	/* New sub-board numbering (as saved) */
 	for(unsigned grp = 0; grp < cfg->total_grps; grp++) {
 		for(i=0;i<cfg->total_subs;i++) {
@@ -378,44 +343,39 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			if(cfg->sub[i]->grp != grp)
 				continue;
+			SAFEPRINTF(tmp, "sub:%s:%s"
+				,cfg->grp[grp]->sname, cfg->sub[i]->code_suffix);
+			section = tmp;
 			cfg->sub[i]->subnum = subnum++;
-			put_int(cfg->sub[i]->grp,stream);
-			put_str(cfg->sub[i]->lname,stream);
-			put_str(cfg->sub[i]->sname,stream);
-			put_str(cfg->sub[i]->qwkname,stream);
-			put_str(cfg->sub[i]->code_suffix,stream);
+			iniSetString(&ini, section, "description", cfg->sub[i]->lname, NULL);
+			iniSetString(&ini, section, "name", cfg->sub[i]->sname, NULL);
+			iniSetString(&ini, section, "qwk_name", cfg->sub[i]->qwkname, NULL);
 	#if 1
 			if(cfg->sub[i]->data_dir[0]) {
 				backslash(cfg->sub[i]->data_dir);
 				md(cfg->sub[i]->data_dir);
 			}
 	#endif
-			put_str(cfg->sub[i]->data_dir,stream);
-			put_str(cfg->sub[i]->arstr,stream);
-			put_str(cfg->sub[i]->read_arstr,stream);
-			put_str(cfg->sub[i]->post_arstr,stream);
-			put_str(cfg->sub[i]->op_arstr,stream);
-			l=(cfg->sub[i]->misc&(~SUB_HDRMOD));    /* Don't write mod bit */
-			put_int(l,stream);
-			put_str(cfg->sub[i]->tagline,stream);
-			put_str(cfg->sub[i]->origline,stream);
-			put_str(cfg->sub[i]->post_sem,stream);
-			put_str(cfg->sub[i]->newsgroup,stream);
-			put_int(cfg->sub[i]->faddr,stream);
-			put_int(cfg->sub[i]->maxmsgs,stream);
-			put_int(cfg->sub[i]->maxcrcs,stream);
-			put_int(cfg->sub[i]->maxage,stream);
-			put_int(cfg->sub[i]->ptridx,stream);
-			put_str(cfg->sub[i]->mod_arstr,stream);
-			put_int(cfg->sub[i]->qwkconf,stream);
-			c=0;
-			put_int(c,stream); // unused
-			put_int(cfg->sub[i]->pmode,stream);
-			put_int(cfg->sub[i]->n_pmode,stream);
-			put_str(cfg->sub[i]->area_tag, stream);
-			n=0;
-			put_int(c,stream);
-			put_int(n,stream);
+			iniSetString(&ini, section, "data_dir", cfg->sub[i]->data_dir, NULL);
+			iniSetString(&ini, section, "ars", cfg->sub[i]->arstr, NULL);
+			iniSetString(&ini, section, "read_ars", cfg->sub[i]->read_arstr, NULL);
+			iniSetString(&ini, section, "post_ars", cfg->sub[i]->post_arstr, NULL);
+			iniSetString(&ini, section, "operator_ars", cfg->sub[i]->op_arstr, NULL);
+			iniSetLongInt(&ini, section, "esttings", cfg->sub[i]->misc&(~SUB_HDRMOD), NULL);    /* Don't write mod bit */
+			iniSetString(&ini, section, "qwknet_tagline", cfg->sub[i]->tagline, NULL);
+			iniSetString(&ini, section, "fidonet_origin", cfg->sub[i]->origline, NULL);
+			iniSetString(&ini, section, "post_sem", cfg->sub[i]->post_sem, NULL);
+			iniSetString(&ini, section, "newsgroup", cfg->sub[i]->newsgroup, NULL);
+			iniSetString(&ini, section, "fidonet_addr", smb_faddrtoa(&cfg->sub[i]->faddr, tmp), NULL);
+			iniSetLongInt(&ini, section, "max_msgs", cfg->sub[i]->maxmsgs, NULL);
+			iniSetLongInt(&ini, section, "max_crcs", cfg->sub[i]->maxcrcs, NULL);
+			iniSetShortInt(&ini, section, "max_age", cfg->sub[i]->maxage, NULL);
+			iniSetShortInt(&ini, section, "ptridx", cfg->sub[i]->ptridx, NULL);
+			iniSetString(&ini, section, "moderated_ars", cfg->sub[i]->mod_arstr, NULL);
+			iniSetShortInt(&ini, section, "qwk_conf", cfg->sub[i]->qwkconf, NULL);
+			iniSetLongInt(&ini, section, "print_mode", cfg->sub[i]->pmode, NULL);
+			iniSetLongInt(&ini, section, "print_mode_neg", cfg->sub[i]->n_pmode, NULL);
+			iniSetString(&ini, section, "area_tag", cfg->sub[i]->area_tag, NULL);
 
 			if(all_msghdr || (cfg->sub[i]->misc&SUB_HDRMOD && !no_msghdr)) {
 				if(!cfg->sub[i]->data_dir[0])
@@ -424,11 +384,11 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 					SAFECOPY(smb.file,cfg->sub[i]->data_dir);
 				prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
 				md(smb.file);
-				SAFEPRINTF2(str,"%s%s"
+				SAFEPRINTF2(path,"%s%s"
 					,cfg->grp[cfg->sub[i]->grp]->code_prefix
 					,cfg->sub[i]->code_suffix);
-				strlwr(str);
-				strcat(smb.file,str);
+				strlwr(path);
+				strcat(smb.file,path);
 				if(smb_open(&smb) != SMB_SUCCESS) {
 					result = FALSE;
 					continue;
@@ -477,93 +437,93 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 	/* FidoNet */
 
-	put_int(cfg->total_faddrs,stream);
+	put_int(cfg->total_faddrs, NULL);
 	for(i=0;i<cfg->total_faddrs;i++) {
-		put_int(cfg->faddr[i].zone,stream);
-		put_int(cfg->faddr[i].net,stream);
-		put_int(cfg->faddr[i].node,stream);
-		put_int(cfg->faddr[i].point,stream); }
+		put_int(cfg->faddr[i].zone, NULL);
+		put_int(cfg->faddr[i].net, NULL);
+		put_int(cfg->faddr[i].node, NULL);
+		put_int(cfg->faddr[i].point, NULL); }
 
-	put_str(cfg->origline,stream);
-	put_str(cfg->netmail_sem,stream);
-	put_str(cfg->echomail_sem,stream);
+	put_str(cfg->origline, NULL);
+	put_str(cfg->netmail_sem, NULL);
+	put_str(cfg->echomail_sem, NULL);
 	backslash(cfg->netmail_dir);
-	put_str(cfg->netmail_dir,stream);
-	put_str(cfg->echomail_dir,stream);	/* not used */
+	put_str(cfg->netmail_dir, NULL);
+	put_str(cfg->echomail_dir, NULL);	/* not used */
 	backslash(cfg->fidofile_dir);
-	put_str(cfg->fidofile_dir,stream);
-	put_int(cfg->netmail_misc,stream);
-	put_int(cfg->netmail_cost,stream);
-	put_int(cfg->dflt_faddr,stream);
+	put_str(cfg->fidofile_dir, NULL);
+	put_int(cfg->netmail_misc, NULL);
+	put_int(cfg->netmail_cost, NULL);
+	put_int(cfg->dflt_faddr, NULL);
 	n=0;
 	for(i=0;i<28;i++)
-		put_int(n,stream);
+		put_int(n, NULL);
 	md(cfg->netmail_dir);
 
 	/* QWKnet Config */
 
-	put_str(cfg->qnet_tagline,stream);
+	put_str(cfg->qnet_tagline, NULL);
 
-	put_int(cfg->total_qhubs,stream);
+	put_int(cfg->total_qhubs, NULL);
 	for(i=0;i<cfg->total_qhubs;i++) {
-		put_str(cfg->qhub[i]->id,stream);
-		put_int(cfg->qhub[i]->time,stream);
-		put_int(cfg->qhub[i]->freq,stream);
-		put_int(cfg->qhub[i]->days,stream);
-		put_int(cfg->qhub[i]->node,stream);
-		put_str(cfg->qhub[i]->call,stream);
-		put_str(cfg->qhub[i]->pack,stream);
-		put_str(cfg->qhub[i]->unpack,stream);
+		put_str(cfg->qhub[i]->id, NULL);
+		put_int(cfg->qhub[i]->time, NULL);
+		put_int(cfg->qhub[i]->freq, NULL);
+		put_int(cfg->qhub[i]->days, NULL);
+		put_int(cfg->qhub[i]->node, NULL);
+		put_str(cfg->qhub[i]->call, NULL);
+		put_str(cfg->qhub[i]->pack, NULL);
+		put_str(cfg->qhub[i]->unpack, NULL);
 		n = 0;
 		for(j=0;j<cfg->qhub[i]->subs;j++)
 			if(cfg->qhub[i]->sub[j] != NULL) n++;
-		put_int(n,stream);
+		put_int(n, NULL);
 		for(j=0;j<cfg->qhub[i]->subs;j++) {
 			if(cfg->qhub[i]->sub[j] == NULL)
 				continue;
-			put_int(cfg->qhub[i]->conf[j],stream);
+			put_int(cfg->qhub[i]->conf[j], NULL);
 			n=(uint16_t)cfg->qhub[i]->sub[j]->subnum;
-			put_int(n,stream);
-			put_int(cfg->qhub[i]->mode[j],stream); 
+			put_int(n, NULL);
+			put_int(cfg->qhub[i]->mode[j], NULL); 
 		}
-		put_int(cfg->qhub[i]->misc, stream);
-		put_str(cfg->qhub[i]->fmt,stream);
+		put_int(cfg->qhub[i]->misc, NULL);
+		put_str(cfg->qhub[i]->fmt, NULL);
 		n=0;
 		for(j=0;j<28;j++)
-			put_int(n,stream); 
+			put_int(n, NULL); 
 	}
 	n=0;
 	for(i=0;i<32;i++)
-		put_int(n,stream);
+		put_int(n, NULL);
 
 	/* PostLink Config */
 
 	memset(str,0,11);
-	fwrite(str,11,1,stream);	/* unused, used to be site name */
-	put_int(cfg->sys_psnum,stream);
+	fwrite(str,11,1, NULL);	/* unused, used to be site name */
+	put_int(cfg->sys_psnum, NULL);
 
-	put_int(cfg->total_phubs,stream);
+	put_int(cfg->total_phubs, NULL);
 	for(i=0;i<cfg->total_phubs;i++) {
-		put_str(cfg->phub[i]->name,stream);
-		put_int(cfg->phub[i]->time,stream);
-		put_int(cfg->phub[i]->freq,stream);
-		put_int(cfg->phub[i]->days,stream);
-		put_int(cfg->phub[i]->node,stream);
-		put_str(cfg->phub[i]->call,stream);
+		put_str(cfg->phub[i]->name, NULL);
+		put_int(cfg->phub[i]->time, NULL);
+		put_int(cfg->phub[i]->freq, NULL);
+		put_int(cfg->phub[i]->days, NULL);
+		put_int(cfg->phub[i]->node, NULL);
+		put_str(cfg->phub[i]->call, NULL);
 		n=0;
 		for(j=0;j<32;j++)
-			put_int(n,stream); }
+			put_int(n, NULL); }
 
-	put_str(cfg->sys_psname,stream);
+	put_str(cfg->sys_psname, NULL);
 	n=0;
 	for(i=0;i<32;i++)
-		put_int(n,stream);
+		put_int(n, NULL);
 
-	put_str(cfg->sys_inetaddr,stream); /* Internet address */
-	put_str(cfg->inetmail_sem,stream);
-	put_int(cfg->inetmail_misc,stream);
-	put_int(cfg->inetmail_cost,stream);
-	put_str(cfg->smtpmail_sem,stream);
+	put_str(cfg->sys_inetaddr, NULL); /* Internet address */
+	put_str(cfg->inetmail_sem, NULL);
+	put_int(cfg->inetmail_misc, NULL);
+	put_int(cfg->inetmail_cost, NULL);
+	put_str(cfg->smtpmail_sem, NULL);
 
 	fclose(stream);
 
@@ -631,130 +591,130 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 	}
 	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
-	put_int(cfg->min_dspace,stream);
-	put_int(cfg->max_batup,stream);
-	put_int(cfg->max_batdn,stream);
-	put_int(cfg->max_userxfer,stream);
-	put_int(l,stream);					/* unused */
-	put_int(cfg->cdt_up_pct,stream);
-	put_int(cfg->cdt_dn_pct,stream);
-	put_int(l,stream);					/* unused */
+	put_int(cfg->min_dspace, NULL);
+	put_int(cfg->max_batup, NULL);
+	put_int(cfg->max_batdn, NULL);
+	put_int(cfg->max_userxfer, NULL);
+	put_int(l, NULL);					/* unused */
+	put_int(cfg->cdt_up_pct, NULL);
+	put_int(cfg->cdt_dn_pct, NULL);
+	put_int(l, NULL);					/* unused */
 	memset(cmd, 0, sizeof(cmd));
-	put_str(cmd,stream);
-	put_int(cfg->leech_pct,stream);
-	put_int(cfg->leech_sec,stream);
-	put_int(cfg->file_misc,stream);
-	put_int(cfg->filename_maxlen, stream);
+	put_str(cmd, NULL);
+	put_int(cfg->leech_pct, NULL);
+	put_int(cfg->leech_sec, NULL);
+	put_int(cfg->file_misc, NULL);
+	put_int(cfg->filename_maxlen, NULL);
 	n=0;
 	for(i=0;i<29;i++)
-		put_int(n,stream);
+		put_int(n, NULL);
 
 	/* Extractable File Types */
 
-	put_int(cfg->total_fextrs,stream);
+	put_int(cfg->total_fextrs, NULL);
 	for(i=0;i<cfg->total_fextrs;i++) {
-		put_str(cfg->fextr[i]->ext,stream);
-		put_str(cfg->fextr[i]->cmd,stream);
-		put_str(cfg->fextr[i]->arstr,stream);
+		put_str(cfg->fextr[i]->ext, NULL);
+		put_str(cfg->fextr[i]->cmd, NULL);
+		put_str(cfg->fextr[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n, NULL); }
 
 	/* Compressable File Types */
 
-	put_int(cfg->total_fcomps,stream);
+	put_int(cfg->total_fcomps, NULL);
 	for(i=0;i<cfg->total_fcomps;i++) {
-		put_str(cfg->fcomp[i]->ext,stream);
-		put_str(cfg->fcomp[i]->cmd,stream);
-		put_str(cfg->fcomp[i]->arstr,stream);
+		put_str(cfg->fcomp[i]->ext, NULL);
+		put_str(cfg->fcomp[i]->cmd, NULL);
+		put_str(cfg->fcomp[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n, NULL); }
 
 	/* Viewable File Types */
 
-	put_int(cfg->total_fviews,stream);
+	put_int(cfg->total_fviews, NULL);
 	for(i=0;i<cfg->total_fviews;i++) {
-		put_str(cfg->fview[i]->ext,stream);
-		put_str(cfg->fview[i]->cmd,stream);
-		put_str(cfg->fview[i]->arstr,stream);
+		put_str(cfg->fview[i]->ext, NULL);
+		put_str(cfg->fview[i]->cmd, NULL);
+		put_str(cfg->fview[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n, NULL); }
 
 	/* Testable File Types */
 
-	put_int(cfg->total_ftests,stream);
+	put_int(cfg->total_ftests, NULL);
 	for(i=0;i<cfg->total_ftests;i++) {
-		put_str(cfg->ftest[i]->ext,stream);
-		put_str(cfg->ftest[i]->cmd,stream);
-		put_str(cfg->ftest[i]->workstr,stream);
-		put_str(cfg->ftest[i]->arstr,stream);
+		put_str(cfg->ftest[i]->ext, NULL);
+		put_str(cfg->ftest[i]->cmd, NULL);
+		put_str(cfg->ftest[i]->workstr, NULL);
+		put_str(cfg->ftest[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n, NULL); }
 
 	/* Download Events */
 
-	put_int(cfg->total_dlevents,stream);
+	put_int(cfg->total_dlevents, NULL);
 	for(i=0;i<cfg->total_dlevents;i++) {
-		put_str(cfg->dlevent[i]->ext,stream);
-		put_str(cfg->dlevent[i]->cmd,stream);
-		put_str(cfg->dlevent[i]->workstr,stream);
-		put_str(cfg->dlevent[i]->arstr,stream);
+		put_str(cfg->dlevent[i]->ext, NULL);
+		put_str(cfg->dlevent[i]->cmd, NULL);
+		put_str(cfg->dlevent[i]->workstr, NULL);
+		put_str(cfg->dlevent[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n, NULL); }
 
 	/* File Transfer Protocols */
 
-	put_int(cfg->total_prots,stream);
+	put_int(cfg->total_prots, NULL);
 	for(i=0;i<cfg->total_prots;i++) {
-		put_int(cfg->prot[i]->mnemonic,stream);
-		put_str(cfg->prot[i]->name,stream);
-		put_str(cfg->prot[i]->ulcmd,stream);
-		put_str(cfg->prot[i]->dlcmd,stream);
-		put_str(cfg->prot[i]->batulcmd,stream);
-		put_str(cfg->prot[i]->batdlcmd,stream);
-		put_str(cfg->prot[i]->blindcmd,stream);
-		put_str(cfg->prot[i]->bicmd,stream);
-		put_int(cfg->prot[i]->misc,stream);
-		put_str(cfg->prot[i]->arstr,stream);
+		put_int(cfg->prot[i]->mnemonic, NULL);
+		put_str(cfg->prot[i]->name, NULL);
+		put_str(cfg->prot[i]->ulcmd, NULL);
+		put_str(cfg->prot[i]->dlcmd, NULL);
+		put_str(cfg->prot[i]->batulcmd, NULL);
+		put_str(cfg->prot[i]->batdlcmd, NULL);
+		put_str(cfg->prot[i]->blindcmd, NULL);
+		put_str(cfg->prot[i]->bicmd, NULL);
+		put_int(cfg->prot[i]->misc, NULL);
+		put_str(cfg->prot[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n, NULL); }
 
 	/* Alternate File Paths */
 
-	put_int(cfg->altpaths,stream);
+	put_int(cfg->altpaths, NULL);
 	for(i=0;i<cfg->altpaths;i++) {
 		backslash(cfg->altpath[i]);
-		fwrite(cfg->altpath[i],LEN_DIR+1,1,stream);
+		fwrite(cfg->altpath[i],LEN_DIR+1,1, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n, NULL); }
 
 	/* File Libraries */
 
-	put_int(cfg->total_libs,stream);
+	put_int(cfg->total_libs, NULL);
 	for(i=0;i<cfg->total_libs;i++) {
-		put_str(cfg->lib[i]->lname,stream);
-		put_str(cfg->lib[i]->sname,stream);
-		put_str(cfg->lib[i]->arstr,stream);
-		put_str(cfg->lib[i]->parent_path,stream);
-		put_str(cfg->lib[i]->code_prefix,stream);
+		put_str(cfg->lib[i]->lname, NULL);
+		put_str(cfg->lib[i]->sname, NULL);
+		put_str(cfg->lib[i]->arstr, NULL);
+		put_str(cfg->lib[i]->parent_path, NULL);
+		put_str(cfg->lib[i]->code_prefix, NULL);
 
 		c = cfg->lib[i]->sort;
-		put_int(c,stream);
-		put_int(cfg->lib[i]->misc,stream);
+		put_int(c, NULL);
+		put_int(cfg->lib[i]->misc, NULL);
 		c = cfg->lib[i]->vdir_name;
-		put_int(c,stream);
+		put_int(c, NULL);
 		c = 0x00;
-		put_int(c,stream);
+		put_int(c, NULL);
 
 		n=0xffff;
 		for(j=0;j<16;j++)
-			put_int(n,stream); 
+			put_int(n, NULL); 
 	}
 
 	/* File Directories */
@@ -767,7 +727,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 			&& cfg->dir[i]->sname[0]
 			&& cfg->dir[i]->code_suffix[0])
 			n++;
-	put_int(n,stream);
+	put_int(n, NULL);
 	unsigned int dirnum = 0;	/* New directory numbering (as saved) */
 	for (j = 0; j < cfg->total_libs; j++) {
 		for (i = 0; i < cfg->total_dirs; i++) {
@@ -777,23 +737,23 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			if (cfg->dir[i]->lib == j) {
 				cfg->dir[i]->dirnum = dirnum++;
-				put_int(cfg->dir[i]->lib, stream);
-				put_str(cfg->dir[i]->lname, stream);
-				put_str(cfg->dir[i]->sname, stream);
-				put_str(cfg->dir[i]->code_suffix, stream);
+				put_int(cfg->dir[i]->lib, NULL);
+				put_str(cfg->dir[i]->lname, NULL);
+				put_str(cfg->dir[i]->sname, NULL);
+				put_str(cfg->dir[i]->code_suffix, NULL);
 
 				if (cfg->dir[i]->data_dir[0]) {
 					backslash(cfg->dir[i]->data_dir);
 					md(cfg->dir[i]->data_dir);
 				}
 
-				put_str(cfg->dir[i]->data_dir, stream);
-				put_str(cfg->dir[i]->arstr, stream);
-				put_str(cfg->dir[i]->ul_arstr, stream);
-				put_str(cfg->dir[i]->dl_arstr, stream);
-				put_str(cfg->dir[i]->op_arstr, stream);
+				put_str(cfg->dir[i]->data_dir, NULL);
+				put_str(cfg->dir[i]->arstr, NULL);
+				put_str(cfg->dir[i]->ul_arstr, NULL);
+				put_str(cfg->dir[i]->dl_arstr, NULL);
+				put_str(cfg->dir[i]->op_arstr, NULL);
 				backslash(cfg->dir[i]->path);
-				put_str(cfg->dir[i]->path, stream);
+				put_str(cfg->dir[i]->path, NULL);
 
 				if (cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path, cfg->dir[i]->path);
@@ -815,27 +775,27 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 					(void)mkpath(path);
 				}
 
-				put_str(cfg->dir[i]->upload_sem, stream);
-				put_int(cfg->dir[i]->maxfiles, stream);
-				put_str(cfg->dir[i]->exts, stream);
-				put_int(cfg->dir[i]->misc, stream);
-				put_int(cfg->dir[i]->seqdev, stream);
-				put_int(cfg->dir[i]->sort, stream);
-				put_str(cfg->dir[i]->ex_arstr, stream);
-				put_int(cfg->dir[i]->maxage, stream);
-				put_int(cfg->dir[i]->up_pct, stream);
-				put_int(cfg->dir[i]->dn_pct, stream);
-				put_str(cfg->dir[i]->area_tag, stream);
+				put_str(cfg->dir[i]->upload_sem, NULL);
+				put_int(cfg->dir[i]->maxfiles, NULL);
+				put_str(cfg->dir[i]->exts, NULL);
+				put_int(cfg->dir[i]->misc, NULL);
+				put_int(cfg->dir[i]->seqdev, NULL);
+				put_int(cfg->dir[i]->sort, NULL);
+				put_str(cfg->dir[i]->ex_arstr, NULL);
+				put_int(cfg->dir[i]->maxage, NULL);
+				put_int(cfg->dir[i]->up_pct, NULL);
+				put_int(cfg->dir[i]->dn_pct, NULL);
+				put_str(cfg->dir[i]->area_tag, NULL);
 				n = 0xffff;
 				for (k = 0; k < 4; k++)
-					put_int(n, stream);
+					put_int(n, NULL);
 			}
 		}
 	}
 
 	/* Text File Sections */
 
-	put_int(cfg->total_txtsecs,stream);
+	put_int(cfg->total_txtsecs, NULL);
 	for(i=0;i<cfg->total_txtsecs;i++) {
 #if 1
 		SAFECOPY(str,cfg->txtsec[i]->code);
@@ -843,12 +803,12 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 		safe_snprintf(path,sizeof(path),"%stext/%s",cfg->data_dir,str);
 		md(path);
 #endif
-		put_str(cfg->txtsec[i]->name,stream);
-		put_str(cfg->txtsec[i]->code,stream);
-		put_str(cfg->txtsec[i]->arstr,stream);
+		put_str(cfg->txtsec[i]->name, NULL);
+		put_str(cfg->txtsec[i]->code, NULL);
+		put_str(cfg->txtsec[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); 
+			put_int(n, NULL); 
 	}
 
 	fclose(stream);
@@ -879,52 +839,52 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 	}
 	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
-	put_int(cfg->total_gurus,stream);
+	put_int(cfg->total_gurus, NULL);
 	for(i=0;i<cfg->total_gurus;i++) {
-		put_str(cfg->guru[i]->name,stream);
-		put_str(cfg->guru[i]->code,stream);
-		put_str(cfg->guru[i]->arstr,stream);
+		put_str(cfg->guru[i]->name, NULL);
+		put_str(cfg->guru[i]->code, NULL);
+		put_str(cfg->guru[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream);
+			put_int(n, NULL);
 		}
 
-	put_int(cfg->total_actsets,stream);
+	put_int(cfg->total_actsets, NULL);
 	for(i=0;i<cfg->total_actsets;i++)
-		put_str(cfg->actset[i]->name,stream);
+		put_str(cfg->actset[i]->name, NULL);
 
-	put_int(cfg->total_chatacts,stream);
+	put_int(cfg->total_chatacts, NULL);
 	for(i=0;i<cfg->total_chatacts;i++) {
-		put_int(cfg->chatact[i]->actset,stream);
-		put_str(cfg->chatact[i]->cmd,stream);
-		put_str(cfg->chatact[i]->out,stream);
+		put_int(cfg->chatact[i]->actset, NULL);
+		put_str(cfg->chatact[i]->cmd, NULL);
+		put_str(cfg->chatact[i]->out, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream);
+			put_int(n, NULL);
 		}
 
-	put_int(cfg->total_chans,stream);
+	put_int(cfg->total_chans, NULL);
 	for(i=0;i<cfg->total_chans;i++) {
-		put_int(cfg->chan[i]->actset,stream);
-		put_str(cfg->chan[i]->name,stream);
-		put_str(cfg->chan[i]->code,stream);
-		put_str(cfg->chan[i]->arstr,stream);
-		put_int(cfg->chan[i]->cost,stream);
-		put_int(cfg->chan[i]->guru,stream);
-		put_int(cfg->chan[i]->misc,stream);
+		put_int(cfg->chan[i]->actset, NULL);
+		put_str(cfg->chan[i]->name, NULL);
+		put_str(cfg->chan[i]->code, NULL);
+		put_str(cfg->chan[i]->arstr, NULL);
+		put_int(cfg->chan[i]->cost, NULL);
+		put_int(cfg->chan[i]->guru, NULL);
+		put_int(cfg->chan[i]->misc, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream);
+			put_int(n, NULL);
 		}
 
-	put_int(cfg->total_pages,stream);
+	put_int(cfg->total_pages, NULL);
 	for(i=0;i<cfg->total_pages;i++) {
-		put_str(cfg->page[i]->cmd,stream);
-		put_str(cfg->page[i]->arstr,stream);
-		put_int(cfg->page[i]->misc,stream);
+		put_str(cfg->page[i]->cmd, NULL);
+		put_str(cfg->page[i]->arstr, NULL);
+		put_int(cfg->page[i]->misc, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream);
+			put_int(n, NULL);
 		}
 
 	fclose(stream);
@@ -955,35 +915,35 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 	}
 	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
-	put_int(cfg->total_swaps,stream);
+	put_int(cfg->total_swaps, NULL);
 	for(i=0;i<cfg->total_swaps;i++)
-		put_str(cfg->swap[i]->cmd,stream);
+		put_str(cfg->swap[i]->cmd, NULL);
 
-	put_int(cfg->total_xedits,stream);
+	put_int(cfg->total_xedits, NULL);
 	for(i=0;i<cfg->total_xedits;i++) {
-		put_str(cfg->xedit[i]->name,stream);
-		put_str(cfg->xedit[i]->code,stream);
-		put_str(cfg->xedit[i]->lcmd,stream);
-		put_str(cfg->xedit[i]->rcmd,stream);
-		put_int(cfg->xedit[i]->misc,stream);
-		put_str(cfg->xedit[i]->arstr,stream);
-		put_int(cfg->xedit[i]->type,stream);
+		put_str(cfg->xedit[i]->name, NULL);
+		put_str(cfg->xedit[i]->code, NULL);
+		put_str(cfg->xedit[i]->lcmd, NULL);
+		put_str(cfg->xedit[i]->rcmd, NULL);
+		put_int(cfg->xedit[i]->misc, NULL);
+		put_str(cfg->xedit[i]->arstr, NULL);
+		put_int(cfg->xedit[i]->type, NULL);
 		c = cfg->xedit[i]->soft_cr;
-		put_int(c,stream);
+		put_int(c, NULL);
 		n=0;
-		put_int(cfg->xedit[i]->quotewrap_cols, stream);
+		put_int(cfg->xedit[i]->quotewrap_cols, NULL);
 		for(j=0;j<6;j++)
-			put_int(n,stream);
+			put_int(n, NULL);
 		}
 
-	put_int(cfg->total_xtrnsecs,stream);
+	put_int(cfg->total_xtrnsecs, NULL);
 	for(i=0;i<cfg->total_xtrnsecs;i++) {
-		put_str(cfg->xtrnsec[i]->name,stream);
-		put_str(cfg->xtrnsec[i]->code,stream);
-		put_str(cfg->xtrnsec[i]->arstr,stream);
+		put_str(cfg->xtrnsec[i]->name, NULL);
+		put_str(cfg->xtrnsec[i]->code, NULL);
+		put_str(cfg->xtrnsec[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream);
+			put_int(n, NULL);
 		}
 
 	/* Calculate and save the actual number (total) of xtrn programs that will be written */
@@ -993,7 +953,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 			&& cfg->xtrn[i]->name[0]
 			&& cfg->xtrn[i]->code[0])
 			n++;
-	put_int(n,stream);
+	put_int(n, NULL);
 	for(sec=0;sec<cfg->total_xtrnsecs;sec++)
 		for(i=0;i<cfg->total_xtrns;i++) {
 			if(cfg->xtrn[i]->name[0] == 0
@@ -1001,58 +961,58 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			if(cfg->xtrn[i]->sec!=sec)
 				continue;
-			put_int(cfg->xtrn[i]->sec,stream);
-			put_str(cfg->xtrn[i]->name,stream);
-			put_str(cfg->xtrn[i]->code,stream);
-			put_str(cfg->xtrn[i]->arstr,stream);
-			put_str(cfg->xtrn[i]->run_arstr,stream);
-			put_int(cfg->xtrn[i]->type,stream);
-			put_int(cfg->xtrn[i]->misc,stream);
-			put_int(cfg->xtrn[i]->event,stream);
-			put_int(cfg->xtrn[i]->cost,stream);
-			put_str(cfg->xtrn[i]->cmd,stream);
-			put_str(cfg->xtrn[i]->clean,stream);
-			put_str(cfg->xtrn[i]->path,stream);
-			put_int(cfg->xtrn[i]->textra,stream);
-			put_int(cfg->xtrn[i]->maxtime,stream);
+			put_int(cfg->xtrn[i]->sec, NULL);
+			put_str(cfg->xtrn[i]->name, NULL);
+			put_str(cfg->xtrn[i]->code, NULL);
+			put_str(cfg->xtrn[i]->arstr, NULL);
+			put_str(cfg->xtrn[i]->run_arstr, NULL);
+			put_int(cfg->xtrn[i]->type, NULL);
+			put_int(cfg->xtrn[i]->misc, NULL);
+			put_int(cfg->xtrn[i]->event, NULL);
+			put_int(cfg->xtrn[i]->cost, NULL);
+			put_str(cfg->xtrn[i]->cmd, NULL);
+			put_str(cfg->xtrn[i]->clean, NULL);
+			put_str(cfg->xtrn[i]->path, NULL);
+			put_int(cfg->xtrn[i]->textra, NULL);
+			put_int(cfg->xtrn[i]->maxtime, NULL);
 			n=0;
 			for(j=0;j<7;j++)
-				put_int(n,stream);
+				put_int(n, NULL);
 			}
 
-	put_int(cfg->total_events,stream);
+	put_int(cfg->total_events, NULL);
 	for(i=0;i<cfg->total_events;i++) {
-		put_str(cfg->event[i]->code,stream);
-		put_str(cfg->event[i]->cmd,stream);
-		put_int(cfg->event[i]->days,stream);
-		put_int(cfg->event[i]->time,stream);
-		put_int(cfg->event[i]->node,stream);
-		put_int(cfg->event[i]->misc,stream);
-		put_str(cfg->event[i]->dir,stream);
-		put_int(cfg->event[i]->freq,stream);
-		put_int(cfg->event[i]->mdays,stream);
-		put_int(cfg->event[i]->months,stream);
-		put_int(cfg->event[i]->errlevel,stream);
+		put_str(cfg->event[i]->code, NULL);
+		put_str(cfg->event[i]->cmd, NULL);
+		put_int(cfg->event[i]->days, NULL);
+		put_int(cfg->event[i]->time, NULL);
+		put_int(cfg->event[i]->node, NULL);
+		put_int(cfg->event[i]->misc, NULL);
+		put_str(cfg->event[i]->dir, NULL);
+		put_int(cfg->event[i]->freq, NULL);
+		put_int(cfg->event[i]->mdays, NULL);
+		put_int(cfg->event[i]->months, NULL);
+		put_int(cfg->event[i]->errlevel, NULL);
 		c=0;
-		put_int(c,stream);
+		put_int(c, NULL);
 		n=0;
 		for(j=0;j<3;j++)
-			put_int(n,stream);
+			put_int(n, NULL);
 		}
 
-	put_int(cfg->total_natvpgms,stream);
+	put_int(cfg->total_natvpgms, NULL);
 	for(i=0;i<cfg->total_natvpgms;i++)
-		put_str(cfg->natvpgm[i]->name,stream);
+		put_str(cfg->natvpgm[i]->name, NULL);
 	for(i=0;i<cfg->total_natvpgms;i++)
-		put_int(cfg->natvpgm[i]->misc,stream);
+		put_int(cfg->natvpgm[i]->misc, NULL);
 
-	put_int(cfg->total_hotkeys,stream);
+	put_int(cfg->total_hotkeys, NULL);
 	for(i=0;i<cfg->total_hotkeys;i++) {
-		put_int(cfg->hotkey[i]->key,stream);
-		put_str(cfg->hotkey[i]->cmd,stream);
+		put_int(cfg->hotkey[i]->key, NULL);
+		put_str(cfg->hotkey[i]->cmd, NULL);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream);
+			put_int(n, NULL);
 		}
 
 	fclose(stream);
