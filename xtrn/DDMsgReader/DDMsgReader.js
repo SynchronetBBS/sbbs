@@ -51,6 +51,8 @@
  *                              Deleted messages can now be un-marked for deletion from the message
  *                              list with the U key (if the user has delete permissions). Also, the reader now
  *                              honors the system setting for whether users can view deleted messages.
+ * 2022-08-06 Eric Oulashin     Version 1.54
+ *                              Users now have a personal twit list (configurable via Ctrl-U, user settings).
  */
 
 "use strict";
@@ -155,8 +157,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.53";
-var READER_DATE = "2022-07-18";
+var READER_VERSION = "1.54";
+var READER_DATE = "2022-08-06";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -272,9 +274,6 @@ var LOWER_CENTER_BLOCK = "\xDC";
 
 const ERROR_PAUSE_WAIT_MS = 1500;
 
-// Store whether or not the Synchronet compile date is at least May 12, 2013
-// so that we don't have to call compileDateAtLeast2013_05_12() multiple times.
-var gSyncCompileDateAtLeast2013_05_12 = compileDateAtLeast2013_05_12();
 // Reader mode definitions:
 const READER_MODE_LIST = 0;
 const READER_MODE_READ = 1;
@@ -417,6 +416,10 @@ if (file_exists(backslash(system.exec_dir) + "load/smbdefs.js") && file_exists(b
 	gAvatar = load({}, "avatar_lib.js");
 }
 
+// User twitlist filename (and settings filename)
+var gUserTwitListFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".DDMsgReader_twitlist";
+//var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".DDMsgReader_Settings";
+
 /////////////////////////////////////////////
 // Script execution code
 
@@ -507,6 +510,13 @@ if (gCmdLineArgVals.hasOwnProperty("search") && (gCmdLineArgVals["search"].toLow
 
 if (gDoDDMR)
 {
+	// Write the user's default twitlist if it doesn't already exist
+	writeDefaultUserTwitListIfNotExist();
+
+	// Set a control key pass-thru so we can capture certain control keys that we normally wouldn't be able to
+	var gOldCtrlKeyPassthru = console.ctrlkey_passthru; // Backup to be restored later
+	console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_";
+
 	// Create an instance of the DigDistMsgReader class and use it to read/list the
 	// messages in the user's current sub-board.  Pass the parsed command-line
 	// argument values object to its constructor.
@@ -524,97 +534,104 @@ if (gDoDDMR)
 			readerSubCode = gCmdLineArgVals["subboard"];
 	}
 	var msgReader = new DigDistMsgReader(readerSubCode, gCmdLineArgVals);
-	// If the option to choose a message area first was enabled on the command-line
-	// (and neither the -subBoard nor the -personalEmail options were specified),
-	// then let the user choose a sub-board now.
-	if (gCmdLineArgVals.hasOwnProperty("chooseareafirst") && gCmdLineArgVals["chooseareafirst"] && !gCmdLineArgVals.hasOwnProperty("subboard") && !gListPersonalEmailCmdLineOpt)
-		msgReader.SelectMsgArea();
-	// Back up the user's current sub-board so that we can change back
-	// to it after searching is done, if a search is done.
-	var originalMsgGrpIdx = bbs.curgrp;
-	var originalSubBoardIdx = bbs.cursub;
-	var restoreOriginalSubCode = true;
-	// Based on the reader's start mode/search type, do the appropriate thing.
-	switch (msgReader.searchType)
+	if (gCmdLineArgVals.indexedmode)
 	{
-		case SEARCH_NONE:
-			restoreOriginalSubCode = false;
-			if (msgReader.subBoardCode != "mail")
-			{
-				console.print("\x01n");
-				console.crlf();
-				console.print("Loading " + subBoardGrpAndName(msgReader.subBoardCode) + "....");
-				console.line_counter = 0; // To prevent a pause before the message list comes up
-			}
-			msgReader.ReadOrListSubBoard();
-			break;
-		case SEARCH_KEYWORD:
-			var txtToSearch = (gCmdLineArgVals.hasOwnProperty("searchtext") ? gCmdLineArgVals.searchtext : null);
-			var subBoardCode = (gCmdLineArgVals.hasOwnProperty("subboard") ? gCmdLineArgVals.subboard : null);
-			msgReader.SearchMsgScan("keyword_search", txtToSearch, subBoardCode);
-			break;
-		case SEARCH_FROM_NAME:
-			msgReader.SearchMessages("from_name_search");
-			break;
-		case SEARCH_TO_NAME_CUR_MSG_AREA:
-			msgReader.SearchMessages("to_name_search");
-			break;
-		case SEARCH_TO_USER_CUR_MSG_AREA:
-			msgReader.SearchMessages("to_user_search");
-			break;
-		case SEARCH_MSG_NEWSCAN:
-			if (!gCmdLineArgVals.suppresssearchtypetext)
-			{
-				console.crlf();
-				console.print(replaceAtCodesInStr(msgReader.text.newMsgScanText));
-				console.crlf();
-			}
-			msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW);
-			break;
-		case SEARCH_MSG_NEWSCAN_CUR_SUB:
-			msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "S");
-			break;
-		case SEARCH_MSG_NEWSCAN_CUR_GRP:
-			msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "G");
-			break;
-		case SEARCH_MSG_NEWSCAN_ALL:
-			msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "A");
-			break;
-		case SEARCH_TO_USER_NEW_SCAN:
-			if (!gCmdLineArgVals.suppresssearchtypetext)
-			{
-				console.crlf();
-				console.print(replaceAtCodesInStr(msgReader.text.newToYouMsgScanText));
-				console.crlf();
-			}
-			msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD);
-			break;
-		case SEARCH_TO_USER_NEW_SCAN_CUR_SUB:
-			msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "S");
-			break;
-		case SEARCH_TO_USER_NEW_SCAN_CUR_GRP:
-			msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "G");
-			break;
-		case SEARCH_TO_USER_NEW_SCAN_ALL:
-			msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "A");
-			break;
-		case SEARCH_ALL_TO_USER_SCAN:
-			if (!gCmdLineArgVals.suppresssearchtypetext)
-			{
-				console.crlf();
-				console.print(replaceAtCodesInStr(msgReader.text.allToYouMsgScanText));
-				console.crlf();
-			}
-			msgReader.MessageAreaScan(SCAN_CFG_TOYOU, SCAN_TOYOU);
-			break;
+		msgReader.DoIndexedMode();
 	}
-
-	// If we should restore the user's original message area, then do so.
-	if (restoreOriginalSubCode)
+	else
 	{
-		bbs.cursub = 0;
-		bbs.curgrp = originalMsgGrpIdx;
-		bbs.cursub = originalSubBoardIdx;
+		// If the option to choose a message area first was enabled on the command-line
+		// (and neither the -subBoard nor the -personalEmail options were specified),
+		// then let the user choose a sub-board now.
+		if (gCmdLineArgVals.hasOwnProperty("chooseareafirst") && gCmdLineArgVals["chooseareafirst"] && !gCmdLineArgVals.hasOwnProperty("subboard") && !gListPersonalEmailCmdLineOpt)
+			msgReader.SelectMsgArea();
+		// Back up the user's current sub-board so that we can change back
+		// to it after searching is done, if a search is done.
+		var originalMsgGrpIdx = bbs.curgrp;
+		var originalSubBoardIdx = bbs.cursub;
+		var restoreOriginalSubCode = true;
+		// Based on the reader's start mode/search type, do the appropriate thing.
+		switch (msgReader.searchType)
+		{
+			case SEARCH_NONE:
+				restoreOriginalSubCode = false;
+				if (msgReader.subBoardCode != "mail")
+				{
+					console.print("\x01n");
+					console.crlf();
+					console.print("Loading " + subBoardGrpAndName(msgReader.subBoardCode) + "....");
+					console.line_counter = 0; // To prevent a pause before the message list comes up
+				}
+				msgReader.ReadOrListSubBoard();
+				break;
+			case SEARCH_KEYWORD:
+				var txtToSearch = (gCmdLineArgVals.hasOwnProperty("searchtext") ? gCmdLineArgVals.searchtext : null);
+				var subBoardCode = (gCmdLineArgVals.hasOwnProperty("subboard") ? gCmdLineArgVals.subboard : null);
+				msgReader.SearchMsgScan("keyword_search", txtToSearch, subBoardCode);
+				break;
+			case SEARCH_FROM_NAME:
+				msgReader.SearchMessages("from_name_search");
+				break;
+			case SEARCH_TO_NAME_CUR_MSG_AREA:
+				msgReader.SearchMessages("to_name_search");
+				break;
+			case SEARCH_TO_USER_CUR_MSG_AREA:
+				msgReader.SearchMessages("to_user_search");
+				break;
+			case SEARCH_MSG_NEWSCAN:
+				if (!gCmdLineArgVals.suppresssearchtypetext)
+				{
+					console.crlf();
+					console.print(replaceAtCodesInStr(msgReader.text.newMsgScanText));
+					console.crlf();
+				}
+				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW);
+				break;
+			case SEARCH_MSG_NEWSCAN_CUR_SUB:
+				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "S");
+				break;
+			case SEARCH_MSG_NEWSCAN_CUR_GRP:
+				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "G");
+				break;
+			case SEARCH_MSG_NEWSCAN_ALL:
+				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "A");
+				break;
+			case SEARCH_TO_USER_NEW_SCAN:
+				if (!gCmdLineArgVals.suppresssearchtypetext)
+				{
+					console.crlf();
+					console.print(replaceAtCodesInStr(msgReader.text.newToYouMsgScanText));
+					console.crlf();
+				}
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD);
+				break;
+			case SEARCH_TO_USER_NEW_SCAN_CUR_SUB:
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "S");
+				break;
+			case SEARCH_TO_USER_NEW_SCAN_CUR_GRP:
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "G");
+				break;
+			case SEARCH_TO_USER_NEW_SCAN_ALL:
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "A");
+				break;
+			case SEARCH_ALL_TO_USER_SCAN:
+				if (!gCmdLineArgVals.suppresssearchtypetext)
+				{
+					console.crlf();
+					console.print(replaceAtCodesInStr(msgReader.text.allToYouMsgScanText));
+					console.crlf();
+				}
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU, SCAN_TOYOU);
+				break;
+		}
+
+		// If we should restore the user's original message area, then do so.
+		if (restoreOriginalSubCode)
+		{
+			bbs.cursub = 0;
+			bbs.curgrp = originalMsgGrpIdx;
+			bbs.cursub = originalSubBoardIdx;
+		}
 	}
 
 	// Remove the temporary attachments & ANSI temp directories if they exists
@@ -626,7 +643,10 @@ if (gDoDDMR)
 	// blink, etc.)
 	console.print("\x01n");
 	if (console.term_supports(USER_ANSI))
-		console.print("[0m");
+		console.print("\x01B[0m"); // ESC[0m
+
+	// Set the original control key passthru back into the console object
+	console.ctrlkey_passthru = gOldCtrlKeyPassthru;
 }
 
 // End of script execution.  Functions below:
@@ -706,6 +726,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.WriteMsgListScreenTopHeader = DigDistMsgReader_WriteMsgListScreenTopHeader;
 	this.ReadMessageEnhanced = DigDistMsgReader_ReadMessageEnhanced;
 	this.ReadMessageEnhanced_Scrollable = DigDistMsgReader_ReadMessageEnhanced_Scrollable;
+	this.ScrollableReaderNextReadableMessage = DigDistMsgReader_ScrollableReaderNextReadableMessage;
 	this.ScrollReaderDetermineClickCoordAction = DigDistMsgReader_ScrollReaderDetermineClickCoordAction;
 	this.ReadMessageEnhanced_Traditional = DigDistMsgReader_ReadMessageEnhanced_Traditional;
 	this.EnhReaderPrepLast2LinesForPrompt = DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt;
@@ -725,6 +746,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.CanEdit = DigDistMsgReader_CanEdit;
 	this.CanQuote = DigDistMsgReader_CanQuote;
 	this.ReadConfigFile = DigDistMsgReader_ReadConfigFile;
+	this.ReadUserSettingsFile = DigDistMsgReader_ReadUserSettingsFile;
 	// TODO: Is this.DisplaySyncMsgHeader even needed anymore?  Looks like it's not being called.
 	this.DisplaySyncMsgHeader = DigDistMsgReader_DisplaySyncMsgHeader;
 	this.GetMsgHdrFilenameFull = DigDistMsgReader_GetMsgHdrFilenameFull;
@@ -1003,6 +1025,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		showVotes: "T",
 		closePoll: "!",
 		bypassSubBoardInNewScan: "B",
+		userSettings: CTRL_U,
 		threadView: "*" // TODO: Implement this
 	};
 	if (user.is_sysop)
@@ -1015,6 +1038,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		editMsg: "E",
 		goToMsg: "G",
 		chgMsgArea: "C",
+		userSettings: CTRL_U,
 		quit: "Q",
 		showHelp: "?"
 	};
@@ -1035,6 +1059,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Read the settings from the config file
 	this.cfgFileSuccessfullyRead = false;
 	this.ReadConfigFile();
+	this.userSettings = {
+		twitList: []
+	};
+	this.ReadUserSettingsFile();
 	// Set any other values specified by the command-line parameters
 	// Reader start mode - Read or list mode
 	if (scriptArgsIsValid)
@@ -1286,6 +1314,15 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ValidateMsgAreaChoice = DigDistMsgReader_ValidateMsgAreaChoice;
 	this.ValidateMsg = DigDistMsgReader_ValidateMsg;
 	this.GetGroupNameAndDesc = DigDistMsgReader_GetGroupNameAndDesc;
+	this.DoUserSettings_Scrollable = DigDistMsgReader_DoUserSettings_Scrollable;
+	this.DoUserSettings_Traditional = DigDistMsgReader_DoUserSettings_Traditional;
+	this.RefreshMsgAreaRectangle = DigDistMsgReader_RefreshMsgAreaRectangle;
+	this.MsgHdrFromOrToInUserTwitlist = DigDistMsgReader_MsgHdrFromOrToInUserTwitlist;
+	// For indexed mode
+	this.DoIndexedMode = DigDistMsgReader_DoIndexedMode;
+	this.DoIndexedModeLightbar = DigDistMsgReader_DoIndexedModeLightbar;
+	this.DoIndexedModeTraditional = DigDistMsgReader_DoIndexedModeTraditional;
+	this.MakeLightbarIndexedModeMenu = DigDistMsgReader_MakeLightbarIndexedModeMenu;
 
 	// printf strings for message group/sub-board lists
 	// Message group information (printf strings)
@@ -1435,25 +1472,11 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
 	{
 		// First get all headers in a temporary array, then filter them into
 		// this.hdrsForCurrentSubBoard.
-		// If get_all_msg_headers exists as a function, then use it.  Otherwise,
-		// iterate through all message offsets and get the headers.
-		if (typeof(msgbase.get_all_msg_headers) === "function")
-		{
-			// The first parameter is whether to include votes (the parameter was introduced in Synchronet 3.17+).
-			// We used to pass false here.
-			tmpHdrs = msgbase.get_all_msg_headers(true);
-		}
-		else
-		{
-			tmpHdrs = [];
-			var msgHdr;
-			var numMsgs = msgbase.total_msgs;
-			for (var msgIdx = 0; msgIdx < numMsgs; ++msgIdx)
-			{
-				msgHdr = msgbase.get_msg_header(true, msgIdx, expandFields);
-				tmpHdrs.push(msgHdr);
-			}
-		}
+		// Note: get_all_msg_headers() was added in Synchronet 3.16.  DDMsgReader requires a minimum
+		// of 3.18, so we're okay to use it.
+		// The first parameter is whether to include votes (the parameter was introduced in Synchronet 3.17+).
+		// We used to pass false here.
+		tmpHdrs = msgbase.get_all_msg_headers(true);
 		msgbase.close();
 	}
 
@@ -1482,11 +1505,12 @@ function DigDistMsgReader_FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pCle
 
 	for (var prop in pMsgHdrs)
 	{
-		// Only add the message header if the message is readable to the user.
+		// Only add the message header if the message is readable to the user
+		// and the from & to name isn't in the user's personal twitlist.
 		// this.hdrsForCurrentSubBoardByMsgNum also has to be populated, but
 		// that's done later in this function, in case this.hdrsForCurrentSubBoard
 		// needs to be sorted.
-		if (isReadableMsgHdr(pMsgHdrs[prop], this.subBoardCode))
+		if (isReadableMsgHdr(pMsgHdrs[prop], this.subBoardCode) && !this.MsgHdrFromOrToInUserTwitlist(pMsgHdrs[prop]))
 		{
 			this.hdrsForCurrentSubBoard.push(pMsgHdrs[prop]);
 			// This isn't done right here anymore due to the possibility of
@@ -3852,6 +3876,38 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				DisplayHelpLine(this.msgListLightbarModeHelpLine);
 			}
 		}
+		else if (lastUserInputUpper == this.msgListKeys.userSettings)
+		{
+			var userSettingsRetObj = this.DoUserSettings_Scrollable();
+			lastUserInputUpper = "";
+			drawMenu = userSettingsRetObj.needWholeScreenRefresh;
+			// In case the user changed their twitlist, re-filter the messages for this sub-board
+			if (userSettingsRetObj.userTwitListChanged)
+			{
+				console.gotoxy(1, console.screen_rows);
+				console.crlf();
+				console.print("\x01nTwitlist changed; re-filtering..");
+				var tmpMsgbase = new MsgBase(this.subBoardCode);
+				if (tmpMsgbase.open())
+				{
+					var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
+					tmpMsgbase.close();
+					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
+				}
+				else
+					console.print("\x01y\x01hFailed to open the messagbase!\x01\r\n\x01p");
+				this.SetUpLightbarMsgListVars();
+				msgListMenu = this.CreateLightbarMsgListMenu();
+				drawMenu = true;
+			}
+			if (userSettingsRetObj.needWholeScreenRefresh)
+			{
+				this.WriteMsgListScreenTopHeader();
+				DisplayHelpLine(this.msgListLightbarModeHelpLine);
+			}
+			else
+				msgListMenu.DrawPartialAbs(userSettingsRetObj.optionBoxTopLeftX, userSettingsRetObj.optionBoxTopLeftY, userSettingsRetObj.optionBoxWidth, userSettingsRetObj.optionBoxHeight);
+		}
 		// S: Sorting options
 		// TODO
 		else if (lastUserInputUpper == "S")
@@ -3944,11 +4000,12 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
-	var additionalQuitKeys = "EeqQgGcCsS ?0123456789" + CTRL_A + CTRL_D;
+	// Ctrl-A: Select all messages
+	var additionalQuitKeys = "EeqQgGcCsS ?0123456789" + CTRL_A + this.msgListKeys.batchDelete + this.msgListKeys.userSettings;
 	if (this.CanDelete() || this.CanDeleteLastMsg())
-		additionalQuitKeys += ("uU" + KEY_DEL); // U: Undelete message
+		additionalQuitKeys += this.msgListKeys.deleteMessage + this.msgListKeys.undeleteMessage.toLowerCase() + this.msgListKeys.undeleteMessage.toUpperCase();
 	if (this.CanEdit())
-		additionalQuitKeys += "E";
+		additionalQuitKeys += this.msgListKeys.editMsg;
 	msgListMenu.AddAdditionalQuitKeys(additionalQuitKeys);
 
 	// Change the menu's NumItems() and GetItem() function to reference
@@ -5154,59 +5211,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// if we don't find one, we'll still want to return from this
 				// function (with message index -1) so that this script can go
 				// onto the next message sub-board/group.
-				retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
-				// Note: Unlike the left arrow key, we want to exit this method when
-				// navigating to the next message, regardless of whether or not the
-				// user is allowed to change to a different sub-board, so that processes
-				// that require continuation (such as new message scan) can continue.
-				// Still, if there are no more readable messages in the current sub-board
-				// (and thus the user would go onto the next message area), prompt the
-				// user whether they want to continue onto the next message area.
-				if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
-				{
-					// For personal mail, don't do anything, and don't refresh the
-					// message.  In a sub-board, ask the user if they want to go
-					// to the next one.
-					if (this.readingPersonalEmail)
-						writeMessage = false;
-					else
-					{
-						// If configured to allow the user to post in the sub-board
-						// instead of going to the next message area and we're not
-						// scanning, then do so.
-						if (this.readingPostOnSubBoardInsteadOfGoToNext && !this.doingMsgScan)
-						{
-							console.print("\x01n");
-							console.crlf();
-							// Ask the user if they want to post on the sub-board.
-							// If they say yes, then do so before exiting.
-							var grpNameAndDesc = this.GetGroupNameAndDesc();
-							if (!console.noyes(replaceAtCodesInStr(format(this.text.postOnSubBoard, grpNameAndDesc.grpName, grpNameAndDesc.grpDesc))))
-								bbs.post_msg(this.subBoardCode);
-							continueOn = false;
-							retObj.nextAction = ACTION_QUIT;
-						}
-						else
-						{
-							// Prompt the user whether they want to go to the next message area
-							if (this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
-							{
-								// Let this method exit and let the caller go to the next sub-board
-								continueOn = false;
-								retObj.nextAction = ACTION_GO_NEXT_MSG;
-							}
-							else
-								writeMessage = false; // No need to refresh the message
-						}
-					}
-				}
-				else
-				{
-					// We're not at the end of the sub-board, so it's okay to exit this
-					// method and go to the next message.
-					continueOn = false;
-					retObj.nextAction = ACTION_GO_NEXT_MSG;
-				}
+				var findNextMsgRetObj = this.ScrollableReaderNextReadableMessage(pOffset, msgInfo, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks);
+				if (findNextMsgRetObj.newMsgOffset > -1)
+					retObj.newMsgOffset = findNextMsgRetObj.newMsgOffset;
+				writeMessage = findNextMsgRetObj.writeMessage;
+				continueOn = findNextMsgRetObj.continueOn;
+				retObj.nextAction = findNextMsgRetObj.nextAction;
 				break;
 				// First & last message: Quit out of this input loop and let the
 				// calling function, this.ReadMessages(), handle the action.
@@ -5370,10 +5380,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					// Refresh the last 2 lines of the message on the screen to overwrite
 					// the file save prompt
 					this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-					writeMessage = false; // Don't write the whole message again
 				}
-				else
-					writeMessage = false;
+				writeMessage = false; // Don't write the whole message again
 				break;
 			case this.enhReaderKeys.userEdit: // Edit the user who wrote the message
 				if (user.is_sysop)
@@ -5652,6 +5660,69 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					writeMessage = false;
 				*/
 				break;
+			case this.enhReaderKeys.userSettings:
+				var userSettingsRetObj = this.DoUserSettings_Scrollable();
+				retObj.lastKeypress = "";
+				writeMessage = userSettingsRetObj.needWholeScreenRefresh;
+				// In case the user changed their twitlist, re-filter the messages for this sub-board
+				if (userSettingsRetObj.userTwitListChanged)
+				{
+					console.gotoxy(1, console.screen_rows);
+					console.crlf();
+					console.print("\x01nTwitlist changed; re-filtering..");
+					var tmpMsgbase = new MsgBase(this.subBoardCode);
+					if (tmpMsgbase.open())
+					{
+						continueOn = false;
+						writeMessage = false;
+						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
+						tmpMsgbase.close();
+						this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
+						// TODO: If the user is currently reading a message a message by someone who is now
+						// in their twit list, change the message currently being viewed.
+						if (this.MsgHdrFromOrToInUserTwitlist(msgHeader))
+						{
+							// TODO: Is this right?
+							var findNextMsgRetObj = this.ScrollableReaderNextReadableMessage(pOffset, msgInfo, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks);
+							if (findNextMsgRetObj.newMsgOffset > -1)
+							{
+								retObj.newMsgOffset = findNextMsgRetObj.newMsgOffset;
+								retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							}
+							else
+								retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+						}
+						else
+						{
+							// If there are still messages in this sub-board, and the message offset is beyond the last
+							// message, then show the last message in the sub-board.  Otherwise, go to the next message area.
+							if (this.hdrsForCurrentSubBoard.length > 0)
+							{
+								if (pOffset > this.hdrsForCurrentSubBoard.length)
+								{
+									//this.hdrsForCurrentSubBoard[this.hdrsForCurrentSubBoard.length-1].number
+									retObj.newMsgOffset = this.hdrsForCurrentSubBoard.length - 1;
+									retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+								}
+							}
+							else
+								retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+						}
+					}
+					else
+						console.print("\x01y\x01hFailed to open the messagbase!\x01\r\n\x01p");
+					this.SetUpLightbarMsgListVars();
+					writeMessage = true;
+				}
+				if (userSettingsRetObj.needWholeScreenRefresh)
+				{
+					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+				}
+				else
+					this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, userSettingsRetObj.optionBoxTopLeftX, userSettingsRetObj.optionBoxTopLeftY, userSettingsRetObj.optionBoxWidth, userSettingsRetObj.optionBoxHeight);
+				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
@@ -5660,6 +5731,91 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				writeMessage = false;
 				break;
 		}
+	}
+
+	return retObj;
+}
+// Helper method for ReadMessageEnhanced_Scrollable(): Determines if there is a readable message after the
+// one at the given offset.
+//
+// Parameters:
+//  pOfset: The offset of the current message
+//  pMsgInfo: An object contaiining message information
+//  pTopMsgLineIdx: The index of the message line at the top of the reader area
+//  pMsgLineFormatStr: A format string for the message line
+//  pSolidBlockStartRow: The screen row of where the solid blocks start for the scrollbar
+//  pNumSolidScrollBlocks: The number of solid blocks in the scrollbar
+//
+// Return value: An object containing the following properties:
+//               newMsgOffset: The offset of the next readable message, if available.  If not available, this will be -1.
+//               writeMessage: Boolean - Whether or not to write the whole message again (for the scrollable interface)
+//               continueOn: Boolean - Whether or not to continue with the reader input loop
+//               nextAction: A value indicating the next action for the reader to take after leaving the reader function
+function DigDistMsgReader_ScrollableReaderNextReadableMessage(pOffset, pMsgInfo, pTopMsgLineIdx, pMsgLineFormatStr, pSolidBlockStartRow, pNumSolidScrollBlocks)
+{
+	var retObj = {
+		newMsgOffset: -1,
+		writeMessage: true,
+		continueOn: true,
+		nextAction: ACTION_NONE
+	};
+
+	// Look for a later message that isn't marked for deletion.  Even
+	// if we don't find one, we'll still want to return from this
+	// function (with message index -1) so that this script can go
+	// onto the next message sub-board/group.
+	retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
+	// Note: Unlike the left arrow key, we want to exit this method when
+	// navigating to the next message, regardless of whether or not the
+	// user is allowed to change to a different sub-board, so that processes
+	// that require continuation (such as new message scan) can continue.
+	// Still, if there are no more readable messages in the current sub-board
+	// (and thus the user would go onto the next message area), prompt the
+	// user whether they want to continue onto the next message area.
+	if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
+	{
+		// For personal mail, don't do anything, and don't refresh the
+		// message.  In a sub-board, ask the user if they want to go
+		// to the next one.
+		if (this.readingPersonalEmail)
+			retObj.writeMessage = false;
+		else
+		{
+			// If configured to allow the user to post in the sub-board
+			// instead of going to the next message area and we're not
+			// scanning, then do so.
+			if (this.readingPostOnSubBoardInsteadOfGoToNext && !this.doingMsgScan)
+			{
+				console.print("\x01n");
+				console.crlf();
+				// Ask the user if they want to post on the sub-board.
+				// If they say yes, then do so before exiting.
+				var grpNameAndDesc = this.GetGroupNameAndDesc();
+				if (!console.noyes(replaceAtCodesInStr(format(this.text.postOnSubBoard, grpNameAndDesc.grpName, grpNameAndDesc.grpDesc))))
+					bbs.post_msg(this.subBoardCode);
+				retObj.continueOn = false;
+				retObj.nextAction = ACTION_QUIT;
+			}
+			else
+			{
+				// Prompt the user whether they want to go to the next message area
+				if (this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText), pMsgInfo.messageLines, pTopMsgLineIdx, pMsgLineFormatStr, pSolidBlockStartRow, pNumSolidScrollBlocks))
+				{
+					// Let this method exit and let the caller go to the next sub-board
+					retObj.continueOn = false;
+					retObj.nextAction = ACTION_GO_NEXT_MSG;
+				}
+				else
+					retObj.writeMessage = false; // No need to refresh the message
+			}
+		}
+	}
+	else
+	{
+		// We're not at the end of the sub-board, so it's okay to exit this
+		// method and go to the next message.
+		retObj.continueOn = false;
+		retObj.nextAction = ACTION_GO_NEXT_MSG;
 	}
 
 	return retObj;
@@ -6496,6 +6652,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				else
 					writeMessage = false;
 				*/
+				break;
+			case this.enhReaderKeys.userSettings:
+				// TODO: Finish (traditional)
 				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
@@ -7969,6 +8128,112 @@ function DigDistMsgReader_ReadConfigFile()
 		}
 	}
 }
+// For the DigDistMsgReader class: Reads the user settings file
+//
+// Parameters:
+//  pOnlyTwitlist: Optional boolean - Whether or not to only read the user's twitlist. Defaults to false.
+function DigDistMsgReader_ReadUserSettingsFile(pOnlyTwitlist)
+{
+	var onlyTwitList = (typeof(pOnlyTwitlist) === "boolean" ? pOnlyTwitlist : false);
+	// Open the user's personal twit list file, if it exists
+	var userTwitlistFile = new File(gUserTwitListFilename);
+	if (userTwitlistFile.open("r"))
+	{
+		while (!userTwitlistFile.eof)
+		{
+			// Read the next line from the config file.
+			var fileLine = userTwitlistFile.readln(2048);
+
+			// fileLine should be a string, but I've seen some cases
+			// where for some reason it isn't.  If it's not a string,
+			// then continue onto the next line.
+			if (typeof(fileLine) != "string")
+				continue;
+
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
+
+			// In case there are any commas, split on commas. Add all names to the user's twitlist
+			var names = fileLine.split(",");
+			for (var i = 0; i < names.length; ++i)
+			{
+				var twitListNameEntry = names[i].trim().toLowerCase(); // Lowercase for case-insensitive comparisons
+				if (twitListNameEntry.length > 0)
+					this.userSettings.twitList.push(twitListNameEntry);
+			}
+		}
+		userTwitlistFile.close();
+	}
+
+	/*
+	if (!onlyTwitList)
+	{
+		// Open the user settings file, if it exists
+		var userSettingsFile = new File(gUserSettingsFilename);
+		if (userSettingsFile.open("r"))
+		{
+			var settingsMode = "behavior";
+			var equalsPos = 0;       // Position of a = in the line
+			var commentPos = 0;      // Position of the start of a comment
+			var setting = null;      // A setting name (string)
+			var settingUpper = null; // Upper-case setting name
+			var value = null;        // A value for a setting (string)
+			var valueUpper = null;   // Upper-cased value
+			while (!userSettingsFile.eof)
+			{
+				// Read the next line from the config file.
+				var fileLine = userSettingsFile.readln(2048);
+
+				// fileLine should be a string, but I've seen some cases
+				// where for some reason it isn't.  If it's not a string,
+				// then continue onto the next line.
+				if (typeof(fileLine) != "string")
+					continue;
+
+				// If the line starts with with a semicolon (the comment
+				// character) or is blank, then skip it.
+				if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+					continue;
+
+				// If in the "behavior" section, then set the behavior-related variables.
+				if (fileLine.toUpperCase() == "[BEHAVIOR]")
+				{
+					settingsMode = "behavior";
+					continue;
+				}
+
+				// If the line has a semicolon anywhere in it, then remove
+				// everything from the semicolon onward.
+				commentPos = fileLine.indexOf(";");
+				if (commentPos > -1)
+					fileLine = fileLine.substr(0, commentPos);
+
+				// Look for an equals sign, and if found, separate the line
+				// into the setting name (before the =) and the value (after the
+				// equals sign).
+				equalsPos = fileLine.indexOf("=");
+				if (equalsPos > 0)
+				{
+					// Read the setting & value, and trim leading & trailing spaces.
+					setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+					settingUpper = setting.toUpperCase();
+					value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+					valueUpper = value.toUpperCase();
+
+					if (settingsMode == "behavior")
+					{
+						if (settingUpper == "SOMETHING")
+							this.userSettings.something = (valueUpper == "TRUE");
+					}
+				}
+			}
+			userSettingsFile.close();
+		}
+	}
+	*/
+}
 // For the DigDistMsgReader class: Lets the user edit an existing message.
 //
 // Parameters:
@@ -9399,20 +9664,6 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			msgBaseInfoFile.writeln(this.NumMessages(msgbase).toString()); // Total # messages
 			// Message number (Note: For SlyEdit, requires SlyEdit 1.27 or newer).
 			msgBaseInfoFile.writeln(pMsgHdr.number.toString()); // # of the message being read (New: 2013-05-14)
-			// Old: Using either the message number or offset:
-			/*
-			// Message number/offset:
-			// If the Synchronet version is at least 3.16 and the Synchronet compile
-			// date is at least May 12, 2013, then use bbs.msg_number.  Otherwise,
-			// use bbs.smb_curmsg.  bbs.msg_number is the absolute message number and
-			// is always accurate, but bbs.msg_number only works properly in the
-			// Synchronet 3.16 daily builds starting on May 12, 2013, which was right
-			// after Digital Man committed his fix to make bbs.msg_number work properly.
-			if ((system.version_num >= 3.16) && gSyncCompileDateAtLeast2013_05_12)
-				msgBaseInfoFile.writeln(pMsgHdr.number.toString()); // # of the message being read (New: 2013-05-14)
-			else
-				msgBaseInfoFile.writeln(pOffset.toString()); // Offset of the message (for older builds of Synchronet)
-			*/
 			msgBaseInfoFile.writeln(this.subBoardCode); // Sub-board code
 			msgBaseInfoFile.close();
 		}
@@ -9475,20 +9726,9 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			}
 			else if (this.hdrsForCurrentSubBoard.length > 0)
 			{
-				if (typeof(msgbase.get_all_msg_headers) === "function")
-				{
-					// Pass false to get_all_msg_headers() to tell it not to return vote messages
-					// (the parameter was introduced in Synchronet 3.17+)
-					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(msgbase.get_all_msg_headers(true), true);
-				}
-				else
-				{
-					// Can't use get_all_msg_headers().  Also, append the new message
-					// headers to the end of this.hdrsForCurrentSubBoard and
-					// this.hdrsForCurrentSubBoardByMsgNum.
-					var msgHeaders = searchMsgbase(this.subBoardCode, this.searchType, this.searchString, this.readingPersonalEmailFromUser, numMessagesBefore, msgbase.total_msgs);
-					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(msgHeaders.indexed, false);
-				}
+				// Pass false to get_all_msg_headers() to tell it not to return vote messages
+				// (the parameter was introduced in Synchronet 3.17+)
+				this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(msgbase.get_all_msg_headers(true), true);
 			}
 		}
 	}
@@ -9691,6 +9931,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	                    "\x01h\x01cPageUp\x01g/\x01cPageDown  \x01g: \x01n\x01cScroll up\x01g/\x01cdown a page in the message",
 	                    "\x01h\x01cHOME             \x01g: \x01n\x01cGo to the top of the message",
 	                    "\x01h\x01cEND              \x01g: \x01n\x01cGo to the bottom of the message"];
+	keyHelpLines.push("\x01h\x01cCtrl-U           \x01g: \x01n\x01cUser settings (including personal twit list)");
 	if (user.is_sysop)
 	{
 		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current message");
@@ -13043,6 +13284,252 @@ function DigDistMsgReader_GetGroupNameAndDesc()
 	return retObj;
 }
 
+// For the DigDistMsgReader class:  Lets the user manage their preferences/settings (scrollable/ANSI user interface).
+//
+// Return value: An object containing the following properties:
+//               needWholeScreenRefresh: Boolean - Whether or not the whole screen needs to be
+//                                       refreshed (i.e., when the user has edited their twitlist)
+//               optionBoxTopLeftX: The top-left screen column of the option box
+//               optionBoxTopLeftY: The top-left screen row of the option box
+//               optionBoxWidth: The width of the option box
+//               optionBoxHeight: The height of the option box
+//               userTwitListChanged: Boolean - Whether or not the user's personal twit list changed
+function DigDistMsgReader_DoUserSettings_Scrollable()
+{
+	var retObj = {
+		needWholeScreenRefresh: false,
+		optionBoxTopLeftX: 1,
+		optionBoxTopLeftY: 1,
+		optionBoxWidth: 0,
+		optionBoxHeight: 0,
+		userTwitListChanged: false
+	};
+
+	if (!canDoHighASCIIAndANSI())
+	{
+		this.DoUserSettings_Traditional();
+		return retObj;
+	}
+
+	// TODO: Finish
+	/*
+	// Save the user's current settings so that we can check them later to see if any
+	// of them changed, in order to determine whether to save the user's settings file.
+	var originalSettings = {};
+	for (var prop in gUserSettings)
+	{
+		if (gUserSettings.hasOwnProperty(prop))
+			originalSettings[prop] = gUserSettings[prop];
+	}
+	*/
+
+	// Create the user settings box
+	var optBoxTitle = "Setting                                      Enabled";
+	var optBoxWidth = ChoiceScrollbox_MinWidth();
+	var optBoxHeight = 10;
+	/*
+	this.msgAreaLeft = 1;
+	this.msgAreaRight = console.screen_columns - 1;
+	this.msgAreaWidth = this.msgAreaRight - this.msgAreaLeft + 1;
+	this.msgAreaHeight = this.msgAreaBottom - this.msgAreaTop + 1;
+	*/
+	var optBoxStartX = this.msgAreaLeft + Math.floor((this.msgAreaWidth/2) - (optBoxWidth/2));
+	if (optBoxStartX < this.msgAreaLeft)
+		optBoxStartX = this.msgAreaLeft;
+	var optionBox = new ChoiceScrollbox(optBoxStartX, this.msgAreaTop+1, optBoxWidth, optBoxHeight, optBoxTitle,
+										null/*gConfigSettings*/, false, true);
+	optionBox.addInputLoopExitKey(CTRL_U);
+	// Update the bottom help text to be more specific to the user settings box
+	var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
+						  + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
+	// This one contains the page navigation keys..  Don't really need to show those,
+	// since the settings box only has one page right now:
+	/*var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+						   + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cEnter\x01y=\x01bSelect, "
+						   + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";*/
+
+	optionBox.setBottomBorderText(bottomBorderText, true, false);
+
+	// Add the options to the option box
+	const checkIdx = 48;
+	//const TAGLINE_OPT_INDEX = optionBox.addTextItem("Taglines                                       [ ]");
+	//if (this.userSettings.twitList.enableTaglines)
+	//	optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
+
+	// Create an object containing toggle values (true/false) for each option index
+	var optionToggles = {};
+	//optionToggles[TAGLINE_OPT_INDEX] = this.userSettings.enableTaglines;
+
+	// Other actions
+	var USER_TWITLIST_OPT_INDEX = optionBox.addTextItem("Personal twit list");
+
+	// Set up the enter key in the box to toggle the selected item.
+	optionBox.readerObj = this;
+	optionBox.setEnterKeyOverrideFn(function(pBox) {
+		var itemIndex = pBox.getChosenTextItemIndex();
+		if (itemIndex > -1)
+		{
+			// If there's an option for the chosen item, then update the text on the
+			// screen depending on whether the option is enabled or not.
+			if (optionToggles.hasOwnProperty(itemIndex))
+			{
+				// Toggle the option and refresh it on the screen
+				optionToggles[itemIndex] = !optionToggles[itemIndex];
+				if (optionToggles[itemIndex])
+					optionBox.chgCharInTextItem(itemIndex, checkIdx, CHECK_CHAR);
+				else
+					optionBox.chgCharInTextItem(itemIndex, checkIdx, " ");
+				optionBox.refreshItemCharOnScreen(itemIndex, checkIdx);
+
+				// Toggle the setting for the user in global user setting object.
+				switch (itemIndex)
+				{
+					//case TAGLINE_OPT_INDEX:
+					//	this.userSettings.enableTaglines = !this.userSettings.enableTaglines;
+					//	break;
+					default:
+						break;
+				}
+			}
+			// For options that aren't on/off toggle options, take the appropriate action.
+			else
+			{
+				switch (itemIndex)
+				{
+					//case DICTIONARY_OPT_INDEX:
+					//	break;
+					case USER_TWITLIST_OPT_INDEX:
+						console.clear("\x01n", false);
+						console.editfile(gUserTwitListFilename);
+						// Re-read the user's twitlist and see if the user's twitlist changed
+						var oldUserTwitList = this.readerObj.userSettings.twitList;
+						this.readerObj.userSettings.twitList = [];
+						this.readerObj.ReadUserSettingsFile(true);
+						retObj.userTwitListChanged = !arraysHaveSameValues(this.readerObj.userSettings.twitList, oldUserTwitList);
+						optionBox.continueInputLoopOverride = false; // Exit the input loop of the option box
+						retObj.needWholeScreenRefresh = true;
+						break;
+					default:
+						break;
+				}
+			}
+		}
+	}); // Option box enter key override function
+
+	// Display the option box and have it do its input loop
+	var boxRetObj = optionBox.doInputLoop(true);
+
+	// If the user changed any of their settings, then save the user settings.
+	// If the save fails, then output an error message.
+	var settingsChanged = false;
+	for (var prop in this.userSettings)
+	{
+		if (this.userSettings.hasOwnProperty(prop))
+		{
+			// TODO
+			//settingsChanged = (originalSettings[prop] != this.userSettings[prop]);
+			if (settingsChanged)
+				break;
+		}
+	}
+	if (settingsChanged)
+	{
+		// TODO
+		/*
+		if (!WriteUserSettingsFile(this.userSettings))
+			writeMsgOntBtmHelpLineWithPause("\x01n\x01y\x01hFailed to save settings!\x01n", ERRORMSG_PAUSE_MS);
+		*/
+	}
+
+	optionBox.addInputLoopExitKey(CTRL_U);
+
+	// Prepare return object values and return
+	retObj.optionBoxTopLeftX = optionBox.dimensions.topLeftX;
+	retObj.optionBoxTopLeftY = optionBox.dimensions.topLeftY;
+	retObj.optionBoxWidth = optionBox.dimensions.width;
+	retObj.optionBoxHeight = optionBox.dimensions.height;
+	return retObj;
+}
+// For the DigDistMsgReader class:  Lets the user manage their preferences/settings (traditional user interface)
+function DigDistMsgReader_DoUserSettings_Traditional()
+{
+}
+
+// For the DigDistMsgReader class: Starts indexed mode
+function DigDistMsgReader_DoIndexedMode()
+{
+	if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
+		this.DoIndexedModeLightbar();
+	else
+		this.DoIndexedModeTraditional();
+}
+
+function DigDistMsgReader_DoIndexedModeLightbar()
+{
+	// Stuff for DDMsgReader "Indexed" reader mode:
+	// https://gitlab.synchro.net/main/sbbs/-/issues/354
+	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
+	{
+		console.print(msg_area.grp_list[grpIdx].name + " - " + msg_area.grp_list[grpIdx].description + ":\r\n");
+		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
+		{
+			//msg_area.grp_list[grpIdx].sub_list[subIdx].
+			//console.print(" " + msg_area.grp_list[grpIdx].sub_list[subIdx].name + " - " + msg_area.grp_list[grpIdx].sub_list[subIdx].description + "\r\n");
+			// scan_ptr: user's current new message scan pointer (highest-read message number)
+			var displayThisSub = false;
+			// posts: number of messages currently posted to this sub-board (introduced in v3.18c)
+			var totalNumMsgsInSub = msg_area.grp_list[grpIdx].sub_list[subIdx].posts;
+			var newMsgsInSub = 0;
+			if (typeof(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_ptr) === "number")
+			{
+				var msgbase = new MsgBase(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
+				if (msgbase.open())
+				{
+					//displayThisSub = (msg_area.grp_list[grpIdx].sub_list[subIdx].scan_ptr < msgbase.last_msg);
+					if (msg_area.grp_list[grpIdx].sub_list[subIdx].scan_ptr < msgbase.last_msg)
+					{
+						displayThisSub = true;
+						var msgIdx = msgbase.get_msg_index(false, msg_area.grp_list[grpIdx].sub_list[subIdx].scan_ptr, false);
+						if (msgIdx != null)
+						{
+							newMsgsInSub = msg_area.grp_list[grpIdx].sub_list[subIdx].posts - msgIdx.offset;
+							if (newMsgsInSub < 0) newMsgsInSub = 0;
+						}
+					}
+					msgbase.close();
+				}
+			}
+			/*
+			// last_read: user's last-read message number
+			if (typeof(msg_area.grp_list[grpIdx].sub_list[subIdx].last_read) === "number")
+			{
+				
+			}
+			*/
+			if (displayThisSub)
+			{
+				var descWidth = 50;
+				var numMsgsWidth = 5;
+				var numNewMsgsWidth = 5;
+				var formatStr = "%-" + descWidth + "s %" + numMsgsWidth + "s %" + numNewMsgsWidth + "s";
+				var subDesc = msg_area.grp_list[grpIdx].sub_list[subIdx].name + " - " + msg_area.grp_list[grpIdx].sub_list[subIdx].description;
+				subDesc = subDesc.substr(0, descWidth);
+				printf(formatStr + "\r\n", "Description", "Total", "New");
+				printf(formatStr + "\r\n", subDesc, totalNumMsgsInSub, newMsgsInSub);
+				console.crlf();
+			}
+		}
+	}
+}
+
+function DigDistMsgReader_DoIndexedModeTraditional()
+{
+}
+
+function DigDistMsgReader_MakeLightbarIndexedModeMenu()
+{
+}
+
 // For the DigDistMsgReader class: Writes message lines to a file on the BBS
 // machine.
 //
@@ -13991,26 +14478,23 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 			if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(pMsgHdr.number))
 			{
 				var originalMsgIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgHdr.number];
-				if (typeof(msgbase.get_all_msg_headers) === "function")
+				var tmpHdrs = msgbase.get_all_msg_headers(true);
+				if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
 				{
-					var tmpHdrs = msgbase.get_all_msg_headers(true);
-					if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
-					{
-						this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
-						// Originally, this script assigned retObj.updatedHdr as follows:
-						//retObj.updatedHdr = pMsgHdr;
-						// However, after an update, there were a couple errors that total_votes and upvotes
-						// were read-only, so it wuldn't assign to them, so now we copy pMsgHdr this way:
-						retObj.updatedHdr = {};
-						for (var prop in pMsgHdr)
-							retObj.updatedHdr[prop] = pMsgHdr[prop];
-						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("total_votes"))
-							retObj.updatedHdr.total_votes = this.hdrsForCurrentSubBoard[originalMsgIdx].total_votes;
-						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("upvotes"))
-							retObj.updatedHdr.upvotes = this.hdrsForCurrentSubBoard[originalMsgIdx].upvotes;
-						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("tally"))
-							retObj.updatedHdr.tally = this.hdrsForCurrentSubBoard[originalMsgIdx].tally;
-					}
+					this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
+					// Originally, this script assigned retObj.updatedHdr as follows:
+					//retObj.updatedHdr = pMsgHdr;
+					// However, after an update, there were a couple errors that total_votes and upvotes
+					// were read-only, so it wuldn't assign to them, so now we copy pMsgHdr this way:
+					retObj.updatedHdr = {};
+					for (var prop in pMsgHdr)
+						retObj.updatedHdr[prop] = pMsgHdr[prop];
+					if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("total_votes"))
+						retObj.updatedHdr.total_votes = this.hdrsForCurrentSubBoard[originalMsgIdx].total_votes;
+					if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("upvotes"))
+						retObj.updatedHdr.upvotes = this.hdrsForCurrentSubBoard[originalMsgIdx].upvotes;
+					if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("tally"))
+						retObj.updatedHdr.tally = this.hdrsForCurrentSubBoard[originalMsgIdx].tally;
 				}
 			}
 		}
@@ -14102,26 +14586,23 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
 		{
-			if (typeof(msgbase.get_all_msg_headers) === "function")
+			// Pass true to get_all_msg_headers() to tell it to return vote messages
+			// (the parameter was introduced in Synchronet 3.17+)
+			var tmpHdrs = msgbase.get_all_msg_headers(true);
+			for (var tmpProp in tmpHdrs)
 			{
-				// Pass true to get_all_msg_headers() to tell it to return vote messages
-				// (the parameter was introduced in Synchronet 3.17+)
-				var tmpHdrs = msgbase.get_all_msg_headers(true);
-				for (var tmpProp in tmpHdrs)
+				if (tmpHdrs[tmpProp] == null)
+					continue;
+				// If this header's thread_back or reply_id matches the poll message
+				// number, then append the 'user voted' string to the message body.
+				if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 				{
-					if (tmpHdrs[tmpProp] == null)
-						continue;
-					// If this header's thread_back or reply_id matches the poll message
-					// number, then append the 'user voted' string to the message body.
-					if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
+					var tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number, false, false, true, true);
+					if ((tmpHdrs[tmpProp].field_list.length == 0) && (tmpMessageBody.length == 0))
 					{
-						var tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number, false, false, true, true);
-						if ((tmpHdrs[tmpProp].field_list.length == 0) && (tmpMessageBody.length == 0))
-						{
-							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
-							var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-							voteInfo.push("\x01n\x01c\x01h" + tmpHdrs[tmpProp].from + "\x01n\x01c voted on this message on " + voteDate + "\x01n");
-						}
+						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
+						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
+						voteInfo.push("\x01n\x01c\x01h" + tmpHdrs[tmpProp].from + "\x01n\x01c voted on this message on " + voteDate + "\x01n");
 					}
 				}
 			}
@@ -14243,37 +14724,34 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 			{
 				// Check all the messages in the messagebase after the current one
 				// to find poll response messages
-				if (typeof(msgbase.get_all_msg_headers) === "function")
-				{
-					// Get the line from text.dat for writing who voted & when.  It
-					// is a format string and should look something like this:
-					//"\r\n\x01n\x01hOn %s, in \x01c%s \x01n\x01c%s\r\n\x01h\x01m%s voted in your poll: \x01n\x01h%s\r\n" 787 PollVoteNotice
-					var userVotedInYourPollText = bbs.text(typeof(PollVoteNotice) != "undefined" ? PollVoteNotice : 787);
+				// Get the line from text.dat for writing who voted & when.  It
+				// is a format string and should look something like this:
+				//"\r\n\x01n\x01hOn %s, in \x01c%s \x01n\x01c%s\r\n\x01h\x01m%s voted in your poll: \x01n\x01h%s\r\n" 787 PollVoteNotice
+				var userVotedInYourPollText = bbs.text(typeof(PollVoteNotice) != "undefined" ? PollVoteNotice : 787);
 
-					// Pass true to get_all_msg_headers() to tell it to return vote messages
-					// (the parameter was introduced in Synchronet 3.17+)
-					var tmpHdrs = msgbase.get_all_msg_headers(true);
-					for (var tmpProp in tmpHdrs)
+				// Pass true to get_all_msg_headers() to tell it to return vote messages
+				// (the parameter was introduced in Synchronet 3.17+)
+				var tmpHdrs = msgbase.get_all_msg_headers(true);
+				for (var tmpProp in tmpHdrs)
+				{
+					if (tmpHdrs[tmpProp] == null)
+						continue;
+					// If this header's thread_back or reply_id matches the poll message
+					// number, then append the 'user voted' string to the message body.
+					if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 					{
-						if (tmpHdrs[tmpProp] == null)
-							continue;
-						// If this header's thread_back or reply_id matches the poll message
-						// number, then append the 'user voted' string to the message body.
-						if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
+						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
+						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
+						var grpName = "";
+						var msgbaseCfgName = "";
+						var msgbase = new MsgBase(this.subBoardCode);
+						if (msgbase.open())
 						{
-							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
-							var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-							var grpName = "";
-							var msgbaseCfgName = "";
-							var msgbase = new MsgBase(this.subBoardCode);
-							if (msgbase.open())
-							{
-								grpName = msgbase.cfg.grp_name;
-								msgbaseCfgName = msgbase.cfg.name;
-								msgbase.close();
-							}
-							msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
+							grpName = msgbase.cfg.grp_name;
+							msgbaseCfgName = msgbase.cfg.name;
+							msgbase.close();
 						}
+						msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
 					}
 				}
 			}
@@ -14295,7 +14773,6 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 		// Remove any initial coloring from the message body, which can color the whole message
 		msgBody = removeInitialColorFromMsgBody(msgBody);
 		// For HTML-formatted messages, convert HTML entities
-		//console.print("\x01n\r\nSubtype: " + pMsgHdr.text_subtype + "\r\n\x01p"); // Temporary
 		if (pMsgHdr.hasOwnProperty("text_subtype") && pMsgHdr.text_subtype.toLowerCase() == "html")
 		{
 			msgBody = html2asc(msgBody);
@@ -14506,6 +14983,104 @@ function DigDistMsgReader_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pLineRefreshDe
 	var helpLineRefreshDef = (typeof(pHelpLineRefreshDef) == "number" ? pHelpLineRefreshDef : -1);
 	if (helpLineRefreshDef == REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE)
 		this.WriteChgMsgAreaKeysHelpLine();
+}
+
+// For the scrollable reader interface: Refreshes a rectangular region on the screen
+// by printing part of the message text.
+//
+//  pTxtLines: The array of text lines of the message being displayed
+//  pTopLineIdx: The index of the text line currently at the top row in the reader area
+//  pTopLeftX: The upper-left corner column of the rectangle to be refreshed (1-based) - Absolute screen coordinate
+//  pTopLeftY: The upper-left corner row of the rectangle to be refreshed (1-based) - Absolute screen coordinate
+//  pWidth: The width of the rectangle to be refreshed
+//  pHeight: The height of the rectangle to be refreshed
+function DigDistMsgReader_RefreshMsgAreaRectangle(pTxtLines, pTopLineIdx, pTopLeftX, pTopLeftY, pWidth, pHeight)
+{
+	if (typeof(pTxtLines) !== "object")
+		return;
+	if (typeof(pTopLineIdx) !== "number" || pTopLineIdx < 0 || pTopLineIdx >= pTxtLines.length)
+		return;
+	if (typeof(pTopLeftX) !== "number" || pTopLeftX < 1 || pTopLeftX > console.screen_columns)
+		return;
+	if (typeof(pTopLeftY) !== "number" || pTopLeftY < 1 || pTopLeftY > console.screen_rows)
+		return;
+	if (typeof(pWidth) !== "number" || pWidth <= 0 || typeof(pHeight) !== "number" || pHeight <= 0)
+		return;
+
+	var firstTxtLineIdx = pTopLeftY - pTopLineIdx - 1;
+	if (firstTxtLineIdx < 0) firstTxtLineIdx = 0; // Shouldn't happen, but just in case
+	//this.msgAreaLeft = 1;
+	//this.msgAreaRight = console.screen_columns - 1;
+	//this.msgAreaWidth = this.msgAreaRight - this.msgAreaLeft + 1;
+	//this.msgAreaHeight = this.msgAreaBottom - this.msgAreaTop + 1;
+	// Sanity checking
+	if (pTopLeftY < this.msgAreaTop)
+	{
+		var diff = this.msgAreaTop - pTopLeftY;
+		pTopLeftY = this.msgAreaTop;
+		pTopLineIdx += diff;
+	}
+	var lastScreenRow = pTopLeftY + pHeight - 1; // Inclusive, for loop
+	if (lastScreenRow > this.msgAreaBottom)
+		lastScreenRow = this.msgAreaBottom;
+	if (pTopLeftX + pWidth > this.msgAreaRight)
+		pWidth = this.msgAreaRight - pTopLeftX + 1;
+
+	// Print the parts of the text lines that make up the rectangle
+	var txtLineIdx = pTopLineIdx + (pTopLeftY-this.msgAreaTop);
+	if (txtLineIdx < 0) txtLineIdx = 0; // Just in case, but shouldn't happen
+	var txtLineStartIdx = pTopLeftX - this.msgAreaLeft; // Within each text line (it seemed right to subtract 1 but it wasn't)
+	if (txtLineStartIdx < 0) txtLineStartIdx = 0; // Just in case, but shouldn't happen
+	var emptyFormatStr = "\x01n%" + pWidth + "s"; // For printing empty strings after printing all text lines
+	console.print("\x01n");
+	for (var screenRow = pTopLeftY; screenRow <= lastScreenRow; ++screenRow)
+	{
+		console.gotoxy(pTopLeftX, screenRow);
+		// If the current text line index is within the array of text lines, then output the section of the
+		// text line.  Otherwise, output an empty string.
+		if (txtLineIdx < pTxtLines.length)
+		{
+			// Get the text attributes up to the current point and output them
+			console.print(getAllEditLineAttrsUntilLineIdx(pTxtLines, txtLineIdx, true, txtLineStartIdx));
+			// Get the section of line (and make sure it can fill the needed width), and print it
+			// Note: substrWithAttrCodes(pStr, pStartIdx, pLen) is defined in dd_lightbar_menu.js
+			var lineText = substrWithAttrCodes(pTxtLines[txtLineIdx], txtLineStartIdx, pWidth);
+			var printableTxtLen = console.strlen(lineText);
+			if (printableTxtLen < pWidth)
+			{
+				var lenDiff = pWidth - printableTxtLen;
+				lineText += format("\x01n%" + lenDiff + "s", "");
+			}
+			console.print(lineText);
+		}
+		else // We've printed all the remaining text lines, so now print an empty string.
+			printf(emptyFormatStr, "");
+
+		++txtLineIdx;
+	}
+}
+
+// For the scrollable reader interface: Returns whether a 'from' or 'to' name in a message header
+// is in the user's personal twitlist.
+//
+// Parameters:
+//  pMsgHdr: A message header to check
+//
+// Return value: Boolean - Whether or not the header 'from' or 'to' name is in the user's personal twitlist
+function DigDistMsgReader_MsgHdrFromOrToInUserTwitlist(pMsgHdr)
+{
+	if (pMsgHdr == null || typeof(pMsgHdr) !== "object")
+		return false;
+	if (!pMsgHdr.hasOwnProperty("from") && !pMsgHdr.hasOwnProperty("to"))
+		return false;
+
+	// The names in the user's twitlist have been converted to lowercase for case-insensitive matching.
+	var fromLower = pMsgHdr.from.toLowerCase();
+	var toLower = pMsgHdr.to.toLowerCase();
+	var hdrNamesInTwitlist = false;
+	for (var i = 0; i < this.userSettings.twitList.length && !hdrNamesInTwitlist; ++i)
+		hdrNamesInTwitlist = (this.userSettings.twitList[i] == fromLower || this.userSettings.twitList[i] == toLower);
+	return hdrNamesInTwitlist;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -14817,68 +15392,6 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 			console.print(HORIZONTAL_SINGLE);
 		console.crlf();
 	}
-}
-
-// Returns whether the Synchronet compile date is at least May 12, 2013.  That
-// was when Digital Man's change to make bbs.msg_number work when a script is
-// running first went into the Synchronet daily builds.
-function compileDateAtLeast2013_05_12()
-{
-  // system.compiled_when is in the following format:
-  // May 12 2013 05:02
-
-  var compileDateParts = system.compiled_when.split(" ");
-  if (compileDateParts.length < 4)
-    return false;
-
-  // Convert the month to a 1-based number
-  var compileMonth = 0;
-  if (/^Jan/.test(compileDateParts[0]))
-    compileMonth = 1;
-  else if (/^Feb/.test(compileDateParts[0]))
-    compileMonth = 2;
-  else if (/^Mar/.test(compileDateParts[0]))
-    compileMonth = 3;
-  else if (/^Apr/.test(compileDateParts[0]))
-    compileMonth = 4;
-  else if (/^May/.test(compileDateParts[0]))
-    compileMonth = 5;
-  else if (/^Jun/.test(compileDateParts[0]))
-    compileMonth = 6;
-  else if (/^Jul/.test(compileDateParts[0]))
-    compileMonth = 7;
-  else if (/^Aug/.test(compileDateParts[0]))
-    compileMonth = 8;
-  else if (/^Sep/.test(compileDateParts[0]))
-    compileMonth = 9;
-  else if (/^Oct/.test(compileDateParts[0]))
-    compileMonth = 10;
-  else if (/^Nov/.test(compileDateParts[0]))
-    compileMonth = 11;
-  else if (/^Dec/.test(compileDateParts[0]))
-    compileMonth = 12;
-
-  // Get the compileDay and compileYear as numeric variables
-  var compileDay = +compileDateParts[1];
-  var compileYear = +compileDateParts[2];
-
-  // Determine if the compile date is at least 2013-05-12
-  var compileDateIsAtLeastMin = true;
-  if (compileYear > 2013)
-    compileDateIsAtLeastMin = true;
-  else if (compileYear < 2013)
-    compileDateIsAtLeastMin = false;
-  else // compileYear is 2013
-  {
-    if (compileMonth > 5)
-      compileDateIsAtLeastMin = true
-    else if (compileMonth < 5)
-      compileDateIsAtLeastMin = false;
-    else // compileMonth is 5
-      compileDateIsAtLeastMin = (compileDay >= 12);
-  }
-
-  return compileDateIsAtLeastMin;
 }
 
 // Removes multiple, leading, and/or trailing spaces.
@@ -15440,6 +15953,55 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 	return retObj;
 }
 
+// Gets all the attribute codes from an array of text lines until a certain index.
+//
+// Parameters:
+//  pTxtLines: The array of text lines of the message being displayed
+//  pEndArrayIdx: One past the last edit line index to get attributes for
+//  pIncludeEndArrayIdxAttrs: Optional boolean: Whether or not to include the attributes for the line at the end array index.
+//                            Defaults to false.
+//  pLastLineTextEndIdx: Optional - Only used when pIncludeEndArrayIdxAttrs is true, this parameter specifies the
+//                    end index (non-inclusive) in the last text line to include attributes for.  If not specified,
+//                    the entire end line will be used to include its attributes.
+//
+// Return value: A string containing the relevant attribute codes to apply up to the given line index (non-inclusive).
+function getAllEditLineAttrsUntilLineIdx(pTxtLines, pEndArrayIdx, pIncludeEndArrayIdxAttrs, pLastLineTextEndIdx)
+{
+	if (typeof(pTxtLines) !== "object" || typeof(pEndArrayIdx) !== "number" || pEndArrayIdx < 0)
+		return "";
+
+	var includeEndArrayIdxAttrs = (typeof(pIncludeEndArrayIdxAttrs) === "boolean" ? pIncludeEndArrayIdxAttrs : false);
+
+	var syncAttrRegex = /\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]/gi;
+	var attributesStr = "";
+	var onePastLastIdx = (includeEndArrayIdxAttrs ? pEndArrayIdx + 1 : pEndArrayIdx);
+	for (var i = 0; i < onePastLastIdx; ++i)
+	{
+		if (typeof(pTxtLines[i]) !== "string") continue;
+		var attrCodes;
+		if (typeof(pLastLineTextEndIdx) === "number" && i === (onePastLastIdx-1))
+		{
+			// Note: dd_lightbar_menu.js defines substrWithAttrCodes(pStr, pStartIdx, pLen)
+			var textLine = substrWithAttrCodes(pTxtLines[i], 0, pLastLineTextEndIdx);
+			attrCodes = textLine.match(syncAttrRegex);
+		}
+		else
+			attrCodes = pTxtLines[i].match(syncAttrRegex);
+		if (attrCodes != null)
+		{
+			for (var attrMatchI = 0; attrMatchI < attrCodes.length; ++attrMatchI)
+				attributesStr += attrCodes[attrMatchI];
+		}
+	}
+	// If there is a normal attribute code in the middle of the string, remove anything before it
+	var normalAttrIdx = attributesStr.lastIndexOf("\x01n");
+	if (normalAttrIdx < 0)
+		normalAttrIdx = attributesStr.lastIndexOf("\x01N");
+	if (normalAttrIdx > -1)
+		attributesStr = attributesStr.substr(normalAttrIdx/*+2*/);
+	return attributesStr;
+}
+
 // Finds the (1-based) page number of an item by number (1-based).  If no page
 // is found, then the return value will be 0.
 //
@@ -15932,55 +16494,6 @@ function msgIsFromUser(pMsgHdr)
 	return isFromUser;
 }
 
-// Given some text, this converts ANSI color codes to Synchronet codes and
-// removes unwanted ANSI codes (such as cursor movement codes, etc.).
-//
-// Parameters:
-//  pText: A string to process
-//
-// Return value: A version of the string with Synchronet color codes converted to
-//               Synchronet attribute codes and unwanted ANSI codes removed
-function cvtANSIToSyncAndRemoveUnwantedANSI(pText)
-{
-	// Attributes
-	var txt = pText.replace(/\[0[mM]/g, "\x01n"); // All attributes off
-	txt = txt.replace(/\[1[mM]/g, "\x01h"); // Bold on (use high intensity)
-	txt = txt.replace(/\[5[mM]/g, "\x01i"); // Blink on
-	// Foreground colors
-	txt = txt.replace(/\[30[mM]/g, "\x01k"); // Black foreground
-	txt = txt.replace(/\[31[mM]/g, "\x01r"); // Red foreground
-	txt = txt.replace(/\[32[mM]/g, "\x01g"); // Green foreground
-	txt = txt.replace(/\[33[mM]/g, "\x01y"); // Yellow foreground
-	txt = txt.replace(/\[34[mM]/g, "\x01b"); // Blue foreground
-	txt = txt.replace(/\[35[mM]/g, "\x01m"); // Magenta foreground
-	txt = txt.replace(/\[36[mM]/g, "\x01c"); // Cyan foreground
-	txt = txt.replace(/\[37[mM]/g, "\x01w"); // White foreground
-	// Background colors
-	txt = txt.replace(/\[40[mM]/g, "\x01" + "0"); // Black background
-	txt = txt.replace(/\[41[mM]/g, "\x01" + "1"); // Red background
-	txt = txt.replace(/\[42[mM]/g, "\x01" + "2"); // Green background
-	txt = txt.replace(/\[43[mM]/g, "\x01" + "3"); // Yellow background
-	txt = txt.replace(/\[44[mM]/g, "\x01" + "4"); // Blue background
-	txt = txt.replace(/\[45[mM]/g, "\x01" + "5"); // Magenta background
-	txt = txt.replace(/\[46[mM]/g, "\x01" + "6"); // Cyan background
-	txt = txt.replace(/\[47[mM]/g, "\x01" + "7"); // White background
-	// Convert ;-delimited modes (such as [Value;...;Valuem)
-	txt = ANSIMultiConvertToSyncCodes(txt);
-	// Remove ANSI codes that are not wanted (such as moving the cursor, etc.)
-	txt = txt.replace(/\[[0-9]+[aA]/g, ""); // Cursor up
-	txt = txt.replace(/\[[0-9]+[bB]/g, ""); // Cursor down
-	txt = txt.replace(/\[[0-9]+[cC]/g, ""); // Cursor forward
-	txt = txt.replace(/\[[0-9]+[dD]/g, ""); // Cursor backward
-	txt = txt.replace(/\[[0-9]+;[0-9]+[hH]/g, ""); // Cursor position
-	txt = txt.replace(/\[[0-9]+;[0-9]+[fF]/g, ""); // Cursor position
-	txt = txt.replace(/\[[sS]/g, ""); // Restore cursor position
-	txt = txt.replace(/\[2[jJ]/g, ""); // Erase display
-	txt = txt.replace(/\[[kK]/g, ""); // Erase line
-	txt = txt.replace(/\[=[0-9]+[hH]/g, ""); // Set various screen modes
-	txt = txt.replace(/\[=[0-9]+[lL]/g, ""); // Reset various screen modes
-	return txt;
-}
-
 // Returns whether a given message group index & sub-board index (or the current ones,
 // based on bbs.curgrp and bbs.cursub) are for the last message sub-board on the system.
 //
@@ -15998,22 +16511,22 @@ function cvtANSIToSyncAndRemoveUnwantedANSI(pText)
 //               bbs.cursub), this method will return false.
 function curMsgSubBoardIsLast(pGrpIdx, pSubIdx)
 {
-   var curGrp = 0;
-   if (typeof(pGrpIdx) == "number")
-      curGrp = pGrpIdx;
-   else if (typeof(bbs.curgrp) == "number")
-      curGrp = bbs.curgrp;
-   else
-      return false;
-   var curSub = 0;
-   if (typeof(pSubIdx) == "number")
-      curSub = pSubIdx;
-   else if (typeof(bbs.cursub) == "number")
-      curSub = bbs.cursub;
-   else
-      return false;
+	var curGrp = 0;
+	if (typeof(pGrpIdx) == "number")
+		curGrp = pGrpIdx;
+	else if (typeof(bbs.curgrp) == "number")
+		curGrp = bbs.curgrp;
+	else
+		return false;
+	var curSub = 0;
+	if (typeof(pSubIdx) == "number")
+		curSub = pSubIdx;
+	else if (typeof(bbs.cursub) == "number")
+		curSub = bbs.cursub;
+	else
+		return false;
 
-   return (curGrp == msg_area.grp_list.length-1) && (curSub == msg_area.grp_list[msg_area.grp_list.length-1].sub_list.length-1);
+	return (curGrp == msg_area.grp_list.length-1) && (curSub == msg_area.grp_list[msg_area.grp_list.length-1].sub_list.length-1);
 }
 
 // Parses arguments, where each argument in the given array is in the format
@@ -16082,7 +16595,7 @@ function parseArgs(argv)
 			if ((argName == "chooseareafirst") || (argName == "personalemail") ||
 			    (argName == "personalemailsent") || (argName == "allpersonalemail") ||
 			    (argName == "verboselogging") || (argName == "suppresssearchtypetext") ||
-			    (argName == "onlynewpersonalemail"))
+			    (argName == "onlynewpersonalemail") || (argName == "indexedmode"))
 			{
 				argVals[argName] = true;
 			}
@@ -16282,6 +16795,7 @@ function getDefaultArgParseObj()
 		personalemailsent: false,
 		verboselogging: false,
 		suppresssearchtypetext: false,
+		indexedmode: false,
 		loadableModule: false,
 		exitNow: false
 	};
@@ -18558,6 +19072,814 @@ function canViewDeletedMsgs()
 	var sysopVDM = ((system.settings & SYS_SYSVDELM) == SYS_SYSVDELM);
 	return (usersVDM || (user.is_sysop && sysopVDM));
 }
+
+///////////////////////////////////////////////////////////////////////////////////
+// ChoiceScrollbox stuff (this was copied from SlyEdit_Misc.js; maybe there's a better way to do this)
+
+// Returns the minimum width for a ChoiceScrollbox
+function ChoiceScrollbox_MinWidth()
+{
+	return 73; // To leave room for the navigation text in the bottom border
+}
+
+// ChoiceScrollbox constructor
+//
+// Parameters:
+//  pLeftX: The horizontal component (column) of the upper-left coordinate
+//  pTopY: The vertical component (row) of the upper-left coordinate
+//  pWidth: The width of the box (including the borders)
+//  pHeight: The height of the box (including the borders)
+//  pTopBorderText: The text to include in the top border
+//  pCfgObj: The script/program configuration object (color settings are used)
+//  pAddTCharsAroundTopText: Optional, boolean - Whether or not to use left & right T characters
+//                           around the top border text.  Defaults to true.
+// pReplaceTopTextSpacesWithBorderChars: Optional, boolean - Whether or not to replace
+//                           spaces in the top border text with border characters.
+//                           Defaults to false.
+function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj,
+                         pAddTCharsAroundTopText, pReplaceTopTextSpacesWithBorderChars)
+{
+	if (pCfgObj == null || typeof(pCfgObj) !== "object")
+		pCfgObj = {};
+	if (pCfgObj.colors == null || typeof(pCfgObj.colors) !== "object")
+	{
+		pCfgObj.colors = {
+			listBoxBorder: "\x01n\x01g",
+			listBoxBorderText: "\x01n\x01b\x01h",
+			listBoxItemText: "\x01n\x01c",
+			listBoxItemHighlight: "\x01n\x01" + "4\x01w\x01h"
+		};
+	}
+	else
+	{
+		if (!pCfgObj.colors.hasOwnProperty("listBoxBorder"))
+			pCfgObj.colors.listBoxBorder = "\x01n\x01g";
+		if (!pCfgObj.colors.hasOwnProperty("listBoxBorderText"))
+			pCfgObj.colors.listBoxBorderText = "\x01n\x01b\x01h";
+		if (!pCfgObj.colors.hasOwnProperty("listBoxItemText"))
+			pCfgObj.colors.listBoxItemText = "\x01n\x01c";
+		if (!pCfgObj.colors.hasOwnProperty("listBoxItemHighlight"))
+			pCfgObj.colors.listBoxItemHighlight = "\x01n\x01" + "4\x01w\x01h";
+	}
+
+	// The default is to add left & right T characters around the top border
+	// text.  But also use pAddTCharsAroundTopText if it's a boolean.
+	var addTopTCharsAroundText = true;
+	if (typeof(pAddTCharsAroundTopText) == "boolean")
+		addTopTCharsAroundText = pAddTCharsAroundTopText;
+	// If pReplaceTopTextSpacesWithBorderChars is true, then replace the spaces
+	// in pTopBorderText with border characters.
+	if (pReplaceTopTextSpacesWithBorderChars)
+	{
+		var startIdx = 0;
+		var firstSpcIdx = pTopBorderText.indexOf(" ", 0);
+		// Look for the first non-space after firstSpaceIdx
+		var nonSpcIdx = -1;
+		for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
+		{
+			if (pTopBorderText.charAt(i) != " ")
+				nonSpcIdx = i;
+		}
+		var firstStrPart = "";
+		var lastStrPart = "";
+		var numSpaces = 0;
+		while ((firstSpcIdx > -1) && (nonSpcIdx > -1))
+		{
+			firstStrPart = pTopBorderText.substr(startIdx, (firstSpcIdx-startIdx));
+			lastStrPart = pTopBorderText.substr(nonSpcIdx);
+			numSpaces = nonSpcIdx - firstSpcIdx;
+			if (numSpaces > 0)
+			{
+				pTopBorderText = firstStrPart + "\x01n" + pCfgObj.colors.listBoxBorder;
+				for (var i = 0; i < numSpaces; ++i)
+					pTopBorderText += HORIZONTAL_SINGLE;
+				pTopBorderText += "\x01n" + pCfgObj.colors.listBoxBorderText + lastStrPart;
+			}
+
+			// Look for the next space and non-space character after that.
+			firstSpcIdx = pTopBorderText.indexOf(" ", nonSpcIdx);
+			// Look for the first non-space after firstSpaceIdx
+			nonSpcIdx = -1;
+			for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
+			{
+				if (pTopBorderText.charAt(i) != " ")
+					nonSpcIdx = i;
+			}
+		}
+	}
+
+	this.programCfgObj = pCfgObj;
+
+	var minWidth = ChoiceScrollbox_MinWidth();
+
+	this.dimensions = {
+		topLeftX: pLeftX,
+		topLeftY: pTopY,
+		width: 0,
+		height: pHeight,
+		bottomRightX: 0,
+		bottomRightY: 0
+	};
+	// Make sure the width is the minimum width
+	if ((pWidth < 0) || (pWidth < minWidth))
+		this.dimensions.width = minWidth;
+	else
+		this.dimensions.width = pWidth;
+	this.dimensions.bottomRightX = this.dimensions.topLeftX + this.dimensions.width - 1;
+	this.dimensions.bottomRightY = this.dimensions.topLeftY + this.dimensions.height - 1;
+
+	// The text item array and member variables relating to it and the items
+	// displayed on the screen during the input loop
+	this.txtItemList = [];
+	this.chosenTextItemIndex = -1;
+	this.topItemIndex = 0;
+	this.bottomItemIndex = 0;
+
+	// Top border string
+	var innerBorderWidth = this.dimensions.width - 2;
+	// Calculate the maximum top border text length to account for the left/right
+	// T chars and "Page #### of ####" text
+	var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
+	if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
+		pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
+	this.topBorder = "\x01n" + pCfgObj.colors.listBoxBorder + UPPER_LEFT_SINGLE;
+	if (addTopTCharsAroundText)
+		this.topBorder += RIGHT_T_SINGLE;
+	this.topBorder += "\x01n" + pCfgObj.colors.listBoxBorderText
+	               + pTopBorderText + "\x01n" + pCfgObj.colors.listBoxBorder;
+	if (addTopTCharsAroundText)
+		this.topBorder += LEFT_T_SINGLE;
+	const topBorderTextLen = strip_ctrl(pTopBorderText).length;
+	var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
+	if (addTopTCharsAroundText)
+		numHorizBorderChars -= 2;
+	for (var i = 0; i <= numHorizBorderChars; ++i)
+		this.topBorder += HORIZONTAL_SINGLE;
+	this.topBorder += RIGHT_T_SINGLE + "\x01n" + pCfgObj.colors.listBoxBorderText
+	               + "Page    1 of    1" + "\x01n" + pCfgObj.colors.listBoxBorder + LEFT_T_SINGLE
+	               + UPPER_RIGHT_SINGLE;
+
+	// Bottom border string
+	this.btmBorderNavText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+	                      + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cHOME\x01b, \x01cEND\x01b, \x01cEnter\x01y=\x01bSelect, "
+	                      + "\x01cESC\x01n\x01c/\x01h\x01cQ\x01y=\x01bEnd";
+	this.bottomBorder = "\x01n" + pCfgObj.colors.listBoxBorder + LOWER_LEFT_SINGLE
+	                  + RIGHT_T_SINGLE + this.btmBorderNavText + "\x01n" + pCfgObj.colors.listBoxBorder
+	                  + LEFT_T_SINGLE;
+	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
+	for (var i = 0; i < numCharsRemaining; ++i)
+		this.bottomBorder += HORIZONTAL_SINGLE;
+	this.bottomBorder += LOWER_RIGHT_SINGLE;
+
+	// Item format strings
+	this.listIemFormatStr = "\x01n" + pCfgObj.colors.listBoxItemText + "%-"
+	                      + +(this.dimensions.width-2) + "s";
+	this.listIemHighlightFormatStr = "\x01n" + pCfgObj.colors.listBoxItemHighlight + "%-"
+	                               + +(this.dimensions.width-2) + "s";
+
+	// Key functionality override function pointers
+	this.enterKeyOverrideFn = null;
+
+	// inputLoopeExitKeys is an object containing additional keypresses that will
+	// exit the input loop.
+	this.inputLoopExitKeys = {};
+
+	// For drawing the menu
+	this.pageNum = 0;
+	this.numPages = 0;
+	this.numItemsPerPage = 0;
+	this.maxItemWidth = 0;
+	this.pageNumTxtStartX = 0;
+
+	// Input loop quit override (to be used in overridden enter function if needed to quit the input loop there
+	this.continueInputLoopOverride = true;
+
+	// Object functions
+	this.addTextItem = ChoiceScrollbox_AddTextItem; // Returns the index of the item
+	this.getTextItem = ChoiceScrollbox_GetTextIem;
+	this.replaceTextItem = ChoiceScrollbox_ReplaceTextItem;
+	this.delTextItem = ChoiceScrollbox_DelTextItem;
+	this.chgCharInTextItem = ChoiceScrollbox_ChgCharInTextItem;
+	this.getChosenTextItemIndex = ChoiceScrollbox_GetChosenTextItemIndex;
+	this.setItemArray = ChoiceScrollbox_SetItemArray; // Sets the item array; returns whether or not it was set.
+	this.clearItems = ChoiceScrollbox_ClearItems; // Empties the array of items
+	this.setEnterKeyOverrideFn = ChoiceScrollbox_SetEnterKeyOverrideFn;
+	this.clearEnterKeyOverrideFn = ChoiceScrollbox_ClearEnterKeyOverrideFn;
+	this.addInputLoopExitKey = ChoiceScrollbox_AddInputLoopExitKey;
+	this.setBottomBorderText = ChoiceScrollbox_SetBottomBorderText;
+	this.drawBorder = ChoiceScrollbox_DrawBorder;
+	this.drawInnerMenu = ChoiceScrollbox_DrawInnerMenu;
+	this.refreshOnScreen = ChoiceScrollbox_RefreshOnScreen;
+	this.refreshItemCharOnScreen = ChoiceScrollbox_RefreshItemCharOnScreen;
+	// Does the input loop.  Returns an object with the following properties:
+	//  itemWasSelected: Boolean - Whether or not an item was selected
+	//  selectedIndex: The index of the selected item
+	//  selectedItem: The text of the selected item
+	//  lastKeypress: The last key pressed by the user
+	this.doInputLoop = ChoiceScrollbox_DoInputLoop;
+}
+function ChoiceScrollbox_AddTextItem(pTextLine, pStripCtrl)
+{
+   var stripCtrl = true;
+   if (typeof(pStripCtrl) == "boolean")
+      stripCtrl = pStripCtrl;
+
+   if (stripCtrl)
+      this.txtItemList.push(strip_ctrl(pTextLine));
+   else
+      this.txtItemList.push(pTextLine);
+   // Return the index of the added item
+   return this.txtItemList.length-1;
+}
+function ChoiceScrollbox_GetTextIem(pItemIndex)
+{
+   if (typeof(pItemIndex) != "number")
+      return "";
+   if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length))
+      return "";
+
+   return this.txtItemList[pItemIndex];
+}
+function ChoiceScrollbox_ReplaceTextItem(pItemIndexOrStr, pNewItem)
+{
+   if (typeof(pNewItem) != "string")
+      return false;
+
+   // Find the item index
+   var itemIndex = -1;
+   if (typeof(pItemIndexOrStr) == "number")
+   {
+      if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
+         return false;
+      else
+         itemIndex = pItemIndexOrStr;
+   }
+   else if (typeof(pItemIndexOrStr) == "string")
+   {
+      itemIndex = -1;
+      for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
+      {
+         if (this.txtItemList[i] == pItemIndexOrStr)
+            itemIndex = i;
+      }
+   }
+   else
+      return false;
+
+   // Replace the item
+   var replacedIt = false;
+   if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
+   {
+      this.txtItemList[itemIndex] = pNewItem;
+      replacedIt = true;
+   }
+   return replacedIt;
+}
+function ChoiceScrollbox_DelTextItem(pItemIndexOrStr)
+{
+   // Find the item index
+   var itemIndex = -1;
+   if (typeof(pItemIndexOrStr) == "number")
+   {
+      if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
+         return false;
+      else
+         itemIndex = pItemIndexOrStr;
+   }
+   else if (typeof(pItemIndexOrStr) == "string")
+   {
+      itemIndex = -1;
+      for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
+      {
+         if (this.txtItemList[i] == pItemIndexOrStr)
+            itemIndex = i;
+      }
+   }
+   else
+      return false;
+
+   // Remove the item
+   var removedIt = false;
+   if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
+   {
+      this.txtItemList = this.txtItemList.splice(itemIndex, 1);
+      removedIt = true;
+   }
+   return removedIt;
+}
+function ChoiceScrollbox_ChgCharInTextItem(pItemIndexOrStr, pStrIndex, pNewText)
+{
+	// Find the item index
+	var itemIndex = -1;
+	if (typeof(pItemIndexOrStr) == "number")
+	{
+		if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
+			return false;
+		else
+			itemIndex = pItemIndexOrStr;
+	}
+	else if (typeof(pItemIndexOrStr) == "string")
+	{
+		itemIndex = -1;
+		for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
+		{
+			if (this.txtItemList[i] == pItemIndexOrStr)
+				itemIndex = i;
+		}
+	}
+	else
+		return false;
+
+	// Change the character in the item
+	var changedIt = false;
+	if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
+	{
+		this.txtItemList[itemIndex] = chgCharInStr(this.txtItemList[itemIndex], pStrIndex, pNewText);
+		changedIt = true;
+	}
+	return changedIt;
+}
+function ChoiceScrollbox_GetChosenTextItemIndex()
+{
+   return this.chosenTextItemIndex;
+}
+function ChoiceScrollbox_SetItemArray(pArray, pStripCtrl)
+{
+	var safeToSet = false;
+	if (Object.prototype.toString.call(pArray) === "[object Array]")
+	{
+		if (pArray.length > 0)
+			safeToSet = (typeof(pArray[0]) == "string");
+		else
+			safeToSet = true; // It's safe to set an empty array
+	}
+
+	if (safeToSet)
+	{
+		delete this.txtItemList;
+		this.txtItemList = pArray;
+
+		var stripCtrl = true;
+		if (typeof(pStripCtrl) == "boolean")
+			stripCtrl = pStripCtrl;
+		if (stripCtrl)
+		{
+			// Remove attribute/color characters from the text lines in the array
+			for (var i = 0; i < this.txtItemList.length; ++i)
+				this.txtItemList[i] = strip_ctrl(this.txtItemList[i]);
+		}
+	}
+
+	return safeToSet;
+}
+function ChoiceScrollbox_ClearItems()
+{
+   this.txtItemList.length = 0;
+}
+function ChoiceScrollbox_SetEnterKeyOverrideFn(pOverrideFn)
+{
+   if (Object.prototype.toString.call(pOverrideFn) == "[object Function]")
+      this.enterKeyOverrideFn = pOverrideFn;
+}
+function ChoiceScrollbox_ClearEnterKeyOverrideFn()
+{
+   this.enterKeyOverrideFn = null;
+}
+function ChoiceScrollbox_AddInputLoopExitKey(pKeypress)
+{
+   this.inputLoopExitKeys[pKeypress] = true;
+}
+function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooLong)
+{
+	if (typeof(pText) != "string")
+		return;
+
+	const innerWidth = (pAddTChars ? this.dimensions.width-4 : this.dimensions.width-2);
+
+	if (pAutoStripIfTooLong)
+	{
+		if (strip_ctrl(pText).length > innerWidth)
+			pText = pText.substr(0, innerWidth);
+	}
+
+	// Re-build the bottom border string based on the new text
+	this.bottomBorder = "\x01n" + this.programCfgObj.colors.listBoxBorder + LOWER_LEFT_SINGLE;
+	if (pAddTChars)
+		this.bottomBorder += RIGHT_T_SINGLE;
+	if (pText.indexOf("\x01n") != 0)
+		this.bottomBorder += "\x01n";
+	this.bottomBorder += pText + "\x01n" + this.programCfgObj.colors.listBoxBorder;
+	if (pAddTChars)
+		this.bottomBorder += LEFT_T_SINGLE;
+	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
+	for (var i = 0; i < numCharsRemaining; ++i)
+		this.bottomBorder += HORIZONTAL_SINGLE;
+	this.bottomBorder += LOWER_RIGHT_SINGLE;
+}
+function ChoiceScrollbox_DrawBorder()
+{
+	console.gotoxy(this.dimensions.topLeftX, this.dimensions.topLeftY);
+	console.print(this.topBorder);
+	// Draw the side border characters
+	var screenRow = this.dimensions.topLeftY + 1;
+	for (var screenRow = this.dimensions.topLeftY+1; screenRow <= this.dimensions.bottomRightY-1; ++screenRow)
+	{
+		console.gotoxy(this.dimensions.topLeftX, screenRow);
+		console.print(VERTICAL_SINGLE);
+		console.gotoxy(this.dimensions.bottomRightX, screenRow);
+		console.print(VERTICAL_SINGLE);
+	}
+	// Draw the bottom border
+	console.gotoxy(this.dimensions.topLeftX, this.dimensions.bottomRightY);
+	console.print(this.bottomBorder);
+}
+function ChoiceScrollbox_DrawInnerMenu(pSelectedIndex)
+{
+	var selectedIndex = (typeof(pSelectedIndex) == "number" ? pSelectedIndex : -1);
+	var startArrIndex = this.pageNum * this.numItemsPerPage;
+	var endArrIndex = startArrIndex + this.numItemsPerPage;
+	if (endArrIndex > this.txtItemList.length)
+		endArrIndex = this.txtItemList.length;
+	var selectedItemRow = this.dimensions.topLeftY+1;
+	var screenY = this.dimensions.topLeftY + 1;
+	for (var i = startArrIndex; i < endArrIndex; ++i)
+	{
+		console.gotoxy(this.dimensions.topLeftX+1, screenY);
+		if (i == selectedIndex)
+		{
+			printf(this.listIemHighlightFormatStr, this.txtItemList[i].substr(0, this.maxItemWidth));
+			selectedItemRow = screenY;
+		}
+		else
+			printf(this.listIemFormatStr, this.txtItemList[i].substr(0, this.maxItemWidth));
+		++screenY;
+	}
+	// If the current screen row is below the bottom row inside the box,
+	// continue and write blank lines to the bottom of the inside of the box
+	// to blank out any text that might still be there.
+	while (screenY < this.dimensions.topLeftY+this.dimensions.height-1)
+	{
+		console.gotoxy(this.dimensions.topLeftX+1, screenY);
+		printf(this.listIemFormatStr, "");
+		++screenY;
+	}
+
+	// Update the page number in the top border of the box.
+	console.gotoxy(this.pageNumTxtStartX, this.dimensions.topLeftY);
+	printf("\x01n" + this.programCfgObj.colors.listBoxBorderText + "Page %4d of %4d", this.pageNum+1, this.numPages);
+	return selectedItemRow;
+}
+function ChoiceScrollbox_RefreshOnScreen(pSelectedIndex)
+{
+	this.drawBorder();
+	this.drawInnerMenu(pSelectedIndex);
+}
+function ChoiceScrollbox_RefreshItemCharOnScreen(pItemIndex, pCharIndex)
+{
+	if ((typeof(pItemIndex) != "number") || (typeof(pCharIndex) != "number"))
+		return;
+	if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length) ||
+	    (pItemIndex < this.topItemIndex) || (pItemIndex > this.bottomItemIndex))
+	{
+		return;
+	}
+	if ((pCharIndex < 0) || (pCharIndex >= this.txtItemList[pItemIndex].length))
+		return;
+
+	// Save the current cursor position so that we can restore it later
+	const originalCurpos = console.getxy();
+	// Go to the character's position on the screen and set the highlight or
+	// normal color, depending on whether the item is the currently selected item,
+	// then print the character on the screen.
+	const charScreenX = this.dimensions.topLeftX + 1 + pCharIndex;
+	const itemScreenY = this.dimensions.topLeftY + 1 + (pItemIndex - this.topItemIndex);
+	console.gotoxy(charScreenX, itemScreenY);
+	if (pItemIndex == this.chosenTextItemIndex)
+		console.print(this.programCfgObj.colors.listBoxItemHighlight);
+	else
+		console.print(this.programCfgObj.colors.listBoxItemText);
+	console.print(this.txtItemList[pItemIndex].charAt(pCharIndex));
+	// Move the cursor back to where it was originally
+	console.gotoxy(originalCurpos);
+}
+function ChoiceScrollbox_DoInputLoop(pDrawBorder)
+{
+	var retObj = {
+		itemWasSelected: false,
+		selectedIndex: -1,
+		selectedItem: "",
+		lastKeypress: ""
+	};
+
+	// Don't do anything if the item list doesn't contain any items
+	if (this.txtItemList.length == 0)
+		return retObj;
+
+	//////////////////////////////////
+	// Locally-defined functions
+
+	// This function returns the index of the bottommost item that
+	// can be displayed in the box.
+	//
+	// Parameters:
+	//  pArray: The array containing the items
+	//  pTopindex: The index of the topmost item displayed in the box
+	//  pNumItemsPerPage: The number of items per page
+	function getBottommostItemIndex(pArray, pTopIndex, pNumItemsPerPage)
+	{
+		var bottomIndex = pTopIndex + pNumItemsPerPage - 1;
+		// If bottomIndex is beyond the last index, then adjust it.
+		if (bottomIndex >= pArray.length)
+			bottomIndex = pArray.length - 1;
+		return bottomIndex;
+	}
+
+
+
+	//////////////////////////////////
+	// Code
+
+	// Variables for keeping track of the item list
+	this.numItemsPerPage = this.dimensions.height - 2;
+	this.topItemIndex = 0;    // The index of the message group at the top of the list
+	// Figure out the index of the last message group to appear on the screen.
+	this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, this.numItemsPerPage);
+	this.numPages = Math.ceil(this.txtItemList.length / this.numItemsPerPage);
+	const topIndexForLastPage = (this.numItemsPerPage * this.numPages) - this.numItemsPerPage;
+
+	if (pDrawBorder)
+		this.drawBorder();
+
+	// User input loop
+	// For the horizontal location of the page number text for the box border:
+	// Based on the fact that there can be up to 9999 text replacements and 10
+	// per page, there will be up to 1000 pages of replacements.  To write the
+	// text, we'll want to be 20 characters to the left of the end of the border
+	// of the box.
+	this.pageNumTxtStartX = this.dimensions.topLeftX + this.dimensions.width - 19;
+	this.maxItemWidth = this.dimensions.width - 2;
+	this.pageNum = 0;
+	var startArrIndex = 0;
+	this.chosenTextItemIndex = retObj.selectedIndex = 0;
+	var endArrIndex = 0; // One past the last array item
+	var curpos = { // For keeping track of the current cursor position
+		x: 0,
+		y: 0
+	};
+	var refreshList = true; // For screen redraw optimizations
+	this.continueInputLoopOverride = true;
+	var continueOn = true;
+	while (continueOn && this.continueInputLoopOverride)
+	{
+		if (refreshList)
+		{
+			this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, this.numItemsPerPage);
+
+			// Write the list of items for the current page.  Also, drawInnerMenu()
+			// will return the selected item row.
+			var selectedItemRow = this.drawInnerMenu(retObj.selectedIndex);
+
+			// Just for sane appearance: Move the cursor to the first character of
+			// the currently-selected row and set the appropriate color.
+			curpos.x = this.dimensions.topLeftX+1;
+			curpos.y = selectedItemRow;
+			console.gotoxy(curpos.x, curpos.y);
+			console.print(this.programCfgObj.colors.listBoxItemHighlight);
+
+			refreshList = false;
+		}
+
+		// Get a key from the user (upper-case) and take action based upon it.
+		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, this.programCfgObj);
+		switch (retObj.lastKeypress)
+		{
+			case 'N': // Next page
+			case KEY_PAGE_DOWN:
+				refreshList = (this.pageNum < this.numPages-1);
+				if (refreshList)
+				{
+					++this.pageNum;
+					this.topItemIndex += this.numItemsPerPage;
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				break;
+			case 'P': // Previous page
+			case KEY_PAGE_UP:
+				refreshList = (this.pageNum > 0);
+				if (refreshList)
+				{
+					--this.pageNum;
+					this.topItemIndex -= this.numItemsPerPage;
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				break;
+			case 'F': // First page
+				refreshList = (this.pageNum > 0);
+				if (refreshList)
+				{
+					this.pageNum = 0;
+					this.topItemIndex = 0;
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				break;
+			case 'L': // Last page
+				refreshList = (this.pageNum < this.numPages-1);
+				if (refreshList)
+				{
+					this.pageNum = this.numPages-1;
+					this.topItemIndex = topIndexForLastPage;
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				break;
+			case KEY_UP:
+				// Move the cursor up one item
+				if (retObj.selectedIndex > 0)
+				{
+					// If the previous item index is on the previous page, then we'll
+					// want to display the previous page.
+					var previousItemIndex = retObj.selectedIndex - 1;
+					if (previousItemIndex < this.topItemIndex)
+					{
+						--this.pageNum;
+						this.topItemIndex -= this.numItemsPerPage;
+						// Note: this.bottomItemIndex is refreshed at the top of the loop
+						refreshList = true;
+					}
+					else
+					{
+						// Display the current line un-highlighted
+						console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+						printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+						// Display the previous line highlighted
+						curpos.x = this.dimensions.topLeftX+1;
+						--curpos.y;
+						console.gotoxy(curpos);
+						printf(this.listIemHighlightFormatStr, this.txtItemList[previousItemIndex].substr(0, this.maxItemWidth));
+						console.gotoxy(curpos); // Move the cursor into place where it should be
+						refreshList = false;
+					}
+					this.chosenTextItemIndex = retObj.selectedIndex = previousItemIndex;
+				}
+				break;
+			case KEY_DOWN:
+				// Move the cursor down one item
+				if (retObj.selectedIndex < this.txtItemList.length - 1)
+				{
+					// If the next item index is on the next page, then we'll want to
+					// display the next page.
+					var nextItemIndex = retObj.selectedIndex + 1;
+					if (nextItemIndex > this.bottomItemIndex)
+					{
+						++this.pageNum;
+						this.topItemIndex += this.numItemsPerPage;
+						// Note: this.bottomItemIndex is refreshed at the top of the loop
+						refreshList = true;
+					}
+					else
+					{
+						// Display the current line un-highlighted
+						console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+						printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+						// Display the previous line highlighted
+						curpos.x = this.dimensions.topLeftX+1;
+						++curpos.y;
+						console.gotoxy(curpos);
+						printf(this.listIemHighlightFormatStr, this.txtItemList[nextItemIndex].substr(0, this.maxItemWidth));
+						console.gotoxy(curpos); // Move the cursor into place where it should be
+						refreshList = false;
+					}
+					this.chosenTextItemIndex = retObj.selectedIndex = nextItemIndex;
+				}
+				break;
+			case KEY_HOME: // Go to the first row in the box
+				if (retObj.selectedIndex > this.topItemIndex)
+				{
+					// Display the current line un-highlighted
+					console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+					// Select the top item, and display it highlighted.
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					curpos.x = this.dimensions.topLeftX+1;
+					curpos.y = this.dimensions.topLeftY+1;
+					console.gotoxy(curpos);
+					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+					console.gotoxy(curpos); // Move the cursor into place where it should be
+					refreshList = false;
+				}
+				break;
+			case KEY_END: // Go to the last row in the box
+				if (retObj.selectedIndex < this.bottomItemIndex)
+				{
+					// Display the current line un-highlighted
+					console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+					// Select the bottommost item, and display it highlighted.
+					this.chosenTextItemIndex = retObj.selectedIndex = this.bottomItemIndex;
+					curpos.x = this.dimensions.topLeftX+1;
+					curpos.y = this.dimensions.bottomRightY-1;
+					console.gotoxy(curpos);
+					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+					console.gotoxy(curpos); // Move the cursor into place where it should be
+					refreshList = false;
+				}
+				break;
+			case KEY_ENTER:
+				// If the enter key override function is set, then call it and pass
+				// this object into it.  Otherwise, just select the item and quit.
+				if (this.enterKeyOverrideFn !== null)
+				this.enterKeyOverrideFn(this);
+				else
+				{
+					retObj.itemWasSelected = true;
+					// Note: retObj.selectedIndex is already set.
+					retObj.selectedItem = this.txtItemList[retObj.selectedIndex];
+					refreshList = false;
+					continueOn = false;
+				}
+				break;
+			case KEY_ESC: // Quit
+			case CTRL_A:  // Quit
+			case 'Q':     // Quit
+				this.chosenTextItemIndex = retObj.selectedIndex = -1;
+				refreshList = false;
+				continueOn = false;
+				break;
+			default:
+				// If the keypress is an additional key to exit the input loop, then
+				// do so.
+				if (this.inputLoopExitKeys.hasOwnProperty(retObj.lastKeypress))
+				{
+					this.chosenTextItemIndex = retObj.selectedIndex = -1;
+					refreshList = false;
+					continueOn = false;
+				}
+				else
+				{
+					// Unrecognized command.  Don't refresh the list of the screen.
+					refreshList = false;
+				}
+				break;
+		}
+	}
+
+	this.continueInputLoopOverride = true; // Reset
+
+	console.print("\x01n"); // To prevent outputting highlight colors, etc..
+	return retObj;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+// Writes a default twitlist for the user if it doesn't exist
+function writeDefaultUserTwitListIfNotExist()
+{
+	if (file_exists(gUserTwitListFilename))
+		return;
+
+	var outFile = new File(gUserTwitListFilename);
+	if (outFile.open("w"))
+	{
+		outFile.writeln("; This is a personal twitlist for Digital Distortion Message Reader to block");
+		outFile.writeln("; messages from (and to) certain usernames. The intention is that if you are");
+		outFile.writeln("; being harassed by a specific person, or you simply do not wish to see their");
+		outFile.writeln("; messages, you can filter that person by adding their name (or email address)");
+		outFile.writeln("; to this file.");
+
+		outFile.close();
+	}
+}
+
+// Returns whether 2 arrays have the same values
+function arraysHaveSameValues(pArray1, pArray2)
+{
+	if (pArray1 == null && pArray2 == null)
+		return true;
+	else if (pArray1 != null && pArray2 == null)
+		return false;
+	else if (pArray1 == null && pArray2 != null)
+		return false;
+
+	var arraysHaveSameValues = true;
+	if (pArray1.length != pArray2.length)
+		arraysHaveSameValues = false;
+	else
+	{
+		for (var a1i = 0; a1i < pArray1.length && arraysHaveSameValues; ++a1i)
+		{
+			var seenInArray2 = false;
+			for (var a2i = 0; a2i < pArray2.length && !seenInArray2; ++a2i)
+				seenInArray2 = (pArray2[a2i] == pArray1[a1i]);
+			arraysHaveSameValues = seenInArray2;
+		}
+	}
+	return arraysHaveSameValues;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
 
 // For debugging: Writes some text on the screen at a given location with a given pause.
 //
