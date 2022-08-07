@@ -3216,7 +3216,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 				}
 			}
 			// D: Delete a message
-			else if (retvalObj.userInput == "D")
+			else if (retvalObj.userInput == "D" || retvalObj.userInput == this.msgListKeys.deleteMessage) // KEY_DEL
 			{
 				if (this.CanDelete() || this.CanDeleteLastMsg())
 				{
@@ -3234,7 +3234,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 				}
 			}
 			// E: Edit a message
-			else if (retvalObj.userInput == "E")
+			else if (retvalObj.userInput == this.msgListKeys.editMsg) // "E"
 			{
 				if (this.CanEdit())
 				{
@@ -3286,7 +3286,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 				this.WriteMsgListScreenTopHeader();
 			}
 			// C: Change to another message area (sub-board)
-			else if (retvalObj.userInput == "C")
+			else if (retvalObj.userInput == this.msgListKeys.chgMsgArea) // "C"
 			{
 				if (allowChgSubBoard && (this.subBoardCode != "mail"))
 				{
@@ -3340,7 +3340,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 				this.WriteMsgListScreenTopHeader();
 			}
 			// Ctrl-D: Batch delete (for selected messages)
-			else if (retvalObj.userInput == CTRL_D)
+			else if (retvalObj.userInput == this.msgListKeys.batchDelete) // CTRL_D
 			{
 				console.print("\x01n");
 				console.crlf();
@@ -3385,6 +3385,57 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 					console.clear("\x01n");
 					this.WriteMsgListScreenTopHeader();
 				}
+			}
+			// User settings
+			else if (retvalObj.userInput == this.msgListKeys.userSettings)
+			{
+				/*
+				var continueOn = true;
+				var retvalObj = null;
+				var curpos = null; // Current character position
+				var lastScreen = false;
+
+				this.RecalcMsgListWidthsAndFormatStrs();
+				if (this.tradListTopMsgIdx == -1)
+					this.SetUpTraditionalMsgListVars();
+				this.WriteMsgListScreenTopHeader();
+				*/
+				var userSettingsRetObj = this.DoUserSettings_Traditional();
+				retvalObj.userInput = "";
+				//drawMenu = userSettingsRetObj.needWholeScreenRefresh;
+				// In case the user changed their twitlist, re-filter the messages for this sub-board
+				if (userSettingsRetObj.userTwitListChanged)
+				{
+					console.gotoxy(1, console.screen_rows);
+					console.crlf();
+					console.print("\x01nTwitlist changed; re-filtering..");
+					var tmpMsgbase = new MsgBase(this.subBoardCode);
+					if (tmpMsgbase.open())
+					{
+						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
+						tmpMsgbase.close();
+						this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
+					}
+					else
+						console.print("\x01y\x01hFailed to open the messagbase!\x01\r\n\x01p");
+					this.RecalcMsgListWidthsAndFormatStrs();
+					if (this.tradListTopMsgIdx == -1)
+						this.SetUpTraditionalMsgListVars();
+					// If there are still messages in this sub-board, and the message offset is beyond the last
+					// message, then adjust the top message index as necessary.
+					if (this.hdrsForCurrentSubBoard.length > 0)
+					{
+						if (this.tradListTopMsgIdx > this.hdrsForCurrentSubBoard.length)
+							this.tradListTopMsgIdx = this.hdrsForCurrentSubBoard.length - this.tradMsgListNumLines;
+					}
+					else
+					{
+						continueOn = false;
+						retObj.selectedMsgOffset = -1;
+					}
+				}
+				if (userSettingsRetObj.needWholeScreenRefresh)
+					this.WriteMsgListScreenTopHeader();
 			}
 			else
 			{
@@ -4442,6 +4493,7 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoar
 	// the end of the message list.
 	var userInput = "";
 	var allowedKeys = "?GS"; // ? = help, G = Go to message #, S = Select message(s), Ctrl-D: Batch delete
+	allowedKeys += this.msgListKeys.userSettings;
 	if (allowChgSubBoard)
 		allowedKeys += "C"; // Change to another message area
 	if (this.CanDelete() || this.CanDeleteLastMsg())
@@ -5678,11 +5730,10 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
 						tmpMsgbase.close();
 						this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
-						// TODO: If the user is currently reading a message a message by someone who is now
+						// If the user is currently reading a message a message by someone who is now
 						// in their twit list, change the message currently being viewed.
 						if (this.MsgHdrFromOrToInUserTwitlist(msgHeader))
 						{
-							// TODO: Is this right?
 							var findNextMsgRetObj = this.ScrollableReaderNextReadableMessage(pOffset, msgInfo, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks);
 							if (findNextMsgRetObj.newMsgOffset > -1)
 							{
@@ -6654,7 +6705,57 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				*/
 				break;
 			case this.enhReaderKeys.userSettings:
-				// TODO: Finish (traditional)
+				var userSettingsRetObj = this.DoUserSettings_Traditional();
+				// In case the user changed their twitlist, re-filter the messages for this sub-board
+				if (userSettingsRetObj.userTwitListChanged)
+				{
+					console.crlf();
+					console.print("\x01nTwitlist changed; re-filtering..");
+					var tmpMsgbase = new MsgBase(this.subBoardCode);
+					if (tmpMsgbase.open())
+					{
+						continueOn = false;
+						writeMessage = false;
+						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
+						tmpMsgbase.close();
+						this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
+						// If the user is currently reading a message a message by someone who is now
+						// in their twit list, change the message currently being viewed.
+						if (this.MsgHdrFromOrToInUserTwitlist(msgHeader))
+						{
+							var newReadableMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
+							if (newReadableMsgOffset > -1)
+							{
+								retObj.newMsgOffset = newReadableMsgOffset;
+								retObj.offsetValid = true;
+								retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							}
+							else
+								retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+						}
+						else
+						{
+							// If there are still messages in this sub-board, and the message offset is beyond the last
+							// message, then show the last message in the sub-board.  Otherwise, go to the next message area.
+							if (this.hdrsForCurrentSubBoard.length > 0)
+							{
+								if (pOffset > this.hdrsForCurrentSubBoard.length)
+								{
+									//this.hdrsForCurrentSubBoard[this.hdrsForCurrentSubBoard.length-1].number
+									retObj.newMsgOffset = this.hdrsForCurrentSubBoard.length - 1;
+									retObj.offsetValid = true;
+									retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+								}
+							}
+							else
+								retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+						}
+					}
+					else
+						console.print("\x01y\x01hFailed to open the messagbase!\x01\r\n\x01p");
+					this.SetUpLightbarMsgListVars();
+					writeMessage = true;
+				}
 				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
@@ -7270,7 +7371,7 @@ function DigDistMsgReader_ListScreenfulOfMessages(pTopIndex, pMaxLines)
 
 			// Get the message header (it will be a MsgHeader object) and
 			// display it.
-			msgHeader = this.GetMsgHdrByIdx(msgIndex, this.showScoresInMsgList);
+			var msgHeader = this.GetMsgHdrByIdx(msgIndex, this.showScoresInMsgList);
 			if (msgHeader == null)
 				continue;
 
@@ -13311,7 +13412,6 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 		return retObj;
 	}
 
-	// TODO: Finish
 	/*
 	// Save the user's current settings so that we can check them later to see if any
 	// of them changed, in order to determine whether to save the user's settings file.
@@ -13327,12 +13427,6 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
 	var optBoxHeight = 10;
-	/*
-	this.msgAreaLeft = 1;
-	this.msgAreaRight = console.screen_columns - 1;
-	this.msgAreaWidth = this.msgAreaRight - this.msgAreaLeft + 1;
-	this.msgAreaHeight = this.msgAreaBottom - this.msgAreaTop + 1;
-	*/
 	var optBoxStartX = this.msgAreaLeft + Math.floor((this.msgAreaWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < this.msgAreaLeft)
 		optBoxStartX = this.msgAreaLeft;
@@ -13340,7 +13434,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 										null/*gConfigSettings*/, false, true);
 	optionBox.addInputLoopExitKey(CTRL_U);
 	// Update the bottom help text to be more specific to the user settings box
-	var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
+	var bottomBorderText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
 						  + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
 	// This one contains the page navigation keys..  Don't really need to show those,
 	// since the settings box only has one page right now:
@@ -13451,8 +13545,53 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 	return retObj;
 }
 // For the DigDistMsgReader class:  Lets the user manage their preferences/settings (traditional user interface)
+//
+// Return value: An object containing the following properties:
+//               needWholeScreenRefresh: Boolean - Whether or not the whole screen needs to be
+//                                       refreshed (i.e., when the user has edited their twitlist)
+//               optionBoxTopLeftX: The top-left screen column of the option box
+//               optionBoxTopLeftY: The top-left screen row of the option box
+//               optionBoxWidth: The width of the option box
+//               optionBoxHeight: The height of the option box
+//               userTwitListChanged: Boolean - Whether or not the user's personal twit list changed
 function DigDistMsgReader_DoUserSettings_Traditional()
 {
+	var retObj = {
+		needWholeScreenRefresh: true,
+		optionBoxTopLeftX: 1,
+		optionBoxTopLeftY: 1,
+		optionBoxWidth: 0,
+		optionBoxHeight: 0,
+		userTwitListChanged: false
+	};
+
+	console.crlf();
+	console.print("\x01n\x01c\x01hU\x01n\x01cser \x01hS\x01n\x01cettings\x01n\r\n");
+	console.print("\x01c\x01h1\x01g: \x01n\x01c\x01hP\x01n\x01cersonal \x01ht\x01n\x01cwit list\x01n\r\n");
+	var USER_TWITLIST_OPT_NUM = 1;
+	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM;
+	console.crlf();
+	console.print("\x01cYour choice (\x01hQ\x01n\x01c: Quit)\x01h: \x01g");
+	var userChoiceNum = console.getnum(HIGHEST_CHOICE_NUM);
+	console.print("\x01n");
+	var userChoiceStr = userChoiceNum.toString().toUpperCase();
+	if (userChoiceStr.length == 0 || userChoiceStr == "Q")
+		return retObj;
+
+	switch (userChoiceNum)
+	{
+		case USER_TWITLIST_OPT_NUM:
+			console.editfile(gUserTwitListFilename);
+			// Re-read the user's twitlist and see if the user's twitlist changed
+			var oldUserTwitList = this.userSettings.twitList;
+			this.userSettings.twitList = [];
+			this.ReadUserSettingsFile(true);
+			retObj.userTwitListChanged = !arraysHaveSameValues(this.userSettings.twitList, oldUserTwitList);
+			retObj.needWholeScreenRefresh = true;
+			break;
+	}
+
+	return retObj;
 }
 
 // For the DigDistMsgReader class: Starts indexed mode
