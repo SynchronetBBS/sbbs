@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.53
-                           Release date: 2022-07-18
+                                 Version 1.54
+                           Release date: 2022-08-06
 
                                      by
 
@@ -65,6 +65,11 @@ traditional user interface (which does not support scrolling).  The user
 interface style can also be toggled by the sysop in the configuration file
 in case the sysop wants the reader to use the traditional interface even for
 ANSI users.
+
+With this message reader, users can have their own personal twitlists. This
+allows users to not see messages from (or to) specified usernames.  A user can
+edit their twit list by going into their user settings (with the Ctrl-U hotkey)
+and choosing the option to edit their personal twit list.
 
 This reader effectively replaces the Digital Distortion Message Lister, which
 provided a traditional message reader interface but not the scrollable reader
@@ -133,6 +138,7 @@ confirmation before deleting the messages.
 - The program settings, colors, and some text can be changed via configuration
   files.  The configuration files may be placed in the same directory as the
   .js script or in the sbbs/ctrl directory.
+- Allows a personal twit list, editable via user settings (Ctrl-U)
 
 If a message has been marked for deletion, it will appear in the message list
 with a blinking red asterisk (*) after the message number.
