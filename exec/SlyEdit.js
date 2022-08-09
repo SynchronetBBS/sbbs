@@ -406,15 +406,16 @@ else
 		gInputFilename = newest_filename;
 }
 
+// When exiting this script, make sure to set the bbs.sys_status & ctrl key pasthru values
+// back to what they were originally
+js.on_exit("bbs.sys_status = " + bbs.sys_status);
+js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+
 // Update the user's status on the BBS
-var gOldStatus = bbs.sys_status;
 bbs.sys_status &=~SS_PAUSEON;
 bbs.sys_status |= SS_PAUSEOFF;
-var gOldPassthru = console.ctrlkey_passthru;
+// Update the ctrl key passthru to support what SlyEdit needs (only while SlyEdit is running)
 console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_";
-// Set some on-exit code to ensure that the original ctrl key passthru & system
-// status settings are restored upon script exit, even if there is a runtime error.
-js.on_exit("console.ctrlkey_passthru = gOldPassthru; bbs.sys_status = gOldStatus;");
 // Enable delete line in SyncTERM (Disabling ANSI Music in the process)
 console.write("\x1B[=1M"); // 1B (27): ESC
 console.clear();
@@ -885,10 +886,6 @@ function saveMessageToFile()
 		console.print("\x01n\x01r\x01h* Unable to save the message!\x01n\r\n");
 }
 
-
-// Set the original ctrlkey_passthru and sys_status settins back.
-console.ctrlkey_passthru = gOldPassthru;
-bbs.sys_status = gOldStatus;
 
 // Set the end-of-program status message.
 var endStatusMessage = "";
