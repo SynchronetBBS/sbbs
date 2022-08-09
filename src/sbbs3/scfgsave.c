@@ -19,6 +19,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "scfglib.h"
 #include "scfgsave.h"
 #include "load_cfg.h"
 #include "smblib.h"
@@ -285,7 +286,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 {
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
-	char	tmp[128];
+	char	tmp[INI_MAX_VALUE_LEN];
 	FILE*	fp;
 	const char* section = ROOT_SECTION;
 	smb_t	smb;
@@ -298,6 +299,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	SAFEPRINTF(path, "%smsgs.ini", cfg->ctrl_dir);
 	backup(path, backup_level, TRUE);
 
+	str_list_t ini = strListInit();
 	iniSetLongInt(&ini, "qwk", "max_msgs", cfg->max_qwkmsgs, NULL);
 	iniSetLongInt(&ini, "mail", "max_crcs", cfg->mail_maxcrcs, NULL);
 	iniSetLongInt(&ini, "mail", "max_age", cfg->mail_maxage, NULL);
@@ -320,30 +322,16 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 	/* Message Sub-boards */
 
-	backslash(cfg->echomail_dir);
-
-	str[0]=0;
-	/* Calculate and save the actual number (total) of sub-boards that will be written */
-	n = 0;
-	for(i=0; i<cfg->total_subs; i++)
-		if(cfg->sub[i]->grp < cfg->total_grps	/* total VALID sub-boards */
-			&& cfg->sub[i]->lname[0]
-			&& cfg->sub[i]->sname[0]
-			&& cfg->sub[i]->code_suffix[0])
-			n++;
-	put_int(n, NULL);
-	
-	
 	unsigned int subnum = 0;	/* New sub-board numbering (as saved) */
 	for(unsigned grp = 0; grp < cfg->total_grps; grp++) {
-		for(i=0;i<cfg->total_subs;i++) {
+		for(uint i=0; i<cfg->total_subs; i++) {
 			if(cfg->sub[i]->lname[0] == 0
 				|| cfg->sub[i]->sname[0] == 0
 				|| cfg->sub[i]->code_suffix[0] == 0)
 				continue;
 			if(cfg->sub[i]->grp != grp)
 				continue;
-			SAFEPRINTF(tmp, "sub:%s:%s"
+			SAFEPRINTF2(tmp, "sub:%s:%s"
 				,cfg->grp[grp]->sname, cfg->sub[i]->code_suffix);
 			section = tmp;
 			cfg->sub[i]->subnum = subnum++;
@@ -437,99 +425,68 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 	/* FidoNet */
 
-	put_int(cfg->total_faddrs, NULL);
-	for(i=0;i<cfg->total_faddrs;i++) {
-		put_int(cfg->faddr[i].zone, NULL);
-		put_int(cfg->faddr[i].net, NULL);
-		put_int(cfg->faddr[i].node, NULL);
-		put_int(cfg->faddr[i].point, NULL); }
+	section = "FidoNet";
+	str_list_t addr_list = strListInit();
+	for(uint i=0; i<cfg->total_faddrs; i++)
+		strListPush(&addr_list, smb_faddrtoa(&cfg->faddr[i], tmp));
+	iniSetStringList(&ini, section, "addr_list", ",", addr_list, NULL);
+	strListFree(&addr_list);
 
-	put_str(cfg->origline, NULL);
-	put_str(cfg->netmail_sem, NULL);
-	put_str(cfg->echomail_sem, NULL);
+	iniSetString(&ini, section, "default_origin", cfg->origline, NULL);
+	iniSetString(&ini, section, "netmail_sem", cfg->netmail_sem, NULL);
+	iniSetString(&ini, section, "echomail_sem", cfg->echomail_sem, NULL);
 	backslash(cfg->netmail_dir);
-	put_str(cfg->netmail_dir, NULL);
-	put_str(cfg->echomail_dir, NULL);	/* not used */
-	backslash(cfg->fidofile_dir);
-	put_str(cfg->fidofile_dir, NULL);
-	put_int(cfg->netmail_misc, NULL);
-	put_int(cfg->netmail_cost, NULL);
-	put_int(cfg->dflt_faddr, NULL);
-	n=0;
-	for(i=0;i<28;i++)
-		put_int(n, NULL);
+	iniSetString(&ini, section, "netmail_dir", cfg->netmail_dir, NULL);
+	iniSetLongInt(&ini, section, "netmail_settings", cfg->netmail_misc, NULL);
+	iniSetLongInt(&ini, section, "netmail_cost", cfg->netmail_cost, NULL);
 	md(cfg->netmail_dir);
 
 	/* QWKnet Config */
 
-	put_str(cfg->qnet_tagline, NULL);
+	iniSetString(&ini, "QWK", "default_tagline", cfg->qnet_tagline, NULL);
 
-	put_int(cfg->total_qhubs, NULL);
-	for(i=0;i<cfg->total_qhubs;i++) {
-		put_str(cfg->qhub[i]->id, NULL);
-		put_int(cfg->qhub[i]->time, NULL);
-		put_int(cfg->qhub[i]->freq, NULL);
-		put_int(cfg->qhub[i]->days, NULL);
-		put_int(cfg->qhub[i]->node, NULL);
-		put_str(cfg->qhub[i]->call, NULL);
-		put_str(cfg->qhub[i]->pack, NULL);
-		put_str(cfg->qhub[i]->unpack, NULL);
-		n = 0;
-		for(j=0;j<cfg->qhub[i]->subs;j++)
-			if(cfg->qhub[i]->sub[j] != NULL) n++;
-		put_int(n, NULL);
-		for(j=0;j<cfg->qhub[i]->subs;j++) {
+	for(uint i=0; i<cfg->total_qhubs; i++) {
+		SAFEPRINTF(tmp, "qhub:%s", cfg->qhub[i]->id);
+		section = tmp;
+		iniSetShortInt(&ini, section, "time", cfg->qhub[i]->time, NULL);
+		iniSetShortInt(&ini, section, "freq", cfg->qhub[i]->freq, NULL);
+		iniSetShortInt(&ini, section, "days", cfg->qhub[i]->days, NULL);
+		iniSetShortInt(&ini, section, "node", cfg->qhub[i]->node, NULL);
+		iniSetString(&ini, section, "call", cfg->qhub[i]->call, NULL);
+		iniSetString(&ini, section, "pack", cfg->qhub[i]->pack, NULL);
+		iniSetString(&ini, section, "unpack", cfg->qhub[i]->unpack, NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->qhub[i]->misc, NULL);
+		iniSetString(&ini, section, "format", cfg->qhub[i]->fmt, NULL);
+		for(uint j=0; j<cfg->qhub[i]->subs; j++) {
 			if(cfg->qhub[i]->sub[j] == NULL)
 				continue;
-			put_int(cfg->qhub[i]->conf[j], NULL);
-			n=(uint16_t)cfg->qhub[i]->sub[j]->subnum;
-			put_int(n, NULL);
-			put_int(cfg->qhub[i]->mode[j], NULL); 
+			int subnum = cfg->qhub[i]->sub[j]->subnum;
+			if(!is_valid_subnum(cfg, subnum))
+				continue;
+			SAFEPRINTF2(tmp, "qhubsub:%s:%u", cfg->qhub[i]->id, cfg->qhub[i]->conf[j]);
+			iniSetString(&ini, section, "sub", cfg->sub[subnum]->code, NULL);
+			iniSetLongInt(&ini, section, "settings", cfg->qhub[i]->mode[j], NULL);
 		}
-		put_int(cfg->qhub[i]->misc, NULL);
-		put_str(cfg->qhub[i]->fmt, NULL);
-		n=0;
-		for(j=0;j<28;j++)
-			put_int(n, NULL); 
 	}
-	n=0;
-	for(i=0;i<32;i++)
-		put_int(n, NULL);
 
-	/* PostLink Config */
+	section = "Internet";
+	iniSetString(&ini, section, "addr", cfg->sys_inetaddr, NULL); /* Internet address */
+	iniSetString(&ini, section, "netmail_sem", cfg->inetmail_sem, NULL);
+	iniSetLongInt(&ini, section, "settings", cfg->inetmail_misc, NULL);
+	iniSetLongInt(&ini, section, "cost", cfg->inetmail_cost, NULL);
+	iniSetString(&ini, section, "smtp_sem", cfg->smtpmail_sem, NULL);
 
-	memset(str,0,11);
-	fwrite(str,11,1, NULL);	/* unused, used to be site name */
-	put_int(cfg->sys_psnum, NULL);
+	if((fp = fopen(path, "w")) != NULL) {
+		result = iniWriteFile(fp, ini);
+		fclose(fp);
+	}
+	iniFreeStringList(ini);
 
-	put_int(cfg->total_phubs, NULL);
-	for(i=0;i<cfg->total_phubs;i++) {
-		put_str(cfg->phub[i]->name, NULL);
-		put_int(cfg->phub[i]->time, NULL);
-		put_int(cfg->phub[i]->freq, NULL);
-		put_int(cfg->phub[i]->days, NULL);
-		put_int(cfg->phub[i]->node, NULL);
-		put_str(cfg->phub[i]->call, NULL);
-		n=0;
-		for(j=0;j<32;j++)
-			put_int(n, NULL); }
-
-	put_str(cfg->sys_psname, NULL);
-	n=0;
-	for(i=0;i<32;i++)
-		put_int(n, NULL);
-
-	put_str(cfg->sys_inetaddr, NULL); /* Internet address */
-	put_str(cfg->inetmail_sem, NULL);
-	put_int(cfg->inetmail_misc, NULL);
-	put_int(cfg->inetmail_cost, NULL);
-	put_str(cfg->smtpmail_sem, NULL);
-
-	fclose(stream);
 
 	/* MUST BE AT END */
 
 	if(!no_msghdr) {
+		char dir[MAX_PATH + 1];
 		strcpy(dir,cfg->data_dir);
 		prep_dir(cfg->ctrl_dir,dir,sizeof(dir));
 		md(dir);
@@ -542,7 +499,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			smb.status.max_crcs=cfg->mail_maxcrcs;
 			smb.status.max_age=cfg->mail_maxage;
 			smb.status.attr=SMB_EMAIL;
-			i=smb_create(&smb);
+			int i=smb_create(&smb);
 			smb_close(&smb);
 			return(i==0);
 		}
@@ -572,188 +529,142 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[MAX_PATH+1],cmd[LEN_CMD+1],c;
+	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
-	int 	i,j,k,file;
-	uint16_t	n;
-	int32_t	l=0;
-	FILE	*stream;
+	char	tmp[INI_MAX_VALUE_LEN];
+	const char* section = ROOT_SECTION;
 
 	if(cfg->prepped)
-		return(FALSE);
+		return FALSE;
 
-	SAFEPRINTF(str,"%sfile.cnf",cfg->ctrl_dir);
-	backup(str, backup_level, TRUE);
+	SAFEPRINTF(path, "%sfile.ini", cfg->ctrl_dir);
+	backup(path, backup_level, TRUE);
 
-	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
-		|| (stream=fdopen(file,"wb"))==NULL) {
-		return(FALSE); 
-	}
-	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
-
-	put_int(cfg->min_dspace, NULL);
-	put_int(cfg->max_batup, NULL);
-	put_int(cfg->max_batdn, NULL);
-	put_int(cfg->max_userxfer, NULL);
-	put_int(l, NULL);					/* unused */
-	put_int(cfg->cdt_up_pct, NULL);
-	put_int(cfg->cdt_dn_pct, NULL);
-	put_int(l, NULL);					/* unused */
-	memset(cmd, 0, sizeof(cmd));
-	put_str(cmd, NULL);
-	put_int(cfg->leech_pct, NULL);
-	put_int(cfg->leech_sec, NULL);
-	put_int(cfg->file_misc, NULL);
-	put_int(cfg->filename_maxlen, NULL);
-	n=0;
-	for(i=0;i<29;i++)
-		put_int(n, NULL);
+	str_list_t ini = strListInit();
+	iniSetShortInt(&ini, section, "min_dspace", cfg->min_dspace, NULL);
+	iniSetShortInt(&ini, section, "max_batup", cfg->max_batup, NULL);
+	iniSetShortInt(&ini, section, "max_batdn", cfg->max_batdn, NULL);
+	iniSetShortInt(&ini, section, "max_userxfer" ,cfg->max_userxfer, NULL);
+	iniSetShortInt(&ini, section, "cdt_up_pct", cfg->cdt_up_pct, NULL);
+	iniSetShortInt(&ini, section, "cdt_dn_pct", cfg->cdt_dn_pct, NULL);
+	iniSetShortInt(&ini, section, "leech_cpt", cfg->leech_pct, NULL);
+	iniSetShortInt(&ini, section, "leech_sec", cfg->leech_sec, NULL);
+	iniSetLongInt(&ini, section, "settings", cfg->file_misc, NULL);
+	iniSetShortInt(&ini, section, "filename_maxlen", cfg->filename_maxlen, NULL);
 
 	/* Extractable File Types */
 
-	put_int(cfg->total_fextrs, NULL);
-	for(i=0;i<cfg->total_fextrs;i++) {
-		put_str(cfg->fextr[i]->ext, NULL);
-		put_str(cfg->fextr[i]->cmd, NULL);
-		put_str(cfg->fextr[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL); }
+	for(uint i=0; i<cfg->total_fextrs; i++) {
+		SAFEPRINTF(tmp, "extractor:%u", i);
+		section = tmp;
+		iniSetString(&ini, section, "extension", cfg->fextr[i]->ext, NULL);
+		iniSetString(&ini, section, "cmd", cfg->fextr[i]->cmd, NULL);
+		iniSetString(&ini, section, "ars", cfg->fextr[i]->arstr, NULL);
+	}
 
 	/* Compressable File Types */
 
-	put_int(cfg->total_fcomps, NULL);
-	for(i=0;i<cfg->total_fcomps;i++) {
-		put_str(cfg->fcomp[i]->ext, NULL);
-		put_str(cfg->fcomp[i]->cmd, NULL);
-		put_str(cfg->fcomp[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL); }
+	for(uint i=0; i<cfg->total_fcomps; i++) {
+		SAFEPRINTF(tmp, "compressor:%u", i);
+		section = tmp;
+		iniSetString(&ini, section, "extension", cfg->fcomp[i]->ext, NULL);
+		iniSetString(&ini, section, "cmd", cfg->fcomp[i]->cmd, NULL);
+		iniSetString(&ini, section, "ars", cfg->fcomp[i]->arstr, NULL);
+	}
 
 	/* Viewable File Types */
 
-	put_int(cfg->total_fviews, NULL);
-	for(i=0;i<cfg->total_fviews;i++) {
-		put_str(cfg->fview[i]->ext, NULL);
-		put_str(cfg->fview[i]->cmd, NULL);
-		put_str(cfg->fview[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL); }
+	for(uint i=0; i<cfg->total_fviews; i++) {
+		SAFEPRINTF(tmp, "viewer:%u", i);
+		section = tmp;
+		iniSetString(&ini, section, "extension", cfg->fview[i]->ext, NULL);
+		iniSetString(&ini, section, "cmd", cfg->fview[i]->cmd, NULL);
+		iniSetString(&ini, section, "ars", cfg->fview[i]->arstr, NULL);
+	}
 
 	/* Testable File Types */
 
-	put_int(cfg->total_ftests, NULL);
-	for(i=0;i<cfg->total_ftests;i++) {
-		put_str(cfg->ftest[i]->ext, NULL);
-		put_str(cfg->ftest[i]->cmd, NULL);
-		put_str(cfg->ftest[i]->workstr, NULL);
-		put_str(cfg->ftest[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL); }
+	for(uint i=0; i<cfg->total_ftests; i++) {
+		SAFEPRINTF(tmp, "tester:%u", i);
+		section = tmp;
+		iniSetString(&ini, section, "extension", cfg->ftest[i]->ext, NULL);
+		iniSetString(&ini, section, "cmd", cfg->ftest[i]->cmd, NULL);
+		iniSetString(&ini, section, "working", cfg->ftest[i]->workstr, NULL);
+		iniSetString(&ini, section, "ars", cfg->ftest[i]->arstr, NULL);
+	}
 
 	/* Download Events */
 
-	put_int(cfg->total_dlevents, NULL);
-	for(i=0;i<cfg->total_dlevents;i++) {
-		put_str(cfg->dlevent[i]->ext, NULL);
-		put_str(cfg->dlevent[i]->cmd, NULL);
-		put_str(cfg->dlevent[i]->workstr, NULL);
-		put_str(cfg->dlevent[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL); }
+	for(uint i=0; i<cfg->total_dlevents; i++) {
+		SAFEPRINTF(tmp, "dlevent:%u", i);
+		section = tmp;
+		iniSetString(&ini, section, "extension", cfg->dlevent[i]->ext, NULL);
+		iniSetString(&ini, section, "cmd", cfg->dlevent[i]->cmd, NULL);
+		iniSetString(&ini, section, "working", cfg->dlevent[i]->workstr, NULL);
+		iniSetString(&ini, section, "ars", cfg->dlevent[i]->arstr, NULL);
+	}
 
 	/* File Transfer Protocols */
 
-	put_int(cfg->total_prots, NULL);
-	for(i=0;i<cfg->total_prots;i++) {
-		put_int(cfg->prot[i]->mnemonic, NULL);
-		put_str(cfg->prot[i]->name, NULL);
-		put_str(cfg->prot[i]->ulcmd, NULL);
-		put_str(cfg->prot[i]->dlcmd, NULL);
-		put_str(cfg->prot[i]->batulcmd, NULL);
-		put_str(cfg->prot[i]->batdlcmd, NULL);
-		put_str(cfg->prot[i]->blindcmd, NULL);
-		put_str(cfg->prot[i]->bicmd, NULL);
-		put_int(cfg->prot[i]->misc, NULL);
-		put_str(cfg->prot[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL); }
-
-	/* Alternate File Paths */
-
-	put_int(cfg->altpaths, NULL);
-	for(i=0;i<cfg->altpaths;i++) {
-		backslash(cfg->altpath[i]);
-		fwrite(cfg->altpath[i],LEN_DIR+1,1, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL); }
+	for(uint i=0; i<cfg->total_prots; i++) {
+		char str[128];
+		SAFEPRINTF(tmp, "protocol:%u", i);
+		section = tmp;
+		SAFEPRINTF(str, "%c", cfg->prot[i]->mnemonic);
+		iniSetString(&ini, section, "key", str, NULL);
+		iniSetString(&ini, section, "name", cfg->prot[i]->name, NULL);
+		iniSetString(&ini, section, "ulcmd", cfg->prot[i]->ulcmd, NULL);
+		iniSetString(&ini, section, "dlcmd", cfg->prot[i]->dlcmd, NULL);
+		iniSetString(&ini, section, "batulcmd", cfg->prot[i]->batulcmd, NULL);
+		iniSetString(&ini, section, "batdlcmd", cfg->prot[i]->batdlcmd, NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->prot[i]->misc, NULL);
+		iniSetString(&ini, section, "ars", cfg->prot[i]->arstr, NULL);
+	}
 
 	/* File Libraries */
 
-	put_int(cfg->total_libs, NULL);
-	for(i=0;i<cfg->total_libs;i++) {
-		put_str(cfg->lib[i]->lname, NULL);
-		put_str(cfg->lib[i]->sname, NULL);
-		put_str(cfg->lib[i]->arstr, NULL);
-		put_str(cfg->lib[i]->parent_path, NULL);
-		put_str(cfg->lib[i]->code_prefix, NULL);
+	for(uint i=0; i<cfg->total_libs; i++) {
+		SAFEPRINTF(tmp, "lib:%s", cfg->lib[i]->sname);
+		section = tmp;
+		iniSetString(&ini, section, "description", cfg->lib[i]->lname, NULL);
+		iniSetString(&ini, section, "ars", cfg->lib[i]->arstr, NULL);
+		iniSetString(&ini, section, "parent_path", cfg->lib[i]->parent_path, NULL);
+		iniSetString(&ini, section, "code_prefix", cfg->lib[i]->code_prefix, NULL);
 
-		c = cfg->lib[i]->sort;
-		put_int(c, NULL);
-		put_int(cfg->lib[i]->misc, NULL);
-		c = cfg->lib[i]->vdir_name;
-		put_int(c, NULL);
-		c = 0x00;
-		put_int(c, NULL);
-
-		n=0xffff;
-		for(j=0;j<16;j++)
-			put_int(n, NULL); 
+		iniSetShortInt(&ini, section, "sort", cfg->lib[i]->sort, NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->lib[i]->misc, NULL);
+		iniSetShortInt(&ini, section, "vdir_name", cfg->lib[i]->vdir_name, NULL);
 	}
 
 	/* File Directories */
 
-	/* Calculate and save the actual number (total) of dirs that will be written */
-	n = 0;
-	for (i = 0; i < cfg->total_dirs; i++)
-		if (cfg->dir[i]->lib < cfg->total_libs	/* total VALID file dirs */
-			&& cfg->dir[i]->lname[0]
-			&& cfg->dir[i]->sname[0]
-			&& cfg->dir[i]->code_suffix[0])
-			n++;
-	put_int(n, NULL);
 	unsigned int dirnum = 0;	/* New directory numbering (as saved) */
-	for (j = 0; j < cfg->total_libs; j++) {
-		for (i = 0; i < cfg->total_dirs; i++) {
+	for (uint j = 0; j < cfg->total_libs; j++) {
+		for (uint i = 0; i < cfg->total_dirs; i++) {
 			if (cfg->dir[i]->lname[0] == 0
 				|| cfg->dir[i]->sname[0] == 0
 				|| cfg->dir[i]->code_suffix[0] == 0)
 				continue;
 			if (cfg->dir[i]->lib == j) {
 				cfg->dir[i]->dirnum = dirnum++;
-				put_int(cfg->dir[i]->lib, NULL);
-				put_str(cfg->dir[i]->lname, NULL);
-				put_str(cfg->dir[i]->sname, NULL);
-				put_str(cfg->dir[i]->code_suffix, NULL);
+				SAFEPRINTF2(tmp, "lib:%s:%s"
+					,cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
+				section = tmp;
+				iniSetString(&ini, section, "description", cfg->dir[i]->lname, NULL);
+				iniSetString(&ini, section, "name", cfg->dir[i]->sname, NULL);
 
 				if (cfg->dir[i]->data_dir[0]) {
 					backslash(cfg->dir[i]->data_dir);
 					md(cfg->dir[i]->data_dir);
 				}
 
-				put_str(cfg->dir[i]->data_dir, NULL);
-				put_str(cfg->dir[i]->arstr, NULL);
-				put_str(cfg->dir[i]->ul_arstr, NULL);
-				put_str(cfg->dir[i]->dl_arstr, NULL);
-				put_str(cfg->dir[i]->op_arstr, NULL);
+				iniSetString(&ini, section, "data_dir", cfg->dir[i]->data_dir, NULL);
+				iniSetString(&ini, section, "ars", cfg->dir[i]->arstr, NULL);
+				iniSetString(&ini, section, "upload_ars", cfg->dir[i]->ul_arstr, NULL);
+				iniSetString(&ini, section, "download_ars", cfg->dir[i]->dl_arstr, NULL);
+				iniSetString(&ini, section, "operator_ars", cfg->dir[i]->op_arstr, NULL);
 				backslash(cfg->dir[i]->path);
-				put_str(cfg->dir[i]->path, NULL);
+				iniSetString(&ini, section, "path", cfg->dir[i]->path, NULL);
 
 				if (cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path, cfg->dir[i]->path);
@@ -766,6 +677,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 					if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
 						prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, path, sizeof(path));
 					else {
+						char str[MAX_PATH + 1];
 						if(cfg->dir[i]->data_dir[0])
 							SAFECOPY(str, cfg->dir[i]->data_dir);
 						else
@@ -775,45 +687,44 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 					(void)mkpath(path);
 				}
 
-				put_str(cfg->dir[i]->upload_sem, NULL);
-				put_int(cfg->dir[i]->maxfiles, NULL);
-				put_str(cfg->dir[i]->exts, NULL);
-				put_int(cfg->dir[i]->misc, NULL);
-				put_int(cfg->dir[i]->seqdev, NULL);
-				put_int(cfg->dir[i]->sort, NULL);
-				put_str(cfg->dir[i]->ex_arstr, NULL);
-				put_int(cfg->dir[i]->maxage, NULL);
-				put_int(cfg->dir[i]->up_pct, NULL);
-				put_int(cfg->dir[i]->dn_pct, NULL);
-				put_str(cfg->dir[i]->area_tag, NULL);
-				n = 0xffff;
-				for (k = 0; k < 4; k++)
-					put_int(n, NULL);
+				iniSetString(&ini, section, "upload_sem", cfg->dir[i]->upload_sem, NULL);
+				iniSetShortInt(&ini, section, "maxfiles", cfg->dir[i]->maxfiles, NULL);
+				iniSetString(&ini, section, "extensions", cfg->dir[i]->exts, NULL);
+				iniSetLongInt(&ini, section, "settings", cfg->dir[i]->misc, NULL);
+				iniSetShortInt(&ini, section, "seqdev", cfg->dir[i]->seqdev, NULL);
+				iniSetShortInt(&ini, section, "sort", cfg->dir[i]->sort, NULL);
+				iniSetString(&ini, section, "exempt_ars", cfg->dir[i]->ex_arstr, NULL);
+				iniSetShortInt(&ini, section, "maxage", cfg->dir[i]->maxage, NULL);
+				iniSetShortInt(&ini, section, "up_pct", cfg->dir[i]->up_pct, NULL);
+				iniSetShortInt(&ini, section, "dn_pct", cfg->dir[i]->dn_pct, NULL);
+				iniSetString(&ini, section, "area_tag", cfg->dir[i]->area_tag, NULL);
 			}
 		}
 	}
 
 	/* Text File Sections */
 
-	put_int(cfg->total_txtsecs, NULL);
-	for(i=0;i<cfg->total_txtsecs;i++) {
+	for(uint i=0; i<cfg->total_txtsecs; i++) {
+		char str[LEN_CODE + 1];
 #if 1
 		SAFECOPY(str,cfg->txtsec[i]->code);
 		strlwr(str);
 		safe_snprintf(path,sizeof(path),"%stext/%s",cfg->data_dir,str);
 		md(path);
 #endif
-		put_str(cfg->txtsec[i]->name, NULL);
-		put_str(cfg->txtsec[i]->code, NULL);
-		put_str(cfg->txtsec[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL); 
+		SAFEPRINTF(tmp, "text:%s", cfg->txtsec[i]->code);
+		iniSetString(&ini, section, "name", cfg->txtsec[i]->name, NULL);
+		iniSetString(&ini, section, "ars", cfg->txtsec[i]->arstr, NULL);
 	}
 
-	fclose(stream);
+	FILE* fp = fopen(path, "w");
+	if(fp != NULL) {
+		result = iniWriteFile(fp, ini);
+		fclose(fp);
+	}
+	iniFreeStringList(ini);
 
-	return(TRUE);
+	return result;
 }
 
 
@@ -822,6 +733,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 {
+#if 0
 	char	str[MAX_PATH+1];
 	int 	i,j,file;
 	uint16_t	n;
@@ -841,9 +753,9 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 
 	put_int(cfg->total_gurus, NULL);
 	for(i=0;i<cfg->total_gurus;i++) {
-		put_str(cfg->guru[i]->name, NULL);
-		put_str(cfg->guru[i]->code, NULL);
-		put_str(cfg->guru[i]->arstr, NULL);
+		iniSetString(&ini, section, "cfg->guru[i]->name, NULL);
+		iniSetString(&ini, section, "cfg->guru[i]->code, NULL);
+		iniSetString(&ini, section, "cfg->guru[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
 			put_int(n, NULL);
@@ -851,13 +763,13 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 
 	put_int(cfg->total_actsets, NULL);
 	for(i=0;i<cfg->total_actsets;i++)
-		put_str(cfg->actset[i]->name, NULL);
+		iniSetString(&ini, section, "cfg->actset[i]->name, NULL);
 
 	put_int(cfg->total_chatacts, NULL);
 	for(i=0;i<cfg->total_chatacts;i++) {
 		put_int(cfg->chatact[i]->actset, NULL);
-		put_str(cfg->chatact[i]->cmd, NULL);
-		put_str(cfg->chatact[i]->out, NULL);
+		iniSetString(&ini, section, "cfg->chatact[i]->cmd, NULL);
+		iniSetString(&ini, section, "cfg->chatact[i]->out, NULL);
 		n=0;
 		for(j=0;j<8;j++)
 			put_int(n, NULL);
@@ -866,9 +778,9 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->total_chans, NULL);
 	for(i=0;i<cfg->total_chans;i++) {
 		put_int(cfg->chan[i]->actset, NULL);
-		put_str(cfg->chan[i]->name, NULL);
-		put_str(cfg->chan[i]->code, NULL);
-		put_str(cfg->chan[i]->arstr, NULL);
+		iniSetString(&ini, section, "cfg->chan[i]->name, NULL);
+		iniSetString(&ini, section, "cfg->chan[i]->code, NULL);
+		iniSetString(&ini, section, "cfg->chan[i]->arstr, NULL);
 		put_int(cfg->chan[i]->cost, NULL);
 		put_int(cfg->chan[i]->guru, NULL);
 		put_int(cfg->chan[i]->misc, NULL);
@@ -879,8 +791,8 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 
 	put_int(cfg->total_pages, NULL);
 	for(i=0;i<cfg->total_pages;i++) {
-		put_str(cfg->page[i]->cmd, NULL);
-		put_str(cfg->page[i]->arstr, NULL);
+		iniSetString(&ini, section, "cfg->page[i]->cmd, NULL);
+		iniSetString(&ini, section, "cfg->page[i]->arstr, NULL);
 		put_int(cfg->page[i]->misc, NULL);
 		n=0;
 		for(j=0;j<8;j++)
@@ -888,7 +800,7 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 		}
 
 	fclose(stream);
-
+#endif
 	return(TRUE);
 }
 
@@ -897,6 +809,7 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 {
+#if 0
 	char	str[MAX_PATH+1];
 	uchar	c;
 	int 	i,j,sec,file;
@@ -917,16 +830,16 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 
 	put_int(cfg->total_swaps, NULL);
 	for(i=0;i<cfg->total_swaps;i++)
-		put_str(cfg->swap[i]->cmd, NULL);
+		iniSetString(&ini, section, "cfg->swap[i]->cmd, NULL);
 
 	put_int(cfg->total_xedits, NULL);
 	for(i=0;i<cfg->total_xedits;i++) {
-		put_str(cfg->xedit[i]->name, NULL);
-		put_str(cfg->xedit[i]->code, NULL);
-		put_str(cfg->xedit[i]->lcmd, NULL);
-		put_str(cfg->xedit[i]->rcmd, NULL);
+		iniSetString(&ini, section, "cfg->xedit[i]->name, NULL);
+		iniSetString(&ini, section, "cfg->xedit[i]->code, NULL);
+		iniSetString(&ini, section, "cfg->xedit[i]->lcmd, NULL);
+		iniSetString(&ini, section, "cfg->xedit[i]->rcmd, NULL);
 		put_int(cfg->xedit[i]->misc, NULL);
-		put_str(cfg->xedit[i]->arstr, NULL);
+		iniSetString(&ini, section, "cfg->xedit[i]->arstr, NULL);
 		put_int(cfg->xedit[i]->type, NULL);
 		c = cfg->xedit[i]->soft_cr;
 		put_int(c, NULL);
@@ -938,9 +851,9 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 
 	put_int(cfg->total_xtrnsecs, NULL);
 	for(i=0;i<cfg->total_xtrnsecs;i++) {
-		put_str(cfg->xtrnsec[i]->name, NULL);
-		put_str(cfg->xtrnsec[i]->code, NULL);
-		put_str(cfg->xtrnsec[i]->arstr, NULL);
+		iniSetString(&ini, section, "cfg->xtrnsec[i]->name, NULL);
+		iniSetString(&ini, section, "cfg->xtrnsec[i]->code, NULL);
+		iniSetString(&ini, section, "cfg->xtrnsec[i]->arstr, NULL);
 		n=0;
 		for(j=0;j<8;j++)
 			put_int(n, NULL);
@@ -962,17 +875,17 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 			if(cfg->xtrn[i]->sec!=sec)
 				continue;
 			put_int(cfg->xtrn[i]->sec, NULL);
-			put_str(cfg->xtrn[i]->name, NULL);
-			put_str(cfg->xtrn[i]->code, NULL);
-			put_str(cfg->xtrn[i]->arstr, NULL);
-			put_str(cfg->xtrn[i]->run_arstr, NULL);
+			iniSetString(&ini, section, "cfg->xtrn[i]->name, NULL);
+			iniSetString(&ini, section, "cfg->xtrn[i]->code, NULL);
+			iniSetString(&ini, section, "cfg->xtrn[i]->arstr, NULL);
+			iniSetString(&ini, section, "cfg->xtrn[i]->run_arstr, NULL);
 			put_int(cfg->xtrn[i]->type, NULL);
 			put_int(cfg->xtrn[i]->misc, NULL);
 			put_int(cfg->xtrn[i]->event, NULL);
 			put_int(cfg->xtrn[i]->cost, NULL);
-			put_str(cfg->xtrn[i]->cmd, NULL);
-			put_str(cfg->xtrn[i]->clean, NULL);
-			put_str(cfg->xtrn[i]->path, NULL);
+			iniSetString(&ini, section, "cfg->xtrn[i]->cmd, NULL);
+			iniSetString(&ini, section, "cfg->xtrn[i]->clean, NULL);
+			iniSetString(&ini, section, "cfg->xtrn[i]->path, NULL);
 			put_int(cfg->xtrn[i]->textra, NULL);
 			put_int(cfg->xtrn[i]->maxtime, NULL);
 			n=0;
@@ -982,13 +895,13 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 
 	put_int(cfg->total_events, NULL);
 	for(i=0;i<cfg->total_events;i++) {
-		put_str(cfg->event[i]->code, NULL);
-		put_str(cfg->event[i]->cmd, NULL);
+		iniSetString(&ini, section, "cfg->event[i]->code, NULL);
+		iniSetString(&ini, section, "cfg->event[i]->cmd, NULL);
 		put_int(cfg->event[i]->days, NULL);
 		put_int(cfg->event[i]->time, NULL);
 		put_int(cfg->event[i]->node, NULL);
 		put_int(cfg->event[i]->misc, NULL);
-		put_str(cfg->event[i]->dir, NULL);
+		iniSetString(&ini, section, "cfg->event[i]->dir, NULL);
 		put_int(cfg->event[i]->freq, NULL);
 		put_int(cfg->event[i]->mdays, NULL);
 		put_int(cfg->event[i]->months, NULL);
@@ -1002,21 +915,21 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 
 	put_int(cfg->total_natvpgms, NULL);
 	for(i=0;i<cfg->total_natvpgms;i++)
-		put_str(cfg->natvpgm[i]->name, NULL);
+		iniSetString(&ini, section, "cfg->natvpgm[i]->name, NULL);
 	for(i=0;i<cfg->total_natvpgms;i++)
 		put_int(cfg->natvpgm[i]->misc, NULL);
 
 	put_int(cfg->total_hotkeys, NULL);
 	for(i=0;i<cfg->total_hotkeys;i++) {
 		put_int(cfg->hotkey[i]->key, NULL);
-		put_str(cfg->hotkey[i]->cmd, NULL);
+		iniSetString(&ini, section, "cfg->hotkey[i]->cmd, NULL);
 		n=0;
 		for(j=0;j<8;j++)
 			put_int(n, NULL);
 		}
 
 	fclose(stream);
-
+#endif
 	return(TRUE);
 }
 
