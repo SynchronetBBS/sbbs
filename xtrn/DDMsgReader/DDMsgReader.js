@@ -513,6 +513,8 @@ if (gDoDDMR)
 	// Write the user's default twitlist if it doesn't already exist
 	writeDefaultUserTwitListIfNotExist();
 
+	// When exiting this script, make sure to set the ctrl key pasthru back to what it was originally
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	// Set a control key pass-thru so we can capture certain control keys that we normally wouldn't be able to
 	var gOldCtrlKeyPassthru = console.ctrlkey_passthru; // Backup to be restored later
 	console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_";
@@ -644,9 +646,6 @@ if (gDoDDMR)
 	console.print("\x01n");
 	if (console.term_supports(USER_ANSI))
 		console.print("\x01B[0m"); // ESC[0m
-
-	// Set the original control key passthru back into the console object
-	console.ctrlkey_passthru = gOldCtrlKeyPassthru;
 }
 
 // End of script execution.  Functions below:
