@@ -472,7 +472,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->netmail_sem, iniGetString(ini, section, "netmail_sem", "", value));
 	SAFECOPY(cfg->echomail_sem, iniGetString(ini, section, "echomail_sem", "", value));
 	SAFECOPY(cfg->netmail_dir, iniGetString(ini, section, "netmail_dir", "", value));
-	SAFECOPY(cfg->echomail_dir, iniGetString(ini, section, "echomail_dir", "", value));
 	SAFECOPY(cfg->fidofile_dir, iniGetString(ini, section, "file_dir", "", value));
 	cfg->netmail_misc = iniGetLongInt(ini, section, "netmail_settings", 0);
 	cfg->netmail_cost = iniGetLongInt(ini, section, "netmail_cost", 0);
@@ -497,10 +496,10 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		memset(cfg->qhub[i],0,sizeof(qhub_t));
 
 		SAFECOPY(cfg->qhub[i]->id, section + 5);
-		cfg->qhub[i]->time = iniGetInteger(ini, section, "time", 0);
-		cfg->qhub[i]->freq = iniGetInteger(ini, section, "freq", 0);
-		cfg->qhub[i]->days = iniGetInteger(ini, section, "days", 0);
-		cfg->qhub[i]->node = iniGetInteger(ini, section, "node", 0);
+		cfg->qhub[i]->time = iniGetShortInt(ini, section, "time", 0);
+		cfg->qhub[i]->freq = iniGetShortInt(ini, section, "freq", 0);
+		cfg->qhub[i]->days = iniGetShortInt(ini, section, "days", 0);
+		cfg->qhub[i]->node = iniGetShortInt(ini, section, "node", 0);
 		SAFECOPY(cfg->qhub[i]->call, iniGetString(ini, section, "call", "", value));
 		SAFECOPY(cfg->qhub[i]->pack, iniGetString(ini, section, "pack", "", value));
 		SAFECOPY(cfg->qhub[i]->unpack, iniGetString(ini, section, "unpack", "", value));
