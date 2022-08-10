@@ -28,15 +28,6 @@
 
 BOOL no_msghdr=FALSE,all_msghdr=FALSE;
 
-static char nulbuf[256]={0};
-static int  pslen;
-#define put_int(var,stream) fwrite(&var,1,sizeof(var),stream)
-#define put_str(var,stream) { pslen=strlen(var); \
-							fwrite(var,1,pslen > sizeof(var) \
-								? sizeof(var) : pslen ,stream); \
-							fwrite(nulbuf,1,pslen > sizeof(var) \
-								? 0 : sizeof(var)-pslen,stream); }
-
 /****************************************************************************/
 /****************************************************************************/
 BOOL save_cfg(scfg_t* cfg, int backup_level)
@@ -376,7 +367,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 					,cfg->grp[cfg->sub[i]->grp]->code_prefix
 					,cfg->sub[i]->code_suffix);
 				strlwr(path);
-				strcat(smb.file,path);
+				SAFECAT(smb.file,path);
 				if(smb_open(&smb) != SMB_SUCCESS) {
 					result = FALSE;
 					continue;
@@ -487,7 +478,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 	if(!no_msghdr) {
 		char dir[MAX_PATH + 1];
-		strcpy(dir,cfg->data_dir);
+		SAFECOPY(dir, cfg->data_dir);
 		prep_dir(cfg->ctrl_dir,dir,sizeof(dir));
 		md(dir);
 		SAFEPRINTF(smb.file,"%smail",dir);
@@ -501,7 +492,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			smb.status.attr=SMB_EMAIL;
 			int i=smb_create(&smb);
 			smb_close(&smb);
-			return(i==0);
+			return(i == SMB_SUCCESS);
 		}
 		if(smb_locksmbhdr(&smb)!=0) {
 			smb_close(&smb);
@@ -728,80 +719,60 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 }
 
 
-
 /****************************************************************************/
 /****************************************************************************/
 BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 {
-#if 0
-	char	str[MAX_PATH+1];
-	int 	i,j,file;
-	uint16_t	n;
-	FILE	*stream;
+	BOOL	result = FALSE;
+	char	path[MAX_PATH+1];
+	char	section[INI_MAX_VALUE_LEN];
 
 	if(cfg->prepped)
-		return(FALSE);
+		return FALSE;
 
-	SAFEPRINTF(str,"%schat.cnf",cfg->ctrl_dir);
-	backup(str, backup_level, TRUE);
+	SAFEPRINTF(path, "%schat.ini", cfg->ctrl_dir);
+	backup(path, backup_level, TRUE);
 
-	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
-		|| (stream=fdopen(file,"wb"))==NULL) {
-		return(FALSE); 
+	str_list_t ini = strListInit();
+	for(uint i=0; i<cfg->total_gurus; i++) {
+		SAFEPRINTF(section, "guru:%s", cfg->guru[i]->code);
+		iniSetString(&ini, section, "name", cfg->guru[i]->name, NULL);
+		iniSetString(&ini, section, "ars", cfg->guru[i]->arstr, NULL);
 	}
-	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
-	put_int(cfg->total_gurus, NULL);
-	for(i=0;i<cfg->total_gurus;i++) {
-		iniSetString(&ini, section, "cfg->guru[i]->name, NULL);
-		iniSetString(&ini, section, "cfg->guru[i]->code, NULL);
-		iniSetString(&ini, section, "cfg->guru[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL);
+	for(uint i=0; i<cfg->total_actsets; i++) {
+		SAFEPRINTF(section, "actions:%s", cfg->actset[i]->name);
+		for(uint j=0; j<cfg->total_chatacts; j++) {
+			if(cfg->chatact[j]->actset == i)
+				iniSetString(&ini, section, cfg->chatact[j]->cmd, cfg->chatact[j]->out, NULL);
 		}
+	}
 
-	put_int(cfg->total_actsets, NULL);
-	for(i=0;i<cfg->total_actsets;i++)
-		iniSetString(&ini, section, "cfg->actset[i]->name, NULL);
+	for(uint i=0; i<cfg->total_chans; i++) {
+		SAFEPRINTF(section, "chan:%s", cfg->chan[i]->code);
+		iniSetString(&ini, section, "actions", cfg->actset[cfg->chan[i]->actset]->name, NULL);
+		iniSetString(&ini, section, "name", cfg->chan[i]->name, NULL);
+		iniSetString(&ini, section, "ars", cfg->chan[i]->arstr, NULL);
+		iniSetLongInt(&ini, section, "cost", cfg->chan[i]->cost, NULL);
+		iniSetString(&ini, section, "guru", cfg->guru[cfg->chan[i]->guru]->code, NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->chan[i]->misc, NULL);
+	}
 
-	put_int(cfg->total_chatacts, NULL);
-	for(i=0;i<cfg->total_chatacts;i++) {
-		put_int(cfg->chatact[i]->actset, NULL);
-		iniSetString(&ini, section, "cfg->chatact[i]->cmd, NULL);
-		iniSetString(&ini, section, "cfg->chatact[i]->out, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL);
-		}
+	for(uint i=0; i<cfg->total_pages; i++) {
+		SAFEPRINTF(section, "pager:%u", i);
+		iniSetString(&ini, section, "cmd", cfg->page[i]->cmd, NULL);
+		iniSetString(&ini, section, "ars", cfg->page[i]->arstr, NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->page[i]->misc, NULL);
+	}
 
-	put_int(cfg->total_chans, NULL);
-	for(i=0;i<cfg->total_chans;i++) {
-		put_int(cfg->chan[i]->actset, NULL);
-		iniSetString(&ini, section, "cfg->chan[i]->name, NULL);
-		iniSetString(&ini, section, "cfg->chan[i]->code, NULL);
-		iniSetString(&ini, section, "cfg->chan[i]->arstr, NULL);
-		put_int(cfg->chan[i]->cost, NULL);
-		put_int(cfg->chan[i]->guru, NULL);
-		put_int(cfg->chan[i]->misc, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL);
-		}
+	FILE* fp = fopen(path, "w");
+	if(fp != NULL) {
+		result = iniWriteFile(fp, ini);
+		fclose(fp);
+	}
+	iniFreeStringList(ini);
 
-	put_int(cfg->total_pages, NULL);
-	for(i=0;i<cfg->total_pages;i++) {
-		iniSetString(&ini, section, "cfg->page[i]->cmd, NULL);
-		iniSetString(&ini, section, "cfg->page[i]->arstr, NULL);
-		put_int(cfg->page[i]->misc, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL);
-		}
-
-	fclose(stream);
-#endif
-	return(TRUE);
+	return result;
 }
 
 
@@ -809,128 +780,89 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 {
-#if 0
-	char	str[MAX_PATH+1];
-	uchar	c;
-	int 	i,j,sec,file;
-	uint16_t	n;
-	FILE	*stream;
+	BOOL	result = FALSE;
+	char	path[MAX_PATH+1];
+	char	section[INI_MAX_VALUE_LEN];
 
 	if(cfg->prepped)
-		return(FALSE);
+		return FALSE;
 
-	sprintf(str,"%sxtrn.cnf",cfg->ctrl_dir);
-	backup(str, backup_level, TRUE);
+	SAFEPRINTF(path, "%sxtrn.ini", cfg->ctrl_dir);
+	backup(path, backup_level, TRUE);
 
-	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
-		|| (stream=fdopen(file,"wb"))==NULL) {
-		return(FALSE); 
+	str_list_t ini = strListInit();
+	for(uint i=0; i<cfg->total_xedits; i++) {
+		SAFEPRINTF(section, "editor:%s", cfg->xedit[i]->code);
+		iniSetString(&ini, section, "name", cfg->xedit[i]->name, NULL);
+		iniSetString(&ini, section, "cmd", cfg->xedit[i]->rcmd, NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->xedit[i]->misc, NULL);
+		iniSetString(&ini, section, "ars", cfg->xedit[i]->arstr, NULL);
+		iniSetShortInt(&ini, section, "type", cfg->xedit[i]->type, NULL);
+		iniSetShortInt(&ini, section, "soft_cr", cfg->xedit[i]->soft_cr, NULL);
+		iniSetShortInt(&ini, section, "quotewrap_cols", cfg->xedit[i]->quotewrap_cols, NULL);
 	}
-	setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 
-	put_int(cfg->total_swaps, NULL);
-	for(i=0;i<cfg->total_swaps;i++)
-		iniSetString(&ini, section, "cfg->swap[i]->cmd, NULL);
+	for(uint i=0; i<cfg->total_xtrnsecs; i++) {
+		SAFEPRINTF(section, "sec:%s", cfg->xtrnsec[i]->code);
+		iniSetString(&ini, section, "name", cfg->xtrnsec[i]->name, NULL);
+		iniSetString(&ini, section, "ars", cfg->xtrnsec[i]->arstr, NULL);
+	}
 
-	put_int(cfg->total_xedits, NULL);
-	for(i=0;i<cfg->total_xedits;i++) {
-		iniSetString(&ini, section, "cfg->xedit[i]->name, NULL);
-		iniSetString(&ini, section, "cfg->xedit[i]->code, NULL);
-		iniSetString(&ini, section, "cfg->xedit[i]->lcmd, NULL);
-		iniSetString(&ini, section, "cfg->xedit[i]->rcmd, NULL);
-		put_int(cfg->xedit[i]->misc, NULL);
-		iniSetString(&ini, section, "cfg->xedit[i]->arstr, NULL);
-		put_int(cfg->xedit[i]->type, NULL);
-		c = cfg->xedit[i]->soft_cr;
-		put_int(c, NULL);
-		n=0;
-		put_int(cfg->xedit[i]->quotewrap_cols, NULL);
-		for(j=0;j<6;j++)
-			put_int(n, NULL);
-		}
-
-	put_int(cfg->total_xtrnsecs, NULL);
-	for(i=0;i<cfg->total_xtrnsecs;i++) {
-		iniSetString(&ini, section, "cfg->xtrnsec[i]->name, NULL);
-		iniSetString(&ini, section, "cfg->xtrnsec[i]->code, NULL);
-		iniSetString(&ini, section, "cfg->xtrnsec[i]->arstr, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL);
-		}
-
-	/* Calculate and save the actual number (total) of xtrn programs that will be written */
-	n = 0;
-	for (i = 0; i < cfg->total_xtrns; i++)
-		if (cfg->xtrn[i]->sec < cfg->total_xtrnsecs	/* Total VALID xtrn progs */
-			&& cfg->xtrn[i]->name[0]
-			&& cfg->xtrn[i]->code[0])
-			n++;
-	put_int(n, NULL);
-	for(sec=0;sec<cfg->total_xtrnsecs;sec++)
-		for(i=0;i<cfg->total_xtrns;i++) {
+	for(uint sec=0; sec<cfg->total_xtrnsecs; sec++) {
+		for(uint i=0; i<cfg->total_xtrns; i++) {
 			if(cfg->xtrn[i]->name[0] == 0
 				|| cfg->xtrn[i]->code[0] == 0)
 				continue;
 			if(cfg->xtrn[i]->sec!=sec)
 				continue;
-			put_int(cfg->xtrn[i]->sec, NULL);
-			iniSetString(&ini, section, "cfg->xtrn[i]->name, NULL);
-			iniSetString(&ini, section, "cfg->xtrn[i]->code, NULL);
-			iniSetString(&ini, section, "cfg->xtrn[i]->arstr, NULL);
-			iniSetString(&ini, section, "cfg->xtrn[i]->run_arstr, NULL);
-			put_int(cfg->xtrn[i]->type, NULL);
-			put_int(cfg->xtrn[i]->misc, NULL);
-			put_int(cfg->xtrn[i]->event, NULL);
-			put_int(cfg->xtrn[i]->cost, NULL);
-			iniSetString(&ini, section, "cfg->xtrn[i]->cmd, NULL);
-			iniSetString(&ini, section, "cfg->xtrn[i]->clean, NULL);
-			iniSetString(&ini, section, "cfg->xtrn[i]->path, NULL);
-			put_int(cfg->xtrn[i]->textra, NULL);
-			put_int(cfg->xtrn[i]->maxtime, NULL);
-			n=0;
-			for(j=0;j<7;j++)
-				put_int(n, NULL);
-			}
-
-	put_int(cfg->total_events, NULL);
-	for(i=0;i<cfg->total_events;i++) {
-		iniSetString(&ini, section, "cfg->event[i]->code, NULL);
-		iniSetString(&ini, section, "cfg->event[i]->cmd, NULL);
-		put_int(cfg->event[i]->days, NULL);
-		put_int(cfg->event[i]->time, NULL);
-		put_int(cfg->event[i]->node, NULL);
-		put_int(cfg->event[i]->misc, NULL);
-		iniSetString(&ini, section, "cfg->event[i]->dir, NULL);
-		put_int(cfg->event[i]->freq, NULL);
-		put_int(cfg->event[i]->mdays, NULL);
-		put_int(cfg->event[i]->months, NULL);
-		put_int(cfg->event[i]->errlevel, NULL);
-		c=0;
-		put_int(c, NULL);
-		n=0;
-		for(j=0;j<3;j++)
-			put_int(n, NULL);
+			SAFEPRINTF2(section, "prog:%s:%s", cfg->xtrnsec[sec]->code, cfg->xtrn[i]->code);
+			iniSetString(&ini, section, "name", cfg->xtrn[i]->name, NULL);
+			iniSetString(&ini, section, "ars", cfg->xtrn[i]->arstr, NULL);
+			iniSetString(&ini, section, "run_ars", cfg->xtrn[i]->run_arstr, NULL);
+			iniSetShortInt(&ini, section, "type", cfg->xtrn[i]->type, NULL);
+			iniSetLongInt(&ini, section, "settings", cfg->xtrn[i]->misc, NULL);
+			iniSetShortInt(&ini, section, "event", cfg->xtrn[i]->event, NULL);
+			iniSetLongInt(&ini, section, "cost", cfg->xtrn[i]->cost, NULL);
+			iniSetString(&ini, section, "cmd", cfg->xtrn[i]->cmd, NULL);
+			iniSetString(&ini, section, "clean_cmd", cfg->xtrn[i]->clean, NULL);
+			iniSetString(&ini, section, "startup_dir", cfg->xtrn[i]->path, NULL);
+			iniSetShortInt(&ini, section, "textra", cfg->xtrn[i]->textra, NULL);
+			iniSetShortInt(&ini, section, "max_time", cfg->xtrn[i]->maxtime, NULL);
 		}
+	}
 
-	put_int(cfg->total_natvpgms, NULL);
-	for(i=0;i<cfg->total_natvpgms;i++)
-		iniSetString(&ini, section, "cfg->natvpgm[i]->name, NULL);
-	for(i=0;i<cfg->total_natvpgms;i++)
-		put_int(cfg->natvpgm[i]->misc, NULL);
+	for(uint i=0; i<cfg->total_events; i++) {
+		SAFEPRINTF(section, "event:%s", cfg->event[i]->code);
+		iniSetString(&ini, section, "cmd", cfg->event[i]->cmd, NULL);
+		iniSetShortInt(&ini, section, "days", cfg->event[i]->days, NULL);
+		iniSetShortInt(&ini, section, "time", cfg->event[i]->time, NULL);
+		iniSetShortInt(&ini, section, "node", cfg->event[i]->node, NULL);
+		iniSetLongInt(&ini, section, "settings", cfg->event[i]->misc, NULL);
+		iniSetString(&ini, section, "startup_dir", cfg->event[i]->dir, NULL);
+		iniSetShortInt(&ini, section, "freq", cfg->event[i]->freq, NULL);
+		iniSetShortInt(&ini, section, "mdays", cfg->event[i]->mdays, NULL);
+		iniSetShortInt(&ini, section, "months", cfg->event[i]->months, NULL);
+		iniSetShortInt(&ini, section, "errlevel", cfg->event[i]->errlevel, NULL);
+	}
 
-	put_int(cfg->total_hotkeys, NULL);
-	for(i=0;i<cfg->total_hotkeys;i++) {
-		put_int(cfg->hotkey[i]->key, NULL);
-		iniSetString(&ini, section, "cfg->hotkey[i]->cmd, NULL);
-		n=0;
-		for(j=0;j<8;j++)
-			put_int(n, NULL);
-		}
+	for(uint i=0; i<cfg->total_natvpgms; i++) {
+		SAFEPRINTF(section, "native:%s", cfg->natvpgm[i]->name);
+		iniAddSection(&ini, section, NULL);
+	}
 
-	fclose(stream);
-#endif
-	return(TRUE);
+	for(uint i=0; i<cfg->total_hotkeys; i++) {
+		SAFEPRINTF(section, "hotkey:%c", cfg->hotkey[i]->key);
+		iniSetString(&ini, section, "cmd", cfg->hotkey[i]->cmd, NULL);
+	}
+
+	FILE* fp = fopen(path, "w");
+	if(fp != NULL) {
+		result = iniWriteFile(fp, ini);
+		fclose(fp);
+	}
+	iniFreeStringList(ini);
+
+	return result;
 }
 
 void refresh_cfg(scfg_t* cfg)
