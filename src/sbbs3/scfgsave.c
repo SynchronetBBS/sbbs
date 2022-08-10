@@ -638,7 +638,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			if (cfg->dir[i]->lib == j) {
 				cfg->dir[i]->dirnum = dirnum++;
-				SAFEPRINTF2(tmp, "lib:%s:%s"
+				SAFEPRINTF2(tmp, "dir:%s:%s"
 					,cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
 				section = tmp;
 				iniSetString(&ini, section, "description", cfg->dir[i]->lname, NULL);
@@ -708,6 +708,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 		iniSetString(&ini, section, "ars", cfg->txtsec[i]->arstr, NULL);
 	}
 
+	SAFEPRINTF(path, "%sfile.ini", cfg->ctrl_dir);
 	FILE* fp = fopen(path, "w");
 	if(fp != NULL) {
 		result = iniWriteFile(fp, ini);

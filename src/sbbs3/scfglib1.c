@@ -160,7 +160,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	SAFECOPY(cfg->new_genders, iniGetString(ini, section, "gender_options", "MFX", value));
 	SAFECOPY(cfg->new_pass, iniGetString(ini, section, "password", "", value));
-	SAFECOPY(cfg->new_magic, iniGetString(ini, section, "magic", "", value));
+	SAFECOPY(cfg->new_magic, iniGetString(ini, section, "magic_word", "", value));
 	SAFECOPY(cfg->new_sif, iniGetString(ini, section, "sif", "", value));
 	SAFECOPY(cfg->new_sof, iniGetString(ini, section, "sof", cfg->new_sif, value));
 	cfg->new_prot = *iniGetString(ini, section, "download_protocol", " ", value);
