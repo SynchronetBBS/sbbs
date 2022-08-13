@@ -417,7 +417,7 @@ static void event_log_msg(log_msg_t* msg)
 			if(msg->repeated)
 				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
 			Line+="\n";
-			fwritelog(AnsiString(Line).c_str(),Line.Length(),LogStream);
+			fwritelog(&MainForm->cfg, AnsiString(Line).c_str(), Line.Length(), &LogStream);
 		}
 	}
 }

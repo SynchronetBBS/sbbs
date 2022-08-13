@@ -37,7 +37,7 @@ BOOL	fmutex(const char* fname, const char* text, long max_age);
 BOOL	fcompare(const char* fn1, const char* fn2);
 BOOL	backup(const char* org, int backup_level, BOOL ren);
 FILE*	fopenlog(scfg_t*, const char* path);
-size_t	fwritelog(void* buf, size_t size, FILE*);
+size_t	fwritelog(scfg_t*, void* buf, size_t size, FILE**);
 void	fcloselog(FILE*);
 
 #ifdef __cplusplus
