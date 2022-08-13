@@ -5,7 +5,7 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="sbbsctrl.exe"/>
     <OBJFILES value="sbbsctrl.obj MainFormUnit.obj CtrlPathDialogUnit.obj TextFileEditUnit.obj 
-      TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj NodeFormUnit.obj 
+      TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj NodeFormUnit.obj ..\nopen.obj
       StatsFormUnit.obj AboutBoxFormUnit.obj StatsLogFormUnit.obj 
       CodeInputFormUnit.obj ClientFormUnit.obj SpyFormUnit.obj ..\ringbuf.obj 
       emulvt.obj UserListFormUnit.obj UserMsgFormUnit.obj PropertiesDlgUnit.obj 

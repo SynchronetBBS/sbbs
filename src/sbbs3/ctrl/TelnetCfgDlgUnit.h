@@ -96,6 +96,7 @@ __published:
     TLabel *SshConnectTimeoutLabel;
     TEdit *SshConnTimeoutEdit;
     TButton *ConfigureSoundButton;
+    TCheckBox *EventsLogFileCheckBox;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
     void __fastcall RLoginEnabledCheckBoxClick(TObject *Sender);
