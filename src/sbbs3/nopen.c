@@ -237,6 +237,11 @@ FILE* fopenlog(scfg_t* cfg, const char* path)
 	return fp;
 }
 
+size_t fwritelog(void* buf, size_t size, FILE* fp)
+{
+	return fwrite(buf, 1, size, fp);
+}
+
 void fcloselog(FILE* fp)
 {
 	fclose(fp);
