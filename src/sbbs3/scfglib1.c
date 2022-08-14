@@ -80,10 +80,11 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
+	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
 	char	errstr[256];
 	FILE*	fp;
-	str_list_t	ini;
+	str_list_t	ini = NULL;
 	char	value[INI_MAX_VALUE_LEN];
 	const char* section = ROOT_SECTION;
 
@@ -91,10 +92,11 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
 	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
 		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
-		return FALSE;
+	} else {
+		ini = iniReadFile(fp);
+		fclose(fp);
+		result = TRUE;
 	}
-	ini = iniReadFile(fp);
-	fclose(fp);
 
 	SAFECOPY(cfg->sys_name, iniGetString(ini, section, "name", "", value));
 	SAFECOPY(cfg->sys_op, iniGetString(ini, section, "operator", "", value));
@@ -291,7 +293,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	iniFreeStringList(shell_list);
 	iniFreeStringList(ini);
 
-	return TRUE;
+	return result;
 }
 
 /****************************************************************************/
