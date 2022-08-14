@@ -40,7 +40,7 @@ char *	readtext(long *line, FILE *stream, long dflt);
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, size_t maxerrlen)
+BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, size_t maxerrlen)
 {
 	int		i;
 	long	line=0L;
@@ -62,7 +62,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, 
 		cfg->node_num=1;
 
 	backslash(cfg->ctrl_dir);
-	if(read_main_cfg(cfg, error, maxerrlen)==FALSE)
+	if(read_main_cfg(cfg, error, maxerrlen)==FALSE && req_cfg)
 		return(FALSE);
 
 	if(prep)
@@ -71,7 +71,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, 
 
 	SAFECOPY(cfg->node_dir,cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
-	if(read_node_cfg(cfg, error, maxerrlen)==FALSE && req_node)
+	if(read_node_cfg(cfg, error, maxerrlen)==FALSE && req_cfg)
 		return(FALSE);
 	if(read_msgs_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
