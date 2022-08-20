@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.30     2022-08-19   Made use of the control key passthru setting so that
+                      certain hotkeys (such as Ctrl-P, for Pageup) are only
+                      caught by the scripts and not passed thru to the BBS.
+1.29     2022-07-23   Re-arranged the help text to be more consistent with
+                      each other.
 1.28     2022-07-06   File area chooser: Lightbar mode fix for not actually
                       moving to the user's selected directory when directly
                       choosing a directory in their library
