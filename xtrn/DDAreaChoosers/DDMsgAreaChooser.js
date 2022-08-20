@@ -37,6 +37,9 @@
  *                            when only choosing a sub-board within the user's current message group.
  * 2022-07-23 Eric Oulashin   Version 1.29
  *                            Re-arranged the help text for lightbar mode to be more consistent with my message reader.
+ * 2022-08-19 Eric Oulashin   Version 1.30
+ *                            Set the control key pass-thru so that some hotkeys (such as Ctrl-P for PageUp) only
+ *                            get caught by this script.
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -80,8 +83,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.29";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-07-23";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.30";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-08-19";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -150,6 +153,10 @@ else if (typeof(argv[1]) == "string")
 // it to let the user choose a message area.
 if (executeThisScript)
 {
+	// When exiting this script, make sure to set the ctrl key pasthru back to what it was originally
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+	console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_"; // So that control key combinations only get caught by this script
+
 	var msgAreaChooser = new DDMsgAreaChooser();
 	// If we are to let the user choose a sub-board within
 	// their current group (and not choose a message group
