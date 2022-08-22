@@ -2929,7 +2929,6 @@ static int is_dynamic_req(http_session_t* session)
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && i)  {
 		lprintf(LOG_DEBUG,"%04d Setting up JavaScript support", session->socket);
 		if(!js_setup(session)) {
-			lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript support", session->socket);
 			send_error(session,__LINE__,error_500);
 			return(IS_STATIC);
 		}
@@ -3453,7 +3452,7 @@ static BOOL exec_js_webctrl(http_session_t* session, char *name, char* script, c
 	char		redir_req[MAX_REQUEST_LINE+1];
 
 	if(!js_setup_cx(session)) {
-		lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript support for %s", session->socket, name);
+		lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript context for %s", session->socket, name);
 		return FALSE;
 	}
 
@@ -5801,8 +5800,10 @@ js_initcx(http_session_t *session)
 {
 	JSContext*	js_cx;
 
-    if((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL) {
+		lprintf(LOG_CRIT, "%04d JavaScript: Failed to create new context", session->socket);
 		return(NULL);
+	}
 	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
@@ -5828,6 +5829,7 @@ js_initcx(http_session_t *session)
 									,&session->js_glob
 		)
 		|| !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
+		lprintf(LOG_CRIT, "%04d JavaScript: Failed to create global objects and classes", session->socket);
 		JS_RemoveObjectRoot(js_cx, &session->js_glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
@@ -5854,7 +5856,7 @@ static BOOL js_setup_cx(http_session_t* session)
 	if(session->js_cx==NULL) {	/* Context not yet created, create it now */
 		/* js_initcx() begins a context */
 		if(((session->js_cx=js_initcx(session))==NULL)) {
-			lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript context",session->socket);
+			lprintf(LOG_WARNING, "%04d !ERROR initializing JavaScript context",session->socket);
 			return(FALSE);
 		}
 		argv=JS_NewArrayObject(session->js_cx, 0, NULL);
