@@ -139,7 +139,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t node_dirs = iniGetKeyList(ini, "node_dir");
 	cfg->sys_nodes = strListCount(node_dirs);
 	for(size_t i=0; i<cfg->sys_nodes; i++) {
-		SAFECOPY(cfg->node_path[i], node_dirs[i]);
+		SAFECOPY(cfg->node_path[i], iniGetString(ini, "node_dir", node_dirs[i], "", value));
 #if defined(__unix__)
 		strlwr(cfg->node_path[i]);
 #endif
