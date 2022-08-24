@@ -281,8 +281,8 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		memset(cfg->shell[i],0,sizeof(shell_t));
 
 		section = shell_list[i];
-		SAFECOPY(cfg->shell[i]->code, section + 5);
-		SAFECOPY(cfg->shell[i]->name, iniGetString(ini, section, "name", section + 5, value));
+		SAFECOPY(cfg->shell[i]->code, section + 6);
+		SAFECOPY(cfg->shell[i]->name, iniGetString(ini, section, "name", section + 6, value));
 		SAFECOPY(cfg->shell[i]->arstr, iniGetString(ini, section, "ars", "", value));
 		arstr(NULL,cfg->shell[i]->arstr,cfg,cfg->shell[i]->ar);
 		cfg->shell[i]->misc = iniGetLongInt(ini, section, "settings", 0);
