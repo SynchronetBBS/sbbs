@@ -139,9 +139,9 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	backslash(cfg->exec_dir);
 	iniSetString(&ini, "dir", "exec", cfg->exec_dir, NULL);
 
-	iniSetString(&ini, section, "logon", cfg->sys_logon, NULL);
-	iniSetString(&ini, section, "logout", cfg->sys_logout, NULL);
-	iniSetString(&ini, section, "daily", cfg->sys_daily, NULL);
+	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon, NULL);
+	iniSetString(&ini, "logout_event", "cmd", cfg->sys_logout, NULL);
+	iniSetString(&ini, "daily_event", "cmd", cfg->sys_daily, NULL);
 	iniSetShortInt(&ini, section, "timezone", cfg->sys_timezone, NULL);
 	iniSetLongInt(&ini, section, "settings", cfg->sys_misc, NULL);
 	iniSetShortInt(&ini, section, "lastnode", cfg->sys_lastnode, NULL);

@@ -132,9 +132,9 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->new_install = iniGetBool(ini, section, "new_install", FALSE);
 
 	// fixed events
-	SAFECOPY(cfg->sys_logon, iniGetString(ini, section, "logon", "", value));
-	SAFECOPY(cfg->sys_logout, iniGetString(ini, section, "logout", "", value));
-	SAFECOPY(cfg->sys_daily, iniGetString(ini, section, "daily", "", value));
+	SAFECOPY(cfg->sys_logon, iniGetString(ini, "logon_event", "cmd", "", value));
+	SAFECOPY(cfg->sys_logout, iniGetString(ini, "logout_event", "cmd", "", value));
+	SAFECOPY(cfg->sys_daily, iniGetString(ini, "daily_event", "cmd", "", value));
 
 	str_list_t node_dirs = iniGetKeyList(ini, "node_dir");
 	cfg->sys_nodes = strListCount(node_dirs);

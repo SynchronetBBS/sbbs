@@ -26,6 +26,14 @@ if(!ini.open("w+")) {
 	alert("Error " + ini.error + " opening/creating " + ini.name);
 	exit(1);
 }
+
+ini.iniSetObject("logon_event", { cmd: cnf.sys_logon });
+delete cnf.sys_logon;
+ini.iniSetObject("logout_event", { cmd: cnf.sys_logout });
+delete cnf.sys_logout;
+ini.iniSetObject("daily_event", { cmd: cnf.sys_daily });
+delete cnf.sys_daily;
+
 var sys = {};
 sys.settings = format("0x%08lx", cnf.sys_settings);
 delete cnf.sys_settings;
