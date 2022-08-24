@@ -432,7 +432,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->sub[i]->maxage = iniGetInteger(ini, section, "max_age", 0);
 		cfg->sub[i]->ptridx = iniGetInteger(ini, section, "ptridx", 0);
 #ifdef SBBS
-		for(j=0;j<i;j++)
+		for(uint j=0; j<i; j++)
 			if(cfg->sub[i]->ptridx==cfg->sub[j]->ptridx) {
 				safe_snprintf(error, maxerrlen,"%s: Duplicate pointer index for subs %s and %s"
 					,fname
