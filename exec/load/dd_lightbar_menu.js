@@ -905,17 +905,6 @@ function DDLightbarMenu_DrawBorder()
 function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY)
 {
 	var itemText = this.GetItemText(pIdx, pItemLen, pHighlight, pSelected);
-	// Temporary
-	if (user.is_sysop)
-	{
-		var outFile = new File("/home/erico/temp/debug.txt");
-		if (outFile.open("a"))
-		{
-			outFile.writeln(itemText);
-			outFile.close();
-		}
-	}
-	// End Temporary
 	// If this.nextDrawOnlyItemSubstr is an object with start & end properties,
 	// then create a string that is shortened from itemText from those start & end
 	// indexes, and add color to it.
