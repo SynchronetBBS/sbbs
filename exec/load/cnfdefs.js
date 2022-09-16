@@ -88,7 +88,8 @@ struct.event_t={
 	freq:			{bytes:UINT16_T,		type:"int"},
 	mdays:			{bytes:UINT32_T,		type:"int"},
 	months:			{bytes:UINT16_T,		type:"int"},
-	__PADDING__:{bytes:8}
+	errlevel:		{bytes:1,				type:"int"},
+	__PADDING__:{bytes:7}
 };
 struct.natvpgm_t={
 	name:		{bytes:13,				type:"str"},
