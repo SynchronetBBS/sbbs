@@ -191,6 +191,7 @@ DLLEXPORT ulong 		iniGetBitField(str_list_t, const char* section, const char* ke
 							,ini_bitdesc_t* bitdesc, ulong deflt);
 DLLEXPORT str_list_t 	iniGetSection(str_list_t, const char *section);
 #define		iniGetLogLevel(l,s,k,d) iniGetEnum(l,s,k,iniLogLevelStringList(),d)
+DLLEXPORT str_list_t 	iniCutSection(str_list_t, const char *section);
 
 #if !defined(NO_SOCKET_SUPPORT)
 DLLEXPORT uint32_t 		iniReadIpAddress(FILE*, const char* section, const char* key
@@ -274,6 +275,7 @@ DLLEXPORT char* 		iniPopString(str_list_t*, const char* section, const char* key
 DLLEXPORT BOOL 			iniRemoveKey(str_list_t*, const char* section, const char* key);
 DLLEXPORT BOOL 			iniRemoveValue(str_list_t*, const char* section, const char* key);
 DLLEXPORT BOOL 			iniRemoveSection(str_list_t*, const char* section);
+DLLEXPORT BOOL 			iniRemoveSectionFast(str_list_t, const char* section);
 DLLEXPORT BOOL 			iniRemoveSections(str_list_t*, const char* prefix);
 DLLEXPORT BOOL 			iniRenameSection(str_list_t*, const char* section, const char* newname);
 DLLEXPORT BOOL 			iniSortSections(str_list_t*, const char* prefix, BOOL sort_keys);
