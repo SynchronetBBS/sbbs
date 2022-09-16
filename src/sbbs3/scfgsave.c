@@ -277,6 +277,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 {
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
+	char	name[INI_MAX_VALUE_LEN];
 	char	tmp[INI_MAX_VALUE_LEN];
 	FILE*	fp;
 	const char* section = ROOT_SECTION;
@@ -322,9 +323,9 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			if(cfg->sub[i]->grp != grp)
 				continue;
-			SAFEPRINTF2(tmp, "sub:%s:%s"
+			SAFEPRINTF2(name, "sub:%s:%s"
 				,cfg->grp[grp]->sname, cfg->sub[i]->code_suffix);
-			section = tmp;
+			section = name;
 			cfg->sub[i]->subnum = subnum++;
 			iniSetString(&ini, section, "description", cfg->sub[i]->lname, NULL);
 			iniSetString(&ini, section, "name", cfg->sub[i]->sname, NULL);
@@ -340,7 +341,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			iniSetString(&ini, section, "read_ars", cfg->sub[i]->read_arstr, NULL);
 			iniSetString(&ini, section, "post_ars", cfg->sub[i]->post_arstr, NULL);
 			iniSetString(&ini, section, "operator_ars", cfg->sub[i]->op_arstr, NULL);
-			iniSetLongInt(&ini, section, "esttings", cfg->sub[i]->misc&(~SUB_HDRMOD), NULL);    /* Don't write mod bit */
+			iniSetLongInt(&ini, section, "settings", cfg->sub[i]->misc&(~SUB_HDRMOD), NULL);    /* Don't write mod bit */
 			iniSetString(&ini, section, "qwknet_tagline", cfg->sub[i]->tagline, NULL);
 			iniSetString(&ini, section, "fidonet_origin", cfg->sub[i]->origline, NULL);
 			iniSetString(&ini, section, "post_sem", cfg->sub[i]->post_sem, NULL);
@@ -538,7 +539,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 	iniSetShortInt(&ini, section, "max_userxfer" ,cfg->max_userxfer, NULL);
 	iniSetShortInt(&ini, section, "cdt_up_pct", cfg->cdt_up_pct, NULL);
 	iniSetShortInt(&ini, section, "cdt_dn_pct", cfg->cdt_dn_pct, NULL);
-	iniSetShortInt(&ini, section, "leech_cpt", cfg->leech_pct, NULL);
+	iniSetShortInt(&ini, section, "leech_pct", cfg->leech_pct, NULL);
 	iniSetShortInt(&ini, section, "leech_sec", cfg->leech_sec, NULL);
 	iniSetLongInt(&ini, section, "settings", cfg->file_misc, NULL);
 	iniSetShortInt(&ini, section, "filename_maxlen", cfg->filename_maxlen, NULL);
