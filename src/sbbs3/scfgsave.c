@@ -442,7 +442,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		iniSetShortInt(&ini, section, "time", cfg->qhub[i]->time, NULL);
 		iniSetShortInt(&ini, section, "freq", cfg->qhub[i]->freq, NULL);
 		iniSetShortInt(&ini, section, "days", cfg->qhub[i]->days, NULL);
-		iniSetShortInt(&ini, section, "node", cfg->qhub[i]->node, NULL);
+		iniSetShortInt(&ini, section, "node_num", cfg->qhub[i]->node, NULL);
 		iniSetString(&ini, section, "call", cfg->qhub[i]->call, NULL);
 		iniSetString(&ini, section, "pack", cfg->qhub[i]->pack, NULL);
 		iniSetString(&ini, section, "unpack", cfg->qhub[i]->unpack, NULL);
@@ -837,7 +837,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 		iniSetString(&ini, section, "cmd", cfg->event[i]->cmd, NULL);
 		iniSetShortInt(&ini, section, "days", cfg->event[i]->days, NULL);
 		iniSetShortInt(&ini, section, "time", cfg->event[i]->time, NULL);
-		iniSetShortInt(&ini, section, "node", cfg->event[i]->node, NULL);
+		iniSetShortInt(&ini, section, "node_num", cfg->event[i]->node, NULL);
 		iniSetLongInt(&ini, section, "settings", cfg->event[i]->misc, NULL);
 		iniSetString(&ini, section, "startup_dir", cfg->event[i]->dir, NULL);
 		iniSetShortInt(&ini, section, "freq", cfg->event[i]->freq, NULL);
