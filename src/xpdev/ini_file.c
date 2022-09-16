@@ -437,6 +437,29 @@ BOOL iniRemoveSection(str_list_t* list, const char* section)
 	return(TRUE);
 }
 
+BOOL iniRemoveSectionFast(str_list_t list, const char* section)
+{
+	size_t	i;
+
+	i=find_section_index(list,section);
+	if(list[i]==NULL)	/* not found */
+		return(FALSE);
+	do {
+		strListFastDelete(list,i);
+	} while(list[i]!=NULL && *list[i]!=INI_OPEN_SECTION_CHAR);
+
+	return(TRUE);
+}
+
+str_list_t iniCutSection(str_list_t list, const char *section)
+{
+	str_list_t ini = iniGetSection(list, section);
+	if(ini == NULL)
+		return NULL;
+	(void)iniRemoveSectionFast(list, section);
+	return ini;
+}
+
 BOOL iniRemoveSections(str_list_t* list, const char* prefix)
 {
 	str_list_t sections;
