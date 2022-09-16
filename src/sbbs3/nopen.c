@@ -237,6 +237,17 @@ FILE* fopenlog(scfg_t* cfg, const char* path)
 	return fp;
 }
 
+// Write to a log file and may close it if reached max size
+size_t fwritelog(scfg_t* cfg, void* buf, size_t size, FILE** fp)
+{
+	size_t result = fwrite(buf, 1, size, *fp);
+	if(cfg->max_log_size && ftell(*fp) >= (off_t)cfg->max_log_size) {
+		fclose(*fp);
+		*fp = NULL;
+	}
+	return result;
+}
+
 void fcloselog(FILE* fp)
 {
 	fclose(fp);

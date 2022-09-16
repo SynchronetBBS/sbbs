@@ -1239,8 +1239,8 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		session->req.sent_headers=TRUE;
 		return(FALSE);
 	}
-	lprintf(LOG_DEBUG,"%04d Request resolved to: %s"
-		,session->socket,session->req.physical_path);
+	lprintf(LOG_DEBUG,"%04d %s [%s] Request resolved to: %s"
+		,session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
 	if(session->http_ver <= HTTP_0_9) {
 		session->req.sent_headers=TRUE;
 		if(session->req.ld != NULL)
@@ -1312,7 +1312,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		/* Status-Line */
 		safe_snprintf(header,sizeof(header),"%s %s",response_http_vers[session->http_ver > HTTP_0_9 ? HTTP_1_1 : HTTP_0_9],status_line);
 
-		lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
+		lprintf(LOG_DEBUG,"%04d %s [%s] Result: %s", session->socket, session->client.protocol, session->host_ip, header);
 
 		safecat(headers,header,MAX_HEADERS_SIZE);
 
@@ -1447,7 +1447,7 @@ static off_t sock_sendfile(http_session_t *session,char *path, off_t start, off_
 	uint64_t remain;
 
 	if(startup->options&WEB_OPT_DEBUG_TX)
-		lprintf(LOG_DEBUG,"%04d Sending %s",session->socket,path);
+		lprintf(LOG_DEBUG,"%04d %s [%s] Sending %s",session->socket, session->client.protocol, session->host_ip, path);
 	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf(LOG_WARNING,"%04d !ERROR %d opening %s",session->socket,errno,path);
 	else {
@@ -1491,7 +1491,8 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 	if(session->socket==INVALID_SOCKET)
 		return;
 	session->req.if_modified_since=0;
-	lprintf(LOG_INFO,"%04d [%s] !ERROR: %s (line %u)",session->socket,session->host_ip,message,line);
+	lprintf(LOG_INFO,"%04d %s [%s] !ERROR: %s (line %u) request: %s"
+		,session->socket, session->client.protocol, session->host_ip, message, line, session->req.request_line);
 	session->req.keep_alive=FALSE;
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
@@ -1587,7 +1588,8 @@ void http_logon(http_session_t * session, user_t *usr)
 	if(session->user.number==session->last_user_num)
 		return;
 
-	lprintf(LOG_DEBUG,"%04d HTTP Logon (user #%d)",session->socket,session->user.number);
+	lprintf(LOG_DEBUG,"%04d %s [%s] Logon (user #%d)"
+		,session->socket, session->client.protocol, session->host_ip, session->user.number);
 
 	if(session->subscan!=NULL)
 		getmsgptrs(&scfg,&session->user,session->subscan,NULL,NULL);
@@ -1616,8 +1618,8 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 	if(session->last_user_num<=0)
 		return;
 
-	lprintf(LOG_DEBUG,"%04d HTTP Logoff (user #%d) from line %d"
-		,socket,session->user.number, line);
+	lprintf(LOG_DEBUG,"%04d %s [%s] Logoff (user #%d) from line %d"
+		,socket, session->client.protocol, session->host_ip, session->user.number, line);
 
 	SAFECOPY(session->username,unknown);
 	if(!logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time))
@@ -2040,8 +2042,8 @@ static BOOL check_ars(http_session_t * session)
 	}
 
 	/* Should go to the hack log? */
-	lprintf(LOG_WARNING,"%04d !AUTHORIZATION FAILURE for user %s, ARS: %s"
-		,session->socket,session->req.auth.username,session->req.ars);
+	lprintf(LOG_WARNING,"%04d %s [%s] !AUTHORIZATION FAILURE for user %s, ARS: %s"
+		,session->socket, session->client.protocol, session->host_ip, session->req.auth.username, session->req.ars);
 
 #ifdef _WIN32
 	if(startup->sound.hack[0] && !sound_muted(&scfg))
@@ -2314,7 +2316,8 @@ static void js_add_queryval(http_session_t * session, char *key, char *value)
 		alen=len;
 	}
 
-	lprintf(LOG_DEBUG,"%04d Adding query value %s=%s at pos %d",session->socket,key,value,alen);
+	lprintf(LOG_DEBUG,"%04d %s [%s] Adding query value %s=%s at pos %d"
+		,session->socket, session->client.protocol, session->host_ip, key,value,alen);
 	val=STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx,value));
 	JS_SetElement(session->js_cx, keyarray, alen, &val);
 }
@@ -2345,7 +2348,8 @@ static void js_add_cookieval(http_session_t * session, char *key, char *value)
 		alen=len;
 	}
 
-	lprintf(LOG_DEBUG,"%04d Adding cookie value %s=%s at pos %d",session->socket,key,value,alen);
+	lprintf(LOG_DEBUG,"%04d %s [%s] Adding cookie value %s=%s at pos %d"
+		,session->socket, session->client.protocol, session->host_ip, key,value,alen);
 	val=STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx,value));
 	JS_SetElement(session->js_cx, keyarray, alen, &val);
 }
@@ -2925,7 +2929,6 @@ static int is_dynamic_req(http_session_t* session)
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && i)  {
 		lprintf(LOG_DEBUG,"%04d Setting up JavaScript support", session->socket);
 		if(!js_setup(session)) {
-			lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript support", session->socket);
 			send_error(session,__LINE__,error_500);
 			return(IS_STATIC);
 		}
@@ -3267,13 +3270,13 @@ static BOOL get_req(http_session_t * session, char *request_line)
 		if(len<0)
 			return(FALSE);
 		if(req_line[0])
-			lprintf(LOG_INFO,"%04d Request: %s",session->socket,req_line);
+			lprintf(LOG_INFO,"%04d %s [%s] Request: %s",session->socket, session->client.protocol, session->host_ip, req_line);
 		if(session->req.ld!=NULL && session->req.ld->request==NULL)
 			/* FREE()d in http_logging_thread() */
 			session->req.ld->request=strdup(req_line);
 	}
 	else {
-		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",session->socket,request_line);
+		lprintf(LOG_DEBUG,"%04d %s [%s] Handling Internal Redirect to: %s",session->socket, session->client.protocol, session->host_ip, request_line);
 		session->req.extra_path_info[0]=0;
 		SAFECOPY(req_line,request_line);
 		is_redir=1;
@@ -3449,7 +3452,7 @@ static BOOL exec_js_webctrl(http_session_t* session, char *name, char* script, c
 	char		redir_req[MAX_REQUEST_LINE+1];
 
 	if(!js_setup_cx(session)) {
-		lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript support for %s", session->socket, name);
+		lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript context for %s", session->socket, name);
 		return FALSE;
 	}
 
@@ -3493,7 +3496,7 @@ static BOOL exec_js_webctrl(http_session_t* session, char *name, char* script, c
 
 		session->js_callback.counter=0;
 
-		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling %s", session->socket, name);
+		lprintf(LOG_DEBUG,"%04d %s [%s] JavaScript: Compiling %s", session->socket, session->client.protocol, session->host_ip, name);
 		if(!JS_EvaluateScript(session->js_cx, session->js_glob, script, strlen(script), name, 1, &rval)) {
 			lprintf(LOG_WARNING,"%04d !JavaScript FAILED to compile rewrite %s:%s"
 				,session->socket,name,script);
@@ -3611,7 +3614,7 @@ static BOOL check_request(http_session_t * session)
 
 	SAFECOPY(path,session->req.physical_path);
 	if(startup->options&WEB_OPT_DEBUG_TX)
-		lprintf(LOG_DEBUG,"%04d Path is: %s",session->socket,path);
+		lprintf(LOG_DEBUG,"%04d %s [%s] Path is: %s",session->socket, session->client.protocol, session->host_ip, path);
 	if(isdir(path)) {
 		last_ch=*lastchar(path);
 		if(!IS_PATH_DELIM(last_ch))  {
@@ -3668,7 +3671,7 @@ static BOOL check_request(http_session_t * session)
 			session->req.keep_alive=FALSE;
 			send_error(session,__LINE__,"400 Bad Request");
 			SAFEPRINTF2(str, "Request for '%s' is outside of web root: %s", path, root_dir);
-			lprintf(LOG_NOTICE,"%04d !ERROR %s", session->socket, str);
+			lprintf(LOG_NOTICE,"%04d %s [%s] !ERROR %s", session->socket, session->client.protocol, session->host_ip, str);
 			hacklog(&scfg, session->client.protocol, session->username, str, session->client.host, &session->addr);
 #ifdef _WIN32
 			if(startup->sound.hack[0] && !sound_muted(&scfg))
@@ -4682,7 +4685,7 @@ static BOOL exec_fastcgi(http_session_t *session)
 		.arg = &cd
 	};
 
-	lprintf(LOG_INFO,"%04d Executing FastCGI: %s",session->socket,session->req.physical_path);
+	lprintf(LOG_INFO,"%04d %s [%s] Executing FastCGI: %s",session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
 	if (session->req.fastcgi_socket == NULL) {
 		lprintf(LOG_ERR, "%04d No FastCGI socket configured!",session->socket);
 		return FALSE;
@@ -4787,7 +4790,7 @@ static BOOL exec_cgi(http_session_t *session)
 
 	SAFECOPY(cmdline,session->req.physical_path);
 
-	lprintf(LOG_INFO,"%04d Executing CGI: %s",session->socket,cmdline);
+	lprintf(LOG_INFO,"%04d %s [%s] Executing CGI: %s",session->socket, session->client.protocol, session->host_ip, cmdline);
 
 	orig_keep=session->req.keep_alive;
 	session->req.keep_alive=FALSE;
@@ -4865,12 +4868,12 @@ static BOOL exec_cgi(http_session_t *session)
 			execle(cmdline,cmdline,NULL,env_list);
 		}
 
-		lprintf(LOG_ERR,"%04d !FAILED! execle() (%d)",session->socket,errno);
+		lprintf(LOG_ERR,"%04d !ERROR %d executing execle(%s)",session->socket, errno, cmdline);
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
 
 	if(child==-1)  {
-		lprintf(LOG_ERR,"%04d !FAILED! fork() errno=%d",session->socket,errno);
+		lprintf(LOG_ERR,"%04d !ERROR %d invoking fork()",session->socket,errno);
 		if (session->tls_sess)
 			close(in_pipe[1]);	/* close write-end of pipe */
 		close(out_pipe[0]);		/* close read-end of pipe */
@@ -4936,8 +4939,8 @@ static BOOL exec_cgi(http_session_t *session)
 		done_wait = (waitpid(child,&status,WNOHANG)==child);
 	if(!done_wait)  {
 		if(start)
-			lprintf(LOG_NOTICE,"%04d CGI Process %s still alive on client exit"
-				,session->socket,getfname(cmdline));
+			lprintf(LOG_NOTICE,"%04d %s [%s] CGI Process %s still alive on client exit"
+				,session->socket, session->client.protocol, session->host_ip, getfname(cmdline));
 		kill(child,SIGTERM);
 		mswait(1000);
 		done_wait = (waitpid(child,&status,WNOHANG)==child);
@@ -4955,7 +4958,7 @@ static BOOL exec_cgi(http_session_t *session)
 			i=read(err_pipe[0],buf,sizeof(buf)-1);
 			if(i!=-1 && i!=0) {
 				buf[i]=0;
-				lprintf(LOG_ERR,"%04d CGI Error: %s",session->socket,buf);
+				lprintf(LOG_ERR,"%04d %s [%s] !CGI Error: %s",session->socket, session->client.protocol, session->host_ip, buf);
 			}
 		}
 
@@ -5797,8 +5800,10 @@ js_initcx(http_session_t *session)
 {
 	JSContext*	js_cx;
 
-    if((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL) {
+		lprintf(LOG_CRIT, "%04d JavaScript: Failed to create new context", session->socket);
 		return(NULL);
+	}
 	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
@@ -5824,6 +5829,7 @@ js_initcx(http_session_t *session)
 									,&session->js_glob
 		)
 		|| !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
+		lprintf(LOG_CRIT, "%04d JavaScript: Failed to create global objects and classes", session->socket);
 		JS_RemoveObjectRoot(js_cx, &session->js_glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
@@ -5850,7 +5856,7 @@ static BOOL js_setup_cx(http_session_t* session)
 	if(session->js_cx==NULL) {	/* Context not yet created, create it now */
 		/* js_initcx() begins a context */
 		if(((session->js_cx=js_initcx(session))==NULL)) {
-			lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript context",session->socket);
+			lprintf(LOG_WARNING, "%04d !ERROR initializing JavaScript context",session->socket);
 			return(FALSE);
 		}
 		argv=JS_NewArrayObject(session->js_cx, 0, NULL);
@@ -6496,7 +6502,8 @@ void http_session_thread(void* arg)
 		thread_down();
 		return;
 	}
-	lprintf(LOG_DEBUG,"%04d Session thread started", session.socket);
+	session.client.protocol=session.is_tls ? "HTTPS":"HTTP";
+	lprintf(LOG_DEBUG,"%04d %s [%s] Session thread started", session.socket, session.client.protocol, session.host_ip);
 
 	if(startup->index_file_name==NULL || startup->cgi_ext==NULL)
 		lprintf(LOG_DEBUG,"%04d !!! DANGER WILL ROBINSON, DANGER !!!", session.socket);
@@ -6568,7 +6575,8 @@ void http_session_thread(void* arg)
 	char host_name[128] = "";
 	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))  {
 		getnameinfo(&session.addr.addr, session.addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		lprintf(LOG_INFO,"%04d Hostname: %s [%s]", session.socket, host_name[0] ? host_name : STR_NO_HOSTNAME, session.host_ip);
+		lprintf(LOG_INFO,"%04d %s [%s] Hostname: %s"
+			,session.socket, session.client.protocol, session.host_ip, host_name[0] ? host_name : STR_NO_HOSTNAME);
 #if	0 /* gethostbyaddr() is apparently not (always) thread-safe
 	     and getnameinfo() doesn't return alias information */
 		for(i=0;host!=NULL && host->h_aliases!=NULL
@@ -6576,7 +6584,8 @@ void http_session_thread(void* arg)
 			lprintf(LOG_INFO,"%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 #endif
 		if(host_name[0] && trashcan(&scfg, host_name,"host")) {
-			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", session.socket, host_name);
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
+				,session.socket, session.client.protocol, session.host_ip, host_name);
 			close_session_socket(&session);
 			sem_wait(&session.output_thread_terminated);
 			sem_destroy(&session.output_thread_terminated);
@@ -6599,10 +6608,11 @@ void http_session_thread(void* arg)
 	if(banned || trashcan(&scfg,session.host_ip,"ip")) {
 		if(banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
-				,session.socket, session.host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
+			lprintf(LOG_NOTICE, "%04d %s !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
+				,session.socket, session.client.protocol
+				,session.host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		} else
-			lprintf(LOG_NOTICE, "%04d !CLIENT BLOCKED in ip.can: %s", session.socket, session.host_ip);
+			lprintf(LOG_NOTICE, "%04d %s !CLIENT BLOCKED in ip.can: %s", session.socket, session.client.protocol, session.host_ip);
 		close_session_socket(&session);
 		sem_wait(&session.output_thread_terminated);
 		sem_destroy(&session.output_thread_terminated);
@@ -6619,7 +6629,6 @@ void http_session_thread(void* arg)
 	SAFECOPY(session.client.host, host_name);
 	session.client.port=inet_addrport(&session.addr);
 	session.client.time=time32(NULL);
-	session.client.protocol=session.is_tls ? "HTTPS":"HTTP";
 	session.client.user=session.username;
 	session.client.size=sizeof(session.client);
 	session.client.usernum = 0;
@@ -6708,7 +6717,8 @@ void http_session_thread(void* arg)
 								safe_snprintf(session.redir_req,sizeof(session.redir_req),"%s %s%s%s",methods[session.req.method]
 									,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
 							}
-							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,session.redir_req);
+							lprintf(LOG_DEBUG,"%04d %s [%s] Internal Redirect to: %s"
+								,socket, session.client.protocol, session.host_ip, session.redir_req);
 							redirp=session.redir_req;
 						}
 					}
@@ -6759,8 +6769,8 @@ void http_session_thread(void* arg)
 	if(startup->index_file_name==NULL || startup->cgi_ext==NULL)
 		lprintf(LOG_DEBUG,"%04d !!! ALL YOUR BASE ARE BELONG TO US !!!", socket);
 
-	lprintf(LOG_INFO,"%04d Session thread terminated (%u clients, %u threads remain, %lu served)"
-		,socket, clients_remain, protected_uint32_value(thread_count), served);
+	lprintf(LOG_INFO,"%04d %s [%s] Session thread terminated (%u clients, %u threads remain, %lu served)"
+		,socket, session.client.protocol, session.host_ip, clients_remain, protected_uint32_value(thread_count), served);
 
 }
 

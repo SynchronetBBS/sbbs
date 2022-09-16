@@ -36,6 +36,12 @@
  * 2022-07-06 Eric Oulashin   Version 1.28
  *                            Fix for not actually moving to the user's selected directory
  *                            when directly choosing a directory in their library in lightbar mode.
+ * 2022-07-23 Eric Oulashin   Version 1.29
+ *                            Re-arranged the help text for lightbar mode to be more consistent with my message reader
+ *                            (and message area chooser).
+ * 2022-08-19 Eric Oulashin   Version 1.30
+ *                            Set the control key pass-thru so that some hotkeys (such as Ctrl-P for PageUp) only
+ *                            get caught by this script.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -76,8 +82,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.28";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-07-06";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.30";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-08-19";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -137,6 +143,10 @@ else if (typeof(argv[1]) == "string")
 // it to let the user choose a message area.
 if (executeThisScript)
 {
+	// When exiting this script, make sure to set the ctrl key pasthru back to what it was originally
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+	console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_"; // So that control key combinations only get caught by this script
+
 	var fileAreaChooser = new DDFileAreaChooser();
 	fileAreaChooser.SelectFileArea(chooseFileLib);
 }
@@ -245,44 +255,44 @@ function DDFileAreaChooser()
 	// Lightbar mode key help line
 	this.lightbarKeyHelpText = "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + UP_ARROW
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + DOWN_ARROW
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "HOME"
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "END"
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "#"
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "PgUp"
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + "/"
-				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "Dn"
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + ", "
-				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "F"
-				  + "\x01n" + this.colors.lightbarHelpLineParen
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + DOWN_ARROW
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "PgUp"
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + "/"
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "Dn"
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "HOME"
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "END"
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "F"
+	              + "\x01n" + this.colors.lightbarHelpLineParen
+	              + this.colors.lightbarHelpLineBkg + ")"
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + "irst pg, "
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "L"
+	              + "\x01n" + this.colors.lightbarHelpLineParen
 				  + this.colors.lightbarHelpLineBkg + ")"
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + "irst pg, "
-				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "L"
-				  + "\x01n" + this.colors.lightbarHelpLineParen
-				  + this.colors.lightbarHelpLineBkg + ")"
-				  + "\x01n" + this.colors.lightbarHelpLineGeneral
-				  + this.colors.lightbarHelpLineBkg + "ast pg, "
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + "ast pg, "
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "#"
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "CTRL-F"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral

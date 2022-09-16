@@ -324,7 +324,7 @@ void chan_cfg()
 			sprintf(opt[k++],"%-27.27s%s","Channel Guru"
 				,cfg.chan[i]->guru<cfg.total_gurus ? cfg.guru[cfg.chan[i]->guru]->name : "");
 			sprintf(opt[k++],"%-27.27s%s","Channel Action Set"
-				,cfg.actset[cfg.chan[i]->actset]->name);
+				,cfg.chan[i]->actset < cfg.total_actsets ? cfg.actset[cfg.chan[i]->actset]->name : "INVALID!");
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Chat Channel Configuration:`\n"

@@ -58,7 +58,7 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 	off_t	l,length;
 	FILE*	stream;
 
-	if(!VALID_CFG(cfg) || name==NULL)
+	if(!VALID_CFG(cfg) || name==NULL || *name == '\0')
 		return(0);
 
 	if(sysop_alias &&
@@ -78,6 +78,8 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 		for(c=0;c<LEN_ALIAS;c++)
 			if(dat[c]==ETX) break;
 		dat[c]=0;
+		if(c < 1) // Deleted user
+			continue;
 		if(matchusername(cfg, dat, name))
 			break;
 	}

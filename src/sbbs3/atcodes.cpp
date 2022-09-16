@@ -1884,7 +1884,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(str);
 	}
 	if(!strcmp(sp,"MSG_SCORE") && current_msg!=NULL) {
-		safe_snprintf(str, maxlen, "%ld", (long)(current_msg->upvotes - current_msg->downvotes));
+		safe_snprintf(str, maxlen, "%ld", (long)current_msg->upvotes - (long)current_msg->downvotes);
 		return(str);
 	}
 	if(!strcmp(sp,"MSG_UPVOTES") && current_msg!=NULL) {
