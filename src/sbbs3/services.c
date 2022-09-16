@@ -773,8 +773,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	BOOL		success=FALSE;
 	BOOL		rooted=FALSE;
 
-    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL) {
+		lprintf(LOG_CRIT, "%04d %s JavaScript: Failed to create new context", sock, service_client->client->protocol);
 		return(NULL);
+	}
 	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
@@ -881,6 +883,8 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 
 	if(!success) {
+		lprintf(LOG_CRIT, "%04d %s JavaScript: Failed to create global objects and classes"
+			,sock, service_client->client->protocol);
 		if(rooted)
 			JS_RemoveObjectRoot(js_cx, glob);
 		JS_ENDREQUEST(js_cx);
@@ -1117,14 +1121,16 @@ static void js_service_thread(void* arg)
 
 	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
-		if(service->log_level >= LOG_ERR)
-			lprintf(LOG_ERR,"%04d %s !ERROR initializing JavaScript context"
-				,socket,service->protocol);
+		if(service->log_level >= LOG_WARNING)
+			lprintf(LOG_WARNING,"%04d %s !JavaScript ERROR %s"
+				,socket, js_runtime == NULL ? "creating runtime" : "initializing context", service->protocol);
 		if (service_client.tls_sess != -1)
 			cryptDestroySession(service_client.tls_sess);
 		client_off(socket);
 		close_socket(socket);
 		protected_uint32_adjust(&service->clients, -1);
+		if(js_runtime != NULL)
+			jsrt_Release(js_runtime);
 		thread_down();
 		return;
 	}
@@ -1257,7 +1263,7 @@ static void js_static_service_thread(void* arg)
 
 	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__))==NULL) {
 		if(service->log_level >= LOG_ERR)
-			lprintf(LOG_ERR,"%s !ERROR initializing JavaScript runtime"
+			lprintf(LOG_ERR,"%s !JavaScript ERROR creating runtime"
 				,service->protocol);
 		xpms_destroy(service->set, close_socket_cb, service);
 		service->set = NULL;
@@ -1273,8 +1279,8 @@ static void js_static_service_thread(void* arg)
 
 	do {
 		if((js_cx=js_initcx(js_runtime,INVALID_SOCKET,&service_client,&js_glob))==NULL) {
-			if(service->log_level >= LOG_ERR)
-				lprintf(LOG_ERR,"%s !ERROR initializing JavaScript context"
+			if(service->log_level >= LOG_WARNING)
+				lprintf(LOG_WARNING,"%s !JavaScript ERROR initializing context"
 					,service->protocol);
 			break;
 		}

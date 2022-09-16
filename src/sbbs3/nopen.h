@@ -1,5 +1,3 @@
-/* $Id: nopen.h,v 1.4 2017/11/06 06:28:56 rswindell Exp $ */
-
 /* "Network-file Open" (nopen) and friends */
 
 /****************************************************************************
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -51,6 +37,7 @@ BOOL	fmutex(const char* fname, const char* text, long max_age);
 BOOL	fcompare(const char* fn1, const char* fn2);
 BOOL	backup(const char* org, int backup_level, BOOL ren);
 FILE*	fopenlog(scfg_t*, const char* path);
+size_t	fwritelog(scfg_t*, void* buf, size_t size, FILE**);
 void	fcloselog(FILE*);
 
 #ifdef __cplusplus

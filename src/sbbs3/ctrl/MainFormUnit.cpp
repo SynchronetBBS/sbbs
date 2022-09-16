@@ -391,7 +391,35 @@ static void bbs_start(void)
 
 static void event_log_msg(log_msg_t* msg)
 {
+	static FILE* LogStream;
+
+	if(msg==NULL) {
+		if(LogStream!=NULL)
+			fcloselog(LogStream);
+		LogStream=NULL;
+		return;
+	}
+
 	log_msg(EventsForm->Log, msg);
+
+	if(MainForm->EventsLogFile) {
+		AnsiString LogFileName = AnsiString(MainForm->cfg.logs_dir) + "events";
+		if(MainForm->bbs_startup.first_node > 1)
+			LogFileName += MainForm->bbs_startup.first_node;
+		LogFileName += ".log";
+
+		if(LogStream==NULL)
+			LogStream=fopenlog(&MainForm->cfg, LogFileName.c_str());
+
+		if(LogStream!=NULL) {
+			AnsiString Line=SystemTimeToDateTime(msg->time).FormatString("yyyy-mm-dd hh:mm:ss  ");
+			Line+=AnsiString(msg->buf).Trim();
+			if(msg->repeated)
+				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
+			Line+="\n";
+			fwritelog(&MainForm->cfg, AnsiString(Line).c_str(), Line.Length(), &LogStream);
+		}
+	}
 }
 
 static void services_log_msg(log_msg_t* msg)
@@ -1901,14 +1929,19 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         ErrorSoundFile=Registry->ReadString("ErrorSoundFile");
 
     if(Registry->ValueExists("MailLogFile"))
-    	MailLogFile=Registry->ReadInteger("MailLogFile");
+		MailLogFile=Registry->ReadBool("MailLogFile");
     else
-    	MailLogFile=true;
+		MailLogFile=true;
 
     if(Registry->ValueExists("FtpLogFile"))
-    	FtpLogFile=Registry->ReadInteger("FtpLogFile");
+		FtpLogFile=Registry->ReadBool("FtpLogFile");
     else
-    	FtpLogFile=true;
+		FtpLogFile=true;
+
+    if(Registry->ValueExists("EventsLogFile"))
+		EventsLogFile=Registry->ReadBool("EventsLogFile");
+    else
+		EventsLogFile=true;
 
 	Registry->CloseKey();
     delete Registry;
@@ -2238,6 +2271,10 @@ void __fastcall TMainForm::SaveRegistrySettings(TObject* Sender)
     Registry->WriteBool("ToolBarVisible",Toolbar->Visible);
     Registry->WriteBool("StatusBarVisible",StatusBar->Visible);
 
+	Registry->WriteBool("FtpLogFile", FtpLogFile);
+	Registry->WriteBool("MailLogFile", MailLogFile);
+	Registry->WriteBool("EventsLogFile", EventsLogFile);
+
     Registry->WriteInteger("MaxLogLen",MaxLogLen);
 
     Registry->WriteString("LoginCommand",LoginCommand);
@@ -2375,6 +2412,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
     ImportFormSettings(IniFile,section="TelnetForm",TelnetForm);
     ImportFont(IniFile,section,"LogFont",TelnetForm->Log->Font);
     TelnetForm->Log->Color=StringToColor(IniFile->ReadString(section,"LogColor",clWindow));
+    EventsLogFile=IniFile->ReadBool(section,"EventsFile",true);    
 
     ImportFormSettings(IniFile,section="EventsForm",EventsForm);
     ImportFont(IniFile,section,"LogFont",EventsForm->Log->Font);
@@ -2386,7 +2424,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
 
     ImportFormSettings(IniFile,section="FtpForm",FtpForm);
     ImportFont(IniFile,section,"LogFont",FtpForm->Log->Font);
-   	FtpLogFile=IniFile->ReadInteger(section,"LogFile",true);
+	FtpLogFile=IniFile->ReadBool(section,"LogFile",true);
     FtpForm->Log->Color=StringToColor(IniFile->ReadString(section,"LogColor",clWindow));
 
     ImportFormSettings(IniFile,section="WebForm",WebForm);
@@ -2395,7 +2433,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
 
     ImportFormSettings(IniFile,section="MailForm",MailForm);
     ImportFont(IniFile,section,"LogFont",MailForm->Log->Font);
-   	MailLogFile=IniFile->ReadInteger(section,"LogFile",true);
+	MailLogFile=IniFile->ReadBool(section,"LogFile",true);
     MailForm->Log->Color=StringToColor(IniFile->ReadString(section,"LogColor",clWindow));
 
     ImportFormSettings(IniFile,section="NodeForm",NodeForm);

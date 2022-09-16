@@ -45,12 +45,14 @@ struct.swap_t={
 struct.xedit_t={
 	name:		{bytes:41,				type:"str"},
 	code:		{bytes:LEN_CODE+1,		type:"str"},
-	cmd:		{bytes:LEN_CMD+1,		type:"str"},	// was lcmd
-	rcmd:		{bytes:LEN_CMD+1,		type:"str"},	// unused
+	lcmd:		{bytes:LEN_CMD+1,		type:"str"},	// unused
+	cmd:		{bytes:LEN_CMD+1,		type:"str"},	// was rcmd
 	settings:	{bytes:UINT32_T,		type:"int"},	// was misc
 	ars:		{bytes:LEN_ARSTR+1,		type:"str"},	// was arstr
 	type:		{bytes:UCHAR,			type:"int"},
-	__PADDING__:{bytes:15}
+	soft_cr:	{bytes:UCHAR,			type:"int"},
+	quotewrap_cols: {bytes:UINT16_T,		type:"int"},
+	__PADDING__:{bytes:12}
 };
 struct.xtrnsec_t={
 	name:		{bytes:41,				type:"str"},
@@ -144,8 +146,8 @@ struct.grp_t={
 	name:			{bytes:LEN_GSNAME+1,	type:"str"},	// was sname
 	ars:			{bytes:LEN_ARSTR+1,		type:"str"},	// was arstr
 	code_prefix:	{bytes:LEN_CODE+1,		type:"str"},
-	// uchar		*ar;
-	__PADDING__:{bytes:87}
+	sort:			{bytes:1,				type:"int"},
+	__PADDING__:{bytes:86}
 };
 struct.qhubsub_t={
 	conf:		{bytes:UINT16_T,		type:"int"},
@@ -198,14 +200,14 @@ struct.sec_level_t={
 	timeperday:	{bytes:UINT16_T,			type:"int"},
 	timepercall:{bytes:UINT16_T,			type:"int"},
 	callsperday:{bytes:UINT16_T,			type:"int"},
-	__PADDING1__:{bytes:4},									// was freecdtperd
+	freecdtperd:{bytes:UINT32_T,			type:"int"},
 	linespermsg:{bytes:UINT16_T,			type:"int"},
 	postsperday:{bytes:UINT16_T,			type:"int"},
 	emailperday:{bytes:UINT16_T,			type:"int"},
 	settings:	{bytes:UINT32_T,			type:"int"},	// was misc
 	expireto:	{bytes:UCHAR,				type:"int"},
 	freecdtperday:{bytes:UINT64_T,			type:"int"},
-	__PADDING2__:{bytes:3}
+	__PADDING__:{bytes:3}
 };
 
 struct.cmd_shell_t={

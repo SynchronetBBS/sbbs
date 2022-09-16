@@ -982,6 +982,10 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 		SAFECAT(fpath, pathname);
 		if(!overwrite && fexist(fpath))
 			continue;
+		if(max_files && extracted >= max_files) {
+			safe_snprintf(error, maxerrlen, "maximum number of files (%lu) extracted", max_files);
+			break;
+		}
 		FILE* fp = fopen(fpath, "wb");
 		if(fp == NULL) {
 			char err[256];
@@ -1010,10 +1014,6 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 		fclose(fp);
 		if(result != ARCHIVE_EOF)
 			(void)remove(fpath);
-		if(max_files && extracted >= max_files) {
-			safe_snprintf(error, maxerrlen, "maximum number of files (%lu) extracted", max_files);
-			break;
-		}
 	}
 	archive_read_free(ar);
 	return extracted;

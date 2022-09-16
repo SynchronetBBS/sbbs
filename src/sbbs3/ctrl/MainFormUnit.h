@@ -463,6 +463,7 @@ public:		// User declarations
     BOOL            ServicesAutoStart;
     bool			MailLogFile;
     bool			FtpLogFile;
+    bool            EventsLogFile;
     AnsiString      LoginCommand;
     AnsiString      ConfigCommand;
     AnsiString		Password;

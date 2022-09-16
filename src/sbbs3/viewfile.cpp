@@ -86,12 +86,14 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 
 /*****************************************************************************/
 /*****************************************************************************/
-bool sbbs_t::viewfile(const char* path)
+bool sbbs_t::viewfile(const char* inpath)
 {
+	char	path[MAX_PATH + 1];
     char	viewcmd[256];
     int		i;
 
-	if(!fexist(path)) {
+	SAFECOPY(path, inpath);
+	if(!fexistcase(path)) {
 		bputs(text[FileNotFound]);
 		return false; 
 	}
