@@ -53,7 +53,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->cdt_dn_pct = iniGetShortInt(ini, ROOT_SECTION, "cdt_dn_pct", 0);
 	cfg->leech_pct = iniGetShortInt(ini, ROOT_SECTION, "leech_pct", 0);
 	cfg->leech_sec = iniGetShortInt(ini, ROOT_SECTION, "leech_sec", 0);
-	cfg->file_misc = iniGetLongInt(ini, ROOT_SECTION, "settings", 0);
+	cfg->file_misc = iniGetInt32(ini, ROOT_SECTION, "settings", 0);
 	cfg->filename_maxlen = iniGetShortInt(ini, ROOT_SECTION, "filename_maxlen", SMB_FILEIDX_NAMELEN);
 
 	/**************************/
@@ -61,7 +61,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/**************************/
 
 	str_list_t fextr_list = iniGetSectionList(ini, "extractor:");
-	cfg->total_fextrs = strListCount(fextr_list);
+	cfg->total_fextrs = (uint16_t)strListCount(fextr_list);
 
 	if(cfg->total_fextrs) {
 		if((cfg->fextr=(fextr_t **)malloc(sizeof(fextr_t *)*cfg->total_fextrs))==NULL)
@@ -87,7 +87,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***************************/
 
 	str_list_t fcomp_list = iniGetSectionList(ini, "compressor:");
-	cfg->total_fcomps = strListCount(fcomp_list);
+	cfg->total_fcomps = (uint16_t)strListCount(fcomp_list);
 
 	if(cfg->total_fcomps) {
 		if((cfg->fcomp=(fcomp_t **)malloc(sizeof(fcomp_t *)*cfg->total_fcomps))==NULL)
@@ -113,7 +113,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***********************/
 
 	str_list_t fview_list = iniGetSectionList(ini, "viewer:");
-	cfg->total_fviews = strListCount(fview_list);
+	cfg->total_fviews = (uint16_t)strListCount(fview_list);
 
 	if(cfg->total_fviews) {
 		if((cfg->fview=(fview_t **)malloc(sizeof(fview_t *)*cfg->total_fviews))==NULL)
@@ -139,7 +139,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***********************/
 
 	str_list_t ftest_list = iniGetSectionList(ini, "tester:");
-	cfg->total_ftests = strListCount(ftest_list);
+	cfg->total_ftests = (uint16_t)strListCount(ftest_list);
 
 	if(cfg->total_ftests) {
 		if((cfg->ftest=(ftest_t **)malloc(sizeof(ftest_t *)*cfg->total_ftests))==NULL)
@@ -166,7 +166,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*******************/
 
 	str_list_t dlevent_list = iniGetSectionList(ini, "dlevent:");
-	cfg->total_dlevents = strListCount(dlevent_list);
+	cfg->total_dlevents = (uint16_t)strListCount(dlevent_list);
 
 	if(cfg->total_dlevents) {
 		if((cfg->dlevent=(dlevent_t **)malloc(sizeof(dlevent_t *)*cfg->total_dlevents))
@@ -194,7 +194,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***************************/
 
 	str_list_t prot_list = iniGetSectionList(ini, "protocol:");
-	cfg->total_prots = strListCount(prot_list);
+	cfg->total_prots = (uint16_t)strListCount(prot_list);
 
 	if(cfg->total_prots) {
 		if((cfg->prot=(prot_t **)malloc(sizeof(prot_t *)*cfg->total_prots))==NULL)
@@ -214,7 +214,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->prot[i]->dlcmd, iniGetString(section, NULL, "dlcmd", "", value));
 		SAFECOPY(cfg->prot[i]->batulcmd, iniGetString(section, NULL, "batulcmd", "", value));
 		SAFECOPY(cfg->prot[i]->batdlcmd, iniGetString(section, NULL, "batdlcmd", "", value));
-		cfg->prot[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->prot[i]->misc = iniGetInt32(section, NULL, "settings", 0);
 		SAFECOPY(cfg->prot[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->prot[i]->arstr, cfg, cfg->prot[i]->ar);
 		iniFreeStringList(section);
@@ -226,7 +226,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/******************/
 
 	str_list_t lib_list = iniGetSectionList(ini, "lib:");
-	cfg->total_libs = strListCount(lib_list);
+	cfg->total_libs = (uint16_t)strListCount(lib_list);
 
 	if(cfg->total_libs) {
 		if((cfg->lib=(lib_t **)malloc(sizeof(lib_t *)*cfg->total_libs))==NULL)
@@ -252,7 +252,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		SAFECOPY(cfg->lib[i]->parent_path, iniGetString(section, NULL, "parent_path", "", value));
 		cfg->lib[i]->sort = iniGetInteger(section, NULL, "sort", 0);
-		cfg->lib[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->lib[i]->misc = iniGetInt32(section, NULL, "settings", 0);
 		cfg->lib[i]->vdir_name = iniGetShortInt(section, NULL, "vdir_name", 0);
 		iniFreeStringList(section);
 	}
@@ -264,7 +264,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	cfg->sysop_dir=cfg->user_dir=cfg->upload_dir=INVALID_DIR;
 	str_list_t dir_list = iniGetSectionList(ini, "dir:");
-	cfg->total_dirs = strListCount(dir_list);
+	cfg->total_dirs = (uint16_t)strListCount(dir_list);
 
 	if(cfg->total_dirs) {
 		if((cfg->dir=(dir_t **)malloc(sizeof(dir_t *)*(cfg->total_dirs+1)))==NULL)
@@ -326,9 +326,9 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		cfg->dir[i]->maxfiles = iniGetShortInt(section, NULL, "maxfiles", 0);
 		SAFECOPY(cfg->dir[i]->exts, iniGetString(section, NULL, "extensions", "", value));
-		cfg->dir[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
-		cfg->dir[i]->seqdev = iniGetShortInt(section, NULL, "seqdev", 0);
-		cfg->dir[i]->sort = iniGetShortInt(section, NULL, "sort", 0);
+		cfg->dir[i]->misc = iniGetInt32(section, NULL, "settings", 0);
+		cfg->dir[i]->seqdev = iniGetUInteger(section, NULL, "seqdev", 0);
+		cfg->dir[i]->sort = iniGetUInteger(section, NULL, "sort", 0);
 		SAFECOPY(cfg->dir[i]->ex_arstr, iniGetString(section, NULL, "exempt_ars", "", value));
 		arstr(NULL, cfg->dir[i]->ex_arstr, cfg, cfg->dir[i]->ex_ar);
 
@@ -346,7 +346,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/**********************/
 
 	str_list_t sec_list = iniGetSectionList(ini, "text:");
-	cfg->total_txtsecs = strListCount(sec_list);
+	cfg->total_txtsecs = (uint16_t)strListCount(sec_list);
 
 	if(cfg->total_txtsecs) {
 		if((cfg->txtsec=(txtsec_t **)malloc(sizeof(txtsec_t *)*cfg->total_txtsecs))==NULL)
@@ -398,7 +398,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/********************/
 
 	str_list_t list = iniGetSectionList(ini, "editor:");
-	cfg->total_xedits = strListCount(list);
+	cfg->total_xedits = (uint16_t)strListCount(list);
 
 	if(cfg->total_xedits) {
 		if((cfg->xedit=(xedit_t **)malloc(sizeof(xedit_t *)*cfg->total_xedits))==NULL)
@@ -416,11 +416,11 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->xedit[i]->name, iniGetString(section, NULL, "name", name + 7, value));
 		SAFECOPY(cfg->xedit[i]->rcmd, iniGetString(section, NULL, "cmd", "", value));
 
-		cfg->xedit[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->xedit[i]->misc = iniGetInt32(section, NULL, "settings", 0);
 		SAFECOPY(cfg->xedit[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->xedit[i]->arstr, cfg, cfg->xedit[i]->ar);
 
-		cfg->xedit[i]->type = iniGetShortInt(section, NULL, "type", 0);
+		cfg->xedit[i]->type = (uint8_t)iniGetShortInt(section, NULL, "type", 0);
 		cfg->xedit[i]->soft_cr = iniGetShortInt(section, NULL, "soft_cr", (cfg->xedit[i]->misc&QUICKBBS) ? XEDIT_SOFT_CR_EXPAND : XEDIT_SOFT_CR_RETAIN);
 		cfg->xedit[i]->quotewrap_cols = iniGetShortInt(section, NULL, "quotewrap_cols", 0);
 		iniFreeStringList(section);
@@ -432,7 +432,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*****************************/
 
 	list = iniGetSectionList(ini, "sec:");
-	cfg->total_xtrnsecs = strListCount(list);
+	cfg->total_xtrnsecs = (uint16_t)strListCount(list);
 
 	if(cfg->total_xtrnsecs) {
 		if((cfg->xtrnsec=(xtrnsec_t **)malloc(sizeof(xtrnsec_t *)*cfg->total_xtrnsecs))
@@ -460,7 +460,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*********************/
 
 	list = iniGetSectionList(ini, "prog:");
-	cfg->total_xtrns = strListCount(list);
+	cfg->total_xtrns = (uint16_t)strListCount(list);
 
 	if(cfg->total_xtrns) {
 		if((cfg->xtrn=(xtrn_t **)malloc(sizeof(xtrn_t *)*cfg->total_xtrns))==NULL)
@@ -495,15 +495,15 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		arstr(NULL, cfg->xtrn[i]->arstr, cfg, cfg->xtrn[i]->ar);
 		arstr(NULL, cfg->xtrn[i]->run_arstr, cfg, cfg->xtrn[i]->run_ar);
 
-		cfg->xtrn[i]->type = iniGetShortInt(section, NULL, "type", 0);
-		cfg->xtrn[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
-		cfg->xtrn[i]->event = iniGetShortInt(section, NULL, "event", 0);
-		cfg->xtrn[i]->cost = iniGetLongInt(section, NULL, "cost", 0);
+		cfg->xtrn[i]->type = (uint8_t)iniGetShortInt(section, NULL, "type", 0);
+		cfg->xtrn[i]->misc = iniGetInt32(section, NULL, "settings", 0);
+		cfg->xtrn[i]->event = (uint8_t)iniGetShortInt(section, NULL, "event", 0);
+		cfg->xtrn[i]->cost = iniGetInt32(section, NULL, "cost", 0);
 		SAFECOPY(cfg->xtrn[i]->cmd, iniGetString(section, NULL, "cmd", "", value));
 		SAFECOPY(cfg->xtrn[i]->clean, iniGetString(section, NULL, "clean_cmd", "", value));
 		SAFECOPY(cfg->xtrn[i]->path, iniGetString(section, NULL, "startup_dir", "", value));
-		cfg->xtrn[i]->textra = iniGetShortInt(section, NULL, "textra", 0);
-		cfg->xtrn[i]->maxtime = iniGetShortInt(section, NULL, "max_time", 0);
+		cfg->xtrn[i]->textra = (uint8_t)iniGetShortInt(section, NULL, "textra", 0);
+		cfg->xtrn[i]->maxtime = (uint8_t)iniGetShortInt(section, NULL, "max_time", 0);
 		iniFreeStringList(section);
 		++cfg->total_xtrns;
 	}
@@ -514,7 +514,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/****************/
 
 	list = iniGetSectionList(ini, "event:");
-	cfg->total_events = strListCount(list);
+	cfg->total_events = (uint16_t)strListCount(list);
 
 	if(cfg->total_events) {
 		if((cfg->event=(event_t **)malloc(sizeof(event_t *)*cfg->total_events))==NULL)
@@ -531,15 +531,15 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		SAFECOPY(cfg->event[i]->code, name + 6);
 		SAFECOPY(cfg->event[i]->cmd, iniGetString(section, NULL, "cmd", "", value));
-		cfg->event[i]->days = iniGetShortInt(section, NULL, "days", 0);
+		cfg->event[i]->days = (uint8_t)iniGetShortInt(section, NULL, "days", 0);
 		cfg->event[i]->time = iniGetShortInt(section, NULL, "time", 0);
 		cfg->event[i]->node = iniGetShortInt(section, NULL, "node_num", 0);
-		cfg->event[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->event[i]->misc = iniGetInt32(section, NULL, "settings", 0);
 		SAFECOPY(cfg->event[i]->dir, iniGetString(section, NULL, "startup_dir", "", value));
 		cfg->event[i]->freq = iniGetShortInt(section, NULL, "freq", 0);
 		cfg->event[i]->mdays = iniGetShortInt(section, NULL, "mdays", 0);
 		cfg->event[i]->months = iniGetShortInt(section, NULL, "months", 0);
-		cfg->event[i]->errlevel = iniGetShortInt(section, NULL, "errlevel", LOG_ERR);
+		cfg->event[i]->errlevel = (uint8_t)iniGetShortInt(section, NULL, "errlevel", LOG_ERR);
 
 		// You can't require exclusion *and* not specify which node/instance will execute the event
 		if(cfg->event[i]->node == NODE_ANY)
@@ -553,7 +553,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/************************************/
 
 	list = iniGetSectionList(ini, "native:");
-	cfg->total_natvpgms = strListCount(list);
+	cfg->total_natvpgms = (uint16_t)strListCount(list);
 
 	if(cfg->total_natvpgms) {
 		if((cfg->natvpgm=(natvpgm_t **)malloc(sizeof(natvpgm_t *)*cfg->total_natvpgms))==NULL)
@@ -575,7 +575,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*******************/
 
 	list = iniGetSectionList(ini, "hotkey:");
-	cfg->total_hotkeys = strListCount(list);
+	cfg->total_hotkeys = (uint16_t)strListCount(list);
 
 	if(cfg->total_hotkeys) {
 		if((cfg->hotkey=(hotkey_t **)malloc(sizeof(hotkey_t *)*cfg->total_hotkeys))==NULL)
@@ -597,7 +597,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/************************************/
 	/* External Program-related Toggles */
 	/************************************/
-	cfg->xtrn_misc = iniGetLongInt(ini, ROOT_SECTION, "settings", 0);
+	cfg->xtrn_misc = iniGetInt32(ini, ROOT_SECTION, "settings", 0);
 
 	iniFreeStringList(ini);
 
@@ -629,7 +629,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*********/
 
 	str_list_t list = iniGetSectionList(ini, "guru:");
-	cfg->total_gurus = strListCount(list);
+	cfg->total_gurus = (uint16_t)strListCount(list);
 
 	if(cfg->total_gurus) {
 		if((cfg->guru=(guru_t **)malloc(sizeof(guru_t *)*cfg->total_gurus))==NULL)
@@ -658,7 +658,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/********************/
 
 	list = iniGetSectionList(ini, "actions:");
-	cfg->total_actsets = strListCount(list);
+	cfg->total_actsets = (uint16_t)strListCount(list);
 
 	if(cfg->total_actsets) {
 		if((cfg->actset=(actset_t **)malloc(sizeof(actset_t *)*cfg->total_actsets))==NULL)
@@ -698,7 +698,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***************************/
 
 	list = iniGetSectionList(ini, "chan:");
-	cfg->total_chans = strListCount(list);
+	cfg->total_chans = (uint16_t)strListCount(list);
 
 	if(cfg->total_chans) {
 		if((cfg->chan=(chan_t **)malloc(sizeof(chan_t *)*cfg->total_chans))==NULL)
@@ -721,9 +721,9 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->chan[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->chan[i]->arstr, cfg, cfg->chan[i]->ar);
 
-		cfg->chan[i]->cost = iniGetLongInt(section, NULL, "cost", 0);
+		cfg->chan[i]->cost = iniGetUInt32(section, NULL, "cost", 0);
 		cfg->chan[i]->guru = getgurunum(cfg, iniGetString(section, NULL, "guru", "", value));
-		cfg->chan[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->chan[i]->misc = iniGetUInt32(section, NULL, "settings", 0);
 		iniFreeStringList(section);
 	}
 	iniFreeStringList(list);
@@ -733,7 +733,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***************/
 
 	list = iniGetSectionList(ini, "pager:");
-	cfg->total_pages = strListCount(list);
+	cfg->total_pages = (uint16_t)strListCount(list);
 
 	if(cfg->total_pages) {
 		if((cfg->page=(page_t **)malloc(sizeof(page_t *)*cfg->total_pages))==NULL)
@@ -753,7 +753,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->page[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->page[i]->arstr, cfg, cfg->page[i]->ar);
 
-		cfg->page[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->page[i]->misc = iniGetInt32(section, NULL, "settings", 0);
 		iniFreeStringList(section);
 	}
 	iniFreeStringList(list);
