@@ -3620,8 +3620,8 @@ BOOL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(
 			str_list_t keys = iniGetSection(ini, cfg->sub[i]->code);
 			if(keys == NULL)
 				continue;
-			subscan[i].ptr	= iniGetLongInt(keys, NULL, "ptr"	, subscan[i].ptr);
-			subscan[i].last	= iniGetLongInt(keys, NULL, "last"	, subscan[i].last);
+			subscan[i].ptr	= iniGetUInt32(keys, NULL, "ptr"	, subscan[i].ptr);
+			subscan[i].last	= iniGetUInt32(keys, NULL, "last"	, subscan[i].last);
 			subscan[i].cfg	= iniGetShortInt(keys, NULL, "cfg"	, subscan[i].cfg);
 			subscan[i].cfg &= (SUB_CFG_NSCAN|SUB_CFG_SSCAN|SUB_CFG_YSCAN);	// Sanitize the 'cfg' value
 			subscan[i].sav_ptr	= subscan[i].ptr;
@@ -3696,8 +3696,8 @@ BOOL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 			&& keys != NULL && *keys != NULL)
 			iniAppendSectionWithKeys(&new, cfg->sub[i]->code, keys, &ini_style);
 		else {
-			iniSetLongInt(&new, cfg->sub[i]->code, "ptr", subscan[i].ptr, &ini_style);
-			iniSetLongInt(&new, cfg->sub[i]->code, "last", subscan[i].last, &ini_style);
+			iniSetUInt32(&new, cfg->sub[i]->code, "ptr", subscan[i].ptr, &ini_style);
+			iniSetUInt32(&new, cfg->sub[i]->code, "last", subscan[i].last, &ini_style);
 			iniSetHexInt(&new, cfg->sub[i]->code, "cfg", subscan[i].cfg, &ini_style);
 			iniSetDateTime(&new, cfg->sub[i]->code, "updated", /* include_time: */TRUE, now, &ini_style);
 			modified = TRUE;
