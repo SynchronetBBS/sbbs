@@ -184,6 +184,7 @@ function main()
 	var val;
 
 	uifc.init("FREQIT Config");
+	js.on_exit("uifc.bail()");
 	while (cmd >= 0) {
 		opts = ["Dirs...", "Secure Dirs...", format("Max Files (%d)", cfg.maxfiles), "Magic Names..."];
 		cmd = uifc.list(WIN_ACT|WIN_ORG|WIN_MID, "FREQIT Options", opts, ctx);
