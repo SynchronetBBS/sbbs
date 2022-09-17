@@ -667,16 +667,34 @@ char* iniSetValue(str_list_t* list, const char* section, const char* key, const 
 	return ini_set_string(list, section, key, value, /* literal: */FALSE, style);
 }
 
-char* iniSetInteger(str_list_t* list, const char* section, const char* key, long value
+char* iniSetInteger(str_list_t* list, const char* section, const char* key, int value
 					,ini_style_t* style)
 {
 	char	str[INI_MAX_VALUE_LEN];
 
-	SAFEPRINTF(str,"%ld",value);
+	SAFEPRINTF(str,"%d",value);
 	return iniSetString(list, section, key, str, style);
 }
 
-char* iniSetShortInt(str_list_t* list, const char* section, const char* key, ushort value
+char* iniSetUInteger(str_list_t* list, const char* section, const char* key, uint value
+					,ini_style_t* style)
+{
+	char	str[INI_MAX_VALUE_LEN];
+
+	SAFEPRINTF(str,"%u",value);
+	return iniSetString(list, section, key, str, style);
+}
+
+char* iniSetShortInt(str_list_t* list, const char* section, const char* key, short value
+					,ini_style_t* style)
+{
+	char	str[INI_MAX_VALUE_LEN];
+
+	SAFEPRINTF(str,"%hd",value);
+	return iniSetString(list, section, key, str, style);
+}
+
+char* iniSetUShortInt(str_list_t* list, const char* section, const char* key, ushort value
 					,ini_style_t* style)
 {
 	char	str[INI_MAX_VALUE_LEN];
@@ -685,7 +703,16 @@ char* iniSetShortInt(str_list_t* list, const char* section, const char* key, ush
 	return iniSetString(list, section, key, str, style);
 }
 
-char* iniSetLongInt(str_list_t* list, const char* section, const char* key, ulong value
+char* iniSetLongInt(str_list_t* list, const char* section, const char* key, long value
+					,ini_style_t* style)
+{
+	char	str[INI_MAX_VALUE_LEN];
+
+	SAFEPRINTF(str,"%ld",value);
+	return iniSetString(list, section, key, str, style);
+}
+
+char* iniSetULongInt(str_list_t* list, const char* section, const char* key, ulong value
 					,ini_style_t* style)
 {
 	char	str[INI_MAX_VALUE_LEN];
@@ -694,12 +721,12 @@ char* iniSetLongInt(str_list_t* list, const char* section, const char* key, ulon
 	return iniSetString(list, section, key, str, style);
 }
 
-char* iniSetHexInt(str_list_t* list, const char* section, const char* key, ulong value
+char* iniSetHexInt(str_list_t* list, const char* section, const char* key, uint value
 					,ini_style_t* style)
 {
 	char	str[INI_MAX_VALUE_LEN];
 
-	SAFEPRINTF(str,"0x%lx",value);
+	SAFEPRINTF(str,"0x%x",value);
 	return iniSetString(list, section, key, str, style);
 }
 
@@ -712,7 +739,7 @@ char* iniSetFloat(str_list_t* list, const char* section, const char* key, double
 	return iniSetString(list, section, key, str, style);
 }
 
-char* iniSetBytes(str_list_t* list, const char* section, const char* key, ulong unit
+char* iniSetBytes(str_list_t* list, const char* section, const char* key, uint unit
 					,int64_t value, ini_style_t* style)
 {
 	char	str[INI_MAX_VALUE_LEN];
@@ -802,7 +829,7 @@ char* iniSetEnum(str_list_t* list, const char* section, const char* key, str_lis
 	if(value < strListCount(names))
 		return iniSetString(list, section, key, names[value], style);
 
-	return iniSetLongInt(list, section, key, value, style);
+	return iniSetUInteger(list, section, key, value, style);
 }
 
 char* iniSetEnumList(str_list_t* list, const char* section, const char* key
@@ -832,8 +859,8 @@ char* iniSetEnumList(str_list_t* list, const char* section, const char* key
 	return iniSetString(list, section, key, value, style);
 }
 
-char* iniSetNamedInt(str_list_t* list, const char* section, const char* key, named_long_t* names
-					 ,long value, ini_style_t* style)
+char* iniSetNamedInt(str_list_t* list, const char* section, const char* key, named_int_t* names
+					 ,int value, ini_style_t* style)
 {
 	size_t	i;
 
@@ -844,8 +871,8 @@ char* iniSetNamedInt(str_list_t* list, const char* section, const char* key, nam
 	return iniSetInteger(list, section, key, value, style);
 }
 
-char* iniSetNamedHexInt(str_list_t* list, const char* section, const char* key, named_ulong_t* names
-					 ,ulong value, ini_style_t* style)
+char* iniSetNamedHexInt(str_list_t* list, const char* section, const char* key, named_uint_t* names
+					 ,uint value, ini_style_t* style)
 {
 	size_t	i;
 
@@ -856,8 +883,8 @@ char* iniSetNamedHexInt(str_list_t* list, const char* section, const char* key, 
 	return iniSetHexInt(list, section, key, value, style);
 }
 
-char* iniSetNamedLongInt(str_list_t* list, const char* section, const char* key, named_ulong_t* names
-					 ,ulong value, ini_style_t* style)
+char* iniSetNamedLongInt(str_list_t* list, const char* section, const char* key, named_long_t* names
+					 ,long value, ini_style_t* style)
 {
 	size_t	i;
 
@@ -881,7 +908,7 @@ char* iniSetNamedFloat(str_list_t* list, const char* section, const char* key, n
 }
 
 char* iniSetBitField(str_list_t* list, const char* section, const char* key
-					 ,ini_bitdesc_t* bitdesc, ulong value, ini_style_t* style)
+					 ,ini_bitdesc_t* bitdesc, uint value, ini_style_t* style)
 {
 	char	str[INI_MAX_VALUE_LEN];
 	int		i;
@@ -1459,7 +1486,23 @@ static BOOL isTrue(const char* value)
 	return is_true;
 }
 
-static long parseInteger(const char* value)
+static int parseInteger(const char* value)
+{
+	if(isTrue(value))
+		return(TRUE);
+
+	return((int)strtol(value,NULL,0));
+}
+
+static uint parseUInteger(const char* value)
+{
+	if(isTrue(value))
+		return(TRUE);
+
+	return((uint)strtoul(value,NULL,0));
+}
+
+static long parseLongInteger(const char* value)
 {
 	if(isTrue(value))
 		return(TRUE);
@@ -1467,7 +1510,7 @@ static long parseInteger(const char* value)
 	return(strtol(value,NULL,0));
 }
 
-static ulong parseLongInteger(const char* value)
+static ulong parseULongInteger(const char* value)
 {
 	if(isTrue(value))
 		return(TRUE);
@@ -1480,7 +1523,7 @@ static BOOL parseBool(const char* value)
 	return(INT_TO_BOOL(parseInteger(value)));
 }
 
-long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
+int iniReadInteger(FILE* fp, const char* section, const char* key, int deflt)
 {
 	char*	value;
 	char	buf[INI_MAX_VALUE_LEN];
@@ -1494,7 +1537,21 @@ long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 	return(parseInteger(value));
 }
 
-long iniGetInteger(str_list_t list, const char* section, const char* key, long deflt)
+uint iniReadUInteger(FILE* fp, const char* section, const char* key, uint deflt)
+{
+	char*	value;
+	char	buf[INI_MAX_VALUE_LEN];
+
+	if((value=read_value(fp,section,key,buf, /* literals_supported: */FALSE))==NULL)
+		return(deflt);
+
+	if(*value==0)		/* blank value */
+		return(deflt);
+
+	return(parseUInteger(value));
+}
+
+int iniGetInteger(str_list_t list, const char* section, const char* key, int deflt)
 {
 	char*	vp=NULL;
 
@@ -1506,17 +1563,39 @@ long iniGetInteger(str_list_t list, const char* section, const char* key, long d
 	return(parseInteger(vp));
 }
 
-ushort iniReadShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
+uint iniGetUInteger(str_list_t list, const char* section, const char* key, uint deflt)
 {
-	return((ushort)iniReadInteger(fp, section, key, deflt));
+	char*	vp=NULL;
+
+	get_value(list, section, key, NULL, &vp, /* literals_supported: */FALSE);
+
+	if(vp==NULL || *vp==0)	/* blank value or missing key */
+		return(deflt);
+
+	return(parseUInteger(vp));
 }
 
-ushort iniGetShortInt(str_list_t list, const char* section, const char* key, ushort deflt)
+short iniReadShortInt(FILE* fp, const char* section, const char* key, short deflt)
 {
-	return((ushort)iniGetInteger(list, section, key, deflt));
+	return((short)iniReadInteger(fp, section, key, deflt));
 }
 
-ulong iniReadLongInt(FILE* fp, const char* section, const char* key, ulong deflt)
+ushort iniReadUShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
+{
+	return((ushort)iniReadUInteger(fp, section, key, deflt));
+}
+
+short iniGetShortInt(str_list_t list, const char* section, const char* key, short deflt)
+{
+	return((short)iniGetInteger(list, section, key, deflt));
+}
+
+ushort iniGetUShortInt(str_list_t list, const char* section, const char* key, ushort deflt)
+{
+	return((ushort)iniGetUInteger(list, section, key, deflt));
+}
+
+long iniReadLongInt(FILE* fp, const char* section, const char* key, long deflt)
 {
 	char*	value;
 	char	buf[INI_MAX_VALUE_LEN];
@@ -1530,7 +1609,21 @@ ulong iniReadLongInt(FILE* fp, const char* section, const char* key, ulong deflt
 	return(parseLongInteger(value));
 }
 
-ulong iniGetLongInt(str_list_t list, const char* section, const char* key, ulong deflt)
+ulong iniReadULongInt(FILE* fp, const char* section, const char* key, ulong deflt)
+{
+	char*	value;
+	char	buf[INI_MAX_VALUE_LEN];
+
+	if((value=read_value(fp,section,key,buf, /* literals_supported: */FALSE))==NULL)
+		return(deflt);
+
+	if(*value==0)		/* blank value */
+		return(deflt);
+
+	return(parseULongInteger(value));
+}
+
+long iniGetLongInt(str_list_t list, const char* section, const char* key, long deflt)
 {
 	char*	vp=NULL;
 
@@ -1542,7 +1635,19 @@ ulong iniGetLongInt(str_list_t list, const char* section, const char* key, ulong
 	return(parseLongInteger(vp));
 }
 
-int64_t iniReadBytes(FILE* fp, const char* section, const char* key, ulong unit, int64_t deflt)
+ulong iniGetULongInt(str_list_t list, const char* section, const char* key, ulong deflt)
+{
+	char*	vp=NULL;
+
+	get_value(list, section, key, NULL, &vp, /* literals_supported: */FALSE);
+
+	if(vp==NULL || *vp==0)	/* blank value or missing key */
+		return(deflt);
+
+	return(parseULongInteger(vp));
+}
+
+int64_t iniReadBytes(FILE* fp, const char* section, const char* key, uint unit, int64_t deflt)
 {
 	char*	value;
 	char	buf[INI_MAX_VALUE_LEN];
@@ -1556,7 +1661,7 @@ int64_t iniReadBytes(FILE* fp, const char* section, const char* key, ulong unit,
 	return(parse_byte_count(value,unit));
 }
 
-int64_t iniGetBytes(str_list_t list, const char* section, const char* key, ulong unit, int64_t deflt)
+int64_t iniGetBytes(str_list_t list, const char* section, const char* key, uint unit, int64_t deflt)
 {
 	char*	vp=NULL;
 
@@ -2093,7 +2198,7 @@ unsigned* iniGetEnumList(str_list_t list, const char* section, const char* key
 	return(parseEnumList(vp, sep, names, cp));
 }
 
-static long parseNamedInt(const char* value, named_long_t* names)
+static int parseNamedInt(const char* value, named_int_t* names)
 {
 	unsigned i;
 
@@ -2110,8 +2215,8 @@ static long parseNamedInt(const char* value, named_long_t* names)
 	return(parseInteger(value));
 }
 
-long iniReadNamedInt(FILE* fp, const char* section, const char* key
-					 ,named_long_t* names, long deflt)
+int iniReadNamedInt(FILE* fp, const char* section, const char* key
+					 ,named_int_t* names, int deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
@@ -2125,8 +2230,8 @@ long iniReadNamedInt(FILE* fp, const char* section, const char* key
 	return(parseNamedInt(value,names));
 }
 
-long iniGetNamedInt(str_list_t list, const char* section, const char* key
-					,named_long_t* names, long deflt)
+int iniGetNamedInt(str_list_t list, const char* section, const char* key
+					,named_int_t* names, int deflt)
 {
 	char*	vp=NULL;
 
@@ -2138,7 +2243,7 @@ long iniGetNamedInt(str_list_t list, const char* section, const char* key
 	return(parseNamedInt(vp,names));
 }
 
-static ulong parseNamedLongInt(const char* value, named_ulong_t* names)
+static ulong parseNamedULongInt(const char* value, named_ulong_t* names)
 {
 	unsigned i;
 
@@ -2152,10 +2257,10 @@ static ulong parseNamedLongInt(const char* value, named_ulong_t* names)
 		if(strnicmp(names[i].name,value,strlen(value))==0)
 			return(names[i].value);
 
-	return(parseLongInteger(value));
+	return(parseULongInteger(value));
 }
 
-ulong iniReadNamedLongInt(FILE* fp, const char* section, const char* key
+ulong iniReadNamedULongInt(FILE* fp, const char* section, const char* key
 					 ,named_ulong_t* names, ulong deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
@@ -2167,10 +2272,10 @@ ulong iniReadNamedLongInt(FILE* fp, const char* section, const char* key
 	if(*value==0)		/* blank value */
 		return(deflt);
 
-	return(parseNamedLongInt(value,names));
+	return(parseNamedULongInt(value,names));
 }
 
-ulong iniGetNamedLongInt(str_list_t list, const char* section, const char* key
+ulong iniGetNamedULongInt(str_list_t list, const char* section, const char* key
 					,named_ulong_t* names, ulong deflt)
 {
 	char*	vp=NULL;
@@ -2180,7 +2285,7 @@ ulong iniGetNamedLongInt(str_list_t list, const char* section, const char* key
 	if(vp==NULL || *vp==0)		/* blank value or missing key */
 		return(deflt);
 
-	return(parseNamedLongInt(vp,names));
+	return(parseNamedULongInt(vp,names));
 }
 
 static double parseNamedFloat(const char* value, named_double_t* names)
@@ -2260,8 +2365,8 @@ static ulong parseBitField(char* value, ini_bitdesc_t* bitdesc)
 	return(v);
 }
 
-ulong iniReadBitField(FILE* fp, const char* section, const char* key,
-						ini_bitdesc_t* bitdesc, ulong deflt)
+uint iniReadBitField(FILE* fp, const char* section, const char* key,
+						ini_bitdesc_t* bitdesc, uint deflt)
 {
 	char*	value;
 	char	buf[INI_MAX_VALUE_LEN];
@@ -2272,8 +2377,8 @@ ulong iniReadBitField(FILE* fp, const char* section, const char* key,
 	return(parseBitField(value,bitdesc));
 }
 
-ulong iniGetBitField(str_list_t list, const char* section, const char* key,
-						ini_bitdesc_t* bitdesc, ulong deflt)
+uint iniGetBitField(str_list_t list, const char* section, const char* key,
+						ini_bitdesc_t* bitdesc, uint deflt)
 {
 	char*	vp=NULL;;
 
