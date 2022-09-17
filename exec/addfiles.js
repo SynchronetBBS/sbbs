@@ -51,6 +51,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("options:");
 			writeln("  -all            add files in all libraries/directories (implies -auto)");
 			writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
+			writeln("  -auto           add files only to directories that have Auto-ADDFILES enabled");
 			writeln("  -from=<name>    specify uploader's user name (may require quotes)");
 			writeln("  -file=<name>    specify files to add (wildcards supported, default: *)");
 			writeln("  -ex=<filename>  add to excluded filename list");
