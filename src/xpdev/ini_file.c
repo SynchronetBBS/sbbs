@@ -930,7 +930,7 @@ char* iniSetBitField(str_list_t* list, const char* section, const char* key
 	if(value) {	/* left over bits? */
 		if(str[0])
 			SAFECAT(str, bit_separator);
-		sprintf(str+strlen(str), "0x%lX", value);
+		sprintf(str+strlen(str), "0x%X", value);
 	}
 	return iniSetString(list, section, key, str, style);
 }
