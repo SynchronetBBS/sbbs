@@ -93,10 +93,12 @@ if(join) {
 }
 
 var delay=0;
-if(msg)
+var send_count = 0;
+if(msg) {
 	send(msg, delay);
+	send_count++;
+}
 else while((msg=readln())!=undefined) {	/* read from stdin */
-	var send_count = 0;
 	if (send(msg, delay)) {
 		send_count++;
 		if (send_count > 4)
@@ -109,7 +111,8 @@ while(my_server.poll(0) && (response=my_server.recvline()))
 
 var token = format("%x", random(0x7fffffff));
 if(my_server.sendline("PING :"+ token)) {
-	while(my_server.poll(5)) {
+	mylog("PING sent");
+	while(my_server.poll(10 * send_count)) {
 		var response = my_server.recvline();
 		mylog(response);
 		if(response == (":" + server + " PONG " + server + " :" + token))
@@ -119,7 +122,7 @@ if(my_server.sendline("PING :"+ token)) {
 
 IRC_quit(my_server);
 mylog("Exiting");
-exit();
+exit(0);
 
 function send(msg, delay)
 {
