@@ -329,11 +329,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*************************/
 	/* General Message Stuff */
 	/*************************/
+	cfg->msg_misc = iniGetLongInt(ini, ROOT_SECTION, "settings", 0xffff0000);
 	cfg->smb_retry_time = iniGetInteger(ini, ROOT_SECTION, "smb_retry_time", 30);
 
 	/* QWK stuff */
 	str_list_t section = iniCutSection(ini, "QWK");
-	cfg->msg_misc = iniGetLongInt(section, NULL, "settings", 0xffff0000);
 	cfg->max_qwkmsgs = iniGetInteger(section, NULL, "max_msgs", 0);
 	cfg->max_qwkmsgage = iniGetInteger(section, NULL, "max_age", 0);
 	SAFECOPY(cfg->qnet_tagline, iniGetString(section, NULL, "default_tagline", "", value));
