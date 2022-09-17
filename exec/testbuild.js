@@ -91,6 +91,8 @@ var builds
 
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
+	builds.unshift(["src/sbbs3"			,'..\\build\\gitinfo.bat'
+																,"> " + build_output]);
 	/* Requires Visual C++ 2019 */
 	builds.push(["src/sbbs3"			,'release.bat /v:m /p:WarningLevel=0'
 																,"> " + build_output]);

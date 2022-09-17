@@ -4744,6 +4744,7 @@ static void cleanup(int code)
     lputs(LOG_INFO,"Terminal Server thread terminating");
 
 	xpms_destroy(ts_set, sock_close_cb, startup);
+	ts_set = NULL;
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0)
