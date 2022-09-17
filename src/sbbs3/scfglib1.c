@@ -113,7 +113,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->sys_deldays = iniGetInteger(ini, ROOT_SECTION, "deldays", 0);
 	cfg->sys_exp_warn = iniGetInteger(ini, ROOT_SECTION, "exp_warn", 0);
 	cfg->sys_autodel = iniGetInteger(ini, ROOT_SECTION, "autodel", 0);
-	cfg->cdt_min_value =  iniGetUInt16(ini, ROOT_SECTION, "cdt_min_value", 1, 0);
+	cfg->cdt_min_value =  iniGetUInt16(ini, ROOT_SECTION, "cdt_min_value", 0);
 	cfg->max_minutes = iniGetInteger(ini, ROOT_SECTION, "max_minutes", 0);
 	cfg->cdt_per_dollar = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "cdt_per_dollar", 1, 0);
 	cfg->guest_msgscan_init = iniGetInteger(ini, ROOT_SECTION, "guest_msgscan_init", 0);
