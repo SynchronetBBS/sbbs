@@ -60,7 +60,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->node_arstr, iniGetString(ini, ROOT_SECTION, "ars", "", value));
 	arstr(NULL, cfg->node_arstr, cfg, cfg->node_ar);
 
-	cfg->node_misc = iniGetLongInt(ini, ROOT_SECTION, "settings", 0);
+	cfg->node_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
 	cfg->node_valuser = iniGetShortInt(ini, ROOT_SECTION, "valuser", 0);
 	cfg->node_sem_check = iniGetShortInt(ini, ROOT_SECTION, "sem_check", 60);
 	cfg->node_stat_check = iniGetShortInt(ini, ROOT_SECTION, "stat_check", 10);
@@ -108,22 +108,22 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	arstr(NULL, cfg->sys_chat_arstr, cfg, cfg->sys_chat_ar);
 
 	cfg->sys_timezone = iniGetShortInt(ini, ROOT_SECTION, "timezone", 0);
-	cfg->sys_misc = iniGetLongInt(ini, ROOT_SECTION, "settings", 0);
+	cfg->sys_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
 	cfg->sys_pwdays = iniGetInteger(ini, ROOT_SECTION, "pwdays", 0);
 	cfg->sys_deldays = iniGetInteger(ini, ROOT_SECTION, "deldays", 0);
 	cfg->sys_exp_warn = iniGetInteger(ini, ROOT_SECTION, "exp_warn", 0);
 	cfg->sys_autodel = iniGetInteger(ini, ROOT_SECTION, "autodel", 0);
-	cfg->cdt_min_value =  iniGetBytes(ini, ROOT_SECTION, "cdt_min_value", 1, 0);
+	cfg->cdt_min_value =  iniGetUInt16(ini, ROOT_SECTION, "cdt_min_value", 1, 0);
 	cfg->max_minutes = iniGetInteger(ini, ROOT_SECTION, "max_minutes", 0);
-	cfg->cdt_per_dollar = iniGetBytes(ini, ROOT_SECTION, "cdt_per_dollar", 1, 0);
+	cfg->cdt_per_dollar = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "cdt_per_dollar", 1, 0);
 	cfg->guest_msgscan_init = iniGetInteger(ini, ROOT_SECTION, "guest_msgscan_init", 0);
 	cfg->min_pwlen = iniGetInteger(ini, ROOT_SECTION, "min_pwlen", 0);
 	if(cfg->min_pwlen < MIN_PASS_LEN)
 		cfg->min_pwlen = MIN_PASS_LEN;
 	if(cfg->min_pwlen > LEN_PASS)
 		cfg->min_pwlen = LEN_PASS;
-	cfg->max_log_size = iniGetLongInt(ini, ROOT_SECTION, "max_log_size", 0);
-	cfg->max_logs_kept = iniGetInteger(ini, ROOT_SECTION, "max_logs_kept", 0);
+	cfg->max_log_size = iniGetUInt32(ini, ROOT_SECTION, "max_log_size", 0);
+	cfg->max_logs_kept = iniGetUInt16(ini, ROOT_SECTION, "max_logs_kept", 0);
 	cfg->ctrlkey_passthru = iniGetInteger(ini, ROOT_SECTION, "ctrlkey_passthru", 0);
 
 	cfg->user_backup_level = iniGetInteger(ini, ROOT_SECTION, "user_backup_level", 5);
@@ -138,7 +138,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	section = iniCutSection(ini, "node_dir");
 
 	str_list_t node_dirs = iniGetKeyList(section, NULL);
-	cfg->sys_nodes = strListCount(node_dirs);
+	cfg->sys_nodes = (uint16_t)strListCount(node_dirs);
 	for(size_t i=0; i<cfg->sys_nodes; i++) {
 		SAFECOPY(cfg->node_path[i], iniGetString(section, NULL, node_dirs[i], "", value));
 #if defined(__unix__)
@@ -161,7 +161,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/* New User Settings */
 	/*********************/
 	section = iniCutSection(ini, "newuser");
-	cfg->uq = iniGetLongInt(section, NULL, "questions", 0);
+	cfg->uq = iniGetUInteger(section, NULL, "questions", 0);
 
 	SAFECOPY(cfg->new_genders, iniGetString(section, NULL, "gender_options", "MFX", value));
 	SAFECOPY(cfg->new_pass, iniGetString(section, NULL, "password", "", value));
@@ -174,16 +174,16 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->new_xedit, iniGetString(section, NULL, "editor", "", value));
 
 	cfg->new_level = iniGetInteger(section, NULL, "level", 0);
-	cfg->new_flags1 = iniGetLongInt(section, NULL, "flags1", 0);
-	cfg->new_flags2 = iniGetLongInt(section, NULL, "flags2", 0);
-	cfg->new_flags3 = iniGetLongInt(section, NULL, "flags3", 0);
-	cfg->new_flags4 = iniGetLongInt(section, NULL, "flags4", 0);
-	cfg->new_exempt = iniGetLongInt(section, NULL, "exemptions", 0);
-	cfg->new_rest = iniGetLongInt(section, NULL, "restrictions", 0);
-	cfg->new_cdt = iniGetBytes(section, NULL, "credits", 1, 0);
-	cfg->new_min = iniGetLongInt(section, NULL, "minutes", 0);
+	cfg->new_flags1 = iniGetUInt32(section, NULL, "flags1", 0);
+	cfg->new_flags2 = iniGetUInt32(section, NULL, "flags2", 0);
+	cfg->new_flags3 = iniGetUInt32(section, NULL, "flags3", 0);
+	cfg->new_flags4 = iniGetUInt32(section, NULL, "flags4", 0);
+	cfg->new_exempt = iniGetUInt32(section, NULL, "exemptions", 0);
+	cfg->new_rest = iniGetUInt32(section, NULL, "restrictions", 0);
+	cfg->new_cdt = (uint32_t)iniGetBytes(section, NULL, "credits", 1, 0);
+	cfg->new_min = iniGetUInteger(section, NULL, "minutes", 0);
 	cfg->new_expire = iniGetInteger(section, NULL, "expire", 0);
-	cfg->new_misc = iniGetLongInt(section, NULL, "settings", 0);
+	cfg->new_misc = iniGetUInt32(section, NULL, "settings", 0);
 	cfg->new_msgscan_init = iniGetInteger(section, NULL, "msgscan_init", 0);
 	iniFreeStringList(section);
 
@@ -192,12 +192,12 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*************************/
 	section = iniCutSection(ini, "expired");
 	cfg->expired_level = iniGetInteger(section, NULL, "level", 0);
-	cfg->expired_flags1 = iniGetLongInt(section, NULL, "flags1", 0);
-	cfg->expired_flags2 = iniGetLongInt(section, NULL, "flags2", 0);
-	cfg->expired_flags3 = iniGetLongInt(section, NULL, "flags3", 0);
-	cfg->expired_flags4 = iniGetLongInt(section, NULL, "flags4", 0);
-	cfg->expired_exempt = iniGetLongInt(section, NULL, "exemptions", 0);
-	cfg->expired_rest = iniGetLongInt(section, NULL, "restrictions", 0);
+	cfg->expired_flags1 = iniGetUInt32(section, NULL, "flags1", 0);
+	cfg->expired_flags2 = iniGetUInt32(section, NULL, "flags2", 0);
+	cfg->expired_flags3 = iniGetUInt32(section, NULL, "flags3", 0);
+	cfg->expired_flags4 = iniGetUInt32(section, NULL, "flags4", 0);
+	cfg->expired_exempt = iniGetUInt32(section, NULL, "exemptions", 0);
+	cfg->expired_rest = iniGetUInt32(section, NULL, "restrictions", 0);
 	iniFreeStringList(section);
 
 	/***********/
@@ -237,13 +237,13 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		section = iniCutSection(ini, name);
 		cfg->val_level[i] = iniGetInteger(section, NULL, "level", 0);
 		cfg->val_expire[i] = iniGetInteger(section, NULL, "expire", 0);
-		cfg->val_flags1[i] = iniGetLongInt(section, NULL, "flags1", 0);
-		cfg->val_flags2[i] = iniGetLongInt(section, NULL, "flags2", 0);
-		cfg->val_flags3[i] = iniGetLongInt(section, NULL, "flags3", 0);
-		cfg->val_flags4[i] = iniGetLongInt(section, NULL, "flags4", 0);
-		cfg->val_cdt[i] = iniGetBytes(section, NULL, "credits", 1, 0);
-		cfg->val_exempt[i] = iniGetLongInt(section, NULL, "exemptions", 0);
-		cfg->val_rest[i] = iniGetLongInt(section, NULL, "restrictions", 0);
+		cfg->val_flags1[i] = iniGetUInt32(section, NULL, "flags1", 0);
+		cfg->val_flags2[i] = iniGetUInt32(section, NULL, "flags2", 0);
+		cfg->val_flags3[i] = iniGetUInt32(section, NULL, "flags3", 0);
+		cfg->val_flags4[i] = iniGetUInt32(section, NULL, "flags4", 0);
+		cfg->val_cdt[i] = (uint32_t)iniGetBytes(section, NULL, "credits", 1, 0);
+		cfg->val_exempt[i] = iniGetUInt32(section, NULL, "exemptions", 0);
+		cfg->val_rest[i] = iniGetUInt32(section, NULL, "restrictions", 0);
 		iniFreeStringList(section);
 	}
 
@@ -261,14 +261,14 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->level_linespermsg[i] = iniGetInteger(section, NULL, "linespermsg", 0);
 		cfg->level_postsperday[i] = iniGetInteger(section, NULL, "postsperday", 0);
 		cfg->level_emailperday[i] = iniGetInteger(section, NULL, "emailperday", 0);
-		cfg->level_misc[i] = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->level_misc[i] = iniGetUInteger(section, NULL, "settings", 0);
 		cfg->level_expireto[i] = iniGetInteger(section, NULL, "expireto", 0);
 		cfg->level_freecdtperday[i] = iniGetBytes(section, NULL, "freecdtperday", 1, 0);
 		iniFreeStringList(section);
 	}
 
 	str_list_t shell_list = iniGetSectionList(ini, "shell:");
-	cfg->total_shells = strListCount(shell_list);
+	cfg->total_shells = (uint16_t)strListCount(shell_list);
 	#ifdef SBBS
 	if(!cfg->total_shells) {
 		safe_snprintf(error, maxerrlen,"At least one command shell must be configured.");
@@ -294,7 +294,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->shell[i]->name, iniGetString(section, NULL, "name", name + 6, value));
 		SAFECOPY(cfg->shell[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL,cfg->shell[i]->arstr,cfg,cfg->shell[i]->ar);
-		cfg->shell[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->shell[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
 		if(stricmp(cfg->shell[i]->code, new_shell) == 0)
 			cfg->new_shell = i;
 		iniFreeStringList(section);
@@ -329,7 +329,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*************************/
 	/* General Message Stuff */
 	/*************************/
-	cfg->msg_misc = iniGetLongInt(ini, ROOT_SECTION, "settings", 0xffff0000);
+	cfg->msg_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0xffff0000);
 	cfg->smb_retry_time = iniGetInteger(ini, ROOT_SECTION, "smb_retry_time", 30);
 
 	/* QWK stuff */
@@ -353,7 +353,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/******************/
 
 	str_list_t grp_list = iniGetSectionList(ini, "grp:");
-	cfg->total_grps = strListCount(grp_list);
+	cfg->total_grps = (uint16_t)strListCount(grp_list);
 
 	if(cfg->total_grps) {
 		if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
@@ -383,7 +383,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/**********************/
 
 	str_list_t sub_list = iniGetSectionList(ini, "sub:");
-	cfg->total_subs = strListCount(sub_list);
+	cfg->total_subs = (uint16_t)strListCount(sub_list);
 
 	if(cfg->total_subs) {
 		if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
@@ -430,7 +430,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		arstr(NULL, cfg->sub[i]->op_arstr, cfg, cfg->sub[i]->op_ar);
 		arstr(NULL, cfg->sub[i]->mod_arstr, cfg,cfg->sub[i]->mod_ar);
 
-		cfg->sub[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->sub[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
 		if((cfg->sub[i]->misc&(SUB_FIDO|SUB_INET)) && !(cfg->sub[i]->misc&SUB_QNET))
 			cfg->sub[i]->misc|=SUB_NOVOTING;
 
@@ -457,8 +457,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 
 		cfg->sub[i]->qwkconf = iniGetShortInt(section, NULL, "qwk_conf", 0);
-		cfg->sub[i]->pmode = iniGetLongInt(section, NULL, "print_mode", 0);
-		cfg->sub[i]->n_pmode = iniGetLongInt(section, NULL, "print_mode_neg", 0);
+		cfg->sub[i]->pmode = iniGetUInteger(section, NULL, "print_mode", 0);
+		cfg->sub[i]->n_pmode = iniGetUInteger(section, NULL, "print_mode_neg", 0);
 		iniFreeStringList(section);
 		++cfg->total_subs;
 	}
@@ -469,7 +469,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***********/
 	section = iniCutSection(ini, "fidonet");
 	str_list_t faddr_list = iniGetStringList(section, NULL, "addr_list", ",", "");
-	cfg->total_faddrs = strListCount(faddr_list);
+	cfg->total_faddrs = (uint16_t)strListCount(faddr_list);
 
 	if(cfg->total_faddrs) {
 		if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
@@ -490,15 +490,15 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->echomail_sem, iniGetString(section, NULL, "echomail_sem", "", value));
 	SAFECOPY(cfg->netmail_dir, iniGetString(section, NULL, "netmail_dir", "", value));
 	SAFECOPY(cfg->fidofile_dir, iniGetString(section, NULL, "file_dir", "", value));
-	cfg->netmail_misc = iniGetLongInt(section, NULL, "netmail_settings", 0);
-	cfg->netmail_cost = iniGetLongInt(section, NULL, "netmail_cost", 0);
+	cfg->netmail_misc = iniGetUShortInt(section, NULL, "netmail_settings", 0);
+	cfg->netmail_cost = iniGetUInt32(section, NULL, "netmail_cost", 0);
 	iniFreeStringList(section);
 
 	/**********/
 	/* QWKnet */
 	/**********/
 	str_list_t qhub_list = iniGetSectionList(ini, "qhub:");
-	cfg->total_qhubs = strListCount(qhub_list);
+	cfg->total_qhubs = (uint16_t)strListCount(qhub_list);
 
 	if(cfg->total_qhubs) {
 		if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
@@ -517,13 +517,13 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->qhub[i]->id, name + 5);
 		cfg->qhub[i]->time = iniGetShortInt(section, NULL, "time", 0);
 		cfg->qhub[i]->freq = iniGetShortInt(section, NULL, "freq", 0);
-		cfg->qhub[i]->days = iniGetShortInt(section, NULL, "days", 0);
+		cfg->qhub[i]->days = (char)iniGetShortInt(section, NULL, "days", 0);
 		cfg->qhub[i]->node = iniGetShortInt(section, NULL, "node_num", 0);
 		SAFECOPY(cfg->qhub[i]->call, iniGetString(section, NULL, "call", "", value));
 		SAFECOPY(cfg->qhub[i]->pack, iniGetString(section, NULL, "pack", "", value));
 		SAFECOPY(cfg->qhub[i]->unpack, iniGetString(section, NULL, "unpack", "", value));
 		SAFECOPY(cfg->qhub[i]->fmt, iniGetString(section, NULL, "format", "zip", value));
-		cfg->qhub[i]->misc = iniGetLongInt(section, NULL, "settings", 0);
+		cfg->qhub[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
 
 		char str[128];
 		SAFEPRINTF(str, "qhubsub:%s:", cfg->qhub[i]->id);
@@ -542,11 +542,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			uint16_t	confnum;
 			int			subnum;
 			char		subcode[LEN_EXTCODE + 1];
-			uint8_t		mode;
+			uint		mode;
 			confnum = atoi(qsub_list[j] + strlen(str));
 			SAFECOPY(subcode, iniGetString(ini, qsub_list[j], "sub", "", value));
 			subnum = getsubnum(cfg, subcode);
-			mode = iniGetLongInt(ini, qsub_list[i], "mode", 0);
+			mode = iniGetUInteger(ini, qsub_list[i], "mode", 0);
 			if(is_valid_subnum(cfg, subnum)) {
 				cfg->sub[subnum]->misc |= SUB_QNET;
 				cfg->qhub[i]->sub[cfg->qhub[i]->subs]	= cfg->sub[subnum];
@@ -568,8 +568,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->sys_inetaddr, iniGetString(section, NULL, "addr", "", value));
 	SAFECOPY(cfg->inetmail_sem, iniGetString(section, NULL, "netmail_sem", "", value));
 	SAFECOPY(cfg->smtpmail_sem, iniGetString(section, NULL, "smtp_sem", "", value));
-	cfg->inetmail_misc = iniGetLongInt(section, NULL, "settings", 0);
-	cfg->inetmail_cost = iniGetLongInt(section, NULL, "cost", 0);
+	cfg->inetmail_misc = iniGetUInteger(section, NULL, "settings", 0);
+	cfg->inetmail_cost = iniGetUInt32(section, NULL, "cost", 0);
 	iniFreeStringList(section);
 
 	iniFreeStringList(ini);
