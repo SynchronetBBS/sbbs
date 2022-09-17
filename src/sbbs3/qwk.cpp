@@ -1012,7 +1012,7 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	int result;
 	smb_t smb;
 	ZERO_VAR(smb);
-	ulong n = iniGetLongInt(ini, section, "Conference", 0);
+	uint n = iniGetUInteger(ini, section, "Conference", 0);
 
 	if(confnum == 0)
 		confnum = n;
@@ -1089,7 +1089,7 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 
 		smb_hfield_str(&msg, RFC822MSGID, section + 5);
 		msg.hdr.votes = iniGetShortInt(ini, section, "MaxVotes", 0);
-		ulong results = iniGetLongInt(ini, section, "Results", 0);
+		uint results = iniGetUInteger(ini, section, "Results", 0);
 		msg.hdr.auxattr = (results << POLL_RESULTS_SHIFT) & POLL_RESULTS_MASK;
 		for(int i=0;;i++) {
 			char str[128];
