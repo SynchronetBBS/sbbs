@@ -1,8 +1,5 @@
 /* Functions to parse ini (initialization / configuration) files */
 
-/* $Id: ini_file.h,v 1.60 2020/04/03 18:41:45 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -47,7 +44,7 @@
 #define ROOT_SECTION		NULL
 
 typedef struct {
-	ulong		bit;
+	uint		bit;
 	const char*	name;
 } ini_bitdesc_t;
 
@@ -92,14 +89,20 @@ DLLEXPORT char* 		iniReadExistingString(FILE*, const char* section, const char* 
 							,const char* deflt, char* value);
 DLLEXPORT str_list_t 	iniReadStringList(FILE*, const char* section, const char* key
 							,const char* sep, const char* deflt);
-DLLEXPORT long 			iniReadInteger(FILE*, const char* section, const char* key
-							,long deflt);
-DLLEXPORT ushort 		iniReadShortInt(FILE*, const char* section, const char* key
+DLLEXPORT int 			iniReadInteger(FILE*, const char* section, const char* key
+							,int deflt);
+DLLEXPORT uint 			iniReadUInteger(FILE*, const char* section, const char* key
+							,uint deflt);
+DLLEXPORT short 		iniReadShortInt(FILE*, const char* section, const char* key
+							,short deflt);
+DLLEXPORT ushort 		iniReadUShortInt(FILE*, const char* section, const char* key
 							,ushort deflt);
-DLLEXPORT ulong 		iniReadLongInt(FILE*, const char* section, const char* key
+DLLEXPORT long 			iniReadLongInt(FILE*, const char* section, const char* key
+							,long deflt);
+DLLEXPORT ulong 		iniReadULongInt(FILE*, const char* section, const char* key
 							,ulong deflt);
 DLLEXPORT int64_t 		iniReadBytes(FILE*, const char* section, const char* key
-							,ulong unit, int64_t deflt);
+							,uint unit, int64_t deflt);
 DLLEXPORT double 		iniReadDuration(FILE*, const char* section, const char* key
 							,double deflt);
 DLLEXPORT double 		iniReadFloat(FILE*, const char* section, const char* key
@@ -114,14 +117,14 @@ DLLEXPORT unsigned* 	iniReadEnumList(FILE*, const char* section, const char* key
 							,str_list_t names, unsigned* count, const char* sep, const char* deflt);
 DLLEXPORT int* 			iniReadIntList(FILE*, const char* section, const char* key
 							,unsigned* count, const char* sep, const char* deflt);
-DLLEXPORT long 			iniReadNamedInt(FILE*, const char* section, const char* key
+DLLEXPORT int 			iniReadNamedInt(FILE*, const char* section, const char* key
+							,named_int_t*, int deflt);
+DLLEXPORT long			iniReadNamedLongInt(FILE*, const char* section, const char* key
 							,named_long_t*, long deflt);
-DLLEXPORT ulong 		iniReadNamedLongInt(FILE*, const char* section, const char* key
-							,named_ulong_t*, ulong deflt);
 DLLEXPORT double 		iniReadNamedFloat(FILE*, const char* section, const char* key
 							,named_double_t*, double deflt);
-DLLEXPORT ulong 		iniReadBitField(FILE*, const char* section, const char* key
-							,ini_bitdesc_t* bitdesc, ulong deflt);
+DLLEXPORT uint 			iniReadBitField(FILE*, const char* section, const char* key
+							,ini_bitdesc_t* bitdesc, uint deflt);
 #define		iniReadLogLevel(f,s,k,d) iniReadEnum(f,s,k,iniLogLevelStringList(),d)
 
 /* Free string list returned from iniRead*List functions */
@@ -159,14 +162,20 @@ DLLEXPORT char* 		iniGetExistingString(str_list_t, const char* section, const ch
 							,const char* deflt, char* value /* may be NULL */);
 DLLEXPORT str_list_t 	iniGetStringList(str_list_t, const char* section, const char* key
 							,const char* sep, const char* deflt);
-DLLEXPORT long 			iniGetInteger(str_list_t, const char* section, const char* key
-							,long deflt);
-DLLEXPORT ushort 		iniGetShortInt(str_list_t, const char* section, const char* key
+DLLEXPORT int 			iniGetInteger(str_list_t, const char* section, const char* key
+							,int deflt);
+DLLEXPORT uint 			iniGetUInteger(str_list_t, const char* section, const char* key
+							,uint deflt);
+DLLEXPORT short 		iniGetShortInt(str_list_t, const char* section, const char* key
+							,short deflt);
+DLLEXPORT ushort 		iniGetUShortInt(str_list_t, const char* section, const char* key
 							,ushort deflt);
-DLLEXPORT ulong 		iniGetLongInt(str_list_t, const char* section, const char* key
+DLLEXPORT long 			iniGetLongInt(str_list_t, const char* section, const char* key
+							,long deflt);
+DLLEXPORT ulong 		iniGetULongInt(str_list_t, const char* section, const char* key
 							,ulong deflt);
 DLLEXPORT int64_t 		iniGetBytes(str_list_t, const char* section, const char* key
-							,ulong unit, int64_t deflt);
+							,uint unit, int64_t deflt);
 DLLEXPORT double 		iniGetDuration(str_list_t, const char* section, const char* key
 							,double deflt);
 DLLEXPORT double 		iniGetFloat(str_list_t, const char* section, const char* key
@@ -181,14 +190,14 @@ DLLEXPORT unsigned* 	iniGetEnumList(str_list_t, const char* section, const char*
 							,str_list_t names, unsigned* count, const char* sep, const char* deflt);
 DLLEXPORT int* 			iniGetIntList(str_list_t, const char* section, const char* key
 							,unsigned* count, const char* sep, const char* deflt);
-DLLEXPORT long 			iniGetNamedInt(str_list_t, const char* section, const char* key
+DLLEXPORT int 			iniGetNamedInt(str_list_t, const char* section, const char* key
+							,named_int_t*, int deflt);
+DLLEXPORT long 			iniGetNamedLongInt(str_list_t, const char* section, const char* key
 							,named_long_t*, long deflt);
-DLLEXPORT ulong 		iniGetNamedLongInt(str_list_t, const char* section, const char* key
-							,named_ulong_t*, ulong deflt);
 DLLEXPORT double 		iniGetNamedFloat(str_list_t, const char* section, const char* key
 							,named_double_t*, double deflt);
-DLLEXPORT ulong 		iniGetBitField(str_list_t, const char* section, const char* key
-							,ini_bitdesc_t* bitdesc, ulong deflt);
+DLLEXPORT uint 			iniGetBitField(str_list_t, const char* section, const char* key
+							,ini_bitdesc_t* bitdesc, uint deflt);
 DLLEXPORT str_list_t 	iniGetSection(str_list_t, const char *section);
 #define		iniGetLogLevel(l,s,k,d) iniGetEnum(l,s,k,iniLogLevelStringList(),d)
 DLLEXPORT str_list_t 	iniCutSection(str_list_t, const char *section);
@@ -220,17 +229,23 @@ DLLEXPORT char* 		iniSetStringLiteral(str_list_t*, const char* section, const ch
 							,ini_style_t*);
 DLLEXPORT char* 		iniSetValue(str_list_t*, const char* section, const char* key, const char* value
 							,ini_style_t*);
-DLLEXPORT char* 		iniSetInteger(str_list_t*, const char* section, const char* key, long value
+DLLEXPORT char* 		iniSetInteger(str_list_t*, const char* section, const char* key, int value
 							,ini_style_t*);
-DLLEXPORT char* 		iniSetShortInt(str_list_t*, const char* section, const char* key, ushort value
+DLLEXPORT char* 		iniSetUInteger(str_list_t*, const char* section, const char* key, uint value
 							,ini_style_t*);
-DLLEXPORT char* 		iniSetLongInt(str_list_t*, const char* section, const char* key, ulong value
+DLLEXPORT char* 		iniSetShortInt(str_list_t*, const char* section, const char* key, short value
 							,ini_style_t*);
-DLLEXPORT char* 		iniSetBytes(str_list_t*, const char* section, const char* key, ulong unit, int64_t value
+DLLEXPORT char* 		iniSetUShortInt(str_list_t*, const char* section, const char* key, ushort value
+							,ini_style_t*);
+DLLEXPORT char* 		iniSetLongInt(str_list_t*, const char* section, const char* key, long value
+							,ini_style_t*);
+DLLEXPORT char* 		iniSetULongInt(str_list_t*, const char* section, const char* key, ulong value
+							,ini_style_t*);
+DLLEXPORT char* 		iniSetBytes(str_list_t*, const char* section, const char* key, uint unit, int64_t value
 							,ini_style_t*);
 DLLEXPORT char* 		iniSetDuration(str_list_t*, const char* section, const char* key, double value
 							,ini_style_t*);
-DLLEXPORT char* 		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
+DLLEXPORT char* 		iniSetHexInt(str_list_t*, const char* section, const char* key, uint value
 							,ini_style_t*);
 DLLEXPORT char* 		iniSetFloat(str_list_t*, const char* section, const char* key, double value
 							,ini_style_t*);
@@ -242,15 +257,15 @@ DLLEXPORT char* 		iniSetEnum(str_list_t*, const char* section, const char* key, 
 							,unsigned value, ini_style_t*);
 DLLEXPORT char* 		iniSetEnumList(str_list_t*, const char* section, const char* key
 							,const char* sep, str_list_t names, unsigned* values, unsigned count, ini_style_t*);
-DLLEXPORT char* 		iniSetNamedInt(str_list_t*, const char* section, const char* key, named_long_t*
+DLLEXPORT char* 		iniSetNamedInt(str_list_t*, const char* section, const char* key, named_int_t*
+							,int value, ini_style_t*);
+DLLEXPORT char* 		iniSetNamedHexInt(str_list_t*, const char* section, const char* key, named_uint_t*
+							,uint value, ini_style_t*);
+DLLEXPORT char* 		iniSetNamedLongInt(str_list_t*, const char* section, const char* key, named_long_t*
 							,long value, ini_style_t*);
-DLLEXPORT char* 		iniSetNamedHexInt(str_list_t*, const char* section, const char* key, named_ulong_t*
-							,ulong value, ini_style_t*);
-DLLEXPORT char* 		iniSetNamedLongInt(str_list_t*, const char* section, const char* key, named_ulong_t*
-							,ulong value, ini_style_t*);
 DLLEXPORT char* 		iniSetNamedFloat(str_list_t*, const char* section, const char* key, named_double_t*
 							,double value, ini_style_t*);
-DLLEXPORT char* 		iniSetBitField(str_list_t*, const char* section, const char* key, ini_bitdesc_t*, ulong value
+DLLEXPORT char* 		iniSetBitField(str_list_t*, const char* section, const char* key, ini_bitdesc_t*, uint value
 							,ini_style_t*);
 DLLEXPORT char* 		iniSetStringList(str_list_t*, const char* section, const char* key
 							,const char* sep, str_list_t value, ini_style_t*);
@@ -287,6 +302,20 @@ DLLEXPORT BOOL 			iniHasInclude(const str_list_t);
  */
 DLLEXPORT unsigned*		parseEnumList(const char* values, const char* sep, str_list_t names, unsigned* count);
 DLLEXPORT int*			parseIntList(const char* values, const char* sep, unsigned* count);
+
+// All currently supported platforms have 16-bit shorts and 32-bit ints
+#define	iniReadInt16	iniReadShortInt
+#define	iniReadUInt16	iniReadUShortInt
+#define iniReadInt32	iniReadInteger
+#define iniReadUInt32	iniReadUInteger
+#define iniGetInt16		iniGetShortInt
+#define iniGetUInt16	iniGetUShortInt
+#define iniGetInt32		iniGetInteger
+#define iniGetUInt32	iniGetUInteger
+#define iniSetInt16		iniSetShortInt
+#define iniSetUInt16	iniSetUShortInt
+#define iniSetInt32		iniSetInteger
+#define iniSetUInt32	iniSetUInteger
 
 #if defined(__cplusplus)
 }
