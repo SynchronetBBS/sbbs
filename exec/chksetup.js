@@ -37,6 +37,12 @@ var tests = {
 			output.push("User #1    is not a sysop");
 		if(usr.security.restrictions & UFLAG_G)
 			output.push("User #1    should not have the (G)uest restriction");
+		if(usr.security.restrictions & UFLAG_L)
+			output.push("User #1    should not have the (L)ogon Once/Day restriction");
+		if(!(usr.security.exemptions & UFLAG_T))
+			output.push("User #1    should have the (T)ime exemption");
+		if(!(usr.security.exemptions & UFLAG_L))
+			output.push("User #1    should have the (L)ogon exemption");
 		if(system.operator.toLowerCase() != usr.alias.toLowerCase()
 			&& system.operator.toLowerCase() != usr.name.toLowerCase())
 			output.push(format("User #%-4u name (%s) and alias (%s) does not match system operator (%s)"
