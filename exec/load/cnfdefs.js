@@ -160,7 +160,7 @@ struct.qhub_t={
 	time:		{bytes:UINT16_T,		type:"int"},
 	freq:		{bytes:UINT16_T,		type:"int"},
 	days:		{bytes:UCHAR,			type:"int"},
-	node:		{bytes:UINT16_T,		type:"int"},
+	node_num:	{bytes:UINT16_T,		type:"int"},
 	call:		{bytes:LEN_CMD+1,		type:"str"},
 	pack:		{bytes:LEN_CMD+1,		type:"str"},
 	unpack:		{bytes:LEN_CMD+1,		type:"str"},
