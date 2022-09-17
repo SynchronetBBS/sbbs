@@ -64,7 +64,6 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
 	FILE*	fp;
-	const char* section = ROOT_SECTION;
 
 	if(cfg->prepped)
 		return FALSE;
@@ -79,20 +78,20 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 	backup(path, backup_level, TRUE);
 
 	str_list_t ini = strListInit();
-	iniSetString(&ini, section, "phone", cfg->node_phone, NULL);
-	iniSetString(&ini, section, "daily", cfg->node_daily, NULL);
-	iniSetString(&ini, section, "text_dir", cfg->text_dir, NULL);
-	iniSetString(&ini, section, "temp_dir", cfg->temp_dir, NULL);
-	iniSetString(&ini, section, "ars", cfg->node_arstr, NULL);
+	iniSetString(&ini, ROOT_SECTION, "phone", cfg->node_phone, NULL);
+	iniSetString(&ini, ROOT_SECTION, "daily", cfg->node_daily, NULL);
+	iniSetString(&ini, ROOT_SECTION, "text_dir", cfg->text_dir, NULL);
+	iniSetString(&ini, ROOT_SECTION, "temp_dir", cfg->temp_dir, NULL);
+	iniSetString(&ini, ROOT_SECTION, "ars", cfg->node_arstr, NULL);
 
-	iniSetLongInt(&ini, section, "settings", cfg->node_misc, NULL);
-	iniSetShortInt(&ini, section, "valuser", cfg->node_valuser, NULL);
-	iniSetShortInt(&ini, section, "sem_check", cfg->node_sem_check, NULL);
-	iniSetShortInt(&ini, section, "stat_check", cfg->node_stat_check, NULL);
-	iniSetShortInt(&ini, section, "sec_warn", cfg->sec_warn, NULL);
-	iniSetShortInt(&ini, section, "sec_hangup", cfg->sec_hangup, NULL);
-	iniSetShortInt(&ini, section, "erruser", cfg->node_erruser, NULL);
-	iniSetShortInt(&ini, section, "errlevel", cfg->node_errlevel, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "settings", cfg->node_misc, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "valuser", cfg->node_valuser, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "sem_check", cfg->node_sem_check, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "stat_check", cfg->node_stat_check, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "sec_warn", cfg->sec_warn, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "sec_hangup", cfg->sec_hangup, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "erruser", cfg->node_erruser, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "errlevel", cfg->node_errlevel, NULL);
 
 	if((fp = fopen(path, "w")) != NULL) {
 		result = iniWriteFile(fp, ini);
@@ -109,9 +108,9 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 {
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
+	char	name[INI_MAX_VALUE_LEN];
 	char	tmp[128];
 	FILE*	fp;
-	const char* section = ROOT_SECTION;
 
 	if(cfg->prepped)
 		return FALSE;
@@ -120,13 +119,33 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	backup(path, backup_level, TRUE);
 
 	str_list_t ini = strListInit();
-	iniSetString(&ini, section, "name", cfg->sys_name, NULL);
-	iniSetString(&ini, section, "qwk_id", cfg->sys_id, NULL);
-	iniSetString(&ini, section, "location", cfg->sys_location, NULL);
-	iniSetString(&ini, section, "phonefmt", cfg->sys_phonefmt, NULL);
-	iniSetString(&ini, section, "operator", cfg->sys_op, NULL);
-	iniSetString(&ini, section, "guru", cfg->sys_guru, NULL);
-	iniSetString(&ini, section, "password", cfg->sys_pass, NULL);
+	iniSetString(&ini, ROOT_SECTION, "name", cfg->sys_name, NULL);
+	iniSetString(&ini, ROOT_SECTION, "qwk_id", cfg->sys_id, NULL);
+	iniSetString(&ini, ROOT_SECTION, "location", cfg->sys_location, NULL);
+	iniSetString(&ini, ROOT_SECTION, "phonefmt", cfg->sys_phonefmt, NULL);
+	iniSetString(&ini, ROOT_SECTION, "operator", cfg->sys_op, NULL);
+	iniSetString(&ini, ROOT_SECTION, "guru", cfg->sys_guru, NULL);
+	iniSetString(&ini, ROOT_SECTION, "password", cfg->sys_pass, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "timezone", cfg->sys_timezone, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "settings", cfg->sys_misc, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "lastnode", cfg->sys_lastnode, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "pwdays", cfg->sys_pwdays, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "deldays", cfg->sys_deldays, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "exp_warn", cfg->sys_exp_warn, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "autodel", cfg->sys_autodel, NULL);
+	iniSetString(&ini, ROOT_SECTION, "chat_ars", cfg->sys_chat_arstr, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "cdt_min_value", cfg->cdt_min_value, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "max_minutes", cfg->max_minutes, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "cdt_per_dollar", cfg->cdt_per_dollar, NULL);
+	iniSetBool(&ini, ROOT_SECTION, "new_install", cfg->new_install, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "guest_msgscan_init", cfg->guest_msgscan_init, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "min_password_length", cfg->min_pwlen, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "max_log_size", cfg->max_log_size, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "max_logs_kept", cfg->max_logs_kept, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "ctrlkey_passthru", cfg->ctrlkey_passthru, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "user_backup_level", cfg->user_backup_level, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "mail_backup_level", cfg->mail_backup_level, NULL);
+
 	for(uint i=0;i<cfg->sys_nodes;i++) {
 		char key[128];
 		SAFEPRINTF(key, "%u", i + 1);
@@ -134,132 +153,129 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 			SAFEPRINTF(cfg->node_path[i], "../node%u", i + 1);
 		iniSetString(&ini, "node_dir", key, cfg->node_path[i], NULL);
 	}
-	backslash(cfg->data_dir);
-	iniSetString(&ini, "dir", "data", cfg->data_dir, NULL);
-	backslash(cfg->exec_dir);
-	iniSetString(&ini, "dir", "exec", cfg->exec_dir, NULL);
+	{
+		const char* name = "dir";
+		backslash(cfg->data_dir);
+		backslash(cfg->exec_dir);
+		iniSetString(&ini, name, "data", cfg->data_dir, NULL);
+		iniSetString(&ini, name, "exec", cfg->exec_dir, NULL);
+		iniSetString(&ini, name, "mods", cfg->mods_dir, NULL);
+		iniSetString(&ini, name, "logs", cfg->logs_dir, NULL);
+	}
+	{
+		const char* name = "newuser";
+		iniSetLongInt(&ini, name, "questions", cfg->uq, NULL);
+		iniSetString(&ini, name, "password", cfg->new_pass, NULL);
+		iniSetString(&ini, name, "magic_word", cfg->new_magic, NULL);
+		iniSetString(&ini, name, "sif", cfg->new_sif, NULL);
+		iniSetString(&ini, name, "sof", cfg->new_sof, NULL);
+
+		iniSetShortInt(&ini, name, "level", cfg->new_level, NULL);
+		iniSetLongInt(&ini, name, "flags1", cfg->new_flags1, NULL);
+		iniSetLongInt(&ini, name, "flags2", cfg->new_flags2, NULL);
+		iniSetLongInt(&ini, name, "flags3", cfg->new_flags3, NULL);
+		iniSetLongInt(&ini, name, "flags4", cfg->new_flags4, NULL);
+		iniSetLongInt(&ini, name, "exemptions", cfg->new_exempt, NULL);
+		iniSetLongInt(&ini, name, "restrictions", cfg->new_rest, NULL);
+		iniSetLongInt(&ini, name, "credits", cfg->new_cdt, NULL);
+		iniSetLongInt(&ini, name, "minutes", cfg->new_min, NULL);
+		iniSetString(&ini, name, "editor", cfg->new_xedit, NULL);
+		iniSetShortInt(&ini, name, "expiration_days", cfg->new_expire, NULL);
+		if(cfg->new_shell>=cfg->total_shells)
+			cfg->new_shell=0;
+		if(cfg->total_shells > 0)
+			iniSetString(&ini, name, "command_shell", cfg->shell[cfg->new_shell]->code, NULL);
+		iniSetLongInt(&ini, name, "settings", cfg->new_misc, NULL);
+		SAFEPRINTF(tmp, "%c", cfg->new_prot);
+		iniSetString(&ini, name, "download_protocol", tmp, NULL);
+		iniSetShortInt(&ini, name, "msgscan_init", cfg->new_msgscan_init, NULL);
+		iniSetString(&ini, name, "gender_options", cfg->new_genders, NULL);
+	}
 
 	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon, NULL);
 	iniSetString(&ini, "logout_event", "cmd", cfg->sys_logout, NULL);
 	iniSetString(&ini, "daily_event", "cmd", cfg->sys_daily, NULL);
-	iniSetShortInt(&ini, section, "timezone", cfg->sys_timezone, NULL);
-	iniSetLongInt(&ini, section, "settings", cfg->sys_misc, NULL);
-	iniSetShortInt(&ini, section, "lastnode", cfg->sys_lastnode, NULL);
-	iniSetLongInt(&ini, "newuser", "questions", cfg->uq, NULL);
-	iniSetShortInt(&ini, section, "pwdays", cfg->sys_pwdays, NULL);
-	iniSetShortInt(&ini, section, "deldays", cfg->sys_deldays, NULL);
-	iniSetShortInt(&ini, section, "exp_warn", cfg->sys_exp_warn, NULL);
-	iniSetShortInt(&ini, section, "autodel", cfg->sys_autodel, NULL);
-	iniSetString(&ini, section, "chat_ars", cfg->sys_chat_arstr, NULL);
-	iniSetShortInt(&ini, section, "cdt_min_value", cfg->cdt_min_value, NULL);
-	iniSetLongInt(&ini, section, "max_minutes", cfg->max_minutes, NULL);
-	iniSetLongInt(&ini, section, "cdt_per_dollar", cfg->cdt_per_dollar, NULL);
-	iniSetString(&ini, "newuser", "password", cfg->new_pass, NULL);
-	iniSetString(&ini, "newuser", "magic_word", cfg->new_magic, NULL);
-	iniSetString(&ini, "newuser", "sif", cfg->new_sif, NULL);
-	iniSetString(&ini, "newuser", "sof", cfg->new_sof, NULL);
 
-	iniSetShortInt(&ini, "newuser", "level", cfg->new_level, NULL);
-	iniSetLongInt(&ini, "nweuser", "flags1", cfg->new_flags1, NULL);
-	iniSetLongInt(&ini, "nweuser", "flags2", cfg->new_flags2, NULL);
-	iniSetLongInt(&ini, "nweuser", "flags3", cfg->new_flags3, NULL);
-	iniSetLongInt(&ini, "nweuser", "flags4", cfg->new_flags4, NULL);
-	iniSetLongInt(&ini, "newuser", "exemptions", cfg->new_exempt, NULL);
-	iniSetLongInt(&ini, "newuser", "restrictions", cfg->new_rest, NULL);
-	iniSetLongInt(&ini, "newuser", "credits", cfg->new_cdt, NULL);
-	iniSetLongInt(&ini, "newuser", "minutes", cfg->new_min, NULL);
-	iniSetString(&ini, "newuser", "editor", cfg->new_xedit, NULL);
-	iniSetShortInt(&ini, "newuser", "expiration_days", cfg->new_expire, NULL);
-	if(cfg->new_shell>=cfg->total_shells)
-		cfg->new_shell=0;
-	if(cfg->total_shells > 0)
-		iniSetString(&ini, "newuser", "command_shell", cfg->shell[cfg->new_shell]->code, NULL);
-	iniSetLongInt(&ini, "newuser", "settings", cfg->new_misc, NULL);
-	SAFEPRINTF(tmp, "%c", cfg->new_prot);
-	iniSetString(&ini, "newuser", "download_protocol", tmp, NULL);
-	iniSetBool(&ini, section, "new_install", cfg->new_install, NULL);
-	iniSetShortInt(&ini, "newuser", "msgscan_init", cfg->new_msgscan_init, NULL);
-	iniSetShortInt(&ini, section, "guest_msgscan_init", cfg->guest_msgscan_init, NULL);
-	iniSetShortInt(&ini, section, "min_password_length", cfg->min_pwlen, NULL);
-	iniSetLongInt(&ini, section, "max_log_size", cfg->max_log_size, NULL);
-	iniSetShortInt(&ini, section, "max_logs_kept", cfg->max_logs_kept, NULL);
+	{
+		const char* name = "expired";
+		iniSetShortInt(&ini, name, "level", cfg->expired_level, NULL);
+		iniSetLongInt(&ini, name, "flags1", cfg->expired_flags1, NULL);
+		iniSetLongInt(&ini, name, "flags2", cfg->expired_flags2, NULL);
+		iniSetLongInt(&ini, name, "flags3", cfg->expired_flags3, NULL);
+		iniSetLongInt(&ini, name, "flags4", cfg->expired_flags4, NULL);
+		iniSetLongInt(&ini, name, "exemptions", cfg->expired_exempt, NULL);
+		iniSetLongInt(&ini, name, "restrictions", cfg->expired_rest, NULL);
+	}
 
-	section = "expired";
-	iniSetShortInt(&ini, section, "level", cfg->expired_level, NULL);
-	iniSetLongInt(&ini, section, "flags1", cfg->expired_flags1, NULL);
-	iniSetLongInt(&ini, section, "flags2", cfg->expired_flags2, NULL);
-	iniSetLongInt(&ini, section, "flags3", cfg->expired_flags3, NULL);
-	iniSetLongInt(&ini, section, "flags4", cfg->expired_flags4, NULL);
-	iniSetLongInt(&ini, section, "exemptions", cfg->expired_exempt, NULL);
-	iniSetLongInt(&ini, section, "restrictions", cfg->expired_rest, NULL);
+	{
+		const char* name = "module";
+		iniSetString(&ini, name, "logon", cfg->logon_mod, NULL);
+		iniSetString(&ini, name, "logoff", cfg->logoff_mod, NULL);
+		iniSetString(&ini, name, "newuser", cfg->newuser_mod, NULL);
+		iniSetString(&ini, name, "login", cfg->login_mod, NULL);
+		iniSetString(&ini, name, "logout", cfg->logout_mod, NULL);
+		iniSetString(&ini, name, "sync", cfg->sync_mod, NULL);
+		iniSetString(&ini, name, "expire", cfg->expire_mod, NULL);
+		iniSetString(&ini, name, "readmail", cfg->readmail_mod, NULL);
+		iniSetString(&ini, name, "scanposts", cfg->scanposts_mod, NULL);
+		iniSetString(&ini, name, "scansubs", cfg->scansubs_mod, NULL);
+		iniSetString(&ini, name, "listmsgs", cfg->listmsgs_mod, NULL);
+		iniSetString(&ini, name, "textsec", cfg->textsec_mod, NULL);
+		iniSetString(&ini, name, "automsg", cfg->automsg_mod, NULL);
+		iniSetString(&ini, name, "xtrnsec", cfg->xtrnsec_mod, NULL);
 
-	section = "module";
-	iniSetString(&ini, section, "logon", cfg->logon_mod, NULL);
-	iniSetString(&ini, section, "logoff", cfg->logoff_mod, NULL);
-	iniSetString(&ini, section, "newuser", cfg->newuser_mod, NULL);
-	iniSetString(&ini, section, "login", cfg->login_mod, NULL);
-	iniSetString(&ini, section, "logout", cfg->logout_mod, NULL);
-	iniSetString(&ini, section, "sync", cfg->sync_mod, NULL);
-	iniSetString(&ini, section, "expire", cfg->expire_mod, NULL);
-	iniSetLongInt(&ini, ROOT_SECTION, "ctrlkey_passthru", cfg->ctrlkey_passthru, NULL);
-	iniSetString(&ini, "dir", "mods", cfg->mods_dir, NULL);
-	iniSetString(&ini, "dir", "logs", cfg->logs_dir, NULL);
-	iniSetString(&ini, section, "readmail", cfg->readmail_mod, NULL);
-	iniSetString(&ini, section, "scanposts", cfg->scanposts_mod, NULL);
-	iniSetString(&ini, section, "scansubs", cfg->scansubs_mod, NULL);
-	iniSetString(&ini, section, "listmsgs", cfg->listmsgs_mod, NULL);
-	iniSetString(&ini, section, "textsec", cfg->textsec_mod, NULL);
-	iniSetString(&ini, section, "automsg", cfg->automsg_mod, NULL);
-	iniSetString(&ini, section, "xtrnsec", cfg->xtrnsec_mod, NULL);
-
-	iniSetString(&ini, section, "nodelist", cfg->nodelist_mod, NULL);
-	iniSetString(&ini, section, "whosonline", cfg->whosonline_mod, NULL);
-	iniSetString(&ini, section, "privatemsg", cfg->privatemsg_mod, NULL);
-	iniSetString(&ini, section, "logonlist", cfg->logonlist_mod, NULL);
+		iniSetString(&ini, name, "nodelist", cfg->nodelist_mod, NULL);
+		iniSetString(&ini, name, "whosonline", cfg->whosonline_mod, NULL);
+		iniSetString(&ini, name, "privatemsg", cfg->privatemsg_mod, NULL);
+		iniSetString(&ini, name, "logonlist", cfg->logonlist_mod, NULL);
 	
-    iniSetString(&ini, section, "prextrn", cfg->prextrn_mod, NULL);
-    iniSetString(&ini, section, "postxtrn", cfg->postxtrn_mod, NULL);
+		iniSetString(&ini, name, "prextrn", cfg->prextrn_mod, NULL);
+		iniSetString(&ini, name, "postxtrn", cfg->postxtrn_mod, NULL);
 
-	iniSetString(&ini, section, "tempxfer", cfg->tempxfer_mod, NULL);
-
-	iniSetString(&ini, "newuser", "gender_options", cfg->new_genders, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "user_backup_level", cfg->user_backup_level, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "mail_backup_level", cfg->mail_backup_level, NULL);
+		iniSetString(&ini, name, "tempxfer", cfg->tempxfer_mod, NULL);
+	}
 
 	for(uint i=0; i<10; i++) {
-		SAFEPRINTF(tmp, "valset:%u", i);
-		section = tmp;
-		iniSetShortInt(&ini, section, "level", cfg->val_level[i], NULL);
-		iniSetShortInt(&ini, section, "expire", cfg->val_expire[i], NULL);
-		iniSetLongInt(&ini, section, "flags1", cfg->val_flags1[i], NULL);
-		iniSetLongInt(&ini, section, "flags2", cfg->val_flags2[i], NULL);
-		iniSetLongInt(&ini, section, "flags3", cfg->val_flags3[i], NULL);
-		iniSetLongInt(&ini, section, "flags4", cfg->val_flags4[i], NULL);
-		iniSetLongInt(&ini, section, "credits", cfg->val_cdt[i], NULL);
-		iniSetLongInt(&ini, section, "exempt", cfg->val_exempt[i], NULL);
-		iniSetLongInt(&ini, section, "rest", cfg->val_rest[i], NULL);
+		SAFEPRINTF(name, "valset:%u", i);
+		str_list_t section = strListInit();
+		iniSetShortInt(&section, name, "level", cfg->val_level[i], NULL);
+		iniSetShortInt(&section, name, "expire", cfg->val_expire[i], NULL);
+		iniSetLongInt(&section, name, "flags1", cfg->val_flags1[i], NULL);
+		iniSetLongInt(&section, name, "flags2", cfg->val_flags2[i], NULL);
+		iniSetLongInt(&section, name, "flags3", cfg->val_flags3[i], NULL);
+		iniSetLongInt(&section, name, "flags4", cfg->val_flags4[i], NULL);
+		iniSetLongInt(&section, name, "credits", cfg->val_cdt[i], NULL);
+		iniSetLongInt(&section, name, "exempt", cfg->val_exempt[i], NULL);
+		iniSetLongInt(&section, name, "rest", cfg->val_rest[i], NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	for(uint i=0; i<100; i++) {
-		SAFEPRINTF(tmp, "level:%u", i);
-		section = tmp;
-		iniSetShortInt(&ini, section, "timeperday", cfg->level_timeperday[i], NULL);
-		iniSetShortInt(&ini, section, "timepercall", cfg->level_timepercall[i], NULL);
-		iniSetShortInt(&ini, section, "callsperday", cfg->level_callsperday[i], NULL);
-		iniSetShortInt(&ini, section, "linespermsg", cfg->level_linespermsg[i], NULL);
-		iniSetShortInt(&ini, section, "postsperday", cfg->level_postsperday[i], NULL);
-		iniSetShortInt(&ini, section, "emailperday", cfg->level_emailperday[i], NULL);
-		iniSetLongInt(&ini, section, "settings", cfg->level_misc[i], NULL);
-		iniSetShortInt(&ini, section, "expireto", cfg->level_expireto[i], NULL);
-		iniSetLongInt(&ini, section, "freecdtperday", cfg->level_freecdtperday[i], NULL);
+		SAFEPRINTF(name, "level:%u", i);
+		str_list_t section = strListInit();
+		iniSetShortInt(&section, name, "timeperday", cfg->level_timeperday[i], NULL);
+		iniSetShortInt(&section, name, "timepercall", cfg->level_timepercall[i], NULL);
+		iniSetShortInt(&section, name, "callsperday", cfg->level_callsperday[i], NULL);
+		iniSetShortInt(&section, name, "linespermsg", cfg->level_linespermsg[i], NULL);
+		iniSetShortInt(&section, name, "postsperday", cfg->level_postsperday[i], NULL);
+		iniSetShortInt(&section, name, "emailperday", cfg->level_emailperday[i], NULL);
+		iniSetLongInt(&section, name, "settings", cfg->level_misc[i], NULL);
+		iniSetShortInt(&section, name, "expireto", cfg->level_expireto[i], NULL);
+		iniSetLongInt(&section, name, "freecdtperday", cfg->level_freecdtperday[i], NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* Command Shells */
 	for(uint i=0; i<cfg->total_shells; i++) {
-		SAFEPRINTF(tmp, "shell:%s", cfg->shell[i]->code);
-		iniSetString(&ini, section, "name", cfg->shell[i]->name, NULL);
-		iniSetString(&ini, section, "ars", cfg->shell[i]->arstr, NULL);
-		iniSetLongInt(&ini, section, "settings", cfg->shell[i]->misc, NULL);
+		SAFEPRINTF(name, "shell:%s", cfg->shell[i]->code);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "name", cfg->shell[i]->name, NULL);
+		iniSetString(&section, name, "ars", cfg->shell[i]->arstr, NULL);
+		iniSetLongInt(&section, name, "settings", cfg->shell[i]->misc, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	if((fp = fopen(path, "w")) != NULL) {
@@ -280,7 +296,6 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	char	name[INI_MAX_VALUE_LEN];
 	char	tmp[INI_MAX_VALUE_LEN];
 	FILE*	fp;
-	const char* section = ROOT_SECTION;
 	smb_t	smb;
 
 	if(cfg->prepped)
@@ -292,24 +307,35 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	backup(path, backup_level, TRUE);
 
 	str_list_t ini = strListInit();
-	iniSetLongInt(&ini, "qwk", "max_msgs", cfg->max_qwkmsgs, NULL);
-	iniSetLongInt(&ini, "mail", "max_crcs", cfg->mail_maxcrcs, NULL);
-	iniSetLongInt(&ini, "mail", "max_age", cfg->mail_maxage, NULL);
-	iniSetString(&ini, "qwk", "prepack_ars", cfg->preqwk_arstr, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "smb_retry_time", cfg->smb_retry_time, NULL);
-	iniSetShortInt(&ini, "qwk", "max_age", cfg->max_qwkmsgage, NULL);
-	iniSetShortInt(&ini, "mail", "max_spam_age", cfg->max_spamage, NULL);
 	iniSetLongInt(&ini, ROOT_SECTION, "settings", cfg->msg_misc, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "smb_retry_time", cfg->smb_retry_time, NULL);
+
+	{
+		const char* name = "mail";
+		iniSetLongInt(&ini, name, "max_crcs", cfg->mail_maxcrcs, NULL);
+		iniSetLongInt(&ini, name, "max_age", cfg->mail_maxage, NULL);
+		iniSetShortInt(&ini, name, "max_spam_age", cfg->max_spamage, NULL);
+	}
+
+	{
+		const char* name = "qwk";
+		iniSetLongInt(&ini, name, "max_msgs", cfg->max_qwkmsgs, NULL);
+		iniSetString(&ini, name, "prepack_ars", cfg->preqwk_arstr, NULL);
+		iniSetShortInt(&ini, name, "max_age", cfg->max_qwkmsgage, NULL);
+		iniSetString(&ini, name, "default_tagline", cfg->qnet_tagline, NULL);
+	}
 
 	/* Message Groups */
 
 	for(uint i=0;i<cfg->total_grps;i++) {
-		SAFEPRINTF(tmp, "grp:%s", cfg->grp[i]->sname);
-		section = tmp;
-		iniSetString(&ini, section, "description", cfg->grp[i]->lname, NULL);
-		iniSetString(&ini, section, "ars", cfg->grp[i]->arstr, NULL);
-		iniSetString(&ini, section, "code_prefix", cfg->grp[i]->code_prefix, NULL);
-		iniSetShortInt(&ini, section, "sort", cfg->grp[i]->sort, NULL);
+		SAFEPRINTF(name, "grp:%s", cfg->grp[i]->sname);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "description", cfg->grp[i]->lname, NULL);
+		iniSetString(&section, name, "ars", cfg->grp[i]->arstr, NULL);
+		iniSetString(&section, name, "code_prefix", cfg->grp[i]->code_prefix, NULL);
+		iniSetShortInt(&section, name, "sort", cfg->grp[i]->sort, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* Message Sub-boards */
@@ -325,37 +351,39 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			SAFEPRINTF2(name, "sub:%s:%s"
 				,cfg->grp[grp]->sname, cfg->sub[i]->code_suffix);
-			section = name;
+			str_list_t section = strListInit();
 			cfg->sub[i]->subnum = subnum++;
-			iniSetString(&ini, section, "description", cfg->sub[i]->lname, NULL);
-			iniSetString(&ini, section, "name", cfg->sub[i]->sname, NULL);
-			iniSetString(&ini, section, "qwk_name", cfg->sub[i]->qwkname, NULL);
+			iniSetString(&section, name, "description", cfg->sub[i]->lname, NULL);
+			iniSetString(&section, name, "name", cfg->sub[i]->sname, NULL);
+			iniSetString(&section, name, "qwk_name", cfg->sub[i]->qwkname, NULL);
 	#if 1
 			if(cfg->sub[i]->data_dir[0]) {
 				backslash(cfg->sub[i]->data_dir);
 				md(cfg->sub[i]->data_dir);
 			}
 	#endif
-			iniSetString(&ini, section, "data_dir", cfg->sub[i]->data_dir, NULL);
-			iniSetString(&ini, section, "ars", cfg->sub[i]->arstr, NULL);
-			iniSetString(&ini, section, "read_ars", cfg->sub[i]->read_arstr, NULL);
-			iniSetString(&ini, section, "post_ars", cfg->sub[i]->post_arstr, NULL);
-			iniSetString(&ini, section, "operator_ars", cfg->sub[i]->op_arstr, NULL);
-			iniSetLongInt(&ini, section, "settings", cfg->sub[i]->misc&(~SUB_HDRMOD), NULL);    /* Don't write mod bit */
-			iniSetString(&ini, section, "qwknet_tagline", cfg->sub[i]->tagline, NULL);
-			iniSetString(&ini, section, "fidonet_origin", cfg->sub[i]->origline, NULL);
-			iniSetString(&ini, section, "post_sem", cfg->sub[i]->post_sem, NULL);
-			iniSetString(&ini, section, "newsgroup", cfg->sub[i]->newsgroup, NULL);
-			iniSetString(&ini, section, "fidonet_addr", smb_faddrtoa(&cfg->sub[i]->faddr, tmp), NULL);
-			iniSetLongInt(&ini, section, "max_msgs", cfg->sub[i]->maxmsgs, NULL);
-			iniSetLongInt(&ini, section, "max_crcs", cfg->sub[i]->maxcrcs, NULL);
-			iniSetShortInt(&ini, section, "max_age", cfg->sub[i]->maxage, NULL);
-			iniSetShortInt(&ini, section, "ptridx", cfg->sub[i]->ptridx, NULL);
-			iniSetString(&ini, section, "moderated_ars", cfg->sub[i]->mod_arstr, NULL);
-			iniSetShortInt(&ini, section, "qwk_conf", cfg->sub[i]->qwkconf, NULL);
-			iniSetLongInt(&ini, section, "print_mode", cfg->sub[i]->pmode, NULL);
-			iniSetLongInt(&ini, section, "print_mode_neg", cfg->sub[i]->n_pmode, NULL);
-			iniSetString(&ini, section, "area_tag", cfg->sub[i]->area_tag, NULL);
+			iniSetString(&section, name, "data_dir", cfg->sub[i]->data_dir, NULL);
+			iniSetString(&section, name, "ars", cfg->sub[i]->arstr, NULL);
+			iniSetString(&section, name, "read_ars", cfg->sub[i]->read_arstr, NULL);
+			iniSetString(&section, name, "post_ars", cfg->sub[i]->post_arstr, NULL);
+			iniSetString(&section, name, "operator_ars", cfg->sub[i]->op_arstr, NULL);
+			iniSetLongInt(&section, name, "settings", cfg->sub[i]->misc&(~SUB_HDRMOD), NULL);    /* Don't write mod bit */
+			iniSetString(&section, name, "qwknet_tagline", cfg->sub[i]->tagline, NULL);
+			iniSetString(&section, name, "fidonet_origin", cfg->sub[i]->origline, NULL);
+			iniSetString(&section, name, "post_sem", cfg->sub[i]->post_sem, NULL);
+			iniSetString(&section, name, "newsgroup", cfg->sub[i]->newsgroup, NULL);
+			iniSetString(&section, name, "fidonet_addr", smb_faddrtoa(&cfg->sub[i]->faddr, tmp), NULL);
+			iniSetLongInt(&section, name, "max_msgs", cfg->sub[i]->maxmsgs, NULL);
+			iniSetLongInt(&section, name, "max_crcs", cfg->sub[i]->maxcrcs, NULL);
+			iniSetShortInt(&section, name, "max_age", cfg->sub[i]->maxage, NULL);
+			iniSetShortInt(&section, name, "ptridx", cfg->sub[i]->ptridx, NULL);
+			iniSetString(&section, name, "moderated_ars", cfg->sub[i]->mod_arstr, NULL);
+			iniSetShortInt(&section, name, "qwk_conf", cfg->sub[i]->qwkconf, NULL);
+			iniSetLongInt(&section, name, "print_mode", cfg->sub[i]->pmode, NULL);
+			iniSetLongInt(&section, name, "print_mode_neg", cfg->sub[i]->n_pmode, NULL);
+			iniSetString(&section, name, "area_tag", cfg->sub[i]->area_tag, NULL);
+			strListMerge(&ini, section);
+			free(section);
 
 			if(all_msghdr || (cfg->sub[i]->misc&SUB_HDRMOD && !no_msghdr)) {
 				if(!cfg->sub[i]->data_dir[0])
@@ -416,57 +444,68 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	}
 
 	/* FidoNet */
+	{
+		const char* name = "FidoNet";
+		str_list_t section = strListInit();
+		str_list_t addr_list = strListInit();
+		for(uint i=0; i<cfg->total_faddrs; i++)
+			strListPush(&addr_list, smb_faddrtoa(&cfg->faddr[i], tmp));
+		iniSetStringList(&section, name, "addr_list", ",", addr_list, NULL);
+		strListFree(&addr_list);
 
-	section = "FidoNet";
-	str_list_t addr_list = strListInit();
-	for(uint i=0; i<cfg->total_faddrs; i++)
-		strListPush(&addr_list, smb_faddrtoa(&cfg->faddr[i], tmp));
-	iniSetStringList(&ini, section, "addr_list", ",", addr_list, NULL);
-	strListFree(&addr_list);
-
-	iniSetString(&ini, section, "default_origin", cfg->origline, NULL);
-	iniSetString(&ini, section, "netmail_sem", cfg->netmail_sem, NULL);
-	iniSetString(&ini, section, "echomail_sem", cfg->echomail_sem, NULL);
-	backslash(cfg->netmail_dir);
-	iniSetString(&ini, section, "netmail_dir", cfg->netmail_dir, NULL);
-	iniSetLongInt(&ini, section, "netmail_settings", cfg->netmail_misc, NULL);
-	iniSetLongInt(&ini, section, "netmail_cost", cfg->netmail_cost, NULL);
-	md(cfg->netmail_dir);
+		iniSetString(&section, name, "default_origin", cfg->origline, NULL);
+		iniSetString(&section, name, "netmail_sem", cfg->netmail_sem, NULL);
+		iniSetString(&section, name, "echomail_sem", cfg->echomail_sem, NULL);
+		backslash(cfg->netmail_dir);
+		iniSetString(&section, name, "netmail_dir", cfg->netmail_dir, NULL);
+		iniSetLongInt(&section, name, "netmail_settings", cfg->netmail_misc, NULL);
+		iniSetLongInt(&section, name, "netmail_cost", cfg->netmail_cost, NULL);
+		md(cfg->netmail_dir);
+		strListMerge(&ini, section);
+		free(section);
+	}
 
 	/* QWKnet Config */
-
-	iniSetString(&ini, "QWK", "default_tagline", cfg->qnet_tagline, NULL);
-
 	for(uint i=0; i<cfg->total_qhubs; i++) {
-		SAFEPRINTF(tmp, "qhub:%s", cfg->qhub[i]->id);
-		section = tmp;
-		iniSetShortInt(&ini, section, "time", cfg->qhub[i]->time, NULL);
-		iniSetShortInt(&ini, section, "freq", cfg->qhub[i]->freq, NULL);
-		iniSetShortInt(&ini, section, "days", cfg->qhub[i]->days, NULL);
-		iniSetShortInt(&ini, section, "node_num", cfg->qhub[i]->node, NULL);
-		iniSetString(&ini, section, "call", cfg->qhub[i]->call, NULL);
-		iniSetString(&ini, section, "pack", cfg->qhub[i]->pack, NULL);
-		iniSetString(&ini, section, "unpack", cfg->qhub[i]->unpack, NULL);
-		iniSetLongInt(&ini, section, "settings", cfg->qhub[i]->misc, NULL);
-		iniSetString(&ini, section, "format", cfg->qhub[i]->fmt, NULL);
+		SAFEPRINTF(name, "qhub:%s", cfg->qhub[i]->id);
+		str_list_t section = strListInit();
+		iniSetShortInt(&section, name, "time", cfg->qhub[i]->time, NULL);
+		iniSetShortInt(&section, name, "freq", cfg->qhub[i]->freq, NULL);
+		iniSetShortInt(&section, name, "days", cfg->qhub[i]->days, NULL);
+		iniSetShortInt(&section, name, "node_num", cfg->qhub[i]->node, NULL);
+		iniSetString(&section, name, "call", cfg->qhub[i]->call, NULL);
+		iniSetString(&section, name, "pack", cfg->qhub[i]->pack, NULL);
+		iniSetString(&section, name, "unpack", cfg->qhub[i]->unpack, NULL);
+		iniSetLongInt(&section, name, "settings", cfg->qhub[i]->misc, NULL);
+		iniSetString(&section, name, "format", cfg->qhub[i]->fmt, NULL);
+		strListMerge(&ini, section);
+		free(section);
 		for(uint j=0; j<cfg->qhub[i]->subs; j++) {
 			if(cfg->qhub[i]->sub[j] == NULL)
 				continue;
 			int subnum = cfg->qhub[i]->sub[j]->subnum;
 			if(!is_valid_subnum(cfg, subnum))
 				continue;
-			SAFEPRINTF2(tmp, "qhubsub:%s:%u", cfg->qhub[i]->id, cfg->qhub[i]->conf[j]);
-			iniSetString(&ini, section, "sub", cfg->sub[subnum]->code, NULL);
-			iniSetLongInt(&ini, section, "settings", cfg->qhub[i]->mode[j], NULL);
+			SAFEPRINTF2(name, "qhubsub:%s:%u", cfg->qhub[i]->id, cfg->qhub[i]->conf[j]);
+			str_list_t section = strListInit();
+			iniSetString(&section, name, "sub", cfg->sub[subnum]->code, NULL);
+			iniSetLongInt(&section, name, "settings", cfg->qhub[i]->mode[j], NULL);
+			strListMerge(&ini, section);
+			free(section);
 		}
 	}
 
-	section = "Internet";
-	iniSetString(&ini, section, "addr", cfg->sys_inetaddr, NULL); /* Internet address */
-	iniSetString(&ini, section, "netmail_sem", cfg->inetmail_sem, NULL);
-	iniSetLongInt(&ini, section, "settings", cfg->inetmail_misc, NULL);
-	iniSetLongInt(&ini, section, "cost", cfg->inetmail_cost, NULL);
-	iniSetString(&ini, section, "smtp_sem", cfg->smtpmail_sem, NULL);
+	{
+		const char* name = "Internet";
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "addr", cfg->sys_inetaddr, NULL); /* Internet address */
+		iniSetString(&section, name, "netmail_sem", cfg->inetmail_sem, NULL);
+		iniSetLongInt(&section, name, "settings", cfg->inetmail_misc, NULL);
+		iniSetLongInt(&section, name, "cost", cfg->inetmail_cost, NULL);
+		iniSetString(&section, name, "smtp_sem", cfg->smtpmail_sem, NULL);
+		strListMerge(&ini, section);
+		free(section);
+	}
 
 	if((fp = fopen(path, "w")) != NULL) {
 		result = iniWriteFile(fp, ini);
@@ -523,8 +562,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 {
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
-	char	tmp[INI_MAX_VALUE_LEN];
-	const char* section = ROOT_SECTION;
+	char	name[INI_MAX_VALUE_LEN];
 
 	if(cfg->prepped)
 		return FALSE;
@@ -533,99 +571,113 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 	backup(path, backup_level, TRUE);
 
 	str_list_t ini = strListInit();
-	iniSetShortInt(&ini, section, "min_dspace", cfg->min_dspace, NULL);
-	iniSetShortInt(&ini, section, "max_batup", cfg->max_batup, NULL);
-	iniSetShortInt(&ini, section, "max_batdn", cfg->max_batdn, NULL);
-	iniSetShortInt(&ini, section, "max_userxfer" ,cfg->max_userxfer, NULL);
-	iniSetShortInt(&ini, section, "cdt_up_pct", cfg->cdt_up_pct, NULL);
-	iniSetShortInt(&ini, section, "cdt_dn_pct", cfg->cdt_dn_pct, NULL);
-	iniSetShortInt(&ini, section, "leech_pct", cfg->leech_pct, NULL);
-	iniSetShortInt(&ini, section, "leech_sec", cfg->leech_sec, NULL);
-	iniSetLongInt(&ini, section, "settings", cfg->file_misc, NULL);
-	iniSetShortInt(&ini, section, "filename_maxlen", cfg->filename_maxlen, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "min_dspace", cfg->min_dspace, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "max_batup", cfg->max_batup, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "max_batdn", cfg->max_batdn, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "max_userxfer" ,cfg->max_userxfer, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "cdt_up_pct", cfg->cdt_up_pct, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "cdt_dn_pct", cfg->cdt_dn_pct, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "leech_pct", cfg->leech_pct, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "leech_sec", cfg->leech_sec, NULL);
+	iniSetLongInt(&ini, ROOT_SECTION, "settings", cfg->file_misc, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "filename_maxlen", cfg->filename_maxlen, NULL);
 
 	/* Extractable File Types */
 
 	for(uint i=0; i<cfg->total_fextrs; i++) {
-		SAFEPRINTF(tmp, "extractor:%u", i);
-		section = tmp;
-		iniSetString(&ini, section, "extension", cfg->fextr[i]->ext, NULL);
-		iniSetString(&ini, section, "cmd", cfg->fextr[i]->cmd, NULL);
-		iniSetString(&ini, section, "ars", cfg->fextr[i]->arstr, NULL);
+		SAFEPRINTF(name, "extractor:%u", i);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "extension", cfg->fextr[i]->ext, NULL);
+		iniSetString(&section, name, "cmd", cfg->fextr[i]->cmd, NULL);
+		iniSetString(&section, name, "ars", cfg->fextr[i]->arstr, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* Compressable File Types */
 
 	for(uint i=0; i<cfg->total_fcomps; i++) {
-		SAFEPRINTF(tmp, "compressor:%u", i);
-		section = tmp;
-		iniSetString(&ini, section, "extension", cfg->fcomp[i]->ext, NULL);
-		iniSetString(&ini, section, "cmd", cfg->fcomp[i]->cmd, NULL);
-		iniSetString(&ini, section, "ars", cfg->fcomp[i]->arstr, NULL);
+		SAFEPRINTF(name, "compressor:%u", i);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "extension", cfg->fcomp[i]->ext, NULL);
+		iniSetString(&section, name, "cmd", cfg->fcomp[i]->cmd, NULL);
+		iniSetString(&section, name, "ars", cfg->fcomp[i]->arstr, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* Viewable File Types */
 
 	for(uint i=0; i<cfg->total_fviews; i++) {
-		SAFEPRINTF(tmp, "viewer:%u", i);
-		section = tmp;
-		iniSetString(&ini, section, "extension", cfg->fview[i]->ext, NULL);
-		iniSetString(&ini, section, "cmd", cfg->fview[i]->cmd, NULL);
-		iniSetString(&ini, section, "ars", cfg->fview[i]->arstr, NULL);
+		SAFEPRINTF(name, "viewer:%u", i);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "extension", cfg->fview[i]->ext, NULL);
+		iniSetString(&section, name, "cmd", cfg->fview[i]->cmd, NULL);
+		iniSetString(&section, name, "ars", cfg->fview[i]->arstr, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* Testable File Types */
 
 	for(uint i=0; i<cfg->total_ftests; i++) {
-		SAFEPRINTF(tmp, "tester:%u", i);
-		section = tmp;
-		iniSetString(&ini, section, "extension", cfg->ftest[i]->ext, NULL);
-		iniSetString(&ini, section, "cmd", cfg->ftest[i]->cmd, NULL);
-		iniSetString(&ini, section, "working", cfg->ftest[i]->workstr, NULL);
-		iniSetString(&ini, section, "ars", cfg->ftest[i]->arstr, NULL);
+		SAFEPRINTF(name, "tester:%u", i);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "extension", cfg->ftest[i]->ext, NULL);
+		iniSetString(&section, name, "cmd", cfg->ftest[i]->cmd, NULL);
+		iniSetString(&section, name, "working", cfg->ftest[i]->workstr, NULL);
+		iniSetString(&section, name, "ars", cfg->ftest[i]->arstr, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* Download Events */
 
 	for(uint i=0; i<cfg->total_dlevents; i++) {
-		SAFEPRINTF(tmp, "dlevent:%u", i);
-		section = tmp;
-		iniSetString(&ini, section, "extension", cfg->dlevent[i]->ext, NULL);
-		iniSetString(&ini, section, "cmd", cfg->dlevent[i]->cmd, NULL);
-		iniSetString(&ini, section, "working", cfg->dlevent[i]->workstr, NULL);
-		iniSetString(&ini, section, "ars", cfg->dlevent[i]->arstr, NULL);
+		SAFEPRINTF(name, "dlevent:%u", i);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "extension", cfg->dlevent[i]->ext, NULL);
+		iniSetString(&section, name, "cmd", cfg->dlevent[i]->cmd, NULL);
+		iniSetString(&section, name, "working", cfg->dlevent[i]->workstr, NULL);
+		iniSetString(&section, name, "ars", cfg->dlevent[i]->arstr, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* File Transfer Protocols */
 
 	for(uint i=0; i<cfg->total_prots; i++) {
 		char str[128];
-		SAFEPRINTF(tmp, "protocol:%u", i);
-		section = tmp;
+		SAFEPRINTF(name, "protocol:%u", i);
+		str_list_t section = strListInit();
 		SAFEPRINTF(str, "%c", cfg->prot[i]->mnemonic);
-		iniSetString(&ini, section, "key", str, NULL);
-		iniSetString(&ini, section, "name", cfg->prot[i]->name, NULL);
-		iniSetString(&ini, section, "ulcmd", cfg->prot[i]->ulcmd, NULL);
-		iniSetString(&ini, section, "dlcmd", cfg->prot[i]->dlcmd, NULL);
-		iniSetString(&ini, section, "batulcmd", cfg->prot[i]->batulcmd, NULL);
-		iniSetString(&ini, section, "batdlcmd", cfg->prot[i]->batdlcmd, NULL);
-		iniSetLongInt(&ini, section, "settings", cfg->prot[i]->misc, NULL);
-		iniSetString(&ini, section, "ars", cfg->prot[i]->arstr, NULL);
+		iniSetString(&section, name, "key", str, NULL);
+		iniSetString(&section, name, "name", cfg->prot[i]->name, NULL);
+		iniSetString(&section, name, "ulcmd", cfg->prot[i]->ulcmd, NULL);
+		iniSetString(&section, name, "dlcmd", cfg->prot[i]->dlcmd, NULL);
+		iniSetString(&section, name, "batulcmd", cfg->prot[i]->batulcmd, NULL);
+		iniSetString(&section, name, "batdlcmd", cfg->prot[i]->batdlcmd, NULL);
+		iniSetLongInt(&section, name, "settings", cfg->prot[i]->misc, NULL);
+		iniSetString(&section, name, "ars", cfg->prot[i]->arstr, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* File Libraries */
 
 	for(uint i=0; i<cfg->total_libs; i++) {
-		SAFEPRINTF(tmp, "lib:%s", cfg->lib[i]->sname);
-		section = tmp;
-		iniSetString(&ini, section, "description", cfg->lib[i]->lname, NULL);
-		iniSetString(&ini, section, "ars", cfg->lib[i]->arstr, NULL);
-		iniSetString(&ini, section, "parent_path", cfg->lib[i]->parent_path, NULL);
-		iniSetString(&ini, section, "code_prefix", cfg->lib[i]->code_prefix, NULL);
+		SAFEPRINTF(name, "lib:%s", cfg->lib[i]->sname);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "description", cfg->lib[i]->lname, NULL);
+		iniSetString(&section, name, "ars", cfg->lib[i]->arstr, NULL);
+		iniSetString(&section, name, "parent_path", cfg->lib[i]->parent_path, NULL);
+		iniSetString(&section, name, "code_prefix", cfg->lib[i]->code_prefix, NULL);
 
-		iniSetShortInt(&ini, section, "sort", cfg->lib[i]->sort, NULL);
-		iniSetLongInt(&ini, section, "settings", cfg->lib[i]->misc, NULL);
-		iniSetShortInt(&ini, section, "vdir_name", cfg->lib[i]->vdir_name, NULL);
+		iniSetShortInt(&section, name, "sort", cfg->lib[i]->sort, NULL);
+		iniSetLongInt(&section, name, "settings", cfg->lib[i]->misc, NULL);
+		iniSetShortInt(&section, name, "vdir_name", cfg->lib[i]->vdir_name, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* File Directories */
@@ -639,24 +691,24 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			if (cfg->dir[i]->lib == j) {
 				cfg->dir[i]->dirnum = dirnum++;
-				SAFEPRINTF2(tmp, "dir:%s:%s"
+				SAFEPRINTF2(name, "dir:%s:%s"
 					,cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
-				section = tmp;
-				iniSetString(&ini, section, "description", cfg->dir[i]->lname, NULL);
-				iniSetString(&ini, section, "name", cfg->dir[i]->sname, NULL);
+				str_list_t section = strListInit();
+				iniSetString(&section, name, "description", cfg->dir[i]->lname, NULL);
+				iniSetString(&section, name, "name", cfg->dir[i]->sname, NULL);
 
 				if (cfg->dir[i]->data_dir[0]) {
 					backslash(cfg->dir[i]->data_dir);
 					md(cfg->dir[i]->data_dir);
 				}
 
-				iniSetString(&ini, section, "data_dir", cfg->dir[i]->data_dir, NULL);
-				iniSetString(&ini, section, "ars", cfg->dir[i]->arstr, NULL);
-				iniSetString(&ini, section, "upload_ars", cfg->dir[i]->ul_arstr, NULL);
-				iniSetString(&ini, section, "download_ars", cfg->dir[i]->dl_arstr, NULL);
-				iniSetString(&ini, section, "operator_ars", cfg->dir[i]->op_arstr, NULL);
+				iniSetString(&section, name, "data_dir", cfg->dir[i]->data_dir, NULL);
+				iniSetString(&section, name, "ars", cfg->dir[i]->arstr, NULL);
+				iniSetString(&section, name, "upload_ars", cfg->dir[i]->ul_arstr, NULL);
+				iniSetString(&section, name, "download_ars", cfg->dir[i]->dl_arstr, NULL);
+				iniSetString(&section, name, "operator_ars", cfg->dir[i]->op_arstr, NULL);
 				backslash(cfg->dir[i]->path);
-				iniSetString(&ini, section, "path", cfg->dir[i]->path, NULL);
+				iniSetString(&section, name, "path", cfg->dir[i]->path, NULL);
 
 				if (cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path, cfg->dir[i]->path);
@@ -679,17 +731,19 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 					(void)mkpath(path);
 				}
 
-				iniSetString(&ini, section, "upload_sem", cfg->dir[i]->upload_sem, NULL);
-				iniSetShortInt(&ini, section, "maxfiles", cfg->dir[i]->maxfiles, NULL);
-				iniSetString(&ini, section, "extensions", cfg->dir[i]->exts, NULL);
-				iniSetLongInt(&ini, section, "settings", cfg->dir[i]->misc, NULL);
-				iniSetShortInt(&ini, section, "seqdev", cfg->dir[i]->seqdev, NULL);
-				iniSetShortInt(&ini, section, "sort", cfg->dir[i]->sort, NULL);
-				iniSetString(&ini, section, "exempt_ars", cfg->dir[i]->ex_arstr, NULL);
-				iniSetShortInt(&ini, section, "maxage", cfg->dir[i]->maxage, NULL);
-				iniSetShortInt(&ini, section, "up_pct", cfg->dir[i]->up_pct, NULL);
-				iniSetShortInt(&ini, section, "dn_pct", cfg->dir[i]->dn_pct, NULL);
-				iniSetString(&ini, section, "area_tag", cfg->dir[i]->area_tag, NULL);
+				iniSetString(&section, name, "upload_sem", cfg->dir[i]->upload_sem, NULL);
+				iniSetShortInt(&section, name, "maxfiles", cfg->dir[i]->maxfiles, NULL);
+				iniSetString(&section, name, "extensions", cfg->dir[i]->exts, NULL);
+				iniSetLongInt(&section, name, "settings", cfg->dir[i]->misc, NULL);
+				iniSetShortInt(&section, name, "seqdev", cfg->dir[i]->seqdev, NULL);
+				iniSetShortInt(&section, name, "sort", cfg->dir[i]->sort, NULL);
+				iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, NULL);
+				iniSetShortInt(&section, name, "maxage", cfg->dir[i]->maxage, NULL);
+				iniSetShortInt(&section, name, "up_pct", cfg->dir[i]->up_pct, NULL);
+				iniSetShortInt(&section, name, "dn_pct", cfg->dir[i]->dn_pct, NULL);
+				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, NULL);
+				strListMerge(&ini, section);
+				free(section);
 			}
 		}
 	}
@@ -704,9 +758,12 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 		safe_snprintf(path,sizeof(path),"%stext/%s",cfg->data_dir,str);
 		md(path);
 #endif
-		SAFEPRINTF(tmp, "text:%s", cfg->txtsec[i]->code);
-		iniSetString(&ini, section, "name", cfg->txtsec[i]->name, NULL);
-		iniSetString(&ini, section, "ars", cfg->txtsec[i]->arstr, NULL);
+		SAFEPRINTF(name, "text:%s", cfg->txtsec[i]->code);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "name", cfg->txtsec[i]->name, NULL);
+		iniSetString(&section, name, "ars", cfg->txtsec[i]->arstr, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	SAFEPRINTF(path, "%sfile.ini", cfg->ctrl_dir);
@@ -784,7 +841,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 {
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
-	char	section[INI_MAX_VALUE_LEN];
+	char	name[INI_MAX_VALUE_LEN];
 
 	if(cfg->prepped)
 		return FALSE;
@@ -794,20 +851,26 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 
 	str_list_t ini = strListInit();
 	for(uint i=0; i<cfg->total_xedits; i++) {
-		SAFEPRINTF(section, "editor:%s", cfg->xedit[i]->code);
-		iniSetString(&ini, section, "name", cfg->xedit[i]->name, NULL);
-		iniSetString(&ini, section, "cmd", cfg->xedit[i]->rcmd, NULL);
-		iniSetLongInt(&ini, section, "settings", cfg->xedit[i]->misc, NULL);
-		iniSetString(&ini, section, "ars", cfg->xedit[i]->arstr, NULL);
-		iniSetShortInt(&ini, section, "type", cfg->xedit[i]->type, NULL);
-		iniSetShortInt(&ini, section, "soft_cr", cfg->xedit[i]->soft_cr, NULL);
-		iniSetShortInt(&ini, section, "quotewrap_cols", cfg->xedit[i]->quotewrap_cols, NULL);
+		SAFEPRINTF(name, "editor:%s", cfg->xedit[i]->code);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "name", cfg->xedit[i]->name, NULL);
+		iniSetString(&section, name, "cmd", cfg->xedit[i]->rcmd, NULL);
+		iniSetLongInt(&section, name, "settings", cfg->xedit[i]->misc, NULL);
+		iniSetString(&section, name, "ars", cfg->xedit[i]->arstr, NULL);
+		iniSetShortInt(&section, name, "type", cfg->xedit[i]->type, NULL);
+		iniSetShortInt(&section, name, "soft_cr", cfg->xedit[i]->soft_cr, NULL);
+		iniSetShortInt(&section, name, "quotewrap_cols", cfg->xedit[i]->quotewrap_cols, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	for(uint i=0; i<cfg->total_xtrnsecs; i++) {
-		SAFEPRINTF(section, "sec:%s", cfg->xtrnsec[i]->code);
-		iniSetString(&ini, section, "name", cfg->xtrnsec[i]->name, NULL);
-		iniSetString(&ini, section, "ars", cfg->xtrnsec[i]->arstr, NULL);
+		SAFEPRINTF(name, "sec:%s", cfg->xtrnsec[i]->code);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "name", cfg->xtrnsec[i]->name, NULL);
+		iniSetString(&section, name, "ars", cfg->xtrnsec[i]->arstr, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	for(uint sec=0; sec<cfg->total_xtrnsecs; sec++) {
@@ -817,44 +880,50 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			if(cfg->xtrn[i]->sec!=sec)
 				continue;
-			SAFEPRINTF2(section, "prog:%s:%s", cfg->xtrnsec[sec]->code, cfg->xtrn[i]->code);
-			iniSetString(&ini, section, "name", cfg->xtrn[i]->name, NULL);
-			iniSetString(&ini, section, "ars", cfg->xtrn[i]->arstr, NULL);
-			iniSetString(&ini, section, "run_ars", cfg->xtrn[i]->run_arstr, NULL);
-			iniSetShortInt(&ini, section, "type", cfg->xtrn[i]->type, NULL);
-			iniSetLongInt(&ini, section, "settings", cfg->xtrn[i]->misc, NULL);
-			iniSetShortInt(&ini, section, "event", cfg->xtrn[i]->event, NULL);
-			iniSetLongInt(&ini, section, "cost", cfg->xtrn[i]->cost, NULL);
-			iniSetString(&ini, section, "cmd", cfg->xtrn[i]->cmd, NULL);
-			iniSetString(&ini, section, "clean_cmd", cfg->xtrn[i]->clean, NULL);
-			iniSetString(&ini, section, "startup_dir", cfg->xtrn[i]->path, NULL);
-			iniSetShortInt(&ini, section, "textra", cfg->xtrn[i]->textra, NULL);
-			iniSetShortInt(&ini, section, "max_time", cfg->xtrn[i]->maxtime, NULL);
+			SAFEPRINTF2(name, "prog:%s:%s", cfg->xtrnsec[sec]->code, cfg->xtrn[i]->code);
+			str_list_t section = strListInit();
+			iniSetString(&section, name, "name", cfg->xtrn[i]->name, NULL);
+			iniSetString(&section, name, "ars", cfg->xtrn[i]->arstr, NULL);
+			iniSetString(&section, name, "run_ars", cfg->xtrn[i]->run_arstr, NULL);
+			iniSetShortInt(&section, name, "type", cfg->xtrn[i]->type, NULL);
+			iniSetLongInt(&section, name, "settings", cfg->xtrn[i]->misc, NULL);
+			iniSetShortInt(&section, name, "event", cfg->xtrn[i]->event, NULL);
+			iniSetLongInt(&section, name, "cost", cfg->xtrn[i]->cost, NULL);
+			iniSetString(&section, name, "cmd", cfg->xtrn[i]->cmd, NULL);
+			iniSetString(&section, name, "clean_cmd", cfg->xtrn[i]->clean, NULL);
+			iniSetString(&section, name, "startup_dir", cfg->xtrn[i]->path, NULL);
+			iniSetShortInt(&section, name, "textra", cfg->xtrn[i]->textra, NULL);
+			iniSetShortInt(&section, name, "max_time", cfg->xtrn[i]->maxtime, NULL);
+			strListMerge(&ini, section);
+			free(section);
 		}
 	}
 
 	for(uint i=0; i<cfg->total_events; i++) {
-		SAFEPRINTF(section, "event:%s", cfg->event[i]->code);
-		iniSetString(&ini, section, "cmd", cfg->event[i]->cmd, NULL);
-		iniSetShortInt(&ini, section, "days", cfg->event[i]->days, NULL);
-		iniSetShortInt(&ini, section, "time", cfg->event[i]->time, NULL);
-		iniSetShortInt(&ini, section, "node_num", cfg->event[i]->node, NULL);
-		iniSetLongInt(&ini, section, "settings", cfg->event[i]->misc, NULL);
-		iniSetString(&ini, section, "startup_dir", cfg->event[i]->dir, NULL);
-		iniSetShortInt(&ini, section, "freq", cfg->event[i]->freq, NULL);
-		iniSetShortInt(&ini, section, "mdays", cfg->event[i]->mdays, NULL);
-		iniSetShortInt(&ini, section, "months", cfg->event[i]->months, NULL);
-		iniSetShortInt(&ini, section, "errlevel", cfg->event[i]->errlevel, NULL);
+		SAFEPRINTF(name, "event:%s", cfg->event[i]->code);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "cmd", cfg->event[i]->cmd, NULL);
+		iniSetShortInt(&section, name, "days", cfg->event[i]->days, NULL);
+		iniSetShortInt(&section, name, "time", cfg->event[i]->time, NULL);
+		iniSetShortInt(&section, name, "node_num", cfg->event[i]->node, NULL);
+		iniSetLongInt(&section, name, "settings", cfg->event[i]->misc, NULL);
+		iniSetString(&section, name, "startup_dir", cfg->event[i]->dir, NULL);
+		iniSetShortInt(&section, name, "freq", cfg->event[i]->freq, NULL);
+		iniSetShortInt(&section, name, "mdays", cfg->event[i]->mdays, NULL);
+		iniSetShortInt(&section, name, "months", cfg->event[i]->months, NULL);
+		iniSetShortInt(&section, name, "errlevel", cfg->event[i]->errlevel, NULL);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	for(uint i=0; i<cfg->total_natvpgms; i++) {
-		SAFEPRINTF(section, "native:%s", cfg->natvpgm[i]->name);
-		iniAddSection(&ini, section, NULL);
+		SAFEPRINTF(name, "native:%s", cfg->natvpgm[i]->name);
+		iniAddSection(&ini, name, NULL);
 	}
 
 	for(uint i=0; i<cfg->total_hotkeys; i++) {
-		SAFEPRINTF(section, "hotkey:%c", cfg->hotkey[i]->key);
-		iniSetString(&ini, section, "cmd", cfg->hotkey[i]->cmd, NULL);
+		SAFEPRINTF(name, "hotkey:%c", cfg->hotkey[i]->key);
+		iniSetString(&ini, name, "cmd", cfg->hotkey[i]->cmd, NULL);
 	}
 
 	FILE* fp = fopen(path, "w");
