@@ -222,3 +222,12 @@ if(!upgraded) {
 	print("No v3.19 file bases found, running " + cmdline);
 	system.exec(cmdline);
 }
+print("Checking for v3.20 config files");
+upgraded = true;
+["main.cnf", "msgs.cnf", "file.cnf", "xtrn.cnf", "chat.cnf"].forEach(function(f) {
+	if(file_date(system.ctrl_dir + f) > file_date(system.ctrl_dir + f.replace('.cnf', '.ini')))
+		upgraded = false;
+});
+if(!upgraded)
+	js.exec("upgrade_to_v320.js", {});
+
