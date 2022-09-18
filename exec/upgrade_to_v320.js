@@ -1,5 +1,6 @@
 // Convert SBBS v3.1x ctrl/*.cnf to SBBS v3.2 ctrl/*.ini
 
+print("Upgrading Synchronet v3.1x config files to v3.20");
 var cnflib = load({}, 'cnflib.js');
 
 function upgrade_node(dir)
