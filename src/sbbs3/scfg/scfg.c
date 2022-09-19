@@ -436,7 +436,7 @@ int main(int argc, char **argv)
 		bail(1);
 	}
 
-	SAFEPRINTF(str,"%smain.cnf",cfg.ctrl_dir);
+	SAFEPRINTF(str,"%smain.ini",cfg.ctrl_dir);
 	if(!fexist(str)) {
 		SAFEPRINTF(errormsg, "Main configuration file (%s) missing!",str);
 		uifc.msg(errormsg);
