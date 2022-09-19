@@ -229,7 +229,7 @@ void prep_cfg(scfg_t* cfg)
 			dir_t dir;
 			memset(&dir, 0, sizeof(dir));
 			dir.lib = i;
-			dir.misc = DIR_FILES;
+			dir.misc = DIR_DIZ;
 			SAFECOPY(dir.path, p);
 			backslash(dir.path);
 			SAFECOPY(dir.lname, dirname);
