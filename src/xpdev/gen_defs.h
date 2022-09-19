@@ -339,6 +339,11 @@ typedef struct {
 
 typedef struct {
         char*   name;
+        char**  list;
+} named_str_list_t;
+
+typedef struct {
+        char*   name;
         int     value;
 } named_int_t;
 
