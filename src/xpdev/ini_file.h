@@ -297,6 +297,12 @@ DLLEXPORT BOOL 			iniSortSections(str_list_t*, const char* prefix, BOOL sort_key
 
 DLLEXPORT BOOL 			iniHasInclude(const str_list_t);
 
+/* Named String List functions */
+DLLEXPORT named_str_list_t** iniParseSections(const str_list_t);
+DLLEXPORT str_list_t	iniGetParsedSection(named_str_list_t**, const char* section, BOOL cut);
+DLLEXPORT str_list_t 	iniGetParsedSectionList(named_str_list_t**, const char* prefix);
+DLLEXPORT void*			iniFreeParsedSections(named_str_list_t** list);
+
 /*
  * Too handy to leave internal
  */
