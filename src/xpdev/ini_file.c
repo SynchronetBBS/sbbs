@@ -1460,6 +1460,124 @@ iniGetNamedStringList(str_list_t list, const char* section)
 	return(lp);
 }
 
+named_str_list_t** iniParseSections(str_list_t list)
+{
+	char str[INI_MAX_LINE_LEN];
+	char* p;
+	size_t i;
+	size_t sections = 0;
+	size_t keys = 0;
+	named_str_list_t** lp;
+	named_str_list_t** np;
+
+	if(list == NULL)
+		return NULL;
+
+	// Find first section
+	for(i = 0; list[i] != NULL; ++i) {
+		p = list[i];
+		SKIP_WHITESPACE(p);
+		if(*p == INI_OPEN_SECTION_CHAR)
+			break;
+	}
+	if(list[i] == NULL)
+		return NULL;
+
+	if((lp = (named_str_list_t**)malloc(sizeof(named_str_list_t*))) == NULL)
+		return NULL;
+
+	for(;list[i] != NULL; ++i) {
+		SAFECOPY(str, list[i]);
+		p = section_name(str);
+		if(p != NULL) {
+			if((np = (named_str_list_t**)realloc(lp, sizeof(named_str_list_t*)*(sections+2))) == NULL)
+				break;
+			lp = np;
+			if((lp[sections] = (named_str_list_t*)malloc(sizeof(named_str_list_t))) == NULL)
+				break;
+			if((lp[sections]->name = strdup(p)) == NULL)
+				break;
+			if((lp[sections]->list = strListInit()) == NULL)
+				break;
+			++sections;
+			keys = 0;
+		} else {
+			p = str;
+			if(is_eof(p))
+				break;
+			if(sections > 0) {
+				SKIP_WHITESPACE(p);
+				if(*p == '\0' || *p == INI_COMMENT_CHAR)
+					continue;
+				strListAppend(&lp[sections - 1]->list, p, keys++);
+			}
+		}
+	}
+
+	lp[sections] = NULL;	/* terminate list */
+
+	return lp;
+}
+
+str_list_t iniGetParsedSectionList(named_str_list_t** list, const char* prefix)
+{
+	size_t i;
+	size_t count = 0;
+	str_list_t result = strListInit();
+	named_str_list_t* section;
+
+	for(i = 0; list[i] != NULL; ++i) {
+		section = list[i];
+		if(section->name == NULL)
+			continue;
+		if(prefix != NULL) {
+			if(strnicmp(section->name, prefix, strlen(prefix)) != 0)
+				continue;
+		}
+		strListAppend(&result, section->name, count++);
+	}
+	return result;
+}
+
+str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, BOOL cut)
+{
+	size_t i;
+	named_str_list_t* section;
+
+	if(name == NULL) // Root section not supported
+		return NULL;
+
+	for(i = 0; list[i] != NULL; ++i) {
+		section = list[i];
+		if(section->name == NULL)
+			continue;
+		if(stricmp(section->name, name) == 0) {
+			if(cut) {
+				free(section->name);
+				section->name = NULL;
+			}
+			return section->list;
+		}
+	}
+	return NULL;
+}
+
+void* iniFreeParsedSections(named_str_list_t** list)
+{
+	size_t i;
+
+	if(list == NULL)
+		return NULL;
+
+	for(i = 0; list[i] != NULL; ++i) {
+		free(list[i]->name);
+		strListFree(&list[i]->list);
+		free(list[i]);
+	}
+
+	free(list);
+	return NULL;
+}
 
 /* These functions read a single key of the specified type */
 
@@ -2582,10 +2700,11 @@ void main(int argc, char** argv)
 			continue;
 		}
 		if((list=iniReadFile(fp)) != NULL) {
-			iniSortSections(&list, NULL, TRUE);
-			for(size_t j = 0; list[j] != NULL; j++)
-				printf("%s\n", list[j]);
-			strListFree(&list);
+			named_str_list_t** ini = iniParseSections(list);
+			str_list_t sections = iniGetParsedSectionList(ini, NULL);
+			for(size_t j = 0; sections[j] != NULL; j++)
+				printf("%s\n", sections[j]);
+			strListFree(&sections);
 		}
 		fclose(fp);
 	}
