@@ -560,7 +560,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->sys_inetaddr, iniGetString(section, NULL, "addr", "", value));
 	SAFECOPY(cfg->inetmail_sem, iniGetString(section, NULL, "netmail_sem", "", value));
 	SAFECOPY(cfg->smtpmail_sem, iniGetString(section, NULL, "smtp_sem", "", value));
-	cfg->inetmail_misc = iniGetUInteger(section, NULL, "settings", 0);
+	cfg->inetmail_misc = iniGetUInteger(section, NULL, "netmail_settings", 0);
 	cfg->inetmail_cost = iniGetUInt32(section, NULL, "cost", 0);
 
 	iniFreeStringList(ini);
