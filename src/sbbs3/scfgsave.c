@@ -501,7 +501,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "addr", cfg->sys_inetaddr, NULL); /* Internet address */
 		iniSetString(&section, name, "netmail_sem", cfg->inetmail_sem, NULL);
-		iniSetHexInt(&section, name, "settings", cfg->inetmail_misc, NULL);
+		iniSetHexInt(&section, name, "netmail_settings", cfg->inetmail_misc, NULL);
 		iniSetUInt32(&section, name, "cost", cfg->inetmail_cost, NULL);
 		iniSetString(&section, name, "smtp_sem", cfg->smtpmail_sem, NULL);
 		strListMerge(&ini, section);
