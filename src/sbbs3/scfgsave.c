@@ -885,7 +885,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 			str_list_t section = strListInit();
 			iniSetString(&section, name, "name", cfg->xtrn[i]->name, NULL);
 			iniSetString(&section, name, "ars", cfg->xtrn[i]->arstr, NULL);
-			iniSetString(&section, name, "run_ars", cfg->xtrn[i]->run_arstr, NULL);
+			iniSetString(&section, name, "execution_ars", cfg->xtrn[i]->run_arstr, NULL);
 			iniSetShortInt(&section, name, "type", cfg->xtrn[i]->type, NULL);
 			iniSetHexInt(&section, name, "settings", cfg->xtrn[i]->misc, NULL);
 			iniSetShortInt(&section, name, "event", cfg->xtrn[i]->event, NULL);
