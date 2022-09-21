@@ -485,7 +485,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->xtrn[i]->name, iniGetString(section, NULL, "name", code, value));
 		SAFECOPY(cfg->xtrn[i]->code, code);
 		SAFECOPY(cfg->xtrn[i]->arstr, iniGetString(section, NULL, "ars", "", value));
-		SAFECOPY(cfg->xtrn[i]->run_arstr, iniGetString(section, NULL, "run_ars", "", value));
+		SAFECOPY(cfg->xtrn[i]->run_arstr, iniGetString(section, NULL, "execution_ars", "", value));
 		arstr(NULL, cfg->xtrn[i]->arstr, cfg, cfg->xtrn[i]->ar);
 		arstr(NULL, cfg->xtrn[i]->run_arstr, cfg, cfg->xtrn[i]->run_ar);
 
