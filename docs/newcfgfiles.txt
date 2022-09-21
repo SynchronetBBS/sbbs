@@ -31,13 +31,15 @@ has also been an ongoing-challenge to add new configuration fields or extend
 the size of existing configuration fields. Most records included "padding"
 bytes for future expansion, but the future is now past and most of those bytes
 were consumed with new and expanded configuration fields; we've consumed the
-growth budget of most of the configuration records already.
+growth budget of most of the configuration records already. Now it'll be much
+easier to add new configuration fields and extend the size of existing fields
+when desired (e.g. no more 8-character internal code suffix limits!).
 
 Additionally, it has been a challenge to keep track of changes to the stock
 configuration files stored in the Synchronet source code repository. Revision
 control systems (e.g. CVS, Git) can track changes in text files much better
 than changes to binary files. Moving to text-based configuration files
-remedies the change management issue and allows sysops to easily search and
+remedies this change management issue and allows sysops to easily search and
 compare the contents of Synchronet configuration files (e.g. comparing with
 backed-up or stock/original versions of .ini files).
 
@@ -47,9 +49,9 @@ containing LF or CRLF-terminated lines of ASCII text conforming to the
 Synchronet supported .ini file syntax
 (https://wiki.synchro.net/config:ini_files#syntax).
 
-Interestingly, Synchronet v1 also used text configuration (.cfg) files for
-the vast majority of configuration settings, however the format was not as
-flexible as .ini and the large .cfg files were slow to load at the time.
+Interestingly, Synchronet v1 also used text configuration (*.cfg) files for
+the vast majority of its configuration settings, however the format was not as
+flexible as .ini and the large .cfg files were slow to load.
 
 The flexible format of .ini files does mean that they take more compute
 (and time) to parse than fixed-structure (e.g. .cnf) files, but through
@@ -64,16 +66,16 @@ added comments (lines beginning with a semicolon) or white-space changes will
 be lost when the file is subsequently edited using SCFG. Unlike other
 Synchronet initialization files (e.g. sbbs.ini), there's been no effort made
 to make these new configuration files particularly easy to read (e.g. optional
-comments) and no effort made to maintain the exact key ordering or formatting
-used during any manual edits of the files. If a sysop chooses to make manual
-edits, they should either no longer use SCFG or be okay with the idea that the
-files will be completely re-written/formatted if subsequently edited with
-SCFG.
+comments, named bits for bit-fields) and no effort made to maintain the exact
+key ordering or formatting used during any manual edits of the files. If a
+sysop chooses to make manual edits, they should either no longer use SCFG or
+be okay with the idea that the files will be completely re-written/formatted
+when subsequently edited with SCFG.
 
 _Why ini?_
 The .ini file format was chosen because this is already a first class data
 file format in Synchronet, supported equally well in the C/C++ code and
-JavaScript. Other stuctured text formats were considered (e.g. JSON, YAML),
+JavaScript. Other structured text formats were considered (e.g. JSON, YAML),
 the pros and cons were weighed, and .ini won.
 
 _Attribution_
