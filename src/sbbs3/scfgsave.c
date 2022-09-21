@@ -923,7 +923,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 	}
 
 	for(uint i=0; i<cfg->total_hotkeys; i++) {
-		SAFEPRINTF(name, "hotkey:%c", cfg->hotkey[i]->key);
+		SAFEPRINTF(name, "hotkey:%u", cfg->hotkey[i]->key);
 		iniSetString(&ini, name, "cmd", cfg->hotkey[i]->cmd, NULL);
 	}
 
