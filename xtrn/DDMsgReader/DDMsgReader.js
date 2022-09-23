@@ -53,6 +53,9 @@
  *                              honors the system setting for whether users can view deleted messages.
  * 2022-08-06 Eric Oulashin     Version 1.54
  *                              Users now have a personal twit list (configurable via Ctrl-U, user settings).
+ * 2022-09-23 Eric Oulashin     Version 1.55
+ *                              Refactored how email replies are done (passing the header to the appropriate
+ *                              functions, not using ungetstr() when prompting for the message subject)
  */
 
 "use strict";
@@ -157,8 +160,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.54";
-var READER_DATE = "2022-08-06";
+var READER_VERSION = "1.55";
+var READER_DATE = "2022-09-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -9891,19 +9894,22 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			// message header.  Otherwise (i.e., on a networked sub-board), use
 			// username@from_net_addr.
 			var emailAddr = "";
-			if (pMsgHdr.from_net_type == NET_INTERNET)
-				emailAddr = pMsgHdr.from_net_addr;
-			else
-				emailAddr = pMsgHdr.from + "@" + pMsgHdr.from_net_addr;
+			if (typeof(pMsgHdr.from_net_addr) === "string" && pMsgHdr.from_net_addr.length > 0)
+			{
+				if (pMsgHdr.from_net_type == NET_INTERNET)
+					emailAddr = pMsgHdr.from_net_addr;
+				else
+					emailAddr = pMsgHdr.from + "@" + pMsgHdr.from_net_addr;
+			}
 			// Prompt the user to verify the receiver's email address
 			console.putmsg(bbs.text(Email), P_SAVEATR);
-			console.ungetstr(emailAddr);
+			if (emailAddr.length > 0)
+				console.ungetstr(emailAddr);
 			emailAddr = console.getstr(60, K_LINE);
 			if ((typeof(emailAddr) == "string") && (emailAddr.length > 0))
 			{
 				replyMode |= WM_NETMAIL;
-				console.ungetstr(pMsgHdr.subject);
-				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode);
+				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode, null, pMsgHdr);
 				console.pause();
 			}
 			else
@@ -9916,6 +9922,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 	}
 	if (replyLocally)
 	{
+		//console.print("\x01n\r\nHere!\x01p"); // Temporary
 		// Replying to a local user
 		replyMode |= WM_EMAIL;
 		// Look up the user number of the "from" user name in the message header
@@ -9927,7 +9934,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			// sender.  Note that if the send failed, that could be because the
 			// user aborted the message.
 			console.crlf();
-			retObj.sendSucceeded = bbs.email(userNumber, replyMode, "", pMsgHdr.subject);
+			retObj.sendSucceeded = bbs.email(userNumber, replyMode, null, null, pMsgHdr);
 			console.pause();
 		}
 		else
