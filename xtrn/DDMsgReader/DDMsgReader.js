@@ -9903,9 +9903,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			}
 			// Prompt the user to verify the receiver's email address
 			console.putmsg(bbs.text(Email), P_SAVEATR);
-			if (emailAddr.length > 0)
-				console.ungetstr(emailAddr);
-			emailAddr = console.getstr(60, K_LINE);
+			emailAddr = console.getstr(emailAddr, 60, K_LINE|K_EDIT);
 			if ((typeof(emailAddr) == "string") && (emailAddr.length > 0))
 			{
 				replyMode |= WM_NETMAIL;
@@ -9922,7 +9920,6 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 	}
 	if (replyLocally)
 	{
-		//console.print("\x01n\r\nHere!\x01p"); // Temporary
 		// Replying to a local user
 		replyMode |= WM_EMAIL;
 		// Look up the user number of the "from" user name in the message header
