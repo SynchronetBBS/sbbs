@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.55     2022-09-23   Refactored how email replies are done (passing the header
+                      to the appropriate functions, not using ungetstr() when
+                      prompting for the message subject)
 1.54     2022-08-06   Users now have a personal twit list, configurable via
                       user settings, with the Ctrl-U hotkey.
 1.53     2022-07-18   Deleted messages can now be un-marked for deletion from
