@@ -7772,7 +7772,7 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`Q`Q@"
 							   + this.colors.lightbarMsgListHelpLineParenColor + ")"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "uit, "
-	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "?  ";
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`?`?@  ";
 	lbHelpLineLen += 15;
 
 	// Add spaces to the end of sLightbarModeHelpLine up until one char
