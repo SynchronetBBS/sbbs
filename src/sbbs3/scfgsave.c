@@ -489,7 +489,11 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 				continue;
 			SAFEPRINTF2(name, "qhubsub:%s:%u", cfg->qhub[i]->id, cfg->qhub[i]->conf[j]);
 			str_list_t section = strListInit();
-			iniSetString(&section, name, "sub", cfg->sub[subnum]->code, NULL);
+			char code[LEN_EXTCODE + 1];
+			SAFEPRINTF2(code,"%s%s"
+				,cfg->grp[cfg->sub[subnum]->grp]->code_prefix
+				,cfg->sub[subnum]->code_suffix);
+			iniSetString(&section, name, "sub", code, NULL);
 			iniSetHexInt(&section, name, "settings", cfg->qhub[i]->mode[j], NULL);
 			strListMerge(&ini, section);
 			free(section);
