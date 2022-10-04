@@ -86,6 +86,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "upgrade_to_v319", "upgrade_
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sbbsexec", "sbbsexec.vcxproj", "{AF4DBBF1-F99A-4DFF-8991-0B98B581151B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "upgrade_to_v320", "upgrade_to_v320.vcxproj", "{DBABED32-2B9E-481A-8F7E-B554953EFF83}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -251,6 +253,10 @@ Global
 		{AF4DBBF1-F99A-4DFF-8991-0B98B581151B}.Debug|Win32.ActiveCfg = Debug|Win32
 		{AF4DBBF1-F99A-4DFF-8991-0B98B581151B}.Release|Win32.ActiveCfg = Release|Win32
 		{AF4DBBF1-F99A-4DFF-8991-0B98B581151B}.Release|Win32.Build.0 = Release|Win32
+		{DBABED32-2B9E-481A-8F7E-B554953EFF83}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DBABED32-2B9E-481A-8F7E-B554953EFF83}.Debug|Win32.Build.0 = Debug|Win32
+		{DBABED32-2B9E-481A-8F7E-B554953EFF83}.Release|Win32.ActiveCfg = Release|Win32
+		{DBABED32-2B9E-481A-8F7E-B554953EFF83}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

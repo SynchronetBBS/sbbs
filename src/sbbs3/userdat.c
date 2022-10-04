@@ -33,6 +33,7 @@
 #include "getstats.h"
 #include "msgdate.h"
 #include "scfglib.h"
+#include "xpdatetime.h"
 
 #ifndef USHRT_MAX
 	#define USHRT_MAX ((unsigned short)~0)
@@ -200,7 +201,7 @@ int openuserdat(scfg_t* cfg, BOOL for_modify)
 	if(!VALID_CFG(cfg))
 		return(-1);
 
-	SAFEPRINTF(path,"%suser/user.dat",cfg->data_dir);
+	SAFEPRINTF(path,"%suser/user.tab",cfg->data_dir);
 	return nopen(path, for_modify ? (O_RDWR|O_CREAT|O_DENYNONE) : (O_RDONLY|O_DENYNONE));
 }
 
@@ -516,24 +517,149 @@ char* userbytestr(uint64_t bytes, char* str)
 }
 
 /****************************************************************************/
-/* Writes into user.number's slot in user.dat data in structure 'user'      */
-/* Called from functions newuser, useredit and main                         */
 /****************************************************************************/
-int putuserdat(scfg_t* cfg, user_t* user)
+BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 {
-    int		i,file;
-    char	userdat[U_LEN],str[MAX_PATH+1];
+	if(user == NULL)
+		return FALSE;
 
-	if(user==NULL)
-		return(-1);
+	if(!VALID_CFG(cfg) || user->number < 1)
+		return FALSE;
 
-	if(!VALID_CFG(cfg) || user->number<1)
-		return(-1);
+	char flags1[33];
+	char flags2[33];
+	char flags3[33];
+	char flags4[33];
+	char exemptions[33];
+	char restrictions[33];
+	ltoaf(user->flags1, flags1);
+	ltoaf(user->flags2, flags2);
+	ltoaf(user->flags3, flags3);
+	ltoaf(user->flags4, flags4);
+	ltoaf(user->exempt, exemptions);
+	ltoaf(user->rest, restrictions);
 
-	memset(userdat,ETX,U_LEN);
-	putrec(userdat,U_ALIAS,LEN_ALIAS+5,user->alias);
-	putrec(userdat,U_NAME,LEN_NAME,user->name);
-	putrec(userdat,U_HANDLE,LEN_HANDLE,user->handle);
+	int len = snprintf(userdat, USER_REC_LEN,
+		"%u\t"	// USER_ID
+		"%s\t"	// USER_ALIAS
+		"%s\t"	// USER_NAME
+		"%s\t"	// USER_HANDLE
+		"%s\t"	// USER_NOTE
+		"%s\t"	// USER_IPADDR
+		"%s\t"	// USER_HOST
+		"%s\t"	// USER_NETMAIL
+		"%s\t"	// USER_ADDRESS
+		"%s\t"	// USER_LOCATION
+		"%s\t"	// USER_ZIPCODE
+		"%s\t"	// USER_PHONE
+		"%s\t"	// USER_BIRTH
+		"%c\t"	// USER_GENDER
+		"%s\t"	// USER_COMMENT
+		"%s\t"	// USER_CONNECTION
+		"%u\t"	// USER_MISC
+		"%u\t"	// USER_QWK
+		"%u\t"	// USER_CHAT
+		"%u\t"	// USER_ROWS
+		"%u\t"	// USER_COLS
+		"%s\t"	// USER_XEDIT
+		"%s\t"	// USER_SHELL
+		"%s\t"	// USER_TMPEXT
+		"%c\t"	// USER_PROT
+		"%s\t"	// USER_CURSUB
+		"%s\t"	// USER_CURDIR
+		"%s\t"	// USER_CURXTRN
+		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_LOGONTIME
+		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_NS_TIME
+		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_LASTON
+		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_FIRSTON
+		"%u\t"	// USER_LOGONS
+		"%u\t"	// USER_LTODAY
+		"%u\t"	// USER_TIMEON
+		"%u\t"	// USER_TTODAY
+		"%u\t"	// USER_TLAST
+		"%u\t"	// USER_POSTS
+		"%u\t"	// USER_EMAILS
+		"%u\t"	// USER_FBACKS
+		"%u\t"	// USER_ETODAY
+		"%u\t"	// USER_PTODAY
+		"%" PRIu64	// USER_ULB
+		"%u\t"	    // USER_ULS
+		"%" PRIu64	// USER_DLB
+		"%u\t"	    // USER_DLS
+		"%u\t"	// USER_LEECH
+		"%s\t"	// USER_PASS
+		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_PWMOD
+		"%u\t"	// USER_LEVEL
+		"%s\t"	// USER_FLAGS1
+		"%s\t"	// USER_FLAGS2
+		"%s\t"	// USER_FLAGS3
+		"%s\t"	// USER_FLAGS4
+		"%s\t"	// USER_EXEMPT
+		"%s\t"	// USER_REST
+		"%" PRIu64 "\t"	// USER_CDT
+		"%" PRIu64 "\t"	// USER_FREECDT
+		,user->number
+		,user->alias
+		,user->name
+		,user->handle
+		,user->note
+		,user->ipaddr
+		,user->comp
+		,user->netmail
+		,user->address
+		,user->location
+		,user->zipcode
+		,user->phone
+		,user->birth
+		,user->sex
+		,user->comment
+		,user->modem
+		,user->misc
+		,user->qwk
+		,user->chat
+		,user->rows
+		,user->cols
+		,user->xedit && user->xedit <= cfg->total_xedits ? cfg->xedit[user->xedit - 1]->code : ""
+		,user->shell <= cfg->total_shells ? cfg->shell[user->shell]->code : ""
+		,user->tmpext
+		,user->prot
+		,user->cursub
+		,user->curdir
+		,user->curxtrn
+		,gmtime_to_isoDate(user->logontime), gmtime_to_isoTime(user->logontime)
+		,gmtime_to_isoDate(user->ns_time), gmtime_to_isoTime(user->ns_time)
+		,gmtime_to_isoDate(user->laston), gmtime_to_isoTime(user->laston)
+		,gmtime_to_isoDate(user->firston), gmtime_to_isoTime(user->firston)
+		,user->logons
+		,user->ltoday
+		,user->timeon
+		,user->ttoday
+		,user->tlast
+		,user->posts
+		,user->emails
+		,user->fbacks
+		,user->etoday
+		,user->ptoday
+		,user->ulb
+		,user->uls
+		,user->dlb
+		,user->dls
+		,user->leech
+		,user->pass
+		,gmtime_to_isoDate(user->pwmod), gmtime_to_isoTime(user->pwmod)
+		,user->level
+		,flags1
+		,flags2
+		,flags3
+		,flags4
+		,exemptions
+		,restrictions
+		,user->cdt
+		,user->freecdt
+	);
+	if(len > USER_REC_LEN || len < 0) // truncated?
+		return FALSE;
+#if 0
 	putrec(userdat,U_HANDLE+LEN_HANDLE,2,crlf);
 
 	putrec(userdat,U_NOTE,LEN_NOTE,user->note);
@@ -628,6 +754,32 @@ int putuserdat(scfg_t* cfg, user_t* user)
 
 	putrec(userdat,U_UNUSED,U_LEN-(U_UNUSED)-2,crlf);
 	putrec(userdat,U_UNUSED+(U_LEN-(U_UNUSED)-2),2,crlf);
+#endif
+
+	memset(userdat + len, '\t', USER_REC_LEN - len);
+	userdat[USER_REC_LINE_LEN - 2] = '\r';
+	userdat[USER_REC_LINE_LEN - 1] = '\n';
+
+	return TRUE;
+}
+
+/****************************************************************************/
+/* Writes into user.number's slot in user.dat data in structure 'user'      */
+/* Called from functions newuser, useredit and main                         */
+/****************************************************************************/
+int putuserdat(scfg_t* cfg, user_t* user)
+{
+    int		i,file;
+    char	userdat[USER_REC_LINE_LEN];
+
+	if(user==NULL)
+		return(-1);
+
+	if(!VALID_CFG(cfg) || user->number<1)
+		return(-1);
+
+	if(!format_userdat(cfg, user, userdat))
+		return -10;
 
 	if((file=openuserdat(cfg, /* for_modify: */TRUE)) < 0)
 		return(errno);
@@ -652,14 +804,15 @@ int putuserdat(scfg_t* cfg, user_t* user)
 		return(-2);
 	}
 
-	if(write(file,userdat,U_LEN)!=U_LEN) {
-		unlock(file,(long)((long)(user->number-1)*U_LEN),U_LEN);
+	if(write(file,userdat,sizeof(userdat))!=sizeof(userdat)) {
+		unlock(file,(long)((long)(user->number-1)*sizeof(userdat)),sizeof(userdat));
 		close(file);
 		return(-3);
 	}
-	unlock(file,(long)((long)(user->number-1)*U_LEN),U_LEN);
+	unlock(file,(long)((long)(user->number-1)*sizeof(userdat)),sizeof(userdat));
 	close(file);
 	dirtyuserdat(cfg,user->number);
+
 	return(0);
 }
 
