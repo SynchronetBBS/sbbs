@@ -29,6 +29,90 @@
 #include "startup.h"	/* struct login_attempt_settings */
 #include "dllexport.h"
 
+#define USER_REC_LINE_LEN	1000					/* includes CRLF terminator */
+#define USER_REC_LEN		(USER_REC_LINE_LEN-2)	/* does not include CRLF */
+
+// User data field indexes
+// Do not insert new fields into following enum, add to the end
+enum user_field {
+	USER_ID,
+	USER_ALIAS,
+	USER_NAME,
+	USER_HANDLE,
+	USER_NOTE,
+	USER_IPADDR,
+	USER_HOST,
+	USER_NETMAIL,
+	USER_ADDRESS,
+	USER_LOCATION,
+	USER_ZIPCODE,
+	USER_PHONE,
+	USER_BIRTH,
+	USER_GENDER,
+	USER_COMMENT,
+	USER_CONNECTION,
+
+	// Bit-fields:
+	USER_MISC,
+	USER_QWK,
+	USER_CHAT,
+
+	// Settings:
+	USER_ROWS,
+	USER_COLS,
+	USER_XEDIT,
+	USER_SHELL,
+	USER_TMPEXT,
+	USER_PROT,
+	USER_CURSUB,
+	USER_CURDIR,
+	USER_CURXTRN,
+
+	// Date/times:
+	USER_LOGONTIME,
+	USER_NS_TIME,
+	USER_LASTON,
+	USER_FIRSTON,
+
+	// Counting stats:
+	USER_LOGONS,
+	USER_LTODAY,
+	USER_TIMEON,
+	USER_TTODAY,
+	USER_TLAST,
+	USER_POSTS,
+	USER_EMAILS,
+	USER_FBACKS,
+	USER_ETODAY,
+	USER_PTODAY,
+
+	// File xfer stats:
+	USER_ULB,
+	USER_ULS,
+	USER_DLB,
+	USER_DLS,
+	USER_LEECH,
+
+	// Security:
+	USER_PASS,
+	USER_PWMOD,
+	USER_LEVEL,
+	USER_FLAGS1,
+	USER_FLAGS2,
+	USER_FLAGS3,
+	USER_FLAGS4,
+	USER_EXEMPT,
+	USER_REST,
+	USER_CDT,
+	USER_FREECDT,
+	USER_MIN,
+	USER_TEXTRA,
+	USER_EXPIRE,
+
+	// Last:
+	USER_FIELD_COUNT
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,6 +123,7 @@ DLLEXPORT int	readuserdat(scfg_t*, unsigned user_number, char* userdat, int infi
 DLLEXPORT int	parseuserdat(scfg_t*, char* userdat, user_t*);
 DLLEXPORT int	getuserdat(scfg_t*, user_t*); 	/* Fill userdat struct with user data   */
 DLLEXPORT int	fgetuserdat(scfg_t*, user_t*, int file);
+DLLEXPORT BOOL	format_userdat(scfg_t*, user_t*, char userdat[]);
 DLLEXPORT int	putuserdat(scfg_t*, user_t*);	/* Put userdat struct into user file	*/
 DLLEXPORT int	newuserdat(scfg_t*, user_t*);	/* Create new userdat in user file */
 DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); /* Checks for a username match */
