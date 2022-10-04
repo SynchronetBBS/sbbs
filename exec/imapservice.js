@@ -889,8 +889,7 @@ var unauthenticated_command_handlers = {
 				client.socket.send("+\r\n");
 				line=client.socket.recvline(10240, 1800);
 				args=base64_decode(line).split(/\x00/);
-				if(!login(args[1],args[2])) {
-//					log(LOG_INFO, format("Attempted login: '%s', pw: '%s'", args[1], args[2]));
+				if(args === null || (!login(args[1],args[2]))) {
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
 				}
