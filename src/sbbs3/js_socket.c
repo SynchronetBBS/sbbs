@@ -337,8 +337,12 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 	int copied=0,ret;
 	char *estr;
 
-	if(p->session==-1)
+	if(p->session==-1) {
+		BOOL wr = FALSE;
+		if(!socket_check(p->sock, NULL, &wr, 0) || !wr)
+			return 0;
 		return sendsocket(p->sock, msg, len);
+	}
 	do {
 		// If we don't limit this, we occasionally get errors on large sends...
 		if((ret=cryptPushData(p->session, msg, len > 0x2000 ? 0x2000 : len, &copied))==CRYPT_OK) {
