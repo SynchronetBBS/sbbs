@@ -304,6 +304,11 @@ UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/upgrade_to_v319$(OFILE)
 
+UPGRADE_TO_V320_OBJS  = $(LOAD_CFG_OBJS) \
+			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/dat_rec$(OFILE) \
+			$(OBJODIR)/getstats$(OFILE) \
+			$(OBJODIR)/upgrade_to_v320$(OFILE)
 LOAD_CFG_OBJS = \
 			$(OBJODIR)/getctrl$(OFILE) \
 			$(OBJODIR)/load_cfg$(OFILE) \

@@ -289,6 +289,19 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
 }
 
 /****************************************************************************/
+/****************************************************************************/
+void split_userdat(char *userdat, char* field[])
+{
+	char* p = userdat;
+	for(size_t i = 0; i < USER_FIELD_COUNT; i++) {
+		field[i] = p;
+		FIND_CHAR(p, '\t');
+		if(*p != '\0')
+			*(p++) = '\0';
+	}
+}
+
+/****************************************************************************/
 /* Fills the structure 'user' with info for user.number	from userdat		*/
 /* (a buffer representing a single user 'record' from the user.dat file		*/
 /****************************************************************************/
@@ -309,17 +322,8 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	   before calling chk_ar() below for user-number comparisons in AR strings to function correctly */
 	user->number=user_number;	/* Signal of success */
 
-	char dat[USER_REC_LEN + 1];
-	SAFECOPY(dat, userdat);
-	truncsp(dat);
-	char* p = dat;
 	char* field[USER_FIELD_COUNT];
-	for(size_t i = 0; i < USER_FIELD_COUNT; i++) {
-		field[i] = p;
-		FIND_CHAR(p, '\t');
-		if(p != '\0')
-			*(p++) = '\0';
-	}
+	split_userdat(userdat, field);
 	SAFECOPY(user->alias, field[USER_ALIAS]);
 	SAFECOPY(user->name, field[USER_NAME]);
 	SAFECOPY(user->handle, field[USER_HANDLE]);
@@ -332,16 +336,71 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	SAFECOPY(user->zipcode, field[USER_ZIPCODE]);
 	SAFECOPY(user->phone, field[USER_PHONE]);
 	SAFECOPY(user->birth, field[USER_BIRTH]);
-	user->sex = field[USER_GENDER][0];
+	user->sex = *field[USER_GENDER];
 	SAFECOPY(user->comment, field[USER_COMMENT]);
 	SAFECOPY(user->modem, field[USER_CONNECTION]);
 
-	user->misc = (uint32_t)strtoul(field[USER_MISC], NULL, 0);
-	user->qwk = (uint32_t)strtoul(field[USER_QWK], NULL, 0);
-	user->chat = (uint32_t)strtoul(field[USER_CHAT], NULL, 0);
+	user->misc = (uint32_t)strtoul(field[USER_MISC], NULL, 16);
+	user->qwk = (uint32_t)strtoul(field[USER_QWK], NULL, 16);
+	user->chat = (uint32_t)strtoul(field[USER_CHAT], NULL, 16);
 
 	user->rows = strtoul(field[USER_ROWS], NULL, 0);
 	user->cols = strtoul(field[USER_COLS], NULL, 0);
+
+	for(uint i = 0; i < cfg->total_xedits; i++) {
+		if(stricmp(field[USER_XEDIT], cfg->xedit[i]->code) == 0) {
+			user->xedit = i + 1;
+			break;
+		}
+	}
+	for(uint i=0; i < cfg->total_shells; i++) {
+		if(stricmp(field[USER_SHELL], cfg->shell[i]->code) == 0) {
+			user->shell = i;
+			break;
+		}
+	}
+
+	SAFECOPY(user->tmpext, field[USER_TMPEXT]);
+	user->prot = *field[USER_PROT];
+	SAFECOPY(user->cursub, field[USER_CURSUB]);
+	SAFECOPY(user->curdir, field[USER_CURDIR]);
+	SAFECOPY(user->curxtrn, field[USER_CURXTRN]);
+	user->logontime = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_LOGONTIME]));
+	user->ns_time = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_NS_TIME]));
+	user->laston = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_LASTON]));
+	user->firston = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_FIRSTON]));
+
+	user->logons = strtoul(field[USER_LOGONS], NULL, 0);
+	user->ltoday = strtoul(field[USER_LTODAY], NULL, 0);
+	user->timeon = strtoul(field[USER_TIMEON], NULL, 0);
+	user->ttoday = strtoul(field[USER_TTODAY], NULL, 0);
+	user->tlast = strtoul(field[USER_TLAST], NULL, 0);
+	user->posts = strtoul(field[USER_POSTS], NULL, 0);
+	user->emails = strtoul(field[USER_EMAILS], NULL, 0);
+	user->fbacks = strtoul(field[USER_FBACKS], NULL, 0);
+	user->etoday = strtoul(field[USER_ETODAY], NULL, 0);
+	user->ptoday = strtoul(field[USER_PTODAY], NULL, 0);
+
+	user->ulb = strtoull(field[USER_ULB], NULL, 0);
+	user->uls = strtoul(field[USER_ULS], NULL, 0);
+	user->dlb = strtoull(field[USER_DLB], NULL, 0);
+	user->dls = strtoul(field[USER_DLS], NULL, 0);
+	user->leech = strtoul(field[USER_LEECH], NULL, 0);
+
+	SAFECOPY(user->pass, field[USER_PASS]);
+	user->pwmod = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_PWMOD]));
+	user->level = atoi(field[USER_LEVEL]);
+	user->flags1 = aftol(field[USER_FLAGS1]);
+	user->flags2 = aftol(field[USER_FLAGS2]);
+	user->flags3 = aftol(field[USER_FLAGS3]);
+	user->flags4 = aftol(field[USER_FLAGS4]);
+	user->exempt = aftol(field[USER_EXEMPT]);
+	user->rest = aftol(field[USER_REST]);
+	user->cdt = strtoull(field[USER_CDT], NULL, 0);
+	user->freecdt = strtoull(field[USER_FREECDT], NULL, 0);
+	user->min = strtoul(field[USER_MIN], NULL, 0);
+	user->textra = strtoul(field[USER_TEXTRA], NULL, 0);
+	user->expire = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_EXPIRE]));
 
 #if 0
 	/* order of these function calls is irrelevant */
@@ -489,7 +548,7 @@ int getuserdat(scfg_t* cfg, user_t *user)
 {
 	int		retval;
 	int		file;
-	char	userdat[U_LEN+1];
+	char	userdat[USER_REC_LINE_LEN + 1];
 
 	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
 		return(-1);
@@ -624,9 +683,9 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%c\t"	// USER_GENDER
 		"%s\t"	// USER_COMMENT
 		"%s\t"	// USER_CONNECTION
-		"%u\t"	// USER_MISC
-		"%u\t"	// USER_QWK
-		"%u\t"	// USER_CHAT
+		"%x\t"	// USER_MISC
+		"%x\t"	// USER_QWK
+		"%x\t"	// USER_CHAT
 		"%u\t"	// USER_ROWS
 		"%u\t"	// USER_COLS
 		"%s\t"	// USER_XEDIT
