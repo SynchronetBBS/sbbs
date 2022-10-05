@@ -37,15 +37,6 @@
 
 scfg_t scfg;
 
-#ifndef USHRT_MAX
-	#define USHRT_MAX ((unsigned short)~0)
-#endif
-
-/* convenient space-saving global variables */
-static const char* crlf="\r\n";
-static const char* nulstr="";
-static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
-
 #define VALID_CFG(cfg)	(cfg!=NULL && cfg->size==sizeof(scfg_t))
 
 int lprintf(int level, const char *fmt, ...)
@@ -534,8 +525,64 @@ bool upgrade_users()
 	fclose(out);
 
 	time_t diff = time(NULL) - start;
-	printf("%lu users converted (%lu users/second), largest (#%u) = %u bytes\n"
+	printf("%u users converted (%lu users/second), largest (#%u) = %u bytes\n"
 		,total_users, (ulong)(diff ? total_users / diff : total_users), largest, (unsigned)maxlen);
+
+	return result;
+}
+
+bool verify_users()
+{
+	int result = true;
+	time_t start = time(NULL);
+	uint total_users = 0;
+	uint last = v31x_lastuser(&scfg);
+	uint largest = 0;
+	size_t maxlen = 0;
+	char userdat[USER_REC_LINE_LEN];
+	char path[MAX_PATH + 1];
+
+	printf("Comparing user.dat to user.tab\n");
+	int tab = openuserdat(&scfg, /* for_modify */FALSE);
+	if(tab == -1) {
+		perror("user.tab");
+		return false;
+	}
+
+	int file = v31x_openuserdat(&scfg, /* for_modify */FALSE);
+	if(file == -1) {
+		perror("user.dat");
+		return false;
+	}
+	for(uint i = 1; i <= last; i++) {
+		user_t user;
+		ZERO_VAR(user);
+		user.number = i;
+		if(v31x_fgetuserdat(&scfg, &user, file) != 0) {
+			printf("Error reading user %d\n", user.number);
+			result = false;
+			break;
+		}
+		user_t new;
+		new.number = i;
+		if(fgetuserdat(&scfg, &new, tab) != 0) {
+			printf("Error reading user %d from user.tab\n", i);
+			result = false;
+			break;
+		}
+		if(memcmp(&user, &new, sizeof(user)) != 0) {
+			printf("Error comparing user #%u afer upgrade\n", i);
+			result = false;
+			break;
+		}
+		total_users++;
+	}
+	v31x_closeuserdat(file);
+	closeuserdat(tab);
+
+	time_t diff = time(NULL) - start;
+	printf("%u users verified (%lu users/second)\n"
+		,total_users, (ulong)(diff ? total_users / diff : total_users));
 
 	return result;
 }
@@ -564,6 +611,9 @@ int main(int argc, char** argv)
 	}
 
 	if(!upgrade_users())
+		return EXIT_FAILURE + __COUNTER__;
+
+	if(!verify_users())
 		return EXIT_FAILURE + __COUNTER__;
 
 	printf("Upgrade successful.\n");
