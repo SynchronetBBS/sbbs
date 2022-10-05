@@ -105,6 +105,8 @@
 #define LEN_SSNAME	25		/* Sub/Dir short name						*/
 #define LEN_SLNAME	40		/* Sub/Dir long name						*/
 
+#define LEN_FLAGSTR	32		/* Flag sets are 32-bits each				*/
+
 									/* User Questions (e.g. for new users)	*/
 #define UQ_ALIASES		(1L<<0) 	/* Ask for alias						*/
 #define UQ_LOCATION		(1L<<1) 	/* Ask for location 					*/
