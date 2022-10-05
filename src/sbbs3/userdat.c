@@ -45,6 +45,9 @@ static const char* nulstr="";
 static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
 
 #define VALID_CFG(cfg)	(cfg!=NULL && cfg->size==sizeof(scfg_t))
+#define VALID_USER_NUMBER(n) ((n) >= 1)
+
+#define LOOP_USERDAT 50
 
 /****************************************************************************/
 /* Looks for a perfect match among all usernames (not deleted users)		*/
@@ -212,6 +215,36 @@ int closeuserdat(int file)
 	return close(file);
 }
 
+off_t userdatoffset(unsigned user_number)
+{
+	return (user_number - 1) * USER_REC_LINE_LEN;
+}
+
+BOOL lockuserdat(int file, unsigned user_number)
+{
+	if(!VALID_USER_NUMBER(user_number))
+		return FALSE;
+
+	off_t offset = userdatoffset(user_number);
+
+	(void)lseek(file, offset, SEEK_SET);
+	unsigned attempt=0;
+	while(attempt<LOOP_USERDAT && lock(file, offset, USER_REC_LINE_LEN) == -1) {
+		if(attempt)
+			mswait(100);
+		attempt++;
+	}
+	return attempt < LOOP_USERDAT;
+}
+
+BOOL unlockuserdat(int file, unsigned user_number)
+{
+	if(!VALID_USER_NUMBER(user_number))
+		return FALSE;
+
+	return unlock(file, userdatoffset(user_number), USER_REC_LINE_LEN) == 0;
+}
+
 /****************************************************************************/
 /* Locks and reads a single user record from an open user.dat file into a	*/
 /* buffer of U_LEN+1 in size.												*/
@@ -219,9 +252,9 @@ int closeuserdat(int file)
 /****************************************************************************/
 int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
 {
-	int i,file;
+	int file;
 
-	if(!VALID_CFG(cfg) || user_number<1)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(user_number))
 		return(-1);
 
 	if(infile >= 0)
@@ -231,33 +264,25 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
 			return file;
 	}
 
-	if(user_number > (unsigned)(filelength(file)/U_LEN)) {
+	if(user_number > (unsigned)(filelength(file)/USER_REC_LINE_LEN)) {
 		if(file != infile)
 			close(file);
 		return(-1);	/* no such user record */
 	}
 
-	(void)lseek(file,(long)((long)(user_number-1)*U_LEN),SEEK_SET);
-	i=0;
-	while(i<LOOP_NODEDAB
-		&& lock(file,(long)((long)(user_number-1)*U_LEN),U_LEN)==-1) {
-		if(i)
-			mswait(100);
-		i++;
-	}
-	if(i>=LOOP_NODEDAB) {
+	if(!lockuserdat(file, user_number)) {
 		if(file != infile)
 			close(file);
 		return(-2);
 	}
 
-	if(read(file,userdat,U_LEN)!=U_LEN) {
-		unlock(file,(long)((long)(user_number-1)*U_LEN),U_LEN);
+	if(read(file,userdat,USER_REC_LINE_LEN) != USER_REC_LINE_LEN) {
+		unlockuserdat(file, user_number);
 		if(file != infile)
 			close(file);
 		return(-3);
 	}
-	unlock(file,(long)((long)(user_number-1)*U_LEN),U_LEN);
+	unlockuserdat(file, user_number);
 	if(file != infile)
 		close(file);
 	return 0;
@@ -269,8 +294,6 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
 /****************************************************************************/
 int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 {
-	char str[U_LEN+1];
-	int i;
 	unsigned user_number;
 
 	if(user==NULL)
@@ -279,13 +302,48 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	user_number=user->number;
 	memset(user,0,sizeof(user_t));
 
-	if(!VALID_CFG(cfg) || user_number < 1)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(user_number))
 		return(-1);
 
 	/* The user number needs to be set here
 	   before calling chk_ar() below for user-number comparisons in AR strings to function correctly */
 	user->number=user_number;	/* Signal of success */
 
+	char dat[USER_REC_LEN + 1];
+	SAFECOPY(dat, userdat);
+	truncsp(dat);
+	char* p = dat;
+	char* field[USER_FIELD_COUNT];
+	for(size_t i = 0; i < USER_FIELD_COUNT; i++) {
+		field[i] = p;
+		FIND_CHAR(p, '\t');
+		if(p != '\0')
+			*(p++) = '\0';
+	}
+	SAFECOPY(user->alias, field[USER_ALIAS]);
+	SAFECOPY(user->name, field[USER_NAME]);
+	SAFECOPY(user->handle, field[USER_HANDLE]);
+	SAFECOPY(user->note, field[USER_NOTE]);
+	SAFECOPY(user->ipaddr, field[USER_IPADDR]);
+	SAFECOPY(user->comp, field[USER_HOST]);
+	SAFECOPY(user->netmail, field[USER_NETMAIL]);
+	SAFECOPY(user->address, field[USER_ADDRESS]);
+	SAFECOPY(user->location, field[USER_LOCATION]);
+	SAFECOPY(user->zipcode, field[USER_ZIPCODE]);
+	SAFECOPY(user->phone, field[USER_PHONE]);
+	SAFECOPY(user->birth, field[USER_BIRTH]);
+	user->sex = field[USER_GENDER][0];
+	SAFECOPY(user->comment, field[USER_COMMENT]);
+	SAFECOPY(user->modem, field[USER_CONNECTION]);
+
+	user->misc = (uint32_t)strtoul(field[USER_MISC], NULL, 0);
+	user->qwk = (uint32_t)strtoul(field[USER_QWK], NULL, 0);
+	user->chat = (uint32_t)strtoul(field[USER_CHAT], NULL, 0);
+
+	user->rows = strtoul(field[USER_ROWS], NULL, 0);
+	user->cols = strtoul(field[USER_COLS], NULL, 0);
+
+#if 0
 	/* order of these function calls is irrelevant */
 	getrec(userdat,U_ALIAS,LEN_ALIAS,user->alias);
 	getrec(userdat,U_NAME,LEN_NAME,user->name);
@@ -403,6 +461,9 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 
 	getrec(userdat,U_CHAT,8,str);
 	user->chat=ahtoul(str);
+
+#endif
+
 	/* Reset daily stats if not already logged on today */
 	if(user->ltoday || user->etoday || user->ptoday || user->ttoday) {
 		time_t		now;
@@ -430,7 +491,7 @@ int getuserdat(scfg_t* cfg, user_t *user)
 	int		file;
 	char	userdat[U_LEN+1];
 
-	if(!VALID_CFG(cfg) || user==NULL || user->number < 1)
+	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
 		return(-1);
 
 	if((file = openuserdat(cfg, /* for_modify: */FALSE)) < 0) {
@@ -455,7 +516,7 @@ int fgetuserdat(scfg_t* cfg, user_t *user, int file)
 	int		retval;
 	char	userdat[U_LEN+1];
 
-	if(!VALID_CFG(cfg) || user==NULL || user->number < 1)
+	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
 		return(-1);
 
 	memset(userdat, 0, sizeof(userdat));
@@ -516,6 +577,13 @@ char* userbytestr(uint64_t bytes, char* str)
 	return str;
 }
 
+static uint32_t isoDate(time_t t)
+{
+	if(t <= 0)
+		return 0;
+	return gmtime_to_isoDate(t);
+}
+
 /****************************************************************************/
 /****************************************************************************/
 BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
@@ -523,15 +591,15 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	if(user == NULL)
 		return FALSE;
 
-	if(!VALID_CFG(cfg) || user->number < 1)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(user->number))
 		return FALSE;
 
-	char flags1[33];
-	char flags2[33];
-	char flags3[33];
-	char flags4[33];
-	char exemptions[33];
-	char restrictions[33];
+	char flags1[LEN_FLAGSTR + 1];
+	char flags2[LEN_FLAGSTR + 1];
+	char flags3[LEN_FLAGSTR + 1];
+	char flags4[LEN_FLAGSTR + 1];
+	char exemptions[LEN_FLAGSTR + 1];
+	char restrictions[LEN_FLAGSTR + 1];
 	ltoaf(user->flags1, flags1);
 	ltoaf(user->flags2, flags2);
 	ltoaf(user->flags3, flags3);
@@ -568,10 +636,10 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%s\t"	// USER_CURSUB
 		"%s\t"	// USER_CURDIR
 		"%s\t"	// USER_CURXTRN
-		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_LOGONTIME
-		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_NS_TIME
-		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_LASTON
-		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_FIRSTON
+		"%" PRIu32 "T%06" PRIu32 "Z\t"	// USER_LOGONTIME
+		"%" PRIu32 "T%06" PRIu32 "Z\t"	// USER_NS_TIME
+		"%" PRIu32 "T%06" PRIu32 "Z\t"	// USER_LASTON
+		"%" PRIu32 "T%06" PRIu32 "Z\t"	// USER_FIRSTON
 		"%u\t"	// USER_LOGONS
 		"%u\t"	// USER_LTODAY
 		"%u\t"	// USER_TIMEON
@@ -588,7 +656,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%u\t"	    // USER_DLS
 		"%u\t"	// USER_LEECH
 		"%s\t"	// USER_PASS
-		"%" PRIu32 "T%" PRIu32 "Z\t"	// USER_PWMOD
+		"%" PRIu32 "T%06" PRIu32 "Z\t"	// USER_PWMOD
 		"%u\t"	// USER_LEVEL
 		"%s\t"	// USER_FLAGS1
 		"%s\t"	// USER_FLAGS2
@@ -598,6 +666,9 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%s\t"	// USER_REST
 		"%" PRIu64 "\t"	// USER_CDT
 		"%" PRIu64 "\t"	// USER_FREECDT
+		"%" PRIu32 "\t" // USER_MIN
+		"%u\t"	// USER_TEXTRA
+		"%" PRIu32 "T%06" PRIu32 "Z\t"	// USER_EXPIRE
 		,user->number
 		,user->alias
 		,user->name
@@ -626,10 +697,10 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,user->cursub
 		,user->curdir
 		,user->curxtrn
-		,gmtime_to_isoDate(user->logontime), gmtime_to_isoTime(user->logontime)
-		,gmtime_to_isoDate(user->ns_time), gmtime_to_isoTime(user->ns_time)
-		,gmtime_to_isoDate(user->laston), gmtime_to_isoTime(user->laston)
-		,gmtime_to_isoDate(user->firston), gmtime_to_isoTime(user->firston)
+		,isoDate(user->logontime), gmtime_to_isoTime(user->logontime)
+		,isoDate(user->ns_time), gmtime_to_isoTime(user->ns_time)
+		,isoDate(user->laston), gmtime_to_isoTime(user->laston)
+		,isoDate(user->firston), gmtime_to_isoTime(user->firston)
 		,user->logons
 		,user->ltoday
 		,user->timeon
@@ -646,7 +717,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,user->dls
 		,user->leech
 		,user->pass
-		,gmtime_to_isoDate(user->pwmod), gmtime_to_isoTime(user->pwmod)
+		,isoDate(user->pwmod), gmtime_to_isoTime(user->pwmod)
 		,user->level
 		,flags1
 		,flags2
@@ -656,6 +727,9 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,restrictions
 		,user->cdt
 		,user->freecdt
+		,user->min
+		,user->textra
+		,isoDate(user->expire), gmtime_to_isoTime(user->expire)
 	);
 	if(len > USER_REC_LEN || len < 0) // truncated?
 		return FALSE;
@@ -775,7 +849,7 @@ int putuserdat(scfg_t* cfg, user_t* user)
 	if(user==NULL)
 		return(-1);
 
-	if(!VALID_CFG(cfg) || user->number<1)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(user->number))
 		return(-1);
 
 	if(!format_userdat(cfg, user, userdat))
@@ -830,7 +904,7 @@ char* username(scfg_t* cfg, int usernumber, char *name)
 	if(name==NULL)
 		return(NULL);
 
-	if(!VALID_CFG(cfg) || usernumber<1) {
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber)) {
 		name[0]=0;
 		return(name);
 	}
@@ -870,7 +944,7 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	off_t length;
 	off_t total_users;
 
-	if(!VALID_CFG(cfg) || name==NULL || number<1)
+	if(!VALID_CFG(cfg) || name==NULL || !VALID_USER_NUMBER(number))
 		return(-1);
 
 	SAFEPRINTF(str,"%suser/name.dat", cfg->data_dir);
@@ -1554,7 +1628,7 @@ int putsmsg(scfg_t* cfg, int usernumber, char *strin)
     int file,i;
     node_t node;
 
-	if(!VALID_CFG(cfg) || usernumber<1 || strin==NULL)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || strin==NULL)
 		return(-1);
 
 	if(*strin==0)
@@ -1595,7 +1669,7 @@ char* getsmsg(scfg_t* cfg, int usernumber)
     int		file = -1;
 	node_t	node;
 
-	if(!VALID_CFG(cfg) || usernumber<1)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber))
 		return(NULL);
 
 	for(i=1;i<=cfg->sys_nodes;i++) {	/* clear msg waiting flag */
@@ -1623,7 +1697,7 @@ char* readsmsg(scfg_t* cfg, int usernumber)
     int		file;
     long	length;
 
-	if(!VALID_CFG(cfg) || usernumber<1)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber))
 		return(NULL);
 
 	SAFEPRINTF2(str,"%smsgs/%4.4u.msg",cfg->data_dir,usernumber);
@@ -2363,12 +2437,12 @@ int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 	char	path[256];
 	int		i,c,file;
 
-	if(!VALID_CFG(cfg) || usernumber<1 || str==NULL)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || str==NULL)
 		return(-1);
 	SAFEPRINTF(path,"%suser/user.dat",cfg->data_dir);
 	if((file=nopen(path,O_RDONLY|O_DENYNONE))==-1)
 		return(errno);
-	if(usernumber<1
+	if(!VALID_USER_NUMBER(usernumber)
 		|| filelength(file)<(long)((long)(usernumber-1L)*U_LEN)+(long)start) {
 		close(file);
 		return(-2);
@@ -2427,7 +2501,7 @@ int putuserrec(scfg_t* cfg, int usernumber, int start, int length, const char *s
 	int		file;
 	uint	i;
 
-	if(!VALID_CFG(cfg) || usernumber < 1 || str == NULL)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || str == NULL)
 		return -1;
 
 	if(length == 0) {	/* auto-length */
@@ -2495,7 +2569,7 @@ uint64_t adjustuserrec(scfg_t* cfg, int usernumber, int start, int64_t adj)
 	int i,c,file;
 	uint64_t val;
 
-	if(!VALID_CFG(cfg) || usernumber<1)
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber))
 		return(0);
 
 	SAFEPRINTF(path,"%suser/user.dat",cfg->data_dir);

@@ -492,9 +492,13 @@ bool upgrade_users()
 	time_t start = time(NULL);
 	uint total_users = 0;
 	uint last = v31x_lastuser(&scfg);
+	uint largest = 0;
+	size_t maxlen = 0;
 	char userdat[USER_REC_LINE_LEN];
 	char path[MAX_PATH + 1];
 	SAFEPRINTF(path, "%suser/user.tab", scfg.data_dir);
+
+	printf("Converting from user.dat to %s\n", path);
 	FILE* out = fopen(path, "wb");
 	if(out == NULL) {
 		perror(path);
@@ -517,14 +521,21 @@ bool upgrade_users()
 		}
 		format_userdat(&scfg, &user, userdat);
 		fwrite(userdat, sizeof(char), sizeof(userdat), out);
+		userdat[USER_REC_LEN] = '\0';
+		truncsp(userdat);
+		size_t len = strlen(userdat);
+		if(len > maxlen) {
+			maxlen = len;
+			largest = user.number;
+		}
 		total_users++;
 	}
 	v31x_closeuserdat(file);
 	fclose(out);
 
 	time_t diff = time(NULL) - start;
-	printf("\r%lu users converted (%lu users/second)%40s\n"
-		,total_users, (ulong)(diff ? total_users / diff : total_users), "");
+	printf("%lu users converted (%lu users/second), largest (#%u) = %u bytes\n"
+		,total_users, (ulong)(diff ? total_users / diff : total_users), largest, (unsigned)maxlen);
 
 	return result;
 }
