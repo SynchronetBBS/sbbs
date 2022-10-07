@@ -7,7 +7,7 @@ var ks_fname = backslash(system.ctrl_dir)+"letsyncrypt.key";
 var setting_fname = backslash(system.ctrl_dir)+"letsyncrypt.ini";
 var sks_fname = backslash(system.ctrl_dir)+"ssl.cert";
 var maincnf_fname = backslash(system.ctrl_dir)+"main.cnf";
-var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
+var recycle_sem = backslash(system.ctrl_dir)+"recycle";
 
 function at_least_a_third()
 {
