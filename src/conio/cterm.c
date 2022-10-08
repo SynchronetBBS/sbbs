@@ -5346,10 +5346,10 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 									if (y == CURR_MINY)
 										break;
 									x = CURR_MINX;
-									GOTOXY(x, k-1);
+									GOTOXY(x, y-1);
 								}
 								else
-									GOTOXY(--x, k);
+									GOTOXY(--x, y);
 								if(x < CURR_MAXX) {
 									sx = x;
 									sy = y;
