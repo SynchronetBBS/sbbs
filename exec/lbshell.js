@@ -707,6 +707,10 @@ while(bbs.online) {
 						handle_a_ctrlkey(x_prog);
 						continue;
 					}
+					if (xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number === undefined) {
+						console.beep();
+						continue;
+					}
 					stop_mouse();
 					clear_screen();
 
