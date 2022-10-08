@@ -29,6 +29,8 @@
 #if defined(_WIN32)
 	#include <winsock2.h>
 	#include <ws2tcpip.h>	// struct in6_addr
+#else
+	#include <netinet/in.h>
 #endif
 
 #define IPv4_LOCALHOST	0x7f000001U	/* 127.0.0.1 */
