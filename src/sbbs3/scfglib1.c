@@ -851,29 +851,40 @@ BOOL is_valid_grpnum(scfg_t* cfg, int grpnum)
 	return (grpnum >= 0) && (cfg != NULL) && (grpnum < cfg->total_grps);
 }
 
-faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
+uint nearest_sysfaddr_index(scfg_t* cfg, faddr_t* addr)
 {
 	uint i;
-
-	if(cfg->total_faddrs <= 0)
-		return addr;
+	uint nearest = 0;
+	int min = INT_MAX;
 
 	for(i=0; i < cfg->total_faddrs; i++)
 		if(memcmp(addr, &cfg->faddr[i], sizeof(*addr)) == 0)
-			return &cfg->faddr[i];
+			return i;
 	for(i=0; i < cfg->total_faddrs; i++)
 		if(addr->zone == cfg->faddr[i].zone
 			&& addr->net == cfg->faddr[i].net
 			&& addr->node == cfg->faddr[i].node)
-			return &cfg->faddr[i];
+			return i;
 	for(i=0; i < cfg->total_faddrs; i++)
 		if(addr->zone == cfg->faddr[i].zone
 			&& addr->net == cfg->faddr[i].net)
-			return &cfg->faddr[i];
-	for(i=0; i < cfg->total_faddrs; i++)
-		if(addr->zone == cfg->faddr[i].zone)
-			return &cfg->faddr[i];
-	return &cfg->faddr[0];
+			return i;
+	for(i=0; i < cfg->total_faddrs; i++) {
+		int diff = abs((int)addr->zone - (int)cfg->faddr[i].zone);
+		if(diff < min) {
+			min = diff;
+			nearest = i;
+		}
+	}
+	return nearest;
+}
+
+faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
+{
+	uint i = nearest_sysfaddr_index(cfg, addr);
+	if(i >= cfg->total_faddrs)
+		return addr;
+	return &cfg->faddr[i];
 }
 
 /****************************************************************************/
