@@ -42,29 +42,27 @@ function main(cmd) {
 	switch(cmd) {
 		case 'install':
 		case '-install':
-			var cnflib = load({}, "cnflib.js");
-			var file_cnf = cnflib.read("file.cnf");
-			if(!file_cnf) {
-				alert("Failed to read file.cnf");
+			var f = new File(system.ctrl_dir + "file.ini");
+			if(!f.open(f.exists ? 'r+':'w+')) {
+				alert("Failed to open " + f.name);
 				exit(-1);
 			}
-			file_cnf.prot.push({ 
+			if(!f.iniSetObject("protocol:new", {
 				  key: 'L'
 				, name: 'Local Copy'
-				, ulcmd: '?localcopy send %f' 
+				, ulcmd: '?localcopy send %f'
 				, dlcmd: '?localcopy recv %f'
 				, batulcmd: '?localcopy send %g'
 				, batdlcmd: '?localcopy recv %s'
 				, ars: 'SYSOP'
 				, settings: PROT_NATIVE
-				});
-		
-			if(!cnflib.write("file.cnf", undefined, file_cnf)) {
-				alert("Failed to write file.cnf");
+				})) {
+				alert("Failed to write " + f.name);
 				exit(-1);
 			}
+			f.close();
 			exit(0);
-	
+
 		case 'send':
 			if(file_isdir(argv[1])) { /* batch upload */
 				var dest = backslash(argv[1]);

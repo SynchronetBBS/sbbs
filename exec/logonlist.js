@@ -11,17 +11,16 @@ require("sbbsdefs.js", 'SYS_LISTLOC');
 function install()
 {
 	var maint_event = "?logonlist -m";
-	var cnflib = load({}, "cnflib.js");
-	var main_cnf = cnflib.read("main.cnf");
-	if(!main_cnf)
-		return "Failed to read main.cnf";
-	if(main_cnf.sys_daily == maint_event)
+	var f = new File(system.ctrl_dir + "main.ini");
+	if(!f.open(f.exists ? 'r+':'w+'))
+		return "Failed to read " + f.name;
+	var cmd = f.iniGetValue("daily_event", "cmd");
+	if(cmd == maint_event)
 		return true;
-	if(main_cnf.sys_daily)
-		return format("System daily event already set to: '%s'", main_cnf.sys_daily);
-	main_cnf.sys_daily = maint_event;
-	if(!cnflib.write("main.cnf", undefined, main_cnf))
-		return "Failed to write main.cnf";
+	if(cmd)
+		return format("System daily event already set to: '%s'", cmd);
+	if(!f.iniSetValue("daily_event", "cmd", maint_event))
+		return "Failed to write " + f.name;
 	return true;
 }
 
