@@ -5128,7 +5128,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 										coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &ex, NULL);
 										MOVETEXT(sx + 1, sy, ex, sy, sx, sy);
 									}
-									GOTOXY(CURR_MAXX, k);
+									GOTOXY(CURR_MAXX, y);
 									cterm_clreol(cterm);
 									GOTOXY(x, y);
 									break;
