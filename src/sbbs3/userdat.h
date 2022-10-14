@@ -29,8 +29,8 @@
 #include "startup.h"	/* struct login_attempt_settings */
 #include "dllexport.h"
 
-#define USER_REC_LINE_LEN	1000					/* includes CRLF terminator */
-#define USER_REC_LEN		(USER_REC_LINE_LEN-2)	/* does not include CRLF */
+#define USER_REC_LINE_LEN	1000					// includes LF terminator */
+#define USER_REC_LEN		(USER_REC_LINE_LEN - 1)	// does not include LF
 
 // User data field indexes
 // Do not insert new fields into following enum, add to the end
@@ -124,6 +124,8 @@ DLLEXPORT int	parseuserdat(scfg_t*, char* userdat, user_t*);
 DLLEXPORT int	getuserdat(scfg_t*, user_t*); 	/* Fill userdat struct with user data   */
 DLLEXPORT int	fgetuserdat(scfg_t*, user_t*, int file);
 DLLEXPORT BOOL	format_userdat(scfg_t*, user_t*, char userdat[]);
+DLLEXPORT BOOL	lockuserdat(int file, unsigned user_number);
+DLLEXPORT BOOL	unlockuserdat(int file, unsigned user_number);
 DLLEXPORT int	putuserdat(scfg_t*, user_t*);	/* Put userdat struct into user file	*/
 DLLEXPORT int	newuserdat(scfg_t*, user_t*);	/* Create new userdat in user file */
 DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); /* Checks for a username match */
@@ -174,6 +176,7 @@ DLLEXPORT BOOL	logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
 DLLEXPORT void	resetdailyuserdat(scfg_t*, user_t*, BOOL write);
 DLLEXPORT void	subtract_cdt(scfg_t*, user_t*, uint64_t amt);
 DLLEXPORT int	user_rec_len(int offset);
+DLLEXPORT size_t user_field_len(enum user_field);
 DLLEXPORT BOOL	can_user_access_all_libs(scfg_t*, user_t*, client_t*);
 DLLEXPORT BOOL	can_user_access_all_dirs(scfg_t*, uint libnum, user_t*, client_t*);
 DLLEXPORT BOOL	can_user_access_lib(scfg_t*, uint libnum, user_t*, client_t*);

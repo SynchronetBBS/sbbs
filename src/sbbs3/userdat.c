@@ -40,12 +40,11 @@
 #endif
 
 /* convenient space-saving global variables */
-static const char* crlf="\r\n";
-static const char* nulstr="";
 static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
 
 #define VALID_CFG(cfg)	(cfg!=NULL && cfg->size==sizeof(scfg_t))
 #define VALID_USER_NUMBER(n) ((n) >= 1)
+#define VALID_USER_FIELD(n)	((n) >= 0 && (n) < USER_FIELD_COUNT)
 
 #define LOOP_USERDAT 50
 
@@ -220,6 +219,11 @@ off_t userdatoffset(unsigned user_number)
 	return (user_number - 1) * USER_REC_LINE_LEN;
 }
 
+off_t userdatseek(int file, unsigned user_number)
+{
+	return lseek(file, userdatoffset(user_number), SEEK_SET);
+}
+
 BOOL lockuserdat(int file, unsigned user_number)
 {
 	if(!VALID_USER_NUMBER(user_number))
@@ -227,9 +231,10 @@ BOOL lockuserdat(int file, unsigned user_number)
 
 	off_t offset = userdatoffset(user_number);
 
-	(void)lseek(file, offset, SEEK_SET);
+	if(lseek(file, offset, SEEK_SET) != offset)
+		return FALSE;
 	unsigned attempt=0;
-	while(attempt<LOOP_USERDAT && lock(file, offset, USER_REC_LINE_LEN) == -1) {
+	while(attempt < LOOP_USERDAT && lock(file, offset, USER_REC_LINE_LEN) == -1) {
 		if(attempt)
 			mswait(100);
 		attempt++;
@@ -247,7 +252,7 @@ BOOL unlockuserdat(int file, unsigned user_number)
 
 /****************************************************************************/
 /* Locks and reads a single user record from an open user.dat file into a	*/
-/* buffer of U_LEN+1 in size.												*/
+/* buffer of USER_REC_LINE_LEN + 1 in size.									*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
 int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
@@ -264,7 +269,7 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
 			return file;
 	}
 
-	if(user_number > (unsigned)(filelength(file)/USER_REC_LINE_LEN)) {
+	if(user_number > (unsigned)(filelength(file) / USER_REC_LINE_LEN)) {
 		if(file != infile)
 			close(file);
 		return(-1);	/* no such user record */
@@ -276,7 +281,7 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
 		return(-2);
 	}
 
-	if(read(file,userdat,USER_REC_LINE_LEN) != USER_REC_LINE_LEN) {
+	if(read(file, userdat, USER_REC_LINE_LEN) != USER_REC_LINE_LEN) {
 		unlockuserdat(file, user_number);
 		if(file != infile)
 			close(file);
@@ -286,6 +291,23 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
 	if(file != infile)
 		close(file);
 	return 0;
+}
+
+// Assumes file already positioned at beginning of user record
+BOOL writeuserfields(scfg_t* cfg, char* field[], int file)
+{
+	char	userdat[USER_REC_LINE_LEN + 1] = "";
+
+	for(size_t i = 0; i < USER_FIELD_COUNT; i++) {
+		SAFECAT(userdat, field[i]);
+		SAFECAT(userdat, "\t");
+	}
+	size_t len = strlen(userdat);
+	memset(userdat + len, '\t', USER_REC_LEN - len);
+	userdat[USER_REC_LINE_LEN - 1] = '\n';
+	if(write(file, userdat, USER_REC_LINE_LEN) != USER_REC_LINE_LEN)
+		return FALSE;
+	return TRUE;
 }
 
 /****************************************************************************/
@@ -299,6 +321,14 @@ void split_userdat(char *userdat, char* field[])
 		if(*p != '\0')
 			*(p++) = '\0';
 	}
+}
+
+static time32_t parse_usertime(const char* str)
+{
+	time_t result = xpDateTime_to_time(isoDateTimeStr_parse(str));
+	if(result == INVALID_TIME)
+		result = 0;
+	return (time32_t)result;
 }
 
 /****************************************************************************/
@@ -365,30 +395,30 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	SAFECOPY(user->cursub, field[USER_CURSUB]);
 	SAFECOPY(user->curdir, field[USER_CURDIR]);
 	SAFECOPY(user->curxtrn, field[USER_CURXTRN]);
-	user->logontime = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_LOGONTIME]));
-	user->ns_time = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_NS_TIME]));
-	user->laston = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_LASTON]));
-	user->firston = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_FIRSTON]));
+	user->logontime = parse_usertime(field[USER_LOGONTIME]);
+	user->ns_time = parse_usertime(field[USER_NS_TIME]);
+	user->laston = parse_usertime(field[USER_LASTON]);
+	user->firston = parse_usertime(field[USER_FIRSTON]);
 
-	user->logons = strtoul(field[USER_LOGONS], NULL, 0);
-	user->ltoday = strtoul(field[USER_LTODAY], NULL, 0);
-	user->timeon = strtoul(field[USER_TIMEON], NULL, 0);
-	user->ttoday = strtoul(field[USER_TTODAY], NULL, 0);
-	user->tlast = strtoul(field[USER_TLAST], NULL, 0);
-	user->posts = strtoul(field[USER_POSTS], NULL, 0);
-	user->emails = strtoul(field[USER_EMAILS], NULL, 0);
-	user->fbacks = strtoul(field[USER_FBACKS], NULL, 0);
-	user->etoday = strtoul(field[USER_ETODAY], NULL, 0);
-	user->ptoday = strtoul(field[USER_PTODAY], NULL, 0);
+	user->logons = (ushort)strtoul(field[USER_LOGONS], NULL, 0);
+	user->ltoday = (ushort)strtoul(field[USER_LTODAY], NULL, 0);
+	user->timeon = (ushort)strtoul(field[USER_TIMEON], NULL, 0);
+	user->ttoday = (ushort)strtoul(field[USER_TTODAY], NULL, 0);
+	user->tlast = (ushort)strtoul(field[USER_TLAST], NULL, 0);
+	user->posts = (ushort)strtoul(field[USER_POSTS], NULL, 0);
+	user->emails = (ushort)strtoul(field[USER_EMAILS], NULL, 0);
+	user->fbacks = (ushort)strtoul(field[USER_FBACKS], NULL, 0);
+	user->etoday = (ushort)strtoul(field[USER_ETODAY], NULL, 0);
+	user->ptoday = (ushort)strtoul(field[USER_PTODAY], NULL, 0);
 
 	user->ulb = strtoull(field[USER_ULB], NULL, 0);
-	user->uls = strtoul(field[USER_ULS], NULL, 0);
+	user->uls = (ushort)strtoul(field[USER_ULS], NULL, 0);
 	user->dlb = strtoull(field[USER_DLB], NULL, 0);
-	user->dls = strtoul(field[USER_DLS], NULL, 0);
-	user->leech = strtoul(field[USER_LEECH], NULL, 0);
+	user->dls = (ushort)strtoul(field[USER_DLS], NULL, 0);
+	user->leech = (uchar)strtoul(field[USER_LEECH], NULL, 0);
 
 	SAFECOPY(user->pass, field[USER_PASS]);
-	user->pwmod = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_PWMOD]));
+	user->pwmod = parse_usertime(field[USER_PWMOD]);
 	user->level = atoi(field[USER_LEVEL]);
 	user->flags1 = aftol(field[USER_FLAGS1]);
 	user->flags2 = aftol(field[USER_FLAGS2]);
@@ -399,129 +429,8 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	user->cdt = strtoull(field[USER_CDT], NULL, 0);
 	user->freecdt = strtoull(field[USER_FREECDT], NULL, 0);
 	user->min = strtoul(field[USER_MIN], NULL, 0);
-	user->textra = strtoul(field[USER_TEXTRA], NULL, 0);
-	user->expire = xpDateTime_to_time(isoDateTimeStr_parse(field[USER_EXPIRE]));
-
-#if 0
-	/* order of these function calls is irrelevant */
-	getrec(userdat,U_ALIAS,LEN_ALIAS,user->alias);
-	getrec(userdat,U_NAME,LEN_NAME,user->name);
-	getrec(userdat,U_HANDLE,LEN_HANDLE,user->handle);
-	getrec(userdat,U_NOTE,LEN_NOTE,user->note);
-	getrec(userdat,U_COMP,LEN_COMP,user->comp);
-	getrec(userdat,U_COMMENT,LEN_COMMENT,user->comment);
-	getrec(userdat,U_NETMAIL,LEN_NETMAIL,user->netmail);
-	getrec(userdat,U_ADDRESS,LEN_ADDRESS,user->address);
-	getrec(userdat,U_LOCATION,LEN_LOCATION,user->location);
-	getrec(userdat,U_ZIPCODE,LEN_ZIPCODE,user->zipcode);
-	getrec(userdat,U_PASS,LEN_PASS,user->pass);
-	if(user->pass[0] == 0)	// Backwards compatibility hack
-		getrec(userdat, U_OLDPASS, LEN_OLDPASS, user->pass);
-	getrec(userdat,U_PHONE,LEN_PHONE,user->phone);
-	getrec(userdat,U_BIRTH,LEN_BIRTH,user->birth);
-	getrec(userdat,U_MODEM,LEN_MODEM,user->modem);
-	getrec(userdat,U_IPADDR,LEN_IPADDR,user->ipaddr);
-	getrec(userdat,U_LASTON,8,str); user->laston=ahtoul(str);
-	getrec(userdat,U_FIRSTON,8,str); user->firston=ahtoul(str);
-	getrec(userdat,U_EXPIRE,8,str); user->expire=ahtoul(str);
-	getrec(userdat,U_PWMOD,8,str); user->pwmod=ahtoul(str);
-	getrec(userdat,U_NS_TIME,8,str);
-	user->ns_time=ahtoul(str);
-	if(user->ns_time<0x20000000L)
-		user->ns_time=user->laston;  /* Fix for v2.00->v2.10 */
-	getrec(userdat,U_LOGONTIME,8,str); user->logontime=ahtoul(str);
-
-	getrec(userdat,U_LOGONS,5,str); user->logons=atoi(str);
-	getrec(userdat,U_LTODAY,5,str); user->ltoday=atoi(str);
-	getrec(userdat,U_TIMEON,5,str); user->timeon=atoi(str);
-	getrec(userdat,U_TEXTRA,5,str); user->textra=atoi(str);
-	getrec(userdat,U_TTODAY,5,str); user->ttoday=atoi(str);
-	getrec(userdat,U_TLAST,5,str); user->tlast=atoi(str);
-	getrec(userdat,U_POSTS,5,str); user->posts=atoi(str);
-	getrec(userdat,U_EMAILS,5,str); user->emails=atoi(str);
-	getrec(userdat,U_FBACKS,5,str); user->fbacks=atoi(str);
-	getrec(userdat,U_ETODAY,5,str); user->etoday=atoi(str);
-	getrec(userdat,U_PTODAY,5,str); user->ptoday=atoi(str);
-	getrec(userdat,U_ULB,10,str); user->ulb=parse_byte_count(str, 1);
-	getrec(userdat,U_ULS,5,str); user->uls=atoi(str);
-	getrec(userdat,U_DLB,10,str); user->dlb=parse_byte_count(str, 1);
-	getrec(userdat,U_DLS,5,str); user->dls=atoi(str);
-	getrec(userdat,U_CDT,LEN_CDT,str);
-	if(str[0] < '0' || str[0] > '9')
-		getrec(userdat,U_OLDCDT,10,str);
-	user->cdt=strtoull(str, NULL, 10);
-	getrec(userdat,U_MIN,10,str); user->min=strtoul(str, NULL, 10);
-	getrec(userdat,U_LEVEL,2,str); user->level=atoi(str);
-	getrec(userdat,U_FLAGS1,8,str); user->flags1=ahtoul(str);
-	getrec(userdat,U_FLAGS2,8,str); user->flags2=ahtoul(str);
-	getrec(userdat,U_FLAGS3,8,str); user->flags3=ahtoul(str);
-	getrec(userdat,U_FLAGS4,8,str); user->flags4=ahtoul(str);
-	getrec(userdat,U_EXEMPT,8,str); user->exempt=ahtoul(str);
-	getrec(userdat,U_REST,8,str); user->rest=ahtoul(str);
-	if(getrec(userdat,U_OLDROWS,2,str) <= 0) // Moved to new location
-		getrec(userdat, U_ROWS, LEN_ROWS, str);
-	user->rows = atoi(str);
-	if(user->rows && user->rows < TERM_ROWS_MIN)
-		user->rows = TERM_ROWS_MIN;
-	getrec(userdat, U_COLS, LEN_COLS, str);
-	user->cols = atoi(str);
-	if(user->cols && user->cols < TERM_COLS_MIN)
-		user->cols = TERM_COLS_MIN;
-	user->sex=userdat[U_SEX];
-	if(!user->sex)
-		user->sex=' ';	 /* fix for v1b04 that could save as 0 */
-	user->prot=userdat[U_PROT];
-	if(user->prot<' ')
-		user->prot=' ';
-	getrec(userdat,U_MISC,8,str); user->misc=ahtoul(str);
-	if(user->rest&FLAG('Q'))
-		user->misc&=~SPIN;
-
-	getrec(userdat,U_LEECH,2,str);
-	user->leech=(uchar)ahtoul(str);
-	getrec(userdat,U_CURSUB,sizeof(user->cursub)-1,user->cursub);
-	getrec(userdat,U_CURDIR,sizeof(user->curdir)-1,user->curdir);
-	getrec(userdat,U_CURXTRN,8,user->curxtrn);
-
-	getrec(userdat,U_FREECDT,LEN_CDT,str);
-	if(str[0] < '0' || str[0] > '9')
-		getrec(userdat,U_OLDFREECDT,10,str);
-	user->freecdt=strtoull(str, NULL, 10);
-
-	getrec(userdat,U_XEDIT,8,str);
-	for(i=0;i<cfg->total_xedits;i++)
-		if(!stricmp(str,cfg->xedit[i]->code))
-			break;
-	user->xedit=i+1;
-	if(user->xedit>cfg->total_xedits)
-		user->xedit=0;
-
-	getrec(userdat,U_SHELL,8,str);
-	for(i=0;i<cfg->total_shells;i++)
-		if(!stricmp(str,cfg->shell[i]->code))
-			break;
-	if(i==cfg->total_shells)
-		i=0;
-	user->shell=i;
-
-	getrec(userdat,U_QWK,8,str);
-	if(str[0]<' ') { 			   /* v1c, so set defaults */
-		if(user->rest&FLAG('Q'))
-			user->qwk=QWK_DEFAULT|QWK_RETCTLA;
-		else
-			user->qwk=QWK_DEFAULT;
-	}
-	else
-		user->qwk=ahtoul(str);
-
-	getrec(userdat,U_TMPEXT,3,user->tmpext);
-	if((!user->tmpext[0] || !strcmp(user->tmpext,"0")) && cfg->total_fcomps)
-		strcpy(user->tmpext,cfg->fcomp[0]->ext);  /* For v1x to v2x conversion */
-
-	getrec(userdat,U_CHAT,8,str);
-	user->chat=ahtoul(str);
-
-#endif
+	user->textra = (ushort)strtoul(field[USER_TEXTRA], NULL, 0);
+	user->expire = parse_usertime(field[USER_EXPIRE]);
 
 	/* Reset daily stats if not already logged on today */
 	if(user->ltoday || user->etoday || user->ptoday || user->ttoday) {
@@ -558,7 +467,6 @@ int getuserdat(scfg_t* cfg, user_t *user)
 		return file;
 	}
 
-	memset(userdat, 0, sizeof(userdat));
 	if((retval = readuserdat(cfg, user->number, userdat, file)) != 0) {
 		close(file);
 		user->number = 0;
@@ -573,12 +481,11 @@ int getuserdat(scfg_t* cfg, user_t *user)
 int fgetuserdat(scfg_t* cfg, user_t *user, int file)
 {
 	int		retval;
-	char	userdat[U_LEN+1];
+	char	userdat[USER_REC_LINE_LEN + 1];
 
 	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
 		return(-1);
 
-	memset(userdat, 0, sizeof(userdat));
 	if((retval = readuserdat(cfg, user->number, userdat, file)) != 0) {
 		user->number = 0;
 		return retval;
@@ -709,10 +616,10 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%u\t"	// USER_FBACKS
 		"%u\t"	// USER_ETODAY
 		"%u\t"	// USER_PTODAY
-		"%" PRIu64	// USER_ULB
-		"%u\t"	    // USER_ULS
-		"%" PRIu64	// USER_DLB
-		"%u\t"	    // USER_DLS
+		"%" PRIu64 "\t"	// USER_ULB
+		"%u\t"			// USER_ULS
+		"%" PRIu64 "\t" // USER_DLB
+		"%u\t"			// USER_DLS
 		"%u\t"	// USER_LEECH
 		"%s\t"	// USER_PASS
 		"%" PRIu32 "T%06" PRIu32 "Z\t"	// USER_PWMOD
@@ -761,23 +668,23 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,isoDate(user->laston), gmtime_to_isoTime(user->laston)
 		,isoDate(user->firston), gmtime_to_isoTime(user->firston)
 		,user->logons
-		,user->ltoday
-		,user->timeon
-		,user->ttoday
-		,user->tlast
-		,user->posts
-		,user->emails
-		,user->fbacks
-		,user->etoday
-		,user->ptoday
+		,(uint)user->ltoday
+		,(uint)user->timeon
+		,(uint)user->ttoday
+		,(uint)user->tlast
+		,(uint)user->posts
+		,(uint)user->emails
+		,(uint)user->fbacks
+		,(uint)user->etoday
+		,(uint)user->ptoday
 		,user->ulb
-		,user->uls
+		,(uint)user->uls
 		,user->dlb
-		,user->dls
-		,user->leech
+		,(uint)user->dls
+		,(uint)user->leech
 		,user->pass
 		,isoDate(user->pwmod), gmtime_to_isoTime(user->pwmod)
-		,user->level
+		,(uint)user->level
 		,flags1
 		,flags2
 		,flags3
@@ -792,105 +699,8 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	);
 	if(len > USER_REC_LEN || len < 0) // truncated?
 		return FALSE;
-#if 0
-	putrec(userdat,U_HANDLE+LEN_HANDLE,2,crlf);
-
-	putrec(userdat,U_NOTE,LEN_NOTE,user->note);
-	putrec(userdat,U_COMP,LEN_COMP,user->comp);
-	putrec(userdat,U_COMP+LEN_COMP,2,crlf);
-
-	putrec(userdat,U_COMMENT,LEN_COMMENT,user->comment);
-	putrec(userdat,U_COMMENT+LEN_COMMENT,2,crlf);
-
-	putrec(userdat,U_NETMAIL,LEN_NETMAIL,user->netmail);
-	putrec(userdat,U_NETMAIL+LEN_NETMAIL,2,crlf);
-
-	putrec(userdat,U_ADDRESS,LEN_ADDRESS,user->address);
-	putrec(userdat,U_LOCATION,LEN_LOCATION,user->location);
-	putrec(userdat,U_ZIPCODE,LEN_ZIPCODE,user->zipcode);
-	putrec(userdat,U_ZIPCODE+LEN_ZIPCODE,2,crlf);
-
-	putrec(userdat,U_PASS,LEN_PASS,user->pass);
-	putrec(userdat,U_OLDPASS,LEN_OLDPASS,user->pass);	// So a sysop can downgrade to a previous build/version
-	putrec(userdat,U_PHONE,LEN_PHONE,user->phone);
-	putrec(userdat,U_BIRTH,LEN_BIRTH,user->birth);
-	putrec(userdat,U_MODEM,LEN_MODEM,user->modem);
-	putrec(userdat,U_IPADDR,LEN_IPADDR,user->ipaddr);
-	putrec(userdat,U_LASTON,8,ultoa((ulong)user->laston,str,16));
-	putrec(userdat,U_FIRSTON,8,ultoa((ulong)user->firston,str,16));
-	putrec(userdat,U_EXPIRE,8,ultoa((ulong)user->expire,str,16));
-	putrec(userdat,U_PWMOD,8,ultoa((ulong)user->pwmod,str,16));
-	putrec(userdat,U_PWMOD+8,2,crlf);
-
-	putrec(userdat,U_LOGONS,5,ultoa(user->logons,str,10));
-	putrec(userdat,U_LTODAY,5,ultoa(user->ltoday,str,10));
-	putrec(userdat,U_TIMEON,5,ultoa(user->timeon,str,10));
-	putrec(userdat,U_TEXTRA,5,ultoa(user->textra,str,10));
-	putrec(userdat,U_TTODAY,5,ultoa(user->ttoday,str,10));
-	putrec(userdat,U_TLAST,5,ultoa(user->tlast,str,10));
-	putrec(userdat,U_POSTS,5,ultoa(user->posts,str,10));
-	putrec(userdat,U_EMAILS,5,ultoa(user->emails,str,10));
-	putrec(userdat,U_FBACKS,5,ultoa(user->fbacks,str,10));
-	putrec(userdat,U_ETODAY,5,ultoa(user->etoday,str,10));
-	putrec(userdat,U_PTODAY,5,ultoa(user->ptoday,str,10));
-	putrec(userdat,U_PTODAY+5,2,crlf);
-
-	putrec(userdat,U_ULB,10,userbytestr(user->ulb, str));
-	putrec(userdat,U_ULS,5,ultoa(user->uls,str,10));
-	putrec(userdat,U_DLB,10,userbytestr(user->dlb, str));
-	putrec(userdat,U_DLS,5,ultoa(user->dls,str,10));
-	putrec(userdat,U_CDT,LEN_CDT,_ui64toa(user->cdt,str,10));
-	putrec(userdat,U_MIN,10,ultoa(user->min,str,10));
-	putrec(userdat,U_MIN+10,2,crlf);
-
-	putrec(userdat,U_LEVEL,2,ultoa(user->level,str,10));
-	putrec(userdat,U_FLAGS1,8,ultoa(user->flags1,str,16));
-	putrec(userdat,U_TL,2,nulstr);	/* unused */
-	putrec(userdat,U_FLAGS2,8,ultoa(user->flags2,str,16));
-	putrec(userdat,U_EXEMPT,8,ultoa(user->exempt,str,16));
-	putrec(userdat,U_REST,8,ultoa(user->rest,str,16));
-	putrec(userdat,U_REST+8,2,crlf);
-
-	putrec(userdat, U_ROWS, LEN_ROWS, ultoa(user->rows,str,10));
-	putrec(userdat, U_COLS, LEN_COLS, ultoa(user->cols,str,10));
-	userdat[U_SEX]=user->sex;
-	userdat[U_PROT]=user->prot;
-	putrec(userdat,U_MISC,8,ultoa(user->misc,str,16));
-	putrec(userdat,U_LEECH,2,ultoa(user->leech,str,16));
-
-	putrec(userdat,U_CURSUB,sizeof(user->cursub)-1,user->cursub);
-	putrec(userdat,U_CURDIR,sizeof(user->curdir)-1,user->curdir);
-	putrec(userdat,U_CURXTRN,8,user->curxtrn);
-	putrec(userdat,U_CURXTRN+8,2,crlf);
-
-	putrec(userdat,U_PASS+LEN_PASS, 2, crlf);
-
-	putrec(userdat,U_IPADDR+LEN_IPADDR,2,crlf);
-
-	putrec(userdat,U_FREECDT,LEN_CDT,_ui64toa(user->freecdt,str,10));
-
-	putrec(userdat,U_FLAGS3,8,ultoa(user->flags3,str,16));
-	putrec(userdat,U_FLAGS4,8,ultoa(user->flags4,str,16));
-
-	if(user->xedit)
-		putrec(userdat,U_XEDIT,8,cfg->xedit[user->xedit-1]->code);
-	else
-		putrec(userdat,U_XEDIT,8,nulstr);
-
-	putrec(userdat,U_SHELL,8,cfg->shell[user->shell]->code);
-
-	putrec(userdat,U_QWK,8,ultoa(user->qwk,str,16));
-	putrec(userdat,U_TMPEXT,3,user->tmpext);
-	putrec(userdat,U_CHAT,8,ultoa(user->chat,str,16));
-	putrec(userdat,U_NS_TIME,8,ultoa((ulong)user->ns_time,str,16));
-	putrec(userdat,U_LOGONTIME,8,ultoa((ulong)user->logontime,str,16));
-
-	putrec(userdat,U_UNUSED,U_LEN-(U_UNUSED)-2,crlf);
-	putrec(userdat,U_UNUSED+(U_LEN-(U_UNUSED)-2),2,crlf);
-#endif
 
 	memset(userdat + len, '\t', USER_REC_LEN - len);
-	userdat[USER_REC_LINE_LEN - 2] = '\r';
 	userdat[USER_REC_LINE_LEN - 1] = '\n';
 
 	return TRUE;
@@ -1021,7 +831,7 @@ int putusername(scfg_t* cfg, int number, const char *name)
 		return(-3);
 	}
 	if(length<(((long)number-1)*(LEN_ALIAS+2))) {
-		SAFEPRINTF2(str,"%*s\r\n",LEN_ALIAS,nulstr);
+		SAFEPRINTF2(str,"%*s\r\n",LEN_ALIAS,"");
 		memset(str,ETX,LEN_ALIAS);
 		(void)lseek(file,0L,SEEK_END);
 		while((length = filelength(file)) >= 0 && length < ((long)number*(LEN_ALIAS+2)))	// Shouldn't this be (number-1)?
@@ -1029,7 +839,7 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	}
 	(void)lseek(file,(long)(((long)number-1)*(LEN_ALIAS+2)),SEEK_SET);
 	putrec(str,0,LEN_ALIAS,name);
-	putrec(str,LEN_ALIAS,2,crlf);
+	putrec(str,LEN_ALIAS,2,"\r\n");
 	wr=write(file,str,LEN_ALIAS+2);
 	close(file);
 
@@ -2618,6 +2428,70 @@ int putuserrec(scfg_t* cfg, int usernumber, int start, int length, const char *s
 }
 
 /****************************************************************************/
+/* Returns 0 on success, non-zero on failure.								*/
+/****************************************************************************/
+int getuserfield(scfg_t* cfg, int usernumber, enum user_field fnum, char *str, size_t size)
+{
+	char*	field[USER_FIELD_COUNT];
+	char	userdat[USER_REC_LINE_LEN + 1];
+	int		file;
+	int		retval;
+
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || !VALID_USER_FIELD(fnum) || str == NULL)
+		return -1;
+
+	if((file = openuserdat(cfg, /* for_modify: */false)) == -1)
+		return errno;
+
+	if(!lockuserdat(file, usernumber))
+		return -2;
+
+	retval = readuserdat(cfg, usernumber, userdat, file);
+	if(retval == 0) {
+		split_userdat(userdat, field);
+		safe_snprintf(str, size, "%s", field[fnum]);
+	}
+	unlockuserdat(file, usernumber);
+	close(file);
+	dirtyuserdat(cfg, usernumber);
+	return retval;
+}
+
+/****************************************************************************/
+/* Returns 0 on success, non-zero on failure.								*/
+/****************************************************************************/
+int putuserfield(scfg_t* cfg, int usernumber, enum user_field fnum, const char *str)
+{
+	char*	field[USER_FIELD_COUNT];
+	char	userdat[USER_REC_LINE_LEN + 1];
+	int		file;
+	int		retval;
+
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || !VALID_USER_FIELD(fnum) || str == NULL)
+		return -1;
+
+	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
+		return errno;
+
+	if(!lockuserdat(file, usernumber))
+		return -2;
+
+	retval = readuserdat(cfg, usernumber, userdat, file);
+	if(retval == 0) {
+		split_userdat(userdat, field);
+		field[fnum] = (char*)str;
+		if(userdatseek(file, usernumber) < 0)
+			retval = -3;
+		else
+			writeuserfields(cfg, field, file);
+	}
+	unlockuserdat(file, usernumber);
+	close(file);
+	dirtyuserdat(cfg, usernumber);
+	return retval;
+}
+
+/****************************************************************************/
 /* Updates user 'usernumber's record (numeric string) by adding 'adj' to it */
 /* returns the new value.													*/
 /****************************************************************************/
@@ -2717,6 +2591,83 @@ uint64_t adjustuserrec(scfg_t* cfg, int usernumber, int start, int64_t adj)
 }
 
 /****************************************************************************/
+/* Updates user 'usernumber's numeric field by adding 'adj' to it			*/
+/* returns the new value.													*/
+/****************************************************************************/
+uint64_t adjustuserfield(scfg_t* cfg, int usernumber, enum user_field fnum, int64_t adj)
+{
+	char value[256];
+	char userdat[USER_REC_LINE_LEN + 1];
+	int file;
+	uint64_t val;
+
+	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || !VALID_USER_FIELD(fnum))
+		return 0;
+
+	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
+		return errno;
+
+	if(!lockuserdat(file, usernumber))
+		return -2;
+
+	int retval = readuserdat(cfg, usernumber, userdat, file);
+	if(retval == 0) {
+		char* field[USER_FIELD_COUNT];
+		split_userdat(userdat, field);
+		val = strtoull(field[fnum], NULL, 10);
+		switch(user_field_len(fnum)) {
+			case sizeof(uint64_t):
+				if(adj < 0 && val < (uint64_t)-adj)		// don't go negative
+					val = 0;
+				else if(adj > 0 && val + adj < val)
+					val = UINT64_MAX;
+				else
+					val += (uint64_t)adj;
+				SAFEPRINTF(value, "%" PRIu64, val);
+				break;
+			case sizeof(uint32_t):
+				if(adj < 0 && val < (uint32_t)-adj)		// don't go negative
+					val = 0;
+				else if(adj > 0 && val + adj < val)
+					val = UINT32_MAX;
+				else
+					val += (uint32_t)adj;
+				SAFEPRINTF(value, "%" PRIu32, val);
+				break;
+			case sizeof(uint16_t):
+				if(adj < 0 && val < (uint16_t)-adj)		// don't go negative
+					val = 0;
+				else if(adj > 0 && val + adj < val)
+					val = UINT16_MAX;
+				else
+					val += (uint16_t)adj;
+				SAFEPRINTF(value, "%u", (uint)val);
+				break;
+			case sizeof(uint8_t):
+				if(adj < 0 && val < (uint8_t)-adj)		// don't go negative
+					val = 0;
+				else if(adj > 0 && val + adj < val)
+					val = UINT8_MAX;
+				else
+					val += (uint8_t)adj;
+				SAFEPRINTF(value, "%u", (uint)val);
+				break;
+			default:
+				return 0;
+		}
+		field[fnum] = value;
+		if(userdatseek(file, usernumber) < 0)
+			retval = -3;
+		else
+			writeuserfields(cfg, field, file);
+	}
+	unlockuserdat(file, usernumber);
+	close(file);
+	dirtyuserdat(cfg, usernumber);
+	return retval;
+}
+
+/****************************************************************************/
 /* Subtract credits from the current user online, accounting for the new    */
 /* "free credits" field.                                                    */
 /****************************************************************************/
@@ -2730,19 +2681,18 @@ void subtract_cdt(scfg_t* cfg, user_t* user, uint64_t amt)
 	if(user->freecdt) {
 		if(amt > user->freecdt) {      /* subtract both credits and */
 			mod=amt-user->freecdt;   /* free credits */
-			putuserrec(cfg, user->number,U_FREECDT,0,"0");
+			putuserfield(cfg, user->number, USER_FREECDT, "0");
 			user->freecdt=0;
-			user->cdt=adjustuserrec(cfg, user->number,U_CDT,-mod);
+			user->cdt = adjustuserfield(cfg, user->number, USER_FREECDT, -mod);
 		} else {                          /* subtract just free credits */
 			user->freecdt-=amt;
-			putuserrec(cfg, user->number,U_FREECDT,0
-				,_ui64toa(user->freecdt,tmp,10));
+			putuserfield(cfg, user->number, USER_FREECDT, _ui64toa(user->freecdt, tmp, 10));
 		}
 	}
 	else {  /* no free credits */
 		if(amt > INT64_MAX)
 			amt = INT64_MAX;
-		user->cdt=adjustuserrec(cfg, user->number,U_CDT,-(int64_t)amt);
+		user->cdt = adjustuserfield(cfg, user->number, USER_CDT, -(int64_t)amt);
 	}
 }
 
@@ -2751,8 +2701,8 @@ BOOL user_posted_msg(scfg_t* cfg, user_t* user, int count)
 	if(user==NULL)
 		return(FALSE);
 
-	user->posts	=(ushort)adjustuserrec(cfg, user->number, U_POSTS, count);
-	user->ptoday=(ushort)adjustuserrec(cfg, user->number, U_PTODAY, count);
+	user->posts	=(ushort)adjustuserfield(cfg, user->number, USER_POSTS, count);
+	user->ptoday=(ushort)adjustuserfield(cfg, user->number, USER_PTODAY, count);
 
 	if(user->rest & FLAG('Q'))
 		return TRUE;
@@ -2766,10 +2716,10 @@ BOOL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback)
 		return(FALSE);
 
 	if(feedback)
-		user->fbacks=(ushort)adjustuserrec(cfg, user->number, U_FBACKS, count);
+		user->fbacks=(ushort)adjustuserfield(cfg, user->number, USER_FBACKS, count);
 	else
-		user->emails=(ushort)adjustuserrec(cfg, user->number, U_EMAILS, count);
-	user->etoday=(ushort)adjustuserrec(cfg, user->number, U_ETODAY, count);
+		user->emails=(ushort)adjustuserfield(cfg, user->number, USER_EMAILS, count);
+	user->etoday=(ushort)adjustuserfield(cfg, user->number, USER_ETODAY, count);
 
 	return inc_email_stats(cfg, count, feedback);
 }
@@ -2779,8 +2729,8 @@ BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	if(user==NULL)
 		return(FALSE);
 
-	user->dls=(ushort)adjustuserrec(cfg, user->number, U_DLS, files);
-	user->dlb=adjustuserrec(cfg, user->number, U_DLB, bytes);
+	user->dls=(ushort)adjustuserfield(cfg, user->number, USER_DLS, files);
+	user->dlb=adjustuserfield(cfg, user->number, USER_DLB, bytes);
 
 	return(TRUE);
 }
@@ -2837,7 +2787,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		if(!(cfg->dir[dirnum]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
 			l=0;
 		uint64_t mod=(uint64_t)(l*(cfg->dir[dirnum]->dn_pct/100.0));
-		adjustuserrec(cfg, uploader.number, U_CDT, mod);
+		adjustuserfield(cfg, uploader.number, USER_CDT, mod);
 		if(cfg->text != NULL && !(cfg->dir[dirnum]->misc&DIR_QUIET)) {
 			char str[256];
 			char tmp[128];
@@ -2892,8 +2842,8 @@ BOOL user_uploaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	if(user==NULL)
 		return(FALSE);
 
-	user->uls=(ushort)adjustuserrec(cfg, user->number, U_ULS, files);
-	user->ulb=adjustuserrec(cfg, user->number, U_ULB, bytes);
+	user->uls=(ushort)adjustuserfield(cfg, user->number, USER_ULS, files);
+	user->ulb=adjustuserfield(cfg, user->number, USER_ULB, bytes);
 
 	return(TRUE);
 }
@@ -2906,7 +2856,7 @@ BOOL user_adjust_credits(scfg_t* cfg, user_t* user, int64_t amount)
 	if(amount<0)	/* subtract */
 		subtract_cdt(cfg, user, -amount);
 	else			/* add */
-		user->cdt=adjustuserrec(cfg, user->number, U_CDT, amount);
+		user->cdt=adjustuserfield(cfg, user->number, USER_CDT, amount);
 
 	return(TRUE);
 }
@@ -2916,7 +2866,7 @@ BOOL user_adjust_minutes(scfg_t* cfg, user_t* user, long amount)
 	if(user==NULL)
 		return(FALSE);
 
-	user->min=(uint32_t)adjustuserrec(cfg, user->number, U_MIN, amount);
+	user->min=(uint32_t)adjustuserfield(cfg, user->number, USER_MIN, amount);
 
 	return(TRUE);
 }
@@ -2938,10 +2888,10 @@ BOOL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 	tused=(now-logontime)/60;
 	user->tlast=(ushort)(tused > USHRT_MAX ? USHRT_MAX : tused);
 
-	putuserrec(cfg,user->number,U_LASTON,8,ultoa((ulong)now,str,16));
-	putuserrec(cfg,user->number,U_TLAST,5,ultoa(user->tlast,str,10));
-	adjustuserrec(cfg,user->number,U_TIMEON,user->tlast);
-	adjustuserrec(cfg,user->number,U_TTODAY,user->tlast);
+	putuserfield(cfg,user->number, USER_LASTON, ultoa((ulong)now,str,16));
+	putuserfield(cfg,user->number, USER_TLAST, ultoa(user->tlast,str,10));
+	adjustuserfield(cfg,user->number, USER_TIMEON, user->tlast);
+	adjustuserfield(cfg,user->number, USER_TTODAY, user->tlast);
 
 	/* Convert time_t to struct tm */
 	if(localtime_r(&now,&tm_now)==NULL)
@@ -2968,23 +2918,23 @@ void resetdailyuserdat(scfg_t* cfg, user_t* user, BOOL write)
 
 	/* logons today */
 	user->ltoday=0;
-	if(write) putuserrec(cfg,user->number,U_LTODAY,5,"0");
+	if(write) putuserfield(cfg,user->number, USER_LTODAY, "0");
 	/* e-mails today */
 	user->etoday=0;
-	if(write) putuserrec(cfg,user->number,U_ETODAY,5,"0");
+	if(write) putuserfield(cfg,user->number, USER_ETODAY, "0");
 	/* posts today */
 	user->ptoday=0;
-	if(write) putuserrec(cfg,user->number,U_PTODAY,5,"0");
+	if(write) putuserfield(cfg,user->number, USER_PTODAY, "0");
 	/* free credits per day */
 	user->freecdt=cfg->level_freecdtperday[user->level];
-	if(write) putuserrec(cfg,user->number,U_FREECDT,0
+	if(write) putuserfield(cfg,user->number, USER_FREECDT
 		,_ui64toa(user->freecdt,str,10));
 	/* time used today */
 	user->ttoday=0;
-	if(write) putuserrec(cfg,user->number,U_TTODAY,5,"0");
+	if(write) putuserfield(cfg,user->number, USER_TTODAY, "0");
 	/* extra time today */
 	user->textra=0;
-	if(write) putuserrec(cfg,user->number,U_TEXTRA,5,"0");
+	if(write) putuserfield(cfg,user->number, USER_TEXTRA, "0");
 }
 
 /****************************************************************************/
@@ -3117,12 +3067,13 @@ int newuserdat(scfg_t* cfg, user_t* user)
 				if(str[c]==ETX) break;
 			str[c]=0;
 			if(!c) {	 /* should be a deleted user */
-				getuserrec(cfg,unum,U_MISC,8,str);
-				misc=ahtoul(str);
-				if(misc&DELETED) {	 /* deleted bit set too */
-					getuserrec(cfg,unum,U_LASTON,8,str);
-					if((time(NULL)-ahtoul(str))/86400>=cfg->sys_deldays)
-						break; /* deleted long enough ? */
+				user_t deluser;
+				deluser.number = unum;
+				if(getuserdat(cfg, &deluser) == 0) {
+					if(deluser.misc&DELETED) {	 /* deleted bit set too */
+						if((time(NULL)-deluser.laston)/86400>=cfg->sys_deldays)
+							break; /* deleted long enough ? */
+					}
 				}
 			}
 			unum++;
@@ -3135,9 +3086,10 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	if(unum>last+1) 		/* Corrupted name.dat? */
 		unum=last+1;
 	else if(unum<=last) {	/* Overwriting existing user */
-		getuserrec(cfg,unum,U_MISC,8,str);
-		misc=ahtoul(str);
-		if(!(misc&DELETED)) /* Not deleted? Set usernumber to end+1 */
+		user_t deluser;
+		deluser.number = unum;
+		if(getuserdat(cfg, &deluser) == 0) {
+		if(!(deluser.misc&DELETED)) /* Not deleted? Set usernumber to end+1 */
 			unum=last+1;
 	}
 
@@ -3181,6 +3133,88 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	}
 
 	return(0);
+}
+
+size_t user_field_len(enum user_field fnum)
+{
+	user_t user;
+
+	switch(fnum) {
+		case USER_ALIAS:	return sizeof(user.alias) - 1;
+		case USER_NAME:		return sizeof(user.name) - 1;
+		case USER_HANDLE:	return sizeof(user.handle) -1;
+		case USER_NOTE:		return sizeof(user.note) - 1;
+		case USER_IPADDR:	return sizeof(user.ipaddr) - 1;
+		case USER_HOST:		return sizeof(user.comp) - 1;
+		case USER_NETMAIL:	return sizeof(user.netmail) - 1;
+		case USER_ADDRESS:	return sizeof(user.address) - 1;
+		case USER_LOCATION:	return sizeof(user.location) - 1;
+		case USER_ZIPCODE:	return sizeof(user.zipcode) - 1;
+		case USER_PHONE:	return sizeof(user.phone) - 1;
+		case USER_BIRTH:	return sizeof(user.birth) - 1;
+		case USER_GENDER:	return sizeof(user.sex);
+		case USER_COMMENT:	return sizeof(user.comment) - 1;
+		case USER_CONNECTION: return sizeof(user.modem) -1;
+
+		// Bit-fields:
+		case USER_MISC:		return sizeof(user.misc);
+		case USER_QWK:		return sizeof(user.qwk);
+		case USER_CHAT:		return sizeof(user.chat);
+
+		// Settings:
+		case USER_ROWS:		return sizeof(user.rows);
+		case USER_COLS:		return sizeof(user.cols);
+		case USER_XEDIT:	return sizeof(user.xedit);
+		case USER_SHELL:	return sizeof(user.shell);
+		case USER_TMPEXT:	return sizeof(user.tmpext) - 1;
+		case USER_PROT:		return sizeof(user.prot);
+		case USER_CURSUB:	return sizeof(user.cursub) - 1;
+		case USER_CURDIR:	return sizeof(user.curdir) - 1;
+		case USER_CURXTRN:	return sizeof(user.curxtrn) - 1;
+
+		// Date/times:
+		case USER_LOGONTIME:	return sizeof(user.logontime);
+		case USER_NS_TIME:		return sizeof(user.ns_time);
+		case USER_LASTON:		return sizeof(user.laston);
+		case USER_FIRSTON:		return sizeof(user.firston);
+
+		// Counting stats:
+		case USER_LOGONS:		return sizeof(user.logons);
+		case USER_LTODAY:		return sizeof(user.ltoday);
+		case USER_TIMEON:		return sizeof(user.timeon);
+		case USER_TTODAY:		return sizeof(user.ttoday);
+		case USER_TLAST:		return sizeof(user.tlast);
+		case USER_POSTS:		return sizeof(user.posts);
+		case USER_EMAILS:		return sizeof(user.emails);
+		case USER_FBACKS:		return sizeof(user.fbacks);
+		case USER_ETODAY:		return sizeof(user.etoday);
+		case USER_PTODAY:		return sizeof(user.ptoday);
+
+		// File xfer stats:
+		case USER_ULB:			return sizeof(user.ulb);
+		case USER_ULS:			return sizeof(user.uls);
+		case USER_DLB:			return sizeof(user.dlb);
+		case USER_DLS:			return sizeof(user.dls);
+		case USER_LEECH:		return sizeof(user.leech);
+
+		// Security:
+		case USER_PASS:			return sizeof(user.pass) - 1;
+		case USER_PWMOD:		return sizeof(user.pwmod);
+		case USER_LEVEL:		return sizeof(user.level);
+		case USER_FLAGS1:		return sizeof(user.flags1);
+		case USER_FLAGS2:		return sizeof(user.flags2);
+		case USER_FLAGS3:		return sizeof(user.flags3);
+		case USER_FLAGS4:		return sizeof(user.flags4);
+		case USER_EXEMPT:		return sizeof(user.exempt);
+		case USER_REST:			return sizeof(user.rest);
+		case USER_CDT:			return sizeof(user.cdt);
+		case USER_FREECDT:		return sizeof(user.freecdt);
+		case USER_MIN:			return sizeof(user.min);
+		case USER_TEXTRA:		return sizeof(user.textra);
+		case USER_EXPIRE:		return sizeof(user.expire);
+
+		default:			return 0;
+	}
 }
 
 /* Returns length of specified user record 'field', or -1 if invalid */
