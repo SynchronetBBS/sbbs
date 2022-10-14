@@ -1,6 +1,3 @@
-// $Id: msglist.js,v 1.14 2020/08/13 20:05:23 rswindell Exp $
-// vi: tabstop=4
-
 // Message Listing Module
 
 /* To install manually into a Baja command shell (*.src) file,
@@ -32,14 +29,12 @@
 
 function install()
 {
-	var cnflib = load({}, "cnflib.js");
-	var main_cnf = cnflib.read("main.cnf");
-	if(!main_cnf)
-		return "Failed to read main.cnf";
-	main_cnf.readmail_mod = "msglist mail -preview";
-	main_cnf.listmsgs_mod = "msglist";
-	if(!cnflib.write("main.cnf", undefined, main_cnf))
-		return "Failed to write main.cnf";
+	var f = new File(system.ctrl_dir + "main.ini");
+	if(!f.open(f.exists ? 'r+':'w+'))
+		return "Failed to open " + f.name;
+	f.iniSetValue("module", "readmail", "msglist mail -preview");
+	f.iniSetValue("module", "listmsgs", "msglist");
+	f.close();
 	file_touch(system.ctrl_dir + "recycle");
 	return true;
 }

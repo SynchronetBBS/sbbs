@@ -1847,14 +1847,23 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if(waitpid(pid, &i, WNOHANG)==0)  {		// Child still running?
 			kill(pid, SIGHUP);					// Tell child user has hung up
-			time_t start=time(NULL);			// Wait up to 10 seconds
-			while(time(NULL)-start<10) {		// for child to terminate
+			time_t start=time(NULL);			// Wait up to 5 seconds
+			while(time(NULL)-start<5 ) {		// for child to terminate
 				if(waitpid(pid, &i, WNOHANG)!=0)
 					break;
 				mswait(500);
 			}
-			if(waitpid(pid, &i, WNOHANG)==0)	// Child still running?
-				kill(pid, SIGKILL);				// terminate child process
+			if(waitpid(pid, &i, WNOHANG)==0) {	// Child still running?
+				kill(pid, SIGTERM);				// terminate child process (gracefully)
+				start=time(NULL);				// Wait up to 5 (more) seconds
+				while(time(NULL)-start<5 ) {	// for child to terminate
+					if(waitpid(pid, &i, WNOHANG)!=0)
+						break;
+					mswait(500);
+				}
+				if(waitpid(pid, &i, WNOHANG)==0)// Child still running?
+					kill(pid, SIGKILL);			// terminate child process (ungracefully)
+			}
 		}
 		/* close unneeded descriptors */
 		if(mode&EX_STDIN)
