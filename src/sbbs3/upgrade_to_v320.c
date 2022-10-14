@@ -308,11 +308,11 @@ static int v31x_fgetuserdat(scfg_t* cfg, user_t *user, int file)
 		return(-1);
 
 	memset(userdat, 0, sizeof(userdat));
-	if((retval = readuserdat(cfg, user->number, userdat, file)) != 0) {
+	if((retval = v31x_readuserdat(cfg, user->number, userdat, file)) != 0) {
 		user->number = 0;
 		return retval;
 	}
-	return parseuserdat(cfg, userdat, user);
+	return v31x_parseuserdat(cfg, userdat, user);
 }
 
 /****************************************************************************/
@@ -477,7 +477,22 @@ static int v31x_user_rec_len(int offset)
 	return(-1);
 }
 
-bool upgrade_users()
+bool compare_user(user_t* before, user_t* after)
+{
+	uint8_t* b = (uint8_t*)before;
+	uint8_t* a = (uint8_t*)after;
+	bool result = true;
+
+	for(size_t i = 0; i < sizeof(user_t); i++) {
+		if(a[i] != b[i]) {
+			printf("user #%-4u offset %04X: %02X != %02X\n", before->number, i, (uint)b[i], (uint)a[i]);
+			result = false;
+		}
+	}
+	return result;
+}
+
+bool upgrade_users(bool verify)
 {
 	int result = true;
 	time_t start = time(NULL);
@@ -490,7 +505,7 @@ bool upgrade_users()
 	SAFEPRINTF(path, "%suser/user.tab", scfg.data_dir);
 
 	printf("Converting from user.dat to %s\n", path);
-	FILE* out = fopen(path, "wb");
+	FILE* out = fopen(path, "w+b");
 	if(out == NULL) {
 		perror(path);
 		return false;
@@ -519,70 +534,30 @@ bool upgrade_users()
 			maxlen = len;
 			largest = user.number;
 		}
+		if(verify) {
+			user_t new;
+			ZERO_VAR(new);
+			new.number = i;
+			fflush(out);
+			if(fgetuserdat(&scfg, &new, fileno(out)) != 0) {
+				printf("Error reading user %d from user.tab\n", i);
+				result = false;
+				break;
+			}
+			if(!compare_user(&user, &new)) {
+				printf("Error comparing user #%u afer upgrade\n", i);
+				result = false;
+				break;
+			}
+		}
 		total_users++;
 	}
 	v31x_closeuserdat(file);
 	fclose(out);
 
 	time_t diff = time(NULL) - start;
-	printf("%u users converted (%lu users/second), largest (#%u) = %u bytes\n"
+	printf("%u users converted successfully (%lu users/second), largest (#%u) = %u bytes\n"
 		,total_users, (ulong)(diff ? total_users / diff : total_users), largest, (unsigned)maxlen);
-
-	return result;
-}
-
-bool verify_users()
-{
-	int result = true;
-	time_t start = time(NULL);
-	uint total_users = 0;
-	uint last = v31x_lastuser(&scfg);
-	uint largest = 0;
-	size_t maxlen = 0;
-	char userdat[USER_REC_LINE_LEN];
-	char path[MAX_PATH + 1];
-
-	printf("Comparing user.dat to user.tab\n");
-	int tab = openuserdat(&scfg, /* for_modify */FALSE);
-	if(tab == -1) {
-		perror("user.tab");
-		return false;
-	}
-
-	int file = v31x_openuserdat(&scfg, /* for_modify */FALSE);
-	if(file == -1) {
-		perror("user.dat");
-		return false;
-	}
-	for(uint i = 1; i <= last; i++) {
-		user_t user;
-		ZERO_VAR(user);
-		user.number = i;
-		if(v31x_fgetuserdat(&scfg, &user, file) != 0) {
-			printf("Error reading user %d\n", user.number);
-			result = false;
-			break;
-		}
-		user_t new;
-		new.number = i;
-		if(fgetuserdat(&scfg, &new, tab) != 0) {
-			printf("Error reading user %d from user.tab\n", i);
-			result = false;
-			break;
-		}
-		if(memcmp(&user, &new, sizeof(user)) != 0) {
-			printf("Error comparing user #%u afer upgrade\n", i);
-			result = false;
-			break;
-		}
-		total_users++;
-	}
-	v31x_closeuserdat(file);
-	closeuserdat(tab);
-
-	time_t diff = time(NULL) - start;
-	printf("%u users verified (%lu users/second)\n"
-		,total_users, (ulong)(diff ? total_users / diff : total_users));
 
 	return result;
 }
@@ -592,10 +567,16 @@ char *usage="\nusage: upgrade [ctrl_dir]\n";
 int main(int argc, char** argv)
 {
 	char	error[512];
+	bool	verify = false;
 
 	fprintf(stderr,"\nupgrade - Upgrade Synchronet BBS to %s\n"
 		,VERSION
 		);
+
+	for(int i = 1; i < argc; i++) {
+		if(strcmp(argv[i], "-v") == 0)
+			verify = true;
+	}
 
 	memset(&scfg, 0, sizeof(scfg));
 	scfg.size = sizeof(scfg);
@@ -610,12 +591,10 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE + __COUNTER__;
 	}
 
-	if(!upgrade_users())
-		return EXIT_FAILURE + __COUNTER__;
-
-	if(!verify_users())
+	if(!upgrade_users(verify))
 		return EXIT_FAILURE + __COUNTER__;
 
 	printf("Upgrade successful.\n");
+
     return EXIT_SUCCESS;
 }
