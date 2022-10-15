@@ -3048,7 +3048,6 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	int		file;
 	int		unum=1;
 	int		last;
-	long	misc;
 	FILE*	stream;
 	stats_t	stats;
 
@@ -3089,8 +3088,9 @@ int newuserdat(scfg_t* cfg, user_t* user)
 		user_t deluser;
 		deluser.number = unum;
 		if(getuserdat(cfg, &deluser) == 0) {
-		if(!(deluser.misc&DELETED)) /* Not deleted? Set usernumber to end+1 */
-			unum=last+1;
+			if(!(deluser.misc&DELETED)) /* Not deleted? Set usernumber to end+1 */
+				unum=last+1;
+		}
 	}
 
 	user->number=unum;		/* store the new user number */
