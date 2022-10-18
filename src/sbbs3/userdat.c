@@ -2501,7 +2501,7 @@ uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_
 					val = UINT32_MAX;
 				else
 					val += (uint32_t)adj;
-				SAFEPRINTF(value, "%" PRIu32, val);
+				SAFEPRINTF(value, "%" PRIu32, (uint)val);
 				break;
 			case sizeof(uint16_t):
 				if(adj < 0 && val < (uint16_t)-adj)		// don't go negative
