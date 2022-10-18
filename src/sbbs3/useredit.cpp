@@ -658,8 +658,6 @@ int sbbs_t::searchup(char *search,int usernum)
 	if((file=openuserdat(&cfg, /* for_modify: */FALSE))==-1)
 		return(usernum);
 
-	int last = (int)filelength(file) / USER_RECORD_LEN;
-
 	while(readuserdat(&cfg, i, userdat, sizeof(userdat), file) == 0) {
 		strupr(userdat);
 		if(strstr(userdat,search)) {
