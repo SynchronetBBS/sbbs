@@ -327,7 +327,6 @@ int edit_logon(scfg_t *cfg, user_t *user)
 {
 	int 	i,j;
 	char 	**opt;
-	char	str[256];
 
 	if((opt=(char **)alloca(sizeof(char *)*(5+1)))==NULL)
 		allocfail(sizeof(char *)*(5+1));
@@ -390,7 +389,6 @@ int edit_chat(scfg_t *cfg, user_t *user)
 {
 	int 	i,j;
 	char 	**opt;
-	char	str[256];
 
 	if((opt=(char **)alloca(sizeof(char *)*(5+1)))==NULL)
 		allocfail(sizeof(char *)*(5+1));
@@ -479,7 +477,6 @@ int edit_cmd(scfg_t *cfg, user_t *user)
 {
 	int 	i,j;
 	char 	**opt;
-	char	str[256];
 
 	if((opt=(char **)alloca(sizeof(char *)*(2+1)))==NULL)
 		allocfail(sizeof(char *)*(2+1));
@@ -554,7 +551,6 @@ int edit_msgopts(scfg_t *cfg, user_t *user)
 {
 	int 	i,j;
 	char 	**opt;
-	char	str[256];
 
 	if((opt=(char **)alloca(sizeof(char *)*(3+1)))==NULL)
 		allocfail(sizeof(char *)*(3+1));
@@ -640,7 +636,6 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 {
 	int 	i,j;
 	char 	**opt;
-	char	str[256];
 
 	if((opt=(char **)alloca(sizeof(char *)*(15+1)))==NULL)
 		allocfail(sizeof(char *)*(15+1));
@@ -1069,7 +1064,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Total Logons",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->logons=strtoul(str,NULL,10);
-					putuserdec(cfg, user->number, USER_LOGONS, user->logons);
+					putuserdec32(cfg, user->number, USER_LOGONS, user->logons);
 				}
 				break;
 			case 4:
@@ -1274,12 +1269,12 @@ int edit_security(scfg_t *cfg, user_t *user)
 		i=0;
 		sprintf(opt[i++],"Level         %d",user->level);
 		sprintf(opt[i++],"Expiration    %s",user->expire?unixtodstr(cfg, user->expire, str):"Never");
-		sprintf(opt[i++],"Flag Set 1    %s",ltoaf(user->flags1,str));
-		sprintf(opt[i++],"Flag Set 2    %s",ltoaf(user->flags2,str));
-		sprintf(opt[i++],"Flag Set 3    %s",ltoaf(user->flags3,str));
-		sprintf(opt[i++],"Flag Set 4    %s",ltoaf(user->flags4,str));
-		sprintf(opt[i++],"Exemptions    %s",ltoaf(user->exempt,str));
-		sprintf(opt[i++],"Restrictions  %s",ltoaf(user->rest,str));
+		sprintf(opt[i++],"Flag Set 1    %s",u32toaf(user->flags1,str));
+		sprintf(opt[i++],"Flag Set 2    %s",u32toaf(user->flags2,str));
+		sprintf(opt[i++],"Flag Set 3    %s",u32toaf(user->flags3,str));
+		sprintf(opt[i++],"Flag Set 4    %s",u32toaf(user->flags4,str));
+		sprintf(opt[i++],"Exemptions    %s",u32toaf(user->exempt,str));
+		sprintf(opt[i++],"Restrictions  %s",u32toaf(user->rest,str));
 		sprintf(opt[i++],"Credits       %" PRIu64,user->cdt);
 		sprintf(opt[i++],"Free Credits  %" PRIu64,user->freecdt);
 		sprintf(opt[i++],"Minutes       %" PRIu32,user->min);
@@ -1311,60 +1306,60 @@ int edit_security(scfg_t *cfg, user_t *user)
 			case 2:
 				/* Flag Set 1 */
 				GETUSERDAT(cfg,user);
-				ltoaf(user->flags1,str);
+				u32toaf(user->flags1,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Flag Set 1",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
-					user->flags1=aftol(str);
+					user->flags1=aftou32(str);
 					putuserflags(cfg, user->number, USER_FLAGS1, user->flags1);
 				}
 				break;
 			case 3:
 				/* Flag Set 2 */
 				GETUSERDAT(cfg,user);
-				ltoaf(user->flags2,str);
+				u32toaf(user->flags2,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Flag Set 2",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
-					user->flags2=aftol(str);
+					user->flags2=aftou32(str);
 					putuserflags(cfg, user->number, USER_FLAGS2, user->flags2);
 				}
 				break;
 			case 4:
 				/* Flag Set 3 */
 				GETUSERDAT(cfg,user);
-				ltoaf(user->flags3,str);
+				u32toaf(user->flags3,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Flag Set 3",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
-					user->flags3=aftol(str);
+					user->flags3=aftou32(str);
 					putuserflags(cfg, user->number, USER_FLAGS3, user->flags3);
 				}
 				break;
 			case 5:
 				/* Flag Set 4 */
 				GETUSERDAT(cfg,user);
-				ltoaf(user->flags4,str);
+				u32toaf(user->flags4,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Flag Set 4",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
-					user->flags4=aftol(str);
+					user->flags4=aftou32(str);
 					putuserflags(cfg, user->number, USER_FLAGS4, user->flags4);
 				}
 				break;
 			case 6:
 				/* Exemptions */
 				GETUSERDAT(cfg,user);
-				ltoaf(user->exempt,str);
+				u32toaf(user->exempt,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Exemptions",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
-					user->exempt=aftol(str);
+					user->exempt=aftou32(str);
 					putuserflags(cfg, user->number, USER_EXEMPT, user->exempt);
 				}
 				break;
 			case 7:
 				/* Restrictions */
 				GETUSERDAT(cfg,user);
-				ltoaf(user->rest,str);
+				u32toaf(user->rest,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Restrictions",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
-					user->rest=aftol(str);
+					user->rest=aftou32(str);
 					putuserflags(cfg, user->number, USER_REST, user->rest);
 				}
 				break;
@@ -1428,7 +1423,6 @@ int edit_personal(scfg_t *cfg, user_t *user)
 	int 	i,j;
 	char 	**opt;
 	char	onech[2];
-	char	str[256];
 
 	if((opt=(char **)alloca(sizeof(char *)*(16+1)))==NULL)
 		allocfail(sizeof(char *)*(16+1));
