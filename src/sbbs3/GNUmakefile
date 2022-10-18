@@ -240,11 +240,6 @@ $(SLOG): $(SLOG_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(SLOG_OBJS) $(XPDEV_LIBS) -lsbbs
 
-# ALLUSERS
-$(ALLUSERS): $(ALLUSERS_OBJS) $(ENCODE_LIB)
-	@echo Linking $@
-	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(ALLUSERS_OBJS) $(XPDEV_LIBS) $(ENCODE_LIBS)
-
 # DELFILES
 $(DELFILES): $(DELFILES_OBJS) $(ENCODE_LIB)
 	@echo Linking $@
