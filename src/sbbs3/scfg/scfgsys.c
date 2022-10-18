@@ -879,17 +879,17 @@ void sys_cfg(void)
 					i=0;
 					sprintf(opt[i++],"%-27.27s%u","Level",cfg.new_level);
 					sprintf(opt[i++],"%-27.27s%s","Flag Set #1"
-						,ltoaf(cfg.new_flags1,str));
+						,u32toaf(cfg.new_flags1,str));
 					sprintf(opt[i++],"%-27.27s%s","Flag Set #2"
-						,ltoaf(cfg.new_flags2,str));
+						,u32toaf(cfg.new_flags2,str));
 					sprintf(opt[i++],"%-27.27s%s","Flag Set #3"
-						,ltoaf(cfg.new_flags3,str));
+						,u32toaf(cfg.new_flags3,str));
 					sprintf(opt[i++],"%-27.27s%s","Flag Set #4"
-						,ltoaf(cfg.new_flags4,str));
+						,u32toaf(cfg.new_flags4,str));
 					sprintf(opt[i++],"%-27.27s%s","Exemptions"
-						,ltoaf(cfg.new_exempt,str));
+						,u32toaf(cfg.new_exempt,str));
 					sprintf(opt[i++],"%-27.27s%s","Restrictions"
-						,ltoaf(cfg.new_rest,str));
+						,u32toaf(cfg.new_rest,str));
 					sprintf(opt[i++],"%-27.27s%s","Expiration Days"
 						,ultoa(cfg.new_expire,str,10));
 
@@ -933,7 +933,7 @@ void sys_cfg(void)
 							cfg.new_level=atoi(str);
 							break;
 						case 1:
-							truncsp(ltoaf(cfg.new_flags1,str));
+							truncsp(u32toaf(cfg.new_flags1,str));
 							uifc.helpbuf=
 								"`New User Security Flags:`\n"
 								"\n"
@@ -941,10 +941,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Flag Set #1"
 								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.new_flags1=aftol(str);
+							cfg.new_flags1=aftou32(str);
 							break;
 						case 2:
-							truncsp(ltoaf(cfg.new_flags2,str));
+							truncsp(u32toaf(cfg.new_flags2,str));
 							uifc.helpbuf=
 								"`New User Security Flags:`\n"
 								"\n"
@@ -952,10 +952,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Flag Set #2"
 								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.new_flags2=aftol(str);
+							cfg.new_flags2=aftou32(str);
 							break;
 						case 3:
-							truncsp(ltoaf(cfg.new_flags3,str));
+							truncsp(u32toaf(cfg.new_flags3,str));
 							uifc.helpbuf=
 								"`New User Security Flags:`\n"
 								"\n"
@@ -963,10 +963,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Flag Set #3"
 								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.new_flags3=aftol(str);
+							cfg.new_flags3=aftou32(str);
 							break;
 						case 4:
-							truncsp(ltoaf(cfg.new_flags4,str));
+							truncsp(u32toaf(cfg.new_flags4,str));
 							uifc.helpbuf=
 								"`New User Security Flags:`\n"
 								"\n"
@@ -974,10 +974,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Flag Set #4"
 								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.new_flags4=aftol(str);
+							cfg.new_flags4=aftou32(str);
 							break;
 						case 5:
-							truncsp(ltoaf(cfg.new_exempt,str));
+							truncsp(u32toaf(cfg.new_exempt,str));
 							uifc.helpbuf=
 								"`New User Exemption Flags:`\n"
 								"\n"
@@ -987,10 +987,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
 								,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.new_exempt=aftol(str);
+							cfg.new_exempt=aftou32(str);
 							break;
 						case 6:
-							truncsp(ltoaf(cfg.new_rest,str));
+							truncsp(u32toaf(cfg.new_rest,str));
 							uifc.helpbuf=
 								"`New User Restriction Flags:`\n"
 								"\n"
@@ -1000,7 +1000,7 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
 								,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.new_rest=aftol(str);
+							cfg.new_rest=aftou32(str);
 							break;
 						case 7:
 							ultoa(cfg.new_expire,str,10);
@@ -2065,17 +2065,17 @@ void sys_cfg(void)
 					i=0;
 					sprintf(opt[i++],"%-27.27s%u","Level",cfg.expired_level);
 					sprintf(opt[i++],"%-27.27s%s","Flag Set #1 to Remove"
-						,ltoaf(cfg.expired_flags1,str));
+						,u32toaf(cfg.expired_flags1,str));
 					sprintf(opt[i++],"%-27.27s%s","Flag Set #2 to Remove"
-						,ltoaf(cfg.expired_flags2,str));
+						,u32toaf(cfg.expired_flags2,str));
 					sprintf(opt[i++],"%-27.27s%s","Flag Set #3 to Remove"
-						,ltoaf(cfg.expired_flags3,str));
+						,u32toaf(cfg.expired_flags3,str));
 					sprintf(opt[i++],"%-27.27s%s","Flag Set #4 to Remove"
-						,ltoaf(cfg.expired_flags4,str));
+						,u32toaf(cfg.expired_flags4,str));
 					sprintf(opt[i++],"%-27.27s%s","Exemptions to Remove"
-						,ltoaf(cfg.expired_exempt,str));
+						,u32toaf(cfg.expired_exempt,str));
 					sprintf(opt[i++],"%-27.27s%s","Restrictions to Add"
-						,ltoaf(cfg.expired_rest,str));
+						,u32toaf(cfg.expired_rest,str));
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`Expired Account Values:`\n"
@@ -2103,7 +2103,7 @@ void sys_cfg(void)
 							cfg.expired_level=atoi(str);
 							break;
 						case 1:
-							truncsp(ltoaf(cfg.expired_flags1,str));
+							truncsp(u32toaf(cfg.expired_flags1,str));
 							uifc.helpbuf=
 								"`Expired Security Flags to Remove:`\n"
 								"\n"
@@ -2112,10 +2112,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #1"
 								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_flags1=aftol(str);
+							cfg.expired_flags1=aftou32(str);
 							break;
 						case 2:
-							truncsp(ltoaf(cfg.expired_flags2,str));
+							truncsp(u32toaf(cfg.expired_flags2,str));
 							uifc.helpbuf=
 								"`Expired Security Flags to Remove:`\n"
 								"\n"
@@ -2124,10 +2124,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #2"
 								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_flags2=aftol(str);
+							cfg.expired_flags2=aftou32(str);
 							break;
 						case 3:
-							truncsp(ltoaf(cfg.expired_flags3,str));
+							truncsp(u32toaf(cfg.expired_flags3,str));
 							uifc.helpbuf=
 								"`Expired Security Flags to Remove:`\n"
 								"\n"
@@ -2136,10 +2136,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #3"
 								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_flags3=aftol(str);
+							cfg.expired_flags3=aftou32(str);
 							break;
 						case 4:
-							truncsp(ltoaf(cfg.expired_flags4,str));
+							truncsp(u32toaf(cfg.expired_flags4,str));
 							uifc.helpbuf=
 								"`Expired Security Flags to Remove:`\n"
 								"\n"
@@ -2148,10 +2148,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #4"
 								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_flags4=aftol(str);
+							cfg.expired_flags4=aftou32(str);
 							break;
 						case 5:
-							truncsp(ltoaf(cfg.expired_exempt,str));
+							truncsp(u32toaf(cfg.expired_exempt,str));
 							uifc.helpbuf=
 								"`Expired Exemption Flags to Remove:`\n"
 								"\n"
@@ -2160,10 +2160,10 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
 								,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_exempt=aftol(str);
+							cfg.expired_exempt=aftou32(str);
 							break;
 						case 6:
-							truncsp(ltoaf(cfg.expired_rest,str));
+							truncsp(u32toaf(cfg.expired_rest,str));
 							uifc.helpbuf=
 								"`Expired Restriction Flags to Add:`\n"
 								"\n"
@@ -2172,7 +2172,7 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
 								,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_rest=aftol(str);
+							cfg.expired_rest=aftou32(str);
 							break; 
 						} 
 				}
@@ -2183,7 +2183,7 @@ void sys_cfg(void)
 				while(1) {
 					for(i=0;i<10;i++)
 						sprintf(opt[i],"%d  SL: %-2d  F1: %s"
-							,i,cfg.val_level[i],ltoaf(cfg.val_flags1[i],str));
+							,i,cfg.val_level[i],u32toaf(cfg.val_flags1[i],str));
 					opt[i][0]=0;
 					i=0;
 					uifc.helpbuf=
@@ -2207,17 +2207,17 @@ void sys_cfg(void)
 						j=0;
 						sprintf(opt[j++],"%-22.22s%u","Level",cfg.val_level[i]);
 						sprintf(opt[j++],"%-22.22s%s","Flag Set #1"
-							,ltoaf(cfg.val_flags1[i],tmp));
+							,u32toaf(cfg.val_flags1[i],tmp));
 						sprintf(opt[j++],"%-22.22s%s","Flag Set #2"
-							,ltoaf(cfg.val_flags2[i],tmp));
+							,u32toaf(cfg.val_flags2[i],tmp));
 						sprintf(opt[j++],"%-22.22s%s","Flag Set #3"
-							,ltoaf(cfg.val_flags3[i],tmp));
+							,u32toaf(cfg.val_flags3[i],tmp));
 						sprintf(opt[j++],"%-22.22s%s","Flag Set #4"
-							,ltoaf(cfg.val_flags4[i],tmp));
+							,u32toaf(cfg.val_flags4[i],tmp));
 						sprintf(opt[j++],"%-22.22s%s","Exemptions"
-							,ltoaf(cfg.val_exempt[i],tmp));
+							,u32toaf(cfg.val_exempt[i],tmp));
 						sprintf(opt[j++],"%-22.22s%s","Restrictions"
-							,ltoaf(cfg.val_rest[i],tmp));
+							,u32toaf(cfg.val_rest[i],tmp));
 						sprintf(opt[j++],"%-22.22s%u days","Extend Expiration"
 							,cfg.val_expire[i]);
 						sprintf(opt[j++],"%-22.22s%u","Additional Credits"
@@ -2252,44 +2252,44 @@ void sys_cfg(void)
 							case 1:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Flag Set #1"
-									,truncsp(ltoaf(cfg.val_flags1[i],tmp)),26
+									,truncsp(u32toaf(cfg.val_flags1[i],tmp)),26
 									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_flags1[i]=aftol(tmp);
+								cfg.val_flags1[i]=aftou32(tmp);
 								break;
 							case 2:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Flag Set #2"
-									,truncsp(ltoaf(cfg.val_flags2[i],tmp)),26
+									,truncsp(u32toaf(cfg.val_flags2[i],tmp)),26
 									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_flags2[i]=aftol(tmp);
+								cfg.val_flags2[i]=aftou32(tmp);
 								break;
 							case 3:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Flag Set #3"
-									,truncsp(ltoaf(cfg.val_flags3[i],tmp)),26
+									,truncsp(u32toaf(cfg.val_flags3[i],tmp)),26
 									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_flags3[i]=aftol(tmp);
+								cfg.val_flags3[i]=aftou32(tmp);
 								break;
 							case 4:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Flag Set #4"
-									,truncsp(ltoaf(cfg.val_flags4[i],tmp)),26
+									,truncsp(u32toaf(cfg.val_flags4[i],tmp)),26
 									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_flags4[i]=aftol(tmp);
+								cfg.val_flags4[i]=aftou32(tmp);
 								break;
 							case 5:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Exemption Flags"
-									,truncsp(ltoaf(cfg.val_exempt[i],tmp)),26
+									,truncsp(u32toaf(cfg.val_exempt[i],tmp)),26
 									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_exempt[i]=aftol(tmp);
+								cfg.val_exempt[i]=aftou32(tmp);
 								break;
 							case 6:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Restriction Flags"
-									,truncsp(ltoaf(cfg.val_rest[i],tmp)),26
+									,truncsp(u32toaf(cfg.val_rest[i],tmp)),26
 									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_rest[i]=aftol(tmp);
+								cfg.val_rest[i]=aftou32(tmp);
 								break;
 							case 7:
 								uifc.input(WIN_MID|WIN_SAV,0,0

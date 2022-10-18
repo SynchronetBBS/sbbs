@@ -90,8 +90,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	i=matchuser(cfg,node,FALSE);			/* Check if destination is a node */
 	if(i) {
-		getuserrec(cfg,i,U_REST,8,str);
-		if(ahtoul(str)&FLAG('Q')) {
+		if(getuserflags(cfg, i, USER_REST) & FLAG('Q')) {
 			strncpy(fulladdr,node,maxlen);
 			return(i);
 		}
@@ -115,8 +114,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 		i=matchuser(cfg,node,FALSE);			/* Check if next hop is a node */
 		if(i) {
-			getuserrec(cfg,i,U_REST,8,str);
-			if(ahtoul(str)&FLAG('Q')) {
+			if(getuserflags(cfg, i, USER_REST) & FLAG('Q')) {
 				strncpy(fulladdr,inaddr,maxlen);
 				return(i);
 			}
@@ -163,8 +161,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	i=matchuser(cfg,node,FALSE);				/* Check if first hop is a node */
 	if(i) {
-		getuserrec(cfg,i,U_REST,8,str);
-		if(ahtoul(str)&FLAG('Q'))
+		if(getuserflags(cfg, i, USER_REST) & FLAG('Q'))
 			return(i);
 	}
 	fulladdr[0]=0;
@@ -510,7 +507,7 @@ void sbbs_t::qwk_sec()
 						s=uselect(0,0,0,0,0);
 						if(s>=0) {
 							SAFECOPY(useron.tmpext, ext_list[s]);
-							putuserrec(&cfg,useron.number,U_TMPEXT,3,useron.tmpext);
+							putuserstr(&cfg, useron.number, USER_TMPEXT, useron.tmpext);
 						}
 						strListFree(&ext_list);
 						break;
@@ -565,7 +562,7 @@ void sbbs_t::qwk_sec()
 						useron.qwk^=QWK_UTF8;
 						break;
 				}
-				putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
+				putuserqwk(&cfg, useron.number, useron.qwk);
 			}
 			delfiles(cfg.temp_dir,ALLFILES);
 			clear_hotspots();
@@ -711,7 +708,6 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 void sbbs_t::qwkcfgline(char *buf,uint subnum)
 {
 	char	str[128];
-	char 	tmp[512];
 	uint 	x,y;
 	long	l;
 	ulong	qwk=useron.qwk;
@@ -909,22 +905,17 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	}
 
 	if(qwk!=useron.qwk)
-		putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,tmp,16));
+		putuserqwk(&cfg, useron.number, useron.qwk);
 }
 
 
-int sbbs_t::set_qwk_flag(ulong flag)
+bool sbbs_t::set_qwk_flag(ulong flag)
 {
-	int i;
-	char str[32];
-
 	if(useron.qwk&flag)
-		return 0;
-	if((i=getuserrec(&cfg,useron.number,U_QWK,8,str))!=0)
-		return(i);
-	useron.qwk=ahtoul(str);
+		return true;
+	useron.qwk = getuserqwk(&cfg, useron.number);
 	useron.qwk|=flag;
-	return putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
+	return putuserqwk(&cfg, useron.number, useron.qwk) == 0;
 }
 
 /****************************************************************************/

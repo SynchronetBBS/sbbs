@@ -251,47 +251,47 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 			case 0:
 				/* Auto-detect */
 				user->misc ^= AUTOTERM;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 1:
 				/* EX-ASCII */
 				user->misc ^= NO_EXASCII;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 2:
 				/* ANSI */
 				user->misc ^= ANSI;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 3:
 				/* Colour */
 				user->misc ^= COLOR;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 4:
 				/* RIP */
 				user->misc ^= RIP;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 5:
 				/* WIP */
 				user->misc ^= WIP;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 6:
 				/* Pause */
 				user->misc ^= UPAUSE;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 7:
 				/* Hot Keys */
 				user->misc ^= COLDKEYS;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 8:
 				/* Spinning Cursor */
 				user->misc ^= SPIN;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 9:
 				/* Columns */
@@ -299,7 +299,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Columns (0=auto-detect)", str, LEN_COLS, K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->cols=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_COLS,0,ultoa(user->cols,str,10));
+					putuserdec32(cfg, user->number, USER_COLS, user->cols);
 				}
 				break;
 			case 10:
@@ -308,7 +308,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Rows (0=auto-detect)", str, LEN_ROWS, K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->rows=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_ROWS,0,ultoa(user->rows,str,10));
+					putuserdec32(cfg, user->number, USER_ROWS, user->rows);
 				}
 				break;
 		}
@@ -352,27 +352,27 @@ int edit_logon(scfg_t *cfg, user_t *user)
 			case 0:
 				/* Ask New MSG Scan */
 				user->misc ^= ASK_NSCAN;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 1:
 				/* Ask YOUR MSG scan */
 				user->misc ^= ASK_SSCAN;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 2:
 				/* Remember Curr Sub */
 				user->misc ^= CURSUB;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 3:
 				/* Quiet Mode */
 				user->misc ^= QUIET;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 4:
 				/* Auto-Login by IP */
 				user->misc ^= AUTOLOGON;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 		}
 	}
@@ -415,27 +415,27 @@ int edit_chat(scfg_t *cfg, user_t *user)
 			case 0:
 				/* Chat Echo */
 				user->chat ^= CHAT_ECHO;
-				putuserrec(cfg,user->number,U_CHAT,8,ultoa(user->chat,str,16));
+				putuserchat(cfg, user->number, user->chat);
 				break;
 			case 1:
 				/* Chat Actions */
 				user->chat ^= CHAT_ACTION;
-				putuserrec(cfg,user->number,U_CHAT,8,ultoa(user->chat,str,16));
+				putuserchat(cfg, user->number, user->chat);
 				break;
 			case 2:
 				/* Availabe for Chat */
 				user->chat ^= CHAT_NOPAGE;
-				putuserrec(cfg,user->number,U_CHAT,8,ultoa(user->chat,str,16));
+				putuserchat(cfg, user->number, user->chat);
 				break;
 			case 3:
 				/* Activity Alerts */
 				user->chat ^= CHAT_NOACT;
-				putuserrec(cfg,user->number,U_CHAT,8,ultoa(user->chat,str,16));
+				putuserchat(cfg, user->number, user->chat);
 				break;
 			case 4:
 				/* Split-Screen Priv Chat */
 				user->chat ^= CHAT_SPLITP;
-				putuserrec(cfg,user->number,U_CHAT,8,ultoa(user->chat,str,16));
+				putuserchat(cfg, user->number, user->chat);
 				break;
 		}
 	}
@@ -463,7 +463,7 @@ int edit_shell(scfg_t *cfg, user_t *user)
 		default:
 			if(user->shell != j) {
 				user->shell=j;
-				putuserrec(cfg,user->number,U_SHELL,8,cfg->shell[j]->code);
+				putuserstr(cfg, user->number, USER_SHELL, cfg->shell[j]->code);
 			}
 			break;
 	}
@@ -505,7 +505,7 @@ int edit_cmd(scfg_t *cfg, user_t *user)
 			case 1:
 				/* Expert Mode */
 				user->misc ^= EXPERT;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 		}
 	}
@@ -536,9 +536,9 @@ int edit_xedit(scfg_t *cfg, user_t *user)
 			if(user->xedit != j) {
 				user->xedit=j;
 				if(j > 0)
-				    putuserrec(cfg,user->number,U_XEDIT,8,cfg->xedit[j-1]->code);
+				    putuserstr(cfg, user->number, USER_XEDIT, cfg->xedit[j-1]->code);
 				else
-				    putuserrec(cfg,user->number,U_XEDIT,8,"");
+				    putuserstr(cfg, user->number, USER_XEDIT, "");
 			}
 			break;
 	}
@@ -577,12 +577,12 @@ int edit_msgopts(scfg_t *cfg, user_t *user)
 			case 0:
 				/* FWD Email */
 				user->misc ^= NETMAIL;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 1:
 				/* Clear Between MSGS */
 				user->misc ^=CLRSCRN;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 2:
 				/* External Editor */
@@ -616,7 +616,7 @@ int edit_tmpqwktype(scfg_t *cfg, user_t *user)
 		default:
 			if(strcmp(cfg->fcomp[j]->ext,user->tmpext)) {
 				strcpy(user->tmpext,cfg->fcomp[j]->ext);
-				putuserrec(cfg,user->number,U_TMPEXT,3,user->tmpext);
+				putuserstr(cfg, user->number, USER_TMPEXT, user->tmpext);
 			}
 			break;
 	}
@@ -675,72 +675,72 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 			case 0:
 				/* New Files List */
 				user->qwk ^= QWK_FILES;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 1:
 				/* Unread Email */
 				user->qwk ^= QWK_EMAIL;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 2:
 				/* ALL Email */
 				user->qwk ^= QWK_ALLMAIL;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 3:
 				/* Del Email after Download */
 				user->qwk ^= QWK_DELMAIL;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 4:
 				/* Include From Self */
 				user->qwk ^= QWK_BYSELF;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 5:
 				/* Expand CTRL-A */
 				user->qwk ^= QWK_EXPCTLA;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 6:
 				/* Strip CTRL-A */
 				user->qwk ^= QWK_RETCTLA;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 7:
 				/* Include Attach */
 				user->qwk ^= QWK_ATTACH;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 8:
 				/* Include Indexes */
 				user->qwk ^= QWK_NOINDEX;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 9:
 				/* Include TZ */
 				user->qwk ^= QWK_TZ;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 10:
 				/* Include VIA */
 				user->qwk ^= QWK_VIA;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 11:
 				/* Extra CTRL Files */
 				user->qwk ^= QWK_NOCTRL;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 12:
 				/* Extended QWKE */
 				user->qwk ^= QWK_EXT;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 13:
 				/* Include MSGID */
 				user->qwk ^= QWK_MSGID;
-				putuserrec(cfg,user->number,U_QWK,8,ultoa(user->qwk,str,16));
+				putuserqwk(cfg, user->number, user->qwk);
 				break;
 			case 14:
 				/* Temp/QWK Type */
@@ -757,6 +757,7 @@ int edit_proto(scfg_t *cfg, user_t *user)
 {
 	int 	i;
 	int		j=0;
+	char	tmp[128];
 	char 	**opt;
 
 	if((opt=(char **)alloca(sizeof(char *)*(cfg->total_prots+1)))==NULL)
@@ -775,13 +776,14 @@ int edit_proto(scfg_t *cfg, user_t *user)
 			break;
 		case 0:
 			if(user->prot != ' ')
-				putuserrec(cfg,user->number,U_PROT,1," ");
+				putuserstr(cfg, user->number, USER_PROT, " ");
 			user->prot=' ';
 			break;
 		default:
 			if(user->prot != cfg->prot[j-1]->mnemonic) {
 				user->prot=cfg->prot[j-1]->mnemonic;
-				putuserrec(cfg,user->number,U_PROT,1,(char*)&user->prot);
+				SAFEPRINTF(tmp, "%c", user->prot);
+				putuserstr(cfg, user->number, USER_PROT, tmp);
 			}
 			break;
 	}
@@ -831,22 +833,22 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 			case 0:
 				/* Auto-New Scan */
 				user->misc ^= ANFSCAN;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 1:
 				/* Extended Descs */
 				user->misc ^= EXTDESC;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 2:
 				/* Batch Flagging */
 				user->misc ^= BATCHFLAG;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 3:
 				/* Auto-Hangup */
 				user->misc ^= AUTOHANG;
-				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 4:
 				/* Default Download Protocol */
@@ -1026,7 +1028,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				if(temptime2!=-1)
 					user->firston += temptime2;
 				if(temptime!=user->firston)
-					putuserrec(cfg,user->number,U_FIRSTON,8,ultoa(user->firston,str,16));
+					putuserdatetime(cfg, user->number, USER_FIRSTON, user->firston);
 				break;
 			case 1:
 				/* Last On */
@@ -1042,7 +1044,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				if(temptime2!=-1)
 					user->laston += temptime2;
 				if(temptime!=user->laston)
-					putuserrec(cfg,user->number,U_LASTON,8,ultoa(user->laston,str,16));
+					putuserdatetime(cfg, user->number, USER_LASTON, user->laston);
 				break;
 			case 2:
 				/* Logon Time */
@@ -1058,7 +1060,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				if(temptime2!=-1)
 					user->logontime += temptime2;
 				if(temptime!=user->logontime)
-					putuserrec(cfg,user->number,U_LOGONTIME,8,ultoa(user->logontime,str,16));
+					putuserdatetime(cfg, user->number, USER_LOGONTIME, user->logontime);
 				break;
 			case 3:
 				/* Total Logons */
@@ -1067,7 +1069,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Total Logons",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->logons=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_LOGONS,5,ultoa(user->logons,str,10));
+					putuserdec(cfg, user->number, USER_LOGONS, user->logons);
 				}
 				break;
 			case 4:
@@ -1077,7 +1079,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Todays Logons",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->ltoday=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_LTODAY,5,ultoa(user->ltoday,str,10));
+					putuserdec32(cfg, user->number, USER_LTODAY, user->ltoday);
 				}
 				break;
 			case 5:
@@ -1087,7 +1089,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Total Posts",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->posts=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_POSTS,5,ultoa(user->posts,str,10));
+					putuserdec32(cfg, user->number, USER_POSTS, user->posts);
 				}
 				break;
 			case 6:
@@ -1097,7 +1099,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Todays Posts",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->ptoday=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_PTODAY,5,ultoa(user->ptoday,str,10));
+					putuserdec32(cfg, user->number, USER_PTODAY, user->ptoday);
 				}
 				break;
 			case 7:
@@ -1107,7 +1109,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Total Emails",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->emails=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_EMAILS,5,ultoa(user->emails,str,10));
+					putuserdec32(cfg, user->number, USER_EMAILS, user->emails);
 				}
 				break;
 			case 8:
@@ -1117,7 +1119,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Todays Emails",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->etoday=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_ETODAY,5,ultoa(user->etoday,str,10));
+					putuserdec32(cfg, user->number, USER_ETODAY, user->etoday);
 				}
 				break;
 			case 9:
@@ -1127,7 +1129,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Emails to Sysop",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->fbacks=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_FBACKS,5,ultoa(user->fbacks,str,10));
+					putuserdec32(cfg, user->number, USER_FBACKS, user->fbacks);
 				}
 				break;
 			case 10:
@@ -1137,7 +1139,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Total Time On",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->timeon=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_TIMEON,5,ultoa(user->timeon,str,10));
+					putuserdec32(cfg, user->number, USER_TIMEON, user->timeon);
 				}
 				break;
 			case 11:
@@ -1147,7 +1149,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Time On Today",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->ttoday=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_TTODAY,5,ultoa(user->ttoday,str,10));
+					putuserdec32(cfg, user->number, USER_TTODAY, user->ttoday);
 				}
 				break;
 			case 12:
@@ -1157,7 +1159,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Time On Last Call",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->tlast=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_TLAST,5,ultoa(user->tlast,str,10));
+					putuserdec32(cfg, user->number, USER_TLAST, user->tlast);
 				}
 				break;
 			case 13:
@@ -1167,7 +1169,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Extra Time Today",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->textra=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_TEXTRA,5,ultoa(user->textra,str,10));
+					putuserdec32(cfg, user->number, USER_TEXTRA, user->textra);
 				}
 				break;
 			case 14:
@@ -1177,7 +1179,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Total Downloads",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->dls=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_DLS,5,ultoa(user->dls,str,10));
+					putuserdec32(cfg, user->number, USER_DLS, user->dls);
 				}
 				break;
 			case 15:
@@ -1187,7 +1189,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Downloaded Bytes",str,20,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->dlb=strtoull(str,NULL,10);
-					putuserrec(cfg,user->number,U_DLB,10,userbytestr(user->dlb,str));
+					putuserdec64(cfg, user->number, USER_DLB, user->dlb);
 				}
 				break;
 			case 16:
@@ -1197,7 +1199,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Total Uploads",str,5,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->uls=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_ULS,5,ultoa(user->uls,str,10));
+					putuserdec32(cfg, user->number, USER_ULS, user->uls);
 				}
 				break;
 			case 17:
@@ -1207,7 +1209,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Uploaded Bytes",str,20,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->ulb=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_ULB,10,userbytestr(user->ulb,str));
+					putuserdec64(cfg, user->number, USER_ULB, user->ulb);
 				}
 				break;
 			case 18:
@@ -1217,7 +1219,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Leech Counter",str,3,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->leech=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_LEECH,2,ultoa(user->leech,str,16));
+					putuserdec32(cfg, user->number, USER_LEECH, user->leech);
 				}
 				break;
 			case 19:
@@ -1234,7 +1236,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				if(temptime2!=-1)
 					user->pwmod += temptime2;
 				if(temptime!=user->pwmod)
-					putuserrec(cfg,user->number,U_PWMOD,8,ultoa(user->pwmod,str,16));
+					putuserdatetime(cfg, user->number, USER_PWMOD, user->pwmod);
 				break;
 		}
 	}
@@ -1293,7 +1295,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Level",str,2,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->level=atoi(str);
-					putuserrec(cfg,user->number,U_LEVEL,2,str);
+					putuserdec32(cfg, user->number, USER_LEVEL, user->level);
 				}
 				break;
 			case 1:
@@ -1303,7 +1305,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Expiration",str,8,K_EDIT);
 				if(uifc.changes && dstrtounix(cfg, str)!=user->expire) {
 					user->expire=dstrtounix(cfg, str);
-					putuserrec(cfg,user->number,U_EXPIRE,8,ultoa(user->expire,str,16));
+					putuserdatetime(cfg, user->number, USER_EXPIRE, user->expire);
 				}
 				break;
 			case 2:
@@ -1313,7 +1315,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Flag Set 1",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
 					user->flags1=aftol(str);
-					putuserrec(cfg,user->number,U_FLAGS1,8,ultoa(user->flags1,str,16));
+					putuserflags(cfg, user->number, USER_FLAGS1, user->flags1);
 				}
 				break;
 			case 3:
@@ -1323,7 +1325,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Flag Set 2",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
 					user->flags2=aftol(str);
-					putuserrec(cfg,user->number,U_FLAGS2,8,ultoa(user->flags2,str,16));
+					putuserflags(cfg, user->number, USER_FLAGS2, user->flags2);
 				}
 				break;
 			case 4:
@@ -1333,7 +1335,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Flag Set 3",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
 					user->flags3=aftol(str);
-					putuserrec(cfg,user->number,U_FLAGS3,8,ultoa(user->flags3,str,16));
+					putuserflags(cfg, user->number, USER_FLAGS3, user->flags3);
 				}
 				break;
 			case 5:
@@ -1343,7 +1345,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Flag Set 4",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
 					user->flags4=aftol(str);
-					putuserrec(cfg,user->number,U_FLAGS4,8,ultoa(user->flags4,str,16));
+					putuserflags(cfg, user->number, USER_FLAGS4, user->flags4);
 				}
 				break;
 			case 6:
@@ -1353,7 +1355,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Exemptions",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
 					user->exempt=aftol(str);
-					putuserrec(cfg,user->number,U_EXEMPT,8,ultoa(user->exempt,str,16));
+					putuserflags(cfg, user->number, USER_EXEMPT, user->exempt);
 				}
 				break;
 			case 7:
@@ -1363,7 +1365,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Restrictions",str,26,K_EDIT|K_UPPER|K_ALPHA);
 				if(uifc.changes) {
 					user->rest=aftol(str);
-					putuserrec(cfg,user->number,U_REST,8,ultoa(user->rest,str,16));
+					putuserflags(cfg, user->number, USER_REST, user->rest);
 				}
 				break;
 			case 8:
@@ -1373,7 +1375,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Credits",str,LEN_CDT,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->cdt=strtoull(str,NULL,10);
-					putuserrec(cfg,user->number,U_CDT,0,_ui64toa(user->cdt,str,10));
+					putuserdec64(cfg, user->number, USER_CDT, user->cdt);
 				}
 				break;
 			case 9:
@@ -1383,7 +1385,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Free Credits",str,LEN_CDT,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->freecdt=strtoull(str,NULL,10);
-					putuserrec(cfg,user->number,U_FREECDT,0,_ui64toa(user->freecdt,str,10));
+					putuserdec64(cfg, user->number, USER_FREECDT, user->freecdt);
 				}
 				break;
 			case 10:
@@ -1393,7 +1395,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Minutes",str,10,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->min=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_MIN,10,ultoa(user->min,str,10));
+					putuserdec32(cfg, user->number, USER_MIN, user->min);
 				}
 				break;
 		}
@@ -1464,14 +1466,14 @@ int edit_personal(scfg_t *cfg, user_t *user)
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Real Name",user->name,LEN_NAME,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_NAME,LEN_NAME,user->name);
+					putuserstr(cfg, user->number, USER_NAME, user->name);
 				break;
 			case 1:
 				/* Alias */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Alias",user->alias,LEN_ALIAS,K_EDIT);
 				if(uifc.changes) {
-					putuserrec(cfg,user->number,U_ALIAS,LEN_ALIAS,user->alias);
+					putuserstr(cfg, user->number, USER_ALIAS, user->alias);
 					putusername(cfg,user->number,user->alias);
 				}
 				break;
@@ -1480,14 +1482,14 @@ int edit_personal(scfg_t *cfg, user_t *user)
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Chat Handle",user->handle,LEN_ALIAS,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_HANDLE,LEN_HANDLE,user->handle);
+					putuserstr(cfg, user->number, USER_HANDLE, user->handle);
 				break;
 			case 3:
 				/* NetMail */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"NetMail Address",user->netmail,LEN_NETMAIL,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail);
+					putuserstr(cfg, user->number, USER_NETMAIL, user->netmail);
 				break;
 			case 4:
 				/* Gender */
@@ -1496,7 +1498,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Gender",onech,1,K_UPPER|K_ALPHA|K_EDIT);
 				if(uifc.changes) {
 					user->sex=onech[0];
-					putuserrec(cfg,user->number,U_SEX,1,onech);
+					putuserstr(cfg, user->number, USER_GENDER, onech);
 				}
 				break;
 			case 5:
@@ -1504,42 +1506,42 @@ int edit_personal(scfg_t *cfg, user_t *user)
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B. (YYYYMMDD)",user->birth,LEN_BIRTH,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_BIRTH,LEN_BIRTH,user->birth);
+					putuserstr(cfg, user->number, USER_BIRTH, user->birth);
 				break;
 			case 6:
 				/* Address */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Address",user->address,LEN_ADDRESS,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_ADDRESS,LEN_ADDRESS,user->address);
+					putuserstr(cfg, user->number, USER_ADDRESS, user->address);
 				break;
 			case 7:
 				/* Location */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Location",user->location,LEN_LOCATION,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_LOCATION,LEN_LOCATION,user->location);
+					putuserstr(cfg, user->number, USER_LOCATION, user->location);
 				break;
 			case 8:
 				/* Postal/Zip */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Postal/Zip Code",user->zipcode,LEN_ZIPCODE,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_ZIPCODE,LEN_ZIPCODE,user->zipcode);
+					putuserstr(cfg, user->number, USER_ZIPCODE, user->zipcode);
 				break;
 			case 9:
 				/* Phone */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Phone",user->phone,LEN_PHONE,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_PHONE,LEN_PHONE,user->phone);
+					putuserstr(cfg, user->number, USER_PHONE, user->phone);
 				break;
 			case 10:
-				/* Computer */
+				/* Host Name */
 				GETUSERDAT(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Computer",user->comp,LEN_COMP,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Host Name",user->comp,LEN_COMP,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_COMP,LEN_COMP,user->comp);
+					putuserstr(cfg, user->number, USER_HOST, user->comp);
 				break;
 
             case 11:
@@ -1547,23 +1549,23 @@ int edit_personal(scfg_t *cfg, user_t *user)
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Connection",user->modem,LEN_MODEM,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_MODEM,LEN_MODEM,user->modem);
+					putuserstr(cfg, user->number, USER_CONNECTION, user->modem);
 				break;
 			case 12:
 				/* IP Address */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"IP Address",user->ipaddr,LEN_IPADDR,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_IPADDR,LEN_IPADDR,user->ipaddr);
+					putuserstr(cfg, user->number, USER_IPADDR, user->ipaddr);
 				break;
 			case 13:
 				/* Password */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Password",user->pass,LEN_PASS,K_EDIT);
 				if(uifc.changes) {
-					putuserrec(cfg,user->number,U_PASS,LEN_PASS,user->pass);
+					putuserstr(cfg, user->number, USER_PASS, user->pass);
 					user->pwmod=time(NULL);
-					putuserrec(cfg,user->number,U_PWMOD,8,ultoa(user->pwmod,str,16));
+					putuserdatetime(cfg, user->number, USER_PWMOD, user->pwmod);
 				}
 				break;
 			case 14:
@@ -1571,14 +1573,14 @@ int edit_personal(scfg_t *cfg, user_t *user)
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Note",user->note,LEN_NOTE,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_NOTE,LEN_NOTE,user->note);
+					putuserstr(cfg, user->number, USER_NOTE, user->note);
 				break;
 			case 15:
 			    /* Comment */
 				GETUSERDAT(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Comment",user->comment,LEN_COMMENT,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_COMMENT,60,user->comment);
+					putuserstr(cfg, user->number, USER_COMMENT, user->comment);
 				break;
 		}
 	}
@@ -1630,7 +1632,7 @@ int edit_user(scfg_t *cfg, int usernum)
 
 			case 0:
 				user.misc ^= DELETED;
-				putuserrec(cfg,user.number,U_MISC,8,ultoa(user.misc,str,16));
+				putusermisc(cfg, user.number, user.misc);
 				if(user.misc & DELETED)
 					putusername(cfg,user.number,"");
 				else
@@ -1639,7 +1641,7 @@ int edit_user(scfg_t *cfg, int usernum)
 
 			case 1:
 				user.misc ^= INACTIVE;
-				putuserrec(cfg,user.number,U_MISC,8,ultoa(user.misc,str,16));
+				putusermisc(cfg, user.number, user.misc);
 				break;
 
 			case 2:

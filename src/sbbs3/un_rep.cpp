@@ -39,7 +39,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	uint	i,j,k,lastsub=INVALID_SUB;
 	uint	blocks;
 	uint	usernum;
-	long	l,size,misc;
+	long	l,size;
 	ulong	n;
 	ulong	ex;
 	ulong	tmsgs = 0;
@@ -269,10 +269,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				continue; 
 			}
 
-			getuserrec(&cfg,usernum,U_MISC,8,str);
-			misc=ahtoul(str);
-			if(misc&NETMAIL && cfg.sys_misc&SM_FWDTONET) {
-				getuserrec(&cfg,usernum,U_NETMAIL,LEN_NETMAIL,str);
+			if((getusermisc(&cfg, usernum) & NETMAIL) && (cfg.sys_misc & SM_FWDTONET)) {
+				getuserstr(&cfg, usernum, USER_NETMAIL, str, sizeof(str));
 				qwktonetmail(rep,block,str,0);
 				continue; 
 			}
@@ -325,20 +323,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(qwk_import_msg(rep, block, blocks
 				,/* fromhub: */0, &smb, /* touser: */usernum, &msg, &dupe)) {
 				if(usernum==1) {
-					useron.fbacks++;
+					useron.fbacks = (ushort)adjustuserval(&cfg, useron.number, USER_FBACKS, 1);
 					logon_fbacks++;
-					putuserrec(&cfg,useron.number,U_FBACKS,5
-						,ultoa(useron.fbacks,tmp,10)); 
 				}
 				else {
-					useron.emails++;
+					useron.emails = (ushort)adjustuserval(&cfg, useron.number, USER_EMAILS, 1);
 					logon_emails++;
-					putuserrec(&cfg,useron.number,U_EMAILS,5
-						,ultoa(useron.emails,tmp,10)); 
 				}
-				useron.etoday++;
-				putuserrec(&cfg,useron.number,U_ETODAY,5
-					,ultoa(useron.etoday,tmp,10));
+				useron.etoday = (ushort)adjustuserval(&cfg, useron.number, USER_ETODAY, 1);
 				bprintf(P_REMOTE, text[Emailed],username(&cfg,usernum,tmp),usernum);
 				SAFEPRINTF2(str,"sent QWK e-mail to %s #%d"
 					,username(&cfg,usernum,tmp),usernum);

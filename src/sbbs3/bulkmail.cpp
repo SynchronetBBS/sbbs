@@ -28,7 +28,6 @@ bool sbbs_t::bulkmail(uchar *ar)
 	char*		msgbuf;
 	const char*	editor=NULL;
 	const char*	charset=NULL;
-	char 		tmp[512];
 	int 		i,j,x;
 	long		msgs=0;
 	long		length;
@@ -155,8 +154,8 @@ bool sbbs_t::bulkmail(uchar *ar)
 		return(false);
 	}
 
-	putuserrec(&cfg,useron.number,U_EMAILS,5,ultoa(useron.emails,tmp,10));
-	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
+	putuserdec32(&cfg, useron.number, USER_EMAILS, useron.emails);
+	putuserdec32(&cfg, useron.number, USER_ETODAY, useron.etoday);
 
 	return(true);
 }

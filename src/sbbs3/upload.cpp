@@ -188,10 +188,10 @@ bool sbbs_t::uploadfile(file_t* f)
 	user_uploaded(&cfg, &useron, 1, length);
 	if(cfg.dir[f->dir]->up_pct && cfg.dir[f->dir]->misc&DIR_CDTUL) { /* credit for upload */
 		if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps)    /* Give min instead of cdt */
-			useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN
+			useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN
 				,((ulong)(length*(cfg.dir[f->dir]->up_pct/100.0))/cur_cps)/60);
 		else
-			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT
+			useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT
 				,(int64_t)(f->cost * (cfg.dir[f->dir]->up_pct/100.0))); 
 	}
 

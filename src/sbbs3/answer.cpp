@@ -378,7 +378,7 @@ bool sbbs_t::answer()
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
 		&& (startup->options&BBS_OPT_AUTO_LOGON) && client_ipaddr[0]) {
-		useron.number=userdatdupe(0, U_IPADDR, LEN_IPADDR, client_ipaddr);
+		useron.number = finduserstr(0, USER_IPADDR, client_ipaddr);
 		if(useron.number) {
 			getuserdat(&cfg, &useron);
 			if(!(useron.misc&AUTOLOGON) || !(useron.exempt&FLAG('V')))

@@ -901,7 +901,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	JSString*	js_str;
-	int32		offset=0;
+	int32		field=0;
 	int32		usernumber=0;
 	int			len;
 	jsrefcount	rc;
@@ -914,12 +914,12 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return JS_FALSE;
 
-	JS_ValueToInt32(cx,argv[0],&offset);
+	JS_ValueToInt32(cx,argv[0],&field);
 	rc=JS_SUSPENDREQUEST(cx);
-	len=user_rec_len(offset);
+	len=user_field_len(field);
 	JS_RESUMEREQUEST(cx, rc);
-	if(len<0) {
-		JS_ReportError(cx,"Invalid user data offset: %d", offset);
+	if(len < 1) {
+		JS_ReportError(cx,"Invalid user field: %d", field);
 		return(JS_FALSE);
 	}
 
@@ -940,7 +940,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(userdatdupe(sys->cfg,usernumber,offset,len,p,FALSE,match_next,NULL,NULL)));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(finduserstr(sys->cfg, usernumber, field, p, FALSE, match_next, NULL, NULL)));
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -1772,7 +1772,6 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	int32		n;
 	user_t		user;
-	char		str[128];
 
 	js_system_private_t* sys;
 	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
@@ -1784,7 +1783,7 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);	/* fail, by default */
 	if(getuserdat(sys->cfg, &user)==0
-		&& putuserrec(sys->cfg,n,U_MISC,8,ultoa(user.misc|DELETED,str,16))==0
+		&& putusermisc(sys->cfg, n, user.misc | DELETED)==0
 		&& putusername(sys->cfg,n,nulstr)==0)
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);	/* success */
 	JS_RESUMEREQUEST(cx, rc);

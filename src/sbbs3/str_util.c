@@ -405,6 +405,19 @@ ulong ahtoul(const char *str)
 }
 
 /****************************************************************************/
+/* Converts an ASCII Hex string into an uint32_t                            */
+/* by Steve Deppe (Ille Homine Albe)										*/
+/****************************************************************************/
+uint32_t ahtou32(const char *str)
+{
+    uint32_t l,val=0;
+
+	while((l=(*str++)|0x20)!=0x20)
+		val=(l&0xf)+(l>>6&1)*9+val*16;
+	return(val);
+}
+
+/****************************************************************************/
 /* Converts hex-plus string to integer										*/
 /****************************************************************************/
 uint hptoi(const char *str)
