@@ -225,8 +225,8 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 				SAFEPRINTF(tmp,text[Convert100ktoNminQ],cfg.cdt_min_value);
 				if(yesno(tmp)) {
 					logline("  ","Credit to Minute Conversion");
-					useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,cfg.cdt_min_value);
-					useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,-(102400LL));
+					useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, cfg.cdt_min_value);
+					useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT, -(102400LL));
 					SAFEPRINTF(str,"Credit Adjustment: %ld",-(102400L));
 					logline("$-",str);
 					SAFEPRINTF(str,"Minute Adjustment: %u",cfg.cdt_min_value);
@@ -271,14 +271,14 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 					useron.rest|=cfg.expired_rest;
 					useron.expire=0; 
 				}
-				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,str,10));
-				putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,str,16));
-				putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,str,16));
-				putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,str,16));
-				putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,str,16));
-				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa((ulong)useron.expire,str,16));
-				putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,str,16));
-				putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,str,16));
+				putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level);
+				putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
+				putuserflags(&cfg, useron.number, USER_FLAGS2, useron.flags2);
+				putuserflags(&cfg, useron.number, USER_FLAGS3, useron.flags3);
+				putuserflags(&cfg, useron.number, USER_FLAGS4, useron.flags4);
+				putuserdatetime(&cfg, useron.number, USER_EXPIRE, useron.expire);
+				putuserflags(&cfg, useron.number, USER_EXEMPT, useron.exempt);
+				putuserflags(&cfg, useron.number, USER_REST, useron.rest);
 				if(cfg.expire_mod[0])
 					exec_bin(cfg.expire_mod,&main_csi);
 				RESTORELINE;

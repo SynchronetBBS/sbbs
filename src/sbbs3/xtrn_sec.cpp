@@ -254,15 +254,15 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		}
 
 		SAFEPRINTF2(str,"%s\n%s\n"
-			,ltoaf(useron.flags1,tmp)			/* Main flags */
-			,ltoaf(useron.flags2,tmp2)			/* Transfer flags */
+			,u32toaf(useron.flags1,tmp)			/* Main flags */
+			,u32toaf(useron.flags2,tmp2)			/* Transfer flags */
 			);
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%lx\n%s\n%s\n%s\n"
-			,ltoaf(useron.exempt,tmp)			/* Exemptions */
-			,ltoaf(useron.rest,tmp2)			/* Restrictions */
+			,u32toaf(useron.exempt,tmp)			/* Exemptions */
+			,u32toaf(useron.rest,tmp2)			/* Restrictions */
 			,(long)useron.expire				/* Expiration date in unix form */
 			,useron.address 					/* Address */
 			,useron.location					/* City/State */
@@ -273,8 +273,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%d\n%s\n%lu\n%s\n%s\n%s\n%s\n"
 			"%" PRIx32 "\n%d\n"
-			,ltoaf(useron.flags3,tmp)			/* Flag set #3 */
-			,ltoaf(useron.flags4,tmp2)			/* Flag set #4 */
+			,u32toaf(useron.flags3,tmp)			/* Flag set #3 */
+			,u32toaf(useron.flags4,tmp2)			/* Flag set #4 */
 			,0									/* Time-slice type */
 			,useron.name						/* Real name/company */
 			,cur_rate							/* DCE rate */
@@ -416,7 +416,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		safe_snprintf(str, sizeof(str), "%lu\n%c\n%s\n%u\n%02u/%02u/%02u\n%u\n%c\n%u\n%u\n"
 			,rows								/* 21: User screen length */
 			,(useron.misc&EXPERT) ? 'Y':'N'     /* 22: Expert? (Y/N) */
-			,ltoaf(useron.flags1,tmp2)			/* 23: Registered conferences */
+			,u32toaf(useron.flags1,tmp2)			/* 23: Registered conferences */
 			,0									/* 24: Conference came from */
 			,TM_MONTH(tm.tm_mon)				/* 25: User expiration date (MM/DD/YY) */
 			,tm.tm_mday, TM_YEAR(tm.tm_year)
@@ -1017,12 +1017,12 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		if((file=nopen(path,O_RDONLY))!=-1) {
 			lseek(file,361,SEEK_SET);
 			read(file,&useron.flags1,4); /* Flags */
-			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16));
+			putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
 			lseek(file,373,SEEK_SET);
 			read(file,&i,2);			/* SecLvl */
 			if(i<SYSOP_LEVEL) {
 				useron.level=(uint8_t)i;
-				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
+				putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level); 
 			}
 			close(file);
 			remove(path); 
@@ -1040,7 +1040,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				mod=atoi(str);
 				if(mod<SYSOP_LEVEL) {
 					useron.level=(char)mod;
-					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
+					putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level); 
 				} 
 			}
 
@@ -1048,8 +1048,8 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				if(!fgets(str,128,stream))
 					break;
 			if(i==23) { 					/* set main flags */
-				useron.flags1=aftol(str);
-				putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); 
+				useron.flags1=aftou32(str);
+				putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1); 
 			}
 
 			for(;i<25;i++)
@@ -1061,7 +1061,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				&& (str[5]=='/' || str[5]=='-')
 				&& IS_DIGIT(str[6]) && IS_DIGIT(str[7])) { /* valid expire date */
 				useron.expire=(ulong)dstrtounix(&cfg,str);
-				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa((ulong)useron.expire,tmp,16)); 
+				putuserdatetime(&cfg, useron.number, USER_EXPIRE, useron.expire); 
 			}
 
 			for(;i<29;i++)					/* line 29, total downloaded files */
@@ -1070,7 +1070,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			if(i==29) {
 				truncsp(str);
 				useron.dls=atoi(str);
-				putuserrec(&cfg,useron.number,U_DLS,5,str); 
+				putuserdec32(&cfg, useron.number, USER_DLS, useron.dls); 
 			}
 
 			if(fgets(str,128,stream)) { 	/* line 30, Kbytes downloaded today */
@@ -1078,9 +1078,9 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				truncsp(str);
 				mod=atol(str)*1024L;
 				if(mod) {
-					useron.dlb=adjustuserrec(&cfg,useron.number,U_DLB,mod);
+					useron.dlb = adjustuserval(&cfg, useron.number, USER_DLB, mod);
 					subtract_cdt(&cfg,&useron,mod); 
-				} 
+				}
 			}
 
 			for(;i<42;i++)
@@ -1088,7 +1088,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 					break;
 			if(i==42 && IS_DIGIT(str[0])) {	/* Time Credits in Minutes */
 				useron.min=atol(str);
-				putuserrec(&cfg,useron.number,U_MIN,10,ultoa(useron.min,tmp,10)); 
+				putuserdec32(&cfg, useron.number, USER_MIN, useron.min); 
 			}
 
 			fclose(stream); 
@@ -1108,13 +1108,13 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				i = LE_INT(i);
 				if(i<SYSOP_LEVEL) {
 					useron.level=(uint8_t)i;
-					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
+					putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level); 
 				}
 				lseek(file,75,SEEK_CUR);	/* read in expiration date */
 				read(file,&i,2);			/* convert from julian to unix */
 				i = LE_INT(i);
 				useron.expire=(ulong)juliantounix(i);
-				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa((ulong)useron.expire,tmp,16)); 
+				putuserdatetime(&cfg, useron.number, USER_EXPIRE, useron.expire); 
 			}
 			close(file); 
 		}
@@ -1137,7 +1137,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			}
 			logline(tmp,str);
 			if(mod>0L)			/* always add to real cdt */
-				useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,mod);
+				useron.cdt=adjustuserval(&cfg,useron.number, USER_CDT, mod);
 			else
 				subtract_cdt(&cfg,&useron,-mod); /* subtract from free cdt first */
 		}
@@ -1145,91 +1145,91 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			mod=atoi(str);
 			if(IS_DIGIT(str[0]) && mod<SYSOP_LEVEL) {
 				useron.level=(uchar)mod;
-				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
+				putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level); 
 			} 
 		}
 		fgets(str,81,stream);		 /* was transfer level, now ignored */
 		if(fgets(str,81,stream)) {		/* flags #1 */
 			if(strchr(str,'-'))         /* remove flags */
-				useron.flags1&=~aftol(str);
+				useron.flags1&=~aftou32(str);
 			else						/* add flags */
-				useron.flags1|=aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); 
+				useron.flags1|=aftou32(str);
+			putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
 		}
 
 		if(fgets(str,81,stream)) {		/* flags #2 */
 			if(strchr(str,'-'))         /* remove flags */
-				useron.flags2&=~aftol(str);
+				useron.flags2&=~aftou32(str);
 			else						/* add flags */
-				useron.flags2|=aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,tmp,16)); 
+				useron.flags2|=aftou32(str);
+			putuserflags(&cfg, useron.number, USER_FLAGS2, useron.flags2); 
 		}
 
 		if(fgets(str,81,stream)) {		/* exemptions */
 			if(strchr(str,'-'))
-				useron.exempt&=~aftol(str);
+				useron.exempt&=~aftou32(str);
 			else
-				useron.exempt|=aftol(str);
-			putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,tmp,16)); 
+				useron.exempt|=aftou32(str);
+			putuserflags(&cfg, useron.number, USER_EXEMPT, useron.exempt);
 		}
 		if(fgets(str,81,stream)) {		/* restrictions */
 			if(strchr(str,'-'))
-				useron.rest&=~aftol(str);
+				useron.rest&=~aftou32(str);
 			else
-				useron.rest|=aftol(str);
-			putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,tmp,16)); 
+				useron.rest|=aftou32(str);
+			putuserflags(&cfg, useron.number, USER_REST, useron.rest);
 		}
 		if(fgets(str,81,stream)) {		/* Expiration date */
 			if(isxdigit(str[0]))
-				putuserrec(&cfg,useron.number,U_EXPIRE,8,str); 
+				putuserdatetime(&cfg, useron.number, USER_EXPIRE, ahtoul(str)); 
 		}
 		if(fgets(str,81,stream)) {		/* additional minutes */
 			mod=atol(str);
 			if(mod) {
 				SAFEPRINTF(str,"Minute Adjustment: %s",ultoac(mod,tmp));
 				logline("*+",str);
-				useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,mod); 
+				useron.min=(uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, mod); 
 			} 
 		}
 		if(fgets(str,81,stream)) {		/* flags #3 */
 			if(strchr(str,'-'))         /* remove flags */
-				useron.flags3&=~aftol(str);
+				useron.flags3&=~aftou32(str);
 			else						/* add flags */
-				useron.flags3|=aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,tmp,16)); 
+				useron.flags3|=aftou32(str);
+			putuserflags(&cfg, useron.number, USER_FLAGS3, useron.flags3);
 		}
 
 		if(fgets(str,81,stream)) {		/* flags #4 */
 			if(strchr(str,'-'))         /* remove flags */
-				useron.flags4&=~aftol(str);
+				useron.flags4&=~aftou32(str);
 			else						/* add flags */
-				useron.flags4|=aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,tmp,16)); 
+				useron.flags4|=aftou32(str);
+			putuserflags(&cfg, useron.number, USER_FLAGS4, useron.flags4); 
 		}
 
 		if(fgets(str,81,stream)) {		/* flags #1 to REMOVE only */
-			useron.flags1&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); 
+			useron.flags1&=~aftou32(str);
+			putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
 		}
 		if(fgets(str,81,stream)) {		/* flags #2 to REMOVE only */
-			useron.flags2&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,tmp,16)); 
+			useron.flags2&=~aftou32(str);
+			putuserflags(&cfg, useron.number, USER_FLAGS2, useron.flags2);
 		}
 		if(fgets(str,81,stream)) {		/* flags #3 to REMOVE only */
-			useron.flags3&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,tmp,16)); 
+			useron.flags3&=~aftou32(str);
+			putuserflags(&cfg, useron.number, USER_FLAGS3, useron.flags3);
 		}
 		if(fgets(str,81,stream)) {		/* flags #4 to REMOVE only */
-			useron.flags4&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,tmp,16)); 
+			useron.flags4&=~aftou32(str);
+			putuserflags(&cfg, useron.number, USER_FLAGS4, useron.flags4);
 		}
 		if(fgets(str,81,stream)) {		/* exemptions to remove */
-			useron.exempt&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,tmp,16)); 
+			useron.exempt&=~aftou32(str);
+			putuserflags(&cfg, useron.number, USER_EXEMPT, useron.exempt);
 		}
 		if(fgets(str,81,stream)) {		/* restrictions to remove */
-			useron.rest&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,tmp,16)); 
+			useron.rest&=~aftou32(str);
+			putuserflags(&cfg, useron.number, USER_REST, useron.rest);
 		}
 
 		fclose(stream);
@@ -1358,7 +1358,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		thisnode.aux=xtrnnum+1;
 		putnodedat(cfg.node_num,&thisnode);
 	}
-	putuserrec(&cfg,useron.number,U_CURXTRN,8,cfg.xtrn[xtrnnum]->code);
+	putuserstr(&cfg, useron.number, USER_CURXTRN, cfg.xtrn[xtrnnum]->code);
 
 	if(cfg.xtrn[xtrnnum]->misc&REALNAME) {
 		SAFECOPY(name,useron.name);

@@ -700,7 +700,7 @@ public:
 	uint	getusrdir(uint dirnum);
 	uint	getusrlib(uint dirnum);
 
-	uint	userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
+	uint	finduserstr(uint usernumber, enum user_field, const char* str
 				,bool del=false, bool next=false);
 	ulong	gettimeleft(bool handle_out_of_time=true);
 	bool	gettimeleft_inside;
@@ -1122,7 +1122,7 @@ public:
 	void	qwk_success(ulong msgcnt, char bi, char prepack);
 	void	qwksetptr(uint subnum, char *buf, int reset);
 	void	qwkcfgline(char *buf,uint subnum);
-	int		set_qwk_flag(ulong flag);
+	bool	set_qwk_flag(ulong flag);
 	uint	resolve_qwkconf(uint confnum, int hubnum=-1);
 	bool	qwk_vote(str_list_t ini, const char* section, smb_net_type_t, const char* qnet_id, uint confnum, int hubnum);
 	bool	qwk_voting(str_list_t* ini, long offset, smb_net_type_t, const char* qnet_id, uint confnum, int hubnum = -1);

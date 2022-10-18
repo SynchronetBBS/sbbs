@@ -34,6 +34,7 @@
 #include "getstats.h"
 #include "msgdate.h"
 #include "scfglib.h"
+#include "dat_rec.h"
 
 scfg_t scfg;
 
@@ -50,6 +51,87 @@ int lprintf(int level, const char *fmt, ...)
     va_end(argptr);
     return(puts(sbuf));
 }
+
+/****************************************************************************/
+/* This is a list of offsets into the USER.DAT file for different variables */
+/* that are stored (for each user)											*/
+/****************************************************************************/
+#define U_ALIAS 	0					/* Offset to alias */
+#define U_NAME		U_ALIAS+LEN_ALIAS  /* Offset to name */
+#define U_HANDLE	U_NAME+LEN_NAME
+#define U_NOTE		U_HANDLE+LEN_HANDLE+2
+#define U_COMP		U_NOTE+LEN_NOTE
+#define U_COMMENT	U_COMP+LEN_COMP+2
+
+#define U_NETMAIL	U_COMMENT+LEN_COMMENT+2
+
+#define U_ADDRESS	U_NETMAIL+LEN_NETMAIL+2
+#define U_LOCATION	U_ADDRESS+LEN_ADDRESS
+#define U_ZIPCODE	U_LOCATION+LEN_LOCATION
+
+#define U_OLDPASS	U_ZIPCODE+LEN_ZIPCODE+2
+#define U_PHONE  	U_OLDPASS+LEN_OLDPASS  	/* Offset to phone-number */
+#define U_BIRTH  	U_PHONE+12 		/* Offset to users birthday	*/
+#define U_MODEM     U_BIRTH+8
+#define U_LASTON	U_MODEM+8
+#define U_FIRSTON	U_LASTON+8
+#define U_EXPIRE    U_FIRSTON+8
+#define U_PWMOD     U_EXPIRE+8
+
+#define U_LOGONS    U_PWMOD+8+2
+#define U_LTODAY    U_LOGONS+5
+#define U_TIMEON    U_LTODAY+5
+#define U_TEXTRA  	U_TIMEON+5
+#define U_TTODAY    U_TEXTRA+5
+#define U_TLAST     U_TTODAY+5
+#define U_POSTS     U_TLAST+5
+#define U_EMAILS    U_POSTS+5
+#define U_FBACKS    U_EMAILS+5
+#define U_ETODAY	U_FBACKS+5
+#define U_PTODAY	U_ETODAY+5
+
+#define U_ULB       U_PTODAY+5+2
+#define U_ULS       U_ULB+10
+#define U_DLB       U_ULS+5
+#define U_DLS       U_DLB+10
+#define U_OLDCDT	U_DLS+5
+#define U_MIN		U_OLDCDT+10
+
+#define U_LEVEL 	U_MIN+10+2 	/* Offset to Security Level    */
+#define U_FLAGS1	U_LEVEL+2  	/* Offset to Flags */
+#define U_TL		U_FLAGS1+8 	/* Offset to unused field */
+#define U_FLAGS2	U_TL+2
+#define U_EXEMPT	U_FLAGS2+8
+#define U_REST		U_EXEMPT+8
+#define U_OLDROWS	U_REST+8+2 	/* Number of Rows on user's monitor */
+#define U_SEX		U_OLDROWS+2 	/* Sex, Del, ANSI, color etc.		*/
+#define U_MISC		U_SEX+1 		/* Miscellaneous flags in 8byte hex */
+#define U_OLDXEDIT	U_MISC+8 		/* External editor (Version 1 method  */
+#define U_LEECH 	U_OLDXEDIT+2 	/* two hex digits - leech attempt count */
+#define U_CURSUB	U_LEECH+2  	/* Current sub (internal code)  */
+#define U_CURXTRN	U_CURSUB+16 /* Current xtrn (internal code) */
+#define U_ROWS		U_CURXTRN+8+2
+#define U_COLS		U_ROWS+LEN_ROWS
+#define U_CDT		U_COLS+LEN_COLS	/* unused */
+#define U_MAIN_CMD	U_CDT+LEN_CDT
+#define U_PASS		U_MAIN_CMD+LEN_MAIN_CMD
+#define U_FREECDT	U_PASS+LEN_PASS+2
+#define U_SCAN_CMD	U_FREECDT+LEN_CDT  				/* unused */
+#define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD
+#define U_OLDFREECDT U_IPADDR+LEN_IPADDR+2			/* unused */
+#define U_FLAGS3	U_OLDFREECDT+10 	/* Flag set #3 */
+#define U_FLAGS4	U_FLAGS3+8 	/* Flag set #4 */
+#define U_XEDIT 	U_FLAGS4+8 	/* External editor (code  */
+#define U_SHELL 	U_XEDIT+8  	/* Command shell (code  */
+#define U_QWK		U_SHELL+8  	/* QWK settings */
+#define U_TMPEXT	U_QWK+8 		/* QWK extension */
+#define U_CHAT		U_TMPEXT+3 	/* Chat settings */
+#define U_NS_TIME	U_CHAT+8 		/* New-file scan date/time */
+#define U_PROT		U_NS_TIME+8 	/* Default transfer protocol */
+#define U_LOGONTIME	U_PROT+1
+#define U_CURDIR	U_LOGONTIME+8	/* Current dir (internal code  */
+#define U_UNUSED	U_CURDIR+16
+#define U_LEN		(U_UNUSED+4+2)
 
 /****************************************************************************/
 /* Returns the number of the last user in user.dat (deleted ones too)		*/
@@ -212,12 +294,12 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	user->cdt=strtoull(str, NULL, 10);
 	getrec(userdat,U_MIN,10,str); user->min=strtoul(str, NULL, 10);
 	getrec(userdat,U_LEVEL,2,str); user->level=atoi(str);
-	getrec(userdat,U_FLAGS1,8,str); user->flags1=ahtoul(str);
-	getrec(userdat,U_FLAGS2,8,str); user->flags2=ahtoul(str);
-	getrec(userdat,U_FLAGS3,8,str); user->flags3=ahtoul(str);
-	getrec(userdat,U_FLAGS4,8,str); user->flags4=ahtoul(str);
-	getrec(userdat,U_EXEMPT,8,str); user->exempt=ahtoul(str);
-	getrec(userdat,U_REST,8,str); user->rest=ahtoul(str);
+	getrec(userdat,U_FLAGS1,8,str); user->flags1=ahtoul(str)&0x03ffffff;
+	getrec(userdat,U_FLAGS2,8,str); user->flags2=ahtoul(str)&0x03ffffff;
+	getrec(userdat,U_FLAGS3,8,str); user->flags3=ahtoul(str)&0x03ffffff;
+	getrec(userdat,U_FLAGS4,8,str); user->flags4=ahtoul(str)&0x03ffffff;
+	getrec(userdat,U_EXEMPT,8,str); user->exempt=ahtoul(str)&0x03ffffff;
+	getrec(userdat,U_REST,8,str); user->rest=ahtoul(str)&0x03ffffff;
 	if(getrec(userdat,U_OLDROWS,2,str) <= 0) // Moved to new location
 		getrec(userdat, U_ROWS, LEN_ROWS, str);
 	user->rows = atoi(str);
@@ -315,68 +397,8 @@ static int v31x_fgetuserdat(scfg_t* cfg, user_t *user, int file)
 	return v31x_parseuserdat(cfg, userdat, user);
 }
 
-/****************************************************************************/
-/* Fills 'str' with record for usernumber starting at start for length bytes*/
-/* Called from function ???													*/
-/****************************************************************************/
-static int v31x_getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
-{
-	char	path[256];
-	int		i,c,file;
-
-	if(!VALID_CFG(cfg) || usernumber<1 || str==NULL)
-		return(-1);
-	SAFEPRINTF(path,"%suser/user.dat",cfg->data_dir);
-	if((file=nopen(path,O_RDONLY|O_DENYNONE))==-1)
-		return(errno);
-	if(usernumber<1
-		|| filelength(file)<(long)((long)(usernumber-1L)*U_LEN)+(long)start) {
-		close(file);
-		return(-2);
-	}
-	(void)lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
-
-	if(length < 1) { /* auto-length */
-		length=user_rec_len(start);
-		if(length < 1) {
-			close(file);
-			return -5;
-		}
-	}
-
-	i=0;
-	while(i<LOOP_NODEDAB
-		&& lock(file,(long)((long)(usernumber-1)*U_LEN)+start,length)==-1) {
-		if(i)
-			mswait(100);
-		i++;
-	}
-
-	if(i>=LOOP_NODEDAB) {
-		close(file);
-		return(-3);
-	}
-
-	if(read(file,str,length)!=length) {
-		unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
-		close(file);
-		return(-4);
-	}
-
-	unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
-	close(file);
-	for(c=0;c<length;c++)
-		if(str[c]==ETX || str[c]==CR) break;
-	str[c]=0;
-
-	if(c == 0 && start == LEN_PASS) // Backwards compatibility hack
-		return getuserrec(cfg, usernumber, U_OLDPASS, LEN_OLDPASS, str);
-
-	return(0);
-}
-
 /* Returns length of specified user record 'field', or -1 if invalid */
-static int v31x_user_rec_len(int offset)
+static int user_rec_len(int offset)
 {
 	switch(offset) {
 
@@ -477,6 +499,66 @@ static int v31x_user_rec_len(int offset)
 	return(-1);
 }
 
+/****************************************************************************/
+/* Fills 'str' with record for usernumber starting at start for length bytes*/
+/* Called from function ???													*/
+/****************************************************************************/
+static int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
+{
+	char	path[256];
+	int		i,c,file;
+
+	if(!VALID_CFG(cfg) || usernumber<1 || str==NULL)
+		return(-1);
+	SAFEPRINTF(path,"%suser/user.dat",cfg->data_dir);
+	if((file=nopen(path,O_RDONLY|O_DENYNONE))==-1)
+		return(errno);
+	if(usernumber<1
+		|| filelength(file)<(long)((long)(usernumber-1L)*U_LEN)+(long)start) {
+		close(file);
+		return(-2);
+	}
+	(void)lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
+
+	if(length < 1) { /* auto-length */
+		length=user_rec_len(start);
+		if(length < 1) {
+			close(file);
+			return -5;
+		}
+	}
+
+	i=0;
+	while(i<LOOP_NODEDAB
+		&& lock(file,(long)((long)(usernumber-1)*U_LEN)+start,length)==-1) {
+		if(i)
+			mswait(100);
+		i++;
+	}
+
+	if(i>=LOOP_NODEDAB) {
+		close(file);
+		return(-3);
+	}
+
+	if(read(file,str,length)!=length) {
+		unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
+		close(file);
+		return(-4);
+	}
+
+	unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
+	close(file);
+	for(c=0;c<length;c++)
+		if(str[c]==ETX || str[c]==CR) break;
+	str[c]=0;
+
+	if(c == 0 && start == LEN_PASS) // Backwards compatibility hack
+		return getuserrec(cfg, usernumber, U_OLDPASS, LEN_OLDPASS, str);
+
+	return(0);
+}
+
 bool compare_user(user_t* before, user_t* after)
 {
 	uint8_t* b = (uint8_t*)before;
@@ -500,7 +582,7 @@ bool upgrade_users(bool verify)
 	uint last = v31x_lastuser(&scfg);
 	uint largest = 0;
 	size_t maxlen = 0;
-	char userdat[USER_REC_LINE_LEN];
+	char userdat[USER_RECORD_LINE_LEN];
 	char path[MAX_PATH + 1];
 	SAFEPRINTF(path, "%suser/user.tab", scfg.data_dir);
 
@@ -526,8 +608,9 @@ bool upgrade_users(bool verify)
 			break;
 		}
 		format_userdat(&scfg, &user, userdat);
+		fseek(out, (i - 1) * USER_RECORD_LINE_LEN, SEEK_SET);
 		fwrite(userdat, sizeof(char), sizeof(userdat), out);
-		userdat[USER_REC_LEN] = '\0';
+		userdat[USER_RECORD_LEN] = '\0';
 		truncsp(userdat);
 		size_t len = strlen(userdat);
 		if(len > maxlen) {
@@ -539,13 +622,14 @@ bool upgrade_users(bool verify)
 			ZERO_VAR(new);
 			new.number = i;
 			fflush(out);
-			if(fgetuserdat(&scfg, &new, fileno(out)) != 0) {
-				printf("Error reading user %d from user.tab\n", i);
+			int result;
+			if((result = fgetuserdat(&scfg, &new, fileno(out))) != 0) {
+				printf("Error %d reading user #%d from user.tab\n", result, i);
 				result = false;
 				break;
 			}
 			if(!compare_user(&user, &new)) {
-				printf("Error comparing user #%u afer upgrade\n", i);
+				printf("Error comparing user #%u after upgrade\n", i);
 				result = false;
 				break;
 			}

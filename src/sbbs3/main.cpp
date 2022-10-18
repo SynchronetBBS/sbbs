@@ -4631,14 +4631,14 @@ void sbbs_t::daily_maint(void)
 				user.rest|=cfg.expired_rest;
 				user.expire=0;
 			}
-			putuserrec(&cfg,user.number,U_LEVEL,2,ultoa(user.level,str,10));
-			putuserrec(&cfg,user.number,U_FLAGS1,8,ultoa(user.flags1,str,16));
-			putuserrec(&cfg,user.number,U_FLAGS2,8,ultoa(user.flags2,str,16));
-			putuserrec(&cfg,user.number,U_FLAGS3,8,ultoa(user.flags3,str,16));
-			putuserrec(&cfg,user.number,U_FLAGS4,8,ultoa(user.flags4,str,16));
-			putuserrec(&cfg,user.number,U_EXPIRE,8,ultoa((ulong)user.expire,str,16));
-			putuserrec(&cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,str,16));
-			putuserrec(&cfg,user.number,U_REST,8,ultoa(user.rest,str,16));
+			putuserdec32(&cfg, user.number, USER_LEVEL, user.level);
+			putuserflags(&cfg, user.number, USER_FLAGS1, user.flags1);
+			putuserflags(&cfg, user.number, USER_FLAGS2, user.flags2);
+			putuserflags(&cfg, user.number, USER_FLAGS3, user.flags3);
+			putuserflags(&cfg, user.number, USER_FLAGS4, user.flags4);
+			putuserdatetime(&cfg, user.number, USER_EXPIRE, user.expire);
+			putuserflags(&cfg, user.number, USER_EXEMPT, user.exempt);
+			putuserflags(&cfg, user.number, USER_REST, user.rest);
 			if(cfg.expire_mod[0]) {
 				useron=user;
 				online=ON_LOCAL;
@@ -4659,7 +4659,7 @@ void sbbs_t::daily_maint(void)
 			lputs(LOG_NOTICE, str);
 			delallmail(user.number, MAIL_ANY);
 			putusername(&cfg,user.number,nulstr);
-			putuserrec(&cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16));
+			putusermisc(&cfg, user.number, user.misc | DELETED);
 		}
 	}
 	closeuserdat(userfile);

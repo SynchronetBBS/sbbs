@@ -70,15 +70,14 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		return(false); 
 	}
 	str[0] = '\0';
-	getuserrec(&cfg,usernumber,U_MISC,8,str);
-	l=ahtoul(str);
+	l = getusermisc(&cfg, usernumber);
 	if(l&(DELETED|INACTIVE)) {              /* Deleted or Inactive User */
 		bputs(text[UnknownUser]);
 		return(false); 
 	}
 	if((l&NETMAIL) && (cfg.sys_misc&SM_FWDTONET) && !(mode & WM_NOFWD) && !(useron.rest&FLAG('M'))) {
 		str[0] = '\0';
-		if(getuserrec(&cfg,usernumber,U_NETMAIL,LEN_NETMAIL,str) == 0
+		if(getuserstr(&cfg, usernumber, USER_NETMAIL, str, sizeof(str)) != NULL
 			&& is_supported_netmail_addr(&cfg, str)) {
 			bprintf(text[UserNetMail],str);
 			if((mode & WM_FORCEFWD) || yesno(text[ForwardMailQ])) /* Forward to netmail address */

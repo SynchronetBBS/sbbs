@@ -1335,8 +1335,8 @@ static void pop3_thread(void* arg)
 			listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
 		}
 
-		putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
-		putuserrec(&scfg,user.number,U_IPADDR,LEN_IPADDR,host_ip);
+		putuserstr(&scfg, user.number, USER_HOST, host_name);
+		putuserstr(&scfg, user.number, USER_IPADDR, host_ip);
 
 		/* Update client display */
 		client.user=user.alias;
@@ -1924,7 +1924,7 @@ static BOOL email_addr_is_exempt(const char* addr)
 		return TRUE;
 	p = netmail + 1;
 	*lastchar(p) = '\0';
-	return userdatdupe(&scfg, 0, U_NETMAIL, LEN_NETMAIL, p, /* del */FALSE, /* next */FALSE, NULL, NULL);
+	return finduserstr(&scfg, 0, USER_NETMAIL, p, /* del */FALSE, /* next */FALSE, NULL, NULL);
 }
 
 static void exempt_email_addr(const char* comment
@@ -2770,7 +2770,7 @@ static uint smtp_matchuser(scfg_t *scfg, char *str, BOOL aliases, BOOL datdupe)
 		goto end;
 
 	if(datdupe)
-		usernum=userdatdupe(scfg, 0, U_NAME, LEN_NAME, name, /* del */FALSE, /* next */FALSE, NULL, NULL);
+		usernum=finduserstr(scfg, 0, USER_NAME, name, /* del */FALSE, /* next */FALSE, NULL, NULL);
 	else
 		usernum=matchuser(scfg, name, aliases);
 
@@ -4641,7 +4641,7 @@ static void smtp_thread(void* arg)
 					SAFEPRINTF(relay_list,"%srelay.cfg",scfg.ctrl_dir);
 					if(relay_user.number==0 /* not authenticated, search for IP */
 						&& startup->options&MAIL_OPT_SMTP_AUTH_VIA_IP) { 
-						relay_user.number=userdatdupe(&scfg, 0, U_IPADDR, LEN_IPADDR, host_ip, /* del */FALSE, /* next */FALSE, NULL, NULL);
+						relay_user.number=finduserstr(&scfg, 0, USER_IPADDR, host_ip, /* del */FALSE, /* next */FALSE, NULL, NULL);
 						if(relay_user.number) {
 							getuserdat(&scfg,&relay_user);
 							if(relay_user.laston < time(NULL)-(60*60))	/* logon in past hour? */

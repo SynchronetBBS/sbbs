@@ -137,9 +137,9 @@ void sbbs_t::useredit(int usernumber)
 			,byte_estimate_to_str(cfg.level_freecdtperday[user.level], str, sizeof(str), 1, 1));
 		bprintf(text[UserMinutes],ultoac(user.min,tmp));
 		bprintf(text[UeditSecLevel],user.level);
-		bprintf(text[UeditFlags],ltoaf(user.flags1,tmp),ltoaf(user.flags3,tmp2)
-			,ltoaf(user.flags2,tmp3),ltoaf(user.flags4,str));
-		bprintf(text[UeditExempts],ltoaf(user.exempt,tmp),ltoaf(user.rest,tmp2));
+		bprintf(text[UeditFlags],u32toaf(user.flags1,tmp),u32toaf(user.flags3,tmp2)
+			,u32toaf(user.flags2,tmp3),u32toaf(user.flags4,str));
+		bprintf(text[UeditExempts],u32toaf(user.exempt,tmp),u32toaf(user.rest,tmp2));
 		if(lncntr>=rows-2)
 			lncntr=0;
 		if(user.misc&DELETED)
@@ -167,21 +167,21 @@ void sbbs_t::useredit(int usernumber)
 				getstr(user.alias,LEN_ALIAS,kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_ALIAS,LEN_ALIAS,user.alias);
+				putuserstr(&cfg, user.number, USER_ALIAS, user.alias);
 				if(!(user.misc&DELETED))
 					putusername(&cfg,user.number,user.alias);
 				bputs(text[EnterYourHandle]);
 				getstr(user.handle,LEN_HANDLE,kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_HANDLE,LEN_HANDLE,user.handle);
+				putuserstr(&cfg, user.number, USER_HANDLE, user.handle);
 				break;
 			case 'B':
 				bprintf(text[EnterYourBirthday], birthdate_format(&cfg));
 				format_birthdate(&cfg, user.birth, str, sizeof(str));
 				if(gettmplt(str, "nn/nn/nnnn", kmode) == 10) {
 					parse_birthdate(&cfg, str, user.birth, sizeof(user.birth));
-					putuserrec(&cfg,user.number,U_BIRTH,LEN_BIRTH,user.birth);
+					putuserstr(&cfg, user.number, USER_BIRTH, user.birth);
 				}
 				break;
 			case 'C':
@@ -189,21 +189,19 @@ void sbbs_t::useredit(int usernumber)
 				getstr(user.comp,LEN_COMP,kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_COMP,LEN_COMP,user.comp);
+				putuserstr(&cfg, user.number, USER_HOST, user.comp);
 				break;
 			case 'D':
 				if(user.misc&DELETED) {
 					if(!noyes(text[UeditRestoreQ])) {
-						putuserrec(&cfg,user.number,U_MISC,8
-							,ultoa(user.misc&~DELETED,str,16));
+						putusermisc(&cfg, user.number, user.misc &~ DELETED);
 						putusername(&cfg,user.number,user.alias); 
 					}
 					break; 
 				}
 				if(user.misc&INACTIVE) {
 					if(!noyes(text[UeditActivateQ]))
-						putuserrec(&cfg,user.number,U_MISC,8
-							,ultoa(user.misc&~INACTIVE,str,16));
+						putusermisc(&cfg, user.number, user.misc &~ INACTIVE);
 					break; 
 				}
 				if(!noyes(text[UeditDeleteQ])) {
@@ -216,8 +214,7 @@ void sbbs_t::useredit(int usernumber)
 						if(yesno(text[UeditReadUserMailSQ]))
 							readmail(user.number,MAIL_SENT); 
 					}
-					putuserrec(&cfg,user.number,U_MISC,8
-						,ultoa(user.misc|DELETED,str,16));
+					putusermisc(&cfg, user.number, user.misc | DELETED);
 					putusername(&cfg,user.number,nulstr);
 					break; 
 				}
@@ -230,8 +227,7 @@ void sbbs_t::useredit(int usernumber)
 						if(yesno(text[UeditReadUserMailSQ]))
 							readmail(user.number,MAIL_SENT); 
 					}
-					putuserrec(&cfg,user.number,U_MISC,8
-						,ultoa(user.misc|INACTIVE,str,16));
+					putusermisc(&cfg, user.number, user.misc | INACTIVE);
 					break; 
 				}
 				break;
@@ -239,7 +235,7 @@ void sbbs_t::useredit(int usernumber)
 				if(!yesno(text[ChangeExemptionQ]))
 					break;
 				while(online) {
-					bprintf(text[FlagEditing],ltoaf(user.exempt,tmp));
+					bprintf(text[FlagEditing], u32toaf(user.exempt,tmp));
 					c=(char)getkeys("ABCDEFGHIJKLMNOPQRSTUVWXYZ?\r",0);
 					if(sys_status&SS_ABORT)
 						break;
@@ -249,7 +245,7 @@ void sbbs_t::useredit(int usernumber)
 						continue; 
 					}
 					user.exempt^=FLAG(c);
-					putuserrec(&cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,tmp,16)); 
+					putuserflags(&cfg, user.number, USER_EXEMPT, user.exempt); 
 				}
 				break;
 			case 'F':
@@ -258,16 +254,16 @@ void sbbs_t::useredit(int usernumber)
 					bprintf("\r\nFlag Set #%d\r\n",i);
 					switch(i) {
 						case 1:
-							bprintf(text[FlagEditing],ltoaf(user.flags1,tmp));
+							bprintf(text[FlagEditing], u32toaf(user.flags1,tmp));
 							break;
 						case 2:
-							bprintf(text[FlagEditing],ltoaf(user.flags2,tmp));
+							bprintf(text[FlagEditing], u32toaf(user.flags2,tmp));
 							break;
 						case 3:
-							bprintf(text[FlagEditing],ltoaf(user.flags3,tmp));
+							bprintf(text[FlagEditing], u32toaf(user.flags3,tmp));
 							break;
 						case 4:
-							bprintf(text[FlagEditing],ltoaf(user.flags4,tmp));
+							bprintf(text[FlagEditing], u32toaf(user.flags4,tmp));
 							break; 
 					}
 					c=(char)getkeys("ABCDEFGHIJKLMNOPQRSTUVWXYZ?1234\r",0);
@@ -286,23 +282,19 @@ void sbbs_t::useredit(int usernumber)
 					switch(i) {
 						case 1:
 							user.flags1^=FLAG(c);
-							putuserrec(&cfg,user.number,U_FLAGS1,8
-								,ultoa(user.flags1,tmp,16));
+							putuserflags(&cfg, user.number, USER_FLAGS1, user.flags1);
 							break;
 						case 2:
 							user.flags2^=FLAG(c);
-							putuserrec(&cfg,user.number,U_FLAGS2,8
-								,ultoa(user.flags2,tmp,16));
+							putuserflags(&cfg, user.number, USER_FLAGS2, user.flags2);
 							break;
 						case 3:
 							user.flags3^=FLAG(c);
-							putuserrec(&cfg,user.number,U_FLAGS3,8
-								,ultoa(user.flags3,tmp,16));
+							putuserflags(&cfg, user.number, USER_FLAGS3, user.flags3);
 							break;
 						case 4:
 							user.flags4^=FLAG(c);
-							putuserrec(&cfg,user.number,U_FLAGS4,8
-								,ultoa(user.flags4,tmp,16));
+							putuserflags(&cfg, user.number, USER_FLAGS4, user.flags4);
 							break; 
 					}
 				}
@@ -334,7 +326,7 @@ void sbbs_t::useredit(int usernumber)
 				bputs(text[UeditMinutes]);
 				ultoa(user.min,str,10);
 				if(getstr(str,10,K_NUMBER|K_LINE))
-					putuserrec(&cfg,user.number,U_MIN,10,str);
+					putuserstr(&cfg, user.number, USER_MIN, str);
 				break;
 			case 'K':	/* date changes */
 				bputs(text[UeditLastOn]);
@@ -343,72 +335,72 @@ void sbbs_t::useredit(int usernumber)
 				if(sys_status&SS_ABORT)
 					break;
 				user.laston=dstrtounix(&cfg,str);
-				putuserrec(&cfg,user.number,U_LASTON,8,ultoa((ulong)user.laston,tmp,16));
+				putuserdatetime(&cfg, user.number, USER_LASTON, user.laston);
 				bputs(text[UeditFirstOn]);
 				unixtodstr(&cfg,user.firston,str);
 				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.firston=dstrtounix(&cfg,str);
-				putuserrec(&cfg,user.number,U_FIRSTON,8,ultoa((ulong)user.firston,tmp,16));
+				putuserdatetime(&cfg, user.number, USER_FIRSTON, user.firston);
 				bputs(text[UeditExpire]);
 				unixtodstr(&cfg,user.expire,str);
 				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.expire=dstrtounix(&cfg,str);
-				putuserrec(&cfg,user.number,U_EXPIRE,8,ultoa((ulong)user.expire,tmp,16));
+				putuserdatetime(&cfg, user.number, USER_EXPIRE, user.expire);
 				bputs(text[UeditPwModDate]);
 				unixtodstr(&cfg,user.pwmod,str);
 				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.pwmod=dstrtounix(&cfg,str);
-				putuserrec(&cfg,user.number,U_PWMOD,8,ultoa((ulong)user.pwmod,tmp,16));
+				putuserdatetime(&cfg, user.number, USER_PWMOD, user.pwmod);
 				break;
 			case 'L':
 				bputs(text[EnterYourAddress]);
 				getstr(user.address,LEN_ADDRESS,kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_ADDRESS,LEN_ADDRESS,user.address);
+				putuserstr(&cfg, user.number, USER_ADDRESS, user.address);
 				bputs(text[EnterYourCityState]);
 				getstr(user.location,LEN_LOCATION,kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_LOCATION,LEN_LOCATION,user.location);
+				putuserstr(&cfg, user.number, USER_LOCATION, user.location);
 				bputs(text[EnterYourZipCode]);
 				getstr(user.zipcode,LEN_ZIPCODE,K_LINE|K_EDIT|K_AUTODEL|K_UPPER);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_ZIPCODE,LEN_ZIPCODE,user.zipcode);
+				putuserstr(&cfg, user.number, USER_ZIPCODE, user.zipcode);
 				break;
 			case 'M':
 				bputs(text[UeditML]);
 				ultoa(user.level,str,10);
 				if(getstr(str,2,K_NUMBER|K_LINE))
-					putuserrec(&cfg,user.number,U_LEVEL,2,str);
+					putuserstr(&cfg, user.number, USER_LEVEL, str);
 				break;
 			case 'N':
 				bputs(text[UeditNote]);
 				getstr(user.note,LEN_NOTE,K_LINE|K_EDIT|K_AUTODEL);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_NOTE,LEN_NOTE,user.note);
+				putuserstr(&cfg, user.number, USER_NOTE, user.note);
 				break;
 			case 'O':
 				bputs(text[UeditComment]);
 				getstr(user.comment,60,kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_COMMENT,60,user.comment);
+				putuserstr(&cfg, user.number, USER_COMMENT, user.comment);
 				break;
 			case 'P':
 				bputs(text[EnterYourPhoneNumber]);
 				getstr(user.phone,LEN_PHONE,kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_PHONE,LEN_PHONE,user.phone);
+				putuserstr(&cfg, user.number, USER_PHONE, user.phone);
 				break;
 			case 'Q':
 				lncntr = 0;
@@ -421,12 +413,12 @@ void sbbs_t::useredit(int usernumber)
 				getstr(user.name,LEN_NAME,kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_NAME,LEN_NAME,user.name);
+				putuserstr(&cfg, user.number, USER_NAME, user.name);
 				break;
 			case 'S':
 				bputs(text[EnterYourGender]);
 				if(getstr(str,1,K_UPPER|K_LINE))
-					putuserrec(&cfg,user.number,U_SEX,1,str);
+					putuserstr(&cfg, user.number, USER_GENDER, str);
 				break;
 			case 'T':   /* Text Search */
 				bputs(text[SearchStringPrompt]);
@@ -438,37 +430,37 @@ void sbbs_t::useredit(int usernumber)
 				_ui64toa(user.ulb,str,10);
 				if(getstr(str,19,K_UPPER|K_LINE|K_EDIT|K_AUTODEL)) {
 					user.ulb = parse_byte_count(str, 1);
-					putuserrec(&cfg,user.number,U_ULB,10,userbytestr(user.ulb, str));
+					putuserdec64(&cfg, user.number, USER_ULB, user.ulb);
 				}
 				if(sys_status&SS_ABORT)
 					break;
 				bputs(text[UeditUploads]);
 				SAFEPRINTF(str,"%u",user.uls);
 				if(getstr(str,5,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL))
-					putuserrec(&cfg,user.number,U_ULS,5,str);
+					putuserstr(&cfg, user.number, USER_ULS, str);
 				if(sys_status&SS_ABORT)
 					break;
 				bputs(text[UeditDlBytes]);
 				_ui64toa(user.dlb,str,10);
 				if(getstr(str,19,K_UPPER|K_LINE|K_EDIT|K_AUTODEL)) {
 					user.dlb = parse_byte_count(str, 1);
-					putuserrec(&cfg,user.number,U_DLB,10,userbytestr(user.dlb, str));
+					putuserdec64(&cfg, user.number, USER_DLB, user.dlb);
 				}
 				if(sys_status&SS_ABORT)
 					break;
 				bputs(text[UeditDownloads]);
 				SAFEPRINTF(str,"%u",user.dls);
 				if(getstr(str,5,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL))
-					putuserrec(&cfg,user.number,U_DLS,5,str);
+					putuserstr(&cfg, user.number, USER_DLS, str);
 				break;
 			case 'V':
 				CLS;
 				attr(LIGHTGRAY);
 				for(i=0;i<10;i++) {
 					bprintf(text[QuickValidateFmt]
-						,i,cfg.val_level[i],ltoaf(cfg.val_flags1[i],str)
-						,ltoaf(cfg.val_exempt[i],tmp)
-						,ltoaf(cfg.val_rest[i],tmp3)); 
+						,i,cfg.val_level[i], u32toaf(cfg.val_flags1[i], str)
+						,u32toaf(cfg.val_exempt[i], tmp)
+						,u32toaf(cfg.val_rest[i], tmp3)); 
 				}
 				ASYNC;
 				bputs(text[QuickValidatePrompt]);
@@ -498,7 +490,7 @@ void sbbs_t::useredit(int usernumber)
 				getstr(user.pass,LEN_PASS,K_UPPER|kmode);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user.number,U_PASS,LEN_PASS,user.pass);
+				putuserstr(&cfg, user.number, USER_PASS, user.pass);
 				break;
 			case 'X':
 				attr(LIGHTGRAY);
@@ -521,7 +513,7 @@ void sbbs_t::useredit(int usernumber)
 				if(!yesno(text[ChangeRestrictsQ]))
 					break;
 				while(online) {
-					bprintf(text[FlagEditing],ltoaf(user.rest,tmp));
+					bprintf(text[FlagEditing], u32toaf(user.rest, tmp));
 					c=(char)getkeys("ABCDEFGHIJKLMNOPQRSTUVWXYZ?\r",0);
 					if(sys_status&SS_ABORT)
 						break;
@@ -531,7 +523,7 @@ void sbbs_t::useredit(int usernumber)
 						continue; 
 					}
 					user.rest^=FLAG(c);
-					putuserrec(&cfg,user.number,U_REST,8,ultoa(user.rest,tmp,16)); 
+					putuserflags(&cfg, user.number, USER_REST, user.rest); 
 				}
 				break;
 			case '?':
@@ -542,7 +534,7 @@ void sbbs_t::useredit(int usernumber)
 			case '~':
 				bputs(text[UeditLeech]);
 				if(getstr(str,2,K_NUMBER|K_LINE))
-					putuserrec(&cfg,user.number,U_LEECH,2,ultoa(atoi(str),tmp,16));
+					putuserdec32(&cfg, user.number, USER_LEECH, atoi(str));
 				break;
 			case '+':
 				bputs(text[ModifyCredits]);
@@ -551,7 +543,7 @@ void sbbs_t::useredit(int usernumber)
 						adj = strtoll(str, NULL, 10) * cfg.cdt_per_dollar;
 					else
 						adj = parse_byte_count(str, 1);
-					adjustuserrec(&cfg, user.number, U_CDT, adj);
+					adjustuserval(&cfg, user.number, USER_CDT, adj);
 				}
 				break;
 			case '*':
@@ -564,7 +556,7 @@ void sbbs_t::useredit(int usernumber)
 					user.min=0L;
 				else
 					user.min+=l;
-				putuserrec(&cfg,user.number,U_MIN,10,ultoa(user.min,tmp,10));
+				putuserdec32(&cfg, user.number, USER_MIN, user.min);
 				break;
 			case '#': /* read new user questionnaire */
 				SAFEPRINTF2(str,"%suser/%4.4u.dat", cfg.data_dir,user.number);
@@ -579,7 +571,7 @@ void sbbs_t::useredit(int usernumber)
 				_ui64toa(user.cdt,str,10);
 				if(getstr(str,19,K_UPPER|K_LINE|K_EDIT|K_AUTODEL)) {
 					user.cdt = parse_byte_count(str, 1);
-					putuserrec(&cfg,user.number,U_CDT,0,userbytestr(user.cdt, str));
+					putuserdec64(&cfg, user.number, USER_CDT, user.cdt);
 				}
 				break;
 			case '/':
@@ -657,48 +649,18 @@ void sbbs_t::useredit(int usernumber)
 /****************************************************************************/
 int sbbs_t::searchup(char *search,int usernum)
 {
-	char userdat[U_LEN+1];
-	int file,count;
+	char userdat[USER_RECORD_LEN + 1];
+	int file;
 	uint i=usernum+1;
-	long flen;
 
 	if(!search[0])
 		return(usernum);
-	SAFEPRINTF(userdat,"%suser/user.dat", cfg.data_dir);
-	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
+	if((file=openuserdat(&cfg, /* for_modify: */FALSE))==-1)
 		return(usernum);
 
-	flen=(long)filelength(file);
-	if(flen < 0) {
-		close(file);
-		return usernum;
-	}
-	lseek(file,(long)((long)usernum*U_LEN),0);
+	int last = (int)filelength(file) / USER_RECORD_LEN;
 
-	while((i*U_LEN)<=(ulong)flen) {
-		count=0;
-		while(count<LOOP_NODEDAB
-			&& lock(file,(long)((long)(i-1)*U_LEN),U_LEN)==-1) {
-			if(count)
-				mswait(100);
-			count++; 
-		}
-
-		if(count>=LOOP_NODEDAB) {
-			close(file);
-			errormsg(WHERE,ERR_LOCK,"user.dat",i);
-			return(usernum); 
-		}
-
-		if(read(file,userdat,U_LEN)!=U_LEN) {
-			unlock(file,(long)((long)(i-1)*U_LEN),U_LEN);
-			close(file);
-			errormsg(WHERE,ERR_READ,"user.dat",U_LEN);
-			return(usernum); 
-		}
-
-		unlock(file,(long)((long)(i-1)*U_LEN),U_LEN);
-		userdat[U_LEN]=0;
+	while(readuserdat(&cfg, i, userdat, sizeof(userdat), file) == 0) {
 		strupr(userdat);
 		if(strstr(userdat,search)) {
 			close(file);
@@ -719,39 +681,16 @@ int sbbs_t::searchup(char *search,int usernum)
 /****************************************************************************/
 int sbbs_t::searchdn(char *search,int usernum)
 {
-	char userdat[U_LEN+1];
-	int file,count;
+	char userdat[USER_RECORD_LEN + 1];
+	int file;
 	uint i=usernum-1;
 
 	if(!search[0])
 		return(usernum);
-	SAFEPRINTF(userdat,"%suser/user.dat", cfg.data_dir);
-	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
+	if((file = openuserdat(&cfg, /* for_modify: */FALSE)) == -1)
 		return(usernum);
-	while(i) {
-		lseek(file,(long)((long)(i-1)*U_LEN),0);
-		count=0;
-		while(count<LOOP_NODEDAB
-			&& lock(file,(long)((long)(i-1)*U_LEN),U_LEN)==-1) {
-			if(count)
-				mswait(100);
-			count++; 
-		}
 
-		if(count>=LOOP_NODEDAB) {
-			close(file);
-			errormsg(WHERE,ERR_LOCK,"user.dat",i);
-			return(usernum); 
-		}
-
-		if(read(file,userdat,U_LEN)==-1) {
-			unlock(file,(long)((long)(i-1)*U_LEN),U_LEN);
-			close(file);
-			errormsg(WHERE,ERR_READ,"USER.DAT",U_LEN);
-			return(usernum); 
-		}
-		unlock(file,(long)((long)(i-1)*U_LEN),U_LEN);
-		userdat[U_LEN]=0;
+	while(i > 0 && readuserdat(&cfg, i, userdat, sizeof(userdat), file) == 0) {
 		strupr(userdat);
 		if(strstr(userdat,search)) {
 			close(file);
@@ -977,15 +916,15 @@ void sbbs_t::maindflts(user_t* user)
 				}
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'B':
 				user->misc^=BATCHFLAG;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'E':
 				if(noyes(text[UseExternalEditorQ])) {
-					putuserrec(&cfg,user->number,U_XEDIT,8,nulstr);
+					putuserstr(&cfg, user->number, USER_XEDIT, nulstr);
 					break; 
 				}
 				if(user->xedit)
@@ -993,13 +932,13 @@ void sbbs_t::maindflts(user_t* user)
 				for(i=0;i<cfg.total_xedits;i++)
 					uselect(1,i,text[ExternalEditorHeading],cfg.xedit[i]->name, cfg.xedit[i]->ar);
 				if((i=uselect(0,user->xedit,0,0,0))>=0)
-					putuserrec(&cfg,user->number,U_XEDIT,8,cfg.xedit[i]->code);
+					putuserstr(&cfg, user->number, USER_XEDIT, cfg.xedit[i]->code);
 				break;
 			case 'K':   /* Command shell */
 				for(i=0;i<cfg.total_shells;i++)
 					uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
 				if((i=uselect(0,user->shell,0,0,0))>=0)
-					putuserrec(&cfg,user->number,U_SHELL,8,cfg.shell[i]->code);
+					putuserstr(&cfg, user->number, USER_SHELL, cfg.shell[i]->code);
 				break;
 			case 'A':
 			{
@@ -1012,7 +951,7 @@ void sbbs_t::maindflts(user_t* user)
 				for(i=0; ext_list[i] != NULL; i++)
 					uselect(1,i,text[ArchiveTypeHeading], ext_list[i], NULL);
 				if((i=uselect(0,0,0,0,0))>=0)
-					putuserrec(&cfg,user->number,U_TMPEXT,3,ext_list[i]);
+					putuserstr(&cfg, user->number, USER_TMPEXT, ext_list[i]);
 				strListFree(&ext_list);
 				break;
 			}
@@ -1020,7 +959,7 @@ void sbbs_t::maindflts(user_t* user)
 				bputs(text[HowManyColumns]);
 				if((i = getnum(TERM_COLS_MAX)) < 0)
 					break;
-				putuserrec(&cfg,user->number,U_COLS,0,ultoa(i,tmp,10));
+				putuserdec32(&cfg, user->number, USER_COLS, i);
 				if(user==&useron) {
 					useron.cols = i;
 					ansi_getlines();
@@ -1028,7 +967,7 @@ void sbbs_t::maindflts(user_t* user)
 				bputs(text[HowManyRows]);
 				if((i = getnum(TERM_ROWS_MAX)) < 0)
 					break;
-				putuserrec(&cfg,user->number,U_ROWS,0,ultoa(i,tmp,10));
+				putuserdec32(&cfg, user->number, USER_ROWS, i);
 				if(user==&useron) {
 					useron.rows = i;
 					ansi_getlines();
@@ -1036,11 +975,11 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'P':
 				user->misc^=UPAUSE;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'H':
 				user->misc^=COLDKEYS;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'S':
 				user->misc^=SPIN;
@@ -1050,27 +989,27 @@ void sbbs_t::maindflts(user_t* user)
 					else
 						user->misc&=~NOPAUSESPIN;
 				}
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'F':
 				user->misc^=ANFSCAN;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'X':
 				user->misc^=EXPERT;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'R':   /* Remember current sub/dir */
 				user->misc^=CURSUB;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'Y':   /* Prompt for scanning message to you */
 				user->misc^=ASK_SSCAN;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'N':   /* Prompt for new message/files scanning */
 				user->misc^=ASK_NSCAN;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'M':   /* NetMail address */
 				bputs(text[EnterNetMailAddress]);
@@ -1080,20 +1019,20 @@ void sbbs_t::maindflts(user_t* user)
 				user->misc &= ~NETMAIL;
 				if(is_supported_netmail_addr(&cfg, user->netmail) && !noyes(text[ForwardMailQ]))
 					user->misc |= NETMAIL;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
-				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
+				putusermisc(&cfg, user->number, user->misc);
+				putuserstr(&cfg, user->number, USER_NETMAIL, user->netmail); 
 				break;
 			case 'C':
 				user->misc^=CLRSCRN;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'D':
 				user->misc^=QUIET;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'I':
 				user->misc^=AUTOLOGON;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			case 'W':
 				if(!noyes(text[NewPasswordQ])) {
@@ -1130,9 +1069,9 @@ void sbbs_t::maindflts(user_t* user)
 					}
 					if(!online)
 						break;
-					putuserrec(&cfg,user->number,U_PASS,LEN_PASS,str);
+					putuserstr(&cfg, user->number, USER_PASS, str);
 					now=time(NULL);
-					putuserrec(&cfg,user->number,U_PWMOD,8,ultoa((ulong)now,tmp,16));
+					putuserdatetime(&cfg, user->number, USER_PWMOD, now);
 					bputs(text[PasswordChanged]);
 					logline(LOG_NOTICE,nulstr,"changed password");
 				}
@@ -1157,15 +1096,18 @@ void sbbs_t::maindflts(user_t* user)
 				ch=(char)getkeys(str,0);
 				if(ch==quit_key() || sys_status&SS_ABORT) {
 					ch=' ';
-					putuserrec(&cfg,user->number,U_PROT,1,&ch); 
+					putuserstr(&cfg, user->number, USER_PROT, ""); 
 				}
-				else
-					putuserrec(&cfg,user->number,U_PROT,1,&ch);
+				else {
+					tmp[0] = ch;
+					tmp[1] = '\0';
+					putuserstr(&cfg, user->number, USER_PROT, tmp);
+				}
 				if(yesno(text[HangUpAfterXferQ]))
 					user->misc|=AUTOHANG;
 				else
 					user->misc&=~AUTOHANG;
-				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putusermisc(&cfg, user->number, user->misc);
 				break;
 			default:
 				clear_hotspots();
@@ -1175,8 +1117,7 @@ void sbbs_t::maindflts(user_t* user)
 }
 
 void sbbs_t::purgeuser(int usernumber)
-{
-	char str[128];
+{ 	char str[128];
 	user_t user;
 
 	user.number=usernumber;
@@ -1185,5 +1126,5 @@ void sbbs_t::purgeuser(int usernumber)
 	logentry("!*",str);
 	delallmail(usernumber, MAIL_ANY);
 	putusername(&cfg,usernumber,nulstr);
-	putuserrec(&cfg,usernumber,U_MISC,8,ultoa(user.misc|DELETED,str,16));
+	putusermisc(&cfg, usernumber, user.misc | DELETED);
 }

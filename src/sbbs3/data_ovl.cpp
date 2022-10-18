@@ -75,10 +75,10 @@ static void ProgressSearchingUsers(void* cbdata, int count, int total)
 /* 'del' is true if the search is to include deleted/inactive users			*/
 /* Returns the usernumber of the dupe if found, 0 if not                    */
 /****************************************************************************/
-uint sbbs_t::userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
+uint sbbs_t::finduserstr(uint usernumber, enum user_field fnum, const char* str
     ,bool del, bool next)
 {
-	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del, next, online == ON_REMOTE ? ProgressSearchingUsers : NULL, this);
+	uint i=::finduserstr(&cfg, usernumber, fnum, str, del, next, online == ON_REMOTE ? ProgressSearchingUsers : NULL, this);
 	if(online == ON_REMOTE)
 		bputs(text[SearchedForDupes]);
 	return(i);

@@ -209,10 +209,9 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				continue; 
 			}
 
-			getuserrec(&cfg,usernum,U_MISC,8,str);
-			misc=ahtoul(str);
+			misc = getusermisc(&cfg, usernum);
 			if(misc&NETMAIL && cfg.sys_misc&SM_FWDTONET) {
-				getuserrec(&cfg,usernum,U_NETMAIL,LEN_NETMAIL,str);
+				getuserstr(&cfg, usernum, USER_NETMAIL, str, sizeof(str));
 				qwktonetmail(qwk,(char*)block,str,hubnum+1);
 				continue; 
 			}

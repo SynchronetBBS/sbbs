@@ -288,8 +288,7 @@ void sbbs_t::multinodechat(int channel)
 						bprintf("\r\nAction commands are now %s\r\n"
 							,useron.chat&CHAT_ACTION
 							? text[ON]:text[OFF]);
-						putuserrec(&cfg,useron.number,U_CHAT,8
-							,ultoa(useron.chat,str,16));
+						putuserchat(&cfg, useron.number, useron.chat);
 						break;
 					case 'C':   /* List of action commands */
 						CRLF;
@@ -312,8 +311,7 @@ void sbbs_t::multinodechat(int channel)
 						bprintf(text[EchoIsNow]
 							,useron.chat&CHAT_ECHO
 							? text[ON]:text[OFF]);
-						putuserrec(&cfg,useron.number,U_CHAT,8
-							,ultoa(useron.chat,str,16));
+						putuserchat(&cfg, useron.number, useron.chat);
 						break;
 					case 'L':	/* list nodes */
 						CRLF;
@@ -448,8 +446,7 @@ void sbbs_t::multinodechat(int channel)
 								username(&cfg,node.useron,str);
 								if(!strnicmp(str,p,strlen(str)))
 									break;
-								getuserrec(&cfg,node.useron,U_HANDLE
-									,LEN_HANDLE,str);
+								getuserstr(&cfg, node.useron, USER_HANDLE, str, sizeof(str));
 								if(!strnicmp(str,p,strlen(str)))
 									break;
 							}
@@ -609,16 +606,14 @@ void sbbs_t::chatsection()
 		switch(ch) {
 			case 'S':
 				useron.chat^=CHAT_SPLITP;
-				putuserrec(&cfg,useron.number,U_CHAT,8
-					,ultoa(useron.chat,str,16));
+				putuserchat(&cfg, useron.number, useron.chat);
 				bprintf("\r\nPrivate split-screen chat is now: %s\r\n"
 					,useron.chat&CHAT_SPLITP ? text[ON]:text[OFF]);
 				break;
 			case 'A':
 				CRLF;
 				useron.chat^=CHAT_NOACT;
-				putuserrec(&cfg,useron.number,U_CHAT,8
-					,ultoa(useron.chat,str,16));
+				putuserchat(&cfg, useron.number, useron.chat);
 				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 					thisnode.misc^=NODE_AOFF;
 					printnodedat(cfg.node_num,&thisnode);
@@ -629,8 +624,7 @@ void sbbs_t::chatsection()
 			case 'D':
 				CRLF;
 				useron.chat^=CHAT_NOPAGE;
-				putuserrec(&cfg,useron.number,U_CHAT,8
-					,ultoa(useron.chat,str,16));
+				putuserchat(&cfg, useron.number, useron.chat);
 				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 					thisnode.misc^=NODE_POFF;
 					printnodedat(cfg.node_num,&thisnode);
@@ -1235,7 +1229,6 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	char	str[128];
 	char 	tmp[512];
 	uint 	i,j;
-	ulong	l;
 	node_t	node;
 
 	if(!lastnodemsg)
@@ -1300,7 +1293,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		return(-1);
 
 	if(str[0]=='\'') {
-		j=userdatdupe(0,U_HANDLE,LEN_HANDLE,str+1);
+		j=finduserstr(0, USER_HANDLE, str+1);
 		if(!j) {
 			bputs(text[UnknownUser]);
 			return(0); 
@@ -1314,9 +1307,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		return(0);
 	if(j>lastuser(&cfg))
 		return(0);
-	getuserrec(&cfg,j,U_MISC,8,tmp);
-	l=ahtoul(tmp);
-	if(l&(DELETED|INACTIVE)) {              /* Deleted or Inactive User */
+	if(getusermisc(&cfg, j) & (DELETED|INACTIVE)) {              /* Deleted or Inactive User */
 		bputs(text[UnknownUser]);
 		return(0); 
 	}

@@ -72,7 +72,7 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 		useron.number=matchuser(&cfg,username,FALSE);
 		if(!useron.number && (uchar)username[0]<0x7f && username[1]
 			&& IS_ALPHA(username[0]) && strchr(username,' ') && cfg.node_misc&NM_LOGON_R)
-			useron.number=userdatdupe(0,U_NAME,LEN_NAME,username);
+			useron.number = finduserstr(0, USER_NAME, username);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
 			if(useron.number && useron.misc&(DELETED|INACTIVE))

@@ -772,13 +772,13 @@ char *readline(long *offset, char *outstr, int maxlen, FILE *instream)
 }
 
 /****************************************************************************/
-/* Turns char string of flags into a long									*/
+/* Turns char string of flags into a uint32_t								*/
 /****************************************************************************/
-long aftol(char *str)
+uint32_t aftou32(const char *str)
 {
 	char	ch;
 	size_t	c=0;
-	ulong	l=0UL;
+	uint32_t l = 0;
 
 	while(str[c]) {
 		ch=toupper(str[c]);
@@ -792,12 +792,12 @@ long aftol(char *str)
 /*****************************************************************************/
 /* Converts a long into an ASCII Flag string (A-Z) that represents bits 0-25 */
 /*****************************************************************************/
-char *ltoaf(long l,char *str)
+char *u32toaf(uint32_t l,char *str)
 {
 	int	c=0;
 
 	while(c<26) {
-		if(l&(long)(1L<<c))
+		if(l & (1 << c))
 			str[c]='A'+c;
 		else str[c]=' ';
 		c++; 

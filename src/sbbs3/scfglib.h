@@ -49,8 +49,8 @@ void	free_file_cfg(scfg_t* cfg);
 void	free_msgs_cfg(scfg_t* cfg);
 void	free_chat_cfg(scfg_t* cfg);
 
-long	aftol(char *str);              /* Converts flag string to long */
-char*	ltoaf(long l, char *str);     /* Converts long to flag string */
+uint32_t aftou32(const char *str);      /* Converts flag string to uint32_t */
+char*	u32toaf(uint32_t t, char *str); /* Converts uint32_t to flag string */
 uint	attrstr(char *str);		/* Convert ATTR string into attribute int */
 
 int		getdirnum(scfg_t*, const char* code);

@@ -86,7 +86,7 @@ BOOL sbbs_t::newuser()
 	useron.prot=cfg.new_prot;
 	SAFECOPY(useron.comp,client_name);	/* hostname or CID name */
 	SAFECOPY(useron.ipaddr,cid);			/* IP address or CID number */
-	if((i=userdatdupe(0,U_IPADDR,LEN_IPADDR,cid, /* del */true))!=0) {	/* Duplicate IP address */
+	if((i=finduserstr(0, USER_IPADDR, cid, /* del */true))!=0) {	/* Duplicate IP address */
 		SAFEPRINTF2(useron.comment,"Warning: same IP address as user #%d %s"
 			,i,username(&cfg,i,str));
 		logline(LOG_NOTICE,"N!",useron.comment); 
@@ -200,7 +200,7 @@ BOOL sbbs_t::newuser()
 			getstr(useron.alias,LEN_ALIAS,kmode);
 			truncsp(useron.alias);
 			if (!check_name(&cfg,useron.alias)
-				|| userdatdupe(useron.number, U_NAME, LEN_NAME, useron.alias)
+				|| finduserstr(useron.number, USER_NAME, useron.alias)
 				|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,' '))) {
 				bputs(text[YouCantUseThatName]);
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
@@ -217,7 +217,7 @@ BOOL sbbs_t::newuser()
 				if (!check_name(&cfg,useron.name)
 					|| !strchr(useron.name,' ')
 					|| ((cfg.uq&UQ_DUPREAL)
-						&& userdatdupe(useron.number,U_NAME,LEN_NAME,useron.name)))
+						&& finduserstr(useron.number, USER_NAME, useron.name)))
 					bputs(text[YouCantUseThatName]);
 				else
 					break; 
@@ -235,7 +235,7 @@ BOOL sbbs_t::newuser()
 		}
 		if(!useron.name[0])
 			SAFECOPY(useron.name,useron.alias);
-		else if(!(cfg.uq&UQ_DUPREAL) && userdatdupe(useron.number,U_NAME,LEN_NAME,useron.name) > 0)
+		else if(!(cfg.uq&UQ_DUPREAL) && finduserstr(useron.number, USER_NAME, useron.name) > 0)
 			useron.rest |= FLAG('O'); // Can't post or send netmail using real name (it's a duplicate)
 		if(!online) return(FALSE);
 		if(!useron.handle[0])
@@ -246,7 +246,7 @@ BOOL sbbs_t::newuser()
 				,K_LINE|K_EDIT|K_AUTODEL|K_TRIM|(cfg.uq&UQ_NOEXASC))
 				|| strchr(useron.handle,0xff)
 				|| ((cfg.uq&UQ_DUPHAND)
-					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle))
+					&& finduserstr(0, USER_HANDLE, useron.handle))
 				|| trashcan(useron.handle,"name"))
 				bputs(text[YouCantUseThatName]);
 			else
@@ -324,7 +324,7 @@ BOOL sbbs_t::newuser()
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM) < 1
 				|| trashcan(useron.netmail,"email")
-				|| ((cfg.uq & UQ_DUPNETMAIL) && userdatdupe(useron.number, U_NETMAIL, LEN_NETMAIL, useron.netmail)))
+				|| ((cfg.uq & UQ_DUPNETMAIL) && finduserstr(useron.number, USER_NETMAIL, useron.netmail)))
 				bputs(text[YouCantUseThatNetmail]);
 			else
 				break;
@@ -471,9 +471,8 @@ BOOL sbbs_t::newuser()
         		bprintf(text[NoFeedbackWarning],username(&cfg,cfg.node_valuser,tmp));
 				logline(LOG_NOTICE,"N!","Aborted feedback");
 				hangup();
-				putuserrec(&cfg,useron.number,U_COMMENT,60,"Didn't leave feedback");
-				putuserrec(&cfg,useron.number,U_MISC,8
-					,ultoa(useron.misc|DELETED,tmp,16));
+				putuserstr(&cfg, useron.number, USER_COMMENT, "Didn't leave feedback");
+				putusermisc(&cfg, useron.number, useron.misc | DELETED);
 				putusername(&cfg,useron.number,nulstr);
 				return(FALSE); 
 			} 
