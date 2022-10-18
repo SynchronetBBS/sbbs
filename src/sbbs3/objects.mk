@@ -267,11 +267,6 @@ SLOG_OBJS = \
 			$(OBJODIR)/slog$(OFILE) \
 			$(OBJODIR)/nopen$(OFILE)
 
-ALLUSERS_OBJS = \
-			$(OBJODIR)/allusers$(OFILE) \
-			$(OBJODIR)/str_util$(OFILE) \
-			$(OBJODIR)/ars$(OFILE)
-
 DELFILES_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/delfiles$(OFILE) \
 			$(OBJODIR)/filedat$(OFILE) \
