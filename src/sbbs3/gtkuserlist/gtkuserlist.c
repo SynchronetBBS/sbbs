@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 	gtk_list_store_move_after(quickstore, &curr, 0);
 	for(i=0; i<10; i++) {
 		gtk_list_store_append(quickstore, &curr);
-		sprintf(str,"%-2d  SL: %-2d  F1: %s",i,cfg.val_level[i],ltoaf(cfg.val_flags1[i],flags));
+		sprintf(str,"%-2d  SL: %-2d  F1: %s",i,cfg.val_level[i],u32toaf(cfg.val_flags1[i],flags));
 		gtk_list_store_set(quickstore, &curr, 0, str, -1);
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(quickstore), &curr);
 	}
