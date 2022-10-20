@@ -1455,27 +1455,27 @@ int sbbs_t::exec(csi_t *csi)
 				switch(i) {
 					case '1':
 						useron.flags1^=FLAG(ch);
-						putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
+						putuserflags(useron.number, USER_FLAGS1, useron.flags1);
 						break;
 					case '2':
 						useron.flags2^=FLAG(ch);
-						putuserflags(&cfg, useron.number, USER_FLAGS2, useron.flags2);
+						putuserflags(useron.number, USER_FLAGS2, useron.flags2);
 						break;
 					case '3':
 						useron.flags3^=FLAG(ch);
-						putuserflags(&cfg, useron.number, USER_FLAGS3, useron.flags3);
+						putuserflags(useron.number, USER_FLAGS3, useron.flags3);
 						break;
 					case '4':
 						useron.flags4^=FLAG(ch);
-						putuserflags(&cfg, useron.number, USER_FLAGS4, useron.flags4);
+						putuserflags(useron.number, USER_FLAGS4, useron.flags4);
 						break;
 					case 'R':
 						useron.rest^=FLAG(ch);
-						putuserflags(&cfg, useron.number, USER_REST, useron.rest);
+						putuserflags(useron.number, USER_REST, useron.rest);
 						break;
 					case 'E':
 						useron.exempt^=FLAG(ch);
-						putuserflags(&cfg, useron.number, USER_EXEMPT, useron.exempt);
+						putuserflags(useron.number, USER_EXEMPT, useron.exempt);
 						break;
 					default:
 						errormsg(WHERE,ERR_CHK,"user flag type",*(csi->ip-2));
@@ -1619,7 +1619,7 @@ int sbbs_t::exec(csi_t *csi)
 				return(0);
 			case CS_SET_USER_LEVEL:
 				useron.level=*(csi->ip++);
-				putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level);
+				putuserdec32(useron.number, USER_LEVEL, useron.level);
 				return(0);
 			case CS_SET_USER_STRING:
 				csi->logic=LOGIC_FALSE;
@@ -1635,7 +1635,7 @@ int sbbs_t::exec(csi_t *csi)
 						if(i && i!=useron.number)
 							break;
 						sprintf(useron.alias,"%.*s",LEN_ALIAS,csi->str);
-						putuserstr(&cfg, useron.number, USER_ALIAS, useron.alias);
+						putuserstr(useron.number, USER_ALIAS, useron.alias);
 						putusername(&cfg,useron.number,useron.alias);
 						csi->logic=LOGIC_TRUE;
 						break;
@@ -1646,7 +1646,7 @@ int sbbs_t::exec(csi_t *csi)
 							&& finduserstr(useron.number, USER_NAME, csi->str))
 							break;
 						sprintf(useron.name,"%.*s",LEN_NAME,csi->str);
-						putuserstr(&cfg, useron.number, USER_NAME
+						putuserstr(useron.number, USER_NAME
 							,useron.name);
 						csi->logic=LOGIC_TRUE;
 						break;
@@ -1657,43 +1657,43 @@ int sbbs_t::exec(csi_t *csi)
 							&& finduserstr(useron.number, USER_HANDLE, csi->str))
 							break;
 						sprintf(useron.handle,"%.*s",LEN_HANDLE,csi->str);
-						putuserstr(&cfg, useron.number, USER_HANDLE
+						putuserstr(useron.number, USER_HANDLE
 							,useron.handle);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_COMPUTER:
 						sprintf(useron.comp,"%.*s",LEN_COMP,csi->str);
-						putuserstr(&cfg, useron.number, USER_HOST
+						putuserstr(useron.number, USER_HOST
 							,useron.comp);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_NOTE:
 						sprintf(useron.note,"%.*s",LEN_NOTE,csi->str);
-						putuserstr(&cfg, useron.number, USER_NOTE
+						putuserstr(useron.number, USER_NOTE
 							,useron.note);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_ADDRESS:
 						sprintf(useron.address,"%.*s",LEN_ADDRESS,csi->str);
-						putuserstr(&cfg, useron.number, USER_ADDRESS
+						putuserstr(useron.number, USER_ADDRESS
 							,useron.address);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_LOCATION:
 						sprintf(useron.location,"%.*s",LEN_LOCATION,csi->str);
-						putuserstr(&cfg, useron.number, USER_LOCATION
+						putuserstr(useron.number, USER_LOCATION
 							,useron.location);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_ZIPCODE:
 						sprintf(useron.zipcode,"%.*s",LEN_ZIPCODE,csi->str);
-						putuserstr(&cfg, useron.number, USER_ZIPCODE
+						putuserstr(useron.number, USER_ZIPCODE
 							,useron.zipcode);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_PASSWORD:
 						sprintf(useron.pass,"%.*s",LEN_PASS,csi->str);
-						putuserstr(&cfg, useron.number, USER_PASS
+						putuserstr(useron.number, USER_PASS
 							,useron.pass);
 						csi->logic=LOGIC_TRUE;
 						break;
@@ -1701,7 +1701,7 @@ int sbbs_t::exec(csi_t *csi)
 						if(!getage(&cfg,csi->str))
 							break;
 						sprintf(useron.birth,"%.*s",LEN_BIRTH,csi->str);
-						putuserstr(&cfg, useron.number, USER_BIRTH
+						putuserstr(useron.number, USER_BIRTH
 							,useron.birth);
 						csi->logic=LOGIC_TRUE;
 						break;
@@ -1709,31 +1709,31 @@ int sbbs_t::exec(csi_t *csi)
 						if(trashcan(csi->str,"phone"))
 							break;
 						sprintf(useron.phone,"%.*s",LEN_PHONE,csi->str);
-						putuserstr(&cfg, useron.number, USER_PHONE
+						putuserstr(useron.number, USER_PHONE
 							,useron.phone);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_MODEM:
 						sprintf(useron.modem,"%.*s",LEN_MODEM,csi->str);
-						putuserstr(&cfg, useron.number, USER_CONNECTION
+						putuserstr(useron.number, USER_CONNECTION
 							,useron.phone);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_IPADDR:
 						sprintf(useron.ipaddr,"%.*s",LEN_IPADDR,csi->str);
-						putuserstr(&cfg, useron.number, USER_IPADDR
+						putuserstr(useron.number, USER_IPADDR
 							,useron.phone);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_COMMENT:
 						sprintf(useron.comment,"%.*s",LEN_COMMENT,csi->str);
-						putuserstr(&cfg, useron.number, USER_COMMENT
+						putuserstr(useron.number, USER_COMMENT
 							,useron.comment);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_NETMAIL:
 						sprintf(useron.netmail,"%.*s",LEN_NETMAIL,csi->str);
-						putuserstr(&cfg, useron.number, USER_NETMAIL
+						putuserstr(useron.number, USER_NETMAIL
 							,useron.netmail);
 						csi->logic=LOGIC_TRUE;
 						break;
@@ -1899,7 +1899,7 @@ int sbbs_t::exec(csi_t *csi)
 					break;
 			if(i<cfg.total_shells) {
 				useron.shell=i;
-				putuserstr(&cfg, useron.number, USER_SHELL, cfg.shell[i]->code); 
+				putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code); 
 			}
 			else
 				csi->logic=LOGIC_FALSE;
@@ -1916,7 +1916,7 @@ int sbbs_t::exec(csi_t *csi)
 					break;
 			if(i<cfg.total_xedits) {
 				useron.xedit=i+1;
-				putuserstr(&cfg, useron.number, USER_XEDIT, cfg.xedit[i]->code);
+				putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code);
 			}
 			else
 				csi->logic=LOGIC_FALSE;
@@ -2026,7 +2026,7 @@ bool sbbs_t::select_shell(void)
 		uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
 	if((i=uselect(0,useron.shell,0,0,0))>=0) {
 		useron.shell=i;
-		putuserstr(&cfg, useron.number, USER_SHELL, cfg.shell[i]->code); 
+		putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code); 
 		return(true); 
 	}
 	return(false);
@@ -2041,7 +2041,7 @@ bool sbbs_t::select_editor(void)
 	if(useron.xedit) useron.xedit--;
 	if((i=uselect(0,useron.xedit,0,0,0))>=0) {
 		useron.xedit=i+1;
-		putuserstr(&cfg, useron.number, USER_XEDIT, cfg.xedit[i]->code); 
+		putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code); 
 		return(true);
 	}
 	return(false);

@@ -271,14 +271,14 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 					useron.rest|=cfg.expired_rest;
 					useron.expire=0; 
 				}
-				putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level);
-				putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
-				putuserflags(&cfg, useron.number, USER_FLAGS2, useron.flags2);
-				putuserflags(&cfg, useron.number, USER_FLAGS3, useron.flags3);
-				putuserflags(&cfg, useron.number, USER_FLAGS4, useron.flags4);
-				putuserdatetime(&cfg, useron.number, USER_EXPIRE, useron.expire);
-				putuserflags(&cfg, useron.number, USER_EXEMPT, useron.exempt);
-				putuserflags(&cfg, useron.number, USER_REST, useron.rest);
+				putuserdec32(useron.number, USER_LEVEL, useron.level);
+				putuserflags(useron.number, USER_FLAGS1, useron.flags1);
+				putuserflags(useron.number, USER_FLAGS2, useron.flags2);
+				putuserflags(useron.number, USER_FLAGS3, useron.flags3);
+				putuserflags(useron.number, USER_FLAGS4, useron.flags4);
+				putuserdatetime(useron.number, USER_EXPIRE, useron.expire);
+				putuserflags(useron.number, USER_EXEMPT, useron.exempt);
+				putuserflags(useron.number, USER_REST, useron.rest);
 				if(cfg.expire_mod[0])
 					exec_bin(cfg.expire_mod,&main_csi);
 				RESTORELINE;

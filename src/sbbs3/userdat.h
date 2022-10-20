@@ -29,7 +29,8 @@
 #include "dllexport.h"
 #include "userfields.h"
 
-#define USER_RECORD_LINE_LEN	1000					// includes LF terminator */
+#define USER_DATA_FILENAME		"user.tab"
+#define USER_RECORD_LINE_LEN	1000					// includes LF terminator
 #define USER_RECORD_LEN			(USER_RECORD_LINE_LEN - 1)	// does not include LF
 
 #ifdef __cplusplus

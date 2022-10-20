@@ -1017,12 +1017,12 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		if((file=nopen(path,O_RDONLY))!=-1) {
 			lseek(file,361,SEEK_SET);
 			read(file,&useron.flags1,4); /* Flags */
-			putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
+			putuserflags(useron.number, USER_FLAGS1, useron.flags1);
 			lseek(file,373,SEEK_SET);
 			read(file,&i,2);			/* SecLvl */
 			if(i<SYSOP_LEVEL) {
 				useron.level=(uint8_t)i;
-				putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level); 
+				putuserdec32(useron.number, USER_LEVEL, useron.level); 
 			}
 			close(file);
 			remove(path); 
@@ -1040,7 +1040,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				mod=atoi(str);
 				if(mod<SYSOP_LEVEL) {
 					useron.level=(char)mod;
-					putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level); 
+					putuserdec32(useron.number, USER_LEVEL, useron.level); 
 				} 
 			}
 
@@ -1049,7 +1049,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 					break;
 			if(i==23) { 					/* set main flags */
 				useron.flags1=aftou32(str);
-				putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1); 
+				putuserflags(useron.number, USER_FLAGS1, useron.flags1); 
 			}
 
 			for(;i<25;i++)
@@ -1061,7 +1061,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				&& (str[5]=='/' || str[5]=='-')
 				&& IS_DIGIT(str[6]) && IS_DIGIT(str[7])) { /* valid expire date */
 				useron.expire=(ulong)dstrtounix(&cfg,str);
-				putuserdatetime(&cfg, useron.number, USER_EXPIRE, useron.expire); 
+				putuserdatetime(useron.number, USER_EXPIRE, useron.expire); 
 			}
 
 			for(;i<29;i++)					/* line 29, total downloaded files */
@@ -1070,7 +1070,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			if(i==29) {
 				truncsp(str);
 				useron.dls=atoi(str);
-				putuserdec32(&cfg, useron.number, USER_DLS, useron.dls); 
+				putuserdec32(useron.number, USER_DLS, useron.dls); 
 			}
 
 			if(fgets(str,128,stream)) { 	/* line 30, Kbytes downloaded today */
@@ -1088,7 +1088,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 					break;
 			if(i==42 && IS_DIGIT(str[0])) {	/* Time Credits in Minutes */
 				useron.min=atol(str);
-				putuserdec32(&cfg, useron.number, USER_MIN, useron.min); 
+				putuserdec32(useron.number, USER_MIN, useron.min); 
 			}
 
 			fclose(stream); 
@@ -1108,13 +1108,13 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				i = LE_INT(i);
 				if(i<SYSOP_LEVEL) {
 					useron.level=(uint8_t)i;
-					putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level); 
+					putuserdec32(useron.number, USER_LEVEL, useron.level); 
 				}
 				lseek(file,75,SEEK_CUR);	/* read in expiration date */
 				read(file,&i,2);			/* convert from julian to unix */
 				i = LE_INT(i);
 				useron.expire=(ulong)juliantounix(i);
-				putuserdatetime(&cfg, useron.number, USER_EXPIRE, useron.expire); 
+				putuserdatetime(useron.number, USER_EXPIRE, useron.expire); 
 			}
 			close(file); 
 		}
@@ -1145,7 +1145,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			mod=atoi(str);
 			if(IS_DIGIT(str[0]) && mod<SYSOP_LEVEL) {
 				useron.level=(uchar)mod;
-				putuserdec32(&cfg, useron.number, USER_LEVEL, useron.level); 
+				putuserdec32(useron.number, USER_LEVEL, useron.level); 
 			} 
 		}
 		fgets(str,81,stream);		 /* was transfer level, now ignored */
@@ -1154,7 +1154,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				useron.flags1&=~aftou32(str);
 			else						/* add flags */
 				useron.flags1|=aftou32(str);
-			putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
+			putuserflags(useron.number, USER_FLAGS1, useron.flags1);
 		}
 
 		if(fgets(str,81,stream)) {		/* flags #2 */
@@ -1162,7 +1162,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				useron.flags2&=~aftou32(str);
 			else						/* add flags */
 				useron.flags2|=aftou32(str);
-			putuserflags(&cfg, useron.number, USER_FLAGS2, useron.flags2); 
+			putuserflags(useron.number, USER_FLAGS2, useron.flags2); 
 		}
 
 		if(fgets(str,81,stream)) {		/* exemptions */
@@ -1170,18 +1170,18 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				useron.exempt&=~aftou32(str);
 			else
 				useron.exempt|=aftou32(str);
-			putuserflags(&cfg, useron.number, USER_EXEMPT, useron.exempt);
+			putuserflags(useron.number, USER_EXEMPT, useron.exempt);
 		}
 		if(fgets(str,81,stream)) {		/* restrictions */
 			if(strchr(str,'-'))
 				useron.rest&=~aftou32(str);
 			else
 				useron.rest|=aftou32(str);
-			putuserflags(&cfg, useron.number, USER_REST, useron.rest);
+			putuserflags(useron.number, USER_REST, useron.rest);
 		}
 		if(fgets(str,81,stream)) {		/* Expiration date */
 			if(isxdigit(str[0]))
-				putuserdatetime(&cfg, useron.number, USER_EXPIRE, ahtoul(str)); 
+				putuserdatetime(useron.number, USER_EXPIRE, ahtoul(str)); 
 		}
 		if(fgets(str,81,stream)) {		/* additional minutes */
 			mod=atol(str);
@@ -1196,7 +1196,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				useron.flags3&=~aftou32(str);
 			else						/* add flags */
 				useron.flags3|=aftou32(str);
-			putuserflags(&cfg, useron.number, USER_FLAGS3, useron.flags3);
+			putuserflags(useron.number, USER_FLAGS3, useron.flags3);
 		}
 
 		if(fgets(str,81,stream)) {		/* flags #4 */
@@ -1204,32 +1204,32 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				useron.flags4&=~aftou32(str);
 			else						/* add flags */
 				useron.flags4|=aftou32(str);
-			putuserflags(&cfg, useron.number, USER_FLAGS4, useron.flags4); 
+			putuserflags(useron.number, USER_FLAGS4, useron.flags4); 
 		}
 
 		if(fgets(str,81,stream)) {		/* flags #1 to REMOVE only */
 			useron.flags1&=~aftou32(str);
-			putuserflags(&cfg, useron.number, USER_FLAGS1, useron.flags1);
+			putuserflags(useron.number, USER_FLAGS1, useron.flags1);
 		}
 		if(fgets(str,81,stream)) {		/* flags #2 to REMOVE only */
 			useron.flags2&=~aftou32(str);
-			putuserflags(&cfg, useron.number, USER_FLAGS2, useron.flags2);
+			putuserflags(useron.number, USER_FLAGS2, useron.flags2);
 		}
 		if(fgets(str,81,stream)) {		/* flags #3 to REMOVE only */
 			useron.flags3&=~aftou32(str);
-			putuserflags(&cfg, useron.number, USER_FLAGS3, useron.flags3);
+			putuserflags(useron.number, USER_FLAGS3, useron.flags3);
 		}
 		if(fgets(str,81,stream)) {		/* flags #4 to REMOVE only */
 			useron.flags4&=~aftou32(str);
-			putuserflags(&cfg, useron.number, USER_FLAGS4, useron.flags4);
+			putuserflags(useron.number, USER_FLAGS4, useron.flags4);
 		}
 		if(fgets(str,81,stream)) {		/* exemptions to remove */
 			useron.exempt&=~aftou32(str);
-			putuserflags(&cfg, useron.number, USER_EXEMPT, useron.exempt);
+			putuserflags(useron.number, USER_EXEMPT, useron.exempt);
 		}
 		if(fgets(str,81,stream)) {		/* restrictions to remove */
 			useron.rest&=~aftou32(str);
-			putuserflags(&cfg, useron.number, USER_REST, useron.rest);
+			putuserflags(useron.number, USER_REST, useron.rest);
 		}
 
 		fclose(stream);
@@ -1358,7 +1358,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		thisnode.aux=xtrnnum+1;
 		putnodedat(cfg.node_num,&thisnode);
 	}
-	putuserstr(&cfg, useron.number, USER_CURXTRN, cfg.xtrn[xtrnnum]->code);
+	putuserstr(useron.number, USER_CURXTRN, cfg.xtrn[xtrnnum]->code);
 
 	if(cfg.xtrn[xtrnnum]->misc&REALNAME) {
 		SAFECOPY(name,useron.name);

@@ -4528,7 +4528,7 @@ void sbbs_t::daily_maint(void)
 
 	if(cfg.user_backup_level) {
 		lputs(LOG_INFO,"DAILY: Backing-up user data...");
-		SAFEPRINTF(str,"%suser/user.dat",cfg.data_dir);
+		SAFEPRINTF(str,"%suser/" USER_DATA_FILENAME, cfg.data_dir);
 		backup(str,cfg.user_backup_level,FALSE);
 		SAFEPRINTF(str,"%suser/name.dat",cfg.data_dir);
 		backup(str,cfg.user_backup_level,FALSE);
@@ -4583,7 +4583,7 @@ void sbbs_t::daily_maint(void)
 		}
 
 		/***********************************************/
-		/* Fix name (name.dat and user.dat) mismatches */
+		/* Fix name (name.dat and user.tab) mismatches */
 		/***********************************************/
 		username(&cfg,user.number,uname);
 		if(user.misc&DELETED) {
@@ -4631,14 +4631,14 @@ void sbbs_t::daily_maint(void)
 				user.rest|=cfg.expired_rest;
 				user.expire=0;
 			}
-			putuserdec32(&cfg, user.number, USER_LEVEL, user.level);
-			putuserflags(&cfg, user.number, USER_FLAGS1, user.flags1);
-			putuserflags(&cfg, user.number, USER_FLAGS2, user.flags2);
-			putuserflags(&cfg, user.number, USER_FLAGS3, user.flags3);
-			putuserflags(&cfg, user.number, USER_FLAGS4, user.flags4);
-			putuserdatetime(&cfg, user.number, USER_EXPIRE, user.expire);
-			putuserflags(&cfg, user.number, USER_EXEMPT, user.exempt);
-			putuserflags(&cfg, user.number, USER_REST, user.rest);
+			putuserdec32(user.number, USER_LEVEL, user.level);
+			putuserflags(user.number, USER_FLAGS1, user.flags1);
+			putuserflags(user.number, USER_FLAGS2, user.flags2);
+			putuserflags(user.number, USER_FLAGS3, user.flags3);
+			putuserflags(user.number, USER_FLAGS4, user.flags4);
+			putuserdatetime(user.number, USER_EXPIRE, user.expire);
+			putuserflags(user.number, USER_EXEMPT, user.exempt);
+			putuserflags(user.number, USER_REST, user.rest);
 			if(cfg.expire_mod[0]) {
 				useron=user;
 				online=ON_LOCAL;
@@ -4659,7 +4659,7 @@ void sbbs_t::daily_maint(void)
 			lputs(LOG_NOTICE, str);
 			delallmail(user.number, MAIL_ANY);
 			putusername(&cfg,user.number,nulstr);
-			putusermisc(&cfg, user.number, user.misc | DELETED);
+			putusermisc(user.number, user.misc | DELETED);
 		}
 	}
 	closeuserdat(userfile);

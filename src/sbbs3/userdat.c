@@ -54,7 +54,7 @@ static const char user_field_separator[2] = { USER_FIELD_SEPARATOR, '\0' };
 
 char* userdat_filename(scfg_t* cfg, char* path, size_t size)
 {
-	safe_snprintf(path, size, "%suser/user.tab", cfg->data_dir);
+	safe_snprintf(path, size, "%suser/" USER_DATA_FILENAME, cfg->data_dir);
 	return path;
 }
 
@@ -175,7 +175,7 @@ uint total_users(scfg_t* cfg)
 }
 
 /****************************************************************************/
-/* Returns the number of the last user in user.dat (deleted ones too)		*/
+/* Returns the number of the last user in user.tab (deleted ones too)		*/
 /****************************************************************************/
 uint lastuser(scfg_t* cfg)
 {

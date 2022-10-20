@@ -288,7 +288,7 @@ void sbbs_t::multinodechat(int channel)
 						bprintf("\r\nAction commands are now %s\r\n"
 							,useron.chat&CHAT_ACTION
 							? text[ON]:text[OFF]);
-						putuserchat(&cfg, useron.number, useron.chat);
+						putuserchat(useron.number, useron.chat);
 						break;
 					case 'C':   /* List of action commands */
 						CRLF;
@@ -311,7 +311,7 @@ void sbbs_t::multinodechat(int channel)
 						bprintf(text[EchoIsNow]
 							,useron.chat&CHAT_ECHO
 							? text[ON]:text[OFF]);
-						putuserchat(&cfg, useron.number, useron.chat);
+						putuserchat(useron.number, useron.chat);
 						break;
 					case 'L':	/* list nodes */
 						CRLF;
@@ -606,14 +606,14 @@ void sbbs_t::chatsection()
 		switch(ch) {
 			case 'S':
 				useron.chat^=CHAT_SPLITP;
-				putuserchat(&cfg, useron.number, useron.chat);
+				putuserchat(useron.number, useron.chat);
 				bprintf("\r\nPrivate split-screen chat is now: %s\r\n"
 					,useron.chat&CHAT_SPLITP ? text[ON]:text[OFF]);
 				break;
 			case 'A':
 				CRLF;
 				useron.chat^=CHAT_NOACT;
-				putuserchat(&cfg, useron.number, useron.chat);
+				putuserchat(useron.number, useron.chat);
 				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 					thisnode.misc^=NODE_AOFF;
 					printnodedat(cfg.node_num,&thisnode);
@@ -624,7 +624,7 @@ void sbbs_t::chatsection()
 			case 'D':
 				CRLF;
 				useron.chat^=CHAT_NOPAGE;
-				putuserchat(&cfg, useron.number, useron.chat);
+				putuserchat(useron.number, useron.chat);
 				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 					thisnode.misc^=NODE_POFF;
 					printnodedat(cfg.node_num,&thisnode);
