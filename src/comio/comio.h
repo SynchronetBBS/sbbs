@@ -131,6 +131,7 @@ COMIOEXPORT size_t		comReadLine(COM_HANDLE, char* buf, size_t buflen
 							,int timeout /* in milliseconds */);
 COMIOEXPORT BOOL		comPurgeInput(COM_HANDLE);
 COMIOEXPORT BOOL		comPurgeOutput(COM_HANDLE);
+COMIOEXPORT BOOL		comDrainOutput(COM_HANDLE);
 COMIOEXPORT BOOL		comSetParity(COM_HANDLE, BOOL enable, BOOL odd);
 COMIOEXPORT BOOL		comSetBits(COM_HANDLE, size_t byteSize, size_t stopBits);
 

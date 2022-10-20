@@ -170,16 +170,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 			return(false); 
 	}
 
-	for(i=0;i<cfg.total_faddrs;i++)
-		if(dest_addr.zone==cfg.faddr[i].zone && dest_addr.net==cfg.faddr[i].net)
-			break;
-	if(i==cfg.total_faddrs) {
-		for(i=0;i<cfg.total_faddrs;i++)
-			if(dest_addr.zone==cfg.faddr[i].zone)
-				break; 
-	}
-	if(i >= cfg.total_faddrs)
-		i=0;
+	i = nearest_sysfaddr_index(&cfg, &dest_addr);
 
 	if((cfg.netmail_misc&NMAIL_CHSRCADDR) && cfg.total_faddrs > 1) {
 		for(uint j=0; j < cfg.total_faddrs; j++)
