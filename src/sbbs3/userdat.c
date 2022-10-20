@@ -191,7 +191,7 @@ uint lastuser(scfg_t* cfg)
 }
 
 /****************************************************************************/
-/* Deletes (completely removes) last user record in user.dat				*/
+/* Deletes (completely removes) last user record in userbase				*/
 /****************************************************************************/
 BOOL del_lastuser(scfg_t* cfg)
 {
@@ -270,7 +270,7 @@ BOOL unlockuserdat(int file, unsigned user_number)
 }
 
 /****************************************************************************/
-/* Locks and reads a single user record from an open user.dat file into a	*/
+/* Locks and reads a single user record from an open userbase file into a	*/
 /* buffer of USER_RECORD_LINE_LEN in size.									*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
@@ -347,7 +347,7 @@ static time32_t parse_usertime(const char* str)
 
 /****************************************************************************/
 /* Fills the structure 'user' with info for user.number	from userdat		*/
-/* (a buffer representing a single user 'record' from the user.dat file		*/
+/* (a buffer representing a single user 'record' from the userbase file		*/
 /****************************************************************************/
 int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 {
@@ -465,7 +465,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 }
 
 /****************************************************************************/
-/* Fills the structure 'user' with info for user.number	from user.dat file	*/
+/* Fills the structure 'user' with info for user.number	from userbase file	*/
 /****************************************************************************/
 int getuserdat(scfg_t* cfg, user_t *user)
 {
@@ -491,7 +491,7 @@ int getuserdat(scfg_t* cfg, user_t *user)
 	return retval;
 }
 
-/* Fast getuserdat() (leaves user.dat file open) */
+/* Fast getuserdat() (leaves userbase file open) */
 int fgetuserdat(scfg_t* cfg, user_t *user, int file)
 {
 	int		retval;
@@ -729,7 +729,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 }
 
 /****************************************************************************/
-/* Writes into user.number's slot in user.dat data in structure 'user'      */
+/* Writes into user.number's slot in userbase data in structure 'user'      */
 /* Called from functions newuser, useredit and main                         */
 /****************************************************************************/
 int putuserdat(scfg_t* cfg, user_t* user)
