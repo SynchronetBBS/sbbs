@@ -814,6 +814,7 @@ void printf_trunc(char *dst, size_t dstsz, char *fmt, char *path)
 			mangled[remain_len - 3] = '.';
 			mangled[remain_len - 4] = '.';
 			sprintf(dst, fmt, mangled);
+			free(mangled);
 		}
 		else
 			sprintf(dst, fmt, "<Long>");
@@ -2085,7 +2086,7 @@ static bool edit_comment(struct bbslist *list, char *listpath)
 	str_list_t inifile = NULL;
 	int ch;
 	bool ret = false;
-	char *old;
+	char *old = NULL;
 	int i;
 
 	if (list == NULL)
@@ -2136,6 +2137,7 @@ static bool edit_comment(struct bbslist *list, char *listpath)
 	}
 
 done:
+	free(old);
 	if (inifile != NULL) {
 		if ((listfile = fopen(listpath,"w")) != NULL) {
 			iniWriteFile(listfile, inifile);
