@@ -700,6 +700,16 @@ public:
 	uint	getusrdir(uint dirnum);
 	uint	getusrlib(uint dirnum);
 
+	bool	putuserstr(int usernumber, enum user_field, const char *str);
+	bool	putuserdatetime(int usernumber, enum user_field, time_t t);
+	bool	putuserflags(int usernumber, enum user_field, uint32_t flags);
+	bool	putuserhex32(int usernumber, enum user_field, uint32_t value);
+	bool	putuserdec32(int usernumber, enum user_field, uint32_t value);
+	bool	putuserdec64(int usernumber, enum user_field, uint64_t value);
+	bool	putusermisc(int usernumber, uint32_t value);
+	bool	putuserchat(int usernumber, uint32_t value);
+	bool	putuserqwk(int usernumber, uint32_t value);
+
 	uint	finduserstr(uint usernumber, enum user_field, const char* str
 				,bool del=false, bool next=false);
 	ulong	gettimeleft(bool handle_out_of_time=true);

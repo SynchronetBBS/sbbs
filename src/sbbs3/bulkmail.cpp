@@ -154,8 +154,8 @@ bool sbbs_t::bulkmail(uchar *ar)
 		return(false);
 	}
 
-	putuserdec32(&cfg, useron.number, USER_EMAILS, useron.emails);
-	putuserdec32(&cfg, useron.number, USER_ETODAY, useron.etoday);
+	putuserdec32(useron.number, USER_EMAILS, useron.emails);
+	putuserdec32(useron.number, USER_ETODAY, useron.etoday);
 
 	return(true);
 }
