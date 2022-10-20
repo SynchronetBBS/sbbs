@@ -1231,9 +1231,9 @@ void sbbs_t::change_user(void)
 		}
 	}
 	putmsgptrs();
-	putuserstr(&cfg, useron.number, USER_CURSUB
+	putuserstr(useron.number, USER_CURSUB
 		,cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
-	putuserstr(&cfg, useron.number, USER_CURDIR
+	putuserstr(useron.number, USER_CURDIR
 		,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
 	useron.number=i;
 	getuserdat(&cfg,&useron);

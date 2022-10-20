@@ -296,7 +296,7 @@ bool sbbs_t::logon()
 			}
 			SAFECOPY(useron.pass,str);
 			useron.pwmod=time32(NULL);
-			putuserdatetime(&cfg, useron.number, USER_PWMOD, useron.pwmod);
+			putuserdatetime(useron.number, USER_PWMOD, useron.pwmod);
 			bputs(text[PasswordChanged]);
 			pause(); 
 		}

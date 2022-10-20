@@ -507,7 +507,7 @@ void sbbs_t::qwk_sec()
 						s=uselect(0,0,0,0,0);
 						if(s>=0) {
 							SAFECOPY(useron.tmpext, ext_list[s]);
-							putuserstr(&cfg, useron.number, USER_TMPEXT, useron.tmpext);
+							putuserstr(useron.number, USER_TMPEXT, useron.tmpext);
 						}
 						strListFree(&ext_list);
 						break;
@@ -562,7 +562,7 @@ void sbbs_t::qwk_sec()
 						useron.qwk^=QWK_UTF8;
 						break;
 				}
-				putuserqwk(&cfg, useron.number, useron.qwk);
+				putuserqwk(useron.number, useron.qwk);
 			}
 			delfiles(cfg.temp_dir,ALLFILES);
 			clear_hotspots();
@@ -905,7 +905,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	}
 
 	if(qwk!=useron.qwk)
-		putuserqwk(&cfg, useron.number, useron.qwk);
+		putuserqwk(useron.number, useron.qwk);
 }
 
 
@@ -915,7 +915,7 @@ bool sbbs_t::set_qwk_flag(ulong flag)
 		return true;
 	useron.qwk = getuserqwk(&cfg, useron.number);
 	useron.qwk|=flag;
-	return putuserqwk(&cfg, useron.number, useron.qwk) == 0;
+	return putuserqwk(useron.number, useron.qwk) == 0;
 }
 
 /****************************************************************************/

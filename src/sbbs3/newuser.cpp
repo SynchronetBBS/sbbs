@@ -471,8 +471,8 @@ BOOL sbbs_t::newuser()
         		bprintf(text[NoFeedbackWarning],username(&cfg,cfg.node_valuser,tmp));
 				logline(LOG_NOTICE,"N!","Aborted feedback");
 				hangup();
-				putuserstr(&cfg, useron.number, USER_COMMENT, "Didn't leave feedback");
-				putusermisc(&cfg, useron.number, useron.misc | DELETED);
+				putuserstr(useron.number, USER_COMMENT, "Didn't leave feedback");
+				putusermisc(useron.number, useron.misc | DELETED);
 				putusername(&cfg,useron.number,nulstr);
 				return(FALSE); 
 			} 
