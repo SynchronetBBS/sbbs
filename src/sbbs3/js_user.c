@@ -1365,7 +1365,7 @@ static jsSyncMethodSpec js_user_functions[] = {
 	,31401
 	},
 	{"close",			js_user_close,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("Close the <tt>user.dat</tt> file, if open. The file will be auto-reopened if necessary.")
+	,JSDOCSTR("Close the <tt>user.tab</tt> file, if open. The file will be auto-reopened if necessary.")
 	,31902
 	},
 	{0}
