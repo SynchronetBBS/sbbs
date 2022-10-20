@@ -1793,7 +1793,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_close(&ctx, digest);
 	MD5_hex(ha2, digest);
 
-	/* Check password as in user.dat */
+	/* Check password as in user base */
 	calculate_digest(session, ha1, ha2, digest);
 	if(thisuser.pass[0]) {	// Zero-length password is "special" (any password will work)
 		if(memcmp(digest, session->req.auth.digest, sizeof(digest))) {
