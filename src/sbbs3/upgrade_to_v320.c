@@ -420,6 +420,7 @@ bool upgrade_users(bool verify)
 	uint last = v31x_lastuser(&scfg);
 	uint largest = 0;
 	size_t maxlen = 0;
+	size_t total_bytes = 0;
 	char userdat[USER_RECORD_LINE_LEN];
 	char path[MAX_PATH + 1];
 	SAFEPRINTF(path, "%suser/user.tab", scfg.data_dir);
@@ -455,6 +456,7 @@ bool upgrade_users(bool verify)
 			maxlen = len;
 			largest = user.number;
 		}
+		total_bytes += len;
 		if(verify) {
 			user_t new;
 			ZERO_VAR(new);
@@ -478,8 +480,9 @@ bool upgrade_users(bool verify)
 	fclose(out);
 
 	time_t diff = time(NULL) - start;
-	printf("%u users converted successfully (%lu users/second), largest (#%u) = %u bytes\n"
-		,total_users, (ulong)(diff ? total_users / diff : total_users), largest, (unsigned)maxlen);
+	printf("%u users converted successfully (%lu users/second), largest (#%u) = %u bytes, avg = %u bytes\n"
+		,total_users, (ulong)(diff ? total_users / diff : total_users), largest, (unsigned)maxlen
+		,(unsigned int)total_bytes / total_users);
 
 	return result;
 }
