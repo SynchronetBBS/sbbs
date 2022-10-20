@@ -186,7 +186,7 @@ uint lastuser(scfg_t* cfg)
 		return(0);
 
 	if((length = flength(userdat_filename(cfg, path, sizeof(path)))) > 0)
-		return (uint)(length / USER_RECORD_LEN);
+		return (uint)(length / USER_RECORD_LINE_LEN);
 	return 0;
 }
 
@@ -204,11 +204,11 @@ BOOL del_lastuser(scfg_t* cfg)
 	if((file=openuserdat(cfg, /* for_modify: */TRUE)) < 0)
 		return(FALSE);
 	length = filelength(file);
-	if(length < USER_RECORD_LEN) {
+	if(length < USER_RECORD_LINE_LEN) {
 		close(file);
 		return(FALSE);
 	}
-	chsize(file, (long)length - USER_RECORD_LEN);
+	chsize(file, (long)length - USER_RECORD_LINE_LEN);
 	close(file);
 	return(TRUE);
 }
@@ -749,7 +749,7 @@ int putuserdat(scfg_t* cfg, user_t* user)
 	if((file=openuserdat(cfg, /* for_modify: */TRUE)) < 0)
 		return(errno);
 
-	if(filelength(file)<((off_t)user->number-1) * USER_RECORD_LEN) {
+	if(filelength(file)<((off_t)user->number - 1) * USER_RECORD_LINE_LEN) {
 		close(file);
 		return(-4);
 	}
@@ -1445,7 +1445,7 @@ uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
 
 	if((file=openuserdat(cfg, /* for_modify: */FALSE)) == -1)
 		return(0);
-	int last = (int)filelength(file) / USER_RECORD_LEN;
+	int last = (int)filelength(file) / USER_RECORD_LINE_LEN;
 	if(usernumber && next)
 		unum = usernumber;
 	else
