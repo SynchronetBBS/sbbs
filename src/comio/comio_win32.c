@@ -252,3 +252,8 @@ BOOL comPurgeOutput(COM_HANDLE handle)
 	return PurgeComm(handle, PURGE_TXCLEAR);
 }
 
+BOOL comDrainOutput(COM_HANDLE handle)
+{
+	return FlushFileBuffers(handle);
+}
+

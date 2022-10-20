@@ -277,8 +277,8 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	int oldscroll;
 	int olddmc=hold_update;
 	struct	text_info txtinfo;
-	int now;
-	static int lastupd=0;
+	time_t now;
+	static time_t lastupd=0;
 	static int oldspeed=0;
 	int	timeon;
 	char sep;
@@ -316,7 +316,12 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	}
 	lastupd=now;
 	oldspeed=speed;
-	timeon=now - bbs->connected;
+	if (now > (bbs->connected + 359999))
+		timeon = 350000;
+	else if (now < bbs->connected)
+		timeon = 0;
+	else
+		timeon=(int)(now - bbs->connected);
 	gettextinfo(&txtinfo);
 	oldscroll=_wscroll;
 	hold_update=TRUE;
@@ -1276,7 +1281,8 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 {
 	uint64_t	total_blocks;
 	unsigned	cps;
-	int			l;
+	int		i;
+	uint64_t	l;
 	time_t		t;
 	time_t		now;
 	static time_t last_progress;
@@ -1312,7 +1318,7 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 				,offset);
 			clreol();
 			cputs("\r\n");
-			cprintf("Time: %lu:%02lu/%lu:%02lu  %u cps"
+			cprintf("Time: %lu:%02lu/%" PRIu64 ":%02" PRIu64 "  %u cps"
 				,(ulong)(t/60L)
 				,(ulong)(t%60L)
 				,(ulong)(l/60L)
@@ -1323,15 +1329,19 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 			cputs("\r\n");
 			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-5, ""
 				,fsize?(long)(((float)offset/(float)fsize)*100.0):100);
-			l = fsize?(long)(((float)offset/(float)fsize)*60.0):60;
-			cprintf("[%*.*s%*s]", l, l,
+			i = fsize?(((float)offset/(float)fsize)*60.0):60;
+			if (i < 0)
+				i = 0;
+			else if (i > 60)
+				i = 60;
+			cprintf("[%*.*s%*s]", i, i,
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-					, 60-l, "");
+					, 60-i, "");
 		} else if((*(xm->mode))&YMODEM) {
 			cprintf("Block (%lu%s): %lu  Byte: %"PRId64
 				,xm->block_size%1024L ? xm->block_size: xm->block_size/1024L
@@ -1350,15 +1360,19 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 			cputs("\r\n");
 			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-5, ""
 				,fsize?(long)(((float)offset/(float)fsize)*100.0):100);
-			l = fsize?(long)(((float)offset/(float)fsize)*60.0):60;
-			cprintf("[%*.*s%*s]", l, l,
+			i = fsize?(long)(((float)offset/(float)fsize)*60.0):60;
+			if (i < 0)
+				i = 0;
+			else if (i > 60)
+				i = 60;
+			cprintf("[%*.*s%*s]", i, i,
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-					, 60-l, "");
+					, 60-i, "");
 		} else { /* XModem receive */
 			cprintf("Block (%lu%s): %lu  Byte: %"PRId64
 				,xm->block_size%1024L ? xm->block_size: xm->block_size/1024L
