@@ -17,7 +17,7 @@ SOCKET rlogin_sock=INVALID_SOCKET;
 #endif
 void rlogin_input_thread(void *args)
 {
-	int		rd;
+	int		rd = 0;
 	int	buffered;
 	size_t	buffer;
 

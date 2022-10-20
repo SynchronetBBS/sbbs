@@ -165,7 +165,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		GetShortPathName(cfg.exec_dir,exec_dir,sizeof(exec_dir));
 		GetShortPathName(cfg.text_dir,text_dir,sizeof(text_dir));
 		GetShortPathName(cfg.temp_dir,temp_dir,sizeof(temp_dir));
-#elif defined(__linux__) && defined(USE_DOSEMU)
+#elif defined(__linux__)
 		/* These drive mappings must match the Linux/DOSEMU patch in xtrn.cpp: */
 		SAFECOPY(node_dir, DOSEMU_NODE_DIR);
 		SAFECOPY(ctrl_dir, DOSEMU_CTRL_DIR);

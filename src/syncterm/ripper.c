@@ -7733,7 +7733,7 @@ unmap_rip_x(int x)
 			rip.xunmap[i] = roundl(((double)i) * rip.x_dim / rip.x_max);
 	}
 	if (x >= rip.x_dim)
-		x = rip.x_dim;
+		x = rip.x_dim - 1;
 	return rip.xunmap[x];
 }
 
@@ -7754,7 +7754,7 @@ unmap_rip_y(int y)
 			rip.yunmap[i] = roundl(((double)i) * rip.y_dim / rip.y_max);
 	}
 	if (y >= rip.y_dim)
-		y = rip.y_dim;
+		y = rip.y_dim - 1;
 	return rip.yunmap[y];
 }
 
@@ -10164,6 +10164,7 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 	for (j = 2; j < i; j += 2) {
 		set_line(targets[j - 2], targets[j - 1], targets[j], targets[j + 1], fg, rip.line_pattern, rip.line_width);
 	}
+	free(targets);
 }
 
 static void
