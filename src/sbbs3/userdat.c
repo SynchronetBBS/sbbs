@@ -151,6 +151,7 @@ uint total_users(scfg_t* cfg)
 {
     uint	total_users=0;
 	int		file;
+	bool	success = true;
 
 	if(!VALID_CFG(cfg))
 		return(0);
@@ -158,7 +159,7 @@ uint total_users(scfg_t* cfg)
 	if((file=openuserdat(cfg, /* for_modify: */FALSE)) < 0)
 		return 0;
 
-	for(int usernumber = 1;; usernumber++) {
+	for(int usernumber = 1; success; usernumber++) {
 		char userdat[USER_RECORD_LEN + 1];
 		if(!lockuserdat(file, usernumber))
 			break;
@@ -167,7 +168,8 @@ uint total_users(scfg_t* cfg)
 			split_userdat(userdat, field);
 			if(!(ahtou32(field[USER_MISC]) & (DELETED|INACTIVE)))
 				total_users++;
-		}
+		} else
+			success = false;
 		unlockuserdat(file, usernumber);
 	}
 
