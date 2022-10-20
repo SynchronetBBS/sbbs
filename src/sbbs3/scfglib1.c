@@ -122,7 +122,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->min_pwlen = MIN_PASS_LEN;
 	if(cfg->min_pwlen > LEN_PASS)
 		cfg->min_pwlen = LEN_PASS;
-	cfg->max_log_size = iniGetUInt32(ini, ROOT_SECTION, "max_log_size", 0);
+	cfg->max_log_size = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "max_log_size", 1, 0);
 	cfg->max_logs_kept = iniGetUInt16(ini, ROOT_SECTION, "max_logs_kept", 0);
 	cfg->ctrlkey_passthru = iniGetInteger(ini, ROOT_SECTION, "ctrlkey_passthru", 0);
 

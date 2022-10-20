@@ -1,6 +1,4 @@
-// $Id: init-fidonet.js,v 1.29 2020/05/12 17:23:30 rswindell Exp $
-
-// Initial FidoNet setup script - interactive, run via JSexec or ;exec
+// $Id: init-fidonet.tup script - interactive, run via JSexec or ;exec
 
 // usage: init-fidonet.js [zone | othernet-name] [http://path/to/echolist.na]
 
@@ -22,7 +20,7 @@
 
 "use strict";
 
-const REVISION = "$Revision: 1.30 $".split(' ')[1];
+const REVISION = "2.0;
 require('sbbsdefs.js', 'SUB_NAME');
 const temp_node = 9999;
 var netname;
@@ -472,10 +470,9 @@ if(netname) {
 } else
 	alert("Unrecognized network zone: " + netzone);
 
-print("Reading Message Area configuration file: msgs.cnf");
-var cnflib = load({}, "cnflib.js");
-var msgs_cnf = cnflib.read("msgs.cnf");
-if(!msgs_cnf) {
+var msgs_ini = new File(system.ctrl_dir + "msgs.ini");
+print("Reading Message Area configuration file: " + msgs_ini.name);
+if(!f.open(f.exists ? 'r+':'w+')) {
 	alert("Failed to read msgs.cnf");
 	exit(1);
 }
@@ -602,36 +599,32 @@ if(your.node === temp_node && network.email && network.email.indexOf('@') > 0
 }
 
 if(!find_sys_addr(fidoaddr.to_str(your))
-	&& confirm("Add node address " + fidoaddr.to_str(your) + " to your configuration"))
-	msgs_cnf.fido_addr_list.push(your);
-
-if(!msgs_cnf.fido_default_origin)
-	msgs_cnf.fido_default_origin = system.name + " - " + system.inet_addr;
-while((!msgs_cnf.fido_default_origin
-	|| !confirm("Your origin line is '" +	msgs_cnf.fido_default_origin + "'")) && !aborted()) {
-	msgs_cnf.fido_default_origin = prompt("Your origin line");
+	&& confirm("Add node address " + fidoaddr.to_str(your) + " to your configuration")) {
+	var fido_addr_list = msgs_ini.iniGetValue("fidonet", "addr_list", []);
+	fido_addr_list.push(your);
+	msgs_ini.iniSetValue("fidonet", "addr_list", fido_addr_list);
 }
 
+var fido_default_origin = msgs_ini.iniGetValue("fidonet", "default_origin");
+if(!fido_default_origin)
+	fido_default_origin = system.name + " - " + system.inet_addr;
+while((!fido_default_origin
+	|| !confirm("Your origin line is '" +	fido_default_origin + "'")) && !aborted()) {
+	fido_default_origin = prompt("Your origin line");
+}
+msgs_ini.iniSetValue("fidonet", "default_origin", fido_default_origin);
+
 /*******************/
-/* UPDATE MSGS.CNF */
+/* UPDATE MSGS.INI */
 /*******************/
-if(!msg_area.grp[netname]
+if(!msgs_ini.iniGetObject("grp:" + netname)
 	&& confirm("Create " + netname + " message group in SCFG->Message Areas")) {
 	print("Adding Message Group: " + netname);
-	msgs_cnf.grp.push( {
-		"name": netname,
+	msgs_ini.iniSetObject("grp:" + netname, {
 		"description": netname,
-		"ars": "",
 		"code_prefix": network.areatag_prefix === undefined
 			? (netname.toUpperCase() + "_") : network.areatag_prefix
 	});
-}
-if(confirm("Save Changes to Message Area configuration file: msgs.cnf")) {
-	if(!cnflib.write("msgs.cnf", undefined, msgs_cnf)) {
-		alert("Failed to write msgs.cnf");
-		exit(1);
-	}
-	print("msgs.cnf updated successfully.");
 }
 
 /*********************/
