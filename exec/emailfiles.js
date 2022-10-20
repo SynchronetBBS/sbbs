@@ -51,25 +51,23 @@ if(!options.maxpending)
 	options.maxpending = 100 * 1024 * 1024;
 
 if(argv[0] === '-install') {
-	var cnflib = load({}, "cnflib.js");
-	var file_cnf = cnflib.read("file.cnf");
-	if(!file_cnf) {
-		alert("Failed to read file.cnf");
+	var f = new File(system.ctrl_dir + "file.ini");
+	if(!f.open(f.exists ? 'r+':'w+')) {
+		alert("Failed to open " + f.name);
 		exit(-1);
 	}
-	file_cnf.prot.push({
+	if(!f.iniSetObject("protocol:new", {
 		  key: 'E'
 		, name: 'E-mail Attachment'
 		, dlcmd: '?emailfiles %f'
 		, batdlcmd: '?emailfiles +%f'
 		, ars: 'REST NOT M'
 		, settings: PROT_NATIVE | PROT_DSZLOG
-		});
-
-	if(!cnflib.write("file.cnf", undefined, file_cnf)) {
-		alert("Failed to write file.cnf");
+		})) {
+		alert("Failed to write " + f.name);
 		exit(-1);
 	}
+	f.close();
 	exit(0);
 }
 

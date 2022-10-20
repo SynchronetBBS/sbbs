@@ -2159,14 +2159,6 @@ function find_code(objs, code)
 	return -1;
 }
 
-function remove_from_list(list, value)
-{
-	var index = find_code(list, value);
-	if(index < 0)
-		return null;
-	return list.splice(index, 1);
-}
-
 function replace_in_list(list, value, obj)
 {
 	var index = find_code(list, value);
@@ -2179,11 +2171,8 @@ function replace_in_list(list, value, obj)
 function install()
 {
 	var sbbslist_cfg = {
-		"sec": 0,
 		"name": "Synchronet BBS List",
-		"code": "SBBSLIST",
 		"ars": "",
-		"run_ars": "",
 		"type": 0,
 		"settings": 1,
 		"event": 0,
@@ -2195,7 +2184,6 @@ function install()
 		"max_time": 0
 		};
 	var smb2sbl_cfg = {
-		"code": "SMB2SBL",
 		"cmd": "?sbbslist import",
 		"days": 255,
 		"time": 0,
@@ -2207,7 +2195,6 @@ function install()
 		"months": 0
 		};
 	var sbl2smb_cfg = {
-        "code": "SBL2SMB",
         "cmd": "?sbbslist export",
         "days": 255,
         "time": 0,
@@ -2219,7 +2206,6 @@ function install()
         "months": 0
 		};
 	var sblupdate_cfg = {
-        "code": "SBLUPDAT",
         "cmd": "?sbbslist update -preview",
         "days": 255,
         "time": 0,
@@ -2231,7 +2217,6 @@ function install()
         "months": 0
 		};
 	var sblmaint_cfg = {
-        "code": "SBLMAINT",
         "cmd": "?sbbslist maint",
         "days": 255,
         "time": 0,
@@ -2242,30 +2227,26 @@ function install()
         "mdays": 0,
         "months": 0
 		};
-	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read("xtrn.cnf");
-	if(!xtrn_cnf)
-		return "Failed to read xtrn.cnf";
+	var f = new File(system.ctrl_dir + "xtrn.ini");
+	if(!f.open(f.exists ? 'r+':'w+'))
+		return "Failed to open " + f.name;
 
-	remove_from_list(xtrn_cnf.xtrn, "sbl");
 	printf("Adding external program: SBBSLIST\r\n");
-	replace_in_list(xtrn_cnf.xtrn, "sbbslist", sbbslist_cfg);
+	f.iniSetObject("prog:MAIN:SBBSLIST", sbbslist_cfg);
 
 	printf("Adding timed event: SMB2SBL\r\n");
-	replace_in_list(xtrn_cnf.event, "smb2sbl", smb2sbl_cfg);
+	f.iniSetObject("event:SMB2SBL", smb2sbl_cfg);
 
 	printf("Adding timed event: SBL2SMB\r\n");
-	replace_in_list(xtrn_cnf.event, "sbl2smb", sbl2smb_cfg);
+	f.iniSetObject("event:SBL2SMB", sbl2smb_cfg);
 
 	printf("Adding timed event: SBLUPDAT\r\n");
-	replace_in_list(xtrn_cnf.event, "sblupdat", sblupdate_cfg);
+	f.iniSetObject("event:SBLUPDAT", sblupdate_cfg);
 
 	printf("Adding timed event: SBLMAINT\r\n");
-	replace_in_list(xtrn_cnf.event, "sblmaint", sblmaint_cfg);
+	f.iniSetObject("event:SBLMAINT", sblmaint_cfg);
 
-	if(!cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
-		return "Failed to write xtrn.cnf";
-
+	f.close();
 	return true;
 }
 
