@@ -161,16 +161,13 @@ uint total_users(scfg_t* cfg)
 
 	for(int usernumber = 1; success; usernumber++) {
 		char userdat[USER_RECORD_LEN + 1];
-		if(!lockuserdat(file, usernumber))
-			break;
-		if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file) == 0) {
+		if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */FALSE) == 0) {
 			char* field[USER_FIELD_COUNT];
 			split_userdat(userdat, field);
 			if(!(ahtou32(field[USER_MISC]) & (DELETED|INACTIVE)))
 				total_users++;
 		} else
 			success = false;
-		unlockuserdat(file, usernumber);
 	}
 
 	close(file);
@@ -277,7 +274,7 @@ BOOL unlockuserdat(int file, unsigned user_number)
 /* buffer of USER_RECORD_LINE_LEN in size.									*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
-int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, int infile)
+int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, int infile, BOOL leave_locked)
 {
 	int file;
 
@@ -316,7 +313,8 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, i
 			close(file);
 		return -5;
 	}
-	unlockuserdat(file, user_number);
+	if(!leave_locked)
+		unlockuserdat(file, user_number);
 	if(file != infile)
 		close(file);
 	return 0;
@@ -483,7 +481,7 @@ int getuserdat(scfg_t* cfg, user_t *user)
 		return file;
 	}
 
-	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file)) != 0) {
+	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */FALSE)) != 0) {
 		close(file);
 		user->number = 0;
 		return retval;
@@ -502,7 +500,7 @@ int fgetuserdat(scfg_t* cfg, user_t *user, int file)
 	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
 		return(-1);
 
-	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file)) != 0) {
+	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */FALSE)) != 0) {
 		user->number = 0;
 		return retval;
 	}
@@ -1459,11 +1457,8 @@ uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
 			progress(cbdata, unum, last);
 		if(usernumber && unum == usernumber)
 			continue;
-		if(!lockuserdat(file, unum))
-			continue;
-
 		char userdat[USER_RECORD_LEN + 1];
-		if(readuserdat(cfg, unum, userdat, sizeof(userdat), file) == 0) {
+		if(readuserdat(cfg, unum, userdat, sizeof(userdat), file, /* leave_locked: */FALSE) == 0) {
 			char* field[USER_FIELD_COUNT];
 			split_userdat(userdat, field);
 			if(stricmp(field[fnum], str) == 0) {
@@ -1471,7 +1466,6 @@ uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
 					found = unum;
 			}
 		}
-		unlockuserdat(file, unum);
 	}
 	close(file);
 	if(progress != NULL)
@@ -2304,14 +2298,10 @@ char* getuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, char *str, s
 	if((file = openuserdat(cfg, /* for_modify: */false)) == -1)
 		return str;
 
-	if(!lockuserdat(file, usernumber))
-		return str;
-
-	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file) == 0) {
+	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */FALSE) == 0) {
 		split_userdat(userdat, field);
 		safe_snprintf(str, size, "%s", field[fnum]);
 	}
-	unlockuserdat(file, usernumber);
 	close(file);
 	dirtyuserdat(cfg, usernumber);
 	return str;
@@ -2391,10 +2381,7 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
 		return errno;
 
-	if(!lockuserdat(file, usernumber))
-		return -3;
-
-	retval = readuserdat(cfg, usernumber, userdat, sizeof(userdat), file);
+	retval = readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */TRUE);
 	if(retval == 0) {
 		split_userdat(userdat, field);
 		field[fnum] = (char*)str;
@@ -2402,8 +2389,8 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 			retval = -4;
 		else
 			writeuserfields(cfg, field, file);
+		unlockuserdat(file, usernumber);
 	}
-	unlockuserdat(file, usernumber);
 	close(file);
 	dirtyuserdat(cfg, usernumber);
 	return retval;
@@ -2470,19 +2457,16 @@ uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_
 	char value[256];
 	char userdat[USER_RECORD_LEN + 1];
 	int file;
-	uint64_t val;
+	bool valid = true;
+	uint64_t val = 0;
 
 	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || !VALID_USER_FIELD(fnum))
 		return 0;
 
 	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
-		return errno;
+		return 0;
 
-	if(!lockuserdat(file, usernumber))
-		return -2;
-
-	int retval = readuserdat(cfg, usernumber, userdat, sizeof(userdat), file);
-	if(retval == 0) {
+	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */TRUE) == 0) {
 		char* field[USER_FIELD_COUNT];
 		split_userdat(userdat, field);
 		val = strtoull(field[fnum], NULL, 10);
@@ -2524,18 +2508,19 @@ uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_
 				SAFEPRINTF(value, "%u", (uint)val);
 				break;
 			default:
-				return 0;
+				valid = false;
+				break;
 		}
-		field[fnum] = value;
-		if(!seekuserdat(file, usernumber))
-			retval = -3;
-		else
-			writeuserfields(cfg, field, file);
+		if(valid) {
+			field[fnum] = value;
+			if(seekuserdat(file, usernumber))
+				writeuserfields(cfg, field, file);
+		}
 	}
 	unlockuserdat(file, usernumber);
 	close(file);
 	dirtyuserdat(cfg, usernumber);
-	return retval;
+	return val;
 }
 
 /****************************************************************************/
