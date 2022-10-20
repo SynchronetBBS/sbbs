@@ -469,10 +469,10 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			break;
 		case USER_PROP_ALIAS:
 			SAFECOPY(p->user->alias,str);
-			/* update USER.DAT */
+			/* update user.tab */
 			putuserstr(scfg, p->user->number, USER_ALIAS, str);
 
-			/* update NAME.DAT */
+			/* update name.dat */
 			usermisc = getusermisc(scfg, p->user->number);
 			if(!(usermisc&DELETED))
 				putusername(scfg,p->user->number,str);
@@ -525,20 +525,18 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			SAFECOPY(p->user->birth,str);
 			putuserstr(scfg, p->user->number, USER_BIRTH, str);
 			break;
-#if 0 // TODO
 		case USER_PROP_BIRTHYEAR:
-			SAFEPRINTF(tmp, "%04u", atoi(str));
-			putuserstr(scfg, p->user->number, U_BIRTH, tmp);
+			if(JS_ValueToECMAUint32(cx, *vp, &val))
+				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(val, getbirthmonth(scfg, p->user->birth), getbirthday(scfg, p->user->birth)));
 			break;
 		case USER_PROP_BIRTHMONTH:
-			SAFEPRINTF(tmp, "%02u", atoi(str));
-			putuserstr(scfg, p->user->number, U_BIRTH + 4, 2, tmp);
+			if(JS_ValueToECMAUint32(cx, *vp, &val))
+				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(p->user->birth), val, getbirthday(scfg, p->user->birth)));
 			break;
 		case USER_PROP_BIRTHDAY:
-			SAFEPRINTF(tmp, "%02u", atoi(str));
-			putuserstr(scfg, p->user->number, U_BIRTH + 6, 2, tmp);
+			if(JS_ValueToECMAUint32(cx, *vp, &val))
+				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(p->user->birth), getbirthmonth(scfg, p->user->birth), val));
 			break;
-#endif
 		case USER_PROP_MODEM:     
 			SAFECOPY(p->user->modem,str);
 			putuserstr(scfg, p->user->number, USER_CONNECTION, str);
