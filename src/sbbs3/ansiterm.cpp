@@ -250,7 +250,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
             else if(ch=='R' && rsp)
             	break;
 			else {
-				str[rsp] = 0;
+				str[rsp + 1] = 0;
 #ifdef _DEBUG
 				char dbg[128];
 				c_escape_str(str, dbg, sizeof(dbg), /* Ctrl-only? */true);
