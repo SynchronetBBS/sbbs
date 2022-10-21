@@ -1095,14 +1095,13 @@ void sbbs_t::privchat(bool forced, int node_num)
 			if(rd != 1) {
 				lprintf(LOG_ERR, "read character from %s returned %d instead of 1", inpath, rd);
 				ch = 0;
-			} else {
-				if(ch < ' ')
-					lprintf(LOG_DEBUG, "read control character %u (%s) from %s", ch, c_escape_char(ch), inpath);
-				else
-					lprintf(LOG_DEBUG, "read character '%c' from %s", ch, inpath);
 			}
 			(void)lseek(in,-1L,SEEK_CUR);
 			if(!ch) break;					  /* char from other node */
+			if(ch < ' ')
+				lprintf(LOG_DEBUG, "read control character %u (%s) from %s", ch, c_escape_char(ch), inpath);
+			else
+				lprintf(LOG_DEBUG, "read character '%c' from %s", ch, inpath);
 			activity=1;
 			if(sys_status&SS_SPLITP && !remote_activity) {
 				ansi_getxy(&x,&y);
