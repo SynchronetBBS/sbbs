@@ -1091,8 +1091,16 @@ void sbbs_t::privchat(bool forced, int node_num)
 				lseek(in,0L,SEEK_SET);
 			ch=0;
 			utime(inpath,NULL);
-			if(read(in,&ch,1) != 1)
+			int rd = read(in,&ch,1);
+			if(rd != 1) {
+				lprintf(LOG_ERR, "read character from %s returned %d instead of 1", inpath, rd);
 				ch = 0;
+			} else {
+				if(ch < ' ')
+					lprintf(LOG_DEBUG, "read control character %u (%s) from %s", ch, c_escape_char(ch), inpath);
+				else
+					lprintf(LOG_DEBUG, "read character '%c' from %s", ch, inpath);
+			}
 			(void)lseek(in,-1L,SEEK_CUR);
 			if(!ch) break;					  /* char from other node */
 			activity=1;
@@ -1162,7 +1170,13 @@ void sbbs_t::privchat(bool forced, int node_num)
 				} 
 			}
 			ch=0;
-			write(in,&ch,1);
+			int wr = write(in,&ch,1);
+			if(wr != 1)
+				lprintf(LOG_ERR, "write of character 0x%02X to %s returned %d", ch, inpath, wr);
+			else if(ch < ' ')
+				lprintf(LOG_DEBUG, "wrote control character %u (%s) to %s", ch, c_escape_char(ch), inpath);
+			else
+				lprintf(LOG_DEBUG, "wrote character '%c' to %s", ch, inpath);
 
 			if(!(sys_status&SS_SPLITP))
 				localchar=remotechar;
