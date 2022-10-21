@@ -775,6 +775,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 	char	outpath[MAX_PATH+1];
 	char	inpath[MAX_PATH+1];
 	uchar	ch;
+	int		wr;
 	int 	in,out,i,n,echo=1,x,y,activity,remote_activity;
     int		local_y=1,remote_y=1;
 	node_t	node;
@@ -1071,15 +1072,22 @@ void sbbs_t::privchat(bool forced, int node_num)
 			(void)read(out,&c,1);
 			(void)lseek(out,-1L,SEEK_CUR);
 			if(!c)		/* hasn't wrapped */
-				write(out,&ch,1);
+				wr = write(out,&ch,1);
 			else {
 				if(!tell(out))
 					lseek(out,0L,SEEK_END);
 				lseek(out,-1L,SEEK_CUR);
 				ch=0;
-				write(out,&ch,1);
+				wr = write(out,&ch,1);
 				lseek(out,-1L,SEEK_CUR); 
 			}
+			if(wr != 1)
+				lprintf(LOG_ERR, "write of character 0x%02X to %s returned %d", ch, outpath, wr);
+			else if(ch < ' ')
+				lprintf(LOG_DEBUG, "wrote control character %u (%s) to %s", ch, c_escape_char(ch), outpath);
+			else
+				lprintf(LOG_DEBUG, "wrote character '%c' to %s", ch, outpath);
+
 			utime(outpath,NULL);	/* update mod time for NFS/smbfs nodes */
 			if(tell(out)>=PCHAT_LEN)
 				lseek(out,0L,SEEK_SET);
@@ -1169,13 +1177,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 				} 
 			}
 			ch=0;
-			int wr = write(in,&ch,1);
-			if(wr != 1)
-				lprintf(LOG_ERR, "write of character 0x%02X to %s returned %d", ch, inpath, wr);
-			else if(ch < ' ')
-				lprintf(LOG_DEBUG, "wrote control character %u (%s) to %s", ch, c_escape_char(ch), inpath);
-			else
-				lprintf(LOG_DEBUG, "wrote character '%c' to %s", ch, inpath);
+			if(write(in,&ch,1) != 1)
+				lprintf(LOG_ERR, "write of NUL to %s returned %d", inpath, wr);
 
 			if(!(sys_status&SS_SPLITP))
 				localchar=remotechar;
