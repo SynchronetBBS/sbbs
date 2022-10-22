@@ -208,6 +208,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 	size_t	rsp=0;
 	int		ch;
 	char	str[128];
+	enum { state_escape, state_open, state_y, state_x } state = state_escape;
 
 	if(x != NULL)
 		*x=0;
@@ -218,39 +219,39 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 
     time_t start=time(NULL);
     sys_status&=~SS_ABORT;
-    while(online && !(sys_status&SS_ABORT) && rsp < sizeof(str)) {
+    while(online && !(sys_status&SS_ABORT) && rsp < sizeof(str) - 1) {
 		if((ch=incom(1000))!=NOINP) {
-			str[rsp] = ch;
-			if(ch==ESC && rsp==0) {
-            	rsp++;
+			str[rsp++] = ch;
+			if(ch==ESC && state == state_escape) {
+				state = state_open;
 				start=time(NULL);
 			}
-            else if(ch=='[' && rsp==1) {
-            	rsp++;
+            else if(ch=='[' && state == state_open) {
+				state = state_y;
 				start=time(NULL);
 			}
-            else if(IS_DIGIT(ch) && rsp==2) {
+            else if(IS_DIGIT(ch) && state == state_y) {
 				if(y!=NULL) {
                		(*y)*=10;
 					(*y)+=(ch&0xf);
 				}
 				start=time(NULL);
             }
-            else if(ch==';' && rsp>=2) {
-            	rsp++;
+            else if(ch==';' && state == state_y) {
+				state = state_x;
 				start=time(NULL);
 			}
-            else if(IS_DIGIT(ch) && rsp==3) {
+            else if(IS_DIGIT(ch) && state == state_x) {
 				if(x!=NULL) {
             		(*x)*=10;
 					(*x)+=(ch&0xf);
 				}
 				start=time(NULL);
             }
-            else if(ch=='R' && rsp)
+            else if(ch=='R' && state == state_x)
             	break;
 			else {
-				str[rsp + 1] = 0;
+				str[rsp] = '\0';
 #ifdef _DEBUG
 				char dbg[128];
 				c_escape_str(str, dbg, sizeof(dbg), /* Ctrl-only? */true);
@@ -258,6 +259,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 #endif
 				ungetstr(str, /* insert */false);
 				rsp = 0;
+				state = state_escape;
 			}
         }
     	if(time(NULL)-start>TIMEOUT_ANSI_GETXY) {
