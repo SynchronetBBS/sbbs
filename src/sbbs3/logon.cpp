@@ -449,8 +449,8 @@ bool sbbs_t::logon()
 	if(!(sys_status&SS_QWKLOGON) && cfg.logon_mod[0])
 		exec_bin(cfg.logon_mod,&main_csi);
 
-#if 0
 	if(thisnode.status!=NODE_QUIET && (!REALSYSOP || cfg.sys_misc&SM_SYSSTAT)) {
+		int file;
 		safe_snprintf(str, sizeof(str), "%slogon.lst",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT|O_APPEND);
@@ -466,7 +466,7 @@ bool sbbs_t::logon()
 		write(file,str,strlen(str));
 		close(file); 
 	}
-#endif
+
 	if(cfg.sys_logon[0]) {				/* execute system logon event */
 		lprintf(LOG_DEBUG, "executing logon event: %s", cfg.sys_logon);
 		external(cmdstr(cfg.sys_logon,nulstr,nulstr,NULL),EX_STDOUT); /* EX_SH */
