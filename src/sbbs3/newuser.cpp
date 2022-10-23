@@ -264,11 +264,13 @@ BOOL sbbs_t::newuser()
 		if(!online) return(FALSE);
 		while((cfg.uq&UQ_LOCATION) && online && text[EnterYourCityState][0]) {
 			bputs(text[EnterYourCityState]);
-			if(getstr(useron.location,LEN_LOCATION,kmode)
-				&& ((cfg.uq&UQ_NOCOMMAS) || strchr(useron.location,',')))
+			if(getstr(useron.location,LEN_LOCATION,kmode) < 1)
+				continue;
+			if((cfg.uq&UQ_NOCOMMAS) && strchr(useron.location,',') == NULL) {
+				bputs(text[CommaInLocationRequired]);
+				useron.location[0]=0;
+			} else
 				break;
-			bputs(text[CommaInLocationRequired]);
-			useron.location[0]=0; 
 		}
 		if(cfg.uq&UQ_ADDRESS)
 			while(online && text[EnterYourZipCode][0]) {
