@@ -112,7 +112,12 @@ if(options.send_welcome && file_exists(welcome_msg) && !qnet && user.number>1) {
 }
 
 if(options.notify_sysop)
-	system.notify(options.notify_sysop, format("New user (#%u) created: %s", user.number, user.alias));
+	system.notify(options.notify_sysop
+		,format("New user created: \x01c%s #%u", user.alias, user.number)
+		,format("%s, %u %s from %s using %ux%u %s/%s via %s"
+			,user.name, user.age, user.gender, user.location
+			,console.screen_columns, console.screen_rows, console.charset, console.type
+			,user.connection));
 
 function send_newuser_welcome_msg(fname)
 {
