@@ -675,7 +675,9 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const c
 		SAFEPRINTF(str, "%u", usernumber);
 		smb_hfield_str(&msg, RECIPIENTEXT, str);
 	}
-	smb_hfield_str(&msg, SUBJECT, subject);
+	char* msgsubj = strip_ctrl(subject, NULL);
+	smb_hfield_str(&msg, SUBJECT, msgsubj);
+	free(msgsubj);
 	add_msg_ids(cfg, &smb, &msg, /* remsg: */NULL);
 	if(msgbase_open(cfg, &smb, INVALID_SUB, &storage, &dupechk_hashes, &xlat) == SMB_SUCCESS) {
 		smb_addmsg(&smb, &msg, storage, dupechk_hashes, xlat, (uchar*)text, /* tail: */NULL);
