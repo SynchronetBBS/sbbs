@@ -82,7 +82,9 @@ function Unregistered_Client(id,socket) {
 		|| (this.ip.slice(0,7) == "100.64.")
 		|| (this.ip.slice(0,7) == "172.16." )
 		|| (this.ip.slice(0,2) == "::")
-		|| (this.ip.slice(0,6).toUpperCase() == "FE80::")
+		|| (this.ip.slice(0,2).toUpperCase() == "FC")
+		|| (this.ip.slice(0,2).toUpperCase() == "FD")
+		|| (this.ip.slice(0,2).toUpperCase() == "FE")
 	) {
 		this.hostname = ServerName;
 		this.dns_pending = false;
