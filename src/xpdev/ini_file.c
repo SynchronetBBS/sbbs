@@ -1526,7 +1526,7 @@ str_list_t iniGetParsedSectionList(named_str_list_t** list, const char* prefix)
 	str_list_t result = strListInit();
 	named_str_list_t* section;
 
-	for(i = 0; list[i] != NULL; ++i) {
+	for(i = 0; list != NULL && list[i] != NULL; ++i) {
 		section = list[i];
 		if(section->name == NULL)
 			continue;
@@ -1545,6 +1545,9 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, BOOL c
 	named_str_list_t* section;
 
 	if(name == NULL) // Root section not supported
+		return NULL;
+
+	if(list == NULL)
 		return NULL;
 
 	for(i = 0; list[i] != NULL; ++i) {
