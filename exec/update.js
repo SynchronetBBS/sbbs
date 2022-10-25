@@ -223,6 +223,7 @@ if(!upgraded) {
 	print("No v3.19 file bases found, running " + cmdline);
 	system.exec(cmdline);
 }
+
 print("Checking for v3.20 config files");
 upgraded = true;
 ["main.cnf", "msgs.cnf", "file.cnf", "xtrn.cnf", "chat.cnf"].forEach(function(f) {
@@ -231,4 +232,11 @@ upgraded = true;
 });
 if(!upgraded)
 	js.exec("upgrade_to_v320.js", {});
+
+print("Checking for v3.20 user base");
+if(!file_exists(system.data_dir + 'user/user.tab')) {
+	var cmdline = system.exec_dir + "upgrade_to_v320";
+	print("No v3.20 user base found, running " + cmdline);
+	system.exec(cmdline);
+}
 
