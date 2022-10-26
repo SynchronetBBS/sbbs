@@ -245,8 +245,8 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		iniSetHexInt(&section, name, "flags3", cfg->val_flags3[i], NULL);
 		iniSetHexInt(&section, name, "flags4", cfg->val_flags4[i], NULL);
 		iniSetUInt32(&section, name, "credits", cfg->val_cdt[i], NULL);
-		iniSetHexInt(&section, name, "exempt", cfg->val_exempt[i], NULL);
-		iniSetHexInt(&section, name, "rest", cfg->val_rest[i], NULL);
+		iniSetHexInt(&section, name, "exemptions", cfg->val_exempt[i], NULL);
+		iniSetHexInt(&section, name, "restrictions", cfg->val_rest[i], NULL);
 		strListMerge(&ini, section);
 		free(section);
 	}
