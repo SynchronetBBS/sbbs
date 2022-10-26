@@ -191,9 +191,9 @@ struct.validation_set_t={
 	flags2:		{bytes:UINT32_T,			type:"int"},
 	flags3:		{bytes:UINT32_T,			type:"int"},
 	flags4:		{bytes:UINT32_T,			type:"int"},
-	cdt:		{bytes:UINT32_T,			type:"int"},
-	exempt:		{bytes:UINT32_T,			type:"int"},
-	rest:		{bytes:UINT32_T,			type:"int"},
+	credits:	{bytes:UINT32_T,			type:"int"},
+	exemptions:	{bytes:UINT32_T,			type:"int"},
+	restrictions:	{bytes:UINT32_T,			type:"int"},
 	__PADDING__:{bytes:16}
 };
 
