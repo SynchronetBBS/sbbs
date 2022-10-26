@@ -117,7 +117,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->max_minutes = iniGetInteger(ini, ROOT_SECTION, "max_minutes", 0);
 	cfg->cdt_per_dollar = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "cdt_per_dollar", 1, 0);
 	cfg->guest_msgscan_init = iniGetInteger(ini, ROOT_SECTION, "guest_msgscan_init", 0);
-	cfg->min_pwlen = iniGetInteger(ini, ROOT_SECTION, "min_pwlen", 0);
+	cfg->min_pwlen = iniGetInteger(ini, ROOT_SECTION, "min_password_length", 0);
 	if(cfg->min_pwlen < MIN_PASS_LEN)
 		cfg->min_pwlen = MIN_PASS_LEN;
 	if(cfg->min_pwlen > LEN_PASS)
