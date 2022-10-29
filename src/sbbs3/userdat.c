@@ -349,7 +349,7 @@ static time32_t parse_usertime(const char* str)
 /* Fills the structure 'user' with info for user.number	from userdat		*/
 /* (a buffer representing a single user 'record' from the userbase file		*/
 /****************************************************************************/
-int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
+int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 {
 	unsigned user_number;
 
@@ -366,7 +366,9 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	   before calling chk_ar() below for user-number comparisons in AR strings to function correctly */
 	user->number=user_number;	/* Signal of success */
 
-	char* field[USER_FIELD_COUNT];
+	char* fbuf[USER_FIELD_COUNT];
+    if(field == NULL)
+        field = fbuf;
 	split_userdat(userdat, field);
 	SAFECOPY(user->alias, field[USER_ALIAS]);
 	SAFECOPY(user->name, field[USER_NAME]);
@@ -486,7 +488,7 @@ int getuserdat(scfg_t* cfg, user_t *user)
 		user->number = 0;
 		return retval;
 	}
-	retval = parseuserdat(cfg, userdat, user);
+	retval = parseuserdat(cfg, userdat, user, NULL);
 	close(file);
 	return retval;
 }
@@ -504,7 +506,7 @@ int fgetuserdat(scfg_t* cfg, user_t *user, int file)
 		user->number = 0;
 		return retval;
 	}
-	return parseuserdat(cfg, userdat, user);
+	return parseuserdat(cfg, userdat, user, NULL);
 }
 
 /****************************************************************************/
@@ -2396,7 +2398,7 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 	return retval;
 }
 
-int putuserdatetime(scfg_t* cfg, int usernumber, enum user_field fnum, time_t t)
+int putuserdatetime(scfg_t* cfg, int usernumber, enum user_field fnum, time32_t t)
 {
 	char str[128];
 
@@ -2744,7 +2746,7 @@ BOOL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 	tused=(now-logontime)/60;
 	user->tlast=(ushort)(tused > USHRT_MAX ? USHRT_MAX : tused);
 
-	putuserdatetime(cfg,user->number, USER_LASTON, now);
+	putuserdatetime(cfg,user->number, USER_LASTON, (time32_t)now);
 	putuserstr(cfg,user->number, USER_TLAST, ultoa(user->tlast,str,10));
 	adjustuserval(cfg,user->number, USER_TIMEON, user->tlast);
 	adjustuserval(cfg,user->number, USER_TTODAY, user->tlast);
@@ -2892,6 +2894,52 @@ char* alias(scfg_t* cfg, const char* name, char* buf)
 	}
 	fclose(fp);
 	return(p);
+}
+
+int newuserdefaults(scfg_t* cfg, user_t* user)
+{
+	int i;
+
+	user->sex = ' ';
+
+	/* statistics */
+	user->firston=user->laston=user->pwmod=time32(NULL);
+
+	/* security */
+	user->level=cfg->new_level;
+	user->flags1=cfg->new_flags1;
+	user->flags2=cfg->new_flags2;
+	user->flags3=cfg->new_flags3;
+	user->flags4=cfg->new_flags4;
+	user->rest=cfg->new_rest;
+	user->exempt=cfg->new_exempt;
+
+	user->cdt=cfg->new_cdt;
+	user->min=cfg->new_min;
+	user->freecdt=cfg->level_freecdtperday[user->level];
+	if(cfg->new_expire)
+		user->expire=user->firston+((long)cfg->new_expire*24L*60L*60L);
+	else
+		user->expire=0;
+
+	/* settings */
+	if(cfg->total_fcomps)
+		SAFECOPY(user->tmpext,cfg->fcomp[0]->ext);
+	else
+		SAFECOPY(user->tmpext,"zip");
+
+	user->shell=cfg->new_shell;
+	user->misc=cfg->new_misc|(AUTOTERM|COLOR);
+	user->prot=cfg->new_prot;
+	user->qwk=QWK_DEFAULT;
+
+	for(i=0;i<cfg->total_xedits;i++)
+		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar, user, /* client: */NULL))
+			break;
+	if(i<cfg->total_xedits)
+		user->xedit=i+1;
+
+	return 0;
 }
 
 int newuserdat(scfg_t* cfg, user_t* user)
