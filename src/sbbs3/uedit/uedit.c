@@ -296,7 +296,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 			case 9:
 				/* Columns */
 				SAFEPRINTF(str,"%u",user->cols);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Columns (0=auto-detect)", str, LEN_COLS, K_EDIT|K_NUMBER);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Columns (0=auto-detect)", str, 3, K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->cols=strtoul(str,NULL,10);
 					putuserdec32(cfg, user->number, USER_COLS, user->cols);
@@ -305,7 +305,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 			case 10:
 				/* Rows */
 				SAFEPRINTF(str,"%u",user->rows);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Rows (0=auto-detect)", str, LEN_ROWS, K_EDIT|K_NUMBER);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Rows (0=auto-detect)", str, 3, K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->rows=strtoul(str,NULL,10);
 					putuserdec32(cfg, user->number, USER_ROWS, user->rows);
@@ -1367,7 +1367,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				/* Credits */
 				GETUSERDAT(cfg,user);
 				sprintf(str,"%" PRIu64,user->cdt);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Credits",str,LEN_CDT,K_EDIT|K_NUMBER);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Credits",str,10,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->cdt=strtoull(str,NULL,10);
 					putuserdec64(cfg, user->number, USER_CDT, user->cdt);
@@ -1377,7 +1377,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 				/* Free Credits */
 				GETUSERDAT(cfg,user);
 				sprintf(str,"%" PRIu64,user->freecdt);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Free Credits",str,LEN_CDT,K_EDIT|K_NUMBER);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Free Credits",str,10,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->freecdt=strtoull(str,NULL,10);
 					putuserdec64(cfg, user->number, USER_FREECDT, user->freecdt);
