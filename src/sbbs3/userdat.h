@@ -37,11 +37,12 @@
 extern "C" {
 #endif
 
+DLLEXPORT char*	userdat_filename(scfg_t*, char*, size_t);
 DLLEXPORT int	openuserdat(scfg_t*, BOOL for_modify);
 DLLEXPORT BOOL	seekuserdat(int file, unsigned user_number);
 DLLEXPORT int	closeuserdat(int file);
 DLLEXPORT int	readuserdat(scfg_t*, unsigned user_number, char* userdat, size_t, int file, BOOL leave_locked);
-DLLEXPORT int	parseuserdat(scfg_t*, char* userdat, user_t*);
+DLLEXPORT int	parseuserdat(scfg_t*, char* userdat, user_t*, char* fields[]);
 DLLEXPORT int	getuserdat(scfg_t*, user_t*); 	// Fill user_t with user data
 DLLEXPORT int	fgetuserdat(scfg_t*, user_t*, int file);
 DLLEXPORT BOOL	format_userdat(scfg_t*, user_t*, char userdat[]);
@@ -49,6 +50,7 @@ DLLEXPORT BOOL	lockuserdat(int file, unsigned user_number);
 DLLEXPORT BOOL	unlockuserdat(int file, unsigned user_number);
 DLLEXPORT int	putuserdat(scfg_t*, user_t*);	// Put user_t into user file
 DLLEXPORT int	newuserdat(scfg_t*, user_t*);	// Create new user in user file
+DLLEXPORT int	newuserdefaults(scfg_t*, user_t*);
 DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); // Checks for a username match
 DLLEXPORT BOOL	matchusername(scfg_t*, const char* name, const char* compare);
 DLLEXPORT char* alias(scfg_t*, const char* name, char* buf);
@@ -98,7 +100,7 @@ DLLEXPORT uint32_t getuserdec32(scfg_t*, int usernumber, enum user_field);
 DLLEXPORT uint64_t getuserdec64(scfg_t*, int usernumber, enum user_field);
 DLLEXPORT char*	getuserstr(scfg_t*, int usernumber, enum user_field, char *str, size_t);
 DLLEXPORT int	putuserstr(scfg_t*, int usernumber, enum user_field, const char *str);
-DLLEXPORT int	putuserdatetime(scfg_t*, int usernumber, enum user_field, time_t t);
+DLLEXPORT int	putuserdatetime(scfg_t*, int usernumber, enum user_field, time32_t t);
 DLLEXPORT int	putuserflags(scfg_t*, int usernumber, enum user_field, uint32_t flags);
 DLLEXPORT int	putuserhex32(scfg_t*, int usernumber, enum user_field, uint32_t value);
 DLLEXPORT int	putuserdec32(scfg_t*, int usernumber, enum user_field, uint32_t value);

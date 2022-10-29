@@ -82,7 +82,7 @@ bool sbbs_t::putuserstr(int usernumber, enum user_field fnum, const char *str)
 
 bool sbbs_t::putuserdatetime(int usernumber, enum user_field fnum, time_t t)
 {
-	int result = ::putuserdatetime(&cfg, usernumber, fnum, t);
+	int result = ::putuserdatetime(&cfg, usernumber, fnum, (time32_t)t);
 	if(result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
