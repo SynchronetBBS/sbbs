@@ -52,25 +52,50 @@ int lprintf(int level, const char *fmt, ...)
     return(puts(sbuf));
 }
 
+							/* String lengths								*/
+#define LEN31x_ALIAS		25	/* User alias									*/
+#define LEN31x_NAME		25	/* User name									*/
+#define LEN31x_HANDLE		8	/* User chat handle 							*/
+#define LEN31x_NOTE		30	/* User note									*/
+#define LEN31x_COMP		30	/* User computer description					*/
+#define LEN31x_COMMENT 	60	/* User comment 								*/
+#define LEN31x_NETMAIL 	60	/* NetMail forwarding address					*/
+#define LEN31x_OLDPASS		 8	/* User password (old)							*/
+#define LEN31x_PHONE		12	/* User phone number							*/
+#define LEN31x_BIRTH		 8	/* Birthday in MM/DD/YY format					*/
+#define LEN31x_ADDRESS 	30	/* User address 								*/
+#define LEN31x_LOCATION	30	/* Location (City, State)						*/
+#define LEN31x_ZIPCODE 	10	/* Zip/Postal code								*/
+#define LEN31x_MODEM		 8	/* User modem type description					*/
+#define LEN31x_CDT			20	/* Maximum credit length: 18446744073709551616	*/
+#define LEN31x_MAIN_CMD	8	/* Unused Storage in user.dat					*/
+#define LEN31x_COLS		3
+#define LEN31x_ROWS		3
+#define LEN31x_PASS		40
+#define LEN31x_SCAN_CMD	15
+#define LEN31x_IPADDR		45
+#define LEN31x_CID 		45	/* Caller ID (phone number) 					*/
+
+
 /****************************************************************************/
 /* This is a list of offsets into the USER.DAT file for different variables */
 /* that are stored (for each user)											*/
 /****************************************************************************/
 #define U_ALIAS 	0					/* Offset to alias */
-#define U_NAME		U_ALIAS+LEN_ALIAS  /* Offset to name */
-#define U_HANDLE	U_NAME+LEN_NAME
-#define U_NOTE		U_HANDLE+LEN_HANDLE+2
-#define U_COMP		U_NOTE+LEN_NOTE
-#define U_COMMENT	U_COMP+LEN_COMP+2
+#define U_NAME		U_ALIAS+LEN31x_ALIAS  /* Offset to name */
+#define U_HANDLE	U_NAME+LEN31x_NAME
+#define U_NOTE		U_HANDLE+LEN31x_HANDLE+2
+#define U_COMP		U_NOTE+LEN31x_NOTE
+#define U_COMMENT	U_COMP+LEN31x_COMP+2
 
-#define U_NETMAIL	U_COMMENT+LEN_COMMENT+2
+#define U_NETMAIL	U_COMMENT+LEN31x_COMMENT+2
 
-#define U_ADDRESS	U_NETMAIL+LEN_NETMAIL+2
-#define U_LOCATION	U_ADDRESS+LEN_ADDRESS
-#define U_ZIPCODE	U_LOCATION+LEN_LOCATION
+#define U_ADDRESS	U_NETMAIL+LEN31x_NETMAIL+2
+#define U_LOCATION	U_ADDRESS+LEN31x_ADDRESS
+#define U_ZIPCODE	U_LOCATION+LEN31x_LOCATION
 
-#define U_OLDPASS	U_ZIPCODE+LEN_ZIPCODE+2
-#define U_PHONE  	U_OLDPASS+LEN_OLDPASS  	/* Offset to phone-number */
+#define U_OLDPASS	U_ZIPCODE+LEN31x_ZIPCODE+2
+#define U_PHONE  	U_OLDPASS+LEN31x_OLDPASS  	/* Offset to phone-number */
 #define U_BIRTH  	U_PHONE+12 		/* Offset to users birthday	*/
 #define U_MODEM     U_BIRTH+8
 #define U_LASTON	U_MODEM+8
@@ -111,14 +136,14 @@ int lprintf(int level, const char *fmt, ...)
 #define U_CURSUB	U_LEECH+2  	/* Current sub (internal code)  */
 #define U_CURXTRN	U_CURSUB+16 /* Current xtrn (internal code) */
 #define U_ROWS		U_CURXTRN+8+2
-#define U_COLS		U_ROWS+LEN_ROWS
-#define U_CDT		U_COLS+LEN_COLS	/* unused */
-#define U_MAIN_CMD	U_CDT+LEN_CDT
-#define U_PASS		U_MAIN_CMD+LEN_MAIN_CMD
-#define U_FREECDT	U_PASS+LEN_PASS+2
-#define U_SCAN_CMD	U_FREECDT+LEN_CDT  				/* unused */
-#define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD
-#define U_OLDFREECDT U_IPADDR+LEN_IPADDR+2			/* unused */
+#define U_COLS		U_ROWS+LEN31x_ROWS
+#define U_CDT		U_COLS+LEN31x_COLS	/* unused */
+#define U_MAIN_CMD	U_CDT+LEN31x_CDT
+#define U_PASS		U_MAIN_CMD+LEN31x_MAIN_CMD
+#define U_FREECDT	U_PASS+LEN31x_PASS+2
+#define U_SCAN_CMD	U_FREECDT+LEN31x_CDT  				/* unused */
+#define U_IPADDR	U_SCAN_CMD+LEN31x_SCAN_CMD
+#define U_OLDFREECDT U_IPADDR+LEN31x_IPADDR+2			/* unused */
 #define U_FLAGS3	U_OLDFREECDT+10 	/* Flag set #3 */
 #define U_FLAGS4	U_FLAGS3+8 	/* Flag set #4 */
 #define U_XEDIT 	U_FLAGS4+8 	/* External editor (code  */
@@ -246,23 +271,23 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	user->number=user_number;	/* Signal of success */
 
 	/* order of these function calls is irrelevant */
-	getrec(userdat,U_ALIAS,LEN_ALIAS,user->alias);
-	getrec(userdat,U_NAME,LEN_NAME,user->name);
-	getrec(userdat,U_HANDLE,LEN_HANDLE,user->handle);
-	getrec(userdat,U_NOTE,LEN_NOTE,user->note);
-	getrec(userdat,U_COMP,LEN_COMP,user->comp);
-	getrec(userdat,U_COMMENT,LEN_COMMENT,user->comment);
-	getrec(userdat,U_NETMAIL,LEN_NETMAIL,user->netmail);
-	getrec(userdat,U_ADDRESS,LEN_ADDRESS,user->address);
-	getrec(userdat,U_LOCATION,LEN_LOCATION,user->location);
-	getrec(userdat,U_ZIPCODE,LEN_ZIPCODE,user->zipcode);
-	getrec(userdat,U_PASS,LEN_PASS,user->pass);
+	getrec(userdat,U_ALIAS,LEN31x_ALIAS,user->alias);
+	getrec(userdat,U_NAME,LEN31x_NAME,user->name);
+	getrec(userdat,U_HANDLE,LEN31x_HANDLE,user->handle);
+	getrec(userdat,U_NOTE,LEN31x_NOTE,user->note);
+	getrec(userdat,U_COMP,LEN31x_COMP,user->comp);
+	getrec(userdat,U_COMMENT,LEN31x_COMMENT,user->comment);
+	getrec(userdat,U_NETMAIL,LEN31x_NETMAIL,user->netmail);
+	getrec(userdat,U_ADDRESS,LEN31x_ADDRESS,user->address);
+	getrec(userdat,U_LOCATION,LEN31x_LOCATION,user->location);
+	getrec(userdat,U_ZIPCODE,LEN31x_ZIPCODE,user->zipcode);
+	getrec(userdat,U_PASS,LEN31x_PASS,user->pass);
 	if(user->pass[0] == 0)	// Backwards compatibility hack
-		getrec(userdat, U_OLDPASS, LEN_OLDPASS, user->pass);
-	getrec(userdat,U_PHONE,LEN_PHONE,user->phone);
-	getrec(userdat,U_BIRTH,LEN_BIRTH,user->birth);
-	getrec(userdat,U_MODEM,LEN_MODEM,user->modem);
-	getrec(userdat,U_IPADDR,LEN_IPADDR,user->ipaddr);
+		getrec(userdat, U_OLDPASS, LEN31x_OLDPASS, user->pass);
+	getrec(userdat,U_PHONE,LEN31x_PHONE,user->phone);
+	getrec(userdat,U_BIRTH,LEN31x_BIRTH,user->birth);
+	getrec(userdat,U_MODEM,LEN31x_MODEM,user->modem);
+	getrec(userdat,U_IPADDR,LEN31x_IPADDR,user->ipaddr);
 	getrec(userdat,U_LASTON,8,str); user->laston=ahtoul(str);
 	getrec(userdat,U_FIRSTON,8,str); user->firston=ahtoul(str);
 	getrec(userdat,U_EXPIRE,8,str); user->expire=ahtoul(str);
@@ -288,7 +313,7 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat,U_ULS,5,str); user->uls=atoi(str);
 	getrec(userdat,U_DLB,10,str); user->dlb=parse_byte_count(str, 1);
 	getrec(userdat,U_DLS,5,str); user->dls=atoi(str);
-	getrec(userdat,U_CDT,LEN_CDT,str);
+	getrec(userdat,U_CDT,LEN31x_CDT,str);
 	if(str[0] < '0' || str[0] > '9')
 		getrec(userdat,U_OLDCDT,10,str);
 	user->cdt=strtoull(str, NULL, 10);
@@ -301,11 +326,11 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat,U_EXEMPT,8,str); user->exempt=ahtoul(str)&0x03ffffff;
 	getrec(userdat,U_REST,8,str); user->rest=ahtoul(str)&0x03ffffff;
 	if(getrec(userdat,U_OLDROWS,2,str) <= 0) // Moved to new location
-		getrec(userdat, U_ROWS, LEN_ROWS, str);
+		getrec(userdat, U_ROWS, LEN31x_ROWS, str);
 	user->rows = atoi(str);
 	if(user->rows && user->rows < TERM_ROWS_MIN)
 		user->rows = TERM_ROWS_MIN;
-	getrec(userdat, U_COLS, LEN_COLS, str);
+	getrec(userdat, U_COLS, LEN31x_COLS, str);
 	user->cols = atoi(str);
 	if(user->cols && user->cols < TERM_COLS_MIN)
 		user->cols = TERM_COLS_MIN;
@@ -325,7 +350,7 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat,U_CURDIR,sizeof(user->curdir)-1,user->curdir);
 	getrec(userdat,U_CURXTRN,8,user->curxtrn);
 
-	getrec(userdat,U_FREECDT,LEN_CDT,str);
+	getrec(userdat,U_FREECDT,LEN31x_CDT,str);
 	if(str[0] < '0' || str[0] > '9')
 		getrec(userdat,U_OLDFREECDT,10,str);
 	user->freecdt=strtoull(str, NULL, 10);
