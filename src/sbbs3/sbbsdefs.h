@@ -509,7 +509,6 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_COMP		30	/* User computer description					*/
 #define LEN_COMMENT 	60	/* User comment 								*/
 #define LEN_NETMAIL 	60	/* NetMail forwarding address					*/
-#define LEN_OLDPASS		 8	/* User password (old)							*/
 #define LEN_PHONE		12	/* User phone number							*/
 #define LEN_BIRTH		 8	/* Birthday in MM/DD/YY format					*/
 #define LEN_ADDRESS 	30	/* User address 								*/
@@ -519,14 +518,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_FDESC		58	/* File description (summary) 					*/
 #define LEN_EXTDESC		5000	/* Extended file description				*/
 #define LEN_TITLE		70	/* Message title								*/
-#define LEN_CDT			20	/* Maximum credit length: 18446744073709551616	*/
-#define LEN_MAIN_CMD	8	/* Unused Storage in user.dat					*/
-#define LEN_COLS		3
-#define LEN_ROWS		3
 #define LEN_PASS		40
 #define MIN_PASS_LEN	 4
 #define RAND_PASS_LEN	 8
-#define LEN_SCAN_CMD	15
 #define LEN_IPADDR		45
 #define LEN_CID 		45	/* Caller ID (phone number) 					*/
 #define LEN_ARSTR		40	/* Max length of Access Requirement string		*/
