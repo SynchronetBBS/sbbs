@@ -2769,8 +2769,6 @@ BOOL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 /****************************************************************************/
 void resetdailyuserdat(scfg_t* cfg, user_t* user, BOOL write)
 {
-	char str[128];
-
 	if(!VALID_CFG(cfg) || user==NULL)
 		return;
 
@@ -2785,8 +2783,7 @@ void resetdailyuserdat(scfg_t* cfg, user_t* user, BOOL write)
 	if(write) putuserstr(cfg,user->number, USER_PTODAY, "0");
 	/* free credits per day */
 	user->freecdt=cfg->level_freecdtperday[user->level];
-	if(write) putuserstr(cfg,user->number, USER_FREECDT
-		,_ui64toa(user->freecdt,str,10));
+	if(write) putuserdec64(cfg,user->number, USER_FREECDT, user->freecdt);
 	/* time used today */
 	user->ttoday=0;
 	if(write) putuserstr(cfg,user->number, USER_TTODAY, "0");
