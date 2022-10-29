@@ -33,7 +33,6 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
     {
          Application->Initialize();
          Application->Title = "Synchronet User Editor";
-         Application->Title = "Synchronet User Editor v" VERSION;
          Application->CreateForm(__classid(TMainForm), &MainForm);
          SAFECOPY(MainForm->cfg.ctrl_dir, get_ctrl_dir(/* warn: */FALSE));
          backslash(MainForm->cfg.ctrl_dir);
