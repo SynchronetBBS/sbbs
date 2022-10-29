@@ -1712,46 +1712,8 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 		SAFECOPY(user.ipaddr,client->addr);
 	}
 
-	user.sex=' ';
 	SAFECOPY(user.alias,alias);
-
-	/* statistics */
-	user.firston=user.laston=user.pwmod=time32(NULL);
-
-	/* security */
-	user.level=cfg->new_level;
-	user.flags1=cfg->new_flags1;
-	user.flags2=cfg->new_flags2;
-	user.flags3=cfg->new_flags3;
-	user.flags4=cfg->new_flags4;
-	user.rest=cfg->new_rest;
-	user.exempt=cfg->new_exempt;
-
-	user.cdt=cfg->new_cdt;
-	user.min=cfg->new_min;
-	user.freecdt=cfg->level_freecdtperday[user.level];
-	if(cfg->new_expire)
-		user.expire=user.firston+((long)cfg->new_expire*24L*60L*60L);
-	else
-		user.expire=0;
-
-	/* settings */
-	if(cfg->total_fcomps)
-		SAFECOPY(user.tmpext,cfg->fcomp[0]->ext);
-	else
-		SAFECOPY(user.tmpext,supported_archive_formats[0]);
-
-	user.shell=cfg->new_shell;
-	user.misc=cfg->new_misc|(AUTOTERM|COLOR);
-	user.prot=cfg->new_prot;
-	user.qwk=QWK_DEFAULT;
-
-	for(i=0;i<cfg->total_xedits;i++)
-		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar,&user,/* client: */NULL))
-			break;
-	if(i<cfg->total_xedits)
-		user.xedit=i+1;
-
+	newuserdefaults(cfg, &user);
 	i=newuserdat(cfg,&user);
 	JS_RESUMEREQUEST(cx, rc);
 
