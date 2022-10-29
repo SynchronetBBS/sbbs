@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 1015
-  Top = 651
+  Left = 1081
+  Top = 601
   ActiveControl = ScrollBar
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
@@ -33,9 +33,9 @@ object MainForm: TMainForm
       Top = 81
       Width = 447
       Height = 278
-      ActivePage = SecurityTabSheet
+      ActivePage = StatsTabSheet
       Align = alClient
-      TabIndex = 1
+      TabIndex = 2
       TabOrder = 0
       object PersonalTabSheet: TTabSheet
         Caption = 'Personal'
@@ -217,7 +217,7 @@ object MainForm: TMainForm
           TabOrder = 5
           OnChange = EditChange
         end
-        object GroupBox9: TGroupBox
+        object AddressGroupBox: TGroupBox
           Left = 72
           Top = 160
           Width = 297
@@ -301,7 +301,7 @@ object MainForm: TMainForm
         end
         object Label28: TLabel
           Left = 264
-          Top = 56
+          Top = 104
           Width = 65
           Height = 21
           AutoSize = False
@@ -309,7 +309,7 @@ object MainForm: TMainForm
         end
         object Label29: TLabel
           Left = 264
-          Top = 32
+          Top = 56
           Width = 65
           Height = 21
           AutoSize = False
@@ -362,7 +362,7 @@ object MainForm: TMainForm
         end
         object MinutesEdit: TEdit
           Left = 336
-          Top = 56
+          Top = 104
           Width = 89
           Height = 21
           CharCase = ecUpperCase
@@ -372,7 +372,7 @@ object MainForm: TMainForm
         end
         object FreeCreditsEdit: TEdit
           Left = 336
-          Top = 32
+          Top = 56
           Width = 89
           Height = 21
           CharCase = ecUpperCase
@@ -380,7 +380,7 @@ object MainForm: TMainForm
           TabOrder = 6
           OnChange = EditChange
         end
-        object GroupBox8: TGroupBox
+        object FlagSetGroupBox: TGroupBox
           Left = 8
           Top = 40
           Width = 233
@@ -456,17 +456,35 @@ object MainForm: TMainForm
             OnChange = EditChange
           end
         end
+        object CreditsStaticText: TStaticText
+          Left = 336
+          Top = 32
+          Width = 89
+          Height = 21
+          AutoSize = False
+          BorderStyle = sbsSunken
+          TabOrder = 8
+        end
+        object FreeCreditsStaticText: TStaticText
+          Left = 336
+          Top = 80
+          Width = 89
+          Height = 21
+          AutoSize = False
+          BorderStyle = sbsSunken
+          TabOrder = 9
+        end
       end
       object StatsTabSheet: TTabSheet
         Caption = 'Statistics'
         ImageIndex = 2
-        object GroupBox1: TGroupBox
+        object TimeOnGroupBox: TGroupBox
           Left = 152
           Top = 120
           Width = 137
           Height = 121
           Caption = 'Time On'
-          TabOrder = 0
+          TabOrder = 4
           DesignSize = (
             137
             121)
@@ -526,7 +544,7 @@ object MainForm: TMainForm
             Width = 57
             Height = 21
             Anchors = [akTop, akRight]
-            TabOrder = 2
+            TabOrder = 3
             OnChange = EditChange
           end
           object LastCallTimeEdit: TEdit
@@ -535,11 +553,11 @@ object MainForm: TMainForm
             Width = 57
             Height = 21
             Anchors = [akTop, akRight]
-            TabOrder = 3
+            TabOrder = 2
             OnChange = EditChange
           end
         end
-        object GroupBox2: TGroupBox
+        object LogonsGroupBoxx: TGroupBox
           Left = 8
           Top = 88
           Width = 137
@@ -579,13 +597,13 @@ object MainForm: TMainForm
             OnChange = EditChange
           end
         end
-        object GroupBox3: TGroupBox
+        object DatesGroupBox: TGroupBox
           Left = 8
           Top = 8
           Width = 137
           Height = 73
           Caption = 'Dates'
-          TabOrder = 2
+          TabOrder = 0
           object Label17: TLabel
             Left = 8
             Top = 20
@@ -619,13 +637,13 @@ object MainForm: TMainForm
             OnChange = EditChange
           end
         end
-        object GroupBox4: TGroupBox
+        object PostsGroupBox: TGroupBox
           Left = 8
           Top = 168
           Width = 137
           Height = 73
           Caption = 'Posts'
-          TabOrder = 3
+          TabOrder = 2
           object Label32: TLabel
             Left = 8
             Top = 20
@@ -659,13 +677,13 @@ object MainForm: TMainForm
             OnChange = EditChange
           end
         end
-        object GroupBox5: TGroupBox
+        object EmailGroupBox: TGroupBox
           Left = 296
           Top = 144
           Width = 137
           Height = 97
           Caption = 'E-mail'
-          TabOrder = 4
+          TabOrder = 6
           object Label34: TLabel
             Left = 8
             Top = 20
@@ -715,13 +733,13 @@ object MainForm: TMainForm
             OnChange = EditChange
           end
         end
-        object GroupBox6: TGroupBox
+        object UploadsGroupBox: TGroupBox
           Left = 152
           Top = 8
           Width = 137
-          Height = 73
+          Height = 97
           Caption = 'Uploads'
-          TabOrder = 5
+          TabOrder = 3
           object Label37: TLabel
             Left = 8
             Top = 20
@@ -754,14 +772,23 @@ object MainForm: TMainForm
             TabOrder = 1
             OnChange = EditChange
           end
+          object UploadedBytesStaticText: TStaticText
+            Left = 72
+            Top = 68
+            Width = 58
+            Height = 21
+            AutoSize = False
+            BorderStyle = sbsSunken
+            TabOrder = 2
+          end
         end
-        object GroupBox7: TGroupBox
+        object DownloadsGroupBox: TGroupBox
           Left = 296
           Top = 8
           Width = 137
-          Height = 97
+          Height = 121
           Caption = 'Downloads'
-          TabOrder = 6
+          TabOrder = 5
           object Label39: TLabel
             Left = 8
             Top = 20
@@ -780,7 +807,7 @@ object MainForm: TMainForm
           end
           object Label42: TLabel
             Left = 8
-            Top = 68
+            Top = 92
             Width = 57
             Height = 21
             AutoSize = False
@@ -804,18 +831,27 @@ object MainForm: TMainForm
           end
           object LeechEdit: TEdit
             Left = 72
-            Top = 68
+            Top = 92
             Width = 57
             Height = 21
             TabOrder = 2
             OnChange = EditChange
+          end
+          object DownloadedBytesStaticText: TStaticText
+            Left = 72
+            Top = 68
+            Width = 58
+            Height = 21
+            AutoSize = False
+            BorderStyle = sbsSunken
+            TabOrder = 3
           end
         end
       end
       object SettingsTabSheet: TTabSheet
         Caption = 'Settings'
         ImageIndex = 3
-        object GroupBox10: TGroupBox
+        object TerminalGroupBox: TGroupBox
           Left = 8
           Top = 8
           Width = 209
@@ -863,13 +899,13 @@ object MainForm: TMainForm
             TabOrder = 1
           end
         end
-        object GroupBox11: TGroupBox
+        object LogonGroupBox: TGroupBox
           Left = 224
           Top = 8
           Width = 209
           Height = 113
           Caption = 'Logon'
-          TabOrder = 1
+          TabOrder = 2
           DesignSize = (
             209
             113)
@@ -890,13 +926,13 @@ object MainForm: TMainForm
             TabOrder = 0
           end
         end
-        object GroupBox13: TGroupBox
+        object ChatGroupBox: TGroupBox
           Left = 224
           Top = 128
           Width = 209
           Height = 113
           Caption = 'Chat'
-          TabOrder = 2
+          TabOrder = 3
           DesignSize = (
             209
             113)
@@ -917,13 +953,13 @@ object MainForm: TMainForm
             TabOrder = 0
           end
         end
-        object GroupBox15: TGroupBox
+        object CommandShellGroupBox: TGroupBox
           Left = 8
           Top = 168
           Width = 209
           Height = 73
           Caption = 'Command Shell'
-          TabOrder = 3
+          TabOrder = 1
           object ShellEdit: TEdit
             Left = 8
             Top = 24
@@ -947,7 +983,7 @@ object MainForm: TMainForm
       object MsgFileSettingsTabSheet: TTabSheet
         Caption = 'Msg/File Settings'
         ImageIndex = 4
-        object GroupBox16: TGroupBox
+        object MessageGroupBox: TGroupBox
           Left = 8
           Top = 8
           Width = 209
@@ -982,20 +1018,20 @@ object MainForm: TMainForm
             Left = 128
             Top = 64
             Width = 73
-            Height = 24
+            Height = 21
             Anchors = [akLeft, akTop, akRight]
             CharCase = ecUpperCase
             TabOrder = 1
             OnChange = EditChange
           end
         end
-        object GroupBox12: TGroupBox
+        object FileGroupBox: TGroupBox
           Left = 224
           Top = 8
           Width = 209
           Height = 153
           Caption = 'File'
-          TabOrder = 1
+          TabOrder = 2
           DesignSize = (
             209
             153)
@@ -1021,7 +1057,7 @@ object MainForm: TMainForm
             Left = 168
             Top = 120
             Width = 33
-            Height = 24
+            Height = 21
             Anchors = [akLeft, akTop, akBottom]
             CharCase = ecUpperCase
             MaxLength = 3
@@ -1032,7 +1068,7 @@ object MainForm: TMainForm
             Left = 184
             Top = 88
             Width = 17
-            Height = 24
+            Height = 21
             Anchors = [akLeft, akTop, akBottom]
             CharCase = ecUpperCase
             MaxLength = 1
@@ -1055,13 +1091,13 @@ object MainForm: TMainForm
             TabOrder = 2
           end
         end
-        object GroupBox14: TGroupBox
+        object QwkGroupBox: TGroupBox
           Left = 8
           Top = 112
           Width = 209
           Height = 129
           Caption = 'QWK Message Packet'
-          TabOrder = 2
+          TabOrder = 1
           DesignSize = (
             209
             129)

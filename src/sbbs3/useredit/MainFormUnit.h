@@ -109,7 +109,7 @@ __published:	// IDE-managed Components
     TEdit* ShellEdit;
     TEdit* EditorEdit;
     TEdit* TempFileExtEdit;
-    TGroupBox *GroupBox1;
+    TGroupBox *TimeOnGroupBox;
     TCheckBox *ExpertCheckBox;
     TCheckListBox* TerminalCheckListBox;
     TCheckListBox* MessageCheckListBox;
@@ -121,6 +121,25 @@ __published:	// IDE-managed Components
     TAction* SaveUser;
     TAction* NewUser;
     TImageList* ImageList;
+    TGroupBox *DatesGroupBox;
+    TGroupBox *LogonsGroupBoxx;
+    TGroupBox *PostsGroupBox;
+    TGroupBox *UploadsGroupBox;
+    TGroupBox *DownloadsGroupBox;
+    TGroupBox *EmailGroupBox;
+    TGroupBox *FlagSetGroupBox;
+    TGroupBox *TerminalGroupBox;
+    TGroupBox *CommandShellGroupBox;
+    TGroupBox *LogonGroupBox;
+    TGroupBox *ChatGroupBox;
+    TGroupBox *MessageGroupBox;
+    TGroupBox *FileGroupBox;
+    TGroupBox *QwkGroupBox;
+    TGroupBox *AddressGroupBox;
+    TStaticText *CreditsStaticText;
+    TStaticText *FreeCreditsStaticText;
+    TStaticText *UploadedBytesStaticText;
+    TStaticText *DownloadedBytesStaticText;
     void __fastcall EditChange(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
     void __fastcall ScrollBarChange(TObject *Sender);
@@ -143,6 +162,7 @@ private:	// User declarations
     void __fastcall PutUserStr(TEdit*, enum user_field, const char*);
     void __fastcall PutUserText(TEdit*, enum user_field);
     void __fastcall PutUserDate(TEdit*, enum user_field);
+    void __fastcall PutUserBytes(TEdit*, enum user_field);    
     void __fastcall SaveChanges(void);
     void __fastcall SetBit(bool set_it, uint32_t& field, uint32_t bit);
 public:		// User declarations

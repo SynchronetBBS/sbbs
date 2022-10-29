@@ -82,6 +82,12 @@ void __fastcall TMainForm::PutUserDate(TEdit* Edit, enum user_field fnum)
     Edit->Tag = false;
 }
 //---------------------------------------------------------------------------
+void __fastcall TMainForm::PutUserBytes(TEdit* Edit, enum user_field fnum)
+{
+    AnsiString str = parse_byte_count(Edit->Text.c_str(), 1);
+    PutUserStr(Edit, fnum, str.c_str());
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::GetUserDate(TEdit* Edit, time_t t)
 {
     char tmp[64];
@@ -238,7 +244,9 @@ void __fastcall TMainForm::GetUserData(int number)
     GetUserFlags(RestrictionsEdit, user.rest);
 
     GetUserText(CreditsEdit, user.cdt);
+    CreditsStaticText->Caption = byte_estimate_to_str(user.cdt, tmp, sizeof(tmp), 1, 1);
     GetUserText(FreeCreditsEdit, user.freecdt);
+    FreeCreditsStaticText->Caption = byte_estimate_to_str(user.freecdt, tmp, sizeof(tmp), 1, 1);
     GetUserText(MinutesEdit, user.min);
 
     // Stats
@@ -257,8 +265,10 @@ void __fastcall TMainForm::GetUserData(int number)
     GetUserText(FeedbackEdit, user.fbacks);
     GetUserText(UploadedFilesEdit, user.uls);
     GetUserText(UploadedBytesEdit, user.ulb);
+    UploadedBytesStaticText->Caption = byte_estimate_to_str(user.ulb, tmp, sizeof(tmp), 1, 1);
     GetUserText(DownloadedFilesEdit, user.dls);
     GetUserText(DownloadedBytesEdit, user.dlb);
+    DownloadedBytesStaticText->Caption = byte_estimate_to_str(user.dlb, tmp, sizeof(tmp), 1, 1);
     GetUserText(LeechEdit, user.leech);
 
     // Extended Comment
@@ -392,8 +402,8 @@ void __fastcall TMainForm::PutUserData(int number)
     PutUserText(RestrictionsEdit, USER_REST);
     PutUserDate(ExpireEdit, USER_EXPIRE);
 
-    PutUserText(CreditsEdit, USER_CDT);
-    PutUserText(FreeCreditsEdit, USER_FREECDT);
+    PutUserBytes(CreditsEdit, USER_CDT);
+    PutUserBytes(FreeCreditsEdit, USER_FREECDT);
     PutUserText(MinutesEdit, USER_MIN);
 
     PutUserDate(FirstOnEdit, USER_FIRSTON);
@@ -410,9 +420,9 @@ void __fastcall TMainForm::PutUserData(int number)
     PutUserText(EmailTodayEdit, USER_ETODAY);
     PutUserText(FeedbackEdit, USER_FBACKS);
     PutUserText(UploadedFilesEdit, USER_ULS);
-    PutUserText(UploadedBytesEdit, USER_ULB);
+    PutUserBytes(UploadedBytesEdit, USER_ULB);
     PutUserText(DownloadedFilesEdit, USER_DLS);
-    PutUserText(DownloadedBytesEdit, USER_DLB);
+    PutUserBytes(DownloadedBytesEdit, USER_DLB);
     PutUserText(LeechEdit, USER_LEECH);
 
     if(Memo->Tag) {
