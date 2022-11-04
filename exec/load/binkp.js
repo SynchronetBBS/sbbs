@@ -252,8 +252,13 @@ BinkP.prototype.send_chunks = function(str) {
 		ret = this.sock.send(str.substr(sent));
 		if (ret > 0)
 			sent += ret;
-		else
+		else {
+			if (ret !== 0)
+				log(LOG_NOTICE, "socket send returned " + ret + ", error: " + this.sock.error_str);
+			if (!this.sock.is_writable)
+				log(LOG_WARNING, "socket is not writable");
 			return false;
+		}
 	}
 	return true;
 };
@@ -680,6 +685,7 @@ BinkP.prototype.session = function()
 	var size;
 	var last = Date.now();
 	var cur_timeout;
+	var success = true;
 
 	// Session set up, we're good to go!
 	outer:
@@ -868,11 +874,17 @@ BinkP.prototype.session = function()
 				if (this.receiving === undefined) {
 					if (this.ver1_1) {
 						if (this.senteob == 0 || (this.goteob))
-							this.sendCmd(this.command.M_EOB);
+							if (!this.sendCmd(this.command.M_EOB)) {
+								success = false;
+								break;
+							}
 					}
 					else {
 						if (!this.senteob)
-							this.sendCmd(this.command.M_EOB);
+							if (!this.sendCmd(this.command.M_EOB)) {
+								success = false;
+								break;
+							}
 					}
 				}
 			}
@@ -892,8 +904,11 @@ BinkP.prototype.session = function()
 		if (this.sending !== undefined) {
 			if (this.ver1_1 || this.senteob === 0) {
 				if (this.sending.waitingForGet !== undefined && !this.sending.waitingForGet) {
-					if(this.sendData(this.sending.file.read(32767)))
-						last = Date.now();
+					if (!this.sendData(this.sending.file.read(32767))) {
+						success = false;
+						break;
+					}
+					last = Date.now();
 					if (this.eof || this.sending.file.position >= this.sending.file.length) {
 						log(LOG_INFO, "Sent file: " + this.sending.file.name + format(" (%1.1fKB)", this.sending.file.position / 1024.0));
 						this.sending.file.close();
@@ -911,7 +926,7 @@ BinkP.prototype.session = function()
 
 	if (js.terminated)
 		return false;
-	return true;
+	return success;
 };
 BinkP.prototype.close = function()
 {
@@ -966,11 +981,11 @@ BinkP.prototype.sendCmd = function(cmd, data)
 		return false;
 	if (data === undefined)
 		data = '';
+	if (cmd < this.command_name.length)
+		type = this.command_name[cmd];
+	else
+		type = 'Unknown Command '+cmd;
 	if (this.debug || cmd == this.command.M_ERR) {
-		if (cmd < this.command_name.length)
-			type = this.command_name[cmd];
-		else
-			type = 'Unknown Command '+cmd;
 		log(cmd == this.command.M_ERR ? LOG_NOTICE : LOG_DEBUG, "Sending "+type+" command args: "+data);
 	}
 	var len = data.length+1;
@@ -978,7 +993,7 @@ BinkP.prototype.sendCmd = function(cmd, data)
 	// We'll send it all in one go to avoid sending small packets...
 	var sstr = this.send_buf(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + ascii(cmd) + data);
 	if (!this.send_chunks(sstr)) {
-		log(LOG_WARNING, "Send failure");
+		log(LOG_WARNING, "sendCmd(" + type + "): Send failure");
 		return false;
 	}
 	log(LOG_DEBUG, "Sent " + type + " command");
@@ -1020,7 +1035,7 @@ BinkP.prototype.sendData = function(data)
 	// We'll send it all in one go to avoid sending small packets...
 	var sstr = this.send_buf(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + data);
 	if (!this.send_chunks(sstr)) {
-		log(LOG_WARNING, "Send failure");
+		log(LOG_WARNING, "sendData(" + sstr.length + " bytes): Send failure");
 		return false;
 	}
 	return true;
