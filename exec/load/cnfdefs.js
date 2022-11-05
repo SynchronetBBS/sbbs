@@ -393,8 +393,8 @@ struct.dir_t={
 	sort:			{bytes:1,				type:"int"},
 	exempt_ars:		{bytes:LEN_ARSTR+1,		type:"str"},
 	max_age:		{bytes:UINT16_T,		type:"int"},
-	upload_pct:		{bytes:UINT16_T,		type:"int"},
-	download_pct:	{bytes:UINT16_T,		type:"int"},
+	upload_credit_pct:	{bytes:UINT16_T,		type:"int"},
+	download_credit_pct:	{bytes:UINT16_T,		type:"int"},
 	__PADDING__:	{bytes:49}
 };
 struct.lib_t={
@@ -485,8 +485,8 @@ struct.file={
 	max_batdn:		{bytes:UINT16_T,		type:"int"},
 	max_userxfer:	{bytes:UINT16_T,		type:"int"},
 	__PADDING1__:	{bytes:4},
-	cdt_up_pct:		{bytes:UINT16_T,		type:"int"},
-	cdt_dn_pct:		{bytes:UINT16_T,		type:"int"},
+	upload_credit_pct:	{bytes:UINT16_T,		type:"int"},
+	download_credit_pct:	{bytes:UINT16_T,		type:"int"},
 	__PADDING2__:	{bytes:68},
 	leech_pct:		{bytes:UINT16_T,		type:"int"},
 	leech_sec:		{bytes:UINT16_T,		type:"int"},

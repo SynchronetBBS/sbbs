@@ -581,8 +581,8 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 	iniSetShortInt(&ini, ROOT_SECTION, "max_batup", cfg->max_batup, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "max_batdn", cfg->max_batdn, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "max_userxfer" ,cfg->max_userxfer, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "cdt_up_pct", cfg->cdt_up_pct, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "cdt_dn_pct", cfg->cdt_dn_pct, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "upload_credit_pct", cfg->cdt_up_pct, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "download_credit_pct", cfg->cdt_dn_pct, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "leech_pct", cfg->leech_pct, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "leech_sec", cfg->leech_sec, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->file_misc, NULL);
@@ -745,8 +745,8 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 				iniSetShortInt(&section, name, "sort", cfg->dir[i]->sort, NULL);
 				iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, NULL);
 				iniSetShortInt(&section, name, "maxage", cfg->dir[i]->maxage, NULL);
-				iniSetShortInt(&section, name, "up_pct", cfg->dir[i]->up_pct, NULL);
-				iniSetShortInt(&section, name, "dn_pct", cfg->dir[i]->dn_pct, NULL);
+				iniSetShortInt(&section, name, "upload_credit_pct", cfg->dir[i]->up_pct, NULL);
+				iniSetShortInt(&section, name, "download_credit_pct", cfg->dir[i]->dn_pct, NULL);
 				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, NULL);
 				strListMerge(&ini, section);
 				free(section);
