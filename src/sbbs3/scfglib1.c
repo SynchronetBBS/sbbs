@@ -264,12 +264,6 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	str_list_t shell_list = iniGetParsedSectionList(sections, "shell:");
 	cfg->total_shells = (uint16_t)strListCount(shell_list);
-	#ifdef SBBS
-	if(!cfg->total_shells) {
-		safe_snprintf(error, maxerrlen,"At least one command shell must be configured.");
-		return(FALSE);
-	}
-	#endif
 
 	if(cfg->total_shells) {
 		if((cfg->shell=(shell_t **)malloc(sizeof(shell_t *)*cfg->total_shells))==NULL)

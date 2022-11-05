@@ -4942,6 +4942,12 @@ void bbs_thread(void* arg)
 		return;
 	}
 
+	if(scfg.total_shells < 1) {
+		lprintf(LOG_CRIT, "At least one command shell must be configured (e.g. in SCFG->Command Shells)");
+		cleanup(1);
+		return;
+	}
+
 	if((t=checktime())!=0) {   /* Check binary time */
 		lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
 	}
