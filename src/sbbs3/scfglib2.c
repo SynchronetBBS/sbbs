@@ -49,8 +49,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->max_batup = iniGetShortInt(ini, ROOT_SECTION, "max_batup", 0);
 	cfg->max_batdn = iniGetShortInt(ini, ROOT_SECTION, "max_batdn", 0);
 	cfg->max_userxfer = iniGetShortInt(ini, ROOT_SECTION, "max_userxfer", 0);
-	cfg->cdt_up_pct = iniGetShortInt(ini, ROOT_SECTION, "cdt_up_pct", 0);
-	cfg->cdt_dn_pct = iniGetShortInt(ini, ROOT_SECTION, "cdt_dn_pct", 0);
+	cfg->cdt_up_pct = iniGetShortInt(ini, ROOT_SECTION, "upload_credit_pct", 0);
+	cfg->cdt_dn_pct = iniGetShortInt(ini, ROOT_SECTION, "download_credit_pct", 0);
 	cfg->leech_pct = iniGetShortInt(ini, ROOT_SECTION, "leech_pct", 0);
 	cfg->leech_sec = iniGetShortInt(ini, ROOT_SECTION, "leech_sec", 0);
 	cfg->file_misc = iniGetInt32(ini, ROOT_SECTION, "settings", 0);
@@ -328,8 +328,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		arstr(NULL, cfg->dir[i]->ex_arstr, cfg, cfg->dir[i]->ex_ar);
 
 		cfg->dir[i]->maxage = iniGetShortInt(section, NULL, "maxage", 0);
-		cfg->dir[i]->up_pct = iniGetShortInt(section, NULL, "up_pct", 0);
-		cfg->dir[i]->dn_pct = iniGetShortInt(section, NULL, "dn_pct", 0);
+		cfg->dir[i]->up_pct = iniGetShortInt(section, NULL, "upload_credit_pct", 0);
+		cfg->dir[i]->dn_pct = iniGetShortInt(section, NULL, "download_credit_pct", 0);
 		SAFECOPY(cfg->dir[i]->area_tag, iniGetString(section, NULL, "area_tag", "", value));
 		++cfg->total_dirs;
 	}
