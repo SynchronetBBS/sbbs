@@ -395,7 +395,8 @@ struct.dir_t={
 	max_age:		{bytes:UINT16_T,		type:"int"},
 	upload_credit_pct:	{bytes:UINT16_T,		type:"int"},
 	download_credit_pct:	{bytes:UINT16_T,		type:"int"},
-	__PADDING__:	{bytes:49}
+	area_tag:		{bytes:41,			type:"str"},
+	__PADDING__:	{bytes:8}
 };
 struct.lib_t={
 	description:	{bytes:LEN_GLNAME+1,	type:"str"},
