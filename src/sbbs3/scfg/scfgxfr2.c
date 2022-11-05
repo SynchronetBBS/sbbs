@@ -252,7 +252,7 @@ void xfer_cfg()
 		"constructed from a combination of the prefix and the specified code\n"
 		"suffix for each directory.\n"
 		"\n"
-		"Code prefixes may contain up to 8 legal filename characters.\n"
+		"Code prefixes may contain up to 16 legal filename characters.\n"
 		"\n"
 		"Code prefixes should be unique among the file libraries on the system.\n"
 		"\n"
