@@ -319,15 +319,15 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		SAFECOPY(cfg->dir[i]->upload_sem, iniGetString(section, NULL, "upload_sem", "", value));
 
-		cfg->dir[i]->maxfiles = iniGetShortInt(section, NULL, "maxfiles", 0);
+		cfg->dir[i]->maxfiles = iniGetShortInt(section, NULL, "max_files", 0);
 		SAFECOPY(cfg->dir[i]->exts, iniGetString(section, NULL, "extensions", "", value));
 		cfg->dir[i]->misc = iniGetInt32(section, NULL, "settings", 0);
-		cfg->dir[i]->seqdev = iniGetUInteger(section, NULL, "seqdev", 0);
+		cfg->dir[i]->seqdev = iniGetUInteger(section, NULL, "seq_dev", 0);
 		cfg->dir[i]->sort = iniGetUInteger(section, NULL, "sort", 0);
 		SAFECOPY(cfg->dir[i]->ex_arstr, iniGetString(section, NULL, "exempt_ars", "", value));
 		arstr(NULL, cfg->dir[i]->ex_arstr, cfg, cfg->dir[i]->ex_ar);
 
-		cfg->dir[i]->maxage = iniGetShortInt(section, NULL, "maxage", 0);
+		cfg->dir[i]->maxage = iniGetShortInt(section, NULL, "max_age", 0);
 		cfg->dir[i]->up_pct = iniGetShortInt(section, NULL, "upload_credit_pct", 0);
 		cfg->dir[i]->dn_pct = iniGetShortInt(section, NULL, "download_credit_pct", 0);
 		SAFECOPY(cfg->dir[i]->area_tag, iniGetString(section, NULL, "area_tag", "", value));

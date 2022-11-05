@@ -738,13 +738,13 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 				}
 
 				iniSetString(&section, name, "upload_sem", cfg->dir[i]->upload_sem, NULL);
-				iniSetShortInt(&section, name, "maxfiles", cfg->dir[i]->maxfiles, NULL);
+				iniSetShortInt(&section, name, "max_files", cfg->dir[i]->maxfiles, NULL);
 				iniSetString(&section, name, "extensions", cfg->dir[i]->exts, NULL);
 				iniSetHexInt(&section, name, "settings", cfg->dir[i]->misc, NULL);
-				iniSetShortInt(&section, name, "seqdev", cfg->dir[i]->seqdev, NULL);
+				iniSetShortInt(&section, name, "seq_dev", cfg->dir[i]->seqdev, NULL);
 				iniSetShortInt(&section, name, "sort", cfg->dir[i]->sort, NULL);
 				iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, NULL);
-				iniSetShortInt(&section, name, "maxage", cfg->dir[i]->maxage, NULL);
+				iniSetShortInt(&section, name, "max_age", cfg->dir[i]->maxage, NULL);
 				iniSetShortInt(&section, name, "upload_credit_pct", cfg->dir[i]->up_pct, NULL);
 				iniSetShortInt(&section, name, "download_credit_pct", cfg->dir[i]->dn_pct, NULL);
 				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, NULL);
