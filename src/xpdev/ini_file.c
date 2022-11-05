@@ -1460,7 +1460,7 @@ iniGetNamedStringList(str_list_t list, const char* section)
 	return(lp);
 }
 
-named_str_list_t** iniParseSections(str_list_t list)
+named_str_list_t** iniParseSections(const str_list_t list)
 {
 	char str[INI_MAX_LINE_LEN];
 	char* p;
