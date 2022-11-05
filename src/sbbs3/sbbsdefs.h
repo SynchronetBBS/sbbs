@@ -92,8 +92,7 @@
 #define LEN_DIR		63		/* Maximum length of directory paths		*/
 #define LEN_CMD		63		/* Maximum length of command lines			*/
 
-							/* MS-DOS limited values					*/
-#define LEN_CODE	8		/* Maximum length of internal codes			*/
+#define LEN_CODE	16		/* Maximum length of internal codes			*/
 #define LEN_QWKID	8		/* Maximum length of QWK-ID					*/
 #define LEN_MODNAME 8		/* Maximum length of loadable module name	*/
 #define LEN_SIFNAME 8		/* Maximum length of SIF filename			*/

@@ -486,7 +486,7 @@ void msgs_cfg()
 		"constructed from a combination of the prefix and the specified code \n"
 		"suffix for each sub-board.\n"
 		"\n"
-		"Code prefixes may contain up to 8 legal filename characters.\n"
+		"Code prefixes may contain up to 16 legal filename characters.\n"
 		"\n"
 		"Code prefixes should be unique among the message groups on the system.\n"
 		"\n"
