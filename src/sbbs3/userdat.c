@@ -1472,7 +1472,7 @@ uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
 	close(file);
 	if(progress != NULL)
 		progress(cbdata, unum, last);
-	return(0);
+	return found;
 }
 
 /****************************************************************************/
