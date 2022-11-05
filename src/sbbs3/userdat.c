@@ -367,8 +367,8 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->number=user_number;	/* Signal of success */
 
 	char* fbuf[USER_FIELD_COUNT];
-    if(field == NULL)
-        field = fbuf;
+	if(field == NULL)
+		field = fbuf;
 	split_userdat(userdat, field);
 	SAFECOPY(user->alias, field[USER_ALIAS]);
 	SAFECOPY(user->name, field[USER_NAME]);
