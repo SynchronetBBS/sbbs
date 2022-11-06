@@ -549,34 +549,34 @@ CIOLIBEXPORT int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 {
 	int width;
 	int height;
-	void *buf;
+	void *buf = NULL;
 
 	CIOLIB_INIT();
 
-	if(cio_api.movetext != NULL)
-		return(cio_api.movetext(sx, sy, ex, ey, dx, dy));
+	if (cio_api.movetext != NULL)
+		return cio_api.movetext(sx, sy, ex, ey, dx, dy);
 
-	width=ex-sx;
-	height=ey-sy;
-	if (cio_api.vmem_gettext) {
-		buf=malloc((width+1)*(height+1)*sizeof(struct vmem_cell));
+	width = ex - sx;
+	height = ey - sy;
+	if (cio_api.vmem_gettext != NULL) {
+		buf = malloc((width + 1) * (height + 1) * sizeof(struct vmem_cell));
 		if (buf == NULL)
-			return 0;
-		if(!ciolib_vmem_gettext(sx,sy,ex,ey,buf))
 			goto fail;
-		if(!ciolib_vmem_puttext(dx,dy,dx+width,dy+height,buf))
+		if (ciolib_vmem_gettext(sx, sy, ex, ey, buf) == 0)
+			goto fail;
+		if (ciolib_vmem_puttext(dx, dy, dx+width, dy+height, buf) == 0)
 			goto fail;
 	}
 	else {
-		buf=malloc((width+1)*(height+1)*2);
+		buf = malloc((width + 1) * (height + 1) * 2);
 		if (buf == NULL)
-			return 0;
-		if(!ciolib_gettext(sx,sy,ex,ey,buf))
 			goto fail;
-		if(!ciolib_puttext(dx,dy,dx+width,dy+height,buf))
+		if (ciolib_gettext(sx, sy, ex, ey, buf) == 0)
+			goto fail;
+		if (ciolib_puttext(dx, dy, dx + width, dy + height, buf) == 0)
 			goto fail;
 	}
-
+	free(buf);
 	return(1);
 
 fail:
@@ -1169,14 +1169,9 @@ CIOLIBEXPORT void ciolib_normvideo(void)
  */
 CIOLIBEXPORT int ciolib_puttext(int a,int b,int c,int d,void *e)
 {
-	char	*buf=e;
-	int		ret;
 	CIOLIB_INIT();
 
-	ret = cio_api.puttext(a,b,c,d,(void *)buf);
-	if (buf != e)
-		free(buf);
-	return ret;
+	return cio_api.puttext(a, b, c, d, (void *)buf);
 }
 
 /* **MUST** be implemented */
