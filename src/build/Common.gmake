@@ -215,7 +215,9 @@ endif
 os      :=	$(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 
 ifneq ($(os),win32)
- CFLAGS +=	-DPREFER_POLL
+ ifneq ($(os),darwin)
+  CFLAGS +=	-DPREFER_POLL
+ endif
 endif
 
 machine		:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
