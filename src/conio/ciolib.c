@@ -1171,7 +1171,7 @@ CIOLIBEXPORT int ciolib_puttext(int a,int b,int c,int d,void *e)
 {
 	CIOLIB_INIT();
 
-	return cio_api.puttext(a, b, c, d, (void *)buf);
+	return cio_api.puttext(a, b, c, d, e);
 }
 
 /* **MUST** be implemented */
