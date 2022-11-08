@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.32     2022-11-07   Message area chooser only: Bug fix for numeric input when
+                      choosing a sub-board.  Bug fix for getting the number of
+					  posts with the traditional user interface.
 1.31     2022-11-04   Message area chooser only: Made use of the 'posts'
                       property in msg_area.sub[sub-code] (or
                       msg_area.grp_list.sub_list) for the number of posts

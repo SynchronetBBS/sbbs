@@ -43,6 +43,9 @@
  * 2022-11-04 Eric Oulashin   Version 1.31
  *                            Made use of the 'posts' property in msg_area.sub[sub-code] (or msg_area.grp_list.sub_list)
  *                            for the number of posts without votes
+ * 2022-11-07 Eric Oulashin   Version 1.32
+ *                            Bug fix for numeric input when choosing a sub-board.  Bug fix for getting the number of
+ *                            posts with the traditional user interface.
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -86,8 +89,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.30";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-08-19";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.32";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-11-07";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -781,7 +784,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			console.gotoxy(1, console.screen_rows);
 			console.clearline("\1n");
 			console.print("\1cChoose group #: \1h");
-			var userInput = console.getnum(msg_area.grp_list.length);
+			var userInput = console.getnum(msgAreaMenu.NumItems());
 			if (userInput > 0)
 				chosenIdx = userInput - 1;
 			else
@@ -1916,7 +1919,7 @@ function DDMsgAreaChooser_GetSubBoardInfo(pGrpIdx, pSubIdx, pSubSubIdx)
 		retObj.subCode = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code;
 
 		// Get the number of messages in the sub-board
-		var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
+		var numMsgs = numReadableMsgs(null, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
 		if (numMsgs > 0)
 		{
 			retObj.numItems = numMsgs;
@@ -2924,6 +2927,18 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 	{
 		// Just return the total number of messages..  This isn't accurate, but it's fast.
 		return pMsgbase.total_msgs;
+	}
+	else if (pMsgbase === null)
+	{
+		var numMsgs = 0;
+		var msgBase = new MsgBase(pSubBoardCode);
+		if (msgBase.open())
+		{
+			// Just return the total number of messages..  This isn't accurate, but it's fast.
+			numMsgs = msgBase.total_msgs;
+			msgBase.close();
+		}
+		return numMsgs;
 	}
 	else
 		return 0;
