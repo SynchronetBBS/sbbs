@@ -5,15 +5,14 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="sbbsctrl.exe"/>
     <OBJFILES value="sbbsctrl.obj MainFormUnit.obj CtrlPathDialogUnit.obj TextFileEditUnit.obj 
-      TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj NodeFormUnit.obj ..\nopen.obj
+      TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj NodeFormUnit.obj 
       StatsFormUnit.obj AboutBoxFormUnit.obj StatsLogFormUnit.obj 
       CodeInputFormUnit.obj ClientFormUnit.obj SpyFormUnit.obj ..\ringbuf.obj 
       emulvt.obj UserListFormUnit.obj UserMsgFormUnit.obj PropertiesDlgUnit.obj 
       EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
       TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
       ServicesCfgDlgUnit.obj ..\sbbs_ini.obj PreviewFormUnit.obj WebFormUnit.obj 
-      WebCfgDlgUnit.obj LoginAttemptsFormUnit.obj 
-      SoundCfgDlgUnit.obj"/>
+      WebCfgDlgUnit.obj LoginAttemptsFormUnit.obj SoundCfgDlgUnit.obj ..\nopen.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -26,8 +25,7 @@
       EventsFormUnit.dfm ConfigWizardUnit.dfm ServicesFormUnit.dfm 
       TelnetCfgDlgUnit.dfm MailCfgDlgUnit.dfm FtpCfgDlgUnit.dfm 
       ServicesCfgDlgUnit.dfm PreviewFormUnit.dfm WebFormUnit.dfm 
-      WebCfgDlgUnit.dfm LoginAttemptsFormUnit.dfm 
-      SoundCfgDlgUnit.dfm"/>
+      WebCfgDlgUnit.dfm LoginAttemptsFormUnit.dfm SoundCfgDlgUnit.dfm"/>
     <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib services.lib 
       ..\..\xpdev\bcc.win32.lib.debug\xpdev_mt.lib websrvr.lib"/>
     <LIBRARIES value="bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib soaprtl.lib bcbie.lib 
@@ -43,7 +41,7 @@
     <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi vcljpg.bpi bcbsmp.bpi dsnap.bpi dbrtl.bpi 
       vcldb.bpi bdertl.bpi inet.bpi inetdb.bpi vcldbx.bpi qrpt.bpi teeui.bpi 
       teedb.bpi tee.bpi dss.bpi nmfast.bpi dclocx.bpi"/>
-    <PATHCPP value=".;..;.."/>
+    <PATHCPP value=".;..;..;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -60,8 +58,8 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev 
-      -I..\..\smblib -I..\..\hash -I$(BCB)\include -I$(BCB)\include\vcl 
+    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib -I..\..\hash 
+      -I$(BCB)\include -I$(BCB)\include\vcl 
       -I..\..\..\3rdp\win32.release\cryptlib\include -I..\..\comio -src_suffix 
       cpp -DSBBS -DRINGBUF_SEM -DRINGBUF_MUTEX -DUSE_CRYPTLIB -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
@@ -118,6 +116,7 @@
       <FILE FILENAME="WebCfgDlgUnit.cpp" FORMNAME="WebCfgDlg" UNITNAME="WebCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="LoginAttemptsFormUnit.cpp" FORMNAME="LoginAttemptsForm" UNITNAME="LoginAttemptsFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="SoundCfgDlgUnit.cpp" FORMNAME="SoundCfgDlg" UNITNAME="SoundCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\nopen.c" FORMNAME="" UNITNAME="nopen" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
