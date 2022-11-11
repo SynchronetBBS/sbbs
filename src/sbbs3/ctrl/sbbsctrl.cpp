@@ -63,7 +63,7 @@ USEFORM("PreviewFormUnit.cpp", PreviewForm);
 USEFORM("WebFormUnit.cpp", WebForm);
 USEFORM("WebCfgDlgUnit.cpp", WebCfgDlg);
 USEFORM("LoginAttemptsFormUnit.cpp", LoginAttemptsForm);
-USEFORM("C:\src\sbbs3\ctrl\SoundCfgDlgUnit.cpp", SoundCfgDlg);
+USEFORM("SoundCfgDlgUnit.cpp", SoundCfgDlg);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
