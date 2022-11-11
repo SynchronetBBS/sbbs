@@ -401,13 +401,19 @@ BOOL iniRemoveKey(str_list_t* list, const char* section, const char* key)
 {
 	size_t	i;
 	char*	vp=NULL;
+	BOOL	removed = FALSE;
 
-	i=get_value(*list, section, key, NULL, &vp, /* literals_supported: */FALSE);
+	while(1) {
+		i=get_value(*list, section, key, NULL, &vp, /* literals_supported: */FALSE);
 
-	if(vp==NULL)
-		return(FALSE);
+		if(vp==NULL)
+			return removed;
 
-	return(strListDelete(list,i));
+		if(!strListDelete(list,i))
+			return FALSE;
+		removed = TRUE;
+	}
+	return removed;
 }
 
 BOOL iniRemoveValue(str_list_t* list, const char* section, const char* key)
