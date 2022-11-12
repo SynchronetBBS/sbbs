@@ -722,10 +722,7 @@ char* os_version(char *str, size_t size)
 /****************************************************************************/
 char* os_cpuarch(char *str, size_t size)
 {
-	safe_snprintf(str, size, "unknown");
-
 #if defined(_WIN32)
-
 	SYSTEM_INFO sysinfo;
 
 #if _WIN32_WINNT < 0x0501
@@ -751,6 +748,9 @@ char* os_cpuarch(char *str, size_t size)
 		case PROCESSOR_ARCHITECTURE_INTEL:
 			safe_snprintf(str, size, "x86");
 			break;
+		default:
+			safe_snprintf(str, size, "unknown");
+			break;
 	}
 
 #elif defined(__unix__)
@@ -759,6 +759,8 @@ char* os_cpuarch(char *str, size_t size)
 
 	if(uname(&unixver) == 0)
 		safe_snprintf(str, size, "%s", unixver.machine);
+	else
+		safe_snprintf(str, size, "unknown");
 
 #endif
 
