@@ -361,7 +361,7 @@ bool write_cfg(struct modem* modem)
 	iniSetInteger(&ini, section, iniKeyDialWait, modem->dial_wait, style);
 	iniSetInteger(&ini, section, iniKeyGuardTime, modem->guard_time, style);
 	bool result = false;
-	FILE* fp = iniOpenFile(ini_fname, /* create: */TRUE);
+	FILE* fp = iniOpenFile(ini_fname, /* for_modify: */TRUE);
 	if(fp != NULL) {
 		if(iniWriteFile(fp, ini)) {
 			dprintf("Wrote config to: %s", ini_fname);
@@ -380,7 +380,7 @@ bool write_save(struct modem* modem, ulong savnum)
 	if(savnum >= MAX_SAVES)
 		return false;
 	SAFEPRINTF(key, "Save%lu", savnum);
-	FILE* fp = iniOpenFile(ini_fname, /* create: */TRUE);
+	FILE* fp = iniOpenFile(ini_fname, /* for_modify: */TRUE);
 	if(fp == NULL)
 		return false;
 	ini = iniReadFile(fp);
@@ -1083,7 +1083,7 @@ void listen_thread(void* arg)
 
 bool read_ini(const char* ini_fname)
 {
-	FILE* fp = iniOpenFile(ini_fname, /* create: */false);
+	FILE* fp = iniOpenFile(ini_fname, /* for_modify: */false);
 	if(fp == NULL)
 		return false;
 
