@@ -384,7 +384,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(VERSION_NOTICE);
 
 	if(!strcmp(sp,"OS_VER"))
-		return(os_version(str, sizeof(str)));
+		return(os_version(str, maxlen));
+
+	if(strcmp(sp,"OS_CPU") == 0)
+		return(os_cpuarch(str, maxlen));
 
 #ifdef JAVASCRIPT
 	if(!strcmp(sp,"JS_VER"))

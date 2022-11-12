@@ -703,10 +703,9 @@ char* os_version(char *str, size_t size)
 		if(uname(&unixver) != 0)
 			safe_snprintf(str, size, "Unix (uname errno: %d)",errno);
 		else
-			safe_snprintf(str, size, "%s %s %s"
+			safe_snprintf(str, size, "%s %s"
 				,unixver.sysname	/* e.g. "Linux" */
 				,unixver.release	/* e.g. "2.2.14-5.0" */
-				,unixver.machine	/* e.g. "i586" */
 				);
 	}
 #else	/* DOS */
@@ -716,6 +715,51 @@ char* os_version(char *str, size_t size)
 #endif
 
 	return(str);
+}
+
+/****************************************************************************/
+/* Write the CPU architecture according to the Operating System into str	*/
+/****************************************************************************/
+char* os_cpuarch(char *str, size_t size)
+{
+	safe_snprintf(str, size, "unknown");
+
+#if defined(_WIN32)
+
+	SYSTEM_INFO sysinfo;
+	
+	GetNativeSystemInfo(&sysinfo);
+	
+	switch(sysinfo.wProcessorArchitecture) {
+		case PROCESSOR_ARCHITECTURE_AMD64:
+			safe_snprintf(str, size, "x64");
+			break;
+		case PROCESSOR_ARCHITECTURE_ARM:
+			safe_snprintf(str, size, "ARM");
+			break;
+#if defined PROCESSOR_ARCHITECTURE_ARM64
+		case PROCESSOR_ARCHITECTURE_ARM64:
+			safe_snprintf(str, size, "ARM64");
+			break;
+#endif
+		case PROCESSOR_ARCHITECTURE_IA64:
+			safe_snprintf(str, size, "IA-64");
+			break;
+		case PROCESSOR_ARCHITECTURE_INTEL:
+			safe_snprintf(str, size, "x86");
+			break;
+	}
+
+#elif defined(__unix__)
+
+	struct utsname unixver;
+
+	if(uname(&unixver) == 0)
+		safe_snprintf(str, size, "%s", unixver.machine);
+
+#endif
+
+	return str;
 }
 
 char* os_cmdshell(void)
