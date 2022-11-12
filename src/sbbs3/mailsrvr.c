@@ -6153,7 +6153,7 @@ void mail_server(void* arg)
 		mailproc_list=NULL;
 		mailproc_count=0;
 		iniFileName(mailproc_ini,sizeof(mailproc_ini),scfg.ctrl_dir,"mailproc.ini");
-		if((fp=iniOpenFile(mailproc_ini, /* create? */FALSE))!=NULL) {
+		if((fp=iniOpenFile(mailproc_ini, /* for_modify: */FALSE))!=NULL) {
 			lprintf(LOG_DEBUG,"Reading %s",mailproc_ini);
 			sec_list = iniReadSectionList(fp,/* prefix */NULL);
 			if((mailproc_count=strListCount(sec_list))!=0

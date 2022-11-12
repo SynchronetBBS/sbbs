@@ -2590,12 +2590,12 @@ int* iniReadIntList(FILE* fp, const char* section, const char* key
 	return parseIntList(value, sep, cp);
 }
 
-FILE* iniOpenFile(const char* fname, BOOL create)
+FILE* iniOpenFile(const char* fname, BOOL for_modify)
 {
-	char* mode="r+";
+	char* mode="r";
 
-	if(create && !fexist(fname))
-		mode="w+";
+	if(for_modify)
+		mode = fexist(fname) ? "r+" : "w+";
 
 	return(fopen(fname,mode));
 }

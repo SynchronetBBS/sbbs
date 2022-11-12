@@ -136,7 +136,7 @@ DLLEXPORT void* 		iniFreeNamedStringList(named_string_t** list);
 
 /* File I/O Functions */
 DLLEXPORT char* 		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
-DLLEXPORT FILE* 		iniOpenFile(const char* fname, BOOL create);
+DLLEXPORT FILE* 		iniOpenFile(const char* fname, BOOL for_modify);
 DLLEXPORT str_list_t 	iniReadFile(FILE*);
 DLLEXPORT BOOL 			iniWriteFile(FILE*, const str_list_t);
 DLLEXPORT BOOL 			iniCloseFile(FILE*);

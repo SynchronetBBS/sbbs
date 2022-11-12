@@ -239,7 +239,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 
 	get_default_echocfg(cfg);
 
-	if((fp=iniOpenFile(cfg->cfgfile, /* create: */false))==NULL)
+	if((fp=iniOpenFile(cfg->cfgfile, /* for_modify: */false))==NULL)
 		return false;
 	ini = iniReadFile(fp);
 	iniCloseFile(fp);
@@ -507,7 +507,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	if(cfg->cfgfile_backups)
 		backup(cfg->cfgfile, cfg->cfgfile_backups, /* ren: */false);
 
-	if((fp=iniOpenFile(cfg->cfgfile, /* create: */true))==NULL)
+	if((fp=iniOpenFile(cfg->cfgfile, /* for_modify: */true))==NULL)
 		return false;
 	ini = iniReadFile(fp);
 

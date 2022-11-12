@@ -382,7 +382,7 @@ void new_echostat_msg(echostat_t* stat, enum echostat_msg_type type, echostat_ms
 size_t read_echostats(const char* fname, echostat_t **echostat)
 {
 	str_list_t ini;
-	FILE* fp = iniOpenFile(fname, FALSE);
+	FILE* fp = iniOpenFile(fname, /* for_modify: */false);
 	if(fp == NULL)
 		return 0;
 
@@ -1852,7 +1852,7 @@ bool alter_config(nodecfg_t* nodecfg, const char* key, const char* value)
 	if(alterations++ == 0)
 		backup(cfg.cfgfile, cfg.cfgfile_backups, /* ren: */false);
 
-	if((fp=iniOpenFile(cfg.cfgfile, false)) == NULL) {
+	if((fp=iniOpenFile(cfg.cfgfile, /* for_modify: */true)) == NULL) {
 		lprintf(LOG_ERR, "ERROR %d (%s) opening %s for altering configuration of node %s"
 			,errno, strerror(errno), cfg.cfgfile, smb_faddrtoa(&nodecfg->addr, NULL));
 		return false;
@@ -4618,7 +4618,7 @@ static uint32_t read_export_ptr(int subnum, const char* tag)
 	uint32_t	ptr=0;
 
 	safe_snprintf(path,sizeof(path),"%s%s.ini",scfg.sub[subnum]->data_dir,scfg.sub[subnum]->code);
-	if((fp=iniOpenFile(path, /* create: */false)) != NULL) {
+	if((fp=iniOpenFile(path, /* for_modify: */false)) != NULL) {
 		safe_snprintf(key, sizeof(key), "%s.export_ptr", tag);
 		if((ptr=iniReadLongInt(fp, "SBBSecho", key, 0)) == 0)
 			ptr=iniReadLongInt(fp, "SBBSecho", "export_ptr", 0);	/* the previous .ini method (did not support gating) */
@@ -4636,7 +4636,7 @@ static void write_export_ptr(int subnum, uint32_t ptr, const char* tag)
 
 	/* New way (July-21-2012): */
 	safe_snprintf(path,sizeof(path),"%s%s.ini",scfg.sub[subnum]->data_dir,scfg.sub[subnum]->code);
-	if((fp=iniOpenFile(path, /* create: */true)) != NULL) {
+	if((fp=iniOpenFile(path, /* for_modify: */true)) != NULL) {
 		safe_snprintf(key, sizeof(key), "%s.export_ptr", tag);
 		ini_file = iniReadFile(fp);
 		iniSetLongInt(&ini_file, "SBBSecho", key, ptr, /* style (default): */NULL);

@@ -1686,7 +1686,7 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 	memset(client, 0, sizeof(*client));
 	client->size = sizeof(client);
 	SAFEPRINTF(path, "%sclient.ini", cfg->node_path[number - 1]);
-	fp = iniOpenFile(path, /* create: */FALSE);
+	fp = iniOpenFile(path, /* for_modify: */FALSE);
 	if(fp == NULL)
 		return -2;
 	sock = iniReadShortInt(fp, ROOT_SECTION, "sock", 0);
@@ -3959,12 +3959,12 @@ BOOL set_sound_muted(scfg_t* scfg, BOOL muted)
 /* user .ini file get/set functions */
 /************************************/
 
-static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, BOOL create)
+static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, BOOL for_modify)
 {
 	char path[MAX_PATH+1];
 
 	SAFEPRINTF2(path, "%suser/%04u.ini", scfg->data_dir, user_number);
-	return iniOpenFile(path, create);
+	return iniOpenFile(path, for_modify);
 }
 
 BOOL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen)
@@ -3972,7 +3972,7 @@ BOOL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, 
 	FILE* fp;
 	char buf[INI_MAX_VALUE_LEN];
 
-	fp = user_ini_open(scfg, user_number, /* create: */FALSE);
+	fp = user_ini_open(scfg, user_number, /* for_modify: */FALSE);
 	if(fp == NULL)
 		return FALSE;
 	char* result = iniReadValue(fp, section, key, NULL, buf);
@@ -3987,7 +3987,7 @@ BOOL user_set_property(scfg_t* scfg, unsigned user_number, const char* section, 
 	FILE* fp;
 	str_list_t ini;
 
-	fp = user_ini_open(scfg, user_number, /* create: */TRUE);
+	fp = user_ini_open(scfg, user_number, /* for_modify: */TRUE);
 	if(fp == NULL)
 		return FALSE;
 	ini = iniReadFile(fp);
@@ -4004,7 +4004,7 @@ BOOL user_set_time_property(scfg_t* scfg, unsigned user_number, const char* sect
 	FILE* fp;
 	str_list_t ini;
 
-	fp = user_ini_open(scfg, user_number, /* create: */TRUE);
+	fp = user_ini_open(scfg, user_number, /* for_modify: */TRUE);
 	if(fp == NULL)
 		return FALSE;
 	ini = iniReadFile(fp);

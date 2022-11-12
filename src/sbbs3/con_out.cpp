@@ -561,7 +561,7 @@ bool sbbs_t::update_nodeterm(void)
 
 	char path[MAX_PATH + 1];
 	SAFEPRINTF(path, "%sterminal.ini", cfg.node_dir);
-	FILE* fp = iniOpenFile(path, /* create: */TRUE);
+	FILE* fp = iniOpenFile(path, /* for_modify: */TRUE);
 	bool result = false;
 	if(fp != NULL) {
 		result = iniWriteFile(fp, ini);
