@@ -1701,7 +1701,7 @@ int main(int argc, char **argv)
 				fprintf(statfp,"Debug\n");
 #endif
 				fprintf(statfp,"Compiled %s %.5s with %s\n",__DATE__,__TIME__,compiler);
-				fprintf(statfp,"%s\n",os_version(str));
+				fprintf(statfp,"%s\n",os_version(str, sizeof(str)));
 				bail(0);
 				return 0;
 			}

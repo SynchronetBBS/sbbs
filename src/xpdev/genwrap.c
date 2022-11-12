@@ -638,11 +638,11 @@ char* _ui64toa(uint64_t val, char* str, int radix)
 /****************************************************************************/
 /* Write the version details of the current operating system into str		*/
 /****************************************************************************/
-char* os_version(char *str)
+char* os_version(char *str, size_t size)
 {
 #if defined(__OS2__) && defined(__BORLANDC__)
 
-	sprintf(str,"OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
+	safe_snprintf(str, size, "OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
 
 #elif defined(_WIN32)
 
@@ -676,7 +676,7 @@ char* os_version(char *str)
 		}
 	}
 
-	sprintf(str,"Windows %sVersion %lu.%lu"
+	safe_snprintf(str, size, "Windows %sVersion %lu.%lu"
 			,winflavor
 			,winver.dwMajorVersion, winver.dwMinorVersion);
 	if(winver.dwBuildNumber)
@@ -693,7 +693,7 @@ char* os_version(char *str)
 		char* p = iniReadString(fp, NULL, "PRETTY_NAME", "Unix", value);
 		fclose(fp);
 		SKIP_CHAR(p, '"');
-		strcpy(str, p);
+		strncpy(str, p, size);
 		p = lastchar(str);
 		if(*p == '"')
 			*p = '\0';
@@ -701,9 +701,9 @@ char* os_version(char *str)
 		struct utsname unixver;
 
 		if(uname(&unixver) != 0)
-			sprintf(str,"Unix (uname errno: %d)",errno);
+			safe_snprintf(str, size, "Unix (uname errno: %d)",errno);
 		else
-			sprintf(str,"%s %s %s"
+			safe_snprintf(str, size, "%s %s %s"
 				,unixver.sysname	/* e.g. "Linux" */
 				,unixver.release	/* e.g. "2.2.14-5.0" */
 				,unixver.machine	/* e.g. "i586" */
@@ -711,7 +711,7 @@ char* os_version(char *str)
 	}
 #else	/* DOS */
 
-	sprintf(str,"DOS %u.%02u",_osmajor,_osminor);
+	safe_snprintf(str, size, "DOS %u.%02u",_osmajor,_osminor);
 
 #endif
 
