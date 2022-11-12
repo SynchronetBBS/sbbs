@@ -577,7 +577,7 @@ void sbbs_t::batch_upload()
 /****************************************************************************/
 void sbbs_t::batch_download(int xfrprot)
 {
-	FILE* fp = batch_list_open(&cfg, useron.number, XFER_BATCH_DOWNLOAD, /* create: */FALSE);
+	FILE* fp = batch_list_open(&cfg, useron.number, XFER_BATCH_DOWNLOAD, /* for_modify: */true);
 	if(fp == NULL)
 		return;
 	str_list_t ini = iniReadFile(fp);

@@ -2061,7 +2061,7 @@ static named_string_t** read_ini_list(char* path, char* section, char* desc
 
 	list=iniFreeNamedStringList(list);
 
-	if((fp=iniOpenFile(path, /* create? */FALSE))!=NULL) {
+	if((fp=iniOpenFile(path, /* for_modify: */FALSE))!=NULL) {
 		list=iniReadNamedStringList(fp,section);
 		iniCloseFile(fp);
 		COUNT_LIST_ITEMS(list,i);
@@ -7135,7 +7135,7 @@ void web_server(void* arg)
 
 		/* Don't do this for *each* CGI request, just once here during [re]init */
 		iniFileName(cgi_env_ini,sizeof(cgi_env_ini),scfg.ctrl_dir,"cgi_env.ini");
-		if((fp=iniOpenFile(cgi_env_ini,/* create? */FALSE)) != NULL) {
+		if((fp=iniOpenFile(cgi_env_ini,/* for_modify: */FALSE)) != NULL) {
 			cgi_env = iniReadFile(fp);
 			iniCloseFile(fp);
 		}

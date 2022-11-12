@@ -80,7 +80,7 @@ extern const char*		supported_archive_formats[];
 
 /* Batch file transfer queues */
 DLLEXPORT char*			batch_list_name(scfg_t* , uint usernumber, enum XFER_TYPE, char* fname, size_t);
-DLLEXPORT FILE*			batch_list_open(scfg_t* , uint usernumber, enum XFER_TYPE, bool create);
+DLLEXPORT FILE*			batch_list_open(scfg_t* , uint usernumber, enum XFER_TYPE, bool for_modify);
 DLLEXPORT str_list_t	batch_list_read(scfg_t* , uint usernumber, enum XFER_TYPE);
 DLLEXPORT bool			batch_list_write(scfg_t*, uint usernumber, enum XFER_TYPE, str_list_t list);
 DLLEXPORT bool			batch_list_sort(scfg_t*, uint usernumber, enum XFER_TYPE);
