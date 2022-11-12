@@ -29,6 +29,8 @@
 #include <limits.h>		/* CHAR_BIT */
 #include <math.h>		/* fmod */
 
+#include "ini_file.h"
+
 #if defined(__unix__)
 	#include <sys/ioctl.h>		/* ioctl() */
 	#include <sys/utsname.h>	/* uname() */
@@ -40,7 +42,6 @@
 
 #include "genwrap.h"	/* Verify prototypes */
 #include "xpendian.h"	/* BYTE_SWAP */
-#include "ini_file.h"
 
 /****************************************************************************/
 /* Used to replace snprintf()  guarantees to terminate.			  			*/
