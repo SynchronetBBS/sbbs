@@ -727,9 +727,12 @@ char* os_cpuarch(char *str, size_t size)
 #if defined(_WIN32)
 
 	SYSTEM_INFO sysinfo;
-	
+
+#if _WIN32_WINNT < 0x0501
+	GetSystemInfo(&sysinfo);
+#else
 	GetNativeSystemInfo(&sysinfo);
-	
+#endif
 	switch(sysinfo.wProcessorArchitecture) {
 		case PROCESSOR_ARCHITECTURE_AMD64:
 			safe_snprintf(str, size, "x64");
