@@ -1,10 +1,10 @@
 @WORDWRAP@@MENU:../banner*@
 nhCLIENT ncCONN: h@CONN@
 nh       ncADDR: h@HOST@ [@IP@]
-nh       ncTERM: h@COLS@x@ROWS@ @TERM@ 
+nh       ncTERM: h@COLS@x@ROWS@ @CHARSET@ / @TERM@
 nhSERVER ncNAME: hy@BBS@
 nh       ncADDR: h@HOSTNAME@
-nh       ncNODE: h@NODE@ nc(of h@TNODE@nc) - h@OS_VER@
+nh       ncNODE: h@NODE@ nc(of h@TNODE@nc) - h@OS_VER@ @OS_CPU@
 nh       ncTIME: h@DATETIME-L############@ @TIMEZONE@
 nh       ncADMN: h@SYSOP@
 
