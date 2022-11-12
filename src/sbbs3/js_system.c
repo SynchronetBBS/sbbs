@@ -2578,7 +2578,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRFUNC("compiled_when", sprintf(str,"%s %.5s",__DATE__,__TIME__), str);
 	LAZY_STRING("copyright", COPYRIGHT_NOTICE);
 	LAZY_STRING("js_version", (char *)JS_GetImplementationVersion());
-	LAZY_STRING("os_version", os_version(str));
+	LAZY_STRING("os_version", os_version(str, sizeof(str)));
 
 #ifndef JSDOOR
 	/* fido_addr_list property */

@@ -122,6 +122,6 @@ void sbbs_t::ver()
 	}
 #endif
 
-	center(os_version(str));
+	center(os_version(str, sizeof(str)));
 }
 #endif
