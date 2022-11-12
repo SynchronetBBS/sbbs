@@ -13,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -52,6 +40,7 @@
 
 #include "genwrap.h"	/* Verify prototypes */
 #include "xpendian.h"	/* BYTE_SWAP */
+#include "ini_file.h"
 
 /****************************************************************************/
 /* Used to replace snprintf()  guarantees to terminate.			  			*/
@@ -695,18 +684,30 @@ char* os_version(char *str)
 		sprintf(str+strlen(str), " %s", winver.szCSDVersion);
 
 #elif defined(__unix__)
+	FILE* fp = fopen("/etc/os-release", "r");
+	if(fp == NULL)
+		fp = fopen("/usr/lib/os-release", "r");
+	if(fp != NULL) {
+		char value[INI_MAX_VALUE_LEN];
+		char* p = iniReadString(fp, NULL, "PRETTY_NAME", "Unix", value);
+		fclose(fp);
+		SKIP_CHAR(p, '"');
+		strcpy(str, p);
+		p = lastchar(str);
+		if(*p == '"')
+			*p = '\0';
+	} else {
+		struct utsname unixver;
 
-	struct utsname unixver;
-
-	if(uname(&unixver)<0)
-		sprintf(str,"Unix (uname errno: %d)",errno);
-	else
-		sprintf(str,"%s %s %s"
-			,unixver.sysname	/* e.g. "Linux" */
-			,unixver.release	/* e.g. "2.2.14-5.0" */
-			,unixver.machine	/* e.g. "i586" */
-			);
-
+		if(uname(&unixver) != 0)
+			sprintf(str,"Unix (uname errno: %d)",errno);
+		else
+			sprintf(str,"%s %s %s"
+				,unixver.sysname	/* e.g. "Linux" */
+				,unixver.release	/* e.g. "2.2.14-5.0" */
+				,unixver.machine	/* e.g. "i586" */
+				);
+	}
 #else	/* DOS */
 
 	sprintf(str,"DOS %u.%02u",_osmajor,_osminor);
