@@ -72,7 +72,7 @@ char* socklib_version(char* str, char* winsock_ver)
 #if defined(SBBS) && !defined(JSDOOR)
 void sbbs_t::ver()
 {
-	char str[128],compiler[32];
+	char str[128], compiler[32], os[128], cpu[128];
 
 	CRLF;
 	strcpy(str,VERSION_NOTICE);
@@ -122,6 +122,7 @@ void sbbs_t::ver()
 	}
 #endif
 
-	center(os_version(str, sizeof(str)));
+	safe_snprintf(str, sizeof(str), "%s %s", os_version(os, sizeof(os)), os_cpuarch(cpu, sizeof(cpu)));
+	center(str);
 }
 #endif
