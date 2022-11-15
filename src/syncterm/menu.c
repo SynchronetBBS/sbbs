@@ -224,7 +224,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 				}
 				break;
 			case 5:		/* Output rate */
-				if(bbs->conn_type==CONN_TYPE_MODEM || bbs->conn_type==CONN_TYPE_SERIAL) {
+				if(bbs->conn_type==CONN_TYPE_MODEM || bbs->conn_type==CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) {
 					uifcmsg("Not supported for this connection type"
 						,"Cannot change the display rate for Modem/Serial connections.");
 				}
