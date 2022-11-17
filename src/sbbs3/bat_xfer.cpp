@@ -666,7 +666,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 		bputs(text[R_Download]);
 		return false;
 	}
-	if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron,&client)) {
+	if(!can_user_download(&cfg, f->dir, &useron, &client, /* reason */NULL)) {
 		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[CantDownloadFromDir]);
 		return false;

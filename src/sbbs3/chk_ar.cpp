@@ -862,5 +862,5 @@ uint sbbs_t::getusrdir(uint dirnum)
 
 int sbbs_t::dir_op(uint dirnum)
 {
-	return(SYSOP || (cfg.dir[dirnum]->op_ar[0] && chk_ar(cfg.dir[dirnum]->op_ar,&useron,&client)));
+	return is_user_dirop(&cfg, dirnum, &useron, &client);
 }

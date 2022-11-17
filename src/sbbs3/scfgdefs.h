@@ -108,9 +108,17 @@ typedef struct {							/* Transfer Library Information */
 				sname[LEN_GSNAME+1],		/* Short Name - used for prompts */
 				vdir[LEN_GSNAME+1],			/* Virtual Directory name */
 				arstr[LEN_ARSTR+1],			/* Access Requirements */
+				ul_arstr[LEN_ARSTR+1], 		/* Upload Requirements */
+				dl_arstr[LEN_ARSTR+1], 		/* Download Requirements */
+				ex_arstr[LEN_ARSTR+1], 		/* Exemption Requirements (credits) */
+				op_arstr[LEN_ARSTR+1], 		/* Operator Requirements */
 				code_prefix[LEN_CODE+1],	/* Prefix for internal code */
 				parent_path[48];			/* Parent for dir paths */
-	uchar		ar[LEN_ARSTR+1];
+	uchar		ar[LEN_ARSTR+1],
+				ul_ar[LEN_ARSTR+1],
+				dl_ar[LEN_ARSTR+1],
+				ex_ar[LEN_ARSTR+1],
+				op_ar[LEN_ARSTR+1];
 	uint32_t	offline_dir;				/* Offline file directory */
 	uint32_t	misc;						/* Miscellaneous bits */
 	enum area_sort sort;

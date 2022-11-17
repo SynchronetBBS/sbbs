@@ -3262,6 +3262,8 @@ BOOL can_user_upload(scfg_t* cfg, uint dirnum, user_t* user, client_t* client, u
 		&& !is_user_dirop(cfg, dirnum, user, client)) {
 		if(reason!=NULL)
 			*reason=CantUploadHere;
+		if(!chk_ar(cfg, cfg->lib[cfg->dir[dirnum]->lib]->ul_ar, user, client))
+			return FALSE;
 		if(!chk_ar(cfg, cfg->dir[dirnum]->ul_ar, user, client))
 			return FALSE;
 	}
@@ -3281,6 +3283,8 @@ BOOL can_user_download(scfg_t* cfg, uint dirnum, user_t* user, client_t* client,
 		return FALSE;
 	if(reason!=NULL)
 		*reason=CantDownloadFromDir;
+	if(!chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->dl_ar,user,client))
+		return FALSE;
 	if(!chk_ar(cfg,cfg->dir[dirnum]->dl_ar,user,client))
 		return FALSE;
 	if(reason!=NULL)
@@ -3353,7 +3357,8 @@ BOOL is_user_dirop(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
 	if(user->level >= SYSOP_LEVEL)
 		return TRUE;
 
-	return cfg->dir[dirnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client);
+	return (cfg->dir[dirnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client))
+			|| (cfg->lib[cfg->dir[dirnum]->lib]->op_ar[0]!=0 && chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->op_ar,user,client));
 }
 
 /****************************************************************************/
@@ -3376,6 +3381,10 @@ BOOL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
 
 	if(user->exempt&FLAG('D'))
 		return(TRUE);
+
+	if(cfg->lib[cfg->dir[dirnum]->lib]->ex_ar[0] != 0
+		&& chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->ex_ar,user,client))
+		return TRUE;
 
 	if(cfg->dir[dirnum]->ex_ar[0]==0)
 		return(FALSE);
