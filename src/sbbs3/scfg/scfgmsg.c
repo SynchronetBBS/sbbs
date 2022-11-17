@@ -549,7 +549,7 @@ void msgs_cfg()
 			if(uifc.input(WIN_MID|WIN_SAV,0,0, "Group Short Name", short_name, sizeof(short_name)-1 ,K_EDIT)<1)
 				continue;
 
-			char code_prefix[LEN_GSNAME+1];	/* purposely extra-long */
+			char code_prefix[LEN_EXTCODE+1];	/* purposely extra-long */
 			SAFECOPY(code_prefix, short_name);
 			prep_code(code_prefix, NULL);
 			if(strlen(code_prefix) < LEN_CODE)
