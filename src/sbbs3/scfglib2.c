@@ -241,10 +241,19 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->lib[i]->lname, iniGetString(section, NULL, "description", name + 4, value));
 		SAFECOPY(cfg->lib[i]->code_prefix, iniGetString(section, NULL, "code_prefix", "", value));
 		SAFECOPY(cfg->lib[i]->arstr, iniGetString(section, NULL, "ars", "", value));
+		SAFECOPY(cfg->lib[i]->ul_arstr, iniGetString(section, NULL, "upload_ars", "", value));
+		SAFECOPY(cfg->lib[i]->dl_arstr, iniGetString(section, NULL, "download_ars", "", value));
+		SAFECOPY(cfg->lib[i]->op_arstr, iniGetString(section, NULL, "operator_ars", "", value));
+		SAFECOPY(cfg->lib[i]->ex_arstr, iniGetString(section, NULL, "exempt_ars", "", value));
+
 		SAFECOPY(cfg->lib[i]->vdir, cfg->lib[i]->sname);
 		pathify(cfg->lib[i]->vdir);
 
 		arstr(NULL, cfg->lib[i]->arstr, cfg, cfg->lib[i]->ar);
+		arstr(NULL, cfg->lib[i]->ul_arstr, cfg, cfg->lib[i]->ul_ar);
+		arstr(NULL, cfg->lib[i]->dl_arstr, cfg, cfg->lib[i]->dl_ar);
+		arstr(NULL, cfg->lib[i]->op_arstr, cfg, cfg->lib[i]->op_ar);
+		arstr(NULL, cfg->lib[i]->ex_arstr, cfg, cfg->lib[i]->ex_ar);
 
 		SAFECOPY(cfg->lib[i]->parent_path, iniGetString(section, NULL, "parent_path", "", value));
 		cfg->lib[i]->sort = iniGetInteger(section, NULL, "sort", 0);

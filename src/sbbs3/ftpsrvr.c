@@ -124,8 +124,7 @@ BOOL direxist(char *dir)
 
 BOOL dir_op(scfg_t* cfg, user_t* user, client_t* client, uint dirnum)
 {
-	return(user->level>=SYSOP_LEVEL
-		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client)));
+	return is_user_dirop(cfg, dirnum, user, client);
 }
 
 #if defined(__GNUC__)	// Catch printf-format errors with lprintf
@@ -1924,6 +1923,8 @@ static BOOL can_upload(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
 		return TRUE;
 	if (dir->dirnum == scfg.upload_dir)
 		return TRUE;
+	if (!chk_ar(&scfg, lib->ul_ar, user, client))
+		return FALSE;
 	if (chk_ar(&scfg, dir->ul_ar,user,client))
 		return TRUE;
 	if ((user->exempt & FLAG('U')))
@@ -1976,7 +1977,7 @@ static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 	if (dir->dirnum != scfg.sysop_dir && dir->dirnum != scfg.upload_dir && !chk_ar(&scfg,dir->ar,user,client))
 		return FALSE;
 	if(!dir_op(&scfg,user,client,dir->dirnum) && !(user->exempt&FLAG('U'))) {
-		if(!chk_ar(&scfg,dir->ul_ar,user,client))
+		if(!chk_ar(&scfg,dir->ul_ar,user,client) || !chk_ar(&scfg, lib->ul_ar, user, client))
 			return FALSE;
 	}
 	if (file->from == NULL || stricmp(file->from, user->alias) != 0)
@@ -2001,16 +2002,7 @@ static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 
 static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
 {
-	if (user->rest&FLAG('D'))
-		return FALSE;
-	if (!chk_ar(&scfg,lib->ar,user,client))
-		return FALSE;
-	if (!chk_ar(&scfg,dir->ar,user,client))
-		return FALSE;
-	if (!chk_ar(&scfg,dir->dl_ar,user,client))
-		return FALSE;
-	// TODO: Verify credits
-	return TRUE;
+	return can_user_download(&scfg, dir->dirnum, user, client,  /* reason */NULL);
 }
 
 static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file, char *permstr)
@@ -4325,7 +4317,7 @@ static void ctrl_thread(void* arg)
 				}
 
 				if(!getsize && !getdate && !delecmd
-					&& !chk_ar(&scfg,scfg.dir[dir]->dl_ar,&user,&client)) {
+					&& !can_user_download(&scfg, dir, &user, &client, /* reason */NULL)) {
 					lprintf(LOG_WARNING,"%04d <%s> has insufficient access to download from /%s/%s"
 						,sock,user.alias
 						,scfg.lib[scfg.dir[dir]->lib]->vdir
@@ -4529,7 +4521,8 @@ static void ctrl_thread(void* arg)
 				append=(strnicmp(cmd,"APPE",4)==0);
 			
 				if(!dir_op(&scfg,&user,&client,dir) && !(user.exempt&FLAG('U'))) {
-					if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user,&client)) {
+					if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user,&client)
+						|| !chk_ar(&scfg, scfg.lib[scfg.dir[dir]->lib]->ul_ar, &user, &client)) {
 						lprintf(LOG_WARNING,"%04d <%s> cannot upload to /%s/%s (insufficient access)"
 							,sock,user.alias
 							,scfg.lib[scfg.dir[dir]->lib]->vdir

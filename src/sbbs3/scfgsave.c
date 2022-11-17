@@ -676,6 +676,10 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "description", cfg->lib[i]->lname, NULL);
 		iniSetString(&section, name, "ars", cfg->lib[i]->arstr, NULL);
+		iniSetString(&section, name, "upload_ars", cfg->lib[i]->ul_arstr, NULL);
+		iniSetString(&section, name, "download_ars", cfg->lib[i]->dl_arstr, NULL);
+		iniSetString(&section, name, "operator_ars", cfg->lib[i]->op_arstr, NULL);
+		iniSetString(&section, name, "exempt_ars", cfg->lib[i]->ex_arstr, NULL);
 		iniSetString(&section, name, "parent_path", cfg->lib[i]->parent_path, NULL);
 		iniSetString(&section, name, "code_prefix", cfg->lib[i]->code_prefix, NULL);
 

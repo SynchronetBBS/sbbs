@@ -949,7 +949,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 				}
 				continue; 
 			}
-			if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron,&client)) {
+			if(!can_user_download(&cfg, f->dir, &useron, &client, /* reason: */NULL)) {
 				SYNC;
 				bputs(text[CantDownloadFromDir]);
 				mnemonics(text[QuitOrNext]);

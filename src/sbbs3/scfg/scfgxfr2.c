@@ -221,7 +221,7 @@ unsigned dirs_in_lib(unsigned libnum)
 
 void xfer_cfg()
 {
-	static int libs_dflt,libs_bar,dflt;
+	static int libs_dflt,libs_bar,dflt,bar;
 	char str[256], done=0, *p;
 	char tmp_code[MAX_PATH+1];
 	int file,j,k,q;
@@ -429,6 +429,14 @@ void xfer_cfg()
 				,cfg.lib[libnum]->parent_path);
 			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
 				,cfg.lib[libnum]->arstr);
+			sprintf(opt[j++],"%-27.27s%s","Upload Requirements"
+				,cfg.lib[libnum]->ul_arstr);
+			sprintf(opt[j++],"%-27.27s%s","Download Requirements"
+				,cfg.lib[libnum]->dl_arstr);
+			sprintf(opt[j++],"%-27.27s%s","Operator Requirements"
+				,cfg.lib[libnum]->op_arstr);
+			sprintf(opt[j++],"%-27.27s%s","Exemption Requirements"
+				,cfg.lib[libnum]->ex_arstr);
 			sprintf(opt[j++],"%-27.27s%s","Access to Sub-directories"
 				,cfg.lib[libnum]->parent_path[0] ? (cfg.lib[libnum]->misc&LIB_DIRS ? "Yes":"No") : "N/A");
 			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[libnum]->sort]);
@@ -449,12 +457,12 @@ void xfer_cfg()
 				"The left and right arrow keys may be used to cycle through file\n"
 				"libraries.\n"
 			;
-			uifc_winmode_t wmode = WIN_ACT|WIN_EXTKEYS;
+			uifc_winmode_t wmode = WIN_RHT|WIN_ACT|WIN_EXTKEYS;
 			if(libnum > 0)
 				wmode |= WIN_LEFTKEY;
 			if(libnum + 1 < cfg.total_libs)
 				wmode |= WIN_RIGHTKEY;
-			switch(uifc.list(wmode,6,4,60,&dflt,0,str,opt)) {
+			switch(uifc.list(wmode,0,0,0,&dflt,&bar,str,opt)) {
 				case -1:
 					done=1;
 					break;
@@ -521,8 +529,24 @@ void xfer_cfg()
 						,cfg.lib[libnum]->parent_path,sizeof(cfg.lib[libnum]->parent_path)-1,K_EDIT);
 					break;
 				case __COUNTER__:
-					sprintf(str,"%s Library",cfg.lib[libnum]->sname);
+					sprintf(str,"%s Library Access",cfg.lib[libnum]->sname);
 					getar(str,cfg.lib[libnum]->arstr);
+					break;
+				case __COUNTER__:
+					sprintf(str,"%s Library Upload",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->ul_arstr);
+					break;
+				case __COUNTER__:
+					sprintf(str,"%s Library Download",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->dl_arstr);
+					break;
+				case __COUNTER__:
+					sprintf(str,"%s Library Operator",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->op_arstr);
+					break;
+				case __COUNTER__:
+					sprintf(str,"%s Library Exemption",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->ex_arstr);
 					break;
 				case __COUNTER__:
 					uifc.helpbuf=
