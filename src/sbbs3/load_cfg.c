@@ -217,11 +217,12 @@ void prep_cfg(scfg_t* cfg)
 				continue;
 			*tp = 0; // Remove trailing slash
 			char* dirname = getfname(p);
+			*tp = PATH_DELIM;
 			int j;
 			for(j = 0; j < cfg->total_dirs; j++) {
 				if(cfg->dir[j]->lib != i)
 					continue;
-				if(stricmp(cfg->dir[j]->lname, dirname) == 0)
+				if(strcmp(cfg->dir[j]->path, p) == 0 || strcmp(cfg->dir[j]->path, dirname) == 0)
 					break;
 			}
 			if(j < cfg->total_dirs)	// duplicate
@@ -231,7 +232,7 @@ void prep_cfg(scfg_t* cfg)
 			dir.lib = i;
 			dir.misc = DIR_DIZ;
 			SAFECOPY(dir.path, p);
-			backslash(dir.path);
+			*tp = 0; // Remove trailing slash
 			SAFECOPY(dir.lname, dirname);
 			SAFECOPY(dir.sname, dir.lname);
 			char code_suffix[LEN_EXTCODE+1];
