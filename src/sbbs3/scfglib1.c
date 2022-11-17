@@ -385,7 +385,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		char group[INI_MAX_VALUE_LEN];
 		const char* name = sub_list[i];
 		SAFECOPY(group, name + 4);
-		char* p = strchr(group, ':');
+		char* p = strrchr(group, ':');
 		if(p == NULL)
 			continue;
 		*p = '\0';

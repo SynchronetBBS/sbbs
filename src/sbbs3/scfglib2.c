@@ -281,7 +281,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		char lib[INI_MAX_VALUE_LEN];
 		const char* name = dir_list[i];
 		SAFECOPY(lib, name + 4);
-		char* p = strchr(lib, ':');
+		char* p = strrchr(lib, ':');
 		if(p == NULL)
 			continue;
 		*p = '\0';
