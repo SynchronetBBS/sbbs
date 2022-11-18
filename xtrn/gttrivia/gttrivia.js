@@ -4,7 +4,7 @@ trivia categories.  User's high scores and trivia category stats (total score, l
 are saved to a file.
 
 Date       Author            Description
-2022-11-17 Eric Oulashin     Version 1.00
+2022-11-18 Eric Oulashin     Version 1.00
 */
 
 "use strict";
@@ -31,7 +31,7 @@ if (system.version_num < 31500)
 
 // Version information
 var GAME_VERSION = "1.00";
-var GAME_VER_DATE = "2022-11-17";
+var GAME_VER_DATE = "2022-11-18";
 
 // Load required .js libraries
 var requireFnExists = (typeof(require) === "function");
@@ -184,7 +184,8 @@ function playTrivia()
 	var qaFilenameInfo = getQACategoriesAndFilenames();
 	if (qaFilenameInfo.length == 0)
 	{
-		console.print("\x01n" + gSettings.colors.error + "There are no trivia sections available!\x01n");
+		console.attributes = "N" + gSettings.colors.error;
+		console.print("There are no trivia sections available!\x01n");
 		console.crlf();
 		console.pause();
 		return 2;
@@ -194,22 +195,27 @@ function playTrivia()
 	var chosenSectionIdx = 0;
 	if (qaFilenameInfo.length > 1)
 	{
-		console.print("\x01n" + gSettings.colors.triviaCategoryHdr + "Choose a trivia section:\x01n");
+		console.attributes = "N" + gSettings.colors.triviaCategoryHdr;
+		console.print("Choose a trivia section:\x01n");
 		console.crlf();
 		for (var i = 0; i < qaFilenameInfo.length; ++i)
 		{
 			var categoryNum = i + 1;
-			var categoryNumStr = format(gSettings.colors.triviaCategoryListNumbers + "%3d", i + 1);
-			var categorySep = gSettings.colors.triviaCategoryListSeparator + ": ";
-			var categoryName = gSettings.colors.triviaCategoryName + qaFilenameInfo[i].sectionName;
+			var categoryNumStr = format(attrCodeStr(gSettings.colors.triviaCategoryListNumbers) + "%3d", i + 1);
+			var categorySep = attrCodeStr(gSettings.colors.triviaCategoryListSeparator) + ": ";
+			var categoryName = attrCodeStr(gSettings.colors.triviaCategoryName) + qaFilenameInfo[i].sectionName;
 			console.print("\x01n" + categoryNumStr + "\x01n" + categorySep + "\x01n" + categoryName);
 			console.crlf();
 		}
-		console.print("\x01n" + gSettings.colors.categoryNumPrompt + "Choose\x01n" + gSettings.colors.categoryNumPromptSeparator + ": \x01n" + gSettings.colors.categoryNumInput);
+		console.attributes = "N" + gSettings.colors.categoryNumPrompt;
+		console.print("Choose\x01n");
+		console.attributes = gSettings.colors.categoryNumPromptSeparator;
+		console.print(": \x01n");
+		console.attributes = gSettings.colors.categoryNumInput;
 		var chosenSectionNum = +(console.getnum(qaFilenameInfo.length));
 		if (chosenSectionNum < 1 || chosenSectionNum > qaFilenameInfo.length)
 		{
-			//console.print("\x01n" + gSettings.colors.error + "That is not a valid section number\x01n");
+			//console.print("\x01n" + attrCodeStr(gSettings.colors.error) + "That is not a valid section number\x01n");
 			//console.print("\x01n\x01cReturning to \x01y\x01h" + system.name + "\x01n\x01c...\x01n");
 			//mswait(1500);
 			return 0;
@@ -217,7 +223,10 @@ function playTrivia()
 		chosenSectionIdx = chosenSectionNum - 1;
 	}
 
-	console.print("\x01n" + gSettings.colors.triviaCategoryHdr + "Playing " + gSettings.colors.triviaCategoryName + qaFilenameInfo[chosenSectionIdx].sectionName + "\x01n");
+	console.attributes = "N" + gSettings.colors.triviaCategoryHdr;
+	console.print("Playing ");
+	console.attributes = gSettings.colors.triviaCategoryName;
+	console.print(qaFilenameInfo[chosenSectionIdx].sectionName + "\x01n");
 	console.crlf();
 
 	// Load and parse the section filename into questions, answers, and points
@@ -238,12 +247,15 @@ function playTrivia()
 	if (QAArray.length < maxNumQuestions)
 		maxNumQuestions = QAArray.length;
 	var continueQuestioning = true;
+	var questionColor = attrCodeStr(gSettings.colors.question);
+	var questionHdrColor = attrCodeStr(gSettings.colors.questionHdr);
+	var questionHdrNumColor = attrCodeStr(gSettings.colors.questionHdrNum);
+	var answerWhenIncorrectColor = attrCodeStr(gSettings.colors.answerAfterIncorrect);
 	for (var i = 0; i < maxNumQuestions && continueQuestioning; ++i)
 	{
 		var questionNumTxt = format("\x01n%sQuestion \x01n%s%d \x01n%sof \x01n%s%d\x01n%s:\x01n",
-		   gSettings.colors.questionHdr, gSettings.colors.questionHdrNum, (i+1),
-		   gSettings.colors.questionHdr, gSettings.colors.questionHdrNum,
-		   maxNumQuestions, gSettings.colors.questionHdr);
+		                       questionHdrColor, questionHdrNumColor, (i+1), questionHdrColor, questionHdrNumColor,
+		                       maxNumQuestions, questionHdrColor);
 
 		// Show the question and prompt the user for a response.  Let the user
 		// try multiple times; when wrong, display a hint.
@@ -253,23 +265,30 @@ function playTrivia()
 			// Print the question
 			console.print(questionNumTxt);
 			console.crlf();
-			printWithWordWrap(gSettings.colors.question, QAArray[i].question);
-			console.print("\x01n" + gSettings.colors.questionHdr + "# points: \x01n" +
-			              gSettings.colors.questionHdrNum + QAArray[i].numPoints + "\x01n\r\n");
+			printWithWordWrap(questionColor, QAArray[i].question);
+			console.attributes = "N" + gSettings.colors.questionHdr;
+			console.print("# points: ");
+			console.attributes = "N" + gSettings.colors.questionHdrNum;
+			console.print(QAArray[i].numPoints + "\x01n");
+			console.crlf();
 			// If this is after the first try, then give a clue
 			if (tryI > 0)
 			{
-				console.print("\x01n" + gSettings.colors.clueHdr + "Clue:\x01n");
+				console.attributes = "N" + gSettings.colors.clueHdr;
+				console.print("Clue:");
 				console.crlf();
-				console.print(gSettings.colors.clue + partiallyHiddenStr(QAArray[i].answer, tryI-1) + "\x01n");
+				console.attributes = "N" + gSettings.colors.clue;
+				console.print(partiallyHiddenStr(QAArray[i].answer, tryI-1) + "\x01n");
 				console.crlf();
 				
 			}
 			// Prompt for an answer
-			console.print(gSettings.colors.answerPrompt + "Answer (try " + +(tryI+1) + " of " + gSettings.behavior.numTriesPerQuestion +
-			              ")\x01n" + gSettings.colors.answerPromptSep + ": \x01n"/* + gSettings.colors.answerInput*/);
+			console.attributes = "N" + gSettings.colors.answerPrompt;
+			console.print("Answer (try " + +(tryI+1) + " of " + gSettings.behavior.numTriesPerQuestion + ")");
+			console.attributes = "N" + gSettings.colors.answerPromptSep;
+			console.print(": ");
 			console.crlf();
-			console.print(gSettings.colors.answerInput);
+			console.attributes = "N" + gSettings.colors.answerInput;
 			var userResponse = console.getstr();
 			console.print("\x01n");
 			var responseCheckRetObj = checkUserResponse(QAArray[i].answer, userResponse);
@@ -282,12 +301,14 @@ function playTrivia()
 			{
 				gotAnswerCorrect = true;
 				userPoints += QAArray[i].numPoints;
-				console.print("\x01n" + gSettings.colors.questionHdr + "Correct!\x01n");
+				console.attributes = "N" + gSettings.colors.questionHdr;
+				console.print("Correct!\x01n");
 				console.crlf();
 			}
 			else
 			{
-				console.print("\x01n" + gSettings.colors.questionHdr + "* Incorrect!");
+				console.attributes = "N" + gSettings.colors.questionHdr;
+				console.print("* Incorrect!");
 				console.crlf();
 				if (tryI < gSettings.behavior.numTriesPerQuestion)
 					console.crlf();
@@ -296,22 +317,32 @@ function playTrivia()
 		// If the user didn't get the answer correct, output the correct answer
 		if (!gotAnswerCorrect)
 		{
-			console.print("\x01n" + gSettings.colors.questionHdr + "The answer was:");
+			console.attributes = "N" + gSettings.colors.questionHdr;
+			console.print("The answer was:");
 			console.crlf();
-			printWithWordWrap(gSettings.colors.answerAfterIncorrect, QAArray[i].answer);
-			console.print("\x01n");
+			console.attributes = "N";
+			printWithWordWrap(answerWhenIncorrectColor, QAArray[i].answer);
+			console.attributes = "N";
 		}
 
 		// Print the user's score so far
 		console.crlf();
-		console.print("\x01n" + gSettings.colors.scoreSoFarText + "Your score so far: \x01n" + gSettings.colors.userScore + userPoints + "\x01n");
+		console.attributes = "N" +  gSettings.colors.scoreSoFarText;
+		console.print("Your score so far: ");
+		console.attributes = "N" + gSettings.colors.userScore;
+		console.print(userPoints);
+		console.attributes = "N";
 		console.crlf();
 
 		console.crlf();
 	}
-	console.print("\x01n" + gSettings.colors.questionHdr + "Your score: \x01n" + gSettings.colors.userScore + userPoints + "\x01n");
+	console.attributes = "N" + gSettings.colors.questionHdr;
+	console.print("Your score: ");
+	console.attributes = "N" + gSettings.colors.userScore;
+	console.print(userPoints);
+	console.attributes = "N";
 	console.crlf();
-	console.print("\x01n\x01b\x01hUpdating the scores file...");
+	console.print("\x01b\x01hUpdating the scores file...");
 	console.crlf();
 	updateScoresFile(userPoints, qaFilenameInfo[chosenSectionIdx].sectionName);
 	console.print("Done.\x01n");
@@ -353,43 +384,43 @@ function loadSettings(pStartupPath)
 			settings.behavior.maxNumPlayerScoresToDisplay = 10;
 
 		if (typeof(settings.colors.error) !== "string")
-			settings.colors.error = "\x01y\x01h";
+			settings.colors.error = "YH";
 		if (typeof(settings.colors.triviaCategoryHdr) !== "string")
-			settings.colors.triviaCategoryHdr = "\x01m\x01h";
+			settings.colors.triviaCategoryHdr = "MH";
 		if (typeof(settings.colors.triviaCategoryListNumbers) !== "string")
-			settings.colors.triviaCategoryListNumbers = "\x01c\x01h";
+			settings.colors.triviaCategoryListNumbers = "CH";
 		if (typeof(settings.colors.triviaCategoryListSeparator) !== "string")
-			settings.colors.triviaCategoryListSeparator = "\x01g\x01h";
+			settings.colors.triviaCategoryListSeparator = "GH";
 		if (typeof(settings.colors.triviaCategoryName) !== "string")
-			settings.colors.triviaCategoryName = "\x01c";
+			settings.colors.triviaCategoryName = "C";
 		if (typeof(settings.colors.categoryNumPrompt) !== "string")
-			settings.colors.categoryNumPrompt = "\x01c";
+			settings.colors.categoryNumPrompt = "C";
 		if (typeof(settings.colors.categoryNumPromptSeparator) !== "string")
-			settings.colors.categoryNumPromptSeparator = "\x01g\x01h";
+			settings.colors.categoryNumPromptSeparator = "GH";
 		if (typeof(settings.colors.categoryNumInput) !== "string")
-			settings.colors.categoryNumInput = "\x01c\x01h";
+			settings.colors.categoryNumInput = "CH";
 		if (typeof(settings.colors.questionHdr) !== "string")
-			settings.colors.questionHdr = "\x01m";
+			settings.colors.questionHdr = "M";
 		if (typeof(settings.colors.questionHdrNum) !== "string")
-			settings.colors.questionHdrNum = "\x01c\x01h";
+			settings.colors.questionHdrNum = "CH";
 		if (typeof(settings.colors.question) !== "string")
-			settings.colors.question = "\x01b\x01h";
+			settings.colors.question = "BH";
 		if (typeof(settings.colors.answerPrompt) !== "string")
-			settings.colors.answerPrompt = "\x01c";
+			settings.colors.answerPrompt = "C";
 		if (typeof(settings.colors.answerPromptSep) !== "string")
-			settings.colors.answerPromptSep = "\x01g\x01h";
+			settings.colors.answerPromptSep = "GH";
 		if (typeof(settings.colors.answerInput) !== "string")
-			settings.colors.answerInput = "\x01c\x01h";
+			settings.colors.answerInput = "CH";
 		if (typeof(settings.colors.userScore) !== "string")
-			settings.colors.userScore = "\x01c\x01h";
+			settings.colors.userScore = "CH";
 		if (typeof(settings.colors.scoreSoFarText) !== "string")
-			settings.colors.scoreSoFarText = "\x01c";
+			settings.colors.scoreSoFarText = "C";
 		if (typeof(settings.colors.clueHdr) !== "string")
-			settings.colors.clueHdr = "\x01r\x01h";
+			settings.colors.clueHdr = "RH";
 		if (typeof(settings.colors.clue) !== "string")
-			settings.colors.clue = "\x01g\x01h";
+			settings.colors.clue = "GH";
 		if (typeof(settings.colors.answerAfterIncorrect) !== "string")
-			settings.colors.answerAfterIncorrect = "\x01g";
+			settings.colors.answerAfterIncorrect = "G";
 		
 		// Sanity checking
 		if (settings.behavior.numQuestionsPerPlay <= 0)
@@ -399,9 +430,11 @@ function loadSettings(pStartupPath)
 		if (settings.behavior.maxNumPlayerScoresToDisplay <= 0)
 			settings.behavior.maxNumPlayerScoresToDisplay = 10;
 
+		// No need to do this:
 		// For each color, replace any instances of specifying the control character in substWord with the actual control character
-		for (var prop in settings.colors)
-			settings.colors[prop] = settings.colors[prop].replace(/\\[xX]01/g, "\x01").replace(/\\[xX]1/g, "\x01").replace(/\\1/g, "\x01");
+		//for (var prop in settings.colors)
+		//	settings.colors[prop] = settings.colors[prop].replace(/\\[xX]01/g, "\x01").replace(/\\[xX]1/g, "\x01").replace(/\\1/g, "\x01");
+		
 		iniFile.close();
 	}
 	return settings;
@@ -1080,4 +1113,22 @@ function printWithWordWrap(pAttributes, pStr, pPrintNormalAttrAfterward)
 	var applyNormalAttr = (typeof(pPrintNormalAttrAfterward) === "boolean" ? pPrintNormalAttrAfterward : true);
 	if (applyNormalAttr)
 		console.print("\x01n");
+}
+
+// Given a string of attribute characters, this function inserts the control code
+// in front of each attribute character and returns the new string.
+//
+// Parameters:
+//  pAttrCodeCharStr: A string of attribute characters (i.e., "YH" for yellow high)
+//
+// Return value: A string with the control character inserted in front of the attribute characters
+function attrCodeStr(pAttrCodeCharStr)
+{
+	if (typeof(pAttrCodeCharStr) !== "string")
+		return "";
+
+	var str = "";
+	for (var i = 0; i < pAttrCodeCharStr.length; ++i)
+		str += "\x01" + pAttrCodeCharStr[i];
+	return str;
 }

@@ -1,6 +1,6 @@
                                Good Time Trivia
                                  Version 1.00
-                           Release date: 2022-11-17
+                           Release date: 2022-11-18
 
                                      by
 
@@ -50,6 +50,9 @@ the script.  The scores file is in JSON format.
 
 In the main menu, there will be an extra option for the sysop to clear the high
 scores.  This will delete the scores.json file.
+
+This is currently a single-player game, but multiple users on different nodes
+can play it simultaneously.
 
 Currently, this trivia game is local to the current BBS only.  In the future,
 I think it would be good to add a feature for networked/inter-BBS games.
@@ -178,6 +181,10 @@ maxNumPlayerScoresToDisplay       The maximum number of player scores to display
                                   in the list of high scores
 
 [COLORS] section
+In this section, the color codes are simply specified by a string of color
+(attribute) code characters (i.e., YH for yellow and high).  See this page for
+Synchronet attribute codes:
+http://wiki.synchro.net/custom:ctrl-a_codes
 Setting                           Element applied to
 -------                           -------------------
 error                             Errors
