@@ -991,9 +991,9 @@ function showHelpScreen()
 	console.center("\x01n\x01cVersion \x01h" + GAME_VERSION);
 	console.center("\x01n\x01c\x01h" + GAME_VER_DATE + "\x01n");
 	console.crlf();
-	var helpText = "\x01n\x01c" + GAME_NAME + " is a trivia game with a freeform answer format.  The game "
+	var helpText = GAME_NAME + " is a trivia game with a freeform answer format.  The game "
 	             + "starts with a main menu, allowing you to play, show high scores, or quit.";
-	printWithWordWrap(null, helpText);
+	printWithWordWrap("\x01n\x01c", helpText);
 	console.crlf();
 	console.print("\x01n\x01c\x01hGameplay:");
 	console.crlf();
@@ -1002,10 +1002,10 @@ function showHelpScreen()
 		console.print(HORIZONTAL_SINGLE);
 	console.print("\x01n");
 	console.crlf();
-	helpText = "\x01n\x01cWhen starting a game, there can be potentially multiple trivia categories to "
+	helpText = "When starting a game, there can be potentially multiple trivia categories to "
 	         + "choose from.  If there is only one category, the game will automatically start with that category.";
-	printWithWordWrap(null, helpText);
-	helpText = "\x01n\x01cDuring a game, you will be asked up to " + gSettings.behavior.numQuestionsPerPlay
+	printWithWordWrap("\x01n\x01c", helpText);
+	helpText = "During a game, you will be asked up to " + gSettings.behavior.numQuestionsPerPlay
 	         + " questions per play.  For each question, you are given ";
 	if (gSettings.behavior.numTriesPerQuestion > 1)
 		helpText += gSettings.behavior.numTriesPerQuestion + " chances ";
@@ -1021,7 +1021,7 @@ function showHelpScreen()
 	}
 	helpText += "When the questions have completed, your score will be shown.  When you're done playing, "
 	         + "your current play score, category, and total running score will be saved to the high scores file.";
-	printWithWordWrap(null, helpText);
+	printWithWordWrap("\x01n\x01c", helpText);
 	console.print("\x01n");
 	console.crlf();
 	console.pause();
@@ -1074,12 +1074,9 @@ function printWithWordWrap(pAttributes, pStr, pPrintNormalAttrAfterward)
 		//console.print("\x01n" + pAttributes);
 		attrs = "\x01n" + pAttributes;
 	}
-	/*
-	var str = word_wrap(pStr, console.screen_columns-1, console.strlen(pStr), false);
-	console.print(str);
-	console.print("\r");
-	*/
-	console.putmsg(attrs + pStr, P_WORDWRAP);
+	//console.print(word_wrap(pStr, console.screen_columns-1, console.strlen(pStr), false));
+	//console.print("\r");
+	console.putmsg(attrs + pStr, P_WORDWRAP|P_NOATCODES);
 	var applyNormalAttr = (typeof(pPrintNormalAttrAfterward) === "boolean" ? pPrintNormalAttrAfterward : true);
 	if (applyNormalAttr)
 		console.print("\x01n");
