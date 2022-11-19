@@ -248,6 +248,7 @@ static char *conn_type_help=           "`Connection Type`\n\n"
                                 "`SSH`..............: Connect using the Secure Shell (SSH-2) protocol\n"
                                 "`Modem`............: Connect using a dial-up modem\n"
                                 "`Serial`...........: Connect directly to a serial communications port\n"
+                                "`3-wire (no RTS)`..: As with Serial, but lower RTS\n"
                                 "`Shell`............: Connect to a local PTY (*nix only)\n"
                                 "`MBBS GHost`.......: Communicate using the Major BBS 'GHost' protocol\n";
                                 ;
@@ -980,7 +981,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
             sprintf(opt[i++], "Name              %s",itemname);
             if(item->conn_type==CONN_TYPE_MODEM)
                 sprintf(opt[i++], "Phone Number      %s",item->addr);
-            else if(item->conn_type==CONN_TYPE_SERIAL)
+            else if (item->conn_type == CONN_TYPE_SERIAL || item->conn_type == CONN_TYPE_SERIAL_NORTS)
                 sprintf(opt[i++], "Device Name       %s",item->addr);
             else if(item->conn_type==CONN_TYPE_SHELL)
                 sprintf(opt[i++], "Command           %s",item->addr);
@@ -1166,6 +1167,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 uifc.input(WIN_MID|WIN_SAV,0,0
                     ,item->conn_type==CONN_TYPE_MODEM ? "Phone Number"
                     :item->conn_type==CONN_TYPE_SERIAL ? "Device Name"
+                    :item->conn_type==CONN_TYPE_SERIAL_NORTS ? "Device Name"
                     :item->conn_type==CONN_TYPE_SHELL ? "Command"
                     : "Address"
                     ,item->addr,LIST_ADDR_MAX,K_EDIT);
@@ -1173,7 +1175,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 iniSetString(&inifile,itemname,"Address",item->addr,&ini_style);
                 break;
             case 3:
-                if (item->conn_type == CONN_TYPE_MODEM || item->conn_type == CONN_TYPE_SERIAL) {
+                if (item->conn_type == CONN_TYPE_MODEM || item->conn_type == CONN_TYPE_SERIAL || item->conn_type == CONN_TYPE_SERIAL_NORTS) {
                     uifc.helpbuf = "`Flow Control`\n\n"
                                    "Select the desired flow control type.\n"
                                    "This should usually be left as \"RTS/CTS\".\n";
@@ -1281,7 +1283,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				item->user[0] = 0;
 			}
 
-                        if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL
+                        if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL && item->conn_type != CONN_TYPE_SERIAL_NORTS
                                 && item->conn_type!=CONN_TYPE_SHELL
                                 ) {
                             /* Set the port too */
@@ -2413,6 +2415,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                 list[listcount-1]->conn_type++;
                                 if(list[listcount-1]->conn_type!=CONN_TYPE_MODEM
                                     && list[listcount-1]->conn_type!=CONN_TYPE_SERIAL
+                                    && list[listcount-1]->conn_type!=CONN_TYPE_SERIAL_NORTS
                                     && list[listcount-1]->conn_type!=CONN_TYPE_SHELL
                                     ) {
                                     /* Set the port too */
@@ -2434,6 +2437,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                 uifc.input(WIN_MID|WIN_SAV,0,0
                                     ,list[listcount-1]->conn_type==CONN_TYPE_MODEM ? "Phone Number"
                                     :list[listcount-1]->conn_type==CONN_TYPE_SERIAL ? "Device Name"
+                                    :list[listcount-1]->conn_type==CONN_TYPE_SERIAL_NORTS ? "Device Name"
                                     :list[listcount-1]->conn_type==CONN_TYPE_SHELL ? "Command"
                                     :"Address"
                                     ,list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);

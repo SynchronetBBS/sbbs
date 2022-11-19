@@ -142,7 +142,7 @@ int modem_connect(struct bbslist *bbs)
     if (!bbs->hidepopups)
         init_uifc(TRUE, TRUE);
 
-    if(bbs->conn_type == CONN_TYPE_SERIAL) {
+    if(bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) {
         if((com=comOpen(bbs->addr)) == COM_HANDLE_INVALID) {
             if (!bbs->hidepopups)
                 uifcmsg("Cannot Open Port", "`Cannot Open Port`\n\n"
@@ -159,6 +159,9 @@ int modem_connect(struct bbslist *bbs)
                 comClose(com);
                 return(-1);
             }
+        }
+        if (bbs->conn_type == CONN_TYPE_SERIAL_NORTS) {
+            comLowerRTS(com);
         }
         if(!comRaiseDTR(com)) {
             if (!bbs->hidepopups)

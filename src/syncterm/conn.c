@@ -47,8 +47,8 @@
 #include "conn_telnet.h"
 
 struct conn_api conn_api;
-char *conn_types_enum[]={"Unknown","RLogin","RLoginReversed","Telnet","Raw","SSH","SSHNA","Modem","Serial","Shell","MBBSGhost","TelnetS", NULL};
-char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","SSH (no auth)","Modem","Serial","Shell","MBBS GHost","TelnetS",NULL};
+char *conn_types_enum[]={"Unknown","RLogin","RLoginReversed","Telnet","Raw","SSH","SSHNA","Modem","Serial","NoRTS","Shell","MBBSGhost","TelnetS", NULL};
+char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","SSH (no auth)","Modem","Serial","3-wire (No RTS)","Shell","MBBS GHost","TelnetS",NULL};
 short unsigned int conn_ports[]={0,513,513,23,0,22,22,0,0,0,65535,992,0};
 
 struct conn_buffer conn_inbuf;
@@ -377,6 +377,7 @@ int conn_connect(struct bbslist *bbs)
 #endif
 #ifndef __HAIKU__
 		case CONN_TYPE_SERIAL:
+		case CONN_TYPE_SERIAL_NORTS:
 			conn_api.connect=modem_connect;
 			conn_api.close=serial_close;
 			break;

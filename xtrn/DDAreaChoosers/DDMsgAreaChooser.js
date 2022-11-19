@@ -40,6 +40,12 @@
  * 2022-08-19 Eric Oulashin   Version 1.30
  *                            Set the control key pass-thru so that some hotkeys (such as Ctrl-P for PageUp) only
  *                            get caught by this script.
+ * 2022-11-04 Eric Oulashin   Version 1.31
+ *                            Made use of the 'posts' property in msg_area.sub[sub-code] (or msg_area.grp_list.sub_list)
+ *                            for the number of posts without votes
+ * 2022-11-07 Eric Oulashin   Version 1.32
+ *                            Bug fix for numeric input when choosing a sub-board.  Bug fix for getting the number of
+ *                            posts with the traditional user interface.
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -83,8 +89,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.30";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-08-19";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.32";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-11-07";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -135,11 +141,6 @@ if (typeof(argv[0]) == "boolean")
 else if (typeof(argv[0]) == "string")
 	gChooseMsgGrpOnStartup = (argv[0].toLowerCase() == "true");
 
-
-// When using the number of messages in a sub-board, whether or not to count the
-// number of readable messages (which can be slow).  If false, will just look at the number
-// of all messages in the sub-board.
-var gUseNumReadableMessagesForMsgCount = false;
 
 // 2nd command-line argument: Determine whether or not to execute the message listing
 // code (true/false)
@@ -783,7 +784,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			console.gotoxy(1, console.screen_rows);
 			console.clearline("\1n");
 			console.print("\1cChoose group #: \1h");
-			var userInput = console.getnum(msg_area.grp_list.length);
+			var userInput = console.getnum(msgAreaMenu.NumItems());
 			if (userInput > 0)
 				chosenIdx = userInput - 1;
 			else
@@ -1070,17 +1071,7 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 						{
 							// There is no sub-subboard list, so this is just a regular sub-board.
 							// Get the number of readable messages in the sub-board.
-							// TODO: This can take a long time
-							if (gUseNumReadableMessagesForMsgCount)
-							{
-								numItems = numReadableMsgs(msgBase, this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
-							}
-							// Fast but could be inaccurate due to counting deleted messages,
-							// vote responses, etc..
-							else
-							{
-								numItems = msgBase.total_msgs;
-							}
+							numItems = numReadableMsgs(msgBase, this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
 						}
 						msgBase.close();
 					}
@@ -1634,10 +1625,7 @@ function DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pSubIdx
 						subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[subIdx].description;
 					}
 
-					if (gUseNumReadableMessagesForMsgCount)
-						subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[subIdx].code);
-					else
-						subBoardInfo.numPosts = msgBase.total_msgs;
+					subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[subIdx].code);
 
 					// Get the date & time when the last message was imported.
 					if (this.showDatesInSubBoardList && (subBoardInfo.numPosts > 0))
@@ -1931,11 +1919,7 @@ function DDMsgAreaChooser_GetSubBoardInfo(pGrpIdx, pSubIdx, pSubSubIdx)
 		retObj.subCode = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code;
 
 		// Get the number of messages in the sub-board
-		var numMsgs = 0;
-		if (gUseNumReadableMessagesForMsgCount)
-			numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
-		else
-			numMsgs = getNumMsgsInSubBoard(msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
+		var numMsgs = numReadableMsgs(null, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
 		if (numMsgs > 0)
 		{
 			retObj.numItems = numMsgs;
@@ -2018,11 +2002,7 @@ function DDMsgAreaChooser_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
 	if (msgBase.open())
 	{
-		var numMsgs = 0;
-		if (gUseNumReadableMessagesForMsgCount)
-			numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-		else
-			numMsgs = msgBase.total_msgs;
+		var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
 		var newestDate = {}; // For storing the date of the newest post
 		// Get the date & time when the last message was imported.
 		var msgHeader = getLatestMsgHdr(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
@@ -2601,11 +2581,7 @@ function getGreatestNumMsgs(pGrpIndex)
 		if (msgBase == null) continue;
 		if (msgBase.open())
 		{
-			var numMsgs = 0;
-			if (gUseNumReadableMessagesForMsgCount)
-				numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[subIndex].code);
-			else
-				numMsgs = msgBase.total_msgs;
+			var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[subIndex].code);
 			if (numMsgs > greatestNumMsgs)
 				greatestNumMsgs = numMsgs;
 			msgBase.close();
@@ -2943,6 +2919,32 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 // Return value: The number of readable messages in the sub-board
 function numReadableMsgs(pMsgbase, pSubBoardCode)
 {
+	// The posts property in msg_area.sub[sub_code] and msg_area.grp_list.sub_list is the number
+	// of posts excluding vote posts
+	if (typeof(msg_area.sub[pSubBoardCode].posts) === "number")
+		return msg_area.sub[pSubBoardCode].posts;
+	else if ((pMsgbase !== null) && pMsgbase.is_open)
+	{
+		// Just return the total number of messages..  This isn't accurate, but it's fast.
+		return pMsgbase.total_msgs;
+	}
+	else if (pMsgbase === null)
+	{
+		var numMsgs = 0;
+		var msgBase = new MsgBase(pSubBoardCode);
+		if (msgBase.open())
+		{
+			// Just return the total number of messages..  This isn't accurate, but it's fast.
+			numMsgs = msgBase.total_msgs;
+			msgBase.close();
+		}
+		return numMsgs;
+	}
+	else
+		return 0;
+
+	// Older code, used before Synchronet 3.18c when the 'posts' property was added - This is slow:
+	/*
 	if ((pMsgbase === null) || !pMsgbase.is_open)
 		return 0;
 
@@ -2971,6 +2973,7 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 		}
 	}
 	return numMsgs;
+	*/
 }
 
 // Returns whether a given name matches the logged-in user's handle, alias, or
@@ -3303,10 +3306,7 @@ function getLatestMsgTime(pSubCode)
 	var msgBase = new MsgBase(pSubCode);
 	if (msgBase.open())
 	{
-		if (gUseNumReadableMessagesForMsgCount)
-			numMsgs = numReadableMsgs(msgBase, pSubCode);
-		else
-			numMsgs = msgBase.total_msgs;
+		numMsgs = numReadableMsgs(msgBase, pSubCode);
 		msgBase.close();
 	}
 	delete msgBase; // Free some memory?
