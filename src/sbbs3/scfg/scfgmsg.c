@@ -834,7 +834,7 @@ void msgs_cfg()
 						"  Standard (RFC3977) NNTP `LIST NEWSGROUPS` output format:\n"
 						"  Newsgroup names and (optional) descriptions, one line per newsgroup."
 					;
-					k = uifc.list(WIN_MID|WIN_ACT,0,0,0,&export_list_type,0
+					k = uifc.list(WIN_MID|WIN_SAV,0,0,0,&export_list_type,0
 						,"Export Area File Format",opt);
 					if(k==-1)
 						break;
@@ -999,7 +999,7 @@ void msgs_cfg()
 						"  Standard (RFC3977) NNTP `LIST NEWSGROUPS` output format:\n"
 						"  Newsgroup names and (optional) descriptions, one line per newsgroup."
 					;
-					k=uifc.list(WIN_MID|WIN_ACT,0,0,0,&import_list_type,0
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&import_list_type,0
 						,"Import Area File Format",opt);
 					if(k < 0)
 						break;
