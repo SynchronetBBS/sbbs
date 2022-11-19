@@ -1659,7 +1659,6 @@ void dir_cfg(uint libnum)
 	while(1) {
 		if(uifc.changes && cfg.lib[libnum]->sort)
 			sort_dirs(libnum);
-		bool template_shown = false;
 		for(i=0,j=0;i<cfg.total_dirs && j<MAX_OPTS;i++) {
 			if(cfg.dir[i]->lib != libnum)
 				continue;
