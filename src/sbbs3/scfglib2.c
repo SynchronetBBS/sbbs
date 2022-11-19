@@ -278,9 +278,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		char dir_defaults[128];
 		SAFEPRINTF(dir_defaults, "dir_defaults:%s", cfg->lib[i]->sname);
-		section = iniCutSection(ini, dir_defaults);
+		section = iniGetParsedSection(sections, dir_defaults, /* cut: */TRUE);
 		read_dir_defaults_cfg(cfg, section, &cfg->lib[i]->dir_defaults);
-		iniFreeStringList(section);
 	}
 	iniFreeStringList(lib_list);
 
