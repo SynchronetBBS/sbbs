@@ -227,10 +227,8 @@ void prep_cfg(scfg_t* cfg)
 			}
 			if(j < cfg->total_dirs)	// duplicate
 				continue;
-			dir_t dir;
-			memset(&dir, 0, sizeof(dir));
+			dir_t dir = cfg->lib[i]->dir_defaults;
 			dir.lib = i;
-			dir.misc = DIR_DIZ;
 			SAFECOPY(dir.path, p);
 			*tp = 0; // Remove trailing slash
 			SAFECOPY(dir.lname, dirname);

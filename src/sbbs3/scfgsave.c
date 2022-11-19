@@ -560,6 +560,22 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	return result;
 }
 
+/****************************************************************************/
+/* Write the settings common between dirs and lib.dir_defaults				*/
+/****************************************************************************/
+static void write_dir_defaults_cfg(str_list_t* ini, const char* section, dir_t* dir)
+{
+	iniSetString(ini, section, "data_dir", dir->data_dir, NULL);
+	iniSetString(ini, section, "upload_sem", dir->upload_sem, NULL);
+	iniSetString(ini, section, "extensions", dir->exts, NULL);
+	iniSetHexInt(ini, section, "settings", dir->misc, NULL);
+	iniSetShortInt(ini, section, "seq_dev", dir->seqdev, NULL);
+	iniSetShortInt(ini, section, "sort", dir->sort, NULL);
+	iniSetShortInt(ini, section, "max_age", dir->maxage, NULL);
+	iniSetShortInt(ini, section, "max_files", dir->maxfiles, NULL);
+	iniSetShortInt(ini, section, "upload_credit_pct", dir->up_pct, NULL);
+	iniSetShortInt(ini, section, "download_credit_pct", dir->dn_pct, NULL);
+}
 
 /****************************************************************************/
 /****************************************************************************/
@@ -688,6 +704,12 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 		iniSetShortInt(&section, name, "vdir_name", cfg->lib[i]->vdir_name, NULL);
 		strListMerge(&ini, section);
 		free(section);
+
+		SAFEPRINTF(name, "dir_defaults:%s", cfg->lib[i]->sname);
+		section = strListInit();
+		write_dir_defaults_cfg(&section, name, &cfg->lib[i]->dir_defaults);
+		strListMerge(&ini, section);
+		free(section);
 	}
 
 	/* File Directories */
@@ -712,11 +734,12 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 					md(cfg->dir[i]->data_dir);
 				}
 
-				iniSetString(&section, name, "data_dir", cfg->dir[i]->data_dir, NULL);
 				iniSetString(&section, name, "ars", cfg->dir[i]->arstr, NULL);
 				iniSetString(&section, name, "upload_ars", cfg->dir[i]->ul_arstr, NULL);
 				iniSetString(&section, name, "download_ars", cfg->dir[i]->dl_arstr, NULL);
 				iniSetString(&section, name, "operator_ars", cfg->dir[i]->op_arstr, NULL);
+				iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, NULL);
+				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, NULL);
 				backslash(cfg->dir[i]->path);
 				iniSetString(&section, name, "path", cfg->dir[i]->path, NULL);
 
@@ -741,17 +764,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 					(void)mkpath(path);
 				}
 
-				iniSetString(&section, name, "upload_sem", cfg->dir[i]->upload_sem, NULL);
-				iniSetShortInt(&section, name, "max_files", cfg->dir[i]->maxfiles, NULL);
-				iniSetString(&section, name, "extensions", cfg->dir[i]->exts, NULL);
-				iniSetHexInt(&section, name, "settings", cfg->dir[i]->misc, NULL);
-				iniSetShortInt(&section, name, "seq_dev", cfg->dir[i]->seqdev, NULL);
-				iniSetShortInt(&section, name, "sort", cfg->dir[i]->sort, NULL);
-				iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, NULL);
-				iniSetShortInt(&section, name, "max_age", cfg->dir[i]->maxage, NULL);
-				iniSetShortInt(&section, name, "upload_credit_pct", cfg->dir[i]->up_pct, NULL);
-				iniSetShortInt(&section, name, "download_credit_pct", cfg->dir[i]->dn_pct, NULL);
-				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, NULL);
+				write_dir_defaults_cfg(&section, name, cfg->dir[i]);
 				strListMerge(&ini, section);
 				free(section);
 			}

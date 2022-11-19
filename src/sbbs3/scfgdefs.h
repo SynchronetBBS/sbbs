@@ -123,6 +123,7 @@ typedef struct {							/* Transfer Library Information */
 	uint32_t	misc;						/* Miscellaneous bits */
 	enum area_sort sort;
 	enum vdir_name vdir_name;
+	dir_t dir_defaults;
 
 } lib_t;
 

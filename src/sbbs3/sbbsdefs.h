@@ -258,9 +258,11 @@
 #define DIR_QUIET		(1<<18)		/* Do not notify uploader of downloads */
 #define DIR_NOSTAT		(1<<19)		/* Do not include transfers in system stats */
 #define DIR_FILES		(1<<20)		/* List/access files not in database (not used) */
-#define DIR_TEMPLATE	(1<<21)		/* Use this dir as template for new dirs (in this lib) */
+#define DIR_TEMPLATE	(1<<21)		/* Use this dir as template for new dirs (in this lib) - DEPRECATED */
 #define DIR_NOHASH		(1<<22)		/* Don't auto calculate/store file content hashes */
 #define DIR_FILETAGS	(1<<23)		/* Allow files to have user-specified tags */
+
+#define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
 
 #define FM_SAFEST		(1<<1)		/* Allow safest filenames to be uploaded only */
 #define FM_SPACES		(1<<2)		/* Allow spaces in uploaded filenames */
