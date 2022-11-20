@@ -2578,6 +2578,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		if(JS_RVAL(cx, arglist) == JSVAL_FALSE)
 			return JS_TRUE;
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 	}
 
 	memset(&msg,0,sizeof(msg));
@@ -2727,6 +2728,7 @@ js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		if(JS_RVAL(cx, arglist) == JSVAL_FALSE)
 			return JS_TRUE;
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 	}
 
 	memset(&msg, 0, sizeof(msg));
@@ -2794,6 +2796,7 @@ js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		if(JS_RVAL(cx, arglist) == JSVAL_FALSE)
 			return JS_TRUE;
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 	}
 
 	memset(&msg, 0, sizeof(msg));
