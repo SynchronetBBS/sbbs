@@ -332,13 +332,13 @@ function get_winners(level)
 				if(calced == md5) {
 					if(idx.subject == winner_crc) {
 						obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
-						if(!list_contains(obj))
+						if(!list_contains(list, obj))
 							list.push(obj);
 					} else {
 						for(var j = 0; j < obj.game.length; j++) {
 							var game = obj.game[j];
 							game.net_addr = hdr.from_net_addr;
-							if(!list_contains(game))
+							if(!list_contains(list, game))
 								list.push(game);
 						}
 					}
