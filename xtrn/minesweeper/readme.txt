@@ -11,7 +11,7 @@ The objective was to try to mimic the old Microsoft versions of the game that
 I remember playing in the 1990's, but support more difficulty levels (5) and
 maximize the number of cells usable in terminals, while keeping the game
 playable and easy on the eyes (my daughter, Emma, helped with the color scheme,
-as she is *not* colorblind). There's no mouse support; use the keyboard.
+as she is *not* colorblind). You can use the mouse (with SyncTERM) or keyboard.
 
 Multiple users can play the game simultaneously, but there is no inter-user
 interaction of any kind. The normal Synchronet inter-node paging/listing
@@ -56,7 +56,7 @@ Requirements
 Tested with Synchronet v3.17c (in development). Older versions of Synchronet
 (e.g. v3.17b) may work however.
 
-An up-to-date set of exec/load/*.js files (from cvs.synchronet) are needed.
+An up-to-date set of exec/load/*.js files (from git.synchro.net) are needed.
 
 Install
 -------
@@ -96,12 +96,23 @@ program entry:
     Command Line               ?minesweeper winners
     ...
     Execute on Event           Logon, Only
+    
+If you want your top-x winners exported periodically to a message network
+(i.e. to be displayed on other BBSes), create an additional Timed Event entry:
+
+    Internal Code              MSHIGHSCORES
+    Start-up Directory         ../xtrn/minesweeper
+    Command Line               ?minesweeper export 
+    ...
+    Execution Day of Week      Sun
+
 
 Configure
 ---------
 Command-line arguments supported:
 
 "winners [num]"	- display list of top-[num] winners and exit
+"export [num]"  - export list of top-[num] high scores to msgbase and exit
 "nocls"   		- don't clear the screen upon exit
 <level>   		- set the initial game difficulty level (1-5)
 
@@ -135,5 +146,3 @@ If you already had game winners and want to retain them in the list, copy or
 rename the data/minesweeper.jsonl to xtrn/minesweeper/winners.jsonl. If you
 don't care, the game will run fine and new winners will be added to the
 new/correct filename.
-
-$Id: readme.txt,v 2.1 2019/10/07 20:53:14 rswindell Exp $
