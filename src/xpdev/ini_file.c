@@ -1466,6 +1466,8 @@ iniGetNamedStringList(str_list_t list, const char* section)
 	return(lp);
 }
 
+// the 'list' must remain allocated/valid through-out the life of the returned named_str_list
+// as this function does not copy the key=value lines in the original list, it just references them
 named_str_list_t** iniParseSections(const str_list_t list)
 {
 	char str[INI_MAX_LINE_LEN];
@@ -1508,14 +1510,14 @@ named_str_list_t** iniParseSections(const str_list_t list)
 			++sections;
 			keys = 0;
 		} else {
-			p = str;
+			p = list[i];
 			if(is_eof(p))
 				break;
 			if(sections > 0) {
 				SKIP_WHITESPACE(p);
 				if(*p == '\0' || *p == INI_COMMENT_CHAR)
 					continue;
-				strListAppend(&lp[sections - 1]->list, p, keys++);
+				strListAnnex(&lp[sections - 1]->list, p, keys++);
 			}
 		}
 	}
@@ -1580,7 +1582,6 @@ void* iniFreeParsedSections(named_str_list_t** list)
 
 	for(i = 0; list[i] != NULL; ++i) {
 		free(list[i]->name);
-		strListFree(&list[i]->list);
 		free(list[i]);
 	}
 
