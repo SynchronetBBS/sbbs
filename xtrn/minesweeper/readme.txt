@@ -20,7 +20,7 @@ controls (Ctrl-P/U) are disabled while running the game.
 The game supports ANSI and PETSCII terminals from display widths (columns) of
 40 to 132+ and heights (rows) of 24+.
 
-For more details on game play, see winesweeper.hlp (the "Help" text available
+For more details on game play, see minesweeper.hlp (the "Help" text available
 while running the game).
 
 Winners
