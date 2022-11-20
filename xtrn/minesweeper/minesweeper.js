@@ -1,5 +1,3 @@
-// $Id: minesweeper.js,v 2.14 2020/08/04 05:11:26 rswindell Exp $
-
 // Minesweeper, the game
 
 // See readme.txt for instructions on installation, configuration, and use
@@ -8,7 +6,7 @@
 
 const title = "Synchronet Minesweeper";
 const ini_section = "minesweeper";
-const REVISION = "$Revision: 2.14 $".split(' ')[1];
+const REVISION = "$Revision: 2.15 $".split(' ')[1];
 const author = "Digital Man";
 const header_height = 4;
 const winners_list = js.exec_dir + "winners.jsonl";
@@ -32,6 +30,8 @@ const char_mine = '\x01r\x01h\xEB';
 const char_detonated_mine = '\x01r\x01h\x01i\*';
 const attr_count = "\x01c";
 const winner_subject = "Winner";
+const highscores_subject = "High Scores";
+const tear_line = "\r\n--- " + js.exec_file + " " + REVISION + "\r\n";
 const selectors = ["()", "[]", "<>", "{}", "--", "  "];
 
 require("sbbsdefs.js", "K_NONE");
@@ -61,13 +61,22 @@ if(!options.splash_delay)
 	options.splash_delay = 500;
 if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
-
-var userprops = bbs.mods.userprops;
-if(!userprops)
-	userprops = load(bbs.mods.userprops = {}, "userprops.js");
-var json_lines = bbs.mods.json_lines;
-if(!json_lines)
-	json_lines = load(bbs.mods.json_lines = {}, "json_lines.js");
+if(js.global.bbs === undefined)
+	json_lines = load({}, "json_lines.js");
+else {
+	var userprops = bbs.mods.userprops;
+	if(!userprops)
+		userprops = load(bbs.mods.userprops = {}, "userprops.js");
+	var json_lines = bbs.mods.json_lines;
+	if(!json_lines)
+		json_lines = load(bbs.mods.json_lines = {}, "json_lines.js");
+	var selector = userprops.get(ini_section, "selector", options.selector);
+	var highlight = userprops.get(ini_section, "highlight", options.highlight);
+	var difficulty = userprops.get(ini_section, "difficulty", options.difficulty);
+	var ansiterm = bbs.mods.ansiterm_lib;
+	if(!ansiterm)
+		ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
+}
 var game = {};
 var board = [];
 var selected = {x:0, y:0};
@@ -77,16 +86,9 @@ var new_best = false;
 var win_rank = false;
 var view_details = false;
 var cell_width;	// either 3 or 2
-var selector = userprops.get(ini_section, "selector", options.selector);
-var highlight = userprops.get(ini_section, "highlight", options.highlight);
-var difficulty = userprops.get(ini_section, "difficulty", options.difficulty);
 var best = null;
 
 log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
-
-var ansiterm = bbs.mods.ansiterm_lib;
-if(!ansiterm)
-	ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
 
 function mouse_enable(enable)
 {
@@ -183,7 +185,7 @@ function isgamewon()
 			game.md5 = md5_calc(JSON.stringify(game));
 			game.name = undefined;
 			var body = lfexpand(JSON.stringify(game, null, 1));
-			body += "\r\n--- " + js.exec_file + " " + REVISION + "\r\n";
+			body += tear_line;
 			if(!msgbase.save_msg(hdr, body))
 				alert("Error saving message to: " + options.sub);
 			msgbase.close();
@@ -266,6 +268,21 @@ function secondstr(t, frac)
 	return format("%2u:%02u", Math.floor(t/60), Math.floor(t%60));
 }
 
+function list_contains(list, obj)
+{
+	var match = false;
+	for(var i = 0; i < list.length && !match; i++) {
+		match = true;
+		for(var p in obj) {
+			if(list[i][p] != obj[p]) {
+				match = false;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
 function get_winners(level)
 {
 	var list = json_lines.get(winners_list);
@@ -276,17 +293,21 @@ function get_winners(level)
 		var msgbase = new MsgBase(options.sub);
 		if(msgbase.get_index !== undefined && msgbase.open()) {
 			var to_crc = crc16_calc(title.toLowerCase());
-			var subj_crc = crc16_calc(winner_subject.toLowerCase());
+			var winner_crc = crc16_calc(winner_subject.toLowerCase());
+			var highscores_crc = crc16_calc(highscores_subject.toLowerCase());
 			var index = msgbase.get_index();
 			for(var i = 0; index && i < index.length; i++) {
 				var idx = index[i];
-				if((idx.attr&MSG_DELETE)
-					|| idx.to != to_crc || idx.subject != subj_crc)
+				if((idx.attr&MSG_DELETE) || idx.to != to_crc)
+					continue;
+				if(idx.subject != winner_crc && idx.subject != highscores_crc)
 					continue;
 				var hdr = msgbase.get_msg_header(true, idx.offset);
 				if(!hdr)
 					continue;
-				if(!hdr.from_net_type || hdr.to != title || hdr.subject != winner_subject)
+				if(!hdr.from_net_type || hdr.to != title)
+					continue;
+				if(hdr.subject != winner_subject && hdr.subject != highscores_subject)
 					continue;
 				var body = msgbase.get_msg_body(hdr, false, false, false);
 				if(!body)
@@ -302,13 +323,25 @@ function get_winners(level)
 				}
 				if(!obj.md5)	// Ignore old test messages
 					continue;
+				if(idx.subject == highscores_crc && !obj.game)
+					continue;
 				obj.name = hdr.from;
 				var md5 = obj.md5;
 				obj.md5 = undefined;
-				var calced = md5_calc(JSON.stringify(obj));
+				var calced = md5_calc(JSON.stringify(idx.subject == winner_crc ? obj : obj.game));
 				if(calced == md5) {
-					obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
-					list.push(obj);
+					if(idx.subject == winner_crc) {
+						obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
+						if(!list_contains(obj))
+							list.push(obj);
+					} else {
+						for(var j = 0; j < obj.game.length; j++) {
+							var game = obj.game[j];
+							game.net_addr = hdr.from_net_addr;
+							if(!list_contains(game))
+								list.push(game);
+						}
+					}
 				} else {
 					log(LOG_INFO, title +
 						" MD5 not " + calced +
@@ -1213,12 +1246,13 @@ try {
 		if(!isNaN(numval))
 			break;
 	}
-	
-	if(argv.indexOf("nocls") < 0)
-		js.on_exit("console.clear()");
-	
-	js.on_exit("console.attributes = LIGHTGRAY");
 
+	if(js.global.console) {
+		if(argv.indexOf("nocls") < 0)
+			js.on_exit("console.clear()");
+
+		js.on_exit("console.attributes = LIGHTGRAY");
+	}
 	if(argv.indexOf("winners") >= 0) {
 		if(!isNaN(numval) && numval > 0)
 			options.winners = numval;
@@ -1226,11 +1260,46 @@ try {
 		exit();
 	}
 
-	js.on_exit("console.line_counter = 0");
-	js.on_exit("console.status = " + console.status);
-	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
-	console.ctrlkey_passthru = "KOPTUZ";
+	if(argv.indexOf("export") >= 0) {
+		if(!options.sub) {
+			alert("Sub-board not defined");
+			exit(1);
+		}
+		var count = 20;
+		if(!isNaN(numval) && numval > 0)
+			count = numval;
+		var list = json_lines.get(winners_list);
+		if(typeof list != 'object') {
+			alert("No winners yet: " + list);
+			exit(0);
+		}
+		list.sort(compare_won_game);
+		var obj = { date: Date(), game: [] };
+		for(var i = 0; i < list.length && i < count; i++)
+			obj.game.push(list[i]);
+		obj.md5 = md5_calc(JSON.stringify(obj.game));
+		var msgbase = new MsgBase(options.sub);
+		var hdr = {
+			to: title,
+			from: system.operator,
+			subject: highscores_subject
+		};
+		var body = lfexpand(JSON.stringify(obj, null, 1));
+		body += tear_line;
+		if(!msgbase.save_msg(hdr, body)) {
+			alert("Error saving message to: " + options.sub);
+			exit(2);
+		}
+		msgbase.close();
+		exit(0);
+	}
 
+	if(js.global.console) {
+		js.on_exit("console.line_counter = 0");
+		js.on_exit("console.status = " + console.status);
+		js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+		console.ctrlkey_passthru = "KOPTUZ";
+	}
 	if(!isNaN(numval) && numval > 0 && numval < max_difficulty)
 		difficulty = numval;
 
@@ -1247,16 +1316,17 @@ try {
 	var msg = file_getname(e.fileName) + 
 		" line " + e.lineNumber + 
 		": " + e.message;
-	console.crlf();
+	if(js.global.console)
+		console.crlf();
 	alert(msg);
 	if(options.sub && user.alias != author) {
 		var msgbase = new MsgBase(options.sub);
 		var hdr = { 
 			to: author,
-			from: user.alias,
+			from: user.alias || system.operator,
 			subject: title
 		};
-		msg += "\r\n--- " + js.exec_file + " " + REVISION + "\r\n";		
+		msg += tear_line;
 		if(!msgbase.save_msg(hdr, msg))
 			alert("Error saving exception-message to: " + options.sub);
 		msgbase.close();
