@@ -1057,13 +1057,13 @@ void sys_cfg(void)
 								break;
 							uifc.changes=1;
 							if(i && i<=cfg.total_xedits)
-								sprintf(cfg.new_xedit,"%-.8s",cfg.xedit[i-1]->code);
+								SAFECOPY(cfg.new_xedit, cfg.xedit[i-1]->code);
 							else
 								cfg.new_xedit[0]=0;
 							break;
 						case 11:
 							for(i=0;i<cfg.total_shells && i<MAX_OPTS;i++)
-								sprintf(opt[i],"%-.8s",cfg.shell[i]->code);
+								sprintf(opt[i],"%-.*s", LEN_CODE, cfg.shell[i]->code);
 							opt[i][0]=0;
 							i=0;
 							uifc.helpbuf=
