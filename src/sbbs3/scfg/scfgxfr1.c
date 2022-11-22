@@ -288,7 +288,7 @@ void xfer_opts()
 					"    Filenames containing illegal characters (`" ILLEGAL_FILENAME_CHARS "`)\n"
 					"    Filenames containing control characters (ASCII 0-31 and 127)\n"
 				;
-				i = uifc.list(0, 0, 0, 0, &j, NULL, "Allowed Characters in Uploaded Filenames", opt);
+				i = uifc.list(WIN_RHT, 0, 0, 0, &j, NULL, "Allowed Characters in Uploaded Filenames", opt);
 				switch(i) {
 					case 0:
 						if(cfg.file_misc != FM_SAFEST) {
@@ -331,7 +331,7 @@ void xfer_opts()
 					for(i=0;i<cfg.total_fviews && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.fview[i]->ext,cfg.fview[i]->cmd);
 					opt[i][0]=0;
-					i=WIN_ACT|WIN_SAV;	/* save cause size can change */
+					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_fviews<MAX_OPTS)
 						i|=WIN_INS|WIN_XTR;
 					if(cfg.total_fviews)
@@ -467,7 +467,7 @@ void xfer_opts()
 					for(i=0;i<cfg.total_ftests && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.ftest[i]->ext,cfg.ftest[i]->cmd);
 					opt[i][0]=0;
-					i=WIN_ACT|WIN_SAV;	/* save cause size can change */
+					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_ftests<MAX_OPTS)
 						i|=WIN_INS|WIN_XTR;
 					if(cfg.total_ftests)
@@ -601,7 +601,7 @@ void xfer_opts()
 					for(i=0;i<cfg.total_dlevents && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.dlevent[i]->ext,cfg.dlevent[i]->cmd);
 					opt[i][0]=0;
-					i=WIN_ACT|WIN_SAV;	/* save cause size can change */
+					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_dlevents<MAX_OPTS)
 						i|=WIN_INS|WIN_XTR;
 					if(cfg.total_dlevents)
@@ -750,7 +750,7 @@ void xfer_opts()
 						sprintf(opt[i],"%-3.3s  %-40s"
 							,cfg.fextr[i]->ext,cfg.fextr[i]->cmd);
 					opt[i][0]=0;
-					i=WIN_ACT|WIN_SAV;  /* save cause size can change */
+					i=WIN_RHT|WIN_ACT|WIN_SAV;  /* save cause size can change */
 					if(cfg.total_fextrs<MAX_OPTS)
 						i|=WIN_INS|WIN_XTR;
 					if(cfg.total_fextrs)
@@ -884,7 +884,7 @@ void xfer_opts()
 					for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
 						sprintf(opt[i],"%-3.3s  %-40s",cfg.fcomp[i]->ext,cfg.fcomp[i]->cmd);
 					opt[i][0]=0;
-					i=WIN_ACT|WIN_SAV;	/* save cause size can change */
+					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_fcomps<MAX_OPTS)
 						i|=WIN_INS|WIN_XTR;
 					if(cfg.total_fcomps)
@@ -1018,7 +1018,7 @@ void xfer_opts()
 						sprintf(opt[i],"%c  %s"
 							,cfg.prot[i]->mnemonic,cfg.prot[i]->name);
 					opt[i][0]=0;
-					uifc_winmode_t wmode = WIN_ACT|WIN_SAV;	/* WIN_SAV because size can change */
+					uifc_winmode_t wmode = WIN_RHT|WIN_ACT|WIN_SAV;	/* WIN_SAV because size can change */
 					if(cfg.total_prots<MAX_OPTS)
 						wmode |= WIN_INS|WIN_XTR;
 					if(cfg.total_prots)
