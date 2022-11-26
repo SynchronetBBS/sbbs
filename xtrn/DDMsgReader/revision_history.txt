@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.56     2022-11-25   Fixed bug startup mode for scanning all groups for un-read
+                      messages to you where the reader was bringing up personal
+                      email instead.
 1.55     2022-09-23   Refactored how email replies are done (passing the header
                       to the appropriate functions, not using ungetstr() when
                       prompting for the message subject)
