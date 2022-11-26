@@ -56,6 +56,9 @@
  * 2022-09-23 Eric Oulashin     Version 1.55
  *                              Refactored how email replies are done (passing the header to the appropriate
  *                              functions, not using ungetstr() when prompting for the message subject)
+ * 2022-11-25 Eric Oulashin     Version 1.56
+ *                              Fixed bug startup mode for scanning all groups for un-read messages to you where
+ *                              the reader was bringing up personal email instead.
  */
 
 "use strict";
@@ -160,8 +163,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.55";
-var READER_DATE = "2022-09-23";
+var READER_VERSION = "1.56";
+var READER_DATE = "2022-11-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -16811,7 +16814,7 @@ function parseLoadableModuleArgs(argv)
 	}
 	// 2 parameters: Whether or not all subs are being scanned (0 or 1), and the scan mode (numeric)
 	// (Scan Subs module)
-	else if (argv.length == 2 && /^[0-1]$/.test(argv[0]) && allDigitsRegex.test(argv[1]) && isValidScanMode(+(argv[1])))
+	else if (argv.length == 2 && /^[0-1]$/.test(argv[0]) && allDigitsRegex.test(argv[1]))
 	{
 		argVals.loadableModule = true;
 		var scanAllSubs = (argv[0] == "1");
@@ -16852,7 +16855,7 @@ function parseLoadableModuleArgs(argv)
 	// 1. The sub-board internal code
 	// 2. The scan mode (numeric)
 	// 3. Optional: Search text (if any)
-	else if ((argv.length == 2 || argv.length == 3) && subBoardCodeIsValid(arg1Lower) && allDigitsRegex.test(argv[1]) && isValidScanMode(+(argv[1])))
+	else if ((argv.length == 2 || argv.length == 3) && subBoardCodeIsValid(arg1Lower) && allDigitsRegex.test(argv[1]))
 	{
 		argVals.loadableModule = true;
 		var scanMode = +(argv[1]);
@@ -19000,25 +19003,6 @@ function getSubBoardsToScanArray(pScanScopeChar)
 	else if (pScanScopeChar == "S") // Current sub-board scan
 		subBoardsToScan.push(bbs.cursub_code);
 	return subBoardsToScan;
-}
-
-// Returns whether a number is a valid scan mode
-//
-// Parameters:
-//  pNum: A number to test
-//
-// Return value: Boolean - Whether or not the given number is a valid scan mode
-function isValidScanMode(pNum)
-{
-	if (typeof(pNum) !== "number")
-		return false;
-	// The scan modes are defined in sbbsdefs.js
-	var validScanModes = [SCAN_READ, SCAN_CONST, SCAN_NEW, SCAN_BACK, SCAN_TOYOU,
-	                      SCAN_FIND, SCAN_UNREAD, SCAN_MSGSONLY, SCAN_POLLS, SCAN_INDEX];
-	var numIsValidScanMode = false;
-	for (var i = 0; i < validScanModes.length && !numIsValidScanMode; ++i)
-		numIsValidScanMode = (pNum === validScanModes[i]);
-	return numIsValidScanMode;
 }
 
 // Returns whether a user number is valid (only an actual, active user)
