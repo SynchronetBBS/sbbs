@@ -12,6 +12,7 @@
  * ... Removed comments ...
  * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
  * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
+ * 2022-11-19 Eric Oulashin     Updated readColorConfig() to handle just attribute characters
  */
 
 "use strict";
@@ -40,18 +41,27 @@ readColorConfig(gConfigSettings.iceColors.ThemeFilename);
 //  pFilename: The name of the color configuration file
 function readColorConfig(pFilename)
 {
-   var colors = readValueSettingConfigFile(pFilename, 512);
-   if (colors != null)
-   {
-      // Make a backup of the menuOptClassicColors setting so we can set it
-      // back in the Ice color settings object after setting the colors.
-      var useClassicColorsBackup = gConfigSettings.iceColors.menuOptClassicColors;
-      gConfigSettings.iceColors = colors;
-      // Move the general color settings into gConfigSettings.genColors.*
-      if (EDITOR_STYLE == "ICE")
-         moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
-      gConfigSettings.iceColors.menuOptClassicColors = useClassicColorsBackup;
-   }
+	var colors = readValueSettingConfigFile(pFilename, 512);
+	if (colors != null)
+	{
+		// Convert the color values from just attribute characters to actual attribute codes
+		for (var prop in colors)
+		{
+			// Remove any instances of specifying the control character
+			colors[prop] = colors[prop].replace(/\\[xX]01/g, "").replace(/\\[xX]1/g, "").replace(/\\1/g, "");
+			// Add actual control characters in the color setting
+			colors[prop] = attrCodeStr(colors[prop]);
+		}
+
+		// Make a backup of the menuOptClassicColors setting so we can set it
+		// back in the Ice color settings object after setting the colors.
+		var useClassicColorsBackup = gConfigSettings.iceColors.menuOptClassicColors;
+		gConfigSettings.iceColors = colors;
+		// Move the general color settings into gConfigSettings.genColors.*
+		if (EDITOR_STYLE == "ICE")
+			moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
+		gConfigSettings.iceColors.menuOptClassicColors = useClassicColorsBackup;
+	}
 }
 
 // Sets up any global screen-related variables needed for Ice style
