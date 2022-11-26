@@ -5,7 +5,14 @@ are saved to a file.
 
 Date       Author            Description
 2022-11-18 Eric Oulashin     Version 1.00
+2022-11-25 Eric Oulashin     Version 1.01
+                             Added the ability to store & retrieve scores to/from a server,
+                             so that scores from multiple BBSes can be displayed.  There are
+                             also sysop functions to remove players and users from the hosted
+                             inter-BBS scores. Also, answer clues now don't mask spaces in the
+                             answer.
 */
+
 
 "use strict";
 
@@ -30,16 +37,11 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.00";
-var GAME_VER_DATE = "2022-11-18";
-
-// Load required .js libraries
-var requireFnExists = (typeof(require) === "function");
-if (requireFnExists)
-	require("sbbsdefs.js", "P_NONE");
-else
-	load("sbbsdefs.js");
-
+var GAME_VERSION = "1.01";
+var GAME_VER_DATE = "2022-11-25";
+// Version of data written to the server, if applicable.  This might not necessarily be the same as
+// the version of the game.
+var SERVER_DATA_VERSION = "1.01";
 
 // Determine the location of this script (its startup directory).
 // The code for figuring this out is a trick that was created by Deuce,
@@ -50,6 +52,22 @@ try { throw dig.dist(dist); } catch(e) {
 	gStartupPath = backslash(e.fileName.replace(/[\/\\][^\/\\]*$/,''));
 	gThisScriptFilename = file_getname(e.fileName);
 }
+
+// Load required .js libraries
+var requireFnExists = (typeof(require) === "function");
+if (requireFnExists)
+{
+	require("sbbsdefs.js", "P_NONE");
+	require("json-client.js", "JSONClient");
+	require(gStartupPath + "lib.js", "getJSONSvcPortFromServicesIni");
+}
+else
+{
+	load("sbbsdefs.js");
+	load("json-client.js");
+	load(gStartupPath + "lib.js");
+}
+
 
 // Characters for display
 // Box-drawing/border characters: Single-line
@@ -109,11 +127,24 @@ var ACTION_PLAY = 0;
 var ACTION_SHOW_HELP_SCREEN = 1;
 var ACTION_SHOW_HIGH_SCORES = 2;
 var ACTION_QUIT = 3;
-var ACTION_SYSOP_CLEAR_SCORES = 4;
+var ACTION_SYSOP_MENU = 4;
+
+
+// Values for JSON DB reading and writing
+var JSON_DB_LOCK_READ = 1;
+var JSON_DB_LOCK_WRITE = 2;
+var JSON_DB_LOCK_UNLOCK = -1;
 
 
 // Upon exit for any reason, make sure the scores semaphore filename doesn't exist so future instances don't get frozen
 //js.on_exit("if (file_exists(\"" + SCORES_SEMAPHORE_FILENAME + "\")) file_remove(\"" + SCORES_SEMAPHORE_FILENAME + "\");");
+
+
+
+// Enable debugging if the first command-line parameter is -debug
+var gDebug = false;
+if (argv.length > 0)
+	gDebug = (argv[0].toUpperCase() == "-DEBUG");
 
 
 // Display the program logo
@@ -139,26 +170,11 @@ while (continueOn)
 			showHelpScreen();
 			break;
 		case ACTION_SHOW_HIGH_SCORES:
-			showScores(false);
+			showScores();
 			break;
-		case ACTION_SYSOP_CLEAR_SCORES:
+		case ACTION_SYSOP_MENU:
 			if (user.is_sysop)
-			{
-				console.print("\x01n");
-				console.crlf();
-				if (file_exists(SCORES_FILENAME))
-				{
-					if (!console.noyes("\x01y\x01hAre you SURE you want to clear the scores\x01b"))
-					{
-						file_remove(SCORES_FILENAME);
-						console.print("\x01n\x01c\x01hThe score file has been deleted.");
-					}
-				}
-				else
-					console.print("\x01n\x01c\x01hThere is no score file yet.");
-				console.print("\x01n");
-				console.crlf();
-			}
+				doSysopMenu();
 			break;
 		case ACTION_QUIT:
 		default:
@@ -367,6 +383,7 @@ function loadSettings(pStartupPath)
 		settings.behavior = iniFile.iniGetObject("BEHAVIOR");
 		settings.colors = iniFile.iniGetObject("COLORS");
 		settings.category_ars = iniFile.iniGetObject("CATEGORY_ARS");
+		settings.remoteServer = iniFile.iniGetObject("REMOTE_SERVER");
 
 		// Ensure the actual expected setting name & color names exist in the settings
 		if (typeof(settings.behavior) !== "object")
@@ -375,6 +392,8 @@ function loadSettings(pStartupPath)
 			settings.colors = {};
 		if (typeof(settings.category_ars) !== "object")
 			settings.category_ars = {};
+		if (typeof(settings.remoteServer) !== "object")
+			settings.remoteServer = {};
 
 		if (typeof(settings.behavior.numQuestionsPerPlay) !== "number")
 			settings.behavior.numQuestionsPerPlay = 10;
@@ -429,6 +448,8 @@ function loadSettings(pStartupPath)
 			settings.behavior.numTriesPerQuestion = 3;
 		if (settings.behavior.maxNumPlayerScoresToDisplay <= 0)
 			settings.behavior.maxNumPlayerScoresToDisplay = 10;
+		if (!/^[0-9]+$/.test(settings.remoteServer.port))
+			settings.remoteServer.port = 0;
 
 		// No need to do this:
 		// For each color, replace any instances of specifying the control character in substWord with the actual control character
@@ -437,6 +458,25 @@ function loadSettings(pStartupPath)
 		
 		iniFile.close();
 	}
+
+	// Other settings - Not read from the configuration file, but things we want to use in multiple places
+	// in this script
+	// JSON scope and JSON location for scores on the server (if a server is to be used)
+	settings.remoteServer.gtTriviaScope = "GTTRIVIA";
+	// JSON location: For the BBS name, use the QWK ID if available, but if not, use the system name and replace spaces
+	// with underscores (since spaces may cause issues in JSON property names)
+	var BBS_ID = "";
+	if (system.qwk_id.length > 0)
+		BBS_ID = system.qwk_id;
+	else
+		BBS_ID = system.name.replace(/ /g, "_");
+	settings.remoteServer.scoresJSONLocation = "SCORES";
+	settings.remoteServer.BBSJSONLocation = settings.remoteServer.scoresJSONLocation + ".systems." + BBS_ID;
+	settings.remoteServer.userScoresJSONLocationWithoutUsername = settings.remoteServer.BBSJSONLocation + ".user_scores";
+	settings.hasValidServerSettings = function() {
+		return (this.remoteServer.hasOwnProperty("server") && this.remoteServer.hasOwnProperty("port") && this.remoteServer.server.length > 0);
+	};
+
 	return settings;
 }
 // For configuration files, this function returns a fully-pathed filename.
@@ -487,6 +527,7 @@ function displayProgramLogo(pClearScreenFirst, pPauseAfter)
 // ACTION_PLAY
 // ACTION_SHOW_HIGH_SCORES
 // ACTION_SHOW_HELP_SCREEN
+// ACTION_SYSOP_MENU
 // ACTION_QUIT
 function doMainMenu()
 {
@@ -500,7 +541,7 @@ function doMainMenu()
 	console.print("\x01c2\x01y\x01h) \x01bHelp \x01n");
 	console.print("\x01c3\x01y\x01h) \x01bShow high scores \x01n");
 	if (user.is_sysop)
-		console.print("\x01c9\x01y\x01h) \x01bClear high scores \x01n"); // Option 9
+		console.print("\x01c9\x01y\x01h) \x01bSysop menu \x01n"); // Option 9
 	console.print("\x01cQ\x01y\x01h)\x01buit");
 	console.crlf();
 	console.print("\x01n");
@@ -515,7 +556,7 @@ function doMainMenu()
 	if (user.is_sysop)
 		validKeys += "9"; // Clear scores
 	var userChoice = console.getkeys(validKeys, -1, K_UPPER).toString();
-	console.print("\x01n");
+	console.attributes = "N";
 	if (userChoice.length == 0 || userChoice == "Q")
 		menuAction = ACTION_QUIT;
 	else if (userChoice == "1")
@@ -525,7 +566,7 @@ function doMainMenu()
 	else if (userChoice == "3")
 		menuAction = ACTION_SHOW_HIGH_SCORES;
 	else if (userChoice == "9" && user.is_sysop)
-		menuAction = ACTION_SYSOP_CLEAR_SCORES;
+		menuAction = ACTION_SYSOP_MENU;
 	return menuAction;
 }
 
@@ -809,13 +850,15 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 			}
 			catch (error)
 			{
-				log(LOG_ERR, GAME_NAME + " - Loading scores: " + error);
-				bbs.log_str(GAME_NAME + " - Loading scores: " + error);
+				log(LOG_ERR, GAME_NAME + " - Loading scores: Line " + error.lineNumber + ": " + error);
+				bbs.log_str(GAME_NAME + " - Loading scores: Line " + error.lineNumber + ": " + error);
 			}
 		}
 	}
 	if (typeof(scoresObj) !== "object")
 		scoresObj = {};
+
+	var scoresForUser = {}; // Will store just the current user's score information
 
 	// Add/update the user's score, and save the scores file
 	try
@@ -823,12 +866,14 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 		// Score object example (note: last_time is a UNIX time):
 		// Username:
 		//   category_stats:
-		//     category_1:
+		//     0:
+		//       category_name: General
 		//       last_time: 166000
-		//       total_score: 20
-		//     category_2:
+		//       last_score: 20
+		//     1:
+		//       category_name: Misc
 		//       last_time: 146000
-		//       total_score: 80
+		//       last_score: 80
 		//  total_score: 100
 		//  last_score: 20
 		//  last_trivia_category: category_1
@@ -838,17 +883,54 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 		// Ensure the score object has an object for the current user
 		if (!scoresObj.hasOwnProperty(user.alias))
 			scoresObj[user.alias] = {};
-		// Ensure the user object in the scores object has a category_total_scores object
+		// Ensure the user object in the scores object has a category_stats array
 		if (!scoresObj[user.alias].hasOwnProperty(userCategoryStatsPropName))
-			scoresObj[user.alias][userCategoryStatsPropName] = {};
-		// Add/update the user's score for the category in their category_total_scores object
-		if (!scoresObj[user.alias][userCategoryStatsPropName].hasOwnProperty(pLastSectionName))
-			scoresObj[user.alias][userCategoryStatsPropName][pLastSectionName] = {};
-		scoresObj[user.alias][userCategoryStatsPropName][pLastSectionName].last_time = currentTime;
-		if (!scoresObj[user.alias][userCategoryStatsPropName][pLastSectionName].hasOwnProperty("total_score"))
-			scoresObj[user.alias][userCategoryStatsPropName][pLastSectionName].total_score = pUserCurrentGameScore;
+			scoresObj[user.alias][userCategoryStatsPropName] = [];
 		else
-			scoresObj[user.alias][userCategoryStatsPropName][pLastSectionName].total_score += pUserCurrentGameScore;
+		{
+			// In case version 1.00 of this door has been run before, the category stats would be an object
+			// with category names as the properties..  Convert that to an array
+			if (!Array.isArray(scoresObj[user.alias][userCategoryStatsPropName]))
+			{
+				var userCatStats = [];
+				for (var categoryName in scoresObj[user.alias][userCategoryStatsPropName])
+				{
+					var statsObj = {
+						category_name: categoryName,
+						last_score: 0,
+						last_time: scoresObj[user.alias][userCategoryStatsPropName].last_time
+					};
+					// Version 1.00 has a total_score in the category sections
+					if (scoresObj[user.alias][userCategoryStatsPropName].hasOwnProperty("total_score"))
+						statsObj.last_score = scoresObj[user.alias][userCategoryStatsPropName].total_score;
+					else if (scoresObj[user.alias][userCategoryStatsPropName].hasOwnProperty("last_score"))
+						statsObj.last_score = scoresObj[user.alias][userCategoryStatsPropName].last_score;
+					userCatStats.push(statsObj);
+				}
+				scoresObj[user.alias][userCategoryStatsPropName] = userCatStats;
+			}
+		}
+		// See if the category stats already has an element with the last section name
+		var catStatsElementIdx = -1;
+		for (var i = 0; i < scoresObj[user.alias][userCategoryStatsPropName].length && catStatsElementIdx == -1; ++i)
+		{
+			if (scoresObj[user.alias][userCategoryStatsPropName][i].category_name == pLastSectionName)
+				catStatsElementIdx = i;
+		}
+		if (catStatsElementIdx == -1)
+		{
+			// The last section info doesn't exist in the array
+			scoresObj[user.alias][userCategoryStatsPropName].push({
+				category_name: pLastSectionName,
+				last_score: pUserCurrentGameScore,
+				last_time: currentTime
+			});
+		}
+		else // The last section info already exists in the array
+		{
+			scoresObj[user.alias][userCategoryStatsPropName][catStatsElementIdx].last_score = pUserCurrentGameScore;
+			scoresObj[user.alias][userCategoryStatsPropName][catStatsElementIdx].last_time = currentTime;
+		}
 		// Update the user's grand total score value
 		if (scoresObj[user.alias].hasOwnProperty("total_score"))
 			scoresObj[user.alias].total_score += pUserCurrentGameScore;
@@ -857,13 +939,14 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 		scoresObj[user.alias].last_score = pUserCurrentGameScore;
 		scoresObj[user.alias].last_trivia_category = lastSectionName;
 		scoresObj[user.alias].last_time = currentTime;
+		scoresForUser = scoresObj[user.alias];
 	}
 	catch (error)
 	{
-		console.print("* " + error);
+		console.print("* Line " + error.lineNumber + ": " + error);
 		console.crlf();
-		log(LOG_ERR, GAME_NAME + " - Updating trivia score object: " + error);
-		bbs.log_str(GAME_NAME + " - Updating trivia score object: " + error);
+		log(LOG_ERR, GAME_NAME + " - Updating trivia score object: Line " + error.lineNumber + ": " + error);
+		bbs.log_str(GAME_NAME + " - Updating trivia score object: Line " + error.lineNumber + ": " + error);
 	}
 	scoresFile = new File(SCORES_FILENAME);
 	if (scoresFile.open("w"))
@@ -874,13 +957,68 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 
 	// Delete the semaphore file
 	file_remove(SCORES_SEMAPHORE_FILENAME);
+
+	// If there is a server configured, then send the user's score to the server too
+	if (gSettings.hasValidServerSettings())
+		updateScoresOnServer(user.alias, scoresForUser);
 }
 
-// Shows the saved scores
+// Updates user scores on the server (if there is one configured)
 //
 // Parameters:
-//  pPauseAtEnd: Boolean - Whether or not to pause at the end.  The default is false.
-function showScores(pPauseAtEnd)
+//  pUserNameForScores: The user's name as used for the scores
+//  pUserScoreInfo: An object containing user scores, as created by updateScoresFile()
+function updateScoresOnServer(pUserNameForScores, pUserScoreInfo)
+{
+	// Make sure the settings have valid server settings and the user score info object is valid
+	if (!gSettings.hasValidServerSettings())
+		return;
+	if (typeof(pUserNameForScores) !== "string" || pUserNameForScores.length == 0 || typeof(pUserScoreInfo) !== "object")
+		return;
+
+	try
+	{
+		var jsonClient = new JSONClient(gSettings.remoteServer.server, gSettings.remoteServer.port);
+		// Ensure the BBS name on the server has been set
+		var JSONLocation = gSettings.remoteServer.BBSJSONLocation + ".bbs_name";
+		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, system.name, JSON_DB_LOCK_WRITE);
+		// Write the scores on the server
+		JSONLocation = gSettings.remoteServer.userScoresJSONLocationWithoutUsername + "." + pUserNameForScores;
+		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, pUserScoreInfo, JSON_DB_LOCK_WRITE);
+		// Write the client & version information in the user scores too
+		var gameInfo = format("%s version %s (%s)", GAME_NAME, GAME_VERSION, GAME_VER_DATE);
+		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation + ".game_client", gameInfo, JSON_DB_LOCK_WRITE);
+		jsonClient.disconnect();
+	}
+	catch (error)
+	{
+		console.print("* Line " + error.lineNumber + ": " + error);
+		console.crlf();
+		log(LOG_ERR, GAME_NAME + " - Updating scores on server: Line " + error.lineNumber + ": " + error);
+		bbs.log_str(GAME_NAME + " - Updating scores on server: Line " + error.lineNumber + ": " + error);
+	}
+}
+
+// Shows the saved scores - First the locally saved scores, and then if there is a
+// server configured, shows the remote saved scores (after prompting the user whether
+// to show those)
+function showScores()
+{
+	// Show local scores.  Then, if there is a server configured, prompt the user if they
+	// want to see server scores, and if so, show those.
+	showLocalScores();
+	
+	if (gSettings.hasValidServerSettings())
+	{
+		var showServerScoresConfirm = console.yesno("\x01n\x01b\x01hShow multi-BBS scores");
+		console.attributes = "N";
+		if (showServerScoresConfirm)
+			showServerScores();
+	}
+}
+
+// Shows the locally saved scores (on the current BBS)
+function showLocalScores()
 {
 	console.print("\x01n");
 	console.crlf();
@@ -899,90 +1037,218 @@ function showScores(pPauseAtEnd)
 			var scoresObj = JSON.parse(scoreFileContents);
 			for (var prop in scoresObj)
 			{
-				sortedScores.push({
-					name: prop,
-					total_score: scoresObj[prop].total_score,
-					last_score: scoresObj[prop].last_score,
-					last_trivia_category: scoresObj[prop].last_trivia_category,
-					last_time: scoresObj[prop].last_time
-				});
+				sortedScores.push(new UserScoreObj(prop, scoresObj[prop].total_score, scoresObj[prop].last_score,
+				                              scoresObj[prop].last_trivia_category, scoresObj[prop].last_time));
 			}
 		}
 		// Sort the array: High total score first
-		sortedScores.sort(function(objA, objB) {
-			if (objA.total_score > objB.total_score)
-				return -1;
-			else if (objA.total_score < objB.total_score)
-				return 1;
-			else
-				return 0;
-		});
+		sortedScores.sort(userScoresSortTotalScoreHighest);
 	}
 	// Print the scores if there are any
 	if (sortedScores.length > 0)
-	{
-		// Make the format string for printf()
-		var scoreWidth = 6;
-		var dateWidth = 10;
-		var categoryWidth = 15;
-		var nameWidth = 0;
-		var formatStr = "";
-		if (console.screen_columns >= 80)
-		{
-			nameWidth = console.screen_columns - dateWidth - categoryWidth - (scoreWidth * 2) - 5;
-			formatStr = "%-" + nameWidth + "s %-" + dateWidth + "s %-" + categoryWidth + "s %" + scoreWidth + "d %" + scoreWidth + "d";
-		}
-		else
-		{
-			nameWidth = console.screen_columns - (scoreWidth * 2) - 3;
-			formatStr = "%-" + nameWidth + "s %" + scoreWidth + "d %" + scoreWidth + "d";
-		}
-		// Print the scores
-		console.center("\x01g\x01hHigh Scores\x01n");
-		console.crlf();
-		if (console.screen_columns >= 80)
-		{
-			printf("\x01w\x01h%-" + nameWidth + "s %-" + dateWidth + "s %-" + categoryWidth + "s %" + scoreWidth + "s %" + scoreWidth + "s",
-			       "Player", "Last date", "Last category", "Total", "Last");
-		}
-		else
-			printf("\x01w\x01h%-" + nameWidth + "s %" + scoreWidth + "s %" + scoreWidth + "s\x01n", "Player", "Total", "Last");
-		console.crlf();
-		console.print("\x01n\x01b");
-		for (var i = 0; i < console.screen_columns-1; ++i)
-			console.print(HORIZONTAL_DOUBLE);
-		console.crlf();
-		// Print the list of high scores
-		console.print("\x01g");
-		if (console.screen_columns >= 80)
-		{
-			for (var i = 0; i < sortedScores.length && i < gSettings.behavior.maxNumPlayerScoresToDisplay; ++i)
-			{
-				var playerName = sortedScores[i].name.substr(0, nameWidth);
-				var lastDate = strftime("%Y-%m-%d", sortedScores[i].last_time);
-				var sectionName = sortedScores[i].last_trivia_category.substr(0, categoryWidth);
-				printf(formatStr, playerName, lastDate, sectionName, sortedScores[i].total_score, sortedScores[i].last_score);
-				console.crlf();
-			}
-		}
-		else
-		{
-			for (var i = 0; i < sortedScores.length && i < gSettings.behavior.maxNumPlayerScoresToDisplay; ++i)
-			{
-				printf(formatStr, sortedScores[i].name.substr(0, nameWidth), sortedScores[i].total_score, sortedScores[i].last_score);
-				console.crlf();
-			}
-		}
-		console.print("\x01n\x01b");
-		for (var i = 0; i < console.screen_columns-1; ++i)
-			console.print(HORIZONTAL_DOUBLE);
-		console.crlf();
-	}
+		showUserScoresArray(sortedScores);
 	else
 		console.print("\x01gThere are no saved scores yet.\x01n");
 	console.crlf();
-	if (typeof(pPauseAtEnd) === "boolean" && pPauseAtEnd)
-		console.pause();
+}
+
+// Shows the scores from the server (multi-BBS scores)
+function showServerScores()
+{
+	if (!gSettings.hasValidServerSettings())
+		return;
+
+	// Use a JSONClient to get the scores JSON from the server
+	try
+	{
+		var jsonClient = new JSONClient(gSettings.remoteServer.server, gSettings.remoteServer.port);
+		var data = jsonClient.read(gSettings.remoteServer.gtTriviaScope, "SCORES", JSON_DB_LOCK_READ);
+		jsonClient.disconnect();
+		// Example of scores from the server (as of data version 1.01):
+		/*
+		SCORES:
+		 systems:
+		  DIGDIST:
+		   bbs_name: Digital Distortion
+		   user_scores:
+		    Nightfox:
+			 category_stats:
+			  0:
+			   category_name: General
+			   last_score: 20
+			   last_time: 2022-11-24
+			 total_score: 60
+			 last_score: 20
+			 last_trivia_category: General
+			 last_time: 2022-11-24
+			 game_client: Good Time Trivia version 1.01 Beta (2022-11-24)
+		*/
+		/*
+		if (typeof(data) === "string")
+			data = JSON.parse(data);
+		*/
+		// Sanity checking: Make sure the data is an object and has a "systems" property
+		if (typeof(data) !== "object")
+		{
+			console.attributes = "N" + gSettings.colors.error;
+			console.print("Invalid scores data was received from the server\x01n");
+			console.crlf();
+			return;
+		}
+		if (!data.hasOwnProperty("systems"))
+		{
+			console.attributes = "N" + gSettings.colors.error;
+			console.print("Invalid scores data was received from the server\x01n");
+			console.crlf();
+			return;
+		}
+
+		// For each BBS in the scores, sort the player scores and then show the scores for
+		// the BBS
+		for (var BBS_ID in data.systems)
+		{
+			if (!data.systems[BBS_ID].hasOwnProperty("user_scores"))
+				continue;
+			var sortedScores = [];
+			for (var playerName in data.systems[BBS_ID].user_scores)
+			{
+				// Player category stats are also available (as an array):
+				//data.systems[BBS_ID].user_scores[playerName].category_stats
+				var scoreObj = new UserScoreObj(playerName, data.systems[BBS_ID].user_scores[playerName].total_score, data.systems[BBS_ID].user_scores[playerName].last_score,
+												data.systems[BBS_ID].user_scores[playerName].last_trivia_category, data.systems[BBS_ID].user_scores[playerName].last_time);
+				sortedScores.push(scoreObj);
+			}
+			// Sort the array: High total score first.  Then display them.
+			sortedScores.sort(userScoresSortTotalScoreHighest);
+			if (sortedScores.length > 0)
+			{
+				showUserScoresArray(sortedScores, data.systems[BBS_ID].bbs_name);
+				// If debugging is enabled, then also show the game_client property (game_client stores the name
+				// & version of the game that wrote the user score data for this player)
+				if (gDebug)
+				{
+					if (data.systems[BBS_ID].user_scores[playerName].hasOwnProperty("game_client"))
+					{
+						console.print("\x01n\x01cGame client: \x01h" + data.systems[BBS_ID].user_scores[playerName].game_client + "\x01n");
+						console.crlf();
+					}
+				}
+				console.crlf();
+			}
+		}
+	}
+	catch (error)
+	{
+		log(LOG_ERR, GAME_NAME + " - Getting server scores: Line " + error.lineNumber + ": " + error);
+		bbs.log_str(GAME_NAME + " - Getting server scores: Line " + error.lineNumber + ": " + error);
+		console.attributes = "N" + gSettings.colors.error;
+		console.print("* Line: " + error.lineNumber + ": " + error);
+		console.crlf();
+	}
+}
+
+// Shows an array of user scores
+//
+// Parameters:
+//  pUserScoresArray: An array of objects with the following properties:
+//                    name: Player's name
+//                    total_score: Player's total score from all games they've played
+//                    last_score: The player's score from the last game they played
+//                    last_trivia_category: The name of the last trivia category the player played
+//                    last_time: The UNIX timestamp when the player's scores were saved
+//  pBBSName: Optional - The name of a BBS where the scores are coming from (if applicable)
+function showUserScoresArray(pUserScoresArray, pBBSName)
+{
+	if (typeof(pUserScoresArray) !== "object" || pUserScoresArray.length == 0)
+		return;
+
+	// Make the format string for printf()
+	var scoreWidth = 6;
+	var dateWidth = 10;
+	var categoryWidth = 15;
+	var nameWidth = 0;
+	var formatStr = "";
+	if (console.screen_columns >= 80)
+	{
+		nameWidth = console.screen_columns - dateWidth - categoryWidth - (scoreWidth * 2) - 5;
+		formatStr = "%-" + nameWidth + "s %-" + dateWidth + "s %-" + categoryWidth + "s %" + scoreWidth + "d %" + scoreWidth + "d";
+	}
+	else
+	{
+		nameWidth = console.screen_columns - (scoreWidth * 2) - 3;
+		formatStr = "%-" + nameWidth + "s %" + scoreWidth + "d %" + scoreWidth + "d";
+	}
+	// Show the "High scores" header
+	/*
+	if (typeof(pBBSName) === "string" && pBBSName.length > 0)
+		console.center("\x01g\x01hHigh Scores: \x01c" + pBBSName + "\x01n");
+	else
+		console.center("\x01g\x01hHigh Scores\x01n");
+	*/
+	console.center("\x01n\x01g\x01hHigh Scores\x01n");
+	if (typeof(pBBSName) === "string" && pBBSName.length > 0)
+		console.center("\x01n\x01gBBS\x01h: \x01c" + pBBSName);
+	console.crlf();
+	// Print the scores
+	if (console.screen_columns >= 80)
+	{
+		printf("\x01w\x01h%-" + nameWidth + "s %-" + dateWidth + "s %-" + categoryWidth + "s %" + scoreWidth + "s %" + scoreWidth + "s",
+			   "Player", "Last date", "Last category", "Total", "Last");
+	}
+	else
+		printf("\x01w\x01h%-" + nameWidth + "s %" + scoreWidth + "s %" + scoreWidth + "s\x01n", "Player", "Total", "Last");
+	console.crlf();
+	console.print("\x01n\x01b");
+	for (var i = 0; i < console.screen_columns-1; ++i)
+		console.print(HORIZONTAL_DOUBLE);
+	console.crlf();
+	// Print the list of high scores
+	console.print("\x01g");
+	if (console.screen_columns >= 80)
+	{
+		for (var i = 0; i < pUserScoresArray.length && i < gSettings.behavior.maxNumPlayerScoresToDisplay; ++i)
+		{
+			var playerName = pUserScoresArray[i].name.substr(0, nameWidth);
+			var lastDate = strftime("%Y-%m-%d", pUserScoresArray[i].last_time);
+			var sectionName = pUserScoresArray[i].last_trivia_category.substr(0, categoryWidth);
+			printf(formatStr, playerName, lastDate, sectionName, pUserScoresArray[i].total_score, pUserScoresArray[i].last_score);
+			console.crlf();
+		}
+	}
+	else
+	{
+		for (var i = 0; i < pUserScoresArray.length && i < gSettings.behavior.maxNumPlayerScoresToDisplay; ++i)
+		{
+			printf(formatStr, pUserScoresArray[i].name.substr(0, nameWidth), pUserScoresArray[i].total_score, pUserScoresArray[i].last_score);
+			console.crlf();
+		}
+	}
+	console.print("\x01n\x01b");
+	for (var i = 0; i < console.screen_columns-1; ++i)
+		console.print(HORIZONTAL_DOUBLE);
+	console.crlf();
+}
+
+// Creates a user score object for display in the high scores
+function UserScoreObj(pPlayerName, pTotalScore, pLastScore, pLastCategory, pLastTime)
+{
+	this.name = pPlayerName;
+	this.total_score = pTotalScore;
+	this.last_score = pLastScore;
+	this.last_trivia_category = pLastCategory;
+	this.last_time = pLastTime;
+}
+
+// An array sorting function for UserScoreObj objects to sort the array by
+// highest total_score first
+function userScoresSortTotalScoreHighest(pPlayerA, pPlayerB)
+{
+	if (pPlayerA.total_score > pPlayerB.total_score)
+		return -1;
+	else if (pPlayerA.total_score < pPlayerB.total_score)
+		return 1;
+	else
+		return 0;
 }
 
 // Displays the game help to the user
@@ -1060,7 +1326,8 @@ function showHelpScreen()
 	console.pause();
 }
 
-// Returns a version of a string that is masked, possibly with some of its characters unmasked
+// Returns a version of a string that is masked, possibly with some of its characters unmasked.
+// Spaces will not be included.
 //
 // Parameters:
 //  pStr: A string to mask
@@ -1068,23 +1335,38 @@ function showHelpScreen()
 //  pMaskChar: Optional - The mask character. Defaults to "*".
 function partiallyHiddenStr(pStr, pNumLettersUncovered, pMaskChar)
 {
-	if (typeof(pStr) !== "string")
+	if (typeof(pStr) !== "string" || pStr.length == 0)
 		return "";
+
+	// Count the number of spaces in the string
+	var numSpaces = 0;
+	for (var i = 0; i < pStr.length; ++i)
+	{
+		if (pStr.charAt(i) == " ")
+			++numSpaces;
+	}
+
 	var maskChar = (typeof(pMaskChar) === "string" && pMaskChar.length > 0 ? pMaskChar.substr(0, 1) : "*");
 	var numLetersUncovered = (typeof(pNumLettersUncovered) === "number" && pNumLettersUncovered > 0 ? pNumLettersUncovered : 0);
 	var str = "";
-	if (numLetersUncovered >= pStr.length)
+	if (numLetersUncovered >= pStr.length - numSpaces) //if (numLetersUncovered >= pStr.length)
 		str = pStr;
 	else
 	{
 		var i = 0;
+		var charCount = 0;
 		for (i = 0; i < pStr.length; ++i)
 		{
-			if (i < numLetersUncovered)
-				str += pStr.charAt(i);
+			var currentChar = pStr.charAt(i);
+			if (currentChar == " ")
+			{
+				str += " ";
+				continue;
+			}
+			if (charCount++ < numLetersUncovered)
+				str += currentChar;
 			else
 				str += maskChar;
-			
 		}
 	}
 	return str;
@@ -1131,4 +1413,149 @@ function attrCodeStr(pAttrCodeCharStr)
 	for (var i = 0; i < pAttrCodeCharStr.length; ++i)
 		str += "\x01" + pAttrCodeCharStr[i];
 	return str;
+}
+
+// Sysop menu: Provides the sysop with some maintenance options
+function doSysopMenu()
+{
+	if (!user.is_sysop)
+		return;
+
+	var continueOn = true;
+	while (continueOn)
+	{
+		console.attributes = "N";
+		console.print("\x01c\x01hSysop menu");
+		console.crlf();
+		console.attributes = "NB";
+		for (var i = 0; i < console.screen_columns-1; ++i)
+			console.print(HORIZONTAL_DOUBLE);
+		console.crlf();
+		var validKeys = "1Q"; // Clear high scores, Quit
+		console.print("\x01c1\x01y\x01h) \x01bClear high scores\x01n");
+		console.print("     \x01cQ\x01y\x01h)\x01buit\x01n");
+		// If there is an inter-BBS scores JSON file, then add some options to manage that
+		if (file_exists(backslash(gStartupPath + "server") + "gttrivia.json"))
+		{
+			validKeys += "23";
+			console.crlf();
+			console.print("\x01gInter-BBS scores\x01n");
+			console.crlf();
+			console.attributes = "KH";
+			for (var i = 0; i < 16; ++i)
+				console.print(HORIZONTAL_SINGLE);
+			console.attributes = "N";
+			console.crlf();
+			console.print("\x01c2\x01y\x01h) \x01bDelete user (from all systems)\x01n");
+			console.crlf();
+			console.print("\x01c3\x01y\x01h) \x01bDelete BBS scores\x01n");
+			console.crlf();
+		}
+		console.attributes = "NB";
+		for (var i = 0; i < console.screen_columns-1; ++i)
+			console.print(HORIZONTAL_DOUBLE);
+		console.attributes = "N";
+		console.crlf();
+		console.print("\x01cYour choice\x01g\x01h: \x01c");
+		var userChoice = console.getkeys(validKeys, -1, K_UPPER).toString();
+		console.attributes = "N";
+		if (userChoice.length == 0 || userChoice == "Q")
+			continueOn = false;
+		else if (userChoice == "1")
+		{
+			console.crlf();
+			if (file_exists(SCORES_FILENAME))
+			{
+				if (!console.noyes("\x01y\x01hAre you SURE you want to clear the scores\x01b"))
+				{
+					file_remove(SCORES_FILENAME);
+					console.print("\x01n\x01c\x01hThe score file has been deleted.");
+				}
+			}
+			else
+				console.print("\x01n\x01c\x01hThere is no score file yet.");
+			console.print("\x01n");
+			console.crlf();
+		}
+		else if (userChoice == "2")
+		{
+			// Delete user from all systems from server scores
+			console.print("\x01cPlayer name\x01g\x01h: \x01c");
+			var playerName = console.getstr("", -1, K_UPRLWR);
+			if (playerName.length > 0)
+			{
+				if (!console.noyes("\x01y\x01hAre you SURE you want to remove \x01g" + playerName + "\x01b"))
+				{
+					var localJSONServicePort = getJSONSvcPortFromServicesIni();
+					var jsonClient = new JSONClient("127.0.0.1", localJSONServicePort);
+					try
+					{
+						var data = jsonClient.read(gSettings.remoteServer.gtTriviaScope, "SCORES", JSON_DB_LOCK_READ);
+						if (typeof(data) === "object" && data.hasOwnProperty("systems"))
+						{
+							for (var BBS_ID in data.systems)
+							{
+								if (data.systems[BBS_ID].hasOwnProperty("user_scores"))
+								{
+									var playerNameUpper = playerName.toUpperCase();
+									for (var playerName in data.systems[BBS_ID].user_scores)
+									{
+										if (playerName.toUpperCase() == playerNameUpper)
+										{
+											var JSONLocation = format("SCORES.systems.%s.user_scores.%s", BBS_ID, playerName);
+											jsonClient.remove(gSettings.remoteServer.gtTriviaScope, JSONLocation, JSON_DB_LOCK_WRITE);
+										}
+									}
+								}
+							}
+						}
+					}
+					catch (error)
+					{
+						console.print("* " + error + "\r\n");
+						log(LOG_ERR, GAME_NAME + " - Deleting user from server scores: Line " + error.lineNumber + ": " + error);
+						bbs.log_str(GAME_NAME + " - Deleting user from server scores: Line " + error.lineNumber + ": " + error);
+					}
+					jsonClient.disconnect();
+				}
+			}
+		}
+		else if (userChoice == "3")
+		{
+			// Delete BBS from server scores
+			console.print("\x01cBBS name\x01g\x01h: \x01c");
+			var BBSName = console.getstr("", -1, K_UPRLWR);
+			if (BBSName.length > 0)
+			{
+				if (!console.noyes("\x01y\x01hAre you SURE you want to remove \x01g" + BBSName + "\x01b"))
+				{
+					var localJSONServicePort = getJSONSvcPortFromServicesIni();
+					var jsonClient = new JSONClient("127.0.0.1", localJSONServicePort);
+					try
+					{
+						var data = jsonClient.read(gSettings.remoteServer.gtTriviaScope, "SCORES", JSON_DB_LOCK_READ);
+						if (typeof(data) === "object" && data.hasOwnProperty("systems"))
+						{
+							var BBSNameUpper = BBSName.toUpperCase();
+							for (var BBS_ID in data.systems)
+							{
+								if (data.systems[BBS_ID].hasOwnProperty("bbs_name") && data.systems[BBS_ID].bbs_name.toUpperCase() == BBSNameUpper)
+								{
+									var JSONLocation = format("SCORES.systems.%s", BBS_ID);
+									jsonClient.remove(gSettings.remoteServer.gtTriviaScope, JSONLocation, JSON_DB_LOCK_WRITE);
+								}
+							}
+						}
+					}
+					catch (error)
+					{
+						console.print("* " + error + "\r\n");
+						log(LOG_ERR, GAME_NAME + " - Deleting user from server scores: Line " + error.lineNumber + ": " + error);
+						bbs.log_str(GAME_NAME + " - Deleting user from server scores: Line " + error.lineNumber + ": " + error);
+					}
+					jsonClient.disconnect();
+				}
+			}
+		}
+	}
 }
