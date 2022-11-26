@@ -44,6 +44,7 @@
  * 2022-05-27                   Fixed a few instances where SlyEdit was trying to access
  *                              sub-board information with an empty sub-board code (in the rare
  *                              case when no sub-boards are configured).
+ * 2022-11-19 Eric Oulashin     Refactored ReadSlyEditConfigFile().
  */
 
 "use strict";
@@ -2224,141 +2225,56 @@ function ReadSlyEditConfigFile()
 	var cfgFile = new File(slyEdCfgFileName);
 	if (cfgFile.open("r"))
 	{
-		var settingsMode = "behavior";
-		var fileLine = null;     // A line read from the file
-		var equalsPos = 0;       // Position of a = in the line
-		var commentPos = 0;      // Position of the start of a comment
-		var setting = null;      // A setting name (string)
-		var settingUpper = null; // Upper-case setting name
-		var value = null;        // A value for a setting (string), with spaces trimmed
-		var valueLiteral = null; // The value as it is in the config file, no processing
-		var valueUpper = null;   // Upper-cased value
-		while (!cfgFile.eof)
+		// Behavior settings
+		var behaviorSettings = cfgFile.iniGetObject("BEHAVIOR");
+		// The following are all boolean properties/settings:
+		var propsToCopy = ["displayEndInfoScreen", "userInputTimeout", "reWrapQuoteLines", "allowColorSelection",
+		                   "saveColorsAsANSI", "useQuoteLineInitials", "indentQuoteLinesWithInitials", "allowCrossPosting",
+		                   "enableTaglines", "quoteTaglines", "shuffleTaglines", "allowUserSettings", "allowEditQuoteLines",
+		                   "allowSpellCheck"];
+		for (var i = 0; i < propsToCopy.length; ++i)
 		{
-			// Read the next line from the config file.
-			fileLine = cfgFile.readln(2048);
-
-			// fileLine should be a string, but I've seen some cases
-			// where for some reason it isn't.  If it's not a string,
-			// then continue onto the next line.
-			if (typeof(fileLine) != "string")
-				continue;
-
-			// If the line starts with with a semicolon (the comment
-			// character) or is blank, then skip it.
-			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-				continue;
-
-			// If in the "behavior" section, then set the behavior-related variables.
-			if (fileLine.toUpperCase() == "[BEHAVIOR]")
-			{
-				settingsMode = "behavior";
-				continue;
-			}
-			else if (fileLine.toUpperCase() == "[ICE_COLORS]")
-			{
-				settingsMode = "ICEColors";
-				continue;
-			}
-			else if (fileLine.toUpperCase() == "[DCT_COLORS]")
-			{
-				settingsMode = "DCTColors";
-				continue;
-			}
-
-			// If the line has a semicolon anywhere in it, then remove
-			// everything from the semicolon onward.
-			commentPos = fileLine.indexOf(";");
-			if (commentPos > -1)
-				fileLine = fileLine.substr(0, commentPos);
-
-			// Look for an equals sign, and if found, separate the line
-			// into the setting name (before the =) and the value (after the
-			// equals sign).
-			equalsPos = fileLine.indexOf("=");
-			if (equalsPos > 0)
-			{
-				// Read the setting & value, and trim leading & trailing spaces.
-				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-				settingUpper = setting.toUpperCase();
-				valueLiteral = fileLine.substr(equalsPos+1);
-				value = trimSpaces(valueLiteral, true, false, true);
-				valueUpper = value.toUpperCase();
-
-				if (settingsMode == "behavior")
-				{
-					if (settingUpper == "DISPLAYENDINFOSCREEN")
-						cfgObj.displayEndInfoScreen = (valueUpper == "TRUE");
-					else if (settingUpper == "USERINPUTTIMEOUT")
-						cfgObj.userInputTimeout = (valueUpper == "TRUE");
-					else if (settingUpper == "INPUTTIMEOUTMS")
-						cfgObj.inputTimeoutMS = +value;
-					else if (settingUpper == "REWRAPQUOTELINES")
-						cfgObj.reWrapQuoteLines = (valueUpper == "TRUE");
-					else if (settingUpper == "ALLOWCOLORSELECTION")
-						cfgObj.allowColorSelection = (valueUpper == "TRUE");
-					else if (settingUpper == "SAVECOLORSASANSI")
-						cfgObj.saveColorsAsANSI = (valueUpper == "TRUE");
-					else if (settingUpper == "USEQUOTELINEINITIALS")
-						cfgObj.useQuoteLineInitials = (valueUpper == "TRUE");
-					else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
-						cfgObj.indentQuoteLinesWithInitials = (valueUpper == "TRUE");
-					else if (settingUpper == "ADD3RDPARTYSTARTUPSCRIPT")
-						cfgObj.thirdPartyLoadOnStart.push(value);
-					else if (settingUpper == "ADD3RDPARTYEXITSCRIPT")
-						cfgObj.thirdPartyLoadOnExit.push(value);
-					else if (settingUpper == "ADDJSONSTART")
-						cfgObj.runJSOnStart.push(value);
-					else if (settingUpper == "ADDJSONEXIT")
-						cfgObj.runJSOnExit.push(value);
-					else if (settingUpper == "ALLOWCROSSPOSTING")
-						cfgObj.allowCrossPosting = (valueUpper == "TRUE");
-					else if (settingUpper == "ENABLETEXTREPLACEMENTS")
-					{
-						// The enableTxtReplacements setting in the config file can
-						// be regex, true, or false:
-						//  - regex: Text replacement enabled using regular expressions
-						//  - true: Text replacement enabled using exact match
-						//  - false: Text replacement disabled
-						cfgObj.textReplacementsUseRegex = (valueUpper == "REGEX");
-						if (cfgObj.textReplacementsUseRegex)
-							cfgObj.enableTextReplacements = true;
-						else
-							cfgObj.enableTextReplacements = (valueUpper == "TRUE");
-					}
-					else if (settingUpper == "ENABLETAGLINES")
-						cfgObj.enableTaglines = (valueUpper == "TRUE");
-					else if (settingUpper == "TAGLINEFILENAME")
-						cfgObj.tagLineFilename = genFullPathCfgFilename(value, gStartupPath);
-					else if (settingUpper == "TAGLINEPREFIX")
-						cfgObj.taglinePrefix = valueLiteral;
-					else if (settingUpper == "QUOTETAGLINES")
-						cfgObj.quoteTaglines = (valueUpper == "TRUE");
-					else if (settingUpper == "SHUFFLETAGLINES")
-						cfgObj.shuffleTaglines = (valueUpper == "TRUE");
-					else if (settingUpper == "ALLOWUSERSETTINGS")
-						cfgObj.allowUserSettings = (valueUpper == "TRUE");
-					else if (settingUpper == "ALLOWEDITQUOTELINES")
-						cfgObj.allowEditQuoteLines = (valueUpper == "TRUE");
-					else if (settingUpper == "ALLOWSPELLCHECK")
-						cfgObj.allowSpellCheck = (valueUpper == "TRUE");
-					else if (settingUpper == "DICTIONARYFILENAMES")
-						cfgObj.dictionaryFilenames = parseDictionaryConfig(value, gStartupPath);
-				}
-				else if (settingsMode == "ICEColors")
-				{
-					if (settingUpper == "THEMEFILENAME")
-						cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(value, gStartupPath);
-					else if (settingUpper == "MENUOPTCLASSICCOLORS")
-						cfgObj.iceColors.menuOptClassicColors = (valueUpper == "TRUE");
-				}
-				else if (settingsMode == "DCTColors")
-				{
-					if (settingUpper == "THEMEFILENAME")
-						cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(value, gStartupPath);
-				}
-			}
+			var propName = propsToCopy[i];
+			cfgObj[propName] = behaviorSettings[propName];
 		}
+		// Other settings:
+		cfgObj.inputTimeoutMS = +(behaviorSettings.inputTimeoutMS);
+		if (behaviorSettings.hasOwnProperty("add3rdPartyStartupScript"))
+			cfgObj.thirdPartyLoadOnStart.push(behaviorSettings.add3rdPartyStartupScript);
+		if (behaviorSettings.hasOwnProperty("addJSOnStart"))
+			cfgObj.runJSOnStart.push(behaviorSettings.addJSOnStart);
+		if (behaviorSettings.hasOwnProperty("addJSOnExit"))
+			cfgObj.runJSOnExit.push(behaviorSettings.addJSOnExit);
+		if (behaviorSettings.hasOwnProperty("enableTextReplacements"))
+		{
+			// The enableTxtReplacements setting in the config file can
+			// be regex, true, or false:
+			//  - regex: Text replacement enabled using regular expressions
+			//  - true: Text replacement enabled using exact match
+			//  - false: Text replacement disabled
+			var valueUpper = behaviorSettings.enableTextReplacements.toUpperCase();
+			cfgObj.textReplacementsUseRegex = (valueUpper == "REGEX");
+			if (cfgObj.textReplacementsUseRegex)
+				cfgObj.enableTextReplacements = true;
+			else
+				cfgObj.enableTextReplacements = (valueUpper == "TRUE");
+		}
+		if (behaviorSettings.hasOwnProperty("taglineFilename"))
+			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.taglineFilename, gStartupPath);
+		if (behaviorSettings.hasOwnProperty("taglinePrefix"))
+			cfgObj.taglinePrefix = behaviorSettings.taglinePrefix;
+		if (behaviorSettings.hasOwnProperty("dictionaryFilenames"))
+			cfgObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, gStartupPath);
+		// Color settings
+		var iceColorSettings = cfgFile.iniGetObject("ICE_COLORS");
+		var DCTColorSettings = cfgFile.iniGetObject("DCT_COLORS");
+		if (typeof(cfgObj.iceColors) !== "object")
+			cfgObj.iceColors = {};
+		if (typeof(cfgObj.DCTColors) !== "object")
+			cfgObj.DCTColors = {};
+		cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(iceColorSettings.ThemeFilename, gStartupPath);
+		cfgObj.iceColors.menuOptClassicColors = iceColorSettings.menuOptClassicColors; // This is a boolean
+		cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, gStartupPath);
 
 		cfgFile.close();
 
@@ -5788,6 +5704,30 @@ function findFirstPrintableChar(pStr)
 	else
 		firstPrintableIdx = (pStr.length > 0 ? 0 : -1);
 	return firstPrintableIdx;
+}
+
+// Given a string of attribute characters, this function inserts the control code
+// in front of each attribute character and returns the new string.
+//
+// Parameters:
+//  pAttrCodeCharStr: A string of attribute characters (i.e., "YH" for yellow high)
+//
+// Return value: A string with the control character inserted in front of the attribute characters
+function attrCodeStr(pAttrCodeCharStr)
+{
+	if (typeof(pAttrCodeCharStr) !== "string")
+		return "";
+
+	var str = "";
+	// See this page for Synchronet color attribute codes:
+	// http://wiki.synchro.net/custom:ctrl-a_codes
+	for (var i = 0; i < pAttrCodeCharStr.length; ++i)
+	{
+		var currentChar = pAttrCodeCharStr.charAt(i);
+		if (/[krgybmcwKRGYBMCWHhIiEeFfNn01234567]/.test(currentChar))
+			str += "\x01" + currentChar;
+	}
+	return str;
 }
 
 // This function displays debug text at a given location on the screen, then
