@@ -12,6 +12,7 @@
  * ... Removed comments ...
  * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
  * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
+ * 2022-11-19 Eric Oulashin     Updated readColorConfig() to handle just attribute characters
  */
 
 "use strict";
@@ -55,14 +56,23 @@ readColorConfig(gConfigSettings.DCTColors.ThemeFilename);
 //  pFilename: The name of the color configuration file
 function readColorConfig(pFilename)
 {
-   var colors = readValueSettingConfigFile(pFilename, 512);
-   if (colors != null)
-   {
-      gConfigSettings.DCTColors = colors;
-      // Move the general color settings into gConfigSettings.genColors.*
-      if (EDITOR_STYLE == "DCT")
-        moveGenColorsToGenSettings(gConfigSettings.DCTColors, gConfigSettings);
-   }
+	var colors = readValueSettingConfigFile(pFilename, 512);
+	if (colors != null)
+	{
+		// Convert the color values from just attribute characters to actual attribute codes
+		for (var prop in colors)
+		{
+			// Remove any instances of specifying the control character
+			colors[prop] = colors[prop].replace(/\\[xX]01/g, "").replace(/\\[xX]1/g, "").replace(/\\1/g, "");
+			// Add actual control characters in the color setting
+			colors[prop] = attrCodeStr(colors[prop]);
+		}
+
+		gConfigSettings.DCTColors = colors;
+		// Move the general color settings into gConfigSettings.genColors.*
+		if (EDITOR_STYLE == "DCT")
+			moveGenColorsToGenSettings(gConfigSettings.DCTColors, gConfigSettings);
+	}
 }
 
 // Sets up any global screen-related variables needed for DCT style
