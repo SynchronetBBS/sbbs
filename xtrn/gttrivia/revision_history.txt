@@ -4,4 +4,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.01     2022-11-25   Added the ability to store & retrieve scores to/from a
+                      server, so that scores from multiple BBSes can be
+                      displayed.  By default, it's configured to use Digital
+                      Distortion as the host.  There are also sysop functions
+                      to remove players and users from the hosted inter-BBS
+                      scores. Also, answer clues now don't mask spaces in the
+                      answer.
 1.00     2022-11-18   Initial version/release
