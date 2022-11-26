@@ -5608,8 +5608,8 @@ NO_SSH:
 					sbbs->putnodedat(cfg->node_num,&node);
 					continue;
 				}
-				cfg->node_num = i; // correct the node number
 			}
+			cfg->node_num = i; // correct the node number
 			if(node.misc & NODE_RRUN) {
 				sbbs->getnodedat(cfg->node_num,&node,true);
 				node.misc &= ~NODE_RRUN;

@@ -10,7 +10,7 @@
 *.txt  text
 *.TXT  text
 *.json text
-*.bat  text
+*.bat  text eol=crlf
 *.mak  text
 *.mk   text
 makefile text
@@ -18,4 +18,8 @@ Makefile text
 GNUmakefile text
 *.bin  -text
 *.cnf  -text
+*.ans text eol=crlf
+*.ANS text eol=crlf
+*.asc text eol=crlf
+*.msg text eol=crlf
 
