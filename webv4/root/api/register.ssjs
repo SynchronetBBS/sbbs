@@ -6,6 +6,7 @@ var request = require({}, settings.web_lib + 'request.js', 'request');
 
 if (user.alias !== settings.guest) exit();
 if (!settings.user_registration) exit();
+if (system.settings&SYS_CLOSED) exit();
 
 var MIN_ALIAS = 1,
 	MIN_REALNAME = 3,
