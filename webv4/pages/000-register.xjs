@@ -12,6 +12,13 @@
 
 	require('sbbsdefs.js', 'SYS_CLOSED');
 
+	if (system.settings&SYS_CLOSED) {
+?>
+		<div class="alert alert-danger"><h3><?xjs write('Sorry, the system is closed to new users.'); ?></h3></div>
+<?xjs
+		exit();
+	}
+
 	function required(mask) {
 		return ((system.new_user_questions&mask) ? (' ' + locale.strings.page_register.stat_suffix_field_required) : '');
 	}
@@ -52,6 +59,14 @@
 	</div>
 
 	<form id="form-register" data-toggle="validator">
+
+		<?xjs if(system.newuser_password !== '') { ?>
+		<div class="form-group">
+			<label for="newuser-password"><?xjs write(locale.strings.page_register.input_registration_password); ?></label>
+			<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
+			<input type="password" class="form-control" id="newuser-password" name="newuser-password" placeholder="<?xjs write(locale.strings.page_register.input_registration_password); ?>" required>
+		</div>
+		<?xjs } ?>
 
 		<div class="form-group">
 			<label for="alias"><?xjs write(locale.strings.page_register.input_alias); ?></label>
@@ -175,15 +190,6 @@
 			</div>
 		</div>
 		<br>
-
-		<?xjs if(system.newuser_password !== '') { ?>
-		<div class="form-group">
-			<label for="newuser-password">
-				<?xjs write(locale.strings.page_register.input_registration_password); ?>
-			</label>
-			<input type="password" id="newuser-password" name="newuser-password" data-minlength="1" maxlength="8">
-		</div>
-		<?xjs } ?>
 
 		<!-- Traps - leave these here. They will be hidden from users. -->
 		<input id="send-me-free-stuff" title="Don't fill this field" name="send-me-free-stuff" type="text">
