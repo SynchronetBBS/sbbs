@@ -170,7 +170,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->new_sof, iniGetString(section, NULL, "sof", cfg->new_sif, value));
 	cfg->new_prot = *iniGetString(section, NULL, "download_protocol", " ", value);
 	char new_shell[LEN_CODE + 1];
-	SAFECOPY(new_shell, iniGetString(section, NULL, "shell", "default", value));
+	SAFECOPY(new_shell, iniGetString(section, NULL, "command_shell", "default", value));
 	SAFECOPY(cfg->new_xedit, iniGetString(section, NULL, "editor", "", value));
 
 	cfg->new_level = iniGetInteger(section, NULL, "level", 0);
@@ -182,7 +182,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->new_rest = iniGetUInt32(section, NULL, "restrictions", 0);
 	cfg->new_cdt = (uint32_t)iniGetBytes(section, NULL, "credits", 1, 0);
 	cfg->new_min = iniGetUInteger(section, NULL, "minutes", 0);
-	cfg->new_expire = iniGetInteger(section, NULL, "expire", 0);
+	cfg->new_expire = iniGetInteger(section, NULL, "expiration_days", 0);
 	cfg->new_misc = iniGetUInt32(section, NULL, "settings", 0);
 	cfg->new_msgscan_init = iniGetInteger(section, NULL, "msgscan_init", 0);
 
