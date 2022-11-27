@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.80
-                        Release date: 2022-07-04
+                              Version 1.81
+                        Release date: 2022-11-26
 
                                   by
 
@@ -416,12 +416,22 @@ ThemeFilename                     The name of the color theme file to use.
                                   If no theme file is specified, then default
                                   colors will be used.
 
-The color theme files are plain text files that can be edited with a
-text editor.
+The color theme files are plain text files that can be edited with a text
+editor.  For each color setting, you can specify color attribute characters as
+specified in the Synchronet documentation for attribute (Ctrl-A) codes:
+http://wiki.synchro.net/custom:ctrl-a_codes
+Note that you don't need control (Ctrl-A) characters for the color settings;
+just the attribute characters.  A couple examples of specifying colors:
+
+High green: gh
+Normal cyan: c
 
 
 6. Ice-style Color Theme Settings
 =================================
+Note that you don't need control (Ctrl-A) characters for the color settings;
+just the attribute characters.
+
 The following options are valid for Ice-style theme files:
 ----------------------------------------------------------
 QuoteLineColor                    The color for quoted lines in the message
@@ -484,6 +494,9 @@ UnselectedOptionTextColor         The color to use for the text for unselected
 
 7. DCT-style Color Theme Settings
 =================================
+Note that you don't need control (Ctrl-A) characters for the color settings;
+just the attribute characters.
+
 The following options are valid for DCT-style theme files:
 ----------------------------------------------------------
 QuoteLineColor                    The color for quoted lines in the message
@@ -615,6 +628,9 @@ MenuHotkeys                       The color to use for the hotkey characters in 
 
 8. Common colors (appearing in both Ice and DCT color theme files)
 ==================================================================
+Note that you don't need control (Ctrl-A) characters for the color settings;
+just the attribute characters.
+
 listBoxBorder                     The color to use for the border of list
                                   boxes, such as the cross-post area selection
                                   box and the text replacements list box.  Note
