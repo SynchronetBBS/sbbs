@@ -1,6 +1,6 @@
                                Good Time Trivia
-                                 Version 1.00
-                           Release date: 2022-11-18
+                                 Version 1.01
+                           Release date: 2022-11-25
 
                                      by
 
@@ -22,6 +22,9 @@ Contents
 3. Installation & Setup
    - Installation in SCFG
 4. Configuration file
+5. Optional: Configuring your BBS to host player scores
+   - Only do this if you would prefer to host scores on your BBS rather than
+     using the inter-BBS scores hosted on Digital Distortion
 
 
 1. Disclaimer
@@ -84,7 +87,11 @@ of the following files and directories:
 3. gttrivia.asc           The logo/startup screen to be shown to the user.
                           This is in Synchronet attribute code format.
 
-4. qa                     This is a subdirectory that contains the trivia
+4. install-xtrn.ini       A configuration file for automated installation into
+                          Synchronet's external programs section; for use with
+						  install-xtrn.js.  This is optional.
+
+5. qa                     This is a subdirectory that contains the trivia
                           question & answer files.  Each file contains a
 						  collection of questions, answers, and number of
 						  points for each question.  Each filename must have
@@ -92,6 +99,17 @@ of the following files and directories:
 						  category_name is the name of the category of
 						  questions (underscores are required between each
 						  word).  The filename extension must be .qa .
+
+6. server                 This directory contains a couple scripts that are
+                          used if you enable the gttrivia JSON database (for
+						  hosting game scores on a Synchronet BBS so that scores
+						  from players on multiple BBSes can be hosted and
+						  displayed).  As of this writing, I host scores for
+						  Good Time Trivia on my BBS (Digital Distortion), so
+						  unless you really want to do your own score hosting,
+						  you can have your installation of the game read
+						  inter-BBS scores from Digital Distortion.
+
 
 The trivia category files (in the qa directory, with filenames ending in .qa)
 are plain text files and contain questions, their answers, and their number of
@@ -135,7 +153,8 @@ gttrivia.js.
 Installation in SCFG
 --------------------
 This is an example of adding the game in one of your external programs sections
-in SCFG:
+in SCFG (note that the 'Native Executable/Script value doesn't matter for JS
+scripts):
 ╔═════════════════════════════════════════════════════[< >]╗
 ║                     Good Time Trivia                     ║
 ╠══════════════════════════════════════════════════════════╣
@@ -149,7 +168,7 @@ in SCFG:
 ║ │Execution Requirements                                  ║
 ║ │Multiple Concurrent Users  Yes                          ║
 ║ │I/O Method                 FOSSIL or UART               ║
-║ │Native Executable/Script   No                           ║
+║ │Native Executable/Script   Yes                          ║
 ║ │Use Shell or New Context   No                           ║
 ║ │Modify User Data           No                           ║
 ║ │Execute on Event           No                           ║
@@ -166,6 +185,7 @@ gttrivia.ini is the configuration file for the door game.  There are 3 sections:
 [BEHAVIOR], [COLORS], and [CATEGORY_ARS].  The settings are described below:
 
 [BEHAVIOR] section
+------------------
 Setting                           Description
 -------                           -----------
 numQuestionsPerPlay               The maximum number of trivia questions
@@ -181,10 +201,12 @@ maxNumPlayerScoresToDisplay       The maximum number of player scores to display
                                   in the list of high scores
 
 [COLORS] section
+----------------
 In this section, the color codes are simply specified by a string of color
 (attribute) code characters (i.e., YH for yellow and high).  See this page for
 Synchronet attribute codes:
 http://wiki.synchro.net/custom:ctrl-a_codes
+
 Setting                           Element applied to
 -------                           -------------------
 error                             Errors
@@ -211,6 +233,7 @@ clue                              Clue text
 answerAfterIncorrect              The answer printed after incorrect response
 
 [CATEGORY_ARS] section
+----------------------
 In this section, the format is section_name=ARS string
 section_name must match the part of a filename in the qa directory without the
 filename extension.  The ARS string is a string that Synchronet uses to describe
@@ -220,3 +243,57 @@ categories that you may want age-restricted, for instance).  See the following
 web page for documentation on Synchronet's ARS strings:
 http://wiki.synchro.net/access:requirements
 
+[REMOTE_SERVER] section
+-----------------------
+This section is used for specifying a remote server to connect to.  Currently,
+this is used for writing & reading player scores on the remote system.  Inter-
+BBS scores (retrieved from the remote system) can be optionally viewed when a
+user is viewing scores.
+
+Setting                           Description
+-------                           -----------
+server                            The server hostname/IP address.  The default
+                                  value can be used if you want to use Digital
+								  Distortion BBS.
+
+port                              The port number to use to connect to the
+                                  remote host.  The default value is set for
+								  Digital Distortion.
+
+[SERVER] section
+----------------
+This section is only used if you decide to host scores for Good Time Trivia.
+
+Setting                           Description
+-------                           -----------
+deleteScoresOlderThanDays         The number of days to keep old player scores.
+                                  The background service will remove player
+								  scores older than this number of days.
+
+
+5. Optional: Configuring your BBS to host player scores
+=======================================================
+You should only do this if you would prefer to host scores on your BBS rather
+than using the inter-BBS scores hosted on Digital Distortion.
+
+If you want to host player scores for Good Time Trivia, first ensure you have a
+section in your ctrl/services.ini configured to run json-service.js (usually
+with a name of JSON, or JSON in the name):
+
+[JSON]
+Port=10088
+Options=STATIC | LOOP
+Command=json-service.js
+
+Note that those settings configure it to run on port 10088.  Also, you might
+already have a similar section in your services.ini if you currently host any
+JSON databases.
+
+Then, open your ctrl/json-service.ini and add these lines to enable the gttrivia
+JSON dtaabase:
+
+[gttrivia]
+dir=../xtrn/gttrivia/server/
+
+It would then probably be a good idea to stop and re-start your Synchronet BBS
+in order for it to recognize that you have a new JSON database configured.

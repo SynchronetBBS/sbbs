@@ -12,6 +12,12 @@
  * 2022-07-04 Eric Oulashin     Version 1.80
  *                              Added the ability to choose/change the color of text being typed,
  *                              using Ctrl-K if color changing is enabled.
+ * 2022-11-19 Eric Oulashin     Version 1.81 Beta
+ *                              Refactored ReadSlyEditConfigFile().  Also, the color configuration
+ *                              files now can just specify attribute characters, without the
+ *                              control character.
+ * 2022-11-26 Eric Oulashin     Version 1.81
+ *                              Releasing this verison.
  */
 
 "use strict";
@@ -109,8 +115,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.80";
-var EDITOR_VER_DATE = "2022-07-04";
+var EDITOR_VERSION = "1.81";
+var EDITOR_VER_DATE = "2022-11-26";
 
 
 // Program variables
