@@ -993,7 +993,7 @@ BinkP.prototype.sendCmd = function(cmd, data)
 	// We'll send it all in one go to avoid sending small packets...
 	var sstr = this.send_buf(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + ascii(cmd) + data);
 	if (!this.send_chunks(sstr)) {
-		log(LOG_WARNING, "sendCmd(" + type + "): Send failure");
+		log(LOG_WARNING, "sendCmd(" + type + "): Send failure, socket error: " + this.sock.error);
 		return false;
 	}
 	log(LOG_DEBUG, "Sent " + type + " command");
@@ -1035,7 +1035,7 @@ BinkP.prototype.sendData = function(data)
 	// We'll send it all in one go to avoid sending small packets...
 	var sstr = this.send_buf(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + data);
 	if (!this.send_chunks(sstr)) {
-		log(LOG_WARNING, "sendData(" + sstr.length + " bytes): Send failure");
+		log(LOG_WARNING, "sendData(" + sstr.length + " bytes): Send failure, socket error: " + this.sock.error);
 		return false;
 	}
 	return true;
@@ -1285,7 +1285,7 @@ BinkP.prototype.addFile = function(path, sendas, waitget)
 	if (waitget === undefined)
 		waitget = true;
 	if (!file.open("rb", true)) {
-		log(LOG_WARNING, "Error " + file.error + " opening '"+file.name+"'.  Not sending.");
+		log(LOG_WARNING, "Error " + format("%d (%s)", file.error, errno_str) + " opening '"+file.name+"'.  Not sending.");
 		return false;
 	}
 	if (this.debug)
