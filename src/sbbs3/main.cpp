@@ -3810,6 +3810,9 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(usrdirs);
 	FREE_AND_NULL(usrdir);
 
+	FREE_AND_NULL(qwknode);
+	total_qwknodes = 0;
+
 	listFree(&savedlines);
 	listFree(&smb_list);
 	listFree(&mouse_hotspots);
