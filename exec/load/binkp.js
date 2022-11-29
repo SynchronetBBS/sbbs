@@ -249,6 +249,10 @@ BinkP.prototype.send_chunks = function(str) {
 	var sent = 0;
 
 	while (sent < str.length) {
+		if (this.sock.poll(this.timeout, /* write: */true) == 0) {
+			log(LOG_WARNING, "TIMEOUT of socket poll() for write");
+			return false;
+		}
 		ret = this.sock.send(str.substr(sent));
 		if (ret > 0)
 			sent += ret;
