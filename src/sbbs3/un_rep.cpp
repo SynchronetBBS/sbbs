@@ -197,8 +197,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 		long confnum = atol((char *)block+1);
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				if(qwk_msg_filtered(&msg, ip_can, host_can, subject_can, twit_list))
-					continue;
 				if(!qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias, confnum)) {
 					lprintf(LOG_WARNING, "QWK vote failure, offset %ld of %s", l, getfname(msg_fname));
 					errors++;
