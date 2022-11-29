@@ -166,8 +166,6 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				if(qwk_msg_filtered(&msg, ip_can, host_can, subject_can, twit_list))
-					continue;
 				if(!qwk_voting(&voting, l, NET_QWK, cfg.qhub[hubnum]->id, n, hubnum)) {
 					lprintf(LOG_WARNING, "QWK vote failure, offset %lu in %s", l, packet);
 					errors++;
