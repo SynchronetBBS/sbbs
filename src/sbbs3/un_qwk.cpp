@@ -62,11 +62,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	smbmsg_t	msg;
 	str_list_t	headers=NULL;
 	str_list_t	voting=NULL;
-	str_list_t	ip_can=NULL;
-	str_list_t	host_can=NULL;
-	str_list_t	subject_can=NULL;
-	str_list_t	twit_list=NULL;
 	link_list_t user_list={0};
+	msg_filters msg_filters{};
 
 	memset(&msg,0,sizeof(msg));
 
@@ -135,12 +132,12 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	/********************/
 	lprintf(LOG_INFO,"Importing QWK Network Packet: %s",packet);
 
-	ip_can=trashcan_list(&cfg,"ip");
-	host_can=trashcan_list(&cfg,"host");
-	subject_can=trashcan_list(&cfg,"subject");
+	msg_filters.ip_can = trashcan_list(&cfg,"ip");
+	msg_filters.host_can = trashcan_list(&cfg,"host");
+	msg_filters.subject_can = trashcan_list(&cfg,"subject");
 
 	SAFEPRINTF(fname,"%stwitlist.cfg",cfg.ctrl_dir);
-	twit_list = findstr_list(fname);
+	msg_filters.twit_list = findstr_list(fname);
 
 	for(l=QWK_BLOCK_LEN;l<size;l+=blocks*QWK_BLOCK_LEN) {
 		if(terminated) {
@@ -166,7 +163,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				if(!qwk_voting(&voting, l, NET_QWK, cfg.qhub[hubnum]->id, n, hubnum)) {
+				if(!qwk_voting(&voting, l, NET_QWK, cfg.qhub[hubnum]->id, n, msg_filters, hubnum)) {
 					lprintf(LOG_WARNING, "QWK vote failure, offset %lu in %s", l, packet);
 					errors++;
 				}
@@ -183,9 +180,6 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			errors++;
 			continue;
 		}
-
-		if(qwk_msg_filtered(&msg, ip_can, host_can, subject_can))
-			continue;
 
 		if(!n) {		/* NETMAIL */
 			lprintf(LOG_INFO,"QWK NetMail from %s to %s", cfg.qhub[hubnum]->id, msg.to);
@@ -279,9 +273,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			continue;
 		}
 
-		/* TWIT FILTER */
-		if(qwk_msg_filtered(&msg, /* ip_can: */NULL, /* host_can: */NULL, /* subject_can: */NULL, twit_list))
-			continue; 
+		if(qwk_msg_filtered(&msg, msg_filters))
+			continue;
 
 		if(j!=lastsub) {
 
@@ -367,10 +360,10 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	iniFreeStringList(headers);
 	iniFreeStringList(voting);
 
-	strListFree(&ip_can);
-	strListFree(&host_can);
-	strListFree(&subject_can);
-	strListFree(&twit_list);
+	strListFree(&msg_filters.ip_can);
+	strListFree(&msg_filters.host_can);
+	strListFree(&msg_filters.subject_can);
+	strListFree(&msg_filters.twit_list);
 	listFree(&user_list);
 
 	delfiles(cfg.temp_dir,"*.NDX");

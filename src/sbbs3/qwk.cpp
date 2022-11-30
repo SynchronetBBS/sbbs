@@ -957,7 +957,7 @@ uint sbbs_t::resolve_qwkconf(uint n, int hubnum)
 }
 
 bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, const char* qnet_id
-	, uint confnum, int hubnum)
+	, uint confnum, msg_filters filters, int hubnum)
 {
 	char* section;
 	char location[128];
@@ -977,7 +977,7 @@ bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, c
 		strListFree(&section_list);
 		return false;
 	}
-	result = qwk_vote(*ini, section, net_type, qnet_id, confnum, hubnum);
+	result = qwk_vote(*ini, section, net_type, qnet_id, confnum, filters, hubnum);
 	iniRemoveSection(ini, section);
 	iniRemoveSection(ini, location);
 	strListFree(&section_list);
@@ -989,15 +989,18 @@ void sbbs_t::qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t net_type
 	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 
 	for(int i=0; section_list != NULL && section_list[i] != NULL; i++) {
+		lprintf(LOG_WARNING, "Remaining QWK VOTING.DAT section: %s", section_list[i]);
+#if 0 // (problematic) Backwards-compatibility hack that shouldn't be necessary any more
 		if(strnicmp(section_list[i], "poll:", 5) == 0
 			|| strnicmp(section_list[i], "vote:", 5) == 0
 			|| strnicmp(section_list[i], "close:", 6) == 0)
 			qwk_vote(*ini, section_list[i], net_type, qnet_id, /* confnum: */0, hubnum);
+#endif
 	}
 	strListFree(&section_list);
 }
 
-bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_type, const char* qnet_id, uint confnum, int hubnum)
+bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_type, const char* qnet_id, uint confnum, msg_filters filters, int hubnum)
 {
 	char* p;
 	int result;
@@ -1021,10 +1024,6 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	}
 	if(cfg.sub[smb.subnum]->misc&SUB_NOVOTING) {
 		errormsg(WHERE, ERR_CHK, "conference number (voting not allowed)", confnum, section);
-		return false;
-	}
-	if((result = smb_open_sub(&cfg, &smb, smb.subnum)) != SMB_SUCCESS) {
-		errormsg(WHERE, ERR_OPEN, smb.file, 0, smb.last_error);
 		return false;
 	}
 
@@ -1075,6 +1074,16 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 		smb_hfield_str(&msg, SENDERPROTOCOL, p);
 	while((p=iniGetString(ini,section, smb_hfieldtype(SENDERORG), NULL, NULL)) != NULL)
 		smb_hfield_str(&msg, SENDERORG, p);
+
+	if(qwk_msg_filtered(&msg, filters)) {
+		smb_freemsgmem(&msg);
+		return false;
+	}
+
+	if((result = smb_open_sub(&cfg, &smb, smb.subnum)) != SMB_SUCCESS) {
+		errormsg(WHERE, ERR_OPEN, smb.file, 0, smb.last_error);
+		return false;
+	}
 
 	if(strnicmp(section, "poll:", 5) == 0) {
 
@@ -1148,7 +1157,7 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	return result == SMB_SUCCESS;
 }
 
-bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_can, str_list_t subject_can, str_list_t twit_list)
+bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, msg_filters filters)
 {
 	uint32_t now = time32(NULL);
 
@@ -1160,7 +1169,7 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_
 		return true;
 	}
 
-	if(findstr_in_list(msg->from_ip,ip_can)) {
+	if(findstr_in_list(msg->from_ip, filters.ip_can)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
 			,msg->from
 			,msg->from_ip); 
@@ -1168,21 +1177,21 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_
 	}
 
 	const char* hostname=getHostNameByAddr(msg->from_host);
-	if(findstr_in_list(hostname,host_can)) {
+	if(findstr_in_list(hostname, filters.host_can)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
 			,msg->from
 			,hostname); 
 		return true;
 	}
 
-	if(findstr_in_list(msg->subj,subject_can)) {
+	if(findstr_in_list(msg->subj, filters.subject_can)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
 			,msg->from
 			,msg->subj); 
 		return true;
 	}
 
-	if(findstr_in_list(msg->from,twit_list) || findstr_in_list(msg->to,twit_list)) {
+	if(findstr_in_list(msg->from, filters.twit_list) || findstr_in_list(msg->to, filters.twit_list)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
 			,msg->from
 			,msg->to);
@@ -1193,7 +1202,7 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_
 		char fidoaddr[64];
 		char str[128];
 		SAFEPRINTF2(str, "%s@%s", msg->from, smb_netaddrstr(&msg->from_net, fidoaddr));
-		if(findstr_in_list(str, twit_list)) {
+		if(findstr_in_list(str, filters.twit_list)) {
 			lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
 				,str
 				,msg->to);
