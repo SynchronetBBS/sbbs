@@ -1134,10 +1134,16 @@ public:
 	void	qwkcfgline(char *buf,uint subnum);
 	bool	set_qwk_flag(ulong flag);
 	uint	resolve_qwkconf(uint confnum, int hubnum=-1);
-	bool	qwk_vote(str_list_t ini, const char* section, smb_net_type_t, const char* qnet_id, uint confnum, int hubnum);
-	bool	qwk_voting(str_list_t* ini, long offset, smb_net_type_t, const char* qnet_id, uint confnum, int hubnum = -1);
+	struct msg_filters {
+		str_list_t ip_can;
+		str_list_t host_can;
+		str_list_t subject_can;
+		str_list_t twit_list;
+	};
+	bool	qwk_msg_filtered(smbmsg_t* msg, msg_filters);
+	bool	qwk_vote(str_list_t ini, const char* section, smb_net_type_t, const char* qnet_id, uint confnum, msg_filters, int hubnum);
+	bool	qwk_voting(str_list_t* ini, long offset, smb_net_type_t, const char* qnet_id, uint confnum, msg_filters, int hubnum = -1);
 	void	qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t, const char* qnet_id, int hubnum = -1);
-	bool	qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_can, str_list_t subject_can, str_list_t twit_list=NULL);
 
 	/* pack_qwk.cpp */
 	bool	pack_qwk(char *packet, ulong *msgcnt, bool prepack);
