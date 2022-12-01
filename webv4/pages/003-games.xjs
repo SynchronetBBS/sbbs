@@ -35,7 +35,7 @@
 		<h4></h4>
 		<ul class="nav nav-pills">
 			<li id="xtrn-item-template" role="presentation" style="display:none;">
-			<a href="#fTelnet"></a>
+			<a href="#"></a>
 			</li>
 		</ul>
 	</div>
@@ -85,6 +85,10 @@
             var a = $(li).find('a')[0];
             $(a).text(xx.n);
             $(a).click(function (evt) {
+                if (xx.c.toLowerCase() === 'msweeper') {
+                    // Resize client to support a level 5 game of minesweeper
+                    fTelnet.Crt.SetScreenSize(80, 35);
+                }
                 launchXtrn(xx.c);
             });
             $(ul).append(li);
