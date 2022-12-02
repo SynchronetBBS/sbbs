@@ -165,6 +165,7 @@ DLLEXPORT BOOL	user_adjust_minutes(scfg_t*, user_t*, long amount);
 DLLEXPORT time_t gettimeleft(scfg_t*, user_t*, time_t starttime);
 
 DLLEXPORT BOOL	check_name(scfg_t*, const char* name);
+DLLEXPORT BOOL	check_realname(scfg_t*, const char* name);
 DLLEXPORT BOOL	sysop_available(scfg_t*);
 DLLEXPORT BOOL	set_sysop_availability(scfg_t*, BOOL available);
 DLLEXPORT BOOL	sound_muted(scfg_t*);

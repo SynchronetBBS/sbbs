@@ -195,6 +195,8 @@ bool sbbs_t::answer()
 			pthread_mutex_unlock(&ssh_mutex);
 		}
 		useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
+		if(!useron.number && check_realname(&cfg, rlogin_name) && cfg.node_misc & NM_LOGON_R)
+			useron.number = finduserstr(0, USER_NAME, rlogin_name);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
 			for(i=0;i<3 && online;i++) {
