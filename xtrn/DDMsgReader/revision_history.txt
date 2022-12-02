@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.57     2022-12-01   When replying to a message, @-codes are now expanded in
+                      the quote file.
 1.56     2022-11-25   Fixed bug startup mode for scanning all groups for un-read
                       messages to you where the reader was bringing up personal
                       email instead.

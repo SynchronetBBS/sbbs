@@ -59,6 +59,8 @@
  * 2022-11-25 Eric Oulashin     Version 1.56
  *                              Fixed bug startup mode for scanning all groups for un-read messages to you where
  *                              the reader was bringing up personal email instead.
+ * 2022-12-01 Eric Oulashin     Version 1.57
+ *                              When replying to a message, @-codes are now expanded in the quote file.
  */
 
 "use strict";
@@ -163,8 +165,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.56";
-var READER_DATE = "2022-11-25";
+var READER_VERSION = "1.57";
+var READER_DATE = "2022-12-01";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -9711,6 +9713,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 
 	// If quoting is allowed in the sub-board, then write QUOTES.TXT in
 	// the node directory to allow the user to quote the original message.
+	// Also, expand/parse @-codes when writing the message to QUOTE.TXT.
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
@@ -9720,15 +9723,18 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			quoteFile = new File(system.node_dir + "QUOTES.TXT");
 			if (quoteFile.open("w"))
 			{
+				var msgNum = (typeof(pMsgIdx) === "number" ? pMsgIdx+1 : null);
 				if (typeof(pMsgText) == "string")
 				{
 					//quoteFile.write(word_wrap(pMsgText, 80/*79*/));
-					quoteFile.write(pMsgText);
+					//quoteFile.write(pMsgText);
+					quoteFile.write(this.ParseMsgAtCodes(pMsgText, pMsgHdr, msgNum, null, false, false));
 				}
 				else
 				{
-					var msgText = msgbase.get_msg_body(false, msgHeader.number, false, false, true, true);
+					var msgText = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
 					//quoteFile.write(word_wrap(msgText, 80/*79*/));
+					msgText = this.ParseMsgAtCodes(msgText, pMsgHdr, msgNum, null, false, false);
 					quoteFile.write(msgText);
 				}
 				quoteFile.close();
