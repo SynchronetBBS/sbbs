@@ -2246,19 +2246,19 @@ function ReadSlyEditConfigFile()
 			cfgObj.runJSOnStart.push(behaviorSettings.addJSOnStart);
 		if (behaviorSettings.hasOwnProperty("addJSOnExit") && typeof(behaviorSettings.addJSOnExit) === "string")
 			cfgObj.runJSOnExit.push(behaviorSettings.addJSOnExit);
-		if (behaviorSettings.hasOwnProperty("enableTextReplacements") && typeof(behaviorSettings.enableTextReplacements) === "string")
+		if (behaviorSettings.hasOwnProperty("enableTextReplacements"))
 		{
 			// The enableTxtReplacements setting in the config file can
 			// be regex, true, or false:
 			//  - regex: Text replacement enabled using regular expressions
 			//  - true: Text replacement enabled using exact match
 			//  - false: Text replacement disabled
-				var valueUpper = behaviorSettings.enableTextReplacements.toUpperCase();
-				cfgObj.textReplacementsUseRegex = (valueUpper == "REGEX");
-				if (cfgObj.textReplacementsUseRegex)
-					cfgObj.enableTextReplacements = true;
-				else
-					cfgObj.enableTextReplacements = (valueUpper == "TRUE");
+			if (typeof(behaviorSettings.enableTextReplacements) === "string")
+				cfgObj.textReplacementsUseRegex = (behaviorSettings.enableTextReplacements.toUpperCase() == "REGEX");
+			else if (typeof(behaviorSettings.enableTextReplacements) === "boolean")
+				cfgObj.enableTextReplacements = behaviorSettings.enableTextReplacements;
+			if (cfgObj.textReplacementsUseRegex)
+				cfgObj.enableTextReplacements = true;
 		}
 		if (behaviorSettings.hasOwnProperty("taglineFilename") && typeof(behaviorSettings.taglineFilename) === "string")
 			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.taglineFilename, gStartupPath);
