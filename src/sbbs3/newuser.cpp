@@ -201,7 +201,7 @@ BOOL sbbs_t::newuser()
 			truncsp(useron.alias);
 			if (!check_name(&cfg,useron.alias)
 				|| finduserstr(useron.number, USER_NAME, useron.alias)
-				|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,' '))) {
+				|| (!(cfg.uq&UQ_ALIASES) && !check_realname(&cfg, useron.alias))) {
 				bputs(text[YouCantUseThatName]);
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
 					return(FALSE);
@@ -215,7 +215,7 @@ BOOL sbbs_t::newuser()
 				bputs(text[EnterYourRealName]);
 				getstr(useron.name,LEN_NAME,kmode);
 				if (!check_name(&cfg,useron.name)
-					|| !strchr(useron.name,' ')
+					|| !check_realname(&cfg, useron.name)
 					|| ((cfg.uq&UQ_DUPREAL)
 						&& finduserstr(useron.number, USER_NAME, useron.name)))
 					bputs(text[YouCantUseThatName]);

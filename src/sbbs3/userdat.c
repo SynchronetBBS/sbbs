@@ -3510,6 +3510,17 @@ BOOL check_name(scfg_t* cfg, const char* name)
  	return TRUE;
 }
 
+/*************************************************************************/
+/* Check a supplied real name and see if it's valid by our standards.   */
+/*************************************************************************/
+BOOL check_realname(scfg_t* cfg, const char* name)
+{
+	if(name == NULL)
+		return FALSE;
+
+	return (uchar)name[0]<0x7f && name[1] && IS_ALPHA(name[0]) && strchr(name,' ');
+}
+
 /****************************************************************************/
 /* Login attempt/hack tracking												*/
 /****************************************************************************/
