@@ -2260,12 +2260,22 @@ function ReadSlyEditConfigFile()
 			if (cfgObj.textReplacementsUseRegex)
 				cfgObj.enableTextReplacements = true;
 		}
-		if (behaviorSettings.hasOwnProperty("taglineFilename") && typeof(behaviorSettings.taglineFilename) === "string")
+		if (behaviorSettings.hasOwnProperty("tagLineFilename") && typeof(behaviorSettings.tagLineFilename) === "string")
+		{
+			if (user.is_sysop) console.print("\x01n\r\nGot tagline filename\r\n"); // Temporary
 			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.taglineFilename, gStartupPath);
+		}
 		if (behaviorSettings.hasOwnProperty("taglinePrefix") && typeof(behaviorSettings.taglinePrefix) === "string")
+		{
+			if (user.is_sysop) console.print("\x01n\r\nGot tagline prefix\r\n"); // Temporary
 			cfgObj.taglinePrefix = behaviorSettings.taglinePrefix;
+		}
 		if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
+		{
+			if (user.is_sysop) console.print("\x01n\r\nGot dictionary filenames\r\n"); // Temporary
 			cfgObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, gStartupPath);
+		}
+		if (user.is_sysop) console.pause(); // Temporary
 		// Color settings
 		var iceColorSettings = cfgFile.iniGetObject("ICE_COLORS");
 		var DCTColorSettings = cfgFile.iniGetObject("DCT_COLORS");
