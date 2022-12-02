@@ -45,6 +45,7 @@
  *                              sub-board information with an empty sub-board code (in the rare
  *                              case when no sub-boards are configured).
  * 2022-11-19 Eric Oulashin     Refactored ReadSlyEditConfigFile().
+ * 2022-12-01 Eric Oulashin     Added some safety checks to ReadSlyEditConfigFile().
  */
 
 "use strict";
@@ -2239,11 +2240,11 @@ function ReadSlyEditConfigFile()
 		}
 		// Other settings:
 		cfgObj.inputTimeoutMS = +(behaviorSettings.inputTimeoutMS);
-		if (behaviorSettings.hasOwnProperty("add3rdPartyStartupScript"))
+		if (behaviorSettings.hasOwnProperty("add3rdPartyStartupScript") && typeof(behaviorSettings.add3rdPartyStartupScript) === "string")
 			cfgObj.thirdPartyLoadOnStart.push(behaviorSettings.add3rdPartyStartupScript);
-		if (behaviorSettings.hasOwnProperty("addJSOnStart"))
+		if (behaviorSettings.hasOwnProperty("addJSOnStart") && typeof(behaviorSettings.addJSOnStart) === "string")
 			cfgObj.runJSOnStart.push(behaviorSettings.addJSOnStart);
-		if (behaviorSettings.hasOwnProperty("addJSOnExit"))
+		if (behaviorSettings.hasOwnProperty("addJSOnExit") && typeof(behaviorSettings.addJSOnExit) === "string")
 			cfgObj.runJSOnExit.push(behaviorSettings.addJSOnExit);
 		if (behaviorSettings.hasOwnProperty("enableTextReplacements"))
 		{
@@ -2252,18 +2253,18 @@ function ReadSlyEditConfigFile()
 			//  - regex: Text replacement enabled using regular expressions
 			//  - true: Text replacement enabled using exact match
 			//  - false: Text replacement disabled
-			var valueUpper = behaviorSettings.enableTextReplacements.toUpperCase();
-			cfgObj.textReplacementsUseRegex = (valueUpper == "REGEX");
+			if (typeof(behaviorSettings.enableTextReplacements) === "string")
+				cfgObj.textReplacementsUseRegex = (behaviorSettings.enableTextReplacements.toUpperCase() == "REGEX");
+			else if (typeof(behaviorSettings.enableTextReplacements) === "boolean")
+				cfgObj.enableTextReplacements = behaviorSettings.enableTextReplacements;
 			if (cfgObj.textReplacementsUseRegex)
 				cfgObj.enableTextReplacements = true;
-			else
-				cfgObj.enableTextReplacements = (valueUpper == "TRUE");
 		}
-		if (behaviorSettings.hasOwnProperty("taglineFilename"))
+		if (behaviorSettings.hasOwnProperty("tagLineFilename") && typeof(behaviorSettings.tagLineFilename) === "string")
 			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.taglineFilename, gStartupPath);
-		if (behaviorSettings.hasOwnProperty("taglinePrefix"))
+		if (behaviorSettings.hasOwnProperty("taglinePrefix") && typeof(behaviorSettings.taglinePrefix) === "string")
 			cfgObj.taglinePrefix = behaviorSettings.taglinePrefix;
-		if (behaviorSettings.hasOwnProperty("dictionaryFilenames"))
+		if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
 			cfgObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, gStartupPath);
 		// Color settings
 		var iceColorSettings = cfgFile.iniGetObject("ICE_COLORS");
@@ -2272,8 +2273,11 @@ function ReadSlyEditConfigFile()
 			cfgObj.iceColors = {};
 		if (typeof(cfgObj.DCTColors) !== "object")
 			cfgObj.DCTColors = {};
-		cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(iceColorSettings.ThemeFilename, gStartupPath);
-		cfgObj.iceColors.menuOptClassicColors = iceColorSettings.menuOptClassicColors; // This is a boolean
+		if (iceColorSettings.hasOwnProperty("ThemeFilename") && typeof(iceColorSettings.ThemeFilename) === "string")
+			cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(iceColorSettings.ThemeFilename, gStartupPath);
+		if (iceColorSettings.hasOwnProperty("menuOptClassicColors") && typeof(iceColorSettings.menuOptClassicColors) === "boolean")
+			cfgObj.iceColors.menuOptClassicColors = iceColorSettings.menuOptClassicColors; // This is a boolean
+		if (DCTColorSettings.hasOwnProperty("ThemeFilename") && typeof(DCTColorSettings.ThemeFilename) === "string")
 		cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, gStartupPath);
 
 		cfgFile.close();
