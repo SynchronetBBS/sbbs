@@ -86,8 +86,11 @@
             $(a).text(xx.n);
             $(a).click(function (evt) {
                 if (xx.c.toLowerCase() === 'msweeper') {
-                    // Resize client to support a level 5 game of minesweeper
-                    fTelnet.Crt.SetScreenSize(80, 35);
+                    // Resize client to support a level 5 game of minesweeper, if necessary
+                    if (fTelnet.Crt.ScreenRows < 35) {
+                        // Switch to 80x35, which fits a full level 5.0 game
+                        fTelnet.Crt.SetScreenSize(80, 35);
+                    }
                 }
                 launchXtrn(xx.c);
             });
