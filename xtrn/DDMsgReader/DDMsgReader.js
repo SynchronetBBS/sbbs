@@ -59,6 +59,11 @@
  * 2022-11-25 Eric Oulashin     Version 1.56
  *                              Fixed bug startup mode for scanning all groups for un-read messages to you where
  *                              the reader was bringing up personal email instead.
+ * 2022-12-02 Eric Oulashin     Version 1.57
+ *                              @-codes were only expanded when reading personal mail; now, DDMsgReader
+ *                              also checks to make sure the sender is a sysop.  Also, used putmsg() in
+ *                              place of this script's own @-message parsing when displaying some of the
+ *                              configured text strings.
  */
 
 "use strict";
@@ -163,8 +168,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.56";
-var READER_DATE = "2022-11-25";
+var READER_VERSION = "1.57";
+var READER_DATE = "2022-12-02";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -590,8 +595,7 @@ if (gDoDDMR)
 				if (!gCmdLineArgVals.suppresssearchtypetext)
 				{
 					console.crlf();
-					console.print(replaceAtCodesInStr(msgReader.text.newMsgScanText));
-					console.crlf();
+					console.putmsg(msgReader.text.newMsgScanText);
 				}
 				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW);
 				break;
@@ -608,8 +612,7 @@ if (gDoDDMR)
 				if (!gCmdLineArgVals.suppresssearchtypetext)
 				{
 					console.crlf();
-					console.print(replaceAtCodesInStr(msgReader.text.newToYouMsgScanText));
-					console.crlf();
+					console.putmsg(msgReader.text.newToYouMsgScanText);
 				}
 				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD);
 				break;
@@ -626,8 +629,7 @@ if (gDoDDMR)
 				if (!gCmdLineArgVals.suppresssearchtypetext)
 				{
 					console.crlf();
-					console.print(replaceAtCodesInStr(msgReader.text.allToYouMsgScanText));
-					console.crlf();
+					console.putmsg(msgReader.text.allToYouMsgScanText);
 				}
 				msgReader.MessageAreaScan(SCAN_CFG_TOYOU, SCAN_TOYOU);
 				break;
@@ -1743,11 +1745,15 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 		{
 			subCode = (typeof(pSubBoardCode) === "string" ? pSubBoardCode : this.subBoardCode);
 			if (subCode == "mail")
-				console.print("\x01n" + replaceAtCodesInStr(this.text.searchingPersonalMailText));
+			{
+				//console.print("\x01n" + replaceAtCodesInStr(this.text.searchingPersonalMailText));
+				console.putmsg("\x01n" + this.text.searchingPersonalMailText);
+			}
 			else
 			{
 				var formattedText = format(this.text.searchingSubBoardAbovePromptText, subBoardGrpAndName(bbs.cursub_code));
-				console.print("\x01n" + replaceAtCodesInStr(formattedText) + "\x01n");
+				//console.print("\x01n" + replaceAtCodesInStr(formattedText) + "\x01n");
+				console.putmst("\x01n" + formattedText + "\x01n");
 			}
 			console.crlf();
 		}
@@ -1756,19 +1762,28 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 		{
 			case SEARCH_KEYWORD:
 				if (!searchTextProvided)
-					console.print("\x01n" + replaceAtCodesInStr(this.text.searchTextPromptText));
+				{
+					//console.print("\x01n" + replaceAtCodesInStr(this.text.searchTextPromptText));
+					console.putmsg("\x01n" + this.text.searchTextPromptText);
+				}
 				else
 					console.print("\x01n\x01gSearching for: \x01c" + pTxtToSearch + "\x01n\r\n");
 				break;
 			case SEARCH_FROM_NAME:
 				if (!searchTextProvided)
-					console.print("\x01n" + replaceAtCodesInStr(this.text.fromNamePromptText));
+				{
+					//console.print("\x01n" + replaceAtCodesInStr(this.text.fromNamePromptText));
+					console.putmsg("\x01n" + this.text.fromNamePromptText);
+				}
 				else
 					console.print("\x01n\x01gSearching for: \x01c" + pTxtToSearch + "\x01n\r\n");
 				break;
 			case SEARCH_TO_NAME_CUR_MSG_AREA:
 				if (!searchTextProvided)
-					console.print("\x01n" +replaceAtCodesInStr(this.text.toNamePromptText));
+				{
+					//console.print("\x01n" + replaceAtCodesInStr(this.text.toNamePromptText));
+					console.putmsg("\x01n" + this.text.toNamePromptText);
+				}
 				else
 					console.print("\x01n\x01gSearching for: \x01c" + pTxtToSearch + "\x01n\r\n");
 				break;
@@ -1795,8 +1810,9 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 		if (promptUserForText && (this.searchString.length == 0))
 		{
 			this.ClearSearchData();
-			console.print("\x01n" + replaceAtCodesInStr(this.text.abortedText));
-			console.crlf();
+			//console.print("\x01n" + replaceAtCodesInStr(this.text.abortedText));
+			//console.crlf();
+			console.putmsg("\x01n" + this.text.abortedText);
 			console.pause();
 			return;
 		}
@@ -1893,8 +1909,9 @@ function DigDistMsgReader_SearchMsgScan(pSearchModeStr, pTxtToSearch, pSubCode)
 	else
 	{
 		console.crlf();
-		console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
-		console.crlf();
+		//console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
+		//console.crlf();
+		console.putmsg(this.text.msgScanAbortedText);
 		console.pause();
 	}
 	// Restore this.subBoardCode if necessary
@@ -2149,7 +2166,8 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 					formattedText = format(this.text.loadingPersonalMailText, subBoardGrpAndName(this.subBoardCode));
 				else
 					formattedText = format(this.text.searchingSubBoardText, subBoardGrpAndName(this.subBoardCode));
-				console.print("\x01n" + replaceAtCodesInStr(formattedText) + "\x01n");
+				//console.print("\x01n" + replaceAtCodesInStr(formattedText) + "\x01n");
+				console.putmsg("\x01n" + formattedText + "\x01n");
 			}
 			this.msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.searchType, this.searchString, this.readingPersonalEmailFromUser);
 		}
@@ -2175,7 +2193,10 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 			console.print("\x01n");
 			console.crlf();
 			if (this.readingPersonalEmail)
-				console.print(replaceAtCodesInStr(this.text.noPersonalEmailText));
+			{
+				//console.print(replaceAtCodesInStr(this.text.noPersonalEmailText));
+				console.putmsg(this.text.noPersonalEmailText);
+			}
 			else
 			{
 				var formattedText = "";
@@ -2183,7 +2204,8 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 					formattedText = format(this.text.noSearchResultsInSubBoardText, subBoardGrpAndName(this.subBoardCode));
 				else
 					formattedText = format(this.text.noMessagesInSubBoardText, subBoardGrpAndName(this.subBoardCode));
-				console.print(replaceAtCodesInStr(formattedText));
+				//console.print(replaceAtCodesInStr(formattedText));
+				console.putmsg(formattedText);
 			}
 			console.crlf();
 			var pauseOnNoMsgsError = (typeof(pPauseOnNoMsgError) == "boolean" ? pPauseOnNoMsgError : true);
@@ -2277,8 +2299,9 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		if (scanScopeChar.length == 0)
 		{
 			console.crlf();
-			console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
-			console.crlf();
+			//console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
+			//console.crlf();
+			console.putmsg(this.text.msgScanAbortedText);
 			console.pause();
 			return;
 		}
@@ -2500,9 +2523,15 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	{
 		console.crlf();
 		if (userAborted)
-			console.print("\x01n" + replaceAtCodesInStr(this.text.msgScanAbortedText) + "\x01n");
+		{
+			//console.print("\x01n" + replaceAtCodesInStr(this.text.msgScanAbortedText) + "\x01n");
+			console.putmsg("\x01n" + this.text.msgScanAbortedText + "\x01n");
+		}
 		else
-			console.print("\x01n" + replaceAtCodesInStr(this.text.msgScanCompleteText) + "\x01n");
+		{
+			//console.print("\x01n" + replaceAtCodesInStr(this.text.msgScanCompleteText) + "\x01n");
+			console.putmsg("\x01n" + this.text.msgScanCompleteText + "\x01n");
+		}
 		console.crlf();
 		console.pause();
 	}
@@ -4667,8 +4696,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	var msgHeader = this.GetMsgHdrByIdx(pOffset, true);
 	if (msgHeader == null)
 	{
-		console.print("\x01n" + replaceAtCodesInStr(format(this.text.invalidMsgNumText, +(pOffset+1))) + "\x01n");
-		console.crlf();
+		//console.print("\x01n" + replaceAtCodesInStr(format(this.text.invalidMsgNumText, +(pOffset+1))) + "\x01n");
+		//console.crlf();
+		console.putmsg("\x01n" + format(this.text.invalidMsgNumText, +(pOffset+1)) + "\x01n");
 		console.inkey(K_NONE, ERROR_PAUSE_WAIT_MS);
 		retObj.offsetValid = false;
 		return retObj;
@@ -5944,11 +5974,11 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 
 	var msgHasAttachments = msgHdrHasAttachmentFlag(msgHeader);
 
-	// Only interpret @-codes if the user is reading personal email.  There
+	// Only interpret @-codes if the user is reading personal email and the sender is a sysop.  There
 	// are many @-codes that do some action such as move the cursor, execute a
 	// script, etc., and I don't want users on message networks to do anything
 	// malicious to users on other BBSes.
-	if (this.readingPersonalEmail)
+	if (this.readingPersonalEmail && msgSenderIsASysop(msgHeader))
 		messageText = replaceAtCodesInStr(messageText); // Or this.ParseMsgAtCodes(messageText, msgHeader) to replace only some @ codes
 	var msgHasANSICodes = messageText.indexOf("\x1b[") >= 0;
 	var msgTextWrapped = (msgHasANSICodes ? messageText : word_wrap(messageText, console.screen_columns-1));
@@ -9720,6 +9750,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			quoteFile = new File(system.node_dir + "QUOTES.TXT");
 			if (quoteFile.open("w"))
 			{
+				var msgNum = (typeof(pMsgIdx) === "number" ? pMsgIdx+1 : null);
 				if (typeof(pMsgText) == "string")
 				{
 					//quoteFile.write(word_wrap(pMsgText, 80/*79*/));
@@ -9727,7 +9758,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 				}
 				else
 				{
-					var msgText = msgbase.get_msg_body(false, msgHeader.number, false, false, true, true);
+					var msgText = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
 					//quoteFile.write(word_wrap(msgText, 80/*79*/));
 					quoteFile.write(msgText);
 				}
@@ -12481,11 +12512,11 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	retObj.msgText = word_wrap(msgBody, console.screen_columns - 1, true);
 
 	var msgTextAltered = retObj.msgText; // Will alter the message text, but not yet
-	// Only interpret @-codes if the user is reading personal email.  There
+	// Only interpret @-codes if the user is reading personal email and the sender is a sysop.  There
 	// are many @-codes that do some action such as move the cursor, execute a
 	// script, etc., and I don't want users on message networks to do anything
 	// malicious to users on other BBSes.
-	if (this.readingPersonalEmail)
+	if (this.readingPersonalEmail && msgSenderIsASysop(pMsgHdr))
 		msgTextAltered = replaceAtCodesInStr(msgTextAltered); // Or this.ParseMsgAtCodes(msgTextAltered, pMsgHdr) to replace only some @ codes
 	msgTextAltered = msgTextAltered.replace(/\t/g, this.tabReplacementText);
 	// Convert other BBS color codes to Synchronet attribute codes if the settings
@@ -20003,6 +20034,41 @@ function arraysHaveSameValues(pArray1, pArray2)
 		}
 	}
 	return arraysHaveSameValues;
+}
+
+// Returns whether or not the sender of a message is a sysop.
+//
+// Parameters:
+//  pMsgHdr: A message header
+//
+// Return value: Boolean: Whether or not the sender of the message is a sysop
+function msgSenderIsASysop(pMsgHdr)
+{
+	if (typeof(pMsgHdr) !== "object")
+		return false;
+
+	var senderUserNum = 0;
+	if (pMsgHdr.hasOwnProperty("sender_userid"))
+		senderUserNum = system.matchuser(pMsgHdr.sender_userid);
+	else if (pMsgHdr.hasOwnProperty("from"))
+	{
+		senderUserNum = system.matchuser(pMsgHdr.from);
+		if (senderUserNum < 1)
+			senderUserNum = system.matchuserdata(U_NAME, pMsgHdr.from);
+	}
+
+	var senderIsSysop = false;
+	if (senderUserNum >= 1)
+	{
+		if (senderUserNum == 1)
+			senderIsSysop = true;
+		else
+		{
+			var senderUser = new User(senderUserNum);
+			senderIsSysop = senderUser.is_sysop;
+		}
+	}
+	return senderIsSysop;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
