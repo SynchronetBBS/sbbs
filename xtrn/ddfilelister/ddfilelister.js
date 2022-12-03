@@ -572,11 +572,20 @@ function showFileInfo(pFileList, pFileListMenu)
 		fileDesc = fileMetadata.desc;
 	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
 	// so make sure it's a string.
-	// Also, if it's a string, check to see if it starts with a normal attribute and remove if so,
-	// since that seems to cause problems with displaying the description in a Frame object.  This
-	// may be a kludge, and perhaps there's a better solution..
+	// Also, if it's a string, reformat certain types of strings that don't look good in a
+	// Frame object
 	if (typeof(fileDesc) === "string")
+	{
+		// Check to see if it starts with a normal attribute and remove if so,
+		// since that seems to cause problems with displaying the description in a Frame object.  This
+		// may be a kludge, and perhaps there's a better solution..
 		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
+		// If there's only a return or only a newline, split & recombine with \r\n
+		if (/[^\r]\n[^\r]/.test(fileDesc)) // Only a newline
+			fileDesc = splitStrAndCombineWithRN(fileDesc, "\n");
+		else if (/[^\n]\r[^\n]/.test(fileDesc)) // Only a carriage return
+			fileDesc = splitStrAndCombineWithRN(fileDesc, "\r");
+	}
 	else
 		fileDesc = "";
 	// This might be overkill, but just in case, convert any non-Synchronet
@@ -659,6 +668,33 @@ function showFileInfo(pFileList, pFileListMenu)
 	};
 
 	return retObj;
+}
+// Splits a string on a given string and then re-combines the string with \r\n (carriage return & newline)
+// at the end of each line
+//
+// Parameters:
+//  pStr: The string to split & recombine
+//  pSplitStr: The string to split the first string on
+//
+// Return value: The string split on pSplitStr and re-combined with \r\n at the end of each line
+function splitStrAndCombineWithRN(pStr, pSplitStr)
+{
+	if (typeof(pStr) !== "string")
+		return "";
+	if (typeof(pSplitStr) !== "string")
+		return pStr;
+
+	var newStr = "";
+	var strs = pStr.split(pSplitStr);
+	if (strs.length > 0)
+	{
+		for (var i = 0; i < strs.length; ++i)
+			newStr += strs[i] + "\r\n";
+		newStr = newStr.replace(/\r\n$/, "");
+	}
+	else
+		newStr = pStr;
+	return newStr;
 }
 
 // Lets the user view a file.
