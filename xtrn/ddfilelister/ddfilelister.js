@@ -580,11 +580,8 @@ function showFileInfo(pFileList, pFileListMenu)
 		// since that seems to cause problems with displaying the description in a Frame object.  This
 		// may be a kludge, and perhaps there's a better solution..
 		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
-		// If there's only a return or only a newline, split & recombine with \r\n
-		if (/[^\r]\n[^\r]/.test(fileDesc)) // Only a newline
-			fileDesc = splitStrAndCombineWithRN(fileDesc, "\n");
-		else if (/[^\n]\r[^\n]/.test(fileDesc)) // Only a carriage return
-			fileDesc = splitStrAndCombineWithRN(fileDesc, "\r");
+		// Fix line endings if necessary
+		fileDesc = fixStrLineEndings(fileDesc);
 	}
 	else
 		fileDesc = "";
@@ -694,6 +691,21 @@ function splitStrAndCombineWithRN(pStr, pSplitStr)
 	}
 	else
 		newStr = pStr;
+	return newStr;
+}
+
+// Fixes line endings in a string
+function fixStrLineEndings(pStr)
+{
+	if (typeof(pStr) !== "string")
+		return "";
+
+	// If there's only a return or only a newline, split & recombine with \r\n
+	var newStr = pStr;
+	if (/[^\r]\n[^\r]/.test(newStr)) // Only a newline
+		newStr = splitStrAndCombineWithRN(newStr, "\n");
+	else if (/[^\n]\r[^\n]/.test(newStr)) // Only a carriage return
+		newStr = splitStrAndCombineWithRN(newStr, "\r");
 	return newStr;
 }
 
@@ -3212,7 +3224,11 @@ function populateFileList(pSearchMode)
 			{
 				gFileList[i].dirCode = bbs.curdir_code;
 				if (gFileList[i].hasOwnProperty("extdesc") && /\r\n$/.test(gFileList[i].extdesc))
+				{
 					gFileList[i].extdesc = gFileList[i].extdesc.substr(0, gFileList[i].extdesc.length-2);
+					// Fix line endings if necessary
+					gFileList[i].extdesc = fixStrLineEndings(gFileList[i].extdesc);
+				}
 			}
 		}
 		else
