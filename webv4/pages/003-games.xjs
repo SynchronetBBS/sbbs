@@ -25,7 +25,11 @@
 
 ?>
 
+<?xjs if (settings.ftelnet_menubar) { ?>
+<style>.fTelnetConnectButton { display : none; }</style>
+<?xjs } else { ?>
 <style>.fTelnetStatusBar { display : none; }</style>
+<?xjs } ?>
 
 <a name="fTelnet"></a>
 <div id="fTelnetContainer" class="fTelnetContainer" style="margin-bottom:1em;"></div>
