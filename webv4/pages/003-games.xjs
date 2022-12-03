@@ -90,6 +90,10 @@
                     if (fTelnet.Crt.ScreenRows < 35) {
                         // Switch to 80x35, which fits a full level 5.0 game
                         fTelnet.Crt.SetScreenSize(80, 35);
+
+                        // Call SetFont, which will switch to a smaller font if the new 35 row
+                        // client is too tall for the browser window
+                        fTelnet.Crt.SetFont(fTelnet.Crt.Font.Name);
                     }
                 }
                 launchXtrn(xx.c);
