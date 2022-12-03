@@ -47,6 +47,11 @@
  *                              When extended file descriptions are enabled, the file
  *                              date is now shown with the file description on the last
  *                              line.
+ * 2022-12-02 Eric Oulashin     Version 2.07
+ *                              In a file's extended description, added the number of times
+ *                              downloaded and date/time last downloaded.  Also, fixed a bug
+ *                              where some descriptions were blank in the Frame object because
+ *                              of a leading normal attribute (the fix may be a kludge though).
 */
 
 "use strict";
@@ -104,8 +109,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.06";
-var LISTER_DATE = "2022-04-13";
+var LISTER_VERSION = "2.07";
+var LISTER_DATE = "2022-12-02";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -566,8 +571,13 @@ function showFileInfo(pFileList, pFileListMenu)
 	else
 		fileDesc = fileMetadata.desc;
 	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
-	// so make sure it's a string
-	if (typeof(fileDesc) !== "string")
+	// so make sure it's a string.
+	// Also, if it's a string, check to see if it starts with a normal attribute and remove if so,
+	// since that seems to cause problems with displaying the description in a Frame object.  This
+	// may be a kludge, and perhaps there's a better solution..
+	if (typeof(fileDesc) === "string")
+		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
+	else
 		fileDesc = "";
 	// This might be overkill, but just in case, convert any non-Synchronet
 	// attribute codes to Synchronet attribute codes in the description.
@@ -583,10 +593,17 @@ function showFileInfo(pFileList, pFileListMenu)
 
 	fileInfoStr += gColors.desc;
 	if (fileDesc.length > 0)
-		fileInfoStr += "Description:\r\n" + fileDesc;
+		fileInfoStr += "Description:\r\n" + fileDesc; // Don't want to use strip_ctrl(fileDesc)
 	else
 		fileInfoStr += "No description available";
 	fileInfoStr += "\r\n";
+	// # of times downloaded and last downloaded date/time
+	var fieldFormatStr = "\r\n\x01n\x01c\x01h%s\x01g:\x01n\x01c %s";
+	var timesDownloaded = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
+	fileInfoStr += format(fieldFormatStr, "Times downloaded", timesDownloaded);
+	if (fileMetadata.hasOwnProperty("last_downloaded"))
+		fileInfoStr += format(fieldFormatStr, "Last downloaded", strftime("%Y-%m-%d %H:%M", fileMetadata.last_downloaded));
+	// Some more fields for the sysop
 	if (user.is_sysop)
 	{
 		var sysopFields = [ "from", "cost", "added"];
@@ -598,11 +615,12 @@ function showFileInfo(pFileList, pFileListMenu)
 				if (typeof(fileMetadata[prop]) === "string" && fileMetadata[prop].length == 0)
 					continue;
 				var propName = prop.charAt(0).toUpperCase() + prop.substr(1);
-				fileInfoStr += "\r\n\x01n\x01c\x01h" + propName + "\x01g:\x01n\x01c ";
+				var infoValue = "";
 				if (prop == "added")
-					fileInfoStr += strftime("%Y-%m-%d %H:%M:%S", fileMetadata.added);
+					infoValue = strftime("%Y-%m-%d %H:%M:%S", fileMetadata.added);
 				else
-					fileInfoStr += fileMetadata[prop].toString().substr(0, frameInnerWidth);
+					infoValue = fileMetadata[prop].toString().substr(0, frameInnerWidth);
+				fileInfoStr += format(fieldFormatStr, propName, infoValue);
 				fileInfoStr += "\x01n\x01w";
 			}
 		}

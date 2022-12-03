@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.07     2022-12-02   In a file's extended description, added the number of
+                      times downloaded and date/time last downloaded.  Also,
+                      fixed a bug where some descriptions were blank in the
+                      extended description box because of a leading normal
+                      attribute.
 2.06     2022-04-13   When extended file descriptions are enabled, the file date
                       is now shown with the file description on the last line.
 2.05a    2022-03-13   Fix for "fileDesc is not defined" error when displaying
