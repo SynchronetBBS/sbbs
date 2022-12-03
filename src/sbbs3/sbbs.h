@@ -559,6 +559,7 @@ public:
 	char 	lbuf[LINE_BUFSIZE+1];/* Temp storage for each line output */
 	int		lbuflen;		/* Number of characters in line buffer */
 	uint	latr=0;			/* Starting attribute of line buffer */
+	uint	line_delay=0;	/* Delay duration (ms) after each line sent */
 	ulong	console;		/* Defines current Console settings */
 	char 	wordwrap[81];	/* Word wrap buffer */
 	time_t	now=0,			/* Used to store current time in Unix format */

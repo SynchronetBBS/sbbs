@@ -112,6 +112,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 	} else {	// Line-at-a-time mode
 		ulong sys_status_sav = sys_status;
 		enum output_rate output_rate = cur_output_rate;
+		uint org_line_delay = line_delay;
 		uint tmpatr = curatr;
 		ulong orgcon = console;
 		attr_sp = 0;	/* clear any saved attributes */
@@ -149,6 +150,8 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 		/* Restore original settings of Forced Pause On/Off */
 		sys_status &= ~(SS_PAUSEOFF|SS_PAUSEON);
 		sys_status |= (sys_status_sav&(SS_PAUSEOFF|SS_PAUSEON));
+
+		line_delay = org_line_delay;
 	}
 
 	if((mode&P_NOABORT || rip) && online==ON_REMOTE) {

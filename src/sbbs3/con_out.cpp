@@ -677,8 +677,11 @@ int sbbs_t::outchar(char ch)
 		} else {
 			if(utf8[0] != 0)
 				putcom(utf8);
-			else
+			else {
+				if(ch == '\n' && line_delay)
+					SLEEP(line_delay);
 				outcom(ch);
+			}
 		}
 	}
 	if(outchar_esc == ansiState_none) {
