@@ -147,6 +147,13 @@ if (typeof http_request.query.notice !== 'undefined') {
 
 if (typeof http_request.query.sub !== 'undefined' &&
 	typeof msg_area.sub[http_request.query.sub[0]] !== 'undefined' &&
+	!msg_area.sub[http_request.query.sub[0]].can_read
+) {
+	writeln('<div class="alert alert-danger">Sorry, you do not have access to the requested sub.</div>');
+}
+
+if (typeof http_request.query.sub !== 'undefined' &&
+	typeof msg_area.sub[http_request.query.sub[0]] !== 'undefined' &&
 	typeof http_request.query.thread !== 'undefined' &&
 	msg_area.sub[http_request.query.sub[0]].can_read
 ) {
