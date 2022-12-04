@@ -18,6 +18,9 @@
  *                              control character.
  * 2022-11-26 Eric Oulashin     Version 1.81
  *                              Releasing this verison.
+ * 2022-12-01 Eric Oulashin     Version 1.82
+ *                              Added some safety checks when reading the configuration file
+ *                              (that section of code was refactored recently).
  */
 
 "use strict";
@@ -115,8 +118,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.81";
-var EDITOR_VER_DATE = "2022-11-26";
+var EDITOR_VERSION = "1.82";
+var EDITOR_VER_DATE = "2022-12-01";
 
 
 // Program variables
