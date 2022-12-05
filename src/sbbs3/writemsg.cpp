@@ -931,7 +931,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 
 	maxlines=cfg.level_linespermsg[useron.level];
 
-	if((str = strListSplit(NULL, buf, "\r\n")) == NULL) {
+	if((str = strListDivide(NULL, buf, "\n")) == NULL) {
 		errormsg(WHERE,ERR_ALLOC,"msgeditor",sizeof(char *)*(maxlines+1));
 		return(0); 
 	}
@@ -939,6 +939,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 	while(lines > maxlines)
 		free(str[--lines]);
 	str[lines] = NULL;
+	strListTruncateTrailingLineEndings(str);
 	if(lines)
 		bprintf("\r\nMessage editor: Read in %d lines\r\n",lines);
 	bprintf(text[EnterMsgNow],maxlines);
