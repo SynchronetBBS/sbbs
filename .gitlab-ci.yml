@@ -68,6 +68,7 @@ sbbs-windows:
     - make
   artifacts:
     name: sbbs-win32
+    dependencies: []
     paths:
       - "src/sbbs3/*.exe.release/*.exe"
       - "src/sbbs3/*.dll.release/*.dll"
