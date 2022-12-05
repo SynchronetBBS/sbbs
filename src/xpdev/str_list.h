@@ -100,11 +100,15 @@ DLLEXPORT BOOL			strListSwap(const str_list_t, size_t index1, size_t index2);
 #define		strListPop(list)		strListRemove(list, STR_LIST_LAST_INDEX)
 
 /* Add to an existing or new string list by splitting specified string (str) */
-/* into multiple strings, separated by one of the delimit characters */
+/* into multiple (non-empty) strings, separated by one or more of the delimit characters */
 DLLEXPORT str_list_t	strListSplit(str_list_t*, char* str, const char* delimit);
 
 /* Same as above, but copies str to temporary heap buffer first */
 DLLEXPORT str_list_t	strListSplitCopy(str_list_t*, const char* str, const char* delimit);
+
+/* Add to an existing or new string list by splitting specified string (str) */
+/* into multiple (possibly empty) strings, separated by one of the delimit characters */
+DLLEXPORT str_list_t	strListDivide(str_list_t*, char* str, const char* delimit);
 
 /* Merge 2 string lists (no copying of string data) */
 DLLEXPORT size_t		strListMerge(str_list_t*, str_list_t append_list);

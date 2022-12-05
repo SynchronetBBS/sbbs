@@ -370,6 +370,7 @@ char* strListInsertFormat(str_list_t* list, size_t index, const char* format, ..
 }
 #endif
 
+// Consecutive delimiters are treated as one (empty strings are skipped)
 str_list_t strListSplit(str_list_t* lp, char* str, const char* delimit)
 {
 	size_t	count;
@@ -415,6 +416,38 @@ str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delim
 
 	return(new_list);
 }
+
+// Consecutive delimiters are treated as multiple (empty strings are supported)
+str_list_t strListDivide(str_list_t* lp, char* str, const char* delimit)
+{
+	size_t	count;
+	char*	p = str;
+	char*	np;
+	char*	end;
+	str_list_t	list;
+
+	if(str == NULL || delimit == NULL)
+		return NULL;
+
+	if(lp == NULL) {
+		if((list = strListInit()) == NULL)
+			return NULL;
+		lp = &list;
+		count = 0;
+	} else
+		count = strListCount(*lp);
+
+	end = str + strlen(str);
+	while(p < end) {
+		np = p + strcspn(p, delimit);
+		*np = '\0';
+		strListAppend(lp, p, count++);
+		p = np + 1;
+	}
+
+	return *lp;
+}
+
 
 size_t strListMerge(str_list_t* list, str_list_t add_list)
 {
