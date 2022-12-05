@@ -63,8 +63,7 @@ typedef struct {
 	/* Callbacks (NULL if unused) */
 	int 	(*lputs)(void*, int level, const char* msg);
 	void	(*errormsg)(void*, int level, const char* msg);
-	void	(*status)(void*, const char*);
-    void	(*started)(void*);
+	void	(*set_state)(void*, enum server_state);
 	void	(*recycle)(void*);
     void	(*terminated)(void*, int code);
     void	(*clients)(void*, int active);

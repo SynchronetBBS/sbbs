@@ -244,6 +244,12 @@ static char* server_host_name(void)
 	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
 }
 
+static void set_state(enum server_state state)
+{
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
+}
+
 static void update_clients(void)
 {
 	if(startup!=NULL && startup->clients!=NULL)
@@ -329,12 +335,6 @@ int mail_close_socket(SOCKET *sock, int *sess)
 	*sock = -1;
 
 	return(result);
-}
-
-static void status(char* str)
-{
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
 }
 
 int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...)
@@ -1155,9 +1155,6 @@ static void pop3_thread(void* arg)
 	client.usernum = 0;
 	client_on(socket,&client,FALSE /* update */);
 
-	SAFEPRINTF2(str,"%s: %s", client.protocol, host_ip);
-	status(str);
-
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &pop3.client_addr)) > 1) {
 		lprintf(LOG_DEBUG,"%04d %s [%s] Throttling suspicious connection (%lu login attempts)"
@@ -1346,8 +1343,6 @@ static void pop3_thread(void* arg)
 
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
 			lprintf(LOG_INFO,"%04d %s [%s] %s logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
-		SAFEPRINTF2(str,"%s: %s", client.protocol, user.alias);
-		status(str);
 #ifdef _WIN32
 		if(startup->sound.login[0] && !sound_muted(&scfg)) 
 			PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
@@ -1547,8 +1542,6 @@ static void pop3_thread(void* arg)
 			}
 			activity=TRUE;
 			if(!strnicmp(buf, "RETR ",5) || !strnicmp(buf,"TOP ",4)) {
-				SAFEPRINTF2(str,"%s: %s", client.protocol, user.alias);
-				status(str);
 
 				lines=-1;
 				p=buf+4;
@@ -1737,8 +1730,6 @@ static void pop3_thread(void* arg)
 			lprintf(LOG_INFO,"%04d %s [%s] client disconnected from port %u on %s"
 				,socket, client.protocol, host_ip, inet_addrport(&pop3.client_addr), host_name);
 	}
-
-	status(STATUS_WFC);
 
 	/* Free up resources here */
 	if(mail!=NULL)
@@ -3171,9 +3162,6 @@ static void smtp_thread(void* arg)
 	client.user=STR_UNKNOWN_USER;
 	client.usernum = 0;
 	client_on(socket,&client,FALSE /* update */);
-
-	SAFEPRINTF(str,"SMTP: %s",host_ip);
-	status(str);
 
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &smtp.client_addr)) > 1) {
@@ -5037,8 +5025,6 @@ static void smtp_thread(void* arg)
 		fclose(spy);
 	js_cleanup(js_runtime, js_cx, &js_glob);
 
-	status(STATUS_WFC);
-
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
 	(void)protected_uint32_adjust(&active_clients, -1);
 	update_clients();
@@ -5618,8 +5604,6 @@ static void sendmail_thread(void* arg)
 
 			lprintf(LOG_INFO,"0000 SEND Message #%u (%u of %u) from %s to %s"
 				,msg.hdr.number, u+1, msgs, sender_info, rcpt_info);
-			SAFEPRINTF2(str,"Sending (%u of %u)", u+1, msgs);
-			status(str);
 #ifdef _WIN32
 			if(startup->outbound_sound[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->outbound_sound, NULL, SND_ASYNC|SND_FILENAME);
@@ -5874,7 +5858,6 @@ static void sendmail_thread(void* arg)
 			if(msg.from_agent==AGENT_PERSON && !(startup->options&MAIL_OPT_NO_AUTO_EXEMPT))
 				exempt_email_addr("SEND Auto-exempting", sender_info, toaddr);
 		}
-		status(STATUS_WFC);
 		/* Free up resources here */
 		if(mail!=NULL)
 			freemail(mail);
@@ -5955,7 +5938,6 @@ static void cleanup(int code)
 		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 	thread_down();
-	status("Down");
 	if(terminate_server || code) {
 		char str[1024];
 		sprintf(str,"%lu connections served", stats.connections_served);
@@ -6051,6 +6033,8 @@ void mail_server(void* arg)
 		return;
 	}
 
+	set_state(SERVER_INIT);
+
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
 	js_server_props.version_detail=mail_ver();
@@ -6087,8 +6071,6 @@ void mail_server(void* arg)
 
 		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
-
-		status("Initializing");
 
 		memset(&scfg, 0, sizeof(scfg));
 
@@ -6253,8 +6235,6 @@ void mail_server(void* arg)
 			_beginthread(sendmail_thread, 0, NULL);
 		}
 
-		status(STATUS_WFC);
-
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","mail");
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","mail");
@@ -6271,8 +6251,7 @@ void mail_server(void* arg)
 		savemsg_mutex_created = true;
 
 		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started(startup->cbdata);
+		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Mail Server thread started");
 
@@ -6391,6 +6370,8 @@ void mail_server(void* arg)
 			}
 		}
 
+		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+
 		if(protected_uint32_value(active_clients)) {
 			lprintf(LOG_INFO,"Waiting for %d active clients to disconnect..."
 				, protected_uint32_value(active_clients));
@@ -6442,4 +6423,6 @@ void mail_server(void* arg)
 	} while(!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+
+	set_state(SERVER_STOPPED);
 }

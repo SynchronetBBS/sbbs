@@ -192,10 +192,10 @@ static char* server_host_name(void)
 	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
 }
 
-static void status(char* str)
+static void set_state(enum server_state state)
 {
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
 }
 
 static void update_clients(void)
@@ -4803,8 +4803,6 @@ static void ctrl_thread(void* arg)
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-/*	status(STATUS_WFC); server thread should control status display */
-
 	if(pasv_sock!=INVALID_SOCKET)
 		ftp_close_socket(&pasv_sock,&pasv_sess,__LINE__);
 	if(data_sock!=INVALID_SOCKET)
@@ -4873,7 +4871,6 @@ static void cleanup(int code, int line)
 #endif
 
 	thread_down();
-	status("Down");
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"#### FTP Server thread terminated (%lu clients served)", served);
 	if(startup!=NULL && startup->terminated!=NULL)
@@ -4941,6 +4938,7 @@ void ftp_server(void* arg)
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}
+	set_state(SERVER_INIT);
 
 	uptime=0;
 	served=0;
@@ -4962,8 +4960,6 @@ void ftp_server(void* arg)
 
 		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
-
-		status("Initializing");
 
 		memset(&scfg, 0, sizeof(scfg));
 
@@ -5068,8 +5064,6 @@ void ftp_server(void* arg)
 		 */
 		xpms_add_list(ftp_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "FTP Server", ftp_open_socket_cb, startup->seteuid, NULL);
 
-		status(STATUS_WFC);
-
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","ftp");
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","ftp");
@@ -5082,8 +5076,7 @@ void ftp_server(void* arg)
 		}
 
 		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started(startup->cbdata);
+		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"FTP Server thread started");
 
@@ -5169,6 +5162,8 @@ void ftp_server(void* arg)
 			served++;
 		}
 
+		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+
 #if 0 /* def _DEBUG */
 		lprintf(LOG_DEBUG,"0000 terminate_server: %d",terminate_server);
 #endif
@@ -5199,4 +5194,6 @@ void ftp_server(void* arg)
 	} while(!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+
+	set_state(SERVER_STOPPED);
 }

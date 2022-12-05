@@ -157,11 +157,10 @@ extern "C" {
 
 static bbs_startup_t* startup=NULL;
 
-static const char* status(const char* str)
+static void set_state(enum server_state state)
 {
-	if(startup!=NULL && startup->status!=NULL)
-		startup->status(startup->cbdata,str);
-	return str;
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
 }
 
 static void update_clients()
@@ -2777,8 +2776,6 @@ void event_thread(void* arg)
 				int userfile = openuserdat(&sbbs->cfg, /* for_modify: */FALSE);
 				for(i=1;i<=j;i++) {
 
-					SAFEPRINTF2(str,"%5u of %-5u",i,j);
-					//status(str);
 					sbbs->useron.number=i;
 					if(fgetuserdat(&sbbs->cfg,&sbbs->useron, userfile) != 0)
 						continue;
@@ -2824,7 +2821,6 @@ void event_thread(void* arg)
 				close(file);
 
 				remove(semfile);
-				//status(STATUS_WFC);
 			}
 			sbbs->useron.number = 0;
 		}
@@ -4448,8 +4444,6 @@ void node_thread(void* arg)
 		chsize(fileno(sbbs->logfile_fp), 0);
 	}
 
-	status(STATUS_WFC);
-
 	sbbs->getnodedat(sbbs->cfg.node_num,&node,1);
 	if(node.misc&NODE_DOWN)
 		node.status=NODE_OFFLINE;
@@ -4576,8 +4570,6 @@ void sbbs_t::daily_maint(void)
 	lastusernum=lastuser(&cfg);
 	int userfile=openuserdat(&cfg, /* for_modify: */FALSE);
 	for(usernum=1;usernum<=lastusernum;usernum++) {
-		SAFEPRINTF2(str,"%5u of %-5u",usernum,lastusernum);
-		status(str);
 		user.number = usernum;
 		if((i=fgetuserdat(&cfg, &user, userfile)) != 0) {
 			SAFEPRINTF(str,"user record %u",usernum);
@@ -4691,7 +4683,6 @@ void sbbs_t::daily_maint(void)
 		online = FALSE;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Daily event: '%s' returned %d", cmd, result);
 	}
-	status(STATUS_WFC);
 	lputs(LOG_INFO, "DAILY: System maintenance ended");
 	sys_status&=~SS_DAILY;
 }
@@ -4773,7 +4764,6 @@ static void cleanup(int code)
 	protected_uint32_destroy(node_threads_running);
 	protected_uint32_destroy(ssh_sessions);
 
-	status("Down");
 	thread_down();
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"Terminal Server thread terminated (%lu clients served)", served);
@@ -4828,6 +4818,8 @@ void bbs_thread(void* arg)
 		return;
 	}
 
+	set_state(SERVER_INIT);
+
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
 		startup->seteuid(TRUE);
@@ -4866,8 +4858,6 @@ void bbs_thread(void* arg)
 	thread_up(FALSE /* setuid */);
 	if(startup->seteuid!=NULL)
 		startup->seteuid(TRUE);
-
-	status("Initializing");
 
 	memset(text, 0, sizeof(text));
     memset(&scfg, 0, sizeof(scfg));
@@ -5173,8 +5163,6 @@ NO_SSH:
 		sbbs->putnodedat(i,&node);
 	}
 
-	status(STATUS_WFC);
-
 	/* Setup recycle/shutdown semaphore file lists */
 	shutdown_semfiles = semfile_list_init(scfg.ctrl_dir,"shutdown", "term");
 	recycle_semfiles = semfile_list_init(scfg.ctrl_dir,"recycle", "term");
@@ -5212,8 +5200,7 @@ NO_SSH:
 #endif // __unix__ (unix-domain spy sockets)
 
 	/* signal caller that we've started up successfully */
-	if(startup->started!=NULL)
-		startup->started(startup->cbdata);
+	set_state(SERVER_READY);
 
 	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
 
@@ -5792,6 +5779,8 @@ NO_SSH:
 		served++;
 	}
 
+	set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+
     // Close all open sockets
     for(i=0;i<MAX_NODES;i++)  {
     	if(node_socket[i]!=INVALID_SOCKET) {
@@ -5907,4 +5896,5 @@ NO_SSH:
 
 	} while(!terminate_server);
 
+	set_state(SERVER_STOPPED);
 }
