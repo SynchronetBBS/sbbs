@@ -325,13 +325,15 @@ static int svc_lputs(void* p, int level, const char* str)
 /* Shared Service Callback Routines */
 /************************************/
 
-static void svc_started(void* p)
+static void svc_set_state(void* p, enum server_state state)
 {
 	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
 
-	svc->status.dwCurrentState=SERVICE_RUNNING;
-	svc->status.dwControlsAccepted|=SERVICE_ACCEPT_STOP;
-	SetServiceStatus(svc->status_handle, &svc->status);
+	if(state == SERVER_READY) {
+		svc->status.dwCurrentState=SERVICE_RUNNING;
+		svc->status.dwControlsAccepted|=SERVICE_ACCEPT_STOP;
+		SetServiceStatus(svc->status_handle, &svc->status);
+	}
 }
 
 static void read_ini(sbbs_ntsvc_t* svc)
@@ -1180,7 +1182,7 @@ int main(int argc, char** argv)
 	bbs_startup.lputs=svc_lputs;
 	bbs_startup.event_cbdata=&event;
 	bbs_startup.event_lputs=svc_lputs;
-    bbs_startup.started=svc_started;
+    bbs_startup.set_state=svc_set_state;
 	bbs_startup.recycle=svc_recycle;
     bbs_startup.terminated=svc_terminated;
 	bbs_startup.clients=svc_clients;
@@ -1192,7 +1194,7 @@ int main(int argc, char** argv)
 	ftp_startup.cbdata=&ftp;
     ftp_startup.size=sizeof(ftp_startup);
 	ftp_startup.lputs=svc_lputs;
-    ftp_startup.started=svc_started;
+    ftp_startup.set_state=svc_set_state;
 	ftp_startup.recycle=svc_recycle;
     ftp_startup.terminated=svc_terminated;
 	ftp_startup.clients=svc_clients;
@@ -1204,7 +1206,7 @@ int main(int argc, char** argv)
 	web_startup.cbdata=&web;
     web_startup.size=sizeof(web_startup);
 	web_startup.lputs=svc_lputs;
-    web_startup.started=svc_started;
+    web_startup.set_state=svc_set_state;
 	web_startup.recycle=svc_recycle;
     web_startup.terminated=svc_terminated;
 	web_startup.clients=svc_clients;
@@ -1216,7 +1218,7 @@ int main(int argc, char** argv)
 	mail_startup.cbdata=&mail;
     mail_startup.size=sizeof(mail_startup);
 	mail_startup.lputs=svc_lputs;
-    mail_startup.started=svc_started;
+    mail_startup.set_state=svc_set_state;
 	mail_startup.recycle=svc_recycle;
     mail_startup.terminated=svc_terminated;
 	mail_startup.clients=svc_clients;
@@ -1228,7 +1230,7 @@ int main(int argc, char** argv)
 	services_startup.cbdata=&services;
     services_startup.size=sizeof(services_startup);
 	services_startup.lputs=svc_lputs;
-    services_startup.started=svc_started;
+    services_startup.set_state=svc_set_state;
 	services_startup.recycle=svc_recycle;
     services_startup.terminated=svc_terminated;
 	services_startup.clients=svc_clients;
