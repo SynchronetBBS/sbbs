@@ -581,7 +581,7 @@ function showFileInfo(pFileList, pFileListMenu)
 		// may be a kludge, and perhaps there's a better solution..
 		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
 		// Fix line endings if necessary
-		fileDesc = fixStrLineEndings(fileDesc);
+		fileDesc = lfexpand(fileDesc);
 	}
 	else
 		fileDesc = "";
@@ -691,21 +691,6 @@ function splitStrAndCombineWithRN(pStr, pSplitStr)
 	}
 	else
 		newStr = pStr;
-	return newStr;
-}
-
-// Fixes line endings in a string
-function fixStrLineEndings(pStr)
-{
-	if (typeof(pStr) !== "string")
-		return "";
-
-	// If there's only a return or only a newline, split & recombine with \r\n
-	var newStr = pStr;
-	if (/[^\r]\n[^\r]/.test(newStr)) // Only a newline
-		newStr = splitStrAndCombineWithRN(newStr, "\n");
-	else if (/[^\n]\r[^\n]/.test(newStr)) // Only a carriage return
-		newStr = splitStrAndCombineWithRN(newStr, "\r");
 	return newStr;
 }
 
@@ -3227,7 +3212,7 @@ function populateFileList(pSearchMode)
 				{
 					gFileList[i].extdesc = gFileList[i].extdesc.substr(0, gFileList[i].extdesc.length-2);
 					// Fix line endings if necessary
-					gFileList[i].extdesc = fixStrLineEndings(gFileList[i].extdesc);
+					gFileList[i].extdesc = lfexpand(gFileList[i].extdesc);
 				}
 			}
 		}
