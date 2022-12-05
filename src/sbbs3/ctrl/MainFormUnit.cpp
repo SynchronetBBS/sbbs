@@ -330,13 +330,6 @@ static const char* server_state_str(enum server_state state)
 
 static void bbs_set_state(void* p, enum server_state state)
 {
-#if 0
-	static HANDLE mutex;
-
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
-#endif
 	TelnetForm->Status->Caption = server_state_str(state);
 	
 	switch(state) {
@@ -378,9 +371,6 @@ static void bbs_clients(void* p, int clients)
 
 static void bbs_start(void)
 {
-//	Screen->Cursor=crAppStart;
-//    TelnetForm->Status->Caption = "Starting";
-
     FILE* fp=fopen(MainForm->ini_file,"r");
     sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
@@ -437,16 +427,8 @@ static void services_log_msg(log_msg_t* msg)
 
 static void services_set_state(void* p, enum server_state state)
 {
-#if 0
-	static HANDLE mutex;
-
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
-#endif
 	ServicesForm->Status->Caption = server_state_str(state);
 	
-//	Screen->Cursor=crDefault;
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->ServicesStart->Enabled=true;
@@ -463,8 +445,6 @@ static void services_set_state(void* p, enum server_state state)
 			MainForm->ServicesPause->Checked=false;
 			break;
 	}
-//	ReleaseMutex(mutex);
-	// Application->ProcessMessages();
 }
 
 static void services_clients(void* p, int clients)
@@ -513,16 +493,8 @@ static void mail_log_msg(log_msg_t* msg)
 
 static void mail_set_state(void* p, enum server_state state)
 {
-#if 0
-	static HANDLE mutex;
-
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
-#endif
 	MailForm->Status->Caption = server_state_str(state);
 	
-//	Screen->Cursor=crDefault;
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->MailStart->Enabled=true;
@@ -539,8 +511,6 @@ static void mail_set_state(void* p, enum server_state state)
 			MainForm->MailPause->Checked=false;
 			break;
 	}
-//	ReleaseMutex(mutex);
-	// Application->ProcessMessages();
 }
 
 static void mail_clients(void* p, int clients)
@@ -559,9 +529,6 @@ static void mail_clients(void* p, int clients)
 
 static void mail_start(void)
 {
-//	Screen->Cursor=crAppStart;
-//    mail_status(NULL, "Starting");
-
     FILE* fp=fopen(MainForm->ini_file,"r");
     sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
@@ -621,16 +588,8 @@ static void ftp_log_msg(log_msg_t* msg)
 
 static void ftp_set_state(void* p, enum server_state state)
 {
-#if 0
-	static HANDLE mutex;
-
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
-#endif
 	FtpForm->Status->Caption = server_state_str(state);
 	
-//	Screen->Cursor=crDefault;
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->FtpStart->Enabled=true;
@@ -647,8 +606,6 @@ static void ftp_set_state(void* p, enum server_state state)
 			MainForm->FtpPause->Checked=false;
 			break;
 	}
-//	ReleaseMutex(mutex);
-	// Application->ProcessMessages();
 }
 
 static void ftp_clients(void* p, int clients)
@@ -667,9 +624,6 @@ static void ftp_clients(void* p, int clients)
 
 static void ftp_start(void)
 {
-//	Screen->Cursor=crAppStart;
-//    ftp_status(NULL, "Starting");
-
     FILE* fp=fopen(MainForm->ini_file,"r");
     sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
@@ -702,16 +656,8 @@ static void web_log_msg(log_msg_t* msg)
 
 static void web_set_state(void* p, enum server_state state)
 {
-#if 0	
-	static HANDLE mutex;
-
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
-#endif
 	WebForm->Status->Caption = server_state_str(state);
 	
-//	Screen->Cursor=crDefault;
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->WebStart->Enabled=true;
@@ -728,8 +674,6 @@ static void web_set_state(void* p, enum server_state state)
 			MainForm->WebPause->Checked=false;
 			break;
 	}
-//	ReleaseMutex(mutex);
-	// Application->ProcessMessages();
 }
 
 static void web_clients(void* p, int clients)
@@ -748,9 +692,6 @@ static void web_clients(void* p, int clients)
 
 static void web_start(void)
 {
-//	Screen->Cursor=crAppStart;
-//    web_status(NULL, "Starting");
-
     FILE* fp=fopen(MainForm->ini_file,"r");
     sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
@@ -1204,8 +1145,6 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 {
 	if(StartNTsvc(services_svc,&services_svc_status,services_svc_config,services_svc_config_size))
     	return;
-//	Screen->Cursor=crAppStart;
-//    services_status(NULL, "Starting");
 
     FILE* fp=fopen(ini_file,"r");
     sbbs_read_ini(fp, MainForm->ini_file
@@ -1238,8 +1177,6 @@ void __fastcall TMainForm::ServicesStopExecute(TObject *Sender)
 {
 	if(StopNTsvc(services_svc,&services_svc_status))
     	return;
-//    Screen->Cursor=crAppStart;
-//    services_status(NULL, "Terminating");
     services_terminate();
     Application->ProcessMessages();
 }
@@ -1249,7 +1186,6 @@ void __fastcall TMainForm::TelnetStopExecute(TObject *Sender)
 {
 	if(StopNTsvc(bbs_svc,&bbs_svc_status))
     	return;
-//    Screen->Cursor=crAppStart;
     bbs_terminate();
     Application->ProcessMessages();
 }
@@ -1312,8 +1248,6 @@ void __fastcall TMainForm::MailStopExecute(TObject *Sender)
 {
 	if(StopNTsvc(mail_svc,&mail_svc_status))
     	return;
-//    Screen->Cursor=crAppStart;
-//    mail_status(NULL, "Terminating");
     mail_terminate();
     Application->ProcessMessages();
 }
@@ -1377,8 +1311,6 @@ void __fastcall TMainForm::FtpStopExecute(TObject *Sender)
 {
 	if(StopNTsvc(ftp_svc,&ftp_svc_status))
     	return;
-//    Screen->Cursor=crAppStart;
-//    ftp_status(NULL, "Terminating");
     ftp_terminate();
     Application->ProcessMessages();
 }
@@ -1407,8 +1339,6 @@ void __fastcall TMainForm::WebStopExecute(TObject *Sender)
 {
 	if(StopNTsvc(web_svc,&web_svc_status))
     	return;
-//    Screen->Cursor=crAppStart;
-//    web_status(NULL, "Terminating");
     web_terminate();
     Application->ProcessMessages();
 }
