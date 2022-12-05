@@ -60,6 +60,10 @@ ifeq ($(os),linux)
   CFLAGS += -DUSE_LINUX_CAPS
   CON_LIBS += -lcap
  endif
+ ifeq ($(shell test -f /usr/include/systemd/sd-daemon.h && echo "yes"),yes)
+  CFLAGS += -DUSE_SYSTEMD
+  CON_LIBS += -lsystemd
+ endif
 endif
 
 include sbbsdefs.mk

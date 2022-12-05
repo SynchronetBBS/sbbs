@@ -173,6 +173,12 @@ static char* server_host_name(void)
 	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
 }
 
+static void set_state(enum server_state state)
+{
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
+}
+
 static ulong active_clients(void)
 {
 	ulong i;
@@ -259,12 +265,6 @@ static int close_socket(SOCKET sock)
 		lprintf(LOG_WARNING,"%04d !ERROR %d closing socket: %s",sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
 
 	return(result);
-}
-
-static void status(char* str)
-{
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
 }
 
 /* Global JavaScript Methods */
@@ -1711,7 +1711,6 @@ static void cleanup(int code)
 	thread_down();
 	if(terminated || code)
 		lprintf(LOG_INFO,"#### Services thread terminated (%lu clients served)",served);
-	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -1854,6 +1853,7 @@ void services_thread(void* arg)
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}
+	set_state(SERVER_INIT);
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
@@ -1873,8 +1873,6 @@ void services_thread(void* arg)
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 
 		thread_up(FALSE /* setuid */);
-
-		status("Initializing");
 
 		memset(&scfg, 0, sizeof(scfg));
 
@@ -2012,8 +2010,6 @@ void services_thread(void* arg)
 			}
 		}
 
-		status("Listening");
-
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","services");
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","services");
@@ -2029,8 +2025,7 @@ void services_thread(void* arg)
 		terminated=FALSE;
 
 		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started(startup->cbdata);
+		set_state(SERVER_READY);
 
 		if (need_cert) {
 			if (get_ssl_cert(&scfg, &ssl_estr, &level) == -1) {
@@ -2345,6 +2340,8 @@ void services_thread(void* arg)
 #endif
 			}
 		}
+		set_state(terminated ? SERVER_STOPPING : SERVER_RELOADING);
+
 #ifdef PREFER_POLL
 		FREE_AND_NULL(fds);
 #endif
@@ -2396,4 +2393,6 @@ void services_thread(void* arg)
 		}
 
 	} while(!terminated);
+
+	set_state(SERVER_STOPPED);
 }

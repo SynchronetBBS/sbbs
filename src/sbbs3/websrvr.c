@@ -732,10 +732,10 @@ static char* server_host_name(void)
 	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
 }
 
-static void status(char* str)
+static void set_state(enum server_state state)
 {
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
 }
 
 static void update_clients(void)
@@ -6824,7 +6824,6 @@ static void cleanup(int code)
 #endif
 
 	thread_down();
-	status("Down");
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"#### Web Server thread terminated (%lu clients served, %lu concurrently)"
 			,served, client_highwater);
@@ -7000,6 +6999,7 @@ void web_server(void* arg)
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}
+	set_state(SERVER_INIT);
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
@@ -7038,8 +7038,6 @@ void web_server(void* arg)
 
 		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
-
-		status("Initializing");
 
 		/* Copy html directories */
 		SAFECOPY(root_dir,startup->root_dir);
@@ -7192,11 +7190,9 @@ void web_server(void* arg)
 		}
 
 		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started(startup->cbdata);
+		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Web Server thread started");
-		status("Listening");
 
 		while(!terminated && !terminate_server) {
 			YIELD();
@@ -7314,6 +7310,8 @@ void web_server(void* arg)
 			served++;
 		}
 
+		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+
 		if(session) {
 			pthread_mutex_unlock(&session->struct_filled);
 			session=NULL;
@@ -7367,4 +7365,5 @@ void web_server(void* arg)
 	} while(!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+	set_state(SERVER_STOPPED);
 }
