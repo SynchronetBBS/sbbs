@@ -37,11 +37,8 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.01";
-var GAME_VER_DATE = "2022-11-25";
-// Version of data written to the server, if applicable.  This might not necessarily be the same as
-// the version of the game.
-var SERVER_DATA_VERSION = "1.01";
+var GAME_VERSION = "1.02 Beta";
+var GAME_VER_DATE = "2022-12-06";
 
 // Determine the location of this script (its startup directory).
 // The code for figuring this out is a trick that was created by Deuce,
@@ -141,18 +138,91 @@ var JSON_DB_LOCK_UNLOCK = -1;
 
 
 
-// Enable debugging if the first command-line parameter is -debug
-var gDebug = false;
-if (argv.length > 0)
-	gDebug = (argv[0].toUpperCase() == "-DEBUG");
+// Load the settings from the .ini file
+var gSettings = loadSettings(gStartupPath);
+
+// Parse command-line arguments
+var gCmdLineArgs = parseCmdLineArgs(argv);
+
+// If the command-line argument was specified to post or read scores in the configured message
+// sub-board, then do so and exit.
+if (gCmdLineArgs.postScoresToSubBoard)
+{
+	if (gSettings.behavior.scoresMsgSubBoardsForPosting.length == 0)
+	{
+		log(LOG_ERR, format("%s - Post scores to sub-boards specified, but scoresMsgSubBoardsForPosting is not set", GAME_NAME));
+		exit(2);
+	}
+
+	var exitCode = 0;
+	for (var i = 0; i < gSettings.behavior.scoresMsgSubBoardsForPosting.length; ++i)
+	{
+		var subCode = gSettings.behavior.scoresMsgSubBoardsForPosting[i];
+		if (!msg_area.sub.hasOwnProperty(subCode))
+		{
+			log(LOG_ERR, format("%s - Sub-board-code %s does not exist (specified in %s)", GAME_NAME, subCode, "scoresMsgSubBoardsForPosting"));
+			exitCode = 3;
+			continue;
+		}
+
+		var postSuccessful = postGTTriviaScoresToSubBoard(subCode);
+		// For logging
+		var subBoardInfoStr = msg_area.sub[subCode].name + " - " + msg_area.sub[subCode].description;
+		// Write the status to the log
+		var logMsg = "";
+		var logLevel = LOG_INFO;
+		if (postSuccessful)
+			logMsg = format("%s - Successfully posted local scores to sub-board %s (%s)", GAME_NAME, subCode, subBoardInfoStr);
+		else
+		{
+			logLevel = LOG_ERR;
+			logMsg = format("%s - Posting scores to sub-board %s (%s) failed!", GAME_NAME, subCode, subBoardInfoStr);
+			exitCode = 3;
+		}
+		log(logLevel, logMsg);
+	}
+	exit(exitCode);
+}
+else if (gCmdLineArgs.readScoresFromSubBoard)
+{
+	if (gSettings.server.scoresMsgSubBoardsForReading.length == 0)
+	{
+		log(LOG_ERR, format("%s - Read scores from sub-boards specified, but scoresMsgSubBoardsForReading is not set", GAME_NAME));
+		exit(2);
+	}
+
+	var exitCode = 0;
+	for (var i = 0; i < gSettings.server.scoresMsgSubBoardsForReading.length; ++i)
+	{
+		var subCode = gSettings.server.scoresMsgSubBoardsForReading[i];
+		if (subCode.length == 0 || !msg_area.sub.hasOwnProperty(subCode))
+		{
+			log(LOG_ERR, format("%s - Invalid sub-board code specified in scoresMsgSubBoardsForReading: %s", GAME_NAME, subCode));
+			continue;
+		}
+
+		var readSuccessful = readGTTriviaScoresFromSubBoard(subCode);
+		// For logging
+		var subBoardInfoStr = msg_area.sub[subCode].name + " - " + msg_area.sub[subCode].description;
+		// Write the status to the log
+		var logMsg = "";
+		var logLevel = LOG_INFO;
+		if (readSuccessful)
+			logMsg = format("%s - Successfully read scores from sub-board %s (%s)", GAME_NAME, subCode, subBoardInfoStr);
+		else
+		{
+			logLevel = LOG_ERR;
+			logMsg = format("%s - Reading scores from sub-board %s (%s) failed!", GAME_NAME, subCode, subBoardInfoStr);
+			exitCode = 4;
+		}
+		log(logLevel, logMsg);
+	}
+	exit(exitCode);
+}
 
 
 // Display the program logo
 displayProgramLogo(true, false);
-
-// Load the settings from the .ini file
-var gSettings = loadSettings(gStartupPath);
-
 
 //console.clear("\x01n");
 
@@ -360,8 +430,50 @@ function playTrivia()
 	console.crlf();
 	console.print("\x01b\x01hUpdating the scores file...");
 	console.crlf();
-	updateScoresFile(userPoints, qaFilenameInfo[chosenSectionIdx].sectionName);
-	console.print("Done.\x01n");
+	// Update the local scores file
+	var updateLocalScoresRetObj = updateScoresFile(userPoints, qaFilenameInfo[chosenSectionIdx].sectionName);
+	if (updateLocalScoresRetObj.succeeded)
+	{
+		// If there is a server configured, then send the user's score to the server too.
+		// If there are no server settings configured, or posting scores to the server fails,
+		// then if there's a sub-board configured, then write the user scores to the sub-board
+		var writeUserScoresToSubBoard = false;
+		if (gSettings.hasValidServerSettings())
+		{
+			writeUserScoresToSubBoard = !updateScoresOnServer(user.alias, updateLocalScoresRetObj.userScoresObj);
+			if (writeUserScoresToSubBoard)
+			{
+				var errorMsg = "\x01n" + attrCodeStr(gSettings.colors.error) + "Failed to update scores on the remote server.";
+				if (gSettings.behavior.scoresMsgSubBoardsForPosting.length > 0)
+					errorMsg += " Will post server scores in message area(s); server scores will be delayed.\x01n";
+				console.putmsg(errorMsg, P_WORDWRAP|P_NOATCODES);
+				console.attributes = "BH"; // As before
+			}
+		}
+		else
+			writeUserScoresToSubBoard = true;
+		if (writeUserScoresToSubBoard)
+		{
+			// If there are any message sub-boards configured, post the scores in there
+			for (var i = 0; i < gSettings.behavior.scoresMsgSubBoardsForPosting.length; ++i)
+			{
+				var subCode = gSettings.behavior.scoresMsgSubBoardsForPosting[i];
+				if (msg_area.sub.hasOwnProperty(subCode))
+				{
+					if (postGTTriviaScoresToSubBoard(subCode))
+						log(LOG_INFO, format("%s - Successfully posted scores in the sub-board", GAME_NAME));
+					else
+						log(LOG_INFO, format("%s - Posting scores in the sub-board failed!", GAME_NAME));
+				}
+			}
+		}
+		console.print("Done.\x01n");
+	}
+	else
+	{
+		console.attributes = "N" + gSettings.colors.error;
+		console.print("Failed to save the scores!\x01n");
+	}
 	console.crlf();
 	return 0;
 }
@@ -384,6 +496,7 @@ function loadSettings(pStartupPath)
 		settings.colors = iniFile.iniGetObject("COLORS");
 		settings.category_ars = iniFile.iniGetObject("CATEGORY_ARS");
 		settings.remoteServer = iniFile.iniGetObject("REMOTE_SERVER");
+		settings.server = iniFile.iniGetObject("SERVER");
 
 		// Ensure the actual expected setting name & color names exist in the settings
 		if (typeof(settings.behavior) !== "object")
@@ -394,6 +507,8 @@ function loadSettings(pStartupPath)
 			settings.category_ars = {};
 		if (typeof(settings.remoteServer) !== "object")
 			settings.remoteServer = {};
+		if (typeof(settings.server) !== "object")
+			settings.server = {};
 
 		if (typeof(settings.behavior.numQuestionsPerPlay) !== "number")
 			settings.behavior.numQuestionsPerPlay = 10;
@@ -440,7 +555,10 @@ function loadSettings(pStartupPath)
 			settings.colors.clue = "GH";
 		if (typeof(settings.colors.answerAfterIncorrect) !== "string")
 			settings.colors.answerAfterIncorrect = "G";
-		
+
+		settings.behavior.scoresMsgSubBoardsForPosting = splitAndVerifyMsgSubCodes(settings.behavior.scoresMsgSubBoardsForPosting, "scoresMsgSubBoardsForPosting");
+		settings.server.scoresMsgSubBoardsForReading = splitAndVerifyMsgSubCodes(settings.server.scoresMsgSubBoardsForReading, "scoresMsgSubBoardsForReading");
+
 		// Sanity checking
 		if (settings.behavior.numQuestionsPerPlay <= 0)
 			settings.behavior.numQuestionsPerPlay = 10;
@@ -465,11 +583,7 @@ function loadSettings(pStartupPath)
 	settings.remoteServer.gtTriviaScope = "GTTRIVIA";
 	// JSON location: For the BBS name, use the QWK ID if available, but if not, use the system name and replace spaces
 	// with underscores (since spaces may cause issues in JSON property names)
-	var BBS_ID = "";
-	if (system.qwk_id.length > 0)
-		BBS_ID = system.qwk_id;
-	else
-		BBS_ID = system.name.replace(/ /g, "_");
+	var BBS_ID = getBBSIDForJSON();
 	settings.remoteServer.scoresJSONLocation = "SCORES";
 	settings.remoteServer.BBSJSONLocation = settings.remoteServer.scoresJSONLocation + ".systems." + BBS_ID;
 	settings.remoteServer.userScoresJSONLocationWithoutUsername = settings.remoteServer.BBSJSONLocation + ".user_scores";
@@ -504,6 +618,39 @@ function genFullPathCfgFilename(pFilename, pDefaultPath)
 			fullyPathedFilename = pFilename;
 	}
 	return fullyPathedFilename;
+}
+// Takes a comma-separated list of internal sub-board codes and splits them into an array,
+// and also verifies they exist; the returned array will contain only ones that exist.
+// Also ensures there are no duplicates in the array.
+//
+// Parameters:
+//  pSubCodeList: A comma-separated list of message sub-board codes (string)
+//  pSettingName: Optional string representing the configuration setting name, for logging
+//                invalid sub-board codes. If this is missing/null or empty, no logging will be done.
+function splitAndVerifyMsgSubCodes(pSubCodeList, pSettingName)
+{
+	if (typeof(pSubCodeList) !== "string")
+		return [];
+
+	var settingName = (typeof(pSettingName) === "string" ? pSettingName : "");
+
+	var subCodes = [];
+	var subCodesFromList = pSubCodeList.split(",");
+	for (var i = 0; i < subCodesFromList.length; ++i)
+	{
+		if (msg_area.sub.hasOwnProperty(subCodesFromList[i]))
+		{
+			if (!subCodes.indexOf(subCodesFromList[i]) > -1)
+				subCodes.push(subCodesFromList[i]);
+		}
+		else if (settingName.length > 0)
+		{
+			var errMsg = format("%s - For configuration setting %s, %s is an invalid sub-board code", GAME_NAME, settingName, subCodesFromList[i]);
+			log(LOG_ERR, errMsg);
+		}
+	}
+	//!msg_area.sub.hasOwnProperty(
+	return subCodes;
 }
 
 // Displays the program logo
@@ -814,10 +961,19 @@ function levenshteinDistance(pStr1, pStr2)
 // Parameters:
 //  pUserCurrentGameScore: The user's score for their current game
 //  pLastSectionName: The name of the last trivia section the user played
+//
+// Return value: An object with the following properties:
+//               succeeded: Boolean: Whether or not saving the scores to the file succeeded
+//               userScoresObj: An object containing information on the user's scores
 function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 {
+	var retObj = {
+		succeeded: false,
+		userScoresObj: {}
+	};
+
 	if (typeof(pUserCurrentGameScore) !== "number")
-		return false;
+		return retObj;
 
 	var lastSectionName = (typeof(pLastSectionName) === "string" ? pLastSectionName : "");
 
@@ -858,8 +1014,7 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 	if (typeof(scoresObj) !== "object")
 		scoresObj = {};
 
-	var scoresForUser = {}; // Will store just the current user's score information
-
+	retObj.succeeded = true;
 	// Add/update the user's score, and save the scores file
 	try
 	{
@@ -939,10 +1094,11 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 		scoresObj[user.alias].last_score = pUserCurrentGameScore;
 		scoresObj[user.alias].last_trivia_category = lastSectionName;
 		scoresObj[user.alias].last_time = currentTime;
-		scoresForUser = scoresObj[user.alias];
+		retObj.userScoresObj = scoresObj[user.alias];
 	}
 	catch (error)
 	{
+		retObj.succeeded = false;
 		console.print("* Line " + error.lineNumber + ": " + error);
 		console.crlf();
 		log(LOG_ERR, GAME_NAME + " - Updating trivia score object: Line " + error.lineNumber + ": " + error);
@@ -954,13 +1110,13 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 		scoresFile.write(JSON.stringify(scoresObj));
 		scoresFile.close();
 	}
+	else
+		retObj.succeeded = false;
 
 	// Delete the semaphore file
 	file_remove(SCORES_SEMAPHORE_FILENAME);
 
-	// If there is a server configured, then send the user's score to the server too
-	if (gSettings.hasValidServerSettings())
-		updateScoresOnServer(user.alias, scoresForUser);
+	return retObj;
 }
 
 // Updates user scores on the server (if there is one configured)
@@ -968,17 +1124,22 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 // Parameters:
 //  pUserNameForScores: The user's name as used for the scores
 //  pUserScoreInfo: An object containing user scores, as created by updateScoresFile()
+//
+// Return value: Boolean: Whether or not the update was successful
 function updateScoresOnServer(pUserNameForScores, pUserScoreInfo)
 {
 	// Make sure the settings have valid server settings and the user score info object is valid
 	if (!gSettings.hasValidServerSettings())
-		return;
+		return false;
 	if (typeof(pUserNameForScores) !== "string" || pUserNameForScores.length == 0 || typeof(pUserScoreInfo) !== "object")
-		return;
+		return false;
 
+	var updateSuccessful = true;
 	try
 	{
+		// TODO: It seems that locking is preventing the scores from being written on the server
 		var jsonClient = new JSONClient(gSettings.remoteServer.server, gSettings.remoteServer.port);
+		//jsonClient.lock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation, JSON_DB_LOCK_WRITE);
 		// Ensure the BBS name on the server has been set
 		var JSONLocation = gSettings.remoteServer.BBSJSONLocation + ".bbs_name";
 		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, system.name, JSON_DB_LOCK_WRITE);
@@ -987,16 +1148,20 @@ function updateScoresOnServer(pUserNameForScores, pUserScoreInfo)
 		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, pUserScoreInfo, JSON_DB_LOCK_WRITE);
 		// Write the client & version information in the user scores too
 		var gameInfo = format("%s version %s (%s)", GAME_NAME, GAME_VERSION, GAME_VER_DATE);
-		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation + ".game_client", gameInfo, JSON_DB_LOCK_WRITE);
+		JSONLocation += ".game_client";
+		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, gameInfo, JSON_DB_LOCK_WRITE);
+		//jsonClient.unlock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation);
 		jsonClient.disconnect();
 	}
 	catch (error)
 	{
+		updateSuccessful = false;
 		console.print("* Line " + error.lineNumber + ": " + error);
 		console.crlf();
 		log(LOG_ERR, GAME_NAME + " - Updating scores on server: Line " + error.lineNumber + ": " + error);
 		bbs.log_str(GAME_NAME + " - Updating scores on server: Line " + error.lineNumber + ": " + error);
 	}
+	return updateSuccessful;
 }
 
 // Shows the saved scores - First the locally saved scores, and then if there is a
@@ -1125,7 +1290,7 @@ function showServerScores()
 				showUserScoresArray(sortedScores, data.systems[BBS_ID].bbs_name);
 				// If debugging is enabled, then also show the game_client property (game_client stores the name
 				// & version of the game that wrote the user score data for this player)
-				if (gDebug)
+				if (gCmdLineArgs.debug)
 				{
 					if (data.systems[BBS_ID].user_scores[playerName].hasOwnProperty("game_client"))
 					{
@@ -1559,3 +1724,293 @@ function doSysopMenu()
 		}
 	}
 }
+
+// Returns a BBS ID to use for JSON (the QWK ID if existing; otherwise, the BBS name with
+// spaces converted to underscores)
+function getBBSIDForJSON()
+{
+	var BBS_ID = "";
+	if (system.qwk_id.length > 0)
+		BBS_ID = system.qwk_id;
+	else
+		BBS_ID = system.name.replace(/ /g, "_");
+	return BBS_ID;
+}
+
+// Posts all users' scores from the local scores file to a message sub-board
+//
+// Parameters:
+//  pSubCode: The internal code of the sub-board to post the scores to
+function postGTTriviaScoresToSubBoard(pSubCode)
+{
+	if (typeof(pSubCode) !== "string" || !msg_area.sub.hasOwnProperty(pSubCode))
+		return false;
+
+	// Prepare the user scores for posting in the message sub-board
+	// JSON location: For the BBS name, use the QWK ID if available, but if not, use the system name and replace spaces
+	// with underscores (since spaces may cause issues in JSON property names)
+	var BBS_ID = getBBSIDForJSON();
+	var scoresForThisBBS = {};
+	scoresForThisBBS[BBS_ID] = {};
+	scoresForThisBBS[BBS_ID].bbs_name = system.name;
+	scoresForThisBBS[BBS_ID].user_scores = {};
+
+	// Read the scores file to see if the user has an existing score in there already
+	var scoresFile = new File(SCORES_FILENAME);
+	if (file_exists(SCORES_FILENAME))
+	{
+		if (scoresFile.open("r"))
+		{
+			var scoreFileArray = scoresFile.readAll();
+			scoresFile.close();
+			var scoreFileContents = "";
+			for (var i = 0; i < scoreFileArray.length; ++i)
+				scoreFileContents += (scoreFileArray[i] + "\n");
+			try
+			{
+				scoresForThisBBS[BBS_ID].user_scores = JSON.parse(scoreFileContents);
+			}
+			catch (error)
+			{
+				scoresForThisBBS[BBS_ID].user_scores = {};
+				log(LOG_ERR, GAME_NAME + " - Loading scores: Line " + error.lineNumber + ": " + error);
+				bbs.log_str(GAME_NAME + " - Loading scores: Line " + error.lineNumber + ": " + error);
+			}
+		}
+	}
+	if (typeof(scoresForThisBBS[BBS_ID]) !== "object")
+		scoresForThisBBS[BBS_ID].user_scores = {};
+
+	if (Object.keys(scoresForThisBBS[BBS_ID].user_scores).length === 0)
+		return false;
+
+	var postSuccessful = false;
+	var dataMsgbase = new MsgBase(pSubCode);
+	if (dataMsgbase.open())
+	{
+		// Create the message header, and send the message.
+		var header = {
+			to: GAME_NAME, // "Good Time Trivia"
+			from: system.username(1),
+			from_ext: 1,
+			subject: system.name
+			//from_net_type: NET_NONE,
+			//to_net_type: NET_NONE
+		};
+		/*
+		if ((dataMsgbase.settings & SUB_QNET) == SUB_QNET)
+		{
+			header.from_net_type = NET_QWK;
+			header.to_net_type = NET_QWK;
+		}
+		else if ((dataMsgbase.settings & SUB_PNET) == SUB_PNET)
+		{
+			header.from_net_type = NET_POSTLINK;
+			header.to_net_type = NET_POSTLINK;
+		}
+		else if ((dataMsgbase.settings & SUB_FIDO) == SUB_FIDO)
+		{
+			header.from_net_type = NET_FIDO;
+			header.to_net_type = NET_FIDO;
+		}
+		else if ((dataMsgbase.settings & SUB_INET) == SUB_INET)
+		{
+			header.from_net_type = NET_INTERNET;
+			header.to_net_type = NET_INTERNET;
+		}
+		*/
+
+		//postSuccessful = dataMsgbase.save_msg(header, JSON.stringify(scoresForThisBBS));
+		var message = lfexpand(JSON.stringify(scoresForThisBBS, null, 1));
+		message += " --- " + GAME_NAME + " " + GAME_VERSION + " (" + GAME_VER_DATE + ")";
+		postSuccessful = dataMsgbase.save_msg(header, message);
+
+		dataMsgbase.close();
+	}
+	return postSuccessful;
+}
+
+// Reads trivia scores from a sub-board and posts on the host system (if configured)
+//
+// Parameters:
+//  pSubCode: An internal code of a sub-board to read the game scores from
+//
+// Return value: Boolean - Whether or not the score update succeeded
+function readGTTriviaScoresFromSubBoard(pSubCode)
+{
+	if (typeof(pSubCode) !== "string" || !msg_area.sub.hasOwnProperty(pSubCode))
+		return false;
+
+	// For logging
+	var subBoardInfoStr = msg_area.sub[subCode].name + " - " + msg_area.sub[subCode].description;
+	log(LOG_INFO, format("%s - Reading score posts from sub-board %s (%s)", GAME_NAME, pSubCode, subBoardInfoStr));
+
+	// For posting to the local JSON server, get the configured JSON service port number
+	var localJSONServicePort = getJSONSvcPortFromServicesIni();
+	if (localJSONServicePort <= 0)
+	{
+		log(LOG_ERR, format("%s - Local JSON service port is invalid (%d)", GAME_NAME, localJSONServicePort));
+		return false;
+	}
+
+	var scoreUpdateSucceeded = true;
+	var dataMsgbase = new MsgBase(pSubCode);
+	if (dataMsgbase.open())
+	{
+		try
+		{
+			// Create the JSON Client object for updating the scores on the local JSON DB server.
+			// For each user score in the JSON object, if their last time is after the current last
+			// time in the server's JSON, then post the user's score.
+			var jsonClient = new JSONClient("127.0.0.1", localJSONServicePort);
+
+			var to_crc = crc16_calc(GAME_NAME.toLowerCase());
+			var index = dataMsgbase.get_index();
+			for (var i = 0; index && i < index.length; i++)
+			{
+				var idx = index[i];
+				if ((idx.attr & MSG_DELETE) == MSG_DELETE || idx.to != to_crc)
+					continue;
+
+				var msgHdr = dataMsgbase.get_msg_header(true, idx.offset);
+				if (!msgHdr)
+					continue;
+				if (/*!msgHdr.from_net_type ||*/ msgHdr.to != GAME_NAME)
+					continue;
+
+				var msgBody = dataMsgbase.get_msg_body(msgHdr, false, false, false);
+				if (msgBody == null || msgBody.length == 0) //if (!msgBody)
+					continue;
+
+				log(LOG_INFO, "Scores message imported at " + strftime("%Y-%m-%d %H:%M:%S", msgHdr.when_imported_time));
+				// Clean up the message body so that it only has JSON
+				var txtIdx = msgBody.indexOf(" --- " + GAME_NAME);
+				if (txtIdx > 0)
+					msgBody = msgBody.substr(0, txtIdx);
+				// Parse the JSON from the message, and then go through the BBSes and users
+				// in it.  For any user scores that are more recent than what's on the server,
+				// post those to the server.
+				try
+				{
+					var scoresObjFromMsg = JSON.parse(msgBody);
+					// For each user score, if their last time is after the current last time in the
+					// server's JSON, then post the user's score.
+					for (var BBS_ID in scoresObjFromMsg)
+					{
+						// TODO: It seems that locking is preventing the scores from being written on the server
+						//jsonClient.lock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation, JSON_DB_LOCK_WRITE);
+						// Ensure the BBS name on the server has been set
+						var JSONLocation = gSettings.remoteServer.scoresJSONLocation + ".systems." + BBS_ID + ".bbs_name";
+						//jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, system.name, JSON_DB_LOCK_WRITE);
+						for (var userID in scoresObjFromMsg[BBS_ID].user_scores)
+						{
+							// For logging
+							var msgLastTimeFormatted = strftime("%Y-%m-%d %H:%M:%S", scoresObjFromMsg[BBS_ID].user_scores[userID].last_time);
+							var serverLastTimeFormatted = "";
+
+							// Read the current user's scores from the server and compare the user's last_time
+							// from the message in the sub-board with the one from the server, and only update
+							// if newer.
+							JSONLocation = gSettings.remoteServer.scoresJSONLocation + ".systems." + BBS_ID + ".user_scores." + userID;
+							var serverUserScoreData = jsonClient.read(gSettings.remoteServer.gtTriviaScope, JSONLocation, JSON_DB_LOCK_READ);
+							var postUserScoresToServer = false;
+							if (typeof(serverUserScoreData) === "object")
+							{
+								postUserScoresToServer = (scoresObjFromMsg[BBS_ID].user_scores[userID].last_time > serverUserScoreData.last_time);
+								serverLastTimeFormatted = strftime("%Y-%m-%d %H:%M:%S", serverUserScoreData.last_time)
+							}
+							else
+							{
+								postUserScoresToServer = true;
+								serverLastTimeFormatted = "N/A";
+							}
+
+							// Log the user, BBS, and date of the scores seen
+							var logMsg = format("%s - Saw scores for %s on %s; in message: %s, on server: %s; will update server scores: %s",
+												GAME_NAME, userID, scoresObjFromMsg[BBS_ID].bbs_name, msgLastTimeFormatted, serverLastTimeFormatted,
+												postUserScoresToServer);
+							log(LOG_INFO, logMsg);
+
+							// If the scores from the message are newer, write the scores on the server
+							if (postUserScoresToServer)
+							{
+								JSONLocation = gSettings.remoteServer.scoresJSONLocation + ".systems." + BBS_ID + ".user_scores." + userID;
+								jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, scoresObjFromMsg[BBS_ID].user_scores[userID], JSON_DB_LOCK_WRITE);
+							}
+							//jsonClient.unlock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation);
+						}
+					}
+				}
+				catch (error)
+				{
+					scoreUpdateSucceeded = false;
+					console.print("* Line " + error.lineNumber + ": " + error);
+					console.crlf();
+					log(LOG_ERR, GAME_NAME + " - Updating scores on server: Line " + error.lineNumber + ": " + error);
+					bbs.log_str(GAME_NAME + " - Updating scores on server: Line " + error.lineNumber + ": " + error);
+				}
+			}
+
+			jsonClient.disconnect();
+		}
+		catch (error)
+		{
+			scoreUpdateSucceeded = false;
+			console.print("* Line " + error.lineNumber + ": " + error);
+			console.crlf();
+			log(LOG_ERR, GAME_NAME + " - Connecting to JSON DB server (for scores update): Line " + error.lineNumber + ": " + error);
+			bbs.log_str(GAME_NAME + " - Connecting to JSON DB server (for scores update): Line " + error.lineNumber + ": " + error);
+		}
+
+		dataMsgbase.close();
+	}
+	else
+	{
+		var errMsg = format("%s - Unable to open sub-board %s (%s)", GAME_NAME, pSubCode, subBoardInfoStr);
+		log(LOG_ERR, errMsg);
+	}
+
+	log(LOG_INFO, format("%s - End of reading score posts from sub-board %s (%s).  All succeeded: %s", GAME_NAME, pSubCode,
+	                     subBoardInfoStr, scoreUpdateSucceeded));
+
+	return scoreUpdateSucceeded;
+}
+
+// Parses command-line arguments.  Returns an object with settings/actions specified.
+//
+// Parameters:
+//  argv: The array of command-line arguments
+//
+// Return value: An object with the following properties:
+//  debug: Boolean: Whether or not to enable debugging
+//  postScoresToSubBoard: Boolean: Whether or not to post scores in the configured sub-board. If this is
+//                        enabled, scores are to be posted and then the script should exit.
+//  readScoresFromSubBoard: Boolean: Whether or not to read scores from the configured sub-board.
+//                          If this is enabled, scores are to be posted and then the script should exit.
+function parseCmdLineArgs(argv)
+{
+	var retObj = {
+		debug: false,
+		postScoresToSubBoard: false,
+		readScoresFromSubBoard: false
+	};
+
+	if (!Array.isArray(argv))
+		return retObj;
+
+	var postScoresToSubOpt = "POST_SCORES_TO_SUBBOARD";
+	var readScoresFromSubOpt = "READ_SCORES_FROM_SUBBOARD";
+	for (var i = 0; i < argv.length; ++i)
+	{
+		var argUpper = argv[i].toUpperCase();
+		if (argUpper == "DEBUG" || argUpper == "-DEBUG" || argUpper == "--DEBUG")
+			retObj.debug = true;
+		else if (argUpper == postScoresToSubOpt || argUpper == "-" + postScoresToSubOpt || argUpper == "--" + postScoresToSubOpt)
+			retObj.postScoresToSubBoard = true;
+		else if (argUpper == readScoresFromSubOpt || argUpper == "-" + readScoresFromSubOpt || argUpper == "--" + readScoresFromSubOpt)
+			retObj.readScoresFromSubBoard = true;
+	}
+
+	return retObj;
+}
+

@@ -1,11 +1,11 @@
                                Good Time Trivia
-                                 Version 1.01
-                           Release date: 2022-11-25
+                                 Version 1.02
+                           Release date: 2022-12-??
 
                                      by
 
                                 Eric Oulashin
-								 AKA Nightfox
+                                 AKA Nightfox
                           Sysop of Digital Distortion
                   BBS internet address: digitaldistortionbbs.com
                      Alternate address: digdist.bbsindex.com
@@ -57,10 +57,6 @@ scores.  This will delete the scores.json file.
 This is currently a single-player game, but multiple users on different nodes
 can play it simultaneously.
 
-Currently, this trivia game is local to the current BBS only.  In the future,
-I think it would be good to add a feature for networked/inter-BBS games.
-
-
 Answer matching: When a user answers a question, the game can allow non-exact
 answer matching in some circumstances, to account for typos and spelling
 mistakes.  If the answer is a single word up to 12 characters, the game will
@@ -72,6 +68,39 @@ increasing it too much would mean allowing wrong answers as correct in some
 cases.
 For more information on Levenshtein distances:
 https://www.cuelogic.com/blog/the-levenshtein-algorithm
+
+
+Shared game scores on a server BBS
+----------------------------------
+The game can be configured to share its local game scores, to be stored on a
+remote BBS.  The scores can be shared either by directly contacting the remote
+BBS and/or by posting the local game scores in one or more message sub-boards
+(both configurable in gttrivia.ini).  The option to post scores in a message
+sub-board (which would need to be networked) is a backup in case the remote BBS
+is down and cannot be contacted directly.  You may also opt to just have Good
+Time Trivia post scores in a message sub-board and not configure a remote BBS
+server.
+
+For instance, if your BBS has the Dove-Net message sub-boards, you could
+configure Good Time Trivia to post scores in the Dove-Net Synchronet Data
+sub-board (using the internal code configured on your BBS).  The host BBS would
+also need to have Dove-Net and have an event configured to periodically run
+Good Time Trivia to poll Dove-Net Synchronet Data and read the game scores.
+
+By default, the game is set up to post scores to Digital Distortion, so you may
+choose to view the scores there or host scores yourself. See section 4
+(Configuration file) for more information on the options to send scores to a
+remote BBS.
+
+When configured to send user scores to a remote BBS and to write scores to a
+message sub-board, that happens whenever a user stops playing a game.  The logic
+for sending the scores is as follows:
+- Try to post the scores to the remote BBS
+- If that fails, then post the scores in the configured message sub-board, if
+  there is one configured.
+That logic should ensure that the scores get posted.  The remote BBS should then
+be configured to have their JSON-DB service running and/or have Good Time Trivia
+periodically scan the same (networked) message sub-board to read the scores.
 
 
 3. Installation & Setup
@@ -178,6 +207,20 @@ scripts):
 ╚══════════════════════════════════════════════════════════╝
 
 
+That is all you need to do to get Good Time Trivia running.
+
+
+Optional
+--------
+As mentioned in the introduction, server scores can be sent to a remote BBS so
+that scores from players on multiple BBSes can be viewed. Normally, if Good Time
+Trivia is unable to connect to the remote BBS directly, it will fall back to
+posting scores in a networked message sub-board (if configured) as a backup
+option. That happens automatically after a user finishes playing a game, but
+Good Time Trivia can also (optionally) be configured to post game scores in a
+sub-board as a timed event by running gttrivia.js with the
+-post_scores_to_subboard command-line argument.
+
 
 4. Configuration File
 =====================
@@ -199,6 +242,27 @@ numTriesPerQuestion               The maximum number of times a user is
 
 maxNumPlayerScoresToDisplay       The maximum number of player scores to display
                                   in the list of high scores
+
+scoresMsgSubBoardsForPosting      This can be used to specify a comma-separated
+                                  list of internal sub-board codes for the game
+								  to post user scores in, if you want your user
+								  scores to be shared. In case the remote BBS
+								  in the REMOTE_SERVER setting can't be reached
+								  or there is no remote BBS configured, the game
+								  will post scores in the sub-board(s) specified
+								  here. You can specify more than one sub-board
+								  code in case there are multiple BBSes that
+								  host scores for this game.
+								  Note that this setting is empty by default,
+								  because internal sub-board codes are probably
+								  different on each BBS. Digital Distortion is
+								  set up to host scores for this game, and if
+								  your BBS is connected to Dove-Net, it is
+								  recommended to use your BBS's internal code
+								  code for the Dove-Net Synchronet Data
+								  sub-board here. FSXNet also has an InterBBS
+								  Data area that might be used for conveying
+								  game scores to a host BBS.
 
 [COLORS] section
 ----------------
@@ -270,6 +334,19 @@ deleteScoresOlderThanDays         The number of days to keep old player scores.
                                   The background service will remove player
 								  scores older than this number of days.
 
+scoresMsgSubBoardsForReading      This can be used to specify a comma-separated
+                                  list of internal sub-board codes for the game
+								  to read user scores from, for client BBSes
+								  that post their game scores there. See section
+								  5 (Optional: Configuring your BBS to host
+								  player scores) for information on adding an
+								  event in SCFG to periodically read scores
+								  from the sub-board(s) if you want to host game
+								  scores on your BBS. By default, the game is
+								  set up to post scores to Digital Distortion,
+								  so you may choose to view the scores there or
+								  host scores yourself.
+
 
 5. Optional: Configuring your BBS to host player scores
 =======================================================
@@ -297,3 +374,51 @@ dir=../xtrn/gttrivia/server/
 
 It would then probably be a good idea to stop and re-start your Synchronet BBS
 in order for it to recognize that you have a new JSON database configured.
+
+
+Periodic reading of scores from a message sub-board
+---------------------------------------------------
+BBSes with the game installed could configure their game to post scores in a
+(networked) message sub-board.  If you decide to host game scores on your BBS,
+it's also a good idea to configure your BBS to read scores from a networked
+message sub-board (which would need to be the same one that BBSes post in). For
+instance, you could set it up to read scores from Dove-Net Synchronet Data,
+FSXNet InterBBS Data, or perhaps another networked sub-board that is meant to
+carry BBS data.
+
+To specify which sub-board(s) to read scores from, you can specify those as a
+comma-separated list of internal sub-board codes using the
+scoresMsgSubBoardsForReading setting under the [SERVER] section of
+gttrivia.ini.
+
+Then, in SCFG, you will need to configure an event to run periodically to run
+gttrivia.js to read those message sub-boards for game scores. You can do that
+in SCFG > External Programs > Timed Events. Set it up to run gttrivia.js with
+the command-line parameter -read_scores_from_subboard
+Add an event as follows (internal code can be what you want; GTRIVSIM is short
+for Good Time Trivia scores import):
+
+╔═══════════════════════════════════════════════════════════════[< >]╗
+║                        GTRIVSIM Timed Event                        ║
+╠════════════════════════════════════════════════════════════════════╣
+║ │Internal Code                   GTRIVSIM                          ║
+║ │Start-up Directory              ../xtrn/gttrivia                  ║
+║ │Command Line                    ?gttrivia.js -read_scores_from_subboard
+║ │Enabled                         Yes                               ║
+║ │Execution Node                  12                                ║
+║ │Execution Months                Any                               ║
+║ │Execution Days of Month         Any                               ║
+║ │Execution Days of Week          All                               ║
+║ │Execution Frequency             96 times a day                    ║
+║ │Requires Exclusive Execution    No                                ║
+║ │Force Users Off-line For Event  No                                ║
+║ │Native Executable/Script        Yes                               ║
+║ │Use Shell or New Context        No                                ║
+║ │Background Execution            No                                ║
+║ │Always Run After Init/Re-init   No                                ║
+║ │Error Log Level                 Error                             ║
+╚════════════════════════════════════════════════════════════════════╝
+
+The number of times per day is up to you, but it would probably be beneficial
+for this to happen frequently so that scores are kept up to date. In the above
+example, 96 times per day would mean it would run every 15 minutes.
