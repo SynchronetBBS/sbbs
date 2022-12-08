@@ -1753,7 +1753,7 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 			{
 				var formattedText = format(this.text.searchingSubBoardAbovePromptText, subBoardGrpAndName(bbs.cursub_code));
 				//console.print("\x01n" + replaceAtCodesInStr(formattedText) + "\x01n");
-				console.putmst("\x01n" + formattedText + "\x01n");
+				console.putmsg("\x01n" + formattedText + "\x01n");
 			}
 			console.crlf();
 		}
