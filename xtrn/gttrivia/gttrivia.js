@@ -11,6 +11,10 @@ Date       Author            Description
                              also sysop functions to remove players and users from the hosted
                              inter-BBS scores. Also, answer clues now don't mask spaces in the
                              answer.
+2022-12-?? Eric Oulashin     Version 1.02
+                             The game can now post scores in a (networked) message sub-board as
+                             a backup to using a JSON DB server in case the server can't be
+                             contacted.							 
 */
 
 
@@ -1330,7 +1334,7 @@ function showUserScoresArray(pUserScoresArray, pBBSName)
 	// Make the format string for printf()
 	var scoreWidth = 6;
 	var dateWidth = 10;
-	var categoryWidth = 15;
+	var categoryWidth = 25; //15;
 	var nameWidth = 0;
 	var formatStr = "";
 	if (console.screen_columns >= 80)
