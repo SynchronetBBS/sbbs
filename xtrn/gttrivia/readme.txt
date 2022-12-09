@@ -1,6 +1,6 @@
                                Good Time Trivia
                                  Version 1.02
-                           Release date: 2022-12-??
+                           Release date: 2022-12-08
 
                                      by
 
@@ -74,18 +74,27 @@ Shared game scores on a server BBS
 ----------------------------------
 The game can be configured to share its local game scores, to be stored on a
 remote BBS.  The scores can be shared either by directly contacting the remote
-BBS and/or by posting the local game scores in one or more message sub-boards
-(both configurable in gttrivia.ini).  The option to post scores in a message
-sub-board (which would need to be networked) is a backup in case the remote BBS
+BBS (via the JSON DB service) and/or by posting the local game scores in one or
+more (networked) message sub-boards (both configurable in gttrivia.ini).  The
+option to post scores in a message sub-board is a backup in case the remote BBS
 is down and cannot be contacted directly.  You may also opt to just have Good
 Time Trivia post scores in a message sub-board and not configure a remote BBS
 server.
 
-For instance, if your BBS has the Dove-Net message sub-boards, you could
-configure Good Time Trivia to post scores in the Dove-Net Synchronet Data
-sub-board (using the internal code configured on your BBS).  The host BBS would
-also need to have Dove-Net and have an event configured to periodically run
-Good Time Trivia to poll Dove-Net Synchronet Data and read the game scores.
+Digital Distortion (BBS) is set up to host scores for this game, and the
+default settings in the REMOTE_SERVER section of gttrivia.ini point to
+Digital Distortion, to use the direct-connect JSON DB method to update remote
+scores.
+
+Digital Distortion is also set up to look for scores for this game in the
+Dove-Net Synchronet Data message area, as well as FSXNet Inter-BBS Data.
+
+If your BBS has the Dove-Net message sub-boards, you could configure Good Time
+Trivia to post scores in the Dove-Net Synchronet Data sub-board (using the
+internal code configured on your BBS).  If there are other BBSes besides Digital
+Distortion hosting scores, the host BBS would also need to have Dove-Net and
+have an event configured to periodically run Good Time Trivia to poll Dove-Net
+Synchronet Data and read the game scores.
 
 By default, the game is set up to post scores to Digital Distortion, so you may
 choose to view the scores there or host scores yourself. See section 4

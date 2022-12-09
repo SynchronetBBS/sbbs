@@ -11,8 +11,8 @@ Date       Author            Description
                              also sysop functions to remove players and users from the hosted
                              inter-BBS scores. Also, answer clues now don't mask spaces in the
                              answer.
-2022-12-?? Eric Oulashin     Version 1.02
-                             The game can now post scores in a (networked) message sub-board as
+2022-12-08 Eric Oulashin     Version 1.02
+                             The game can now post scores in (networked) message sub-boards as
                              a backup to using a JSON DB server in case the server can't be
                              contacted.							 
 */
@@ -41,8 +41,8 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.02 Beta";
-var GAME_VER_DATE = "2022-12-06";
+var GAME_VERSION = "1.02";
+var GAME_VER_DATE = "2022-12-08";
 
 // Determine the location of this script (its startup directory).
 // The code for figuring this out is a trick that was created by Deuce,
@@ -370,7 +370,6 @@ function playTrivia()
 				console.attributes = "N" + gSettings.colors.clue;
 				console.print(partiallyHiddenStr(QAArray[i].answer, tryI-1) + "\x01n");
 				console.crlf();
-				
 			}
 			// Prompt for an answer
 			console.attributes = "N" + gSettings.colors.answerPrompt;
@@ -1141,20 +1140,30 @@ function updateScoresOnServer(pUserNameForScores, pUserScoreInfo)
 	var updateSuccessful = true;
 	try
 	{
-		// TODO: It seems that locking is preventing the scores from being written on the server
+		// You could lock for each individual write like this:
+		//
+		// var JSONLocation = gSettings.remoteServer.BBSJSONLocation + ".bbs_name";
+		// jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, system.name, JSON_DB_LOCK_WRITE);
+		//
+		// You can also call lock() to lock the JSON location you want to use, do your reads & writes, and then
+		// unlock at the end.  The code here locks on the BBS ID JSON location and does its writes, so that
+		// readGTTriviaScoresFromSubBoard() can also lock on the same location to do its writes when importing
+		// scores from the messagebase.
+
 		var jsonClient = new JSONClient(gSettings.remoteServer.server, gSettings.remoteServer.port);
-		//jsonClient.lock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation, JSON_DB_LOCK_WRITE);
+		jsonClient.lock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation, JSON_DB_LOCK_WRITE);
 		// Ensure the BBS name on the server has been set
 		var JSONLocation = gSettings.remoteServer.BBSJSONLocation + ".bbs_name";
-		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, system.name, JSON_DB_LOCK_WRITE);
+		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, system.name);
 		// Write the scores on the server
 		JSONLocation = gSettings.remoteServer.userScoresJSONLocationWithoutUsername + "." + pUserNameForScores;
-		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, pUserScoreInfo, JSON_DB_LOCK_WRITE);
+		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, pUserScoreInfo);
 		// Write the client & version information in the user scores too
 		var gameInfo = format("%s version %s (%s)", GAME_NAME, GAME_VERSION, GAME_VER_DATE);
 		JSONLocation += ".game_client";
-		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, gameInfo, JSON_DB_LOCK_WRITE);
-		//jsonClient.unlock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation);
+		jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, gameInfo);
+		// Now that we're done, unlock and disconnect
+		jsonClient.unlock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation);
 		jsonClient.disconnect();
 	}
 	catch (error)
@@ -1901,11 +1910,11 @@ function readGTTriviaScoresFromSubBoard(pSubCode)
 					// server's JSON, then post the user's score.
 					for (var BBS_ID in scoresObjFromMsg)
 					{
-						// TODO: It seems that locking is preventing the scores from being written on the server
-						//jsonClient.lock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation, JSON_DB_LOCK_WRITE);
+						// Lock on the BBS name location in the JSON, do the writes, and unlock when we're done
+						jsonClient.lock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation, JSON_DB_LOCK_WRITE);
 						// Ensure the BBS name on the server has been set
 						var JSONLocation = gSettings.remoteServer.scoresJSONLocation + ".systems." + BBS_ID + ".bbs_name";
-						//jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, system.name, JSON_DB_LOCK_WRITE);
+						jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, system.name);
 						for (var userID in scoresObjFromMsg[BBS_ID].user_scores)
 						{
 							// For logging
@@ -1916,7 +1925,7 @@ function readGTTriviaScoresFromSubBoard(pSubCode)
 							// from the message in the sub-board with the one from the server, and only update
 							// if newer.
 							JSONLocation = gSettings.remoteServer.scoresJSONLocation + ".systems." + BBS_ID + ".user_scores." + userID;
-							var serverUserScoreData = jsonClient.read(gSettings.remoteServer.gtTriviaScope, JSONLocation, JSON_DB_LOCK_READ);
+							var serverUserScoreData = jsonClient.read(gSettings.remoteServer.gtTriviaScope, JSONLocation);
 							var postUserScoresToServer = false;
 							if (typeof(serverUserScoreData) === "object")
 							{
@@ -1939,9 +1948,10 @@ function readGTTriviaScoresFromSubBoard(pSubCode)
 							if (postUserScoresToServer)
 							{
 								JSONLocation = gSettings.remoteServer.scoresJSONLocation + ".systems." + BBS_ID + ".user_scores." + userID;
-								jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, scoresObjFromMsg[BBS_ID].user_scores[userID], JSON_DB_LOCK_WRITE);
+								jsonClient.write(gSettings.remoteServer.gtTriviaScope, JSONLocation, scoresObjFromMsg[BBS_ID].user_scores[userID]);
 							}
-							//jsonClient.unlock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation);
+							// Now that we've written the user scores, unlock this BBS in the JSON
+							jsonClient.unlock(gSettings.remoteServer.gtTriviaScope, gSettings.remoteServer.BBSJSONLocation);
 						}
 					}
 				}
