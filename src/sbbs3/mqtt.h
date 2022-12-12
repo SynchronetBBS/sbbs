@@ -23,9 +23,9 @@
 #define MQTT_H
 
 #include "scfgdefs.h"
+#include "dllexport.h"
 
 #include <stdarg.h>
-#include <stdint.h>
 
 #ifdef USE_MOSQUITTO
 	#include <mosquitto.h>
@@ -56,20 +56,20 @@ enum topic_depth {
 extern "C" {
 #endif
 
-int mqtt_init(struct mqtt*, scfg_t*, const char* host, const char* server);
-char* mqtt_libver(char* str, size_t size);
-char* mqtt_topic(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
-int mqtt_subscribe(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
-int mqtt_lputs(struct mqtt*, enum topic_depth, int level, const char* str);
-int mqtt_pub_strval(struct mqtt*, enum topic_depth, const char* key, const char* str);
-int mqtt_pub_uintval(struct mqtt*, enum topic_depth, const char* key, ulong value);
-int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len);
-int mqtt_open(struct mqtt*);
-void mqtt_close(struct mqtt*);
-int mqtt_connect(struct mqtt*, const char* bind_address);
-int mqtt_disconnect(struct mqtt*);
-int mqtt_thread_start(struct mqtt*);
-int mqtt_thread_stop(struct mqtt*);
+DLLEXPORT int mqtt_init(struct mqtt*, scfg_t*, const char* host, const char* server);
+DLLEXPORT char* mqtt_libver(char* str, size_t size);
+DLLEXPORT char* mqtt_topic(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
+DLLEXPORT int mqtt_subscribe(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
+DLLEXPORT int mqtt_lputs(struct mqtt*, enum topic_depth, int level, const char* str);
+DLLEXPORT int mqtt_pub_strval(struct mqtt*, enum topic_depth, const char* key, const char* str);
+DLLEXPORT int mqtt_pub_uintval(struct mqtt*, enum topic_depth, const char* key, ulong value);
+DLLEXPORT int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len);
+DLLEXPORT int mqtt_open(struct mqtt*);
+DLLEXPORT void mqtt_close(struct mqtt*);
+DLLEXPORT int mqtt_connect(struct mqtt*, const char* bind_address);
+DLLEXPORT int mqtt_disconnect(struct mqtt*);
+DLLEXPORT int mqtt_thread_start(struct mqtt*);
+DLLEXPORT int mqtt_thread_stop(struct mqtt*);
 
 #ifdef __cplusplus
 }

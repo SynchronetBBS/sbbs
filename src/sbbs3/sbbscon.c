@@ -1820,6 +1820,7 @@ int main(int argc, char** argv)
 	}
 #endif
 
+#ifdef __unix__
 	if(is_daemon) {
 		lprintf(LOG_INFO,"Running as daemon");
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
@@ -1845,6 +1846,8 @@ int main(int argc, char** argv)
 		new_gid=gr_entry->gr_gid;
 
 	do_seteuid(TRUE);
+
+#endif // __unix__
 
 #ifdef _THREAD_SUID_BROKEN
 	/* check if we're using NPTL */
