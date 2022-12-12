@@ -25,6 +25,7 @@
 #include "ars_defs.h"
 #include "findstr.h"
 #include "ini_file.h"
+#include "sockwrap.h"	 // IPPORT_MQTT
 
 BOOL allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
 {
