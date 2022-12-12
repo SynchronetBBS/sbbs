@@ -68,6 +68,7 @@ typedef struct {
 	/* Login Attempt parameters */
 	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
+	struct mqtt mqtt;
 
 } services_startup_t;
 

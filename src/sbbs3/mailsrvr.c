@@ -50,6 +50,7 @@
 
 /* Constants */
 static const char*	server_name="Synchronet Mail Server";
+static const char*	server_abbrev = "mail";
 #define FORWARD			"forward:"
 #define NO_FORWARD		"local:"
 #define NO_SPAM			"#nospam"
@@ -71,8 +72,6 @@ int dns_getmx(char* name, char* mx, char* mx2
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
 #define SMTP_MAX_BAD_CMDS		9
-
-#define STATUS_WFC	"Listening"
 
 static mail_startup_t* startup=NULL;
 static scfg_t	scfg;
@@ -192,7 +191,7 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		SAFEPRINTF(errmsg, "mail %s", sbuf);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
 		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
@@ -200,6 +199,9 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_CRIT)
 		stats.crit_errors++;
+
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
 		return(0);
@@ -252,8 +254,11 @@ static void set_state(enum server_state state)
 
 static void update_clients(void)
 {
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,protected_uint32_value(active_clients)+active_sendmail);
+	if(startup != NULL) {
+		if(startup->clients != NULL)
+			startup->clients(startup->cbdata,protected_uint32_value(active_clients)+active_sendmail);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", protected_uint32_value(active_clients));
+	}
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -273,15 +278,21 @@ static void client_off(SOCKET sock)
 
 static void thread_up(BOOL setuid)
 {
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,TRUE,setuid);
+	if(startup != NULL) {
+		if(startup->thread_up != NULL)
+			startup->thread_up(startup->cbdata,TRUE,setuid);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", protected_uint32_value(thread_count));
+	}
 }
 
 static int32_t thread_down(void)
 {
 	int32_t count = protected_uint32_adjust_fetch(&thread_count,-1);
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,FALSE,FALSE);
+	if(startup != NULL) {
+		if(startup->thread_up != NULL)
+			startup->thread_up(startup->cbdata,FALSE,FALSE);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", count);
+	}
 	return count;
 }
 
@@ -298,6 +309,8 @@ void mail_open_socket(SOCKET sock, void* cb_protocol)
 		lprintf(LOG_ERR,"%04d %s !ERROR %s", sock, protocol, error);
 
 	stats.sockets++;
+	if(startup != NULL)
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
 }
 
 void mail_close_socket_cb(SOCKET sock, void* cb_protocol)
@@ -305,6 +318,8 @@ void mail_close_socket_cb(SOCKET sock, void* cb_protocol)
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
 	stats.sockets--;
+	if(startup != NULL)
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
 }
 
 int mail_close_socket(SOCKET *sock, int *sess)
@@ -323,6 +338,8 @@ int mail_close_socket(SOCKET *sock, int *sess)
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
 	stats.sockets--;
+	if(startup != NULL)
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
 			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, ERROR_VALUE);
@@ -6035,6 +6052,8 @@ void mail_server(void* arg)
 
 	set_state(SERVER_INIT);
 
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", mail_ver());
+
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
 	js_server_props.version_detail=mail_ver();
@@ -6236,8 +6255,8 @@ void mail_server(void* arg)
 		}
 
 		/* Setup recycle/shutdown semaphore file lists */
-		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","mail");
-		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","mail");
+		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%smailsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);

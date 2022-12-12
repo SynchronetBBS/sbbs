@@ -308,5 +308,8 @@ DLLEXPORT BOOL socket_recvdone(SOCKET sock, int timeout);
 #ifndef IPPORT_BINKP
 #define IPPORT_BINKP		24554
 #endif
+#ifndef IPPORT_MQTT
+#define IPPORT_MQTT			1883
+#endif
 
 #endif	/* Don't add anything after this line */

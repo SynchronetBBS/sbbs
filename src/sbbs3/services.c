@@ -55,6 +55,7 @@
 #define MAX_UDP_BUF_LEN			8192	/* 8K */
 #define DEFAULT_LISTEN_BACKLOG	5
 
+static const char* server_abbrev = "srvc";
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
 static char*	text[TOTAL_TEXT];
@@ -124,11 +125,14 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		SAFEPRINTF(errmsg, "srvc %s", sbuf);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
 		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
+
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
         return(0);
@@ -1854,6 +1858,8 @@ void services_thread(void* arg)
 		return;
 	}
 	set_state(SERVER_INIT);
+
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", services_ver());
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)

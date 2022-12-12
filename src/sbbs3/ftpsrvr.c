@@ -49,8 +49,8 @@
 /* Constants */
 
 #define FTP_SERVER				"Synchronet FTP Server"
+const char* server_abbrev = "ftp";
 
-#define STATUS_WFC				"Listening"
 #define ANONYMOUS				"anonymous"
 
 #define BBS_VIRTUAL_PATH		"bbs:/""/"	/* this is actually bbs:<slash><slash> */
@@ -142,11 +142,13 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		SAFEPRINTF(errmsg, "ftp  %s", sbuf);
+		SAFEPRINTF2(errmsg, "%s  %s", server_abbrev, sbuf);
 		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
 		return(0);
@@ -200,8 +202,12 @@ static void set_state(enum server_state state)
 
 static void update_clients(void)
 {
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,protected_uint32_value(active_clients));
+	if(startup != NULL) {
+		uint32_t count = protected_uint32_value(active_clients);
+		if(startup->clients != NULL)
+			startup->clients(startup->cbdata, count);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", count);
+	}
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -221,15 +227,21 @@ static void client_off(SOCKET sock)
 
 static void thread_up(BOOL setuid)
 {
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,TRUE, setuid);
+	if(startup != NULL) {
+		if(startup->thread_up != NULL)
+			startup->thread_up(startup->cbdata,TRUE, setuid);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", protected_uint32_value(thread_count));
+	}
 }
 
 static int32_t thread_down(void)
 {
 	int32_t count = protected_uint32_adjust_fetch(&thread_count,-1);
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,FALSE, FALSE);
+	if(startup != NULL) {
+		if(startup->thread_up != NULL)
+			startup->thread_up(startup->cbdata,FALSE, FALSE);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", count);
+	}
 	return count;
 }
 
@@ -4940,6 +4952,8 @@ void ftp_server(void* arg)
 	}
 	set_state(SERVER_INIT);
 
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", ftp_ver());
+
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
@@ -5065,8 +5079,8 @@ void ftp_server(void* arg)
 		xpms_add_list(ftp_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "FTP Server", ftp_open_socket_cb, startup->seteuid, NULL);
 
 		/* Setup recycle/shutdown semaphore file lists */
-		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","ftp");
-		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","ftp");
+		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%sftpsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
