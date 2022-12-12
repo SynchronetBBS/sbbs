@@ -5,6 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.57.1   2022-12-12   Fix for "assignment to undeclared variable" error
 1.57     2022-12-02   @-codes were only expanded when reading personal mail;
                       now, DDMsgReader also checks to make sure the sender is a
                       sysop.
