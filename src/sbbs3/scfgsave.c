@@ -212,8 +212,11 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		iniSetBool(&ini, name, "enabled", cfg->mqtt.enabled, NULL);
 		iniSetString(&ini, name, "broker_addr", cfg->mqtt.broker_addr, NULL);
 		iniSetUInt16(&ini, name, "broker_port", cfg->mqtt.broker_port, NULL);
+		iniSetInteger(&ini, name, "protocol_version", cfg->mqtt.protocol_version, NULL);
 		iniSetInteger(&ini, name, "keepalive", cfg->mqtt.keepalive, NULL);
 		iniSetInteger(&ini, name, "qos", cfg->mqtt.qos, NULL);
+		iniSetString(&ini, name, "username", cfg->mqtt.username, NULL);
+		iniSetString(&ini, name, "password", cfg->mqtt.password, NULL);
 	}
 
 	{
