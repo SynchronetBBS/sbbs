@@ -65,6 +65,11 @@ ifeq ($(os),linux)
   CON_LIBS += -lsystemd
  endif
 endif
+ifeq ($(shell test -f /usr/include/mosquitto.h && echo "yes"),yes)
+ CFLAGS += -DUSE_MOSQUITTO
+ CON_LIBS += -lmosquitto
+ JS_LIBS += -lmosquitto
+endif
 
 include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS)

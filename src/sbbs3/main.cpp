@@ -40,7 +40,7 @@
 //---------------------------------------------------------------------------
 
 #define TELNET_SERVER "Synchronet Terminal Server"
-#define STATUS_WFC	"Listening"
+const char* server_abbrev = "term";
 
 #define TIMEOUT_THREAD_WAIT		60			// Seconds (was 15)
 #define IO_THREAD_BUF_SIZE	   	20000		// Bytes
@@ -165,8 +165,11 @@ static void set_state(enum server_state state)
 
 static void update_clients()
 {
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,protected_uint32_value(node_threads_running));
+	if(startup != NULL) {
+		if(startup->clients != NULL)
+			startup->clients(startup->cbdata,protected_uint32_value(node_threads_running));
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_HOST, "client_count", protected_uint32_value(node_threads_running));
+	}
 }
 
 void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -198,9 +201,11 @@ static void thread_down()
 
 int lputs(int level, const char* str)
 {
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, str);
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
-		SAFEPRINTF(errmsg, "term %s", str);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, str);
 		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
@@ -2255,6 +2260,7 @@ void output_thread(void* arg)
 {
 	char		node[128];
 	char		stats[128];
+	char		spy_topic[128];
 	BYTE		buf[IO_THREAD_BUF_SIZE];
 	int			i=0;	// Assignment to silence Valgrind
 	ulong		avail;
@@ -2270,9 +2276,10 @@ void output_thread(void* arg)
 	SetThreadName("sbbs/termOutput");
 	thread_up(TRUE /* setuid */);
 
-	if(sbbs->cfg.node_num)
+	if(sbbs->cfg.node_num) {
 		SAFEPRINTF(node,"Node %d",sbbs->cfg.node_num);
-	else
+		SAFEPRINTF(spy_topic, "node%d/output", sbbs->cfg.node_num);
+	} else
 		SAFECOPY(node,sbbs->client_name);
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG,"%s output thread started",node);
@@ -2471,6 +2478,9 @@ void output_thread(void* arg)
 					sem_post(startup->node_spysem[sbbs->cfg.node_num-1]);
 			}
 			/* Spy on the user remotely */
+			int result = mqtt_pub_message(&startup->mqtt, TOPIC_BBS, spy_topic, buf+bufbot, i);
+			if(result != MQTT_SUCCESS)
+				lprintf(LOG_WARNING, "%s ERROR %d publishing message (%u bytes) to spy topic: %s", node, result, i, spy_topic);
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
 				(void)sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #ifdef __unix__
@@ -4387,6 +4397,13 @@ void node_thread(void* arg)
 		fclose(fp);
 	}
 
+	if(sbbs->useron.number) {
+		char topic[128];
+		SAFEPRINTF(topic, "node%u/laston", sbbs->cfg.node_num);
+		SAFEPRINTF2(str, "%u\t%s", sbbs->useron.number, sbbs->useron.alias);
+		mqtt_pub_strval(&startup->mqtt, TOPIC_BBS, topic, str);
+	}
+
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance
 		sbbs->daily_maint();
 	}
@@ -4914,6 +4931,7 @@ void bbs_thread(void* arg)
 		cleanup(1);
 		return;
 	}
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", bbs_ver());
 
 	t=time(NULL);
 	lprintf(LOG_INFO,"Initializing on %.24s with options: %x"
@@ -4957,6 +4975,8 @@ void bbs_thread(void* arg)
         	,startup->last_node, scfg.sys_nodes);
         startup->last_node=scfg.sys_nodes;
     }
+
+	mqtt_pub_uintval(&startup->mqtt, TOPIC_BBS, "node_count", scfg.sys_nodes);
 
 	/* Create missing directories */
 	lprintf(LOG_INFO,"Verifying/creating data directories");
@@ -5164,9 +5184,9 @@ NO_SSH:
 	}
 
 	/* Setup recycle/shutdown semaphore file lists */
-	shutdown_semfiles = semfile_list_init(scfg.ctrl_dir,"shutdown", "term");
-	recycle_semfiles = semfile_list_init(scfg.ctrl_dir,"recycle", "term");
-	clear_attempts_semfiles = semfile_list_init(scfg.ctrl_dir,"clear", "term");
+	shutdown_semfiles = semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+	recycle_semfiles = semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
+	clear_attempts_semfiles = semfile_list_init(scfg.ctrl_dir,"clear", server_abbrev);
 	semfile_list_add(&recycle_semfiles,startup->ini_fname);
 	SAFEPRINTF(str,"%stext.dat",scfg.ctrl_dir);
 	semfile_list_add(&recycle_semfiles,str);

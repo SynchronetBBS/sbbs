@@ -198,6 +198,16 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->expired_exempt = iniGetUInt32(section, NULL, "exemptions", 0);
 	cfg->expired_rest = iniGetUInt32(section, NULL, "restrictions", 0);
 
+	/*****************/
+	/* MQTT Settings */
+	/*****************/
+	section = iniGetParsedSection(sections, "mqtt", /* cut: */TRUE);
+	cfg->mqtt.enabled = iniGetBool(section, NULL, "enabled", FALSE);
+	SAFECOPY(cfg->mqtt.broker_addr, iniGetString(section, NULL, "broker_addr", "127.0.0.1", value));
+	cfg->mqtt.broker_port = iniGetUInt16(section, NULL, "broker_port", IPPORT_MQTT);
+	cfg->mqtt.keepalive = iniGetInteger(section, NULL, "keepalive", 10);
+	cfg->mqtt.qos = iniGetInteger(section, NULL, "qos", 0);
+
 	/***********/
 	/* Modules */
 	/***********/

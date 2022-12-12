@@ -71,6 +71,7 @@
 #include "git_hash.h"
 
 static const char*	server_name="Synchronet Web Server";
+static const char*	server_abbrev = "web";
 static const char*	newline="\r\n";
 static const char*	http_scheme="http://";
 static const size_t	http_scheme_len=7;
@@ -549,11 +550,14 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		SAFEPRINTF(errmsg, "web  %s", sbuf);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
 		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
+
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
         return(0);
@@ -740,8 +744,12 @@ static void set_state(enum server_state state)
 
 static void update_clients(void)
 {
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,protected_uint32_value(active_clients));
+	if(startup != NULL) {
+		uint32_t count = protected_uint32_value(active_clients);
+		if(startup->clients!=NULL)
+			startup->clients(startup->cbdata, count);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", count);
+	}
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -7001,6 +7009,8 @@ void web_server(void* arg)
 	}
 	set_state(SERVER_INIT);
 
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", web_ver());
+
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
 		startup->seteuid(TRUE);
@@ -7174,8 +7184,8 @@ void web_server(void* arg)
 		}
 
 		/* Setup recycle/shutdown semaphore file lists */
-		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","web");
-		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","web");
+		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%swebsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);

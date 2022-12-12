@@ -32,6 +32,7 @@
 	#define LINK_LIST_THREADSAFE
 #endif
 #include "link_list.h"
+#include "mqtt.h"
 
 typedef struct {
 	ulong	max_bytes;		/* max allocated bytes before garbage collection */
@@ -164,6 +165,7 @@ typedef struct {
 	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
 	uint	max_concurrent_connections;
+	struct mqtt mqtt;
 
 } bbs_startup_t;
 

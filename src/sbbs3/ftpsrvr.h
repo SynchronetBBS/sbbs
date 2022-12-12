@@ -82,6 +82,7 @@ typedef struct {
 	link_list_t* login_attempt_list;
 
 	uint	max_concurrent_connections;
+	struct mqtt mqtt;
 
 } ftp_startup_t;
 

@@ -363,6 +363,14 @@ typedef struct {
 	char		cmd[LEN_CMD+1];
 } hotkey_t;
 
+struct mqtt_cfg {
+	BOOL		enabled;
+	char		broker_addr[128];
+	uint16_t	broker_port;
+	int			keepalive;
+	int			qos;
+};
+
 typedef struct 
 {
 	DWORD			size;				/* sizeof(scfg_t) */
@@ -637,6 +645,7 @@ typedef struct
 	int				tls_certificate;
 	time32_t        tls_cert_file_date;
 
+	struct mqtt_cfg mqtt;
 } scfg_t;
 
 #endif /* Don't add anything after this line */

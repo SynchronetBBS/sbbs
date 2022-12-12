@@ -208,6 +208,15 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	}
 
 	{
+		const char* name = "mqtt";
+		iniSetBool(&ini, name, "enabled", cfg->mqtt.enabled, NULL);
+		iniSetString(&ini, name, "broker_addr", cfg->mqtt.broker_addr, NULL);
+		iniSetUInt16(&ini, name, "broker_port", cfg->mqtt.broker_port, NULL);
+		iniSetInteger(&ini, name, "keepalive", cfg->mqtt.keepalive, NULL);
+		iniSetInteger(&ini, name, "qos", cfg->mqtt.qos, NULL);
+	}
+
+	{
 		const char* name = "module";
 		iniSetString(&ini, name, "logon", cfg->logon_mod, NULL);
 		iniSetString(&ini, name, "logoff", cfg->logoff_mod, NULL);
