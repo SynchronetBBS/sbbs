@@ -242,7 +242,14 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 		return MQTT_FAILURE;
 
 #ifdef USE_MOSQUITTO
-	mosquitto_int_option(mqtt->handle, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
+	char* username = mqtt->cfg->mqtt.username;
+	char* password = mqtt->cfg->mqtt.password;
+	if(*username == '\0')
+		username = NULL;
+	if(*password == '\0')
+		password = NULL;
+	mosquitto_int_option(mqtt->handle, MOSQ_OPT_PROTOCOL_VERSION, mqtt->cfg->mqtt.protocol_version);
+	mosquitto_username_pw_set(mqtt->handle, username, password);
 	return mosquitto_connect_bind(mqtt->handle,
 		mqtt->cfg->mqtt.broker_addr,
 		mqtt->cfg->mqtt.broker_port,

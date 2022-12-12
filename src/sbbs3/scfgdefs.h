@@ -367,8 +367,11 @@ struct mqtt_cfg {
 	BOOL		enabled;
 	char		broker_addr[128];
 	uint16_t	broker_port;
+	char		username[256];
+	char		password[256];
 	int			keepalive;
 	int			qos;
+	int			protocol_version;
 };
 
 typedef struct 

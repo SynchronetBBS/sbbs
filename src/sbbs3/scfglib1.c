@@ -204,10 +204,13 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*****************/
 	section = iniGetParsedSection(sections, "mqtt", /* cut: */TRUE);
 	cfg->mqtt.enabled = iniGetBool(section, NULL, "enabled", FALSE);
+	SAFECOPY(cfg->mqtt.username, iniGetString(section, NULL, "username", "", value));
+	SAFECOPY(cfg->mqtt.password, iniGetString(section, NULL, "password", "", value));
 	SAFECOPY(cfg->mqtt.broker_addr, iniGetString(section, NULL, "broker_addr", "127.0.0.1", value));
 	cfg->mqtt.broker_port = iniGetUInt16(section, NULL, "broker_port", IPPORT_MQTT);
 	cfg->mqtt.keepalive = iniGetInteger(section, NULL, "keepalive", 10);
 	cfg->mqtt.qos = iniGetInteger(section, NULL, "qos", 0);
+	cfg->mqtt.protocol_version = iniGetInteger(section, NULL, "protocol_version", 5);
 
 	/***********/
 	/* Modules */
