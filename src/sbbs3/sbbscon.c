@@ -320,7 +320,7 @@ static void recycle_all()
 }
 
 #ifdef USE_MOSQUITTO
-void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const struct mosquitto_message* msg)
+static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const struct mosquitto_message* msg)
 {
 	char topic[128];
 	lprintf(LOG_DEBUG, "MQTT message received (%d bytes) on %s", msg->payloadlen, msg->topic);
@@ -356,6 +356,16 @@ void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const struct mo
 		services_startup.recycle_now = true;
 		return;
 	}
+}
+
+static void mqtt_log_msg(struct mosquitto* moq, void* cbdata, int level, const char* str)
+{
+	lprintf(LOG_INFO, "MQTT log_msg(%x): %s", level, str);
+}
+
+static void mqtt_disconnected(struct mosquitto* mosq , void* cbdata, int reason)
+{
+	lprintf(LOG_ERR, "MQTT broker disconnected, reason: %d", reason);
 }
 #endif
 
@@ -1820,6 +1830,8 @@ int main(int argc, char** argv)
 
 #ifdef USE_MOSQUITTO
 	if(bbs_startup.mqtt.handle != NULL) {
+		mosquitto_log_callback_set(bbs_startup.mqtt_handle, mqtt_log_msg);
+		mosquitto_disconnect_callback_set(bbs_startup.mqtt_handle, mqtt_disconnected);
 		mosquitto_message_callback_set(bbs_startup.mqtt.handle, mqtt_message_received);
 		for(int i = bbs_startup.first_node; i <= bbs_startup.last_node; i++) {
 			mqtt_subscribe(&bbs_startup.mqtt, TOPIC_BBS, str, sizeof(str), "node%d/input", i);
