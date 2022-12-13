@@ -1830,8 +1830,8 @@ int main(int argc, char** argv)
 
 #ifdef USE_MOSQUITTO
 	if(bbs_startup.mqtt.handle != NULL) {
-		mosquitto_log_callback_set(bbs_startup.mqtt_handle, mqtt_log_msg);
-		mosquitto_disconnect_callback_set(bbs_startup.mqtt_handle, mqtt_disconnected);
+		mosquitto_log_callback_set(bbs_startup.mqtt.handle, mqtt_log_msg);
+		mosquitto_disconnect_callback_set(bbs_startup.mqtt.handle, mqtt_disconnected);
 		mosquitto_message_callback_set(bbs_startup.mqtt.handle, mqtt_message_received);
 		for(int i = bbs_startup.first_node; i <= bbs_startup.last_node; i++) {
 			mqtt_subscribe(&bbs_startup.mqtt, TOPIC_BBS, str, sizeof(str), "node%d/input", i);
