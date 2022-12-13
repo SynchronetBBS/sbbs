@@ -46,6 +46,7 @@ enum topic_depth {
 	TOPIC_ROOT,
 	TOPIC_BBS,
 	TOPIC_HOST,
+	TOPIC_EVENT,
 	TOPIC_SERVER
 };
 

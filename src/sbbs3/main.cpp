@@ -227,6 +227,9 @@ int eputs(int level, const char *str)
 	if(*str == 0)
 		return 0;
 
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_EVENT, level, str);
+
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
 		SAFEPRINTF(errmsg, "evnt %s", str);
