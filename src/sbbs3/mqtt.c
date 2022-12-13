@@ -83,7 +83,7 @@ static int mqtt_sub(struct mqtt* mqtt, const char* topic)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt != NULL && mqtt->handle != NULL && topic != NULL) {
-		return mosquitto_subscribe(mqtt->handle, /* mid: */NULL, topic, mqtt->cfg->mqtt.qos);
+		return mosquitto_subscribe(mqtt->handle, /* mid: */NULL, topic, mqtt->cfg->mqtt.subscribe_qos);
 	}
 #endif
 	return MQTT_FAILURE;
@@ -119,7 +119,7 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 			/* topic: */sub,
 			/* payloadlen */strlen(str),
 			/* payload */str,
-			/* qos */mqtt->cfg->mqtt.qos,
+			/* qos */mqtt->cfg->mqtt.publish_qos,
 			/* retain */false,
 			/* properties */NULL);
 		mqtt_topic(mqtt, depth, sub, sizeof(sub), "log");
@@ -130,7 +130,7 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 			/* topic: */sub,
 			/* payloadlen */strlen(str),
 			/* payload */str,
-			/* qos */mqtt->cfg->mqtt.qos,
+			/* qos */mqtt->cfg->mqtt.publish_qos,
 			/* retain */false,
 			/* properties */props);
 		mosquitto_property_free_all(&props);
@@ -153,7 +153,7 @@ int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, 
 			/* topic: */sub,
 			/* payloadlen */strlen(str),
 			/* payload */str,
-			/* qos */mqtt->cfg->mqtt.qos,
+			/* qos */mqtt->cfg->mqtt.publish_qos,
 			/* retain */true,
 			/* properties */NULL);
 	}
@@ -176,7 +176,7 @@ int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 			/* topic: */sub,
 			/* payloadlen */strlen(str),
 			/* payload */str,
-			/* qos */mqtt->cfg->mqtt.qos,
+			/* qos */mqtt->cfg->mqtt.publish_qos,
 			/* retain */true,
 			/* properties */NULL);
 	}
@@ -197,7 +197,7 @@ int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 			/* topic: */sub,
 			/* payloadlen */len,
 			/* payload */buf,
-			/* qos */mqtt->cfg->mqtt.qos,
+			/* qos */mqtt->cfg->mqtt.publish_qos,
 			/* retain */false,
 			/* properties */NULL);
 	}
