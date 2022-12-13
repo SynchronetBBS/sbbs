@@ -370,7 +370,8 @@ struct mqtt_cfg {
 	char		username[256];
 	char		password[256];
 	int			keepalive;
-	int			qos;
+	int			publish_qos;
+	int			subscribe_qos;
 	int			protocol_version;
 };
 
