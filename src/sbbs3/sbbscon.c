@@ -358,18 +358,22 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 	}
 }
 
+#ifdef MOSQUITTO_LOG
 static void mqtt_log_msg(struct mosquitto* moq, void* cbdata, int level, const char* str)
 {
 	char msg[1024];
 	SAFEPRINTF2(msg, "MQTT log_msg(%x): %s", level, str);
 	log_puts(LOG_DEBUG, msg);
 }
+#endif
 
 static void mqtt_disconnected(struct mosquitto* mosq , void* cbdata, int reason)
 {
-	lprintf(LOG_ERR, "MQTT broker disconnected, reason: %d", reason);
+	char msg[1024];
+	SAFEPRINTF(msg, "MQTT broker disconnected, reason: %d", reason);
+	log_puts(LOG_INFO, msg);
 }
-#endif
+#endif // USE_MOSQUITTO
 
 #ifdef __unix__
 static pthread_mutex_t setid_mutex;
@@ -1832,7 +1836,9 @@ int main(int argc, char** argv)
 
 #ifdef USE_MOSQUITTO
 	if(bbs_startup.mqtt.handle != NULL) {
+#ifdef MOSQUITTO_LOG
 		mosquitto_log_callback_set(bbs_startup.mqtt.handle, mqtt_log_msg);
+#endif
 		mosquitto_disconnect_callback_set(bbs_startup.mqtt.handle, mqtt_disconnected);
 		mosquitto_message_callback_set(bbs_startup.mqtt.handle, mqtt_message_received);
 		for(int i = bbs_startup.first_node; i <= bbs_startup.last_node; i++) {
