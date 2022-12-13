@@ -360,7 +360,9 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 
 static void mqtt_log_msg(struct mosquitto* moq, void* cbdata, int level, const char* str)
 {
-	lprintf(LOG_INFO, "MQTT log_msg(%x): %s", level, str);
+	char msg[1024];
+	SAFEPRINTF2(msg, "MQTT log_msg(%x): %s", level, str);
+	log_puts(LOG_DEBUG, msg);
 }
 
 static void mqtt_disconnected(struct mosquitto* mosq , void* cbdata, int reason)
