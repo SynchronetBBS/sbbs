@@ -54,6 +54,9 @@ static char* format_topic(struct mqtt* mqtt, enum topic_depth depth, char* str, 
 		case TOPIC_SERVER:
 			safe_snprintf(str, size, "sbbs/%s/%s/%s/%s", mqtt->cfg->sys_id, mqtt->host, mqtt->server, sbuf);
 			break;
+		case TOPIC_EVENT:
+			safe_snprintf(str, size, "sbbs/%s/%s/event/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
+			break;
 		default:
 			safe_snprintf(str, size, "%s", sbuf);
 			break;
