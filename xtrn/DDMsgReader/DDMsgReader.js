@@ -64,6 +64,8 @@
  *                              also checks to make sure the sender is a sysop.  Also, used putmsg() in
  *                              place of this script's own @-message parsing when displaying some of the
  *                              configured text strings.
+ * 2022-12-12 Eric Oulashin     Fix for "assignment to undeclared variable" error in GetMsgSubBrdLine();
+ *                              appeared when changing to a different message area from the reader
  */
 
 "use strict";
@@ -168,8 +170,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.57";
-var READER_DATE = "2022-12-02";
+var READER_VERSION = "1.57.1";
+var READER_DATE = "2022-12-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -11940,7 +11942,7 @@ function DigDistMsgReader_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 		if (numMsgs > 0)
 		{
 			// Get the header of the last message in the sub-board
-			msgHeader = null;
+			var msgHeader = null;
 			var msgOffset = msgBase.total_msgs - 1;
 			while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code) && (msgOffset >= 0))
 				msgHeader = msgBase.get_msg_header(true, --msgOffset, true);
