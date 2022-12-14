@@ -1,15 +1,36 @@
 require("sbbsdefs.js", "K_NOCRLF");
 
 
-var inputFilename = "/mnt/data/SharedMedia/triviaQuestions/music_and_movies.txt";
-var outputFilename = inputFilename + "-converted.txt";
+var opts = parseCmdLine(argv);
 
 print("");
-print("Converting " + inputFilename);
+
+if (opts.inputFilename.length == 0)
+{
+	print("No input filename was specified.");
+	print("");
+	exit(1);
+}
+if (!file_exists(opts.inputFilename))
+{
+	print("Specified file does not exist:");
+	print(opts.inputFilename);
+	print("");
+	exit(2);
+}
+
+print("Input filename:" + opts.inputFilename + ":");
+print("");
+
+
+var outputFilename = opts.inputFilename + "-converted.txt";
+
+print("");
+print("Converting " + opts.inputFilename);
 print("Output: " + outputFilename);
 print("");
 
-var inFile = new File(inputFilename);
+var inFile = new File(opts.inputFilename);
 var outFile = new File(outputFilename);
 if (inFile.open("r"))
 {
@@ -112,7 +133,10 @@ if (inFile.open("r"))
 	inFile.close();
 }
 else
-	print("* Failed to open " + inputFilename + " for reading!");
+{
+	print("* Failed to open " + opts.inputFilename + " for reading!");
+	exit(3);
+}
 
 
 
@@ -127,4 +151,35 @@ function QA(pQuestion, pAnswer, pNumPoints)
 	this.question = pQuestion;
 	this.answer = pAnswer;
 	this.numPoints = pNumPoints;
+}
+
+// Parses command line options
+function parseCmdLine(argv)
+{
+	var retObj = {
+		inputFilename: ""
+	};
+
+	if (!Array.isArray(argv))
+		return retObj;
+
+	for (var i = 0; i < argv.length; ++i)
+	{
+		if (argv[i].length == 0) continue;
+		if (argv[i].charAt(0) == "-")
+		{
+			if (i >= argv.length - 1) continue;
+			var paramNameUpper = argv[i].substr(1).toUpperCase();
+			if (paramNameUpper == "INPUTFILENAME" || paramNameUpper == "INPUT_FILENAME")
+				retObj.inputFilename = argv[i+1];
+			++i; // To avoid analyzing the next parameter, since the next one is the value for this one
+		}
+		else
+		{
+			if (i == 0)
+				retObj.inputFilename = argv[i];
+		}
+	}
+
+	return retObj;
 }
