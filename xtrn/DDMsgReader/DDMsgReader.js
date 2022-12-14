@@ -66,7 +66,7 @@
  *                              configured text strings.
  * 2022-12-12 Eric Oulashin     Fix for "assignment to undeclared variable" error in GetMsgSubBrdLine();
  *                              appeared when changing to a different message area from the reader
- * 2012-12-13 Eric Oulashin     Version 1.58
+ * 2012-12-14 Eric Oulashin     Version 1.58
  *                              When writing QUOTES.TXT, quote lines are now wrapped if the user's
  *                              external editor configuration is configured to do so.
  */
@@ -174,7 +174,7 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 // Reader version information
 var READER_VERSION = "1.58";
-var READER_DATE = "2022-12-13";
+var READER_DATE = "2022-12-14";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -9754,15 +9754,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		{
 			// Get the user's setting for whether or not to wrap quote lines (and how long) from
 			// their external editor settings
-			var wrapQuoteLines = false;
-			var quoteLineWrapLen = console.screen_columns - 1;
-			if (typeof(user.editor) === "string" && xtrn_area.editor.hasOwnProperty(user.editor))
-			{
-				if ((xtrn_area.editor[user.editor].settings & XTRN_QUOTEWRAP) == XTRN_QUOTEWRAP)
-					wrapQuoteLines = true;
-				// TODO: Determine the quote line wrap width (it can be defined in SCFG in the editor settings)
-				//quoteLineWrapLen
-			}
+			var editorQuoteCfg = getExternalEditorQuoteWrapCfgFromSCFG(user.editor);
 			// Write the message text to the quotes file
 			quoteFile = new File(system.node_dir + "QUOTES.TXT");
 			if (quoteFile.open("w"))
@@ -9773,8 +9765,8 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 					msgText = pMsgText;
 				else
 					msgText = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
-				if (wrapQuoteLines)
-					msgText = word_wrap(msgText, quoteLineWrapLen, msgText.length, false);
+				if (editorQuoteCfg.quoteWrapEnabled && editorQuoteCfg.quoteWrapCols > 0)
+					msgText = word_wrap(msgText, editorQuoteCfg.quoteWrapCols, msgText.length, false);
 				quoteFile.write(msgText);
 
 				quoteFile.close();
@@ -20084,6 +20076,61 @@ function msgSenderIsASysop(pMsgHdr)
 		}
 	}
 	return senderIsSysop;
+}
+
+// Gets the quote wrap settings for an external editor
+//
+// Parameters:
+//  pEditorCode: The internal code of an external editor
+//
+// Return value: An object containing the following properties:
+//               quoteWrapEnabled: Boolean: Whether or not quote wrapping is enabled for the editor
+//               quoteWrapCols: The number of columns to wrap quote lines
+//  If the given editor code is not found, quoteWrapEnabled will be false and quoteWrapCols will be -1
+function getExternalEditorQuoteWrapCfgFromSCFG(pEditorCode)
+{
+	var retObj = {
+		quoteWrapEnabled: false,
+		quoteWrapCols: -1
+	};
+
+	if (typeof(pEditorCode) !== "string")
+		return retObj;
+	if (pEditorCode.length == 0)
+		return retObj;
+
+	var editorCode = pEditorCode.toLowerCase();
+	if (!xtrn_area.editor.hasOwnProperty(editorCode))
+		return retObj;
+
+	if ((xtrn_area.editor[editorCode].settings & XTRN_QUOTEWRAP) == XTRN_QUOTEWRAP)
+	{
+		retObj.quoteWrapEnabled = true;
+		retObj.quoteWrapCols = console.screen_columns - 1;
+	}
+
+	// See exportcfg.js for an example of using cnflib.js
+	// TODO: If running Synchronet 3.20, then there will be an easier way to get the quotewrap
+	// columns, from the .ini configuration
+	var cnflib = load({}, "cnflib.js");
+	var xtrnCnf = cnflib.read("xtrn.cnf");
+	if (typeof(xtrnCnf) === "object")
+	{
+		for (var i = 0; i < xtrnCnf.xedit.length; ++i)
+		{
+			if (xtrnCnf.xedit[i].code.toLowerCase() == editorCode)
+			{
+				if (xtrnCnf.xedit[i].hasOwnProperty("quotewrap_cols"))
+				{
+					if (xtrnCnf.xedit[i].quotewrap_cols > 0)
+						retObj.quoteWrapCols = xtrnCnf.xedit[i].quotewrap_cols;
+				}
+				break;
+			}
+		}
+	}
+
+	return retObj;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

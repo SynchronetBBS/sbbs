@@ -122,8 +122,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.83 Beta";
-var EDITOR_VER_DATE = "2022-12-13";
+var EDITOR_VERSION = "1.83";
+var EDITOR_VER_DATE = "2022-12-14";
 
 
 // Program variables
