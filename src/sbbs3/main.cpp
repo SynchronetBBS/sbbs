@@ -168,7 +168,7 @@ static void update_clients()
 	if(startup != NULL) {
 		if(startup->clients != NULL)
 			startup->clients(startup->cbdata,protected_uint32_value(node_threads_running));
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_HOST, "client_count", protected_uint32_value(node_threads_running));
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", protected_uint32_value(node_threads_running));
 	}
 }
 
